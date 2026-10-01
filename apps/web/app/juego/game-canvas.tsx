@@ -48,8 +48,8 @@ import {
   readPlaceRequest,
   withoutPlaceRequest,
 } from '../../lib/world-handoff';
-import { type ArrivalPanel, approachPoint, planArrival, runArrival } from './arrival';
-import { CarnetInvite } from './carnet/carnet-invite';
+import { type ArrivalPanel, approachPoint, planArrival, runArrival } from '../../lib/mundo/arrival';
+import { CarnetInvite } from '../../lib/mundo/carnet/carnet-invite';
 import {
   SHIP_POSITION_SAVE_MS,
   documentNavigationType,
@@ -58,29 +58,35 @@ import {
   restoreShipPosition,
   saveShipPosition,
   shouldRestorePosition,
-} from './ship-position';
-import { useCarnetInvitations } from './use-invitations';
+} from '../../lib/mundo/ship-position';
+import { useCarnetInvitations } from '../../lib/mundo/use-invitations';
 import {
   TIME_PLAYED_TICK_S,
   onAchievementNotices,
   recordBuoy,
   recordSignal,
   signalFromWorldEvent,
-} from './achievements';
-import { VOYAGE_PARAM, type Voyage, isSteeringKey, planVoyage, stepVoyage } from './autopilot';
-import { BalancesChip } from './balances';
-import { BottleBar, bottleBarRect } from './bottles/bottle-bar';
-import { Celebration } from './celebration';
+} from '../../lib/mundo/achievements';
+import {
+  VOYAGE_PARAM,
+  type Voyage,
+  isSteeringKey,
+  planVoyage,
+  stepVoyage,
+} from '../../lib/mundo/autopilot';
+import { BalancesChip } from '../../lib/mundo/balances';
+import { BottleBar, bottleBarRect } from '../../lib/mundo/bottles/bottle-bar';
+import { Celebration } from '../../lib/mundo/celebration';
 import {
   boardedNotice,
   crewReaction,
   deliveredNotice,
   loadMission,
   persistMissionEvent,
-} from './mission';
-import { BottleSheet, type BottleSheetMode } from './bottles/bottle-sheet';
-import { CarnetSheet } from './carnet/carnet-sheet';
-import { CircuitTimer, useCircuit } from './circuit-hud';
+} from '../../lib/mundo/mission';
+import { BottleSheet, type BottleSheetMode } from '../../lib/mundo/bottles/bottle-sheet';
+import { CarnetSheet } from '../../lib/mundo/carnet/carnet-sheet';
+import { CircuitTimer, useCircuit } from '../../lib/mundo/circuit-hud';
 import {
   DOLPHIN_PARAM,
   type DolphinAction,
@@ -89,32 +95,38 @@ import {
   findDolphinGuide,
   inOpenSea,
   undiscoveredTarget,
-} from './encounters';
-import { DiscountPanel, PlacePanel, type PlacePanelState } from './place-panels';
+} from '../../lib/mundo/encounters';
+import { DiscountPanel, PlacePanel, type PlacePanelState } from '../../lib/mundo/place-panels';
 import {
   type ProgressOutcome,
   discoverPlace,
   discoveredPlaces,
   grantEncounter,
   persistWorldEvent,
-} from './world-progress';
-import { SHIP_PREF, type ShipPref, isShipPref } from './carnet/use-carnet';
-import { worlds } from './demo-world';
-import { ATLAS_URL, VOYAGE_WAIT_MS, requestedQuality } from './streaming';
-import { Compass, MenuAnchor } from './hud-buttons';
-import './hud.css';
+} from '../../lib/mundo/world-progress';
+import { SHIP_PREF, type ShipPref, isShipPref } from '../../lib/mundo/carnet/use-carnet';
+import { worlds } from '../../lib/mundo/demo-world';
+import { ATLAS_URL, VOYAGE_WAIT_MS, requestedQuality } from '../../lib/mundo/streaming';
+import { Compass, MenuAnchor } from '../../lib/mundo/hud-buttons';
+import '../../lib/mundo/hud.css';
 import './juego.css';
-import './carnet/carnet.css';
-import { OnboardMenu } from './menu/onboard-menu';
-import type { MenuContext, ShipMenu, WorldMenu } from './menu/types';
-import { type MinigameOffer, MinigameLayer } from './minigame-layer';
-import { ExpandedMap, Minimap } from './minimap';
-import { discoveryNotice } from './notice-copy';
-import { NoticeToast, useNoticeQueue } from './notices';
-import { gameRepository, useRepoData } from './repo';
+import '../../lib/mundo/carnet/carnet.css';
+import { OnboardMenu } from '../../lib/mundo/menu/onboard-menu';
+import type { MenuContext, ShipMenu, WorldMenu } from '../../lib/mundo/menu/types';
+import { type MinigameOffer, MinigameLayer } from '../../lib/mundo/minigame-layer';
+import { ExpandedMap, Minimap } from '../../lib/mundo/minimap';
+import { discoveryNotice } from '../../lib/mundo/notice-copy';
+import { NoticeToast, useNoticeQueue } from '../../lib/mundo/notices';
+import { gameRepository, useRepoData } from '../../lib/mundo/repo';
 import { type ShipDressing, dressingFor, dressingKey } from '../../lib/barco/dressing';
-import { type ShipLook, equipLook, rememberLook, storedLook, syncStyleParam } from './ship-look';
-import { feedbackFor } from './feedback';
+import {
+  type ShipLook,
+  equipLook,
+  rememberLook,
+  storedLook,
+  syncStyleParam,
+} from '../../lib/mundo/ship-look';
+import { feedbackFor } from '../../lib/mundo/feedback';
 import {
   applyAudioSettings,
   bump,
@@ -124,10 +136,15 @@ import {
   playSound,
   plop,
   setAmbientWorld,
-} from './sound';
-import { useViewport } from './use-viewport';
-import { adminWorldId, currentWorld, syncWorldParam, visitorWorldChoice } from './world-choice';
-import { EventPanel } from './world-ui';
+} from '../../lib/mundo/sound';
+import { useViewport } from '../../lib/mundo/use-viewport';
+import {
+  adminWorldId,
+  currentWorld,
+  syncWorldParam,
+  visitorWorldChoice,
+} from '../../lib/mundo/world-choice';
+import { EventPanel } from '../../lib/mundo/world-ui';
 import { t as msg } from '../../lib/i18n';
 
 const MANIFEST_URL = '/api/art/barco/manifest.json?optional=1';

@@ -10,7 +10,7 @@ import { expect, test, type Locator, type Page, type TestInfo } from '@playwrigh
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACHIEVEMENT_READY_BODY } from '../app/juego/achievements';
+import { ACHIEVEMENT_READY_BODY } from '../lib/mundo/achievements';
 
 /**
  * La tienda «Barco» (T40, D-23 punto 1, O5), en /juego y en /mar: el

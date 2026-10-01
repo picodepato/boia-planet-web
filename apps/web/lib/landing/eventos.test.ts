@@ -14,8 +14,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EventPageBody } from '../../app/(landing)/components/event-page';
 import { EventCard } from '../../app/(landing)/components/event-card';
-import { IslandUpcoming } from '../../app/juego/place-panels';
-import { EventPanel } from '../../app/juego/world-ui';
+import { IslandUpcoming } from '../mundo/place-panels';
+import { EventPanel } from '../mundo/world-ui';
 import { EVENTOS_COPY } from './eventos-copy';
 import {
   GENERAL_GALLERY,

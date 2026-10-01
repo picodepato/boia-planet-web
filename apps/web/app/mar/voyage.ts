@@ -1,5 +1,5 @@
 import type { WorldConfig } from '@boia/world';
-import type { PositionStore } from '../juego/ship-position';
+import type { PositionStore } from '../../lib/mundo/ship-position';
 import type { VoyageEnd } from './engine/mar3d';
 import { type EventTrip, islandOfEvent } from './sheet';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FIRST_SECTOR_BUDGET, readAtlasIndex, worldBudgets } from '../../../tools/atlas/budget';
-import { requestedQuality } from '../app/juego/streaming';
+import { requestedQuality } from '../lib/mundo/streaming';
 
 /**
  * REQ-ARQ-014 (T47): el primer sector de cada mundo cabe en 5 MB antes de

@@ -5,7 +5,7 @@ import {
   type AchievementFacts,
   type AchievementGoal,
   achievementGoal,
-} from '../../app/juego/achievements';
+} from '../mundo/achievements';
 import { t } from '../i18n';
 
 /**

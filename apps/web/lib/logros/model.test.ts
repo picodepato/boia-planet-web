@@ -1,6 +1,6 @@
 import { createLocalRepository } from '@boia/store';
 import { describe, expect, it } from 'vitest';
-import { achievementFacts, achievementGoal, completeBySignal } from '../../app/juego/achievements';
+import { achievementFacts, achievementGoal, completeBySignal } from '../mundo/achievements';
 import {
   CLAIMED_HINT,
   HIDDEN_HINT,

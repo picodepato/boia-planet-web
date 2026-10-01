@@ -2,7 +2,7 @@ import { EVENT_STATES, EVENT_STATE_BEHAVIOR, type BoiaEvent, canBuy } from '@boi
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { EventPanel } from '../../juego/world-ui';
+import { EventPanel } from '../../../lib/mundo/world-ui';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
 import { EventCard } from './event-card';

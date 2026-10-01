@@ -2,9 +2,9 @@ import type { IntroConfig } from '@boia/engine/intro';
 import type { WorldIntroSetup } from '@boia/engine/intro/world-geometry';
 import { requestedShipStyle } from '@boia/engine/ui';
 import type { SeaPalette } from '@boia/world';
-import { worlds } from '../../app/juego/demo-world';
-import { gameRepository } from '../../app/juego/repo';
-import { adminWorldId, currentWorld } from '../../app/juego/world-choice';
+import { worlds } from '../mundo/demo-world';
+import { gameRepository } from '../mundo/repo';
+import { adminWorldId, currentWorld } from '../mundo/world-choice';
 import { liveWorld } from '../admin/live-world';
 import { introForWorld } from './worlds';
 

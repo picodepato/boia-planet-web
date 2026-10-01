@@ -6,7 +6,7 @@ import { t } from '../i18n';
  * Condiciones de logro que el Admin puede elegir (REQ-ADM-021): el catálogo
  * cerrado de disparadores de `@boia/contracts` y, para cada uno, sus
  * parámetros con su tipo y su rango seguro, los mismos que lee el juego
- * (`app/juego/achievements.ts`). Sin constructor de lógica libre: sólo se
+ * (`lib/mundo/achievements.ts`). Sin constructor de lógica libre: sólo se
  * elige un disparador y se rellenan sus casillas.
  */
 

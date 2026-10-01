@@ -21,8 +21,8 @@ import {
   IslandMemories,
   IslandPhotosLink,
   IslandUpcoming,
-} from '../juego/place-panels';
-import { useRepoData } from '../juego/repo';
+} from '../../lib/mundo/place-panels';
+import { useRepoData } from '../../lib/mundo/repo';
 
 /**
  * La ficha de abajo del mar 3D: lo que abre un lugar al acercarse (evento,

@@ -2,7 +2,11 @@ import { WORLD_REGISTRY } from '@boia/world';
 import { SAMPLE_DISCOUNTS } from '@boia/store';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_CONTENT } from '../../lib/landing/sample-content';
-import { SHIP_POSITION_KEY, loadShipPosition, saveShipPosition } from '../juego/ship-position';
+import {
+  SHIP_POSITION_KEY,
+  loadShipPosition,
+  saveShipPosition,
+} from '../../lib/mundo/ship-position';
 import { marWorld } from './engine/compact';
 import { MAR_POSITION_KEY, islandTrip, marPositionStore, tripOutcome } from './voyage';
 

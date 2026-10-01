@@ -13,7 +13,7 @@ escritorio) y lo que falta probar a mano. Estado a 2026-09-30 (T49).
 | # | Caso | Estado | Evidencia |
 |---:|---|---|---|
 | 1 | Móvil corto (360×640) | e2e | Proyecto `mobile` de toda la suite; `landing.spec.ts` «CTA Explorar y Tickets se ven sin scroll»; `juego-hud.spec.ts` «minimapa ≤ 22 % del ancho y ningún elemento del HUD tapa la zona del joystick» |
-| 2 | Áreas seguras (notch, barra de gestos) | a mano | El HUD usa `env(safe-area-inset-*)` (`app/juego/use-viewport.ts`); Chromium no emula el notch |
+| 2 | Áreas seguras (notch, barra de gestos) | a mano | El HUD usa `env(safe-area-inset-*)` (`lib/mundo/use-viewport.ts`); Chromium no emula el notch |
 | 3 | Scroll | parcial | `landing.spec.ts` «CTA Explorar y Tickets se ven sin scroll»; que el scroll de la página no mueva el barco se prueba a mano |
 | 4 | Teclado | e2e | `landing.spec.ts` «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» (Escape cierra el checkout y luego el panel); `juego-hud.spec.ts` «Menú de a bordo: siete iconos, separación y modo de teclado guardado»; `mar-3d.spec.ts` «el minimapa abre el mapa grande; «Cerrar», tocarlo otra vez y la M lo cierran» |
 | 5 | Foco | e2e | `landing.spec.ts` (el foco va al título del panel y vuelve a «Tickets»); `intro.spec.ts` «`/`: el mini-mundo, luego «BOIA» y el botón; al pulsar, aterriza en la landing (ENT 01, 02)» (foco en «Zarpar») |

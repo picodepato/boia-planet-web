@@ -2,8 +2,8 @@
 
 import type { AchievementProgress, BoiaRepository, ShipUnlock } from '@boia/store';
 import { useEffect, useRef, useState } from 'react';
-import { type AchievementFacts, achievementFacts } from '../../app/juego/achievements';
-import { useRepoData } from '../../app/juego/repo';
+import { type AchievementFacts, achievementFacts } from '../mundo/achievements';
+import { useRepoData } from '../mundo/repo';
 import { type CosmeticNames, readyCount } from './model';
 import { t as msg } from '../i18n';
 

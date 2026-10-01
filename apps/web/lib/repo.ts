@@ -1,7 +1,7 @@
 import { bottlePositionValidator, settleInSea } from '@boia/engine/bottles';
 import { type BoiaRepository, SAMPLE_BOTTLES, browserRepository } from '@boia/store';
 import { BOTTLE_SPOTS, type WorldConfig } from '@boia/world';
-import { worlds } from '../app/juego/demo-world';
+import { worlds } from './mundo/demo-world';
 
 /**
  * El repositorio de la demo (T16, D-20): todo en este navegador. Lo usan

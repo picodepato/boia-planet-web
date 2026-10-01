@@ -24,13 +24,13 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-PRO-002 | Comprar sin jugar ni registrarse | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-PRO-003 | Flujo comercial directo en 2 toques | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-PRO-004 | Flujo experiencial sin formularios | L1 | PARCIAL | [record-demo.spec.ts](../../apps/web/e2e/record-demo.spec.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
-| REQ-PRO-005 | Juego como segunda vía de conversión | L1 | PARCIAL | [world-progress.test.ts](../../apps/web/app/juego/world-progress.test.ts) | Una prueba lo cubre en parte |
+| REQ-PRO-005 | Juego como segunda vía de conversión | L1 | PARCIAL | [world-progress.test.ts](../../apps/web/lib/mundo/world-progress.test.ts) | Una prueba lo cubre en parte |
 | REQ-PRO-006 | Formato All Day BOIA o satélite | L1 | PARCIAL | [events.ts](../../packages/contracts/src/events.ts) | Construido; sin prueba que lo nombre |
 | REQ-PRO-007 | Satélites sin isla principal | L1 | HECHO | [access.test.ts](../../apps/web/lib/landing/access.test.ts) «la isla del evento destacado o, sin isla, la localización común (O7)» | — |
 | REQ-PRO-008 | Móvil táctil primero | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-PRO-009 | Más mundo, menos HUD | L1 | PARCIAL | [hud-layout.ts](../../packages/engine/src/ui/hud-layout.ts) | Construido; sin prueba que lo nombre |
 | REQ-PRO-010 | Sin modales que detengan la navegación | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-PRO-011 | Feedback con animación y sonido | L1 | HECHO | [feedback.test.ts](../../apps/web/app/juego/feedback.test.ts) | — |
+| REQ-PRO-011 | Feedback con animación y sonido | L1 | HECHO | [feedback.test.ts](../../apps/web/lib/mundo/feedback.test.ts) | — |
 | REQ-PRO-012 | Mecánicas que se entienden solas | L1 | FALTA | — | — |
 | REQ-PRO-013 | Curiosidad recompensada tras la misión | L1 | PARCIAL | [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | Una prueba lo cubre en parte |
 | REQ-PRO-014 | Identidad BOIA coherente | L1 | FALTA | — | pide revisión, medición o documento |
@@ -74,12 +74,12 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ENT-031 | Bloques de actividades y comunidad | L2 | L2 | — | — |
 | REQ-ENT-032 | Cierre de página | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [access.test.ts](../../apps/web/lib/landing/access.test.ts) | — |
 | REQ-ENT-033 | Home por bloques administrables | L1 | HECHO | [admin.spec.ts](../../apps/web/e2e/admin.spec.ts) «Probar admin: los cambios se ven en la landing y en el mar» | — |
-| REQ-ENT-034 | Tickets, Fotos y Tienda con isla visible | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/app/juego/arrival.test.ts) | — |
+| REQ-ENT-034 | Tickets, Fotos y Tienda con isla visible | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-ENT-035 | Checkout sólo con acción explícita | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-ENT-036 | URLs compartibles y Atrás | L1 | PARCIAL | [event-page.tsx](../../apps/web/app/%28landing%29/components/event-page.tsx) | Construido; sin prueba que lo nombre |
 | REQ-ENT-037 | Tickets general | L1 | PARCIAL | [tickets-panel.tsx](../../apps/web/app/%28landing%29/components/tickets-panel.tsx) | Construido; sin prueba que lo nombre |
 | REQ-ENT-038 | Carga ligera primero | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «motor bloqueado: ilustración del puerto y Tickets funcionando (REQ-ENT-017, 038)» | — |
-| REQ-ENT-039 | Teletransportes sin premios | L1 | HECHO | [arrival.test.ts](../../apps/web/app/juego/arrival.test.ts) | — |
+| REQ-ENT-039 | Teletransportes sin premios | L1 | HECHO | [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-ENT-040 | `/mar`: botón «Entradas» siempre visible, con viaje en turbo | L1 | HECHO | [mar-3d.spec.ts](../../apps/web/e2e/mar-3d.spec.ts) | — |
 | REQ-MUN-001 | Mundo 2D/2.5D; 3D sólo en `/mar` | L1 | PARCIAL | [page.tsx](../../apps/web/app/mar/page.tsx) | Construido; sin prueba que lo nombre |
 | REQ-MUN-002 | Motor, datos y arte separados | L1 | HECHO | [swap.test.ts](../../packages/engine/src/world/swap.test.ts) | — |
@@ -125,29 +125,29 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-AVE-003 | Guion del tutorial | L1 | PARCIAL | [sample-world.ts](../../packages/world/src/sample-world.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-004 | Pulsos del ancla y del minimapa | L1 | HECHO | [sample-world.test.ts](../../packages/world/src/sample-world.test.ts) | — |
 | REQ-AVE-005 | Boia Fiestera entre cocodrilos | L1 | HECHO | [fiestera.spec.ts](../../apps/web/e2e/fiestera.spec.ts); [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
-| REQ-AVE-006 | Rescate y aviso de tripulante | L1 | HECHO | [mission.test.ts](../../apps/web/app/juego/mission.test.ts) | — |
+| REQ-AVE-006 | Rescate y aviso de tripulante | L1 | HECHO | [mission.test.ts](../../apps/web/lib/mundo/mission.test.ts) | — |
 | REQ-AVE-007 | Boia Fiestera visible a bordo | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
-| REQ-AVE-008 | Entrega en la última isla | L1 | PARCIAL | [celebration.tsx](../../apps/web/app/juego/celebration.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-008 | Entrega en la última isla | L1 | PARCIAL | [celebration.tsx](../../apps/web/lib/mundo/celebration.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-009 | Mundo abierto y desvíos | L1 | PARCIAL | [fiestera.spec.ts](../../apps/web/e2e/fiestera.spec.ts) | Una prueba lo cubre en parte |
 | REQ-AVE-010 | Destino por ID de lugar y de temporada | L1 | HECHO | [community.test.ts](../../apps/web/lib/admin/community.test.ts); [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
-| REQ-AVE-011 | Cambio de destino auditado | L1 | HECHO | [world-switch.test.ts](../../apps/web/app/juego/world-switch.test.ts); [community.test.ts](../../apps/web/lib/admin/community.test.ts) | — |
+| REQ-AVE-011 | Cambio de destino auditado | L1 | HECHO | [world-switch.test.ts](../../apps/web/lib/mundo/world-switch.test.ts); [community.test.ts](../../apps/web/lib/admin/community.test.ts) | — |
 | REQ-AVE-012 | Islas por radio amplio | L1 | HECHO | [sample-world.test.ts](../../packages/world/src/sample-world.test.ts) «la isla de evento se activa con un radio amplio: más del doble de su costa» | — |
 | REQ-AVE-013 | Primera llegada y visitas | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts) | — |
-| REQ-AVE-014 | Recuerdos y próximos eventos en la isla | L1 | PARCIAL | [place-panels.tsx](../../apps/web/app/juego/place-panels.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-014 | Recuerdos y próximos eventos en la isla | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-015 | Secretos insinuados | L1 | PARCIAL | [discovery.ts](../../packages/engine/src/ui/discovery.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-016 | Restos regenerables | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-017 | Cofres fugaces | L1 | PARCIAL | [map.ts](../../packages/world/src/worlds/arcilla/map.ts) | Construido; sin prueba que lo nombre |
-| REQ-AVE-018 | Delfín guía | L1 | HECHO | [encounters.test.ts](../../apps/web/app/juego/encounters.test.ts) | — |
-| REQ-AVE-019 | Remolino | L1 | PARCIAL | [encounters.ts](../../apps/web/app/juego/encounters.ts) | Construido; sin prueba que lo nombre |
+| REQ-AVE-018 | Delfín guía | L1 | HECHO | [encounters.test.ts](../../apps/web/lib/mundo/encounters.test.ts) | — |
+| REQ-AVE-019 | Remolino | L1 | PARCIAL | [encounters.ts](../../apps/web/lib/mundo/encounters.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-020 | Náufrago con descuento | L1 | HECHO | [mundo-arcilla.spec.ts](../../apps/web/e2e/mundo-arcilla.spec.ts) «náufrago: pide que lo lleven y deja su código de descuento» | — |
 | REQ-AVE-021 | Descuentos de tienda en restos | L1 | PARCIAL | [map.ts](../../packages/world/src/worlds/arcilla/map.ts) | Construido; sin prueba que lo nombre |
-| REQ-AVE-022 | Puerto de Fotos | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/app/juego/arrival.test.ts) | — |
-| REQ-AVE-023 | Boia de WhatsApp | L1 | PARCIAL | [place-panels.tsx](../../apps/web/app/juego/place-panels.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-022 | Puerto de Fotos | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
+| REQ-AVE-023 | Boia de WhatsApp | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-024 | Boia musical | L2 | L2 | — | — |
 | REQ-AVE-025 | Ideas musicales en reserva | diferido | final | — | Alcance diferido |
-| REQ-AVE-026 | Circuito lateral como atajo | L1 | PARCIAL | [circuit-hud.tsx](../../apps/web/app/juego/circuit-hud.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-026 | Circuito lateral como atajo | L1 | PARCIAL | [circuit-hud.tsx](../../apps/web/lib/mundo/circuit-hud.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-027 | Récord personal local | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «se guarda por circuito y versión, y sólo mejora» | — |
-| REQ-AVE-028 | Cronómetro pequeño arriba | L1 | PARCIAL | [circuit-hud.tsx](../../apps/web/app/juego/circuit-hud.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-028 | Cronómetro pequeño arriba | L1 | PARCIAL | [circuit-hud.tsx](../../apps/web/lib/mundo/circuit-hud.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-029 | Boost de 2 s en checkpoints | L1 | HECHO | [runtime.test.ts](../../packages/engine/src/world/runtime.test.ts) «el checkpoint valida el paso y da un boost de su duración» | — |
 | REQ-AVE-030 | Tres obstáculos | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-AVE-031 | Ruta segura y atajo | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «salida, CP1, las dos ramas con el mismo orden, CP2 y meta; versión del circuito» | — |
@@ -159,7 +159,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-AVE-037 | Cañón contra tiburones | L1 | HECHO | [minigames.test.ts](../../packages/engine/src/minigames/minigames.test.ts) «un tiburón sumergido no se asusta; uno asustado huye entero y otro ocupa su sitio» | — |
 | REQ-AVE-038 | Sesiones de minijuego validadas | L1 | HECHO | [minigames.test.ts](../../packages/engine/src/minigames/minigames.test.ts) | — |
 | REQ-AVE-039 | Accesibilidad de los minijuegos | L1 | PARCIAL | [faro.ts](../../packages/engine/src/minigames/faro.ts) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |
-| REQ-AVE-040 | Cinco boies informativas y la mascota | L1 | HECHO | [boies.test.ts](../../apps/web/app/juego/boies.test.ts) «hablar con las seis completa «Las seis boies», con el aviso n de 6 una sola vez» | — |
+| REQ-AVE-040 | Cinco boies informativas y la mascota | L1 | HECHO | [boies.test.ts](../../apps/web/lib/mundo/boies.test.ts) «hablar con las seis completa «Las seis boies», con el aviso n de 6 una sola vez» | — |
 | REQ-IDE-001 | Todo sin cuenta | L1 | HECHO | [tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts) «landing → compra de prueba → Mi Carnet; isla → compra de prueba → los dos sellos» | — |
 | REQ-IDE-002 | OTP de 6 dígitos y enlace mágico | L1 | final | — | Acceso por correo (D-20) |
 | REQ-IDE-003 | Vuelta al contexto tras verificar | L1 | final | — | Acceso por correo (D-20) |
@@ -169,22 +169,22 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-007 | Límite del progreso local explicado | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts) «Fotos desde la landing lleva el barco al Puerto de Fotos y abre la galería» | — |
 | REQ-IDE-008 | Invitaciones en 3 contextos | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [invitations.test.ts](../../apps/web/lib/landing/invitations.test.ts) | — |
 | REQ-IDE-009 | Ritmo de las invitaciones | L1 | HECHO | [invitations.test.ts](../../apps/web/lib/landing/invitations.test.ts) | — |
-| REQ-IDE-010 | Carnet creado al registrarse | L1 | HECHO | [carnet.test.ts](../../apps/web/app/juego/carnet/carnet.test.ts) | — |
+| REQ-IDE-010 | Carnet creado al registrarse | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) | — |
 | REQ-IDE-011 | Mi Carnet en el menú | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) «Carnet → botella → recargar y encontrarla → leer una de muestra → VER SU CARNET» | — |
 | REQ-IDE-012 | Identidad musical, no estatus | L1 | PARCIAL | [progress.ts](../../packages/store/src/sample/progress.ts) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |
-| REQ-IDE-013 | Aviso de campos públicos | L1 | HECHO | [carnet.test.ts](../../apps/web/app/juego/carnet/carnet.test.ts) | — |
+| REQ-IDE-013 | Aviso de campos públicos | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) | — |
 | REQ-IDE-014 | Las 5 preguntas textuales | L1 | HECHO | [schema.test.ts](../../packages/db/src/schema.test.ts); [carnet.test.ts](../../packages/store/src/carnet.test.ts) | — |
-| REQ-IDE-015 | Pregunta pequeña, respuesta grande | L1 | HECHO | [carnet.test.ts](../../apps/web/app/juego/carnet/carnet.test.ts) «el Carnet enseña cada respuesta con su pregunta textual, en el orden de las preguntas» | — |
+| REQ-IDE-015 | Pregunta pequeña, respuesta grande | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) «el Carnet enseña cada respuesta con su pregunta textual, en el orden de las preguntas» | — |
 | REQ-IDE-016 | Preguntas editables con versión | L2 | L2 | — | — |
 | REQ-IDE-017 | Carnets desde ranking y botellas | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts) «el ranking local enseña al visitante entre los miembros de muestra» | — |
 | REQ-IDE-018 | Perfil público de artista | L2 | L2 | — | — |
-| REQ-IDE-019 | Sin artistas vistos ni valoraciones | L1 | PARCIAL | [carnet-card.tsx](../../apps/web/app/juego/carnet/carnet-card.tsx) | Construido; sin prueba que lo nombre |
+| REQ-IDE-019 | Sin artistas vistos ni valoraciones | L1 | PARCIAL | [carnet-card.tsx](../../apps/web/lib/mundo/carnet/carnet-card.tsx) | Construido; sin prueba que lo nombre |
 | REQ-IDE-020 | Miembro, bollero y tripulación | L1 | FALTA | — | — |
 | REQ-IDE-021 | Sello por compra confirmada | L1 | HECHO | [ticketing.test.ts](../../apps/web/lib/ticketing/ticketing.test.ts) «confirmar dos veces la misma compra (seguidas o a la vez) deja un solo sello» | — |
-| REQ-IDE-022 | Sello como recuerdo | L1 | PARCIAL | [carnet-card.tsx](../../apps/web/app/juego/carnet/carnet-card.tsx) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |
+| REQ-IDE-022 | Sello como recuerdo | L1 | PARCIAL | [carnet-card.tsx](../../apps/web/lib/mundo/carnet/carnet-card.tsx) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |
 | REQ-IDE-023 | QR alternativo de sello | L2 | L2 | — | — |
-| REQ-IDE-024 | Logros que se reclaman: en curso, listos y reclamados | L1 | HECHO | [achievements.test.ts](../../apps/web/app/juego/achievements.test.ts) | — |
-| REQ-IDE-025 | Logros de lanzamiento | L1 | PARCIAL | [achievements.test.ts](../../apps/web/app/juego/achievements.test.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
+| REQ-IDE-024 | Logros que se reclaman: en curso, listos y reclamados | L1 | HECHO | [achievements.test.ts](../../apps/web/lib/mundo/achievements.test.ts) | — |
+| REQ-IDE-025 | Logros de lanzamiento | L1 | PARCIAL | [achievements.test.ts](../../apps/web/lib/mundo/achievements.test.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
 | REQ-IDE-026 | Avisos legibles en cola, con cerrar | L1 | HECHO | [notifications.test.ts](../../packages/engine/src/ui/notifications.test.ts) | — |
 | REQ-IDE-027 | Puntos y monedas separados | L1 | HECHO | [ledger.test.ts](../../packages/store/src/ledger.test.ts) «puntos y monedas van separados: gastar monedas no toca los puntos» | — |
 | REQ-IDE-028 | Rangos lúdicos | L1 | PARCIAL | [content.ts](../../packages/store/src/content.ts) | Construido; sin prueba que lo nombre |
@@ -193,13 +193,13 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-031 | Barcos y cosméticos por monedas, puntos o logros | L1 | HECHO | [economy.test.ts](../../packages/store/src/economy.test.ts) «el barco por puntos se desbloquea al llegar al umbral sin gastar los puntos» | — |
 | REQ-IDE-032 | Cosméticos sin efecto en la física | L1 | HECHO | [physics.test.ts](../../apps/web/lib/barco/physics.test.ts) | — |
 | REQ-IDE-033 | Barco guardado | L1 | HECHO | [demo.spec.ts](../../apps/web/e2e/demo.spec.ts) ««Barco»: otro barco de base cambia el barco al momento y sobrevive a recargar; lo bloqueado no se pone» | — |
-| REQ-IDE-034 | Menú de a bordo | L1 | HECHO | [hud.test.ts](../../apps/web/app/juego/hud.test.ts) | — |
-| REQ-IDE-035 | Welcome Aboard consultable | L1 | PARCIAL | [welcome.tsx](../../apps/web/app/juego/menu/sections/welcome.tsx) | Construido; sin prueba que lo nombre |
-| REQ-IDE-036 | Controles | L1 | PARCIAL | [controles.tsx](../../apps/web/app/juego/menu/sections/controles.tsx) | Construido; sin prueba que lo nombre |
+| REQ-IDE-034 | Menú de a bordo | L1 | HECHO | [hud.test.ts](../../apps/web/lib/mundo/hud.test.ts) | — |
+| REQ-IDE-035 | Welcome Aboard consultable | L1 | PARCIAL | [welcome.tsx](../../apps/web/lib/mundo/menu/sections/welcome.tsx) | Construido; sin prueba que lo nombre |
+| REQ-IDE-036 | Controles | L1 | PARCIAL | [controles.tsx](../../apps/web/lib/mundo/menu/sections/controles.tsx) | Construido; sin prueba que lo nombre |
 | REQ-IDE-037 | Música y efectos por separado | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «Menú de a bordo: siete iconos, separación y modo de teclado guardado» | — |
 | REQ-IDE-038 | Ranking de puntos | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts) «ordena por puntos, con el visitante siempre dentro y su puesto» | — |
 | REQ-IDE-039 | Nada competitivo desde el cliente | L1 | final | — | Validación en servidor (D-20) |
-| REQ-IDE-040 | Una botella de 140 caracteres | L1 | HECHO | [carnet.test.ts](../../apps/web/app/juego/carnet/carnet.test.ts); [sea.test.ts](../../packages/engine/src/bottles/sea.test.ts) | — |
+| REQ-IDE-040 | Una botella de 140 caracteres | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts); [sea.test.ts](../../packages/engine/src/bottles/sea.test.ts) | — |
 | REQ-IDE-041 | Leer una botella y ver su Carnet | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) «leer no la quita del mar y deja la lectura; se ve el apodo y el Carnet del autor» | — |
 | REQ-IDE-042 | Botellas sin premios | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) | — |
 | REQ-IDE-043 | Reporte y retirada | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) «reportar una vez; el Admin la retira y desaparece del mar» | — |
@@ -233,7 +233,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-COM-018 | Sin webhook, QR o código | L1 | final | — | Ticketera real (D-20) |
 | REQ-COM-019 | Devoluciones auditadas | L1 | final | — | Ticketera real con webhook (D-20) |
 | REQ-COM-020 | Descuentos por evento | L1 | HECHO | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts) | — |
-| REQ-COM-021 | Descubrimiento premiado una vez | L1 | HECHO | [world-progress.test.ts](../../apps/web/app/juego/world-progress.test.ts) | — |
+| REQ-COM-021 | Descubrimiento premiado una vez | L1 | HECHO | [world-progress.test.ts](../../apps/web/lib/mundo/world-progress.test.ts) | — |
 | REQ-COM-022 | Copiar y enlazar el descuento | L1 | HECHO | [mundo-arcilla.spec.ts](../../apps/web/e2e/mundo-arcilla.spec.ts) «descuento escondido: se copia con un toque y sólo se concede una vez» | — |
 | REQ-COM-023 | Primera compra y WhatsApp | L2 | L2 | — | — |
 | REQ-COM-024 | Exclusivos y códigos especiales | L2 | L2 | — | — |
@@ -245,7 +245,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-COM-030 | Página Filosofía | L1 | PARCIAL | [home-blocks.ts](../../packages/contracts/src/home-blocks.ts) | Construido; sin prueba que lo nombre |
 | REQ-COM-031 | Galería de fotos | L1 | HECHO | [eventos.test.ts](../../apps/web/lib/landing/eventos.test.ts) | — |
 | REQ-COM-032 | Vídeos sin bloquear la carga | L1 | FALTA | — | — |
-| REQ-COM-033 | Tienda L1 con enlace externo | L1 | PARCIAL | [place-panels.tsx](../../apps/web/app/juego/place-panels.tsx) | Construido; sin prueba que lo nombre |
+| REQ-COM-033 | Tienda L1 con enlace externo | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-COM-034 | Tienda con checkout propio | L2 | L2 | — | — |
 | REQ-COM-035 | Versión de prueba: sello por checkout sandbox | L1 | HECHO | [tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts); [event-card.test.ts](../../apps/web/app/%28landing%29/components/event-card.test.ts) | — |
 | REQ-COM-036 | El descuento lleva a su isla y se ve al comprar | L1 | HECHO | [descuentos.spec.ts](../../apps/web/e2e/descuentos.spec.ts); [discount-banner.test.ts](../../apps/web/lib/ticketing/discount-banner.test.ts) | — |

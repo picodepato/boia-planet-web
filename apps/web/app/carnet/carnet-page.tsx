@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import '../juego/hud.css';
-import '../juego/carnet/carnet.css';
-import { CarnetCard } from '../juego/carnet/carnet-card';
-import { CarnetReport } from '../juego/carnet/carnet-report';
-import { LOCAL_ONLY_NOTICE } from '../juego/carnet/carnet-editor';
+import '../../lib/mundo/hud.css';
+import '../../lib/mundo/carnet/carnet.css';
+import { CarnetCard } from '../../lib/mundo/carnet/carnet-card';
+import { CarnetReport } from '../../lib/mundo/carnet/carnet-report';
+import { LOCAL_ONLY_NOTICE } from '../../lib/mundo/carnet/carnet-editor';
 import { INVITE_COPY } from '../../lib/landing/invitations';
-import { useCarnet } from '../juego/carnet/use-carnet';
+import { useCarnet } from '../../lib/mundo/carnet/use-carnet';
 
 /**
  * El Carnet a pantalla completa (REQ-IDE-010, REQ-IDE-017): el propio en

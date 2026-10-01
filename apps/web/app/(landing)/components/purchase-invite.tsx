@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CarnetInvite } from '../../juego/carnet/carnet-invite';
+import { CarnetInvite } from '../../../lib/mundo/carnet/carnet-invite';
 import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import { browserInvitations } from '../../../lib/landing/invitations';
 import { gameRepository } from '../../../lib/repo';

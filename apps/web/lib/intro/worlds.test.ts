@@ -1,7 +1,7 @@
 import { DEFAULT_INTRO_CONFIG, portCamera, validateWorldIntro } from '@boia/engine/intro';
 import { worldToScreen } from '@boia/world';
 import { describe, expect, it } from 'vitest';
-import { worlds } from '../../app/juego/demo-world';
+import { worlds } from '../mundo/demo-world';
 import { EMPTY_WORLD_CONTENT, MAP_POINTS, composeLiveWorld } from '../admin/world';
 import {
   DEFAULT_WORLD_INTRO,

@@ -2,7 +2,7 @@
 
 import { type Balances, type BoiaRepository, type ShopItem, isStoreError } from '@boia/store';
 import { type ReactNode, useState } from 'react';
-import { useRepoData } from '../../app/juego/repo';
+import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
 import { FLAG_LOOKS, WAKE_TINTS, hexOf } from './dressing';
 import {

@@ -25,7 +25,7 @@ import {
 } from '@boia/world';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { worlds } from '../../app/juego/demo-world';
+import { worlds } from '../mundo/demo-world';
 import { introForWorld } from './worlds';
 
 /**

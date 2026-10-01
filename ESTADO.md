@@ -4,6 +4,52 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — plan 005 T52: Shared world code out of app/juego
+
+Qué existe:
+
+- `apps/web/lib/mundo/` es la casa común del mundo: todo lo que había en
+  `apps/web/app/juego/` salvo el renderizador PixiJS 2D (71 archivos, con sus
+  pruebas y sus CSS, misma estructura: `carnet/`, `menu/`, `bottles/`). Movido
+  con `git mv`; ningún cambio de comportamiento, sólo rutas de import.
+- En `apps/web/app/juego/` quedan sólo `page.tsx`, `game-canvas.tsx` y
+  `juego.css` (el 2D); `game-canvas.tsx` importa ahora de `lib/mundo/`. Sin
+  reexportaciones: borrar `app/juego/` (T62) no toca /mar, /carnet, la landing
+  ni `lib/`.
+- Imports actualizados en /mar, /carnet, la landing (`event-card.test.ts`,
+  `purchase-invite.tsx`), `lib/` (repo, logros, barco, ticketing, intro,
+  landing), `app/sphere-probe`, `scripts/world-budget.test.ts` y los e2e
+  (`accesos`, `fiestera`, `logros`, `tienda`).
+- Rutas de evidencia de `docs/spec/estado.md` y las menciones de
+  `docs/matriz-dispositivos.md`, `docs/propuestas/logros-catalogo.md` y
+  `lib/admin/achievements.ts` apuntan a `lib/mundo/`.
+
+Comandos:
+
+- `grep -rnE "from ['\"](\.\./)+juego/|app/juego/" apps/web/app/mar apps/web/app/carnet apps/web/lib --include=*.ts --include=*.tsx | grep -v "lib/intro"` → sin salida.
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 99 archivos, 871 pruebas.
+- `sh tools/spec/checks.sh` → exit 0 (294 REQ · HECHO 155).
+- `pnpm typecheck`, `pnpm lint`, `pnpm build` → exit 0 (landing 180.5 kB de 192 kB).
+- `E2E_PORT=3211 pnpm e2e e2e/mar-3d.spec.ts e2e/mar-paridad.spec.ts --workers=2` → exit 0, 40 pasan.
+- `E2E_PORT=3211 pnpm e2e --workers=2` → exit 1: 189 pasan, 36 se saltan,
+  15 fallan. 13 son esperas bajo carga (intro, juego-hud, fiestera, mar-3d,
+  mar-paridad: «Tearing down context exceeded», trazas cortadas) y pasan al
+  repetirlas solas: `fiestera` + `juego-hud` con `--workers=1` → todas
+  pasan; `intro.spec.ts --workers=1` → exit 0, 26 pasan (igual que en `main`,
+  26 pasan); `mar-3d` + `mar-paridad` → 40 pasan. Las 2 de
+  `despliegue.spec.ts` fallan en Windows por las barras de `path.relative`
+  (`mundos\arcilla\…` frente a `'mundos/arcilla/'`), sin relación con este
+  cambio.
+
+Pendiente:
+
+- `juego.css` sigue en `app/juego/`, importado sólo por `game-canvas.tsx`:
+  el canvas 2D y el aspecto de `.juego-panel*` / `.juego-pulse-*` en /juego.
+  /mar no lo carga (tiene sus propias reglas `.mar .juego-panel` en
+  `mar.css`), así que se va con /juego en T62.
+- Los componentes movidos que sólo usa el 2D (menú a bordo, minimapa,
+  botellas, botones del HUD…) esperan en `lib/mundo/` a T55/T56 o a T62.
+
 ## 2026-10-01 — plan 005 T54: Faster steering in /mar
 
 Qué existe:

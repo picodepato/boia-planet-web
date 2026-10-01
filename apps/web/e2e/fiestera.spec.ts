@@ -2,7 +2,7 @@ import { SAMPLE_ACHIEVEMENTS } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { rescueMissionOf } from '@boia/engine/mission';
-import { BOARDED_NOTICE } from '../app/juego/mission';
+import { BOARDED_NOTICE } from '../lib/mundo/mission';
 
 /**
  * La misión de la Boia Fiestera en /juego (T21, REQ-AVE-005…010), en

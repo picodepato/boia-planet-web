@@ -1,6 +1,6 @@
 import { EVENT_STATE_BEHAVIOR, eventKicker, eventState } from '@boia/contracts';
 import type { BoiaRepository } from '@boia/store';
-import { completeBySignal } from '../../app/juego/achievements';
+import { completeBySignal } from '../mundo/achievements';
 import { trackSandboxPurchase } from '../analytics';
 import type {
   CheckoutEvent,

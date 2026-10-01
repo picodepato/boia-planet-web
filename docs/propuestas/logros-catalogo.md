@@ -44,7 +44,7 @@ Y, pero se ven como «???» hasta completarlos.
 
 ## Catálogo (25 logros)
 
-«Señal» es lo que el juego envía (`apps/web/app/juego/achievements.ts`,
+«Señal» es lo que el juego envía (`apps/web/lib/mundo/achievements.ts`,
 tipo `AchievementSignal`). Las marcadas **T36** son nuevas: existen en la
 demo del navegador y faltan en el enum de Supabase.
 

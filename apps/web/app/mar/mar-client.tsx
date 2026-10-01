@@ -38,10 +38,10 @@ import {
   recordBuoy,
   recordSignal,
   signalFromWorldEvent,
-} from '../juego/achievements';
-import { CarnetInvite } from '../juego/carnet/carnet-invite';
-import { finishLap, lapNotices } from '../juego/circuit-hud';
-import { worlds } from '../juego/demo-world';
+} from '../../lib/mundo/achievements';
+import { CarnetInvite } from '../../lib/mundo/carnet/carnet-invite';
+import { finishLap, lapNotices } from '../../lib/mundo/circuit-hud';
+import { worlds } from '../../lib/mundo/demo-world';
 import {
   DOLPHIN_PARAM,
   type DolphinAction,
@@ -50,12 +50,17 @@ import {
   findDolphinGuide,
   inOpenSea,
   undiscoveredTarget,
-} from '../juego/encounters';
-import { MundosPicker } from '../juego/menu/sections/mundos';
-import { type MinigameOffer, MinigameLayer } from '../juego/minigame-layer';
-import { boardedNotice, deliveredNotice, loadMission, persistMissionEvent } from '../juego/mission';
-import { useNoticeQueue } from '../juego/notices';
-import { gameRepository, useRepoData } from '../juego/repo';
+} from '../../lib/mundo/encounters';
+import { MundosPicker } from '../../lib/mundo/menu/sections/mundos';
+import { type MinigameOffer, MinigameLayer } from '../../lib/mundo/minigame-layer';
+import {
+  boardedNotice,
+  deliveredNotice,
+  loadMission,
+  persistMissionEvent,
+} from '../../lib/mundo/mission';
+import { useNoticeQueue } from '../../lib/mundo/notices';
+import { gameRepository, useRepoData } from '../../lib/mundo/repo';
 import {
   SHIP_POSITION_SAVE_MS,
   documentNavigationType,
@@ -63,7 +68,7 @@ import {
   movedEnough,
   saveShipPosition,
   shouldRestorePosition,
-} from '../juego/ship-position';
+} from '../../lib/mundo/ship-position';
 import {
   applyAudioSettings,
   bump,
@@ -73,22 +78,22 @@ import {
   plop,
   setAmbientWorld,
   whoosh,
-} from '../juego/sound';
-import { equipLook, rememberLook, storedLook, syncStyleParam } from '../juego/ship-look';
-import { useCarnetInvitations } from '../juego/use-invitations';
+} from '../../lib/mundo/sound';
+import { equipLook, rememberLook, storedLook, syncStyleParam } from '../../lib/mundo/ship-look';
+import { useCarnetInvitations } from '../../lib/mundo/use-invitations';
 import {
   adminWorldId,
   currentWorld,
   syncWorldParam,
   visitorWorldChoice,
-} from '../juego/world-choice';
+} from '../../lib/mundo/world-choice';
 import {
   type ProgressOutcome,
   discoverPlace,
   discoveredPlaces,
   grantEncounter,
   persistWorldEvent,
-} from '../juego/world-progress';
+} from '../../lib/mundo/world-progress';
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { MOOD_IDS, MOOD_LABEL, type MoodId } from './engine/palette';

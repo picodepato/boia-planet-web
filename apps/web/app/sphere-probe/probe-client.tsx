@@ -2,7 +2,7 @@
 
 import type { SphereProbe } from '@boia/engine/intro/sphere-probe';
 import { useEffect, useRef, useState } from 'react';
-import { demoWorld } from '../juego/demo-world';
+import { demoWorld } from '../../lib/mundo/demo-world';
 
 declare global {
   interface Window {

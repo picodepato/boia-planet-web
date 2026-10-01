@@ -4,7 +4,7 @@ import { expect, test, type Locator, type Page, type TestInfo } from '@playwrigh
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACHIEVEMENT_READY_BODY } from '../app/juego/achievements';
+import { ACHIEVEMENT_READY_BODY } from '../lib/mundo/achievements';
 import { REWARD_MS } from '../lib/logros/model';
 
 /**

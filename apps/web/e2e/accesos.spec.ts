@@ -1,10 +1,10 @@
 import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
-import { approachPoint } from '../app/juego/arrival';
+import { approachPoint } from '../lib/mundo/arrival';
 import { PHOTOS_PLACE_ID } from '../lib/landing/access';
 import { INVITE_COPY } from '../lib/landing/invitations';
 import { SETTINGS_KEY } from '@boia/engine/ui';
-import { SHIP_POSITION_KEY } from '../app/juego/ship-position';
+import { SHIP_POSITION_KEY } from '../lib/mundo/ship-position';
 
 /**
  * La landing que te lleva en barco (T44): Fotos, Tienda y Tickets abren el

@@ -2,7 +2,7 @@ import { CircuitRace, circuitFromWorld, circuitRecordId } from '@boia/engine/cir
 import { createLocalRepository } from '@boia/store';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
-import { finishLap } from '../juego/circuit-hud';
+import { finishLap } from '../../lib/mundo/circuit-hud';
 import { marWorld } from './engine/compact';
 import { raceCheckpoint } from './race';
 
