@@ -116,7 +116,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: lighthouse (night beam, 3 ship types, DESTELLO, streak x4) and cannon (side view, drag to aim on a parabola, pirates need 2 hits, combo x4) rebuilt with 30 rule tests and e2e in /mar → 39ea477
 
 ## T61 — Circuit El Freu, rebuilt
-- Status: running (attempt 1)
+- Status: pending
 - Depends on: T52
 - Goal: The circuit is too simple. Rebuild it: a course marked by buoys you must pass, 3 laps, a ghost boat of your best time, boosts on the water, gold/silver/bronze medals, start light kept. Works in both worlds (El Freu / El Penyal) and on mobile.
 - Context: `packages/engine/src/circuit`, `CIRCUIT_ID` in `packages/world`, `CircuitRace` and `apps/web/app/mar/race.ts`, circuit HUD (moved by T52), local record storage, ranking Circuito tab (T56 may land before or after: keep the stored record format compatible), REQ AVE-026/028.
@@ -259,3 +259,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 01:27 T60 done · branch worktree-agent-a900a0897deee5236 → 39ea477
 - 2026-10-02 01:29 T64 launched · attempt 1 · agent a086a6573393db55d
 - 2026-10-02 01:39 T59 done · branch worktree-agent-a4ef0c67ac86cd069 → ef0d4d3
+- 2026-10-02 01:40 usage limit reached: T61 not launched; T64 agent a086a6573393db55d still running (on resume: section 7 orphans)
