@@ -38,6 +38,31 @@ export interface ShipConfig {
   openEdgeCurrent: number;
   /** u más allá del borde superior en las que la corriente llega a su máximo. muestra */
   openEdgeSoftZone: number;
+  /**
+   * Fracción del giro que se tiene con el acelerador casi a cero (0..1). Sin
+   * valor, el giro sigue al acelerador entero (un toque corto apenas gira).
+   * Con valor, el giro es `steerFloor + (1 − steerFloor) · acelerador`: un
+   * arrastre pequeño ya gira rápido hacia donde se apunta. muestra
+   */
+  steerFloor?: number;
+  /**
+   * u: radio de giro que no se pasa por ir más rápido que el crucero (turbo,
+   * viaje, boost). Por encima de `turnRadius · turnRate` u/s el giro, el
+   * agarre y el freno en las curvas crecen con la velocidad. Sin valor, el
+   * giro máximo no crece y el círculo se abre al acelerar. muestra
+   */
+  turnRadius?: number;
+  /**
+   * Pedir rumbo de espaldas yendo hacia delante: vuelta corta. Escala con lo
+   * de espaldas que quede el rumbo pedido (nada a 90°, todo a 180°). Sin
+   * valor, el barco hace el arco de siempre. muestra
+   */
+  reverseTurn?: {
+    /** Multiplica el giro máximo con el rumbo pedido justo detrás. muestra */
+    turnBoost: number;
+    /** u/s² de freno extra con el rumbo pedido justo detrás. muestra */
+    brake: number;
+  };
 }
 
 export const DEFAULT_SHIP_CONFIG: ShipConfig = {
