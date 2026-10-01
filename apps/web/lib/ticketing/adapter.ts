@@ -12,7 +12,15 @@
  *   la misma idempotencia por id de compra (REQ-COM-017, REQ-IDE-021).
  */
 
+import type { PurchaseSource } from '@boia/contracts/analytics';
+
 export type TicketingProvider = 'sandbox' | 'fourvenues';
+
+/** Lo que la web cuenta de una compra al prepararla (T58). */
+export interface StartOptions {
+  /** `world`: se compra dentro del mar 3D; la analítica de la compra lo dice. */
+  source?: PurchaseSource;
+}
 
 export interface TicketingAdapter {
   readonly provider: TicketingProvider;
@@ -22,7 +30,7 @@ export interface TicketingAdapter {
    * Prepara la compra de un evento: precio, descuento aplicable e id de
    * compra estable. Si el evento no se puede comprar, lo dice con su motivo.
    */
-  start(eventId: string): Promise<CheckoutStart>;
+  start(eventId: string, opts?: StartOptions): Promise<CheckoutStart>;
   /**
    * Confirma una compra preparada con `start`. Sólo el sandbox la expone;
    * repetirla con la misma sesión no duplica sello ni logro.
@@ -50,6 +58,8 @@ export interface CheckoutSession {
   quote: Quote;
   /** `inline`: se confirma aquí (sandbox). `redirect`: checkout del proveedor. */
   flow: { kind: 'inline' } | { kind: 'redirect'; url: string };
+  /** Dónde se compra (T58): viaja con la compra hasta su `purchase_confirmed`. */
+  source?: PurchaseSource;
 }
 
 export interface AppliedDiscount {

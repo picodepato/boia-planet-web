@@ -47,7 +47,7 @@ export function createSandboxTicketing(
     provider: 'sandbox',
     isTest: true,
 
-    async start(eventId): Promise<CheckoutStart> {
+    async start(eventId, startOpts = {}): Promise<CheckoutStart> {
       const event = (await repo.content.events()).find((e) => e.id === eventId);
       if (!event) return { ok: false, reason: 'not_found', event: null };
       const view: CheckoutEvent = {
@@ -70,6 +70,7 @@ export function createSandboxTicketing(
           event: view,
           quote: quoteFor(event, found, now()),
           flow: { kind: 'inline' },
+          ...(startOpts.source ? { source: startOpts.source } : {}),
         },
       };
     },
@@ -89,6 +90,7 @@ export function createSandboxTicketing(
           provider: 'sandbox',
           orderRef: purchase.id,
           ...(purchase.discountId ? { discountId: purchase.discountId } : {}),
+          ...(session.source ? { source: session.source } : {}),
         });
       }
       // El repositorio no completa los logros de entradas: se piden aquí (con

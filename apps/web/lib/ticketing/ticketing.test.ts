@@ -6,7 +6,8 @@ import {
   SAMPLE_EVENTS,
   createLocalRepository,
 } from '@boia/store';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { CapturedEvent } from '../analytics';
 import { purchaseNotices } from './notices';
 import { applicableDiscount, discountCents, quoteFor, samplePriceCents } from './pricing';
 import { TICKET_TRIGGER, createSandboxTicketing } from './sandbox';
@@ -207,5 +208,43 @@ describe('descuento del náufrago: sólo con un código válido', () => {
     // Un importe mayor que el precio deja el total en cero, nunca en negativo.
     const huge = { discount: { ...eur.discount, value: price * 3 } };
     expect(quoteFor(id, [huge], VALID).totalCents).toBe(0);
+  });
+});
+
+describe('compra dentro del mar 3D (T58)', () => {
+  type FakeWindow = { location: { pathname: string }; __boiaAnalytics?: CapturedEvent[] };
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('el sandbox lleva el origen «world» hasta purchase_confirmed, con el código aplicado', async () => {
+    const win: FakeWindow = { location: { pathname: '/mar' } };
+    vi.stubGlobal('window', win);
+    const { repo, tickets } = setup();
+    await repo.progress.findDiscount(naufrago.id);
+    const r = await tickets.start(naufragoEvent.id, { source: 'world' });
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.session.source).toBe('world');
+    expect(r.session.quote.discount?.id).toBe(naufrago.id);
+    await tickets.confirm!(r.session);
+    const confirmed = win.__boiaAnalytics?.filter((e) => e.event === 'purchase_confirmed');
+    expect(confirmed).toHaveLength(1);
+    expect(confirmed![0]!.properties).toMatchObject({
+      eventId: naufragoEvent.id,
+      provider: 'sandbox',
+      discountId: naufrago.id,
+      source: 'world',
+      $pathname: '/mar',
+    });
+  });
+
+  it('sin origen (la landing), la compra no lo inventa', async () => {
+    const win: FakeWindow = { location: { pathname: '/' } };
+    vi.stubGlobal('window', win);
+    const { tickets } = setup();
+    const s = await start(tickets, otherEvent.id);
+    expect(s.source).toBeUndefined();
+    await tickets.confirm!(s);
+    const confirmed = win.__boiaAnalytics?.find((e) => e.event === 'purchase_confirmed');
+    expect(confirmed).toBeDefined();
+    expect(confirmed!.properties).not.toHaveProperty('source');
   });
 });

@@ -114,5 +114,5 @@ export const esMar = {
   'mar.controles.zoom': 'Pellizca o usa la rueda: de la cubierta al planeta entero.',
   'mar.controles.sensibilidad': 'La sensibilidad del giro se cambia en ⚙️ Ajustes.',
   'mar.bienvenida.entradas':
-    '🎟️ «Entradas», en la barra de abajo, te lleva a la isla del próximo evento.',
+    '🎟️ «Entradas», en la barra de abajo, abre los eventos: compra sin salir del mar o ve a su isla.',
 } as const;

@@ -83,9 +83,10 @@ export function islandOfEvent(world: WorldConfig, eventId: string): WorldObject 
 }
 
 /**
- * Un viaje en turbo (REQ-ENT-040, T43): a la isla del evento vigente para
- * comprar («Entradas») o a la isla del evento de un código («Ir a la isla»),
- * que al llegar abre su ficha con el aviso del descuento.
+ * Un viaje en turbo (REQ-ENT-040, T43): a la isla de un evento para comprar
+ * («Ir a su isla» en «Elige tu evento», T58) o a la isla del evento de un
+ * código («Ir a la isla»), que al llegar abre su ficha con el aviso del
+ * descuento.
  */
 export interface EventTrip {
   placeId: string;
@@ -93,31 +94,6 @@ export interface EventTrip {
   eventId: string;
   /** Qué abre al llegar: la compra o la ficha del evento. */
   then?: 'checkout' | 'sheet';
-}
-
-/**
- * El evento vigente del mar (REQ-ENT-040): de las islas que abren un evento a
- * la venta (su TICKET o CONTENIDO de evento, ya re-ligado por el Admin), la
- * del evento destacado de la landing y, si no, la del más próximo. Sin
- * ninguno, null (el botón lleva a la sección de entradas de la landing).
- */
-export function currentEventTrip(world: WorldConfig): EventTrip | null {
-  const pb = block('priority_event');
-  const priority = pb?.type === 'priority_event' ? pb.eventId : undefined;
-  const trips: Array<EventTrip & { ev: BoiaEvent }> = [];
-  for (const o of world.objects) {
-    if (!o.identity.active) continue;
-    const ev = findEvent(eventOfPlace(o));
-    if (!ev || !EVENT_STATE_BEHAVIOR[ev.state].purchasable) continue;
-    trips.push({ placeId: o.identity.id, placeName: o.identity.name, eventId: ev.id, ev });
-  }
-  trips.sort(
-    (a, b) =>
-      Number(b.ev.id === priority) - Number(a.ev.id === priority) ||
-      a.ev.startsAt.localeCompare(b.ev.startsAt),
-  );
-  const best = trips[0];
-  return best ? { placeId: best.placeId, placeName: best.placeName, eventId: best.eventId } : null;
 }
 
 export interface SheetProps {
@@ -506,7 +482,7 @@ function kickerOf(o: WorldObject | undefined): string {
 }
 
 /** Nombre de un estado sin compra (el «a la venta» no se rotula). */
-function StateTag({ event }: { event: BoiaEvent }) {
+export function StateTag({ event }: { event: BoiaEvent }) {
   if (event.state === 'on_sale') return null;
   return (
     <span className={`juego-estado is-${event.state}`} data-testid="mar-evento-estado">

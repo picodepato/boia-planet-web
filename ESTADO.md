@@ -4,6 +4,55 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — plan 005 T58: Entradas dentro del mundo 3D
+
+Qué existe:
+- «Entradas» de la barra de /mar abre «Elige tu evento» dentro del mar, en la
+  hoja crema de abajo (`MarHoja`; `app/mar/entradas.tsx`, estilos en
+  `app/mar/entradas.css`). Los eventos salen de `resolveTicketsPanel`, la misma
+  función que el panel de Tickets de la landing (`app/mar/entradas-model.ts`):
+  el destacado y los próximos a la venta, con su estado, el aviso «Tienes un
+  código de descuento» si el visitante tiene uno que vale, «🎟️ Comprar
+  entrada» y «⛵ Ir a su isla» (si la tiene en el mapa). Otro toque de
+  «Entradas» lo cierra; durante un viaje hacia una compra el toque abre la
+  compra ya (como antes).
+- «Comprar entrada» abre el checkout de prueba (`SandboxCheckout`, el mismo de
+  la landing) encima del panel, sin salir de /mar; en el móvil va pegado abajo
+  como hoja (`className="checkout--mar"`). El código encontrado navegando se
+  aplica (lo hacía ya el sandbox). Al cerrar tras comprar, el panel se cierra y
+  llega la invitación al Carnet; «Ver mi Carnet» abre Mi Carnet dentro del mar
+  con el sello. Cerrar sin comprar vuelve al panel.
+- «Ir a su isla» hace el viaje que antes hacía «Entradas» directamente: vuelo
+  (o turbo con `?vuelo=0`) a la isla del evento y, al llegar o con «Saltar»,
+  el checkout; con movimiento reducido, directo. Se quitó `currentEventTrip`
+  (`sheet.tsx`), que ya no usaba nadie; el «sin evento → `/#tickets`» de la
+  landing desaparece (el panel dice «Próximamente»).
+- Analítica: `tickets_panel_open` con `source: 'world'`; `ticket_click_out`
+  con `source: 'world'` (panel) o `'island'` (la ficha de la isla en /mar, que
+  antes no se contaba); `purchase_confirmed` lleva `source: 'world'` (opcional
+  en el contrato, `PurchaseSource`): `SandboxCheckout` acepta `source`, el
+  adaptador lo recibe en `start(eventId, { source })` y viaja en la sesión. La
+  landing no lo pasa: su flujo no cambia.
+- Texto de Welcome Aboard `mar.bienvenida.entradas` al día (`muestra`).
+- REQ-ENT-037 pasa a HECHO (`entradas-model.test.ts` con 0, 1 y 3 eventos a
+  la venta, y `mar-entradas.spec.ts`).
+- Capturas (móvil 390×844): `docs/informes/img/p005-t58-entradas.png`,
+  `p005-t58-checkout.png`, `p005-t58-comprada.png` (con `RECORD_T58=1`).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0 (104 archivos, 912 pruebas)
+- `sh tools/spec/checks.sh`, `pnpm typecheck`, `pnpm lint`, `pnpm build` → exit 0
+- `E2E_PORT=3281 pnpm e2e mar-entradas.spec.ts mar-3d.spec.ts mar-hud.spec.ts --workers=2` → exit 0 (34 passed)
+- `E2E_PORT=3281 pnpm e2e tickets.spec.ts landing.spec.ts descuentos.spec.ts mar-paridad.spec.ts logros.spec.ts despliegue.spec.ts --workers=2` → exit 1 (36 passed, 6 skipped, 10 failed, todos en desktop): 8 de logros/mar-paridad por carga (cierre de contexto y esperas de más de 2 min); las 2 de `despliegue.spec.ts` (`/api/art`) fallan en Windows por las barras de `path.relative` (`art\mundos\…` frente a `mundos/arcilla/`), nada que ver con T58
+- Repetición de lo que falló por carga: `E2E_PORT=3281 pnpm e2e logros.spec.ts mar-paridad.spec.ts --project=desktop --workers=1` → exit 0 (12 passed, 2 skipped)
+- Los specs de Tickets de la landing (`tickets.spec.ts`, `landing.spec.ts`, `descuentos.spec.ts`) pasan en los dos proyectos
+
+Pendiente:
+- Textos `muestra` [pendiente Álvaro].
+- REQ-ENT-040 sigue HECHO con `mar-3d.spec.ts`, pero ahora el viaje en turbo
+  sale de «Ir a su isla» del panel y no del primer toque de «Entradas»; su
+  texto en `09-requisitos.md` podría decirlo (no se tocó la spec).
+
 ## 2026-10-01 — plan 005 T55: Ajustes, Controles, Carnet y enlaces profundos dentro de /mar
 
 Qué existe:

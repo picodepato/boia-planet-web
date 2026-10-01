@@ -1,5 +1,6 @@
 'use client';
 
+import type { PurchaseSource } from '@boia/contracts/analytics';
 import { useEffect, useRef, useState } from 'react';
 import { formatEventDate } from '../i18n/web';
 import type { CheckoutEvent, CheckoutSession, PurchaseOutcome, TicketingAdapter } from './adapter';
@@ -33,12 +34,18 @@ export function SandboxCheckout({
   onConfirmed,
   carnet,
   adapter,
+  source,
+  className,
 }: {
   eventId: string;
   onClose: () => void;
   onConfirmed?: (outcome: PurchaseOutcome, session: CheckoutSession) => void;
   carnet: CarnetLink;
   adapter?: TicketingAdapter;
+  /** `world`: se compra dentro del mar 3D (T58); la analítica de la compra lo dice. */
+  source?: PurchaseSource;
+  /** Otra clase junto a `checkout` (en el mar, la hoja de abajo del HUD, T58). */
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -73,7 +80,7 @@ export function SandboxCheckout({
   useEffect(() => {
     let alive = true;
     (adapter ?? ticketing())
-      .start(eventId)
+      .start(eventId, source ? { source } : undefined)
       .then((r) => {
         if (!alive) return;
         if (r.ok) setState({ kind: 'ready', session: r.session, busy: false, error: null });
@@ -91,7 +98,7 @@ export function SandboxCheckout({
     return () => {
       alive = false;
     };
-  }, [eventId, adapter]);
+  }, [eventId, adapter, source]);
 
   const confirm = async () => {
     if (state.kind !== 'ready' || confirming.current) return;
@@ -122,7 +129,7 @@ export function SandboxCheckout({
   return (
     <dialog
       ref={ref}
-      className="checkout"
+      className={className ? `checkout ${className}` : 'checkout'}
       data-testid="checkout"
       aria-labelledby="checkout-title"
       onClick={(e) => {

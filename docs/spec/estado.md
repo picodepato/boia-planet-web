@@ -77,7 +77,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ENT-034 | Tickets, Fotos y Tienda con isla visible | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «`/mar?ir=<Puerto de Fotos>` sale navegando hasta allí y abre la galería»; [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-ENT-035 | Checkout sólo con acción explícita | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-ENT-036 | URLs compartibles y Atrás | L1 | PARCIAL | [event-page.tsx](../../apps/web/app/%28landing%29/components/event-page.tsx) | Construido; sin prueba que lo nombre |
-| REQ-ENT-037 | Tickets general | L1 | PARCIAL | [tickets-panel.tsx](../../apps/web/app/%28landing%29/components/tickets-panel.tsx) | Construido; sin prueba que lo nombre |
+| REQ-ENT-037 | Tickets general | L1 | HECHO | [entradas-model.test.ts](../../apps/web/app/mar/entradas-model.test.ts), [mar-entradas.spec.ts](../../apps/web/e2e/mar-entradas.spec.ts) | El mismo panel en la landing y dentro del mar (T58) |
 | REQ-ENT-038 | Carga ligera primero | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «motor bloqueado: el planeta ligero y Tickets funcionando (REQ-ENT-017, 038)» | — |
 | REQ-ENT-039 | Teletransportes sin premios | L1 | HECHO | [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-ENT-040 | `/mar`: botón «Entradas» siempre visible, con viaje en turbo | L1 | HECHO | [mar-3d.spec.ts](../../apps/web/e2e/mar-3d.spec.ts) | — |

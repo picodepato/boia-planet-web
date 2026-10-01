@@ -33,6 +33,7 @@ import {
 import Link from 'next/link';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { liveWorld } from '../../lib/admin/live-world';
+import { track } from '../../lib/analytics';
 import { SandboxCheckout } from '../../lib/ticketing/checkout';
 import { purchaseNotices } from '../../lib/ticketing/notices';
 import { ClaimBadge, claimLabel } from '../../lib/logros/claim-badge';
@@ -114,6 +115,8 @@ import {
   readMarLinks,
   withoutMarLinks,
 } from './deep-link';
+import { MarEntradas } from './entradas';
+import { worldTickets } from './entradas-model';
 import { MarLogros } from './logros';
 import { MarTienda } from './tienda';
 import { MarMinimap } from './minimap';
@@ -121,7 +124,6 @@ import { raceCheckpoint } from './race';
 import {
   Sheet,
   type SheetState,
-  currentEventTrip,
   eventOfPlace,
   findEvent,
   islandOfEvent,
@@ -307,6 +309,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const linksRef = useRef<MarLinks | null>(null);
   // Mi Carnet, Ajustes, Controles y Welcome Aboard, dentro del mar (T55).
   const [hoja, setHoja] = useState<Exclude<MarPanel, 'logros'> | null>(null);
+  // «Elige tu evento» dentro del mar (T58): lo abre «Entradas».
+  const [entradas, setEntradas] = useState(false);
   const [minigameOffer, setMinigameOffer] = useState<MinigameOffer | null>(null);
   const [minigameOpen, setMinigameOpen] = useState(false);
   const [mood, setMood] = useState<MoodId>('tarde');
@@ -731,9 +735,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   };
 
   /**
-   * Primer toque: turbo hasta la isla del evento vigente y, al llegar, su
-   * checkout. Otro toque (o «Saltar») lo abre ya; con movimiento reducido se
-   * abre directo; sin evento vigente, a las entradas de la landing.
+   * «Entradas» (T58): abre «Elige tu evento» dentro del mar (otro toque lo
+   * cierra). Durante un viaje hacia una compra, el toque llega ya y la abre.
    */
   const onTickets = () => {
     const current = tripRef.current;
@@ -741,12 +744,30 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       finishTrip(current, 'skip');
       return;
     }
+    if (entradas) setEntradas(false);
+    else openEntradas();
+  };
+
+  /** «Comprar entrada» en «Elige tu evento» (T58): el checkout encima, sin salir del mar. */
+  const buyFromPanel = (eventId: string) => {
+    track('ticket_click_out', { eventId, source: 'world' });
+    openCheckout(eventId);
+  };
+
+  /**
+   * «Ir a su isla» en «Elige tu evento»: turbo (o vuelo, el experimento)
+   * hasta la isla del evento y, al llegar, su checkout. Tocar «Entradas» (o
+   * «Saltar») durante el viaje lo abre ya; con movimiento reducido, directo.
+   */
+  const sailToTickets = (eventId: string) => {
+    setEntradas(false);
     const w = worldRef.current;
-    const next = w ? currentEventTrip(w) : null;
-    if (!next) {
-      window.location.assign('/#tickets');
+    const island = w ? islandOfEvent(w, eventId) : null;
+    if (!island) {
+      openCheckout(eventId);
       return;
     }
+    const next: Trip = { placeId: island.identity.id, placeName: island.identity.name, eventId };
     const g = engineRef.current;
     const started = g
       ? ticketsFly()
@@ -1030,9 +1051,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
-    g.inputEnabled = !checkoutFor && !minigameOpen && !logros && !tienda && !hoja;
+    g.inputEnabled = !checkoutFor && !minigameOpen && !logros && !tienda && !hoja && !entradas;
     g.paused = minigameOpen;
-  }, [checkoutFor, minigameOpen, logros, tienda, hoja, status]);
+  }, [checkoutFor, minigameOpen, logros, tienda, hoja, entradas, status]);
 
   // Bandera y estela equipadas (T40), también si cambian desde otra pestaña.
   useEffect(() => {
@@ -1046,6 +1067,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
     setMenu(false);
     setHoja(null);
+    setEntradas(false);
     setLogros(true);
   };
 
@@ -1060,7 +1082,20 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setMenu(false);
     setLogros(false);
     setTienda(false);
+    setEntradas(false);
     setHoja(panel);
+  };
+
+  /** «Elige tu evento» (T58): como un panel de a bordo, anula la vuelta en curso. */
+  const openEntradas = () => {
+    const r = raceRef.current;
+    if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
+    setMenu(false);
+    setLogros(false);
+    setTienda(false);
+    setHoja(null);
+    setEntradas(true);
+    track('tickets_panel_open', { source: 'world' });
   };
 
   // Los enlaces profundos (T55), una vez con el mar listo: el panel pedido y
@@ -1257,6 +1292,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     logros ||
     tienda ||
     !!hoja ||
+    entradas ||
     menu;
   const invitations = useCarnetInvitations({
     running: status === 'ready',
@@ -1738,6 +1774,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               type="button"
               className="mar-tickets__btn"
               data-testid="mar-entradas"
+              aria-haspopup={trip ? undefined : 'dialog'}
+              aria-expanded={trip ? undefined : entradas}
               aria-label={
                 trip
                   ? trip.then === 'sheet' || trip.then === 'place'
@@ -1793,7 +1831,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onClose={() => setSheet(null)}
           onCourse={courseTo}
           onFly={flyTo}
-          onBuy={(id) => setCheckoutFor(id)}
+          onBuy={(id) => {
+            track('ticket_click_out', { eventId: id, source: 'island' });
+            setCheckoutFor(id);
+          }}
           onSteerEvent={steerToEvent}
           onGoToIsland={goToIsland}
         />
@@ -1832,13 +1873,32 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         />
       ) : null}
 
+      {entradas && world ? (
+        <MarEntradas
+          tickets={worldTickets(
+            liveContent(),
+            new Date(),
+            (id) => islandOfEvent(world, id)?.identity.id ?? null,
+          )}
+          onBuy={buyFromPanel}
+          onSail={sailToTickets}
+          onClose={() => setEntradas(false)}
+        />
+      ) : null}
+
       {checkoutFor ? (
         <SandboxCheckout
           eventId={checkoutFor}
+          source="world"
+          className="checkout--mar"
           onClose={() => {
             setCheckoutFor(null);
-            // Después de comprar, la invitación a crear el Carnet (REQ-IDE-008).
-            if (purchasedRef.current) inviteTrigger('purchase');
+            // Después de comprar, la invitación a crear el Carnet (REQ-IDE-008),
+            // con «Elige tu evento» ya cerrado (con un panel abierto, espera).
+            if (purchasedRef.current) {
+              setEntradas(false);
+              inviteTrigger('purchase');
+            }
             purchasedRef.current = false;
           }}
           onConfirmed={(o, s) => {

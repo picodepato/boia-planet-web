@@ -1,0 +1,79 @@
+/*
+ * «Elige tu evento» y el checkout dentro del mar 3D (T58). La lista va en la
+ * hoja crema de abajo (`MarHoja`); el checkout de prueba, encima, también
+ * pegado abajo en el móvil, como las tarjetas del HUD (T53).
+ */
+
+.mar-entradas {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.mar-logros__body .mar-entradas {
+  padding: 0;
+}
+
+.mar-entrada {
+  padding: 12px 14px;
+  border: 1px solid rgb(27 20 64 / 0.12);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mar-entrada.is-featured {
+  border: 2px solid var(--orange);
+}
+
+.mar-entrada p {
+  margin: 0 0 4px;
+}
+
+.mar-entrada__featured {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--purple);
+}
+
+.mar-entrada .mar-sheet__kicker {
+  padding-right: 0;
+}
+
+.mar-entrada__name {
+  margin: 2px 0 4px;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.mar-entrada .mar-sheet__actions {
+  margin-top: 8px;
+}
+
+.mar-entrada .discount-banner {
+  margin: 8px 0 0;
+}
+
+.mar-entradas__empty {
+  margin: 8px 0 14px;
+  font-weight: 700;
+}
+
+/* El checkout en el mar: en el móvil, una hoja pegada abajo (encima de la barra). */
+@media (max-width: 759px) {
+  .checkout.checkout--mar {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100svh - 64px);
+    margin: auto 0 0;
+    border-radius: 20px 20px 0 0;
+    animation: mar-logros-up 0.28s cubic-bezier(0.2, 1, 0.4, 1);
+  }
+
+  .checkout--mar .checkout__sheet {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+}

@@ -140,10 +140,11 @@ test('la ficha de una isla: una tarjeta pequeña abajo que se despliega al tocar
 });
 
 test('los avisos son chips pequeños arriba que se van solos', async ({ page }) => {
-  // Con movimiento reducido «Entradas» abre la compra directa: una compra da avisos.
+  // «Entradas» abre «Elige tu evento» (T58) y su compra, dentro del mar: una compra da avisos.
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const errors = await openMar(page);
   await page.getByTestId('mar-entradas').click();
+  await page.getByTestId(/^mar-entradas-comprar-/).first().click();
   const checkout = page.getByTestId('checkout');
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
