@@ -5,7 +5,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createLocalRepository } from '@boia/store';
-import { SKIN_RULES, allowedSkins, type ShipRegistry } from './catalog';
+import { SKIN_RULES, allowedSkins, buildShipCatalog, type ShipRegistry } from './catalog';
 import { BarcoShopView, readShop } from './shop';
 import { shopRows } from './shop-model';
 import { loadShipCatalog, repoRoot } from './load';
@@ -33,16 +33,42 @@ const registryEntry = (id: string) => {
   return registry.barcos.find((b) => b.id === barco);
 };
 
+/** Los estilos con arte propio (las variantes del registro, T59, van aparte). */
+const artStyles = catalog.styles.filter((s) => !s.variant);
+
 describe('catálogo de la sección «Barco»', () => {
-  it('lista exactamente los estilos de art/barco/manifest.json, el por defecto primero', () => {
+  it('lista exactamente los estilos de art/barco/manifest.json, el por defecto primero, y luego las variantes del registro', () => {
     expect(catalog.defaultId).toBe(rootManifest.style);
     expect(catalog.styles.map((s) => s.id)).toEqual([
       rootManifest.style,
       ...rootManifest.style_variants.map((v) => v.id),
+      ...(registry.variantes ?? []).map((v) => v.id),
     ]);
   });
 
-  it.each(catalog.styles.map((s) => [s.id, s] as const))(
+  it('una variante (T59) usa el arte de su estilo en su skin, con el tono girado y una sola skin', () => {
+    const variants = registry.variantes ?? [];
+    expect(variants.length).toBeGreaterThan(0);
+    for (const v of variants) {
+      const style = catalog.styles.find((s) => s.id === v.id)!;
+      const base = catalog.styles.find((s) => s.id === v.de)!;
+      expect(style.name).toBe(v.nombre);
+      expect(style.description).toBe(v.aspecto);
+      expect(style.variant).toEqual({ of: v.de, skin: v.skin, hue: v.tono });
+      expect(style.skins.map((k) => k.id)).toEqual(['base']);
+      expect(style.skins[0]!.preview).toBe(base.skins.find((k) => k.id === v.skin)!.preview);
+      // Sin el arte del que sale, no se ofrece.
+      const without = buildShipCatalog({
+        root: rootManifest,
+        styleManifests: {},
+        registry: { barcos: [], variantes: [v] },
+        scripts: {},
+      });
+      expect(without.styles.map((s) => s.id)).not.toContain(v.id);
+    }
+  });
+
+  it.each(artStyles.map((s) => [s.id, s] as const))(
     '%s ofrece las skins de su manifiesto que admiten sus notas',
     (id, style) => {
       const declared = manifestSkins(id);

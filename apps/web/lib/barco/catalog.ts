@@ -14,6 +14,11 @@ import { t } from '../i18n';
  *   `tools/barcos/guia_colores.py` (los colores no se copian);
  * - `notas_render` quita skins que el estilo no admite (ver SKIN_RULES).
  *
+ * Además, las variantes del registro (`variantes`, T59): barcos sin arte
+ * nuevo, hechos con el arte de otro estilo en una de sus skins y el tono
+ * girado (el barco exclusivo de la Boia Fiestera). Se ofrecen con una sola
+ * skin, la suya.
+ *
  * `buildShipCatalog` es puro; `loadShipCatalog` (lib/barco/load.ts) lee los
  * archivos del repo al construir la página.
  */
@@ -45,6 +50,17 @@ export interface ShipStyleEntry {
   swatches: ShipSwatch[];
   /** Skins que se ofrecen, en orden (base, fiesta, noche, otras). */
   skins: ShipSkinEntry[];
+  /**
+   * Variante sin arte propio (T59): el estilo y la skin cuyo arte usa y el
+   * giro de tono (grados) que se le aplica, en 3D y en las miniaturas.
+   */
+  variant?: ShipVariantLook;
+}
+
+export interface ShipVariantLook {
+  of: string;
+  skin: string;
+  hue: number;
 }
 
 export interface ShipCatalog {
@@ -91,9 +107,27 @@ interface RegistryShip {
   notas_render?: string[];
   paleta?: { grupo: string; colores: RegistryColor[] }[];
 }
+/** Una variante del registro (`variantes`, T59): arte de otro estilo, tono girado. */
+interface RegistryVariant {
+  id: string;
+  nombre: string;
+  aspecto: string;
+  /** Estilo cuyo arte usa. */
+  de: string;
+  /** Skin de ese estilo. */
+  skin: string;
+  /** Giro de tono, en grados. */
+  tono: number;
+}
 export interface ShipRegistry {
   referencias?: { marca?: { nombre: string; hex: string }[] };
   barcos: RegistryShip[];
+  variantes?: RegistryVariant[];
+}
+
+/** El filtro CSS de una miniatura de variante (el mismo giro de tono que en 3D). */
+export function variantFilter(style: Pick<ShipStyleEntry, 'variant'> | undefined): string | undefined {
+  return style?.variant ? `hue-rotate(${style.variant.hue}deg)` : undefined;
 }
 
 export interface ShipCatalogSources {
@@ -185,6 +219,23 @@ export function buildShipCatalog(src: ShipCatalogSources): ShipCatalog {
       isDefault,
       swatches,
       skins,
+    });
+  }
+  for (const v of src.registry.variantes ?? []) {
+    if (styles.some((st) => st.id === v.id)) continue;
+    const base = styles.find((st) => st.id === v.de);
+    const look = base?.skins.find((k) => k.id === v.skin);
+    // Sin el arte del que sale, la variante no se ofrece.
+    if (!base || !look) continue;
+    styles.push({
+      id: v.id,
+      name: v.nombre,
+      description: v.aspecto,
+      barco: null,
+      isDefault: false,
+      swatches: [],
+      skins: [{ id: 'base', label: SKIN_LABELS.base!, preview: look.preview }],
+      variant: { of: base.id, skin: look.id, hue: v.tono },
     });
   }
   return { defaultId: index.defaultId, styles };

@@ -534,8 +534,14 @@ class LocalRepository implements BoiaRepository {
     const equipped = (userId && doc.players[userId]?.equipped) || {};
     const defs = this.resolved('achievements', doc);
     const catalog = this.resolved('cosmetics', doc);
+    const missions = (userId && doc.players[userId]?.missions) || {};
+    // Exclusivo de una misión (T59): lo tiene quien la ha completado.
+    const missionDone = (id: string) => !!missions[id]?.completedAt;
     const owns = (c: Cosmetic) =>
-      c.base || bought.has(c.id) || (c.unlockPoints !== undefined && b.points >= c.unlockPoints);
+      c.base ||
+      bought.has(c.id) ||
+      (c.unlockPoints !== undefined && b.points >= c.unlockPoints) ||
+      (c.unlockMission !== undefined && missionDone(c.unlockMission));
     return catalog
       .filter((c) => c.active || bought.has(c.id))
       .map((c): ShopItem => {
@@ -545,7 +551,9 @@ class LocalRepository implements BoiaRepository {
           ? { kind: 'base' }
           : c.unlockPoints !== undefined
             ? { kind: 'points', points: c.unlockPoints }
-            : c.priceCoins !== null && c.active
+            : c.unlockMission !== undefined
+              ? { kind: 'mission', missionId: c.unlockMission }
+              : c.priceCoins !== null && c.active
               ? { kind: 'coins', price: c.priceCoins }
               : achievementId
                 ? { kind: 'achievement', achievementId }
@@ -1153,6 +1161,7 @@ class LocalRepository implements BoiaRepository {
             achievementId: i.achievementId,
             priceCoins: i.cosmetic.priceCoins,
             unlockPoints: i.cosmetic.unlockPoints ?? null,
+            unlockMission: i.cosmetic.unlockMission ?? null,
             base: i.cosmetic.base,
           })),
       shop: async () => this.shopItems(this.doc, myId()),

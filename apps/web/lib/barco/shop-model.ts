@@ -1,5 +1,5 @@
 import type { ShopItem } from '@boia/store';
-import { SKIN_LABELS, type ShipCatalog } from './catalog';
+import { SKIN_LABELS, type ShipCatalog, variantFilter } from './catalog';
 import { t } from '../i18n';
 
 /**
@@ -37,6 +37,8 @@ export interface ShopShipRow {
   preview: string | null;
   item: ShopItem;
   skins: ShopSkinRow[];
+  /** Filtro CSS de las miniaturas de una variante sin arte propio (T59). */
+  filter?: string;
 }
 
 export interface ShopRows {
@@ -69,6 +71,7 @@ export function shopRows(catalog: ShipCatalog | null, items: readonly ShopItem[]
         ? [{ skin: k.id, label: k.label, preview: k.preview, item: sold, owned: sold.owned }]
         : [];
     });
+    const filter = variantFilter(style);
     ships.push({
       style: style.id,
       name: item.cosmetic.name,
@@ -76,6 +79,7 @@ export function shopRows(catalog: ShipCatalog | null, items: readonly ShopItem[]
       preview: style.skins[0]?.preview ?? null,
       item,
       skins,
+      ...(filter ? { filter } : {}),
     });
   }
   const active = (slot: string) =>
@@ -108,6 +112,8 @@ export function unlockText(item: ShopItem, titles: AchievementTitles = {}): stri
         points: u.points,
         n: n(item.missing, 'punto', 'puntos'),
       });
+    case 'mission':
+      return t('shop.lockedMission');
     case 'achievement': {
       const title = titles[u.achievementId];
       return title

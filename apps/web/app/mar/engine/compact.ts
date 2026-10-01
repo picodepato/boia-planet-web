@@ -6,7 +6,7 @@ import { type Circle, type Period, periodOf, planetRect, shortest, wrapIn } from
  * El mundo compacto de `/mar` (T50), sin three.js: el mapa compartido a la
  * escala del mar 3D (`compressWorld`, con las zonas a la mitad de distancia
  * que en T33), el decorado propio (castillo, Explanada, islote de la cueva),
- * los límites del planeta ajustados a lo que hay y la ruta de boyas que une
+ * los límites del planeta ajustados a lo que hay y la ruta (marcas en el agua) que une
  * las islas en el orden de la historia. Las posiciones del mapa compartido
  * no cambian (el 2D sigue igual): todo se deriva al cargar `/mar`, y el
  * runtime, los rótulos, el piloto, el viaje de «Entradas» y los premios
@@ -171,14 +171,10 @@ export const ROUTE_STOPS = [
 
 /** Medidas de la ruta (u). muestra */
 export const ROUTE = {
-  /** Entre boya y boya. */
-  spacing: 125,
-  /** Entre trazo y trazo de la línea del mapa. */
+  /** Entre trazo y trazo de las marcas en el agua. */
   dash: 72,
-  /** Agua libre entre las boyas y lo sólido. */
+  /** Agua libre entre la ruta y lo sólido (lo que se acerca a ella). */
   clear: 50,
-  /** Agua de más alrededor de cada parada antes de la primera boya. */
-  stopClear: 70,
   /** La ruta se aparta de las islas que no son parada y del decorado. */
   detourPad: 70,
   /** La ruta sale del puerto recta por la bocana (hacia donde mira el barco) esto antes de girar. */
@@ -199,9 +195,11 @@ export interface SeaRoute {
   path: Point[];
   /** Índice en `path` de cada parada; la última entrada es la vuelta al puerto. */
   stopAt: number[];
-  /** Boyas, dentro del planeta. */
-  buoys: Point[];
-  /** Trazos de la línea del mapa: centro (dentro del planeta) y rumbo. */
+  /**
+   * Las marcas en el agua que guían (T50; desde T59, lo único de la ruta que
+   * se ve: ya no hay boyas que unan las islas): centro (dentro del planeta) y
+   * rumbo de cada trazo.
+   */
   dashes: (Point & { angle: number })[];
 }
 
@@ -213,23 +211,6 @@ function stopPoint(world: WorldConfig, id: string): Point | null {
   if (id === 'puerto' && world.spawn) return { x: world.spawn.x, y: world.spawn.y };
   const o = byId(world, id);
   return o ? { x: o.position.x, y: o.position.y } : null;
-}
-
-/**
- * Cuánto se aparta la ruta de una parada antes de poner boyas: su huella y,
- * en el puerto y el remanso, lo sólido de su composición.
- */
-function stopClearance(world: WorldConfig, id: string, at: Point): number {
-  const o = byId(world, id);
-  let r = o ? footprintOf(o) : 0;
-  if (!o || !isIsland(o)) {
-    for (const x of world.objects) {
-      if (x.position.zone !== id || !hasCollision(x)) continue;
-      const d = Math.hypot(x.position.x - at.x, x.position.y - at.y);
-      if (d < 320) r = Math.max(r, d + footprintOf(x));
-    }
-  }
-  return r + ROUTE.stopClear;
 }
 
 /** Lo más cercano de un tramo a `p` (en la copia de `p` más cercana al tramo). */
@@ -291,7 +272,7 @@ function detour(
 export const periodOfWorld = (world: WorldConfig): Period => periodOf(planetRect(world.bounds));
 
 /**
- * La ruta de boyas: sale recta por la bocana del puerto y une las paradas en
+ * La ruta: sale recta por la bocana del puerto y une las paradas en
  * orden, cada tramo por el camino más corto del planeta (dando la vuelta si
  * lo es), rodeando las islas que no son parada y el decorado, y vuelve al
  * puerto. Sólo decorado: sin choques ni premios.
@@ -333,28 +314,21 @@ export function seaRoute(world: WorldConfig): SeaRoute {
     stopAt.push(path.length - 1);
   }
 
-  // Lo que las boyas no pisan: todo lo sólido y el agua de cada parada.
+  // Lo que las marcas no pisan: todo lo sólido.
   const solids: Circle[] = [...decor];
   for (const o of world.objects) {
     if (o.identity.active && hasCollision(o)) solids.push(...solidCircles(o));
   }
-  const clears = stops.map((id, i) => ({ ...at[i]!, radius: stopClearance(world, id, at[i]!) }));
-  const free = (p: Point, pad: number, withStops: boolean) =>
+  const free = (p: Point, pad: number) =>
     solids.every((c) => {
       const s = shortest(c, p, period);
       return Math.hypot(s.dx, s.dy) >= c.radius + pad;
-    }) &&
-    (!withStops ||
-      clears.every((c) => {
-        const s = shortest(c, p, period);
-        return Math.hypot(s.dx, s.dy) >= c.radius;
-      }));
+    });
   const inside = (p: Point) => ({
     x: wrapIn(p.x, rect.left, rect.right),
     y: wrapIn(p.y, rect.top, rect.bottom),
   });
 
-  const buoys: Point[] = [];
   const dashes: (Point & { angle: number })[] = [];
   const walk = (step: number, visit: (p: Point, angle: number) => void) => {
     let carry = step / 2;
@@ -370,13 +344,10 @@ export function seaRoute(world: WorldConfig): SeaRoute {
       carry = s - len;
     }
   };
-  walk(ROUTE.spacing, (p) => {
-    if (free(p, ROUTE.clear, true)) buoys.push(inside(p));
-  });
   walk(ROUTE.dash, (p, angle) => {
-    if (free(p, 20, false)) dashes.push({ ...inside(p), angle });
+    if (free(p, 20)) dashes.push({ ...inside(p), angle });
   });
-  return { stops, path, stopAt, buoys, dashes };
+  return { stops, path, stopAt, dashes };
 }
 
 /**

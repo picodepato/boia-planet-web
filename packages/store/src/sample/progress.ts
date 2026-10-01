@@ -367,6 +367,18 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     assetKey: 'pixel-art',
     sample: true,
   },
+  // El premio de la misión central (T59): exclusivo de quien entrega a la
+  // Boia Fiestera en la última isla. Arte: el de Arcilla en fiesta, teñido
+  // (variante de `docs/barcos/barcos.json`, sin arte nuevo). muestra
+  {
+    id: 'barco-fiestera',
+    name: 'La Fiestera',
+    slot: 'ship',
+    priceCoins: null,
+    assetKey: 'fiestera',
+    unlockMission: 'fiestera',
+    sample: true,
+  },
   // Los dos de los mundos iniciales: de todos desde el principio.
   {
     id: 'barco-arcilla',

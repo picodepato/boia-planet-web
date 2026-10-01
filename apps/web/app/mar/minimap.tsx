@@ -12,6 +12,11 @@ import { t as msg } from '../../lib/i18n';
  * en naranja), el rumbo y la ruta de boyas. Un lienzo 2D pequeño que se
  * repinta `MINIMAP_FPS` veces por segundo, no con cada fotograma del 3D.
  *
+ * Los «?» (T59) son los descuentos por encontrar: el del náufrago, el del
+ * ánfora y el premio de la Boia Fiestera (a ella mientras espera, a su
+ * destino mientras va a bordo). Viven aquí, en el minimapa, y desaparecen
+ * al encontrar su código.
+ *
  * Tocarlo abre el mapa grande (la vista de mapa del 3D); tocarlo otra vez lo
  * cierra. El gesto es el del minimapa del 2D (`MinimapGesture`): un roce
  * que empieza en él y se mueve no cuenta como toque. muestra
@@ -20,14 +25,24 @@ import { t as msg } from '../../lib/i18n';
 /** Repintados por segundo: el globo apenas cambia (el barco y un giro lentísimo). */
 export const MINIMAP_FPS = 5;
 
+/** Un «?» del minimapa: el lugar donde está (id y sitio del mapa) y su código. */
+export interface MinimapMark {
+  placeId: string;
+  discountId: string;
+  x: number;
+  y: number;
+}
+
 export function MarMinimap({
   engineRef,
   pins,
+  marks = [],
   mapMode,
   onToggle,
 }: {
   engineRef: RefObject<Mar3D | null>;
   pins: readonly PinSpec[];
+  marks?: readonly MinimapMark[];
   mapMode: boolean;
   onToggle: () => void;
 }) {
@@ -35,12 +50,18 @@ export function MarMinimap({
   const gesture = useRef(new MinimapGesture());
   const from = useRef({ x: 0, y: 0 });
   const pinsRef = useRef(pins);
+  const marksRef = useRef(marks);
   const drawRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     pinsRef.current = pins;
     drawRef.current();
   }, [pins]);
+
+  useEffect(() => {
+    marksRef.current = marks;
+    drawRef.current();
+  }, [marks]);
 
   useEffect(() => {
     drawRef.current();
@@ -66,11 +87,19 @@ export function MarMinimap({
         if (!st?.present) continue;
         list.push({ id: p.id, x: st.x, y: st.y, accent: !!p.accent });
       }
+      // Donde está ahora (lo que se mueve, como la Fiestera) o su sitio del mapa.
+      const marks: GlobePin[] = marksRef.current.map((m) => {
+        const st = g.runtime.objectState(m.placeId);
+        return st?.present
+          ? { id: m.placeId, x: st.x, y: st.y }
+          : { id: m.placeId, x: m.x, y: m.y };
+      });
       drawGlobe(ctx, size, {
         rect: g.planetBounds,
         spin: g.planetSpin,
         ship: g.ship,
         pins: list,
+        marks,
         route: g.route.path,
         course: g.courseTarget,
       });
@@ -82,6 +111,8 @@ export function MarMinimap({
         .filter((p) => p.accent)
         .map((p) => p.id)
         .join(',');
+      canvas.dataset.marks = marksRef.current.map((m) => m.discountId).join(',');
+      canvas.dataset.markPlaces = marks.map((m) => m.id).join(',');
     };
     drawRef.current = draw;
     draw();
@@ -111,7 +142,10 @@ export function MarMinimap({
       type="button"
       className={`mar-minimap${mapMode ? ' is-on' : ''}`}
       data-testid="mar-minimapa"
-      aria-label={mapMode ? msg('mar.minimap.cerrarElMapaY') : msg('mar.minimap.abrirElMapaDel')}
+      aria-label={`${mapMode ? msg('mar.minimap.cerrarElMapaY') : msg('mar.minimap.abrirElMapaDel')}${
+        marks.length ? ` · ${msg('mar.minimap.codigos', { n: marks.length })}` : ''
+      }`}
+      data-codigos={marks.length}
       aria-pressed={mapMode}
       onPointerDown={onPointerDown}
       onPointerMove={(e) => gesture.current.move(performance.now(), e.clientX, e.clientY)}

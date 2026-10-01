@@ -59,7 +59,18 @@ export interface MissionDestination {
   radius: number;
   /** Dónde se queda: posición en el agua y altura (u) hasta el nicho. */
   drop: Point & { z: number };
-  reward: { points: number; coins: number };
+  reward: MissionReward;
+}
+
+/**
+ * El premio grande de la entrega (REQ-AVE-008): puntos, monedas y, si el
+ * destino lo dice (`missionReward.discount`, T59), el id de un código de
+ * entradas que se da al entregarla.
+ */
+export interface MissionReward {
+  points: number;
+  coins: number;
+  discount?: string;
 }
 
 export type RescueStep = 'rescued' | 'delivered';
@@ -85,7 +96,7 @@ export type MissionEvent =
       missionId: string;
       character: string;
       destination: string;
-      reward: { points: number; coins: number };
+      reward: MissionReward;
     }
   /** Ya en su sitio de la isla. */
   | { type: 'landed'; missionId: string; destination: string };
@@ -122,7 +133,10 @@ export function missionDestination(world: WorldConfig, placeId: string): Mission
     (prox?.type === 'proximity' ? prox.params.radius : undefined) ?? proximityOf(o) ?? null;
   if (radius === null) return null;
   const d = o.params?.missionDrop as { x?: unknown; y?: unknown; z?: unknown } | undefined;
-  const r = o.params?.missionReward as { points?: unknown; coins?: unknown } | undefined;
+  const r = o.params?.missionReward as
+    | { points?: unknown; coins?: unknown; discount?: unknown }
+    | undefined;
+  const discount = str(r?.discount);
   const center = { x: o.position.x, y: o.position.y };
   const dx = num(d?.x);
   const dy = num(d?.y);
@@ -131,7 +145,11 @@ export function missionDestination(world: WorldConfig, placeId: string): Mission
     center,
     radius,
     drop: dx !== null && dy !== null ? { x: dx, y: dy, z: num(d?.z) ?? 0 } : { ...center, z: 0 },
-    reward: { points: Math.max(0, num(r?.points) ?? 0), coins: Math.max(0, num(r?.coins) ?? 0) },
+    reward: {
+      points: Math.max(0, num(r?.points) ?? 0),
+      coins: Math.max(0, num(r?.coins) ?? 0),
+      ...(discount ? { discount } : {}),
+    },
   };
 }
 

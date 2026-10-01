@@ -289,11 +289,14 @@ export class CourseMarker {
 // --- La ruta de boyas en el mapa (T50) -------------------------------------------
 
 /**
- * La ruta de boyas vista de lejos: trazos amarillos sobre el agua, que
- * aparecen al alejarse (de cerca se ven las boyas) y engordan en el mapa
- * para leerse en un móvil. Un solo `InstancedMesh`; quien lo usa lo curva
+ * Las marcas de la ruta: trazos amarillos sobre el agua, lo único que guía
+ * entre islas desde T59 (ya sin boyas). De cerca se ven suaves; al alejarse
+ * se afirman y engordan en el mapa para leerse en un móvil. Un solo `InstancedMesh`; quien lo usa lo curva
  * con el planeta (cada vértice en su copia más cercana).
  */
+/** Lo que se ven las marcas de cerca (0…1), con el barco. muestra */
+export const NEAR_MARKS = 0.55;
+
 export class RouteLine {
   readonly mesh: InstancedMesh;
   private readonly mat: MeshBasicMaterial;
@@ -320,7 +323,7 @@ export class RouteLine {
 
   /** `zoom` 0 (barco) … 1 (mapa). */
   update(zoom: number): void {
-    const a = smooth(0.3, 0.6, zoom);
+    const a = NEAR_MARKS + (1 - NEAR_MARKS) * smooth(0.3, 0.6, zoom);
     this.mat.opacity = a * 0.95;
     this.mesh.visible = a > 0.01 && this.dashes.length > 0;
     if (!this.mesh.visible) return;

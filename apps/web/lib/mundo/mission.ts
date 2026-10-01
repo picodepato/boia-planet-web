@@ -2,7 +2,7 @@ import type { Notice } from '@boia/engine/ui';
 import type { MissionEvent, SavedRescue } from '@boia/engine/mission';
 import type { BoiaRepository, ProgressApi } from '@boia/store';
 import { recordSignal } from './achievements';
-import { rewardTitle } from './world-progress';
+import { type ProgressOutcome, discountFound, rewardTitle } from './world-progress';
 import { t } from '../i18n';
 
 /**
@@ -121,4 +121,37 @@ export async function persistMissionEvent(
     default:
       return [];
   }
+}
+
+/**
+ * El código de entradas de la entrega (T59): la misión central premia con un
+ * descuento (`reward.discount` del destino) que se encuentra una sola vez,
+ * como los escondidos, y la compra aplica. Lo que devuelve es lo de
+ * `discountFound`: la ficha del código y su aviso, o nada si ya lo tenía.
+ */
+export async function deliveryDiscount(
+  progress: ProgressApi,
+  e: Extract<MissionEvent, { type: 'delivered' }>,
+  ctx: { sessionId: string; worldId: string },
+): Promise<ProgressOutcome[]> {
+  const id = e.reward.discount;
+  if (!id) return [];
+  return discountFound(progress, id, ctx);
+}
+
+/**
+ * Quien ya entregó a la Fiestera antes de que la entrega diera código (o en
+ * otra pestaña) lo recibe al volver: si la misión está entregada y su
+ * destino da un código que aún no tiene, se le da ahora (una vez).
+ */
+export async function missedDeliveryDiscount(
+  progress: ProgressApi,
+  missionId: string,
+  discountId: string | null,
+  ctx: { sessionId: string; worldId: string },
+): Promise<ProgressOutcome[]> {
+  if (!discountId) return [];
+  const m = await progress.mission(missionId);
+  if (!m?.completedAt) return [];
+  return discountFound(progress, discountId, ctx);
 }

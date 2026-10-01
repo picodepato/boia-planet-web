@@ -142,7 +142,7 @@ describe('el mundo compacto de /mar (T50)', () => {
   });
 });
 
-describe('la ruta de boyas', () => {
+describe('la ruta (marcas en el agua)', () => {
   it('visita las paradas en el orden de la historia y vuelve al puerto', () => {
     expect(route.stops).toEqual([
       'puerto',
@@ -195,20 +195,33 @@ describe('la ruta de boyas', () => {
     }
   });
 
-  it('las boyas son decorado: dentro del planeta, en el agua y sin pisar nada sólido', () => {
-    expect(route.buoys.length).toBeGreaterThan(route.stops.length * 3);
+  it('sin boyas que unan las islas: la ruta son marcas en el agua, sin pisar nada sólido (T59)', () => {
+    // Ni boyas de ruta en lo que calcula /mar…
+    expect(route).not.toHaveProperty('buoys');
+    // …ni lugares nuevos en el mundo de /mar: las boias que hay son las del
+    // mapa compartido (la de la entrada, la de WhatsApp y las informativas),
+    // todas con algo que decir o que abrir; las de carrera son del circuito.
+    expect(world.objects).toHaveLength(shared.objects.length);
+    const boias = (w: WorldConfig) =>
+      w.objects.filter((o) => o.identity.category === 'boia').map((o) => o.identity.id);
+    expect(boias(world)).toEqual(boias(shared));
+    for (const o of world.objects.filter((x) => x.identity.category === 'boia')) {
+      expect(
+        o.behaviors.some((b) => b.type === 'dialogue' || b.type === 'content'),
+        o.identity.id,
+      ).toBe(true);
+    }
+    // Lo que guía son las marcas, a lo largo de toda la ruta.
+    expect(route.dashes.length).toBeGreaterThan(route.stops.length * 3);
     const rt = new WorldRuntime({ ...world, bounds: rect }, { wrap: true });
     const solids = [...rt.solidObstacles(), ...decorCircles(decorSpots(world))];
-    for (const b of route.buoys) {
+    for (const b of route.dashes) {
       expect(b.x).toBeGreaterThanOrEqual(rect.left);
       expect(b.x).toBeLessThan(rect.right);
       expect(b.y).toBeGreaterThanOrEqual(rect.top);
       expect(b.y).toBeLessThan(rect.bottom);
-      for (const c of solids)
-        expect(around(b, c)).toBeGreaterThanOrEqual(c.radius + ROUTE.clear - 1e-6);
+      for (const c of solids) expect(around(b, c)).toBeGreaterThanOrEqual(c.radius + 20 - 1e-6);
     }
-    // No son lugares del mundo: ni choques ni premios.
-    expect(world.objects).toHaveLength(shared.objects.length);
   });
 
   it('el mar vivo queda junto a la ruta, sin amontonarse', () => {

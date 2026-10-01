@@ -282,6 +282,8 @@ export type CosmeticUnlock =
   | { kind: 'base' }
   | { kind: 'points'; points: number }
   | { kind: 'achievement'; achievementId: string }
+  /** Exclusivo de quien completa esa misión (T59). */
+  | { kind: 'mission'; missionId: string }
   | { kind: 'coins'; price: number }
   | { kind: 'none' };
 
@@ -322,6 +324,8 @@ export interface ShipUnlock {
   priceCoins: number | null;
   /** Umbral de puntos que lo desbloquea, si lo hay. */
   unlockPoints: number | null;
+  /** Misión que lo desbloquea (exclusivo, T59), si la hay. */
+  unlockMission: string | null;
   /** De base: desbloqueado desde el principio. */
   base: boolean;
 }

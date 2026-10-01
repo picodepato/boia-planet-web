@@ -365,6 +365,22 @@
   font-size: 1rem;
 }
 
+/* Lo que señala una boia informativa (T59): toca para fijar rumbo. */
+.mar-chip--guide {
+  background: var(--glass-strong);
+  border-color: #ffd23f;
+  padding-right: 8px;
+}
+
+.mar-chip__go {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
 .mar-countdown {
   position: absolute;
   inset: 0;

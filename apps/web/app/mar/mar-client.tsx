@@ -58,16 +58,25 @@ import {
   WhirlpoolTimer,
   findDolphinGuide,
   inOpenSea,
-  undiscoveredTarget,
 } from '../../lib/mundo/encounters';
 import { MundosPicker } from '../../lib/mundo/menu/sections/mundos';
 import { type MinigameOffer, MinigameLayer } from '../../lib/mundo/minigame-layer';
 import {
   boardedNotice,
   deliveredNotice,
+  deliveryDiscount,
   loadMission,
+  missedDeliveryDiscount,
   persistMissionEvent,
 } from '../../lib/mundo/mission';
+import {
+  type GuideSpot,
+  buoyGuide,
+  discountMarks,
+  guideSpots,
+  missionDiscountOf,
+  nearestSpot,
+} from '../../lib/mundo/guide';
 import { useNoticeQueue } from '../../lib/mundo/notices';
 import { gameRepository, seaWorld, useRepoData } from '../../lib/mundo/repo';
 import type { BottleSheetMode } from '../../lib/mundo/bottles/bottle-sheet';
@@ -107,7 +116,12 @@ import {
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { MOOD_IDS, MOOD_LABEL, type MoodId } from './engine/palette';
-import { type ShipModelEntry, loadShipManifest, loadShipModel } from './engine/ship-model';
+import {
+  type ShipModelEntry,
+  loadShipManifest,
+  loadShipModel,
+  withShipVariants,
+} from './engine/ship-model';
 import { MarABordo } from './a-bordo';
 import {
   type MarLinks,
@@ -123,7 +137,8 @@ import { MarTienda } from './tienda';
 import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
 import { type PointMap, pointMap } from './engine/compress';
-import { MarMinimap } from './minimap';
+import { MarMinimap, type MinimapMark } from './minimap';
+import { MarGuideChip } from './guia';
 import { raceCheckpoint } from './race';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import {
@@ -285,6 +300,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const dolphinRuntime = useRef<unknown>(null);
   const dolphinClock = useRef(0);
   const [dolphinOut, setDolphinOut] = useState(false);
+  // Adónde guía el delfín al salir (T59): la Fiestera, un código o un minijuego.
+  const [dolphinTo, setDolphinTo] = useState<string | null>(null);
+  // Lo que señala una boia informativa al terminar de hablar (T59).
+  const [guide, setGuide] = useState<GuideSpot | null>(null);
+  // Los códigos ya encontrados (T59): sus «?» se quitan y nadie guía hasta ellos.
+  const { data: foundDiscountList } = useRepoData((r) => r.progress.discounts());
+  const foundDiscountsRef = useRef(new Set<string>());
+  foundDiscountsRef.current = new Set((foundDiscountList ?? []).map((f) => f.discount.id));
   // Lo ya encontrado (secretos, cofres, boias…): el delfín no guía hasta ahí.
   const foundObjectsRef = useRef(new Set<string>());
   // Islas ya descubiertas: su ficha ofrece «Explorar la isla» (REQ-AVE-013).
@@ -381,6 +404,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     { readable: true },
   );
   const push = notices.push;
+  // Para el arranque (que corre una vez): el aviso y el catálogo de ahora (T59).
+  const pushRef = useRef(push);
+  pushRef.current = push;
+  const shipCatalogRef = useRef(shipCatalog);
+  shipCatalogRef.current = shipCatalog;
 
   const persist = useCallback(
     (p: Promise<ProgressOutcome[]>) => {
@@ -460,9 +488,28 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     }
   };
 
+  /**
+   * Lo que el mar señala ahora (T59): la Fiestera (o su destino, a bordo),
+   * los códigos sin encontrar y los minijuegos sin visitar.
+   */
+  const spotsNow = (world: WorldConfig): GuideSpot[] =>
+    guideSpots(world.objects, {
+      phase: missionRef.current?.phase ?? null,
+      destination: missionRef.current?.destination ?? null,
+      found: {
+        has: (id: string) => discoveredRef.current.has(id) || foundObjectsRef.current.has(id),
+      },
+      foundDiscounts: foundDiscountsRef.current,
+    });
+
   const onWorldEvent = (e: WorldEvent) => {
     const world = worldRef.current;
     if (!world) return;
+    // Una boia informativa que termina de hablar señala adónde ir (T59).
+    if (e.type === 'dialogue_end') {
+      const spot = buoyGuide(world.objects, e.objectId, spotsNow(world));
+      if (spot) setGuide(spot);
+    }
     const ctx = { sessionId, worldId: worldIdRef.current };
     const repo = gameRepository();
     const r = raceRef.current;
@@ -546,6 +593,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         setSheet((s) => (s && 'placeId' in s && s.placeId === e.objectId ? null : s));
         break;
       case 'minigame':
+        // Llegar a un minijuego: el delfín y las boies ya no guían hasta él (T59).
+        foundObjectsRef.current.add(e.objectId);
         if (e.available && e.gameId) setMinigameOffer({ objectId: e.objectId, gameId: e.gameId });
         break;
       case 'contact':
@@ -579,6 +628,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         engineRef.current?.celebrate(e.destination);
         push(deliveredNotice(e.missionId));
         pushAll(persistMissionEvent(gameRepository(), e, ctx));
+        // El premio que importa (T59): su código de entradas, en su ficha.
+        persist(deliveryDiscount(progressApi(), e, { ...ctx, sessionId }));
+        setGuide(null);
         break;
       default:
         break;
@@ -631,12 +683,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !g.voyaging &&
       !g.switching &&
       !(raceRef.current?.race.active ?? false);
-    const found = {
-      has: (id: string) => discoveredRef.current.has(id) || foundObjectsRef.current.has(id),
-    };
     const openSea = calm && !d.active && inOpenSea(world.objects, ship);
-    const target = d.active || openSea ? undiscoveredTarget(world.objects, found, ship) : null;
-    applyDolphin(g, d, d.step(elapsed, ship, { openSea, target }));
+    // T59: guía a la Fiestera, a los códigos y a los minijuegos pendientes.
+    const spot = d.active || openSea ? nearestSpot(spotsNow(world), ship, 400) : null;
+    const target = spot ? { id: spot.objectId, x: spot.x, y: spot.y } : null;
+    const actions = d.step(elapsed, ship, { openSea, target });
+    if (target && actions.some((a) => a.type === 'surface') && !dolphinOut) setDolphinTo(target.id);
+    applyDolphin(g, d, actions);
   };
 
   const onStep = (ship: ShipState, dt: number) => {
@@ -837,7 +890,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       // three.js, el mar y el barco llegan aparte: la página pinta su pantalla de carga antes.
       const [{ Mar3D }, shipList] = await Promise.all([
         import('./engine/mar3d'),
-        loadShipManifest(),
+        // Con las variantes del catálogo (T59: el barco exclusivo de la Fiestera).
+        loadShipManifest().then((list) => withShipVariants(list, shipCatalogRef.current)),
       ]);
       // El barco del 2D: ?estilo= o lo equipado en la tienda (T40), si es tuyo;
       // si no, el del mundo.
@@ -872,6 +926,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       if (cancelled) return;
       missionRef.current = mission;
       phaseRef.current = mission?.phase ?? null;
+      // Entregada antes de que la entrega diera código (T59): se le da ahora, una vez.
+      if (mission?.phase === 'delivered') {
+        void missedDeliveryDiscount(
+          progressApi(),
+          mission.missionId,
+          missionDiscountOf(world.objects, mission.destination),
+          { sessionId, worldId: live.id },
+        )
+          .then((outs) => outs.forEach((o) => pushRef.current(o.notice)))
+          .catch(() => undefined);
+      }
 
       engine = new Mar3D({
         canvas,
@@ -1375,6 +1440,20 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const world = worldRef.current;
   // Los rótulos también van al minimapa (la isla del evento, destacada).
   const pins = useMemo(() => (world ? pinsOf(world, phase) : []), [world, phase]);
+  // Los «?» del minimapa (T59): los códigos por encontrar, donde están.
+  const missionDestination = missionRef.current?.destination ?? null;
+  const marks = useMemo<MinimapMark[]>(() => {
+    if (!world) return [];
+    const found = new Set((foundDiscountList ?? []).map((f) => f.discount.id));
+    return discountMarks(
+      guideSpots(world.objects, {
+        phase,
+        destination: missionDestination,
+        found: { has: () => false },
+        foundDiscounts: found,
+      }),
+    ).map((m) => ({ placeId: m.placeId, discountId: m.discountId!, x: m.x, y: m.y }));
+  }, [world, phase, missionDestination, foundDiscountList]);
   const sheetObject = useMemo(() => {
     if (!sheet || !('placeId' in sheet) || !world) return undefined;
     const placeId = sheet.placeId;
@@ -1423,6 +1502,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       }
       data-barco={stats ? `${Math.round(stats.x)},${Math.round(stats.y)}` : undefined}
       data-delfin={dolphinOut ? 'guiando' : undefined}
+      data-delfin-hacia={dolphinOut && dolphinTo ? dolphinTo : undefined}
+      data-mision={phase ?? undefined}
       data-modelos={stats?.models}
       data-llegada={arrivedAt ?? undefined}
       data-giro={stats ? `${stats.sensitivity.keyboard},${stats.sensitivity.touch}` : undefined}
@@ -1463,6 +1544,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             <MarMinimap
               engineRef={engineRef}
               pins={pins}
+              marks={marks}
               mapMode={!!stats?.mapMode}
               onToggle={() => engineRef.current?.toggleMap()}
             />
@@ -1683,6 +1765,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               ×
             </button>
           </div>
+        ) : null}
+        {guide && !stats?.course ? (
+          <MarGuideChip
+            spot={guide}
+            world={world}
+            onGo={() => {
+              courseTo(guide.placeId);
+              setGuide(null);
+            }}
+            onClose={() => setGuide(null)}
+          />
         ) : null}
         {aboard && destinationId && !stats?.course ? (
           <button

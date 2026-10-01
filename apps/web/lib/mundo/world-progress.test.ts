@@ -80,14 +80,17 @@ describe('descuentos escondidos (REQ-COM-021)', () => {
   });
 
   it('el caducado se guarda y se enseña como caducado', async () => {
+    // Desde T59 ningún escondido de la muestra está caducado hoy: se mira
+    // uno después de su fecha de fin.
     const repo = browser()();
     const all = await Promise.all(
       hidden.map((h) => repo.progress.findDiscount(h.ref, { worldId: world.id })),
     );
-    const expired = all.filter((f) => f.status === 'expired');
-    expect(expired.length).toBeGreaterThan(0);
-    const fresh = browser()();
-    const out = await discountFound(fresh.progress, expired[0]!.discount.id, ctx('a'));
+    const ending = all.find((f) => f.discount.endsAt)!;
+    expect(ending).toBeDefined();
+    const after = new Date(new Date(ending.discount.endsAt!).getTime() + 60_000).toISOString();
+    const fresh = browser(after)();
+    const out = await discountFound(fresh.progress, ending.discount.id, ctx('a'));
     expect(out[0]!.kind === 'discount' && out[0]!.found.status).toBe('expired');
     expect(out[0]!.notice.title).toMatch(/caducado/i);
   });

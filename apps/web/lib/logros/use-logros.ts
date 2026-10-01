@@ -72,8 +72,10 @@ export function useShipLocks(): ShipLock[] | undefined {
 
 /** El texto de un barco bloqueado. muestra */
 export function lockedShipText(
-  lock: Pick<ShipLock, 'achievementTitle' | 'achievementId' | 'priceCoins'>,
+  lock: Pick<ShipLock, 'achievementTitle' | 'achievementId' | 'priceCoins'> &
+    Partial<Pick<ShipLock, 'unlockMission'>>,
 ): string {
+  if (lock.unlockMission) return msg('shop.lockedMission');
   if (lock.achievementTitle)
     return msg('shop.lockedAchievement', { achievement: lock.achievementTitle });
   if (lock.achievementId) return msg('logros.useLogros.seGanaConUn');

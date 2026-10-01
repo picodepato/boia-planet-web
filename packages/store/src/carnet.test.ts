@@ -124,8 +124,9 @@ describe('compras de prueba y sellos', () => {
     const usable = discounts.find(
       (d) => d.eventId === onSale.id && discountStatus(d, clock.now()) === 'active',
     );
-    const expired = discounts.find((d) => discountStatus(d, clock.now()) === 'expired');
-    if (!usable || !expired) throw new Error('muestra sin descuentos vigente y caducado');
+    // Otro código encontrado que caduca (desde T59 la muestra no trae uno caducado).
+    const expired = discounts.find((d) => d.id !== usable?.id && d.endsAt);
+    if (!usable || !expired) throw new Error('muestra sin dos descuentos con fecha de fin');
     await expect(
       repo.purchases.confirmSandbox({
         purchaseId: 'p-1',
@@ -142,6 +143,7 @@ describe('compras de prueba y sellos', () => {
       discountId: usable.id,
     });
     expect(p.purchase.discountId).toBe(usable.id);
+    clock.advance(new Date(expired.endsAt!).getTime() - clock.now().getTime() + 1);
     expect((await repo.progress.findDiscount(expired.id)).status).toBe('expired');
   });
 });

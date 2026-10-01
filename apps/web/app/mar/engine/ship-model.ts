@@ -2,6 +2,7 @@ import type { BufferGeometry, Mesh } from 'three';
 import {
   Box3,
   CanvasTexture,
+  type Color,
   DoubleSide,
   Group,
   Matrix4,
@@ -14,6 +15,7 @@ import {
   SRGBColorSpace,
   Vector3,
 } from 'three';
+import type { ShipCatalog } from '../../../lib/barco/catalog';
 import type { FlagLook } from '../../../lib/barco/dressing';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -35,6 +37,37 @@ export interface ShipModelEntry {
   slot: [number, number];
   /** Archivo de cada skin (`base`, `noche`, `fiesta`…), T39. */
   skins?: Record<string, string>;
+  /** Variante sin arte propio (T59): giro de tono, en grados, de cada pieza. */
+  hue?: number;
+}
+
+/**
+ * Los barcos del manifiesto 3D y, detrás, las variantes del catálogo (T59):
+ * cada una usa el GLB de su estilo en su skin, con el tono girado. Una
+ * variante cuyo estilo no está en el manifiesto no se añade.
+ */
+export function withShipVariants(
+  list: readonly ShipModelEntry[],
+  catalog: ShipCatalog | null,
+): ShipModelEntry[] {
+  const out = [...list];
+  for (const style of catalog?.styles ?? []) {
+    const v = style.variant;
+    if (!v || out.some((b) => b.id === style.id)) continue;
+    const base = list.find((b) => b.id === v.of);
+    if (!base) continue;
+    const file = base.skins?.[v.skin] ?? base.file;
+    out.push({
+      id: style.id,
+      file,
+      barco: base.barco,
+      label: style.name,
+      slot: base.slot,
+      skins: { base: file },
+      hue: v.hue,
+    });
+  }
+  return out;
 }
 
 export interface ShipModel {
@@ -76,6 +109,10 @@ export async function loadShipModel(entry: ShipModelEntry, skin = 'base'): Promi
         color: src.color,
         ...(glowing ? { emissive: src.emissive, emissiveIntensity: 0.9 } : {}),
       });
+      if (entry.hue) {
+        rotateHue(mat.color, entry.hue);
+        if (glowing) rotateHue(mat.emissive, entry.hue);
+      }
       cache.set(src.uuid, mat);
       src.dispose();
     }
@@ -90,6 +127,14 @@ export async function loadShipModel(entry: ShipModelEntry, skin = 'base'): Promi
     object: root,
     slot: { x: entry.slot[0], y: deck, z: -entry.slot[1] },
   };
+}
+
+const hsl = { h: 0, s: 0, l: 0 };
+
+/** Gira el tono de un color `deg` grados (las variantes de T59). */
+export function rotateHue(c: Color, deg: number): Color {
+  c.getHSL(hsl);
+  return c.setHSL((((hsl.h + deg / 360) % 1) + 1) % 1, hsl.s, hsl.l);
 }
 
 /** Eslora del modelo en su eje X (proa a +X). */

@@ -14,7 +14,7 @@ import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
  * landing lo enlaza junto a EXPLORAR. El botón «Entradas» siempre a la vista
  * (REQ-ENT-040) y los bocadillos que se leen y se cierran (REQ-AVE-002).
  * El mar es un planeta que da la vuelta (D-22, REQ-MUN-038), compacto y con
- * una ruta de boyas que une las islas (T50). Móvil y escritorio.
+ * una ruta de marcas en el agua que une las islas (T50; sin boyas desde T59). Móvil y escritorio.
  */
 
 const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
@@ -245,7 +245,7 @@ test('el planeta da la vuelta: desde la cueva del oeste, El Freu (al este) queda
   expect(errors).toEqual([]);
 });
 
-test('el mundo compacto: boyas en el agua y la isla del evento a unos segundos del puerto', async ({
+test('el mundo compacto: marcas en el agua (sin boyas de ruta) y la isla del evento a unos segundos del puerto', async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -253,10 +253,12 @@ test('el mundo compacto: boyas en el agua y la isla del evento a unos segundos d
   const sea = marWorld(world);
   const route = seaRoute(sea);
   const errors = await openMar(page);
+  // T59: ya no hay boyas que unan las islas; guían las marcas en el agua.
   await expect(page.getByTestId('mar-canvas')).toHaveAttribute(
-    'data-route-buoys',
-    String(route.buoys.length),
+    'data-route-marks',
+    String(route.dashes.length),
   );
+  await expect(page.getByTestId('mar-canvas')).not.toHaveAttribute('data-route-buoys', /.*/);
 
   // Rumbo a la isla del evento desde el anillo: la distancia es la del mundo
   // compacto por el camino corto, hasta su orilla (Mar3D.setCourse).

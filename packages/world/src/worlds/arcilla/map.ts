@@ -386,9 +386,11 @@ const ISLANDS: PlaceInput[] = [
     params: {
       missionDestination: 'fiestera',
       // Dónde se queda la Fiestera al bajar (el nicho de la isla) y el premio grande
-      // de la entrega (REQ-AVE-008) [pendiente Álvaro].
+      // de la entrega (REQ-AVE-008) [pendiente Álvaro]: puntos, monedas y el
+      // código de entradas de la Fiestera (T59; el barco exclusivo lo da la
+      // misión completada, `unlockMission`).
       missionDrop: NICHO_DROP,
-      missionReward: { points: 100, coins: 100 },
+      missionReward: { points: 100, coins: 100, discount: 'dto-fiestera' },
     },
   },
   // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `faro` y `canon`.
@@ -491,7 +493,11 @@ const FIESTERA: PlaceInput[] = [
 
 // --- Mar vivo -------------------------------------------------------------------
 
-/** Restos flotantes (`zonas/marvivo/restos`): el cuarto guarda un código caducado. */
+/**
+ * Restos flotantes (`zonas/marvivo/restos`): monedas que vuelven en otra
+ * visita. Desde T59 ya no guardan códigos (los descuentos del mundo son tres:
+ * el náufrago, el ánfora y el premio de la Fiestera).
+ */
 const RESTOS: Maq[] = [
   [-3.4, 18.4],
   [-8.8, 12.4],
@@ -502,8 +508,6 @@ const RESTOS: Maq[] = [
   [-1.6, -21.6],
   [10.2, 21.4],
 ];
-/** Id del descuento caducado de los restos (REQ-COM-021: se enseña como caducado). */
-export const DEBRIS_DISCOUNT = { place: 'restos-4', discount: 'dto-caducado' };
 /** u de reaparición semialeatoria de los restos alrededor de su sitio. muestra */
 const RESTOS_JITTER = 40;
 
@@ -561,7 +565,6 @@ const MAR_VIVO: PlaceInput[] = [
         { type: 'collectible', params: {} },
         { type: 'spawn', params: { positions: jitter(pos) } },
         coins(3, 'session'),
-        ...(id === DEBRIS_DISCOUNT.place ? [discount(DEBRIS_DISCOUNT.discount)] : []),
       ],
       source: [`zonas/marvivo/restos/${i}`],
     };
@@ -915,13 +918,26 @@ const SECRETS: PlaceInput[] = [
  * T45 junto a un punto de la ruta y dentro del sector de su tramo. Su arte es
  * la mascota de BOIA (`art:boias#info_<n>`, T39). muestra
  */
-export const INFO_BOIES: { id: string; name: string; at: Maq; zone: string; lines: string[] }[] = [
+export const INFO_BOIES: {
+  id: string;
+  name: string;
+  at: Maq;
+  zone: string;
+  lines: string[];
+  /**
+   * Lo que señala al terminar de hablar (T59): el id de la misión central, de
+   * un sitio con descuento o de un minijuego. Si ya está hecho, la web manda
+   * a lo pendiente más cercano. muestra
+   */
+  guide: string;
+}[] = [
   {
     // Entre la bocana y la primera isla (ruta principal [1,5; 19,8]).
     id: 'boia-espacio',
     name: 'La boia del espacio',
     at: [1.7, 19.6],
     zone: 'puerto',
+    guide: 'naufrago',
     lines: [
       '¡Plop! ¿Sabes por qué existe BOIA?',
       'Para dar espacio a artistas nuevos y a gente con algo que contar.',
@@ -933,6 +949,7 @@ export const INFO_BOIES: { id: string; name: string; at: Maq; zone: string; line
     name: 'La boia de descubrir',
     at: [1.3, 9.0],
     zone: 'fiestera',
+    guide: 'fiestera',
     lines: [
       'Aquí nadie te pregunta qué música te gusta.',
       'En BOIA suenan muchos géneros el mismo día.',
@@ -944,6 +961,7 @@ export const INFO_BOIES: { id: string; name: string; at: Maq; zone: string; line
     name: 'La boia de pertenecer',
     at: [-2.0, -5.1],
     zone: 'allday',
+    guide: 'secreto-anfora',
     lines: [
       'No vienes simplemente a BOIA: formas parte.',
       'Tu Carnet guarda tus sellos, tus respuestas y tu barco.',
@@ -955,6 +973,7 @@ export const INFO_BOIES: { id: string; name: string; at: Maq; zone: string; line
     name: 'La boia del All Day',
     at: [-0.4, -11.2],
     zone: 'allday',
+    guide: 'canon',
     lines: [
       'Ahí delante está el escenario del All Day.',
       'Un All Day es un día entero de música, comida y gente.',
@@ -966,6 +985,7 @@ export const INFO_BOIES: { id: string; name: string; at: Maq; zone: string; line
     name: 'La boia de los secretos',
     at: [6.6, -24.4],
     zone: 'ultima',
+    guide: 'faro',
     lines: ['Psst. No todo sale en el minimapa.', 'BOIA premia la curiosidad. Desvíate un poco.'],
   },
 ];
@@ -987,6 +1007,7 @@ const INFO: PlaceInput[] = INFO_BOIES.map((b, i) => ({
     talk(b.lines, true),
     { type: 'achievement', params: { trigger: 'find_boia' } },
   ],
+  params: { guide: b.guide },
   source: [`art:boias#info_${i + 1}`],
 }));
 

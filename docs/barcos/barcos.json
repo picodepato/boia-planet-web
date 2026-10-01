@@ -317,5 +317,16 @@
           {"ref": ["PALETTE", 15], "uso": "Cristal, brillo"}]}
       ]
     }
+  ],
+  "variantes": [
+    {
+      "id": "fiestera",
+      "nombre": "La Fiestera",
+      "aspecto": "El remolcador de arcilla vestido de fiesta, teñido de rosa fiestera. Exclusivo: sólo para quien rescata a la Boia Fiestera y la lleva a la última isla.",
+      "de": "arcilla",
+      "skin": "fiesta",
+      "tono": 170,
+      "nota": "T59: sin arte nuevo. Usa el GLB y las vistas de B05 Arcilla en su skin fiesta con el tono girado (en 3D, en el color de cada pieza; en las miniaturas, un filtro hue-rotate). Lo desbloquea la misión de la Fiestera completada (cosmético barco-fiestera, unlockMission). muestra"
+    }
   ]
 }

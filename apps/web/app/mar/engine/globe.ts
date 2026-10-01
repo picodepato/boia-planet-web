@@ -110,7 +110,12 @@ export interface GlobeScene {
   spin: number;
   ship: { x: number; y: number; heading: number };
   pins: readonly GlobePin[];
-  /** La ruta de boyas, seguida (puede salirse del periodo: se envuelve aquí). */
+  /**
+   * Los «?» (T59): los descuentos por encontrar (el náufrago, el ánfora y el
+   * premio de la Boia Fiestera). Se pintan encima de las islas.
+   */
+  marks?: readonly GlobePin[];
+  /** La ruta (sus marcas en el agua), seguida (puede salirse del periodo: se envuelve aquí). */
   route: readonly { x: number; y: number }[];
   course: { x: number; y: number } | null;
 }
@@ -127,6 +132,9 @@ export const GLOBE_COLORS = {
   accent: '#ec4f24',
   ship: '#ffffff',
   course: '#ffd23f',
+  // Los «?» de los descuentos (T59): amarillo de la ruta con tinta de la marca.
+  mark: '#ffd23f',
+  markInk: '#1b1440',
 } as const;
 
 /** Paralelos y meridianos del globo (en el cuadrado), para que se lea redondo y girando. */
@@ -183,7 +191,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
     ctx.stroke();
   }
 
-  // La ruta de boyas: trazos amarillos, cortados en la costura.
+  // La ruta (las marcas en el agua): trazos amarillos, cortados en la costura.
   if (s.route.length > 1) {
     ctx.strokeStyle = GLOBE_COLORS.route;
     ctx.lineWidth = Math.max(1, px * 1.4);
@@ -243,6 +251,26 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
     ctx.lineWidth = Math.max(1, px * 0.9);
     ctx.strokeStyle = pin.accent ? GLOBE_COLORS.island : GLOBE_COLORS.islandEdge;
     ctx.stroke();
+  }
+
+  // Los «?» de los descuentos por encontrar: un círculo amarillo con su interrogación.
+  for (const m of s.marks ?? []) {
+    globeProject(m.x, m.y, s.rect, s.spin, tmp);
+    const [x, y] = P(tmp);
+    const depth = Math.sqrt(Math.max(0, 1 - tmp.x * tmp.x - tmp.y * tmp.y));
+    const r = 5.2 * px * (0.7 + 0.3 * depth);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = GLOBE_COLORS.mark;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, px * 1.1);
+    ctx.strokeStyle = GLOBE_COLORS.markInk;
+    ctx.stroke();
+    ctx.fillStyle = GLOBE_COLORS.markInk;
+    ctx.font = `bold ${Math.round(r * 1.5)}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', x, y + r * 0.08);
   }
 
   // El rumbo marcado: un aro amarillo.

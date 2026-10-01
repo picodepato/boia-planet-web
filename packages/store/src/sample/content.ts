@@ -266,7 +266,14 @@ export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
 
 export const SAMPLE_PROMOTIONS: AreaInput<'promotions'>[] = [];
 
-/** Descuentos escondidos en el mundo (REQ-COM-020 a 022). Códigos inventados. */
+/**
+ * Los tres descuentos escondidos en el mundo (T59, decisión de Hernán y
+ * Álvaro; REQ-COM-020 a 022): el del náufrago, el del ánfora (el «cofre») y
+ * el premio de la Boia Fiestera, que se da al dejarla en la última isla. Cada
+ * uno sale como «?» en el minimapa. Los códigos son inventados (`muestra`,
+ * P16). Ya no hay código caducado en los restos ni descuento de tienda en el
+ * mundo: el Admin puede seguir escondiendo uno de tienda (`hiddenAt`).
+ */
 export const SAMPLE_DISCOUNTS: AreaInput<'discounts'>[] = [
   {
     id: 'dto-naufrago',
@@ -291,27 +298,17 @@ export const SAMPLE_DISCOUNTS: AreaInput<'discounts'>[] = [
     sample: true,
   },
   {
-    id: 'dto-caducado',
-    code: 'VERANO26',
-    label: '-15 % en el All Day 2026',
-    eventId: 'ev-finalizado',
+    // El premio de la misión central (T59): vale para cualquier entrega y,
+    // si hay otro código para la misma compra, se aplica éste (prioridad).
+    id: 'dto-fiestera',
+    code: 'FIESTERA20',
+    label: '-20 % en tu próxima entrada',
     kind: 'percent',
-    value: 15,
-    endsAt: '2026-06-19T23:59:00+02:00',
-    conditions: 'Caducado: se muestra como tal (REQ-COM-021).',
-    sample: true,
-  },
-  {
-    // Descuento de tienda (O8): se copia y lleva a la tienda externa, que lo valida.
-    id: 'dto-tienda',
-    code: 'TIENDA15',
-    label: '-15 % en la tienda de BOIA',
-    scope: 'store',
-    kind: 'percent',
-    value: 15,
-    endsAt: '2027-06-30T23:59:00+02:00',
-    conditions: 'Lo valida la tienda de BOIA. Muestra: no es un código real.',
-    hiddenAt: 'restos-2',
+    value: 20,
+    priority: 10,
+    endsAt: '2027-12-31T23:59:00+01:00',
+    conditions:
+      'Sólo para quien rescata a la Boia Fiestera y la lleva a la última isla. Muestra: no es un código real.',
     sample: true,
   },
 ];

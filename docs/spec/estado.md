@@ -127,20 +127,20 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-AVE-005 | Boia Fiestera entre cocodrilos | L1 | HECHO | [fiestera.spec.ts](../../apps/web/e2e/fiestera.spec.ts); [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
 | REQ-AVE-006 | Rescate y aviso de tripulante | L1 | HECHO | [mission.test.ts](../../apps/web/lib/mundo/mission.test.ts) | — |
 | REQ-AVE-007 | Boia Fiestera visible a bordo | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
-| REQ-AVE-008 | Entrega en la última isla | L1 | PARCIAL | [celebration.tsx](../../apps/web/lib/mundo/celebration.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-008 | Entrega en la última isla | L1 | PARCIAL | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) «rescatar a la Fiestera y dejarla en la última isla: su código vale en la compra y el barco exclusivo es tuyo»; [guide.test.ts](../../apps/web/lib/mundo/guide.test.ts) «entregarla da su código de entradas, una sola vez» | T59: la entrega da también su código de entradas y el barco exclusivo; falta la llegada por 2 lados en /mar |
 | REQ-AVE-009 | Mundo abierto y desvíos | L1 | PARCIAL | [fiestera.spec.ts](../../apps/web/e2e/fiestera.spec.ts) | Una prueba lo cubre en parte |
 | REQ-AVE-010 | Destino por ID de lugar y de temporada | L1 | HECHO | [community.test.ts](../../apps/web/lib/admin/community.test.ts); [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
 | REQ-AVE-011 | Cambio de destino auditado | L1 | HECHO | [world-switch.test.ts](../../apps/web/lib/mundo/world-switch.test.ts); [community.test.ts](../../apps/web/lib/admin/community.test.ts) | — |
 | REQ-AVE-012 | Islas por radio amplio | L1 | HECHO | [sample-world.test.ts](../../packages/world/src/sample-world.test.ts) «la isla de evento se activa con un radio amplio: más del doble de su costa» | — |
 | REQ-AVE-013 | Primera llegada y visitas | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts) | — |
 | REQ-AVE-014 | Recuerdos y próximos eventos en la isla | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
-| REQ-AVE-015 | Secretos insinuados | L1 | PARCIAL | [discovery.ts](../../packages/engine/src/ui/discovery.ts) | Construido; sin prueba que lo nombre |
+| REQ-AVE-015 | Secretos insinuados | L1 | HECHO | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) «un secreto sin código sigue escondido y premia al encontrarlo»; [guide.test.ts](../../apps/web/lib/mundo/guide.test.ts) «los secretos sin código no se señalan y siguen ocultos, con su premio» | — |
 | REQ-AVE-016 | Restos regenerables | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-017 | Cofres fugaces | L1 | PARCIAL | [map.ts](../../packages/world/src/worlds/arcilla/map.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-018 | Delfín guía | L1 | HECHO | [encounters.test.ts](../../apps/web/lib/mundo/encounters.test.ts) | — |
 | REQ-AVE-019 | Remolino | L1 | PARCIAL | [encounters.ts](../../apps/web/lib/mundo/encounters.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-020 | Náufrago con descuento | L1 | HECHO | [mundo-arcilla.spec.ts](../../apps/web/e2e/mundo-arcilla.spec.ts) «náufrago: pide que lo lleven y deja su código de descuento» | — |
-| REQ-AVE-021 | Descuentos de tienda en restos | L1 | PARCIAL | [map.ts](../../packages/world/src/worlds/arcilla/map.ts) | Construido; sin prueba que lo nombre |
+| REQ-AVE-021 | Descuentos de tienda en restos | L1 | PARCIAL | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts) | T59: la muestra ya no esconde códigos en los restos (el mundo tiene 3: náufrago, ánfora y Fiestera); el Admin puede esconder uno de tienda (`hiddenAt`) |
 | REQ-AVE-022 | Puerto de Fotos | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-AVE-023 | Boia de WhatsApp | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-024 | Boia musical | L2 | L2 | — | — |

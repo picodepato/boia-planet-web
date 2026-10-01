@@ -4,6 +4,72 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T59: Boia Fiestera como misión central; 3 descuentos claros
+
+Qué existe:
+
+- **Tres descuentos del mundo** (`packages/store/src/sample/content.ts`): el
+  del náufrago (`NAUFRAGO10`), el del ánfora («cofre», `COFRE5`) y el premio
+  de la Fiestera (`FIESTERA20`, -20 % en cualquier entrada, prioridad 10). Se
+  quitan el código caducado de los restos (`VERANO26`, `DEBRIS_DISCOUNT`) y el
+  de tienda escondido (`TIENDA15`). Códigos `muestra` (P16). El Admin sigue
+  pudiendo esconder uno de tienda (`hiddenAt`).
+- **Misión central**: la última isla declara `missionReward.discount`; el
+  motor lo lleva en `reward.discount` del evento `delivered`
+  (`packages/engine/src/mission/rescue.ts`). /mar, al entregarla, da el
+  código con su ficha (`deliveryDiscount`, `lib/mundo/mission.ts`), y la
+  compra de prueba lo aplica. Quien la entregó antes lo recibe al volver
+  (`missedDeliveryDiscount`).
+- **Barco exclusivo «La Fiestera»**: cosmético `barco-fiestera` con
+  `unlockMission: 'fiestera'` (campo nuevo de `cosmeticSchema`): lo tiene
+  quien completó la misión, derivado de la misión guardada (sin logro, sin
+  precio, sin migración); `ShopItem.unlock` gana `{ kind: 'mission' }`. Arte:
+  variante del registro (`docs/barcos/barcos.json` → `variantes`), el GLB y las
+  vistas de B05 Arcilla en fiesta con el tono girado 170° (3D:
+  `withShipVariants`/`rotateHue` en `ship-model.ts`; miniaturas: filtro
+  `hue-rotate`). Sin arte nuevo de Blender.
+- **«?» en el minimapa** (`app/mar/minimap.tsx`, `engine/globe.ts`): uno por
+  código pendiente; el de la Fiestera va con ella y, a bordo, a su destino; se
+  quitan al encontrar el código. Viven en el componente del minimapa.
+- **Guía** (`lib/mundo/guide.ts`): la Fiestera (o su destino), los códigos
+  pendientes y los minijuegos sin visitar. El delfín de /mar guía a lo
+  pendiente más cercano (`data-delfin-hacia`); cada boia informativa tiene
+  `params.guide` y al terminar de hablar ofrece un chip «Rumbo a…» que fija
+  rumbo (`app/mar/guia.tsx`). Los secretos sin código (cueva, campana,
+  círculo) siguen ocultos, sin «?», y dan sus monedas/puntos y su logro.
+- **Sin boyas de ruta** (petición de Hernán y Álvaro): `seaRoute` ya no
+  calcula boyas ni /mar las pinta; guían las marcas en el agua (`RouteLine`,
+  ahora visibles también de cerca). Quedan las 6 boies informativas y las de
+  carrera del circuito.
+- `main.mar` expone `data-mision` (paso de la misión).
+- REQ: AVE-015 → HECHO; AVE-008 y AVE-021 con evidencia y nota nuevas.
+- Capturas: `docs/informes/img/p005-t59-*.png` (móvil, `RECORD_T59=1`).
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 106 archivos, 926 pruebas.
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm typecheck` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` → exit 0.
+- `E2E_PORT=3291 pnpm e2e e2e/mar-fiestera.spec.ts --workers=2` → exit 0, 10 pasan.
+- Specs relacionados (mar-fiestera, mar-3d, mar-paridad, mar-entradas,
+  mar-hud, tienda, logros, demo, descuentos, mundo-arcilla, mundo-acuarela,
+  fiestera, comunidad, mar-a-bordo) con `--workers=2` → 122 pasan, 5 se
+  saltan, 3 fallan por carga (mar-hud «los avisos son chips…» ×2, mar-3d «el
+  mundo compacto…» en escritorio); solos con `--workers=1` → exit 0, 4 pasan.
+
+Tras integrar main (T56 botellas y ranking, T60 minijuegos; conflicto sólo
+en los imports de `mar-client.tsx`, se quedan los dos):
+
+- vitest → exit 0, 108 archivos, 943 pruebas · checks, typecheck, lint, build → exit 0.
+- `pnpm e2e e2e/mar-fiestera.spec.ts e2e/minijuegos.spec.ts --workers=1` → exit 0, 16 pasan.
+- `pnpm e2e e2e/mar-botellas.spec.ts e2e/mar-3d.spec.ts e2e/mar-entradas.spec.ts e2e/mar-hud.spec.ts --workers=1` → exit 0, 38 pasan.
+
+Pendiente:
+
+- /juego no da el código de la entrega ni guía igual (se borra en T62).
+- La entrega por 2 lados en /mar (REQ-AVE-008) sigue sin prueba propia.
+- Códigos, textos y el aspecto del barco exclusivo: `muestra`, pendientes de Álvaro.
+
 ## 2026-10-02 — plan 005 T60: Lighthouse and cannon minigames, rebuilt
 
 Qué existe:

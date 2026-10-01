@@ -519,6 +519,8 @@ export const esZonas = {
   'shop.missingPoints': 'Te faltan {n} puntos',
   'shop.unlockedPoints': '¡Desbloqueado! Y tus {threshold} puntos siguen ahí.',
   'shop.lockedAchievement': 'Se gana con el logro «{achievement}»',
+  // T59: el barco exclusivo de la misión central. muestra
+  'shop.lockedMission': 'Sólo para quien rescata a la Boia Fiestera y la lleva a la última isla',
   'shop.skins.heading': 'Skins',
   'shop.skin.base': 'Base',
   'shop.skin.night': 'Noche',

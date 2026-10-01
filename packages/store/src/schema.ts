@@ -351,7 +351,8 @@ export type CosmeticSlot = (typeof COSMETIC_SLOTS)[number];
  * Cosmético del barco (REQ-IDE-030 a REQ-IDE-032): nunca cambia cómo navega.
  * Cómo se consigue (T40, D-23 punto 1 y O5), por orden: `base` (lo tiene todo
  * el mundo desde el principio), `unlockPoints` (umbral de puntos: los puntos
- * no se gastan), un logro que lo conceda o `priceCoins` en la tienda.
+ * no se gastan), `unlockMission` (exclusivo de quien completa esa misión, T59),
+ * un logro que lo conceda o `priceCoins` en la tienda.
  */
 export const cosmeticSchema = z.object({
   id: stableKey,
@@ -365,6 +366,11 @@ export const cosmeticSchema = z.object({
   base: z.boolean().default(false),
   /** Se desbloquea solo al llegar a estos puntos (umbral; no se gastan). */
   unlockPoints: z.number().int().positive().optional(),
+  /**
+   * Exclusivo de una misión (T59): lo tiene quien la ha completado (el barco
+   * de la Boia Fiestera). Se deriva de la misión guardada; no se vende.
+   */
+  unlockMission: stableKey.optional(),
   /** Skin de un barco: el id del cosmético `ship` al que va (hace falta tenerlo). */
   forShip: stableKey.optional(),
   active: z.boolean().default(true),

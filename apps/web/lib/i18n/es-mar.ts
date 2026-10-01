@@ -123,4 +123,11 @@ export const esMar = {
   'mar.controles.sensibilidad': 'La sensibilidad del giro se cambia en ⚙️ Ajustes.',
   'mar.bienvenida.entradas':
     '🎟️ «Entradas», en la barra de abajo, abre los eventos: compra sin salir del mar o ve a su isla.',
+  // T59: los «?» del minimapa y lo que señalan las boies informativas. muestra
+  'mar.minimap.codigos': '{n} ? por encontrar',
+  'mar.guide.fiestera': '🎈 Rumbo a la Boia Fiestera',
+  'mar.guide.mission': '🎈 Rumbo a {place}',
+  'mar.guide.discount': '❓ Rumbo a un código escondido',
+  'mar.guide.minigame': '🎮 Rumbo a {place}',
+  'mar.guide.cerrar': 'No, gracias',
 } as const;

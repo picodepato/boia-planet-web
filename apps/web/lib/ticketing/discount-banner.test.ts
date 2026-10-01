@@ -27,7 +27,20 @@ const code = discounts.find(
 )!;
 const event = onSale.find((e) => e.id === code.eventId)!;
 const other = onSale.find((e) => e.id !== event.id)!;
-const shop = discounts.find((d) => d.scope === 'store')!;
+/**
+ * Un código de tienda (O8). Desde T59 la muestra ya no esconde uno en el
+ * mundo; el Admin puede crearlo, y así se crea aquí.
+ */
+const shop: Discount = discountSchema.parse({
+  id: 'dto-tienda-prueba',
+  code: 'TIENDAPRUEBA',
+  label: 'Código de la tienda',
+  scope: 'store',
+  kind: 'percent',
+  value: 15,
+  endsAt: code.endsAt,
+  sample: true,
+});
 const VALID = new Date(Date.parse(code.endsAt!) - 7 * DAY);
 const EXPIRED = new Date(Date.parse(code.endsAt!) + DAY);
 const owned = (d: Discount, usedAt: string | null = null) => ({ discount: d, usedAt });
@@ -43,7 +56,7 @@ function setup(now: Date) {
 }
 
 describe('aviso de descuento al comprar (REQ-COM-036)', () => {
-  it('la muestra tiene un código de evento y uno de tienda', () => {
+  it('la muestra tiene un código de evento (y la prueba, uno de tienda)', () => {
     expect(code).toBeDefined();
     expect(event).toBeDefined();
     expect(other).toBeDefined();
@@ -123,6 +136,7 @@ describe('aviso de descuento al comprar (REQ-COM-036)', () => {
 
   it('un código de tienda se guarda pero nunca descuenta una entrada', async () => {
     const { repo, tickets } = setup(VALID);
+    await repo.admin.upsert('discounts', shop);
     await repo.progress.findDiscount(shop.id);
     const r = await tickets.start(event.id);
     if (!r.ok) throw new Error(r.reason);

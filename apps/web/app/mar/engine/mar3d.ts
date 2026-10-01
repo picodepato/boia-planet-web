@@ -352,7 +352,10 @@ export class Mar3D {
   private readonly marker = new CourseMarker();
   private readonly confetti = new Confetti();
   private readonly clouds: Clouds;
-  /** La ruta de boyas (T50): las boyas en el agua y la línea que se ve en el mapa. */
+  /**
+   * La ruta (T50): sólo marcas en el agua que guían, de cerca y en el mapa.
+   * Desde T59 no hay boyas que unan las islas.
+   */
   readonly route: SeaRoute;
   private readonly routeLine: RouteLine;
   private readonly glow;
@@ -526,9 +529,8 @@ export class Mar3D {
     );
     curveMaterial(this.routeLine.mesh.material as MeshBasicMaterial, true);
     this.scene.add(this.routeLine.mesh);
-    this.buildRouteBuoys(glows);
-    // Para las pruebas: cuántas boyas hay en el agua.
-    opts.canvas.dataset.routeBuoys = String(this.route.buoys.length);
+    // Para las pruebas: cuántas marcas guían en el agua (T59: ya sin boyas de ruta).
+    opts.canvas.dataset.routeMarks = String(this.route.dashes.length);
     this.water.setShores(shores);
     this.glow = glowPoints(glows);
     // Los resplandores no tienen sitio propio: cada uno va a su copia más cercana.
@@ -1195,31 +1197,6 @@ export class Mar3D {
       });
     }
     return shores;
-  }
-
-  /**
-   * Las boyas de la ruta (T50): una boya con farolillo cada tramo, en el
-   * orden de la historia. Sólo decorado (sin choques ni premios): piezas
-   * fusionadas que se dibujan en su copia más cercana, y su luz.
-   */
-  private buildRouteBuoys(glows: Glows[]): void {
-    const k = new Kit();
-    const lights = new Glows();
-    for (const b of this.route.buoys) {
-      const x = toScene(b.x);
-      const z = toScene(b.y);
-      k.add(new CylinderGeometry(0.42, 0.58, 0.55, 10), C.yellow, { p: [x, 0.12, z] });
-      k.add(new CylinderGeometry(0.44, 0.44, 0.14, 10), C.purple, { p: [x, 0.3, z] });
-      k.add(new CylinderGeometry(0.1, 0.13, 1.3, 6), C.purple, { p: [x, 1, z] });
-      k.add(new SphereGeometry(0.24, 10, 8), C.bulb, { p: [x, 1.72, z] });
-      lights.add([x, 1.72, z], C.yellow, 3.2);
-    }
-    glows.push(lights);
-    if (k.empty) return;
-    const m = new Mesh(k.build(), litMaterial());
-    curveMaterial(m.material, true);
-    m.frustumCulled = false;
-    this.scene.add(m);
   }
 
   /** Construye cada lugar; devuelve las orillas para el agua. */

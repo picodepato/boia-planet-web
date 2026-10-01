@@ -152,7 +152,14 @@ export function BarcoShopView({
               >
                 {row.preview ? (
                   // eslint-disable-next-line @next/next/no-img-element -- arte servido desde art/ (D-16)
-                  <img src={row.preview} alt="" width={72} height={72} loading="lazy" />
+                  <img
+                    src={row.preview}
+                    alt=""
+                    width={72}
+                    height={72}
+                    loading="lazy"
+                    style={row.filter ? { filter: row.filter } : undefined}
+                  />
                 ) : null}
                 <span className="tienda-nombre">
                   {i.owned ? null : <span aria-hidden="true">🔒 </span>}
@@ -205,7 +212,14 @@ export function BarcoShopView({
                   >
                     {k.preview ? (
                       // eslint-disable-next-line @next/next/no-img-element -- arte servido desde art/ (D-16)
-                      <img src={k.preview} alt="" width={56} height={56} loading="lazy" />
+                      <img
+                        src={k.preview}
+                        alt=""
+                        width={56}
+                        height={56}
+                        loading="lazy"
+                        style={shown.filter ? { filter: shown.filter } : undefined}
+                      />
                     ) : null}
                     <span className="tienda-nombre">{k.label}</span>
                     <span className="tienda-estado">{status}</span>

@@ -24,6 +24,7 @@ El velero que hoy usa el juego (`tools/blender/ship.py`, skins base, noche y fie
 ## Qué hay
 
 - `barcos.json` es el registro: una ficha por barco. Los colores no se copian; cada uno apunta por nombre a su constante en el script de Blender.
+- `variantes` (en `barcos.json`, T59) son barcos sin arte propio: el arte de otro estilo en una de sus skins con el tono girado (`tono`, grados). Hoy, «La Fiestera», el barco exclusivo de quien entrega a la Boia Fiestera. Blender y la guía de colores no las leen.
 - `colores.html` es la guía de colores, generada. No se edita a mano.
 - `tools/barcos/guia_colores.py` es el generador. Lee cada color del script, mide el render de cada barco y escribe la guía.
 

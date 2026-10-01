@@ -71,6 +71,22 @@ describe('la misión sale de los datos del mapa', () => {
     expect(spec.crewAsset).toMatch(/#tripulante$/);
   });
 
+  it('el premio de la entrega lleva el código del destino (T59), y sin él no hay código', () => {
+    const o = world.objects.find((x) => x.identity.id === spec.destination)!;
+    const declared = (o.params?.missionReward as { discount?: string }).discount;
+    expect(declared, 'la misión central da un código de entradas').toBeTruthy();
+    expect(missionDestination(world, spec.destination)!.reward.discount).toBe(declared);
+    const plain: WorldConfig = {
+      ...world,
+      objects: world.objects.map((x) =>
+        x === o
+          ? { ...x, params: { ...x.params, missionReward: { points: 1, coins: 1 } } }
+          : x,
+      ),
+    };
+    expect(missionDestination(plain, spec.destination)!.reward).toEqual({ points: 1, coins: 1 });
+  });
+
   it('sin destino en el mapa no hay misión (REQ-AVE-010)', () => {
     const noDest: WorldConfig = {
       ...world,
