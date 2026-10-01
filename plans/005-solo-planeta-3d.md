@@ -93,7 +93,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: Entradas opens "Elige tu evento" as a MarHoja sheet inside /mar (app/mar/entradas.tsx), checkout reused with source world, world discount applied, stamp to Carnet, URL stays /mar; ENT-037 HECHO → 40be280
 
 ## T59 — Boia Fiestera as the central mission; 3 clear discounts
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T53
 - Goal: Interview decisions: (1) the Boia Fiestera rescue is the central mission; completing it (delivering her to the last island) gives a prize that matters: a ticket discount code applied in the checkout AND an exclusive ship only rescuers get. (2) Hidden discounts become exactly 3 — el náufrago, the cofre/ánfora, and the Fiestera's — each shown as a "?" on the minimap so people go for them; drop the others (expired VERANO26 debris, store TIENDA15 as a world discount). (3) Secrets without a prize (cueva del acantilado, campana hundida, círculo de las boies dormidas) stay hidden, unmarked, and grant coins or an achievement when found. (4) The dolphin and the info buoys guide towards the Fiestera, the discounts and the minigames. (5) Added 2026-10-02: remove the guide buoys that join the islands (route buoys); keep only the marks on the water to guide (info buoys and circuit buoys stay). Achievements and coins/points otherwise stay as they are. Codes stay `muestra` (P16).
 - Context: mission in `packages/engine/src/mission`, discounts in `packages/store` sample content (`packages/store/src/sample/content.ts`), ship catalog `apps/web/lib/barco/catalog.ts` and `docs/barcos/barcos.json`, achievements `apps/web/lib/logros` and `docs/propuestas/logros-catalogo.md`, encounters (dolphin, buoys), minimap in /mar, REQ AVE-007/008/009/015/016/017/019/021.
@@ -101,7 +101,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e in /mar: the minimap shows 3 "?" markers; completing the Fiestera grants a discount code usable in checkout and unlocks the exclusive ship; finding a secret grants its reward; only 3 world discounts exist in the sample content (asserted from the content source) → exit 0
-- Outcome:
+- Outcome: Fiestera delivery gives FIESTERA20 (-20%, muestra) + exclusive pink ship "La Fiestera"; exactly 3 world discounts with "?" on the minimap; secrets pay rewards; info buoys offer "Rumbo a…"; dolphin guides to Fiestera/codes/minigames; route buoys removed → ef0d4d3
 
 ## T60 — Lighthouse and cannon minigames, rebuilt
 - Status: done
@@ -116,7 +116,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: lighthouse (night beam, 3 ship types, DESTELLO, streak x4) and cannon (side view, drag to aim on a parabola, pirates need 2 hits, combo x4) rebuilt with 30 rule tests and e2e in /mar → 39ea477
 
 ## T61 — Circuit El Freu, rebuilt
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T52
 - Goal: The circuit is too simple. Rebuild it: a course marked by buoys you must pass, 3 laps, a ghost boat of your best time, boosts on the water, gold/silver/bronze medals, start light kept. Works in both worlds (El Freu / El Penyal) and on mobile.
 - Context: `packages/engine/src/circuit`, `CIRCUIT_ID` in `packages/world`, `CircuitRace` and `apps/web/app/mar/race.ts`, circuit HUD (moved by T52), local record storage, ranking Circuito tab (T56 may land before or after: keep the stored record format compatible), REQ AVE-026/028.
@@ -223,7 +223,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 T60: a minigame is won (reward paid) when the score reaches its goal (lighthouse 600, cannon 400); games end on lives, after 10 waves or at 600 s; balance values are muestra (agent)
 - 2026-10-02 orchestrator: T64 launched before T61 because T62, T65 and T66 wait on it
 
+- 2026-10-02 T59: FIESTERA20 -20% wins over other codes (muestra); TIENDA15 and VERANO26 removed from the sample; exclusive ship owned on mission completion via cosmetic field unlockMission (no new art: Arcilla fiesta boat recoloured pink); earlier rescuers get code and ship automatically (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
 - 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
 - 2026-10-02 Hernán and Álvaro: Carnet with username and password (final version, D-20: Supabase auth)
 - 2026-10-02 T58: REQ-ENT-040 wording in 09-requisitos.md still says the trip starts on the first Entradas tap; it now starts from "Ir a su isla": reword
@@ -254,3 +257,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 00:48 T60 launched · attempt 1 · agent a900a0897deee5236
 - 2026-10-02 01:20 T59 conflict with main (mar-client.tsx) · sent back to agent a4ef0c67ac86cd069
 - 2026-10-02 01:27 T60 done · branch worktree-agent-a900a0897deee5236 → 39ea477
+- 2026-10-02 01:29 T64 launched · attempt 1 · agent a086a6573393db55d
+- 2026-10-02 01:39 T59 done · branch worktree-agent-a4ef0c67ac86cd069 → ef0d4d3
