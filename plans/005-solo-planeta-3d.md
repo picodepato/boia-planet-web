@@ -48,7 +48,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: fast steering in /mar via optional ShipConfig fields (steerFloor, turnRadius, reverseTurn) set only by MAR_SHIP_CONFIG; 90° from a small drag 19.6 s → 0.73 s; tight reverse turn; turbo keeps the radius; sensitivity applied → 9c204be
 
 ## T55 — Settings, controls, Carnet and deep links inside /mar
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T53, T54
 - Goal: Things only /juego has move into the 3D world: Ajustes (turn sensitivity driving T54's `turnScale`, music and effects volumes, language), the Controles help and Welcome Aboard sections, and the Carnet inside the world (view and edit without leaving /mar, reachable from the bar's Carnet icon). /mar also learns the deep links the landing uses: `?ir=<place>` and `?evento=<slug>` start the 3D with the boat sailing towards that island; `?menu=carnet` opens the Carnet. Then every landing/page link that today points to /juego points to /mar: hero is handled by T57, but here "Rumbo a su isla"/"Ir a su isla" (event page, `lib/landing/eventos.ts`), "Ir en barco al Puerto de Fotos", "Ir en barco a la isla tienda" (`blocks.tsx`, `lib/landing/access.ts`), footer "crear Carnet", purchase invite (`buy-button.tsx`), tickets panel `ticketsSailHref`, /carnet links, Admin "Ver el mundo".
 - Context: /juego menu sections in `apps/web/app/juego/menu/sections/` (or where T52 moved them), `loadSettings`, `apps/web/app/carnet/`, `apps/web/app/mar/mar-client.tsx` (reads only `vuelo`, `mundo`, `estilo`, `delfin`, `cerca` today), `apps/web/lib/world-handoff.ts`, analytics `explore_start` sources in `packages/contracts/src/analytics.ts:19`.
@@ -60,7 +60,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T56 — Message bottles and ranking in /mar
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T53
 - Goal: Bring to the 3D world the message bottles (one per person, 140 characters, needs a Carnet, visible to its author plus seeded sample bottles) and the Ranking (tabs De siempre / Temporada / Circuito, local, sample members), reachable from the new HUD/menu.
 - Context: `apps/web/app/juego/bottles/*` (or moved by T52), `packages/engine/src/bottles/{sea,finder}`, `repo.bottles` in `packages/store`, `BOTTLE_SPOTS` in `packages/world`, `apps/web/app/juego/menu/sections/ranking.tsx`, Temporadas per world in the Admin.
@@ -71,7 +71,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T57 — 3D landing intro with the planet, and the hero
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T52
 - Goal: The landing intro is a PixiJS scene and sometimes skips straight to the landing. Rebuild it in three.js with the /mar planet: short; the planet turns, the BOIA letters appear, "Zarpar" leads on. Fix the skips: the load budget must start at mount and wait for the scene to really be ready (no fixed 2000 ms from page boot), campaign/share query params (`?si=`, `?s=`, `?ref=`, utm, WhatsApp/Linktree tags) must not skip it, a background-tab load must play it when the tab becomes visible, and a hero-block remount must not cancel it. Keep: "Saltar animación", "Solo quiero ver las entradas", reduced-motion still, light fallback without WebGL, client navigation back to "/" goes direct (D-21), `/?intro=1` replays. The hero gets two buttons: the main one to the 3D world (/mar) and Tickets beside it, visible; remove the separate 2D "Explorar el universo" CTA. The landing must stay within its 192 kB budget (three.js lazy-loaded, not on the critical path).
 - Context: `apps/web/app/(landing)/page.tsx` (`bootScript`, ~L31), `apps/web/app/(landing)/components/intro-stage.tsx`, `apps/web/app/(landing)/components/blocks.tsx` (hero CTAs ~L105-120, `heroScene`, key `b.id`), `packages/engine/src/intro/{entry,controller,timeline,config,title,world-geometry,scene}.ts` (budget `loadBudgetMs` 2000 at config.ts:205, entry.ts:25-50,94-105, controller.ts:151-155,199,370-380), `apps/web/lib/intro/*`, `apps/web/app/mar/engine/` for the planet, `scripts/landing-budget.mjs`, D-19/D-21 in `docs/DECISIONES.md`, REQ ENT-004/005/018/021/024/025.
@@ -79,7 +79,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0 (includes the landing budget in `pnpm build`)
   - e2e: bare `/` plays the 3D intro and "Zarpar" reaches the landing; `/?si=abc` and `/?utm_source=ig` also play it; `/?intro=0` and a client navigation back to "/" go direct; reduced-motion shows the still; with an artificially slow scene load (route delay) the intro still plays instead of skipping; hero has exactly two CTAs: /mar and Tickets → exit 0
-- Outcome:
+- Outcome: 3D planet intro (apps/web/lib/planeta/), budget 9 s from mount counting visible time only, campaign params no longer skip, hero with /mar + Tickets; landing 177.8/192 kB → 09e86a6
 
 ## T58 — Tickets inside the 3D world
 - Status: pending
@@ -168,7 +168,14 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-01 T53: back link and world name moved into a header inside the Menú; Menú and Carnet invite open as cards above the bar; each compact card has one button (Navegar / Comprar entrada / Ir a la isla / Explorar la isla); desktop uses the same layout with a centred 480px bar; Carnet icon 📇 links to /carnet until T55 (agent)
 
+- 2026-10-01 T57: shared planet module apps/web/lib/planeta/ imports /mar island builders and palette (no /mar file changed); intro config v4 in intro/planet.ts; Pixi intro/scene.ts and lib/intro/active.ts deleted (agent)
+- 2026-10-01 T57: load budget 9 s from mount (visible time only), 15 s boot-script safety cap; hero planet capped at 30 fps and ¼ frame time, loaded on idle; without WebGL a CSS planet; main CTA keeps class cta-explore and its Admin label, now to /mar (agent)
+- 2026-10-01 T57: REQ-ENT-012 (scene hand-off to /juego) moved to FALTA (agent)
+- 2026-10-01 T57: T62 must also delete the leftover 2D intro modules (config, sphere, port, world-geometry, timeline, assets, sphere-probe) and lib/intro/worlds.ts (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-01 T57: unused i18n keys hero.explore3d* come from docs/propuestas/textos-zonas.md and stay until that document changes
+- 2026-10-01 T57: REQ-ENT-003/005 text says "no 3D library in the bundle"; critical path still has none (three.js lazy): reword with Álvaro
 - 2026-10-01 T53: REQ-PRO-009 stays PARCIAL (criterion asks for "Inicio" among on-screen controls and fps only with ?debug): decide whether the new bar closes it
 - 2026-10-01 T54: in turbo, the pull-back turn is still wider than at normal speed (101 u vs 65 u)
 - 2026-10-01: parallax landing (next batch)
@@ -181,3 +188,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 22:18 T53 launched · attempt 1 · agent ac03818fc888500c6
 - 2026-10-01 22:18 T57 launched · attempt 1 · agent a42618e2a4c75025b
 - 2026-10-01 22:41 T53 done · branch worktree-agent-ac03818fc888500c6 → 03882a9
+- 2026-10-01 22:43 T55 launched · attempt 1 · agent a3b7f8362886c377c
+- 2026-10-01 23:21 T57 done · branch worktree-agent-a42618e2a4c75025b → 09e86a6
