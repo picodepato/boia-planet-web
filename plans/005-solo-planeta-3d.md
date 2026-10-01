@@ -60,7 +60,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: Ajustes (sensitivity read by the engine), Controles, Welcome Aboard and Mi Carnet inside /mar in a shared MarHoja sheet; deep links ?ir, ?evento, ?menu; every landing/Carnet/Admin link to /mar; IDE-035/036 HECHO → 42fedb9
 
 ## T56 — Message bottles and ranking in /mar
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T53
 - Goal: Bring to the 3D world the message bottles (one per person, 140 characters, needs a Carnet, visible to its author plus seeded sample bottles) and the Ranking (tabs De siempre / Temporada / Circuito, local, sample members), reachable from the new HUD/menu.
 - Context: `apps/web/app/juego/bottles/*` (or moved by T52), `packages/engine/src/bottles/{sea,finder}`, `repo.bottles` in `packages/store`, `BOTTLE_SPOTS` in `packages/world`, `apps/web/app/juego/menu/sections/ranking.tsx`, Temporadas per world in the Admin.
@@ -68,7 +68,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e in /mar: with a Carnet, write a bottle (≤140 chars), it appears in the sea for its author after reload; sample bottles are visible; Ranking opens with its three tabs and sample members → exit 0
-- Outcome:
+- Outcome: bottles (140 chars, needs Carnet, sample bottles) and Ranking (3 tabs) in /mar as MarHoja sheets; Mi Carnet in the world links to the bottle sheet; own ranking row opens Mi Carnet → b6e81b6
 
 ## T57 — 3D landing intro with the planet, and the hero
 - Status: done
@@ -104,7 +104,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T60 — Lighthouse and cannon minigames, rebuilt
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T52
 - Goal: Both are too simple. Lighthouse ("Vigilancia del faro"): at night you sweep the lighthouse beam to light up pirate ships before they reach the coast; waves that get faster, lives and score. Cannon ("Cañón contra tiburones"): drag to aim (angle and power), the ball flies on a parabola, sharks and pirates move; waves, combos and score. Both playable on mobile and desktop inside /mar, with local best score, and keep their rewards hooks. Remove the "Minijuego · muestra" label once they are real games.
 - Context: `packages/engine/src/minigames`, `MinigameLayer` (moved by T52), `.mar-minigame` in `apps/web/app/mar/mar.css`, islands Isla del Faro / Cap de l'Horta and Isla del Cañón / Torre de l'Illeta, REQ AVE-035/039.
@@ -178,6 +178,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T58: each event in the in-world panel has "Comprar entrada" (checkout on top) and "Ir a su isla" (the old trip, then checkout); without an on-sale event the panel says "Próximamente"; SandboxCheckout gained optional source/className (checkout--mar = bottom sheet on mobile); analytics tickets_panel_open/ticket_click_out with source world, island buy button now sends ticket_click_out source island (agent)
 
+- 2026-10-02 T56: bottles keep shared-map coordinates, converted by pointMap (land spots move to nearest water); MarHoja focuses with preventScroll for every sheet; opening one sheet closes the other; Circuito tab reads readRecord (compatible with T61) (agent)
+- 2026-10-02 T56: conflicts with T55 and T58 resolved by the agent (agent)
+
 ## Proposals (new scope)
 - 2026-10-02 T58: REQ-ENT-040 wording in 09-requisitos.md still says the trip starts on the first Entradas tap; it now starts from "Ir a su isla": reword
 - 2026-10-01 T57: unused i18n keys hero.explore3d* come from docs/propuestas/textos-zonas.md and stay until that document changes
@@ -202,3 +205,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 23:49 T58 launched · attempt 1 · agent a4283d2de4dfb0890
 - 2026-10-02 00:25 T56 conflict with main (mar3d.ts, mar-client.tsx) · sent back to agent a00ff67f4d11ca19d
 - 2026-10-02 00:38 T58 done · branch worktree-agent-a4283d2de4dfb0890 → 40be280
+- 2026-10-02 00:40 T59 launched · attempt 1 · agent a4ef0c67ac86cd069
+- 2026-10-02 00:46 T56 done · branch worktree-agent-a00ff67f4d11ca19d → b6e81b6
