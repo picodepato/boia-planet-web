@@ -4,6 +4,70 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T56: Botellas y ranking en /mar
+
+Qué existe:
+
+- **Botellas en el mar 3D** (REQ-IDE-040…044). El repositorio sigue guardando
+  cada botella con su posición del mapa compartido (la que valida, la misma
+  del 2D). `pointMap` (`apps/web/app/mar/engine/compress.ts`) la pasa al
+  planeta de /mar con el mismo cambio de escala que `compressWorld`, y
+  también la devuelve. `apps/web/app/mar/bottles.ts` (sin three.js): las
+  coloca en el agua del planeta (fuera de islas, de lo sólido y del
+  decorado), busca dónde cae la propia junto a la popa y mira cuáles están
+  cerca del barco por el camino corto del planeta. `Mar3D.setBottles`
+  (`engine/mar3d.ts`) pinta una botella de cristal tumbada que flota en cada
+  sitio (la propia con el corcho naranja) y deja sus ids en `data-bottles`
+  del lienzo.
+- **HUD** (sólo se añaden entradas): en el Menú, «✉️ Mi botella» y
+  «🏅 Ranking». Encima de la barra salen chips con las botellas cercanas
+  («🍾 Tu botella», «🍾 Botella de X», como mucho dos). Se ven cuando no hay
+  ficha, compra, menú, viaje ni invitación.
+- **Hoja de la botella y del ranking** (`apps/web/app/mar/botellas.tsx`),
+  en la `MarHoja` de T55. Reutiliza `MyBottle` y `FoundBottle` de
+  `lib/mundo/bottles/bottle-sheet.tsx` (ahora exportadas; `MyBottle` recibe
+  `dropSpot`). Lo que pide Carnet abre «Mi Carnet» dentro del mundo (T55).
+  Desde allí, «Echar una botella» y «Editar o retirar» vuelven a la hoja de
+  la botella (`MarABordo` recibe `onBottles`). «VER SU CARNET» de otro
+  miembro abre `/carnet/<id>`. La botella, el ranking, los paneles de a
+  bordo y «Elige tu evento» (T58) se cierran entre sí al abrir otro.
+  `MarHoja` enfoca con `preventScroll`: el mar ya no se desplaza 40 px
+  mientras la hoja entra.
+- **Ranking** con tres pestañas: De siempre, Temporada y Circuito.
+  `RankingPanel` (exportado de `lib/mundo/menu/sections/ranking.tsx`) lo
+  usan /mar y el Menú del 2D. Con `onOwnCarnet`, la fila propia abre Mi
+  Carnet en el mar. La pestaña Circuito (`lib/mundo/ranking-circuit.ts`)
+  junta el récord local (`readRecord`, el mismo formato de récord por
+  versión que la carrera) con los tiempos de muestra `SAMPLE_CIRCUIT_MS`. El
+  visitante sin vuelta va al final («sin vuelta»).
+- `@boia/engine/bottles`: `findDropSpotWhere` y `nearestSpotWhere`, con una
+  regla de agua a elegir. `findDropSpot` y `nearestSeaSpot` las usan.
+- i18n: `mar.botella.*` y `mar.ranking.*` (es-mar.ts) y `lib.ranking.*`
+  (es-lib.ts).
+- `docs/spec/estado.md`: REQ-IDE-040 y REQ-IDE-053 enlazan las pruebas
+  nuevas.
+
+Comandos (tras unir main con T55 y T58):
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 106 archivos,
+  924 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm typecheck` → exit 0. `pnpm lint`
+  → exit 0. `pnpm build` → exit 0 (landing 178,4/192 kB).
+- `E2E_PORT=3261 pnpm e2e e2e/mar-botellas.spec.ts e2e/mar-entradas.spec.ts
+  e2e/mar-hud.spec.ts e2e/mar-a-bordo.spec.ts --workers=1` → exit 0, 26 pasan.
+- Tras la unión con T55: `mar-botellas`, `mar-a-bordo` y `mar-hud` con
+  `--workers=1` → exit 0, 22 pasan. `comunidad.spec.ts` con `--workers=1` →
+  exit 0, 8 pasan. La misma tanda con `--workers=2`, con otra suite e2e
+  corriendo a la vez, tardó 21 min y fallaron 7 por tiempo y por contextos
+  cerrados. Se repitieron solas y pasan.
+- Antes, `e2e/mar-paridad.spec.ts`: «Mundos» en móvil falló una vez con la
+  máquina cargada (el barco se movió durante el vórtice). Sola → exit 0.
+
+Pendiente:
+
+- Contenido `muestra`: los tiempos del circuito de los miembros de muestra y
+  la forma de la botella.
+
 ## 2026-10-01 — plan 005 T58: Entradas dentro del mundo 3D
 
 Qué existe:

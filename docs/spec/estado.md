@@ -199,7 +199,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-037 | Música y efectos por separado | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «Menú de a bordo: siete iconos, separación y modo de teclado guardado»; [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Ajustes: la sensibilidad del giro la lee el motor; música, efectos e idioma se guardan» | — |
 | REQ-IDE-038 | Ranking de puntos | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts) «ordena por puntos, con el visitante siempre dentro y su puesto» | — |
 | REQ-IDE-039 | Nada competitivo desde el cliente | L1 | final | — | Validación en servidor (D-20) |
-| REQ-IDE-040 | Una botella de 140 caracteres | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts); [sea.test.ts](../../packages/engine/src/bottles/sea.test.ts) | — |
+| REQ-IDE-040 | Una botella de 140 caracteres | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts); [sea.test.ts](../../packages/engine/src/bottles/sea.test.ts); en /mar, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [bottles.test.ts](../../apps/web/app/mar/bottles.test.ts) | — |
 | REQ-IDE-041 | Leer una botella y ver su Carnet | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) «leer no la quita del mar y deja la lectura; se ve el apodo y el Carnet del autor» | — |
 | REQ-IDE-042 | Botellas sin premios | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) | — |
 | REQ-IDE-043 | Reporte y retirada | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) «reportar una vez; el Admin la retira y desaparece del mar» | — |
@@ -212,7 +212,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-050 | Exportar y borrar desde la web | L2 | L2 | — | — |
 | REQ-IDE-051 | Versión de prueba: invitado con apodo y botella propia | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) | — |
 | REQ-IDE-052 | Premio según el logro | L1 | HECHO | [achievements.test.ts](../../packages/store/src/achievements.test.ts) «monedas y puntos: a los saldos del libro» | — |
-| REQ-IDE-053 | Versión de prueba: ranking local | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts); [community.test.ts](../../packages/store/src/community.test.ts) | — |
+| REQ-IDE-053 | Versión de prueba: ranking local | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts); [community.test.ts](../../packages/store/src/community.test.ts); en /mar con la pestaña Circuito, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [ranking-circuit.test.ts](../../apps/web/lib/mundo/ranking-circuit.test.ts) | — |
 | REQ-COM-001 | Campos del evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-COM-002 | Evento e isla separados | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
 | REQ-COM-003 | Siete estados de evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |

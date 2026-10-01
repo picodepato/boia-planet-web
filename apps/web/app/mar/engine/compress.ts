@@ -253,6 +253,43 @@ export function compressWorld(world: WorldConfig, opts: { compact?: number } = {
   };
 }
 
+/**
+ * Un punto suelto entre el mapa compartido y el mar 3D (T56): las botellas se
+ * guardan con la posición del mapa compartido (la que valida el repositorio)
+ * y se ven aquí. `toMar` es el mismo cambio de escala que `compressWorld`;
+ * `toShared`, su inverso (de vuelta al mismo punto cuando lo hay: el agua
+ * que se abre al separar dos islas no viene de ningún punto del mapa).
+ */
+export interface PointMap {
+  toMar(p: Point): Point;
+  toShared(q: Point): Point;
+}
+
+export function pointMap(world: WorldConfig, opts: { compact?: number } = {}): PointMap {
+  const k = (opts.compact ?? MAR3D_SCALE.compact) / MAR3D_SCALE.spread;
+  const anchors = anchorsOf(world, k);
+  return {
+    toMar: (p) => compressPoint(anchors, p, k),
+    toShared: (q) => {
+      // Lejos de las zonas, la escala de las posiciones; cerca, la de su zona.
+      const far = { x: q.x / k, y: q.y / k };
+      const candidates = [
+        far,
+        ...anchors.map((a) => ({
+          x: a.at.x + (q.x - a.to.x) / a.grow,
+          y: a.at.y + (q.y - a.to.y) / a.grow,
+        })),
+      ];
+      const hit = candidates.find((p) => {
+        const back = compressPoint(anchors, p, k);
+        return Math.hypot(back.x - q.x, back.y - q.y) < 0.05;
+      });
+      const p = hit ?? far;
+      return { x: r2(p.x), y: r2(p.y) };
+    },
+  };
+}
+
 /** u de motor → unidades de escena. */
 export const toScene = (u: number) => u / MAR3D_SCALE.unitsPerScene;
 /** Unidades de escena → u de motor. */

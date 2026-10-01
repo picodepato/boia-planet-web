@@ -319,6 +319,9 @@ interface Anchor {
   dy: number;
 }
 
+/** Prefijo de las vistas de botella (T56): no son lugares del mapa. */
+const BOTTLE_VIEW = 'botella:';
+
 const tmpV = new Vector3();
 const tmpM = new Matrix4();
 const tmpV2 = new Vector2();
@@ -449,6 +452,8 @@ export class Mar3D {
   /** Sin simular ni pintar (un minijuego a pantalla completa encima). */
   paused = false;
   private gates = new Map<number, MeshBasicMaterial[]>();
+  /** El material de las botellas (T56), compartido por todas. */
+  private bottleMaterial: ReturnType<typeof litMaterial> | null = null;
   // Cambio de mundo por agujero negro (T41 en el 2D; aquí T51).
   private readonly vortex = new VortexPass();
   private readonly switcher: WorldSwitcher<MarScene>;
@@ -1038,6 +1043,54 @@ export class Mar3D {
         vis: false,
       });
     }
+  }
+
+  /**
+   * Las botellas del mar (T56): una botella de cristal tumbada que flota en
+   * cada sitio (u de motor de este mundo), con el corcho naranja la propia.
+   * Cambiar la lista las cambia todas. Para las pruebas, sus ids en
+   * `data-bottles` del lienzo.
+   */
+  setBottles(list: readonly { id: string; x: number; y: number; mine: boolean }[]): void {
+    for (const [id, v] of this.views) {
+      if (!id.startsWith(BOTTLE_VIEW)) continue;
+      this.scene.remove(v.obj);
+      v.obj.traverse((o) => (o as Mesh).geometry?.dispose());
+      this.views.delete(id);
+    }
+    this.bottleMaterial?.dispose();
+    this.bottleMaterial = null;
+    if (list.length) {
+      const mat = litMaterial();
+      this.bottleMaterial = mat;
+      for (const b of list) {
+        const k = new Kit();
+        k.add(new CylinderGeometry(0.3, 0.3, 0.95, 10), '#8fd3b8');
+        k.add(new CylinderGeometry(0.13, 0.28, 0.32, 10), '#8fd3b8', { p: [0, 0.62, 0] });
+        k.add(new CylinderGeometry(0.12, 0.12, 0.2, 8), b.mine ? C.orange : C.wood, {
+          p: [0, 0.86, 0],
+        });
+        // El mensaje enrollado, dentro.
+        k.add(new CylinderGeometry(0.14, 0.14, 0.6, 8), C.cream, { p: [0, 0.02, 0] });
+        const body = new Mesh(k.build(), mat);
+        body.rotation.z = 1.25;
+        body.position.y = 0.12;
+        const g = new Group();
+        g.add(body);
+        g.position.set(toScene(b.x), 0, toScene(b.y));
+        curveTree(g);
+        this.addView({
+          id: BOTTLE_VIEW + b.id,
+          obj: g,
+          kind: 'botella',
+          y: 0,
+          phase: (seedOf(b.id) % 628) / 100,
+          labelY: 1.2,
+          update: bob(0.1),
+        });
+      }
+    }
+    this.opts.canvas.dataset.bottles = list.map((b) => b.id).join(' ');
   }
 
   /** Semáforo del circuito: apagado, rojo, ámbar o verde. */

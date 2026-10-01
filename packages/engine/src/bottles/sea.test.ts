@@ -7,7 +7,9 @@ import {
   bottlePositionValidator,
   bottleSpotProblem,
   findDropSpot,
+  findDropSpotWhere,
   isSeaSpot,
+  nearestSpotWhere,
   settleInSea,
 } from './sea';
 
@@ -136,5 +138,27 @@ describe('botellas cerca del barco', () => {
     expect(bottleObject({ id: 'x', x: 1, y: 2 }, 'mundos/arcilla/botella').appearance.asset).toBe(
       'mundos/arcilla/botella',
     );
+  });
+});
+
+describe('sitios con otra regla de mar (T56: el planeta de /mar)', () => {
+  it('la botella cae por la popa si la regla lo permite, y si no a un lado', () => {
+    const pose = { x: 0, y: 0, heading: 0 };
+    const stern = findDropSpotWhere(() => true, pose)!;
+    expect(stern.x).toBeCloseTo(-BOTTLE_DROP_DISTANCE, 6);
+    expect(stern.y).toBeCloseTo(0, 6);
+    // Sin agua detrás (x < 0), a un lado.
+    const side = findDropSpotWhere((p) => p.x > -1, pose)!;
+    expect(side.x).toBeGreaterThan(-1);
+    expect(findDropSpotWhere(() => false, pose)).toBeNull();
+  });
+
+  it('el punto más cercano que cumple la regla, o null si no hay ninguno a mano', () => {
+    const ok = (p: { x: number; y: number }) => Math.hypot(p.x, p.y) >= 100;
+    const q = nearestSpotWhere(ok, { x: 10, y: 0 })!;
+    expect(ok(q)).toBe(true);
+    expect(Math.hypot(q.x - 10, q.y)).toBeLessThanOrEqual(100);
+    expect(nearestSpotWhere(ok, { x: 200, y: 0 })).toEqual({ x: 200, y: 0 });
+    expect(nearestSpotWhere(() => false, { x: 0, y: 0 }, 64)).toBeNull();
   });
 });

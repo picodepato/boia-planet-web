@@ -3,7 +3,7 @@
 import { BOTTLE_MESSAGE_MAX, BOTTLE_REPORT_REASON_MAX, charLength } from '@boia/contracts';
 import { type ShipPose, findDropSpot } from '@boia/engine/bottles';
 import { type BoiaRepository, type BottleView, isStoreError } from '@boia/store';
-import type { WorldConfig } from '@boia/world';
+import type { Vec2, WorldConfig } from '@boia/world';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { emitSignal } from '../achievements';
 import { useRepoData } from '../repo';
@@ -125,17 +125,19 @@ function errorText(e: unknown): string {
   return t('juego.bottleSheet.noSeHaPodido');
 }
 
-/** La botella propia: echarla, editarla o retirarla. */
-function MyBottle({
+/**
+ * La botella propia: echarla, editarla o retirarla. `dropSpot` dice dónde
+ * cae (posición del mapa compartido, junto al barco), o null si alrededor
+ * sólo hay tierra. También la usa /mar (T56).
+ */
+export function MyBottle({
   repo,
-  world,
-  ship,
+  dropSpot,
   onNeedCarnet,
   onClose,
 }: {
   repo: BoiaRepository;
-  world: WorldConfig;
-  ship: () => ShipPose | null;
+  dropSpot: () => Vec2 | null;
   onNeedCarnet: () => void;
   onClose: () => void;
 }) {
@@ -183,8 +185,7 @@ function MyBottle({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const pose = ship();
-          const spot = pose ? findDropSpot(world, pose) : null;
+          const spot = dropSpot();
           if (!spot) {
             setError(BOTTLE_COPY.noSpot);
             return;
@@ -319,8 +320,8 @@ function MyBottle({
   );
 }
 
-/** Una botella encontrada en el mar: se lee (queda registrado) y sigue flotando. */
-function FoundBottle({
+/** Una botella encontrada en el mar: se lee (queda registrado) y sigue flotando. También en /mar. */
+export function FoundBottle({
   repo,
   id,
   onOpenCarnet,
@@ -477,8 +478,10 @@ export function BottleSheet({
       ) : mode.kind === 'mine' ? (
         <MyBottle
           repo={repo}
-          world={world}
-          ship={ship}
+          dropSpot={() => {
+            const pose = ship();
+            return pose ? findDropSpot(world, pose) : null;
+          }}
           onNeedCarnet={onNeedCarnet}
           onClose={onClose}
         />

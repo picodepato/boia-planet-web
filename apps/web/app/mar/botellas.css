@@ -1,0 +1,72 @@
+/* Botellas y Ranking en /mar (T56). Las piezas compartidas con el 2D
+   (formulario de la botella, tabla del ranking) llevan sus clases de allí; la
+   hoja (mar.css, T55) ya da los botones y campos: aquí, lo que falta. */
+
+.mar-logros__body .juego-button.is-quiet {
+  background: transparent;
+  color: #12233f;
+  box-shadow: inset 0 0 0 2px rgb(18 35 63 / 0.3);
+}
+
+.mar-logros__body .carnet-actions {
+  margin-top: 8px;
+}
+
+/* Las botellas cerca del barco: chips encima de la barra, entre la
+   velocidad (izquierda) y el turbo (derecha). */
+.mar-bottles {
+  position: absolute;
+  bottom: var(--above-bar);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(300px, calc(100% - 2 * (var(--safe-l) + 96px)));
+  z-index: 6;
+}
+
+.mar-bottles__chip {
+  max-width: 100%;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 2px solid #8fd3b8;
+  border-radius: 20px;
+  background: var(--glass-strong);
+  color: #fffaf0;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  animation: mar-bottles-in 0.25s ease-out;
+}
+
+.mar-bottles__chip.is-mine {
+  border-color: #f26a1b;
+}
+
+.mar-bottles__chip.is-read {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+@keyframes mar-bottles-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-bottles__chip {
+    animation: none;
+  }
+}

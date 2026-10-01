@@ -22,11 +22,14 @@ export function MarABordo({
   panel,
   settings,
   onSettings,
+  onBottles,
   onClose,
 }: {
   panel: Exclude<MarPanel, 'logros'>;
   settings: Settings | null;
   onSettings: (change: (s: Settings) => Settings) => void;
+  /** Abre la hoja de la botella propia (T56): echarla, editarla o retirarla. */
+  onBottles?: () => void;
   onClose: () => void;
 }) {
   const body = useRef<HTMLDivElement>(null);
@@ -42,7 +45,10 @@ export function MarABordo({
           bodyRef={body}
           onClose={onClose}
         >
-          <CarnetPanel onTop={() => body.current?.scrollTo?.({ top: 0 })} />
+          <CarnetPanel
+            onTop={() => body.current?.scrollTo?.({ top: 0 })}
+            {...(onBottles ? { onBottles } : {})}
+          />
         </MarHoja>
       );
     case 'ajustes':

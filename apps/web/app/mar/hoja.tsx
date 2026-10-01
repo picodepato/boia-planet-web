@@ -34,7 +34,8 @@ export function MarHoja({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
-  useEffect(() => ref.current?.focus(), []);
+  // Sin desplazar el mar: la hoja entra animada desde abajo y el foco la «seguiría» (T56).
+  useEffect(() => ref.current?.focus({ preventScroll: true }), []);
   // Escape también cierra con el foco fuera de la hoja (p. ej. tras cambiar
   // de ver a editar el Carnet, el botón pulsado desaparece).
   const close = useRef(onClose);

@@ -4,6 +4,9 @@
  * usa la clave de allí (es-zonas.ts). Todo `muestra` hasta que Álvaro lo apruebe.
  */
 export const esLib = {
+  'lib.ranking.tiempo': 'Tiempo',
+  'lib.ranking.sinVuelta': 'sin vuelta',
+  'lib.ranking.tuVuelta': 'Tu mejor vuelta en {place}: {time}. Vas {n}.º.',
   'admin.achievements.visitarIslas': 'Visitar islas',
   'admin.achievements.encontrarBoies': 'Encontrar boies',
   'admin.achievements.recogerObjetos': 'Recoger objetos',

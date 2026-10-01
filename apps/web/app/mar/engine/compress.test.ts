@@ -1,7 +1,7 @@
 import { WorldRuntime } from '@boia/engine/headless';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
-import { MAR3D_SCALE, compressWorld } from './compress';
+import { MAR3D_SCALE, compressWorld, pointMap } from './compress';
 
 const original = WORLD_REGISTRY.get('arcilla').config;
 const world = compressWorld(original);
@@ -94,6 +94,41 @@ describe('el mapa compartido en el mar 3D', () => {
         expect(p.x, o.identity.id).toBeCloseTo(p0.x * k, 1);
         expect(p.y, o.identity.id).toBeCloseTo(p0.y * k, 1);
       });
+    }
+  });
+});
+
+describe('puntos sueltos entre el mapa y el mar 3D (T56)', () => {
+  const map = pointMap(original);
+
+  it('cada lugar cae donde lo pone compressWorld', () => {
+    for (const o of original.objects) {
+      const q = map.toMar(o.position);
+      const want = byId(world, o.identity.id).position;
+      expect(q.x, o.identity.id).toBeCloseTo(want.x, 1);
+      expect(q.y, o.identity.id).toBeCloseTo(want.y, 1);
+    }
+  });
+
+  it('ida y vuelta: un punto del mar 3D vuelve al mapa y cae otra vez en el mismo sitio', () => {
+    const b = world.bounds;
+    let found = 0;
+    for (let i = 0; i <= 12; i++) {
+      for (let j = 0; j <= 12; j++) {
+        const q = {
+          x: b.left + ((b.right - b.left) * i) / 12,
+          y: b.top + ((b.bottom - b.top) * j) / 12,
+        };
+        const p = map.toShared(q);
+        const again = map.toMar(p);
+        // El agua abierta al separar islas no tiene punto en el mapa: sólo esa no vuelve.
+        if (dist(again, q) < 0.05) found++;
+      }
+    }
+    expect(found / 169).toBeGreaterThan(0.95);
+    for (const o of world.objects) {
+      const q = o.position;
+      expect(dist(map.toMar(map.toShared(q)), q), o.identity.id).toBeLessThan(0.05);
     }
   });
 });

@@ -68,12 +68,15 @@ export interface ShipPose {
   heading: number;
 }
 
+/** ¿Puede flotar una botella en `p`? (el mar de un mapa u otro, como el del planeta de /mar). */
+export type SpotTest = (p: Vec2) => boolean;
+
 /**
- * Sitio de mar junto al barco donde cae su botella: primero por la popa (la
- * deja atrás al seguir navegando), luego a los lados y, si hace falta, un
- * poco más lejos. null si alrededor sólo hay tierra.
+ * Sitio junto al barco donde `ok` deja caer su botella: primero por la popa
+ * (la deja atrás al seguir navegando), luego a los lados y, si hace falta,
+ * un poco más lejos. null si alrededor no hay sitio.
  */
-export function findDropSpot(world: WorldConfig, ship: ShipPose): Vec2 | null {
+export function findDropSpotWhere(ok: SpotTest, ship: ShipPose): Vec2 | null {
   const stern = ship.heading + Math.PI;
   const turns = [0, 0.25, -0.25, 0.5, -0.5, 0.75, -0.75, 1];
   for (const k of [1, 1.5, 2.2, 3]) {
@@ -81,10 +84,33 @@ export function findDropSpot(world: WorldConfig, ship: ShipPose): Vec2 | null {
     for (const t of turns) {
       const a = stern + t * Math.PI;
       const p = { x: ship.x + Math.cos(a) * d, y: ship.y + Math.sin(a) * d };
-      if (isSeaSpot(world, p)) return p;
+      if (ok(p)) return p;
     }
   }
   return null;
+}
+
+/** El punto más cercano a `p` que cumple `ok` (en anillos cada `step` u), o null. */
+export function nearestSpotWhere(ok: SpotTest, p: Vec2, maxDistance = 480, step = 16): Vec2 | null {
+  if (ok(p)) return { x: p.x, y: p.y };
+  for (let r = step; r <= maxDistance; r += step) {
+    const n = Math.max(8, Math.round((2 * Math.PI * r) / step));
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * 2 * Math.PI;
+      const q = { x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r };
+      if (ok(q)) return q;
+    }
+  }
+  return null;
+}
+
+/**
+ * Sitio de mar junto al barco donde cae su botella: primero por la popa (la
+ * deja atrás al seguir navegando), luego a los lados y, si hace falta, un
+ * poco más lejos. null si alrededor sólo hay tierra.
+ */
+export function findDropSpot(world: WorldConfig, ship: ShipPose): Vec2 | null {
+  return findDropSpotWhere((p) => isSeaSpot(world, p), ship);
 }
 
 /** El punto de mar más cercano a `p` (en anillos cada `step` u), o null. */
@@ -94,16 +120,7 @@ export function nearestSeaSpot(
   maxDistance = 480,
   step = 16,
 ): Vec2 | null {
-  if (isSeaSpot(world, p)) return { x: p.x, y: p.y };
-  for (let r = step; r <= maxDistance; r += step) {
-    const n = Math.max(8, Math.round((2 * Math.PI * r) / step));
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * 2 * Math.PI;
-      const q = { x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r };
-      if (isSeaSpot(world, q)) return q;
-    }
-  }
-  return null;
+  return nearestSpotWhere((q) => isSeaSpot(world, q), p, maxDistance, step);
 }
 
 function spawnOf(world: WorldConfig): Vec2 {

@@ -69,7 +69,8 @@ import {
   persistMissionEvent,
 } from '../../lib/mundo/mission';
 import { useNoticeQueue } from '../../lib/mundo/notices';
-import { gameRepository, useRepoData } from '../../lib/mundo/repo';
+import { gameRepository, seaWorld, useRepoData } from '../../lib/mundo/repo';
+import type { BottleSheetMode } from '../../lib/mundo/bottles/bottle-sheet';
 import {
   SHIP_POSITION_SAVE_MS,
   documentNavigationType,
@@ -119,16 +120,12 @@ import { MarEntradas } from './entradas';
 import { worldTickets } from './entradas-model';
 import { MarLogros } from './logros';
 import { MarTienda } from './tienda';
+import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
+import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
+import { type PointMap, pointMap } from './engine/compress';
 import { MarMinimap } from './minimap';
 import { raceCheckpoint } from './race';
-import {
-  Sheet,
-  type SheetState,
-  eventOfPlace,
-  findEvent,
-  islandOfEvent,
-  sheetKey,
-} from './sheet';
+import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import {
   type Trip,
   arrivalSheet,
@@ -256,6 +253,10 @@ type Status = 'loading' | 'ready' | 'error';
 const BUMP_FULL_SPEED = 200;
 const BUMP_COOLDOWN_MS = 350;
 
+/** Mapa compartido → mar 3D para las botellas (T56), hecho la primera vez que hace falta. */
+let bottlePointMap: PointMap | null = null;
+const bottleMap = () => (bottlePointMap ??= pointMap(seaWorld()));
+
 /** El mar 3D ya arrancó antes en este documento (volver sin recargar restaura la posición). */
 let bootedInDocument = false;
 
@@ -363,6 +364,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Logros (T37): el icono del HUD con su número y el panel para reclamar.
   const [logros, setLogros] = useState(false);
   const readyToClaim = useReadyCount();
+  // Botellas (T56): las del repositorio flotan en el mar 3D; cerca del barco se leen.
+  const { data: bottleList } = useRepoData((r) => r.bottles.list());
+  const marBottlesRef = useRef<MarBottle[]>([]);
+  const nearBottlesRef = useRef<ReadonlySet<string>>(new Set());
+  const [nearBottles, setNearBottles] = useState<readonly string[]>([]);
+  const [bottleSheet, setBottleSheet] = useState<BottleSheetMode | null>(null);
+  // El ranking local (T56): De siempre, Temporada y Circuito.
+  const [ranking, setRanking] = useState(false);
 
   // Avisos con tiempo de lectura (D-22): al menos 3 s, más si el texto es largo.
   const notices = useNoticeQueue(
@@ -643,8 +652,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     }
   };
 
+  /** Las botellas cerca del barco (T56), por el camino corto del planeta. */
+  const stepBottles = (s: Stats) => {
+    const w = worldRef.current;
+    if (!w) return;
+    const near = bottlesNear(s, marBottlesRef.current, nearBottlesRef.current, marPeriod(w));
+    if (near.join() === [...nearBottlesRef.current].join()) return;
+    nearBottlesRef.current = new Set(near);
+    setNearBottles(near);
+  };
+
   const onStats = (s: Stats) => {
     setStats(s);
+    stepBottles(s);
     const r = raceRef.current;
     if (r) {
       const now = performance.now() / 1000;
@@ -1051,9 +1071,27 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
-    g.inputEnabled = !checkoutFor && !minigameOpen && !logros && !tienda && !hoja && !entradas;
+    g.inputEnabled =
+      !checkoutFor &&
+      !minigameOpen &&
+      !logros &&
+      !tienda &&
+      !hoja &&
+      !entradas &&
+      !bottleSheet &&
+      !ranking;
     g.paused = minigameOpen;
-  }, [checkoutFor, minigameOpen, logros, tienda, hoja, entradas, status]);
+  }, [checkoutFor, minigameOpen, logros, tienda, hoja, entradas, bottleSheet, ranking, status]);
+
+  // Las botellas del repositorio en el mar (T56): con cada cambio y con cada mundo.
+  useEffect(() => {
+    const g = engineRef.current;
+    const w = worldRef.current;
+    if (status !== 'ready' || !g || !w || !bottleList) return;
+    const placed = placeBottles(bottleList, seaWorld(), w, bottleMap());
+    marBottlesRef.current = placed;
+    g.setBottles(placed);
+  }, [bottleList, status, worldId]);
 
   // Bandera y estela equipadas (T40), también si cambian desde otra pestaña.
   useEffect(() => {
@@ -1083,6 +1121,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setLogros(false);
     setTienda(false);
     setEntradas(false);
+    setBottleSheet(null);
+    setRanking(false);
     setHoja(panel);
   };
 
@@ -1094,6 +1134,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setLogros(false);
     setTienda(false);
     setHoja(null);
+    setBottleSheet(null);
+    setRanking(false);
     setEntradas(true);
     track('tickets_panel_open', { source: 'world' });
   };
@@ -1151,6 +1193,26 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       .finally(() => {
         if (request === shipRequest.current) setShipPending(false);
       });
+  };
+
+  /** Abre la botella o el ranking (T56); como cualquier panel, anula la vuelta en curso. */
+  const openSheet = (open: () => void) => {
+    const r = raceRef.current;
+    if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
+    setMenu(false);
+    setLogros(false);
+    setHoja(null);
+    setEntradas(false);
+    open();
+  };
+  const openBottle = (mode: BottleSheetMode) => openSheet(() => setBottleSheet(mode));
+  const openRanking = () => openSheet(() => setRanking(true));
+
+  /** Dónde cae la botella propia: junto a la popa del barco, guardada en el mapa compartido. */
+  const bottleDrop = () => {
+    const g = engineRef.current;
+    const w = worldRef.current;
+    return g && w ? dropSpot(seaWorld(), w, g.ship, bottleMap()) : null;
   };
 
   /** Abre la tienda «Barco»; como cualquier panel, anula la vuelta en curso. */
@@ -1293,6 +1355,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     tienda ||
     !!hoja ||
     entradas ||
+    !!bottleSheet ||
+    ranking ||
     menu;
   const invitations = useCarnetInvitations({
     running: status === 'ready',
@@ -1462,6 +1526,22 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             }}
           >
             {msg('mar.client.misCodigos')}
+          </button>
+          <button
+            type="button"
+            className="mar-menu__link"
+            data-testid="mar-mi-botella"
+            onClick={() => openBottle({ kind: 'mine' })}
+          >
+            {msg('mar.botella.miBotella')}
+          </button>
+          <button
+            type="button"
+            className="mar-menu__link"
+            data-testid="mar-ranking-abrir"
+            onClick={openRanking}
+          >
+            {msg('mar.ranking.menu')}
           </button>
           <button type="button" className="mar-menu__link" onClick={openLogros}>
             {msg('mar.client.logros2', {
@@ -1852,6 +1932,31 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
+      {/* Botellas cerca del barco (T56), encima de la barra, cuando no hay nada más abajo. */}
+      {status === 'ready' && !sheet && !checkoutFor && !menu && !trip && !invitations.reason ? (
+        <MarBottlesNear
+          ids={nearBottles}
+          bottles={bottleList ?? []}
+          onRead={(id) => openBottle({ kind: 'read', id })}
+        />
+      ) : null}
+      {bottleSheet ? (
+        <MarBotella
+          mode={bottleSheet}
+          dropSpot={bottleDrop}
+          onMine={() => setBottleSheet({ kind: 'mine' })}
+          onNeedCarnet={() => openPanel('carnet')}
+          onClose={() => setBottleSheet(null)}
+        />
+      ) : null}
+      {ranking ? (
+        <MarRanking
+          season={worldId ?? ''}
+          worldName={worldName}
+          onOwnCarnet={() => openPanel('carnet')}
+          onClose={() => setRanking(false)}
+        />
+      ) : null}
       {logros ? (
         <MarLogros onClose={() => setLogros(false)} onCarnet={() => openPanel('carnet')} />
       ) : null}
@@ -1860,6 +1965,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           panel={hoja}
           settings={settings}
           onSettings={updateSettings}
+          onBottles={() => openBottle({ kind: 'mine' })}
           onClose={() => setHoja(null)}
         />
       ) : null}
