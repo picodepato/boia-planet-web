@@ -25,7 +25,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: everything in app/juego except the 2D renderer (page.tsx, game-canvas.tsx, juego.css) moved to apps/web/lib/mundo/ with git mv; importers rewritten, no re-exports → 5c5b886
 
 ## T53 — Mobile HUD and small popups in /mar
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T52
 - Goal: On mobile the popups take up to ~60% of the screen and the menu/HUD is scattered. Interview decisions: (1) one thin fixed bar at the bottom with 4–5 always-visible icons — Mapa, Logros, Carnet, Menú — plus a highlighted "Entradas" button; (2) at the top only the minimap (kept, small, tap to enlarge) and the balance; (3) every popup (island/event sheet, discount, achievement, notices) becomes a small card at the bottom, about 25% of the screen, with the essentials and one button, expanding only when tapped; (4) notices become small chips at the top that leave on their own. Minimum space, everything organized and visible. Desktop keeps working with the same structure.
 - Context: `apps/web/app/mar/mar.css` (safe areas L16-19, `.mar-top`, `.mar-menu`, `.mar-notices`, `.mar-chips`, `.mar-minimap`, `.mar-rail`, `.mar-turbo`, `.mar-tickets`, `.mar-sheet` with max-height min(58vh,520px), desktop rules at `@media (min-width: 760px)`), `apps/web/app/mar/mar-client.tsx` (header ~1237, menu ~1280-1345, notices, chips, rail, minimap, sheet ~1595), `apps/web/app/mar/sheet.tsx`, REQ PRO-008 / PRO-009 / IDE-035/036 in `docs/spec/09-requisitos.md`. The bar's Carnet icon may open `/carnet` until T55 brings the Carnet inside the world; Menú keeps today's sections.
@@ -36,7 +36,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T54 — Faster steering in /mar
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: On mobile the boat needs a large stick angle to turn and turns slowly. Interview decisions: it turns quickly towards where you point even with a small drag; when you are going forward and pull the stick backwards, the boat makes a quick, tight turn (small radius, fast) instead of a wide arc; turbo/voyage speed must not widen the turning circle. Apply the touch sensitivity (`turnScale`) in /mar as /juego does, so T55's Ajustes slider can drive it.
 - Context: `apps/web/app/mar/engine/mar3d.ts` (touch stick ~1696-1715, `readInput` ~1828-1848: dead zone 8 px, throttle=(len-8)/56; turbo/voyage multipliers ~1941-1945; `TURBO_S`, `VOYAGE_SPEED` ~237-242), `packages/engine/src/ship/controller.ts:98-111` (max turn = turnRate × speedFactor × throttle × turnScale; `align` slows the boat until it faces the target), `packages/engine/src/ship/config.ts` (turnRate 2.4, minTurnFactor 0.4, maxSpeed 220), `packages/engine/src/input/controls.ts:192,252` (sensitivity 0.5–1.5).
@@ -45,7 +45,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Test command → exit 0
   - unit tests in the controller/mar input show: with a small drag (just past the dead zone) the heading reaches a 90° target in clearly less time than before (assert against the old constants in the test); a reverse input while moving forward completes a 180° turn with a smaller radius than a forward 180° turn at the same speed; turbo does not increase the turning radius → exit 0
   - `pnpm e2e e2e/mar-3d.spec.ts` → exit 0
-- Outcome:
+- Outcome: fast steering in /mar via optional ShipConfig fields (steerFloor, turnRadius, reverseTurn) set only by MAR_SHIP_CONFIG; 90° from a small drag 19.6 s → 0.73 s; tight reverse turn; turbo keeps the radius; sensitivity applied → 9c204be
 
 ## T55 — Settings, controls, Carnet and deep links inside /mar
 - Status: pending
@@ -71,7 +71,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T57 — 3D landing intro with the planet, and the hero
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T52
 - Goal: The landing intro is a PixiJS scene and sometimes skips straight to the landing. Rebuild it in three.js with the /mar planet: short; the planet turns, the BOIA letters appear, "Zarpar" leads on. Fix the skips: the load budget must start at mount and wait for the scene to really be ready (no fixed 2000 ms from page boot), campaign/share query params (`?si=`, `?s=`, `?ref=`, utm, WhatsApp/Linktree tags) must not skip it, a background-tab load must play it when the tab becomes visible, and a hero-block remount must not cancel it. Keep: "Saltar animación", "Solo quiero ver las entradas", reduced-motion still, light fallback without WebGL, client navigation back to "/" goes direct (D-21), `/?intro=1` replays. The hero gets two buttons: the main one to the 3D world (/mar) and Tickets beside it, visible; remove the separate 2D "Explorar el universo" CTA. The landing must stay within its 192 kB budget (three.js lazy-loaded, not on the critical path).
 - Context: `apps/web/app/(landing)/page.tsx` (`bootScript`, ~L31), `apps/web/app/(landing)/components/intro-stage.tsx`, `apps/web/app/(landing)/components/blocks.tsx` (hero CTAs ~L105-120, `heroScene`, key `b.id`), `packages/engine/src/intro/{entry,controller,timeline,config,title,world-geometry,scene}.ts` (budget `loadBudgetMs` 2000 at config.ts:205, entry.ts:25-50,94-105, controller.ts:151-155,199,370-380), `apps/web/lib/intro/*`, `apps/web/app/mar/engine/` for the planet, `scripts/landing-budget.mjs`, D-19/D-21 in `docs/DECISIONES.md`, REQ ENT-004/005/018/021/024/025.
@@ -162,10 +162,18 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 T52: shared world home is apps/web/lib/mundo/ (71 files moved); /juego keeps only page.tsx, game-canvas.tsx, juego.css; /mar styles panels with its own .mar .juego-panel rules (agent)
 - 2026-10-01 T52: on this Windows machine the full e2e run at --workers=2 has load timeouts that pass when rerun alone, and e2e/despliegue.spec.ts (/api/art) fails because path.relative gives backslashes; T62 must fix that spec so its full e2e run can pass (orchestrator)
 
+- 2026-10-01 T54: new steering is 3 optional ShipConfig fields (steerFloor, turnRadius, reverseTurn) set only by /mar through apps/web/app/mar/engine/steering.ts; /juego unchanged (agent)
+- 2026-10-01 T54: /mar reads sensitivity each step via controlSensitivity(); T55 only has to call setControlSensitivity; steering values are `muestra`, to tune on a real phone (agent)
+- 2026-10-01 T54: integration failed once because ESLint linted .claude/worktrees; fixed by ignoring .claude/** in eslint.config.mjs (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-01 T54: in turbo, the pull-back turn is still wider than at normal speed (101 u vs 65 u)
 - 2026-10-01: parallax landing (next batch)
 
 ## Log
 - 2026-10-01 21:40 T52 launched · attempt 1 · agent a8c286457ec28b741
 - 2026-10-01 21:40 T54 launched · attempt 1 · agent a54ffde1ea099d9dd
+- 2026-10-01 22:11 T54 done · branch worktree-agent-a54ffde1ea099d9dd → 9c204be
 - 2026-10-01 22:16 T52 done · branch worktree-agent-a8c286457ec28b741 → 5c5b886
+- 2026-10-01 22:18 T53 launched · attempt 1 · agent ac03818fc888500c6
+- 2026-10-01 22:18 T57 launched · attempt 1 · agent a42618e2a4c75025b
