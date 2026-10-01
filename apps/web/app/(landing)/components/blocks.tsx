@@ -1,6 +1,6 @@
 import type { Artist } from '@boia/contracts';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { ADMIN_PATH } from '../../../lib/admin/paths';
 import {
   ACCESS_COPY,
@@ -89,7 +89,10 @@ export function BlockView({
     case 'hero':
       return (
         <section id="inicio" className="hero" aria-labelledby="hero-title" data-block={block.id}>
-          {heroScene ?? <div className="hero__sea" aria-hidden="true" />}
+          {/* Con clave: `heroScene` lo crea el servidor (LandingPage) y aquí va entre hermanos. */}
+          <Fragment key="hero-scene">
+            {heroScene ?? <div className="hero__sea" aria-hidden="true" />}
+          </Fragment>
           <div className="hero__content">
             <p className="hero__brand">{t('hero.brand')}</p>
             <h1 id="hero-title" className="hero__title">

@@ -4,6 +4,20 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — fuera de plan: CSP sin `'unsafe-eval'` y clave de la escena de la entrada
+
+Qué existe:
+- **CSP de producción sin `'unsafe-eval'`** (REQ-ARQ-012): `packages/engine/src/pixi-app.ts` importa `pixi.js/unsafe-eval` (todas las `Application` del motor salen de `newApplication`), así que PixiJS ya no compila con `new Function`. `lib/security-headers.ts` sólo lo deja en desarrollo (refresco en caliente). Comprobado con `pnpm build && pnpm start`: la entrada (`/?intro=1`), `/juego` y `/mar` arrancan sin errores de CSP.
+- **Aviso de React «Each child in a list should have a unique "key"»** en la landing (`BlockView`, hero): `heroScene` lo crea el servidor (`LandingPage`) y se pintaba entre hermanos sin clave; ahora va en un `Fragment` con `key`.
+- En Windows, el repo necesita `core.autocrlf=false` (con CRLF fallan `apps/web/lib/barco/catalog.test.ts` y los `.sh`).
+
+Comandos:
+```
+pnpm exec vitest run --testTimeout=30000 && pnpm typecheck && pnpm lint && pnpm build   # exit 0 salvo packages/db (sin Postgres local); 871 pruebas; landing 180,5 kB de 192
+```
+
+Pendiente: no se corrieron las e2e ni `tools/spec/checks.sh` (python3) en esta sesión.
+
 ## 2026-09-30 — plan 004 T49: entrega: estado por REQ, i18n, cabeceras de seguridad y documentos de traspaso
 
 Qué existe:

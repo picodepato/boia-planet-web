@@ -1,4 +1,8 @@
 import { AccessibilitySystem, Application } from 'pixi.js';
+// Sombreadores y uniforms sin `new Function`: así la CSP no necesita
+// `'unsafe-eval'` en producción (REQ-ARQ-012). Todas las Application del
+// motor salen de aquí, así que basta con importarlo una vez.
+import 'pixi.js/unsafe-eval';
 
 /**
  * Aplicaciones Pixi del motor (juego, entrada y la prueba de la esfera), con

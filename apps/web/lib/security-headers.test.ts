@@ -12,9 +12,12 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'self'");
     expect(csp).toContain(`connect-src 'self' data: blob: ${HOST}`);
-    // PixiJS 8 compila con `new Function` (ver security-headers.ts).
-    expect(csp).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
+    // Sin `'unsafe-eval'`: el motor importa `pixi.js/unsafe-eval` (ver security-headers.ts).
+    expect(csp).toContain("script-src 'self' 'unsafe-inline'");
+    expect(csp).not.toContain("'unsafe-eval'");
     expect(csp).not.toContain('ws:');
+    // En desarrollo, el refresco en caliente sí lo necesita.
+    expect(get(true, 'Content-Security-Policy')).toContain("'unsafe-eval'");
     expect(get(true, 'Content-Security-Policy')).toContain('ws:');
   });
 

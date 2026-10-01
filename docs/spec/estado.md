@@ -300,7 +300,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ARQ-009 | Auditoría con 5 campos | L1 | HECHO | [rls.test.ts](../../packages/db/src/rls.test.ts) «un cambio de estado registra autor, motivo y valores anterior y nuevo» | — |
 | REQ-ARQ-010 | Recompensas con sesión firmada | L1 | final | — | Recompensas validadas en servidor (D-20) |
 | REQ-ARQ-011 | Identidad pública separada | L1 | final | — | Identidad pública en servidor (D-20) |
-| REQ-ARQ-012 | Seguridad web y secretos | L1 | PARCIAL | [entrega.spec.ts](../../apps/web/e2e/entrega.spec.ts); [security-headers.test.ts](../../apps/web/lib/security-headers.test.ts) | CSP y cabeceras de seguridad en next.config (T49; `unsafe-eval` por PixiJS); límites, origen y repetición llegan con el servidor (D-20) |
+| REQ-ARQ-012 | Seguridad web y secretos | L1 | PARCIAL | [entrega.spec.ts](../../apps/web/e2e/entrega.spec.ts); [security-headers.test.ts](../../apps/web/lib/security-headers.test.ts) | CSP y cabeceras de seguridad en next.config (T49; sin `unsafe-eval` en producción: el motor importa `pixi.js/unsafe-eval`); límites, origen y repetición llegan con el servidor (D-20) |
 | REQ-ARQ-013 | Conservación de datos y copias | L1 | final | — | Copias en servidor (D-20) |
 | REQ-ARQ-014 | Presupuesto de 1 MB y 5 MB | L1 | HECHO | [sectores.spec.ts](../../apps/web/e2e/sectores.spec.ts); [world-budget.test.ts](../../apps/web/scripts/world-budget.test.ts) | — |
 | REQ-ARQ-015 | 30 y 60 FPS | L1 | PARCIAL | [sectors.ts](../../packages/engine/src/world/sectors.ts) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |

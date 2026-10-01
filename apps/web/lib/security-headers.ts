@@ -5,9 +5,9 @@
  * La CSP es la que aguanta la versión de prueba sin servidor propio (D-20):
  * - `script-src 'unsafe-inline'`: Next mete scripts en línea (el payload de
  *   React Server Components) y no hay middleware que ponga nonces.
- * - `script-src 'unsafe-eval'`: PixiJS 8 (el motor de /juego y de la entrada)
- *   compila con `new Function`; se quita importando `pixi.js/unsafe-eval` en
- *   @boia/engine. En desarrollo lo pide también el refresco en caliente.
+ * - `script-src 'unsafe-eval'`: sólo en desarrollo, para el refresco en
+ *   caliente. PixiJS 8 compilaría con `new Function`, pero @boia/engine importa
+ *   `pixi.js/unsafe-eval` (`pixi-app.ts`) y en producción no le hace falta.
  * - `img-src https:`: el Admin deja poner fotos por URL (sin almacenamiento
  *   hasta Supabase); `data:`/`blob:` para el Carnet y las texturas de los GLB.
  * - `media-src data: blob:`: la música que sube el Admin vive en el navegador.
@@ -23,7 +23,7 @@ export function securityHeaders({
 }): { key: string; value: string }[] {
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob:",
