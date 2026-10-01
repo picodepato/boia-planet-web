@@ -15,11 +15,12 @@ import { gameRepository } from './repo';
 import { t } from '../i18n';
 
 /**
- * Punto de montaje de los minijuegos (T23) en el 2D. El juego vive en
- * `@boia/engine/minigames`; aquí sólo:
+ * Punto de montaje de los minijuegos (T23, rehechos en T60) en el mar (el
+ * 3D de /mar y, mientras exista, el 2D). El juego vive en
+ * `@boia/engine/minigames`, con su propia capa; aquí sólo:
  * - el panel de la isla Faro o Cañón al acercarse (evento `minigame` de
  *   INICIAR_MINIJUEGO), que explica la actividad y la abre con «Jugar»;
- * - la ruta de prueba del 2D `?minijuego=faro|canon`, que la abre directamente;
+ * - la ruta de prueba `?minijuego=faro|canon`, que la abre directamente;
  * - la capa a pantalla completa, que al salir deja el barco donde estaba.
  */
 
@@ -118,7 +119,7 @@ export function MinigameLayer({
           >
             ×
           </button>
-          <p className="juego-panel-kicker">{t('juego.minigameLayer.minijuegoMuestra')}</p>
+          <p className="juego-panel-kicker">{t('minigame.kicker')}</p>
           <h2>{def.title}</h2>
           <p>{def.summary}</p>
           <button

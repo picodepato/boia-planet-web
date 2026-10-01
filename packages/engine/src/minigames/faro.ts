@@ -1,9 +1,10 @@
-import { between, rng, shuffle } from './rng';
+import { between, rng } from './rng';
 import { outline, wash } from './skin';
 import type {
   BaseConfig,
   DrawOptions,
   Ending,
+  EndReason,
   MinigameDefinition,
   MinigameInput,
   MinigameSim,
@@ -14,20 +15,32 @@ import type {
 } from './types';
 
 /**
- * Vigilancia del faro (REQ-AVE-036). De noche, el haz del faro barre el mar;
- * los barcos pasan en silueta y la bandera sólo se reconoce tras iluminarla
- * un rato. ALARMA ante un pirata lo hace retirarse; ante un mercante, un
- * señuelo o el mar vacío es una falsa alarma. Los mercantes y los señuelos
- * tienen que llegar: no pasa nada si cruzan. Un pirata que cruza se escapa.
+ * Vigilancia del faro (REQ-AVE-036, T60). Es de noche: los barcos piratas
+ * salen del horizonte rumbo a la costa y sólo se ven en silueta. Barriendo
+ * el mar con el haz del faro, la luz se acumula sobre cada barco; cuando se
+ * llena, el pirata queda descubierto y da media vuelta. Si uno llega a la
+ * costa, se pierde una vida. El DESTELLO (uno por oleada) descubre de golpe
+ * a todos los que caen en un cono ancho.
  *
- * Fin: 5 piratas identificados (gana), o se acaba el tiempo, las falsas
- * alarmas permitidas o los barcos por pasar (pierde). Todo `muestra`.
+ * Oleadas cada vez más rápidas y nutridas; racha de descubiertos seguidos
+ * que multiplica los puntos; tres vidas. Fin: sin vidas, o tras la última
+ * oleada. Se gana el premio con `goal` puntos o más. Todo `muestra`.
  */
 
+export type FaroKind = 'sloop' | 'brig' | 'galleon';
+
+export interface FaroKindRule {
+  /** s de luz continua que hacen falta para descubrirlo. */
+  spotS: number;
+  points: number;
+  /** Multiplica la velocidad de la oleada. */
+  speed: number;
+}
+
 export interface FaroConfig extends BaseConfig {
-  maxErrors: number;
-  /** s de luz continua para reconocer la bandera. */
-  identifyS: number;
+  lives: number;
+  /** Oleadas de la noche; tras la última, la partida acaba. */
+  waves: number;
   /** Semiancho del haz, en radianes (generoso: no exige precisión de un píxel). */
   beamHalfWidth: number;
   /** rad/s del haz con el teclado. */
@@ -36,102 +49,139 @@ export interface FaroConfig extends BaseConfig {
   followSpeed: number;
   beamMin: number;
   beamMax: number;
-  alarmCooldownS: number;
-  fleet: {
-    count: number;
-    pirates: number;
-    decoys: number;
+  /** Fracción de luz que pierde por s un barco fuera del haz. */
+  fade: number;
+  flash: { halfWidth: number; perWave: number; max: number };
+  kinds: Record<FaroKind, FaroKindRule>;
+  wave: {
+    /** Barcos de la primera oleada y cuántos más en cada una. */
+    ships: number;
+    more: number;
+    /** Altura de escena por s en la primera oleada, y cuánto sube por oleada. */
+    speed: number;
+    speedUp: number;
+    /** s entre barcos, cuánto baja por oleada y su mínimo. */
     intervalS: number;
-    jitterS: number;
-    /** Anchos de escena por segundo. */
-    speedMin: number;
-    speedMax: number;
-    /** Carriles (y lógica) por donde pasan. */
-    lanes: readonly number[];
+    intervalDown: number;
+    intervalMin: number;
+    /** s de respiro entre oleadas. */
+    breakS: number;
   };
+  /** La racha: cada `every` descubiertos seguidos, +1 al multiplicador, hasta `max`. */
+  combo: { every: number; max: number };
 }
 
 export const FARO_DEFAULTS: FaroConfig = {
-  version: 1,
-  goal: 5,
-  timeLimitS: 90,
-  maxErrors: 3,
-  identifyS: 0.6,
-  beamHalfWidth: 0.13,
-  turnSpeed: 1.7,
-  followSpeed: 5,
-  beamMin: -1.3,
-  beamMax: 1.3,
-  alarmCooldownS: 0.6,
-  fleet: {
-    count: 16,
-    pirates: 8,
-    decoys: 4,
-    intervalS: 4.2,
-    jitterS: 1.4,
-    speedMin: 0.06,
-    speedMax: 0.1,
-    lanes: [0.24, 0.34, 0.44, 0.54],
+  version: 2,
+  goal: 600,
+  timeLimitS: 600,
+  lives: 3,
+  waves: 10,
+  beamHalfWidth: 0.1,
+  turnSpeed: 1.8,
+  followSpeed: 4.5,
+  beamMin: -1.35,
+  beamMax: 1.35,
+  fade: 0.8,
+  flash: { halfWidth: 0.5, perWave: 1, max: 2 },
+  kinds: {
+    sloop: { spotS: 0.3, points: 10, speed: 1.35 },
+    brig: { spotS: 0.5, points: 15, speed: 1 },
+    galleon: { spotS: 0.9, points: 25, speed: 0.7 },
   },
+  wave: {
+    ships: 4,
+    more: 2,
+    speed: 0.055,
+    speedUp: 0.15,
+    intervalS: 2.4,
+    intervalDown: 0.15,
+    intervalMin: 0.9,
+    breakS: 2.5,
+  },
+  combo: { every: 4, max: 4 },
   reward: { policy: 'daily', points: 15, coins: 5, maxPoints: 30, maxCoins: 10 },
 };
 
 /** Faro: la lámpara, en coordenadas lógicas de la escena. */
-export const LAMP: Point = { x: 0.5, y: 0.84 };
-const HORIZON = 0.13;
-const EDGE = 0.07;
+export const LAMP: Point = { x: 0.5, y: 0.86 };
+export const HORIZON = 0.14;
+/** Un barco que llega a esta altura ha tocado costa. */
+export const COAST_Y = 0.76;
 
-export type ShipKind = 'pirate' | 'merchant' | 'decoy';
-type ShipState = 'waiting' | 'sailing' | 'retreating' | 'arrived' | 'escaped' | 'gone';
+export interface FaroShipPlan {
+  kind: FaroKind;
+  /** s desde el principio de la oleada. */
+  delay: number;
+  /** x de salida en el horizonte y x de la costa adonde va. */
+  x0: number;
+  tx: number;
+}
+
+export type FaroShipState = 'waiting' | 'sailing' | 'retreating' | 'landed' | 'gone';
 
 export interface FaroShip {
   id: number;
-  kind: ShipKind;
+  wave: number;
+  kind: FaroKind;
   spawnAt: number;
-  y: number;
-  dir: 1 | -1;
-  speed: number;
+  x0: number;
+  tx: number;
   x: number;
-  state: ShipState;
-  litFor: number;
-  identified: boolean;
+  y: number;
+  /** Velocidad vertical (altura de escena por s). */
+  speed: number;
+  /** Luz acumulada, 0..1: a 1 queda descubierto. */
+  light: number;
+  state: FaroShipState;
 }
 
 interface Mark {
-  kind: 'hit' | 'false_alarm' | 'escape';
+  kind: 'hit' | 'escape';
   x: number;
   y: number;
+  text: string;
   age: number;
 }
 
-/** La flota de una semilla: siempre la misma. */
-export function faroFleet(seed: number, c: FaroConfig): FaroShip[] {
-  const r = rng(seed);
-  const f = c.fleet;
-  const kinds = shuffle(r, [
-    ...Array<ShipKind>(f.pirates).fill('pirate'),
-    ...Array<ShipKind>(f.decoys).fill('decoy'),
-    ...Array<ShipKind>(Math.max(0, f.count - f.pirates - f.decoys)).fill('merchant'),
-  ]);
-  return kinds.map((kind, i) => {
-    const dir: 1 | -1 = r() < 0.5 ? 1 : -1;
-    return {
-      id: i,
-      kind,
-      spawnAt: i * f.intervalS + between(r, 0, f.jitterS),
-      y: f.lanes[Math.floor(r() * f.lanes.length)] ?? 0.4,
-      dir,
-      speed: between(r, f.speedMin, f.speedMax),
-      x: dir === 1 ? -EDGE : 1 + EDGE,
-      state: 'waiting',
-      litFor: 0,
-      identified: false,
-    };
-  });
+/** Ritmo de la oleada `n` (desde 1): más rápida y más apretada cada vez. */
+export function faroWave(
+  c: FaroConfig,
+  n: number,
+): { speed: number; intervalS: number; ships: number } {
+  const w = c.wave;
+  return {
+    speed: w.speed * (1 + w.speedUp * (n - 1)),
+    intervalS: Math.max(w.intervalMin, w.intervalS - w.intervalDown * (n - 1)),
+    ships: w.ships + w.more * (n - 1),
+  };
 }
 
-/** s desde que aparece hasta que entra en la escena. */
-const entryDelay = (s: FaroShip) => EDGE / s.speed;
+/** Las oleadas de una semilla: siempre las mismas. */
+export function faroPlan(seed: number, c: FaroConfig): FaroShipPlan[][] {
+  const r = rng(seed);
+  const plan: FaroShipPlan[][] = [];
+  for (let n = 1; n <= c.waves; n++) {
+    const w = faroWave(c, n);
+    const ships: FaroShipPlan[] = [];
+    let t = n === 1 ? 0.8 : 0.4;
+    for (let i = 0; i < w.ships; i++) {
+      const roll = r();
+      const galleon = n >= 3 ? 0.2 : 0;
+      const sloop = Math.min(0.5, 0.15 + 0.05 * n);
+      const kind: FaroKind = roll < galleon ? 'galleon' : roll < galleon + sloop ? 'sloop' : 'brig';
+      ships.push({ kind, delay: t, x0: between(r, 0.06, 0.94), tx: between(r, 0.08, 0.92) });
+      t += w.intervalS * between(r, 0.75, 1.25);
+    }
+    plan.push(ships);
+  }
+  return plan;
+}
+
+/** Multiplicador de la racha tras `streak` descubiertos seguidos. */
+export function faroMultiplier(c: FaroConfig, streak: number): number {
+  return Math.min(c.combo.max, 1 + Math.floor(streak / c.combo.every));
+}
 
 const angleTo = (x: number, y: number) => Math.atan2(x - LAMP.x, LAMP.y - y);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -139,45 +189,83 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 export class FaroSim implements MinigameSim {
   time = 0;
   score = 0;
-  errors = 0;
-  escaped = 0;
+  lives: number;
+  /** Oleada en curso (desde 1). */
+  wave = 1;
+  /** Descubiertos seguidos sin perder una vida. */
+  streak = 0;
+  flashes: number;
   ended: Ending | null = null;
   beam = 0;
-  readonly ships: FaroShip[];
-  private cooldown = 0;
+  readonly ships: FaroShip[] = [];
+  readonly plan: FaroShipPlan[][];
+  /** s de respiro antes de la oleada siguiente; null en plena oleada. */
+  breakLeft: number | null = null;
+  /** s desde el último destello (para dibujarlo). */
+  flashAge = Infinity;
+  private nextId = 0;
   private marks: Mark[] = [];
 
   constructor(
     seed: number,
     readonly config: FaroConfig,
   ) {
-    this.ships = faroFleet(seed, config);
+    this.plan = faroPlan(seed, config);
+    this.lives = config.lives;
+    this.flashes = Math.min(config.flash.max, config.flash.perWave);
+    this.launchWave(0);
+  }
+
+  get multiplier(): number {
+    return faroMultiplier(this.config, this.streak);
+  }
+
+  private launchWave(at: number) {
+    const w = faroWave(this.config, this.wave);
+    for (const p of this.plan[this.wave - 1] ?? []) {
+      this.ships.push({
+        id: this.nextId++,
+        wave: this.wave,
+        kind: p.kind,
+        spawnAt: at + p.delay,
+        x0: p.x0,
+        tx: p.tx,
+        x: p.x0,
+        y: HORIZON,
+        speed: w.speed * this.config.kinds[p.kind].speed,
+        light: 0,
+        state: 'waiting',
+      });
+    }
   }
 
   aim(): Point {
     return { x: LAMP.x + Math.sin(this.beam) * 0.5, y: LAMP.y - Math.cos(this.beam) * 0.5 };
   }
 
-  /** ¿Ilumina el haz este barco? */
-  isLit(s: FaroShip): boolean {
-    if (s.state !== 'sailing' || s.x <= 0 || s.x >= 1) return false;
-    const dist = Math.hypot(s.x - LAMP.x, LAMP.y - s.y);
-    return Math.abs(angleTo(s.x, s.y) - this.beam) <= this.config.beamHalfWidth + 0.035 / dist;
+  /** ¿Cae el barco dentro de un cono de semiancho `half` alrededor del haz? */
+  inCone(s: FaroShip, half: number): boolean {
+    if (s.state !== 'sailing') return false;
+    const dist = Math.max(0.05, Math.hypot(s.x - LAMP.x, LAMP.y - s.y));
+    return Math.abs(angleTo(s.x, s.y) - this.beam) <= half + 0.03 / dist;
   }
 
-  /** El barco que recibe la alarma: el iluminado más cerca del centro del haz. */
-  target(): FaroShip | null {
-    let best: FaroShip | null = null;
-    let bestD = Infinity;
-    for (const s of this.ships) {
-      if (!this.isLit(s)) continue;
-      const d = Math.abs(angleTo(s.x, s.y) - this.beam);
-      if (d < bestD) {
-        bestD = d;
-        best = s;
-      }
-    }
-    return best;
+  /** ¿Ilumina el haz este barco? */
+  isLit(s: FaroShip): boolean {
+    return this.inCone(s, this.config.beamHalfWidth);
+  }
+
+  /** Descubre un barco: media vuelta, puntos con el multiplicador de la racha. */
+  private spot(s: FaroShip, out: SimEvent[]) {
+    const mult = this.multiplier;
+    const points = this.config.kinds[s.kind].points * mult;
+    this.score += points;
+    this.streak++;
+    s.light = 1;
+    s.state = 'retreating';
+    const ev: SimEvent = { kind: 'hit', x: s.x, y: s.y, points, combo: mult };
+    out.push(ev);
+    this.marks.push({ kind: 'hit', x: s.x, y: s.y, text: `+${points}`, age: 0 });
   }
 
   step(dt: number, input: MinigameInput): SimEvent[] {
@@ -185,9 +273,9 @@ export class FaroSim implements MinigameSim {
     const c = this.config;
     const out: SimEvent[] = [];
     this.time += dt;
-    this.cooldown = Math.max(0, this.cooldown - dt);
+    this.flashAge += dt;
     for (const m of this.marks) m.age += dt;
-    this.marks = this.marks.filter((m) => m.age < 1.4);
+    this.marks = this.marks.filter((m) => m.age < 1.2);
 
     // Haz: el teclado lo gira; el dedo o el puntero lo llevan hacia sí.
     if (input.turn) this.beam += clamp(input.turn, -1, 1) * c.turnSpeed * dt;
@@ -204,73 +292,91 @@ export class FaroSim implements MinigameSim {
 
     for (const s of this.ships) {
       if (s.state === 'waiting' && this.time >= s.spawnAt) s.state = 'sailing';
-      if (s.state === 'sailing' || s.state === 'retreating') s.x += s.dir * s.speed * dt;
-      const out1 = s.dir === 1 ? s.x > 1 + EDGE : s.x < -EDGE;
-      if (s.state === 'sailing' && out1) {
-        s.state = s.kind === 'pirate' ? 'escaped' : 'arrived';
-        if (s.kind === 'pirate') {
-          this.escaped++;
-          const ev = { kind: 'escape' as const, x: clamp(s.x, 0.04, 0.96), y: s.y };
+      if (s.state === 'sailing') {
+        s.y += s.speed * dt;
+        const k = clamp((s.y - HORIZON) / (COAST_Y - HORIZON), 0, 1);
+        s.x = s.x0 + (s.tx - s.x0) * k;
+        if (s.y >= COAST_Y) {
+          s.state = 'landed';
+          this.lives = Math.max(0, this.lives - 1);
+          this.streak = 0;
+          const ev: SimEvent = { kind: 'escape', x: s.x, y: COAST_Y };
           out.push(ev);
-          this.marks.push({ ...ev, age: 0 });
+          this.marks.push({ kind: 'escape', x: s.x, y: COAST_Y - 0.03, text: '−1', age: 0 });
+          continue;
         }
-      } else if (s.state === 'retreating' && out1) {
-        s.state = 'gone';
-      }
-      if (this.isLit(s)) {
-        s.litFor += dt;
-        if (s.litFor >= c.identifyS) s.identified = true;
-      } else {
-        s.litFor = 0;
-      }
-    }
-
-    if (input.action && this.cooldown === 0) {
-      this.cooldown = c.alarmCooldownS;
-      const t = this.target();
-      if (t && t.kind === 'pirate') {
-        this.score++;
-        t.identified = true;
-        t.state = 'retreating';
-        t.dir = t.dir === 1 ? -1 : 1;
-        t.speed *= 1.6;
-        const ev = { kind: 'hit' as const, x: t.x, y: t.y };
-        out.push(ev);
-        this.marks.push({ ...ev, age: 0 });
-      } else {
-        this.errors++;
-        const p = t ?? this.aim();
-        const ev = { kind: 'false_alarm' as const, x: p.x, y: t ? t.y : 0.4 };
-        out.push(ev);
-        this.marks.push({ ...ev, age: 0 });
+        if (this.isLit(s)) {
+          s.light += dt / c.kinds[s.kind].spotS;
+          if (s.light >= 1) this.spot(s, out);
+        } else {
+          s.light = Math.max(0, s.light - c.fade * dt);
+        }
+      } else if (s.state === 'retreating') {
+        s.y -= s.speed * 1.6 * dt;
+        if (s.y < HORIZON - 0.06) s.state = 'gone';
       }
     }
 
+    // DESTELLO: descubre a todos los del cono ancho. Uno por oleada.
+    if (input.action) {
+      if (this.flashes > 0) {
+        this.flashes--;
+        this.flashAge = 0;
+        out.push({ kind: 'flash' });
+        for (const s of this.ships) if (this.inCone(s, c.flash.halfWidth)) this.spot(s, out);
+      } else {
+        out.push({ kind: 'false_alarm' });
+      }
+    }
+
+    this.advanceWaves(dt, out);
     this.ended = this.checkEnd();
     if (this.ended) out.push({ kind: 'end' });
     return out;
   }
 
+  private advanceWaves(dt: number, out: SimEvent[]) {
+    const c = this.config;
+    if (this.breakLeft === null) {
+      const live = this.ships.some(
+        (s) => s.wave === this.wave && (s.state === 'waiting' || s.state === 'sailing'),
+      );
+      if (!live && this.wave < c.waves) this.breakLeft = c.wave.breakS;
+      return;
+    }
+    this.breakLeft -= dt;
+    if (this.breakLeft > 0) return;
+    this.breakLeft = null;
+    this.wave++;
+    this.flashes = Math.min(c.flash.max, this.flashes + c.flash.perWave);
+    this.launchWave(this.time);
+    out.push({ kind: 'wave', wave: this.wave });
+  }
+
   private checkEnd(): Ending | null {
     const c = this.config;
-    if (this.score >= c.goal) return { outcome: 'won', reason: 'goal' };
-    if (this.errors >= c.maxErrors) return { outcome: 'lost', reason: 'errors' };
-    if (this.time >= c.timeLimitS) return { outcome: 'lost', reason: 'time' };
-    if (this.ships.every((s) => s.state !== 'waiting' && s.state !== 'sailing')) {
-      return { outcome: 'lost', reason: 'ships' };
+    let reason: EndReason | null = null;
+    if (this.lives <= 0) reason = 'lives';
+    else if (this.time >= c.timeLimitS) reason = 'time';
+    else if (
+      this.wave >= c.waves &&
+      this.breakLeft === null &&
+      this.ships.every((s) => s.state !== 'waiting' && s.state !== 'sailing')
+    ) {
+      reason = 'waves';
     }
-    return null;
+    if (!reason) return null;
+    return { outcome: this.score >= c.goal ? 'won' : 'lost', reason };
   }
 
   status(): StatusItem[] {
     const c = this.config;
-    const left = Math.max(0, Math.ceil(c.timeLimitS - this.time));
-    const ships = this.ships.filter((s) => s.state === 'waiting' || s.state === 'sailing').length;
     return [
-      { label: 'Piratas', value: `${this.score}/${c.goal}` },
-      { label: 'Falsas alarmas', value: `${this.errors}/${c.maxErrors}` },
-      { label: 'Tiempo', value: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` },
-      { label: 'Barcos', value: String(ships) },
+      { label: 'Puntos', value: String(this.score) },
+      { label: 'Vidas', value: `${this.lives}/${c.lives}` },
+      { label: 'Oleada', value: `${this.wave}/${c.waves}` },
+      { label: 'Racha', value: `x${this.multiplier}` },
+      { label: 'Destellos', value: String(this.flashes) },
     ];
   }
 
@@ -283,42 +389,69 @@ export class FaroSim implements MinigameSim {
   }
 }
 
+/**
+ * El tiempo mínimo para llegar a `score` con esta semilla: ningún barco se
+ * descubre antes de salir, cada uno da como mucho sus puntos por el
+ * multiplicador máximo, y una oleada no empieza antes de que salga el último
+ * barco de la anterior y pase el respiro.
+ */
 export function faroMinPlausibleMs(score: number, seed: number, c: FaroConfig): number {
   if (score <= 0) return 0;
-  const entries = faroFleet(seed, c)
-    .filter((s) => s.kind === 'pirate')
-    .map((s) => s.spawnAt + entryDelay(s))
-    .sort((a, b) => a - b);
-  const kth = entries[score - 1];
-  if (kth === undefined) return Infinity;
-  return Math.max(kth, (score - 1) * c.alarmCooldownS) * 1000;
+  const spawns: { t: number; max: number }[] = [];
+  let start = 0;
+  for (const wave of faroPlan(seed, c)) {
+    for (const p of wave)
+      spawns.push({ t: start + p.delay, max: c.kinds[p.kind].points * c.combo.max });
+    start += Math.max(0, ...wave.map((p) => p.delay)) + c.wave.breakS;
+  }
+  spawns.sort((a, b) => a.t - b.t);
+  let sum = 0;
+  for (const s of spawns) {
+    sum += s.max;
+    if (sum >= score) return s.t * 1000;
+  }
+  return Infinity;
 }
 
 export const faro: MinigameDefinition<FaroConfig> = {
   id: 'faro',
   title: 'Vigilancia del faro',
   summary:
-    'De noche, el faro vigila la bocana. Barre el mar con el haz, reconoce las banderas y da la alarma cuando veas un pirata.',
+    'Es de noche y los piratas vienen a oscuras hacia la costa. Bárrelos con el haz del faro: un pirata iluminado da media vuelta.',
   instructions: [
     'Mueve el haz con el dedo, el ratón o las flechas.',
-    'Deja la luz sobre un barco hasta ver su bandera.',
-    'Calavera y huesos cruzados = pirata: pulsa ALARMA (o Espacio).',
-    'Los mercantes y los barcos de rayas deben llegar: no les des la alarma.',
+    'Deja la luz sobre un barco hasta que se llene su círculo: descubierto, se va.',
+    'Si un pirata toca costa, pierdes una de tus tres vidas. Descubrir varios seguidos multiplica los puntos.',
+    'DESTELLO (o Espacio): ilumina de golpe un cono ancho. Uno por oleada.',
   ],
-  actionLabel: 'ALARMA',
+  actionLabel: 'DESTELLO',
+  hint: '← → haz · Espacio destello · Esc pausa',
   defaults: FARO_DEFAULTS,
   create: (seed, config) => new FaroSim(seed, config),
   minPlausibleMs: faroMinPlausibleMs,
   endText(e) {
-    switch (e.reason) {
-      case 'goal':
-        return '¡Bocana a salvo! Cinco piratas se han dado la vuelta.';
-      case 'errors':
-        return 'Demasiadas falsas alarmas: el puerto ya no se fía.';
-      case 'ships':
-        return 'Ya no quedan barcos por pasar esta noche.';
+    if (e.reason === 'waves') return '¡Amanece! Has guardado la costa toda la noche.';
+    if (e.reason === 'time') return 'Se acabó la guardia de esta noche.';
+    return 'Tres piratas han tocado costa: se acabó la guardia.';
+  },
+  feedback(ev) {
+    switch (ev.kind) {
+      case 'hit':
+        return {
+          text:
+            ev.combo && ev.combo > 1
+              ? `¡Descubierto! +${ev.points} (x${ev.combo})`
+              : `¡Descubierto! +${ev.points}`,
+          tone: 'good',
+        };
+      case 'escape':
+        return { text: 'Un pirata ha tocado costa: −1 vida.', tone: 'bad' };
+      case 'wave':
+        return { text: `Oleada ${ev.wave}: vienen más rápido.`, tone: 'good' };
+      case 'false_alarm':
+        return { text: 'Sin destellos: llega otro con la próxima oleada.', tone: 'bad' };
       default:
-        return 'Se acabó la guardia de esta noche.';
+        return null;
     }
   },
 };
@@ -326,14 +459,15 @@ export const faro: MinigameDefinition<FaroConfig> = {
 // --- Dibujo ------------------------------------------------------------------
 
 const STARS: readonly [number, number][] = [
-  [0.08, 0.03],
-  [0.2, 0.08],
-  [0.33, 0.02],
-  [0.47, 0.06],
-  [0.61, 0.03],
-  [0.72, 0.09],
-  [0.86, 0.04],
-  [0.94, 0.1],
+  [0.06, 0.03],
+  [0.18, 0.08],
+  [0.29, 0.02],
+  [0.41, 0.06],
+  [0.55, 0.03],
+  [0.66, 0.09],
+  [0.78, 0.04],
+  [0.9, 0.08],
+  [0.97, 0.02],
 ];
 
 function drawFaro(
@@ -359,90 +493,134 @@ function drawFaro(
   ctx.restore();
   ctx.fillStyle = skin.crest;
   for (const [sx, sy] of STARS) ctx.fillRect(X(sx), Y(sy), 2, 2);
+  // Luna.
+  ctx.save();
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = skin.beam;
+  ctx.beginPath();
+  ctx.arc(X(0.86), Y(0.06), u * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = skin.night;
+  ctx.beginPath();
+  ctx.arc(X(0.86) + u * 0.012, Y(0.06) - u * 0.006, u * 0.026, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Olas en perspectiva: más juntas al fondo.
   ctx.save();
   ctx.strokeStyle = skin.wave;
-  ctx.globalAlpha = 0.35;
-  ctx.lineWidth = Math.max(1, u * 0.004);
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = Math.max(1, u * 0.003);
   const drift = o.reducedMotion ? 0 : (o.clock * 0.02) % 0.2;
-  for (let row = 0; row < 7; row++) {
-    const y = HORIZON + 0.06 + row * 0.1;
-    for (let col = -1; col < 6; col++) {
-      const x = col * 0.2 + (row % 2) * 0.1 + drift * (row % 2 ? 1 : -1);
+  for (let row = 0; row < 8; row++) {
+    const k = row / 7;
+    const y = HORIZON + 0.03 + (COAST_Y - HORIZON) * k * k;
+    const len = 0.03 + 0.04 * k;
+    for (let col = -1; col < 7; col++) {
+      const x = col * 0.17 + (row % 2) * 0.085 + drift * (row % 2 ? 1 : -1);
       ctx.beginPath();
       ctx.moveTo(X(x), Y(y));
-      ctx.lineTo(X(x + 0.06), Y(y));
+      ctx.lineTo(X(x + len), Y(y));
       ctx.stroke();
     }
   }
   ctx.restore();
 
-  // Haz: luz atenuada, sin destellos.
-  const R = 1.6;
-  const a0 = sim.beam - c.beamHalfWidth;
-  const a1 = sim.beam + c.beamHalfWidth;
-  ctx.save();
-  const g = ctx.createRadialGradient(X(LAMP.x), Y(LAMP.y), 0, X(LAMP.x), Y(LAMP.y), u * 1.1);
-  g.addColorStop(0, skin.beam);
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = g;
-  ctx.globalAlpha = 0.32;
-  ctx.beginPath();
-  ctx.moveTo(X(LAMP.x), Y(LAMP.y));
-  ctx.lineTo(X(LAMP.x + Math.sin(a0) * R), Y(LAMP.y - Math.cos(a0) * R));
-  ctx.lineTo(X(LAMP.x + Math.sin(a1) * R), Y(LAMP.y - Math.cos(a1) * R));
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  for (const s of sim.ships) {
-    if (s.state !== 'sailing' && s.state !== 'retreating') continue;
-    drawShip(ctx, skin, u, X(s.x), Y(s.y), s, sim.isLit(s), c.identifyS);
+  // Haz: luz atenuada, sin destellos rápidos.
+  const R = 1.7;
+  const cone = (half: number, alpha: number) => {
+    const a0 = sim.beam - half;
+    const a1 = sim.beam + half;
+    ctx.save();
+    const g = ctx.createRadialGradient(X(LAMP.x), Y(LAMP.y), 0, X(LAMP.x), Y(LAMP.y), u * 1.2);
+    g.addColorStop(0, skin.beam);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(X(LAMP.x), Y(LAMP.y));
+    ctx.lineTo(X(LAMP.x + Math.sin(a0) * R), Y(LAMP.y - Math.cos(a0) * R));
+    ctx.lineTo(X(LAMP.x + Math.sin(a1) * R), Y(LAMP.y - Math.cos(a1) * R));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+  cone(c.beamHalfWidth, 0.34);
+  if (sim.flashAge < 0.6) {
+    // El destello se abre y se apaga despacio (sin parpadeos).
+    cone(c.flash.halfWidth, 0.3 * (1 - sim.flashAge / 0.6));
   }
 
-  // Torre del faro.
-  const top = LAMP.y + 0.02;
+  // Barcos: los de más lejos (arriba), primero.
+  const ships = sim.ships
+    .filter((s) => s.state === 'sailing' || s.state === 'retreating')
+    .sort((a, b) => a.y - b.y);
+  for (const s of ships) drawShip(ctx, skin, u, X(s.x), Y(s.y), s, sim.isLit(s));
+
+  // Costa con el faro.
   wash(ctx, skin, skin.land, () => {
-    ctx.moveTo(X(0.455), h);
-    ctx.lineTo(X(0.475), Y(top));
-    ctx.lineTo(X(0.525), Y(top));
-    ctx.lineTo(X(0.545), h);
+    ctx.moveTo(0, h);
+    ctx.lineTo(0, Y(COAST_Y + 0.04));
+    for (let i = 0; i <= 12; i++) {
+      ctx.lineTo(X(i / 12), Y(COAST_Y + 0.025 + ((i * 7) % 3) * 0.012));
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+  });
+  outline(ctx, skin, u);
+  const top = LAMP.y + 0.02;
+  wash(ctx, skin, skin.crest, () => {
+    ctx.moveTo(X(0.47), h);
+    ctx.lineTo(X(0.482), Y(top));
+    ctx.lineTo(X(0.518), Y(top));
+    ctx.lineTo(X(0.53), h);
     ctx.closePath();
   });
   outline(ctx, skin, u);
   ctx.fillStyle = skin.accent;
   for (let i = 0; i < 2; i++) {
-    const y0 = top + 0.035 + i * 0.05;
-    ctx.fillRect(X(0.462 + i * 0.004), Y(y0), X(0.076 - i * 0.008), Y(0.018));
+    ctx.fillRect(X(0.475 + i * 0.003), Y(top + 0.035 + i * 0.045), X(0.05 - i * 0.006), Y(0.016));
   }
   ctx.fillStyle = skin.beam;
   ctx.beginPath();
-  ctx.arc(X(LAMP.x), Y(LAMP.y), u * 0.02, 0, Math.PI * 2);
+  ctx.arc(X(LAMP.x), Y(LAMP.y), u * 0.022, 0, Math.PI * 2);
   ctx.fill();
   outline(ctx, skin, u);
 
-  // Marcas de acierto, falsa alarma y escape: anillo y símbolo, sin destellos.
+  // Vidas sobre la costa: faroles.
+  for (let i = 0; i < c.lives; i++) {
+    ctx.save();
+    ctx.globalAlpha = i < sim.lives ? 1 : 0.25;
+    ctx.fillStyle = i < sim.lives ? skin.beam : skin.ink;
+    ctx.beginPath();
+    ctx.arc(X(0.06 + i * 0.05), Y(0.93), u * 0.016, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Marcas: puntos ganados y vidas perdidas, sin destellos.
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `700 ${Math.round(u * 0.05)}px system-ui, sans-serif`;
+  ctx.font = `800 ${Math.round(u * 0.05)}px system-ui, sans-serif`;
   for (const m of sim.drawMarks) {
-    const alpha = Math.max(0, 1 - m.age / 1.4);
-    const color = m.kind === 'hit' ? skin.good : skin.bad;
-    const r = u * (0.05 + (o.reducedMotion ? 0 : m.age * 0.03));
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = Math.max(2, u * 0.006);
-    ctx.beginPath();
-    ctx.arc(X(m.x), Y(m.y), r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.fillText(
-      m.kind === 'hit' ? '✓' : m.kind === 'escape' ? '!' : '✗',
-      X(m.x),
-      Y(m.y) - r - u * 0.03,
-    );
+    ctx.globalAlpha = Math.max(0, 1 - m.age / 1.2);
+    ctx.fillStyle = m.kind === 'hit' ? skin.good : skin.bad;
+    const rise = o.reducedMotion ? 0 : m.age * 0.05;
+    ctx.fillText(m.text, X(m.x), Y(m.y - 0.05 - rise));
   }
   ctx.restore();
+
+  // Cartel de oleada durante el respiro.
+  if (sim.breakLeft !== null && !sim.ended) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = skin.crest;
+    ctx.font = `800 ${Math.round(u * 0.07)}px system-ui, sans-serif`;
+    ctx.fillText(`Oleada ${sim.wave + 1}`, X(0.5), Y(0.36));
+    ctx.restore();
+  }
 }
 
 function drawShip(
@@ -453,104 +631,54 @@ function drawShip(
   y: number,
   s: FaroShip,
   lit: boolean,
-  identifyS: number,
 ) {
-  // Más lejos (arriba), más pequeño.
-  const k = u * 0.05 * (0.65 + s.y);
+  // Más lejos (arriba), más pequeño; el galeón, más grande.
+  const depth = 0.45 + ((s.y - HORIZON) / (COAST_Y - HORIZON)) * 0.75;
+  const size = s.kind === 'galleon' ? 1.35 : s.kind === 'sloop' ? 0.8 : 1;
+  const k = u * 0.065 * depth * size;
+  const shown = lit || s.state === 'retreating';
   ctx.save();
   ctx.translate(x, y);
   // Casco en silueta; iluminado, se aclara.
-  wash(ctx, skin, lit ? '#6f7f94' : '#141c28', () => {
+  wash(ctx, skin, shown ? '#5d4a3a' : '#222c3a', () => {
     ctx.moveTo(-k, -k * 0.1);
     ctx.lineTo(k, -k * 0.1);
     ctx.lineTo(k * 0.7, k * 0.35);
     ctx.lineTo(-k * 0.7, k * 0.35);
     ctx.closePath();
   });
-  if (lit) outline(ctx, skin, u);
-  ctx.strokeStyle = lit ? '#c8d2de' : '#141c28';
-  ctx.lineWidth = Math.max(1.5, k * 0.08);
-  ctx.beginPath();
-  ctx.moveTo(0, -k * 0.1);
-  ctx.lineTo(0, -k * 1.3);
-  ctx.stroke();
-
-  // Bandera: ondea hacia atrás. Sólo se reconoce tras iluminarla (identifyS).
-  const fw = k * 0.8;
-  const fh = k * 0.52;
-  const fx = s.dir === 1 ? -fw : 0;
-  const fy = -k * 1.3;
-  const shown = s.identified || s.state === 'retreating';
-  ctx.translate(fx, fy);
-  if (!shown) {
-    ctx.fillStyle = lit ? '#4a5566' : '#1d2633';
-    ctx.fillRect(0, 0, fw, fh);
-    if (lit) {
-      // Progreso de identificación: la bandera se va revelando.
-      ctx.strokeStyle = skin.beam;
-      ctx.lineWidth = Math.max(2, k * 0.08);
-      ctx.beginPath();
-      ctx.arc(
-        fw / 2,
-        fh / 2,
-        fh * 0.9,
-        -Math.PI / 2,
-        -Math.PI / 2 + (Math.PI * 2 * s.litFor) / identifyS,
-      );
-      ctx.stroke();
-    }
-  } else {
-    drawFlag(ctx, s.kind, fw, fh, skin);
+  if (shown) outline(ctx, skin, u);
+  // Velas.
+  const masts = s.kind === 'galleon' ? [-0.45, 0.35] : [0];
+  for (const m of masts) {
+    wash(ctx, skin, shown ? '#e9e1cf' : '#2a3444', () => {
+      ctx.moveTo(k * m, -k * 0.15);
+      ctx.lineTo(k * m, -k * 1.3);
+      ctx.lineTo(k * (m + 0.55), -k * 0.3);
+      ctx.closePath();
+    });
+    if (shown) outline(ctx, skin, u);
   }
-  ctx.restore();
-}
-
-/**
- * Banderas con patrón además de color (REQ-AVE-039): pirata, negra con
- * calavera y huesos en aspa; señuelo, oscura con rayas horizontales;
- * mercante, clara con una banda diagonal.
- */
-function drawFlag(
-  ctx: CanvasRenderingContext2D,
-  kind: ShipKind,
-  w: number,
-  h: number,
-  skin: MinigameSkin,
-) {
-  ctx.save();
-  ctx.lineCap = 'round';
-  if (kind === 'pirate') {
+  // Bandera pirata sólo cuando se ve: negra con calavera (patrón, no sólo color).
+  if (shown) {
+    const fw = k * 0.5;
+    const fh = k * 0.32;
+    const fx = k * (masts[0] ?? 0) - fw;
+    const fy = -k * 1.32;
     ctx.fillStyle = '#0c0c0c';
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = '#f5f5f5';
-    ctx.lineWidth = Math.max(1.5, h * 0.1);
-    ctx.beginPath();
-    ctx.moveTo(w * 0.28, h * 0.6);
-    ctx.lineTo(w * 0.72, h * 0.92);
-    ctx.moveTo(w * 0.72, h * 0.6);
-    ctx.lineTo(w * 0.28, h * 0.92);
-    ctx.stroke();
+    ctx.fillRect(fx, fy, fw, fh);
     ctx.fillStyle = '#f5f5f5';
     ctx.beginPath();
-    ctx.arc(w * 0.5, h * 0.36, h * 0.22, 0, Math.PI * 2);
+    ctx.arc(fx + fw / 2, fy + fh * 0.45, fh * 0.25, 0, Math.PI * 2);
     ctx.fill();
-  } else if (kind === 'decoy') {
-    ctx.fillStyle = '#1d2a44';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#f5f5f5';
-    for (let i = 0; i < 3; i++) ctx.fillRect(0, h * (0.14 + i * 0.3), w, h * 0.12);
-  } else {
-    ctx.fillStyle = '#f2efe6';
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = skin.accent;
-    ctx.lineWidth = h * 0.22;
+  }
+  // Círculo de luz acumulada: cuánto falta para descubrirlo.
+  if (s.state === 'sailing' && s.light > 0) {
+    ctx.strokeStyle = skin.beam;
+    ctx.lineWidth = Math.max(2, u * 0.006);
     ctx.beginPath();
-    ctx.moveTo(0, h);
-    ctx.lineTo(w, 0);
+    ctx.arc(0, -k * 0.5, k * 1.25, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, s.light));
     ctx.stroke();
   }
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(0, 0, w, h);
   ctx.restore();
 }

@@ -125,10 +125,9 @@ export class LocalSessionAuthority {
     }
     const score = result.score;
     if (!Number.isInteger(score) || score < 0) return { valid: false, reason: 'implausible_score' };
+    // Se gana con la marca del objetivo o más, acabe como acabe la partida.
     const won = score >= s.limits.goal;
-    if ((result.outcome === 'won') !== won || (won && result.reason !== 'goal')) {
-      return { valid: false, reason: 'implausible_score' };
-    }
+    if ((result.outcome === 'won') !== won) return { valid: false, reason: 'implausible_score' };
     const ms = result.elapsedMs;
     if (!Number.isFinite(ms) || ms < 0) return { valid: false, reason: 'implausible_duration' };
     if (ms > s.limits.timeLimitMs + STEP_SLACK_MS) {

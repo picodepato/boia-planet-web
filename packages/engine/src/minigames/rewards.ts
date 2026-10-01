@@ -118,16 +118,17 @@ export function rewardText(r: RewardOutcome, rule: RewardRule): string {
   }
 }
 
-/** Política en palabras, para las instrucciones. */
-export function policyText(rule: RewardRule): string {
+/** Política en palabras, para las instrucciones; con `goal`, la marca que hace falta. */
+export function policyText(rule: RewardRule, goal?: number): string {
   const what = `${rule.points} puntos y ${rule.coins} monedas`;
+  const when = goal ? `, si haces ${goal} o más` : '';
   switch (rule.policy) {
     case 'daily':
-      return `Premio (muestra): ${what}, una vez al día.`;
+      return `Premio (muestra)${when}: ${what}, una vez al día.`;
     case 'season':
-      return `Premio (muestra): ${what}, una vez por temporada.`;
+      return `Premio (muestra)${when}: ${what}, una vez por temporada.`;
     case 'once':
-      return `Premio (muestra): ${what}, una sola vez.`;
+      return `Premio (muestra)${when}: ${what}, una sola vez.`;
     default:
       return 'Sin premio: sólo cuenta tu mejor marca.';
   }

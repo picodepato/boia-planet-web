@@ -6,7 +6,7 @@ import { type WorldLook, minigameSkin } from './skin';
 import { playCue } from './sound';
 import { MINIGAME_CSS } from './styles';
 import type { KeyValueStore } from '../ui/storage';
-import type { MinigameInput, MinigameSim, Point, SimEvent } from './types';
+import type { MinigameInput, MinigameSim, Point } from './types';
 
 /**
  * Anfitrión DOM de un minijuego (REQ-AVE-035, REQ-AVE-039): capa a pantalla
@@ -46,14 +46,6 @@ export function pageAuthority(): LocalSessionAuthority {
   tabAuthority ??= new LocalSessionAuthority();
   return tabAuthority;
 }
-
-const FEEDBACK: Partial<Record<SimEvent['kind'], { text: string; tone: 'good' | 'bad' }>> = {
-  hit: { text: '¡Pirata! Da media vuelta.', tone: 'good' },
-  false_alarm: { text: 'Falsa alarma.', tone: 'bad' },
-  escape: { text: 'Se ha escapado un pirata.', tone: 'bad' },
-  scare: { text: '¡Tiburón ahuyentado!', tone: 'good' },
-  miss: { text: 'Al agua: ningún tiburón en superficie.', tone: 'bad' },
-};
 
 function injectCss(doc: Document) {
   if (doc.getElementById('boia-minigame-css')) return;
@@ -157,13 +149,7 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
     testid: 'minijuego-accion',
     text: def.actionLabel,
   });
-  const hint = el(doc, 'span', {
-    className: 'mg-hint',
-    text:
-      def.id === 'faro'
-        ? '← → haz · Espacio alarma · Esc pausa'
-        : 'Flechas mira · Espacio fuego · Esc pausa',
-  });
+  const hint = el(doc, 'span', { className: 'mg-hint', text: def.hint });
   const actions = el(doc, 'footer', { className: 'mg-actions' }, actionBtn, hint);
   root.append(bar, stage, actions);
   parent.append(root);
@@ -230,11 +216,13 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
   const showIntro = () => {
     showCard(
       'intro',
-      el(doc, 'p', { className: 'mg-kicker', text: 'Minijuego · muestra' }),
       el(doc, 'h3', { text: def.title }),
       el(doc, 'p', { text: def.summary }),
       el(doc, 'ul', {}, ...def.instructions.map((t) => el(doc, 'li', { text: t }))),
-      el(doc, 'p', { className: 'mg-small', text: policyText(def.defaults.reward) }),
+      el(doc, 'p', {
+        className: 'mg-small',
+        text: policyText(def.defaults.reward, def.defaults.goal),
+      }),
       bestLine(),
       volumeControl(),
       el(
@@ -284,7 +272,14 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
     showCard(
       'final',
       el(doc, 'p', { className: 'mg-kicker', text: def.title }),
-      el(doc, 'h3', { text: ending.outcome === 'won' ? '¡Conseguido!' : 'Fin de la partida' }),
+      el(doc, 'h3', {
+        text: ending.outcome === 'won' ? '¡Premio conseguido!' : 'Fin de la partida',
+      }),
+      el(doc, 'p', {
+        className: 'mg-score',
+        testid: 'minijuego-marca',
+        text: `${sim.score} puntos`,
+      }),
       el(doc, 'p', { text: def.endText(ending) }),
       el(doc, 'p', {
         className: 'mg-small',
@@ -314,6 +309,7 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
   const renderChrome = () => {
     root.dataset.phase = controller.phase;
     const sim = controller.sim;
+    root.dataset.score = String(sim?.score ?? 0);
     if (sim?.ended) root.dataset.outcome = sim.ended.outcome;
     else delete root.dataset.outcome;
     actionBtn.disabled = controller.phase !== 'playing';
@@ -337,8 +333,15 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
   };
 
   // --- Acciones ----------------------------------------------------------------
-  const input: { aim: Point | null; turn: number; lift: number; action: boolean } = {
+  const input: {
+    aim: Point | null;
+    pull: Point | null;
+    turn: number;
+    lift: number;
+    action: boolean;
+  } = {
     aim: null,
+    pull: null,
     turn: 0,
     lift: 0,
     action: false,
@@ -348,6 +351,7 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
   function start() {
     controller.start();
     input.action = false;
+    input.pull = null;
     hideCard();
     renderChrome();
     o.onEvent?.('minigame_start', { game: def.id, version: def.defaults.version });
@@ -390,24 +394,47 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
       y: (e.clientY - r.top) / Math.max(1, r.height),
     };
   };
+  // Faro: el haz va hacia el dedo (o sigue al ratón). Cañón: se arrastra
+  // desde cualquier sitio (dirección = ángulo, longitud = potencia) y al
+  // soltar dispara.
+  const drags = def.id === 'canon';
   let dragging = false;
+  let dragFrom: Point | null = null;
+  const pullTo = (p: Point): Point | null =>
+    dragFrom ? { x: p.x - dragFrom.x, y: p.y - dragFrom.y } : null;
   canvas.addEventListener('pointerdown', (e) => {
     if (controller.phase !== 'playing') return;
     dragging = true;
     canvas.setPointerCapture?.(e.pointerId);
-    input.aim = toScene(e);
+    const p = toScene(e);
+    if (drags) {
+      dragFrom = p;
+      input.pull = null;
+    } else {
+      input.aim = p;
+    }
   });
   canvas.addEventListener('pointermove', (e) => {
     if (controller.phase !== 'playing') return;
-    if (dragging || e.pointerType === 'mouse') input.aim = toScene(e);
+    const p = toScene(e);
+    if (drags) {
+      if (dragging) input.pull = pullTo(p);
+    } else if (dragging || e.pointerType === 'mouse') {
+      input.aim = p;
+    }
   });
   const release = (e: PointerEvent, fire: boolean) => {
     if (!dragging) return;
     dragging = false;
-    input.aim = toScene(e);
-    // Cañón: arrastrar apunta y soltar dispara.
-    if (fire && def.id === 'canon' && controller.phase === 'playing') input.action = true;
-    if (e.pointerType !== 'mouse' && def.id === 'faro') input.aim = null;
+    const p = toScene(e);
+    if (drags) {
+      input.pull = pullTo(p);
+      dragFrom = null;
+      if (fire && controller.phase === 'playing') input.action = true;
+      return;
+    }
+    input.aim = p;
+    if (e.pointerType !== 'mouse') input.aim = null;
   };
   canvas.addEventListener('pointerup', (e) => release(e, true));
   canvas.addEventListener('pointercancel', (e) => release(e, false));
@@ -450,6 +477,7 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
     keys.add(e.key.toLowerCase());
     // El teclado manda: la mira deja de seguir al puntero hasta que se mueva.
     input.aim = null;
+    input.pull = null;
   };
   const onKeyUp = (e: KeyboardEvent) => {
     e.stopPropagation();
@@ -486,15 +514,18 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
       const k = (a: string, b: string) => (keys.has(a) || keys.has(b) ? 1 : 0);
       const step: MinigameInput = {
         aim: input.aim,
+        pull: input.pull,
         turn: k('arrowright', 'd') - k('arrowleft', 'a'),
         lift: k('arrowup', 'w') - k('arrowdown', 's'),
         action: input.action,
       };
       input.action = false;
+      // Un arrastre suelto ya apuntó: no se vuelve a aplicar.
+      if (!dragging) input.pull = null;
       const events = controller.tick(dt, step);
       for (const ev of events) {
         playCue(ev.kind, volume * localVolume);
-        const f = FEEDBACK[ev.kind];
+        const f = def.feedback(ev);
         if (f) setFeedback(f.text, f.tone);
       }
       // `tick` puede haber terminado la partida.

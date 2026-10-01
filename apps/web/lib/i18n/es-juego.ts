@@ -138,7 +138,6 @@ export const esJuego = {
   'juego.welcome.acercateAUnaIsla': 'Acércate a una isla para ver su evento.',
   'juego.welcome.textoDeMuestraPendiente': 'Texto de muestra, pendiente de Álvaro.',
   'juego.minigameLayer.cerrar': 'Cerrar',
-  'juego.minigameLayer.minijuegoMuestra': 'Minijuego · muestra',
   'juego.minigameLayer.jugar': 'Jugar',
   'juego.minimap.senalar': 'Señalar {name}',
   'juego.minimap.senalarUnPuntoSin': 'Señalar un punto sin descubrir',

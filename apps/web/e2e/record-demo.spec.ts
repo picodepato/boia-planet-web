@@ -173,11 +173,9 @@ test('recorrido de la versión de prueba en móvil', async ({ baseURL }, info) =
   await pause(page);
   await page.getByTestId('minijuego-empezar').click();
   await pause(page, 2500);
-  for (let i = 0; i < 3 && (await layer.getAttribute('data-phase')) === 'playing'; i++) {
-    await page.getByTestId('minijuego-accion').click();
-    await pause(page, 900);
-  }
-  await expect(page.getByTestId('minijuego-final')).toBeVisible({ timeout: 30_000 });
+  // Un destello (T60) y, sin vigilar más, los piratas tocan costa hasta acabar las vidas.
+  await page.getByTestId('minijuego-accion').click();
+  await expect(page.getByTestId('minijuego-final')).toBeVisible({ timeout: 100_000 });
   await pause(page, 1500);
   await page.getByTestId('minijuego-final').getByTestId('minijuego-volver').click();
   await expect(layer).toHaveCount(0);

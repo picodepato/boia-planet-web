@@ -51,6 +51,15 @@ export function playCue(kind: SimEvent['kind'], volume: number): void {
       tone(520, 880, 0, 0.16, v, 'triangle');
       tone(780, 1180, 0.1, 0.18, v, 'triangle');
       break;
+    case 'flash':
+      tone(300, 1200, 0, 0.3, v, 'sine');
+      break;
+    case 'wave':
+      tone(440, 440, 0, 0.12, v, 'triangle');
+      tone(550, 550, 0.12, 0.12, v, 'triangle');
+      tone(660, 660, 0.24, 0.2, v, 'triangle');
+      break;
+    case 'miss':
     case 'false_alarm':
       tone(220, 180, 0, 0.3, v, 'square');
       break;

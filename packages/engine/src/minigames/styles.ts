@@ -80,6 +80,7 @@ export const MINIGAME_CSS = `
 .mg-card li { margin-bottom: 4px; }
 .mg-kicker { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
 .mg-small { font-size: 13px; opacity: 0.85; }
+.mg-score { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .mg-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .mg-btn {
   flex: 1 1 140px;

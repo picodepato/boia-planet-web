@@ -1,6 +1,6 @@
 /**
  * Minijuegos de INICIAR_MINIJUEGO (REQ-AVE-035…039, D-20): Vigilancia del
- * faro (`faro`) y Cañón contra tiburones (`canon`). Se importa como
+ * faro (`faro`) y Cañón contra tiburones (`canon`), rehechos en T60. Se importa como
  * `@boia/engine/minigames`: sin Pixi, para que la capa HTML no arrastre el
  * motor del mar. `MINIGAME_REGISTRY` va al motor como `runtime.minigames`;
  * `mountMinigame` abre la capa sobre el mar.
@@ -8,20 +8,38 @@
 export * from './types';
 export { MINIGAME_IDS, MINIGAME_REGISTRY, isMinigameId, minigame } from './registry';
 export {
+  COAST_Y,
   FARO_DEFAULTS,
   FaroSim,
+  LAMP,
   faro,
-  faroFleet,
   faroMinPlausibleMs,
+  faroMultiplier,
+  faroPlan,
+  faroWave,
   type FaroConfig,
+  type FaroKind,
+  type FaroShip,
 } from './faro';
 export {
   CANON_DEFAULTS,
+  COAST_X,
   CanonSim,
-  SHARK_PATTERNS,
+  MUZZLE,
+  WATER_Y,
+  aimFromPull,
+  ballAt,
   canon,
   canonMinPlausibleMs,
+  canonMultiplier,
+  canonPlan,
+  canonShot,
+  canonWave,
+  powerFor,
+  pullFor,
   type CanonConfig,
+  type CanonFoe,
+  type Shot,
 } from './canon';
 export {
   INVALID_TEXT,

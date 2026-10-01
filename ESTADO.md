@@ -4,6 +4,56 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T60: Lighthouse and cannon minigames, rebuilt
+
+Qué existe:
+- **Vigilancia del faro** rehecho (`packages/engine/src/minigames/faro.ts`): de noche, los
+  piratas salen del horizonte rumbo a la costa en silueta; el haz (dedo, ratón o ← →)
+  acumula luz sobre cada barco y, llena, el pirata da media vuelta. Tres clases (balandra,
+  bergantín, galeón: rapidez, luz necesaria y puntos distintos), 10 oleadas cada vez más
+  rápidas y apretadas (`faroWave`), 3 vidas (un pirata en la costa = −1), racha que
+  multiplica los puntos (x1…x4, se rompe al perder una vida) y DESTELLO: un cono ancho, uno
+  por oleada (máx. 2 guardados).
+- **Cañón contra tiburones** rehecho (`canon.ts`): vista de lado, cañón en la torre;
+  arrastrar desde cualquier sitio da ángulo (dirección) y potencia (longitud), soltar
+  dispara; la bola vuela en parábola exacta (`canonShot`, `ballAt`, `powerFor`) con la
+  primera parte del arco punteada. Tiburones (se sumergen; la salpicadura sólo asusta a los
+  de superficie) y, desde la oleada 2, piratas (dos impactos; la bola también da en la
+  vela en vuelo). 10 oleadas más rápidas, combo por disparos seguidos que aciertan (x1…x4,
+  un fallo o una vida perdida lo ponen a cero), 3 vidas. Teclado: ↑↓ ángulo, ←→ potencia,
+  Espacio fuego.
+- Los dos: fin por vidas, por acabar las 10 oleadas o por el tope de 600 s; premio (ganchos
+  de siempre: `grantMinigameReward`, `withWinSignal` → logro `win_minigame`) con 600
+  (faro) / 400 (cañón) puntos o más; mejor marca local (`boia.minijuegos.marcas`) en la
+  intro y en la pantalla final, que ahora enseña la marca en grande
+  (`minijuego-marca`). Sesiones: se gana si y sólo si la marca llega al objetivo, acabe como
+  acabe; `minPlausibleMs` nuevo por semilla (cada barco/intruso, como mucho sus puntos al
+  multiplicador máximo, nunca antes de salir).
+- Sin la etiqueta «Minijuego · muestra»: ni en la intro del juego ni en el panel de la isla
+  (clave `minigame.kicker`, «Minijuego»; se quitó `juego.minigameLayer.minijuegoMuestra`).
+- Capa propia, sin tocar la barra de /mar: `mountMinigame` pinta su overlay; textos y
+  avisos de cada juego en su definición (`hint`, `feedback`), sonido para destello y oleada.
+- `docs/spec/estado.md`: REQ-AVE-036/037 enlazan las pruebas nuevas.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 106 archivos, 929 pruebas, todas
+  pasan (bajo carga, algunas pruebas de arte/mundo ajenas a T60 se pasan de 5 s; repetidas,
+  pasan). `minigames.test.ts`: 30 pruebas (oleadas más rápidas, vidas que acaban la
+  partida, parábola que cae en el objetivo con el ángulo/potencia calculados, combo y
+  racha, destello, sesiones, dibujo en los tres estilos).
+- `sh tools/spec/checks.sh` → OK; `pnpm typecheck` → 0; `pnpm lint` → 0; `pnpm build` → 0.
+- `E2E_PORT=3251 pnpm e2e minijuegos.spec.ts --workers=1` → 6 passed (móvil y escritorio):
+  cada juego se abre en su isla con `/mar?ir=faro|canon` y «Jugar», se juega con guion
+  hasta puntuar, se pierden las 3 vidas, pantalla final con marca y mejor marca, y vuelta
+  al mar; pausa y pestaña oculta con `/mar?minijuego=canon`.
+
+Pendiente:
+- Balance (objetivos 600/400, velocidades, premio) es `muestra`: lo ajusta quien juegue.
+- `docs/spec/09-requisitos.md` (criterios de AVE-036/037) y los textos `minigame.*` de
+  `docs/propuestas/textos-zonas.md` / `es-zonas.ts` describen los juegos antiguos (no los
+  usa el código): actualizar con los docs de T62.
+- T63: exponer en el Admin los parámetros que se quieran (objetivo, vidas, oleadas).
+
 ## 2026-10-02 — plan 005 T56: Botellas y ranking en /mar
 
 Qué existe:

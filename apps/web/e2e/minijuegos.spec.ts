@@ -1,80 +1,134 @@
+import { CANON_DEFAULTS, LAMP, powerFor, pullFor } from '@boia/engine/minigames';
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Minijuegos (T23): cada uno se abre por su ruta de prueba
- * `/juego?minijuego=<id>`, se juega hasta un final y se vuelve al mar.
+ * Minijuegos rehechos (T60) dentro del mar 3D: cada uno se abre en su isla
+ * (`/mar?ir=faro`, `/mar?ir=canon`: el barco navega hasta allí y la isla
+ * ofrece «Jugar»), se juega con entradas de guion hasta sumar puntos, se
+ * deja que los intrusos lleguen a la costa hasta perder las tres vidas y,
+ * desde la pantalla final (con la mejor marca), se vuelve al mar.
  */
 
-// Se juega en tiempo real: el cañón necesita sus diez disparos.
-test.describe.configure({ timeout: 90_000 });
+// Se juega en tiempo real: hasta perder las tres vidas pasan unos 40 s.
+test.describe.configure({ timeout: 150_000 });
 
 const layer = (page: Page) => page.getByTestId('minijuego');
+const score = async (page: Page) => Number((await layer(page).getAttribute('data-score')) ?? 0);
 
-async function openMinigame(page: Page, id: 'faro' | 'canon') {
-  await page.goto(`/juego?minijuego=${id}`);
-  await expect(layer(page)).toBeVisible({ timeout: 20_000 });
+async function openMar(page: Page, path: string) {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(path);
+  await expect(page.getByTestId('mar-canvas')).toBeVisible();
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 45_000 });
+  return errors;
+}
+
+/** Navega hasta la isla del juego, cierra su ficha y lo abre con «Jugar». */
+async function openAtIsland(page: Page, id: 'faro' | 'canon') {
+  const errors = await openMar(page, `/mar?ir=${id}`);
+  await expect(page.locator('main.mar')).toHaveAttribute('data-llegada', id, { timeout: 60_000 });
+  const sheet = page.getByTestId('mar-ficha');
+  if (await sheet.isVisible().catch(() => false)) {
+    await sheet.getByRole('button', { name: 'Cerrar' }).first().click();
+  }
+  const panel = page.getByTestId('panel-minijuego');
+  await expect(panel).toBeVisible({ timeout: 15_000 });
+  // Ya no es «Minijuego · muestra»: es un juego de verdad.
+  await expect(panel).not.toContainText('muestra');
+  await panel.getByRole('button', { name: 'Jugar' }).click();
+  await expect(layer(page)).toBeVisible();
   await expect(layer(page)).toHaveAttribute('data-game', id);
-  await expect(layer(page)).toHaveAttribute('data-phase', 'intro');
   await expect(page.getByTestId('minijuego-intro')).toBeVisible();
+  await expect(page.getByTestId('minijuego-intro')).not.toContainText('muestra ·');
   await page.getByTestId('minijuego-empezar').click();
   await expect(layer(page)).toHaveAttribute('data-phase', 'playing');
+  return errors;
 }
 
-async function backToSea(page: Page) {
-  await expect(page.getByTestId('minijuego-final')).toBeVisible();
-  await page.getByTestId('minijuego-final').getByTestId('minijuego-volver').click();
+/** Sin jugar más, los intrusos llegan a la costa: fin de partida y vuelta al mar. */
+async function loseAndReturn(page: Page) {
+  await expect(layer(page)).toHaveAttribute('data-phase', 'ended', { timeout: 100_000 });
+  const final = page.getByTestId('minijuego-final');
+  await expect(final).toBeVisible();
+  await expect(final).toContainText('Vidas: 0/3');
+  await expect(page.getByTestId('minijuego-marca')).toContainText(/[1-9]\d* puntos/);
+  await expect(final).toContainText('mejor marca');
+  await final.getByTestId('minijuego-volver').click();
   await expect(layer(page)).toHaveCount(0);
-  await expect(page.getByTestId('juego')).toBeVisible();
-  await expect(page.getByTestId('minimapa')).toBeVisible();
-  // Al recargar no se vuelve a abrir: la ruta de prueba se consume.
-  expect(new URL(page.url()).searchParams.has('minijuego')).toBe(false);
+  await expect(page.getByTestId('mar-canvas')).toBeVisible();
 }
 
-test('Vigilancia del faro: tres falsas alarmas acaban la guardia y se vuelve al mar', async ({
+test('Vigilancia del faro, en su isla: el haz descubre piratas y las vidas acaban la guardia', async ({
   page,
 }) => {
-  await openMinigame(page, 'faro');
-  await expect(page.getByTestId('minijuego-estado')).toContainText('Falsas alarmas');
-  const alarm = page.getByTestId('minijuego-accion');
-  await expect(alarm).toHaveText('ALARMA');
-  // Al empezar, ningún barco ha llegado aún al haz: dar la alarma es una falsa alarma.
-  for (let i = 0; i < 3; i++) {
-    await alarm.click();
-    await page.waitForTimeout(800);
+  const errors = await openAtIsland(page, 'faro');
+  const status = page.getByTestId('minijuego-estado');
+  await expect(status).toContainText('Vidas 3/3');
+  await expect(status).toContainText('Oleada 1/');
+  await expect(page.getByTestId('minijuego-accion')).toHaveText('DESTELLO');
+
+  // Guion: un destello cuando ya hay barcos en el mar y, después, barridos lentos del haz.
+  const box = (await page.locator('.mg-canvas').boundingBox())!;
+  const pointAt = (a: number) => ({
+    x: box.x + box.width * (LAMP.x + Math.sin(a) * 0.4),
+    y: box.y + box.height * (LAMP.y - Math.cos(a) * 0.4),
+  });
+  await page.waitForTimeout(3000);
+  await page.getByTestId('minijuego-accion').click();
+  const deadline = Date.now() + 40_000;
+  let a = -1.2;
+  let dir = 1;
+  while ((await score(page)) === 0 && Date.now() < deadline) {
+    const p = pointAt(a);
+    await page.mouse.move(p.x, p.y);
+    await page.waitForTimeout(150);
+    a += dir * 0.05;
+    if (Math.abs(a) > 1.2) dir = -dir;
   }
-  await expect(layer(page)).toHaveAttribute('data-phase', 'ended');
-  await expect(layer(page)).toHaveAttribute('data-outcome', 'lost');
-  await expect(page.getByTestId('minijuego-final')).toContainText('falsas alarmas');
-  await backToSea(page);
+  expect(await score(page)).toBeGreaterThan(0);
+  // Se deja de vigilar: el haz al borde, y los piratas tocan costa.
+  const away = pointAt(1.35);
+  await page.mouse.move(away.x, away.y);
+  await loseAndReturn(page);
+  expect(errors).toEqual([]);
 });
 
-test('Cañón contra tiburones: se dispara hasta acabar las bolas y se vuelve al mar', async ({
+test('Cañón contra tiburones, en su isla: arrastrar apunta, la bola cae en parábola y puntúa', async ({
   page,
 }) => {
-  await openMinigame(page, 'canon');
-  await expect(page.getByTestId('minijuego-estado')).toContainText('Bolas');
-  const fire = page.getByTestId('minijuego-accion');
-  await expect(fire).toHaveText('FUEGO');
-  // Arrastrar por el mar apunta y soltar dispara.
+  const errors = await openAtIsland(page, 'canon');
+  const status = page.getByTestId('minijuego-estado');
+  await expect(status).toContainText('Vidas 3/3');
+  await expect(status).toContainText('Combo x1');
+  await expect(page.getByTestId('minijuego-accion')).toHaveText('FUEGO');
+
+  // Guion: arrastrar con el ángulo y la potencia que hacen caer la bola en x = 0,55,
+  // por donde pasan los tiburones camino de la playa; soltar dispara.
+  const angle = 0.7;
+  const pull = pullFor(angle, powerFor(angle, 0.55, CANON_DEFAULTS)!, CANON_DEFAULTS);
   const box = (await page.locator('.mg-canvas').boundingBox())!;
-  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.3);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * 0.2, { steps: 4 });
-  await page.mouse.up();
-  await page.waitForTimeout(800);
-  // Dispara hasta que se acaben las bolas (o, con suerte, los tiburones); la recarga dura 0,7 s.
+  const from = { x: box.x + box.width * 0.3, y: box.y + box.height * 0.6 };
   const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline && (await layer(page).getAttribute('data-phase')) === 'playing') {
-    await fire.click({ timeout: 1000 }).catch(() => {});
-    await page.waitForTimeout(800);
+  while ((await score(page)) === 0 && Date.now() < deadline) {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x + pull.x * box.width, from.y + pull.y * box.height, {
+      steps: 4,
+    });
+    await page.mouse.up();
+    await page.waitForTimeout(700);
   }
-  await expect(layer(page)).toHaveAttribute('data-phase', 'ended', { timeout: 5_000 });
-  await expect(layer(page)).toHaveAttribute('data-outcome', /won|lost/);
-  await backToSea(page);
+  expect(await score(page)).toBeGreaterThan(0);
+  await loseAndReturn(page);
+  expect(errors).toEqual([]);
 });
 
 test('la pausa detiene la partida y ocultar la pestaña quita el premio', async ({ page }) => {
-  await openMinigame(page, 'canon');
+  await openMar(page, '/mar?minijuego=canon');
+  await expect(layer(page)).toBeVisible({ timeout: 20_000 });
+  await page.getByTestId('minijuego-empezar').click();
+  await expect(layer(page)).toHaveAttribute('data-phase', 'playing');
   await page.getByTestId('minijuego-pausa').click();
   await expect(layer(page)).toHaveAttribute('data-phase', 'paused');
   await expect(page.getByTestId('minijuego-pausada')).toBeVisible();
@@ -90,5 +144,7 @@ test('la pausa detiene la partida y ocultar la pestaña quita el premio', async 
   await expect(page.getByTestId('minijuego-estado')).toContainText('sin premio');
   await page.getByTestId('minijuego-salir').click();
   await expect(layer(page)).toHaveCount(0);
-  await expect(page.getByTestId('juego')).toBeVisible();
+  await expect(page.getByTestId('mar-canvas')).toBeVisible();
+  // Al salir, la ruta de prueba se consume.
+  expect(new URL(page.url()).searchParams.has('minijuego')).toBe(false);
 });

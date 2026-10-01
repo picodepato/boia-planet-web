@@ -23,14 +23,17 @@ export interface RewardRule {
 export interface BaseConfig {
   /** Versión de reglas y patrones; cambia la validación. */
   version: number;
-  /** Objetivo: piratas identificados o tiburones ahuyentados. */
+  /** Marca (puntos de la partida) a partir de la cual se gana el premio. */
   goal: number;
+  /** Tope de duración de una partida: más, y la marca no es posible. */
   timeLimitS: number;
   reward: RewardRule;
 }
 
+/** `won`: la partida acabó con `goal` puntos o más (y da premio). */
 export type Outcome = 'won' | 'lost';
-export type EndReason = 'goal' | 'time' | 'errors' | 'ships' | 'ammo';
+/** Sin vidas, tras la última oleada o al tope de tiempo. */
+export type EndReason = 'lives' | 'waves' | 'time';
 
 export interface Ending {
   outcome: Outcome;
@@ -45,11 +48,13 @@ export interface Point {
 
 /**
  * Entrada de un paso. `aim` es el punto que señala el dedo o el puntero;
- * `turn` y `lift` (-1..1) vienen del teclado; `action` es ALARMA o FUEGO y
- * vale sólo en el paso en que se pulsa.
+ * `pull` es el arrastre en curso (del punto donde empezó al de ahora, en
+ * unidades de escena); `turn` y `lift` (-1..1) vienen del teclado; `action`
+ * es DESTELLO o FUEGO y vale sólo en el paso en que se pulsa.
  */
 export interface MinigameInput {
   aim?: Point | null;
+  pull?: Point | null;
   turn?: number;
   lift?: number;
   action?: boolean;
@@ -57,9 +62,30 @@ export interface MinigameInput {
 
 /** Lo que pasó en un paso, para el sonido, los avisos y las marcas en pantalla. */
 export interface SimEvent {
-  kind: 'hit' | 'false_alarm' | 'escape' | 'fire' | 'splash' | 'scare' | 'miss' | 'end';
+  kind:
+    | 'hit'
+    | 'false_alarm'
+    | 'escape'
+    | 'fire'
+    | 'splash'
+    | 'scare'
+    | 'miss'
+    | 'flash'
+    | 'wave'
+    | 'end';
   x?: number;
   y?: number;
+  /** Puntos que dio y multiplicador con que los dio. */
+  points?: number;
+  combo?: number;
+  /** Oleada que empieza. */
+  wave?: number;
+}
+
+/** Aviso en texto de un evento (también se oye; REQ-AVE-039). */
+export interface Feedback {
+  text: string;
+  tone: 'good' | 'bad';
 }
 
 /** Una línea de estado legible sin audio (REQ-AVE-039). */
@@ -99,8 +125,10 @@ export interface MinigameDefinition<C extends BaseConfig = BaseConfig> {
   summary: string;
   /** Instrucciones breves, una por línea. */
   instructions: readonly string[];
-  /** Texto del botón de acción (ALARMA, FUEGO). */
+  /** Texto del botón de acción (DESTELLO, FUEGO). */
   actionLabel: string;
+  /** Teclas, en una línea (sólo con teclado). */
+  hint: string;
   defaults: C;
   create(seed: number, config: C): MinigameSim;
   /**
@@ -110,6 +138,8 @@ export interface MinigameDefinition<C extends BaseConfig = BaseConfig> {
   minPlausibleMs(score: number, seed: number, config: C): number;
   /** Texto del final, por motivo. */
   endText(e: Ending): string;
+  /** Aviso de un evento, o nada. */
+  feedback(ev: SimEvent): Feedback | null;
 }
 
 /** Colores y trazo de un mundo para los minijuegos. */
