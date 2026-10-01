@@ -1,5 +1,6 @@
 import {
   type DialogueView,
+  DEFAULT_SHIP_CONFIG,
   IDLE_INPUT,
   type RuntimeOptions,
   type ShipConfig,
@@ -14,12 +15,6 @@ import {
   stepShip,
 } from '@boia/engine/headless';
 import type { MissionHost } from '@boia/engine/mission';
-import {
-  browserStore,
-  controlSensitivity,
-  loadSettings,
-  setControlSensitivity,
-} from '@boia/engine/ui';
 import type { WorldConfig, WorldObject } from '@boia/world';
 import type { Color, ShaderMaterial } from 'three';
 import {
@@ -92,14 +87,6 @@ import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { Glows, buoy, crag, rock } from './props';
 import { type ShipModel, createFlag, modelLength, topPoint } from './ship-model';
 import { type ModelKey, ModelStore, fitHeight, modelFor, modelSlot, planModels } from './models';
-import {
-  MAR_SHIP_CONFIG,
-  TURBO_SPEED,
-  VOYAGE_SPEED,
-  boostedConfig,
-  keysInput,
-  stickInput,
-} from './steering';
 import { VortexPass } from './vortex';
 import { createWater } from './water';
 import {
@@ -249,6 +236,8 @@ const SHIP_LENGTH = 3.9;
 const STEP = 1 / 60;
 const TURBO_S = 2.4;
 const TURBO_COOLDOWN_S = 7;
+/** Velocidad del viaje en turbo de «Entradas» (× la máxima): más que el turbo, que llegue pronto. muestra */
+const VOYAGE_SPEED = 2.6;
 /** Tope de un viaje en turbo: si no llega (encajonado), se da por llegado. muestra */
 const VOYAGE_MAX_S = 20;
 const METERS_PER_U = 0.25;
@@ -367,7 +356,8 @@ export class Mar3D {
   /** Centro del mapa en la copia de la vista de mapa (se elige al alejarse). */
   private readonly mapC = new Vector2();
   private readonly frustum = new Frustum();
-  private readonly cfg: ShipConfig = MAR_SHIP_CONFIG;
+  // Radio de choque acorde con el barco que se ve (más grande que en el 2D).
+  private readonly cfg: ShipConfig = { ...DEFAULT_SHIP_CONFIG, radius: 18 };
   private sternX = -1.3;
   private moods: Record<MoodId, Mood>;
   private moodId: MoodId;
@@ -458,8 +448,6 @@ export class Mar3D {
   constructor(opts: Mar3DOptions) {
     this.opts = opts;
     this.world = opts.world;
-    // La sensibilidad guardada en Ajustes, como al abrir /juego (REQ-MUN-008).
-    setControlSensitivity(loadSettings(browserStore()).sensitivity);
     // El planeta: el mapa con su margen da la vuelta (sólo en /mar; /juego conserva sus costas).
     const rect = planetRect(opts.world.bounds);
     this.rt = new WorldRuntime({ ...opts.world, bounds: rect }, { ...opts.runtime, wrap: true });
@@ -1844,11 +1832,18 @@ export class Mar3D {
     if (this.keys.has('arrowright') || this.keys.has('d')) dx += 1;
     if (this.keys.has('arrowup') || this.keys.has('w')) dy -= 1;
     if (this.keys.has('arrowdown') || this.keys.has('s')) dy += 1;
-    // Sensibilidad de Ajustes (REQ-MUN-008): estado del módulo de controles.
-    const sens = controlSensitivity();
-    if (dx || dy) return keysInput(dx, dy, sens.keyboard);
+    if (dx || dy) return { dirX: dx, dirY: dy, throttle: 1, drift: false };
     if (this.mode === 'stick') {
-      return stickInput(this.stick.dx, this.stick.dy, sens.touch) ?? IDLE_INPUT;
+      const len = Math.hypot(this.stick.dx, this.stick.dy);
+      if (len > 8) {
+        return {
+          dirX: this.stick.dx,
+          dirY: this.stick.dy,
+          throttle: Math.min(1, (len - 8) / 56),
+          drift: false,
+        };
+      }
+      return IDLE_INPUT;
     }
     if (this.course) return this.autopilot();
     return IDLE_INPUT;
@@ -1945,7 +1940,8 @@ export class Mar3D {
     const input = this.readInput();
     let cfg = this.runtime.shipConfig(this.cfg);
     if (this.turboLeft > 0 || this.voyage) {
-      cfg = boostedConfig(cfg, this.voyage ? VOYAGE_SPEED : TURBO_SPEED);
+      const k = this.voyage ? VOYAGE_SPEED : 1.6;
+      cfg = { ...cfg, maxSpeed: cfg.maxSpeed * k, acceleration: cfg.acceleration * 2.4 };
     }
     if (this.turboLeft > 0) this.turboLeft -= dt;
     if (this.voyage) {

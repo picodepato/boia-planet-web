@@ -94,24 +94,18 @@ export function stepShip(s: ShipState, input: ShipInput, cfg: ShipConfig, dt: nu
 
   const speed = shipSpeed(s);
   let align = 1;
-  // 0..1: cuánto de espaldas se pide el rumbo yendo hacia delante (vuelta corta).
-  let back = 0;
   if (throttle > 0) {
     const target = Math.atan2(input.dirY, input.dirX);
     const delta = wrapAngle(target - s.heading);
     const speedFactor =
       cfg.minTurnFactor + (1 - cfg.minTurnFactor) * clamp(speed / (0.5 * cfg.maxSpeed), 0, 1);
-    const steer =
-      cfg.steerFloor === undefined ? throttle : cfg.steerFloor + (1 - cfg.steerFloor) * throttle;
-    let turnRate = cfg.turnRate * speedFactor;
-    // Más rápido que el crucero, el giro crece con la velocidad: mismo círculo.
-    if (cfg.turnRadius) turnRate = Math.max(turnRate, speed / cfg.turnRadius);
-    if (cfg.reverseTurn && s.vx * Math.cos(s.heading) + s.vy * Math.sin(s.heading) > 0) {
-      back = clamp((Math.abs(delta) - Math.PI / 2) / (Math.PI / 2), 0, 1);
-      turnRate *= 1 + (cfg.reverseTurn.turnBoost - 1) * back;
-    }
     const maxTurn =
-      turnRate * (drifting ? cfg.drift.turnMultiplier : 1) * (input.turnScale ?? 1) * steer * dt;
+      cfg.turnRate *
+      (drifting ? cfg.drift.turnMultiplier : 1) *
+      (input.turnScale ?? 1) *
+      speedFactor *
+      dt *
+      throttle;
     s.heading = wrapAngle(s.heading + clamp(delta, -maxTurn, maxTurn));
     // Con el rumbo pedido muy de espaldas, gira antes de acelerar.
     align = clamp((Math.cos(wrapAngle(target - s.heading)) + 0.5) / 1.5, 0.15, 1);
@@ -123,25 +117,15 @@ export function stepShip(s: ShipState, input: ShipInput, cfg: ShipConfig, dt: nu
   let vL = -s.vx * fy + s.vy * fx;
 
   // La quilla anula el deslizamiento lateral y devuelve parte como avance.
-  // Más rápido que el crucero (con `turnRadius`), agarra en proporción: el
-  // derrape no abre el círculo.
-  const over = cfg.turnRadius ? Math.max(1, speed / (cfg.turnRadius * cfg.turnRate)) : 1;
-  const grip = (drifting ? cfg.drift.lateralGrip : cfg.lateralGrip) * over;
-  // En la vuelta corta el deslizamiento se pierde (frena) en vez de empujar.
-  const toForward = (drifting ? cfg.drift.gripToForward : cfg.gripToForward) * (1 - back);
+  const grip = drifting ? cfg.drift.lateralGrip : cfg.lateralGrip;
+  const toForward = drifting ? cfg.drift.gripToForward : cfg.gripToForward;
   const removed = vL * damp(grip, dt);
   vL -= removed;
   vF += Math.abs(removed) * toForward * (vF >= 0 ? 1 : -1);
 
   if (throttle > 0) {
     const targetSpeed = cfg.maxSpeed * throttle * align;
-    // Girando fuerte por encima del crucero frena en proporción: el círculo no
-    // se abre. `turning` es 0 con el rumbo pedido delante y 1 a partir de ~60°.
-    const turning = clamp((1 - align) * 3, 0, 1);
-    const brake =
-      (cfg.brakeDeceleration + (cfg.reverseTurn?.brake ?? 0) * back) *
-      (1 + (over * over - 1) * turning);
-    const rate = vF < targetSpeed ? cfg.acceleration : brake;
+    const rate = vF < targetSpeed ? cfg.acceleration : cfg.brakeDeceleration;
     vF = approach(vF, targetSpeed, rate * dt);
   } else {
     vF = approach(vF, 0, cfg.brakeDeceleration * dt);
