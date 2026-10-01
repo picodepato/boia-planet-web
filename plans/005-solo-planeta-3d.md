@@ -13,7 +13,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 ## Tasks
 
 ## T52 — Shared world code out of app/juego
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: /mar, /carnet, the landing and their tests import ~20 modules from `apps/web/app/juego/` (achievements, carnet, carnet-invite, circuit-hud, demo-world, encounters, MundosPicker, minigame-layer, mission, notices, repo, ship-position, sound, ship-look, use-invitations, world-choice, world-progress, place-panels, world-ui, hud.css…). Move everything that is not the PixiJS 2D renderer to a shared home so /juego can later be deleted without touching /mar. Pure refactor: no behavior change.
 - Context: `apps/web/app/mar/mar-client.tsx` (imports at ~41-91), `apps/web/app/mar/sheet.tsx:24`, `apps/web/app/carnet/carnet-page.tsx:4-10`, `apps/web/app/(landing)/` (event-card test, `lib/landing/eventos.test.ts`), `apps/web/lib/` (repo, logros, barco, ticketing). `packages/engine` Pixi-free modules (headless, circuit, mission, minigames, ui, streaming, bottles, ship controller) stay where they are. ESTADO.md plan 004 T51 section describes /mar parity. The landing intro (`apps/web/lib/intro/*`, `packages/engine/src/intro/`) is rebuilt in T57: leave its imports alone if moving them is not trivial.
@@ -36,7 +36,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T54 — Faster steering in /mar
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: On mobile the boat needs a large stick angle to turn and turns slowly. Interview decisions: it turns quickly towards where you point even with a small drag; when you are going forward and pull the stick backwards, the boat makes a quick, tight turn (small radius, fast) instead of a wide arc; turbo/voyage speed must not widen the turning circle. Apply the touch sensitivity (`turnScale`) in /mar as /juego does, so T55's Ajustes slider can drive it.
 - Context: `apps/web/app/mar/engine/mar3d.ts` (touch stick ~1696-1715, `readInput` ~1828-1848: dead zone 8 px, throttle=(len-8)/56; turbo/voyage multipliers ~1941-1945; `TURBO_S`, `VOYAGE_SPEED` ~237-242), `packages/engine/src/ship/controller.ts:98-111` (max turn = turnRate × speedFactor × throttle × turnScale; `align` slows the boat until it faces the target), `packages/engine/src/ship/config.ts` (turnRate 2.4, minTurnFactor 0.4, maxSpeed 220), `packages/engine/src/input/controls.ts:192,252` (sensitivity 0.5–1.5).
@@ -163,3 +163,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01: parallax landing (next batch)
 
 ## Log
+- 2026-10-01 21:40 T52 launched · attempt 1 · agent a8c286457ec28b741
+- 2026-10-01 21:40 T54 launched · attempt 1 · agent a54ffde1ea099d9dd
