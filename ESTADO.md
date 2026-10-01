@@ -4,6 +4,46 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — plan 005 T54: Faster steering in /mar
+
+Qué existe:
+- `apps/web/app/mar/engine/steering.ts` (nuevo, sin three.js): `MAR_SHIP_CONFIG` (física
+  de /mar: giro 3,4 rad/s, `minTurnFactor` 0,75, `steerFloor` 0,8, `turnRadius` =
+  220/3,4 u, `reverseTurn` {×1,9, +520 u/s²}; todo `muestra`), `stickInput` (zona muerta
+  8 px, acelerador (len − 8)/56, como antes) y `keysInput` con `turnScale`,
+  `boostedConfig` (turbo `TURBO_SPEED` 1,6 y viaje `VOYAGE_SPEED` 2,6, movidos aquí).
+- `packages/engine/src/ship/controller.ts` + `config.ts`: tres campos opcionales de
+  `ShipConfig`. `steerFloor`: el giro ya no cae con el acelerador (arrastre pequeño =
+  giro rápido). `turnRadius`: por encima del crucero el giro, el agarre lateral y el
+  freno en curva crecen con la velocidad, así el turbo/viaje no abren el círculo.
+  `reverseTurn`: rumbo pedido de espaldas yendo hacia delante = más giro, freno extra y
+  el deslizamiento se pierde en vez de empujar (vuelta corta y rápida). Sin los campos
+  (`DEFAULT_SHIP_CONFIG`, /juego) el cálculo es el de siempre.
+- `mar3d.ts`: usa `MAR_SHIP_CONFIG`, `stickInput`/`keysInput` y `boostedConfig`; lee la
+  sensibilidad (REQ-MUN-008) de `controlSensitivity()` en cada paso (táctil para el
+  joystick, teclado para las flechas) y al arrancar aplica la guardada en Ajustes
+  (`setControlSensitivity(loadSettings(browserStore()).sensitivity)`), como /juego.
+  T55 sólo tiene que llamar a `setControlSensitivity` al mover el deslizador.
+- `@boia/engine/ui` exporta también `controlSensitivity`.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 100 ficheros, 879 pruebas
+  (nuevas: `apps/web/app/mar/engine/steering.test.ts` 5, `controller.test.ts` +3).
+  Arrastre pequeño: 90° en 0,73 s (antes 19,6 s). Vuelta de 180° a 220 u/s: hacia atrás
+  65 u de ancho / 0,80 s, hacia un lado 127 u / 0,92 s (antes ~181 u / 1,3 s ambas).
+  Radio instantáneo igual en turbo y viaje que en crucero.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm typecheck` → exit 0; `pnpm lint` → exit 0;
+  `pnpm build` → exit 0.
+- `E2E_PORT=3263 pnpm e2e e2e/mar-3d.spec.ts --workers=2` → 22/24 con la máquina cargada
+  (2 fallos por tiempo: minimapa y «mundo compacto»); esos dos con `--repeat-each=2` →
+  8/8, exit 0. Los fallos por timeout de una primera pasada también pasan solos.
+
+Pendiente:
+- La vuelta hacia atrás en turbo sale algo más ancha que a velocidad de crucero (sigue
+  más cerrada que la vuelta hacia un lado); el radio instantáneo es el mismo.
+- Valores `muestra`: ajustarlos navegando en un móvil real.
+- El deslizador de Ajustes en /mar es de T55.
+
 ## 2026-10-01 — fuera de plan: CSP sin `'unsafe-eval'` y clave de la escena de la entrada
 
 Qué existe:

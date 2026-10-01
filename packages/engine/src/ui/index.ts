@@ -14,6 +14,7 @@ export {
   DEFAULT_SENSITIVITY,
   KEYBOARD_MODES,
   SENSITIVITY_RANGE,
+  controlSensitivity,
   isKeyboardMode,
   setControlSensitivity,
   type ControlSensitivity,

@@ -168,6 +168,57 @@ describe('golpe y sensibilidad', () => {
   });
 });
 
+describe('giro ágil (steerFloor, turnRadius, reverseTurn; /mar, T54)', () => {
+  const side: ShipInput = { dirX: 0, dirY: 1, throttle: 0.05, drift: false };
+  const turnOnce = (c: typeof cfg, speed: number, input: ShipInput) => {
+    const s = createShipState(0, 0, 0);
+    s.vx = speed;
+    stepShip(s, input, c, DT);
+    return s.heading;
+  };
+
+  it('steerFloor: con poco acelerador gira casi como a fondo', () => {
+    const floor = { ...cfg, steerFloor: 0.8 };
+    expect(turnOnce(cfg, 100, side)).toBeCloseTo(
+      turnOnce(cfg, 100, { ...side, throttle: 1 }) * 0.05,
+    );
+    expect(turnOnce(floor, 100, side)).toBeCloseTo(
+      turnOnce(floor, 100, { ...side, throttle: 1 }) * (0.8 + 0.2 * 0.05),
+    );
+  });
+
+  it('turnRadius: por encima del crucero el radio de giro no crece', () => {
+    const r = cfg.maxSpeed / cfg.turnRate;
+    const c = { ...cfg, turnRadius: r, maxSpeed: cfg.maxSpeed * 2 };
+    const full = { ...side, throttle: 1 };
+    for (const v of [cfg.maxSpeed, cfg.maxSpeed * 1.5, cfg.maxSpeed * 2]) {
+      expect(v / (turnOnce(c, v, full) / DT)).toBeCloseTo(r, 6);
+    }
+    // Sin él, el giro por paso es el mismo y el radio crece con la velocidad.
+    const plain = { ...cfg, maxSpeed: cfg.maxSpeed * 2 };
+    expect(turnOnce(plain, cfg.maxSpeed * 2, full)).toBeCloseTo(
+      turnOnce(plain, cfg.maxSpeed, full),
+    );
+  });
+
+  it('reverseTurn: con el rumbo pedido detrás gira más y frena más', () => {
+    const c = { ...cfg, reverseTurn: { turnBoost: 2, brake: 500 } };
+    const back: ShipInput = { dirX: -1, dirY: 0.01, throttle: 1, drift: false };
+    expect(turnOnce(c, 200, back)).toBeGreaterThan(turnOnce(cfg, 200, back) * 1.9);
+    const speedAfter = (k: typeof cfg) => {
+      const s = createShipState(0, 0, 0);
+      s.vx = 200;
+      stepShip(s, back, k, DT);
+      return shipSpeed(s);
+    };
+    expect(speedAfter(c)).toBeLessThan(speedAfter(cfg));
+    // De lado (90°) no cambia nada.
+    expect(turnOnce(c, 200, { ...side, throttle: 1 })).toBeCloseTo(
+      turnOnce(cfg, 200, { ...side, throttle: 1 }),
+    );
+  });
+});
+
 describe('mundo que da la vuelta (wrap, /mar)', () => {
   const W = bounds.right - bounds.left;
   const H = bounds.bottom - bounds.top;
