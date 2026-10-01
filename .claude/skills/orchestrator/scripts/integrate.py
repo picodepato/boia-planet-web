@@ -23,11 +23,15 @@ test results:  pass | fail
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
 
 TAIL_LINES = 40
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def git(*args):
@@ -46,12 +50,23 @@ def log_dir():
     return path
 
 
+def bash():
+    """/bin/bash on macOS/Linux; Git Bash on Windows (WSL's System32 bash would run Linux tools)."""
+    if os.path.exists("/bin/bash"):
+        return "/bin/bash"
+    for path in (os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "Git", "bin", "bash.exe"),
+                 shutil.which("bash")):
+        if path and os.path.exists(path) and "system32" not in path.lower():
+            return path
+    sys.exit("integrate.py: no bash found (install Git for Windows)")
+
+
 def run_tests(command, label):
     log = os.path.join(log_dir(), f"{time.strftime('%Y%m%d-%H%M%S')}-{label}.log")
     start = time.time()
-    with open(log, "w") as f:
-        rc = subprocess.run(["/bin/bash", "-c", command], stdout=f, stderr=subprocess.STDOUT).returncode
-    with open(log, errors="replace") as f:
+    with open(log, "w", encoding="utf-8") as f:
+        rc = subprocess.run([bash(), "-c", command], stdout=f, stderr=subprocess.STDOUT).returncode
+    with open(log, encoding="utf-8", errors="replace") as f:
         lines = [l.rstrip("\n")[:200] for l in f.readlines()]
     return {"exit": rc, "seconds": round(time.time() - start), "log": log,
             "last_line": next((l for l in reversed(lines) if l.strip()), ""),

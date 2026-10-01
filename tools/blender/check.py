@@ -238,7 +238,7 @@ def pngs_on_disk(root, skip_dirs=()):
     for dp, dns, fns in os.walk(root):
         if dp == root:
             dns[:] = [d for d in dns if d not in skip_dirs]
-        out += [os.path.relpath(os.path.join(dp, fn), root) for fn in fns if fn.endswith(".png")]
+        out += [os.path.relpath(os.path.join(dp, fn), root).replace(os.sep, "/") for fn in fns if fn.endswith(".png")]
     return sorted(out)
 
 
@@ -661,7 +661,7 @@ def check_world(res_dir, schema, diff_dir, known_ids):
     listed = [im["file"] for im in man["images"]]
     if len(set(listed)) != len(listed):
         fails.append("imágenes repetidas en el manifiesto")
-    on_disk = sorted(os.path.relpath(os.path.join(dp, fn), res_dir)
+    on_disk = sorted(os.path.relpath(os.path.join(dp, fn), res_dir).replace(os.sep, "/")
                      for dp, _, fns in os.walk(res_dir) for fn in fns if fn.endswith(".png"))
     if on_disk != sorted(listed):
         fails.append("en disco hay %s; el manifiesto lista %s" % (on_disk, sorted(listed)))
