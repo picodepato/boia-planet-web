@@ -82,7 +82,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: 3D planet intro (apps/web/lib/planeta/), budget 9 s from mount counting visible time only, campaign params no longer skip, hero with /mar + Tickets; landing 177.8/192 kB → 09e86a6
 
 ## T58 — Tickets inside the 3D world
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T53
 - Goal: The "Entradas" button in /mar opens the tickets panel ("Elige tu evento") and the test checkout right there, as a bottom card/sheet in the new HUD style, without leaving the world or going to the landing. A discount code found in the world is applied in that checkout; the post-purchase stamp/achievement and the Carnet invite work as on the landing.
 - Context: tickets panel `apps/web/app/(landing)/components/tickets-panel.tsx`, checkout/buy button, `apps/web/lib/ticketing`, /mar "Entradas" today links to `/#tickets` and sails in turbo to the event island, analytics `tickets_panel_open`, `ticket_click_out`, `purchase_confirmed` (source must say it came from the world). REQ ENT-037, COM-015/016/017.
@@ -90,10 +90,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e in /mar: tap Entradas → panel opens inside the world; with a discount found in the world, confirm the test purchase with the discount applied; the stamp reaches the Carnet; the URL stays on /mar → exit 0, and the landing tickets e2e specs still pass
-- Outcome:
+- Outcome: Entradas opens "Elige tu evento" as a MarHoja sheet inside /mar (app/mar/entradas.tsx), checkout reused with source world, world discount applied, stamp to Carnet, URL stays /mar; ENT-037 HECHO → 40be280
 
 ## T59 — Boia Fiestera as the central mission; 3 clear discounts
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T53
 - Goal: Interview decisions: (1) the Boia Fiestera rescue is the central mission; completing it (delivering her to the last island) gives a prize that matters: a ticket discount code applied in the checkout AND an exclusive ship only rescuers get. (2) Hidden discounts become exactly 3 — el náufrago, the cofre/ánfora, and the Fiestera's — each shown as a "?" on the minimap so people go for them; drop the others (expired VERANO26 debris, store TIENDA15 as a world discount). (3) Secrets without a prize (cueva del acantilado, campana hundida, círculo de las boies dormidas) stay hidden, unmarked, and grant coins or an achievement when found. (4) The dolphin and the info buoys guide towards the Fiestera, the discounts and the minigames. Achievements and coins/points otherwise stay as they are. Codes stay `muestra` (P16).
 - Context: mission in `packages/engine/src/mission`, discounts in `packages/store` sample content (`packages/store/src/sample/content.ts`), ship catalog `apps/web/lib/barco/catalog.ts` and `docs/barcos/barcos.json`, achievements `apps/web/lib/logros` and `docs/propuestas/logros-catalogo.md`, encounters (dolphin, buoys), minimap in /mar, REQ AVE-007/008/009/015/016/017/019/021.
@@ -176,7 +176,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 T55: shared MarHoja cream sheet (Carnet, Ajustes, Controles, Welcome Aboard, Logros, Barco shop); deep links accept event id or slug and 2D menu names, are stripped from the URL at boot, and a sail link starts from the spawn; voyageHref is /mar?evento=…; new explore_start sources photos and store (agent)
 - 2026-10-01 T55: conflict with T57 in lib/intro resolved keeping T57's intro (agent)
 
+- 2026-10-02 T58: each event in the in-world panel has "Comprar entrada" (checkout on top) and "Ir a su isla" (the old trip, then checkout); without an on-sale event the panel says "Próximamente"; SandboxCheckout gained optional source/className (checkout--mar = bottom sheet on mobile); analytics tickets_panel_open/ticket_click_out with source world, island buy button now sends ticket_click_out source island (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T58: REQ-ENT-040 wording in 09-requisitos.md still says the trip starts on the first Entradas tap; it now starts from "Ir a su isla": reword
 - 2026-10-01 T57: unused i18n keys hero.explore3d* come from docs/propuestas/textos-zonas.md and stay until that document changes
 - 2026-10-01 T57: REQ-ENT-003/005 text says "no 3D library in the bundle"; critical path still has none (three.js lazy): reword with Álvaro
 - 2026-10-01 T53: REQ-PRO-009 stays PARCIAL (criterion asks for "Inicio" among on-screen controls and fps only with ?debug): decide whether the new bar closes it
@@ -196,3 +199,6 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 23:22 T56 launched · attempt 1 · agent a00ff67f4d11ca19d
 - 2026-10-01 23:58 T55 conflict with main (lib/intro/active.ts, bridge.ts) · sent back to agent a3b7f8362886c377c
 - 2026-10-01 23:47 T55 done · branch worktree-agent-a3b7f8362886c377c → 42fedb9
+- 2026-10-01 23:49 T58 launched · attempt 1 · agent a4283d2de4dfb0890
+- 2026-10-02 00:25 T56 conflict with main (mar3d.ts, mar-client.tsx) · sent back to agent a00ff67f4d11ca19d
+- 2026-10-02 00:38 T58 done · branch worktree-agent-a4283d2de4dfb0890 → 40be280
