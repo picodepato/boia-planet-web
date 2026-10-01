@@ -13,7 +13,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 ## Tasks
 
 ## T52 — Shared world code out of app/juego
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: /mar, /carnet, the landing and their tests import ~20 modules from `apps/web/app/juego/` (achievements, carnet, carnet-invite, circuit-hud, demo-world, encounters, MundosPicker, minigame-layer, mission, notices, repo, ship-position, sound, ship-look, use-invitations, world-choice, world-progress, place-panels, world-ui, hud.css…). Move everything that is not the PixiJS 2D renderer to a shared home so /juego can later be deleted without touching /mar. Pure refactor: no behavior change.
 - Context: `apps/web/app/mar/mar-client.tsx` (imports at ~41-91), `apps/web/app/mar/sheet.tsx:24`, `apps/web/app/carnet/carnet-page.tsx:4-10`, `apps/web/app/(landing)/` (event-card test, `lib/landing/eventos.test.ts`), `apps/web/lib/` (repo, logros, barco, ticketing). `packages/engine` Pixi-free modules (headless, circuit, mission, minigames, ui, streaming, bottles, ship controller) stay where they are. ESTADO.md plan 004 T51 section describes /mar parity. The landing intro (`apps/web/lib/intro/*`, `packages/engine/src/intro/`) is rebuilt in T57: leave its imports alone if moving them is not trivial.
@@ -22,7 +22,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - `grep -rnE "from ['\"](\.\./)+juego/|app/juego/" apps/web/app/mar apps/web/app/carnet apps/web/lib --include=*.ts --include=*.tsx | grep -v "lib/intro"` → no output
   - Test command → exit 0
   - `pnpm e2e e2e/mar-3d.spec.ts e2e/mar-paridad.spec.ts` (with E2E_PORT) → exit 0, and the /juego specs still pass (`pnpm e2e` full run, --workers=2) → exit 0
-- Outcome:
+- Outcome: everything in app/juego except the 2D renderer (page.tsx, game-canvas.tsx, juego.css) moved to apps/web/lib/mundo/ with git mv; importers rewritten, no re-exports → 5c5b886
 
 ## T53 — Mobile HUD and small popups in /mar
 - Status: pending
@@ -159,9 +159,13 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 interview: Fiestera central with discount + exclusive ship prize; 3 discounts marked on the minimap; secrets without prize stay with an achievement; dolphin and buoys guide to the new content; rebuild lighthouse (night beam), cannon (parabola), circuit (buoys, 3 laps, ghost, boosts, medals); achievements and coins stay; tickets open inside the 3D; Admin adapted (Hernán and Álvaro)
 - 2026-10-01 T00: test command excludes `packages/db` (no Postgres on this Windows machine) and sets PYTHONUTF8=1 (orchestrator)
 
+- 2026-10-01 T52: shared world home is apps/web/lib/mundo/ (71 files moved); /juego keeps only page.tsx, game-canvas.tsx, juego.css; /mar styles panels with its own .mar .juego-panel rules (agent)
+- 2026-10-01 T52: on this Windows machine the full e2e run at --workers=2 has load timeouts that pass when rerun alone, and e2e/despliegue.spec.ts (/api/art) fails because path.relative gives backslashes; T62 must fix that spec so its full e2e run can pass (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-01: parallax landing (next batch)
 
 ## Log
 - 2026-10-01 21:40 T52 launched · attempt 1 · agent a8c286457ec28b741
 - 2026-10-01 21:40 T54 launched · attempt 1 · agent a54ffde1ea099d9dd
+- 2026-10-01 22:16 T52 done · branch worktree-agent-a8c286457ec28b741 → 5c5b886
