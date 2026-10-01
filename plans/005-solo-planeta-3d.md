@@ -25,7 +25,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: everything in app/juego except the 2D renderer (page.tsx, game-canvas.tsx, juego.css) moved to apps/web/lib/mundo/ with git mv; importers rewritten, no re-exports → 5c5b886
 
 ## T53 — Mobile HUD and small popups in /mar
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T52
 - Goal: On mobile the popups take up to ~60% of the screen and the menu/HUD is scattered. Interview decisions: (1) one thin fixed bar at the bottom with 4–5 always-visible icons — Mapa, Logros, Carnet, Menú — plus a highlighted "Entradas" button; (2) at the top only the minimap (kept, small, tap to enlarge) and the balance; (3) every popup (island/event sheet, discount, achievement, notices) becomes a small card at the bottom, about 25% of the screen, with the essentials and one button, expanding only when tapped; (4) notices become small chips at the top that leave on their own. Minimum space, everything organized and visible. Desktop keeps working with the same structure.
 - Context: `apps/web/app/mar/mar.css` (safe areas L16-19, `.mar-top`, `.mar-menu`, `.mar-notices`, `.mar-chips`, `.mar-minimap`, `.mar-rail`, `.mar-turbo`, `.mar-tickets`, `.mar-sheet` with max-height min(58vh,520px), desktop rules at `@media (min-width: 760px)`), `apps/web/app/mar/mar-client.tsx` (header ~1237, menu ~1280-1345, notices, chips, rail, minimap, sheet ~1595), `apps/web/app/mar/sheet.tsx`, REQ PRO-008 / PRO-009 / IDE-035/036 in `docs/spec/09-requisitos.md`. The bar's Carnet icon may open `/carnet` until T55 brings the Carnet inside the world; Menú keeps today's sections.
@@ -33,7 +33,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - a new or updated e2e spec at a 375×812 viewport asserts: the bottom bar with Mapa/Logros/Carnet/Menú and Entradas is visible; an island sheet opens at ≤ 30% of the viewport height and expands on tap; notices render as chips — exit 0, together with `e2e/mar-3d.spec.ts` and `e2e/mar-paridad.spec.ts`
-- Outcome:
+- Outcome: bottom bar (Mapa, Logros, Entradas, Carnet, Menú), top only minimap + balances, compact bottom cards (~21% height) that expand on tap, notices as chips; new e2e mar-hud.spec.ts → 03882a9
 
 ## T54 — Faster steering in /mar
 - Status: done
@@ -166,7 +166,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 T54: /mar reads sensitivity each step via controlSensitivity(); T55 only has to call setControlSensitivity; steering values are `muestra`, to tune on a real phone (agent)
 - 2026-10-01 T54: integration failed once because ESLint linted .claude/worktrees; fixed by ignoring .claude/** in eslint.config.mjs (orchestrator)
 
+- 2026-10-01 T53: back link and world name moved into a header inside the Menú; Menú and Carnet invite open as cards above the bar; each compact card has one button (Navegar / Comprar entrada / Ir a la isla / Explorar la isla); desktop uses the same layout with a centred 480px bar; Carnet icon 📇 links to /carnet until T55 (agent)
+
 ## Proposals (new scope)
+- 2026-10-01 T53: REQ-PRO-009 stays PARCIAL (criterion asks for "Inicio" among on-screen controls and fps only with ?debug): decide whether the new bar closes it
 - 2026-10-01 T54: in turbo, the pull-back turn is still wider than at normal speed (101 u vs 65 u)
 - 2026-10-01: parallax landing (next batch)
 
@@ -177,3 +180,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 22:16 T52 done · branch worktree-agent-a8c286457ec28b741 → 5c5b886
 - 2026-10-01 22:18 T53 launched · attempt 1 · agent ac03818fc888500c6
 - 2026-10-01 22:18 T57 launched · attempt 1 · agent a42618e2a4c75025b
+- 2026-10-01 22:41 T53 done · branch worktree-agent-ac03818fc888500c6 → 03882a9
