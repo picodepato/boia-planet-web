@@ -4,7 +4,7 @@ import { refreshLiveContent } from '../landing/live-content';
 import { composeLiveWorld } from './world';
 
 /**
- * El mundo que se juega en /juego con lo que dejó el Admin de la demo (T26):
+ * El mundo que se juega en el 2D con lo que dejó el Admin de la demo (T26):
  * lugares movidos, desactivados u ocultos, nombres y textos por mundo y cada
  * isla con su evento, los códigos escondidos donde los dejó (T43) y el
  * destino de la Fiestera para las partidas nuevas de ese mundo (T45). Deja

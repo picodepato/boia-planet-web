@@ -74,7 +74,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ENT-031 | Bloques de actividades y comunidad | L2 | L2 | — | — |
 | REQ-ENT-032 | Cierre de página | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [access.test.ts](../../apps/web/lib/landing/access.test.ts) | — |
 | REQ-ENT-033 | Home por bloques administrables | L1 | HECHO | [admin.spec.ts](../../apps/web/e2e/admin.spec.ts) «Probar admin: los cambios se ven en la landing y en el mar» | — |
-| REQ-ENT-034 | Tickets, Fotos y Tienda con isla visible | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
+| REQ-ENT-034 | Tickets, Fotos y Tienda con isla visible | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «`/mar?ir=<Puerto de Fotos>` sale navegando hasta allí y abre la galería»; [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-ENT-035 | Checkout sólo con acción explícita | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-ENT-036 | URLs compartibles y Atrás | L1 | PARCIAL | [event-page.tsx](../../apps/web/app/%28landing%29/components/event-page.tsx) | Construido; sin prueba que lo nombre |
 | REQ-ENT-037 | Tickets general | L1 | PARCIAL | [tickets-panel.tsx](../../apps/web/app/%28landing%29/components/tickets-panel.tsx) | Construido; sin prueba que lo nombre |
@@ -194,9 +194,9 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-032 | Cosméticos sin efecto en la física | L1 | HECHO | [physics.test.ts](../../apps/web/lib/barco/physics.test.ts) | — |
 | REQ-IDE-033 | Barco guardado | L1 | HECHO | [demo.spec.ts](../../apps/web/e2e/demo.spec.ts) ««Barco»: otro barco de base cambia el barco al momento y sobrevive a recargar; lo bloqueado no se pone» | — |
 | REQ-IDE-034 | Menú de a bordo | L1 | HECHO | [hud.test.ts](../../apps/web/lib/mundo/hud.test.ts) | — |
-| REQ-IDE-035 | Welcome Aboard consultable | L1 | PARCIAL | [welcome.tsx](../../apps/web/lib/mundo/menu/sections/welcome.tsx) | Construido; sin prueba que lo nombre |
-| REQ-IDE-036 | Controles | L1 | PARCIAL | [controles.tsx](../../apps/web/lib/mundo/menu/sections/controles.tsx) | Construido; sin prueba que lo nombre |
-| REQ-IDE-037 | Música y efectos por separado | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «Menú de a bordo: siete iconos, separación y modo de teclado guardado» | — |
+| REQ-IDE-035 | Welcome Aboard consultable | L1 | HECHO | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Controles y Welcome Aboard se consultan desde el Menú» | — |
+| REQ-IDE-036 | Controles | L1 | HECHO | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Controles y Welcome Aboard se consultan desde el Menú» | — |
+| REQ-IDE-037 | Música y efectos por separado | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «Menú de a bordo: siete iconos, separación y modo de teclado guardado»; [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Ajustes: la sensibilidad del giro la lee el motor; música, efectos e idioma se guardan» | — |
 | REQ-IDE-038 | Ranking de puntos | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts) «ordena por puntos, con el visitante siempre dentro y su puesto» | — |
 | REQ-IDE-039 | Nada competitivo desde el cliente | L1 | final | — | Validación en servidor (D-20) |
 | REQ-IDE-040 | Una botella de 140 caracteres | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts); [sea.test.ts](../../packages/engine/src/bottles/sea.test.ts) | — |

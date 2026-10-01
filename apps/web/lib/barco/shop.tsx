@@ -21,7 +21,7 @@ import { t as msg } from '../i18n';
 
 /**
  * ⛵ La tienda «Barco» (T40, REQ-IDE-030/031, D-23 punto 1, O5), la misma en
- * el Menú de a bordo de /juego y en el selector de barco de /mar: cada barco
+ * el Menú de a bordo del 2D y en el selector de barco de /mar: cada barco
  * con su precio o su condición («te faltan N monedas/puntos»), comprar con
  * confirmación, equipar, lo propio marcado; las skins del barco que se lleva,
  * la bandera y la estela. Sólo cambia cómo se ve el barco.

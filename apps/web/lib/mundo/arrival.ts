@@ -3,8 +3,8 @@ import type { PlaceRequest } from '../world-handoff';
 
 /**
  * Llegada a un lugar sin conducir (REQ-ENT-034, REQ-AVE-022, T44): los
- * accesos de la landing (Tickets, Fotos, Tienda) abren /juego con
- * `?ir=<lugar>`; el barco entra navegando unos segundos hasta su punto seguro
+ * accesos de la landing (Tickets, Fotos, Tienda) abrían el 2D con
+ * `?ir=<lugar>` (el mar 3D, T55, navega hasta allí: `app/mar/voyage.ts`); el barco entra navegando unos segundos hasta su punto seguro
  * (al sur del lugar, fuera de su radio: así no concede premios, visitas ni
  * descubrimientos, REQ-ENT-039) y se abre el panel del lugar. Cerrar el panel
  * deja el barco allí, listo para navegar. La entrada es breve y se salta con

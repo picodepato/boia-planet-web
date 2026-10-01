@@ -4,6 +4,70 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — plan 005 T55: Ajustes, Controles, Carnet y enlaces profundos dentro de /mar
+
+Qué existe:
+
+- **A bordo dentro del mar** (`apps/web/app/mar/a-bordo.tsx`, `hoja.tsx`): Mi Carnet
+  (ver, crear y editar sin salir del mundo), Ajustes (sensibilidad del giro teclado/táctil,
+  música y efectos con su volumen, idioma), Controles (los del mar 3D) y Welcome Aboard,
+  cada uno en una hoja crema (`MarHoja`, la de Logros y la tienda, que ahora la usan
+  también). Se abren desde el Menú (botones nuevos), el icono Carnet de la barra (ya no
+  navega a /carnet), «Mi Carnet» de Logros, la invitación «Crear mi Carnet», «Ver Mi
+  Carnet» tras la compra de prueba y `?menu=<panel>`. Escape cierra aunque el foco
+  esté fuera de la hoja.
+- **Ajustes vivos**: `updateSettings` en `mar-client.tsx` guarda (`saveSettings`), aplica el
+  sonido y llama a `setControlSensitivity`; el motor (T54) lo lee en cada paso
+  (`turnScale`) y lo publica en `Stats.sensitivity` → `main.mar[data-giro="tecl,tactil"]`.
+  Piezas compartidas con el 2D: `SoundAndLanguage`, `SensitivityField`, `WelcomeBody`
+  (`lib/mundo/menu/sections/`) y `CarnetPanel` (`lib/mundo/carnet/carnet-panel.tsx`).
+- **Enlaces profundos de /mar** (`app/mar/deep-link.ts`, `voyage.ts`): `?ir=<lugar>`
+  (con `&evento=`), `?evento=<id o slug>` y `?menu=carnet|ajustes|controles|bienvenida|logros`
+  (acepta los nombres del 2D `welcome`, `settings`, `controls`). El mar arranca con el
+  barco en turbo hacia la isla (el viaje de la barra, con «Saltar») y al llegar abre su
+  ficha (galería, escaparate o evento) y marca `data-llegada`; con movimiento reducido
+  llega de un salto. Se quitan de la URL al arrancar; con `?ir`/`?evento` no se
+  restaura la posición guardada.
+- **Enlaces a /mar**: `placeHref` (Fotos, Tienda, Tickets `ticketsSailHref`) y el nuevo
+  `eventSailHref` (`lib/world-handoff.ts`, con `MAR_PATH`, `MENU_PARAM`,
+  `MAR_CARNET_HREF`); «Ir a su isla» de la ficha de evento (`lib/landing/eventos.ts`);
+  `voyageHref` de las tarjetas de descuento; pie «Crear mi Carnet» y «Ver Mi Carnet» de
+  la compra (`CARNET_CREATE_HREF`, `CARNET_FROM_LANDING`); panel de Tickets sin isla
+  (`SEA_HREF`); /carnet («Volver al mar», «Editar/Crear mi Carnet»); Admin «Ver el mundo».
+- Analítica: `explore_start` acepta `photos` y `store` y los «Ir en barco» de Fotos y
+  Tienda lo emiten.
+- Comentarios y textos que nombraban /juego dicen «el 2D» o «el mar»; los del Admin
+  («quien llega al mar», «al entrar en el mar»).
+- REQ-IDE-035 y REQ-IDE-036 pasan a HECHO; REQ-IDE-037 y REQ-ENT-034 enlazan también
+  `mar-a-bordo.spec.ts`.
+
+Comandos:
+
+- Comando de prueba del proyecto (vitest sin db, checks.sh, typecheck, lint, build) →
+  exit 0; vitest 101 archivos, 887 pruebas.
+- `E2E_PORT=3231 pnpm e2e e2e/mar-a-bordo.spec.ts --workers=2` → exit 0, 12 passed.
+- `E2E_PORT=3231 pnpm e2e` de mar-a-bordo, accesos, tickets, eventos, mar-hud, logros,
+  tienda, carnet, juego-hud, mar-paridad y admin `--workers=2` → 87 passed, 5 skipped,
+  2 failed (mar-paridad escritorio: el barco recogió otro código por el camino, bajo
+  carga); `mar-paridad.spec.ts --project=desktop --workers=1` sola → exit 0, 8 passed.
+- Tras `git merge main` (T57): conflictos en `lib/intro/active.ts` (borrado, como en main)
+  y `lib/intro/bridge.ts` (comentario de main). Comando de prueba → exit 0, vitest 103
+  archivos, 905 pruebas. `pnpm e2e` de mar-a-bordo, accesos, tickets, landing, intro y
+  mar-hud `--workers=2` → 72 passed, 1 skipped, 1 failed (mar-hud escritorio «los avisos…»,
+  tiempo agotado bajo carga); `mar-hud.spec.ts --project=desktop --workers=1` sola → exit 0,
+  3 passed.
+- `grep -rn "/juego" apps/web/app apps/web/lib --include=*.ts --include=*.tsx | grep -v "app/juego/"`
+  → tras el merge sólo quedan, en /mar, «Versión clásica 2D» y el enlace de error (T62)
+  y la prueba de T57 que comprueba que el hero ya no enlaza a /juego.
+
+Pendiente:
+
+- La botella propia no se abre desde Mi Carnet del mar (`CarnetPanel` sin `onBottles`):
+  es de T56.
+- «Versión clásica 2D» y el enlace de error de /mar a /juego: se van con T62.
+- Textos nuevos (`mar.controles.*`, `mar.bienvenida.entradas`, títulos) `muestra`
+  [pendiente Álvaro].
+
 ## 2026-10-01 — plan 005 T57: 3D landing intro with the planet, and the hero
 
 Qué existe:

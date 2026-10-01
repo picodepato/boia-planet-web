@@ -61,12 +61,28 @@ export function HomeBlocks({
 
 /**
  * «Ir en barco» (T44, REQ-ENT-034): la misma sección, en su isla del mar. Es
- * un enlace normal a /juego; sin JavaScript no se ve (el mar lo necesita) y
- * la sección sigue siendo el camino.
+ * un enlace normal a /mar (T55); sin JavaScript no se ve (el mar lo necesita)
+ * y la sección sigue siendo el camino. Cuenta como `explore_start`.
  */
-function SailLink({ href, label, testId }: { href: string; label: string; testId: string }) {
+function SailLink({
+  href,
+  label,
+  testId,
+  source,
+}: {
+  href: string;
+  label: string;
+  testId: string;
+  source: 'photos' | 'store';
+}) {
   return (
-    <a className="sail-link" href={href} data-testid={testId}>
+    <a
+      className="sail-link"
+      href={href}
+      data-testid={testId}
+      data-track="explore_start"
+      data-source={source}
+    >
       <span aria-hidden="true">⛵ </span>
       {label}
     </a>
@@ -287,6 +303,7 @@ export function BlockView({
                 href={PHOTOS_SAIL_HREF}
                 label={ACCESS_COPY.sailPhotos}
                 testId="fotos-en-barco"
+                source="photos"
               />
             </p>
           </div>
@@ -327,6 +344,7 @@ export function BlockView({
                 href={STORE_SAIL_HREF}
                 label={ACCESS_COPY.sailStore}
                 testId="tienda-en-barco"
+                source="store"
               />
             </p>
           </div>

@@ -389,7 +389,7 @@ function storeUrl(): string | undefined {
  * Una tarjeta de descuento (REQ-COM-022, REQ-COM-036): código con su estado,
  * evento, fecha, condiciones, copiar con un toque y a dónde lleva. Uno de
  * entradas con isla lleva «Ir a la isla» (el barco navega solo si
- * `onGoToIsland`; si no, abre /juego en esa isla); sin isla, a la ficha del
+ * `onGoToIsland`; si no, abre el mar rumbo a esa isla); sin isla, a la ficha del
  * evento; uno de tienda (O8), «Ir a la tienda» (externa, la valida ella).
  */
 export function DiscountCard({

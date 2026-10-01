@@ -15,6 +15,7 @@ import {
 } from '@boia/engine/headless';
 import type { MissionHost } from '@boia/engine/mission';
 import {
+  type ControlSensitivity,
   browserStore,
   controlSensitivity,
   loadSettings,
@@ -125,7 +126,7 @@ interface SceneRect {
 }
 
 /**
- * El mar 3D: three.js sobre el mismo `WorldRuntime` que /juego. Aquí sólo
+ * El mar 3D: three.js sobre el mismo `WorldRuntime` que el 2D. Aquí sólo
  * vive la vista y el control: cámara con zoom continuo desde el barco hasta
  * el mapa entero, joystick táctil desde el punto tocado, pellizco y rueda,
  * rumbo por toque (piloto automático que esquiva islas), turbo y los tres
@@ -172,6 +173,8 @@ export interface Stats {
   heading: number;
   /** Modelos de Blender puestos ahora (carga por distancia, T51). */
   models: number;
+  /** La sensibilidad del giro con que gobierna ahora (Ajustes, `turnScale`, T55). */
+  sensitivity: ControlSensitivity;
 }
 
 /** Cómo terminó un viaje en turbo: llegó, tardó demasiado o el jugador tomó el timón. */
@@ -446,7 +449,7 @@ export class Mar3D {
   /** Sin simular ni pintar (un minijuego a pantalla completa encima). */
   paused = false;
   private gates = new Map<number, MeshBasicMaterial[]>();
-  // Cambio de mundo por agujero negro (T41 en /juego; aquí T51).
+  // Cambio de mundo por agujero negro (T41 en el 2D; aquí T51).
   private readonly vortex = new VortexPass();
   private readonly switcher: WorldSwitcher<MarScene>;
   private switchingMode: SwitchMode | null = null;
@@ -458,9 +461,9 @@ export class Mar3D {
   constructor(opts: Mar3DOptions) {
     this.opts = opts;
     this.world = opts.world;
-    // La sensibilidad guardada en Ajustes, como al abrir /juego (REQ-MUN-008).
+    // La sensibilidad guardada en Ajustes (REQ-MUN-008); cambiarla allí la cambia ya (T55).
     setControlSensitivity(loadSettings(browserStore()).sensitivity);
-    // El planeta: el mapa con su margen da la vuelta (sólo en /mar; /juego conserva sus costas).
+    // El planeta: el mapa con su margen da la vuelta (sólo en /mar; el 2D conserva sus costas).
     const rect = planetRect(opts.world.bounds);
     this.rt = new WorldRuntime({ ...opts.world, bounds: rect }, { ...opts.runtime, wrap: true });
     this.switcher = new WorldSwitcher<MarScene>({ swap: (next) => this.adoptWorld(next) });
@@ -2269,7 +2272,7 @@ export class Mar3D {
   }
 
   /**
-   * Carga por distancia (T47 en /juego): los lugares con modelo de Blender
+   * Carga por distancia (T47 en el 2D): los lugares con modelo de Blender
    * cerca del barco lo piden; los lejanos lo sueltan y vuelven a la mascota
    * hecha a mano (que no pesa nada).
    */
@@ -2554,6 +2557,7 @@ export class Mar3D {
       y: this.ship.y,
       heading: this.ship.heading,
       models: [...this.modelViews.values()].filter((m) => m.model).length,
+      sensitivity: controlSensitivity(),
     });
   }
 }

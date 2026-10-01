@@ -27,7 +27,7 @@ let hidden = false;
 let gains = { sfx: 0.8, music: 0.6 };
 let noise: AudioBuffer | null = null;
 
-/** Mundo cuyo loop debe sonar (null: ninguno, p. ej. fuera de /juego). */
+/** Mundo cuyo loop debe sonar (null: ninguno, p. ej. fuera del mar). */
 let ambientWorld: string | null = null;
 let ambient: { world: string; source: AudioBufferSourceNode; gain: GainNode } | null = null;
 const ambientBuffers = new Map<string, AudioBuffer>();

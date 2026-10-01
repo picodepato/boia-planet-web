@@ -12,7 +12,7 @@ import {
 
 /**
  * Posición del barco en el dispositivo (T44, REQ-IDE-004): se guarda al
- * navegar y una recarga de /juego la restaura con su rumbo.
+ * navegar y una recarga del 2D la restaura con su rumbo.
  */
 
 class MemoryStore implements PositionStore {
@@ -70,7 +70,7 @@ describe('posición del barco (REQ-IDE-004)', () => {
     }
   });
 
-  it('volver a /juego sin recargar (Atrás o desde otra página) también sigue donde estaba', () => {
+  it('volver al 2D sin recargar (Atrás o desde otra página) también sigue donde estaba', () => {
     expect(shouldRestorePosition({ ...reload, navigationType: 'back_forward' })).toBe(true);
     expect(
       shouldRestorePosition({ ...reload, navigationType: 'navigate', bootedBefore: true }),

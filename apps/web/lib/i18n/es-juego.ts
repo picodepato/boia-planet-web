@@ -1,5 +1,5 @@
 /**
- * Textos de interfaz de /juego (REQ-ARQ-020, T49), por clave
+ * Textos de interfaz del 2D (REQ-ARQ-020, T49), por clave
  * `juego.<archivo>.<texto>`. Lo que ya estaba en docs/propuestas/textos-zonas.md
  * usa la clave de allí (es-zonas.ts). Todo `muestra` hasta que Álvaro lo apruebe.
  */

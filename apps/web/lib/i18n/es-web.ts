@@ -2,7 +2,7 @@
  * Textos de la web pública (landing, eventos, fotos, legales, checkout) en
  * español (D-03, REQ-ARQ-020). Es la parte del catálogo que viaja al
  * navegador en la landing: `lib/i18n/web.ts` traduce sólo con esto, para no
- * cargar los textos de /juego, /mar y el Admin (presupuesto de la landing,
+ * cargar los textos del 2D, /mar y el Admin (presupuesto de la landing,
  * T14). El catálogo entero está en `es.ts`. El inglés (L2) será otro archivo con las mismas
  * claves. El contenido administrable (eventos, artistas, bloques) no está
  * aquí: es dato. Todo el copy es `muestra` hasta que Álvaro lo apruebe
@@ -104,7 +104,7 @@ export type WebKey = keyof typeof esWeb;
 
 /**
  * Las claves de la landing que el Admin deja cambiar («Textos y música»,
- * REQ-ADM-019): las de la web anteriores a T49, no las de /juego, /mar ni el
+ * REQ-ADM-019): las de la web anteriores a T49, no las del 2D, /mar ni el
  * propio Admin.
  */
 export const LANDING_TEXT_KEYS = Object.keys(base) as WebKey[];

@@ -1,54 +1,36 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useRef } from 'react';
 import { AchievementsPanel } from '../../lib/logros/panel';
 import { t } from '../../lib/i18n';
+import { MarHoja } from './hoja';
 
 /**
- * El panel de logros en /mar (T37), abierto desde el icono 🏆 del HUD o
- * tocando el aviso «¡Logro completado!»: el mismo panel que la sección
- * «Logros» de /juego, en una hoja crema por encima del mar. Escape, la × o
- * tocar fuera lo cierran. Mientras está abierto el barco no se mueve.
+ * El panel de logros en /mar (T37), abierto desde el icono 🏆 de la barra o
+ * tocando el aviso «¡Logro completado!»: el mismo panel que el Menú de a
+ * bordo del 2D, en una hoja crema por encima del mar. «Mi Carnet» abre el
+ * Carnet sin salir del mar (T55).
  */
-export function MarLogros({ onClose }: { onClose: () => void }) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => ref.current?.focus(), []);
+export function MarLogros({ onClose, onCarnet }: { onClose: () => void; onCarnet: () => void }) {
   return (
-    <div className="mar-logros" onClick={onClose}>
-      <section
-        ref={ref}
-        tabIndex={-1}
-        className="mar-logros__sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('mar.logros.logros')}
-        data-testid="mar-logros-panel"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          e.stopPropagation();
-          if (e.key === 'Escape') onClose();
-        }}
-      >
-        <header className="mar-logros__head">
-          <h2>{t('mar.logros.logros2')}</h2>
-          <Link className="mar-logros__carnet" href="/carnet" prefetch={false}>
-            {t('mar.logros.miCarnet')}
-          </Link>
-          <button
-            type="button"
-            className="mar-logros__x"
-            data-testid="mar-logros-cerrar"
-            aria-label={t('mar.logros.cerrarLogros')}
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </header>
-        <div className="mar-logros__body">
-          <AchievementsPanel />
-        </div>
-      </section>
-    </div>
+    <MarHoja
+      title={t('mar.logros.logros2')}
+      label={t('mar.logros.logros')}
+      closeLabel={t('mar.logros.cerrarLogros')}
+      testId="mar-logros-panel"
+      closeTestId="mar-logros-cerrar"
+      extra={
+        <button
+          type="button"
+          className="mar-logros__carnet"
+          data-testid="mar-logros-carnet"
+          onClick={onCarnet}
+        >
+          {t('mar.logros.miCarnet')}
+        </button>
+      }
+      onClose={onClose}
+    >
+      <AchievementsPanel />
+    </MarHoja>
   );
 }

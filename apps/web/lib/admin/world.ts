@@ -18,7 +18,7 @@ import { t } from '../i18n';
  * mapa compartido de `@boia/world` más los cambios del repositorio
  * (`content.places()` por id de lugar, `content.skins()` por mundo y lugar) y
  * los eventos, que deciden qué evento abre cada isla. Lo usan el Admin (para
- * validar y previsualizar) y /juego (para jugar lo que el Admin dejó).
+ * validar y previsualizar) y el 2D (para jugar lo que el Admin dejó).
  *
  * - Posición, parámetros y activado van por id de lugar y valen en todos los
  *   mundos (mover un lugar lo mueve en todos).

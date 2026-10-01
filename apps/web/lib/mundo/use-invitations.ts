@@ -13,7 +13,7 @@ import { useRepoData } from './repo';
 const ACTIVE_TICK_S = 5;
 
 /**
- * Invitaciones a crear el Carnet en /juego (REQ-IDE-008/009, T44). Los
+ * Invitaciones a crear el Carnet en el 2D (REQ-IDE-008/009, T44). Los
  * momentos de compra y galería los dispara quien llama (`trigger`); los de
  * progreso (5 minutos activos, 3 logros) salen solos. Lo pedido espera a que
  * no haya carrera, diálogo, pago ni panel (`blocked`); el ritmo (una por

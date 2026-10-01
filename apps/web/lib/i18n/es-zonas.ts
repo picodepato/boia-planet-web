@@ -1,6 +1,6 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
- * (T38, `muestra`): las del resto (/juego, /mar, el Admin…). No se edita a mano: se cambia el documento y se
+ * (T38, `muestra`): las del resto (el 2D, /mar, el Admin…). No se edita a mano: se cambia el documento y se
  * vuelve a generar. 526 claves.
  */
 export const esZonas = {

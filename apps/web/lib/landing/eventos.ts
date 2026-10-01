@@ -11,6 +11,7 @@ import {
   nextAllDay,
   upcomingEvents,
 } from '@boia/contracts';
+import { MAR_PATH, eventSailHref } from '../world-handoff';
 
 /**
  * Ficha compartible de cada evento (`/eventos/<slug>`, REQ-COM-012,
@@ -63,9 +64,9 @@ export function eventIslandId(
 }
 
 /**
- * «Ir a su isla»: el mar con la brújula hacia la isla (`?evento=` del evento
- * que la isla abre ahora; sin evento vigente, el mar sin más). No teletransporta
- * ni concede nada (REQ-ENT-039).
+ * «Ir a su isla»: el mar con el barco navegando hacia la isla (`?evento=` del
+ * evento que la isla abre ahora, T55; sin evento vigente, el mar sin más). No
+ * concede nada al llegar (REQ-ENT-039).
  */
 export function islandHref(
   event: BoiaEvent,
@@ -75,7 +76,7 @@ export function islandHref(
   const islandId = eventIslandId(event, events, now);
   if (!islandId) return null;
   const current = islandCurrentEvent(islandId, events, now);
-  return current ? `/juego?evento=${encodeURIComponent(current.id)}` : '/juego';
+  return current ? eventSailHref(current.id) : MAR_PATH;
 }
 
 /** Ancla de la galería de un evento en /fotos: la de su isla o, sin isla, la suya. */

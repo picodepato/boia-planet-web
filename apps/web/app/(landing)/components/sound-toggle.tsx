@@ -6,7 +6,7 @@ import { readSound, subscribeSound, toggleSound } from '../../../lib/landing/sou
 
 /**
  * Interruptor de sonido de la cabecera (REQ-ENT-029). La landing no suena
- * (O10): decide si suenan música y efectos al navegar en /juego y /mar. Sin
+ * (O10): decide si suenan música y efectos al navegar en el 2D y /mar. Sin
  * JavaScript no se ve (no haría nada).
  */
 export function SoundToggle({ className = '' }: { className?: string }) {

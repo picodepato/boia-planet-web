@@ -1,7 +1,7 @@
 import type { QualityTier } from '@boia/engine/streaming';
 
 /**
- * Carga por sectores en /juego (T47). Los atlas por sector los escribe
+ * Carga por sectores en el 2D (T47). Los atlas por sector los escribe
  * `tools/atlas/build.ts` en `public/atlas/` antes de `next dev` y
  * `next build`; sin ellos el motor usa los PNG de `/api/art`.
  */

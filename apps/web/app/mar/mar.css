@@ -1571,6 +1571,97 @@
   padding: 0 14px calc(var(--safe-b) + 18px);
 }
 
+/* La × siempre a la derecha, también sin nada más en la cabecera (T55). */
+.mar-logros__head h2 {
+  flex: 1;
+}
+
+button.mar-logros__carnet {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A bordo dentro del mar (T55): Mi Carnet, Ajustes, Controles y Welcome
+   Aboard usan las piezas del Menú de a bordo; sus formularios, aquí. */
+.mar-logros__body h3 {
+  margin: 14px 0 6px;
+  font-size: 1rem;
+}
+
+.mar-logros__body ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  line-height: 1.45;
+}
+
+.mar-logros__body .juego-muted {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.mar-logros__body .juego-button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--orange);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.mar-logros__body .juego-button:disabled {
+  opacity: 0.5;
+}
+
+.mar-logros__body .juego-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid rgb(18 35 63 / 0.18);
+  border-radius: 12px;
+}
+
+.mar-logros__body .juego-field legend,
+.mar-logros__body .juego-field > span {
+  font-weight: 700;
+}
+
+.mar-logros__body .juego-field select {
+  min-height: 44px;
+  font: inherit;
+}
+
+.mar-logros__body .juego-choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 4px 0;
+}
+
+.mar-logros__body .juego-choice input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--orange);
+}
+
+.mar-logros__body .juego-range {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+}
+
+.mar-logros__body .juego-range input {
+  flex: 1;
+  accent-color: var(--orange);
+}
+
 @keyframes mar-logros-up {
   from {
     transform: translateY(40px);

@@ -1,5 +1,5 @@
 import type { Artist, BoiaEvent } from '@boia/contracts';
-import { ACCESS_COPY, ticketsSailHref } from '../../../lib/landing/access';
+import { ACCESS_COPY, SEA_HREF, ticketsSailHref } from '../../../lib/landing/access';
 import { t } from '../../../lib/landing/texts';
 import { EventCard } from './event-card';
 
@@ -27,8 +27,8 @@ export function TicketsPanel({
   nextAllDay?: { name: string; slug: string } | null;
   /**
    * Isla del evento destacado (o la localización común): «Ver su isla en el
-   * mar» abre /juego con el barco llegando allí y el panel con la compra
-   * (T44, REQ-ENT-034). Sin isla, el enlace lleva al mar a secas.
+   * mar» abre el mar 3D con el barco navegando hasta allí y la ficha con la
+   * compra al llegar (T44, T55, REQ-ENT-034). Sin isla, el enlace lleva al mar a secas.
    */
   island?: string;
 }) {
@@ -86,7 +86,7 @@ export function TicketsPanel({
           {t('tickets.islandInvite')}{' '}
           <a
             className="sail-link"
-            href={island ? ticketsSailHref(island, featured?.id) : '/juego'}
+            href={island ? ticketsSailHref(island, featured?.id) : SEA_HREF}
             data-track="explore_start"
             data-source="tickets_panel"
             data-testid="tickets-en-barco"

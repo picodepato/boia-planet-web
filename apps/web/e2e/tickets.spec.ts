@@ -62,19 +62,23 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
   await expect(result).toContainText(CHECKOUT_COPY.stamp.granted);
   await expect(checkout.getByTestId('checkout-logro')).toContainText(ticketAchievement.title);
 
-  // «Ver Mi Carnet»: el juego abre en Mi Carnet; al crearlo, el sello ya está.
+  // «Ver Mi Carnet»: el mar abre en Mi Carnet (T55); al crearlo, el sello ya está.
+  await expect(checkout.getByTestId('checkout-carnet')).toHaveAttribute(
+    'href',
+    /^\/mar\?menu=carnet/,
+  );
   await checkout.getByTestId('checkout-carnet').click();
-  await expect(page).toHaveURL(/\/juego\?menu=carnet/);
-  await gameRunning(page);
-  const menu = page.getByTestId('menu');
-  await menu.getByTestId('carnet-crear').click();
-  await menu.getByTestId('carnet-apodo-input').fill(`Compradora ${info.project.name}`);
-  await menu.getByTestId('carnet-guardar').click();
-  const stamps = menu.getByTestId('carnet-sellos');
+  await expect(page).toHaveURL(/\/mar/);
+  const carnet = page.getByTestId('mar-carnet');
+  await expect(carnet).toBeVisible({ timeout: 30_000 });
+  await carnet.getByTestId('carnet-crear').click();
+  await carnet.getByTestId('carnet-apodo-input').fill(`Compradora ${info.project.name}`);
+  await carnet.getByTestId('carnet-guardar').click();
+  const stamps = carnet.getByTestId('carnet-sellos');
   await expect(stamps).toContainText(storeName(landingEvent.id));
   await expect(stamps).not.toContainText(storeName(islandEvent.id));
-  await menu.getByRole('button', { name: 'Cerrar menú' }).click();
-  await expect(menu).toBeHidden();
+  await carnet.getByTestId('mar-carnet-cerrar').click();
+  await expect(carnet).toBeHidden();
 
   // Rumbo norte hasta la isla del evento: su panel ofrece la compra de prueba.
   // El mapa de Arcilla es grande: se empieza junto a la isla con `?cerca=`.

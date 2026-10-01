@@ -17,6 +17,6 @@ export const worlds: WorldRegistry = WORLD_REGISTRY;
 /**
  * El mundo de muestra de plan 001, pequeño: lo usan la sonda de la esfera
  * (`/sphere-probe`) y algunas pruebas. La entrada juega desde T28 el mundo
- * activo (`lib/intro/active.ts`) y `/juego` elige el suyo con `world-choice.ts`.
+ * activo (`lib/intro/active.ts`) y el mar elige el suyo con `world-choice.ts`.
  */
 export const demoWorld: WorldConfig = parseWorldConfig(SAMPLE_WORLD);

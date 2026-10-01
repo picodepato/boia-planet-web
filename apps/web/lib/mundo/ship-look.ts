@@ -8,7 +8,7 @@ import type { ProgressApi } from '@boia/store';
 import { BASE_SKIN, type ShipLook, resolveLook, styleOf } from '../barco/shop-model';
 
 /**
- * Aspecto del barco (estilo + skin) en /juego y /mar (T12, T40). Qué se
+ * Aspecto del barco (estilo + skin) en el 2D y /mar (T12, T40). Qué se
  * carga al entrar (`resolveLook`): `?estilo=<id>` si viene en la URL y es
  * tuyo, si no lo equipado en el repositorio, si no lo último elegido en este
  * navegador antes de la tienda y, si no, el barco del mundo. Equipar en la

@@ -11,7 +11,7 @@ import { t } from '../i18n';
 /**
  * El panel de logros (T37, D-22 punto 5), sin React: de lo que devuelve
  * `progress.achievements()` y lo contado (`achievementFacts`) sale cada fila
- * tal como se pinta, igual en /mar y en /juego: título (o «???» si es oculto
+ * tal como se pinta, igual en /mar y en el 2D: título (o «???» si es oculto
  * y no se ha completado), barra de progreso, «te queda…», premio y estado
  * (en curso, listo para reclamar, reclamado). Textos `muestra`.
  */

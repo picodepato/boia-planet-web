@@ -4,7 +4,7 @@ import { t as msg } from '../i18n';
 
 /**
  * Textos de los avisos y del mapa ampliado (borrador, pendiente Álvaro). Van
- * aquí, junto al juego, como el resto del copy de /juego (ver T04).
+ * aquí, junto al juego, como el resto del copy del 2D (ver T04).
  */
 
 /** Nombre de cada logro del catálogo de triggers; los que falten, genérico. */

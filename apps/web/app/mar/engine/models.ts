@@ -9,7 +9,7 @@ import { SHIP_MODELS_URL } from './ship-model';
  * Los modelos de Blender del mar 3D que no son el barco (T39): la mascota
  * de BOIA como cada boia (la primera, las informativas, la de WhatsApp y la
  * Boia Fiestera). Pesan ~200 kB cada uno, así que se cargan por distancia
- * (T47 en /juego, T51 aquí) con el mismo plan que los sectores del 2D
+ * (T47 en el 2D, T51 aquí) con el mismo plan que los sectores del 2D
  * (`@boia/engine/streaming`): cerca del barco se piden, lejos se sueltan
  * (geometría y materiales fuera de la GPU). Mientras no llegan, y si fallan,
  * se ve la mascota hecha a mano de siempre.

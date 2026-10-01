@@ -11,7 +11,7 @@ import { gameRepository } from '../repo';
 import { worlds } from './demo-world';
 
 /**
- * Qué mundo se juega en /juego (T17, T24): `?mundo=<id>`, si no el elegido
+ * Qué mundo se juega en el 2D (T17, T24): `?mundo=<id>`, si no el elegido
  * en este navegador (menú «Mundos»), si no el activo que fije el Admin
  * (T26), si no el por defecto. La elección del visitante vive en
  * `localStorage` (`boia:mundo`); el mundo activo, en el repositorio local

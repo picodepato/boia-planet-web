@@ -4,7 +4,7 @@ import type { BoiaRepository, CarnetView } from '@boia/store';
 import { useRepoData } from '../repo';
 import type { CarnetExtras } from './carnet-card';
 
-/** Preferencia del invitado con el barco que lleva (la escribe /juego). */
+/** Preferencia del invitado con el barco que lleva (la escribe el barco elegido). */
 export const SHIP_PREF = 'barco';
 
 export interface ShipPref {

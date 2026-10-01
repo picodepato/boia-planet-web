@@ -20,7 +20,7 @@ import { recordSignal } from './achievements';
 import { t as msg } from '../i18n';
 
 /**
- * El Freu en /juego (T20, REQ-AVE-026…033): la carrera del motor
+ * El Freu en el 2D (T20, REQ-AVE-026…033): la carrera del motor
  * (`@boia/engine/circuit`), el cronómetro muy pequeño arriba a la izquierda
  * (ni grande, ni modal, ni centrado: REQ-AVE-028), el récord antes (al
  * acercarse a la salida) y después (en el aviso de meta), guardado en este

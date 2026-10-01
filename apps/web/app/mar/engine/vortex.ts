@@ -13,7 +13,7 @@ import {
 } from 'three';
 
 /**
- * El agujero negro del cambio de mundo en el mar 3D (T41 en /juego, T51 aquí):
+ * El agujero negro del cambio de mundo en el mar 3D (T41 en el 2D, T51 aquí):
  * la escena se pinta en una textura y un cuadro a pantalla completa la
  * enrosca y la encoge hacia el barco, abre el agujero y apaga todo; es el
  * mismo sombreador que el filtro de Pixi, con la pose de `SwitchTimeline`.

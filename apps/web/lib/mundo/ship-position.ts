@@ -1,6 +1,6 @@
 /**
  * Posición del barco guardada en el dispositivo (REQ-IDE-004, T44): dónde
- * estaba y hacia dónde miraba, para que una recarga de /juego siga en el
+ * estaba y hacia dónde miraba, para que una recarga del 2D siga en el
  * mismo sitio. El mapa es común a todos los mundos (D-20), así que vale
  * aunque se cambie de mundo. Se guarda aparte del repositorio: se escribe a
  * menudo y no es progreso que haya que fusionar con una cuenta.
@@ -84,8 +84,8 @@ export function movedEnough(
 }
 
 /**
- * ¿Se restaura la posición al arrancar? Sí al recargar /juego (o volver con
- * Atrás/Adelante) y al volver a /juego sin recargar desde otra página de la
+ * ¿Se restaura la posición al arrancar? Sí al recargar el 2D (o volver con
+ * Atrás/Adelante) y al volver al 2D sin recargar desde otra página de la
  * web; no cuando se llega desde EXPLORAR (el barco sale del puerto, D-20),
  * ni con `?ir=` o `?cerca=`, que ya dicen dónde empezar.
  */
@@ -104,7 +104,7 @@ export function shouldRestorePosition(opts: {
 }
 
 /**
- * Al arrancar /juego: pone el barco donde se guardó si toca
+ * Al arrancar el 2D: pone el barco donde se guardó si toca
  * (`shouldRestorePosition`). Devuelve dónde quedó, o `null` si no se movió.
  */
 export function restoreShipPosition(

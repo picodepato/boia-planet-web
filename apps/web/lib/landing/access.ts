@@ -1,4 +1,4 @@
-import { placeHref } from '../world-handoff';
+import { MAR_CARNET_HREF, MAR_PATH, placeHref } from '../world-handoff';
 import { t } from '../i18n/web';
 
 /**
@@ -6,8 +6,8 @@ import { t } from '../i18n/web';
  * REQ-AVE-022) y los textos nuevos de cabecera y pie (REQ-ENT-029,
  * REQ-ENT-032, O13). La landing sigue siendo HTML: Tickets abre su panel,
  * Fotos y Tienda son secciones; con JavaScript, cada una ofrece además «ir en
- * barco», que abre /juego con el barco llegando a su isla y su panel abierto
- * (el sector navegable bajo demanda de REQ-ENT-038). Textos de
+ * barco», que abre el mar 3D con el barco navegando a su isla y su ficha al
+ * llegar (T55; el sector navegable bajo demanda de REQ-ENT-038). Textos de
  * docs/propuestas/textos-zonas.md, `muestra`.
  */
 
@@ -15,20 +15,23 @@ import { t } from '../i18n/web';
 export const PHOTOS_PLACE_ID = 'fotos';
 export const STORE_PLACE_ID = 'tienda';
 
-/** /juego con el barco en el Puerto de Fotos y la galería abierta. */
+/** El mar con el barco rumbo al Puerto de Fotos y su galería al llegar. */
 export const PHOTOS_SAIL_HREF = placeHref(PHOTOS_PLACE_ID);
-/** /juego con el barco en la isla tienda y su escaparate abierto. */
+/** El mar con el barco rumbo a la isla tienda y su escaparate al llegar. */
 export const STORE_SAIL_HREF = placeHref(STORE_PLACE_ID);
 
-/** /juego con el barco en la isla del evento y su panel (con compra) abierto. */
+/** El mar con el barco rumbo a la isla del evento y su ficha (con compra) al llegar. */
 export function ticketsSailHref(islandId: string, eventId?: string): string {
   return placeHref(islandId, eventId ? { eventId } : {});
 }
 
 /** Mi Carnet desde la cabecera: la página del propio Carnet (o su invitación). */
 export const CARNET_PAGE = '/carnet';
-/** Crear el Carnet desde la landing: Mi Carnet en el Menú de a bordo. */
-export const CARNET_CREATE_HREF = '/juego?menu=carnet';
+/** Crear el Carnet desde la landing: Mi Carnet dentro del mar (T55). */
+export const CARNET_CREATE_HREF = MAR_CARNET_HREF;
+
+/** El mar a secas (sin isla a la que ir). */
+export const SEA_HREF = MAR_PATH;
 
 export const ACCESS_COPY = {
   carnet: t('nav.carnet'),

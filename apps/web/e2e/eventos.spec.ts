@@ -105,7 +105,7 @@ test.describe('sin JavaScript', () => {
     await expect(ficha.getByTestId('evento-precio')).toContainText('€');
     // Sin JavaScript, el enlace a la ticketera (de muestra).
     await expect(ficha.getByTestId(`comprar-${e.id}`)).toHaveAttribute('href', e.ticketUrl!);
-    await expect(ficha.getByTestId('evento-ir-isla')).toHaveAttribute('href', /^\/juego/);
+    await expect(ficha.getByTestId('evento-ir-isla')).toHaveAttribute('href', /^\/mar\?/);
   });
 
   test('una ficha finalizada no tiene compra y enseña sus recuerdos', async ({ page }) => {

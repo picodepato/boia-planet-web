@@ -78,7 +78,8 @@ test('la barra de abajo: Mapa, Logros, «Entradas», Carnet y Menú; arriba, min
   for (let i = 1; i < xs.length; i++) expect(xs[i]!.x).toBeGreaterThan(xs[i - 1]!.x);
   const mid = xs[2]!.x + xs[2]!.width / 2;
   expect(Math.abs(mid - VIEW.width / 2)).toBeLessThan(VIEW.width * 0.06);
-  await expect(carnet).toHaveAttribute('href', '/carnet');
+  // Mi Carnet se abre dentro del mar (T55), no en otra página.
+  await expect(carnet).toHaveAttribute('aria-haspopup', 'dialog');
 
   // Arriba sólo el minimapa y los saldos, en la franja de arriba.
   const top = await box(page.locator('.mar-top'));

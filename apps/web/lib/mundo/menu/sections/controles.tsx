@@ -31,6 +31,43 @@ const ZONE_LABEL: Record<MinimapZone, string> = {
   'middle-left': t('juego.controles.enMedioALa2'),
 };
 
+/**
+ * Sensibilidad del giro, teclado y táctil por separado (REQ-MUN-008): la del
+ * Menú de a bordo del 2D y la de Ajustes del mar 3D (T55, `turnScale`).
+ */
+export function SensitivityField({
+  value,
+  onChange,
+}: {
+  value: ControlSensitivity;
+  onChange: (next: ControlSensitivity) => void;
+}) {
+  return (
+    <fieldset className="juego-field" data-testid="sensibilidad">
+      <legend>{t('juego.controles.sensibilidadDelGiro')}</legend>
+      {(Object.keys(SENSITIVITY_LABEL) as (keyof ControlSensitivity)[]).map((k) => (
+        <label key={k} className="juego-range">
+          <span>
+            {SENSITIVITY_LABEL[k]} · {Math.round(value[k] * 100)} %
+          </span>
+          <input
+            type="range"
+            min={Math.round(SENSITIVITY_RANGE.min * 100)}
+            max={Math.round(SENSITIVITY_RANGE.max * 100)}
+            step={Math.round(SENSITIVITY_RANGE.step * 100)}
+            value={Math.round(value[k] * 100)}
+            aria-label={t('juego.controles.sensibilidadDelGiro2', {
+              v1: SENSITIVITY_LABEL[k].toLowerCase(),
+            })}
+            onChange={(e) => onChange({ ...value, [k]: Number(e.target.value) / 100 })}
+          />
+        </label>
+      ))}
+      <small>{t('juego.controles.masElBarcoGira')}</small>
+    </fieldset>
+  );
+}
+
 /** 🎮 Controles (REQ-IDE-036) y modo del teclado (D-14, REQ-MUN-008). */
 export const controlesSection: MenuSection = {
   id: 'controles',
@@ -69,33 +106,10 @@ export const controlesSection: MenuSection = {
           ))}
         </fieldset>
 
-        <fieldset className="juego-field" data-testid="sensibilidad">
-          <legend>{t('juego.controles.sensibilidadDelGiro')}</legend>
-          {(Object.keys(SENSITIVITY_LABEL) as (keyof ControlSensitivity)[]).map((k) => (
-            <label key={k} className="juego-range">
-              <span>
-                {SENSITIVITY_LABEL[k]} · {Math.round(ctx.settings.sensitivity[k] * 100)} %
-              </span>
-              <input
-                type="range"
-                min={Math.round(SENSITIVITY_RANGE.min * 100)}
-                max={Math.round(SENSITIVITY_RANGE.max * 100)}
-                step={Math.round(SENSITIVITY_RANGE.step * 100)}
-                value={Math.round(ctx.settings.sensitivity[k] * 100)}
-                aria-label={t('juego.controles.sensibilidadDelGiro2', {
-                  v1: SENSITIVITY_LABEL[k].toLowerCase(),
-                })}
-                onChange={(e) =>
-                  ctx.updateSettings((s) => ({
-                    ...s,
-                    sensitivity: { ...s.sensitivity, [k]: Number(e.target.value) / 100 },
-                  }))
-                }
-              />
-            </label>
-          ))}
-          <small>{t('juego.controles.masElBarcoGira')}</small>
-        </fieldset>
+        <SensitivityField
+          value={ctx.settings.sensitivity}
+          onChange={(sensitivity) => ctx.updateSettings((s) => ({ ...s, sensitivity }))}
+        />
 
         <h3>{t('controls.minimap.heading')}</h3>
         <ul>

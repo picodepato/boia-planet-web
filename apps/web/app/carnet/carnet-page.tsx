@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { MAR_CARNET_HREF, MAR_PATH } from '../../lib/world-handoff';
 import '../../lib/mundo/hud.css';
 import '../../lib/mundo/carnet/carnet.css';
 import { CarnetCard } from '../../lib/mundo/carnet/carnet-card';
@@ -22,7 +23,7 @@ export function CarnetPage({ userId }: { userId: string | null }) {
     <main className="carnet-page" data-testid="carnet-pagina">
       <div className="carnet-page-inner">
         <p className="carnet-page-nav">
-          <Link href="/juego">← Volver al mar</Link>
+          <Link href={MAR_PATH}>← Volver al mar</Link>
         </p>
         {data === undefined ? (
           <p>Cargando…</p>
@@ -34,7 +35,7 @@ export function CarnetPage({ userId }: { userId: string | null }) {
             </p>
             {data.carnet.isMine ? (
               <div className="carnet-actions">
-                <Link className="juego-button" href="/juego?menu=carnet">
+                <Link className="juego-button" href={MAR_CARNET_HREF}>
                   Editar mi Carnet
                 </Link>
               </div>
@@ -57,7 +58,7 @@ export function CarnetPage({ userId }: { userId: string | null }) {
             <p>
               Tu Carnet BOIA es tu identidad musical en el mar. Se crea en un momento, sin email.
             </p>
-            <Link className="juego-button" href="/juego?menu=carnet">
+            <Link className="juego-button" href={MAR_CARNET_HREF}>
               Crear mi Carnet
             </Link>
             {/* REQ-IDE-007 (T44): los límites del progreso local, antes de registrarse. */}

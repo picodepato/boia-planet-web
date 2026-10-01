@@ -99,4 +99,20 @@ export const esMar = {
   'mar.client.volverABoiaMenu': '← Volver a BOIA',
   'mar.sheet.verMas': 'Ver más',
   'mar.sheet.verMenos': 'Ver menos',
+  // A bordo dentro del mar (T55): Mi Carnet, Ajustes, Controles y Welcome Aboard.
+  'mar.client.bienvenida': '⚓ Welcome Aboard',
+  'mar.client.controles': '🎮 Controles',
+  'mar.client.ajustes': '⚙️ Ajustes',
+  'mar.hoja.cerrar': 'Cerrar {title}',
+  'mar.controles.vueltaCorta': 'Tira hacia atrás mientras avanzas para dar la vuelta corta.',
+  'mar.controles.rumbo': 'Toca el mar o una isla para fijar rumbo: el barco va solo hasta allí.',
+  'mar.controles.teclado':
+    'En el ordenador: flechas o WASD para navegar, T turbo, M mapa y +/− para el zoom.',
+  'mar.controles.mapaYZoom': 'Mapa y zoom',
+  'mar.controles.mapa':
+    'Toca el minimapa (o 🗺️ Mapa) para ver el planeta entero; toca una isla para ver qué hay.',
+  'mar.controles.zoom': 'Pellizca o usa la rueda: de la cubierta al planeta entero.',
+  'mar.controles.sensibilidad': 'La sensibilidad del giro se cambia en ⚙️ Ajustes.',
+  'mar.bienvenida.entradas':
+    '🎟️ «Entradas», en la barra de abajo, te lleva a la isla del próximo evento.',
 } as const;

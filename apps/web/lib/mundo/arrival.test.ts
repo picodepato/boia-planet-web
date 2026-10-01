@@ -1,7 +1,7 @@
 import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { PHOTOS_PLACE_ID, STORE_PLACE_ID } from '../landing/access';
-import { placeHref, readPlaceRequest, withoutPlaceRequest } from '../world-handoff';
+import { MAR_PATH, placeHref, readPlaceRequest, withoutPlaceRequest } from '../world-handoff';
 import { ARRIVAL_HEADING, approachPoint, arrivalPoint, planArrival } from './arrival';
 
 /**
@@ -90,13 +90,13 @@ describe('llegada a un lugar con ?ir= (REQ-ENT-034)', () => {
   });
 });
 
-describe('enlace «abrir /juego en un lugar»', () => {
+describe('enlace «abrir el mar en un lugar»', () => {
   it('ida y vuelta, y se quita de la URL al llegar', () => {
     const href = placeHref('allday', { eventId: 'halloween-2026' });
     const url = new URL(href, 'http://x');
-    expect(url.pathname).toBe('/juego');
+    expect(url.pathname).toBe(MAR_PATH);
     expect(readPlaceRequest(url.search)).toEqual({ placeId: 'allday', eventId: 'halloween-2026' });
     expect(readPlaceRequest('?mundo=acuarela')).toBeNull();
-    expect(withoutPlaceRequest(`${href}&mundo=acuarela`)).toBe('/juego?mundo=acuarela');
+    expect(withoutPlaceRequest(`${href}&mundo=acuarela`)).toBe(`${MAR_PATH}?mundo=acuarela`);
   });
 });

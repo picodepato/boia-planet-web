@@ -4,7 +4,7 @@ import { SAMPLE_CONTENT } from './sample-content';
 
 /**
  * Lo último que se leyó del contenido del repositorio, para quien lo necesita
- * sin esperar (el mar de /juego y /mar: qué evento abre una isla, si se
+ * sin esperar (el mar del 2D y /mar: qué evento abre una isla, si se
  * vende). Hasta que `refreshLiveContent` lee el repositorio, la muestra;
  * después, la muestra con los cambios del Admin de la demo (T26).
  *

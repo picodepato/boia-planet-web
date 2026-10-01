@@ -68,7 +68,7 @@ describe('las seis boies del mapa compartido', () => {
     const ids = worldBuoys(world);
     const titles: string[] = [];
     for (const [i, objectId] of ids.entries()) {
-      // La señal sale del evento del mundo, como en /juego.
+      // La señal sale del evento del mundo, como en el 2D.
       const signal = signalFromWorldEvent(
         { type: 'achievement', objectId, trigger: 'find_boia' } as never,
         world,

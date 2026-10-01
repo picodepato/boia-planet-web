@@ -10,7 +10,7 @@ import { t } from '../i18n';
 
 /**
  * El panel de logros (T37, D-22 punto 5, REQ-IDE-024…028), el mismo en /mar
- * (desde el icono del HUD) y en /juego (sección «Logros» del Menú de a
+ * (desde el icono del HUD) y en el 2D (sección «Logros» del Menú de a
  * bordo): «X de Y logros», saldos y rango arriba, y cada logro con su barra,
  * lo que le queda y su premio; los ocultos, «???» hasta completarlos. Los
  * completados llevan «Reclamar»: el premio llega entonces (una sola vez, lo

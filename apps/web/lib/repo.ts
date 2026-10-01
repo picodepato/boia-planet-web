@@ -5,13 +5,13 @@ import { worlds } from './mundo/demo-world';
 
 /**
  * El repositorio de la demo (T16, D-20): todo en este navegador. Lo usan
- * /juego, /carnet y la compra de prueba de la landing (T25). Las botellas se
+ * el 2D, /carnet y la compra de prueba de la landing (T25). Las botellas se
  * validan contra el mar del mapa compartido (el mismo en todos los mundos) y
  * las de muestra, cuyas coordenadas son del mapa de Arcilla, se dejan en el
  * mar del mapa que se juega hoy.
  *
  * `browserRepository` se queda con las opciones de la primera llamada, y la
- * landing y /juego comparten pestaña (EXPLORAR navega sin recargar): en la
+ * landing y el 2D comparten pestaña (EXPLORAR navega sin recargar): en la
  * web, toda llamada tiene que pasar por aquí.
  */
 

@@ -15,11 +15,11 @@ import { gameRepository } from './repo';
 import { t } from '../i18n';
 
 /**
- * Punto de montaje de los minijuegos (T23) en /juego. El juego vive en
+ * Punto de montaje de los minijuegos (T23) en el 2D. El juego vive en
  * `@boia/engine/minigames`; aquí sólo:
  * - el panel de la isla Faro o Cañón al acercarse (evento `minigame` de
  *   INICIAR_MINIJUEGO), que explica la actividad y la abre con «Jugar»;
- * - la ruta de prueba `/juego?minijuego=faro|canon`, que la abre directamente;
+ * - la ruta de prueba del 2D `?minijuego=faro|canon`, que la abre directamente;
  * - la capa a pantalla completa, que al salir deja el barco donde estaba.
  */
 

@@ -16,6 +16,7 @@ import { EventPageBody } from '../../app/(landing)/components/event-page';
 import { EventCard } from '../../app/(landing)/components/event-card';
 import { IslandUpcoming } from '../mundo/place-panels';
 import { EventPanel } from '../mundo/world-ui';
+import { eventSailHref } from '../world-handoff';
 import { EVENTOS_COPY } from './eventos-copy';
 import {
   GENERAL_GALLERY,
@@ -68,7 +69,8 @@ describe('ficha de evento (REQ-COM-012)', () => {
     const html = page(onSale, NOW);
     expect(html).toContain(`${BUY}${onSale.id}"`);
     expect(html).toContain('data-testid="evento-precio"');
-    expect(html).toContain(`href="/juego?evento=${onSale.id}"`);
+    expect(html).toContain(`href="${eventSailHref(onSale.id)}"`);
+    expect(eventSailHref(onSale.id)).toMatch(/^\/mar\?/);
     expect(html).toContain(EVENTOS_COPY.sailToIsland);
   });
 
@@ -140,7 +142,7 @@ describe('BOIA Club · Halloween, satélite sin isla (D-23, O7)', () => {
     expect(view.warmup?.next?.slug).toBe(next.slug);
     expect(view.kicker).toBe('BOIA Club');
     // «Ir a su isla»: la isla del próximo All Day.
-    expect(view.islandHref).toBe(`/juego?evento=${next.id}`);
+    expect(view.islandHref).toBe(eventSailHref(next.id));
 
     const tickets = resolveHome(SAMPLE_CONTENT, NOW).tickets;
     expect(tickets.nextAllDay?.slug).toBe(next.slug);

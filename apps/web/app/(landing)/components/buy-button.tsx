@@ -4,14 +4,15 @@ import type { FunnelEventProps } from '@boia/contracts/analytics';
 import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../../../lib/i18n/web';
+import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import type { SandboxCheckout } from '../../../lib/ticketing/checkout';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
 
 type Source = FunnelEventProps['ticket_click_out']['source'];
 type Checkout = typeof SandboxCheckout;
 
-/** Dónde ver el sello desde la landing: Mi Carnet en el Menú de a bordo. */
-export const CARNET_FROM_LANDING = '/juego?menu=carnet';
+/** Dónde ver el sello desde la landing: Mi Carnet dentro del mar (T55). */
+export const CARNET_FROM_LANDING = CARNET_CREATE_HREF;
 
 /**
  * «Comprar entradas» de la landing y del panel de Tickets (T25): abre el

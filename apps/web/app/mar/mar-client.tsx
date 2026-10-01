@@ -15,7 +15,15 @@ import {
   type RescuePhase,
   rescueMissionOf,
 } from '@boia/engine/mission';
-import { type Notice, browserStore, loadSettings } from '@boia/engine/ui';
+import {
+  type Notice,
+  type Settings,
+  browserStore,
+  loadSettings,
+  parseSettings,
+  saveSettings,
+  setControlSensitivity,
+} from '@boia/engine/ui';
 import {
   CIRCUIT_ID,
   type ComposedWorld,
@@ -98,12 +106,19 @@ import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { MOOD_IDS, MOOD_LABEL, type MoodId } from './engine/palette';
 import { type ShipModelEntry, loadShipManifest, loadShipModel } from './engine/ship-model';
+import { MarABordo } from './a-bordo';
+import {
+  type MarLinks,
+  type MarPanel,
+  hasMarLinks,
+  readMarLinks,
+  withoutMarLinks,
+} from './deep-link';
 import { MarLogros } from './logros';
 import { MarTienda } from './tienda';
 import { MarMinimap } from './minimap';
 import { raceCheckpoint } from './race';
 import {
-  type EventTrip,
   Sheet,
   type SheetState,
   currentEventTrip,
@@ -112,16 +127,27 @@ import {
   islandOfEvent,
   sheetKey,
 } from './sheet';
-import { islandTrip, marPositionStore, tripOutcome } from './voyage';
+import {
+  type Trip,
+  arrivalSheet,
+  islandTrip,
+  linkTrip,
+  marPositionStore,
+  tripOutcome,
+} from './voyage';
+import { liveContent } from '../../lib/landing/live-content';
 import './mar.css';
 import { t as msg } from '../../lib/i18n';
 
 /**
- * /mar: el mar de BOIA en 3D, la otra forma de explorar junto a /juego. Mismo
+ * /mar: el mar de BOIA en 3D, el mundo navegable (plan 005: el único). Mismo
  * mapa compartido, mismo motor de comportamientos y mismo repositorio (lo que
- * se gana aquí sale en el Carnet y en /juego, y al revés); la vista, la
- * cámara y los controles son nuevos: pensados para el móvil, con zoom
- * continuo desde la cubierta hasta el mapa entero. Textos `muestra`.
+ * se gana aquí sale en el Carnet); la vista, la cámara y los controles están
+ * pensados para el móvil, con zoom continuo desde la cubierta hasta el mapa
+ * entero. Mi Carnet, Ajustes, Controles y Welcome Aboard se abren dentro del
+ * mar (T55), y los enlaces de la landing (`?ir=`, `?evento=`, `?menu=`)
+ * arrancan con el barco navegando a su isla o con su panel abierto.
+ * Textos `muestra`.
  */
 
 const progressApi = () => gameRepository().progress;
@@ -133,6 +159,10 @@ const ticketAvailable = (id: string) => {
   const e = findEvent(id);
   return !!e && EVENT_STATE_BEHAVIOR[e.state].purchasable;
 };
+
+/** El id de un evento por su id o su slug (los enlaces usan los dos); null si no existe. */
+const eventIdOf = (idOrSlug: string): string | null =>
+  (findEvent(idOrSlug) ?? liveContent().events.find((e) => e.slug === idOrSlug))?.id ?? null;
 
 function prefersReducedMotion(): boolean {
   try {
@@ -267,10 +297,16 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const sheetRef = useRef<SheetState | null>(null);
   sheetRef.current = sheet;
   const [checkoutFor, setCheckoutFor] = useState<string | null>(null);
-  // Viaje en turbo del botón «Entradas» (REQ-ENT-040) y lo que sube la ficha abierta.
-  const [trip, setTrip] = useState<EventTrip | null>(null);
-  const tripRef = useRef<EventTrip | null>(null);
+  // Viaje en turbo del botón «Entradas» (REQ-ENT-040), de «Ir a la isla» o de
+  // un enlace profundo (T55), y el lugar al que llegó el último.
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const tripRef = useRef<Trip | null>(null);
   tripRef.current = trip;
+  const [arrivedAt, setArrivedAt] = useState<string | null>(null);
+  // Los enlaces profundos de la URL (T55), leídos al arrancar y consumidos al estar listo.
+  const linksRef = useRef<MarLinks | null>(null);
+  // Mi Carnet, Ajustes, Controles y Welcome Aboard, dentro del mar (T55).
+  const [hoja, setHoja] = useState<Exclude<MarPanel, 'logros'> | null>(null);
   const [minigameOffer, setMinigameOffer] = useState<MinigameOffer | null>(null);
   const [minigameOpen, setMinigameOpen] = useState(false);
   const [mood, setMood] = useState<MoodId>('tarde');
@@ -301,9 +337,24 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [shipPending, setShipPending] = useState(false);
   const [tienda, setTienda] = useState(false);
   const { data: equippedNow } = useRepoData((r) => r.progress.equipped());
-  const [settings] = useState(() =>
+  const [settings, setSettings] = useState<Settings | null>(() =>
     typeof window === 'undefined' ? null : loadSettings(browserStore()),
   );
+  /**
+   * Ajustes (T55): se guardan en este navegador y se aplican ya: el sonido y
+   * la sensibilidad del giro, que el motor lee en cada paso (`turnScale`).
+   */
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const updateSettings = useCallback((change: (s: Settings) => Settings) => {
+    const store = browserStore();
+    const next = parseSettings(change(settingsRef.current ?? loadSettings(store)));
+    settingsRef.current = next;
+    setSettings(next);
+    saveSettings(store, next);
+    applyAudioSettings(next);
+    setControlSensitivity(next.sensitivity);
+  }, []);
   const { data: balances } = useRepoData((r) => r.progress.balances());
   // Logros (T37): el icono del HUD con su número y el panel para reclamar.
   const [logros, setLogros] = useState(false);
@@ -340,7 +391,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   );
 
   // Los logros de las señales sueltas (minijuegos, mundo, botellas, Carnet)
-  // también avisan aquí, como en /juego (T37).
+  // también avisan aquí, como en el 2D (T37).
   useEffect(() => onAchievementNotices((ns) => ns.forEach(push)), [push]);
 
   // --- Eventos del mundo ------------------------------------------------------
@@ -413,7 +464,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       case 'achievement': {
         foundObjectsRef.current.add(e.objectId);
         const s = signalFromWorldEvent(e, world);
-        // Una boia nueva avisa «Boia encontrada · n de 6» (O12, T45), como en /juego.
+        // Una boia nueva avisa «Boia encontrada · n de 6» (O12, T45), como en el 2D.
         if (s?.trigger === 'find_buoy') pushAll(recordBuoy(repo, s.objectId, world));
         else if (s) pushAll(recordSignal(repo, s));
         break;
@@ -542,7 +593,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   };
 
   /**
-   * El delfín (O15, REQ-AVE-018), como en /juego: escondido hasta que, tras
+   * El delfín (O15, REQ-AVE-018), como en el 2D: escondido hasta que, tras
    * 2–4 minutos de mar abierto (sin carrera, ficha, viaje ni diálogo), sale
    * junto al barco y guía hacia lo más cercano sin descubrir.
    */
@@ -619,10 +670,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setCheckoutFor(eventId);
   };
 
-  /** Termina un viaje: la compra («Entradas»), la ficha del evento («Ir a la isla») o nada. */
-  const finishTrip = (t: EventTrip, how: VoyageEnd | 'skip') => {
+  /**
+   * Termina un viaje: la compra («Entradas»), la ficha del evento («Ir a la
+   * isla», `?evento=`), la del lugar (`?ir=`, T55) o nada.
+   */
+  const finishTrip = (t: Trip, how: VoyageEnd | 'skip') => {
     const outcome = tripOutcome(t, how);
-    if (outcome === 'checkout') {
+    if (outcome === 'checkout' && t.then !== 'place') {
       openCheckout(t.eventId);
       return;
     }
@@ -634,8 +688,28 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         g.stopVoyage();
         g.startNear(t.placeId);
       }
-      setSheet({ kind: 'event', placeId: t.placeId, eventId: t.eventId });
+      setArrivedAt(t.placeId);
+      setSheet(arrivalSheet(t));
     }
+  };
+
+  /**
+   * Un viaje en turbo hasta un lugar (T43, T55): el barco navega solo (se
+   * puede «Saltar» o tomar el timón) y, al llegar, abre su ficha. Con
+   * movimiento reducido llega de un salto.
+   */
+  const sailTrip = (next: Trip) => {
+    const g = engineRef.current;
+    if (!g) return;
+    setMenu(false);
+    setSheet(null);
+    if (prefersReducedMotion() || !g.startVoyage(next.placeId)) {
+      finishTrip(next, 'skip');
+      return;
+    }
+    navigator.vibrate?.(20);
+    whoosh();
+    setTrip(next);
   };
 
   const onVoyageEnd = (placeId: string, how: VoyageEnd) => {
@@ -652,18 +726,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
    */
   const goToIsland = (eventId: string) => {
     const w = worldRef.current;
-    const g = engineRef.current;
     const next = w ? islandTrip(w, eventId) : null;
-    if (!next || !g) return;
-    setMenu(false);
-    setSheet(null);
-    if (prefersReducedMotion() || !g.startVoyage(next.placeId)) {
-      finishTrip(next, 'skip');
-      return;
-    }
-    navigator.vibrate?.(20);
-    whoosh();
-    setTrip(next);
+    if (next) sailTrip(next);
   };
 
   /**
@@ -780,7 +844,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           minigames: MINIGAME_REGISTRY,
           sessionId,
           seasonId: live.id,
-          // Bocadillos con tiempo de lectura (D-22), como en /juego.
+          // Bocadillos con tiempo de lectura (D-22), como en el 2D.
           readableDialogue: true,
           seed: (Date.now() % 2147483646) + 1,
         },
@@ -807,6 +871,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         void equipLook(progressApi(), look);
       }
       const near = new URLSearchParams(window.location.search).get('cerca');
+      // Enlaces profundos (T55): `?ir=`/`?evento=` navegan a su isla y `?menu=`
+      // abre un panel cuando el mar está listo; se quitan ya de la URL.
+      const links = readMarLinks(window.location.search);
+      if (near) links.sail = null;
+      linksRef.current = links;
+      if (hasMarLinks(links)) {
+        history.replaceState(history.state, '', withoutMarLinks(window.location.href));
+      }
       // REQ-IDE-004 (T44): al recargar, el barco sigue donde estaba y con su rumbo.
       const positions = devicePositions();
       const restore =
@@ -816,7 +888,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           navigationType: documentNavigationType(),
           bootedBefore: bootedInDocument,
           handedOver: false,
-          placeRequested: false,
+          placeRequested: !!links.sail,
         })
           ? loadShipPosition(positions)
           : null;
@@ -868,7 +940,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   }, [dialogue]);
 
   // Navegar en este mundo cuenta (logro «Entre dos mundos»), con su aviso,
-  // como al arrancar /juego (T37: antes sólo se apuntaba, sin aviso).
+  // como al arrancar el 2D (T37: antes sólo se apuntaba, sin aviso).
   useEffect(() => {
     if (status !== 'ready') return;
     pushAll(
@@ -878,14 +950,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   // Sonido (T46, O10): el primer gesto lo desbloquea (también en iOS), ocultar
   // la pestaña lo pausa, y al salir del mar se calla el ambiente.
+  // Los cambios de Ajustes se aplican al cambiarlos (`updateSettings`).
   useEffect(() => {
     const off = installAudioLifecycle();
-    if (settings) applyAudioSettings(settings);
+    if (settingsRef.current) applyAudioSettings(settingsRef.current);
     return () => {
       off();
       setAmbientWorld(null);
     };
-  }, [settings]);
+  }, []);
   // Un loop de ambiente por mundo: cambia con el mundo.
   useEffect(() => {
     if (worldId) setAmbientWorld(worldId);
@@ -957,9 +1030,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
-    g.inputEnabled = !checkoutFor && !minigameOpen && !logros && !tienda;
+    g.inputEnabled = !checkoutFor && !minigameOpen && !logros && !tienda && !hoja;
     g.paused = minigameOpen;
-  }, [checkoutFor, minigameOpen, logros, tienda, status]);
+  }, [checkoutFor, minigameOpen, logros, tienda, hoja, status]);
 
   // Bandera y estela equipadas (T40), también si cambian desde otra pestaña.
   useEffect(() => {
@@ -972,8 +1045,38 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     const r = raceRef.current;
     if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
     setMenu(false);
+    setHoja(null);
     setLogros(true);
   };
+
+  /** Abre un panel de a bordo (Mi Carnet, Ajustes…, T55); también anula la vuelta en curso. */
+  const openPanel = (panel: MarPanel) => {
+    if (panel === 'logros') {
+      openLogros();
+      return;
+    }
+    const r = raceRef.current;
+    if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
+    setMenu(false);
+    setLogros(false);
+    setTienda(false);
+    setHoja(panel);
+  };
+
+  // Los enlaces profundos (T55), una vez con el mar listo: el panel pedido y
+  // el viaje hasta la isla del enlace (sale navegando; al llegar, su ficha).
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const links = linksRef.current;
+    linksRef.current = null;
+    const w = worldRef.current;
+    if (!links || !w) return;
+    if (links.menu) openPanel(links.menu);
+    const next = links.sail ? linkTrip(w, links.sail, eventIdOf) : null;
+    if (next) sailTrip(next);
+    // Una vez, al estar listo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   useEffect(() => {
     // La capa del minijuego se monta en su propio nodo: se observa si tiene hijos.
@@ -1020,6 +1123,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     const r = raceRef.current;
     if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
     setMenu(false);
+    setHoja(null);
     setTienda(true);
   };
 
@@ -1052,7 +1156,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     return true;
   };
 
-  // --- Cambio de mundo (T41 en /juego, T51 aquí) -----------------------------
+  // --- Cambio de mundo (T41 en el 2D, T51 aquí) -----------------------------
   // Mismo mapa, otra piel: el mundo cae a un agujero negro centrado en el
   // barco, se cambia a oscuras y el nuevo se despliega; con movimiento
   // reducido, un fundido. El barco sigue donde está, con su misión.
@@ -1152,6 +1256,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     minigameOpen ||
     logros ||
     tienda ||
+    !!hoja ||
     menu;
   const invitations = useCarnetInvitations({
     running: status === 'ready',
@@ -1219,6 +1324,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       data-barco={stats ? `${Math.round(stats.x)},${Math.round(stats.y)}` : undefined}
       data-delfin={dolphinOut ? 'guiando' : undefined}
       data-modelos={stats?.models}
+      data-llegada={arrivedAt ?? undefined}
+      data-giro={stats ? `${stats.sensitivity.keyboard},${stats.sensitivity.touch}` : undefined}
     >
       <canvas
         ref={canvasRef}
@@ -1328,9 +1435,38 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           <Link className="mar-menu__link" href="/#tickets">
             {msg('mar.client.entradas')}
           </Link>
-          <Link className="mar-menu__link" href="/carnet">
+          <button
+            type="button"
+            className="mar-menu__link"
+            data-testid="mar-menu-carnet"
+            onClick={() => openPanel('carnet')}
+          >
             {msg('mar.client.miCarnet')}
-          </Link>
+          </button>
+          <button
+            type="button"
+            className="mar-menu__link"
+            data-testid="mar-menu-bienvenida"
+            onClick={() => openPanel('bienvenida')}
+          >
+            {msg('mar.client.bienvenida')}
+          </button>
+          <button
+            type="button"
+            className="mar-menu__link"
+            data-testid="mar-menu-controles"
+            onClick={() => openPanel('controles')}
+          >
+            {msg('mar.client.controles')}
+          </button>
+          <button
+            type="button"
+            className="mar-menu__link"
+            data-testid="mar-menu-ajustes"
+            onClick={() => openPanel('ajustes')}
+          >
+            {msg('mar.client.ajustes')}
+          </button>
           <Link className="mar-menu__link" href="/juego">
             {msg('mar.client.versionClasica2d')}
           </Link>
@@ -1392,7 +1528,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         <CarnetInvite
           className="mar-invite"
           reason={invitations.reason}
-          create={{ href: '/carnet' }}
+          create={{
+            onCreate: () => {
+              invitations.dismiss();
+              openPanel('carnet');
+            },
+          }}
           onLater={invitations.decline}
         />
       ) : null}
@@ -1599,7 +1740,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               data-testid="mar-entradas"
               aria-label={
                 trip
-                  ? trip.then === 'sheet'
+                  ? trip.then === 'sheet' || trip.then === 'place'
                     ? msg('mar.client.rumboATocaPara', { placeName: trip.placeName })
                     : msg('mar.client.entradasRumboAToca', { placeName: trip.placeName })
                   : msg('hud.tickets')
@@ -1618,16 +1759,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               ) : null}
             </button>
           </div>
-          {/* Hasta que el Carnet viva dentro del mundo (T55), abre /carnet. */}
-          <Link
+          {/* Mi Carnet dentro del mundo (T55): verlo y editarlo sin salir del mar. */}
+          <button
+            type="button"
             className="mar-bar__item"
-            href="/carnet"
-            prefetch={false}
             data-testid="mar-barra-carnet"
+            aria-expanded={hoja === 'carnet'}
+            aria-haspopup="dialog"
+            onClick={() => (hoja === 'carnet' ? setHoja(null) : openPanel('carnet'))}
           >
             <span aria-hidden="true">📇</span>
             <small>{msg('mar.client.barraCarnet')}</small>
-          </Link>
+          </button>
           <button
             type="button"
             className="mar-bar__item"
@@ -1668,7 +1811,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
-      {logros ? <MarLogros onClose={() => setLogros(false)} /> : null}
+      {logros ? (
+        <MarLogros onClose={() => setLogros(false)} onCarnet={() => openPanel('carnet')} />
+      ) : null}
+      {hoja ? (
+        <MarABordo
+          panel={hoja}
+          settings={settings}
+          onSettings={updateSettings}
+          onClose={() => setHoja(null)}
+        />
+      ) : null}
       {tienda ? (
         <MarTienda
           catalog={shipCatalog}
@@ -1692,7 +1845,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             purchasedRef.current = true;
             for (const n of purchaseNotices(o, s.event.name)) push(n);
           }}
-          carnet={{ href: '/carnet' }}
+          carnet={{
+            onOpen: () => {
+              purchasedRef.current = false;
+              setCheckoutFor(null);
+              openPanel('carnet');
+            },
+          }}
         />
       ) : null}
     </main>

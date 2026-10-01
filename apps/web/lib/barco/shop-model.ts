@@ -5,7 +5,7 @@ import { t } from '../i18n';
 /**
  * La tienda «Barco» sin React (T40, D-23 punto 1, O5): de lo que devuelve
  * `progress.shop()` y el catálogo del arte sale cada fila tal como se pinta,
- * igual en /juego y en /mar, y el aspecto que lleva el barco al entrar.
+ * igual en el 2D y en /mar, y el aspecto que lleva el barco al entrar.
  * Textos `muestra`.
  */
 

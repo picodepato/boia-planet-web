@@ -2,7 +2,7 @@ import { t } from '../i18n';
 
 /**
  * Textos del Admin de la demo (T26, D-20, REQ-ADM-039). Todo `muestra`
- * [pendiente Álvaro]. Lo importa el menú de /juego para el botón, sin cargar
+ * [pendiente Álvaro]. Lo importa el menú del 2D para el botón, sin cargar
  * el Admin; la landing usa `paths.ts` y sus propias claves (`footer.tryAdmin`)
  * para no cargar el catálogo entero.
  */

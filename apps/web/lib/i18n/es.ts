@@ -18,7 +18,7 @@ export { LANDING_TEXT_KEYS } from './es-web';
 
 /**
  * El catálogo entero: el de la web pública (es-web.ts), el resto de
- * textos-zonas.md y las claves de /juego, /mar, el Admin y los módulos de
+ * textos-zonas.md y las claves del 2D, /mar, el Admin y los módulos de
  * lib/ (T49).
  */
 export const es = {

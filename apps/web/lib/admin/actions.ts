@@ -858,7 +858,7 @@ export function createAdminActions(deps: AdminDeps) {
 
     /**
      * Mundo activo (la temporada, D-20); null: el por defecto del registro.
-     * Vive sólo en el repositorio: /juego lo lee de ahí (`adminWorldId`, T24).
+     * Vive sólo en el repositorio: el mar lo lee de ahí (`adminWorldId`, T24).
      */
     async setActiveWorld(worldId: string | null) {
       if (worldId !== null && !registry.has(worldId)) {

@@ -22,6 +22,7 @@ import { TextsSection } from './sections/texts';
 import { WorldSection } from './sections/world';
 import { type AdminContext, useAdminContext } from './use-admin';
 import { t } from '../../lib/i18n';
+import { MAR_PATH } from '../../lib/world-handoff';
 
 /** Secciones de L1 (REQ-ADM-008), con su ancla en la URL (`/admin#mundo`). */
 const SECTIONS: { id: string; label: string; Component: ComponentType<{ ctx: AdminContext }> }[] = [
@@ -51,7 +52,7 @@ function sectionFromHash(): string {
  * El Admin de la demo (T26, D-20, REQ-ADM-039): sin login, con un aviso
  * permanente de que es una prueba y de que los cambios se quedan en este
  * navegador. Lee y escribe el repositorio local, el mismo que la landing y
- * /juego: lo que se cambia aquí se ve allí, en este navegador.
+ * el mar: lo que se cambia aquí se ve allí, en este navegador.
  */
 export function AdminApp() {
   const ctx = useAdminContext();
@@ -77,7 +78,7 @@ export function AdminApp() {
           <Link href="/?intro=0" prefetch={false} data-testid="admin-ver-web">
             {t('admin.adminApp.verLaWeb')}
           </Link>
-          <Link href="/juego" prefetch={false} data-testid="admin-ver-mundo">
+          <Link href={MAR_PATH} prefetch={false} data-testid="admin-ver-mundo">
             {t('admin.adminApp.verElMundo')}
           </Link>
         </nav>

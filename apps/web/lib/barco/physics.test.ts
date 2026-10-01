@@ -15,7 +15,7 @@ import { dressingFor } from './dressing';
 /**
  * REQ-IDE-032 (T40): ni el barco de estilo, ni la skin, ni la bandera, ni la
  * estela cambian cómo navega el barco. Se da la misma vuelta al circuito del
- * mundo con cada cosmético equipado, con la física tal como la montan /juego
+ * mundo con cada cosmético equipado, con la física tal como la montan el 2D
  * y /mar (la configuración del barco y el runtime del mundo), y el tiempo de
  * vuelta, los choques y la traza salen idénticos.
  */

@@ -1,8 +1,9 @@
 import { DEFAULT_SHIP_CONFIG } from '@boia/engine/headless';
 import type { Vec2, WorldObject } from '@boia/world';
+import { eventSailHref } from '../world-handoff';
 
 /**
- * Piloto automático de «Ir a la isla» en /juego (T43, D-23 punto 5,
+ * Piloto automático de «Ir a la isla» en el 2D (T43, D-23 punto 5,
  * REQ-COM-036): desde una tarjeta de descuento, el barco navega solo hasta la
  * isla del evento del código, en turbo como el viaje de «Entradas» de /mar
  * (plan 003 T35), y se puede saltar. Sin E/S: el juego llama a `stepVoyage`
@@ -109,12 +110,15 @@ export function stepVoyage(v: Voyage, ship: Vec2, dt: number): VoyageStep {
   };
 }
 
-/** El juego abierto en la isla de un evento, con el barco llegando (desde fuera del mar). */
+/**
+ * El mar abierto con el barco navegando a la isla de un evento (desde fuera
+ * del mar, T55): `?evento=` sin `?ir=` ya es ese viaje en /mar.
+ */
 export function voyageHref(eventId: string): string {
-  return `/juego?evento=${encodeURIComponent(eventId)}&piloto=1`;
+  return eventSailHref(eventId);
 }
 
-/** Parámetro de /juego que arranca el viaje a la isla de `?evento=`. */
+/** Parámetro del 2D que arranca el viaje a la isla de `?evento=`. */
 export const VOYAGE_PARAM = 'piloto';
 
 /** Teclas que cuentan como tomar el timón (y cancelan el viaje). */

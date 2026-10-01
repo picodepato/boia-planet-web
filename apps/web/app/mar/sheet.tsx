@@ -29,7 +29,7 @@ import { useRepoData } from '../../lib/mundo/repo';
  * isla, fotos, tienda, WhatsApp) o al tocar su rótulo, el descuento
  * encontrado y «Mis códigos». No tapa el mar: el barco sigue navegando y se
  * cierra sola al alejarse. Mismos datos y mismas piezas que los paneles de
- * /juego (T42, T43, T45): el estado del evento con su aviso, sus recuerdos,
+ * el 2D (T42, T43, T45): el estado del evento con su aviso, sus recuerdos,
  * «Ver fotos de la isla», «Próximos eventos» con los satélites, el aviso
  * «Tienes un código de descuento para este evento» junto a la compra y cada
  * código con «Ir a la isla». Textos `muestra` [pendiente Álvaro].
@@ -515,7 +515,7 @@ function StateTag({ event }: { event: BoiaEvent }) {
   );
 }
 
-/** Aviso del estado en la isla (textos-zonas, zonas 4 y 11), como en /juego. */
+/** Aviso del estado en la isla (textos-zonas, zonas 4 y 11), como en el 2D. */
 function stateNotice(event: BoiaEvent): string | null {
   switch (event.state) {
     case 'sold_out':

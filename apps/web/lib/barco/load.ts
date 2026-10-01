@@ -3,7 +3,7 @@ import path from 'node:path';
 import { buildShipCatalog, type ShipCatalog, type ShipRegistry } from './catalog';
 
 /**
- * Sólo servidor (al construir /juego): lee `art/barco`, `docs/barcos/barcos.json`
+ * Sólo servidor (al construir el 2D): lee `art/barco`, `docs/barcos/barcos.json`
  * y los scripts de Blender que nombra el registro. Si falta el arte del barco,
  * `null`: el juego sigue con el barco provisional y la sección no ofrece estilos.
  */

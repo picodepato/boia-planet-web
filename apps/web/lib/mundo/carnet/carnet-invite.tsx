@@ -8,7 +8,7 @@ import './carnet-invite.css';
  * Tarjeta «Crear mi Carnet» (REQ-IDE-008, T44). No es modal ni roba el foco:
  * el mar (o la landing) sigue debajo. Explica por qué en ese momento, dice
  * los límites del progreso local (REQ-IDE-007) y siempre deja «Ahora no».
- * En la landing «Crear mi Carnet» es un enlace; en /juego abre Mi Carnet.
+ * En la landing «Crear mi Carnet» es un enlace; en el mar abre Mi Carnet.
  */
 export function CarnetInvite({
   reason,

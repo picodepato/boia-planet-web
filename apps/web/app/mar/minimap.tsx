@@ -13,7 +13,7 @@ import { t as msg } from '../../lib/i18n';
  * repinta `MINIMAP_FPS` veces por segundo, no con cada fotograma del 3D.
  *
  * Tocarlo abre el mapa grande (la vista de mapa del 3D); tocarlo otra vez lo
- * cierra. El gesto es el del minimapa de /juego (`MinimapGesture`): un roce
+ * cierra. El gesto es el del minimapa del 2D (`MinimapGesture`): un roce
  * que empieza en él y se mueve no cuenta como toque. muestra
  */
 

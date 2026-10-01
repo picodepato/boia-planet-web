@@ -1,6 +1,6 @@
 /**
  * Sonido desde la cabecera de la landing (T44, REQ-ENT-029). La landing no
- * suena (O10): el interruptor cambia los ajustes que usan /juego y /mar
+ * suena (O10): el interruptor cambia los ajustes que usan el 2D y /mar
  * (música y efectos, `boia.ajustes`, los de `@boia/engine/ui`). Se leen y
  * escriben aquí a mano para no cargar el HUD del juego en la landing; el
  * juego los vuelve a validar al leerlos (`parseSettings`).

@@ -2,7 +2,7 @@ import type { Behavior, Rect, WorldConfig, WorldObject } from '@boia/world';
 
 /**
  * El mapa compartido (D-20) visto en el mar 3D. Mismo mapa, mismos lugares y
- * mismos comportamientos que /juego, con dos cambios de escala para que en 3D
+ * mismos comportamientos que el 2D, con dos cambios de escala para que en 3D
  * el mar no sea un desierto y las islas se lean desde lejos:
  *
  * - el agua entre zonas se acorta `spread` veces (el 2D la estira ×15 para

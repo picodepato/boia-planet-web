@@ -8,7 +8,7 @@ import { type Circle, type Period, periodOf, planetRect, shortest, wrapIn } from
  * que en T33), el decorado propio (castillo, Explanada, islote de la cueva),
  * los límites del planeta ajustados a lo que hay y la ruta de boyas que une
  * las islas en el orden de la historia. Las posiciones del mapa compartido
- * no cambian (`/juego` sigue igual): todo se deriva al cargar `/mar`, y el
+ * no cambian (el 2D sigue igual): todo se deriva al cargar `/mar`, y el
  * runtime, los rótulos, el piloto, el viaje de «Entradas» y los premios
  * (por id de lugar) van sobre este mismo mundo. u de motor salvo donde se
  * diga. Todo `muestra`.

@@ -239,7 +239,7 @@ export const esAdmin = {
   'admin.home.vistaPreviaDelBorrador': 'Vista previa del borrador',
   'admin.misc.temporadas': 'Temporadas',
   'admin.misc.cadaMundoEsUna':
-    'Cada mundo es una temporada. El activo es el que ve por defecto quien llega a /juego sin haber elegido otro en el menú. Duplicar temporadas llega en L2.',
+    'Cada mundo es una temporada. El activo es el que ve por defecto quien llega al mar sin haber elegido otro en el menú. Duplicar temporadas llega en L2.',
   'admin.misc.mundoActivo': 'Mundo activo',
   'admin.misc.temporadaActiva': 'Temporada activa: {name}.',
   'admin.misc.barco': '· barco',
@@ -443,7 +443,7 @@ export const esAdmin = {
   'admin.world.guardarTextos': 'Guardar textos',
   'admin.world.ocultoEnEsteMundo': 'Oculto en este mundo',
   'admin.world.guardadoValeEnTodos': 'Guardado: vale en todos los mundos.',
-  'admin.world.dondeApareceElBarco': 'Donde aparece el barco al entrar en /juego.',
+  'admin.world.dondeApareceElBarco': 'Donde aparece el barco al entrar en el mar.',
   'admin.world.elPuertoDeSalida': 'El puerto de salida (El Varadero en Arcilla).',
   'admin.world.dondeAterrizaLaCamara':
     'Donde aterriza la cámara de la entrada (la usa la entrada desde T28).',

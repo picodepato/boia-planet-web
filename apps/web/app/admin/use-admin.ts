@@ -9,7 +9,7 @@ import { t } from '../../lib/i18n';
 
 /**
  * El Admin de la demo lee y escribe el mismo repositorio que la landing y
- * /juego (`gameRepository`, T16/T22): lo que cambia aquí se ve allí, en este
+ * el mar (`gameRepository`, T16/T22): lo que cambia aquí se ve allí, en este
  * navegador. Sólo existe en el navegador (tras montar).
  */
 export interface AdminContext {

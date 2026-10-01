@@ -13,7 +13,7 @@ import { t } from '../i18n';
 
 /**
  * Logros del juego (T21, T36; REQ-IDE-024…027, D-22 punto 5): un solo sistema
- * de LOGROS/PROGRESO sobre `@boia/store`, igual en /juego y en /mar. El juego
+ * de LOGROS/PROGRESO sobre `@boia/store`, igual en el 2D y en /mar. El juego
  * manda señales (una boia, una isla, un secreto, un minuto a bordo, una
  * partida ganada, una botella leída…); cada señal deja su huella en el
  * progreso (por id de lugar u objeto, así sobrevive a recargar y a cambiar de

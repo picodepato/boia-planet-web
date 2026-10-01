@@ -22,7 +22,7 @@ function pointList(v: unknown): Point[] {
 /**
  * El delfín de rastro fijo (T20), el que sigue usando /mar: cada vez que el
  * barco lo alcanza salta al siguiente punto de su rastro (`params.trail`);
- * tras el último salto, alcanzarlo da el premio y vuelve a su sitio. /juego
+ * tras el último salto, alcanzarlo da el premio y vuelve a su sitio. El 2D
  * usa el delfín guía (`DolphinGuide`, T45); pasar /mar a él queda para
  * después del plan 003.
  */
@@ -260,7 +260,7 @@ export class DolphinGuide {
   }
 }
 
-/** El delfín guía del mapa (/juego). */
+/** El delfín guía del mapa (el 2D). */
 export function findDolphinGuide(
   objects: readonly WorldObject[],
   opts?: { tuning?: Partial<DolphinTuning>; random?: () => number },

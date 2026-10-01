@@ -10,9 +10,10 @@ import {
   stepVoyage,
   voyageHref,
 } from './autopilot';
+import { MAR_PATH } from '../world-handoff';
 
 /**
- * «Ir a la isla» en /juego (T43): el viaje para dentro del radio de la isla
+ * «Ir a la isla» en el 2D (T43): el viaje para dentro del radio de la isla
  * (su panel se abre al llegar) y fuera de su casco, llega siempre (también
  * atascado o con el tiempo agotado) y no tarda más de lo que dice.
  */
@@ -62,9 +63,9 @@ describe('piloto automático a la isla (T43)', () => {
     expect({ x: r.x, y: r.y }).toEqual(v.arrival);
   });
 
-  it('el timón cancela: flechas y WASD; el enlace abre /juego en esa isla', () => {
+  it('el timón cancela: flechas y WASD; el enlace abre el mar rumbo a esa isla', () => {
     expect(['ArrowUp', 'ArrowLeft', 'KeyW', 'KeyD'].every(isSteeringKey)).toBe(true);
     expect(['Space', 'Escape', 'KeyM'].some(isSteeringKey)).toBe(false);
-    expect(voyageHref('ev x')).toBe('/juego?evento=ev%20x&piloto=1');
+    expect(voyageHref('ev x')).toBe(`${MAR_PATH}?evento=ev%20x`);
   });
 });

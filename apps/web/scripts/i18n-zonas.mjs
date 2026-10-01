@@ -9,7 +9,7 @@
  *   es-web.ts). Viajan al navegador en la landing.
  * - `lib/i18n/es-zonas-eventos.ts`: las que sólo usa lib/landing/eventos-copy.ts
  *   (ficha de evento y «Fotos y eventos»), que no viajan en la home.
- * - `lib/i18n/es-zonas.ts`: el resto (/juego, /mar, el Admin…).
+ * - `lib/i18n/es-zonas.ts`: el resto (el 2D, /mar, el Admin…).
  * El documento manda: si se cambia un texto allí, o la web empieza a usar otra
  * clave, se vuelve a correr esto (`pnpm --filter @boia/web i18n:zonas`).
  * `lib/i18n/zonas.test.ts` comprueba que el catálogo y el documento coinciden.
@@ -106,7 +106,7 @@ ${body.join('\n')}
   };
   await write(OUT_WEB, 'esZonasWeb', inWeb, 'las claves que usa la web pública');
   await write(OUT_EVENTOS, 'esZonasEventos', inEventos, 'las de la ficha de evento y las fotos');
-  await write(OUT, 'esZonas', rest, 'las del resto (/juego, /mar, el Admin…)');
+  await write(OUT, 'esZonas', rest, 'las del resto (el 2D, /mar, el Admin…)');
   console.log(
     `es-zonas-web.ts: ${inWeb.length} · es-zonas-eventos.ts: ${inEventos.length} · es-zonas.ts: ${rest.length} claves`,
   );
