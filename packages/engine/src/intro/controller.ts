@@ -1,94 +1,69 @@
-import type { IntroConfig } from './config';
 import type { Viewport } from './math';
-import type { PortReveal } from './port';
-import type { IntroGeometry } from './sphere';
+import { EASING_FNS } from './math';
 import {
   actDuration,
-  exploreFrame,
   frameAt,
+  landingSpin,
+  spinRate,
   type IntroAct,
   type IntroFrame,
   type IntroMode,
-} from './timeline';
+  type PlanetIntroConfig,
+} from './planet';
 
 /**
- * Máquina de estados de la entrada «mini-mundo» (D-19). Sin DOM ni Pixi:
- * recibe eventos (botón de entrar, saltar, pestaña oculta, cambio de ruta,
- * Atrás, rotación) y decide qué fotograma pintar y cuándo se muestra la
- * landing. Garantías (REQ-ENT-008, 014, 019, 020):
+ * Máquina de estados de la entrada 3D (T57; D-19, D-21). Sin DOM ni three.js:
+ * recibe eventos (botón de entrar, saltar, pestaña oculta o visible, cambio
+ * de ruta, Atrás, rotación) y decide qué fotograma pintar y cuándo se muestra
+ * la landing. Garantías (REQ-ENT-008, 014, 019, 020):
  * - crea como mucho una escena en toda su vida, pase lo que pase;
  * - la landing se muestra una sola vez (`onLanded` se llama una vez);
  * - la pausa no avanza sin el botón (o el avance automático, si está activo);
  * - entrar, saltar, interrumpir y destruir son idempotentes;
- * - nunca arranca el juego: sólo `explore()`, ya en la landing, lo hace;
- *   con escena, primero se aleja hasta el puerto (T28) y al terminar lo
- *   arranca, una vez.
+ * - el plazo de carga empieza al arrancar (el montaje), no al cargar la
+ *   página, y sólo corre con la pestaña a la vista (`suspend`/`resume`):
+ *   una carga en segundo plano espera y reproduce la entrada al volver;
+ * - la escena cuenta como lista cuando lo dice `createScene` (con su primer
+ *   fotograma ya pintado), no cuando llega su código.
  *
  * Fases: `waiting` (acto 0: escena cargando) → `appearing` (acto 1) →
- * `paused` (acto 2) → `landing` (acto 3) → `landed` → (EXPLORAR)
- * `exploring` (la cámara se aleja hasta el puerto) → `explored` (la escena
- * ya es del juego); `destroyed` al desmontar. Con movimiento reducido no hay acto 1 (el mini-mundo sale
- * quieto) y el acto 3 es un fundido. Un enlace directo o una visita
- * posterior nacen ya en `landed`: la escena, si llega, se pinta en el
- * encuadre final.
+ * `paused` (acto 2) → `landing` (acto 3) → `landed`; `destroyed` al
+ * desmontar. Con movimiento reducido no hay acto 1 (el planeta sale quieto)
+ * y el acto 3 es un fundido. Un enlace directo o una visita posterior nacen
+ * ya en `landed`: la escena, si llega, se pinta en el encuadre del hero.
  */
 
 /**
- * Un fotograma nunca adelanta la secuencia más de esto: tras un tirón (subir
- * texturas, un móvil lento) la animación sigue donde iba en vez de saltar.
+ * Un fotograma nunca adelanta la secuencia más de esto: tras un tirón la
+ * animación sigue donde iba en vez de saltar.
  */
 export const MAX_FRAME_STEP_MS = 250;
 
 export type IntroPhase =
-  | 'idle'
-  | 'waiting'
-  | 'appearing'
-  | 'paused'
-  | 'landing'
-  | 'landed'
-  | 'exploring'
-  | 'explored'
-  | 'destroyed';
+  'idle' | 'waiting' | 'appearing' | 'paused' | 'landing' | 'landed' | 'destroyed';
 export type SceneStatus = 'none' | 'loading' | 'ready' | 'failed' | 'disposed';
 export type IntroOutcome = 'played' | 'skipped' | 'none';
 export type EnterSource = 'button' | 'auto';
 
-/**
- * Lo que la escena sabe mejor que la página estática: el mundo activo de este
- * navegador (el elegido, con los cambios del Admin) puede aterrizar en otro
- * punto o tener la salida en otro sitio. Se adopta al llegar la escena.
- */
-export interface IntroSceneView {
-  config?: IntroConfig;
-  geometry?: IntroGeometry;
-  reveal?: PortReveal | null;
-}
-
 export interface IntroSceneHandle {
   render(frame: IntroFrame, clockSeconds: number): void;
   destroy(): void;
-  readonly view?: IntroSceneView;
 }
 
 export interface IntroControllerDeps<S extends IntroSceneHandle> {
   mode: IntroMode;
-  config: IntroConfig;
-  geometry: IntroGeometry;
+  config: PlanetIntroConfig;
+  /** El planeta no gira (movimiento reducido del sistema), también en la landing. */
+  still?: boolean;
   /** Reloj en ms (performance.now en el navegador). */
   now(): number;
-  /** ms ya gastados desde la carga cuando se crea el controlador. */
-  elapsedSinceBoot: number;
-  /** Crea la escena (Pixi). Puede fallar: entonces se queda la landing ligera. */
+  /** Crea la escena y pinta su primer fotograma. Puede fallar: se queda la landing ligera. */
   createScene(): Promise<S>;
   setTimer(fn: () => void, ms: number): () => void;
   /** Se muestra la landing. Exactamente una vez. */
   onLanded(outcome: IntroOutcome): void;
   /** Cualquier cambio de fase o de escena (para depurar y para las pruebas). */
   onChange?(): void;
-  /** Única vía para arrancar el juego (Explorar). */
-  startGame?(): void;
-  /** EXPLORAR: el alejamiento hasta el puerto (T28). Sin él, el juego arranca al momento. */
-  reveal?: PortReveal | null;
 }
 
 const ACT_OF: Partial<Record<IntroPhase, IntroAct>> = {
@@ -103,37 +78,44 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
   outcome: IntroOutcome | null = null;
   scenesCreated = 0;
   scenesDestroyed = 0;
-  gamesStarted = 0;
   /** Cómo se pidió el aterrizaje (botón o avance automático); `null` si no se pidió. */
   enteredBy: EnterSource | null = null;
   /** ms de reloj que duró la aparición (acto 1), si se vio entera. */
   appearedMs: number | null = null;
-  /** ms de reloj que duró el aterrizaje (acto 3), si se vio entero. */
+  /** ms de reloj que duró «Zarpar» (acto 3), si se vio entero. */
   playedMs: number | null = null;
+  /** ms desde `start()` hasta tener la escena lista. */
+  sceneReadyMs: number | null = null;
+  /** ms de plazo que quedaban al llegar la escena (o 0 si se agotó). */
+  budgetLeftMs: number | null = null;
 
   private scene: S | null = null;
   /** ms avanzados dentro del acto (con el tope por fotograma). */
   private actMs = 0;
-  /** ms de giro acumulados en los actos 1 y 2. */
-  private spinMs = 0;
+  /** Giro acumulado, radianes. */
+  private spin = 0;
   private lastNow: number | null = null;
   private actStartedAt: number | null = null;
+  private startedAt = 0;
+  // Plazo de carga: lo que queda y desde cuándo corre (null: parado).
+  private budgetLeft = 0;
+  private budgetSince: number | null = null;
   private cancelBudget: (() => void) | null = null;
+  private suspended = false;
   private cancelAuto: (() => void) | null = null;
-  private config: IntroConfig;
-  private geometry: IntroGeometry;
-  private reveal: PortReveal | null;
-  /** Vista del juego para el encuadre del puerto (si no, la de la escena). */
-  private gameView: Viewport | null = null;
 
   constructor(private readonly deps: IntroControllerDeps<S>) {
-    this.config = deps.config;
-    this.geometry = deps.geometry;
-    this.reveal = deps.reveal ?? null;
+    const { config } = deps;
+    this.spin = this.still ? config.reduced.spinDeg * (Math.PI / 180) : 0;
   }
 
   get mode(): IntroMode {
     return this.deps.mode;
+  }
+
+  /** Sin giro: movimiento reducido (de la entrada o del sistema). */
+  get still(): boolean {
+    return this.deps.mode === 'reduced' || !!this.deps.still;
   }
 
   /** Escenas vivas (0 o 1). */
@@ -143,31 +125,42 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
 
   start(): void {
     if (this.phase !== 'idle') return;
-    const { mode, config } = this.deps;
-    if (mode === 'direct') {
+    this.startedAt = this.deps.now();
+    if (this.deps.mode === 'direct') {
       this.land('none');
     } else {
       this.phase = 'waiting';
-      const remaining = Math.max(0, config.loadBudgetMs - this.deps.elapsedSinceBoot);
-      this.cancelBudget = this.deps.setTimer(() => {
-        // Recursos no listos a tiempo: landing ligera, sin alargar la espera.
-        if (this.phase === 'waiting') this.land('none');
-      }, remaining);
+      this.budgetLeft = this.deps.config.loadBudgetMs;
+      if (!this.suspended) this.runBudget();
     }
     this.loadScene();
     this.changed();
   }
 
+  /** Pestaña oculta: el plazo de carga se para (la carga sigue). */
+  suspend(): void {
+    if (this.suspended) return;
+    this.suspended = true;
+    this.stopBudget();
+  }
+
+  /** Pestaña visible otra vez: el plazo sigue donde estaba. */
+  resume(): void {
+    if (!this.suspended) return;
+    this.suspended = false;
+    if (this.phase === 'waiting') this.runBudget();
+  }
+
   /**
-   * Botón de entrar (o avance automático): empieza el aterrizaje. Sólo desde
-   * la pausa; devuelve si lo empezó. Pulsarlo otra vez no hace nada.
+   * Botón de entrar (o avance automático): empieza «Zarpar». Sólo desde la
+   * pausa; devuelve si lo empezó. Pulsarlo otra vez no hace nada.
    */
   enter(source: EnterSource = 'button'): boolean {
     if (this.phase !== 'paused') return false;
     this.clearAuto();
     this.enteredBy = source;
     this.toAct('landing');
-    // El aterrizaje cuenta desde la pulsación, no desde el fotograma anterior.
+    // Cuenta desde la pulsación, no desde el fotograma anterior.
     this.lastNow = this.actStartedAt = this.deps.now();
     return true;
   }
@@ -192,76 +185,35 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
   /**
    * Pestaña oculta, rotación o vuelta desde la caché del navegador: lo que se
    * estaba animando termina en su estado final y no se retoma a medias. La
-   * aparición acaba en la pausa (con título y botón); el aterrizaje, en la
-   * landing. La pausa sigue esperando al botón.
+   * aparición acaba en la pausa (con título y botón); «Zarpar», en la landing.
+   * La carga y la pausa siguen esperando.
    */
   interrupt(): void {
-    if (this.phase === 'waiting') this.land('none');
-    else if (this.phase === 'appearing') {
+    if (this.phase === 'appearing') {
       this.toAct('paused');
       // Título y botón ya visibles: al volver no hay nada a medias.
-      this.actMs = this.config.pause.uiInMs;
+      this.actMs = this.deps.config.pause.uiInMs;
     } else if (this.phase === 'landing') this.land('played');
-    // Sin pantalla no hay alejamiento que ver: el juego arranca ya, en el puerto.
-    else if (this.phase === 'exploring') this.finishExplore();
-  }
-
-  /**
-   * Explorar: arranca el juego una vez, y sólo desde la landing. Con escena y
-   * alejamiento, la cámara va primero hasta el encuadre del puerto (`game`:
-   * la vista del juego, si no es la de la escena) y el juego arranca al
-   * pintar el último fotograma. Con movimiento reducido no hay alejamiento
-   * (REQ-ENT-010): el juego arranca ya, en el puerto.
-   */
-  explore(game?: Viewport): boolean {
-    if (this.phase !== 'landed' || this.gamesStarted > 0) return false;
-    this.gamesStarted++;
-    const r = this.reveal;
-    if (
-      this.scene &&
-      this.sceneStatus === 'ready' &&
-      r &&
-      r.durationMs > 0 &&
-      this.deps.mode !== 'reduced'
-    ) {
-      this.gameView = game ?? null;
-      this.phase = 'exploring';
-      this.actMs = 0;
-      this.lastNow = this.actStartedAt = this.deps.now();
-      this.changed();
-      return true;
-    }
-    this.finishExplore();
-    return true;
   }
 
   /**
    * Fotograma para ahora, o `null` si no hay escena que pintar. Terminar un
-   * acto pasa al siguiente; terminar el aterrizaje muestra la landing.
+   * acto pasa al siguiente; terminar «Zarpar» muestra la landing.
    */
   frame(vp: Viewport): IntroFrame | null {
-    if (this.sceneStatus !== 'ready' || this.phase === 'destroyed' || this.phase === 'explored')
-      return null;
-    const { config, geometry } = this;
-    const { mode } = this.deps;
-    if (this.phase === 'exploring' && this.reveal) {
-      const now = this.deps.now();
-      const dt = Math.min(Math.max(0, now - (this.lastNow ?? now)), MAX_FRAME_STEP_MS);
-      this.lastNow = now;
-      this.actMs += dt;
-      return exploreFrame(config, geometry, this.reveal, vp, this.actMs, this.gameView ?? vp);
-    }
-    const act = ACT_OF[this.phase];
-    if (!act) return frameAt(config, geometry, vp, { act: 'landed', t: 0, spinMs: 0 }, 'direct');
-
+    if (this.sceneStatus !== 'ready' || this.phase === 'destroyed') return null;
+    const { config, mode } = this.deps;
     const now = this.deps.now();
     // El acto empieza en su primer fotograma, no al llegar la escena.
     if (this.lastNow === null) this.lastNow = now;
-    if (this.actStartedAt === null) this.actStartedAt = now;
     const dt = Math.min(Math.max(0, now - this.lastNow), MAX_FRAME_STEP_MS);
     this.lastNow = now;
+    if (!this.still) this.spin += dt * spinRate(config);
+
+    const act = ACT_OF[this.phase];
+    if (!act) return frameAt(config, vp, { act: 'landed', t: 0, spin: this.spin }, 'direct');
+    if (this.actStartedAt === null) this.actStartedAt = now;
     this.actMs += dt;
-    if (mode === 'intro' && act !== 'landing') this.spinMs += dt;
 
     const duration = actDuration(config, act, mode);
     if (act === 'appear' && this.actMs >= duration) {
@@ -273,27 +225,22 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
     }
     const f = frameAt(
       config,
-      geometry,
       vp,
-      { act: ACT_OF[this.phase]!, t: this.actMs, spinMs: this.spinMs },
+      { act: ACT_OF[this.phase]!, t: this.actMs, spin: this.spin },
       mode,
     );
     if (act === 'landing' && f.done) {
-      // Duración real, de reloj: es la que se mide contra los ~2 s.
+      // Duración real, de reloj.
       this.playedMs = now - this.actStartedAt;
       this.land('played');
     }
     return f;
   }
 
-  /**
-   * Pinta el fotograma de ahora en la escena, si la hay. Pintado el último
-   * del alejamiento, el juego arranca (la escena se queda en ese encuadre).
-   */
+  /** Pinta el fotograma de ahora en la escena, si la hay. */
   render(vp: Viewport, clockSeconds: number): IntroFrame | null {
     const f = this.frame(vp);
     if (f && this.scene) this.scene.render(f, clockSeconds);
-    if (f?.act === 'explore' && f.done && this.phase === 'exploring') this.finishExplore();
     return f;
   }
 
@@ -301,17 +248,34 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
   destroy(): void {
     if (this.phase === 'destroyed') return;
     this.phase = 'destroyed';
-    this.cancelBudget?.();
-    this.cancelBudget = null;
+    this.stopBudget();
     this.clearAuto();
     this.disposeScene();
     this.changed();
   }
 
-  private finishExplore(): void {
-    this.phase = 'explored';
-    this.deps.startGame?.();
-    this.changed();
+  private runBudget(): void {
+    this.stopBudget();
+    this.budgetSince = this.deps.now();
+    this.cancelBudget = this.deps.setTimer(
+      () => {
+        this.cancelBudget = null;
+        this.budgetSince = null;
+        this.budgetLeft = 0;
+        // La escena no llegó a tiempo: landing ligera, sin alargar la espera.
+        if (this.phase === 'waiting') this.land('none');
+      },
+      Math.max(0, this.budgetLeft),
+    );
+  }
+
+  private stopBudget(): void {
+    if (this.budgetSince !== null) {
+      this.budgetLeft = Math.max(0, this.budgetLeft - (this.deps.now() - this.budgetSince));
+      this.budgetSince = null;
+    }
+    this.cancelBudget?.();
+    this.cancelBudget = null;
   }
 
   private toAct(phase: 'appearing' | 'paused' | 'landing'): void {
@@ -324,7 +288,7 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
 
   private scheduleAuto(): void {
     this.clearAuto();
-    const auto = this.config.pause.autoAdvance;
+    const auto = this.deps.config.pause.autoAdvance;
     if (!auto.enabled) return;
     this.cancelAuto = this.deps.setTimer(() => {
       this.cancelAuto = null;
@@ -353,28 +317,23 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
         }
         this.scene = scene;
         this.sceneStatus = 'ready';
-        const view = scene.view;
-        if (view?.config) this.config = view.config;
-        if (view?.geometry) this.geometry = view.geometry;
-        if (view?.reveal !== undefined) this.reveal = view.reveal;
+        this.sceneReadyMs = this.deps.now() - this.startedAt;
         if (this.phase === 'waiting') {
-          this.cancelBudget?.();
-          this.cancelBudget = null;
+          this.stopBudget();
+          this.budgetLeftMs = this.budgetLeft;
           this.lastNow = null;
-          this.spinMs = 0;
           this.toAct(this.deps.mode === 'intro' ? 'appearing' : 'paused');
           return;
         }
         this.changed();
       },
       () => {
+        this.scenesDestroyed++;
         if (this.phase === 'destroyed') {
-          this.scenesDestroyed++;
           this.sceneStatus = 'disposed';
           return;
         }
-        // Motor o recursos fallan: la escena no existe y la landing ligera se queda.
-        this.scenesDestroyed++;
+        // Motor o recursos fallan: no hay escena y se queda la landing ligera.
         this.sceneStatus = 'failed';
         if (this.phase === 'waiting') this.land('none');
         this.changed();
@@ -392,17 +351,16 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
   }
 
   private land(outcome: IntroOutcome): void {
-    if (
-      this.phase === 'landed' ||
-      this.phase === 'exploring' ||
-      this.phase === 'explored' ||
-      this.phase === 'destroyed'
-    )
-      return;
+    if (this.phase === 'landed' || this.phase === 'destroyed') return;
+    // La vuelta extra de «Zarpar» se queda: el giro de la landing sigue desde ahí.
+    if (this.phase === 'landing' && !this.still) {
+      const { config } = this.deps;
+      const e = Math.min(1, this.actMs / Math.max(1, config.landing.durationMs));
+      this.spin += landingSpin(config) * EASING_FNS[config.landing.easing](e);
+    }
     this.phase = 'landed';
     this.outcome = outcome;
-    this.cancelBudget?.();
-    this.cancelBudget = null;
+    this.stopBudget();
     this.clearAuto();
     this.deps.onLanded(outcome);
     this.changed();

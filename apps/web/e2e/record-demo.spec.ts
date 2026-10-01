@@ -110,11 +110,8 @@ test('recorrido de la versión de prueba en móvil', async ({ baseURL }, info) =
     timeout: 20_000,
   });
   await pause(page);
-  await page
-    .locator('.hero')
-    .getByRole('link', { name: /explorar el universo/i })
-    .click();
-  await expect(page).toHaveURL(/\/juego$/);
+  // El hero lleva a /mar (T57); la demo grabada sigue en el mundo 2D hasta T62.
+  await page.goto('/juego');
   await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
   await pause(page, 1500);
 

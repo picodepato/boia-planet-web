@@ -4,6 +4,80 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — plan 005 T57: 3D landing intro with the planet, and the hero
+
+Qué existe:
+
+- **Entrada 3D con el planeta de /mar** (three.js, bajo demanda; nada en la
+  ruta crítica): el planeta sube, crece y gira (1,4 s), entran las letras
+  «BOIA» (la hoja de Blender de T27) y «Zarpar»; al pulsar, la cámara baja
+  (1,3 s) hasta el horizonte del planeta, que se queda girando detrás del hero.
+  - `packages/engine/src/intro/planet.ts`: configuración v4 versionada y
+    validada (`DEFAULT_PLANET_INTRO`, `validatePlanetIntro`, encuadres por
+    ancho con pose `intro` y `hero`) y la línea de tiempo pura (`frameAt`,
+    `heroFrame`, `viewMoved`).
+  - `controller.ts` reescrito: sin EXPLORAR/traspaso a /juego; el plazo de
+    carga (`loadBudgetMs` 9000) empieza en `start()` (el montaje), sólo corre
+    con la pestaña visible (`suspend`/`resume`) y la escena cuenta como lista
+    cuando `createScene` resuelve (shaders compilados y primer pintado).
+  - `entry.ts`: `bootScript({ capMs })` ya no lleva el plazo de 2000 ms desde
+    el arranque; sólo un tope de seguridad (`bootCapMs` 15000) por si la app no
+    monta nunca, que no corre con la pestaña oculta. `decideEntry` deja pasar
+    `si`, `s`, `ref`, `ref_src`, `igsh`, `ltclid`/`lt_*`, `wa_*`, `mc_*`,
+    `_ga`/`_gl`, `gbraid`/`wbraid`… además de `utm_*` y los `*clid`.
+  - `apps/web/lib/planeta/`: `mini-planet.ts` (módulo compartido: agua en una
+    esfera con orillas y espuma en shader, las islas de /mar —`buildIsland`,
+    `buildSandbank`— dobladas sobre la superficie, nubes y halo),
+    `sphere-map.ts` (puro: el mar de /mar enrollado en una esfera) e
+    `intro-scene.ts` (renderer, cámara ortográfica en px CSS, estrellas, el
+    mundo de este navegador con `liveWorld` + `marWorld`). Cero cambios en
+    archivos de /mar: importa sus constructores de islas y su paleta.
+  - `apps/web/lib/intro/run.ts`: la entrada en curso vive lo que la carga de
+    `/`, no lo que el bloque del hero: un remontaje recoge la misma entrada
+    (canvas incluido); sólo se termina si el hero se va (otra ruta). Además el
+    hero tiene clave fija (`'hero'`) en `HomeBlocks`. En la landing, el giro
+    del planeta va a 30 fps como mucho y nunca a más de ¼ del tiempo (WebGL por
+    software, móviles flojos); en visita directa el planeta espera a que la
+    página esté libre.
+  - Respaldo ligero sin WebGL o sin el motor: un planeta en CSS (`.hero__planet`,
+    tamaño en `cqmin`) en el sitio del horizonte final (`stillCss`).
+  - Se borró la escena Pixi de la entrada (`intro/scene.ts`, sólo la usaba la
+    landing) y `lib/intro/active.ts`.
+- **Hero**: dos botones, el principal a `/mar` («Explorar el universo», texto
+  del Admin, `data-testid="cta-3d"`) y Tickets al lado (en fila desde 481 px).
+  Fuera el CTA 2D a /juego y la insignia «3D».
+- Pruebas: `planet.test.ts` (nueva), `controller.test.ts` y `entry.test.ts`
+  reescritas (plazo desde el montaje, pestaña oculta, tope del arranque),
+  `blocks.test.ts` (+2: dos botones; clave fija del hero),
+  `lib/planeta/sphere-map.test.ts`; `e2e/intro.spec.ts` reescrita (17 pruebas:
+  `/` entera, `?si=`/`?utm_source=`/`?ref=`, escena retrasada 4 s que aun así
+  se reproduce, escena que no llega → landing ligera, carga en segundo plano,
+  saltar, Atrás, movimiento reducido, motor bloqueado, sin WebGL, recarga,
+  `?intro=0`/`?menu=`/«Ver la introducción», vuelta a `/` sin recarga desde
+  /legal); `demo.spec.ts`, `landing.spec.ts` y `record-demo.spec.ts` adaptadas.
+  `docs/spec/estado.md`: ENT-003/006/010/014/020/038 enlazan las pruebas
+  nuevas; ENT-012 (traspaso de escena a /juego) pasa a FALTA.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 102 archivos, 897 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm typecheck` → exit 0. `pnpm lint` → exit 0.
+- `pnpm build` → exit 0; ruta crítica de la landing 177,8 kB de 192 kB.
+- `E2E_PORT=3271 pnpm e2e e2e/intro.spec.ts e2e/demo.spec.ts e2e/accesos.spec.ts e2e/mar-3d.spec.ts:92 --workers=2`
+  → 52 passed, 1 failed (`accesos.spec.ts:152`, /juego, por carga); sola → 1 passed.
+- `E2E_PORT=3271 pnpm e2e e2e/landing.spec.ts e2e/admin-endurecido.spec.ts e2e/eventos.spec.ts --workers=2` → 28 passed.
+
+Pendiente:
+
+- Todo `muestra`: tiempos, encuadres (pose del planeta en la entrada y en el
+  hero), colores del agua y del cielo, planeta en CSS; verlo con Hernán y
+  Álvaro en móviles reales (REQ-ENT-021).
+- T62: quedan del 2D `intro/{config,sphere,port,world-geometry,timeline,assets,
+  test-fixtures,sphere-probe*}`, `lib/intro/worlds.ts` y las claves i18n
+  `hero.explore3d*` (salen de `docs/propuestas/textos-zonas.md`); el texto de
+  REQ-ENT-003/005 en `09-requisitos.md` aún dice «ninguna librería 3D en el
+  bundle» (la ruta crítica sigue sin ella; three.js llega bajo demanda).
+
 ## 2026-10-01 — plan 005 T53: Mobile HUD and small popups in /mar
 
 Qué existe:

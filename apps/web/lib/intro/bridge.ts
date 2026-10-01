@@ -8,22 +8,22 @@ export interface IntroDiagnostics {
   outcome: IntroOutcome | null;
   scenesCreated: number;
   worldsAlive: number;
-  gamesStarted: number;
   framesRendered: number;
-  /** Fotogramas en los que la cámara (o la esfera) se movió sin que cambiase la vista. */
+  /** Fotogramas en los que el planeta visible se movió o giró. */
   cameraMoves: number;
-  /** Curvatura del último fotograma pintado (1 esfera, 0 plano) y las vistas en el aterrizaje. */
-  k: number | null;
-  landingK: number[];
-  /** Cómo se pidió el aterrizaje: botón o avance automático. */
+  /** Radio del planeta (px) en los fotogramas de «Zarpar»: sólo crece. */
+  landingRadius: number[];
+  /** Cómo se pidió «Zarpar»: botón o avance automático. */
   enteredBy: 'button' | 'auto' | null;
-  /** ms de reloj de la aparición y del aterrizaje (sólo si se vieron enteros). */
+  /** ms de reloj de la aparición y de «Zarpar» (sólo si se vieron enteros). */
   appearedMs: number | null;
   playedMs: number | null;
   /** GPU con la que pinta la escena (SwiftShader = por software). */
   renderer: string | null;
-  /** ms desde la carga hasta tener la escena lista (si pasa de `loadBudgetMs`, landing ligera). */
+  /** ms desde el montaje hasta tener la escena lista (con su primer fotograma). */
   sceneReadyMs: number | null;
+  /** ms de plazo de carga que sobraban al llegar la escena. */
+  budgetLeftMs: number | null;
   /** ms desde la carga (arranque del script) hasta ver la landing. */
   landedAtMs: number | null;
   /** Fotograma más largo durante la animación y cuántos pasaron de 50 ms. */
@@ -31,28 +31,15 @@ export interface IntroDiagnostics {
   slowFrames: number;
   /** Fases vistas, en orden. */
   history: string[];
-  /** EXPLORAR arrancó el juego desde esta landing (cediendo la escena si la había). */
-  explored: boolean;
+  /** Veces que se montó la escena del hero (un remontaje no repite ni corta la entrada). */
+  mounts: number;
   /** Título del acto 2 (T27). */
   title: TitleDiagnostics;
-  /** Mundo de la escena (el de /juego en este navegador) y su aterrizaje, en coordenadas del mundo (T28). */
+  /** Mundo del planeta (el de /mar en este navegador) y cuántas islas lleva. */
   world: string | null;
-  landingPoint: { x: number; y: number } | null;
-  /** EXPLORAR descubre el puerto (T28). */
-  reveal: RevealDiagnostics;
-}
-
-export interface RevealDiagnostics {
-  /** ms de reloj desde la carga al pulsar EXPLORAR y al pintar el encuadre del puerto. */
-  startedMs: number | null;
-  finishedMs: number | null;
-  /** Vista del juego para la que se encuadró el puerto (px CSS). */
-  view: { width: number; height: number } | null;
-  /** Última cámara pintada: el punto (x, y) en px de juego a zoom 1 se pinta en (ax, ay). */
-  camera: { x: number; y: number; zoom: number; ax: number; ay: number } | null;
-  /** Dónde quedaron en la vista (px CSS) el barco en la salida y el puerto. */
-  ship: { x: number; y: number } | null;
-  port: { x: number; y: number } | null;
+  islands: number | null;
+  /** Último fotograma pintado: el planeta en px CSS de la vista (centro, radio) y su giro. */
+  pose: { x: number; y: number; radius: number; tilt: number; spin: number } | null;
 }
 
 export interface TitleDiagnostics {

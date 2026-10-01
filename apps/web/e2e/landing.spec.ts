@@ -29,7 +29,8 @@ async function captured(
 const LANDING = '/?intro=0';
 
 const hero = (page: Page) => page.locator('.hero');
-const exploreCta = (page: Page) => hero(page).getByRole('link', { name: /explorar el universo/i });
+// El botón principal del hero: el mundo 3D (/mar), con Tickets al lado (T57).
+const exploreCta = (page: Page) => hero(page).getByTestId('cta-3d');
 const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Tickets', exact: true });
 const ticketsPanel = (page: Page) => page.getByRole('dialog', { name: 'Elige tu evento' });
 

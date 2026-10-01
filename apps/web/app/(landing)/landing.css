@@ -288,13 +288,15 @@ body {
 
 /* ---------- Escena del hero y entrada (T03) ---------- */
 
+/* El cielo sobre el horizonte del planeta (T57). Contenedor de tamaño: el
+   planeta ligero se mide en cqmin (el lado corto del hero), como el de la
+   escena. */
 .hero__scene {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background:
-    repeating-linear-gradient(165deg, rgb(255 255 255 / 0.04) 0 2px, transparent 2px 30px),
-    var(--water);
+  container-type: size;
+  background: linear-gradient(180deg, #0b1233 0%, #241a5e 42%, #5b4aa8 70%, #c9789a 100%);
   transition: background-color 0.3s ease;
 }
 
@@ -315,10 +317,27 @@ body {
   inset: 0;
 }
 
-.hero__still img {
+/* Planeta ligero (sin motor ni JavaScript): el horizonte del mar del planeta,
+   donde lo deja la escena; tamaño y sitio por encuadre en stillCss. muestra */
+.hero__planet {
   position: absolute;
-  max-width: none;
-  height: auto;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 46% 3%, rgb(255 244 226 / 0.9) 0 0.9%, transparent 1.4%),
+    radial-gradient(circle at 58% 5%, #7db043 0 1.6%, #ebcf9e 2%, #3aa3c4 3.4%, transparent 5%),
+    radial-gradient(circle at 36% 7%, #7db043 0 1.1%, #ebcf9e 1.5%, #3aa3c4 2.6%, transparent 4%),
+    radial-gradient(circle at 50% 0%, #3aa3c4 0%, #1a7aa6 14%, #15245e 46%, #0b1233 70%);
+  box-shadow:
+    0 0 0 6px rgb(159 220 255 / 0.18),
+    0 0 60px 16px rgb(159 220 255 / 0.35);
+}
+
+.hero__scene[data-ready] .hero__still {
+  opacity: 0;
+}
+
+.hero__still {
+  transition: opacity 0.3s ease;
 }
 
 .hero__canvas {
@@ -373,25 +392,6 @@ html[data-intro] .site-footer {
 .site-header,
 .hero__content {
   transition: opacity 0.6s ease;
-}
-
-/* EXPLORAR (T28): la landing se aparta y la cámara se aleja hasta el puerto;
-   después, la escena pasa a /juego. */
-html[data-explore] {
-  overflow: hidden;
-}
-
-html[data-explore] .site-header,
-html[data-explore] .hero__content,
-html[data-explore] .hero__scene::after {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
-}
-
-html[data-explore] #contenido > :not(.hero),
-html[data-explore] .site-footer {
-  visibility: hidden;
 }
 
 /* Acto 0 (D-19): boia dibujada y «Cargando», sólo si la escena tarda. El
@@ -646,61 +646,6 @@ html[data-intro='arrive'] .intro-overlay__links {
   filter: brightness(1.06);
 }
 
-/* La otra forma de explorar: el mar en 3D (/mar). Secundaria frente a
-   EXPLORAR, con su insignia. muestra */
-.cta-3d {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  min-width: 320px;
-  padding: 8px 20px 8px 10px;
-  border-radius: 18px;
-  border: 1px solid rgb(255 255 255 / 0.28);
-  background: rgb(35 26 92 / 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #fff;
-  text-decoration: none;
-  text-align: left;
-}
-
-.cta-3d:hover {
-  background: rgb(35 26 92 / 0.72);
-}
-
-.cta-3d__badge {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #6a4fc4, #3b2a8f);
-  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.25);
-  font-weight: 900;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
-}
-
-.cta-3d__text {
-  display: grid;
-  gap: 1px;
-}
-
-.cta-3d__label {
-  font-weight: 900;
-  font-size: 1.02rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.cta-3d__sub {
-  font-size: 0.8rem;
-  font-weight: 600;
-  opacity: 0.85;
-}
-
 @keyframes cta-pulse {
   0%,
   70%,
@@ -714,16 +659,26 @@ html[data-intro='arrive'] .intro-overlay__links {
 
 @media (max-width: 480px) {
   .cta-explore,
-  .cta-3d,
   .button--tickets {
     width: 100%;
     min-width: 0;
   }
 }
 
+/* Tickets al lado del botón principal (plan 005), a su altura. */
 @media (min-width: 481px) {
+  .hero__actions {
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
   .button--tickets {
     min-width: 200px;
+    min-height: 64px;
+    border-radius: 20px;
+    font-size: 1.125rem;
   }
 }
 

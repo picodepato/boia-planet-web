@@ -1,20 +1,25 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_INTRO_CONFIG as CFG, type IntroConfig } from './config';
 import {
   IntroController,
   MAX_FRAME_STEP_MS,
   type IntroOutcome,
   type IntroSceneHandle,
 } from './controller';
-import { realGeometry } from './test-fixtures';
-import { landingCamera, samePose, type IntroFrame, type IntroMode } from './timeline';
+import {
+  DEFAULT_PLANET_INTRO as CFG,
+  heroFrame,
+  viewMoved,
+  type IntroFrame,
+  type IntroMode,
+  type PlanetIntroConfig,
+} from './planet';
 
-const geometry = realGeometry();
 const VP = { width: 360, height: 640 };
 const APPEAR = CFG.appear.durationMs;
 const LAND = CFG.landing.durationMs;
+const BUDGET = CFG.loadBudgetMs;
 /** Configuración de prueba con el avance automático encendido. */
-const AUTO: IntroConfig = {
+const AUTO: PlanetIntroConfig = {
   ...CFG,
   pause: { ...CFG.pause, autoAdvance: { enabled: true, afterMs: 8000 } },
 };
@@ -36,12 +41,14 @@ class FakeScene implements IntroSceneHandle {
 }
 
 /** Controlador con reloj, temporizadores y escena de mentira. */
-function setup(mode: IntroMode = 'intro', opts: { elapsed?: number; config?: IntroConfig } = {}) {
+function setup(
+  mode: IntroMode = 'intro',
+  opts: { config?: PlanetIntroConfig; still?: boolean } = {},
+) {
   FakeScene.alive = 0;
   let now = 0;
   const timers: Array<{ at: number; fn: () => void; cancelled: boolean }> = [];
   const landed: IntroOutcome[] = [];
-  const startGame = vi.fn();
   let resolveScene!: (s: FakeScene) => void;
   let rejectScene!: (e: Error) => void;
   const createScene = vi.fn(
@@ -54,9 +61,8 @@ function setup(mode: IntroMode = 'intro', opts: { elapsed?: number; config?: Int
   const c = new IntroController<FakeScene>({
     mode,
     config: opts.config ?? CFG,
-    geometry,
+    still: !!opts.still,
     now: () => now,
-    elapsedSinceBoot: opts.elapsed ?? 0,
     createScene,
     setTimer: (fn, ms) => {
       const t = { at: now + ms, fn, cancelled: false };
@@ -64,7 +70,6 @@ function setup(mode: IntroMode = 'intro', opts: { elapsed?: number; config?: Int
       return () => (t.cancelled = true);
     },
     onLanded: (o) => landed.push(o),
-    startGame,
   });
   const advance = (ms: number) => {
     now += ms;
@@ -103,6 +108,8 @@ function setup(mode: IntroMode = 'intro', opts: { elapsed?: number; config?: Int
     return scene;
   };
   const pending = () => timers.filter((t) => !t.cancelled).length;
+  const moves = (frames: IntroFrame[]) =>
+    frames.reduce((n, f, i) => n + (i > 0 && viewMoved(frames[i - 1]!, f) ? 1 : 0), 0);
   return {
     c,
     advance,
@@ -112,8 +119,8 @@ function setup(mode: IntroMode = 'intro', opts: { elapsed?: number; config?: Int
     toPause,
     pending,
     landed,
-    startGame,
     createScene,
+    moves,
   };
 }
 
@@ -124,12 +131,10 @@ function expectInvariants(h: ReturnType<typeof setup>) {
   expect(h.c.worldsAlive).toBeLessThanOrEqual(1);
   expect(FakeScene.alive).toBeLessThanOrEqual(1);
   expect(h.landed.length).toBeLessThanOrEqual(1);
-  expect(h.startGame).not.toHaveBeenCalled();
-  expect(h.c.gamesStarted).toBe(0);
 }
 
-describe('máquina de estados de la entrada «mini-mundo»', () => {
-  it('primera visita: carga → aparición → pausa → (botón) → aterrizaje → landing', async () => {
+describe('máquina de estados de la entrada 3D (T57)', () => {
+  it('carga → aparición → pausa → (Zarpar) → horizonte del hero → landing', async () => {
     const h = setup();
     h.c.start();
     expect(h.c.phase).toBe('waiting');
@@ -147,7 +152,15 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     expect(h.c.enteredBy).toBe('button');
     expect(h.c.playedMs).toBeGreaterThanOrEqual(LAND);
     expect(h.c.playedMs).toBeLessThan(LAND + 20);
-    expect(scene.frames.at(-1)!.camera).toEqual(landingCamera(CFG, geometry, VP));
+    // Termina en el encuadre del hero, sin salto: el giro sigue desde ahí.
+    const done = scene.frames.find((f) => f.done)!;
+    const hero = heroFrame(CFG, VP, done.pose.spin);
+    expect(done.pose).toEqual(hero.pose);
+    const after = scene.frames.at(-1)!;
+    expect(after.act).toBe('landed');
+    expect(after.pose.spin - done.pose.spin).toBeGreaterThanOrEqual(0);
+    expect(after.pose.spin - done.pose.spin).toBeLessThan(0.05);
+    expect(h.moves(scene.frames)).toBeGreaterThan(0);
     expectInvariants(h);
   });
 
@@ -163,11 +176,11 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     const last = scene.frames.at(-1)!;
     expect(last.act).toBe('pause');
     expect(last.content).toBe(0);
-    expect(last.sphere.k).toBe(1);
+    expect(last.title).toBe(1);
     expectInvariants(h);
   });
 
-  it('con el avance automático encendido, aterriza solo tras el tiempo configurado', async () => {
+  it('con el avance automático encendido, zarpa solo tras el tiempo configurado', async () => {
     const h = setup('intro', { config: AUTO });
     await h.toPause();
     h.play(AUTO.pause.autoAdvance.afterMs - 100);
@@ -193,7 +206,7 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     expectInvariants(h);
   });
 
-  it('el botón pulsado dos veces (y cinco) aterriza una sola vez', async () => {
+  it('el botón pulsado dos veces (y cinco) zarpa una sola vez', async () => {
     const h = setup();
     const scene = await h.toPause();
     expect(h.c.enter()).toBe(true);
@@ -203,9 +216,9 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     h.play(LAND);
     expect(h.c.enter()).toBe(false);
     expect(h.landed).toEqual(['played']);
-    // El aterrizaje no volvió a empezar: k nunca sube.
-    const ks = scene.frames.filter((f) => f.act === 'landing').map((f) => f.sphere.k);
-    expect(ks.every((k, i) => i === 0 || k <= ks[i - 1]!)).toBe(true);
+    // «Zarpar» no volvió a empezar: el planeta sólo crece.
+    const r = scene.frames.filter((f) => f.act === 'landing').map((f) => f.pose.radius);
+    expect(r.every((v, i) => i === 0 || v >= r[i - 1]!)).toBe(true);
     expectInvariants(h);
   });
 
@@ -224,31 +237,24 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     expectInvariants(h);
   });
 
-  it('«Saltar» durante la pausa: una vez, al mismo estado final', async () => {
-    const h = setup();
-    const scene = await h.toPause();
-    for (let i = 0; i < 5; i++) h.c.skip();
-    expect(h.c.phase).toBe('landed');
-    expect(h.landed).toEqual(['skipped']);
-    h.play(100);
-    const last = scene.frames.at(-1)!;
-    expect(last.done).toBe(true);
-    expect(last.camera).toEqual(landingCamera(CFG, geometry, VP));
-    expectInvariants(h);
-  });
-
-  it('«Saltar» durante el aterrizaje: una vez, al mismo estado final', async () => {
-    const h = setup();
-    const scene = await h.toPause();
-    h.c.enter();
-    h.play(LAND / 3);
-    h.c.skip();
-    h.c.skip();
-    h.c.enter();
-    expect(h.landed).toEqual(['skipped']);
-    h.play(100);
-    expect(scene.frames.at(-1)!.done).toBe(true);
-    expectInvariants(h);
+  it('«Saltar» durante la pausa o durante «Zarpar»: una vez, al encuadre del hero', async () => {
+    for (const during of ['paused', 'landing'] as const) {
+      const h = setup();
+      const scene = await h.toPause();
+      if (during === 'landing') {
+        h.c.enter();
+        h.play(LAND / 3);
+      }
+      for (let i = 0; i < 5; i++) h.c.skip();
+      h.c.enter();
+      expect(h.c.phase).toBe('landed');
+      expect(h.landed).toEqual(['skipped']);
+      h.play(100);
+      const last = scene.frames.at(-1)!;
+      expect(last.done).toBe(true);
+      expect(last.source).toBe('hero');
+      expectInvariants(h);
+    }
   });
 
   it('saltar antes de que llegue la escena también es idempotente', async () => {
@@ -268,15 +274,14 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     await h.toPause();
     h.c.skip(); // popstate
     h.c.skip(); // hashchange justo después
-    // Volver desde la caché del navegador (pageshow) tampoco repite.
-    h.c.interrupt();
+    h.c.interrupt(); // vuelta desde la caché del navegador
     h.c.start();
     expect(h.c.phase).toBe('landed');
     expect(h.landed).toEqual(['skipped']);
     expectInvariants(h);
   });
 
-  it('pestaña oculta en la aparición: al volver, pausa con título y botón (no aterriza sola)', async () => {
+  it('pestaña oculta en la aparición: al volver, pausa con título y botón (no zarpa sola)', async () => {
     const h = setup();
     h.c.start();
     const scene = await h.sceneReady();
@@ -293,7 +298,7 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     expectInvariants(h);
   });
 
-  it('pestaña oculta en la pausa: sigue esperando; en el aterrizaje: termina en la landing', async () => {
+  it('pestaña oculta en la pausa: sigue esperando; durante «Zarpar»: termina en la landing', async () => {
     const h = setup();
     const scene = await h.toPause();
     h.c.interrupt();
@@ -306,6 +311,7 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     h.play(32);
     expect(scene.frames.at(-1)!.done).toBe(true);
     expect(h.landed).toEqual(['played']);
+    expect(h.c.playedMs).toBeNull();
     expectInvariants(h);
   });
 
@@ -326,7 +332,7 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     expectInvariants(h);
   });
 
-  it('cambio de ruta en la pausa o en el aterrizaje: se destruye una vez y no queda mundo', async () => {
+  it('cambio de ruta en la pausa o durante «Zarpar»: se destruye una vez y no queda escena', async () => {
     for (const during of ['paused', 'landing'] as const) {
       const h = setup('intro', { config: AUTO });
       const scene = await h.toPause();
@@ -346,19 +352,71 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     }
   });
 
-  it('recursos que no llegan a tiempo: landing ligera; si llegan luego, fondo quieto', async () => {
-    const h = setup('intro', { elapsed: 500 });
+  it('el plazo de carga cuenta desde el montaje, no desde la carga de la página', async () => {
+    const h = setup();
+    // La página lleva un buen rato cargando antes de montar: no cuenta.
+    h.advance(BUDGET * 3);
     h.c.start();
-    h.advance(CFG.loadBudgetMs - 500);
+    h.advance(BUDGET - 1);
+    expect(h.c.phase).toBe('waiting');
+    // Una escena lenta, pero dentro del plazo: la entrada se ve entera.
+    await h.sceneReady();
+    expect(h.c.phase).toBe('appearing');
+    expect(h.c.sceneReadyMs).toBe(BUDGET - 1);
+    expect(h.c.budgetLeftMs).toBe(1);
+    expect(h.pending()).toBe(0);
+    expectInvariants(h);
+  });
+
+  it('una escena que no llega en el plazo: landing ligera; si llega luego, el hero quieto en su sitio', async () => {
+    const h = setup();
+    h.c.start();
+    h.advance(BUDGET);
     expect(h.c.phase).toBe('landed');
     expect(h.landed).toEqual(['none']);
     const scene = await h.sceneReady();
     h.play(50);
-    expect(scene.frames.every((f) => f.done)).toBe(true);
+    expect(scene.frames.every((f) => f.done && f.source === 'hero')).toBe(true);
     expectInvariants(h);
   });
 
-  it('motor que falla: landing ligera, sin mundo', async () => {
+  it('pestaña oculta mientras carga: el plazo se para y la entrada se ve al volver', async () => {
+    const h = setup();
+    h.c.suspend(); // la página se abrió en segundo plano
+    h.c.start();
+    h.advance(BUDGET * 10);
+    expect(h.c.phase).toBe('waiting');
+    const scene = await h.sceneReady();
+    expect(h.c.phase).toBe('appearing');
+    // Sin pintar en segundo plano: al volver, la aparición empieza desde el principio.
+    h.advance(60_000);
+    h.c.resume();
+    h.play(64);
+    expect(scene.frames[0]!.act).toBe('appear');
+    expect(scene.frames[0]!.t).toBe(0);
+    h.play(APPEAR);
+    expect(h.c.phase).toBe('paused');
+    expect(h.landed).toEqual([]);
+    expectInvariants(h);
+  });
+
+  it('pestaña oculta y vuelta durante la carga: el plazo sigue donde iba', async () => {
+    const h = setup();
+    h.c.start();
+    h.advance(BUDGET - 2000);
+    h.c.suspend();
+    h.advance(BUDGET * 5);
+    h.c.resume();
+    h.c.resume();
+    h.advance(1999);
+    expect(h.c.phase).toBe('waiting');
+    h.advance(1);
+    expect(h.c.phase).toBe('landed');
+    expect(h.landed).toEqual(['none']);
+    expectInvariants(h);
+  });
+
+  it('motor que falla: landing ligera, sin escena', async () => {
     const h = setup();
     h.c.start();
     await h.sceneFails();
@@ -374,14 +432,14 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     h.c.start();
     await h.sceneReady();
     h.play(300);
-    h.advance(2500); // un fotograma de 2,5 s (subida de texturas, móvil lento)
+    h.advance(2500); // un fotograma de 2,5 s (subir geometría, un móvil lento)
     const f = h.c.render(VP, 0)!;
     expect(f.act).toBe('appear');
     expect(f.t).toBeLessThanOrEqual(304 + MAX_FRAME_STEP_MS);
     expectInvariants(h);
   });
 
-  it('movimiento reducido: sin aparición; mini-mundo quieto; al pulsar, fundido sin mover nada', async () => {
+  it('movimiento reducido: sin aparición; planeta quieto; al pulsar, fundido sin mover nada (REQ-ENT-010)', async () => {
     const h = setup('reduced');
     h.c.start();
     expect(h.landed).toEqual([]);
@@ -390,26 +448,26 @@ describe('máquina de estados de la entrada «mini-mundo»', () => {
     h.play(3000);
     expect(h.c.phase).toBe('paused');
     expect(h.c.enter()).toBe(true);
-    h.play(CFG.reduced.fadeMs + 100);
+    h.play(CFG.reduced.fadeMs + 500);
     expect(h.landed).toEqual(['played']);
-    const shown = scene.frames.filter((f) => f.planet > 0);
-    expect(shown.every((f) => samePose(f.sphere, shown[0]!.sphere))).toBe(true);
-    const cams = new Set(scene.frames.map((f) => JSON.stringify(f.camera)));
-    expect(cams.size).toBe(1);
     expect(scene.frames.some((f) => f.act === 'appear')).toBe(false);
+    expect(h.moves(scene.frames)).toBe(0);
+    const spins = new Set(scene.frames.map((f) => f.pose.spin));
+    expect(spins.size).toBe(1);
     expectInvariants(h);
   });
 
-  it('Explorar arranca el juego una vez y sólo desde la landing', async () => {
-    const h = setup();
-    await h.toPause();
-    expect(h.c.explore()).toBe(false);
-    h.c.enter();
-    expect(h.c.explore()).toBe(false);
-    h.play(LAND + 20);
-    expect(h.c.explore()).toBe(true);
-    expect(h.c.explore()).toBe(false);
-    expect(h.startGame).toHaveBeenCalledTimes(1);
-    expect(h.c.scenesCreated).toBe(1);
+  it('una visita directa con movimiento reducido del sistema: el hero no gira', async () => {
+    const h = setup('direct', { still: true });
+    h.c.start();
+    expect(h.landed).toEqual(['none']);
+    const scene = await h.sceneReady();
+    h.play(2000);
+    expect(h.moves(scene.frames)).toBe(0);
+    const g = setup('direct');
+    g.c.start();
+    const moving = await g.sceneReady();
+    g.play(2000);
+    expect(g.moves(moving.frames)).toBeGreaterThan(0);
   });
 });

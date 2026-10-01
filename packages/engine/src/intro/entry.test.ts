@@ -27,6 +27,30 @@ describe('qué entrada toca (D-21: según la URL)', () => {
     expect(decideEntry({ ...base, search: '?utm_source=ig&menu=carnet' })).toBe('direct');
   });
 
+  it('los de compartir (WhatsApp, Instagram, X, YouTube, Spotify, Linktree) tampoco (T57)', () => {
+    for (const search of [
+      '?si=abc',
+      '?s=20',
+      '?ref=whatsapp',
+      '?ref_src=twsrc',
+      '?igsh=MXZ',
+      '?igshid=abc',
+      '?utm_source=ig',
+      '?utm_source=linktree&utm_medium=referral',
+      '?ltclid=12ab',
+      '?wa_status=1',
+      '?mc_cid=1&mc_eid=2',
+      '?_gl=1*abc',
+      '?si=abc&utm_campaign=verano&fbclid=x',
+    ]) {
+      expect(decideEntry({ ...base, search }), search).toBe('intro');
+    }
+    // Lo que sí apunta a algo sigue entrando directo, con o sin etiquetas.
+    expect(decideEntry({ ...base, search: '?si=abc&menu=carnet' })).toBe('direct');
+    expect(decideEntry({ ...base, search: '?ref=wa', hash: '#tickets' })).toBe('direct');
+    expect(decideEntry({ ...base, search: '?sitio=1' })).toBe('direct');
+  });
+
   it('«Ver la introducción» (?intro=1) la pide aunque la URL apunte a otra cosa', () => {
     expect(decideEntry({ ...base, search: '?intro=1' })).toBe('intro');
     expect(decideEntry({ ...base, search: '?a=b&intro=1' })).toBe('intro');
@@ -63,27 +87,33 @@ function runBoot(opts: {
   hash?: string;
   reduced?: boolean;
   storageThrows?: boolean;
+  /** La pestaña se abrió en segundo plano. */
+  hidden?: boolean;
 }) {
   const attrs = new Map<string, string>();
-  const timers: Array<{ fn: () => void; ms: number }> = [];
+  let nextId = 1;
+  const timers = new Map<number, { fn: () => void; ms: number }>();
   const events: string[] = [];
   const preloaded: string[] = [];
   const store = new Map<string, string>(Object.entries(opts.stored ?? {}));
-  let clickListener: ((e: { target: unknown }) => void) | null = null;
+  const listeners = new Map<string, (e: { target: unknown }) => void>();
   const win: Record<string, unknown> = {
     matchMedia: () => ({ matches: !!opts.reduced }),
     dispatchEvent: (e: { type: string; detail: { intro: string } }) =>
       events.push(`${e.type}:${e.detail.intro}`),
   };
+  const doc = {
+    hidden: !!opts.hidden,
+    documentElement: {
+      setAttribute: (k: string, v: string) => attrs.set(k, v),
+      removeAttribute: (k: string) => attrs.delete(k),
+    },
+    addEventListener: (type: string, fn: (e: { target: unknown }) => void) =>
+      listeners.set(type, fn),
+  };
   const env = {
     window: win,
-    document: {
-      documentElement: {
-        setAttribute: (k: string, v: string) => attrs.set(k, v),
-        removeAttribute: (k: string) => attrs.delete(k),
-      },
-      addEventListener: (_: string, fn: typeof clickListener) => (clickListener = fn),
-    },
+    document: doc,
     location: { pathname: opts.pathname ?? '/', search: opts.search ?? '', hash: opts.hash ?? '' },
     localStorage: {
       getItem: (k: string) => {
@@ -101,8 +131,11 @@ function runBoot(opts: {
         preloaded.push(v);
       }
     },
-    setTimeout: (fn: () => void, ms: number) => timers.push({ fn, ms }),
-    clearTimeout: () => {},
+    setTimeout: (fn: () => void, ms: number) => {
+      timers.set(nextId, { fn, ms });
+      return nextId++;
+    },
+    clearTimeout: (id: number) => timers.delete(id),
     CustomEvent: class {
       constructor(
         readonly type: string,
@@ -113,41 +146,68 @@ function runBoot(opts: {
       }
     },
   };
-  const src = bootScript({ loadBudgetMs: 2000, hardCapMs: 9000, preload: ['/a.png', '/b.png'] });
+  const src = bootScript({ capMs: 9000, preload: ['/a.png', '/b.png'] });
   new Function(...Object.keys(env), src)(...Object.values(env));
+  /** Dispara los temporizadores que siguen armados. */
+  const fire = () => {
+    for (const [id, t] of [...timers]) {
+      timers.delete(id);
+      t.fn();
+    }
+  };
   return {
     attrs,
     timers,
+    fire,
     events,
     store,
     preloaded,
     entry: win.__boiaEntry as BootEntry,
     click: (skip: boolean) =>
-      clickListener?.({
+      listeners.get('click')?.({
         target: { closest: (s: string) => (skip && s === '[data-intro-skip]' ? {} : null) },
       }),
+    setHidden: (hidden: boolean) => {
+      doc.hidden = hidden;
+      listeners.get('visibilitychange')?.({ target: doc });
+    },
   };
 }
 
 describe('script de arranque', () => {
-  it('`/` a secas: oculta la landing y se da un plazo', () => {
+  it('`/` a secas: oculta la landing y arma sólo el tope de seguridad', () => {
     const b = runBoot({});
     expect(b.attrs.get('data-entry')).toBe('intro');
     expect(b.attrs.get('data-intro')).toBe('play');
-    expect(b.timers.map((t) => t.ms)).toEqual([2000, 9000]);
+    // Un solo temporizador: el tope por si la app nunca llega. El plazo de la
+    // escena no empieza aquí, sino al montarla (T57).
+    expect([...b.timers.values()].map((t) => t.ms)).toEqual([9000]);
     expect(b.preloaded).toEqual(['/a.png', '/b.png']);
     expect(b.entry.landed).toBeNull();
   });
 
-  it('si nadie toma el relevo a tiempo, la landing ligera aparece (REQ-ENT-007)', () => {
+  it('si nadie toma el relevo, al tope la landing aparece, una vez (REQ-ENT-007)', () => {
     const b = runBoot({});
-    b.timers[0]!.fn();
+    b.fire();
     expect(b.attrs.has('data-intro')).toBe(false);
     expect(b.entry.landed).toBe('none');
     expect(b.events).toEqual(['boia:landed:none']);
-    // El tope final no repite nada.
-    b.timers[1]!.fn();
+    b.setHidden(true);
+    b.setHidden(false);
+    b.fire();
     expect(b.events).toHaveLength(1);
+  });
+
+  it('cargada en segundo plano: el tope no corre hasta que se mira la pestaña (T57)', () => {
+    const b = runBoot({ hidden: true });
+    expect(b.attrs.get('data-intro')).toBe('play');
+    expect(b.timers.size).toBe(0);
+    b.setHidden(false);
+    expect([...b.timers.values()].map((t) => t.ms)).toEqual([9000]);
+    // Volver a ocultarla lo para otra vez.
+    b.setHidden(true);
+    expect(b.timers.size).toBe(0);
+    expect(b.entry.landed).toBeNull();
   });
 
   it('Saltar antes de hidratar funciona y es idempotente', () => {
@@ -159,6 +219,7 @@ describe('script de arranque', () => {
     expect(b.attrs.has('data-intro')).toBe(false);
     expect(b.entry.skipped).toBe(true);
     expect(b.events).toEqual(['boia:landed:skipped']);
+    expect(b.timers.size).toBe(0);
   });
 
   it('una segunda carga completa de `/` vuelve a reproducir la entrada (D-21)', () => {
@@ -187,6 +248,15 @@ describe('script de arranque', () => {
       expect(b.attrs.has('data-intro')).toBe(false);
       expect(b.entry.landed).toBe('none');
       expect(b.preloaded).toEqual([]);
+      expect(b.timers.size).toBe(0);
+    }
+  });
+
+  it('enlaces compartidos con etiquetas de campaña: la entrada (T57)', () => {
+    for (const search of ['?si=abc', '?utm_source=ig', '?ref=whatsapp&utm_medium=social']) {
+      const b = runBoot({ search });
+      expect(b.attrs.get('data-entry'), search).toBe('intro');
+      expect(b.attrs.get('data-intro'), search).toBe('play');
     }
   });
 
@@ -195,17 +265,20 @@ describe('script de arranque', () => {
     expect(b.attrs.get('data-entry')).toBe('intro');
   });
 
-  it('con movimiento reducido también espera al botón (mini-mundo quieto, D-19)', () => {
+  it('con movimiento reducido también espera al botón (planeta quieto)', () => {
     const b = runBoot({ reduced: true });
     expect(b.attrs.get('data-entry')).toBe('reduced');
     expect(b.attrs.get('data-intro')).toBe('play');
     expect(b.entry.landed).toBeNull();
   });
 
-  it('tomado el relevo, ni el plazo ni el tope muestran la landing: la pausa espera al botón', () => {
+  it('tomado el relevo, el tope no muestra la landing: la escena manda', () => {
     const b = runBoot({});
     b.entry.claimed = true;
-    for (const t of b.timers) t.fn();
+    b.fire();
+    b.setHidden(true);
+    b.setHidden(false);
+    expect(b.timers.size).toBe(0);
     expect(b.attrs.get('data-intro')).toBe('play');
     expect(b.entry.landed).toBeNull();
     expect(b.events).toEqual([]);

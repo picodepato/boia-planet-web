@@ -1,481 +1,52 @@
 'use client';
 
-import {
-  IntroController,
-  mountMode,
-  onScreen,
-  titlePoses,
-  viewMoved,
-  type BootEntry,
-  type IntroFrame,
-  type IntroMode,
-  type IntroOutcome,
-  type PortReveal,
-} from '@boia/engine/intro';
-import type { IntroScene } from '@boia/engine/intro/scene';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import type { IntroDiagnostics } from '../../../lib/intro/bridge';
 import type { IntroData } from '../../../lib/intro/load';
-import { clearTitle, drawTitle, fitTitle, sizeTitleCanvas } from '../../../lib/intro/title-canvas';
-import { offerWorld } from '../../../lib/world-handoff';
-
-/** Vistas de k guardadas en el diagnóstico durante el aterrizaje (tope). */
-const MAX_K_SAMPLES = 600;
+import { attachIntro, enterIntro, skipIntro } from '../../../lib/intro/run';
 
 /**
- * Escena del hero y entrada «mini-mundo» (D-19, REQ-ENT-001…020). Lo que
- * pinta el servidor funciona solo: mar en CSS con la isla y el barco en
- * `<img>` (ilustración ligera, REQ-ENT-038), y los textos de la entrada. Al
- * hidratar carga bajo demanda la escena Pixi y la pone encima. En cada carga
- * completa de `/` (D-21): carga (sólo si hace falta) → el mini-mundo aparece y gira → «BOIA»
- * y el botón → al pulsar, aterrizaje continuo en el mar y la landing encima.
- * El script de arranque ya ocultó la landing antes del primer pintado (ver
- * `bootScript`).
+ * Escena del hero y entrada 3D con el planeta de `/mar` (T57; D-19, D-21;
+ * REQ-ENT-001…020). Lo que pinta el servidor funciona solo: el cielo y un
+ * planeta ligero en CSS (REQ-ENT-038), y los textos de la entrada. Al
+ * hidratar, la entrada (`lib/intro/run.ts`) carga bajo demanda la escena
+ * three.js y la pone encima. En cada carga completa de `/` (D-21): carga
+ * (sólo si hace falta) → el planeta aparece y gira → «BOIA» y «Zarpar» → al
+ * pulsar, la cámara baja hasta el horizonte del planeta y la landing entra
+ * encima. El script de arranque ya ocultó la landing antes del primer
+ * pintado (ver `bootScript`). La entrada vive lo que la carga de `/`, no lo
+ * que este componente: un remontaje del hero la recoge donde iba.
  */
 export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLabel: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
   const title3dRef = useRef<HTMLCanvasElement>(null);
   const enterRef = useRef<HTMLButtonElement>(null);
-  const controllerRef = useRef<IntroController<IntroScene> | null>(null);
   const [overlay, setOverlay] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
-    const host = hostRef.current;
-    const html = document.documentElement;
-    const entry: BootEntry | undefined = window.__boiaEntry;
-    if (!host || !data) {
-      entry?.reveal('none');
+    if (!data) {
+      window.__boiaEntry?.reveal('none');
       setOverlay(false);
       return;
     }
-    const { config, geometry } = data;
-
-    // La entrada sólo se reproduce en la carga completa en la que el script
-    // de arranque la pidió y aún no se resolvió; volver a `/` dentro de la
-    // app no la repite (D-21).
-    const mode: IntroMode = mountMode(entry);
-    if (entry) {
-      entry.claimed = true;
-      clearTimeout(entry.timer);
-    }
-
-    const diag: IntroDiagnostics = {
-      mode,
-      phase: 'idle',
-      sceneStatus: 'none',
-      outcome: null,
-      scenesCreated: 0,
-      worldsAlive: 0,
-      gamesStarted: 0,
-      framesRendered: 0,
-      cameraMoves: 0,
-      k: null,
-      landingK: [],
-      enteredBy: null,
-      appearedMs: null,
-      playedMs: null,
-      renderer: null,
-      sceneReadyMs: null,
-      landedAtMs: null,
-      longestFrameMs: 0,
-      slowFrames: 0,
-      history: [],
-      explored: false,
-      title: { mode: 'flat', requestedMs: null, loadedMs: null, draws: 0, pose: null },
-      world: data.worldId,
-      landingPoint: { ...config.landingPoint },
-      reveal: {
-        startedMs: null,
-        finishedMs: null,
-        view: null,
-        camera: null,
-        ship: null,
-        port: null,
-      },
-    };
-    window.__boiaIntro = diag;
-
-    const t0 = entry?.t0 ?? performance.now();
-    const mountedAt = performance.now();
-    const reduced = mode === 'reduced';
-    let scene: IntroScene | null = null;
-    let raf = 0;
-    let visible = true;
-    let lastFrame: IntroFrame | null = null;
-    let lastSize = '';
-    let lastFrameAt = 0;
-    let focused = false;
-    /** EXPLORAR: adónde se va al terminar el alejamiento, y el alejamiento del mundo de la escena. */
-    let exploreHref: string | null = null;
-    let reveal: PortReveal = data.reveal;
-
-    // Título 3D (T27): la hoja se pide cuando el mini-mundo ya está listo, no
-    // antes (no compite con la escena). Hasta que llega, el título es texto.
-    const sheet = data.title;
-    let titleImg: HTMLImageElement | null = null;
-    /** ms de la pausa en los que empezó a entrar (0 si la hoja llegó antes de la pausa). */
-    let titleFrom = 0;
-    /** Últimos ms de pausa vistos (la salida sigue el bucle desde ahí). */
-    let pauseMs = 0;
-    const requestTitle = () => {
-      if (!sheet || diag.title.requestedMs !== null) return;
-      diag.title.requestedMs = performance.now() - t0;
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = sheet.url;
-      img
-        .decode()
-        .then(() => {
-          const c = controllerRef.current;
-          // Si ya se está aterrizando (o se fue), se queda el título plano.
-          if (!c || (c.phase !== 'waiting' && c.phase !== 'appearing' && c.phase !== 'paused'))
-            return;
-          titleImg = img;
-          titleFrom = c.phase === 'paused' && !reduced ? pauseMs : 0;
-          diag.title.mode = '3d';
-          diag.title.loadedMs = performance.now() - t0;
-          if (titleRef.current) titleRef.current.dataset.title = '3d';
-          lastFrame = null;
-          kick();
-        })
-        .catch(() => {
-          console.warn('[boia] no cargó la hoja del título; se queda el título plano');
-        });
-    };
-    const paintTitle = (f: IntroFrame) => {
-      const canvas = title3dRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (!sheet || !titleImg || !canvas || !ctx) return false;
-      if (f.act === 'pause') pauseMs = f.t;
-      if (f.act !== 'pause' && f.act !== 'landing') {
-        clearTitle(ctx);
-        return true;
-      }
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const layout = fitTitle(sheet, window.innerWidth, window.innerHeight);
-      sizeTitleCanvas(canvas, layout, dpr);
-      const exiting = f.act === 'landing';
-      const poses = titlePoses(config.title, sheet, sheet.letters.length, {
-        shownMs: pauseMs - titleFrom + (exiting ? f.t : 0),
-        exitMs: exiting ? f.t : null,
-        reduced,
-      });
-      drawTitle(ctx, titleImg, sheet, poses, layout, dpr);
-      diag.title.draws++;
-      diag.title.pose = poses
-        .map((p) => `${p.frame}:${p.y.toFixed(3)}:${p.roll.toFixed(3)}:${p.alpha.toFixed(2)}`)
-        .join('|');
-      return true;
-    };
-
-    const viewport = () => ({
-      width: Math.max(1, host.clientWidth),
-      height: Math.max(1, host.clientHeight),
+    return attachIntro(data, {
+      host: hostRef,
+      title: titleRef,
+      title3d: title3dRef,
+      enter: enterRef,
+      onLanded: () => setOverlay(false),
     });
-
-    const sync = () => {
-      const c = controllerRef.current;
-      if (!c) return;
-      if (diag.phase !== c.phase) diag.history.push(c.phase);
-      diag.phase = c.phase;
-      diag.sceneStatus = c.sceneStatus;
-      diag.outcome = c.outcome;
-      diag.scenesCreated = c.scenesCreated;
-      diag.worldsAlive = c.worldsAlive;
-      diag.gamesStarted = c.gamesStarted;
-      diag.enteredBy = c.enteredBy;
-      diag.appearedMs = c.appearedMs;
-      diag.playedMs = c.playedMs;
-      host.dataset.phase = c.phase;
-      // Acto en curso, para el CSS de la capa de la entrada (carga, título, botón).
-      if (c.phase === 'destroyed' || c.phase === 'landed') delete html.dataset.introAct;
-      else html.dataset.introAct = c.phase;
-      // La escena llega con el canvas ya borrado (color del espacio): se
-      // muestra enseguida, así el navegador lo compone antes del primer
-      // fotograma y no en mitad de la aparición.
-      if (c.sceneStatus === 'ready') {
-        host.dataset.ready = '';
-        requestTitle();
-      } else delete host.dataset.ready;
-      // Acto 2: el botón recibe el foco (Enter lo activa).
-      if (c.phase === 'paused' && !focused) {
-        focused = true;
-        enterRef.current?.focus({ preventScroll: true });
-      }
-      kick();
-    };
-
-    const onLanded = (outcome: IntroOutcome) => {
-      diag.landedAtMs = performance.now() - t0;
-      setOverlay(false);
-      if (entry) entry.reveal(outcome);
-      else html.removeAttribute('data-intro');
-    };
-
-    const controller = new IntroController<IntroScene>({
-      mode,
-      config,
-      geometry,
-      now: () => performance.now(),
-      elapsedSinceBoot: mountedAt - t0,
-      async createScene() {
-        const [{ createIntroScene }, { activeIntro }] = await Promise.all([
-          import('@boia/engine/intro/scene'),
-          import('../../../lib/intro/active'),
-        ]);
-        // El mundo que se jugará en /juego en este navegador (el elegido, con
-        // los cambios del Admin): aterrizaje, trozo de mapa y puerto (T28).
-        const active = await activeIntro(window.location.search, config, data.assets.artScale);
-        if (!active) throw new Error('el aterrizaje o la salida del mundo caen fuera del mapa');
-        reveal = active.reveal;
-        diag.world = active.worldId;
-        diag.landingPoint = { ...active.config.landingPoint };
-        const canvas = document.createElement('canvas');
-        canvas.className = 'hero__canvas';
-        host.appendChild(canvas);
-        const vp = viewport();
-        try {
-          scene = await createIntroScene({
-            canvas,
-            world: active.world,
-            config: active.config,
-            geometry: active.geometry,
-            assets: { ...data.assets, ship: data.ships[active.shipStyle] ?? data.assets.ship },
-            sea: active.sea,
-            view: { config: active.config, geometry: active.geometry, reveal: active.reveal },
-            width: vp.width,
-            height: vp.height,
-            resolution: Math.min(window.devicePixelRatio || 1, 2),
-          });
-          diag.renderer = scene.renderer;
-          diag.sceneReadyMs = performance.now() - t0;
-          return scene;
-        } catch (err) {
-          console.warn('[boia] la escena de entrada no arrancó; se queda la landing ligera', err);
-          canvas.remove();
-          throw err;
-        }
-      },
-      setTimer(fn, ms) {
-        const id = window.setTimeout(fn, ms);
-        return () => window.clearTimeout(id);
-      },
-      onLanded,
-      onChange: sync,
-      reveal: data.reveal,
-      // EXPLORAR (REQ-ENT-012): la escena no se destruye; tras alejarse hasta
-      // el puerto (T28) cede canvas, WebGL y mar al juego, que los recoge en
-      // /juego tras una navegación sin recarga.
-      startGame() {
-        const surface = scene?.release();
-        if (surface) offerWorld(surface);
-        if (diag.reveal.startedMs !== null) diag.reveal.finishedMs = performance.now() - t0;
-        router.push(exploreHref ?? '/juego');
-      },
-    });
-    controllerRef.current = controller;
-
-    // Bucle de pintado: sólo mientras haya algo que mover y se vea.
-    const loop = () => {
-      raf = 0;
-      if (document.hidden || controller.phase === 'destroyed') return;
-      const vp = viewport();
-      const size = `${vp.width}x${vp.height}`;
-      if (size !== lastSize) {
-        scene?.resize(vp.width, vp.height);
-        lastFrame = null;
-      }
-      const clock = reduced ? 0 : (performance.now() - mountedAt) / 1000;
-      const before = performance.now();
-      const phase = controller.phase;
-      const f = controller.render(vp, clock);
-      if (phase === 'appearing' || phase === 'landing') {
-        const dt = lastFrameAt ? before - lastFrameAt : 0;
-        diag.longestFrameMs = Math.max(diag.longestFrameMs, dt);
-        if (dt > 50) diag.slowFrames++;
-        lastFrameAt = before;
-      } else lastFrameAt = 0;
-      if (f) {
-        diag.framesRendered++;
-        diag.k = f.planet > 0 ? f.sphere.k : 0;
-        if (phase === 'landing' && diag.landingK.length < MAX_K_SAMPLES) diag.landingK.push(diag.k);
-        if (lastFrame && size === lastSize && viewMoved(lastFrame, f)) diag.cameraMoves++;
-        lastFrame = f;
-        // Con el título 3D las letras llevan su propia entrada y salida; en
-        // movimiento reducido se funde como el texto.
-        const own = paintTitle(f) && !reduced;
-        if (titleRef.current) titleRef.current.style.opacity = own ? '1' : String(f.title);
-        if (enterRef.current) enterRef.current.style.opacity = String(f.button);
-        if (controller.phase === 'landing' && f.content > 0)
-          html.setAttribute('data-intro', 'arrive');
-        if (f.act === 'explore') {
-          const view = diag.reveal.view ?? vp;
-          diag.reveal.camera = { ...f.camera };
-          diag.reveal.ship = onScreen(f.camera, reveal.ship);
-          diag.reveal.port = onScreen(f.camera, reveal.port);
-          diag.reveal.view = view;
-        }
-      }
-      lastSize = size;
-      const next = controller.phase;
-      // Movimiento reducido: la pausa es una escena quieta; sólo se pinta
-      // mientras entran título y botón. Tras llegar, el mar sigue vivo.
-      const moving =
-        next === 'waiting' ||
-        next === 'appearing' ||
-        next === 'landing' ||
-        next === 'exploring' ||
-        (next === 'paused' && (!reduced || (f?.title ?? 0) < 1));
-      const idle = !reduced && controller.sceneStatus === 'ready' && visible;
-      if (moving || idle) raf = requestAnimationFrame(loop);
-    };
-    function kick() {
-      if (!raf && !document.hidden) raf = requestAnimationFrame(loop);
-    }
-
-    // Lo que interrumpe una animación la termina en su estado final.
-    const interrupt = () => {
-      controller.interrupt();
-      kick();
-    };
-    const onVisibility = () => (document.hidden ? interrupt() : kick());
-    // Rotar o cambiar el ancho termina la animación; un cambio sólo de alto
-    // (barras del navegador móvil al cargar) no la corta.
-    let lastWidth = window.innerWidth;
-    const animating = () => controller.phase === 'appearing' || controller.phase === 'landing';
-    const onResize = () => {
-      if (window.innerWidth !== lastWidth && animating()) controller.interrupt();
-      lastWidth = window.innerWidth;
-      kick();
-    };
-    const onOrientation = () => {
-      if (animating()) controller.interrupt();
-      kick();
-    };
-    const onPageShow = (e: PageTransitionEvent) => e.persisted && interrupt();
-    // Atrás o un cambio de ancla durante la entrada: se sale de ella.
-    const onNavigate = () => {
-      controller.skip();
-      kick();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      controller.touch();
-      if (e.key === 'Escape') controller.skip();
-    };
-    const onPointer = () => controller.touch();
-    // EXPLORAR sin recargar: el enlace sigue siendo /juego (sin JS, o con
-    // Cmd/Ctrl para otra pestaña, navega normal y el juego arranca en limpio).
-    const onExplore = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
-        return;
-      const link = e.target instanceof Element ? e.target.closest('a.cta-explore') : null;
-      if (!link) return;
-      e.preventDefault();
-      if (exploreHref !== null) return; // ya se está explorando
-      exploreHref = exploreTarget(link.getAttribute('href') ?? '/juego');
-      router.prefetch(exploreHref);
-      // La landing se aparta (CSS de `data-explore`) y la cámara se aleja hasta
-      // el puerto; al pintar su encuadre, `startGame` cede la escena y navega.
-      window.scrollTo(0, 0);
-      html.dataset.explore = '';
-      // La vista del juego (/juego ocupa la ventana), empezando donde el hero.
-      const game = { width: window.innerWidth, height: window.innerHeight };
-      diag.reveal.view = game;
-      diag.reveal.startedMs = performance.now() - t0;
-      diag.explored = controller.explore(game);
-      if (!diag.explored) router.push(exploreHref);
-      kick();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onOrientation);
-    window.addEventListener('popstate', onNavigate);
-    window.addEventListener('hashchange', onNavigate);
-    window.addEventListener('pageshow', onPageShow);
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('click', onExplore);
-    const io =
-      typeof IntersectionObserver === 'function'
-        ? new IntersectionObserver(([e]) => {
-            visible = !!e?.isIntersecting;
-            if (visible) kick();
-          })
-        : null;
-    io?.observe(host);
-
-    controller.start();
-    sync();
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onOrientation);
-      window.removeEventListener('popstate', onNavigate);
-      window.removeEventListener('hashchange', onNavigate);
-      window.removeEventListener('pageshow', onPageShow);
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('click', onExplore);
-      io?.disconnect();
-      if (raf) cancelAnimationFrame(raf);
-      raf = 0;
-      delete html.dataset.explore;
-      const unfinished =
-        controller.phase !== 'landed' &&
-        controller.phase !== 'exploring' &&
-        controller.phase !== 'explored' &&
-        controller.phase !== 'destroyed';
-      controller.destroy();
-      sync();
-      delete html.dataset.introAct;
-      controllerRef.current = null;
-      if (entry) {
-        // Un remontaje inmediato (StrictMode en desarrollo) vuelve a reclamar la
-        // entrada; si no llega, la landing no se queda oculta en otra ruta.
-        entry.claimed = false;
-        if (unfinished) {
-          window.setTimeout(() => {
-            if (!entry.claimed) entry.reveal('none');
-          }, 0);
-        }
-      }
-    };
-  }, [data, router]);
-
-  const still = data && (
-    <div className="hero__still">
-      {data.still.map((p, i) => (
-        // eslint-disable-next-line @next/next/no-img-element -- arte servido desde art/ (D-16)
-        <img
-          key={i}
-          className="hero__still-piece"
-          data-piece={i}
-          src={p.art.url}
-          alt=""
-          width={p.art.width}
-          height={p.art.height}
-        />
-      ))}
-      {/* eslint-disable-next-line @next/next/no-img-element -- arte servido desde art/ (D-16) */}
-      <img
-        className="hero__still-ship"
-        src={data.assets.ship.url}
-        alt=""
-        width={data.assets.ship.width}
-        height={data.assets.ship.height}
-      />
-    </div>
-  );
+  }, [data]);
 
   const copy = data?.config.copy;
   return (
     <>
       <div className="hero__scene" ref={hostRef} aria-hidden="true">
-        {still}
+        {data && (
+          <div className="hero__still">
+            <div className="hero__planet" />
+          </div>
+        )}
       </div>
       {copy && overlay && (
         <div className="intro-overlay">
@@ -494,7 +65,7 @@ export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLa
             className="intro-overlay__enter"
             data-intro-enter=""
             ref={enterRef}
-            onClick={() => controllerRef.current?.enter('button')}
+            onClick={enterIntro}
           >
             {copy.enter}
           </button>
@@ -505,7 +76,7 @@ export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLa
               href="#tickets"
               data-intro-skip=""
               data-tickets-open="hero"
-              onClick={() => controllerRef.current?.skip()}
+              onClick={skipIntro}
             >
               {copy.ticketsOnly}
             </a>
@@ -513,7 +84,7 @@ export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLa
               type="button"
               className="intro-overlay__skip"
               data-intro-skip=""
-              onClick={() => controllerRef.current?.skip()}
+              onClick={skipIntro}
             >
               {skipLabel}
             </button>
@@ -522,18 +93,6 @@ export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLa
       )}
     </>
   );
-}
-
-/**
- * El destino de EXPLORAR: el del enlace, llevando `?mundo=` si la landing lo
- * traía (así /juego juega el mismo mundo que la escena que recibe).
- */
-function exploreTarget(href: string): string {
-  const world = new URLSearchParams(window.location.search).get('mundo');
-  if (!world) return href;
-  const url = new URL(href, window.location.href);
-  if (!url.searchParams.has('mundo')) url.searchParams.set('mundo', world);
-  return url.pathname + url.search + url.hash;
 }
 
 /** Acto 0: una boia dibujada (muestra, hasta que haya arte o logo de BOIA). */

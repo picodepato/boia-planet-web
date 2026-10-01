@@ -45,7 +45,9 @@ export function HomeBlocks({
     <>
       {blocks.map((b) => (
         <BlockView
-          key={b.id}
+          // El hero lleva la escena de la entrada: con clave fija, un hero que
+          // llega del repositorio con otro id no la desmonta (T57).
+          key={b.type === 'hero' ? 'hero' : b.id}
           block={b}
           artists={artists}
           buyable={buyable}
@@ -100,11 +102,14 @@ export function BlockView({
             </h1>
             <p className="hero__positioning">{block.positioning}</p>
             <div className="hero__actions">
+              {/* El mundo es el planeta 3D (plan 005): el botón principal va a /mar;
+                  Tickets, al lado. */}
               <a
                 className="cta-explore"
-                href="/juego"
+                href="/mar"
                 data-track="explore_start"
                 data-source="hero"
+                data-testid="cta-3d"
               >
                 <span className="cta-explore__label">{t('hero.explore')}</span>
                 <span className="cta-explore__sub">
@@ -113,21 +118,6 @@ export function BlockView({
                       ? 'hero.explore.withPromotions'
                       : 'hero.explore.withoutPromotions',
                   )}
-                </span>
-              </a>
-              <a
-                className="cta-3d"
-                href="/mar"
-                data-track="explore_start"
-                data-source="hero_3d"
-                data-testid="cta-3d"
-              >
-                <span className="cta-3d__badge" aria-hidden="true">
-                  3D
-                </span>
-                <span className="cta-3d__text">
-                  <span className="cta-3d__label">{t('hero.explore3d')}</span>
-                  <span className="cta-3d__sub">{t('hero.explore3d.sub')}</span>
                 </span>
               </a>
               <a className="button button--tickets" href="#tickets" data-tickets-open="hero">

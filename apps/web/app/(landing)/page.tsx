@@ -21,8 +21,8 @@ export default function LandingPage() {
   const now = new Date();
 
   const view = resolveHome(content, now);
-  // Entrada «mini-mundo» (T14, D-19): configuración, arte de la ilustración
-  // ligera y geometría del mundo, leídos al construir la página.
+  // Entrada 3D con el planeta (T57; D-19, D-21): configuración y hoja del
+  // título, leídas al construir la página. three.js llega aparte, bajo demanda.
   const intro = loadIntroData();
   const hasHero = view.main.some((b) => b.type === 'hero');
 
@@ -33,12 +33,9 @@ export default function LandingPage() {
           {/* Antes que nada: decide la entrada antes del primer pintado. */}
           <script
             dangerouslySetInnerHTML={{
-              __html: bootScript({
-                loadBudgetMs: intro.config.loadBudgetMs,
-                // Sólo si nadie toma el relevo: después manda el controlador.
-                hardCapMs: intro.config.loadBudgetMs + 4000,
-                preload: intro.preload,
-              }),
+              // El tope sólo cuenta si la app nunca monta la escena; el plazo
+              // de la escena lo lleva el controlador desde el montaje.
+              __html: bootScript({ capMs: intro.config.bootCapMs }),
             }}
           />
           <style dangerouslySetInnerHTML={{ __html: `${stillCss(intro)}\n${introCss(intro)}` }} />

@@ -108,6 +108,27 @@ describe('renderizador de bloques de la home', () => {
     expect(render(hero, noPromo)).not.toContain('Encuentra descuentos para tus entradas');
   });
 
+  it('el hero lleva dos botones: el mundo 3D (/mar) y Tickets al lado (T57)', () => {
+    const hero = SAMPLE_CONTENT.blocks.find((b) => b.type === 'hero')!;
+    const html = render(hero);
+    const actions = html.match(/<div class="hero__actions">(.*?)<\/div>/s)?.[1] ?? '';
+    const hrefs = [...actions.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    expect(hrefs).toEqual(['/mar', '#tickets']);
+    expect(html).not.toContain('href="/juego"');
+  });
+
+  it('el hero tiene clave fija: otro id del repositorio no desmonta la entrada (T57)', () => {
+    const view = resolveHome(SAMPLE_CONTENT, NOW);
+    const keyed = (blocks: typeof view.main) => {
+      const el = HomeBlocks({ blocks, artists: SAMPLE_CONTENT.artists, buyable: new Set() });
+      const children = (el.props as { children: { key: string | null }[] }).children;
+      return children.map((c) => c.key);
+    };
+    const renamed = view.main.map((b) => (b.type === 'hero' ? { ...b, id: 'hero-del-repo' } : b));
+    expect(keyed(view.main)).toContain('hero');
+    expect(keyed(renamed)).toEqual(keyed(view.main));
+  });
+
   it('el trío inicial de artistas no repite a nadie', () => {
     const block = SAMPLE_CONTENT.blocks.find((b) => b.type === 'artists')!;
     const html = render(block);

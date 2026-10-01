@@ -5,14 +5,13 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { worldIntroFor } from '../lib/intro/worlds';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 
 /**
  * Demo de punta a punta (T12), con datos de muestra y sin Supabase: entrada
- * «mini-mundo» (T14; en cada carga de `/`, D-21) → landing → EXPLORAR (la
- * cámara se aleja hasta el puerto, T28) → /juego con el mismo mundo y el
- * barco en el puerto → isla de evento → menú «Barco» → artistas. Corre en móvil 360×640 y en escritorio.
+ * 3D con el planeta (T57; en cada carga de `/`, D-21) → landing → Tickets; el
+ * hero lleva a /mar → isla de evento (en /juego hasta T62) → menú «Barco» →
+ * artistas. Corre en móvil 360×640 y en escritorio.
  *
  * Con DEMO_SHOTS=1 guarda además capturas del recorrido en docs/informes/img/
  * (p001-t12-<paso>-<móvil|escritorio>.png).
@@ -101,12 +100,12 @@ async function openBarco(page: Page) {
   return menu;
 }
 
-test('`/` → mini-mundo → «Zarpar» → landing → EXPLORAR → /juego con el mismo mundo → isla de evento', async ({
+test('`/` → planeta → «Zarpar» → landing → Tickets; el hero lleva a /mar → isla de evento', async ({
   page,
 }, info) => {
   test.setTimeout(120_000);
   await page.goto('/');
-  // Entrada «mini-mundo» (T14): aparece, espera al botón y aterriza en la landing.
+  // Entrada 3D con el planeta (T57): aparece, espera al botón y baja a la landing.
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
   await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused', null, {
     timeout: 20_000,
@@ -116,18 +115,10 @@ test('`/` → mini-mundo → «Zarpar» → landing → EXPLORAR → /juego con 
     timeout: 20_000,
   });
   await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
-  const explore = page.locator('.hero').getByRole('link', { name: /explorar el universo/i });
-  await expect(explore).toBeVisible();
-  await page.waitForFunction(() => window.__boiaIntro?.sceneStatus === 'ready', null, {
-    timeout: 20_000,
-  });
-  // La entrada es la del mundo activo: aterriza en su punto (el puerto, T28).
-  const arrived = (await page.evaluate(() => window.__boiaIntro))!;
-  expect(arrived.world).toBe(defaultWorld.id);
-  expect(arrived.landingPoint).toEqual({
-    x: WORLD_REGISTRY.map.introLanding.x,
-    y: WORLD_REGISTRY.map.introLanding.y,
-  });
+  // El planeta es el del mundo activo de /mar.
+  expect((await page.evaluate(() => window.__boiaIntro))!.world).toBe(defaultWorld.id);
+  // El botón principal del hero es el mundo 3D (T57).
+  await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', '/mar');
   await shot(page, info, '1-landing');
 
   // Tickets abre el panel de muestra.
@@ -137,52 +128,6 @@ test('`/` → mini-mundo → «Zarpar» → landing → EXPLORAR → /juego con 
   await shot(page, info, '2-tickets');
   await page.keyboard.press('Escape');
   await expect(tickets).toBeHidden();
-
-  // EXPLORAR: navegación sin recarga; el juego adopta la escena de la entrada (REQ-ENT-012).
-  await page.evaluate(() => ((window as Window & { __sinRecarga?: boolean }).__sinRecarga = true));
-  await explore.click();
-  await expect(page).toHaveURL(/\/juego$/);
-  await gameRunning(page);
-  await expect(game(page)).toHaveAttribute('data-world', 'adoptado');
-  expect(
-    await page.evaluate(() => (window as Window & { __sinRecarga?: boolean }).__sinRecarga),
-    'la página no se recargó',
-  ).toBe(true);
-  const intro = await page.evaluate(() => window.__boiaIntro);
-  expect(intro?.explored).toBe(true);
-  expect(intro?.scenesCreated).toBe(1);
-  // EXPLORAR se aleja un poco hasta el puerto (T28, D-20 punto 6): el último
-  // encuadre es el del juego, a su escala, con el barco y el puerto a la vista.
-  const h = intro!.history;
-  expect(h.indexOf('explored'), 'se alejó y luego cedió la escena').toBe(
-    h.indexOf('exploring') + 1,
-  );
-  expect(h).toContain('exploring');
-  const reveal = intro!.reveal;
-  expect(reveal.finishedMs, 'el alejamiento terminó').not.toBeNull();
-  // Se vio el alejamiento entero (no se saltó a /juego).
-  expect(reveal.finishedMs! - reveal.startedMs!).toBeGreaterThanOrEqual(
-    worldIntroFor(defaultWorld.id).explore.durationMs - 50,
-  );
-  expect(reveal.camera!.zoom).toBe(1);
-  const view = reveal.view!;
-  expect(view).toEqual(page.viewportSize());
-  for (const [what, p] of [
-    ['barco', reveal.ship!],
-    ['puerto', reveal.port!],
-  ] as const) {
-    expect(p.x, `${what} a la vista (x)`).toBeGreaterThan(0);
-    expect(p.x, `${what} a la vista (x)`).toBeLessThan(view.width);
-    expect(p.y, `${what} a la vista (y)`).toBeGreaterThan(0);
-    expect(p.y, `${what} a la vista (y)`).toBeLessThan(view.height);
-  }
-  // Y el juego lo recoge con el barco en la salida del puerto.
-  await expectShipAtPort(page);
-  // Ni segunda entrada ni un segundo canvas: uno solo, el de la landing.
-  await expect(page.locator('.intro-overlay')).toHaveCount(0);
-  await expect(page.locator('canvas:visible')).toHaveCount(1);
-  await expect(page.getByTestId('minimapa')).toBeVisible();
-  await shot(page, info, '3-juego');
 
   // Rumbo norte hasta la isla de evento: su proximidad abre el panel del evento.
   // El mapa de Arcilla es grande y la isla queda lejos del puerto: se sigue
