@@ -95,7 +95,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 ## T59 — Boia Fiestera as the central mission; 3 clear discounts
 - Status: running (attempt 1)
 - Depends on: T53
-- Goal: Interview decisions: (1) the Boia Fiestera rescue is the central mission; completing it (delivering her to the last island) gives a prize that matters: a ticket discount code applied in the checkout AND an exclusive ship only rescuers get. (2) Hidden discounts become exactly 3 — el náufrago, the cofre/ánfora, and the Fiestera's — each shown as a "?" on the minimap so people go for them; drop the others (expired VERANO26 debris, store TIENDA15 as a world discount). (3) Secrets without a prize (cueva del acantilado, campana hundida, círculo de las boies dormidas) stay hidden, unmarked, and grant coins or an achievement when found. (4) The dolphin and the info buoys guide towards the Fiestera, the discounts and the minigames. Achievements and coins/points otherwise stay as they are. Codes stay `muestra` (P16).
+- Goal: Interview decisions: (1) the Boia Fiestera rescue is the central mission; completing it (delivering her to the last island) gives a prize that matters: a ticket discount code applied in the checkout AND an exclusive ship only rescuers get. (2) Hidden discounts become exactly 3 — el náufrago, the cofre/ánfora, and the Fiestera's — each shown as a "?" on the minimap so people go for them; drop the others (expired VERANO26 debris, store TIENDA15 as a world discount). (3) Secrets without a prize (cueva del acantilado, campana hundida, círculo de las boies dormidas) stay hidden, unmarked, and grant coins or an achievement when found. (4) The dolphin and the info buoys guide towards the Fiestera, the discounts and the minigames. (5) Added 2026-10-02: remove the guide buoys that join the islands (route buoys); keep only the marks on the water to guide (info buoys and circuit buoys stay). Achievements and coins/points otherwise stay as they are. Codes stay `muestra` (P16).
 - Context: mission in `packages/engine/src/mission`, discounts in `packages/store` sample content (`packages/store/src/sample/content.ts`), ship catalog `apps/web/lib/barco/catalog.ts` and `docs/barcos/barcos.json`, achievements `apps/web/lib/logros` and `docs/propuestas/logros-catalogo.md`, encounters (dolphin, buoys), minimap in /mar, REQ AVE-007/008/009/015/016/017/019/021.
 - Scope: may touch mission, discounts, secrets, encounters, sample content, ship catalog (add one exclusive ship reusing existing art or a recolor; no new Blender art), achievements catalog entries, /mar minimap markers, i18n, e2e / must not touch minigames (T60/T61), the Admin UI (T63).
 - Done when:
@@ -142,13 +142,47 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 ## T63 — Admin adapted to the new world
 - Status: pending
-- Depends on: T59, T60, T61, T62
-- Goal: The Admin reflects the batch: the 3 world discounts and the Fiestera prize (code + exclusive ship) editable; the rebuilt minigames and circuit (their tunable settings, if any, and achievements); "Ver el mundo" and the home preview open the 3D world; Admin "Mundo" edits trigger the vortex in /mar in the same tab (gap noted in TRASPASO); remove Admin sections or fields that only made sense for the 2D world. Nothing else changes.
+- Depends on: T59, T60, T61, T62, T64, T65, T66
+- Goal: The Admin reflects the batch: the Carnet discount percentage (T66) and the top-bar link targets (T65) editable; the 3 world discounts and the Fiestera prize (code + exclusive ship) editable; the rebuilt minigames and circuit (their tunable settings, if any, and achievements); "Ver el mundo" and the home preview open the 3D world; Admin "Mundo" edits trigger the vortex in /mar in the same tab (gap noted in TRASPASO); remove Admin sections or fields that only made sense for the 2D world. Nothing else changes.
 - Context: `apps/web/app/admin/admin-app.tsx` and its sections, `apps/web/lib/admin/validate.ts`, `liveWorld` in `mar-client.tsx`, outcomes of T59–T62. REQ ADM-008/019/032.
 - Scope: may touch `apps/web/app/admin/**`, `apps/web/lib/admin/**`, the store's admin-editable content, i18n, e2e admin specs / must not touch game rules beyond reading their config.
 - Done when:
   - Test command → exit 0
   - e2e: edit the Fiestera discount code in the Admin and see it applied after completing the mission in /mar; edit a world discount and see it in /mar; "Ver el mundo" opens /mar → exit 0
+- Outcome:
+
+## T64 — Zarpar enters the game
+- Status: pending
+- Depends on: none
+- Goal: Decision 2026-10-02 (Hernán and Álvaro): the globe in the landing intro is the 3D world itself (the /mar planet with its islands, not a different mini-world), and "Zarpar" enters the game directly: it goes into /mar (no landing in between; as seamless as possible from the intro globe to the playable planet) and the Boia's explanatory popup (the welcome/tutorial dialogue of the first buoy, "La boia de la entrada" / Welcome Aboard: what BOIA is, how to sail, what to look for) opens right away. "Saltar animación" and "Solo quiero ver las entradas" still lead to the landing (the latter to its tickets); reduced-motion and no-WebGL fallbacks still work; `/?intro=1` replays; analytics `explore_start` gets source `intro`.
+- Context: T57's outcome (apps/web/lib/planeta/, intro config v4 in intro/planet.ts, intro-stage.tsx, budget from mount), `apps/web/app/mar/` (T55's MarHoja and Welcome Aboard section, deep links), tutorial buoy dialogue in packages/world, D-19/D-21 in docs/DECISIONES.md (record the change as a new decision), REQ ENT-004/005/012/018/021.
+- Scope: may touch `apps/web/app/(landing)/**` intro only, `apps/web/lib/intro/**`, `apps/web/lib/planeta/**`, `apps/web/app/mar/**` (entry + welcome popup, additive), `packages/engine/src/intro/**`, analytics, i18n, e2e, docs/DECISIONES.md, docs/spec/estado.md / must not touch the /mar HUD layout (T65), landing blocks.
+- Done when:
+  - Test command → exit 0
+  - e2e: bare `/` plays the intro with the /mar planet (same islands); "Zarpar" ends on /mar with the Boia welcome popup open; "Saltar animación" and "Solo quiero ver las entradas" end on the landing; reduced-motion still works; landing within its budget → exit 0
+- Outcome:
+
+## T65 — Game HUD v2: top links, left menu, minimap fix
+- Status: pending
+- Depends on: T59, T64
+- Goal: Decision 2026-10-02 (Hernán and Álvaro), replacing T53's bottom bar: (1) at the top of the game screen, buttons that link to the landing page: Fotos, Contacto, Artistas, Carnet, Shop. Fotos, Contacto, Artistas and Shop take you to the matching landing section/page; Carnet does NOT leave the game: it opens the game menu at Mi Carnet. (2) On the left, a settings button with the achievements icon; it opens one game menu with everything: Logros, Mi Carnet, ship/skins (Barco shop), day/night, change world (Mundos/vortex), how to play (Controles + Welcome Aboard), Ajustes (sensitivity, volumes, language), Mis códigos, Mi botella, Ranking. "Mi Carnet" anywhere opens this same menu at its Carnet section. (3) At the bottom only Entradas (highlighted) and turbo. (4) The minimap stays; fix its bug: when you drag/move it far to one side it glitches. (5) Landing: the Contacto block contains Filosofía and the contact data (merge the Filosofía block into Contacto) so the top Contacto link lands on both; the other landing blocks stay. Mobile-first, minimum space, popups stay as compact bottom cards.
+- Context: T53, T55, T56, T58, T59 outcomes in this plan; `apps/web/app/mar/mar-client.tsx`, `mar.css`, `apps/web/app/mar/sheet.tsx`, MarHoja, `apps/web/lib/mundo/` menu sections, the minimap component, `apps/web/app/(landing)/components/blocks.tsx` (Filosofía, Contacto), Admin home blocks editor (keep it consistent with the merged block), `e2e/mar-hud.spec.ts`. REQ PRO-008/009, COM-030.
+- Scope: may touch `apps/web/app/mar/**`, shared world UI in `apps/web/lib/mundo/**`, the landing Filosofía/Contacto blocks and their Admin block definitions, i18n, e2e, docs/spec/estado.md / must not touch game rules, steering, checkout logic.
+- Done when:
+  - Test command → exit 0
+  - e2e at 375×812 and desktop: top shows Fotos, Contacto, Artistas, Carnet, Shop; Fotos/Contacto/Artistas/Shop hrefs point to the landing sections/pages; Carnet opens the game menu at Mi Carnet; the left button opens the menu with Logros, skins/Barco, day/night, Mundos, how to play, Ajustes; bottom has only Entradas and turbo; dragging the minimap far to each side and back keeps it within bounds and functional (regression test for the bug); the landing Contacto block shows Filosofía and the contact data → exit 0
+- Outcome:
+
+## T66 — Carnet worth having
+- Status: pending
+- Depends on: T65
+- Goal: Decision 2026-10-02 (Hernán and Álvaro): (1) having a Carnet BOIA gives 10% off your ticket (sample value, editable later in the Admin by T63); it does not stack with world codes: the checkout applies the best single discount and says which. (2) Before buying a ticket without a Carnet, show a notice with a shortcut: "¿Tienes Carnet BOIA? Créalo en 30 s y ahorra un 10%" with "Crear Carnet" (creates it, then returns to the checkout with the discount applied) and "Seguir sin Carnet", in /mar (T58's in-world panel) and on the landing tickets flow. (3) The Carnet nickname appears in the ranking list (own row with the real nickname). (4) Ranking gets a "Descubrir a un BOIERO" button that shows a random member's Carnet, which can also be one of the artists (artist Carnets built from the artists sample content). Users with username and password are the final version (D-20), not this task.
+- Context: `apps/web/lib/ticketing/**`, SandboxCheckout, `apps/web/app/mar/entradas.tsx`, landing tickets panel, discount resolution in packages/store, Carnet storage, `RankingPanel` (T56), artists in `packages/store/src/sample/content.ts`, `/carnet/[id]` public Carnet, analytics (`purchase_confirmed` should carry which discount applied). Checkout and Carnet REQs in docs/spec.
+- Scope: may touch ticketing/checkout, discounts resolution, Carnet store, ranking UI, sample content (artist Carnets), landing tickets flow, /mar entradas, i18n, analytics, e2e, docs/spec/estado.md / must not touch HUD layout, game rules.
+- Done when:
+  - Test command → exit 0
+  - unit tests: best single discount wins between Carnet 10% and world codes; no stacking → exit 0
+  - e2e: without Carnet, buying shows the notice; "Crear Carnet" creates it and returns to checkout with 10% applied; with a better world code that one applies instead; own nickname shows in Ranking; "Descubrir a un BOIERO" opens a random Carnet (members and artists both possible, asserted with a seeded random), in /mar and on the landing → exit 0
 - Outcome:
 
 ## Decisions
@@ -181,7 +215,13 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 T56: bottles keep shared-map coordinates, converted by pointMap (land spots move to nearest water); MarHoja focuses with preventScroll for every sheet; opening one sheet closes the other; Circuito tab reads readRecord (compatible with T61) (agent)
 - 2026-10-02 T56: conflicts with T55 and T58 resolved by the agent (agent)
 
+- 2026-10-02 Hernán and Álvaro: the intro globe is the 3D world and "Zarpar" enters /mar directly with the Boia's explanatory popup open (T64)
+- 2026-10-02 Hernán and Álvaro: game HUD v2 replaces T53's bar: top links Fotos, Contacto (with Filosofía and contact data), Artistas, Carnet, Shop; left settings button with the achievements icon opening one menu with everything (logros, skins, day/night, worlds, how to play, ajustes); Carnet (top or Mi Carnet) opens that menu instead of leaving the game; bottom only Entradas + turbo; minimap stays and its drag bug gets fixed (T65)
+- 2026-10-02 Hernán and Álvaro: remove the guide buoys joining the islands, keep the water marks (added to T59 while running)
+- 2026-10-02 Hernán and Álvaro: Carnet gives 10% off tickets, best single discount applies (no stacking); notice with "Crear Carnet" shortcut before buying without Carnet; nickname in ranking; "Descubrir a un BOIERO" random member or artist (T66)
+
 ## Proposals (new scope)
+- 2026-10-02 Hernán and Álvaro: Carnet with username and password (final version, D-20: Supabase auth)
 - 2026-10-02 T58: REQ-ENT-040 wording in 09-requisitos.md still says the trip starts on the first Entradas tap; it now starts from "Ir a su isla": reword
 - 2026-10-01 T57: unused i18n keys hero.explore3d* come from docs/propuestas/textos-zonas.md and stay until that document changes
 - 2026-10-01 T57: REQ-ENT-003/005 text says "no 3D library in the bundle"; critical path still has none (three.js lazy): reword with Álvaro
@@ -207,3 +247,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 00:38 T58 done · branch worktree-agent-a4283d2de4dfb0890 → 40be280
 - 2026-10-02 00:40 T59 launched · attempt 1 · agent a4ef0c67ac86cd069
 - 2026-10-02 00:46 T56 done · branch worktree-agent-a00ff67f4d11ca19d → b6e81b6
+- 2026-10-02 00:48 T60 launched · attempt 1 · agent a900a0897deee5236
