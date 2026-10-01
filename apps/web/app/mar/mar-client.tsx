@@ -110,6 +110,7 @@ import {
   eventOfPlace,
   findEvent,
   islandOfEvent,
+  sheetKey,
 } from './sheet';
 import { islandTrip, marPositionStore, tripOutcome } from './voyage';
 import './mar.css';
@@ -176,6 +177,14 @@ const PIN_ICON: Record<string, string> = {
   ultima: '🌅',
   faro: '🗼',
   canon: '💣',
+};
+
+/** El icono de cada aviso en su chip (T53). */
+const NOTICE_ICON: Record<Notice['kind'], string> = {
+  discovery: '🧭',
+  achievement: '🏆',
+  reward: '🎁',
+  info: '💬',
 };
 
 function pinsOf(world: WorldConfig, phase: RescuePhase | null): PinSpec[] {
@@ -262,7 +271,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [trip, setTrip] = useState<EventTrip | null>(null);
   const tripRef = useRef<EventTrip | null>(null);
   tripRef.current = trip;
-  const [sheetLift, setSheetLift] = useState(0);
   const [minigameOffer, setMinigameOffer] = useState<MinigameOffer | null>(null);
   const [minigameOpen, setMinigameOpen] = useState(false);
   const [mood, setMood] = useState<MoodId>('tarde');
@@ -925,16 +933,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     return () => window.clearInterval(t);
   }, [status, pushAll]);
 
-  // La ficha tapa la parte de abajo en el móvil: la cámara sube el barco y
-  // el botón «Entradas» se pone encima de ella (nunca queda tapado).
+  // La tarjeta de abajo (T53: encima de la barra) tapa parte del mar en el
+  // móvil: la cámara sube el barco por encima de ella, también al abrirla.
+  // «Entradas» va en la barra y la tarjeta nunca la tapa.
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
     const el = document.querySelector<HTMLElement>('.mar-sheet, .mar .juego-panel');
     const measure = () => {
       const narrow = window.innerWidth < 760;
-      g.setBottomInset(el && narrow ? el.offsetHeight + 10 : 0);
-      setSheetLift(el ? el.offsetHeight : 0);
+      // offsetTop no cuenta la animación de entrada (un transform).
+      const box = el?.offsetParent?.clientHeight ?? window.innerHeight;
+      g.setBottomInset(el && narrow ? Math.max(0, box - el.offsetTop) : 0);
     };
     measure();
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -1239,23 +1249,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
-      {/* Barra de arriba */}
+      {/* Arriba (T53): sólo el minimapa (tocarlo abre el mapa grande, T34) y los saldos. */}
       <header className="mar-top">
-        <Link className="mar-round" href="/" aria-label={msg('mar.client.volverABoia')}>
-          ←
-        </Link>
-        <button
-          type="button"
-          className="mar-brand"
-          onClick={() => setMenu((m) => !m)}
-          aria-expanded={menu}
-        >
-          <span className="mar-brand__logo">{msg('mar.client.boia')}</span>
-          <span className="mar-brand__sub">
-            {msg('mar.client.mar3d', { v1: worldName ? ` · ${worldName}` : '' })}
-          </span>
-          <span aria-hidden="true">▾</span>
-        </button>
+        {status === 'ready' ? (
+          <div className={`mar-globe${stats?.mapMode ? ' is-map' : ''}`}>
+            <MarMinimap
+              engineRef={engineRef}
+              pins={pins}
+              mapMode={!!stats?.mapMode}
+              onToggle={() => engineRef.current?.toggleMap()}
+            />
+          </div>
+        ) : null}
         <div
           className="mar-balances"
           data-testid="mar-saldos"
@@ -1264,25 +1269,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           <span title={msg('mar.client.puntos')}>★ {balances?.points ?? '–'}</span>
           <span title={msg('mar.client.monedas')}>🪙 {balances?.coins ?? '–'}</span>
         </div>
-        {/* Logros (T37): arriba a la derecha, sobre el minimapa; nunca junto a «Entradas». */}
-        <button
-          type="button"
-          className="mar-round mar-logros-btn"
-          data-testid="mar-logros"
-          data-por-reclamar={readyToClaim}
-          aria-label={claimLabel(msg('mar.client.logros'), readyToClaim)}
-          aria-expanded={logros}
-          aria-haspopup="dialog"
-          title={claimLabel(msg('mar.client.logros'), readyToClaim)}
-          onClick={() => (logros ? setLogros(false) : openLogros())}
-        >
-          <span aria-hidden="true">🏆</span>
-          <ClaimBadge count={readyToClaim} testId="mar-logros-contador" />
-        </button>
       </header>
 
       {menu ? (
-        <nav className="mar-menu" aria-label={msg('mar.client.menu')}>
+        <nav className="mar-menu" data-testid="mar-menu" aria-label={msg('mar.client.menu')}>
+          <p className="mar-menu__head">
+            <span className="mar-menu__logo">{msg('mar.client.boia')}</span>
+            <span className="mar-menu__world">
+              {msg('mar.client.mar3d', { v1: worldName ? ` · ${worldName}` : '' })}
+            </span>
+          </p>
+          <Link className="mar-menu__link" href="/" aria-label={msg('mar.client.volverABoia')}>
+            {msg('mar.client.volverABoiaMenu')}
+          </Link>
           <p className="mar-menu__label">{msg('mar.client.momentoDelDia')}</p>
           <div className="mar-menu__moods">
             {MOOD_IDS.map((m) => (
@@ -1349,36 +1348,43 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </nav>
       ) : null}
 
-      {/* Avisos */}
+      {/* Avisos (T53): un chip pequeño arriba que se va solo (tiempo de lectura, D-22). */}
       <div className="mar-notices" role="status" aria-live="polite">
         {notices.current ? (
-          <button
+          <div
             key={`${notices.current.notice.id}@${notices.current.shownAt}`}
-            type="button"
             className={`mar-notice is-${notices.current.notice.kind}`}
-            data-testid="mar-aviso"
-            data-kind={notices.current.notice.kind}
-            onClick={() => {
-              // «¡Logro completado! Reclama tu premio»: tocarlo lleva al panel (T37).
-              const toClaim = notices.current?.notice.kind === 'achievement';
-              notices.dismiss();
-              if (toClaim) openLogros();
-            }}
           >
-            <strong>{notices.current.notice.title}</strong>
-            {notices.current.notice.body ? <span>{notices.current.notice.body}</span> : null}
-          </button>
-        ) : null}
-        {notices.current ? (
-          <button
-            type="button"
-            className="mar-x mar-notices__x"
-            data-testid="mar-aviso-cerrar"
-            aria-label={msg('mar.client.cerrarAviso')}
-            onClick={notices.dismiss}
-          >
-            ×
-          </button>
+            <button
+              type="button"
+              className="mar-notice__body"
+              data-testid="mar-aviso"
+              data-kind={notices.current.notice.kind}
+              onClick={() => {
+                // «¡Logro completado! Reclama tu premio»: tocarlo lleva al panel (T37).
+                const toClaim = notices.current?.notice.kind === 'achievement';
+                notices.dismiss();
+                if (toClaim) openLogros();
+              }}
+            >
+              <span className="mar-notice__icon" aria-hidden="true">
+                {NOTICE_ICON[notices.current.notice.kind]}
+              </span>
+              <span className="mar-notice__text">
+                <strong>{notices.current.notice.title}</strong>
+                {notices.current.notice.body ? <small>{notices.current.notice.body}</small> : null}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="mar-notice__x"
+              data-testid="mar-aviso-cerrar"
+              aria-label={msg('mar.client.cerrarAviso')}
+              onClick={notices.dismiss}
+            >
+              ×
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -1463,18 +1469,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </button>
       </div>
 
-      {/* Minimapa: el planeta girando; tocarlo abre (o cierra) el mapa grande (T34). */}
-      {status === 'ready' ? (
-        <div className={`mar-globe${stats?.mapMode ? ' is-map' : ''}`}>
-          <MarMinimap
-            engineRef={engineRef}
-            pins={pins}
-            mapMode={!!stats?.mapMode}
-            onToggle={() => engineRef.current?.toggleMap()}
-          />
-        </div>
-      ) : null}
-
       <button
         type="button"
         className={`mar-turbo${turboReady ? ' is-ready' : ''}${(stats?.turbo ?? 0) > 0 ? ' is-on' : ''}`}
@@ -1552,52 +1546,104 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
+      {/* La barra de abajo (T53): Mapa, Logros, «Entradas» destacada (REQ-ENT-040),
+          Carnet y Menú, siempre a la vista; las tarjetas se abren encima. */}
       {status === 'ready' ? (
-        <div
-          className={`mar-tickets${trip ? ' is-sailing' : ''}`}
-          data-testid="mar-viaje"
-          data-lugar={trip?.placeId}
-          style={{ '--lift': `${sheetLift}px` } as CSSProperties}
-        >
-          {trip ? (
-            <button
-              type="button"
-              className="mar-tickets__skip"
-              data-testid="mar-entradas-saltar"
-              onClick={() => finishTrip(trip, 'skip')}
-            >
-              {msg('mar.client.saltar')}
-            </button>
-          ) : null}
+        <nav className="mar-bar" data-testid="mar-barra" aria-label={msg('mar.client.barra')}>
           <button
             type="button"
-            className="mar-tickets__btn"
-            data-testid="mar-entradas"
-            aria-label={
-              trip
-                ? trip.then === 'sheet'
-                  ? msg('mar.client.rumboATocaPara', { placeName: trip.placeName })
-                  : msg('mar.client.entradasRumboAToca', { placeName: trip.placeName })
-                : msg('hud.tickets')
-            }
-            onClick={onTickets}
+            className="mar-bar__item"
+            data-testid="mar-barra-mapa"
+            aria-pressed={!!stats?.mapMode}
+            onClick={() => {
+              setMenu(false);
+              engineRef.current?.toggleMap();
+            }}
           >
-            <span aria-hidden="true">🎟️</span>
-            <strong>{msg('hud.tickets')}</strong>
-            {trip ? (
-              <small>
-                {msg('mar.client.a', {
-                  v1: stats?.flight ? msg('mar.client.volando') : msg('mar.client.rumbo'),
-                  placeName: trip.placeName,
-                })}
-              </small>
-            ) : null}
+            <span aria-hidden="true">🗺️</span>
+            <small>{msg('mar.client.barraMapa')}</small>
           </button>
-        </div>
+          <button
+            type="button"
+            className="mar-bar__item mar-logros-btn"
+            data-testid="mar-logros"
+            data-por-reclamar={readyToClaim}
+            aria-label={claimLabel(msg('mar.client.logros'), readyToClaim)}
+            aria-expanded={logros}
+            aria-haspopup="dialog"
+            title={claimLabel(msg('mar.client.logros'), readyToClaim)}
+            onClick={() => (logros ? setLogros(false) : openLogros())}
+          >
+            <span aria-hidden="true">🏆</span>
+            <small aria-hidden="true">{msg('mar.client.logros')}</small>
+            <ClaimBadge count={readyToClaim} testId="mar-logros-contador" />
+          </button>
+          <div
+            className={`mar-tickets${trip ? ' is-sailing' : ''}`}
+            data-testid="mar-viaje"
+            data-lugar={trip?.placeId}
+          >
+            {trip ? (
+              <button
+                type="button"
+                className="mar-tickets__skip"
+                data-testid="mar-entradas-saltar"
+                onClick={() => finishTrip(trip, 'skip')}
+              >
+                {msg('mar.client.saltar')}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="mar-tickets__btn"
+              data-testid="mar-entradas"
+              aria-label={
+                trip
+                  ? trip.then === 'sheet'
+                    ? msg('mar.client.rumboATocaPara', { placeName: trip.placeName })
+                    : msg('mar.client.entradasRumboAToca', { placeName: trip.placeName })
+                  : msg('hud.tickets')
+              }
+              onClick={onTickets}
+            >
+              <span aria-hidden="true">🎟️</span>
+              <strong>{msg('hud.tickets')}</strong>
+              {trip ? (
+                <small>
+                  {msg('mar.client.a', {
+                    v1: stats?.flight ? msg('mar.client.volando') : msg('mar.client.rumbo'),
+                    placeName: trip.placeName,
+                  })}
+                </small>
+              ) : null}
+            </button>
+          </div>
+          {/* Hasta que el Carnet viva dentro del mundo (T55), abre /carnet. */}
+          <Link
+            className="mar-bar__item"
+            href="/carnet"
+            prefetch={false}
+            data-testid="mar-barra-carnet"
+          >
+            <span aria-hidden="true">📇</span>
+            <small>{msg('mar.client.barraCarnet')}</small>
+          </Link>
+          <button
+            type="button"
+            className="mar-bar__item"
+            data-testid="mar-barra-menu"
+            aria-expanded={menu}
+            onClick={() => setMenu((m) => !m)}
+          >
+            <span aria-hidden="true">☰</span>
+            <small>{msg('mar.client.menu')}</small>
+          </button>
+        </nav>
       ) : null}
 
       {sheet ? (
         <Sheet
+          key={sheetKey(sheet)}
           state={sheet}
           object={sheetObject}
           distance={distance}

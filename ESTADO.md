@@ -4,6 +4,61 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-01 — plan 005 T53: Mobile HUD and small popups in /mar
+
+Qué existe:
+
+- **Barra fina abajo** (`.mar-bar`, `data-testid="mar-barra"`), siempre a la
+  vista en móvil y escritorio: Mapa (abre/cierra el mapa grande,
+  `aria-pressed`), Logros (el mismo `mar-logros` con su número), «Entradas»
+  destacada en el centro y un poco por encima (`mar-entradas`, mismo viaje y
+  «Saltar» flotando encima), Carnet (enlace a `/carnet` hasta T55) y Menú
+  (`mar-barra-menu`). En escritorio la barra va centrada (480 px).
+- **Arriba sólo el minimapa** (izquierda, 72 px en móvil y 96 en escritorio;
+  tocarlo sigue abriendo el mapa) **y los saldos** (derecha). El «←» y el
+  botón BOIA/mundo pasan al menú: cabecera con «BOIA · Mar 3D · <mundo>»
+  (`.mar-menu__world`) y «← Volver a BOIA». El menú (mismas secciones) se abre
+  encima de la barra, a la derecha (`data-testid="mar-menu"`).
+- **Fichas pequeñas** (`apps/web/app/mar/sheet.tsx`): toda ficha (vista de
+  una isla, evento, isla, fotos, tienda, WhatsApp, descuento) se abre como
+  tarjeta abajo, encima de la barra, con rótulo, título, una línea y un solo
+  botón (Navegar, Comprar entrada, Ir a la isla, Explorar la isla, Ver fotos…),
+  tope 30 % de la pantalla (~21 % medido a 375×812). Tocarla o su flecha
+  (`mar-ficha-mas`, `aria-expanded`) la despliega entera;
+  `data-expandida="si|no"`. «Mis códigos» se abre ya desplegada. Una ficha
+  nueva (`sheetKey`) vuelve a abrirse pequeña. La cámara sube el barco por
+  encima de la tarjeta (`setBottomInset` mide desde su `offsetTop`).
+- **Avisos como chips** arriba, junto al minimapa y bajo los saldos: icono por
+  tipo, título y cuerpo en una línea, × pequeño; se van solos con su tiempo de
+  lectura (D-22). La invitación al Carnet pasa a tarjeta abajo, encima de la barra.
+- Turbo (72 px), zoom y velocidad se apoyan encima de la barra (`--above-bar`).
+- Claves i18n nuevas en `lib/i18n/es-mar.ts` (`mar.client.barra*`,
+  `mar.client.volverABoiaMenu`, `mar.sheet.verMas/verMenos`).
+- e2e nueva `apps/web/e2e/mar-hud.spec.ts` (375×812): barra con los cinco y
+  «Entradas» en el centro, arriba sólo minimapa y saldos, Mapa y Menú
+  funcionan; ficha de isla ≤ 30 % que se despliega al tocarla y se recoge;
+  avisos como chips arriba que no pisan el HUD y se van solos.
+  `mar-3d`, `mar-paridad` y `tienda` actualizados (desplegar la ficha antes de
+  lo secundario; el menú desde `mar-barra-menu`).
+- Capturas: `docs/informes/img/p005-t53-{hud,ficha,ficha-desplegada,aviso}.png`
+  (`RECORD_T53=1`).
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 100 archivos, 879 pruebas.
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm typecheck` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` → exit 0.
+- `E2E_PORT=3221 pnpm e2e e2e/mar-hud.spec.ts e2e/mar-3d.spec.ts e2e/mar-paridad.spec.ts e2e/logros.spec.ts e2e/tienda.spec.ts --workers=2` → exit 0, 58 pasan, 4 omitidas (capturas de logros), 0 fallan.
+
+Pendiente:
+
+- REQ-PRO-009 sigue PARCIAL: su criterio pide también «Inicio» en el HUD
+  (ahora está en el menú) y la caja de fps sólo con `?debug`; decidir si la
+  barra nueva lo cierra y enlazar `mar-hud.spec.ts`.
+- El icono de Carnet de la barra abre `/carnet` hasta que T55 traiga el
+  Carnet dentro del mundo.
+- Probar en móvil físico (REQ-PRO-008).
+
 ## 2026-10-01 — plan 005 T52: Shared world code out of app/juego
 
 Qué existe:

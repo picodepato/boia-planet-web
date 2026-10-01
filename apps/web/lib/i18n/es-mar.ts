@@ -93,4 +93,10 @@ export const esMar = {
   'mar.client.llevaALaFiestera': '🎈 Lleva a la Fiestera a {v1} · rumbo',
   'mar.client.a': '{v1} a {placeName}…',
   'mar.sheet.muestra2': '🏝️ {v1} · muestra',
+  'mar.client.barra': 'Accesos del mar',
+  'mar.client.barraMapa': 'Mapa',
+  'mar.client.barraCarnet': 'Carnet',
+  'mar.client.volverABoiaMenu': '← Volver a BOIA',
+  'mar.sheet.verMas': 'Ver más',
+  'mar.sheet.verMenos': 'Ver menos',
 } as const;

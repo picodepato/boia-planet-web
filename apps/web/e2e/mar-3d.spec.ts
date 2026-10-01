@@ -64,6 +64,8 @@ test('el mar 3D arranca, pasa a mapa por el minimapa y fija rumbo a la isla del 
   await expect(minimap(page)).toHaveAttribute('aria-pressed', 'true');
   await page.locator('[data-pin="allday"]').click();
   await expect(page.getByTestId('mar-ficha')).toContainText('Navegar');
+  // La ficha se abre pequeña (T53): tocarla la despliega.
+  await page.getByTestId('mar-ficha-mas').click();
   await expect(page.getByTestId('mar-volar')).toBeVisible();
   await page.getByTestId('mar-rumbo').click();
   await expect(page.getByTestId('mar-rumbo-activo')).toBeVisible();
@@ -78,6 +80,8 @@ test('«Ir en nave» desde la ficha: despega, vuela y se posa sin abrir la compr
   await minimap(page).click();
   await expect(minimap(page)).toHaveAttribute('aria-pressed', 'true');
   await page.locator('[data-pin="allday"]').click();
+  // La ficha se abre pequeña (T53): tocarla la despliega.
+  await page.getByTestId('mar-ficha-mas').click();
   await page.getByTestId('mar-volar').click();
   const main = page.locator('main.mar');
   await expect(main).toHaveAttribute('data-flight', 'lift');

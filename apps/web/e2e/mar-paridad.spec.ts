@@ -165,6 +165,9 @@ test('el náufrago da su código, «Ir a la isla» navega solo y la isla lo apli
   const sheet = page.getByTestId('mar-ficha');
   await steerTo(page, castaway.identity.id, sheetIs(page, 'discount'));
   await expect(sheet).toHaveAttribute('data-tipo', 'discount');
+  // La tarjeta pequeña (T53) enseña el código; tocarla la despliega.
+  await expect(sheet).toContainText(discount.code);
+  await sheet.getByTestId('mar-ficha-mas').click();
   const card = sheet.getByTestId('mar-descuento');
   await expect(card.getByTestId('descuento-codigo')).toHaveText(discount.code);
   await expect(card.getByTestId('descuento-estado')).toHaveText('Activo');
@@ -182,6 +185,7 @@ test('el náufrago da su código, «Ir a la isla» navega solo y la isla lo apli
   await expect(sheet).toHaveAttribute('data-tipo', 'event', { timeout: 30_000 });
   await expect(trip).not.toHaveAttribute('data-lugar', /.+/);
   await expect(sheet.getByRole('heading', { name: event.name })).toBeVisible();
+  await sheet.getByTestId('mar-ficha-mas').click();
   const banner = sheet.getByTestId('banner-descuento');
   await expect(banner).toContainText('Tienes un código de descuento para este evento');
   await expect(banner.getByTestId('banner-descuento-codigo')).toHaveText(discount.code);
@@ -211,7 +215,7 @@ test('el náufrago da su código, «Ir a la isla» navega solo y la isla lo apli
   await expect(invite).toHaveCount(0);
 
   // «Mis códigos» del menú: ya usado, y sin «Ir a la isla».
-  await page.locator('.mar-brand').click();
+  await page.getByTestId('mar-barra-menu').click();
   await page.getByTestId('mar-mis-codigos').click();
   const mine = page.getByTestId('mar-codigos').getByTestId(`descuento-${discount.id}`);
   await expect(mine.getByTestId('descuento-estado')).toHaveText('Usado');
@@ -228,6 +232,7 @@ test('«Saltar» lleva a la isla de un salto', async ({ page }) => {
   await page.getByTestId('mar-entradas-saltar').click();
   await expect(sheet).toHaveAttribute('data-tipo', 'event');
   await expect(sheet).toHaveAttribute('data-lugar', event.islandId!);
+  await sheet.getByTestId('mar-ficha-mas').click();
   await expect(sheet.getByTestId('banner-descuento')).toBeVisible();
 });
 
@@ -241,6 +246,7 @@ test('la ficha de una isla: recuerdos, «Próximos eventos» y «Ver fotos de la
   );
   await expect(sheet).toHaveAttribute('data-lugar', infoIsland.identity.id);
   await expect(sheet.getByRole('heading', { name: infoIsland.identity.name })).toBeVisible();
+  await sheet.getByTestId('mar-ficha-mas').click();
   await expect(sheet.getByTestId('panel-proximos')).toBeVisible();
   const photos = sheet.getByTestId('ver-fotos-isla');
   await expect(photos).toHaveText('Ver fotos de la isla');
@@ -258,7 +264,7 @@ test('«Mundos»: el mar cae al agujero negro y vuelve con el barco en su sitio'
   await expect(mar(page)).toHaveAttribute('data-mundo', first.id);
   const ship = await shipSettled(page);
 
-  await page.locator('.mar-brand').click();
+  await page.getByTestId('mar-barra-menu').click();
   await page.getByTestId(`mundo-${second.id}`).click();
   // El menú se cierra para ver el vórtice; mientras dura, nada responde.
   await expect(page.locator('.mar-menu')).toHaveCount(0);
@@ -275,7 +281,11 @@ test('«Mundos»: el mar cae al agujero negro y vuelve con el barco en su sitio'
   await expect(mar(page)).not.toHaveAttribute('data-cambio-mundo', /.+/, { timeout: 20_000 });
   await expect(page.getByTestId('cambio-mundo')).toHaveCount(0);
   expect(await mar(page).getAttribute('data-barco')).toBe(ship);
-  await expect(page.locator('.mar-brand__sub')).toContainText(second.theme.name);
+  // El nombre del mundo va en la cabecera del menú (T53).
+  await page.getByTestId('mar-barra-menu').click();
+  await expect(page.locator('.mar-menu__world')).toContainText(second.theme.name);
+  await page.getByTestId('mar-barra-menu').click();
+  await expect(page.locator('.mar-menu')).toHaveCount(0);
   await snap(page, 'p004-t51-otro-mundo.png');
 
   // Y la entrada vuelve: ahora el barco sí navega.
@@ -300,7 +310,7 @@ test.describe('con movimiento reducido', () => {
         if (v) (window as unknown as { __cambio: (v: string) => void }).__cambio(v);
       }).observe(el, { attributes: true, attributeFilter: ['data-cambio-mundo'] });
     });
-    await page.locator('.mar-brand').click();
+    await page.getByTestId('mar-barra-menu').click();
     await page.getByTestId(`mundo-${second.id}`).click();
     await expect(mar(page)).toHaveAttribute('data-mundo', second.id, { timeout: 20_000 });
     await expect(mar(page)).not.toHaveAttribute('data-cambio-mundo', /.+/, { timeout: 20_000 });

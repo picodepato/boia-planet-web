@@ -135,6 +135,34 @@ export interface SheetProps {
   distance: number | null;
 }
 
+/** La clave de una ficha: otra ficha (otro lugar u otro tipo) vuelve a abrirse pequeña. */
+export function sheetKey(state: SheetState): string {
+  switch (state.kind) {
+    case 'discount':
+      return `discount:${state.found.discount.id}`;
+    case 'codes':
+      return 'codes';
+    case 'event':
+      return `event:${state.placeId}:${state.eventId}`;
+    case 'preview':
+      return `preview:${state.placeId}`;
+    default:
+      return `${state.target}:${state.placeId}:${state.ref ?? ''}`;
+  }
+}
+
+/**
+ * Lo esencial de una ficha (T53): la tarjeta pequeña de abajo, unos 25 % de
+ * la pantalla, con su rótulo, su título, una línea y un solo botón. Tocarla
+ * la despliega entera.
+ */
+interface Compact {
+  kicker: ReactNode;
+  title: string;
+  meta?: ReactNode;
+  action?: ReactNode;
+}
+
 export function Sheet({
   state,
   object,
@@ -146,13 +174,40 @@ export function Sheet({
   onGoToIsland,
   distance,
 }: SheetProps) {
+  // «Mis códigos» se pide desde el menú: se abre ya desplegada.
+  const [expanded, setExpanded] = useState(state.kind === 'codes');
   const name = object?.identity.name ?? '';
   let body: ReactNode;
+  let compact: Compact;
   let label = name;
   let estado: string | undefined;
+  const expand = () => setExpanded(true);
 
   if (state.kind === 'discount') {
     label = t('discount.found.title');
+    const d = state.found.discount;
+    const ds = foundDiscountState(state.found);
+    const event = d.scope === 'event' ? findEvent(d.eventId) : undefined;
+    compact = {
+      kicker: t('mar.sheet.descuentoEncontradoMuestra'),
+      title: t('discount.found.title'),
+      meta: (
+        <>
+          <code className="mar-sheet__code">{d.code}</code> · {d.label}
+        </>
+      ),
+      action:
+        event?.islandId && ds !== 'expired' && ds !== 'used' ? (
+          <button
+            type="button"
+            className="mar-btn mar-btn--primary"
+            data-testid="descuento-ir-isla"
+            onClick={() => onGoToIsland(event.id)}
+          >
+            {t('discount.goToIsland')}
+          </button>
+        ) : undefined,
+    };
     body = (
       <>
         <p className="mar-sheet__kicker">{t('mar.sheet.descuentoEncontradoMuestra')}</p>
@@ -166,23 +221,69 @@ export function Sheet({
     );
   } else if (state.kind === 'codes') {
     label = t('menu.discounts');
+    compact = { kicker: t('mar.sheet.misCodigosMuestra'), title: t('menu.discounts') };
     body = <MyCodes onGoToIsland={onGoToIsland} />;
   } else if (state.kind === 'event') {
     const e = findEvent(state.eventId);
     estado = e?.state;
+    const buy = !!e && EVENT_STATE_BEHAVIOR[e.state].purchasable;
+    compact = {
+      kicker: e ? (
+        <>
+          🎤 {eventKicker(e)}
+          {e.sample ? t('mar.sheet.muestra') : ''}
+          <StateTag event={e} />
+        </>
+      ) : null,
+      title: e?.name ?? name,
+      meta: e ? `${formatEventDate(e.startsAt, e.timeZone)} · ${e.placeLabel}` : undefined,
+      action:
+        e && buy ? (
+          <button
+            type="button"
+            className="mar-btn mar-btn--primary"
+            data-testid="mar-comprar"
+            aria-haspopup="dialog"
+            onClick={() => onBuy(e.id)}
+          >
+            {t('mar.sheet.comprarEntrada')}
+          </button>
+        ) : undefined,
+    };
     body = e ? <EventBlock event={e} onBuy={onBuy} onSteer={onSteerEvent} /> : null;
   } else if (state.kind === 'preview') {
     const eventId = eventOfPlace(object);
     const e = findEvent(eventId);
     estado = e?.state;
     const island = object?.identity.category === 'isla';
+    const kicker = (
+      <>
+        {textOf(object, 'kicker') ?? kickerOf(object)}
+        {distance !== null ? t('mar.sheet.m', { distance }) : ''}
+        {e ? <StateTag event={e} /> : null}
+      </>
+    );
+    const course = (
+      <button
+        type="button"
+        className="mar-btn mar-btn--primary"
+        data-testid="mar-rumbo"
+        onClick={() => onCourse(state.placeId)}
+      >
+        {onFly ? t('mar.sheet.navegar') : t('mar.sheet.navegarAqui')}
+      </button>
+    );
+    compact = {
+      kicker,
+      title: e?.name ?? name,
+      meta: e
+        ? `${formatEventDate(e.startsAt, e.timeZone)} · ${e.placeLabel}`
+        : textOf(object, 'body'),
+      action: course,
+    };
     body = (
       <>
-        <p className="mar-sheet__kicker">
-          {textOf(object, 'kicker') ?? kickerOf(object)}
-          {distance !== null ? t('mar.sheet.m', { distance }) : ''}
-          {e ? <StateTag event={e} /> : null}
-        </p>
+        <p className="mar-sheet__kicker">{kicker}</p>
         <h2 className="mar-sheet__title">{e?.name ?? name}</h2>
         {e ? (
           <p className="mar-sheet__meta">
@@ -201,14 +302,7 @@ export function Sheet({
           </p>
         ) : null}
         <div className="mar-sheet__actions">
-          <button
-            type="button"
-            className="mar-btn mar-btn--primary"
-            data-testid="mar-rumbo"
-            onClick={() => onCourse(state.placeId)}
-          >
-            {onFly ? t('mar.sheet.navegar') : t('mar.sheet.navegarAqui')}
-          </button>
+          {course}
           {onFly ? (
             <button
               type="button"
@@ -229,11 +323,28 @@ export function Sheet({
     );
   } else if (state.target === 'photos') {
     const photos = liveContent().photos.slice(0, 6);
+    const text = textOf(object, 'body') ?? t('mar.sheet.todasLasFotosDe');
+    const gallery = (
+      <Link
+        className="mar-btn mar-btn--primary"
+        href={photosHref()}
+        prefetch={false}
+        data-testid="mar-fotos-galeria"
+      >
+        {t('mar.sheet.verFotosYEventos')}
+      </Link>
+    );
+    compact = {
+      kicker: t('mar.sheet.puertoDeFotosMuestra'),
+      title: name,
+      meta: text,
+      action: gallery,
+    };
     body = (
       <>
         <p className="mar-sheet__kicker">{t('mar.sheet.puertoDeFotosMuestra')}</p>
         <h2 className="mar-sheet__title">{name}</h2>
-        <p>{textOf(object, 'body') ?? t('mar.sheet.todasLasFotosDe')}</p>
+        <p>{text}</p>
         <ul className="mar-sheet__photos" aria-label={t('mar.sheet.galeria')}>
           {photos.map((p, i) => (
             <li
@@ -245,68 +356,72 @@ export function Sheet({
             />
           ))}
         </ul>
-        <div className="mar-sheet__actions">
-          <Link
-            className="mar-btn mar-btn--primary"
-            href={photosHref()}
-            prefetch={false}
-            data-testid="mar-fotos-galeria"
-          >
-            {t('mar.sheet.verFotosYEventos')}
-          </Link>
-        </div>
+        <div className="mar-sheet__actions">{gallery}</div>
       </>
     );
   } else if (state.target === 'store') {
     const sb = block('store');
     const url = sb?.type === 'store' ? sb.url : undefined;
     const products = sb?.type === 'store' ? sb.products : [];
+    const text = textOf(object, 'body') ?? t('mar.sheet.camisetasToteBagsY');
+    const shop = url ? (
+      <a className="mar-btn mar-btn--primary" href={url} target="_blank" rel="noopener noreferrer">
+        {t('discount.goToStore')}
+      </a>
+    ) : undefined;
+    compact = { kicker: t('mar.sheet.tiendaMuestra'), title: name, meta: text, action: shop };
     body = (
       <>
         <p className="mar-sheet__kicker">{t('mar.sheet.tiendaMuestra')}</p>
         <h2 className="mar-sheet__title">{name}</h2>
-        <p>{textOf(object, 'body') ?? t('mar.sheet.camisetasToteBagsY')}</p>
+        <p>{text}</p>
         {products.length ? <p className="mar-sheet__meta">{products.join(' · ')}</p> : null}
-        {url ? (
-          <div className="mar-sheet__actions">
-            <a
-              className="mar-btn mar-btn--primary"
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t('discount.goToStore')}
-            </a>
-          </div>
-        ) : null}
+        {shop ? <div className="mar-sheet__actions">{shop}</div> : null}
       </>
     );
   } else if (state.ref === 'whatsapp') {
     const cb = block('contact');
     const wa = cb?.type === 'contact' ? cb.links.find((l) => /whatsapp/i.test(l.label)) : undefined;
+    const title = textOf(object, 'title') ?? name;
+    const text = textOf(object, 'body') ?? t('mar.sheet.elGrupoDeWhatsapp');
+    const join = wa ? (
+      <a
+        className="mar-btn mar-btn--primary"
+        href={wa.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {t('whatsapp.cta')}
+      </a>
+    ) : undefined;
+    compact = { kicker: t('mar.sheet.provisionalMuestra'), title, meta: text, action: join };
     body = (
       <>
         <p className="mar-sheet__kicker">{t('mar.sheet.provisionalMuestra')}</p>
-        <h2 className="mar-sheet__title">{textOf(object, 'title') ?? name}</h2>
-        <p>{textOf(object, 'body') ?? t('mar.sheet.elGrupoDeWhatsapp')}</p>
-        {wa ? (
-          <div className="mar-sheet__actions">
-            <a
-              className="mar-btn mar-btn--primary"
-              href={wa.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t('whatsapp.cta')}
-            </a>
-          </div>
-        ) : null}
+        <h2 className="mar-sheet__title">{title}</h2>
+        <p>{text}</p>
+        {join ? <div className="mar-sheet__actions">{join}</div> : null}
       </>
     );
   } else {
+    // Otra visita a una isla ya descubierta: pequeña, con «Explorar la isla» (REQ-AVE-013).
+    compact = {
+      kicker: islandKicker(object),
+      title: name,
+      meta: textOf(object, 'body'),
+      action: state.revisit ? (
+        <button
+          type="button"
+          className="mar-btn mar-btn--primary"
+          data-testid="isla-explorar"
+          onClick={expand}
+        >
+          {ISLAND_EXPLORE}
+        </button>
+      ) : undefined,
+    };
     body = (
       <IslandBlock
-        key={state.placeId}
         placeId={state.placeId}
         object={object}
         revisit={!!state.revisit}
@@ -315,26 +430,62 @@ export function Sheet({
     );
   }
 
+  const more = expanded ? t('mar.sheet.verMenos') : t('mar.sheet.verMas');
   return (
     <section
-      className="mar-sheet"
+      className={`mar-sheet ${expanded ? 'is-expanded' : 'is-compact'}`}
       data-testid="mar-ficha"
       data-tipo={state.kind === 'content' ? state.target : state.kind}
       data-lugar={'placeId' in state ? state.placeId : undefined}
       data-estado={estado}
+      data-expandida={expanded ? 'si' : 'no'}
       aria-label={label || t('mar.sheet.ficha')}
+      onClick={
+        expanded
+          ? undefined
+          : (ev) => {
+              // Tocar la tarjeta la despliega; sus botones y enlaces hacen lo suyo.
+              if (!(ev.target as Element).closest('a, button')) expand();
+            }
+      }
     >
-      <button
-        type="button"
-        className="mar-sheet__close"
-        onClick={onClose}
-        aria-label={t('mar.sheet.cerrar')}
-      >
-        ×
-      </button>
-      {body}
+      <div className="mar-sheet__tools">
+        <button
+          type="button"
+          className="mar-sheet__more"
+          data-testid="mar-ficha-mas"
+          aria-expanded={expanded}
+          aria-label={more}
+          title={more}
+          onClick={() => setExpanded((x) => !x)}
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+        <button
+          type="button"
+          className="mar-sheet__close"
+          onClick={onClose}
+          aria-label={t('mar.sheet.cerrar')}
+        >
+          ×
+        </button>
+      </div>
+      {expanded ? (
+        body
+      ) : (
+        <>
+          {compact.kicker ? <p className="mar-sheet__kicker">{compact.kicker}</p> : null}
+          <h2 className="mar-sheet__title">{compact.title}</h2>
+          {compact.meta ? <p className="mar-sheet__meta mar-sheet__clamp">{compact.meta}</p> : null}
+          {compact.action ? <div className="mar-sheet__actions">{compact.action}</div> : null}
+        </>
+      )}
     </section>
   );
+}
+
+function islandKicker(object: WorldObject | undefined): string {
+  return t('mar.sheet.muestra2', { v1: textOf(object, 'kicker') ?? t('mar.sheet.isla2') });
 }
 
 function kickerOf(o: WorldObject | undefined): string {
@@ -457,9 +608,9 @@ function EventBlock({
 }
 
 /**
- * Una isla sin evento: su relato, sus recuerdos, «Ver fotos de la isla» y
- * sus «Próximos eventos» (REQ-AVE-014). En una visita posterior empieza
- * recogida, con el acceso directo «Explorar la isla» (REQ-AVE-013).
+ * Una isla sin evento, desplegada: su relato, sus recuerdos, «Ver fotos de la
+ * isla» y sus «Próximos eventos» (REQ-AVE-014). En una visita posterior la
+ * tarjeta pequeña ofrece el acceso directo «Explorar la isla» (REQ-AVE-013).
  */
 function IslandBlock({
   placeId,
@@ -472,34 +623,10 @@ function IslandBlock({
   revisit: boolean;
   onSteer: (eventId: string) => boolean;
 }) {
-  const [explored, setExplored] = useState(!revisit);
   const name = object?.identity.name ?? '';
-  const kicker = (
-    <p className="mar-sheet__kicker">
-      {t('mar.sheet.muestra2', { v1: textOf(object, 'kicker') ?? t('mar.sheet.isla2') })}
-    </p>
-  );
-  if (!explored) {
-    return (
-      <div data-visita="otra">
-        {kicker}
-        <h2 className="mar-sheet__title">{name}</h2>
-        <div className="mar-sheet__actions">
-          <button
-            type="button"
-            className="mar-btn mar-btn--primary"
-            data-testid="isla-explorar"
-            onClick={() => setExplored(true)}
-          >
-            {ISLAND_EXPLORE}
-          </button>
-        </div>
-      </div>
-    );
-  }
   return (
     <div data-visita={revisit ? 'otra' : 'primera'}>
-      {kicker}
+      <p className="mar-sheet__kicker">{islandKicker(object)}</p>
       <h2 className="mar-sheet__title">{name}</h2>
       {textOf(object, 'body') ? <p>{textOf(object, 'body')}</p> : null}
       <IslandMemories placeId={placeId} />
