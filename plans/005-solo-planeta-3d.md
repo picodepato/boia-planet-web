@@ -104,7 +104,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T60 — Lighthouse and cannon minigames, rebuilt
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T52
 - Goal: Both are too simple. Lighthouse ("Vigilancia del faro"): at night you sweep the lighthouse beam to light up pirate ships before they reach the coast; waves that get faster, lives and score. Cannon ("Cañón contra tiburones"): drag to aim (angle and power), the ball flies on a parabola, sharks and pirates move; waves, combos and score. Both playable on mobile and desktop inside /mar, with local best score, and keep their rewards hooks. Remove the "Minijuego · muestra" label once they are real games.
 - Context: `packages/engine/src/minigames`, `MinigameLayer` (moved by T52), `.mar-minigame` in `apps/web/app/mar/mar.css`, islands Isla del Faro / Cap de l'Horta and Isla del Cañón / Torre de l'Illeta, REQ AVE-035/039.
@@ -113,7 +113,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Test command → exit 0
   - unit tests for each game's rules (waves speed up, lives end the game, parabola hits a target at the computed angle/power, combo scoring) → exit 0
   - e2e in /mar: open each minigame at its island, play scripted inputs, reach a score > 0 and a game-over screen → exit 0
-- Outcome:
+- Outcome: lighthouse (night beam, 3 ship types, DESTELLO, streak x4) and cannon (side view, drag to aim on a parabola, pirates need 2 hits, combo x4) rebuilt with 30 rule tests and e2e in /mar → 39ea477
 
 ## T61 — Circuit El Freu, rebuilt
 - Status: pending
@@ -152,7 +152,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T64 — Zarpar enters the game
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: Decision 2026-10-02 (Hernán and Álvaro): the globe in the landing intro is the 3D world itself (the /mar planet with its islands, not a different mini-world), and "Zarpar" enters the game directly: it goes into /mar (no landing in between; as seamless as possible from the intro globe to the playable planet) and the Boia's explanatory popup (the welcome/tutorial dialogue of the first buoy, "La boia de la entrada" / Welcome Aboard: what BOIA is, how to sail, what to look for) opens right away. "Saltar animación" and "Solo quiero ver las entradas" still lead to the landing (the latter to its tickets); reduced-motion and no-WebGL fallbacks still work; `/?intro=1` replays; analytics `explore_start` gets source `intro`.
 - Context: T57's outcome (apps/web/lib/planeta/, intro config v4 in intro/planet.ts, intro-stage.tsx, budget from mount), `apps/web/app/mar/` (T55's MarHoja and Welcome Aboard section, deep links), tutorial buoy dialogue in packages/world, D-19/D-21 in docs/DECISIONES.md (record the change as a new decision), REQ ENT-004/005/012/018/021.
@@ -220,7 +220,11 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 Hernán and Álvaro: remove the guide buoys joining the islands, keep the water marks (added to T59 while running)
 - 2026-10-02 Hernán and Álvaro: Carnet gives 10% off tickets, best single discount applies (no stacking); notice with "Crear Carnet" shortcut before buying without Carnet; nickname in ranking; "Descubrir a un BOIERO" random member or artist (T66)
 
+- 2026-10-02 T60: a minigame is won (reward paid) when the score reaches its goal (lighthouse 600, cannon 400); games end on lives, after 10 waves or at 600 s; balance values are muestra (agent)
+- 2026-10-02 orchestrator: T64 launched before T61 because T62, T65 and T66 wait on it
+
 ## Proposals (new scope)
+- 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
 - 2026-10-02 Hernán and Álvaro: Carnet with username and password (final version, D-20: Supabase auth)
 - 2026-10-02 T58: REQ-ENT-040 wording in 09-requisitos.md still says the trip starts on the first Entradas tap; it now starts from "Ir a su isla": reword
 - 2026-10-01 T57: unused i18n keys hero.explore3d* come from docs/propuestas/textos-zonas.md and stay until that document changes
@@ -248,3 +252,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 00:40 T59 launched · attempt 1 · agent a4ef0c67ac86cd069
 - 2026-10-02 00:46 T56 done · branch worktree-agent-a00ff67f4d11ca19d → b6e81b6
 - 2026-10-02 00:48 T60 launched · attempt 1 · agent a900a0897deee5236
+- 2026-10-02 01:20 T59 conflict with main (mar-client.tsx) · sent back to agent a4ef0c67ac86cd069
+- 2026-10-02 01:27 T60 done · branch worktree-agent-a900a0897deee5236 → 39ea477
