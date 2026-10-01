@@ -48,7 +48,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: fast steering in /mar via optional ShipConfig fields (steerFloor, turnRadius, reverseTurn) set only by MAR_SHIP_CONFIG; 90° from a small drag 19.6 s → 0.73 s; tight reverse turn; turbo keeps the radius; sensitivity applied → 9c204be
 
 ## T55 — Settings, controls, Carnet and deep links inside /mar
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T53, T54
 - Goal: Things only /juego has move into the 3D world: Ajustes (turn sensitivity driving T54's `turnScale`, music and effects volumes, language), the Controles help and Welcome Aboard sections, and the Carnet inside the world (view and edit without leaving /mar, reachable from the bar's Carnet icon). /mar also learns the deep links the landing uses: `?ir=<place>` and `?evento=<slug>` start the 3D with the boat sailing towards that island; `?menu=carnet` opens the Carnet. Then every landing/page link that today points to /juego points to /mar: hero is handled by T57, but here "Rumbo a su isla"/"Ir a su isla" (event page, `lib/landing/eventos.ts`), "Ir en barco al Puerto de Fotos", "Ir en barco a la isla tienda" (`blocks.tsx`, `lib/landing/access.ts`), footer "crear Carnet", purchase invite (`buy-button.tsx`), tickets panel `ticketsSailHref`, /carnet links, Admin "Ver el mundo".
 - Context: /juego menu sections in `apps/web/app/juego/menu/sections/` (or where T52 moved them), `loadSettings`, `apps/web/app/carnet/`, `apps/web/app/mar/mar-client.tsx` (reads only `vuelo`, `mundo`, `estilo`, `delfin`, `cerca` today), `apps/web/lib/world-handoff.ts`, analytics `explore_start` sources in `packages/contracts/src/analytics.ts:19`.
@@ -57,7 +57,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Test command → exit 0
   - e2e: `/mar?ir=<photos place>` sails to that island; `/mar?evento=<sample slug>` sails to the event island; `/mar?menu=carnet` opens the Carnet in the world; changing sensitivity in Ajustes changes turning (store value read by the engine); every landing link above has href starting with `/mar` → exit 0
   - `grep -rn "/juego" apps/web/app apps/web/lib --include=*.ts --include=*.tsx | grep -v "app/juego/"` → only the hero CTA (T57) and the /mar "Versión clásica 2D"/fallback links (T62) remain
-- Outcome:
+- Outcome: Ajustes (sensitivity read by the engine), Controles, Welcome Aboard and Mi Carnet inside /mar in a shared MarHoja sheet; deep links ?ir, ?evento, ?menu; every landing/Carnet/Admin link to /mar; IDE-035/036 HECHO → 42fedb9
 
 ## T56 — Message bottles and ranking in /mar
 - Status: running (attempt 1)
@@ -82,7 +82,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: 3D planet intro (apps/web/lib/planeta/), budget 9 s from mount counting visible time only, campaign params no longer skip, hero with /mar + Tickets; landing 177.8/192 kB → 09e86a6
 
 ## T58 — Tickets inside the 3D world
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T53
 - Goal: The "Entradas" button in /mar opens the tickets panel ("Elige tu evento") and the test checkout right there, as a bottom card/sheet in the new HUD style, without leaving the world or going to the landing. A discount code found in the world is applied in that checkout; the post-purchase stamp/achievement and the Carnet invite work as on the landing.
 - Context: tickets panel `apps/web/app/(landing)/components/tickets-panel.tsx`, checkout/buy button, `apps/web/lib/ticketing`, /mar "Entradas" today links to `/#tickets` and sails in turbo to the event island, analytics `tickets_panel_open`, `ticket_click_out`, `purchase_confirmed` (source must say it came from the world). REQ ENT-037, COM-015/016/017.
@@ -173,6 +173,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 T57: REQ-ENT-012 (scene hand-off to /juego) moved to FALTA (agent)
 - 2026-10-01 T57: T62 must also delete the leftover 2D intro modules (config, sphere, port, world-geometry, timeline, assets, sphere-probe) and lib/intro/worlds.ts (orchestrator)
 
+- 2026-10-01 T55: shared MarHoja cream sheet (Carnet, Ajustes, Controles, Welcome Aboard, Logros, Barco shop); deep links accept event id or slug and 2D menu names, are stripped from the URL at boot, and a sail link starts from the spawn; voyageHref is /mar?evento=…; new explore_start sources photos and store (agent)
+- 2026-10-01 T55: conflict with T57 in lib/intro resolved keeping T57's intro (agent)
+
 ## Proposals (new scope)
 - 2026-10-01 T57: unused i18n keys hero.explore3d* come from docs/propuestas/textos-zonas.md and stay until that document changes
 - 2026-10-01 T57: REQ-ENT-003/005 text says "no 3D library in the bundle"; critical path still has none (three.js lazy): reword with Álvaro
@@ -190,3 +193,6 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 22:41 T53 done · branch worktree-agent-ac03818fc888500c6 → 03882a9
 - 2026-10-01 22:43 T55 launched · attempt 1 · agent a3b7f8362886c377c
 - 2026-10-01 23:21 T57 done · branch worktree-agent-a42618e2a4c75025b → 09e86a6
+- 2026-10-01 23:22 T56 launched · attempt 1 · agent a00ff67f4d11ca19d
+- 2026-10-01 23:58 T55 conflict with main (lib/intro/active.ts, bridge.ts) · sent back to agent a3b7f8362886c377c
+- 2026-10-01 23:47 T55 done · branch worktree-agent-a3b7f8362886c377c → 42fedb9
