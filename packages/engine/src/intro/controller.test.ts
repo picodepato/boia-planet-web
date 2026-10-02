@@ -7,7 +7,6 @@ import {
 } from './controller';
 import {
   DEFAULT_PLANET_INTRO as CFG,
-  heroFrame,
   viewMoved,
   type IntroFrame,
   type IntroMode,
@@ -26,6 +25,8 @@ const AUTO: PlanetIntroConfig = {
 
 class FakeScene implements IntroSceneHandle {
   static alive = 0;
+  /** El puerto de salida de /mar en el planeta (T64). */
+  readonly focus = { lon: 2.2, lat: -0.55 };
   frames: IntroFrame[] = [];
   destroyed = 0;
   constructor() {
@@ -134,7 +135,7 @@ function expectInvariants(h: ReturnType<typeof setup>) {
 }
 
 describe('máquina de estados de la entrada 3D (T57)', () => {
-  it('carga → aparición → pausa → (Zarpar) → horizonte del hero → landing', async () => {
+  it('carga → aparición → pausa → (Zarpar) → zambullida en el puerto → juego (T64)', async () => {
     const h = setup();
     h.c.start();
     expect(h.c.phase).toBe('waiting');
@@ -152,14 +153,19 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expect(h.c.enteredBy).toBe('button');
     expect(h.c.playedMs).toBeGreaterThanOrEqual(LAND);
     expect(h.c.playedMs).toBeLessThan(LAND + 20);
-    // Termina en el encuadre del hero, sin salto: el giro sigue desde ahí.
+    // Zarpar entra en el juego, no en la landing.
+    expect(h.c.toGame).toBe(true);
+    // Termina con el velo del mar puesto y el puerto de cara (su latitud, inclinada).
     const done = scene.frames.find((f) => f.done)!;
-    const hero = heroFrame(CFG, VP, done.pose.spin);
-    expect(done.pose).toEqual(hero.pose);
-    const after = scene.frames.at(-1)!;
-    expect(after.act).toBe('landed');
-    expect(after.pose.spin - done.pose.spin).toBeGreaterThanOrEqual(0);
-    expect(after.pose.spin - done.pose.spin).toBeLessThan(0.05);
+    expect(done.act).toBe('landing');
+    expect(done.cover).toBe(1);
+    expect(done.content).toBe(0);
+    expect(done.pose.tilt).toBeCloseTo(scene.focus.lat);
+    // Mientras se zambulle, el planeta sólo gira hacia el puerto (sin su giro de siempre).
+    const dive = scene.frames.filter((f) => f.act === 'landing');
+    const turn = dive.map((f) => f.pose.spin - dive[0]!.pose.spin);
+    const sign = Math.sign(turn.at(-1)!);
+    expect(turn.every((d, i) => i === 0 || sign * d >= sign * turn[i - 1]! - 1e-12)).toBe(true);
     expect(h.moves(scene.frames)).toBeGreaterThan(0);
     expectInvariants(h);
   });
@@ -190,6 +196,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expect(h.c.enteredBy).toBe('auto');
     h.play(LAND + 50);
     expect(h.landed).toEqual(['played']);
+    expect(h.c.toGame).toBe(true);
     expectInvariants(h);
   });
 
@@ -249,6 +256,8 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
       h.c.enter();
       expect(h.c.phase).toBe('landed');
       expect(h.landed).toEqual(['skipped']);
+      // Saltar lleva a la landing, no al juego (T64).
+      expect(h.c.toGame).toBe(false);
       h.play(100);
       const last = scene.frames.at(-1)!;
       expect(last.done).toBe(true);
@@ -298,7 +307,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('pestaña oculta en la pausa: sigue esperando; durante «Zarpar»: termina en la landing', async () => {
+  it('pestaña oculta en la pausa: sigue esperando; durante «Zarpar»: termina, rumbo al juego', async () => {
     const h = setup();
     const scene = await h.toPause();
     h.c.interrupt();
@@ -311,6 +320,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     h.play(32);
     expect(scene.frames.at(-1)!.done).toBe(true);
     expect(h.landed).toEqual(['played']);
+    expect(h.c.toGame).toBe(true);
     expect(h.c.playedMs).toBeNull();
     expectInvariants(h);
   });
@@ -450,6 +460,8 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expect(h.c.enter()).toBe(true);
     h.play(CFG.reduced.fadeMs + 500);
     expect(h.landed).toEqual(['played']);
+    expect(h.c.toGame).toBe(true);
+    expect(scene.frames.find((f) => f.done)!.cover).toBe(1);
     expect(scene.frames.some((f) => f.act === 'appear')).toBe(false);
     expect(h.moves(scene.frames)).toBe(0);
     const spins = new Set(scene.frames.map((f) => f.pose.spin));

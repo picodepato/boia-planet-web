@@ -554,8 +554,84 @@ html[data-intro='arrive'] .intro-overlay__links {
   opacity: 0;
 }
 
+/* Velo del mar (T64): al final de «Zarpar» cubre la vista con la pantalla de
+   carga de /mar (mismo fondo, misma boia, mismo texto: .mar-splash), así el
+   paso de la entrada al juego no tiene costura. La opacidad la lleva la
+   línea de tiempo. */
+.intro-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 40%, #3b2a8f, #1b1440 70%);
+  color: #fff;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-cover__label {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.intro-cover__boia {
+  position: relative;
+  width: 72px;
+  height: 68px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #ffa46b, #ec4f24 60%, #c9480f);
+  animation: intro-cover-bob 1.2s ease-in-out infinite;
+}
+
+.intro-cover__boia::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: -18px;
+  width: 44px;
+  height: 34px;
+  background: #3b2a8f;
+  border-radius: 60% 60% 10% 10%;
+  transform: rotate(-18deg);
+}
+
+.intro-cover__boia::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 34px;
+  width: 36px;
+  height: 14px;
+  border-radius: 0 0 20px 20px;
+  background: #fff;
+}
+
+/* El mismo vaivén que la boia de carga de /mar (mar-bob). */
+@keyframes intro-cover-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(4deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .intro-loading__boia {
+  .intro-loading__boia,
+  .intro-cover__boia {
     animation: none;
   }
 }

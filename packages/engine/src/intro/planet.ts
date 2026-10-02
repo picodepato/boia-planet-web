@@ -14,15 +14,18 @@ import { EASING_FNS, clamp01, ramp, type Viewport } from './math';
  * 1. aparición: el planeta sube, crece y gira;
  * 2. pausa: sigue girando; entran las letras «BOIA» y «Zarpar» (no avanza
  *    sola salvo el avance automático, apagado);
- * 3. zarpar: la cámara baja hacia el planeta hasta el horizonte del hero,
- *    que se queda girando despacio detrás de la landing.
+ * 3. zarpar (T64, D-24): el planeta se vuelve hacia el puerto de salida de
+ *    `/mar` y la cámara se zambulle en él; un velo con el color del mar de
+ *    `/mar` cubre la vista y se entra en el juego. «Saltar animación» y «Solo
+ *    quiero ver las entradas» llevan a la landing, con el horizonte del
+ *    planeta girando despacio detrás del hero.
  *
  * Unidades: tiempos en ms; poses en fracciones de la vista (`fit`: diámetro
  * del planeta como múltiplo del lado corto; `anchor`: centro, fracciones de
  * ancho y alto, puede salirse de la vista); ángulos en grados.
  */
 
-export const PLANET_INTRO_VERSION = 4 as const;
+export const PLANET_INTRO_VERSION = 5 as const;
 
 export type IntroMode = 'intro' | 'reduced' | 'direct';
 export type IntroAct = 'appear' | 'pause' | 'landing' | 'landed';
@@ -89,18 +92,25 @@ export interface PlanetIntroConfig {
     uiInMs: number;
     autoAdvance: { enabled: boolean; afterMs: number };
   };
-  /** Acto 3: «Zarpar». */
+  /**
+   * Acto 3: «Zarpar» (T64): la zambullida hasta el puerto de salida de
+   * `/mar`. El planeta gira hasta tener el puerto de cara y crece hasta
+   * `diveFit`, con el puerto en `anchor`; el velo del mar cubre la vista en
+   * el tramo `cover`.
+   */
   landing: {
     durationMs: number;
     easing: Easing;
-    /** Vuelta extra que da el planeta al bajar, grados. */
-    extraSpinDeg: number;
+    /** Diámetro final del planeta como múltiplo del lado corto de la vista. */
+    diveFit: number;
+    /** Dónde queda el puerto al final, fracciones de la vista. */
+    anchor: readonly [number, number];
     /** Tramo en el que se van título y botón. */
     uiOut: Span;
-    /** Tramo en el que entra la landing encima (acaba en 1). */
-    content: Span;
+    /** Tramo en el que el velo del mar cubre la vista (acaba en 1). */
+    cover: Span;
   };
-  /** Movimiento reducido: planeta quieto; al pulsar, un fundido. */
+  /** Movimiento reducido: planeta quieto; al pulsar, un fundido al velo del mar. */
   reduced: { fadeMs: number; spinDeg: number };
   /** Nubes alrededor del planeta. */
   clouds: { count: number; seed: number; speed: number; lift: number };
@@ -114,7 +124,7 @@ export interface PlanetIntroConfig {
 /** Configuración de muestra (T57): todo `muestra` hasta verlo en móviles reales (D-19, P6). */
 export const DEFAULT_PLANET_INTRO: PlanetIntroConfig = {
   version: PLANET_INTRO_VERSION,
-  id: 'entrada-planeta-muestra-v4',
+  id: 'entrada-planeta-muestra-v5',
   status: 'muestra',
   copy: { ...DEFAULT_INTRO_CONFIG.copy },
   loadBudgetMs: 9000,
@@ -124,11 +134,12 @@ export const DEFAULT_PLANET_INTRO: PlanetIntroConfig = {
   spin: { periodS: 50 },
   pause: { uiInMs: 400, autoAdvance: { enabled: false, afterMs: 8000 } },
   landing: {
-    durationMs: 1300,
+    durationMs: 1500,
     easing: 'easeInOutCubic',
-    extraSpinDeg: 40,
+    diveFit: 9,
+    anchor: [0.5, 0.55],
     uiOut: [0, 0.15],
-    content: [0.7, 1],
+    cover: [0.72, 1],
   },
   reduced: { fadeMs: 400, spinDeg: 20 },
   clouds: { count: 9, seed: 7, speed: 1.6, lift: 0.16 },
@@ -216,13 +227,17 @@ export function validatePlanetIntro(input: unknown): PlanetConfigResult {
   const landing = obj(c.landing, 'landing');
   need(inRange(landing.durationMs, 300, 6000), 'landing.durationMs', '300–6000');
   need(EASINGS.includes(landing.easing as Easing), 'landing.easing', EASINGS.join(' | '));
-  need(inRange(landing.extraSpinDeg, -360, 360), 'landing.extraSpinDeg', '±360');
-  need(isSpan(landing.uiOut), 'landing.uiOut', '[inicio, fin] en 0..1');
+  need(inRange(landing.diveFit, 1, 40), 'landing.diveFit', '1–40');
   need(
-    isSpan(landing.content) && landing.content[1] === 1,
-    'landing.content',
-    '[inicio, 1] en 0..1',
+    Array.isArray(landing.anchor) &&
+      landing.anchor.length === 2 &&
+      isFrac(landing.anchor[0]) &&
+      isFrac(landing.anchor[1]),
+    'landing.anchor',
+    '[x, y] en 0..1',
   );
+  need(isSpan(landing.uiOut), 'landing.uiOut', '[inicio, fin] en 0..1');
+  need(isSpan(landing.cover) && landing.cover[1] === 1, 'landing.cover', '[inicio, 1] en 0..1');
 
   const reduced = obj(c.reduced, 'reduced');
   need(inRange(reduced.fadeMs, 0, 1000), 'reduced.fadeMs', '0–1000 (un fundido breve)');
@@ -309,8 +324,16 @@ export interface IntroFrame {
   title: number;
   button: number;
   content: number;
-  /** Llegó: el planeta está en el encuadre del hero. */
+  /** Velo del mar de `/mar` encima de todo (T64): llega a 1 al terminar de zarpar. */
+  cover: number;
+  /** Terminó: el planeta está en el encuadre del hero, o la zambullida acabó. */
   done: boolean;
+}
+
+/** Dónde está el puerto de salida de `/mar` en el planeta, radianes. */
+export interface PlanetFocus {
+  lon: number;
+  lat: number;
 }
 
 /** Lo que lleva el controlador; la línea de tiempo sólo lo lee. */
@@ -318,8 +341,10 @@ export interface TimelineState {
   act: IntroAct;
   /** ms dentro del acto. */
   t: number;
-  /** Giro acumulado del planeta, radianes (sin la vuelta extra de zarpar en curso). */
+  /** Giro acumulado del planeta, radianes (quieto mientras se zarpa). */
   spin: number;
+  /** El puerto de salida (T64): la zambullida acaba con él de cara. Sin él, no gira. */
+  focus?: PlanetFocus | null;
 }
 
 const DEG = Math.PI / 180;
@@ -341,9 +366,33 @@ export function spinRate(cfg: PlanetIntroConfig): number {
   return (2 * Math.PI) / (cfg.spin.periodS * 1000);
 }
 
-/** La vuelta extra de «Zarpar», radianes. */
-export function landingSpin(cfg: PlanetIntroConfig): number {
-  return cfg.landing.extraSpinDeg * DEG;
+/**
+ * El giro con el que el puerto queda de cara a la cámara (longitud 0 tras
+ * girar), el más cercano a `spin`: al zarpar, nunca más de media vuelta.
+ */
+export function focusSpin(spin: number, focus: PlanetFocus): number {
+  const TAU = 2 * Math.PI;
+  const raw = -focus.lon - spin;
+  return spin + (raw - TAU * Math.round(raw / TAU));
+}
+
+/** La pose final de la zambullida: el puerto de cara, grande, en su sitio de la vista. */
+export function divePose(
+  cfg: PlanetIntroConfig,
+  vp: Viewport,
+  spin: number,
+  tilt: number,
+  focus: PlanetFocus | null | undefined,
+): PlanetPose {
+  const short = Math.min(vp.width, vp.height);
+  return {
+    x: cfg.landing.anchor[0] * vp.width,
+    y: cfg.landing.anchor[1] * vp.height,
+    radius: (cfg.landing.diveFit * short) / 2,
+    // Inclinar tanto como la latitud del puerto lo pone en el centro del disco.
+    tilt: focus ? focus.lat : tilt,
+    spin: focus ? focusSpin(spin, focus) : spin,
+  };
 }
 
 /** Duración del acto (la pausa dura hasta que se pulsa). */
@@ -365,6 +414,7 @@ export function heroFrame(cfg: PlanetIntroConfig, vp: Viewport, spin: number, t 
     title: 0,
     button: 0,
     content: 1,
+    cover: 0,
     done: true,
   };
 }
@@ -384,27 +434,23 @@ export function frameAt(
   const intro = poseOf(framing.intro, vp, s.spin);
 
   if (mode === 'reduced') {
-    // Planeta quieto, título y botón; al pulsar, un fundido: se va el planeta
-    // entero y vuelve en el horizonte del hero. Nada se mueve.
-    const base = { pose: intro, source: 'intro' as const, planet: 1, done: false };
+    // Planeta quieto, título y botón; al pulsar, un fundido al velo del mar
+    // de `/mar` y se entra en el juego (T64). Nada se mueve.
+    const base = { pose: intro, source: 'intro' as const, planet: 1, content: 0 };
     if (s.act !== 'landing') {
-      return { ...base, act: 'pause', t: s.t, title: ui, button: ui, content: 0 };
+      return { ...base, act: 'pause', t: s.t, title: ui, button: ui, cover: 0, done: false };
     }
     const fade = cfg.reduced.fadeMs;
     const t = Math.max(0, Math.min(s.t, fade));
-    if (t >= fade) return heroFrame(cfg, vp, s.spin, t);
     const u = fade > 0 ? t / fade : 1;
-    const second = u >= 0.5;
     return {
+      ...base,
       act: 'landing',
       t,
-      pose: second ? poseOf(framing.hero, vp, s.spin) : intro,
-      source: second ? 'hero' : 'intro',
-      planet: second ? 2 * u - 1 : 1 - 2 * u,
       title: 1 - u,
       button: 1 - u,
-      content: u,
-      done: false,
+      cover: u,
+      done: t >= fade,
     };
   }
 
@@ -426,34 +472,35 @@ export function frameAt(
       title: appear ? 0 : ui,
       button: appear ? 0 : ui,
       content: 0,
+      cover: 0,
       done: false,
     };
   }
 
-  // «Zarpar»: del planeta entero al horizonte del hero, con una vuelta extra.
+  // «Zarpar» (T64): del planeta entero a la zambullida en el puerto de salida.
   const dur = cfg.landing.durationMs;
   const t = Math.max(0, Math.min(s.t, dur));
-  if (t >= dur) return heroFrame(cfg, vp, s.spin + landingSpin(cfg), t);
   const e = EASING_FNS[cfg.landing.easing](t / dur);
-  const hero = poseOf(framing.hero, vp, s.spin);
+  const dive = divePose(cfg, vp, s.spin, intro.tilt, s.focus);
   const out = 1 - ramp(t / dur, cfg.landing.uiOut);
   return {
     act: 'landing',
     t,
     pose: {
-      x: lerp(intro.x, hero.x, e),
-      y: lerp(intro.y, hero.y, e),
+      x: lerp(intro.x, dive.x, e),
+      y: lerp(intro.y, dive.y, e),
       // El radio crece en escala logarítmica: el acercamiento se siente parejo.
-      radius: intro.radius * Math.pow(hero.radius / intro.radius, e),
-      tilt: lerp(intro.tilt, hero.tilt, e),
-      spin: s.spin + landingSpin(cfg) * e,
+      radius: intro.radius * Math.pow(dive.radius / intro.radius, e),
+      tilt: lerp(intro.tilt, dive.tilt, e),
+      spin: lerp(s.spin, dive.spin, e),
     },
     source: 'moving',
     planet: 1,
     title: out,
     button: out,
-    content: ramp(t / dur, cfg.landing.content),
-    done: false,
+    content: 0,
+    cover: ramp(t / dur, cfg.landing.cover),
+    done: t >= dur,
   };
 }
 

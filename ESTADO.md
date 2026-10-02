@@ -4,6 +4,61 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T64: «Zarpar» entra en el juego
+
+Qué existe:
+
+- D-24 en `docs/DECISIONES.md`: el planeta de la entrada es el mundo 3D y
+  «Zarpar» entra en `/mar` con la bienvenida de la boia abierta; «Saltar
+  animación» y «Solo quiero ver las entradas» siguen yendo a la landing.
+- Entrada v5 (`packages/engine/src/intro/planet.ts`): el acto 3 ya no baja
+  al hero; es una zambullida. `landing` lleva `diveFit`, `anchor` y `cover`
+  (sin `extraSpinDeg` ni `content`). El planeta gira por el camino más corto
+  hasta poner de cara el puerto de salida (`focusSpin`, `divePose`), crece
+  hasta 9 veces el lado corto y un velo cubre la vista al final. Con
+  movimiento reducido es un fundido al velo, sin mover nada. Los fotogramas
+  llevan `cover`. El controlador expone `toGame` y deja de girar mientras
+  zarpa. La escena le da el puerto (`focus`, el `spawn` de `/mar` en la
+  esfera) e `islandIds`.
+- `lib/intro/run.ts`: al llegar zarpando, el velo se queda puesto, se cuenta
+  `explore_start {source:'intro'}` (nuevo origen en
+  `packages/contracts/src/analytics.ts`), no hay `landing_view` y se llama a
+  `onEnterGame`. En la pausa se pide `/mar` por adelantado. El diagnóstico
+  `__boiaIntro` añade `exit`, `cover` e `islandIds`.
+- `intro-stage.tsx`: el velo `.intro-cover` (la pantalla de carga de `/mar`:
+  mismo fondo, boia y «Preparando el mar…») y `router.push('/mar?menu=bienvenida')`
+  (`lib/intro/zarpar.ts`). Es una navegación de la app, sin recarga; si en
+  8 s no ha llegado, hace una carga completa.
+- `/mar`, sólo añadidos: al llegar zarpando (`takeZarpar`), un velo
+  `.mar-velo` igual que la pantalla de carga se funde cuando el mar está
+  listo. Welcome Aboard empieza con la boia de la entrada hablando
+  («¡Plop! Soy la boia de la entrada…», `muestra`) y acaba con «¡A
+  navegar!», que la cierra.
+- REQ: ENT-012 pasa de FALTA a PARCIAL. ENT-001, ENT-006 y ENT-014 llevan
+  nota de T64, y ENT-006 enlaza el nuevo título de su prueba.
+
+Comandos:
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0
+  (109 archivos, 948 pruebas, tras unir con main: T56, T58, T59 y T60).
+- `sh tools/spec/checks.sh` → OK (estado.md: HECHO 158, PARCIAL 56, FALTA 33).
+- `pnpm typecheck` → 0. `pnpm lint` → 0.
+- `pnpm build` → 0, landing 179,1/192 kB.
+- Tras unir con main: `E2E_PORT=3264 pnpm e2e e2e/intro.spec.ts e2e/demo.spec.ts e2e/mar-a-bordo.spec.ts e2e/landing.spec.ts e2e/mar-3d.spec.ts e2e/mar-fiestera.spec.ts --workers=2`
+  → 99 passed, 1 failed (`mar-fiestera` «un secreto sin código…», escritorio:
+  no vio a tiempo el aviso de monedas mientras el barco navegaba, con carga);
+  `pnpm e2e e2e/mar-fiestera.spec.ts --workers=1` → exit 0, 10 passed.
+
+Pendiente:
+
+- T62 tiene que usar D-25 para «sólo el planeta 3D»: D-24 ya está tomada.
+- Ajustar en móviles reales la zambullida (`diveFit`, `anchor`, `cover`) y
+  el texto de la boia (`muestra`).
+- `docs/spec/09-requisitos.md` sigue diciendo que REQ-ENT-001 termina «en la
+  landing sobre el mar»; D-24 lo modifica.
+- `record.spec.ts` y `record-titulo.spec.ts` siguen grabando «Zarpar → landing».
+  Sólo corren a mano.
+
 ## 2026-10-02 — plan 005 T59: Boia Fiestera como misión central; 3 descuentos claros
 
 Qué existe:

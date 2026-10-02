@@ -19,8 +19,13 @@ export type PurchaseSource = 'world';
 /** Propiedades de cada evento. Nunca datos personales. */
 export interface FunnelEventProps {
   landing_view: { intro: 'played' | 'skipped' | 'none' };
-  /** `photos`/`store`: «Ir en barco» de Fotos y Tienda en la landing (T55). */
-  explore_start: { source: 'hero' | 'hero_3d' | 'tickets_panel' | 'event' | 'photos' | 'store' };
+  /**
+   * `photos`/`store`: «Ir en barco» de Fotos y Tienda en la landing (T55).
+   * `intro`: «Zarpar» de la entrada, que lleva directa al mar 3D (T64).
+   */
+  explore_start: {
+    source: 'hero' | 'hero_3d' | 'tickets_panel' | 'event' | 'photos' | 'store' | 'intro';
+  };
   discount_found: { discountId: string; eventId?: string };
   /** `world`: «Entradas» de la barra del mar 3D (T58). */
   tickets_panel_open: { source: 'hero' | 'header' | 'deep_link' | 'event' | 'world' };

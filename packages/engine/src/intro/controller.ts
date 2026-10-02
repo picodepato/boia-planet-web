@@ -1,13 +1,12 @@
 import type { Viewport } from './math';
-import { EASING_FNS } from './math';
 import {
   actDuration,
   frameAt,
-  landingSpin,
   spinRate,
   type IntroAct,
   type IntroFrame,
   type IntroMode,
+  type PlanetFocus,
   type PlanetIntroConfig,
 } from './planet';
 
@@ -27,9 +26,11 @@ import {
  *   fotograma ya pintado), no cuando llega su código.
  *
  * Fases: `waiting` (acto 0: escena cargando) → `appearing` (acto 1) →
- * `paused` (acto 2) → `landing` (acto 3) → `landed`; `destroyed` al
- * desmontar. Con movimiento reducido no hay acto 1 (el planeta sale quieto)
- * y el acto 3 es un fundido. Un enlace directo o una visita posterior nacen
+ * `paused` (acto 2) → `landing` (acto 3, «Zarpar»: la zambullida hacia el
+ * juego, T64) → `landed`; `destroyed` al desmontar. Con movimiento reducido
+ * no hay acto 1 (el planeta sale quieto) y el acto 3 es un fundido. Llegar
+ * con «Zarpar» (`outcome` `played` y `enteredBy` puesto) es entrar en el
+ * juego; saltar, en la landing (`toGame`). Un enlace directo o una visita posterior nacen
  * ya en `landed`: la escena, si llega, se pinta en el encuadre del hero.
  */
 
@@ -48,6 +49,8 @@ export type EnterSource = 'button' | 'auto';
 export interface IntroSceneHandle {
   render(frame: IntroFrame, clockSeconds: number): void;
   destroy(): void;
+  /** El puerto de salida de `/mar` en el planeta: «Zarpar» se zambulle en él (T64). */
+  readonly focus?: PlanetFocus | null;
 }
 
 export interface IntroControllerDeps<S extends IntroSceneHandle> {
@@ -123,6 +126,11 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
     return this.scenesCreated - this.scenesDestroyed;
   }
 
+  /** Llegó zarpando (botón o avance automático): se entra en el juego, no en la landing (T64). */
+  get toGame(): boolean {
+    return this.phase === 'landed' && this.outcome === 'played' && this.enteredBy !== null;
+  }
+
   start(): void {
     if (this.phase !== 'idle') return;
     this.startedAt = this.deps.now();
@@ -185,7 +193,7 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
   /**
    * Pestaña oculta, rotación o vuelta desde la caché del navegador: lo que se
    * estaba animando termina en su estado final y no se retoma a medias. La
-   * aparición acaba en la pausa (con título y botón); «Zarpar», en la landing.
+   * aparición acaba en la pausa (con título y botón); «Zarpar», en el juego (T64).
    * La carga y la pausa siguen esperando.
    */
   interrupt(): void {
@@ -208,7 +216,8 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
     if (this.lastNow === null) this.lastNow = now;
     const dt = Math.min(Math.max(0, now - this.lastNow), MAX_FRAME_STEP_MS);
     this.lastNow = now;
-    if (!this.still) this.spin += dt * spinRate(config);
+    // Al zarpar, el giro lo lleva la zambullida (hacia el puerto).
+    if (!this.still && this.phase !== 'landing') this.spin += dt * spinRate(config);
 
     const act = ACT_OF[this.phase];
     if (!act) return frameAt(config, vp, { act: 'landed', t: 0, spin: this.spin }, 'direct');
@@ -226,7 +235,7 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
     const f = frameAt(
       config,
       vp,
-      { act: ACT_OF[this.phase]!, t: this.actMs, spin: this.spin },
+      { act: ACT_OF[this.phase]!, t: this.actMs, spin: this.spin, focus: this.scene?.focus ?? null },
       mode,
     );
     if (act === 'landing' && f.done) {
@@ -352,12 +361,6 @@ export class IntroController<S extends IntroSceneHandle = IntroSceneHandle> {
 
   private land(outcome: IntroOutcome): void {
     if (this.phase === 'landed' || this.phase === 'destroyed') return;
-    // La vuelta extra de «Zarpar» se queda: el giro de la landing sigue desde ahí.
-    if (this.phase === 'landing' && !this.still) {
-      const { config } = this.deps;
-      const e = Math.min(1, this.actMs / Math.max(1, config.landing.durationMs));
-      this.spin += landingSpin(config) * EASING_FNS[config.landing.easing](e);
-    }
     this.phase = 'landed';
     this.outcome = outcome;
     this.stopBudget();

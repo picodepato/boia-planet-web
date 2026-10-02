@@ -41,20 +41,20 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-PRO-019 | Contenido que aporta BOIA | L1 | FALTA | — | — |
 | REQ-PRO-020 | Lista de publicación y autorización | L1 | FALTA | [entrega.md](../../docs/entrega.md) | La lista la firma Álvaro antes de publicar; docs/entrega.md es la de la versión de prueba |
 | REQ-PRO-021 | Cuentas de producción de BOIA | L1 | final | — | Cuentas de producción de BOIA (D-04, D-20) |
-| REQ-ENT-001 | Entrada en tres actos: mini-mundo, botón y aterrizaje en el mar | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
+| REQ-ENT-001 | Entrada en tres actos: mini-mundo, botón y aterrizaje en el mar | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | T64 (D-24): el botón termina en /mar con la bienvenida de la boia, no en la landing |
 | REQ-ENT-002 | Sólo el botón de entrar antes de la landing; entradas siempre a mano | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
 | REQ-ENT-003 | Título «BOIA» en letras 3D y botón de entrar | L1 | HECHO | [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) «la de serie es válida, de muestra, versionada y trae «BOIA» y «Zarpar» (REQ-ENT-003)» | — |
 | REQ-ENT-004 | Dirección artística de la entrada | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-ENT-005 | Planeta 2D/2.5D reconocible | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-ENT-006 | Aparición, pausa, acercamiento con aplanado y llegada | L1 | HECHO | [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) «acto 3: el planeta baja hasta el horizonte del hero, sólo acercándose, y acaba en él (REQ-ENT-014)» | T57: entrada 3D con el planeta de /mar; el aplanado era del 2D |
+| REQ-ENT-006 | Aparición, pausa, acercamiento con aplanado y llegada | L1 | HECHO | [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) «acto 3 (T64): la cámara se zambulle, sólo acercándose, hasta el puerto de cara (REQ-ENT-014)» | T57: entrada 3D con el planeta de /mar; el aplanado era del 2D. T64: la llegada es la zambullida en el puerto de /mar |
 | REQ-ENT-007 | Duración por tramos (~2 s + ~2 s), nunca espera vacía | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts); [entry.test.ts](../../packages/engine/src/intro/entry.test.ts) | — |
 | REQ-ENT-008 | Sin audio y Saltar idempotente | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts); [controller.test.ts](../../packages/engine/src/intro/controller.test.ts) | — |
 | REQ-ENT-009 | La entrada según la URL, en cada carga de `/` | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
 | REQ-ENT-010 | Movimiento reducido | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts); [controller.test.ts](../../packages/engine/src/intro/controller.test.ts) | — |
 | REQ-ENT-011 | Enlaces directos sin introducción | L1 | HECHO | [demo.spec.ts](../../apps/web/e2e/demo.spec.ts); [eventos.spec.ts](../../apps/web/e2e/eventos.spec.ts) | — |
-| REQ-ENT-012 | Explorar sin reiniciar el mundo, desde el puerto | L1 | FALTA | — | T57: el hero lleva a /mar con una carga normal; el traspaso de la escena era del mundo 2D (se va en T62) |
+| REQ-ENT-012 | Explorar sin reiniciar el mundo, desde el puerto | L1 | PARCIAL | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | T64: «Zarpar» se zambulle en el puerto del planeta (las islas de /mar) y entra en /mar sin recargar, con el barco en ese puerto; la escena de /mar es otra (no el mismo objeto) |
 | REQ-ENT-013 | La cinemática no concede nada | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
-| REQ-ENT-014 | Traspaso de cámara y cancelación limpia | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts); [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) | — |
+| REQ-ENT-014 | Traspaso de cámara y cancelación limpia | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts); [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) | T64: el último fotograma de «Zarpar» es el velo del mar, igual a la pantalla de carga de /mar |
 | REQ-ENT-015 | Configuración de entrada versionada | L1 | HECHO | [config.test.ts](../../packages/engine/src/intro/config.test.ts) | — |
 | REQ-ENT-016 | Entrada editable desde el Admin | L2 | L2 | — | — |
 | REQ-ENT-017 | HTML comercial sin motor ni JS | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |

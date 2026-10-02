@@ -51,6 +51,13 @@ export interface MiniPlanet {
   readonly radius: number;
   /** Islas puestas en la esfera. */
   readonly islands: number;
+  /** Sus ids, los mismos que en `/mar` (T64). */
+  readonly islandIds: readonly string[];
+  /**
+   * El puerto de salida de `/mar` (donde nace el barco) en la esfera, en
+   * radianes: «Zarpar» se zambulle en él (T64).
+   */
+  readonly focus: { lon: number; lat: number };
   /** Gira el planeta (rad), lo inclina hacia la cámara (rad) y mueve el agua y las nubes. */
   pose(spin: number, tilt: number, cloudSpin: number, time: number): void;
   setOpacity(alpha: number): void;
@@ -199,7 +206,7 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
   const glow = new MeshBasicMaterial({ vertexColors: true });
   disposables.push(lit, glow);
   const shores: Vector4[] = [];
-  let islands = 0;
+  const islandIds: string[] = [];
   for (const o of world.objects) {
     if (!o.identity.active) continue;
     const cat = o.identity.category;
@@ -221,8 +228,10 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
     }
     if (shores.length < MAX_SHORES)
       shores.push(new Vector4(up[0], up[1], up[2], (R * scale) / radius));
-    islands++;
+    islandIds.push(id);
   }
+  const spawn = world.spawn ?? { x: 0, y: 0 };
+  const focus = lonLat(map, toScene(spawn.x), toScene(spawn.y));
 
   // El agua.
   const shoreUniform = Array.from({ length: MAX_SHORES }, (_, i) => shores[i] ?? new Vector4());
@@ -293,7 +302,9 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
   return {
     group,
     radius,
-    islands,
+    islands: islandIds.length,
+    islandIds,
+    focus,
     pose(spin, tilt, cloudSpin, time) {
       group.rotation.set(tilt, 0, 0);
       spinGroup.rotation.set(0, spin, 0);

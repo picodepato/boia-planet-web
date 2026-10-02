@@ -130,4 +130,7 @@ export const esMar = {
   'mar.guide.discount': '❓ Rumbo a un código escondido',
   'mar.guide.minigame': '🎮 Rumbo a {place}',
   'mar.guide.cerrar': 'No, gracias',
+  // La boia de la entrada da la bienvenida al zarpar desde la landing (T64). muestra
+  'mar.bienvenida.boia': '¡Plop! Soy la boia de la entrada. Antes de soltar amarras, te cuento:',
+  'mar.bienvenida.aNavegar': '¡A navegar!',
 } as const;

@@ -7,6 +7,7 @@ import {
   type IntroFrame,
   type IntroOutcome,
 } from '@boia/engine/intro';
+import { track } from '../analytics';
 import type { IntroScene } from '../planeta/intro-scene';
 import type { IntroDiagnostics } from './bridge';
 import type { IntroData } from './load';
@@ -36,8 +37,14 @@ export interface IntroView {
   title: { readonly current: HTMLParagraphElement | null };
   title3d: { readonly current: HTMLCanvasElement | null };
   enter: { readonly current: HTMLButtonElement | null };
+  /** Velo con el color del mar de /mar: cubre la vista al final de «Zarpar» (T64). */
+  cover: { readonly current: HTMLDivElement | null };
   /** La landing ya se ve: fuera la capa de la entrada. */
   onLanded(): void;
+  /** Acto 2: el planeta espera a «Zarpar» (buen momento para ir pidiendo /mar). */
+  onPaused?(): void;
+  /** «Zarpar» terminó con el velo puesto: a /mar, sin pasar por la landing (T64). */
+  onEnterGame(): void;
 }
 
 /**
@@ -68,6 +75,10 @@ class IntroRun {
   private lastSize = '';
   private lastFrameAt = 0;
   private focused = false;
+  private pausedSeen = false;
+  private sailed = false;
+  /** «Zarpar» terminó y la página se va a /mar: el velo se queda y no se pinta más. */
+  private leaving = false;
   private disposeTimer = 0;
   private readonly entry: BootEntry | undefined;
   private readonly t0: number;
@@ -122,6 +133,9 @@ class IntroRun {
       title: { mode: 'flat', requestedMs: null, loadedMs: null, draws: 0, pose: null },
       world: null,
       islands: null,
+      islandIds: null,
+      exit: null,
+      cover: 0,
       pose: null,
     };
     window.__boiaIntro = this.diag;
@@ -177,7 +191,7 @@ class IntroRun {
     this.lastSize = '';
     this.focused = false;
     this.sync();
-    if (this.controller.phase === 'landed') view.onLanded();
+    if (this.controller.phase === 'landed' && !this.leaving) view.onLanded();
   }
 
   /** El montaje se va. Si nadie la recoge enseguida, la entrada se termina. */
@@ -225,6 +239,7 @@ class IntroRun {
       this.diag.renderer = scene.renderer;
       this.diag.world = scene.worldId;
       this.diag.islands = scene.islands;
+      this.diag.islandIds = [...scene.islandIds];
       return scene;
     } catch (err) {
       console.warn('[boia] la escena de entrada no arrancó; se queda la landing ligera', err);
@@ -274,11 +289,32 @@ class IntroRun {
         enter.focus({ preventScroll: true });
       }
     }
+    if (c.phase === 'paused' && !this.pausedSeen) {
+      this.pausedSeen = true;
+      this.view?.onPaused?.();
+    }
+    // «Zarpar» (botón o avance automático) empieza a explorar el mundo (T64).
+    if (c.phase === 'landing' && !this.sailed) {
+      this.sailed = true;
+      track('explore_start', { source: 'intro' });
+    }
     this.kick();
   }
 
   private landed(outcome: IntroOutcome): void {
     this.diag.landedAtMs = performance.now() - this.t0;
+    if (this.controller.toGame) {
+      // «Zarpar» (T64): el velo del mar se queda puesto y se entra en /mar,
+      // sin enseñar la landing (ni contarla como vista).
+      this.diag.exit = 'game';
+      this.leaving = true;
+      this.diag.cover = 1;
+      const cover = this.view?.cover.current;
+      if (cover) cover.style.opacity = '1';
+      this.view?.onEnterGame();
+      return;
+    }
+    this.diag.exit = 'landing';
     this.view?.onLanded();
     if (this.entry) this.entry.reveal(outcome);
     else this.html.removeAttribute('data-intro');
@@ -346,6 +382,7 @@ class IntroRun {
     this.raf = 0;
     const c = this.controller;
     if (document.hidden || c.phase === 'destroyed' || this.disposed || !this.view) return;
+    if (this.leaving) return;
     const d = this.diag;
     const vp = this.viewport();
     const size = `${vp.width}x${vp.height}`;
@@ -376,8 +413,11 @@ class IntroRun {
       const own = this.paintTitle(f) && !this.still;
       const title = this.view.title.current;
       const enter = this.view.enter.current;
+      const cover = this.view.cover.current;
       if (title) title.style.opacity = own ? '1' : String(f.title);
       if (enter) enter.style.opacity = String(f.button);
+      d.cover = this.leaving ? 1 : f.cover;
+      if (cover) cover.style.opacity = String(d.cover);
       if (c.phase === 'landing' && f.content > 0) this.html.setAttribute('data-intro', 'arrive');
     }
     this.lastSize = size;
@@ -486,7 +526,10 @@ class IntroRun {
     this.canvas = null;
     this.scene = null;
     delete this.html.dataset.introAct;
+    // Ya en /mar tras «Zarpar»: la marca de la entrada no se queda en <html>.
+    if (this.leaving) this.html.removeAttribute('data-intro');
     // El hero se fue sin terminar la entrada (otra ruta): la página no se queda oculta.
+
     if (unfinished) {
       if (this.entry) this.entry.reveal('none');
       else this.html.removeAttribute('data-intro');

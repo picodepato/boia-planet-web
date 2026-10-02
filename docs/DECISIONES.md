@@ -560,6 +560,38 @@ es el ranking de la versión final. Siguen abiertas con Álvaro P2 (ticketera)
 y P14 (D-22), y las nuevas P15 a P22 (lo que aún falta). Hasta que conteste
 se avanza con esta decisión.
 
+## D-24 · «Zarpar» entra en el juego: el planeta de la entrada es el mundo 3D · 2026-10-02 · Hernán y Álvaro
+
+En la entrevista del plan 005 Hernán y Álvaro deciden que el globo de la
+entrada de la landing es el mundo 3D mismo y que «Zarpar» lleva al juego, no
+a la landing:
+
+1. **El planeta de la entrada es el de `/mar`**: el mundo activo de este
+   navegador (con los cambios del Admin de la demo), con las mismas islas,
+   construidas con las mismas piezas, sobre una esfera. No es un mini-mundo
+   aparte.
+2. **«Zarpar» entra directamente en `/mar`**, sin pasar por la landing: el
+   planeta gira hasta poner de cara el puerto de salida y la cámara se
+   zambulle en él; un velo con la pantalla de carga de `/mar` cubre la vista
+   y se pasa a `/mar` sin recargar la página (navegación de la app). El velo
+   se funde cuando el mar está listo, con el barco en ese puerto.
+3. **Al llegar se abre la bienvenida de la boia de la entrada** (Welcome
+   Aboard: qué es BOIA, cómo se navega, qué buscar), con un botón «¡A
+   navegar!». Se puede volver a abrir desde el Menú.
+4. **«Saltar animación» y «Solo quiero ver las entradas» siguen llevando a la
+   landing** (la segunda, a su panel de Tickets). Con movimiento reducido,
+   «Zarpar» es un fundido al velo, sin mover la cámara, y entra igual en el
+   juego. Sin WebGL, o si la escena no llega en su plazo, sale la landing
+   ligera como antes. `/?intro=1` la repite y D-21 no cambia: volver a `/`
+   desde el juego (Atrás, o un enlace de la app) entra directo a la landing.
+5. **Analítica**: «Zarpar» cuenta como `explore_start` con origen `intro`;
+   como la landing no se llega a ver, no hay `landing_view`.
+
+Modifica REQ-ENT-001 (el botón ya no termina en la landing sobre el mar sino
+en `/mar`), REQ-ENT-006 y REQ-ENT-014 (la llegada es la zambullida en el
+puerto y el último fotograma es el velo de `/mar`) y acerca REQ-ENT-012
+(explorar desde el puerto sin recargar). Textos de la bienvenida `muestra`.
+
 ## Preguntas abiertas
 
 | # | Pregunta | Para | Traba |

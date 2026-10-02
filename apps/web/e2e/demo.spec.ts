@@ -100,26 +100,28 @@ async function openBarco(page: Page) {
   return menu;
 }
 
-test('`/` → planeta → «Zarpar» → landing → Tickets; el hero lleva a /mar → isla de evento', async ({
+test('`/` → planeta → «Zarpar» → /mar con la bienvenida; la landing → Tickets; isla de evento', async ({
   page,
 }, info) => {
   test.setTimeout(120_000);
   await page.goto('/');
-  // Entrada 3D con el planeta (T57): aparece, espera al botón y baja a la landing.
+  // Entrada 3D con el planeta (T57): aparece y espera al botón; «Zarpar»
+  // entra en el mar 3D con la bienvenida de la boia abierta (T64).
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
   await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused', null, {
     timeout: 20_000,
   });
-  await page.getByRole('button', { name: 'Zarpar' }).click();
-  await page.waitForFunction(() => window.__boiaIntro?.phase === 'landed', null, {
-    timeout: 20_000,
-  });
-  await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
   // El planeta es el del mundo activo de /mar.
   expect((await page.evaluate(() => window.__boiaIntro))!.world).toBe(defaultWorld.id);
-  // El botón principal del hero es el mundo 3D (T57).
+  await page.getByRole('button', { name: 'Zarpar' }).click();
+  await expect(page).toHaveURL(/\/mar$/, { timeout: 30_000 });
+  await expect(page.getByTestId('mar-bienvenida')).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator('main.mar')).toHaveAttribute('data-mundo', defaultWorld.id);
+  await shot(page, info, '1-mar');
+
+  // La landing, directa: el botón principal del hero es el mundo 3D (T57).
+  await page.goto('/?intro=0');
   await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', '/mar');
-  await shot(page, info, '1-landing');
 
   // Tickets abre el panel de muestra.
   await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();

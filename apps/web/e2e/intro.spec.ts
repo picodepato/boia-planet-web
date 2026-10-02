@@ -1,13 +1,28 @@
 import { DEFAULT_PLANET_INTRO } from '@boia/engine/intro';
+import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { marWorld } from '../app/mar/engine/compact';
 
 /**
- * Entrada 3D con el planeta de /mar (T57; D-19, D-21; REQ-ENT-001…020, ENT
- * 01–03). La entrada depende sólo de la URL (D-21): `/` a secas la reproduce
- * en cada carga completa, también con etiquetas de campaña o de compartir;
- * una URL que apunta a algo concreto entra directa. El estado se lee de
+ * Entrada 3D con el planeta de /mar (T57, T64; D-19, D-21, D-24;
+ * REQ-ENT-001…020, ENT 01–03). La entrada depende sólo de la URL (D-21): `/`
+ * a secas la reproduce en cada carga completa, también con etiquetas de
+ * campaña o de compartir; una URL que apunta a algo concreto entra directa.
+ * «Zarpar» entra en el juego (T64): se zambulle en el puerto del planeta y
+ * acaba en /mar con la bienvenida de la boia abierta; «Saltar animación» y
+ * «Solo quiero ver las entradas» llevan a la landing. El estado se lee de
  * `window.__boiaIntro` (diagnóstico público de la entrada).
  */
+
+/** Las islas del mundo activo de /mar, de la fuente: las mismas que lleva el planeta. */
+const marIslands = marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config)
+  .objects.filter(
+    (o) =>
+      o.identity.active &&
+      (o.identity.category === 'isla' || o.identity.category === 'naufrago'),
+  )
+  .map((o) => o.identity.id)
+  .sort();
 
 type Diag = NonNullable<Window['__boiaIntro']>;
 
@@ -49,6 +64,46 @@ async function landingViews(page: Page) {
       .filter((e) => e.event === 'landing_view')
       .map((e) => e.properties.intro),
   );
+}
+
+async function exploreSources(page: Page) {
+  return page.evaluate(() =>
+    (window.__boiaAnalytics ?? [])
+      .filter((e) => e.event === 'explore_start')
+      .map((e) => e.properties.source),
+  );
+}
+
+/** Marca la pestaña: si sigue ahí al final, no hubo recarga (navegación de la app). */
+const markNoReload = (page: Page) =>
+  page.evaluate(() => ((window as Window & { __sinRecarga?: boolean }).__sinRecarga = true));
+const noReload = (page: Page) =>
+  page.evaluate(() => !!(window as Window & { __sinRecarga?: boolean }).__sinRecarga);
+
+/**
+ * Tras «Zarpar» (T64): en /mar, sin pasar por la landing, con la bienvenida
+ * de la boia de la entrada abierta y la entrada recogida.
+ */
+async function inTheGame(page: Page): Promise<Diag> {
+  await expect(page).toHaveURL(/\/mar$/, { timeout: 30_000 });
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 45_000 });
+  const welcome = page.getByTestId('mar-bienvenida');
+  await expect(welcome).toBeVisible();
+  await expect(welcome.getByTestId('mar-bienvenida-boia')).toBeVisible();
+  await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
+  await expect(page.locator('.intro-overlay')).toHaveCount(0);
+  const d = (await diag(page))!;
+  // Llegó zarpando y la entrada se recogió al dejar la landing.
+  expect(d.history.slice(-2)).toEqual(['landed', 'destroyed']);
+  expect(d.outcome).toBe('played');
+  expect(d.exit).toBe('game');
+  expect(d.cover, 'el velo del mar cubría la vista al salir').toBe(1);
+  // El planeta de la entrada era el mundo que se abre.
+  await expect(page.locator('main.mar')).toHaveAttribute('data-mundo', d.world!);
+  // Se entró a explorar desde la entrada; la landing no se llegó a ver.
+  expect(await exploreSources(page)).toEqual(['intro']);
+  expect(await landingViews(page)).toEqual([]);
+  return d;
 }
 
 /** El elemento que recibe un toque en el centro de `el` es `el` o algo suyo (ENT 02). */
@@ -100,10 +155,10 @@ async function onSceneChunk(page: Page, withScene: (route: Route, body: string) 
   return hits;
 }
 
-test('`/`: el planeta, luego «BOIA» y «Zarpar»; al pulsar, baja al hero con dos botones (ENT 01, 02)', async ({
+test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambulle y entra en /mar con la bienvenida (ENT 01, 02; T64)', async ({
   page,
 }, info) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
 
@@ -143,21 +198,26 @@ test('`/`: el planeta, luego «BOIA» y «Zarpar»; al pulsar, baja al hero con 
   await page.waitForTimeout(400);
   expect(await titlePose(page), 'las letras se mueven en reposo').not.toBe(pose);
   await expect(ticketsOnly(page)).toBeVisible();
-  // El planeta es el de /mar: el mundo activo, con sus islas.
+  // El planeta es el de /mar: el mundo activo, con exactamente sus islas (T64).
   const ready = (await diag(page))!;
-  expect(ready.world).toBe('arcilla');
-  expect(ready.islands).toBeGreaterThan(3);
+  expect(ready.world).toBe(WORLD_REGISTRY.defaultId);
+  expect([...ready.islandIds!].sort()).toEqual(marIslands);
+  expect(ready.islands).toBe(marIslands.length);
 
-  // Acto 3: Enter (el botón tiene el foco) → «Zarpar».
+  // Acto 3: Enter (el botón tiene el foco) → «Zarpar»: la zambullida y el juego.
+  await markNoReload(page);
   await page.keyboard.press('Enter');
-  const d = await waitLanded(page);
-  expect(d.history).toEqual(['waiting', 'appearing', 'paused', 'landing', 'landed']);
-  expect(d.outcome).toBe('played');
+  const d = await inTheGame(page);
+  expect(await noReload(page), 'de la entrada al mar sin recargar la página').toBe(true);
+  expect(d.history).toEqual(['waiting', 'appearing', 'paused', 'landing', 'landed', 'destroyed']);
   expect(d.enteredBy).toBe('button');
   expect(d.cameraMoves, 'la cámara se movió').toBeGreaterThan(0);
   // La cámara baja hacia el planeta sin retroceder: el radio sólo crece.
   expect(d.landingRadius.length).toBeGreaterThan(2);
   expect(d.landingRadius.every((r, i) => i === 0 || r >= d.landingRadius[i - 1]!)).toBe(true);
+  // Se zambulle de verdad: al final el planeta es mucho mayor que la vista.
+  const vp = page.viewportSize()!;
+  expect(d.landingRadius.at(-1)! * 2).toBeGreaterThan(Math.max(vp.width, vp.height));
   // Corta: los tiempos de la configuración, con el reloj del navegador.
   expect(d.appearedMs).toBeGreaterThanOrEqual(DEFAULT_PLANET_INTRO.appear.durationMs);
   expect(d.playedMs).toBeGreaterThanOrEqual(DEFAULT_PLANET_INTRO.landing.durationMs);
@@ -166,21 +226,18 @@ test('`/`: el planeta, luego «BOIA» y «Zarpar»; al pulsar, baja al hero con 
     description: `escena lista a ${d.sceneReadyMs?.toFixed(0)} ms del montaje, aparición ${d.appearedMs?.toFixed(0)} ms, zarpar ${d.playedMs?.toFixed(0)} ms, fotograma más largo ${d.longestFrameMs.toFixed(0)} ms · ${d.renderer}`,
   });
 
-  // La landing sobre el planeta responde ya: dos botones, una escena.
-  await oneScene(page);
-  await expect(page.locator('.intro-overlay')).toHaveCount(0);
-  await twoHeroButtons(page);
-  await receivesTaps(page, 'cta-3d');
-  await receivesTaps(page, 'tickets');
-  expect(await landingViews(page)).toEqual(['played']);
-  // El horizonte del planeta queda detrás del hero, girando.
-  const top = d.pose!.y - d.pose!.radius;
-  expect(top).toBeGreaterThan(0);
-  expect(top).toBeLessThan(page.viewportSize()!.height);
+  // La bienvenida se cierra con su botón y el mar queda a mano.
+  await page.getByTestId('mar-bienvenida-navegar').click();
+  await expect(page.getByTestId('mar-bienvenida')).toHaveCount(0);
+  await expect(page.getByTestId('mar-entradas')).toBeVisible();
 
-  await heroTickets(page).click();
-  await expect(ticketsPanel(page)).toBeVisible();
-  expect(new URL(page.url()).pathname).toBe('/');
+  // Atrás: la landing, directa, sin repetir la entrada (D-21).
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await page.waitForFunction(
+    () => window.__boiaIntro?.mode === 'direct' && window.__boiaIntro.phase === 'landed',
+  );
+  await twoHeroButtons(page);
 });
 
 test('enlaces compartidos (`?si=`, `?utm_source=`, `?ref=`) también reproducen la entrada (T57)', async ({
@@ -195,9 +252,7 @@ test('enlaces compartidos (`?si=`, `?utm_source=`, `?ref=`) también reproducen 
     await expect(enterButton(page)).toBeVisible();
   }
   await enterButton(page).click();
-  const d = await waitLanded(page);
-  expect(d.outcome).toBe('played');
-  await twoHeroButtons(page);
+  await inTheGame(page);
 });
 
 test('una escena lenta (más que el antiguo plazo de 2 s) no se salta la entrada (T57)', async ({
@@ -228,8 +283,9 @@ test('una escena lenta (más que el antiguo plazo de 2 s) no se salta la entrada
   expect(d.sceneReadyMs!).toBeGreaterThan(DELAY - 500);
   expect(d.budgetLeftMs!).toBeGreaterThan(0);
   await enterButton(page).click();
-  expect((await waitLanded(page)).outcome).toBe('played');
+  await inTheGame(page);
 });
+
 
 test('una escena que no llega en el plazo: «Cargando» y luego la landing ligera (REQ-ENT-007)', async ({
   page,
@@ -295,10 +351,15 @@ test('«Solo quiero ver las entradas» lleva a Tickets sin el botón ni la anima
   expect(d.outcome).toBe('skipped');
   expect(d.history).not.toContain('landing');
   expect(new URL(page.url()).pathname).toBe('/');
+  expect(d.exit).toBe('landing');
   expect(await landingViews(page)).toEqual(['skipped']);
+  expect(await exploreSources(page)).toEqual([]);
 });
 
-test('botón pulsado dos veces: un solo «Zarpar», una sola escena (ENT 03)', async ({ page }) => {
+test('botón pulsado dos veces: un solo «Zarpar», una sola escena, un solo viaje (ENT 03)', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
   await page.goto('/');
   await phaseIs(page, 'paused');
   await page.evaluate(() => {
@@ -307,12 +368,13 @@ test('botón pulsado dos veces: un solo «Zarpar», una sola escena (ENT 03)', a
     b?.click();
   });
   await page.keyboard.press('Enter');
-  const d = await waitLanded(page);
-  expect(d.outcome).toBe('played');
+  const d = await inTheGame(page);
   expect(d.history.filter((p) => p === 'landing')).toHaveLength(1);
   expect(d.landingRadius.every((r, i) => i === 0 || r >= d.landingRadius[i - 1]!)).toBe(true);
-  await oneScene(page);
-  expect(await landingViews(page)).toEqual(['played']);
+  expect(d.scenesCreated).toBe(1);
+  // La escena de la entrada se fue con la landing: en /mar no queda su canvas.
+  expect(d.worldsAlive).toBe(0);
+  await expect(page.locator('canvas[data-scene="boia-intro-scene"]')).toHaveCount(0);
 });
 
 test('«Saltar» cinco veces y Escape en la pausa: la misma landing (REQ-ENT-008, ENT 03)', async ({
@@ -327,12 +389,19 @@ test('«Saltar» cinco veces y Escape en la pausa: la misma landing (REQ-ENT-008
   await page.keyboard.press('Escape');
   const d = await waitLanded(page, 2000);
   expect(d.outcome).toBe('skipped');
+  expect(d.exit).toBe('landing');
   expect(d.history).not.toContain('landing');
   await oneScene(page);
   expect(new URL(page.url()).pathname).toBe('/');
   expect(await landingViews(page)).toEqual(['skipped']);
+  await twoHeroButtons(page);
   await receivesTaps(page, 'tickets');
   await receivesTaps(page, 'cta-3d');
+  // El horizonte del planeta queda detrás del hero, girando.
+  const pose = (await diag(page))!.pose!;
+  const top = pose.y - pose.radius;
+  expect(top).toBeGreaterThan(0);
+  expect(top).toBeLessThan(page.viewportSize()!.height);
 });
 
 test('«Saltar» durante «Zarpar»: termina una vez, sin duplicar la escena', async ({ page }) => {
@@ -347,12 +416,18 @@ test('«Saltar» durante «Zarpar»: termina una vez, sin duplicar la escena', a
   });
   const d = await waitLanded(page, 2000);
   expect(d.outcome).toBe('skipped');
+  expect(d.exit).toBe('landing');
   await oneScene(page);
+  // Saltar se queda en la landing, también a medio zarpar.
+  await page.waitForTimeout(500);
+  expect(new URL(page.url()).pathname).toBe('/');
+  await twoHeroButtons(page);
 });
 
-test('pestaña oculta: la aparición acaba en la pausa; «Zarpar», en la landing (REQ-ENT-014)', async ({
+test('pestaña oculta: la aparición acaba en la pausa; «Zarpar», en el juego (REQ-ENT-014)', async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   const hide = (hidden: boolean) =>
     page.evaluate((h) => {
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => h });
@@ -373,11 +448,11 @@ test('pestaña oculta: la aparición acaba en la pausa; «Zarpar», en la landin
   await enterButton(page).click();
   await phaseIs(page, 'landing');
   await hide(true);
-  const d = await waitLanded(page, 2000);
-  expect(d.outcome).toBe('played');
-  expect(d.playedMs).toBeNull();
+  await page.waitForFunction(() => window.__boiaIntro?.exit === 'game', null, { timeout: 2000 });
   await hide(false);
-  await oneScene(page);
+
+  const d = await inTheGame(page);
+  expect(d.playedMs).toBeNull();
 });
 
 test('Atrás en la pausa: no repite la entrada ni duplica la escena (ENT 03)', async ({ page }) => {
@@ -397,9 +472,10 @@ test('Atrás en la pausa: no repite la entrada ni duplica la escena (ENT 03)', a
 test.describe('movimiento reducido', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  test('planeta quieto, título y botón; al pulsar, fundido sin mover la cámara (REQ-ENT-010)', async ({
+  test('planeta quieto, título y botón; al pulsar, fundido sin mover la cámara y al juego (REQ-ENT-010)', async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-entry', 'reduced');
     await phaseIs(page, 'paused');
@@ -422,12 +498,22 @@ test.describe('movimiento reducido', () => {
     expect((await diag(page))!.title.draws, 'no se repinta en reposo').toBe(draws);
     expect((await diag(page))!.framesRendered, 'el planeta está quieto').toBe(frames);
     await enterButton(page).click();
-    const d = await waitLanded(page);
+    const d = await inTheGame(page);
     expect(d.mode).toBe('reduced');
     expect(d.history).not.toContain('appearing');
-    expect(d.outcome).toBe('played');
     expect(d.framesRendered).toBeGreaterThan(0);
     expect(d.cameraMoves).toBe(0);
+  });
+
+  test('«Saltar animación» lleva a la landing, también con movimiento reducido', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await phaseIs(page, 'paused');
+    await page.getByRole('button', { name: 'Saltar animación' }).click();
+    const d = await waitLanded(page, 3000);
+    expect(d.exit).toBe('landing');
+    expect(new URL(page.url()).pathname).toBe('/');
     await oneScene(page);
     await receivesTaps(page, 'tickets');
   });
@@ -500,10 +586,11 @@ test('cada carga completa de `/` reproduce la entrada, aunque ya se viera (D-21,
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
   await phaseIs(page, 'paused');
-  await enterButton(page).click();
+  await page.getByRole('button', { name: 'Saltar animación' }).click();
   await waitLanded(page);
 
   // Recarga: otra vez la entrada entera.
+
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
   await phaseIs(page, 'paused');

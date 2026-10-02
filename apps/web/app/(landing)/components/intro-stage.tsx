@@ -1,26 +1,51 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { IntroData } from '../../../lib/intro/load';
 import { attachIntro, enterIntro, skipIntro } from '../../../lib/intro/run';
+import { ZARPAR_HREF, markZarpar } from '../../../lib/intro/zarpar';
 
 /**
- * Escena del hero y entrada 3D con el planeta de `/mar` (T57; D-19, D-21;
- * REQ-ENT-001…020). Lo que pinta el servidor funciona solo: el cielo y un
- * planeta ligero en CSS (REQ-ENT-038), y los textos de la entrada. Al
- * hidratar, la entrada (`lib/intro/run.ts`) carga bajo demanda la escena
- * three.js y la pone encima. En cada carga completa de `/` (D-21): carga
- * (sólo si hace falta) → el planeta aparece y gira → «BOIA» y «Zarpar» → al
- * pulsar, la cámara baja hasta el horizonte del planeta y la landing entra
- * encima. El script de arranque ya ocultó la landing antes del primer
+ * Si la navegación de la app a /mar no llega en este tiempo tras «Zarpar»,
+ * carga completa (con el velo puesto, nada se ve a medias).
+ */
+const ZARPAR_FALLBACK_MS = 8000;
+
+/**
+ * Escena del hero y entrada 3D con el planeta de `/mar` (T57, T64; D-19,
+ * D-21, D-24; REQ-ENT-001…020). Lo que pinta el servidor funciona solo: el
+ * cielo y un planeta ligero en CSS (REQ-ENT-038), y los textos de la
+ * entrada. Al hidratar, la entrada (`lib/intro/run.ts`) carga bajo demanda la
+ * escena three.js y la pone encima. En cada carga completa de `/` (D-21):
+ * carga (sólo si hace falta) → el planeta aparece y gira → «BOIA» y
+ * «Zarpar» → al pulsar, el planeta se vuelve hacia el puerto de salida, la
+ * cámara se zambulle en él, el velo del mar cubre la vista y se entra en
+ * `/mar` con la bienvenida de la boia abierta (T64), sin pasar por la
+ * landing. «Saltar animación» y «Solo quiero ver las entradas» llevan a la
+ * landing. El script de arranque ya ocultó la landing antes del primer
  * pintado (ver `bootScript`). La entrada vive lo que la carga de `/`, no lo
  * que este componente: un remontaje del hero la recoge donde iba.
  */
-export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLabel: string }) {
+export function IntroStage({
+  data,
+  skipLabel,
+  coverLabel,
+}: {
+  data: IntroData | null;
+  skipLabel: string;
+  /** El texto de la pantalla de carga de /mar, que el velo ya enseña (T64). */
+  coverLabel: string;
+}) {
+  const router = useRouter();
+  // El router de la app es estable, pero la entrada no se vuelve a enganchar por él.
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const hostRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
   const title3dRef = useRef<HTMLCanvasElement>(null);
   const enterRef = useRef<HTMLButtonElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
   const [overlay, setOverlay] = useState(true);
 
   useEffect(() => {
@@ -29,13 +54,28 @@ export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLa
       setOverlay(false);
       return;
     }
-    return attachIntro(data, {
+    let fallback = 0;
+    const detach = attachIntro(data, {
       host: hostRef,
       title: titleRef,
       title3d: title3dRef,
       enter: enterRef,
+      cover: coverRef,
       onLanded: () => setOverlay(false),
+      // Mientras se mira el planeta, /mar ya se va pidiendo: zarpar es inmediato.
+      onPaused: () => routerRef.current.prefetch(ZARPAR_HREF),
+      onEnterGame: () => {
+        markZarpar();
+        routerRef.current.push(ZARPAR_HREF);
+        fallback = window.setTimeout(() => {
+          if (window.location.pathname === '/') window.location.assign(ZARPAR_HREF);
+        }, ZARPAR_FALLBACK_MS);
+      },
     });
+    return () => {
+      window.clearTimeout(fallback);
+      detach();
+    };
   }, [data]);
 
   const copy = data?.config.copy;
@@ -88,6 +128,11 @@ export function IntroStage({ data, skipLabel }: { data: IntroData | null; skipLa
             >
               {skipLabel}
             </button>
+          </div>
+          {/* Velo del mar (T64): la pantalla de carga de /mar, que entra al final de «Zarpar». */}
+          <div className="intro-cover" ref={coverRef} aria-hidden="true">
+            <div className="intro-cover__boia" />
+            <p className="intro-cover__label">{coverLabel}</p>
           </div>
         </div>
       )}

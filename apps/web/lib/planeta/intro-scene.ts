@@ -51,6 +51,8 @@ export interface IntroScene extends IntroSceneHandle {
   readonly renderer: string;
   readonly worldId: string;
   readonly islands: number;
+  /** Ids de las islas del planeta: las de `/mar` (T64). */
+  readonly islandIds: readonly string[];
   resize(width: number, height: number): void;
 }
 
@@ -155,6 +157,9 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
     renderer: gpuName(renderer),
     worldId: live.id,
     islands: planet.islands,
+    islandIds: planet.islandIds,
+    // «Zarpar» se zambulle en el puerto de salida de /mar (T64).
+    focus: planet.focus,
     resize,
     render(f: IntroFrame, clock: number) {
       if (destroyed) return;

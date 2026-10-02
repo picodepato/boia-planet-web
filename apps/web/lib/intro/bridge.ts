@@ -38,6 +38,15 @@ export interface IntroDiagnostics {
   /** Mundo del planeta (el de /mar en este navegador) y cuántas islas lleva. */
   world: string | null;
   islands: number | null;
+  /** Ids de esas islas: las mismas que en /mar (T64). */
+  islandIds: string[] | null;
+  /**
+   * Adónde llevó la entrada (T64): `game`, «Zarpar» entra en /mar; `landing`,
+   * saltada, sin escena o visita directa. `null` mientras sigue.
+   */
+  exit: 'game' | 'landing' | null;
+  /** Velo del mar del último fotograma (0–1): llega a 1 antes de entrar en el juego. */
+  cover: number;
   /** Último fotograma pintado: el planeta en px CSS de la vista (centro, radio) y su giro. */
   pose: { x: number; y: number; radius: number; tilt: number; spin: number } | null;
 }

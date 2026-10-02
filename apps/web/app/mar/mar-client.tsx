@@ -113,6 +113,7 @@ import {
   grantEncounter,
   persistWorldEvent,
 } from '../../lib/mundo/world-progress';
+import { takeZarpar } from '../../lib/intro/zarpar';
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { MOOD_IDS, MOOD_LABEL, type MoodId } from './engine/palette';
@@ -167,6 +168,8 @@ import { t as msg } from '../../lib/i18n';
 const progressApi = () => gameRepository().progress;
 const newSessionId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const MOOD_KEY = 'boia:mar3d:momento';
+/** Lo que tarda en fundirse el velo de la entrada al llegar zarpando (T64). */
+const VELO_MS = 700;
 const HELP_KEY = 'boia:mar3d:ayuda';
 
 const ticketAvailable = (id: string) => {
@@ -318,6 +321,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   const [sessionId] = useState(newSessionId);
   const [status, setStatus] = useState<Status>('loading');
+  // Llegada zarpando desde la entrada de la landing (T64): el velo del mar de
+  // la entrada sigue puesto y se funde cuando el mar está listo.
+  const [velo, setVelo] = useState(false);
+  useEffect(() => {
+    if (takeZarpar()) setVelo(true);
+  }, []);
+  useEffect(() => {
+    if (status !== 'ready' || !velo) return;
+    const id = window.setTimeout(() => setVelo(false), VELO_MS);
+    return () => window.clearTimeout(id);
+  }, [status, velo]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const sheetRef = useRef<SheetState | null>(null);
@@ -1534,6 +1548,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               <p className="mar-splash__title">{msg('mar.client.preparandoElMar')}</p>
             </>
           )}
+        </div>
+      ) : null}
+
+      {/* El velo de la entrada (T64): la misma pantalla de carga, que se funde al estar listo. */}
+      {velo && status !== 'error' ? (
+        <div
+          className="mar-velo"
+          data-testid="mar-velo"
+          data-out={status === 'ready' ? '' : undefined}
+          aria-hidden="true"
+        >
+          <div className="mar-splash__boia" />
+          <p className="mar-splash__title">{msg('mar.client.preparandoElMar')}</p>
         </div>
       ) : null}
 
