@@ -118,7 +118,10 @@ describe('mapa compartido de Arcilla (T20)', () => {
     const missing = mapaEntries().filter((e) => !claimed.has(e));
     expect(missing).toEqual([]);
     // Y lo que el mundo dice sacar de mapa.json existe de verdad.
-    const dangling = [...claimed].filter((r) => !r.startsWith('art:') && resolve(r) === undefined);
+    // (`plan:Txx`: piezas añadidas después de la maqueta, como las del circuito cerrado de T61.)
+    const dangling = [...claimed].filter(
+      (r) => !r.startsWith('art:') && !r.startsWith('plan:') && resolve(r) === undefined,
+    );
     expect(dangling).toEqual([]);
   });
 
