@@ -116,7 +116,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: lighthouse (night beam, 3 ship types, DESTELLO, streak x4) and cannon (side view, drag to aim on a parabola, pirates need 2 hits, combo x4) rebuilt with 30 rule tests and e2e in /mar → 39ea477
 
 ## T61 — Circuit El Freu, rebuilt
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T52
 - Goal: The circuit is too simple. Rebuild it: a course marked by buoys you must pass, 3 laps, a ghost boat of your best time, boosts on the water, gold/silver/bronze medals, start light kept. Works in both worlds (El Freu / El Penyal) and on mobile.
 - Context: `packages/engine/src/circuit`, `CIRCUIT_ID` in `packages/world`, `CircuitRace` and `apps/web/app/mar/race.ts`, circuit HUD (moved by T52), local record storage, ranking Circuito tab (T56 may land before or after: keep the stored record format compatible), REQ AVE-026/028.
@@ -128,7 +128,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T62 — Delete the 2D world
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T55, T56, T57, T58, T64
 - Goal: Remove /juego and the PixiJS renderer. `/juego` (with any query) redirects to `/mar`, mapping `?ir=`, `?evento=`, `?menu=` to /mar's deep links. Delete the Pixi files (`game.ts`, `pixi-app.ts`, `views.ts`, `water.ts`, `wake.ts`, `camera.ts`, `ship/view.ts`, `bottles/view.ts`, `world/{assets,bubble,coast-view,object-view,streamer,texture-store}`, `transition/vortex-view.ts`, `intro/scene.ts`, `intro/sphere-probe.ts` and whatever T57 left), the `pixi.js` dependency, `GameSurface`/`world-handoff`, `app/sphere-probe`, `scripts/world-budget.mjs` from the build if it only served /juego, dead code (`useShipLocks`, `world/iso.ts` if unused), the /mar "Versión clásica 2D" link and the WebGL-error fallback to /juego (replace with a clear "your device can't show the 3D world" message plus Tickets). Keep both worlds (Arcilla, Acuarela) and the black-hole vortex in 3D. Migrate the e2e specs that open /juego to /mar or delete the ones that only test 2D rendering. Update docs: `README.md`, `CLAUDE.md` description ("mundo 2.5D isométrico" → 3D planet), `docs/TRASPASO.md`, `docs/spec/estado.md` (REQs that were about 2D), `docs/DECISIONES.md` (record the decision as a new D-24: only the 3D planet, 2026-10-01, Hernán and Álvaro).
 - Context: the T52–T58 outcomes in this plan, `apps/web/next.config.ts` (`transpilePackages`), `packages/engine/src/index.ts`, `apps/web/e2e/` (23 specs open /juego), `apps/web/scripts/`.
@@ -152,7 +152,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T64 — Zarpar enters the game
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: Decision 2026-10-02 (Hernán and Álvaro): the globe in the landing intro is the 3D world itself (the /mar planet with its islands, not a different mini-world), and "Zarpar" enters the game directly: it goes into /mar (no landing in between; as seamless as possible from the intro globe to the playable planet) and the Boia's explanatory popup (the welcome/tutorial dialogue of the first buoy, "La boia de la entrada" / Welcome Aboard: what BOIA is, how to sail, what to look for) opens right away. "Saltar animación" and "Solo quiero ver las entradas" still lead to the landing (the latter to its tickets); reduced-motion and no-WebGL fallbacks still work; `/?intro=1` replays; analytics `explore_start` gets source `intro`.
 - Context: T57's outcome (apps/web/lib/planeta/, intro config v4 in intro/planet.ts, intro-stage.tsx, budget from mount), `apps/web/app/mar/` (T55's MarHoja and Welcome Aboard section, deep links), tutorial buoy dialogue in packages/world, D-19/D-21 in docs/DECISIONES.md (record the change as a new decision), REQ ENT-004/005/012/018/021.
@@ -160,11 +160,11 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e: bare `/` plays the intro with the /mar planet (same islands); "Zarpar" ends on /mar with the Boia welcome popup open; "Saltar animación" and "Solo quiero ver las entradas" end on the landing; reduced-motion still works; landing within its budget → exit 0
-- Outcome:
+- Outcome: intro globe is the /mar planet; "Zarpar" enters /mar with the Boia welcome popup open; skip/tickets still go to the landing; D-24 recorded; landing 179.1/192 kB → f13f30b
 
 ## T65 — Game HUD v2: top links, left menu, minimap fix
-- Status: pending
-- Depends on: T59, T64
+- Status: running (attempt 1)
+- Depends on: T59
 - Goal: Decision 2026-10-02 (Hernán and Álvaro), replacing T53's bottom bar: (1) at the top of the game screen, buttons that link to the landing page: Fotos, Contacto, Artistas, Carnet, Shop. Fotos, Contacto, Artistas and Shop take you to the matching landing section/page; Carnet does NOT leave the game: it opens the game menu at Mi Carnet. (2) On the left, a settings button with the achievements icon; it opens one game menu with everything: Logros, Mi Carnet, ship/skins (Barco shop), day/night, change world (Mundos/vortex), how to play (Controles + Welcome Aboard), Ajustes (sensitivity, volumes, language), Mis códigos, Mi botella, Ranking. "Mi Carnet" anywhere opens this same menu at its Carnet section. (3) At the bottom only Entradas (highlighted) and turbo. (4) The minimap stays; fix its bug: when you drag/move it far to one side it glitches. (5) Landing: the Contacto block contains Filosofía and the contact data (merge the Filosofía block into Contacto) so the top Contacto link lands on both; the other landing blocks stay. Mobile-first, minimum space, popups stay as compact bottom cards.
 - Context: T53, T55, T56, T58, T59 outcomes in this plan; `apps/web/app/mar/mar-client.tsx`, `mar.css`, `apps/web/app/mar/sheet.tsx`, MarHoja, `apps/web/lib/mundo/` menu sections, the minimap component, `apps/web/app/(landing)/components/blocks.tsx` (Filosofía, Contacto), Admin home blocks editor (keep it consistent with the merged block), `e2e/mar-hud.spec.ts`. REQ PRO-008/009, COM-030.
 - Scope: may touch `apps/web/app/mar/**`, shared world UI in `apps/web/lib/mundo/**`, the landing Filosofía/Contacto blocks and their Admin block definitions, i18n, e2e, docs/spec/estado.md / must not touch game rules, steering, checkout logic.
@@ -174,8 +174,8 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T66 — Carnet worth having
-- Status: pending
-- Depends on: T65
+- Status: running (attempt 1)
+- Depends on: none
 - Goal: Decision 2026-10-02 (Hernán and Álvaro): (1) having a Carnet BOIA gives 10% off your ticket (sample value, editable later in the Admin by T63); it does not stack with world codes: the checkout applies the best single discount and says which. (2) Before buying a ticket without a Carnet, show a notice with a shortcut: "¿Tienes Carnet BOIA? Créalo en 30 s y ahorra un 10%" with "Crear Carnet" (creates it, then returns to the checkout with the discount applied) and "Seguir sin Carnet", in /mar (T58's in-world panel) and on the landing tickets flow. (3) The Carnet nickname appears in the ranking list (own row with the real nickname). (4) Ranking gets a "Descubrir a un BOIERO" button that shows a random member's Carnet, which can also be one of the artists (artist Carnets built from the artists sample content). Users with username and password are the final version (D-20), not this task.
 - Context: `apps/web/lib/ticketing/**`, SandboxCheckout, `apps/web/app/mar/entradas.tsx`, landing tickets panel, discount resolution in packages/store, Carnet storage, `RankingPanel` (T56), artists in `packages/store/src/sample/content.ts`, `/carnet/[id]` public Carnet, analytics (`purchase_confirmed` should carry which discount applied). Checkout and Carnet REQs in docs/spec.
 - Scope: may touch ticketing/checkout, discounts resolution, Carnet store, ranking UI, sample content (artist Carnets), landing tickets flow, /mar entradas, i18n, analytics, e2e, docs/spec/estado.md / must not touch HUD layout, game rules.
@@ -225,6 +225,11 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T59: FIESTERA20 -20% wins over other codes (muestra); TIENDA15 and VERANO26 removed from the sample; exclusive ship owned on mission completion via cosmetic field unlockMission (no new art: Arcilla fiesta boat recoloured pink); earlier rescuers get code and ship automatically (agent)
 
+- 2026-10-02 orchestrator: Hernán asked for up to 4 agents; T65 no longer waits on T64 and T66 no longer waits on T65 (little overlap: T64 = intro + /mar entry popup, T65 = HUD/menu/minimap, T66 = checkout/Carnet/ranking panel); conflicts resolved at integration
+
+- 2026-10-02 T64: es-mar.ts conflict resolved keeping T59's guide/minimap strings and T64's welcome-buoy strings; D-24 kept (agent)
+- 2026-10-02 T64: mar-fiestera secret test can miss its coins toast under load (passes alone, --workers=1) (agent)
+
 ## Proposals (new scope)
 - 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
 - 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
@@ -235,6 +240,8 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01 T53: REQ-PRO-009 stays PARCIAL (criterion asks for "Inicio" among on-screen controls and fps only with ?debug): decide whether the new bar closes it
 - 2026-10-01 T54: in turbo, the pull-back turn is still wider than at normal speed (101 u vs 65 u)
 - 2026-10-01: parallax landing (next batch)
+
+- 2026-10-02 T64: REQ-ENT-001 in 09-requisitos.md still says "Zarpar" ends on the landing; record.spec.ts and record-titulo.spec.ts still record "Zarpar → landing"
 
 ## Log
 - 2026-10-01 21:40 T52 launched · attempt 1 · agent a8c286457ec28b741
@@ -261,3 +268,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 01:39 T59 done · branch worktree-agent-a4ef0c67ac86cd069 → ef0d4d3
 - 2026-10-02 01:40 usage limit reached: T61 not launched; T64 agent a086a6573393db55d still running (on resume: section 7 orphans)
 - 2026-10-02 02:05 T64 agent done (c74f53e) but integration conflicts with main in apps/web/lib/i18n/es-mar.ts (T59 strings); branch worktree-agent-a086a6573393db55d and its worktree kept; on resume: continuation agent for the conflict (section 8), then integrate. Note: T64 recorded D-24, so T62 must use D-25
+- 2026-10-02 08:25 resumed; Telegram config missing on this machine, questions go to the session; SendMessage to a086a6573393db55d failed (no transcript)
+- 2026-10-02 08:27 T64 continuation (merge conflict in es-mar.ts) launched · attempt 1 · agent aeef9629cb03a1cc6
+- 2026-10-02 08:27 T61 launched · attempt 1 · agent a75467d02da559288
+- 2026-10-02 08:35 T65 launched · attempt 1 · agent a8c035f804d3a84b1 (dependency on T64 relaxed)
+- 2026-10-02 08:35 T66 launched · attempt 1 · agent af21726997e651865 (dependency on T65 relaxed)
+- 2026-10-02 08:40 T64 done · branch worktree-agent-aeef9629cb03a1cc6 → f13f30b
+- 2026-10-02 08:41 T62 launched · attempt 1
