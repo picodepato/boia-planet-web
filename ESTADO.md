@@ -4,6 +4,57 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T70: Isla del Sonido model
+
+Qué existe:
+
+- **Isla del Sonido** (`tools/blender/islas/allday.py` → `art/islas/3d/allday.glb`,
+  29 156 triángulos de 30 000, 26 materiales, 4 emisivos, 868 kB; salida
+  determinista, mismo md5 en dos corridas), con el pipeline de T69 sin
+  tocarlo: arena con meseta de hierba; al fondo, mirando al puerto, el sound
+  system de rave: dos muros de altavoces apilados (3 columnas × 5 filas:
+  graves con un cono grande, medios con dos, agudos con cono y bocina) algo
+  girados hacia la pista, con una tira naranja de BOIA y balizas encima, y
+  dos columnas sueltas a los lados; entre los muros, la cabina del DJ (tiras
+  de LED cian y magenta, «BOIA» en letras de bloques naranjas, dos platos y
+  mesa de mezclas). Encima, un pórtico de celosía de aluminio con seis focos
+  colgados apuntando a la pista y un láser con un abanico de siete rayos
+  (verde y magenta). Delante, la pista redonda con aro de luz y círculos de
+  color; encima, cinco boias de BOIA bailando (la mascota de `mascota.py`
+  con brazos y guantes, ladeadas, dos saltando, tres con gafas de sol, una
+  cantando) y la boia DJ con cascos detrás de la cabina. Palmeras, cantos y
+  el muelle con balizas de colores. Focos, láser, LED, pista y balizas
+  brillan de noche.
+- Las piezas de esta isla (cajas de aristas vivas, conos, muros, celosía,
+  focos, palmeras de hojas en tira, boia bailando con `gafas_sol` y
+  `auriculares`) viven en `islas/allday.py`; `islas/comun.py` no cambia.
+- `art/islas/3d/manifest.json`: sólo la entrada `allday` nueva (la escribe el
+  exportador, ordenada por id, antes de `halloween`). /mar la carga sin
+  cambios de código.
+- E2E `apps/web/e2e/mar-isla-sonido.spec.ts`: con `?cerca=allday` el lienzo
+  dice `allday:glb`, el GLB responde 200 una vez, el pin de la isla está y no
+  hay errores; con `RECORD_T70=1` (escritorio) deja
+  `docs/informes/img/p006-t70-isla-sonido.png` y `…-noche.png` (un paso de
+  «Alejar» para que quepa el sound system entero).
+
+Comandos:
+
+- `blender -b -P tools/blender/export_islas_glb.py -- --only allday` → exit 0
+  (`[glb] allday.glb: 29156 triángulos, 26 materiales, 868 kB`).
+- `python3 tools/blender/check.py` → exit 0 (`islas/3d: allday: 29156/30000
+  triángulos, 26 materiales (4 emisivos), 868 kB`; 60 manifiestos válidos).
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0 (104 archivos,
+  943 pruebas); `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0;
+  `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+- `E2E_PORT=3371 pnpm e2e mar-isla-sonido.spec.ts mar-isla-modelo.spec.ts
+  --workers=1` → exit 0 (6 pasan, 4 saltadas: las de captura sin RECORD).
+
+Pendiente:
+
+- Todo es `muestra`: el visto bueno del aspecto es de Álvaro.
+- El modelo va justo de presupuesto (844 triángulos libres): una boia más no
+  cabe sin quitar algo (cada boia cuesta ~3 000).
+
 ## 2026-10-02 — plan 006 T69: Island models from Blender, starting with the Isla de Halloween
 
 Qué existe:

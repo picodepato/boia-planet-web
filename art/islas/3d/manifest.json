@@ -5,6 +5,17 @@
  "max_tris": 30000,
  "islas": [
   {
+   "id": "allday",
+   "file": "allday.glb",
+   "label": "Isla del Sonido",
+   "radius": 7.0,
+   "top": 1.55,
+   "height": 9.204,
+   "tris": 29156,
+   "kb": 868,
+   "doc": "sound system de rave con dos muros de altavoces, cabina de DJ, pórtico de focos y láser que brillan de noche, y boias de BOIA bailando en la pista"
+  },
+  {
    "id": "halloween",
    "file": "halloween.glb",
    "label": "Isla de Halloween",
