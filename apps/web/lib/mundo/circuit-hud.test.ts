@@ -21,11 +21,10 @@ const byParam = (k: string) =>
   circuitDefs.find((d) => (d.triggerParams as Record<string, unknown>)[k] !== undefined)!;
 
 describe('finishLap', () => {
-  it('una vuelta lenta por la ruta segura sólo completa la vuelta', async () => {
+  it('una carrera lenta sin pasar por la boia del atajo sólo completa la vuelta', async () => {
     const r = repo();
-    const safe = spec.gates.filter((g) => g.order === 2).map((g) => g.objectId);
     const shortcutGate = param(byParam('via').id, 'via');
-    const route = [safe.find((g) => g !== shortcutGate)!];
+    const route = spec.gates.map((g) => g.objectId).filter((g) => g !== shortcutGate);
     const res = await finishLap(r.progress, spec, FAST_LAP_MS * 2, route);
     const plain = circuitDefs.find((d) => Object.keys(d.triggerParams).length === 1)!;
     expect(res.achievements.map((n) => n.id)).toEqual([`logro:${plain.id}`]);
