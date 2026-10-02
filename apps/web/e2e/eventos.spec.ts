@@ -1,4 +1,5 @@
 import { canBuy, eventState, isIslandlessSatellite } from '@boia/contracts';
+import { eventSailHref } from '../lib/world-handoff';
 import { HALLOWEEN_EVENT_ID } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
@@ -33,9 +34,7 @@ async function noIntro(page: Page) {
   await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.+/);
 }
 
-test('la ficha de BOIA Club · Halloween: cartel próximamente, satélite y su estado', async ({
-  page,
-}) => {
+test('la ficha de BOIA Halloween: cartel próximamente, su isla y su estado', async ({ page }) => {
   await page.goto(eventHref(halloween.slug));
   await noIntro(page);
   const ficha = page.getByTestId('evento-ficha');
@@ -44,9 +43,14 @@ test('la ficha de BOIA Club · Halloween: cartel próximamente, satélite y su e
   await expect(ficha.getByTestId('evento-cartel')).toContainText(EVENTOS_COPY.posterSoon);
   await expect(ficha).toContainText('BOIA Club');
   await expect(ficha).toContainText(halloween.placeLabel);
-  // Satélite sin isla: calienta para el próximo All Day (si lo hay).
-  expect(isIslandlessSatellite(halloween)).toBe(true);
-  await expect(ficha.getByTestId(`calienta-${halloween.id}`)).toBeVisible();
+  // Desde T67 tiene isla propia (la Isla de Halloween): «Ir a su isla» y nada de «calienta».
+  expect(isIslandlessSatellite(halloween)).toBe(false);
+  expect(halloween.islandId).toBe('halloween');
+  await expect(ficha.getByTestId('evento-ir-isla')).toHaveAttribute(
+    'href',
+    eventSailHref(halloween.id),
+  );
+  await expect(ficha.getByTestId(`calienta-${halloween.id}`)).toHaveCount(0);
   // Compra sólo si está a la venta ahora.
   await expect(ficha.getByTestId(`comprar-${halloween.id}`)).toHaveCount(
     canBuy(halloween, now) ? 1 : 0,

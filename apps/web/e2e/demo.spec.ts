@@ -1,5 +1,5 @@
 import { SAMPLE_COSMETICS } from '@boia/store';
-import { WORLD_REGISTRY } from '@boia/world';
+import { ALLDAY_EVENT_ID, WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -42,7 +42,8 @@ const OTHER_STYLE = SAMPLE_COSMETICS.find(
   (c) => c.slot === 'ship' && c.base && c.assetKey !== WORLD_SHIP_STYLE,
 )!.assetKey!;
 const LOCKED_STYLE = shipRoot.style_variants.find((v) => LOCKED_STYLES.has(v.id))!.id;
-const EVENT_ID = 'ev-all-day-primavera';
+// El evento de la Isla del Sonido (SONIDO desde T67).
+const EVENT_ID = ALLDAY_EVENT_ID;
 const eventIsland = defaultWorld.config.objects.find((o) =>
   o.behaviors.some(
     (b) =>

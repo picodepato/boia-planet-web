@@ -1,7 +1,7 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
  * (T38, `muestra`): las del resto (el 2D, /mar, el Admin…). No se edita a mano: se cambia el documento y se
- * vuelve a generar. 527 claves.
+ * vuelve a generar. 536 claves.
  */
 export const esZonas = {
   'intro.enter': 'Zarpar',
@@ -23,11 +23,19 @@ export const esZonas = {
   'explore.back': 'Volver a la web',
   'checkout.testNotice':
     'Versión de prueba: no se cobra nada ni se emite una entrada real. Al confirmar, el sello del evento aparece en tu Carnet.',
-  'event.halloween-2026.name': 'BOIA Club · Halloween',
+  'event.halloween-2026.name': 'BOIA Halloween',
   'event.halloween-2026.when': 'Sábado, 31 de octubre de 2026',
-  'event.halloween-2026.place': 'Kiki García Bar',
+  'event.halloween-2026.place': 'Kiki García',
   'event.halloween-2026.summary':
-    'La primera noche del BOIA Club. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto.',
+    'La noche de Halloween de BOIA. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto.',
+  'event.sonido-2026.name': 'SONIDO',
+  'event.sonido-2026.when': 'Sábado, 5 de diciembre de 2026',
+  'event.sonido-2026.summary':
+    'Un día entero alrededor del sonido: muros de altavoces, música sin un único género y gente con ganas de bailar.',
+  'event.nochevieja-2026.name': 'BOIA Nochevieja',
+  'event.nochevieja-2026.when': 'Jueves, 31 de diciembre de 2026',
+  'event.nochevieja-2026.summary':
+    'Despedimos el año con BOIA: uvas, confeti y música hasta que salga el sol del primer día.',
   'philosophy.short.title': 'BOIA en pocas palabras',
   'philosophy.short.body':
     'BOIA nace en Alicante para dar espacio a lo que merece ser descubierto. Música sin un único género, cultura sin un único formato y una comunidad en la que no vienes a mirar: formas parte. Ven por la música. Quédate por todo lo que ocurre alrededor.',
@@ -99,7 +107,7 @@ export const esZonas = {
   'world.arcilla.boia.tutorial.2':
     'Toca en cualquier sitio y arrastra: el barco va hacia donde apuntes.',
   'world.arcilla.boia.tutorial.3':
-    'Una Boia Fiestera se ha quedado atrapada entre cocodrilos. Encuéntrala y llévala a la Isla del Amanecer.',
+    'Una Boia Fiestera se ha quedado atrapada entre cocodrilos. Encuéntrala y llévala a la Isla de Nochevieja.',
   'world.arcilla.boia.tutorial.4':
     'Por el camino hay monedas, descuentos para tus entradas y algún secreto. Desvíate sin miedo.',
   'world.arcilla.boia.tutorial.5':
@@ -111,7 +119,7 @@ export const esZonas = {
   'world.acuarela.boia.tutorial.2':
     'Toca en cualquier sitio y arrastra: el remolcador va hacia donde apuntes.',
   'world.acuarela.boia.tutorial.3':
-    "La Fiestera se ha quedado en L'Albufereta con los farolillos. Encuéntrala y llévala a Tabarca antes de medianoche.",
+    "La Fiestera se ha quedado en L'Albufereta con los farolillos. Encuéntrala y llévala a la Isla de Nochevieja antes de medianoche.",
   'world.acuarela.boia.tutorial.4':
     'Por el camino hay monedas, descuentos para tus entradas y algún secreto. Mira bien: la pintura aún está húmeda.',
   'world.acuarela.boia.tutorial.5':
@@ -124,11 +132,12 @@ export const esZonas = {
   'world.arcilla.fiestera.call.1': '¡Eh, barquito! Estos señores no me dejan ir a la fiesta.',
   'world.arcilla.fiestera.call.2': 'Tranquilo, no muerden. Sólo son muy pesados.',
   'world.arcilla.fiestera.board':
-    '¡Arriba! ¿Me llevas a la Isla del Amanecer? Te lo pago bailando.',
+    '¡Arriba! ¿Me llevas a la Isla de Nochevieja? Te lo pago bailando.',
   'world.acuarela.fiestera.call.1':
     '¡Eh, barquito azul! Estos señores se han quedado con mis farolillos.',
   'world.acuarela.fiestera.call.2': 'No son malos: es que les encantan las luces.',
-  'world.acuarela.fiestera.board': '¿Me llevas a Tabarca? A medianoche se quema la hoguera.',
+  'world.acuarela.fiestera.board':
+    '¿Me llevas a la Isla de Nochevieja? A medianoche se quema la hoguera.',
   'fiestera.crocs': 'Los cocodrilos se sumergen, muertos de vergüenza.',
   'mission.rescued.title': 'Nueva tripulante a bordo',
   'mission.rescued.body': 'Boia Fiestera rescatada · Destino: {place}',
@@ -168,7 +177,11 @@ export const esZonas = {
   'island.explore': 'Explorar la isla',
   'island.sailHere': 'Navegar aquí',
   'island.secretHint': 'Por aquí cerca huele a secreto.',
-  'island.allday.name': 'Isla del escenario · All Day BOIA',
+  'island.allday.name': 'Isla del Sonido',
+  'island.ultima.name': 'Isla de Nochevieja',
+  'island.halloween.name': 'Isla de Halloween',
+  'world.arcilla.island.halloween.body':
+    'Aquí la noche de Halloween dura todo el año. Calabazas encendidas, boias disfrazadas y un club con cara de pocos amigos.',
   'world.arcilla.island.puerto.body':
     'El Varadero: de aquí salen los barcos cada temporada. Las gaviotas no pagan amarre.',
   'world.arcilla.island.cala.body':
@@ -180,7 +193,7 @@ export const esZonas = {
   'world.arcilla.island.tienda.body':
     'Camisetas, tote bags y pegatinas. La tienda de verdad está en tierra; esto es su escaparate.',
   'world.arcilla.island.ultima.body':
-    'Aquí la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla.',
+    'Aquí el año se despide bailando y la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla.',
   'world.acuarela.island.puerto.body':
     'La Explanada: aquí se abre el cuaderno. Cuidado con el mosaico, que marea.',
   'world.acuarela.island.cala.body':
@@ -192,7 +205,7 @@ export const esZonas = {
   'world.acuarela.island.tienda.body':
     'Camisetas, bolsas y pegatinas. La tienda de verdad está en tierra; esta cúpula se ve desde lejos, como la de Altea.',
   'world.acuarela.island.ultima.body':
-    'La verbena acaba en Tabarca: a medianoche se quema la hoguera y todo el mundo se moja los pies para pedir un deseo.',
+    'La verbena acaba en la Isla de Nochevieja: a medianoche se quema la hoguera y todo el mundo se moja los pies para pedir un deseo.',
   'achievements.heading': 'Logros',
   'achievements.counter': '{got} de {total} logros',
   'achievements.state.inProgress': 'En curso',
@@ -357,7 +370,7 @@ export const esZonas = {
   'welcome.what':
     'BOIA.PLANET es el universo de BOIA: un mar con islas de fiestas, descuentos escondidos, secretos y gente con Carnet. Aquí se compran las entradas y aquí se viene a curiosear.',
   'welcome.goal':
-    'Tu misión: encontrar a la Boia Fiestera y llevarla hasta la última isla. Lo demás es opcional, y ahí está la gracia.',
+    'Tu misión: encontrar a la Boia Fiestera y llevarla hasta la Isla de Nochevieja. Lo demás es opcional, y ahí está la gracia.',
   'welcome.tip.sail': 'Toca y arrastra en cualquier sitio para navegar.',
   'welcome.tip.island': 'Acércate a una isla para ver su evento y sus fotos.',
   'welcome.tip.compass': 'La brújula señala lo siguiente sin explorar.',
@@ -365,7 +378,7 @@ export const esZonas = {
     '¿Sólo quieres entradas? Botón «Inicio» y luego «Tickets». No hace falta jugar.',
   'welcome.world': 'Estás en {world}. Puedes cambiar de mundo en «Mundos»: todo sigue en su sitio.',
   'welcome.sample': 'Textos de muestra, pendientes de Álvaro.',
-  'island.faro.name': 'Isla del Faro',
+  'island.faro.name': 'Tabarca',
   'world.arcilla.faro.body':
     'Desde aquí se vigila la bocana. Los piratas llegan de noche y se disfrazan de mercantes: hace falta buen ojo.',
   'world.acuarela.faro.body':
@@ -404,7 +417,7 @@ export const esZonas = {
   'minigame.hiddenTab':
     'La pestaña se ocultó: esta partida ya no da premio, pero puedes seguir jugando.',
   'minigame.status.time': 'Tiempo',
-  'island.canon.name': 'Isla del Cañón',
+  'island.canon.name': "L'Illeta dels Banyets",
   'world.arcilla.canon.body':
     'Los tiburones rondan la cala y asustan a los bañistas. Este cañón dispara bolas de agua: nadie sale herido, sólo mojado.',
   'world.acuarela.canon.body':
@@ -435,9 +448,9 @@ export const esZonas = {
   'footer.whatsapp': 'WhatsApp',
   'boia-espacio': 'Entre la bocana y la primera isla',
   'boia-descubrir': 'Entre la primera isla y el encuentro de la Fiestera',
-  'boia-pertenecer': 'Entre la tienda y el Puerto de Fotos',
-  'boia-allday': 'Antes de la isla del escenario',
-  'boia-secretos': 'Cerca de la salida del circuito, antes de la última isla',
+  'boia-pertenecer': 'Entre Ibiza y la Isla de Benidorm',
+  'boia-allday': 'Antes de la Isla del Sonido',
+  'boia-secretos': 'Cerca de la salida del circuito, antes de la Isla de Nochevieja',
   'world.arcilla.boia.espacio.name': 'La boia del horno',
   'world.arcilla.boia.espacio.1': '¡Plop! ¿Sabes por qué existe BOIA?',
   'world.arcilla.boia.espacio.2':
@@ -520,7 +533,8 @@ export const esZonas = {
   'shop.missingPoints': 'Te faltan {n} puntos',
   'shop.unlockedPoints': '¡Desbloqueado! Y tus {threshold} puntos siguen ahí.',
   'shop.lockedAchievement': 'Se gana con el logro «{achievement}»',
-  'shop.lockedMission': 'Sólo para quien rescata a la Boia Fiestera y la lleva a la última isla',
+  'shop.lockedMission':
+    'Sólo para quien rescata a la Boia Fiestera y la lleva a la Isla de Nochevieja',
   'shop.skins.heading': 'Skins',
   'shop.skin.base': 'Base',
   'shop.skin.night': 'Noche',
@@ -556,11 +570,11 @@ export const esZonas = {
   'worlds.error': 'No hemos podido cambiar de mundo. Sigues en {world}.',
   'world.arcilla.name': 'Arcilla',
   'world.arcilla.tagline':
-    'Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla del Amanecer.',
+    'Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla de Nochevieja.',
   'world.arcilla.arrive': 'Huele a barro recién cocido.',
   'world.acuarela.name': 'Acuarela',
   'world.acuarela.tagline':
-    "El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de Tabarca.",
+    "El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de la Isla de Nochevieja.",
   'world.acuarela.arrive': 'Cuidado, que la pintura todavía está húmeda.',
   'discount.found.title': 'Descuento encontrado',
   'discount.found.saved': 'Lo tienes guardado en el Menú de a bordo, en «Mis códigos».',

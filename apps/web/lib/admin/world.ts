@@ -168,7 +168,8 @@ function contentOf(p: Pick<Place, 'behaviors'>): ContentBehavior | undefined {
 /**
  * Islas a las que se puede ligar un evento: las de categoría isla cuyo panel
  * es de evento o de isla (no el Puerto de Fotos, la tienda ni las de
- * minijuego). Hoy: la isla de evento, la cala y la última isla.
+ * minijuego). Hoy: las tres islas con entradas (Halloween, Sonido y
+ * Nochevieja) y la Cala Cantalar.
  */
 export function eventIslands(map: SharedMap): Place[] {
   return map.places.filter((p) => {

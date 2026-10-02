@@ -18,10 +18,32 @@ import { type Maq, POS, U, at, ellipseCollision, near, proximity, size } from '.
 
 export const SHARED_MAP_ID = 'boia-mapa';
 
-/** Id del evento de muestra ligado a la isla `allday` (el de la landing y de `@boia/store`). */
-export const ALLDAY_EVENT_ID = 'ev-all-day-primavera';
+/**
+ * Las tres islas con entradas (decisión de Hernán y Álvaro del 2026-10-02) y
+ * el id de su evento en el contenido (`@boia/store`): BOIA Halloween en la
+ * Isla de Halloween, SONIDO en la Isla del Sonido (`allday`) y BOIA
+ * Nochevieja en la Isla de Nochevieja (`ultima`, donde se entrega la Boia
+ * Fiestera). Se llaman igual en todos los mundos (D-20).
+ */
+export const TICKET_ISLAND_EVENTS = {
+  halloween: 'halloween-2026',
+  allday: 'sonido-2026',
+  ultima: 'nochevieja-2026',
+} as const;
 
-/** Id del circuito para checkpoints y récords (REQ-AVE-033 añade la versión). */
+/** Id del evento ligado a la isla `allday`, la Isla del Sonido (el de la landing y de `@boia/store`). */
+export const ALLDAY_EVENT_ID = TICKET_ISLAND_EVENTS.allday;
+
+/** La Isla de Halloween (T67): sin maqueta en mapa.json, su fuente es el plan. */
+export const HALLOWEEN_PLACE_ID = 'halloween';
+/** Dónde está: mar libre en el centro, entre el remanso de la Fiestera, Ibiza y la Isla del Sonido. muestra */
+export const HALLOWEEN_CENTER: Maq = [-1.0, 1.5];
+
+/**
+ * Id del circuito para checkpoints y récords (REQ-AVE-033 añade la versión).
+ * Desde T67 el circuito se llama Los Rápidos; el id sigue siendo el de El
+ * Freu para no perder récords ni logros.
+ */
 export const CIRCUIT_ID = 'el-freu';
 /**
  * Versión del trazado (REQ-AVE-033): `mapa.json` → `circuito.version` era la
@@ -37,7 +59,7 @@ const TAGS = ['muestra'];
 export const PORT_ANCHOR: Maq = [0, 25.3];
 /** La Boia Fiestera (`zonas/fiestera/lugares/fiestera`): ancla del remanso. */
 export const FIESTERA_ANCHOR: Maq = [-3.8, 7.6];
-/** La última isla (`zonas/ultima/islas/isla`) y el nicho de la Fiestera (`zonas/ultima/lugares/nicho`). */
+/** La Isla de Nochevieja, antes «la última isla» (`zonas/ultima/islas/isla`), y el nicho de la Fiestera (`zonas/ultima/lugares/nicho`). */
 export const ULTIMA_CENTER: Maq = [4.4, -27.4];
 const NICHO: Maq = [4.0, -28.2];
 /** Semieje menor y altura de la isla (`zonas/ultima/islas/isla`: `b`, `alto`). */
@@ -150,6 +172,12 @@ const talk = (lines: string[], once = false): BehaviorInput => ({
   params: { lines, once },
 });
 
+/** Una isla con entradas: abre su evento y lo vende (CONTENIDO y TICKET). */
+const tickets = (eventId: string): BehaviorInput[] => [
+  content('event', eventId),
+  { type: 'ticket', params: { eventId } },
+];
+
 /** Isla con colisión elíptica, proximidad amplia y primera llegada. */
 function island(
   id: string,
@@ -187,7 +215,7 @@ const TUTORIAL: BehaviorInput = {
     lines: [
       '¡Plop! Bienvenido a BOIA.PLANET.',
       'Toca en cualquier sitio y arrastra: el barco va hacia donde apuntes.',
-      'Tu misión: encontrar a la Boia Fiestera y llevarla hasta la última isla.',
+      'Tu misión: encontrar a la Boia Fiestera y llevarla hasta la Isla de Nochevieja.',
       'Por el mar hay descuentos, monedas y secretos. Mira bien al navegar.',
       {
         text: 'Arriba tienes el minimapa: tócalo para ampliar, mantenlo pulsado para moverlo.',
@@ -299,7 +327,7 @@ const PORT: PlaceInput[] = [
 const ISLANDS: PlaceInput[] = [
   island(
     'cala',
-    'Cala del Alfar',
+    'Cala Cantalar',
     'zonas/cala/islas/isla',
     [8.5, 13.0],
     3.1,
@@ -315,17 +343,17 @@ const ISLANDS: PlaceInput[] = [
       ),
     ],
   ),
-  // Isla de evento: sólo el nombre común, igual en todos los mundos (D-20).
+  // Islas con entradas: sólo el nombre común, igual en todos los mundos (D-20).
   island(
     'allday',
-    'Isla del escenario · All Day BOIA',
+    'Isla del Sonido',
     'zonas/allday/islas/isla',
     [1.2, -15.6],
     4.6,
     3.4,
     12,
     6.4,
-    [content('event', ALLDAY_EVENT_ID), { type: 'ticket', params: { eventId: ALLDAY_EVENT_ID } }, points(10), visit()],
+    [...tickets(ALLDAY_EVENT_ID), points(10), visit()],
     [
       'zonas/allday',
       'zonas/allday/proximidad/isla',
@@ -336,7 +364,7 @@ const ISLANDS: PlaceInput[] = [
   ),
   island(
     'fotos',
-    'Puerto de Fotos',
+    'Isla de Benidorm',
     'zonas/fotos/islas/isla',
     [-9.4, -9.9],
     2.6,
@@ -353,7 +381,7 @@ const ISLANDS: PlaceInput[] = [
   ),
   island(
     'tienda',
-    'Isla tienda',
+    'Ibiza',
     'zonas/tienda/islas/isla',
     [6.6, -1.2],
     1.9,
@@ -369,17 +397,18 @@ const ISLANDS: PlaceInput[] = [
     ],
   ),
   {
-    // La última isla: destino de la misión de la Fiestera (T21).
+    // La Isla de Nochevieja: destino de la misión de la Fiestera (T21) y,
+    // desde T67, isla con entradas (BOIA Nochevieja).
     ...island(
       'ultima',
-      'Última isla',
+      'Isla de Nochevieja',
       'zonas/ultima/islas/isla',
       ULTIMA_CENTER,
       2.7,
       2.1,
       -10,
       4.4,
-      [content('info', 'ultima'), points(20), visit()],
+      [...tickets(TICKET_ISLAND_EVENTS.ultima), points(20), visit()],
       [
         'zonas/ultima',
         'zonas/ultima/proximidad/isla',
@@ -396,12 +425,24 @@ const ISLANDS: PlaceInput[] = [
       missionReward: { points: 100, coins: 100, discount: 'dto-fiestera' },
     },
   },
+  // La Isla de Halloween (T67): mar libre del centro, sin maqueta (la modela T69).
+  island(
+    HALLOWEEN_PLACE_ID,
+    'Isla de Halloween',
+    'plan:T67',
+    HALLOWEEN_CENTER,
+    2.4,
+    1.9,
+    20,
+    4.0,
+    [...tickets(TICKET_ISLAND_EVENTS.halloween), points(10), visit()],
+  ),
   // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `faro` y `canon`.
-  island('faro', 'Isla del Faro', 'minijuegos/faro/isla', [-10.5, -25.2], 1.9, 1.3, 30, 3.4, [
+  island('faro', 'Tabarca', 'minijuegos/faro/isla', [-10.5, -25.2], 1.9, 1.3, 30, 3.4, [
     { type: 'start_minigame', params: { gameId: 'faro' } },
     visit(),
   ], ['minijuegos/faro']),
-  island('canon', 'Isla del Cañón', 'minijuegos/canon/isla', [-9.0, -18.6], 1.5, 1.1, -15, 3.0, [
+  island('canon', "L'Illeta dels Banyets", 'minijuegos/canon/isla', [-9.0, -18.6], 1.5, 1.1, -15, 3.0, [
     { type: 'start_minigame', params: { gameId: 'canon' } },
     visit(),
   ], ['minijuegos/canon']),
@@ -444,7 +485,7 @@ const FIESTERA: PlaceInput[] = [
       { type: 'proximity', params: { radius: CROC_RADIUS } },
       talk([
         '¡Eh, barquito! Estos señores no me dejan ir a la fiesta.',
-        '¿Me llevas a la última isla? Te lo pagaré bailando.',
+        '¿Me llevas a la Isla de Nochevieja? Te lo pagaré bailando.',
       ]),
     ],
     // La misión (T21): rescate en el radio de proximidad, cocodrilos en `crocRadius`.
@@ -659,7 +700,7 @@ export const BOTTLE_SPOTS: { id: string; x: number; y: number; source: string[] 
   })),
 ];
 
-// --- El Freu: el circuito (a escala de posiciones) ------------------------------
+// --- Los Rápidos (antes El Freu): el circuito (a escala de posiciones) --------
 
 /*
  * Desde T61 (entrevista del 2026-10-01) El Freu es un circuito cerrado: tres
@@ -815,7 +856,7 @@ function boostPads(): PlaceInput[] {
 
 const CIRCUIT: PlaceInput[] = [
   {
-    ...gate('circuito', 'Salida de El Freu', CIRCUIT_START, 0, 0, [
+    ...gate('circuito', 'Salida de Los Rápidos', CIRCUIT_START, 0, 0, [
       'circuito/salida',
       'zonas/circuito',
       'zonas/circuito/lugares/salida',
@@ -841,7 +882,7 @@ const CIRCUIT: PlaceInput[] = [
   ...RACE_BUOYS.map((b, i) => gate(b.id, b.name, b.p, i + 1, 0.6, b.source)),
   retired(gate('circuito-cp2', 'Checkpoint 2', [11.4, -22.0], 0, 0, ['circuito/checkpoints/3'])),
   retired(
-    gate('circuito-meta', 'Meta de El Freu', [8.8, -25.0], 0, 0, [
+    gate('circuito-meta', 'Meta de Los Rápidos', [8.8, -25.0], 0, 0, [
       'circuito/meta',
       'zonas/circuito/lugares/meta',
     ]),
@@ -1072,14 +1113,14 @@ const INFO: PlaceInput[] = INFO_BOIES.map((b, i) => ({
 /** Rectángulo que envuelve el contorno de cada zona (`zonas[].contorno`). */
 const ZONES: [string, string, number, number, number, number][] = [
   ['puerto', 'Puerto de salida', -7, 7, 19.2, 31],
-  ['cala', 'Cala del Alfar', 3, 15, 8, 19.2],
+  ['cala', 'Cala Cantalar', 3, 15, 8, 19.2],
   ['fiestera', 'Encuentro de la Boia Fiestera', -7, 1.5, 3.5, 11],
-  ['allday', 'Isla del escenario · All Day BOIA', -6, 7, -21.5, -4.5],
-  ['fotos', 'Puerto de Fotos', -15, -3, -15.5, -4.5],
-  ['tienda', 'Isla tienda', 1.5, 9.8, -4.5, 8],
+  ['allday', 'Isla del Sonido', -6, 7, -21.5, -4.5],
+  ['fotos', 'Isla de Benidorm', -15, -3, -15.5, -4.5],
+  ['tienda', 'Ibiza', 1.5, 9.8, -4.5, 8],
   ['marvivo', 'Mar vivo', -15, -2, -4.5, 19.2],
-  ['circuito', 'Circuito de velocidad', 7, 15, -25.8, 8],
-  ['ultima', 'Última isla', -2, 15, -31.5, -21.5],
+  ['circuito', 'Los Rápidos', 7, 15, -25.8, 8],
+  ['ultima', 'Isla de Nochevieja', -2, 15, -31.5, -21.5],
 ];
 
 const clampY = (y: number) => Math.min(Math.max(y, ARCILLA_BOUNDS.top), ARCILLA_BOUNDS.bottom);

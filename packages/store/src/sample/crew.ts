@@ -121,7 +121,7 @@ export const SAMPLE_BOTTLES: SampleBottle[] = [
   {
     id: 'botella-muestra-3',
     userId: 'muestra-la-del-castillo',
-    message: 'Detrás del Puerto de Fotos hay algo brillando. No digo más.',
+    message: 'Detrás de la Isla de Benidorm hay algo brillando. No digo más.',
     x: 2 * U,
     y: -8 * U,
     createdAt: '2026-09-20T23:00:00+02:00',

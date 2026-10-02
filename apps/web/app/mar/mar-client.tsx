@@ -238,11 +238,12 @@ function writePref(key: string, v: string): void {
 }
 
 const PIN_ICON: Record<string, string> = {
-  allday: '🎤',
+  allday: '🔊',
   cala: '🏺',
   fotos: '📷',
   tienda: '🛍️',
-  ultima: '🌅',
+  ultima: '🎆',
+  halloween: '🎃',
   faro: '🗼',
   canon: '💣',
 };
@@ -693,7 +694,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       case 'content_open':
         if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
         if (e.target === 'event' && e.ref && findEvent(e.ref)) {
-          setSheet({ kind: 'event', placeId: e.objectId, eventId: e.ref });
+          // La Isla de Nochevieja vende entradas y es el destino de la Fiestera:
+          // su código (la ficha del descuento) no lo tapa la ficha del evento.
+          const ref = e.ref;
+          setSheet((s) =>
+            s?.kind === 'discount' || s?.kind === 'codes'
+              ? s
+              : { kind: 'event', placeId: e.objectId, eventId: ref },
+          );
         } else if (e.target === 'info' || e.target === 'photos' || e.target === 'store') {
           // Otra visita a una isla ya descubierta: «Explorar la isla» (REQ-AVE-013).
           const revisit = e.target === 'info' && discoveredRef.current.has(e.objectId);

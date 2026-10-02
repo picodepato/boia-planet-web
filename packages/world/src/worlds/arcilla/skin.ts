@@ -16,7 +16,7 @@ export const ARCILLA_WORLD_ID = 'arcilla';
 const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   'puerto-boia': {
     lines: [
-      '¡Plop! Bienvenido. Una Boia Fiestera se ha perdido entre cocodrilos: encuéntrala y llévala a la última isla.',
+      '¡Plop! Bienvenido. Una Boia Fiestera se ha perdido entre cocodrilos: encuéntrala y llévala a la Isla de Nochevieja.',
       'Toca en cualquier sitio y arrastra: el barco va hacia donde apuntes.',
       'Por el camino hay monedas, descuentos y algún secreto. Toca para seguir.',
       {
@@ -40,8 +40,8 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   },
   ultima: {
     texts: {
-      kicker: 'Última isla',
-      body: 'Aquí la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla.',
+      kicker: 'Isla de Nochevieja',
+      body: 'Aquí el año se despide bailando y la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla.',
     },
   },
   fotos: {
@@ -55,7 +55,7 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   fiestera: {
     lines: [
       '¡Eh, barquito! Estos señores no me dejan ir a la fiesta.',
-      '¿Me llevas a la última isla? Te lo pagaré bailando.',
+      '¿Me llevas a la Isla de Nochevieja? Te lo pagaré bailando.',
     ],
   },
   naufrago: {
@@ -97,14 +97,18 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   },
 };
 
-/** Nombres propios de Arcilla (diseno.md → `propuesta_nombre`); las islas de evento no. */
+/**
+ * Nombres propios de Arcilla (diseno.md → `propuesta_nombre`); las islas de
+ * evento no. Desde el 2026-10-02 (Hernán y Álvaro) las islas de Arcilla
+ * llevan nombres reales del Mediterráneo y de Alicante (Cala Cantalar, Isla
+ * de Benidorm, Ibiza, Tabarca, L'Illeta dels Banyets): son los nombres
+ * comunes del mapa (`./map`), así que aquí sólo quedan el puerto, el remanso,
+ * el circuito y las boias.
+ */
 const NAMES: Record<string, string> = {
   puerto: 'El Varadero',
   fiestera: 'El Remanso de los Cocodrilos',
-  fotos: 'El Revelado',
-  tienda: 'La Botiga',
-  ultima: 'Isla del Amanecer',
-  circuito: 'El Freu',
+  circuito: 'Los Rápidos',
   'boia-espacio': 'La boia del horno',
   'boia-descubrir': 'La boia del chiringuito',
   'boia-pertenecer': 'La boia de las huellas',
@@ -116,7 +120,7 @@ export const ARCILLA_SKIN: WorldSkinInput = {
   id: ARCILLA_WORLD_ID,
   name: 'Arcilla',
   tagline:
-    'Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla del Amanecer.',
+    'Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla de Nochevieja.',
   ship: { style: 'arcilla' },
   sea: { base: '#1a7aa6', wave: '#3aa3c4', crest: '#f4efe6' },
   ui: { accent: '#e43b30' },

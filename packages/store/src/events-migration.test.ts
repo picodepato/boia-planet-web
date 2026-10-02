@@ -1,7 +1,6 @@
 import { eventState } from '@boia/contracts';
 import { describe, expect, it } from 'vitest';
 import { V3_EVENT_PRICES_CENTS, migrate } from './migrations';
-import { SAMPLE_EVENTS } from './sample';
 import { STORE_KEY } from './storage';
 import { MemoryStorage } from './storage';
 import { makeRepo } from './test-helpers';
@@ -11,7 +10,8 @@ import { makeRepo } from './test-helpers';
  * libre y el estado a mano pasan a la forma nueva sin cambiar lo que se ve.
  */
 const at = '2026-09-20T10:00:00.000Z';
-const primavera = SAMPLE_EVENTS.find((e) => e.id === 'ev-all-day-primavera')!;
+/** El All Day de primavera de la muestra de entonces (ya no está en la muestra: T67). */
+const primavera = { id: 'ev-all-day-primavera' };
 
 /** Un evento tal como lo guardaba el Admin en la v2 (sin los campos nuevos). */
 function v2Event(id: string, format: string, state: string) {

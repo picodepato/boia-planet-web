@@ -4,6 +4,84 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T67: Island names, the Halloween place and the three ticket events
+
+Qué existe:
+
+- **Nombres de Arcilla** (decisión de Hernán y Álvaro del 2026-10-02), como
+  nombres comunes del mapa compartido (`packages/world/src/worlds/arcilla/map.ts`):
+  `cala` Cala Cantalar, `fotos` Isla de Benidorm, `tienda` Ibiza, `faro`
+  Tabarca, `canon` L'Illeta dels Banyets, `allday` Isla del Sonido, `ultima`
+  Isla de Nochevieja. El Varadero, El náufrago y El Remanso de los Cocodrilos
+  siguen igual. El circuito se llama **Los Rápidos** (Arcilla; salida y meta
+  «de Los Rápidos»); el id (`el-freu`) no cambia, así no se pierden récords ni
+  logros. Acuarela conserva sus nombres salvo las tres islas con entradas.
+- **Isla de Halloween** (`halloween`, `HALLOWEEN_PLACE_ID`): isla nueva en mar
+  libre del centro (`HALLOWEEN_CENTER` [-1,0; 1,5] u_maq: a más de 7,9 u_maq de
+  cualquier otra isla, sin empujones al compactar), con colisión, proximidad,
+  primera llegada, 10 puntos, CONTENIDO `event` y TICKET de BOIA Halloween.
+  En el arte 2D lleva un marcador a propósito (`PLACE_MARKERS`,
+  `placeholder:isla`, world:check la da por buena); en /mar una composición
+  provisional (`islands.ts` → `halloween`: roca oscura, calabaza con la cara
+  encendida, árboles secos, antorchas) hasta el modelo de T69. Es parada de la
+  ruta de marcas (`ROUTE_STOPS`, entre el remanso y la Isla del Sonido) y
+  tiene su icono 🎃 en el rótulo.
+- **Tres eventos con entradas** (`packages/store/src/sample/content.ts`), cada
+  uno en su isla (`TICKET_EVENT_ISLANDS` en store y `TICKET_ISLAND_EVENTS` en
+  world, comprobados entre sí): BOIA Halloween en el Kiki García, sábado
+  31/10/2026 → `halloween` (id `halloween-2026`, se mantiene); SONIDO, sábado
+  05/12/2026 → `allday` (`sonido-2026`, All Day); BOIA Nochevieja, jueves
+  31/12/2026 → `ultima` (`nochevieja-2026`). Horas, precios (`priceSample`),
+  descripciones y enlaces son `muestra`. Los de antes (All Day de primavera y
+  de verano, Noche de mayo) ya no están; quedan el borrador y el finalizado
+  (archivo y fotos). El destacado de la home es BOIA Halloween; los códigos
+  del náufrago y del ánfora pasan a SONIDO y a BOIA Nochevieja.
+- **Isla de Nochevieja**: además de destino de la Fiestera, vende BOIA
+  Nochevieja; en /mar la ficha del evento ya no tapa la del código de la
+  Fiestera al entregarla (`mar-client.tsx`, `content_open`). Textos de misión,
+  tutorial, Fiestera, taglines, logro «Hasta el amanecer», catálogo de logros
+  y `shop.lockedMission` dicen «Isla de Nochevieja».
+- Textos: `docs/propuestas/textos-zonas.md` (y `es-zonas.ts` regenerado),
+  `docs/propuestas/logros-catalogo.md`, `es-juego.ts`, `es-mar.ts`,
+  `es-lib-web.ts`; `docs/spec/estado.md` (REQ-AVE-005 y 008 con el título
+  nuevo de su prueba).
+- Pruebas nuevas: `apps/web/lib/mundo/islas-entradas.test.ts` (nombres de
+  Arcilla, Halloween en los dos mundos, exactamente tres a la venta con su
+  isla y su fecha, en la landing y en «Elige tu evento»), casos nuevos en
+  `arcilla.test.ts` y `acuarela.test.ts`, y `apps/web/e2e/mar-islas.spec.ts`
+  («Entradas» con los tres; `?ir=halloween`); `mar-fiestera.spec.ts` comprueba
+  el aviso «¡Fiesta en la Isla de Nochevieja!».
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (101 files, 921 tests passed)
+- `sh tools/spec/checks.sh` → exit 0 (294 REQ; estado OK; art OK)
+- `pnpm lint` → exit 0 · `pnpm build` → exit 0 (landing 178,1 kB de 192 kB) · `pnpm typecheck` → exit 0
+- `pnpm world:check` → exit 0 (78 lugares por mundo, 0 sin skin; `halloween` marcador)
+- `E2E_PORT=3311 pnpm e2e mar-islas.spec.ts mar-fiestera.spec.ts eventos.spec.ts tickets.spec.ts demo.spec.ts --workers=1` → exit 0, 36 passed, 6 skipped (record)
+- `E2E_PORT=3311 pnpm e2e --workers=1` → 230 passed, 31 skipped, 5 failed: `mar-3d` minimapa (esperaba un solo acento; ahora son las tres islas con entradas: prueba corregida) y 3 por carga (mar-botellas, mar-hud avisos, mar-paridad «Saltar», de 2 a 3 min con T68 en paralelo). Repetidas: `E2E_PORT=3311 pnpm e2e mar-3d.spec.ts mar-botellas.spec.ts mar-hud.spec.ts mar-paridad.spec.ts --workers=1` → exit 0, 56 passed
+
+Pendiente:
+
+- T69 modela la Isla de Halloween en Blender (hoy marcador 2D y composición
+  provisional en /mar); T70 y T71, la del Sonido y la de Nochevieja.
+- El logro `islas-7` («Cartógrafa») sigue pidiendo 7 islas; con Halloween el
+  mapa tiene 8 (su descripción dice ahora «Descubre 7 islas del mapa.»). T72
+  puede subirlo si quiere que sean todas.
+- Horas, precios y descripciones de los tres eventos, pendientes de Álvaro.
+- Los nombres de tests y comentarios del circuito («El Freu») en
+  `mar-circuito.spec.ts` y el HUD de carrera los toca T73.
+
+Después de mezclar main (T68 bienvenida corta y ayuda «?», T74 tipografías):
+conflictos en `es-juego.ts` (se quedan fuera las claves `juego.welcome.*`
+que quitó T68; se conservan los textos de Isla de Nochevieja, Los Rápidos e
+Isla de Benidorm de T67) y `docs/spec/estado.md` (versión de main con las
+filas REQ-AVE-005 y 008 de T67).
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (101 files, 922 tests)
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm typecheck` → exit 0 · `pnpm build` → exit 0 (landing 189,6 kB de 192 kB) · `pnpm world:check` → exit 0
+- `E2E_PORT=3311 pnpm e2e --workers=1` → 258 passed, 39 skipped, 1 failed (`mar-circuito` en escritorio, «sin carrera» del piloto; en móvil pasó). Repetida: `E2E_PORT=3311 pnpm e2e mar-circuito.spec.ts --workers=1` → exit 0, 4 passed
+
 ## 2026-10-02 — plan 006 T74: Site font: Druk-Wide-like titles and Inter
 
 Qué existe:

@@ -183,10 +183,13 @@ describe('nombres: común y propio de cada mundo', () => {
         expect(nameIn(WORLD_REGISTRY, id, p.id)).toBe(p.name);
       }
     }
-    // El resto puede llamarse distinto en cada mundo.
-    const island = played.places.find((p) => !isEventPlace(p) && p.category === 'isla')!;
-    const names = WORLD_REGISTRY.ids().map((id) => nameIn(WORLD_REGISTRY, id, island.id));
-    expect(new Set(names).size).toBeGreaterThan(1);
+    // El resto puede llamarse distinto en cada mundo (alguna isla lo hace).
+    const islands = played.places.filter((p) => !isEventPlace(p) && p.category === 'isla');
+    const differs = islands.some(
+      (island) =>
+        new Set(WORLD_REGISTRY.ids().map((id) => nameIn(WORLD_REGISTRY, id, island.id))).size > 1,
+    );
+    expect(differs).toBe(true);
   });
 
   it('renombrar con alcance `world` cambia sólo ese mundo', () => {

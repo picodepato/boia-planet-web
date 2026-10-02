@@ -85,7 +85,10 @@ describe('Carnet', () => {
 });
 
 describe('compras de prueba y sellos', () => {
-  const onSale = SAMPLE_EVENTS.find((e) => e.state === 'on_sale');
+  // Uno a la venta con un código del mundo (para probar el descuento).
+  const onSale = SAMPLE_EVENTS.find(
+    (e) => e.state === 'on_sale' && SAMPLE_DISCOUNTS.some((d) => d.eventId === e.id),
+  );
   const notOnSale = SAMPLE_EVENTS.find((e) => e.state !== 'on_sale');
   if (!onSale || !notOnSale) throw new Error('muestra sin eventos a la venta y no a la venta');
 

@@ -8,6 +8,7 @@ import { ARCILLA_WORLD_ID } from '../arcilla';
 import { WORLD_REGISTRY } from '../catalog';
 import { manifestAssetExists } from '../check';
 import { isEventPlace } from '../map';
+import { PLACE_MARKERS } from '../place-art';
 import { ACUARELA_NAMES, ACUARELA_WORLD_ID } from '.';
 
 /**
@@ -64,8 +65,9 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
     for (const p of acuarela.places) {
       expect(p.status, p.id).toBe('skin');
       if (p.asset!.startsWith('placeholder:')) {
-        // Sólo los secretos, sin arte en ningún mundo todavía (como en Arcilla).
-        expect(p.id).toMatch(/^secreto-/);
+        // Sólo los secretos y los lugares aún sin pieza (la Isla de Halloween,
+        // T67), sin arte en ningún mundo todavía (como en Arcilla).
+        expect(p.id.startsWith('secreto-') || p.id in PLACE_MARKERS, p.id).toBe(true);
         continue;
       }
       expect(parseAssetRef(p.asset!).base, p.id).toMatch(/^mundos\/acuarela\//);
@@ -135,7 +137,7 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
     expect(() => WORLD_REGISTRY.movePlace('isla-fantasma', 0, 0)).toThrow(/desconocido/);
   });
 
-  it('nombres de lugares.json; la isla de evento conserva el nombre compartido', () => {
+  it('nombres de lugares.json; las islas de evento conservan el nombre compartido', () => {
     for (const [id, name] of Object.entries(ACUARELA_NAMES)) {
       const src = lugares.lugares.find((l) => l.id === id || id.startsWith(`${l.id}-`));
       if (src) expect(name, id).toBe(src.nombre);
@@ -146,8 +148,15 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
         objectIn(arcilla, place.id)!.identity.name,
       );
     }
-    // Los sitios con nombre propio se llaman distinto que en Arcilla.
-    for (const id of ['puerto', 'fiestera', 'ultima', 'cala', 'fotos', 'tienda']) {
+    // Las tres islas con entradas, con el mismo nombre en los dos mundos (2026-10-02).
+    const events = WORLD_REGISTRY.map.places.filter(isEventPlace).map((p) => p.id);
+    expect(events.sort()).toEqual(['allday', 'halloween', 'ultima']);
+    expect(
+      ['halloween', 'allday', 'ultima'].map((id) => objectIn(acuarela, id)!.identity.name),
+    ).toEqual(['Isla de Halloween', 'Isla del Sonido', 'Isla de Nochevieja']);
+    // Los sitios con nombre propio se llaman distinto que en Arcilla (la Cala
+    // Cantalar, desde el 2026-10-02, se llama igual en los dos).
+    for (const id of ['puerto', 'fiestera', 'fotos', 'tienda', 'faro', 'canon']) {
       expect(objectIn(acuarela, id)!.identity.name).not.toBe(objectIn(arcilla, id)!.identity.name);
     }
   });

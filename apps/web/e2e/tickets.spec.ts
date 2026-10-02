@@ -14,9 +14,10 @@ import { marSheet, openMar } from './mar-helpers';
  * móvil 360×640 y en escritorio.
  */
 
-// El evento de la isla (el de la isla de la demo) y otro a la venta sin isla.
+// El evento de una isla (se compra en el mar) y otro a la venta (se compra en
+// la landing). Desde T67 los tres a la venta tienen isla.
 const islandEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.islandId)!;
-const landingEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && !e.islandId)!;
+const landingEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.id !== islandEvent.id)!;
 // Su isla en el mundo por defecto (Arcilla desde T20).
 const islandPlace = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config.objects.find((o) =>
   o.behaviors.some(

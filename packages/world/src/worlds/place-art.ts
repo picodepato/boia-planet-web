@@ -63,6 +63,15 @@ const PARTS: Record<string, [string, string?, string?]> = {
 const RESTOS_VARIANTS = ['a', 'b', 'c'];
 
 /**
+ * Lugares sin pieza de arte todavía, con un marcador a propósito
+ * (`placeholder:<forma>`): la Isla de Halloween (T67) hasta que T69 la
+ * modele. En /mar la dibuja su composición 3D.
+ */
+export const PLACE_MARKERS: Readonly<Record<string, string>> = {
+  halloween: 'placeholder:isla',
+};
+
+/**
  * El asset de un lugar del mapa (`id`, en la posición `i` del mapa) en un
  * mundo. Los secretos llevan todos el mismo marcador brillante de T39
  * (`secreto#secreto`). Un id que nadie conoce es un error: un lugar nuevo del
@@ -71,6 +80,8 @@ const RESTOS_VARIANTS = ['a', 'b', 'c'];
 export function sharedPlaceAsset(worldId: string, id: string, i: number): string {
   const art = (place: string, part?: string, variant?: string) =>
     placePart(worldId, place, part, variant);
+  const marker = PLACE_MARKERS[id];
+  if (marker) return marker;
   const fixed = PARTS[id];
   if (fixed) return art(...fixed);
   let m = /^fiestera-(cocodrilo|roca)_(\d)$/.exec(id);

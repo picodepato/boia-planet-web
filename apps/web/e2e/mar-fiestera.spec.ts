@@ -12,7 +12,7 @@ import { discountRefOf, guideSpots, missionDiscountOf } from '../lib/mundo/guide
 /**
  * La Boia Fiestera como misión central y tres descuentos claros en /mar
  * (T59): el minimapa enseña tres «?» (los códigos del mundo, leídos de la
- * muestra); rescatarla y dejarla en la última isla da su código de entradas,
+ * muestra); rescatarla y dejarla en la Isla de Nochevieja da su código de entradas,
  * que la compra de prueba aplica, y el barco exclusivo; un secreto sin
  * código sigue escondido y premia al encontrarlo; el delfín guía a la
  * Fiestera, a los códigos y a los minijuegos (las boies informativas ya no
@@ -138,7 +138,7 @@ test('el minimapa enseña un «?» por cada uno de los tres códigos del mundo',
   expect(errors).toEqual([]);
 });
 
-test('rescatar a la Fiestera y dejarla en la última isla: su código vale en la compra y el barco exclusivo es tuyo', async ({
+test('rescatar a la Fiestera y dejarla en la Isla de Nochevieja: su código vale en la compra y el barco exclusivo es tuyo', async ({
   page,
 }) => {
   // 1. El remanso: los cocodrilos se sumergen y ella sube a bordo.
@@ -151,11 +151,18 @@ test('rescatar a la Fiestera y dejarla en la última isla: su código vale en la
     .poll(async () => (await minimap(page).getAttribute('data-mark-places')) ?? '')
     .toContain(spec.destination);
 
-  // 2. La última isla (otra visita: sigue a bordo): baja y deja su código.
+  // 2. La Isla de Nochevieja (otra visita: sigue a bordo): baja y deja su código.
   await openMar(page, `?cerca=${spec.destination}`);
   await expect(mar(page)).toHaveAttribute('data-mision', 'aboard');
   await steerTo(page, spec.destination, sheetIs(page, 'discount'));
   await expect(mar(page)).toHaveAttribute('data-mision', 'delivered', { timeout: 10_000 });
+  // La entrega nombra la Isla de Nochevieja (2026-10-02): su destino y su aviso.
+  expect(objects.find((o) => o.identity.id === spec.destination)?.identity.name).toBe(
+    'Isla de Nochevieja',
+  );
+  await expect(
+    page.getByTestId('mar-aviso').filter({ hasText: '¡Fiesta en la Isla de Nochevieja!' }).first(),
+  ).toBeVisible();
   const sheet = page.getByTestId('mar-ficha');
   await expect(sheet).toHaveAttribute('data-tipo', 'discount');
   await expect(sheet).toContainText(fiesteraCode.code);

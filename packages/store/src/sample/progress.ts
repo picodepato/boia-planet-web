@@ -1,10 +1,10 @@
 import type { AreaInput } from '../schema';
 
-/** El circuito de El Freu (id de `@boia/world`, CIRCUIT_ID). */
+/** El circuito Los Rápidos, antes El Freu (id de `@boia/world`, CIRCUIT_ID: no cambia). */
 const FREU = 'el-freu';
 
 /**
- * «Rayo del Freu»: 80 % de una vuelta limpia por la ruta segura con el barco
+ * «Rayo de Los Rápidos»: 80 % de una vuelta limpia por la ruta segura con el barco
  * base (54,5 s medidos en T36 con el runtime del motor, `DEFAULT_SHIP_CONFIG`,
  * saliendo parado en «¡Ya!»). muestra
  */
@@ -64,7 +64,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   {
     id: 'islas-7',
     title: 'Cartógrafa',
-    description: 'Descubre todas las islas del mapa.',
+    description: 'Descubre 7 islas del mapa.',
     trigger: 'visit_island',
     triggerParams: { count: 7 },
     points: 80,
@@ -84,7 +84,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   {
     id: 'fiestera-entregada',
     title: 'Hasta el amanecer',
-    description: 'Lleva a la Boia Fiestera a la última isla.',
+    description: 'Lleva a la Boia Fiestera a la Isla de Nochevieja.',
     trigger: 'deliver_character',
     triggerParams: { character: 'boia-fiestera' },
     points: 150,
@@ -94,7 +94,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   },
   {
     id: 'circuito',
-    title: 'Por El Freu',
+    title: 'Por Los Rápidos',
     description: 'Termina una vuelta al circuito.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU },
@@ -116,7 +116,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   },
   {
     id: 'circuito-rapido',
-    title: 'Rayo del Freu',
+    title: 'Rayo de Los Rápidos',
     description: 'Haz una vuelta en menos de 43,6 s.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU, maxMs: FAST_LAP_MS },
@@ -368,7 +368,7 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     sample: true,
   },
   // El premio de la misión central (T59): exclusivo de quien entrega a la
-  // Boia Fiestera en la última isla. Arte: el de Arcilla en fiesta, teñido
+  // Boia Fiestera en la Isla de Nochevieja. Arte: el de Arcilla en fiesta, teñido
   // (variante de `docs/barcos/barcos.json`, sin arte nuevo). muestra
   {
     id: 'barco-fiestera',

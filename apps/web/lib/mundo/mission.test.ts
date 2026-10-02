@@ -157,7 +157,7 @@ describe('la misión de la Fiestera, guardada', () => {
 
   it('el aviso del rescate dice lo que pide REQ-AVE-006', () => {
     expect(`${BOARDED_NOTICE.title} · ${BOARDED_NOTICE.body}`).toBe(
-      'Nueva tripulante a bordo · Boia Fiestera rescatada · Destino: última isla',
+      'Nueva tripulante a bordo · Boia Fiestera rescatada · Destino: Isla de Nochevieja',
     );
   });
 });

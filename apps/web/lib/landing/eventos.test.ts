@@ -8,7 +8,7 @@ import {
   islandUpcomingEvents,
   nextAllDay,
 } from '@boia/contracts';
-import { HALLOWEEN_EVENT_ID } from '@boia/store';
+import { HALLOWEEN_EVENT_ID, NOCHEVIEJA_EVENT_ID, SONIDO_EVENT_ID } from '@boia/store';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -123,70 +123,93 @@ describe('ficha de evento (REQ-COM-012)', () => {
   });
 });
 
-describe('BOIA Club · Halloween, satélite sin isla (D-23, O7)', () => {
-  it('es el evento real: satélite de la serie BOIA Club, sin isla y no de muestra', () => {
-    expect(halloween).toMatchObject({
-      format: 'satelite',
-      series: 'boia-club',
-      placeLabel: 'Kiki García Bar',
-      sample: false,
-    });
-    expect(isIslandlessSatellite(halloween)).toBe(true);
+describe('los tres eventos con entradas, cada uno en su isla (2026-10-02)', () => {
+  it('BOIA Halloween en el Kiki García, SONIDO y BOIA Nochevieja: reales, con precio de muestra', () => {
+    const want = [
+      [HALLOWEEN_EVENT_ID, 'BOIA Halloween', '2026-10-31', 'halloween'],
+      [SONIDO_EVENT_ID, 'SONIDO', '2026-12-05', 'allday'],
+      [NOCHEVIEJA_EVENT_ID, 'BOIA Nochevieja', '2026-12-31', 'ultima'],
+    ];
+    expect(
+      want.map(([id]) => {
+        const e = byId(id!);
+        return [e.id, e.name, e.startsAt.slice(0, 10), e.islandId];
+      }),
+    ).toEqual(want);
+    expect(halloween.placeLabel).toBe('Kiki García');
+    for (const [id] of want) {
+      expect(byId(id!)).toMatchObject({ sample: false, priceSample: true });
+      expect(isIslandlessSatellite(byId(id!))).toBe(false);
+    }
+  });
+});
+
+describe('un satélite sin isla (D-23, O7)', () => {
+  // Desde el 2026-10-02 la muestra no tiene satélites sin isla: uno como el BOIA Club de antes.
+  const club: BoiaEvent = { ...halloween, id: 'club-sin-isla', slug: 'club-sin-isla' };
+  delete club.islandId;
+  const events = [...SAMPLE_CONTENT.events, club];
+  const withClub = { ...content, events };
+
+  it('vive en la localización común', () => {
+    expect(isIslandlessSatellite(club)).toBe(true);
   });
 
   it('su ficha y su tarjeta de Tickets enlazan al próximo All Day', () => {
-    const next = nextAllDay(SAMPLE_CONTENT.events, NOW)!;
+    const next = nextAllDay(events, NOW)!;
     expect(next.format).toBe('all_day');
-    const view = eventPageView(content, halloween.slug, NOW)!;
+    const view = eventPageView(withClub, club.slug, NOW)!;
     expect(view.warmup?.next?.slug).toBe(next.slug);
     expect(view.kicker).toBe('BOIA Club');
     // «Ir a su isla»: la isla del próximo All Day.
     expect(view.islandHref).toBe(eventSailHref(next.id));
 
-    const tickets = resolveHome(SAMPLE_CONTENT, NOW).tickets;
+    const tickets = resolveHome({ ...SAMPLE_CONTENT, events }, NOW).tickets;
     expect(tickets.nextAllDay?.slug).toBe(next.slug);
     const card = renderToStaticMarkup(
       createElement(EventCard, {
-        event: halloween,
+        event: club,
         artists: [],
         buyable: true,
         source: 'tickets_panel',
         nextAllDay: tickets.nextAllDay,
       }),
     );
-    expect(card).toContain(`data-testid="calienta-${halloween.id}"`);
+    expect(card).toContain(`data-testid="calienta-${club.id}"`);
     expect(card).toContain(`href="/eventos/${next.slug}"`);
     expect(card).toContain('BOIA Club');
   });
 
   it('sin próximo All Day, no inventa el enlace', () => {
-    const events = SAMPLE_CONTENT.events.filter((e) => e.format !== 'all_day');
-    const view = eventPageView({ ...content, events }, halloween.slug, NOW)!;
+    const noAllDay = events.filter((e) => e.format !== 'all_day');
+    const view = eventPageView({ ...content, events: noAllDay }, club.slug, NOW)!;
     expect(view.warmup).toEqual({ next: null });
-    expect(page(halloween, NOW, events)).toContain(EVENTOS_COPY.warmupNone);
+    expect(page(club, NOW, noAllDay)).toContain(EVENTOS_COPY.warmupNone);
   });
 
   it('sale en los «Próximos eventos» de la isla del próximo All Day, con su enlace', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
-    const next = nextAllDay(SAMPLE_CONTENT.events, NOW)!;
-    const html = (islandId: string) =>
-      renderToStaticMarkup(createElement(IslandUpcoming, { islandId, excludeId: next.id }));
-    expect(html(next.islandId!)).toContain(`data-testid="calienta-${halloween.id}"`);
-    expect(html(next.islandId!)).toContain(`href="/eventos/${next.slug}"`);
-    // Primero los de la isla (y sus satélites); luego, el resto de próximos.
-    const order = [...html(next.islandId!).matchAll(/data-evento="([^"]+)"/g)].map((m) => m[1]);
-    const own = islandUpcomingEvents(next.islandId!, SAMPLE_CONTENT.events, NOW, next.id);
-    expect(order.slice(0, own.length)).toEqual(own.map((e) => e.id));
-    expect(own.map((e) => e.id)).toContain(halloween.id);
+    const next = nextAllDay(events, NOW)!;
+    const own = islandUpcomingEvents(next.islandId!, events, NOW, next.id);
+    expect(own.map((e) => e.id)).toContain(club.id);
+    // El panel de la isla lee el contenido vivo (la muestra): sin el satélite,
+    // enseña los de la isla y luego el resto de próximos.
+    const html = renderToStaticMarkup(
+      createElement(IslandUpcoming, { islandId: next.islandId!, excludeId: next.id }),
+    );
+    const order = [...html.matchAll(/data-evento="([^"]+)"/g)].map((m) => m[1]);
+    const mine = islandUpcomingEvents(next.islandId!, SAMPLE_CONTENT.events, NOW, next.id);
+    expect(order.slice(0, mine.length)).toEqual(mine.map((e) => e.id));
   });
 });
 
 describe('«Fotos y eventos» (REQ-COM-031)', () => {
   const islands = [
-    { id: 'cala', name: 'Cala' },
-    { id: 'allday', name: 'Isla del escenario' },
-    { id: 'ultima', name: 'Última isla' },
+    { id: 'cala', name: 'Cala Cantalar' },
+    { id: 'allday', name: 'Isla del Sonido' },
+    { id: 'ultima', name: 'Isla de Nochevieja' },
+    { id: 'halloween', name: 'Isla de Halloween' },
   ];
   const galleries = photoGalleries(
     { events: SAMPLE_CONTENT.events, albums: SAMPLE_ALBUM_CONTENT, photos: SAMPLE_CONTENT.photos },
@@ -208,18 +231,20 @@ describe('«Fotos y eventos» (REQ-COM-031)', () => {
   });
 
   it('un evento sin isla con álbum tiene su propia galería; un borrador no', () => {
+    const club: BoiaEvent = { ...halloween, id: 'club-sin-isla', slug: 'club-sin-isla' };
+    delete club.islandId;
     const own = photoGalleries(
       {
-        events: SAMPLE_CONTENT.events,
+        events: [...SAMPLE_CONTENT.events, club],
         albums: [
-          { id: 'a-hal', title: 'Halloween', eventId: halloween.id, sample: true },
+          { id: 'a-hal', title: 'Halloween', eventId: club.id, sample: true },
           { id: 'a-draft', title: 'Borrador', eventId: 'ev-borrador', sample: true },
         ],
         photos: [{ id: 'p', albumId: 'a-hal', alt: 'x', width: 1, height: 1, selection: false }],
       },
       [],
     );
-    expect(own.map((g) => g.id)).toEqual([halloween.slug]);
+    expect(own.map((g) => g.id)).toEqual([club.slug]);
     expect(own[0]!.count).toBe(1);
   });
 

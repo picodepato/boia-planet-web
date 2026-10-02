@@ -53,12 +53,12 @@ demo del navegador y faltan en el enum de Supabase.
 | 1 | `primera-boia` | Primera boia | Habla con tu primera boia. | 1 · «Te falta 1 boia» | `find_buoy` (el mapa la llama `find_boia`) | 10 pts + 5 monedas |
 | 2 | `boies-3` | Coro de boies | Habla con 3 boies distintas. | 3 · «Te quedan 2 boies» | `find_buoy`; se podrá completar cuando el plan 004 ponga sus boies en el mapa | 30 pts + 10 monedas |
 | 3 | `islas-3` | Isla a isla | Descubre 3 islas. | 3 · «Te quedan 2 islas» | `visit_island` | 30 pts + 10 monedas |
-| 4 | `islas-7` | Cartógrafa | Descubre todas las islas del mapa. | 7 · «Te quedan 4 islas» | `visit_island` | 80 pts + 20 monedas |
+| 4 | `islas-7` | Cartógrafa | Descubre 7 islas del mapa. | 7 · «Te quedan 4 islas» (desde T67 el mapa tiene 8 islas) | `visit_island` | 80 pts + 20 monedas |
 | 5 | `fiestera-rescatada` | Boia Fiestera rescatada | Saca a la Boia Fiestera de entre los cocodrilos. | 1 · «Búscala entre los cocodrilos» | `rescue_character` (`boia-fiestera`) | 50 pts + 20 monedas |
-| 6 | `fiestera-entregada` | Hasta el amanecer | Lleva a la Boia Fiestera a la última isla. | 1 · «Llévala a la última isla» | `deliver_character` (`boia-fiestera`) | 150 pts + **Bandera de la Fiestera** |
-| 7 | `circuito` | Por El Freu | Termina una vuelta al circuito. | 1 · «Termina una vuelta» | `complete_circuit` (`finishLap`, en `circuit-hud.tsx`) | 40 pts + 15 monedas |
+| 6 | `fiestera-entregada` | Hasta el amanecer | Lleva a la Boia Fiestera a la Isla de Nochevieja. | 1 · «Llévala a la Isla de Nochevieja» | `deliver_character` (`boia-fiestera`) | 150 pts + **Bandera de la Fiestera** |
+| 7 | `circuito` | Por Los Rápidos | Termina una vuelta al circuito. | 1 · «Termina una vuelta» | `complete_circuit` (`finishLap`, en `circuit-hud.tsx`) | 40 pts + 15 monedas |
 | 8 | `circuito-atajo` | ¿Atajo? Atajo. *(oculto)* | Termina una vuelta por el atajo. | 1 · «???» | `complete_circuit` con la ruta de la vuelta (`via`: arco `circuito-cp-a`) | 40 pts + **Bandera a cuadros** |
-| 9 | `circuito-rapido` | Rayo del Freu | Haz una vuelta en menos de 43,6 s. | 43,6 s · «Tu récord: 52 s, te sobran 8,4 s» | `complete_circuit` con el tiempo (`maxMs` 43 600) | 100 pts + **Estela de rayo** |
+| 9 | `circuito-rapido` | Rayo de Los Rápidos | Haz una vuelta en menos de 43,6 s. | 43,6 s · «Tu récord: 52 s, te sobran 8,4 s» | `complete_circuit` con el tiempo (`maxMs` 43 600) | 100 pts + **Estela de rayo** |
 | 10 | `faro` | Vigía del faro | Gana Vigilancia del faro. | 1 · «Gana una partida en el Faro» | **T36** `win_minigame` (`faro`) | 40 pts + 15 monedas |
 | 11 | `canon` | Ni un tiburón | Gana Cañón contra tiburones. | 1 · «Gana una partida en el Cañón» | **T36** `win_minigame` (`canon`) | 40 pts + 15 monedas |
 | 12 | `guardacostas` | Guardacostas | Gana los dos minijuegos. | 2 · «Te queda 1 minijuego» | **T36** `win_minigame`, juegos distintos | 100 pts + barco **Cel-shaded cómic** |
@@ -92,14 +92,14 @@ Las cifras de «te queda» son ejemplos; el juego pone las de cada persona.
   `throw_bottle`) y `naufrago-fiesta` (llevar al náufrago a una fiesta, con
   la señal que ya existe `deliver_character`: el náufrago hoy sólo deja su
   código al arrimarse, así que se completará cuando tenga misión).
-- **Puntos abiertos, como recomendaba el borrador:** «Rayo del Freu» al 80 %
+- **Puntos abiertos, como recomendaba el borrador:** «Rayo de Los Rápidos» (antes «Rayo del Freu») al 80 %
   de una vuelta limpia medida con el barco base; quien ya tenía `entrada` o
   `secretos` recibe también la insignia o el barco sin tocar sus saldos; el
   castillo y la Explanada de `/mar` no cuentan como islas; las botellas
   siguen sólo en `/juego`; los 3 ocultos, como estaban; el aviso dice
   «Reclama tu premio».
 
-## Tiempo de «Rayo del Freu»
+## Tiempo de «Rayo de Los Rápidos»
 
 Medido en T36 con el runtime del motor (`WorldRuntime` y `DEFAULT_SHIP_CONFIG`,
 el barco base), saliendo parado en «¡Ya!» y siguiendo el centro de los
@@ -110,7 +110,7 @@ carriles hasta la meta, con los impulsos de los arcos:
 | Segura (`circuito-cp-s`) | 54,5 s |
 | Atajo (`circuito-cp-a`) | 51,3 s |
 
-«Rayo del Freu» pide el 80 % de la vuelta limpia por la ruta segura:
+«Rayo de Los Rápidos» pide el 80 % de la vuelta limpia por la ruta segura:
 **43,6 s** (`FAST_LAP_MS` en `sample/progress.ts`). Ni el atajo sin más
 llega: hace falta derrapar bien y aprovechar los impulsos.
 

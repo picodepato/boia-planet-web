@@ -7,9 +7,10 @@ import type { PlaceSkinInput, WorldSkinInput } from '../skin';
  * (`art/mundos/acuarela/<lugar>/`, las mismas piezas que Arcilla), los
  * nombres de `mundos/acuarela/lugares.json` (sitios reales de la costa de
  * Alicante) y los textos de `mundos/acuarela/diseno.md`: el cuaderno de una
- * pintora la noche de Sant Joan, de la Explanada a la hoguera de Tabarca.
- * Ningún lugar se mueve: el mapa es el de Arcilla. La isla de evento
- * (`allday`) conserva el nombre compartido. Todo es `muestra` [pendiente
+ * pintora la noche de Sant Joan, de la Explanada a la hoguera de la Isla de
+ * Nochevieja.
+ * Ningún lugar se mueve: el mapa es el de Arcilla. Las islas con
+ * entradas (`halloween`, `allday`, `ultima`) conservan el nombre compartido. Todo es `muestra` [pendiente
  * Álvaro, preguntas al final de diseno.md].
  */
 
@@ -20,7 +21,7 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   'puerto-boia': {
     lines: [
       "¡Plop! Esta tarde es Sant Joan. La Fiestera se ha quedado en L'Albufereta con los farolillos.",
-      'Encuéntrala y llévala a Tabarca antes de medianoche.',
+      'Encuéntrala y llévala a la Isla de Nochevieja antes de medianoche.',
       'Toca en cualquier sitio y arrastra: el remolcador va hacia donde apuntes.',
       'Por el camino hay monedas, descuentos y algún secreto. Toca para seguir.',
       {
@@ -44,8 +45,8 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   },
   ultima: {
     texts: {
-      kicker: 'Última isla',
-      body: 'La verbena acaba en Tabarca: a medianoche se quema la hoguera y todos se mojan los pies para pedir un deseo.',
+      kicker: 'Isla de Nochevieja',
+      body: 'La verbena acaba en la Isla de Nochevieja: a medianoche se quema la hoguera y todos se mojan los pies para pedir un deseo.',
     },
   },
   fotos: {
@@ -61,7 +62,7 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   fiestera: {
     lines: [
       '¡Eh, barquito azul! Estos señores se han quedado con mis farolillos.',
-      '¿Me llevas a Tabarca? A medianoche se quema la hoguera.',
+      '¿Me llevas a la Isla de Nochevieja? A medianoche se quema la hoguera.',
     ],
   },
   naufrago: {
@@ -107,8 +108,9 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
 /**
  * Nombres propios de Acuarela (lugares.json → `nombre`) de los lugares que
  * son un sitio. Los que son una cosa o un bicho (restos, cofres, botellas,
- * delfín) y las piezas sueltas conservan el nombre común; la isla de evento,
- * el compartido.
+ * delfín) y las piezas sueltas conservan el nombre común; las tres islas con
+ * entradas (Isla de Halloween, Isla del Sonido e Isla de Nochevieja, que
+ * antes era Tabarca), el compartido (2026-10-02).
  */
 export const ACUARELA_NAMES: Record<string, string> = {
   puerto: 'La Explanada',
@@ -116,7 +118,6 @@ export const ACUARELA_NAMES: Record<string, string> = {
   fiestera: "L'Albufereta",
   fotos: 'La Vila Joiosa',
   tienda: 'Altea',
-  ultima: 'Tabarca',
   naufrago: 'La Nao',
   remolino: 'Cap de la Nau',
   circuito: 'El Penyal',
@@ -134,7 +135,7 @@ export const ACUARELA_SKIN: WorldSkinInput = {
   id: ACUARELA_WORLD_ID,
   name: 'Acuarela',
   tagline:
-    "El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de Tabarca.",
+    "El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de la Isla de Nochevieja.",
   ship: { style: 'acuarela' },
   // lugares.json → `mar`: aguada turquesa, lejos del azul del casco B02.
   sea: { base: '#5fb3ae', wave: '#8fd0c6', crest: '#fbf6ea' },

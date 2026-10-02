@@ -34,7 +34,7 @@ export const esMar = {
   'mar.client.cerrarAviso': 'Cerrar aviso',
   'mar.client.entreDosMundos': 'Entre dos mundos…',
   'mar.client.preparados': 'Preparados…',
-  // El Freu, circuito cerrado de tres vueltas (T61).
+  // Los Rápidos (antes El Freu), circuito cerrado de tres vueltas (T61).
   'mar.race.chip.lap': 'Vuelta {lap}/{laps}',
   'mar.race.chip.buoy': 'Boia {next}/{buoys}',
   'mar.race.chip.finish': 'a la salida',
@@ -86,7 +86,7 @@ export const esMar = {
   'mar.sheet.navegarAqui': '🧭 Navegar aquí',
   'mar.sheet.irEnNave': '🛸 Ir en nave',
   'mar.sheet.entradas': '🎟️ Entradas',
-  'mar.sheet.puertoDeFotosMuestra': '📷 Puerto de Fotos · muestra',
+  'mar.sheet.puertoDeFotosMuestra': '📷 Isla de Benidorm · fotos · muestra',
   'mar.sheet.todasLasFotosDe': 'Todas las fotos de BOIA se revelan aquí.',
   'mar.sheet.galeria': 'Galería',
   'mar.sheet.verFotosYEventos': 'Ver «Fotos y eventos»',

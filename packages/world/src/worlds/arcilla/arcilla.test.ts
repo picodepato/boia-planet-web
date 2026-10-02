@@ -6,14 +6,17 @@ import { parseArtManifest, parseAssetRef, placePartArt } from '../../art';
 import { coastAssets } from '../../schema';
 import { manifestAssetExists } from '../check';
 import { WORLD_REGISTRY } from '../catalog';
-import { parseSharedMap } from '../map';
+import { isEventPlace, parseSharedMap } from '../map';
+import { PLACE_MARKERS } from '../place-art';
 import {
   ARCILLA_MAP,
   ARCILLA_SKIN,
   BOTTLE_SPOTS,
   COAST_HALF_WIDTH,
   FACTOR,
+  HALLOWEEN_PLACE_ID,
   LOCAL_ANCHORS,
+  TICKET_ISLAND_EVENTS,
   type Maq,
   POS,
   U,
@@ -39,6 +42,24 @@ const readArt = (base: string): unknown => {
 };
 
 const map = parseSharedMap(ARCILLA_MAP);
+
+/** Los nombres que decidieron Hernán y Álvaro el 2026-10-02 para el mundo principal. */
+const NAMES_2026_10_02: Record<string, string> = {
+  cala: 'Cala Cantalar',
+  fotos: 'Isla de Benidorm',
+  tienda: 'Ibiza',
+  faro: 'Tabarca',
+  canon: "L'Illeta dels Banyets",
+  allday: 'Isla del Sonido',
+  ultima: 'Isla de Nochevieja',
+  halloween: 'Isla de Halloween',
+  // Se quedan como estaban.
+  puerto: 'El Varadero',
+  naufrago: 'El náufrago',
+  fiestera: 'El Remanso de los Cocodrilos',
+  // El circuito: de El Freu a Los Rápidos (el id no cambia).
+  circuito: 'Los Rápidos',
+};
 const arr = (v: unknown) => (Array.isArray(v) ? (v as Json[]) : []);
 const isPoint = (v: unknown): v is Maq =>
   Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === 'number');
@@ -132,7 +153,9 @@ describe('mapa compartido de Arcilla (T20)', () => {
       expect(src, p.id).toBeDefined();
       const point = sourcePoint(src!);
       if (!point) continue; // una ruta (las boies de carril): no tiene un punto
-      const anchor = LOCAL_ANCHORS.find(([prefix]) => p.id === prefix || p.id.startsWith(`${prefix}-`));
+      const anchor = LOCAL_ANCHORS.find(
+        ([prefix]) => p.id === prefix || p.id.startsWith(`${prefix}-`),
+      );
       const want = anchor ? near(anchor[1], point) : at(point);
       expect(p.position.x, p.id).toBeCloseTo(want.x, 1);
       expect(p.position.y, p.id).toBeCloseTo(want.y, 1);
@@ -167,7 +190,8 @@ describe('mapa compartido de Arcilla (T20)', () => {
     expect(missing).toEqual([]);
     expect(w.places.every((p) => p.status === 'skin')).toBe(true);
     const markers = w.places.filter((p) => p.asset?.startsWith('placeholder:')).map((p) => p.id);
-    expect(markers.every((id) => id.startsWith('secreto-'))).toBe(true);
+    // Los secretos y los lugares aún sin pieza (la Isla de Halloween, T67).
+    expect(markers.every((id) => id.startsWith('secreto-') || id in PLACE_MARKERS)).toBe(true);
     for (const a of coastAssets(w.config.coast)) expect(exists(a), a).toBe(true);
   });
 
@@ -190,10 +214,39 @@ describe('mapa compartido de Arcilla (T20)', () => {
     expect(b.images.map((i) => i.file)).toEqual(['restos_b.png']);
   });
 
-  it('la isla de evento lleva el mismo nombre en todos los mundos', () => {
+  it('las islas de evento llevan el mismo nombre en todos los mundos', () => {
+    const events = map.places.filter(isEventPlace).map((p) => p.id);
+    expect(events.sort()).toEqual(Object.keys(TICKET_ISLAND_EVENTS).sort());
     for (const id of WORLD_REGISTRY.ids()) {
-      expect(WORLD_REGISTRY.skin(id).names.allday).toBeUndefined();
+      for (const place of events) expect(WORLD_REGISTRY.skin(id).names[place]).toBeUndefined();
     }
     expect(ARCILLA_SKIN.names?.puerto).toBe('El Varadero');
+  });
+
+  it('nombres de Arcilla del 2026-10-02: islas del Mediterráneo y Los Rápidos', () => {
+    const arcilla = WORLD_REGISTRY.get('arcilla');
+    const name = (id: string) => arcilla.places.find((p) => p.id === id)?.name;
+    expect(Object.fromEntries(Object.keys(NAMES_2026_10_02).map((id) => [id, name(id)]))).toEqual(
+      NAMES_2026_10_02,
+    );
+  });
+
+  it('la Isla de Halloween: isla con entradas en mar libre, lejos de las demás', () => {
+    const h = map.places.find((p) => p.id === HALLOWEEN_PLACE_ID)!;
+    expect(h).toMatchObject({ category: 'isla', name: 'Isla de Halloween', active: true });
+    const ticket = h.behaviors.find((b) => b.type === 'ticket');
+    const content = h.behaviors.find((b) => b.type === 'content');
+    expect(ticket?.params).toMatchObject({ eventId: TICKET_ISLAND_EVENTS.halloween });
+    expect(content?.params).toMatchObject({ target: 'event', ref: TICKET_ISLAND_EVENTS.halloween });
+    // Dentro del mar y a más de 6 u_maq (× POS) de cualquier otra isla.
+    const b = map.bounds;
+    expect(h.position.x).toBeGreaterThan(b.left);
+    expect(h.position.x).toBeLessThan(b.right);
+    expect(h.position.y).toBeGreaterThan(b.top);
+    expect(h.position.y).toBeLessThan(b.bottom);
+    for (const o of map.places.filter((p) => p.category === 'isla' && p.id !== h.id)) {
+      const d = Math.hypot(o.position.x - h.position.x, o.position.y - h.position.y);
+      expect(d / POS, o.id).toBeGreaterThan(6);
+    }
   });
 });

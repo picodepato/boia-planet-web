@@ -65,8 +65,16 @@ las que pide D-23 o que la v14 no inventariaba.
 - **Bocadillos.** Cada bocadillo es una clave (`….1`, `….2`). Las marcas
   `cue: pulse_minimap` y `cue: pulse_menu` de la nota son las del código de
   hoy (`packages/world/src/worlds/*/skin.ts`).
-- **Dato, no interfaz.** Los textos del evento real (BOIA Club · Halloween)
-  son datos que se cargan en el Admin; van aquí para tenerlos juntos.
+- **Dato, no interfaz.** Los textos de los tres eventos con entradas (BOIA
+  Halloween, SONIDO y BOIA Nochevieja, 2026-10-02) son datos que se cargan en
+  el Admin; van aquí para tenerlos juntos.
+- **Nombres del 2026-10-02 (Hernán y Álvaro).** Las islas del mundo
+  principal llevan nombres reales del Mediterráneo y de Alicante: Cala
+  Cantalar (`cala`), Isla de Benidorm (`fotos`), Ibiza (`tienda`), Tabarca
+  (`faro`), L'Illeta dels Banyets (`canon`); las tres islas con entradas son
+  la Isla de Halloween (`halloween`), la Isla del Sonido (`allday`) y la Isla
+  de Nochevieja (`ultima`, adonde se lleva a la Boia Fiestera), con el mismo
+  nombre en todos los mundos; el circuito El Freu pasa a llamarse Los Rápidos.
 - **No se reescriben:** las cinco preguntas del Carnet (v14 §44.1, textuales,
   D-08 y D-23 punto 10) y los nombres y descripciones de los logros, que
   viven en `docs/propuestas/logros-catalogo.md`.
@@ -158,10 +166,16 @@ toca y nunca corporativa. Español de España y de tú. Los tres verbos mandan:
 | `checkout.noDiscount` | Sin descuento. Algunos se esconden en el mar. | |
 | `checkout.stampAdded` | ¡Sello añadido a tu Carnet! | |
 | `checkout.viewCarnet` | Ver Mi Carnet | |
-| `event.halloween-2026.name` | BOIA Club · Halloween | Dato del evento real (D-23) |
+| `event.halloween-2026.name` | BOIA Halloween | Dato del evento real (Álvaro, 2026-10-02); en la Isla de Halloween |
 | `event.halloween-2026.when` | Sábado, 31 de octubre de 2026 | Dato |
-| `event.halloween-2026.place` | Kiki García Bar | Dato |
-| `event.halloween-2026.summary` | La primera noche del BOIA Club. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto. | Dato, `muestra` |
+| `event.halloween-2026.place` | Kiki García | Dato |
+| `event.halloween-2026.summary` | La noche de Halloween de BOIA. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto. | Dato, `muestra` |
+| `event.sonido-2026.name` | SONIDO | Dato del evento real (Álvaro, 2026-10-02); en la Isla del Sonido |
+| `event.sonido-2026.when` | Sábado, 5 de diciembre de 2026 | Dato |
+| `event.sonido-2026.summary` | Un día entero alrededor del sonido: muros de altavoces, música sin un único género y gente con ganas de bailar. | Dato, `muestra` |
+| `event.nochevieja-2026.name` | BOIA Nochevieja | Dato del evento real (Álvaro, 2026-10-02); en la Isla de Nochevieja |
+| `event.nochevieja-2026.when` | Jueves, 31 de diciembre de 2026 | Dato |
+| `event.nochevieja-2026.summary` | Despedimos el año con BOIA: uvas, confeti y música hasta que salga el sol del primer día. | Dato, `muestra` |
 | `event.halloween-2026.poster` | Cartel próximamente | Dato (P19) |
 
 ## 5 · Filosofía
@@ -254,13 +268,13 @@ Cumple REQ-AVE-003 (misión, descuentos, monedas y secretos) y REQ-AVE-004
 |---|---|---|
 | `world.arcilla.boia.tutorial.1` | ¡Plop! Bienvenido a BOIA.PLANET. Soy la boia del puerto y hoy me toca recibirte. | |
 | `world.arcilla.boia.tutorial.2` | Toca en cualquier sitio y arrastra: el barco va hacia donde apuntes. | |
-| `world.arcilla.boia.tutorial.3` | Una Boia Fiestera se ha quedado atrapada entre cocodrilos. Encuéntrala y llévala a la Isla del Amanecer. | |
+| `world.arcilla.boia.tutorial.3` | Una Boia Fiestera se ha quedado atrapada entre cocodrilos. Encuéntrala y llévala a la Isla de Nochevieja. | |
 | `world.arcilla.boia.tutorial.4` | Por el camino hay monedas, descuentos para tus entradas y algún secreto. Desvíate sin miedo. | |
 | `world.arcilla.boia.tutorial.5` | Arriba tienes el minimapa: tócalo para ampliar, mantenlo pulsado para moverlo. | cue: pulse_minimap |
 | `world.arcilla.boia.tutorial.6` | Y en el ancla está el Menú de a bordo: tu Carnet, tus logros y tu barco. ¡Buen viaje! | cue: pulse_menu |
 | `world.acuarela.boia.tutorial.1` | ¡Plop! Esta tarde es Sant Joan y el cuaderno está recién pintado. Bienvenido. | |
 | `world.acuarela.boia.tutorial.2` | Toca en cualquier sitio y arrastra: el remolcador va hacia donde apuntes. | |
-| `world.acuarela.boia.tutorial.3` | La Fiestera se ha quedado en L'Albufereta con los farolillos. Encuéntrala y llévala a Tabarca antes de medianoche. | |
+| `world.acuarela.boia.tutorial.3` | La Fiestera se ha quedado en L'Albufereta con los farolillos. Encuéntrala y llévala a la Isla de Nochevieja antes de medianoche. | |
 | `world.acuarela.boia.tutorial.4` | Por el camino hay monedas, descuentos para tus entradas y algún secreto. Mira bien: la pintura aún está húmeda. | |
 | `world.acuarela.boia.tutorial.5` | Arriba tienes el minimapa: tócalo para ampliar, mantenlo pulsado para moverlo. | cue: pulse_minimap |
 | `world.acuarela.boia.tutorial.6` | Y en el ancla está el Menú de a bordo: tu Carnet, tus logros y tu barco. ¡Buena verbena! | cue: pulse_menu |
@@ -274,13 +288,13 @@ Cumple REQ-AVE-003 (misión, descuentos, monedas y secretos) y REQ-AVE-004
 |---|---|---|
 | `world.arcilla.fiestera.call.1` | ¡Eh, barquito! Estos señores no me dejan ir a la fiesta. | Pide ayuda |
 | `world.arcilla.fiestera.call.2` | Tranquilo, no muerden. Sólo son muy pesados. | |
-| `world.arcilla.fiestera.board` | ¡Arriba! ¿Me llevas a la Isla del Amanecer? Te lo pago bailando. | Al subir |
+| `world.arcilla.fiestera.board` | ¡Arriba! ¿Me llevas a la Isla de Nochevieja? Te lo pago bailando. | Al subir |
 | `world.acuarela.fiestera.call.1` | ¡Eh, barquito azul! Estos señores se han quedado con mis farolillos. | |
 | `world.acuarela.fiestera.call.2` | No son malos: es que les encantan las luces. | |
-| `world.acuarela.fiestera.board` | ¿Me llevas a Tabarca? A medianoche se quema la hoguera. | |
+| `world.acuarela.fiestera.board` | ¿Me llevas a la Isla de Nochevieja? A medianoche se quema la hoguera. | |
 | `fiestera.crocs` | Los cocodrilos se sumergen, muertos de vergüenza. | Aviso breve |
 | `mission.rescued.title` | Nueva tripulante a bordo | v14 §8.1 |
-| `mission.rescued.body` | Boia Fiestera rescatada · Destino: {place} | {place}: la última isla del mundo |
+| `mission.rescued.body` | Boia Fiestera rescatada · Destino: {place} | {place}: la Isla de Nochevieja |
 | `mission.route` | Lleva a la Fiestera a {place} | |
 | `mission.route.clear` | Quitar rumbo | |
 | `fiestera.react.1` | ¡Uy, qué sitio! | Reacciones a bordo, de vez en cuando |
@@ -328,19 +342,22 @@ Cumple REQ-AVE-003 (misión, descuentos, monedas y secretos) y REQ-AVE-004
 | `island.event.memory` | Este evento ya pasó. Aquí se queda su recuerdo: fotos, cartel y artistas. | Isla en recuerdo |
 | `island.event.soldOut` | Agotado. Pero esta isla tiene más fiestas: mira abajo. | |
 | `island.secretHint` | Por aquí cerca huele a secreto. | |
-| `island.allday.name` | Isla del escenario · All Day BOIA | Nombre común, igual en todos los mundos (D-20) |
+| `island.allday.name` | Isla del Sonido | Nombre común, igual en todos los mundos (D-20; 2026-10-02) |
+| `island.ultima.name` | Isla de Nochevieja | Nombre común, igual en todos los mundos; destino de la Boia Fiestera (2026-10-02) |
+| `island.halloween.name` | Isla de Halloween | Nombre común, igual en todos los mundos (2026-10-02, T67) |
+| `world.arcilla.island.halloween.body` | Aquí la noche de Halloween dura todo el año. Calabazas encendidas, boias disfrazadas y un club con cara de pocos amigos. | |
 | `world.arcilla.island.puerto.body` | El Varadero: de aquí salen los barcos cada temporada. Las gaviotas no pagan amarre. | |
 | `world.arcilla.island.cala.body` | Aquí se coció tu barco. Todavía está caliente. De día la cala cocina; de noche, baila. | |
 | `world.arcilla.island.allday.body` | All Day BOIA: de la paella al amanecer. ¿Llegas en barco? Pasa por el arco, que la fiesta está dentro. | |
 | `world.arcilla.island.fotos.body` | Todas las fotos de BOIA se revelan aquí. Pasa por el marco y sonríe. | |
 | `world.arcilla.island.tienda.body` | Camisetas, tote bags y pegatinas. La tienda de verdad está en tierra; esto es su escaparate. | |
-| `world.arcilla.island.ultima.body` | Aquí la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla. | |
+| `world.arcilla.island.ultima.body` | Aquí el año se despide bailando y la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla. | |
 | `world.acuarela.island.puerto.body` | La Explanada: aquí se abre el cuaderno. Cuidado con el mosaico, que marea. | |
 | `world.acuarela.island.cala.body` | Aquí vive la pintora del cuaderno: lo que pinta cobra vida mientras está húmedo. Cuidado, que aún estás fresco: si te mojas mucho, se te corre el azul. | |
 | `world.acuarela.island.allday.body` | La barraca del All Day, montada como las de Hogueras. De la tarde a medianoche, sin un solo género. | |
 | `world.acuarela.island.fotos.body` | En La Vila cada casa es de un color para que los marineros la vieran desde el mar. Aquí cada foto de BOIA tiene su casa. | |
 | `world.acuarela.island.tienda.body` | Camisetas, bolsas y pegatinas. La tienda de verdad está en tierra; esta cúpula se ve desde lejos, como la de Altea. | |
-| `world.acuarela.island.ultima.body` | La verbena acaba en Tabarca: a medianoche se quema la hoguera y todo el mundo se moja los pies para pedir un deseo. | |
+| `world.acuarela.island.ultima.body` | La verbena acaba en la Isla de Nochevieja: a medianoche se quema la hoguera y todo el mundo se moja los pies para pedir un deseo. | |
 
 ## 12 · Logros
 
@@ -376,7 +393,7 @@ Nombres, descripciones y «te queda» de cada logro: `docs/propuestas/logros-cat
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `circuit.idle` | {place} · pasa por el arco de salida para empezar | {place}: El Freu o El Penyal |
+| `circuit.idle` | {place} · pasa por el arco de salida para empezar | {place}: Los Rápidos o El Penyal |
 | `circuit.idle.record` | {place} · récord {time} · pasa por el arco | |
 | `circuit.countdown.go` | ¡Ya! | |
 | `circuit.shortcut.sign` | ATAJO → | Cartel (v14 §13) |
@@ -540,7 +557,7 @@ Primera sección del Menú de a bordo (v14 §19).
 | `menu.settings` | Ajustes | |
 | `welcome.title` | Bienvenido a bordo | |
 | `welcome.what` | BOIA.PLANET es el universo de BOIA: un mar con islas de fiestas, descuentos escondidos, secretos y gente con Carnet. Aquí se compran las entradas y aquí se viene a curiosear. | |
-| `welcome.goal` | Tu misión: encontrar a la Boia Fiestera y llevarla hasta la última isla. Lo demás es opcional, y ahí está la gracia. | |
+| `welcome.goal` | Tu misión: encontrar a la Boia Fiestera y llevarla hasta la Isla de Nochevieja. Lo demás es opcional, y ahí está la gracia. | |
 | `welcome.tip.sail` | Toca y arrastra en cualquier sitio para navegar. | |
 | `welcome.tip.island` | Acércate a una isla para ver su evento y sus fotos. | |
 | `welcome.tip.compass` | La brújula señala lo siguiente sin explorar. | |
@@ -552,7 +569,7 @@ Primera sección del Menú de a bordo (v14 §19).
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `island.faro.name` | Isla del Faro | Nombre común; en Acuarela, «Cap de l'Horta» |
+| `island.faro.name` | Tabarca | Nombre común (2026-10-02); en Acuarela, «Cap de l'Horta» |
 | `world.arcilla.faro.body` | Desde aquí se vigila la bocana. Los piratas llegan de noche y se disfrazan de mercantes: hace falta buen ojo. | Panel editorial (REQ-AVE-036) |
 | `world.acuarela.faro.body` | Desde el faro del Cap de l'Horta se vigila el cuaderno: por aquí intentan colarse los piratas. | |
 | `minigame.faro.title` | Vigilancia del faro | |
@@ -591,7 +608,7 @@ Primera sección del Menú de a bordo (v14 §19).
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `island.canon.name` | Isla del Cañón | Nombre común; en Acuarela, «Torre de l'Illeta» |
+| `island.canon.name` | L'Illeta dels Banyets | Nombre común (2026-10-02); en Acuarela, «Torre de l'Illeta» |
 | `world.arcilla.canon.body` | Los tiburones rondan la cala y asustan a los bañistas. Este cañón dispara bolas de agua: nadie sale herido, sólo mojado. | |
 | `world.acuarela.canon.body` | La Torre de l'Illeta ahuyenta tiburones a cañonazos de agua. Ni un rasguño: sólo sustos. | |
 | `minigame.canon.title` | Cañón contra tiburones | |
@@ -634,9 +651,9 @@ boia tiene un nombre y dos bocadillos por mundo. Con la primera boia son seis.
 |---|---|---|
 | `boia-espacio` | Entre la bocana y la primera isla | Dar espacio: por qué existe BOIA |
 | `boia-descubrir` | Entre la primera isla y el encuentro de la Fiestera | Descubrir: música sin un único género |
-| `boia-pertenecer` | Entre la tienda y el Puerto de Fotos | Pertenecer: el Carnet |
-| `boia-allday` | Antes de la isla del escenario | Qué es un All Day |
-| `boia-secretos` | Cerca de la salida del circuito, antes de la última isla | La curiosidad tiene premio |
+| `boia-pertenecer` | Entre Ibiza y la Isla de Benidorm | Pertenecer: el Carnet |
+| `boia-allday` | Antes de la Isla del Sonido | Qué es un All Day |
+| `boia-secretos` | Cerca de la salida del circuito, antes de la Isla de Nochevieja | La curiosidad tiene premio |
 
 | Clave | Texto | Nota |
 |---|---|---|
@@ -743,7 +760,7 @@ propuesta del equipo.
 | `shop.missingPoints` | Te faltan {n} puntos | |
 | `shop.unlockedPoints` | ¡Desbloqueado! Y tus {threshold} puntos siguen ahí. | Los puntos no se gastan |
 | `shop.lockedAchievement` | Se gana con el logro «{achievement}» | |
-| `shop.lockedMission` | Sólo para quien rescata a la Boia Fiestera y la lleva a la última isla | T59: el barco exclusivo de la misión central |
+| `shop.lockedMission` | Sólo para quien rescata a la Boia Fiestera y la lleva a la Isla de Nochevieja | T59: el barco exclusivo de la misión central |
 | `shop.skins.heading` | Skins | |
 | `shop.skin.base` | Base | |
 | `shop.skin.night` | Noche | 150 monedas |
@@ -782,10 +799,10 @@ propuesta del equipo.
 | `worlds.transition.done` | Bienvenido a {world}. Todo sigue en su sitio. | Aviso al salir del vórtice |
 | `worlds.error` | No hemos podido cambiar de mundo. Sigues en {world}. | |
 | `world.arcilla.name` | Arcilla | |
-| `world.arcilla.tagline` | Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla del Amanecer. | |
+| `world.arcilla.tagline` | Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla de Nochevieja. | |
 | `world.arcilla.arrive` | Huele a barro recién cocido. | Primer bocadillo al llegar |
 | `world.acuarela.name` | Acuarela | |
-| `world.acuarela.tagline` | El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de Tabarca. | |
+| `world.acuarela.tagline` | El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de la Isla de Nochevieja. | |
 | `world.acuarela.arrive` | Cuidado, que la pintura todavía está húmeda. | |
 
 ## 28 · Descuentos y «Mis códigos»

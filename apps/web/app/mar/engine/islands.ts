@@ -43,7 +43,7 @@ import {
 
 /**
  * Las islas del mapa compartido en 3D: cada lugar con su composición (el
- * escenario del All Day, el horno de la Cala del Alfar, el faro…), hecha de
+ * escenario del All Day, el horno de la Cala Cantalar, el faro…), hecha de
  * piezas low-poly. Medidas en unidades de escena, con el centro de la isla en
  * el origen y el sur (hacia el puerto) en +z.
  */
@@ -225,7 +225,7 @@ export function textTexture(
 
 export const newParts = (): Parts => ({ lit: new Kit(), glow: new Kit(), glows: new Glows() });
 
-// --- All Day BOIA: el escenario --------------------------------------------
+// --- Isla del Sonido (`allday`): el escenario -----------------------------
 
 function allday(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -382,7 +382,7 @@ function allday(R: number, rnd: () => number): IslandBuild {
   return { parts, animated, update, heightAt: h, labelY: top + 6.4 };
 }
 
-// --- Cala del Alfar: el horno -----------------------------------------------
+// --- Cala Cantalar: el horno ----------------------------------------------
 
 function cala(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -442,7 +442,7 @@ function cala(R: number, rnd: () => number): IslandBuild {
   return { parts, animated, update, heightAt: h, labelY: top + 5 };
 }
 
-// --- Puerto de Fotos ---------------------------------------------------------
+// --- Isla de Benidorm: las fotos ------------------------------------------
 
 function fotos(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -498,7 +498,7 @@ function fotos(R: number, rnd: () => number): IslandBuild {
   return { parts, animated, heightAt: h, labelY: top + 4.2 };
 }
 
-// --- Isla tienda --------------------------------------------------------------
+// --- Ibiza: la tienda -------------------------------------------------------
 
 function tienda(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -537,7 +537,7 @@ function tienda(R: number, rnd: () => number): IslandBuild {
   return { parts, animated: [], heightAt: h, labelY: top + 3.8 };
 }
 
-// --- Última isla (la del amanecer) ------------------------------------------
+// --- Isla de Nochevieja (`ultima`, donde baja la Fiestera) ---------------
 
 function ultima(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -681,6 +681,65 @@ function canon(R: number, rnd: () => number): IslandBuild {
   return { parts, animated: [], heightAt: h, labelY: top + 3.6 };
 }
 
+// --- Isla de Halloween (T67): marcador hasta el modelo de Blender de T69 --------
+
+/**
+ * Una composición sencilla y provisional: roca oscura, una calabaza grande
+ * con la cara encendida en el centro, árboles secos y antorchas moradas. T69
+ * la cambia por el modelo de Blender (el club calabaza y las boias
+ * disfrazadas).
+ */
+function halloween(R: number, rnd: () => number): IslandBuild {
+  const parts = newParts();
+  const k = parts.lit;
+  const h = terrain(k, R, rocky(1.6), rnd, 22);
+  shoreRocks(k, R, 10, rnd, Math.PI / 2);
+  const top = h(0, 0);
+  // La calabaza: gajos aplastados, rabo y la cara que brilla de noche.
+  const pr = Math.min(2.2, R * 0.32);
+  const cz = -0.4;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    k.add(new SphereGeometry(pr * 0.55, 10, 8), i % 2 ? C.orange : C.orangeDeep, {
+      p: [Math.cos(a) * pr * 0.42, top + pr * 0.62, cz + Math.sin(a) * pr * 0.42],
+      s: [1, 1.15, 1],
+    });
+  }
+  k.add(new CylinderGeometry(0.16, 0.24, 0.7, 6), C.leafDark, {
+    p: [0, top + pr * 1.38, cz],
+    r: [0, 0, 0.25],
+  });
+  const face = pr * 0.94;
+  for (const s of [-1, 1]) {
+    parts.glow.add(new ConeGeometry(0.28, 0.42, 3), C.flame, {
+      p: [s * 0.45, top + pr * 0.82, cz + face],
+      r: [Math.PI / 2, 0, 0],
+    });
+  }
+  parts.glow.add(new BoxGeometry(1.1, 0.22, 0.12), C.flame, { p: [0, top + pr * 0.42, cz + face] });
+  parts.glows.add([0, top + pr * 0.6, cz + face + 0.4], '#ff8a2a', 7);
+  // Árboles secos.
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI * 0.95 + i * 0.6 + (rnd() - 0.5) * 0.2;
+    const x = Math.cos(a) * R * 0.62;
+    const z = Math.sin(a) * R * 0.62;
+    const y = h(x, z);
+    k.add(new CylinderGeometry(0.08, 0.14, 2.2, 5), C.iron, { p: [x, y + 1.1, z] });
+    for (const s of [-1, 1]) {
+      k.add(new CylinderGeometry(0.04, 0.07, 0.9, 4), C.iron, {
+        p: [x + s * 0.3, y + 1.8, z],
+        r: [0, 0, -s * 0.8],
+      });
+    }
+  }
+  for (const s of [-1, 1]) {
+    torch(parts, s * 1.4, h(s * 1.4, R * 0.5), R * 0.5);
+    parts.glows.add([s * 1.4, h(s * 1.4, R * 0.5) + 1.4, R * 0.5], C.purpleSoft, 3);
+  }
+  pier(k, 0, R * 0.9, Math.PI / 2, R * 0.5);
+  return { parts, animated: [], heightAt: h, labelY: top + pr * 1.6 + 2.6 };
+}
+
 /** Una isla genérica (lugares de categoría isla que aún no tienen composición). */
 function generic(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -698,6 +757,7 @@ const BUILDERS: Record<string, (R: number, rnd: () => number) => IslandBuild> = 
   ultima,
   faro,
   canon,
+  halloween,
 };
 
 /** La composición de una isla del mapa (por id; si no hay, una isla genérica). */
@@ -733,7 +793,7 @@ export function buildSandbank(R: number): IslandBuild {
   return { parts, animated: [], heightAt: h, labelY: 3.4 };
 }
 
-/** Un anillo de boias dormidas (el secreto de la última isla). */
+/** Un anillo de boias dormidas (el secreto junto a la Isla de Nochevieja). */
 export function sleepingRing(k: Kit, r: number): void {
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2;

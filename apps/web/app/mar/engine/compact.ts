@@ -151,16 +151,18 @@ export function contentBounds(world: WorldConfig, decor: readonly Circle[]): Rec
 // --- La ruta de boyas ---------------------------------------------------------------
 
 /**
- * El orden de la historia: del puerto (El Varadero) a la Cala del Alfar, el
- * remanso de la Boia Fiestera (la rescatas ahí), la isla del evento, el
- * Puerto de Fotos, la isla tienda, el Cañón y el Faro, y la Isla del
- * Amanecer (la última, donde la Fiestera baja: su misión la lleva hasta el
- * final de la ruta). Luego vuelve al puerto.
+ * El orden de la historia: del puerto (El Varadero) a la Cala Cantalar, el
+ * remanso de la Boia Fiestera (la rescatas ahí), la Isla de Halloween y la
+ * Isla del Sonido (islas con entradas, T67), la Isla de Benidorm (fotos),
+ * Ibiza (la tienda), L'Illeta dels Banyets (el cañón) y Tabarca (el faro), y
+ * la Isla de Nochevieja (la última, donde la Fiestera baja: su misión la
+ * lleva hasta el final de la ruta). Luego vuelve al puerto.
  */
 export const ROUTE_STOPS = [
   'puerto',
   'cala',
   'fiestera',
+  'halloween',
   'allday',
   'fotos',
   'tienda',

@@ -148,6 +148,7 @@ describe('la ruta (marcas en el agua)', () => {
       'puerto',
       'cala',
       'fiestera',
+      'halloween',
       'allday',
       'fotos',
       'tienda',

@@ -318,7 +318,14 @@ test('el minimapa: redondo, girando con el planeta y sin tapar «Entradas»', as
   const first = await frames();
   await expect.poll(frames).toBeGreaterThan(first + 2);
   expect(Number(await canvas.getAttribute('data-pins'))).toBeGreaterThan(5);
-  await expect(canvas).toHaveAttribute('data-accent', islandEvent.islandId!);
+  // Destacadas, las islas con entradas (las tres desde T67), en el orden del mapa.
+  const eventIslands = marWorld(world)
+    .objects.filter(
+      (o) => o.identity.category === 'isla' && o.behaviors.some((b) => b.type === 'ticket'),
+    )
+    .map((o) => o.identity.id);
+  expect(eventIslands).toContain(islandEvent.islandId!);
+  await expect(canvas).toHaveAttribute('data-accent', eventIslands.join(','));
   expect(errors).toEqual([]);
 });
 
