@@ -37,7 +37,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: short welcome (bold title, text, objective, 2 tips, orange "A navegar" + "Comprar entradas"), no auto-guidance chips or first-time hint, "?" help card with objective/hint/"Rumbo a…", links Fotos/Shop/Artistas/Contacto/Carnet, minimap centred (islands drawn without the sky spin) → 66a1e2c
 
 ## T69 — Island models from Blender, starting with the Isla de Halloween
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T67
 - Goal: /mar islands are procedural three.js today; Hernán wants the ticket islands modelled in Blender. Build the path: a Blender script that models and exports island GLBs (within a triangle budget suited to mobile, like the boats' MAX_TRIS), manifest + `tools/blender/check.py` validation, and /mar loading an island GLB for a place when it exists (lazy by distance like the buoys, falling back to the procedural builder). Then model the Isla de Halloween: buoys (the BOIA mascot style) dressed up as witches, ghosts and Frankensteins around the island, and in the centre the club: a big jack-o'-lantern pumpkin with an angry Halloween face (glowing at night). Same art style as the existing BOIA buoys and boats.
 - Context: `tools/blender/export_barcos_glb.py` (GLB export, MAX_TRIS=12000, buoys from `mascota.py`), `tools/blender/rig.py`, `style.py`, `mascota.py`, `check.py`, `manifest.schema.json`; `art/barco/3d/` + `manifest.json`; `apps/web/app/mar/engine/models.ts` (`MODEL_FILES`, `ModelKey`, `modelFor()`, `MODEL_TUNING`), `mar3d.ts` (~1265 island build, ~2459 `modelSlot` fallback), `app/api/art/[...path]/route.ts`; T67's `halloween` place.
@@ -47,10 +47,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - `python3 tools/blender/check.py` → exit 0 (includes the new island asset, triangle budget)
   - Test command → exit 0 (landing budget unchanged)
   - e2e: in /mar near the Isla de Halloween its GLB loads (data attribute on the place) and without the GLB the procedural fallback still renders → exit 0; a screenshot of the island committed under docs/informes/img/p006-t69-*.png
-- Outcome:
+- Outcome: island GLB pipeline (tools/blender/export_islas_glb.py + islas/<id>.py modules, art/islas/3d/manifest.json, MAX_TRIS 30000, lazy load in /mar with procedural fallback) and the Isla de Halloween model → 88f3ab2
 
 ## T70 — Isla del Sonido model
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T69
 - Goal: Model the Isla del Sonido (place `allday`) in Blender with T69's pipeline: a rave-style sound system with many stacked speakers (walls of speakers), lights, and BOIA buoys dancing. Same art style; within the triangle budget; loaded by /mar like T69's island.
 - Context: T69's pipeline and loader; `apps/web/app/mar/engine/islands.ts` (current `allday` builder, the fallback).
@@ -62,7 +62,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T71 — Isla de Nochevieja model
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T69
 - Goal: Model the Isla de Nochevieja (place `ultima`, where the Boia Fiestera is delivered) in Blender with T69's pipeline: a snowy mountain with party lights (beams) pointing in every direction, full of camping tents with BOIA buoys dancing, and New Year's Eve elements (clock, grapes, confetti, fireworks, champagne). Same art style; within budget; loaded by /mar; the Fiestera delivery celebration still works there.
 - Context: T69's pipeline and loader; current `ultima` builder in `islands.ts`; mission delivery in packages/engine/src/mission and /mar.
@@ -74,7 +74,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T72 — Economy rebalance and bottle cap
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T67
 - Goal: Decisions 2026-10-02. Make progress faster: with about 10 minutes of normal play a player can unlock at least 3 ships and some skin. Lower ship and skin prices and give more coins and experience (points). Fixed values: each floating log/debris piece picked up gives 10 coins; the treasure (Cofre fugaz) gives 40 coins and 20 points; creating the Carnet BOIA gives 300 points and unlocks one ship (choose one that is not already free or a mission prize, and say which); the minigames (lighthouse, cannon) last only 3 rounds/waves with faster enemies, and finishing one gives 50 coins and 150 points (they will be redesigned later). Bottles: at most 10 active bottles in the sea from people with a Carnet; a new bottle removes the oldest; one active bottle per person (throwing another replaces yours); sample bottles count towards the 10.
 - Context: `packages/store/src/sample/progress.ts` (`SKIN_PRICE`, ship prices, cosmetics), `packages/world/src/worlds/arcilla/map.ts` (restos coins, cofre coins, island points, secrets, dolphin), `packages/store/src/sample/content.ts` (`SAMPLE_ACHIEVEMENTS`, carnet achievement), `packages/engine/src/minigames/{faro,canon}.ts` (`FARO_DEFAULTS`, `CANON_DEFAULTS`, waves, speeds, rewards), `packages/engine/src/minigames/rewards.ts`, bottles in `packages/store/src/local.ts` (~1583 one-per-person, `allBottles` ~445), `sample/crew.ts` `SAMPLE_BOTTLES`, `apps/web/lib/repo.ts` `placeSampleBottles`, `apps/web/app/mar/bottles.ts`.
@@ -84,7 +84,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - a unit "10-minute session" simulation (scripted typical route: logs, cofre, islands, one minigame, Carnet) shows enough coins/points to unlock ≥ 3 ships and ≥ 1 skin → exit 0
   - unit tests: log 10 coins, cofre 40 coins + 20 points, Carnet 300 points + the chosen ship, minigames 3 waves and 50 coins + 150 points, bottle cap 10 with oldest removed and one per person → exit 0
   - e2e: create Carnet in /mar → the ship is owned; `e2e/minijuegos.spec.ts` and `e2e/mar-botellas.spec.ts` pass (updated) → exit 0
-- Outcome:
+- Outcome: 10-min simulation earns 715 points/245 coins (Carnet ship + points ship + a bought ship + a skin); log 10c, cofre 40c+20p, Carnet 300p + Low-poly ship, minigames 3 waves 50c+150p, bottle cap 10 (one per person) → fa907f3
 
 ## T73 — Los Rápidos: circuit v3
 - Status: pending
@@ -123,7 +123,12 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T67: most island names became the shared map names (both worlds share Cala Cantalar; Acuarela keeps its own for the rest except the 3 ticket islands); circuit id el-freu unchanged; Halloween is the featured event; castaway code goes with SONIDO, amphora code with Nochevieja; map pins 🔊/🎆/🎃 (agent)
 
+- 2026-10-02 T72: Carnet ship is Low-poly (no longer sold); Cartoon 30s 120 coins, Semi-realista at 600 points, skins 50 coins; islas-7 now asks for all 8 islands (id kept); minigames v3 win scores 250/200, 300 s cap; fixed logs/cofres giving nothing in /mar (reward key with @ rejected by the store); "Echar otra" button on the bottle sheet (agent)
+- 2026-10-02 T69: island budget 30000 tris joined into one mesh per material; each island is a module tools/blender/islas/<id>.py and /mar reads art/islas/3d/manifest.json, so a new island needs no web code; load from 2200 u, unload past 3200 u; state in data-islas-modelo on the canvas (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T72: ranks still top out at 600 points (reached in ~10 min); the Fiestera mission still gives 100 points/100 coins; bottle rules only in the browser store, not in Supabase
+- 2026-10-02 T69: procedural glow points still show under the GLB (slightly off); costume buoys in the GLB do not bob; no Draco compression (no decoder in /mar)
 - 2026-10-02 T67: DECISIONES.md D-23 still says Halloween has no island; achievement islas-7 vs 8 islands (T72); Blender scripts and mundos/acuarela/lugares.json use old names (T69+)
 - 2026-10-02 T74: canvas text (island/globe labels in islands.ts and globe.ts, minigame canvases) still uses system-ui; the landing has only 2.2 kB of budget left
 - 2026-10-02 T68: info buoys params.guide in packages/world no longer used by /mar; the 2D OnboardMenu / MENU_SECTIONS look like dead code
@@ -136,3 +141,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 20:47 T74 done · branch worktree-agent-aaad2a5c73cf97f3c → a8c7881
 - 2026-10-02 21:50 T67 conflict with main (es-juego.ts, estado.md) · sent back to agent a10edbb2b1a7341bc
 - 2026-10-02 21:25 T67 done · branch worktree-agent-a10edbb2b1a7341bc → 6934762
+- 2026-10-02 21:27 T69 launched · attempt 1 · agent ab329487181906b16
+- 2026-10-02 21:27 T72 launched · attempt 1 · agent a783b7fd1593c36a5
+- 2026-10-02 21:56 T72 done · branch worktree-agent-a783b7fd1593c36a5 → fa907f3
+- 2026-10-02 21:57 T69 done · branch worktree-agent-ab329487181906b16 → 88f3ab2
