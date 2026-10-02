@@ -274,4 +274,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 08:35 T65 launched · attempt 1 · agent a8c035f804d3a84b1 (dependency on T64 relaxed)
 - 2026-10-02 08:35 T66 launched · attempt 1 · agent af21726997e651865 (dependency on T65 relaxed)
 - 2026-10-02 08:40 T64 done · branch worktree-agent-aeef9629cb03a1cc6 → f13f30b
-- 2026-10-02 08:41 T62 launched · attempt 1
+- 2026-10-02 08:41 T62 launched · attempt 1 · agent aa43c83b646bb6499
+- 2026-10-02 10:06 T66 agent done (3dfa4e1) but mar-3d "Ir a su isla con movimiento reducido" fails alone (likely Carnet notice); sent back to agent af21726997e651865 before integrating
+- 2026-10-02 11:27 T61 agent done (216a0b9, branch worktree-agent-a75467d02da559288 kept); integration failed twice on vitest 5 s timeouts under load (worlds.test world:check, catalog.test, physics.test, ambient) while 3 agents ran e2e; main reverted and green. On resume: retry integration with fewer agents running; if it still fails, continuation agent
+- 2026-10-02 11:28 usage limit reached; T62 (aa43c83b646bb6499), T65 (a8c035f804d3a84b1), T66 fix (af21726997e651865) still running. On resume: section 7 orphans
