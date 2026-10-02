@@ -22,7 +22,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T77 — Design plan for the scroll hero and the hand-off to the blocks
-- Status: running (attempt 1)
+- Status: done
 - Model: fable
 - Skills: frontend-design (invoke first with the Skill tool)
 - Depends on: none
@@ -33,10 +33,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `docs/propuestas/2026-10-03-landing-scroll.md` exists with these sections: Palette, Typography, Composition (375/768/1280), Layers, Motion map (a table scroll position → camera, light, UI, blocks), Blocks restyle, Static version, Accessibility, i18n keys, Props for Blender (name, purpose, triangle budget, kB budget, total), Open questions; at least 6 storyboard frames in `docs/informes/img/p007-t77-*` (hero at rest, mid-dive, sea with first block, night with photos, mobile hero, static version)
   - Hernán approves the plan: stop with STATUS: blocked and a QUESTION that summarises the proposal in ≤ 15 lines with ATTACH lines for the frames; when the answer arrives, apply his changes, add a line "Approved <date> by Hernán" at the top of the document, commit, and finish
   - Test command → exit 0
-- Outcome:
+- Outcome: v2 design plan approved by Hernán: night-black editorial page, scrubbed dive to a deck camera between two beacons, golden → night keyed to Fotos, dark bands with sea windows, realistic props for T78 (costa, puerto, barco, boya: 8 900 tris / ≈205 kB, caps 12 000 / 220 kB) and a post pass; docs/propuestas/2026-10-03-landing-scroll.md → 8dc402c
+- 2026-10-03 03:00 T78 launched · attempt 1 · agent (pending)
 
 ## T78 — Hero 3D art from Blender: GLB props and the still render
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable
 - Skills: blender-art-direction-intake (brief from T77's document; ask Hernán only if something blocks), blender-modeling-workflow, blender-procedural-workflow (only for scattering or repeated geometry), blender-rendering-workflow, blender-asset-validation (always, before finishing); blender-iterative-refinement only if validation fails
 - Depends on: T77
@@ -123,6 +124,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-03 T77: T78 caps 12 000 tris / 220 kB (512² atlas allowed for puerto); stills with real water, DOF and grain; frames are generated SVG; T79 must regrade the mini-planet's procedural clouds (mini-planet.ts) to match frame 01 (agent)
 - 2026-10-03 T77: design v1 (cream sheets, low-poly props) rejected by Hernán; v2 approved: night-black editorial page in the tone of andyhardy.co and observatoriofestival.com, realistic set dressing (costa, puerto, barco realista, boya real; no mascot or clouds in the hero), hero grade separate from /mar moods, corner labels, «Zarpar» pill in the header, post pass that T80 may trim on low power (Hernán)
 - 2026-10-03 interview: Codex's 2D parallax prototype (worktree 459e, 4 WebP layers in the critical path, global restyle, intro trimmed) is discarded; the scroll landing starts from zero with the improved idea (Hernán)
 - 2026-10-03 interview: `/` plays the appearance (D-21) and rests with «Zarpar» + «Entradas» visible from the first paint and a scroll hint; scrolling is the hand-off; no automatic advance; «Saltar animación» removed; «Solo quiero ver las entradas» becomes the «Entradas» button; direct URLs and in-app returns open at rest (Hernán)
@@ -137,6 +139,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T77: /mar could adopt the hero's cinematic grade in a later plan
 - 2026-10-03 T77: `hero.explore3d*` i18n keys look unused; the Tickets panel surface could match the blocks' new surface later; island GLBs (800–950 kB each) are too heavy for the hero, the horizon uses procedural islands
 
 ## Log
@@ -145,3 +148,4 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 01:40 T77 answer sent: v1 rejected by Hernán (too low poly, childish; wants a professional festival site, refs andyhardy.co and observatoriofestival.com) · agent redoing as v2
 - 2026-10-03 02:00 T77 blocked again · d4cf86c T77: WIP (v2) · question: approve v2 (night-black editorial page, realistic set dressing, 10 open points)
 - 2026-10-03 02:10 T77 answer sent: v2 approved by Hernán with all 10 recommendations · agent finishing
+- 2026-10-03 02:58 T77 done · branch worktree-agent-ad894fbe35db9dba4 → 8dc402c
