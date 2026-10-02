@@ -481,9 +481,9 @@ Nombres, descripciones y «te queda» de cada logro: `docs/propuestas/logros-cat
 | `error.offline.tickets` | Sin conexión no podemos abrir la compra. Vuelve a intentarlo cuando tengas cobertura. | |
 | `error.engine` | No hemos podido arrancar el mar en este navegador. Prueba la versión ligera o actualiza el navegador. | |
 | `error.engine.cta` | Ver la versión ligera | |
-| `error.3d.title` | Tu dispositivo no puede mostrar el mundo 3D | `/mar` (sin WebGL; desde D-25 no hay versión 2D) |
-| `error.3d.body` | Este navegador no puede pintar el planeta. Tus entradas sí: cómpralas desde la web. | |
-| `error.3d.cta` | Ver las entradas | |
+| `error.3d.title` | Este móvil no puede con el 3D | `/mar` |
+| `error.3d.body` | Prueba la versión clásica: el mismo mar, en 2D. | |
+| `error.3d.cta` | Ir al mar 2D | |
 | `error.storage` | Tu navegador no nos deja guardar nada (¿modo privado?). Puedes navegar, pero lo que consigas se perderá al cerrar. | |
 | `error.unavailable` | Esto no está disponible ahora mismo. Vuelve en un rato. | |
 | `empty.loading` | Cargando… | |
@@ -743,7 +743,6 @@ propuesta del equipo.
 | `shop.missingPoints` | Te faltan {n} puntos | |
 | `shop.unlockedPoints` | ¡Desbloqueado! Y tus {threshold} puntos siguen ahí. | Los puntos no se gastan |
 | `shop.lockedAchievement` | Se gana con el logro «{achievement}» | |
-| `shop.lockedMission` | Sólo para quien rescata a la Boia Fiestera y la lleva a la última isla | T59: el barco exclusivo de la misión central |
 | `shop.skins.heading` | Skins | |
 | `shop.skin.base` | Base | |
 | `shop.skin.night` | Noche | 150 monedas |

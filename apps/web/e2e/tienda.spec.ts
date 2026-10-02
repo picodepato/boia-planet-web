@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { ACHIEVEMENT_READY_BODY } from '../lib/mundo/achievements';
 
 /**
- * La tienda «Barco» (T40, D-23 punto 1, O5), en el mar 3D: el
+ * La tienda «Barco» (T40, D-23 punto 1, O5), en /juego y en /mar: el
  * visitante trae unas monedas guardadas, gana las que le faltan reclamando
  * «Primera boia», compra un barco (con confirmación) y una bandera, los
  * equipa, recarga y los sigue llevando. Móvil y escritorio.
@@ -137,6 +137,49 @@ async function shopFlow(page: Page, shop: Locator, info: TestInfo | null, root: 
 }
 
 test.describe.configure({ timeout: 150_000 });
+
+test('/juego: ganar monedas, comprar un barco y una bandera, equiparlos y recargar', async ({
+  page,
+}, info) => {
+  if (process.env.RECORD_T40) await page.setViewportSize({ width: 390, height: 844 });
+  await seedCoins(page);
+  await page.goto('/juego');
+  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  const root = page.getByTestId('juego');
+  await expect(root).toHaveAttribute('data-ship-style', world.theme.ship.style);
+
+  await sailUntilAchievement(page, page.locator('[data-testid="aviso"][data-kind="achievement"]'));
+  await page.getByTestId('menu-ancla').click();
+  const menu = page.getByTestId('menu');
+  await menu.getByRole('tab', { name: 'Logros' }).click();
+  await claimFirstBuoy(menu);
+  await menu.getByRole('tab', { name: 'Barco', exact: true }).click();
+  await shopFlow(page, menu.getByTestId('barco'), info, root);
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  if (process.env.RECORD_T40) {
+    // Para la captura: sin bocadillo y con el barco en mar abierto, a la vista.
+    const close = page.getByTestId('bocadillo-cerrar');
+    for (let i = 0; i < 5 && (await close.count()) > 0; i++)
+      await close.first().dispatchEvent('click');
+    await page.keyboard.down('ArrowUp');
+    await page.waitForTimeout(1200);
+    await page.keyboard.up('ArrowUp');
+    await page.waitForTimeout(1500);
+    if ((await close.count()) > 0) await close.first().dispatchEvent('click');
+    await page.waitForTimeout(400);
+    await shot(page, info, 'barco-equipado');
+  }
+
+  await page.reload();
+  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  await expect(root).toHaveAttribute('data-ship-style', STYLE);
+  await expect(root).toHaveAttribute('data-ship-flag', flag.id);
+  await page.getByTestId('menu-ancla').click();
+  await menu.getByRole('tab', { name: 'Barco', exact: true }).click();
+  await expect(menu.getByTestId(`barco-estilo-${STYLE}`)).toHaveAttribute('aria-checked', 'true');
+  await expect(menu.getByTestId('barco-saldo')).toHaveAttribute('data-coins', '0');
+});
 
 test('/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar', async ({
   page,

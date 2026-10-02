@@ -15,7 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EventPageBody } from '../../app/(landing)/components/event-page';
 import { EventCard } from '../../app/(landing)/components/event-card';
 import { IslandUpcoming } from '../mundo/place-panels';
-import { EventBlock } from '../../app/mar/sheet';
+import { EventPanel } from '../mundo/world-ui';
 import { eventSailHref } from '../world-handoff';
 import { EVENTOS_COPY } from './eventos-copy';
 import {
@@ -86,13 +86,14 @@ describe('ficha de evento (REQ-COM-012)', () => {
     const view = resolveHome(SAMPLE_CONTENT, past);
     expect(view.buyable).not.toContain(onSale.id);
     const panel = renderToStaticMarkup(
-      createElement(EventBlock, {
+      createElement(EventPanel, {
         event: { ...onSale, state: 'finished' },
+        showTicket: true,
         onBuy: () => {},
-        onSteer: () => false,
+        onClose: () => {},
       }),
     );
-    expect(panel).not.toContain('mar-comprar');
+    expect(panel).not.toContain('panel-evento-comprar');
   });
 
   it('sólo «a la venta» enseña compra en la ficha', () => {

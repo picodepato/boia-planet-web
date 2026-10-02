@@ -1,3 +1,5 @@
 *.tsbuildinfo
 next-env.d.ts
 playwright-report/
+# atlas por sector generados de art/ (tools/atlas, T47)
+public/atlas/

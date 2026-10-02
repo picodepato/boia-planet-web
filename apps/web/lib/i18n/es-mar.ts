@@ -34,6 +34,7 @@ export const esMar = {
   'mar.client.porReclamar': ' · {readyToClaim} por reclamar',
   'mar.client.entradas': '🎟️ Entradas',
   'mar.client.miCarnet': '🪪 Mi Carnet',
+  'mar.client.versionClasica2d': '🗺️ Versión clásica 2D',
   'mar.client.mundos': 'Mundos',
   'mar.client.arrastraParaNavegarPellizca':
     'Arrastra para navegar · Pellizca o usa la rueda para el zoom · Toca el mar o una isla para fijar rumbo · Teclado: flechas, +/−, M mapa, T turbo.',

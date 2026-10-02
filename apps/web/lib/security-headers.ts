@@ -6,7 +6,8 @@
  * - `script-src 'unsafe-inline'`: Next mete scripts en línea (el payload de
  *   React Server Components) y no hay middleware que ponga nonces.
  * - `script-src 'unsafe-eval'`: sólo en desarrollo, para el refresco en
- *   caliente; three.js no lo necesita en producción.
+ *   caliente. PixiJS 8 compilaría con `new Function`, pero @boia/engine importa
+ *   `pixi.js/unsafe-eval` (`pixi-app.ts`) y en producción no le hace falta.
  * - `img-src https:`: el Admin deja poner fotos por URL (sin almacenamiento
  *   hasta Supabase); `data:`/`blob:` para el Carnet y las texturas de los GLB.
  * - `media-src data: blob:`: la música que sube el Admin vive en el navegador.
@@ -53,9 +54,4 @@ export function securityHeaders({
 export const RENAMED_ROUTES = [
   // «Condiciones» pasó a ser el aviso legal (D-23, O14; textos-zonas.md zona 32).
   { source: '/legal/condiciones', destination: '/legal/aviso-legal', permanent: true },
-  // El mundo 2D se fue (D-25, T62): /juego lleva al planeta 3D. Next pasa la
-  // consulta tal cual, así `?ir=`, `?evento=`, `?menu=` (y `?cerca=`) siguen
-  // abriendo el mar en su sitio. Temporal (307): el navegador no la guarda.
-  { source: '/juego', destination: '/mar', permanent: false },
-  { source: '/juego/:path*', destination: '/mar', permanent: false },
 ];

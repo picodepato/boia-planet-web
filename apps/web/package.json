@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0 --port 3000",
-    "build": "next build && node scripts/landing-budget.mjs",
+    "dev": "node scripts/atlas.mjs && next dev --hostname 0.0.0.0 --port 3000",
+    "build": "node scripts/atlas.mjs && next build && node scripts/landing-budget.mjs && node scripts/world-budget.mjs",
+    "atlas": "node scripts/atlas.mjs",
     "i18n:zonas": "node scripts/i18n-zonas.mjs",
+    "world-budget": "node scripts/world-budget.mjs",
     "budget": "node scripts/landing-budget.mjs",
     "e2e": "playwright test",
     "start": "next start --hostname 0.0.0.0 --port 3000",

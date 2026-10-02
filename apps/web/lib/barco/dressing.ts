@@ -1,8 +1,11 @@
 /**
  * Cómo se ve cada bandera y cada estela de la tienda «Barco» (T40): colores
- * `muestra` hasta que haya arte de Blender para ellas. El mar 3D (three.js)
- * pinta la bandera en el tope del mástil y la estela con este tinte. Nada de
- * esto llega a la física del barco (REQ-IDE-032).
+ * `muestra` hasta que haya arte de Blender para ellas. La vista 2D (Pixi) y la
+ * 3D (three.js) pintan lo mismo: la bandera en el tope del mástil y la estela
+ * con este tinte. Nada de esto llega a la física del barco (REQ-IDE-032).
+ *
+ * Mismas formas que `ShipDressing` de `@boia/engine` (ship/dressing.ts), que
+ * no se exporta: el motor las lee del manifiesto que recibe.
  */
 
 export type FlagPattern = 'solid' | 'stripes' | 'checker';

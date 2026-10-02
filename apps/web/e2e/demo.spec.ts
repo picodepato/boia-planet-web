@@ -1,3 +1,4 @@
+import { minimapProjection } from '@boia/engine/ui';
 import { SAMPLE_COSMETICS } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
@@ -5,14 +6,12 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
-import { mar, marSheet, openMar } from './mar-helpers';
 
 /**
  * Demo de punta a punta (T12), con datos de muestra y sin Supabase: entrada
  * 3D con el planeta (T57; en cada carga de `/`, D-21) → landing → Tickets; el
- * hero lleva a /mar → isla de evento → barco por `?estilo=` → artistas (el mar
- * 3D es el único mundo desde T62, D-25). Corre en móvil 360×640 y en
- * escritorio.
+ * hero lleva a /mar → isla de evento (en /juego hasta T62) → menú «Barco» →
+ * artistas. Corre en móvil 360×640 y en escritorio.
  *
  * Con DEMO_SHOTS=1 guarda además capturas del recorrido en docs/informes/img/
  * (p001-t12-<paso>-<móvil|escritorio>.png).
@@ -33,6 +32,8 @@ const shipRoot = JSON.parse(readFileSync(path.join(ROOT, 'art/barco/manifest.jso
 const LOCKED_STYLES = new Set(
   SAMPLE_COSMETICS.filter((c) => c.slot === 'ship' && !c.base).map((c) => c.assetKey ?? c.id),
 );
+const THEMED_SKIN = shipRoot.skins.find((s) => s !== 'base')!;
+const SKIN_PRICE = SAMPLE_COSMETICS.find((c) => c.slot === 'skin')!.priceCoins!;
 
 // El mundo por defecto (Arcilla desde T20) trae su barco y su isla de evento.
 const defaultWorld = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId);
@@ -57,6 +58,46 @@ async function shot(page: Page, info: TestInfo, name: string) {
   mkdirSync(SHOTS, { recursive: true });
   const device = info.project.name === 'mobile' ? 'movil' : 'escritorio';
   await page.screenshot({ path: path.join(SHOTS, `p001-t12-${name}-${device}.png`) });
+}
+
+const game = (page: Page) => page.getByTestId('juego');
+
+/** Salida del barco y puerto del mapa compartido (T20, T28). */
+const SPAWN = WORLD_REGISTRY.map.spawn;
+
+/**
+ * El barco está en la salida del puerto: la flecha del minimapa cae donde el
+ * minimapa proyecta la salida del mapa (a un par de px: el minimapa es pequeño).
+ */
+async function expectShipAtPort(page: Page) {
+  const minimap = page.getByTestId('minimapa').locator('svg').first();
+  await expect(minimap.locator('polygon')).toHaveCount(1, { timeout: 30_000 });
+  const got = await minimap.evaluate((svg) => {
+    const poly = svg.querySelector('polygon')!;
+    const m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(poly.getAttribute('transform') ?? '');
+    return {
+      w: Number(svg.getAttribute('width')),
+      h: Number(svg.getAttribute('height')),
+      x: Number(m?.[1]),
+      y: Number(m?.[2]),
+    };
+  });
+  const want = minimapProjection(defaultWorld.config.bounds, got.w, got.h).project(SPAWN);
+  expect(Math.abs(got.x - want.x), 'barco en la salida (x del minimapa)').toBeLessThan(2);
+  expect(Math.abs(got.y - want.y), 'barco en la salida (y del minimapa)').toBeLessThan(2);
+}
+
+/** El motor corre (y escucha el teclado) cuando la caja de datos da FPS. */
+async function gameRunning(page: Page) {
+  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
+}
+
+async function openBarco(page: Page) {
+  await page.getByTestId('menu-ancla').click();
+  const menu = page.getByTestId('menu');
+  await menu.getByRole('tab', { name: 'Barco', exact: true }).click();
+  await expect(menu.getByTestId('barco')).toBeVisible();
+  return menu;
 }
 
 test('`/` → planeta → «Zarpar» → /mar con la bienvenida; la landing → Tickets; isla de evento', async ({
@@ -90,34 +131,90 @@ test('`/` → planeta → «Zarpar» → /mar con la bienvenida; la landing → 
   await page.keyboard.press('Escape');
   await expect(tickets).toBeHidden();
 
-  // El mar navega hasta la isla de evento (`?evento=`, con «Saltar») y abre su ficha.
+  // Rumbo norte hasta la isla de evento: su proximidad abre el panel del evento.
+  // El mapa de Arcilla es grande y la isla queda lejos del puerto: se sigue
+  // junto a ella con `?cerca=`.
   expect(eventIsland, `el mundo ${defaultWorld.id} tiene la isla de ${EVENT_ID}`).toBeDefined();
-  await openMar(page, `?evento=${EVENT_ID}`);
+  await page.goto(`/juego?cerca=${eventIsland.identity.id}`);
+  await gameRunning(page);
   await page
-    .getByTestId('mar-entradas-saltar')
-    .click({ timeout: 5_000 })
+    .locator('canvas:visible')
+    .first()
+    .focus()
     .catch(() => {});
-  const sheet = marSheet(page);
-  await expect(sheet).toHaveAttribute('data-lugar', eventIsland.identity.id, { timeout: 30_000 });
+  await page.keyboard.down('ArrowUp');
+  const panel = page.getByTestId('panel-evento');
+  await expect(panel).toBeVisible({ timeout: 45_000 });
+  await page.keyboard.up('ArrowUp');
   const event = SAMPLE_CONTENT.events.find((e) => e.id === EVENT_ID)!;
-  await expect(sheet.getByRole('heading', { name: event.name })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: event.name })).toBeVisible();
   await shot(page, info, '4-isla');
 });
 
-test('el barco: el del mundo sin elección; `?estilo=` pone uno tuyo y no uno bloqueado', async ({
+test('«Barco»: otro barco de base cambia el barco al momento y sobrevive a recargar; lo bloqueado no se pone', async ({
   page,
-}) => {
+}, info) => {
   test.setTimeout(120_000);
-  await openMar(page);
+  await page.goto('/juego');
+  await gameRunning(page);
   // Sin elección guardada, el barco del mundo (T17).
-  await expect(mar(page)).toHaveAttribute('data-ship-style', WORLD_SHIP_STYLE);
-  await expect(mar(page)).toHaveAttribute('data-ship-skin', 'base');
-  // ?estilo= manda (T11) si el barco es tuyo: el otro de base es libre.
-  await openMar(page, `?estilo=${OTHER_STYLE}`);
-  await expect(mar(page)).toHaveAttribute('data-ship-style', OTHER_STYLE);
-  // Uno bloqueado no (T40): queda el que llevaba.
-  await openMar(page, `?estilo=${LOCKED_STYLE}`);
-  await expect(mar(page)).toHaveAttribute('data-ship-style', OTHER_STYLE);
+  await expect(game(page)).toHaveAttribute('data-ship-style', WORLD_SHIP_STYLE);
+  await expect(game(page)).toHaveAttribute('data-ship-skin', 'base');
+  await expect(game(page)).toHaveAttribute('data-world', 'nuevo');
+  // Un enlace directo a /juego empieza en limpio en el puerto del mundo activo (T28).
+  await expectShipAtPort(page);
+
+  // El otro barco de base: se aplica sin recargar.
+  let menu = await openBarco(page);
+  await page.evaluate(() => ((window as Window & { __sinRecarga?: boolean }).__sinRecarga = true));
+  await menu.getByTestId(`barco-estilo-${OTHER_STYLE}`).click();
+  await expect(game(page)).toHaveAttribute('data-ship-style', OTHER_STYLE);
+  await expect(menu.getByTestId(`barco-estilo-${OTHER_STYLE}`)).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  expect(
+    await page.evaluate(() => (window as Window & { __sinRecarga?: boolean }).__sinRecarga),
+  ).toBe(true);
+  // Lo que no se tiene va con candado y su condición (T40): un barco y las skins.
+  await expect(menu.getByTestId(`barco-estilo-${LOCKED_STYLE}`)).toHaveAttribute(
+    'data-bloqueado',
+    'si',
+  );
+  await expect(menu.getByTestId(`barco-skin-${THEMED_SKIN}`)).toHaveAttribute(
+    'data-bloqueado',
+    'si',
+  );
+  await expect(menu.getByTestId(`barco-skin-item-${THEMED_SKIN}`)).toContainText(
+    `te faltan ${SKIN_PRICE} monedas`,
+  );
+  // Tocar lo bloqueado no cambia el barco.
+  await menu.getByTestId(`barco-skin-${THEMED_SKIN}`).click({ force: true });
+  await expect(game(page)).toHaveAttribute('data-ship-skin', 'base');
+  await shot(page, info, '5-barco-menu');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('menu')).toBeHidden();
+  await shot(page, info, '6-barco-estilo');
+
+  await page.reload();
+  await gameRunning(page);
+  await expect(game(page)).toHaveAttribute('data-ship-style', OTHER_STYLE);
+  await expect(game(page)).toHaveAttribute('data-ship-skin', 'base');
+
+  // ?estilo= sigue mandando (T11) si el barco es tuyo, y el menú lo refleja.
+  await page.goto(`/juego?estilo=${WORLD_SHIP_STYLE}`);
+  await gameRunning(page);
+  await expect(game(page)).toHaveAttribute('data-ship-style', WORLD_SHIP_STYLE);
+  menu = await openBarco(page);
+  await expect(menu.getByTestId(`barco-estilo-${WORLD_SHIP_STYLE}`)).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await page.keyboard.press('Escape');
+  // Uno bloqueado no: queda lo equipado.
+  await page.goto(`/juego?estilo=${LOCKED_STYLE}`);
+  await gameRunning(page);
+  await expect(game(page)).toHaveAttribute('data-ship-style', WORLD_SHIP_STYLE);
 });
 
 test('«Ver todos los artistas» enseña los 26 artistas', async ({ page }, info) => {

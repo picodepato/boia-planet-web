@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
 /**
- * Chunks JS que sólo usa el juego (el mar 3D, /mar) y no la landing, sacados del
+ * Chunks JS que sólo usa el juego (/juego) y no la landing, sacados del
  * manifiesto del build que acaba de levantar el webServer.
  */
 function gameOnlyChunks(): string[] {
@@ -15,7 +15,7 @@ function gameOnlyChunks(): string[] {
       .filter(([route]) => route.startsWith('/(landing)/') || route === '/layout')
       .flatMap(([, files]) => files),
   );
-  return (manifest.pages['/mar/page'] ?? []).filter((f) => !landing.has(f));
+  return (manifest.pages['/juego/page'] ?? []).filter((f) => !landing.has(f));
 }
 
 async function captured(
@@ -78,7 +78,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
 
   const gameChunks = gameOnlyChunks().filter((c) => !loadedByBuy.has(`/_next/${c}`));
   expect(gameChunks.length, 'el build tiene chunks propios del juego').toBeGreaterThan(0);
-  expect(gameChunks.some((c) => c.includes('app/mar/page'))).toBe(true);
+  expect(gameChunks.some((c) => c.includes('app/juego/page'))).toBe(true);
 
   // Sin WebGL.
   await page.addInitScript(() => {
@@ -99,7 +99,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   await page.route(
     (url) =>
       gameChunks.some((c) => url.pathname.endsWith(c.replace(/^static\//, ''))) ||
-      url.pathname.startsWith('/mar'),
+      url.pathname.startsWith('/juego'),
     (route) => {
       blocked.push(route.request().url());
       return route.abort('blockedbyclient');
@@ -145,7 +145,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   await expect(heroTickets(page)).toBeFocused();
 
   // La landing ni siquiera pidió la ruta del juego.
-  expect(blocked.filter((u) => new URL(u).pathname.startsWith('/mar'))).toEqual([]);
+  expect(blocked.filter((u) => new URL(u).pathname.startsWith('/juego'))).toEqual([]);
 });
 
 test('el enlace /#tickets abre el panel directamente', async ({ page }) => {
