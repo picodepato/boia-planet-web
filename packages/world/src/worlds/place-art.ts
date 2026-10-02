@@ -46,10 +46,6 @@ const PARTS: Record<string, [string, string?, string?]> = {
   'circuito-cp-s': ['circuito', 'cp-s'],
   'circuito-cp-a': ['circuito', 'cp-a'],
   'circuito-cp2': ['circuito', 'cp2'],
-  // Las boias del circuito cerrado de T61 sin pieza propia usan las de los checkpoints.
-  'circuito-giro': ['circuito', 'cp2'],
-  'circuito-regreso': ['circuito', 'cp1'],
-  'circuito-recta': ['circuito', 'cp1'],
   'circuito-meta': ['circuito', 'meta'],
   'circuito-semaforo': ['circuito', 'semaforo'],
   'circuito-cartel': ['circuito', 'cartel'],
@@ -79,8 +75,6 @@ export function sharedPlaceAsset(worldId: string, id: string, i: number): string
   if (m) return art('restos', 'restos', RESTOS_VARIANTS[Number(m[1]) % RESTOS_VARIANTS.length]);
   if (id.startsWith('cofre-')) return art('cofres', 'cofre');
   if (id.startsWith('circuito-carril-')) return art('circuito', 'boia_carril', i % 2 ? 'b' : 'a');
-  // Los impulsos de T61 no tienen pieza: en el 2D se ven como una boia de carril.
-  if (id.startsWith('circuito-impulso-')) return art('circuito', 'boia_carril', 'a');
   if (id.startsWith('secreto-')) return art('secreto', 'secreto');
   throw new Error(`${worldId}: lugar sin arte asignado: ${id}`);
 }

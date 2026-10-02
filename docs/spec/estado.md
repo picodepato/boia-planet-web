@@ -145,14 +145,14 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-AVE-023 | Boia de WhatsApp | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-024 | Boia musical | L2 | L2 | — | — |
 | REQ-AVE-025 | Ideas musicales en reserva | diferido | final | — | Alcance diferido |
-| REQ-AVE-026 | Circuito lateral como atajo | L1 | PARCIAL | [mar-circuito.spec.ts](../../apps/web/e2e/mar-circuito.spec.ts) | T61 (entrevista 2026-10-01): El Freu es un circuito cerrado de tres vueltas junto a la salida; ya no lleva a un destino |
-| REQ-AVE-027 | Récord personal local | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «se guarda el tiempo total por circuito y versión, y sólo mejora» | — |
-| REQ-AVE-028 | Cronómetro pequeño arriba | L1 | HECHO | [mar-circuito.spec.ts](../../apps/web/e2e/mar-circuito.spec.ts) «El Freu: tres vueltas por las boias, medalla y récord; la segunda, contra el fantasma» | — |
+| REQ-AVE-026 | Circuito lateral como atajo | L1 | PARCIAL | [circuit-hud.tsx](../../apps/web/lib/mundo/circuit-hud.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-027 | Récord personal local | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «se guarda por circuito y versión, y sólo mejora» | — |
+| REQ-AVE-028 | Cronómetro pequeño arriba | L1 | PARCIAL | [circuit-hud.tsx](../../apps/web/lib/mundo/circuit-hud.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-029 | Boost de 2 s en checkpoints | L1 | HECHO | [runtime.test.ts](../../packages/engine/src/world/runtime.test.ts) «el checkpoint valida el paso y da un boost de su duración» | — |
 | REQ-AVE-030 | Tres obstáculos | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
-| REQ-AVE-031 | Ruta segura y atajo | L1 | PARCIAL | [race.ts](../../packages/engine/src/circuit/race.ts) | T61: el trazado cerrado rodea Els Dents por los dos lados, sin ramas a elegir; el motor sigue admitiendo ramas (boias con el mismo orden) |
+| REQ-AVE-031 | Ruta segura y atajo | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «salida, CP1, las dos ramas con el mismo orden, CP2 y meta; versión del circuito» | — |
 | REQ-AVE-032 | Intento invalidado | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «abrir un panel, ocultar la pestaña o teletransportarse anula el intento» | — |
-| REQ-AVE-033 | Récord por versión de circuito | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «se guarda el tiempo total por circuito y versión, y sólo mejora» | — |
+| REQ-AVE-033 | Récord por versión de circuito | L1 | HECHO | [race.test.ts](../../packages/engine/src/circuit/race.test.ts) «se guarda por circuito y versión, y sólo mejora» | — |
 | REQ-AVE-034 | Ranking global de tiempos | L2 | L2 | — | — |
 | REQ-AVE-035 | Módulo de minijuegos | L1 | PARCIAL | [host.ts](../../packages/engine/src/minigames/host.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-036 | Vigilancia del faro | L1 | HECHO | [minigames.test.ts](../../packages/engine/src/minigames/minigames.test.ts) «las vidas acaban la partida: sin vigilar, los piratas tocan costa» | Rehecho en T60 (plan 005): haz de noche, oleadas más rápidas, vidas, racha y destello; e2e en su isla de /mar en minijuegos.spec.ts. Los criterios de 09 describen el juego anterior |

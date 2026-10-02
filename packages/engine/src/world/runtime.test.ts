@@ -136,21 +136,6 @@ describe('COLISIÓN', () => {
     const later = r.trace[hit + Math.round(2 / DT) + 5]!;
     expect(Math.hypot(later.vx, later.vy)).toBeLessThanOrEqual(cfg.maxSpeed + 1e-6);
   });
-
-  it('dos boosts seguidos no se encadenan: vale el más fuerte (T61)', () => {
-    const w = world(
-      obj('flecha-1', 500, 1100, { activation: circle(30) }, [
-        { type: 'collision', params: { mode: 'boost', intensity: 0.5, duration: 3 } },
-      ]),
-      obj('flecha-2', 500, 900, { activation: circle(30) }, [
-        { type: 'collision', params: { mode: 'boost', intensity: 0.5, duration: 3 } },
-      ]),
-    );
-    const r = simulate(w, { seconds: 3, start: { x: 500, y: 1500 }, input: () => north });
-    expect(ofType(r.events, 'effect')).toHaveLength(2);
-    const top = Math.max(...r.trace.map((s) => Math.hypot(s.vx, s.vy)));
-    expect(top).toBeCloseTo(cfg.maxSpeed * 1.5, 3);
-  });
 });
 
 describe('PROXIMIDAD', () => {
