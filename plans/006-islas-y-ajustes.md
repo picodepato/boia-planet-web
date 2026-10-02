@@ -62,7 +62,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: Isla del Sonido GLB (two 3x5 speaker walls, DJ booth with BOIA letters, truss with spotlights and a laser fan, round dance floor with 5 dancing buoys + DJ buoy; 29156/30000 tris) → 6017dbb
 
 ## T71 — Isla de Nochevieja model
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T69
 - Goal: Model the Isla de Nochevieja (place `ultima`, where the Boia Fiestera is delivered) in Blender with T69's pipeline: a snowy mountain with party lights (beams) pointing in every direction, full of camping tents with BOIA buoys dancing, and New Year's Eve elements (clock, grapes, confetti, fireworks, champagne). Same art style; within budget; loaded by /mar; the Fiestera delivery celebration still works there.
 - Context: T69's pipeline and loader; current `ultima` builder in `islands.ts`; mission delivery in packages/engine/src/mission and /mar.
@@ -71,7 +71,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Blender export for `ultima` → exit 0; `python3 tools/blender/check.py` → exit 0
   - Test command → exit 0
   - e2e: the Isla de Nochevieja GLB loads in /mar and `e2e/mar-fiestera.spec.ts` still passes → exit 0; screenshot docs/informes/img/p006-t71-*.png
-- Outcome:
+- Outcome: Isla de Nochevieja GLB (snowy mountain at the back, light beams, tents, 7 dancing buoys, clock at one to midnight, grapes, champagne, fireworks; 29856/30000 tris, 31 materials); Fiestera delivery still works → 70a9af5
 
 ## T72 — Economy rebalance and bottle cap
 - Status: done
@@ -110,9 +110,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: titles in Archivo Expanded (wdth 125, 700, 11.5 kB Latin woff2), body in variable Inter, one definition in apps/web/lib/fonts.ts, Titan One removed; landing 189.8/192 kB → a8c7881
 
 ## T75 — Island labels clear of the top bar and the models
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T71
-- Goal: In /mar the floating island-name labels (pins) can hide under the top links bar (Fotos, Shop, Artistas, Contacto, Carnet) and sit over the new island models at the default zoom, so a far island's name looks like it names the nearer one (seen on the Isla de Halloween with the Isla del Sonido label). Keep every island label readable and attached to its own island: never under the top bar or other HUD (clamp or fade near the HUD), placed above the island model's real height (art/islas/3d/manifest.json `height`) rather than the procedural one, and far islands' labels fade or shrink so they do not read as the nearer island's. Also hide the procedural island's glow points when its GLB is shown (T69 noted they show slightly off).
+- Goal: In /mar the floating island-name labels (pins) can hide under the top links bar (Fotos, Shop, Artistas, Contacto, Carnet) and sit over the new island models at the default zoom, so a far island's name looks like it names the nearer one (seen on the Isla de Halloween with the Isla del Sonido label). Keep every island label readable and attached to its own island: never under the top bar or other HUD (clamp or fade near the HUD), placed above the island model's real height (art/islas/3d/manifest.json `height`) rather than the procedural one, and far islands' labels fade or shrink so they do not read as the nearer island's. Also hide the procedural island's glow points when its GLB is shown (T69 noted they show slightly off). The label height and the Fiestera delivery confetti still use the procedural island's `labelY` (T71: with the model the Nochevieja label sits at the clock tower): use the model's height when a GLB is shown.
 - Context: T69's island model loading (`apps/web/app/mar/engine/models.ts`, `mar3d.ts`, `data-islas-modelo`), the pins/labels in /mar (mar-client.tsx, mar.css `.mar-links`, pin CSS), screenshots docs/informes/img/p006-t69-isla-halloween-noche.png and p006-t70-*.png.
 - Scope: may touch /mar label/pin placement, its CSS, the glow-point hiding, tests / must not touch island models, HUD layout, game rules.
 - Done when:
@@ -140,7 +140,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 T70: all island pieces in tools/blender/islas/allday.py; budget nearly full (844 tris left) (agent)
 - 2026-10-02 orchestrator: added T75 (island labels under the top bar / over the models, seen in T69 screenshots and reported by T70) as a small fix task after T71
 
+- 2026-10-02 T71: no year text on the island (real content needs Álvaro); fewer-face buoys and material reuse to fit the budget; island-specific code only in tools/blender/islas/ultima.py (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T71: mobile performance near the 31-material island not measured
 - 2026-10-02 T72: ranks still top out at 600 points (reached in ~10 min); the Fiestera mission still gives 100 points/100 coins; bottle rules only in the browser store, not in Supabase
 - 2026-10-02 T69: procedural glow points still show under the GLB (slightly off); costume buoys in the GLB do not bob; no Draco compression (no decoder in /mar)
 - 2026-10-02 T67: DECISIONES.md D-23 still says Halloween has no island; achievement islas-7 vs 8 islands (T72); Blender scripts and mundos/acuarela/lugares.json use old names (T69+)
@@ -162,3 +165,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 21:59 T70 launched · attempt 1 · agent a5f97bb6f02f4e0a5
 - 2026-10-02 21:59 T71 launched · attempt 1 · agent a77c2040bfa9131a8
 - 2026-10-02 22:15 T70 done · branch worktree-agent-a5f97bb6f02f4e0a5 → 6017dbb
+- 2026-10-02 22:17 T73 launched · attempt 1 · agent a64eac98af0ac71b2
+- 2026-10-02 22:21 T71 done · branch worktree-agent-a77c2040bfa9131a8 → 70a9af5
