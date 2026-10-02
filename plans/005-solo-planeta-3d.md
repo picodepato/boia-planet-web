@@ -141,7 +141,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: /juego and the PixiJS renderer deleted, /juego redirects to /mar → dd77258
 
 ## T63 — Admin adapted to the new world
-- Status: pending
+- Status: skipped
 - Depends on: T59, T60, T61, T62, T64, T65, T66
 - Goal: The Admin reflects the batch: the Carnet discount percentage (T66) and the top-bar link targets (T65) editable; the 3 world discounts and the Fiestera prize (code + exclusive ship) editable; the rebuilt minigames and circuit (their tunable settings, if any, and achievements); "Ver el mundo" and the home preview open the 3D world; Admin "Mundo" edits trigger the vortex in /mar in the same tab (gap noted in TRASPASO); remove Admin sections or fields that only made sense for the 2D world. Nothing else changes.
 - Context: `apps/web/app/admin/admin-app.tsx` and its sections, `apps/web/lib/admin/validate.ts`, `liveWorld` in `mar-client.tsx`, outcomes of T59–T62. REQ ADM-008/019/032.
@@ -149,7 +149,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e: edit the Fiestera discount code in the Admin and see it applied after completing the mission in /mar; edit a world discount and see it in /mar; "Ver el mundo" opens /mar → exit 0
-- Outcome:
+- Outcome: skipped by Hernán and Álvaro (2026-10-02: the Admin has little value); "Ver el mundo" already opens /mar (T55) and the Admin passes its tests after T62
 
 ## T64 — Zarpar enters the game
 - Status: done
@@ -239,7 +239,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T65: conflict with T62 in mar-client.tsx resolved keeping the MarMenu component (no "Versión clásica 2D" link) (agent)
 
+- 2026-10-02 Hernán and Álvaro: the Admin has little value; T63 skipped (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-02 T63 (skipped): Admin editing for the Carnet discount %, the 3 world discounts, the Fiestera prize, minigame/circuit tuning, top-bar link targets; Mundo edits triggering the vortex in the same tab
 - 2026-10-02 T65: REQ-PRO-009 criterion does not mention the top links to the landing; labels "Shop", "Datos de contacto" and menu labels are muestra waiting for Álvaro
 - 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
 - 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
@@ -303,3 +306,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 14:31 T66 continuation (interrupted) launched · attempt 2 · agent ace8e92ac82710c5a (old branch worktree-agent-af21726997e651865)
 - 2026-10-02 14:52 T65 done · branch worktree-agent-ae2e06416b23a8e3c → 067232c
 - 2026-10-02 14:53 T66 conflict with main (mar-client.tsx, mar-hud.spec.ts) · sent back to agent ace8e92ac82710c5a
+- 2026-10-02 14:58 T63 skipped (Hernán and Álvaro: the Admin has little value)
