@@ -13,7 +13,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 ## Tasks
 
 ## T67 — Island names, the Halloween place and the three ticket events
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: Decisions 2026-10-02 (Hernán and Álvaro). (1) Main world (Arcilla) island display names: `cala` → Cala Cantalar, `fotos` → Isla de Benidorm, `tienda` → Ibiza, `faro` → Tabarca, `canon` → L'Illeta dels Banyets, `allday` → Isla del Sonido, `ultima` → Isla de Nochevieja; the port, the castaway and El Remanso de los Cocodrilos keep their names; circuit `El Freu` → Los Rápidos (display name; keep ids stable unless renaming them is trivial and safe). (2) Add a new place `halloween` (Isla de Halloween) on the shared map, in free sea away from the other islands, reachable, with category isla, a ticket behavior and content('event'); give it a simple procedural placeholder look until T69 models it. (3) Acuarela (shares the map) gets the same three ticket islands with the same names (Isla de Halloween, Isla del Sonido, Isla de Nochevieja); its other islands keep their current names. (4) Exactly three ticket events in the sample content, linked to their islands: "BOIA Halloween" at Kiki García on Saturday 31/10/2026 → `halloween`; "SONIDO" on Saturday 05/12/2026 → `allday` (Isla del Sonido); "BOIA Nochevieja" on Thursday 31/12/2026 → `ultima` (Isla de Nochevieja). Prices `muestra`. The tickets panel (landing and /mar) shows only these three; older sample events are removed or moved to the past/archive so they never show as on sale. (5) The Boia Fiestera is delivered to the Isla de Nochevieja: every text, achievement, mission prompt and landing copy that names the destination says "Isla de Nochevieja". Update every test, deep link (`?ir=`, `?evento=`) and analytics that depends on the old ids/names.
 - Context: `packages/world/src/worlds/arcilla/map.ts` (places, `ALLDAY_EVENT_ID`, `missionDestination`, circuit constants), `arcilla/skin.ts` `NAMES`, `acuarela/skin.ts` `ACUARELA_NAMES`, `packages/contracts/src/events.ts` (`BoiaEvent.islandId`, `ALL_DAY_ISLAND_ID`), `packages/store/src/sample/content.ts` (events, achievements, texts), `apps/web/app/mar/engine/islands.ts` (procedural builders; `generic()` for unknown isla), `apps/web/app/mar/sheet.tsx` (`islandOfEvent`/`eventOfPlace`), `apps/web/lib/admin/world.ts` `eventIslands()`, landing tickets panel and `/eventos/[slug]`, `docs/propuestas/textos-zonas.md` + `es-zonas.ts` generator, `lib/i18n/es-mar.ts`.
@@ -23,7 +23,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - `pnpm world:check` → exit 0
   - unit test asserts the Arcilla names above, the `halloween` place exists in both worlds, and exactly three on-sale sample events map to `halloween`, `allday`, `ultima` with the given dates → exit 0
   - e2e: /mar tickets panel lists exactly the 3 events; `/mar?ir=halloween` sails to the Isla de Halloween; delivering the Fiestera names the Isla de Nochevieja → exit 0
-- Outcome:
+- Outcome: Arcilla names (Cala Cantalar, Isla de Benidorm, Ibiza, Tabarca, L'Illeta dels Banyets, Isla del Sonido, Isla de Nochevieja, Los Rápidos), new place halloween at [-1.0, 1.5] in both worlds, exactly 3 on-sale events (halloween-2026, sonido-2026, nochevieja-2026), Fiestera delivered to the Isla de Nochevieja → 6934762
 
 ## T68 — Welcome sheet, help instead of guidance, top links, minimap centring
 - Status: done
@@ -37,7 +37,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: short welcome (bold title, text, objective, 2 tips, orange "A navegar" + "Comprar entradas"), no auto-guidance chips or first-time hint, "?" help card with objective/hint/"Rumbo a…", links Fotos/Shop/Artistas/Contacto/Carnet, minimap centred (islands drawn without the sky spin) → 66a1e2c
 
 ## T69 — Island models from Blender, starting with the Isla de Halloween
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T67
 - Goal: /mar islands are procedural three.js today; Hernán wants the ticket islands modelled in Blender. Build the path: a Blender script that models and exports island GLBs (within a triangle budget suited to mobile, like the boats' MAX_TRIS), manifest + `tools/blender/check.py` validation, and /mar loading an island GLB for a place when it exists (lazy by distance like the buoys, falling back to the procedural builder). Then model the Isla de Halloween: buoys (the BOIA mascot style) dressed up as witches, ghosts and Frankensteins around the island, and in the centre the club: a big jack-o'-lantern pumpkin with an angry Halloween face (glowing at night). Same art style as the existing BOIA buoys and boats.
 - Context: `tools/blender/export_barcos_glb.py` (GLB export, MAX_TRIS=12000, buoys from `mascota.py`), `tools/blender/rig.py`, `style.py`, `mascota.py`, `check.py`, `manifest.schema.json`; `art/barco/3d/` + `manifest.json`; `apps/web/app/mar/engine/models.ts` (`MODEL_FILES`, `ModelKey`, `modelFor()`, `MODEL_TUNING`), `mar3d.ts` (~1265 island build, ~2459 `modelSlot` fallback), `app/api/art/[...path]/route.ts`; T67's `halloween` place.
@@ -74,7 +74,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T72 — Economy rebalance and bottle cap
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T67
 - Goal: Decisions 2026-10-02. Make progress faster: with about 10 minutes of normal play a player can unlock at least 3 ships and some skin. Lower ship and skin prices and give more coins and experience (points). Fixed values: each floating log/debris piece picked up gives 10 coins; the treasure (Cofre fugaz) gives 40 coins and 20 points; creating the Carnet BOIA gives 300 points and unlocks one ship (choose one that is not already free or a mission prize, and say which); the minigames (lighthouse, cannon) last only 3 rounds/waves with faster enemies, and finishing one gives 50 coins and 150 points (they will be redesigned later). Bottles: at most 10 active bottles in the sea from people with a Carnet; a new bottle removes the oldest; one active bottle per person (throwing another replaces yours); sample bottles count towards the 10.
 - Context: `packages/store/src/sample/progress.ts` (`SKIN_PRICE`, ship prices, cosmetics), `packages/world/src/worlds/arcilla/map.ts` (restos coins, cofre coins, island points, secrets, dolphin), `packages/store/src/sample/content.ts` (`SAMPLE_ACHIEVEMENTS`, carnet achievement), `packages/engine/src/minigames/{faro,canon}.ts` (`FARO_DEFAULTS`, `CANON_DEFAULTS`, waves, speeds, rewards), `packages/engine/src/minigames/rewards.ts`, bottles in `packages/store/src/local.ts` (~1583 one-per-person, `allBottles` ~445), `sample/crew.ts` `SAMPLE_BOTTLES`, `apps/web/lib/repo.ts` `placeSampleBottles`, `apps/web/app/mar/bottles.ts`.
@@ -121,7 +121,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T74: Archivo at widest width chosen over Unbounded/Anybody as the closest free match to Druk Wide; Inter not preloaded (budget); landing-budget.mjs counts preloaded fonts from the CSS (Next on Windows never adds the preload link); README explains switching to Druk (agent)
 
+- 2026-10-02 T67: most island names became the shared map names (both worlds share Cala Cantalar; Acuarela keeps its own for the rest except the 3 ticket islands); circuit id el-freu unchanged; Halloween is the featured event; castaway code goes with SONIDO, amphora code with Nochevieja; map pins 🔊/🎆/🎃 (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T67: DECISIONES.md D-23 still says Halloween has no island; achievement islas-7 vs 8 islands (T72); Blender scripts and mundos/acuarela/lugares.json use old names (T69+)
 - 2026-10-02 T74: canvas text (island/globe labels in islands.ts and globe.ts, minigame canvases) still uses system-ui; the landing has only 2.2 kB of budget left
 - 2026-10-02 T68: info buoys params.guide in packages/world no longer used by /mar; the 2D OnboardMenu / MENU_SECTIONS look like dead code
 
@@ -131,3 +134,5 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 19:51 T68 done · branch worktree-agent-a928e10c981e1ae13 → 66a1e2c
 - 2026-10-02 19:53 T74 launched · attempt 1 · agent aaad2a5c73cf97f3c
 - 2026-10-02 20:47 T74 done · branch worktree-agent-aaad2a5c73cf97f3c → a8c7881
+- 2026-10-02 21:50 T67 conflict with main (es-juego.ts, estado.md) · sent back to agent a10edbb2b1a7341bc
+- 2026-10-02 21:25 T67 done · branch worktree-agent-a10edbb2b1a7341bc → 6934762
