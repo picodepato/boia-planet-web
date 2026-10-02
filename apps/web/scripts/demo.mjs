@@ -10,7 +10,7 @@
  * Ctrl+C (o SIGTERM) para el servidor y todos sus procesos hijos: Next corre
  * en su propio grupo de procesos y se le manda la señal al grupo entero.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { networkInterfaces } from 'node:os';
@@ -53,6 +53,8 @@ if (!(await portFree(PORT))) {
 }
 
 const next = createRequire(join(WEB, 'package.json')).resolve('next/dist/bin/next');
+// Atlas por sector (T47), como `pnpm dev`.
+spawnSync(process.execPath, ['scripts/atlas.mjs'], { cwd: WEB, stdio: 'inherit' });
 const child = spawn(process.execPath, [next, 'dev', '--hostname', HOST, '--port', String(PORT)], {
   cwd: WEB,
   // Grupo de procesos propio: al parar se mata el grupo entero (Next arranca workers).

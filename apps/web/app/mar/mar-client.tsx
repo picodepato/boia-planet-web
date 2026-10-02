@@ -1663,11 +1663,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             <>
               <p className="mar-splash__title">{msg('error.3d.title')}</p>
               <p>{msg('error.3d.body')}</p>
-              <Link
-                className="mar-btn mar-btn--primary"
-                href="/#tickets"
-                data-testid="mar-sin-3d-entradas"
-              >
+              <Link className="mar-btn mar-btn--primary" href="/juego">
                 {msg('error.3d.cta')}
               </Link>
             </>
@@ -1821,6 +1817,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           >
             {msg('mar.client.ajustes')}
           </button>
+          <Link className="mar-menu__link" href="/juego">
+            {msg('mar.client.versionClasica2d')}
+          </Link>
           <p className="mar-menu__label">{msg('mar.client.mundos')}</p>
           <div className="mar-menu__mundos">
             <MundosPicker

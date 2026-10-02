@@ -52,9 +52,22 @@ export function useReadyCount(): number {
   return data ? readyCount(data) : 0;
 }
 
-/** Un barco bloqueable, con el título del logro que lo da (textos de la tienda). */
+/** Barcos de estilo bloqueables, con el título del logro que los da (selector de barco). */
 export interface ShipLock extends ShipUnlock {
   achievementTitle: string | null;
+}
+
+export function useShipLocks(): ShipLock[] | undefined {
+  const { data } = useRepoData(async (r) => {
+    const [ships, list] = await Promise.all([r.progress.ships(), r.progress.achievements()]);
+    return ships.map((s) => {
+      const a = s.achievementId ? list.find((x) => x.definition.id === s.achievementId) : null;
+      // Un logro oculto sin completar no se chiva: «un logro oculto».
+      const title = a ? (a.hidden ? null : a.definition.title) : null;
+      return { ...s, achievementTitle: title };
+    });
+  });
+  return data;
 }
 
 /** El texto de un barco bloqueado. muestra */

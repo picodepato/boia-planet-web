@@ -12,7 +12,7 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'self'");
     expect(csp).toContain(`connect-src 'self' data: blob: ${HOST}`);
-    // Sin `'unsafe-eval'` en producción (ver security-headers.ts).
+    // Sin `'unsafe-eval'`: el motor importa `pixi.js/unsafe-eval` (ver security-headers.ts).
     expect(csp).toContain("script-src 'self' 'unsafe-inline'");
     expect(csp).not.toContain("'unsafe-eval'");
     expect(csp).not.toContain('ws:');
@@ -27,14 +27,6 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
     expect(get(false, 'Referrer-Policy')).toBe('strict-origin-when-cross-origin');
     expect(get(false, 'Permissions-Policy')).toContain('camera=()');
     expect(get(false, 'Strict-Transport-Security')).toContain('max-age=');
-  });
-
-  it('/juego (el mundo 2D, D-25) lleva al planeta 3D', () => {
-    for (const source of ['/juego', '/juego/:path*']) {
-      expect(RENAMED_ROUTES).toContainEqual(
-        expect.objectContaining({ source, destination: '/mar' }),
-      );
-    }
   });
 
   it('«Condiciones» lleva al aviso legal', () => {

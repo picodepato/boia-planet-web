@@ -6,6 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./intro": "./src/intro/index.ts",
+    "./intro/world-geometry": "./src/intro/world-geometry.ts",
+    "./intro/sphere-probe": "./src/intro/sphere-probe.ts",
     "./ui": "./src/ui/index.ts",
     "./bottles": "./src/bottles/index.ts",
     "./circuit": "./src/circuit/index.ts",
@@ -19,6 +21,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@boia/world": "workspace:*"
+    "@boia/world": "workspace:*",
+    "pixi.js": "8.21.0"
   }
 }

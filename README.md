@@ -1,9 +1,8 @@
 # boia-planet
 
 BOIA.PLANET: la web-universo de Boia, colectivo de eventos musicales de
-Alicante. Landing con entradas de los «All Day BOIA» y un planeta 3D
-navegable en barco (`/mar`, three.js; D-25: el mundo 2D de `/juego` se borró
-y su ruta lleva a `/mar`). Cómo se trabaja en el repo: `CLAUDE.md`;
+Alicante. Landing con entradas de los «All Day BOIA» y un mundo isométrico
+navegable en barco (`/juego`). Cómo se trabaja en el repo: `CLAUDE.md`;
 requisitos: `docs/DECISIONES.md` y `docs/spec/`; estado: `ESTADO.md`.
 
 Monorepo `pnpm` (Node 24, pnpm 11.27.1 por `packageManager`):
@@ -101,10 +100,12 @@ pnpm dlx vercel --prod      # producción
 
 1. `https://<dominio>/api/art/barco/manifest.json` responde JSON (el arte llega).
 2. `https://<dominio>/` enseña la entrada (letras 3D «BOIA», «Zarpar») y la landing.
-3. «Zarpar» entra en `/mar` (el planeta 3D; sus barcos también salen de
-   `/api/art`, `art/barco/3d/*.glb`) con la bienvenida de la boia abierta.
-4. `https://<dominio>/juego?ir=fotos` redirige a `/mar?ir=fotos` (D-25).
+3. EXPLORAR lleva a `/juego` con el barco en el puerto.
+4. «Navegar en 3D» lleva a `/mar` (el mar 3D; sus barcos también salen de
+   `/api/art`, `art/barco/3d/*.glb`).
 5. El recorrido completo para el móvil está en `ESTADO.md` (plan 002 T30, «Guía de la demo»).
+
+`/sphere-probe` da 404 en producción (sólo existe con `BOIA_SPHERE_PROBE=1`).
 
 Cada respuesta lleva la CSP y las cabeceras de seguridad
 (`apps/web/lib/security-headers.ts`, REQ-ARQ-012): `curl -I https://<dominio>/`

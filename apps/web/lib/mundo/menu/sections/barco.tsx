@@ -19,7 +19,7 @@ export const barcoSection: MenuSection = {
       <BarcoShop
         catalog={ctx.ship.catalog}
         current={ctx.ship.current}
-        pending={ctx.ship.pending || !ctx.ready}
+        pending={ctx.ship.pending || !ctx.game}
         onEquip={ctx.ship.choose}
       />
     );

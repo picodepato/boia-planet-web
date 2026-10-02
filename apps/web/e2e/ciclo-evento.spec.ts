@@ -3,14 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { eventIslands } from '../lib/admin/world';
 import { EVENTOS_COPY } from '../lib/landing/eventos-copy';
 import { eventHref } from '../lib/landing/eventos';
-import { marSheet, openMar } from './mar-helpers';
 
 /**
  * El ciclo completo de un evento sin desplegar código (REQ-COM-014, T42),
  * desde el Admin de la demo y en el mismo navegador (D-20):
  *
  * 1. publicar un evento futuro a la venta en la isla de evento: sale en la
- *    home, en Tickets, en su ficha y la isla del mar 3D lo abre con su compra;
+ *    home, en Tickets, en su ficha y la isla lo abre con su compra;
  * 2. agotarlo: se ve agotado, sin compra;
  * 3. finalizarlo: sale de la home, su ficha sigue (recuerdos, sin compra) y
  *    la isla se queda con su recuerdo;
@@ -85,20 +84,23 @@ async function ficha(page: Page, e: typeof A) {
   return f;
 }
 
-/** El mar 3D navega hasta la isla de evento (`?ir=`, con «Saltar») y devuelve su ficha desplegada. */
+/** Navega hasta la isla de evento y devuelve su panel. */
 async function sailToIsland(page: Page) {
-  await openMar(page, `?ir=${island.id}`);
+  await page.goto(`/juego?cerca=${island.id}`);
+  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
   await page
-    .getByTestId('mar-entradas-saltar')
-    .click({ timeout: 5_000 })
+    .locator('canvas:visible')
+    .first()
+    .focus()
     .catch(() => {});
-  const sheet = marSheet(page);
-  await expect(sheet).toHaveAttribute('data-lugar', island.id, { timeout: 30_000 });
-  if ((await sheet.getAttribute('data-expandida')) !== 'si') {
-    await sheet.getByTestId('mar-ficha-mas').click();
+  const panel = page.getByTestId('panel-evento');
+  await page.keyboard.down('ArrowUp');
+  try {
+    await expect(panel).toBeVisible({ timeout: 25_000 });
+  } finally {
+    await page.keyboard.up('ArrowUp');
   }
-  await expect(sheet).toHaveAttribute('data-expandida', 'si');
-  return sheet;
+  return panel;
 }
 
 test('ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar', async ({
@@ -117,7 +119,7 @@ test('ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer
   await expect(f.getByTestId('evento-precio')).toContainText('12,50');
   let panel = await sailToIsland(page);
   await expect(panel.getByRole('heading', { name: A.name })).toBeVisible();
-  await expect(panel.getByTestId('mar-comprar').first()).toBeVisible({ timeout: 10_000 });
+  await expect(panel.getByTestId('panel-evento-comprar')).toBeVisible({ timeout: 10_000 });
 
   // 2. Agotarlo: agotado en la home y en su ficha, sin compra.
   await setState(page, A, 'sold_out');
@@ -167,8 +169,8 @@ test('ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer
   // La isla enseña el aviso del evento cancelado, sin compra.
   panel = await sailToIsland(page);
   await expect(panel).toHaveAttribute('data-estado', 'cancelled');
-  await expect(panel.getByTestId('mar-evento-aviso')).toContainText(
+  await expect(panel.getByTestId('panel-evento-aviso')).toContainText(
     EVENTOS_COPY.stateBody.cancelled,
   );
-  await expect(panel.getByTestId('mar-comprar')).toHaveCount(0);
+  await expect(panel.getByTestId('panel-evento-comprar')).toHaveCount(0);
 });
