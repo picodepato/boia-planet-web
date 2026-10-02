@@ -10,11 +10,7 @@
   background: rgba(18, 35, 63, 0.96);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
   color: #fff;
-  font:
-    14px/1.4 system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font: 14px/1.4 var(--font-body);
 }
 
 .carnet-invite__kicker {

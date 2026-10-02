@@ -45,6 +45,38 @@ E2E_PORT=3107 pnpm e2e --workers=2      # ~15 min; la primera vez: pnpm --filter
   se copian con `pnpm --filter @boia/web i18n:zonas`; una prueba avisa si el
   catálogo y el documento no coinciden.
 
+## Tipografías
+
+Referencia de Álvaro (2026-10-02): las de draaimolen.nu/story, Druk Wide
+Medium para títulos e Inter para el texto. Las define un solo archivo,
+[`apps/web/lib/fonts.ts`](apps/web/lib/fonts.ts) (`next/font/local`, en el
+`<html>` del layout raíz); el CSS sólo usa `var(--font-title)` (títulos; los
+`h1`–`h3` la llevan desde `globals.css`) y `var(--font-body)` (texto).
+
+- Títulos: `apps/web/public/fonts/titulo-latin.woff2`. Hoy Archivo en su
+  anchura máxima (wdth 125, peso 700), SIL OFL (`OFL-archivo.txt`): Druk es
+  comercial (Commercial Type) y no se puede copiar. Se precarga y cuenta en
+  el presupuesto de la landing (192 kB, `pnpm --filter @boia/web budget`).
+- Texto: `apps/web/public/fonts/inter-latin.woff2`, Inter variable (peso
+  400–900), SIL OFL (`OFL-inter.txt`). No se precarga (no cabe en el
+  presupuesto): entra con `swap`.
+
+Los dos archivos son subconjuntos latinos woff2 hechos con
+[`tools/fonts/subset.py`](tools/fonts/subset.py) (necesita
+`pip install fonttools brotli`) a partir de las fuentes de Google Fonts.
+
+**Cambiar a Druk Wide Medium** cuando Álvaro compre la licencia web:
+
+1. `python tools/fonts/subset.py titulo DrukWide-Medium-Web.otf` (o el
+   `.woff2` web que da Commercial Type) reescribe `titulo-latin.woff2`.
+   Si la licencia no permite subconjuntos, se copia su `.woff2` tal cual.
+2. Se borra `OFL-archivo.txt` y se deja al lado la licencia de Druk.
+3. En `lib/fonts.ts`, sólo el comentario: el `weight: '700'` se queda
+   aunque sea Medium (los títulos piden negrita; con `500` el navegador la
+   engordaría a mano). Nada más nombra la fuente.
+4. `pnpm build` (presupuesto) y
+   `E2E_PORT=3341 pnpm e2e tipografia.spec.ts` (familias y carga).
+
 ## Desplegar la versión de prueba
 
 La versión de prueba (plan 002, D-20) no usa ningún servicio: ni Supabase, ni

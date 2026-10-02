@@ -8,7 +8,7 @@ export const MINIGAME_CSS = `
   flex-direction: column;
   background: var(--mg-night);
   color: #fff;
-  font: 500 15px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 500 15px/1.4 var(--font-body, system-ui, -apple-system, 'Segoe UI', sans-serif);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -36,7 +36,7 @@ export const MINIGAME_CSS = `
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
-  font: 700 17px/1 system-ui, sans-serif;
+  font: 700 17px/1 var(--font-body, system-ui, sans-serif);
   cursor: pointer;
 }
 .mg-icon:focus-visible, .mg-btn:focus-visible, .mg-action:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
@@ -74,7 +74,7 @@ export const MINIGAME_CSS = `
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   touch-action: auto;
 }
-.mg-card h3 { margin: 0 0 6px; font-size: 20px; }
+.mg-card h3 { margin: 0 0 6px; font-family: var(--font-title, inherit); font-size: 20px; }
 .mg-card p { margin: 0 0 8px; }
 .mg-card ul { margin: 0 0 10px; padding-left: 20px; }
 .mg-card li { margin-bottom: 4px; }
@@ -90,7 +90,7 @@ export const MINIGAME_CSS = `
   border-radius: 12px;
   background: transparent;
   color: #12233f;
-  font: 700 16px/1 system-ui, sans-serif;
+  font: 700 16px/1 var(--font-body, system-ui, sans-serif);
   cursor: pointer;
 }
 .mg-btn.mg-primary { background: var(--mg-accent); border-color: var(--mg-accent); color: var(--mg-on-accent); }
@@ -112,7 +112,7 @@ export const MINIGAME_CSS = `
   border-radius: 18px;
   background: var(--mg-accent);
   color: var(--mg-on-accent);
-  font: 800 22px/1 system-ui, sans-serif;
+  font: 800 22px/1 var(--font-body, system-ui, sans-serif);
   letter-spacing: 0.08em;
   cursor: pointer;
   touch-action: manipulation;

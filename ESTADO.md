@@ -4,6 +4,69 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T74: Site font: Druk-Wide-like titles and Inter
+
+Qué existe:
+
+- `apps/web/lib/fonts.ts`: el único sitio que define las tipografías
+  (`next/font/local`), aplicadas en el `<html>` del layout raíz:
+  `fuenteTitulo` → `--font-display` (títulos) y `fuenteTexto` → `--font-text`
+  (texto). `globals.css` deriva `--font-title` y `--font-body`; `h1`–`h3` de
+  toda la web van con `--font-title`, `body` con `--font-body`.
+- Títulos: Archivo en su anchura máxima (wdth 125, peso 700; «Archivo
+  Expanded Bold»), SIL OFL, la libre más parecida a Druk Wide Medium entre
+  Archivo, Unbounded y Anybody (comparativa en
+  `docs/informes/img/p006-t74-comparativa.png`: Unbounded tiene la «a» de un
+  piso y remates redondos; Anybody 150 es más ancha que Druk). Instancia
+  estática, subconjunto latino woff2, 11,5 kB:
+  `apps/web/public/fonts/titulo-latin.woff2` + `OFL-archivo.txt`. Se precarga.
+- Texto: Inter variable (peso 400–900, opsz 14), subconjunto latino woff2,
+  32,4 kB: `apps/web/public/fonts/inter-latin.woff2` + `OFL-inter.txt`. No se
+  precarga (no cabe en los 192 kB): `swap` sobre un respaldo con métricas
+  ajustadas por next/font.
+- Titan One (T50) y su licencia, borradas; `(landing)/layout.tsx` y
+  `admin.css` ya no definen fuentes.
+- Pilas `system-ui` sustituidas por `var(--font-body)` en `mar.css`,
+  `landing.css` (portada de la entrada), `hud.css`, `carnet.css`,
+  `carnet-invite.css`, `checkout.css` y los minijuegos
+  (`packages/engine/src/minigames/styles.ts`, con respaldo; su `h3` con la
+  display).
+- `tools/fonts/subset.py`: rehace los dos woff2 desde las fuentes oficiales
+  (fonttools + brotli); `titulo <fuente>` sirve para Druk.
+- `scripts/landing-budget.mjs` cuenta también las fuentes precargadas (`.p.`)
+  que nombran las hojas de la ruta: next/font no emite su `<link
+rel=preload>` en Windows (su plugin busca la ruta del cargador con «/»), así
+  que antes el total de Windows no las contaba y el de Vercel sí.
+- README, «Tipografías»: cómo está montado y cómo pasar a Druk Wide Medium.
+  DECISIONES, nota en P20.
+- `apps/web/e2e/tipografia.spec.ts` (móvil y escritorio): familia calculada
+  del h1 de la landing, del h2 de una hoja de /mar («Elige tu evento») y del
+  texto contra `--font-display`/`--font-text`, las dos cargadas en
+  `document.fonts`, y ningún h1–h3 desbordado en landing, /mar, evento,
+  fotos, artistas, legal, carnet y admin. `RECORD_T74=1` deja
+  `docs/informes/img/p006-t74-*.png`.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 100 archivos, 914 pruebas.
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; landing 189,8 kB de 192 kB (13 archivos, la
+  display incluida, 11,5 kB).
+- `RECORD_T74=1 E2E_PORT=3341 pnpm e2e tipografia.spec.ts --workers=1` → exit 0, 16 pasan.
+- Regresión: `E2E_PORT=3341 pnpm e2e landing accesos eventos carnet admin
+mar-hud mar-entradas mar-ayuda intro logros minijuegos tickets descuentos
+tipografia --workers=2` → 118 pasan, 25 omitidas, 11 fallan por tiempo
+  (con otro agente en paralelo: pruebas de 2–5 min); las 11 otra vez con
+  `--workers=1` → exit 0, 20 pasan, 2 omitidas.
+
+Pendiente:
+
+- Licencia web de Druk Wide Medium (Álvaro, P20); el cambio es el del README.
+- Margen de la landing: 2,2 kB. Inter no se precarga por eso.
+- El texto pintado en canvas (rótulos de islas y globo del motor 3D,
+  marcadores de Faro y Cañón) sigue con `system-ui`: no es CSS.
+
 ## 2026-10-02 — plan 006 T68: Welcome sheet, help instead of guidance, top links, minimap centring
 
 Qué existe:

@@ -642,6 +642,6 @@ aviso sin WebGL `muestra`.
 | P17 | Fotos de los 26 artistas y sus Carnets con las preguntas (D-23, respuesta 5) | Álvaro | avatares y Carnets de artista; hoy avatar neutro |
 | P18 | Música con licencia, una por mundo (D-23, respuesta 7) | Álvaro | sustituir los loops generados de O10 |
 | P19 | Cartel de BOIA Club · Halloween (D-23, respuesta 2) | Álvaro | el evento sale con «cartel próximamente» |
-| P20 | Archivo de la tipografía de BOIA (.otf o .ttf), si existe (D-23, respuesta 8) | Álvaro | si no llega, se calca del wordmark |
+| P20 | Archivo de la tipografía de BOIA (.otf o .ttf), si existe (D-23, respuesta 8). Nota 2026-10-02 (plan 006 T74): Hernán y Álvaro eligen las de draaimolen.nu/story, Druk Wide Medium para títulos e Inter para el texto, en toda la web (el wordmark sigue siendo el logo). Druk es comercial: hasta que Álvaro compre la licencia web, los títulos van con Archivo en su anchura máxima (OFL), la libre más parecida; se cambia en un solo archivo (`apps/web/lib/fonts.ts`, README «Tipografías»). | Álvaro | licencia web de Druk Wide Medium (Commercial Type); hasta entonces, Archivo Expanded |
 | P21 | Datos legales reales (titular, NIF/CIF, domicilio, correo de privacidad) y revisión profesional de los textos legales | Álvaro | publicar de verdad (REQ-PRO-020); hoy son inventados (D-23, O14) |
 | P22 | Lectura rápida de los textos del equipo (`docs/propuestas/textos-zonas.md`) y de O1–O15 de D-23 | Álvaro | quitar `muestra` de los textos |

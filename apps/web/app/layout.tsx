@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { fuentesClassName } from '../lib/fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     // El script de arranque de la landing marca <html data-entry/data-intro>
     // antes de hidratar (entrada cinemática, T03).
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className={fuentesClassName} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

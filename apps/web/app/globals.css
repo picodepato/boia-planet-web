@@ -1,8 +1,11 @@
 /*
  * Marca BOIA (T50): colores muestreados de la marca de Álvaro (art/marca/,
  * mediana de los píxeles de cada color; los mismos que tools/blender/intro/
- * trazar_marca.py). Tipografía de títulos: Titan One (SIL OFL, public/fonts/),
- * una display libre parecida al wordmark hasta que Álvaro mande la suya.
+ * trazar_marca.py).
+ *
+ * Tipografías (plan 006 T74): las define lib/fonts.ts (next/font, en <html>) y
+ * aquí sólo se nombran por variable. Títulos: --font-title (hoy Archivo
+ * Expanded, mañana Druk Wide Medium); texto: --font-body (Inter).
  */
 :root {
   --boia-orange: #ec4f24; /* naranja del wordmark: logo, botones, rellenos */
@@ -12,9 +15,11 @@
   --boia-white: #ffffff;
   /* El mar y el espacio de la escena, no son de marca (la paleta de /mar la fija el plan 003). */
   --boia-navy: #12233f;
-  /* Respaldo de la display mientras carga, o donde no se carga (las secciones definen --font-title:
-     la landing con next/font, el Admin en admin.css). */
+  /* Respaldo mientras cargan, o donde no se cargan; --font-display y --font-text vienen de lib/fonts.ts. */
   --font-title-fallback: 'Arial Black', 'Arial Bold', system-ui, sans-serif;
+  --font-body-fallback: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-title: var(--font-display, 'Arial Black'), var(--font-title-fallback);
+  --font-body: var(--font-text, system-ui), var(--font-body-fallback);
   color-scheme: light;
 }
 
@@ -26,14 +31,16 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--font-body);
   background: var(--boia-navy);
   color: #fff;
+}
+
+/* Los títulos de toda la web (landing, /mar, Carnet, páginas, legal, Admin) con la display. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
 }
 
 a {

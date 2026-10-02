@@ -1,17 +1,8 @@
 /* Admin de la demo (T26). Claro y sobrio: es una herramienta, no la web.
    Marca desde T50: la mascota en la barra, el azul del gorro y la display de
-   los títulos (la misma Titan One que la landing, servida desde public/fonts/). */
-
-@font-face {
-  font-family: 'Titan One';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('../../public/fonts/titan-one-latin.woff2') format('woff2');
-}
+   los títulos (--font-title, la de toda la web: lib/fonts.ts, plan 006 T74). */
 
 .admin {
-  --font-title: 'Titan One', var(--font-title-fallback);
   --admin-bg: #f4f6f8;
   --admin-card: #ffffff;
   --admin-ink: #16202c;

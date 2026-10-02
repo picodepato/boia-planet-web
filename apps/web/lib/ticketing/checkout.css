@@ -16,11 +16,7 @@
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   overflow: auto;
   overscroll-behavior: contain;
-  font:
-    15px/1.45 system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font: 15px/1.45 var(--font-body);
   user-select: text;
   -webkit-user-select: text;
 }

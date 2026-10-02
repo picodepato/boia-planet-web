@@ -5,11 +5,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  font:
-    14px/1.4 system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font: 14px/1.4 var(--font-body);
   color: #fff;
 }
 .juego-hud > * {
@@ -222,11 +218,7 @@
   padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
     max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background: rgba(8, 18, 34, 0.45);
-  font:
-    15px/1.45 system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font: 15px/1.45 var(--font-body);
   user-select: text;
   -webkit-user-select: text;
 }

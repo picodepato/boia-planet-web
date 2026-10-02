@@ -1,8 +1,8 @@
 /*
  * Landing de BOIA.PLANET. Marca de Álvaro desde T50: naranja, azul y negro
  * muestreados de art/marca/ (tokens --boia-* de globals.css), el logo
- * (mascota y wordmark) y la display de los títulos (Titan One, provisional
- * hasta la fuente de Álvaro). El mar y el espacio siguen siendo los de la
+ * (mascota y wordmark). Tipografías de lib/fonts.ts (T74): títulos con
+ * --font-title, texto con Inter (--font-body). El mar y el espacio siguen siendo los de la
  * escena. Contraste AA comprobado con axe: texto negro sobre naranja (el
  * blanco sobre naranja no llega a 4,5:1) y, para texto naranja sobre el mar,
  * el naranja de la mascota (--orange-text).
@@ -32,10 +32,9 @@ html {
   scroll-behavior: smooth;
 }
 
-/* La envoltura de (landing)/layout.tsx: sólo lleva la fuente de los títulos. */
+/* La envoltura de (landing)/layout.tsx (y de la vista previa del Admin). */
 .landing-root {
   display: contents;
-  --font-title: var(--font-display), var(--font-title-fallback);
 }
 
 /* ---------- Logo (T50) ---------- */
@@ -570,12 +569,7 @@ html[data-intro='arrive'] .intro-overlay__links {
   text-align: center;
   background: radial-gradient(circle at 50% 40%, #3b2a8f, #1b1440 70%);
   color: #fff;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--font-body);
   opacity: 0;
   pointer-events: none;
 }

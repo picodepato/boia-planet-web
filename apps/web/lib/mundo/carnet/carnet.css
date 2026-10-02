@@ -275,11 +275,7 @@ a.juego-button {
   min-height: 100dvh;
   padding: max(16px, env(safe-area-inset-top)) 16px 32px;
   background: #12233f;
-  font:
-    15px/1.45 system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font: 15px/1.45 var(--font-body);
 }
 .carnet-page-inner {
   box-sizing: border-box;
