@@ -15,7 +15,8 @@ import '../../lib/mundo/carnet/carnet.css';
  * Lo que sólo tenía el Menú de a bordo del 2D, dentro del mar 3D (T55): Mi
  * Carnet (verlo y editarlo sin salir del mundo), Ajustes (sensibilidad del
  * giro, música, efectos e idioma), Controles y Welcome Aboard. Cada uno en
- * su hoja crema (`MarHoja`), desde el Menú, la barra o `?menu=<panel>`.
+ * su hoja crema (`MarHoja`), como sección del menú del juego (T65) o con
+ * `?menu=<panel>`.
  * Textos `muestra` [pendiente Álvaro].
  */
 export function MarABordo({
@@ -24,6 +25,7 @@ export function MarABordo({
   onSettings,
   onBottles,
   onClose,
+  onMenu,
 }: {
   panel: Exclude<MarPanel, 'logros'>;
   settings: Settings | null;
@@ -31,8 +33,11 @@ export function MarABordo({
   /** Abre la hoja de la botella propia (T56): echarla, editarla o retirarla. */
   onBottles?: () => void;
   onClose: () => void;
+  /** Vuelve al menú del juego (T65): cada panel es una sección suya. */
+  onMenu?: () => void;
 }) {
   const body = useRef<HTMLDivElement>(null);
+  const menu = onMenu ? { onMenu } : {};
   switch (panel) {
     case 'carnet':
       return (
@@ -44,6 +49,7 @@ export function MarABordo({
           closeTestId="mar-carnet-cerrar"
           bodyRef={body}
           onClose={onClose}
+          {...menu}
         >
           <CarnetPanel
             onTop={() => body.current?.scrollTo?.({ top: 0 })}
@@ -60,6 +66,7 @@ export function MarABordo({
           testId="mar-ajustes"
           closeTestId="mar-ajustes-cerrar"
           onClose={onClose}
+          {...menu}
         >
           {settings ? (
             <>
@@ -84,6 +91,7 @@ export function MarABordo({
           testId="mar-controles"
           closeTestId="mar-controles-cerrar"
           onClose={onClose}
+          {...menu}
         >
           <h3>{t('controls.sail.heading')}</h3>
           <ul>
@@ -109,6 +117,7 @@ export function MarABordo({
           testId="mar-bienvenida"
           closeTestId="mar-bienvenida-cerrar"
           onClose={onClose}
+          {...menu}
         >
           {/* La boia de la entrada lo cuenta (T64): es lo primero al zarpar desde la landing. */}
           <div className="mar-bienvenida__boia" data-testid="mar-bienvenida-boia">

@@ -30,8 +30,28 @@ export type ResolvedBlock =
   | HomeBlockOf<'philosophy'>
   | (HomeBlockOf<'photos'> & { photos: Photo[] })
   | HomeBlockOf<'store'>
-  | HomeBlockOf<'contact'>
+  | ContactView
   | HomeBlockOf<'footer'>;
+
+/**
+ * El bloque Contacto con la Filosofía dentro (T65, decisión del 2026-10-02):
+ * el enlace «Contacto» del juego lleva a las dos cosas. Cada una sigue siendo
+ * su bloque en el Admin (textos, visible, programación); se pintan juntas en
+ * la sección de Contacto, con la Filosofía primero.
+ */
+export type ContactView = HomeBlockOf<'contact'> & {
+  philosophy?: HomeBlockOf<'philosophy'>;
+};
+
+/** La Filosofía que se ve (visible, en su programación y con texto); si no, null. */
+function shownPhilosophy(content: HomeContent, now: Date): HomeBlockOf<'philosophy'> | null {
+  const block = content.blocks.find((b): b is HomeBlockOf<'philosophy'> => b.type === 'philosophy');
+  if (!block || !isBlockScheduled(block, now)) return null;
+  return block.paragraphs.length > 0 || block.verbs.length > 0 ? block : null;
+}
+
+/** Con un bloque Contacto, la Filosofía va dentro de él y no por separado (T65). */
+const hasContactBlock = (content: HomeContent) => content.blocks.some((b) => b.type === 'contact');
 
 /** Semilla fija: el orden de rotación es el mismo en servidor y cliente. */
 export const ARTIST_ORDER_SEED = 2026;
@@ -74,6 +94,8 @@ export function resolveBlock(
     }
 
     case 'philosophy':
+      // Va dentro de Contacto (T65); sola, sólo en un contenido sin bloque Contacto.
+      if (hasContactBlock(content)) return null;
       return block.paragraphs.length > 0 || block.verbs.length > 0 ? block : null;
 
     case 'photos': {
@@ -88,8 +110,12 @@ export function resolveBlock(
     case 'store':
       return block;
 
-    case 'contact':
+    case 'contact': {
+      // Oculto o fuera de programación, Contacto se lleva su Filosofía con él.
+      const philosophy = shownPhilosophy(content, now);
+      if (philosophy) return { ...block, philosophy };
       return block.email !== undefined || block.links.length > 0 ? block : null;
+    }
 
     case 'footer':
       return block;
@@ -153,8 +179,10 @@ export function landingSections(content: HomeContent, now: Date): string[] {
     ...new Set(
       content.blocks
         .filter((b) => b.type !== 'footer')
-        .filter((b) => resolveBlock(b, content, now) !== null)
-        .map((b) => ANCHORS[b.type])
+        .map((b) => resolveBlock(b, content, now))
+        .flatMap((b) =>
+          !b ? [] : b.type === 'contact' && b.philosophy ? [ANCHORS.philosophy] : [ANCHORS[b.type]],
+        )
         .filter((a): a is string => a !== undefined),
     ),
   ];

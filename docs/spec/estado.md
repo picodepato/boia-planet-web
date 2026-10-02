@@ -28,7 +28,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-PRO-006 | Formato All Day BOIA o satélite | L1 | PARCIAL | [events.ts](../../packages/contracts/src/events.ts) | Construido; sin prueba que lo nombre |
 | REQ-PRO-007 | Satélites sin isla principal | L1 | HECHO | [access.test.ts](../../apps/web/lib/landing/access.test.ts) «la isla del evento destacado o, sin isla, la localización común (O7)» | — |
 | REQ-PRO-008 | Móvil táctil primero | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-PRO-009 | Más mundo, menos HUD | L1 | PARCIAL | [hud-layout.ts](../../packages/engine/src/ui/hud-layout.ts) | Construido; sin prueba que lo nombre |
+| REQ-PRO-009 | Más mundo, menos HUD | L1 | PARCIAL | [mar-hud.spec.ts](../../apps/web/e2e/mar-hud.spec.ts) «arriba los enlaces a la web, a la izquierda el menú, abajo sólo «Entradas» y el turbo» | HUD v2 de /mar (T65, decisión del 2026-10-02): suma los enlaces a la web arriba; el criterio de 09 (sólo minimapa, menú, Inicio, saldos, brújula) está por ajustar a esa decisión |
 | REQ-PRO-010 | Sin modales que detengan la navegación | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-PRO-011 | Feedback con animación y sonido | L1 | PARCIAL | [sound.test.ts](../../apps/web/lib/mundo/sound.test.ts) | T62 (D-25): la respuesta por comportamiento (sonido y animación declarados) era del 2D; /mar suena pero no anima según el comportamiento |
 | REQ-PRO-012 | Mecánicas que se entienden solas | L1 | FALTA | — | — |
@@ -242,7 +242,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-COM-027 | Tarjeta de artista y A–Z | L1 | PARCIAL | [page.tsx](../../apps/web/app/%28landing%29/artistas/page.tsx) | Construido; sin prueba que lo nombre |
 | REQ-COM-028 | 26 artistas textuales | L1 | HECHO | [artists-list.test.ts](../../apps/web/app/%28landing%29/components/artists-list.test.ts) «los datos son los de v14 §18.1, textuales» | — |
 | REQ-COM-029 | Validación de artistas | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-COM-030 | Página Filosofía | L1 | PARCIAL | [home-blocks.ts](../../packages/contracts/src/home-blocks.ts) | Construido; sin prueba que lo nombre |
+| REQ-COM-030 | Página Filosofía | L1 | PARCIAL | [blocks.test.ts](../../apps/web/app/%28landing%29/components/blocks.test.ts) «Contacto lleva la Filosofía dentro y sus datos (T65)» | Desde T65 la Filosofía se ve dentro del bloque Contacto (decisión del 2026-10-02); textos `muestra` [pendiente Álvaro] |
 | REQ-COM-031 | Galería de fotos | L1 | HECHO | [eventos.test.ts](../../apps/web/lib/landing/eventos.test.ts) | — |
 | REQ-COM-032 | Vídeos sin bloquear la carga | L1 | FALTA | — | — |
 | REQ-COM-033 | Tienda L1 con enlace externo | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |

@@ -79,6 +79,7 @@ const base = {
 
   'contact.heading': 'Contacto',
   'contact.email': 'Escríbenos',
+  'contact.data': 'Datos de contacto',
 
   'footer.official': 'Enlaces oficiales de BOIA',
   'footer.legal': 'Información legal',

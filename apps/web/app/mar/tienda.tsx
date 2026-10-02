@@ -17,12 +17,15 @@ export function MarTienda({
   pending,
   onEquip,
   onClose,
+  onMenu,
 }: {
   catalog: ShipCatalog | null;
   current: ShipLook | null;
   pending: boolean;
   onEquip: (look: ShipLook) => void;
   onClose: () => void;
+  /** Vuelve al menú del juego (T65). */
+  onMenu?: () => void;
 }) {
   return (
     <MarHoja
@@ -32,6 +35,7 @@ export function MarTienda({
       testId="mar-tienda"
       closeTestId="mar-tienda-cerrar"
       onClose={onClose}
+      {...(onMenu ? { onMenu } : {})}
     >
       <BarcoShop catalog={catalog} current={current} pending={pending} onEquip={onEquip} />
     </MarHoja>

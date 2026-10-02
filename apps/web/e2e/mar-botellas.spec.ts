@@ -30,7 +30,7 @@ async function bottlesInSea(page: Page): Promise<string[]> {
 }
 
 async function openMenuEntry(page: Page, testId: string) {
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-menu').getByTestId(testId).click();
 }
 
@@ -110,7 +110,7 @@ test('botellas: las de muestra flotan; con Carnet se echa una de 140 y sigue al 
   await panel.getByTestId('mar-botella-cerrar').click();
 
   // Mi Carnet (T55) la enseña y lleva a ella: «Editar o retirar».
-  await page.getByTestId('mar-barra-carnet').click();
+  await page.getByTestId('mar-enlace-carnet').click();
   const carnetSheet = page.getByTestId('mar-carnet');
   await expect(carnetSheet.getByTestId('carnet-botella')).toContainText(message);
   await carnetSheet.getByRole('button', { name: t('juego.carnet.editarORetirar') }).click();

@@ -17,12 +17,15 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
-  /* HUD (T53): el minimapa arriba y la barra fina abajo; las tarjetas y los
-     mandos se apoyan encima de la barra (--above-bar). */
+  /* HUD (T65): arriba los enlaces a la web (--links-h) y, debajo, el
+     minimapa; abajo sólo «Entradas» y el turbo (--bar-h); las tarjetas y los
+     mandos se apoyan encima (--above-bar). */
   --mini: 72px;
-  --bar-h: 58px;
-  --above-bar: calc(var(--safe-b) + 8px + var(--bar-h) + 10px);
-  --top-space: calc(var(--safe-t) + 10px + var(--mini) + 26px);
+  --links-h: 38px;
+  --turbo: 64px;
+  --bar-h: var(--turbo);
+  --above-bar: calc(var(--safe-b) + 8px + var(--bar-h) + 8px);
+  --top-space: calc(var(--safe-t) + var(--links-h) + 10px + var(--mini) + 26px);
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -66,11 +69,11 @@
 /* ---------- Cristal ---------- */
 
 .mar-round,
-.mar-bar,
+.mar-links__item,
+.mar-menu-btn,
 .mar-balances,
 .mar-speed,
 .mar-chip,
-.mar-menu,
 .mar-help,
 .mar-maphint {
   background: var(--glass);
@@ -102,10 +105,56 @@
 
 /* ---------- Arriba ---------- */
 
-/* Sólo el minimapa (izquierda) y los saldos (derecha): nada más tapa el mar. */
+/* Los enlaces a la web (T65): una fila fina arriba del todo. Fotos,
+   Contacto, Artistas y Shop salen a su sección de la landing; Carnet abre el
+   menú del juego en Mi Carnet. */
+.mar-links {
+  position: absolute;
+  top: calc(var(--safe-t) + 6px);
+  left: calc(var(--safe-l) + 8px);
+  right: calc(var(--safe-r) + 8px);
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  z-index: 6;
+  pointer-events: none;
+  animation: mar-in 0.3s ease-out;
+}
+
+.mar-links__item {
+  pointer-events: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0 11px;
+  border-radius: 15px;
+  color: #fff !important;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* `.mar button` hereda la letra: el botón Carnet, como los enlaces. */
+.mar button.mar-links__item {
+  border-color: rgb(255 82 25 / 0.75);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.mar-links__item:active {
+  transform: scale(0.94);
+}
+
+/* Debajo, el minimapa (izquierda) y los saldos (derecha): nada más tapa el mar. */
 .mar-top {
   position: absolute;
-  top: calc(var(--safe-t) + 10px);
+  top: calc(var(--safe-t) + var(--links-h) + 10px);
   left: calc(var(--safe-l) + 10px);
   right: calc(var(--safe-r) + 10px);
   display: flex;
@@ -135,75 +184,198 @@
   flex: none;
 }
 
-/* El menú se abre encima de la barra, junto a su botón. */
-.mar-menu {
-  position: absolute;
-  right: calc(var(--safe-r) + 10px);
-  bottom: var(--above-bar);
-  width: min(340px, calc(100% - 20px));
-  padding: 14px;
-  border-radius: 20px;
-  background: var(--glass-strong);
-  z-index: 7;
-  display: grid;
-  gap: 8px;
-  animation: mar-in 0.18s ease-out;
-}
-
-.mar-menu__head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0 0 2px;
-  min-width: 0;
-}
+/* ---------- El menú del juego (T65) ----------
+   Una hoja crema (MarHoja) con todo: secciones en mosaico (cada una abre su
+   hoja con «‹ Menú»), «Cómo jugar», el momento del día y los mundos. */
 
 .mar-menu__logo {
   font-weight: 900;
   letter-spacing: 0.02em;
-  color: var(--orange-2);
-  font-size: 1.05rem;
+  color: var(--orange);
 }
 
 .mar-menu__world {
   font-size: 0.8rem;
   font-weight: 700;
-  opacity: 0.85;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.mar-menu__grid,
+.mar-menu__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+}
+
+.mar .mar-menu__tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 6px 4px;
+  border: 1px solid rgb(27 20 64 / 0.1);
+  border-radius: 14px;
+  background: rgb(27 20 64 / 0.05);
+  color: var(--ink) !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.mar-menu__tile:active {
+  transform: scale(0.96);
+}
+
+.mar-menu__icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.mar-menu__name,
+.mar-menu__sub {
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.mar-menu__label {
-  margin: 0;
+.mar-menu__sub {
+  font-size: 0.66rem;
+  font-weight: 700;
+  opacity: 0.65;
+}
+
+.mar-menu__tile .logros-contador {
+  top: 4px;
+  right: 6px;
+}
+
+.mar-menu__group {
+  margin-top: 12px;
+}
+
+/* Mundos (T65): plegado, para que el menú quepa en una tarjeta. */
+.mar-menu__mundos > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgb(27 20 64 / 0.1);
+  border-radius: 14px;
+  background: rgb(27 20 64 / 0.05);
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mar-menu__mundos[open] > summary {
+  margin-bottom: 8px;
+}
+
+.mar-logros__body h3.mar-menu__label {
+  margin: 0 0 6px;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 .mar-menu__moods {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 4px;
 }
 
-.mar-menu__link {
-  display: block;
-  padding: 11px 12px;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 0.06);
-  text-decoration: none;
+.mar .mar-menu__mood {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgb(27 20 64 / 0.15);
+  border-radius: 18px;
+  background: rgb(27 20 64 / 0.05);
+  color: var(--ink) !important;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
-.mar-menu__help {
-  margin: 4px 0 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  opacity: 0.75;
+.mar-menu__mood.is-on {
+  background: var(--orange);
+  border-color: transparent;
+  color: #fff !important;
+}
+
+.mar-menu__home {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+/* «‹ Menú» en la cabecera de cada sección (T65). */
+.mar .mar-logros__back {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: 18px;
+  background: rgb(27 20 64 / 0.08);
+  color: var(--ink) !important;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.mar-logros__back span {
+  font-size: 1.1rem;
+}
+
+/* El botón del menú del juego (T65): a la izquierda, bajo el minimapa, con
+   el icono de logros y su número de premios por reclamar. */
+.mar-menu-btn {
+  position: absolute;
+  top: var(--top-space);
+  left: calc(var(--safe-l) + 10px + (var(--mini) - 54px) / 2);
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border-radius: 50%;
+  color: #fff !important;
+  animation: mar-in 0.3s ease-out;
+}
+
+.mar-menu-btn > span {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.mar-menu-btn > small {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  opacity: 0.9;
+}
+
+.mar-menu-btn[aria-expanded='true'] {
+  background: var(--orange);
+}
+
+.mar-menu-btn:active {
+  transform: scale(0.94);
+}
+
+.mar-menu-btn .logros-contador {
+  top: -3px;
+  right: -3px;
 }
 
 /* ---------- Avisos y chips ---------- */
@@ -212,7 +384,7 @@
    que se va solo (tiempo de lectura de D-22); tocarlo o su × lo cierran. */
 .mar-notices {
   position: absolute;
-  top: calc(var(--safe-t) + 10px + 36px + 8px);
+  top: calc(var(--safe-t) + var(--links-h) + 10px + 36px + 8px);
   left: calc(var(--safe-l) + 10px + var(--mini) + 10px);
   right: calc(var(--safe-r) + 10px);
   display: flex;
@@ -317,7 +489,8 @@
   gap: 6px;
   z-index: 3;
   width: max-content;
-  max-width: calc(100% - 24px);
+  /* Sin pisar el botón del menú de la izquierda (T65). */
+  max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
 }
 
 .mar-chip {
@@ -535,9 +708,9 @@
   height: 56px;
 }
 
-/* ---------- La barra de abajo (T53) ----------
-   Fina y fija: Mapa, Logros, «Entradas» destacada en el centro, Carnet y
-   Menú, siempre a la vista. */
+/* ---------- Abajo (T65) ----------
+   Sólo «Entradas», destacada en el centro, y el turbo a la derecha; sin
+   barra: todo lo demás está en el menú del juego. */
 
 .mar-bar {
   position: absolute;
@@ -546,60 +719,23 @@
   bottom: calc(var(--safe-b) + 8px);
   height: var(--bar-h);
   display: grid;
-  grid-template-columns: 1fr 1fr auto 1fr 1fr;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 0 4px;
-  border-radius: 20px;
-  background: var(--glass-strong);
   z-index: 7;
+  pointer-events: none;
 }
 
-.mar-bar__item {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 3px;
-  height: calc(100% - 8px);
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 14px;
-  background: none;
-  color: #fff !important;
-  text-decoration: none;
+.mar-bar > * {
+  pointer-events: auto;
 }
 
-.mar-bar__item > span {
-  font-size: 1.2rem;
-  line-height: 1;
+.mar-bar > .mar-tickets {
+  grid-column: 2;
 }
 
-.mar-bar__item > small {
-  max-width: 100%;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.9;
-}
-
-.mar-bar__item[aria-pressed='true'],
-.mar-bar__item[aria-expanded='true'] {
-  background: rgb(255 255 255 / 0.12);
-  color: var(--orange-2) !important;
-}
-
-.mar-bar__item:active {
-  transform: scale(0.94);
-}
-
-/* El número de logros por reclamar, sobre el icono. */
-.mar-bar__item .logros-contador {
-  top: 0;
-  right: calc(50% - 24px);
+.mar-bar > .mar-turbo {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .mar-logros-btn:not([data-por-reclamar='0']) > span {
@@ -611,7 +747,7 @@
 .mar-rail {
   position: absolute;
   right: calc(var(--safe-r) + 14px);
-  bottom: calc(var(--above-bar) + 72px + 12px);
+  bottom: calc(var(--above-bar) + 4px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -639,11 +775,9 @@
 }
 
 .mar-turbo {
-  position: absolute;
-  right: calc(var(--safe-r) + 12px);
-  bottom: var(--above-bar);
-  width: 72px;
-  height: 72px;
+  position: relative;
+  width: var(--turbo);
+  height: var(--turbo);
   border-radius: 50%;
   border: 0;
   display: grid;
@@ -669,8 +803,16 @@
   inset: -5px;
   border-radius: 50%;
   background: conic-gradient(var(--cream) calc(var(--p) * 360deg), transparent 0);
-  mask: radial-gradient(circle, transparent 36px, #000 37px);
-  -webkit-mask: radial-gradient(circle, transparent 36px, #000 37px);
+  mask: radial-gradient(
+    circle,
+    transparent calc(var(--turbo) / 2),
+    #000 calc(var(--turbo) / 2 + 1px)
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent calc(var(--turbo) / 2),
+    #000 calc(var(--turbo) / 2 + 1px)
+  );
   opacity: 0.9;
 }
 
@@ -706,7 +848,7 @@
 .mar-speed {
   position: absolute;
   left: calc(var(--safe-l) + 12px);
-  bottom: var(--above-bar);
+  bottom: calc(var(--safe-b) + 8px + (var(--bar-h) - 56px) / 2);
   display: grid;
   place-items: center;
   width: 56px;
@@ -735,7 +877,7 @@
   /* Centrada en el hueco que deja la barra del zoom a la derecha. */
   left: calc(var(--safe-l) + 12px);
   right: calc(var(--safe-r) + 66px);
-  bottom: calc(var(--above-bar) + 84px);
+  bottom: calc(var(--above-bar) + 52px);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -1009,7 +1151,6 @@
   font-weight: 900;
   letter-spacing: 0.01em;
   box-shadow: 0 8px 20px rgb(242 106 27 / 0.35);
-  transform: translateY(-10px);
   animation: mar-glow 2.4s ease-in-out infinite;
 }
 
@@ -1030,7 +1171,7 @@
 }
 
 .mar-tickets__btn:active {
-  transform: translateY(-10px) scale(0.95);
+  transform: scale(0.95);
 }
 
 .mar-tickets__skip {
@@ -1448,13 +1589,23 @@
 @media (min-width: 760px) {
   .mar {
     --mini: 96px;
+    --turbo: 72px;
+    /* Los enlaces van arriba, centrados, en la fila del minimapa. */
+    --links-h: 0px;
   }
 
-  .mar-bar {
+  .mar-links {
+    top: calc(var(--safe-t) + 14px);
     left: 50%;
     right: auto;
-    width: 480px;
     translate: -50% 0;
+  }
+
+  .mar .mar-links__item {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 17px;
+    font-size: 0.82rem;
   }
 
   .mar-sheet,
@@ -1851,22 +2002,14 @@ button.mar-logros__carnet {
 
 /* ---------- T51: lo que plan 004 trajo a /juego, en el mar 3D ---------- */
 
-/* El menú crece con «Mundos»: se desplaza dentro sin tapar el mar entero. */
-.mar-menu {
-  max-height: calc(100% - var(--top-space) - var(--above-bar));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-}
-
-.mar-menu__mundos .mundos > p {
+.mar-menu .mundos > p {
   margin: 0 0 6px;
   font-size: 0.8rem;
   line-height: 1.4;
   opacity: 0.8;
 }
 
-.mar-menu__mundos .mundos-lista {
+.mar-menu .mundos-lista {
   display: grid;
   gap: 6px;
   margin: 0 0 6px;
@@ -1874,26 +2017,26 @@ button.mar-logros__carnet {
   list-style: none;
 }
 
-.mar-menu__mundos .mundo {
+.mar-menu .mundo {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   min-height: 48px;
   padding: 6px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid rgb(27 20 64 / 0.12);
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.06);
+  background: rgb(27 20 64 / 0.04);
   text-align: left;
 }
 
-.mar-menu__mundos .mundo.is-active {
+.mar-menu .mundo.is-active {
   border-color: var(--orange);
-  background: rgb(236 79 36 / 0.22);
+  background: rgb(236 79 36 / 0.14);
 }
 
-.mar-menu__mundos .mundo img,
-.mar-menu__mundos .mundo-sin-barco {
+.mar-menu .mundo img,
+.mar-menu .mundo-sin-barco {
   flex: none;
   width: 40px;
   height: 40px;
@@ -1902,21 +2045,21 @@ button.mar-logros__carnet {
   place-items: center;
 }
 
-.mar-menu__mundos .mundo-texto {
+.mar-menu .mundo-texto {
   display: grid;
   gap: 1px;
   font-size: 0.78rem;
   line-height: 1.3;
 }
 
-.mar-menu__mundos .mundo-nombre {
+.mar-menu .mundo-nombre {
   font-size: 0.92rem;
   font-weight: 800;
 }
 
-.mar-menu__mundos .mundo-historia,
-.mar-menu__mundos .mundo-barco,
-.mar-menu__mundos .juego-muted {
+.mar-menu .mundo-historia,
+.mar-menu .mundo-barco,
+.mar-menu .juego-muted {
   opacity: 0.75;
   font-size: 0.74rem;
 }

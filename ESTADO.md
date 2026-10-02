@@ -4,6 +4,59 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T65: Game HUD v2 (enlaces arriba, menú a la izquierda, minimapa)
+
+Qué existe:
+
+- HUD de `/mar` según la decisión del 2026-10-02, que sustituye la barra de T53:
+  - Arriba, `mar-enlaces`: Fotos (`/#fotos`), Contacto (`/#contacto`), Artistas
+    (`/#artistas`), Carnet y Shop (`/#tienda`). Los enlaces son `<a>` normales (carga
+    completa: con ancla la landing entra directa, D-21). Carnet no sale del juego: abre
+    el menú del juego en Mi Carnet. Debajo, el minimapa y los saldos.
+  - A la izquierda, bajo el minimapa, el botón del menú del juego con el icono 🏆 y el
+    número de premios por reclamar (`data-testid="mar-logros"`, se queda el de antes).
+  - Abajo sólo «Entradas» (centro, destacada) y el turbo (`mar-barra` con dos botones);
+    se van Mapa (el minimapa abre el mapa), Logros, Carnet y Menú de la barra.
+- Menú del juego (`app/mar/menu.tsx`, `MarMenu`): una hoja crema (`MarHoja`) con
+  Logros, Mi Carnet, Barco, Mis códigos, Mi botella, Ranking, Ajustes, «Cómo jugar»
+  (Controles y Welcome Aboard), momento del día y Mundos (plegado). Cada sección se
+  abre en su hoja con «‹ Menú» (`MarHoja` `onMenu`, `mar-hoja-menu`) que vuelve al
+  menú; «Mi Carnet», venga de donde venga (Carnet de arriba, Logros, Ranking, botella,
+  invitación, compra), es esa sección del menú. Mis códigos sigue siendo la tarjeta de
+  abajo (sin «‹ Menú»). Se quita «Versión clásica 2D» del menú.
+- Minimapa: arrastrar la carta (mapa grande) muy a un lado hacía saltar islas y marcas
+  al otro lado (la vuelta al planeta se calculaba alrededor del foco arrastrado). Ahora
+  se da la vuelta alrededor del centro de la carta (`wrapC` en `engine/mar3d.ts`) y la
+  carta sólo se arrastra hasta ver su borde (`mapPanLimit` en `engine/wrap.ts`, con
+  pruebas). Además, un arrastre que empieza en el minimapa, va lejos y vuelve al sitio
+  ya no abre el mapa (sólo una pulsación que no se movió).
+- Landing: la Filosofía se pinta dentro del bloque Contacto (`ContactView` en
+  `lib/landing/resolve.ts`, `#filosofia` dentro de `#contacto`, luego «Datos de
+  contacto»); cada parte sigue siendo su bloque en el Admin (etiquetas «Contacto (con
+  la Filosofía dentro)» y «Filosofía (se ve dentro de Contacto)»). Contacto oculto se
+  lleva la Filosofía; sin bloque Contacto, la Filosofía sale sola. El enlace
+  «Filosofía» de la cabecera sigue (ancla dentro de Contacto).
+- REQ-PRO-009 y REQ-COM-030 con su nueva prueba en `docs/spec/estado.md` (siguen
+  PARCIAL).
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0
+  (97 ficheros, 891 pruebas).
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0;
+  `pnpm typecheck` → exit 0.
+- `E2E_PORT=3221 pnpm e2e mar-hud logros mar-a-bordo mar-botellas mar-fiestera
+  mar-paridad tienda solo-3d intro agujero-negro demo mar-entradas tickets landing
+  admin.spec carnet --workers=1` → 135 pasan, 10 saltadas, 1 falla
+  (`intro.spec.ts` «una escena lenta», móvil: `route.fetch: read ECONNRESET` por carga
+  de la máquina); repetida sola (`intro -g "escena lenta"`) → exit 0, 2 pasan.
+
+Pendiente:
+
+- REQ-PRO-009: su criterio en `09-requisitos.md` (sólo minimapa, menú, Inicio, saldos,
+  brújula) no recoge los enlaces a la web de esta decisión.
+- Textos `muestra` («Shop», «Datos de contacto», etiquetas del menú) [pendiente Álvaro].
+
 ## 2026-10-02 — plan 005 T62: Borrar el mundo 2D
 
 Qué existe:

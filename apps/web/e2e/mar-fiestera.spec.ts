@@ -182,7 +182,7 @@ test('rescatar a la Fiestera y dejarla en la última isla: su código vale en la
 
   // 4. El barco exclusivo: en la tienda, ya suyo; se lo pone y se queda tras recargar.
   await openMar(page);
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-barco').click();
   const shop = page.getByTestId('mar-tienda');
   await expect(shop).toBeVisible();
@@ -198,7 +198,7 @@ test('rescatar a la Fiestera y dejarla en la última isla: su código vale en la
 
 test('sin rescatarla, el barco exclusivo está bloqueado y dice cómo se gana', async ({ page }) => {
   await openMar(page);
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-barco').click();
   const row = page.getByTestId('mar-tienda').getByTestId(`barco-estilo-${exclusive.assetKey}`);
   await expect(row).toHaveAttribute('data-bloqueado', 'si');

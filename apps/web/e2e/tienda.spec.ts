@@ -154,13 +154,15 @@ test('/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar
     page,
     page.locator('[data-testid="mar-aviso"][data-kind="achievement"]'),
   );
+  // Logros y Barco, en el menú del juego (T65).
   await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
   const panel = page.getByTestId('mar-logros-panel');
   await claimFirstBuoy(panel);
   await expect(page.getByTestId('logro-premio')).toHaveCount(0, { timeout: 6000 });
   await page.getByTestId('mar-logros-cerrar').click();
 
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-barco').click();
   const sheet = page.getByTestId('mar-tienda');
   await expect(sheet).toBeVisible();

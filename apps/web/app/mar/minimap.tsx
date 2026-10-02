@@ -19,7 +19,9 @@ import { t as msg } from '../../lib/i18n';
  *
  * Tocarlo abre el mapa grande (la vista de mapa del 3D); tocarlo otra vez lo
  * cierra. El gesto es el del minimapa del 2D (`MinimapGesture`): un roce
- * que empieza en él y se mueve no cuenta como toque. muestra
+ * que empieza en él y se mueve no cuenta como toque. Tampoco un arrastre
+ * lejos que vuelve al sitio (T65): sólo abre una pulsación que no se movió.
+ * muestra
  */
 
 /** Repintados por segundo: el globo apenas cambia (el barco y un giro lentísimo). */
@@ -49,6 +51,8 @@ export function MarMinimap({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gesture = useRef(new MinimapGesture());
   const from = useRef({ x: 0, y: 0 });
+  /** Lo más lejos que fue el dedo desde que tocó (px). */
+  const reach = useRef(0);
   const pinsRef = useRef(pins);
   const marksRef = useRef(marks);
   const drawRef = useRef<() => void>(() => {});
@@ -126,14 +130,18 @@ export function MarMinimap({
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.setPointerCapture?.(e.pointerId);
     from.current = { x: e.clientX, y: e.clientY };
+    reach.current = 0;
     gesture.current.down(performance.now(), e.clientX, e.clientY);
   };
 
   const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
     const r = gesture.current.up(performance.now());
     if (!r) return;
-    // Una pulsación larga que no se mueve también abre (aquí no se arrastra).
-    const still = Math.hypot(e.clientX - from.current.x, e.clientY - from.current.y) <= TAP_SLOP_PX;
+    // Una pulsación larga que no se mueve también abre (aquí no se arrastra);
+    // ir lejos y volver al mismo sitio no es quedarse quieto (T65).
+    const still =
+      Math.max(reach.current, Math.hypot(e.clientX - from.current.x, e.clientY - from.current.y)) <=
+      TAP_SLOP_PX;
     if (r.kind === 'tap' || (r.kind === 'drop' && still)) onToggle();
   };
 
@@ -148,7 +156,13 @@ export function MarMinimap({
       data-codigos={marks.length}
       aria-pressed={mapMode}
       onPointerDown={onPointerDown}
-      onPointerMove={(e) => gesture.current.move(performance.now(), e.clientX, e.clientY)}
+      onPointerMove={(e) => {
+        reach.current = Math.max(
+          reach.current,
+          Math.hypot(e.clientX - from.current.x, e.clientY - from.current.y),
+        );
+        gesture.current.move(performance.now(), e.clientX, e.clientY);
+      }}
       onPointerUp={onPointerUp}
       onPointerCancel={() => gesture.current.cancel()}
       onClick={(e) => {

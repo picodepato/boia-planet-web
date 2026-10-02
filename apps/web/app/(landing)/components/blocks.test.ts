@@ -2,7 +2,7 @@ import type { HomeBlock, HomeContent } from '@boia/contracts';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { resolveBlock, resolveHome } from '../../../lib/landing/resolve';
+import { landingSections, resolveBlock, resolveHome } from '../../../lib/landing/resolve';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { BlockView, HomeBlocks } from './blocks';
 
@@ -39,10 +39,16 @@ function renderList(blocks: readonly HomeBlock[], content = SAMPLE_CONTENT): str
   );
 }
 
+/** La home de muestra con un bloque cambiado (la Filosofía se pinta dentro de Contacto, T65). */
+const renderPatched = (block: HomeBlock, patch: Partial<HomeBlock>) =>
+  renderList(
+    SAMPLE_CONTENT.blocks.map((b) => (b.id === block.id ? ({ ...b, ...patch } as HomeBlock) : b)),
+  );
+
 describe('renderizador de bloques de la home', () => {
   it('cada bloque de muestra visible pinta algo con su id', () => {
+    const html = renderList(SAMPLE_CONTENT.blocks);
     for (const block of SAMPLE_CONTENT.blocks) {
-      const html = render(block);
       expect(html, block.type).toContain(`data-block="${block.id}"`);
     }
   });
@@ -57,10 +63,47 @@ describe('renderizador de bloques de la home', () => {
     const later = new Date(NOW.getTime() + 3600_000).toISOString();
     const earlier = new Date(NOW.getTime() - 3600_000).toISOString();
     for (const block of SAMPLE_CONTENT.blocks) {
-      expect(render({ ...block, showFrom: later })).toBe('');
-      expect(render({ ...block, showUntil: earlier })).toBe('');
-      expect(render({ ...block, showFrom: earlier, showUntil: later })).not.toBe('');
+      const id = `data-block="${block.id}"`;
+      expect(renderPatched(block, { showFrom: later }), block.type).not.toContain(id);
+      expect(renderPatched(block, { showUntil: earlier }), block.type).not.toContain(id);
+      expect(renderPatched(block, { showFrom: earlier, showUntil: later }), block.type).toContain(
+        id,
+      );
     }
+  });
+
+  it('Contacto lleva la Filosofía dentro y sus datos (T65)', () => {
+    const contact = SAMPLE_CONTENT.blocks.find((b) => b.type === 'contact')!;
+    const philosophy = SAMPLE_CONTENT.blocks.find((b) => b.type === 'philosophy')!;
+    if (contact.type !== 'contact' || philosophy.type !== 'philosophy') throw new Error('muestra');
+    const html = render(contact);
+    // Una sola sección: Contacto, con la Filosofía (su ancla) y los datos de contacto.
+    expect(html).toContain('id="contacto"');
+    expect(html).toContain('id="filosofia"');
+    expect(html).toContain(`data-block="${philosophy.id}"`);
+    for (const p of philosophy.paragraphs) expect(html).toContain(p);
+    if (contact.email) expect(html).toContain(`mailto:${contact.email}`);
+    for (const l of contact.links) expect(html).toContain(l.url);
+    // La Filosofía ya no es una sección aparte; su enlace de la cabecera sigue.
+    expect(resolveBlock(philosophy, SAMPLE_CONTENT, NOW)).toBeNull();
+    const all = renderList(SAMPLE_CONTENT.blocks);
+    expect(all.match(/id="filosofia"/g)).toHaveLength(1);
+    expect(all.indexOf('id="contacto"')).toBeLessThan(all.indexOf('id="filosofia"'));
+    expect(landingSections(SAMPLE_CONTENT, NOW)).toContain('filosofia');
+  });
+
+  it('cada parte se oculta desde su bloque; Contacto oculto se lleva la Filosofía', () => {
+    const contact = SAMPLE_CONTENT.blocks.find((b) => b.type === 'contact')!;
+    const philosophy = SAMPLE_CONTENT.blocks.find((b) => b.type === 'philosophy')!;
+    const noPhilosophy = renderPatched(philosophy, { visible: false });
+    expect(noPhilosophy).toContain('id="contacto"');
+    expect(noPhilosophy).not.toContain('id="filosofia"');
+    const noContact = renderPatched(contact, { visible: false });
+    expect(noContact).not.toContain('id="contacto"');
+    expect(noContact).not.toContain('id="filosofia"');
+    // Sin bloque Contacto en el contenido, la Filosofía se pinta sola.
+    const html = renderList(SAMPLE_CONTENT.blocks.filter((b) => b.type !== 'contact'));
+    expect(html).toContain('id="filosofia"');
   });
 
   it('la lista respeta el orden configurado y se salta los ocultos', () => {

@@ -89,8 +89,8 @@ test('`/mar?menu=carnet` abre Mi Carnet en el mar: crear, ver y editar sin salir
   await carnet.getByTestId('mar-carnet-cerrar').click();
   await expect(carnet).toBeHidden();
 
-  // El icono Carnet de la barra lo abre también, sin navegar.
-  await page.getByTestId('mar-barra-carnet').click();
+  // Carnet, arriba (T65), lo abre también, sin navegar: el menú del juego en Mi Carnet.
+  await page.getByTestId('mar-enlace-carnet').click();
   await expect(carnet).toBeVisible();
   await expect(carnet.getByTestId('carnet-apodo')).toHaveText(`${nickname} 2`);
   await page.keyboard.press('Escape');
@@ -107,7 +107,7 @@ test('Ajustes: la sensibilidad del giro la lee el motor; música, efectos e idio
   const before = await giro();
   expect(before).toMatch(/^[\d.]+,[\d.]+$/);
 
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-menu-ajustes').click();
   const ajustes = page.getByTestId('mar-ajustes');
   await expect(ajustes).toBeVisible();
@@ -148,7 +148,7 @@ test('Controles y Welcome Aboard se consultan desde el Menú', async ({ page }) 
     ['mar-menu-controles', 'mar-controles'],
     ['mar-menu-bienvenida', 'mar-bienvenida'],
   ] as const) {
-    await page.getByTestId('mar-barra-menu').click();
+    await page.getByTestId('mar-logros').click();
     await page.getByTestId(item).click();
     const hoja = page.getByTestId(panel);
     await expect(hoja).toBeVisible();

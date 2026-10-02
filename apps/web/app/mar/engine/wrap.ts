@@ -33,6 +33,19 @@ export function wrapD(d: number, p: number): number {
   return d - p * Math.floor(d / p + 0.5);
 }
 
+/**
+ * Cuánto se puede arrastrar la carta (vista de mapa) desde su centro, en un
+ * eje (T65): hasta ver su borde si no cabe en la pantalla (`view` < `period`)
+ * y, si cabe entera, sólo un poco (`slack` del periodo). Así la carta no se
+ * va de la pantalla y lo que está cerca del borde no salta al otro lado.
+ */
+export const MAP_PAN_SLACK = 0.12;
+
+export function mapPanLimit(period: number, view: number, slack = MAP_PAN_SLACK): number {
+  if (!(period > 0)) return 0;
+  return Math.max(period * slack, (period - Math.max(0, view)) / 2);
+}
+
 /** `v` dentro de [min, max) dando la vuelta. */
 export function wrapIn(v: number, min: number, max: number): number {
   const p = max - min;

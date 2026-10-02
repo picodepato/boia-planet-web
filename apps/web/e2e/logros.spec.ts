@@ -65,7 +65,10 @@ async function expectOnTop(el: Locator) {
   expect(onTop, 'nada tapa el icono').toBe(true);
 }
 
-/** El icono de logros de /mar no pisa el minimapa ni «Entradas», y nada lo tapa. */
+/**
+ * El icono de logros de /mar (desde T65, el botón del menú del juego, a la
+ * izquierda) no pisa el minimapa ni «Entradas», y nada lo tapa.
+ */
 async function expectIconClear(page: Page) {
   const icon = (await page.getByTestId('mar-logros').boundingBox())!;
   const map = (await page.getByTestId('mar-minimapa').boundingBox())!;
@@ -73,6 +76,12 @@ async function expectIconClear(page: Page) {
   expect(apart(icon, map), 'el icono y el minimapa no se pisan').toBe(true);
   expect(apart(icon, tickets), 'el icono y «Entradas» no se pisan').toBe(true);
   await expectOnTop(page.getByTestId('mar-logros'));
+}
+
+/** Logros, desde el menú del juego (T65): el botón de la izquierda y su sección. */
+async function openLogros(page: Page) {
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
 }
 
 async function shot(page: Page, info: TestInfo, name: string) {
@@ -142,7 +151,7 @@ test('/mar: completar un logro, su número en el icono, «Reclamar» una vez y r
     () => true,
     () => false,
   );
-  if (!viaNotice) await icon.click();
+  if (!viaNotice) await openLogros(page);
   const panel = page.getByTestId('mar-logros-panel');
   await expect(panel).toBeVisible();
   await expect(panel.getByTestId('logros-cabecera')).toContainText(
@@ -159,7 +168,7 @@ test('/mar: completar un logro, su número en el icono, «Reclamar» una vez y r
   await expect(panel).toHaveCount(0);
   await page.reload();
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
-  await icon.click();
+  await openLogros(page);
   await expect(panel.getByTestId(`logro-${firstBuoy.id}`)).toHaveAttribute(
     'data-estado',
     'claimed',
@@ -181,7 +190,7 @@ test.describe('capturas del informe (390×844)', () => {
       page.locator('[data-testid="mar-aviso"][data-kind="achievement"]'),
     );
     await shot(page, info, 'aviso-mar');
-    await page.getByTestId('mar-logros').click();
+    await openLogros(page);
     const panel = page.getByTestId('mar-logros-panel');
     await shot(page, info, 'logros-mar');
     // Una captura del mar en 3D tarda más que la animación en la máquina de

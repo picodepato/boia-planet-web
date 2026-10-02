@@ -89,6 +89,32 @@ function SailLink({
   );
 }
 
+/** Los párrafos y los verbos de la Filosofía (sola o dentro de Contacto). */
+function PhilosophyBody({
+  block,
+}: {
+  block: { paragraphs: string[]; verbs: { verb: string; text: string }[] };
+}) {
+  return (
+    <>
+      {block.paragraphs.map((p) => (
+        <p key={p} className="philosophy__text">
+          {p}
+        </p>
+      ))}
+      {block.verbs.length > 0 && (
+        <ul className="philosophy__verbs">
+          {block.verbs.map((v) => (
+            <li key={v.verb}>
+              <strong className="philosophy__verb">{v.verb}</strong> {v.text}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 /** Pinta un bloque ya resuelto de la home. */
 export function BlockView({
   block,
@@ -228,6 +254,7 @@ export function BlockView({
       );
 
     case 'philosophy':
+      // Sola sólo sin bloque Contacto (T65: normalmente va dentro de él).
       return (
         <section
           id="filosofia"
@@ -239,20 +266,7 @@ export function BlockView({
             <h2 id="philosophy-title" className="section__title">
               {t('philosophy.heading')}
             </h2>
-            {block.paragraphs.map((p) => (
-              <p key={p} className="philosophy__text">
-                {p}
-              </p>
-            ))}
-            {block.verbs.length > 0 && (
-              <ul className="philosophy__verbs">
-                {block.verbs.map((v) => (
-                  <li key={v.verb}>
-                    <strong className="philosophy__verb">{v.verb}</strong> {v.text}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <PhilosophyBody block={block} />
           </div>
         </section>
       );
@@ -363,7 +377,24 @@ export function BlockView({
             <h2 id="contact-title" className="section__title">
               {t('contact.heading')}
             </h2>
-            <ul className="link-list">
+            {/* La Filosofía, dentro de Contacto (T65): «Contacto» del juego lleva a las dos. */}
+            {block.philosophy ? (
+              <div
+                id="filosofia"
+                className="contact__philosophy"
+                data-block={block.philosophy.id}
+                data-testid="contacto-filosofia"
+              >
+                <h3 id="philosophy-title" className="contact__subtitle">
+                  {t('philosophy.heading')}
+                </h3>
+                <PhilosophyBody block={block.philosophy} />
+              </div>
+            ) : null}
+            {block.email || block.links.length > 0 ? (
+              <h3 className="contact__subtitle">{t('contact.data')}</h3>
+            ) : null}
+            <ul className="link-list" data-testid="contacto-datos">
               {block.email && (
                 <li>
                   <a href={`mailto:${block.email}`}>

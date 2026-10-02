@@ -29,6 +29,7 @@ export function MarBotella({
   onMine,
   onNeedCarnet,
   onClose,
+  onMenu,
 }: {
   mode: BottleSheetMode;
   /** Dónde cae la botella propia (posición del mapa compartido), o null. */
@@ -37,6 +38,8 @@ export function MarBotella({
   /** Sin Carnet: «Mi Carnet» dentro del mundo, para crearlo. */
   onNeedCarnet: () => void;
   onClose: () => void;
+  /** Vuelve al menú del juego (T65). */
+  onMenu?: () => void;
 }) {
   const { repo } = useRepoData(async () => null);
   const title = mode.kind === 'mine' ? t('bottle.title.own') : t('bottle.title.found');
@@ -48,6 +51,7 @@ export function MarBotella({
       testId="mar-botella"
       closeTestId="mar-botella-cerrar"
       onClose={onClose}
+      {...(onMenu ? { onMenu } : {})}
     >
       {!repo ? (
         <p className="juego-muted">{t('empty.loading')}</p>
@@ -106,12 +110,15 @@ export function MarRanking({
   worldName,
   onOwnCarnet,
   onClose,
+  onMenu,
 }: {
   season: string;
   worldName: string;
   /** La fila propia abre «Mi Carnet» dentro del mundo. */
   onOwnCarnet: () => void;
   onClose: () => void;
+  /** Vuelve al menú del juego (T65). */
+  onMenu?: () => void;
 }) {
   return (
     <MarHoja
@@ -121,6 +128,7 @@ export function MarRanking({
       testId="mar-ranking"
       closeTestId="mar-ranking-cerrar"
       onClose={onClose}
+      {...(onMenu ? { onMenu } : {})}
     >
       <RankingPanel season={season} worldName={worldName} onOwnCarnet={onOwnCarnet} />
     </MarHoja>

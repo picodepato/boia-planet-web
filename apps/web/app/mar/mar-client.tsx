@@ -64,7 +64,6 @@ import {
   findDolphinGuide,
   inOpenSea,
 } from '../../lib/mundo/encounters';
-import { MundosPicker } from '../../lib/mundo/menu/sections/mundos';
 import { type MinigameOffer, MinigameLayer } from '../../lib/mundo/minigame-layer';
 import {
   boardedNotice,
@@ -121,7 +120,7 @@ import {
 import { takeZarpar } from '../../lib/intro/zarpar';
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
-import { MOOD_IDS, MOOD_LABEL, type MoodId } from './engine/palette';
+import { MOOD_IDS, type MoodId } from './engine/palette';
 import {
   type ShipModelEntry,
   loadShipManifest,
@@ -139,6 +138,7 @@ import {
 import { MarEntradas } from './entradas';
 import { worldTickets } from './entradas-model';
 import { MarLogros } from './logros';
+import { MarMenu, type MenuSection } from './menu';
 import { MarTienda } from './tienda';
 import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
@@ -168,8 +168,21 @@ import { t as msg } from '../../lib/i18n';
  * entero. Mi Carnet, Ajustes, Controles y Welcome Aboard se abren dentro del
  * mar (T55), y los enlaces de la landing (`?ir=`, `?evento=`, `?menu=`)
  * arrancan con el barco navegando a su isla o con su panel abierto.
- * Textos `muestra`.
+ *
+ * El HUD (T65, decisión del 2026-10-02): arriba, los enlaces a la web (Fotos,
+ * Contacto, Artistas y Shop salen a su sección; Carnet abre el menú del juego
+ * en Mi Carnet), el minimapa y los saldos; a la izquierda, el botón del menú
+ * del juego (el icono de logros), con todo lo demás; abajo, sólo «Entradas»
+ * y el turbo. Textos `muestra`.
  */
+
+/** Los enlaces de arriba a la web (T65): a su sección de la landing (D-21: entra directa). */
+const LANDING_LINKS = [
+  ['fotos', 'mar.hud.fotos', '/#fotos'],
+  ['contacto', 'mar.hud.contacto', '/#contacto'],
+  ['artistas', 'mar.hud.artistas', '/#artistas'],
+  ['shop', 'mar.hud.shop', '/#tienda'],
+] as const;
 
 const progressApi = () => gameRepository().progress;
 const newSessionId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1275,9 +1288,21 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !hoja &&
       !entradas &&
       !bottleSheet &&
-      !ranking;
+      !ranking &&
+      !menu;
     g.paused = minigameOpen;
-  }, [checkoutFor, minigameOpen, logros, tienda, hoja, entradas, bottleSheet, ranking, status]);
+  }, [
+    checkoutFor,
+    minigameOpen,
+    logros,
+    tienda,
+    hoja,
+    entradas,
+    bottleSheet,
+    ranking,
+    menu,
+    status,
+  ]);
 
   // Las botellas del repositorio en el mar (T56): con cada cambio y con cada mundo.
   useEffect(() => {
@@ -1418,6 +1443,45 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setMenu(false);
     setHoja(null);
     setTienda(true);
+  };
+
+  /**
+   * El menú del juego (T65): cierra la sección abierta y vuelve a él (el
+   * botón de la izquierda y «‹ Menú» de cada sección).
+   */
+  const openMenu = () => {
+    setLogros(false);
+    setTienda(false);
+    setHoja(null);
+    setEntradas(false);
+    setBottleSheet(null);
+    setRanking(false);
+    setSheet((s) => (s?.kind === 'codes' ? null : s));
+    setMenu(true);
+  };
+
+  /** Una sección del menú del juego, en su hoja (con «‹ Menú» para volver). */
+  const openSection = (section: MenuSection) => {
+    switch (section) {
+      case 'logros':
+        openLogros();
+        return;
+      case 'barco':
+        openTienda();
+        return;
+      case 'codigos':
+        setMenu(false);
+        setSheet({ kind: 'codes' });
+        return;
+      case 'botella':
+        openBottle({ kind: 'mine' });
+        return;
+      case 'ranking':
+        openRanking();
+        return;
+      default:
+        openPanel(section);
+    }
   };
 
   const courseTo = (placeId: string) => {
@@ -1693,7 +1757,33 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
-      {/* Arriba (T53): sólo el minimapa (tocarlo abre el mapa grande, T34) y los saldos. */}
+      {/* Arriba (T65): los enlaces a la web; Carnet no sale del juego (abre el
+          menú en Mi Carnet). Debajo, el minimapa (tocarlo abre el mapa grande,
+          T34) y los saldos. */}
+      {status === 'ready' ? (
+        <nav className="mar-links" data-testid="mar-enlaces" aria-label={msg('mar.hud.enlaces')}>
+          {LANDING_LINKS.slice(0, 3).map(([id, key, href]) => (
+            <a key={id} className="mar-links__item" href={href} data-testid={`mar-enlace-${id}`}>
+              {msg(key)}
+            </a>
+          ))}
+          <button
+            type="button"
+            className="mar-links__item"
+            data-testid="mar-enlace-carnet"
+            aria-haspopup="dialog"
+            aria-label={msg('mar.hud.carnetAria')}
+            onClick={() => openPanel('carnet')}
+          >
+            {msg('mar.hud.carnet')}
+          </button>
+          {LANDING_LINKS.slice(3).map(([id, key, href]) => (
+            <a key={id} className="mar-links__item" href={href} data-testid={`mar-enlace-${id}`}>
+              {msg(key)}
+            </a>
+          ))}
+        </nav>
+      ) : null}
       <header className="mar-top">
         {status === 'ready' ? (
           <div className={`mar-globe${stats?.mapMode ? ' is-map' : ''}`}>
@@ -1716,123 +1806,46 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       </header>
 
+      {/* A la izquierda (T65): el menú del juego, con el icono de logros y su
+          número de premios por reclamar. */}
+      {status === 'ready' ? (
+        <button
+          type="button"
+          className="mar-menu-btn mar-logros-btn"
+          data-testid="mar-logros"
+          data-por-reclamar={readyToClaim}
+          aria-label={claimLabel(msg('mar.menu.titulo'), readyToClaim)}
+          aria-expanded={menu}
+          aria-haspopup="dialog"
+          title={claimLabel(msg('mar.menu.titulo'), readyToClaim)}
+          onClick={() => (menu ? setMenu(false) : openMenu())}
+        >
+          <span aria-hidden="true">🏆</span>
+          <small aria-hidden="true">{msg('mar.client.menu')}</small>
+          <ClaimBadge count={readyToClaim} testId="mar-logros-contador" />
+        </button>
+      ) : null}
+
       {menu ? (
-        <nav className="mar-menu" data-testid="mar-menu" aria-label={msg('mar.client.menu')}>
-          <p className="mar-menu__head">
-            <span className="mar-menu__logo">{msg('mar.client.boia')}</span>
-            <span className="mar-menu__world">
-              {msg('mar.client.mar3d', { v1: worldName ? ` · ${worldName}` : '' })}
-            </span>
-          </p>
-          <Link className="mar-menu__link" href="/" aria-label={msg('mar.client.volverABoia')}>
-            {msg('mar.client.volverABoiaMenu')}
-          </Link>
-          <p className="mar-menu__label">{msg('mar.client.momentoDelDia')}</p>
-          <div className="mar-menu__moods">
-            {MOOD_IDS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                className={`mar-chip${m === mood ? ' is-on' : ''}`}
-                onClick={() => chooseMood(m)}
-              >
-                {m === 'dia' ? '☀️' : m === 'tarde' ? '🌅' : '🌙'} {MOOD_LABEL[m]}
-              </button>
-            ))}
-          </div>
-          {ships.length ? (
-            <button
-              type="button"
-              className="mar-menu__link"
-              data-testid="mar-barco"
-              onClick={openTienda}
-            >
-              {msg('mar.client.barco', {
-                v1: shipLook
-                  ? ` · ${shipCatalog?.styles.find((st) => st.id === shipLook.style)?.name ?? shipLook.style}`
-                  : '',
-              })}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-mis-codigos"
-            onClick={() => {
-              setMenu(false);
-              setSheet({ kind: 'codes' });
-            }}
-          >
-            {msg('mar.client.misCodigos')}
-          </button>
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-mi-botella"
-            onClick={() => openBottle({ kind: 'mine' })}
-          >
-            {msg('mar.botella.miBotella')}
-          </button>
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-ranking-abrir"
-            onClick={openRanking}
-          >
-            {msg('mar.ranking.menu')}
-          </button>
-          <button type="button" className="mar-menu__link" onClick={openLogros}>
-            {msg('mar.client.logros2', {
-              v1: readyToClaim > 0 ? msg('mar.client.porReclamar', { readyToClaim }) : '',
-            })}
-          </button>
-          <Link className="mar-menu__link" href="/#tickets">
-            {msg('mar.client.entradas')}
-          </Link>
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-menu-carnet"
-            onClick={() => openPanel('carnet')}
-          >
-            {msg('mar.client.miCarnet')}
-          </button>
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-menu-bienvenida"
-            onClick={() => openPanel('bienvenida')}
-          >
-            {msg('mar.client.bienvenida')}
-          </button>
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-menu-controles"
-            onClick={() => openPanel('controles')}
-          >
-            {msg('mar.client.controles')}
-          </button>
-          <button
-            type="button"
-            className="mar-menu__link"
-            data-testid="mar-menu-ajustes"
-            onClick={() => openPanel('ajustes')}
-          >
-            {msg('mar.client.ajustes')}
-          </button>
-          <p className="mar-menu__label">{msg('mar.client.mundos')}</p>
-          <div className="mar-menu__mundos">
-            <MundosPicker
-              worlds={worlds.list()}
-              current={worldId ?? ''}
-              pending={worldPending}
-              catalog={shipCatalog}
-              onChoose={chooseWorld}
-            />
-          </div>
-          <p className="mar-menu__help">{msg('mar.client.arrastraParaNavegarPellizca')}</p>
-        </nav>
+        <MarMenu
+          worldName={worldName}
+          readyToClaim={readyToClaim}
+          mood={mood}
+          hasShips={ships.length > 0}
+          shipName={
+            shipLook
+              ? (shipCatalog?.styles.find((st) => st.id === shipLook.style)?.name ?? shipLook.style)
+              : null
+          }
+          worlds={worlds.list()}
+          worldId={worldId ?? ''}
+          worldPending={worldPending}
+          catalog={shipCatalog}
+          onOpen={openSection}
+          onMood={chooseMood}
+          onWorld={chooseWorld}
+          onClose={() => setMenu(false)}
+        />
       ) : null}
 
       {/* Avisos (T53): un chip pequeño arriba que se va solo (tiempo de lectura, D-22). */}
@@ -1973,23 +1986,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </button>
       </div>
 
-      <button
-        type="button"
-        className={`mar-turbo${turboReady ? ' is-ready' : ''}${(stats?.turbo ?? 0) > 0 ? ' is-on' : ''}`}
-        style={{ '--p': stats?.turboReady ?? 1 } as CSSProperties}
-        aria-label={msg('mar.client.turbo')}
-        data-testid="mar-turbo"
-        onClick={() => {
-          if (engineRef.current?.turbo()) {
-            navigator.vibrate?.(20);
-            whoosh();
-          }
-        }}
-      >
-        <span>⚡</span>
-        <small>{turboReady ? msg('mar.client.turbo') : '…'}</small>
-      </button>
-
       <div className="mar-speed" aria-hidden="true">
         <strong>{stats?.knots ?? 0}</strong>
         <small>{msg('mar.client.nudos')}</small>
@@ -2050,38 +2046,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
-      {/* La barra de abajo (T53): Mapa, Logros, «Entradas» destacada (REQ-ENT-040),
-          Carnet y Menú, siempre a la vista; las tarjetas se abren encima. */}
+      {/* Abajo (T65): sólo «Entradas», destacada (REQ-ENT-040), y el turbo;
+          las tarjetas se abren encima. */}
       {status === 'ready' ? (
-        <nav className="mar-bar" data-testid="mar-barra" aria-label={msg('mar.client.barra')}>
-          <button
-            type="button"
-            className="mar-bar__item"
-            data-testid="mar-barra-mapa"
-            aria-pressed={!!stats?.mapMode}
-            onClick={() => {
-              setMenu(false);
-              engineRef.current?.toggleMap();
-            }}
-          >
-            <span aria-hidden="true">🗺️</span>
-            <small>{msg('mar.client.barraMapa')}</small>
-          </button>
-          <button
-            type="button"
-            className="mar-bar__item mar-logros-btn"
-            data-testid="mar-logros"
-            data-por-reclamar={readyToClaim}
-            aria-label={claimLabel(msg('mar.client.logros'), readyToClaim)}
-            aria-expanded={logros}
-            aria-haspopup="dialog"
-            title={claimLabel(msg('mar.client.logros'), readyToClaim)}
-            onClick={() => (logros ? setLogros(false) : openLogros())}
-          >
-            <span aria-hidden="true">🏆</span>
-            <small aria-hidden="true">{msg('mar.client.logros')}</small>
-            <ClaimBadge count={readyToClaim} testId="mar-logros-contador" />
-          </button>
+        <nav className="mar-bar" data-testid="mar-barra" aria-label={msg('mar.hud.abajo')}>
           <div
             className={`mar-tickets${trip ? ' is-sailing' : ''}`}
             data-testid="mar-viaje"
@@ -2124,27 +2092,21 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               ) : null}
             </button>
           </div>
-          {/* Mi Carnet dentro del mundo (T55): verlo y editarlo sin salir del mar. */}
           <button
             type="button"
-            className="mar-bar__item"
-            data-testid="mar-barra-carnet"
-            aria-expanded={hoja === 'carnet'}
-            aria-haspopup="dialog"
-            onClick={() => (hoja === 'carnet' ? setHoja(null) : openPanel('carnet'))}
+            className={`mar-turbo${turboReady ? ' is-ready' : ''}${(stats?.turbo ?? 0) > 0 ? ' is-on' : ''}`}
+            style={{ '--p': stats?.turboReady ?? 1 } as CSSProperties}
+            aria-label={msg('mar.client.turbo')}
+            data-testid="mar-turbo"
+            onClick={() => {
+              if (engineRef.current?.turbo()) {
+                navigator.vibrate?.(20);
+                whoosh();
+              }
+            }}
           >
-            <span aria-hidden="true">📇</span>
-            <small>{msg('mar.client.barraCarnet')}</small>
-          </button>
-          <button
-            type="button"
-            className="mar-bar__item"
-            data-testid="mar-barra-menu"
-            aria-expanded={menu}
-            onClick={() => setMenu((m) => !m)}
-          >
-            <span aria-hidden="true">☰</span>
-            <small>{msg('mar.client.menu')}</small>
+            <span>⚡</span>
+            <small>{turboReady ? msg('mar.client.turbo') : '…'}</small>
           </button>
         </nav>
       ) : null}
@@ -2194,6 +2156,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onMine={() => setBottleSheet({ kind: 'mine' })}
           onNeedCarnet={() => openPanel('carnet')}
           onClose={() => setBottleSheet(null)}
+          onMenu={openMenu}
         />
       ) : null}
       {ranking ? (
@@ -2202,10 +2165,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           worldName={worldName}
           onOwnCarnet={() => openPanel('carnet')}
           onClose={() => setRanking(false)}
+          onMenu={openMenu}
         />
       ) : null}
       {logros ? (
-        <MarLogros onClose={() => setLogros(false)} onCarnet={() => openPanel('carnet')} />
+        <MarLogros
+          onClose={() => setLogros(false)}
+          onCarnet={() => openPanel('carnet')}
+          onMenu={openMenu}
+        />
       ) : null}
       {hoja ? (
         <MarABordo
@@ -2214,6 +2182,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onSettings={updateSettings}
           onBottles={() => openBottle({ kind: 'mine' })}
           onClose={() => setHoja(null)}
+          onMenu={openMenu}
         />
       ) : null}
       {tienda ? (
@@ -2223,6 +2192,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           pending={shipPending}
           onEquip={chooseShip}
           onClose={() => setTienda(false)}
+          onMenu={openMenu}
         />
       ) : null}
 

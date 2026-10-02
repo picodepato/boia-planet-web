@@ -84,6 +84,12 @@ async function sailNorthUntil(page: Page, until: () => Promise<void>) {
 }
 
 /** Dónde queda el barco cuando deja de moverse (tras arrancar, puede asentarse un poco). */
+/** «Mundos», en el menú del juego (T65): plegado; se abre para elegir. */
+async function openMundos(page: Page) {
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-mundos-abrir').click();
+}
+
 async function shipSettled(page: Page) {
   let last = '';
   await expect
@@ -215,7 +221,7 @@ test('el náufrago da su código, «Ir a la isla» navega solo y la isla lo apli
   await expect(invite).toHaveCount(0);
 
   // «Mis códigos» del menú: ya usado, y sin «Ir a la isla».
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-mis-codigos').click();
   const mine = page.getByTestId('mar-codigos').getByTestId(`descuento-${discount.id}`);
   await expect(mine.getByTestId('descuento-estado')).toHaveText('Usado');
@@ -264,7 +270,7 @@ test('«Mundos»: el mar cae al agujero negro y vuelve con el barco en su sitio'
   await expect(mar(page)).toHaveAttribute('data-mundo', first.id);
   const ship = await shipSettled(page);
 
-  await page.getByTestId('mar-barra-menu').click();
+  await openMundos(page);
   await page.getByTestId(`mundo-${second.id}`).click();
   // El menú se cierra para ver el vórtice; mientras dura, nada responde.
   await expect(page.locator('.mar-menu')).toHaveCount(0);
@@ -282,9 +288,9 @@ test('«Mundos»: el mar cae al agujero negro y vuelve con el barco en su sitio'
   await expect(page.getByTestId('cambio-mundo')).toHaveCount(0);
   expect(await mar(page).getAttribute('data-barco')).toBe(ship);
   // El nombre del mundo va en la cabecera del menú (T53).
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-logros').click();
   await expect(page.locator('.mar-menu__world')).toContainText(second.theme.name);
-  await page.getByTestId('mar-barra-menu').click();
+  await page.getByTestId('mar-menu-cerrar').click();
   await expect(page.locator('.mar-menu')).toHaveCount(0);
   await snap(page, 'p004-t51-otro-mundo.png');
 
@@ -310,7 +316,7 @@ test.describe('con movimiento reducido', () => {
         if (v) (window as unknown as { __cambio: (v: string) => void }).__cambio(v);
       }).observe(el, { attributes: true, attributeFilter: ['data-cambio-mundo'] });
     });
-    await page.getByTestId('mar-barra-menu').click();
+    await openMundos(page);
     await page.getByTestId(`mundo-${second.id}`).click();
     await expect(mar(page)).toHaveAttribute('data-mundo', second.id, { timeout: 20_000 });
     await expect(mar(page)).not.toHaveAttribute('data-cambio-mundo', /.+/, { timeout: 20_000 });

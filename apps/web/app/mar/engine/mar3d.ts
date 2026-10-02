@@ -109,6 +109,7 @@ import {
   type Period,
   behindPlanet,
   bendDrop,
+  mapPanLimit,
   periodOf,
   planetRect,
   pushOut,
@@ -408,6 +409,12 @@ export class Mar3D {
   private lastBoatZoom = BOAT_ZOOM;
   private readonly pan = new Vector2();
   private readonly focus = new Vector3();
+  /**
+   * Alrededor de qué se da la vuelta al planeta (T65): el foco sin lo que se
+   * arrastró la carta. Con el barco es el foco; en el mapa, el centro de la
+   * carta, así que arrastrarla no hace saltar islas ni marcas al otro lado.
+   */
+  private readonly wrapC = new Vector2();
   private readonly look = new Vector3();
   private dFar = 700;
   /** px tapados abajo por la ficha: la cámara sube el barco por encima. */
@@ -1960,9 +1967,16 @@ export class Mar3D {
     return (2 * d * Math.tan((this.camera.fov * Math.PI) / 360)) / h;
   }
 
+  /**
+   * La carta no se va de la pantalla (T65): se arrastra hasta ver su borde
+   * y, si cabe entera, sólo un poco (`mapPanLimit`). Antes se iba hasta el
+   * 60 % del periodo y, muy a un lado, las islas saltaban al otro.
+   */
   private clampPan(): void {
-    const w = (this.b.right - this.b.left) * 0.6;
-    const h = (this.b.bottom - this.b.top) * 0.6;
+    const per = this.worldPerPixel();
+    const c = this.opts.canvas;
+    const w = mapPanLimit(this.periodS.w, per * (c.clientWidth || 1));
+    const h = mapPanLimit(this.periodS.h, per * (c.clientHeight || 1));
     this.pan.x = Math.max(-w, Math.min(w, this.pan.x));
     this.pan.y = Math.max(-h, Math.min(h, this.pan.y));
   }
@@ -2168,8 +2182,8 @@ export class Mar3D {
     const py = s.y - wrapD(s.y - this.prev.y, this.periodU.h);
     const cx = toScene(lerp(px, s.x, alpha));
     const cz = toScene(lerp(py, s.y, alpha));
-    const x = this.focus.x + wrapD(cx - this.focus.x, this.periodS.w);
-    const z = this.focus.z + wrapD(cz - this.focus.z, this.periodS.h);
+    const x = this.wrapC.x + wrapD(cx - this.wrapC.x, this.periodS.w);
+    const z = this.wrapC.y + wrapD(cz - this.wrapC.y, this.periodS.h);
     this.shipCanon.set(cx, cz);
     const h =
       this.prev.heading +
@@ -2195,6 +2209,7 @@ export class Mar3D {
     if (snap) {
       // Sin foco previo: el barco en su sitio del mapa.
       this.focus.set(toScene(this.ship.x), 0, toScene(this.ship.y));
+      this.wrapC.set(this.focus.x, this.focus.z);
       this.placeShip(1);
     }
     const ship = this.boat.group.position;
@@ -2235,6 +2250,7 @@ export class Mar3D {
     const fz = lerp(bz, this.mapC.y, w) + this.pan.y + lift;
     if (snap) this.focus.set(fx, 0, fz);
     else this.focus.lerp(tmpV.set(fx, 0, fz), 1 - Math.exp(-dt * FOCUS_RATE));
+    this.wrapC.set(this.focus.x - this.pan.x, this.focus.z - this.pan.y);
     this.look.copy(this.focus);
     this.look.z += mapLift;
     let ox = 0;
@@ -2260,7 +2276,7 @@ export class Mar3D {
     this.bend = lerp(BEND_NEAR, BEND_MAP, smooth(0.25, 0.9, z));
     planetUniforms.uBend.value = this.bend;
     planetUniforms.uBendCenter.value.set(camX, camZ);
-    planetUniforms.uPlanetFocus.value.set(this.focus.x, this.focus.z);
+    planetUniforms.uPlanetFocus.value.set(this.wrapC.x, this.wrapC.y);
     // Se mira al foco ya curvado (baja un poco con la distancia).
     this.look.y = -bendDrop(this.bend, back) + this.air * 0.85;
     this.camera.lookAt(this.look);
@@ -2278,7 +2294,7 @@ export class Mar3D {
     this.water.mesh.position.set(camX, 0, camZ);
     // Bajíos: los que se ven (hasta el horizonte y algo más; en el mapa, todos).
     this.water.update(
-      this.focus,
+      tmpV.set(this.wrapC.x, 0, this.wrapC.y),
       this.periodS,
       { x: camX, z: camZ },
       horizon + 30 + dist * smooth(0.25, 0.9, z) * 3,
@@ -2348,10 +2364,11 @@ export class Mar3D {
 
     this.updateCamera(dt);
 
-    // Lugares: cada uno en su copia más cercana al foco; lo que queda tras el
-    // horizonte o fuera de la vista no se pinta.
-    const fx = this.focus.x;
-    const fz = this.focus.z;
+    // Lugares: cada uno en su copia más cercana al foco (en el mapa, al centro
+    // de la carta: `wrapC`); lo que queda tras el horizonte o fuera de la
+    // vista no se pinta.
+    const fx = this.wrapC.x;
+    const fz = this.wrapC.y;
     const P = this.periodS;
     const cam = this.camera.position;
     const bend = this.bend;

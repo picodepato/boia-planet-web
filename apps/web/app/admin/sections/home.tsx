@@ -16,10 +16,11 @@ const BLOCK_LABELS: Record<HomeBlock['type'], string> = {
   priority_event: t('admin.home.eventoPrioritario'),
   upcoming_events: t('island.upcoming.heading'),
   artists: t('admin.home.artistas'),
-  philosophy: t('philosophy.heading'),
+  // T65: la Filosofía se ve dentro del bloque Contacto; cada uno se edita aparte.
+  philosophy: t('admin.home.filosofiaEnContacto'),
   photos: t('admin.home.fotos'),
   store: t('admin.home.tienda'),
-  contact: t('admin.home.contacto'),
+  contact: t('admin.home.contactoConFilosofia'),
   footer: t('admin.home.pie'),
 };
 

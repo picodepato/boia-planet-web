@@ -2,9 +2,11 @@ import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { marWorld } from './compact';
 import {
+  MAP_PAN_SLACK,
   PLANET_MARGIN,
   behindPlanet,
   bendDrop,
+  mapPanLimit,
   periodOf,
   planetRect,
   pushOut,
@@ -103,5 +105,28 @@ describe('el planeta de agua de /mar', () => {
     expect(behindPlanet(camY, 30, -bendDrop(bend, 30), bend)).toBe(false);
     // Una torre muy alta asoma por encima del horizonte.
     expect(behindPlanet(camY, far, -bendDrop(bend, far) + 200, bend)).toBe(false);
+  });
+});
+
+describe('mapPanLimit (T65): la carta se arrastra sin irse de la pantalla', () => {
+  it('si no cabe, hasta ver su borde', () => {
+    expect(mapPanLimit(1000, 600)).toBe(200);
+    // Arrastrada al límite, el borde de la vista coincide con el de la carta.
+    expect(mapPanLimit(1000, 600) + 600 / 2).toBe(1000 / 2);
+  });
+
+  it('si cabe entera (o casi), sólo un poco', () => {
+    expect(mapPanLimit(1000, 1400)).toBe(1000 * MAP_PAN_SLACK);
+    expect(mapPanLimit(1000, 1000)).toBe(1000 * MAP_PAN_SLACK);
+    expect(mapPanLimit(1000, 950)).toBe(1000 * MAP_PAN_SLACK);
+  });
+
+  it('nunca más de medio periodo: lo arrastrado no da la vuelta', () => {
+    for (const view of [0, 10, 300, 999, 5000]) {
+      const lim = mapPanLimit(period.w, view);
+      expect(lim).toBeGreaterThanOrEqual(0);
+      expect(lim).toBeLessThanOrEqual(period.w / 2);
+    }
+    expect(mapPanLimit(0, 100)).toBe(0);
   });
 });
