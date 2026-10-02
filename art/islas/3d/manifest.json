@@ -25,6 +25,17 @@
    "tris": 29842,
    "kb": 791,
    "doc": "club calabaza con cara de enfado que brilla de noche y seis boias disfrazadas (brujas, fantasmas y Frankenstein) alrededor"
+  },
+  {
+   "id": "ultima",
+   "file": "ultima.glb",
+   "label": "Isla de Nochevieja",
+   "radius": 7.0,
+   "top": 1.45,
+   "height": 10.75,
+   "tris": 29856,
+   "kb": 946,
+   "doc": "montaña nevada con la torre del reloj de las campanadas y rayos de luces de fiesta hacia todas partes, tiendas de campaña con boias bailando, uvas, cava, confeti y fuegos artificiales"
   }
  ]
 }

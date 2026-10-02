@@ -4,6 +4,64 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T71: Isla de Nochevieja model
+
+Qué existe:
+
+- **Isla de Nochevieja** (`tools/blender/islas/ultima.py` →
+  `art/islas/3d/ultima.glb`, 29 856 triángulos de 30 000, 31 materiales,
+  946 kB; salida determinista, mismo md5 en dos corridas). Es el lugar `ultima`, donde se
+  entrega la Boia Fiestera. Isla de roca fría con la meseta nevada y, detrás
+  (el frente queda libre para la explanada), una montaña en punta con la cima
+  de nieve y cantos. Arriba, la torre del reloj de las campanadas (esfera que
+  brilla, doce marcas, agujas a las doce menos uno, campanas) con la bola
+  dorada; desde ella diez rayos de luces de fiesta en cuatro colores hacia
+  todas partes (alguno baja hacia el mar) y otros cuatro desde focos de la
+  explanada. Doce tiendas de campaña (canadienses e iglú) con la puerta
+  encendida de noche, seis pinos nevados y ventisqueros. Siete boias de BOIA
+  (`mascota.py`) bailando: ladeadas, brazos en V con guantes, pompón y tres
+  con bengala. Delante: el escenario redondo de la Fiestera con arco de
+  bombillas y bola de espejos, camino de farolillos con guirnalda desde el
+  muelle, el cuenco de las doce uvas, un racimo gigante, la botella de cava
+  descorchándose en su cubitera (tapón y espuma), una torre de seis copas,
+  confeti por el suelo y en el aire, serpentinas y tres fuegos artificiales
+  con su estela y el cohete en el suelo.
+- Para caber en el presupuesto con siete boias, `ultima.py` envuelve el
+  Builder en `Menos` (aún menos segmentos por pieza, sólo para sus boias) y
+  rebaja las tiras de `mascota.patch` mientras las construye; las uvas son
+  esferas de pocas caras con sombreado suave. No toca `comun.py` ni
+  `mascota.py`.
+- `art/islas/3d/manifest.json`: sólo se añade la entrada `ultima`.
+- e2e `apps/web/e2e/mar-isla-nochevieja.spec.ts`: el destino de la misión del
+  mundo tiene modelo en el manifiesto con el nombre del lugar; cerca de él se
+  pide el GLB (200) y el lienzo dice `ultima:glb`; en escritorio, rescatar a
+  la Fiestera y dejarla allí con el modelo puesto (misión `delivered`, aviso
+  de la i18n, ficha del código, el modelo sigue). Con `RECORD_T71=1` deja
+  `docs/informes/img/p006-t71-isla-nochevieja.png`, `-noche.png` y
+  `p006-t71-entrega-fiestera.png`.
+
+Comandos:
+
+- `blender -b -P tools/blender/export_islas_glb.py -- --only ultima` → exit 0
+  (29 856 triángulos, 31 materiales, 946 kB)
+- `python3 tools/blender/check.py` → exit 0 (islas/3d 2)
+- `vitest run --exclude '**/packages/db/**'` → exit 0, 943 pasan
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0;
+  `pnpm typecheck` → exit 0
+- `RECORD_T71=1 E2E_PORT=3381 pnpm e2e e2e/mar-isla-nochevieja.spec.ts
+  e2e/mar-fiestera.spec.ts --workers=1` → 16 pasan, 2 omitidas (las de sólo
+  escritorio en móvil); antes, con `mar-isla-modelo.spec.ts` también: 20
+  pasan, 4 omitidas.
+
+Pendiente:
+
+- La isla usa 31 materiales (31 llamadas de dibujo cerca de ella; la de
+  Halloween, 25). Si el móvil lo nota, se pueden juntar más colores.
+- El rótulo de /mar y el confeti de la entrega siguen saliendo de la
+  composición a mano (`labelY`); con el modelo, el rótulo queda a la altura
+  de la torre del reloj.
+- Todo es `muestra` hasta el visto bueno de Álvaro.
+
 ## 2026-10-02 — plan 006 T70: Isla del Sonido model
 
 Qué existe:
