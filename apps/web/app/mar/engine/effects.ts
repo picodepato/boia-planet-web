@@ -214,6 +214,30 @@ export function glowPoints(glows: Glows[]): Points {
   return pts;
 }
 
+/** Dónde empieza cada grupo de `glows` dentro de los puntos de `glowPoints` (índice de punto). */
+export function glowOffsets(glows: readonly Glows[]): number[] {
+  let at = 0;
+  return glows.map((g) => {
+    const start = at;
+    at += g.size.length;
+    return start;
+  });
+}
+
+/**
+ * Enciende o apaga un grupo de resplandores (el de una isla cuando se ve su
+ * modelo de Blender, T75): apagado, su color es negro y, como se suman, no
+ * se ve. Encendido, vuelve a su color (`g.col`).
+ */
+export function showGlows(points: Points, start: number, g: Glows, on: boolean): void {
+  const n = g.size.length;
+  if (n === 0) return;
+  const attr = points.geometry.getAttribute('color') as BufferAttribute;
+  const arr = attr.array as Float32Array;
+  for (let i = 0; i < n * 3; i++) arr[start * 3 + i] = on ? g.col[i]! : 0;
+  attr.needsUpdate = true;
+}
+
 // --- Destino y ruta ------------------------------------------------------------
 
 export class CourseMarker {

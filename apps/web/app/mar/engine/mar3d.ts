@@ -67,7 +67,18 @@ import { fromScene, toScene } from './compress';
 import { FOCUS_RATE, lookAhead, startZoom } from './framing';
 import { buildDecor } from './decor';
 import type { ShipDressing } from '../../../lib/barco/dressing';
-import { Clouds, Confetti, CourseMarker, RouteLine, Wake, glowPoints, whirlpool } from './effects';
+import {
+  Clouds,
+  Confetti,
+  CourseMarker,
+  RouteLine,
+  Wake,
+  glowOffsets,
+  glowPoints,
+  showGlows,
+  whirlpool,
+} from './effects';
+import { HUD_MARGIN, LABEL_GAP, type PinSight, type Rect, layoutPins, modelLabelY } from './labels';
 import {
   FLIGHT,
   FlightClouds,
@@ -229,6 +240,8 @@ export interface Mar3DOptions {
   onImpact?(speed: number): void;
   /** Rótulo del arco de salida y meta del circuito (T61; la web lo da traducido). */
   raceStartLabel?: string;
+  /** Los mandos que los rótulos no pisan (la barra de enlaces, el minimapa…; T75). */
+  avoid?(): Iterable<Element>;
   /** Una rampa del circuito lanzó el barco o el barco cayó al agua (T73). Para el sonido. */
   onJump?(e: JumpEvent): void;
 }
@@ -268,6 +281,8 @@ interface IslandModelView {
   acquired: boolean;
   state: IslandModelState;
   glow: ((glow: number) => void) | null;
+  /** Los resplandores de la composición a mano: se apagan mientras se ve el modelo (T75). */
+  glows: { g: Glows; start: number } | null;
 }
 
 /** s entre dos repasos de qué modelos cargar. */
@@ -356,6 +371,10 @@ interface PinView {
   rx: number;
   rz: number;
   vis: boolean;
+  /** Tamaño de su caja (px, sin escalar) y cómo se puso la última vez (T75). */
+  w: number;
+  h: number;
+  look: string;
 }
 
 interface Anchor {
@@ -371,6 +390,8 @@ const tmpV = new Vector3();
 const tmpM = new Matrix4();
 const tmpV2 = new Vector2();
 const tmpSphere = new Sphere();
+/** Lo que queda por encima de la pantalla, como un mando más (los rótulos no se van por arriba). */
+const ABOVE_SCREEN = { left: -1e6, top: -1e6, right: 1e6, bottom: -HUD_MARGIN };
 
 export class Mar3D {
   /** El mundo de ahora (cambia de piel con `setWorld`; los lugares son los mismos). */
@@ -408,6 +429,9 @@ export class Mar3D {
   private readonly islands: { x: number; z: number; R: number; build: IslandBuild }[] = [];
   private readonly animated: ((t: number, glow: number) => void)[] = [];
   private readonly pins: PinView[] = [];
+  /** Los mandos que no pisan los rótulos (px del lienzo) y, para las pruebas, las islas de Blender en pantalla (T75). */
+  private hudRects: Rect[] = [];
+  private readonly islandScreen = new Map<string, Rect>();
   private readonly anchors: Anchor[] = [];
   /** El planeta: su rectángulo (escena) y su periodo en u de motor y en escena. */
   private readonly b: SceneRect;
@@ -600,6 +624,12 @@ export class Mar3D {
     opts.canvas.dataset.routeMarks = String(this.route.dashes.length);
     this.water.setShores(shores);
     this.glow = glowPoints(glows);
+    // Cada isla con hueco sabe dónde están sus resplandores, para apagarlos con el modelo (T75).
+    const starts = glowOffsets(glows);
+    for (const v of this.islandModels.values()) {
+      const i = v.glows ? glows.indexOf(v.glows.g) : -1;
+      if (v.glows && i >= 0) v.glows.start = starts[i]!;
+    }
     // Los resplandores no tienen sitio propio: cada uno va a su copia más cercana.
     curveMaterial(this.glow.material as ShaderMaterial, true);
     this.scene.add(this.glow);
@@ -1071,7 +1101,7 @@ export class Mar3D {
     const v = placeId ? this.views.get(placeId) : null;
     const x = v ? v.obj.position.x : this.boat.group.position.x;
     const z = v ? v.obj.position.z : this.boat.group.position.z;
-    this.confetti.burst(x, (v?.labelY ?? 3) * 0.6, z);
+    this.confetti.burst(x, (v && placeId ? this.labelYOf(placeId, v) : 3) * 0.6, z);
   }
 
   /** Pone un elemento HTML sobre un lugar (o sobre el barco) y lo sigue. */
@@ -1113,6 +1143,9 @@ export class Mar3D {
         rx: v.obj.position.x,
         rz: v.obj.position.z,
         vis: false,
+        w: 0,
+        h: 0,
+        look: '',
       });
     }
   }
@@ -1365,6 +1398,7 @@ export class Mar3D {
             acquired: false,
             state: 'procedural',
             glow: null,
+            glows: { g: build.parts.glows, start: 0 },
           });
         } else {
           g.add(fallback);
@@ -2662,6 +2696,12 @@ export class Mar3D {
       v.slot.add(model);
       v.model = model;
       v.state = 'glb';
+      // Sus luces de a mano no caen en el modelo: se apagan mientras se ve (T75).
+      if (v.glows) showGlows(this.glow, v.glows.start, v.glows.g, false);
+      // Lo que se ve llega hasta la cima del modelo (para no quitarlo de la vista antes de tiempo).
+      const view = this.views.get(id);
+      const top = modelLabelY(v.entry, v.R);
+      if (view && top !== null) view.top = Math.max(view.top, top);
       this.showIslandStates();
     });
   }
@@ -2673,6 +2713,7 @@ export class Mar3D {
       v.model = null;
       v.glow = null;
       v.slot.add(v.fallback);
+      if (v.glows) showGlows(this.glow, v.glows.start, v.glows.g, true);
     }
     v.state = 'procedural';
     this.islandStore.release(id);
@@ -2685,6 +2726,23 @@ export class Mar3D {
       .filter(([, v]) => v.entry)
       .map(([id, v]) => [id, v.state] as [string, IslandModelState]);
     this.opts.canvas.dataset.islasModelo = islandStates(list);
+    // Para las pruebas (T75): las islas con sus luces de a mano apagadas.
+    this.opts.canvas.dataset.islasSinLuces = [...this.islandModels]
+      .filter(([, v]) => v.model)
+      .map(([id]) => id)
+      .sort()
+      .join(' ');
+  }
+
+  /**
+   * A qué altura (escena) va el rótulo de un lugar: con su modelo de Blender
+   * puesto, sobre su alto real (manifiesto); si no, el de la composición a
+   * mano. Lo usan también el confeti de la entrega y lo que se ancla encima (T75).
+   */
+  private labelYOf(id: string, v: View): number {
+    const mv = this.islandModels.get(id);
+    const y = mv?.model && mv.entry ? modelLabelY(mv.entry, mv.R) : null;
+    return y ?? v.labelY;
   }
 
   /** Alas, chispas y nubecillas del vuelo (escena), en la copia del barco que se ve. */
@@ -2803,16 +2861,49 @@ export class Mar3D {
     at(want * lo);
   }
 
-  private placeOverlay(): void {
-    const bx = this.boat.group.position.x;
-    const bz = this.boat.group.position.z;
-    const far = this.zoom > 0.28;
+  /**
+   * Lo que ocupa un lugar en pantalla: de lado a lado y abajo, su orilla;
+   * arriba, su cima en el centro (null si queda detrás de la cámara).
+   */
+  private bodyRect(x: number, z: number, r: number, top: number): Rect | null {
+    this.project(x, top, z, this.scr);
+    if (tmpV.z >= 1) return null;
+    const out = { left: this.scr.x, top: this.scr.y, right: this.scr.x, bottom: this.scr.y };
+    const pts: [number, number, number][] = [
+      [x - r, 0, z],
+      [x + r, 0, z],
+      [x, 0, z - r],
+      [x, 0, z + r],
+    ];
+    for (const [px, py, pz] of pts) {
+      this.project(px, py, pz, this.scr);
+      if (tmpV.z >= 1) return null;
+      out.left = Math.min(out.left, this.scr.x);
+      out.right = Math.max(out.right, this.scr.x);
+      out.bottom = Math.max(out.bottom, this.scr.y);
+    }
+    return out;
+  }
+
+  /**
+   * Los rótulos (T75): cada uno sobre su lugar (las islas de Blender, sobre
+   * su alto real), sin pisar los mandos, más pequeños y tenues los lejanos, y
+   * casi apagados los que caen encima de un lugar más cercano (`labels.ts`).
+   */
+  private placePins(bx: number, bz: number, far: boolean): void {
     const cam = this.camera.position;
+    const boatD = Math.max(1, cam.distanceTo(this.boat.group.position));
+    const W = this.opts.canvas.clientWidth;
+    const H = this.opts.canvas.clientHeight;
+    const sights: PinSight[] = [];
+    const shown: PinView[] = [];
+    this.islandScreen.clear();
     for (const p of this.pins) {
       const v = this.views.get(p.spec.id);
       if (v) {
         p.rx = v.obj.position.x;
         p.rz = v.obj.position.z;
+        p.y = this.labelYOf(p.spec.id, v);
       }
       const near = Math.hypot(p.rx - bx, p.rz - bz) < 70;
       const want = far || near || !!p.spec.always;
@@ -2820,29 +2911,74 @@ export class Mar3D {
       const y = p.y;
       const z = p.rz;
       let atHorizon = false;
+      let body: Rect | null = null;
       if (this.hidden(x, y, z)) {
-        if (!p.spec.always) {
-          if (p.vis) {
-            p.vis = false;
-            p.el.classList.remove('is-on');
-          }
-          continue;
-        }
         // Lo que vende se queda asomado al horizonte, en su dirección.
+        if (!p.spec.always || !want) continue;
         atHorizon = true;
+      } else if (v) {
+        const mv = this.islandModels.get(p.spec.id);
+        const R = this.islandRadius.get(p.spec.id) ?? Math.max(1, v.radius - 3);
+        const top = mv?.model ? y - LABEL_GAP : v.labelY * 0.7;
+        body = this.bodyRect(x, z, R, top);
+        if (body && (body.right < 0 || body.left > W || body.bottom < 0 || body.top > H)) body = null;
+        if (body && mv?.model) this.islandScreen.set(p.spec.id, body);
       }
-      if (atHorizon) this.horizonPoint(x - cam.x, z - cam.z, p.el.offsetWidth / 2, this.scr);
+      if (atHorizon) this.horizonPoint(x - cam.x, z - cam.z, p.w / 2, this.scr);
       else this.project(x, y, z, this.scr);
-      const vis = want && this.scr.on;
-      if (vis !== p.vis) {
-        p.vis = vis;
-        p.el.classList.toggle('is-on', vis);
+      if (!this.scr.on && !body) continue;
+      const depth = atHorizon
+        ? Number.POSITIVE_INFINITY
+        : Math.hypot(x - cam.x, y - cam.y, z - cam.z) / boatD;
+      sights.push({
+        x: this.scr.x,
+        y: this.scr.y,
+        w: p.w,
+        h: p.h,
+        depth,
+        horizon: atHorizon,
+        always: !!p.spec.always,
+        body,
+        // Por encima de la pantalla con su isla a la vista (una isla alta, de cerca): baja sobre ella.
+        label: want && (this.scr.on || !!body),
+      });
+      shown.push(p);
+    }
+    // Tampoco por encima del borde de arriba de la pantalla.
+    const looks = layoutPins(sights, [...this.hudRects, ABOVE_SCREEN]);
+    const seen = new Set<PinView>();
+    shown.forEach((p, i) => {
+      const look = looks[i]!;
+      const s = sights[i]!;
+      if (!look.on) return;
+      seen.add(p);
+      if (!p.vis) {
+        p.vis = true;
+        p.el.classList.add('is-on');
       }
-      if (vis) {
-        p.el.style.transform = `translate3d(${this.scr.x.toFixed(1)}px, ${this.scr.y.toFixed(1)}px, 0)`;
+      p.el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${look.y.toFixed(1)}px, 0) scale(${look.scale.toFixed(3)})`;
+      const key = `${far ? 'm' : ''}${s.horizon ? 'h' : ''}${look.behind ? 'b' : ''}${look.alpha.toFixed(2)}`;
+      if (key !== p.look) {
+        p.look = key;
         p.el.classList.toggle('is-map', far);
+        p.el.classList.toggle('is-horizon', s.horizon);
+        p.el.classList.toggle('is-behind', look.behind);
+        p.el.style.setProperty('--pin-alpha', look.alpha.toFixed(2));
+      }
+    });
+    for (const p of this.pins) {
+      if (p.vis && !seen.has(p)) {
+        p.vis = false;
+        p.el.classList.remove('is-on');
       }
     }
+  }
+
+  private placeOverlay(): void {
+    const bx = this.boat.group.position.x;
+    const bz = this.boat.group.position.z;
+    const far = this.zoom > 0.28;
+    this.placePins(bx, bz, far);
     for (const a of this.anchors) {
       let x = bx;
       let y = 2.4;
@@ -2852,7 +2988,7 @@ export class Mar3D {
         if (!v) continue;
         x = v.obj.position.x;
         z = v.obj.position.z;
-        y = v.labelY * 0.8;
+        y = this.labelYOf(a.target, v) * 0.8;
       }
       this.project(x, y + a.dy, z, this.scr);
       // Que no se salga por los lados ni por arriba.
@@ -2863,6 +2999,35 @@ export class Mar3D {
       a.el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0)`;
       a.el.style.visibility = this.scr.on ? 'visible' : 'hidden';
     }
+  }
+
+  /**
+   * Cada cuarto de segundo (antes de mover nada en el fotograma): dónde están
+   * los mandos y cuánto mide cada rótulo (T75).
+   */
+  private measureOverlay(): void {
+    const base = this.opts.overlay.getBoundingClientRect();
+    const rects: Rect[] = [];
+    for (const el of this.opts.avoid?.() ?? []) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      rects.push({
+        left: r.left - base.left,
+        top: r.top - base.top,
+        right: r.right - base.left,
+        bottom: r.bottom - base.top,
+      });
+    }
+    this.hudRects = rects;
+    for (const p of this.pins) {
+      p.w = p.el.offsetWidth;
+      p.h = p.el.offsetHeight;
+    }
+    // Para las pruebas: «id:izq,arriba,der,abajo» de cada isla de Blender que se ve.
+    this.opts.canvas.dataset.islasPantalla = [...this.islandScreen]
+      .map(([id, r]) => `${id}:${[r.left, r.top, r.right, r.bottom].map(Math.round).join(',')}`)
+      .sort()
+      .join(' ');
   }
 
   private measure(dt: number, now: number): void {
@@ -2887,6 +3052,7 @@ export class Mar3D {
         this.resize();
       }
     }
+    this.measureOverlay();
     // Para las pruebas: dónde queda el barco en la pantalla (px del lienzo). En
     // vuelo el barco está en el aire (y = altura del vuelo), no en el agua.
     const bp = this.boat.group.position;

@@ -126,6 +126,7 @@ import {
 import { takeZarpar } from '../../lib/intro/zarpar';
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
+import { PIN_AVOID } from './engine/labels';
 import { MOOD_IDS, type MoodId } from './engine/palette';
 import {
   type ShipModelEntry,
@@ -1143,6 +1144,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         mood: startMood,
         sea: live.theme.sea,
         pins: pinsOf(world, mission?.phase ?? null),
+        avoid: () => canvas.parentElement?.querySelectorAll(PIN_AVOID) ?? [],
         runtime: {
           ticketAvailable,
           minigames: MINIGAME_REGISTRY,

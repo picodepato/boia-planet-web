@@ -4,6 +4,58 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T75: Island labels clear of the top bar and the models
+
+Qué existe:
+- `apps/web/app/mar/engine/labels.ts` (nuevo, sin three.js): decide cada rótulo
+  de /mar. Nunca pisa los mandos (`PIN_AVOID`: barra de enlaces, minimapa,
+  saldos, botones de los lados, zoom, nudos, turbo, Entradas) ni se va por
+  arriba de la pantalla: si su isla está a la vista baja justo por debajo del
+  mando, sobre su isla (de cerca una isla alta llega a la barra); si no, se
+  apaga. Los lejanos (distancia a la cámara ÷ la del barco, 1,6 → 4) y los
+  asomados al horizonte menguan a 0,72 y se atenúan a 0,62; uno que cae sobre
+  la isla o el rótulo de un lugar más cercano se apaga, o, si es de lo que
+  vende (`always`), se queda a 0,68 de tamaño y 0,32 de opacidad. Valores `muestra`.
+- `modelLabelY`: con el GLB puesto, el rótulo va a `height` del manifiesto ×
+  `islandScale` + 1,4; lo usan el rótulo, el confeti de la entrega de la
+  Fiestera y lo que se ancla encima (bocadillos). Sin GLB, el `labelY` de a mano.
+- Las luces de a mano (`Glows`) de una isla se apagan (color 0; se suman)
+  mientras se ve su GLB y vuelven al soltarlo (`glowOffsets`, `showGlows` en
+  effects.ts). El lienzo lo dice en `data-islas-sin-luces`, y en
+  `data-islas-pantalla` dónde queda cada isla de Blender en pantalla.
+- La vista de una isla con GLB crece hasta la cima del modelo (no se recorta antes de tiempo).
+- mar.css: el rótulo escala desde su punta (`transform-origin` abajo) y su
+  opacidad va en `--pin-alpha`; fuera el `scale` de entrada (desplazaba la
+  posición); `.is-horizon` sin punta; `.is-behind` sin sombra.
+- e2e `mar-rotulos.spec.ts`: cerca de cada isla del manifiesto, en 375×812 y
+  escritorio: ningún rótulo encendido pisa la barra de enlaces ni otro mando;
+  el de la isla, centrado sobre su isla y encima de su modelo (o, de cerca,
+  pegado bajo el mando que tiene encima); alejando, encima de su modelo; luces
+  de a mano apagadas. Con RECORD_T75=1, capturas
+  `docs/informes/img/p006-t75-{allday,halloween,ultima}-{mobile,desktop}[-lejos].png`.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 105 ficheros, 954 pruebas (labels.test.ts: 11).
+- `sh tools/spec/checks.sh` → exit 0 (OK). `pnpm lint` → exit 0. `pnpm build` → exit 0 (189,6 kB / 192 kB). `pnpm typecheck` → exit 0.
+- `E2E_PORT=3381 RECORD_T75=1 pnpm e2e mar-rotulos.spec.ts --workers=1` → exit 0, 6 passed.
+- `E2E_PORT=3381 pnpm e2e mar-rotulos mar-3d mar-hud mar-islas mar-isla-modelo mar-isla-sonido mar-isla-nochevieja mar-fiestera --workers=2` → exit 0, 67 passed, 15 skipped.
+
+Tras fusionar main (T73, Los Rápidos v3; conflictos en mar3d.ts, mar-client.tsx
+y mar.css resueltos conservando lo de las dos tareas):
+- vitest → exit 0, 106 ficheros, 967 pruebas. checks.sh, lint, build (189,6 kB), typecheck → exit 0.
+- `E2E_PORT=3381 RECORD_T75=1 pnpm e2e mar-rotulos.spec.ts mar-circuito.spec.ts --workers=1`
+  → mar-rotulos 6/6; mar-circuito, la prueba larga de la carrera falló en los dos
+  proyectos («sin carrera»: el piloto de la prueba pierde la carrera). En main
+  sin T75 falla igual (escritorio, 3 passed 1 failed). Repetida sola en esta
+  rama: `pnpm e2e mar-circuito.spec.ts --workers=1` → exit 0, 4 passed.
+
+Pendiente:
+- mar-circuito.spec.ts (T73) es inestable: su piloto a veces pierde la carrera, también en main.
+- De cerca, la Isla de Nochevieja mide 10,75 con los rayos de luz: en el móvil
+  el rótulo baja bajo los saldos, sobre la torre del reloj. Si Álvaro lo quiere
+  más arriba, bajar `height` en el manifiesto (Blender) o dar un alto «de rótulo» aparte.
+- Los valores de lejanía y atenuación son `muestra`, a ajustar a ojo con Hernán.
+
 ## 2026-10-02 — plan 006 T73: Los Rápidos: circuit v3
 
 Qué existe:

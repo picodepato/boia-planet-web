@@ -1063,10 +1063,10 @@
   box-shadow: 0 6px 16px rgb(10 6 40 / 0.35);
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity 0.25s,
-    scale 0.25s;
-  scale: 0.85;
+  /* El motor lo pone en su sitio y lo escala desde la punta (T75): lejos, más
+     pequeño; su opacidad, en --pin-alpha. */
+  transform-origin: 50% 100%;
+  transition: opacity 0.25s;
   will-change: transform;
 }
 
@@ -1085,9 +1085,18 @@
 }
 
 .mar-pin.is-on {
-  opacity: 1;
+  opacity: var(--pin-alpha, 1);
   pointer-events: auto;
-  scale: 1;
+}
+
+/* Asomado al horizonte (su isla queda detrás del planeta): sin la punta, que no señala a nada. */
+.mar-pin.is-horizon::after {
+  display: none;
+}
+
+/* Encima de un lugar más cercano: tenue y sin sombra, para que no parezca suyo. */
+.mar-pin.is-behind {
+  box-shadow: none;
 }
 
 .mar-pin.is-map {
