@@ -4,6 +4,68 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T69: Island models from Blender, starting with the Isla de Halloween
+
+Qué existe:
+
+- **Pipeline de islas de Blender** (`tools/blender/export_islas_glb.py`): cada
+  isla es un módulo `tools/blender/islas/<id>.py` (id del lugar) con `ID`,
+  `LABEL`, `DOC`, `RADIUS`, `DETAIL`, `ROLES`, `GLOW` y `build(B, K)`; piezas
+  comunes en `islas/comun.py` (Builder «ligero» de los mundos con menos
+  segmentos, terreno, cantos, muelle, superficie de calabaza con gajos,
+  láminas pegadas a una superficie, boias disfrazadas con la mascota de
+  `mascota.py`, murciélagos). Colores planos por papel (tema de arcilla +
+  papeles de la isla) y papeles emisivos. Todo se junta en una malla (25
+  materiales = 25 llamadas de dibujo) y la isla tiene que caber en
+  `MAX_TRIS` = 30 000 (sale con 1 si no). `--preview <dir>` deja PNG de día
+  y de noche fuera del repo; `--detalle`, triángulos por material. Salida
+  determinista (mismo md5 en dos corridas).
+- **Isla de Halloween** (`islas/halloween.py` → `art/islas/3d/halloween.glb`,
+  29 842 triángulos, 791 kB): roca morada con cima de hierba oscura; en el
+  centro el club, una calabaza grande con cara de enfado (ojos rasgados,
+  cejas fruncidas, nariz y boca de dientes que hace de puerta, con escalones)
+  que brilla de noche, rabo con zarcillo, altavoces y murciélagos; lápidas,
+  árboles secos, calabacitas encendidas por el camino y muelle; en el agua,
+  seis boias con la mascota de BOIA disfrazadas (dos brujas con sombrero y
+  escoba, dos fantasmas con sábana y bracitos, dos Frankenstein con pelo
+  plano, cicatriz y tornillos), mirando hacia fuera y hacia el puerto.
+- **Manifiesto y validación**: `art/islas/3d/manifest.json` (id, file,
+  label, radius, top, height, tris, kb, doc; `max_tris`), esquema
+  `tools/blender/isla3d.schema.json`; `tools/blender/check.py` →
+  `check_islas_3d`: esquema, un GLB por módulo y ninguno de más, una sola
+  malla, triángulos leídos del GLB = manifiesto ≤ `MAX_TRIS`.
+- **/mar** (`apps/web/app/mar/engine/island-models.ts`, `mar3d.ts`): cada
+  isla del mapa va en un hueco con su composición a mano dentro; las que el
+  manifiesto lista piden su GLB por distancia (`ISLAND_MODEL_TUNING`: 2200 /
+  3200 u, más lejos que las boias) con el mismo `ModelStore` (ahora genérico
+  en clave y URL), lo escalan al radio del lugar, lo curvan con el planeta y
+  suben el brillo de lo emisivo de noche (`islandGlow`). Lejos, mientras
+  llega o si falla, la de a mano. El lienzo dice `data-islas-modelo`
+  («halloween:procedural|cargando|glb|error»). Añadir una isla no toca /mar.
+- Docs: README «Islas de Blender en el mar 3D» (cómo añadir una: T70, T71) y
+  una línea en `docs/TRASPASO.md`. Capturas:
+  `docs/informes/img/p006-t69-isla-halloween.png`, `-noche.png` y
+  `-sin-glb.png` (la de a mano).
+
+Comandos:
+
+- `blender.exe -b -P tools/blender/export_islas_glb.py -- --only halloween` → exit 0 (29 842 triángulos, 25 materiales, 791 kB; GLB y manifiesto en art/islas/3d/)
+- `python3 tools/blender/check.py` → exit 0 (60 manifiestos; islas/3d: halloween 29 842/30 000, 2 emisivos)
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (102 files, 931 tests passed; nuevo `island-models.test.ts`)
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` → exit 0 (landing 189,6 kB de 192 kB) · `pnpm typecheck` → exit 0
+- `E2E_PORT=3351 RECORD_T69=1 pnpm e2e e2e/mar-isla-modelo.spec.ts --workers=1` → exit 0, 5 passed, 1 skipped (captura de noche en móvil)
+- `E2E_PORT=3351 pnpm e2e e2e/mar-isla-modelo.spec.ts e2e/mar-islas.spec.ts e2e/mar-3d.spec.ts e2e/mar-paridad.spec.ts --workers=2` → exit 0, 48 passed, 2 skipped
+
+Pendiente:
+
+- T70 (Isla del Sonido) y T71 (Isla de Nochevieja): un módulo cada una en
+  `tools/blender/islas/` y `--only <id>`; el presupuesto es por isla.
+- Los resplandores de la isla a mano (antorchas y cara de la calabaza) se
+  quedan también con el GLB: caen cerca del club y de la cara, pero no
+  exactos. Si molestan, el manifiesto podría traer sus propios puntos de luz.
+- Las boias disfrazadas del GLB no se balancean (son parte de la malla).
+- El GLB pesa 791 kB (sin Draco: el cargador de /mar no lo lleva).
+
 ## 2026-10-02 — plan 006 T72: Economy rebalance and bottle cap
 
 Qué existe:

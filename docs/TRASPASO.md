@@ -113,6 +113,9 @@ migraciones) quedó a medias en la rama `worktree-agent-a208530713932c80c`
 - Vercel: Root Directory `apps/web` con los archivos de fuera incluidos
   (`packages/` y `art/`). Cada push a `main` despliega a producción. Detalle
   en el [README](../README.md).
+- Las islas de `/mar` con modelo de Blender (T69: Halloween) salen de
+  `tools/blender/islas/<id>.py` con `export_islas_glb.py`; añadir una es un
+  módulo y un `--only <id>` ([README](../README.md#islas-de-blender-en-el-mar-3d)).
 - Los worktrees de agentes salen de `HEAD` (`.claude/settings.json`) y copian
   lo que lista `.worktreeinclude`.
 - Para seguir con el mismo método: `/orchestrator` con el objetivo del plan

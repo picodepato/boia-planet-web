@@ -77,6 +77,33 @@ Los dos archivos son subconjuntos latinos woff2 hechos con
 4. `pnpm build` (presupuesto) y
    `E2E_PORT=3341 pnpm e2e tipografia.spec.ts` (familias y carga).
 
+## Islas de Blender en el mar 3D
+
+Las islas de `/mar` se hacen a mano en three.js
+(`apps/web/app/mar/engine/islands.ts`); las que tienen modelo de Blender
+(T69: la Isla de Halloween) lo cargan cerca del barco y vuelven a la de a
+mano lejos, mientras llega o si falla. Blender 5.2.2 LTS.
+
+- Cada isla es un módulo `tools/blender/islas/<id>.py` (`<id>` = id del
+  lugar del mundo) con `ID`, `LABEL`, `DOC`, `RADIUS`, `DETAIL`, `ROLES`,
+  `GLOW` y `build(B, K)`; piezas comunes (boias disfrazadas con la mascota,
+  terreno, calabaza, láminas) en `islas/comun.py`. El contrato está arriba
+  de `tools/blender/export_islas_glb.py`.
+- `blender -b -P tools/blender/export_islas_glb.py -- --only <id>` escribe
+  `art/islas/3d/<id>.glb` y su entrada en `art/islas/3d/manifest.json`.
+  Opciones: `--preview <carpeta fuera del repo>` (PNG de día y de noche) y
+  `--detalle` (triángulos por material). Sale con 1 si la isla pasa de
+  `MAX_TRIS` (30 000).
+- `python3 tools/blender/check.py` valida el manifiesto
+  (`isla3d.schema.json`), un GLB por módulo, una sola malla y el presupuesto.
+
+**Añadir una isla** (T70, T71): copiar `islas/halloween.py` a
+`islas/<id>.py`, cambiar sus datos y `build`, exportar con `--only <id>` y
+pasar `check.py`. `/mar` no necesita cambios: lee el manifiesto y escala el
+modelo al radio del lugar (frente a -Y de Blender, que mira al puerto). En
+el lienzo, `data-islas-modelo` dice `id:procedural|cargando|glb|error`
+(`e2e/mar-isla-modelo.spec.ts`).
+
 ## Desplegar la versión de prueba
 
 La versión de prueba (plan 002, D-20) no usa ningún servicio: ni Supabase, ni

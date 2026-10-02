@@ -94,6 +94,16 @@ import { Glows, buoy, crag, rock } from './props';
 import { type ShipModel, createFlag, modelLength, topPoint } from './ship-model';
 import { type ModelKey, ModelStore, fitHeight, modelFor, modelSlot, planModels } from './models';
 import {
+  ISLAND_MODEL_TUNING,
+  type IslandModelEntry,
+  type IslandModelState,
+  islandGlow,
+  islandModelUrl,
+  islandScale,
+  islandStates,
+  loadIslandManifest,
+} from './island-models';
+import {
   MAR_SHIP_CONFIG,
   TURBO_SPEED,
   VOYAGE_SPEED,
@@ -234,6 +244,19 @@ interface ModelView {
   fallback: Object3D;
   model: Object3D | null;
   acquired: boolean;
+}
+
+/** Una isla del mapa con modelo de Blender (T69): su composición a mano hasta que llega. */
+interface IslandModelView {
+  slot: Group;
+  fallback: Object3D;
+  /** Radio de la isla en escena (el modelo se escala a él). */
+  R: number;
+  entry: IslandModelEntry | null;
+  model: Object3D | null;
+  acquired: boolean;
+  state: IslandModelState;
+  glow: ((glow: number) => void) | null;
 }
 
 /** s entre dos repasos de qué modelos cargar. */
@@ -487,6 +510,11 @@ export class Mar3D {
   private readonly modelStore = new ModelStore();
   private readonly modelViews = new Map<string, ModelView>();
   private modelClock = MODEL_PLAN_S;
+  // Islas de Blender (T69): cada isla del mapa tiene su hueco; las del manifiesto, modelo por distancia.
+  private readonly islandModels = new Map<string, IslandModelView>();
+  private readonly islandStore = new ModelStore<string>(undefined, (id) =>
+    islandModelUrl(this.islandModels.get(id)?.entry ?? { file: `${id}.glb` }),
+  );
 
   constructor(opts: Mar3DOptions) {
     this.opts = opts;
@@ -564,6 +592,7 @@ export class Mar3D {
     this.scene.add(this.clouds.group);
     // Todo lo demás se curva con el planeta (lo que ya está curvado se queda como está).
     curveTree(this.scene);
+    this.watchIslandModels();
 
     this.missionHost = {
       moveObject: (id, x, y, z) => this.runtime.moveObject(id, x, y, z),
@@ -1173,6 +1202,7 @@ export class Mar3D {
       else mat?.dispose();
     });
     this.modelStore.destroy();
+    this.islandStore.destroy();
     this.vortex.dispose();
     this.renderer.dispose();
   }
@@ -1267,12 +1297,32 @@ export class Mar3D {
         const build = cat === 'isla' ? buildIsland(id, R) : buildSandbank(R);
         const g = new Group();
         g.position.set(x, 0, z);
-        g.add(new Mesh(build.parts.lit.build(), lit));
+        // La composición a mano va en un hueco: si la isla tiene modelo de Blender (T69), lo sustituye de cerca.
+        const fallback = new Group();
+        fallback.add(new Mesh(build.parts.lit.build(), lit));
         if (!build.parts.glow.empty) {
-          g.add(new Mesh(build.parts.glow.build(), new MeshBasicMaterial({ vertexColors: true })));
+          fallback.add(
+            new Mesh(build.parts.glow.build(), new MeshBasicMaterial({ vertexColors: true })),
+          );
         }
-        for (const a of build.animated) g.add(a);
+        for (const a of build.animated) fallback.add(a);
         if (build.update) this.animated.push(build.update);
+        if (cat === 'isla') {
+          const slot = modelSlot(fallback);
+          g.add(slot);
+          this.islandModels.set(id, {
+            slot,
+            fallback,
+            R,
+            entry: null,
+            model: null,
+            acquired: false,
+            state: 'procedural',
+            glow: null,
+          });
+        } else {
+          g.add(fallback);
+        }
         const gl = build.parts.glows;
         for (let i = 0; i < gl.pos.length; i += 3) {
           gl.pos[i] = gl.pos[i]! + x;
@@ -2435,6 +2485,7 @@ export class Mar3D {
    * hecha a mano (que no pesa nada).
    */
   private streamModels(): void {
+    this.streamIslandModels();
     if (this.modelViews.size === 0) return;
     const ship = this.ship;
     // En el planeta cuenta la copia más cercana: se mide por el camino corto.
@@ -2485,6 +2536,86 @@ export class Mar3D {
       mv.slot.add(mv.fallback);
     }
     this.modelStore.release(mv.key);
+  }
+
+  /**
+   * Las islas de Blender (T69): el manifiesto dice cuáles tienen modelo; se
+   * piden y se sueltan por distancia como las boias, con su propio alcance.
+   */
+  private watchIslandModels(): void {
+    this.animated.push((_t, glow) => {
+      for (const v of this.islandModels.values()) v.glow?.(glow);
+    });
+    void loadIslandManifest().then((entries) => {
+      if (this.destroyed) return;
+      for (const [id, entry] of entries) {
+        const v = this.islandModels.get(id);
+        if (v) v.entry = entry;
+      }
+      this.showIslandStates();
+      this.streamIslandModels();
+    });
+  }
+
+  private streamIslandModels(): void {
+    const withModel = [...this.islandModels].filter(([, v]) => v.entry);
+    if (withModel.length === 0) return;
+    const ship = this.ship;
+    const near = withModel.map(([id]) => {
+      const at = this.world.objects.find((x) => x.identity.id === id)?.position;
+      const { dx, dy } = this.runtime.delta(ship.x, ship.y, at?.x ?? 0, at?.y ?? 0);
+      return { id, x: ship.x + dx, y: ship.y + dy };
+    });
+    const { want, keep } = planModels(near, ship, ISLAND_MODEL_TUNING);
+    for (const [id, v] of withModel) {
+      if (want.has(id) && !v.acquired) this.acquireIsland(id, v);
+      else if (!keep.has(id) && v.acquired) this.releaseIsland(id, v);
+    }
+  }
+
+  private acquireIsland(id: string, v: IslandModelView): void {
+    v.acquired = true;
+    v.state = 'cargando';
+    this.showIslandStates();
+    void this.islandStore.acquire(id).then((model) => {
+      if (this.destroyed || !v.acquired) return;
+      if (!model || !v.entry) {
+        v.state = 'error';
+        this.showIslandStates();
+        return;
+      }
+      // Frente a +z (el puerto), agua en y = 0: sólo se escala al radio de la isla.
+      model.scale.setScalar(islandScale(v.entry, v.R));
+      curveTree(model);
+      v.glow = islandGlow(model);
+      v.glow(this.mood.glow);
+      v.slot.remove(v.fallback);
+      v.slot.add(model);
+      v.model = model;
+      v.state = 'glb';
+      this.showIslandStates();
+    });
+  }
+
+  private releaseIsland(id: string, v: IslandModelView): void {
+    v.acquired = false;
+    if (v.model) {
+      v.slot.remove(v.model);
+      v.model = null;
+      v.glow = null;
+      v.slot.add(v.fallback);
+    }
+    v.state = 'procedural';
+    this.islandStore.release(id);
+    this.showIslandStates();
+  }
+
+  /** Para las pruebas: `data-islas-modelo` en el lienzo, «id:estado» de cada isla con modelo. */
+  private showIslandStates(): void {
+    const list = [...this.islandModels]
+      .filter(([, v]) => v.entry)
+      .map(([id, v]) => [id, v.state] as [string, IslandModelState]);
+    this.opts.canvas.dataset.islasModelo = islandStates(list);
   }
 
   /** Alas, chispas y nubecillas del vuelo (escena), en la copia del barco que se ve. */

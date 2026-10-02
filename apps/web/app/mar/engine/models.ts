@@ -98,25 +98,34 @@ function disposeTree(root: Object3D): void {
   }
 }
 
+/** Un glTF del arte (`/api/art/...`) como escena de three. */
+export const loadGltf = async (url: string): Promise<Object3D> =>
+  (await new GLTFLoader().loadAsync(url)).scene;
+
+/** La URL del modelo de cada boia (art/barco/3d). */
+export const boiaModelUrl = (key: ModelKey) => `${SHIP_MODELS_URL}/${MODEL_FILES[key]}`;
+
 /**
  * Los modelos con recuento de usos: cada vista que lo lleva lo pide y lo
- * suelta; sin nadie, se descarga. `load` se puede cambiar en las pruebas.
+ * suelta; sin nadie, se descarga. `load` (recibe la URL) se puede cambiar en
+ * las pruebas; `urlOf` dice dónde está cada modelo (las boias, por defecto;
+ * las islas de Blender, T69, con su manifiesto).
  */
-export class ModelStore {
-  private readonly models = new Map<ModelKey, Loaded>();
+export class ModelStore<K extends string = ModelKey> {
+  private readonly models = new Map<K, Loaded>();
   private destroyed = false;
 
   constructor(
-    private readonly load: (file: string) => Promise<Object3D> = async (file) =>
-      (await new GLTFLoader().loadAsync(`${SHIP_MODELS_URL}/${file}`)).scene,
+    private readonly load: (url: string) => Promise<Object3D> = loadGltf,
+    private readonly urlOf: (key: K) => string = (key) => boiaModelUrl(key as unknown as ModelKey),
   ) {}
 
   /** Una copia del modelo (comparte geometría y materiales), o null si no hay. */
-  async acquire(key: ModelKey): Promise<Object3D | null> {
+  async acquire(key: K): Promise<Object3D | null> {
     let e = this.models.get(key);
     if (!e) {
       const entry: Loaded = { refs: 0, template: null, ready: Promise.resolve(null) };
-      entry.ready = this.load(MODEL_FILES[key]).then(
+      entry.ready = this.load(this.urlOf(key)).then(
         (scene) => {
           lambertize(scene);
           entry.template = scene;
@@ -124,7 +133,7 @@ export class ModelStore {
           return scene;
         },
         (err: unknown) => {
-          console.warn(`[boia] modelo «${key}» no disponible; la mascota de siempre`, err);
+          console.warn(`[boia] modelo «${key}» no disponible; se queda el hecho a mano`, err);
           return null;
         },
       );
@@ -136,21 +145,21 @@ export class ModelStore {
     return template && !this.destroyed ? template.clone(true) : null;
   }
 
-  release(key: ModelKey): void {
+  release(key: K): void {
     const e = this.models.get(key);
     if (!e) return;
     e.refs = Math.max(0, e.refs - 1);
     if (e.refs === 0 && e.template) this.drop(key, e);
   }
 
-  private drop(key: ModelKey, e: Loaded): void {
+  private drop(key: K, e: Loaded): void {
     if (this.models.get(key) === e) this.models.delete(key);
     if (e.template) disposeTree(e.template);
     e.template = null;
   }
 
   /** Modelos en memoria (para las pruebas y `data-modelos`). */
-  get loaded(): ModelKey[] {
+  get loaded(): K[] {
     return [...this.models.entries()].filter(([, e]) => e.template).map(([k]) => k);
   }
 

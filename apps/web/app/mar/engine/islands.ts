@@ -681,13 +681,14 @@ function canon(R: number, rnd: () => number): IslandBuild {
   return { parts, animated: [], heightAt: h, labelY: top + 3.6 };
 }
 
-// --- Isla de Halloween (T67): marcador hasta el modelo de Blender de T69 --------
+// --- Isla de Halloween (T67): la de a mano bajo el modelo de Blender de T69 ----
 
 /**
- * Una composición sencilla y provisional: roca oscura, una calabaza grande
- * con la cara encendida en el centro, árboles secos y antorchas moradas. T69
- * la cambia por el modelo de Blender (el club calabaza y las boias
- * disfrazadas).
+ * Una composición sencilla: roca oscura, una calabaza grande con la cara
+ * encendida en el centro, árboles secos y antorchas moradas. De cerca la
+ * sustituye el modelo de Blender (T69, art/islas/3d/halloween.glb: el club
+ * calabaza y las boias disfrazadas); ésta se ve lejos, mientras llega o si
+ * falla.
  */
 function halloween(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();

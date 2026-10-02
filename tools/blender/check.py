@@ -15,6 +15,9 @@ WORLDS, referencias a mapa.json, la misma cámara y densidad que el barco del
 mundo, y por pieza anclajes, huella, pistas, animaciones, losas y esquinas.
 El título 3D de la entrada (art/intro/titulo/, kind "title-sheet") lo valida
 intro/check_titulo.py.
+Las islas de Blender del mar 3D (art/islas/3d/, kind "island-glb", T69): el
+manifiesto con isla3d.schema.json, un GLB por módulo de tools/blender/islas/ y
+cada uno dentro del presupuesto de triángulos (export_islas_glb.MAX_TRIS).
 Exit 0 si todo pasa; 1 si algo falla (lista cada fallo).
 """
 import argparse
@@ -1095,6 +1098,103 @@ def check_worlds(art, diff_root, worlds):
     return results
 
 
+# --- Islas de Blender del mar 3D (T69): art/islas/3d/ ----------------------------------------
+ISLAS_SUBDIR = os.path.join("islas", "3d")
+ISLAS_DIR = os.path.join(HERE, "islas")
+ISLAS_NOT_ISLANDS = {"__init__", "comun"}
+
+
+def export_islas_max_tris():
+    """MAX_TRIS de export_islas_glb.py: el presupuesto de triángulos de cada isla."""
+    with open(os.path.join(HERE, "export_islas_glb.py"), encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "MAX_TRIS" for t in node.targets):
+            return ast.literal_eval(node.value)
+    raise ValueError("export_islas_glb.py no define MAX_TRIS")
+
+
+def glb_summary(path):
+    """(triángulos, materiales, mallas, materiales emisivos) de un .glb, leyendo su trozo JSON."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(data) < 20 or data[:4] != b"glTF":
+        raise ValueError("no es un GLB")
+    version, length = struct.unpack_from("<II", data, 4)
+    clen, ctype = struct.unpack_from("<II", data, 12)
+    if version != 2 or length != len(data) or ctype != 0x4E4F534A:
+        raise ValueError("cabecera GLB inválida (versión %d, %d/%d bytes)" % (version, length, len(data)))
+    doc = json.loads(data[20:20 + clen])
+    tris = 0
+    for mesh in doc.get("meshes", []):
+        for prim in mesh["primitives"]:
+            if prim.get("mode", 4) != 4:
+                raise ValueError("primitiva que no es de triángulos (mode %r)" % prim.get("mode"))
+            acc = prim.get("indices", prim["attributes"]["POSITION"])
+            tris += doc["accessors"][acc]["count"] // 3
+    mats = doc.get("materials", [])
+    glowing = [m for m in mats if any(c > 0 for c in m.get("emissiveFactor", [0, 0, 0]))]
+    return tris, len(mats), len(doc.get("meshes", [])), len(glowing)
+
+
+def check_islas_3d(art):
+    """-> (label, kind, fails, info, n_glb). Cada isla de tools/blender/islas/ con su GLB, en presupuesto."""
+    label = ISLAS_SUBDIR.replace(os.sep, "/")
+    fails, info = [], []
+    res = os.path.join(art, ISLAS_SUBDIR)
+    mpath = os.path.join(res, "manifest.json")
+    modules = sorted(f[:-3] for f in os.listdir(ISLAS_DIR) if f.endswith(".py") and f[:-3] not in ISLAS_NOT_ISLANDS)
+    if not os.path.exists(mpath):
+        return label, "island-glb", ["falta %s (Blender -b -P tools/blender/export_islas_glb.py)"
+                                     % os.path.relpath(mpath, REPO)], info, 0
+    with open(mpath, encoding="utf-8") as f:
+        man = json.load(f)
+    with open(os.path.join(HERE, "isla3d.schema.json"), encoding="utf-8") as f:
+        schema = json.load(f)
+    errs = validate(man, schema, schema)
+    if errs:
+        return label, "island-glb", errs, info, 0
+    budget = export_islas_max_tris()
+    if man["max_tris"] != budget:
+        fails.append("max_tris %d; export_islas_glb.MAX_TRIS es %d (vuelve a exportar)" % (man["max_tris"], budget))
+    ids = [e["id"] for e in man["islas"]]
+    if len(set(ids)) != len(ids):
+        fails.append("ids repetidos: %s" % ids)
+    for m in modules:
+        if m not in ids:
+            fails.append("tools/blender/islas/%s.py sin GLB en el manifiesto (exporta con --only %s)" % (m, m))
+    on_disk = sorted(f for f in os.listdir(res) if f.endswith(".glb"))
+    listed = sorted(e["file"] for e in man["islas"])
+    if on_disk != listed:
+        fails.append("GLB en la carpeta %s; en el manifiesto %s" % (on_disk, listed))
+    for e in man["islas"]:
+        iid = e["id"]
+        if iid not in modules:
+            fails.append("%s: sin módulo tools/blender/islas/%s.py" % (iid, iid))
+        if e["file"] != iid + ".glb":
+            fails.append("%s: el archivo se llama %r (se espera %s.glb)" % (iid, e["file"], iid))
+        path = os.path.join(res, e["file"])
+        if not os.path.exists(path):
+            fails.append("%s: falta %s" % (iid, e["file"]))
+            continue
+        try:
+            tris, n_mats, n_meshes, n_glow = glb_summary(path)
+        except (ValueError, KeyError, IndexError, json.JSONDecodeError) as err:
+            fails.append("%s: %s ilegible: %s" % (iid, e["file"], err))
+            continue
+        if tris > budget:
+            fails.append("%s: %d triángulos > presupuesto %d" % (iid, tris, budget))
+        if tris != e["tris"]:
+            fails.append("%s: el GLB tiene %d triángulos; el manifiesto dice %d" % (iid, tris, e["tris"]))
+        if n_meshes != 1:
+            fails.append("%s: %d mallas (se juntan en una: una llamada de dibujo por material)" % (iid, n_meshes))
+        if e["height"] <= e["top"]:
+            fails.append("%s: alto %r no supera la cima %r" % (iid, e["height"], e["top"]))
+        info.append("%s: %d/%d triángulos, %d materiales (%d emisivos), %d kB"
+                    % (iid, tris, budget, n_mats, n_glow, os.path.getsize(path) // 1024))
+    return label, "island-glb", fails, info, len(man["islas"])
+
+
 def expected_worlds():
     with open(os.path.join(HERE, "render.py"), encoding="utf-8") as f:
         tree = ast.parse(f.read())
@@ -1144,6 +1244,7 @@ def main():
     worlds = expected_worlds()
     batches.append(check_worlds(a.art, a.diff, worlds))
     batches.append([check_titulo.check_title(a.art, Png, a.diff)])   # art/intro/titulo/ (T27)
+    batches.append([check_islas_3d(a.art)])   # art/islas/3d/ (T69)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:
