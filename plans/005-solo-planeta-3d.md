@@ -163,7 +163,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: intro globe is the /mar planet; "Zarpar" enters /mar with the Boia welcome popup open; skip/tickets still go to the landing; D-24 recorded; landing 179.1/192 kB → f13f30b
 
 ## T65 — Game HUD v2: top links, left menu, minimap fix
-- Status: running (attempt 2)
+- Status: done
 - Depends on: T59
 - Goal: Decision 2026-10-02 (Hernán and Álvaro), replacing T53's bottom bar: (1) at the top of the game screen, buttons that link to the landing page: Fotos, Contacto, Artistas, Carnet, Shop. Fotos, Contacto, Artistas and Shop take you to the matching landing section/page; Carnet does NOT leave the game: it opens the game menu at Mi Carnet. (2) On the left, a settings button with the achievements icon; it opens one game menu with everything: Logros, Mi Carnet, ship/skins (Barco shop), day/night, change world (Mundos/vortex), how to play (Controles + Welcome Aboard), Ajustes (sensitivity, volumes, language), Mis códigos, Mi botella, Ranking. "Mi Carnet" anywhere opens this same menu at its Carnet section. (3) At the bottom only Entradas (highlighted) and turbo. (4) The minimap stays; fix its bug: when you drag/move it far to one side it glitches. (5) Landing: the Contacto block contains Filosofía and the contact data (merge the Filosofía block into Contacto) so the top Contacto link lands on both; the other landing blocks stay. Mobile-first, minimum space, popups stay as compact bottom cards.
 - Context: T53, T55, T56, T58, T59 outcomes in this plan; `apps/web/app/mar/mar-client.tsx`, `mar.css`, `apps/web/app/mar/sheet.tsx`, MarHoja, `apps/web/lib/mundo/` menu sections, the minimap component, `apps/web/app/(landing)/components/blocks.tsx` (Filosofía, Contacto), Admin home blocks editor (keep it consistent with the merged block), `e2e/mar-hud.spec.ts`. REQ PRO-008/009, COM-030.
@@ -171,7 +171,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e at 375×812 and desktop: top shows Fotos, Contacto, Artistas, Carnet, Shop; Fotos/Contacto/Artistas/Shop hrefs point to the landing sections/pages; Carnet opens the game menu at Mi Carnet; the left button opens the menu with Logros, skins/Barco, day/night, Mundos, how to play, Ajustes; bottom has only Entradas and turbo; dragging the minimap far to each side and back keeps it within bounds and functional (regression test for the bug); the landing Contacto block shows Filosofía and the contact data → exit 0
-- Outcome:
+- Outcome: top links Fotos/Contacto/Artistas/Carnet/Shop, left settings button opening one MarMenu with everything, bottom only Entradas + turbo, minimap drag fix, landing Contacto includes Filosofía → 067232c
 
 ## T66 — Carnet worth having
 - Status: running (attempt 2)
@@ -237,7 +237,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 orchestrator: Test command runs pnpm typecheck after pnpm build, so stale generated .next/types from an earlier build cannot fail typecheck (build regenerates .next)
 
+- 2026-10-02 T65: conflict with T62 in mar-client.tsx resolved keeping the MarMenu component (no "Versión clásica 2D" link) (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T65: REQ-PRO-009 criterion does not mention the top links to the landing; labels "Shop", "Datos de contacto" and menu labels are muestra waiting for Álvaro
 - 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
 - 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
 - 2026-10-02 Hernán and Álvaro: Carnet with username and password (final version, D-20: Supabase auth)
@@ -296,3 +299,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 14:14 T62 agent done (260da7a); integration failed on 19 vitest 5 s timeouts under load, reverted; Test command now uses --testTimeout=30000; retrying
 - 2026-10-02 14:25 T62 retry failed on typecheck: stale apps/web/.next/types in main still list app/juego and app/sphere-probe (generated, ignored); guard blocked deleting them; asked Hernán to delete; T62 branch kept
 - 2026-10-02 14:28 T62 done · branch worktree-agent-aa43c83b646bb6499 → dd77258 (after reordering the Test command)
+- 2026-10-02 14:31 T65 continuation (interrupted) launched · attempt 2 · agent ae2e06416b23a8e3c (old branch worktree-agent-a8c035f804d3a84b1)
+- 2026-10-02 14:31 T66 continuation (interrupted) launched · attempt 2 · agent ace8e92ac82710c5a (old branch worktree-agent-af21726997e651865)
+- 2026-10-02 14:52 T65 done · branch worktree-agent-ae2e06416b23a8e3c → 067232c
+- 2026-10-02 14:53 T66 conflict with main (mar-client.tsx, mar-hud.spec.ts) · sent back to agent ace8e92ac82710c5a
