@@ -154,6 +154,20 @@ export interface CarnetView {
   isSample: boolean;
   /** Lo que la moderación retiró de este Carnet (REQ-ADM-040), para avisarlo. */
   moderated: { photo: boolean; nickname: boolean; answers: number };
+  /**
+   * Carnet de un artista del contenido (T66): sus géneros. Lo construye el
+   * repositorio desde la ficha del artista; sus sellos son los eventos en
+   * los que toca.
+   */
+  artist?: { artistId: string; genres: string[] };
+}
+
+/** Un Carnet que «Descubrir a un BOIERO» puede enseñar (T66). */
+export interface CarnetMember {
+  userId: string;
+  nickname: string;
+  /** `member`: miembro de muestra; `artist`: un artista del contenido. */
+  kind: 'member' | 'artist';
 }
 
 export interface CarnetInput {
@@ -168,6 +182,11 @@ export interface CarnetApi {
   mine(): Promise<CarnetView | null>;
   /** El Carnet de cualquiera (propio o de muestra), p. ej. desde su botella. */
   get(userId: string): Promise<CarnetView | null>;
+  /**
+   * Los Carnets de los demás que se pueden descubrir (T66): los miembros de
+   * muestra y los de los artistas del contenido, en ese orden. Nunca el propio.
+   */
+  members(): Promise<CarnetMember[]>;
   /** Crea el Carnet del invitado; fija «Miembro desde». Apodo único sin distinguir mayúsculas. */
   create(input: CarnetInput): Promise<CarnetView>;
   update(patch: Partial<CarnetInput>): Promise<CarnetView>;
@@ -520,6 +539,11 @@ export interface ContentApi {
   activeWorldId(): Promise<string | null>;
   /** Destinos de las partidas nuevas fijados por el Admin: mundo → misión → lugar. */
   missionDestinations(): Promise<Record<string, Record<string, string>>>;
+  /**
+   * El descuento de tener Carnet BOIA (T66): con la forma de un descuento de
+   * entradas. No se suma a los códigos del mundo; la compra aplica el mejor.
+   */
+  carnetDiscount(): Promise<Discount>;
 }
 
 export interface AdminOptions {

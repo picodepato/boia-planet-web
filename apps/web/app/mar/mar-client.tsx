@@ -377,6 +377,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const linksRef = useRef<MarLinks | null>(null);
   // Mi Carnet, Ajustes, Controles y Welcome Aboard, dentro del mar (T55).
   const [hoja, setHoja] = useState<Exclude<MarPanel, 'logros'> | null>(null);
+  // «Crear Carnet» del aviso de la compra (T66): Mi Carnet entra en el alta
+  // y, al crearlo, vuelve a la compra de este evento con el descuento.
+  const [carnetForCheckout, setCarnetForCheckout] = useState<string | null>(null);
   // «Elige tu evento» dentro del mar (T58): lo abre «Entradas».
   const [entradas, setEntradas] = useState(false);
   const [minigameOffer, setMinigameOffer] = useState<MinigameOffer | null>(null);
@@ -1344,6 +1347,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setEntradas(false);
     setBottleSheet(null);
     setRanking(false);
+    setCarnetForCheckout(null);
     setHoja(panel);
   };
 
@@ -2181,8 +2185,23 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           settings={settings}
           onSettings={updateSettings}
           onBottles={() => openBottle({ kind: 'mine' })}
-          onClose={() => setHoja(null)}
-          onMenu={openMenu}
+          carnetCreate={hoja === 'carnet' && carnetForCheckout !== null}
+          onCarnetCreated={() => {
+            // Vuelta a la compra (T66): se vuelve a preparar, ya con el descuento del Carnet.
+            const eventId = carnetForCheckout;
+            if (!eventId) return;
+            setCarnetForCheckout(null);
+            setHoja(null);
+            setCheckoutFor(eventId);
+          }}
+          onClose={() => {
+            setCarnetForCheckout(null);
+            setHoja(null);
+          }}
+          onMenu={() => {
+            setCarnetForCheckout(null);
+            openMenu();
+          }}
         />
       ) : null}
       {tienda ? (
@@ -2234,6 +2253,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               setCheckoutFor(null);
               openPanel('carnet');
             },
+          }}
+          onCreateCarnet={() => {
+            // «Crear Carnet» antes de comprar (T66): el alta de Mi Carnet dentro del mar.
+            const eventId = checkoutFor;
+            setCheckoutFor(null);
+            openPanel('carnet');
+            setCarnetForCheckout(eventId);
           }}
         />
       ) : null}

@@ -4,6 +4,73 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T66: Un Carnet que vale la pena
+
+Qué existe:
+
+- **-10 % por tener Carnet BOIA** (`muestra`): `SAMPLE_CARNET_DISCOUNT` en
+  `packages/store/src/sample/content.ts`, con la forma de un descuento de
+  entradas (id `carnet`). No está en `discounts` (no se esconde ni sale en el
+  mapa). El repositorio lo da con `repo.content.carnetDiscount()` (también en
+  `SampleInput.carnetDiscount`): ahí lo podrá editar el Admin (T63).
+- **El mejor descuento, sin sumarse** (`apps/web/lib/ticketing/pricing.ts`,
+  `bestDiscount`): entre el código del mundo que vale (prioridad y ahorro,
+  como antes, así FIESTERA20 sigue mandando entre códigos) y el del Carnet,
+  va el que más ahorra; a igual ahorro, el del Carnet (el código, que vale
+  una vez, queda para otra compra). `AppliedDiscount.kind` (`code`/`carnet`);
+  `Quote.skipped` (el que no se aplica) y `Quote.carnetOffer` (sin Carnet, lo
+  que ahorraría si fuera el mejor). El sandbox lee Carnet y descuento al
+  preparar la compra; sólo un código se gasta en el repositorio; el del
+  Carnet queda en el importe. `purchase_confirmed` lleva `discountId` y el
+  nuevo `discountKind` (`@boia/contracts/analytics`).
+- **Checkout**: sin Carnet, si el Carnet ahorraría más que lo que ya hay,
+  antes de comprar sale «¿Tienes Carnet BOIA? Créalo en 30 s y ahorra un
+  10 %» con «Crear Carnet» y «Seguir sin Carnet» (no hay «Confirmar» hasta
+  elegir). En la landing, «Crear Carnet» es un alta rápida con el
+  apodo dentro del mismo checkout (`saveCarnet`, con su logro) y la compra se
+  vuelve a preparar con el 10 %. En /mar (`onCreateCarnet`) abre Mi Carnet del
+  mundo (T55) ya en el alta y, al crearlo, vuelve al checkout del mismo
+  evento (`MarABordo.carnetCreate`/`onCarnetCreated`, `CarnetPanel.onCreated`).
+  La línea del descuento dice cuál es (`data-kind`) y, si había los dos,
+  «Los descuentos no se suman…». El aviso de la isla y del panel de entradas
+  enseña el del Carnet cuando es el que se aplicará (`discount-banner`).
+- **Carnets de artistas**: `artista-<id>` construido desde la ficha del
+  artista (nombre, foto si hay, géneros, sus eventos como sellos, «miembro
+  desde» su primer evento o `ARTIST_CARNET_SINCE`; sin respuestas). Abre en
+  `/carnet/artista-<id>`, se puede reportar, no entra en el ranking y nadie
+  puede usar el nombre de un artista como apodo. `repo.carnet.members()`:
+  miembros de muestra y artistas, nunca el propio.
+- **Ranking**: la fila propia ya llevaba el apodo; «🔎 Descubrir a un BOIERO»
+  (`RankingPanel`, `lib/mundo/discover.ts`) enseña ahí mismo el Carnet de uno
+  al azar (sin repetir el que se ve), con «Ver su Carnet entero». Las e2e fijan
+  el azar con `window.__boiaDiscoverSeed` (mulberry32).
+- i18n: `ticketing.carnet.*` (es-lib-web.ts), `lib.ranking.descubrir*`,
+  `lib.carnet.*` (es-lib.ts).
+- Specs que compraban sin Carnet ahora pulsan «Seguir sin Carnet» (tickets,
+  landing, intro, mar-entradas, mar-hud). `record-demo.spec.ts` lo borró T62.
+- `docs/spec/estado.md`: REQ-COM-020, REQ-COM-036, REQ-IDE-017 y REQ-IDE-053
+  enlazan las pruebas nuevas.
+
+Comandos (sobre main con T62, /juego ya borrado):
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 100 archivos,
+  908 pruebas (nuevas: `carnet-discount.test.ts`, `discover.test.ts`, `carnet-members.test.ts`,
+  42 pruebas entre las tres y ticketing).
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` → exit 0 (landing
+  178,1/192 kB) · `pnpm typecheck` → exit 0.
+- `E2E_PORT=3231 pnpm e2e e2e/carnet-descuento.spec.ts e2e/mar-3d.spec.ts --workers=1` → exit 0,
+  32 pasan.
+- Specs relacionados (tickets, landing, intro, mar-entradas, mar-hud, mar-fiestera, descuentos,
+  mar-botellas, carnet, mar-a-bordo, solo-3d, comunidad, accesos, mar-paridad, demo)
+  con `--workers=1` → exit 0, 135 pasan, 1 se salta.
+
+Pendiente:
+
+- El 10 %, sus textos y que los artistas tengan Carnet: `muestra`, pendientes
+  de Álvaro. El Admin todavía no edita el descuento del Carnet (T63).
+- La landing no tiene ranking: «Descubrir a un BOIERO» está en el ranking de
+  /mar.
+
 ## 2026-10-02 — plan 005 T65: Game HUD v2 (enlaces arriba, menú a la izquierda, minimapa)
 
 Qué existe:

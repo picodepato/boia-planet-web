@@ -15,12 +15,14 @@ import { type DiscountBannerInfo, discountBannerFor, formatEuros } from './prici
  * sale si el visitante tiene un código que la compra de prueba aplicaría.
  */
 export function DiscountBanner({ info }: { info: DiscountBannerInfo }) {
+  if (info.kind === 'carnet') return <CarnetBanner info={info} />;
   return (
     <div
       className="discount-banner"
       role="status"
       data-testid="banner-descuento"
       data-discount-id={info.discountId}
+      data-kind="code"
     >
       <p className="discount-banner__title">
         <span aria-hidden="true">🏷️ </span>
@@ -39,11 +41,38 @@ export function DiscountBanner({ info }: { info: DiscountBannerInfo }) {
   );
 }
 
+/** El descuento de tener Carnet BOIA (T66): lo que se ahorra, sin código que copiar. */
+function CarnetBanner({ info }: { info: DiscountBannerInfo }) {
+  return (
+    <div
+      className="discount-banner discount-banner--carnet"
+      role="status"
+      data-testid="banner-descuento"
+      data-discount-id={info.discountId}
+      data-kind="carnet"
+    >
+      <p className="discount-banner__title">
+        <span aria-hidden="true">🪪 </span>
+        {CHECKOUT_COPY.banner.carnetTitle}
+      </p>
+      <p className="discount-banner__code">
+        <span data-testid="banner-descuento-ahorro">
+          {CHECKOUT_COPY.banner.saving(formatEuros(info.savingCents))}
+        </span>
+      </p>
+      <p className="discount-banner__note">
+        {info.label} · {CHECKOUT_COPY.banner.applied}
+      </p>
+    </div>
+  );
+}
+
 const noop = () => () => {};
 
 /**
- * El aviso de un evento con los códigos de este navegador; vuelve a mirar
- * con cada cambio del repositorio (un código recién encontrado o ya usado).
+ * El aviso de un evento con los códigos y el Carnet de este navegador;
+ * vuelve a mirar con cada cambio del repositorio (un código recién
+ * encontrado o ya usado, un Carnet recién creado).
  */
 export function useDiscountBanner(
   event: Pick<BoiaEvent, 'id' | 'priceCents'> | null,
@@ -61,10 +90,20 @@ export function useDiscountBanner(
   useEffect(() => {
     if (!repo || !eventId) return;
     let alive = true;
-    repo.progress.discounts().then(
-      (found) => {
+    // El mejor descuento de la compra: el código encontrado o el del Carnet (T66).
+    Promise.all([
+      repo.progress.discounts(),
+      repo.carnet.mine(),
+      repo.content.carnetDiscount(),
+    ]).then(
+      ([found, mine, carnetDiscount]) => {
         if (!alive) return;
-        setInfo(discountBannerFor({ id: eventId, priceCents: price }, found, new Date()));
+        setInfo(
+          discountBannerFor({ id: eventId, priceCents: price }, found, new Date(), {
+            has: mine !== null,
+            discount: carnetDiscount,
+          }),
+        );
       },
       (err: unknown) => console.warn('[boia] no se pudieron leer los descuentos', err),
     );

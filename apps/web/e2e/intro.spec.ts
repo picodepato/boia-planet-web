@@ -553,7 +553,9 @@ test('motor bloqueado: el planeta ligero y Tickets funcionando (REQ-ENT-017, 038
   await expect(buy).toBeVisible();
   // Sin escena, la compra de prueba (D-20) se abre igual.
   await buy.click();
-  await expect(page.getByTestId('checkout-confirmar')).toBeVisible({ timeout: 20_000 });
+  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
+  await page.getByTestId('checkout-sin-carnet').click({ timeout: 20_000 });
+  await expect(page.getByTestId('checkout-confirmar')).toBeVisible();
 });
 
 test('sin WebGL: landing ligera enseguida, sin canvas', async ({ page }) => {

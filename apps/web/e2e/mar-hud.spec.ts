@@ -419,6 +419,8 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
       .first()
       .click();
     const checkout = page.getByTestId('checkout');
+    // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
+    await checkout.getByTestId('checkout-sin-carnet').click();
     await checkout.getByTestId('checkout-confirmar').click();
     await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
     await checkout.getByTestId('checkout-cerrar').click();

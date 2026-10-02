@@ -24,6 +24,8 @@ export function MarABordo({
   settings,
   onSettings,
   onBottles,
+  carnetCreate = false,
+  onCarnetCreated,
   onClose,
   onMenu,
 }: {
@@ -32,6 +34,10 @@ export function MarABordo({
   onSettings: (change: (s: Settings) => Settings) => void;
   /** Abre la hoja de la botella propia (T56): echarla, editarla o retirarla. */
   onBottles?: () => void;
+  /** Mi Carnet entra ya en el alta («Crear Carnet» de la compra, T66). */
+  carnetCreate?: boolean;
+  /** El Carnet se acaba de crear aquí (T66): la compra vuelve con su descuento. */
+  onCarnetCreated?: () => void;
   onClose: () => void;
   /** Vuelve al menú del juego (T65): cada panel es una sección suya. */
   onMenu?: () => void;
@@ -52,8 +58,11 @@ export function MarABordo({
           {...menu}
         >
           <CarnetPanel
+            key={carnetCreate ? 'alta' : 'ver'}
+            startEditing={carnetCreate}
             onTop={() => body.current?.scrollTo?.({ top: 0 })}
             {...(onBottles ? { onBottles } : {})}
+            {...(onCarnetCreated ? { onCreated: onCarnetCreated } : {})}
           />
         </MarHoja>
       );

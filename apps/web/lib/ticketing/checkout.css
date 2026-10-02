@@ -216,3 +216,63 @@
 .discount-banner__note {
   font-size: 13px;
 }
+
+/* El aviso de tener Carnet (T66): azul de la marca, como el Carnet. */
+.discount-banner--carnet {
+  background: #12233f;
+  border-color: #12233f;
+  color: #fffaf0;
+}
+
+/*
+ * «¿Tienes Carnet BOIA?» antes de comprar sin Carnet (T66): el atajo para
+ * crearlo y la compra sigue con el 10 % aplicado.
+ */
+.checkout__offer {
+  margin: 8px 0 12px;
+  padding: 12px;
+  border: 2px solid #12233f;
+  border-radius: 12px;
+  background: #fff3df;
+  color: #12233f;
+}
+
+.checkout__offer p {
+  margin: 0 0 4px;
+}
+
+.checkout__offer-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.checkout__carnet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.checkout__carnet-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.checkout__carnet-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 2px solid #12233f;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #12233f;
+  font: inherit;
+}
+
+.checkout__skipped {
+  font-size: 13px;
+  color: #3b4d6b;
+}

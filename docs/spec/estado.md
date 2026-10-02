@@ -176,7 +176,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-014 | Las 5 preguntas textuales | L1 | HECHO | [schema.test.ts](../../packages/db/src/schema.test.ts); [carnet.test.ts](../../packages/store/src/carnet.test.ts) | — |
 | REQ-IDE-015 | Pregunta pequeña, respuesta grande | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) «el Carnet enseña cada respuesta con su pregunta textual, en el orden de las preguntas» | — |
 | REQ-IDE-016 | Preguntas editables con versión | L2 | L2 | — | — |
-| REQ-IDE-017 | Carnets desde ranking y botellas | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) «leer una botella de muestra → VER SU CARNET»; [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) «ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los miembros de muestra» | — |
+| REQ-IDE-017 | Carnets desde ranking y botellas | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) «leer una botella de muestra → VER SU CARNET»; [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) «ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los miembros de muestra»; «Descubrir a un BOIERO» abre el Carnet de un miembro o de un artista al azar en /mar, [carnet-descuento.spec.ts](../../apps/web/e2e/carnet-descuento.spec.ts), [carnet-members.test.ts](../../packages/store/src/carnet-members.test.ts) y [discover.test.ts](../../apps/web/lib/mundo/discover.test.ts) | — |
 | REQ-IDE-018 | Perfil público de artista | L2 | L2 | — | — |
 | REQ-IDE-019 | Sin artistas vistos ni valoraciones | L1 | PARCIAL | [carnet-card.tsx](../../apps/web/lib/mundo/carnet/carnet-card.tsx) | Construido; sin prueba que lo nombre |
 | REQ-IDE-020 | Miembro, bollero y tripulación | L1 | FALTA | — | — |
@@ -212,7 +212,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-050 | Exportar y borrar desde la web | L2 | L2 | — | — |
 | REQ-IDE-051 | Versión de prueba: invitado con apodo y botella propia | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) | — |
 | REQ-IDE-052 | Premio según el logro | L1 | HECHO | [achievements.test.ts](../../packages/store/src/achievements.test.ts) «monedas y puntos: a los saldos del libro» | — |
-| REQ-IDE-053 | Versión de prueba: ranking local | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts); en /mar, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [ranking-circuit.test.ts](../../apps/web/lib/mundo/ranking-circuit.test.ts) | — |
+| REQ-IDE-053 | Versión de prueba: ranking local | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts); en /mar, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [ranking-circuit.test.ts](../../apps/web/lib/mundo/ranking-circuit.test.ts); la fila propia con el apodo del Carnet, [carnet-descuento.spec.ts](../../apps/web/e2e/carnet-descuento.spec.ts) | — |
 | REQ-COM-001 | Campos del evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-COM-002 | Evento e isla separados | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
 | REQ-COM-003 | Siete estados de evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
@@ -232,7 +232,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-COM-017 | Compra confirmada por webhook | L1 | PARCIAL | [index.ts](../../apps/web/lib/analytics/index.ts) | Construido; sin prueba que lo nombre |
 | REQ-COM-018 | Sin webhook, QR o código | L1 | final | — | Ticketera real (D-20) |
 | REQ-COM-019 | Devoluciones auditadas | L1 | final | — | Ticketera real con webhook (D-20) |
-| REQ-COM-020 | Descuentos por evento | L1 | HECHO | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts) | — |
+| REQ-COM-020 | Descuentos por evento | L1 | HECHO | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts); el mejor entre el -10 % del Carnet (T66) y los códigos, sin sumarse, [carnet-discount.test.ts](../../apps/web/lib/ticketing/carnet-discount.test.ts) | — |
 | REQ-COM-021 | Descubrimiento premiado una vez | L1 | HECHO | [world-progress.test.ts](../../apps/web/lib/mundo/world-progress.test.ts) | — |
 | REQ-COM-022 | Copiar y enlazar el descuento | L1 | HECHO | [mundo-arcilla.spec.ts](../../apps/web/e2e/mundo-arcilla.spec.ts) «descuento escondido: se copia con un toque y sólo se concede una vez» | — |
 | REQ-COM-023 | Primera compra y WhatsApp | L2 | L2 | — | — |
@@ -248,7 +248,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-COM-033 | Tienda L1 con enlace externo | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-COM-034 | Tienda con checkout propio | L2 | L2 | — | — |
 | REQ-COM-035 | Versión de prueba: sello por checkout sandbox | L1 | HECHO | [tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts); [event-card.test.ts](../../apps/web/app/%28landing%29/components/event-card.test.ts) | — |
-| REQ-COM-036 | El descuento lleva a su isla y se ve al comprar | L1 | HECHO | [descuentos.spec.ts](../../apps/web/e2e/descuentos.spec.ts); [discount-banner.test.ts](../../apps/web/lib/ticketing/discount-banner.test.ts) | — |
+| REQ-COM-036 | El descuento lleva a su isla y se ve al comprar | L1 | HECHO | [descuentos.spec.ts](../../apps/web/e2e/descuentos.spec.ts); [discount-banner.test.ts](../../apps/web/lib/ticketing/discount-banner.test.ts); el aviso del Carnet antes de comprar y el descuento que se aplica, en la landing y en /mar, [carnet-descuento.spec.ts](../../apps/web/e2e/carnet-descuento.spec.ts) | — |
 | REQ-ADM-001 | Contenido como datos | L1 | PARCIAL | [admin.spec.ts](../../apps/web/e2e/admin.spec.ts) | Una prueba lo cubre en parte |
 | REQ-ADM-002 | Contraseña y TOTP | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-ADM-003 | Alta única del propietario | L1 | final | — | Login del Admin (D-20) |

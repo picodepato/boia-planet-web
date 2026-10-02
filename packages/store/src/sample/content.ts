@@ -312,3 +312,34 @@ export const SAMPLE_DISCOUNTS: AreaInput<'discounts'>[] = [
     sample: true,
   },
 ];
+
+/**
+ * El descuento de tener Carnet BOIA (T66, decisión de Hernán y Álvaro del
+ * 2026-10-02): -10 % en la entrada para quien tiene Carnet. No se suma a los
+ * códigos del mundo: la compra aplica el mejor de los dos y dice cuál. No es
+ * un código escondido (no está en `discounts` ni sale en el mapa). Valor
+ * `muestra`; el Admin lo podrá editar (T63).
+ */
+export const SAMPLE_CARNET_DISCOUNT: AreaInput<'discounts'> = {
+  id: 'carnet',
+  code: 'CARNET BOIA',
+  label: '-10 % por tener Carnet BOIA',
+  kind: 'percent',
+  value: 10,
+  conditions: 'En cada entrada, con tu Carnet BOIA. No se suma a otros códigos. Muestra.',
+  sample: true,
+};
+
+/** Prefijo del id del Carnet de un artista (T66): `artista-<id del artista>`. */
+export const ARTIST_CARNET_PREFIX = 'artista-';
+
+/** Id del Carnet de un artista del contenido. */
+export function artistCarnetId(artistId: string): string {
+  return `${ARTIST_CARNET_PREFIX}${artistId}`;
+}
+
+/**
+ * «Miembro desde» del Carnet de un artista que aún no toca en ningún evento:
+ * el primer All Day de la muestra. `muestra`.
+ */
+export const ARTIST_CARNET_SINCE = '2025-06-21T12:00:00+02:00';

@@ -171,10 +171,14 @@ test('«Entradas»: otro toque abre el checkout ya; el vuelo llega y lo abre', a
 });
 
 test('«Ir a su isla» con movimiento reducido abre el checkout directo', async ({ page }) => {
+  // Como las otras de «Entradas»: el mar en escritorio tarda en arrancar con la máquina cargada.
+  test.setTimeout(60_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openMar(page);
   await sailToTickets(page);
   await expect(checkoutEvent(page)).toHaveText(islandEvent.name, { timeout: 20_000 });
+  // Sin Carnet, la compra abre con su aviso (T66), sin viaje de por medio.
+  await expect(page.getByTestId('checkout-oferta-carnet')).toBeVisible();
   await expect(page.getByTestId('mar-entradas-saltar')).toHaveCount(0);
   await expect(page.getByTestId('mar-rumbo-activo')).toHaveCount(0);
 });

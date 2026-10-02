@@ -48,12 +48,22 @@ export function CarnetCard({ carnet, extras = {} }: { carnet: CarnetView; extras
         <div>
           <p className="carnet-kicker">
             {t('juego.carnetCard.carnetBoia', {
-              v1: carnet.isSample ? t('juego.carnetCard.miembroDeMuestra') : '',
+              v1: carnet.artist
+                ? t('lib.carnet.artista')
+                : carnet.isSample
+                  ? t('juego.carnetCard.miembroDeMuestra')
+                  : '',
             })}
           </p>
           <h3 className="carnet-name" data-testid="carnet-apodo">
             {carnet.nickname}
           </h3>
+          {/* El Carnet de un artista (T66): sus géneros, de su ficha. */}
+          {carnet.artist ? (
+            <p className="juego-carnet-generos" data-testid="carnet-generos">
+              {t('lib.carnet.generos', { genres: carnet.artist.genres.join(' · ') })}
+            </p>
+          ) : null}
           {since ? (
             <p className="carnet-since">{t('carnet.memberSince', { date: since })}</p>
           ) : null}

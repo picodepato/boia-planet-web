@@ -12,7 +12,7 @@
  *   la misma idempotencia por id de compra (REQ-COM-017, REQ-IDE-021).
  */
 
-import type { PurchaseSource } from '@boia/contracts/analytics';
+import type { DiscountKind, PurchaseSource } from '@boia/contracts/analytics';
 
 export type TicketingProvider = 'sandbox' | 'fourvenues';
 
@@ -68,6 +68,10 @@ export interface AppliedDiscount {
   label: string;
   /** Céntimos que descuenta sobre el precio. */
   cents: number;
+  /** `code`: un código encontrado en el mundo; `carnet`: el de tener Carnet BOIA (T66). */
+  kind: DiscountKind;
+  /** Porcentaje, si es de porcentaje («ahorra un 10 %»). */
+  percent?: number;
 }
 
 export interface Quote {
@@ -79,6 +83,16 @@ export interface Quote {
   totalCents: number;
   /** Precio de muestra, no real. */
   sample: boolean;
+  /**
+   * El otro descuento que valía y no se aplica (T66): no se suman, va el
+   * mejor. Sólo cuando había los dos.
+   */
+  skipped?: AppliedDiscount;
+  /**
+   * Sin Carnet: lo que ahorraría con él, si fuera el mejor descuento (T66).
+   * Con esto el checkout ofrece crearlo antes de comprar.
+   */
+  carnetOffer?: AppliedDiscount;
 }
 
 export interface PurchaseOutcome {

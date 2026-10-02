@@ -62,13 +62,18 @@ export function createSandboxTicketing(
       if (!EVENT_STATE_BEHAVIOR[eventState(event, now())].purchasable) {
         return { ok: false, reason: 'not_on_sale', event: view };
       }
-      const found = await repo.progress.discounts();
+      // El mejor descuento entre el código encontrado y el de tener Carnet (T66).
+      const [found, mine, carnetDiscount] = await Promise.all([
+        repo.progress.discounts(),
+        repo.carnet.mine(),
+        repo.content.carnetDiscount(),
+      ]);
       return {
         ok: true,
         session: {
           purchaseId: newId(event.id),
           event: view,
-          quote: quoteFor(event, found, now()),
+          quote: quoteFor(event, found, now(), 1, { has: mine !== null, discount: carnetDiscount }),
           flow: { kind: 'inline' },
           ...(startOpts.source ? { source: startOpts.source } : {}),
         },
@@ -76,11 +81,14 @@ export function createSandboxTicketing(
     },
 
     async confirm(session: CheckoutSession): Promise<PurchaseOutcome> {
+      const applied = session.quote.discount;
       const { purchase, first, stamp } = await repo.purchases.confirmSandbox({
         purchaseId: session.purchaseId,
         eventId: session.event.id,
         quantity: session.quote.quantity,
-        discountId: session.quote.discount?.id ?? null,
+        // Sólo un código encontrado se gasta; el del Carnet vale en cada compra
+        // y queda en el importe (y en la analítica).
+        discountId: applied?.kind === 'code' ? applied.id : null,
         amountCents: session.quote.totalCents,
       });
       // En la versión de prueba el sandbox hace de webhook (REQ-ARQ-019).
@@ -89,7 +97,7 @@ export function createSandboxTicketing(
           eventId: purchase.eventId,
           provider: 'sandbox',
           orderRef: purchase.id,
-          ...(purchase.discountId ? { discountId: purchase.discountId } : {}),
+          ...(applied ? { discountId: applied.id, discountKind: applied.kind } : {}),
           ...(session.source ? { source: session.source } : {}),
         });
       }

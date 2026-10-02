@@ -319,3 +319,9 @@ a.juego-button {
   color: #6b6255;
   font-style: italic;
 }
+
+/* Los géneros del Carnet de un artista (T66). */
+.juego-carnet-generos {
+  margin: 2px 0 0;
+  font-weight: 700;
+}

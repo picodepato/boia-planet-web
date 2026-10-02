@@ -20,15 +20,18 @@ import { useCarnet } from './use-carnet';
  * - `onTop`: al pasar de ver a editar (o al guardar), se vuelve arriba.
  * - `onBottles`: abre la hoja de la botella propia; sin él, sólo se enseña.
  * - `startEditing`: entra ya en el alta (p. ej. desde «Crear mi Carnet»).
+ * - `onCreated`: se acaba de crear el Carnet (p. ej. para volver a la compra, T66).
  */
 export function CarnetPanel({
   onTop,
   onBottles,
   startEditing = false,
+  onCreated,
 }: {
   onTop?: () => void;
   onBottles?: () => void;
   startEditing?: boolean;
+  onCreated?: () => void;
 }) {
   const { data, repo } = useCarnet(null);
   const { data: bottle } = useRepoData((r) => r.bottles.mine());
@@ -47,7 +50,10 @@ export function CarnetPanel({
         repo={repo}
         questions={CARNET_QUESTIONS}
         before={carnet}
-        onDone={() => setEditing(false)}
+        onDone={() => {
+          setEditing(false);
+          if (!carnet) onCreated?.();
+        }}
         onCancel={() => setEditing(false)}
       />
     );

@@ -5,8 +5,12 @@ import type { RankingRow } from '@boia/store';
 import { CIRCUIT_ID, type WorldConfig } from '@boia/world';
 import Link from 'next/link';
 import { useState } from 'react';
+import { CarnetCard } from '../../carnet/carnet-card';
+import '../../carnet/carnet.css';
 import { carnetPath } from '../../carnet/share';
+import { useCarnet } from '../../carnet/use-carnet';
 import { worlds } from '../../demo-world';
+import { discoverRandom, pickMember } from '../../discover';
 import { type CircuitRow, circuitName, circuitRanking } from '../../ranking-circuit';
 import { useRepoData } from '../../repo';
 import type { MenuContext, MenuSection } from '../types';
@@ -38,6 +42,13 @@ export const RANKING_COPY = {
   pointsNote: t('ranking.pointsNote'),
   sampleTag: 'muestra',
   openCarnet: (name: string) => t('ranking.openCarnet.aria', { name }),
+  discover: t('lib.ranking.descubrir'),
+  discoverAgain: t('lib.ranking.descubrirOtro'),
+  discoverNote: t('lib.ranking.descubrirNota'),
+  discoverEmpty: t('lib.ranking.descubrirVacio'),
+  discoveredMember: t('lib.ranking.descubiertoMiembro'),
+  discoveredArtist: t('lib.ranking.descubiertoArtista'),
+  seeCarnet: t('lib.ranking.verSuCarnet'),
 } as const;
 
 type Scope = 'all' | 'season' | 'circuit';
@@ -222,6 +233,62 @@ function PointsTable({
 }
 
 /**
+ * «Descubrir a un BOIERO» (T66): enseña aquí mismo el Carnet de un miembro
+ * al azar, que también puede ser uno de los artistas (sus Carnets salen de
+ * su ficha). Otro toque, otro distinto.
+ */
+function Discover() {
+  const { data: members } = useRepoData((r) => r.carnet.members());
+  const [shown, setShown] = useState<string | null>(null);
+  const discover = () => {
+    const next = pickMember(members ?? [], discoverRandom, shown);
+    if (next) setShown(next.userId);
+  };
+  const kind = members?.find((m) => m.userId === shown)?.kind ?? null;
+  return (
+    <div className="juego-ranking-descubrir" data-testid="ranking-descubrir-zona">
+      <button
+        type="button"
+        className="juego-button"
+        data-testid="ranking-descubrir"
+        disabled={!members}
+        onClick={discover}
+      >
+        {shown ? RANKING_COPY.discoverAgain : RANKING_COPY.discover}
+      </button>
+      <p className="juego-muted">
+        {members && members.length === 0 ? RANKING_COPY.discoverEmpty : RANKING_COPY.discoverNote}
+      </p>
+      {shown && kind ? <Discovered userId={shown} kind={kind} /> : null}
+    </div>
+  );
+}
+
+function Discovered({ userId, kind }: { userId: string; kind: 'member' | 'artist' }) {
+  const { data } = useCarnet(userId);
+  if (!data?.carnet) return null;
+  return (
+    <section
+      className="juego-ranking-descubierto"
+      data-testid="ranking-descubierto"
+      data-user-id={userId}
+      data-kind={kind}
+      aria-live="polite"
+    >
+      <p className="juego-ranking-rotulo">
+        {kind === 'artist' ? RANKING_COPY.discoveredArtist : RANKING_COPY.discoveredMember}
+      </p>
+      <CarnetCard carnet={data.carnet} extras={data.extras} />
+      <p>
+        <Link href={carnetPath(userId)} prefetch={false} className="juego-link">
+          {RANKING_COPY.seeCarnet}
+        </Link>
+      </p>
+    </section>
+  );
+}
+
+/**
  * 🏆 Ranking local (REQ-IDE-053, D-23 punto 8): los puntos de este navegador
  * junto a los miembros de muestra, de siempre y de la temporada (el mundo que
  * se juega), con el puesto propio destacado, y el récord del circuito (T56).
@@ -246,6 +313,7 @@ export function RankingPanel({
         {RANKING_COPY.localLabel}
       </p>
       <p className="juego-muted">{RANKING_COPY.localNotice}</p>
+      <Discover />
       <div
         className="juego-ranking-tabs"
         role="group"

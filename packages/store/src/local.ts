@@ -37,6 +37,7 @@ import type {
   BottleView,
   CarnetApi,
   CarnetInput,
+  CarnetMember,
   CarnetModerationAction,
   CarnetView,
   ChangeArea,
@@ -58,7 +59,14 @@ import type {
   StampView,
   TrashItem,
 } from './repository';
-import { parseSample, type SampleData, type SampleInput } from './sample';
+import {
+  ARTIST_CARNET_PREFIX,
+  ARTIST_CARNET_SINCE,
+  artistCarnetId,
+  parseSample,
+  type SampleData,
+  type SampleInput,
+} from './sample';
 import {
   AVATAR_IMAGE_MAX,
   CARNET_REPORT_REASON_MAX,
@@ -715,7 +723,7 @@ class LocalRepository implements BoiaRepository {
       };
     }
     const crew = this.sample.crew.find((c) => c.userId === userId);
-    if (!crew) return null;
+    if (!crew) return this.artistCarnetView(userId, doc);
     const events = this.resolved('events', doc);
     return {
       userId,
@@ -772,6 +780,59 @@ class LocalRepository implements BoiaRepository {
     };
   }
 
+  /**
+   * El Carnet de un artista del contenido (T66), construido desde su ficha:
+   * su nombre, su foto si la tiene, sus géneros y, como sellos, los eventos
+   * publicados en los que toca. «Miembro desde»: su primer evento. Sin
+   * respuestas: nadie contesta por un artista.
+   */
+  private artistCarnetView(userId: string, doc: StoreDoc): CarnetView | null {
+    if (!userId.startsWith(ARTIST_CARNET_PREFIX)) return null;
+    const artistId = userId.slice(ARTIST_CARNET_PREFIX.length);
+    const artist = this.resolved('artists', doc).find((a) => a.id === artistId);
+    if (!artist) return null;
+    const plays = this.resolved('events', doc)
+      .filter((e) => e.state !== 'draft' && e.artistIds.includes(artistId))
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    return {
+      userId,
+      nickname: artist.name,
+      avatarKey: null,
+      avatarImage: artist.photoUrl ?? null,
+      memberSince: plays[0]?.startsAt ?? ARTIST_CARNET_SINCE,
+      answers: [],
+      points: 0,
+      rank: rankFor(0, this.resolved('ranks', doc)),
+      achievements: [],
+      badges: [],
+      stamps: plays.map((e) => ({
+        eventId: e.id,
+        eventName: e.name,
+        purchaseId: null,
+        grantedAt: null,
+      })),
+      cosmeticIds: [],
+      equipped: {},
+      isMine: false,
+      isSample: true,
+      moderated: { photo: false, nickname: false, answers: 0 },
+      artist: { artistId, genres: [...artist.genres] },
+    };
+  }
+
+  /** Los Carnets que se pueden descubrir (T66): muestra y artistas, sin el propio. */
+  private carnetMembers(doc: StoreDoc = this.doc): CarnetMember[] {
+    const crew = this.sample.crew.flatMap((c): CarnetMember[] => {
+      const view = this.carnetView(c.userId, doc);
+      return view ? [{ userId: c.userId, nickname: view.nickname, kind: 'member' }] : [];
+    });
+    const artists = this.resolved('artists', doc).flatMap((a): CarnetMember[] => {
+      const view = this.carnetView(artistCarnetId(a.id), doc);
+      return view ? [{ userId: view.userId, nickname: view.nickname, kind: 'artist' }] : [];
+    });
+    return [...crew, ...artists];
+  }
+
   private checkNickname(draft: StoreDoc, raw: unknown, userId: string): string {
     if (typeof raw !== 'string') invalid('apodo: texto');
     const nickname = raw.trim().replace(/\s+/g, ' ');
@@ -783,6 +844,8 @@ class LocalRepository implements BoiaRepository {
     const lower = nickname.toLocaleLowerCase('es');
     const taken =
       this.sample.crew.some((c) => c.nickname.toLocaleLowerCase('es') === lower) ||
+      // Nadie se hace pasar por un artista (sus Carnets salen de su ficha, T66).
+      this.resolved('artists', draft).some((a) => a.name.toLocaleLowerCase('es') === lower) ||
       Object.values(draft.carnets).some(
         (c) => c.userId !== userId && c.nickname.toLocaleLowerCase('es') === lower,
       );
@@ -859,6 +922,7 @@ class LocalRepository implements BoiaRepository {
         return id && this.doc.carnets[id] ? this.carnetView(id) : null;
       },
       get: async (userId) => this.carnetView(userId),
+      members: async () => this.carnetMembers(),
       create: async (input: CarnetInput) =>
         this.mutate(['identity', 'carnet'], (d) => {
           const me = this.ensureIdentity(d);
@@ -1627,6 +1691,7 @@ class LocalRepository implements BoiaRepository {
       skins: async () => clone(this.doc.content.skins),
       activeWorldId: async () => this.activeWorld(),
       missionDestinations: async () => clone(this.doc.content.missionDestinations),
+      carnetDiscount: async () => clone(this.sample.carnetDiscount),
     };
   }
 

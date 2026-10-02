@@ -74,3 +74,13 @@
   color: #6b6255;
   font-size: 12px;
 }
+/* T66: «Descubrir a un BOIERO», un Carnet al azar dentro del ranking. */
+.juego-ranking-descubrir {
+  margin: 8px 0 4px;
+}
+.juego-ranking-descubrir > .juego-muted {
+  margin: 4px 0;
+}
+.juego-ranking-descubierto {
+  margin: 8px 0 12px;
+}

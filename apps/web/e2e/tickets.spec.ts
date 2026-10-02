@@ -48,7 +48,9 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
 
   // El checkout se rotula como prueba y enseña evento, precio y total.
   const checkout = page.getByTestId('checkout');
-  await expect(checkout.getByTestId('checkout-confirmar')).toBeVisible({ timeout: CHECKOUT_LOAD });
+  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
+  await checkout.getByTestId('checkout-sin-carnet').click({ timeout: CHECKOUT_LOAD });
+  await expect(checkout.getByTestId('checkout-confirmar')).toBeVisible();
   await expect(checkout.getByTestId('checkout-prueba')).toHaveText(CHECKOUT_COPY.kicker);
   await expect(checkout.getByTestId('checkout-evento')).toHaveText(landingEvent.name);
   await expect(checkout.getByTestId('checkout-aviso')).toContainText('este navegador');

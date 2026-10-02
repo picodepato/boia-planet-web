@@ -71,6 +71,7 @@ describe('aviso de descuento al comprar (REQ-COM-036)', () => {
     expect(discountBannerFor(event, [owned(code, VALID.toISOString())], VALID)).toBeNull();
     expect(discountBannerFor(event, [owned(shop)], VALID)).toBeNull();
     expect(discountBannerFor(event, [owned(code)], VALID)).toEqual({
+      kind: 'code',
       discountId: code.id,
       code: code.code,
       label: code.label,

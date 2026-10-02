@@ -16,6 +16,9 @@ export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 /** Dónde se compró: dentro del mundo 3D (T58). */
 export type PurchaseSource = 'world';
 
+/** De dónde sale el descuento de una compra (T66): un código encontrado o el Carnet. */
+export type DiscountKind = 'code' | 'carnet';
+
 /** Propiedades de cada evento. Nunca datos personales. */
 export interface FunnelEventProps {
   landing_view: { intro: 'played' | 'skipped' | 'none' };
@@ -47,8 +50,13 @@ export interface FunnelEventProps {
     eventId: string;
     provider: string;
     orderRef: string;
-    /** Descuento aplicado, si lo hubo (T43). */
+    /** Descuento aplicado, si lo hubo (T43). El de tener Carnet es `carnet` (T66). */
     discountId?: string;
+    /**
+     * Qué descuento se aplicó (T66): un código del mundo o el de tener Carnet.
+     * No se suman: va el mejor de los dos.
+     */
+    discountKind?: DiscountKind;
     /** `world`: la compra se hizo dentro del mar 3D (T58); sin él, en la web. */
     source?: PurchaseSource;
   };

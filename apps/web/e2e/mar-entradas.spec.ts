@@ -201,7 +201,9 @@ test('sin código: precio entero; al cerrar tras comprar, el panel se va y llega
   // Cerrar sin comprar vuelve al panel; otro toque de «Entradas» lo cierra.
   await panel.getByTestId(`mar-entradas-comprar-${event.id}`).click();
   const checkout = page.getByTestId('checkout');
-  await expect(checkout.getByTestId('checkout-sin-descuento')).toBeVisible({ timeout: 20_000 });
+  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
+  await checkout.getByTestId('checkout-sin-carnet').click({ timeout: 20_000 });
+  await expect(checkout.getByTestId('checkout-sin-descuento')).toBeVisible();
   await checkout.getByTestId('checkout-cerrar').click();
   await expect(checkout).toHaveCount(0);
   await expect(panel).toBeVisible();
@@ -211,6 +213,7 @@ test('sin código: precio entero; al cerrar tras comprar, el panel se va y llega
   // Comprar y cerrar: el panel se cierra y llega la invitación (como en la landing).
   await page.getByTestId('mar-entradas').click();
   await panel.getByTestId(`mar-entradas-comprar-${event.id}`).click();
+  await checkout.getByTestId('checkout-sin-carnet').click();
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
   await checkout.getByTestId('checkout-cerrar').click();
