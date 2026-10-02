@@ -116,7 +116,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: lighthouse (night beam, 3 ship types, DESTELLO, streak x4) and cannon (side view, drag to aim on a parabola, pirates need 2 hits, combo x4) rebuilt with 30 rule tests and e2e in /mar → 39ea477
 
 ## T61 — Circuit El Freu, rebuilt
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T52
 - Goal: The circuit is too simple. Rebuild it: a course marked by buoys you must pass, 3 laps, a ghost boat of your best time, boosts on the water, gold/silver/bronze medals, start light kept. Works in both worlds (El Freu / El Penyal) and on mobile.
 - Context: `packages/engine/src/circuit`, `CIRCUIT_ID` in `packages/world`, `CircuitRace` and `apps/web/app/mar/race.ts`, circuit HUD (moved by T52), local record storage, ranking Circuito tab (T56 may land before or after: keep the stored record format compatible), REQ AVE-026/028.
@@ -125,7 +125,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Test command → exit 0
   - unit tests: missing a buoy does not count the lap; 3 laps finish the race; medal thresholds; ghost replays the stored best run → exit 0
   - e2e in /mar: start the race, scripted run completes 3 laps, a medal and the best time are shown, a second run shows the ghost → exit 0
-- Outcome:
+- Outcome: closed loop of 6 buoys around Els Dents, 3 laps, ghost of the best run, 3 boost pads, medals gold 36 s / silver 44 s / bronze 58 s (muestra), CIRCUIT_VERSION 2 (records restart, same format); AVE-028 HECHO → 5179a36
 
 ## T62 — Delete the 2D world
 - Status: running (attempt 1)
@@ -230,6 +230,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 T64: es-mar.ts conflict resolved keeping T59's guide/minimap strings and T64's welcome-buoy strings; D-24 kept (agent)
 - 2026-10-02 T64: mar-fiestera secret test can miss its coins toast under load (passes alone, --workers=1) (agent)
 
+- 2026-10-02 T61: course reuses CP1, CP-A, CP-S plus 3 new buoys (source plan:T61); CP2, old finish and ATAJO kept inactive; boosts no longer multiply (strongest wins, runtime.ts, outside scope); race clock uses simulation time; ghost stored in localStorage (agent)
+- 2026-10-02 T61: integration failed twice on vitest 5 s timeouts while 3 agents ran e2e; passed with the machine idle (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
 - 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
@@ -242,6 +245,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-01: parallax landing (next batch)
 
 - 2026-10-02 T64: REQ-ENT-001 in 09-requisitos.md still says "Zarpar" ends on the landing; record.spec.ts and record-titulo.spec.ts still record "Zarpar → landing"
+
+- 2026-10-02 T61: achievements «¿Atajo? Atajo.» now completes on every race and «Rayo del Freu» says one lap but measures 3: review the circuit achievements
+- 2026-10-02 orchestrator: vitest tests that spawn Python (world:check, barcos palette) and physics.test time out at 5 s under load on this machine: give them a longer per-test timeout
 
 ## Log
 - 2026-10-01 21:40 T52 launched · attempt 1 · agent a8c286457ec28b741
@@ -278,3 +284,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 10:06 T66 agent done (3dfa4e1) but mar-3d "Ir a su isla con movimiento reducido" fails alone (likely Carnet notice); sent back to agent af21726997e651865 before integrating
 - 2026-10-02 11:27 T61 agent done (216a0b9, branch worktree-agent-a75467d02da559288 kept); integration failed twice on vitest 5 s timeouts under load (worlds.test world:check, catalog.test, physics.test, ambient) while 3 agents ran e2e; main reverted and green. On resume: retry integration with fewer agents running; if it still fails, continuation agent
 - 2026-10-02 11:28 usage limit reached; T62 (aa43c83b646bb6499), T65 (a8c035f804d3a84b1), T66 fix (af21726997e651865) still running. On resume: section 7 orphans
+- 2026-10-02 13:14 T61 done · branch worktree-agent-a75467d02da559288 → 5179a36 (worktree folder locked by Windows, removal pending)
