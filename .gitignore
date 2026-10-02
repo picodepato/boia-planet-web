@@ -14,3 +14,6 @@ __pycache__/
 
 # worktrees de los agentes del /orchestrator
 .claude/worktrees/
+
+.vercel
+.env*
