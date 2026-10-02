@@ -673,6 +673,57 @@
   cursor: pointer;
 }
 
+/* Los Rápidos (T73): la tarjeta de la salida («¿Empezar?») y la tabla de meta. */
+.mar-carrera--oferta {
+  width: min(320px, calc(100vw - 24px));
+}
+
+.mar-carrera__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mar-carrera__actions .mar-carrera__again {
+  flex: 2;
+}
+
+.mar-carrera__later {
+  flex: 1;
+  margin-top: 8px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mar-carrera__puesto {
+  font-weight: 700;
+}
+
+.mar-carrera__tabla {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.mar-carrera__tabla li {
+  display: grid;
+  grid-template-columns: 1.4em 1fr auto;
+  gap: 6px;
+  padding: 1px 4px;
+  border-radius: 6px;
+  opacity: 0.8;
+}
+
+.mar-carrera__tabla li.is-mine {
+  background: rgb(255 210 63 / 0.18);
+  opacity: 1;
+  font-weight: 700;
+}
+
 .mar-countdown {
   position: absolute;
   inset: 0;

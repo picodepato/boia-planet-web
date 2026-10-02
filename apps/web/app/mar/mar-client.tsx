@@ -54,7 +54,12 @@ import {
 } from '../../lib/mundo/achievements';
 import { CarnetInvite } from '../../lib/mundo/carnet/carnet-invite';
 import { finishLap } from '../../lib/mundo/circuit-hud';
-import { circuitName } from '../../lib/mundo/ranking-circuit';
+import {
+  circuitName,
+  circuitRanking,
+  crewLeader,
+  crewPlace,
+} from '../../lib/mundo/ranking-circuit';
 import { worlds } from '../../lib/mundo/demo-world';
 import {
   DOLPHIN_PARAM,
@@ -146,8 +151,23 @@ import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from '
 import { type PointMap, pointMap } from './engine/compress';
 import { MarMinimap, type MinimapMark } from './minimap';
 import { MarAyuda } from './guia';
-import { browserGhostStorage, loadGhost, raceCheckpoint, saveGhost, startPose } from './race';
-import { MarRaceChip, MarRaceIntro, MarRaceResult, type RaceHud, type RaceResult } from './carrera';
+import {
+  browserGhostStorage,
+  lapTargets,
+  loadGhost,
+  raceCheckpoint,
+  saveGhost,
+  startPose,
+} from './race';
+import {
+  MarRaceChip,
+  MarRaceIntro,
+  MarRaceOffer,
+  MarRaceResult,
+  type RaceHud,
+  type RaceOffer,
+  type RaceResult,
+} from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import {
   type Trip,
@@ -398,6 +418,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   // El récord al acercarse a la salida, antes de correr (REQ-AVE-028).
   const [raceIntro, setRaceIntro] = useState<string | null>(null);
+  // Al llegar a la salida (T73): qué es la carrera y si empezar.
+  const [raceOffer, setRaceOffer] = useState<RaceOffer | null>(null);
   const [menu, setMenu] = useState(false);
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
@@ -506,6 +528,25 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     if (!r || !g) return;
     for (const e of evs) {
       switch (e.type) {
+        case 'ready': {
+          // La salida ya no arranca sola (T73): explica la carrera y pregunta.
+          const spec = r.spec;
+          const place = (world && circuitName(world)) ?? msg('mar.sheet.circuito');
+          void readRecord(progressApi(), spec)
+            .catch(() => null)
+            .then((rec) => {
+              if (raceRef.current?.spec !== spec || raceRef.current.race.active) return;
+              setRaceResult(null);
+              setRaceOffer({
+                place,
+                laps: spec.laps,
+                buoys: spec.buoys,
+                bestMs: rec?.bestMs ?? null,
+                leader: crewLeader(),
+              });
+            });
+          break;
+        }
         case 'countdown': {
           // Quieto en la salida hasta «¡Ya!», mirando a la primera boia.
           g.setSemaphore('red');
@@ -514,6 +555,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           r.ghost = loadGhost(browserGhostStorage(), r.spec);
           setRaceResult(null);
           setRaceIntro(null);
+          setRaceOffer(null);
           plop();
           break;
         }
@@ -562,6 +604,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           const place = (world && circuitName(world)) ?? msg('mar.sheet.circuito');
           finishLap(progressApi(), spec, e.ms, e.route)
             .then((res) => {
+              // Contra los demás (la tripulación de muestra: en esta versión no hay
+              // ranking compartido) y contra ti (tu récord), T73.
+              const table = circuitRanking({ nickname: null, hasCarnet: false, bestMs: res.bestMs });
               setRaceResult({
                 place,
                 ms: e.ms,
@@ -569,6 +614,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
                 medals: spec.medals,
                 best: res.best,
                 bestMs: res.bestMs,
+                ranking: table.rows,
+                ...crewPlace(e.ms),
               });
               res.achievements.forEach(push);
             })
@@ -591,10 +638,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     }
   };
 
-  /** «Otra vez» en la tarjeta de meta: la cuenta atrás desde la salida. */
+  /** «Empezar» al llegar a la salida u «Otra vez» en la tarjeta de meta: la cuenta atrás. */
   const raceAgain = () => {
     const r = raceRef.current;
     setRaceResult(null);
+    setRaceOffer(null);
     if (r && !r.race.active) raceEvents(r.race.start(r.clock));
   };
 
@@ -637,6 +685,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           .catch(() => undefined);
       } else if (e.type === 'proximity_exit') {
         setRaceIntro(null);
+        // Se aleja sin empezar: la pregunta se va con él.
+        setRaceOffer(null);
       }
     }
     switch (e.type) {
@@ -1108,6 +1158,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         onPin: (id) => handlers.current.onPin(id),
         onVoyageEnd: (id, how) => handlers.current.onVoyageEnd(id, how),
         onImpact: (speed) => handlers.current.onImpact(speed),
+        // Las rampas de Los Rápidos (T73): despegue y chapuzón.
+        onJump: (e) => (e.type === 'jump' ? whoosh() : plop()),
         raceStartLabel: msg('mar.race.startBanner'),
         onSwitch: (mode) => setSwitching(mode),
       });
@@ -1578,6 +1630,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         raceRef.current = newRace(w);
         setRace(null);
         setRaceIntro(null);
+        setRaceOffer(null);
         // Sin barco elegido (ni en la URL ni equipado), el del mundo nuevo (T40).
         void storedLook(progressApi(), next.theme.ship, window.location.search).then((want) => {
           if (want.source !== 'world') return;
@@ -1630,6 +1683,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     !!dialogue ||
     !!race ||
     !!raceResult ||
+    !!raceOffer ||
     !!checkoutFor ||
     !!trip ||
     !!switching ||
@@ -1657,7 +1711,24 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   const world = worldRef.current;
   // Los rótulos también van al minimapa (la isla del evento, destacada).
-  const pins = useMemo(() => (world ? pinsOf(world, phase) : []), [world, phase]);
+  // En carrera (T73), también la boia que toca, destacada: el trazado cruza el mapa.
+  const raceNext = race?.phase === 'racing' ? race.next : null;
+  const pins = useMemo(() => {
+    if (!world) return [];
+    const list = pinsOf(world, phase);
+    const r = raceRef.current;
+    if (raceNext === null || !r) return list;
+    const target = lapTargets(world, r.spec)[raceNext - 1];
+    if (!target) return list;
+    const text =
+      raceNext > r.spec.buoys
+        ? msg('mar.race.chip.finish')
+        : msg('mar.race.chip.buoy', { next: raceNext, buoys: r.spec.buoys });
+    return [
+      ...list.filter((p) => p.id !== target.id),
+      { id: target.id, text, icon: '🎯', accent: true, always: true },
+    ];
+  }, [world, phase, raceNext]);
   // Los «?» del minimapa (T59): los códigos por encontrar, donde están.
   const missionDestination = missionRef.current?.destination ?? null;
   const marks = useMemo<MinimapMark[]>(() => {
@@ -1935,14 +2006,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       {/* Rumbo, circuito y misión */}
       <div className="mar-chips">
         {race ? <MarRaceChip race={race} /> : null}
-        {!race && raceResult ? (
+        {!race && raceOffer ? (
+          <MarRaceOffer offer={raceOffer} onStart={raceAgain} onClose={() => setRaceOffer(null)} />
+        ) : null}
+        {!race && !raceOffer && raceResult ? (
           <MarRaceResult
             result={raceResult}
             onAgain={raceAgain}
             onClose={() => setRaceResult(null)}
           />
         ) : null}
-        {!race && !raceResult && raceIntro ? <MarRaceIntro text={raceIntro} /> : null}
+        {!race && !raceOffer && !raceResult && raceIntro ? <MarRaceIntro text={raceIntro} /> : null}
         {stats?.course ? (
           <div className="mar-chip mar-chip--course" data-testid="mar-rumbo-activo">
             🧭 {courseName(stats.course)} · {stats.course.meters} m

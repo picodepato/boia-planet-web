@@ -9,11 +9,15 @@ import { SAMPLE_CREW, type SampleCrewMember } from '@boia/store';
  * tiempos de verdad es de L2 (REQ-AVE-034).
  */
 
-/** Mejor vuelta de cada miembro de muestra (ms). muestra */
+/**
+ * Mejor carrera (tres vueltas) de cada miembro de muestra (ms), en el trazado
+ * de T73 (versión 3 del circuito): uno entre el oro y la plata, otro entre la
+ * plata y el bronce y otro sin medalla. muestra
+ */
 export const SAMPLE_CIRCUIT_MS: Readonly<Record<string, number>> = {
-  'muestra-pulpo-sonico': 41_300,
-  'muestra-la-del-castillo': 48_900,
-  'muestra-grumete-turron': 63_500,
+  'muestra-pulpo-sonico': 69_400,
+  'muestra-la-del-castillo': 82_200,
+  'muestra-grumete-turron': 106_800,
 };
 
 export interface CircuitRow {
@@ -80,4 +84,30 @@ export function circuitName(world: WorldConfig, circuitId: string = CIRCUIT_ID):
     ),
   );
   return start?.identity.name ?? null;
+}
+
+/**
+ * El puesto de una carrera de `ms` contra la tripulación de muestra (T73):
+ * 1 más los que fueron más rápidos, de cuántos (ellos y esta carrera).
+ */
+export function crewPlace(
+  ms: number,
+  crew: readonly SampleCrewMember[] = SAMPLE_CREW,
+  times: Readonly<Record<string, number>> = SAMPLE_CIRCUIT_MS,
+): { position: number; of: number } {
+  const others = crew.flatMap((c) => (times[c.userId] === undefined ? [] : [times[c.userId]!]));
+  return { position: 1 + others.filter((t) => t < ms).length, of: others.length + 1 };
+}
+
+/** El más rápido de la tripulación de muestra (nombre y tiempo), o null. */
+export function crewLeader(
+  crew: readonly SampleCrewMember[] = SAMPLE_CREW,
+  times: Readonly<Record<string, number>> = SAMPLE_CIRCUIT_MS,
+): { name: string; ms: number } | null {
+  let best: { name: string; ms: number } | null = null;
+  for (const c of crew) {
+    const ms = times[c.userId];
+    if (ms !== undefined && (!best || ms < best.ms)) best = { name: c.nickname, ms };
+  }
+  return best;
 }

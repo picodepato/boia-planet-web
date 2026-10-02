@@ -1,7 +1,13 @@
 import { SAMPLE_CREW } from '@boia/store';
-import { WORLD_REGISTRY } from '@boia/world';
+import { CIRCUIT_MEDALS, WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_CIRCUIT_MS, circuitName, circuitRanking } from './ranking-circuit';
+import {
+  SAMPLE_CIRCUIT_MS,
+  circuitName,
+  circuitRanking,
+  crewLeader,
+  crewPlace,
+} from './ranking-circuit';
 
 const withTime = SAMPLE_CREW.filter((c) => SAMPLE_CIRCUIT_MS[c.userId] !== undefined);
 const sorted = [...withTime].sort(
@@ -34,5 +40,27 @@ describe('pestaña Circuito del ranking local (T56)', () => {
       const name = circuitName(WORLD_REGISTRY.get(w.id).config);
       expect(name, w.id).toBeTruthy();
     }
+  });
+});
+
+describe('la carrera contra la tripulación de muestra (T73)', () => {
+  it('el puesto de una carrera: 1 más los que fueron más rápidos, de ellos más uno', () => {
+    const times = sorted.map((c) => SAMPLE_CIRCUIT_MS[c.userId]!);
+    const of = sorted.length + 1;
+    expect(crewPlace(times[0]! - 1)).toEqual({ position: 1, of });
+    expect(crewPlace(times[0]! + 1)).toEqual({ position: 2, of });
+    expect(crewPlace(times.at(-1)! + 1)).toEqual({ position: of, of });
+  });
+
+  it('el récord de la tripulación es el del más rápido', () => {
+    const first = sorted[0]!;
+    expect(crewLeader()).toEqual({ name: first.nickname, ms: SAMPLE_CIRCUIT_MS[first.userId] });
+    expect(crewLeader(SAMPLE_CREW, {})).toBeNull();
+  });
+
+  it('los tiempos de muestra son del trazado de ahora: entre las medallas, no todos con oro', () => {
+    const times = Object.values(SAMPLE_CIRCUIT_MS);
+    expect(Math.min(...times)).toBeGreaterThan(CIRCUIT_MEDALS.gold);
+    expect(times.some((t) => t > CIRCUIT_MEDALS.silver)).toBe(true);
   });
 });

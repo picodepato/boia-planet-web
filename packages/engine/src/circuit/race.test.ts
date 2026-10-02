@@ -30,9 +30,10 @@ const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
 const spec = circuitFromWorld(world, CIRCUIT_ID)!;
 const idOf = (order: number) => spec.gates.find((g) => g.order === order)!.objectId;
 
-/** Arranca una carrera en `t0` y devuelve el instante de «¡Ya!». */
+/** Llega a la salida en `t0`, pulsa «Empezar» y devuelve el instante de «¡Ya!». */
 function start(race: CircuitRace, t0 = 0): number {
   race.checkpoint(0, t0, idOf(0));
+  race.start(t0);
   const go = t0 + spec.countdown;
   race.tick(go);
   return go;
@@ -47,7 +48,7 @@ function lap(race: CircuitRace, t: number, every = 2): { events: RaceEvent[]; en
   return { events, end };
 }
 
-describe('El Freu en los datos del mundo', () => {
+describe('Los Rápidos en los datos del mundo', () => {
   it('una salida que es también meta, boias numeradas en orden, vueltas y medallas; versión del circuito', () => {
     expect(spec.version).toBe(CIRCUIT_VERSION);
     const orders = spec.gates.map((g) => g.order).sort((a, b) => a - b);
@@ -79,7 +80,7 @@ describe('El Freu en los datos del mundo', () => {
 describe('carrera de tres vueltas', () => {
   it('cuenta atrás, boias en orden, vuelta al pasar por la salida y meta tras la última vuelta', () => {
     const race = new CircuitRace(spec);
-    const events = [...race.checkpoint(0, 100, idOf(0))];
+    const events = [...race.checkpoint(0, 100, idOf(0)), ...race.start(100)];
     events.push(...race.tick(100 + spec.countdown));
     let t = 100 + spec.countdown;
     for (let l = 0; l < spec.laps; l++) {
@@ -88,7 +89,7 @@ describe('carrera de tres vueltas', () => {
       t = r.end;
     }
     const types = events.map((e) => e.type);
-    expect(types.slice(0, 2)).toEqual(['countdown', 'go']);
+    expect(types.slice(0, 3)).toEqual(['ready', 'countdown', 'go']);
     expect(types.filter((x) => x === 'checkpoint')).toHaveLength(spec.buoys * spec.laps);
     expect(events.filter((e) => e.type === 'lap')).toEqual(
       Array.from({ length: spec.laps - 1 }, (_, i) => ({
@@ -139,15 +140,30 @@ describe('carrera de tres vueltas', () => {
     expect(race.checkpoint(0, go + 21, idOf(0))).toEqual([]);
   });
 
+  it('llegar a la salida no arranca la carrera: avisa (`ready`) y espera a «Empezar» (T73)', () => {
+    const race = new CircuitRace(spec);
+    expect(race.checkpoint(0, 10, idOf(0))).toEqual([{ type: 'ready' }]);
+    expect(race.active).toBe(false);
+    // Sin empezar, ni el reloj ni las boias hacen nada; cada llegada vuelve a avisar.
+    expect(race.tick(20)).toEqual([]);
+    expect(race.checkpoint(1, 21, idOf(1))).toEqual([]);
+    expect(race.view(21)).toMatchObject({ phase: 'idle', elapsedMs: null, countdown: null });
+    expect(race.checkpoint(0, 30, idOf(0))).toEqual([{ type: 'ready' }]);
+    // «Empezar»: cuenta atrás desde ese instante; durante ella la salida ya no avisa.
+    expect(race.start(31)).toEqual([{ type: 'countdown', goAt: 31 + spec.countdown }]);
+    expect(race.checkpoint(0, 32, idOf(0))).toEqual([]);
+    expect(race.tick(31 + spec.countdown)).toEqual([{ type: 'go' }]);
+  });
+
   it('antes de «¡Ya!» las boias no cuentan', () => {
     const race = new CircuitRace(spec);
-    race.checkpoint(0, 0);
+    race.start(0);
     expect(race.checkpoint(1, 1)).toEqual([]);
     expect(race.view(1).phase).toBe('countdown');
     expect(race.view(1).countdown).toBeCloseTo(spec.countdown - 1);
   });
 
-  it('`start` arranca la cuenta atrás como pasar por la salida (una vez)', () => {
+  it('`start` arranca la cuenta atrás (una vez)', () => {
     const race = new CircuitRace(spec);
     expect(race.start(5)).toEqual([{ type: 'countdown', goAt: 5 + spec.countdown }]);
     expect(race.start(6)).toEqual([]);

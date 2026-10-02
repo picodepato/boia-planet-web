@@ -4,11 +4,11 @@ import type { AreaInput } from '../schema';
 const FREU = 'el-freu';
 
 /**
- * «Rayo de Los Rápidos»: 80 % de una vuelta limpia por la ruta segura con el barco
- * base (54,5 s medidos en T36 con el runtime del motor, `DEFAULT_SHIP_CONFIG`,
- * saliendo parado en «¡Ya!»). muestra
+ * «Rayo de Los Rápidos»: la carrera de tres vueltas por debajo de la plata del
+ * trazado de T73 (`CIRCUIT_MEDALS.silver` de `@boia/world`, 74 s, menos 0,6 s).
+ * Antes, 43,6 s en el trazado corto de T61. muestra
  */
-export const FAST_LAP_MS = 43_600;
+export const FAST_LAP_MS = 73_400;
 
 // Economía de la decisión 2026-10-02 (T72): en unos 10 minutos de juego normal
 // se desbloquean 3 barcos y alguna skin (lo prueba
@@ -129,7 +129,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   {
     id: 'circuito-rapido',
     title: 'Rayo de Los Rápidos',
-    description: 'Haz una vuelta en menos de 43,6 s.',
+    description: 'Haz las tres vueltas en menos de 73,4 s.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU, maxMs: FAST_LAP_MS },
     points: 120,

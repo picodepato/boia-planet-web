@@ -7,8 +7,9 @@ import type { WorldConfig } from '@boia/world';
  * pequeño y el resultado, y guarda el récord local con `submitRecord` (D-09:
  * nada de servidor en L1).
  *
- * - La salida (orden 0) es también la meta. Pasarla sin carrera arranca la
- *   cuenta atrás; el tiempo cuenta desde «¡Ya!».
+ * - La salida (orden 0) es también la meta. Pasarla sin carrera ya no
+ *   arranca nada (T73): avisa (`ready`) y la aplicación pregunta si empezar;
+ *   `start` lanza la cuenta atrás y el tiempo cuenta desde «¡Ya!».
  * - Las boias (orden 1…n) se pasan en orden; una fuera de orden no cuenta.
  *   Varias boias con el mismo orden son alternativas (una rama).
  * - Volver a la salida después de la última boia cierra la vuelta; volver
@@ -138,6 +139,8 @@ export type RacePhase = 'idle' | 'countdown' | 'racing';
 export type InvalidReason = 'panel' | 'hidden' | 'teleport' | 'timeout';
 
 export type RaceEvent =
+  /** El barco llegó a la salida sin carrera (T73): la aplicación pregunta si empezar. */
+  | { type: 'ready' }
   | { type: 'countdown'; goAt: number }
   | { type: 'go' }
   /** Boia pasada en orden; `lap` es la vuelta en curso (1…). */
@@ -221,7 +224,7 @@ export class CircuitRace {
     return [];
   }
 
-  /** Empieza la cuenta atrás (como pasar por la salida sin carrera). */
+  /** Empieza la cuenta atrás (lo pide la aplicación: «Empezar» o «Otra vez»). */
   start(now: number): RaceEvent[] {
     if (this.phase !== 'idle') return [];
     this.phase = 'countdown';
@@ -241,7 +244,8 @@ export class CircuitRace {
   checkpoint(order: number, now: number, objectId?: string): RaceEvent[] {
     const out = this.tick(now);
     if (order === 0) {
-      if (this.phase === 'idle') return [...out, ...this.start(now)];
+      // Sin carrera, la salida sólo avisa: empezar lo decide quien juega (T73).
+      if (this.phase === 'idle') return [...out, { type: 'ready' }];
       if (this.phase !== 'racing') return out;
       if (this.next <= this.spec.buoys) {
         // Antes de la primera boia es la misma salida (rozarla al arrancar): nada.

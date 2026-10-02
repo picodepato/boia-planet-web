@@ -13,6 +13,7 @@ import {
   shipSpeed,
   stepShip,
 } from '@boia/engine/headless';
+import { BoatJump, type JumpEvent, type JumpSpec, rampsOf } from '@boia/engine/circuit';
 import type { MissionHost } from '@boia/engine/mission';
 import {
   type ControlSensitivity,
@@ -112,7 +113,15 @@ import {
   stickInput,
 } from './steering';
 import { VortexPass } from './vortex';
-import { type BoostPad, type RaceBuoy, boostPad, ghostBoat, raceBuoy } from './race-props';
+import {
+  type BoostPad,
+  type JumpRamp,
+  type RaceBuoy,
+  boostPad,
+  ghostBoat,
+  jumpRamp,
+  raceBuoy,
+} from './race-props';
 import { createWater } from './water';
 import {
   type Circle,
@@ -220,6 +229,8 @@ export interface Mar3DOptions {
   onImpact?(speed: number): void;
   /** Rótulo del arco de salida y meta del circuito (T61; la web lo da traducido). */
   raceStartLabel?: string;
+  /** Una rampa del circuito lanzó el barco o el barco cayó al agua (T73). Para el sonido. */
+  onJump?(e: JumpEvent): void;
 }
 
 /** Dónde está y hacia dónde mira un barco (u de motor, rad): el fantasma, la salida. */
@@ -500,6 +511,11 @@ export class Mar3D {
   private ghostAt: ShipPose | null = null;
   /** El barco quieto en la salida durante la cuenta atrás (T61), o null. */
   private hold: ShipPose | null = null;
+  /** El salto de las rampas del circuito (T73): sólo se ve, la simulación sigue en el agua. */
+  private readonly jump = new BoatJump();
+  private rampWorld: WorldConfig | null = null;
+  private ramps = new Map<string, JumpSpec>();
+  private splashes = 0;
   /** El material de las botellas (T56), compartido por todas. */
   private bottleMaterial: ReturnType<typeof litMaterial> | null = null;
   // Cambio de mundo por agujero negro (T41 en el 2D; aquí T51).
@@ -740,6 +756,7 @@ export class Mar3D {
     for (const e of this.rt.drainEvents()) this.opts.onWorldEvent(e);
     this.rt = next.runtime;
     this.world = next.world;
+    this.jump.reset();
     if (next.sea) {
       this.moods = moods(next.sea);
       this.moodTo = this.moods[this.moodId];
@@ -757,6 +774,7 @@ export class Mar3D {
   moveShip(x: number, y: number, heading?: number): { x: number; y: number } {
     const p = this.freePoint(x, y);
     const h = heading ?? this.ship.heading;
+    this.jump.reset();
     Object.assign(this.ship, { x: p.x, y: p.y, vx: 0, vy: 0, heading: h });
     Object.assign(this.prev, { x: p.x, y: p.y, heading: h });
     this.updateCamera(0, true);
@@ -1145,6 +1163,34 @@ export class Mar3D {
       }
     }
     this.opts.canvas.dataset.bottles = list.map((b) => b.id).join(' ');
+  }
+
+  /** El impulso de una rampa (T73) lanza el barco al aire. */
+  private jumpOn(e: WorldEvent): void {
+    if (e.type !== 'effect' || e.effect !== 'boost' || this.flight) return;
+    if (this.rampWorld !== this.world) {
+      this.rampWorld = this.world;
+      this.ramps = rampsOf(this.world);
+    }
+    const spec = this.ramps.get(e.objectId);
+    if (!spec) return;
+    for (const j of this.jump.launch(e.objectId, spec, this.time)) {
+      this.opts.canvas.dataset.salto = 'aire';
+      this.opts.onJump?.(j);
+    }
+  }
+
+  /** Cae al agua: chapuzón alrededor del casco y un golpe de cámara. */
+  private landJump(): void {
+    for (const j of this.jump.tick(this.time)) {
+      const bp = this.boat.group.position;
+      this.splash.burst(bp.x, bp.z, 1);
+      this.shake = Math.max(this.shake, 0.3);
+      this.splashes++;
+      this.opts.canvas.dataset.salto = 'agua';
+      this.opts.canvas.dataset.chapuzones = String(this.splashes);
+      this.opts.onJump?.(j);
+    }
   }
 
   /** Semáforo del circuito: apagado, rojo, ámbar o verde. */
@@ -1622,6 +1668,23 @@ export class Mar3D {
             update: (_v, t) => pad.update(t),
           });
           staticGlows.add([x, 0.3, z], '#3df2ff', 2.4);
+          break;
+        }
+        case 'rampa': {
+          // Rampas de salto (T73): suben hacia la boia siguiente.
+          const heading = typeof o.params?.heading === 'number' ? o.params.heading : 0;
+          const ramp: JumpRamp = jumpRamp(toScene(o.geometry.activation?.radius ?? 27), heading);
+          ramp.group.position.set(x, 0, z);
+          this.addView({
+            id,
+            obj: ramp.group,
+            kind: 'rampa',
+            y: 0,
+            phase,
+            labelY: 2,
+            update: (_v, t) => ramp.update(t),
+          });
+          staticGlows.add([x, 0.6, z], '#ffd23f', 2.4);
           break;
         }
         case 'carril':
@@ -2117,7 +2180,11 @@ export class Mar3D {
       this.prev.y = this.ship.y;
       this.prev.heading = this.ship.heading;
     }
-    for (const e of this.runtime.drainEvents()) this.opts.onWorldEvent(e);
+    for (const e of this.runtime.drainEvents()) {
+      this.jumpOn(e);
+      this.opts.onWorldEvent(e);
+    }
+    this.landJump();
     this.modelClock += dt;
     if (this.modelClock >= MODEL_PLAN_S) {
       this.modelClock = 0;
@@ -2377,7 +2444,7 @@ export class Mar3D {
     // Barco (interpolado entre pasos, en la copia más cercana al foco).
     const s = this.ship;
     const fl = this.flight;
-    this.air = fl ? fl.pose.alt : 0;
+    this.air = fl ? fl.pose.alt : toScene(this.jump.height(t));
     const { x, z, h } = this.placeShip(alpha);
     const speed = fl ? 0 : shipSpeed(s);
     const v01 = Math.min(1.4, speed / this.cfg.maxSpeed);
@@ -2392,7 +2459,7 @@ export class Mar3D {
       body.position.y = Math.sin(t * 1.9) * 0.07 + Math.sin(t * 3.3) * 0.03 + v01 * 0.08;
       body.rotation.x =
         Math.max(-0.35, Math.min(0.35, -this.turnRate * 0.14)) + Math.sin(t * 1.5) * 0.03;
-      body.rotation.z = v01 * 0.07 + Math.sin(t * 2.1) * 0.025;
+      body.rotation.z = v01 * 0.07 + Math.sin(t * 2.1) * 0.025 + this.jump.pitch(t);
     }
     this.wings.group.position.y = body.position.y;
     this.wings.group.rotation.copy(body.rotation);
@@ -2410,7 +2477,9 @@ export class Mar3D {
     const boost = this.turboLeft > 0 || this.voyage ? 1.4 : 1;
     // Al levitar, sólo un rizo de espuma bajo el casco mientras está cerca del agua.
     const hovering = fl ? Math.max(0, 1 - this.air / 1.2) * 0.5 : 0;
-    this.wake.update(dt, sternX, sternZ, h, fl ? hovering : Math.min(1, v01 * boost), t);
+    // En el aire de un salto (T73), sin estela.
+    const wake = this.jump.airborne ? 0 : Math.min(1, v01 * boost);
+    this.wake.update(dt, sternX, sternZ, h, fl ? hovering : wake, t);
 
     this.updateCamera(dt);
 

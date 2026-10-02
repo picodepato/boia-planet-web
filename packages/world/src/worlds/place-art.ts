@@ -50,6 +50,10 @@ const PARTS: Record<string, [string, string?, string?]> = {
   'circuito-giro': ['circuito', 'cp2'],
   'circuito-regreso': ['circuito', 'cp1'],
   'circuito-recta': ['circuito', 'cp1'],
+  // Las de T73, igual.
+  'circuito-poniente': ['circuito', 'cp-s'],
+  'circuito-acantilado': ['circuito', 'cp2'],
+  'circuito-delfin': ['circuito', 'cp-a'],
   'circuito-meta': ['circuito', 'meta'],
   'circuito-semaforo': ['circuito', 'semaforo'],
   'circuito-cartel': ['circuito', 'cartel'],
@@ -92,6 +96,10 @@ export function sharedPlaceAsset(worldId: string, id: string, i: number): string
   if (id.startsWith('circuito-carril-')) return art('circuito', 'boia_carril', i % 2 ? 'b' : 'a');
   // Los impulsos de T61 no tienen pieza: en el 2D se ven como una boia de carril.
   if (id.startsWith('circuito-impulso-')) return art('circuito', 'boia_carril', 'a');
+  // Las rampas de T73 tampoco: la otra boia de carril. Sus rocas y medusas, las de la maqueta.
+  if (id.startsWith('circuito-rampa-')) return art('circuito', 'boia_carril', 'b');
+  m = /^circuito-(roca|medusa)-\d+$/.exec(id);
+  if (m) return art('circuito', m[1]);
   if (id.startsWith('secreto-')) return art('secreto', 'secreto');
   throw new Error(`${worldId}: lugar sin arte asignado: ${id}`);
 }

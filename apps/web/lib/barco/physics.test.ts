@@ -47,7 +47,7 @@ function lap(cfg: ShipConfig, dressed: ReturnType<typeof dressedShip>, into?: 'c
   let finish: number | null = null;
   let hits = 0;
   const trace: string[] = [];
-  const steps = into === 'coast' ? 60 * 15 : 60 * 200;
+  const steps = into === 'coast' ? 60 * 15 : 60 * 400;
   for (let i = 0; i < steps && finish === null; i++) {
     const t = i * dt;
     // `coast`: siempre hacia el este, hasta dar con el borde del mapa y seguir empujando.
@@ -70,6 +70,8 @@ function lap(cfg: ShipConfig, dressed: ReturnType<typeof dressedShip>, into?: 'c
       if (e.type !== 'checkpoint') continue;
       for (const r of race.checkpoint(e.order, t, e.objectId)) {
         if (r.type === 'finish') finish = r.ms;
+        // En la salida, «Empezar» (T73: la carrera ya no arranca sola).
+        if (r.type === 'ready') race.start(t);
       }
     }
     race.tick(t);

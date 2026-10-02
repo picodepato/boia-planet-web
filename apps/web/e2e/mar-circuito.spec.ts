@@ -1,4 +1,5 @@
 import { circuitFromWorld } from '@boia/engine/circuit';
+import { SAMPLE_CREW } from '@boia/store';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -6,15 +7,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
 import { lapTargets } from '../app/mar/race';
+import { SAMPLE_CIRCUIT_MS } from '../lib/mundo/ranking-circuit';
 
 /**
- * El Freu en /mar (T61, REQ-AVE-026…028): un circuito cerrado de tres
- * vueltas marcado por boias. Desde cerca de la salida se ve el récord;
- * pasar por la salida enciende el semáforo y deja el barco quieto hasta
- * «¡Ya!»; el cronómetro pequeño de arriba dice la vuelta y la boia que
- * tocan. Una carrera con el teclado (a cada boia en orden, tres vueltas)
- * termina con medalla, tiempo y récord en una tarjeta pequeña, y «Otra
- * vez» corre contra el fantasma de esa carrera. Móvil y escritorio.
+ * Los Rápidos en /mar (T61, T73, REQ-AVE-026…028): un circuito cerrado de
+ * tres vueltas marcado por boias por todo el mapa. Desde cerca de la salida
+ * se ve el récord; llegar a ella ya no arranca la carrera: una tarjeta la
+ * explica y pregunta, y «Empezar» enciende el semáforo y deja el barco
+ * quieto hasta «¡Ya!»; el cronómetro pequeño de arriba dice la vuelta y la
+ * boia que tocan. Una carrera con el teclado (a cada boia en orden, tres
+ * vueltas) termina con medalla, tiempo, récord y el puesto entre la
+ * tripulación de muestra en una tarjeta pequeña, y «Otra vez» corre contra
+ * el fantasma de esa carrera. Móvil y escritorio.
  *
  * Con RECORD_T61=1 deja capturas en docs/informes/img/ p005-t61-*.png (móvil).
  */
@@ -25,12 +29,14 @@ const world = marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config);
 const spec = circuitFromWorld(world, CIRCUIT_ID)!;
 const targets = lapTargets(world, spec);
 const start = targets.at(-1)!;
-/** El nombre del circuito en el mundo (el de su salida): «El Freu». */
+/** El nombre del circuito en el mundo (el de su salida): «Los Rápidos». */
 const placeName = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config.objects.find(
   (o) => o.identity.id === start.id,
 )!.identity.name;
 
 const mar = (page: Page) => page.locator('main.mar');
+/** La tripulación de muestra con tiempo en el circuito: contra ella se compite en esta versión. */
+const timedCrew = SAMPLE_CREW.filter((c) => SAMPLE_CIRCUIT_MS[c.userId] !== undefined);
 const crono = (page: Page) => page.getByTestId('mar-crono');
 
 const OUT = path.resolve(
@@ -58,11 +64,11 @@ type Point = { x: number; y: number };
 
 /**
  * Qué quiere el piloto: `intro` (hasta ver el récord junto a la salida),
- * `countdown` (hasta que pasar por la salida arranca la cuenta atrás),
- * `race` (boia a boia hasta la tarjeta de meta) o `skip` (a la boia 1 y, sin
- * pasar por la 2, de vuelta a la salida hasta el aviso).
+ * `offer` (hasta que llegar a la salida saca la tarjeta que pregunta si
+ * empezar), `race` (boia a boia hasta la tarjeta de meta) o `skip` (a la
+ * boia 1 y, sin pasar por la 2, de vuelta a la salida hasta el aviso).
  */
-type Goal = 'intro' | 'countdown' | 'race' | 'skip';
+type Goal = 'intro' | 'offer' | 'race' | 'skip';
 
 /**
  * Pilota dentro de la página, con las flechas, una decisión por fotograma:
@@ -109,8 +115,9 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
             const intro = q('mar-carrera-salida');
             if (intro) return intro.textContent ?? '';
             steer(start);
-          } else if (goal === 'countdown') {
-            if (chip) return chip.dataset.fase ?? '';
+          } else if (goal === 'offer') {
+            if (chip) return `carrera sin preguntar: ${chip.dataset.fase ?? ''}`;
+            if (q('mar-carrera-oferta')) return 'offer';
             steer(start);
           } else if (goal === 'race') {
             if (q('mar-carrera-final')) return 'ok';
@@ -138,11 +145,24 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
 }
 
 /**
- * Pasa por la salida: el barco se queda quieto en ella durante la cuenta
- * atrás aunque se pulse adelante, y sale al «¡Ya!».
+ * Llega a la salida: sale la tarjeta que explica la carrera y no empieza
+ * sola; «Empezar» lanza la cuenta atrás. El barco se queda quieto en la
+ * salida durante ella aunque se pulse adelante, y sale al «¡Ya!».
  */
 async function startRace(page: Page) {
-  expect(await pilot(page, 'countdown')).toBe('countdown');
+  expect(await pilot(page, 'offer')).toBe('offer');
+  const offer = page.getByTestId('mar-carrera-oferta');
+  await expect(offer).toBeVisible();
+  await expect(offer).toContainText(placeName);
+  await expect(offer).toContainText(String(spec.laps));
+  await expect(offer).toContainText(/fantasma/i);
+  // Sin «Empezar» no hay carrera.
+  await page.waitForTimeout(1500);
+  await expect(crono(page)).toHaveCount(0);
+  await snap(page, 'p006-t73-oferta.png');
+  await page.getByTestId('mar-carrera-empezar').click();
+  await expect(offer).toHaveCount(0);
+  await expect(crono(page)).toHaveAttribute('data-fase', 'countdown');
   // La posición se publica cuatro veces por segundo: la primera puede ser de antes de
   // quedarse en la salida. Desde que está en ella, no se mueve hasta «¡Ya!».
   const moved = await page.evaluate(async (p) => {
@@ -168,12 +188,12 @@ async function startRace(page: Page) {
   await expect(crono(page)).toHaveAttribute('data-fase', 'racing');
 }
 
-test('El Freu: tres vueltas por las boias, medalla y récord; la segunda, contra el fantasma', async ({
+test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, récord y puesto; la segunda, contra el fantasma', async ({
   page,
 }) => {
   const errors = await openMar(page, `?cerca=${start.id}`);
   // Antes de correr, al acercarse a la salida: el circuito y que aún no hay récord.
-  // (Se lee al vuelo: el barco sigue hacia la salida y al llegar a ella empieza la carrera.)
+  // (Se lee al vuelo: el barco sigue hacia la salida, donde sale la tarjeta de empezar.)
   const intro = await pilot(page, 'intro');
   expect(intro).toContain(placeName);
   expect(intro).not.toMatch(/\d,\d/);
@@ -197,6 +217,17 @@ test('El Freu: tres vueltas por las boias, medalla y récord; la segunda, contra
   await expect(page.getByTestId('mar-carrera-tiempo')).toContainText(/\d+,\d/);
   await expect(page.getByTestId('mar-carrera-record')).toBeVisible();
   await expect(crono(page)).toHaveCount(0);
+  // Contra los demás (la tripulación de muestra) y contra ti (tu récord, que es esta carrera).
+  await expect(page.getByTestId('mar-carrera-puesto')).toContainText(
+    String(timedCrew.length + 1),
+  );
+  const table = page.getByTestId('mar-carrera-ranking');
+  for (const c of timedCrew) await expect(table).toContainText(c.nickname);
+  await expect(table.locator('li')).toHaveCount(timedCrew.length + 1);
+  const mine = table.locator('li[data-mio="si"]');
+  await expect(mine).toHaveCount(1);
+  const time = (await page.getByTestId('mar-carrera-tiempo').textContent())!.match(/[\d:,]+\d/)![0];
+  await expect(mine).toContainText(time);
   await snap(page, 'p005-t61-meta.png');
 
   // «Otra vez»: cuenta atrás desde la salida y, tras «¡Ya!», el fantasma de la mejor carrera.

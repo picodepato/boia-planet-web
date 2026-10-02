@@ -4,6 +4,54 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T73: Los Rápidos: circuit v3
+
+Qué existe:
+
+- **No arranca sola.** `CircuitRace.checkpoint(0)` sin carrera devuelve `{ type: 'ready' }`
+  (antes lanzaba la cuenta atrás). En /mar, `ready` saca la tarjeta «Carrera en Los Rápidos»
+  (`MarRaceOffer`, `data-testid="mar-carrera-oferta"`): 3 vueltas por las boias en orden,
+  contra los tiempos de la tripulación y contra ti, el fantasma repite tu mejor carrera, las
+  flechas impulsan y las rampas saltan; tu récord y el de la tripulación; «Ahora no» y
+  «Empezar» (`mar-carrera-empezar`, lanza la cuenta atrás). Se cierra al alejarse.
+- **Ranking contra otros (versión de prueba).** La tarjeta de meta añade «Con este tiempo:
+  puesto n de m» (`crewPlace`) y una tabla corta con la tripulación de muestra y tu récord
+  (`circuitRanking`), en `lib/mundo/ranking-circuit.ts`. El ranking compartido sigue en L2.
+- **Fantasma**: el de T61, algo más opaco (0,6) para verse en carrera.
+- **Trazado v3** (`CIRCUIT_VERSION = 3`: récords y fantasmas desde cero), en
+  `packages/world/src/worlds/arcilla/map.ts`: 9 boias por todo el mapa (este, el paso entre
+  Els Dents y las Rocas del Freu, norte, centro bajo la Isla del Sonido, oeste junto al
+  acantilado, sur hacia El Varadero y entre la Cala y Halloween), lejos del radio de
+  proximidad de las islas en /mar. Medallas 60/74/98 s (el piloto recto hace ~66 s, plata).
+- **Más obstáculos**: 5 rocas y 3 medusas nuevas a un lado de los tramos
+  (`circuito-roca-N`, `circuito-medusa-N`), además de los de T61 (el cocodrilo cruza el
+  tramo 3→4).
+- **Rampas de salto** (`circuito-rampa-1..3`, categoría `rampa`): impulso flojo + `params.jump`.
+  Motor: `packages/engine/src/circuit/jump.ts` (`BoatJump`, `rampsOf`, `jumpOf`): despegue,
+  parábola, cabeceo y chapuzón. `Mar3D` lanza el salto con el efecto `boost` de una rampa,
+  levanta el barco, quita la estela en el aire y al caer salpica (`data-salto`,
+  `data-chapuzones` en el lienzo; `onJump` suena). Plataforma con flechas amarillas hacia
+  arriba en `race-props.ts` (`jumpRamp`).
+- **Impulsos y rampas entre dos boias** apuntando a la siguiente: se calculan desde el tramo
+  (`onLeg`, `towardNext`).
+- El minimapa destaca la boia que toca (🎯) durante la carrera.
+- Recalibrado con el trazado: `SAMPLE_CIRCUIT_MS` (69,4/82,2/106,8 s) y `FAST_LAP_MS`
+  (73,4 s, «Rayo de Los Rápidos»; sólo el umbral, no el premio).
+
+Comandos:
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (105 archivos, 956 pruebas)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `E2E_PORT=3391 pnpm e2e mar-circuito.spec.ts --workers=1` → exit 0 (4 passed: móvil y escritorio)
+- `mar-3d.spec.ts` y `mar-botellas.spec.ts` (workers=2) → 28 passed, 2 por tiempo bajo carga; repetidas
+  con workers=1 → 2 passed
+
+Pendiente:
+
+- Posiciones, medallas, tiempos de muestra y saltos son `muestra` (Álvaro).
+- `lib/mundo/circuit-hud.tsx` (`useCircuit`, el HUD del 2D) ya no se usa; con T73 no arranca
+  carreras (no hay 2D).
+
 ## 2026-10-02 — plan 006 T71: Isla de Nochevieja model
 
 Qué existe:

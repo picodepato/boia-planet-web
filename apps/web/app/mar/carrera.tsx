@@ -2,12 +2,15 @@
 
 import { type Medal, type Medals, formatRaceTime, medalFor, nextMedal } from '@boia/engine/circuit';
 import { t as msg } from '../../lib/i18n';
+import type { CircuitRow } from '../../lib/mundo/ranking-circuit';
 
 /**
- * El HUD de El Freu en /mar (T61): el cronómetro pequeño arriba, con la
- * vuelta y la boia que tocan (REQ-AVE-028), el récord al acercarse a la
- * salida y, en meta, una tarjeta pequeña con la medalla, el tiempo, el
- * récord y «Otra vez». Sin lógica de carrera: la lleva `mar-client`.
+ * El HUD de Los Rápidos en /mar (T61, T73): el cronómetro pequeño arriba,
+ * con la vuelta y la boia que tocan (REQ-AVE-028), el récord al acercarse a
+ * la salida, la tarjeta que al llegar a ella explica la carrera y pregunta
+ * si empezar (ya no arranca sola) y, en meta, una tarjeta pequeña con la
+ * medalla, el tiempo, el récord, el puesto entre la tripulación de muestra y
+ * «Otra vez». Sin lógica de carrera: la lleva `mar-client`.
  */
 
 export interface RaceHud {
@@ -29,6 +32,26 @@ export interface RaceResult {
   medals: Medals;
   best: boolean;
   bestMs: number;
+  /**
+   * La tabla del circuito (T73): los tiempos de la tripulación de muestra y
+   * tu récord, del más rápido al más lento. En esta versión de prueba no hay
+   * ranking compartido (D-20).
+   */
+  ranking: CircuitRow[];
+  /** El puesto de esta carrera entre la tripulación de muestra (1 = la más rápida) y de cuántos. */
+  position: number;
+  of: number;
+}
+
+/** Lo que enseña la tarjeta de la salida antes de correr (T73). */
+export interface RaceOffer {
+  place: string;
+  laps: number;
+  buoys: number;
+  /** Tu récord en este navegador (ms), o null. */
+  bestMs: number | null;
+  /** El más rápido de la tripulación de muestra, o null. */
+  leader: { name: string; ms: number } | null;
 }
 
 const MEDAL_TEXT: Record<Medal, string> = {
@@ -76,6 +99,91 @@ export function MarRaceChip({ race }: { race: RaceHud }) {
         </span>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Al llegar a la salida (T73): qué es la carrera (tres vueltas por las boias
+ * en orden, contra los tiempos de los demás y contra ti, con el fantasma de
+ * tu mejor carrera) y si empezar ya. «Empezar» lanza la cuenta atrás.
+ */
+export function MarRaceOffer({
+  offer,
+  onStart,
+  onClose,
+}: {
+  offer: RaceOffer;
+  onStart(): void;
+  onClose(): void;
+}) {
+  return (
+    <section
+      className="mar-carrera mar-carrera--oferta"
+      data-testid="mar-carrera-oferta"
+      role="dialog"
+      aria-label={msg('mar.race.offer.title', { place: offer.place })}
+    >
+      <header className="mar-carrera__head">
+        <strong className="mar-carrera__medal">
+          🏁 {msg('mar.race.offer.title', { place: offer.place })}
+        </strong>
+        <span className="mar-carrera__place" />
+        <button
+          type="button"
+          className="mar-chip__x"
+          aria-label={msg('mar.race.close')}
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </header>
+      <p>{msg('mar.race.offer.how', { laps: offer.laps, buoys: offer.buoys })}</p>
+      <p>{msg('mar.race.offer.vs')}</p>
+      <p className="mar-carrera__laps">{msg('mar.race.offer.props')}</p>
+      <p className="mar-carrera__best" data-testid="mar-carrera-oferta-record">
+        {offer.bestMs !== null
+          ? msg('mar.race.result.best', { time: formatRaceTime(offer.bestMs) })
+          : msg('mar.race.offer.noBest')}
+        {offer.leader
+          ? ` · ${msg('mar.race.offer.leader', {
+              name: offer.leader.name,
+              time: formatRaceTime(offer.leader.ms),
+            })}`
+          : ''}
+      </p>
+      <div className="mar-carrera__actions">
+        <button type="button" className="mar-carrera__later" onClick={onClose}>
+          {msg('mar.race.offer.later')}
+        </button>
+        <button
+          type="button"
+          className="mar-carrera__again"
+          data-testid="mar-carrera-empezar"
+          onClick={onStart}
+        >
+          {msg('mar.race.offer.start')}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** La tabla corta de la tarjeta de meta: la tripulación de muestra y tu récord. */
+function RaceTable({ rows }: { rows: CircuitRow[] }) {
+  return (
+    <ol className="mar-carrera__tabla" data-testid="mar-carrera-ranking">
+      {rows.map((r) => (
+        <li
+          key={r.userId || 'yo'}
+          className={r.isMine ? 'is-mine' : undefined}
+          data-mio={r.isMine ? 'si' : 'no'}
+        >
+          <span>{r.position ?? '–'}</span>
+          <span>{r.isMine ? msg('mar.race.result.you') : (r.nickname ?? r.userId)}</span>
+          <span>{r.ms !== null ? formatRaceTime(r.ms) : '–'}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -134,6 +242,10 @@ export function MarRaceResult({
       <p className="mar-carrera__laps">
         {msg('mar.race.result.laps', { times: result.laps.map(formatRaceTime).join(' · ') })}
       </p>
+      <p className="mar-carrera__puesto" data-testid="mar-carrera-puesto">
+        {msg('mar.race.result.position', { n: result.position, of: result.of })}
+      </p>
+      <RaceTable rows={result.ranking} />
       {next ? (
         <p className="mar-carrera__next">
           {msg('mar.race.result.next', {

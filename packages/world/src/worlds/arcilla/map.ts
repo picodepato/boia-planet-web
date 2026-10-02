@@ -47,9 +47,10 @@ export const HALLOWEEN_CENTER: Maq = [-1.0, 1.5];
 export const CIRCUIT_ID = 'el-freu';
 /**
  * Versión del trazado (REQ-AVE-033): `mapa.json` → `circuito.version` era la
- * 1; el circuito cerrado de tres vueltas de T61 es la 2 (récords desde cero).
+ * 1; el circuito cerrado de tres vueltas de T61 es la 2 y el trazado largo de
+ * T73, por todo el mapa, la 3 (récords y fantasmas desde cero).
  */
-export const CIRCUIT_VERSION = 2;
+export const CIRCUIT_VERSION = 3;
 
 /**
  * Premios del mar vivo (decisión 2026-10-02, T72): cada resto flotante da 10
@@ -717,28 +718,41 @@ export const BOTTLE_SPOTS: { id: string; x: number; y: number; source: string[] 
 // --- Los Rápidos (antes El Freu): el circuito (a escala de posiciones) --------
 
 /*
- * Desde T61 (entrevista del 2026-10-01) El Freu es un circuito cerrado: tres
- * vueltas alrededor de Els Dents, marcado por boias que hay que pasar en
- * orden. La salida es también la meta; se sube por el lado del atajo (entre
- * Els Dents y las Rocas del Freu), se gira al norte, se baja por la ruta
- * segura (junto al cocodrilo) y se vuelve por la recta. Tres impulsos en el
- * agua aceleran. El checkpoint 2 y la meta de la maqueta quedan fuera del
- * trazado (inactivos), como el cartel del atajo, que ya no es una rama.
- * Las piezas nuevas no están en `mapa.json`: su fuente es `plan:T61`.
+ * Desde T61 (entrevista del 2026-10-01) el circuito es cerrado: tres vueltas
+ * marcadas por boias que hay que pasar en orden, con la salida como meta.
+ * T73 (decisiones del 2026-10-02) lo alarga y lo reparte por el mapa: sube
+ * por el este, pasa entre Els Dents y las Rocas del Freu (el atajo de la
+ * maqueta), gira al norte, cruza el centro por debajo de la Isla del Sonido,
+ * baja por el oeste junto al acantilado, vuelve por el sur hacia El Varadero
+ * y cierra entre la Cala Cantalar y la Isla de Halloween. Las boias quedan
+ * lejos de las islas (en /mar, fuera de su radio de proximidad: abrir su
+ * panel anularía la carrera). Impulsos y rampas de salto van siempre en
+ * mitad de un tramo, apuntando a la boia siguiente; las rocas y medusas
+ * nuevas, a un lado del tramo. El checkpoint 2 y la meta de la maqueta
+ * quedan fuera del trazado (inactivos), como el cartel del atajo. Las piezas
+ * nuevas no están en `mapa.json`: su fuente es `plan:T61` o `plan:T73`.
  * Posiciones, vueltas y medallas son `muestra`.
  */
 
-/** Fuente de las piezas del circuito que añadió T61 (no están en la maqueta). */
+/** Fuente de las piezas del circuito que añadieron T61 y T73 (no están en la maqueta). */
 const T61 = 'plan:T61';
+const T73 = 'plan:T73';
 
-/** Boias del circuito (orden ≥ 1) por orden de paso: id, nombre, punto, fuentes. */
+/**
+ * Boias del circuito (orden ≥ 1) por orden de paso: id, nombre, punto,
+ * fuentes. Las que vienen de la maqueta y se movieron (T73) llevan primero
+ * `plan:T73` y después su entrada de `mapa.json`.
+ */
 const RACE_BUOYS: { id: string; name: string; p: Maq; source: string[] }[] = [
-  { id: 'circuito-cp1', name: 'Boia 1', p: [12.2, 1.0], source: ['circuito/checkpoints/0'] },
+  { id: 'circuito-cp1', name: 'Boia 1', p: [12.5, -4.0], source: [T73, 'circuito/checkpoints/0'] },
   { id: 'circuito-cp-a', name: 'Boia 2', p: [12.9, -12.0], source: ['circuito/checkpoints/2'] },
-  { id: 'circuito-giro', name: 'Boia 3', p: [10.6, -15.4], source: [T61] },
-  { id: 'circuito-cp-s', name: 'Boia 4', p: [7.8, -11.7], source: ['circuito/checkpoints/1'] },
-  { id: 'circuito-regreso', name: 'Boia 5', p: [10.4, -4.6], source: [T61] },
-  { id: 'circuito-recta', name: 'Boia 6', p: [11.6, 8.2], source: [T61] },
+  { id: 'circuito-giro', name: 'Boia 3', p: [11.4, -17.4], source: [T73, T61] },
+  { id: 'circuito-cp-s', name: 'Boia 4', p: [5.6, -7.5], source: [T73, 'circuito/checkpoints/1'] },
+  { id: 'circuito-poniente', name: 'Boia 5', p: [-4.0, -7.2], source: [T73] },
+  { id: 'circuito-acantilado', name: 'Boia 6', p: [-11.8, -0.8], source: [T73] },
+  { id: 'circuito-delfin', name: 'Boia 7', p: [-11.0, 9.4], source: [T73] },
+  { id: 'circuito-regreso', name: 'Boia 8', p: [-0.8, 16.5], source: [T73, T61] },
+  { id: 'circuito-recta', name: 'Boia 9', p: [4.8, 6.4], source: [T73, T61] },
 ];
 
 /** Vueltas de una carrera. muestra */
@@ -746,9 +760,38 @@ export const CIRCUIT_LAPS = 3;
 /**
  * Medallas: tiempo total máximo (ms) de las tres vueltas para el oro, la
  * plata y el bronce. Un piloto que va derecho a cada boia, sin turbo, hace
- * unos 39 s (plata); el oro pide turbo e impulsos. muestra
+ * unos 66 s, plata (`app/mar/race.test.ts` lo mide); el oro pide turbo,
+ * impulsos y rampas. muestra
  */
-export const CIRCUIT_MEDALS = { gold: 36_000, silver: 44_000, bronze: 58_000 } as const;
+export const CIRCUIT_MEDALS = { gold: 60_000, silver: 74_000, bronze: 98_000 } as const;
+
+/** El trazado de una vuelta: de la salida por cada boia y de vuelta a la salida. */
+const COURSE: Maq[] = [CIRCUIT_START, ...RACE_BUOYS.map((b) => b.p), CIRCUIT_START];
+
+/** El tramo `leg` (de la boia `leg` a la `leg + 1`; la 0 es la salida): origen, dirección y largo. */
+function legOf(leg: number): { a: Maq; dx: number; dy: number; len: number } {
+  const a = COURSE[leg]!;
+  const b = COURSE[leg + 1]!;
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  return { a, dx: (b[0] - a[0]) / len, dy: (b[1] - a[1]) / len, len };
+}
+
+const r2m = (v: number) => Math.round(v * 100) / 100;
+
+/**
+ * Un punto del tramo `leg` a la fracción `t` de su largo y `side` u_maq a la
+ * derecha de la marcha (negativo: a la izquierda).
+ */
+function onLeg(leg: number, t: number, side = 0): Maq {
+  const { a, dx, dy, len } = legOf(leg);
+  return [r2m(a[0] + dx * len * t - dy * side), r2m(a[1] + dy * len * t + dx * side)];
+}
+
+/** Rumbo (rad) de `p` a la boia que cierra el tramo `leg`: hacia donde apunta lo que va en él. */
+function towardNext(leg: number, p: Maq): number {
+  const b = COURSE[leg + 1]!;
+  return Math.round(Math.atan2(b[1] - p[1], b[0] - p[0]) * 1000) / 1000;
+}
 
 const gate = (
   id: string,
@@ -779,31 +822,69 @@ const retired = (p: PlaceInput): PlaceInput => ({
   behaviors: [deco()],
 });
 
-/** El trazado de una vuelta: de la salida por cada boia y de vuelta a la salida. */
-const COURSE: Maq[] = [CIRCUIT_START, ...RACE_BUOYS.map((b) => b.p), CIRCUIT_START];
+/**
+ * Impulsos (flechas en el agua) y rampas de salto (T73): en qué tramo y a
+ * qué fracción de él. Siempre en mitad del tramo, nunca junto a una boia.
+ * muestra
+ */
+const BOOST_SPOTS: { leg: number; t: number }[] = [
+  { leg: 0, t: 0.5 },
+  { leg: 3, t: 0.55 },
+  { leg: 6, t: 0.5 },
+  { leg: 8, t: 0.45 },
+];
+const RAMP_SPOTS: { leg: number; t: number }[] = [
+  { leg: 4, t: 0.5 },
+  { leg: 7, t: 0.5 },
+  { leg: 9, t: 0.5 },
+];
 
 /**
- * Carriles: boias de decorado por fuera del trazado (no bloquean). Cada tramo
- * conserva el nombre de su rama de la maqueta.
+ * El salto de una rampa: altura (u de motor) y s en el aire. Sólo se ve; la
+ * rampa además impulsa como un impulso flojo. muestra
+ */
+export const RAMP_JUMP = { height: 40, duration: 1.1 } as const;
+
+/** Impulsos y rampas: punto y rumbo hacia la boia siguiente. */
+const BOOST_PADS = BOOST_SPOTS.map(({ leg, t }) => {
+  const p = onLeg(leg, t);
+  return { p, heading: towardNext(leg, p) };
+});
+const RAMPS = RAMP_SPOTS.map(({ leg, t }) => {
+  const p = onLeg(leg, t);
+  return { p, heading: towardNext(leg, p) };
+});
+
+/**
+ * Rocas y medusas de T73 por el camino: a un lado del tramo (u_maq), de modo
+ * que quien va derecho las roza y quien se abre choca. muestra
+ */
+const RACE_OBSTACLES: { kind: 'roca' | 'medusa'; leg: number; t: number; side: number }[] = [
+  { kind: 'roca', leg: 0, t: 0.3, side: 0.75 },
+  { kind: 'medusa', leg: 4, t: 0.3, side: -0.7 },
+  { kind: 'roca', leg: 5, t: 0.35, side: 0.7 },
+  { kind: 'roca', leg: 5, t: 0.65, side: -0.7 },
+  { kind: 'medusa', leg: 6, t: 0.75, side: 0.65 },
+  { kind: 'roca', leg: 7, t: 0.25, side: -0.75 },
+  { kind: 'medusa', leg: 7, t: 0.75, side: 0.7 },
+  { kind: 'roca', leg: 8, t: 0.7, side: 0.75 },
+];
+
+/**
+ * Carriles: boias de decorado por fuera del trazado (no bloquean). Cada rama
+ * de la maqueta marca unos tramos.
  */
 const LANES: { rama: string; from: number; to: number }[] = [
   { rama: 'comun', from: 0, to: 1 },
   { rama: 'atajo', from: 1, to: 3 },
-  { rama: 'segura', from: 3, to: 5 },
-  { rama: 'final', from: 5, to: 7 },
+  { rama: 'segura', from: 3, to: 4 },
+  { rama: 'final', from: 9, to: 10 },
 ];
 /** u_maq entre boies de carril y del trazado a ellas. muestra */
 const LANE_STEP = 2.4;
 const LANE_OFFSET = 1.5;
 
-/** Impulsos en el agua: punto y rumbo (rad, el del trazado allí). muestra */
-const BOOST_PADS: { p: Maq; heading: number }[] = [
-  { p: [12.5, -5.6], heading: Math.atan2(-12.0 - 1.0, 12.9 - 12.2) },
-  { p: [9.1, -14.4], heading: Math.atan2(-11.7 + 15.4, 7.8 - 10.6) },
-  { p: [11.0, 1.8], heading: Math.atan2(8.2 + 4.6, 11.6 - 10.4) },
-];
-
-/** Lo que una boia de carril no debe pisar (u_maq): rocas, arcos, boias, impulsos. */
+/** Lo que una boia de carril no debe pisar (u_maq): rocas, arcos, boias, impulsos, rampas, islas. */
 const LANE_KEEP_OUT: { p: Maq; r: number }[] = [
   { p: [10.7, -11.6], r: 1.8 },
   { p: [14.6, -12.0], r: 1.3 },
@@ -813,7 +894,10 @@ const LANE_KEEP_OUT: { p: Maq; r: number }[] = [
   { p: [8.7, -12.9], r: 1.0 },
   { p: [7.9, -12.9], r: 1.0 },
   ...COURSE.map((p) => ({ p, r: 1.2 })),
-  ...BOOST_PADS.map(({ p }) => ({ p, r: 1.0 })),
+  ...[...BOOST_PADS, ...RAMPS].map(({ p }) => ({ p, r: 1.0 })),
+  ...RACE_OBSTACLES.map(({ leg, t, side }) => ({ p: onLeg(leg, t, side), r: 0.8 })),
+  { p: [6.6, -1.2], r: 2.5 },
+  { p: [8.5, 13.0], r: 3.5 },
 ];
 
 /** Boies de carril por fuera de cada tramo del trazado (decorado: no bloquean). */
@@ -822,17 +906,10 @@ function laneBuoys(): PlaceInput[] {
   for (const lane of LANES) {
     let n = 0;
     for (let i = lane.from; i < lane.to; i++) {
-      const [ax, ay] = COURSE[i]!;
-      const [bx, by] = COURSE[i + 1]!;
-      const len = Math.hypot(bx - ax, by - ay);
-      const steps = Math.max(1, Math.round(len / LANE_STEP));
-      // Por fuera: a la derecha de la marcha (la vuelta va en sentido antihorario).
-      const nx = -(by - ay) / len;
-      const ny = (bx - ax) / len;
+      const steps = Math.max(1, Math.round(legOf(i).len / LANE_STEP));
       for (let k = 1; k < steps; k++) {
-        const t = k / steps;
-        const x = ax + (bx - ax) * t + nx * LANE_OFFSET;
-        const y = ay + (by - ay) * t + ny * LANE_OFFSET;
+        // Por fuera: a la derecha de la marcha.
+        const [x, y] = onLeg(i, k / steps, LANE_OFFSET);
         if (LANE_KEEP_OUT.some((o) => Math.hypot(x - o.p[0], y - o.p[1]) < o.r)) continue;
         n++;
         out.push({
@@ -863,9 +940,49 @@ function boostPads(): PlaceInput[] {
     behaviors: [
       { type: 'collision', params: { mode: 'boost', intensity: 0.5, duration: 1.5, solid: false } },
     ],
-    params: { heading: Math.round(heading * 1000) / 1000 },
-    source: [T61],
+    params: { heading },
+    source: [i === 0 ? T61 : T73],
   }));
+}
+
+/**
+ * Rampas de salto (T73): una plataforma con flechas hacia arriba. Pasar por
+ * encima impulsa un poco y lanza el barco al aire (`params.jump`); al caer,
+ * chapuzón. No bloquean.
+ */
+function ramps(): PlaceInput[] {
+  return RAMPS.map(({ p, heading }, i) => ({
+    id: `circuito-rampa-${i + 1}`,
+    name: 'Rampa',
+    category: 'rampa',
+    tags: [...TAGS, 'sin-brujula'],
+    position: { ...at(p), zone: 'circuito' },
+    geometry: { activation: { shape: 'circle', radius: size(1.1) } },
+    behaviors: [
+      { type: 'collision', params: { mode: 'boost', intensity: 0.3, duration: 1.2, solid: false } },
+    ],
+    params: { heading, jump: { ...RAMP_JUMP } },
+    source: [T73],
+  }));
+}
+
+/** Las rocas (rebotan) y medusas (ralentizan) que T73 pone por el camino. */
+function raceObstacles(): PlaceInput[] {
+  const n = { roca: 1, medusa: 1 };
+  return RACE_OBSTACLES.map(({ kind, leg, t, side }) => {
+    const i = ++n[kind];
+    return {
+      id: `circuito-${kind}-${i}`,
+      name: kind === 'roca' ? 'Roca' : 'Medusa',
+      category: 'obstaculo',
+      tags: TAGS,
+      position: { ...at(onLeg(leg, t, side)), zone: 'circuito' },
+      geometry: { collision: { shape: 'circle', radius: size(kind === 'roca' ? 0.6 : 0.45) } },
+      // Medusa: ralentiza un 40 % durante 1,5 s, como la de T61 [provisional].
+      behaviors: [kind === 'roca' ? bounce(0.45) : slow(0.4, 1.5)],
+      source: [T73],
+    };
+  });
 }
 
 const CIRCUIT: PlaceInput[] = [
@@ -902,6 +1019,7 @@ const CIRCUIT: PlaceInput[] = [
     ]),
   ),
   ...boostPads(),
+  ...ramps(),
   {
     id: 'circuito-semaforo',
     name: 'Semáforo de salida',
@@ -943,7 +1061,7 @@ const CIRCUIT: PlaceInput[] = [
     behaviors: [block()],
     source: ['zonas/circuito/islas/freu'],
   },
-  // Los tres obstáculos (REQ-AVE-030).
+  // Los tres obstáculos de la maqueta (REQ-AVE-030).
   {
     id: 'circuito-roca',
     name: 'Roca',
@@ -973,10 +1091,11 @@ const CIRCUIT: PlaceInput[] = [
     position: { ...at([7.9, -12.9]), zone: 'circuito' },
     geometry: { collision: { shape: 'circle', radius: size(0.55) } },
     behaviors: [slow(0.6, 2), deco()],
-    // Vaivén entre dos puntos (el motor lo mueve: `patrol`).
+    // Vaivén entre dos puntos (el motor lo mueve: `patrol`); cruza el tramo de la boia 3 a la 4.
     params: { patrol: { points: [at([7.1, -12.9]), at([8.7, -12.9])], period: 7 } },
     source: ['circuito/obstaculos/2'],
   },
+  ...raceObstacles(),
   ...laneBuoys(),
 ];
 
