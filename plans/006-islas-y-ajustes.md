@@ -87,7 +87,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: 10-min simulation earns 715 points/245 coins (Carnet ship + points ship + a bought ship + a skin); log 10c, cofre 40c+20p, Carnet 300p + Low-poly ship, minigames 3 waves 50c+150p, bottle cap 10 (one per person) → fa907f3
 
 ## T73 — Los Rápidos: circuit v3
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T67
 - Goal: Decisions 2026-10-02. The circuit (now named Los Rápidos) keeps checkpoints and 3 laps, and: (1) arriving at the start no longer starts the race automatically; a popup explains the race (3 laps through the checkpoints, you compete against the other users' times and against yourself, the ghost replays your best run) and asks whether to start; (2) ranking against others: on this browser-only version use the sample members' times plus your own best (a shared ranking is the final version); (3) the ghost boat replaying your best time is visible during the race; (4) checkpoints spread better across the map (a longer, more varied route); (5) more obstacles along the way; (6) jump platforms with up arrows: driving over one makes the boat jump and splash when it lands in the sea; (7) speed boosts and jump platforms always sit between two checkpoints and point towards the next checkpoint. Works in both worlds and on mobile.
 - Context: `packages/world/src/worlds/arcilla/map.ts` (`CIRCUIT_ID`, `CIRCUIT_VERSION`, `CIRCUIT_LAPS`, `CIRCUIT_MEDALS`, `RACE_BUOYS`, `BOOST_PADS`), `packages/engine/src/circuit/{race,ghost}.ts` (auto-start at race.ts:~244, `CIRCUIT_COUNTDOWN_S`), `apps/web/app/mar/race.ts` (ghost storage key), `mar-client.tsx` (`holdShip`), `lib/mundo/ranking-circuit.ts` (`SAMPLE_CIRCUIT_MS`), the minimap markers; bump `CIRCUIT_VERSION` if old records become incomparable.
@@ -96,7 +96,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Test command → exit 0
   - unit tests: no auto-start; every boost and ramp lies between two consecutive checkpoints and its direction points to the next one (within a tolerance); a ramp triggers a jump and a landing splash event; 3 laps finish; ghost replays the best run → exit 0
   - e2e in /mar: arriving at the start shows the popup; "Empezar" starts the countdown; a scripted run completes 3 laps; the result compares against the sample members and the own best; a second run shows the ghost → exit 0
-- Outcome:
+- Outcome: Los Rápidos v3: start popup instead of auto-start, 9 buoys spread over the map clear of islands, 5 rocks + 3 jellyfish, 4 boost pads and 3 jump ramps mid-leg pointing at the next buoy (visual jump + splash), ghost of the best run, result vs sample members and own best; CIRCUIT_VERSION 3 → 990c3d1
 
 ## T74 — Site font: Druk-Wide-like titles and Inter
 - Status: done
@@ -142,7 +142,11 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T71: no year text on the island (real content needs Álvaro); fewer-face buoys and material reuse to fit the budget; island-specific code only in tools/blender/islas/ultima.py (agent)
 
+- 2026-10-02 T73: CIRCUIT_VERSION 3 (records and ghosts restart); medals 60/74/98 s and sample times recalibrated to a ~66 s straight run; FAST_LAP_MS 73.4 s; the jump is visual only (BoatJump), no steering change; next buoy highlighted on the minimap (agent)
+- 2026-10-02 orchestrator: main had an uncommitted frontend-design skill (added outside this plan); committed it with Hernán's OK (3ee66b4)
+
 ## Proposals (new scope)
+- 2026-10-02 T73: unused 2D useCircuit in lib/mundo/circuit-hud.tsx; achievement text "Te queda una vuelta en menos de…" says lap for a 3-lap time
 - 2026-10-02 T71: mobile performance near the 31-material island not measured
 - 2026-10-02 T72: ranks still top out at 600 points (reached in ~10 min); the Fiestera mission still gives 100 points/100 coins; bottle rules only in the browser store, not in Supabase
 - 2026-10-02 T69: procedural glow points still show under the GLB (slightly off); costume buoys in the GLB do not bob; no Draco compression (no decoder in /mar)
@@ -167,3 +171,6 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 22:15 T70 done · branch worktree-agent-a5f97bb6f02f4e0a5 → 6017dbb
 - 2026-10-02 22:17 T73 launched · attempt 1 · agent a64eac98af0ac71b2
 - 2026-10-02 22:21 T71 done · branch worktree-agent-a77c2040bfa9131a8 → 70a9af5
+- 2026-10-02 22:23 T75 launched · attempt 1 · agent aeeb6a1c1480c312e
+- 2026-10-02 22:49 T73 integration blocked by dirty main (.claude/skills/frontend-design); committed with Hernán's OK
+- 2026-10-02 22:52 T73 done · branch worktree-agent-a64eac98af0ac71b2 → 990c3d1
