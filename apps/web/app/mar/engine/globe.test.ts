@@ -144,4 +144,50 @@ describe('el minimapa redondo de /mar (globo)', () => {
     expect(calls.arc).toBe(3 + pins.length + accents + 1);
     expect(calls.lineTo).toBeGreaterThan(seaRoute(world).path.length / 2);
   });
+
+  it('centrado como el mapa grande (T68): el giro no corre las islas ni el barco', () => {
+    // Un lienzo que apunta dónde pinta cada círculo.
+    const record = () => {
+      const arcs: [number, number][] = [];
+      const ctx = new Proxy(
+        {},
+        {
+          get(target: Record<string, unknown>, key: string) {
+            if (key in target) return target[key];
+            if (key === 'createRadialGradient') return () => ({ addColorStop() {} });
+            if (key === 'arc') return (x: number, y: number) => arcs.push([x, y]);
+            return () => undefined;
+          },
+          set(target: Record<string, unknown>, key: string, value: unknown) {
+            target[key] = value;
+            return true;
+          },
+        },
+      ) as unknown as CanvasRenderingContext2D;
+      return { arcs, ctx };
+    };
+    const pins: GlobePin[] = world.objects
+      .filter((o) => o.identity.category === 'isla')
+      .map((o) => ({ id: o.identity.id, x: o.position.x, y: o.position.y }));
+    const scene = (spin: number) => ({
+      rect,
+      spin,
+      ship: { x: cx + 200, y: cy + 300, heading: 0.4 },
+      pins,
+      route: [],
+      course: null,
+    });
+    const a = record();
+    const b = record();
+    const size = 144;
+    const centerA = drawGlobe(a.ctx, size, scene(0));
+    const centerB = drawGlobe(b.ctx, size, scene(2.5));
+    // El centro del planeta, en el centro del lienzo, gire lo que gire.
+    for (const c of [centerA, centerB]) {
+      expect(c.x).toBeCloseTo(size / 2, 6);
+      expect(c.y).toBeCloseTo(size / 2, 6);
+    }
+    // Y cada isla y el barco, en el mismo sitio con cualquier giro.
+    expect(b.arcs).toEqual(a.arcs);
+  });
 });

@@ -1,28 +1,31 @@
+import type { ReactNode } from 'react';
 import type { MenuSection } from '../types';
 import { t } from '../../../i18n';
 
+/** Los consejos de Welcome Aboard: sólo los dos primeros (decisión del 2026-10-02). */
+export const WELCOME_TIPS = ['welcome.tip.sail', 'welcome.tip.island'] as const;
+
 /**
- * El texto de Welcome Aboard (REQ-IDE-035), igual en el 2D y en el mar 3D
- * (T55); `tips` cambia los consejos (los controles no son los mismos). Borrador.
+ * El texto de Welcome Aboard (REQ-IDE-035), corto (decisión de Hernán y
+ * Álvaro del 2026-10-02): el título en negrita, una frase, el objetivo y los
+ * dos primeros consejos. `title` cambia lo que va con el título (en el mar,
+ * la boia de la entrada a su lado). Borrador.
  */
-export function WelcomeBody({ tips }: { tips?: readonly string[] }) {
-  const list = tips ?? [
-    t('welcome.tip.sail'),
-    t('juego.welcome.acercateAUnaIsla'),
-    t('welcome.tip.compass'),
-  ];
+export function WelcomeBody({ title }: { title?: ReactNode }) {
   return (
     <>
-      <p>{t('juego.welcome.boiaPlanetEsEl')}</p>
-      <p>
-        <strong>{t('juego.welcome.tuObjetivo')}</strong> {t('juego.welcome.encontrarALaBoia')}
-      </p>
-      <ul>
-        {list.map((tip) => (
-          <li key={tip}>{tip}</li>
+      {title ?? (
+        <p>
+          <strong>{t('mar.bienvenida.titulo')}</strong>
+        </p>
+      )}
+      <p data-testid="bienvenida-texto">{t('mar.bienvenida.texto')}</p>
+      <p data-testid="bienvenida-objetivo">{t('mar.bienvenida.objetivo')}</p>
+      <ul data-testid="bienvenida-consejos">
+        {WELCOME_TIPS.map((key) => (
+          <li key={key}>{t(key)}</li>
         ))}
       </ul>
-      <p className="juego-muted">{t('juego.welcome.textoDeMuestraPendiente')}</p>
     </>
   );
 }

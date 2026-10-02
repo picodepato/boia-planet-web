@@ -6,14 +6,14 @@ import {
   SAMPLE_DISCOUNTS,
   createLocalRepository,
 } from '@boia/store';
-import { INFO_BOIES, WORLD_REGISTRY } from '@boia/world';
+import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import {
   type GuideState,
-  buoyGuide,
   discountMarks,
   discountRefOf,
   guideSpots,
+  helpNow,
   missionDiscountOf,
   nearestSpot,
 } from './guide';
@@ -23,15 +23,20 @@ import { deliveryDiscount, missedDeliveryDiscount } from './mission';
  * La Boia Fiestera como misión central y los tres descuentos del mundo
  * (T59): todo sale del mapa y de la muestra. La entrega da un código de
  * entradas y el barco exclusivo; los «?» son los códigos pendientes; el
- * delfín y las boies informativas guían a la Fiestera, a los códigos y a
- * los minijuegos; los secretos sin código siguen escondidos y premian.
+ * delfín guía a la Fiestera, a los códigos y a los minijuegos, y el «?» de
+ * ayuda (T68) da el objetivo y una pista; los secretos sin código siguen escondidos y premian.
  */
 
 const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId);
 const objects = world.config.objects;
 const spec = rescueMissionOf(world.config)!;
 const none = { has: () => false };
-const fresh: GuideState = { phase: 'waiting', destination: null, found: none, foundDiscounts: none };
+const fresh: GuideState = {
+  phase: 'waiting',
+  destination: null,
+  found: none,
+  foundDiscounts: none,
+};
 const byId = (id: string) => objects.find((o) => o.identity.id === id)!;
 const missionDiscount = missionDiscountOf(objects, spec.destination)!;
 /** Los lugares que esconden un código en el mapa. */
@@ -54,9 +59,7 @@ describe('tres descuentos en el mundo (T59)', () => {
     expect(new Set(SAMPLE_DISCOUNTS.map((d) => d.id))).toEqual(inWorld);
     // Ni un código caducado en los restos ni uno de tienda escondido en el mundo.
     expect(SAMPLE_DISCOUNTS.filter((d) => d.scope === 'store' || d.hiddenAt)).toEqual([]);
-    expect(objects.filter((o) => o.identity.category === 'restos' && discountRefOf(o))).toEqual(
-      [],
-    );
+    expect(objects.filter((o) => o.identity.category === 'restos' && discountRefOf(o))).toEqual([]);
     const castaway = objects.find((o) => o.identity.category === 'naufrago')!;
     expect(hiding.map((o) => o.identity.id).sort()).toEqual(
       [castaway.identity.id, 'secreto-anfora'].sort(),
@@ -75,9 +78,7 @@ describe('tres descuentos en el mundo (T59)', () => {
 
   it('cada uno es un «?» del minimapa hasta que se encuentra', () => {
     const marks = discountMarks(guideSpots(objects, fresh));
-    expect(marks.map((m) => m.discountId).sort()).toEqual(
-      SAMPLE_DISCOUNTS.map((d) => d.id).sort(),
-    );
+    expect(marks.map((m) => m.discountId).sort()).toEqual(SAMPLE_DISCOUNTS.map((d) => d.id).sort());
     // El de la Fiestera, en ella mientras espera…
     expect(marks.find((m) => m.discountId === missionDiscount)!.placeId).toBe(spec.characterId);
     // …y en su destino mientras va a bordo.
@@ -105,7 +106,10 @@ describe('tres descuentos en el mundo (T59)', () => {
       ['secreto-campana', 'secreto-circulo', 'secreto-cueva'].sort(),
     );
     for (const o of secrets) {
-      expect(spots.some((s) => s.objectId === o.identity.id), o.identity.id).toBe(false);
+      expect(
+        spots.some((s) => s.objectId === o.identity.id),
+        o.identity.id,
+      ).toBe(false);
       expect(o.identity.tags, o.identity.id).toContain('oculto');
       const prize = o.behaviors.some(
         (b) =>
@@ -143,28 +147,31 @@ describe('el delfín y las boies guían (T59)', () => {
     expect(nearestSpot(spots, at, 400)!.objectId).not.toBe(spec.characterId);
   });
 
-  it('cada boia informativa señala lo suyo y, hecho, lo pendiente más cercano', () => {
+  it('el «?» de ayuda (T68): el objetivo por paso de la misión y una pista con rumbo', () => {
     const spots = guideSpots(objects, fresh);
-    for (const b of INFO_BOIES) {
-      const o = byId(b.id);
-      expect(o.params?.guide, b.id).toBe(b.guide);
-      const g = buoyGuide(objects, b.id, spots)!;
-      expect(g.objectId === b.guide || g.placeId === b.guide, b.id).toBe(true);
-    }
-    // Entre todas guían a la Fiestera, a un código y a un minijuego.
-    expect(kinds(INFO_BOIES.map((b) => buoyGuide(objects, b.id, spots)!))).toEqual([
-      'discount',
-      'minigame',
-      'mission',
-    ]);
-    // La de la Fiestera, con la Fiestera ya entregada: a lo más cercano que quede.
-    const fiestera = INFO_BOIES.find((b) => b.guide === spec.characterId)!;
-    const later = guideSpots(objects, { ...fresh, phase: 'delivered' });
-    const g = buoyGuide(objects, fiestera.id, later)!;
-    expect(g.kind).not.toBe('mission');
-    expect(g).toEqual(nearestSpot(later, byId(fiestera.id).position));
-    // Lo que no es una boia que guía no señala nada.
-    expect(buoyGuide(objects, 'puerto-boia', spots)).toBeNull();
+    const port = { x: 0, y: 0 };
+    // Esperando: encontrarla; su rumbo, a ella. La pista: lo pendiente más cercano que no es ella.
+    const waiting = helpNow(spots, 'waiting', port);
+    expect(waiting.objective).toBe('find');
+    expect(waiting.objectiveSpot?.placeId).toBe(spec.characterId);
+    expect(waiting.hint).toEqual(
+      nearestSpot(
+        spots.filter((s) => s.kind !== 'mission'),
+        port,
+      ),
+    );
+    expect(waiting.hint?.kind).not.toBe('mission');
+    // A bordo: llevarla; el rumbo, a su destino.
+    const aboard = helpNow(guideSpots(objects, { ...fresh, phase: 'aboard' }), 'aboard', port);
+    expect(aboard.objective).toBe('deliver');
+    expect(aboard.objectiveSpot?.placeId).toBe(spec.destination);
+    // Entregada: cumplido, sin rumbo; la pista sigue mientras quede algo.
+    const done = helpNow(guideSpots(objects, { ...fresh, phase: 'delivered' }), 'delivered', port);
+    expect(done.objective).toBe('done');
+    expect(done.objectiveSpot).toBeNull();
+    expect(done.hint).not.toBeNull();
+    // Sin nada pendiente, sin pista.
+    expect(helpNow([], 'delivered', port).hint).toBeNull();
   });
 });
 
@@ -216,8 +223,7 @@ describe('el premio de la misión central (T59)', () => {
     expect(SAMPLE_ACHIEVEMENTS.some((a) => a.cosmeticKey === ship.id)).toBe(false);
     const open = browser();
     const repo = open();
-    const item = async () =>
-      (await open().progress.shop()).find((i) => i.cosmetic.id === ship.id)!;
+    const item = async () => (await open().progress.shop()).find((i) => i.cosmetic.id === ship.id)!;
     expect(await item()).toMatchObject({
       owned: false,
       canBuy: false,

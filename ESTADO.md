@@ -4,6 +4,48 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T68: Welcome sheet, help instead of guidance, top links, minimap centring
+
+Qué existe:
+
+- **Welcome Aboard corta** (`app/mar/a-bordo.tsx`, `lib/mundo/menu/sections/welcome.tsx`):
+  la boia de la entrada junto a «BIENVENIDO A BOIA.PLANET» en negrita, la
+  frase (sin negrita), «Objetivo: Encuentra la BOIA y llévala a la Isla de
+  Nochevieja.», los dos primeros consejos (`WELCOME_TIPS`) y dos botones
+  pegados abajo: «A navegar» (grande, naranja, cierra) y «Comprar entradas»,
+  que abre «Elige tu evento» dentro del mar (`onTickets` → `openEntradas`).
+  Claves `mar.bienvenida.{titulo,texto,objetivo,aNavegar,comprar}`; fuera
+  `mar.bienvenida.{boia,entradas}` y `juego.welcome.*`.
+- **Nada guía solo**: fuera el chip de las boies informativas (`buoyGuide`,
+  `MarGuideChip`), el chip «Lleva a la Fiestera a…» de la misión a bordo y el
+  mensaje centrado de la primera vez («Toca y arrastra…», `.mar-help`,
+  `boia:mar3d:ayuda`). El delfín sigue igual.
+- **El «?» de ayuda** (`mar-ayuda-abrir`, bajo el botón del menú): una
+  tarjetita (`MarAyuda` en `app/mar/guia.tsx`) con el objetivo según el paso
+  de la misión y una pista (el código o minijuego pendiente más cercano al
+  barco), cada uno con su «Rumbo a…» (fija el rumbo y la cierra).
+  `helpNow` en `lib/mundo/guide.ts`. Claves `mar.ayuda.*`.
+- **Enlaces de arriba**: Fotos, Shop, Artistas, Contacto, Carnet.
+- **Minimapa centrado como el mapa grande** (`engine/globe.ts`): las islas,
+  el barco, la ruta, los «?» y el rumbo se proyectan sin el giro del cielo
+  (antes lo corría hacia el este y, al rato, se veía desplazado a la
+  derecha); el giro sólo mueve los meridianos. `drawGlobe` devuelve dónde
+  pintó el centro del planeta y el lienzo lo expone en `data-centro`.
+- `docs/spec/estado.md`: notas de REQ-IDE-035 y REQ-PRO-009 con la prueba nueva.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 100 archivos, 914 pruebas.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+- `E2E_PORT=3321 pnpm e2e mar-ayuda.spec.ts --workers=1` → 8 passed, 8 skipped (cada vista en su proyecto).
+- `E2E_PORT=3321 pnpm e2e mar-hud mar-fiestera intro mar-a-bordo logros mar-3d demo mar-entradas --workers=2` → 112 passed, 10 skipped, 0 failed.
+
+Pendiente:
+
+- Textos `muestra` de la ayuda (`mar.ayuda.*`) a revisar con Álvaro.
+- La cabecera de la hoja sigue diciendo «⚓ Welcome Aboard» (nombre de la sección del menú).
+- `params.guide` de las boies informativas ya no se usa en el mar (dato de `packages/world`).
+
 ## 2026-10-02 — plan 005 T66: Un Carnet que vale la pena
 
 Qué existe:

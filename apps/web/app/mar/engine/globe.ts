@@ -6,9 +6,15 @@
  *
  * Proyección: el periodo del planeta (lo que da la vuelta) ocupa el disco
  * entero una sola vez, así que todo (el barco, cada isla) sale siempre y
- * nunca repetido. El giro desplaza el mar en horizontal, dando la vuelta como
- * en el barco; el cuadrado pasa al disco con el mapeo elíptico (biyectivo) y
- * se abomba un poco hacia el centro, como una esfera vista de frente. muestra
+ * nunca repetido; el cuadrado pasa al disco con el mapeo elíptico
+ * (biyectivo) y se abomba un poco hacia el centro, como una esfera vista de
+ * frente.
+ *
+ * Centrado como el mapa grande (T68, decisión del 2026-10-02): el centro del
+ * planeta va siempre al centro del disco. Antes el giro del cielo arrastraba
+ * también las islas, el barco y la ruta hacia el este y, al rato, lo que
+ * enseñaba se veía corrido a la derecha; ahora el giro sólo mueve los
+ * meridianos (se sigue leyendo como un globo que gira). muestra
  */
 
 export interface GlobeRect {
@@ -107,6 +113,7 @@ export interface GlobePin {
 
 export interface GlobeScene {
   rect: GlobeRect;
+  /** El giro del planeta (rad): sólo mueve los meridianos; lo demás queda centrado. */
   spin: number;
   ship: { x: number; y: number; heading: number };
   pins: readonly GlobePin[];
@@ -142,9 +149,15 @@ const GRID = [-0.5, 0, 0.5];
 
 /**
  * Pinta el globo en un lienzo cuadrado de `size` px (de dispositivo). Barato:
- * unas pocas decenas de trazos; quien lo usa lo llama a pocos fps.
+ * unas pocas decenas de trazos; quien lo usa lo llama a pocos fps. Devuelve
+ * dónde quedó pintado el centro del planeta (px del lienzo): el centro del
+ * lienzo, como en el mapa grande.
  */
-export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeScene): void {
+export function drawGlobe(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  s: GlobeScene,
+): { x: number; y: number } {
   // px de este lienzo por px de un minimapa de 88: los tamaños no dependen de la resolución.
   const px = size / 88;
   // Un margen para que el barco y las islas del borde no se corten con el lienzo.
@@ -152,6 +165,8 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
   const c = size / 2;
   const P = (p: GlobePoint) => [c + p.x * R, c + p.y * R] as const;
   const tmp: GlobePoint = { x: 0, y: 0, u: 0, v: 0 };
+  // Lo que hay en el mar se proyecta sin el giro: centrado como el mapa grande.
+  const at = (x: number, y: number) => globeProject(x, y, s.rect, 0, tmp);
 
   ctx.clearRect(0, 0, size, size);
   ctx.save();
@@ -200,8 +215,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
     const prev: GlobePoint = { x: 0, y: 0, u: 0, v: 0 };
     for (let i = 0; i < s.route.length; i++) {
       const q = s.route[i]!;
-      globeProject(q.x, q.y, s.rect, s.spin, tmp);
-      const [x, y] = P(tmp);
+      const [x, y] = P(at(q.x, q.y));
       if (i === 0 || acrossSeam(prev, tmp)) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
       Object.assign(prev, tmp);
@@ -234,8 +248,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
   // Islas: puntos crema; la del evento, naranja y con aro. Más pequeñas hacia el borde.
   const pins = [...s.pins].sort((a, b) => Number(!!a.accent) - Number(!!b.accent));
   for (const pin of pins) {
-    globeProject(pin.x, pin.y, s.rect, s.spin, tmp);
-    const [x, y] = P(tmp);
+    const [x, y] = P(at(pin.x, pin.y));
     const depth = Math.sqrt(Math.max(0, 1 - tmp.x * tmp.x - tmp.y * tmp.y));
     const r = (pin.accent ? 4.2 : 2.6) * px * (0.6 + 0.4 * depth);
     if (pin.accent) {
@@ -255,8 +268,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
 
   // Los «?» de los descuentos por encontrar: un círculo amarillo con su interrogación.
   for (const m of s.marks ?? []) {
-    globeProject(m.x, m.y, s.rect, s.spin, tmp);
-    const [x, y] = P(tmp);
+    const [x, y] = P(at(m.x, m.y));
     const depth = Math.sqrt(Math.max(0, 1 - tmp.x * tmp.x - tmp.y * tmp.y));
     const r = 5.2 * px * (0.7 + 0.3 * depth);
     ctx.beginPath();
@@ -275,8 +287,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
 
   // El rumbo marcado: un aro amarillo.
   if (s.course) {
-    globeProject(s.course.x, s.course.y, s.rect, s.spin, tmp);
-    const [x, y] = P(tmp);
+    const [x, y] = P(at(s.course.x, s.course.y));
     ctx.beginPath();
     ctx.arc(x, y, 3.2 * px, 0, Math.PI * 2);
     ctx.strokeStyle = GLOBE_COLORS.course;
@@ -285,9 +296,8 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
   }
 
   // El barco: flecha blanca con borde oscuro, hacia donde va.
-  globeProject(s.ship.x, s.ship.y, s.rect, s.spin, tmp);
-  const [sx, sy] = P(tmp);
-  const a = globeHeading(s.ship.x, s.ship.y, s.ship.heading, s.rect, s.spin);
+  const [sx, sy] = P(at(s.ship.x, s.ship.y));
+  const a = globeHeading(s.ship.x, s.ship.y, s.ship.heading, s.rect, 0);
   const L = 9 * px;
   // Un halo claro: el barco se encuentra de un vistazo, también en el borde.
   ctx.beginPath();
@@ -309,4 +319,7 @@ export function drawGlobe(ctx: CanvasRenderingContext2D, size: number, s: GlobeS
   ctx.strokeStyle = GLOBE_COLORS.islandEdge;
   ctx.stroke();
   ctx.restore();
+
+  const [mx, my] = P(at((s.rect.left + s.rect.right) / 2, (s.rect.top + s.rect.bottom) / 2));
+  return { x: mx, y: my };
 }

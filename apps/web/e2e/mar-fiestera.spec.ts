@@ -1,6 +1,6 @@
 import { rescueMissionOf } from '@boia/engine/mission';
 import { SAMPLE_COSMETICS, SAMPLE_DISCOUNTS } from '@boia/store';
-import { INFO_BOIES, WORLD_REGISTRY, type WorldObject } from '@boia/world';
+import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -14,8 +14,9 @@ import { discountRefOf, guideSpots, missionDiscountOf } from '../lib/mundo/guide
  * (T59): el minimapa enseña tres «?» (los códigos del mundo, leídos de la
  * muestra); rescatarla y dejarla en la última isla da su código de entradas,
  * que la compra de prueba aplica, y el barco exclusivo; un secreto sin
- * código sigue escondido y premia al encontrarlo; una boia informativa y el
- * delfín guían a la Fiestera, a los códigos y a los minijuegos. Como en las
+ * código sigue escondido y premia al encontrarlo; el delfín guía a la
+ * Fiestera, a los códigos y a los minijuegos (las boies informativas ya no
+ * ponen chip de rumbo desde T68). Como en las
  * otras pruebas del mar, cada tramo empieza con `?cerca=` y el progreso vive
  * en el navegador de la prueba.
  *
@@ -44,8 +45,6 @@ const secretCoins = (o: WorldObject) =>
     (n, b) => (b.type === 'reward' && b.params.kind === 'coins' ? n + b.params.amount : n),
     0,
   );
-/** La boia que señala a la Fiestera. */
-const fiesteraBoia = INFO_BOIES.find((b) => b.guide === spec.characterId)!;
 
 const OUT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -131,9 +130,9 @@ test('el minimapa enseña un «?» por cada uno de los tres códigos del mundo',
   expect(new Set(SAMPLE_DISCOUNTS.map((d) => d.id))).toEqual(inWorld);
 
   const errors = await openMar(page);
-  await expect.poll(() => marks(page), { timeout: 15_000 }).toEqual(
-    SAMPLE_DISCOUNTS.map((d) => d.id).sort(),
-  );
+  await expect
+    .poll(() => marks(page), { timeout: 15_000 })
+    .toEqual(SAMPLE_DISCOUNTS.map((d) => d.id).sort());
   await expect(page.getByTestId('mar-minimapa')).toHaveAttribute('data-codigos', '3');
   await snap(page, 'p005-t59-minimapa.png');
   expect(errors).toEqual([]);
@@ -164,7 +163,11 @@ test('rescatar a la Fiestera y dejarla en la última isla: su código vale en la
   // Su «?» ya no está; quedan los otros dos.
   await expect
     .poll(() => marks(page))
-    .toEqual(SAMPLE_DISCOUNTS.filter((d) => d.id !== fiesteraCode.id).map((d) => d.id).sort());
+    .toEqual(
+      SAMPLE_DISCOUNTS.filter((d) => d.id !== fiesteraCode.id)
+        .map((d) => d.id)
+        .sort(),
+    );
 
   // 3. La compra de prueba, dentro del mar, lo aplica.
   await page.getByTestId('mar-entradas').click();
@@ -222,19 +225,9 @@ test('un secreto sin código sigue escondido y premia al encontrarlo', async ({ 
   expect(errors).toEqual([]);
 });
 
-test('una boia informativa señala a la Fiestera y fija rumbo; el delfín guía a lo pendiente', async ({
+test('el delfín guía a lo pendiente (las boies informativas ya no ponen chip: T68, mar-ayuda.spec)', async ({
   page,
 }) => {
-  await openMar(page, `?cerca=${fiesteraBoia.id}`);
-  const chip = page.getByTestId('mar-guia');
-  await steerTo(page, fiesteraBoia.id, async () => (await chip.count()) > 0, 45_000);
-  await expect(chip).toHaveAttribute('data-guia', 'mission');
-  await expect(chip).toHaveAttribute('data-destino', spec.characterId);
-  await snap(page, 'p005-t59-boia-guia.png');
-  await chip.getByTestId('mar-guia-ir').click();
-  await expect(page.getByTestId('mar-rumbo-activo')).toBeVisible();
-  await expect(chip).toHaveCount(0);
-
   // El delfín (`?delfin=1`: sale tras 1 s de mar abierto) guía a algo señalado.
   const guided = guideSpots(marWorld(first.config).objects, {
     phase: 'waiting',

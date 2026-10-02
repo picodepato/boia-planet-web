@@ -130,13 +130,6 @@ export const esJuego = {
   'juego.ranking.puntos': 'Puntos',
   'juego.ranking.tu': 'Tú',
   'juego.ranking.queRankingVer': 'Qué ranking ver',
-  'juego.welcome.boiaPlanetEsEl':
-    'BOIA.PLANET es el universo de BOIA: un mar con islas de eventos, secretos, descuentos escondidos y la Boia Fiestera esperando a que la encuentres.',
-  'juego.welcome.tuObjetivo': 'Tu objetivo:',
-  'juego.welcome.encontrarALaBoia':
-    'encontrar a la Boia Fiestera y llevarla hasta la última isla. Por el camino, descubre islas y consigue logros.',
-  'juego.welcome.acercateAUnaIsla': 'Acércate a una isla para ver su evento.',
-  'juego.welcome.textoDeMuestraPendiente': 'Texto de muestra, pendiente de Álvaro.',
   'juego.minigameLayer.cerrar': 'Cerrar',
   'juego.minigameLayer.jugar': 'Jugar',
   'juego.minimap.senalar': 'Señalar {name}',

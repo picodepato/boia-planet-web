@@ -9,7 +9,8 @@ import { t as msg } from '../../lib/i18n';
 /**
  * Minimapa redondo de /mar (T34): el planeta entero como un globo pequeño y
  * semitransparente que gira despacio, con el barco, las islas (la del evento
- * en naranja), el rumbo y la ruta de boyas. Un lienzo 2D pequeño que se
+ * en naranja), el rumbo y la ruta de boyas, centrado como el mapa grande
+ * (T68: el giro ya no corre lo que enseña hacia la derecha). Un lienzo 2D pequeño que se
  * repinta `MINIMAP_FPS` veces por segundo, no con cada fotograma del 3D.
  *
  * Los «?» (T59) son los descuentos por encontrar: el del náufrago, el del
@@ -98,7 +99,7 @@ export function MarMinimap({
           ? { id: m.placeId, x: st.x, y: st.y }
           : { id: m.placeId, x: m.x, y: m.y };
       });
-      drawGlobe(ctx, size, {
+      const center = drawGlobe(ctx, size, {
         rect: g.planetBounds,
         spin: g.planetSpin,
         ship: g.ship,
@@ -117,6 +118,9 @@ export function MarMinimap({
         .join(',');
       canvas.dataset.marks = marksRef.current.map((m) => m.discountId).join(',');
       canvas.dataset.markPlaces = marks.map((m) => m.id).join(',');
+      // Dónde quedó el centro del planeta, en px de CSS del lienzo (T68: centrado).
+      const css = (canvas.clientWidth || size) / size;
+      canvas.dataset.centro = `${(center.x * css).toFixed(1)},${(center.y * css).toFixed(1)}`;
     };
     drawRef.current = draw;
     draw();

@@ -28,6 +28,7 @@ export function MarABordo({
   onCarnetCreated,
   onClose,
   onMenu,
+  onTickets,
 }: {
   panel: Exclude<MarPanel, 'logros'>;
   settings: Settings | null;
@@ -41,6 +42,8 @@ export function MarABordo({
   onClose: () => void;
   /** Vuelve al menú del juego (T65): cada panel es una sección suya. */
   onMenu?: () => void;
+  /** «Comprar entradas» de Welcome Aboard: abre «Elige tu evento» dentro del mar. */
+  onTickets?: () => void;
 }) {
   const body = useRef<HTMLDivElement>(null);
   const menu = onMenu ? { onMenu } : {};
@@ -128,24 +131,41 @@ export function MarABordo({
           onClose={onClose}
           {...menu}
         >
-          {/* La boia de la entrada lo cuenta (T64): es lo primero al zarpar desde la landing. */}
-          <div className="mar-bienvenida__boia" data-testid="mar-bienvenida-boia">
-            <span className="mar-bienvenida__avatar" aria-hidden="true">
-              <span className="mar-splash__boia" />
-            </span>
-            <p>{t('mar.bienvenida.boia')}</p>
-          </div>
+          {/* Corta (decisión del 2026-10-02): la boia de la entrada con el título
+              en negrita, una frase, el objetivo, dos consejos y dos botones. */}
           <WelcomeBody
-            tips={[t('welcome.tip.sail'), t('welcome.tip.island'), t('mar.bienvenida.entradas')]}
+            title={
+              <div className="mar-bienvenida__boia" data-testid="mar-bienvenida-boia">
+                <span className="mar-bienvenida__avatar" aria-hidden="true">
+                  <span className="mar-splash__boia" />
+                </span>
+                <p>
+                  <strong data-testid="mar-bienvenida-titulo">{t('mar.bienvenida.titulo')}</strong>
+                </p>
+              </div>
+            }
           />
-          <button
-            type="button"
-            className="mar-btn mar-btn--primary mar-bienvenida__navegar"
-            data-testid="mar-bienvenida-navegar"
-            onClick={onClose}
-          >
-            {t('mar.bienvenida.aNavegar')}
-          </button>
+          <div className="mar-bienvenida__botones">
+            <button
+              type="button"
+              className="mar-btn mar-btn--primary mar-btn--big mar-bienvenida__navegar"
+              data-testid="mar-bienvenida-navegar"
+              onClick={onClose}
+            >
+              {t('mar.bienvenida.aNavegar')}
+            </button>
+            {onTickets ? (
+              <button
+                type="button"
+                className="mar-btn mar-bienvenida__entradas"
+                data-testid="mar-bienvenida-entradas"
+                aria-haspopup="dialog"
+                onClick={onTickets}
+              >
+                {t('mar.bienvenida.comprar')}
+              </button>
+            ) : null}
+          </div>
         </MarHoja>
       );
   }

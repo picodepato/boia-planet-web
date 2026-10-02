@@ -75,9 +75,10 @@ import {
 } from '../../lib/mundo/mission';
 import {
   type GuideSpot,
-  buoyGuide,
+  type HelpNow,
   discountMarks,
   guideSpots,
+  helpNow,
   missionDiscountOf,
   nearestSpot,
 } from '../../lib/mundo/guide';
@@ -144,7 +145,7 @@ import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
 import { type PointMap, pointMap } from './engine/compress';
 import { MarMinimap, type MinimapMark } from './minimap';
-import { MarGuideChip } from './guia';
+import { MarAyuda } from './guia';
 import { browserGhostStorage, loadGhost, raceCheckpoint, saveGhost, startPose } from './race';
 import { MarRaceChip, MarRaceIntro, MarRaceResult, type RaceHud, type RaceResult } from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
@@ -170,18 +171,20 @@ import { t as msg } from '../../lib/i18n';
  * arrancan con el barco navegando a su isla o con su panel abierto.
  *
  * El HUD (T65, decisión del 2026-10-02): arriba, los enlaces a la web (Fotos,
- * Contacto, Artistas y Shop salen a su sección; Carnet abre el menú del juego
- * en Mi Carnet), el minimapa y los saldos; a la izquierda, el botón del menú
- * del juego (el icono de logros), con todo lo demás; abajo, sólo «Entradas»
- * y el turbo. Textos `muestra`.
+ * Shop, Artistas y Contacto salen a su sección; Carnet, el último, abre el
+ * menú del juego en Mi Carnet), el minimapa y los saldos; a la izquierda, el
+ * botón del menú del juego (el icono de logros), con todo lo demás, y debajo
+ * el «?» de ayuda (T68); abajo, sólo «Entradas» y el turbo. Nada guía solo:
+ * ni chips de rumbo ni mensajes al zarpar (T68); el delfín, sí. Textos
+ * `muestra`.
  */
 
 /** Los enlaces de arriba a la web (T65): a su sección de la landing (D-21: entra directa). */
 const LANDING_LINKS = [
   ['fotos', 'mar.hud.fotos', '/#fotos'],
-  ['contacto', 'mar.hud.contacto', '/#contacto'],
-  ['artistas', 'mar.hud.artistas', '/#artistas'],
   ['shop', 'mar.hud.shop', '/#tienda'],
+  ['artistas', 'mar.hud.artistas', '/#artistas'],
+  ['contacto', 'mar.hud.contacto', '/#contacto'],
 ] as const;
 
 const progressApi = () => gameRepository().progress;
@@ -189,7 +192,6 @@ const newSessionId = () => `${Date.now().toString(36)}-${Math.random().toString(
 const MOOD_KEY = 'boia:mar3d:momento';
 /** Lo que tarda en fundirse el velo de la entrada al llegar zarpando (T64). */
 const VELO_MS = 700;
-const HELP_KEY = 'boia:mar3d:ayuda';
 
 const ticketAvailable = (id: string) => {
   const e = findEvent(id);
@@ -335,8 +337,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [dolphinOut, setDolphinOut] = useState(false);
   // Adónde guía el delfín al salir (T59): la Fiestera, un código o un minijuego.
   const [dolphinTo, setDolphinTo] = useState<string | null>(null);
-  // Lo que señala una boia informativa al terminar de hablar (T59).
-  const [guide, setGuide] = useState<GuideSpot | null>(null);
+  // El «?» de ayuda (T68): el objetivo y una pista, sólo si se pregunta.
+  const [ayuda, setAyuda] = useState<HelpNow | null>(null);
   // Los códigos ya encontrados (T59): sus «?» se quitan y nadie guía hasta ellos.
   const { data: foundDiscountList } = useRepoData((r) => r.progress.discounts());
   const foundDiscountsRef = useRef(new Set<string>());
@@ -395,7 +397,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   // El récord al acercarse a la salida, antes de correr (REQ-AVE-028).
   const [raceIntro, setRaceIntro] = useState<string | null>(null);
-  const [help, setHelp] = useState(false);
   const [menu, setMenu] = useState(false);
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
@@ -613,11 +614,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const onWorldEvent = (e: WorldEvent) => {
     const world = worldRef.current;
     if (!world) return;
-    // Una boia informativa que termina de hablar señala adónde ir (T59).
-    if (e.type === 'dialogue_end') {
-      const spot = buoyGuide(world.objects, e.objectId, spotsNow(world));
-      if (spot) setGuide(spot);
-    }
     const ctx = { sessionId, worldId: worldIdRef.current };
     const repo = gameRepository();
     const r = raceRef.current;
@@ -756,7 +752,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         pushAll(persistMissionEvent(gameRepository(), e, ctx));
         // El premio que importa (T59): su código de entradas, en su ficha.
         persist(deliveryDiscount(progressApi(), e, { ...ctx, sessionId }));
-        setGuide(null);
         break;
       default:
         break;
@@ -1027,7 +1022,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     const saved = readPref(MOOD_KEY);
     const startMood: MoodId = MOOD_IDS.includes(saved as MoodId) ? (saved as MoodId) : 'tarde';
     setMood(startMood);
-    setHelp(readPref(HELP_KEY) !== 'visto');
 
     (async () => {
       const chosen = currentWorld(window.location.search, await adminWorldId());
@@ -1108,10 +1102,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         onImpact: (speed) => handlers.current.onImpact(speed),
         raceStartLabel: msg('mar.race.startBanner'),
         onSwitch: (mode) => setSwitching(mode),
-        onFirstMove: () => {
-          setHelp(false);
-          writePref(HELP_KEY, 'visto');
-        },
       });
       engineRef.current = engine;
       engine.setShipDressing(dressingFor(want.equipped));
@@ -1454,6 +1444,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
    * botón de la izquierda y «‹ Menú» de cada sección).
    */
   const openMenu = () => {
+    setAyuda(null);
     setLogros(false);
     setTienda(false);
     setHoja(null);
@@ -1494,6 +1485,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     g.setCourse({ placeId });
     if (g.zoomLevel >= 0.5) g.backToBoat();
     setSheet(null);
+    setAyuda(null);
+  };
+
+  /** El «?» (T68): el objetivo de ahora y la pista más cercana al barco; otro toque lo cierra. */
+  const toggleAyuda = () => {
+    const g = engineRef.current;
+    const w = worldRef.current;
+    if (ayuda || !g || !w) {
+      setAyuda(null);
+      return;
+    }
+    setAyuda(helpNow(spotsNow(w), missionRef.current?.phase ?? null, g.ship));
   };
 
   /** Ir en nave a un lugar (experimento): despega, vuela y se posa en su orilla. */
@@ -1684,11 +1687,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         msg('mar.client.destino'))
       : msg('mar.client.puntoMarcado');
 
-  const aboard = phase === 'aboard' || phase === 'boarding';
-  const destinationId = missionRef.current?.destination ?? null;
-  const destinationName = destinationId
-    ? world?.objects.find((o) => o.identity.id === destinationId)?.identity.name
-    : null;
   const turboReady = (stats?.turboReady ?? 1) >= 1;
   const countdown =
     race?.phase === 'countdown' && race.countdown !== null ? Math.ceil(race.countdown) : null;
@@ -1766,7 +1764,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           T34) y los saldos. */}
       {status === 'ready' ? (
         <nav className="mar-links" data-testid="mar-enlaces" aria-label={msg('mar.hud.enlaces')}>
-          {LANDING_LINKS.slice(0, 3).map(([id, key, href]) => (
+          {LANDING_LINKS.map(([id, key, href]) => (
             <a key={id} className="mar-links__item" href={href} data-testid={`mar-enlace-${id}`}>
               {msg(key)}
             </a>
@@ -1781,11 +1779,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           >
             {msg('mar.hud.carnet')}
           </button>
-          {LANDING_LINKS.slice(3).map(([id, key, href]) => (
-            <a key={id} className="mar-links__item" href={href} data-testid={`mar-enlace-${id}`}>
-              {msg(key)}
-            </a>
-          ))}
         </nav>
       ) : null}
       <header className="mar-top">
@@ -1828,6 +1821,24 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           <small aria-hidden="true">{msg('mar.client.menu')}</small>
           <ClaimBadge count={readyToClaim} testId="mar-logros-contador" />
         </button>
+      ) : null}
+
+      {/* Debajo, el «?» de ayuda (T68): el objetivo y una pista, con su rumbo. */}
+      {status === 'ready' ? (
+        <button
+          type="button"
+          className="mar-ayuda-btn"
+          data-testid="mar-ayuda-abrir"
+          aria-label={msg('mar.ayuda.boton')}
+          title={msg('mar.ayuda.boton')}
+          aria-expanded={!!ayuda}
+          onClick={toggleAyuda}
+        >
+          ?
+        </button>
+      ) : null}
+      {ayuda && status === 'ready' ? (
+        <MarAyuda help={ayuda} world={world} onCourse={courseTo} onClose={() => setAyuda(null)} />
       ) : null}
 
       {menu ? (
@@ -1937,28 +1948,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             </button>
           </div>
         ) : null}
-        {guide && !stats?.course ? (
-          <MarGuideChip
-            spot={guide}
-            world={world}
-            onGo={() => {
-              courseTo(guide.placeId);
-              setGuide(null);
-            }}
-            onClose={() => setGuide(null)}
-          />
-        ) : null}
-        {aboard && destinationId && !stats?.course ? (
-          <button
-            type="button"
-            className="mar-chip mar-chip--mission"
-            onClick={() => courseTo(destinationId)}
-          >
-            {msg('mar.client.llevaALaFiestera', {
-              v1: destinationName ?? msg('mar.client.suIsla'),
-            })}
-          </button>
-        ) : null}
       </div>
 
       {countdown !== null ? (
@@ -2006,19 +1995,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           >
             {msg('mar.client.cerrar')}
           </button>
-        </div>
-      ) : null}
-
-      {help && status === 'ready' ? (
-        <div className="mar-help" aria-live="polite">
-          <span className="mar-help__hand" aria-hidden="true">
-            👆
-          </span>
-          <p>
-            <strong>{msg('mar.client.tocaYArrastra')}</strong> {msg('mar.client.paraNavegar')}
-            <br />
-            {msg('mar.client.pellizcaParaElZoom')}
-          </p>
         </div>
       ) : null}
 
@@ -2185,6 +2161,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           settings={settings}
           onSettings={updateSettings}
           onBottles={() => openBottle({ kind: 'mine' })}
+          // «Comprar entradas» de Welcome Aboard: «Elige tu evento», ya en el mar.
+          {...(hoja === 'bienvenida' ? { onTickets: openEntradas } : {})}
           carnetCreate={hoja === 'carnet' && carnetForCheckout !== null}
           onCarnetCreated={() => {
             // Vuelta a la compra (T66): se vuelve a preparar, ya con el descuento del Carnet.

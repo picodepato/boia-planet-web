@@ -59,7 +59,6 @@ export const esMar = {
   'mar.race.medalName.bronze': 'Bronce',
   'mar.race.again': 'Otra vez',
   'mar.race.close': 'Cerrar',
-  'mar.client.suIsla': 'su isla',
   'mar.client.ya': '¡Ya!',
   'mar.client.zoom': 'Zoom',
   'mar.client.acercar': 'Acercar',
@@ -68,9 +67,6 @@ export const esMar = {
   'mar.client.nudos': 'nudos',
   'mar.client.tocaUnaIslaPara': 'Toca una isla para ver qué hay · arrastra para mover el mapa',
   'mar.client.cerrar': '✕ Cerrar',
-  'mar.client.tocaYArrastra': 'Toca y arrastra',
-  'mar.client.paraNavegar': 'para navegar',
-  'mar.client.pellizcaParaElZoom': 'Pellizca para el zoom · toca una isla para ir',
   'mar.client.tocaParaSeguir': 'Toca para seguir ▸',
   'mar.client.cerrarDialogo': 'Cerrar diálogo',
   'mar.client.saltar': 'Saltar ›',
@@ -114,7 +110,6 @@ export const esMar = {
   'mar.tienda.barco': 'Barco',
   'mar.tienda.barco2': '⛵ Barco',
   'mar.tienda.cerrarLaTiendaDel': 'Cerrar la tienda del barco',
-  'mar.client.llevaALaFiestera': '🎈 Lleva a la Fiestera a {v1} · rumbo',
   'mar.client.a': '{v1} a {placeName}…',
   'mar.sheet.muestra2': '🏝️ {v1} · muestra',
   'mar.client.volverABoiaMenu': '← Volver a BOIA',
@@ -134,8 +129,6 @@ export const esMar = {
     'Toca el minimapa para ver el planeta entero; toca una isla para ver qué hay.',
   'mar.controles.zoom': 'Pellizca o usa la rueda: de la cubierta al planeta entero.',
   'mar.controles.sensibilidad': 'La sensibilidad del giro se cambia en ⚙️ Ajustes.',
-  'mar.bienvenida.entradas':
-    '🎟️ «Entradas», en la barra de abajo, abre los eventos: compra sin salir del mar o ve a su isla.',
   // HUD v2 (T65): enlaces a la web arriba y el menú del juego a la izquierda. muestra
   'mar.hud.enlaces': 'BOIA en la web',
   'mar.hud.fotos': 'Fotos',
@@ -162,8 +155,25 @@ export const esMar = {
   'mar.guide.mission': '🎈 Rumbo a {place}',
   'mar.guide.discount': '❓ Rumbo a un código escondido',
   'mar.guide.minigame': '🎮 Rumbo a {place}',
-  'mar.guide.cerrar': 'No, gracias',
-  // La boia de la entrada da la bienvenida al zarpar desde la landing (T64). muestra
-  'mar.bienvenida.boia': '¡Plop! Soy la boia de la entrada. Antes de soltar amarras, te cuento:',
-  'mar.bienvenida.aNavegar': '¡A navegar!',
+  // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
+  'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
+  'mar.bienvenida.texto':
+    'Navega por el mundo en busca de las islas perdidas, descuentos y rescata a la BOIA perdida.',
+  'mar.bienvenida.objetivo': 'Objetivo: Encuentra la BOIA y llévala a la Isla de Nochevieja.',
+  'mar.bienvenida.aNavegar': 'A navegar',
+  'mar.bienvenida.comprar': 'Comprar entradas',
+  // El «?» de la izquierda (T68): el objetivo de ahora y una pista, con su rumbo. muestra
+  'mar.ayuda.boton': 'Ayuda: tu objetivo y una pista',
+  'mar.ayuda.titulo': '¿Qué hago ahora?',
+  'mar.ayuda.cerrar': 'Cerrar la ayuda',
+  'mar.ayuda.objetivo.aBordo': 'Objetivo: Lleva la BOIA a la Isla de Nochevieja.',
+  'mar.ayuda.objetivo.hecho':
+    '¡Objetivo cumplido! La BOIA ya está de fiesta en la Isla de Nochevieja.',
+  'mar.ayuda.pista': 'Pista:',
+  'mar.ayuda.pista.discount':
+    'Hay códigos de descuento escondidos por el mar: son los «?» del minimapa.',
+  'mar.ayuda.pista.minigame': 'En {place} te espera un minijuego.',
+  'mar.ayuda.pista.fiestera': 'La Boia Fiestera espera en algún sitio del mar: búscala.',
+  'mar.ayuda.pista.mission': 'La BOIA va a bordo: llévala a {place}.',
+  'mar.ayuda.pista.nada': 'Ya lo has encontrado todo en este mar. ¡Date una vuelta por las islas!',
 } as const;

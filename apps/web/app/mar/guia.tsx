@@ -1,54 +1,121 @@
 'use client';
 
 import type { WorldConfig } from '@boia/world';
-import type { GuideSpot } from '../../lib/mundo/guide';
+import type { GuideSpot, HelpNow } from '../../lib/mundo/guide';
 import { t as msg } from '../../lib/i18n';
 
 /**
- * Lo que señala una boia informativa al terminar de hablar (T59): un chip
- * con rumbo a la Boia Fiestera, a un código escondido o a un minijuego.
- * Tocarlo fija el rumbo (el barco va solo); la × lo quita. Un código
- * escondido no dice dónde está: sólo «un código escondido».
+ * El «?» de ayuda (T68, decisión de Hernán y Álvaro del 2026-10-02): el mar
+ * ya no pone chips de rumbo solo (ni las boies informativas ni la misión);
+ * quien quiera, toca el «?» bajo el menú y ve el objetivo de ahora y una
+ * pista (un código escondido o un minijuego), cada uno con un «Rumbo a…»
+ * opcional que fija el rumbo. Un código escondido no dice dónde está: sólo
+ * «un código escondido». El delfín sigue guiando como antes. muestra
  */
 export function guideLabel(spot: GuideSpot, world: WorldConfig | null): string {
-  const name = (id: string) => world?.objects.find((o) => o.identity.id === id)?.identity.name ?? id;
   if (spot.kind === 'discount') return msg('mar.guide.discount');
-  if (spot.kind === 'minigame') return msg('mar.guide.minigame', { place: name(spot.placeId) });
+  if (spot.kind === 'minigame') return msg('mar.guide.minigame', { place: placeName(spot, world) });
   // La misión: a ella mientras espera; a su destino, a bordo.
   return spot.placeId === spot.objectId
     ? msg('mar.guide.fiestera')
-    : msg('mar.guide.mission', { place: name(spot.placeId) });
+    : msg('mar.guide.mission', { place: placeName(spot, world) });
 }
 
-export function MarGuideChip({
+const placeName = (spot: GuideSpot, world: WorldConfig | null) =>
+  world?.objects.find((o) => o.identity.id === spot.placeId)?.identity.name ?? spot.placeId;
+
+function objectiveText(help: HelpNow): string {
+  if (help.objective === 'done') return msg('mar.ayuda.objetivo.hecho');
+  if (help.objective === 'deliver') return msg('mar.ayuda.objetivo.aBordo');
+  return msg('mar.bienvenida.objetivo');
+}
+
+function hintText(spot: GuideSpot | null, world: WorldConfig | null): string {
+  if (!spot) return msg('mar.ayuda.pista.nada');
+  if (spot.kind === 'discount') return msg('mar.ayuda.pista.discount');
+  if (spot.kind === 'minigame')
+    return msg('mar.ayuda.pista.minigame', { place: placeName(spot, world) });
+  return spot.placeId === spot.objectId
+    ? msg('mar.ayuda.pista.fiestera')
+    : msg('mar.ayuda.pista.mission', { place: placeName(spot, world) });
+}
+
+function CourseButton({
   spot,
   world,
-  onGo,
-  onClose,
+  testId,
+  onCourse,
 }: {
   spot: GuideSpot;
   world: WorldConfig | null;
-  onGo: () => void;
+  testId: string;
+  onCourse: (placeId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="mar-ayuda__rumbo"
+      data-testid={testId}
+      data-destino={spot.placeId}
+      onClick={() => onCourse(spot.placeId)}
+    >
+      {guideLabel(spot, world)}
+    </button>
+  );
+}
+
+/** La tarjetita del «?»: el objetivo y una pista, con su «Rumbo a…». */
+export function MarAyuda({
+  help,
+  world,
+  onCourse,
+  onClose,
+}: {
+  help: HelpNow;
+  world: WorldConfig | null;
+  onCourse: (placeId: string) => void;
   onClose: () => void;
 }) {
   return (
-    <div
-      className="mar-chip mar-chip--guide"
-      data-testid="mar-guia"
-      data-guia={spot.kind}
-      data-destino={spot.placeId}
+    <section
+      className="mar-ayuda"
+      data-testid="mar-ayuda"
+      aria-label={msg('mar.ayuda.titulo')}
+      data-objetivo={help.objective}
+      data-pista={help.hint?.kind ?? 'nada'}
     >
-      <button type="button" className="mar-chip__go" data-testid="mar-guia-ir" onClick={onGo}>
-        {guideLabel(spot, world)}
-      </button>
-      <button
-        type="button"
-        className="mar-chip__x"
-        aria-label={msg('mar.guide.cerrar')}
-        onClick={onClose}
-      >
-        ×
-      </button>
-    </div>
+      <header className="mar-ayuda__head">
+        <strong>{msg('mar.ayuda.titulo')}</strong>
+        <button
+          type="button"
+          className="mar-chip__x"
+          data-testid="mar-ayuda-cerrar"
+          aria-label={msg('mar.ayuda.cerrar')}
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </header>
+      <p data-testid="mar-ayuda-objetivo">{objectiveText(help)}</p>
+      {help.objectiveSpot ? (
+        <CourseButton
+          spot={help.objectiveSpot}
+          world={world}
+          testId="mar-ayuda-rumbo-objetivo"
+          onCourse={onCourse}
+        />
+      ) : null}
+      <p data-testid="mar-ayuda-pista">
+        <strong>{msg('mar.ayuda.pista')}</strong> {hintText(help.hint, world)}
+      </p>
+      {help.hint ? (
+        <CourseButton
+          spot={help.hint}
+          world={world}
+          testId="mar-ayuda-rumbo-pista"
+          onCourse={onCourse}
+        />
+      ) : null}
+    </section>
   );
 }

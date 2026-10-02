@@ -8,8 +8,8 @@ import { t } from '../lib/i18n';
 /**
  * El HUD de /mar (T65, decisión de Hernán y Álvaro del 2026-10-02, que
  * sustituye la barra de T53; REQ-PRO-008, REQ-PRO-009): arriba, los enlaces a
- * la web (Fotos, Contacto, Artistas y Shop salen a su sección de la landing;
- * Carnet abre el menú del juego en Mi Carnet); a la izquierda, el botón del
+ * la web (Fotos, Shop, Artistas y Contacto salen a su sección de la landing;
+ * Carnet, el último desde T68, abre el menú del juego en Mi Carnet); a la izquierda, el botón del
  * menú del juego con el icono de logros y todo dentro; abajo, sólo «Entradas»
  * y el turbo. El minimapa se queda y su arrastre ya no rompe nada. Las
  * tarjetas siguen siendo pequeñas, abajo; los avisos, chips arriba.
@@ -57,12 +57,12 @@ type Box = { x: number; y: number; width: number; height: number };
 const apart = (a: Box, b: Box) =>
   a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
 
-/** Los enlaces de arriba: su texto y la sección de la landing a la que llevan. */
+/** Los enlaces de arriba, en su orden (T68): su texto y la sección de la landing a la que llevan. */
 const LINKS = [
   { id: 'fotos', label: t('mar.hud.fotos'), section: 'fotos' },
-  { id: 'contacto', label: t('mar.hud.contacto'), section: 'contacto' },
-  { id: 'artistas', label: t('mar.hud.artistas'), section: 'artistas' },
   { id: 'shop', label: t('mar.hud.shop'), section: 'tienda' },
+  { id: 'artistas', label: t('mar.hud.artistas'), section: 'artistas' },
+  { id: 'contacto', label: t('mar.hud.contacto'), section: 'contacto' },
 ] as const;
 
 /** Lo que el menú del juego tiene que llevar (secciones en su hoja). */
@@ -96,17 +96,11 @@ for (const view of VIEWS) {
       const errors = await openMar(page);
       const vp = page.viewportSize()!;
 
-      // Arriba: Fotos, Contacto, Artistas, Carnet y Shop, en ese orden y a la vista.
+      // Arriba: Fotos, Shop, Artistas, Contacto y Carnet (T68), en ese orden y a la vista.
       const nav = page.getByTestId('mar-enlaces');
       await expect(nav).toBeVisible();
       const items = nav.locator('a, button');
-      await expect(items).toHaveText([
-        LINKS[0].label,
-        LINKS[1].label,
-        LINKS[2].label,
-        t('mar.hud.carnet'),
-        LINKS[3].label,
-      ]);
+      await expect(items).toHaveText([...LINKS.map((l) => l.label), t('mar.hud.carnet')]);
       for (const l of LINKS) {
         const a = nav.getByTestId(`mar-enlace-${l.id}`);
         await expect(a).toHaveAttribute('href', `/#${l.section}`);

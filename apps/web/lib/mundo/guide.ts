@@ -15,9 +15,11 @@ import type { WorldObject } from '@boia/world';
  * - un minijuego es un lugar con `start_minigame`; deja de señalarse al
  *   llegar a él.
  *
- * Los descuentos pendientes son los «?» del minimapa; el delfín y las boies
- * informativas (`params.guide`) llevan hasta cualquiera de estos sitios. Los
- * secretos sin premio no salen aquí: siguen escondidos (REQ-AVE-015).
+ * Los descuentos pendientes son los «?» del minimapa; el delfín lleva hasta
+ * cualquiera de estos sitios y el «?» de ayuda (T68) da el objetivo y una
+ * pista con su rumbo. Desde el 2026-10-02 las boies informativas ya no
+ * ponen un chip de rumbo al hablar. Los secretos sin premio no salen aquí:
+ * siguen escondidos (REQ-AVE-015).
  */
 
 export type GuideKind = 'mission' | 'discount' | 'minigame';
@@ -147,22 +149,41 @@ export function nearestSpot(
   return best;
 }
 
+export type HelpObjective = 'find' | 'deliver' | 'done';
+
+export interface HelpNow {
+  /** El objetivo de ahora: encontrar la BOIA, llevarla a su isla o ya cumplido. */
+  objective: HelpObjective;
+  /** Adónde lleva su «Rumbo a…» (la Fiestera o su destino), o null. */
+  objectiveSpot: GuideSpot | null;
+  /** Una pista: lo pendiente más cercano al barco (un código o un minijuego), o null. */
+  hint: GuideSpot | null;
+}
+
 /**
- * Adónde manda una boia informativa al terminar de hablar: a su sitio
- * (`params.guide`, el id de lo que señala) si sigue pendiente; si no, a lo
- * pendiente más cercano a ella. null si no es una boia que guíe o ya no
- * queda nada.
+ * Lo que dice el «?» de la izquierda (T68, decisión del 2026-10-02: nada
+ * guía solo; quien quiera, pregunta). El objetivo sale del paso de la
+ * misión; la pista es lo pendiente más cercano al barco que no sea la propia
+ * misión (que ya va en el objetivo).
  */
-export function buoyGuide(
-  objects: readonly WorldObject[],
-  buoyId: string,
+export function helpNow(
   spots: readonly GuideSpot[],
-): GuideSpot | null {
-  const buoy = objects.find((o) => o.identity.id === buoyId);
-  const guide = buoy?.params?.guide;
-  if (!buoy || typeof guide !== 'string') return null;
-  return (
-    spots.find((s) => s.objectId === guide || s.placeId === guide) ??
-    nearestSpot(spots, buoy.position)
-  );
+  phase: RescuePhase | null,
+  from: { x: number; y: number },
+): HelpNow {
+  const mission = spots.find((s) => s.kind === 'mission') ?? null;
+  const objective: HelpObjective =
+    phase === 'delivered'
+      ? 'done'
+      : phase === 'boarding' || phase === 'aboard' || phase === 'landing'
+        ? 'deliver'
+        : 'find';
+  return {
+    objective,
+    objectiveSpot: objective === 'done' ? null : mission,
+    hint: nearestSpot(
+      spots.filter((s) => s.kind !== 'mission'),
+      from,
+    ),
+  };
 }
