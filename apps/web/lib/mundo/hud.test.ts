@@ -1,9 +1,5 @@
-import type { WorldEvent } from '@boia/engine';
-import { NoticeQueue, discoveryTargets } from '@boia/engine/ui';
 import { describe, expect, it } from 'vitest';
-import { demoWorld } from './demo-world';
 import { MENU_SECTIONS, orderedSections } from './menu/sections';
-import { discoveryNotice, noticeFromWorldEvent } from './notice-copy';
 
 describe('Menú de a bordo (§19, REQ-IDE-034)', () => {
   // Los siete iconos de §19, en su orden. Otras secciones pueden sumarse.
@@ -34,43 +30,5 @@ describe('Menú de a bordo (§19, REQ-IDE-034)', () => {
       expect(s.label.length).toBeGreaterThan(0);
       expect(s.icon).toBeTruthy();
     }
-  });
-});
-
-describe('avisos del mundo', () => {
-  it('logros y recompensas avisan; el resto de eventos, no', () => {
-    const achievement: WorldEvent = {
-      type: 'achievement',
-      objectId: 'boia-tutorial',
-      trigger: 'find_boia',
-      amount: 1,
-    };
-    expect(noticeFromWorldEvent(achievement)).toMatchObject({ kind: 'achievement' });
-    const reward: WorldEvent = {
-      type: 'reward',
-      objectId: 'x',
-      kind: 'coins',
-      amount: 5,
-      frequency: 'once',
-      key: 'k-1',
-    };
-    expect(noticeFromWorldEvent(reward)).toMatchObject({ id: 'k-1', title: '+5 monedas' });
-    expect(noticeFromWorldEvent({ type: 'proximity_enter', objectId: 'x' })).toBeNull();
-  });
-
-  it('descubrir todo el mundo de la demo a la vez encola avisos que salen de uno en uno', () => {
-    const q = new NoticeQueue();
-    for (const t of discoveryTargets(demoWorld)) q.push(discoveryNotice(t), 0);
-    let visible = 0;
-    for (let t = 0; t < 60_000; t += 25) {
-      const cur = q.update(t);
-      if (cur) {
-        expect(cur.shownAt).toBeLessThanOrEqual(t);
-        expect(cur.until).toBeGreaterThan(t);
-        visible++;
-      }
-    }
-    expect(visible).toBeGreaterThan(0);
-    expect(q.size).toBe(0);
   });
 });

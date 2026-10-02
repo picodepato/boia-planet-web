@@ -1,4 +1,3 @@
-import type { Game } from '@boia/engine';
 import type { DiscoveryTarget, MinimapZone, Notice, Settings } from '@boia/engine/ui';
 import type { WorldSummary } from '@boia/world';
 import type { ComponentType, ReactNode } from 'react';
@@ -44,8 +43,8 @@ export interface MenuContext {
    * hasta la isla del evento.
    */
   goToIsland: (eventId: string) => void;
-  /** El motor, si ya arrancó (p. ej. para aplicar un cambio al barco). */
-  game: Game | null;
+  /** El motor ya arrancó (p. ej. para aplicar un cambio al barco). */
+  ready: boolean;
   close: () => void;
 }
 

@@ -2,10 +2,10 @@
 
 BOIA.PLANET: la web-universo de BOIA, colectivo de eventos musicales de
 Alicante. Vende entradas de los "All Day BOIA" y, como segunda vía de
-conversión, ofrece un mundo 2.5D isométrico navegable en barco (islas de
-eventos, Boia Fiestera, descuentos escondidos, Carnet BOIA). El cliente y
-quien aprueba identidad, negocio y publicación es Álvaro (BOIA); Hernán
-dirige la construcción.
+conversión, ofrece un planeta 3D navegable en barco (`/mar`, three.js: islas
+de eventos, Boia Fiestera, descuentos escondidos, Carnet BOIA; D-25). El
+cliente y quien aprueba identidad, negocio y publicación es Álvaro (BOIA);
+Hernán dirige la construcción.
 
 Versión de prueba en producción: https://boia-planet.vercel.app (D-20: todo
 en el navegador, sin servidor ni cuentas; contenido `muestra`). Cada push a
@@ -26,7 +26,7 @@ Un agente nuevo lee, en este orden:
 
 Fuente de requisitos, en este orden de precedencia:
 
-1. `docs/DECISIONES.md` — decisiones vigentes (D-01 a D-23) y preguntas
+1. `docs/DECISIONES.md` — decisiones vigentes (D-01 a D-25) y preguntas
    abiertas a Álvaro. Prevalece sobre todo lo demás.
 2. `docs/spec/` — especificación consolidada v15. Un requisito, un ID, un
    sitio (`09-requisitos.md`). El estado de cada REQ (HECHO, PARCIAL, FALTA,

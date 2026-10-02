@@ -1,7 +1,7 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
  * (T38, `muestra`): las del resto (el 2D, /mar, el Admin…). No se edita a mano: se cambia el documento y se
- * vuelve a generar. 526 claves.
+ * vuelve a generar. 527 claves.
  */
 export const esZonas = {
   'intro.enter': 'Zarpar',
@@ -306,9 +306,10 @@ export const esZonas = {
   'error.engine':
     'No hemos podido arrancar el mar en este navegador. Prueba la versión ligera o actualiza el navegador.',
   'error.engine.cta': 'Ver la versión ligera',
-  'error.3d.title': 'Este móvil no puede con el 3D',
-  'error.3d.body': 'Prueba la versión clásica: el mismo mar, en 2D.',
-  'error.3d.cta': 'Ir al mar 2D',
+  'error.3d.title': 'Tu dispositivo no puede mostrar el mundo 3D',
+  'error.3d.body':
+    'Este navegador no puede pintar el planeta. Tus entradas sí: cómpralas desde la web.',
+  'error.3d.cta': 'Ver las entradas',
   'error.storage':
     'Tu navegador no nos deja guardar nada (¿modo privado?). Puedes navegar, pero lo que consigas se perderá al cerrar.',
   'error.unavailable': 'Esto no está disponible ahora mismo. Vuelve en un rato.',
@@ -519,7 +520,6 @@ export const esZonas = {
   'shop.missingPoints': 'Te faltan {n} puntos',
   'shop.unlockedPoints': '¡Desbloqueado! Y tus {threshold} puntos siguen ahí.',
   'shop.lockedAchievement': 'Se gana con el logro «{achievement}»',
-  // T59: el barco exclusivo de la misión central. muestra
   'shop.lockedMission': 'Sólo para quien rescata a la Boia Fiestera y la lleva a la última isla',
   'shop.skins.heading': 'Skins',
   'shop.skin.base': 'Base',

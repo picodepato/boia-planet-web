@@ -25,15 +25,17 @@ en [`CLAUDE.md`](../CLAUDE.md).
 | Ruta | Qué es |
 |---|---|
 | `/` | Entrada cinemática (planeta → mar → letras 3D «BOIA», «Zarpar») y landing HTML con entradas, eventos, fotos y artistas |
-| `/juego` | El mundo 2.5D isométrico (PixiJS): dos mundos, Arcilla (B05) y Acuarela (B02), con islas de eventos, náufragos, descuentos escondidos, cofres, delfín, Boia Fiestera, minijuegos Faro y Cañón, logros, ranking local, tienda de barcos y cambio de mundo por agujero negro |
-| `/mar` | El mismo mundo en 3D (three.js), «planeta de agua» con «Entradas» siempre a mano; a la par con `/juego` en lo del plan 004 |
+| `/mar` | El mundo navegable: un planeta 3D (three.js), dos mundos, Arcilla (B05) y Acuarela (B02), con islas de eventos, náufragos, descuentos escondidos, cofres, delfín, Boia Fiestera, minijuegos Faro y Cañón, logros, ranking local, botellas, Mi Carnet, tienda de barcos, Tickets dentro del mundo y cambio de mundo por agujero negro |
+| `/juego` | Ya no existe (D-25, plan 005 T62): el mundo 2D (PixiJS) se borró y la ruta redirige a `/mar` con su consulta (`?ir=`, `?evento=`, `?menu=`) |
 | `/carnet` | Carnet BOIA (perfil del visitante) |
 | `/admin` | Admin sin login (D-20): eventos, descuentos, fotos, textos, mundo activo, integraciones (sólo lectura), «Volver todo a la muestra» |
 | `/legal/*` | Aviso legal, privacidad y cookies, con datos **inventados** y aviso arriba |
 | `/api/art` | Sirve el arte de `art/` (D-16) |
 
 Stack: monorepo pnpm (Node 24), Next.js 15.5 + React 19 en `apps/web`,
-`packages/` (`engine` motor Pixi, `world` mundos y comportamientos,
+`packages/` (`engine` reglas del mundo sin dibujo: física del barco,
+comportamientos, misión, circuito, minijuegos, HUD y entrada; el dibujo 3D
+está en `apps/web/app/mar/engine/`; `world` mundos y comportamientos,
 `contracts` tipos, `store` el repositorio local y la economía, `db` el
 esquema de Supabase para la versión final), arte generado con Blender sin
 interfaz desde `tools/blender/` (D-05).
@@ -59,14 +61,13 @@ interfaz desde `tools/blender/` (D-05).
   `packages/world/src/worlds/*/skin.ts` (sus claves `world.<mundo>.…` ya
   están en el catálogo, falta que el mundo las lea); los nombres de paletas de
   `/mar` y los mensajes de consola no pasan por i18n.
-- **CSP:** quitar `'unsafe-eval'` importando `pixi.js/unsafe-eval` en
-  `@boia/engine` (`apps/web/lib/security-headers.ts`).
 - **`/mar`:** los secretos usan arte hecho a mano (el `secreto.glb` de T39 no
   se usa); las animaciones de los comportamientos y la sensibilidad de
-  Ajustes no se aplican; el Admin en la misma pestaña no dispara el vórtice
-  (tampoco en `/juego`); la invitación al Carnet lleva a `/carnet`.
-- **Restos:** `useShipLocks`/`lockedShipText` sin usar en
-  `apps/web/lib/logros/use-logros.ts`.
+  Ajustes no se aplican; el Admin en la misma pestaña no dispara el vórtice;
+  la invitación al Carnet lleva a `/carnet`.
+- **Restos del 2D (T62):** el Menú de a bordo 2D (`apps/web/lib/mundo/menu/
+  onboard-menu.tsx` y los `MenuSection` de `sections/`) ya no lo monta nadie;
+  `/mar` sólo usa algunas piezas de sus secciones.
 
 Las propuestas de cada tarea están en la sección «Proposals» de cada plan.
 Varias ya se hicieron en tareas posteriores (T51 cerró casi todo lo de

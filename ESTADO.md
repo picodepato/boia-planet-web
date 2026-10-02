@@ -4,6 +4,94 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 005 T62: Borrar el mundo 2D
+
+Qué existe:
+
+- D-25 en `docs/DECISIONES.md`: sólo el planeta 3D (2026-10-01, Hernán y
+  Álvaro). `CLAUDE.md`, `README.md` y `docs/TRASPASO.md` describen el planeta
+  3D de `/mar` en vez del mundo 2,5D de `/juego`.
+- `/juego` ya no existe: `app/juego/` (page, game-canvas, juego.css) borrado.
+  `lib/security-headers.ts` (`RENAMED_ROUTES`) redirige `/juego` y
+  `/juego/:path*` a `/mar` con un 307 (temporal); Next pasa la consulta tal
+  cual, así `?ir=`, `?evento=`, `?menu=` y `?cerca=` abren el mar en su sitio.
+- Motor 2D fuera de `packages/engine`: `game.ts`, `pixi-app.ts`, `views.ts`,
+  `water.ts`, `wake.ts`, `camera.ts`, `loop.ts`, `input/dom.ts`,
+  `ship/{view,direction,dressing}.ts`, `bottles/view.ts`,
+  `world/{assets,bubble,coast-view,object-view,streamer,texture-store,art-plan,atlas-index,atlas-pack}.ts`,
+  `transition/vortex-view.ts` y la entrada 2D (`intro/{sphere,port,timeline,
+  world-geometry,assets,sphere-probe,sphere-probe-pose,test-fixtures}.ts`) con
+  sus pruebas. `intro/config.ts` queda con lo común (curvas, `TitleMotion`,
+  `DEFAULT_TITLE_MOTION`, `DEFAULT_INTRO_COPY` y `titleMotionErrors`, que
+  ahora valida el título en `validatePlanetIntro`). `pixi.js` fuera de las
+  dependencias y del lockfile; `@boia/engine/streaming` sólo exporta
+  `world/sectors` (lo que usa `/mar`).
+- Fuera también: `app/sphere-probe`, `lib/intro/worlds.ts`, el paso de
+  superficie de `lib/world-handoff.ts` (`offerWorld`/`claimWorld`; el módulo
+  se queda con los enlaces a `/mar`), los atlas por sector
+  (`tools/atlas/`, `scripts/atlas.mjs`, `public/atlas/`) y el presupuesto del
+  primer sector (`scripts/world-budget.mjs` y su prueba); `pnpm build` es
+  `next build` + presupuesto de la landing. Restos del HUD 2D sin usar en
+  `lib/mundo/` (balances, bottle-bar, carnet-sheet, celebration, feedback,
+  hud-buttons, minimap, notice-copy, streaming, use-viewport, world-ui),
+  `useShipLocks` y `demoWorld`.
+- `/mar`: sin el enlace «Versión clásica 2D» del menú; sin WebGL, la pantalla
+  de error dice «Tu dispositivo no puede mostrar el mundo 3D» y ofrece «Ver
+  las entradas» (`/#tickets`, `data-testid="mar-sin-3d-entradas"`); textos en
+  `docs/propuestas/textos-zonas.md` (`error.3d.*`, `muestra`), regenerados con
+  `i18n:zonas` (se añadió allí `shop.lockedMission`, que T59 había puesto a
+  mano en `es-zonas.ts`).
+- Pruebas e2e: las que abrían `/juego` pasan a `/mar` con ayudas comunes en
+  `e2e/mar-helpers.ts` (admin, agujero-negro, carnet, ciclo-evento,
+  comunidad, demo, descuentos, eventos, mundo-acuarela, mundo-arcilla,
+  tickets, record-eventos) o se borran si sólo probaban el 2D o ya las cubre
+  `/mar` (juego-hud, sectores, fiestera, sphere-probe, record-agujero,
+  record-demo, y tests sueltos de accesos, logros y tienda). Nueva
+  `e2e/solo-3d.spec.ts`: `/juego?ir=fotos` lleva a `/mar` navegando hasta el
+  Puerto de Fotos, `/juego?evento=` y `/juego?menu=carnet`, el aviso sin
+  WebGL y el audio tras el primer gesto. `entrega.spec.ts` comprueba el 307
+  con su consulta; `landing.spec.ts` bloquea el bundle de `/mar` en vez del
+  de `/juego`; `despliegue.spec.ts` normaliza las rutas de `art/` a `/` (en
+  Windows `path.relative` daba `\`). Las pruebas unitarias de la ficha de
+  isla (event-card, eventos) usan `EventBlock` de `app/mar/sheet.tsx` (ahora
+  exportado).
+- `docs/spec/estado.md`: 27 filas re-enlazadas a pruebas de `/mar`; bajan a
+  PARCIAL las que sólo sostenía el 2D (PRO-011, MUN-004, MUN-009, MUN-021,
+  MUN-030, IDE-034, ARQ-014). Total: HECHO 152 · PARCIAL 62 · FALTA 33 · L2
+  28 · final 19.
+
+Comandos:
+
+- Comando de pruebas del plan (tras fusionar main con T61) → 0: vitest 97
+  archivos, 886 pruebas; estado.py sin errores; landing 177,6 / 192 kB. Con
+  la máquina cargada por otros agentes, antes de fusionar 1–7 pruebas ajenas
+  caían por el plazo de 5 s y pasaban solas.
+- `grep -rln "pixi" apps packages --include=*.ts --include=*.tsx --include=package.json | grep -v node_modules` → nada.
+- `test ! -d apps/web/app/juego` → 0.
+- `E2E_PORT=3291 pnpm e2e --workers=2` (antes de fusionar main) → 188
+  pasan, 25 fallan, 23 saltadas (1,3 h, máquina cargada); las 25 con
+  `--last-failed --workers=1` → 25 pasan. Tras fusionar main:
+  solo-3d, entrega, minijuegos y mar-circuito → pasan salvo mar-circuito
+  (ver Pendiente).
+
+Pendiente:
+
+- `e2e/mar-circuito.spec.ts` (T61, recién fusionado) es sensible a la carga:
+  su piloto con teclado por fotograma falla a veces («sin carrera», o no
+  queda quieto en la salida); en 3 pasadas cada prueba pasó en algún
+  proyecto, y el código que prueba es idéntico al de main (T62 no toca
+  carrera ni HUD del circuito). Última, con `--workers=1`: 3 pasan, 1 falla
+  (móvil, «tres vueltas…»).
+- `/mar` no cuenta `discount_found` (el 2D sí): REQ-ARQ-019 lo anota.
+- El Menú de a bordo 2D (`lib/mundo/menu/onboard-menu.tsx`, los
+  `MenuSection` de `sections/` y `hud.test.ts`) ya no lo monta nadie; se dejó
+  porque T65 rehace el menú de `/mar` en esa carpeta.
+- Ayudas 2D sin DOM que siguen exportadas y sólo usan las pruebas del motor
+  (`world/visual.ts`, `world/simulate.ts`, `manifest-loader.ts`,
+  `loadShipStyle`, modos de teclado).
+- `record.spec.ts` y `record-titulo.spec.ts` (sólo con variable) siguen
+  grabando «Zarpar → landing».
+
 ## 2026-10-02 — plan 005 T61: Circuit El Freu, rebuilt
 
 Qué existe:

@@ -592,6 +592,34 @@ en `/mar`), REQ-ENT-006 y REQ-ENT-014 (la llegada es la zambullida en el
 puerto y el último fotograma es el velo de `/mar`) y acerca REQ-ENT-012
 (explorar desde el puerto sin recargar). Textos de la bienvenida `muestra`.
 
+## D-25 · Sólo el planeta 3D: el mundo 2D se borra · 2026-10-01 · Hernán y Álvaro
+
+En la prueba de opinión del 2026-10-01 (entrevista del plan 005) Hernán y
+Álvaro repasan cada parte de la web y deciden que el mundo navegable es sólo
+el planeta 3D de `/mar` (three.js):
+
+1. **El mundo 2,5D isométrico de `/juego` (PixiJS) se borra**, con su motor
+   de dibujo, su entrada «mini-mundo» 2D, la sonda de la esfera
+   (`/sphere-probe`), los atlas por sector y el presupuesto de arte del
+   primer sector, que sólo servían al 2D. `pixi.js` sale de las dependencias.
+2. **Lo que sólo tenía el 2D pasa a `/mar`** (plan 005, T52–T61): Ajustes,
+   Controles y la bienvenida, Mi Carnet dentro del mundo, botellas y ranking,
+   enlaces directos (`?ir=`, `?evento=`, `?menu=`), Tickets dentro del mundo,
+   la misión de la Boia Fiestera y los minijuegos.
+3. **Los enlaces viejos siguen sirviendo**: `/juego`, con cualquier consulta,
+   redirige (307, temporal) a `/mar` con la misma consulta, así `?ir=`,
+   `?evento=`, `?menu=` y `?cerca=` abren el mar en su sitio.
+4. **Sin WebGL no hay versión 2D**: `/mar` dice con claridad que el
+   dispositivo no puede mostrar el mundo 3D y ofrece las entradas
+   (`/#tickets`). La landing sigue funcionando sin WebGL (versión ligera).
+5. **Se quedan los dos mundos** (Arcilla y Acuarela) y el cambio de mundo por
+   agujero negro, en 3D (D-23, punto 4).
+
+Deja sin objeto REQ-ENT-012 (paso de la superficie de la entrada al 2D) y
+los requisitos que sólo describían el dibujo 2D (sprites por dirección,
+sectores con atlas); su estado está en `docs/spec/estado.md`. Textos del
+aviso sin WebGL `muestra`.
+
 ## Preguntas abiertas
 
 | # | Pregunta | Para | Traba |
