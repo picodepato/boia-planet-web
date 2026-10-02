@@ -13,7 +13,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 ## Tasks
 
 ## T67 — Island names, the Halloween place and the three ticket events
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: Decisions 2026-10-02 (Hernán and Álvaro). (1) Main world (Arcilla) island display names: `cala` → Cala Cantalar, `fotos` → Isla de Benidorm, `tienda` → Ibiza, `faro` → Tabarca, `canon` → L'Illeta dels Banyets, `allday` → Isla del Sonido, `ultima` → Isla de Nochevieja; the port, the castaway and El Remanso de los Cocodrilos keep their names; circuit `El Freu` → Los Rápidos (display name; keep ids stable unless renaming them is trivial and safe). (2) Add a new place `halloween` (Isla de Halloween) on the shared map, in free sea away from the other islands, reachable, with category isla, a ticket behavior and content('event'); give it a simple procedural placeholder look until T69 models it. (3) Acuarela (shares the map) gets the same three ticket islands with the same names (Isla de Halloween, Isla del Sonido, Isla de Nochevieja); its other islands keep their current names. (4) Exactly three ticket events in the sample content, linked to their islands: "BOIA Halloween" at Kiki García on Saturday 31/10/2026 → `halloween`; "SONIDO" on Saturday 05/12/2026 → `allday` (Isla del Sonido); "BOIA Nochevieja" on Thursday 31/12/2026 → `ultima` (Isla de Nochevieja). Prices `muestra`. The tickets panel (landing and /mar) shows only these three; older sample events are removed or moved to the past/archive so they never show as on sale. (5) The Boia Fiestera is delivered to the Isla de Nochevieja: every text, achievement, mission prompt and landing copy that names the destination says "Isla de Nochevieja". Update every test, deep link (`?ir=`, `?evento=`) and analytics that depends on the old ids/names.
 - Context: `packages/world/src/worlds/arcilla/map.ts` (places, `ALLDAY_EVENT_ID`, `missionDestination`, circuit constants), `arcilla/skin.ts` `NAMES`, `acuarela/skin.ts` `ACUARELA_NAMES`, `packages/contracts/src/events.ts` (`BoiaEvent.islandId`, `ALL_DAY_ISLAND_ID`), `packages/store/src/sample/content.ts` (events, achievements, texts), `apps/web/app/mar/engine/islands.ts` (procedural builders; `generic()` for unknown isla), `apps/web/app/mar/sheet.tsx` (`islandOfEvent`/`eventOfPlace`), `apps/web/lib/admin/world.ts` `eventIslands()`, landing tickets panel and `/eventos/[slug]`, `docs/propuestas/textos-zonas.md` + `es-zonas.ts` generator, `lib/i18n/es-mar.ts`.
@@ -26,7 +26,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T68 — Welcome sheet, help instead of guidance, top links, minimap centring
-- Status: pending
+- Status: done
 - Depends on: none
 - Goal: Decisions 2026-10-02. (1) The welcome sheet after "Zarpar" (Welcome Aboard) becomes short: bold "BIENVENIDO A BOIA.PLANET"; then, not bold, "Navega por el mundo en busca de las islas perdidas, descuentos y rescata a la BOIA perdida."; then "Objetivo: Encuentra la BOIA y llévala a la Isla de Nochevieja."; keep only the first two tips; two buttons: a big orange "A navegar" (closes it) and below it "Comprar entradas", which opens the in-world tickets panel (the "Elige tu evento" sheet with the events). (2) After closing it the player is free: no centred message, no chip leading to the castaway. Remove every automatic guidance chip ("Rumbo a un código escondido", mission/minigame/fiestera chips from info buoys and missions). (3) Add a small "?" help button just below the achievements/settings button on the left; tapping it shows the current objective and one hint (Fiestera, codes, minigames), each with an optional "Rumbo a…" that sets course. (4) The dolphin keeps appearing and guiding as today. (5) Top links order: Fotos, Shop, Artistas, Contacto, Carnet. (6) The small minimap is not centred (what it shows looks shifted right); centre it like the enlarged one.
 - Context: `apps/web/app/mar/a-bordo.tsx` (case `bienvenida`), `apps/web/lib/mundo/menu/sections/welcome.tsx`, keys `mar.client.bienvenida`, `mar.bienvenida.*`, `welcome.tip.*`; `apps/web/app/mar/guia.tsx` (`MarGuideChip`), `mar-client.tsx` (~617 guide chip, ~180 `LANDING_LINKS`, ~1768 links render), `lib/mundo/guide.ts` (`buoyGuide`), `lib/mundo/encounters.ts` (`findDolphinGuide`, keep), `.mar-chips` in `mar.css`; minimap `apps/web/app/mar/minimap.tsx`, `engine/globe.ts`, `.mar-minimap` / `.mar-globe.is-map` CSS; T58's `app/mar/entradas.tsx`.
@@ -34,7 +34,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e at 375×812 and desktop: after Zarpar the sheet shows the bold title, the text, the objective, 2 tips, "A navegar" and "Comprar entradas"; "Comprar entradas" opens the tickets panel; after closing, no guide chip appears after talking to an info buoy; the "?" button shows the objective and a hint and its "Rumbo a…" sets course; top links are in the order Fotos, Shop, Artistas, Contacto, Carnet; the small minimap's drawn centre matches its box centre (±2 px) → exit 0
-- Outcome:
+- Outcome: short welcome (bold title, text, objective, 2 tips, orange "A navegar" + "Comprar entradas"), no auto-guidance chips or first-time hint, "?" help card with objective/hint/"Rumbo a…", links Fotos/Shop/Artistas/Contacto/Carnet, minimap centred (islands drawn without the sky spin) → 66a1e2c
 
 ## T69 — Island models from Blender, starting with the Isla de Halloween
 - Status: pending
@@ -99,7 +99,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T74 — Site font: Druk-Wide-like titles and Inter
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: Decision 2026-10-02: the whole site uses the fonts of https://www.draaimolen.nu/story — Druk Wide Medium for titles and Inter for text. Druk is commercial (Commercial Type) and cannot be copied, so use a free (OFL) wide, heavy display face that looks as close as possible to Druk Wide Medium for titles (candidates: Archivo at its widest expanded width, Unbounded; compare and pick), self-hosted, plus Inter (OFL, self-hosted) for body text, everywhere: landing, /mar HUD and sheets, /carnet, /eventos, /fotos, /artistas, legal, admin. One single place defines the title font so Druk can replace it later when Álvaro buys the license (document how in the README). Keep the landing within its 192 kB budget (subset to Latin, woff2, preload only what the first view needs).
 - Context: `apps/web/public/fonts/` (Titan One + OFL), `app/(landing)/layout.tsx` (`next/font/local`, `--font-display`), `app/admin/admin.css` `@font-face`, `app/globals.css` (`--font-title`, `--font-title-fallback`, system body stack), `app/mar/mar.css:38`, `scripts/landing-budget.mjs`, DECISIONES P20 (typeface file pending Álvaro).
@@ -117,6 +117,12 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 Hernán and Álvaro: bottles: max 10 in the sea, newest removes oldest, one per person
 - 2026-10-02 orchestrator: Blender 5.2.2 LTS installed as a portable copy in C:/Users/alvar/Blender (the winget installer failed while uninstalling Blender 4.0, which stays installed)
 
+- 2026-10-02 T68: the help hint is the nearest pending code or minigame (the objective already points to the Fiestera); help texts are muestra keys mar.ayuda.*; buoyGuide replaced by helpNow (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T68: info buoys params.guide in packages/world no longer used by /mar; the 2D OnboardMenu / MENU_SECTIONS look like dead code
 
 ## Log
+- 2026-10-02 19:30 T67 launched · attempt 1 · agent a10edbb2b1a7341bc
+- 2026-10-02 19:30 T68 launched · attempt 1 · agent a928e10c981e1ae13
+- 2026-10-02 19:51 T68 done · branch worktree-agent-a928e10c981e1ae13 → 66a1e2c
