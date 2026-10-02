@@ -39,8 +39,9 @@ Y, pero se ven como «???» hasta completarlos.
   Pixel art se ganan con un logro; Semi-realista, Cartoon años 30 y Low-poly
   se venderán por monedas en la tienda del plan 004 (hasta entonces se
   eligen libremente, como hoy).
-- Con todo reclamado se suman 1380 pts y 205 monedas (el rango más alto de
-  muestra, «Capitana de la fiesta», pide 600 pts).
+- Con todo reclamado (los 26 logros, `boies-6` incluido) se suman 2280 pts y
+  425 monedas desde T72 (el rango más alto de muestra, «Capitana de la
+  fiesta», pide 600 pts).
 
 ## Catálogo (25 logros)
 
@@ -50,33 +51,59 @@ demo del navegador y faltan en el enum de Supabase.
 
 | # | id | Nombre | Qué hay que hacer | Meta · «te queda» | Señal | Premio |
 |---|---|---|---|---|---|---|
-| 1 | `primera-boia` | Primera boia | Habla con tu primera boia. | 1 · «Te falta 1 boia» | `find_buoy` (el mapa la llama `find_boia`) | 10 pts + 5 monedas |
-| 2 | `boies-3` | Coro de boies | Habla con 3 boies distintas. | 3 · «Te quedan 2 boies» | `find_buoy`; se podrá completar cuando el plan 004 ponga sus boies en el mapa | 30 pts + 10 monedas |
-| 3 | `islas-3` | Isla a isla | Descubre 3 islas. | 3 · «Te quedan 2 islas» | `visit_island` | 30 pts + 10 monedas |
-| 4 | `islas-7` | Cartógrafa | Descubre 7 islas del mapa. | 7 · «Te quedan 4 islas» (desde T67 el mapa tiene 8 islas) | `visit_island` | 80 pts + 20 monedas |
-| 5 | `fiestera-rescatada` | Boia Fiestera rescatada | Saca a la Boia Fiestera de entre los cocodrilos. | 1 · «Búscala entre los cocodrilos» | `rescue_character` (`boia-fiestera`) | 50 pts + 20 monedas |
-| 6 | `fiestera-entregada` | Hasta el amanecer | Lleva a la Boia Fiestera a la Isla de Nochevieja. | 1 · «Llévala a la Isla de Nochevieja» | `deliver_character` (`boia-fiestera`) | 150 pts + **Bandera de la Fiestera** |
-| 7 | `circuito` | Por Los Rápidos | Termina una vuelta al circuito. | 1 · «Termina una vuelta» | `complete_circuit` (`finishLap`, en `circuit-hud.tsx`) | 40 pts + 15 monedas |
-| 8 | `circuito-atajo` | ¿Atajo? Atajo. *(oculto)* | Termina una vuelta por el atajo. | 1 · «???» | `complete_circuit` con la ruta de la vuelta (`via`: arco `circuito-cp-a`) | 40 pts + **Bandera a cuadros** |
-| 9 | `circuito-rapido` | Rayo de Los Rápidos | Haz una vuelta en menos de 43,6 s. | 43,6 s · «Tu récord: 52 s, te sobran 8,4 s» | `complete_circuit` con el tiempo (`maxMs` 43 600) | 100 pts + **Estela de rayo** |
-| 10 | `faro` | Vigía del faro | Gana Vigilancia del faro. | 1 · «Gana una partida en el Faro» | **T36** `win_minigame` (`faro`) | 40 pts + 15 monedas |
-| 11 | `canon` | Ni un tiburón | Gana Cañón contra tiburones. | 1 · «Gana una partida en el Cañón» | **T36** `win_minigame` (`canon`) | 40 pts + 15 monedas |
-| 12 | `guardacostas` | Guardacostas | Gana los dos minijuegos. | 2 · «Te queda 1 minijuego» | **T36** `win_minigame`, juegos distintos | 100 pts + barco **Cel-shaded cómic** |
-| 13 | `secretos` | Ojo de marinera *(oculto)* | Encuentra los 4 secretos del mapa. | 4 · «Te quedan 3 secretos» | `collect_objects` (`secreto`) | 80 pts + barco **Boceto a lápiz** |
-| 14 | `delfin` | Amiga del delfín *(oculto)* | Sigue al delfín hasta el final de sus saltos. | 1 · «???» | **T36** `complete_encounter` (`delfin`) | 30 pts + **Estela de burbujas** |
-| 15 | `botellas-3` | Correo del mar | Lee 3 botellas. | 3 · «Te quedan 2 botellas» | **T36** `read_bottle` (botellas de otros, distintas; sólo `/juego`) | 20 pts + 10 monedas |
-| 16 | `botella-propia` | Mensaje al mar | Echa tu propia botella. | 1 · «Echa tu botella» | **T36** `throw_bottle` (sólo `/juego`) | 10 pts + 5 monedas |
-| 17 | `carnet` | Con Carnet | Crea tu Carnet BOIA. | 1 · «Crea tu Carnet» | **T36** `create_carnet` | 20 pts + 10 monedas |
-| 18 | `carnet-preguntas` | Libro abierto | Responde las 5 preguntas del Carnet. | 5 · «Te quedan 3 preguntas» | **T36** `answer_question` | 40 pts + 20 monedas |
-| 19 | `minutos-5` | Cinco minutos a bordo | Navega 5 minutos. | 5 · «Te quedan 2 minutos» | `time_played` | 10 pts + 5 monedas |
-| 20 | `minutos-20` | Veinte minutos a bordo | Navega 20 minutos. | 20 · «Te quedan 12 minutos» | `time_played` | 30 pts + 10 monedas |
-| 21 | `minutos-60` | Lobo de mar | Navega una hora (en varias visitas). | 60 · «Te quedan 40 minutos» | `time_played` | 100 pts + barco **Pixel art** |
+| 1 | `primera-boia` | Primera boia | Habla con tu primera boia. | 1 · «Te falta 1 boia» | `find_buoy` (el mapa la llama `find_boia`) | 20 pts + 10 monedas |
+| 2 | `boies-3` | Coro de boies | Habla con 3 boies distintas. | 3 · «Te quedan 2 boies» | `find_buoy`; se podrá completar cuando el plan 004 ponga sus boies en el mapa | 40 pts + 20 monedas |
+| 3 | `islas-3` | Isla a isla | Descubre 3 islas. | 3 · «Te quedan 2 islas» | `visit_island` | 40 pts + 20 monedas |
+| 4 | `islas-7` | Cartógrafa | Descubre las 8 islas del mapa. | 8 · «Te quedan 5 islas» (desde T72 pide las 8 islas del mapa de T67; el id no cambia) | `visit_island` | 120 pts + 40 monedas |
+| 5 | `fiestera-rescatada` | Boia Fiestera rescatada | Saca a la Boia Fiestera de entre los cocodrilos. | 1 · «Búscala entre los cocodrilos» | `rescue_character` (`boia-fiestera`) | 80 pts + 40 monedas |
+| 6 | `fiestera-entregada` | Hasta el amanecer | Lleva a la Boia Fiestera a la Isla de Nochevieja. | 1 · «Llévala a la Isla de Nochevieja» | `deliver_character` (`boia-fiestera`) | 200 pts + **Bandera de la Fiestera** |
+| 7 | `circuito` | Por Los Rápidos | Termina una vuelta al circuito. | 1 · «Termina una vuelta» | `complete_circuit` (`finishLap`, en `circuit-hud.tsx`) | 60 pts + 30 monedas |
+| 8 | `circuito-atajo` | ¿Atajo? Atajo. *(oculto)* | Termina una vuelta por el atajo. | 1 · «???» | `complete_circuit` con la ruta de la vuelta (`via`: arco `circuito-cp-a`) | 60 pts + **Bandera a cuadros** |
+| 9 | `circuito-rapido` | Rayo de Los Rápidos | Haz una vuelta en menos de 43,6 s. | 43,6 s · «Tu récord: 52 s, te sobran 8,4 s» | `complete_circuit` con el tiempo (`maxMs` 43 600) | 120 pts + **Estela de rayo** |
+| 10 | `faro` | Vigía del faro | Gana Vigilancia del faro. | 1 · «Gana una partida en el Faro» | **T36** `win_minigame` (`faro`) | 60 pts + 30 monedas |
+| 11 | `canon` | Ni un tiburón | Gana Cañón contra tiburones. | 1 · «Gana una partida en el Cañón» | **T36** `win_minigame` (`canon`) | 60 pts + 30 monedas |
+| 12 | `guardacostas` | Guardacostas | Gana los dos minijuegos. | 2 · «Te queda 1 minijuego» | **T36** `win_minigame`, juegos distintos | 150 pts + barco **Cel-shaded cómic** |
+| 13 | `secretos` | Ojo de marinera *(oculto)* | Encuentra los 4 secretos del mapa. | 4 · «Te quedan 3 secretos» | `collect_objects` (`secreto`) | 120 pts + barco **Boceto a lápiz** |
+| 14 | `delfin` | Amiga del delfín *(oculto)* | Sigue al delfín hasta el final de sus saltos. | 1 · «???» | **T36** `complete_encounter` (`delfin`) | 50 pts + **Estela de burbujas** |
+| 15 | `botellas-3` | Correo del mar | Lee 3 botellas. | 3 · «Te quedan 2 botellas» | **T36** `read_bottle` (botellas de otros, distintas; sólo `/juego`) | 30 pts + 20 monedas |
+| 16 | `botella-propia` | Mensaje al mar | Echa tu propia botella. | 1 · «Echa tu botella» | **T36** `throw_bottle` (sólo `/juego`) | 20 pts + 10 monedas |
+| 17 | `carnet` | Con Carnet | Crea tu Carnet BOIA. | 1 · «Crea tu Carnet» | **T36** `create_carnet` | 300 pts + barco **Low-poly**, al crearlo (sin «Reclamar», T72) |
+| 18 | `carnet-preguntas` | Libro abierto | Responde las 5 preguntas del Carnet. | 5 · «Te quedan 3 preguntas» | **T36** `answer_question` | 60 pts + 30 monedas |
+| 19 | `minutos-5` | Cinco minutos a bordo | Navega 5 minutos. | 5 · «Te quedan 2 minutos» | `time_played` | 30 pts + 15 monedas |
+| 20 | `minutos-20` | Veinte minutos a bordo | Navega 20 minutos. | 20 · «Te quedan 12 minutos» | `time_played` | 60 pts + 30 monedas |
+| 21 | `minutos-60` | Lobo de mar | Navega una hora (en varias visitas). | 60 · «Te quedan 40 minutos» | `time_played` | 150 pts + barco **Pixel art** |
 | 22 | `entrada` | Con entrada | Compra una entrada para un evento de BOIA. | 1 · «Compra tu primera entrada» | `buy_ticket` (el checkout de prueba, `sandbox.ts`) | 100 pts + insignia **Con entrada** |
 | 23 | `entradas-3` | Fiel a BOIA | Ten entradas de 3 eventos distintos. | 3 · «Te quedan 2 eventos» | `buy_ticket`, eventos distintos con sello | 150 pts + insignia **Fiel a BOIA** |
-| 24 | `mundos-2` | Entre dos mundos | Navega en Arcilla y en Acuarela. | 2 · «Te queda 1 mundo» | **T36** `visit_world` | 30 pts + 15 monedas |
-| 25 | `naufrago-fiesta` | Náufrago de fiesta | Lleva al náufrago a una fiesta de BOIA. | 1 · «Llévalo a una fiesta» | `deliver_character` (`naufrago`); se podrá completar cuando el náufrago tenga su misión | 50 pts + 20 monedas |
+| 24 | `mundos-2` | Entre dos mundos | Navega en Arcilla y en Acuarela. | 2 · «Te queda 1 mundo» | **T36** `visit_world` | 40 pts + 20 monedas |
+| 25 | `naufrago-fiesta` | Náufrago de fiesta | Lleva al náufrago a una fiesta de BOIA. | 1 · «Llévalo a una fiesta» | `deliver_character` (`naufrago`); se podrá completar cuando el náufrago tenga su misión | 80 pts + 40 monedas |
 
 Las cifras de «te queda» son ejemplos; el juego pone las de cada persona.
+
+## Economía más rápida (decisión de Hernán y Álvaro, 2026-10-02; T72)
+
+Con unos 10 minutos de juego normal se desbloquean al menos 3 barcos y una
+skin (`apps/web/lib/mundo/economy.test.ts`: 6 restos, un cofre, 4 islas, 3
+boies, una partida al faro, el Carnet y 10 minutos dan 715 pts y 245
+monedas). Todo sigue siendo `muestra`.
+
+- **Logros:** más puntos y monedas en todos menos `entrada` y `entradas-3`
+  (cifras de la tabla de arriba). `islas-7` pide las 8 islas (el id no
+  cambia: el libro lo guarda).
+- **Carnet BOIA:** crearlo da 300 pts y el barco **Low-poly** en el acto, sin
+  «Reclamar» (`grantCarnetReward` en `apps/web/lib/mundo/achievements.ts`).
+  Low-poly porque no era de base, ni de misión, ni premio de otro logro, y era
+  el primer barco de la tienda; deja de venderse.
+- **Barcos y tienda:** Cartoon años 30, 120 monedas (antes 400); Semi-realista
+  «El Veterano», al llegar a 600 pts (antes 1500); cada skin, 50 monedas
+  (antes 150); Bandera BOIA 20, Estela naranja 30, Farolillo 25. Así los tres
+  caminos dan un barco cada uno en la primera visita: el Carnet, los puntos y
+  las monedas.
+- **Mar vivo:** cada resto flotante da 10 monedas y el Cofre fugaz 40
+  monedas y 20 pts (una vez por visita cada uno). Islas: 15–30 pts al
+  descubrirlas. Secretos, delfín y remolino dan más.
+- **Minijuegos:** Faro y Cañón duran 3 oleadas, con intrusos más rápidos;
+  terminarlos (llegar a la marca) da 150 pts y 50 monedas (el Faro una vez al
+  día, el Cañón una vez por temporada). Se rediseñarán más adelante.
 
 ## Cambios de Hernán al borrador (2026-09-29)
 

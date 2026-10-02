@@ -77,12 +77,17 @@ export interface CanonConfig extends BaseConfig {
   combo: { max: number };
 }
 
+/**
+ * Versión 3 (decisión 2026-10-02, T72): 3 oleadas con intrusos más rápidos;
+ * terminarla (llegar a `goal`) da 150 puntos y 50 monedas. Se rediseñará más
+ * adelante. muestra
+ */
 export const CANON_DEFAULTS: CanonConfig = {
-  version: 2,
-  goal: 400,
-  timeLimitS: 600,
+  version: 3,
+  goal: 200,
+  timeLimitS: 300,
   lives: 3,
-  waves: 10,
+  waves: 3,
   gravity: 2.2,
   maxSpeed: 1.45,
   angleMin: 0.08,
@@ -93,19 +98,19 @@ export const CANON_DEFAULTS: CanonConfig = {
   reloadS: 0.55,
   splashRadius: 0.05,
   preview: 0.45,
-  shark: { radius: 0.028, points: 10, speed: 0.05, diveEveryS: [3, 6], diveForS: [0.8, 1.5] },
-  pirate: { halfWidth: 0.05, height: 0.12, hp: 2, hitPoints: 5, points: 25, speed: 0.035 },
+  shark: { radius: 0.028, points: 10, speed: 0.075, diveEveryS: [3, 6], diveForS: [0.8, 1.5] },
+  pirate: { halfWidth: 0.05, height: 0.12, hp: 2, hitPoints: 5, points: 25, speed: 0.05 },
   wave: {
     foes: 3,
     more: 2,
-    speedUp: 0.12,
+    speedUp: 0.2,
     intervalS: 2.6,
     intervalDown: 0.15,
     intervalMin: 1,
     breakS: 2.5,
   },
   combo: { max: 4 },
-  reward: { policy: 'season', points: 20, coins: 8, maxPoints: 40, maxCoins: 16 },
+  reward: { policy: 'season', points: 150, coins: 50, maxPoints: 150, maxCoins: 50 },
 };
 
 /** Boca del cañón, en lo alto de la torre. */

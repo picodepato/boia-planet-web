@@ -1,4 +1,5 @@
 import {
+  BOTTLES_IN_SEA_MAX,
   BOTTLE_MESSAGE_MAX,
   BOTTLE_REPORT_REASON_MAX,
   CARNET_ANSWER_MAX,
@@ -468,6 +469,26 @@ class LocalRepository implements BoiaRepository {
     return [...out, ...local.values()];
   }
 
+  /**
+   * Las botellas activas, de la más nueva a la más antigua (a igual fecha, la
+   * guardada después es la más nueva). En el mar flotan las primeras
+   * `BOTTLES_IN_SEA_MAX` (decisión 2026-10-02).
+   */
+  private activeBottles(doc: StoreDoc = this.doc): Bottle[] {
+    return this.allBottles(doc)
+      .map((b, i) => ({ b, i, t: Date.parse(b.createdAt) }))
+      .filter(({ b }) => b.status === 'active')
+      .sort((x, y) => y.t - x.t || y.i - x.i)
+      .map(({ b }) => b);
+  }
+
+  /** Sale del mar sin moderación: la retira su autor o la empuja una más nueva. */
+  private retireBottle(b: Bottle, at: string): void {
+    b.status = 'retired';
+    b.version++;
+    b.updatedAt = at;
+  }
+
   private nicknameOf(userId: string, doc: StoreDoc = this.doc): string | null {
     return (
       doc.carnets[userId]?.nickname ??
@@ -562,10 +583,10 @@ class LocalRepository implements BoiaRepository {
             : c.unlockMission !== undefined
               ? { kind: 'mission', missionId: c.unlockMission }
               : c.priceCoins !== null && c.active
-              ? { kind: 'coins', price: c.priceCoins }
-              : achievementId
-                ? { kind: 'achievement', achievementId }
-                : { kind: 'none' };
+                ? { kind: 'coins', price: c.priceCoins }
+                : achievementId
+                  ? { kind: 'achievement', achievementId }
+                  : { kind: 'none' };
         const ship = c.forShip ? catalog.find((x) => x.id === c.forShip) : undefined;
         const shipOwned = !c.forShip || (ship !== undefined && owns(ship));
         const missing = owned
@@ -1564,10 +1585,16 @@ class LocalRepository implements BoiaRepository {
       return b;
     };
     return {
-      list: async () =>
-        this.allBottles()
-          .filter((b) => b.status === 'active')
-          .map((b) => this.bottleView(b)),
+      list: async () => {
+        const afloat = new Set(
+          this.activeBottles()
+            .slice(0, BOTTLES_IN_SEA_MAX)
+            .map((b) => b.id),
+        );
+        return this.allBottles()
+          .filter((b) => afloat.has(b.id))
+          .map((b) => this.bottleView(b));
+      },
       mine: async () => {
         const me = this.doc.identity?.id;
         const b = me && this.doc.bottles.find((x) => x.userId === me && x.status === 'active');
@@ -1580,9 +1607,11 @@ class LocalRepository implements BoiaRepository {
           const me = d.identity;
           if (!me || !d.carnets[me.id])
             throw new StoreError('no_carnet', 'sin Carnet no se escriben botellas');
-          if (d.bottles.some((b) => b.userId === me.id && b.status === 'active'))
-            throw new StoreError('conflict', 'ya tienes una botella en el mar');
           const at = this.iso();
+          // Una por persona: la nueva sustituye a la tuya (decisión 2026-10-02).
+          for (const old of d.bottles) {
+            if (old.userId === me.id && old.status === 'active') this.retireBottle(old, at);
+          }
           const b: Bottle = {
             id: newId(),
             userId: me.id,
@@ -1598,6 +1627,14 @@ class LocalRepository implements BoiaRepository {
             updatedAt: at,
           };
           d.bottles.push(b);
+          // Diez en el mar como mucho, ésta incluida: las más antiguas se van (las
+          // de muestra cuentan).
+          const others = this.activeBottles(d).filter((x) => x.id !== b.id);
+          for (const gone of others.slice(BOTTLES_IN_SEA_MAX - 1)) {
+            const next = { ...gone };
+            this.retireBottle(next, at);
+            this.upsertLocalBottle(d, next);
+          }
           return this.bottleView(b, d);
         });
       },
@@ -1623,9 +1660,7 @@ class LocalRepository implements BoiaRepository {
           const b = findMine(d, id);
           if (b.status === 'removed') throw new StoreError('forbidden', 'retirada por moderación');
           if (b.status === 'retired') return skip();
-          b.status = 'retired';
-          b.version++;
-          b.updatedAt = this.iso();
+          this.retireBottle(b, this.iso());
         }),
       read: async (id) =>
         this.mutate(['identity', 'bottles'], (d, skip) => {

@@ -10,6 +10,17 @@ const FREU = 'el-freu';
  */
 export const FAST_LAP_MS = 43_600;
 
+// Economía de la decisión 2026-10-02 (T72): en unos 10 minutos de juego normal
+// se desbloquean 3 barcos y alguna skin (lo prueba
+// `apps/web/lib/mundo/economy.test.ts`). muestra
+
+/** El barco que regala el Carnet BOIA: ni de base, ni de misión, ni de otro logro. */
+export const CARNET_SHIP = 'barco-low-poly';
+/** Puntos (umbral, no se gastan) del barco Semi-realista «El Veterano». */
+export const VETERAN_POINTS = 600;
+/** Precio del barco Cartoon años 30, el que queda a la venta. */
+export const CARTOON_SHIP_PRICE = 120;
+
 /**
  * Catálogo de logros de MUESTRA, el aprobado por Hernán el 2026-09-29
  * (docs/propuestas/logros-catalogo.md, D-22 punto 5; pendiente Álvaro, P14).
@@ -26,8 +37,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Habla con tu primera boia.',
     trigger: 'find_buoy',
     triggerParams: { count: 1 },
-    points: 10,
-    coins: 5,
+    points: 20,
+    coins: 10,
     sample: true,
   },
   {
@@ -36,8 +47,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Habla con 3 boies distintas.',
     trigger: 'find_buoy',
     triggerParams: { count: 3 },
-    points: 30,
-    coins: 10,
+    points: 40,
+    coins: 20,
     sample: true,
   },
   {
@@ -47,8 +58,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Habla con las 6 boies del mar.',
     trigger: 'find_buoy',
     triggerParams: { count: 6 },
-    points: 60,
-    coins: 20,
+    points: 80,
+    coins: 40,
     sample: true,
   },
   {
@@ -57,18 +68,19 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Descubre 3 islas.',
     trigger: 'visit_island',
     triggerParams: { count: 3 },
-    points: 30,
-    coins: 10,
+    points: 40,
+    coins: 20,
     sample: true,
   },
   {
+    // Id estable (el libro lo guarda); desde T67 el mapa tiene 8 islas y pide las 8.
     id: 'islas-7',
     title: 'Cartógrafa',
-    description: 'Descubre 7 islas del mapa.',
+    description: 'Descubre las 8 islas del mapa.',
     trigger: 'visit_island',
-    triggerParams: { count: 7 },
-    points: 80,
-    coins: 20,
+    triggerParams: { count: 8 },
+    points: 120,
+    coins: 40,
     sample: true,
   },
   {
@@ -77,8 +89,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Saca a la Boia Fiestera de entre los cocodrilos.',
     trigger: 'rescue_character',
     triggerParams: { character: 'boia-fiestera' },
-    points: 50,
-    coins: 20,
+    points: 80,
+    coins: 40,
     sample: true,
   },
   {
@@ -87,7 +99,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Lleva a la Boia Fiestera a la Isla de Nochevieja.',
     trigger: 'deliver_character',
     triggerParams: { character: 'boia-fiestera' },
-    points: 150,
+    points: 200,
     coins: 0,
     cosmeticKey: 'bandera-fiestera',
     sample: true,
@@ -98,8 +110,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Termina una vuelta al circuito.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU },
-    points: 40,
-    coins: 15,
+    points: 60,
+    coins: 30,
     sample: true,
   },
   {
@@ -108,7 +120,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Termina una vuelta por el atajo.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU, via: 'circuito-cp-a' },
-    points: 40,
+    points: 60,
     coins: 0,
     cosmeticKey: 'bandera-cuadros',
     secret: true,
@@ -120,7 +132,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Haz una vuelta en menos de 43,6 s.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU, maxMs: FAST_LAP_MS },
-    points: 100,
+    points: 120,
     coins: 0,
     cosmeticKey: 'estela-rayo',
     sample: true,
@@ -131,8 +143,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Gana Vigilancia del faro.',
     trigger: 'win_minigame',
     triggerParams: { game: 'faro' },
-    points: 40,
-    coins: 15,
+    points: 60,
+    coins: 30,
     sample: true,
   },
   {
@@ -141,8 +153,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Gana Cañón contra tiburones.',
     trigger: 'win_minigame',
     triggerParams: { game: 'canon' },
-    points: 40,
-    coins: 15,
+    points: 60,
+    coins: 30,
     sample: true,
   },
   {
@@ -151,7 +163,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Gana los dos minijuegos.',
     trigger: 'win_minigame',
     triggerParams: { count: 2 },
-    points: 100,
+    points: 150,
     coins: 0,
     cosmeticKey: 'barco-cel-shaded',
     sample: true,
@@ -162,7 +174,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Encuentra los 4 secretos del mapa.',
     trigger: 'collect_objects',
     triggerParams: { category: 'secreto', count: 4 },
-    points: 80,
+    points: 120,
     coins: 0,
     cosmeticKey: 'barco-boceto-lapiz',
     secret: true,
@@ -174,7 +186,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Sigue al delfín hasta el final de sus saltos.',
     trigger: 'complete_encounter',
     triggerParams: { encounter: 'delfin' },
-    points: 30,
+    points: 50,
     coins: 0,
     cosmeticKey: 'estela-burbujas',
     secret: true,
@@ -187,8 +199,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Lee 3 botellas.',
     trigger: 'read_bottle',
     triggerParams: { count: 3 },
-    points: 20,
-    coins: 10,
+    points: 30,
+    coins: 20,
     sample: true,
   },
   {
@@ -197,18 +209,21 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Echa tu propia botella.',
     trigger: 'throw_bottle',
     triggerParams: { count: 1 },
-    points: 10,
-    coins: 5,
+    points: 20,
+    coins: 10,
     sample: true,
   },
   {
+    // El premio del Carnet (decisión 2026-10-02, T72): 300 puntos y el barco
+    // Low-poly, que llegan al crearlo, sin «Reclamar» (`grantCarnetReward` de la web).
     id: 'carnet',
     title: 'Con Carnet',
     description: 'Crea tu Carnet BOIA.',
     trigger: 'create_carnet',
     triggerParams: {},
-    points: 20,
-    coins: 10,
+    points: 300,
+    coins: 0,
+    cosmeticKey: CARNET_SHIP,
     sample: true,
   },
   {
@@ -217,8 +232,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Responde las 5 preguntas del Carnet.',
     trigger: 'answer_question',
     triggerParams: { count: 5 },
-    points: 40,
-    coins: 20,
+    points: 60,
+    coins: 30,
     sample: true,
   },
   {
@@ -227,8 +242,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Navega 5 minutos.',
     trigger: 'time_played',
     triggerParams: { minutes: 5 },
-    points: 10,
-    coins: 5,
+    points: 30,
+    coins: 15,
     sample: true,
   },
   {
@@ -237,8 +252,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Navega 20 minutos.',
     trigger: 'time_played',
     triggerParams: { minutes: 20 },
-    points: 30,
-    coins: 10,
+    points: 60,
+    coins: 30,
     sample: true,
   },
   {
@@ -247,7 +262,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Navega una hora (en varias visitas).',
     trigger: 'time_played',
     triggerParams: { minutes: 60 },
-    points: 100,
+    points: 150,
     coins: 0,
     cosmeticKey: 'barco-pixel-art',
     sample: true,
@@ -280,8 +295,8 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Navega en Arcilla y en Acuarela.',
     trigger: 'visit_world',
     triggerParams: { count: 2 },
-    points: 30,
-    coins: 15,
+    points: 40,
+    coins: 20,
     sample: true,
   },
   {
@@ -292,14 +307,14 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     description: 'Lleva al náufrago a una fiesta de BOIA.',
     trigger: 'deliver_character',
     triggerParams: { character: 'naufrago' },
-    points: 50,
-    coins: 20,
+    points: 80,
+    coins: 40,
     sample: true,
   },
 ];
 
-/** Precio de cada skin de barco (O5). muestra */
-export const SKIN_PRICE = 150;
+/** Precio de cada skin de barco (O5; 50 desde la decisión 2026-10-02). muestra */
+export const SKIN_PRICE = 50;
 const SOLD_SKINS = [
   ['noche', 'Noche'],
   ['fiesta', 'Fiesta'],
@@ -316,9 +331,9 @@ const SHIP_SKIN_OWNERS = [
 ] as const;
 
 export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
-  { id: 'bandera-boia', name: 'Bandera BOIA', slot: 'flag', priceCoins: 30, sample: true },
-  { id: 'estela-naranja', name: 'Estela naranja', slot: 'wake', priceCoins: 50, sample: true },
-  { id: 'farolillo', name: 'Farolillo de proa', slot: 'accessory', priceCoins: 40, sample: true },
+  { id: 'bandera-boia', name: 'Bandera BOIA', slot: 'flag', priceCoins: 20, sample: true },
+  { id: 'estela-naranja', name: 'Estela naranja', slot: 'wake', priceCoins: 30, sample: true },
+  { id: 'farolillo', name: 'Farolillo de proa', slot: 'accessory', priceCoins: 25, sample: true },
   {
     id: 'bandera-fiestera',
     name: 'Bandera de la Fiestera',
@@ -341,8 +356,9 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     sample: true,
   },
   { id: 'estela-rayo', name: 'Estela de rayo', slot: 'wake', priceCoins: null, sample: true },
-  // Barcos de estilo (T40, D-23 punto 1 y O5; precios `muestra`). Primero los
-  // que se ganan con un logro (D-22, T36: bloqueados hasta reclamarlo).
+  // Barcos de estilo (T40, D-23 punto 1 y O5; precios `muestra`, rebajados el
+  // 2026-10-02). Primero los que se ganan con un logro (D-22, T36: bloqueados
+  // hasta reclamarlo).
   {
     id: 'barco-cel-shaded',
     name: 'Cel-shaded cómic',
@@ -398,34 +414,35 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     base: true,
     sample: true,
   },
-  // En la tienda, con monedas.
+  // El regalo del Carnet BOIA (logro `carnet`, decisión 2026-10-02): antes se vendía.
   {
-    id: 'barco-low-poly',
+    id: CARNET_SHIP,
     name: 'Low-poly',
     slot: 'ship',
-    priceCoins: 300,
+    priceCoins: null,
     assetKey: 'low-poly',
     sample: true,
   },
+  // En la tienda, con monedas.
   {
     id: 'barco-cartoon-30',
     name: 'Cartoon años 30',
     slot: 'ship',
-    priceCoins: 400,
+    priceCoins: CARTOON_SHIP_PRICE,
     assetKey: 'cartoon-30',
     sample: true,
   },
-  // Con puntos: al llegar a 1500 (umbral; los puntos no se gastan).
+  // Con puntos: al llegar al umbral (los puntos no se gastan).
   {
     id: 'barco-semi-realista',
     name: 'Semi-realista «El Veterano»',
     slot: 'ship',
     priceCoins: null,
     assetKey: 'semi-realista',
-    unlockPoints: 1500,
+    unlockPoints: VETERAN_POINTS,
     sample: true,
   },
-  // Skins noche y fiesta de cada barco: 150 monedas cada una (B01 Boceto a
+  // Skins noche y fiesta de cada barco, a SKIN_PRICE cada una (B01 Boceto a
   // lápiz es monocromo: sólo base).
   ...SHIP_SKIN_OWNERS.flatMap(([ship, style, label]) =>
     SOLD_SKINS.map(([skin, skinLabel]): AreaInput<'cosmetics'> => ({

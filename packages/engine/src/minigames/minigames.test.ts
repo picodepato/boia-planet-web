@@ -263,6 +263,45 @@ describe('Vigilancia del faro (T60)', () => {
   });
 });
 
+describe('partidas cortas (decisión 2026-10-02, T72)', () => {
+  /** El ritmo de la versión 2 (T60), para comparar: 10 oleadas más lentas. */
+  const V2 = {
+    faro: { speed: 0.055, speedUp: 0.15 },
+    canon: { shark: 0.05, pirate: 0.035, speedUp: 0.12 },
+  };
+
+  it('3 oleadas cada uno, y cada oleada más rápida que la misma de antes', () => {
+    expect([FARO_DEFAULTS.waves, CANON_DEFAULTS.waves]).toEqual([3, 3]);
+    expect(faroPlan(7, FARO_DEFAULTS)).toHaveLength(3);
+    expect(canonPlan(7, CANON_DEFAULTS)).toHaveLength(3);
+    for (let n = 1; n <= 3; n++) {
+      expect(faroWave(FARO_DEFAULTS, n).speed).toBeGreaterThan(
+        V2.faro.speed * (1 + V2.faro.speedUp * (n - 1)),
+      );
+      const now = canonWave(CANON_DEFAULTS, n).speed;
+      const before = 1 + V2.canon.speedUp * (n - 1);
+      expect(CANON_DEFAULTS.shark.speed * now).toBeGreaterThan(V2.canon.shark * before);
+      expect(CANON_DEFAULTS.pirate.speed * now).toBeGreaterThan(V2.canon.pirate * before);
+    }
+  });
+
+  async function finish(def: MinigameDefinition<BaseConfig>, bot: Bot) {
+    expect(def.defaults.reward).toMatchObject({ points: 150, coins: 50 });
+    const { controller, clock: k, granted } = setup(def);
+    playHeadless(controller, bot, k.advance);
+    expect(controller.sim?.ended).toEqual({ outcome: 'won', reason: 'waves' });
+    expect(controller.sim!.time).toBeLessThan(60);
+    expect((await controller.settling!).reward).toEqual({ granted: true, points: 150, coins: 50 });
+    expect(granted[0]).toMatchObject({ points: 150, coins: 50 });
+  }
+
+  it('faro: terminarla da 150 puntos y 50 monedas, en menos de un minuto', () =>
+    finish(faro as MinigameDefinition<BaseConfig>, faroExpert));
+
+  it('canon: terminarla da 150 puntos y 50 monedas, en menos de un minuto', () =>
+    finish(canon as MinigameDefinition<BaseConfig>, canonExpert));
+});
+
 describe('Cañón contra tiburones (T60)', () => {
   const c = CANON_DEFAULTS;
 

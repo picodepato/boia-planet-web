@@ -71,12 +71,17 @@ export interface FaroConfig extends BaseConfig {
   combo: { every: number; max: number };
 }
 
+/**
+ * Versión 3 (decisión 2026-10-02, T72): una guardia corta de 3 oleadas con
+ * piratas más rápidos; terminarla (llegar a `goal`) da 150 puntos y 50
+ * monedas. Se rediseñará más adelante. muestra
+ */
 export const FARO_DEFAULTS: FaroConfig = {
-  version: 2,
-  goal: 600,
-  timeLimitS: 600,
+  version: 3,
+  goal: 250,
+  timeLimitS: 300,
   lives: 3,
-  waves: 10,
+  waves: 3,
   beamHalfWidth: 0.1,
   turnSpeed: 1.8,
   followSpeed: 4.5,
@@ -92,15 +97,15 @@ export const FARO_DEFAULTS: FaroConfig = {
   wave: {
     ships: 4,
     more: 2,
-    speed: 0.055,
-    speedUp: 0.15,
+    speed: 0.08,
+    speedUp: 0.25,
     intervalS: 2.4,
     intervalDown: 0.15,
     intervalMin: 0.9,
     breakS: 2.5,
   },
   combo: { every: 4, max: 4 },
-  reward: { policy: 'daily', points: 15, coins: 5, maxPoints: 30, maxCoins: 10 },
+  reward: { policy: 'daily', points: 150, coins: 50, maxPoints: 150, maxCoins: 50 },
 };
 
 /** Faro: la lámpara, en coordenadas lógicas de la escena. */

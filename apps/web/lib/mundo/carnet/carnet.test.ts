@@ -37,17 +37,17 @@ describe('botellas en la demo (REQ-IDE-040…044)', () => {
     expect(b.isMine).toBe(true);
   });
 
-  it('sólo una activa: la segunda se rechaza (conflict) hasta retirar la primera', async () => {
+  it('sólo una activa: echar la segunda sustituye a la primera (decisión 2026-10-02)', async () => {
     const repo = await withCarnet();
     const spot = findDropSpot(sea, spawn)!;
     const first = await repo.bottles.place({ message: 'primera', ...spot });
-    await expect(repo.bottles.place({ message: 'segunda', ...spot })).rejects.toSatisfy((e) =>
-      isStoreError(e, 'conflict'),
-    );
-    expect((await repo.bottles.list()).filter((b) => b.isMine)).toHaveLength(1);
-    await repo.bottles.retire(first.id);
-    await expect(repo.bottles.place({ message: 'segunda', ...spot })).resolves.toMatchObject({
-      message: 'segunda',
+    const second = await repo.bottles.place({ message: 'segunda', ...spot });
+    const mine = (await repo.bottles.list()).filter((b) => b.isMine);
+    expect(mine.map((b) => b.id)).toEqual([second.id]);
+    expect(mine.map((b) => b.id)).not.toContain(first.id);
+    await repo.bottles.retire(second.id);
+    await expect(repo.bottles.place({ message: 'tercera', ...spot })).resolves.toMatchObject({
+      message: 'tercera',
     });
   });
 

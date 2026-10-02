@@ -4,6 +4,69 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-02 — plan 006 T72: Economy rebalance and bottle cap
+
+Qué existe:
+
+- **Economía más rápida** (decisión de Hernán y Álvaro del 2026-10-02), todo
+  `muestra`. Con unos 10 minutos de juego normal (6 restos, un cofre, 4
+  islas, 3 boies, una partida al faro, el Carnet y 10 minutos a bordo) salen
+  715 puntos y 245 monedas: dan el barco del Carnet, el de puntos y el de
+  monedas, y una skin. Lo prueba `apps/web/lib/mundo/economy.test.ts` con el
+  repositorio local, los premios del mapa, un minijuego jugado entero y el
+  catálogo de logros (sin cifras escritas a mano).
+- **Barcos y tienda** (`packages/store/src/sample/progress.ts`): Cartoon años
+  30, 120 monedas (antes 400, `CARTOON_SHIP_PRICE`); Semi-realista, umbral de
+  600 puntos (antes 1500, `VETERAN_POINTS`); skins, 50 (antes 150,
+  `SKIN_PRICE`); bandera 20, estela 30, farolillo 25.
+- **Carnet BOIA**: el logro `carnet` da 300 puntos y el barco **Low-poly**
+  (`CARNET_SHIP`, deja de venderse) y llega al crearlo, sin «Reclamar»:
+  `grantCarnetReward` / `emitCarnetReward` en `apps/web/lib/mundo/achievements.ts`,
+  llamado desde `saveCarnet`. También lo recibe quien tenía el logro
+  completado sin reclamar, al guardar su Carnet.
+- **Logros**: más puntos y monedas en todos menos `entrada` y `entradas-3`
+  (cifras en `docs/propuestas/logros-catalogo.md`, sección nueva «Economía
+  más rápida»); `islas-7` pide ahora las 8 islas (el id no cambia).
+- **Mar vivo** (`packages/world/src/worlds/arcilla/map.ts`): cada resto
+  flotante da 10 monedas (`RESTOS_COINS`), el Cofre fugaz 40 monedas y 20
+  puntos (`COFRE_COINS`, `COFRE_POINTS`), una vez por visita; islas 15–30
+  puntos; secretos, náufrago, delfín (25) y remolino (5/10/15) dan más.
+- **Arreglo**: los premios «por visita» (restos y cofres) usaban la clave
+  `…@visita:…`, que el repositorio rechaza (`isStableKey`); en /mar no daban
+  nada. Ahora `…:visita:…` (`world-progress.ts`).
+- **Minijuegos** (versión 3 de `FARO_DEFAULTS` y `CANON_DEFAULTS`): 3
+  oleadas, intrusos más rápidos, marca para ganar 250 (faro) y 200 (cañón),
+  premio 150 puntos y 50 monedas (faro una vez al día, cañón una vez por
+  temporada). Una partida con el bot experto dura unos 40 s.
+- **Botellas** (`packages/store/src/local.ts`, `BOTTLES_IN_SEA_MAX = 10` en
+  `@boia/contracts`): echar otra sustituye a la tuya (la anterior queda
+  retirada); con 10 en el mar (las de muestra cuentan), la nueva retira la
+  más antigua; `list()` enseña como mucho las 10 más nuevas. En la hoja «Tu
+  botella», un botón «Echar otra» (`botella-echar-otra`) con el aviso de que
+  sustituye a la tuya.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 103 archivos, 934 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm build` →
+  exit 0. `pnpm typecheck` → exit 0.
+- `E2E_PORT=3361 pnpm e2e mar-carnet-barco.spec.ts mar-botellas.spec.ts
+  minijuegos.spec.ts --workers=1` → 12 passed.
+- `E2E_PORT=3361 pnpm e2e tienda logros tickets carnet carnet-descuento
+  mar-a-bordo demo mar-fiestera --workers=2` → 50 passed.
+
+Pendiente:
+
+- Los rangos (`SAMPLE_RANKS`: Capitana a 600 puntos) no se han tocado: con la
+  economía nueva se llega al rango más alto en unos 10 minutos.
+- La misión de la Fiestera sigue dando 100 puntos y 100 monedas
+  [pendiente Álvaro].
+- La regla de botellas está sólo en el repositorio del navegador; la versión
+  final (Supabase) tendrá que sustituir y recortar igual.
+- `bottle.conflict` ya no sale desde «Echar al mar» (la segunda sustituye);
+  el texto se queda por si el repositorio lo devuelve.
+
 ## 2026-10-02 — plan 006 T67: Island names, the Halloween place and the three ticket events
 
 Qué existe:

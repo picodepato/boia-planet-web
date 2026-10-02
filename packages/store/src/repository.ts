@@ -507,10 +507,17 @@ export interface BottleInput {
 }
 
 export interface BottleApi {
-  /** Botellas activas en el mar (las de muestra y las de este navegador). */
+  /**
+   * Botellas activas en el mar (las de muestra y las de este navegador): como
+   * mucho `BOTTLES_IN_SEA_MAX`, las más nuevas.
+   */
   list(): Promise<BottleView[]>;
   mine(): Promise<BottleView | null>;
-  /** Echa la botella. Una activa por identidad: con otra activa, `conflict`. */
+  /**
+   * Echa la botella (hace falta Carnet). Una activa por identidad: la nueva
+   * retira la anterior. Con `BOTTLES_IN_SEA_MAX` en el mar, se retira la más
+   * antigua (decisión 2026-10-02).
+   */
   place(input: BottleInput): Promise<BottleView>;
   edit(id: string, patch: Partial<BottleInput>): Promise<BottleView>;
   /** La retira su autor. */

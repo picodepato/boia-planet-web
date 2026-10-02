@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BOTTLE_MESSAGE_MAX } from '@boia/contracts';
-import { SAMPLE_BOTTLES, SAMPLE_CREW } from './sample';
+import { BOTTLES_IN_SEA_MAX, BOTTLE_MESSAGE_MAX } from '@boia/contracts';
+import { SAMPLE_BOTTLES, SAMPLE_CREW, type SampleBottle } from './sample';
 import { makeRepo } from './test-helpers';
 
 async function member(nickname = 'Marinera de prueba') {
@@ -35,26 +35,76 @@ describe('botellas', () => {
     });
   });
 
-  it('una botella activa por identidad; al retirarla se puede echar otra', async () => {
+  it('una botella activa por persona: echar otra sustituye a la tuya, también al recargar', async () => {
     const { repo, reload } = await member();
     const first = await repo.bottles.place({ message: 'la primera', x: 10, y: 20 });
-    await expect(repo.bottles.place({ message: 'la segunda', x: 30, y: 40 })).rejects.toMatchObject(
-      {
-        code: 'conflict',
-      },
-    );
-    // También después de recargar.
-    const later = reload();
-    await expect(
-      later.bottles.place({ message: 'la segunda', x: 30, y: 40 }),
-    ).rejects.toMatchObject({
-      code: 'conflict',
+    const second = await repo.bottles.place({ message: 'la segunda', x: 30, y: 40 });
+    const mine = async (r = repo) => (await r.bottles.list()).filter((b) => b.isMine);
+    expect((await mine()).map((b) => b.id)).toEqual([second.id]);
+    expect((await repo.bottles.mine())?.id).toBe(second.id);
+    // La anterior queda retirada (no borrada): ya no se edita.
+    await expect(repo.bottles.edit(first.id, { message: 'otra' })).rejects.toMatchObject({
+      code: 'forbidden',
     });
-    await later.bottles.retire(first.id);
-    const second = await later.bottles.place({ message: 'la segunda', x: 30, y: 40 });
-    expect((await later.bottles.mine())?.id).toBe(second.id);
-    const mineActive = (await later.bottles.list()).filter((b) => b.isMine);
-    expect(mineActive.map((b) => b.id)).toEqual([second.id]);
+    const later = reload();
+    const third = await later.bottles.place({ message: 'la tercera', x: 50, y: 60 });
+    expect((await mine(later)).map((b) => b.id)).toEqual([third.id]);
+    // Retirarla a mano sigue funcionando y deja echar otra.
+    await later.bottles.retire(third.id);
+    expect(await later.bottles.mine()).toBeNull();
+    const fourth = await later.bottles.place({ message: 'la cuarta', x: 70, y: 80 });
+    expect((await mine(later)).map((b) => b.id)).toEqual([fourth.id]);
+  });
+
+  /** `n` botellas de muestra de otras personas, de la más antigua a la más nueva. */
+  const crowd = (n: number): SampleBottle[] =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `botella-ajena-${i + 1}`,
+      userId: `muestra-ajena-${i + 1}`,
+      message: `botella ${i + 1}`,
+      x: i,
+      y: i,
+      createdAt: new Date(Date.UTC(2026, 8, 1 + i)).toISOString(),
+    }));
+
+  it(`como mucho ${BOTTLES_IN_SEA_MAX} en el mar: la nueva quita la más antigua (la muestra cuenta)`, async () => {
+    const others = crowd(BOTTLES_IN_SEA_MAX);
+    const { repo, reload } = makeRepo({ sample: { bottles: others } });
+    expect(await repo.bottles.list()).toHaveLength(BOTTLES_IN_SEA_MAX);
+    await repo.carnet.create({ nickname: 'Recién llegada' });
+    const b = await repo.bottles.place({ message: 'hola', x: 1, y: 1 });
+    const afloat = async (r = repo) => (await r.bottles.list()).map((x) => x.id);
+    expect(await afloat()).toHaveLength(BOTTLES_IN_SEA_MAX);
+    expect(await afloat()).toContain(b.id);
+    expect(await afloat()).not.toContain(others[0]!.id);
+    expect(await afloat()).toEqual(expect.arrayContaining(others.slice(1).map((x) => x.id)));
+    // Se queda fuera al recargar: retirada, no escondida.
+    expect(await afloat(reload())).not.toContain(others[0]!.id);
+    const gone = (await repo.admin.bottles()).find((x) => x.id === others[0]!.id);
+    expect(gone?.status).toBe('retired');
+    // Sustituir la propia no empuja a nadie más.
+    const again = await repo.bottles.place({ message: 'otra vez', x: 2, y: 2 });
+    expect(await afloat()).toHaveLength(BOTTLES_IN_SEA_MAX);
+    expect(await afloat()).toContain(again.id);
+    expect(await afloat()).toContain(others[1]!.id);
+  });
+
+  it('con menos de las que caben no se quita ninguna; si la muestra trae de más, flotan las más nuevas', async () => {
+    const few = crowd(BOTTLES_IN_SEA_MAX - 1);
+    const { repo } = makeRepo({ sample: { bottles: few } });
+    await repo.carnet.create({ nickname: 'Con sitio' });
+    const b = await repo.bottles.place({ message: 'cabe', x: 1, y: 1 });
+    expect((await repo.bottles.list()).map((x) => x.id).sort()).toEqual(
+      [...few.map((x) => x.id), b.id].sort(),
+    );
+    const many = crowd(BOTTLES_IN_SEA_MAX + 3);
+    const crowded = makeRepo({ sample: { bottles: many } }).repo;
+    expect((await crowded.bottles.list()).map((x) => x.id).sort()).toEqual(
+      many
+        .slice(-BOTTLES_IN_SEA_MAX)
+        .map((x) => x.id)
+        .sort(),
+    );
   });
 
   it('editar cambia mensaje y posición; la posición la valida quien conoce el mar', async () => {

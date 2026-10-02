@@ -379,6 +379,45 @@ export async function recordSignal(repo: Repo, signal: AchievementSignal): Promi
 }
 
 // ---------------------------------------------------------------------------
+// El premio del Carnet (decisión 2026-10-02, T72)
+
+/**
+ * Crear el Carnet BOIA da en el acto el premio de su logro (`create_carnet`:
+ * 300 puntos y un barco, `muestra`), sin pasar por «Reclamar». Completa y
+ * reclama los logros de esa señal (también uno completado antes y sin
+ * reclamar) y devuelve el aviso de lo concedido. Repetirlo no da nada: el
+ * libro guarda una fila por logro.
+ */
+export async function grantCarnetReward(repo: Repo): Promise<Notice[]> {
+  await completeBySignal(repo, { trigger: 'create_carnet' });
+  const ready = (await repo.progress.achievements()).filter(
+    (a) => a.state === 'ready' && a.definition.trigger === 'create_carnet',
+  );
+  const notices: Notice[] = [];
+  for (const a of ready) {
+    const r = await repo.progress.claimAchievement(a.definition.id);
+    if (!r.claimed) continue;
+    const key = r.reward.kind === 'ship' ? r.reward.cosmeticKey : null;
+    const ship = key
+      ? ((await repo.progress.shop()).find((i) => i.cosmetic.id === key)?.cosmetic.name ?? key)
+      : null;
+    const reward = [
+      achievementBody(a.definition),
+      ...(ship ? [t('achievements.reward.ship', { ship })] : []),
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    notices.push({
+      id: `logro:${a.definition.id}`,
+      kind: 'achievement',
+      title: a.definition.title,
+      body: t('achievements.notice.claimed', { reward }),
+    });
+  }
+  return notices;
+}
+
+// ---------------------------------------------------------------------------
 // Las seis boies (O12, T45)
 
 /** Las boies de un mundo que cuentan para los logros de boies (las que dicen `find_boia`). */
@@ -446,17 +485,25 @@ export function onAchievementNotices(listener: NoticeListener): () => void {
  * a quien escuche (`onAchievementNotices`). Un fallo sólo se apunta en consola.
  */
 export function emitSignal(repo: Repo, signal: AchievementSignal): Promise<void> {
-  return recordSignal(repo, signal).then(
-    (notices) => {
-      if (notices.length === 0) return;
-      for (const l of [...listeners]) {
-        try {
-          l(notices);
-        } catch {
-          // un oyente roto no rompe a los demás
-        }
-      }
-    },
-    (err: unknown) => console.warn('[boia] no se pudo apuntar el logro', err),
+  return recordSignal(repo, signal).then(broadcast, (err: unknown) =>
+    console.warn('[boia] no se pudo apuntar el logro', err),
   );
+}
+
+/** Como `emitSignal`, para el Carnet recién creado: su premio llega ya (`grantCarnetReward`). */
+export function emitCarnetReward(repo: Repo): Promise<void> {
+  return grantCarnetReward(repo).then(broadcast, (err: unknown) =>
+    console.warn('[boia] no se pudo dar el premio del Carnet', err),
+  );
+}
+
+function broadcast(notices: Notice[]): void {
+  if (notices.length === 0) return;
+  for (const l of [...listeners]) {
+    try {
+      l(notices);
+    } catch {
+      // un oyente roto no rompe a los demás
+    }
+  }
 }

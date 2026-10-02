@@ -51,6 +51,15 @@ export const CIRCUIT_ID = 'el-freu';
  */
 export const CIRCUIT_VERSION = 2;
 
+/**
+ * Premios del mar vivo (decisión 2026-10-02, T72): cada resto flotante da 10
+ * monedas y el Cofre fugaz 40 monedas y 20 puntos, una vez por visita cada
+ * uno. muestra
+ */
+export const RESTOS_COINS = 10;
+export const COFRE_COINS = 40;
+export const COFRE_POINTS = 20;
+
 const TAGS = ['muestra'];
 
 // --- Anclas de las composiciones locales -------------------------------------
@@ -147,9 +156,13 @@ const slow = (intensity: number, duration: number): BehaviorInput => ({
 });
 const deco = (animation = 'idle'): BehaviorInput => ({ type: 'decorative', params: { animation } });
 const visit = (): BehaviorInput => ({ type: 'achievement', params: { trigger: 'visit_island' } });
-const points = (amount: number, on?: 'proximity_enter' | 'contact' | 'collect'): BehaviorInput => ({
+const points = (
+  amount: number,
+  on?: 'proximity_enter' | 'contact' | 'collect',
+  frequency: 'once' | 'session' = 'once',
+): BehaviorInput => ({
   type: 'reward',
-  params: { kind: 'points', amount, frequency: 'once', ...(on ? { on } : {}) },
+  params: { kind: 'points', amount, frequency, ...(on ? { on } : {}) },
 });
 const coins = (
   amount: number,
@@ -334,7 +347,7 @@ const ISLANDS: PlaceInput[] = [
     2.1,
     45,
     4.6,
-    [content('info', 'cala'), points(10), visit()],
+    [content('info', 'cala'), points(20), visit()],
     [
       'zonas/cala',
       'zonas/cala/proximidad/isla',
@@ -353,7 +366,7 @@ const ISLANDS: PlaceInput[] = [
     3.4,
     12,
     6.4,
-    [...tickets(ALLDAY_EVENT_ID), points(10), visit()],
+    [...tickets(ALLDAY_EVENT_ID), points(20), visit()],
     [
       'zonas/allday',
       'zonas/allday/proximidad/isla',
@@ -372,7 +385,7 @@ const ISLANDS: PlaceInput[] = [
     -20,
     4.0,
     // REQ-AVE-022: la galería como lugar del mundo.
-    [content('photos', 'album-muestra'), points(10), visit()],
+    [content('photos', 'album-muestra'), points(20), visit()],
     [
       'zonas/fotos',
       'zonas/fotos/proximidad/isla',
@@ -389,7 +402,7 @@ const ISLANDS: PlaceInput[] = [
     45,
     3.2,
     // REQ-COM-033: escaparate de la tienda externa.
-    [content('store', 'tienda'), points(5), visit()],
+    [content('store', 'tienda'), points(15), visit()],
     [
       'zonas/tienda',
       'zonas/tienda/proximidad/isla',
@@ -408,7 +421,7 @@ const ISLANDS: PlaceInput[] = [
       2.1,
       -10,
       4.4,
-      [...tickets(TICKET_ISLAND_EVENTS.ultima), points(20), visit()],
+      [...tickets(TICKET_ISLAND_EVENTS.ultima), points(30), visit()],
       [
         'zonas/ultima',
         'zonas/ultima/proximidad/isla',
@@ -435,7 +448,7 @@ const ISLANDS: PlaceInput[] = [
     1.9,
     20,
     4.0,
-    [...tickets(TICKET_ISLAND_EVENTS.halloween), points(10), visit()],
+    [...tickets(TICKET_ISLAND_EVENTS.halloween), points(20), visit()],
   ),
   // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `faro` y `canon`.
   island('faro', 'Tabarca', 'minijuegos/faro/isla', [-10.5, -25.2], 1.9, 1.3, 30, 3.4, [
@@ -585,7 +598,7 @@ const MAR_VIVO: PlaceInput[] = [
       ]),
       // Al arrimarse: sube a bordo y deja su código (una vez).
       discount('dto-naufrago', 'contact'),
-      points(10, 'contact'),
+      points(20, 'contact'),
     ],
     source: [
       'zonas/marvivo/islas/banco_naufrago',
@@ -608,7 +621,7 @@ const MAR_VIVO: PlaceInput[] = [
       behaviors: [
         { type: 'collectible', params: {} },
         { type: 'spawn', params: { positions: jitter(pos) } },
-        coins(3, 'session'),
+        coins(RESTOS_COINS, 'session'),
       ],
       source: [`zonas/marvivo/restos/${i}`],
     };
@@ -639,7 +652,8 @@ const MAR_VIVO: PlaceInput[] = [
             positions: [pos, { x: pos.x + 180, y: pos.y - 120 }, { x: pos.x - 160, y: pos.y + 140 }],
           },
         },
-        coins(8, 'session'),
+        coins(COFRE_COINS, 'session'),
+        points(COFRE_POINTS, undefined, 'session'),
       ],
       source: [`zonas/marvivo/lugares/cofre_${i + 1}`, `zonas/marvivo/proximidad/cofre_${i + 1}`],
     };
@@ -657,7 +671,7 @@ const MAR_VIVO: PlaceInput[] = [
     behaviors: [prox(), deco('salto')],
     params: {
       trail: [at([-9.6, 6.9]), at([-10.9, 4.9]), at([-9.4, 2.9])],
-      rewardCoins: 12,
+      rewardCoins: 25,
     },
     source: ['zonas/marvivo/lugares/delfin', 'zonas/marvivo/proximidad/delfin'],
   },
@@ -988,20 +1002,20 @@ const secret = (
 });
 
 const SECRETS: PlaceInput[] = [
-  secret('cueva', 'La cueva del acantilado', [-14.8, 4.2], 0, [coins(15), points(15)], 'marvivo'),
+  secret('cueva', 'La cueva del acantilado', [-14.8, 4.2], 0, [coins(25), points(30)], 'marvivo'),
   {
     // El tesoro: un descuento (REQ-AVE-021) y monedas, al recogerla.
     ...secret('anfora', 'El ánfora de Agost', [8.1, 9.5], 1, [], 'cala'),
     behaviors: [
       { type: 'collectible', params: {} },
       discount('dto-cofre'),
-      coins(10),
+      coins(25),
       { type: 'achievement', params: { trigger: 'collect_objects' } },
     ],
     geometry: { activation: { shape: 'circle', radius: 40 } },
   },
-  secret('campana', 'La campana hundida', [-13.2, -16.0], 2, [points(20)], 'fotos'),
-  secret('circulo', 'El círculo de las boies dormidas', [-5.0, -27.0], 3, [coins(20), points(20)], 'ultima'),
+  secret('campana', 'La campana hundida', [-13.2, -16.0], 2, [points(40)], 'fotos'),
+  secret('circulo', 'El círculo de las boies dormidas', [-5.0, -27.0], 3, [coins(30), points(40)], 'ultima'),
 ];
 
 // --- Las cinco boies informativas (O12, D-23; T45) ----------------------------------

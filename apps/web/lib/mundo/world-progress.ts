@@ -47,8 +47,10 @@ export function rewardSource(
   const base = `lugar:${objectId}:${kind}`;
   if (frequency === 'season') return { sourceRef: base, policy: 'season' };
   if (frequency === 'once') return { sourceRef: base, policy: 'once' };
-  // «Por sesión» (restos, cofres) y repetibles: una vez por visita.
-  return { sourceRef: `${base}@visita:${ctx.sessionId}`, policy: 'once' };
+  // «Por sesión» (restos, cofres) y repetibles: una vez por visita. La clave
+  // tiene que ser estable (`isStableKey`: sin «@»); con «@visita» el
+  // repositorio la rechazaba y los restos y cofres no daban nada (T72).
+  return { sourceRef: `${base}:visita:${ctx.sessionId}`, policy: 'once' };
 }
 
 /** Guarda lo que toca de un evento del mundo y devuelve lo que hay que enseñar. */

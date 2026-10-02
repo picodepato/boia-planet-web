@@ -8,7 +8,8 @@ import { t } from '../lib/i18n';
  * Botellas y Ranking en el mar 3D (T56, REQ-IDE-040…044, REQ-IDE-053): las
  * botellas de muestra flotan en el mar; con un Carnet (creado ahí mismo) se
  * echa una de hasta 140 caracteres, que sigue junto al barco al recargar
- * (sólo la ve quien la escribió: todo vive en este navegador, D-20); y el
+ * (sólo la ve quien la escribió: todo vive en este navegador, D-20); echar
+ * otra sustituye a la suya (una por persona, decisión 2026-10-02); y el
  * ranking local se abre desde el Menú con sus tres pestañas.
  */
 
@@ -116,6 +117,18 @@ test('botellas: las de muestra flotan; con Carnet se echa una de 140 y sigue al 
   await carnetSheet.getByRole('button', { name: t('juego.carnet.editarORetirar') }).click();
   await expect(carnetSheet).toBeHidden();
   await expect(panel.getByTestId('botella-mia')).toBeVisible();
+
+  // Una por persona (decisión 2026-10-02): echar otra sustituye a la suya.
+  await panel.getByTestId('botella-echar-otra').click();
+  await expect(panel.getByTestId('botella-sustituye')).toBeVisible();
+  const replacement = `Otra botella (${info.project.name}): la de antes se retira.`;
+  await panel.getByTestId('botella-texto').fill(replacement);
+  await panel.getByTestId('botella-echar').click();
+  await expect(panel).toBeHidden();
+  await expect.poll(() => bottlesInSea(page), { timeout: 10_000 }).not.toContain(ownId);
+  await expect.poll(() => bottlesInSea(page)).toHaveLength(SAMPLE_BOTTLES.length + 1);
+  await openMenuEntry(page, 'mar-mi-botella');
+  await expect(panel.getByTestId('botella-mensaje')).toHaveText(replacement);
   expect(errors).toEqual([]);
 });
 

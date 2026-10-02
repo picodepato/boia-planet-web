@@ -52,6 +52,11 @@ export const NICKNAME_MAX = 30;
 export const CARNET_ANSWER_MAX = 500;
 /** Botella: 1 a 140 caracteres (REQ-IDE-040, tabla `bottles`). */
 export const BOTTLE_MESSAGE_MAX = 140;
+/**
+ * Botellas activas a la vez en el mar, las de muestra incluidas (decisión
+ * 2026-10-02): una nueva quita la más antigua. Una por persona.
+ */
+export const BOTTLES_IN_SEA_MAX = 10;
 /** Motivo de un reporte de botella (tabla `bottle_reports`). */
 export const BOTTLE_REPORT_REASON_MAX = 280;
 

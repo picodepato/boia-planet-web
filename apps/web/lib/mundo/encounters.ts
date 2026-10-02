@@ -311,9 +311,10 @@ export function inOpenSea(objects: readonly WorldObject[], ship: Point, margin =
 
 /** Tramos del remolino: segundos dentro → monedas, cada tramo una vez al día. muestra */
 export const WHIRLPOOL_TIERS: readonly { seconds: number; coins: number }[] = [
-  { seconds: 3, coins: 2 },
-  { seconds: 6, coins: 4 },
-  { seconds: 10, coins: 6 },
+  // Más monedas desde la decisión 2026-10-02 (T72).
+  { seconds: 3, coins: 5 },
+  { seconds: 6, coins: 10 },
+  { seconds: 10, coins: 15 },
 ];
 
 /**

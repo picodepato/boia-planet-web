@@ -10,8 +10,8 @@ import { useRepoData } from '../repo';
 import { t } from '../../i18n';
 
 /**
- * Botellas (REQ-IDE-040…044): la propia (echarla junto al barco, editarla o
- * retirarla) y las que se encuentran en el mar (leerlas, ver el Carnet de
+ * Botellas (REQ-IDE-040…044): la propia (echarla junto al barco, editarla,
+ * retirarla o echar otra, que la sustituye) y las que se encuentran en el mar (leerlas, ver el Carnet de
  * quien la escribió, reportarlas). Leer no la quita. Nunca dan puntos ni
  * monedas. Sin mensajería privada: esto es todo lo social del mar.
  */
@@ -147,6 +147,8 @@ export function MyBottle({
   }));
   const [text, setText] = useState('');
   const [editing, setEditing] = useState(false);
+  /** Escribiendo otra con la suya aún en el mar: al echarla, la sustituye. */
+  const [replacing, setReplacing] = useState(false);
   const [confirmRetire, setConfirmRetire] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +182,7 @@ export function MyBottle({
     </p>
   ) : null;
 
-  if (!bottle) {
+  if (!bottle || replacing) {
     return (
       <form
         onSubmit={(e) => {
@@ -197,6 +199,7 @@ export function MyBottle({
                 .then((b) => emitSignal(repo, { trigger: 'throw_bottle', bottleId: b.id })),
             () => {
               setText('');
+              setReplacing(false);
               onClose();
             },
           );
@@ -204,6 +207,11 @@ export function MyBottle({
       >
         {note ? <p>{note}</p> : null}
         <p className="juego-muted">{BOTTLE_COPY.rules}</p>
+        {bottle ? (
+          <p className="juego-muted" data-testid="botella-sustituye">
+            {t('juego.bottleSheet.sustituyeALaTuya')}
+          </p>
+        ) : null}
         <p className="juego-muted" data-testid="botella-aviso-local">
           {BOTTLE_COPY.localOnly}
         </p>
@@ -217,6 +225,15 @@ export function MyBottle({
         >
           {t('bottle.throw')}
         </button>
+        {bottle ? (
+          <button
+            type="button"
+            className="juego-button is-quiet"
+            onClick={() => setReplacing(false)}
+          >
+            {t('carnet.cancel')}
+          </button>
+        ) : null}
       </form>
     );
   }
@@ -305,6 +322,18 @@ export function MyBottle({
             }}
           >
             {t('juego.bottleSheet.editar')}
+          </button>
+          <button
+            type="button"
+            className="juego-button"
+            data-testid="botella-echar-otra"
+            onClick={() => {
+              setText('');
+              setNote(null);
+              setReplacing(true);
+            }}
+          >
+            {t('juego.bottleSheet.echarOtra')}
           </button>
           <button
             type="button"

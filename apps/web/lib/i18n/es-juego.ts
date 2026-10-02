@@ -9,7 +9,10 @@ export const esJuego = {
   'juego.balances.monedas': 'Monedas',
   'juego.bottleBar.echarUnaBotella': 'Echar una botella',
   'juego.bottleSheet.unaBotellaPorPersona':
-    'Una botella por persona, de hasta 140 caracteres. No da puntos ni monedas. Cuando BOIA.PLANET abra, la leerá quien navegue cerca, con tu apodo.',
+    'Una botella por persona, de hasta 140 caracteres: si echas otra, sustituye a la tuya. En el mar flotan 10 como mucho; cada nueva se lleva la más antigua. No da puntos ni monedas. Cuando BOIA.PLANET abra, la leerá quien navegue cerca, con tu apodo.',
+  'juego.bottleSheet.echarOtra': 'Echar otra',
+  'juego.bottleSheet.sustituyeALaTuya':
+    'La nueva sustituye a la que tienes en el mar: ésa se retira.',
   'juego.bottleSheet.paraEcharBotellasNecesitas': 'Para echar botellas necesitas tu Carnet BOIA.',
   'juego.bottleSheet.paraReportarUnaBotella': 'Para reportar una botella necesitas tu Carnet BOIA.',
   'juego.bottleSheet.aquiSoloHayTierra':
