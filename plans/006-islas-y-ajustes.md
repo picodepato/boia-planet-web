@@ -1,6 +1,6 @@
 # Plan 006 — Event islands, balance and the race
 
-Status: active
+Status: done
 Created: 2026-10-02
 Base branch: main
 Goal: Hernán and Álvaro's instructions of 2026-10-02 for the 3D world (/mar). The three ticket islands become themed Blender models (Isla de Halloween, Isla del Sonido, Isla de Nochevieja) selling the three real events; the main world's islands take real Mediterranean/Alicante names; the welcome sheet gets shorter and the auto-guidance goes away (a "?" help under the achievements instead, the dolphin stays); the economy is rebalanced so 10 minutes of play buys at least 3 ships and a skin; bottles cap at 10 in the sea; the circuit becomes "Los Rápidos" with a start popup, better checkpoints, obstacles, jump ramps and the ghost; the top links are reordered and the minimap centred; the whole site gets a Druk-Wide-like display font plus Inter.
@@ -110,7 +110,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: titles in Archivo Expanded (wdth 125, 700, 11.5 kB Latin woff2), body in variable Inter, one definition in apps/web/lib/fonts.ts, Titan One removed; landing 189.8/192 kB → a8c7881
 
 ## T75 — Island labels clear of the top bar and the models
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T71
 - Goal: In /mar the floating island-name labels (pins) can hide under the top links bar (Fotos, Shop, Artistas, Contacto, Carnet) and sit over the new island models at the default zoom, so a far island's name looks like it names the nearer one (seen on the Isla de Halloween with the Isla del Sonido label). Keep every island label readable and attached to its own island: never under the top bar or other HUD (clamp or fade near the HUD), placed above the island model's real height (art/islas/3d/manifest.json `height`) rather than the procedural one, and far islands' labels fade or shrink so they do not read as the nearer island's. Also hide the procedural island's glow points when its GLB is shown (T69 noted they show slightly off). The label height and the Fiestera delivery confetti still use the procedural island's `labelY` (T71: with the model the Nochevieja label sits at the clock tower): use the model's height when a GLB is shown.
 - Context: T69's island model loading (`apps/web/app/mar/engine/models.ts`, `mar3d.ts`, `data-islas-modelo`), the pins/labels in /mar (mar-client.tsx, mar.css `.mar-links`, pin CSS), screenshots docs/informes/img/p006-t69-isla-halloween-noche.png and p006-t70-*.png.
@@ -118,7 +118,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0
   - e2e at 375×812 and desktop near the Isla de Halloween, Isla del Sonido and Isla de Nochevieja: each visible label's box does not intersect the top links bar; each island's label is above its own model; screenshots docs/informes/img/p006-t75-*.png → exit 0
-- Outcome:
+- Outcome: island labels avoid the top bar and HUD (move onto their own island or hide), far labels shrink/fade, label and Fiestera confetti use the model height, procedural glow points dark under a GLB → d012e86
 
 ## Decisions
 - 2026-10-02 Hernán and Álvaro: three ticket islands (Isla de Halloween, Isla del Sonido, Isla de Nochevieja) in both worlds, modelled in Blender; events BOIA Halloween at Kiki García 31/10/2026, SONIDO 05/12/2026, BOIA Nochevieja 31/12/2026; the name is "Isla de Nochevieja" everywhere
@@ -145,7 +145,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 T73: CIRCUIT_VERSION 3 (records and ghosts restart); medals 60/74/98 s and sample times recalibrated to a ~66 s straight run; FAST_LAP_MS 73.4 s; the jump is visual only (BoatJump), no steering change; next buoy highlighted on the minimap (agent)
 - 2026-10-02 orchestrator: main had an uncommitted frontend-design skill (added outside this plan); committed it with Hernán's OK (3ee66b4)
 
+- 2026-10-02 T75: HUD controls the labels avoid are one selector (PIN_AVOID in labels.ts); far label scale/opacity values are muestra; pins lost their CSS scale entry effect (it shifted them) (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T75: e2e/mar-circuito.spec.ts (T73) is flaky: its scripted pilot sometimes loses the race ("sin carrera"), also on main; on mobile close up the Nochevieja label sits under the points display because the manifest height 10.75 includes the light beams
 - 2026-10-02 T73: unused 2D useCircuit in lib/mundo/circuit-hud.tsx; achievement text "Te queda una vuelta en menos de…" says lap for a 3-lap time
 - 2026-10-02 T71: mobile performance near the 31-material island not measured
 - 2026-10-02 T72: ranks still top out at 600 points (reached in ~10 min); the Fiestera mission still gives 100 points/100 coins; bottle rules only in the browser store, not in Supabase
@@ -174,3 +177,6 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 22:23 T75 launched · attempt 1 · agent aeeb6a1c1480c312e
 - 2026-10-02 22:49 T73 integration blocked by dirty main (.claude/skills/frontend-design); committed with Hernán's OK
 - 2026-10-02 22:52 T73 done · branch worktree-agent-a64eac98af0ac71b2 → 990c3d1
+- 2026-10-02 23:30 T75 conflict with main (mar3d.ts, mar-client.tsx, mar.css; T73) · sent back to agent aeeb6a1c1480c312e
+- 2026-10-02 23:17 T75 done · branch worktree-agent-aeeb6a1c1480c312e → d012e86; Test command on main exit 0
+- 2026-10-02 23:18 plan done
