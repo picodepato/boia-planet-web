@@ -50,7 +50,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: island GLB pipeline (tools/blender/export_islas_glb.py + islas/<id>.py modules, art/islas/3d/manifest.json, MAX_TRIS 30000, lazy load in /mar with procedural fallback) and the Isla de Halloween model → 88f3ab2
 
 ## T70 — Isla del Sonido model
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T69
 - Goal: Model the Isla del Sonido (place `allday`) in Blender with T69's pipeline: a rave-style sound system with many stacked speakers (walls of speakers), lights, and BOIA buoys dancing. Same art style; within the triangle budget; loaded by /mar like T69's island.
 - Context: T69's pipeline and loader; `apps/web/app/mar/engine/islands.ts` (current `allday` builder, the fallback).
@@ -59,7 +59,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Blender export for `allday` → exit 0; `python3 tools/blender/check.py` → exit 0
   - Test command → exit 0
   - e2e: the Isla del Sonido GLB loads in /mar → exit 0; screenshot docs/informes/img/p006-t70-*.png
-- Outcome:
+- Outcome: Isla del Sonido GLB (two 3x5 speaker walls, DJ booth with BOIA letters, truss with spotlights and a laser fan, round dance floor with 5 dancing buoys + DJ buoy; 29156/30000 tris) → 6017dbb
 
 ## T71 — Isla de Nochevieja model
 - Status: running (attempt 1)
@@ -87,7 +87,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: 10-min simulation earns 715 points/245 coins (Carnet ship + points ship + a bought ship + a skin); log 10c, cofre 40c+20p, Carnet 300p + Low-poly ship, minigames 3 waves 50c+150p, bottle cap 10 (one per person) → fa907f3
 
 ## T73 — Los Rápidos: circuit v3
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T67
 - Goal: Decisions 2026-10-02. The circuit (now named Los Rápidos) keeps checkpoints and 3 laps, and: (1) arriving at the start no longer starts the race automatically; a popup explains the race (3 laps through the checkpoints, you compete against the other users' times and against yourself, the ghost replays your best run) and asks whether to start; (2) ranking against others: on this browser-only version use the sample members' times plus your own best (a shared ranking is the final version); (3) the ghost boat replaying your best time is visible during the race; (4) checkpoints spread better across the map (a longer, more varied route); (5) more obstacles along the way; (6) jump platforms with up arrows: driving over one makes the boat jump and splash when it lands in the sea; (7) speed boosts and jump platforms always sit between two checkpoints and point towards the next checkpoint. Works in both worlds and on mobile.
 - Context: `packages/world/src/worlds/arcilla/map.ts` (`CIRCUIT_ID`, `CIRCUIT_VERSION`, `CIRCUIT_LAPS`, `CIRCUIT_MEDALS`, `RACE_BUOYS`, `BOOST_PADS`), `packages/engine/src/circuit/{race,ghost}.ts` (auto-start at race.ts:~244, `CIRCUIT_COUNTDOWN_S`), `apps/web/app/mar/race.ts` (ghost storage key), `mar-client.tsx` (`holdShip`), `lib/mundo/ranking-circuit.ts` (`SAMPLE_CIRCUIT_MS`), the minimap markers; bump `CIRCUIT_VERSION` if old records become incomparable.
@@ -109,6 +109,17 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - e2e: computed font-family of the landing h1, a /mar sheet title and body text use the new title font and Inter respectively, and both fonts load (document.fonts) → exit 0; screenshots docs/informes/img/p006-t74-*.png
 - Outcome: titles in Archivo Expanded (wdth 125, 700, 11.5 kB Latin woff2), body in variable Inter, one definition in apps/web/lib/fonts.ts, Titan One removed; landing 189.8/192 kB → a8c7881
 
+## T75 — Island labels clear of the top bar and the models
+- Status: pending
+- Depends on: T71
+- Goal: In /mar the floating island-name labels (pins) can hide under the top links bar (Fotos, Shop, Artistas, Contacto, Carnet) and sit over the new island models at the default zoom, so a far island's name looks like it names the nearer one (seen on the Isla de Halloween with the Isla del Sonido label). Keep every island label readable and attached to its own island: never under the top bar or other HUD (clamp or fade near the HUD), placed above the island model's real height (art/islas/3d/manifest.json `height`) rather than the procedural one, and far islands' labels fade or shrink so they do not read as the nearer island's. Also hide the procedural island's glow points when its GLB is shown (T69 noted they show slightly off).
+- Context: T69's island model loading (`apps/web/app/mar/engine/models.ts`, `mar3d.ts`, `data-islas-modelo`), the pins/labels in /mar (mar-client.tsx, mar.css `.mar-links`, pin CSS), screenshots docs/informes/img/p006-t69-isla-halloween-noche.png and p006-t70-*.png.
+- Scope: may touch /mar label/pin placement, its CSS, the glow-point hiding, tests / must not touch island models, HUD layout, game rules.
+- Done when:
+  - Test command → exit 0
+  - e2e at 375×812 and desktop near the Isla de Halloween, Isla del Sonido and Isla de Nochevieja: each visible label's box does not intersect the top links bar; each island's label is above its own model; screenshots docs/informes/img/p006-t75-*.png → exit 0
+- Outcome:
+
 ## Decisions
 - 2026-10-02 Hernán and Álvaro: three ticket islands (Isla de Halloween, Isla del Sonido, Isla de Nochevieja) in both worlds, modelled in Blender; events BOIA Halloween at Kiki García 31/10/2026, SONIDO 05/12/2026, BOIA Nochevieja 31/12/2026; the name is "Isla de Nochevieja" everywhere
 - 2026-10-02 Hernán and Álvaro: Arcilla names Cala Cantalar, Isla de Benidorm, Ibiza, Tabarca, L'Illeta dels Banyets, Isla del Sonido, Isla de Nochevieja; El Freu → Los Rápidos
@@ -125,6 +136,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T72: Carnet ship is Low-poly (no longer sold); Cartoon 30s 120 coins, Semi-realista at 600 points, skins 50 coins; islas-7 now asks for all 8 islands (id kept); minigames v3 win scores 250/200, 300 s cap; fixed logs/cofres giving nothing in /mar (reward key with @ rejected by the store); "Echar otra" button on the bottle sheet (agent)
 - 2026-10-02 T69: island budget 30000 tris joined into one mesh per material; each island is a module tools/blender/islas/<id>.py and /mar reads art/islas/3d/manifest.json, so a new island needs no web code; load from 2200 u, unload past 3200 u; state in data-islas-modelo on the canvas (agent)
+
+- 2026-10-02 T70: all island pieces in tools/blender/islas/allday.py; budget nearly full (844 tris left) (agent)
+- 2026-10-02 orchestrator: added T75 (island labels under the top bar / over the models, seen in T69 screenshots and reported by T70) as a small fix task after T71
 
 ## Proposals (new scope)
 - 2026-10-02 T72: ranks still top out at 600 points (reached in ~10 min); the Fiestera mission still gives 100 points/100 coins; bottle rules only in the browser store, not in Supabase
@@ -145,3 +159,6 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 21:27 T72 launched · attempt 1 · agent a783b7fd1593c36a5
 - 2026-10-02 21:56 T72 done · branch worktree-agent-a783b7fd1593c36a5 → fa907f3
 - 2026-10-02 21:57 T69 done · branch worktree-agent-ab329487181906b16 → 88f3ab2
+- 2026-10-02 21:59 T70 launched · attempt 1 · agent a5f97bb6f02f4e0a5
+- 2026-10-02 21:59 T71 launched · attempt 1 · agent a77c2040bfa9131a8
+- 2026-10-02 22:15 T70 done · branch worktree-agent-a5f97bb6f02f4e0a5 → 6017dbb
