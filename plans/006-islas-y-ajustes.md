@@ -99,7 +99,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T74 — Site font: Druk-Wide-like titles and Inter
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: Decision 2026-10-02: the whole site uses the fonts of https://www.draaimolen.nu/story — Druk Wide Medium for titles and Inter for text. Druk is commercial (Commercial Type) and cannot be copied, so use a free (OFL) wide, heavy display face that looks as close as possible to Druk Wide Medium for titles (candidates: Archivo at its widest expanded width, Unbounded; compare and pick), self-hosted, plus Inter (OFL, self-hosted) for body text, everywhere: landing, /mar HUD and sheets, /carnet, /eventos, /fotos, /artistas, legal, admin. One single place defines the title font so Druk can replace it later when Álvaro buys the license (document how in the README). Keep the landing within its 192 kB budget (subset to Latin, woff2, preload only what the first view needs).
 - Context: `apps/web/public/fonts/` (Titan One + OFL), `app/(landing)/layout.tsx` (`next/font/local`, `--font-display`), `app/admin/admin.css` `@font-face`, `app/globals.css` (`--font-title`, `--font-title-fallback`, system body stack), `app/mar/mar.css:38`, `scripts/landing-budget.mjs`, DECISIONES P20 (typeface file pending Álvaro).
@@ -107,7 +107,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Done when:
   - Test command → exit 0 (landing within budget)
   - e2e: computed font-family of the landing h1, a /mar sheet title and body text use the new title font and Inter respectively, and both fonts load (document.fonts) → exit 0; screenshots docs/informes/img/p006-t74-*.png
-- Outcome:
+- Outcome: titles in Archivo Expanded (wdth 125, 700, 11.5 kB Latin woff2), body in variable Inter, one definition in apps/web/lib/fonts.ts, Titan One removed; landing 189.8/192 kB → a8c7881
 
 ## Decisions
 - 2026-10-02 Hernán and Álvaro: three ticket islands (Isla de Halloween, Isla del Sonido, Isla de Nochevieja) in both worlds, modelled in Blender; events BOIA Halloween at Kiki García 31/10/2026, SONIDO 05/12/2026, BOIA Nochevieja 31/12/2026; the name is "Isla de Nochevieja" everywhere
@@ -119,7 +119,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T68: the help hint is the nearest pending code or minigame (the objective already points to the Fiestera); help texts are muestra keys mar.ayuda.*; buoyGuide replaced by helpNow (agent)
 
+- 2026-10-02 T74: Archivo at widest width chosen over Unbounded/Anybody as the closest free match to Druk Wide; Inter not preloaded (budget); landing-budget.mjs counts preloaded fonts from the CSS (Next on Windows never adds the preload link); README explains switching to Druk (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T74: canvas text (island/globe labels in islands.ts and globe.ts, minigame canvases) still uses system-ui; the landing has only 2.2 kB of budget left
 - 2026-10-02 T68: info buoys params.guide in packages/world no longer used by /mar; the 2D OnboardMenu / MENU_SECTIONS look like dead code
 
 ## Log
@@ -127,3 +130,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 19:30 T68 launched · attempt 1 · agent a928e10c981e1ae13
 - 2026-10-02 19:51 T68 done · branch worktree-agent-a928e10c981e1ae13 → 66a1e2c
 - 2026-10-02 19:53 T74 launched · attempt 1 · agent aaad2a5c73cf97f3c
+- 2026-10-02 20:47 T74 done · branch worktree-agent-aaad2a5c73cf97f3c → a8c7881
