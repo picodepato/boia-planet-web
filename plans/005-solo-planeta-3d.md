@@ -4,7 +4,7 @@ Status: active
 Created: 2026-10-01
 Base branch: main
 Goal: Hernán and Álvaro reviewed every section of the site (opinion test, 2026-10-01) and decided that the world is the 3D planet only: the 2D isometric world (/juego, PixiJS) is deleted and everything it has that /mar lacks moves to /mar. The batch also polishes the world on mobile (compact HUD, small popups, faster steering), makes the Boia Fiestera the central mission with a real prize, reduces hidden discounts to 3 clear ones, rebuilds the three minigames (lighthouse, cannon, circuit), opens tickets inside the 3D world, rebuilds the landing intro in 3D (and fixes it skipping to the landing), and adapts the Admin. Content stays `muestra`; landing blocks other than the hero are not touched (a parallax landing is the next batch).
-Test command: export PYTHONUTF8=1 && pnpm exec vitest run --exclude '**/packages/db/**' && sh tools/spec/checks.sh && pnpm typecheck && pnpm lint && pnpm build
+Test command: export PYTHONUTF8=1 && pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000 && sh tools/spec/checks.sh && pnpm lint && pnpm build && pnpm typecheck
 Worktree setup: pnpm install --frozen-lockfile
 Status file: ESTADO.md
 
@@ -128,7 +128,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: closed loop of 6 buoys around Els Dents, 3 laps, ghost of the best run, 3 boost pads, medals gold 36 s / silver 44 s / bronze 58 s (muestra), CIRCUIT_VERSION 2 (records restart, same format); AVE-028 HECHO → 5179a36
 
 ## T62 — Delete the 2D world
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T55, T56, T57, T58, T64
 - Goal: Remove /juego and the PixiJS renderer. `/juego` (with any query) redirects to `/mar`, mapping `?ir=`, `?evento=`, `?menu=` to /mar's deep links. Delete the Pixi files (`game.ts`, `pixi-app.ts`, `views.ts`, `water.ts`, `wake.ts`, `camera.ts`, `ship/view.ts`, `bottles/view.ts`, `world/{assets,bubble,coast-view,object-view,streamer,texture-store}`, `transition/vortex-view.ts`, `intro/scene.ts`, `intro/sphere-probe.ts` and whatever T57 left), the `pixi.js` dependency, `GameSurface`/`world-handoff`, `app/sphere-probe`, `scripts/world-budget.mjs` from the build if it only served /juego, dead code (`useShipLocks`, `world/iso.ts` if unused), the /mar "Versión clásica 2D" link and the WebGL-error fallback to /juego (replace with a clear "your device can't show the 3D world" message plus Tickets). Keep both worlds (Arcilla, Acuarela) and the black-hole vortex in 3D. Migrate the e2e specs that open /juego to /mar or delete the ones that only test 2D rendering. Update docs: `README.md`, `CLAUDE.md` description ("mundo 2.5D isométrico" → 3D planet), `docs/TRASPASO.md`, `docs/spec/estado.md` (REQs that were about 2D), `docs/DECISIONES.md` (record the decision as a new D-24: only the 3D planet, 2026-10-01, Hernán and Álvaro).
 - Context: the T52–T58 outcomes in this plan, `apps/web/next.config.ts` (`transpilePackages`), `packages/engine/src/index.ts`, `apps/web/e2e/` (23 specs open /juego), `apps/web/scripts/`.
@@ -138,7 +138,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - `grep -rln "pixi" apps packages --include=*.ts --include=*.tsx --include=package.json | grep -v node_modules` → no output
   - `test ! -d apps/web/app/juego` → exit 0
   - e2e: `/juego?ir=<place>` redirects to `/mar` sailing there; full `pnpm e2e --workers=2` → exit 0
-- Outcome:
+- Outcome: /juego and the PixiJS renderer deleted, /juego redirects to /mar → dd77258
 
 ## T63 — Admin adapted to the new world
 - Status: pending
@@ -163,7 +163,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: intro globe is the /mar planet; "Zarpar" enters /mar with the Boia welcome popup open; skip/tickets still go to the landing; D-24 recorded; landing 179.1/192 kB → f13f30b
 
 ## T65 — Game HUD v2: top links, left menu, minimap fix
-- Status: running (attempt 1)
+- Status: running (attempt 2)
 - Depends on: T59
 - Goal: Decision 2026-10-02 (Hernán and Álvaro), replacing T53's bottom bar: (1) at the top of the game screen, buttons that link to the landing page: Fotos, Contacto, Artistas, Carnet, Shop. Fotos, Contacto, Artistas and Shop take you to the matching landing section/page; Carnet does NOT leave the game: it opens the game menu at Mi Carnet. (2) On the left, a settings button with the achievements icon; it opens one game menu with everything: Logros, Mi Carnet, ship/skins (Barco shop), day/night, change world (Mundos/vortex), how to play (Controles + Welcome Aboard), Ajustes (sensitivity, volumes, language), Mis códigos, Mi botella, Ranking. "Mi Carnet" anywhere opens this same menu at its Carnet section. (3) At the bottom only Entradas (highlighted) and turbo. (4) The minimap stays; fix its bug: when you drag/move it far to one side it glitches. (5) Landing: the Contacto block contains Filosofía and the contact data (merge the Filosofía block into Contacto) so the top Contacto link lands on both; the other landing blocks stay. Mobile-first, minimum space, popups stay as compact bottom cards.
 - Context: T53, T55, T56, T58, T59 outcomes in this plan; `apps/web/app/mar/mar-client.tsx`, `mar.css`, `apps/web/app/mar/sheet.tsx`, MarHoja, `apps/web/lib/mundo/` menu sections, the minimap component, `apps/web/app/(landing)/components/blocks.tsx` (Filosofía, Contacto), Admin home blocks editor (keep it consistent with the merged block), `e2e/mar-hud.spec.ts`. REQ PRO-008/009, COM-030.
@@ -174,7 +174,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome:
 
 ## T66 — Carnet worth having
-- Status: running (attempt 1)
+- Status: running (attempt 2)
 - Depends on: none
 - Goal: Decision 2026-10-02 (Hernán and Álvaro): (1) having a Carnet BOIA gives 10% off your ticket (sample value, editable later in the Admin by T63); it does not stack with world codes: the checkout applies the best single discount and says which. (2) Before buying a ticket without a Carnet, show a notice with a shortcut: "¿Tienes Carnet BOIA? Créalo en 30 s y ahorra un 10%" with "Crear Carnet" (creates it, then returns to the checkout with the discount applied) and "Seguir sin Carnet", in /mar (T58's in-world panel) and on the landing tickets flow. (3) The Carnet nickname appears in the ranking list (own row with the real nickname). (4) Ranking gets a "Descubrir a un BOIERO" button that shows a random member's Carnet, which can also be one of the artists (artist Carnets built from the artists sample content). Users with username and password are the final version (D-20), not this task.
 - Context: `apps/web/lib/ticketing/**`, SandboxCheckout, `apps/web/app/mar/entradas.tsx`, landing tickets panel, discount resolution in packages/store, Carnet storage, `RankingPanel` (T56), artists in `packages/store/src/sample/content.ts`, `/carnet/[id]` public Carnet, analytics (`purchase_confirmed` should carry which discount applied). Checkout and Carnet REQs in docs/spec.
@@ -233,6 +233,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 T61: course reuses CP1, CP-A, CP-S plus 3 new buoys (source plan:T61); CP2, old finish and ATAJO kept inactive; boosts no longer multiply (strongest wins, runtime.ts, outside scope); race clock uses simulation time; ghost stored in localStorage (agent)
 - 2026-10-02 T61: integration failed twice on vitest 5 s timeouts while 3 agents ran e2e; passed with the machine idle (orchestrator)
 
+- 2026-10-02 orchestrator: Test command gets vitest --testTimeout=30000: with agents running e2e, 5 s timeouts (19 in T62's first integration, all "timed out") blocked every integration; a real hang still fails at 30 s
+
+- 2026-10-02 orchestrator: Test command runs pnpm typecheck after pnpm build, so stale generated .next/types from an earlier build cannot fail typecheck (build regenerates .next)
+
 ## Proposals (new scope)
 - 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
 - 2026-10-02 T60: AVE-036/037 acceptance text in 09-requisitos.md and the minigame.* texts in docs/propuestas/textos-zonas.md still describe the old games (T62 doc update)
@@ -248,6 +252,9 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 T61: achievements «¿Atajo? Atajo.» now completes on every race and «Rayo del Freu» says one lap but measures 3: review the circuit achievements
 - 2026-10-02 orchestrator: vitest tests that spawn Python (world:check, barcos palette) and physics.test time out at 5 s under load on this machine: give them a longer per-test timeout
+
+- 2026-10-02 orchestrator: guard.py on Windows treats a relative path inside the checkout (`rm -r apps/web/.next/types`) as outside it: fix its path resolution in the skills kit
+- 2026-10-02 orchestrator: launch at most 2 agents on this machine: with 4, e2e load made every task slower and broke integrations
 
 ## Log
 - 2026-10-01 21:40 T52 launched · attempt 1 · agent a8c286457ec28b741
@@ -285,3 +292,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 11:27 T61 agent done (216a0b9, branch worktree-agent-a75467d02da559288 kept); integration failed twice on vitest 5 s timeouts under load (worlds.test world:check, catalog.test, physics.test, ambient) while 3 agents ran e2e; main reverted and green. On resume: retry integration with fewer agents running; if it still fails, continuation agent
 - 2026-10-02 11:28 usage limit reached; T62 (aa43c83b646bb6499), T65 (a8c035f804d3a84b1), T66 fix (af21726997e651865) still running. On resume: section 7 orphans
 - 2026-10-02 13:14 T61 done · branch worktree-agent-a75467d02da559288 → 5179a36 (worktree folder locked by Windows, removal pending)
+- 2026-10-02 13:16 resumed after usage limit: T62, T65, T66 agents resumed with SendMessage (same agents, told to merge main)
+- 2026-10-02 14:14 T62 agent done (260da7a); integration failed on 19 vitest 5 s timeouts under load, reverted; Test command now uses --testTimeout=30000; retrying
+- 2026-10-02 14:25 T62 retry failed on typecheck: stale apps/web/.next/types in main still list app/juego and app/sphere-probe (generated, ignored); guard blocked deleting them; asked Hernán to delete; T62 branch kept
+- 2026-10-02 14:28 T62 done · branch worktree-agent-aa43c83b646bb6499 → dd77258 (after reordering the Test command)
