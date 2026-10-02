@@ -260,3 +260,4 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 01:29 T64 launched · attempt 1 · agent a086a6573393db55d
 - 2026-10-02 01:39 T59 done · branch worktree-agent-a4ef0c67ac86cd069 → ef0d4d3
 - 2026-10-02 01:40 usage limit reached: T61 not launched; T64 agent a086a6573393db55d still running (on resume: section 7 orphans)
+- 2026-10-02 02:05 T64 agent done (c74f53e) but integration conflicts with main in apps/web/lib/i18n/es-mar.ts (T59 strings); branch worktree-agent-a086a6573393db55d and its worktree kept; on resume: continuation agent for the conflict (section 8), then integrate. Note: T64 recorded D-24, so T62 must use D-25
