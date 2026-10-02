@@ -8,6 +8,7 @@ skill personal (`~/.claude/skills/`) con el mismo nombre, manda la personal.
 | `orchestrator` | `/orchestrator`: planifica con Hernán un lote de ~10 tareas (`plans/NNN-*.md`) y lo corre con agentes en worktrees, integrando cada tarea en `main` con sus pruebas. Es el método vigente (planes 001–004). | Skill casera de Hernán, copiada el 2026-10-01 con las rutas apuntando al repo |
 | `grilling` | La entrevista por rondas que usa `orchestrator` para armar el plan. | [mattpocock/skills](https://github.com/mattpocock/skills) (`skills/productivity/grilling`), MIT, ver su `LICENSE` |
 | `grill-me` | `/grill-me`: atajo manual a `grilling`. | [mattpocock/skills](https://github.com/mattpocock/skills) (`skills/productivity/grill-me`), MIT, ver su `LICENSE` |
+| `frontend-design` | Dirección visual al construir o rehacer UI (tipografía, paleta, composición, movimiento). Se invoca sólo en tareas de diseño visual (p. ej. el parallax de la landing), no en las de rendimiento, pruebas o docs. Aquí manda la identidad ya aprobada de BOIA sobre sus defaults. | [anthropics/skills](https://github.com/anthropics/skills) (`skills/frontend-design`), Apache-2.0, ver su `LICENSE.txt`; copiada el 2026-10-02 |
 | `orquestador`, `encargo` | El método de la ronda 1 (encargos numerados en `docs/prompts/`). Histórico. | Propias del proyecto |
 
 ## Lo que `orchestrator` necesita fuera del repo
