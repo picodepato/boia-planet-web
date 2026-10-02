@@ -371,9 +371,19 @@ export class WorldRuntime {
     };
   }
 
-  /** Multiplicador actual de la velocidad máxima por efectos activos. */
+  /**
+   * Multiplicador actual de la velocidad máxima por efectos activos. Los que
+   * frenan se suman (multiplican); de los que impulsan vale el más fuerte: dos
+   * impulsos seguidos no se encadenan (T61, las boias del circuito cerrado).
+   */
   speedFactor(): number {
-    return this.effects.reduce((k, e) => k * e.factor, 1);
+    let slow = 1;
+    let boost = 1;
+    for (const e of this.effects) {
+      if (e.factor < 1) slow *= e.factor;
+      else boost = Math.max(boost, e.factor);
+    }
+    return slow * boost;
   }
 
   /** Física del barco para el próximo paso, con ralentizar y boost aplicados. */

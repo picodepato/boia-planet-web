@@ -365,6 +365,74 @@
   font-size: 1rem;
 }
 
+/* El Freu (T61): el récord junto a la salida y la tarjeta de meta, pequeña. */
+.mar-chip--race-intro {
+  background: var(--glass-strong);
+  white-space: normal;
+  max-width: min(320px, calc(100vw - 24px));
+  font-size: 0.8rem;
+}
+
+.mar-carrera {
+  pointer-events: auto;
+  width: min(300px, calc(100vw - 24px));
+  padding: 10px 12px 12px;
+  border-radius: 16px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgb(10 6 40 / 0.28);
+  color: var(--cream);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  animation: mar-in 0.25s ease-out;
+}
+
+.mar-carrera__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mar-carrera__medal {
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.mar-carrera__place {
+  flex: 1;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mar-carrera p {
+  margin: 4px 0 0;
+}
+
+.mar-carrera__time {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.mar-carrera__laps,
+.mar-carrera__next {
+  opacity: 0.75;
+}
+
+.mar-carrera__again {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--orange);
+  color: var(--cream);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 /* Lo que señala una boia informativa (T59): toca para fijar rumbo. */
 .mar-chip--guide {
   background: var(--glass-strong);

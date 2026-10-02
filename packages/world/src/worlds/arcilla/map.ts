@@ -23,8 +23,11 @@ export const ALLDAY_EVENT_ID = 'ev-all-day-primavera';
 
 /** Id del circuito para checkpoints y récords (REQ-AVE-033 añade la versión). */
 export const CIRCUIT_ID = 'el-freu';
-/** `mapa.json` → `circuito.version`. */
-export const CIRCUIT_VERSION = 1;
+/**
+ * Versión del trazado (REQ-AVE-033): `mapa.json` → `circuito.version` era la
+ * 1; el circuito cerrado de tres vueltas de T61 es la 2 (récords desde cero).
+ */
+export const CIRCUIT_VERSION = 2;
 
 const TAGS = ['muestra'];
 
@@ -658,6 +661,40 @@ export const BOTTLE_SPOTS: { id: string; x: number; y: number; source: string[] 
 
 // --- El Freu: el circuito (a escala de posiciones) ------------------------------
 
+/*
+ * Desde T61 (entrevista del 2026-10-01) El Freu es un circuito cerrado: tres
+ * vueltas alrededor de Els Dents, marcado por boias que hay que pasar en
+ * orden. La salida es también la meta; se sube por el lado del atajo (entre
+ * Els Dents y las Rocas del Freu), se gira al norte, se baja por la ruta
+ * segura (junto al cocodrilo) y se vuelve por la recta. Tres impulsos en el
+ * agua aceleran. El checkpoint 2 y la meta de la maqueta quedan fuera del
+ * trazado (inactivos), como el cartel del atajo, que ya no es una rama.
+ * Las piezas nuevas no están en `mapa.json`: su fuente es `plan:T61`.
+ * Posiciones, vueltas y medallas son `muestra`.
+ */
+
+/** Fuente de las piezas del circuito que añadió T61 (no están en la maqueta). */
+const T61 = 'plan:T61';
+
+/** Boias del circuito (orden ≥ 1) por orden de paso: id, nombre, punto, fuentes. */
+const RACE_BUOYS: { id: string; name: string; p: Maq; source: string[] }[] = [
+  { id: 'circuito-cp1', name: 'Boia 1', p: [12.2, 1.0], source: ['circuito/checkpoints/0'] },
+  { id: 'circuito-cp-a', name: 'Boia 2', p: [12.9, -12.0], source: ['circuito/checkpoints/2'] },
+  { id: 'circuito-giro', name: 'Boia 3', p: [10.6, -15.4], source: [T61] },
+  { id: 'circuito-cp-s', name: 'Boia 4', p: [7.8, -11.7], source: ['circuito/checkpoints/1'] },
+  { id: 'circuito-regreso', name: 'Boia 5', p: [10.4, -4.6], source: [T61] },
+  { id: 'circuito-recta', name: 'Boia 6', p: [11.6, 8.2], source: [T61] },
+];
+
+/** Vueltas de una carrera. muestra */
+export const CIRCUIT_LAPS = 3;
+/**
+ * Medallas: tiempo total máximo (ms) de las tres vueltas para el oro, la
+ * plata y el bronce. Un piloto que va derecho a cada boia, sin turbo, hace
+ * unos 39 s (plata); el oro pide turbo e impulsos. muestra
+ */
+export const CIRCUIT_MEDALS = { gold: 36_000, silver: 44_000, bronze: 58_000 } as const;
+
 const gate = (
   id: string,
   name: string,
@@ -671,7 +708,7 @@ const gate = (
   category: 'circuito',
   tags: [...TAGS, 'sin-brujula'],
   position: { ...at(p), zone: 'circuito' },
-  // El arco mide ~3,4 u_maq de ancho; pasar por él (o rozarlo) cuenta.
+  // La boia se pasa rozándola: cuenta dentro de ~1,8 u_maq.
   geometry: { activation: { shape: 'circle', radius: size(1.8) } },
   behaviors: [
     { type: 'checkpoint', params: { circuitId: CIRCUIT_ID, order, boost, on: 'contact' } },
@@ -679,88 +716,101 @@ const gate = (
   source,
 });
 
-/** Carriles de la maqueta (`mapa.json` → `circuito`). */
-const LANES: { rama: string; width: number; points: Maq[] }[] = [
-  {
-    rama: 'comun',
-    width: 2.6,
-    points: [
-      [12.6, 5.6],
-      [12.2, 1.0],
-      [12.4, -2.6],
-    ],
-  },
-  {
-    rama: 'segura',
-    width: 2.6,
-    points: [
-      [12.4, -2.6],
-      [9.6, -5.4],
-      [7.8, -9.6],
-      [7.8, -13.8],
-      [9.4, -17.6],
-      [12.4, -19.6],
-    ],
-  },
-  {
-    rama: 'atajo',
-    width: 1.2,
-    points: [
-      [12.4, -2.6],
-      [13.4, -6.0],
-      [12.9, -10.0],
-      [12.9, -14.0],
-      [13.4, -16.2],
-      [12.4, -19.6],
-    ],
-  },
-  {
-    rama: 'final',
-    width: 2.6,
-    points: [
-      [12.4, -19.6],
-      [11.4, -22.0],
-      [8.8, -25.0],
-    ],
-  },
-];
-/** u_maq entre boies de carril. muestra */
-const LANE_STEP = 2.4;
+/** Una pieza de la maqueta que ya no forma parte del circuito (se conserva, inactiva). */
+const retired = (p: PlaceInput): PlaceInput => ({
+  ...p,
+  active: false,
+  geometry: {},
+  behaviors: [deco()],
+});
 
-/** Boies de carril a los dos lados de cada rama (decorado: no bloquean). */
+/** El trazado de una vuelta: de la salida por cada boia y de vuelta a la salida. */
+const COURSE: Maq[] = [CIRCUIT_START, ...RACE_BUOYS.map((b) => b.p), CIRCUIT_START];
+
+/**
+ * Carriles: boias de decorado por fuera del trazado (no bloquean). Cada tramo
+ * conserva el nombre de su rama de la maqueta.
+ */
+const LANES: { rama: string; from: number; to: number }[] = [
+  { rama: 'comun', from: 0, to: 1 },
+  { rama: 'atajo', from: 1, to: 3 },
+  { rama: 'segura', from: 3, to: 5 },
+  { rama: 'final', from: 5, to: 7 },
+];
+/** u_maq entre boies de carril y del trazado a ellas. muestra */
+const LANE_STEP = 2.4;
+const LANE_OFFSET = 1.5;
+
+/** Impulsos en el agua: punto y rumbo (rad, el del trazado allí). muestra */
+const BOOST_PADS: { p: Maq; heading: number }[] = [
+  { p: [12.5, -5.6], heading: Math.atan2(-12.0 - 1.0, 12.9 - 12.2) },
+  { p: [9.1, -14.4], heading: Math.atan2(-11.7 + 15.4, 7.8 - 10.6) },
+  { p: [11.0, 1.8], heading: Math.atan2(8.2 + 4.6, 11.6 - 10.4) },
+];
+
+/** Lo que una boia de carril no debe pisar (u_maq): rocas, arcos, boias, impulsos. */
+const LANE_KEEP_OUT: { p: Maq; r: number }[] = [
+  { p: [10.7, -11.6], r: 1.8 },
+  { p: [14.6, -12.0], r: 1.3 },
+  { p: [13.4, -8.0], r: 0.8 },
+  { p: [12.95, -15.3], r: 0.8 },
+  { p: [7.1, -12.9], r: 1.0 },
+  { p: [8.7, -12.9], r: 1.0 },
+  { p: [7.9, -12.9], r: 1.0 },
+  ...COURSE.map((p) => ({ p, r: 1.2 })),
+  ...BOOST_PADS.map(({ p }) => ({ p, r: 1.0 })),
+];
+
+/** Boies de carril por fuera de cada tramo del trazado (decorado: no bloquean). */
 function laneBuoys(): PlaceInput[] {
   const out: PlaceInput[] = [];
   for (const lane of LANES) {
     let n = 0;
-    for (let i = 0; i < lane.points.length - 1; i++) {
-      const [ax, ay] = lane.points[i]!;
-      const [bx, by] = lane.points[i + 1]!;
+    for (let i = lane.from; i < lane.to; i++) {
+      const [ax, ay] = COURSE[i]!;
+      const [bx, by] = COURSE[i + 1]!;
       const len = Math.hypot(bx - ax, by - ay);
       const steps = Math.max(1, Math.round(len / LANE_STEP));
+      // Por fuera: a la derecha de la marcha (la vuelta va en sentido antihorario).
       const nx = -(by - ay) / len;
       const ny = (bx - ax) / len;
-      for (let k = i === 0 ? 1 : 0; k < steps; k++) {
+      for (let k = 1; k < steps; k++) {
         const t = k / steps;
-        const cx = ax + (bx - ax) * t;
-        const cy = ay + (by - ay) * t;
+        const x = ax + (bx - ax) * t + nx * LANE_OFFSET;
+        const y = ay + (by - ay) * t + ny * LANE_OFFSET;
+        if (LANE_KEEP_OUT.some((o) => Math.hypot(x - o.p[0], y - o.p[1]) < o.r)) continue;
         n++;
-        for (const side of [1, -1]) {
-          const w = (lane.width / 2) * side;
-          out.push({
-            id: `circuito-carril-${lane.rama}-${n}${side > 0 ? 'd' : 'i'}`,
-            name: 'Boia de carril',
-            category: 'carril',
-            tags: [...TAGS, 'sin-brujula'],
-            position: { ...at([cx + nx * w, cy + ny * w]), zone: 'circuito' },
-            geometry: {},
-            behaviors: [deco()],
-            source: [`circuito/${lane.rama}`],
-          });
-        }
+        out.push({
+          id: `circuito-carril-${lane.rama}-${n}${n % 2 ? 'd' : 'i'}`,
+          name: 'Boia de carril',
+          category: 'carril',
+          tags: [...TAGS, 'sin-brujula'],
+          position: { ...at([x, y]), zone: 'circuito' },
+          geometry: {},
+          behaviors: [deco()],
+          source: [`circuito/${lane.rama}`],
+        });
       }
     }
   }
   return out;
+}
+
+/** Impulsos en el agua del circuito: dan velocidad al pasar por encima (no bloquean). */
+function boostPads(): PlaceInput[] {
+  return BOOST_PADS.map(({ p, heading }, i) => ({
+    id: `circuito-impulso-${i + 1}`,
+    name: 'Impulso',
+    category: 'impulso',
+    tags: [...TAGS, 'sin-brujula'],
+    position: { ...at(p), zone: 'circuito' },
+    geometry: { activation: { shape: 'circle', radius: size(1.0) } },
+    behaviors: [
+      { type: 'collision', params: { mode: 'boost', intensity: 0.5, duration: 1.5, solid: false } },
+    ],
+    params: { heading: Math.round(heading * 1000) / 1000 },
+    source: [T61],
+  }));
 }
 
 const CIRCUIT: PlaceInput[] = [
@@ -779,19 +829,24 @@ const CIRCUIT: PlaceInput[] = [
       prox(),
       { type: 'checkpoint', params: { circuitId: CIRCUIT_ID, order: 0, boost: 0, on: 'contact' } },
     ],
-    params: { circuit: CIRCUIT_ID, version: CIRCUIT_VERSION, destination: 'ultima' },
+    params: {
+      circuit: CIRCUIT_ID,
+      version: CIRCUIT_VERSION,
+      laps: CIRCUIT_LAPS,
+      medals: { ...CIRCUIT_MEDALS },
+      destination: 'ultima',
+    },
     tags: TAGS,
   },
-  gate('circuito-cp1', 'Checkpoint 1', [12.2, 1.0], 1, 0.6, ['circuito/checkpoints/0']),
-  gate('circuito-cp-s', 'Checkpoint de la ruta segura', [7.8, -11.7], 2, 0.6, [
-    'circuito/checkpoints/1',
-  ]),
-  gate('circuito-cp-a', 'Checkpoint del atajo', [12.9, -12.0], 2, 0.6, ['circuito/checkpoints/2']),
-  gate('circuito-cp2', 'Checkpoint 2', [11.4, -22.0], 3, 0.6, ['circuito/checkpoints/3']),
-  gate('circuito-meta', 'Meta de El Freu', [8.8, -25.0], 4, 0, [
-    'circuito/meta',
-    'zonas/circuito/lugares/meta',
-  ]),
+  ...RACE_BUOYS.map((b, i) => gate(b.id, b.name, b.p, i + 1, 0.6, b.source)),
+  retired(gate('circuito-cp2', 'Checkpoint 2', [11.4, -22.0], 0, 0, ['circuito/checkpoints/3'])),
+  retired(
+    gate('circuito-meta', 'Meta de El Freu', [8.8, -25.0], 0, 0, [
+      'circuito/meta',
+      'zonas/circuito/lugares/meta',
+    ]),
+  ),
+  ...boostPads(),
   {
     id: 'circuito-semaforo',
     name: 'Semáforo de salida',
@@ -802,7 +857,8 @@ const CIRCUIT: PlaceInput[] = [
     behaviors: [deco()],
     source: ['art:circuito#semaforo', 'zonas/circuito/lugares/grada'],
   },
-  {
+  // Sin ramas desde T61, el cartel del atajo ya no señala nada: queda inactivo.
+  retired({
     id: 'circuito-cartel',
     name: 'Cartel ATAJO →',
     category: 'obstaculo',
@@ -811,7 +867,7 @@ const CIRCUIT: PlaceInput[] = [
     geometry: { collision: { shape: 'circle', radius: size(0.38) } },
     behaviors: [bounce(0.3)],
     source: ['art:circuito#cartel', 'circuito/cartel_atajo', 'zonas/circuito/lugares/atajo'],
-  },
+  }),
   {
     id: 'circuito-dents',
     name: 'Els Dents',
