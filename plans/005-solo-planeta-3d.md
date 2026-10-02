@@ -1,6 +1,6 @@
 # Plan 005 — Only the 3D planet
 
-Status: active
+Status: done
 Created: 2026-10-01
 Base branch: main
 Goal: Hernán and Álvaro reviewed every section of the site (opinion test, 2026-10-01) and decided that the world is the 3D planet only: the 2D isometric world (/juego, PixiJS) is deleted and everything it has that /mar lacks moves to /mar. The batch also polishes the world on mobile (compact HUD, small popups, faster steering), makes the Boia Fiestera the central mission with a real prize, reduces hidden discounts to 3 clear ones, rebuilds the three minigames (lighthouse, cannon, circuit), opens tickets inside the 3D world, rebuilds the landing intro in 3D (and fixes it skipping to the landing), and adapts the Admin. Content stays `muestra`; landing blocks other than the hero are not touched (a parallax landing is the next batch).
@@ -174,7 +174,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - Outcome: top links Fotos/Contacto/Artistas/Carnet/Shop, left settings button opening one MarMenu with everything, bottom only Entradas + turbo, minimap drag fix, landing Contacto includes Filosofía → 067232c
 
 ## T66 — Carnet worth having
-- Status: running (attempt 2)
+- Status: done
 - Depends on: none
 - Goal: Decision 2026-10-02 (Hernán and Álvaro): (1) having a Carnet BOIA gives 10% off your ticket (sample value, editable later in the Admin by T63); it does not stack with world codes: the checkout applies the best single discount and says which. (2) Before buying a ticket without a Carnet, show a notice with a shortcut: "¿Tienes Carnet BOIA? Créalo en 30 s y ahorra un 10%" with "Crear Carnet" (creates it, then returns to the checkout with the discount applied) and "Seguir sin Carnet", in /mar (T58's in-world panel) and on the landing tickets flow. (3) The Carnet nickname appears in the ranking list (own row with the real nickname). (4) Ranking gets a "Descubrir a un BOIERO" button that shows a random member's Carnet, which can also be one of the artists (artist Carnets built from the artists sample content). Users with username and password are the final version (D-20), not this task.
 - Context: `apps/web/lib/ticketing/**`, SandboxCheckout, `apps/web/app/mar/entradas.tsx`, landing tickets panel, discount resolution in packages/store, Carnet storage, `RankingPanel` (T56), artists in `packages/store/src/sample/content.ts`, `/carnet/[id]` public Carnet, analytics (`purchase_confirmed` should carry which discount applied). Checkout and Carnet REQs in docs/spec.
@@ -183,7 +183,7 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
   - Test command → exit 0
   - unit tests: best single discount wins between Carnet 10% and world codes; no stacking → exit 0
   - e2e: without Carnet, buying shows the notice; "Crear Carnet" creates it and returns to checkout with 10% applied; with a better world code that one applies instead; own nickname shows in Ranking; "Descubrir a un BOIERO" opens a random Carnet (members and artists both possible, asserted with a seeded random), in /mar and on the landing → exit 0
-- Outcome:
+- Outcome: Carnet gives 10% (best single discount wins, Carnet wins ties), notice with "Crear Carnet" before buying in /mar and on the landing, own nickname in Ranking, "Descubrir a un BOIERO" (members and artists) in the /mar Ranking → fb4bb55
 
 ## Decisions
 - 2026-10-01 interview: only the 3D planet; delete the 2D world; the hero's main button goes to the 3D world with Tickets beside it (Hernán and Álvaro)
@@ -241,7 +241,10 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 
 - 2026-10-02 Hernán and Álvaro: the Admin has little value; T63 skipped (orchestrator)
 
+- 2026-10-02 T66: when the Carnet and a code save the same, the Carnet wins; e2e fix the random pick with window.__boiaDiscoverSeed (agent)
+
 ## Proposals (new scope)
+- 2026-10-02 T66: the landing has no ranking, so "Descubrir a un BOIERO" exists only in /mar; the 10% and the artist Carnets are muestra until Álvaro approves them
 - 2026-10-02 T63 (skipped): Admin editing for the Carnet discount %, the 3 world discounts, the Fiestera prize, minigame/circuit tuning, top-bar link targets; Mundo edits triggering the vortex in the same tab
 - 2026-10-02 T65: REQ-PRO-009 criterion does not mention the top links to the landing; labels "Shop", "Datos de contacto" and menu labels are muestra waiting for Álvaro
 - 2026-10-02 T59: REQ-AVE-008 still has no /mar test for arriving from two sides; the guide chip can overlap a pin label (T65 HUD redesign)
@@ -307,3 +310,6 @@ Notes for every task (this machine is Windows 10, Git Bash): the two `packages/d
 - 2026-10-02 14:52 T65 done · branch worktree-agent-ae2e06416b23a8e3c → 067232c
 - 2026-10-02 14:53 T66 conflict with main (mar-client.tsx, mar-hud.spec.ts) · sent back to agent ace8e92ac82710c5a
 - 2026-10-02 14:58 T63 skipped (Hernán and Álvaro: the Admin has little value)
+- 2026-10-02 15:06 resumed: T66 orphan (clean, T65 merged in) verified in its worktree: carnet-descuento + mar-hud + mar-entradas e2e exit 0 (24 passed, 8 skipped)
+- 2026-10-02 15:08 T66 done · branch worktree-agent-ace8e92ac82710c5a → fb4bb55; Test command on main exit 0
+- 2026-10-02 15:10 plan done
