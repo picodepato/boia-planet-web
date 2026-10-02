@@ -5,12 +5,8 @@ import { EVENT_STATE_BEHAVIOR } from '@boia/contracts';
 import {
   CircuitRace,
   type CircuitSpec,
-  GhostRecorder,
-  type GhostRun,
   circuitFromWorld,
   formatRaceTime,
-  ghostPose,
-  readRecord,
 } from '@boia/engine/circuit';
 import { MINIGAME_REGISTRY } from '@boia/engine/minigames';
 import {
@@ -53,8 +49,7 @@ import {
   signalFromWorldEvent,
 } from '../../lib/mundo/achievements';
 import { CarnetInvite } from '../../lib/mundo/carnet/carnet-invite';
-import { finishLap } from '../../lib/mundo/circuit-hud';
-import { circuitName } from '../../lib/mundo/ranking-circuit';
+import { finishLap, lapNotices } from '../../lib/mundo/circuit-hud';
 import { worlds } from '../../lib/mundo/demo-world';
 import {
   DOLPHIN_PARAM,
@@ -145,8 +140,7 @@ import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from '
 import { type PointMap, pointMap } from './engine/compress';
 import { MarMinimap, type MinimapMark } from './minimap';
 import { MarGuideChip } from './guia';
-import { browserGhostStorage, loadGhost, raceCheckpoint, saveGhost, startPose } from './race';
-import { MarRaceChip, MarRaceIntro, MarRaceResult, type RaceHud, type RaceResult } from './carrera';
+import { raceCheckpoint } from './race';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import {
   type Trip,
@@ -303,18 +297,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const worldIdRef = useRef('arcilla');
   const phaseRef = useRef<RescuePhase | null>(null);
   const missionRef = useRef<RescueMission | null>(null);
-  /**
-   * El Freu (T61): la carrera, su reloj (s de simulación: así el tiempo y el
-   * fantasma no dependen de los fotogramas), la grabación de la carrera en
-   * curso y el fantasma de la mejor guardada.
-   */
-  const raceRef = useRef<{
-    race: CircuitRace;
-    spec: CircuitSpec;
-    clock: number;
-    recorder: GhostRecorder;
-    ghost: GhostRun | null;
-  } | null>(null);
+  const raceRef = useRef<{ race: CircuitRace; spec: CircuitSpec } | null>(null);
   // El delfín guía (O15, T45): el runtime en que se escondió y el reloj de sus pasos.
   const dolphinRef = useRef<DolphinGuide | null>(null);
   const dolphinRuntime = useRef<unknown>(null);
@@ -375,10 +358,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     last: boolean;
   } | null>(null);
   const [phase, setPhase] = useState<RescuePhase | null>(null);
-  const [race, setRace] = useState<RaceHud | null>(null);
-  const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
-  // El récord al acercarse a la salida, antes de correr (REQ-AVE-028).
-  const [raceIntro, setRaceIntro] = useState<string | null>(null);
+  const [race, setRace] = useState<{
+    phase: string;
+    countdown: number | null;
+    ms: number | null;
+    next: number;
+  } | null>(null);
   const [help, setHelp] = useState(false);
   const [menu, setMenu] = useState(false);
   const [worldName, setWorldName] = useState('');
@@ -473,95 +458,39 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     );
   };
 
-  /** La carrera de El Freu del mundo `w` (T61), o null si el mundo no tiene circuito. */
-  const newRace = (w: WorldConfig) => {
-    const spec = circuitFromWorld(w, CIRCUIT_ID);
-    return spec
-      ? { race: new CircuitRace(spec), spec, clock: 0, recorder: new GhostRecorder(), ghost: null }
-      : null;
-  };
-
   const raceEvents = (evs: ReturnType<CircuitRace['tick']>) => {
     const r = raceRef.current;
     const g = engineRef.current;
-    const world = worldRef.current;
     if (!r || !g) return;
     for (const e of evs) {
       switch (e.type) {
-        case 'countdown': {
-          // Quieto en la salida hasta «¡Ya!», mirando a la primera boia.
+        case 'countdown':
           g.setSemaphore('red');
           g.setNextGate(1);
-          g.holdShip(world ? startPose(world, r.spec) : null);
-          r.ghost = loadGhost(browserGhostStorage(), r.spec);
-          setRaceResult(null);
-          setRaceIntro(null);
           plop();
           break;
-        }
         case 'go':
-          g.holdShip(null);
           g.setSemaphore('green');
-          r.recorder.reset();
           chime();
           window.setTimeout(() => engineRef.current?.setSemaphore('off'), 2500);
           break;
         case 'checkpoint':
-          g.setNextGate(e.order + 1 > r.spec.buoys ? 0 : e.order + 1);
+          g.setNextGate(e.order + 1);
           plop();
           break;
-        case 'missed':
-          push({
-            id: `circuito:falta:${Date.now()}`,
-            kind: 'info',
-            title: msg('mar.race.missed', { order: e.order }),
-            body: msg('mar.race.missed.body'),
-          });
-          break;
-        case 'lap': {
-          g.setNextGate(1);
-          chime();
-          const time = msg('mar.race.lapDone', { lap: e.lap, time: formatRaceTime(e.lapMs) });
-          const last = e.lap === r.spec.laps - 1;
-          push({
-            id: `circuito:vuelta:${e.lap}:${Date.now()}`,
-            kind: 'info',
-            title: last ? msg('mar.race.lastLap') : time,
-            ...(last ? { body: time } : {}),
-          });
-          break;
-        }
         case 'finish': {
           g.setNextGate(null);
-          g.setGhost(null);
           g.celebrate(null);
           fanfare();
-          // La grabación es el fantasma de la próxima, si es la mejor de este navegador.
-          const run = r.recorder.finish(e.ms);
-          if (run) saveGhost(browserGhostStorage(), r.spec, run);
-          r.ghost = null;
-          const spec = r.spec;
-          const place = (world && circuitName(world)) ?? msg('mar.sheet.circuito');
-          finishLap(progressApi(), spec, e.ms, e.route)
-            .then((res) => {
-              setRaceResult({
-                place,
-                ms: e.ms,
-                laps: e.laps,
-                medals: spec.medals,
-                best: res.best,
-                bestMs: res.bestMs,
-              });
-              res.achievements.forEach(push);
-            })
-            .catch((err: unknown) => console.warn('[boia] no se pudo guardar la carrera', err));
+          // Con la ruta: el atajo cuenta también en /mar (T37).
+          finishLap(progressApi(), r.spec, e.ms, e.route)
+            .then((res) => lapNotices(e.ms, res).forEach(push))
+            .catch((err: unknown) => console.warn('[boia] no se pudo guardar la vuelta', err));
           break;
         }
         case 'invalid':
           g.setNextGate(null);
           g.setSemaphore('off');
-          g.holdShip(null);
-          g.setGhost(null);
           push({
             id: `circuito:anulada:${Date.now()}`,
             kind: 'info',
@@ -571,13 +500,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           break;
       }
     }
-  };
-
-  /** «Otra vez» en la tarjeta de meta: la cuenta atrás desde la salida. */
-  const raceAgain = () => {
-    const r = raceRef.current;
-    setRaceResult(null);
-    if (r && !r.race.active) raceEvents(r.race.start(r.clock));
   };
 
   /**
@@ -606,25 +528,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     const repo = gameRepository();
     const r = raceRef.current;
     if (r && e.type === 'checkpoint') {
-      raceEvents(raceCheckpoint(r.race, e.objectId, r.clock));
-    }
-    // Junto a la salida de El Freu, sin correr: el récord (REQ-AVE-028).
-    const startId = r?.spec.gates.find((g) => g.order === 0)?.objectId;
-    if (r && startId && 'objectId' in e && e.objectId === startId && !r.race.active) {
-      if (e.type === 'proximity_enter') {
-        const place = circuitName(world) ?? msg('mar.sheet.circuito');
-        void readRecord(progressApi(), r.spec)
-          .then((rec) =>
-            setRaceIntro(
-              rec
-                ? msg('circuit.idle.record', { place, time: formatRaceTime(rec.bestMs) })
-                : msg('circuit.idle', { place }),
-            ),
-          )
-          .catch(() => undefined);
-      } else if (e.type === 'proximity_exit') {
-        setRaceIntro(null);
-      }
+      raceEvents(raceCheckpoint(r.race, e.objectId, performance.now() / 1000));
     }
     switch (e.type) {
       case 'reward':
@@ -802,22 +706,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     applyDolphin(g, d, actions);
   };
 
-  /** El reloj de la carrera, su grabación y el fantasma, paso a paso (T61). */
-  const stepRace = (g: Mar3D, ship: ShipState, dt: number) => {
-    const r = raceRef.current;
-    if (!r) return;
-    r.clock += dt;
-    if (!r.race.active) return;
-    raceEvents(r.race.tick(r.clock));
-    if (!r.race.racing) return;
-    const ms = r.race.elapsedMs(r.clock);
-    r.recorder.sample(ms, ship);
-    g.setGhost(r.ghost ? ghostPose(r.ghost, ms) : null);
-  };
-
   const onStep = (ship: ShipState, dt: number) => {
     const g = engineRef.current;
-    if (g) stepRace(g, ship, dt);
     if (g) stepDolphin(g, ship, dt);
     const m = missionRef.current;
     if (!m || !g) return;
@@ -844,22 +734,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     stepBottles(s);
     const r = raceRef.current;
     if (r) {
-      const v = r.race.view(r.clock);
+      const now = performance.now() / 1000;
+      raceEvents(r.race.tick(now));
+      const v = r.race.view(now);
       if (v.phase === 'countdown' && v.countdown !== null && v.countdown < 1)
         engineRef.current?.setSemaphore('amber');
       setRace(
         v.phase === 'idle'
           ? null
-          : {
-              phase: v.phase,
-              countdown: v.countdown,
-              ms: v.elapsedMs,
-              next: v.next,
-              lap: v.lap,
-              laps: v.laps,
-              buoys: v.buoys,
-              ghost: !!r.ghost,
-            },
+          : { phase: v.phase, countdown: v.countdown, ms: v.elapsedMs, next: v.next },
       );
     }
   };
@@ -1045,7 +928,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         world.objects,
         every > 0 ? { tuning: { minInterval: every, maxInterval: every } } : undefined,
       );
-      raceRef.current = newRace(world);
+      const spec = circuitFromWorld(world, CIRCUIT_ID);
+      raceRef.current = spec ? { race: new CircuitRace(spec), spec } : null;
 
       const mspec = rescueMissionOf(world);
       const mission = mspec ? new RescueMission(world, mspec) : null;
@@ -1090,7 +974,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         onPin: (id) => handlers.current.onPin(id),
         onVoyageEnd: (id, how) => handlers.current.onVoyageEnd(id, how),
         onImpact: (speed) => handlers.current.onImpact(speed),
-        raceStartLabel: msg('mar.race.startBanner'),
         onSwitch: (mode) => setSwitching(mode),
         onFirstMove: () => {
           setHelp(false);
@@ -1489,16 +1372,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // La misión sigue (mismo paso, mismo destino guardado) con la piel del mundo nuevo.
         missionRef.current?.setWorld(w);
         g.setPins(pinsOf(w, phaseRef.current));
-        // El circuito es el mismo en cada mundo (El Freu, El Penyal): sin carrera a medias.
-        if (raceRef.current?.race.active) {
-          engineRef.current?.holdShip(null);
-          engineRef.current?.setGhost(null);
-          engineRef.current?.setNextGate(null);
-          engineRef.current?.setSemaphore('off');
-        }
-        raceRef.current = newRace(w);
+        const spec = circuitFromWorld(w, CIRCUIT_ID);
+        raceRef.current = spec ? { race: new CircuitRace(spec), spec } : null;
         setRace(null);
-        setRaceIntro(null);
         // Sin barco elegido (ni en la URL ni equipado), el del mundo nuevo (T40).
         void storedLook(progressApi(), next.theme.ship, window.location.search).then((want) => {
           if (want.source !== 'world') return;
@@ -1550,7 +1426,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     !!sheet ||
     !!dialogue ||
     !!race ||
-    !!raceResult ||
     !!checkoutFor ||
     !!trip ||
     !!switching ||
@@ -1897,15 +1772,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
       {/* Rumbo, circuito y misión */}
       <div className="mar-chips">
-        {race ? <MarRaceChip race={race} /> : null}
-        {!race && raceResult ? (
-          <MarRaceResult
-            result={raceResult}
-            onAgain={raceAgain}
-            onClose={() => setRaceResult(null)}
-          />
+        {race ? (
+          <div className="mar-chip mar-chip--race" data-testid="mar-crono">
+            ⏱ {race.ms !== null ? formatRaceTime(race.ms) : msg('mar.client.preparados')}
+            {race.phase === 'racing' ? (
+              <span className="mar-chip__sub">{msg('mar.client.cp', { next: race.next })}</span>
+            ) : null}
+          </div>
         ) : null}
-        {!race && !raceResult && raceIntro ? <MarRaceIntro text={raceIntro} /> : null}
         {stats?.course ? (
           <div className="mar-chip mar-chip--course" data-testid="mar-rumbo-activo">
             🧭 {courseName(stats.course)} · {stats.course.meters} m

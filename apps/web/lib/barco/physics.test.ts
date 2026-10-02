@@ -21,12 +21,11 @@ import { dressingFor } from './dressing';
  */
 
 const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
-// Una sola vuelta (el circuito cerrado de T61 da tres; para medir basta una).
-const spec = { ...circuitFromWorld(world, CIRCUIT_ID)!, laps: 1 };
+const spec = circuitFromWorld(world, CIRCUIT_ID)!;
+const gates = [...spec.gates].sort((a, b) => a.order - b.order);
 const at = (id: string) => world.objects.find((o) => o.identity.id === id)!.position;
-const idOf = (order: number) => spec.gates.find((g) => g.order === order)!.objectId;
-// Una boia por orden y, al final, la salida, que es también la meta.
-const route = [...Array.from({ length: spec.buoys }, (_, i) => idOf(i + 1)), idOf(0)];
+// Por la rama segura: un arco por orden (las dos ramas comparten el suyo).
+const route = gates.filter((g, i) => gates.findIndex((h) => h.order === g.order) === i);
 
 /** Lo que llega al barco con lo equipado: el aspecto y lo que se pinta encima. */
 function dressedShip(equipped: Record<string, string>) {
@@ -41,22 +40,21 @@ function lap(cfg: ShipConfig, dressed: ReturnType<typeof dressedShip>, into?: 'c
   void dressed;
   const runtime = new WorldRuntime(world, { seed: 7 });
   const race = new CircuitRace(spec);
-  const first = at(idOf(0));
+  const first = at(route[0]!.objectId);
   const ship = createShipState(first.x, first.y + 160, -Math.PI / 2);
   const dt = 1 / 60;
+  let next = 0;
   let finish: number | null = null;
   let hits = 0;
   const trace: string[] = [];
-  const steps = into === 'coast' ? 60 * 15 : 60 * 200;
+  const steps = into === 'coast' ? 60 * 15 : 60 * 150;
   for (let i = 0; i < steps && finish === null; i++) {
     const t = i * dt;
     // `coast`: siempre hacia el este, hasta dar con el borde del mapa y seguir empujando.
     const target =
       into === 'coast'
         ? { x: ship.x + 1000, y: ship.y }
-        : race.active
-          ? at(route[race.view(t).next - 1]!)
-          : first;
+        : at(route[Math.min(next, route.length - 1)]!.objectId);
     const input: ShipInput = {
       dirX: target.x - ship.x,
       dirY: target.y - ship.y,
@@ -70,6 +68,7 @@ function lap(cfg: ShipConfig, dressed: ReturnType<typeof dressedShip>, into?: 'c
       if (e.type !== 'checkpoint') continue;
       for (const r of race.checkpoint(e.order, t, e.objectId)) {
         if (r.type === 'finish') finish = r.ms;
+        if (r.type === 'checkpoint' || r.type === 'countdown') next++;
       }
     }
     race.tick(t);

@@ -102,7 +102,6 @@ import {
   stickInput,
 } from './steering';
 import { VortexPass } from './vortex';
-import { type BoostPad, type RaceBuoy, boostPad, ghostBoat, raceBuoy } from './race-props';
 import { createWater } from './water';
 import {
   type Circle,
@@ -207,15 +206,6 @@ export interface Mar3DOptions {
   onSwitch?(mode: SwitchMode | null): void;
   /** Un golpe contra algo sólido: velocidad perdida (u/s). Para el sonido (T46). */
   onImpact?(speed: number): void;
-  /** Rótulo del arco de salida y meta del circuito (T61; la web lo da traducido). */
-  raceStartLabel?: string;
-}
-
-/** Dónde está y hacia dónde mira un barco (u de motor, rad): el fantasma, la salida. */
-export interface ShipPose {
-  x: number;
-  y: number;
-  heading: number;
 }
 
 /** Un mundo en el mar 3D: su configuración y su runtime (el resto no cambia, D-20.7). */
@@ -464,12 +454,7 @@ export class Mar3D {
   inputEnabled = true;
   /** Sin simular ni pintar (un minijuego a pantalla completa encima). */
   paused = false;
-  /** Lo que se enciende de cada orden del circuito (arco o boia) cuando toca pasarlo. */
-  private gates = new Map<number, ((on: boolean) => void)[]>();
-  /** Dónde va ahora el barco fantasma del circuito (T61); null: no se ve. */
-  private ghostAt: ShipPose | null = null;
-  /** El barco quieto en la salida durante la cuenta atrás (T61), o null. */
-  private hold: ShipPose | null = null;
+  private gates = new Map<number, MeshBasicMaterial[]>();
   /** El material de las botellas (T56), compartido por todas. */
   private bottleMaterial: ReturnType<typeof litMaterial> | null = null;
   // Cambio de mundo por agujero negro (T41 en el 2D; aquí T51).
@@ -538,7 +523,6 @@ export class Mar3D {
     const glows: Glows[] = [];
     const shores = this.buildPlaces(glows);
     shores.push(...this.buildDecor(glows));
-    this.buildGhost();
     this.route = seaRoute(this.world);
     this.routeLine = new RouteLine(
       this.route.dashes.map((d) => ({ x: toScene(d.x), z: toScene(d.y), angle: d.angle })),
@@ -1119,31 +1103,11 @@ export class Mar3D {
     this.semaphore.forEach((m, i) => m.color.set(i === on ? lit[i]! : base[i]!));
   }
 
-  /** Resalta la boia (o el arco de salida, orden 0) que toca pasar (null: ninguna). */
+  /** Resalta el arco que toca pasar (null: ninguno). */
   setNextGate(order: number | null): void {
-    for (const [o, marks] of this.gates) {
-      for (const mark of marks) mark(o === order);
+    for (const [o, mats] of this.gates) {
+      for (const m of mats) m.color.set(o === order ? '#ffd23f' : '#fff4e2');
     }
-  }
-
-  /**
-   * El barco fantasma del circuito (T61): dónde va ahora la mejor carrera
-   * guardada (u de motor), o null para esconderlo.
-   */
-  setGhost(pose: ShipPose | null): void {
-    this.ghostAt = pose;
-    const on = pose ? 'on' : 'off';
-    if (this.opts.canvas.dataset.ghost !== on) this.opts.canvas.dataset.ghost = on;
-  }
-
-  /**
-   * Deja el barco quieto en `pose` (la salida durante la cuenta atrás, T61):
-   * no se mueve ni gobierna hasta `holdShip(null)`. El mundo sigue vivo.
-   */
-  holdShip(pose: ShipPose | null): void {
-    this.hold = pose;
-    // Lo que se pulse durante la cuenta atrás no mueve el barco, pero sigue pulsado al «¡Ya!».
-    if (pose) this.stopVoyage();
   }
 
   dialogue(): DialogueView | null {
@@ -1495,25 +1459,6 @@ export class Mar3D {
         case 'circuito': {
           const gate = gateList.get(id);
           if (!gate) break;
-          if (gate.order > 0) {
-            // Las boias que hay que pasar (T61): numeradas, con su aro de paso.
-            const reach = toScene(o.geometry.activation?.radius ?? 40);
-            const b: RaceBuoy = raceBuoy(gate.order, reach);
-            b.group.position.set(x, 0, z);
-            const marks = this.gates.get(gate.order) ?? [];
-            marks.push((on) => b.setNext(on));
-            this.gates.set(gate.order, marks);
-            this.addView({
-              id,
-              obj: b.group,
-              kind: 'circuito',
-              y: 0,
-              phase,
-              labelY: 5,
-              update: (_v, t) => b.update(t),
-            });
-            break;
-          }
           const g = new Group();
           const k = new Kit();
           const half = Math.max(2.6, r * 0.9);
@@ -1527,8 +1472,8 @@ export class Mar3D {
           }
           g.add(new Mesh(k.build(), lit));
           const bannerMat = new MeshBasicMaterial({ color: '#fff4e2' });
-          // La salida es también la meta (T61); el rótulo lo da la web traducido.
-          const text = this.opts.raceStartLabel ?? 'SALIDA';
+          const text =
+            gate.order === 0 ? 'SALIDA · EL FREU' : gate.finish ? 'META' : `CP ${gate.order}`;
           const banner = new Mesh(new BoxGeometry(0.2, 0.9, half * 2 + 0.4), bannerMat);
           banner.position.y = 3.7;
           g.add(banner);
@@ -1542,29 +1487,12 @@ export class Mar3D {
             face.rotation.y = s > 0 ? 0 : Math.PI;
             g.add(face);
           }
-          const marks = this.gates.get(gate.order) ?? [];
-          marks.push((on) => bannerMat.color.set(on ? '#ffd23f' : '#fff4e2'));
-          this.gates.set(gate.order, marks);
+          const mats = this.gates.get(gate.order) ?? [];
+          mats.push(bannerMat);
+          this.gates.set(gate.order, mats);
           g.position.set(x, 0, z);
           g.rotation.y = -gate.dir;
           this.addView({ id, obj: g, kind: 'circuito', y: 0, phase, labelY: 5 });
-          break;
-        }
-        case 'impulso': {
-          // Impulsos en el agua del circuito (T61): flechas que se encienden hacia delante.
-          const heading = typeof o.params?.heading === 'number' ? o.params.heading : 0;
-          const pad: BoostPad = boostPad(toScene(o.geometry.activation?.radius ?? 24), heading);
-          pad.group.position.set(x, 0, z);
-          this.addView({
-            id,
-            obj: pad.group,
-            kind: 'impulso',
-            y: 0,
-            phase,
-            labelY: 1,
-            update: (_v, t) => pad.update(t),
-          });
-          staticGlows.add([x, 0.3, z], '#3df2ff', 2.4);
           break;
         }
         case 'carril':
@@ -1704,30 +1632,6 @@ export class Mar3D {
     return shores;
   }
 
-  /**
-   * El barco fantasma (T61): una vista más, en la copia más cercana al foco,
-   * que sigue a `ghostAt` y se esconde sin él.
-   */
-  private buildGhost(): void {
-    const g = ghostBoat(SHIP_LENGTH);
-    this.addView({
-      id: '__fantasma',
-      obj: g,
-      kind: 'fantasma',
-      y: 0,
-      phase: 0,
-      labelY: 2,
-      update: (v, t) => {
-        const p = this.ghostAt;
-        v.obj.visible = !!p;
-        if (!p) return;
-        v.obj.rotation.y = -p.heading;
-        v.obj.position.y = Math.sin(t * 1.9) * 0.07;
-      },
-    });
-    this.opts.canvas.dataset.ghost = 'off';
-  }
-
   /** Arcos del circuito: orden y rumbo de paso (del arco anterior al siguiente). */
   private circuitGates(): Map<string, { order: number; dir: number; finish: boolean }> {
     const list: { id: string; order: number; x: number; y: number }[] = [];
@@ -1749,9 +1653,8 @@ export class Mar3D {
     };
     const out = new Map<string, { order: number; dir: number; finish: boolean }>();
     for (const g of list) {
-      // Circuito cerrado (T61): antes de la salida va la última boia y después de ésta, la salida.
-      const prev = avg(g.order === 0 ? max : g.order - 1) ?? g;
-      const next = avg(g.order === max ? 0 : g.order + 1) ?? g;
+      const prev = avg(g.order - 1) ?? g;
+      const next = avg(g.order + 1) ?? g;
       const dx = next.x - prev.x;
       const dy = next.y - prev.y;
       out.set(g.id, { order: g.order, dir: Math.atan2(dy, dx), finish: g.order === max });
@@ -2072,15 +1975,6 @@ export class Mar3D {
       this.stepFlight(dt);
       return;
     }
-    if (this.hold) {
-      Object.assign(s, { ...this.hold, vx: 0, vy: 0 });
-      this.prev.x = s.x;
-      this.prev.y = s.y;
-      this.prev.heading = s.heading;
-      this.runtime.step(s, this.cfg, dt);
-      this.opts.onStep?.(s, dt);
-      return;
-    }
     const input = this.readInput();
     let cfg = this.runtime.shipConfig(this.cfg);
     if (this.turboLeft > 0 || this.voyage) {
@@ -2358,11 +2252,6 @@ export class Mar3D {
     this.frustum.setFromProjectionMatrix(
       tmpM.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse),
     );
-    const ghostView = this.ghostAt ? this.views.get('__fantasma') : undefined;
-    if (ghostView && this.ghostAt) {
-      ghostView.bx = toScene(this.ghostAt.x);
-      ghostView.bz = toScene(this.ghostAt.y);
-    }
     for (const v of this.views.values()) {
       const st = this.runtime.objectState(v.id);
       const cxs = st ? toScene(st.x) : v.bx;

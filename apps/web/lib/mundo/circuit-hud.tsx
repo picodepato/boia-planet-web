@@ -40,9 +40,9 @@ export interface LapResult {
 }
 
 /**
- * Guarda una carrera válida (su tiempo total, T61) y completa los logros del
- * circuito que toquen (una vez; se reclaman aparte). `route`: las boias por
- * las que pasó (`finish.route` de la carrera), para el logro del atajo.
+ * Guarda una vuelta válida y completa los logros del circuito que toquen
+ * (una vez; se reclaman aparte). `route`: los arcos por los que pasó
+ * (`finish.route` de la carrera), para el logro del atajo.
  */
 export async function finishLap(
   progress: ProgressApi,
@@ -121,22 +121,6 @@ export function useCircuit(
       for (const e of events) {
         if (e.type === 'countdown') setStartInfo(null);
         if (e.type === 'checkpoint') latest.current.onBoost?.();
-        // Tres vueltas desde T61: cada vuelta y cada boia saltada se avisan.
-        if (e.type === 'lap') {
-          latest.current.notify({
-            id: `circuito:vuelta:${e.lap}:${Date.now()}`,
-            kind: 'info',
-            title: msg('mar.race.lapDone', { lap: e.lap, time: formatRaceTime(e.lapMs) }),
-          });
-        }
-        if (e.type === 'missed') {
-          latest.current.notify({
-            id: `circuito:falta:${Date.now()}`,
-            kind: 'info',
-            title: msg('mar.race.missed', { order: e.order }),
-            body: msg('mar.race.missed.body'),
-          });
-        }
         if (e.type === 'invalid') {
           latest.current.notify({
             id: `circuito:anulada:${Date.now()}`,
