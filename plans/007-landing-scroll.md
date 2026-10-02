@@ -22,7 +22,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T77 — Design plan for the scroll hero and the hand-off to the blocks
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable
 - Skills: frontend-design (invoke first with the Skill tool)
 - Depends on: none
@@ -123,6 +123,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-03 T77: design v1 (cream sheets, low-poly props) rejected by Hernán; v2 approved: night-black editorial page in the tone of andyhardy.co and observatoriofestival.com, realistic set dressing (costa, puerto, barco realista, boya real; no mascot or clouds in the hero), hero grade separate from /mar moods, corner labels, «Zarpar» pill in the header, post pass that T80 may trim on low power (Hernán)
 - 2026-10-03 interview: Codex's 2D parallax prototype (worktree 459e, 4 WebP layers in the critical path, global restyle, intro trimmed) is discarded; the scroll landing starts from zero with the improved idea (Hernán)
 - 2026-10-03 interview: `/` plays the appearance (D-21) and rests with «Zarpar» + «Entradas» visible from the first paint and a scroll hint; scrolling is the hand-off; no automatic advance; «Saltar animación» removed; «Solo quiero ver las entradas» becomes the «Entradas» button; direct URLs and in-app returns open at rest (Hernán)
 - 2026-10-03 interview: concept: the scroll scrubs the dive from the planet to the sea by the port (Zarpar's path), then the camera advances slowly over the water with the light from golden hour to night; blocks on cards over the fixed scene; «Zarpar» completes the dive into /mar (Hernán)
@@ -136,5 +137,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T77: `hero.explore3d*` i18n keys look unused; the Tickets panel surface could match the blocks' new surface later; island GLBs (800–950 kB each) are too heavy for the hero, the horizon uses procedural islands
 
 ## Log
+- 2026-10-03 01:05 T77 launched · attempt 1 · agent ad894fbe35db9dba4
+- 2026-10-03 01:30 T77 blocked · branch worktree-agent-ad894fbe35db9dba4 · ed2e424 T77: WIP · question: approve the design plan (9 open points, cream sheets, hint copy, header pill, night keyed to Fotos, props costa/puerto/nube/gaviota)
+- 2026-10-03 01:40 T77 answer sent: v1 rejected by Hernán (too low poly, childish; wants a professional festival site, refs andyhardy.co and observatoriofestival.com) · agent redoing as v2
+- 2026-10-03 02:00 T77 blocked again · d4cf86c T77: WIP (v2) · question: approve v2 (night-black editorial page, realistic set dressing, 10 open points)
+- 2026-10-03 02:10 T77 answer sent: v2 approved by Hernán with all 10 recommendations · agent finishing
