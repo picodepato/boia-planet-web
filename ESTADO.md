@@ -4,6 +4,65 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T77: Design plan for the scroll hero and the hand-off to the blocks
+
+Qué existe:
+- `docs/propuestas/2026-10-03-landing-scroll.md`, versión 2: el plan de
+  diseño de la landing como un solo scroll, rehecho tras rechazar Hernán la
+  v1 («muy low poly, muy básico; quiero una página de festival profesional»)
+  con andyhardy.co y observatoriofestival.com como referencias de tono (§1
+  resume qué hacen y qué se toma). La v2 parte de la landing oscura actual:
+  página negra, el mar como fotografía (siluetas a contraluz, camino del sol
+  en el agua, bruma, grano, viñeta, bloom y profundidad de campo), bandas
+  oscuras que emergen del mar con fundidos y una retícula editorial (rótulo
+  pequeño en mayúsculas a la izquierda, tipografía grande a la derecha),
+  Archivo Expanded a tamaño de display. Secciones que pide el plan 007:
+  paleta (gradación cinematográfica propia del hero: espacio, zambullida,
+  hora dorada, ocaso, noche; tokens de interfaz), escala tipográfica
+  (375/768/1280), composición en reposo y en el mar (encuadre nuevo a 600 px,
+  planeta de escritorio en y 0,47), capas (three.js, CSS, imagen; agua con
+  reflejo del cielo y camino especular; pase de post), mapa de movimiento
+  (tabla s → cámara, luz, UI, cabecera, bandas; la noche llega con Fotos),
+  restyle de superficie de los bloques, versión estática (still de Blender
+  con fundido a negro, noche desde Fotos), accesibilidad (contrastes, foco,
+  aria), claves i18n (`hero.tickets` → «Entradas», `hero.scrollHint`,
+  `hero.place`, `hero.coords`, `photos.display`, `nav.zarpar` si se aprueba;
+  fuera `intro.skip` y `copy.ticketsOnly`), props para Blender como atrezo
+  fotográfico (costa 3 000 tris / 45 kB, puerto 3 500 / 55 + atlas 60,
+  barco realista 2 000 / 35, boya 400 / 10; total 8 900 tris, 145 kB + 60;
+  topes 12 000 / 220) y los stills (1600 y 800 px, día y noche), las 10
+  preguntas abiertas resueltas por Hernán como se recomendaba (§13: botón
+  «Zarpar» en la cabecera, `nav.tickets` → «Entradas», boya real, barco
+  nuevo realista, gradación propia del hero, encuadre a 600 px, panel de
+  Tickets sin tocar, pase de post con grano y viñeta siempre) y una nota de
+  por qué se rechazó la v1 (§14). Aprobado el 2026-10-03 por Hernán (línea
+  arriba del documento).
+- Ocho fotogramas de storyboard v2 en `docs/informes/img/p007-t77-0{1..8}-*.svg`
+  (mismos nombres que la v1, sobrescritos): reposo escritorio, zambullida,
+  mar con la primera banda, noche con fotos, reposo móvil, versión estática,
+  composición 375/768/1024, mapa de movimiento. SVG con tipografías de
+  respaldo del sistema, no código de la app; sus PNG para Hernán están fuera
+  del repo (`C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T77\`).
+- Las referencias se leyeron con el navegador integrado (texto, fuentes y
+  estructura por JavaScript) y con capturas de Chromium headless a 1280×800
+  y 390×844 (fuera del repo).
+- Todo `muestra`: el arte definitivo lo aprueba Álvaro.
+
+Comandos:
+- `export PYTHONUTF8=1 && pnpm exec vitest run --exclude '**/packages/db/**'
+  --testTimeout=30000 && sh tools/spec/checks.sh && pnpm lint && pnpm build
+  && pnpm typecheck`, corrida paso a paso (el guardián del worktree no deja
+  encadenarla) → exit 0 en los cinco: vitest 107 ficheros, 976 pruebas
+  (4,9 s); checks.sh 294 REQ, arte OK; eslint 0 avisos; build con la landing
+  en 189,6 kB / 192 kB (T79 sube el tope a 200); typecheck Done en store,
+  engine y web. La tarea no cambia código.
+
+Pendiente:
+- T78 construye los props y los stills según §12; T79 el hero y el restyle
+  según §5–§8 y §11; T80, T81, T82 y T83 lo que sigue.
+- Las nubes procedurales del mini-planeta (`mini-planet.ts`) se regradúan en
+  T79 para parecerse al fotograma 01 (vetas finas, poca opacidad).
+
 ## 2026-10-03 — T76: la carretera de la carrera (boyitas y 5 s fuera)
 
 Qué existe:
