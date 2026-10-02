@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { eventIslands } from '../lib/admin/world';
 import { eventHref, photosHref } from '../lib/landing/eventos';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { marSheet, openMar } from './mar-helpers';
 
 /**
  * Capturas de la T42 para el informe, a tamaño de móvil (390×844). No corre
@@ -60,19 +61,15 @@ test('isla con su evento agotado', async ({ page }) => {
   await page.getByTestId(`evento-estado-${islandEvent.id}`).selectOption('sold_out');
   await expect(page.getByTestId(`evento-ahora-${islandEvent.id}`)).toContainText('Agotado');
 
-  await page.goto(`/juego?cerca=${island.id}`);
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  await openMar(page, `?ir=${island.id}`);
   await page
-    .locator('canvas:visible')
-    .first()
-    .focus()
+    .getByTestId('mar-entradas-saltar')
+    .click({ timeout: 5_000 })
     .catch(() => {});
-  const panel = page.getByTestId('panel-evento');
-  await page.keyboard.down('ArrowUp');
-  try {
-    await expect(panel).toBeVisible({ timeout: 25_000 });
-  } finally {
-    await page.keyboard.up('ArrowUp');
+  const panel = marSheet(page);
+  await expect(panel).toHaveAttribute('data-lugar', island.id, { timeout: 30_000 });
+  if ((await panel.getAttribute('data-expandida')) !== 'si') {
+    await panel.getByTestId('mar-ficha-mas').click();
   }
   await expect(panel).toHaveAttribute('data-estado', 'sold_out');
   await page.waitForTimeout(1500);

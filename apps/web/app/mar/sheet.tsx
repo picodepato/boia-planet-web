@@ -511,7 +511,7 @@ function stateNotice(event: BoiaEvent): string | null {
  * pasó, la ficha y «Ver fotos de la isla», el aviso del código de descuento
  * junto a la compra (sólo a la venta), sus recuerdos y «Próximos eventos».
  */
-function EventBlock({
+export function EventBlock({
   event: e,
   onBuy,
   onSteer,

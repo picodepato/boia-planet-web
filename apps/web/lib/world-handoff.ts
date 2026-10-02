@@ -1,41 +1,9 @@
-import type { GameSurface } from '@boia/engine';
-
 /**
- * Paso del mundo de la landing al juego 2D (REQ-ENT-012). Al pulsar EXPLORAR,
- * la entrada cede su superficie (aplicación Pixi, canvas y mar vivo) y la
- * navegación al 2D es del lado del cliente: el juego la recoge y pinta su
- * mundo en el mismo canvas, sin crear otro contexto WebGL ni repetir la
- * entrada. Vive en memoria del módulo, así que sólo existe dentro de la misma
- * página (una recarga o un enlace directo al 2D arrancan en limpio).
+ * Enlaces al mundo navegable, el planeta 3D de `/mar` (D-25: el mundo 2D y su
+ * paso de superficie desde la entrada, REQ-ENT-012, se fueron con T62). El
+ * nombre del módulo es de cuando también cedía la superficie de la entrada al
+ * juego 2D.
  */
-
-/** Si el 2D no la recoge en este plazo (navegación cancelada), se destruye. */
-const CLAIM_WINDOW_MS = 15_000;
-
-let pending: { surface: GameSurface; timer: ReturnType<typeof setTimeout> } | null = null;
-
-export function offerWorld(surface: GameSurface): void {
-  discardWorld();
-  const timer = setTimeout(discardWorld, CLAIM_WINDOW_MS);
-  pending = { surface, timer };
-}
-
-/** La superficie cedida, una sola vez; `null` si no hay ninguna. */
-export function claimWorld(): GameSurface | null {
-  if (!pending) return null;
-  clearTimeout(pending.timer);
-  const { surface } = pending;
-  pending = null;
-  return surface;
-}
-
-export function discardWorld(): void {
-  if (!pending) return;
-  clearTimeout(pending.timer);
-  const { surface } = pending;
-  pending = null;
-  surface.app.destroy({ removeView: true }, { children: true });
-}
 
 /** La ruta del mundo navegable (el planeta 3D). */
 export const MAR_PATH = '/mar';

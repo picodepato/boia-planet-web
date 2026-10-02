@@ -1,16 +1,5 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import {
-  type ArtManifest,
-  type Vec2,
-  WORLD_REGISTRY,
-  parseArtManifest,
-  parseAssetRef,
-  placePartArt,
-} from '@boia/world';
+import { type Vec2, WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
-import { objectArtFiles, startArt, worldArtPlan, worldAssetIds } from './art-plan';
 import {
   REFERENCE_VIEW,
   STREAM_TUNING,
@@ -32,25 +21,9 @@ import {
  * última isla, con el mapa real de Arcilla.
  */
 
-const ART = fileURLToPath(new URL('../../../../art/', import.meta.url));
 const arcilla = WORLD_REGISTRY.get('arcilla').config;
 const sectors = sectorsOf(arcilla);
 const spawn = arcilla.spawn!;
-
-function manifests(ids: Iterable<string>): Map<string, ArtManifest> {
-  const out = new Map<string, ArtManifest>();
-  for (const id of ids) {
-    const ref = parseAssetRef(id);
-    const raw = parseArtManifest(
-      JSON.parse(readFileSync(path.join(ART, ref.base, 'manifest.json'), 'utf8')),
-    );
-    if (!raw.ok) continue;
-    const m = ref.part ? placePartArt(raw.manifest, ref.part, ref.variant) : raw.manifest;
-    if (m) out.set(id, m);
-  }
-  return out;
-}
-const art = manifests(worldAssetIds(arcilla));
 
 describe('sectores del mapa', () => {
   it('el puerto es el sector del spawn', () => {
@@ -61,7 +34,8 @@ describe('sectores del mapa', () => {
     const by = objectsBySector(arcilla);
     const active = arcilla.objects.filter((o) => o.identity.active);
     expect([...by.values()].flat()).toHaveLength(active.length);
-    for (const [sid, objs] of by) for (const o of objs) expect(sectorAt(sectors, o.position)).toBe(sid);
+    for (const [sid, objs] of by)
+      for (const o of objs) expect(sectorAt(sectors, o.position)).toBe(sid);
   });
 
   it('un mundo sin sectores es un único sector con todo el mapa', () => {
@@ -171,7 +145,7 @@ describe('sin arte ausente en la ruta', () => {
     [1440, 900],
     [360, 640],
   ] as const) {
-    // El piloto automático de /juego hace cualquier viaje en ≤ 8 s; aquí, en 6.
+    // Un viaje en turbo llega en pocos segundos; aquí, en 6.
     it(`${w}×${h}: del puerto a la última isla en 6 s, con 0,4 s de carga por vista`, () => {
       const speed = Math.hypot(ultima.x - spawn.x, ultima.y - spawn.y) / 6;
       expect(sail(spawn, ultima, speed, 0.4, w, h, true)).toBe(0);
@@ -180,27 +154,6 @@ describe('sin arte ausente en la ruta', () => {
       expect(sail(spawn, ultima, 220, 1.5, w, h, false)).toBe(0);
     });
   }
-});
-
-describe('arte por sector', () => {
-  it('cada archivo de un objeto está en el sector de su casa', () => {
-    const plan = worldArtPlan(arcilla, art);
-    const by = objectsBySector(arcilla);
-    for (const [sid, objs] of by) {
-      const keys = new Set(plan.sectors.get(sid)!.map((f) => f.key));
-      for (const o of objs) for (const f of objectArtFiles(o, art)) expect(keys.has(f.key)).toBe(true);
-    }
-    expect(plan.coast.length).toBeGreaterThan(0);
-  });
-
-  it('antes de jugar en el puerto: el arte del puerto y las costas, no el de la última isla', () => {
-    const s = startArt(arcilla, art, spawn);
-    const keys = s.files.map((f) => f.key);
-    expect(keys.some((k) => k.includes('/puerto/'))).toBe(true);
-    expect(keys.some((k) => k.includes('/costa_sur/'))).toBe(true);
-    expect(keys.some((k) => k.includes('/ultima/'))).toBe(false);
-    expect(s.objects.every((o) => o.identity.id !== 'ultima')).toBe(true);
-  });
 });
 
 describe('calidad según el dispositivo', () => {

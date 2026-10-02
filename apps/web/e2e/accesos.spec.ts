@@ -2,7 +2,6 @@ import { expect, test, type Page } from '@playwright/test';
 import { PHOTOS_PLACE_ID, PHOTOS_SAIL_HREF } from '../lib/landing/access';
 import { INVITE_COPY } from '../lib/landing/invitations';
 import { SETTINGS_KEY } from '@boia/engine/ui';
-import { SHIP_POSITION_KEY } from '../lib/mundo/ship-position';
 
 /**
  * La landing que te lleva en barco (T44, T55): Fotos, Tienda y Tickets abren
@@ -10,27 +9,14 @@ import { SHIP_POSITION_KEY } from '../lib/mundo/ship-position';
  * (REQ-ENT-034, REQ-AVE-022); cabecera con Mi Carnet y sonido (REQ-ENT-029);
  * pie con la invitación al Carnet y al WhatsApp, e Instagram (REQ-ENT-032,
  * O13); la invitación al Carnet al cerrar la galería, con «Ahora no»
- * respetado (REQ-IDE-008/009); y la posición del barco tras recargar el 2D
- * (REQ-IDE-004). Corre en móvil 360×640 y en escritorio.
+ * respetado (REQ-IDE-008/009). La posición del barco tras recargar el mar
+ * (REQ-IDE-004) la prueba mar-paridad.spec.ts. Corre en móvil 360×640 y en
+ * escritorio.
  */
 
 test.describe.configure({ timeout: 120_000 });
 
 const LANDING = '/?intro=0';
-
-async function gameRunning(page: Page) {
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
-}
-
-/** Posición del barco (u) que publica /juego en `data-barco`. */
-async function shipAt(page: Page): Promise<{ x: number; y: number }> {
-  const v = await page.getByTestId('juego').getAttribute('data-barco');
-  const [x, y] = (v ?? 'NaN,NaN').split(',').map(Number);
-  return { x: x!, y: y! };
-}
-
-const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-  Math.hypot(a.x - b.x, a.y - b.y);
 
 /** El mar 3D (T55): la landing lleva allí con el barco navegando a su isla. */
 const mar = (page: Page) => page.locator('main.mar');
@@ -145,37 +131,4 @@ test('cabecera con Mi Carnet y sonido; pie con Carnet, WhatsApp e Instagram', as
   await expect(footer.getByRole('link', { name: /instagram/i })).toHaveCount(1);
   // Sin formulario de suscripción (REQ-ENT-032).
   await expect(footer.locator('form, input')).toHaveCount(0);
-});
-
-test('recargar /juego deja el barco donde estaba', async ({ page }) => {
-  await page.goto('/juego');
-  await gameRunning(page);
-  const start = await shipAt(page);
-  await page
-    .locator('canvas:visible')
-    .first()
-    .focus()
-    .catch(() => {});
-  await page.keyboard.down('ArrowUp');
-  await expect.poll(async () => dist(await shipAt(page), start)).toBeGreaterThan(70);
-  await page.keyboard.up('ArrowUp');
-  // Parado: la posición guardada es la de ahora.
-  await expect
-    .poll(async () => {
-      const a = await shipAt(page);
-      await page.waitForTimeout(400);
-      return dist(a, await shipAt(page));
-    })
-    .toBeLessThan(2);
-  const before = await shipAt(page);
-
-  await page.reload();
-  await gameRunning(page);
-  const saved = await page.evaluate(
-    (k) => JSON.parse(localStorage.getItem(k) ?? 'null'),
-    SHIP_POSITION_KEY,
-  );
-  expect(saved).not.toBeNull();
-  await expect.poll(async () => dist(await shipAt(page), before)).toBeLessThan(30);
-  expect(dist(await shipAt(page), start)).toBeGreaterThan(40);
 });

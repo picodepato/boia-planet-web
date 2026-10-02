@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_INTRO_CONFIG, validateIntroConfig } from './config';
+import { DEFAULT_PLANET_INTRO, validatePlanetIntro } from './planet';
 import {
   TITLE_MANIFEST_ID,
   frameForYaw,
@@ -20,8 +20,8 @@ const manifest = JSON.parse(
   ),
 ) as Record<string, unknown>;
 
-const TEXT = DEFAULT_INTRO_CONFIG.copy.title;
-const M = DEFAULT_INTRO_CONFIG.title;
+const TEXT = DEFAULT_PLANET_INTRO.copy.title;
+const M = DEFAULT_PLANET_INTRO.title;
 
 function sheet(): TitleSheet {
   const r = resolveTitleSheet(manifest, '/api/art', TEXT);
@@ -142,12 +142,12 @@ describe('movimiento del título 3D (T27)', () => {
   });
 
   it('la configuración valida el movimiento del título', () => {
-    const c = structuredClone(DEFAULT_INTRO_CONFIG) as unknown as {
+    const c = structuredClone(DEFAULT_PLANET_INTRO) as unknown as {
       title: { idle: { periodMs: number }; rise: { fadeShare: number } };
     };
     c.title.idle.periodMs = 10;
     c.title.rise.fadeShare = 0;
-    const r = validateIntroConfig(c);
+    const r = validatePlanetIntro(c);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toContain('title.idle.periodMs');
