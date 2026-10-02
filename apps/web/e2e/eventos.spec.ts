@@ -6,12 +6,13 @@ import { eventIslands } from '../lib/admin/world';
 import { EVENTOS_COPY, FOTOS_COPY } from '../lib/landing/eventos-copy';
 import { eventHref, galleryAnchor, photosHref } from '../lib/landing/eventos';
 import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { marSheet, openMar } from './mar-helpers';
 
 /**
  * Ficha de evento y «Fotos y eventos» (T42): `/eventos/<slug>` y `/fotos`
  * se abren directas, sin la entrada (REQ-ENT-011), y funcionan sin
  * JavaScript; la home enseña sólo la selección con «Ver todas»; y «Ver fotos
- * de la isla», desde el panel de la isla en el mar, abre `/fotos#<isla>`.
+ * de la isla», desde la ficha de la isla en el mar 3D, abre `/fotos#<isla>`.
  * Corre en móvil 360×640 y en escritorio.
  */
 
@@ -65,19 +66,15 @@ test('la home enseña sólo la selección de fotos y «Ver todas» lleva a /foto
 });
 
 test('«Ver fotos de la isla» abre /fotos en la galería de esa isla', async ({ page }) => {
-  await page.goto(`/juego?cerca=${island.id}`);
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  await openMar(page, `?ir=${island.id}`);
   await page
-    .locator('canvas:visible')
-    .first()
-    .focus()
+    .getByTestId('mar-entradas-saltar')
+    .click({ timeout: 5_000 })
     .catch(() => {});
-  const panel = page.getByTestId('panel-evento');
-  await page.keyboard.down('ArrowUp');
-  try {
-    await expect(panel).toBeVisible({ timeout: 25_000 });
-  } finally {
-    await page.keyboard.up('ArrowUp');
+  const panel = marSheet(page);
+  await expect(panel).toHaveAttribute('data-lugar', island.id, { timeout: 30_000 });
+  if ((await panel.getAttribute('data-expandida')) !== 'si') {
+    await panel.getByTestId('mar-ficha-mas').click();
   }
   const link = panel.getByTestId('ver-fotos-isla');
   await expect(link).toHaveAttribute('href', photosHref(island.id));

@@ -1,7 +1,7 @@
 /**
- * El mar sin Pixi ni DOM (mar 3D): el runtime de comportamientos del mundo y
- * la física del barco, para vistas que no son la de Pixi. Se importa como
- * `@boia/engine/headless`; así /mar no arrastra el motor 2D.
+ * El mar sin DOM (mar 3D): el runtime de comportamientos del mundo y la
+ * física del barco, para la vista three.js de /mar. Se importa como
+ * `@boia/engine/headless`.
  */
 export type { WorldEvent, WorldEventType } from './world/events';
 export {

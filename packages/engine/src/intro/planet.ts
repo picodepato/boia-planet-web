@@ -1,4 +1,12 @@
-import { EASINGS, type Easing, type Span, type TitleMotion, DEFAULT_INTRO_CONFIG } from './config';
+import {
+  DEFAULT_INTRO_COPY,
+  DEFAULT_TITLE_MOTION,
+  EASINGS,
+  type Easing,
+  type Span,
+  type TitleMotion,
+  titleMotionErrors,
+} from './config';
 import { EASING_FNS, clamp01, ramp, type Viewport } from './math';
 
 /**
@@ -126,7 +134,7 @@ export const DEFAULT_PLANET_INTRO: PlanetIntroConfig = {
   version: PLANET_INTRO_VERSION,
   id: 'entrada-planeta-muestra-v5',
   status: 'muestra',
-  copy: { ...DEFAULT_INTRO_CONFIG.copy },
+  copy: { ...DEFAULT_INTRO_COPY },
   loadBudgetMs: 9000,
   bootCapMs: 15000,
   loading: { showAfterMs: 250 },
@@ -160,7 +168,7 @@ export const DEFAULT_PLANET_INTRO: PlanetIntroConfig = {
       buttonY: 0.86,
     },
   ],
-  title: DEFAULT_INTRO_CONFIG.title,
+  title: DEFAULT_TITLE_MOTION,
 };
 
 export type PlanetConfigResult =
@@ -284,7 +292,7 @@ export function validatePlanetIntro(input: unknown): PlanetConfigResult {
     );
   } else errors.push('framings: lista no vacía');
 
-  need(isObj(c.title), 'title', 'movimiento del título');
+  errors.push(...titleMotionErrors(c.title));
 
   return errors.length > 0
     ? { ok: false, error: errors.join('\n') }

@@ -15,11 +15,14 @@ const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ART = path.resolve(WEB, '../../art');
 const NFT = path.join(WEB, '.next/server/app/api/art/[...path]/route.js.nft.json');
 
+/** Ruta relativa a `art/` con `/`, también en Windows (donde `path.relative` usa `\`). */
+const fromArt = (p: string) => path.relative(ART, p).split(path.sep).join('/');
+
 /** Todos los archivos de `art/`, relativos a `art/`. */
 function artFiles(dir = ART): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
-    return e.isDirectory() ? artFiles(p) : [path.relative(ART, p)];
+    return e.isDirectory() ? artFiles(p) : [fromArt(p)];
   });
 }
 
@@ -35,7 +38,7 @@ test('la función /api/art lleva todo art/ en su traza', () => {
     nft.files
       .map((f) => path.resolve(path.dirname(NFT), f))
       .filter((f) => f.startsWith(ART + path.sep))
-      .map((f) => path.relative(ART, f)),
+      .map(fromArt),
   );
   for (const prefix of REQUIRED) {
     expect(

@@ -10,7 +10,7 @@ import { LEGAL_DOCS } from '../lib/legal/docs';
  */
 
 test('cada respuesta lleva la CSP y las cabeceras de seguridad', async ({ request }) => {
-  for (const path of ['/', '/juego', '/mar', '/admin']) {
+  for (const path of ['/', '/mar', '/admin']) {
     const res = await request.get(path);
     expect(res.status(), path).toBe(200);
     const h = res.headers();
@@ -20,6 +20,12 @@ test('cada respuesta lleva la CSP y las cabeceras de seguridad', async ({ reques
     expect(h['x-frame-options'], path).toBe('SAMEORIGIN');
     expect(h['referrer-policy'], path).toBe('strict-origin-when-cross-origin');
   }
+});
+
+test('/juego (el mundo 2D, D-25) redirige al planeta 3D con su consulta', async ({ request }) => {
+  const res = await request.get('/juego?ir=puerto&menu=carnet', { maxRedirects: 0 });
+  expect(res.status()).toBe(307);
+  expect(res.headers()['location']).toBe('/mar?ir=puerto&menu=carnet');
 });
 
 test('páginas legales: aviso de muestra arriba y sus textos; «Condiciones» lleva al aviso legal', async ({

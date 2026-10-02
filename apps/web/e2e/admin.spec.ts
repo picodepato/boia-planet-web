@@ -1,10 +1,11 @@
-import { minimapProjection } from '@boia/engine/ui';
 import { SAMPLE_BOTTLES, emptyDoc } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { ADMIN_COPY } from '../lib/admin/copy';
 import { eventIslands } from '../lib/admin/world';
+import { marWorld } from '../app/mar/engine/compact';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { marSheet, openMar, shipAt } from './mar-helpers';
 
 /**
  * «Probar admin» (T26, D-20, REQ-ADM-039): desde el pie de la landing se abre
@@ -153,46 +154,31 @@ test('Probar admin: los cambios se ven en la landing y en el mar', async ({ page
   expect(blocks.indexOf(artistsBlock)).toBeGreaterThanOrEqual(0);
   expect(blocks.indexOf(artistsBlock)).toBeLessThan(blocks.indexOf(upcomingBlock));
 
-  // 7. El mar: la brújula lleva a la isla del evento nuevo, en su sitio nuevo...
-  await page.goto(`/juego?evento=${EVENT_ID}`);
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
-  await page.getByTestId('brujula').click();
-  const expanded = page.getByTestId('minimapa-ampliado');
-  const svg = expanded.locator('svg').first();
-  const selected = expanded.locator('circle[stroke-dasharray="4 3"]');
-  await expect(selected).toHaveCount(1);
-  const [w, h, cx, cy] = await Promise.all([
-    svg.getAttribute('width'),
-    svg.getAttribute('height'),
-    selected.getAttribute('cx'),
-    selected.getAttribute('cy'),
-  ]);
-  const proj = minimapProjection(map.bounds, Number(w), Number(h), 12);
-  const want = proj.project(moved);
-  const old = proj.project(island.position);
-  expect(Math.abs(Number(cx) - want.x)).toBeLessThan(1);
-  expect(Math.abs(Number(cy) - want.y)).toBeLessThan(1);
-  expect(Math.abs(Number(cx) - old.x)).toBeGreaterThan(1);
-  await page.keyboard.press('Escape');
-
-  // ...y al llegar, su panel abre el evento creado en el Admin.
-  await page.goto(`/juego?cerca=${island.id}`);
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  // 7. El mar 3D: `?evento=` navega a la isla del evento nuevo, en su sitio
+  //    nuevo, y su ficha abre el evento creado en el Admin.
+  await openMar(page, `?evento=${EVENT_ID}`);
   await page
-    .locator('canvas:visible')
-    .first()
-    .focus()
+    .getByTestId('mar-entradas-saltar')
+    .click({ timeout: 5_000 })
     .catch(() => {});
-  const panel = page.getByTestId('panel-evento');
-  await page.keyboard.down('ArrowUp');
-  try {
-    await expect(panel).toBeVisible({ timeout: 25_000 });
-  } finally {
-    await page.keyboard.up('ArrowUp');
-  }
-  await expect(panel.getByRole('heading', { name: EVENT_NAME })).toBeVisible();
-
-  // 8. El Menú de a bordo también lleva al Admin.
-  await page.getByTestId('menu-ancla').click();
-  await expect(page.getByTestId('menu-probar-admin')).toHaveAttribute('href', '/admin');
+  const sheet = marSheet(page);
+  await expect(sheet).toHaveAttribute('data-lugar', island.id, { timeout: 30_000 });
+  await expect(sheet.getByRole('heading', { name: EVENT_NAME })).toBeVisible();
+  // El barco llegó a la isla movida, no a donde estaba (en el mundo compacto del mar).
+  const at = (pos: { x: number; y: number }) => {
+    const shared = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
+    const config = {
+      ...shared,
+      objects: shared.objects.map((o) =>
+        o.identity.id === island.id ? { ...o, position: { ...o.position, ...pos } } : o,
+      ),
+    };
+    return marWorld(config).objects.find((o) => o.identity.id === island.id)!.position;
+  };
+  const now = at(moved);
+  const before = at(island.position);
+  const ship = await shipAt(page);
+  expect(Math.hypot(ship.x - now.x, ship.y - now.y)).toBeLessThan(
+    Math.hypot(ship.x - before.x, ship.y - before.y),
+  );
 });

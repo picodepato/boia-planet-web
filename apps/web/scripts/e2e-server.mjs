@@ -22,8 +22,6 @@ const port = process.argv[2] ?? '3107';
 const cwd = join(dirname(fileURLToPath(import.meta.url)), '..');
 const next = createRequire(join(cwd, 'package.json')).resolve('next/dist/bin/next');
 
-// Atlas por sector (T47) antes del build, como `pnpm build`.
-spawnSync(process.execPath, ['scripts/atlas.mjs'], { cwd, stdio: 'inherit' });
 const build = spawnSync(process.execPath, [next, 'build'], { cwd, stdio: 'inherit' });
 if (build.status !== 0) process.exit(build.status ?? 1);
 

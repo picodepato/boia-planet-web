@@ -23,14 +23,14 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-PRO-001 | Dos caminos: Tickets y Explorar | L1 | HECHO | [test_estado.py](../../tools/spec/test_estado.py) | — |
 | REQ-PRO-002 | Comprar sin jugar ni registrarse | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-PRO-003 | Flujo comercial directo en 2 toques | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
-| REQ-PRO-004 | Flujo experiencial sin formularios | L1 | PARCIAL | [record-demo.spec.ts](../../apps/web/e2e/record-demo.spec.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
+| REQ-PRO-004 | Flujo experiencial sin formularios | L1 | PARCIAL | [demo.spec.ts](../../apps/web/e2e/demo.spec.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento (el recorrido grabado del 2D se borró con T62, D-25) |
 | REQ-PRO-005 | Juego como segunda vía de conversión | L1 | PARCIAL | [world-progress.test.ts](../../apps/web/lib/mundo/world-progress.test.ts) | Una prueba lo cubre en parte |
 | REQ-PRO-006 | Formato All Day BOIA o satélite | L1 | PARCIAL | [events.ts](../../packages/contracts/src/events.ts) | Construido; sin prueba que lo nombre |
 | REQ-PRO-007 | Satélites sin isla principal | L1 | HECHO | [access.test.ts](../../apps/web/lib/landing/access.test.ts) «la isla del evento destacado o, sin isla, la localización común (O7)» | — |
 | REQ-PRO-008 | Móvil táctil primero | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-PRO-009 | Más mundo, menos HUD | L1 | PARCIAL | [hud-layout.ts](../../packages/engine/src/ui/hud-layout.ts) | Construido; sin prueba que lo nombre |
 | REQ-PRO-010 | Sin modales que detengan la navegación | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-PRO-011 | Feedback con animación y sonido | L1 | HECHO | [feedback.test.ts](../../apps/web/lib/mundo/feedback.test.ts) | — |
+| REQ-PRO-011 | Feedback con animación y sonido | L1 | PARCIAL | [sound.test.ts](../../apps/web/lib/mundo/sound.test.ts) | T62 (D-25): la respuesta por comportamiento (sonido y animación declarados) era del 2D; /mar suena pero no anima según el comportamiento |
 | REQ-PRO-012 | Mecánicas que se entienden solas | L1 | FALTA | — | — |
 | REQ-PRO-013 | Curiosidad recompensada tras la misión | L1 | PARCIAL | [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | Una prueba lo cubre en parte |
 | REQ-PRO-014 | Identidad BOIA coherente | L1 | FALTA | — | pide revisión, medición o documento |
@@ -55,14 +55,14 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ENT-012 | Explorar sin reiniciar el mundo, desde el puerto | L1 | PARCIAL | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | T64: «Zarpar» se zambulle en el puerto del planeta (las islas de /mar) y entra en /mar sin recargar, con el barco en ese puerto; la escena de /mar es otra (no el mismo objeto) |
 | REQ-ENT-013 | La cinemática no concede nada | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
 | REQ-ENT-014 | Traspaso de cámara y cancelación limpia | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts); [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) | T64: el último fotograma de «Zarpar» es el velo del mar, igual a la pantalla de carga de /mar |
-| REQ-ENT-015 | Configuración de entrada versionada | L1 | HECHO | [config.test.ts](../../packages/engine/src/intro/config.test.ts) | — |
+| REQ-ENT-015 | Configuración de entrada versionada | L1 | HECHO | [planet.test.ts](../../packages/engine/src/intro/planet.test.ts) «rechaza con el campo que falla» | — |
 | REQ-ENT-016 | Entrada editable desde el Admin | L2 | L2 | — | — |
 | REQ-ENT-017 | HTML comercial sin motor ni JS | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
 | REQ-ENT-018 | Arranque en blanco investigado | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-ENT-019 | Controles libres al terminar | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) ««Saltar» cinco veces y Escape en la pausa: la misma landing (REQ-ENT-008, ENT 03)» | — |
 | REQ-ENT-020 | Entrada resistente a fallos | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «Atrás en la pausa: no repite la entrada ni duplica la escena (ENT 03)» | — |
 | REQ-ENT-021 | Revisión en dispositivos físicos | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-ENT-022 | Presupuestos de la entrada | L1 | PARCIAL | [sphere-probe.spec.ts](../../apps/web/e2e/sphere-probe.spec.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
+| REQ-ENT-022 | Presupuestos de la entrada | L1 | PARCIAL | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | Una prueba lo cubre en parte; pide medición en móvil (la sonda de la esfera 2D se borró con T62, D-25) |
 | REQ-ENT-023 | Storyboard y revisión visual | L1 | HECHO | [record.spec.ts](../../apps/web/e2e/record.spec.ts) | — |
 | REQ-ENT-024 | Hero dentro de la escena | L1 | PARCIAL | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts) | Una prueba lo cubre en parte |
 | REQ-ENT-025 | Primer encuadre de la landing | L1 | PARCIAL | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) | Una prueba lo cubre en parte |
@@ -84,15 +84,15 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-MUN-001 | Mundo 2D/2.5D; 3D sólo en `/mar` | L1 | PARCIAL | [page.tsx](../../apps/web/app/mar/page.tsx) | Construido; sin prueba que lo nombre |
 | REQ-MUN-002 | Motor, datos y arte separados | L1 | HECHO | [swap.test.ts](../../packages/engine/src/world/swap.test.ts) | — |
 | REQ-MUN-003 | Agua viva | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-MUN-004 | Estela reactiva | L1 | HECHO | [wake.test.ts](../../packages/engine/src/wake.test.ts) | — |
+| REQ-MUN-004 | Estela reactiva | L1 | PARCIAL | [effects.ts](../../apps/web/app/mar/engine/effects.ts) | Construido en /mar; sin prueba que lo nombre (la estela 2D y su prueba se borraron con T62, D-25) |
 | REQ-MUN-005 | Ciclo de día y noche | L2 | L2 | — | — |
 | REQ-MUN-006 | Joystick donde toca el dedo | L1 | PARCIAL | [controls.test.ts](../../packages/engine/src/input/controls.test.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
 | REQ-MUN-007 | Drift con segundo dedo | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-MUN-008 | Teclado de dos modos y drift en escritorio | L1 | HECHO | [controls.test.ts](../../packages/engine/src/input/controls.test.ts) | — |
-| REQ-MUN-009 | Física independiente de los FPS | L1 | HECHO | [loop.test.ts](../../packages/engine/src/loop.test.ts) «1 s con imágenes de 16 ms y de 33 ms da la misma posición (< 1 %)» | — |
+| REQ-MUN-009 | Física independiente de los FPS | L1 | PARCIAL | [mar3d.ts](../../apps/web/app/mar/engine/mar3d.ts) | /mar simula a paso fijo; sin prueba que lo nombre (el bucle 2D y su prueba se borraron con T62, D-25) |
 | REQ-MUN-010 | Sin aceleración bloqueada | L1 | HECHO | [controls.test.ts](../../packages/engine/src/input/controls.test.ts) «perder el dedo del joystick deja el acelerador a cero aunque siga el otro» | — |
 | REQ-MUN-011 | Costas, límite superior y zona no publicada en `/juego` | L1 | HECHO | [controller.test.ts](../../packages/engine/src/ship/controller.test.ts) «el borde superior está abierto y una corriente suave devuelve el barco» | — |
-| REQ-MUN-012 | Carga por sectores | L1 | HECHO | [sectores.spec.ts](../../apps/web/e2e/sectores.spec.ts); [sectors.test.ts](../../packages/engine/src/world/sectors.test.ts) | — |
+| REQ-MUN-012 | Carga por sectores | L1 | HECHO | [sectors.test.ts](../../packages/engine/src/world/sectors.test.ts) | — |
 | REQ-MUN-013 | Contrato de mapa | L1 | HECHO | [schema.test.ts](../../packages/world/src/schema.test.ts) «rechaza límites invertidos e IDs repetidos» | — |
 | REQ-MUN-014 | Misma geometría en editor y juego | L1 | HECHO | [minimap.test.ts](../../packages/engine/src/ui/minimap.test.ts) | — |
 | REQ-MUN-015 | Mapa progresivo | L1 | FALTA | — | pide revisión, medición o documento |
@@ -100,8 +100,8 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-MUN-017 | Rutas de 1 y 10 minutos | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-MUN-018 | Boceto del mapa de lanzamiento | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-MUN-019 | Tamaño del minimapa | L1 | HECHO | [hud-layout.test.ts](../../packages/engine/src/ui/hud-layout.test.ts) «96 px en móvil sin pasar del 22 % del ancho; 128 px en escritorio» | — |
-| REQ-MUN-020 | Minimapa ampliable | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «tocar el minimapa lo amplía; mantenerlo 500 ms y arrastrar lo mueve y se recuerda» | — |
-| REQ-MUN-021 | Minimapa reposicionable | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «tocar el minimapa lo amplía; mantenerlo 500 ms y arrastrar lo mueve y se recuerda» | — |
+| REQ-MUN-020 | Minimapa ampliable | L1 | HECHO | [mar-3d.spec.ts](../../apps/web/e2e/mar-3d.spec.ts) «el minimapa abre el mapa grande» | — |
+| REQ-MUN-021 | Minimapa reposicionable | L1 | PARCIAL | [minimap.tsx](../../apps/web/app/mar/minimap.tsx) | Construido en /mar; su prueba e2e era del 2D (borrada con T62, D-25); T65 arregla el arrastre y lo prueba |
 | REQ-MUN-022 | Brújula al objetivo | L1 | HECHO | [minimap.test.ts](../../packages/engine/src/ui/minimap.test.ts) «el barco descubre al entrar en el radio; la brújula va a lo más cercano sin descubrir» | — |
 | REQ-MUN-023 | Objeto = asset + comportamientos | L1 | PARCIAL | [swap.test.ts](../../packages/engine/src/world/swap.test.ts) | Una prueba lo cubre en parte |
 | REQ-MUN-024 | Anatomía de 9 partes | L1 | PARCIAL | [schema.test.ts](../../packages/world/src/schema.test.ts) | Una prueba lo cubre en parte |
@@ -110,36 +110,36 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-MUN-027 | Mecánica nueva una sola vez | L1 | HECHO | [schema.test.ts](../../packages/world/src/schema.test.ts) | — |
 | REQ-MUN-028 | Barco por slots | L1 | PARCIAL | [shop-model.test.ts](../../apps/web/lib/barco/shop-model.test.ts) | Una prueba lo cubre en parte |
 | REQ-MUN-029 | Barco y 3 skins en 8 direcciones | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-MUN-030 | Orientación correcta sin espejar | L1 | PARCIAL | [direction.test.ts](../../packages/engine/src/ship/direction.test.ts) | Una prueba lo cubre en parte; pide revisión, medición o documento |
+| REQ-MUN-030 | Orientación correcta sin espejar | L1 | PARCIAL | [ship-model.ts](../../apps/web/app/mar/engine/ship-model.ts) | En /mar el barco es un modelo 3D: no hay vistas que espejar; sin prueba que lo nombre (T62, D-25) |
 | REQ-MUN-031 | Manifiesto por recurso | L1 | HECHO | [manifest.test.ts](../../packages/world/src/manifest.test.ts) «rechaza un manifiesto sin anclajes de alguna dirección» | `python3 tools/blender/check.py` corre con `pnpm test` (T49) |
 | REQ-MUN-032 | Sprites reproducibles desde Blender | L1 | PARCIAL | [render.py](../../tools/blender/render.py) | Construido; sin prueba que lo nombre |
 | REQ-MUN-033 | Revisión de skins y sustitución | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-MUN-034 | Formatos de assets | L1 | PARCIAL | [check.py](../../tools/blender/check.py) | Construido; sin prueba que lo nombre |
 | REQ-MUN-035 | Un mapa compartido, una skin por mundo | L1 | HECHO | [worlds.test.ts](../../packages/world/src/worlds/worlds.test.ts) «sale con 1 si falta una skin o si una skin nombra un lugar desconocido» | — |
 | REQ-MUN-036 | Nombres comunes y propios por mundo | L1 | HECHO | [worlds.test.ts](../../packages/world/src/worlds/worlds.test.ts) «renombrar con alcance `world` cambia sólo ese mundo» | — |
-| REQ-MUN-037 | Arcilla y Acuarela, con cambio de mundo | L1 | HECHO | [agujero-negro.spec.ts](../../apps/web/e2e/agujero-negro.spec.ts) ««Mundos»: el mundo cae al agujero negro y vuelve con cada lugar en su sitio» | — |
+| REQ-MUN-037 | Arcilla y Acuarela, con cambio de mundo | L1 | HECHO | [mar-paridad.spec.ts](../../apps/web/e2e/mar-paridad.spec.ts) «: el mar cae al agujero negro y vuelve con el barco en su sitio» | — |
 | REQ-MUN-038 | `/mar`: planeta de agua con cielo y estrellas | L1 | HECHO | [mar-3d.spec.ts](../../apps/web/e2e/mar-3d.spec.ts) | — |
-| REQ-MUN-039 | Cambio de mundo por agujero negro | L1 | HECHO | [agujero-negro.spec.ts](../../apps/web/e2e/agujero-negro.spec.ts) ««Mundos»: el mundo cae al agujero negro y vuelve con cada lugar en su sitio» | — |
+| REQ-MUN-039 | Cambio de mundo por agujero negro | L1 | HECHO | [mar-paridad.spec.ts](../../apps/web/e2e/mar-paridad.spec.ts) «: el mar cae al agujero negro y vuelve con el barco en su sitio»; [agujero-negro.spec.ts](../../apps/web/e2e/agujero-negro.spec.ts) | — |
 | REQ-AVE-001 | Primera boia en el puerto, tras el spawn | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-AVE-002 | Bocadillos legibles, con cerrar y salto | L1 | HECHO | [mar-3d.spec.ts](../../apps/web/e2e/mar-3d.spec.ts); [notifications.test.ts](../../packages/engine/src/ui/notifications.test.ts) | — |
 | REQ-AVE-003 | Guion del tutorial | L1 | PARCIAL | [sample-world.ts](../../packages/world/src/sample-world.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-004 | Pulsos del ancla y del minimapa | L1 | HECHO | [sample-world.test.ts](../../packages/world/src/sample-world.test.ts) | — |
-| REQ-AVE-005 | Boia Fiestera entre cocodrilos | L1 | HECHO | [fiestera.spec.ts](../../apps/web/e2e/fiestera.spec.ts); [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
+| REQ-AVE-005 | Boia Fiestera entre cocodrilos | L1 | HECHO | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) «rescatar a la Fiestera y dejarla en la última isla»; [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
 | REQ-AVE-006 | Rescate y aviso de tripulante | L1 | HECHO | [mission.test.ts](../../apps/web/lib/mundo/mission.test.ts) | — |
-| REQ-AVE-007 | Boia Fiestera visible a bordo | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-007 | Boia Fiestera visible a bordo | L1 | PARCIAL | [mar-client.tsx](../../apps/web/app/mar/mar-client.tsx) | Construido en /mar; sin prueba que lo nombre |
 | REQ-AVE-008 | Entrega en la última isla | L1 | PARCIAL | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) «rescatar a la Fiestera y dejarla en la última isla: su código vale en la compra y el barco exclusivo es tuyo»; [guide.test.ts](../../apps/web/lib/mundo/guide.test.ts) «entregarla da su código de entradas, una sola vez» | T59: la entrega da también su código de entradas y el barco exclusivo; falta la llegada por 2 lados en /mar |
-| REQ-AVE-009 | Mundo abierto y desvíos | L1 | PARCIAL | [fiestera.spec.ts](../../apps/web/e2e/fiestera.spec.ts) | Una prueba lo cubre en parte |
+| REQ-AVE-009 | Mundo abierto y desvíos | L1 | PARCIAL | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) | Una prueba lo cubre en parte |
 | REQ-AVE-010 | Destino por ID de lugar y de temporada | L1 | HECHO | [community.test.ts](../../apps/web/lib/admin/community.test.ts); [rescue.test.ts](../../packages/engine/src/mission/rescue.test.ts) | — |
 | REQ-AVE-011 | Cambio de destino auditado | L1 | HECHO | [world-switch.test.ts](../../apps/web/lib/mundo/world-switch.test.ts); [community.test.ts](../../apps/web/lib/admin/community.test.ts) | — |
 | REQ-AVE-012 | Islas por radio amplio | L1 | HECHO | [sample-world.test.ts](../../packages/world/src/sample-world.test.ts) «la isla de evento se activa con un radio amplio: más del doble de su costa» | — |
 | REQ-AVE-013 | Primera llegada y visitas | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts) | — |
 | REQ-AVE-014 | Recuerdos y próximos eventos en la isla | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-AVE-015 | Secretos insinuados | L1 | HECHO | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) «un secreto sin código sigue escondido y premia al encontrarlo»; [guide.test.ts](../../apps/web/lib/mundo/guide.test.ts) «los secretos sin código no se señalan y siguen ocultos, con su premio» | — |
-| REQ-AVE-016 | Restos regenerables | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-016 | Restos regenerables | L1 | PARCIAL | [mar-client.tsx](../../apps/web/app/mar/mar-client.tsx) | Construido en /mar; sin prueba que lo nombre |
 | REQ-AVE-017 | Cofres fugaces | L1 | PARCIAL | [map.ts](../../packages/world/src/worlds/arcilla/map.ts) | Construido; sin prueba que lo nombre |
 | REQ-AVE-018 | Delfín guía | L1 | HECHO | [encounters.test.ts](../../apps/web/lib/mundo/encounters.test.ts) | — |
 | REQ-AVE-019 | Remolino | L1 | PARCIAL | [encounters.ts](../../apps/web/lib/mundo/encounters.ts) | Construido; sin prueba que lo nombre |
-| REQ-AVE-020 | Náufrago con descuento | L1 | HECHO | [mundo-arcilla.spec.ts](../../apps/web/e2e/mundo-arcilla.spec.ts) «náufrago: pide que lo lleven y deja su código de descuento» | — |
+| REQ-AVE-020 | Náufrago con descuento | L1 | HECHO | [mar-paridad.spec.ts](../../apps/web/e2e/mar-paridad.spec.ts) «el náufrago da su código»; [descuentos.spec.ts](../../apps/web/e2e/descuentos.spec.ts) | — |
 | REQ-AVE-021 | Descuentos de tienda en restos | L1 | PARCIAL | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts) | T59: la muestra ya no esconde códigos en los restos (el mundo tiene 3: náufrago, ánfora y Fiestera); el Admin puede esconder uno de tienda (`hiddenAt`) |
 | REQ-AVE-022 | Puerto de Fotos | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-AVE-023 | Boia de WhatsApp | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
@@ -163,20 +163,20 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-001 | Todo sin cuenta | L1 | HECHO | [tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts) «landing → compra de prueba → Mi Carnet; isla → compra de prueba → los dos sellos» | — |
 | REQ-IDE-002 | OTP de 6 dígitos y enlace mágico | L1 | final | — | Acceso por correo (D-20) |
 | REQ-IDE-003 | Vuelta al contexto tras verificar | L1 | final | — | Acceso por correo (D-20) |
-| REQ-IDE-004 | Progreso local del invitado | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [mar-paridad.spec.ts](../../apps/web/e2e/mar-paridad.spec.ts) | — |
+| REQ-IDE-004 | Progreso local del invitado | L1 | HECHO | [mar-paridad.spec.ts](../../apps/web/e2e/mar-paridad.spec.ts) | — |
 | REQ-IDE-005 | Identidad anónima de servidor | L1 | final | — | Identidad de servidor (D-20) |
 | REQ-IDE-006 | Fusión idempotente | L1 | final | — | Fusión del invitado (D-20) |
 | REQ-IDE-007 | Límite del progreso local explicado | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts) «Fotos desde la landing lleva el barco al Puerto de Fotos y abre la galería» | — |
 | REQ-IDE-008 | Invitaciones en 3 contextos | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [invitations.test.ts](../../apps/web/lib/landing/invitations.test.ts) | — |
 | REQ-IDE-009 | Ritmo de las invitaciones | L1 | HECHO | [invitations.test.ts](../../apps/web/lib/landing/invitations.test.ts) | — |
 | REQ-IDE-010 | Carnet creado al registrarse | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) | — |
-| REQ-IDE-011 | Mi Carnet en el menú | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) «Carnet → botella → recargar y encontrarla → leer una de muestra → VER SU CARNET» | — |
+| REQ-IDE-011 | Mi Carnet en el menú | L1 | HECHO | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «abre Mi Carnet en el mar: crear, ver y editar sin salir»; [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) | — |
 | REQ-IDE-012 | Identidad musical, no estatus | L1 | PARCIAL | [progress.ts](../../packages/store/src/sample/progress.ts) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |
 | REQ-IDE-013 | Aviso de campos públicos | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) | — |
 | REQ-IDE-014 | Las 5 preguntas textuales | L1 | HECHO | [schema.test.ts](../../packages/db/src/schema.test.ts); [carnet.test.ts](../../packages/store/src/carnet.test.ts) | — |
 | REQ-IDE-015 | Pregunta pequeña, respuesta grande | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts) «el Carnet enseña cada respuesta con su pregunta textual, en el orden de las preguntas» | — |
 | REQ-IDE-016 | Preguntas editables con versión | L2 | L2 | — | — |
-| REQ-IDE-017 | Carnets desde ranking y botellas | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts) «el ranking local enseña al visitante entre los miembros de muestra» | — |
+| REQ-IDE-017 | Carnets desde ranking y botellas | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) «leer una botella de muestra → VER SU CARNET»; [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) «ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los miembros de muestra» | — |
 | REQ-IDE-018 | Perfil público de artista | L2 | L2 | — | — |
 | REQ-IDE-019 | Sin artistas vistos ni valoraciones | L1 | PARCIAL | [carnet-card.tsx](../../apps/web/lib/mundo/carnet/carnet-card.tsx) | Construido; sin prueba que lo nombre |
 | REQ-IDE-020 | Miembro, bollero y tripulación | L1 | FALTA | — | — |
@@ -189,14 +189,14 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-027 | Puntos y monedas separados | L1 | HECHO | [ledger.test.ts](../../packages/store/src/ledger.test.ts) «puntos y monedas van separados: gastar monedas no toca los puntos» | — |
 | REQ-IDE-028 | Rangos lúdicos | L1 | PARCIAL | [content.ts](../../packages/store/src/content.ts) | Construido; sin prueba que lo nombre |
 | REQ-IDE-029 | Economía ajustable desde el Admin | L1 | PARCIAL | [achievements.tsx](../../apps/web/app/admin/sections/achievements.tsx) | Construido; sin prueba que lo nombre |
-| REQ-IDE-030 | Color, barcos y cosméticos | L1 | HECHO | [demo.spec.ts](../../apps/web/e2e/demo.spec.ts) ««Barco»: otro barco de base cambia el barco al momento y sobrevive a recargar; lo bloqueado no se pone» | — |
+| REQ-IDE-030 | Color, barcos y cosméticos | L1 | HECHO | [tienda.spec.ts](../../apps/web/e2e/tienda.spec.ts) «/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar»; [demo.spec.ts](../../apps/web/e2e/demo.spec.ts) | — |
 | REQ-IDE-031 | Barcos y cosméticos por monedas, puntos o logros | L1 | HECHO | [economy.test.ts](../../packages/store/src/economy.test.ts) «el barco por puntos se desbloquea al llegar al umbral sin gastar los puntos» | — |
 | REQ-IDE-032 | Cosméticos sin efecto en la física | L1 | HECHO | [physics.test.ts](../../apps/web/lib/barco/physics.test.ts) | — |
-| REQ-IDE-033 | Barco guardado | L1 | HECHO | [demo.spec.ts](../../apps/web/e2e/demo.spec.ts) ««Barco»: otro barco de base cambia el barco al momento y sobrevive a recargar; lo bloqueado no se pone» | — |
-| REQ-IDE-034 | Menú de a bordo | L1 | HECHO | [hud.test.ts](../../apps/web/lib/mundo/hud.test.ts) | — |
+| REQ-IDE-033 | Barco guardado | L1 | HECHO | [tienda.spec.ts](../../apps/web/e2e/tienda.spec.ts) «/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar» | — |
+| REQ-IDE-034 | Menú de a bordo | L1 | PARCIAL | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) | El Menú de a bordo 2D (hud.test.ts) ya no se monta desde T62 (D-25); el menú de /mar lo rehace T65 |
 | REQ-IDE-035 | Welcome Aboard consultable | L1 | HECHO | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Controles y Welcome Aboard se consultan desde el Menú» | — |
 | REQ-IDE-036 | Controles | L1 | HECHO | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Controles y Welcome Aboard se consultan desde el Menú» | — |
-| REQ-IDE-037 | Música y efectos por separado | L1 | HECHO | [juego-hud.spec.ts](../../apps/web/e2e/juego-hud.spec.ts) «Menú de a bordo: siete iconos, separación y modo de teclado guardado»; [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Ajustes: la sensibilidad del giro la lee el motor; música, efectos e idioma se guardan» | — |
+| REQ-IDE-037 | Música y efectos por separado | L1 | HECHO | [mar-a-bordo.spec.ts](../../apps/web/e2e/mar-a-bordo.spec.ts) «Ajustes: la sensibilidad del giro la lee el motor; música, efectos e idioma se guardan» | — |
 | REQ-IDE-038 | Ranking de puntos | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts) «ordena por puntos, con el visitante siempre dentro y su puesto» | — |
 | REQ-IDE-039 | Nada competitivo desde el cliente | L1 | final | — | Validación en servidor (D-20) |
 | REQ-IDE-040 | Una botella de 140 caracteres | L1 | HECHO | [carnet.test.ts](../../apps/web/lib/mundo/carnet/carnet.test.ts); [sea.test.ts](../../packages/engine/src/bottles/sea.test.ts); en /mar, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [bottles.test.ts](../../apps/web/app/mar/bottles.test.ts) | — |
@@ -212,7 +212,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-IDE-050 | Exportar y borrar desde la web | L2 | L2 | — | — |
 | REQ-IDE-051 | Versión de prueba: invitado con apodo y botella propia | L1 | HECHO | [carnet.spec.ts](../../apps/web/e2e/carnet.spec.ts) | — |
 | REQ-IDE-052 | Premio según el logro | L1 | HECHO | [achievements.test.ts](../../packages/store/src/achievements.test.ts) «monedas y puntos: a los saldos del libro» | — |
-| REQ-IDE-053 | Versión de prueba: ranking local | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts); [community.test.ts](../../packages/store/src/community.test.ts); en /mar con la pestaña Circuito, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [ranking-circuit.test.ts](../../apps/web/lib/mundo/ranking-circuit.test.ts) | — |
+| REQ-IDE-053 | Versión de prueba: ranking local | L1 | HECHO | [community.test.ts](../../packages/store/src/community.test.ts); en /mar, [mar-botellas.spec.ts](../../apps/web/e2e/mar-botellas.spec.ts) y [ranking-circuit.test.ts](../../apps/web/lib/mundo/ranking-circuit.test.ts) | — |
 | REQ-COM-001 | Campos del evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-COM-002 | Evento e isla separados | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
 | REQ-COM-003 | Siete estados de evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
@@ -302,12 +302,12 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ARQ-011 | Identidad pública separada | L1 | final | — | Identidad pública en servidor (D-20) |
 | REQ-ARQ-012 | Seguridad web y secretos | L1 | PARCIAL | [entrega.spec.ts](../../apps/web/e2e/entrega.spec.ts); [security-headers.test.ts](../../apps/web/lib/security-headers.test.ts) | CSP y cabeceras de seguridad en next.config (T49; sin `unsafe-eval` en producción: el motor importa `pixi.js/unsafe-eval`); límites, origen y repetición llegan con el servidor (D-20) |
 | REQ-ARQ-013 | Conservación de datos y copias | L1 | final | — | Copias en servidor (D-20) |
-| REQ-ARQ-014 | Presupuesto de 1 MB y 5 MB | L1 | HECHO | [sectores.spec.ts](../../apps/web/e2e/sectores.spec.ts); [world-budget.test.ts](../../apps/web/scripts/world-budget.test.ts) | — |
+| REQ-ARQ-014 | Presupuesto de 1 MB y 5 MB | L1 | PARCIAL | [landing-budget.mjs](../../apps/web/scripts/landing-budget.mjs) | La landing se mide en cada build; el presupuesto de 5 MB del primer sector era del 2D (atlas, borrados con T62, D-25) y /mar aún no tiene el suyo |
 | REQ-ARQ-015 | 30 y 60 FPS | L1 | PARCIAL | [sectors.ts](../../packages/engine/src/world/sectors.ts) | Construido; sin prueba que lo nombre; pide revisión, medición o documento |
 | REQ-ARQ-016 | Matriz de accesibilidad y fallos | L1 | PARCIAL | [matriz-dispositivos.md](../../docs/matriz-dispositivos.md) | Matriz con los 16 casos: 7 con e2e, 5 parciales, 4 a mano (T49) |
 | REQ-ARQ-017 | Pruebas en dispositivos físicos | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-ARQ-018 | Suite automática desde el principio | L1 | FALTA | — | — |
-| REQ-ARQ-019 | Analítica del embudo | L1 | PARCIAL | [game-canvas.tsx](../../apps/web/app/juego/game-canvas.tsx) | Construido; sin prueba que lo nombre |
+| REQ-ARQ-019 | Analítica del embudo | L1 | PARCIAL | [descuentos.spec.ts](../../apps/web/e2e/descuentos.spec.ts) | Una prueba mide en /mar el clic de compra en la isla y la compra con descuento; /mar no cuenta `discount_found` (el 2D sí, borrado con T62, D-25) |
 | REQ-ARQ-020 | i18n por claves, contenido en español | L1 | HECHO | [zonas.test.ts](../../apps/web/lib/i18n/zonas.test.ts) | — |
 | REQ-ARQ-021 | Inglés | L2 | L2 | — | — |
 | REQ-ARQ-022 | Entornos y despliegue | L1 | final | — | Producción y dominio de BOIA (D-20) |

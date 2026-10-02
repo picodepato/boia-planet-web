@@ -1,4 +1,4 @@
-import { SAMPLE_ACHIEVEMENTS, SAMPLE_COSMETICS } from '@boia/store';
+import { SAMPLE_ACHIEVEMENTS } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -8,7 +8,7 @@ import { ACHIEVEMENT_READY_BODY } from '../lib/mundo/achievements';
 import { REWARD_MS } from '../lib/logros/model';
 
 /**
- * Logros que se reclaman (T37, D-22 punto 5), en /mar y en /juego: al
+ * Logros que se reclaman (T37, D-22 punto 5), en el mar 3D: al
  * completar uno sale el aviso «¡Logro completado! Reclama tu premio» y el
  * icono de logros lleva un número; en el panel, «Reclamar» sube el saldo una
  * sola vez y, tras recargar, sigue reclamado. En /mar el icono no pisa ni el
@@ -32,9 +32,6 @@ const talkingBoia = world.objects.find(
 const firstBuoy = SAMPLE_ACHIEVEMENTS.find(
   (a) => a.trigger === 'find_buoy' && (a.triggerParams as { count?: number }).count === 1,
 )!;
-// Un barco que se gana con un logro, y ese logro.
-const lockedShip = SAMPLE_COSMETICS.find((c) => c.slot === 'ship' && c.priceCoins === null)!;
-const shipAchievement = SAMPLE_ACHIEVEMENTS.find((a) => a.cosmeticKey === lockedShip.id)!;
 
 async function openMar(page: Page, query = '') {
   const errors: string[] = [];
@@ -43,11 +40,6 @@ async function openMar(page: Page, query = '') {
   await expect(page.getByTestId('mar-canvas')).toBeVisible();
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
   return errors;
-}
-
-async function openGame(page: Page) {
-  await page.goto('/juego');
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
 }
 
 /** Rumbo norte hasta que salga el aviso del logro. */
@@ -179,51 +171,6 @@ test('/mar: completar un logro, su número en el icono, «Reclamar» una vez y r
   expect(errors).toEqual([]);
 });
 
-test('/juego: completar un logro, su número en el ancla, «Reclamar» una vez y recargar', async ({
-  page,
-}) => {
-  await openGame(page);
-  const anchor = page.getByTestId('menu-ancla');
-  const badge = page.getByTestId('menu-ancla-contador');
-  await expect(badge).toHaveCount(0);
-
-  const notice = page.locator('[data-testid="aviso"][data-kind="achievement"]');
-  await sailUntilAchievement(page, notice);
-  await expect(badge).toBeVisible();
-  const ready = Number(await anchor.getAttribute('data-por-reclamar'));
-  expect(ready).toBeGreaterThanOrEqual(1);
-  await expect(badge).toHaveText(String(ready));
-
-  await anchor.click();
-  const menu = page.getByTestId('menu');
-  await expect(menu.getByTestId('menu-logros-contador')).toHaveText(String(ready));
-  await menu.getByRole('tab', { name: 'Logros' }).click();
-  await expect(menu.getByTestId('logros-cabecera')).toContainText(
-    `${ready} de ${SAMPLE_ACHIEVEMENTS.length} logros`,
-  );
-  // Los ocultos, como «???».
-  await expect(menu.locator('[data-oculto="si"]').first()).toContainText('???');
-  const saldos = page.getByTestId('saldos');
-  const points = async () => Number(await saldos.getAttribute('data-points'));
-  const after = await claimOnce(page, menu, points);
-  await expect(anchor).toHaveAttribute('data-por-reclamar', String(ready - 1));
-
-  // El selector de barco enseña el barco que se gana con un logro, con candado.
-  await menu.getByRole('tab', { name: 'Barco' }).click();
-  const style = lockedShip.assetKey!;
-  await expect(menu.getByTestId(`barco-estilo-${style}`)).toHaveAttribute('data-bloqueado', 'si');
-  await expect(menu.getByTestId(`barco-candado-${style}`)).toContainText(shipAchievement.title);
-  await page.keyboard.press('Escape');
-
-  await page.reload();
-  await expect(page.getByTestId('hud')).toContainText(/\d+ fps/, { timeout: 30_000 });
-  await anchor.click();
-  await menu.getByRole('tab', { name: 'Logros' }).click();
-  await expect(menu.getByTestId(`logro-${firstBuoy.id}`)).toHaveAttribute('data-estado', 'claimed');
-  await expect(menu.getByTestId(`logro-reclamar-${firstBuoy.id}`)).toHaveCount(0);
-  expect(await points()).toBe(after);
-});
-
 test.describe('capturas del informe (390×844)', () => {
   test.use({ viewport: { width: 390, height: 844 } });
   test('la animación de «Reclamar» en /mar', async ({ page }, info) => {
@@ -248,18 +195,5 @@ test.describe('capturas del informe (390×844)', () => {
     await expect(page.getByTestId('logro-premio')).toBeVisible();
     await page.waitForTimeout(700);
     await shot(page, info, 'reclamar');
-  });
-
-  test('la sección «Logros» de /juego', async ({ page }, info) => {
-    test.skip(!process.env.LOGROS_SHOTS || info.project.name !== 'mobile', 'sólo con LOGROS_SHOTS');
-    await openGame(page);
-    await sailUntilAchievement(
-      page,
-      page.locator('[data-testid="aviso"][data-kind="achievement"]'),
-    );
-    await page.getByTestId('menu-ancla').click();
-    await page.getByTestId('menu').getByRole('tab', { name: 'Logros' }).click();
-    await expect(page.getByTestId('logros-cabecera')).toBeVisible();
-    await shot(page, info, 'logros-juego');
   });
 });
