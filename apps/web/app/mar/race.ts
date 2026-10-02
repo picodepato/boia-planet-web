@@ -45,6 +45,16 @@ export function lapTargets(world: WorldConfig, spec: CircuitSpec): (Point & { id
 }
 
 /**
+ * La carretera de una vuelta (T76): la salida, cada boia por orden y otra
+ * vez la salida. Las boyitas de los lados y el «te saliste» salen de ella.
+ */
+export function roadPath(world: WorldConfig, spec: CircuitSpec): Point[] {
+  const start = startPose(world, spec);
+  if (!start) return [];
+  return [{ x: start.x, y: start.y }, ...lapTargets(world, spec).map(({ x, y }) => ({ x, y }))];
+}
+
+/**
  * Dónde espera el barco la cuenta atrás: en la salida, mirando a la primera
  * boia (el semáforo manda; el barco no se mueve hasta «¡Ya!»).
  */

@@ -107,6 +107,11 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
         press(keys);
       };
       const until = performance.now() + ms;
+      // Si se acaba sin meta, por qué: los avisos a la vista y dónde estaba.
+      const why = () =>
+        [...document.querySelectorAll('[data-testid="mar-aviso"]')]
+          .map((n) => n.textContent)
+          .join(' / ') + ` @ ${main.dataset.barco ?? ''}`;
       let skipped = false;
       try {
         while (performance.now() < until) {
@@ -121,7 +126,7 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
             steer(start);
           } else if (goal === 'race') {
             if (q('mar-carrera-final')) return 'ok';
-            if (!chip) return 'sin carrera';
+            if (!chip) return `sin carrera: ${why()}`;
             const buoy = Number(chip.dataset.boia);
             steer(buoy === 0 ? start : targets[buoy - 1]!);
           } else {
@@ -218,9 +223,7 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   await expect(page.getByTestId('mar-carrera-record')).toBeVisible();
   await expect(crono(page)).toHaveCount(0);
   // Contra los demás (la tripulación de muestra) y contra ti (tu récord, que es esta carrera).
-  await expect(page.getByTestId('mar-carrera-puesto')).toContainText(
-    String(timedCrew.length + 1),
-  );
+  await expect(page.getByTestId('mar-carrera-puesto')).toContainText(String(timedCrew.length + 1));
   const table = page.getByTestId('mar-carrera-ranking');
   for (const c of timedCrew) await expect(table).toContainText(c.nickname);
   await expect(table.locator('li')).toHaveCount(timedCrew.length + 1);
@@ -247,5 +250,80 @@ test('saltarse una boia no cuenta la vuelta: el aviso dice cuál falta', async (
   expect(await pilot(page, 'skip', 90_000)).toBe('ok');
   await expect(crono(page)).toHaveAttribute('data-vuelta', '1');
   await expect(crono(page)).toHaveAttribute('data-boia', '2');
+  expect(errors).toEqual([]);
+});
+
+/**
+ * Fuera de la carretera (T76), con el piloto dentro de la página: hacia la
+ * boia 1 hasta `y` < 100 y, desde ahí, `rounds` veces a la izquierda (oeste)
+ * hasta el aviso y de vuelta a la derecha hasta que se apaga. Devuelve
+ * cuántas vueltas acabó con la carrera viva, o por qué paró.
+ */
+async function inAndOut(page: Page, rounds: number): Promise<string> {
+  return page.evaluate(async (rounds) => {
+    const main = document.querySelector<HTMLElement>('main.mar')!;
+    const q = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+    const y = () => Number((main.dataset.barco ?? '0,0').split(',')[1]);
+    const held = new Set<string>();
+    const press = (keys: string[]) => {
+      for (const k of [...held]) {
+        if (keys.includes(k)) continue;
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: k, code: k }));
+        held.delete(k);
+      }
+      for (const k of keys) {
+        if (held.has(k)) continue;
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: k, code: k }));
+        held.add(k);
+      }
+    };
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    const until = async (keys: string[], done: () => boolean, ms = 20_000) => {
+      const end = performance.now() + ms;
+      press(keys);
+      while (!done() && performance.now() < end) {
+        if (!q('mar-crono')) return false;
+        await frame();
+      }
+      return done();
+    };
+    try {
+      if (!(await until(['ArrowUp'], () => y() < 100))) return 'sin llegar';
+      for (let i = 0; i < rounds; i++) {
+        if (!(await until(['ArrowLeft'], () => !!q('mar-fuera')))) return `sin aviso ${i}`;
+        if (!(await until(['ArrowRight'], () => !q('mar-fuera')))) return `sin volver ${i}`;
+        if (!q('mar-crono')) return `acabó ${i}`;
+      }
+      return `vivas ${rounds}`;
+    } finally {
+      press([]);
+    }
+  }, rounds);
+}
+
+test('fuera de la carretera: boyitas a los lados, entrar y salir no la acaba, 5 s fuera sí', async ({
+  page,
+}) => {
+  const errors = await openMar(page, `?cerca=${start.id}`);
+  await startRace(page);
+  // Al empezar aparecen las boyitas que marcan la carretera.
+  await expect(page.getByTestId('mar-canvas')).toHaveAttribute('data-carretera', 'on');
+  await expect(page.getByTestId('mar-fuera')).toHaveCount(0);
+  // Salir y volver varias veces seguidas: cada vez avisa y, al volver, la carrera sigue.
+  expect(await inAndOut(page, 3)).toBe('vivas 3');
+  await expect(crono(page)).toHaveAttribute('data-fase', 'racing');
+  // Se aparta otra vez y suelta los mandos: avisa con la cuenta de 5 s…
+  await page.evaluate(() =>
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', code: 'ArrowLeft' })),
+  );
+  await expect(page.getByTestId('mar-fuera')).toBeVisible({ timeout: 20_000 });
+  await page.evaluate(() =>
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowLeft', code: 'ArrowLeft' })),
+  );
+  await expect(page.getByTestId('mar-fuera')).toContainText(/[1-5] s/);
+  // …y sin volver, la carrera se acaba (por salirse) y las boyitas se van.
+  await expect(crono(page)).toHaveCount(0, { timeout: 20_000 });
+  await expect(page.getByTestId('mar-canvas')).toHaveAttribute('data-carretera', 'off');
+  await expect(page.getByTestId('mar-aviso').filter({ hasText: /te saliste/i })).toBeVisible();
   expect(errors).toEqual([]);
 });

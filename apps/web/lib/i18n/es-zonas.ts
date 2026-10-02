@@ -242,6 +242,7 @@ export const esZonas = {
   'circuit.void.panel': 'Vuelta anulada: abriste un panel',
   'circuit.void.tab': 'Vuelta anulada: saliste de la pestaña',
   'circuit.void.slow': 'Vuelta anulada: demasiado tiempo',
+  'circuit.void.offroad': 'Carrera anulada: te saliste del circuito',
   'circuit.void.retry': 'Vuelve a pasar por la salida.',
   'world.arcilla.circuit.judge':
     'Por la derecha, ancho y tranquilo. Por el Freu, rápido y con dientes.',

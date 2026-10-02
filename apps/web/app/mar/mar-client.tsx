@@ -128,6 +128,7 @@ import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { PIN_AVOID } from './engine/labels';
 import { MOOD_IDS, type MoodId } from './engine/palette';
+import type { Period } from './engine/wrap';
 import {
   type ShipModelEntry,
   loadShipManifest,
@@ -157,9 +158,11 @@ import {
   lapTargets,
   loadGhost,
   raceCheckpoint,
+  roadPath,
   saveGhost,
   startPose,
 } from './race';
+import { OffRoad, distToPath, roadMarks } from './road';
 import {
   MarRaceChip,
   MarRaceIntro,
@@ -351,6 +354,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     clock: number;
     recorder: GhostRecorder;
     ghost: GhostRun | null;
+    /** La carretera de una vuelta, sus boyitas y el tiempo que queda fuera de ella (T76). */
+    path: { x: number; y: number }[];
+    /** El periodo del planeta: la distancia a la carretera va por el camino corto. */
+    period: Period;
+    marks: ReturnType<typeof roadMarks>;
+    offRoad: OffRoad;
   } | null>(null);
   // El delfín guía (O15, T45): el runtime en que se escondió y el reloj de sus pasos.
   const dolphinRef = useRef<DolphinGuide | null>(null);
@@ -517,9 +526,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   /** La carrera de El Freu del mundo `w` (T61), o null si el mundo no tiene circuito. */
   const newRace = (w: WorldConfig) => {
     const spec = circuitFromWorld(w, CIRCUIT_ID);
-    return spec
-      ? { race: new CircuitRace(spec), spec, clock: 0, recorder: new GhostRecorder(), ghost: null }
-      : null;
+    if (!spec) return null;
+    const path = roadPath(w, spec);
+    return {
+      period: marPeriod(w),
+      race: new CircuitRace(spec),
+      spec,
+      clock: 0,
+      recorder: new GhostRecorder(),
+      ghost: null,
+      path,
+      marks: roadMarks(path),
+      offRoad: new OffRoad(),
+    };
   };
 
   const raceEvents = (evs: ReturnType<CircuitRace['tick']>) => {
@@ -553,6 +572,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           g.setSemaphore('red');
           g.setNextGate(1);
           g.holdShip(world ? startPose(world, r.spec) : null);
+          // Las boyitas de la carretera aparecen al empezar (T76).
+          r.offRoad.reset();
+          g.setRoad(r.marks);
           r.ghost = loadGhost(browserGhostStorage(), r.spec);
           setRaceResult(null);
           setRaceIntro(null);
@@ -595,6 +617,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         case 'finish': {
           g.setNextGate(null);
           g.setGhost(null);
+          g.setRoad(null);
+          r.offRoad.reset();
           g.celebrate(null);
           fanfare();
           // La grabación es el fantasma de la próxima, si es la mejor de este navegador.
@@ -628,10 +652,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           g.setSemaphore('off');
           g.holdShip(null);
           g.setGhost(null);
+          g.setRoad(null);
+          r.offRoad.reset();
           push({
             id: `circuito:anulada:${Date.now()}`,
             kind: 'info',
-            title: msg('circuit.void'),
+            title: e.reason === 'offroad' ? msg('circuit.void.offroad') : msg('circuit.void'),
             body: msg('circuit.void.retry'),
           });
           break;
@@ -743,7 +769,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         syncDialogue();
         break;
       case 'content_open':
-        if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
+        // En carrera, pasar junto a una isla no abre su ficha ni anula la carrera:
+        // salirse del circuito ya lo cuentan los 5 s de la carretera (T76).
+        if (r?.race.active) break;
         if (e.target === 'event' && e.ref && findEvent(e.ref)) {
           // La Isla de Nochevieja vende entradas y es el destino de la Fiestera:
           // su código (la ficha del descuento) no lo tapa la ficha del evento.
@@ -880,6 +908,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     if (!r.race.active) return;
     raceEvents(r.race.tick(r.clock));
     if (!r.race.racing) return;
+    // Fuera de la carretera hay 5 s para volver; el reloj de la carrera no se para (T76).
+    if (r.offRoad.step(dt, distToPath(r.path, ship, r.period))) {
+      raceEvents([r.race.invalidate('offroad')!]);
+      return;
+    }
     const ms = r.race.elapsedMs(r.clock);
     r.recorder.sample(ms, ship);
     g.setGhost(r.ghost ? ghostPose(r.ghost, ms) : null);
@@ -929,6 +962,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               laps: v.laps,
               buoys: v.buoys,
               ghost: !!r.ghost,
+              offRoad: r.offRoad.remaining,
             },
       );
     }
@@ -1628,6 +1662,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           engineRef.current?.setGhost(null);
           engineRef.current?.setNextGate(null);
           engineRef.current?.setSemaphore('off');
+          engineRef.current?.setRoad(null);
         }
         raceRef.current = newRace(w);
         setRace(null);

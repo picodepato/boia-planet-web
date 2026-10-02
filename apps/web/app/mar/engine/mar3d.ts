@@ -132,6 +132,7 @@ import {
   ghostBoat,
   jumpRamp,
   raceBuoy,
+  roadMarkers,
 } from './race-props';
 import { createWater } from './water';
 import {
@@ -247,6 +248,9 @@ export interface Mar3DOptions {
 }
 
 /** Dónde está y hacia dónde mira un barco (u de motor, rad): el fantasma, la salida. */
+/** Un punto del mar en u de motor. */
+type Point2 = { x: number; y: number };
+
 export interface ShipPose {
   x: number;
   y: number;
@@ -531,6 +535,8 @@ export class Mar3D {
   paused = false;
   /** Lo que se enciende de cada orden del circuito (arco o boia) cuando toca pasarlo. */
   private gates = new Map<number, ((on: boolean) => void)[]>();
+  /** Las boyitas de la carretera de la carrera en curso (T76). */
+  private road: Group | null = null;
   /** Dónde va ahora el barco fantasma del circuito (T61); null: no se ve. */
   private ghostAt: ShipPose | null = null;
   /** El barco quieto en la salida durante la cuenta atrás (T61), o null. */
@@ -1239,6 +1245,31 @@ export class Mar3D {
     for (const [o, marks] of this.gates) {
       for (const mark of marks) mark(o === order);
     }
+  }
+
+  /**
+   * Las boyitas de los lados de la carretera de la carrera (T76): en u de
+   * motor, las de la derecha y las de la izquierda de la marcha; null las quita.
+   */
+  setRoad(marks: { right: Point2[]; left: Point2[] } | null): void {
+    if (this.road) {
+      this.scene.remove(this.road);
+      this.road.traverse((o) => {
+        const m = o as Mesh;
+        m.geometry?.dispose();
+        (m.material as { dispose?(): void } | undefined)?.dispose?.();
+      });
+      this.road = null;
+    }
+    const on = marks ? 'on' : 'off';
+    if (this.opts.canvas.dataset.carretera !== on) this.opts.canvas.dataset.carretera = on;
+    if (!marks) return;
+    const at = (p: Point2): [number, number] => [toScene(p.x), toScene(p.y)];
+    this.road = roadMarkers(marks.right.map(at), marks.left.map(at));
+    // Una pieza fusionada sin sitio propio: se curva con el planeta y cada
+    // boyita va a la copia más cercana al foco (si no, flotan en el cielo).
+    curveTree(this.road, true);
+    this.scene.add(this.road);
   }
 
   /**

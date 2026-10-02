@@ -605,6 +605,23 @@
   font-size: 1rem;
 }
 
+/* Fuera de la carretera de la carrera (T76): cuenta atrás de 5 s para volver. */
+.mar-chip--offroad {
+  background: #b3261e;
+  color: #fff;
+  white-space: normal;
+  max-width: min(320px, calc(100vw - 24px));
+  font-size: 0.85rem;
+  font-weight: 700;
+  animation: mar-offroad-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes mar-offroad-pulse {
+  to {
+    opacity: 0.72;
+  }
+}
+
 /* El Freu (T61): el récord junto a la salida y la tarjeta de meta, pequeña. */
 .mar-chip--race-intro {
   background: var(--glass-strong);

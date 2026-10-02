@@ -23,6 +23,8 @@ export interface RaceHud {
   buoys: number;
   /** Corre contra el fantasma de su mejor carrera. */
   ghost: boolean;
+  /** s que le quedan para volver a la carretera, o null si va por ella (T76). */
+  offRoad: number | null;
 }
 
 export interface RaceResult {
@@ -70,35 +72,42 @@ const MEDAL_NAME: Record<Medal, string> = {
 export function MarRaceChip({ race }: { race: RaceHud }) {
   const toFinish = race.next > race.buoys;
   return (
-    <div
-      className="mar-chip mar-chip--race"
-      data-testid="mar-crono"
-      data-fase={race.phase}
-      data-vuelta={race.lap}
-      data-boia={toFinish ? 0 : race.next}
-      data-fantasma={race.ghost ? 'si' : 'no'}
-      role="timer"
-      aria-live="off"
-    >
-      ⏱ {race.ms !== null ? formatRaceTime(race.ms) : msg('mar.client.preparados')}
-      {race.phase === 'racing' ? (
-        <span className="mar-chip__sub">
-          {msg('mar.race.chip.lap', { lap: race.lap, laps: race.laps })} ·{' '}
-          {toFinish
-            ? msg('mar.race.chip.finish')
-            : msg('mar.race.chip.buoy', { next: race.next, buoys: race.buoys })}
-        </span>
+    <>
+      <div
+        className="mar-chip mar-chip--race"
+        data-testid="mar-crono"
+        data-fase={race.phase}
+        data-vuelta={race.lap}
+        data-boia={toFinish ? 0 : race.next}
+        data-fantasma={race.ghost ? 'si' : 'no'}
+        role="timer"
+        aria-live="off"
+      >
+        ⏱ {race.ms !== null ? formatRaceTime(race.ms) : msg('mar.client.preparados')}
+        {race.phase === 'racing' ? (
+          <span className="mar-chip__sub">
+            {msg('mar.race.chip.lap', { lap: race.lap, laps: race.laps })} ·{' '}
+            {toFinish
+              ? msg('mar.race.chip.finish')
+              : msg('mar.race.chip.buoy', { next: race.next, buoys: race.buoys })}
+          </span>
+        ) : null}
+        {race.ghost ? (
+          <span
+            className="mar-chip__sub"
+            title={msg('mar.race.ghost')}
+            aria-label={msg('mar.race.ghost')}
+          >
+            👻
+          </span>
+        ) : null}
+      </div>
+      {race.offRoad !== null ? (
+        <div className="mar-chip mar-chip--offroad" data-testid="mar-fuera" role="alert">
+          ⚠ {msg('mar.race.offroad', { s: Math.ceil(race.offRoad) })}
+        </div>
       ) : null}
-      {race.ghost ? (
-        <span
-          className="mar-chip__sub"
-          title={msg('mar.race.ghost')}
-          aria-label={msg('mar.race.ghost')}
-        >
-          👻
-        </span>
-      ) : null}
-    </div>
+    </>
   );
 }
 

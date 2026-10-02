@@ -4,6 +4,36 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — T76: la carretera de la carrera (boyitas y 5 s fuera)
+
+Qué existe:
+- Al empezar una carrera en Los Rápidos aparecen boyitas a los lados del
+  trazado (rojas a la derecha de la marcha, blancas a la izquierda;
+  `roadMarks` en `app/mar/road.ts`, `roadMarkers` en race-props.ts,
+  `Mar3D.setRoad`). Se curvan con el planeta (`curveTree(…, true)`): antes se
+  veían en el cielo. Se quitan al acabar, al anularse y al cambiar de mundo.
+- Fuera de la carretera (más de `ROAD_HALF_WIDTH` = 180 u del trazado, medido
+  por el camino corto del planeta) sale «¡Vuelve al circuito! Te quedan n s»
+  (`mar-fuera`); a los 5 s fuera la carrera se anula («te saliste»). La cuenta
+  se para mientras el barco vuelve de verdad (se acerca a más de 60 u/s): sólo
+  dar la vuelta gastaba ~4,5 s. Al volver se reinicia. Valores `muestra`.
+- En carrera, llegar a una isla no abre su ficha ni anula la carrera (antes,
+  al salirse junto a una isla, se anulaba como «panel» con el aviso en 5 s).
+
+Comandos:
+- vitest (sin packages/db) → exit 0, 107 ficheros, 976 pruebas (road.test.ts: 9).
+- `pnpm typecheck`, `pnpm lint`, `sh tools/spec/checks.sh` → exit 0.
+- `mar-circuito.spec.ts` contra el servidor de desarrollo (localhost:3100) →
+  6 passed (móvil y escritorio), con la prueba nueva de entrar y salir.
+  Una pasada anterior, con vitest a la vez, falló la carrera larga en móvil
+  («sin carrera», ya inestable antes); repetida 3 veces, pasa. El piloto
+  ahora dice por qué se acabó.
+
+Pendiente:
+- Las boyitas blancas de lejos se parecen a las rocas crema: quizá otro color.
+- Ancho de la carretera y velocidad de vuelta, a ajustar jugando con Hernán.
+- No se ha corrido `pnpm build` ni la e2e completa contra el build.
+
 ## 2026-10-02 — plan 006 T75: Island labels clear of the top bar and the models
 
 Qué existe:

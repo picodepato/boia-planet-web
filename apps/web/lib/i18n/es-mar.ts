@@ -40,6 +40,7 @@ export const esMar = {
   'mar.race.chip.finish': 'a la salida',
   'mar.race.lapDone': 'Vuelta {lap} · {time}',
   'mar.race.lastLap': '¡Última vuelta!',
+  'mar.race.offroad': '¡Vuelve al circuito! Te quedan {s} s o se acaba la carrera',
   'mar.race.missed': 'Te falta la boia {order}',
   'mar.race.missed.body': 'La vuelta no cuenta: pasa por todas las boias en orden.',
   'mar.race.ghost': 'Fantasma: tu mejor carrera',

@@ -136,7 +136,7 @@ export function nextMedal(ms: number, medals: Medals): Medal | null {
 
 export type RacePhase = 'idle' | 'countdown' | 'racing';
 
-export type InvalidReason = 'panel' | 'hidden' | 'teleport' | 'timeout';
+export type InvalidReason = 'panel' | 'hidden' | 'teleport' | 'timeout' | 'offroad';
 
 export type RaceEvent =
   /** El barco llegó a la salida sin carrera (T73): la aplicación pregunta si empezar. */

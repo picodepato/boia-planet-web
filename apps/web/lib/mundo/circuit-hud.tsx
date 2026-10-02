@@ -86,6 +86,7 @@ const INVALID_TEXT: Record<InvalidReason, string> = {
   hidden: msg('circuit.void.tab'),
   teleport: msg('circuit.void'),
   timeout: msg('circuit.void.slow'),
+  offroad: msg('circuit.void.offroad'),
 };
 
 export interface CircuitState {

@@ -15,6 +15,7 @@ import { litMaterial } from './characters';
 import { textTexture } from './islands';
 import { Kit } from './kit';
 import { C } from './palette';
+import { buoy } from './props';
 
 /**
  * Las piezas del circuito cerrado de Los Rápidos en el mar 3D (T61, T73), en
@@ -225,6 +226,20 @@ export function jumpRamp(radius: number, heading: number): JumpRamp {
       mats.forEach((m, i) => (m.opacity = 0.4 + 0.6 * Math.max(0, Math.sin(t * 5 - i * 1.1))));
     },
   };
+}
+
+/**
+ * Las boyitas que marcan la carretera mientras dura la carrera (T76): rojas a
+ * la derecha de la marcha, blancas a la izquierda. `right` y `left` en
+ * unidades de escena (x, z). Un solo grupo: se quita entero al acabar.
+ */
+export function roadMarkers(right: [number, number][], left: [number, number][]): Group {
+  const k = new Kit();
+  for (const [x, z] of right) buoy(k, x, z, C.red, C.white, 1.3);
+  for (const [x, z] of left) buoy(k, x, z, C.white, C.red, 1.3);
+  const g = new Group();
+  g.add(new Mesh(k.build(), litMaterial()));
+  return g;
 }
 
 /** El barco fantasma: la silueta del barco, translúcida y azulada. Proa hacia +x, eslora `length`. */
