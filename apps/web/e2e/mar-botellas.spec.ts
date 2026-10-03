@@ -1,6 +1,17 @@
 import { BOTTLE_MESSAGE_MAX } from '@boia/contracts';
-import { SAMPLE_BOTTLES, SAMPLE_CREW } from '@boia/store';
+import { isSeaSpot, sheetZones } from '@boia/engine/bottles';
+import {
+  MemoryStorage,
+  SAMPLE_BOTTLES,
+  SAMPLE_CREW,
+  STORE_KEY,
+  createLocalRepository,
+} from '@boia/store';
+import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
+import { marReadable, placeBottles } from '../app/mar/bottles';
+import { marWorld } from '../app/mar/engine/compact';
+import { pointMap } from '../app/mar/engine/compress';
 import { SAMPLE_CIRCUIT_MS } from '../lib/mundo/ranking-circuit';
 import { t } from '../lib/i18n';
 
@@ -181,5 +192,103 @@ test('ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los
   await expect(panel).toBeHidden();
   await expect(page.getByTestId('mar-carnet')).toBeVisible();
   await expect(page).toHaveURL(/\/mar/);
+  expect(errors).toEqual([]);
+});
+
+/**
+ * Botellas donde se pueden leer (T88): una botella guardada junto a una isla
+ * (dentro del radio donde su ficha se abre sola) flota, al cargar, donde se
+ * lee: el barco, desde fuera de la ficha, va hasta ella sin que se abra la
+ * ficha, la encuentra y la abre.
+ */
+test('una botella junto a una isla se puede leer', async ({ page }) => {
+  const shared = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
+  const mar = marWorld(shared);
+  const island = sheetZones(mar).find(
+    (z) => mar.objects.find((o) => o.identity.id === z.id)?.identity.category === 'isla',
+  )!;
+  const land = mar.objects.find((o) => o.identity.id === island.id)!.geometry.collision!.radius;
+  // Guardada al sur de la isla, en el agua de su ficha (por donde llega `?cerca=`).
+  const near = pointMap(shared).toShared({ x: island.x, y: island.y + (land + island.radius) / 2 });
+  const at = { x: Math.round(near.x), y: Math.round(near.y) };
+  expect(isSeaSpot(shared, at), 'agua del mapa compartido').toBe(true);
+  expect(marReadable(mar)(pointMap(shared).toMar(at)), 'ahí no se lee').toBe(false);
+
+  const storage = new MemoryStorage();
+  const repo = createLocalRepository({ storage, watch: false });
+  await repo.carnet.create({ nickname: 'Grumete Isla' });
+  const message = `Junto a la isla ${island.id}: se lee igual.`;
+  const bottle = await repo.bottles.place({ message, ...at });
+  const json = storage.getItem(STORE_KEY)!;
+  await page.addInitScript(
+    ([key, doc]) => {
+      try {
+        if (!window.localStorage.getItem(key)) window.localStorage.setItem(key, doc);
+      } catch {
+        // sin almacenamiento: la prueba fallará más abajo, con su motivo
+      }
+    },
+    [STORE_KEY, json] as const,
+  );
+
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`/mar?cerca=${island.id}`);
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+  await expect.poll(() => bottlesInSea(page), { timeout: 10_000 }).toContain(bottle.id);
+
+  // El barco, junto a la isla pero fuera de su ficha, navega hasta donde flota
+  // (el mismo sitio que calcula /mar): aparece cerca, sin ficha que la tape, y se abre.
+  const ship = (await page.locator('main.mar').getAttribute('data-barco'))!.split(',').map(Number);
+  expect(Math.hypot(ship[0]! - island.x, ship[1]! - island.y)).toBeGreaterThan(island.radius);
+  await expect(page.getByTestId('mar-ficha')).toHaveCount(0);
+  const [afloat] = placeBottles([{ id: bottle.id, ...at, isMine: true, read: false }], shared, mar);
+  expect(marReadable(mar)(afloat!)).toBe(true);
+  const found = page.getByTestId(`mar-botella-cerca-${bottle.id}`);
+  const sailed = await page.evaluate(
+    async ({ target, testId }) => {
+      const main = document.querySelector<HTMLElement>('main.mar')!;
+      const held = new Set<string>();
+      const press = (keys: string[]) => {
+        for (const k of [...held]) {
+          if (keys.includes(k)) continue;
+          window.dispatchEvent(new KeyboardEvent('keyup', { key: k, code: k }));
+          held.delete(k);
+        }
+        for (const k of keys) {
+          if (held.has(k)) continue;
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: k, code: k }));
+          held.add(k);
+        }
+      };
+      const until = performance.now() + 60_000;
+      try {
+        while (performance.now() < until) {
+          if (document.querySelector(`[data-testid="${testId}"]`)) return 'ok';
+          if (document.querySelector('[data-testid="mar-ficha"]')) return 'ficha abierta';
+          const [x, y] = (main.dataset.barco ?? '0,0').split(',').map(Number);
+          const dx = target.x - x!;
+          const dy = target.y - y!;
+          const d = Math.hypot(dx, dy) || 1;
+          const keys: string[] = [];
+          if (dx / d > 0.38) keys.push('ArrowRight');
+          if (dx / d < -0.38) keys.push('ArrowLeft');
+          if (dy / d > 0.38) keys.push('ArrowDown');
+          if (dy / d < -0.38) keys.push('ArrowUp');
+          press(keys);
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+        return `tiempo @ ${main.dataset.barco ?? ''}`;
+      } finally {
+        press([]);
+      }
+    },
+    { target: { x: afloat!.x, y: afloat!.y }, testId: `mar-botella-cerca-${bottle.id}` },
+  );
+  expect(sailed).toBe('ok');
+  await expect(found).toBeVisible();
+  await found.click();
+  const panel = page.getByTestId('mar-botella');
+  await expect(panel.getByTestId('botella-mensaje')).toHaveText(message);
   expect(errors).toEqual([]);
 });

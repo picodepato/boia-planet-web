@@ -628,6 +628,7 @@ export class Mar3D {
     this.scene.add(this.routeLine.mesh);
     // Para las pruebas: cuántas marcas guían en el agua (T59: ya sin boyas de ruta).
     opts.canvas.dataset.routeMarks = String(this.route.dashes.length);
+    opts.canvas.dataset.ruta = 'on';
     this.water.setShores(shores);
     this.glow = glowPoints(glows);
     // Cada isla con hueco sabe dónde están sus resplandores, para apagarlos con el modelo (T75).
@@ -1230,6 +1231,17 @@ export class Mar3D {
       this.opts.canvas.dataset.chapuzones = String(this.splashes);
       this.opts.onJump?.(j);
     }
+  }
+
+  /**
+   * Las marcas amarillas de la ruta entre islas, fuera durante la carrera
+   * (decisión 13, T88): `true` desde la cuenta atrás; `false` al acabar, al
+   * anularse o al cambiar de mundo. Para las pruebas, `data-ruta` del lienzo.
+   */
+  setRouteHidden(hidden: boolean): void {
+    this.routeLine.setSuppressed(hidden);
+    const on = hidden ? 'off' : 'on';
+    if (this.opts.canvas.dataset.ruta !== on) this.opts.canvas.dataset.ruta = on;
   }
 
   /** Semáforo del circuito: apagado, rojo, ámbar o verde. */

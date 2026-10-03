@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T88: /mar: guide lines off during the race; bottles where they can be read
+
+Qué existe:
+- Decisión 13: `RouteLine.setSuppressed(bool)` (`apps/web/app/mar/engine/effects.ts`), que `update(zoom)` respeta en cada fotograma; `Mar3D.setRouteHidden(bool)` lo enciende y publica `data-ruta` (`on`/`off`) en el lienzo. `mar-client.tsx` lo esconde en `countdown` y lo enseña en `finish`, `invalid` (anular por panel, salirse, etc.) y al cambiar de mundo.
+- Botellas legibles: `packages/engine/src/bottles/readable.ts` (se exporta por `@boia/engine/bottles`, para T93). Zonas de ficha (`sheetZones`: objetos con `content` que se abre solo; radio = proximidad + histéresis). Una botella guarda de cada isla su radio de ficha + 150 u de lectura + 30 u de margen (`BOTTLE_READ_MARGIN`, muestra); de lo pequeño que también abre ficha (la boia del WhatsApp del puerto) sólo ficha + margen. Distancias por el camino corto del planeta. `relocateBottle` (punto legible más cercano, determinista) y `findReadableDropSpot` (`findDropSpotWhere` junto a la popa; si no, el agua legible más cercana).
+- `apps/web/app/mar/bottles.ts`: `marReadable(mar)`; `placeBottles` recoloca al cargar las guardadas que incumplen la regla (en u enteras que también cumplen) y `dropSpot` usa la regla.
+- `docs/spec/estado.md`: REQ-IDE-041 enlaza las pruebas nuevas.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (114 archivos, 1012 pruebas)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `E2E_PORT=3417 pnpm e2e mar-circuito.spec.ts mar-botellas.spec.ts --workers=1` → exit 0 (12 pasadas). Nuevo: `data-ruta` off en la cuenta atrás y la carrera (también en «Otra vez»), on en meta, al anular por panel y al salirse; «una botella junto a una isla se puede leer» (guardada en la ficha de una isla, aparece donde se lee y el barco la abre sin que se abra la ficha).
+
+Pendiente:
+- Las posiciones guardadas no se reescriben: la recolocación se calcula al cargar (siempre igual). T93 puede guardar ya la posición legible.
+- Echar una botella junto a una isla la deja en el agua legible más cercana, que puede quedar fuera de la vista.
+
 ## 2026-10-03 — plan 008 T86: Base de Supabase: clientes, migraciones, RPC validadas y pruebas de integración
 
 La base que usan el resto de tareas del plan 008. Hoy la web no la usa en

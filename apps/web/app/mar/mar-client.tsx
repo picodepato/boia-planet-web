@@ -575,6 +575,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           // Las boyitas de la carretera aparecen al empezar (T76).
           r.offRoad.reset();
           g.setRoad(r.marks);
+          // Sin las marcas amarillas entre islas mientras se corre (decisión 13, T88).
+          g.setRouteHidden(true);
           r.ghost = loadGhost(browserGhostStorage(), r.spec);
           setRaceResult(null);
           setRaceIntro(null);
@@ -618,6 +620,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           g.setNextGate(null);
           g.setGhost(null);
           g.setRoad(null);
+          g.setRouteHidden(false);
           r.offRoad.reset();
           g.celebrate(null);
           fanfare();
@@ -653,6 +656,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           g.holdShip(null);
           g.setGhost(null);
           g.setRoad(null);
+          g.setRouteHidden(false);
           r.offRoad.reset();
           push({
             id: `circuito:anulada:${Date.now()}`,
@@ -1664,6 +1668,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           engineRef.current?.setSemaphore('off');
           engineRef.current?.setRoad(null);
         }
+        engineRef.current?.setRouteHidden(false);
         raceRef.current = newRace(w);
         setRace(null);
         setRaceIntro(null);

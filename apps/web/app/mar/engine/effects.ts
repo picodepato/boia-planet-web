@@ -326,6 +326,7 @@ export class RouteLine {
   private readonly mat: MeshBasicMaterial;
   private readonly o = new Object3D();
   private k = -1;
+  private suppressed = false;
 
   constructor(private readonly dashes: readonly { x: number; z: number; angle: number }[]) {
     this.mat = new MeshBasicMaterial({
@@ -345,11 +346,25 @@ export class RouteLine {
     this.mesh.visible = false;
   }
 
+  /**
+   * Escondidas durante la carrera (decisión 13, T88): desde la cuenta atrás
+   * hasta la meta, la anulación o el cambio de mundo. `update` lo respeta en
+   * cada fotograma.
+   */
+  setSuppressed(on: boolean): void {
+    this.suppressed = on;
+    if (on) this.mesh.visible = false;
+  }
+
+  get isSuppressed(): boolean {
+    return this.suppressed;
+  }
+
   /** `zoom` 0 (barco) … 1 (mapa). */
   update(zoom: number): void {
     const a = NEAR_MARKS + (1 - NEAR_MARKS) * smooth(0.3, 0.6, zoom);
     this.mat.opacity = a * 0.95;
-    this.mesh.visible = a > 0.01 && this.dashes.length > 0;
+    this.mesh.visible = !this.suppressed && a > 0.01 && this.dashes.length > 0;
     if (!this.mesh.visible) return;
     const k = 1 + smooth(0.3, 1, zoom) * 1.2;
     if (Math.abs(k - this.k) < 0.01) return;

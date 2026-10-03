@@ -3,11 +3,13 @@ import {
   type ShipPose,
   type SpotTest,
   bottleSpotProblem,
-  findDropSpotWhere,
+  findReadableDropSpot,
   isSeaSpot,
   nearbyBottles,
   nearestSeaSpot,
-  nearestSpotWhere,
+  readableSpot,
+  relocateBottle,
+  sheetZones,
 } from '@boia/engine/bottles';
 import type { Vec2, WorldConfig } from '@boia/world';
 import { decorCircles, decorSpots } from './engine/compact';
@@ -55,18 +57,35 @@ export function marSea(mar: WorldConfig): SpotTest {
 /** El periodo del planeta de /mar (u de motor): da la vuelta por los dos lados. */
 export const marPeriod = (mar: WorldConfig): Period => periodOf(planetRect(mar.bounds));
 
-/** Las botellas del repositorio en el mar de /mar; las que no tienen sitio, fuera. */
+/**
+ * Donde una botella flota y se puede leer (T88): el agua de `marSea` y,
+ * además, lejos de toda isla cuya ficha se abre sola (su radio de ficha más
+ * el de lectura más un margen), por el camino corto del planeta.
+ */
+export function marReadable(mar: WorldConfig): SpotTest {
+  const sea = marSea(mar);
+  const readable = readableSpot(sheetZones(mar), marPeriod(mar));
+  return (p) => sea(p) && readable(p);
+}
+
+/**
+ * Las botellas del repositorio en el mar de /mar; las que no tienen sitio,
+ * fuera. Las que caen en tierra o donde no se pueden leer (junto a una isla,
+ * T88) pasan al agua legible más cercana, siempre la misma para la misma botella.
+ */
 export function placeBottles(
   list: readonly StoredBottle[],
   shared: WorldConfig,
   mar: WorldConfig,
   map: PointMap = pointMap(shared),
 ): MarBottle[] {
-  const ok = marSea(mar);
+  const readable = marReadable(mar);
+  // Se guarda en u enteras: el sitio redondeado también tiene que valer.
+  const ok: SpotTest = (p) => readable({ x: Math.round(p.x), y: Math.round(p.y) });
   const out: MarBottle[] = [];
   for (const b of list) {
     const q = map.toMar(b);
-    const spot = nearestSpotWhere(ok, q);
+    const spot = relocateBottle(ok, q);
     if (!spot) continue;
     out.push({
       id: b.id,
@@ -82,7 +101,8 @@ export function placeBottles(
 /**
  * Dónde se guarda la botella que echa el barco (posición del mapa
  * compartido, la que valida el repositorio): junto a la popa en el planeta
- * y, de vuelta en el mapa, en su agua. null si alrededor sólo hay tierra.
+ * donde se pueda leer (T88) o, junto a una isla, en el agua legible más
+ * cercana; de vuelta en el mapa, en su agua. null si no hay sitio.
  */
 export function dropSpot(
   shared: WorldConfig,
@@ -90,13 +110,13 @@ export function dropSpot(
   ship: ShipPose,
   map: PointMap = pointMap(shared),
 ): Vec2 | null {
-  const ok = marSea(mar);
+  const ok = marReadable(mar);
   const rect = planetRect(mar.bounds);
   const wrap = (p: Vec2) => ({
     x: wrapIn(p.x, rect.left, rect.right),
     y: wrapIn(p.y, rect.top, rect.bottom),
   });
-  const q = findDropSpotWhere((p) => ok(wrap(p)), ship);
+  const q = findReadableDropSpot((p) => ok(wrap(p)), ship);
   if (!q) return null;
   const p = map.toShared(wrap(q));
   if (isSeaSpot(shared, p)) return p;

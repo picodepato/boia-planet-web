@@ -38,6 +38,8 @@ const mar = (page: Page) => page.locator('main.mar');
 /** La tripulación de muestra con tiempo en el circuito: contra ella se compite en esta versión. */
 const timedCrew = SAMPLE_CREW.filter((c) => SAMPLE_CIRCUIT_MS[c.userId] !== undefined);
 const crono = (page: Page) => page.getByTestId('mar-crono');
+/** Las marcas amarillas de la ruta entre islas (decisión 13, T88): `on` u `off`. */
+const ruta = (page: Page) => page.getByTestId('mar-canvas');
 
 const OUT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -164,10 +166,14 @@ async function startRace(page: Page) {
   // Sin «Empezar» no hay carrera.
   await page.waitForTimeout(1500);
   await expect(crono(page)).toHaveCount(0);
+  // Sin carrera, las marcas amarillas guían entre islas.
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
   await snap(page, 'p006-t73-oferta.png');
   await page.getByTestId('mar-carrera-empezar').click();
   await expect(offer).toHaveCount(0);
   await expect(crono(page)).toHaveAttribute('data-fase', 'countdown');
+  // Desde la cuenta atrás, sin marcas amarillas (decisión 13, T88).
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
   // La posición se publica cuatro veces por segundo: la primera puede ser de antes de
   // quedarse en la salida. Desde que está en ella, no se mueve hasta «¡Ya!».
   const moved = await page.evaluate(async (p) => {
@@ -191,6 +197,7 @@ async function startRace(page: Page) {
   }, start);
   expect(moved, 'quieto en la salida durante la cuenta atrás').toBeLessThan(2);
   await expect(crono(page)).toHaveAttribute('data-fase', 'racing');
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
 }
 
 test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, récord y puesto; la segunda, contra el fantasma', async ({
@@ -218,6 +225,8 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   expect(await pilot(page, 'race')).toBe('ok');
   const card = page.getByTestId('mar-carrera-final');
   await expect(card).toBeVisible();
+  // En meta vuelven las marcas amarillas.
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
   await expect(card).toHaveAttribute('data-medalla', /^(gold|silver|bronze)$/);
   await expect(page.getByTestId('mar-carrera-tiempo')).toContainText(/\d+,\d/);
   await expect(page.getByTestId('mar-carrera-record')).toBeVisible();
@@ -237,6 +246,7 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   await page.getByTestId('mar-carrera-otra').click();
   await expect(card).toHaveCount(0);
   await expect(crono(page)).toHaveAttribute('data-fase', 'racing', { timeout: 10_000 });
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
   await expect(crono(page)).toHaveAttribute('data-fantasma', 'si');
   await expect(page.getByTestId('mar-canvas')).toHaveAttribute('data-ghost', 'on');
   await snap(page, 'p005-t61-fantasma.png');
@@ -250,6 +260,12 @@ test('saltarse una boia no cuenta la vuelta: el aviso dice cuál falta', async (
   expect(await pilot(page, 'skip', 90_000)).toBe('ok');
   await expect(crono(page)).toHaveAttribute('data-vuelta', '1');
   await expect(crono(page)).toHaveAttribute('data-boia', '2');
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
+  // Abrir un panel anula la carrera: vuelven las marcas amarillas (T88).
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu').getByTestId('mar-ranking-abrir').click();
+  await expect(crono(page)).toHaveCount(0);
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
   expect(errors).toEqual([]);
 });
 
@@ -324,6 +340,8 @@ test('fuera de la carretera: boyitas a los lados, entrar y salir no la acaba, 5 
   // …y sin volver, la carrera se acaba (por salirse) y las boyitas se van.
   await expect(crono(page)).toHaveCount(0, { timeout: 20_000 });
   await expect(page.getByTestId('mar-canvas')).toHaveAttribute('data-carretera', 'off');
+  // Anulada, vuelven las marcas amarillas (T88).
+  await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
   await expect(page.getByTestId('mar-aviso').filter({ hasText: /te saliste/i })).toBeVisible();
   expect(errors).toEqual([]);
 });
