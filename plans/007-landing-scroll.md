@@ -68,7 +68,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: appearance → rest with «Zarpar» + «Entradas» from first paint; scroll scrubs the dive and the sea advance with T78's props; dark editorial bands; static still for reduced motion/no WebGL/saveData; BOIA logo in the footer, Spotify links (playlist + optional per artist); cap 200 kB, landing 192.4 kB; landing-scroll.spec 10/10, 74 e2e pass → fbb310b
 
 ## T80 — Performance and budget
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -79,7 +79,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - Test command → exit 0; budget line ≤ 200 kB and not above T79's value (record it)
   - `E2E_PORT=<free> pnpm e2e landing-perf.spec.ts --workers=1` → exit 0: with CDP CPU throttling 4× at 375×812, during a scripted 6 s scroll from the hero to the footer the 95th percentile frame time ≤ 50 ms and no long task > 200 ms after the scene is ready; the reduced-motion and low-power paths create no WebGL context
   - `E2E_PORT=<free> pnpm e2e landing-scroll.spec.ts intro.spec.ts --workers=1` → exit 0 (nothing visible changed)
-- Outcome:
+- Outcome: hero runtime and LandingClient lazy, three.js after load, quality levels in motion with a first-frames probe, shaders precompiled, GLBs on idle; landing 192.4 → 184.8 kB; 4× CPU at 375×812: p95 33.4 ms, longest task 133 ms (SwiftShader) → b4808c1
 
 ## T81 — Accessibility, reduced motion and the e2e of the whole flow
 - Status: done
@@ -96,7 +96,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: axe 0 violations (any impact) at rest, after the dive and at the footer, with and without the panel; pixel contrast check e2e/contrast.ts, all texts pass with the design tokens; reduced motion pauses the artist rotation; 70 e2e pass; landing 192.5 kB → 37759ce
 
 ## T82 — The landing ready for real content
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -124,7 +124,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T84 — Update the e2e specs the new hero changed
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -138,6 +138,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-03 T80: hero runtime and LandingClient are lazy chunks (lib/intro/lazy.ts, landing-client-lazy.tsx); frames at rest are full quality, frames in motion drop MSAA/resolution per a first-frames probe, under 30 fps → still; hardwareConcurrency ignored on Apple WebKit (iOS reports 4); lower-section CSS stays critical (deferring it shifts layout) (agent)
 - 2026-10-03 orchestrator: added T84 (fix task) for the eight e2e specs T79's renames broke and the textos-zonas.md key it dropped
 - 2026-10-03 T79: controller `paused` is the rest for every mode, `landed` only means Zarpar finished, `fallback` is the static version; «Zarpar» + «Entradas» from the first paint (plan header wins over T77 §7.1); h1 = Admin hero title visually hidden, «BOIA» on screen is the wordmark; hero.explore → «Zarpar», hero.tickets → «Entradas» via textos-zonas.md; REQ-ENT-028 (subtitle by promotions) → PARCIAL since the design removes that line; no full-screen bloom/DOF (sprite halos); low power = saveData only; Spotify playlist = footer link «Spotify», optional `spotifyUrl` per artist (agent)
 - 2026-10-03 T78: seaward = Blender +Y / glTF −z; no baked atlas (vertex colours only); costa without normals (loader computes them); camera 10 m up, boat 105 m ahead to match §12's framing; f/1.0 DOF; grain 5.5 %; the manifest's `escena` block carries camera, poses and sun/moon for T79; stills reproducible in look but not bit-exact (EEVEE GPU) (agent)
@@ -158,6 +159,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T80: `deviceMemory ≤ 4` sends many mid-range Android phones to the still (Hernán decides); portrait phones with DPR ≤ 2 get the soft 800 px still, `sizes="max(100vw,160vh)"` would fix it (+80 kB); in low power the still appears after hydration, not at first paint
 - 2026-10-03 T81: the scroll hint sits ~7 px under the pills at 1280×800; the rest of intro.spec clicks «Zarpar» with Playwright click() and may flake under load
 - 2026-10-03 T79: the resting planet is still /mar's colourful low-poly world under a darker grade (Álvaro decides the art); the Admin artist editor drops `spotifyUrl` on save (T82)
 - 2026-10-03 T78: KHR_mesh_quantization would give ~40 % more geometry headroom; README section for tools/blender/landing (T83); the 8 quay lamps are mostly outside the still's frame but in the GLB for the scroll
@@ -179,3 +181,6 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 05:05 T81 launched · attempt 1 · agent a1f05cdf5227633de
 - 2026-10-03 06:00 usage limit reached; T80 and T81 still running in their worktrees (resume: section 7, orphans)
 - 2026-10-03 06:10 T81 done · branch worktree-agent-a1f05cdf5227633de → 37759ce
+- 2026-10-03 06:15 T80 done · branch worktree-agent-a27a66847508007c7 → b4808c1
+- 2026-10-03 06:16 T82 launched · attempt 1
+- 2026-10-03 06:16 T84 launched · attempt 1
