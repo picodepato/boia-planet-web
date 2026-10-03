@@ -57,6 +57,19 @@ export interface IntroDiagnostics {
   scroll: { s: number; phase: ScrollPhase; light: number };
   /** Sea props (T78 GLBs) placed in the scene. */
   props: number;
+  /** Frame cost and render quality (plan 007 T80). */
+  quality: QualityDiagnostics;
+}
+
+export interface QualityDiagnostics {
+  /** ms per frame, GPU included, per quality level (`null`: not measured by the first-frames probe). */
+  probeMs: (number | null)[] | null;
+  /** Quality level of the frames in motion (0 = full; frames at rest are always 0). */
+  motion: number | null;
+  /** The probe saw under 30 fps at the lowest level: the static version. */
+  lowFps: boolean;
+  /** Times the frames in motion came too slow and the level went down. */
+  stepDowns: number;
 }
 
 export interface TitleDiagnostics {

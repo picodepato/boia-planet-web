@@ -23,6 +23,13 @@ import { worlds } from '../mundo/demo-world';
 import { gameRepository } from '../mundo/repo';
 import { adminWorldId, currentWorld } from '../mundo/world-choice';
 import { buildMiniPlanet } from './mini-planet';
+import {
+  CLEARLY_OVER_MS,
+  QUALITY,
+  nextProbeLevel,
+  pickMotionLevel,
+  type ProbeResult,
+} from './quality';
 import { rng } from '../../app/mar/engine/kit';
 import { buildSeaRig } from './sea-rig';
 import type { Vec3 } from './sphere-map';
@@ -64,8 +71,37 @@ export interface IntroScene extends IntroSceneHandle {
   readonly islands: number;
   /** Ids de las islas del planeta: las de `/mar` (T64). */
   readonly islandIds: readonly string[];
+  /** What the first-frames probe measured (T80). */
+  readonly probe: ProbeResult;
   resize(width: number, height: number): void;
+  /**
+   * Quality of the next frames (an index of `QUALITY`, quality.ts): 0 is the full
+   * picture, which every frame at rest gets; the others are only for frames
+   * in motion on a GPU that cannot hold them at 60 fps.
+   */
+  setQuality(level: number): void;
+  /** T78's props for the sea (idempotent; the hero asks once the page is calm). */
+  loadProps(): void;
 }
+
+/** The scene cannot hold 30 fps even at the lowest quality (the hero shows the still). */
+export class LowPowerError extends Error {
+  constructor(readonly probe: ProbeResult) {
+    super(`la GPU no llega a 30 fps (${JSON.stringify(probe.costs)} ms)`);
+    this.name = 'LowPowerError';
+  }
+}
+
+/** A task boundary that hidden tabs do not throttle (the probe yields between frames). */
+const yieldTask = () =>
+  new Promise<void>((resolve) => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = () => {
+      ch.port1.close();
+      resolve();
+    };
+    ch.port2.postMessage(0);
+  });
 
 /**
  * Hacia el sol, en el espacio de la cámara: from the upper left and to the
@@ -119,6 +155,9 @@ const postVertex = /* glsl */ `
 const postFragment = /* glsl */ `
   uniform sampler2D tPlanet;
   uniform sampler2D tSea;
+  // The part of the targets drawn at a reduced quality (T80): 1 at full quality.
+  uniform vec2 uScale;
+  uniform vec2 uMaxUv;
   uniform float uSea;
   uniform float uHaze;
   uniform vec3 uHazeColor;
@@ -128,7 +167,8 @@ const postFragment = /* glsl */ `
   varying vec2 vUv;
   float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
   void main() {
-    vec3 planet = texture2D(tPlanet, vUv).rgb;
+    vec2 tuv = uScale.x < 1.0 ? min(vUv * uScale, uMaxUv) : vUv;
+    vec3 planet = texture2D(tPlanet, tuv).rgb;
     // The hero's grade of /mar's planet (T77 frame 01): cooler, less saturated,
     // darker; the game's colours stay a hint under the night.
     float luma = dot(planet, vec3(0.2126, 0.7152, 0.0722));
@@ -137,7 +177,7 @@ const postFragment = /* glsl */ `
     // and the exposure rises; the planet's surface goes soft under it.
     vec3 atmos = mix(vec3(0.11, 0.17, 0.36), vec3(0.42, 0.52, 0.72), 1.0 - vUv.y);
     planet = mix(planet * (1.0 + 0.4 * uAtmos), atmos, uAtmos * 0.78);
-    vec3 col = mix(planet, texture2D(tSea, vUv).rgb, uSea);
+    vec3 col = mix(planet, texture2D(tSea, tuv).rgb, uSea);
     // The golden haze of the atmosphere: thicker low on the screen.
     col = mix(col, uHazeColor * (0.85 + 0.3 * (1.0 - vUv.y)), uHaze * 0.92);
     vec2 c = (vUv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
@@ -191,10 +231,13 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
   // The sea by the port (perspective).
   const sea = buildSeaRig(opts.width, opts.height);
 
-  // Render targets (with MSAA) and the post pass.
+  // Render targets and the post pass. Level 0 draws into the MSAA pair; the
+  // reduced levels (T80, frames in motion on a slow GPU) into a pair without
+  // MSAA, created the first time one is used, within a part of it (viewport).
   const rtOpts = { samples: 4, type: HalfFloatType, depthBuffer: true } as const;
   const rtPlanet = new WebGLRenderTarget(1, 1, rtOpts);
   const rtSea = new WebGLRenderTarget(1, 1, rtOpts);
+  let fast: [WebGLRenderTarget, WebGLRenderTarget] | null = null;
   const post = new ShaderMaterial({
     vertexShader: postVertex,
     fragmentShader: postFragment,
@@ -203,6 +246,8 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
     uniforms: {
       tPlanet: { value: rtPlanet.texture },
       tSea: { value: rtSea.texture },
+      uScale: { value: new Vector2(1, 1) },
+      uMaxUv: { value: new Vector2(1, 1) },
       uSea: { value: 0 },
       uHaze: { value: 0 },
       uHazeColor: { value: new Color(HAZE) },
@@ -219,6 +264,27 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
 
   let width = 1;
   let height = 1;
+  let px = 1;
+  let py = 1;
+  let level = 0;
+
+  /** The pair for `level`, with its viewport set (the part the post pass reads). */
+  const targets = (lv: number): [WebGLRenderTarget, WebGLRenderTarget] => {
+    const q = QUALITY[lv] ?? QUALITY[0]!;
+    if (q.msaa) return [rtPlanet, rtSea];
+    if (!fast) {
+      const o = { type: HalfFloatType, depthBuffer: true } as const;
+      fast = [new WebGLRenderTarget(px, py, o), new WebGLRenderTarget(px, py, o)];
+    }
+    const vx = Math.max(1, Math.round(px * q.scale));
+    const vy = Math.max(1, Math.round(py * q.scale));
+    for (const rt of fast) {
+      rt.viewport.set(0, 0, vx, vy);
+      rt.scissor.set(0, 0, vx, vy);
+    }
+    return fast;
+  };
+
   const resize = (w: number, h: number) => {
     width = Math.max(1, w);
     height = Math.max(1, h);
@@ -230,10 +296,11 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
     camera.updateProjectionMatrix();
     stars.scale.set(width, height, 1);
     sea.resize(width, height);
-    const px = Math.round(width * opts.resolution);
-    const py = Math.round(height * opts.resolution);
+    px = Math.round(width * opts.resolution);
+    py = Math.round(height * opts.resolution);
     rtPlanet.setSize(px, py);
     rtSea.setSize(px, py);
+    if (fast) for (const rt of fast) rt.setSize(px, py);
     (post.uniforms.uRes!.value as Vector2).set(px, py);
   };
   resize(opts.width, opts.height);
@@ -241,21 +308,27 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
   const draw = (f: IntroFrame, clock: number) => {
     const p = f.pose;
     const seaAmt = f.sea;
+    const q = QUALITY[level] ?? QUALITY[0]!;
+    const [tPlanet, tSea] = targets(level);
     if (seaAmt < 1) {
       planet.group.position.set(p.x - width / 2, height / 2 - p.y, 0);
       planet.group.scale.setScalar(p.radius / planet.radius);
       planet.pose(p.spin, p.tilt, p.spin * config.clouds.speed, clock);
-      renderer.setRenderTarget(rtPlanet);
+      renderer.setRenderTarget(tPlanet);
       renderer.render(scene, camera);
     }
     if (seaAmt > 0) {
       sea.update(Math.max(f.s, 0.84), f.light, clock);
-      renderer.setRenderTarget(rtSea);
+      renderer.setRenderTarget(tSea);
       renderer.render(sea.scene, sea.camera);
     }
     const u = post.uniforms;
-    u.tPlanet!.value = (seaAmt < 1 ? rtPlanet : rtSea).texture;
-    u.tSea!.value = (seaAmt > 0 ? rtSea : rtPlanet).texture;
+    u.tPlanet!.value = (seaAmt < 1 ? tPlanet : tSea).texture;
+    u.tSea!.value = (seaAmt > 0 ? tSea : tPlanet).texture;
+    const vp = tPlanet.viewport;
+    (u.uScale!.value as Vector2).set(q.msaa ? 1 : vp.z / px, q.msaa ? 1 : vp.w / py);
+    // Half a texel in from the edge of the part drawn: no stale texels in the filter.
+    (u.uMaxUv!.value as Vector2).set((vp.z - 0.5) / px, (vp.w - 0.5) / py);
     u.uSea!.value = seaAmt;
     u.uHaze!.value = f.haze;
     const a = Math.min(1, Math.max(0, (f.s - 0.12) / 0.5));
@@ -266,48 +339,144 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
   };
 
   // Lista de verdad: shaders compilados y geometría en la GPU antes de la
-  // aparición, para que el primer fotograma no se coma el principio.
+  // aparición, para que el primer fotograma no se coma el principio. Each
+  // rig is compiled against the target it draws into (linear output, not
+  // the canvas's): otherwise the first frames compiled again (T80: long
+  // tasks in the middle of the scroll).
   planet.group.scale.setScalar(Math.min(width, height) / 2 / planet.radius);
   sea.update(1, 0, 0);
-  await Promise.all([
-    renderer.compileAsync(scene, camera),
-    renderer.compileAsync(sea.scene, sea.camera),
-    renderer.compileAsync(postScene, camera),
-  ]);
+  renderer.setRenderTarget(rtPlanet);
+  const compiling = [renderer.compileAsync(scene, camera)];
+  renderer.setRenderTarget(rtSea);
+  compiling.push(renderer.compileAsync(sea.scene, sea.camera));
+  renderer.setRenderTarget(null);
+  compiling.push(renderer.compileAsync(postScene, camera));
+  await Promise.all(compiling);
+
+  // First-frames probe (T80): what a frame costs, GPU included, at each
+  // level until one fits the motion budget: the dearer of a planet frame and
+  // a sea frame (the short stretch of the dive draws both). A GPU under 30
+  // fps even at the lowest level gets the static version. The canvas is
+  // still transparent (it shows from the first real frame on).
+  const gl = renderer.getContext();
+  const pixel = new Uint8Array(4);
+  // Reading a pixel back waits for the GPU (Chrome's `finish` does not).
+  const waitGpu = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+  // The two frames the hero is made of: the planet at rest and the sea.
+  const probeFrame = (seaAmt: number) =>
+    ({
+      pose: {
+        x: width / 2,
+        y: height * 0.45,
+        radius: Math.min(width, height) * 0.42,
+        tilt: 0.3,
+        spin: 0,
+      },
+      sea: seaAmt,
+      haze: 0,
+      s: seaAmt > 0 ? 2 : 0,
+      light: 0.5,
+    }) as IntroFrame;
+  const drawTimed = async (f: IntroFrame): Promise<number> => {
+    await yieldTask();
+    const t0 = performance.now();
+    draw(f, 0);
+    waitGpu();
+    return performance.now() - t0;
+  };
+  /**
+   * What a level costs: the dearer of the two frames, each the best of two
+   * draws (one is enough when it is clearly over). The first draw on a new
+   * pair of targets uploads and allocates: not timed.
+   */
+  const timeLevel = async (lv: number, warm: boolean): Promise<number> => {
+    level = lv;
+    let cost = 0;
+    for (const seaAmt of [0, 1]) {
+      const f = probeFrame(seaAmt);
+      if (warm) {
+        draw(f, 0);
+        waitGpu();
+      }
+      let best = await drawTimed(f);
+      if (best <= CLEARLY_OVER_MS) best = Math.min(best, await drawTimed(f));
+      cost = Math.max(cost, best);
+      if (cost > CLEARLY_OVER_MS) break;
+    }
+    await yieldTask();
+    return cost;
+  };
+  const costs: (number | null)[] = QUALITY.map(() => null);
+  let lv: number | undefined;
+  while ((lv = nextProbeLevel(costs)) !== undefined) {
+    // New targets at level 0 (the first draws) and at the first level without MSAA.
+    const warm = lv === 0 || (!QUALITY[lv]!.msaa && QUALITY.slice(0, lv).every((q) => q.msaa));
+    costs[lv] = await timeLevel(lv, warm);
+  }
+  const motion = pickMotionLevel(costs);
+  const probe: ProbeResult = { costs, motion: motion ?? QUALITY.length - 1 };
+  level = 0;
+  // The canvas starts empty, as without the probe.
+  renderer.setRenderTarget(null);
+  renderer.clear();
 
   let destroyed = false;
-  // The props come after the first frame (T79): nothing waits for them.
-  window.setTimeout(() => {
+  const destroy = () => {
     if (destroyed) return;
-    void sea.loadProps().then((n) => {
-      if (!destroyed) opts.onProps?.(n);
-    });
-  }, 0);
+    destroyed = true;
+    planet.dispose();
+    sea.dispose();
+    stars.geometry.dispose();
+    (stars.material as PointsMaterial).dispose();
+    rtPlanet.dispose();
+    rtSea.dispose();
+    if (fast) for (const rt of fast) rt.dispose();
+    post.dispose();
+    quadGeo.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+  };
+  if (motion === null) {
+    destroy();
+    throw new LowPowerError(probe);
+  }
+
+  // T78's props come when the hero asks (T80: once the page is calm or the
+  // visitor scrolls), each one compiled against the sea's target before it
+  // shows, so neither its parse nor its shaders land in the scroll.
+  let propsAsked = false;
+  const loadProps = () => {
+    if (propsAsked || destroyed) return;
+    propsAsked = true;
+    void sea
+      .loadProps(async (root) => {
+        if (destroyed) return;
+        renderer.setRenderTarget(rtSea);
+        const ready = renderer.compileAsync(root, sea.camera, sea.scene);
+        renderer.setRenderTarget(null);
+        await ready;
+      })
+      .then((n) => {
+        if (!destroyed) opts.onProps?.(n);
+      });
+  };
 
   return {
     renderer: gpuName(renderer),
     worldId: live.id,
     islands: planet.islands,
     islandIds: planet.islandIds,
+    probe,
     // «Zarpar» se zambulle en el puerto de salida de /mar (T64).
     focus: planet.focus,
     resize,
+    setQuality(lv: number) {
+      level = Math.min(QUALITY.length - 1, Math.max(0, Math.round(lv)));
+    },
+    loadProps,
     render(f: IntroFrame, clock: number) {
       if (!destroyed) draw(f, clock);
     },
-    destroy() {
-      if (destroyed) return;
-      destroyed = true;
-      planet.dispose();
-      sea.dispose();
-      stars.geometry.dispose();
-      (stars.material as PointsMaterial).dispose();
-      rtPlanet.dispose();
-      rtSea.dispose();
-      post.dispose();
-      quadGeo.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
-    },
+    destroy,
   };
 }

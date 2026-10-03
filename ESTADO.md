@@ -4,6 +4,122 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T80: Performance and budget
+
+Qué existe:
+- **Presupuesto de la landing: 184,8 kB** gzip (T79: 192,4 kB; tope 200 kB).
+  El chunk de la página baja de 11,1 a 3,4 kB:
+  - `lib/intro/lazy.ts`: el motor del hero (`run.ts`: controlador, scroll,
+    bucle de pintado y su analítica) va en su propio chunk, pedido en cuanto
+    corre el chunk de la página (en paralelo con la hidratación).
+    `intro-stage.tsx` sólo cambia el import. Mientras no llega: el script de
+    arranque ya decide la entrada y adelanta con un scroll, «Zarpar» es un
+    enlace normal a /mar y «Entradas» abre el panel por `:target`; un
+    «Entradas» pulsado antes adelanta la aparición al llegar.
+  - `components/landing-client-lazy.tsx`: `LandingClient` (panel de Tickets
+    y analítica del embudo; no pinta nada) también en chunk aparte.
+    `landing-client.tsx` no se toca.
+  - three.js (la escena) se pide después del evento `load` de la página
+    (antes podía retenerlo ahora que el motor llega antes).
+- Escena (`lib/planeta/intro-scene.ts`, `quality.ts`, `sea-rig.ts`):
+  - Cada rig se compila contra su render target (salida lineal), no contra
+    el canvas: los primeros fotogramas ya no recompilan shaders (eran
+    tareas largas a mitad de scroll: `getProgramInfoLog` 182 ms → 30 ms con
+    GPU real).
+  - Calidad por niveles: 0 = el diseño (MSAA 4×, DPR ≤ 1,5), 1 sin MSAA,
+    2 y 3 sin MSAA a 0,75 y 0,5 de resolución (viewport dentro del target,
+    el pase final reescala). **Todo fotograma en reposo se pinta a nivel 0**;
+    los niveles bajos sólo se usan en movimiento (scroll, aparición,
+    «Zarpar») en una GPU que no los aguanta, y al parar se repinta a 0. En
+    una GPU que va bien el nivel en movimiento es 0: la imagen es la misma.
+  - Sonda de primeros fotogramas: al crear la escena mide lo que cuesta un
+    fotograma de planeta y uno de mar, con GPU incluida (`readPixels` de
+    1 px; el `finish` de Chrome no espera), en los niveles 0, 1 y 3, y
+    elige el primero que cabe en 20 ms. Si ni el nivel 3 llega a 30 fps
+    (> 33,3 ms) → versión estática (`LowPowerError`, `quality.lowFps`). En
+    movimiento, si la mediana de 12 intervalos pasa de 30 ms, baja un nivel
+    (sólo baja).
+  - Los props GLB de T78 se piden con la página tranquila tras el reposo
+    (`requestIdleCallback`, ≤ 2 s) o con el primer scroll; se descargan a la
+    vez y se parsean y compilan de uno en uno, con una tarea entre medias,
+    y cada uno se compila antes de entrar en la escena.
+- Bucle (`lib/intro/run.ts`): pinta sólo si cambió el scroll o hay
+  animación por tiempo (como T79); en reposo, a 30 fps como mucho y un
+  fotograma de calidad completa como mucho cada 4× lo que cuesta a la GPU
+  (la cuarta parte de T57, ahora con la GPU medida): en una GPU lenta el
+  giro del planeta y el agua van a saltos, las letras de «BOIA» siguen a su
+  ritmo y no se encolan fotogramas. Pestaña oculta: no pinta (ya era así).
+  El tamaño se lee antes de escribir el DOM del fotograma (sin layout
+  forzado); `data-hero-top` sólo se toca si cambia.
+- Bajo consumo (`lib/intro/low-power.ts`, con pruebas): `saveData`,
+  `navigator.deviceMemory ≤ 4` o `hardwareConcurrency ≤ 4` → versión
+  estática sin WebGL; más la sonda. **En WebKit de Apple (Safari y todo
+  navegador de iOS) `hardwareConcurrency` no cuenta**: siempre dice 4 u 8
+  (todo iPhone dice 4), así que la regla literal mandaría todos los iPhone
+  al still; ahí decide la sonda.
+- Diagnóstico: `window.__boiaIntro.quality = { probeMs, motion, lowFps,
+  stepDowns }`.
+- `apps/web/e2e/landing-perf.spec.ts`: scroll de 6 s del hero al pie a
+  375×812 con CDP CPU 4× (p95 ≤ 50 ms, ninguna tarea larga > 200 ms tras
+  la escena lista) en el proyecto móvil; movimiento reducido y los tres
+  bajo consumo sin contexto WebGL, en los dos proyectos.
+
+Medidas (Chromium headless, 375×812, CPU 4×; la GPU de Playwright headless
+es SwiftShader, por software, que es lo que cuesta; puede que T81 corriera
+e2e a la vez):
+- Antes (build de T79, mismo spec): p50 83,3 ms, p95 100 ms, peor 367 ms;
+  93 tareas largas tras la escena lista, la mayor 373 ms.
+- Después (corrida del Done-when): 224 fotogramas, p50 33,3 ms, p95
+  33,4 ms, peor 150 ms; 5 tareas largas tras la escena lista (116, 100, 94,
+  89, 133 ms: los fotogramas de reposo a calidad completa); sonda
+  `[75,8, 25,6, –, 19,8]` ms → nivel 3 en movimiento. Otras corridas: p50
+  16,7, p95 33,4, tareas ≤ 168 ms.
+- Con la GPU real de esta máquina (`--use-angle=d3d11`, script aparte, no
+  el spec): sonda 2,9 ms → nivel 0 en movimiento (imagen idéntica), p50 y
+  p95 16,7 ms.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 109 archivos, 990 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm
+  typecheck` → exit 0.
+- `pnpm build` → exit 0; «184.8 kB total, 13 archivos · presupuesto
+  200.0 kB · OK».
+- `E2E_PORT=3401 pnpm e2e landing-perf.spec.ts --workers=1` → exit 0, 9
+  pasan, 1 omitida (la medida de scroll sólo corre en el proyecto móvil).
+- `E2E_PORT=3402 pnpm e2e landing-scroll.spec.ts intro.spec.ts --workers=1`
+  → exit 0, 48 pasan.
+- Extra: `E2E_PORT=3403 pnpm e2e landing.spec.ts --workers=1` → exit 0, 10
+  pasan.
+
+Qué mirar a mano en un móvil real (Hernán):
+- iPhone (Safari) y un Android medio, en https con la versión desplegada:
+  la escena sale (no el still) y en la consola remota
+  `__boiaIntro.quality` da `motion` 0 o 1 y `probeMs[0]` (coste a calidad
+  completa); si un móvil decente da el still, mirar `lowFps` y
+  `navigator.deviceMemory` (un Android con 4 GB va al still por la regla
+  `deviceMemory ≤ 4`: decidir si se queda así).
+- Scroll rápido de arriba abajo y vuelta: sin tirones, sin saltos de
+  maquetación, el planeta y el mar siguen al dedo; al soltar, la imagen no
+  se ve más borrosa que en reposo (si se ve, la GPU está en un nivel bajo).
+- Reposo dos minutos: el móvil no se calienta ni gasta batería de más
+  (DevTools remoto → Performance: pocos fotogramas por segundo en reposo).
+- Ahorro de datos activado en Chrome Android → el still, sin canvas.
+- La primera vez con 4G lento: «Entradas» abre el panel y «Zarpar» lleva a
+  /mar aunque la escena aún no haya llegado.
+
+Pendiente:
+- La regla `deviceMemory ≤ 4` manda al still a muchos Android de gama media
+  (Chrome redondea a 4 GB); es lo que pide la tarea, Hernán decide.
+- No se ha separado el CSS de las bandas: son contenido pintado por el
+  servidor que una URL directa (`/#fotos`, eventos) enseña en el primer
+  pintado y la primera banda asoma en la primera pantalla; cargarlo tarde
+  daría destellos sin estilo y saltos de maquetación (son 5,9 kB).
+- Los stills usan `sizes="100vw"` con `object-fit: cover`: en vertical se
+  muestran ~1,6 veces más anchos que la vista, así que un móvil de DPR ≤ 2
+  pide el de 800 px y se ve blando. `sizes="max(100vw, 160vh)"` lo
+  arreglaría (+80 kB en móvil); es un cambio visible, no se hizo.
+
 ## 2026-10-03 — plan 007 T81: Accesibilidad, movimiento reducido y el e2e del flujo completo
 
 Qué existe:

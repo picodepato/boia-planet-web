@@ -11,8 +11,10 @@ import {
 } from '@boia/engine/intro';
 import { track } from '../analytics';
 import type { IntroScene } from '../planeta/intro-scene';
+import { QUALITY } from '../planeta/quality';
 import type { IntroDiagnostics } from './bridge';
 import type { IntroData } from './load';
+import { lowPower } from './low-power';
 import { clearTitle, drawTitle, fitTitle, sizeTitleCanvas } from './title-canvas';
 
 /** Radios de «Zarpar» guardados en el diagnóstico (tope). */
@@ -21,6 +23,20 @@ const MAX_SAMPLES = 600;
 const MAX_DPR = 1.5;
 /** Time-based motion at rest (the planet's spin, the water): at most 30 fps. */
 const IDLE_FRAME_MS = 1000 / 30;
+/**
+ * …and at most a quarter of the time (T57): the wait is 4× what a frame
+ * costs the main thread; at rest the scene itself paints at most once per
+ * 4× what a full-quality frame costs the GPU (the probe, T80).
+ */
+const IDLE_COST_FACTOR = 4;
+/** Frames in motion whose intervals decide a step down in quality (T80). */
+const MOTION_SAMPLES = 12;
+/** A median interval over this (ms) in motion: one quality level down. */
+const MOTION_SLOW_MS = 30;
+/** Lowest motion quality level. */
+const LOWEST_QUALITY = QUALITY.length - 1;
+/** The props of the sea come once the page is calm after the rest (or on a scroll). */
+const PROPS_IDLE_MS = 2000;
 /** Visita directa: cuánto espera, como mucho, a que la página esté tranquila. */
 const DIRECT_IDLE_MS = 1500;
 /** Smoothing of the scroll position (time constant, ms): no jank from coarse wheels. */
@@ -82,6 +98,8 @@ class IntroRun {
   private idleTimer = 0;
   /** ms que costó pintar el último fotograma. */
   private renderCost = 0;
+  /** When the last full-quality frame at rest was painted (T80). */
+  private lastFullAt = 0;
   private visible = true;
   private lastFrame: IntroFrame | null = null;
   private lastSize = '';
@@ -107,6 +125,11 @@ class IntroRun {
   private titleFrom = 0;
   private pauseMs = 0;
   private lastWidth = window.innerWidth;
+  // Quality of the frames in motion (T80): the probe's level, lowered when
+  // the frames in motion come too slow.
+  private motionLevel = 0;
+  private motionDts: number[] = [];
+  private propsAsked = false;
 
   constructor(private readonly data: IntroData) {
     const entry = window.__boiaEntry;
@@ -156,6 +179,7 @@ class IntroRun {
       pose: null,
       scroll: { s: 0, phase: 'rest', light: 0 },
       props: 0,
+      quality: { probeMs: null, motion: null, lowFps: false, stepDowns: 0 },
     };
     window.__boiaIntro = this.diag;
 
@@ -241,6 +265,10 @@ class IntroRun {
     // Sin entrada que reproducir, el planeta del hero espera a que la página
     // esté tranquila: primero el contenido de la landing.
     if (this.controller.mode === 'direct') await whenIdle(DIRECT_IDLE_MS);
+    // three.js after the page's own load (T80: the runtime now arrives in its
+    // own chunk, possibly before `load`; the scene must not hold that event).
+    if (document.readyState !== 'complete')
+      await new Promise<void>((r) => window.addEventListener('load', () => r(), { once: true }));
     if (this.disposed) throw new Error('la entrada ya se fue');
     const { createIntroScene } = await import('../planeta/intro-scene');
     const canvas = document.createElement('canvas');
@@ -260,11 +288,13 @@ class IntroRun {
         search: window.location.search,
         onProps: (n) => {
           this.diag.props = n;
-          this.lastFrame = null;
           this.kick();
         },
       });
       this.scene = scene;
+      this.motionLevel = scene.probe.motion;
+      this.diag.quality.probeMs = roundCosts(scene.probe.costs);
+      this.diag.quality.motion = scene.probe.motion;
       this.lastSize = `${vp.width}x${vp.height}`;
       this.diag.renderer = scene.renderer;
       this.diag.world = scene.worldId;
@@ -272,6 +302,12 @@ class IntroRun {
       this.diag.islandIds = [...scene.islandIds];
       return scene;
     } catch (err) {
+      // The first-frames probe: under 30 fps even at the lowest quality (low power).
+      const probe = (err as { name?: string; probe?: { costs: (number | null)[] } })?.probe;
+      if ((err as { name?: string })?.name === 'LowPowerError' && probe) {
+        this.diag.quality.lowFps = true;
+        this.diag.quality.probeMs = roundCosts(probe.costs);
+      }
       console.warn('[boia] la escena del hero no arrancó; se queda la versión estática', err);
       canvas.remove();
       this.canvas = null;
@@ -320,6 +356,7 @@ class IntroRun {
     if (c.live) {
       if (host) host.dataset.ready = '';
       this.requestTitle();
+      if (c.phase === 'paused') this.askProps(false);
     } else if (host) delete host.dataset.ready;
     // The rest after the appearance: «Zarpar» gets the focus (Enter sails).
     if (c.phase === 'paused' && c.mode === 'intro' && c.outcome === 'played' && !this.focused) {
@@ -377,7 +414,6 @@ class IntroRun {
         d.loadedMs = performance.now() - this.t0;
         const title = this.view?.title.current;
         if (title) title.dataset.title = '3d';
-        this.lastFrame = null;
         this.kick();
       })
       .catch(() => {
@@ -423,9 +459,26 @@ class IntroRun {
     const top = photos ? photos.getBoundingClientRect().top + y : 0;
     const span = photos ? top - H / 2 - H : 3 * H;
     this.light = Math.min(1, Math.max(0, (y - H) / Math.max(span, H / 2)));
-    if (y < window.innerHeight * HEADER_FROM) this.html.setAttribute('data-hero-top', '');
-    else this.html.removeAttribute('data-hero-top');
+    // toggleAttribute with a force does nothing when it is already so (no style work).
+    this.html.toggleAttribute('data-hero-top', y < window.innerHeight * HEADER_FROM);
   }
+
+  /** T78's props: when the page is calm after the rest, or right away on a scroll. */
+  private askProps(now: boolean): void {
+    const scene = this.scene;
+    if (!scene || this.propsAsked) return;
+    if (now) {
+      this.propsAsked = true;
+      scene.loadProps();
+      return;
+    }
+    if (this.propsTimer) return;
+    this.propsTimer = true;
+    void whenIdle(PROPS_IDLE_MS).then(() => {
+      if (!this.disposed) this.askProps(true);
+    });
+  }
+  private propsTimer = false;
 
   /** The hero's DOM follows the (smoothed) scroll: phase, UI fade, night. */
   private applyScroll(): void {
@@ -449,7 +502,11 @@ class IntroRun {
     }
   }
 
-  /** Bucle de pintado: sólo mientras haya algo que mover y se vea. */
+  /**
+   * Bucle de pintado: sólo mientras haya algo que mover y se vea. A frame is
+   * painted when the scroll position or a time-based animation changed; at
+   * rest at full quality, in motion at the level the GPU holds (T80).
+   */
   private loop = () => {
     this.raf = 0;
     const c = this.controller;
@@ -457,14 +514,17 @@ class IntroRun {
     if (this.leaving) return;
     const d = this.diag;
     const now = performance.now();
+    // Read the size before the writes of the frame: no forced layout.
+    const vp = this.viewport();
     // Smooth the scroll towards the page's position.
-    const dt = this.tick ? Math.min(100, now - this.tick) : 16;
+    const wasMoving = this.tick !== 0;
+    const interval = wasMoving ? now - this.tick : 0;
+    const dt = wasMoving ? Math.min(100, interval) : 16;
     this.tick = now;
     const gap = this.sTarget - this.s;
     this.s = Math.abs(gap) < 5e-4 ? this.sTarget : this.s + gap * (1 - Math.exp(-dt / SMOOTH_MS));
     this.applyScroll();
 
-    const vp = this.viewport();
     const size = `${vp.width}x${vp.height}`;
     if (size !== this.lastSize) {
       this.scene?.resize(vp.width, vp.height);
@@ -472,21 +532,35 @@ class IntroRun {
     }
     const clock = this.still ? 0 : (now - this.mountedAt) / 1000;
     const phase = c.phase;
-    const f = c.render(vp, clock, this.s, this.light);
+    const animating = phase === 'appearing' || phase === 'landing';
+    const inMotion = animating || this.s !== this.sTarget;
+    if (inMotion && wasMoving) this.sampleMotion(interval);
+    // At rest, a full-quality frame at most once per 4× what one costs the GPU
+    // (T57's quarter, T80): on a slow GPU the time-based motion of the scene
+    // goes slower, the title's letters keep their pace, and no frame queues
+    // behind another one. A held frame is painted when its turn comes.
+    const restGap = (this.scene?.probe.costs[0] ?? 0) * IDLE_COST_FACTOR;
+    const sinceFull = now - this.lastFullAt;
+    const hold = !inMotion && c.live && this.lastFrame !== null && sinceFull < restGap;
+    this.scene?.setQuality(inMotion ? this.motionLevel : 0);
+    const f = hold ? c.frame(vp, this.s, this.light) : c.render(vp, clock, this.s, this.light);
+    if (f && !hold && !inMotion && c.live) this.lastFullAt = now;
     this.renderCost = performance.now() - now;
-    if (phase === 'appearing' || phase === 'landing') {
+    if (animating) {
       const step = this.lastFrameAt ? now - this.lastFrameAt : 0;
       d.longestFrameMs = Math.max(d.longestFrameMs, step);
       if (step > 50) d.slowFrames++;
       this.lastFrameAt = now;
     } else this.lastFrameAt = 0;
-    if (f) {
+    if (f && !hold) {
       d.framesRendered++;
       d.pose = { ...f.pose };
       if (f.act === 'landing' && d.landingRadius.length < MAX_SAMPLES)
         d.landingRadius.push(f.pose.radius);
       if (this.lastFrame && size === this.lastSize && viewMoved(this.lastFrame, f)) d.cameraMoves++;
       this.lastFrame = f;
+    }
+    if (f) {
       this.paintTitle(f);
       if (f.act === 'landing') {
         const ui = this.view.ui.current;
@@ -505,11 +579,15 @@ class IntroRun {
     if (moving) this.raf = requestAnimationFrame(this.loop);
     else {
       this.tick = 0;
-      if (idle) {
+      if (idle || hold) {
         // Sin comerse la página: a 30 fps como mucho y, si pintar cuesta (un
         // móvil flojo, WebGL por software), más despacio, para no pasar de
-        // una cuarta parte del tiempo.
-        const wait = Math.max(IDLE_FRAME_MS, this.renderCost * 4) - (performance.now() - now);
+        // una cuarta parte del tiempo. A held frame comes back when its turn does.
+        const wait =
+          hold && !idle
+            ? restGap - sinceFull
+            : Math.max(IDLE_FRAME_MS, this.renderCost * IDLE_COST_FACTOR) -
+              (performance.now() - now);
         this.idleTimer = window.setTimeout(
           () => {
             this.idleTimer = 0;
@@ -520,6 +598,25 @@ class IntroRun {
       }
     }
   };
+
+  /**
+   * Frames in motion that come too slow (median interval over
+   * `MOTION_SLOW_MS`): one quality level down for the frames in motion. Only
+   * down, never back up within the load (no back and forth).
+   */
+  private sampleMotion(intervalMs: number): void {
+    if (this.motionLevel >= LOWEST_QUALITY) return;
+    const xs = this.motionDts;
+    xs.push(intervalMs);
+    if (xs.length > MOTION_SAMPLES) xs.shift();
+    if (xs.length < MOTION_SAMPLES) return;
+    const sorted = [...xs].sort((a, b) => a - b);
+    if (sorted[MOTION_SAMPLES >> 1]! <= MOTION_SLOW_MS) return;
+    this.motionLevel++;
+    this.diag.quality.motion = this.motionLevel;
+    this.diag.quality.stepDowns++;
+    xs.length = 0;
+  }
 
   private kick(): void {
     if (this.idleTimer) {
@@ -533,6 +630,7 @@ class IntroRun {
 
   private onScroll = () => {
     this.readScroll();
+    if (this.sTarget > 0) this.askProps(true);
     // Scrolling during the appearance fast-forwards it (plan 007).
     if (this.sTarget > 0) this.controller.skip();
     this.kick();
@@ -628,10 +726,9 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-/** Low power: the visitor asked to save data (T80 refines the heuristics). */
-function lowPower(): boolean {
-  const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
-  return nav.connection?.saveData === true;
+/** The probe's costs for the diagnostics (0.1 ms; `null`: level not measured). */
+function roundCosts(costs: readonly (number | null)[]): (number | null)[] {
+  return costs.map((c) => (c === null ? null : Math.round(c * 10) / 10));
 }
 
 /** La entrada de esta carga de `/`, mientras haya un hero que la muestre. */

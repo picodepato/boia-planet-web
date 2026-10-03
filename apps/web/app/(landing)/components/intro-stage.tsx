@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import type { IntroData } from '../../../lib/intro/load';
-import { attachIntro, enterIntro, skipIntro } from '../../../lib/intro/run';
+import { attachIntro, enterIntro, skipIntro } from '../../../lib/intro/lazy';
 import { ZARPAR_HREF, markZarpar } from '../../../lib/intro/zarpar';
 import { HeroStills } from './hero-stills';
 

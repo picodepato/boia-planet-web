@@ -36,6 +36,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const ART = '/api/art/landing/3d';
 const DEG = Math.PI / 180;
 
+/** A task boundary: the page gets a turn between the steps of loading the props. */
+const pause = () => new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+
 /** A mood of the hero's cinematic grade (T77 §3.1), sRGB hex. */
 interface MoodHex {
   zenith: string;
@@ -270,8 +273,12 @@ export interface SeaRig {
   /** Pose and light for scroll `s`, light 0..1 and the clock (s). */
   update(s: number, light: number, clock: number): void;
   resize(width: number, height: number): void;
-  /** T78's props, after the first frame; resolves with how many were placed. */
-  loadProps(): Promise<number>;
+  /**
+   * T78's props; resolves with how many were placed. One at a time, with a
+   * task between steps (no long task on a slow phone), and each one goes
+   * through `prepare` (shader compilation) before it is added to the scene.
+   */
+  loadProps(prepare?: (root: Object3D) => Promise<void>): Promise<number>;
   dispose(): void;
 }
 
@@ -419,49 +426,64 @@ export function buildSeaRig(width: number, height: number): SeaRig {
   let boat: Object3D | null = null;
   let boatZ = -105;
   let loaded: Promise<number> | null = null;
+  /** Metres sailed in the last update (a prop placed later starts there). */
+  let lastSailed = 0;
+  const tmp = new Vector3();
 
-  const placeProps = async (): Promise<number> => {
+  const placeProps = async (prepare?: (root: Object3D) => Promise<void>): Promise<number> => {
     const manifest = (await (await fetch(`${ART}/manifest.json`)).json()) as Manifest;
     const esc = manifest.escena;
     sunDir = dirOf(esc.sun.azimuth_deg, esc.sun.elevation_deg);
     moonDir = dirOf(esc.moon.azimuth_deg, esc.moon.elevation_deg);
     const loader = new GLTFLoader();
     let placed = 0;
-    await Promise.all(
-      manifest.props.map(async (p) => {
-        const pose = esc.props[p.id];
-        if (!pose) return;
-        const root = (await loader.loadAsync(`${ART}/${p.file}`)).scene;
-        root.traverse((o) => {
-          const m = o as Mesh;
-          if (!m.isMesh) return;
-          if (!m.geometry.getAttribute('normal')) m.geometry.computeVertexNormals();
-          const mat = m.material as MeshStandardMaterial;
-          if (o.name.startsWith('luz_')) {
-            mat.emissiveIntensity = 2.5;
-            mat.fog = false;
-          }
-        });
-        root.position.set(...pose.position);
-        root.rotation.y = -pose.yaw_deg * DEG;
-        props.add(root);
-        for (const l of p.lights) {
-          const at = new Vector3(...l.position);
-          addLight(
-            root,
-            at,
-            l.color,
-            l.node.startsWith('luz_muelle') ? 0.55 : 1,
-            l.node === 'luz_boya',
-          );
-        }
-        if (p.id === 'barco') {
-          boat = root;
-          boatZ = pose.position[2];
-        }
-        placed++;
+    // The files download together; parsing and compiling go one by one.
+    const wanted = manifest.props.filter((p) => esc.props[p.id]);
+    const files = wanted.map((p) =>
+      fetch(`${ART}/${p.file}`).then((r) => {
+        if (!r.ok) throw new Error(`${p.file}: ${r.status}`);
+        return r.arrayBuffer();
       }),
     );
+    // A failed download stops the loop below; the others must not go unhandled.
+    for (const f of files) f.catch(() => {});
+    for (const [i, p] of wanted.entries()) {
+      const pose = esc.props[p.id]!;
+      const data = await files[i]!;
+      await pause();
+      const root = (await loader.parseAsync(data, `${ART}/`)).scene;
+      await pause();
+      root.traverse((o) => {
+        const m = o as Mesh;
+        if (!m.isMesh) return;
+        if (!m.geometry.getAttribute('normal')) m.geometry.computeVertexNormals();
+        const mat = m.material as MeshStandardMaterial;
+        if (o.name.startsWith('luz_')) {
+          mat.emissiveIntensity = 2.5;
+          mat.fog = false;
+        }
+      });
+      root.position.set(...pose.position);
+      root.rotation.y = -pose.yaw_deg * DEG;
+      for (const l of p.lights) {
+        const at = new Vector3(...l.position);
+        addLight(
+          root,
+          at,
+          l.color,
+          l.node.startsWith('luz_muelle') ? 0.55 : 1,
+          l.node === 'luz_boya',
+        );
+      }
+      if (p.id === 'barco') {
+        boatZ = pose.position[2];
+        root.position.z = boatZ - lastSailed;
+      }
+      await prepare?.(root);
+      if (p.id === 'barco') boat = root;
+      props.add(root);
+      placed++;
+    }
     return placed;
   };
 
@@ -515,6 +537,7 @@ export function buildSeaRig(width: number, height: number): SeaRig {
 
       // Camera: down from the sky onto the deck (s 0.84 → 1), then along the water.
       const d = sailed(s);
+      lastSailed = d;
       const u = smooth(0.84, 1, s);
       const down = 1 - u;
       const bob = Math.sin(clock * 0.9) * 0.12;
@@ -537,7 +560,6 @@ export function buildSeaRig(width: number, height: number): SeaRig {
       // Lights: half at golden hour, full at night; the buoy blinks every 3 s.
       const glow = 0.5 + 0.5 * smooth(0.3, 0.9, light);
       const isleGlow = smooth(0.45, 0.9, light);
-      const tmp = new Vector3();
       for (const l of lights) {
         const isle = l.halo.parent === isles;
         const on = l.blink ? (clock % 3 < 0.6 ? 1 : 0.15) : 1;
@@ -552,8 +574,8 @@ export function buildSeaRig(width: number, height: number): SeaRig {
       }
     },
     resize,
-    loadProps() {
-      loaded ??= placeProps().catch((err: unknown) => {
+    loadProps(prepare) {
+      loaded ??= placeProps(prepare).catch((err: unknown) => {
         console.warn('[boia] los modelos del mar no llegaron; el mar sigue sin ellos', err);
         return 0;
       });
