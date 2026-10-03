@@ -206,7 +206,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: global bottles via `createGlobalBottles` + `useBottles()` (wired in `lib/repo-member.ts`), 10 most recent for guests and members, refreshed every 3 min / on visibility / account switch; client filter mirrors the DB list; reads and reports to Supabase; REQ-IDE-044 HECHO; e2e 6 passed → 82d0286
 
 ## T94 — /admin on real data: email + TOTP login and four sections
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T92, T93
@@ -231,10 +231,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - the existing admin e2e specs in local mode → exit 0
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: /admin with email code + TOTP (aal2), `pnpm admin:grant`, real Fiestas y QR (window, projectable/printable QR, regenerate, stamp image by upload or URL into `stamp-images` bucket), Socios y emails (CSV of opt-ins, artist flag, delete duplicate), bottle moderation, ranking voids, all audited; bottle x/y only via `place_bottle`; `pnpm db:clean-test-users` → 347ed9c
 
 ## T95 — Docs, spec status and the decision draft
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T86, T87, T88, T89, T90, T91, T92, T93, T94
@@ -245,6 +245,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `docs/spec/estado.md`: every REQ these tasks moved, each with its test. Check IDE-023, AVE-034, IDE-040…044, IDE-050, IDE-053, ENT-032, ADM-002/004/027/039 and the final-version REQs D-20 deferred (IDE-002/003/005/006/039, ARQ-002/010/011/013).
   - The decision draft for Hernán in `docs/propuestas/2026-10-03-d27-borrador.md`: Supabase accounts by email with consent, guest merge, global bottles, QR stamps, admin TOTP. Say exactly which points of D-20 it replaces and which open questions it closes or opens (P7). Never edit `docs/DECISIONES.md`.
   - Replace the old test URL boia-planet.vercel.app with https://boia-planet-roan.vercel.app in `CLAUDE.md`, `docs/TRASPASO.md`, `docs/entrega.md` and anywhere else (noting it is temporary until the final domain).
+  - Document `pnpm admin:grant` and `pnpm db:clean-test-users` (README and checklist); consider moving REQ-ADM-003/006 with T94's script and tests.
   - A production checklist for Hernán in the same folder: a separate prod project, Vercel env vars, custom SMTP (the default mailer only reaches the team; Gmail app password for tests, Resend with the final domain for production) and then the Spanish email templates of T89, Auth URLs, running the migrations, granting the owner, removing `muestra` data.
 - Context: every Outcome and the Decisions of this plan; `docs/TRASPASO.md`, `README.md`, `.env.example`, `docs/spec/estado.md`, `tools/spec/estado.py`, `docs/DECISIONES.md` (read only).
 - Scope: may touch `README.md`, `CLAUDE.md` (only the URL), `docs/entrega.md`, `.env.example`, `docs/TRASPASO.md`, `docs/spec/**`, `docs/propuestas/2026-10-03-d27-borrador.md`, `docs/propuestas/2026-10-03-produccion-supabase.md` / must not touch app code, `docs/DECISIONES.md`.
@@ -294,8 +295,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T91: T94 gets the `stampImageUrl` field and a cleanup of leftover `@example.test` users (orchestrator).
 - 2026-10-03 T93: no new migration (T86's RPCs sufficed); wiring in `lib/repo-member.ts` although outside its listed scope; guests use `requireAccount('carnet')` to throw or report; client filter only in Supabase mode; keys in es-mar.ts (es-zonas.ts is generated) (agent).
 - 2026-10-03 T93: the x/y update gap goes to T94 (orchestrator).
+- 2026-10-03 T94: migration `20261003100600_admin_real.sql` (`my_staff_role()`, `events.stamp_image_url`, public `stamp-images` bucket writable by staff with TOTP, audited admin RPCs; voiding spent points refused with `insufficient_coins`); bottle INSERT and x/y UPDATE revoked; URL images fetched once by `/api/admin/stamp-image`, stored as 512 px WebP; admin login never creates accounts, no role → «Sin acceso» before TOTP, editors cannot use the four real sections; `use-carnet.ts` reads stamp images; admin e2e desktop only; `db:clean-test-users` deletes accounts older than 30 min unless `--all` (agent).
 
 ## Proposals (new scope)
+- 2026-10-03 T94: TOTP backup codes and account recovery for admins are not built; carnet moderation and the other admin sections remain local demo.
 - 2026-10-03 T93: in Supabase mode the sample bottles no longer float; a member's own bottle outside the 10 most recent does not float (still in «Mi botella» and the Carnet).
 - 2026-10-03 T91: after a stamp, the points count-up and «Ahora eres {rank}» from T87 are not built (only the «Puntos a → b» chip).
 - 2026-10-03 T92: on «De siempre» all members with 0 points share one position (ties ranked together), so a 0-point viewer may show «3» pinned under 50 others at «3»; the design may need a look.
@@ -330,3 +333,4 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 15:20 T91 done · branch worktree-agent-af6cb47b61ded8c78 → dfa09d9
 - 2026-10-03 15:33 T93 done · branch worktree-agent-af5cffc02be826f3c → 82d0286
 - 2026-10-03 15:34 T94 launched · attempt 1 · agent a1de24fad11003972
+- 2026-10-03 16:09 T94 done · branch worktree-agent-a1de24fad11003972 → 347ed9c
