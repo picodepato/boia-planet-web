@@ -3,7 +3,15 @@ import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { marWorld } from './engine/compact';
 import { roadPath } from './race';
-import { OFFROAD_GRACE, OffRoad, ROAD_HALF_WIDTH, distToPath, isOffRoad, roadMarks } from './road';
+import {
+  OFFROAD_GRACE,
+  OffRoad,
+  ROAD_HALF_WIDTH,
+  ROAD_MARK_STEP,
+  distToPath,
+  isOffRoad,
+  roadMarks,
+} from './road';
 
 /**
  * La carretera de la carrera (T76): las boyitas de los lados y los 5 s para
@@ -55,6 +63,81 @@ describe('carretera', () => {
     expect(right.length + left.length).toBeGreaterThan(60);
     for (const o of w.objects.filter((x) => /^circuito-(roca|medusa)/.test(x.identity.id))) {
       expect(isOffRoad(path, o.position), o.identity.id).toBe(false);
+    }
+  });
+});
+
+describe('el borde del circuito, cerrado (T96)', () => {
+  const w = marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.ids()[0]!).config);
+  const spec = circuitFromWorld(w, CIRCUIT_ID)!;
+  const path = roadPath(w, spec);
+  const { right, left } = roadMarks(path);
+  const marks = [...right, ...left];
+  const nearestMark = (p: { x: number; y: number }) =>
+    Math.min(...marks.map((m) => Math.hypot(m.x - p.x, m.y - p.y)));
+  const at = (c: { x: number; y: number }, angle: number, r: number) => ({
+    x: c.x + Math.cos(angle) * r,
+    y: c.y + Math.sin(angle) * r,
+  });
+  /** La boia de orden `order` (su vértice del trazado: `path[order]`). */
+  const buoy = (order: number) => {
+    const id = spec.gates.find((g) => g.order === order)!.objectId;
+    const o = w.objects.find((x) => x.identity.id === id)!;
+    expect(path[order]).toEqual({ x: o.position.x, y: o.position.y });
+    return path[order]!;
+  };
+  /** Hacia fuera de la curva en un vértice: contra la bisectriz de los dos tramos. */
+  const outward = (i: number) => {
+    const v = path[i]!;
+    const a = path[i - 1]!;
+    const b = path[i + 1]!;
+    const u = (p: { x: number; y: number }) => {
+      const d = Math.hypot(p.x - v.x, p.y - v.y);
+      return { x: (p.x - v.x) / d, y: (p.y - v.y) / d };
+    };
+    const s = { x: u(a).x + u(b).x, y: u(a).y + u(b).y };
+    return Math.atan2(-s.y, -s.x);
+  };
+
+  it('ningún hueco en todo el borde: siempre hay una boyita a menos de un paso', () => {
+    let worst = 0;
+    let where = '';
+    for (let i = 0; i < path.length; i++) {
+      for (let deg = 0; deg < 360; deg += 2) {
+        const p = at(path[i]!, (deg * Math.PI) / 180, ROAD_HALF_WIDTH);
+        // Sólo los puntos del borde (los de dentro de otra parte de la carretera no).
+        if (distToPath(path, p) < ROAD_HALF_WIDTH - 1) continue;
+        const d = nearestMark(p);
+        if (d > worst) {
+          worst = d;
+          where = `vértice ${i}, ${deg}°`;
+        }
+      }
+    }
+    expect(worst, where).toBeLessThanOrEqual(ROAD_MARK_STEP * 0.6);
+  });
+
+  it('por debajo de la boia 8 y por encima de la 3 (el hueco de antes) hay boyitas y es fuera', () => {
+    for (const order of [8, 3]) {
+      const v = buoy(order);
+      const out = outward(order);
+      // El rumbo del hueco: abajo (+y) en la 8 y arriba (−y) en la 3.
+      expect(Math.sin(out) * (order === 8 ? 1 : -1), `boia ${order}`).toBeGreaterThan(0.5);
+      // El borde, donde antes no había boyita a menos de 140 u.
+      expect(nearestMark(at(v, out, ROAD_HALF_WIDTH)), `boia ${order}`).toBeLessThanOrEqual(
+        ROAD_MARK_STEP * 0.6,
+      );
+      // Seguir recto por ahí es salirse: cuenta como fuera de la carretera.
+      for (const r of [ROAD_HALF_WIDTH + 20, ROAD_HALF_WIDTH * 2, ROAD_HALF_WIDTH * 4]) {
+        expect(isOffRoad(path, at(v, out, r)), `boia ${order} a ${r}`).toBe(true);
+      }
+      const t = new OffRoad();
+      let ended = false;
+      // Alejarse por el hueco a 220 u/s: a los 5 s se acaba la carrera.
+      for (let s = 0; s <= OFFROAD_GRACE + 1 && !ended; s += 0.5) {
+        ended = t.step(0.5, distToPath(path, at(v, out, ROAD_HALF_WIDTH + 220 * s)));
+      }
+      expect(ended, `boia ${order}`).toBe(true);
     }
   });
 });

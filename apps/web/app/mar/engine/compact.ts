@@ -1,3 +1,4 @@
+import { sheetRadius } from '@boia/engine/bottles';
 import type { Rect, WorldConfig, WorldObject } from '@boia/world';
 import { compressWorld, fromScene, toScene } from './compress';
 import { type Circle, type Period, periodOf, planetRect, shortest, wrapIn } from './wrap';
@@ -189,6 +190,24 @@ export const ROUTE = {
 
 /** El mar vivo que sale al paso: se acerca a la ruta (categorías, lo grande primero). */
 export const ROUTE_NEIGHBOURS = ['naufrago', 'remolino', 'delfin', 'cofre', 'restos'] as const;
+
+/**
+ * u de agua libre entre el giro de un remolino y la zona donde se abre sola
+ * la ficha de una isla (T96): quien lo surfea no ve abrirse la ficha de la
+ * isla de al lado (con la Isla de Halloween encima, el remolino quedaba
+ * dentro de su ficha). muestra
+ */
+export const WHIRLPOOL_SHEET_MARGIN = 40;
+
+/** Las zonas donde una ficha se abre sola (centro y radio de ficha, u de motor). */
+function sheetZones(world: WorldConfig): Circle[] {
+  const out: Circle[] = [];
+  for (const o of world.objects) {
+    const radius = sheetRadius(o);
+    if (radius !== null) out.push({ x: o.position.x, y: o.position.y, radius });
+  }
+  return out;
+}
 
 export interface SeaRoute {
   /** Ids de las paradas, en orden (las que hay en este mundo). */
@@ -434,6 +453,7 @@ export function pullToRoute(world: WorldConfig, route: SeaRoute): WorldConfig {
       keepOut.push(...solidCircles(o));
     }
   }
+  const sheets = sheetZones(world);
   const placed: Circle[] = [];
   /** Agua libre que queda hasta lo ya colocado (negativa: se pisan). */
   const room = (x: number, y: number, size: number) =>
@@ -477,13 +497,40 @@ export function pullToRoute(world: WorldConfig, route: SeaRoute): WorldConfig {
         ({ x, y } = c);
       }
     }
-    // Nunca dentro de una isla, del decorado ni de lo sólido.
-    for (let iter = 0; iter < 4; iter++) {
+    // El remolino, fuera de toda ficha que se abre sola (T96): si cae en una,
+    // busca a lo largo de la ruta (a un lado o al otro) el primer sitio libre,
+    // así sigue junto a ella.
+    const whirl = o.identity.category === 'remolino';
+    const clear = (cx: number, cy: number, list: readonly Circle[], extra: number) =>
+      list.every((c) => {
+        const s = shortest(c, { x: cx, y: cy }, period);
+        return Math.hypot(s.dx, s.dy) >= c.radius + size + extra;
+      });
+    if (whirl && !clear(x, y, sheets, WHIRLPOOL_SHEET_MARGIN)) {
+      search: for (let k = 1; k <= 48; k++) {
+        const along = Math.ceil(k / 2) * ROUTE.spread * (k % 2 ? 1 : -1);
+        const r = routeAt(route, n.arc + along);
+        for (const s of [side, -side]) {
+          const c = { x: r.p.x - r.dir.y * s * off, y: r.p.y + r.dir.x * s * off };
+          if (
+            clear(c.x, c.y, sheets, WHIRLPOOL_SHEET_MARGIN) &&
+            clear(c.x, c.y, keepOut, 40) &&
+            room(c.x, c.y, size) >= 0
+          ) {
+            ({ x, y } = c);
+            break search;
+          }
+        }
+      }
+    }
+    // Nunca dentro de una isla, del decorado ni de lo sólido (ni el remolino en una ficha).
+    const away = whirl ? [...keepOut, ...sheets] : keepOut;
+    for (let iter = 0; iter < 6; iter++) {
       let moved = false;
-      for (const c of keepOut) {
+      for (const c of away) {
         const s = shortest(c, { x, y }, period);
         const d = Math.hypot(s.dx, s.dy);
-        const need = c.radius + size + 40;
+        const need = c.radius + size + (whirl ? WHIRLPOOL_SHEET_MARGIN : 40);
         if (d >= need) continue;
         const vx = d > 1e-6 ? s.dx / d : 1;
         const vy = d > 1e-6 ? s.dy / d : 0;

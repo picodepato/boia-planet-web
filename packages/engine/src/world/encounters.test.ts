@@ -1,7 +1,7 @@
 import { type WorldObjectInput, parseWorldConfig } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SHIP_CONFIG } from '../ship/config';
-import { createShipState } from '../ship/controller';
+import { IDLE_INPUT, createShipState, stepShip } from '../ship/controller';
 import { WorldRuntime, patrolPoint } from './runtime';
 
 /**
@@ -91,7 +91,7 @@ describe('vaivén (params.patrol)', () => {
 });
 
 describe('remolino (params.swirl)', () => {
-  it('dentro de su radio empuja de lado; fuera, nada', () => {
+  it('dentro de su radio la corriente lleva el barco de lado; fuera, nada', () => {
     const world = base([
       obj('remolino', {
         geometry: { proximityRadius: 100 },
@@ -101,13 +101,46 @@ describe('remolino (params.swirl)', () => {
     ]);
     const rt = new WorldRuntime(world);
     const inside = createShipState(50, 0);
+    const heading = inside.heading;
     rt.step(inside, DEFAULT_SHIP_CONFIG, 1 / 60);
-    // A la derecha del centro, el giro horario (+x → +y) empuja hacia +y.
-    expect(inside.vy).toBeGreaterThan(0);
+    // A la derecha del centro, el giro horario (+x → +y) lo lleva hacia +y
+    // (T96: es una corriente, mueve el barco aunque la quilla no derrape) y
+    // le gira la proa en el mismo sentido.
+    expect(inside.y).toBeCloseTo((120 * 0.5) / 60, 6);
+    expect(inside.heading).toBeGreaterThan(heading);
     const outside = createShipState(500, 0);
     rt.step(outside, DEFAULT_SHIP_CONFIG, 1 / 60);
+    expect(outside.x).toBe(500);
+    expect(outside.y).toBe(0);
     expect(outside.vx).toBe(0);
     expect(outside.vy).toBe(0);
+  });
+
+  it('sin motor, el barco da vueltas dentro (se surfea con la quilla agarrada)', () => {
+    const world = base([
+      obj('remolino', {
+        geometry: { proximityRadius: 100 },
+        behaviors: [{ type: 'proximity' }],
+        params: { swirl: { strength: 110, pull: 25 } },
+      }),
+    ]);
+    const rt = new WorldRuntime(world);
+    const ship = createShipState(60, 0);
+    // Una quilla que anula todo derrape: con el empujón de antes no se movía.
+    const cfg = { ...DEFAULT_SHIP_CONFIG, lateralGrip: 1000 };
+    let turned = 0;
+    let prev = Math.atan2(ship.y, ship.x);
+    for (let i = 0; i < 120; i++) {
+      stepShip(ship, IDLE_INPUT, cfg, 1 / 60);
+      rt.step(ship, cfg, 1 / 60);
+      const a = Math.atan2(ship.y, ship.x);
+      turned += Math.atan2(Math.sin(a - prev), Math.cos(a - prev));
+      prev = a;
+    }
+    // En 2 s da al menos media vuelta alrededor del centro, y sigue dentro.
+    expect(turned).toBeGreaterThan(Math.PI / 2);
+    expect(Math.hypot(ship.x, ship.y)).toBeLessThan(100);
+    expect(rt.drainEvents()).toContainEqual({ type: 'proximity_enter', objectId: 'remolino' });
   });
 });
 

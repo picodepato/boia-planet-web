@@ -109,14 +109,22 @@ interface Patrol {
 }
 
 /**
- * Fuerza de un remolino (`params.swirl`) dentro de su radio de proximidad
- * (REQ-AVE-019): empuja el barco de lado (u/s² de giro) y un poco hacia el
- * centro. El catálogo no tiene este efecto; va como parámetro del objeto.
+ * Corriente de un remolino (`params.swirl`) dentro de su radio de proximidad
+ * (REQ-AVE-019): el agua gira y arrastra el barco alrededor del centro
+ * (`strength`, u/s en el centro) y un poco hacia él (`pull`, u/s), más
+ * cuanto más dentro. El catálogo no tiene este efecto; va como parámetro del
+ * objeto.
  */
 interface Swirl {
   strength: number;
   pull: number;
 }
+
+/** Lo más que el remolino gira la proa del barco (rad/s): en el centro no da trompos. muestra */
+export const SWIRL_MAX_TURN = 2.2;
+
+/** Fracción del radio del remolino que gira como un disco (el ojo). muestra */
+export const SWIRL_CORE = 0.3;
 
 function num(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
@@ -558,7 +566,14 @@ export class WorldRuntime {
     return Math.hypot(dx, dy);
   }
 
-  /** Remolinos: giro alrededor del centro, más fuerte cuanto más dentro. */
+  /**
+   * Remolinos: el agua gira alrededor del centro, más fuerte cuanto más
+   * dentro, y lleva el barco consigo (lo mueve y le gira la proa). Es una
+   * corriente y no un empujón en la velocidad: la quilla anula el
+   * deslizamiento de lado en unas décimas, así que un empujón apenas se
+   * notaba y el remolino no se podía surfear (T96). Con motor a fondo se
+   * sale; sin él, da vueltas dentro.
+   */
   private applySwirls(ship: ShipState, dt: number): void {
     for (const o of this.objs) {
       if (!o.swirl || !o.present || o.inert || o.proximityRadius === null) continue;
@@ -568,9 +583,16 @@ export class WorldRuntime {
       const k = 1 - d / o.proximityRadius;
       const nx = dx / d;
       const ny = dy / d;
+      // En el ojo (`SWIRL_CORE` del radio) el agua gira como un disco: la
+      // corriente baja hasta cero en el centro y el barco no tiembla en él.
+      const core = o.proximityRadius * SWIRL_CORE;
+      const spin = o.swirl.strength * k * Math.min(1, d / core);
+      const pull = Math.min(o.swirl.pull * k, d / dt);
       // Tangente en sentido horario en pantalla (+x hacia +y) y tirón al centro.
-      ship.vx += (-ny * o.swirl.strength * k - nx * o.swirl.pull * k) * dt;
-      ship.vy += (nx * o.swirl.strength * k - ny * o.swirl.pull * k) * dt;
+      ship.x += (-ny * spin - nx * pull) * dt;
+      ship.y += (nx * spin - ny * pull) * dt;
+      const turn = Math.min(spin / Math.max(d, 1), SWIRL_MAX_TURN) * dt;
+      ship.heading = Math.atan2(Math.sin(ship.heading + turn), Math.cos(ship.heading + turn));
     }
   }
 

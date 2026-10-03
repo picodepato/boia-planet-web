@@ -515,10 +515,25 @@ export class Clouds {
 
 // --- Remolino ------------------------------------------------------------------
 
+/**
+ * Cuadros por lado de la malla del remolino. El planeta curva cada vértice
+ * (`planetCurve`): con un solo cuadro, su centro quedaba por debajo del agua
+ * curvada y el remolino no se veía (T96). Con la malla fina sigue la curva
+ * como el agua.
+ */
+export const WHIRLPOOL_SEGMENTS = 32;
+
+/** Altura del remolino sobre el agua (escena). */
+export const WHIRLPOOL_LIFT = 0.15;
+
 export function whirlpool(radius: number): Mesh {
   const m = new ShaderMaterial({
     transparent: true,
     depthWrite: false,
+    // Encima del agua también de lejos (en el mapa, la profundidad da para poco).
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
     uniforms: { uTime: { value: 0 } },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -545,9 +560,12 @@ export function whirlpool(radius: number): Mesh {
       }
     `,
   });
-  const mesh = new Mesh(new PlaneGeometry(radius * 2, radius * 2), m);
+  const mesh = new Mesh(
+    new PlaneGeometry(radius * 2, radius * 2, WHIRLPOOL_SEGMENTS, WHIRLPOOL_SEGMENTS),
+    m,
+  );
   mesh.rotation.x = -Math.PI / 2;
-  mesh.position.y = 0.08;
+  mesh.position.y = WHIRLPOOL_LIFT;
   mesh.renderOrder = 1;
   return mesh;
 }

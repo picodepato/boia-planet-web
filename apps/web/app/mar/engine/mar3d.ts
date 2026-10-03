@@ -72,6 +72,7 @@ import {
   Confetti,
   CourseMarker,
   RouteLine,
+  WHIRLPOOL_LIFT,
   Wake,
   glowOffsets,
   glowPoints,
@@ -628,6 +629,10 @@ export class Mar3D {
     this.scene.add(this.routeLine.mesh);
     // Para las pruebas: cuántas marcas guían en el agua (T59: ya sin boyas de ruta).
     opts.canvas.dataset.routeMarks = String(this.route.dashes.length);
+    // Para las pruebas (T96): cuántos remolinos se pintan en el mar.
+    opts.canvas.dataset.remolinos = String(
+      [...this.views.values()].filter((v) => v.kind === 'remolino').length,
+    );
     opts.canvas.dataset.ruta = 'on';
     this.water.setShores(shores);
     this.glow = glowPoints(glows);
@@ -1658,7 +1663,7 @@ export class Mar3D {
         case 'remolino': {
           const R = toScene(o.geometry.proximityRadius ?? 80) * 1.1;
           const m = whirlpool(R);
-          m.position.set(x, 0.08, z);
+          m.position.set(x, WHIRLPOOL_LIFT, z);
           this.addView({
             id,
             obj: m,
@@ -2576,6 +2581,7 @@ export class Mar3D {
       ghostView.bx = toScene(this.ghostAt.x);
       ghostView.bz = toScene(this.ghostAt.y);
     }
+    let whirlsShown = 0;
     for (const v of this.views.values()) {
       const st = this.runtime.objectState(v.id);
       const cxs = st ? toScene(st.x) : v.bx;
@@ -2601,6 +2607,12 @@ export class Mar3D {
       ) {
         v.obj.visible = false;
       }
+      if (v.kind === 'remolino' && v.obj.visible) whirlsShown++;
+    }
+    // Para las pruebas (T96): cuántos remolinos se ven ahora en pantalla.
+    const shownWhirls = String(whirlsShown);
+    if (this.opts.canvas.dataset.remolinosVista !== shownWhirls) {
+      this.opts.canvas.dataset.remolinosVista = shownWhirls;
     }
     for (const a of this.animated) a(t, glow);
     this.routeLine.update(this.zoom);

@@ -249,13 +249,30 @@ export function Sheet({
         {onFly ? t('mar.sheet.navegar') : t('mar.sheet.navegarAqui')}
       </button>
     );
+    const fly = onFly ? (
+      <button
+        type="button"
+        className="mar-btn mar-btn--primary"
+        data-testid="mar-volar"
+        onClick={() => onFly(state.placeId)}
+      >
+        {t('mar.sheet.irEnNave')}
+      </button>
+    ) : null;
     compact = {
       kicker,
       title: e?.name ?? name,
       meta: e
         ? `${formatEventDate(e.startsAt, e.timeZone)} · ${e.placeLabel}`
         : textOf(object, 'body'),
-      action: course,
+      // Las dos maneras de ir, a la vista sin desplegar la ficha (T96: en el
+      // móvil, «Ir en nave» quedaba escondida dentro).
+      action: (
+        <>
+          {course}
+          {fly}
+        </>
+      ),
     };
     body = (
       <>
@@ -279,16 +296,7 @@ export function Sheet({
         ) : null}
         <div className="mar-sheet__actions">
           {course}
-          {onFly ? (
-            <button
-              type="button"
-              className="mar-btn mar-btn--primary"
-              data-testid="mar-volar"
-              onClick={() => onFly(state.placeId)}
-            >
-              {t('mar.sheet.irEnNave')}
-            </button>
-          ) : null}
+          {fly}
           {e && EVENT_STATE_BEHAVIOR[e.state].purchasable ? (
             <button type="button" className="mar-btn" onClick={() => onBuy(e.id)}>
               {t('mar.sheet.entradas')}

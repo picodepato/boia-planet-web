@@ -4,6 +4,72 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T96: /mar fixes from Hernán's test: race buoys, the open path, whirlpools, mobile «go to»
+
+Qué existe:
+
+- **(a) Boyitas de la carretera, naranjas a los dos lados.**
+  `apps/web/app/mar/engine/race-props.ts`: `ROAD_BUOY` (naranja de la marca
+  con franja blanca) para la derecha y la izquierda; antes, rojas a un lado y
+  blancas al otro. Prueba: `race-props.test.ts`.
+- **(b) El borde del circuito, cerrado.** `apps/web/app/mar/road.ts`
+  (`roadMarks`): en cada vértice del trazado, un arco de boyitas por fuera de
+  la curva, cada `ROAD_MARK_STEP`; con el trazado cerrado, también en la
+  salida/meta. Antes, en una curva cerrada las boyitas del tramo que llega y
+  las del que sale quedaban lejos: el borde se abría por debajo de la boia 8
+  (hueco de 143 u sin boyita) y por encima de la 3 (195 u). Otros huecos del
+  mismo tipo, también cerrados: la salida/meta (vértice 0, 129 u) y, menores,
+  las boias 4, 6 y 9 (~85 u). El «te saliste» ya medía la distancia al
+  trazado (un borde redondeado en los vértices): ahora las boyitas marcan
+  exactamente esa línea, y salir por el hueco de antes cuenta como fuera.
+  Pruebas: `road.test.ts` «ningún hueco en todo el borde…» y «por debajo de
+  la boia 8 y por encima de la 3…».
+- **(c) Remolinos.** Tres causas:
+  1. No se veía: la malla era un solo cuadro; el planeta curva cada vértice
+     (`planetCurve`) y el centro del cuadro quedaba bajo el agua curvada
+     (regresión de T33). `effects.ts` `whirlpool`: malla de
+     `WHIRLPOOL_SEGMENTS` (32) por lado, `WHIRLPOOL_LIFT` 0.15 y
+     `polygonOffset`.
+  2. No se surfeaba: el giro era un empujón en la velocidad y la quilla del
+     barco de /mar lo anulaba en décimas (el barco apenas se movía).
+     `packages/engine/src/world/runtime.ts` `applySwirls`: ahora es una
+     corriente que mueve el barco (y le gira la proa, como mucho
+     `SWIRL_MAX_TURN`), con un ojo que gira como un disco (`SWIRL_CORE`).
+     Sin motor da vueltas dentro; a fondo hacia fuera se sale.
+  3. Estaba dentro de la ficha de la Isla de Halloween (T67): al entrar se
+     abría su ficha. `compact.ts` `pullToRoute`: el remolino queda fuera de
+     toda ficha que se abre sola (`WHIRLPOOL_SHEET_MARGIN`), buscando sitio a
+     lo largo de la ruta.
+  Sin rótulo encima (Hernán, durante la tarea): se ve solo. `Mar3D` deja
+  `data-remolinos` (cuántos se pintan) y `data-remolinos-vista` (cuántos hay
+  en pantalla) en el lienzo, para las pruebas. REQ-AVE-019 pasa a HECHO.
+  Pruebas: `whirlpool.test.ts`, `encounters.test.ts` (motor),
+  `e2e/mar-remolino.spec.ts`.
+- **(d) «Ir a» en el móvil.** `sheet.tsx`: la ficha pequeña de un lugar trae
+  «Navegar» e «Ir en nave» a la vista, en una fila (`mar.css`), sin
+  desplegarla; la ficha desplegada sigue igual. Prueba: `mar-3d.spec.ts`
+  «ir a un lugar: «Navegar» e «Ir en nave» a la vista…» (móvil y escritorio).
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 117 archivos, 1029 pruebas.
+- `sh tools/spec/checks.sh` → exit 0 (REQ-AVE-019 a HECHO).
+- `pnpm lint`, `pnpm build`, `pnpm typecheck` → exit 0.
+- `E2E_PORT=3293 pnpm e2e mar-circuito.spec.ts mar-remolino.spec.ts
+  mar-3d.spec.ts --workers=1` → exit 0, 34 pasadas (móvil y escritorio).
+  En la primera pasada la prueba nueva de «Ir a» falló en escritorio: el
+  clic de Playwright en un rótulo al borde corría el mar de lado y la ficha
+  quedaba fuera de pantalla (artefacto de la prueba, no de la ficha); ahora
+  el rótulo se toca con `dispatchEvent('click')`.
+
+Pendiente:
+
+- Nada de esta tarea. El remolino sigue con los parámetros `muestra` de su
+  mapa (giro 110, tirón 25): sin motor el barco acaba en el ojo dando vueltas;
+  si Hernán lo quiere más difícil (que te eche), es cambiar `pull` de signo o
+  de valor.
+
 ## 2026-10-03 — plan 008 T89: Email sign-in with a 6-digit code, consent and the account
 
 La cuenta con email (decisiones 1–5) sobre el diseño aprobado de T87

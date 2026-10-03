@@ -1429,6 +1429,17 @@
   margin-top: 8px;
 }
 
+/* Dos botones (T96: «Navegar» e «Ir en nave»), los dos a la vista en una fila. */
+.mar-sheet.is-compact .mar-sheet__actions:has(> .mar-btn + .mar-btn) {
+  flex-wrap: nowrap;
+}
+
+.mar-sheet.is-compact .mar-sheet__actions > .mar-btn:not(:only-child) {
+  min-width: 0;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
 .mar-sheet.is-compact .mar-btn {
   min-height: 42px;
 }

@@ -228,15 +228,21 @@ export function jumpRamp(radius: number, heading: number): JumpRamp {
   };
 }
 
+/** Los colores de las boyitas de la carretera, los mismos a los dos lados (T96). muestra */
+export const ROAD_BUOY = { body: C.orange, band: C.white } as const;
+
 /**
- * Las boyitas que marcan la carretera mientras dura la carrera (T76): rojas a
- * la derecha de la marcha, blancas a la izquierda. `right` y `left` en
- * unidades de escena (x, z). Un solo grupo: se quita entero al acabar.
+ * Las boyitas que marcan la carretera mientras dura la carrera (T76): naranjas
+ * con franja blanca a la derecha y a la izquierda de la marcha (T96; antes,
+ * rojas a un lado y blancas al otro). `right` y `left` en unidades de escena
+ * (x, z). Un solo grupo: se quita entero al acabar.
  */
 export function roadMarkers(right: [number, number][], left: [number, number][]): Group {
   const k = new Kit();
-  for (const [x, z] of right) buoy(k, x, z, C.red, C.white, 1.3);
-  for (const [x, z] of left) buoy(k, x, z, C.white, C.red, 1.3);
+  // Naranjas a los dos lados (T96): el borde se lee igual a babor y a estribor.
+  for (const [x, z] of [...right, ...left]) {
+    buoy(k, x, z, ROAD_BUOY.body, ROAD_BUOY.band, 1.3);
+  }
   const g = new Group();
   g.add(new Mesh(k.build(), litMaterial()));
   return g;

@@ -5,6 +5,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { marWorld, seaRoute } from '../app/mar/engine/compact';
 import { startZoom } from '../app/mar/engine/framing';
 import { periodOf, planetRect, shortest } from '../app/mar/engine/wrap';
+import { t } from '../lib/i18n';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
 
@@ -70,6 +71,34 @@ test('el mar 3D arranca, pasa a mapa por el minimapa y fija rumbo a la isla del 
   await expect(page.getByTestId('mar-volar')).toBeVisible();
   await page.getByTestId('mar-rumbo').click();
   await expect(page.getByTestId('mar-rumbo-activo')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('ir a un lugar: «Navegar» e «Ir en nave» a la vista sin desplegar la ficha (T96)', async ({
+  page,
+}) => {
+  const errors = await openMar(page);
+  await minimap(page).click();
+  await expect(minimap(page)).toHaveAttribute('aria-pressed', 'true');
+  // Sin el desplazamiento que Playwright hace para alcanzar un rótulo al borde
+  // (correría el mar entero de lado y la ficha con él).
+  await page.locator('[data-pin="allday"]').dispatchEvent('click');
+  const sheet = page.getByTestId('mar-ficha');
+  // La ficha pequeña, sin tocar «›»: los dos botones, enteros y sin nada encima.
+  await expect(sheet).toHaveAttribute('data-expandida', 'no');
+  const course = sheet.getByTestId('mar-rumbo');
+  const fly = sheet.getByTestId('mar-volar');
+  await expect(course).toContainText(t('mar.sheet.navegar'));
+  await expect(fly).toContainText(t('mar.sheet.irEnNave'));
+  await expectOnTop(course);
+  await expectOnTop(fly);
+  // En una fila: los dos a la misma altura.
+  const a = (await course.boundingBox())!;
+  const b = (await fly.boundingBox())!;
+  expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+  // «Ir en nave» funciona desde ahí mismo.
+  await fly.click();
+  await expect(page.locator('main.mar')).toHaveAttribute('data-flight', /./);
   expect(errors).toEqual([]);
 });
 

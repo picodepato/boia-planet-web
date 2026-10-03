@@ -51,11 +51,22 @@ export function isOffRoad(path: Point[], p: Point, halfWidth = ROAD_HALF_WIDTH):
   return path.length > 1 && distToPath(path, p) > halfWidth;
 }
 
+/** Rumbo unitario del tramo a → b, o null si es un punto. */
+function dirOf(a: Point, b: Point): Point | null {
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  return len === 0 ? null : { x: (b.x - a.x) / len, y: (b.y - a.y) / len };
+}
+
 /**
  * Las boyitas de los dos lados del trazado: una cada `step` por cada tramo, a
- * `halfWidth` de la línea (la derecha de la marcha y la izquierda), más las de
- * los vértices. Las que caerían dentro de la carretera (el lado de dentro de
- * una curva, un cruce) se quitan, y las que quedan casi juntas se dejan en una.
+ * `halfWidth` de la línea (la derecha de la marcha y la izquierda), y en cada
+ * vértice un arco de boyitas por fuera de la curva, también cada `step`. Sin
+ * ese arco, en una curva cerrada las del tramo que llega y las del que sale
+ * quedan lejos y el borde se abre (T96: por debajo de la boia 8 y por encima
+ * de la 3, por donde se salía del circuito). Con el trazado cerrado (la
+ * salida es también la meta), la salida es un vértice más. Las que caerían
+ * dentro de la carretera (el lado de dentro de una curva, un cruce) se
+ * quitan, y las que quedan casi juntas se dejan en una.
  */
 export function roadMarks(
   path: Point[],
@@ -73,17 +84,38 @@ export function roadMarks(
   for (let i = 0; i + 1 < path.length; i++) {
     const a = path[i]!;
     const b = path[i + 1]!;
+    const d = dirOf(a, b);
+    if (!d) continue;
     const len = Math.hypot(b.x - a.x, b.y - a.y);
-    if (len === 0) continue;
-    const dx = (b.x - a.x) / len;
-    const dy = (b.y - a.y) / len;
     const steps = Math.max(1, Math.round(len / step));
     // Con k = 0 se pone la del vértice de salida del tramo; el último vértice, al final.
     for (let k = 0; k <= steps; k++) {
-      const x = a.x + dx * len * (k / steps);
-      const y = a.y + dy * len * (k / steps);
-      put('right', { x: x - dy * halfWidth, y: y + dx * halfWidth });
-      put('left', { x: x + dy * halfWidth, y: y - dx * halfWidth });
+      const x = a.x + d.x * len * (k / steps);
+      const y = a.y + d.y * len * (k / steps);
+      put('right', { x: x - d.y * halfWidth, y: y + d.x * halfWidth });
+      put('left', { x: x + d.y * halfWidth, y: y - d.x * halfWidth });
+    }
+  }
+  // Los arcos de los vértices: de la normal del tramo que llega a la del que sale.
+  const n = path.length;
+  const closed =
+    n > 2 && Math.hypot(path[0]!.x - path[n - 1]!.x, path[0]!.y - path[n - 1]!.y) < 1e-6;
+  for (let i = closed ? 0 : 1; i < n - 1; i++) {
+    const v = path[i]!;
+    const prev = i === 0 ? path[n - 2]! : path[i - 1]!;
+    const din = dirOf(prev, v);
+    const dout = dirOf(v, path[i + 1]!);
+    if (!din || !dout) continue;
+    for (const side of ['right', 'left'] as const) {
+      const s = side === 'right' ? 1 : -1;
+      const from = Math.atan2(din.x * s, -din.y * s);
+      let turn = Math.atan2(dout.x * s, -dout.y * s) - from;
+      turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+      const pieces = Math.ceil((Math.abs(turn) * halfWidth) / step);
+      for (let k = 1; k < pieces; k++) {
+        const a = from + (turn * k) / pieces;
+        put(side, { x: v.x + Math.cos(a) * halfWidth, y: v.y + Math.sin(a) * halfWidth });
+      }
     }
   }
   return out;

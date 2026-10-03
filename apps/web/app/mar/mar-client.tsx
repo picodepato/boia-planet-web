@@ -280,6 +280,10 @@ const NOTICE_ICON: Record<Notice['kind'], string> = {
   info: '💬',
 };
 
+/**
+ * Los rótulos del mar y del mapa. El remolino no lleva (T96, Hernán): se
+ * ve solo, y su nombre encima recargaba el mapa.
+ */
 function pinsOf(world: WorldConfig, phase: RescuePhase | null): PinSpec[] {
   const out: PinSpec[] = [];
   for (const o of world.objects) {
