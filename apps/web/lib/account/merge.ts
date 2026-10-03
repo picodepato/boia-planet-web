@@ -13,11 +13,19 @@
  * - El mejor tiempo de cada circuito (`circuito:<id>:v<n>`).
  * - Los descuentos encontrados y si se usaron (con la fiesta de la compra).
  *
- * La copia del resto del documento (`snapshot`) no va todavía: su forma la
- * fija T90 con `save_snapshot`.
+ * - La copia del resto del documento (`snapshot`, con la forma de
+ *   `save_snapshot` de T90): descubrimientos, misiones, contadores, ajustes,
+ *   logros completados y compras de prueba. El servidor sólo la guarda si la
+ *   cuenta aún no tenía copia.
  */
 import type { MergePayload, MergeResult } from '@boia/db/rpc';
-import type { FoundDiscount, LedgerEntry, Purchase, TimeRecord } from '@boia/store';
+import {
+  type FoundDiscount,
+  type LedgerEntry,
+  type Purchase,
+  type TimeRecord,
+  pointActionFor,
+} from '@boia/store';
 
 type Reward = NonNullable<MergePayload['rewards']>[number];
 type Policy = NonNullable<Reward['policy']>;
@@ -29,15 +37,10 @@ const RECORD_ID = /^circuito:([a-z0-9]+(?:-[a-z0-9]+)*):v(\d+)$/;
 
 /**
  * La acción del servidor (`point_actions`) de un premio del mundo, por la
- * forma de su origen; null si el servidor no la conoce (no se manda).
+ * forma de su origen; null si el servidor no la conoce (no se manda). La
+ * misma que usa el repositorio de un miembro (T90).
  */
-export function actionForRef(sourceRef: string): string | null {
-  if (/^minigame:[a-z0-9_-]+$/.test(sourceRef)) return 'minigame';
-  if (/^mision:[a-z0-9_-]+:entrega$/.test(sourceRef)) return 'mission';
-  if (/^lugar:[a-z0-9_.-]+:(seguir|[0-9]+s)$/.test(sourceRef)) return 'encounter';
-  if (/^lugar:[a-z0-9_.-]+:(points|coins)(:visita:[a-z0-9-]+)?$/.test(sourceRef)) return 'world';
-  return null;
-}
+export const actionForRef = pointActionFor;
 
 function policyOf(metadata: Record<string, unknown>): Policy {
   const p = metadata.policy;
@@ -59,6 +62,8 @@ export interface GuestState {
   purchases: readonly Purchase[];
   /** Récords por id (`player.records` del documento local). */
   records: Record<string, Pick<TimeRecord, 'bestMs' | 'bestAt'>>;
+  /** El resto del documento (`snapshotOf` de @boia/store), si lo hay. */
+  snapshot?: Record<string, unknown> | null | undefined;
 }
 
 /** La entrada de `merge_guest`; sin claves vacías. */
@@ -127,7 +132,18 @@ export function mergePayloadFrom(guest: GuestState): MergePayload {
     ...(Object.keys(equipped).length ? { equipped } : {}),
     ...(times.length ? { times } : {}),
     ...(discounts.length ? { discounts } : {}),
+    ...(guest.snapshot && !isEmptySnapshot(guest.snapshot) ? { snapshot: guest.snapshot } : {}),
   };
+}
+
+/** Una copia sin nada que guardar (un invitado que aún no ha hecho nada). */
+function isEmptySnapshot(snapshot: Record<string, unknown>): boolean {
+  const player = (snapshot.player ?? {}) as Record<string, unknown>;
+  const purchases = snapshot.purchases;
+  const empty = (v: unknown) => !v || (typeof v === 'object' && Object.keys(v).length === 0);
+  return (
+    Object.values(player).every(empty) && (!Array.isArray(purchases) || purchases.length === 0)
+  );
 }
 
 export function isEmptyPayload(p: MergePayload): boolean {

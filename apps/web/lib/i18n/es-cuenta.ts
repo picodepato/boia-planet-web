@@ -127,4 +127,15 @@ export const esCuenta = {
   'legal.privacy.account.rights':
     'Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. En Mi Carnet puedes editar tu Carnet, dejar de recibir noticias y borrar tu cuenta; para lo demás, escribe a privacidad@boia.example. También puedes reclamar ante la Agencia Española de Protección de Datos.',
   'legal.privacy.account.updated': 'Última actualización: 3 de octubre de 2026.',
+
+  // El progreso en la cuenta (T90): avisos de la copia del navegador.
+  'sync.offline':
+    'Sin conexión: lo que hagas se guarda en este navegador y pasará a tu cuenta en cuanto vuelva.',
+  'sync.online': 'Conexión recuperada: tu progreso ya está en tu cuenta.',
+  'sync.rejected.limit': 'Has llegado al tope de puntos de hoy: eso no se ha sumado a tu cuenta.',
+  'sync.rejected.coins': 'En tu cuenta no te llegan las monedas: no se ha comprado.',
+  'sync.rejected.time': 'Ese tiempo no cuenta en tu cuenta: no es posible en este circuito.',
+  'sync.rejected.nickname': 'Ese apodo ya es de otra persona: tu Carnet sigue con el de antes.',
+  'sync.rejected.text': 'Eso no pasa el filtro de textos: no se ha guardado.',
+  'sync.rejected.generic': 'Tu cuenta no ha aceptado ese cambio y se ha deshecho.',
 } as const;

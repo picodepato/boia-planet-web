@@ -2,6 +2,7 @@
 
 import { type Balances, type BoiaRepository, type ShopItem, isStoreError } from '@boia/store';
 import { type ReactNode, useState } from 'react';
+import { requireAccount } from '../account/gate';
 import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
 import { FLAG_LOOKS, WAKE_TINTS, hexOf } from './dressing';
@@ -445,9 +446,14 @@ export function BarcoShop({
       const item = asking;
       if (!item || busy) return;
       setBusy(true);
-      repo.progress
-        .buyCosmetic(item.cosmetic.id)
-        .then(() => setMessage(SHOP_COPY.bought))
+      // Comprar se guarda en la cuenta (plan 008, decisión 1): pide el email
+      // si no hay sesión; en modo local pasa al momento. Cancelar no compra.
+      requireAccount('skin')
+        .then(async (ok) => {
+          if (!ok) return;
+          await repo.progress.buyCosmetic(item.cosmetic.id);
+          setMessage(SHOP_COPY.bought);
+        })
         .catch((err: unknown) => {
           setMessage(
             isStoreError(err, 'insufficient_coins') ? SHOP_COPY.noCoins : SHOP_COPY.failed,

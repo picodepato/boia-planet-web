@@ -222,11 +222,33 @@ export async function verifyCode(email: string, token: string): Promise<void> {
   set({ userId: data.session.user.id, email: data.session.user.email ?? null });
 }
 
+// Quien guarda la copia de la cuenta en el navegador (T90, lib/repo-member.ts)
+// se entera de lo que cambia la cuenta desde aquí.
+const mergeListeners = new Set<() => void>();
+const signOutHooks = new Set<() => Promise<void>>();
+
+/** Avisa cada vez que lo del invitado acaba de pasar a la cuenta. */
+export function onGuestMerged(listener: () => void): () => void {
+  mergeListeners.add(listener);
+  return () => {
+    mergeListeners.delete(listener);
+  };
+}
+
+/** Algo que hacer con la sesión aún abierta antes de cerrarla (p. ej. mandar lo pendiente). */
+export function onBeforeSignOut(hook: () => Promise<void>): () => void {
+  signOutHooks.add(hook);
+  return () => {
+    signOutHooks.delete(hook);
+  };
+}
+
 /** Pasa lo del invitado a la cuenta (decisión 4). */
 export async function mergeGuest(payload: MergePayload): Promise<MergeResult> {
   const sb = await client();
   const { data, error } = await sb.rpc('merge_guest', { p_payload: payload as never });
   if (error) throw error;
+  for (const l of mergeListeners) l();
   return data as unknown as MergeResult;
 }
 
@@ -285,6 +307,7 @@ function signedOutState(): Partial<AccountState> {
 /** Cierra la sesión en este navegador (la cuenta sigue). */
 export async function signOut(): Promise<void> {
   const sb = await client();
+  await Promise.allSettled([...signOutHooks].map((h) => h()));
   const { error } = await sb.auth.signOut({ scope: 'local' });
   if (error) console.warn('[boia] cerrar sesión', error);
   set(signedOutState());

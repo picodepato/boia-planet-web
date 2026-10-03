@@ -11,3 +11,4 @@ export * from './migrations';
 export * from './storage';
 export * from './schema';
 export * from './sample';
+export * from './member';

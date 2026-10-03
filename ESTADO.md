@@ -4,6 +4,109 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T90: The Supabase repository: a member's progress lives in the account
+
+Con sesión y Carnet, todo lo de valor va a la cuenta por las RPC de T86 y
+se lee del servidor; el navegador guarda una copia que sirve sin red. Sin
+las variables de Supabase (producción hoy, pruebas unitarias, e2e por
+defecto) `gameRepository()` es el repositorio local de siempre (D-20).
+
+Qué existe:
+- **`packages/store/src/member/`** (nuevo, exportado por `@boia/store`):
+  - `server.ts`: `SupabaseLike` (la forma mínima del cliente, sin depender
+    de supabase-js), `supabaseMemberServer(cliente, id)`: `pull()` lee de la
+    cuenta el libro (por páginas de 500), lo equipado, `race_times`,
+    `user_discounts`, el Carnet, `carnet_answers` y `account_snapshots`;
+    `rpc()` y `saveAnswer()` (respuestas del Carnet: update y, si no hay,
+    insert; la RLS no deja upsert). `classifyServerError`: P0001/42501 con
+    clave → rechazo; red, 5xx, JWT caducado y `not_member` → pasajero.
+  - `ops.ts`: la cola (`award`, `buy`, `equip`, `time`, `find_discount`,
+    `use_discount`, `profile`, `answer`) y su RPC; `pointActionFor` (la
+    acción de `point_actions` por la forma del origen; `merge.ts` de T89 la
+    reutiliza); `SyncRejectedError` (un `StoreError` con el código que la
+    interfaz ya explica: `insufficient_coins`, `conflict` «apodo en uso»…).
+  - `hydrate.ts`: lo del servidor al documento local con los ids que daría
+    el repositorio local (`world_reward:<clave local>` viaja en
+    `metadata.lk`, `achievement:<id>`, `cosmetic:<id>#n`, `stamp:qr:<fiesta>`,
+    ajustes y compensaciones), pasado por `replayLedger`; récords de circuito
+    desde `race_times` (sin los anulados); la copia `MemberSnapshot`
+    (`format: 1`: descubrimientos, misiones, contadores, ajustes, logros
+    completados, récords que no son de circuito y compras de prueba).
+  - `member.ts`: `createMemberRepository`. Cada acción de valor se hace en la
+    copia (la interfaz responde como siempre) y entra en la cola, que va en
+    orden a las RPC; comprar, equipar y el Carnet esperan la respuesta y
+    lanzan el rechazo; lo demás lo avisa (`onEvent`). Tras un rechazo, la
+    copia vuelve a lo del servidor. Sin red, la cola se guarda
+    (`boia.cuenta.<id>.sync`) y se reintenta (2 s → 60 s, al volver la red y
+    al reabrir). Sólo se lee del servidor con la cola vacía: gana el
+    servidor sin perder lo pendiente. El resto del documento va con
+    `save_snapshot` 4 s después de cambiar y al ocultar la página; un
+    `snapshot_conflict` relee y gana el servidor. Las llamadas esperan a la
+    primera puesta al día (8 s como mucho).
+  - `switchable.ts`: `createSwitchableRepository`: una referencia estable
+    que va al invitado o al miembro, avisa de un cambio en todas las áreas
+    al pasar de uno a otro y hace esperar a las llamadas hasta saber quién
+    juega (`hold`). Contenido y Admin, siempre los del navegador.
+  - `local.ts`: `localDocAccess(repo)` (leer/cambiar el documento de un
+    repositorio local); `schema.ts`: la identidad puede ser `member`.
+- **`apps/web/lib/repo.ts`**: `gameRepository()` (con Supabase) es el
+  repositorio conmutable; `guestRepository()` el invitado de siempre.
+  **`apps/web/lib/repo-member.ts`** (nuevo, sólo se carga con Supabase): con
+  sesión y Carnet crea la copia `boia.cuenta.<id>` (con el contenido del
+  Admin de la demo copiado del navegador) y el repositorio de la cuenta;
+  al salir vuelve al invitado sin recargar y borra la copia (la cola sólo si
+  quedó vacía). Sin red al cargar, con sesión y copia, juega sobre la copia.
+  Manda lo pendiente al volver la red y al ocultar la página, relee al
+  volver a ella y cada minuto. Avisos con los de la cuenta (`sync.*`).
+- **Cuenta (T89)**: `session.ts` avisa tras `merge_guest`
+  (`onGuestMerged`: la siguiente lectura ya trae lo del invitado) y deja
+  mandar lo pendiente antes de cerrar sesión (`onBeforeSignOut`, 4 s como
+  mucho). `guest.ts` lee siempre del invitado (`guestRepository()`) y la
+  fusión lleva ya la copia (`snapshot`) si el invitado hizo algo.
+- **Tienda «Barco»**: comprar pide `requireAccount('skin')` (en modo local
+  pasa al momento; cancelar no compra).
+- **i18n**: `sync.offline`, `sync.online`, `sync.rejected.*` en
+  `es-cuenta.ts` (`muestra`).
+- **Pruebas**: `packages/store/src/member/member.test.ts` (14, con un
+  Supabase falso, `fake-supabase.ts`): sincronización y otro navegador que
+  lo lee, logro reclamado, copia del resto, cola sin red que sobrevive a
+  cerrar la pestaña, rechazos (tope diario, origen desconocido, monedas,
+  apodo), el servidor gana a la copia y a otra copia del documento, invitado
+  ↔ miembro sin recargar, ids del libro, clasificación de errores;
+  `merge.test.ts` (la copia en la fusión). E2E nuevo
+  `cuenta-progreso.spec.ts` (Supabase, escritorio). `cuenta.spec.ts`: con
+  cuenta el Carnet ya sale de la cuenta (sin «Crear» en este navegador).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0 (118 archivos, 1046 pruebas); `sh tools/spec/checks.sh` → exit
+  0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (185.5 kB · presupuesto
+  200 kB · OK); `pnpm typecheck` → exit 0.
+- `pnpm test:supabase` → exit 0 (6 archivos, 63 pruebas; cuentas
+  @example.test que quedan: 0).
+- `E2E_SUPABASE=1 E2E_PORT=3494 pnpm e2e cuenta-progreso.spec.ts
+  cuenta.spec.ts --workers=1` → cuenta-progreso pasa (escritorio, 2,1 min;
+  móvil se salta): el miembro ve en la tienda las monedas de su cuenta,
+  reclama «Primera boia», compra y se pone una skin, corre El Freu; el
+  servidor tiene el logro, la skin comprada y equipada y el tiempo; otro
+  contexto sin nada guardado ve la skin puesta, el récord junto a la
+  salida, los puntos y monedas de la cuenta y su Carnet.
+  `E2E_SUPABASE=1 E2E_PORT=3495 pnpm e2e cuenta.spec.ts --workers=1` → exit
+  0, 10 pasan.
+- `E2E_PORT=3496 pnpm e2e carnet.spec.ts carnet-descuento.spec.ts
+  mar-circuito.spec.ts tienda.spec.ts mar-carnet-barco.spec.ts --workers=1`
+  → exit 0, 22 pasan (modo local).
+
+Pendiente:
+- Con cuenta, el sello de una compra de prueba no se queda (en la cuenta el
+  sello es por QR, T91); el descuento que usa sí va a la cuenta.
+- Ranking (local aún, T92), botellas (en la copia del navegador hasta T93) y
+  Carnets de los demás siguen como antes.
+- Un premio `daily` hecho sin red y mandado otro día cuenta para el día en
+  que llega (`award_points` no recibe fecha).
+- `docs/spec/estado.md` no cambia: los REQ de servidor (IDE-005, IDE-039,
+  ARQ-010…) están en la lista `final` de D-20 y se mueven con T95.
+
 ## 2026-10-03 — plan 008 T96: /mar fixes from Hernán's test: race buoys, the open path, whirlpools, mobile «go to»
 
 Qué existe:

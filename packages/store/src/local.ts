@@ -199,6 +199,30 @@ export function createLocalRepository(options: LocalRepositoryOptions = {}): Boi
   return new LocalRepository(options);
 }
 
+/**
+ * Acceso al documento de un repositorio local, para quien lo usa como copia
+ * de otro sitio (la cuenta de Supabase, T90): leerlo entero y cambiarlo de
+ * una vez. No valida nada: quien escribe deja filas que pasen las reglas del
+ * libro (`replayLedger`), o se descartarán al volver a cargar.
+ */
+export interface LocalDocAccess {
+  /** Copia del documento de ahora. */
+  read(): StoreDoc;
+  /** Lee del documento sin copiarlo entero; `fn` no lo cambia ni se lo queda. */
+  view<T>(fn: (doc: Readonly<StoreDoc>) => T): T;
+  /** Cambia el documento de forma atómica, lo guarda y avisa con `areas`. */
+  write(areas: ChangeArea[], fn: (draft: StoreDoc) => void): void;
+  /** Clave del documento en el almacenamiento. */
+  readonly key: string;
+}
+
+const docAccess = new WeakMap<BoiaRepository, LocalDocAccess>();
+
+/** El acceso al documento de un repositorio local; null si no es local. */
+export function localDocAccess(repo: BoiaRepository): LocalDocAccess | null {
+  return docAccess.get(repo) ?? null;
+}
+
 class LocalRepository implements BoiaRepository {
   private readonly channel: DocChannel;
   private readonly now: () => Date;
@@ -234,6 +258,14 @@ class LocalRepository implements BoiaRepository {
       opts.key ?? STORE_KEY,
     );
     this.load();
+    docAccess.set(this, {
+      key: opts.key ?? STORE_KEY,
+      read: () => clone(this.doc),
+      view: (fn) => fn(this.doc),
+      write: (areas, fn) => {
+        this.mutate(areas, (d) => fn(d));
+      },
+    });
     if (opts.watch ?? useDefault) {
       this.channel.watch(() => {
         this.load();

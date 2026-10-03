@@ -1,4 +1,10 @@
-import { MemoryStorage, STORE_KEY, createLocalRepository } from '@boia/store';
+import {
+  MemoryStorage,
+  STORE_KEY,
+  createLocalRepository,
+  localDocAccess,
+  snapshotOf,
+} from '@boia/store';
 import { describe, expect, it } from 'vitest';
 import {
   actionForRef,
@@ -74,6 +80,24 @@ describe('lo del invitado pasa a la cuenta (decisión 4, merge_guest)', () => {
       expect.objectContaining({ circuit: 'el-freu', version: 3, ms: 71_234 }),
     ]);
     expect(p).not.toHaveProperty('snapshot');
+  });
+
+  it('lleva la copia del resto del documento (T90) si el invitado hizo algo', async () => {
+    const { repo, state } = await guestWithProgress();
+    await repo.progress.discover('isla:puerto');
+    await repo.progress.setMission('fiestera', { step: 'rescued' });
+    const snapshot = snapshotOf(localDocAccess(repo)!.read(), state.userId);
+    const p = mergePayloadFrom({ ...state, snapshot: { ...snapshot } });
+    expect(p.snapshot).toMatchObject({
+      format: 1,
+      player: { discoveries: { 'isla:puerto': expect.any(Object) } },
+    });
+    // El récord del circuito va en `times`, no en la copia.
+    expect(Object.keys((p.snapshot as unknown as typeof snapshot).player.records)).toEqual([]);
+    const fresh = createLocalRepository({ storage: new MemoryStorage(), watch: false });
+    await fresh.identity.ensure();
+    const empty = snapshotOf(localDocAccess(fresh)!.read(), 'nadie');
+    expect(mergePayloadFrom({ ...state, snapshot: { ...empty } })).not.toHaveProperty('snapshot');
   });
 
   it('sólo lo del propio invitado, y nada si no hay nada', () => {

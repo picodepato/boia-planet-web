@@ -210,7 +210,7 @@ test('cerrar sesión y volver a entrar', async ({ page }, info) => {
   await openMar(page);
   const carnet = await openCarnet(page);
   await expect(carnet.getByTestId('cuenta-email')).toHaveText(m.email);
-  await carnet.getByTestId('carnet-crear').click();
+  // El Carnet sale de la cuenta (T90): nada que crear en este navegador.
   await expect(carnet.getByTestId('carnet-apodo')).toHaveText(m.nickname);
 
   await carnet.getByTestId('cuenta-cerrar-sesion').click();
@@ -233,7 +233,6 @@ test('borrar la cuenta escribiendo el apodo', async ({ page }, info) => {
   await signInPage(page, m);
   await openMar(page);
   const carnet = await openCarnet(page);
-  await carnet.getByTestId('carnet-crear').click();
   await expect(carnet.getByTestId('carnet-apodo')).toHaveText(m.nickname);
 
   await carnet.getByTestId('cuenta-borrar').click();

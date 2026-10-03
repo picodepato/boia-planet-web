@@ -55,8 +55,11 @@ const jsonObject = z.record(z.string(), jsonValue);
 
 export const identitySchema = z.object({
   id: z.string().min(1),
-  /** En la demo sólo hay invitados: sin email (D-20). `member` llega con Supabase. */
-  kind: z.literal('guest'),
+  /**
+   * `guest`: invitado de este navegador, sin email (D-20). `member`: la copia
+   * local de una cuenta con email (plan 008, T90); su id es el de la cuenta.
+   */
+  kind: z.enum(['guest', 'member']),
   createdAt: iso,
 });
 export type Identity = z.infer<typeof identitySchema>;
