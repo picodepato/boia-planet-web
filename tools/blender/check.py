@@ -18,6 +18,12 @@ intro/check_titulo.py.
 Las islas de Blender del mar 3D (art/islas/3d/, kind "island-glb", T69): el
 manifiesto con isla3d.schema.json, un GLB por módulo de tools/blender/islas/ y
 cada uno dentro del presupuesto de triángulos (export_islas_glb.MAX_TRIS).
+Los props del hero de la landing (art/landing/3d/, kind "landing-glb", T78): el
+manifiesto con landing3d.schema.json, un GLB por prop de
+tools/blender/landing/export_landing_glb.PROPS, cada uno dentro de su presupuesto
+de triángulos y con ≤ 4 materiales, el total dentro de TOTAL_TRIS / TOTAL_KB, una
+malla principal más una por luz (nodos luz_*), y los stills de
+art/landing/hero-still-*.webp dentro de sus kB (render_hero_still.LIMITS_KB).
 Exit 0 si todo pasa; 1 si algo falla (lista cada fallo).
 """
 import argparse
@@ -1195,6 +1201,139 @@ def check_islas_3d(art):
     return label, "island-glb", fails, info, len(man["islas"])
 
 
+# --- Props del hero de la landing (T78): art/landing/3d/ y los stills ----------------------------
+LANDING_SUBDIR = os.path.join("landing", "3d")
+LANDING_TOOLS = os.path.join(HERE, "landing")
+
+
+def module_constants(path, names):
+    """Los literales de nivel superior `names` de un script (sin importarlo: usa bpy)."""
+    with open(path, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    out = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if getattr(t, "id", None) in names:
+                    out[t.id] = ast.literal_eval(node.value)
+    missing = set(names) - set(out)
+    if missing:
+        raise ValueError("%s no define %s" % (os.path.relpath(path, REPO), ", ".join(sorted(missing))))
+    return out
+
+
+def glb_doc(path):
+    """El trozo JSON de un .glb (cabecera comprobada)."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(data) < 20 or data[:4] != b"glTF":
+        raise ValueError("no es un GLB")
+    version, length = struct.unpack_from("<II", data, 4)
+    clen, ctype = struct.unpack_from("<II", data, 12)
+    if version != 2 or length != len(data) or ctype != 0x4E4F534A:
+        raise ValueError("cabecera GLB inválida (versión %d, %d/%d bytes)" % (version, length, len(data)))
+    return json.loads(data[20:20 + clen])
+
+
+def check_landing_3d(art):
+    """-> (label, kind, fails, info, n_glb). Cada prop de export_landing_glb.PROPS con su GLB, en presupuesto."""
+    label = LANDING_SUBDIR.replace(os.sep, "/")
+    fails, info = [], []
+    res = os.path.join(art, LANDING_SUBDIR)
+    mpath = os.path.join(res, "manifest.json")
+    consts = module_constants(os.path.join(LANDING_TOOLS, "export_landing_glb.py"), ("PROPS", "TOTAL_TRIS", "TOTAL_KB"))
+    stills = module_constants(os.path.join(LANDING_TOOLS, "render_hero_still.py"), ("LIMITS_KB", "FILES"))
+    if not os.path.exists(mpath):
+        return label, "landing-glb", ["falta %s (Blender -b -P tools/blender/landing/export_landing_glb.py)"
+                                      % os.path.relpath(mpath, REPO)], info, 0
+    with open(mpath, encoding="utf-8") as f:
+        man = json.load(f)
+    with open(os.path.join(HERE, "landing3d.schema.json"), encoding="utf-8") as f:
+        schema = json.load(f)
+    errs = validate(man, schema, schema)
+    if errs:
+        return label, "landing-glb", errs, info, 0
+    if man["max_tris"] != consts["TOTAL_TRIS"] or man["max_kb"] != consts["TOTAL_KB"]:
+        fails.append("max_tris/max_kb %d/%d; export_landing_glb dice %d/%d (vuelve a exportar)"
+                     % (man["max_tris"], man["max_kb"], consts["TOTAL_TRIS"], consts["TOTAL_KB"]))
+    ids = [e["id"] for e in man["props"]]
+    if ids != list(consts["PROPS"]):
+        fails.append("props %s; export_landing_glb.PROPS es %s" % (ids, list(consts["PROPS"])))
+    for pid in consts["PROPS"]:
+        if not os.path.exists(os.path.join(LANDING_TOOLS, pid + ".py")):
+            fails.append("%s: sin módulo tools/blender/landing/%s.py" % (pid, pid))
+    on_disk = sorted(f for f in os.listdir(res) if f.endswith(".glb"))
+    listed = sorted(e["file"] for e in man["props"])
+    if on_disk != listed:
+        fails.append("GLB en la carpeta %s; en el manifiesto %s" % (on_disk, listed))
+    if set(man["escena"]["props"]) != set(ids):
+        fails.append("escena.props %s no coincide con los props %s" % (sorted(man["escena"]["props"]), ids))
+    total_tris, total_kb = 0, 0
+    for e in man["props"]:
+        pid = e["id"]
+        if e["file"] != pid + ".glb":
+            fails.append("%s: el archivo se llama %r (se espera %s.glb)" % (pid, e["file"], pid))
+        path = os.path.join(res, e["file"])
+        if not os.path.exists(path):
+            fails.append("%s: falta %s" % (pid, e["file"]))
+            continue
+        try:
+            doc = glb_doc(path)
+            tris, n_mats, n_meshes, n_glow = glb_summary(path)
+        except (ValueError, KeyError, IndexError, json.JSONDecodeError) as err:
+            fails.append("%s: %s ilegible: %s" % (pid, e["file"], err))
+            continue
+        kb = -(-os.path.getsize(path) // 1024)
+        total_tris += tris
+        total_kb += kb
+        if tris != e["tris"]:
+            fails.append("%s: el GLB tiene %d triángulos; el manifiesto dice %d" % (pid, tris, e["tris"]))
+        if kb != e["kb"]:
+            fails.append("%s: el GLB pesa %d kB; el manifiesto dice %d" % (pid, kb, e["kb"]))
+        if tris > e["budget_tris"]:
+            fails.append("%s: %d triángulos > presupuesto %d" % (pid, tris, e["budget_tris"]))
+        if n_mats > 4:
+            fails.append("%s: %d materiales > 4" % (pid, n_mats))
+        if n_meshes != 1 + len(e["lights"]):
+            fails.append("%s: %d mallas (se espera 1 principal + %d luces)" % (pid, n_meshes, len(e["lights"])))
+        nodes = {n.get("name") for n in doc.get("nodes", [])}
+        for light in e["lights"]:
+            if light["node"] not in nodes:
+                fails.append("%s: el nodo %s no está en el GLB" % (pid, light["node"]))
+        if n_glow != len({light["color"] for light in e["lights"]}) and e["lights"]:
+            fails.append("%s: %d materiales emisivos para %d colores de luz" % (pid, n_glow, len({l["color"] for l in e["lights"]})))
+        if "KHR_draco_mesh_compression" in doc.get("extensionsRequired", []):
+            fails.append("%s: usa Draco (/mar no tiene descodificador)" % pid)
+        if doc.get("images") or doc.get("textures"):
+            fails.append("%s: lleva texturas (el presupuesto es por colores de vértice)" % pid)
+        info.append("%s: %d/%d triángulos, %d materiales (%d emisivos), %d luces, %d kB"
+                    % (pid, tris, e["budget_tris"], n_mats, n_glow, len(e["lights"]), kb))
+    if total_tris != man["total_tris"] or total_kb != man["total_kb"]:
+        fails.append("totales %d triángulos / %d kB; el manifiesto dice %d / %d"
+                     % (total_tris, total_kb, man["total_tris"], man["total_kb"]))
+    if total_tris > man["max_tris"]:
+        fails.append("total %d triángulos > %d" % (total_tris, man["max_tris"]))
+    if total_kb > man["max_kb"]:
+        fails.append("total %d kB > %d" % (total_kb, man["max_kb"]))
+    for phase, pattern in stills["FILES"].items():
+        for size, limit in stills["LIMITS_KB"].items():
+            spath = os.path.join(art, "landing", pattern % size)
+            if not os.path.exists(spath):
+                fails.append("falta el still %s (Blender -b -P tools/blender/landing/render_hero_still.py)"
+                             % os.path.relpath(spath, REPO))
+                continue
+            with open(spath, "rb") as f:
+                head = f.read(16)
+            if head[:4] != b"RIFF" or head[8:12] != b"WEBP":
+                fails.append("%s: no es WebP" % os.path.relpath(spath, REPO))
+            skb = os.path.getsize(spath) / 1024.0
+            if skb > limit:
+                fails.append("%s: %.1f kB > %d" % (os.path.relpath(spath, REPO), skb, limit))
+            info.append("still %s: %.1f/%d kB" % (pattern % size, skb, limit))
+    info.append("total %d/%d triángulos, %d/%d kB" % (total_tris, man["max_tris"], total_kb, man["max_kb"]))
+    return label, "landing-glb", fails, info, len(man["props"])
+
+
 def expected_worlds():
     with open(os.path.join(HERE, "render.py"), encoding="utf-8") as f:
         tree = ast.parse(f.read())
@@ -1245,6 +1384,7 @@ def main():
     batches.append(check_worlds(a.art, a.diff, worlds))
     batches.append([check_titulo.check_title(a.art, Png, a.diff)])   # art/intro/titulo/ (T27)
     batches.append([check_islas_3d(a.art)])   # art/islas/3d/ (T69)
+    batches.append([check_landing_3d(a.art)])   # art/landing/3d/ y los stills (T78)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:

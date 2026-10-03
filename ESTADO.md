@@ -4,6 +4,73 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T78: Hero 3D art from Blender: GLB props and the still render
+
+Qué existe:
+- Los cuatro props realistas del hero de la landing que pide el §12 del
+  documento aprobado de T77 (`docs/propuestas/2026-10-03-landing-scroll.md`),
+  como scripts reproducibles en `tools/blender/landing/` (`costa.py`,
+  `puerto.py`, `barco.py`, `boya.py`, helpers en `comun.py`, exportador
+  `export_landing_glb.py`) y exportados a `art/landing/3d/<id>.glb` con
+  `manifest.json` (id, file, label, doc, anchor, scale, height, bounds,
+  tris, kb, materials, lights, normals; esquema
+  `tools/blender/landing3d.schema.json`). Sin mascota, nubes ni gaviotas; sin
+  Draco ni texturas (colores de vértice); ≤ 4 materiales por prop; cada luz
+  es una malla aparte `luz_*` con material emisivo para que three.js le
+  cuelgue su halo. Total 6 222 triángulos de los 12 000 y 203 kB de los 220.
+  La costa (cabo cercano con acantilado y sierra lejana), el puerto (dos
+  diques de escollera con espaldón y paseo, cabezas redondas con las torres
+  de baliza verde a la izquierda y roja a la derecha, muelle con ocho
+  farolas y norays), el barco (motovelero de 10,4 m con casco, cubierta,
+  cabina, bañera y rueda, palo, botavara con la mayor aferrada, obenques,
+  candeleros, dos faroles y luz de tope) y la boya de balizamiento (flotador
+  naranja con defensa, torre de celosía y linterna).
+- Convención: metros, agua en y = 0; el mar (hacia donde mira la cámara del
+  hero) es +Y en Blender y −z en glTF, donde mira una cámara de three.js por
+  defecto. El manifiesto lleva además el bloque `escena` (cámara, posición y
+  giro de cada prop, sol y luna) con el que T79 coloca los GLB igual que los
+  stills.
+- Los stills de la versión estática en `art/landing/`:
+  `hero-still-1600.webp` (104,9 kB ≤ 120), `hero-still-800.webp` (26,7 ≤ 50),
+  `hero-still-noche-1600.webp` (114,4 ≤ 120), `hero-still-noche-800.webp`
+  (42,4 ≤ 50), de `tools/blender/landing/render_hero_still.py` sobre
+  `escena.py`: misma cámara que el fotograma 03 sin la banda (horizonte al
+  42 %, sol al 66 % y 4° arriba, barco al 50 %, diques a los lados, costa a
+  la izquierda, boya al 84 %), EEVEE con agua del modificador Ocean, bruma
+  volumétrica baja, profundidad de campo en el barco, bloom, viñeta 0,45 y
+  grano 5,5 % (numpy, con semilla). Reproducible: los GLB salen idénticos
+  byte a byte entre corridas; los stills iguales a la vista y en tamaño, no
+  en bytes (el muestreo de EEVEE en GPU no es exacto al bit).
+- `tools/blender/check.py` valida `art/landing/3d/` y los stills
+  (`check_landing_3d`); lo corre `tools/spec/checks.sh`.
+- Informe de validación `docs/informes/p007-t78-arte-hero.md` (triángulos
+  evaluados, materiales, kB, reimportación limpia con la skill de
+  validación: `hard_gate_pass` en los cuatro, 0 incidencias) con las vistas
+  en `docs/informes/img/p007-t78-{costa,puerto,barco,boya}-{vistas,hero}.png`.
+- Todo `muestra`: el arte definitivo lo aprueba Álvaro.
+
+Comandos:
+- `blender.exe -b -P tools/blender/landing/export_landing_glb.py` → exit 0,
+  4 GLB y el manifiesto; 6 222/12 000 triángulos, 203/220 kB.
+- `blender.exe -b -P tools/blender/landing/render_hero_still.py` → exit 0,
+  4 WebP dentro de sus límites.
+- `python3 tools/blender/check.py` → exit 0 (`landing/3d (landing-glb)`).
+- Pruebas completas paso a paso (el guardián no deja encadenarlas) → exit 0
+  en los cinco: vitest 107 ficheros, 976 pruebas (5,2 s); checks.sh OK con
+  `landing/3d` en el check de arte; eslint 0 avisos; build con la landing en
+  189,6 kB / 192 kB (sin cambios: la tarea no toca apps/web); typecheck Done
+  en world, db, store, engine y web.
+
+Pendiente:
+- T79 integra los GLB y los stills (`manifest.json` → `escena`, `lights`);
+  la costa va sin normales en el GLB (el loader las calcula, suaves): si
+  `GLTFLoader` no las calculara, `computeVertexNormals()` a mano.
+- Los kB por prop de puerto, barco y boya superan las cifras orientativas del
+  §12 (vértices partidos en aristas duras + JSON del GLB); los topes totales
+  se cumplen. Si hiciera falta más geometría, KHR_mesh_quantization (three.js
+  lo lee sin descodificador) daría ~40 % más de margen.
+- README de `tools/blender/landing/` (T83). Aprobación del arte por Álvaro.
+
 ## 2026-10-03 — plan 007 T77: Design plan for the scroll hero and the hand-off to the blocks
 
 Qué existe:
