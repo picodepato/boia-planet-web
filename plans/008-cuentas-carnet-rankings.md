@@ -10,6 +10,8 @@ Status file: ESTADO.md
 
 Notes for every task (this machine is Windows 10, Git Bash): the two `packages/db` suites need a local Postgres that this machine does not have, hence the exclude; `PYTHONUTF8=1` makes the Python checks read UTF-8; if a guard blocks the chained test command, run its steps one by one. E2E: `E2E_PORT=<free port> pnpm e2e <spec files> --workers=1` (first time in a worktree: `pnpm --filter @boia/web exec playwright install chromium`); the machine is slow under load, rerun only failing specs; the full e2e run is done once by the orchestrator at the end of the plan, never per task. UI strings only by key in `apps/web/lib/i18n/`. When a REQ moves, update `docs/spec/estado.md` with its test (`python3 tools/spec/estado.py` must pass). Content (dates, tickets, photos, texts, legal texts, point amounts) stays `muestra`. Never commit `apps/web/public/atlas/`, `.claude/launch.json` or any `.env*` file other than `.env.example`. Never push or deploy. Never edit `docs/DECISIONES.md`: T95 drafts the decision text and leaves it for Hernán. Skills: each task's block names the skills it may invoke with the Skill tool; invoke none other. Every task runs on Opus 5.5.
 
+Test deployment URL (Hernán, 2026-10-03): **https://boia-planet-roan.vercel.app** (not boia-planet.vercel.app); temporary until the final domain, which will replace it in Auth URLs and docs.
+
 Supabase (dev project `boia-planet-dev`, created by Hernán on 2026-10-03): its keys are in `apps/web/.env.local` (copied into every worktree): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key), `SUPABASE_SERVICE_ROLE_KEY` (secret key, server and scripts only, never in client bundles), `SUPABASE_DB_URL` (session pooler connection string, for migrations and SQL tests). Never print, log or commit any of these values. Agents may apply migrations, seed `muestra` data and create/delete throwaway test users in that dev project without asking (Hernán), and never touch any other Supabase project. Test users use addresses under `@example.test` and are deleted by the tests that create them. Supabase's default mailer only delivers to the project team, so tests never read an inbox: they get the 6-digit code through the admin API (`auth.admin.generateLink`) with the service key. **Local mode must keep working:** when the Supabase env vars are missing (Vercel production today, unit tests, the default e2e run), the app behaves exactly as today on localStorage (D-20), so pushing `main` never breaks production. Supabase-mode e2e runs only when `E2E_SUPABASE=1` (T86 sets up the switch).
 
 Decisions of 2026-10-03 that every task follows (interview, Hernán):
@@ -100,7 +102,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: route line suppressed from countdown to finish/cancel/world switch (`data-ruta` on the canvas); pure readable-placement rule (sheet radius + reading range + 30u margin) used for drops and deterministic relocation at load; 16 unit tests, 12 e2e → 9475832
 
 ## T89 — Email sign-in with a 6-digit code, consent and the account
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (only to apply T87's approved sign-in and account designs; T87 wins over the skill's defaults)
 - Depends on: T86, T87
@@ -120,10 +122,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e carnet.spec.ts --workers=1` → exit 0 (local mode: no sign-in UI)
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `apps/web/lib/account/` (session, `useAccount`, `requireAccount` gate, sign-in sheet with 6-digit code, nickname check, consents, guest merge, account section with sign out/delete), `nickname_status` RPC, CSP for Supabase, privacy page with accounts; cuenta.spec 10 passed → 6ea5b69
 
 ## T90 — The Supabase repository: a member's progress lives in the account
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T89
@@ -239,11 +241,30 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `docs/TRASPASO.md`: what changed, and what still depends on Álvaro: legal texts P21, point amounts, the final Carnet art, the use of the email list.
   - `docs/spec/estado.md`: every REQ these tasks moved, each with its test. Check IDE-023, AVE-034, IDE-040…044, IDE-050, IDE-053, ENT-032, ADM-002/004/027/039 and the final-version REQs D-20 deferred (IDE-002/003/005/006/039, ARQ-002/010/011/013).
   - The decision draft for Hernán in `docs/propuestas/2026-10-03-d27-borrador.md`: Supabase accounts by email with consent, guest merge, global bottles, QR stamps, admin TOTP. Say exactly which points of D-20 it replaces and which open questions it closes or opens (P7). Never edit `docs/DECISIONES.md`.
-  - A production checklist for Hernán in the same folder: a separate prod project, Vercel env vars, custom SMTP (the default mailer only reaches the team), Auth URLs, running the migrations, granting the owner, removing `muestra` data.
+  - Replace the old test URL boia-planet.vercel.app with https://boia-planet-roan.vercel.app in `CLAUDE.md`, `docs/TRASPASO.md`, `docs/entrega.md` and anywhere else (noting it is temporary until the final domain).
+  - A production checklist for Hernán in the same folder: a separate prod project, Vercel env vars, custom SMTP (the default mailer only reaches the team; Gmail app password for tests, Resend with the final domain for production) and then the Spanish email templates of T89, Auth URLs, running the migrations, granting the owner, removing `muestra` data.
 - Context: every Outcome and the Decisions of this plan; `docs/TRASPASO.md`, `README.md`, `.env.example`, `docs/spec/estado.md`, `tools/spec/estado.py`, `docs/DECISIONES.md` (read only).
-- Scope: may touch `README.md`, `.env.example`, `docs/TRASPASO.md`, `docs/spec/**`, `docs/propuestas/2026-10-03-d27-borrador.md`, `docs/propuestas/2026-10-03-produccion-supabase.md` / must not touch app code, `docs/DECISIONES.md`.
+- Scope: may touch `README.md`, `CLAUDE.md` (only the URL), `docs/entrega.md`, `.env.example`, `docs/TRASPASO.md`, `docs/spec/**`, `docs/propuestas/2026-10-03-d27-borrador.md`, `docs/propuestas/2026-10-03-produccion-supabase.md` / must not touch app code, `docs/DECISIONES.md`.
 - Done when:
   - `python3 tools/spec/estado.py` → exit 0
+  - Test command → exit 0
+- Outcome:
+
+## T96 — /mar fixes from Hernán's test: race buoys, the open path, whirlpools, mobile «go to»
+- Status: running (attempt 1)
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: none
+- Goal: Four fixes Hernán found playing on 2026-10-03, all in local mode.
+  - (a) Race side buoys: the buoys that line the circuit must be **orange on both sides** (left and right). Today the two sides differ.
+  - (b) The circuit is not closed **below checkpoint 8 and above checkpoint 3**: there is a gap in the course boundary that lets the player take a wrong way. Close it (buoys/boundary, and offroad detection if it relies on the same data) so the only way through is the intended route. Check the whole circuit for other gaps of the same kind and list them.
+  - (c) Bug: the **whirlpools (remolinos) do not appear on the map and cannot be surfed**. Find the cause (likely a regression from a recent plan: check `git log` of the files involved) and restore them: visible on the map, surfable as designed.
+  - (d) Mobile: when choosing to go to a place, «Navegar» and «Ir en nave» (flying) only appear inside a dropdown. Both must be visible buttons without the dropdown, so the flying option is not lost; desktop keeps working.
+- Context: the circuit and race: `packages/engine/src/circuit/` (`race.ts`, course data, checkpoints, offroad), `apps/web/app/mar/engine/` (buoys/marks rendering, `setRoad`, `mar3d.ts`), `apps/web/app/mar/mar-client.tsx`, `apps/web/app/mar/carrera.tsx`; the whirlpools: search `remolino`/`whirlpool` in `packages/engine` and `apps/web/app/mar`, their REQ in `docs/spec/estado.md` and the plans that touched them (`plans/005`…`007`); the «go to» UI on mobile: search the i18n keys for «Navegar» and «Ir en nave» in `apps/web/lib/i18n/` and their component; e2e `apps/web/e2e/mar-circuito.spec.ts` and the specs covering whirlpools and travel; T88's Outcome (route line, `data-ruta`) in this plan.
+- Scope: may touch `packages/engine/src/circuit/**`, the whirlpool code, `apps/web/app/mar/**` (except the bottles files), the «go to» component and its i18n keys, their tests and e2e specs / must not touch accounts, Supabase, the carnet, the ranking UI, bottles.
+- Done when:
+  - unit tests prove: both buoy sides use the orange material; the course boundary has no opening between checkpoints 8 and 3 (a test that a path through the old gap counts as offroad / blocked); whirlpools are created and surfable from the world data
+  - `E2E_PORT=<free> pnpm e2e mar-circuito.spec.ts <the whirlpool and travel specs> --workers=1` → exit 0, with new assertions: whirlpools present on the map; on a mobile viewport the «go to» sheet shows «Navegar» and «Ir en nave» as visible buttons without opening a dropdown
   - Test command → exit 0
 - Outcome:
 
@@ -256,8 +277,14 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T87: Hernán approved the design with changes: per-event stamp image by upload or URL (T94 builds it, T91 renders it, generated stamp as fallback); season definition open; scan first, then ask for the email; other recommendations stand (Hernán).
 - 2026-10-03 T88: route-line state exposed as `data-ruta`; margin `BOTTLE_READ_MARGIN` 30u (muestra); small auto-sheet objects (port WhatsApp buoy) only keep bottles sheet radius + margin away; relocation at placement time, stored positions not rewritten; a bottle thrown next to an island goes to the nearest readable water (may land out of view) instead of failing (agent).
 - 2026-10-03 T87: stamp image inside the rubber-stamp treatment (cropped window, single ink, texture, rotation); upload limits PNG/WebP/JPEG, ≥ 512 px, ≤ 2 MB, server keeps its own 512 px WebP and fetches URL images once (T94 follows this); new screens use orange buttons with black text (AA); frames are PNGs rendered from HTML (agent).
+- 2026-10-03 plan: T96 added from Hernán's play test (race buoys orange both sides, open path below CP8/above CP3, whirlpools missing, mobile «go to» buttons) (Hernán).
+- 2026-10-03 T89: resumed on «Continúa» assuming the dashboard was applied; the dev project still issues 8-digit codes, blocked again (orchestrator).
+- 2026-10-03 T89: OTP length set to 6 by Hernán; Supabase requires a custom SMTP to edit the email templates, so the templates stay pending for Hernán (non-blocking: e2e read no email); Auth URLs use boia-planet-roan.vercel.app (Hernán).
+- 2026-10-03 T89: `nickname_status` RPC migration; sign-out/delete resets to a fresh guest; guest merge sends no snapshot (T90 defines it); /carnet keeps the cream sheet until T91; templates pending custom SMTP (agent).
+- 2026-10-03 T89: the old URL in CLAUDE.md/TRASPASO/entrega goes to T95 (orchestrator).
 
 ## Proposals (new scope)
+- 2026-10-03 T89: `apps/web/app/carnet/carnet-page.tsx` has hard-coded strings (not i18n); `es-mar.ts` fails `prettier --check`.
 - 2026-10-03 T87: the existing `.juego-button` (white on #f26a1b, 3.4:1) fails AA for normal text; the old screens still use it.
 - 2026-10-03 Hernán: the world switch could become a playable skin; then the season can no longer be «the world being played». To be discussed.
 
@@ -269,3 +296,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 12:05 T87 answered (approve with changes) · resumed agent af80896be8477f7dc
 - 2026-10-03 11:53 T88 done · branch worktree-agent-a811042d3613c3ad7 → 9475832
 - 2026-10-03 11:57 T87 done · branch worktree-agent-af80896be8477f7dc → 281f61a
+- 2026-10-03 11:58 T89 launched · attempt 1 · agent a6c8beff0bb073cef
+- 2026-10-03 12:50 T89 blocked · Hernán applies the Supabase dashboard settings (OTP 6 digits, templates, URLs) · branch worktree-agent-a6c8beff0bb073cef
+- 2026-10-03 13:05 T89 answered (dashboard applied) · resumed agent a6c8beff0bb073cef
+- 2026-10-03 13:08 T89 blocked again · dev project still issues 8-digit OTP codes
+- 2026-10-03 13:20 T89 answered (OTP 6, templates wait for SMTP, roan URL) · resumed agent a6c8beff0bb073cef
+- 2026-10-03 13:20 T96 launched · attempt 1 · agent a358611c785a3bea3
+- 2026-10-03 13:27 T89 done · branch worktree-agent-a6c8beff0bb073cef → 6ea5b69
