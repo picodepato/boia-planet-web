@@ -251,14 +251,14 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T96 — /mar fixes from Hernán's test: race buoys, the open path, whirlpools, mobile «go to»
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
 - Goal: Four fixes Hernán found playing on 2026-10-03, all in local mode.
   - (a) Race side buoys: the buoys that line the circuit must be **orange on both sides** (left and right). Today the two sides differ.
   - (b) The circuit is not closed **below checkpoint 8 and above checkpoint 3**: there is a gap in the course boundary that lets the player take a wrong way. Close it (buoys/boundary, and offroad detection if it relies on the same data) so the only way through is the intended route. Check the whole circuit for other gaps of the same kind and list them.
-  - (c) Bug: the **whirlpools (remolinos) do not appear on the map and cannot be surfed**. Find the cause (likely a regression from a recent plan: check `git log` of the files involved) and restore them: visible on the map, surfable as designed.
+  - (c) Bug: the **whirlpools (remolinos) do not appear on the map and cannot be surfed**. Find the cause (likely a regression from a recent plan: check `git log` of the files involved) and restore them: visible on the map, surfable as designed. Whirlpools show **no name label** above them on the map, only the whirlpool itself (Hernán, 2026-10-03).
   - (d) Mobile: when choosing to go to a place, «Navegar» and «Ir en nave» (flying) only appear inside a dropdown. Both must be visible buttons without the dropdown, so the flying option is not lost; desktop keeps working.
 - Context: the circuit and race: `packages/engine/src/circuit/` (`race.ts`, course data, checkpoints, offroad), `apps/web/app/mar/engine/` (buoys/marks rendering, `setRoad`, `mar3d.ts`), `apps/web/app/mar/mar-client.tsx`, `apps/web/app/mar/carrera.tsx`; the whirlpools: search `remolino`/`whirlpool` in `packages/engine` and `apps/web/app/mar`, their REQ in `docs/spec/estado.md` and the plans that touched them (`plans/005`…`007`); the «go to» UI on mobile: search the i18n keys for «Navegar» and «Ir en nave» in `apps/web/lib/i18n/` and their component; e2e `apps/web/e2e/mar-circuito.spec.ts` and the specs covering whirlpools and travel; T88's Outcome (route line, `data-ruta`) in this plan.
 - Scope: may touch `packages/engine/src/circuit/**`, the whirlpool code, `apps/web/app/mar/**` (except the bottles files), the «go to» component and its i18n keys, their tests and e2e specs / must not touch accounts, Supabase, the carnet, the ranking UI, bottles.
@@ -266,7 +266,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - unit tests prove: both buoy sides use the orange material; the course boundary has no opening between checkpoints 8 and 3 (a test that a path through the old gap counts as offroad / blocked); whirlpools are created and surfable from the world data
   - `E2E_PORT=<free> pnpm e2e mar-circuito.spec.ts <the whirlpool and travel specs> --workers=1` → exit 0, with new assertions: whirlpools present on the map; on a mobile viewport the «go to» sheet shows «Navegar» and «Ir en nave» as visible buttons without opening a dropdown
   - Test command → exit 0
-- Outcome:
+- Outcome: orange buoys both sides; buoy arcs outside every course vertex close the gaps (CP8 143u, CP3 195u, also 0/4/6/9); whirlpools fixed (curved 32×32 mesh, current that moves the ship, moved out of Halloween's auto-sheet area), no name label, REQ-AVE-019 HECHO; mobile «go to» shows «Navegar» and «Ir en nave» in one row; 34 e2e passed → 594a472
 
 ## Decisions
 - 2026-10-03 plan: interview decisions 1–13 in the header (Hernán).
@@ -282,8 +282,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T89: OTP length set to 6 by Hernán; Supabase requires a custom SMTP to edit the email templates, so the templates stay pending for Hernán (non-blocking: e2e read no email); Auth URLs use boia-planet-roan.vercel.app (Hernán).
 - 2026-10-03 T89: `nickname_status` RPC migration; sign-out/delete resets to a fresh guest; guest merge sends no snapshot (T90 defines it); /carnet keeps the cream sheet until T91; templates pending custom SMTP (agent).
 - 2026-10-03 T89: the old URL in CLAUDE.md/TRASPASO/entrega goes to T95 (orchestrator).
+- 2026-10-03 plan: Hernán configured a custom SMTP (Gmail) on the dev project; the Spanish templates can now be edited (Hernán).
+- 2026-10-03 T96: course gaps came from sharp turns, `roadMarks` adds buoy arcs at every vertex; offroad unchanged; whirlpool push is now a current with a calm centre; `data-remolinos`/`data-remolinos-vista` for tests; e2e clicks the pin with dispatchEvent; branch started on T89's WIP (session cwd was in that worktree) and was reset to main (agent).
 
 ## Proposals (new scope)
+- 2026-10-03 T96: with the sample whirlpool values a ship with no throttle spins gently in the centre; whether it should push the player out is a design call.
 - 2026-10-03 T89: `apps/web/app/carnet/carnet-page.tsx` has hard-coded strings (not i18n); `es-mar.ts` fails `prettier --check`.
 - 2026-10-03 T87: the existing `.juego-button` (white on #f26a1b, 3.4:1) fails AA for normal text; the old screens still use it.
 - 2026-10-03 Hernán: the world switch could become a playable skin; then the season can no longer be «the world being played». To be discussed.
@@ -303,3 +306,5 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 13:20 T89 answered (OTP 6, templates wait for SMTP, roan URL) · resumed agent a6c8beff0bb073cef
 - 2026-10-03 13:20 T96 launched · attempt 1 · agent a358611c785a3bea3
 - 2026-10-03 13:27 T89 done · branch worktree-agent-a6c8beff0bb073cef → 6ea5b69
+- 2026-10-03 13:30 T90 launched · attempt 1 · agent a300278d46361eb2a
+- 2026-10-03 14:03 T96 done · branch worktree-agent-a358611c785a3bea3 → 594a472
