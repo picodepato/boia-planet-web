@@ -137,7 +137,24 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - Test command → exit 0
 - Outcome: eight specs updated through a shared e2e/hero-helpers.ts (pills by i18n name, real-pointer tap, pastHero); 67 passed, 3 deliberate project skips; circuit.void.offroad in textos-zonas.md, regeneration gives no diff → 138c030
 
+## T85 — Close the open points: D-26, REQ-ENT-028, low-power rule, still size
+- Status: done
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T83
+- Goal: Apply Hernán's answers of 2026-10-03 after the plan: (1) copy the proposed D-26 text from `docs/propuestas/2026-10-03-D-26-borrador.md` into `docs/DECISIONES.md` as D-26 as is (Hernán approved it), with the header "· 2026-10-03 · Hernán y Álvaro · pendiente Álvaro (arte)", add the cross-references the draft asks for in D-19, D-21 and D-24 (one line each, "modificada por D-26"), and mark the draft as passed; (2) retire REQ-ENT-028 (hero subtitle by promotions) as no longer applicable by D-26 in `docs/spec/estado.md` and `docs/spec/09-requisitos.md`, the way earlier retired REQs are marked (D-25 did it for REQ-ENT-012); (3) the low-power rule sends to the static version only with `navigator.deviceMemory ≤ 2` (was ≤ 4); the first-frames fps probe and saveData stay; (4) the static still's `sizes` so portrait phones with DPR ≤ 2 get the 1600 px still (T80 suggested `sizes="max(100vw,160vh)"`; pick what makes the cover crop sharp). Update the ESTADO fragment, TRASPASO and the tests that assert the old threshold or sizes.
+- Context: T80's and T83's Outcomes, Decisions and Proposals in this plan; `apps/web/lib/landing/**` and `apps/web/lib/intro/**` (low-power detection, still `<img>`/`srcset`), `apps/web/app/(landing)/**`; `apps/web/e2e/landing-perf.spec.ts`, `landing-scroll.spec.ts`; `docs/DECISIONES.md` (D-19, D-21, D-24, D-25 for the format), the D-26 draft, `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`.
+- Scope: may touch the files above / must not touch the design, `apps/web/app/mar/**`, `art/`, `tools/blender/`.
+- Done when:
+  - `grep -n "^## D-26" docs/DECISIONES.md` → one line; `python3 tools/spec/estado.py` → exit 0
+  - a unit test proves deviceMemory 4 keeps the 3D and 2 goes to the still
+  - `E2E_PORT=<free> pnpm e2e landing-perf.spec.ts landing-scroll.spec.ts --workers=1` → exit 0
+  - Test command → exit 0; budget line ≤ 186 kB
+- Outcome: D-26 in DECISIONES.md with cross-references in D-19/21/24; REQ-ENT-028 retired (new `retirado` state in estado.py); low power at deviceMemory ≤ 2; 1600 px still for portrait DPR ≤ 2; README updated; landing 185.4 kB → 4c1b929
+
 ## Decisions
+- 2026-10-03 T85: new REQ state `retirado` (must cite a D-NN) in tools/spec/estado.py; `hardwareConcurrency ≤ 4` kept (D-26 point 6); still sizes `(max-aspect-ratio: 1600/1000) 160vh, 100vw` (agent)
+- 2026-10-03 Hernán (after the plan): pass D-26 to DECISIONES.md as drafted; retire REQ-ENT-028; low-power rule deviceMemory ≤ 2 (was ≤ 4); the 1600 px still for portrait phones with DPR ≤ 2 → added T85; plan reopened
 - 2026-10-03 orchestrator: never run integrations while the full e2e suite runs on main (vitest timeouts under load); call integrate.py with PYTHONUTF8=1 (its JSON print crashed on cp1252)
 - 2026-10-03 T82: Álvaro's content in one file, `null` = muestra; images by id in public/contenido with a test that list and files match; «MUESTRA» mark is CSS on example.* links (label from i18n `link.sample`), «Comprar» excluded to avoid hydration shift; poster = EventCard `poster` 3:4 slot; artist photoUrl accepts a site path (agent)
 - 2026-10-03 T80: hero runtime and LandingClient are lazy chunks (lib/intro/lazy.ts, landing-client-lazy.tsx); frames at rest are full quality, frames in motion drop MSAA/resolution per a first-frames probe, under 30 fps → still; hardwareConcurrency ignored on Apple WebKit (iOS reports 4); lower-section CSS stays critical (deferring it shifts layout) (agent)
@@ -161,6 +178,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T85: i18n keys hero.explore.withPromotions / withoutPromotions and their textos-zonas.md entries are unused
 - 2026-10-03 T83: textos-zonas.md still lists intro.skip and intro.ticketsOnly; matriz-dispositivos /mar rows cite the deleted juego-hud.spec.ts; REQ-ENT-003 and 005 texts still describe a 2D planet; D-26 draft asks whether REQ-ENT-028 is retired
 - 2026-10-03 T82: artist Carnet answers (P17) have no field yet; the Admin has no editor for store/contact/footer links; underline runs under the «MUESTRA» pill in flex links; gallery photos have no folder (Admin → Fotos with https URL)
 - 2026-10-03 T84: record.spec.ts and record-titulo.spec.ts (only with RECORD_*=1) still click the old «Zarpar»
@@ -196,3 +214,8 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 07:45 T83 done · branch worktree-agent-add5763b505aab793 → bb61c36
 - 2026-10-03 07:50 full e2e on main (--workers=2): 310 passed, 3 failed (desktop: intro «enlaces compartidos…», mar-paridad «el náufrago…», «la ficha de una isla…»), 47 skipped; part of the run overlapped T83's first integration build; the two specs rerun alone on desktop: 27 passed
 - 2026-10-03 07:55 plan done · test command on main exit 0
+- 2026-10-03 08:05 second full e2e on main started (machine idle)
+- 2026-10-03 08:06 T85 launched · attempt 1 · agent add9f18fed6976a80
+- 2026-10-03 08:30 second full e2e on main (machine idle, --workers=2): exit 0, 313 passed, 0 failed, 47 skipped (record-* and per-project skips); the 3 earlier failures were load
+- 2026-10-03 09:46 T85 done · branch worktree-agent-add9f18fed6976a80 → 4c1b929
+- 2026-10-03 09:46 plan done again · test command on main exit 0 (T85 integration)
