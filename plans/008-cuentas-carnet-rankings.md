@@ -20,7 +20,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 5. **Nicknames are unique** (case-insensitive), with a basic offensive-word filter. Rankings and public carnets show the nickname. The email is never public.
 6. **What is stored (hybrid).** Everything of value lives in its own tables, written only through validated RPCs: the points/coins ledger, skin purchases and the equipped cosmetics, stamps, race times, discounts used and the Carnet profile. The rest of the store document (house, settings and other state) is saved as a per-account JSON copy. The client never writes value tables directly.
 7. **Basic anti-cheat** in those RPCs: a minimum plausible time per circuit and version; a maximum number of points per action and per day; once per stamp and per discount; only known action types. A determined cheater is out of scope.
-8. **Rankings:** race times per circuit (each account's best, global), all-time points and season points. Each list shows the top and the viewer's own position even outside it, plus a «Mostrar más» button that loads the next page until every member is listed (Hernán).
+8. **Rankings:** race times per circuit (each account's best, global) and all-time points. The season-points ranking stays hidden in the UI until Hernán defines what a season is (its RPC from T86 stays). Each list shows the top and the viewer's own position even outside it, plus a «Mostrar más» button that loads the next page until every member is listed (Hernán).
 9. **QR stamps.** One fixed QR per party. Each event has a secret code in Supabase, and the QR is a URL `/sello?e=<event>&c=<code>`. It is valid only within the party's time window, gives one stamp per account, and the stamp gives **50 points** (`muestra`, Álvaro adjusts). Two ways to scan: a «Escanear sello» button in the Carnet opens the camera inside the web, and the phone's own camera opens the URL directly.
 10. **The Carnet looks like a real ID card.** A horizontal card. The front carries the avatar, nickname, member number, rank, points, member since and a QR to the public carnet. The back holds the stamps, passport-style. A tap flips it. Mockups first, then Hernán approves (T87).
 11. **Admin.** It is entered with the email code plus TOTP (Supabase MFA, `aal2`, which the existing migrations already require). The owner role is given to an email by a script. Four sections move to real data: Fiestas y QR, Socios y emails (CSV export of news opt-ins; mark a member's carnet as artist so it shows in the artists' part; delete a carnet, e.g. a duplicate — Hernán), Moderación de botellas, Rankings (void a time or points). The other sections stay the local demo.
@@ -55,7 +55,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T87 — Design: the ID-card Carnet, the scan flow, the sign-in sheet and the rankings
-- Status: blocked
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (invoke first with the Skill tool)
 - Depends on: none
@@ -84,7 +84,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T88 — /mar: guide lines off during the race; bottles where they can be read
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
@@ -97,7 +97,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - unit tests prove the route-line flag survives `update(zoom)` and the placement rule rejects spots inside an island's sheet radius plus reading range and relocates a stored bottle out of it
   - `E2E_PORT=<free> pnpm e2e mar-circuito.spec.ts mar-botellas.spec.ts --workers=1` → exit 0, with new assertions: route line hidden during the countdown and the race, visible after finish and after a cancel; a bottle near an island can be read
   - Test command → exit 0
-- Outcome:
+- Outcome: route line suppressed from countdown to finish/cancel/world switch (`data-ruta` on the canvas); pure readable-placement rule (sheet radius + reading range + 30u margin) used for drops and deterministic relocation at load; 16 unit tests, 12 e2e → 9475832
 
 ## T89 — Email sign-in with a 6-digit code, consent and the account
 - Status: pending
@@ -154,6 +154,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - The «Escanear sello» button opens the camera in the web: `BarcodeDetector` where available, otherwise a small QR decoder loaded on demand only when scanning, never in the landing's or /mar's initial bundle. It handles the permission prompt and denial.
   - The `/sello` route claims the stamp through `claim_stamp` (asking for the email first with `requireAccount('stamp')`) and shows the received / outside hours / already stamped / invalid states.
   - The stamp appears on the back with the animation.
+  - Stamps keep T87's rubber-stamp look exactly (Hernán likes it): an event's image, when Admin set one (uploaded file or URL, T94), is shown inside that same stamp treatment; without one, the generated stamp.
   - Local mode keeps today's stamp-on-test-purchase behaviour.
 - Context: T87's approved document and frames; `apps/web/lib/mundo/carnet/*`, `apps/web/lib/mundo/menu/sections/carnet.tsx`, `apps/web/app/carnet/`; T86's `claim_stamp` and `event_stamp_codes`; T89's gate; T90's repository; REQ-IDE-010…023 in `docs/spec/estado.md` (IDE-023 «QR alternativo de sello»); `packages/store/src/local.ts` ~1531 (stamps today).
 - Scope: may touch `apps/web/lib/mundo/carnet/**`, `apps/web/lib/mundo/menu/sections/carnet.tsx`, `apps/web/app/carnet/**`, `apps/web/app/sello/**` (new), a scanner module, `apps/web/lib/i18n/`, `package.json` (+ lockfile) for the decoder, e2e specs / must not touch the ranking, bottles, admin, the store's value logic.
@@ -165,12 +166,12 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - Test command → exit 0
 - Outcome:
 
-## T92 — Global rankings: circuit times, all-time points, season points
+## T92 — Global rankings: circuit times and all-time points
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (to apply T87's approved rankings frame)
 - Depends on: T87, T90
-- Goal: Decision 8 on T87's design. The ranking panel reads T86's ranking RPCs: circuit times with a circuit selector, all-time points, season points. Each tab shows the top 50 and the viewer's «tú» row with their position, and a «Mostrar más» button that loads the next 50 until every member is listed (then it disappears). Guests see the lists read-only, with an «Entra con tu email para aparecer» action (`requireAccount('ranking')`). Finishing a race as a member submits the time and shows the new position on the finish card (personal best / position #n). Local mode keeps today's samples (`SAMPLE_CIRCUIT_MS`). REQ-AVE-034 and REQ-IDE-053 move accordingly.
+- Goal: Decision 8 on T87's design. The ranking panel reads T86's ranking RPCs: circuit times with a circuit selector and all-time points; no season tab (hidden until Hernán defines a season; the local-mode season tab goes too). Each tab shows the top 50 and the viewer's «tú» row with their position, and a «Mostrar más» button that loads the next 50 until every member is listed (then it disappears). Guests see the lists read-only, with an «Entra con tu email para aparecer» action (`requireAccount('ranking')`). Finishing a race as a member submits the time and shows the new position on the finish card (personal best / position #n). Local mode keeps today's samples (`SAMPLE_CIRCUIT_MS`). REQ-AVE-034 and REQ-IDE-053 move accordingly.
 - Context: T87's approved document; `apps/web/lib/mundo/menu/sections/ranking.tsx`, `apps/web/lib/mundo/ranking-circuit.ts`; `apps/web/app/mar/carrera.tsx` (finish card), `mar-client.tsx` `raceEvents`; T86's ranking RPCs and seasons; T90's repository (`submitTime`, `record`).
 - Scope: may touch the ranking section and helper, `carrera.tsx`, the race-finish wiring in `mar-client.tsx`, `apps/web/lib/i18n/`, e2e specs / must not touch the route-line code (T88), bottles, carnet, admin.
 - Done when:
@@ -212,7 +213,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - Without a staff role the user sees "no access".
   - `pnpm admin:grant -- <email> <owner|admin|editor>`: a script with the service key, for the dev project, that Hernán runs for his own email.
   - Four sections move to real data:
-    - **Fiestas y QR:** events with the stamp code's valid_from/until, a big QR to project, a printable PNG/PDF, regenerate code.
+    - **Fiestas y QR:** events with the stamp code's valid_from/until, a big QR to project, a printable PNG/PDF, regenerate code; the event's **stamp image**, uploaded as a file (Supabase Storage bucket, public read, staff write, size/format limits from T87's document) or attached from a URL (Hernán, 2026-10-03).
     - **Socios y emails:** list and search members with signup date, nickname and news opt-in with consent date and version; CSV export of the opted-in; mark or unmark a member's carnet as **artist** (it then shows the artist label and appears in the artists' part, as the local demo does today); **delete a carnet** (the member's account and data, with confirmation and audit), for duplicates.
     - **Moderación de botellas:** open reports, retire a bottle, audited.
     - **Rankings:** void a race time or a points entry with a reason, audited.
@@ -221,7 +222,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Context: `apps/web/app/admin/page.tsx`, `admin-app.tsx`, `sections/*` (moderation.tsx); `supabase/migrations/20260928100000_base.sql` (`staff_roles`, `has_staff_role`, `private.staff_role()` with `aal2`, last-owner protection); T86's `event_stamp_codes` and ranking tables; T93's bottle reports; `docs/spec/07-admin.md`; D-10.
 - Scope: may touch `apps/web/app/admin/**`, `apps/web/lib/account/**` for MFA, the grant script, `supabase/migrations/` (new files only), `apps/web/lib/i18n/`, e2e specs / must not touch the public carnet, ranking or bottles UI.
 - Done when:
-  - `E2E_SUPABASE=1 E2E_PORT=<free> pnpm e2e admin-real.spec.ts --workers=1` → exit 0: a granted test admin signs in with code + TOTP (generated in the test from the enrolment secret), regenerates an event's code and the old QR URL stops working, exports a CSV with only opted-in members, marks a member as artist and the public carnet shows it, deletes a duplicate member who then disappears from the rankings and can no longer sign in with their data, retires a reported bottle, voids a time that then leaves the ranking; a member without a role sees "no access"
+  - `E2E_SUPABASE=1 E2E_PORT=<free> pnpm e2e admin-real.spec.ts --workers=1` → exit 0: a granted test admin signs in with code + TOTP (generated in the test from the enrolment secret), regenerates an event's code and the old QR URL stops working, uploads a stamp image and sets another event's image by URL and both show on a member's carnet, exports a CSV with only opted-in members, marks a member as artist and the public carnet shows it, deletes a duplicate member who then disappears from the rankings and can no longer sign in with their data, retires a reported bottle, voids a time that then leaves the ranking; a member without a role sees "no access"
   - the existing admin e2e specs in local mode → exit 0
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
@@ -250,11 +251,18 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 plan: interview decisions 1–13 in the header (Hernán).
 - 2026-10-03 plan: added «Mostrar más» in the rankings; admin can mark a carnet as artist and delete duplicate carnets (Hernán).
 - 2026-10-03 plan: tasks ordered so the backend (T86) and the design (T87) start first; T88 is independent (orchestrator).
+- 2026-10-03 T87: Hernán likes T87's stamp design and wants stamps to look like that: the rubber-stamp look (shape, ink, rotation, type) is the stamp style; an event's uploaded/URL image is shown inside that same treatment, never as a plain photo (Hernán).
+- 2026-10-03 plan: season ranking hidden in the UI for now (Hernán).
+- 2026-10-03 T87: Hernán approved the design with changes: per-event stamp image by upload or URL (T94 builds it, T91 renders it, generated stamp as fallback); season definition open; scan first, then ask for the email; other recommendations stand (Hernán).
+- 2026-10-03 T88: route-line state exposed as `data-ruta`; margin `BOTTLE_READ_MARGIN` 30u (muestra); small auto-sheet objects (port WhatsApp buoy) only keep bottles sheet radius + margin away; relocation at placement time, stored positions not rewritten; a bottle thrown next to an island goes to the nearest readable water (may land out of view) instead of failing (agent).
 
 ## Proposals (new scope)
+- 2026-10-03 Hernán: the world switch could become a playable skin; then the season can no longer be «the world being played». To be discussed.
 
 ## Log
 - 2026-10-03 10:59 T86 launched · attempt 1 · agent acaf409f9b8ab837f
 - 2026-10-03 10:59 T87 launched · attempt 1 · agent af80896be8477f7dc
 - 2026-10-03 11:25 T87 blocked · Hernán approves the design (16 frames, 7 open questions) · branch worktree-agent-af80896be8477f7dc
 - 2026-10-03 11:26 T88 launched · attempt 1 · agent a811042d3613c3ad7
+- 2026-10-03 12:05 T87 answered (approve with changes) · resumed agent af80896be8477f7dc
+- 2026-10-03 11:53 T88 done · branch worktree-agent-a811042d3613c3ad7 → 9475832
