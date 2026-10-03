@@ -148,7 +148,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: member repository behind a switchable `gameRepository()` with a per-account local copy (`boia.cuenta.<id>`), ordered RPC queue, server-wins refresh, snapshot on guest merge; `lib/repo-member.ts` loaded only with Supabase; cuenta-progreso e2e (desktop) + 22 local specs pass → 67bbff5
 
 ## T91 — The ID-card Carnet and QR party stamps
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (to apply T87's approved design; T87 wins over the skill's defaults)
 - Depends on: T87, T90
@@ -166,7 +166,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e carnet.spec.ts carnet-descuento.spec.ts --workers=1` → exit 0 (updated to the new card; document each changed assertion in ESTADO)
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: ID-card Carnet (front with QR via `uqr`, passport back, flip) in /mar, /carnet and public /carnet/[id]; «Escanear sello» with BarcodeDetector or lazy `jsqr`; /sello claims via `claim_stamp`; `refreshMemberAccount()`; camera allowed by Permissions-Policy `camera=(self)`; reads `stampImageUrl` when T94 adds it; sello e2e 6 + camera e2e 2 → dfa09d9
 
 ## T92 — Global rankings: circuit times and all-time points
 - Status: done
@@ -219,6 +219,8 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
     - **Socios y emails:** list and search members with signup date, nickname and news opt-in with consent date and version; CSV export of the opted-in; mark or unmark a member's carnet as **artist** (it then shows the artist label and appears in the artists' part, as the local demo does today); **delete a carnet** (the member's account and data, with confirmation and audit), for duplicates.
     - **Moderación de botellas:** open reports, retire a bottle, audited.
     - **Rankings:** void a race time or a points entry with a reason, audited.
+  - The stamp image needs a field T91 already reads: `stampImageUrl` on the event (content and Supabase); add it.
+  - Add a cleanup for leftover `@example.test` users in the dev project (T91 saw 33–55 left by earlier runs), e.g. `pnpm db:clean-test-users`, and run it.
   - The other sections and the «Probar admin» local demo keep working as today. Local mode keeps the demo admin.
   - REQ-ADM-002/004/027/039 and the related REQs move accordingly.
 - Context: `apps/web/app/admin/page.tsx`, `admin-app.tsx`, `sections/*` (moderation.tsx); `supabase/migrations/20260928100000_base.sql` (`staff_roles`, `has_staff_role`, `private.staff_role()` with `aal2`, last-owner protection); T86's `event_stamp_codes` and ranking tables; T93's bottle reports; `docs/spec/07-admin.md`; D-10.
@@ -287,8 +289,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T90: buy/equip/save Carnet wait for the server and throw the rejection, other actions notify; sign-out flushes the queue (≤ 4 s) then drops the copy; hooks `onGuestMerged`/`onBeforeSignOut` in T89's session; `cuenta-progreso.spec` runs on desktop only (agent).
 - 2026-10-03 plan: at the end of the plan the orchestrator messages the local session «DESPLEGAR WEB VERCEL ALVARO» with what is ready on main (commits, changes, env vars Vercel needs for Supabase mode) so Álvaro's Vercel can be updated; the deploy itself is decided and run there, not from this session (Hernán).
 - 2026-10-03 T92: «Circuito» is the default tab; one selector option per circuit+version (today one); rows show the neutral avatar only; an `incomplete` session counts as guest; «Descubrir a un BOIERO» moved below the list; screenshots only with `RECORD_T92=1` (6 PNGs committed) (agent).
+- 2026-10-03 T91: Permissions-Policy `camera=()` → `camera=(self)` (outside its scope, needed for the scanner); libraries `uqr`, `jsqr` (lazy, not in landing or /mar bundles), `pngjs` (dev); local mode hides «Escanear sello» and /sello explains accounts are needed; a guest is asked for the email before an invalid code is detected; new strings in `i18n/es-carnet.ts`, /carnet's hard-coded texts moved to keys; extra `sello-camara.spec.ts` with Chromium's fake camera; on /carnet 1280 px the actions sit under the card (agent).
+- 2026-10-03 T91: T94 gets the `stampImageUrl` field and a cleanup of leftover `@example.test` users (orchestrator).
 
 ## Proposals (new scope)
+- 2026-10-03 T91: after a stamp, the points count-up and «Ahora eres {rank}» from T87 are not built (only the «Puntos a → b» chip).
 - 2026-10-03 T92: on «De siempre» all members with 0 points share one position (ties ranked together), so a 0-point viewer may show «3» pinned under 50 others at «3»; the design may need a look.
 - 2026-10-03 T90: a `daily` reward earned offline and sent another day counts for the arrival day (`award_points` takes no date).
 - 2026-10-03 T96: with the sample whirlpool values a ship with no throttle spins gently in the centre; whether it should push the player out is a design call.
@@ -317,3 +322,5 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 14:33 T91 launched · attempt 1 · agent af6cb47b61ded8c78
 - 2026-10-03 14:33 T92 launched · attempt 1 · agent a1bd6097682d3dc69
 - 2026-10-03 15:12 T92 done · branch worktree-agent-a1bd6097682d3dc69 → 904cb28
+- 2026-10-03 15:13 T93 launched · attempt 1 · agent af5cffc02be826f3c
+- 2026-10-03 15:20 T91 done · branch worktree-agent-af6cb47b61ded8c78 → dfa09d9
