@@ -4,6 +4,49 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T87: Design: the ID-card Carnet, the scan flow, the sign-in sheet and the rankings
+
+Qué existe:
+
+- `docs/propuestas/2026-10-03-carnet.md`: el diseño, **aprobado por Hernán
+  el 2026-10-03 con dos cambios**: cada fiesta puede tener su imagen de sello
+  subida o enlazada por URL en el Admin (T94 la sube, T91 la pinta; el sello
+  generado queda de respaldo), y qué es una temporada queda abierto: el
+  panel de ranking tiene dos pestañas (circuito y de siempre) y la de
+  temporada vuelve, genérica y sin atarla al mundo que se juega, cuando
+  Hernán la defina. Secciones: Card,
+  Front, Back and stamps (el aspecto de sello de goma de los marcos queda
+  aprobado como EL estilo de sello; «Image stamps»: la imagen va dentro de
+  ese mismo tratamiento — marco y letras de la forma del sello, ventana
+  recortada, pasada a una sola tinta, textura y giro —, nunca pegada tal
+  cual; PNG/WebP/JPEG ≥ 512 px, ≤ 2 MB, copia propia en WebP 512 px; las URL
+  se descargan una vez, nunca se enlazan en caliente), Flip, Scan flow (se lee
+  el QR primero y se pide el email después), /sello page, Sign-in sheet,
+  Account actions, Rankings panel, Palette and type, Accessibility, i18n keys
+  (unas 150 claves nuevas, `muestra`) y Open questions (6 contestadas, 1
+  abierta: la temporada).
+- 17 marcos PNG en `docs/informes/img/p008-t87-*.png` (anverso; reverso con
+  0, 3 y 13 sellos; menú de /mar a 375; /carnet a 1280; escalas 375/768/1280;
+  giro; cámara; sello recibido; errores de escaneo; página /sello; acceso
+  email + código; cuenta nueva; acciones de cuenta; rankings; paleta y tipo;
+  sellos con imagen). Maquetas HTML con las fuentes reales (Archivo Expanded
+  e Inter de `apps/web/public/fonts/`) renderizadas con el Chromium de
+  Playwright; el generador vive fuera del repo (no es código de la app).
+- Sin cambios de código, CSS, i18n, `docs/spec/` ni `docs/DECISIONES.md`.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (112 archivos, 1001 pruebas)
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0
+- `pnpm build` → exit 0
+- `pnpm typecheck` → exit 0
+
+Pendiente:
+
+- Qué es una temporada (Hernán); hasta entonces no hay pestaña de temporada.
+- T89, T91, T92 y T94 (imagen del sello) construyen sobre este diseño.
+
 ## 2026-10-03 — plan 008 T88: /mar: guide lines off during the race; bottles where they can be read
 
 Qué existe:
