@@ -3,8 +3,7 @@
 BOIA.PLANET: la web-universo de Boia, colectivo de eventos musicales de
 Alicante. Landing con entradas de los «All Day BOIA» y un planeta 3D
 navegable en barco (`/mar`, three.js; D-25: el mundo 2D de `/juego` se borró
-y su ruta lleva a `/mar`). La landing es un solo scroll sobre una escena
-3D (plan 007, abajo). Cómo se trabaja en el repo: `CLAUDE.md`;
+y su ruta lleva a `/mar`). Cómo se trabaja en el repo: `CLAUDE.md`;
 requisitos: `docs/DECISIONES.md` y `docs/spec/`; estado: `ESTADO.md`.
 
 Monorepo `pnpm` (Node 24, pnpm 11.27.1 por `packageManager`):
@@ -57,7 +56,7 @@ Medium para títulos e Inter para el texto. Las define un solo archivo,
 - Títulos: `apps/web/public/fonts/titulo-latin.woff2`. Hoy Archivo en su
   anchura máxima (wdth 125, peso 700), SIL OFL (`OFL-archivo.txt`): Druk es
   comercial (Commercial Type) y no se puede copiar. Se precarga y cuenta en
-  el presupuesto de la landing (200 kB, `pnpm --filter @boia/web budget`).
+  el presupuesto de la landing (192 kB, `pnpm --filter @boia/web budget`).
 - Texto: `apps/web/public/fonts/inter-latin.woff2`, Inter variable (peso
   400–900), SIL OFL (`OFL-inter.txt`). No se precarga (no cabe en el
   presupuesto): entra con `swap`.
@@ -77,58 +76,6 @@ Los dos archivos son subconjuntos latinos woff2 hechos con
    engordaría a mano). Nada más nombra la fuente.
 4. `pnpm build` (presupuesto) y
    `E2E_PORT=3341 pnpm e2e tipografia.spec.ts` (familias y carga).
-
-## La landing: el hero por scroll
-
-Plan 007 (diseño: [`docs/propuestas/2026-10-03-landing-scroll.md`](docs/propuestas/2026-10-03-landing-scroll.md);
-decisión en borrador: [`docs/propuestas/2026-10-03-D-26-borrador.md`](docs/propuestas/2026-10-03-D-26-borrador.md)).
-`/` es un solo scroll: la entrada cinemática y, debajo, la página de siempre.
-
-- **Aparición y reposo.** `/` a secas reproduce la aparición (el planeta de
-  `/mar` sube y entran las letras «BOIA», 1,4 s) y se queda en **reposo**
-  con «Zarpar», «Entradas» (visibles desde el primer pintado) y la pista
-  «Desliza para bajar al mar». No avanza solo y no hay «Saltar animación»:
-  un scroll, «Entradas» o «Zarpar» durante la aparición la adelantan. Una URL
-  directa (`/#tickets`, `?intro=0`, un evento) o volver desde `/mar` nace en
-  reposo (D-21). «Zarpar» se zambulle en 1,5 s y entra en `/mar` (D-24);
-  «Entradas» abre el panel de Tickets.
-- **El scroll lleva la escena.** El canvas three.js está fijo bajo toda la
-  página y lo mueve la posición de scroll `s` (en alturas de vista): de 0 a
-  ~0,92 la zambullida del planeta al mar (la trayectoria de «Zarpar»,
-  reversible), de 0,84 a 1 el fundido al mar, y desde 1 la cámara en la
-  cubierta tras el barco avanza sobre el agua mientras la luz pasa de la
-  hora dorada a la noche, que llega con la banda de Fotos. Los bloques son
-  bandas oscuras encima. Tramos: bloque `scroll` de `DEFAULT_PLANET_INTRO`
-  (`packages/engine/src/intro/planet.ts`, `scrollState`).
-- **Dónde está cada cosa.** El script de arranque de
-  `apps/web/app/(landing)/page.tsx` decide la entrada antes del primer
-  pintado (`data-intro`, `data-hero`); `components/intro-stage.tsx` monta el
-  hero, cuyo motor (`apps/web/lib/intro/run.ts`: controlador
-  `packages/engine/src/intro/controller.ts`, scroll, bucle de pintado,
-  `landing_view`) llega en un chunk aparte (`lib/intro/lazy.ts`). La escena,
-  en `apps/web/lib/planeta/`: `intro-scene.ts` (planeta y pase final),
-  `sea-rig.ts` (mar, cielo, luces y el atrezzo GLB de `art/landing/3d`, que
-  se pide por `/api/art` con la página en reposo), `quality.ts` (niveles de
-  calidad y la sonda de primeros fotogramas). three.js se pide tras `load`.
-- **Versión estática.** Con movimiento reducido, sin WebGL, con la escena
-  fuera de plazo (9 s) o que falla, o en bajo consumo
-  (`lib/intro/low-power.ts`: `saveData`, `deviceMemory ≤ 4`,
-  `hardwareConcurrency ≤ 4` salvo en WebKit de Apple, o la sonda por debajo
-  de 30 fps), la misma página sin 3D sobre el still de Blender
-  (`components/hero-stills.tsx`, `art/landing/hero-still*.webp`, el de noche
-  desde Fotos): sin canvas, sin cámara, nada se anima solo.
-- **Para probar y depurar.** `window.__boiaIntro` (fase del controlador,
-  `scroll = { s, phase, light }`, `quality`) y `.hero[data-scroll-phase]`
-  (`rest`, `dive`, `sea`). Pruebas: `e2e/landing-scroll.spec.ts` (flujo,
-  CLS, accesibilidad y teclado), `e2e/landing-perf.spec.ts` (CPU 4× y bajo
-  consumo), `e2e/intro.spec.ts`, `e2e/landing.spec.ts`.
-- **Presupuesto: 200 kB gzip** para la ruta crítica de `/` (HTML, JS, CSS y
-  fuentes precargadas; hoy **185,3 kB**). Lo comprueba
-  `apps/web/scripts/landing-budget.mjs` al final de `pnpm build` (que falla
-  si se pasa) o `pnpm --filter @boia/web budget`. three.js, el atrezzo y los
-  stills no cuentan: cargan aparte.
-- El contenido real (cartel, fotos de artistas, enlaces y Spotify) entra sin
-  código: [`docs/contenido-real.md`](docs/contenido-real.md).
 
 ## Islas de Blender en el mar 3D
 
@@ -156,33 +103,6 @@ pasar `check.py`. `/mar` no necesita cambios: lee el manifiesto y escala el
 modelo al radio del lugar (frente a -Y de Blender, que mira al puerto). En
 el lienzo, `data-islas-modelo` dice `id:procedural|cargando|glb|error`
 (`e2e/mar-isla-modelo.spec.ts`).
-
-## Arte del hero de la landing (Blender)
-
-El atrezzo de la escena del hero y los stills de la versión estática (plan
-007, T78) salen de `tools/blender/landing/`. Todo `muestra` hasta que Álvaro
-apruebe el arte.
-
-- Un módulo por pieza (`costa.py`, `puerto.py`, `barco.py`, `boya.py`, con
-  `ID`, `LABEL`, `DOC`, `BUDGET_TRIS`, `BUDGET_KB` y `build()`), piezas
-  comunes en `comun.py` y la escena de los stills en `escena.py`. Metros,
-  agua en z = 0, el mar hacia +Y de Blender (−z en glTF). Colores de
-  vértice, sin texturas ni Draco; cada luz es una malla `luz_*` aparte con
-  material emisivo (three.js le pone su halo).
-- `blender -b -P tools/blender/landing/export_landing_glb.py` escribe
-  `art/landing/3d/<id>.glb` y `manifest.json` (con el bloque `escena`:
-  cámara, posición de cada pieza, sol y luna, que lee
-  `apps/web/lib/planeta/sea-rig.ts`). `-- --only barco boya` para algunas;
-  `-- --preview <carpeta fuera del repo>` añade un PNG de cada una. Sale con
-  1 si una pieza pasa su presupuesto o el total los topes (12 000
-  triángulos, 220 kB).
-- `blender -b -P tools/blender/landing/render_hero_still.py` renderiza con
-  EEVEE los stills de oro y de noche a 1600 y 800 px
-  (`art/landing/hero-still{,-noche}-{1600,800}.webp`, ≤ 120 y ≤ 50 kB).
-  Los GLB salen idénticos byte a byte; los stills, iguales a la vista.
-- `python3 tools/blender/check.py` valida el manifiesto
-  (`tools/blender/landing3d.schema.json`) y los stills; lo corre `pnpm test`.
-  Informe de validación: `docs/informes/p007-t78-arte-hero.md`.
 
 ## Desplegar la versión de prueba
 
@@ -239,9 +159,7 @@ pnpm dlx vercel --prod      # producción
 ### Comprobar el despliegue
 
 1. `https://<dominio>/api/art/barco/manifest.json` responde JSON (el arte llega).
-2. `https://<dominio>/` enseña la entrada (letras 3D «BOIA», «Zarpar» y
-   «Entradas») y, al bajar, la escena del mar con la landing encima; el
-   atrezzo llega de `/api/art/landing/3d/manifest.json`.
+2. `https://<dominio>/` enseña la entrada (letras 3D «BOIA», «Zarpar») y la landing.
 3. «Zarpar» entra en `/mar` (el planeta 3D; sus barcos también salen de
    `/api/art`, `art/barco/3d/*.glb`) con la bienvenida de la boia abierta.
 4. `https://<dominio>/juego?ir=fotos` redirige a `/mar?ir=fotos` (D-25).

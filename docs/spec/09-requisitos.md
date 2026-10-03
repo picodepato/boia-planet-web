@@ -38,23 +38,23 @@ Definidos en [02-entrada-y-landing](02-entrada-y-landing.md). 40 requisitos: 38 
 
 | ID | Requisito | Fuente | Alcance | Criterio verificable | Notas |
 |---|---|---|---|---|---|
-| REQ-ENT-001 | Entrada en tres actos: planeta, reposo con «Zarpar» y paso al mar | §4.1, §4.4, §47-B, D-19, D-21 · alias ENT 01 | L1 | e2e al abrir `/` en móvil: aparece el planeta, luego «BOIA», «Zarpar» y «Entradas»; pulsar «Zarpar» termina en `/mar` y una pantalla de scroll, en el mar junto al puerto con la landing encima; grabación sin flashes, fotogramas vacíos ni saltos | D-19 sustituye la entrada sin clic de §47-B; D-24 y el plan 007 (borrador D-26) cambian la llegada |
-| REQ-ENT-002 | Sólo «Zarpar» antes de la landing; «Entradas» siempre a mano | §4.1, §4.4, §47-B, D-19 | L1 | e2e al abrir `/`: «Zarpar» y «Entradas» en pantalla desde el primer pintado, ninguna acción obligatoria; «Entradas» abre Tickets sin pulsar «Zarpar», también durante la aparición | plan 007 (borrador D-26): «Solo quiero ver las entradas» pasa a ser el botón «Entradas» |
+| REQ-ENT-001 | Entrada en tres actos: mini-mundo, botón y aterrizaje en el mar | §4.1, §4.4, §47-B, D-19, D-21 · alias ENT 01 | L1 | e2e al abrir `/` en móvil: aparece el mini-mundo, luego «BOIA» y el botón, y pulsarlo termina en la landing sobre el mar; grabación sin flashes, fotogramas vacíos ni saltos | D-19 sustituye la entrada sin clic de §47-B |
+| REQ-ENT-002 | Sólo el botón de entrar antes de la landing; entradas siempre a mano | §4.1, §4.4, §47-B, D-19 | L1 | e2e al abrir `/`: el botón de entrar es la única acción obligatoria y el enlace a entradas lleva a Tickets sin pulsarlo | — |
 | REQ-ENT-003 | Título «BOIA» en letras 3D y botón de entrar | §4.1, §47-B, D-05, D-08, D-19, D-20, D-23 | L1 | La configuración de entrada trae la secuencia renderizada de «BOIA» con la forma del wordmark y un texto de botón marcado `muestra`; con movimiento reducido, un fotograma quieto; ninguna librería 3D en el bundle; ninguna ruta muestra pantalla de bienvenida | [pendiente Álvaro] Texto definitivo del botón (P9) y letras 3D (P12) |
 | REQ-ENT-004 | Dirección artística de la entrada | §4.4 | L1 | Revisión visual de ENT 06 aprobada por Álvaro | — |
 | REQ-ENT-005 | Planeta 2D/2.5D reconocible | §4.4, D-05 | L1 | Revisión de ENT 06; ninguna librería 3D en el bundle | — |
-| REQ-ENT-006 | Aparición, reposo, zambullida y llegada al mar | §4.4, D-19 | L1 | Storyboard de los tiempos aprobado y grabación que los muestra; test: el reposo no avanza solo y la posición de scroll lleva la zambullida y el mar, y de vuelta | plan 007 (borrador D-26): el acercamiento lo lleva «Zarpar» o el scroll; sin aplanado (3D, D-24) |
-| REQ-ENT-007 | Duración por tramos (~1,4 s + 1,5 s), nunca espera vacía | §4.4, D-19 | L1 | La configuración trae los tramos; con una escena que no llega en su plazo aparece la versión estática sin esperar la cinemática | plan 007 (borrador D-26) |
-| REQ-ENT-008 | Sin audio y sin «Saltar»: acciones idempotentes | §4.4, D-21 | L1 | Pulsar «Zarpar» 2 y 5 veces o Escape 5 veces deja 1 escena y 1 viaje; un scroll durante la aparición la adelanta al reposo; 0 audio al cargar | plan 007 (borrador D-26): «Saltar animación» desaparece |
+| REQ-ENT-006 | Aparición, pausa, acercamiento con aplanado y llegada | §4.4, D-19 | L1 | Storyboard de los 4 tiempos aprobado y grabación que los muestra; test: la curvatura va de 1 a 0 sin retroceder durante el aterrizaje | — |
+| REQ-ENT-007 | Duración por tramos (~2 s + ~2 s), nunca espera vacía | §4.4, D-19 | L1 | La configuración trae los dos tramos; con red lenta simulada aparece la landing ligera sin esperar la cinemática | — |
+| REQ-ENT-008 | Sin audio y Saltar idempotente | §4.4, D-21 | L1 | Pulsar Saltar 5 veces deja 1 mundo y 1 barco; 0 audio al cargar | — |
 | REQ-ENT-009 | La entrada según la URL, en cada carga de `/` | §4.4, D-21 | L1 | Una segunda carga completa de `/` reproduce la cinemática; un enlace directo (`/#tickets`, `?menu=…`) y volver a `/` dentro de la web no; «Ver la introducción» (`/?intro=1`) la reproduce | [pendiente Álvaro] Repetir la entrada en cada visita (P9) |
-| REQ-ENT-010 | Movimiento reducido | §4.4 | L1 | e2e con movimiento reducido emulado: 0 desplazamientos de cámara, ningún contexto WebGL y nada animándose solo | plan 007 (borrador D-26): la versión estática con el still de Blender |
+| REQ-ENT-010 | Movimiento reducido | §4.4 | L1 | e2e con movimiento reducido emulado: 0 desplazamientos de cámara | — |
 | REQ-ENT-011 | Enlaces directos sin introducción | §4.4, §49.6 | L1 | e2e: el enlace a un evento abre su panel sin cinemática | — |
 | REQ-ENT-012 | Explorar sin reiniciar el mundo, desde el puerto | §4.3, §4.4, D-20 | L1 | Tras Explorar el barco es el mismo objeto de escena y el encuadre muestra el puerto del mundo activo con el barco dentro; los gestos de la página no lo mueven | — |
 | REQ-ENT-013 | La cinemática no concede nada | §4.4 | L1 | Test: 0 transacciones registradas tras la cinemática | — |
-| REQ-ENT-014 | Traspaso de cámara y cancelación limpia | §4.4, P2 | L1 | Último fotograma de «Zarpar» igual a la pantalla de carga de `/mar`; el paso del planeta al mar por scroll, sin corte y reversible; rotar o cambiar de pestaña a mitad no deja capas ni errores | D-24 y plan 007 (borrador D-26) |
+| REQ-ENT-014 | Traspaso de cámara y cancelación limpia | §4.4, P2 | L1 | Último fotograma igual a la landing; rotar o cambiar de pestaña a mitad no deja capas ni errores | — |
 | REQ-ENT-015 | Configuración de entrada versionada | §4.4, P2 | L1 | La configuración es un documento versionado y validado por esquema | — |
 | REQ-ENT-016 | Entrada editable desde el Admin | §4.4, P2 | L2 | Cambiar un parámetro, previsualizar y restaurar la revisión anterior desde el Admin | [provisional] Alcance: el Admin L1 de D-02 no la nombra |
-| REQ-ENT-017 | HTML comercial sin motor ni JS | §4.4, §49.6, P2 | L1 | e2e con JS y con WebGL desactivados: Tickets, Fotos y Tienda operativos | plan 007 (borrador D-26): el respaldo es la versión estática |
+| REQ-ENT-017 | HTML comercial sin motor ni JS | §4.4, §49.6, P2 | L1 | e2e con JS y con WebGL desactivados: Tickets, Fotos y Tienda operativos | — |
 | REQ-ENT-018 | Arranque en blanco investigado | §4.4, P3, D-01 | L1 | Informe con cada contexto de apertura probado y su resultado | Sin piloto que reproducir (D-01) |
 | REQ-ENT-019 | Controles libres al terminar | §4.4 · alias ENT 02 | L1 | Test de toques tras terminar y tras saltar: 0 capas interceptando, barco inactivo | alias ENT 02 |
 | REQ-ENT-020 | Entrada resistente a fallos | §4.4 · alias ENT 03 | L1 | Matriz de 4 casos más Atrás y Saltar repetido, sin mundos duplicados | alias ENT 03 |
@@ -63,9 +63,9 @@ Definidos en [02-entrada-y-landing](02-entrada-y-landing.md). 40 requisitos: 38 
 | REQ-ENT-023 | Storyboard y revisión visual | §4.4, P3 · alias ENT 06 | L1 | Storyboard, grabación y configuración entregados; aprobación registrada | alias ENT 06 |
 | REQ-ENT-024 | Hero dentro de la escena | §4.4 | L1 | Capturas en 360×640 y 1440×900 con barco y botones visibles | — |
 | REQ-ENT-025 | Primer encuadre de la landing | §4.2, §4.4, §31.2 | L1 | En 360×640, los 5 elementos visibles sin scroll | [pendiente Álvaro] Frase de posicionamiento sin aprobar |
-| REQ-ENT-026 | CTA «Zarpar» dimensionado | §4.2, §46, D-07 | L1 | Medición: alto ≥ 56 px, hasta 480 px de ancho la fila de «Zarpar» y «Entradas» a ancho completo con «Zarpar» el mayor, pulso ≤ 4 % cada 3 s | plan 007 (borrador D-26): «Zarpar» comparte la fila con «Entradas» |
-| REQ-ENT-027 | «Entradas» visible en 360×640 | §4.2, §4.4, D-07 | L1 | Medición: alto ≥ 44 px y visible sin scroll en 360×640 | plan 007 (borrador D-26): «Tickets» pasa a «Entradas» |
-| REQ-ENT-028 | Subtítulo según promociones | §4.2, §4.4, §46 | L1 | Test con 0 y con 1 promoción vigente | [pendiente Álvaro] plan 007 (borrador D-26): el diseño del hero quita la línea bajo el CTA; retirar el REQ o moverlo, lo decide Hernán |
+| REQ-ENT-026 | CTA Explorar dimensionado | §4.2, §46, D-07 | L1 | Medición: alto ≥ 56 px, ancho completo hasta 480 px, pulso ≤ 4 % cada 3 s | — |
+| REQ-ENT-027 | Tickets visible en 360×640 | §4.2, §4.4, D-07 | L1 | Medición: alto ≥ 44 px y visible sin scroll en 360×640 | — |
+| REQ-ENT-028 | Subtítulo según promociones | §4.2, §4.4, §46 | L1 | Test con 0 y con 1 promoción vigente | [pendiente Álvaro] |
 | REQ-ENT-029 | Navegación de la landing | §4.2, §4.4, D-03 | L1 | Capturas en móvil y escritorio con los 5 accesos, Mi Carnet y sonido | — |
 | REQ-ENT-030 | Bloques por scroll | §4.2, §4.4 | L1 | Un bloque sin contenido publicado no se renderiza | — |
 | REQ-ENT-031 | Bloques de actividades y comunidad | §4.4, P3 | L2 | Bloques disponibles en el editor de la home | [provisional] Alcance: D-02 no los nombra |
@@ -75,7 +75,7 @@ Definidos en [02-entrada-y-landing](02-entrada-y-landing.md). 40 requisitos: 38 
 | REQ-ENT-035 | Checkout sólo con acción explícita | §4.3, §49.6 | L1 | e2e: abrir el panel no navega fuera del sitio | — |
 | REQ-ENT-036 | URLs compartibles y Atrás | §49.6 | L1 | e2e: Atrás desde un panel vuelve al estado anterior; la URL reabre el panel | — |
 | REQ-ENT-037 | Tickets general | §4.3, §49.6 | L1 | Test con 0, 1 y 3 eventos a la venta | — |
-| REQ-ENT-038 | Carga ligera primero | §49.6, P2, P3 | L1 | e2e con WebGL desactivado: la versión estática (still) y el panel con las mismas acciones | plan 007 (borrador D-26): la representación ligera es la versión estática |
+| REQ-ENT-038 | Carga ligera primero | §49.6, P2, P3 | L1 | e2e con WebGL desactivado: isla ilustrada y panel con las mismas acciones | — |
 | REQ-ENT-039 | Teletransportes sin premios | §49.6, §49.15 | L1 | Ningún teletransporte registra rescate, entrega ni descubrimiento | — |
 | REQ-ENT-040 | `/mar`: botón «Entradas» siempre visible, con viaje en turbo | §2.1, §4.3, D-22 | L1 | e2e: el botón se ve al zoom de cubierta y en el modo mapa; pulsarlo y «Saltar» abre el checkout del evento vigente | — |
 
