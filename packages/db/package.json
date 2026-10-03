@@ -14,7 +14,9 @@
     "db:types": "node src/cli/gen-types.ts",
     "db:migrate:dev": "node src/cli/migrate-dev.ts",
     "db:types:dev": "node src/cli/gen-types.ts --dev",
-    "test:supabase": "node src/cli/test-supabase.ts"
+    "test:supabase": "node src/cli/test-supabase.ts",
+    "admin:grant": "node src/cli/admin-grant.ts",
+    "db:clean-test-users": "node src/cli/clean-test-users.ts"
   },
   "dependencies": {
     "pg": "8.23.0"

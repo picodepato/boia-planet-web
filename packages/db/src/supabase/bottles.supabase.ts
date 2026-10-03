@@ -2,11 +2,11 @@
  * Lo que usan las botellas globales de la web (plan 008, T93, decisión 12)
  * además de `place_bottle` y `latest_bottles` (community.supabase.ts): la
  * lectura registrada (`bottle_reads`), el reporte (`bottle_reports`), y que
- * el autor edite o retire la suya directamente, con el filtro de texto
- * también ahí. Las pruebas miran sólo sus propias botellas.
+ * el autor edite el mensaje o retire la suya directamente, con el filtro de
+ * texto también ahí, y que la posición sólo la fije `place_bottle` (T94). Las pruebas miran sólo sus propias botellas.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { context, expectRejected, ok, type Member } from './context.ts';
+import { context, expectDenied, expectRejected, ok, type Member } from './context.ts';
 import { testRunId } from './testkit.ts';
 
 const ctx = context();
@@ -107,6 +107,20 @@ describe('botellas globales: leer, reportar, editar y retirar', () => {
       reader.client.from('bottles').update({ message: 'mía' }).eq('id', bottleId).select('id'),
     );
     expect(hijack).toEqual([]);
+  });
+
+  it('sólo place_bottle fija la posición: el autor no mueve x/y ni inserta a mano (T94)', async () => {
+    await expectDenied(
+      author.client.from('bottles').update({ x: 999, y: 999 }).eq('id', bottleId).select('id'),
+    );
+    await expectDenied(author.client.from('bottles').update({ x: 1 }).eq('id', bottleId));
+    await expectDenied(
+      author.client
+        .from('bottles')
+        .insert({ user_id: author.id, message: `A mano ${run}`, x: 0, y: 0 }),
+    );
+    const row = await ok(ctx.service.from('bottles').select('x, y').eq('id', bottleId).single());
+    expect(row).toEqual({ x: 12, y: 34 });
   });
 
   it('el autor la retira y sale del mar', async () => {

@@ -42,15 +42,19 @@ export interface StampEventFacts {
 }
 
 /**
- * La imagen del sello de un evento, si el contenido la trae (T94 la añade al
- * evento: subida o URL, guardada por el servidor). Hasta entonces, ninguna.
+ * La imagen del sello de un evento del contenido (`stampImageUrl`, T94). Con
+ * cuentas manda la del servidor (`events.stamp_image_url`, la copia que guarda
+ * el Admin): ver `stampArtFor`.
  */
 export function eventStampImage(event: BoiaEvent): string | null {
-  const image = (event as BoiaEvent & { stampImageUrl?: unknown }).stampImageUrl;
+  const image = event.stampImageUrl;
   return typeof image === 'string' && image.length > 0 ? image : null;
 }
 
-/** Los eventos de los sellos que no están en el contenido de este navegador, del servidor. */
+/**
+ * Las fiestas de los sellos según el servidor (con cuentas): nombre, fecha y
+ * la imagen del sello que puso el Admin. Vacío en modo local o sin red.
+ */
 async function serverEvents(slugs: string[]): Promise<Map<string, StampEventFacts>> {
   const out = new Map<string, StampEventFacts>();
   if (slugs.length === 0 || !isSupabaseConfigured()) return out;
@@ -59,10 +63,15 @@ async function serverEvents(slugs: string[]): Promise<Map<string, StampEventFact
     if (!sb) return out;
     const { data } = await sb
       .from('events')
-      .select('slug, title, starts_at, is_sample')
+      .select('slug, title, starts_at, is_sample, stamp_image_url')
       .in('slug', slugs);
     for (const e of data ?? []) {
-      out.set(e.slug, { name: e.title, date: e.starts_at, sample: e.is_sample, image: null });
+      out.set(e.slug, {
+        name: e.title,
+        date: e.starts_at,
+        sample: e.is_sample,
+        image: e.stamp_image_url,
+      });
     }
   } catch {
     // sin red: el sello con lo que se sepa
@@ -97,8 +106,14 @@ export async function stampArtFor(
     facts.set(e.id, f);
     if (!facts.has(e.slug)) facts.set(e.slug, f);
   }
-  const missing = carnet.stamps.map((s) => s.eventId).filter((id) => id && !facts.has(id));
-  for (const [slug, f] of await serverEvents([...new Set(missing)])) facts.set(slug, f);
+  // Con cuentas, las fiestas de los sellos se leen también del servidor: las
+  // que no están en el contenido de este navegador y la imagen del sello que
+  // puso el Admin (T94), que manda sobre la del contenido.
+  const slugs = [...new Set(carnet.stamps.map((s) => s.eventId).filter(Boolean))];
+  for (const [slug, f] of await serverEvents(slugs)) {
+    const known = facts.get(slug);
+    facts.set(slug, known ? { ...known, image: f.image ?? known.image } : f);
+  }
   return [...carnet.stamps]
     .sort((a, b) => stampTime(b, facts.get(b.eventId)) - stampTime(a, facts.get(a.eventId)))
     .map((s) => {

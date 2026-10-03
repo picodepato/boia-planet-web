@@ -4,6 +4,124 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T94: /admin on real data: email + TOTP login and four sections
+
+Con Supabase, /admin pide el código del email y después el TOTP (decisión
+11); sin rol del equipo, «Sin acceso». Dentro, cuatro secciones van sobre
+datos reales; el resto sigue siendo la demo de este navegador. Sin las
+variables de Supabase (producción hoy) /admin es el «Probar admin» de
+siempre (D-20).
+
+Qué existe:
+- **Entrada** (`apps/web/app/admin/real/gate.tsx`, `apps/web/lib/account/admin-auth.ts`):
+  email → código de 6 cifras (`signInWithOtp` sin crear cuentas; un email sin
+  cuenta ve lo mismo) → con fila en `staff_roles` (se lee con aal1, RLS
+  propia) el TOTP: la primera vez alta con el QR de Supabase MFA y la clave
+  para escribir a mano; luego sólo el código → `aal2` → dentro. Sin fila,
+  «Sin acceso» con «Cerrar sesión». Banner azul «Admin con cuentas» con
+  quién entró, su rol y «Cerrar sesión». Un editor entra, pero las cuatro
+  secciones reales le dicen que piden admin.
+- **`pnpm admin:grant -- <email> <owner|admin|editor|none>`**
+  (`packages/db/src/cli/admin-grant.ts`, argumentos en `src/grant.ts`): con
+  la clave de servicio de `apps/web/.env.local`, comprueba que la base es del
+  mismo proyecto, crea la cuenta confirmada si no existe y pone o quita el
+  rol (auditado por el disparador de `staff_roles`; el último propietario no
+  se quita). Hernán lo corre con su email.
+- **`pnpm db:clean-test-users [--all | --minutes N]`**
+  (`packages/db/src/cli/clean-test-users.ts`): borra las cuentas
+  `@example.test` de más de 30 min (o todas con `--all`).
+- **Fiestas y QR** (`real/fiestas.tsx`): las fiestas de Supabase con buscador;
+  ventana del sello (desde/hasta), «Crear el QR», «Guardar ventana»,
+  «Regenerar código» con confirmación (el QR anterior deja de valer); el QR
+  de `/sello?e=&c=` grande, «Proyectar QR» (pantalla blanca entera, Esc),
+  «Descargar PNG» (1200 px con el nombre) e «Imprimir o PDF» (sólo la hoja
+  del QR). **Imagen del sello**: subir archivo o traer de una URL; PNG, WebP o
+  JPEG ≥ 512 px y ≤ 2 MB (por los bytes, nunca SVG); la copia propia 512 ×
+  512 en WebP (PNG si el navegador no sabe) va al bucket público
+  `stamp-images`; la URL la descarga una vez el servidor
+  (`app/api/admin/stamp-image/route.ts`: sólo admin/owner con aal2, https sin
+  red local, ≤ 3 redirecciones comprobadas, 10 s) y se guarda igual. Vista
+  previa con el sello de goma de T91. «Quitar imagen».
+- **Socios y emails** (`real/socios.tsx`, `real/csv.ts`): lista y búsqueda
+  (`admin_list_members`, 50 por página, «Mostrar más»): apodo, nº, email,
+  alta, noticias sí/no con fecha y versión, política; «Exportar CSV (con
+  noticias)» sólo con quien dijo que sí (BOM UTF-8, fórmulas escapadas);
+  «Marcar como artista» / «Quitar artista»; «Borrar Carnet» (la cuenta y todo
+  lo suyo) con motivo y escribiendo el apodo, auditado.
+- **Moderación** (`real/botellas.tsx`): las botellas con reportes abiertos
+  (con su autor), «Retirar» con motivo y «Descartar» un reporte; debajo, la
+  moderación de Carnets de la demo local.
+- **Rankings** (`real/rankings.tsx`): tiempos por circuito (`ranking_race`)
+  con «Anular» + motivo; puntos de siempre con las entradas del libro de cada
+  socio y «Anular» (compensación).
+- **Migración `20261003100600_admin_real.sql`**: `my_staff_role()` (null sin
+  aal2); `events.stamp_image_url` (sólo copias del bucket) y
+  `admin_set_stamp_image`; el bucket `stamp-images` (público, 2 MB,
+  webp/png) con escritura sólo del equipo con aal2; `admin_remove_bottle`,
+  `admin_dismiss_bottle_report`, `admin_void_race_time`, `admin_void_points`
+  (rechaza si las monedas ya se gastaron: `insufficient_coins`), todas con
+  motivo y `audit_log`. **Botellas**: se quita a `authenticated` el INSERT y
+  el UPDATE de x/y: sólo `place_bottle` fija la posición (el hueco que vio
+  T93). Aplicada en `boia-planet-dev`; `database.types.ts` regenerado.
+- **Contenido**: `stampImageUrl` en el evento (`packages/contracts`), con su
+  campo en la sección Eventos de la demo; `stampArtFor`
+  (`lib/mundo/carnet/use-carnet.ts`) lee con Supabase la imagen de
+  `events.stamp_image_url` de cada sello (manda sobre la del contenido).
+- i18n: `apps/web/lib/i18n/es-admin-real.ts` (`muestra`).
+- `docs/spec/estado.md`: REQ-ADM-002, 004, 027, 028 y 039 con la nueva
+  evidencia (siguen HECHO).
+
+Comandos:
+- `pnpm db:migrate:dev` → exit 0, «1 aplicadas de 14: 20261003100600»;
+  `pnpm db:types:dev` → +45 líneas.
+- `pnpm test:supabase` → exit 0, 8 archivos, 76 pruebas (nuevo
+  `admin.supabase.ts`: rol sólo con aal2, Storage sólo el equipo y sin SVG,
+  la imagen del sello, retirar y descartar, anular tiempo y puntos con
+  auditoría; `bottles.supabase.ts`: x/y e INSERT directos denegados;
+  `schema.supabase.ts`: `bottles.x/y/user_id` y `events.stamp_image_url` en
+  `CLIENT_READ_ONLY_COLUMNS`); quedan 0 cuentas `@example.test`.
+- `pnpm admin:grant -- boia-grant-check@example.test editor|admin|none` →
+  «cuenta creada», «es editor», «es admin», «ya no tiene rol»; con un rol
+  inventado → exit 1 «rol no válido».
+- `pnpm db:clean-test-users` → «borradas 0 de 0»; `-- --all` tras la prueba
+  del script → «borradas 1 de 1; quedan 0».
+- `E2E_SUPABASE=1 E2E_PORT=3941 pnpm e2e admin-real.spec.ts --workers=1` →
+  exit 0, 1 passed (escritorio), 1 skipped (móvil): sin rol «Sin acceso»;
+  admin dado de alta con el script entra con código + TOTP (calculado del
+  secreto de la pantalla); regenerar el código y el QR viejo da
+  `invalid_code` (el nuevo, sello); sube una imagen a una fiesta y trae la de
+  otra por URL, y las dos salen en el reverso del Carnet público del miembro
+  (`data-imagen="si"`); el CSV trae a quien aceptó noticias y no a los demás;
+  marcar artista y el Carnet público dice «Carnet de artista»; borrar el
+  duplicado: sale de los rankings de puntos y de circuito, su usuario ya no
+  existe y su sesión no se renueva; retirar la botella reportada (fuera de
+  `latest_bottles`, `removed`); anular un tiempo y sale del ranking, con su
+  fila `void_time` en la auditoría.
+- `E2E_PORT=3942 pnpm e2e admin.spec.ts admin-endurecido.spec.ts comunidad.spec.ts eventos.spec.ts --workers=1`
+  → exit 0, 24 passed, 6 skipped (modo local).
+- `E2E_PORT=3943 pnpm e2e ciclo-evento.spec.ts descuentos.spec.ts entrega.spec.ts tipografia.spec.ts carnet.spec.ts --workers=1`
+  → exit 0, 36 passed (modo local).
+- `E2E_SUPABASE=1 E2E_PORT=3944 pnpm e2e sello.spec.ts admin-real.spec.ts --workers=1`
+  → 7 passed, 1 skipped (el Carnet con sellos sigue igual tras leer la imagen del servidor).
+- Comando de prueba → exit 0: vitest 127 archivos / 1108 pruebas (nuevas:
+  `lib/admin/stamp-image.test.ts` 4, `app/admin/real/csv.test.ts` 2),
+  `tools/spec/checks.sh` OK, lint 0, build 0 (185.5 kB · presupuesto 200 kB
+  · OK), typecheck 0.
+- Prueba unitaria: `pnpm exec vitest run packages/db/src/grant.test.ts` → 3 passed
+  (fuera del comando de prueba, que excluye `packages/db`).
+
+Pendiente:
+- Los códigos de respaldo del TOTP y la recuperación si se pierde el móvil
+  (hoy: `pnpm admin:grant -- <email> none` y otra vez el rol, más borrar el
+  factor en el panel de Supabase).
+- Las otras secciones del Admin siguen en la demo local; la moderación de
+  Carnets también.
+- «Imprimir o PDF» usa el diálogo del navegador (sin prueba automática).
+- El instante del sello recibido no carga la imagen antes de caer (T91 la
+  pinta en el Carnet).
+- README y la lista de producción: `pnpm admin:grant` y
+  `pnpm db:clean-test-users` (T95).
+
 ## 2026-10-03 — plan 008 T93: Global message bottles
 
 Qué existe (decisión 12, REQ-IDE-040…044):

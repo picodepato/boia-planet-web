@@ -63,6 +63,11 @@ export const CLIENT_READ_ONLY_COLUMNS: ReadonlyArray<readonly [string, string]> 
   ['carnets', 'member_since'],
   ['bottles', 'moderated_by'],
   ['bottles', 'moderated_at'],
+  // T94: la posición sólo la fija place_bottle; la imagen del sello, su RPC.
+  ['bottles', 'user_id'],
+  ['bottles', 'x'],
+  ['bottles', 'y'],
+  ['events', 'stamp_image_url'],
 ];
 
 const CLIENT_ROLES = ['anon', 'authenticated'] as const;

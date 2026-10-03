@@ -23,6 +23,8 @@
     "db:migrate:dev": "pnpm --filter @boia/db db:migrate:dev",
     "db:types:dev": "pnpm --filter @boia/db db:types:dev",
     "test:supabase": "pnpm --filter @boia/db test:supabase",
+    "admin:grant": "pnpm --filter @boia/db admin:grant",
+    "db:clean-test-users": "pnpm --filter @boia/db db:clean-test-users",
     "spec:estado": "python3 tools/spec/estado.py"
   },
   "devDependencies": {

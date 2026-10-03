@@ -688,6 +688,7 @@ export type Database = {
           published_at: string | null;
           sale_starts_at: string | null;
           slug: string;
+          stamp_image_url: string | null;
           starts_at: string | null;
           state: Database['public']['Enums']['event_state'];
           state_locked: boolean;
@@ -720,6 +721,7 @@ export type Database = {
           published_at?: string | null;
           sale_starts_at?: string | null;
           slug: string;
+          stamp_image_url?: string | null;
           starts_at?: string | null;
           state?: Database['public']['Enums']['event_state'];
           state_locked?: boolean;
@@ -752,6 +754,7 @@ export type Database = {
           published_at?: string | null;
           sale_starts_at?: string | null;
           slug?: string;
+          stamp_image_url?: string | null;
           starts_at?: string | null;
           state?: Database['public']['Enums']['event_state'];
           state_locked?: boolean;
@@ -1602,6 +1605,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      admin_dismiss_bottle_report: {
+        Args: {
+          p_report: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_list_members: {
         Args: {
           p_search?: string;
@@ -1625,6 +1635,13 @@ export type Database = {
           total: number;
         }[];
       };
+      admin_remove_bottle: {
+        Args: {
+          p_bottle: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
       admin_set_artist: {
         Args: {
           p_user: string;
@@ -1639,6 +1656,30 @@ export type Database = {
           p_valid_from: string;
           p_valid_until: string;
           p_regenerate?: boolean;
+        };
+        Returns: Json;
+      };
+      admin_set_stamp_image: {
+        Args: {
+          p_event: string;
+          p_url?: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_void_points: {
+        Args: {
+          p_tx: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      admin_void_race_time: {
+        Args: {
+          p_user: string;
+          p_circuit: string;
+          p_version: number;
+          p_reason: string;
         };
         Returns: Json;
       };
@@ -1704,6 +1745,10 @@ export type Database = {
           p_payload: Json;
         };
         Returns: Json;
+      };
+      my_staff_role: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
       };
       nickname_status: {
         Args: {

@@ -69,6 +69,13 @@ export const RPC_REJECTIONS = [
   // Admin
   'unknown_member',
   'reason_required',
+  // Admin sobre datos reales (T94)
+  'invalid_image',
+  'unknown_bottle',
+  'unknown_report',
+  'unknown_time',
+  'unknown_entry',
+  'invalid_entry',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -224,3 +231,30 @@ export interface StampCodeResult {
   valid_from: string;
   valid_until: string;
 }
+
+/** admin_set_stamp_image */
+export interface StampImageResult {
+  event: string;
+  stamp_image_url: string | null;
+}
+
+/** admin_remove_bottle */
+export interface RemoveBottleResult {
+  bottle: string;
+  status: 'removed';
+  resolved_reports: number;
+}
+
+/** admin_void_race_time */
+export interface VoidTimeResult {
+  user_id: string;
+  circuit: string;
+  version: number;
+  best_ms: number;
+  voided: true;
+}
+
+/** admin_void_points */
+export type VoidPointsResult =
+  | { tx_id: string; voided: true; points_delta: number; coins_delta: number }
+  | { tx_id: null; voided: false; reason: 'already_voided' };

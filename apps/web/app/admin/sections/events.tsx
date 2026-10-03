@@ -64,6 +64,8 @@ interface Draft {
   /** Una actividad por línea. */
   activities: string;
   posterUrl: string;
+  /** Imagen del sello en el Carnet (T94); en la demo, una ruta o URL. */
+  stampImageUrl: string;
   /** Precio en euros, como se escribe («12,50»). */
   price: string;
   priceSample: boolean;
@@ -87,6 +89,7 @@ const EMPTY: Draft = {
   description: '',
   activities: '',
   posterUrl: '',
+  stampImageUrl: '',
   price: '',
   priceSample: true,
   ticketUrl: '',
@@ -123,6 +126,7 @@ function draftOf(e: BoiaEvent): Draft {
     description: e.description,
     activities: e.activities.join('\n'),
     posterUrl: e.posterUrl ?? '',
+    stampImageUrl: e.stampImageUrl ?? '',
     price: euros(e.priceCents),
     priceSample: e.priceSample,
     ticketUrl: e.ticketUrl ?? '',
@@ -197,6 +201,7 @@ function EventForm({
           ...(saleOpensAt ? { saleOpensAt } : {}),
           ...(priceCents !== undefined ? { priceCents } : {}),
           ...(d.posterUrl.trim() ? { posterUrl: d.posterUrl.trim() } : {}),
+          ...(d.stampImageUrl.trim() ? { stampImageUrl: d.stampImageUrl.trim() } : {}),
           ...(d.stateNote ? { stateNote: d.stateNote } : {}),
           ...(d.ticketUrl ? { ticketUrl: d.ticketUrl } : {}),
           ...(d.islandId ? { islandId: d.islandId } : {}),
@@ -360,6 +365,14 @@ function EventForm({
             placeholder="https://… o /…"
             onChange={(e) => set('posterUrl', e.target.value)}
             data-testid="evento-cartel"
+          />
+        </Field>
+        <Field label={t('admin.events.selloUrl')} hint={t('admin.events.selloUrlHint')}>
+          <input
+            value={d.stampImageUrl}
+            placeholder="https://… o /…"
+            onChange={(e) => set('stampImageUrl', e.target.value)}
+            data-testid="evento-sello-imagen"
           />
         </Field>
         <Field

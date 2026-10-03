@@ -181,11 +181,11 @@ describe('botellas globales: las 10 más recientes, una por cuenta, con filtro',
       low.client.rpc('place_bottle', { p_message: 'hola', p_x: 1e9, p_y: 0 }),
       'invalid_position',
     );
-    await expectRejected(
+    // Escribir la botella a mano ya no se puede (T94): sólo con place_bottle.
+    await expectDenied(
       low.client
         .from('bottles')
         .insert({ user_id: low.id, message: 'https://trampa.io', x: 0, y: 0 }),
-      'text_link',
     );
     await expectDenied(ctx.anon.rpc('place_bottle', { p_message: 'hola', p_x: 0, p_y: 0 }));
   });

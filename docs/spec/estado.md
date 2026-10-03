@@ -251,9 +251,9 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-COM-035 | Versión de prueba: sello por checkout sandbox | L1 | HECHO | [tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts); [event-card.test.ts](../../apps/web/app/%28landing%29/components/event-card.test.ts) | — |
 | REQ-COM-036 | El descuento lleva a su isla y se ve al comprar | L1 | HECHO | [descuentos.spec.ts](../../apps/web/e2e/descuentos.spec.ts); [discount-banner.test.ts](../../apps/web/lib/ticketing/discount-banner.test.ts); el aviso del Carnet antes de comprar y el descuento que se aplica, en la landing y en /mar, [carnet-descuento.spec.ts](../../apps/web/e2e/carnet-descuento.spec.ts) | — |
 | REQ-ADM-001 | Contenido como datos | L1 | PARCIAL | [admin.spec.ts](../../apps/web/e2e/admin.spec.ts) | Una prueba lo cubre en parte |
-| REQ-ADM-002 | Contraseña y TOTP | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
+| REQ-ADM-002 | Contraseña y TOTP | L1 | HECHO | [admin-real.spec.ts](../../apps/web/e2e/admin-real.spec.ts) «/admin con cuentas: código + TOTP y las cuatro secciones sobre datos reales»; [admin.supabase.ts](../../packages/db/src/supabase/admin.supabase.ts); [test_check.py](../../tools/spec/test_check.py) | T94 (decisión 11): con cuentas, /admin pide el código del email y el TOTP (alta con QR la primera vez, Supabase MFA `aal2`); sin TOTP el rol no da permisos. El código del email hace de contraseña (decisión 11); los códigos de respaldo no están |
 | REQ-ADM-003 | Alta única del propietario | L1 | final | — | Login del Admin (D-20) |
-| REQ-ADM-004 | Roles de L1 | L1 | HECHO | [rls.test.ts](../../packages/db/src/rls.test.ts) «un editor con TOTP edita el contenido de un evento, pero no su estado» | — |
+| REQ-ADM-004 | Roles de L1 | L1 | HECHO | [rls.test.ts](../../packages/db/src/rls.test.ts) «un editor con TOTP edita el contenido de un evento, pero no su estado»; [admin-real.spec.ts](../../apps/web/e2e/admin-real.spec.ts) «/admin con cuentas: código + TOTP y las cuatro secciones sobre datos reales»; [admin.supabase.ts](../../packages/db/src/supabase/admin.supabase.ts) | T94: el rol se da con `pnpm admin:grant -- <email> <rol>` (owner, admin, editor o none; la e2e lo usa); sin rol, «Sin acceso» |
 | REQ-ADM-005 | Moderador y artista | L2 | L2 | — | — |
 | REQ-ADM-006 | Permisos en servidor y base de datos | L1 | final | — | RLS en Supabase (D-20) |
 | REQ-ADM-007 | Acciones auditadas | L1 | HECHO | [admin-hardening.test.ts](../../packages/store/src/admin-hardening.test.ts) | — |
@@ -276,8 +276,8 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ADM-024 | Concesión masiva | L2 | L2 | — | — |
 | REQ-ADM-025 | Edición de Carnets | L2 | L2 | — | — |
 | REQ-ADM-026 | Perfiles oficiales reclamables | L2 | L2 | — | — |
-| REQ-ADM-027 | Moderación de botellas | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) «reportar una vez; el Admin la retira y desaparece del mar» | — |
-| REQ-ADM-028 | Retirada de recompensas implausibles | L1 | HECHO | [ledger.test.ts](../../packages/store/src/ledger.test.ts) «una compensación del Admin retira el logro y su premio, una sola vez» | — |
+| REQ-ADM-027 | Moderación de botellas | L1 | HECHO | [bottles.test.ts](../../packages/store/src/bottles.test.ts) «reportar una vez; el Admin la retira y desaparece del mar»; [admin-real.spec.ts](../../apps/web/e2e/admin-real.spec.ts) «/admin con cuentas: código + TOTP y las cuatro secciones sobre datos reales»; [admin.supabase.ts](../../packages/db/src/supabase/admin.supabase.ts) | T94: con cuentas, los reportes abiertos y «Retirar» (`admin_remove_bottle`, auditado) sobre las botellas globales |
+| REQ-ADM-028 | Retirada de recompensas implausibles | L1 | HECHO | [ledger.test.ts](../../packages/store/src/ledger.test.ts) «una compensación del Admin retira el logro y su premio, una sola vez»; [admin-real.spec.ts](../../apps/web/e2e/admin-real.spec.ts) «/admin con cuentas: código + TOTP y las cuatro secciones sobre datos reales»; [admin.supabase.ts](../../packages/db/src/supabase/admin.supabase.ts) | T94: con cuentas, Rankings anula un tiempo (`admin_void_race_time`) o una entrada de puntos (`admin_void_points`, compensación del libro), con motivo y auditoría |
 | REQ-ADM-029 | Aviso de impacto y confirmación de borrado | L1 | HECHO | [admin-endurecido.spec.ts](../../apps/web/e2e/admin-endurecido.spec.ts); [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
 | REQ-ADM-030 | Papelera y purga | L1 | HECHO | [admin-endurecido.spec.ts](../../apps/web/e2e/admin-endurecido.spec.ts); [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
 | REQ-ADM-031 | Peticiones de datos a mano | L1 | FALTA | — | — |
@@ -288,7 +288,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ADM-036 | Configuración de minijuegos | L2 | L2 | — | — |
 | REQ-ADM-037 | Valores del registro contextual | L2 | L2 | — | — |
 | REQ-ADM-038 | Prueba de usabilidad de 10 minutos | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-ADM-039 | Versión de prueba: «Probar admin» | L1 | HECHO | [admin.spec.ts](../../apps/web/e2e/admin.spec.ts) | — |
+| REQ-ADM-039 | Versión de prueba: «Probar admin» | L1 | HECHO | [admin.spec.ts](../../apps/web/e2e/admin.spec.ts) | Sin Supabase (producción hoy) sigue igual; con cuentas, /admin pide código + TOTP y la demo local queda en las secciones que no van sobre datos reales (T94) |
 | REQ-ADM-040 | Moderación de Carnets | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts); [community.test.ts](../../apps/web/lib/admin/community.test.ts) | — |
 | REQ-ARQ-001 | Monorepo pnpm en TypeScript estricto | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-ARQ-002 | Supabase y Vercel | L1 | final | — | Supabase (D-20) |

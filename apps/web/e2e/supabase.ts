@@ -11,7 +11,7 @@
  *   …
  *   await deleteMembers([m]);           // en afterAll / finally
  */
-import { randomBytes } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 import type { Page } from '@playwright/test';
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_AUTH_STORAGE_KEY } from '../lib/supabase/config';
@@ -111,4 +111,35 @@ export async function deleteMembers(members: readonly TestMember[]): Promise<voi
     if (error && !/not.*found/i.test(error.message))
       throw new Error(`deleteUser: ${error.message}`);
   }
+}
+
+function base32Decode(s: string): Buffer {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = 0;
+  let value = 0;
+  const out: number[] = [];
+  for (const ch of s.replace(/=+$/, '').toUpperCase()) {
+    const i = alphabet.indexOf(ch);
+    if (i < 0) continue;
+    value = (value << 5) | i;
+    bits += 5;
+    if (bits >= 8) {
+      out.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+}
+
+/**
+ * El código de 6 cifras de una app de autenticación (TOTP, RFC 6238: SHA-1,
+ * 30 s) para el secreto en base32 que enseña el alta del Admin (T94).
+ */
+export function totp(secret: string, now: number = Date.now()): string {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(now / 1000 / 30)));
+  const h = createHmac('sha1', base32Decode(secret)).update(counter).digest();
+  const o = h[h.length - 1]! & 0x0f;
+  const n = (h.readUInt32BE(o) & 0x7fffffff) % 1_000_000;
+  return String(n).padStart(6, '0');
 }

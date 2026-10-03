@@ -428,25 +428,51 @@ describe('Carnet y botellas', () => {
   });
 
   it('una botella activa por cuenta y 140 caracteres como máximo', async () => {
-    const [second, tooLong] = await as(db.client, member(USERS.member2), async (q) => {
+    const second = await as(db.client, service, async (q) => {
       await q.query(
         `insert into public.bottles (user_id, message, x, y) values ($1, 'primera', 0, 0)`,
         [USERS.member2],
       );
-      return [
-        await attempt(
-          q,
-          `insert into public.bottles (user_id, message, x, y) values ($1, 'segunda', 0, 0)`,
-          [USERS.member2],
-        ),
-        await attempt(q, `update public.bottles set message = $2 where user_id = $1`, [
+      return attempt(
+        q,
+        `insert into public.bottles (user_id, message, x, y) values ($1, 'segunda', 0, 0)`,
+        [USERS.member2],
+      );
+    });
+    expect(second.code).toBe(UNIQUE_VIOLATION);
+    const tooLong = await as(
+      db.client,
+      member(USERS.member2),
+      (q) =>
+        attempt(q, `update public.bottles set message = $2 where user_id = $1`, [
           USERS.member2,
           'x'.repeat(141),
         ]),
-      ];
-    });
-    expect(second.code).toBe(UNIQUE_VIOLATION);
+      `insert into public.bottles (user_id, message, x, y) values ('${USERS.member2}', 'primera', 0, 0);`,
+    );
     expect(tooLong.code).toBe(CHECK_VIOLATION);
+  });
+
+  it('sólo place_bottle fija la posición: el autor no inserta ni mueve x/y a mano (T94)', async () => {
+    const results = await as(
+      db.client,
+      member(USERS.member2),
+      async (q) => [
+        await attempt(
+          q,
+          `insert into public.bottles (user_id, message, x, y) values ($1, 'directa', 0, 0)`,
+          [USERS.member2],
+        ),
+        await attempt(q, `update public.bottles set x = 5, y = 5 where user_id = $1`, [
+          USERS.member2,
+        ]),
+        await attempt(q, `update public.bottles set message = 'otra' where user_id = $1`, [
+          USERS.member2,
+        ]),
+      ],
+      `insert into public.bottles (user_id, message, x, y) values ('${USERS.member2}', 'primera', 0, 0);`,
+    );
+    expect(results.map((r) => r.code)).toEqual([PERMISSION_DENIED, PERMISSION_DENIED, null]);
   });
 
   it('el autor no deshace una retirada por moderación', async () => {

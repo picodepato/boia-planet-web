@@ -78,6 +78,13 @@ export const eventSchema = z.object({
    * en `/contenido/carteles/<id>.webp` (docs/contenido-real.md, plan 007 T82).
    */
   posterUrl: imageRefSchema.optional(),
+  /**
+   * Imagen del sello de la fiesta en el Carnet (T87 «Image stamps», T94): va
+   * dentro del tratamiento de sello de goma; sin ella, el sello generado.
+   * Con cuentas es la copia propia que guarda el Admin en Supabase Storage
+   * (`events.stamp_image_url`); en la demo local, una ruta o URL.
+   */
+  stampImageUrl: imageRefSchema.optional(),
   /** Precio de una entrada en céntimos (sale de `lib/ticketing/pricing.ts`, T42). */
   priceCents: z.number().int().nonnegative().optional(),
   /** El precio es de muestra hasta que Álvaro lo fije (D-06). */

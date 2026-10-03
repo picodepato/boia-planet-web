@@ -16,16 +16,23 @@ import {
   UsersSection,
 } from './sections/misc';
 import { MissionSection } from './sections/mission';
-import { ModerationSection } from './sections/moderation';
+import { CarnetReports, ModerationSection } from './sections/moderation';
 import { PhotosSection } from './sections/photos';
 import { TextsSection } from './sections/texts';
 import { WorldSection } from './sections/world';
+import { RealBottles } from './real/botellas';
+import { type RealAdmin, RealAdminProvider } from './real/common';
+import { FiestasSection } from './real/fiestas';
+import { RankingsSection } from './real/rankings';
+import { SociosSection } from './real/socios';
 import { type AdminContext, useAdminContext } from './use-admin';
 import { t } from '../../lib/i18n';
 import { MAR_PATH } from '../../lib/world-handoff';
 
+type Section = { id: string; label: string; Component: ComponentType<{ ctx: AdminContext }> };
+
 /** Secciones de L1 (REQ-ADM-008), con su ancla en la URL (`/admin#mundo`). */
-const SECTIONS: { id: string; label: string; Component: ComponentType<{ ctx: AdminContext }> }[] = [
+const SECTIONS: Section[] = [
   { id: 'inicio', label: t('admin.adminApp.paginaPrincipal'), Component: HomeSection },
   { id: 'eventos', label: t('admin.adminApp.eventos'), Component: EventsSection },
   { id: 'descuentos', label: t('admin.adminApp.descuentos'), Component: DiscountsSection },
@@ -43,9 +50,43 @@ const SECTIONS: { id: string; label: string; Component: ComponentType<{ ctx: Adm
   { id: 'auditoria', label: t('admin.adminApp.auditoriaYMuestra'), Component: AuditSection },
 ];
 
-function sectionFromHash(): string {
+/** Moderación con cuentas: las botellas reales y, debajo, los Carnets de la demo local. */
+function RealModeration({ ctx }: { ctx: AdminContext }) {
+  return (
+    <>
+      <RealBottles />
+      <section className="admin-demo-part">
+        <p className="admin-meta">{t('admin.real.demoBelow')}</p>
+        <CarnetReports ctx={ctx} />
+      </section>
+    </>
+  );
+}
+
+/**
+ * Con cuentas (T94, decisión 11) cuatro secciones van sobre los datos reales
+ * de Supabase: Fiestas y QR, Socios y emails, Moderación (botellas) y
+ * Rankings. El resto sigue siendo la demo de este navegador.
+ */
+const REAL_SECTIONS: Section[] = SECTIONS.flatMap((s): Section[] => {
+  if (s.id === 'eventos') {
+    return [s, { id: 'fiestas', label: t('admin.real.nav.fiestas'), Component: FiestasSection }];
+  }
+  if (s.id === 'artistas') {
+    return [s, { id: 'socios', label: t('admin.real.nav.socios'), Component: SociosSection }];
+  }
+  if (s.id === 'moderacion') {
+    return [
+      { ...s, label: t('admin.real.nav.moderacion'), Component: RealModeration },
+      { id: 'rankings', label: t('admin.real.nav.rankings'), Component: RankingsSection },
+    ];
+  }
+  return [s];
+});
+
+function sectionFromHash(sections: readonly Section[]): string {
   const id = window.location.hash.slice(1);
-  return SECTIONS.some((s) => s.id === id) ? id : SECTIONS[0]!.id;
+  return sections.some((s) => s.id === id) ? id : sections[0]!.id;
 }
 
 /**
@@ -53,57 +94,82 @@ function sectionFromHash(): string {
  * permanente de que es una prueba y de que los cambios se quedan en este
  * navegador. Lee y escribe el repositorio local, el mismo que la landing y
  * el mar: lo que se cambia aquí se ve allí, en este navegador.
+ *
+ * Con cuentas (`real`, T94) se llega aquí tras el código del email y el
+ * TOTP (`real/gate.tsx`), y cuatro secciones van sobre datos reales.
  */
-export function AdminApp() {
+export function AdminApp({ real }: { real?: RealAdmin } = {}) {
   const ctx = useAdminContext();
-  const [active, setActive] = useState(SECTIONS[0]!.id);
+  const sections = real ? REAL_SECTIONS : SECTIONS;
+  const [active, setActive] = useState(sections[0]!.id);
   useEffect(() => {
-    setActive(sectionFromHash());
-    const onHash = () => setActive(sectionFromHash());
+    setActive(sectionFromHash(sections));
+    const onHash = () => setActive(sectionFromHash(sections));
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, []);
-  const section = SECTIONS.find((s) => s.id === active) ?? SECTIONS[0]!;
+  }, [sections]);
+  const section = sections.find((s) => s.id === active) ?? sections[0]!;
   const storage = ctx?.repo.status();
 
   return (
-    <div className="admin" data-testid="admin">
-      <div className="admin-banner" role="note" data-testid="admin-aviso">
-        <strong>{ADMIN_COPY.bannerTitle}.</strong> {ADMIN_COPY.banner}
-        {storage?.message ? <span className="admin-banner__warn"> {storage.message}</span> : null}
+    <RealAdminProvider value={real ?? null}>
+      <div className="admin" data-testid="admin" data-admin={real ? 'real' : 'demo'}>
+        {real ? (
+          <div className="admin-banner admin-banner--real" role="note" data-testid="admin-aviso">
+            <strong>{t('admin.real.bannerTitle')}.</strong> {t('admin.real.banner')}{' '}
+            <span data-testid="admin-quien">
+              {t('admin.real.signedInRole', { email: real.email ?? '—', role: real.role })}
+            </span>{' '}
+            <button
+              type="button"
+              className="admin-link"
+              data-testid="admin-salir"
+              onClick={() => void real.signOut()}
+            >
+              {t('admin.real.signOut')}
+            </button>
+          </div>
+        ) : (
+          <div className="admin-banner" role="note" data-testid="admin-aviso">
+            <strong>{ADMIN_COPY.bannerTitle}.</strong> {ADMIN_COPY.banner}
+            {storage?.message ? (
+              <span className="admin-banner__warn"> {storage.message}</span>
+            ) : null}
+          </div>
+        )}
+        <header className="admin-top">
+          <h1>{t('admin.adminApp.boiaAdmin')}</h1>
+          <nav className="admin-top__links" aria-label={t('admin.adminApp.verLosCambios')}>
+            <Link href="/?intro=0" prefetch={false} data-testid="admin-ver-web">
+              {t('admin.adminApp.verLaWeb')}
+            </Link>
+            <Link href={MAR_PATH} prefetch={false} data-testid="admin-ver-mundo">
+              {t('admin.adminApp.verElMundo')}
+            </Link>
+          </nav>
+        </header>
+        <div className="admin-layout">
+          <nav className="admin-nav" aria-label={t('admin.adminApp.seccionesDelAdmin')}>
+            <ul>
+              {sections.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    aria-current={s.id === section.id ? 'page' : undefined}
+                    data-testid={`admin-nav-${s.id}`}
+                    onClick={() => setActive(s.id)}
+                  >
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <main className="admin-main" data-testid={`admin-seccion-${section.id}`}>
+            {ctx ? <section.Component ctx={ctx} /> : <p>{t('admin.adminApp.cargandoElAdmin')}</p>}
+          </main>
+        </div>
       </div>
-      <header className="admin-top">
-        <h1>{t('admin.adminApp.boiaAdmin')}</h1>
-        <nav className="admin-top__links" aria-label={t('admin.adminApp.verLosCambios')}>
-          <Link href="/?intro=0" prefetch={false} data-testid="admin-ver-web">
-            {t('admin.adminApp.verLaWeb')}
-          </Link>
-          <Link href={MAR_PATH} prefetch={false} data-testid="admin-ver-mundo">
-            {t('admin.adminApp.verElMundo')}
-          </Link>
-        </nav>
-      </header>
-      <div className="admin-layout">
-        <nav className="admin-nav" aria-label={t('admin.adminApp.seccionesDelAdmin')}>
-          <ul>
-            {SECTIONS.map((s) => (
-              <li key={s.id}>
-                <a
-                  href={`#${s.id}`}
-                  aria-current={s.id === section.id ? 'page' : undefined}
-                  data-testid={`admin-nav-${s.id}`}
-                  onClick={() => setActive(s.id)}
-                >
-                  {s.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <main className="admin-main" data-testid={`admin-seccion-${section.id}`}>
-          {ctx ? <section.Component ctx={ctx} /> : <p>{t('admin.adminApp.cargandoElAdmin')}</p>}
-        </main>
-      </div>
-    </div>
+    </RealAdminProvider>
   );
 }

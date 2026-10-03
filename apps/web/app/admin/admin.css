@@ -485,3 +485,148 @@
 .admin-impact--error {
   color: var(--admin-danger);
 }
+
+/* ---------------------------------------------------------------------------
+   Admin con cuentas (plan 008, T94): entrada con código + TOTP y las cuatro
+   secciones sobre datos reales. */
+
+.admin-banner--real {
+  background: #e3f1ff;
+  border-bottom-color: var(--admin-navy);
+  color: #0d2a4a;
+}
+
+.admin-login {
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.admin-login__card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.admin-login__card h2 {
+  margin-top: 0;
+}
+
+.admin-totp {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.admin-totp__qr {
+  width: 200px;
+  height: 200px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+}
+
+.admin-totp code,
+.admin-fiesta__url {
+  word-break: break-all;
+  font-size: 13px;
+}
+
+.admin-fiesta__stamp {
+  flex: none;
+  width: 112px;
+}
+
+.admin-fiesta__stamp svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.admin-fiesta__qr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 12px 0;
+}
+
+.admin-fiesta__qrbox {
+  width: 168px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+}
+
+.admin-fiesta__qrbox svg,
+.admin-projector__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.admin-projector {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  color: #000;
+  text-align: center;
+}
+
+.admin-projector__qr {
+  width: min(70vh, 90vw);
+  padding: 4vmin;
+  background: #fff;
+}
+
+.admin-projector__title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: clamp(22px, 4vmin, 48px);
+}
+
+.admin-projector__caption {
+  margin: 0;
+  font-size: clamp(14px, 2.2vmin, 24px);
+}
+
+.admin-demo-part {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--admin-line);
+}
+
+.admin-void {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.admin-ledger {
+  margin: 8px 0 16px;
+  font-size: 14px;
+}
+
+/* «Imprimir o PDF»: sólo la hoja del QR que se está proyectando. */
+@media print {
+  .admin:has(.admin-projector) .admin-banner,
+  .admin:has(.admin-projector) .admin-top,
+  .admin:has(.admin-projector) .admin-nav,
+  .admin:has(.admin-projector) .admin-section-head,
+  .admin:has(.admin-projector) .admin-list > li:not(:has(.admin-projector)),
+  .admin:has(.admin-projector) .admin-list > li > :not(.admin-projector),
+  .admin-projector button {
+    display: none !important;
+  }
+  .admin-projector {
+    position: static;
+    min-height: 90vh;
+  }
+}

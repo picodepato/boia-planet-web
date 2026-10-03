@@ -211,7 +211,7 @@ function CarnetRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
 }
 
 /** Carnets reportados (REQ-ADM-040, O9): se retira algo sin borrar el Carnet. */
-function CarnetReports({ ctx }: { ctx: AdminContext }) {
+export function CarnetReports({ ctx }: { ctx: AdminContext }) {
   const rows = useRead(ctx, (r) => r.admin.carnetReports());
   if (!rows) return <p>{t('empty.loading')}</p>;
   return (
