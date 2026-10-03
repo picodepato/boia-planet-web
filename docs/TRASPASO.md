@@ -22,14 +22,13 @@ detalle de cada tarea está en `ESTADO.md`; las reglas, en
   comprobadores de Python). Cada tarea del plan 007 pasó sus e2e; la corrida
   completa de `pnpm e2e` del plan la hace el orquestador al cerrarlo (la
   última completa, T49: 204 pasan, 36 saltadas, 0 fallan).
-- **Requisitos:** de los 294 REQ de la spec v15, **151 HECHO**, 64 PARCIAL,
-  32 FALTA, 28 L2 y 19 para la versión final
+- **Requisitos:** de los 294 REQ de la spec v15, **151 HECHO**, 63 PARCIAL,
+  32 FALTA, 28 L2, 19 para la versión final y 1 retirado (REQ-ENT-028, D-26)
   ([spec/estado.md](spec/estado.md)).
-- **Decisión pendiente de pasar:** el borrador de **D-26** (la landing como
-  scroll; cambia D-19, D-21 y D-24 punto 4, quita «Saltar animación», tope de
-  200 kB) está en
-  [propuestas/2026-10-03-D-26-borrador.md](propuestas/2026-10-03-D-26-borrador.md).
-  Lo pasa Hernán a `DECISIONES.md`.
+- **D-26 está en `DECISIONES.md`** (2026-10-03, T85): la landing como scroll;
+  cambia D-19, D-21 y D-24 puntos 4 y 5, quita «Saltar animación», tope de
+  200 kB. Hernán contestó lo que dejaba abierto: REQ-ENT-028 retirado, bajo
+  consumo con `deviceMemory ≤ 2` y el still de 1600 px en móviles verticales.
 - **Lo que frena publicar de verdad** no es código: son las respuestas y el
   material de Álvaro (abajo) y los servicios de la versión final.
 
@@ -89,9 +88,9 @@ En un iPhone (Safari) y un Android medio, con la versión desplegada (https):
 1. **La escena sale, no el still.** Con la consola remota,
    `__boiaIntro.quality` da `motion` 0 o 1 y `probeMs[0]` (lo que cuesta un
    fotograma a calidad completa). Si un móvil decente da el still, mirar
-   `lowFps` y `navigator.deviceMemory`: un Android de 4 GB va al still por la
-   regla `deviceMemory ≤ 4`; decidir si se queda así (está en el borrador de
-   D-26).
+   `lowFps` y `navigator.deviceMemory`: desde T85 (D-26) sólo va al still
+   por memoria con `deviceMemory ≤ 2`; un Android de 4 GB queda en manos de
+   la sonda de fotogramas (`lowFps`).
 2. **Scroll rápido de arriba abajo y vuelta:** sin tirones ni saltos de
    maquetación; el planeta y el mar siguen al dedo; al soltar, la imagen no
    se ve más borrosa que en reposo (si se ve, la GPU está en un nivel bajo).
@@ -101,9 +100,9 @@ En un iPhone (Safari) y un Android medio, con la versión desplegada (https):
    **movimiento reducido** del sistema → el still, nada se mueve solo.
 5. **Primera visita con 4G lento:** «Entradas» abre el panel y «Zarpar» lleva
    a `/mar` aunque la escena aún no haya llegado.
-6. **El still en vertical:** en un móvil de DPR ≤ 2 se ve blando (pide el de
-   800 px y lo estira); decidir si se cambia (`sizes="max(100vw, 160vh)"`,
-   unos 80 kB más en móvil, fuera del presupuesto crítico).
+6. **El still en vertical:** desde T85 un móvil de DPR ≤ 2 pide el de
+   1600 px (`sizes` sigue el recorte de `object-fit: cover`, unos 80 kB más,
+   fuera del presupuesto crítico); comprobar que se ve nítido.
 7. **Lector de pantalla** (VoiceOver y TalkBack) en el hero y las bandas, y
    **zoom al 200 %**: la matriz de [matriz-dispositivos.md](matriz-dispositivos.md)
    los deja a mano. Apuntar cada móvil en su tabla (REQ-ENT-021, REQ-ARQ-017).
@@ -128,12 +127,11 @@ En un iPhone (Safari) y un Android medio, con la versión desplegada (https):
 
 ### Se puede hacer ya (sin Álvaro ni Supabase)
 
-- **Pasar D-26 a `DECISIONES.md`** (Hernán) desde el borrador.
-- **Repasar los 64 PARCIAL y 32 FALTA** de [spec/estado.md](spec/estado.md).
+- **Repasar los 63 PARCIAL y 32 FALTA** de [spec/estado.md](spec/estado.md).
   Muchos FALTA piden una revisión, una medición en móvil o un documento, no
   código (p. ej. REQ-PRO-008, REQ-ENT-021, REQ-ARQ-017). REQ-ENT-028
-  (subtítulo según promociones) se quedó sin sitio en el hero: retirarlo o
-  moverlo (borrador D-26).
+  (subtítulo según promociones) está retirado por D-26; sus textos
+  `hero.explore.with*` siguen en el catálogo sin usarse.
 - **Matriz de dispositivos:** los casos a mano (áreas seguras, zoom, sin
   conexión, pérdida del contexto gráfico) en
   [matriz-dispositivos.md](matriz-dispositivos.md); sus filas de `/mar`

@@ -56,7 +56,9 @@ class EstadoChecks(unittest.TestCase):
     def test_estado_real_pasa(self):
         code, out = self.run_check()
         self.assertEqual(code, 0, out)
-        self.assertRegex(out, r"HECHO \d+ · PARCIAL \d+ · FALTA \d+ · L2 \d+ · final \d+")
+        self.assertRegex(
+            out, r"HECHO \d+ · PARCIAL \d+ · FALTA \d+ · L2 \d+ · final \d+ · retirado \d+"
+        )
 
     def test_hecho_sin_prueba(self):
         # Una fila FALTA marcada HECHO sin evidencia.
@@ -78,6 +80,20 @@ class EstadoChecks(unittest.TestCase):
     def test_l2_con_alcance_l1(self):
         self.edit(lambda s: s.replace("| L1 | FALTA |", "| L1 | L2 |", 1))
         self.assertFails("L2 sólo para alcance L2")
+
+    def test_retirado_sin_decision(self):
+        # Una fila FALTA marcada retirado con una nota que no cita ninguna D-NN.
+        self.edit(
+            lambda s: re.sub(r"\| FALTA \| — \| [^|]* \|$", "| retirado | — | ya no hace falta |", s, count=1, flags=re.M)
+        )
+        self.assertFails("retirado sin citar")
+
+    def test_retirado_con_decision(self):
+        self.edit(
+            lambda s: re.sub(r"\| FALTA \| — \| [^|]* \|$", "| retirado | — | Sin objeto por D-26 |", s, count=1, flags=re.M)
+        )
+        code, out = self.run_check()
+        self.assertEqual(code, 0, out)
 
 
 if __name__ == "__main__":

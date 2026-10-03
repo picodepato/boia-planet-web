@@ -4,6 +4,63 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T85: Cerrar lo abierto: D-26, REQ-ENT-028, regla de bajo consumo, tamaño del still
+
+Aplica las respuestas de Hernán del 2026-10-03 a lo que el plan 007 dejó
+abierto.
+
+Qué existe:
+- **D-26 en `docs/DECISIONES.md`**, copiada tal cual del borrador (cabecera
+  «· 2026-10-03 · Hernán y Álvaro · pendiente Álvaro (arte)»), con un párrafo
+  final de respuestas de Hernán: REQ-ENT-028 sin objeto, bajo consumo con
+  `deviceMemory ≤ 2`, still de 1600 px en móviles verticales. D-19, D-21 y
+  D-24 llevan al final una línea «**Modificada por D-26** (2026-10-03): …».
+  El borrador (`docs/propuestas/2026-10-03-D-26-borrador.md`) dice arriba que
+  ya pasó y su tabla de abiertos marca los tres puntos como cerrados.
+- **REQ-ENT-028 retirado**: nuevo estado `retirado` en `tools/spec/estado.py`
+  (sin objeto por una decisión posterior; la nota tiene que citar la D-NN, si
+  no, error) con dos pruebas en `test_estado.py`; leyenda en
+  `docs/spec/estado.md`; la fila enlaza la prueba del hero sin línea de
+  promoción (`blocks.test.ts`). En `02-entrada-y-landing.md` y
+  `09-requisitos.md` el REQ dice «Sin objeto por D-26», fuente `…, D-26` y
+  sin la marca `[pendiente Álvaro]`. Las citas «plan 007 (borrador D-26)» de
+  la spec pasan a «plan 007 (D-26)».
+- **Bajo consumo** (`apps/web/lib/intro/low-power.ts`): `LOW_MEMORY_GB` 4 → 2.
+  Siguen `saveData`, `hardwareConcurrency ≤ 4` (no en WebKit de Apple) y la
+  sonda de los primeros fotogramas. Prueba unitaria: `deviceMemory` 4 se
+  queda con la escena 3D, 2 (y 1, 0,5) va al still. El e2e de bajo consumo
+  prueba ahora `deviceMemory 2`.
+- **Still nítido en vertical** (`hero-stills.tsx`):
+  `sizes="(max-aspect-ratio: 1600/1000) 160vh, 100vw"`, el ancho con que
+  `object-fit: cover` dibuja el still (igual que `max(100vw, 160vh)`, con
+  condiciones de medio que lee cualquier navegador). Un móvil vertical con
+  DPR 2 pide el de 1600 px; en escritorio no cambia nada. Nuevo e2e en
+  `landing-perf.spec.ts`: 375×812, DPR 2, movimiento reducido → `currentSrc`
+  `…-1600.webp`.
+- `README.md`: «La landing: el hero por scroll» enlaza D-26 en
+  `DECISIONES.md` y dice `deviceMemory ≤ 2`.
+- `docs/TRASPASO.md`: D-26 pasada, conteos de la spec, la regla de memoria y
+  el still en «Qué mide Hernán a mano».
+
+Comandos:
+- `grep -n "^## D-26" docs/DECISIONES.md` → una línea (629).
+- `python3 tools/spec/estado.py` → exit 0; «294 REQ · HECHO 151 · PARCIAL 63
+  · FALTA 32 · L2 28 · final 19 · retirado 1».
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 112 archivos, 1001 pruebas. `sh tools/spec/checks.sh` → exit 0
+  (test_estado 8 pruebas). `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; «185.4 kB total, 13 archivos · presupuesto
+  200.0 kB · OK».
+- `E2E_PORT=3465 pnpm e2e landing-perf.spec.ts landing-scroll.spec.ts
+  --workers=1` → exit 0; 33 pasan, 1 saltada (2,9 min). La primera vuelta
+  falló el e2e nuevo por cómo medía el aspecto (`naturalWidth` va dividido
+  por la densidad del srcset); corregido, ya pedía el de 1600 px.
+
+Pendiente:
+- Los textos `hero.explore.withPromotions` / `withoutPromotions` siguen en el
+  catálogo i18n y en `textos-zonas.md` sin usarse.
+- Probar en un Android real de 4 GB que la sonda de fotogramas basta.
+
 ## 2026-10-03 — plan 007 T83: Documentos: spec, ESTADO, TRASPASO y el borrador de la decisión
 
 Plan 007 en resumen (T77–T84, todo en `main`): la landing es un solo scroll.

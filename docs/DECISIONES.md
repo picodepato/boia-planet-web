@@ -286,6 +286,8 @@ con la prueba de fps de la propuesta (§6, §8), que se anota en `ESTADO.md`.
 Falta el visto bueno de Álvaro: el flujo de entrada es identidad y negocio
 suyos (P9). Hasta que conteste se avanza con esta decisión.
 
+**Modificada por D-26** (2026-10-03): el paso a la landing es el scroll.
+
 ## D-20 · Versión de prueba completa: dos mundos sobre un mapa, todo en el navegador · 2026-09-28 · Hernán · pendiente Álvaro
 
 El plan 002 convierte la demo del plan 001 en una versión de prueba que se
@@ -413,6 +415,8 @@ de «ya la vio» de D-19; REQ-ENT-001 y REQ-ENT-008 dejan de hablar de
 «primera visita». Todos citan ahora D-21. Repetir la entrada en cada visita
 es identidad y experiencia de Álvaro (P9): falta su visto bueno; hasta que
 conteste se avanza con esta decisión.
+
+**Modificada por D-26** (2026-10-03): el punto 4 y las URL directas.
 
 ## D-22 · `/mar`, planeta de agua, «Entradas» siempre a mano, diálogos legibles y logros que se reclaman · 2026-09-29 · Hernán · pendiente Álvaro
 
@@ -592,6 +596,8 @@ en `/mar`), REQ-ENT-006 y REQ-ENT-014 (la llegada es la zambullida en el
 puerto y el último fotograma es el velo de `/mar`) y acerca REQ-ENT-012
 (explorar desde el puerto sin recargar). Textos de la bienvenida `muestra`.
 
+**Modificada por D-26** (2026-10-03): los puntos 4 y 5.
+
 ## D-25 · Sólo el planeta 3D: el mundo 2D se borra · 2026-10-01 · Hernán y Álvaro
 
 En la prueba de opinión del 2026-10-01 (entrevista del plan 005) Hernán y
@@ -619,6 +625,116 @@ Deja sin objeto REQ-ENT-012 (paso de la superficie de la entrada al 2D) y
 los requisitos que sólo describían el dibujo 2D (sprites por dirección,
 sectores con atlas); su estado está en `docs/spec/estado.md`. Textos del
 aviso sin WebGL `muestra`.
+
+## D-26 · La landing es un solo scroll: el hero es la escena 3D y el scroll la lleva · 2026-10-03 · Hernán y Álvaro · pendiente Álvaro (arte)
+
+En la entrevista del plan 007 Hernán y Álvaro deciden que la landing es un
+solo scroll continuo: empieza en la entrada cinemática y sigue en la página
+de siempre (entradas, eventos, fotos, artistas) al bajar. El prototipo 2D de
+capas con parallax de Codex se descarta: se empieza de cero.
+
+1. **`/` reproduce la aparición (planeta y «BOIA», D-21) y se queda en
+   reposo** con «Zarpar» y «Entradas» visibles desde el primer pintado, los
+   rótulos de esquina (BOIA · Alicante, coordenadas del puerto, la frase de
+   posicionamiento) y una pista que dice que la página baja («Desliza para
+   bajar al mar»). **No hay avance automático: hacer scroll es el paso a la
+   landing.**
+2. **El scroll lleva la escena three.js**, fija bajo toda la página: la
+   primera pantalla de scroll recorre la zambullida del planeta al mar junto
+   al puerto (la misma trayectoria de «Zarpar», ahora por scroll y
+   reversible al subir); desde ahí la cámara está en la cubierta tras un
+   barco y avanza despacio sobre el agua, saliendo del puerto, mientras la
+   luz pasa de la hora dorada al anochecer y a la noche, que llega con la
+   banda de Fotos. Los bloques suben del mar como bandas oscuras de estilo
+   editorial (rótulo a la izquierda, contenido a la derecha), con ventanas
+   de mar entre ellas.
+3. **«Saltar animación» desaparece.** Un scroll, «Entradas» o «Zarpar»
+   durante la aparición la adelantan al reposo. **«Solo quiero ver las
+   entradas» pasa a ser el botón «Entradas»**, que abre el panel de Tickets
+   (también en la cabecera; `nav.tickets` dice «Entradas», como en `/mar`).
+4. **«Zarpar» sigue entrando en `/mar`** (D-24): completa la zambullida en
+   1,5 s, el velo cubre y se pasa a `/mar` con la bienvenida; cuenta como
+   `explore_start` con origen `intro`. Al bajar del hero, la cabecera lleva
+   (desde 600 px de ancho) una píldora «Zarpar» que entra en `/mar` con el
+   velo, sin zambullida.
+5. **Las URL directas** (`/#tickets`, `?intro=0`, un evento, una galería) y
+   volver a `/` desde `/mar` o navegando dentro de la web **abren el hero ya
+   en reposo**, sin la aparición; el resto de D-21 no cambia (la entrada
+   según la URL, `/?intro=1` la repite).
+6. **Versión estática**: con movimiento reducido, sin WebGL, si la escena no
+   llega en su plazo o falla, o en bajo consumo (ahorro de datos, poca
+   memoria o pocos núcleos, o una sonda de los primeros fotogramas por
+   debajo de 30 fps), la landing es la misma página sin 3D: un still del mar
+   renderizado en Blender (dorado, y de noche desde Fotos), la misma
+   maquetación y scroll normal, sin movimiento de cámara ni nada que se
+   anime solo. Sustituye a la «landing ligera» con el planeta CSS como
+   respaldo.
+7. **Diseño**: página negra editorial en el tono de andyhardy.co y
+   observatoriofestival.com, el mar tratado como fotografía (contraluz,
+   camino del sol y de la luna en el agua, bruma, grano, viñeta), atrezzo
+   realista hecho en Blender (costa, puerto con balizas y farolas, barco,
+   boya; sin mascota ni nubes en el hero), títulos en Archivo Expanded e
+   Inter para el texto (T74). Una primera versión (hojas color crema y
+   atrezzo low-poly) la rechazó Hernán: «quiero que parezca una página de
+   un festival profesional». Los bloques sólo cambian de superficie: mismo
+   contenido, misma estructura y el mismo panel de Tickets.
+8. **El logo de BOIA y Spotify** (Hernán, 2026-10-03): el wordmark de BOIA
+   grande en el pie, sobre el mar de noche (y pequeño en la cabecera).
+   Enlaces a Spotify como en observatoriofestival.com: «Escúchalo en
+   Spotify» (la lista de BOIA) en la banda de Artistas y en el pie, y un
+   enlace «Spotify» por artista que lo tenga. Son enlaces normales que
+   abren otra pestaña: sin reproductor incrustado y sin cargar nada de
+   Spotify (ni peticiones a terceros ni cookies). Las URL son `muestra`
+   hasta P15.
+9. **Presupuesto de la landing: 200 kB gzip** (antes 192 kB) para la ruta
+   crítica de `/` (HTML, JS, CSS y fuentes precargadas;
+   `apps/web/scripts/landing-budget.mjs`, que hace fallar `pnpm build`).
+   three.js, los GLB del atrezzo y los stills se cargan aparte y no cuentan.
+   Al cerrar el plan, la landing mide **185,3 kB**.
+10. **Analítica**: `landing_view` se envía una vez, al pasar el hero con el
+    scroll (antes, al ver la landing).
+
+Modifica:
+
+- **D-19**: el botón de entrar ya no es el único paso a la landing (el
+  scroll lo es; «Zarpar» va a `/mar`, D-24); «la pausa» es el reposo del
+  hero, que no avanza solo; el aterrizaje en el mar es la zambullida por
+  scroll hasta la cubierta frente al puerto. El título «BOIA» y el texto
+  «Zarpar» siguen.
+- **D-21**, punto 4: «Saltar animación» y «Solo quiero ver las entradas» ya
+  no existen (el scroll y «Entradas» hacen su trabajo); la variante quieta
+  del movimiento reducido es la versión estática con el still; la landing
+  ligera de respaldo es la versión estática. Los puntos 1–3 y `/?intro=1`
+  no cambian, salvo que una URL directa abre el hero en reposo.
+- **D-24**, punto 4: «Saltar animación» y «Solo quiero ver las entradas» ya
+  no llevan a la landing porque no existen; a la landing se llega con el
+  scroll y a Tickets con «Entradas». Con movimiento reducido «Zarpar» sigue
+  siendo un fundido al velo; sin WebGL o con la escena fuera de plazo sale
+  la versión estática (no la landing ligera). El punto 5 cambia: hay
+  `landing_view` cuando se baja del hero, y ninguno si se zarpa desde el
+  reposo.
+- **El presupuesto de la landing** de 192 kB (T74) pasa a 200 kB.
+
+Modifica REQ-ENT-001, 002, 006, 007, 008, 010, 014, 017, 026, 027 y 038,
+que citan «plan 007 (borrador D-26)» en `docs/spec/`; REQ-ENT-028
+(subtítulo según promociones) se queda sin sitio en el hero (abajo). El arte
+del hero (el planeta en reposo, el atrezzo de Blender, los stills) es
+`muestra` hasta que Álvaro lo apruebe.
+
+Respuestas de Hernán (2026-10-03, plan 007 T85) a lo que el borrador dejaba
+abierto:
+
+- **REQ-ENT-028** (subtítulo según promociones) queda sin objeto: el hero ya
+  no tiene esa línea y los rótulos de esquina hacen su trabajo. Su estado
+  está en `docs/spec/estado.md`.
+- **Bajo consumo**: la memoria manda a la versión estática sólo con
+  `navigator.deviceMemory ≤ 2` (antes `≤ 4`, que mandaba al still a los
+  Android de gama media de 4 GB). Siguen el ahorro de datos, los pocos
+  núcleos y la sonda de los primeros fotogramas.
+- **El still en móviles verticales** se pide al ancho con que se dibuja
+  (`object-fit: cover` llena el alto, unas 1,6 veces el alto de la
+  pantalla): un móvil en vertical con DPR ≤ 2 carga el de 1600 px, no el de
+  800 px. No cuenta en el presupuesto de la landing.
 
 ## Preguntas abiertas
 

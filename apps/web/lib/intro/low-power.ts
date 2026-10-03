@@ -1,8 +1,10 @@
 /**
- * Low power (plan 007 T80): the hero shows its static version (T78's still,
- * no WebGL) on devices that would struggle with the three.js scene. Signals,
- * any of them: the visitor asked to save data, `navigator.deviceMemory ≤ 4`
- * (GB, Chromium only) or `navigator.hardwareConcurrency ≤ 4`. The first
+ * Low power (plan 007 T80, D-26): the hero shows its static version (T78's
+ * still, no WebGL) on devices that would struggle with the three.js scene.
+ * Signals, any of them: the visitor asked to save data,
+ * `navigator.deviceMemory ≤ 2` (GB, Chromium only; T85: it was ≤ 4, which
+ * sent the 4 GB mid-range Android phones to the still) or
+ * `navigator.hardwareConcurrency ≤ 4`. The first
  * frames of the scene are measured too (`intro-scene.ts`, the probe): a GPU
  * that cannot hold 30 fps at the lowest motion quality also gets the still.
  *
@@ -19,7 +21,7 @@ export interface PowerSignals {
 }
 
 /** At or under this many GB of memory, or this many cores: low power. */
-export const LOW_MEMORY_GB = 4;
+export const LOW_MEMORY_GB = 2;
 export const LOW_CORES = 4;
 
 export function isLowPower(nav: PowerSignals): boolean {

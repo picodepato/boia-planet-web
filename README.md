@@ -81,7 +81,7 @@ Los dos archivos son subconjuntos latinos woff2 hechos con
 ## La landing: el hero por scroll
 
 Plan 007 (diseño: [`docs/propuestas/2026-10-03-landing-scroll.md`](docs/propuestas/2026-10-03-landing-scroll.md);
-decisión en borrador: [`docs/propuestas/2026-10-03-D-26-borrador.md`](docs/propuestas/2026-10-03-D-26-borrador.md)).
+decisión: D-26 en [`docs/DECISIONES.md`](docs/DECISIONES.md)).
 `/` es un solo scroll: la entrada cinemática y, debajo, la página de siempre.
 
 - **Aparición y reposo.** `/` a secas reproduce la aparición (el planeta de
@@ -112,7 +112,7 @@ decisión en borrador: [`docs/propuestas/2026-10-03-D-26-borrador.md`](docs/prop
   calidad y la sonda de primeros fotogramas). three.js se pide tras `load`.
 - **Versión estática.** Con movimiento reducido, sin WebGL, con la escena
   fuera de plazo (9 s) o que falla, o en bajo consumo
-  (`lib/intro/low-power.ts`: `saveData`, `deviceMemory ≤ 4`,
+  (`lib/intro/low-power.ts`: `saveData`, `deviceMemory ≤ 2`,
   `hardwareConcurrency ≤ 4` salvo en WebKit de Apple, o la sonda por debajo
   de 30 fps), la misma página sin 3D sobre el still de Blender
   (`components/hero-stills.tsx`, `art/landing/hero-still*.webp`, el de noche

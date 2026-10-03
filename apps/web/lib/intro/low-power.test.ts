@@ -23,6 +23,15 @@ describe('isLowPower (plan 007 T80)', () => {
     expect(isLowPower({ ...chrome, connection: { saveData: false } })).toBe(false);
   });
 
+  it('D-26 (T85): a 4 GB phone keeps the 3D scene, a 2 GB one gets the still', () => {
+    // Chrome rounds deviceMemory down to a power of two: mid-range Android
+    // phones report 4 and keep the scene (the frame probe still guards them).
+    expect(isLowPower({ ...chrome, deviceMemory: 4 })).toBe(false);
+    expect(isLowPower({ ...chrome, deviceMemory: 2 })).toBe(true);
+    expect(isLowPower({ ...chrome, deviceMemory: 1 })).toBe(true);
+    expect(isLowPower({ ...chrome, deviceMemory: 0.5 })).toBe(true);
+  });
+
   it("Apple's WebKit reports a fixed core count: it is not a signal there", () => {
     const safari = { vendor: 'Apple Computer, Inc.', hardwareConcurrency: 4 };
     expect(isLowPower(safari)).toBe(false);

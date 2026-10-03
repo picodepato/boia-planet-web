@@ -13,12 +13,15 @@ docs/spec/estado.md tiene una fila por REQ de 09-requisitos.md con su estado:
   FALTA    sin construir, o sin evidencia todavía (revisión, medición…);
   L2       alcance L2 en 09 y sin construir;
   final    aplazado a la versión final (D-20: Supabase, correo, TOTP, editor
-           visual, ticketera real…) o alcance «diferido».
+           visual, ticketera real…) o alcance «diferido»;
+  retirado sin objeto por una decisión posterior, que la nota cita (D-NN);
+           no se construye (plan 007 T85: REQ-ENT-028 por D-26).
 
 La comprobación (exit 0 si todo está bien, 1 si no):
   - cada REQ de 09 aparece una sola vez, con el mismo alcance, y no sobra
     ninguno;
-  - el estado es uno de los cinco; L2 sólo si el alcance es L2;
+  - el estado es uno de los seis; L2 sólo si el alcance es L2; un retirado
+    cita en su nota la decisión que lo retira;
   - toda evidencia enlazada existe; un HECHO enlaza al menos una prueba
     (`*.spec.ts`, `*.test.ts(x)`, `test_*.py`) que nombra el REQ o que
     contiene el título «…» escrito tras el enlace. Así ningún REQ se marca
@@ -44,7 +47,8 @@ SPEC = ROOT / "docs" / "spec"
 REQS = SPEC / "09-requisitos.md"
 ESTADO = SPEC / "estado.md"
 
-STATES = ("HECHO", "PARCIAL", "FALTA", "L2", "final")
+STATES = ("HECHO", "PARCIAL", "FALTA", "L2", "final", "retirado")
+DECISION = re.compile(r"\bD-\d{2}\b")
 TEST_FILE = re.compile(r"(\.spec\.ts|\.test\.tsx?|(^|/)test_[^/]*\.py)$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)(?:\s*«([^»]+)»)?")
 SKIP_DIRS = {"node_modules", ".next", "out", ".git", "__pycache__"}
@@ -125,7 +129,7 @@ def check():
         if len(c) != 6:
             errors.append(f"línea {n}: {len(c)} columnas, se esperan 6")
             continue
-        rid, _title, scope, state, evidence, _note = c
+        rid, _title, scope, state, evidence, note = c
         seen[rid] += 1
         if rid not in reqs:
             errors.append(f"{rid}: no está en 09-requisitos.md")
@@ -137,6 +141,8 @@ def check():
             continue
         if state == "L2" and reqs[rid][1] != "L2":
             errors.append(f"{rid}: L2 sólo para alcance L2")
+        if state == "retirado" and not DECISION.search(note):
+            errors.append(f"{rid}: retirado sin citar en la nota la decisión (D-NN) que lo retira")
         tests = 0
         for m in LINK.finditer(evidence):
             target = (ESTADO.parent / unquote(m.group(1))).resolve()
@@ -233,6 +239,7 @@ comprueba este archivo y cuenta por estado; corre con `pnpm test`.
 | FALTA | Sin construir, o sin la evidencia que pide su criterio (revisión, medición en móvil, documento) |
 | L2 | Alcance L2 en 09 y sin construir |
 | final | Aplazado a la versión final (D-20: Supabase, correo, TOTP, editor visual, ticketera real) o alcance diferido |
+| retirado | Sin objeto por una decisión posterior, que la nota cita (D-NN); no se construye |
 
 Primera versión generada el 2026-09-30 (T49) con `--generar`: pruebas que
 nombran el REQ, un repaso de las pruebas que lo cubren sin nombrarlo y el

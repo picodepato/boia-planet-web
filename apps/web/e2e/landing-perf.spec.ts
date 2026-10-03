@@ -5,8 +5,10 @@ import { expect, test, type Page } from '@playwright/test';
  * throttled 4× (CDP), a scripted 6 s scroll from the hero to the footer:
  * the 95th percentile of the frame time (rAF intervals) stays ≤ 50 ms and
  * no long task over 200 ms runs once the scene is ready. The reduced-motion
- * and low-power paths (`deviceMemory ≤ 4`, `hardwareConcurrency ≤ 4`,
- * `saveData`) get the static version and create no WebGL context.
+ * and low-power paths (`deviceMemory ≤ 2`, `hardwareConcurrency ≤ 4`,
+ * `saveData`; D-26) get the static version and create no WebGL context. On a
+ * portrait phone with DPR 2 the static version loads the 1600 px still
+ * (T85: `sizes` follows the `object-fit: cover` crop, not just the width).
  *
  * The numbers go to the test's annotations and to stdout (`[perf] …`), for
  * ESTADO. Frame times are noisy while other suites load the machine.
@@ -147,10 +149,41 @@ test.describe('movimiento reducido', () => {
   });
 });
 
+test.describe('still en móvil vertical con DPR 2 (T85)', () => {
+  test.use({ reducedMotion: 'reduce', viewport: VIEW, deviceScaleFactor: 2 });
+
+  test('pide el still de 1600 px: el recorte de cover es más ancho que la pantalla', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-hero', 'still');
+    await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused');
+    expect(await page.evaluate(() => window.devicePixelRatio)).toBe(2);
+    const still = page.locator('.hero__still-img').first();
+    await expect(still).toBeVisible();
+    await expect
+      .poll(() => still.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+    const img = await still.evaluate((el: HTMLImageElement) => ({
+      src: el.currentSrc,
+      boxHeight: el.getBoundingClientRect().height,
+      // The width/height attributes: the files' aspect (naturalWidth is
+      // divided by the srcset density, el.width is the layout box).
+      aspect: Number(el.getAttribute('width')) / Number(el.getAttribute('height')),
+    }));
+    // Cover fills the height: the still is drawn box height × its aspect wide,
+    // in device pixels wider than the 800 px file, so that one would blur.
+    expect(img.boxHeight * img.aspect * 2, 'ancho dibujado (px del dispositivo)').toBeGreaterThan(
+      800,
+    );
+    expect(img.src).toMatch(/-1600\.webp$/);
+  });
+});
+
 const LOW_POWER: [string, string][] = [
   [
-    'deviceMemory 4',
-    `Object.defineProperty(Navigator.prototype, 'deviceMemory', { get: () => 4 })`,
+    'deviceMemory 2',
+    `Object.defineProperty(Navigator.prototype, 'deviceMemory', { get: () => 2 })`,
   ],
   [
     'hardwareConcurrency 4',
