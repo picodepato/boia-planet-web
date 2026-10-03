@@ -4,6 +4,58 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T93: Global message bottles
+
+Qué existe (decisión 12, REQ-IDE-040…044):
+
+- `packages/store/src/member/bottles.ts` — `createGlobalBottles({ client, viewer, validatePosition })`:
+  una `BottleApi` sobre Supabase, la misma para invitado y miembro. `list()` lee
+  `latest_bottles` (las 10 activas más recientes de todas las cuentas) y sirve
+  la última lectura hasta `GLOBAL_BOTTLES_REFRESH_MS` (3 min) o `refresh()`;
+  `mine()` lee la activa propia aunque no esté entre las 10; `place()` pide
+  cuenta con Carnet (`no_carnet` si no), pasa el filtro y la posición antes
+  de llamar a `place_bottle` (que retira la anterior); `edit`/`retire` van a
+  `bottles` por la RLS del autor; `read()` registra en `bottle_reads` (sólo
+  miembro; el invitado lee igual y lo leído se recuerda en la visita);
+  `report()` escribe `bottle_reports` (repetido → `{ first: false }`, la
+  propia → `forbidden`). Sin red, el mar se queda como estaba.
+- `packages/store/src/bottle-text.ts` — `textProblem()` / `BLOCKED_WORDS`: la copia
+  en el navegador de `private.text_problem` (enlaces, emails, teléfonos,
+  palabras ofensivas). La guarda de la base ya existía (T86).
+- `createSwitchableRepository(...).useBottles(source)`: con botellas globales,
+  `repo.bottles` va a ellas sea quien sea el dueño; al cambiar de dueño se
+  olvida lo leído (lo mío depende de la sesión); sus cambios avisan como `bottles`.
+- `apps/web/lib/repo-member.ts` (sólo con Supabase) crea las globales con la
+  cuenta `member` como `viewer` y la validación de agua de siempre, y las
+  vuelve a leer cada 3 min con la página a la vista y al volver a ella.
+  /mar no cambia: sigue pintando `bottles.list()` con la regla de T88
+  (`placeBottles`, `dropSpot`).
+- `apps/web/lib/mundo/bottles/bottle-sheet.tsx`: con Supabase, «Mi botella» sin
+  cuenta con Carnet pide «Entrar con tu email» (`requireAccount('carnet')`),
+  el aviso «sólo en este navegador» pasa a `mar.botella.global`, el reporte
+  sin cuenta lleva a la misma puerta, y los rechazos del filtro tienen su
+  texto (`mar.botella.filtro.*`). En modo local todo igual.
+- i18n: `mar.botella.global`, `pideCuenta`, `pideCuentaReporte`, `entrar`,
+  `filtro.{link,email,phone,offensive}` en `es-mar.ts` (`muestra`).
+- Sin migraciones nuevas: `place_bottle`, `latest_bottles`, el filtro y la RLS
+  de lecturas y reportes de T86 bastan.
+- `docs/spec/estado.md`: IDE-040, 041 y 043 suman la evidencia con cuentas;
+  IDE-044 «Sin mensajes privados» pasa de FALTA a HECHO.
+
+Comandos:
+
+- `pnpm exec vitest run packages/store/src/bottle-text.test.ts packages/store/src/member/` → 31 passed (bottle-text 4, member/bottles 13).
+- `pnpm test:supabase` → exit 0, 7 files, 67 passed (nuevo `bottles.supabase.ts`: lecturas, reportes, edición con filtro, retirada), 0 cuentas `@example.test` restantes.
+- `E2E_SUPABASE=1 E2E_PORT=3193 pnpm e2e botellas-globales.spec.ts --workers=1` → exit 0, 6 passed (móvil y escritorio): A echa, B la ve, la lee (`bottle_reads`) y la reporta (`bottle_reports`), el invitado la lee y «Mi botella» le pide el email; un enlace y un teléfono se rechazan sin llegar a la base; de 11 botellas flotan las 10 más recientes.
+- `E2E_PORT=3194 pnpm e2e mar-botellas.spec.ts carnet.spec.ts --workers=1` → exit 0, 10 passed (modo local intacto).
+- Test command → exit 0: vitest 123 files / 1081 passed, `tools/spec/checks.sh` 0, lint 0, build 0, typecheck 0.
+
+Pendiente:
+
+- La moderación de botellas del Admin sigue en la demo local (T94 la pasa a datos reales: retirar con `status = 'removed'`, ver `bottle_reports`).
+- Con Supabase ya no flotan las botellas de muestra (el mar es el de las cuentas); en modo local, las de siempre.
+- Una botella propia que no está entre las 10 más recientes no flota (se ve en «Mi botella» y en el Carnet).
+
 ## 2026-10-03 — plan 008 T91: The ID-card Carnet and QR party stamps
 
 El Carnet es ahora la tarjeta ID-1 aprobada en T87 (decisión 10) en la hoja

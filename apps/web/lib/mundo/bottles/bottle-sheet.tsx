@@ -5,6 +5,8 @@ import { type ShipPose, findDropSpot } from '@boia/engine/bottles';
 import { type BoiaRepository, type BottleView, isStoreError } from '@boia/store';
 import type { Vec2, WorldConfig } from '@boia/world';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { requireAccount } from '../../account/gate';
+import { useAccount } from '../../account/use-account';
 import { emitSignal } from '../achievements';
 import { useRepoData } from '../repo';
 import { t } from '../../i18n';
@@ -14,6 +16,12 @@ import { t } from '../../i18n';
  * retirarla o echar otra, que la sustituye) y las que se encuentran en el mar (leerlas, ver el Carnet de
  * quien la escribió, reportarlas). Leer no la quita. Nunca dan puntos ni
  * monedas. Sin mensajería privada: esto es todo lo social del mar.
+ *
+ * Con Supabase (T93, decisión 12) las botellas son de todos: el mar enseña
+ * las 10 más recientes de todas las cuentas, el invitado las lee y, para
+ * echar o reportar una, se le pide la cuenta (`requireAccount('carnet')`),
+ * que trae su Carnet. El mensaje pasa el filtro (sin enlaces, emails,
+ * teléfonos ni palabras ofensivas) antes de mandarse.
  */
 
 export type BottleSheetMode = { kind: 'mine' } | { kind: 'read'; id: string };
@@ -22,6 +30,7 @@ export type BottleSheetMode = { kind: 'mine' } | { kind: 'read'; id: string };
 export const BOTTLE_COPY = {
   rules: t('juego.bottleSheet.unaBotellaPorPersona'),
   localOnly: t('bottle.localOnly'),
+  global: t('mar.botella.global'),
   needCarnet: t('juego.bottleSheet.paraEcharBotellasNecesitas'),
   needCarnetReport: t('juego.bottleSheet.paraReportarUnaBotella'),
   noSpot: t('juego.bottleSheet.aquiSoloHayTierra'),
@@ -109,7 +118,18 @@ const messageOk = (v: string) => {
   return n >= 1 && n <= BOTTLE_MESSAGE_MAX;
 };
 
+/** Lo que el filtro no deja pasar (T93): enlaces, emails, teléfonos, palabras ofensivas. */
+const FILTER_COPY = {
+  text_link: 'mar.botella.filtro.link',
+  text_email: 'mar.botella.filtro.email',
+  text_phone: 'mar.botella.filtro.phone',
+  text_offensive: 'mar.botella.filtro.offensive',
+} as const;
+
 function errorText(e: unknown): string {
+  if (isStoreError(e, 'invalid') && e.message in FILTER_COPY) {
+    return t(FILTER_COPY[e.message as keyof typeof FILTER_COPY]);
+  }
   if (isStoreError(e, 'conflict')) return BOTTLE_COPY.conflict;
   if (isStoreError(e, 'no_carnet')) return BOTTLE_COPY.needCarnet;
   if (isStoreError(e, 'not_found')) return BOTTLE_COPY.gone;
@@ -145,6 +165,9 @@ export function MyBottle({
     carnet: await r.carnet.mine(),
     bottle: await r.bottles.mine(),
   }));
+  const account = useAccount();
+  /** Con Supabase las botellas son de todos y echarlas pide la cuenta (T93). */
+  const global = account.status !== 'local';
   const [text, setText] = useState('');
   const [editing, setEditing] = useState(false);
   /** Escribiendo otra con la suya aún en el mar: al echarla, la sustituye. */
@@ -154,13 +177,18 @@ export function MyBottle({
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  if (!data) return <p className="juego-muted">{t('empty.loading')}</p>;
-  if (!data.carnet) {
+  if (!data || account.status === 'loading')
+    return <p className="juego-muted">{t('empty.loading')}</p>;
+  if (global ? account.status !== 'member' : !data.carnet) {
     return (
       <div data-testid="botella-sin-carnet">
-        <p>{BOTTLE_COPY.needCarnet}</p>
-        <button type="button" className="juego-button" onClick={onNeedCarnet}>
-          {t('carnet.create')}
+        <p>{global ? t('mar.botella.pideCuenta') : BOTTLE_COPY.needCarnet}</p>
+        <button
+          type="button"
+          className="juego-button"
+          onClick={() => (global ? void requireAccount('carnet') : onNeedCarnet())}
+        >
+          {global ? t('mar.botella.entrar') : t('carnet.create')}
         </button>
       </div>
     );
@@ -212,8 +240,11 @@ export function MyBottle({
             {t('juego.bottleSheet.sustituyeALaTuya')}
           </p>
         ) : null}
-        <p className="juego-muted" data-testid="botella-aviso-local">
-          {BOTTLE_COPY.localOnly}
+        <p
+          className="juego-muted"
+          data-testid={global ? 'botella-aviso-global' : 'botella-aviso-local'}
+        >
+          {global ? BOTTLE_COPY.global : BOTTLE_COPY.localOnly}
         </p>
         <MessageField value={text} onChange={setText} label={t('bottle.field')} />
         {errorLine}
@@ -275,7 +306,9 @@ export function MyBottle({
     <div data-testid="botella-mia">
       {note ? <p>{note}</p> : null}
       <p className="juego-muted">
-        {t('juego.bottleSheet.tuBotellaFlotaEn', { localOnly: BOTTLE_COPY.localOnly })}
+        {t('juego.bottleSheet.tuBotellaFlotaEn', {
+          localOnly: global ? BOTTLE_COPY.global : BOTTLE_COPY.localOnly,
+        })}
       </p>
       <blockquote className="botella-mensaje" data-testid="botella-mensaje">
         {bottle.message}
@@ -368,6 +401,7 @@ export function FoundBottle({
   const [reason, setReason] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const [needCarnet, setNeedCarnet] = useState(false);
+  const global = useAccount().status !== 'local';
 
   useEffect(() => {
     let alive = true;
@@ -449,10 +483,18 @@ export function FoundBottle({
                 />
               </label>
               {needCarnet ? (
-                <p className="carnet-error">
-                  {BOTTLE_COPY.needCarnetReport}{' '}
-                  <button type="button" className="juego-link" onClick={onNeedCarnet}>
-                    {t('carnet.create')}
+                <p className="carnet-error" data-testid="botella-reporte-sin-carnet">
+                  {global ? t('mar.botella.pideCuentaReporte') : BOTTLE_COPY.needCarnetReport}{' '}
+                  <button
+                    type="button"
+                    className="juego-link"
+                    onClick={() =>
+                      global
+                        ? void requireAccount('carnet').then((ok) => ok && setNeedCarnet(false))
+                        : onNeedCarnet()
+                    }
+                  >
+                    {global ? t('mar.botella.entrar') : t('carnet.create')}
                   </button>
                 </p>
               ) : null}

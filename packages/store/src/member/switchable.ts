@@ -11,7 +11,8 @@
  * sesión) antes de elegir a quién van: lo de un miembro nunca se apunta al
  * invitado por llegar antes de tiempo.
  */
-import type { BoiaRepository, ChangeArea, RepositoryChange } from '../repository';
+import type { BoiaRepository, BottleApi, ChangeArea, RepositoryChange } from '../repository';
+import type { GlobalBottles } from './bottles';
 
 export interface SwitchableRepository {
   /** La referencia estable que usa la app. */
@@ -23,6 +24,11 @@ export interface SwitchableRepository {
   switchTo(next: BoiaRepository): void;
   /** Las llamadas esperan a `until` (sin bloquear el contenido ni el Admin). */
   hold(until: Promise<unknown>): void;
+  /**
+   * Las botellas de todos (T93, con Supabase): las mismas para el invitado y
+   * el miembro, en vez de las del repositorio de cada uno. null: las de cada uno.
+   */
+  useBottles(source: GlobalBottles | null): void;
 }
 
 const ALL: ChangeArea[] = [
@@ -67,6 +73,8 @@ export function createSwitchableRepository(base: BoiaRepository): SwitchableRepo
     }
   });
   let offCurrent: (() => void) | null = null;
+  let shared: GlobalBottles | null = null;
+  let offShared: (() => void) | null = null;
 
   const routed = <K extends ApiName>(name: K): BoiaRepository[K] => {
     const out: Record<string, unknown> = {};
@@ -79,6 +87,21 @@ export function createSwitchableRepository(base: BoiaRepository): SwitchableRepo
     }
     return out as unknown as BoiaRepository[K];
   };
+
+  /** Las botellas: las de todos si las hay; si no, las del repositorio de quien juega. */
+  function bottlesApi(): BottleApi {
+    const own = routed('bottles') as unknown as Record<string, (...a: unknown[]) => unknown>;
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(own)) {
+      out[key] = async (...args: unknown[]) => {
+        await gate;
+        if (!shared) return own[key]!(...args);
+        const api = shared.api as unknown as Record<string, (...a: unknown[]) => unknown>;
+        return api[key]!(...args);
+      };
+    }
+    return out as unknown as BottleApi;
+  }
 
   const repo: BoiaRepository = {
     status: () => current.status(),
@@ -93,7 +116,7 @@ export function createSwitchableRepository(base: BoiaRepository): SwitchableRepo
     carnet: routed('carnet'),
     progress: routed('progress'),
     purchases: routed('purchases'),
-    bottles: routed('bottles'),
+    bottles: bottlesApi(),
     content: base.content,
     admin: base.admin,
   };
@@ -108,7 +131,16 @@ export function createSwitchableRepository(base: BoiaRepository): SwitchableRepo
       offCurrent = null;
       current = next;
       if (next !== base) offCurrent = next.subscribe((c) => emit(c.areas, c.external));
+      // Lo mío y lo leído dependen de la sesión: las botellas se vuelven a leer.
+      shared?.invalidate();
       emit(ALL, false);
+    },
+    useBottles(source) {
+      offShared?.();
+      offShared = null;
+      shared = source;
+      if (source) offShared = source.subscribe(() => emit(['bottles'], false));
+      emit(['bottles'], false);
     },
     hold(until) {
       gate = until.then(

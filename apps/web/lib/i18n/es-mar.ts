@@ -13,6 +13,18 @@ export const esMar = {
   'mar.botella.cerca': 'Botellas cerca',
   'mar.botella.tuyaCerca': '🍾 Tu botella',
   'mar.botella.deCerca': '🍾 Botella de {name}',
+  // Botellas de todos (plan 008, T93, decisión 12), con cuentas.
+  'mar.botella.global':
+    'Tu botella la leerá quien navegue cerca, con tu apodo. En el mar flotan las 10 más recientes de todos.',
+  'mar.botella.pideCuenta':
+    'Para echar una botella necesitas tu Carnet BOIA, que se guarda con tu email. Leerlas es libre.',
+  'mar.botella.pideCuentaReporte':
+    'Para reportar una botella necesitas tu Carnet BOIA, que se guarda con tu email.',
+  'mar.botella.entrar': 'Entrar con tu email',
+  'mar.botella.filtro.link': 'Sin enlaces: en una botella no van direcciones web.',
+  'mar.botella.filtro.email': 'Sin emails: en BOIA no hay mensajes privados.',
+  'mar.botella.filtro.phone': 'Sin teléfonos: en BOIA no hay mensajes privados.',
+  'mar.botella.filtro.offensive': 'Ese mensaje lleva palabras que no flotan en este mar.',
   'mar.ranking.titulo': '🏅 Ranking',
   'mar.ranking.cerrar': 'Cerrar el ranking',
   'mar.ranking.menu': '🏅 Ranking',
@@ -62,7 +74,8 @@ export const esMar = {
   'mar.race.result.position': 'Con este tiempo: puesto {n} de {of}',
   'mar.race.result.you': 'Tú (récord)',
   'mar.race.offer.title': 'Carrera en {place}',
-  'mar.race.offer.how': '{laps} vueltas pasando por las {buoys} boias en orden. La salida es también la meta.',
+  'mar.race.offer.how':
+    '{laps} vueltas pasando por las {buoys} boias en orden. La salida es también la meta.',
   'mar.race.offer.vs':
     'Compites contra los tiempos de la tripulación y contra ti: el fantasma repite tu mejor carrera.',
   'mar.race.offer.props': 'Las flechas del agua te impulsan y las rampas te hacen saltar.',

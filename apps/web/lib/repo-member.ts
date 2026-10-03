@@ -13,6 +13,10 @@
  * - Sin red al cargar: con sesión guardada y copia, se juega sobre la copia.
  *
  * Los avisos (sin conexión, de vuelta, rechazos) salen por los de la cuenta.
+ *
+ * Las botellas (T93, decisión 12) son las de todos, para el invitado y el
+ * miembro: las 10 más recientes de Supabase, leídas al entrar y cada pocos
+ * minutos con la página a la vista (`watchBottles`).
  */
 import {
   type BoiaRepository,
@@ -20,6 +24,8 @@ import {
   type SupabaseLike,
   type SwitchableRepository,
   type SyncEvent,
+  GLOBAL_BOTTLES_REFRESH_MS,
+  createGlobalBottles,
   createLocalRepository,
   createMemberRepository,
   defaultStorage,
@@ -147,6 +153,16 @@ function watchPage(repo: MemberRepository): () => void {
   };
 }
 
+/** Las botellas de todos: se vuelven a leer cada pocos minutos y al volver a la página. */
+function watchBottles(refresh: () => void): void {
+  setInterval(() => {
+    if (document.visibilityState === 'visible') refresh();
+  }, GLOBAL_BOTTLES_REFRESH_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refresh();
+  });
+}
+
 function client(): Promise<SupabaseLike> {
   return accountClient().then((c) => {
     if (!c) throw new Error('sin Supabase');
@@ -222,6 +238,17 @@ export function startMemberSync(sw: SwitchableRepository): Promise<void> {
       settle();
     }
   };
+
+  const bottles = createGlobalBottles({
+    client: client(),
+    viewer: () => {
+      const s = accountSnapshot();
+      return s.status === 'member' && s.userId ? s.userId : null;
+    },
+    validatePosition: repoOptions().validate?.bottlePosition,
+  });
+  sw.useBottles(bottles);
+  watchBottles(() => void bottles.refresh());
 
   subscribeAccount(() => apply(accountSnapshot()));
   apply(accountSnapshot());
