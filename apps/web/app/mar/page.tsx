@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { AccountGate } from '../../lib/account/sign-in-sheet';
 import { loadShipCatalog } from '../../lib/barco/load';
 import { MarClient } from './mar-client';
 import { t } from '../../lib/i18n';
@@ -17,5 +18,11 @@ export const viewport: Viewport = {
 
 export default function MarPage() {
   // Miniaturas y nombres de los barcos para la tienda «Barco» (T40), leídos de art/ al construir.
-  return <MarClient shipCatalog={loadShipCatalog()} />;
+  // La hoja de acceso con email (plan 008, T89): sólo con Supabase.
+  return (
+    <>
+      <MarClient shipCatalog={loadShipCatalog()} />
+      <AccountGate />
+    </>
+  );
 }

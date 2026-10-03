@@ -27,6 +27,7 @@ const config: NextConfig = {
     const headers = securityHeaders({
       dev: process.env.NODE_ENV !== 'production',
       analyticsHost: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com',
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
     });
     return [{ source: '/:path*', headers }];
   },

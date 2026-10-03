@@ -9,6 +9,8 @@ import {
 } from '@boia/contracts';
 import { type BoiaRepository, type CarnetView, isStoreError } from '@boia/store';
 import { type FormEvent, useId, useState } from 'react';
+import { requireAccount } from '../../account/gate';
+import { accountSnapshot } from '../../account/session';
 import { emitCarnetReward, emitSignal } from '../achievements';
 import { Avatar, DEFAULT_AVATAR, NEUTRAL_AVATARS, shrinkPhoto } from './avatar';
 import { t } from '../../i18n';
@@ -299,8 +301,27 @@ export function CarnetEditor({
       onSubmit={(draft) => {
         setBusy(true);
         setError(null);
-        saveCarnet(repo, before, draft, questions)
-          .then(onDone, (e: unknown) => {
+        // Guardar el Carnet pide la cuenta (plan 008, T89, decisión 1); en
+        // modo local pasa al momento. Un Carnet nuevo lleva el apodo que se
+        // eligió para la cuenta. Un apodo corto se dice antes de pedirla.
+        const tooShort = charLength(draft.nickname.trim()) < NICKNAME_MIN;
+        (tooShort
+          ? Promise.resolve(true)
+          : requireAccount('carnet', {
+              prefill: {
+                nickname: draft.nickname.trim(),
+                avatarKey: draft.avatarKey,
+                avatarImage: draft.avatarImage,
+              },
+            })
+        )
+          .then((ok) => {
+            if (!ok) return undefined;
+            const profile = accountSnapshot().profile;
+            const toSave = !before && profile ? { ...draft, nickname: profile.nickname } : draft;
+            return saveCarnet(repo, before, toSave, questions).then(onDone);
+          })
+          .then(undefined, (e: unknown) => {
             const invalidLocal = (e as { code?: string }).code === 'invalid';
             setError(
               invalidLocal

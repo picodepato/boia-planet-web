@@ -10,16 +10,22 @@
  * - `img-src https:`: el Admin deja poner fotos por URL (sin almacenamiento
  *   hasta Supabase); `data:`/`blob:` para el Carnet y las texturas de los GLB.
  * - `media-src data: blob:`: la música que sube el Admin vive en el navegador.
- * - `connect-src`: el propio sitio y PostHog (apagado si no hay clave).
+ * - `connect-src`: el propio sitio y PostHog (apagado si no hay clave); con
+ *   cuentas (plan 008), también la API de Supabase (https y wss, la sesión
+ *   y las RPC). Sin Supabase no se añade nada.
  * - `frame-ancestors 'self'`: sólo el Admin enmarca la web (vista previa).
  */
 export function securityHeaders({
   dev,
   analyticsHost,
+  supabaseUrl,
 }: {
   dev: boolean;
   analyticsHost: string;
+  /** `NEXT_PUBLIC_SUPABASE_URL`; vacío o ausente en modo local. */
+  supabaseUrl?: string | null | undefined;
 }): { key: string; value: string }[] {
+  const supabase = supabaseOrigins(supabaseUrl);
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
@@ -27,7 +33,7 @@ export function securityHeaders({
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob:",
     "font-src 'self' data:",
-    `connect-src 'self' data: blob: ${analyticsHost}${dev ? ' ws: wss:' : ''}`,
+    `connect-src 'self' data: blob: ${analyticsHost}${supabase}${dev ? ' ws: wss:' : ''}`,
     "worker-src 'self' blob:",
     "frame-src 'self'",
     "frame-ancestors 'self'",
@@ -47,6 +53,19 @@ export function securityHeaders({
     { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
     { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
   ];
+}
+
+/** « https://x.supabase.co wss://x.supabase.co» o '' si no hay Supabase. */
+function supabaseOrigins(url: string | null | undefined): string {
+  if (!url?.trim()) return '';
+  try {
+    const u = new URL(url.trim());
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+    const ws = `${u.protocol === 'https:' ? 'wss' : 'ws'}://${u.host}`;
+    return ` ${u.origin} ${ws}`;
+  } catch {
+    return '';
+  }
 }
 
 /** Rutas que cambiaron de nombre: la vieja lleva a la nueva. */

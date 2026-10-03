@@ -52,3 +52,28 @@ export const LEGAL_DOCS = {
     ],
   },
 } satisfies Record<string, { title: MessageKey; body: MessageKey[] }>;
+
+/**
+ * La política de privacidad con cuentas por email (plan 008, T89, decisión
+ * 3): qué se recoge y para qué. La página la usa cuando hay Supabase; sin
+ * él (la versión de prueba, D-20) sigue la de arriba. Su versión es
+ * `PRIVACY_POLICY_VERSION` (lib/account/config.ts). `muestra` hasta P21.
+ */
+export const PRIVACY_WITH_ACCOUNTS = {
+  title: 'legal.privacy.title',
+  body: [
+    'legal.privacy.account.intro',
+    'legal.privacy.controller',
+    'legal.privacy.account.what',
+    'legal.privacy.account.public',
+    'legal.privacy.account.notAsked',
+    'legal.privacy.account.where',
+    'legal.privacy.account.why',
+    'legal.privacy.account.basis',
+    'legal.privacy.account.sharing',
+    'legal.privacy.analytics',
+    'legal.privacy.account.retention',
+    'legal.privacy.account.rights',
+  ],
+  updated: 'legal.privacy.account.updated',
+} satisfies { title: MessageKey; body: MessageKey[]; updated: MessageKey };

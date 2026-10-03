@@ -21,6 +21,18 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
     expect(get(true, 'Content-Security-Policy')).toContain('ws:');
   });
 
+  it('CSP con cuentas (plan 008): la API de Supabase; sin Supabase, nada más', () => {
+    const csp = (supabaseUrl?: string) =>
+      securityHeaders({ dev: false, analyticsHost: HOST, supabaseUrl }).find(
+        (h) => h.key === 'Content-Security-Policy',
+      )!.value;
+    expect(csp('https://abc.supabase.co')).toContain(
+      `connect-src 'self' data: blob: ${HOST} https://abc.supabase.co wss://abc.supabase.co;`,
+    );
+    expect(csp('')).toContain(`connect-src 'self' data: blob: ${HOST};`);
+    expect(csp(undefined)).not.toContain('supabase');
+  });
+
   it('el resto de cabeceras', () => {
     expect(get(false, 'X-Content-Type-Options')).toBe('nosniff');
     expect(get(false, 'X-Frame-Options')).toBe('SAMEORIGIN');

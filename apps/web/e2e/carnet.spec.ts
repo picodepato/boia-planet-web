@@ -29,3 +29,23 @@ test('leer una botella de muestra → VER SU CARNET', async ({ page }) => {
   await expect(page.getByTestId('carnet-apodo')).toHaveText(author.nickname);
   expect(errors).toEqual([]);
 });
+
+/**
+ * Modo local (plan 008, T89; D-20): sin Supabase no aparece nada de la cuenta
+ * con email. «Crear mi Carnet» abre el alta de siempre y guardar lo crea en
+ * este navegador, sin hoja de acceso ni «Tu cuenta».
+ */
+test('modo local: el Carnet se crea sin pedir email', async ({ page }, info) => {
+  const errors = await openMar(page);
+  await page.getByTestId('mar-enlace-carnet').click();
+  const carnet = page.getByTestId('mar-carnet');
+  await expect(carnet.getByTestId('carnet-invitacion')).toBeVisible();
+  await carnet.getByTestId('carnet-crear').click();
+  await carnet.getByTestId('carnet-apodo-input').fill(`Local ${info.project.name}`);
+  await carnet.getByTestId('carnet-guardar').click();
+  await expect(carnet.getByTestId('carnet-apodo')).toHaveText(`Local ${info.project.name}`);
+  await expect(page.getByTestId('acceso')).toHaveCount(0);
+  await expect(page.getByTestId('cuenta')).toHaveCount(0);
+  await expect(page.locator('#boia-cuenta-capa')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

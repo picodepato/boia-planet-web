@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MAR_CARNET_HREF, MAR_PATH } from '../../lib/world-handoff';
 import '../../lib/mundo/hud.css';
 import '../../lib/mundo/carnet/carnet.css';
+import { AccountSection } from '../../lib/account/account-section';
 import { CarnetCard } from '../../lib/mundo/carnet/carnet-card';
 import { CarnetReport } from '../../lib/mundo/carnet/carnet-report';
 import { LOCAL_ONLY_NOTICE } from '../../lib/mundo/carnet/carnet-editor';
@@ -34,11 +35,15 @@ export function CarnetPage({ userId }: { userId: string | null }) {
               {LOCAL_ONLY_NOTICE}
             </p>
             {data.carnet.isMine ? (
-              <div className="carnet-actions">
-                <Link className="juego-button" href={MAR_CARNET_HREF}>
-                  Editar mi Carnet
-                </Link>
-              </div>
+              <>
+                <div className="carnet-actions">
+                  <Link className="juego-button" href={MAR_CARNET_HREF}>
+                    Editar mi Carnet
+                  </Link>
+                </div>
+                {/* Con cuentas (plan 008, T89): cerrar sesión y borrar la cuenta. */}
+                <AccountSection />
+              </>
             ) : (
               // REQ-ADM-040 (O9): el Carnet público de otra persona se puede reportar.
               <CarnetReport carnet={data.carnet} />

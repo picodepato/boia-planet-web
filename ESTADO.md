@@ -4,6 +4,166 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T89: Email sign-in with a 6-digit code, consent and the account
+
+La cuenta con email (decisiones 1–5) sobre el diseño aprobado de T87
+(marcos 12–14). Sin las variables de Supabase (producción hoy, pruebas
+unitarias, e2e por defecto) no aparece nada de esto y todo sigue como antes
+en el navegador (D-20).
+
+Qué existe:
+- **`apps/web/lib/account/`** (nuevo):
+  - `session.ts`: la sesión (`local` / `loading` / `guest` / `incomplete` sin
+    Carnet / `member`), escuchando `onAuthStateChange`; el cliente de
+    Supabase se carga con `import()` sólo con Supabase. Acciones: `sendCode`
+    (`signInWithOtp`, crea la cuenta si es nueva), `verifyCode`
+    (`verifyOtp` tipo `email`), `mergeGuest`, `nicknameStatus`,
+    `createProfile` (`save_profile` con la política
+    `PRIVACY_POLICY_VERSION = 'muestra-2026-10-03'` y las noticias sí/no, cada
+    consentimiento con su fecha), `setNewsOptIn`, `signOut` (sólo este
+    navegador) y `deleteAccount` (`delete_my_account`).
+  - `use-account.ts`: `useAccount()` y los avisos de la cuenta.
+  - `gate.ts`: **`requireAccount(reason, { event?, prefill? })`** con los
+    motivos `carnet` / `skin` / `stamp` / `ranking` (título y «por qué» de
+    cada uno). Modo local o miembro con Carnet → `true` al momento; si no,
+    abre la hoja y devuelve `true` al terminar o `false` si se cancela.
+    Necesita `<AccountGate />` montado en la página (hoy /mar y /carnet; T91
+    lo monta en /sello).
+  - `sign-in-sheet.tsx`: `<AccountGate />` y la hoja: email (validado al
+    enviar), código de 6 cifras en un solo campo dibujado como seis casillas
+    (pegar funciona, la sexta cifra comprueba), reenviar con espera de 60 s,
+    errores «incorrecto» / «caducado» (pasados 10 min, y manda otro) /
+    «demasiados intentos»; para una cuenta sin Carnet, apodo (prerrellenado
+    con el del invitado, comprobado a los 400 ms y al enviar: libre, ocupado
+    sin distinguir mayúsculas, filtro), política obligatoria y noticias aparte
+    sin marcar, «Crear mi cuenta» desactivado diciendo qué falta; bienvenida
+    con el nº de socio y lo que pasó del navegador. Cuenta con Carnet: sin
+    paso 3, aviso «Has entrado como…» y termina lo que hacía.
+  - `merge.ts` + `guest.ts`: al entrar, siempre, `merge_guest` con lo del
+    invitado: premios del mundo (acción por la forma del origen: `world`,
+    `encounter`, `mission`, `minigame`) con política y fecha, logros
+    reclamados, cosméticos comprados con monedas, lo equipado, el mejor tiempo
+    de cada circuito y los descuentos (usado y fiesta). Sin `snapshot`: su
+    forma es de T90.
+  - `account-section.tsx`: «Tu cuenta» al final del Mi Carnet propio (hoja
+    de /mar y /carnet): email, noticias (guarda al cambiar), política
+    aceptada con versión y fecha, «Cerrar sesión» y «Borrar mi cuenta» con
+    diálogo que pide el apodo. Al salir o borrar, este navegador vuelve a ser
+    un invitado nuevo (`identity.reset()`) y se avisa.
+  - `account.css`: hoja crema abajo (centrada en escritorio), botones píldora
+    naranja con texto negro, fantasma, errores `#b3261e`, «Libre» `#1f7a4d`.
+- **Mi Carnet** (`carnet-panel.tsx`): con Supabase, el invitado ve el hueco
+  del Carnet («Tu Carnet BOIA») y «Crear mi Carnet» pide antes la cuenta; al
+  volver, el Carnet de este navegador nace con el apodo de la cuenta. Tras
+  cerrar sesión el hueco dice «Entra con tu email para verlo» y el botón
+  «Entrar». **Guardar el Carnet** (`carnet-editor.tsx`) llama a
+  `requireAccount('carnet')` (en modo local pasa al momento); uno nuevo lleva
+  el apodo elegido para la cuenta. /mar y /carnet montan `<AccountGate />`.
+- **`supabase/migrations/20261003100500_nickname_status.sql`**:
+  `nickname_status(apodo)` → `ok` o la clave con la que `save_profile` lo
+  rechazaría, sin crear nada; sólo cuentas con email.
+  `database.types.ts` regenerado; `nickname.supabase.ts` la prueba.
+- **CSP**: `connect-src` admite la URL de Supabase (https y wss) sólo si
+  `NEXT_PUBLIC_SUPABASE_URL` existe (`security-headers.ts`, `next.config.ts`).
+- **/legal/privacidad**: con Supabase dice qué se recoge (email, Carnet,
+  progreso, consentimientos), qué es público (nunca el email), dónde, para
+  qué, base legal, cuánto tiempo (hasta borrar la cuenta) y derechos
+  (`PRIVACY_WITH_ACCOUNTS` en `lib/legal/docs.ts`, `muestra`); sin Supabase,
+  la de siempre.
+- **i18n**: `apps/web/lib/i18n/es-cuenta.ts` con las claves de T87
+  (`auth.*`, `account.*`, `carnet.guest.*`) y unas pocas más marcadas «T89»
+  (enviando, comprobando, error de red, resumen de la fusión,
+  `legal.privacy.account.*`). Todo `muestra`.
+- **Pruebas**: `lib/account/merge.test.ts` y `account.test.ts` (la puerta en
+  modo local y con Supabase, errores, apodo, email);
+  `security-headers.test.ts` (CSP con y sin Supabase); e2e
+  `cuenta.spec.ts` (Supabase) y en `carnet.spec.ts` «modo local: el Carnet se
+  crea sin pedir email».
+
+Comandos:
+- `pnpm db:migrate:dev` → exit 0, «1 aplicadas de 13: 20261003100500»;
+  `pnpm db:types:dev` → +6 líneas en `database.types.ts`.
+- `pnpm test:supabase` → exit 0; 6 archivos, 63 pruebas; «cuentas
+  @example.test que quedan: 0».
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0 (117 archivos, 1031 pruebas); `sh tools/spec/checks.sh` → exit 0;
+  `pnpm lint` → exit 0; `pnpm build` → exit 0 (185.5 kB · presupuesto 200 kB
+  · OK); `pnpm typecheck` → exit 0.
+- `E2E_PORT=3491 pnpm e2e carnet.spec.ts --workers=1` → exit 0 (4 pasan).
+  `E2E_PORT=3492 pnpm e2e mar-botellas.spec.ts carnet-descuento.spec.ts
+  mar-carnet-barco.spec.ts --workers=1` → exit 0 (16 pasan).
+- `generateLink` en el proyecto de desarrollo → códigos de 6 cifras (antes
+  de que Hernán cambiara el ajuste, 8).
+- `E2E_SUPABASE=1 E2E_PORT=3489 pnpm e2e cuenta.spec.ts --workers=1` → exit
+  0, 10 pasan (móvil y escritorio): cuenta nueva con código, apodo ocupado
+  rechazado, sin política no se crea; invitado con 50 puntos →
+  `point_balances` 50; cerrar sesión y volver a entrar; borrar la cuenta; la
+  política de privacidad dice qué se recoge.
+- Las e2e no leen ningún buzón: el envío del navegador (`/auth/v1/otp`) se
+  responde «enviado» sin mandar correo y el código sale de
+  `auth.admin.generateLink`; la cuenta nueva la crea `generateLink`.
+
+Ajustes del panel de Supabase que necesita el código (proyecto
+`boia-planet-dev`; los aplica Hernán; luego, igual en el de producción).
+Hecho el 2026-10-03: 1, 2 y 5. **Pendiente: 3 y 4, después del SMTP propio
+(Hernán)**: Supabase no deja editar las plantillas sin él; las e2e no leen
+correo, así que no bloquean nada, pero hasta entonces el correo que llega es
+el de la plantilla por defecto.
+1. https://supabase.com/dashboard → proyecto **boia-planet-dev**.
+2. Menú de la izquierda **Authentication** → **Sign In / Providers** →
+   **Email** (se abre el panel del proveedor):
+   - «Enable Email provider»: activado. «Confirm email»: activado.
+   - **«Email OTP Length»: 6** (estaba en 8).
+   - **«Email OTP Expiration»: 600** (segundos, 10 min; coincide con
+     `OTP_EXPIRY_MS`).
+   - **Save**.
+3. *(Pendiente, después del SMTP propio — Hernán.)* **Authentication** →
+   **Emails** → pestaña **Templates** → **Magic Link**:
+   - Subject: `Tu código de BOIA: {{ .Token }}`
+   - Message body (pegar entero, en «Source»):
+     ```html
+     <h2>Tu código de BOIA</h2>
+     <p>Escribe este código en BOIA.PLANET para entrar:</p>
+     <p style="font-size:32px;font-weight:700;letter-spacing:6px">{{ .Token }}</p>
+     <p>Caduca en 10 minutos. Si no lo has pedido tú, ignora este correo.</p>
+     <p>BOIA · Alicante</p>
+     ```
+   - **Save changes**.
+4. *(Pendiente, después del SMTP propio — Hernán.)* En la misma pestaña,
+   **Confirm signup** (lo recibe un email nuevo): el
+   mismo Subject y el mismo cuerpo → **Save changes**. Ninguna plantilla usa
+   `{{ .ConfirmationURL }}`: sin enlace mágico (decisión 2).
+5. **Authentication** → **URL Configuration**:
+   - Site URL: `https://boia-planet-roan.vercel.app` → **Save changes**.
+   - Redirect URLs → **Add URL** (una a una): `http://localhost:3100/**`,
+     `http://127.0.0.1:3100/**`, `https://boia-planet-roan.vercel.app/**` →
+     **Save URLs**.
+   - `boia-planet-roan.vercel.app` es el despliegue de prueba de hoy: cuando
+     exista el dominio definitivo de BOIA, cambiar aquí la Site URL y la
+     Redirect URL por las suyas.
+6. Para saber: con el correo de Supabase (sin SMTP propio) sólo llegan
+   correos a los miembros del equipo del proyecto y unos 2 por hora
+   (**Authentication** → **Rate Limits**); para probar a mano, usa tu email
+   de la organización. El SMTP propio va en la lista de producción (T95).
+
+Pendiente:
+- Plantillas de correo en español con `{{ .Token }}` (pasos 3 y 4): después
+  del SMTP propio (Hernán).
+- Site URL y Redirect URL: pasar de `boia-planet-roan.vercel.app` al dominio
+  definitivo cuando exista.
+- T90: el repositorio de Supabase. Hasta entonces, con sesión se sigue
+  jugando en el repositorio local: lo que se gana después de entrar no va al
+  servidor (lo de antes sí, con `merge_guest`), y al cerrar sesión este
+  navegador vuelve a ser invitado nuevo. El Carnet (apodo, avatar, respuestas)
+  se guarda en local; en la cuenta, sólo el apodo y el avatar del alta. La
+  `snapshot` de `merge_guest` la añade T90 con su forma.
+- T90–T93 cablean `requireAccount('skin' | 'stamp' | 'ranking')`; T91 monta
+  `<AccountGate />` en /sello.
+- /carnet usa la misma hoja crema que /mar (el diseño la quería oscura en las
+  páginas de la web); T91 rehace /carnet.
+- `docs/spec/estado.md`: REQ-IDE-002, IDE-003 e IDE-006 (en la lista `final`
+  de D-20) se mueven en T95 junto con el borrador de la decisión.
+
 ## 2026-10-03 — plan 008 T87: Design: the ID-card Carnet, the scan flow, the sign-in sheet and the rankings
 
 Qué existe:

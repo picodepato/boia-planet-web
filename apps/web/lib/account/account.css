@@ -1,0 +1,454 @@
+/*
+ * La hoja de acceso y «Tu cuenta» (plan 008, T89), sobre el diseño aprobado
+ * de T87 (docs/propuestas/2026-10-03-carnet.md, «Sign-in sheet», «Account
+ * actions», «Palette and type»; marcos 12–14): hoja crema abajo en el móvil
+ * y centrada en escritorio, botón píldora naranja con texto negro (5,7 : 1),
+ * fantasma con borde de tinta, títulos en Archivo Expanded.
+ */
+.acceso {
+  --acceso-crema: #fff4e2;
+  --acceso-tinta: #1b1440;
+  --acceso-naranja: #ec4f24;
+  --acceso-error: #b3261e;
+  --acceso-hecho: #1f7a4d;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(10 6 40 / 0.5);
+  color: var(--acceso-tinta);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.acceso__sheet {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 14px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
+  background: var(--acceso-crema);
+  box-shadow: 0 -12px 36px rgb(10 6 40 / 0.4);
+  outline: none;
+  animation: acceso-up 0.26s cubic-bezier(0.2, 1, 0.4, 1);
+}
+
+.acceso--centro {
+  align-items: center;
+  padding: 16px;
+}
+.acceso--centro .acceso__sheet {
+  max-width: 400px;
+  padding-top: 22px;
+  border-radius: 22px;
+}
+
+@media (min-width: 768px) {
+  .acceso {
+    align-items: center;
+  }
+  .acceso__sheet {
+    width: 420px;
+    border-radius: 22px;
+    padding-bottom: 22px;
+  }
+}
+
+@keyframes acceso-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acceso__sheet {
+    animation: none;
+  }
+}
+
+.acceso__head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  margin-bottom: 12px;
+}
+
+.acceso__back {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--acceso-error);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.acceso__x {
+  grid-column: 2;
+  grid-row: 1;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(27 20 64 / 0.08);
+  color: var(--acceso-tinta);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.acceso__title {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--font-title, 'Arial Black', sans-serif);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.acceso__steps {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.acceso__steps li {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(27 20 64 / 0.15);
+}
+.acceso__steps li.is-done {
+  background: var(--acceso-tinta);
+}
+
+.acceso-why {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgb(54 39 138 / 0.08);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.acceso-text {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.acceso-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.acceso-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid rgb(27 20 64 / 0.35);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--acceso-tinta);
+  font: inherit;
+  font-size: 16px;
+}
+.acceso-input[aria-invalid='true'],
+.acceso-input.is-error {
+  border-color: var(--acceso-error);
+}
+
+.acceso-help,
+.acceso-foot {
+  margin: 6px 0 12px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: rgb(27 20 64 / 0.78);
+}
+.acceso-foot {
+  margin-top: 16px;
+}
+
+.acceso-error {
+  margin: 6px 0 12px;
+  color: var(--acceso-error);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.acceso-ok {
+  color: var(--acceso-hecho);
+  font-weight: 700;
+}
+
+.acceso-nick-state {
+  min-height: 1.4em;
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.acceso-primary,
+.acceso-ghost,
+.acceso-danger {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  margin: 12px 0 0;
+  padding: 0 22px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.acceso-primary {
+  border: 0;
+  background: var(--acceso-naranja);
+  color: #000;
+}
+.acceso-ghost {
+  border: 1.5px solid rgb(27 20 64 / 0.35);
+  background: transparent;
+  color: var(--acceso-tinta);
+}
+.acceso-danger {
+  border: 0;
+  background: var(--acceso-error);
+  color: #fff;
+}
+.acceso-primary:disabled,
+.acceso-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.acceso-link,
+.acceso-inline {
+  border: 0;
+  background: none;
+  color: #a32d12;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.acceso-link {
+  display: block;
+  min-height: 44px;
+  margin: 4px auto 0;
+  font-size: 15px;
+}
+.acceso-inline {
+  padding: 0;
+  font-size: inherit;
+}
+
+.acceso-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 14px 0 0;
+  font-size: 14.5px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.acceso-check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--acceso-tinta);
+}
+.acceso-check a {
+  color: #a32d12;
+  font-weight: 700;
+}
+
+/* El código: un solo campo dibujado como seis casillas (T87). */
+.acceso-otp {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  max-width: 320px;
+}
+.acceso-otp__box {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  max-width: 44px;
+  height: 58px;
+  border: 1.5px solid rgb(27 20 64 / 0.3);
+  border-radius: 10px;
+  background: #fff;
+  font-family: var(--font-title, 'Arial Black', sans-serif);
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.acceso-otp:focus-within .acceso-otp__box.is-current {
+  border-color: var(--acceso-tinta);
+  box-shadow: 0 0 0 2px rgb(27 20 64 / 0.25);
+}
+.acceso-otp.is-error .acceso-otp__box {
+  border-color: var(--acceso-error);
+}
+.acceso-otp__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  opacity: 0.01;
+}
+
+.acceso-welcome {
+  display: flex;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgb(31 122 77 / 0.1);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.acceso-welcome p {
+  margin: 0;
+}
+
+.acceso-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.acceso :focus-visible {
+  outline: 2px solid var(--acceso-tinta);
+  outline-offset: 3px;
+}
+
+/* Avisos de la cuenta: arriba, sobre el mar (marco 14). */
+.cuenta-aviso {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 1001;
+  box-sizing: border-box;
+  width: min(420px, calc(100% - 24px));
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #1b1440;
+  color: #fff;
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  box-shadow: 0 10px 28px rgb(10 6 40 / 0.35);
+  transform: translateX(-50%);
+}
+
+/* «Tu cuenta» al final de Mi Carnet. */
+.cuenta {
+  margin: 18px 0 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(27 20 64 / 0.15);
+}
+.cuenta h3 {
+  margin: 0 0 8px;
+}
+.cuenta__label {
+  margin: 0;
+  font-size: 13.5px;
+  opacity: 0.8;
+}
+.cuenta__email {
+  margin: 2px 0 4px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.cuenta__saved {
+  min-height: 1.3em;
+  margin: 4px 0 0;
+  color: #1f7a4d;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.cuenta__muted {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+.cuenta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  margin-top: 12px;
+}
+.cuenta__actions .acceso-ghost {
+  width: auto;
+  margin: 0;
+}
+.cuenta__delete {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #b3261e;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* El hueco del Carnet del invitado (marco 4, «Sin cuenta»). */
+.carnet-hueco {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 150px;
+  margin: 0 0 14px;
+  padding: 18px;
+  border: 2px dashed rgb(27 20 64 / 0.25);
+  border-radius: 18px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(236 79 36 / 0.07) 0 12px,
+    transparent 12px 24px
+  );
+  text-align: center;
+}
+.carnet-hueco strong {
+  font-family: var(--font-title, 'Arial Black', sans-serif);
+  font-size: 20px;
+}
+.carnet-hueco p {
+  margin: 0;
+  font-size: 14px;
+}

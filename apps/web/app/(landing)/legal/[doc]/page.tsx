@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { t } from '../../../../lib/i18n';
-import { LEGAL_DOCS } from '../../../../lib/legal/docs';
+import { LEGAL_DOCS, PRIVACY_WITH_ACCOUNTS } from '../../../../lib/legal/docs';
+import { isSupabaseConfigured } from '../../../../lib/supabase/config';
 
 /**
  * Páginas legales enlazadas desde el pie (REQ-ENT-032): aviso legal,
  * privacidad y cookies (lib/legal/docs.ts), con el aviso de datos
- * inventados arriba (`legal.sampleBanner`, D-23 O14).
+ * inventados arriba (`legal.sampleBanner`, D-23 O14). Con cuentas (plan
+ * 008, T89) la de privacidad dice qué se recoge y para qué.
  */
 type DocId = keyof typeof LEGAL_DOCS;
 const docOf = (id: string) => (id in LEGAL_DOCS ? LEGAL_DOCS[id as DocId] : undefined);
@@ -26,8 +28,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function LegalPage({ params }: Props) {
-  const doc = docOf((await params).doc);
-  if (!doc) notFound();
+  const id = (await params).doc;
+  const found = docOf(id);
+  if (!found) notFound();
+  const accounts = id === 'privacidad' && isSupabaseConfigured();
+  const doc = accounts ? PRIVACY_WITH_ACCOUNTS : found;
+  const updated = accounts ? PRIVACY_WITH_ACCOUNTS.updated : 'legal.updated';
   return (
     <main id="contenido" className="legal">
       <div className="section__inner">
@@ -42,7 +48,7 @@ export default async function LegalPage({ params }: Props) {
           <p key={key}>{t(key)}</p>
         ))}
         <p>
-          <small>{t('legal.updated')}</small>
+          <small>{t(updated)}</small>
         </p>
       </div>
     </main>

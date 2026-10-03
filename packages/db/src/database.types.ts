@@ -1705,6 +1705,12 @@ export type Database = {
         };
         Returns: Json;
       };
+      nickname_status: {
+        Args: {
+          p_nickname: string;
+        };
+        Returns: string;
+      };
       place_bottle: {
         Args: {
           p_message: string;

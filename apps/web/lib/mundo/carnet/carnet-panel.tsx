@@ -3,11 +3,15 @@
 import { CARNET_QUESTIONS } from '@boia/contracts';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AccountSection } from '../../account/account-section';
+import { requireAccount } from '../../account/gate';
+import { accountSnapshot } from '../../account/session';
+import { useAccount } from '../../account/use-account';
 import { INVITE_COPY } from '../../landing/invitations';
 import { t } from '../../i18n';
 import { useRepoData } from '../repo';
 import { CarnetCard } from './carnet-card';
-import { CarnetEditor, LOCAL_ONLY_NOTICE } from './carnet-editor';
+import { CarnetEditor, LOCAL_ONLY_NOTICE, draftFrom, saveCarnet } from './carnet-editor';
 import { carnetPath } from './share';
 import { useCarnet } from './use-carnet';
 
@@ -36,6 +40,8 @@ export function CarnetPanel({
   const { data, repo } = useCarnet(null);
   const { data: bottle } = useRepoData((r) => r.bottles.mine());
   const [editing, setEditing] = useState(startEditing);
+  const account = useAccount();
+  const [creating, setCreating] = useState(false);
   useEffect(() => {
     onTop?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -56,6 +62,56 @@ export function CarnetPanel({
         }}
         onCancel={() => setEditing(false)}
       />
+    );
+  }
+
+  if (!carnet && account.status !== 'local') {
+    // Con cuentas (plan 008, T89): «Crear mi Carnet» pide antes el email
+    // (decisión 1); al volver, el Carnet nace con el apodo de la cuenta.
+    const create = async () => {
+      setCreating(true);
+      try {
+        if (!(await requireAccount('carnet'))) return;
+        if (await repo.carnet.mine()) return;
+        const profile = accountSnapshot().profile;
+        if (!profile) return;
+        await saveCarnet(
+          repo,
+          null,
+          {
+            ...draftFrom(null),
+            nickname: profile.nickname,
+            ...(profile.avatarKey ? { avatarKey: profile.avatarKey } : {}),
+          },
+          CARNET_QUESTIONS,
+        );
+        onCreated?.();
+      } catch {
+        // p. ej. el apodo choca con uno de muestra de este navegador: a mano.
+        setEditing(true);
+      } finally {
+        setCreating(false);
+      }
+    };
+    return (
+      <div data-testid="carnet-invitacion">
+        <div className="carnet-hueco">
+          <strong>{t('carnet.guest.slotTitle')}</strong>
+          <p>{account.signedOut ? t('account.signInToSee') : t('carnet.guest.slotBody')}</p>
+        </div>
+        <p>{t('carnet.guest.body')}</p>
+        <button
+          type="button"
+          className="acceso-primary"
+          data-testid="carnet-crear"
+          disabled={creating}
+          onClick={() => void create()}
+        >
+          {account.signedOut ? t('account.signIn') : t('carnet.create')}
+        </button>
+        <p className="juego-muted">{t('carnet.guest.emailNote')}</p>
+        <AccountSection />
+      </div>
     );
   }
 
@@ -121,6 +177,7 @@ export function CarnetPanel({
           ) : null}
         </p>
       )}
+      <AccountSection />
     </div>
   );
 }
