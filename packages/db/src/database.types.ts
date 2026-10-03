@@ -5,6 +5,30 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      account_snapshots: {
+        Row: {
+          created_at: string;
+          data: Json;
+          updated_at: string;
+          user_id: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          data: Json;
+          updated_at?: string;
+          user_id: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          data?: Json;
+          updated_at?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
       achievements: {
         Row: {
           coins: number;
@@ -334,8 +358,11 @@ export type Database = {
       };
       carnets: {
         Row: {
+          avatar_image: string | null;
           avatar_key: string | null;
           created_at: string;
+          is_artist: boolean;
+          member_number: number;
           member_since: string;
           nickname: string;
           updated_at: string;
@@ -343,8 +370,11 @@ export type Database = {
           version: number;
         };
         Insert: {
+          avatar_image?: string | null;
           avatar_key?: string | null;
           created_at?: string;
+          is_artist?: boolean;
+          member_number?: never;
           member_since?: string;
           nickname: string;
           updated_at?: string;
@@ -352,12 +382,48 @@ export type Database = {
           version?: number;
         };
         Update: {
+          avatar_image?: string | null;
           avatar_key?: string | null;
           created_at?: string;
+          is_artist?: boolean;
+          member_number?: never;
           member_since?: string;
           nickname?: string;
           updated_at?: string;
           user_id?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      circuits: {
+        Row: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          laps: number;
+          max_ms: number;
+          min_ms: number;
+          name: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          is_active?: boolean;
+          laps?: number;
+          max_ms: number;
+          min_ms: number;
+          name: string;
+          version: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          laps?: number;
+          max_ms?: number;
+          min_ms?: number;
+          name?: string;
           version?: number;
         };
         Relationships: [];
@@ -379,6 +445,157 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [];
+      };
+      consents: {
+        Row: {
+          created_at: string;
+          granted: boolean;
+          id: number;
+          kind: string;
+          policy_version: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          granted: boolean;
+          id?: never;
+          kind: string;
+          policy_version: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          granted?: boolean;
+          id?: never;
+          kind?: string;
+          policy_version?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      cosmetics: {
+        Row: {
+          base: boolean;
+          created_at: string;
+          for_ship: string | null;
+          id: string;
+          is_active: boolean;
+          is_sample: boolean;
+          name: string;
+          price_coins: number | null;
+          slot: string;
+          unlock_achievement: string | null;
+          unlock_mission: string | null;
+          unlock_points: number | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          base?: boolean;
+          created_at?: string;
+          for_ship?: string | null;
+          id: string;
+          is_active?: boolean;
+          is_sample?: boolean;
+          name: string;
+          price_coins?: number | null;
+          slot: string;
+          unlock_achievement?: string | null;
+          unlock_mission?: string | null;
+          unlock_points?: number | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          base?: boolean;
+          created_at?: string;
+          for_ship?: string | null;
+          id?: string;
+          is_active?: boolean;
+          is_sample?: boolean;
+          name?: string;
+          price_coins?: number | null;
+          slot?: string;
+          unlock_achievement?: string | null;
+          unlock_mission?: string | null;
+          unlock_points?: number | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'cosmetics_for_ship_fkey';
+            columns: ['for_ship'];
+            isOneToOne: false;
+            referencedRelation: 'cosmetics';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      discounts: {
+        Row: {
+          ends_at: string | null;
+          event_ref: string | null;
+          id: string;
+          is_active: boolean;
+          is_sample: boolean;
+          scope: string;
+          starts_at: string | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          ends_at?: string | null;
+          event_ref?: string | null;
+          id: string;
+          is_active?: boolean;
+          is_sample?: boolean;
+          scope?: string;
+          starts_at?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          ends_at?: string | null;
+          event_ref?: string | null;
+          id?: string;
+          is_active?: boolean;
+          is_sample?: boolean;
+          scope?: string;
+          starts_at?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      equipped_cosmetics: {
+        Row: {
+          cosmetic_id: string;
+          slot: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          cosmetic_id: string;
+          slot: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          cosmetic_id?: string;
+          slot?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'equipped_cosmetics_cosmetic_id_fkey';
+            columns: ['cosmetic_id'];
+            isOneToOne: false;
+            referencedRelation: 'cosmetics';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       event_secrets: {
         Row: {
@@ -405,6 +622,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'event_secrets_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: true;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      event_stamp_codes: {
+        Row: {
+          code: string;
+          created_at: string;
+          event_id: string;
+          updated_at: string;
+          valid_from: string;
+          valid_until: string;
+          version: number;
+        };
+        Insert: {
+          code: string;
+          created_at?: string;
+          event_id: string;
+          updated_at?: string;
+          valid_from: string;
+          valid_until: string;
+          version?: number;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          event_id?: string;
+          updated_at?: string;
+          valid_from?: string;
+          valid_until?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'event_stamp_codes_event_id_fkey';
             columns: ['event_id'];
             isOneToOne: true;
             referencedRelation: 'events';
@@ -642,6 +897,7 @@ export type Database = {
       ledger_transactions: {
         Row: {
           achievement_id: string | null;
+          action: string | null;
           coins_delta: number;
           compensates_id: string | null;
           cosmetic_key: string | null;
@@ -651,6 +907,7 @@ export type Database = {
           id: string;
           kind: Database['public']['Enums']['ledger_kind'];
           metadata: Json;
+          occurred_at: string;
           points_delta: number;
           purchase_id: string | null;
           reason: string | null;
@@ -660,6 +917,7 @@ export type Database = {
         };
         Insert: {
           achievement_id?: string | null;
+          action?: string | null;
           coins_delta?: number;
           compensates_id?: string | null;
           cosmetic_key?: string | null;
@@ -669,6 +927,7 @@ export type Database = {
           id: string;
           kind: Database['public']['Enums']['ledger_kind'];
           metadata?: Json;
+          occurred_at?: string;
           points_delta?: number;
           purchase_id?: string | null;
           reason?: string | null;
@@ -678,6 +937,7 @@ export type Database = {
         };
         Update: {
           achievement_id?: string | null;
+          action?: string | null;
           coins_delta?: number;
           compensates_id?: string | null;
           cosmetic_key?: string | null;
@@ -687,6 +947,7 @@ export type Database = {
           id?: string;
           kind?: Database['public']['Enums']['ledger_kind'];
           metadata?: Json;
+          occurred_at?: string;
           points_delta?: number;
           purchase_id?: string | null;
           reason?: string | null;
@@ -731,6 +992,48 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      point_actions: {
+        Row: {
+          action: string;
+          client_allowed: boolean;
+          daily_coins: number;
+          daily_points: number;
+          description: string;
+          max_coins: number;
+          max_points: number;
+          policies: string[];
+          ref_pattern: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          action: string;
+          client_allowed?: boolean;
+          daily_coins: number;
+          daily_points: number;
+          description: string;
+          max_coins: number;
+          max_points: number;
+          policies: string[];
+          ref_pattern: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          action?: string;
+          client_allowed?: boolean;
+          daily_coins?: number;
+          daily_points?: number;
+          description?: string;
+          max_coins?: number;
+          max_points?: number;
+          policies?: string[];
+          ref_pattern?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [];
       };
       point_balances: {
         Row: {
@@ -803,6 +1106,53 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'events';
             referencedColumns: ['id'];
+          },
+        ];
+      };
+      race_times: {
+        Row: {
+          attempts: number;
+          best_at: string;
+          best_ms: number;
+          circuit_id: string;
+          circuit_version: number;
+          updated_at: string;
+          user_id: string;
+          void_reason: string | null;
+          voided_at: string | null;
+          voided_by: string | null;
+        };
+        Insert: {
+          attempts?: number;
+          best_at?: string;
+          best_ms: number;
+          circuit_id: string;
+          circuit_version: number;
+          updated_at?: string;
+          user_id: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Update: {
+          attempts?: number;
+          best_at?: string;
+          best_ms?: number;
+          circuit_id?: string;
+          circuit_version?: number;
+          updated_at?: string;
+          user_id?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'race_times_circuit_id_circuit_version_fkey';
+            columns: ['circuit_id', 'circuit_version'];
+            isOneToOne: false;
+            referencedRelation: 'circuits';
+            referencedColumns: ['id', 'version'];
           },
         ];
       };
@@ -948,7 +1298,7 @@ export type Database = {
         Row: {
           event_id: string;
           granted_at: string;
-          purchase_id: string;
+          purchase_id: string | null;
           revoked_at: string | null;
           revoked_by_tx: string | null;
           tx_id: string;
@@ -957,7 +1307,7 @@ export type Database = {
         Insert: {
           event_id: string;
           granted_at?: string;
-          purchase_id: string;
+          purchase_id?: string | null;
           revoked_at?: string | null;
           revoked_by_tx?: string | null;
           tx_id: string;
@@ -966,7 +1316,7 @@ export type Database = {
         Update: {
           event_id?: string;
           granted_at?: string;
-          purchase_id?: string;
+          purchase_id?: string | null;
           revoked_at?: string | null;
           revoked_by_tx?: string | null;
           tx_id?: string;
@@ -1094,6 +1444,38 @@ export type Database = {
           },
         ];
       };
+      user_discounts: {
+        Row: {
+          discount_id: string;
+          found_at: string;
+          used_at: string | null;
+          used_event: string | null;
+          user_id: string;
+        };
+        Insert: {
+          discount_id: string;
+          found_at?: string;
+          used_at?: string | null;
+          used_event?: string | null;
+          user_id: string;
+        };
+        Update: {
+          discount_id?: string;
+          found_at?: string;
+          used_at?: string | null;
+          used_event?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_discounts_discount_id_fkey';
+            columns: ['discount_id'];
+            isOneToOne: false;
+            referencedRelation: 'discounts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       world_objects: {
         Row: {
           category: string;
@@ -1212,7 +1594,188 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      admin_delete_member: {
+        Args: {
+          p_user: string;
+          p_reason: string;
+        };
+        Returns: undefined;
+      };
+      admin_list_members: {
+        Args: {
+          p_search?: string;
+          p_news_only?: boolean;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: {
+          user_id: string;
+          email: string;
+          nickname: string;
+          member_number: number;
+          member_since: string;
+          signed_up_at: string;
+          is_artist: boolean;
+          news: boolean;
+          news_at: string;
+          news_version: string;
+          privacy_version: string;
+          privacy_at: string;
+          total: number;
+        }[];
+      };
+      admin_set_artist: {
+        Args: {
+          p_user: string;
+          p_is_artist: boolean;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_set_stamp_code: {
+        Args: {
+          p_event: string;
+          p_valid_from: string;
+          p_valid_until: string;
+          p_regenerate?: boolean;
+        };
+        Returns: Json;
+      };
+      award_points: {
+        Args: {
+          p_action: string;
+          p_ref: string;
+          p_points?: number;
+          p_coins?: number;
+          p_policy?: string;
+          p_metadata?: Json;
+        };
+        Returns: Json;
+      };
+      buy_cosmetic: {
+        Args: {
+          p_cosmetic: string;
+        };
+        Returns: Json;
+      };
+      claim_stamp: {
+        Args: {
+          p_event: string;
+          p_code: string;
+        };
+        Returns: Json;
+      };
+      delete_my_account: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      equip_cosmetic: {
+        Args: {
+          p_slot: string;
+          p_cosmetic?: string;
+        };
+        Returns: Json;
+      };
+      find_discount: {
+        Args: {
+          p_discount: string;
+        };
+        Returns: Json;
+      };
+      latest_bottles: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          message: string;
+          x: number;
+          y: number;
+          author_id: string;
+          author_nickname: string;
+          is_mine: boolean;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
+      merge_guest: {
+        Args: {
+          p_payload: Json;
+        };
+        Returns: Json;
+      };
+      place_bottle: {
+        Args: {
+          p_message: string;
+          p_x: number;
+          p_y: number;
+        };
+        Returns: Json;
+      };
+      ranking_points: {
+        Args: {
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
+      ranking_race: {
+        Args: {
+          p_circuit: string;
+          p_version?: number;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
+      ranking_season: {
+        Args: {
+          p_season?: string;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
+      save_profile: {
+        Args: {
+          p_nickname: string;
+          p_avatar_key?: string;
+          p_avatar_image?: string;
+          p_privacy_version?: string;
+          p_news?: boolean;
+        };
+        Returns: Json;
+      };
+      save_snapshot: {
+        Args: {
+          p_data: Json;
+          p_base_version?: number;
+        };
+        Returns: Json;
+      };
+      set_news_opt_in: {
+        Args: {
+          p_news: boolean;
+        };
+        Returns: Json;
+      };
+      submit_race_time: {
+        Args: {
+          p_circuit: string;
+          p_version: number;
+          p_ms: number;
+        };
+        Returns: Json;
+      };
+      use_discount: {
+        Args: {
+          p_discount: string;
+          p_event?: string;
+        };
+        Returns: Json;
+      };
+    };
     Enums: {
       achievement_scope: 'global' | 'season';
       achievement_trigger:

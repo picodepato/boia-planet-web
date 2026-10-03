@@ -5,6 +5,7 @@
  * catálogo de una base con todas las migraciones aplicadas. Así supabase-js
  * los acepta tal cual y no hace falta la CLI (D-17).
  */
+import { fileURLToPath } from 'node:url';
 import type pg from 'pg';
 import * as prettier from 'prettier';
 
@@ -74,6 +75,90 @@ function tsType(c: ColumnRow, enums: Set<string>): string {
 }
 
 const key = (name: string) => (/^[a-z_][a-z0-9_]*$/.test(name) ? name : `'${name}'`);
+
+interface FunctionRow {
+  name: string;
+  arg_types: number[];
+  all_arg_types: number[] | null;
+  arg_modes: string[] | null;
+  arg_names: string[] | null;
+  n_defaults: number;
+  ret_type: number;
+  ret_set: boolean;
+}
+
+interface TypeRow {
+  oid: number;
+  typname: string;
+  typtype: string;
+  typcategory: string;
+  elem_typname: string | null;
+  elem_typtype: string | null;
+}
+
+/**
+ * Funciones de public como las escribe la CLI de Supabase (lo que acepta
+ * `supabase.rpc`): Args con los parámetros de entrada (opcionales los que
+ * tienen valor por defecto) y Returns con el tipo devuelto; una función
+ * `returns table (...)` devuelve una lista de filas. Sin las de disparador.
+ */
+async function functionTypes(client: pg.Client, enums: Set<string>): Promise<string[]> {
+  const { rows: fns } = await client.query<FunctionRow>(`
+    select p.proname as name, p.proargtypes::oid[]::int8[] as arg_types,
+           p.proallargtypes::int8[] as all_arg_types, p.proargmodes::text[] as arg_modes,
+           p.proargnames as arg_names, p.pronargdefaults::int as n_defaults,
+           p.prorettype::int8 as ret_type, p.proretset as ret_set
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prokind = 'f'
+      and p.prorettype <> 'trigger'::regtype
+    order by p.proname, p.oid`);
+  if (fns.length === 0) return [];
+  const oids = [
+    ...new Set(fns.flatMap((f) => [...(f.all_arg_types ?? f.arg_types), f.ret_type].map(Number))),
+  ];
+  const { rows: types } = await client.query<TypeRow>(
+    `select t.oid::int8 as oid, t.typname, t.typtype::text as typtype,
+            t.typcategory::text as typcategory, et.typname as elem_typname,
+            et.typtype::text as elem_typtype
+     from pg_type t
+     left join pg_type et on et.oid = t.typelem and t.typcategory = 'A'
+     where t.oid = any($1::oid[])`,
+    [oids],
+  );
+  const byOid = new Map(types.map((t) => [Number(t.oid), t]));
+  const ts = (oid: number): string => {
+    const t = byOid.get(Number(oid));
+    if (!t) return 'unknown';
+    if (t.typcategory === 'A' && t.elem_typname) {
+      return `${scalar(t.elem_typname, t.elem_typtype, enums)}[]`;
+    }
+    if (t.typname === 'void') return 'undefined';
+    return scalar(t.typname, t.typtype, enums);
+  };
+
+  return fns.map((f) => {
+    const all = (f.all_arg_types ?? f.arg_types).map(Number);
+    const modes = f.arg_modes ?? all.map(() => 'i');
+    const names = f.arg_names ?? [];
+    const inputs = all.flatMap((oid, i) =>
+      modes[i] === 'i' || modes[i] === 'b' || modes[i] === 'v'
+        ? [{ name: names[i] ?? '', oid }]
+        : [],
+    );
+    const firstDefault = inputs.length - f.n_defaults;
+    const args = inputs.length
+      ? `{\n${inputs.map((a, i) => `${key(a.name)}${i >= firstDefault ? '?' : ''}: ${ts(a.oid)}`).join('\n')}\n}`
+      : 'Record<PropertyKey, never>';
+    const outCols = all.flatMap((oid, i) =>
+      modes[i] === 't' ? [`${key(names[i] ?? '')}: ${ts(oid)}`] : [],
+    );
+    const returns = outCols.length
+      ? `{\n${outCols.join('\n')}\n}[]`
+      : `${ts(f.ret_type)}${f.ret_set ? '[]' : ''}`;
+    return `${f.name}: {\n Args: ${args}\n Returns: ${returns}\n}`;
+  });
+}
 
 export async function generateTypes(client: pg.Client): Promise<string> {
   const { rows: enumRows } = await client.query<{ name: string; label: string }>(`
@@ -178,6 +263,7 @@ export async function generateTypes(client: pg.Client): Promise<string> {
     }`;
 
   const never = '{ [_ in never]: never }';
+  const functions = await functionTypes(client, enumNames);
   const tablesSrc = [...tables].map(([n, c]) => tableBlock(n, c)).join('\n');
   const viewsSrc = [...views].map(([n, c]) => viewBlock(n, c)).join('\n');
   const enumsSrc = [...enums]
@@ -195,7 +281,7 @@ export type Database = {
   public: {
     Tables: ${tables.size ? `{\n${tablesSrc}\n}` : never}
     Views: ${views.size ? `{\n${viewsSrc}\n}` : never}
-    Functions: ${never}
+    Functions: ${functions.length ? `{\n${functions.join('\n')}\n}` : never}
     Enums: ${enums.size ? `{\n${enumsSrc}\n}` : never}
     CompositeTypes: ${never}
   }
@@ -216,6 +302,6 @@ ${constantsSrc}
   },
 } as const;
 `;
-  const config = (await prettier.resolveConfig(new URL(import.meta.url).pathname)) ?? {};
+  const config = (await prettier.resolveConfig(fileURLToPath(import.meta.url))) ?? {};
   return prettier.format(src, { ...config, parser: 'typescript' });
 }

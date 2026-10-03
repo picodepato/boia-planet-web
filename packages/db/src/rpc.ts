@@ -1,0 +1,226 @@
+/**
+ * Lo que devuelven y cómo fallan las RPC del plan 008 (supabase/migrations
+ * 20261003*). `database.types.ts` da sus argumentos; las que devuelven JSON
+ * salen ahí como `Json`, y su forma es la de estos tipos.
+ *
+ * Un rechazo llega como error de PostgREST con `code` P0001 (o 42501 si
+ * falta cuenta o rol) y `message` igual a una de las claves de
+ * `RPC_REJECTIONS`; el texto para personas va en `details`.
+ */
+
+export const RPC_REJECTIONS = [
+  // Cuenta y rol
+  'not_member',
+  'forbidden',
+  // Perfil
+  'nickname_invalid',
+  'nickname_taken',
+  'privacy_required',
+  'invalid_policy_version',
+  'avatar_invalid',
+  'invalid_input',
+  // Filtro de texto (apodo y botellas)
+  'text_link',
+  'text_email',
+  'text_phone',
+  'text_offensive',
+  // Puntos y monedas
+  'unknown_action',
+  'invalid_ref',
+  'invalid_policy',
+  'invalid_amount',
+  'invalid_metadata',
+  'limit_action',
+  'limit_daily',
+  // Cosméticos
+  'unknown_cosmetic',
+  'not_for_sale',
+  'needs_ship',
+  'insufficient_coins',
+  'invalid_slot',
+  'wrong_slot',
+  'not_owned',
+  // Sellos
+  'unknown_event',
+  'invalid_code',
+  'outside_window',
+  'invalid_window',
+  // Carreras
+  'unknown_circuit',
+  'invalid_time',
+  'too_fast',
+  'too_slow',
+  // Descuentos
+  'unknown_discount',
+  'discount_not_found',
+  'discount_used',
+  'wrong_event',
+  'discount_expired',
+  // Copia y fusión
+  'invalid_snapshot',
+  'snapshot_too_large',
+  'snapshot_conflict',
+  'invalid_payload',
+  'payload_too_large',
+  // Botellas
+  'carnet_required',
+  'invalid_message',
+  'invalid_position',
+  // Admin
+  'unknown_member',
+  'reason_required',
+] as const;
+export type RpcRejection = (typeof RPC_REJECTIONS)[number];
+
+export function isRpcRejection(message: unknown): message is RpcRejection {
+  return typeof message === 'string' && (RPC_REJECTIONS as readonly string[]).includes(message);
+}
+
+/** Política de un premio, como `RewardPolicy` de @boia/store. */
+export type AwardPolicy = 'once' | 'daily' | 'season';
+
+/** award_points */
+export type AwardResult =
+  | {
+      granted: true;
+      tx_id: string;
+      points: number;
+      coins: number;
+      season_id: string | null;
+      /** Cosméticos que regaló (logro o misión). */
+      cosmetics: string[];
+    }
+  | { granted: false; reason: 'duplicate'; tx_id: string };
+
+/** buy_cosmetic */
+export type BuyResult =
+  | { granted: true; tx_id: string; coins: number; balance: number }
+  | { granted: false; reason: 'duplicate' };
+
+/** equip_cosmetic: ranura → cosmético. */
+export type EquippedMap = Partial<Record<'flag' | 'accessory' | 'skin' | 'wake' | 'ship', string>>;
+
+/** claim_stamp */
+export type StampResult =
+  | { granted: true; tx_id: string; event: string; points: number }
+  | { granted: false; reason: 'already_stamped'; event: string };
+
+/** submit_race_time */
+export interface RaceTimeResult {
+  best: boolean;
+  best_ms: number;
+  best_at: string;
+  attempts: number;
+  circuit: string;
+  version: number;
+}
+
+/** find_discount */
+export interface FindDiscountResult {
+  first: boolean;
+  discount: string;
+  found_at: string;
+  used_at: string | null;
+}
+
+/** use_discount */
+export interface UseDiscountResult {
+  used: true;
+  discount: string;
+  used_at: string;
+}
+
+/** save_snapshot */
+export interface SnapshotResult {
+  version: number;
+  updated_at: string;
+}
+
+/** save_profile, admin_set_artist: la fila del Carnet y los consentimientos vigentes. */
+export interface ProfileResult {
+  user_id: string;
+  nickname: string;
+  avatar_key: string | null;
+  avatar_image: string | null;
+  member_number: number;
+  member_since: string;
+  is_artist: boolean;
+  news: boolean;
+  privacy_version: string | null;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Entrada de merge_guest (todas las claves son opcionales). */
+export interface MergePayload {
+  rewards?: Array<{
+    action: string;
+    ref: string;
+    points?: number;
+    coins?: number;
+    policy?: AwardPolicy;
+    /** Cuándo ocurrió (ISO); cuenta para el tope de ese día. */
+    at?: string;
+    metadata?: Record<string, unknown>;
+  }>;
+  /** Cosméticos comprados con monedas, en orden. */
+  cosmetics?: string[];
+  equipped?: EquippedMap;
+  times?: Array<{ circuit: string; version: number; ms: number; at?: string }>;
+  discounts?: Array<{ id: string; found_at?: string; used?: boolean; event?: string | null }>;
+  /** El resto del documento: sólo se guarda si la cuenta no tiene copia. */
+  snapshot?: Record<string, unknown>;
+}
+
+/** Salida de merge_guest. */
+export interface MergeResult {
+  rewards: { granted: number; duplicate: number };
+  cosmetics: { granted: number; duplicate: number };
+  times: { accepted: number };
+  discounts: { found: number; used: number };
+  equipped: EquippedMap;
+  snapshot: 'saved' | 'kept' | 'none';
+  rejected: Array<{
+    kind: 'reward' | 'discount' | 'cosmetic' | 'equip' | 'time' | 'snapshot';
+    ref: string | null;
+    reason: string;
+  }>;
+}
+
+/** Una fila de ranking_points, ranking_season o ranking_race. */
+export interface RankingRow {
+  /** Puesto con empates compartidos (1, 2, 2, 4…). */
+  position: number;
+  user_id: string;
+  nickname: string;
+  member_number: number;
+  is_artist: boolean;
+  /** Puntos, o milisegundos en ranking_race. */
+  value: number;
+  /** Sólo en ranking_race. */
+  best_at?: string;
+  is_mine: boolean;
+}
+
+export interface RankingPage {
+  total: number;
+  limit: number;
+  offset: number;
+  rows: RankingRow[];
+  /** La fila de quien llama aunque quede fuera de la página; null si no está. */
+  mine: RankingRow | null;
+  /** ranking_points: null; ranking_season: la temporada. */
+  season_id?: string | null;
+  /** ranking_race */
+  circuit?: string;
+  version?: number;
+}
+
+/** admin_set_stamp_code */
+export interface StampCodeResult {
+  event: string;
+  code: string;
+  valid_from: string;
+  valid_until: string;
+}

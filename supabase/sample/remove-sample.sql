@@ -6,7 +6,8 @@
 -- Después se cargan los datos reales desde el Admin o se vuelve a sembrar la
 -- muestra con supabase/seeds/*.sql. Falla entero, sin borrar nada, si algún
 -- dato real depende de la muestra (una compra de un evento de muestra, un
--- logro de muestra ya concedido, objetos reales en una temporada de muestra).
+-- logro de muestra ya concedido, objetos reales en una temporada de muestra,
+-- un descuento o cosmético de muestra en una cuenta).
 
 begin;
 
@@ -23,6 +24,10 @@ delete from public.home_blocks where is_sample;
 delete from public.world_revisions where is_sample;
 delete from public.world_objects where is_sample;
 delete from public.achievements where is_sample;
+-- Plan 008: descuentos y cosméticos (falla si una cuenta ya los encontró,
+-- compró o lleva puestos). Los códigos de sello caen con su evento.
+delete from public.discounts where is_sample;
+delete from public.cosmetics where is_sample;
 delete from public.events where is_sample;
 delete from public.islands where is_sample;
 delete from public.seasons where is_sample;

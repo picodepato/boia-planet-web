@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@boia/contracts": "workspace:*",
+    "@boia/db": "workspace:*",
     "@boia/engine": "workspace:*",
     "@boia/store": "workspace:*",
     "@boia/world": "workspace:*",
+    "@supabase/supabase-js": "2.117.2",
     "next": "15.5.26",
     "react": "19.3.0",
     "react-dom": "19.3.0",

@@ -18,6 +18,18 @@ export const CLIENT_READ_ONLY_TABLES = [
   'stamps',
   'user_achievements',
   'user_cosmetics',
+  // Plan 008: sólo se escriben con las RPC validadas (decisión 6).
+  'account_snapshots',
+  'carnets',
+  'circuits',
+  'consents',
+  'cosmetics',
+  'discounts',
+  'equipped_cosmetics',
+  'event_stamp_codes',
+  'point_actions',
+  'race_times',
+  'user_discounts',
 ] as const;
 
 /** Derivados del libro: sólo los escribe su disparador, ni service_role. */

@@ -4,12 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./types": "./src/database.types.ts",
+    "./rpc": "./src/rpc.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "db:test": "node src/cli/db-test.ts",
-    "db:types": "node src/cli/gen-types.ts"
+    "db:types": "node src/cli/gen-types.ts",
+    "db:migrate:dev": "node src/cli/migrate-dev.ts",
+    "db:types:dev": "node src/cli/gen-types.ts --dev",
+    "test:supabase": "node src/cli/test-supabase.ts"
   },
   "dependencies": {
     "pg": "8.23.0"
@@ -17,6 +22,7 @@
   "devDependencies": {
     "@boia/contracts": "workspace:*",
     "@boia/world": "workspace:*",
+    "@supabase/supabase-js": "2.117.2",
     "@types/pg": "8.23.1",
     "prettier": "3.9.9"
   }

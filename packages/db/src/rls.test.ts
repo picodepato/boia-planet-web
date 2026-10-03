@@ -381,14 +381,17 @@ describe('lecturas', () => {
 });
 
 describe('Carnet y botellas', () => {
-  it('un miembro crea su Carnet pero no el de otro ni su fecha de alta', async () => {
+  // Plan 008 (T86): el Carnet sólo se escribe con save_profile, que filtra
+  // el apodo y exige la política aceptada.
+  it('un miembro crea su Carnet con save_profile, pero no lo escribe directamente', async () => {
     const other = randomUUID();
     const setup = `insert into auth.users (id, email) values ('${other}', 'x@example.test');`;
     const results = await as(
       db.client,
       member(other),
       async (q) => [
-        await attempt(q, `insert into public.carnets (user_id, nickname) values ($1, 'Nueva')`, [
+        await attempt(q, `select public.save_profile('Nueva', null, null, 'muestra-1', false)`),
+        await attempt(q, `insert into public.carnets (user_id, nickname) values ($1, 'Directa')`, [
           other,
         ]),
         await attempt(q, `insert into public.carnets (user_id, nickname) values ($1, 'Suplanta')`, [
@@ -402,7 +405,12 @@ describe('Carnet y botellas', () => {
       ],
       setup,
     );
-    expect(results.map((r) => r.code)).toEqual([null, PERMISSION_DENIED, PERMISSION_DENIED]);
+    expect(results.map((r) => r.code)).toEqual([
+      null,
+      PERMISSION_DENIED,
+      PERMISSION_DENIED,
+      PERMISSION_DENIED,
+    ]);
   });
 
   it('el invitado anónimo no crea Carnet ni botella', async () => {

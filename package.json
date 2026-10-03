@@ -20,6 +20,9 @@
     "world:check": "node --import ./packages/world/scripts/ts-resolve.mjs packages/world/src/cli/world-check.ts",
     "db:test": "pnpm --filter @boia/db db:test",
     "db:types": "pnpm --filter @boia/db db:types",
+    "db:migrate:dev": "pnpm --filter @boia/db db:migrate:dev",
+    "db:types:dev": "pnpm --filter @boia/db db:types:dev",
+    "test:supabase": "pnpm --filter @boia/db test:supabase",
     "spec:estado": "python3 tools/spec/estado.py"
   },
   "devDependencies": {

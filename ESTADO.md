@@ -4,6 +4,135 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T86: Base de Supabase: clientes, migraciones, RPC validadas y pruebas de integración
+
+La base que usan el resto de tareas del plan 008. Hoy la web no la usa en
+ningún sitio: sin las variables de Supabase sigue en modo local (D-20), y con
+ellas sólo cambia lo que conecten T89–T94.
+
+Qué existe:
+- **Clientes** en `apps/web/lib/supabase/`: `config.ts`
+  (`isSupabaseConfigured()`, falso si falta o está vacía
+  `NEXT_PUBLIC_SUPABASE_URL` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`;
+  `SUPABASE_AUTH_STORAGE_KEY = 'boia.supabase.auth'`), `browser.ts`
+  (`browserSupabase()`, uno por pestaña, sesión en localStorage, null en el
+  servidor o en modo local), `server.ts` (`serverSupabase()`, clave
+  publicable sin sesión, para lecturas públicas) y `service.ts`
+  (`serviceSupabase()`, clave secreta, se niega en un navegador). Sin
+  `@supabase/ssr`: la sesión vive en el navegador y no hacen falta cookies.
+  Tipos: `@boia/db/types`. Dependencias nuevas: `@supabase/supabase-js`
+  2.117.2 (web y, de desarrollo, `@boia/db`).
+- **Migraciones nuevas** (las siete de antes no se reescriben):
+  - `20261003100000_accounts.sql`: el Carnet como perfil (número de socio,
+    `is_artist`, foto, apodo único sin mayúsculas con filtro), `consents`
+    (política y noticias con fecha y versión, sólo altas), `account_snapshots`,
+    el filtro de texto `private.text_problem` (enlaces, emails, teléfonos y una
+    lista básica de palabras en `private.blocked_words`), las RPC
+    `save_profile`, `set_news_opt_in`, `delete_my_account` y las del Admin
+    (`admin_set_artist`, `admin_delete_member` con motivo y auditoría,
+    `admin_list_members` con email y consentimientos). El Carnet ya no se
+    escribe directamente: sólo con `save_profile`.
+  - `20261003100100_economy.sql`: `point_actions` (acciones conocidas con tope
+    por acción y por día, `muestra`), `cosmetics` y `equipped_cosmetics`,
+    `discounts` y `user_discounts`, `circuits` (El Freu v3: 45–300 s) y
+    `race_times`, `event_stamp_codes` (sólo el Admin la lee), el libro con
+    `action` y `occurred_at` y sellos sin compra; las RPC `award_points`,
+    `buy_cosmetic`, `equip_cosmetic`, `claim_stamp` (+50 de
+    `point_actions.stamp`), `submit_race_time`, `find_discount`,
+    `use_discount`, `save_snapshot` (con versión para detectar conflictos),
+    `merge_guest` (cada elemento por la misma función que en vivo, en su
+    subtransacción) y `admin_set_stamp_code`.
+  - `20261003100200_rankings.sql`: `ranking_points`, `ranking_season` y
+    `ranking_race`, por páginas (limit 1–100, offset), orden estable, puesto
+    con empates y la fila propia (`mine`) aunque quede fuera; sólo cuentas con
+    Carnet; anon puede leerlos.
+  - `20261003100300_global_bottles.sql`: el filtro como disparador de
+    `bottles`, `latest_bottles` (las 10 más recientes activas, para todos) y
+    `place_bottle` (pide Carnet y retira la anterior).
+  - `20261003100400_ledger_apply_fix.sql`: **arreglo de una migración
+    existente**: `private.ledger_apply` hacía `insert … on conflict do update`
+    y Postgres comprueba el CHECK de la fila propuesta antes del conflicto, así
+    que gastar monedas fallaba siempre (`coin_balances_coins_check`). Ahora
+    actualiza y sólo inserta si no hay fila.
+  - Convenciones (cabecera de `accounts.sql`): la lógica en `private` con
+    SECURITY DEFINER; en `public` una envoltura INVOKER del mismo nombre; un
+    rechazo es P0001 (o 42501) con una clave estable como mensaje. Claves,
+    formas de lo que devuelven y de la entrada de `merge_guest`:
+    `packages/db/src/rpc.ts`.
+- **Muestra** `supabase/seeds/20261003100100_economy.sql`: las fiestas de la
+  web con su id como slug (`halloween-2026`, `sonido-2026`,
+  `nochevieja-2026`, `all-day-boia-2026`, `borrador`) y su código de sello
+  generado al sembrar, los 30 cosméticos y los 3 descuentos escondidos.
+  `remove-sample.sql` retira también cosméticos y descuentos.
+- **`pnpm db:migrate:dev`** (`packages/db/src/cli/migrate-dev.ts`): lee las
+  variables del entorno o de `apps/web/.env.local` (una variable definida,
+  aunque vacía, gana al archivo, como en Next), se niega si
+  `SUPABASE_DB_URL` no es del proyecto de `NEXT_PUBLIC_SUPABASE_URL`, aplica
+  las migraciones con `migrate()` (registro en
+  `supabase_migrations.schema_migrations`, como la CLI) y las semillas nuevas
+  o cambiadas (por suma, en `supabase_migrations.boia_seed_files`); `--no-seed`
+  sólo migra. **`pnpm db:types:dev`** regenera `database.types.ts` desde el
+  proyecto; el generador escribe ahora también `Functions` (Args y Returns,
+  como la CLI de Supabase) y lee bien `.prettierrc` en Windows.
+- **`pnpm test:supabase`** (`packages/db/src/cli/test-supabase.ts`,
+  `vitest.supabase.config.ts`, `src/supabase/*.supabase.ts`): 5 archivos, 60
+  pruebas contra el proyecto de desarrollo. Cuentas `@example.test` creadas
+  con la clave de servicio y marcadas con la ejecución (`BOIA_TEST_RUN`),
+  entrada con el código de `auth.admin.generateLink`, TOTP real para el Admin
+  (aal1 rechazado, aal2 aceptado). Cada RPC con casos que acepta y rechaza;
+  RLS de anon, otra cuenta y Admin; el catálogo (RLS en todo, sin escrituras
+  de cliente con `clientWriteLeaks`, anon sólo ejecuta las 4 RPC de lectura,
+  ningún SECURITY DEFINER en public, tipos al día). Antes borra las cuentas de
+  prueba olvidadas (más de 30 min); al final, las suyas, y dice cuántas
+  quedan. Sin variables escribe «se omite» y sale con 0.
+- **E2E**: `E2E_SUPABASE=1` en `playwright.config.ts` (sin él, el servidor
+  arranca con las variables de Supabase vacías y Next no usa las de
+  `.env.local`: modo local como siempre); `e2e/supabase-env.ts` (el
+  interruptor), `e2e/supabase.ts` (`createMember`, `otpFor`, `signInPage`,
+  `deleteMembers`) y `e2e/supabase-sesion.spec.ts`, que se salta sin el
+  interruptor.
+- `packages/db/src/checks.ts`: las tablas nuevas y `carnets` en
+  `CLIENT_READ_ONLY_TABLES`. `rls.test.ts`: la prueba del Carnet crea con
+  `save_profile` y comprueba que la escritura directa ya no se puede.
+  `.env.example`: sección de Supabase.
+
+Comandos:
+- `pnpm db:migrate:dev` → exit 0, «12 aplicadas de 12» y «5 semillas
+  aplicadas» sobre el proyecto vacío; otra vez → exit 0, «0 aplicadas de 12
+  (al día)», «0 semillas». Con `SUPABASE_DB_URL` de otra referencia → exit 1,
+  «no es del mismo proyecto… no se toca esa base».
+- `pnpm test:supabase` → exit 0; 5 archivos, 60 pruebas; «cuentas
+  @example.test que quedan: 0 (de esta ejecución: 0)».
+- Sin variables (archivo `.env.local` apartado y sin variables en el entorno):
+  `pnpm test:supabase` → exit 0, «test:supabase: se omite — sin Supabase…»;
+  el comando de prueba entero → exit 0 (113 archivos, 1006 pruebas; checks,
+  lint, build 185.4 kB · OK, typecheck).
+- Comando de prueba con las variables → exit 0: vitest 113 archivos, 1006
+  pruebas; `checks.sh`, `pnpm lint`, `pnpm build` (185.4 kB · presupuesto
+  200 kB · OK) y `pnpm typecheck` en verde.
+- `E2E_SUPABASE=1 E2E_PORT=3186 pnpm e2e supabase-sesion.spec.ts --workers=1`
+  → exit 0, 2 pasan. `E2E_PORT=3187 pnpm e2e supabase-sesion.spec.ts
+  despliegue.spec.ts --workers=1` → exit 0, 4 pasan y 4 saltadas (las de
+  Supabase en modo local).
+
+Pendiente:
+- Las dos suites de `packages/db` con PostgreSQL local (`pnpm db:test`,
+  `schema.test.ts`, `rls.test.ts`) no se pudieron correr en esta máquina; lo
+  que comprueban de catálogo y tipos lo prueba ahora `schema.supabase.ts`
+  contra el proyecto real.
+- Para T89: la CSP (`apps/web/lib/security-headers.ts`) aún no deja
+  `connect-src` a la URL de Supabase; hará falta al conectar el cliente del
+  navegador. La versión de la política la elige T89 (las pruebas usan
+  `muestra-2026-10-03`).
+- Para T90: los logros se cobran con `award_points('achievement', <id>,
+  puntos, monedas)` (tope 300/50; los cosméticos que regala el logro van
+  solos) y la entrega de la misión con `award_points('mission',
+  'mision:<id>:entrega', …)`. La «temporada» del servidor es la activa de
+  `seasons`, no el id del mundo como en local. `merge_guest` no trae sellos
+  de compras de prueba locales (en Supabase el sello es por QR).
+- Los topes de `point_actions` y los 45 s de El Freu son `muestra`: Álvaro los
+  ajusta. La lista de palabras ofensivas es mínima.
+
 ## 2026-10-03 — plan 007 T85: Cerrar lo abierto: D-26, REQ-ENT-028, regla de bajo consumo, tamaño del still
 
 Aplica las respuestas de Hernán del 2026-10-03 a lo que el plan 007 dejó
