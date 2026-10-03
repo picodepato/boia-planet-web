@@ -1,4 +1,6 @@
+import { SAMPLE_LINK_BASE } from '@boia/contracts/links';
 import type { AreaInput } from '../schema';
+import { artistPhotoPath, eventPosterPath, REAL_CONTENT, type RealContent } from './real-content';
 
 /**
  * Contenido de MUESTRA de la web (home, eventos, artistas, fotos, descuentos).
@@ -7,6 +9,10 @@ import type { AreaInput } from '../schema';
  * v14 es inventado y va marcado `sample`: eventos, fechas, enlaces (sandbox en
  * example.com), códigos de descuento. Los 26 artistas son la lista provisional
  * de v14 §18.1, textual, sin foto (avatar neutro).
+ *
+ * Lo real de Álvaro (enlaces, fotos de artistas, carteles) entra por
+ * `./real-content.ts` (plan 007 T82): cada `sample…(real)` de aquí pone lo
+ * real donde lo hay y deja el enlace sandbox (marcado «muestra») donde no.
  *
  * Los eventos con entradas van a sus islas del mapa compartido
  * (mundos/arcilla/mapa.json, D-20, y la Isla de Halloween de T67), no a la
@@ -51,62 +57,68 @@ export function slugify(s: string): string {
     .replace(/^-|-$/g, '');
 }
 
-const SANDBOX = 'https://example.com/boia-sandbox';
+const SANDBOX = SAMPLE_LINK_BASE;
 
-export const SAMPLE_HOME_BLOCKS: AreaInput<'homeBlocks'>[] = [
-  {
-    id: 'hero',
-    type: 'hero',
-    visible: true,
-    title: 'BOIA UNDERGROUND MUSIC FESTIVAL',
-    // §37.11, frase de trabajo. [pendiente Álvaro]
-    positioning: 'Música sin un único género. Cultura sin un único formato.',
-  },
-  { id: 'priority', type: 'priority_event', visible: true, eventId: 'halloween-2026' },
-  { id: 'upcoming', type: 'upcoming_events', visible: true, limit: 6 },
-  { id: 'photos', type: 'photos', visible: true, limit: 6 },
-  { id: 'artists', type: 'artists', visible: true, rotationMs: 5000 },
-  {
-    id: 'philosophy',
-    type: 'philosophy',
-    visible: true,
-    // Versión breve a partir de §37 (docs/spec/10-filosofia.md). [pendiente Álvaro]
-    paragraphs: [
-      'BOIA nace en Alicante para dar espacio a lo que merece ser descubierto: nuevos DJs, productores, directos y proyectos que no encajan en una escena de club segmentada por géneros.',
-      'No vienes simplemente a BOIA. Formas parte de BOIA.',
-    ],
-    verbs: [
-      { verb: 'Dar espacio', text: 'A artistas, proyectos, ideas y personas.' },
-      { verb: 'Descubrir', text: 'Música, cultura, personas y cosas que no esperabas.' },
-      { verb: 'Pertenecer', text: 'Formar parte de una comunidad, no mirarla desde fuera.' },
-    ],
-  },
-  {
-    id: 'store',
-    type: 'store',
-    visible: true,
-    url: `${SANDBOX}/tienda`,
-    products: ['Camisetas', 'Tote bags', 'Packs de pegatinas'],
-  },
-  {
-    id: 'contact',
-    type: 'contact',
-    visible: true,
-    email: 'hola@example.com',
-    links: [{ label: 'WhatsApp', url: `${SANDBOX}/whatsapp` }],
-  },
-  {
-    id: 'footer',
-    type: 'footer',
-    visible: true,
-    officialLinks: [
-      { label: 'Instagram', url: `${SANDBOX}/instagram` },
-      { label: 'TikTok', url: `${SANDBOX}/tiktok` },
-      // BOIA's playlist (plan 007 T79): the artists band and the footer link to it.
-      { label: 'Spotify', url: `${SANDBOX}/spotify/playlist/boia` },
-    ],
-  },
-];
+/** The home blocks with the real links where there are (P15) and sandbox ones elsewhere. */
+export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'homeBlocks'>[] {
+  const l = real.links;
+  return [
+    {
+      id: 'hero',
+      type: 'hero',
+      visible: true,
+      title: 'BOIA UNDERGROUND MUSIC FESTIVAL',
+      // §37.11, frase de trabajo. [pendiente Álvaro]
+      positioning: 'Música sin un único género. Cultura sin un único formato.',
+    },
+    { id: 'priority', type: 'priority_event', visible: true, eventId: 'halloween-2026' },
+    { id: 'upcoming', type: 'upcoming_events', visible: true, limit: 6 },
+    { id: 'photos', type: 'photos', visible: true, limit: 6 },
+    { id: 'artists', type: 'artists', visible: true, rotationMs: 5000 },
+    {
+      id: 'philosophy',
+      type: 'philosophy',
+      visible: true,
+      // Versión breve a partir de §37 (docs/spec/10-filosofia.md). [pendiente Álvaro]
+      paragraphs: [
+        'BOIA nace en Alicante para dar espacio a lo que merece ser descubierto: nuevos DJs, productores, directos y proyectos que no encajan en una escena de club segmentada por géneros.',
+        'No vienes simplemente a BOIA. Formas parte de BOIA.',
+      ],
+      verbs: [
+        { verb: 'Dar espacio', text: 'A artistas, proyectos, ideas y personas.' },
+        { verb: 'Descubrir', text: 'Música, cultura, personas y cosas que no esperabas.' },
+        { verb: 'Pertenecer', text: 'Formar parte de una comunidad, no mirarla desde fuera.' },
+      ],
+    },
+    {
+      id: 'store',
+      type: 'store',
+      visible: true,
+      url: l.store ?? `${SANDBOX}/tienda`,
+      products: ['Camisetas', 'Tote bags', 'Packs de pegatinas'],
+    },
+    {
+      id: 'contact',
+      type: 'contact',
+      visible: true,
+      email: l.email ?? 'hola@example.com',
+      links: [{ label: 'WhatsApp', url: l.whatsapp ?? `${SANDBOX}/whatsapp` }],
+    },
+    {
+      id: 'footer',
+      type: 'footer',
+      visible: true,
+      officialLinks: [
+        { label: 'Instagram', url: l.instagram ?? `${SANDBOX}/instagram` },
+        { label: 'TikTok', url: l.tiktok ?? `${SANDBOX}/tiktok` },
+        // BOIA's playlist (plan 007 T79): the artists band and the footer link to it.
+        { label: 'Spotify', url: l.spotifyPlaylist ?? `${SANDBOX}/spotify/playlist/boia` },
+      ],
+    },
+  ];
+}
+
+export const SAMPLE_HOME_BLOCKS: AreaInput<'homeBlocks'>[] = sampleHomeBlocks();
 
 /**
  * Los tres eventos con entradas (Álvaro, 2026-10-02), cada uno en su isla
@@ -129,7 +141,7 @@ export const TICKET_EVENT_ISLANDS: Readonly<Record<string, string>> = {
   [NOCHEVIEJA_EVENT_ID]: 'ultima',
 };
 
-export const SAMPLE_EVENTS: AreaInput<'events'>[] = [
+const BASE_EVENTS: AreaInput<'events'>[] = [
   {
     id: HALLOWEEN_EVENT_ID,
     slug: HALLOWEEN_EVENT_ID,
@@ -221,16 +233,45 @@ export const SAMPLE_EVENTS: AreaInput<'events'>[] = [
   },
 ];
 
+/** The events with their real ticket link (P15) and poster (P19) where there are. */
+export function sampleEvents(real: RealContent = REAL_CONTENT): AreaInput<'events'>[] {
+  return BASE_EVENTS.map((e) => {
+    const ticketUrl = real.links.tickets[e.id];
+    return {
+      ...e,
+      ...(ticketUrl ? { ticketUrl } : {}),
+      ...(real.eventPosters.includes(e.id) ? { posterUrl: eventPosterPath(e.id) } : {}),
+    };
+  });
+}
+
+export const SAMPLE_EVENTS: AreaInput<'events'>[] = sampleEvents();
+
 /**
- * Every other artist has a Spotify link (plan 007 T79): `muestra`, sandbox
- * URLs until Álvaro sends the real ones (P15; T82 makes them editable).
+ * The artists with their photo (P17) and Spotify (P15) where there are. Until
+ * Álvaro sends them, every other artist has a sandbox Spotify link (plan 007
+ * T79), marked «muestra» on the page.
  */
-export const SAMPLE_ARTISTS: AreaInput<'artists'>[] = ARTISTS_V14.map(([name, genres], i) => ({
-  id: slugify(name),
-  name,
-  genres,
-  ...(i % 2 === 0 ? { spotifyUrl: `${SANDBOX}/spotify/artist/${slugify(name)}` } : {}),
-}));
+export function sampleArtists(real: RealContent = REAL_CONTENT): AreaInput<'artists'>[] {
+  return ARTISTS_V14.map(([name, genres], i) => {
+    const id = slugify(name);
+    const spotify =
+      id in real.links.artistSpotify
+        ? real.links.artistSpotify[id]
+        : i % 2 === 0
+          ? `${SANDBOX}/spotify/artist/${id}`
+          : null;
+    return {
+      id,
+      name,
+      genres,
+      ...(real.artistPhotos.includes(id) ? { photoUrl: artistPhotoPath(id) } : {}),
+      ...(spotify ? { spotifyUrl: spotify } : {}),
+    };
+  });
+}
+
+export const SAMPLE_ARTISTS: AreaInput<'artists'>[] = sampleArtists();
 
 export const SAMPLE_ALBUMS: AreaInput<'albums'>[] = [
   {

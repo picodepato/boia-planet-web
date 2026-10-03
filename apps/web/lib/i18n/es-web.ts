@@ -52,6 +52,11 @@ const base = {
   'event.lineup': 'Cartel',
 
   'priority.heading': 'Próximo evento',
+  // Plan 007 T82: the poster slot of the priority event (P19) and the mark of a
+  // sandbox link (P15). muestra.
+  'priority.posterSoon': 'Cartel próximamente',
+  'priority.posterAlt': 'Cartel de {name}',
+  'link.sample': 'muestra',
   'upcoming.heading': 'Próximos eventos',
 
   'tickets.heading': 'Elige tu evento',

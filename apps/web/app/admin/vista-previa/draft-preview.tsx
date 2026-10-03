@@ -7,6 +7,7 @@ import { type HomeView, resolveHome } from '../../../lib/landing/resolve';
 import { setTextOverrides } from '../../../lib/landing/texts';
 import { gameRepository } from '../../../lib/repo';
 import { HomeBlocks } from '../../(landing)/components/blocks';
+import { SAMPLE_LABEL_STYLE } from '../../(landing)/components/sample-label';
 import { t } from '../../../lib/i18n';
 
 /**
@@ -43,7 +44,12 @@ export function DraftPreview() {
   }, []);
 
   return (
-    <div className="landing-root" data-testid="vista-previa-borrador" data-pendientes={pending}>
+    <div
+      className="landing-root"
+      style={SAMPLE_LABEL_STYLE}
+      data-testid="vista-previa-borrador"
+      data-pendientes={pending}
+    >
       <p
         role="note"
         style={{

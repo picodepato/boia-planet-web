@@ -204,6 +204,7 @@ export function BlockView({
               source="priority_event"
               featured
               display
+              poster
             />
           </div>
         </section>

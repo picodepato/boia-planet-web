@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { SAMPLE_LABEL_STYLE } from './components/sample-label';
 import './landing.css';
 
 /**
@@ -7,5 +8,9 @@ import './landing.css';
  */
 export default function LandingLayout({ children }: { children: ReactNode }) {
   // `display: contents`: la envoltura no cuenta en el diseño.
-  return <div className="landing-root">{children}</div>;
+  return (
+    <div className="landing-root" style={SAMPLE_LABEL_STYLE}>
+      {children}
+    </div>
+  );
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eventSchema } from './events';
+import { eventSchema, imageRefSchema } from './events';
 import { homeBlocksSchema } from './home-blocks';
 
 /** Personas detrás del sonido (v14 §18, REQ-COM-027, REQ-COM-028). */
@@ -7,8 +7,12 @@ export const artistSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   genres: z.array(z.string().min(1)).min(1),
-  /** Sin foto aprobada se muestra un avatar neutro. */
-  photoUrl: z.url().optional(),
+  /**
+   * Foto (P17), también la del Carnet del artista. Sin foto aprobada, avatar
+   * neutro. Las de Álvaro van en `/contenido/artistas/<id>.webp`
+   * (docs/contenido-real.md, plan 007 T82); también vale una URL https.
+   */
+  photoUrl: imageRefSchema.optional(),
   /** The artist on Spotify: a plain link, nothing loaded from Spotify (plan 007 T79). */
   spotifyUrl: z.url().optional(),
 });

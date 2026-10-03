@@ -3,6 +3,7 @@
 import type { Artist } from '@boia/contracts';
 import { useState } from 'react';
 import { slugify } from '../../../lib/admin/actions';
+import { artistFormOf, artistFromForm, genresOf } from '../../../lib/admin/artist-form';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import {
@@ -16,12 +17,6 @@ import {
 } from '../ui';
 import { t } from '../../../lib/i18n';
 
-const genresOf = (s: string) =>
-  s
-    .split(',')
-    .map((g) => g.trim())
-    .filter(Boolean);
-
 function ArtistRow({
   ctx,
   artist,
@@ -31,24 +26,36 @@ function ArtistRow({
   artist: Artist;
   changed: boolean;
 }) {
-  const [name, setName] = useState(artist.name);
-  const [genres, setGenres] = useState(artist.genres.join(', '));
-  const [photo, setPhoto] = useState(artist.photoUrl ?? '');
+  const [form, setForm] = useState(() => artistFormOf(artist));
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
   const { status, busy, run } = useRun();
   return (
     <li className="admin-card" data-testid={`artista-${artist.id}`}>
       <div className="admin-grid">
         <Field label={t('admin.artists.nombre')}>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
+          <input value={form.name} onChange={set('name')} />
         </Field>
         <Field label={t('admin.artists.generosSeparadosPorComas')}>
-          <input value={genres} onChange={(e) => setGenres(e.target.value)} />
+          <input value={form.genres} onChange={set('genres')} />
         </Field>
         <Field
           label={t('admin.artists.fotoUrlOpcional')}
-          hint={t('admin.artists.sinFotoAprobadaAvatar')}
+          hint={t('admin.artists.sinFotoAprobadaAvatar', { id: artist.id })}
         >
-          <input type="url" value={photo} onChange={(e) => setPhoto(e.target.value)} />
+          <input
+            value={form.photo}
+            onChange={set('photo')}
+            data-testid={`artista-foto-${artist.id}`}
+          />
+        </Field>
+        <Field label={t('admin.artists.spotify')} hint={t('admin.artists.spotifyHint')}>
+          <input
+            type="url"
+            value={form.spotify}
+            onChange={set('spotify')}
+            data-testid={`artista-spotify-${artist.id}`}
+          />
         </Field>
       </div>
       <div className="admin-row">
@@ -59,16 +66,9 @@ function ArtistRow({
           disabled={busy}
           onClick={() =>
             void run(() =>
-              ctx.repo.admin.upsert(
-                'artists',
-                {
-                  id: artist.id,
-                  name,
-                  genres: genresOf(genres),
-                  ...(photo ? { photoUrl: photo } : {}),
-                },
-                { reason: 'artista' },
-              ),
+              ctx.repo.admin.upsert('artists', artistFromForm(artist, form), {
+                reason: 'artista',
+              }),
             )
           }
         >
@@ -143,7 +143,7 @@ export function ArtistsSection({ ctx }: { ctx: AdminContext }) {
       <ul className="admin-list">
         {artists.map((a) => (
           <ArtistRow
-            key={`${a.id}|${a.name}|${a.genres.join()}|${a.photoUrl}`}
+            key={`${a.id}|${a.name}|${a.genres.join()}|${a.photoUrl}|${a.spotifyUrl}`}
             ctx={ctx}
             artist={a}
             changed={changedSet.has(a.id)}

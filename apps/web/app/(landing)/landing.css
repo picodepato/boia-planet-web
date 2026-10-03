@@ -156,7 +156,8 @@ body {
 .hero__hint,
 .intro-loading,
 main[data-contenido] > .section > .section__inner > .section__title,
-.event-card__meta {
+.event-card__meta,
+p.event-card__poster {
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 600;
@@ -1087,6 +1088,56 @@ main[data-contenido] .event-card--featured .event-card__desc {
     font-size: 40px;
     line-height: 1.08;
   }
+}
+
+/* The poster slot (T82, T77 §8): 3:4, above the text on phones, at the right
+   edge of the content column from 900 px (220 px wide at 1280); until there
+   is a poster, a dark gradient with «Cartel próximamente». */
+.event-card__poster {
+  display: block;
+  width: min(100%, 260px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  margin: 0 0 24px;
+  object-fit: cover;
+}
+
+p.event-card__poster {
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  background: linear-gradient(160deg, #1b1430, #3a1a1a);
+  color: var(--on-dark-70);
+}
+
+@media (min-width: 900px) {
+  .event-card__poster {
+    float: right;
+    width: 220px;
+    margin-left: 40px;
+  }
+  /* The card holds the float; the hairline under the venue stops beside it. */
+  .event-card--featured,
+  .event-card--featured > .event-card__when {
+    display: flow-root;
+  }
+}
+
+/* «muestra» after a sandbox link (T82, P15) until the real one is in the
+   content: example.com/.net/.org can never be BOIA's. The label is i18n
+   (`link.sample`, set on .landing-root). Not on «Comprar», whose sandbox
+   link only lives until hydration. */
+a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.button--buy)::after {
+  content: var(--sample-label);
+  /* inline-block: the link's underline does not run through the mark. */
+  display: inline-block;
+  margin-left: 0.6em;
+  padding: 0 0.6em;
+  border: 1px solid;
+  border-radius: 9em;
+  font: 600 10px var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* Próximos eventos: rows divided by hairlines. */

@@ -21,6 +21,7 @@ import { SAMPLE_ACHIEVEMENTS, SAMPLE_COSMETICS, SAMPLE_RANKS } from './progress'
 export * from './content';
 export * from './crew';
 export * from './progress';
+export * from './real-content';
 
 /** Muestra de entrada (sin validar): lo que se puede pasar a `createLocalRepository`. */
 export type SampleInput = { [A in EntityArea]: AreaInput<A>[] } & {

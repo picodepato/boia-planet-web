@@ -17,7 +17,14 @@ export function ArtistCard({ artist, genresLabel }: { artist: Artist; genresLabe
     <article className="artist-card">
       {artist.photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- fotos del Admin, dominio aún sin fijar
-        <img className="artist-card__photo" src={artist.photoUrl} alt="" width={96} height={96} />
+        <img
+          className="artist-card__photo"
+          src={artist.photoUrl}
+          alt=""
+          width={96}
+          height={96}
+          loading="lazy"
+        />
       ) : (
         <span className="artist-card__avatar" aria-hidden="true">
           {initials(artist.name)}

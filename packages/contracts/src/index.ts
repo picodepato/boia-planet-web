@@ -5,3 +5,4 @@ export * from './content';
 export * from './analytics';
 export * from './carnet';
 export * from './progress';
+export * from './links';

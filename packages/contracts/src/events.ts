@@ -35,8 +35,8 @@ export type EventFormat = z.infer<typeof eventFormatSchema>;
 export const EVENT_STATE_SOURCES = ['dates', 'manual'] as const;
 export type EventStateSource = (typeof EVENT_STATE_SOURCES)[number];
 
-/** Una imagen propia (`/…`) o externa (`https://…`). */
-const imageRef = z.string().regex(/^(https?:\/\/|\/)\S+$/, 'ruta /… o URL https://…');
+/** Una imagen propia (`/…`, en `apps/web/public`) o externa (`https://…`). */
+export const imageRefSchema = z.string().regex(/^(https?:\/\/|\/)\S+$/, 'ruta /… o URL https://…');
 const isoOffset = z.iso.datetime({ offset: true });
 
 export const eventSchema = z.object({
@@ -73,8 +73,11 @@ export const eventSchema = z.object({
   artistIds: z.array(z.string()),
   /** Actividades además de la música (comida, mercadillo…). */
   activities: z.array(z.string().min(1)).default([]),
-  /** Cartel; sin él se enseña «Cartel próximamente». */
-  posterUrl: imageRef.optional(),
+  /**
+   * Cartel (P19); sin él se enseña «Cartel próximamente». Los de Álvaro van
+   * en `/contenido/carteles/<id>.webp` (docs/contenido-real.md, plan 007 T82).
+   */
+  posterUrl: imageRefSchema.optional(),
   /** Precio de una entrada en céntimos (sale de `lib/ticketing/pricing.ts`, T42). */
   priceCents: z.number().int().nonnegative().optional(),
   /** El precio es de muestra hasta que Álvaro lo fije (D-06). */

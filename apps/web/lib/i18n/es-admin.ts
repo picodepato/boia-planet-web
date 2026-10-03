@@ -85,8 +85,12 @@ export const esAdmin = {
   'admin.achievements.rangos': 'Rangos',
   'admin.artists.nombre': 'Nombre',
   'admin.artists.generosSeparadosPorComas': 'Géneros (separados por comas)',
-  'admin.artists.fotoUrlOpcional': 'Foto (URL, opcional)',
-  'admin.artists.sinFotoAprobadaAvatar': 'Sin foto aprobada, avatar neutro.',
+  'admin.artists.fotoUrlOpcional': 'Foto (ruta o URL, opcional)',
+  'admin.artists.sinFotoAprobadaAvatar':
+    'La de Álvaro: /contenido/artistas/{id}.webp (docs/contenido-real.md). Vacío: avatar neutro.',
+  'admin.artists.spotify': 'Spotify (URL, opcional)',
+  'admin.artists.spotifyHint':
+    'Enlace normal que se abre en otra pestaña. Uno de example.com sale marcado «muestra». Vacío: sin enlace.',
   'admin.artists.guardar': 'Guardar',
   'admin.artists.artistas': 'Artistas',
   'admin.artists.artistasLaHomeLos': '{length} artistas. La home los rota de tres en tres.',
@@ -172,7 +176,8 @@ export const esAdmin = {
   'admin.events.precioDeLaCompra': 'Precio de la compra de prueba.',
   'admin.events.precioDeMuestra': 'Precio de muestra',
   'admin.events.cartelUrl': 'Cartel (URL)',
-  'admin.events.vacioCartelProximamente': 'Vacío: «Cartel próximamente».',
+  'admin.events.vacioCartelProximamente':
+    'El de Álvaro: /contenido/carteles/<id del evento>.webp (docs/contenido-real.md). Vacío: «Cartel próximamente».',
   'admin.events.enlaceDeEntradas': 'Enlace de entradas',
   'admin.events.sandboxHastaQueHaya': 'Sandbox hasta que haya ticketera (D-06, D-20).',
   'admin.events.descripcion': 'Descripción',

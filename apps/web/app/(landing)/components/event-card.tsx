@@ -35,6 +35,7 @@ export function EventCard({
   headingLevel = 3,
   featured = false,
   display = false,
+  poster = false,
   nextAllDay,
 }: {
   /** Con su estado de ahora (`resolveHome`). */
@@ -47,6 +48,11 @@ export function EventCard({
   featured?: boolean;
   /** The date as the band's display line («31 OCT»; plan 007 T79, the priority event). */
   display?: boolean;
+  /**
+   * The poster slot (plan 007 T82, P19; T77 §8): the event's poster, or
+   * «Cartel próximamente» on a dark 3:4 placeholder until there is one.
+   */
+  poster?: boolean;
   /**
    * El próximo All Day, para la línea de un satélite sin isla (REQ-COM-010,
    * O7). `undefined`: aquí no se enseña; `null`: no hay próximo All Day.
@@ -66,6 +72,21 @@ export function EventCard({
       data-evento={event.id}
       data-estado={event.state}
     >
+      {poster &&
+        (event.posterUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- the poster is content (real-content.ts or the Admin)
+          <img
+            className="event-card__poster"
+            src={event.posterUrl}
+            alt={t('priority.posterAlt', { name: event.name })}
+            width={600}
+            height={800}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <p className="event-card__poster">{t('priority.posterSoon')}</p>
+        ))}
       {display && (
         // The full date is read below (`event-card__when`); this is its display.
         <p className="event-card__date" aria-hidden="true">

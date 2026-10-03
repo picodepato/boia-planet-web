@@ -4,6 +4,90 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T82: La landing lista para el contenido real
+
+Qué existe:
+- **Un solo sitio para lo real de Álvaro**:
+  `packages/store/src/sample/real-content.ts` (`REAL_CONTENT`). El contenido
+  de muestra se construye desde él (`sampleHomeBlocks(real)`,
+  `sampleEvents(real)`, `sampleArtists(real)` en `sample/content.ts`; las
+  constantes `SAMPLE_*` son esas funciones con `REAL_CONTENT`): meter lo
+  real no toca ningún componente.
+  - Enlaces (P15): entradas por evento, tienda, WhatsApp, Instagram, TikTok,
+    correo, lista de Spotify de BOIA y Spotify de cada artista. `null` (o
+    sin entrada) es la marca `muestra`: se usa el enlace sandbox de
+    `example.com`. En `artistSpotify`, `null` = el artista no tiene (sin
+    enlace); sin entrada = sigue el de prueba.
+  - Fotos de artistas (P17): ids en `artistPhotos` →
+    `/contenido/artistas/<id>.webp` en `photoUrl` (el campo de avatar de
+    siempre; también es la foto de su Carnet de artista). Sin foto: en la
+    banda sólo el nombre, en `/artistas` y el Carnet el avatar de iniciales.
+  - Carteles (P19): ids en `eventPosters` →
+    `/contenido/carteles/<id>.webp` en `posterUrl`.
+  - Carpetas `apps/web/public/contenido/{artistas,carteles}/` (con
+    `.gitkeep`).
+- **Marca visible «MUESTRA»**: cualquier enlace de la landing (y de las
+  páginas de `(landing)` y la vista previa del Admin) a
+  example.com/.net/.org lleva detrás una etiqueta «MUESTRA» (contorno,
+  10 px, versalitas). Es CSS (`landing.css`, `a:is([href*='example.com'],
+  …):not(.button--buy)::after`) con el texto por clave (`link.sample`,
+  puesto como `--sample-label` en `.landing-root` por
+  `components/sample-label.ts`): 0 bytes de JS. Se quita sola al poner la
+  URL real, venga del archivo o del Admin. «Comprar» no la lleva (su enlace
+  sandbox sólo vive hasta hidratar; marcarlo movería la maquetación).
+  `isSampleLink` (`@boia/contracts/links`, sin zod) dice lo mismo en código.
+- **Hueco del cartel** en la banda «Próximo evento» (T77 §8): 3:4, encima
+  del texto en móvil (hasta 260 px), a la derecha de la columna desde
+  900 px (220 px de ancho); sin cartel, degradado `#1b1430 → #3a1a1a` con
+  «Cartel próximamente» (`priority.posterSoon`); con cartel, `<img>` lazy
+  con alt «Cartel de {nombre}» (`priority.posterAlt`). Prop `poster` de
+  `EventCard`; sólo la usa el bloque del evento prioritario.
+- Contratos: `photoUrl` del artista acepta una ruta propia (`/…`) además de
+  una URL https (`imageRefSchema`, el mismo de `posterUrl`).
+- Admin → Artistas: arreglado que guardar perdía `spotifyUrl`
+  (`lib/admin/artist-form.ts`: guarda lo que el artista ya tenía con el
+  formulario encima); nuevo campo «Spotify (URL, opcional)»; la foto admite
+  la ruta (`/contenido/artistas/<id>.webp`) y la pista lo dice. La pista del
+  cartel en Eventos nombra su ruta.
+- `docs/contenido-real.md` (para Álvaro y Hernán): qué entregar, formato
+  (proporción, tamaño, WebP, peso máximo) y archivo o campo del Admin de
+  cada cosa: cartel de Halloween y de los otros eventos (P19), foto de cada
+  artista y la de su Carnet (P17; las respuestas del Carnet de artista aún
+  no tienen sitio), foto del Carnet de visitante (no se entrega), y los 8
+  enlaces (P15); con la tabla de ids de los 26 artistas. `docs/entrega.md`
+  (fila 15) lo enlaza.
+- Pruebas: `apps/web/app/(landing)/components/real-content.test.ts` (un
+  `RealContent` de prueba con cartel, fotos y enlaces reales sale en los
+  bloques sin ninguna marca; la muestra pinta «Cartel próximamente», sin
+  fotos, y cada enlace sandbox queda marcado por la regla de `landing.css`
+  y ninguno real; archivos de `public/contenido` y listas coinciden; el
+  documento nombra cada artista y cada enlace de entradas),
+  `packages/contracts/src/links.test.ts`, `apps/web/lib/admin/artist-form.test.ts`.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 112 archivos, 1000 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm
+  typecheck` → exit 0.
+- `pnpm build` → exit 0; «185.3 kB total, 13 archivos · presupuesto
+  200.0 kB · OK» (T80: 184,8 kB; +0,5 kB: CSS del hueco y de la marca
+  +0,2, JS +0,2, HTML +0,1). Una primera versión con la marca como `<span>`
+  en cada enlace pesaba +0,9 kB; por eso es CSS.
+- Extra: `E2E_PORT=3421 pnpm e2e landing.spec.ts landing-scroll.spec.ts
+  --workers=1` → exit 0, 32 pasan (axe y contraste sin cambios), más
+  capturas de comprobación del hueco y las marcas (fuera del repo).
+
+Pendiente:
+- Las respuestas del Carnet de cada artista (P17) no tienen campo: hace
+  falta código cuando lleguen.
+- El Admin no edita los enlaces de tienda, contacto y pie (no lo hacía
+  antes): en la versión de prueba el Admin sólo cambia el navegador de quien
+  lo usa, así que lo real va en `real-content.ts`.
+- T83: REQ-PRO-018 («Contenido no aprobado, marcado», FALTA) puede pasar a
+  PARCIAL con `real-content.test.ts` (los enlaces sí; textos y fechas no).
+- Las fotos de la galería (Fotos) siguen por Admin → Fotos con URL https; no
+  tienen carpeta propia.
+
 ## 2026-10-03 — plan 007 T84: Los e2e que cambió el hero nuevo
 
 Qué existe:
