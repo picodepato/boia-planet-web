@@ -30,7 +30,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T86 — Supabase foundation: clients, migrations, validated RPCs and integration tests
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
@@ -55,7 +55,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T87 — Design: the ID-card Carnet, the scan flow, the sign-in sheet and the rankings
-- Status: pending
+- Status: blocked
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (invoke first with the Skill tool)
 - Depends on: none
@@ -84,7 +84,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T88 — /mar: guide lines off during the race; bottles where they can be read
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
@@ -254,3 +254,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-03 10:59 T86 launched · attempt 1 · agent acaf409f9b8ab837f
+- 2026-10-03 10:59 T87 launched · attempt 1 · agent af80896be8477f7dc
+- 2026-10-03 11:25 T87 blocked · Hernán approves the design (16 frames, 7 open questions) · branch worktree-agent-af80896be8477f7dc
+- 2026-10-03 11:26 T88 launched · attempt 1 · agent a811042d3613c3ad7
