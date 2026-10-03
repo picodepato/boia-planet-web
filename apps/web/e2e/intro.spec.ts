@@ -2,24 +2,26 @@ import { DEFAULT_PLANET_INTRO } from '@boia/engine/intro';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
+import { ZARPAR_HREF } from '../lib/intro/zarpar';
 
 /**
- * Entrada 3D con el planeta de /mar (T57, T64; D-19, D-21, D-24;
- * REQ-ENT-001…020, ENT 01–03). La entrada depende sólo de la URL (D-21): `/`
- * a secas la reproduce en cada carga completa, también con etiquetas de
- * campaña o de compartir; una URL que apunta a algo concreto entra directa.
- * «Zarpar» entra en el juego (T64): se zambulle en el puerto del planeta y
- * acaba en /mar con la bienvenida de la boia abierta; «Saltar animación» y
- * «Solo quiero ver las entradas» llevan a la landing. El estado se lee de
- * `window.__boiaIntro` (diagnóstico público de la entrada).
+ * Entrada 3D con el planeta de /mar (T57, T64; plan 007 T79; D-19, D-21,
+ * D-24; REQ-ENT-001…020, ENT 01–03). La entrada depende sólo de la URL (D-21):
+ * `/` a secas reproduce la aparición en cada carga completa, también con
+ * etiquetas de campaña o de compartir; una URL que apunta a algo concreto
+ * nace en reposo, sin aparición. En reposo están «Zarpar», «Entradas» y la
+ * pista del scroll (plan 007: sin «Saltar animación» ni avance automático);
+ * «Zarpar» se zambulle en el puerto del planeta y acaba en /mar con la
+ * bienvenida de la boia abierta (T64). Sin escena (movimiento reducido, sin
+ * WebGL, una escena que no llega) se ve la versión estática. El estado se lee
+ * de `window.__boiaIntro` (diagnóstico público de la entrada).
  */
 
 /** Las islas del mundo activo de /mar, de la fuente: las mismas que lleva el planeta. */
 const marIslands = marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config)
   .objects.filter(
     (o) =>
-      o.identity.active &&
-      (o.identity.category === 'isla' || o.identity.category === 'naufrago'),
+      o.identity.active && (o.identity.category === 'isla' || o.identity.category === 'naufrago'),
   )
   .map((o) => o.identity.id)
   .sort();
@@ -30,21 +32,28 @@ const diag = (page: Page) => page.evaluate(() => window.__boiaIntro ?? null);
 const phaseIs = (page: Page, phase: string, timeout = 20_000) =>
   page.waitForFunction((p) => window.__boiaIntro?.phase === p, phase, { timeout });
 
-async function waitLanded(page: Page, timeout = 20_000): Promise<Diag> {
-  await phaseIs(page, 'landed', timeout);
+/** The rest: the page is shown (no `data-intro`). */
+async function waitRest(page: Page, timeout = 20_000): Promise<Diag> {
+  await phaseIs(page, 'paused', timeout);
   await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
   return (await diag(page))!;
 }
 
+/** The static version: no scene, T78's still (plan 007). */
+async function waitStatic(page: Page, timeout = 20_000): Promise<Diag> {
+  await page.waitForFunction(() => window.__boiaIntro?.fallback === true, null, { timeout });
+  await expect(page.locator('html')).toHaveAttribute('data-hero', 'still');
+  await expect(page.locator('.hero__still-img').first()).toBeVisible();
+  return waitRest(page);
+}
+
 const hero = (page: Page) => page.locator('.hero');
 const worldCta = (page: Page) => page.getByTestId('cta-3d');
-const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Tickets', exact: true });
+const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Entradas', exact: true });
 const ticketsPanel = (page: Page) => page.getByRole('dialog', { name: 'Elige tu evento' });
 const canvases = (page: Page) => page.locator('.hero__scene canvas');
-const title = (page: Page) => page.locator('.intro-overlay__title');
-const enterButton = (page: Page) => page.getByRole('button', { name: 'Zarpar' });
-const ticketsOnly = (page: Page) =>
-  page.getByRole('link', { name: 'Solo quiero ver las entradas' });
+const title = (page: Page) => page.locator('.hero__wordmark');
+const enterButton = (page: Page) => hero(page).getByRole('link', { name: 'Zarpar', exact: true });
 const title3d = (page: Page) => page.locator('.intro-title3d');
 /** Píxeles con tinta en el canvas del título 3D. */
 const titleInk = (page: Page) =>
@@ -91,15 +100,12 @@ async function inTheGame(page: Page): Promise<Diag> {
   await expect(welcome).toBeVisible();
   await expect(welcome.getByTestId('mar-bienvenida-boia')).toBeVisible();
   await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
-  await expect(page.locator('.intro-overlay')).toHaveCount(0);
+  await expect(page.locator('.hero')).toHaveCount(0);
   const d = (await diag(page))!;
   // Llegó zarpando y la entrada se recogió al dejar la landing.
   expect(d.history.slice(-2)).toEqual(['landed', 'destroyed']);
-  expect(d.outcome).toBe('played');
   expect(d.exit).toBe('game');
   expect(d.cover, 'el velo del mar cubría la vista al salir').toBe(1);
-  // El planeta de la entrada era el mundo que se abre.
-  await expect(page.locator('main.mar')).toHaveAttribute('data-mundo', d.world!);
   // Se entró a explorar desde la entrada; la landing no se llegó a ver.
   expect(await exploreSources(page)).toEqual(['intro']);
   expect(await landingViews(page)).toEqual([]);
@@ -118,12 +124,12 @@ async function receivesTaps(page: Page, testId: 'cta-3d' | 'tickets') {
   expect(hit, `${testId} recibe el toque`).toBe(href);
 }
 
-/** El hero tiene exactamente dos botones: el mundo 3D y Tickets (T57). */
+/** El hero tiene exactamente dos botones: «Zarpar» (el mar 3D) y «Entradas» (plan 007). */
 async function twoHeroButtons(page: Page) {
   const actions = hero(page).locator('.hero__actions a');
   await expect(actions).toHaveCount(2);
   expect(await actions.evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual([
-    '/mar',
+    ZARPAR_HREF,
     '#tickets',
   ]);
   await expect(worldCta(page)).toBeVisible();
@@ -164,32 +170,40 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
 
   // Acto 1: el planeta aparece. Sólo hay dos acciones, y ninguna obligatoria.
   await phaseIs(page, 'appearing');
-  // Lo que se puede pulsar durante la aparición, leído de una vez con la fase.
+  // Lo que se puede pulsar en pantalla durante la aparición, leído de una vez con la fase.
   const during = await page.evaluate(() => ({
     phase: window.__boiaIntro?.phase,
     actions: [...document.querySelectorAll<HTMLElement>('a, button, input, select')]
       .filter((el) => {
         const s = getComputedStyle(el);
         const b = el.getBoundingClientRect();
-        return s.visibility !== 'hidden' && s.display !== 'none' && b.width > 0 && b.height > 0;
+        return (
+          s.visibility !== 'hidden' &&
+          s.display !== 'none' &&
+          b.width > 1 &&
+          b.height > 1 &&
+          b.bottom > 0 &&
+          b.top < window.innerHeight
+        );
       })
       .map((el) => el.innerText.trim()),
   }));
   expect(during.phase).toBe('appearing');
-  expect(during.actions).toEqual(['Solo quiero ver las entradas', 'Saltar animación']);
+  expect(during.actions).toEqual(['Zarpar', 'Entradas']);
   await expect(canvases(page)).toHaveCount(1);
   await expect(canvases(page)).toHaveAttribute('data-scene', 'boia-intro-scene');
 
-  // Acto 2: «BOIA» y el botón, con el foco; la pausa no avanza sola.
+  // Acto 2, el reposo: «BOIA» y el botón, con el foco; no avanza solo.
   await phaseIs(page, 'paused');
   await expect(title(page)).toHaveText('BOIA');
   await expect(enterButton(page)).toBeVisible();
   await expect(enterButton(page)).toBeFocused();
+  await expect(page.locator('.hero__hint')).toBeVisible();
   // Título 3D (T27): la hoja llega después del planeta y las letras se mueven solas.
   await expect(title(page)).toHaveAttribute('data-title', '3d', { timeout: 10_000 });
   await page.waitForTimeout(1500);
   expect((await diag(page))!.phase).toBe('paused');
-  expect(await opacity(page, '.intro-overlay__title')).toBe(1);
+  expect(await opacity(page, '.hero__wordmark')).toBe(1);
   await expect(title3d(page)).toBeVisible();
   expect(await titleInk(page), 'las letras tienen tinta').toBeGreaterThan(2000);
   const t = (await diag(page))!.title;
@@ -197,12 +211,13 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
   const pose = await titlePose(page);
   await page.waitForTimeout(400);
   expect(await titlePose(page), 'las letras se mueven en reposo').not.toBe(pose);
-  await expect(ticketsOnly(page)).toBeVisible();
+  await expect(heroTickets(page)).toBeVisible();
   // El planeta es el de /mar: el mundo activo, con exactamente sus islas (T64).
   const ready = (await diag(page))!;
   expect(ready.world).toBe(WORLD_REGISTRY.defaultId);
   expect([...ready.islandIds!].sort()).toEqual(marIslands);
   expect(ready.islands).toBe(marIslands.length);
+  expect(ready.outcome).toBe('played');
 
   // Acto 3: Enter (el botón tiene el foco) → «Zarpar»: la zambullida y el juego.
   await markNoReload(page);
@@ -231,12 +246,13 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
   await expect(page.getByTestId('mar-bienvenida')).toHaveCount(0);
   await expect(page.getByTestId('mar-entradas')).toBeVisible();
 
-  // Atrás: la landing, directa, sin repetir la entrada (D-21).
+  // Atrás: la landing, en reposo, sin repetir la entrada (D-21).
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
   await page.waitForFunction(
-    () => window.__boiaIntro?.mode === 'direct' && window.__boiaIntro.phase === 'landed',
+    () => window.__boiaIntro?.mode === 'direct' && window.__boiaIntro.phase === 'paused',
   );
+  expect((await diag(page))!.history).toEqual(['paused']);
   await twoHeroButtons(page);
 });
 
@@ -268,10 +284,11 @@ test('una escena lenta (más que el antiguo plazo de 2 s) no se salta la entrada
   });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
-  // Mientras tanto: «Cargando», con Tickets y «Saltar» a mano.
+  // Mientras tanto: «Cargando», con «Entradas» y «Zarpar» a mano.
   await expect(page.locator('.intro-loading')).toBeVisible();
   await expect(page.locator('.intro-loading')).toContainText('Cargando');
-  await expect(ticketsOnly(page)).toBeVisible();
+  await expect(heroTickets(page)).toBeVisible();
+  await expect(enterButton(page)).toBeVisible();
   await page.waitForTimeout(2600);
   expect((await diag(page))!.phase, 'sigue esperando a la escena').toBe('waiting');
   await expect(page.locator('html')).toHaveAttribute('data-intro', 'play');
@@ -286,8 +303,7 @@ test('una escena lenta (más que el antiguo plazo de 2 s) no se salta la entrada
   await inTheGame(page);
 });
 
-
-test('una escena que no llega en el plazo: «Cargando» y luego la landing ligera (REQ-ENT-007)', async ({
+test('una escena que no llega en el plazo: «Cargando» y luego la versión estática (REQ-ENT-007)', async ({
   page,
 }) => {
   test.setTimeout(60_000);
@@ -295,10 +311,9 @@ test('una escena que no llega en el plazo: «Cargando» y luego la landing liger
   await onSceneChunk(page, () => new Promise(() => {}));
   await page.goto('/');
   await expect(page.locator('.intro-loading')).toBeVisible();
-  const d = await waitLanded(page, DEFAULT_PLANET_INTRO.loadBudgetMs + 15_000);
+  const d = await waitStatic(page, DEFAULT_PLANET_INTRO.loadBudgetMs + 15_000);
   expect(d.outcome).toBe('none');
   expect(d.history).not.toContain('appearing');
-  await expect(page.locator('.hero__planet')).toBeVisible();
   await twoHeroButtons(page);
 });
 
@@ -340,20 +355,34 @@ test('abierta en segundo plano: la entrada espera y se ve al mirar la pestaña (
   expect(d.appearedMs!).toBeGreaterThanOrEqual(DEFAULT_PLANET_INTRO.appear.durationMs);
 });
 
-test('«Solo quiero ver las entradas» lleva a Tickets sin el botón ni la animación (REQ-ENT-002)', async ({
+test('«Entradas» durante la aparición abre Tickets y deja el hero en reposo (REQ-ENT-002)', async ({
   page,
 }) => {
   await page.goto('/');
   await phaseIs(page, 'appearing');
-  await ticketsOnly(page).click();
+  await heroTickets(page).click();
   await expect(ticketsPanel(page)).toBeVisible();
-  const d = await waitLanded(page, 3000);
+  const d = await waitRest(page, 3000);
   expect(d.outcome).toBe('skipped');
   expect(d.history).not.toContain('landing');
   expect(new URL(page.url()).pathname).toBe('/');
-  expect(d.exit).toBe('landing');
-  expect(await landingViews(page)).toEqual(['skipped']);
+  expect(d.exit).toBeNull();
+  // La vista de la landing cuenta al pasar el hero con el scroll (plan 007), no aquí.
+  expect(await landingViews(page)).toEqual([]);
   expect(await exploreSources(page)).toEqual([]);
+});
+
+test('un scroll durante la aparición la adelanta al reposo y la escena sigue el scroll (plan 007)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await phaseIs(page, 'appearing');
+  await page.evaluate(() => window.scrollTo({ top: innerHeight * 0.4, behavior: 'instant' }));
+  const d = await waitRest(page, 5000);
+  expect(d.outcome).toBe('skipped');
+  expect(d.history).toEqual(['waiting', 'appearing', 'paused']);
+  await page.waitForFunction(() => window.__boiaIntro!.scroll.phase === 'dive');
+  await oneScene(page);
 });
 
 test('botón pulsado dos veces: un solo «Zarpar», una sola escena, un solo viaje (ENT 03)', async ({
@@ -363,7 +392,7 @@ test('botón pulsado dos veces: un solo «Zarpar», una sola escena, un solo via
   await page.goto('/');
   await phaseIs(page, 'paused');
   await page.evaluate(() => {
-    const b = document.querySelector<HTMLButtonElement>('[data-intro-enter]');
+    const b = document.querySelector<HTMLElement>('[data-zarpar="hero"]');
     b?.click();
     b?.click();
   });
@@ -377,54 +406,42 @@ test('botón pulsado dos veces: un solo «Zarpar», una sola escena, un solo via
   await expect(page.locator('canvas[data-scene="boia-intro-scene"]')).toHaveCount(0);
 });
 
-test('«Saltar» cinco veces y Escape en la pausa: la misma landing (REQ-ENT-008, ENT 03)', async ({
+test('Escape cinco veces en reposo: nada cambia, una escena, los dos botones (REQ-ENT-008, ENT 03)', async ({
   page,
 }) => {
   await page.goto('/');
   await phaseIs(page, 'paused');
-  await page.evaluate(() => {
-    const skip = document.querySelector<HTMLButtonElement>('.intro-overlay__skip');
-    for (let i = 0; i < 5; i++) skip?.click();
-  });
-  await page.keyboard.press('Escape');
-  const d = await waitLanded(page, 2000);
-  expect(d.outcome).toBe('skipped');
-  expect(d.exit).toBe('landing');
-  expect(d.history).not.toContain('landing');
+  for (let i = 0; i < 5; i++) await page.keyboard.press('Escape');
+  const d = await waitRest(page, 2000);
+  expect(d.outcome).toBe('played');
+  expect(d.history).toEqual(['waiting', 'appearing', 'paused']);
   await oneScene(page);
   expect(new URL(page.url()).pathname).toBe('/');
-  expect(await landingViews(page)).toEqual(['skipped']);
   await twoHeroButtons(page);
   await receivesTaps(page, 'tickets');
   await receivesTaps(page, 'cta-3d');
-  // El horizonte del planeta queda detrás del hero, girando.
+  // El planeta en reposo, entero en la vista.
   const pose = (await diag(page))!.pose!;
-  const top = pose.y - pose.radius;
-  expect(top).toBeGreaterThan(0);
-  expect(top).toBeLessThan(page.viewportSize()!.height);
+  expect(pose.y - pose.radius).toBeGreaterThan(0);
+  expect(pose.y + pose.radius).toBeLessThan(page.viewportSize()!.height);
 });
 
-test('«Saltar» durante «Zarpar»: termina una vez, sin duplicar la escena', async ({ page }) => {
+test('Escape durante «Zarpar» no lo corta: una zambullida, una escena, al juego', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
   await page.goto('/');
   await phaseIs(page, 'paused');
   await enterButton(page).click();
   await phaseIs(page, 'landing');
-  await page.evaluate(() => {
-    const skip = document.querySelector<HTMLButtonElement>('.intro-overlay__skip');
-    skip?.click();
-    skip?.click();
-  });
-  const d = await waitLanded(page, 2000);
-  expect(d.outcome).toBe('skipped');
-  expect(d.exit).toBe('landing');
-  await oneScene(page);
-  // Saltar se queda en la landing, también a medio zarpar.
-  await page.waitForTimeout(500);
-  expect(new URL(page.url()).pathname).toBe('/');
-  await twoHeroButtons(page);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  const d = await inTheGame(page);
+  expect(d.history.filter((p) => p === 'landing')).toHaveLength(1);
+  expect(d.scenesCreated).toBe(1);
 });
 
-test('pestaña oculta: la aparición acaba en la pausa; «Zarpar», en el juego (REQ-ENT-014)', async ({
+test('pestaña oculta: la aparición acaba en el reposo; «Zarpar», en el juego (REQ-ENT-014)', async ({
   page,
 }) => {
   test.setTimeout(60_000);
@@ -455,14 +472,14 @@ test('pestaña oculta: la aparición acaba en la pausa; «Zarpar», en el juego 
   expect(d.playedMs).toBeNull();
 });
 
-test('Atrás en la pausa: no repite la entrada ni duplica la escena (ENT 03)', async ({ page }) => {
+test('Atrás en reposo: no repite la entrada ni duplica la escena (ENT 03)', async ({ page }) => {
   await page.goto('/');
   await phaseIs(page, 'paused');
   await page.goto('/legal/privacidad');
   await page.goBack();
-  // Vuelta desde la caché del navegador (la pausa sigue) o carga nueva de `/`
-  // (la entrada vuelve a empezar, D-21).
-  await page.waitForFunction(() => ['paused', 'landed'].includes(window.__boiaIntro?.phase ?? ''));
+  // Vuelta desde la caché del navegador (el reposo sigue) o carga nueva de `/`
+  // (la entrada vuelve a empezar y acaba en reposo, D-21).
+  await phaseIs(page, 'paused');
   const d = (await diag(page))!;
   expect(d.history).not.toContain('landing');
   expect(d.worldsAlive).toBeLessThanOrEqual(1);
@@ -472,31 +489,19 @@ test('Atrás en la pausa: no repite la entrada ni duplica la escena (ENT 03)', a
 test.describe('movimiento reducido', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  test('planeta quieto, título y botón; al pulsar, fundido sin mover la cámara y al juego (REQ-ENT-010)', async ({
+  test('la versión estática: sin escena, «BOIA» plano; al pulsar, fundido al velo y al juego (REQ-ENT-010)', async ({
     page,
   }) => {
     test.setTimeout(60_000);
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-entry', 'reduced');
-    await phaseIs(page, 'paused');
+    const d0 = await waitStatic(page);
+    expect(d0.history).toEqual(['paused']);
+    expect(d0.scenesCreated).toBe(0);
+    await expect(canvases(page)).toHaveCount(0);
     await expect(title(page)).toHaveText('BOIA');
+    await expect(title(page)).not.toHaveAttribute('data-title', '3d');
     await expect(enterButton(page)).toBeVisible();
-    // Título 3D quieto: un solo fotograma, que no cambia (T27).
-    await expect(title(page)).toHaveAttribute('data-title', '3d', { timeout: 10_000 });
-    await expect(title3d(page)).toBeVisible();
-    await page.waitForFunction(
-      () =>
-        Number(getComputedStyle(document.querySelector('.intro-overlay__title')!).opacity) === 1,
-    );
-    expect(await titleInk(page)).toBeGreaterThan(2000);
-    const still = await titlePose(page);
-    const draws = (await diag(page))!.title.draws;
-    const frames = (await diag(page))!.framesRendered;
-    await page.waitForTimeout(800);
-    expect((await diag(page))!.phase).toBe('paused');
-    expect(await titlePose(page)).toBe(still);
-    expect((await diag(page))!.title.draws, 'no se repinta en reposo').toBe(draws);
-    expect((await diag(page))!.framesRendered, 'el planeta está quieto').toBe(frames);
     await enterButton(page).click();
     const d = await inTheGame(page);
     expect(d.mode).toBe('reduced');
@@ -505,21 +510,16 @@ test.describe('movimiento reducido', () => {
     expect(d.cameraMoves).toBe(0);
   });
 
-  test('«Saltar animación» lleva a la landing, también con movimiento reducido', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    await phaseIs(page, 'paused');
-    await page.getByRole('button', { name: 'Saltar animación' }).click();
-    const d = await waitLanded(page, 3000);
-    expect(d.exit).toBe('landing');
-    expect(new URL(page.url()).pathname).toBe('/');
-    await oneScene(page);
+  test('una URL directa también es la versión estática', async ({ page }) => {
+    await page.goto('/?intro=0');
+    await expect(page.locator('html')).toHaveAttribute('data-entry', 'direct');
+    const d = await waitStatic(page);
+    expect(d.scenesCreated).toBe(0);
     await receivesTaps(page, 'tickets');
   });
 });
 
-test('motor bloqueado: el planeta ligero y Tickets funcionando (REQ-ENT-017, 038)', async ({
+test('motor bloqueado: la versión estática y Tickets funcionando (REQ-ENT-017, 038)', async ({
   page,
 }) => {
   const blocked = await onSceneChunk(page, (route) => route.abort('blockedbyclient'));
@@ -530,19 +530,11 @@ test('motor bloqueado: el planeta ligero y Tickets funcionando (REQ-ENT-017, 038
     );
 
   await page.goto('/');
-  const d = await waitLanded(page, 6000);
+  const d = await waitStatic(page, 6000);
   expect(blocked.length, 'se bloqueó el bundle de la escena').toBeGreaterThan(0);
   expect(d.sceneStatus).toBe('failed');
   expect(d.worldsAlive).toBe(0);
   await expect(canvases(page)).toHaveCount(0);
-
-  // El planeta ligero, en CSS, con el horizonte detrás del hero.
-  const planet = page.locator('.hero__planet');
-  await expect(planet).toBeVisible();
-  const box = (await planet.boundingBox())!;
-  expect(box.width).toBeGreaterThan(page.viewportSize()!.width);
-  expect(box.y).toBeGreaterThan(0);
-  expect(box.y).toBeLessThan(page.viewportSize()!.height);
   await twoHeroButtons(page);
 
   await heroTickets(page).click();
@@ -558,7 +550,7 @@ test('motor bloqueado: el planeta ligero y Tickets funcionando (REQ-ENT-017, 038
   await expect(page.getByTestId('checkout-confirmar')).toBeVisible();
 });
 
-test('sin WebGL: landing ligera enseguida, sin canvas', async ({ page }) => {
+test('sin WebGL: la versión estática enseguida, sin canvas', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (
@@ -571,11 +563,10 @@ test('sin WebGL: landing ligera enseguida, sin canvas', async ({ page }) => {
     } as typeof HTMLCanvasElement.prototype.getContext;
   });
   await page.goto('/');
-  const d = await waitLanded(page, 10_000);
+  const d = await waitStatic(page, 10_000);
   expect(d.outcome).toBe('none');
   expect(d.sceneStatus).toBe('failed');
   await expect(canvases(page)).toHaveCount(0);
-  await expect(page.locator('.hero__planet')).toBeVisible();
   await twoHeroButtons(page);
 });
 
@@ -587,19 +578,16 @@ test('cada carga completa de `/` reproduce la entrada, aunque ya se viera (D-21,
   await page.addInitScript(() => localStorage.setItem('boia.intro.v2', 'seen'));
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
-  await phaseIs(page, 'paused');
-  await page.getByRole('button', { name: 'Saltar animación' }).click();
-  await waitLanded(page);
+  await waitRest(page);
 
   // Recarga: otra vez la entrada entera.
-
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
   await phaseIs(page, 'paused');
   expect((await diag(page))!.history).toEqual(['waiting', 'appearing', 'paused']);
 });
 
-test('una URL que apunta a algo entra directa; «Ver la introducción» la repite (REQ-ENT-009, 011)', async ({
+test('una URL que apunta a algo nace en reposo; «Ver la introducción» la repite (REQ-ENT-009, 011)', async ({
   page,
   browser,
 }, info) => {
@@ -612,18 +600,17 @@ test('una URL que apunta a algo entra directa; «Ver la introducción» la repit
   expect((await diag(other))!.history).not.toContain('appearing');
   await fresh.close();
 
-  // `?intro=0`: directa a la landing, con el planeta en el horizonte.
+  // `?intro=0`: en reposo, sin aparición.
   await page.goto('/?intro=0');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'direct');
-  const d = await waitLanded(page);
-  expect(d.history).toEqual(['landed']);
-  await expect(page.locator('.intro-overlay')).toHaveCount(0);
+  const d = await waitRest(page);
+  expect(d.history).toEqual(['paused']);
   await twoHeroButtons(page);
 
   // Un parámetro de la web: directa.
   await page.goto('/?menu=carnet');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'direct');
-  expect((await waitLanded(page)).history).toEqual(['landed']);
+  expect((await waitRest(page)).history).toEqual(['paused']);
 
   // Pedirla desde el pie la vuelve a reproducir.
   await page.getByRole('link', { name: 'Ver la introducción' }).click();
@@ -645,22 +632,20 @@ test('volver a `/` navegando dentro de la web no repite la entrada (D-21)', asyn
       .click();
     await expect(page).toHaveURL(/\/$/);
     await page.waitForFunction(
-      () => window.__boiaIntro?.mode === 'direct' && window.__boiaIntro.phase === 'landed',
+      () => window.__boiaIntro?.mode === 'direct' && window.__boiaIntro.phase === 'paused',
     );
     expect(
       await page.evaluate(() => (window as Window & { __sinRecarga?: boolean }).__sinRecarga),
       'sin recarga',
     ).toBe(true);
     await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
-    await expect(page.locator('.intro-overlay')).toHaveCount(0);
+    expect((await diag(page))!.history).toEqual(['paused']);
     await twoHeroButtons(page);
   };
 
   // `/` con su entrada → una página de la web → vuelta a `/`.
   await page.goto('/');
-  await phaseIs(page, 'paused');
-  await page.getByRole('button', { name: 'Saltar animación' }).click();
-  await waitLanded(page);
+  await waitRest(page);
   await page.evaluate(() => ((window as Window & { __sinRecarga?: boolean }).__sinRecarga = true));
   await page
     .locator('.site-footer')

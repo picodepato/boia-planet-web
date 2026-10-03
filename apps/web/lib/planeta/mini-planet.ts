@@ -66,6 +66,8 @@ export interface MiniPlanet {
 
 /** Islas con orilla que pinta el agua (el resto, sin espuma). */
 const MAX_SHORES = 24;
+/** Cloud streaks: translucent (plan 007 T79). */
+const CLOUD_ALPHA = 0.42;
 
 const waterVertex = /* glsl */ `
   varying vec3 vObj;
@@ -116,7 +118,8 @@ const waterFragment = /* glsl */ `
     vec3 h = normalize(uSunDir + v);
     float spec = pow(max(dot(n, h), 0.0), 70.0) * 0.45;
     float rim = pow(1.0 - max(dot(n, v), 0.0), 2.4);
-    col = col * (0.5 + 0.62 * diff) + vec3(spec) + uShallow * rim * 0.55;
+    // Lit from one side, the night side deep (plan 007 T79: the hero's grade).
+    col = col * (0.16 + 0.95 * diff) + vec3(spec) + vec3(0.62, 0.81, 1.0) * rim * 0.32;
     gl_FragColor = vec4(col, uOpacity);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -139,7 +142,7 @@ const haloFragment = /* glsl */ `
   void main() {
     // Más fuerte junto al borde del agua, nada en el borde del halo.
     float g = smoothstep(0.0, uEdge, vFacing);
-    gl_FragColor = vec4(uColor * g * g * 0.9 * uOpacity, 1.0);
+    gl_FragColor = vec4(uColor * g * g * 0.5 * uOpacity, 1.0);
     #include <colorspace_fragment>
   }
 `;
@@ -195,6 +198,10 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
   const radius = map.radius;
   const scale = opts.islands.scale;
   const day = moods(opts.sea).dia;
+  // Plan 007 T79: the hero's grade (T77 frame 01): a darker, deeper sea than
+  // /mar's day, lit from one side; thin translucent cloud streaks.
+  const NIGHT_SEA = new Color('#0b1e3e');
+  const grade = (c: Color, k: number) => new Color().copy(c).lerp(NIGHT_SEA, k);
 
   const group = new Group();
   const spinGroup = new Group();
@@ -240,9 +247,9 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
     fragmentShader: waterFragment,
     transparent: false,
     uniforms: {
-      uDeep: { value: new Color().copy(day.deep) },
-      uShallow: { value: new Color().copy(day.shallow) },
-      uFoam: { value: new Color().copy(day.foam) },
+      uDeep: { value: grade(day.deep, 0.55) },
+      uShallow: { value: grade(day.shallow, 0.4) },
+      uFoam: { value: grade(day.foam, 0.3) },
       uSunDir: { value: new Vector3(...opts.sunDir).normalize() },
       uShores: { value: shoreUniform },
       uShoreCount: { value: shores.length },
@@ -257,10 +264,10 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
   // Nubes: giran por su cuenta, un poco por encima del agua.
   const clouds = new Group();
   const cloudMat = new MeshLambertMaterial({
-    color: '#ffffff',
-    flatShading: true,
+    color: '#dfe7f5',
     transparent: true,
-    opacity: 0.92,
+    opacity: CLOUD_ALPHA,
+    depthWrite: false,
   });
   disposables.push(cloudMat);
   const rnd = rng(opts.clouds.seed);
@@ -275,7 +282,9 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
     m.position.set(d[0] * lift, d[1] * lift, d[2] * lift);
     m.lookAt(0, 0, 0);
     m.rotateX(-Math.PI / 2);
-    m.scale.setScalar(radius * (0.07 + rnd() * 0.05));
+    const k = radius * (0.07 + rnd() * 0.05);
+    // Streaks, not puffs (T77 frame 01).
+    m.scale.set(k * 1.9, k * 0.35, k * 0.8);
     clouds.add(m);
   }
   group.add(clouds);
@@ -290,7 +299,7 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
     depthWrite: false,
     blending: AdditiveBlending,
     uniforms: {
-      uColor: { value: new Color('#9fdcff') },
+      uColor: { value: new Color('#9fd0ff') },
       uEdge: { value: Math.sqrt(1 - (radius / haloR) ** 2) },
       uOpacity: { value: 1 },
     },
@@ -323,7 +332,7 @@ export function buildMiniPlanet(opts: MiniPlanetOptions): MiniPlanet {
       }
       lit.opacity = a;
       glow.opacity = a;
-      cloudMat.opacity = 0.92 * a;
+      cloudMat.opacity = CLOUD_ALPHA * a;
       water.uniforms.uOpacity!.value = a;
       halo.uniforms.uOpacity!.value = a;
     },

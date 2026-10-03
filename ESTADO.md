@@ -4,6 +4,139 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T79: Scroll-bound three.js hero and the hand-off to the landing
+
+Qué existe:
+- La landing es un scroll continuo (diseño v2 aprobado de T77,
+  `docs/propuestas/2026-10-03-landing-scroll.md`). `/` reproduce la
+  aparición (planeta, «BOIA») y queda en reposo con «Zarpar» y «Entradas»
+  (visibles desde el primer pintado), la pista «Desliza para bajar al mar» y
+  los rótulos de esquina (BOIA · Alicante, coordenadas del puerto, la frase
+  de posicionamiento). Sin avance automático; «Saltar animación» y «Solo
+  quiero ver las entradas» ya no existen («Entradas» abre el panel de
+  Tickets y adelanta la aparición, igual que un scroll o un enlace).
+- La escena three.js es fija bajo toda la página y la lleva la posición de
+  scroll `s` (en alturas de vista, suavizada ~90 ms): de 0 a ~0,92 se
+  recorre la zambullida de «Zarpar» (la misma trayectoria, ahora por scroll),
+  con la UI fuera en 0,15 y la atmósfera azul; de 0,84 a 1 un fundido con
+  bruma dorada al rig del mar; desde 1, la cubierta tras el barco junto al
+  puerto de T78 (costa, diques con balizas verde y roja, farolas, barco,
+  boya; GLB de `art/landing/3d` cargados tras el primer fotograma según el
+  bloque `escena` del manifiesto) y la cámara avanza despacio sobre el agua
+  (sale por la bocana) mientras la luz pasa de hora dorada a anochecer y
+  noche, que llega con la banda de Fotos (T77 §7.3). Agua por shader
+  (reflejo del cielo por fresnel, camino del sol o la luna), cielo por
+  ánimo con sol, luna y estrellas, islas en el horizonte con luces de noche,
+  halos y reflejos de las luces; pase final con bruma, viñeta y grano. El
+  planeta del reposo es el de /mar con el grado del hero (más oscuro, frío,
+  a contraluz; nubes en estela translúcida).
+- `lib/intro`: el controlador (`packages/engine/src/intro/controller.ts`)
+  tiene la nueva semántica: `paused` es el reposo (para todos los modos;
+  una URL directa nace ahí), `landed` sólo es «Zarpar» terminado (al
+  juego), `fallback` es la versión estática (movimiento reducido, sin
+  WebGL, escena fuera de plazo o que falla, ahorro de datos). Config v6
+  (`planet.ts`): encuadres 0/600/900 de T77 §5.1, bloque `scroll`, sin
+  `autoAdvance` ni `ticketsOnly` ni pose `hero`; `scrollState` y los
+  fotogramas del reposo por scroll son puros y con pruebas. El script de
+  arranque marca `data-hero="still"` + `data-hero-static` con movimiento
+  reducido antes del primer pintado, `data-hero-top` mientras se está en el
+  hero (la cabecera espera) y un scroll antes de hidratar adelanta la
+  aparición. `window.__boiaIntro.scroll = { s, phase, light }` y
+  `.hero[data-scroll-phase="rest|dive|sea"]` para las pruebas.
+- «Zarpar» es un enlace a `/mar?menu=bienvenida` (funciona sin JS); con el
+  hero, se zambulle con el velo y `router.push` (`explore_start` source
+  `intro`). La cabecera aparece al acabar la zambullida, con el wordmark y
+  la píldora «Zarpar» (≥ 600 px; velo sin zambullida). `landing_view` se
+  envía una vez al pasar el hero con el scroll (`intro` = cómo se llegó al
+  reposo).
+- Versión estática: el still de T78 (`hero-still-*.webp`, dorado y de
+  noche al llegar a Fotos), misma maquetación, scroll normal, sin WebGL.
+- Bloques: restyle de superficie a bandas noche (`--band`) que suben del
+  mar con fundidos de 14 vh y ventanas de mar de 50 vh, rejilla editorial
+  (rótulo a la izquierda, contenido a la derecha desde 900 px), fecha del
+  próximo evento como display («31 OCT»), eventos y artistas en filas con
+  hairlines, fotos a sangre con placeholders de luz de escenario, tienda
+  como línea corrida. Panel de Tickets intacto. Vista previa del Admin:
+  usa el still como fondo y sigue funcionando.
+- Adendas de Hernán (§15 del documento de T77): el wordmark de BOIA grande
+  en el pie sobre el mar de noche (`role="img"`, nombre «BOIA»), y Spotify:
+  «Escúchalo en Spotify» (lista de BOIA, enlace `Spotify` del pie) en
+  Artistas y en el pie, y un enlace «Spotify» por artista con `spotifyUrl`
+  (campo nuevo opcional del artista). Enlaces planos `target="_blank"
+  rel="noopener noreferrer"`, nada cargado de Spotify. URLs `muestra`
+  (sandbox) hasta P15.
+- Textos por clave (`muestra`): `hero.scrollHint`, `hero.place`,
+  `hero.coords`, `photos.display`, `nav.zarpar`, `artists.spotify(.aria)`,
+  `artist.spotify(.aria)`; `nav.tickets`, `hero.tickets` → «Entradas» y
+  `hero.explore` → «Zarpar» (la etiqueta del Admin del CTA sigue siendo
+  `hero.explore`), cambiados en `docs/propuestas/textos-zonas.md` y
+  regenerados con `scripts/i18n-zonas.mjs`.
+- Presupuesto de la landing: tope a 200 kB en
+  `apps/web/scripts/landing-budget.mjs`; **la landing mide 192,4 kB** (antes
+  189,6).
+- Capturas: `docs/informes/img/p007-t79-{reposo,zambullida,mar,noche,estatica}-{mobile,desktop}.png`
+  (`RECORD_T79=1` en `landing-scroll.spec.ts`).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 107 archivos, 982 pruebas.
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; «192.4 kB total, 13 archivos · presupuesto
+  200.0 kB · OK».
+- `E2E_PORT=3393 pnpm e2e intro.spec.ts landing.spec.ts tipografia.spec.ts
+  landing-scroll.spec.ts --workers=1` → exit 0, 74 pasan (móvil y
+  escritorio).
+
+Aserciones e2e cambiadas (y por qué):
+- intro.spec: las acciones en pantalla durante la aparición son «Zarpar» y
+  «Entradas» (antes «Solo quiero ver las entradas» y «Saltar animación»,
+  que el plan quita); el filtro cuenta sólo lo que está en la vista. El
+  título es `.hero__wordmark` y «Zarpar» un enlace (antes un botón de la
+  capa de la entrada). El reposo es la fase `paused` también en visitas
+  directas: `history` de `?intro=0`, `?menu=`, la vuelta de /mar y la
+  navegación interna pasa de `['landed']` a `['paused']` (antes «landed» era
+  «la landing visible»; ahora sólo «Zarpar» llega a `landed`). `twoHeroButtons`
+  espera `[ZARPAR_HREF, '#tickets']` (antes `/mar`). Escena lenta, motor
+  bloqueado y sin WebGL esperan la versión estática (`fallback`, el still)
+  en vez de la landing ligera con el planeta CSS. «Entradas» durante la
+  aparición: reposo `skipped` y sin `landing_view` (ahora cuenta al pasar el
+  hero). Los tests de «Saltar» pasan a «Escape cinco veces en reposo» y
+  «Escape durante Zarpar no lo corta»; nuevo «un scroll durante la aparición
+  la adelanta». Movimiento reducido: la versión estática sin escena ni
+  letras 3D, «Zarpar» con fundido al juego; «Saltar con movimiento
+  reducido» pasa a «una URL directa también es la versión estática».
+  `inTheGame` ya no comprueba `outcome` (es el del reposo) ni
+  `.intro-overlay`.
+- landing.spec: «Tickets» → «Entradas»; título «CTA Zarpar y Entradas se
+  ven sin scroll». D-07 en ≤ 480 px: la fila «Zarpar» + «Entradas» ocupa el
+  ancho menos márgenes, con «Zarpar» la mayor (antes «Explorar» sola a todo
+  el ancho; T77 §5.1 pone las dos píldoras en fila). `landing_view` ya no
+  llega al cargar `?intro=0`: la prueba hace scroll más allá del hero y
+  espera uno con `intro: 'none'`; en la del panel se quita de la lista.
+- tipografia.spec: el texto con Inter se comprueba en los rótulos de esquina
+  del hero (antes el primer `<p>` del hero, que ahora es «BOIA» con la
+  display); se añade que «BOIA» usa la display.
+- docs/spec/estado.md: títulos de prueba de REQ-ENT-019, 020, 026, 027 y 038
+  actualizados a los nuevos; REQ-ENT-028 (subtítulo según promociones) pasa
+  a PARCIAL: el diseño aprobado quita esa línea (T83 revisa el texto).
+
+Pendiente:
+- Otros e2e que no son de esta tarea siguen buscando el enlace «Tickets» del
+  hero o `cta-3d` con `href="/mar"`: accesos, carnet-descuento,
+  ciclo-evento, demo, despliegue, mar-a-bordo, tickets, mar-3d; demo.spec
+  espera la fase `paused` (sigue valiendo). Hay que pasarlos a «Entradas» y
+  a `ZARPAR_HREF` antes de la corrida completa del plan.
+- Arte `muestra`: el planeta del reposo es el mundo de /mar con su grado;
+  el still y los GLB, de T78; Álvaro aprueba el arte final. Sin bloom a
+  pantalla completa ni DOF (halos por sprites); T80 mide en móvil y fija
+  la heurística de bajo consumo (hoy sólo `saveData`).
+- El cartel del próximo evento (hueco 3:4) y la edición de las URL de
+  Spotify son de T82; el editor de artistas del Admin no conserva aún
+  `spotifyUrl` al guardar.
+- `circuit.void.offroad` no está en `docs/propuestas/textos-zonas.md`: al
+  regenerar `i18n-zonas` se pierde; se repuso a mano en `es-zonas.ts`.
+
 ## 2026-10-03 — plan 007 T78: Hero 3D art from Blender: GLB props and the still render
 
 Qué existe:

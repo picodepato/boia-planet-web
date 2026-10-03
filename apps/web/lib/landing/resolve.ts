@@ -216,15 +216,17 @@ export interface HomeView {
 export interface SocialLinks {
   instagram: string | null;
   whatsapp: string | null;
+  /** BOIA's Spotify playlist (plan 007 T79; URL `muestra` until P15). */
+  spotify: string | null;
 }
 
-/** Instagram y WhatsApp de los enlaces del pie y de contacto, por su nombre. */
+/** Instagram, WhatsApp y Spotify de los enlaces del pie y de contacto, por su nombre. */
 export function socialLinks(content: HomeContent): SocialLinks {
   const links = content.blocks.flatMap((b) =>
     b.type === 'footer' ? b.officialLinks : b.type === 'contact' ? b.links : [],
   );
   const find = (re: RegExp) => links.find((l) => re.test(l.label))?.url ?? null;
-  return { instagram: find(/instagram/i), whatsapp: find(/whatsapp/i) };
+  return { instagram: find(/instagram/i), whatsapp: find(/whatsapp/i), spotify: find(/spotify/i) };
 }
 
 export function resolveHome(stored: HomeContent, now: Date): HomeView {

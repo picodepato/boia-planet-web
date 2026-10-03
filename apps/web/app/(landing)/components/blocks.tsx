@@ -11,9 +11,11 @@ import {
 import { PHOTOS_HOME_COPY } from '../../../lib/landing/card-copy';
 import { t } from '../../../lib/landing/texts';
 import type { ResolvedBlock, SocialLinks } from '../../../lib/landing/resolve';
+import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
 import { ArtistRotator } from './artist-rotator';
 import { BrandLogo } from './brand-logo';
 import { EventCard } from './event-card';
+import { HeroStills } from './hero-stills';
 
 /** Lista completa de artistas (v14 §18.1). */
 export const ARTISTS_PAGE = '/artistas';
@@ -131,40 +133,56 @@ export function BlockView({
 }) {
   switch (block.type) {
     case 'hero':
+      // Plan 007 T79 (T77 §5): the hero track. The scene is fixed under the
+      // page; the UI sticks for the first screen of scroll and fades out as
+      // the camera dives. The h1 is the Admin's title (read by screen
+      // readers); «BOIA» on screen is the wordmark, with the 3D letters.
       return (
-        <section id="inicio" className="hero" aria-labelledby="hero-title" data-block={block.id}>
+        <section
+          id="inicio"
+          className="hero"
+          aria-labelledby="hero-title"
+          data-block={block.id}
+          data-scroll-phase="rest"
+        >
           {/* Con clave: `heroScene` lo crea el servidor (LandingPage) y aquí va entre hermanos. */}
           <Fragment key="hero-scene">
-            {heroScene ?? <div className="hero__sea" aria-hidden="true" />}
+            {heroScene ?? (
+              <div className="hero__scene hero__scene--still" aria-hidden="true">
+                <HeroStills />
+              </div>
+            )}
           </Fragment>
-          <div className="hero__content">
-            <p className="hero__brand">{t('hero.brand')}</p>
-            <h1 id="hero-title" className="hero__title">
+          <div className="hero__ui">
+            <h1 id="hero-title" className="visually-hidden">
               {block.title}
             </h1>
-            <p className="hero__positioning">{block.positioning}</p>
+            <p className="hero__wordmark" aria-hidden="true">
+              {t('intro.logoAlt')}
+              <canvas className="intro-title3d" aria-hidden="true" />
+            </p>
             <div className="hero__actions">
-              {/* El mundo es el planeta 3D (plan 005): el botón principal va a /mar;
-                  Tickets, al lado. */}
-              <a
-                className="cta-explore"
-                href="/mar"
-                data-track="explore_start"
-                data-source="hero"
-                data-testid="cta-3d"
-              >
+              {/* «Zarpar» enters the game (D-24): a plain link, the dive with JavaScript. */}
+              <a className="cta-explore" href={ZARPAR_HREF} data-zarpar="hero" data-testid="cta-3d">
                 <span className="cta-explore__label">{t('hero.explore')}</span>
-                <span className="cta-explore__sub">
-                  {t(
-                    block.hasPromotions
-                      ? 'hero.explore.withPromotions'
-                      : 'hero.explore.withoutPromotions',
-                  )}
-                </span>
               </a>
-              <a className="button button--tickets" href="#tickets" data-tickets-open="hero">
+              <a
+                className="button button--tickets"
+                href="#tickets"
+                data-tickets-open="hero"
+                data-intro-skip=""
+              >
                 {t('hero.tickets')}
               </a>
+            </div>
+            <button type="button" className="hero__hint" data-hero-hint="">
+              {t('hero.scrollHint')}
+              <span className="hero__hint-line" aria-hidden="true" />
+            </button>
+            <p className="hero__corner hero__corner--place">{t('hero.place')}</p>
+            <div className="hero__corner hero__corner--bottom">
+              <p>{t('hero.coords')}</p>
+              <p className="hero__corner-line">{block.positioning}</p>
             </div>
           </div>
         </section>
@@ -183,6 +201,7 @@ export function BlockView({
               buyable={buyable.has(block.event.id)}
               source="priority_event"
               featured
+              display
             />
           </div>
         </section>
@@ -192,7 +211,7 @@ export function BlockView({
       return (
         <section
           id="eventos"
-          className="section section--alt"
+          className="section"
           aria-labelledby="upcoming-title"
           data-block={block.id}
         >
@@ -248,6 +267,19 @@ export function BlockView({
               >
                 {t('artists.all')}
               </Link>
+              {/* BOIA's playlist (plan 007 T79): a plain link, no player, nothing from Spotify. */}
+              {social?.spotify ? (
+                <a
+                  className="listen-link"
+                  href={social.spotify}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t('artists.spotify.aria')}
+                  data-testid="artistas-spotify"
+                >
+                  {t('artists.spotify')} <span aria-hidden="true">↗</span>
+                </a>
+              ) : null}
             </p>
           </div>
         </section>
@@ -283,6 +315,7 @@ export function BlockView({
             <h2 id="photos-title" className="section__title">
               {t('photos.heading')}
             </h2>
+            <p className="section__display">{t('photos.display')}</p>
             <ul className="photo-grid">
               {block.photos.map((p, i) => (
                 <li key={p.id}>
@@ -418,9 +451,24 @@ export function BlockView({
       return (
         <footer className="site-footer" data-block={block.id}>
           <div className="section__inner site-footer__inner">
+            {/* The BOIA wordmark, large on the night sea (plan 007 T79, Hernán). */}
             <p className="site-footer__brand">
-              <BrandLogo size="footer" label={t('site.title')} />
+              <BrandLogo size="footer" variant="wordmark" label={t('intro.logoAlt')} />
             </p>
+            {social?.spotify ? (
+              <p className="site-footer__listen">
+                <a
+                  className="listen-link"
+                  href={social.spotify}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t('artists.spotify.aria')}
+                  data-testid="pie-spotify"
+                >
+                  {t('artists.spotify')} <span aria-hidden="true">↗</span>
+                </a>
+              </p>
+            ) : null}
             {/* Invitación voluntaria, sin formulario (REQ-ENT-032, T44). */}
             <section
               className="footer-invite"
@@ -451,13 +499,16 @@ export function BlockView({
             {block.officialLinks.length > 0 && (
               <nav aria-label={t('footer.official')}>
                 <ul className="link-list link-list--inline">
-                  {block.officialLinks.map((l) => (
-                    <li key={l.url}>
-                      <a href={l.url} target="_blank" rel="noopener noreferrer">
-                        {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
-                      </a>
-                    </li>
-                  ))}
+                  {/* The playlist has its own line above, when it is there. */}
+                  {block.officialLinks
+                    .filter((l) => !(social?.spotify && l.url === social.spotify))
+                    .map((l) => (
+                      <li key={l.url}>
+                        <a href={l.url} target="_blank" rel="noopener noreferrer">
+                          {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
+                        </a>
+                      </li>
+                    ))}
                 </ul>
               </nav>
             )}

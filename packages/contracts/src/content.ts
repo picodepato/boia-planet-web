@@ -9,6 +9,8 @@ export const artistSchema = z.object({
   genres: z.array(z.string().min(1)).min(1),
   /** Sin foto aprobada se muestra un avatar neutro. */
   photoUrl: z.url().optional(),
+  /** The artist on Spotify: a plain link, nothing loaded from Spotify (plan 007 T79). */
+  spotifyUrl: z.url().optional(),
 });
 export type Artist = z.infer<typeof artistSchema>;
 

@@ -1,3 +1,4 @@
+import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
 import { ACCESS_COPY, CARNET_PAGE } from '../../../lib/landing/access';
 import { t, type MessageKey } from '../../../lib/landing/texts';
 import { BrandLogo } from './brand-logo';
@@ -58,13 +59,17 @@ export function SiteHeader({
       </a>
       <div className="site-header__inner">
         <a className="site-header__brand" href="#inicio" aria-label={t('nav.home')}>
-          <BrandLogo />
+          <BrandLogo variant="wordmark" />
         </a>
         <nav className="site-header__nav" aria-label={t('nav.label')}>
           <ul className="site-header__links">{items}</ul>
           <SoundToggle className="sound-toggle--bar" />
           <a className="button button--tickets-small" href="#tickets" data-tickets-open="header">
             {t('nav.tickets')}
+          </a>
+          {/* «Zarpar» after the hero (T77 §13.3): to /mar with the veil, no dive. */}
+          <a className="button button--zarpar-small" href={ZARPAR_HREF} data-zarpar="header">
+            {t('nav.zarpar')}
           </a>
           <details className="site-header__menu">
             <summary className="button button--ghost">{t('nav.menu')}</summary>

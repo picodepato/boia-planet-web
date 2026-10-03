@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Presupuesto de la ruta crítica de la landing: 192 kB gzip (T14, T29), muy por
+ * Presupuesto de la ruta crítica de la landing: 200 kB gzip (T14, T29; Hernán
+ * lo subió de 192 a 200 kB el 2026-10-03, plan 007), muy por
  * debajo del de REQ-ARQ-014 (1 MB comprimido para la home crítica).
  * Lee el HTML prerenderizado de `/` tras `next build`, suma el HTML y cada
  * script, hoja de estilos, fuente o imagen que referencia desde /_next/static,
@@ -13,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
-const BUDGET = 192 * 1024;
+const BUDGET = 200 * 1024;
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const htmlPath = join(root, '.next/server/app/index.html');
 

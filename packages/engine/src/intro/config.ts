@@ -22,16 +22,17 @@ export interface IntroCopy {
   title: string;
   /** Botón de entrar. */
   enter: string;
-  /** Enlace a Tickets visible desde el primer momento (REQ-ENT-002). */
-  ticketsOnly: string;
   /** Acto 0. */
   loading: string;
 }
 
+/**
+ * Plan 007 T79: «Solo quiero ver las entradas» ya no existe; es la píldora
+ * «Entradas» del hero, con su texto de la web (`hero.tickets`).
+ */
 export const DEFAULT_INTRO_COPY: IntroCopy = {
   title: 'BOIA',
   enter: 'Zarpar',
-  ticketsOnly: 'Solo quiero ver las entradas',
   loading: 'Cargando',
 };
 

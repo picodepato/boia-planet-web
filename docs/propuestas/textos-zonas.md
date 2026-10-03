@@ -118,8 +118,8 @@ toca y nunca corporativa. Español de España y de tú. Los tres verbos mandan:
 | `hero.brand` | BOIA.PLANET | = es.ts |
 | `hero.title` | BOIA UNDERGROUND MUSIC FESTIVAL | REQ-ENT-025 |
 | `hero.tagline` | Música sin un único género. Cultura sin un único formato. | Frase de posicionamiento |
-| `hero.explore` | Explorar el universo | = es.ts |
-| `hero.tickets` | Tickets | = es.ts |
+| `hero.explore` | Zarpar | La píldora del hero (plan 007 T79, antes «Explorar el universo») |
+| `hero.tickets` | Entradas | Plan 007 T79 (antes «Tickets») |
 | `hero.tickets.aria` | Ver las entradas a la venta | |
 | `hero.explore3d` | Navegar en 3D | = es.ts |
 | `hero.explore3d.sub` | El mismo mar, en 3D y con zoom libre | = es.ts |

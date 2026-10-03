@@ -21,7 +21,8 @@ const base = {
   'nav.label': 'Navegación principal',
   'nav.home': 'Ir al inicio',
   'nav.menu': 'Menú',
-  'nav.tickets': 'Tickets',
+  'nav.tickets': 'Entradas',
+  'nav.zarpar': 'Zarpar',
   'nav.artists': 'Artistas',
   'nav.philosophy': 'Filosofía',
   'nav.store': 'Tienda',
@@ -29,12 +30,16 @@ const base = {
   'nav.skipToContent': 'Saltar al contenido',
 
   'hero.brand': 'BOIA.PLANET',
-  'hero.explore': 'Explorar el universo',
+  'hero.explore': 'Zarpar',
   'hero.explore.withPromotions': 'Encuentra descuentos para tus entradas',
   'hero.explore.withoutPromotions': 'Descubre eventos y secretos navegando',
   'hero.explore3d': 'Navegar en 3D',
   'hero.explore3d.sub': 'Nuevo · zoom libre y mapa interactivo',
-  'hero.tickets': 'Tickets',
+  'hero.tickets': 'Entradas',
+  // Plan 007 T79 (docs/propuestas/2026-10-03-landing-scroll.md §11), muestra.
+  'hero.scrollHint': 'Desliza para bajar al mar',
+  'hero.place': 'BOIA · Alicante',
+  'hero.coords': '38.3452° N, 0.4815° O',
 
   'event.state.coming_soon': 'Próximamente',
   'event.state.on_sale': 'A la venta',
@@ -66,11 +71,17 @@ const base = {
   'artists.pause': 'Pausar rotación',
   'artists.resume': 'Reanudar rotación',
   'artists.genres': 'Géneros',
+  // Plan 007 T79: plain links to Spotify, nothing loaded from it. muestra.
+  'artists.spotify': 'Escúchalo en Spotify',
+  'artists.spotify.aria': 'Escucha la lista de BOIA en Spotify (se abre en otra pestaña)',
+  'artist.spotify': 'Spotify',
+  'artist.spotify.aria': '{name} en Spotify (se abre en otra pestaña)',
 
   'philosophy.heading': 'Filosofía',
 
   'photos.heading': 'Fotos y vídeos',
   'photos.placeholder': 'Foto de muestra',
+  'photos.display': 'Lo que pasó la última vez',
 
   'store.heading': 'Tienda',
   'store.intro': 'Camisetas, tote bags y pegatinas de BOIA.',

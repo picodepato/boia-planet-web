@@ -102,6 +102,8 @@ export const SAMPLE_HOME_BLOCKS: AreaInput<'homeBlocks'>[] = [
     officialLinks: [
       { label: 'Instagram', url: `${SANDBOX}/instagram` },
       { label: 'TikTok', url: `${SANDBOX}/tiktok` },
+      // BOIA's playlist (plan 007 T79): the artists band and the footer link to it.
+      { label: 'Spotify', url: `${SANDBOX}/spotify/playlist/boia` },
     ],
   },
 ];
@@ -219,10 +221,15 @@ export const SAMPLE_EVENTS: AreaInput<'events'>[] = [
   },
 ];
 
-export const SAMPLE_ARTISTS: AreaInput<'artists'>[] = ARTISTS_V14.map(([name, genres]) => ({
+/**
+ * Every other artist has a Spotify link (plan 007 T79): `muestra`, sandbox
+ * URLs until Álvaro sends the real ones (P15; T82 makes them editable).
+ */
+export const SAMPLE_ARTISTS: AreaInput<'artists'>[] = ARTISTS_V14.map(([name, genres], i) => ({
   id: slugify(name),
   name,
   genres,
+  ...(i % 2 === 0 ? { spotifyUrl: `${SANDBOX}/spotify/artist/${slugify(name)}` } : {}),
 }));
 
 export const SAMPLE_ALBUMS: AreaInput<'albums'>[] = [

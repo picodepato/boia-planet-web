@@ -94,9 +94,14 @@ test('landing: el h1 con la display, el texto con Inter, y las dos cargan', asyn
   const h1 = page.locator('h1').first();
   await expect(h1).toBeVisible();
   await expectFonts(page, h1, page.locator('body'));
-  // El texto de verdad, no sólo <body>: un párrafo del hero.
-  const p = page.locator('.hero p').first();
-  if (await p.count()) expect(await firstFamily(p)).toBe(await familyOf(page, '--font-text'));
+  // El texto de verdad, no sólo <body>: los rótulos de esquina del hero
+  // (plan 007: el primer <p> del hero es ahora «BOIA», con la display).
+  const p = page.locator('.hero .hero__corner').first();
+  await expect(p).toBeVisible();
+  expect(await firstFamily(p)).toBe(await familyOf(page, '--font-text'));
+  expect(await firstFamily(page.locator('.hero__wordmark'))).toBe(
+    await familyOf(page, '--font-display'),
+  );
   await expectTitlesFit(page);
   await snap(page, 'landing');
 });

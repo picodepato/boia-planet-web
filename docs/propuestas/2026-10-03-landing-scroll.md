@@ -505,3 +505,35 @@ changes the look: it starts from the current dark landing, treats the sea
 as photography (light, haze, reflections, grain, silhouettes), lays the
 content out editorially on dark bands and sizes the type up. The v1 frames
 and document were replaced in place (commit ed2e424 holds v1).
+
+## 15. Addendum (T79, 2026-10-03): the BOIA logo and Spotify
+
+Two additions from Hernán on 2026-10-03, built in T79 inside this
+document's editorial style (no new colours, no boxes, tracked labels and
+hairlines only):
+
+- **The BOIA logo on the page.** The wordmark of `art/marca` (the
+  `components/brand-logo.tsx` copy) is the footer's display: alone, in
+  orange, at `min(26vw, 280px)`, on the night sea where the footer's fade
+  from transparent to `--black` starts (the last sea window), with the
+  accessible name «BOIA» (`intro.logoAlt`). The header uses the same
+  wordmark alone at 30 px (the mascot stays in `/mar` and the favicon).
+- **Spotify, as observatoriofestival.com does.** In the Artistas band, next
+  to «Ver todos los artistas», a plain link «Escúchalo en Spotify ↗» to the
+  BOIA playlist; the same link heads the footer under the wordmark; each
+  artist with a Spotify page gets a small tracked «Spotify» link at the end
+  of their hairline row. All are ordinary links that open in a new tab
+  (`target="_blank" rel="noopener noreferrer"`), with an `aria-label` that
+  says so: no embedded player, nothing loaded from Spotify (no third-party
+  requests, no cookies). The playlist is the footer link labelled
+  «Spotify» (content, `officialLinks`); each artist's URL is the optional
+  `spotifyUrl` of the artist (content). Both are `muestra` sandbox URLs
+  until Álvaro sends the real ones (P15); T82 makes them editable.
+
+Notes from building v2 in T79 (for Hernán's review, all reversible):
+«Zarpar» and «Entradas» are visible from the first paint (plan header,
+decision 1; §7.1 had «Zarpar» fade in at the pause); the h1 keeps the
+Admin's hero title for screen readers while «BOIA» on screen is the
+wordmark (`aria-hidden`); the poster slot of the Próximo evento band is
+left to T82; the post pass has grade, haze, vignette and grain, with the
+sun's bloom and the lights' halos as sprites (no full-screen bloom or DOF).

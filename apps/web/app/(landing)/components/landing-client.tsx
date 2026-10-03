@@ -3,13 +3,14 @@
 import type { FunnelEventProps } from '@boia/contracts/analytics';
 import { useEffect } from 'react';
 import { track } from '../../../lib/analytics';
-import { onLanded } from '../../../lib/intro/bridge';
 
 type PanelSource = FunnelEventProps['tickets_panel_open']['source'];
 type ExploreSource = FunnelEventProps['explore_start']['source'];
 type ClickOutSource = FunnelEventProps['ticket_click_out']['source'];
 
 const PANEL_HASH = '#tickets';
+/** Past the hero: the dive is over (viewport heights of scroll). */
+const PAST_HERO = 0.97;
 
 /**
  * Mejora progresiva de la landing, sin pintar nada: analítica del embudo y
@@ -91,6 +92,13 @@ export function LandingClient() {
         return;
       }
 
+      // The scroll hint (plan 007): one viewport down, into the sea.
+      if (target.closest('[data-hero-hint]')) {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollBy({ top: window.innerHeight, behavior: reduce ? 'auto' : 'smooth' });
+        return;
+      }
+
       const tracked = target.closest<HTMLElement>('[data-track]');
       if (tracked?.dataset.track === 'explore_start') {
         track('explore_start', {
@@ -119,12 +127,23 @@ export function LandingClient() {
     window.addEventListener('popstate', syncFromUrl);
     window.addEventListener('hashchange', syncFromUrl);
 
-    // La vista de landing cuenta cuando se ve: tras la entrada, si la hubo.
-    const stopWaiting = onLanded((intro) => track('landing_view', { intro }));
+    // The landing view counts once the visitor scrolls past the hero (the
+    // first hand-off, plan 007); without a hero, right away.
+    let viewed = false;
+    const onScroll = () => {
+      if (viewed) return;
+      const hero = document.querySelector('.hero');
+      if (hero && window.scrollY < window.innerHeight * PAST_HERO) return;
+      viewed = true;
+      window.removeEventListener('scroll', onScroll);
+      track('landing_view', { intro: window.__boiaEntry?.landed ?? 'none' });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
     syncFromUrl();
 
     return () => {
-      stopWaiting();
+      window.removeEventListener('scroll', onScroll);
       document.removeEventListener('click', onClick);
       document.removeEventListener('keydown', onKey);
       panel.removeEventListener('click', onBackdrop);

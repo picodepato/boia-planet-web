@@ -1,4 +1,5 @@
 import type { Artist } from '@boia/contracts/content';
+import { t } from '../../../lib/landing/texts';
 
 /** Iniciales para el avatar neutro mientras no haya foto aprobada (REQ-COM-027). */
 export function initials(name: string): string {
@@ -27,6 +28,18 @@ export function ArtistCard({ artist, genresLabel }: { artist: Artist; genresLabe
         <span className="visually-hidden">{genresLabel}: </span>
         {artist.genres.join(', ')}
       </p>
+      {/* A plain link (plan 007 T79): no player, nothing loaded from Spotify. */}
+      {artist.spotifyUrl ? (
+        <a
+          className="artist-card__spotify"
+          href={artist.spotifyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t('artist.spotify.aria', { name: artist.name })}
+        >
+          {t('artist.spotify')}
+        </a>
+      ) : null}
     </article>
   );
 }

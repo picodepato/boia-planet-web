@@ -59,16 +59,16 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ENT-016 | Entrada editable desde el Admin | L2 | L2 | — | — |
 | REQ-ENT-017 | HTML comercial sin motor ni JS | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | — |
 | REQ-ENT-018 | Arranque en blanco investigado | L1 | FALTA | — | pide revisión, medición o documento |
-| REQ-ENT-019 | Controles libres al terminar | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) ««Saltar» cinco veces y Escape en la pausa: la misma landing (REQ-ENT-008, ENT 03)» | — |
-| REQ-ENT-020 | Entrada resistente a fallos | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «Atrás en la pausa: no repite la entrada ni duplica la escena (ENT 03)» | — |
+| REQ-ENT-019 | Controles libres al terminar | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «Escape cinco veces en reposo: nada cambia, una escena, los dos botones (REQ-ENT-008, ENT 03)» | — |
+| REQ-ENT-020 | Entrada resistente a fallos | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «Atrás en reposo: no repite la entrada ni duplica la escena (ENT 03)» | — |
 | REQ-ENT-021 | Revisión en dispositivos físicos | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-ENT-022 | Presupuestos de la entrada | L1 | PARCIAL | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) | Una prueba lo cubre en parte; pide medición en móvil (la sonda de la esfera 2D se borró con T62, D-25) |
 | REQ-ENT-023 | Storyboard y revisión visual | L1 | HECHO | [record.spec.ts](../../apps/web/e2e/record.spec.ts) | — |
 | REQ-ENT-024 | Hero dentro de la escena | L1 | PARCIAL | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts) | Una prueba lo cubre en parte |
 | REQ-ENT-025 | Primer encuadre de la landing | L1 | PARCIAL | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) | Una prueba lo cubre en parte |
-| REQ-ENT-026 | CTA Explorar dimensionado | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «CTA Explorar y Tickets se ven sin scroll» | — |
-| REQ-ENT-027 | Tickets visible en 360×640 | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «CTA Explorar y Tickets se ven sin scroll» | — |
-| REQ-ENT-028 | Subtítulo según promociones | L1 | HECHO | [blocks.test.ts](../../apps/web/app/%28landing%29/components/blocks.test.ts) «el hero promete descuentos sólo con una promoción vigente» | — |
+| REQ-ENT-026 | CTA Explorar dimensionado | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «CTA Zarpar y Entradas se ven sin scroll» | — |
+| REQ-ENT-027 | Tickets visible en 360×640 | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «CTA Zarpar y Entradas se ven sin scroll» | — |
+| REQ-ENT-028 | Subtítulo según promociones | L1 | PARCIAL | [blocks.tsx](../../apps/web/app/%28landing%29/components/blocks.tsx) | Plan 007 T79: el diseño aprobado del hero (T77 v2, §11) quita la línea bajo el CTA; el texto del requisito lo revisa T83 |
 | REQ-ENT-029 | Navegación de la landing | L1 | HECHO | [accesos.spec.ts](../../apps/web/e2e/accesos.spec.ts); [access.test.ts](../../apps/web/lib/landing/access.test.ts) | — |
 | REQ-ENT-030 | Bloques por scroll | L1 | HECHO | [blocks.test.ts](../../apps/web/app/%28landing%29/components/blocks.test.ts) «un bloque sin contenido publicado útil no pinta nada» | — |
 | REQ-ENT-031 | Bloques de actividades y comunidad | L2 | L2 | — | — |
@@ -78,7 +78,7 @@ sube de estado lo que haya cerrado y enlaza su prueba.
 | REQ-ENT-035 | Checkout sólo con acción explícita | L1 | HECHO | [landing.spec.ts](../../apps/web/e2e/landing.spec.ts) «el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado» | — |
 | REQ-ENT-036 | URLs compartibles y Atrás | L1 | PARCIAL | [event-page.tsx](../../apps/web/app/%28landing%29/components/event-page.tsx) | Construido; sin prueba que lo nombre |
 | REQ-ENT-037 | Tickets general | L1 | HECHO | [entradas-model.test.ts](../../apps/web/app/mar/entradas-model.test.ts), [mar-entradas.spec.ts](../../apps/web/e2e/mar-entradas.spec.ts) | El mismo panel en la landing y dentro del mar (T58) |
-| REQ-ENT-038 | Carga ligera primero | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «motor bloqueado: el planeta ligero y Tickets funcionando (REQ-ENT-017, 038)» | — |
+| REQ-ENT-038 | Carga ligera primero | L1 | HECHO | [intro.spec.ts](../../apps/web/e2e/intro.spec.ts) «motor bloqueado: la versión estática y Tickets funcionando (REQ-ENT-017, 038)» | — |
 | REQ-ENT-039 | Teletransportes sin premios | L1 | HECHO | [arrival.test.ts](../../apps/web/lib/mundo/arrival.test.ts) | — |
 | REQ-ENT-040 | `/mar`: botón «Entradas» siempre visible, con viaje en turbo | L1 | HECHO | [mar-3d.spec.ts](../../apps/web/e2e/mar-3d.spec.ts) | — |
 | REQ-MUN-001 | Mundo 2D/2.5D; 3D sólo en `/mar` | L1 | PARCIAL | [page.tsx](../../apps/web/app/mar/page.tsx) | Construido; sin prueba que lo nombre |

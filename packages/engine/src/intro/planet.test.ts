@@ -7,6 +7,7 @@ import {
   frameAt,
   pickPlanetFraming,
   poseOf,
+  scrollState,
   validatePlanetIntro,
   viewMoved,
   type IntroAct,
@@ -59,7 +60,8 @@ describe('configuración de la entrada 3D (REQ-ENT-015)', () => {
     expect(CFG.status).toBe('muestra');
     expect(CFG.copy.title).toBe('BOIA');
     expect(CFG.copy.enter).toBe('Zarpar');
-    expect(CFG.pause.autoAdvance.enabled).toBe(false);
+    // Plan 007: no automatic advance at all; the rest waits for «Zarpar» or the scroll.
+    expect(Object.keys(CFG.pause)).toEqual(['uiInMs']);
   });
 
   it('es corta: aparición y «Zarpar» en menos de 1,5 s cada uno', () => {
@@ -85,8 +87,68 @@ describe('configuración de la entrada 3D (REQ-ENT-015)', () => {
 
   it('los encuadres se eligen por ancho de vista', () => {
     expect(pickPlanetFraming(CFG, 360)).toBe(CFG.framings[0]);
-    expect(pickPlanetFraming(CFG, 1280)).toBe(CFG.framings[1]);
+    expect(pickPlanetFraming(CFG, 768)).toBe(CFG.framings[1]);
+    expect(pickPlanetFraming(CFG, 1280)).toBe(CFG.framings.at(-1));
   });
+
+  it('el scroll: rechaza tramos que no crecen o un mar que no llega en una pantalla', () => {
+    const bad = (scroll: Partial<PlanetIntroConfig['scroll']>) =>
+      validatePlanetIntro({ ...CFG, scroll: { ...CFG.scroll, ...scroll } });
+    expect(bad({ dive: [0.5, 0.2] }).ok).toBe(false);
+    expect(bad({ sea: [0.8, 0.9] }).ok).toBe(false);
+    expect(bad({ haze: [0.9, 0.8, 1] }).ok).toBe(false);
+  });
+});
+
+describe('el hero llevado por el scroll (plan 007 T79)', () => {
+  it('reposo, zambullida y mar según la posición, en viewports', () => {
+    expect(scrollState(CFG, 0).phase).toBe('rest');
+    expect(scrollState(CFG, 0.5).phase).toBe('dive');
+    expect(scrollState(CFG, 1).phase).toBe('sea');
+    expect(scrollState(CFG, 4).phase).toBe('sea');
+    const rest = scrollState(CFG, 0);
+    expect([rest.ui, rest.dive, rest.sea, rest.haze]).toEqual([1, 0, 0, 0]);
+    expect(scrollState(CFG, CFG.scroll.uiOut[1]).ui).toBe(0);
+    const sea = scrollState(CFG, 1);
+    expect(sea.sea).toBe(1);
+    expect(sea.dive).toBe(1);
+    // The haze peaks inside the crossfade and is gone on the deck.
+    expect(scrollState(CFG, CFG.scroll.haze[1]).haze).toBe(1);
+    expect(scrollState(CFG, CFG.scroll.haze[2]).haze).toBe(0);
+  });
+
+  it.each(VIEWPORTS)(
+    'la zambullida del scroll es la de «Zarpar», recorrida por el scroll ($width)',
+    (vp) => {
+      const rest = frameAt(
+        CFG,
+        vp,
+        { act: 'pause', t: 1000, spin: 0.4, focus: PORT, s: 0 },
+        'intro',
+      );
+      expect(rest.pose).toEqual(poseOf(pickPlanetFraming(CFG, vp.width).intro, vp, 0.4));
+      const radii: number[] = [];
+      for (let i = 0; i <= 40; i++) {
+        const s = (CFG.scroll.dive[1] * i) / 40;
+        radii.push(
+          frameAt(CFG, vp, { act: 'pause', t: 1000, spin: 0.4, focus: PORT, s }, 'intro').pose
+            .radius,
+        );
+      }
+      expect(radii.every((r, i) => i === 0 || r >= radii[i - 1]!)).toBe(true);
+      const end = frameAt(
+        CFG,
+        vp,
+        { act: 'pause', t: 1000, spin: 0.4, focus: PORT, s: CFG.scroll.dive[1] },
+        'intro',
+      );
+      const zarpar = at(vp, 'landing', CFG.landing.durationMs, 0.4);
+      expect(end.pose).toEqual(zarpar.pose);
+      // Scrolling is not sailing: no veil, nothing done.
+      expect(end.cover).toBe(0);
+      expect(end.done).toBe(false);
+    },
+  );
 });
 
 describe.each(VIEWPORTS)('línea de tiempo con el planeta, $width×$height', (vp) => {
@@ -99,7 +161,7 @@ describe.each(VIEWPORTS)('línea de tiempo con el planeta, $width×$height', (vp
     expect(a.pose.y).toBeGreaterThan(intro.y);
     expect(a.pose.radius).toBeCloseTo(intro.radius * CFG.appear.growFrom);
     expect(b.pose).toEqual(intro);
-    expect([a.title, a.button, a.content, a.cover]).toEqual([0, 0, 0, 0]);
+    expect([a.title, a.button, a.sea, a.cover]).toEqual([0, 0, 0, 0]);
   });
 
   it('acto 2: la pausa no avanza sola; título y botón entran y se quedan', () => {
@@ -108,7 +170,7 @@ describe.each(VIEWPORTS)('línea de tiempo con el planeta, $width×$height', (vp
     expect(early.title).toBe(0);
     expect(late.title).toBe(1);
     expect(late.button).toBe(1);
-    expect(late.content).toBe(0);
+    expect(late.sea).toBe(0);
     expect(late.cover).toBe(0);
     expect(late.done).toBe(false);
   });
@@ -146,7 +208,7 @@ describe.each(VIEWPORTS)('línea de tiempo con el planeta, $width×$height', (vp
     expect(early.button).toBe(0);
     expect(mid.cover).toBe(0);
     expect(end.cover).toBe(1);
-    for (const x of [start, early, mid, end]) expect(x.content).toBe(0);
+    for (const x of [start, early, mid, end]) expect(x.sea).toBe(0);
   });
 
   it('sin puerto conocido, se zambulle igual sin girar', () => {

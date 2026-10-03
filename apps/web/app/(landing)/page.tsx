@@ -43,13 +43,7 @@ export default function LandingPage() {
       )}
       <LiveLanding
         initial={view}
-        heroScene={
-          <IntroStage
-            data={intro}
-            skipLabel={t('intro.skip')}
-            coverLabel={t('mar.client.preparandoElMar')}
-          />
-        }
+        heroScene={<IntroStage data={intro} coverLabel={t('mar.client.preparandoElMar')} />}
       />
       <LandingClient />
     </>

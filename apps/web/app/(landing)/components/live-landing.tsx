@@ -37,6 +37,7 @@ export function LiveLanding({ initial, heroScene }: { initial: HomeView; heroSce
           artists={view.artists}
           buyable={buyable}
           heroScene={heroScene}
+          social={view.social}
         />
       </main>
       <HomeBlocks

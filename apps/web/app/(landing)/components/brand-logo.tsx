@@ -6,19 +6,27 @@
  * sirve Next como archivos estáticos sin tipos de importación de imágenes.
  *
  * `label`: el nombre para lectores de pantalla; sin él es decorativo (el
- * enlace que lo envuelve ya se nombra).
+ * enlace que lo envuelve ya se nombra). `variant="wordmark"`: only the
+ * wordmark (plan 007 T79: the header and the large footer logo of the
+ * editorial landing).
  */
 export function BrandLogo({
   size = 'header',
+  variant = 'full',
   label,
 }: {
   size?: 'header' | 'footer';
+  variant?: 'full' | 'wordmark';
   label?: string;
 }) {
   const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true };
   return (
-    <span className={`brand-logo brand-logo--${size}`} {...a11y} data-testid="brand-logo">
-      <span className="brand-logo__mascot" />
+    <span
+      className={`brand-logo brand-logo--${size} brand-logo--${variant}`}
+      {...a11y}
+      data-testid="brand-logo"
+    >
+      {variant === 'full' && <span className="brand-logo__mascot" />}
       <span className="brand-logo__wordmark" />
     </span>
   );

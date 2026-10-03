@@ -29,19 +29,19 @@ async function captured(
 const LANDING = '/?intro=0';
 
 const hero = (page: Page) => page.locator('.hero');
-// El botón principal del hero: el mundo 3D (/mar), con Tickets al lado (T57).
+// El botón principal del hero: «Zarpar» (/mar), con «Entradas» al lado (plan 007).
 const exploreCta = (page: Page) => hero(page).getByTestId('cta-3d');
-const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Tickets', exact: true });
+const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Entradas', exact: true });
 const ticketsPanel = (page: Page) => page.getByRole('dialog', { name: 'Elige tu evento' });
 
-test('CTA Explorar y Tickets se ven sin scroll', async ({ page }, info) => {
+test('CTA Zarpar y Entradas se ven sin scroll', async ({ page }, info) => {
   await page.goto(LANDING);
   const vp = page.viewportSize()!;
   if (info.project.name === 'mobile') expect(vp).toEqual({ width: 360, height: 640 });
 
   for (const [name, el, minHeight] of [
-    ['Explorar', exploreCta(page), 56],
-    ['Tickets', heroTickets(page), 44],
+    ['Zarpar', exploreCta(page), 56],
+    ['Entradas', heroTickets(page), 44],
   ] as const) {
     await expect(el, name).toBeVisible();
     const box = (await el.boundingBox())!;
@@ -50,14 +50,22 @@ test('CTA Explorar y Tickets se ven sin scroll', async ({ page }, info) => {
     expect(box.height, `${name} alto mínimo`).toBeGreaterThanOrEqual(minHeight);
   }
 
-  // D-07: ancho completo (menos márgenes) hasta 480 px de viewport.
+  // D-07 con el diseño de plan 007 (T77 §5.1): hasta 480 px, la fila de
+  // «Zarpar» + «Entradas» ocupa el ancho completo (menos márgenes), «Zarpar» la mayor.
   if (vp.width <= 480) {
-    const box = (await exploreCta(page).boundingBox())!;
-    expect(box.width).toBeGreaterThanOrEqual(vp.width - 2 * 16 - 2);
+    const zarpar = (await exploreCta(page).boundingBox())!;
+    const tickets = (await heroTickets(page).boundingBox())!;
+    expect(zarpar.x).toBeLessThanOrEqual(16 + 1);
+    expect(tickets.x + tickets.width).toBeGreaterThanOrEqual(vp.width - 16 - 1);
+    expect(zarpar.width).toBeGreaterThan(tickets.width);
   }
 
-  const events = await captured(page);
-  expect(events.map((e) => e.event)).toContain('landing_view');
+  // La vista de la landing cuenta al pasar el hero con el scroll (plan 007).
+  expect((await captured(page)).map((e) => e.event)).not.toContain('landing_view');
+  await page.evaluate(() => window.scrollTo({ top: innerHeight * 1.2, behavior: 'instant' }));
+  await expect
+    .poll(async () => (await captured(page)).filter((e) => e.event === 'landing_view'))
+    .toEqual([expect.objectContaining({ properties: expect.objectContaining({ intro: 'none' }) })]);
 });
 
 test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', async ({ page }) => {
@@ -136,9 +144,8 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   await expect(panel).toBeVisible();
 
   const names = (await captured(page)).map((e) => e.event);
-  expect(names).toEqual(
-    expect.arrayContaining(['landing_view', 'tickets_panel_open', 'ticket_click_out']),
-  );
+  // Sin scroll no hay `landing_view` (plan 007: cuenta al pasar el hero).
+  expect(names).toEqual(expect.arrayContaining(['tickets_panel_open', 'ticket_click_out']));
   expect(names).not.toContain('purchase_confirmed');
 
   // Escape cierra, quita el #tickets y devuelve el foco al botón.

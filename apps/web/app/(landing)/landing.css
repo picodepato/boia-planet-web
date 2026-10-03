@@ -2,10 +2,15 @@
  * Landing de BOIA.PLANET. Marca de Álvaro desde T50: naranja, azul y negro
  * muestreados de art/marca/ (tokens --boia-* de globals.css), el logo
  * (mascota y wordmark). Tipografías de lib/fonts.ts (T74): títulos con
- * --font-title, texto con Inter (--font-body). El mar y el espacio siguen siendo los de la
- * escena. Contraste AA comprobado con axe: texto negro sobre naranja (el
- * blanco sobre naranja no llega a 4,5:1) y, para texto naranja sobre el mar,
- * el naranja de la mascota (--orange-text).
+ * --font-title, texto con Inter (--font-body).
+ *
+ * Plan 007 T79 (docs/propuestas/2026-10-03-landing-scroll.md, v2): one
+ * continuous scroll. A night-black editorial page over a fixed scene: the
+ * hero track (the planet, then the dive to the sea by the port) and the
+ * content as dark bands that fade in from the water, with the sea showing
+ * between them. Orange is the only colour (Zarpar, Comprar, the wordmark);
+ * tracked labels and hairlines are the only chrome. The Tickets panel and
+ * the other pages keep their navy surface (tokens --sea, --card, --line).
  */
 :root {
   --sea-deep: #0b1830;
@@ -19,13 +24,27 @@
   --on-orange: var(--boia-black);
   --orange-text: var(--boia-orange-bright);
   --violet: #b9a6ff;
-  /* Mismos tonos que el motor: el mar del juego y el espacio de la entrada. */
   --water: #0f5f7d;
   --space: #0b1830;
   --radius: 14px;
-  --header-h: 56px;
+  --header-h: 60px;
   --gutter: 16px;
+  /* T77 §3.2 */
+  --black: #05080f;
+  --band: #07101f;
+  --on-dark-70: rgb(255 255 255 / 0.7);
+  --on-dark-50: rgb(255 255 255 / 0.5);
+  --hairline: rgb(255 255 255 / 0.12);
+  /* T77 §5.2: the fade of a band and the sea between bands. */
+  --fade: 14vh;
+  --sea-window: 50vh;
   scroll-padding-top: calc(var(--header-h) + 8px);
+}
+
+@media (min-width: 600px) {
+  :root {
+    --gutter: 32px;
+  }
 }
 
 html {
@@ -35,6 +54,11 @@ html {
 /* La envoltura de (landing)/layout.tsx (y de la vista previa del Admin). */
 .landing-root {
   display: contents;
+}
+
+/* The scroll landing sits on night black (the other pages keep their navy). */
+body:has(.hero) {
+  background: var(--black);
 }
 
 /* ---------- Logo (T50) ---------- */
@@ -71,6 +95,15 @@ html {
   font-size: 56px;
 }
 
+/* The wordmark alone: the header (small) and the footer (large, on the night sea). */
+.brand-logo--wordmark.brand-logo--header {
+  font-size: 30px;
+}
+
+.brand-logo--wordmark.brand-logo--footer {
+  font-size: min(26vw, 280px);
+}
+
 body {
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
@@ -88,9 +121,11 @@ body {
   border: 0;
 }
 
+/* One ring everywhere (T77 §10): white with a dark halo, on every mood. */
 :focus-visible {
-  outline: 3px solid var(--violet);
+  outline: 3px solid #ffffff;
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--black);
 }
 
 #contenido:focus {
@@ -104,13 +139,30 @@ body {
   z-index: 100;
   padding: 10px 16px;
   background: var(--ink);
-  color: var(--sea);
+  color: var(--black);
   border-radius: 8px;
   font-weight: 700;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .skip-link:focus {
   top: 8px;
+}
+
+/* The tracked label (T77 §4): section labels, corners, hint, meta. */
+.label,
+.hero__corner,
+.hero__hint,
+.intro-loading,
+main[data-contenido] > .section > .section__inner > .section__title,
+.event-card__meta {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* ---------- Botones ---------- */
@@ -120,48 +172,65 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 20px;
+  padding: 0 22px;
   border-radius: 999px;
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
   text-decoration: none;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
   background: none;
   color: var(--ink);
-  font-family: inherit;
+  font-family: var(--font-body);
 }
 
 .button--tickets {
-  border-color: var(--ink);
-  background: rgb(11 24 48 / 0.55);
-  min-height: 48px;
+  border-color: rgb(255 255 255 / 0.75);
+  background: rgb(0 0 0 / 0.35);
+  min-height: 56px;
 }
 
-.button--tickets-small {
+.button--tickets-small,
+.button--zarpar-small {
   min-height: 40px;
-  padding: 0 16px;
-  border-color: var(--ink);
+  padding: 0 18px;
+  border-color: rgb(255 255 255 / 0.75);
+}
+
+.button--zarpar-small {
+  display: none;
+  border-color: var(--orange);
+  background: var(--orange);
+  color: var(--on-orange);
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@media (min-width: 600px) {
+  .button--zarpar-small {
+    display: inline-flex;
+  }
 }
 
 .button--buy {
   background: var(--orange);
   color: var(--on-orange);
-  margin-top: 12px;
+  margin-top: 16px;
+  min-height: 48px;
+}
+
+.button--secondary,
+.button--ghost {
+  border-color: rgb(255 255 255 / 0.55);
 }
 
 .button--secondary {
-  border-color: var(--ink);
-  margin-top: 16px;
-}
-
-.button--ghost {
-  border-color: var(--line);
-  min-height: 44px;
+  margin-top: 20px;
 }
 
 .button:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 
 /* ---------- Cabecera ---------- */
@@ -169,10 +238,13 @@ body {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 20;
-  background: rgb(11 24 48 / 0.92);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  z-index: 30;
+  background: rgb(7 16 31 / 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .site-header__inner {
@@ -181,9 +253,27 @@ body {
   justify-content: space-between;
   gap: 12px;
   height: var(--header-h);
-  max-width: 1120px;
+  max-width: 1264px;
   margin: 0 auto;
   padding: 0 var(--gutter);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    visibility 0.2s;
+}
+
+/* On the hero the header waits off screen (T77 §7.2: it slides in at s ≥ 0.95). */
+html[data-hero-top] .site-header {
+  background: transparent;
+  border-color: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+html[data-hero-top] .site-header__inner {
+  transform: translateY(-100%);
+  opacity: 0;
+  visibility: hidden;
 }
 
 .site-header__brand {
@@ -202,15 +292,18 @@ body {
 .site-header__links {
   display: none;
   list-style: none;
-  margin: 0 8px 0 0;
+  margin: 0 12px 0 0;
   padding: 0;
-  gap: 20px;
+  gap: 24px;
 }
 
 .site-header__links a {
   text-decoration: none;
-  color: var(--ink-soft);
+  color: var(--on-dark-70);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .site-header__links a:hover {
@@ -239,10 +332,10 @@ body {
   margin: 0;
   padding: 8px;
   list-style: none;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.4);
+  background: var(--band);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
 .site-header__menu-list a {
@@ -253,7 +346,7 @@ body {
 }
 
 .site-header__menu-list a:hover {
-  background: var(--sea);
+  background: rgb(255 255 255 / 0.06);
 }
 
 @media (min-width: 900px) {
@@ -265,144 +358,308 @@ body {
   }
 }
 
-/* ---------- Hero ---------- */
+/* ---------- Hero: the track, the fixed scene and the UI (plan 007) ---------- */
 
 /*
- * El hero ocupa la pantalla entera, también bajo la cabecera: su fondo es
- * la escena del mundo (T03), que empieza en el borde superior de la vista
- * y ahí mismo reproduce la entrada. El contenido va abajo, sobre un velo
- * para el contraste, y deja arriba la isla y el barco a la vista.
+ * The hero track: one screen at rest plus one screen of dive (T77 §5.3). It
+ * starts under the header. Its height is reserved from the first paint: no
+ * layout shift (REQ-ENT-038).
  */
 .hero {
   position: relative;
-  overflow: hidden;
-  min-height: 100vh;
-  min-height: 100svh;
+  height: 200vh;
+  height: 200svh;
   margin-top: calc(-1 * var(--header-h));
-  display: flex;
-  align-items: flex-end;
-  padding: calc(var(--header-h) + 24px) var(--gutter) max(28px, env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, var(--sea-deep) 0%, var(--sea) 45%, var(--sea-light) 100%);
 }
 
-/* ---------- Escena del hero y entrada (T03) ---------- */
+/* Static version decided before the first paint: one screen (T77 §9). */
+html[data-hero-static] .hero {
+  height: 100vh;
+  height: 100svh;
+}
 
-/* El cielo sobre el horizonte del planeta (T57). Contenedor de tamaño: el
-   planeta ligero se mide en cqmin (el lado corto del hero), como el de la
-   escena. */
+/*
+ * The scene, fixed under the whole page and sized from CSS (the canvas reads
+ * its size): the CSS sky and planet first, then the canvas or the still.
+ * Contenedor de tamaño: el planeta ligero se mide en cqmin, como el de la
+ * escena.
+ */
 .hero__scene {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 0;
+  height: 100vh;
+  height: 100lvh;
   overflow: hidden;
   container-type: size;
-  background: linear-gradient(180deg, #0b1233 0%, #241a5e 42%, #5b4aa8 70%, #c9789a 100%);
-  transition: background-color 0.3s ease;
-}
-
-/* Velo inferior: contraste para el texto sin tapar la isla. */
-.hero__scene::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 72%;
-  background: linear-gradient(0deg, rgb(11 24 48 / 0.92) 0%, rgb(11 24 48 / 0.7) 45%, transparent);
   pointer-events: none;
-  transition: opacity 0.6s ease;
+  background: radial-gradient(130% 95% at 50% 42%, #0e1433 0%, #070a1c 48%, #020309 100%);
 }
 
-.hero__still,
-.hero__canvas {
-  position: absolute;
-  inset: 0;
-}
-
-/* Planeta ligero (sin motor ni JavaScript): el horizonte del mar del planeta,
-   donde lo deja la escena; tamaño y sitio por encuadre en stillCss. muestra */
+/* Planeta ligero (sin motor ni JavaScript), a contraluz, en la pose de reposo;
+   tamaño y sitio por encuadre en stillCss. muestra */
 .hero__planet {
   position: absolute;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 46% 3%, rgb(255 244 226 / 0.9) 0 0.9%, transparent 1.4%),
-    radial-gradient(circle at 58% 5%, #7db043 0 1.6%, #ebcf9e 2%, #3aa3c4 3.4%, transparent 5%),
-    radial-gradient(circle at 36% 7%, #7db043 0 1.1%, #ebcf9e 1.5%, #3aa3c4 2.6%, transparent 4%),
-    radial-gradient(circle at 50% 0%, #3aa3c4 0%, #1a7aa6 14%, #15245e 46%, #0b1233 70%);
+  background: radial-gradient(circle at 34% 30%, #2f5d8e 0%, #1a416f 28%, #0e2548 58%, #050b1c 88%);
   box-shadow:
-    0 0 0 6px rgb(159 220 255 / 0.18),
-    0 0 60px 16px rgb(159 220 255 / 0.35);
+    inset -22px -14px 48px rgb(0 0 0 / 0.55),
+    0 0 0 2px rgb(159 208 255 / 0.22),
+    0 0 48px 8px rgb(159 208 255 / 0.14);
+  transition: opacity 0.4s ease;
 }
 
-.hero__scene[data-ready] .hero__still {
+/* The appearance plays from empty space; the scene covers the CSS planet. */
+html[data-intro='play'] .hero__planet,
+.hero__scene[data-ready] .hero__planet,
+html[data-hero='still'] .hero__planet {
   opacity: 0;
 }
 
-.hero__still {
-  transition: opacity 0.3s ease;
-}
-
 .hero__canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
 }
 
 .hero__scene[data-ready] .hero__canvas {
   opacity: 1;
 }
 
-.intro-overlay {
-  display: none;
-}
-
-/* Mientras dura la entrada: el mini-mundo, sus textos, Tickets y «Saltar». */
-html[data-intro] {
-  overflow: hidden;
-}
-
-html[data-intro] .intro-overlay {
-  display: block;
+/* The static version (T78's stills): reduced motion, no WebGL, slow scene. */
+.hero__still-img {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  pointer-events: none;
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
 }
 
-html[data-intro] .hero__scene {
-  background: var(--space);
+html[data-hero='still'] .hero__still-img,
+.hero__scene--still .hero__still-img {
+  display: block;
 }
 
-html[data-intro] .hero__scene::after,
-html[data-intro] .hero__still {
+.hero__still-img--night {
   opacity: 0;
-}
-
-html[data-intro='play'] .site-header,
-html[data-intro='play'] .hero__content {
-  visibility: hidden;
-  opacity: 0;
-}
-
-html[data-intro] #contenido > :not(.hero),
-html[data-intro] .site-footer {
-  visibility: hidden;
-}
-
-.site-header,
-.hero__content {
   transition: opacity 0.6s ease;
 }
 
-/* Acto 0 (D-19): boia dibujada y «Cargando», sólo si la escena tarda. El
-   retraso sale de la configuración (loading.showAfterMs, introCss). */
-.intro-loading {
+.hero__scene[data-night] .hero__still-img--night {
+  opacity: 1;
+}
+
+/* The still's bottom fades to black under the pills and labels (T77 §9). */
+.hero__scene::after {
+  content: '';
   position: absolute;
   inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(5 8 15 / 0.35) 0%,
+    transparent 22%,
+    transparent 45%,
+    rgb(5 8 15 / 0.88) 100%
+  );
+  opacity: 0;
+}
+
+html[data-hero='still'] .hero__scene::after,
+.hero__scene--still::after {
+  opacity: 1;
+}
+
+/* The UI sticks for the first screen and fades out with the dive (run.ts). */
+.hero__ui {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 100vh;
+  height: 100svh;
+  /* The 3D letters' canvas carries a margin; it never widens the page. */
+  overflow: hidden;
+}
+
+.hero__ui p {
+  margin: 0;
+}
+
+/* «BOIA»: the wordmark (flat text, or the 3D letters of T27 over it). */
+.hero__wordmark {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: 14%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-family: var(--font-title);
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--orange);
+  text-shadow: 0 6px 28px rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+
+.intro-title3d {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  pointer-events: none;
+}
+
+.hero__wordmark[data-title='3d'] {
+  color: transparent;
+  text-shadow: none;
+}
+
+.hero__wordmark[data-title='3d'] .intro-title3d {
+  display: block;
+}
+
+/* «BOIA» and the hint come in at the rest (400 ms), as the pause of today. */
+.hero__wordmark,
+.hero__hint {
+  transition:
+    opacity 0.4s ease,
+    visibility 0.4s;
+}
+
+html[data-intro='play'] .hero__wordmark,
+html[data-intro='play'] .hero__hint {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* «Zarpar» + «Entradas», visible from the first paint. */
+.hero__actions {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: 74%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* CTA dominante (D-07, REQ-ENT-026): «Zarpar», ≥ 56 px, pulso ≤ 4 % cada 3 s. */
+.cta-explore {
+  flex: 195 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--on-orange);
+  text-decoration: none;
+  animation: cta-pulse 3s ease-in-out infinite;
+}
+
+.cta-explore__label {
+  font-family: var(--font-title);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.cta-explore:hover {
+  filter: brightness(1.08);
+}
+
+.hero__actions .button--tickets {
+  flex: 136 1 0;
+}
+
+@keyframes cta-pulse {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  85% {
+    transform: scale(1.04);
+  }
+}
+
+@media (min-width: 600px) {
+  .cta-explore {
+    flex: 0 0 220px;
+  }
+  .cta-explore__label {
+    font-size: 18px;
+  }
+  .hero__actions .button--tickets {
+    flex: 0 0 160px;
+  }
+}
+
+/* The scroll hint (T77 §10): a button that goes one screen down. */
+.hero__hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 66px);
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  color: var(--on-dark-70);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.hero__hint-line {
+  display: block;
+  width: 1px;
+  height: 24px;
+  background: currentColor;
+  transform-origin: top;
+  animation: hint-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes hint-breathe {
+  50% {
+    transform: scaleY(0.45);
+    opacity: 0.5;
+  }
+}
+
+@media (max-height: 700px) {
+  .hero__hint {
+    gap: 6px;
+    padding-block: 4px;
+  }
+  .hero__hint-line {
+    height: 14px;
+  }
+}
+
+/* Act 0: «Cargando», in the hint's place, only if the scene takes a while. */
+.intro-loading {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 74px);
+  margin: 0;
+  text-align: center;
+  color: var(--on-dark-50);
   opacity: 0;
   visibility: hidden;
 }
@@ -419,138 +676,71 @@ html[data-intro='play'][data-intro-act='waiting'] .intro-loading {
   }
 }
 
-.intro-loading__label {
-  margin: 0;
-  color: var(--ink-soft);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+/* The corner labels (T77 §5.1): facts, never a sentence in the middle. */
+.hero__corner {
+  position: absolute;
+  color: var(--on-dark-50);
 }
 
-.intro-loading__boia {
-  animation: intro-bob 2.4s ease-in-out infinite;
+.hero__corner--place {
+  top: max(16px, env(safe-area-inset-top));
+  left: var(--gutter);
 }
 
-@keyframes intro-bob {
-  50% {
-    transform: translateY(-4px);
+.hero__corner--bottom {
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+@media (min-width: 600px) {
+  .hero__corner--place {
+    top: 24px;
+  }
+  .hero__corner--bottom {
+    bottom: 24px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+  }
+  .hero__corner-line {
+    text-align: right;
+    max-width: 46ch;
+  }
+  .hero__hint {
+    bottom: calc(7.5% - 24px);
+  }
+  .intro-loading {
+    bottom: 7.5%;
+  }
+  .hero__wordmark {
+    top: 13%;
+    font-size: 88px;
+  }
+  .hero__actions {
+    top: 80%;
   }
 }
 
-/* Acto 2: «BOIA» y el botón. La opacidad la lleva la línea de tiempo; la
-   posición por encuadre sale de la configuración (introCss). */
-.intro-overlay__title {
-  position: absolute;
-  left: var(--gutter);
-  right: var(--gutter);
-  top: 14%;
-  margin: 0;
-  transform: translateY(-50%);
-  text-align: center;
-  font-size: clamp(3rem, 17vw, 6.5rem);
-  line-height: 1;
-  font-family: var(--font-title);
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  color: var(--orange);
-  text-shadow: 0 2px 18px rgb(11 24 48 / 0.6);
-  opacity: 0;
+@media (min-width: 900px) {
+  .hero__wordmark {
+    top: 12%;
+    font-size: 104px;
+  }
+  .hero__actions {
+    top: 84%;
+  }
+  .hero__corner {
+    font-size: 12px;
+  }
 }
 
-/* Título 3D (T27): letras de Blender pintadas en un canvas 2D encima del
-   texto, que sigue ahí para los lectores de pantalla y como respaldo. */
-.intro-title3d {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: none;
-  pointer-events: none;
-}
-
-.intro-overlay__title[data-title='3d'] {
-  color: transparent;
-  text-shadow: none;
-}
-
-.intro-overlay__title[data-title='3d'] .intro-title3d {
-  display: block;
-}
-
-.intro-overlay__enter {
-  pointer-events: auto;
-  position: absolute;
-  left: 50%;
-  top: 80%;
-  transform: translate(-50%, -50%);
-  min-height: 56px;
-  min-width: 200px;
-  padding: 0 36px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--orange);
-  color: var(--on-orange);
-  font: inherit;
-  font-size: 1.125rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  opacity: 0;
-  visibility: hidden;
-}
-
-html[data-intro-act='paused'] .intro-overlay__enter,
-html[data-intro-act='landing'] .intro-overlay__enter {
-  visibility: visible;
-}
-
-html[data-intro-act='landing'] .intro-overlay__enter {
-  pointer-events: none;
-}
-
-/* Tickets y «Saltar» desde el primer momento (REQ-ENT-002, 008). */
-.intro-overlay__links {
-  position: absolute;
-  left: max(var(--gutter), env(safe-area-inset-left));
-  right: max(var(--gutter), env(safe-area-inset-right));
-  bottom: max(var(--gutter), env(safe-area-inset-bottom));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  transition: opacity 0.3s ease;
-}
-
-.intro-overlay__tickets {
-  pointer-events: auto;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  max-width: 55%;
-  color: var(--ink);
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.25;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.intro-overlay__skip {
-  pointer-events: auto;
-  flex: none;
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 0.4);
-  background: rgb(11 24 48 / 0.55);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-html[data-intro='arrive'] .intro-overlay__links {
-  opacity: 0;
+/* No scroll while «Zarpar» dives (T77 §7.2). */
+html[data-intro-act='landing'] {
+  overflow: hidden;
 }
 
 /* Velo del mar (T64): al final de «Zarpar» cubre la vista con la pantalla de
@@ -560,7 +750,7 @@ html[data-intro='arrive'] .intro-overlay__links {
 .intro-cover {
   position: fixed;
   inset: 0;
-  z-index: 5;
+  z-index: 80;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -623,144 +813,11 @@ html[data-intro='arrive'] .intro-overlay__links {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .intro-loading__boia,
-  .intro-cover__boia {
-    animation: none;
-  }
-}
-
-/* Mar de respaldo en CSS: la escena del motor (T03) se pondrá detrás. */
-.hero__sea {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 45%;
-  background:
-    repeating-linear-gradient(165deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 28px),
-    radial-gradient(ellipse at 70% 110%, rgb(242 106 27 / 0.22), transparent 60%);
-  pointer-events: none;
-}
-
-.hero__content {
-  position: relative;
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.hero__brand {
-  margin: 0 0 8px;
-  font-weight: 800;
-  letter-spacing: 0.2em;
-  color: var(--violet);
-  font-size: 0.875rem;
-}
-
-.hero__title {
-  margin: 0 0 12px;
-  font-size: clamp(1.75rem, 7.5vw, 3.5rem);
-  line-height: 1.08;
-  font-family: var(--font-title);
-  font-weight: 400;
-  letter-spacing: 0.01em;
-}
-
-.hero__positioning {
-  margin: 0 auto 24px;
-  max-width: 34ch;
-  color: var(--ink-soft);
-  font-size: 1.0625rem;
-}
-
-.hero__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-/* CTA dominante (D-07, REQ-ENT-026): ≥ 56 px de alto, ancho completo hasta
-   480 px de viewport, pulso ≤ 4 % cada 3 s. */
-.cta-explore {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  min-width: 320px;
-  padding: 10px 28px;
-  border-radius: 20px;
-  background: var(--orange);
-  color: var(--on-orange);
-  text-decoration: none;
-  box-shadow: 0 10px 30px rgb(236 79 36 / 0.35);
-  animation: cta-pulse 3s ease-in-out infinite;
-}
-
-.cta-explore__label {
-  font-size: 1.25rem;
-  font-family: var(--font-title);
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  line-height: 1.2;
-}
-
-.cta-explore__sub {
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.cta-explore:hover {
-  filter: brightness(1.06);
-}
-
-@keyframes cta-pulse {
-  0%,
-  70%,
-  100% {
-    transform: scale(1);
-  }
-  85% {
-    transform: scale(1.04);
-  }
-}
-
-@media (max-width: 480px) {
-  .cta-explore,
-  .button--tickets {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-/* Tickets al lado del botón principal (plan 005), a su altura. */
-@media (min-width: 481px) {
-  .hero__actions {
-    flex-direction: row;
-    justify-content: center;
-    align-items: stretch;
-    flex-wrap: wrap;
-  }
-
-  .button--tickets {
-    min-width: 200px;
-    min-height: 64px;
-    border-radius: 20px;
-    font-size: 1.125rem;
-  }
-}
-
 /* ---------- Secciones ---------- */
 
 .section {
   padding: 56px var(--gutter);
   background: var(--sea);
-}
-
-.section--alt {
-  background: var(--sea-deep);
 }
 
 .section__inner {
@@ -781,6 +838,101 @@ html[data-intro='arrive'] .intro-overlay__links {
   margin: 0 0 24px;
   color: var(--ink-soft);
   max-width: 60ch;
+}
+
+/*
+ * The bands of the home (T77 §8): full width, night blue, fading in from the
+ * water and out into the next sea window; nothing animates them, the scene
+ * moves under them. Inside, the editorial grid: the tracked label on the
+ * left (the h2 keeps its text and id), the content on the right.
+ */
+main[data-contenido] > .section {
+  position: relative;
+  z-index: 1;
+  padding: calc(var(--fade) + 24px) var(--gutter) calc(var(--fade) + 40px);
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--band) var(--fade),
+    var(--band) calc(100% - var(--fade)),
+    transparent 100%
+  );
+}
+
+main[data-contenido] > .section + .section {
+  margin-top: var(--sea-window);
+}
+
+/* The first band comes up out of the sea at the end of the dive (T77 §5.2). */
+main[data-contenido] > .hero + .section {
+  margin-top: -44vh;
+}
+
+html[data-hero-static] main[data-contenido] > .hero + .section {
+  margin-top: calc(-1 * var(--fade));
+}
+
+main[data-contenido] > .section > .section__inner {
+  max-width: 1200px;
+}
+
+main[data-contenido] > .section > .section__inner > .section__title {
+  margin: 0 0 20px;
+  color: var(--on-dark-50);
+}
+
+main[data-contenido] .section__lead,
+main[data-contenido] .philosophy__text {
+  color: var(--on-dark-70);
+  font-size: 17px;
+  line-height: 1.5;
+  max-width: 58ch;
+}
+
+/* A display line where a band needs one (Fotos). */
+.section__display {
+  margin: 0 0 28px;
+  font-family: var(--font-title);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+@media (min-width: 600px) {
+  main[data-contenido] > .section {
+    padding: calc(var(--fade) + 32px) var(--gutter) calc(var(--fade) + 56px);
+  }
+  .section__display {
+    font-size: 36px;
+  }
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] > .hero + .section {
+    margin-top: -38vh;
+  }
+  main[data-contenido] > .section > .section__inner {
+    display: grid;
+    grid-template-columns: 28% minmax(0, 1fr);
+    align-items: start;
+  }
+  main[data-contenido] > .section > .section__inner > * {
+    grid-column: 2;
+  }
+  main[data-contenido] > .section > .section__inner > .section__title {
+    grid-column: 1;
+    grid-row: 1 / span 20;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  main[data-contenido] .section__lead,
+  main[data-contenido] .philosophy__text {
+    font-size: 19px;
+  }
+  .section__display {
+    font-size: 44px;
+    line-height: 1.08;
+  }
 }
 
 .card-grid,
@@ -828,11 +980,7 @@ html[data-intro='arrive'] .intro-overlay__links {
   gap: 8px;
   align-items: center;
   margin: 0 0 4px;
-  font-size: 0.875rem;
   color: var(--ink-soft);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .event-card__name {
@@ -867,6 +1015,113 @@ html[data-intro='arrive'] .intro-overlay__links {
   background: var(--ink);
   color: var(--sea);
   font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+/* In the bands: no cards, type and hairlines (T77 §8). */
+main[data-contenido] .event-card {
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+main[data-contenido] .event-card__meta {
+  color: var(--on-dark-50);
+}
+
+main[data-contenido] .event-card__when,
+main[data-contenido] .event-card__lineup,
+main[data-contenido] .event-card__desc,
+main[data-contenido] .event-card__note {
+  color: var(--on-dark-70);
+}
+
+/* Próximo evento: the date as the display, then the name. */
+.event-card__date {
+  margin: 0 0 14px;
+  font-family: var(--font-title);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+main[data-contenido] .event-card--featured .event-card__name {
+  margin: 0 0 10px;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+main[data-contenido] .event-card--featured .event-card__when {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+main[data-contenido] .event-card--featured .event-card__desc {
+  max-width: 58ch;
+}
+
+@media (min-width: 600px) {
+  .event-card__date {
+    font-size: 80px;
+  }
+  main[data-contenido] .event-card--featured .event-card__name {
+    font-size: 26px;
+  }
+}
+
+@media (min-width: 900px) {
+  .event-card__date {
+    font-size: 96px;
+  }
+  main[data-contenido] .event-card--featured .event-card__name {
+    font-size: 40px;
+    line-height: 1.08;
+  }
+}
+
+/* Próximos eventos: rows divided by hairlines. */
+main[data-contenido] .card-grid {
+  display: block;
+  border-top: 1px solid var(--hairline);
+}
+
+main[data-contenido] .card-grid > li {
+  padding: 22px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+main[data-contenido] .card-grid .event-card__name {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+main[data-contenido] .card-grid .button--buy {
+  margin-top: 14px;
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .card-grid .event-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 32px;
+  }
+  main[data-contenido] .card-grid .event-card > * {
+    grid-column: 1;
+  }
+  main[data-contenido] .card-grid .event-card > .button--buy,
+  main[data-contenido] .card-grid .event-card > .event-card__soon {
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    align-self: center;
+    margin: 0;
+  }
+  main[data-contenido] .card-grid .event-card__name {
+    font-size: 30px;
+  }
 }
 
 /* ---------- Artistas ---------- */
@@ -941,8 +1196,108 @@ html[data-intro='arrive'] .intro-overlay__links {
   align-self: start;
 }
 
+.artist-card__spotify {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--on-dark-70);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-underline-offset: 3px;
+}
+
+/* In the band: hairline rows, the name in Archivo, genres to the right. */
+main[data-contenido] .artist-trio {
+  display: block;
+  border-top: 1px solid var(--hairline);
+}
+
+main[data-contenido] .artist-trio > li {
+  border-bottom: 1px solid var(--hairline);
+}
+
+main[data-contenido] .artist-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  column-gap: 16px;
+  row-gap: 2px;
+  padding: 18px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+main[data-contenido] .artist-card__avatar {
+  display: none;
+}
+
+main[data-contenido] .artist-card__photo {
+  grid-row: 1 / span 2;
+  width: 48px;
+  height: 48px;
+  filter: grayscale(1);
+}
+
+main[data-contenido] .artist-card:has(.artist-card__photo) {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+}
+
+main[data-contenido] .artist-card__name {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+main[data-contenido] .artist-card__genres {
+  grid-column: 1;
+  color: var(--on-dark-50);
+  font-size: 14px;
+}
+
+main[data-contenido] .artist-card__spotify {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__genres {
+  grid-column: 2;
+}
+
+main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__spotify {
+  grid-column: 3;
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .artist-card__name {
+    font-size: 30px;
+  }
+}
+
+.artist-rotator__toggle {
+  margin-top: 8px;
+}
+
 .artists-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
   margin: 24px 0 0;
+}
+
+/* «Escúchalo en Spotify» (plan 007): a plain link to the playlist. */
+.listen-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: 44px;
+  color: var(--ink);
+  font-weight: 600;
+  text-underline-offset: 4px;
 }
 
 .artists-page__list {
@@ -987,6 +1342,28 @@ html[data-intro='arrive'] .intro-overlay__links {
   letter-spacing: 0.06em;
 }
 
+main[data-contenido] .philosophy__verbs {
+  gap: 0;
+  border-top: 1px solid var(--hairline);
+  max-width: 58ch;
+}
+
+main[data-contenido] .philosophy__verbs li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--on-dark-70);
+}
+
+main[data-contenido] .philosophy__verb {
+  display: block;
+  color: var(--ink);
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 /* Contacto con la Filosofía dentro (T65). */
 .contact__philosophy {
   margin-bottom: 32px;
@@ -995,6 +1372,11 @@ html[data-intro='arrive'] .intro-overlay__links {
 .contact__subtitle {
   margin: 0 0 12px;
   font-size: 1.25rem;
+}
+
+main[data-contenido] .contact__subtitle {
+  margin: 0 0 16px;
+  font-size: 22px;
 }
 
 .photo-placeholder {
@@ -1024,6 +1406,51 @@ html[data-intro='arrive'] .intro-overlay__links {
   border-radius: var(--radius);
 }
 
+/* Fotos: edge to edge, no radius; placeholders as stage-lit darkness (frame 04). */
+main[data-contenido] #fotos .photo-grid {
+  grid-column: 1 / -1;
+  gap: 6px;
+  margin: 0 calc(-1 * var(--gutter)) 28px;
+}
+
+main[data-contenido] #fotos .photo-grid img,
+main[data-contenido] #fotos .photo-placeholder {
+  border-radius: 0;
+}
+
+main[data-contenido] #fotos .photo-placeholder {
+  place-items: end start;
+  padding: 14px;
+  color: var(--on-dark-50);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+main[data-contenido] #fotos .photo-placeholder--0 {
+  background:
+    radial-gradient(circle at 30% 35%, rgb(255 140 70 / 0.5), transparent 32%),
+    linear-gradient(160deg, #2a2340, #10121f);
+}
+
+main[data-contenido] #fotos .photo-placeholder--1 {
+  background:
+    radial-gradient(circle at 50% 30%, rgb(255 90 208 / 0.45), transparent 32%),
+    linear-gradient(160deg, #3a1a2a, #120e1c);
+}
+
+main[data-contenido] #fotos .photo-placeholder--2 {
+  background:
+    radial-gradient(circle at 62% 40%, rgb(255 233 176 / 0.4), transparent 32%),
+    linear-gradient(160deg, #142a3a, #0b111c);
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] #fotos .photo-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .chip-list {
   display: flex;
   flex-wrap: wrap;
@@ -1040,6 +1467,28 @@ html[data-intro='arrive'] .intro-overlay__links {
   border: 1px solid var(--line);
 }
 
+/* Tienda: the products as one running line, separated by dots. */
+main[data-contenido] .chip-list {
+  gap: 4px 0;
+}
+
+main[data-contenido] .chip {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+main[data-contenido] .chip + .chip::before {
+  content: '·';
+  margin: 0 0.45em;
+  color: var(--on-dark-50);
+}
+
 .link-list {
   list-style: none;
   margin: 0;
@@ -1053,12 +1502,13 @@ html[data-intro='arrive'] .intro-overlay__links {
   align-items: center;
   min-height: 44px;
   font-weight: 600;
+  text-underline-offset: 4px;
 }
 
 .link-list--inline {
   display: flex;
   flex-wrap: wrap;
-  column-gap: 20px;
+  column-gap: 24px;
 }
 
 /* ---------- Pie ---------- */
@@ -1084,6 +1534,44 @@ html[data-intro='arrive'] .intro-overlay__links {
   font-size: 0.875rem;
 }
 
+/*
+ * The footer of the home: the large wordmark on the night sea, then solid
+ * black (T77 §8, plan 007 addendum).
+ */
+main[data-contenido] ~ .site-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: var(--sea-window);
+  padding: 18vh var(--gutter) 56px;
+  border: 0;
+  background: linear-gradient(to bottom, transparent 0, rgb(5 8 15 / 0.7) 22vh, var(--black) 40vh);
+}
+
+main[data-contenido] ~ .site-footer .site-footer__inner {
+  max-width: 1200px;
+  gap: 16px;
+}
+
+main[data-contenido] ~ .site-footer .site-footer__brand {
+  margin: 0 0 4px;
+  line-height: 0;
+}
+
+.site-footer__listen {
+  margin: 0 0 12px;
+}
+
+main[data-contenido] ~ .site-footer .link-list a {
+  color: var(--on-dark-70);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+main[data-contenido] ~ .site-footer .site-footer__small {
+  color: var(--on-dark-50);
+}
+
 .legal {
   padding: 40px var(--gutter);
   min-height: 100svh;
@@ -1102,7 +1590,8 @@ html[data-intro='arrive'] .intro-overlay__links {
 
 /* ---------- Panel de Tickets ----------
    Sin JavaScript: se abre con :target (#tickets). Con JavaScript manda la
-   clase .is-open que pone LandingClient. */
+   clase .is-open que pone LandingClient. Untouched by plan 007 (its sheet
+   stays navy, T77 §13.9). */
 
 .tickets-panel {
   display: none;
@@ -1216,9 +1705,15 @@ html.panel-open {
     scroll-behavior: auto;
   }
   .cta-explore,
+  .hero__hint-line,
   .artist-trio__item--enter,
-  .tickets-panel__sheet {
+  .tickets-panel__sheet,
+  .intro-cover__boia {
     animation: none;
+  }
+  .hero__still-img--night,
+  .site-header__inner {
+    transition: none;
   }
 }
 
@@ -1236,6 +1731,10 @@ html.panel-open {
 }
 
 .photos-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
   margin: 24px 0 0;
 }
 
@@ -1284,8 +1783,14 @@ html.panel-open {
   text-underline-offset: 3px;
 }
 
-.photos-all .sail-link {
-  margin-left: 16px;
+main[data-contenido] .js .sail-link,
+.js main[data-contenido] .sail-link {
+  color: var(--on-dark-70);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: underline;
 }
 
 .sail-row {
@@ -1300,7 +1805,7 @@ html.panel-open {
   min-width: 44px;
   min-height: 44px;
   padding: 0 10px;
-  border: 2px solid var(--line);
+  border: 1.5px solid var(--hairline);
   border-radius: 999px;
   background: transparent;
   color: var(--ink);
@@ -1356,6 +1861,15 @@ html.panel-open {
   border-left: 4px solid var(--orange);
   border-radius: var(--radius);
   background: var(--card);
+}
+
+main[data-contenido] ~ .site-footer .footer-invite {
+  max-width: 58ch;
+  padding: 4px 0 4px 16px;
+  border-left-width: 2px;
+  border-radius: 0;
+  background: none;
+  color: var(--on-dark-70);
 }
 
 .footer-invite__item {

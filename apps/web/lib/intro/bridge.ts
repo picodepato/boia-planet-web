@@ -1,20 +1,23 @@
-import { LANDED_EVENT, type BootEntry, type IntroOutcome } from '@boia/engine/intro';
+import type { BootEntry, EnterSource, IntroOutcome, ScrollPhase } from '@boia/engine/intro';
 
 /** Diagnóstico de la entrada, legible desde la consola y desde las pruebas e2e. */
 export interface IntroDiagnostics {
   mode: string;
   phase: string;
   sceneStatus: string;
+  /** How the rest was reached (`played`, `skipped`, `none`); `null` before. */
   outcome: IntroOutcome | null;
+  /** The static version (T78's still): reduced motion, no WebGL, budget missed, low power. */
+  fallback: boolean;
   scenesCreated: number;
   worldsAlive: number;
   framesRendered: number;
-  /** Fotogramas en los que el planeta visible se movió o giró. */
+  /** Fotogramas en los que el planeta visible se movió o giró, o la cámara bajó. */
   cameraMoves: number;
   /** Radio del planeta (px) en los fotogramas de «Zarpar»: sólo crece. */
   landingRadius: number[];
-  /** Cómo se pidió «Zarpar»: botón o avance automático. */
-  enteredBy: 'button' | 'auto' | null;
+  /** Which «Zarpar» was pressed: the hero pill (the dive) or the header pill (the veil). */
+  enteredBy: EnterSource | null;
   /** ms de reloj de la aparición y de «Zarpar» (sólo si se vieron enteros). */
   appearedMs: number | null;
   playedMs: number | null;
@@ -24,8 +27,8 @@ export interface IntroDiagnostics {
   sceneReadyMs: number | null;
   /** ms de plazo de carga que sobraban al llegar la escena. */
   budgetLeftMs: number | null;
-  /** ms desde la carga (arranque del script) hasta ver la landing. */
-  landedAtMs: number | null;
+  /** ms from the load (boot script) to the rest. */
+  restAtMs: number | null;
   /** Fotograma más largo durante la animación y cuántos pasaron de 50 ms. */
   longestFrameMs: number;
   slowFrames: number;
@@ -40,15 +43,20 @@ export interface IntroDiagnostics {
   islands: number | null;
   /** Ids de esas islas: las mismas que en /mar (T64). */
   islandIds: string[] | null;
-  /**
-   * Adónde llevó la entrada (T64): `game`, «Zarpar» entra en /mar; `landing`,
-   * saltada, sin escena o visita directa. `null` mientras sigue.
-   */
-  exit: 'game' | 'landing' | null;
+  /** `game` once «Zarpar» enters /mar (T64); `null` before. */
+  exit: 'game' | null;
   /** Velo del mar del último fotograma (0–1): llega a 1 antes de entrar en el juego. */
   cover: number;
   /** Último fotograma pintado: el planeta en px CSS de la vista (centro, radio) y su giro. */
   pose: { x: number; y: number; radius: number; tilt: number; spin: number } | null;
+  /**
+   * The scroll hero (plan 007): `s` in viewport heights (smoothed), the
+   * phase it shows (`rest`, `dive`, `sea`) and the light of the sea (0
+   * golden hour → 1 night).
+   */
+  scroll: { s: number; phase: ScrollPhase; light: number };
+  /** Sea props (T78 GLBs) placed in the scene. */
+  props: number;
 }
 
 export interface TitleDiagnostics {
@@ -68,16 +76,4 @@ declare global {
     __boiaEntry?: BootEntry;
     __boiaIntro?: IntroDiagnostics;
   }
-}
-
-/** Llama a `cb` cuando se ve la landing (ya, si ya se ve). Devuelve la baja. */
-export function onLanded(cb: (outcome: IntroOutcome) => void): () => void {
-  const entry = window.__boiaEntry;
-  if (!entry || entry.landed) {
-    cb(entry?.landed ?? 'none');
-    return () => {};
-  }
-  const handler = (e: Event) => cb((e as CustomEvent<{ intro: IntroOutcome }>).detail.intro);
-  window.addEventListener(LANDED_EVENT, handler, { once: true });
-  return () => window.removeEventListener(LANDED_EVENT, handler);
 }

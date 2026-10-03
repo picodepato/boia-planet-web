@@ -7,6 +7,8 @@ import {
 } from './controller';
 import {
   DEFAULT_PLANET_INTRO as CFG,
+  pickPlanetFraming,
+  poseOf,
   viewMoved,
   type IntroFrame,
   type IntroMode,
@@ -17,11 +19,6 @@ const VP = { width: 360, height: 640 };
 const APPEAR = CFG.appear.durationMs;
 const LAND = CFG.landing.durationMs;
 const BUDGET = CFG.loadBudgetMs;
-/** Configuración de prueba con el avance automático encendido. */
-const AUTO: PlanetIntroConfig = {
-  ...CFG,
-  pause: { ...CFG.pause, autoAdvance: { enabled: true, afterMs: 8000 } },
-};
 
 class FakeScene implements IntroSceneHandle {
   static alive = 0;
@@ -50,6 +47,7 @@ function setup(
   let now = 0;
   const timers: Array<{ at: number; fn: () => void; cancelled: boolean }> = [];
   const landed: IntroOutcome[] = [];
+  const rests: IntroOutcome[] = [];
   let resolveScene!: (s: FakeScene) => void;
   let rejectScene!: (e: Error) => void;
   const createScene = vi.fn(
@@ -70,6 +68,7 @@ function setup(
       timers.push(t);
       return () => (t.cancelled = true);
     },
+    onRest: (o) => rests.push(o),
     onLanded: (o) => landed.push(o),
   });
   const advance = (ms: number) => {
@@ -93,14 +92,14 @@ function setup(
     await Promise.resolve();
     await Promise.resolve();
   };
-  /** Pinta fotogramas cada 16 ms durante `ms`. */
-  const play = (ms: number) => {
+  /** Pinta fotogramas cada 16 ms durante `ms`, con el scroll en `s`. */
+  const play = (ms: number, s = 0) => {
     for (let t = 0; t < ms; t += 16) {
       advance(16);
-      c.render(VP, now / 1000);
+      c.render(VP, now / 1000, s);
     }
   };
-  /** Hasta la pausa: escena lista y la aparición entera. */
+  /** Hasta el reposo: escena lista y la aparición entera. */
   const toPause = async () => {
     c.start();
     const scene = await sceneReady();
@@ -120,22 +119,24 @@ function setup(
     toPause,
     pending,
     landed,
+    rests,
     createScene,
     moves,
   };
 }
 
 /** Invariantes que ningún evento puede romper (REQ-ENT-008, 014, 020). */
-function expectInvariants(h: ReturnType<typeof setup>) {
-  expect(h.createScene).toHaveBeenCalledTimes(1);
-  expect(h.c.scenesCreated).toBe(1);
+function expectInvariants(h: ReturnType<typeof setup>, scenes = 1) {
+  expect(h.createScene).toHaveBeenCalledTimes(scenes);
+  expect(h.c.scenesCreated).toBe(scenes);
   expect(h.c.worldsAlive).toBeLessThanOrEqual(1);
   expect(FakeScene.alive).toBeLessThanOrEqual(1);
   expect(h.landed.length).toBeLessThanOrEqual(1);
+  expect(h.rests.length).toBeLessThanOrEqual(1);
 }
 
-describe('máquina de estados de la entrada 3D (T57)', () => {
-  it('carga → aparición → pausa → (Zarpar) → zambullida en el puerto → juego (T64)', async () => {
+describe('máquina de estados del hero (T57; plan 007 T79)', () => {
+  it('carga → aparición → reposo → (Zarpar) → zambullida en el puerto → juego (T64)', async () => {
     const h = setup();
     h.c.start();
     expect(h.c.phase).toBe('waiting');
@@ -143,6 +144,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expect(h.c.phase).toBe('appearing');
     h.play(APPEAR + 32);
     expect(h.c.phase).toBe('paused');
+    expect(h.rests).toEqual(['played']);
     expect(h.c.appearedMs).toBeGreaterThanOrEqual(APPEAR);
     expect(h.c.appearedMs).toBeLessThan(APPEAR + 20);
     expect(h.c.enter()).toBe(true);
@@ -153,13 +155,11 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expect(h.c.enteredBy).toBe('button');
     expect(h.c.playedMs).toBeGreaterThanOrEqual(LAND);
     expect(h.c.playedMs).toBeLessThan(LAND + 20);
-    // Zarpar entra en el juego, no en la landing.
     expect(h.c.toGame).toBe(true);
     // Termina con el velo del mar puesto y el puerto de cara (su latitud, inclinada).
     const done = scene.frames.find((f) => f.done)!;
     expect(done.act).toBe('landing');
     expect(done.cover).toBe(1);
-    expect(done.content).toBe(0);
     expect(done.pose.tilt).toBeCloseTo(scene.focus.lat);
     // Mientras se zambulle, el planeta sólo gira hacia el puerto (sin su giro de siempre).
     const dive = scene.frames.filter((f) => f.act === 'landing');
@@ -170,7 +170,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('la pausa nunca avanza sin el botón (configuración de serie: sin avance automático)', async () => {
+  it('el reposo nunca avanza solo: sin avance automático (plan 007)', async () => {
     const h = setup();
     const scene = await h.toPause();
     h.play(60_000);
@@ -181,36 +181,68 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expect(h.pending()).toBe(0);
     const last = scene.frames.at(-1)!;
     expect(last.act).toBe('pause');
-    expect(last.content).toBe(0);
     expect(last.title).toBe(1);
+    expect(last.sea).toBe(0);
     expectInvariants(h);
   });
 
-  it('con el avance automático encendido, zarpa solo tras el tiempo configurado', async () => {
-    const h = setup('intro', { config: AUTO });
-    await h.toPause();
-    h.play(AUTO.pause.autoAdvance.afterMs - 100);
+  it('en reposo, el scroll lleva la escena: la zambullida y el mar, y de vuelta (plan 007)', async () => {
+    const h = setup();
+    const scene = await h.toPause();
+    const rest = poseOf(pickPlanetFraming(CFG, VP.width).intro, VP, 0);
+    h.play(100, 0.5);
+    const mid = scene.frames.at(-1)!;
+    expect(mid.act).toBe('pause');
+    expect(mid.pose.radius).toBeGreaterThan(rest.radius);
+    expect(mid.title).toBe(0);
+    expect(mid.sea).toBe(0);
+    h.play(100, 1);
+    const sea = scene.frames.at(-1)!;
+    expect(sea.sea).toBe(1);
+    expect(sea.s).toBe(1);
+    // Scrolling never sails: still at rest, nothing for the game.
+    h.play(100, 3);
     expect(h.c.phase).toBe('paused');
-    h.play(200);
-    expect(h.c.phase).toBe('landing');
-    expect(h.c.enteredBy).toBe('auto');
-    h.play(LAND + 50);
-    expect(h.landed).toEqual(['played']);
-    expect(h.c.toGame).toBe(true);
+    h.play(100, 0);
+    const back = scene.frames.at(-1)!;
+    expect(back.sea).toBe(0);
+    expect(back.title).toBe(1);
+    expect(back.pose.radius).toBeCloseTo(rest.radius);
+    expect(h.landed).toEqual([]);
     expectInvariants(h);
   });
 
-  it('avance automático: tocar la pantalla vuelve a contar desde cero', async () => {
-    const h = setup('intro', { config: AUTO });
-    await h.toPause();
-    const after = AUTO.pause.autoAdvance.afterMs;
-    h.play(after - 1000);
-    h.c.touch();
-    h.play(after - 1000);
+  it('bajando, el planeta no gira (el giro sólo corre en reposo arriba)', async () => {
+    const h = setup();
+    const scene = await h.toPause();
+    h.play(500, 0.4);
+    const a = scene.frames.at(-1)!;
+    h.play(2000, 0.4);
+    const b = scene.frames.at(-1)!;
+    expect(b.pose).toEqual(a.pose);
+    h.play(500, 0);
+    expect(scene.frames.at(-1)!.pose.spin).not.toBe(a.pose.spin);
+  });
+
+  it('un scroll durante la aparición la adelanta al reposo; antes de la escena, nace en reposo', async () => {
+    const h = setup();
+    h.c.start();
+    await h.sceneReady();
+    h.play(APPEAR / 3);
+    h.c.skip();
+    h.c.skip();
     expect(h.c.phase).toBe('paused');
-    h.play(1100);
-    expect(h.c.phase).toBe('landing');
+    expect(h.rests).toEqual(['skipped']);
+    const g = setup();
+    g.c.start();
+    g.c.skip();
+    expect(g.c.phase).toBe('paused');
+    const scene = await g.sceneReady();
+    g.play(100);
+    expect(scene.frames.some((f) => f.act === 'appear')).toBe(false);
+    expect(g.rests).toEqual(['skipped']);
     expectInvariants(h);
+    expectInvariants(g);
   });
 
   it('el botón pulsado dos veces (y cinco) zarpa una sola vez', async () => {
@@ -229,68 +261,52 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('el botón no hace nada durante la aparición, antes de la escena ni tras llegar', async () => {
+  it('«Zarpar» durante la aparición: al reposo y se zambulle', async () => {
     const h = setup();
     h.c.start();
-    expect(h.c.enter()).toBe(false);
     await h.sceneReady();
     h.play(APPEAR / 2);
-    expect(h.c.enter()).toBe(false);
-    expect(h.c.phase).toBe('appearing');
-    h.play(APPEAR);
-    h.c.skip();
-    expect(h.c.enter()).toBe(false);
-    expect(h.c.phase).toBe('landed');
+    expect(h.c.enter()).toBe(true);
+    expect(h.rests).toEqual(['skipped']);
+    h.play(LAND + 50);
+    expect(h.landed).toEqual(['played']);
     expectInvariants(h);
   });
 
-  it('«Saltar» durante la pausa o durante «Zarpar»: una vez, al encuadre del hero', async () => {
-    for (const during of ['paused', 'landing'] as const) {
+  it('«Zarpar» sin escena (aún cargando) o desde la cabecera: un fundido al velo, al juego', async () => {
+    for (const how of ['loading', 'header'] as const) {
       const h = setup();
-      const scene = await h.toPause();
-      if (during === 'landing') {
-        h.c.enter();
-        h.play(LAND / 3);
+      if (how === 'loading') h.c.start();
+      else await h.toPause();
+      expect(h.c.enter(how === 'header' ? 'header' : 'button')).toBe(true);
+      const frames: IntroFrame[] = [];
+      for (let t = 0; t < CFG.reduced.fadeMs + 100; t += 16) {
+        h.advance(16);
+        const f = h.c.render(VP, 0);
+        if (f) frames.push(f);
       }
-      for (let i = 0; i < 5; i++) h.c.skip();
-      h.c.enter();
-      expect(h.c.phase).toBe('landed');
-      expect(h.landed).toEqual(['skipped']);
-      // Saltar lleva a la landing, no al juego (T64).
-      expect(h.c.toGame).toBe(false);
-      h.play(100);
-      const last = scene.frames.at(-1)!;
-      expect(last.done).toBe(true);
-      expect(last.source).toBe('hero');
+      expect(h.landed).toEqual(['played']);
+      expect(frames.at(-1)!.cover).toBe(1);
+      expect(h.moves(frames)).toBe(0);
+      expect(h.c.playedMs!).toBeLessThan(LAND);
       expectInvariants(h);
     }
   });
 
-  it('saltar antes de que llegue la escena también es idempotente', async () => {
-    const h = setup();
-    h.c.start();
-    h.c.skip();
-    h.c.skip();
-    const scene = await h.sceneReady();
-    expect(h.c.phase).toBe('landed');
-    h.play(50);
-    expect(scene.frames.every((f) => f.done)).toBe(true);
-    expectInvariants(h);
-  });
-
-  it('Atrás / cambio de ancla durante la pausa: sale a la landing sin repetir ni duplicar', async () => {
+  it('Escape / cambio de ancla en reposo: nada cambia ni se duplica', async () => {
     const h = setup();
     await h.toPause();
     h.c.skip(); // popstate
     h.c.skip(); // hashchange justo después
     h.c.interrupt(); // vuelta desde la caché del navegador
     h.c.start();
-    expect(h.c.phase).toBe('landed');
-    expect(h.landed).toEqual(['skipped']);
+    expect(h.c.phase).toBe('paused');
+    expect(h.rests).toEqual(['played']);
+    expect(h.landed).toEqual([]);
     expectInvariants(h);
   });
 
-  it('pestaña oculta en la aparición: al volver, pausa con título y botón (no zarpa sola)', async () => {
+  it('pestaña oculta en la aparición: al volver, reposo con título y botón (no zarpa sola)', async () => {
     const h = setup();
     h.c.start();
     const scene = await h.sceneReady();
@@ -307,7 +323,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('pestaña oculta en la pausa: sigue esperando; durante «Zarpar»: termina, rumbo al juego', async () => {
+  it('pestaña oculta durante «Zarpar»: termina, rumbo al juego', async () => {
     const h = setup();
     const scene = await h.toPause();
     h.c.interrupt();
@@ -318,7 +334,7 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     h.c.interrupt();
     h.advance(60_000);
     h.play(32);
-    expect(scene.frames.at(-1)!.done).toBe(true);
+    expect(scene.frames.filter((f) => f.act === 'landing').length).toBeGreaterThan(0);
     expect(h.landed).toEqual(['played']);
     expect(h.c.toGame).toBe(true);
     expect(h.c.playedMs).toBeNull();
@@ -342,9 +358,9 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('cambio de ruta en la pausa o durante «Zarpar»: se destruye una vez y no queda escena', async () => {
+  it('cambio de ruta en reposo o durante «Zarpar»: se destruye una vez y no queda escena', async () => {
     for (const during of ['paused', 'landing'] as const) {
-      const h = setup('intro', { config: AUTO });
+      const h = setup();
       const scene = await h.toPause();
       if (during === 'landing') {
         h.c.enter();
@@ -353,11 +369,12 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
       h.c.destroy();
       h.c.destroy();
       h.c.enter();
-      h.advance(60_000); // el avance automático ya no dispara
+      h.advance(60_000);
       expect(scene.destroyed).toBe(1);
       expect(h.c.worldsAlive).toBe(0);
       expect(h.c.phase).toBe('destroyed');
       expect(h.pending()).toBe(0);
+      expect(h.landed).toEqual([]);
       expectInvariants(h);
     }
   });
@@ -378,15 +395,18 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('una escena que no llega en el plazo: landing ligera; si llega luego, el hero quieto en su sitio', async () => {
+  it('una escena que no llega en el plazo: la versión estática; si llega luego, se descarta', async () => {
     const h = setup();
     h.c.start();
     h.advance(BUDGET);
-    expect(h.c.phase).toBe('landed');
-    expect(h.landed).toEqual(['none']);
+    expect(h.c.fallback).toBe(true);
+    expect(h.c.phase).toBe('paused');
+    expect(h.rests).toEqual(['none']);
     const scene = await h.sceneReady();
+    expect(scene.destroyed).toBe(1);
+    expect(h.c.worldsAlive).toBe(0);
     h.play(50);
-    expect(scene.frames.every((f) => f.done && f.source === 'hero')).toBe(true);
+    expect(scene.frames).toEqual([]);
     expectInvariants(h);
   });
 
@@ -419,21 +439,23 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     h.c.resume();
     h.c.resume();
     h.advance(1999);
+    expect(h.c.fallback).toBe(false);
     expect(h.c.phase).toBe('waiting');
     h.advance(1);
-    expect(h.c.phase).toBe('landed');
-    expect(h.landed).toEqual(['none']);
+    expect(h.c.fallback).toBe(true);
+    expect(h.rests).toEqual(['none']);
     expectInvariants(h);
   });
 
-  it('motor que falla: landing ligera, sin escena', async () => {
+  it('motor que falla: la versión estática, sin escena', async () => {
     const h = setup();
     h.c.start();
     await h.sceneFails();
-    expect(h.c.phase).toBe('landed');
+    expect(h.c.phase).toBe('paused');
+    expect(h.c.fallback).toBe(true);
     expect(h.c.sceneStatus).toBe('failed');
     expect(h.c.worldsAlive).toBe(0);
-    expect(h.landed).toEqual(['none']);
+    expect(h.rests).toEqual(['none']);
     expectInvariants(h);
   });
 
@@ -449,32 +471,36 @@ describe('máquina de estados de la entrada 3D (T57)', () => {
     expectInvariants(h);
   });
 
-  it('movimiento reducido: sin aparición; planeta quieto; al pulsar, fundido sin mover nada (REQ-ENT-010)', async () => {
+  it('movimiento reducido: la versión estática, sin escena; «Zarpar» es un fundido (REQ-ENT-010)', async () => {
     const h = setup('reduced');
     h.c.start();
-    expect(h.landed).toEqual([]);
-    const scene = await h.sceneReady();
     expect(h.c.phase).toBe('paused');
-    h.play(3000);
-    expect(h.c.phase).toBe('paused');
+    expect(h.c.fallback).toBe(true);
+    expect(h.rests).toEqual(['none']);
+    expect(h.createScene).not.toHaveBeenCalled();
+    expect(h.c.render(VP, 1, 2)).toBeNull();
     expect(h.c.enter()).toBe(true);
-    h.play(CFG.reduced.fadeMs + 500);
+    const frames: IntroFrame[] = [];
+    for (let t = 0; t < CFG.reduced.fadeMs + 100; t += 16) {
+      h.advance(16);
+      const f = h.c.render(VP, 0);
+      if (f) frames.push(f);
+    }
     expect(h.landed).toEqual(['played']);
     expect(h.c.toGame).toBe(true);
-    expect(scene.frames.find((f) => f.done)!.cover).toBe(1);
-    expect(scene.frames.some((f) => f.act === 'appear')).toBe(false);
-    expect(h.moves(scene.frames)).toBe(0);
-    const spins = new Set(scene.frames.map((f) => f.pose.spin));
-    expect(spins.size).toBe(1);
-    expectInvariants(h);
+    expect(frames.find((f) => f.done)!.cover).toBe(1);
+    expect(h.moves(frames)).toBe(0);
+    expectInvariants(h, 0);
   });
 
-  it('una visita directa con movimiento reducido del sistema: el hero no gira', async () => {
+  it('una visita directa nace en reposo, sin aparición; con movimiento reducido del sistema no gira', async () => {
     const h = setup('direct', { still: true });
     h.c.start();
-    expect(h.landed).toEqual(['none']);
+    expect(h.c.phase).toBe('paused');
+    expect(h.rests).toEqual(['none']);
     const scene = await h.sceneReady();
     h.play(2000);
+    expect(scene.frames.some((f) => f.act === 'appear')).toBe(false);
     expect(h.moves(scene.frames)).toBe(0);
     const g = setup('direct');
     g.c.start();

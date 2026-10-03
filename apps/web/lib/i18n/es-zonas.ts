@@ -10,7 +10,6 @@ export const esZonas = {
   'intro.loading': 'Inflando las boies…',
   'intro.loadingSlow': 'El mar viene con calma. Si tarda, puedes ir directo a las entradas.',
   'intro.lightFallback': 'Te enseñamos la versión ligera: la misma web, sin animación.',
-  'intro.logoAlt': 'BOIA',
   'intro.after.carnet': 'Tu Carnet BOIA te espera en el ancla del menú.',
   'intro.after.language': 'Idioma: español. Más idiomas, más adelante.',
   'hero.title': 'BOIA UNDERGROUND MUSIC FESTIVAL',

@@ -1,17 +1,18 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
  * (T38, `muestra`): las claves que usa la web pública. No se edita a mano: se cambia el documento y se
- * vuelve a generar. 83 claves.
+ * vuelve a generar. 84 claves.
  */
 export const esZonasWeb = {
   'intro.label': 'Introducción animada',
   'intro.skip': 'Saltar animación',
+  'intro.logoAlt': 'BOIA',
   'site.title': 'BOIA.PLANET',
   'site.description':
     'BOIA, desde Alicante: música sin un único género. Entradas para los All Day BOIA y un mar entero para explorar en barco.',
   'hero.brand': 'BOIA.PLANET',
-  'hero.explore': 'Explorar el universo',
-  'hero.tickets': 'Tickets',
+  'hero.explore': 'Zarpar',
+  'hero.tickets': 'Entradas',
   'hero.explore3d': 'Navegar en 3D',
   'hero.explore3d.sub': 'El mismo mar, en 3D y con zoom libre',
   'nav.carnet': 'Mi Carnet',

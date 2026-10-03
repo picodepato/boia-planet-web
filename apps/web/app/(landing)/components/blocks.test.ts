@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { landingSections, resolveBlock, resolveHome } from '../../../lib/landing/resolve';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
+import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
 import { BlockView, HomeBlocks } from './blocks';
 
 // «Ahora» un día antes del primer evento de muestra: todos los listados están por venir.
@@ -133,31 +134,58 @@ describe('renderizador de bloques de la home', () => {
     }
   });
 
-  it('el hero promete descuentos sólo con una promoción vigente', () => {
+  it('el hero (plan 007): el título del Admin en el h1, la frase en una esquina, sin línea de promoción', () => {
     const hero = SAMPLE_CONTENT.blocks.find((b) => b.type === 'hero')!;
-    const withPromo: HomeContent = {
-      ...SAMPLE_CONTENT,
-      promotions: [
-        {
-          id: 'p',
-          startsAt: new Date(NOW.getTime() - 1000).toISOString(),
-          endsAt: new Date(NOW.getTime() + 1000).toISOString(),
-          published: true,
-        },
-      ],
-    };
-    const noPromo: HomeContent = { ...SAMPLE_CONTENT, promotions: [] };
-    expect(render(hero, withPromo)).toContain('Encuentra descuentos para tus entradas');
-    expect(render(hero, noPromo)).not.toContain('Encuentra descuentos para tus entradas');
+    if (hero.type !== 'hero') throw new Error('sin hero');
+    const html = render(hero);
+    expect(html).toContain(`<h1 id="hero-title" class="visually-hidden">${hero.title}</h1>`);
+    expect(html).toMatch(new RegExp(`class="hero__corner-line">${hero.positioning}<`));
+    expect(html).toContain('data-hero-hint');
+    expect(html).not.toContain('Encuentra descuentos para tus entradas');
   });
 
-  it('el hero lleva dos botones: el mundo 3D (/mar) y Tickets al lado (T57)', () => {
+  it('el hero lleva dos botones: «Zarpar» (/mar con la bienvenida) y «Entradas» al lado (plan 007)', () => {
     const hero = SAMPLE_CONTENT.blocks.find((b) => b.type === 'hero')!;
     const html = render(hero);
     const actions = html.match(/<div class="hero__actions">(.*?)<\/div>/s)?.[1] ?? '';
     const hrefs = [...actions.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/mar', '#tickets']);
+    expect(hrefs).toEqual([ZARPAR_HREF.replace('&', '&amp;'), '#tickets']);
     expect(html).not.toContain('href="/juego"');
+  });
+
+  it('Spotify (plan 007): «Escúchalo en Spotify» en Artistas y el pie, y uno por artista que lo tenga', () => {
+    const social = resolveHome(SAMPLE_CONTENT, NOW).social;
+    expect(social.spotify).toMatch(/spotify/);
+    const artists = resolveBlock(
+      SAMPLE_CONTENT.blocks.find((b) => b.type === 'artists')!,
+      SAMPLE_CONTENT,
+      NOW,
+    )!;
+    const html = renderToStaticMarkup(
+      createElement(BlockView, {
+        block: artists,
+        artists: SAMPLE_CONTENT.artists,
+        buyable: new Set<string>(),
+        social,
+      }),
+    );
+    const links = [...html.matchAll(/<a [^>]*href="([^"]*spotify[^"]*)"[^>]*>/g)].map((m) => m[0]);
+    expect(links.length).toBeGreaterThan(1);
+    for (const a of links) {
+      expect(a).toContain('target="_blank"');
+      expect(a).toContain('rel="noopener noreferrer"');
+    }
+    expect(html).toContain(`href="${social.spotify}"`);
+    const footer = resolveBlock(
+      SAMPLE_CONTENT.blocks.find((b) => b.type === 'footer')!,
+      SAMPLE_CONTENT,
+      NOW,
+    )!;
+    const foot = renderToStaticMarkup(
+      createElement(BlockView, { block: footer, artists: [], buyable: new Set<string>(), social }),
+    );
+    expect(foot).toContain('role="img" aria-label="BOIA"');
+    expect(foot.match(new RegExp(`href="${social.spotify}"`, 'g'))).toHaveLength(1);
   });
 
   it('el hero tiene clave fija: otro id del repositorio no desmonta la entrada (T57)', () => {

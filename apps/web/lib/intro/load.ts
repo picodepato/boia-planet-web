@@ -64,16 +64,16 @@ const media = (minWidth: number, css: string) =>
   minWidth > 0 ? `@media (min-width:${minWidth}px){${css}}` : css;
 
 /**
- * CSS del planeta ligero del hero (sin motor ni JavaScript): un disco con el
- * mar del planeta en el mismo sitio y del mismo tamaño que el horizonte del
- * último fotograma de la escena, por encuadre. Al llegar el motor, el canvas
- * lo sustituye sin salto (REQ-ENT-038). El tamaño va en `cqmin` (el lado
- * corto del hero), como el de la escena.
+ * CSS del planeta ligero del hero (sin motor ni JavaScript): un disco en el
+ * mismo sitio y del mismo tamaño que el planeta de la escena en reposo, por
+ * encuadre (plan 007 T79). Al llegar el motor, el canvas lo sustituye sin
+ * salto (REQ-ENT-038). El tamaño va en `cqmin` (el lado corto de la vista),
+ * como el de la escena.
  */
 export function stillCss({ config }: IntroData): string {
   return config.framings
     .map((f) => {
-      const { fit, anchor } = f.hero;
+      const { fit, anchor } = f.intro;
       const size = `${(fit * 100).toFixed(3)}cqmin`;
       return media(
         f.minWidth,
@@ -85,15 +85,15 @@ export function stillCss({ config }: IntroData): string {
 }
 
 /**
- * CSS de la entrada que sale de su configuración (REQ-ENT-015): posición del
- * título y del botón por encuadre, y cuándo aparece la carga del acto 0.
+ * CSS de la entrada que sale de su configuración (REQ-ENT-015): posición de
+ * «BOIA» y de la fila de píldoras por encuadre, y cuándo aparece la carga
+ * del acto 0.
  */
 export function introCss({ config }: IntroData): string {
   const rules = config.framings.map((f) =>
     media(
       f.minWidth,
-      `.intro-overlay__title{top:${pct(f.titleY)}}` +
-        `.intro-overlay__enter{top:${pct(f.buttonY)}}`,
+      `.hero__wordmark{top:${pct(f.titleY)}}` + `.hero__actions{top:${pct(f.buttonY)}}`,
     ),
   );
   rules.push(`.intro-loading{animation-delay:${config.loading.showAfterMs}ms}`);

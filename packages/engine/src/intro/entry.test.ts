@@ -97,10 +97,14 @@ function runBoot(opts: {
   const preloaded: string[] = [];
   const store = new Map<string, string>(Object.entries(opts.stored ?? {}));
   const listeners = new Map<string, (e: { target: unknown }) => void>();
+  const winListeners = new Map<string, () => void>();
   const win: Record<string, unknown> = {
     matchMedia: () => ({ matches: !!opts.reduced }),
     dispatchEvent: (e: { type: string; detail: { intro: string } }) =>
       events.push(`${e.type}:${e.detail.intro}`),
+    scrollY: 0,
+    innerHeight: 800,
+    addEventListener: (type: string, fn: () => void) => winListeners.set(type, fn),
   };
   const doc = {
     hidden: !!opts.hidden,
@@ -171,6 +175,11 @@ function runBoot(opts: {
       doc.hidden = hidden;
       listeners.get('visibilitychange')?.({ target: doc });
     },
+    /** The page scrolls to `y` px (before hydration). */
+    scroll: (y: number) => {
+      win.scrollY = y;
+      winListeners.get('scroll')?.();
+    },
   };
 }
 
@@ -210,7 +219,7 @@ describe('script de arranque', () => {
     expect(b.entry.landed).toBeNull();
   });
 
-  it('Saltar antes de hidratar funciona y es idempotente', () => {
+  it('«Entradas» antes de hidratar adelanta la aparición y es idempotente', () => {
     const b = runBoot({});
     b.click(false);
     expect(b.attrs.get('data-intro')).toBe('play');
@@ -265,11 +274,34 @@ describe('script de arranque', () => {
     expect(b.attrs.get('data-entry')).toBe('intro');
   });
 
-  it('con movimiento reducido también espera al botón (planeta quieto)', () => {
+  it('con movimiento reducido: la versión estática desde el primer pintado, nada oculto (plan 007)', () => {
     const b = runBoot({ reduced: true });
     expect(b.attrs.get('data-entry')).toBe('reduced');
-    expect(b.attrs.get('data-intro')).toBe('play');
+    expect(b.attrs.get('data-hero')).toBe('still');
+    expect(b.attrs.has('data-hero-static')).toBe(true);
+    expect(b.attrs.has('data-intro')).toBe(false);
     expect(b.entry.landed).toBeNull();
+    // Also on a direct URL: reduced motion is the static hero.
+    expect(runBoot({ reduced: true, hash: '#tickets' }).attrs.get('data-hero')).toBe('still');
+    expect(runBoot({}).attrs.has('data-hero')).toBe(false);
+  });
+
+  it('un scroll antes de hidratar adelanta la aparición, una vez; la cabecera espera al final del hero (plan 007)', () => {
+    const b = runBoot({});
+    expect(b.attrs.has('data-hero-top')).toBe(true);
+    b.scroll(200);
+    expect(b.attrs.has('data-intro')).toBe(false);
+    expect(b.entry.landed).toBe('skipped');
+    b.scroll(900);
+    expect(b.attrs.has('data-hero-top')).toBe(false);
+    b.scroll(0);
+    expect(b.attrs.has('data-hero-top')).toBe(true);
+    expect(b.events).toEqual(['boia:landed:skipped']);
+    // Taken over by the app: the scroll is the app's.
+    const c = runBoot({});
+    c.entry.claimed = true;
+    c.scroll(300);
+    expect(c.entry.landed).toBeNull();
   });
 
   it('tomado el relevo, el tope no muestra la landing: la escena manda', () => {

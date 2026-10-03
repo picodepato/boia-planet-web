@@ -10,8 +10,9 @@ import type { LetterPose, TitleSheet } from '@boia/engine/intro';
 /** Alto de la caja del título, en celdas: sitio para subir desde abajo y para el saltito de salida. */
 const BOX_CELLS_H = 2.2;
 /** Tamaño de la palabra: fracción del ancho de la vista y alto de la tinta como fracción del alto. */
-const FIT_WIDTH = 0.8;
-const FIT_HEIGHT = 0.17;
+// Plan 007 T79: a little smaller, so «BOIA» sits over the planet as in T77 §4.
+const FIT_WIDTH = 0.66;
+const FIT_HEIGHT = 0.14;
 /** Nunca más grande que esto (px CSS por px de la hoja): la hoja se vería blanda. */
 const MAX_SCALE = 1.1;
 /** Alto de la tinta de una letra (con el canto de arriba) en mayúsculas. */

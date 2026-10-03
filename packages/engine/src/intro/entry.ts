@@ -78,13 +78,15 @@ export interface BootEntry {
 export const LANDED_EVENT = 'boia:landed';
 
 /**
- * Script en línea que va antes del contenido de la landing. Decide el modo,
- * lo marca en `<html data-entry>` y, si toca cinemática (o su variante
- * reducida), oculta la landing con `<html data-intro="play">` (CSS) hasta
- * que la escena llegue. Garantías aunque el JavaScript de la app nunca
- * llegue a ejecutarse:
- * - «Saltar animación» y «Solo quiero ver las entradas» funcionan antes de
- *   hidratar (cualquier `[data-intro-skip]`);
+ * Script en línea que va antes del contenido de la landing (plan 007 T79).
+ * Decide el modo y lo marca en `<html data-entry>`; with reduced motion it
+ * marks `<html data-hero="still" data-hero-static>` (the static hero and
+ * its one-screen track, before the first paint); if the appearance plays, `<html data-intro="play">` keeps the title
+ * and the scroll hint hidden until the rest. `<html data-hero-top>` says the
+ * page is still on the hero (the header stays hidden there). Guarantees even
+ * if the app's JavaScript never runs:
+ * - «Entradas» (any `[data-intro-skip]`) and a scroll during the appearance
+ *   fast-forward it before hydration (the app is then born at rest);
  * - si nadie toma el relevo en `capMs` con la pestaña a la vista, la landing
  *   se muestra. El tope no corre con la pestaña oculta (una carga en segundo
  *   plano espera a que se mire) ni compite con el plazo de la escena: ese lo
@@ -105,8 +107,12 @@ var entry=w.__boiaEntry={mode:mode,t0:performance.now(),claimed:false,skipped:fa
 reveal:function(o){if(entry.landed)return;entry.landed=o;clearTimeout(entry.timer);entry.timer=0;d.removeAttribute("data-intro");
 try{w.dispatchEvent(new CustomEvent(${JSON.stringify(LANDED_EVENT)},{detail:{intro:o}}));}catch(e){}}};
 d.setAttribute("data-entry",mode);
+if(reduced){d.setAttribute("data-hero","still");d.setAttribute("data-hero-static","");}
+var top=function(){if(w.scrollY<w.innerHeight*0.95)d.setAttribute("data-hero-top","");else d.removeAttribute("data-hero-top");
+if(mode==="intro"&&!entry.claimed&&w.scrollY>0)entry.reveal("skipped");};
+top();w.addEventListener("scroll",top,{passive:true});
 if(mode==="direct"){entry.landed="none";return;}
-d.setAttribute("data-intro","play");
+if(mode==="intro")d.setAttribute("data-intro","play");
 var pre=${JSON.stringify(opts.preload ?? [])};for(var i=0;i<pre.length;i++){new Image().src=pre[i];}
 var arm=function(){if(entry.claimed||entry.landed||entry.timer||doc.hidden)return;
 entry.timer=setTimeout(function(){entry.timer=0;if(!entry.claimed)entry.reveal("none");},${Math.round(opts.capMs)});};
