@@ -124,7 +124,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T84 — Update the e2e specs the new hero changed
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -135,7 +135,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e accesos.spec.ts carnet-descuento.spec.ts ciclo-evento.spec.ts demo.spec.ts despliegue.spec.ts mar-a-bordo.spec.ts tickets.spec.ts mar-3d.spec.ts --workers=1` → exit 0 in both projects
   - regenerating the i18n files from textos-zonas.md → no diff (`git status --porcelain apps/web/lib/i18n` empty)
   - Test command → exit 0
-- Outcome:
+- Outcome: eight specs updated through a shared e2e/hero-helpers.ts (pills by i18n name, real-pointer tap, pastHero); 67 passed, 3 deliberate project skips; circuit.void.offroad in textos-zonas.md, regeneration gives no diff → 138c030
 
 ## Decisions
 - 2026-10-03 T80: hero runtime and LandingClient are lazy chunks (lib/intro/lazy.ts, landing-client-lazy.tsx); frames at rest are full quality, frames in motion drop MSAA/resolution per a first-frames probe, under 30 fps → still; hardwareConcurrency ignored on Apple WebKit (iOS reports 4); lower-section CSS stays critical (deferring it shifts layout) (agent)
@@ -159,6 +159,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T84: record.spec.ts and record-titulo.spec.ts (only with RECORD_*=1) still click the old «Zarpar»
 - 2026-10-03 T80: `deviceMemory ≤ 4` sends many mid-range Android phones to the still (Hernán decides); portrait phones with DPR ≤ 2 get the soft 800 px still, `sizes="max(100vw,160vh)"` would fix it (+80 kB); in low power the still appears after hydration, not at first paint
 - 2026-10-03 T81: the scroll hint sits ~7 px under the pills at 1280×800; the rest of intro.spec clicks «Zarpar» with Playwright click() and may flake under load
 - 2026-10-03 T79: the resting planet is still /mar's colourful low-poly world under a darker grade (Álvaro decides the art); the Admin artist editor drops `spotifyUrl` on save (T82)
@@ -182,5 +183,6 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 06:00 usage limit reached; T80 and T81 still running in their worktrees (resume: section 7, orphans)
 - 2026-10-03 06:10 T81 done · branch worktree-agent-a1f05cdf5227633de → 37759ce
 - 2026-10-03 06:15 T80 done · branch worktree-agent-a27a66847508007c7 → b4808c1
-- 2026-10-03 06:16 T82 launched · attempt 1
-- 2026-10-03 06:16 T84 launched · attempt 1
+- 2026-10-03 06:16 T82 launched · attempt 1 · agent ac871bf55b1920cb5
+- 2026-10-03 06:16 T84 launched · attempt 1 · agent aa4acf4468e37ac44
+- 2026-10-03 06:45 T84 done · branch worktree-agent-aa4acf4468e37ac44 → 138c030
