@@ -184,7 +184,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: two-tab global ranking (Circuito default, De siempre) with top 50, pinned «tú» row and «Mostrar más»; guest box with «Entrar en el ranking»; finish card «Puesto n de N», start card shows the global leader; `flushAccount()` in `lib/repo.ts`; local mode same look with samples → 904cb28
 
 ## T93 — Global message bottles
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T88, T90
@@ -203,10 +203,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e mar-botellas.spec.ts --workers=1` → exit 0
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: global bottles via `createGlobalBottles` + `useBottles()` (wired in `lib/repo-member.ts`), 10 most recent for guests and members, refreshed every 3 min / on visibility / account switch; client filter mirrors the DB list; reads and reports to Supabase; REQ-IDE-044 HECHO; e2e 6 passed → 82d0286
 
 ## T94 — /admin on real data: email + TOTP login and four sections
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T92, T93
@@ -220,6 +220,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
     - **Moderación de botellas:** open reports, retire a bottle, audited.
     - **Rankings:** void a race time or a points entry with a reason, audited.
   - The stamp image needs a field T91 already reads: `stampImageUrl` on the event (content and Supabase); add it.
+  - Close a gap T93 found: the bottles' RLS lets an author update x/y directly without the placement check; only `place_bottle` may set a position (new migration + an RLS test).
   - Add a cleanup for leftover `@example.test` users in the dev project (T91 saw 33–55 left by earlier runs), e.g. `pnpm db:clean-test-users`, and run it.
   - The other sections and the «Probar admin» local demo keep working as today. Local mode keeps the demo admin.
   - REQ-ADM-002/004/027/039 and the related REQs move accordingly.
@@ -291,8 +292,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T92: «Circuito» is the default tab; one selector option per circuit+version (today one); rows show the neutral avatar only; an `incomplete` session counts as guest; «Descubrir a un BOIERO» moved below the list; screenshots only with `RECORD_T92=1` (6 PNGs committed) (agent).
 - 2026-10-03 T91: Permissions-Policy `camera=()` → `camera=(self)` (outside its scope, needed for the scanner); libraries `uqr`, `jsqr` (lazy, not in landing or /mar bundles), `pngjs` (dev); local mode hides «Escanear sello» and /sello explains accounts are needed; a guest is asked for the email before an invalid code is detected; new strings in `i18n/es-carnet.ts`, /carnet's hard-coded texts moved to keys; extra `sello-camara.spec.ts` with Chromium's fake camera; on /carnet 1280 px the actions sit under the card (agent).
 - 2026-10-03 T91: T94 gets the `stampImageUrl` field and a cleanup of leftover `@example.test` users (orchestrator).
+- 2026-10-03 T93: no new migration (T86's RPCs sufficed); wiring in `lib/repo-member.ts` although outside its listed scope; guests use `requireAccount('carnet')` to throw or report; client filter only in Supabase mode; keys in es-mar.ts (es-zonas.ts is generated) (agent).
+- 2026-10-03 T93: the x/y update gap goes to T94 (orchestrator).
 
 ## Proposals (new scope)
+- 2026-10-03 T93: in Supabase mode the sample bottles no longer float; a member's own bottle outside the 10 most recent does not float (still in «Mi botella» and the Carnet).
 - 2026-10-03 T91: after a stamp, the points count-up and «Ahora eres {rank}» from T87 are not built (only the «Puntos a → b» chip).
 - 2026-10-03 T92: on «De siempre» all members with 0 points share one position (ties ranked together), so a 0-point viewer may show «3» pinned under 50 others at «3»; the design may need a look.
 - 2026-10-03 T90: a `daily` reward earned offline and sent another day counts for the arrival day (`award_points` takes no date).
@@ -324,3 +328,4 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 15:12 T92 done · branch worktree-agent-a1bd6097682d3dc69 → 904cb28
 - 2026-10-03 15:13 T93 launched · attempt 1 · agent af5cffc02be826f3c
 - 2026-10-03 15:20 T91 done · branch worktree-agent-af6cb47b61ded8c78 → dfa09d9
+- 2026-10-03 15:33 T93 done · branch worktree-agent-af5cffc02be826f3c → 82d0286
