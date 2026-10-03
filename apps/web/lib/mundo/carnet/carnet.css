@@ -99,11 +99,6 @@ a.juego-button {
   letter-spacing: 0.05em;
   opacity: 0.7;
 }
-.carnet-head {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
 .carnet-avatar {
   flex: 0 0 auto;
   display: grid;
@@ -122,40 +117,7 @@ a.juego-button {
   letter-spacing: 0.06em;
   color: #c24f0c;
 }
-.carnet-name {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-}
-.carnet-since {
-  margin: 2px 0 0;
-  font-size: 13px;
-}
-.carnet-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin: 0;
-}
-.carnet-stats div {
-  padding: 8px;
-  border-radius: 10px;
-  background: #12233f;
-  color: #fff;
-  text-align: center;
-}
-.carnet-stats dt {
-  font-size: 11px;
-  text-transform: uppercase;
-  opacity: 0.75;
-}
-.carnet-stats dd {
-  margin: 0;
-  font-weight: 800;
-}
 .carnet .carnet-answers,
-.carnet .carnet-stamps,
 .carnet .carnet-chips {
   margin: 0;
   padding: 0;
@@ -176,30 +138,6 @@ a.juego-button {
   font-weight: 700;
   line-height: 1.35;
   overflow-wrap: anywhere;
-}
-.carnet .carnet-stamps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.carnet-stamp {
-  display: grid;
-  place-items: center;
-  width: 92px;
-  height: 92px;
-  padding: 6px;
-  box-sizing: border-box;
-  border: 3px double #c24f0c;
-  border-radius: 50%;
-  color: #c24f0c;
-  font-size: 10px;
-  font-weight: 800;
-  text-align: center;
-  text-transform: uppercase;
-  transform: rotate(-8deg);
-}
-.carnet-stamp span:first-child {
-  font-size: 20px;
 }
 .carnet .carnet-chips {
   display: flex;
@@ -270,25 +208,122 @@ a.juego-button {
   opacity: 0;
 }
 
+/*
+ * /carnet y /carnet/<id> (plan 008, T91; T87, marco 05): la noche de la
+ * landing y la tarjeta como objeto iluminado; a partir de 1024 px, la tarjeta
+ * (600 px) a la izquierda y lo que contesta a la derecha.
+ */
 .carnet-page {
   box-sizing: border-box;
   min-height: 100dvh;
-  padding: max(16px, env(safe-area-inset-top)) 16px 32px;
-  background: #12233f;
+  padding: 0 0 40px;
+  background: #07101f;
+  color: #fff;
   font: 15px/1.45 var(--font-body);
+}
+.carnet-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(7 16 31 / 0.82);
+}
+.carnet-page-wm {
+  display: block;
+  width: 74px;
+  aspect-ratio: 620 / 173.5;
+  background: #ec4f24;
+  -webkit-mask: url('../../../app/(landing)/_marca/boia-wordmark.svg') center / contain no-repeat;
+  mask: url('../../../app/(landing)/_marca/boia-wordmark.svg') center / contain no-repeat;
+}
+.carnet-page-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #fff;
+  font: 600 11px / 1 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.carnet-page a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 .carnet-page-inner {
   box-sizing: border-box;
-  max-width: 560px;
+  max-width: 600px;
   margin: 0 auto;
+  padding: 24px 16px 0;
+}
+.carnet-page-inner h1 {
+  margin: 0 0 10px;
+  font: 700 28px / 1.1 var(--font-title);
+}
+.carnet-page-inner > p,
+.carnet-page-note {
+  color: #b3b9c6;
+}
+.carnet-page .carnet h4 {
+  color: #838a99;
+  opacity: 1;
+}
+.carnet-page .carnet-question {
+  color: #b3b9c6;
+  opacity: 1;
+}
+.carnet-page .carnet-answers li {
+  border-bottom-color: rgb(255 255 255 / 0.12);
+}
+.carnet-page .carnet-chips li {
+  background: rgb(255 255 255 / 0.1);
+}
+.carnet-page .juego-muted {
+  color: #b3b9c6;
+}
+.carnet-page-cuenta {
+  margin: 20px 0 0;
   padding: 16px 18px;
   border-radius: 16px;
-  background: #fffaf0;
-  color: #12233f;
+  background: #fff4e2;
+  color: #1b1440;
 }
-.carnet-page-nav a {
-  color: #c24f0c;
-  font-weight: 700;
+.carnet-page-cuenta:empty {
+  display: none;
+}
+@media (min-width: 768px) {
+  .carnet-page-inner {
+    max-width: 592px;
+    padding-top: 40px;
+  }
+}
+@media (min-width: 1024px) {
+  .carnet-page-head {
+    padding: 0 40px;
+  }
+  .carnet-page-inner {
+    max-width: 1200px;
+    padding: 64px 40px 0;
+  }
+  .carnet-page .carnet {
+    display: grid;
+    grid-template-columns: 600px minmax(0, 1fr);
+    column-gap: 72px;
+    align-items: start;
+  }
+  .carnet-page .carnet > * {
+    grid-column: 2;
+  }
+  .carnet-page .carnet > .idc-wrap {
+    grid-column: 1;
+    grid-row: 1 / span 8;
+  }
+  .carnet-page-note,
+  .carnet-page-cuenta {
+    max-width: 600px;
+  }
 }
 
 /* T45: reporte y moderación de Carnets (REQ-ADM-040). */

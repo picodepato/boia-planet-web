@@ -1,0 +1,607 @@
+/*
+ * El Carnet BOIA como tarjeta ID-1 (plan 008, T91; diseño aprobado,
+ * docs/propuestas/2026-10-03-carnet.md). Todo dentro se mide en cqw (1 % del
+ * ancho de la tarjeta), así escala como un solo objeto; los mínimos en px
+ * dejan el texto legible en un móvil.
+ */
+
+.idc {
+  --idc-orange: #ec4f24;
+  --idc-paper: #edf0f6;
+  --idc-blue: #36278a;
+  --idc-ink: #1b1440;
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 0 4px;
+  color: var(--idc-ink, #1b1440);
+}
+
+.idc-flip {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 85.6 / 54;
+  cursor: pointer;
+  transform: perspective(1400px) rotateY(0deg);
+  transform-style: preserve-3d;
+  transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.idc-flip.is-back {
+  transform: perspective(1400px) rotateY(180deg);
+}
+
+.idc-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 3.7cqw;
+  color: #000;
+  font-family: var(--font-body);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.25) inset,
+    0 10px 28px rgb(10 6 40 / 0.28),
+    0 2px 6px rgb(10 6 40 / 0.2);
+}
+.idc-front {
+  background: var(--idc-orange, #ec4f24);
+}
+.idc-back {
+  transform: rotateY(180deg);
+  background: var(--idc-paper, #edf0f6);
+  color: var(--idc-ink, #1b1440);
+}
+
+.idc p,
+.idc dl,
+.idc dd,
+.idc h4 {
+  margin: 0;
+}
+
+/* ---- anverso ---- */
+.idc-guil,
+.idc-chart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.idc-guil path {
+  fill: none;
+  stroke: #000;
+  stroke-width: 0.16;
+  opacity: 0.09;
+}
+.idc-wm {
+  position: absolute;
+  left: 4.6cqw;
+  top: 4.4cqw;
+  width: 17cqw;
+  aspect-ratio: 620 / 173.5;
+  background: #000;
+  -webkit-mask: url('../../../app/(landing)/_marca/boia-wordmark.svg') center / contain no-repeat;
+  mask: url('../../../app/(landing)/_marca/boia-wordmark.svg') center / contain no-repeat;
+}
+.idc-doc {
+  position: absolute;
+  left: 23.6cqw;
+  top: 4.6cqw;
+  width: 14cqw;
+  font: 600 max(9px, 2.3cqw) / 1.15 var(--font-body);
+}
+.idc-fields dt {
+  display: block;
+  margin-bottom: 0.5cqw;
+  font: 500 max(9px, 2.2cqw) / 1.1 var(--font-body);
+}
+.idc-fields dd {
+  font: 700 max(11px, 3.1cqw) / 1.15 var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.idc-num {
+  position: absolute;
+  right: 4.6cqw;
+  top: 3.9cqw;
+  text-align: right;
+}
+.idc-num dt {
+  margin-bottom: 0.6cqw;
+}
+.idc .idc-num dd {
+  font: 700 max(13px, 4.6cqw) / 1 var(--font-title);
+  letter-spacing: 0.02em;
+}
+.idc-f {
+  position: absolute;
+}
+.idc-nick {
+  left: 30cqw;
+  top: 15cqw;
+  width: 41cqw;
+}
+.idc .idc-nick dd {
+  font: 700 5.6cqw / 1.08 var(--font-title);
+  overflow-wrap: anywhere;
+}
+.idc .idc-nick dd[data-tier='2'] {
+  font-size: 4.4cqw;
+}
+.idc .idc-nick dd[data-tier='3'] {
+  font-size: 3.3cqw;
+}
+.idc-rank {
+  left: 30cqw;
+  top: 32.5cqw;
+  width: 18.5cqw;
+}
+.idc-since {
+  left: 50cqw;
+  top: 32.5cqw;
+  width: 24cqw;
+}
+.idc-pts {
+  left: 74.4cqw;
+  top: 37.6cqw;
+  width: 21cqw;
+  text-align: center;
+}
+.idc .idc-pts dd {
+  font: 700 max(13px, 4.2cqw) / 1 var(--font-title);
+}
+.idc-photo {
+  position: absolute;
+  left: 4.6cqw;
+  top: 15.4cqw;
+  display: grid;
+  place-items: center;
+  width: 21.5cqw;
+  height: 27.4cqw;
+  overflow: hidden;
+  border-radius: 1.6cqw;
+  font-size: 13cqw;
+  line-height: 1;
+  box-shadow: 0 0 0 0.45cqw #000;
+}
+.idc-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.idc-seal {
+  position: absolute;
+  left: 19.6cqw;
+  top: 36.4cqw;
+  width: 8.6cqw;
+  aspect-ratio: 1;
+  background: url('../../../app/(landing)/_marca/boia-mascota.svg') center / contain no-repeat;
+  transform: rotate(-12deg);
+}
+.idc-qr {
+  position: absolute;
+  right: 4.6cqw;
+  top: 13.6cqw;
+  box-sizing: border-box;
+  width: 21cqw;
+  height: 21cqw;
+  padding: 1.3cqw;
+  border-radius: 1.2cqw;
+  background: #fff;
+  line-height: 0;
+}
+.idc-qr svg {
+  width: 100%;
+  height: 100%;
+}
+.idc-mrz {
+  position: absolute;
+  left: 4.6cqw;
+  right: 4.6cqw;
+  top: 46.6cqw;
+  padding-top: 1.6cqw;
+  overflow: hidden;
+  border-top: 0.3cqw solid #000;
+  font: 600 max(7.5px, 2.25cqw) / 1.45 var(--font-body);
+  letter-spacing: 0.38em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.idc-specimen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  color: rgb(0 0 0 / 0.1);
+  font: 700 9.5cqw / 1 var(--font-title);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  -webkit-text-stroke: 0.3cqw rgb(0 0 0 / 0.45);
+}
+
+/* ---- reverso ---- */
+.idc-chart line {
+  stroke: var(--idc-blue, #36278a);
+  stroke-width: 0.12;
+  opacity: 0.11;
+}
+.idc-chart line.is-cardinal {
+  stroke-width: 0.22;
+}
+.idc-chart circle {
+  fill: none;
+  stroke: var(--idc-blue, #36278a);
+  stroke-width: 0.18;
+  opacity: 0.2;
+}
+.idc-bh {
+  position: absolute;
+  left: 4.6cqw;
+  right: 4.6cqw;
+  top: 3.8cqw;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.idc .idc-back .idc-bh h4 {
+  margin: 0;
+  color: var(--idc-ink, #1b1440);
+  font: 700 max(13px, 3.8cqw) / 1 var(--font-title);
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 1;
+}
+.idc-bh span {
+  color: #3d3658;
+  font: 500 max(9px, 2.4cqw) / 1 var(--font-body);
+}
+.idc-grid {
+  position: absolute;
+  left: 3cqw;
+  right: 3cqw;
+  top: 11.5cqw;
+  bottom: 2.6cqw;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+.idc .idc-stamps {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.idc-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.idc-cell .stamp {
+  width: 25cqw;
+  height: 25cqw;
+  overflow: visible;
+}
+.idc-slot {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 21cqw;
+  height: 21cqw;
+  padding: 2cqw;
+  border: 0.35cqw dashed rgb(27 20 64 / 0.28);
+  border-radius: 50%;
+  color: #5f5771;
+  font: 600 max(9px, 2.3cqw) / 1.2 var(--font-body);
+  text-align: center;
+}
+.idc-slot.is-first {
+  border-color: rgb(27 20 64 / 0.55);
+  color: var(--idc-ink, #1b1440);
+}
+.idc-more {
+  display: grid;
+  place-content: center;
+  width: 20cqw;
+  height: 20cqw;
+  border: 0.5cqw solid var(--idc-ink, #1b1440);
+  border-radius: 50%;
+  text-align: center;
+}
+.idc-more b {
+  display: block;
+  font: 700 max(14px, 5cqw) / 1 var(--font-title);
+}
+.idc-more span {
+  font: 600 max(9px, 2.2cqw) / 1.1 var(--font-body);
+}
+
+/* Las letras de los sellos (también en «Tus sellos» y /sello). */
+.stamp-t {
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+.stamp-b {
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+/* ---- el sello que cae (T87, marco 09) ---- */
+.idc-cell.is-fresh .stamp {
+  animation: idc-drop 220ms ease-in 520ms both;
+}
+.idc-flip.has-fresh {
+  animation: idc-knock 80ms ease-out 740ms;
+}
+.idc-flip.is-back.has-fresh {
+  animation-name: idc-knock-back;
+}
+@keyframes idc-drop {
+  0% {
+    opacity: 0;
+    filter: blur(1.5px);
+    transform: scale(1.7) rotate(-18deg);
+  }
+  80% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes idc-knock-back {
+  50% {
+    transform: perspective(1400px) rotateY(180deg) translateY(2px);
+  }
+}
+@keyframes idc-knock {
+  50% {
+    transform: perspective(1400px) translateY(2px);
+  }
+}
+
+/* ---- control bajo la tarjeta ---- */
+.idc-ctrl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.idc .idc-flipbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin: 2px 0;
+  padding: 0 14px 0 10px;
+  border: 0;
+  border-radius: 20px;
+  background: rgb(27 20 64 / 0.08);
+  color: var(--idc-ink, #1b1440);
+  font: 600 14px / 1 var(--font-body);
+  cursor: pointer;
+}
+.idc-flipbtn span {
+  font-size: 18px;
+  font-weight: 700;
+}
+.idc-flipbtn:focus-visible {
+  outline: 2px solid var(--idc-ink, #1b1440);
+  outline-offset: 3px;
+}
+.idc-chip {
+  padding: 7px 10px;
+  border-radius: 14px;
+  background: #000;
+  color: #ff8a5c;
+  font: 700 13px / 1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.idc-dots {
+  display: flex;
+  gap: 6px;
+}
+.idc-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(27 20 64 / 0.25);
+}
+.idc-dots i.is-on {
+  background: var(--idc-ink, #1b1440);
+}
+.idc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* En una página oscura (/carnet, /sello) la tarjeta es el objeto iluminado. */
+.is-on-dark .idc .idc-face {
+  box-shadow: 0 40px 80px rgb(0 0 0 / 0.55);
+}
+.is-on-dark .idc .idc-flipbtn {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+.is-on-dark .idc .idc-flipbtn:focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 5px #05080f;
+}
+.is-on-dark .idc .idc-dots i {
+  background: rgb(255 255 255 / 0.3);
+}
+.is-on-dark .idc .idc-dots i.is-on {
+  background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idc-flip {
+    transform: none;
+    transition: none;
+  }
+  .idc-flip.is-back {
+    transform: none;
+  }
+  .idc-face {
+    transition: opacity 150ms linear;
+  }
+  .idc-back {
+    transform: none;
+    opacity: 0;
+  }
+  .idc-flip.is-back .idc-back {
+    opacity: 1;
+  }
+  .idc-flip.is-back .idc-front {
+    opacity: 0;
+  }
+  .idc-cell.is-fresh .stamp {
+    animation: idc-fade 150ms linear both;
+  }
+  .idc-flip.has-fresh,
+  .idc-flip.is-back.has-fresh {
+    animation: none;
+  }
+}
+@keyframes idc-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- botones del Carnet propio (la píldora de la landing, texto negro: 5,7 : 1) ---- */
+.idc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.idc-btn,
+.idc-actions .idc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--idc-orange, #ec4f24);
+  color: #000;
+  font: 700 15px / 1.1 var(--font-body);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.idc-btn.is-wide {
+  grid-column: 1 / -1;
+}
+.idc-btn.is-ghost {
+  background: transparent;
+  color: var(--idc-ink, #1b1440);
+  box-shadow: inset 0 0 0 1.5px rgb(27 20 64 / 0.35);
+}
+.idc-btn:focus-visible,
+.idc-x:focus-visible,
+.idc-sheet h3:focus-visible {
+  outline: 2px solid var(--idc-ink, #1b1440);
+  outline-offset: 3px;
+}
+.idc-btn:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+.is-on-dark .idc-btn.is-ghost {
+  color: #fff;
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.6);
+}
+.is-on-dark .idc-btn:focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 5px #05080f;
+}
+.idc-notice {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(31 122 77 / 0.12);
+  color: #1f7a4d;
+  font: 600 14px / 1.4 var(--font-body);
+}
+.is-on-dark .idc-notice {
+  background: rgb(31 122 77 / 0.25);
+  color: #b9f0d2;
+}
+
+/* ---- «Tus sellos» ---- */
+.idc-sheet {
+  margin: 12px 0;
+  padding: 14px 12px 6px;
+  border-radius: 18px;
+  background: var(--idc-paper, #edf0f6);
+  color: var(--idc-ink, #1b1440);
+}
+.idc-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.idc-sheet h3 {
+  margin: 0;
+  font: 700 18px / 1.1 var(--font-title);
+}
+.idc-x {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(27 20 64 / 0.08);
+  color: var(--idc-ink, #1b1440);
+  font: 700 20px / 1 var(--font-body);
+  cursor: pointer;
+}
+.idc-sheet-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.idc-sheet-list li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0 8px;
+  text-align: center;
+}
+.idc-sheet-list .stamp {
+  width: 132px;
+  height: 132px;
+  overflow: visible;
+}
+.idc-sheet-list b {
+  margin-top: 2px;
+  font: 700 14px / 1.2 var(--font-body);
+}
+.idc-sheet-list span {
+  color: #5f5771;
+  font: 400 13px / 1.3 var(--font-body);
+}
+@media (min-width: 768px) {
+  .idc-sheet-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

@@ -10,8 +10,8 @@ import { useAccount } from '../../account/use-account';
 import { INVITE_COPY } from '../../landing/invitations';
 import { t } from '../../i18n';
 import { useRepoData } from '../repo';
-import { CarnetCard } from './carnet-card';
 import { CarnetEditor, LOCAL_ONLY_NOTICE, draftFrom, saveCarnet } from './carnet-editor';
+import { OwnCarnet } from './own-carnet';
 import { carnetPath } from './share';
 import { useCarnet } from './use-carnet';
 
@@ -138,20 +138,12 @@ export function CarnetPanel({
 
   return (
     <div data-testid="carnet-mio">
+      <OwnCarnet carnet={carnet} extras={extras} onEdit={() => setEditing(true)} />
       <p className="juego-muted" data-testid="carnet-aviso-local">
-        {t('juego.carnet.asiLoVeranLos', { LOCAL_ONLY_NOTICE })}
+        {account.status === 'local'
+          ? t('juego.carnet.asiLoVeranLos', { LOCAL_ONLY_NOTICE })
+          : t('carnet.card.economyNotice')}
       </p>
-      <CarnetCard carnet={carnet} extras={extras} />
-      <div className="carnet-actions">
-        <button
-          type="button"
-          className="juego-button"
-          data-testid="carnet-editar"
-          onClick={() => setEditing(true)}
-        >
-          {t('carnet.edit')}
-        </button>
-      </div>
       <p>
         <Link href={carnetPath(carnet.userId)} className="juego-link">
           {t('carnet.fullScreen')}

@@ -66,6 +66,16 @@ export function guestRepository(): BoiaRepository {
 
 let switcher: SwitchableRepository | null = null;
 
+/**
+ * Vuelve a leer la cuenta del servidor (p. ej. tras un sello por QR, T91, que
+ * se concede con una RPC fuera del repositorio). Sin miembro, no hace nada.
+ */
+export async function refreshMemberAccount(): Promise<void> {
+  const current = switcher?.current() as (BoiaRepository & { sync?: unknown }) | undefined;
+  const sync = current?.sync as { refresh?: (block?: boolean) => Promise<void> } | undefined;
+  await sync?.refresh?.();
+}
+
 export function gameRepository(): BoiaRepository {
   if (typeof window === 'undefined' || !isSupabaseConfigured()) return guestRepository();
   if (!switcher) {

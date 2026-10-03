@@ -37,7 +37,9 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
     expect(get(false, 'X-Content-Type-Options')).toBe('nosniff');
     expect(get(false, 'X-Frame-Options')).toBe('SAMEORIGIN');
     expect(get(false, 'Referrer-Policy')).toBe('strict-origin-when-cross-origin');
-    expect(get(false, 'Permissions-Policy')).toContain('camera=()');
+    // La cámara sólo la pide la propia web (escanear el sello, T91); el micro, nadie.
+    expect(get(false, 'Permissions-Policy')).toContain('camera=(self)');
+    expect(get(false, 'Permissions-Policy')).toContain('microphone=()');
     expect(get(false, 'Strict-Transport-Security')).toContain('max-age=');
   });
 

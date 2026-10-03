@@ -6,6 +6,7 @@
  * §31.2; docs/propuestas/textos-zonas.md).
  */
 import { esAdmin } from './es-admin';
+import { esCarnet } from './es-carnet';
 import { esCuenta } from './es-cuenta';
 import { esJuego } from './es-juego';
 import { esLib } from './es-lib';
@@ -20,7 +21,8 @@ export { LANDING_TEXT_KEYS } from './es-web';
 /**
  * El catálogo entero: el de la web pública (es-web.ts), el resto de
  * textos-zonas.md y las claves del 2D, /mar, el Admin y los módulos de
- * lib/ (T49), y la cuenta con email (es-cuenta.ts, plan 008).
+ * lib/ (T49), la cuenta con email (es-cuenta.ts, plan 008) y el Carnet como
+ * tarjeta con sus sellos (es-carnet.ts, plan 008 T91).
  */
 export const es = {
   ...esWeb,
@@ -32,6 +34,7 @@ export const es = {
   ...esAdmin,
   ...esLib,
   ...esCuenta,
+  ...esCarnet,
 } as const;
 
 export type MessageKey = keyof typeof es;

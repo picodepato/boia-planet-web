@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { t } from '../../i18n';
 import { worlds } from '../demo-world';
 import { gameRepository, seaWorld } from '../repo';
 import { CarnetCard } from './carnet-card';
@@ -140,7 +141,8 @@ describe('Carnet (REQ-IDE-010…015)', () => {
       expect(html.indexOf(full.answers[q.id]!, i)).toBeGreaterThan(i);
     }
     expect(html).toContain(full.nickname);
-    expect(html).toContain('Miembro de BOIA desde');
+    // T91: la tarjeta ID-1 dice «Miembro desde» en su campo (antes, «Miembro de BOIA desde»).
+    expect(html).toContain(t('carnet.card.since'));
     expect(html).toContain(carnet.rank!.name);
   });
 

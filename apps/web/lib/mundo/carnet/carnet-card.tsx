@@ -1,16 +1,24 @@
+'use client';
+
 import type { CarnetView } from '@boia/store';
-import { Avatar } from './avatar';
+import { type ReactNode, useEffect, useState } from 'react';
 import { t } from '../../i18n';
+import { type CardFace, type CardView, IdCard } from './id-card';
+import type { StampArt } from './id-card-model';
+import { carnetPath } from './share';
 
 /**
  * El Carnet BOIA tal como lo ven los demás (REQ-IDE-010…022): identidad
  * musical, no ficha ni estatus. Sirve igual para el propio (menú), el de
- * otra persona (desde su botella) y la vista para compartir (/carnet).
+ * otra persona (desde su botella o el ranking) y la vista para compartir
+ * (/carnet). Desde el plan 008 (T91, decisión 10) arriba va la tarjeta ID-1
+ * (anverso con apodo, nº, rango, puntos, «Miembro desde» y el QR a su Carnet
+ * público; reverso con los sellos), y debajo lo de siempre:
  *
  * - Cada respuesta va con su pregunta en pequeño y la respuesta en grande,
  *   nunca sin contexto (REQ-IDE-015); sólo las contestadas.
  * - Los sellos son una colección de recuerdos, no una lista de compras
- *   (REQ-IDE-022).
+ *   (REQ-IDE-022): en el reverso, sin importes ni números de entrada.
  * - Sin artistas vistos ni valoraciones (REQ-IDE-019).
  */
 
@@ -32,65 +40,108 @@ export interface CarnetExtras {
   shipLabel?: string | null;
   /** Nombre de cada cosmético por id. */
   cosmeticNames?: Readonly<Record<string, string>>;
+  /** Nº de miembro (con cuentas); sin servidor, «—». */
+  memberNumber?: number | null;
+  /** Marcado como artista por el Admin (con cuentas, decisión 11). */
+  isArtist?: boolean;
+  /** Los sellos como se pintan, más recientes primero (`stampArtFor`). */
+  stamps?: StampArt[];
 }
 
-export function CarnetCard({ carnet, extras = {} }: { carnet: CarnetView; extras?: CarnetExtras }) {
-  const since = memberSinceLabel(carnet.memberSince);
+function useOrigin(): string | null {
+  const [origin, setOrigin] = useState<string | null>(null);
+  useEffect(() => setOrigin(window.location.origin), []);
+  return origin;
+}
+
+/** Lo que pinta la tarjeta de un Carnet. */
+export function cardViewOf(
+  carnet: CarnetView,
+  extras: CarnetExtras,
+  origin: string | null,
+): CardView {
+  return {
+    userId: carnet.userId,
+    nickname: carnet.nickname,
+    memberNumber: extras.memberNumber ?? null,
+    rank: carnet.rank?.name ?? null,
+    points: carnet.points,
+    memberSince: carnet.memberSince,
+    avatarKey: carnet.avatarKey,
+    avatarImage: carnet.avatarImage,
+    photoModerated: carnet.moderated.photo,
+    artist: !!carnet.artist || !!extras.isArtist,
+    isSample: carnet.isSample,
+    stamps:
+      extras.stamps ??
+      carnet.stamps.map((s) => ({
+        eventId: s.eventId,
+        name: s.eventName ?? s.eventId,
+        date: s.grantedAt,
+        image: null,
+        sample: carnet.isSample,
+      })),
+    publicUrl: origin ? `${origin}${carnetPath(carnet.userId)}` : null,
+    isMine: carnet.isMine,
+  };
+}
+
+export function CarnetCard({
+  carnet,
+  extras = {},
+  initialFace,
+  fresh,
+  pointsChange,
+  controls,
+  dark = false,
+  onFaceChange,
+}: {
+  carnet: CarnetView;
+  extras?: CarnetExtras;
+  initialFace?: CardFace | undefined;
+  /** El sello que acaba de caer (T91). */
+  fresh?: string | null | undefined;
+  pointsChange?: { from: number; to: number } | null | undefined;
+  /** Lo que va bajo la tarjeta (botones del Carnet propio). */
+  controls?: ReactNode | undefined;
+  /** En una página oscura (/carnet, /sello). */
+  dark?: boolean | undefined;
+  onFaceChange?: ((face: CardFace) => void) | undefined;
+}) {
+  const origin = useOrigin();
+  const card = cardViewOf(carnet, extras, origin);
   const cosmetics = carnet.cosmeticIds.filter(Boolean);
+  const genres = carnet.artist?.genres ?? [];
   return (
     <article
-      className="carnet"
+      className={dark ? 'carnet is-on-dark' : 'carnet'}
       data-testid="carnet"
       aria-label={t('juego.carnetCard.carnetDe', { nickname: carnet.nickname })}
     >
-      <header className="carnet-head">
-        <Avatar avatarKey={carnet.avatarKey} image={carnet.avatarImage} name={carnet.nickname} />
-        <div>
-          <p className="carnet-kicker">
-            {t('juego.carnetCard.carnetBoia', {
-              v1: carnet.artist
-                ? t('lib.carnet.artista')
-                : carnet.isSample
-                  ? t('juego.carnetCard.miembroDeMuestra')
-                  : '',
-            })}
-          </p>
-          <h3 className="carnet-name" data-testid="carnet-apodo">
-            {carnet.nickname}
-          </h3>
-          {/* El Carnet de un artista (T66): sus géneros, de su ficha. */}
-          {carnet.artist ? (
-            <p className="juego-carnet-generos" data-testid="carnet-generos">
-              {t('lib.carnet.generos', { genres: carnet.artist.genres.join(' · ') })}
-            </p>
-          ) : null}
-          {since ? (
-            <p className="carnet-since">{t('carnet.memberSince', { date: since })}</p>
-          ) : null}
-          {carnet.moderated.photo ? (
-            <p className="carnet-moderated" data-testid="carnet-foto-retirada">
-              {MODERATED_PHOTO}
-            </p>
-          ) : null}
-        </div>
-      </header>
-
-      <dl className="carnet-stats">
-        <div>
-          <dt>{t('juego.carnetCard.rango')}</dt>
-          <dd data-testid="carnet-rango">{carnet.rank?.name ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>{t('juego.carnetCard.puntos')}</dt>
-          <dd data-testid="carnet-puntos">{carnet.points}</dd>
-        </div>
-        <div>
-          <dt>{t('juego.carnetCard.sellos')}</dt>
-          <dd>{carnet.stamps.length}</dd>
-        </div>
-      </dl>
+      <div className={dark ? 'idc-wrap is-on-dark' : 'idc-wrap'}>
+        <IdCard
+          card={card}
+          initialFace={initialFace}
+          fresh={fresh ?? null}
+          pointsChange={pointsChange ?? null}
+          below={controls}
+          onFaceChange={onFaceChange}
+        />
+      </div>
+      {carnet.moderated.photo ? (
+        <p className="carnet-moderated" data-testid="carnet-foto-retirada">
+          {MODERATED_PHOTO}
+        </p>
+      ) : null}
+      {/* El Carnet de un artista (T66): sus géneros, de su ficha. */}
+      {genres.length > 0 ? (
+        <p className="juego-carnet-generos" data-testid="carnet-generos">
+          {t('lib.carnet.generos', { genres: genres.join(' · ') })}
+        </p>
+      ) : null}
 
       <section aria-label={t('juego.carnetCard.respuestas')}>
+        <h4>{carnet.isMine ? t('carnet.section.answersOwn') : t('carnet.section.answers')}</h4>
         {carnet.answers.length === 0 ? (
           <p className="juego-muted">
             {carnet.isMine
@@ -111,32 +162,17 @@ export function CarnetCard({ carnet, extras = {} }: { carnet: CarnetView; extras
         )}
       </section>
 
-      <section aria-label={t('juego.carnetCard.sellos')}>
-        <h4>{t('juego.carnetCard.sellos')}</h4>
-        {carnet.stamps.length === 0 ? (
-          <p className="juego-muted">{t('juego.carnetCard.aunSinSellosCada')}</p>
-        ) : (
-          <ul className="carnet-stamps" data-testid="carnet-sellos">
-            {carnet.stamps.map((s) => (
-              <li key={s.eventId} className="carnet-stamp">
-                <span aria-hidden="true">✺</span>
-                <span>{s.eventName ?? s.eventId}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Insignias de los logros reclamados (REQ-IDE-052, T37). */}
-      <section aria-label={t('carnet.badges.heading')}>
-        <h4>{t('carnet.badges.heading')}</h4>
-        {carnet.badges.length === 0 ? (
+      {/* Insignias de los logros reclamados (REQ-IDE-052, T37) y los logros. */}
+      <section aria-label={t('carnet.section.badges')}>
+        <h4>{t('carnet.section.badges')}</h4>
+        {carnet.badges.length === 0 && carnet.achievements.length === 0 ? (
           <p className="juego-muted">
             {carnet.isMine
               ? t('juego.carnetCard.aunSinInsigniasAlgunos')
               : t('juego.carnetCard.aunSinInsignias')}
           </p>
-        ) : (
+        ) : null}
+        {carnet.badges.length > 0 ? (
           <ul className="carnet-chips carnet-insignias" data-testid="carnet-insignias">
             {carnet.badges.map((b) => (
               <li key={b.key} data-testid={`carnet-insignia-${b.key}`}>
@@ -144,14 +180,8 @@ export function CarnetCard({ carnet, extras = {} }: { carnet: CarnetView; extras
               </li>
             ))}
           </ul>
-        )}
-      </section>
-
-      <section aria-label={t('juego.carnetCard.logros')}>
-        <h4>{t('juego.carnetCard.logros')}</h4>
-        {carnet.achievements.length === 0 ? (
-          <p className="juego-muted">{t('juego.carnetCard.aunSinLogros')}</p>
-        ) : (
+        ) : null}
+        {carnet.achievements.length > 0 ? (
           <ul className="carnet-chips" data-testid="carnet-logros">
             {carnet.achievements.map((a) => (
               <li key={a.id} title={a.description ?? undefined}>
@@ -159,11 +189,11 @@ export function CarnetCard({ carnet, extras = {} }: { carnet: CarnetView; extras
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
       </section>
 
-      <section aria-label={t('juego.carnetCard.barco')}>
-        <h4>{t('juego.carnetCard.barco')}</h4>
+      <section aria-label={t('carnet.section.ship')}>
+        <h4>{t('carnet.section.ship')}</h4>
         {extras.shipLabel ? <p data-testid="carnet-barco">⛵ {extras.shipLabel}</p> : null}
         {cosmetics.length > 0 ? (
           <ul className="carnet-chips" data-testid="carnet-cosmeticos">

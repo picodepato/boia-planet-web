@@ -4,6 +4,128 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T91: The ID-card Carnet and QR party stamps
+
+El Carnet es ahora la tarjeta ID-1 aprobada en T87 (decisión 10) en la hoja
+«Mi Carnet» de /mar, en `/carnet` y en `/carnet/<id>`, y los sellos de las
+fiestas llegan por QR (decisión 9): «Escanear sello» abre la cámara en la
+web y `/sello?e=&c=` reclama el sello con `claim_stamp`. En modo local (sin
+Supabase) todo sigue en el navegador: la misma tarjeta, nº «—», sin
+«Escanear sello», y el sello llega con la compra de prueba como siempre.
+
+Qué existe:
+- **La tarjeta** (`apps/web/lib/mundo/carnet/`):
+  - `id-card.tsx` + `id-card.css`: anverso naranja (wordmark, «Carnet de
+    miembro/artista», nº de miembro, foto o avatar con la mascota, apodo en
+    tres tamaños, rango, «Miembro desde», puntos, QR al Carnet público,
+    línea de lectura mecánica, olas, «MUESTRA» en los de muestra) y reverso
+    de pasaporte (rumbos, 3 × 2 celdas, «Aquí va tu primer sello», 5 + «+N»).
+    Todo en `cqw` con mínimos en px. Giro con el botón «Ver sellos / Ver
+    anverso» o tocando la tarjeta (500 ms; fundido de 150 ms con movimiento
+    reducido), cara oculta `inert`, región `aria-live`. `fresh`: el sello que
+    acaba de llegar abre el reverso y cae (escala 1,7 → 1, −18° → su giro,
+    golpe de 2 px, sonido `bump`); chip «Puntos a → b».
+  - `id-card-model.ts`: nº con 4 cifras, «jun 2026», línea mecánica,
+    tamaño del apodo, `stampStyle(eventId)` (forma, tinta y giro por hash,
+    siempre los mismos), `backLayout`.
+  - `stamp.tsx`: el sello de goma de T87 (redondo, rectangular, ovalado;
+    4 tintas; filtro de tinta). Con imagen del evento (T94) la imagen va
+    dentro del mismo tratamiento (ventana recortada `cover`, impresa en la
+    tinta en pocos niveles); si la imagen falla, el sello generado.
+    `eventStampImage(evento)` (en `use-carnet.ts`) lee `stampImageUrl` del
+    evento cuando T94 lo añada; hoy no hay ninguno.
+  - `qr-code.tsx` (`uqr`, corrección M): el QR del anverso.
+  - `carnet-card.tsx`: la tarjeta arriba y debajo lo de siempre (respuestas
+    con su pregunta, insignias y logros, barco). `cardViewOf()`.
+  - `own-carnet.tsx`: el Carnet propio con «Escanear sello» (sólo con
+    cuentas), «Editar mi Carnet», «Compartir» (Web Share o copiar enlace) y
+    «Ver tus sellos» (`stamps-sheet.tsx`, la lista legible) con el reverso a
+    la vista. Lo usan `carnet-panel.tsx` (/mar) y `/carnet`.
+  - `use-carnet.ts`: nº de miembro y artista de la cuenta, los sellos como
+    se pintan (`stampArtFor`: nombre y fecha de la fiesta del contenido o,
+    si no está, de `events` en Supabase), y con Supabase el Carnet público
+    de otro miembro (`public-carnet.ts`: `carnets`, `carnet_answers`,
+    `point_balances`, `stamps` + `events`; nunca el email).
+  - `claim.ts` / `claim-copy.ts`: `claimStamp({event, code})`: la fiesta
+    (Supabase o contenido), `requireAccount('stamp', {event})`,
+    `claim_stamp`, y el resultado `granted | already | early | late |
+    invalid | offline | local | cancelled`; la ventana sale del detalle de
+    `outside_window`; «desde las HH:MM» de `stamps.granted_at`; al conceder,
+    `refreshMemberAccount()` (nuevo en `lib/repo.ts`) relee la cuenta.
+- **El escáner** (`apps/web/lib/scanner/`): `scan-layer.tsx` (capa modal a
+  pantalla completa, cargada con `import()` al tocar «Escanear sello»: antes
+  del permiso, cámara trasera con ventana y esquinas, linterna si la hay,
+  lectura continua, «Sello encontrado / Guardando…», hojas de error, permiso
+  denegado y sin cámara, Esc y foco), `decode.ts` (`BarcodeDetector` si lo
+  hay; si no `jsqr`, cargado con `import()` sólo al escanear: no está en el
+  paquete de la landing ni de /mar, comprobado en el build y en
+  `scanner.test.ts`), `sello-url.ts` (`/sello?e=&c=` en cualquier dominio).
+- **`/sello`** (`apps/web/app/sello/`): página ligera en la noche de la
+  landing; quita `c` de la barra con `replaceState`; comprobando → hoja de
+  acceso para el invitado (y el sello al terminar) → sellado (el reverso
+  con el sello cayendo, «Sellado. +50 puntos…», «Ver mi Carnet», «Zarpar al
+  mar») o el error; sin Supabase, «Los sellos con QR necesitan la versión
+  con cuentas». `noindex`, `no-referrer`.
+- **`/carnet` y `/carnet/<id>`**: noche de la landing, cabecera con el
+  wordmark y «Volver al mar», tarjeta de 600 px a la izquierda y respuestas a
+  la derecha desde 1024 px; textos por clave (antes sueltos).
+- `apps/web/lib/i18n/es-carnet.ts` (nuevo): las claves de T87 de la tarjeta,
+  el escaneo y /sello, más las marcadas «T91».
+- `Permissions-Policy`: `camera=(self)` (antes `camera=()` bloqueaba la
+  cámara en toda la web); el micro sigue cerrado.
+- Dependencias: `uqr` 0.1.3 (QR del anverso), `jsqr` 1.4.0 (decodificador
+  a demanda); de desarrollo `pngjs` 7.0.0 y `@types/pngjs` (la prueba lee el
+  PNG del QR, `apps/web/lib/scanner/fixtures/sello-qr.png`).
+- REQ-IDE-023 «QR alternativo de sello» → HECHO; REQ-IDE-022 sigue PARCIAL
+  (pide la revisión de diseño del hito) con su nueva evidencia.
+
+Pruebas y comandos:
+- `pnpm exec vitest run apps/web/lib/scanner apps/web/lib/mundo/carnet` →
+  3 archivos, 32 pruebas: el decodificador lee el PNG del QR de una fiesta
+  (`/sello?e=…&c=…`), otro QR no es un sello, jsqr y la cámara sólo con
+  `import()`, la URL; la tarjeta (nº,
+  «Miembro desde», línea mecánica, reverso 5 + «+N»), el sello generado y el
+  de imagen, el QR del anverso se decodifica y lleva al Carnet público, el
+  sello recién llegado abre el reverso, la ventana de `outside_window` y los
+  textos de cada error.
+- `E2E_SUPABASE=1 E2E_PORT=3193 pnpm e2e sello.spec.ts sello-camara.spec.ts
+  --workers=1` → 8 passed: un miembro abre el QR → el sello en el reverso y
+  +50 (los de `point_actions`); otra vez → «Ya tienes este sello»; su Carnet
+  público visto por otro sin cuenta (apodo, nº, puntos, sello, sin email);
+  fuera de la ventana → «Este sello abre durante la fiesta»; código malo →
+  «no es un sello»; invitado → hoja de acceso (motivo `stamp`, la fiesta en
+  el «por qué»), cuenta nueva y el sello; «Escanear sello» con una cámara
+  falsa de Chromium que enseña el QR (vídeo .y4m hecho en la prueba).
+  Con `cuenta.spec.ts cuenta-progreso.spec.ts` en la misma tanda: 19
+  passed, 1 skipped (cuenta-progreso sólo corre en escritorio, T90).
+- `E2E_PORT=3191 pnpm e2e carnet.spec.ts carnet-descuento.spec.ts
+  tickets.spec.ts mar-entradas.spec.ts comunidad.spec.ts mar-a-bordo.spec.ts
+  tipografia.spec.ts --workers=1` → 52 passed (modo local).
+- `pnpm test:supabase` → 6 archivos, 63 pruebas, exit 0.
+- Comando de prueba del plan → exit 0 (vitest 122 archivos, 1079 pruebas; checks;
+  lint; build con la landing en 185,6 kB de 200; typecheck).
+
+Aserciones cambiadas:
+- `carnet.spec.ts`: ninguna quitada. Añadidas: el Carnet público de un
+  miembro de muestra es la tarjeta con su QR a `/carnet/<id>` y «MUESTRA»;
+  el Carnet local tiene nº «—» y no tiene «Escanear sello»; prueba nueva «la
+  tarjeta: anverso, girar, el sello de la compra de prueba en el reverso»
+  (y /sello sin servidor).
+- `carnet-descuento.spec.ts`: sin cambios (sigue pasando con la tarjeta:
+  `carnet-apodo` y `carnet-generos` se conservan).
+- `lib/mundo/carnet/carnet.test.ts`: «Miembro de BOIA desde» → el campo
+  «Miembro desde» de la tarjeta (`carnet.card.since`).
+- `lib/security-headers.test.ts`: `camera=()` → `camera=(self)` y
+  `microphone=()`.
+
+Pendiente:
+- T94: el campo de la imagen del sello en el evento (`stampImageUrl` en el
+  contenido y la columna en Supabase); la tarjeta ya la pinta.
+- En /carnet a 1280 las acciones van bajo la tarjeta (T87 las ponía en la
+  columna derecha).
+- La cuenta atrás de los puntos (600 ms) y «Ahora eres {rango}» tras un
+  sello no están; sí el chip «Puntos a → b».
+
 ## 2026-10-03 — plan 008 T92: Global rankings: circuit times and all-time points
 
 Con Supabase, el ranking del Menú de /mar es global (decisión 8) y sigue el
