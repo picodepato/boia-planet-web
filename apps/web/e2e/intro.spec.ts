@@ -359,8 +359,25 @@ test('«Entradas» durante la aparición abre Tickets y deja el hero en reposo (
   page,
 }) => {
   await page.goto('/');
-  await phaseIs(page, 'appearing');
-  await heroTickets(page).click();
+  // «Entradas» pressed in the page as soon as the appearance starts: the
+  // appearance lasts 1.4 s and, on a loaded machine, a click sent from the
+  // test (or `locator.click()` waiting for the fading-in button to be
+  // "stable") could land after it ended (T81).
+  const pressedIn = await page.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        const tick = () => {
+          const phase = window.__boiaIntro?.phase;
+          if (phase !== 'appearing' && phase !== 'waiting' && phase !== undefined)
+            return resolve(phase);
+          if (phase !== 'appearing') return void requestAnimationFrame(tick);
+          document.querySelector<HTMLElement>('.hero [data-tickets-open="hero"]')!.click();
+          resolve(phase);
+        };
+        tick();
+      }),
+  );
+  expect(pressedIn, 'pulsado durante la aparición').toBe('appearing');
   await expect(ticketsPanel(page)).toBeVisible();
   const d = await waitRest(page, 3000);
   expect(d.outcome).toBe('skipped');

@@ -182,7 +182,7 @@ test.describe('sin JavaScript', () => {
   });
 });
 
-test('axe: sin violaciones serias ni críticas en / (y con el panel abierto)', async ({ page }) => {
+test('axe: sin violaciones en / (y con el panel abierto)', async ({ page }) => {
   await page.goto(LANDING);
   // Deja terminar las animaciones de entrada (fundido de artistas): con la
   // escena del mundo cargando de fondo y las pruebas en paralelo, 600 ms fijos
@@ -194,17 +194,18 @@ test('axe: sin violaciones serias ni críticas en / (y con el panel abierto)', a
       .every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity),
   );
 
-  const serious = async () => {
+  // Ninguna violación, de ningún impacto (plan 007 T81; antes sólo serias y críticas).
+  const violations = async () => {
     const results = await new AxeBuilder({ page }).analyze();
-    return results.violations
-      .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-      .map((v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`);
+    return results.violations.map(
+      (v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`,
+    );
   };
 
-  expect(await serious()).toEqual([]);
+  expect(await violations()).toEqual([]);
 
   await heroTickets(page).click();
   await expect(ticketsPanel(page)).toBeVisible();
   await page.waitForTimeout(300);
-  expect(await serious()).toEqual([]);
+  expect(await violations()).toEqual([]);
 });

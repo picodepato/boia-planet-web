@@ -136,7 +136,9 @@ export function BlockView({
       // Plan 007 T79 (T77 §5): the hero track. The scene is fixed under the
       // page; the UI sticks for the first screen of scroll and fades out as
       // the camera dives. The h1 is the Admin's title (read by screen
-      // readers); «BOIA» on screen is the wordmark, with the 3D letters.
+      // readers); «BOIA» on screen is the wordmark, with the 3D letters. The
+      // h1 stays visible to assistive tech when the UI fades out (landing.css,
+      // T81).
       return (
         <section
           id="inicio"

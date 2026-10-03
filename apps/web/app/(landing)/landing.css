@@ -490,6 +490,12 @@ html[data-hero='still'] .hero__scene::after,
   margin: 0;
 }
 
+/* The h1 (visually hidden) stays in the page when the UI fades out with
+   `visibility: hidden` (T81: one h1 at every scroll position). */
+.hero__ui > h1 {
+  visibility: visible;
+}
+
 /* «BOIA»: the wordmark (flat text, or the 3D letters of T27 over it). */
 .hero__wordmark {
   position: absolute;

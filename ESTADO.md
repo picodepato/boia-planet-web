@@ -4,6 +4,84 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T81: Accesibilidad, movimiento reducido y el e2e del flujo completo
+
+Qué existe:
+- axe (todas las severidades) da 0 violaciones en reposo, tras la zambullida,
+  en las bandas, de noche (Fotos) y en el pie, con y sin el panel de Tickets,
+  en móvil y escritorio. La única que había: `page-has-heading-one` en
+  cuanto se bajaba, porque el h1 (visualmente oculto) vive dentro de
+  `.hero__ui`, que la zambullida pone en `visibility: hidden`. Arreglo:
+  `.hero__ui > h1 { visibility: visible; }` en `landing.css` (el DOM no
+  cambia).
+- Movimiento reducido: además de la versión estática de T79 (sin canvas,
+  sin cámara, el still), la rotación de artistas empieza en pausa
+  (`artist-rotator.tsx`; el botón dice «Reanudar rotación» y la arranca).
+  Nada corre solo: `document.getAnimations()` en marcha = [] con el pulso, la
+  pista y la boia ya parados por CSS.
+- Contraste medido en píxeles (`apps/web/e2e/contrast.ts`): axe no puede
+  medir texto sobre el canvas, el still o los degradados de las bandas (lo
+  deja en «incomplete»), así que la prueba hace una captura con los glifos
+  transparentes y compara el color de cada texto visible (con su alfa y la
+  opacidad de sus padres) con cada píxel de fondo bajo sus glifos; pasa si
+  el 95 % de los píxeles da ≥ 4,5:1 (≥ 3:1 en texto grande). Peores valores
+  con los tokens de T77, sin cambiar ninguno: rótulos al 50 % 5,28–5,32:1
+  (escena viva, still y bandas); pista 9,3–9,6:1; «Zarpar» negro sobre
+  naranja 5,71:1; marcadores «Foto de muestra» de noche 5,17:1; «BOIA»
+  plano sobre el still dorado 3,16:1 (escritorio) y 3,48:1 (móvil), texto
+  grande y además logotipo. Las letras 3D sobre la escena viva son canvas y
+  no se miden (logotipo, `aria-hidden`; el h1 lleva el nombre).
+- Teclado: en reposo el foco está en «Zarpar»; Mayús+Tab → «Saltar al
+  contenido»; Tab → «Zarpar» → «Entradas» → la pista («Desliza para bajar al
+  mar»), todos en pantalla con el anillo blanco de 3 px y halo `#05080f`;
+  Enter en la pista baja una pantalla (el mar) y el siguiente Tab entra en
+  las bandas. En visita directa, Tab + Enter en el salto lleva a
+  `#contenido` y el siguiente Tab es «Zarpar». El canvas de la escena es
+  `aria-hidden` + `role="presentation"` dentro de `.hero__scene`
+  `aria-hidden`; los stills `alt=""`; la pista tiene texto.
+- Panel de Tickets: Escape lo cierra y devuelve el foco a «Entradas» del
+  hero; Atrás lo cierra sin mover la página y devuelve el foco a «Entradas»
+  de la cabecera; «Cerrar» en el pie.
+- `landing-scroll.spec.ts` cubre el flujo completo en 375×812 y 1280×800:
+  aparición → reposo → zambullida → mar → noche → pie → vuelta arriba (una
+  escena, un `landing_view`); «Zarpar» → /mar; `/#tickets` y `?intro=0`;
+  Atrás desde /mar (reposo, `history ['paused']`, arriba del todo, el scroll
+  sigue llevando la escena); sin WebGL; escena lenta; movimiento reducido;
+  accesibilidad y teclado. `landing.spec.ts`: el axe pasa a exigir 0
+  violaciones de cualquier impacto (antes sólo serias y críticas).
+- Las pulsaciones de la spec son de puntero real (`tap`, centro del
+  elemento): `locator.click()` de Playwright desplaza «hacia la vista» antes
+  de pulsar y, sobre la UI sticky del hero y la cabecera fija, Chrome mueve
+  la página (hasta 577 px): la escena se zambullía antes de «Zarpar» y el
+  panel se abría 404 px más arriba. No le pasa a un visitante; era la causa
+  del fallo intermitente de «Zarpar lleva a /mar» bajo carga.
+- `intro.spec.ts` «Entradas durante la aparición»: fallaba en escritorio
+  bajo carga (la aparición dura 1,4 s y el clic de Playwright llegaba tarde:
+  `outcome` `played`); ahora la página pulsa «Entradas» en el primer
+  fotograma de la aparición y la prueba comprueba que fue durante ella. Lo
+  que demuestra no cambia.
+- Capturas (`RECORD_T81=1`):
+  `docs/informes/img/p007-t81-{reposo,bloques,pie,reducido}-{mobile,desktop}.png`
+  (reposo con el anillo de foco en «Zarpar»).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 107 archivos, 982 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0.
+  `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; «192.5 kB total, 13 archivos · presupuesto
+  200.0 kB · OK».
+- `E2E_PORT=3414 pnpm e2e landing-scroll.spec.ts landing.spec.ts intro.spec.ts
+  --workers=1` → exit 0, 70 pasan (35 por proyecto, móvil y escritorio;
+  landing-scroll 11 por proyecto, 6 nuevos y uno ampliado).
+
+Pendiente:
+- El resto de `intro.spec.ts` sigue pulsando «Zarpar» con
+  `locator.click()` (pasa); si falla bajo carga por el desplazamiento de
+  Playwright, usar la pulsación de puntero real de `landing-scroll.spec.ts`.
+- «BOIA» plano sobre el still dorado queda en 3,16:1 en escritorio (justo
+  sobre 3:1); si Álvaro cambia el still, la prueba de contraste lo vigila.
+
 ## 2026-10-03 — plan 007 T79: Scroll-bound three.js hero and the hand-off to the landing
 
 Qué existe:

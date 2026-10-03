@@ -7,7 +7,8 @@ import { ArtistCard } from './artist-card';
 
 /**
  * Tres artistas que rotan cada `rotationMs` (REQ-COM-026). Se pausa con hover,
- * con foco dentro, con la pestaña oculta y con el botón de pausa (WCAG 2.2.2).
+ * con foco dentro, con la pestaña oculta y con el botón de pausa (WCAG 2.2.2);
+ * con movimiento reducido empieza en pausa.
  * El servidor pinta el primer trío: sin JavaScript se queda fijo.
  */
 export function ArtistRotator({
@@ -24,6 +25,12 @@ export function ArtistRotator({
   const [focused, setFocused] = useState(false);
   const [paused, setPaused] = useState(false);
   const [hidden, setHidden] = useState(false);
+
+  // With reduced motion nothing autoplays (T77 §9, T81): the rotation starts
+  // paused and the button resumes it.
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setPaused(true);
+  }, []);
 
   useEffect(() => {
     const onVisibility = () => setHidden(document.visibilityState === 'hidden');
