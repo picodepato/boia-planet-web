@@ -4,6 +4,74 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T84: Los e2e que cambió el hero nuevo
+
+Qué existe:
+- Las ocho specs que T79 dejó con los nombres viejos del hero (accesos,
+  carnet-descuento, ciclo-evento, demo, despliegue, mar-a-bordo, tickets,
+  mar-3d) usan «Entradas» y «Zarpar» del hero nuevo y pasan en los dos
+  proyectos. Lo que demuestra cada una no cambia.
+- Ayuda nueva `apps/web/e2e/hero-helpers.ts`: `heroTickets`/`heroZarpar`
+  (por rol y nombre desde `t('hero.tickets')`/`t('hero.explore')`, el
+  catálogo i18n), `ticketsPanel`, `tap` (la pulsación de puntero real en el
+  centro del elemento de T81, la misma que `landing-scroll.spec.ts`: el
+  `click()` de Playwright desplaza la página sobre la UI sticky del hero y la
+  cabecera fija), `pastHero` (baja una pantalla para que salga la cabecera)
+  y `openHeroTickets`.
+- `docs/propuestas/textos-zonas.md` tiene la fila `circuit.void.offroad`
+  («Carrera anulada: te saliste del circuito»), tras `circuit.void.slow`;
+  regenerar con `scripts/i18n-zonas.mjs` ya no la quita (sin diff en
+  `apps/web/lib/i18n`).
+
+Aserciones cambiadas (y por qué):
+- Las siete que abrían el panel con el enlace «Tickets» del hero (accesos,
+  carnet-descuento, ciclo-evento, demo, despliegue, mar-a-bordo, tickets):
+  ahora pulsan «Entradas» del hero (`hero.tickets`, renombrado por T79) con
+  `tap`.
+- demo.spec: «Zarpar» era un botón de la capa de la entrada; ahora es el
+  enlace «Zarpar» del hero (`tap`), y sigue llevando a `/mar` con la
+  bienvenida. `cta-3d` espera `href` = `ZARPAR_HREF`
+  (`/mar?menu=bienvenida`) en vez de `/mar`.
+- mar-3d.spec «la landing enlaza el mar 3D»: `cta-3d` con `href` =
+  `ZARPAR_HREF` en vez de `/mar`.
+- accesos.spec «Tickets se ve sin scroll a 360×640…»: «Entradas» en vez de
+  «Tickets»; la comprobación de que la cabecera no se desborda se hace tras
+  bajar del hero (`pastHero`), porque en el hero la cabecera espera fuera de
+  pantalla (T79, T77 §7.2). Antes se comprueba igual que el scroll es 0 con
+  «Entradas» entera en pantalla y ≥ 44 px.
+- accesos.spec «cabecera con Mi Carnet y sonido…»: baja del hero antes de
+  usar la cabecera (mismo motivo) y pulsa «Menú» (móvil) y el sonido con
+  `tap`: con `click()` Chrome desplazaba la página de vuelta al hero y la
+  cabecera se ocultaba (fallaba por tiempo en móvil).
+- despliegue.spec «sin clave de PostHog…»: `landing_view` ya no se envía al
+  cargar `?intro=0` sino al pasar el hero con el scroll (T79), así que sólo
+  quedaba el evento de abrir el panel y `> 1` fallaba. Ahora baja del hero
+  (espera un `landing_view`), vuelve arriba y abre el panel; la aserción
+  (`> 1` eventos registrados en la página y ninguna petición a PostHog) es la
+  misma.
+- Títulos de las pruebas sin cambiar (docs/spec/estado.md cita algunos).
+
+Comandos:
+- `E2E_PORT=3435 pnpm e2e accesos.spec.ts carnet-descuento.spec.ts
+  ciclo-evento.spec.ts demo.spec.ts despliegue.spec.ts mar-a-bordo.spec.ts
+  tickets.spec.ts mar-3d.spec.ts --workers=1` → exit 0, 67 pasan, 3 saltadas
+  por proyecto a propósito (las dos de `/api/art` sólo en escritorio, la de
+  360×640 sólo en móvil).
+- `node apps/web/scripts/i18n-zonas.mjs` → «es-zonas-web.ts: 84 ·
+  es-zonas-eventos.ts: 14 · es-zonas.ts: 536 claves»;
+  `git status --porcelain apps/web/lib/i18n` vacío.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 109 archivos, 990 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0.
+  `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; «184.8 kB total, 13 archivos · presupuesto
+  200.0 kB · OK».
+
+Pendiente:
+- `record.spec.ts` y `record-titulo.spec.ts` (grabaciones, sólo con
+  `RECORD_*=1`) siguen buscando el botón «Zarpar» de antes; no son de esta
+  tarea.
+
 ## 2026-10-03 — plan 007 T80: Performance and budget
 
 Qué existe:

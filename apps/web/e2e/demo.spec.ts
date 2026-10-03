@@ -5,6 +5,8 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { ZARPAR_HREF } from '../lib/intro/zarpar';
+import { heroTickets, heroZarpar, tap } from './hero-helpers';
 import { mar, marSheet, openMar } from './mar-helpers';
 
 /**
@@ -73,7 +75,7 @@ test('`/` → planeta → «Zarpar» → /mar con la bienvenida; la landing → 
   });
   // El planeta es el del mundo activo de /mar.
   expect((await page.evaluate(() => window.__boiaIntro))!.world).toBe(defaultWorld.id);
-  await page.getByRole('button', { name: 'Zarpar' }).click();
+  await tap(page, heroZarpar(page));
   await expect(page).toHaveURL(/\/mar$/, { timeout: 30_000 });
   await expect(page.getByTestId('mar-bienvenida')).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('main.mar')).toHaveAttribute('data-mundo', defaultWorld.id);
@@ -81,10 +83,10 @@ test('`/` → planeta → «Zarpar» → /mar con la bienvenida; la landing → 
 
   // La landing, directa: el botón principal del hero es el mundo 3D (T57).
   await page.goto('/?intro=0');
-  await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', '/mar');
+  await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', ZARPAR_HREF);
 
   // Tickets abre el panel de muestra.
-  await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();
+  await tap(page, heroTickets(page));
   const tickets = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(tickets).toBeVisible();
   await shot(page, info, '2-tickets');

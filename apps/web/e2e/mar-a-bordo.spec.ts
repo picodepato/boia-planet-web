@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { PHOTOS_PLACE_ID, PHOTOS_SAIL_HREF } from '../lib/landing/access';
 import { eventHref } from '../lib/landing/eventos';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { heroTickets, tap } from './hero-helpers';
 
 /**
  * Lo que sólo tenía el 2D, dentro del mar 3D (T55): los enlaces profundos de
@@ -164,7 +165,7 @@ test('los enlaces de la landing, el Carnet y el Admin llevan al mar 3D', async (
   for (const id of ['fotos-en-barco', 'tienda-en-barco', 'pie-crear-carnet']) {
     await expect(page.getByTestId(id).first(), id).toHaveAttribute('href', /^\/mar(\?|$)/);
   }
-  await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();
+  await tap(page, heroTickets(page));
   const tickets = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(tickets.getByTestId('tickets-en-barco')).toHaveAttribute('href', /^\/mar(\?|$)/);
 

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { PHOTOS_PLACE_ID, PHOTOS_SAIL_HREF } from '../lib/landing/access';
 import { INVITE_COPY } from '../lib/landing/invitations';
 import { SETTINGS_KEY } from '@boia/engine/ui';
+import { heroTickets, pastHero, tap } from './hero-helpers';
 
 /**
  * La landing que te lleva en barco (T44, T55): Fotos, Tienda y Tickets abren
@@ -62,7 +63,7 @@ test('Tickets: el panel HTML sigue y «Ver su isla en el mar» abre la isla del 
   page,
 }) => {
   await page.goto(LANDING);
-  await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();
+  await tap(page, heroTickets(page));
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   const sail = panel.getByTestId('tickets-en-barco');
@@ -83,16 +84,16 @@ test('Tickets se ve sin scroll a 360×640 con el CTA 3D y la cabecera nueva', as
   await page.goto(LANDING);
   const vp = page.viewportSize()!;
   expect(vp).toEqual({ width: 360, height: 640 });
-  const hero = page.locator('.hero');
   await expect(page.getByTestId('cta-3d')).toBeVisible();
-  const tickets = hero.getByRole('link', { name: 'Tickets', exact: true });
+  const tickets = heroTickets(page);
   await expect(tickets).toBeVisible();
   const box = (await tickets.boundingBox())!;
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(vp.height);
   expect(box.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
-  // La cabecera no se desborda.
+  // La cabecera no se desborda (sale al dejar el hero, T79).
+  await pastHero(page);
   const header = (await page.locator('.site-header__inner').boundingBox())!;
   expect(header.x + header.width).toBeLessThanOrEqual(vp.width);
 });
@@ -101,9 +102,11 @@ test('cabecera con Mi Carnet y sonido; pie con Carnet, WhatsApp e Instagram', as
   page,
 }, info) => {
   await page.goto(LANDING);
+  // La cabecera sale al dejar el hero (T79).
+  await pastHero(page);
   const header = page.locator('.site-header');
   if (info.project.name === 'mobile') {
-    await header.getByText('Menú', { exact: true }).click();
+    await tap(page, header.getByText('Menú', { exact: true }));
   }
   const carnet = header.getByTestId('cabecera-carnet').filter({ visible: true });
   await expect(carnet).toHaveAttribute('href', '/carnet');
@@ -113,7 +116,7 @@ test('cabecera con Mi Carnet y sonido; pie con Carnet, WhatsApp e Instagram', as
 
   const sound = header.getByTestId('cabecera-sonido').filter({ visible: true });
   await expect(sound).toHaveAttribute('aria-pressed', 'true');
-  await sound.click();
+  await tap(page, sound);
   await expect(sound).toHaveAttribute('aria-pressed', 'false');
   const saved = await page.evaluate(
     (k) => JSON.parse(localStorage.getItem(k) ?? '{}'),

@@ -6,6 +6,7 @@ import { marWorld, seaRoute } from '../app/mar/engine/compact';
 import { startZoom } from '../app/mar/engine/framing';
 import { periodOf, planetRect, shortest } from '../app/mar/engine/wrap';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { ZARPAR_HREF } from '../lib/intro/zarpar';
 
 /**
  * El mar 3D (/mar): arranca sin errores, pasa a la vista de mapa tocando el
@@ -95,7 +96,7 @@ test('«Ir en nave» desde la ficha: despega, vuela y se posa sin abrir la compr
 
 test('la landing enlaza el mar 3D', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', '/mar');
+  await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', ZARPAR_HREF);
 });
 
 /**

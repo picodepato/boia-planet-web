@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { CHECKOUT_COPY } from '../lib/ticketing/copy';
 import { TICKET_TRIGGER } from '../lib/ticketing/sandbox';
+import { heroTickets, tap } from './hero-helpers';
 import { marSheet, openMar } from './mar-helpers';
 
 /**
@@ -42,7 +43,7 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
 
   // Landing → Tickets → «Comprar entradas». Con un parámetro, sin cinemática (D-21).
   await page.goto('/?intro=0');
-  await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();
+  await tap(page, heroTickets(page));
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   await panel.getByRole('button', { name: CHECKOUT_COPY.buyAria(landingEvent.name) }).click();

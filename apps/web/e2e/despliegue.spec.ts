@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { heroTickets, pastHero, tap } from './hero-helpers';
 
 /**
  * Lo que necesita el despliegue en Vercel (T30, D-04, D-16), contra el build
@@ -71,7 +72,18 @@ test('sin clave de PostHog no sale ninguna petición de analítica', async ({ pa
   const requests: string[] = [];
   page.on('request', (r) => requests.push(r.url()));
   await page.goto('/?intro=0');
-  await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();
+  // `landing_view` is sent when the visitor scrolls past the hero (plan 007
+  // T79), no longer on load: scroll past it, back to the top, and open the panel.
+  await pastHero(page);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window.__boiaAnalytics ?? []).filter((e) => e.event === 'landing_view').length,
+      ),
+    )
+    .toBe(1);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await tap(page, heroTickets(page));
   await expect(page.getByRole('dialog', { name: 'Elige tu evento' })).toBeVisible();
   // Los eventos se registran en la página (para depurar), pero no salen.
   await expect

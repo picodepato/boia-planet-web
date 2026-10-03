@@ -18,6 +18,7 @@ import {
   formatEuros,
   samplePriceCents,
 } from '../lib/ticketing/pricing';
+import { heroTickets, tap } from './hero-helpers';
 
 /**
  * Un Carnet que vale la pena (T66, decisión del 2026-10-02):
@@ -83,7 +84,7 @@ async function seed(
 
 async function openLandingTickets(page: Page) {
   await page.goto('/?intro=0');
-  await page.locator('.hero').getByRole('link', { name: 'Tickets', exact: true }).click();
+  await tap(page, heroTickets(page));
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   return panel;
