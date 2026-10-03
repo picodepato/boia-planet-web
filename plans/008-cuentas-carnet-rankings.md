@@ -125,7 +125,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: `apps/web/lib/account/` (session, `useAccount`, `requireAccount` gate, sign-in sheet with 6-digit code, nickname check, consents, guest merge, account section with sign out/delete), `nickname_status` RPC, CSP for Supabase, privacy page with accounts; cuenta.spec 10 passed → 6ea5b69
 
 ## T90 — The Supabase repository: a member's progress lives in the account
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T89
@@ -145,10 +145,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - the existing local-mode specs that touch progress (`carnet.spec.ts`, `carnet-descuento.spec.ts`, `mar-circuito.spec.ts`, plus any shop spec) → exit 0
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: member repository behind a switchable `gameRepository()` with a per-account local copy (`boia.cuenta.<id>`), ordered RPC queue, server-wins refresh, snapshot on guest merge; `lib/repo-member.ts` loaded only with Supabase; cuenta-progreso e2e (desktop) + 22 local specs pass → 67bbff5
 
 ## T91 — The ID-card Carnet and QR party stamps
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (to apply T87's approved design; T87 wins over the skill's defaults)
 - Depends on: T87, T90
@@ -169,7 +169,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T92 — Global rankings: circuit times and all-time points
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (to apply T87's approved rankings frame)
 - Depends on: T87, T90
@@ -284,8 +284,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T89: the old URL in CLAUDE.md/TRASPASO/entrega goes to T95 (orchestrator).
 - 2026-10-03 plan: Hernán configured a custom SMTP (Gmail) on the dev project; the Spanish templates can now be edited (Hernán).
 - 2026-10-03 T96: course gaps came from sharp turns, `roadMarks` adds buoy arcs at every vertex; offroad unchanged; whirlpool push is now a current with a calm centre; `data-remolinos`/`data-remolinos-vista` for tests; e2e clicks the pin with dispatchEvent; branch started on T89's WIP (session cwd was in that worktree) and was reset to main (agent).
+- 2026-10-03 T90: buy/equip/save Carnet wait for the server and throw the rejection, other actions notify; sign-out flushes the queue (≤ 4 s) then drops the copy; hooks `onGuestMerged`/`onBeforeSignOut` in T89's session; `cuenta-progreso.spec` runs on desktop only (agent).
 
 ## Proposals (new scope)
+- 2026-10-03 T90: a `daily` reward earned offline and sent another day counts for the arrival day (`award_points` takes no date).
 - 2026-10-03 T96: with the sample whirlpool values a ship with no throttle spins gently in the centre; whether it should push the player out is a design call.
 - 2026-10-03 T89: `apps/web/app/carnet/carnet-page.tsx` has hard-coded strings (not i18n); `es-mar.ts` fails `prettier --check`.
 - 2026-10-03 T87: the existing `.juego-button` (white on #f26a1b, 3.4:1) fails AA for normal text; the old screens still use it.
@@ -308,3 +310,4 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 13:27 T89 done · branch worktree-agent-a6c8beff0bb073cef → 6ea5b69
 - 2026-10-03 13:30 T90 launched · attempt 1 · agent a300278d46361eb2a
 - 2026-10-03 14:03 T96 done · branch worktree-agent-a358611c785a3bea3 → 594a472
+- 2026-10-03 14:31 T90 done · branch worktree-agent-a300278d46361eb2a → 67bbff5
