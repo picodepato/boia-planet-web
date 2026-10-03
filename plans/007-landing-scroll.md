@@ -96,7 +96,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: axe 0 violations (any impact) at rest, after the dive and at the footer, with and without the panel; pixel contrast check e2e/contrast.ts, all texts pass with the design tokens; reduced motion pauses the artist rotation; 70 e2e pass; landing 192.5 kB → 37759ce
 
 ## T82 — The landing ready for real content
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -107,10 +107,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - a vitest proves that a fixture with a poster, artist photos and real links renders them in the blocks and that the sample content renders the `muestra` placeholders → pass
   - `docs/contenido-real.md` exists with one row per item (P15, P17, P19 and the Carnet photos) naming format and destination
   - Test command → exit 0; the budget line moves by ≤ 0.5 kB from T80's value
-- Outcome:
+- Outcome: real content in one file (packages/store/src/sample/real-content.ts, null = muestra), images in public/contenido/{artistas,carteles}, 3:4 poster slot, CSS «MUESTRA» mark on sample links, Admin artist editor keeps spotifyUrl; docs/contenido-real.md (14 rows); landing 185.3 kB → e161ba6
 
 ## T83 — Docs: spec, ESTADO, TRASPASO and the decision draft
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T80, T81, T82, T84
@@ -138,6 +138,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: eight specs updated through a shared e2e/hero-helpers.ts (pills by i18n name, real-pointer tap, pastHero); 67 passed, 3 deliberate project skips; circuit.void.offroad in textos-zonas.md, regeneration gives no diff → 138c030
 
 ## Decisions
+- 2026-10-03 T82: Álvaro's content in one file, `null` = muestra; images by id in public/contenido with a test that list and files match; «MUESTRA» mark is CSS on example.* links (label from i18n `link.sample`), «Comprar» excluded to avoid hydration shift; poster = EventCard `poster` 3:4 slot; artist photoUrl accepts a site path (agent)
 - 2026-10-03 T80: hero runtime and LandingClient are lazy chunks (lib/intro/lazy.ts, landing-client-lazy.tsx); frames at rest are full quality, frames in motion drop MSAA/resolution per a first-frames probe, under 30 fps → still; hardwareConcurrency ignored on Apple WebKit (iOS reports 4); lower-section CSS stays critical (deferring it shifts layout) (agent)
 - 2026-10-03 orchestrator: added T84 (fix task) for the eight e2e specs T79's renames broke and the textos-zonas.md key it dropped
 - 2026-10-03 T79: controller `paused` is the rest for every mode, `landed` only means Zarpar finished, `fallback` is the static version; «Zarpar» + «Entradas» from the first paint (plan header wins over T77 §7.1); h1 = Admin hero title visually hidden, «BOIA» on screen is the wordmark; hero.explore → «Zarpar», hero.tickets → «Entradas» via textos-zonas.md; REQ-ENT-028 (subtitle by promotions) → PARCIAL since the design removes that line; no full-screen bloom/DOF (sprite halos); low power = saveData only; Spotify playlist = footer link «Spotify», optional `spotifyUrl` per artist (agent)
@@ -159,6 +160,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T82: artist Carnet answers (P17) have no field yet; the Admin has no editor for store/contact/footer links; underline runs under the «MUESTRA» pill in flex links; gallery photos have no folder (Admin → Fotos with https URL)
 - 2026-10-03 T84: record.spec.ts and record-titulo.spec.ts (only with RECORD_*=1) still click the old «Zarpar»
 - 2026-10-03 T80: `deviceMemory ≤ 4` sends many mid-range Android phones to the still (Hernán decides); portrait phones with DPR ≤ 2 get the soft 800 px still, `sizes="max(100vw,160vh)"` would fix it (+80 kB); in low power the still appears after hydration, not at first paint
 - 2026-10-03 T81: the scroll hint sits ~7 px under the pills at 1280×800; the rest of intro.spec clicks «Zarpar» with Playwright click() and may flake under load
@@ -186,3 +188,5 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 06:16 T82 launched · attempt 1 · agent ac871bf55b1920cb5
 - 2026-10-03 06:16 T84 launched · attempt 1 · agent aa4acf4468e37ac44
 - 2026-10-03 06:45 T84 done · branch worktree-agent-aa4acf4468e37ac44 → 138c030
+- 2026-10-03 06:50 T82 done · branch worktree-agent-ac871bf55b1920cb5 → e161ba6
+- 2026-10-03 06:51 T83 launched · attempt 1
