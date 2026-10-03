@@ -256,6 +256,10 @@ test('un miembro gana un logro, compra y equipa una skin y corre; otro navegador
   });
   expect(await pilot(page, 'race')).toBe('ok');
   await expect(page.getByTestId('mar-carrera-final')).toBeVisible();
+  // La tarjeta de meta enseña su puesto en el ranking global (T92).
+  const puesto = page.getByTestId('mar-carrera-puesto');
+  await expect(puesto).toHaveAttribute('data-ranking', 'global', { timeout: 15_000 });
+  await expect(puesto).toContainText(/Puesto \d+ de \d+/);
   await expect.poll(async () => (await server(m.id)).times.length, { timeout: 15_000 }).toBe(1);
   const best = (await server(m.id)).times[0]!;
   expect(best).toMatchObject({ circuit_id: spec.id, circuit_version: spec.version });

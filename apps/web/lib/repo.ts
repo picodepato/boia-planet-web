@@ -2,6 +2,7 @@ import { bottlePositionValidator, settleInSea } from '@boia/engine/bottles';
 import {
   type BoiaRepository,
   type LocalRepositoryOptions,
+  type MemberRepository,
   SAMPLE_BOTTLES,
   type SwitchableRepository,
   browserRepository,
@@ -74,4 +75,13 @@ export function gameRepository(): BoiaRepository {
     sw.hold(import('./repo-member').then((m) => m.startMemberSync(sw)));
   }
   return switcher.repo;
+}
+
+/**
+ * Manda ya a la cuenta lo que esté en la cola (T92: el tiempo de una carrera
+ * antes de leer su puesto en el ranking). Sin cuenta o en modo local, nada.
+ */
+export async function flushAccount(): Promise<void> {
+  const current = switcher?.current() as Partial<MemberRepository> | undefined;
+  await current?.sync?.flush();
 }

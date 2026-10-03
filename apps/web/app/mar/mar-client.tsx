@@ -60,6 +60,7 @@ import {
   crewLeader,
   crewPlace,
 } from '../../lib/mundo/ranking-circuit';
+import { globalRaceLeader, memberFinishStanding } from '../../lib/mundo/ranking-global';
 import { worlds } from '../../lib/mundo/demo-world';
 import {
   DOLPHIN_PARAM,
@@ -89,6 +90,10 @@ import {
 } from '../../lib/mundo/guide';
 import { useNoticeQueue } from '../../lib/mundo/notices';
 import { gameRepository, seaWorld, useRepoData } from '../../lib/mundo/repo';
+import { flushAccount } from '../../lib/repo';
+import { requireAccount } from '../../lib/account/gate';
+import { accountSnapshot } from '../../lib/account/session';
+import { isSupabaseConfigured } from '../../lib/supabase/config';
 import type { BottleSheetMode } from '../../lib/mundo/bottles/bottle-sheet';
 import {
   SHIP_POSITION_SAVE_MS,
@@ -476,7 +481,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const nearBottlesRef = useRef<ReadonlySet<string>>(new Set());
   const [nearBottles, setNearBottles] = useState<readonly string[]>([]);
   const [bottleSheet, setBottleSheet] = useState<BottleSheetMode | null>(null);
-  // El ranking local (T56): De siempre, Temporada y Circuito.
+  // El ranking (T56; global con cuentas, T92): Circuito y De siempre.
   const [ranking, setRanking] = useState(false);
 
   // Avisos con tiempo de lectura (D-22): al menos 3 s, más si el texto es largo.
@@ -556,9 +561,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           // La salida ya no arranca sola (T73): explica la carrera y pregunta.
           const spec = r.spec;
           const place = (world && circuitName(world)) ?? msg('mar.sheet.circuito');
-          void readRecord(progressApi(), spec)
-            .catch(() => null)
-            .then((rec) => {
+          // Con cuentas, el más rápido del ranking global; si no, el de la tripulación de muestra (T92).
+          const leader = isSupabaseConfigured()
+            ? globalRaceLeader(spec.id, spec.version)
+            : Promise.resolve(crewLeader());
+          void Promise.all([readRecord(progressApi(), spec).catch(() => null), leader]).then(
+            ([rec, lead]) => {
               if (raceRef.current?.spec !== spec || raceRef.current.race.active) return;
               setRaceResult(null);
               setRaceOffer({
@@ -566,9 +574,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
                 laps: spec.laps,
                 buoys: spec.buoys,
                 bestMs: rec?.bestMs ?? null,
-                leader: crewLeader(),
+                leader: lead,
               });
-            });
+            },
+          );
           break;
         }
         case 'countdown': {
@@ -636,19 +645,34 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           const place = (world && circuitName(world)) ?? msg('mar.sheet.circuito');
           finishLap(progressApi(), spec, e.ms, e.route)
             .then((res) => {
-              // Contra los demás (la tripulación de muestra: en esta versión no hay
-              // ranking compartido) y contra ti (tu récord), T73.
-              const table = circuitRanking({ nickname: null, hasCarnet: false, bestMs: res.bestMs });
-              setRaceResult({
+              const base = {
                 place,
                 ms: e.ms,
                 laps: e.laps,
                 medals: spec.medals,
                 best: res.best,
                 bestMs: res.bestMs,
-                ranking: table.rows,
-                ...crewPlace(e.ms),
-              });
+              };
+              if (!isSupabaseConfigured()) {
+                // Modo local: contra la tripulación de muestra y contra ti (tu récord), T73.
+                const table = circuitRanking({
+                  nickname: null,
+                  hasCarnet: false,
+                  bestMs: res.bestMs,
+                });
+                setRaceResult({
+                  ...base,
+                  standing: { kind: 'local', ranking: table.rows, ...crewPlace(e.ms) },
+                });
+              } else if (accountSnapshot().status === 'member') {
+                // Con cuenta (T92): el tiempo va a la cuenta y la tarjeta enseña tu puesto.
+                setRaceResult({ ...base, standing: { kind: 'loading' } });
+                void memberFinishStanding(spec.id, spec.version, flushAccount).then((standing) =>
+                  setRaceResult((cur) => (cur && cur.ms === e.ms ? { ...cur, standing } : cur)),
+                );
+              } else {
+                setRaceResult({ ...base, standing: { kind: 'guest' } });
+              }
               res.achievements.forEach(push);
             })
             .catch((err: unknown) => console.warn('[boia] no se pudo guardar la carrera', err));
@@ -671,6 +695,22 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           break;
       }
     }
+  };
+
+  /**
+   * «Entrar en el ranking» en la tarjeta de meta de un invitado (T92): la hoja
+   * de acceso; al entrar, su récord pasa a la cuenta (decisión 4) y la
+   * tarjeta enseña su puesto.
+   */
+  const enterRankingFromFinish = () => {
+    const spec = raceRef.current?.spec;
+    void requireAccount('ranking').then((ok) => {
+      if (!ok || !spec) return;
+      setRaceResult((cur) => (cur ? { ...cur, standing: { kind: 'loading' } } : cur));
+      void memberFinishStanding(spec.id, spec.version, flushAccount).then((standing) =>
+        setRaceResult((cur) => (cur ? { ...cur, standing } : cur)),
+      );
+    });
   };
 
   /** «Empezar» al llegar a la salida u «Otra vez» en la tarjeta de meta: la cuenta atrás. */
@@ -2060,6 +2100,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             result={raceResult}
             onAgain={raceAgain}
             onClose={() => setRaceResult(null)}
+            onEnterRanking={enterRankingFromFinish}
           />
         ) : null}
         {!race && !raceOffer && !raceResult && raceIntro ? <MarRaceIntro text={raceIntro} /> : null}

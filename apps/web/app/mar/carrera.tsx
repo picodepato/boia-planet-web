@@ -9,8 +9,9 @@ import type { CircuitRow } from '../../lib/mundo/ranking-circuit';
  * con la vuelta y la boia que tocan (REQ-AVE-028), el récord al acercarse a
  * la salida, la tarjeta que al llegar a ella explica la carrera y pregunta
  * si empezar (ya no arranca sola) y, en meta, una tarjeta pequeña con la
- * medalla, el tiempo, el récord, el puesto entre la tripulación de muestra y
- * «Otra vez». Sin lógica de carrera: la lleva `mar-client`.
+ * medalla, el tiempo, el récord, el puesto (entre la tripulación de muestra
+ * en modo local; en el ranking global con cuenta, T92) y «Otra vez». Sin
+ * lógica de carrera: la lleva `mar-client`.
  */
 
 export interface RaceHud {
@@ -27,6 +28,22 @@ export interface RaceHud {
   offRoad: number | null;
 }
 
+/**
+ * Contra los demás, en la tarjeta de meta:
+ * - `local` (modo local, D-20): la tripulación de muestra y tu récord (T73),
+ *   con el puesto de esta carrera entre ellos y de cuántos;
+ * - con cuentas (T92): `loading` mientras el tiempo va a la cuenta y se lee
+ *   el puesto, `global` tu puesto en el ranking del circuito, `guest` (sin
+ *   cuenta: el tiempo se queda en este navegador, «Entrar en el ranking») o
+ *   `unavailable` si no se pudo leer.
+ */
+export type RaceStanding =
+  | { kind: 'local'; ranking: CircuitRow[]; position: number; of: number }
+  | { kind: 'loading' }
+  | { kind: 'global'; position: number; total: number }
+  | { kind: 'guest' }
+  | { kind: 'unavailable' };
+
 export interface RaceResult {
   place: string;
   ms: number;
@@ -34,15 +51,7 @@ export interface RaceResult {
   medals: Medals;
   best: boolean;
   bestMs: number;
-  /**
-   * La tabla del circuito (T73): los tiempos de la tripulación de muestra y
-   * tu récord, del más rápido al más lento. En esta versión de prueba no hay
-   * ranking compartido (D-20).
-   */
-  ranking: CircuitRow[];
-  /** El puesto de esta carrera entre la tripulación de muestra (1 = la más rápida) y de cuántos. */
-  position: number;
-  of: number;
+  standing: RaceStanding;
 }
 
 /** Lo que enseña la tarjeta de la salida antes de correr (T73). */
@@ -52,7 +61,7 @@ export interface RaceOffer {
   buoys: number;
   /** Tu récord en este navegador (ms), o null. */
   bestMs: number | null;
-  /** El más rápido de la tripulación de muestra, o null. */
+  /** El más rápido: de la tripulación de muestra o, con cuentas, del ranking; o null. */
   leader: { name: string; ms: number } | null;
 }
 
@@ -196,6 +205,73 @@ function RaceTable({ rows }: { rows: CircuitRow[] }) {
   );
 }
 
+/** El puesto en la tarjeta de meta (ver `RaceStanding`). */
+function Standing({
+  standing,
+  onEnterRanking,
+}: {
+  standing: RaceStanding;
+  onEnterRanking: (() => void) | undefined;
+}) {
+  switch (standing.kind) {
+    case 'local':
+      return (
+        <>
+          <p className="mar-carrera__puesto" data-testid="mar-carrera-puesto" data-ranking="local">
+            {msg('mar.race.result.position', { n: standing.position, of: standing.of })}
+          </p>
+          <RaceTable rows={standing.ranking} />
+        </>
+      );
+    case 'global':
+      return (
+        <p
+          className="mar-carrera__puesto"
+          data-testid="mar-carrera-puesto"
+          data-ranking="global"
+          data-puesto={standing.position}
+        >
+          {msg('mar.race.result.global', { n: standing.position, total: standing.total })}
+        </p>
+      );
+    case 'loading':
+      return (
+        <p
+          className="mar-carrera__puesto"
+          data-testid="mar-carrera-puesto"
+          data-ranking="cargando"
+          role="status"
+        >
+          {msg('mar.race.result.globalLoading')}
+        </p>
+      );
+    case 'unavailable':
+      return (
+        <p className="mar-carrera__puesto" data-testid="mar-carrera-puesto" data-ranking="sin-dato">
+          {msg('mar.race.result.globalError')}
+        </p>
+      );
+    case 'guest':
+      return (
+        <>
+          <p className="mar-carrera__puesto" data-testid="mar-carrera-invitado">
+            {msg('mar.race.result.guest')}
+          </p>
+          {onEnterRanking ? (
+            <button
+              type="button"
+              className="mar-carrera__later mar-carrera__ranking"
+              data-testid="mar-carrera-entrar"
+              onClick={onEnterRanking}
+            >
+              {msg('ranking.guest.cta')}
+            </button>
+          ) : null}
+        </>
+      );
+  }
+}
+
 /** El récord antes de correr, al acercarse a la salida (REQ-AVE-028). */
 export function MarRaceIntro({ text }: { text: string }) {
   return (
@@ -210,10 +286,13 @@ export function MarRaceResult({
   result,
   onAgain,
   onClose,
+  onEnterRanking,
 }: {
   result: RaceResult;
   onAgain(): void;
   onClose(): void;
+  /** Sin cuenta (con Supabase): abre la hoja de acceso con el motivo `ranking`. */
+  onEnterRanking?: () => void;
 }) {
   const medal = medalFor(result.ms, result.medals);
   const next = nextMedal(result.ms, result.medals);
@@ -251,10 +330,7 @@ export function MarRaceResult({
       <p className="mar-carrera__laps">
         {msg('mar.race.result.laps', { times: result.laps.map(formatRaceTime).join(' · ') })}
       </p>
-      <p className="mar-carrera__puesto" data-testid="mar-carrera-puesto">
-        {msg('mar.race.result.position', { n: result.position, of: result.of })}
-      </p>
-      <RaceTable rows={result.ranking} />
+      <Standing standing={result.standing} onEnterRanking={onEnterRanking} />
       {next ? (
         <p className="mar-carrera__next">
           {msg('mar.race.result.next', {

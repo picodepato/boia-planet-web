@@ -4,6 +4,86 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T92: Global rankings: circuit times and all-time points
+
+Con Supabase, el ranking del Menú de /mar es global (decisión 8) y sigue el
+marco 15 de T87; sin las variables de Supabase (producción hoy, pruebas
+unitarias, e2e por defecto) es el ranking local de siempre, con el mismo
+aspecto y sin la pestaña de temporada (D-20).
+
+Qué existe:
+- **`apps/web/lib/mundo/ranking-global.ts`** (nuevo): `fetchRankingPage`
+  sobre `ranking_race` y `ranking_points` de T86 (páginas de
+  `RANKING_PAGE_SIZE` = 50, la fila propia aunque quede fuera; un circuito que
+  el servidor no conoce es una tabla vacía; los avatares neutros se leen de
+  `carnets`, la foto no viaja), `appendPage` (sin repetir), `hasMore`,
+  `pinnedMine`, `circuitOptions` (un circuito por mundo; si dos mundos
+  comparten trazado y versión, una opción con el nombre del mundo que se
+  juega), `raceStanding`, `raceLeader`, `memberFinishStanding` (manda la cola
+  de la cuenta y lee el puesto) y `globalRaceLeader`.
+- **`apps/web/lib/mundo/menu/sections/ranking.tsx` + `ranking.css`**
+  (reescritos): dos pestañas, «Circuito» (primera, con su `<select>`) y «De
+  siempre», como tablist (flechas, Inicio, Fin); filas de 44 px que son el
+  enlace al Carnet (puesto y valor en Archivo tabular, avatar de 28 px,
+  apodo con elipsis), la fila «tú» con tinte naranja, barra y chip, en su
+  sitio o fijada tras «···»; «Mostrar más» carga 50 más hasta listar a todos
+  (y desaparece; el foco va a la primera fila nueva). Con cuenta: «Vas n.º de
+  N con …». Invitado (o sesión sin Carnet): la caja con su récord o sus
+  puntos del navegador y «Entrar en el ranking» (`requireAccount('ranking')`;
+  al entrar, la tabla se vuelve a leer). Error con «Volver a cargar». Modo
+  local: el rótulo «Ranking local», los puntos y `SAMPLE_CIRCUIT_MS` como
+  antes, sin temporada. «Descubrir a un BOIERO» pasa debajo de la lista.
+- **Tarjeta de meta** (`apps/web/app/mar/carrera.tsx`, `mar-client.tsx`):
+  `RaceResult.standing` (`local` | `loading` | `global` | `guest` |
+  `unavailable`). Un miembro ve «Buscando tu puesto…» y luego «Puesto n de N
+  en el ranking» (`data-ranking="global"`); un invitado, que el tiempo se
+  queda en el navegador y «Entrar en el ranking»; en modo local, la
+  tripulación de muestra como antes. La tarjeta de la salida enseña al más
+  rápido del ranking global con Supabase. `flushAccount()` en
+  `apps/web/lib/repo.ts` manda la cola del miembro antes de leer el puesto.
+- **i18n**: `ranking.tabs.aria`, `ranking.circuit.*`, `ranking.mine.*`,
+  `ranking.youChip`, `ranking.more`, `ranking.loading`, `ranking.guest.*`,
+  `ranking.error`, `ranking.retry`, `mar.race.result.global*`,
+  `mar.race.result.guest` en `es-cuenta.ts` (`muestra`).
+- **Pruebas**: `ranking-global.test.ts` (6); e2e nuevo `ranking.spec.ts`
+  (Supabase: siembra Rápida y Lenta con puntos y tiempos por las RPC, 52
+  cuentas con tiempo y quien mira, el más lento; orden en las dos pestañas,
+  «tú» fijada fuera del top, «Mostrar más» hasta el final; el invitado lee y
+  abre el acceso con el motivo `ranking`; capturas con `RECORD_T92=1` en
+  `docs/informes/img/p008-t92-*`). `mar-botellas.spec.ts`: el ranking local
+  con dos pestañas. `cuenta-progreso.spec.ts`: la tarjeta de meta del
+  miembro enseña su puesto global.
+- **`docs/spec/estado.md`**: REQ-AVE-034 L2 → HECHO (`ranking.spec.ts`);
+  REQ-IDE-053 y REQ-IDE-017 citan el nuevo título de `mar-botellas.spec.ts`.
+
+Comandos:
+- `E2E_SUPABASE=1 E2E_PORT=3524 RECORD_T92=1 pnpm e2e ranking.spec.ts
+  --workers=1` → exit 0, 4 pasan (móvil y escritorio).
+- `E2E_SUPABASE=1 E2E_PORT=3521 pnpm e2e ranking.spec.ts
+  cuenta-progreso.spec.ts --workers=1` → cuenta-progreso pasa en escritorio
+  con la nueva aserción (móvil se salta); las dos de invitado fallaron por la
+  aserción del texto del acceso (lleva un icono delante), corregida y
+  pasada en la ejecución de arriba.
+- `E2E_PORT=3522 pnpm e2e mar-circuito.spec.ts mar-botellas.spec.ts
+  carnet-descuento.spec.ts --workers=1` → exit 0, 20 pasan (modo local).
+- `pnpm test:supabase` → exit 0 (6 archivos, 63 pruebas; cuentas
+  @example.test que quedan: 0).
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0 (121 archivos, 1064 pruebas); `sh tools/spec/checks.sh` → exit 0;
+  `pnpm lint` → exit 0; `pnpm build` → exit 0 (185.5 kB · presupuesto
+  200 kB · OK); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- La temporada sigue oculta hasta que Hernán defina qué es (la RPC
+  `ranking_season` de T86 sigue ahí).
+- Las filas del ranking enseñan el avatar neutro del Carnet; la foto propia
+  no viaja en la lista (peso).
+- El enlace de cada fila va a `/carnet/<id>`; el Carnet público desde
+  Supabase es de T91.
+- El proyecto de desarrollo es compartido: con otras pruebas a la vez el
+  total de una tabla puede moverse entre páginas («Mostrar más» lo tolera y
+  la e2e cuenta las cuentas sembradas, no un total fijo).
+
 ## 2026-10-03 — plan 008 T90: The Supabase repository: a member's progress lives in the account
 
 Con sesión y Carnet, todo lo de valor va a la cuenta por las RPC de T86 y

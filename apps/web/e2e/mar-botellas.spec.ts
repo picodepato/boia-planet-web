@@ -143,7 +143,7 @@ test('botellas: las de muestra flotan; con Carnet se echa una de 140 y sigue al 
   expect(errors).toEqual([]);
 });
 
-test('ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los miembros de muestra', async ({
+test('ranking: se abre desde el Menú con Circuito y De siempre y los miembros de muestra', async ({
   page,
 }) => {
   const errors = await openMar(page);
@@ -151,33 +151,18 @@ test('ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los
   const panel = page.getByTestId('mar-ranking');
   const ranking = panel.getByTestId('ranking');
   await expect(ranking.getByTestId('ranking-rotulo')).toHaveText(t('ranking.localLabel'));
+  // Dos pestañas (T92): sin la de temporada hasta que se defina qué es una temporada.
   const tabs = {
-    siempre: ranking.getByTestId('ranking-tab-siempre'),
-    temporada: ranking.getByTestId('ranking-tab-temporada'),
     circuito: ranking.getByTestId('ranking-tab-circuito'),
+    siempre: ranking.getByTestId('ranking-tab-siempre'),
   };
+  await expect(ranking.getByRole('tab')).toHaveCount(2);
   await expect(tabs.siempre).toHaveText(t('ranking.tab.allTime'));
-  await expect(tabs.temporada).toContainText(t('ranking.tab.season', { world: '' }).trim());
   await expect(tabs.circuito).toHaveText(t('ranking.tab.circuit'));
-  const rows = ranking.getByTestId('ranking-lista').locator('tbody tr');
+  const rows = ranking.getByTestId('ranking-lista').locator('li.ranking-row');
 
-  // De siempre: el visitante entre todos los miembros de muestra.
-  await expect(tabs.siempre).toHaveAttribute('aria-pressed', 'true');
-  await expect(rows).toHaveCount(SAMPLE_CREW.length + 1);
-  for (const c of SAMPLE_CREW) {
-    await expect(ranking.getByTestId(`ranking-fila-${c.userId}`)).toContainText(c.nickname);
-  }
-  await expect(ranking.getByTestId('ranking-fila-mia')).toHaveAttribute('aria-current', 'true');
-
-  // Temporada: el mundo que se juega.
-  await tabs.temporada.click();
-  await expect(tabs.temporada).toHaveAttribute('aria-pressed', 'true');
-  await expect(ranking.getByTestId('ranking-lista')).toHaveAttribute('data-scope', 'season');
-  await expect(ranking.getByTestId('ranking-fila-mia')).toBeVisible();
-
-  // Circuito: los tiempos de muestra y el visitante, sin vuelta todavía, al final.
-  await tabs.circuito.click();
-  await expect(tabs.circuito).toHaveAttribute('aria-pressed', 'true');
+  // Circuito (la primera): los tiempos de muestra y el visitante, sin vuelta todavía, al final.
+  await expect(tabs.circuito).toHaveAttribute('aria-selected', 'true');
   await expect(ranking.getByTestId('ranking-lista')).toHaveAttribute('data-scope', 'circuit');
   const timed = SAMPLE_CREW.filter((c) => SAMPLE_CIRCUIT_MS[c.userId] !== undefined);
   await expect(rows).toHaveCount(timed.length + 1);
@@ -186,6 +171,18 @@ test('ranking: se abre desde el Menú con De siempre, Temporada y Circuito y los
   }
   await expect(rows.last()).toHaveAttribute('data-testid', 'ranking-fila-mia');
   await expect(rows.last()).toContainText(t('lib.ranking.sinVuelta'));
+
+  // De siempre: el visitante entre todos los miembros de muestra (con las flechas del tablist).
+  await tabs.circuito.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(tabs.siempre).toHaveAttribute('aria-selected', 'true');
+  await expect(tabs.siempre).toBeFocused();
+  await expect(ranking.getByTestId('ranking-lista')).toHaveAttribute('data-scope', 'all');
+  await expect(rows).toHaveCount(SAMPLE_CREW.length + 1);
+  for (const c of SAMPLE_CREW) {
+    await expect(ranking.getByTestId(`ranking-fila-${c.userId}`)).toContainText(c.nickname);
+  }
+  await expect(ranking.getByTestId('ranking-fila-mia')).toHaveAttribute('aria-current', 'true');
 
   // La fila propia abre Mi Carnet dentro del mundo (T55), sin salir del mar.
   await ranking.getByTestId('ranking-fila-mia').getByRole('link').click();

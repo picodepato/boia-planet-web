@@ -138,4 +138,29 @@ export const esCuenta = {
   'sync.rejected.nickname': 'Ese apodo ya es de otra persona: tu Carnet sigue con el de antes.',
   'sync.rejected.text': 'Eso no pasa el filtro de textos: no se ha guardado.',
   'sync.rejected.generic': 'Tu cuenta no ha aceptado ese cambio y se ha deshecho.',
+
+  // Rankings globales (T92; T87 «Rankings panel» e «i18n keys»).
+  'ranking.tabs.aria': 'Qué ranking ver',
+  'ranking.circuit.select': 'Circuito',
+  'ranking.circuit.option': '{circuit} · {world}',
+  'ranking.mine.time': 'Vas {n}.º de {total} con {time}',
+  'ranking.mine.points': 'Vas {n}.º de {total} con {points} puntos',
+  'ranking.youChip': 'tú',
+  'ranking.more': 'Mostrar más',
+  'ranking.loading': 'Cargando…',
+  'ranking.circuit.emptyAll': 'Aún nadie ha dado una vuelta en {place}.',
+  'ranking.guest.time':
+    'Tu mejor vuelta aquí es {time}, guardada en este navegador. Entra en el ranking para que cuente.',
+  'ranking.guest.points':
+    'Tienes {points} puntos en este navegador. Entra en el ranking para que cuenten.',
+  'ranking.guest.none': 'Entra en el ranking para aparecer.',
+  'ranking.guest.cta': 'Entrar en el ranking',
+  'ranking.error': 'No se ha podido cargar el ranking. Revisa la conexión.', // T92
+  'ranking.retry': 'Volver a cargar', // T92
+  // La tarjeta de meta con cuenta (T92).
+  'mar.race.result.global': 'Puesto {n} de {total} en el ranking',
+  'mar.race.result.globalLoading': 'Buscando tu puesto en el ranking…',
+  'mar.race.result.globalError': 'Tu tiempo va a tu cuenta; tu puesto saldrá en el ranking.',
+  'mar.race.result.guest':
+    'Este tiempo se queda en este navegador. Entra en el ranking para que cuente.',
 } as const;

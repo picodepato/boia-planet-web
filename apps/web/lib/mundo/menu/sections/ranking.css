@@ -1,4 +1,18 @@
-/* T45: ranking local del Menú de a bordo (REQ-IDE-053). */
+/*
+ * El ranking (T45, REQ-IDE-053; global con cuentas, T92) en el diseño
+ * aprobado de T87 (docs/propuestas/2026-10-03-carnet.md, «Rankings panel»,
+ * marco 15): control segmentado de dos pestañas, selector de circuito, filas
+ * de 44 px (puesto y valor en Archivo Expanded con cifras tabulares), la
+ * fila «tú» con tinte naranja y barra a la izquierda, «Mostrar más» fantasma
+ * y la caja del invitado con el botón naranja de texto negro (5,7 : 1).
+ */
+.ranking {
+  --ranking-tinta: #1b1440;
+  --ranking-naranja: #ec4f24;
+  --ranking-linea: rgb(27 20 64 / 0.12);
+  color: var(--ranking-tinta);
+}
+
 .juego-ranking-rotulo {
   display: inline-block;
   margin: 4px 0 2px;
@@ -9,74 +23,214 @@
   font-size: 13px;
   font-weight: 700;
 }
-.juego-ranking-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0;
-}
-.juego-ranking-tab {
-  min-height: 36px;
-  padding: 4px 12px;
-  border: 2px solid #12233f;
+
+/* Pestañas: píldora blanca sobre una pista de tinta al 8 %; 44 px en total. */
+.ranking-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  box-sizing: border-box;
+  min-height: 44px;
+  margin: 8px 0 12px;
+  padding: 4px;
   border-radius: 999px;
-  background: #fffaf0;
-  color: #12233f;
+  background: rgb(27 20 64 / 0.08);
+}
+.ranking .ranking-tab {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(27 20 64 / 0.78);
   font: inherit;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
 }
-.juego-ranking-tab[aria-pressed='true'] {
-  background: #12233f;
-  color: #fffaf0;
-}
-.juego-ranking-mio {
-  margin: 6px 0;
+.ranking .ranking-tab[aria-selected='true'] {
+  background: #fff;
+  color: var(--ranking-tinta);
   font-weight: 700;
+  box-shadow: 0 1px 3px rgb(27 20 64 / 0.18);
 }
-.juego-ranking-tabla {
+.ranking .ranking-tab:focus-visible,
+.ranking .ranking-select select:focus-visible,
+.ranking .ranking-more:focus-visible,
+.ranking .ranking-cta:focus-visible {
+  outline: 2px solid var(--ranking-tinta);
+  outline-offset: 3px;
+}
+
+/* Selector de circuito: un <select> nativo como campo de 44 px. */
+.ranking-select {
+  display: block;
+  margin: 0 0 10px;
+}
+.ranking-select__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ranking .ranking-select select {
+  box-sizing: border-box;
   width: 100%;
-  border-collapse: collapse;
+  min-height: 44px;
+  padding: 0 40px 0 14px;
+  border: 1.5px solid rgb(27 20 64 / 0.35);
+  border-radius: 12px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231b1440' stroke-width='2'/%3E%3C/svg%3E")
+    no-repeat right 16px center;
+  color: var(--ranking-tinta);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ranking-mine {
+  margin: 4px 0 8px;
+  color: rgb(27 20 64 / 0.8);
   font-size: 14px;
 }
-.juego-ranking-tabla th {
-  padding: 4px 6px;
-  border-bottom: 2px solid #12233f;
-  text-align: left;
-  font-size: 12px;
+.ranking-empty {
+  margin: 12px 0;
+  font-size: 15px;
 }
-.juego-ranking-tabla td {
-  padding: 6px;
-  border-bottom: 1px solid rgba(18, 35, 63, 0.15);
+
+/* La lista: filas enlazadas con filetes entre ellas; sin medallas ni podio. */
+.ranking-list {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ranking-linea);
+  list-style: none;
 }
-.juego-ranking-tabla a {
-  display: inline-block;
-  min-height: 28px;
-  color: #12233f;
+.ranking-row {
+  border-bottom: 1px solid var(--ranking-linea);
+}
+.ranking-row__link {
+  display: grid;
+  grid-template-columns: 2.4em 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 2px 8px;
+  color: var(--ranking-tinta);
+  text-decoration: none;
+}
+.ranking-row__link:focus-visible {
+  outline: 2px solid var(--ranking-tinta);
+  outline-offset: -2px;
+}
+.ranking-row .carnet-avatar {
+  box-shadow: none;
+}
+.ranking-row__pos,
+.ranking-row__value {
+  font-family: var(--font-title, inherit);
+  font-size: 14px;
   font-weight: 700;
-}
-.juego-ranking-tabla tr.is-mine td {
-  background: #ffe2c9;
-}
-.juego-ranking-tabla tr.is-mine td:first-child {
-  box-shadow: inset 4px 0 0 #f26a1b;
-}
-.juego-ranking-puesto,
-.juego-ranking-puntos {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.juego-ranking-puntos {
+.ranking-row__value {
   text-align: right;
 }
-.juego-ranking-muestra {
+.ranking-row__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ranking-row__nick {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ranking-row__sample {
+  flex: none;
   color: #6b6255;
   font-size: 12px;
+  font-weight: 500;
 }
+.ranking-row.is-mine .ranking-row__link {
+  background: rgb(236 79 36 / 0.16);
+  box-shadow: inset 4px 0 0 var(--ranking-naranja);
+}
+.ranking-chip {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #000;
+  color: var(--ranking-naranja);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ranking-sep {
+  padding: 2px 0;
+  border-bottom: 1px solid var(--ranking-linea);
+  color: rgb(27 20 64 / 0.6);
+  text-align: center;
+  letter-spacing: 0.2em;
+}
+
+/* Botones: fantasma («Mostrar más») y naranja con texto negro («Entrar»). */
+.ranking .ranking-more,
+.ranking .ranking-cta {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  margin: 12px 0 0;
+  padding: 0 22px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ranking .ranking-more {
+  border: 1.5px solid rgb(27 20 64 / 0.35);
+  background: transparent;
+  color: var(--ranking-tinta);
+}
+.ranking .ranking-more:disabled {
+  cursor: progress;
+}
+.ranking .ranking-cta {
+  margin: 0 0 12px;
+  border: 0;
+  background: var(--ranking-naranja);
+  color: #000;
+}
+
+/* El invitado: su récord o sus puntos de este navegador y cómo entrar. */
+.ranking-guest__text {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgb(27 20 64 / 0.06);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.ranking-error p {
+  margin: 12px 0 0;
+}
+
 /* T66: «Descubrir a un BOIERO», un Carnet al azar dentro del ranking. */
 .juego-ranking-descubrir {
-  margin: 8px 0 4px;
+  margin: 16px 0 4px;
 }
 .juego-ranking-descubrir > .juego-muted {
   margin: 4px 0;

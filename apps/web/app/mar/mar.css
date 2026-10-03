@@ -690,6 +690,11 @@
   cursor: pointer;
 }
 
+/* Sin cuenta, «Entrar en el ranking» en la tarjeta de meta (T92). */
+.mar-carrera__ranking {
+  width: 100%;
+}
+
 /* Los Rápidos (T73): la tarjeta de la salida («¿Empezar?») y la tabla de meta. */
 .mar-carrera--oferta {
   width: min(320px, calc(100vw - 24px));
