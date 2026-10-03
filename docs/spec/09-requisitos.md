@@ -179,10 +179,10 @@ Definidos en [05-identidad-y-comunidad](05-identidad-y-comunidad.md). 53 requisi
 | ID | Requisito | Fuente | Alcance | Criterio verificable | Notas |
 |---|---|---|---|---|---|
 | REQ-IDE-001 | Todo sin cuenta | §4.1, §47-B, §49.10 | L1 | e2e completo como invitado sin pantalla de login | — |
-| REQ-IDE-002 | OTP de 6 dígitos y enlace mágico | P1, P3, D-10 | L1 | Test: el mismo correo trae código y enlace, y ambos abren sesión | — |
+| REQ-IDE-002 | OTP de 6 dígitos, sin enlace mágico | P1, P3, D-10 | L1 | e2e: el código de 6 cifras del correo abre sesión en la misma página | plan 008 (borrador D-27): sin enlace mágico (decisión 2); D-10 pedía código y enlace |
 | REQ-IDE-003 | Vuelta al contexto tras verificar | §49.10, P3 | L1 | e2e: registrarse desde un evento vuelve a ese evento | — |
 | REQ-IDE-004 | Progreso local del invitado | §49.10, P1 | L1 | Recargar como invitado conserva preferencias, posición y descubrimientos | — |
-| REQ-IDE-005 | Identidad anónima de servidor | §49.10, D-09 | L1 | Test: el premio del invitado queda en el servidor; un saldo local alterado se ignora | — |
+| REQ-IDE-005 | Progreso del invitado validado al entrar | §49.10, D-09 | L1 | Test: al entrar, lo ganado como invitado llega a la cuenta validado por el servidor; los saldos locales no se envían | plan 008 (borrador D-27): sin identidad anónima de servidor (decisiones 1 y 4); antes, el premio del invitado quedaba en el servidor |
 | REQ-IDE-006 | Fusión idempotente | §49.10, P1 | L1 | Fusionar dos veces no duplica logros ni saldos | — |
 | REQ-IDE-007 | Límite del progreso local explicado | §49.10 | L1 | Texto visible antes de registrarse | [pendiente Álvaro] |
 | REQ-IDE-008 | Invitaciones en 3 contextos | §49.10, P3 | L1 | Test de los 3 contextos; la compra sigue sin registro | [provisional] Alcance: D-02 no las nombra |

@@ -1,8 +1,10 @@
 # 08 · Arquitectura y datos
 
-Fuente: v14 §24, §49.13 y los apartados de arquitectura, calidad y entrega de los Prompts 1 a 3; D-03, D-04, D-09, D-10 y D-20. El stack de D-04 se confirma o ajusta en un ADR y sólo cambia si una prueba lo contradice.
+Fuente: v14 §24, §49.13 y los apartados de arquitectura, calidad y entrega de los Prompts 1 a 3; D-03, D-04, D-09, D-10 y D-20, y el plan 008 (borrador D-27). El stack de D-04 se confirma o ajusta en un ADR y sólo cambia si una prueba lo contradice.
 
 ## Stack y módulos
+
+Plan 008 (2026-10-03, borrador D-27, [`docs/propuestas/2026-10-03-d27-borrador.md`](../propuestas/2026-10-03-d27-borrador.md)): Supabase está en uso en el proyecto de desarrollo `boia-planet-dev`: las migraciones de `supabase/migrations/` (`pnpm db:migrate:dev`), Postgres con RLS en todas las tablas, Auth por email con código, MFA (TOTP) para el Admin y Storage para las imágenes de los sellos. Lo de valor (libro de puntos y monedas, cosméticos, sellos, tiempos, descuentos, Carnet) sólo se escribe con RPC `security definer` que validan cada acción con un antitrampas básico (acciones conocidas, topes por acción y por día, tiempo mínimo por circuito, una vez por sello y descuento); el resto del documento del visitante va como copia JSON por cuenta. La web usa Supabase sólo si tiene sus variables; sin ellas sigue el repositorio del navegador (REQ-ARQ-025), como la producción de hoy. La producción con Supabase tiene su lista en [`docs/propuestas/2026-10-03-produccion-supabase.md`](../propuestas/2026-10-03-produccion-supabase.md).
 
 La v14 separa MOTOR BOIA (movimiento, cámara, colisiones, proximidad, interacción, audio, economía, logros, usuarios y reglas), DATOS/EDITOR (mundo, objetos, eventos, triggers, temporadas y publicación), ARTE/ASSETS y PROGRESO DE USUARIO (§24). D-04 lo traduce a paquetes.
 

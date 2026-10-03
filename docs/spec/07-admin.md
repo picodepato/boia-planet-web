@@ -1,10 +1,12 @@
 # 07 · Admin
 
-Fuente: v14 §23, §48.4 a §48.8, §49.1, §49.2, §49.13, §49.15 y las secciones del Admin de los Prompts 1 a 3; D-02, D-10 y D-20. El contenido cambiante es dato, no código (§23): una fiesta nueva se configura desde el Admin. El Admin no es una herramienta aparte: usa las mismas entidades, el mismo esquema de mundo y las mismas validaciones que la web y el motor (P3).
+Fuente: v14 §23, §48.4 a §48.8, §49.1, §49.2, §49.13, §49.15 y las secciones del Admin de los Prompts 1 a 3; D-02, D-10 y D-20, y el plan 008 (borrador D-27). El contenido cambiante es dato, no código (§23): una fiesta nueva se configura desde el Admin. El Admin no es una herramienta aparte: usa las mismas entidades, el mismo esquema de mundo y las mismas validaciones que la web y el motor (P3).
 
 - **REQ-ADM-001** `L1` — Tratar como datos, nunca como código, el evento prioritario, carteles, URL de tickets, diálogos, spawn y demás contenido cambiante. *Fuente: §23, §24, §30*
 
 ## Acceso, roles y auditoría
+
+Plan 008 (2026-10-03, borrador D-27, [`docs/propuestas/2026-10-03-d27-borrador.md`](../propuestas/2026-10-03-d27-borrador.md)): con Supabase, `/admin` se entra con el código de 6 cifras del email y después el TOTP (Supabase MFA, `aal2`; alta con QR la primera vez), sin contraseña; el rol lo da `pnpm admin:grant -- <email> <owner|admin|editor|none>` con la clave de servicio, y sin rol se ve «Sin acceso». Cuatro secciones van sobre datos reales (Fiestas y QR, Socios y emails, Moderación de botellas, Rankings), cada acción con motivo y auditoría; las demás siguen en la demo de este navegador. Sin las variables de Supabase, el «Probar admin» de siempre (REQ-ADM-039). Los códigos de respaldo del TOTP y la recuperación no están.
 
 - **REQ-ADM-002** `L1` — Exigir a toda cuenta del Admin email, contraseña y TOTP, con códigos de respaldo entregados en privado y recuperación por correo verificado que no salta roles ni permite apropiarse de cuentas. *Fuente: §49.13, P2, D-10*
 - **REQ-ADM-003** `L1` — Inicializar al propietario con un mecanismo de un solo uso: contraseña temporal aleatoria de al menos 20 caracteres generada al desplegar, entregada una vez a Álvaro por canal privado y cambiada en el primer acceso; ninguna contraseña en código, repositorio ni documentos. *Fuente: §49.13, P1, P2, D-10*

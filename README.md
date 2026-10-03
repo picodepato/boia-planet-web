@@ -21,7 +21,10 @@ PORT=3100 pnpm demo
 ```
 
 No hace falta ninguna variable de entorno; las opcionales están en
-[`.env.example`](.env.example) (se copian a `apps/web/.env.local`).
+[`.env.example`](.env.example) (se copian a `apps/web/.env.local`). Sin las
+de Supabase la web corre en **modo local** (todo en el navegador, como la
+producción de hoy); con ellas, en modo cuentas (abajo, «Cuentas con
+Supabase»).
 
 ## Probar
 
@@ -41,6 +44,9 @@ E2E_PORT=3107 pnpm e2e --workers=2      # ~15 min; la primera vez: pnpm --filter
 - El estado de cada requisito (HECHO, PARCIAL, FALTA, L2, final) y su prueba
   está en [`docs/spec/estado.md`](docs/spec/estado.md); `pnpm spec:estado`
   lo comprueba y cuenta.
+- Las pruebas contra Supabase (`pnpm test:supabase` y las e2e con
+  `E2E_SUPABASE=1`) van aparte: «Cuentas con Supabase», abajo. Sin las
+  variables, todo lo de arriba corre en modo local.
 - Los textos de la interfaz viven en `apps/web/lib/i18n/` por clave
   (REQ-ARQ-020). Los de [`docs/propuestas/textos-zonas.md`](docs/propuestas/textos-zonas.md)
   se copian con `pnpm --filter @boia/web i18n:zonas`; una prueba avisa si el
@@ -123,7 +129,7 @@ decisión: D-26 en [`docs/DECISIONES.md`](docs/DECISIONES.md)).
   CLS, accesibilidad y teclado), `e2e/landing-perf.spec.ts` (CPU 4× y bajo
   consumo), `e2e/intro.spec.ts`, `e2e/landing.spec.ts`.
 - **Presupuesto: 200 kB gzip** para la ruta crítica de `/` (HTML, JS, CSS y
-  fuentes precargadas; hoy **185,3 kB**). Lo comprueba
+  fuentes precargadas; hoy **185,5 kB**). Lo comprueba
   `apps/web/scripts/landing-budget.mjs` al final de `pnpm build` (que falla
   si se pasa) o `pnpm --filter @boia/web budget`. three.js, el atrezzo y los
   stills no cuentan: cargan aparte.
@@ -184,12 +190,86 @@ apruebe el arte.
   (`tools/blender/landing3d.schema.json`) y los stills; lo corre `pnpm test`.
   Informe de validación: `docs/informes/p007-t78-arte-hero.md`.
 
+## Cuentas con Supabase (plan 008)
+
+Decisión en borrador: [`docs/propuestas/2026-10-03-d27-borrador.md`](docs/propuestas/2026-10-03-d27-borrador.md)
+(D-27, pendiente de Hernán). Con las variables de Supabase la web tiene
+cuentas por email con un código de 6 cifras (sin enlace), el Carnet como
+carné de identidad, lo de valor en la base (escrito sólo por RPC que validan
+cada acción), sellos de fiesta por QR (`/sello`), rankings y botellas
+globales y `/admin` con código + TOTP. **Sin ellas, modo local** (D-20): todo
+en el navegador, como la producción de hoy, así que publicar `main` nunca
+rompe nada (`isSupabaseConfigured()`, `apps/web/lib/supabase/config.ts`).
+
+### Montar un proyecto de desarrollo
+
+El de este repo es `boia-planet-dev` (lo creó Hernán el 2026-10-03; P7).
+Para otro proyecto, o para rehacerlo:
+
+1. https://supabase.com/dashboard → **New project** (región de la UE).
+2. Copiar [`.env.example`](.env.example) a `apps/web/.env.local` (fuera de
+   git; `.worktreeinclude` lo copia a cada worktree) y rellenar las cuatro
+   variables de Supabase (dónde está cada una, en el propio `.env.example`):
+   - `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (la
+     _publishable key_): las usa la web, también en el navegador.
+   - `SUPABASE_SERVICE_ROLE_KEY` (la _secret key_) y `SUPABASE_DB_URL` (el
+     _Session pooler_): sólo los scripts y las pruebas, nunca el navegador ni
+     Vercel.
+3. `pnpm db:migrate:dev`: las migraciones de `supabase/migrations/` y la
+   muestra de `supabase/seeds/`.
+4. En el panel, Auth: «Email OTP Length» 6 y «Email OTP Expiration» 600, SMTP
+   propio, plantillas en español con `{{ .Token }}` y las URL (Site URL y
+   `http://localhost:3100/**` en Redirect URLs). Paso a paso, en la lista de
+   producción, pasos 3–6: [`docs/propuestas/2026-10-03-produccion-supabase.md`](docs/propuestas/2026-10-03-produccion-supabase.md).
+   Sin SMTP propio, el correo de Supabase sólo llega al equipo del proyecto.
+5. `pnpm admin:grant -- <tu email> owner` y entrar en `/admin` (código del
+   email y alta del TOTP con el QR).
+6. `pnpm dev` (o `PORT=3100 pnpm demo`): con las variables, la web está en
+   modo cuentas.
+
+### Comandos
+
+| Comando | Qué hace |
+|---|---|
+| `pnpm db:migrate:dev` | Aplica las migraciones que falten y las semillas nuevas o cambiadas al proyecto de las variables, registradas como la CLI de Supabase; repetir no aplica nada. **Se niega** si `SUPABASE_DB_URL` no es del mismo proyecto que `NEXT_PUBLIC_SUPABASE_URL`. `-- --no-seed`: sólo migraciones. Lee las variables de la terminal y, si no están, de `apps/web/.env.local` |
+| `pnpm db:types:dev` | Regenera `packages/db/src/database.types.ts` desde el proyecto (tras una migración nueva) |
+| `pnpm test:supabase` | Las pruebas de integración contra el proyecto (`packages/db/src/supabase/*.supabase.ts`): crean cuentas `@example.test` con la clave secreta, prueban cada RPC (lo que acepta y lo que rechaza) y la RLS de anon, otra cuenta y el Admin con TOTP, y borran sus cuentas. Sin las variables escribe «se omite» y sale con 0. **Sólo contra desarrollo** |
+| `E2E_SUPABASE=1 E2E_PORT=<libre> pnpm e2e <specs> --workers=1` | Las e2e con cuentas: `supabase-sesion`, `cuenta`, `cuenta-progreso`, `sello`, `sello-camara`, `ranking`, `botellas-globales` y `admin-real` (`.spec.ts`). El código del correo lo sacan con `auth.admin.generateLink`: no leen ningún buzón. Sin `E2E_SUPABASE=1` el servidor de las e2e arranca con las variables de Supabase vacías (modo local) y esas specs se saltan |
+| `pnpm admin:grant -- <email> <owner\|admin\|editor\|none>` | Da o quita (`none`) un rol del Admin a la cuenta de ese email, con la clave secreta; si no tiene cuenta, la crea confirmada. Queda en la auditoría; el último propietario no se quita. Misma comprobación de proyecto que `db:migrate:dev` |
+| `pnpm db:clean-test-users` | Borra las cuentas `@example.test` (y todo lo suyo) que dejan ejecuciones cortadas de `test:supabase` o de las e2e: por defecto las de hace más de 30 min; `-- --all` todas; `-- --minutes N` otro margen. No toca otros dominios. **Sólo desarrollo** |
+| `pnpm db:test` | Las suites de `packages/db` (`schema.test.ts`, `rls.test.ts`) contra un PostgreSQL local (`BOIA_PG_URL`, D-17); en el Windows de los planes no hay, y se excluyen del comando de prueba |
+
+### Dónde está cada cosa
+
+- `supabase/migrations/2026100310*.sql`: perfiles y consentimientos, la
+  economía (libro, cosméticos, sellos por QR, tiempos, descuentos, copia del
+  documento, fusión del invitado), rankings, botellas globales y el Admin
+  real. Convenciones y claves de rechazo: cabecera de `…100000_accounts.sql`
+  y `packages/db/src/rpc.ts`. La muestra, en `supabase/seeds/`; quitarla,
+  `supabase/sample/remove-sample.sql`.
+- `apps/web/lib/supabase/`: los clientes (navegador, servidor, servicio, que
+  se niega en un navegador).
+- `apps/web/lib/account/`: la sesión (`useAccount`), la puerta
+  `requireAccount(motivo)` (carnet, skin, stamp, ranking), la hoja de acceso
+  con el código, la fusión del invitado, «Tu cuenta» en el Carnet y la
+  entrada del Admin con TOTP.
+- `packages/store/src/member/` y `apps/web/lib/repo-member.ts` (sólo se carga
+  con Supabase): el repositorio del socio (RPC, cola sin red, gana el
+  servidor), el cambio invitado ↔ socio sin recargar y las botellas globales.
+- `apps/web/app/sello/` (el QR de la fiesta), `apps/web/lib/scanner/`
+  («Escanear sello»), `apps/web/app/carnet/` (también el público,
+  `/carnet/<id>`), `apps/web/app/admin/real/` (las cuatro secciones) y
+  `apps/web/app/api/admin/stamp-image/`.
+- E2E: `apps/web/e2e/supabase-env.ts` (el interruptor) y `supabase.ts`
+  (crear socios, código, entrar, borrar).
+
 ## Desplegar la versión de prueba
 
-La versión de prueba (plan 002, D-20) no usa ningún servicio: ni Supabase, ni
-correo, ni ticketera. Todo lo que hace el visitante (Carnet, botellas,
-sellos, descuentos, cambios del Admin) se guarda en su navegador. Por eso
-**no necesita ninguna variable de entorno**: `pnpm build` funciona con el
+Hoy en https://boia-planet-roan.vercel.app (**temporal** hasta el dominio
+definitivo). La versión de prueba (plan 002, D-20) corre en modo local: sin
+Supabase, sin correo y sin ticketera. Todo lo que hace el visitante (Carnet,
+botellas, sellos, descuentos, cambios del Admin) se guarda en su navegador.
+Por eso **no necesita ninguna variable de entorno**: `pnpm build` funciona con el
 entorno vacío, la analítica queda apagada sin `NEXT_PUBLIC_POSTHOG_KEY` (los
 eventos sólo se apuntan en `window.__boiaAnalytics`) y el arte sale del
 propio repo por `/api/art` (`next.config.ts` mete todo `art/` en la función).
@@ -206,7 +286,12 @@ En _Project → Settings_:
   por `pnpm-lock.yaml` y `packageManager`; el build es `pnpm run build` de
   `apps/web`, que además falla si la landing pasa de su presupuesto.
 - **Node.js Version:** 24.x.
-- **Environment Variables:** ninguna.
+- **Environment Variables:** ninguna en modo local. Para las cuentas,
+  `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` del proyecto
+  de producción, y volver a desplegar (se meten en el build); nunca la clave
+  secreta. Todo el paso a producción, con el SMTP, las plantillas y el
+  propietario del Admin:
+  [`docs/propuestas/2026-10-03-produccion-supabase.md`](docs/propuestas/2026-10-03-produccion-supabase.md).
 
 No hace falta `vercel.json`. Las URLs de _preview_ piden sesión de Vercel si
 la _Deployment Protection_ está activa (lo está por defecto); la de
@@ -255,6 +340,9 @@ enseña `content-security-policy`.
 
 - [`docs/entrega.md`](docs/entrega.md): la lista de entrega (REQ-ARQ-024) y
   lo que falta para publicar de verdad.
+- [`docs/propuestas/2026-10-03-produccion-supabase.md`](docs/propuestas/2026-10-03-produccion-supabase.md):
+  la lista para poner las cuentas en producción (proyecto aparte, Vercel,
+  SMTP, plantillas, URL, migraciones, propietario, quitar la muestra).
 - [`docs/manual-alvaro.md`](docs/manual-alvaro.md): cómo usar el Admin, para
   BOIA; [`docs/manual-admin.md`](docs/manual-admin.md), los detalles.
 - [`docs/matriz-dispositivos.md`](docs/matriz-dispositivos.md): los 16 casos

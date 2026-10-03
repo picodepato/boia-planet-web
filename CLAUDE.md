@@ -7,8 +7,9 @@ de eventos, Boia Fiestera, descuentos escondidos, Carnet BOIA; D-25). El
 cliente y quien aprueba identidad, negocio y publicación es Álvaro (BOIA);
 Hernán dirige la construcción.
 
-Versión de prueba en producción: https://boia-planet.vercel.app (D-20: todo
-en el navegador, sin servidor ni cuentas; contenido `muestra`). Cada push a
+Versión de prueba en producción: https://boia-planet-roan.vercel.app
+(temporal hasta el dominio definitivo; D-20: todo en el navegador, sin
+servidor ni cuentas; contenido `muestra`). Cada push a
 `main` despliega a producción en Vercel.
 
 ## Empieza aquí

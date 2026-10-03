@@ -1,16 +1,18 @@
 # 05 · Identidad y comunidad
 
-Fuente: v14 §14 a §17, §19 a §21, §40, §42 a §44, §46, §49.8 a §49.10; D-09, D-10, D-20 y D-22. Cómo se guardan saldos y transacciones está en [08-arquitectura-y-datos](08-arquitectura-y-datos.md); cómo se administran, en [07-admin](07-admin.md).
+Fuente: v14 §14 a §17, §19 a §21, §40, §42 a §44, §46, §49.8 a §49.10; D-09, D-10, D-20 y D-22, y el plan 008 (borrador D-27). Cómo se guardan saldos y transacciones está en [08-arquitectura-y-datos](08-arquitectura-y-datos.md); cómo se administran, en [07-admin](07-admin.md).
 
 ## Invitado y cuenta
 
 Nadie necesita cuenta para mirar, jugar ni comprar. La cuenta sirve para conservar y compartir: Carnet, sellos, barco y progreso validado.
 
+Plan 008 (2026-10-03, borrador D-27, [`docs/propuestas/2026-10-03-d27-borrador.md`](../propuestas/2026-10-03-d27-borrador.md)): con Supabase configurado, el invitado navega, corre y lee sin cuenta, y el email se pide al guardar algo (el Carnet, una skin, un sello por QR, entrar en el ranking) con un código de 6 cifras que se escribe en la misma página, sin enlace mágico; al entrar, lo del invitado pasa siempre a la cuenta por las mismas validaciones del servidor que una acción en vivo. El email nunca es público y el apodo es único. Sin las variables de Supabase (la producción de hoy) todo sigue en el navegador (D-20).
+
 - **REQ-IDE-001** `L1` — Permitir navegar, jugar y comprar sin cuenta, y ofrecer login, registro y Carnet desde la landing o el menú sin bloquear nada. *Fuente: §4.1, §47-B, §49.10*
-- **REQ-IDE-002** `L1` — Dar acceso público por email con un código OTP de 6 dígitos y un enlace mágico en el mismo correo, y recuperar el acceso con un correo nuevo. *Fuente: P1, P3, D-10*
+- **REQ-IDE-002** `L1` — Dar acceso público por email con un código OTP de 6 dígitos que se escribe en la misma página, sin enlace mágico (plan 008, borrador D-27), y recuperar el acceso pidiendo un código nuevo. *Fuente: P1, P3, D-10*
 - **REQ-IDE-003** `L1` — Tras verificar el email, devolver a la persona al mismo evento o panel donde empezó. *Fuente: §49.10, P3*
 - **REQ-IDE-004** `L1` — Guardar en el dispositivo del invitado preferencias, posición segura, progreso narrativo, descubrimientos y personalización provisional. *Fuente: §49.10, P1*
-- **REQ-IDE-005** `L1` — Validar las recompensas del invitado, cuando haya conexión, con una identidad anónima de servidor, y no importar nunca un saldo o récord local como verdad competitiva. *Fuente: §49.10, D-09*
+- **REQ-IDE-005** `L1` — Guardar el progreso del invitado en su dispositivo, sin identidad de servidor, y al entrar con su email pasarlo a la cuenta acción por acción, cada una con la misma validación del servidor que en vivo y una sola vez por ID; no importar nunca un saldo local, y un récord local sólo si pasa el tiempo mínimo plausible de su circuito (plan 008, borrador D-27). *Fuente: §49.10, D-09*
 - **REQ-IDE-006** `L1` — Al registrarse, conservar el progreso narrativo y sincronizar sólo recompensas verificables, una vez por ID; si ya existe una cuenta con progreso, mostrar qué se vincula y fusionar por IDs sin sumar premios repetidos ni sobrescribir preferencias o barco sin criterio visible. *Fuente: §49.10, P1*
 - **REQ-IDE-007** `L1` — Explicar que el avance sin conexión es local, que sólo entra en rankings tras validación y que se pierde si se borran los datos del dispositivo [pendiente Álvaro]. *Fuente: §49.10*
 

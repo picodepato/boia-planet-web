@@ -4,6 +4,100 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 008 T95: Docs, spec status and the decision draft
+
+El plan 008 cerrado sobre el papel: README, `.env.example`, TRASPASO, la
+lista de entrega, el estado de la spec, el borrador de D-27 y la lista de
+producción con Supabase. Sin código. `docs/DECISIONES.md` no se ha tocado.
+
+Qué existe:
+- **`docs/propuestas/2026-10-03-d27-borrador.md`** (nuevo): el texto
+  propuesto de **D-27** (cuentas por email con Supabase: cuándo se pide el
+  email, código de 6 cifras sin enlace, consentimiento RGPD, fusión del
+  invitado siempre, apodos únicos, qué se guarda y el antitrampas básico,
+  rankings globales, sellos por QR, el Carnet carné, Admin con código +
+  TOTP, botellas globales, modo local). Dice exactamente qué sustituye de
+  D-20 (puntos 2, 3 y 4 y la lista «Para la versión final»), D-10 (enlace
+  mágico y contraseña del Admin), D-09 (ranking global de tiempos ya, sin
+  semilla ni duración verificadas) y D-17 (pruebas contra el proyecto real).
+  Cierra **P7** y propone **P23** (uso de la lista de emails), **P24**
+  (importes de puntos y topes), **P25** (qué es una temporada), **P26** (arte
+  final del Carnet) y **P27** (dominio definitivo); amplía P21. Lista los
+  cambios de la spec hechos y los propuestos sin hacer (REQ-ADM-002/003,
+  REQ-IDE-023 y REQ-AVE-034 de L2 a L1).
+- **`docs/propuestas/2026-10-03-produccion-supabase.md`** (nuevo): la lista
+  de producción para Hernán, en orden: proyecto aparte (UE, plan Pro por las
+  copias), migraciones con las variables de producción en la terminal
+  (`pnpm db:migrate:dev`, se niega con otro proyecto), Auth (OTP 6 / 600 s,
+  TOTP), SMTP propio (Gmail con contraseña de aplicación para probar, Resend
+  con el dominio para producción, límites), las plantillas en español de
+  T89, las URL de Auth, las dos variables `NEXT_PUBLIC_` en Vercel y volver a
+  desplegar, `pnpm admin:grant -- <email> owner` y un segundo propietario,
+  las fiestas y sus QR, quitar la muestra (`remove-sample.sql`, que también
+  quita cosméticos y descuentos), copias y comprobación final;
+  `pnpm db:clean-test-users` sólo en desarrollo.
+- **`README.md`**: sección nueva «Cuentas con Supabase (plan 008)» (montar
+  un proyecto, las cuatro variables y quién usa cada una, tabla de
+  comandos: `db:migrate:dev`, `db:types:dev`, `test:supabase`,
+  `E2E_SUPABASE=1` con sus specs, `admin:grant`, `db:clean-test-users`,
+  `db:test`; dónde está cada cosa); «En local», «Probar», «Desplegar»
+  (URL `boia-planet-roan`, temporal; variables de Vercel para las cuentas) y
+  «Entrega» al día; la landing pesa 185,5 kB.
+- **`.env.example`**: la sección de Supabase dice qué va a Vercel (sólo las
+  dos `NEXT_PUBLIC_`) y qué no, `admin:grant`, `db:clean-test-users`,
+  `-- --no-seed`, y que el SMTP, las plantillas y las URL van en el panel de
+  Supabase.
+- **`docs/TRASPASO.md`**: estado con el plan 008 (rutas `/carnet`,
+  `/carnet/<id>`, `/sello`, `/admin` con cuentas, ranking y botellas
+  globales), fila del plan 008, sección «Las cuentas del plan 008» (qué hace
+  Hernán y qué decide Álvaro: P21, importes, arte final del Carnet, uso de
+  la lista de emails), propuestas del plan 008, la versión final al día.
+- **URL de prueba**: `boia-planet.vercel.app` → `https://boia-planet-roan.vercel.app`
+  (temporal hasta el dominio definitivo) en `CLAUDE.md`, `docs/TRASPASO.md`
+  y `docs/entrega.md` (no quedaba en ningún otro sitio fuera de `plans/`).
+- **`docs/entrega.md`**: URL, Admin con TOTP, migraciones aplicadas a
+  `boia-planet-dev`, integraciones, comprobación con `test:supabase` y
+  `db:clean-test-users` antes de enseñar un despliegue con cuentas.
+- **`docs/spec/`**: REQ-IDE-002 (código de 6 cifras, sin enlace) y
+  REQ-IDE-005 (progreso del invitado validado al entrar, sin identidad
+  anónima de servidor) reescritos en `05` y `09` citando «plan 008 (borrador
+  D-27)»; párrafos del plan 008 en `05`, `07` y `08`. `estado.md`:
+  - de `final` a HECHO: REQ-IDE-002, IDE-003, IDE-005, IDE-039, ADM-003,
+    ADM-006, ARQ-002, ARQ-011; de `final` a PARCIAL: REQ-IDE-006 (la prueba
+    de fusionar dos veces está en `economy.supabase.ts`, que `estado.py` no
+    cuenta) y ARQ-010 (topes por acción y día, sin cadencia); REQ-IDE-050
+    (L2) a PARCIAL (borrar sí, exportar no);
+  - notas al día en IDE-001, IDE-010, IDE-038, IDE-051, ENT-032, COM-035,
+    COM-018, ADM-007, ARQ-012, ARQ-013, ARQ-022, ARQ-024, ARQ-025;
+  - ya movidos por T88–T96 y comprobados: IDE-023, AVE-034, IDE-040…044,
+    IDE-053, ADM-002/004/027/028/039, AVE-019.
+
+Comandos:
+- `python3 tools/spec/estado.py` → exit 0: 294 REQ · HECHO 163 · PARCIAL 65 ·
+  FALTA 31 · L2 25 · final 9 · retirado 1 (antes del T95: 155 / 62 / 31 /
+  26 / 19 / 1; antes del plan 008: 151 / 63 / 32 / 28 / 19 / 1).
+- `python3 tools/spec/check.py` → exit 0 (294 requisitos, 0 duplicados,
+  centinelas 10/10); `test_check.py` 18 OK; `test_estado.py` 8 OK.
+- Comando de prueba, por pasos: `pnpm exec vitest run --exclude
+  '**/packages/db/**' --testTimeout=30000` → 127 archivos, 1102 pasan y 6
+  fallan por tiempo (30 s) con la máquina cargada (`catalog`, `physics`,
+  dos `worlds`, `arcilla`; sin código tocado); esos 5 archivos otra vez →
+  exit 0, 50 pasan. `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit
+  0; `pnpm build` → exit 0 (185.5 kB · presupuesto 200 kB · OK);
+  `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Hernán: leer y aprobar el borrador de D-27, pasarlo a `DECISIONES.md`
+  (con sus P nuevas) y cambiar «borrador D-27» por «D-27» en `docs/spec/`.
+- REQ-ADM-002/003 (texto con contraseña) y REQ-IDE-023 / REQ-AVE-034 (L2,
+  ya construidos) esperan a D-27 para cambiar de texto o alcance.
+- `tools/spec/estado.py` sólo cuenta como prueba `*.spec.ts`, `*.test.ts(x)`
+  y `test_*.py`: las de `packages/db/src/supabase/*.supabase.ts` no suben un
+  REQ a HECHO (REQ-IDE-006, REQ-ARQ-010). Su lista `FINAL` (sólo para
+  `--generar`) aún nombra REQ que ya no son `final`.
+- Las plantillas de correo en español en `boia-planet-dev` (lista de
+  producción, paso 5) y toda la lista de producción.
+
 ## 2026-10-03 — plan 008 T94: /admin on real data: email + TOTP login and four sections
 
 Con Supabase, /admin pide el código del email y después el TOTP (decisión
