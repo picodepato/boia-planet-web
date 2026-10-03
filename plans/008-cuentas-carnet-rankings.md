@@ -55,7 +55,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T87 — Design: the ID-card Carnet, the scan flow, the sign-in sheet and the rankings
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (invoke first with the Skill tool)
 - Depends on: none
@@ -81,7 +81,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - there are at least 10 frames in `docs/informes/img/p008-t87-*`: front, back with 3 stamps, back with 12+, the /mar menu at 375 px, the /carnet page at 1280 px, the camera view, stamp received, scan error, sign-in email + code, new-account step, rankings
   - Hernán approves: stop with STATUS: blocked and a QUESTION that summarises the proposal in ≤ 15 lines with ATTACH lines for the frames. When the answer arrives, apply his changes, add «Approved <date> by Hernán» at the top of the document, commit and finish
   - Test command → exit 0
-- Outcome:
+- Outcome: approved design (with changes) in `docs/propuestas/2026-10-03-carnet.md` + 17 frames: orange ID-1 card, passport back with rubber stamps, flip, scan flow, /sello, sign-in sheet, account actions, two-tab rankings → 281f61a
 
 ## T88 — /mar: guide lines off during the race; bottles where they can be read
 - Status: done
@@ -100,7 +100,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: route line suppressed from countdown to finish/cancel/world switch (`data-ruta` on the canvas); pure readable-placement rule (sheet radius + reading range + 30u margin) used for drops and deterministic relocation at load; 16 unit tests, 12 e2e → 9475832
 
 ## T89 — Email sign-in with a 6-digit code, consent and the account
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (only to apply T87's approved sign-in and account designs; T87 wins over the skill's defaults)
 - Depends on: T86, T87
@@ -255,8 +255,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 plan: season ranking hidden in the UI for now (Hernán).
 - 2026-10-03 T87: Hernán approved the design with changes: per-event stamp image by upload or URL (T94 builds it, T91 renders it, generated stamp as fallback); season definition open; scan first, then ask for the email; other recommendations stand (Hernán).
 - 2026-10-03 T88: route-line state exposed as `data-ruta`; margin `BOTTLE_READ_MARGIN` 30u (muestra); small auto-sheet objects (port WhatsApp buoy) only keep bottles sheet radius + margin away; relocation at placement time, stored positions not rewritten; a bottle thrown next to an island goes to the nearest readable water (may land out of view) instead of failing (agent).
+- 2026-10-03 T87: stamp image inside the rubber-stamp treatment (cropped window, single ink, texture, rotation); upload limits PNG/WebP/JPEG, ≥ 512 px, ≤ 2 MB, server keeps its own 512 px WebP and fetches URL images once (T94 follows this); new screens use orange buttons with black text (AA); frames are PNGs rendered from HTML (agent).
 
 ## Proposals (new scope)
+- 2026-10-03 T87: the existing `.juego-button` (white on #f26a1b, 3.4:1) fails AA for normal text; the old screens still use it.
 - 2026-10-03 Hernán: the world switch could become a playable skin; then the season can no longer be «the world being played». To be discussed.
 
 ## Log
@@ -266,3 +268,4 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 11:26 T88 launched · attempt 1 · agent a811042d3613c3ad7
 - 2026-10-03 12:05 T87 answered (approve with changes) · resumed agent af80896be8477f7dc
 - 2026-10-03 11:53 T88 done · branch worktree-agent-a811042d3613c3ad7 → 9475832
+- 2026-10-03 11:57 T87 done · branch worktree-agent-af80896be8477f7dc → 281f61a
