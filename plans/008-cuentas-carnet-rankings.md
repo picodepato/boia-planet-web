@@ -234,7 +234,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: /admin with email code + TOTP (aal2), `pnpm admin:grant`, real Fiestas y QR (window, projectable/printable QR, regenerate, stamp image by upload or URL into `stamp-images` bucket), Socios y emails (CSV of opt-ins, artist flag, delete duplicate), bottle moderation, ranking voids, all audited; bottle x/y only via `place_bottle`; `pnpm db:clean-test-users` → 347ed9c
 
 ## T95 — Docs, spec status and the decision draft
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T86, T87, T88, T89, T90, T91, T92, T93, T94
@@ -252,7 +252,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Done when:
   - `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: README/.env.example/TRASPASO/CLAUDE.md URL updated; spec REQs moved (HECHO 155→163, final 19→9); D-27 draft (closes P7, opens P23–P27) and production checklist in `docs/propuestas/` → 7444b0a
 
 ## T96 — /mar fixes from Hernán's test: race buoys, the open path, whirlpools, mobile «go to»
 - Status: done
@@ -271,6 +271,19 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e mar-circuito.spec.ts <the whirlpool and travel specs> --workers=1` → exit 0, with new assertions: whirlpools present on the map; on a mobile viewport the «go to» sheet shows «Navegar» and «Ir en nave» as visible buttons without opening a dropdown
   - Test command → exit 0
 - Outcome: orange buoys both sides; buoy arcs outside every course vertex close the gaps (CP8 143u, CP3 195u, also 0/4/6/9); whirlpools fixed (curved 32×32 mesh, current that moves the ship, moved out of Halloween's auto-sheet area), no name label, REQ-AVE-019 HECHO; mobile «go to» shows «Navegar» and «Ir en nave» in one row; 34 e2e passed → 594a472
+
+## T97 — Fix the mobile island-card e2e after T96's «go to» buttons
+- Status: running (attempt 1)
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T96
+- Goal: The full e2e run at the end of the plan fails `apps/web/e2e/mar-hud.spec.ts:371` («la ficha de una isla: una tarjeta pequeña abajo que se despliega al tocarla») in both projects, consistently: line 383 still expects the collapsed island card to hide `mar-volar` («Ir en nave»), but T96 (Hernán) made «Navegar» and «Ir en nave» both visible on the small card without expanding. Update the test to the new behaviour (both buttons visible in the collapsed card, card still small and above «Entradas», expanding still works). If the collapsed card now breaks another assertion of that test (height ≤ 30 % of the viewport, above «Entradas»), fix the layout, not the assertion, and say so. Check the other specs for the same old expectation (`mar-volar` count 0).
+- Context: T96's Outcome and Decisions in this plan; `apps/web/e2e/mar-hud.spec.ts` ~365–400; the island sheet component in `apps/web/app/mar/` (`mar-ficha`, `mar-rumbo`, `mar-volar`); `apps/web/e2e/mar-3d.spec.ts` (T96's new «go to» assertions).
+- Scope: may touch `apps/web/e2e/**` and, only if the layout is wrong, the island sheet's component/CSS / must not touch anything else.
+- Done when:
+  - `E2E_PORT=<free> pnpm e2e mar-hud.spec.ts mar-3d.spec.ts --workers=1` → exit 0
+  - Test command → exit 0
+- Outcome:
 
 ## Decisions
 - 2026-10-03 plan: interview decisions 1–13 in the header (Hernán).
@@ -296,8 +309,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T93: no new migration (T86's RPCs sufficed); wiring in `lib/repo-member.ts` although outside its listed scope; guests use `requireAccount('carnet')` to throw or report; client filter only in Supabase mode; keys in es-mar.ts (es-zonas.ts is generated) (agent).
 - 2026-10-03 T93: the x/y update gap goes to T94 (orchestrator).
 - 2026-10-03 T94: migration `20261003100600_admin_real.sql` (`my_staff_role()`, `events.stamp_image_url`, public `stamp-images` bucket writable by staff with TOTP, audited admin RPCs; voiding spent points refused with `insufficient_coins`); bottle INSERT and x/y UPDATE revoked; URL images fetched once by `/api/admin/stamp-image`, stored as 512 px WebP; admin login never creates accounts, no role → «Sin acceso» before TOTP, editors cannot use the four real sections; `use-carnet.ts` reads stamp images; admin e2e desktop only; `db:clean-test-users` deletes accounts older than 30 min unless `--all` (agent).
+- 2026-10-03 T95: REQ-IDE-002/005 rewritten citing the D-27 draft; ADM-002/003 wording and IDE-023/AVE-034 L2 left for Hernán; Vercel needs only the two `NEXT_PUBLIC_` variables (the service key is never used at runtime, checked by the orchestrator); new questions P23–P27 (agent).
+- 2026-10-03 plan: full e2e on main: 320 passed, 81 skipped, 5 failed; rerun alone: admin, mar-paridad, mar-circuito pass (load flakes); `mar-hud.spec.ts:371` fails consistently because it still expects the collapsed card to hide «Ir en nave» → T97 (orchestrator).
 
 ## Proposals (new scope)
+- 2026-10-03 T95: `tools/spec/estado.py` counts only `*.spec.ts`, `*.test.ts(x)`, `test_*.py` as tests, so `*.supabase.ts` cannot back a HECHO; its `FINAL` dict is stale.
 - 2026-10-03 T94: TOTP backup codes and account recovery for admins are not built; carnet moderation and the other admin sections remain local demo.
 - 2026-10-03 T93: in Supabase mode the sample bottles no longer float; a member's own bottle outside the 10 most recent does not float (still in «Mi botella» and the Carnet).
 - 2026-10-03 T91: after a stamp, the points count-up and «Ahora eres {rank}» from T87 are not built (only the «Puntos a → b» chip).
@@ -334,3 +350,5 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 15:33 T93 done · branch worktree-agent-af5cffc02be826f3c → 82d0286
 - 2026-10-03 15:34 T94 launched · attempt 1 · agent a1de24fad11003972
 - 2026-10-03 16:09 T94 done · branch worktree-agent-a1de24fad11003972 → 347ed9c
+- 2026-10-03 16:12 T95 launched · attempt 1 · agent abdd6b5bc271b3e03
+- 2026-10-03 16:50 T95 done · branch worktree-agent-abdd6b5bc271b3e03 → 7444b0a
