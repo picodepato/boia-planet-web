@@ -1,6 +1,6 @@
 # Plan 008 — Accounts with email, the ID-card Carnet, QR stamps, global rankings and bottles
 
-Status: active
+Status: done
 Created: 2026-10-03
 Base branch: main
 Goal: BOIA.PLANET stops being browser-only for the people who want to keep their progress. A visitor still sails as a guest, but saving anything (the Carnet, a skin, a QR stamp, a place in the ranking) asks for an email verified with a 6-digit code (Supabase Auth). Everything of value is then stored in Supabase through validated RPCs, and BOIA gets the list of members' emails with their consent. The Carnet is redesigned to look like a real ID card, with a "scan the party's QR" flow that puts the party's stamp on it. Rankings become global: race times per circuit, all-time points and season points. Message bottles become global, so everyone sees the latest 10, and they always sit where they can be read. /admin gets a real login (email code + TOTP) and four sections on real data. During a race, the yellow guide lines between islands disappear.
@@ -273,7 +273,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: orange buoys both sides; buoy arcs outside every course vertex close the gaps (CP8 143u, CP3 195u, also 0/4/6/9); whirlpools fixed (curved 32×32 mesh, current that moves the ship, moved out of Halloween's auto-sheet area), no name label, REQ-AVE-019 HECHO; mobile «go to» shows «Navegar» and «Ir en nave» in one row; 34 e2e passed → 594a472
 
 ## T97 — Fix the mobile island-card e2e after T96's «go to» buttons
-- Status: running (attempt 1)
+- Status: skipped (stopped by Hernán; WIP kept on branch worktree-agent-a0bbeb85bedba6aab, 79bb8fa)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T96
@@ -311,6 +311,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 T94: migration `20261003100600_admin_real.sql` (`my_staff_role()`, `events.stamp_image_url`, public `stamp-images` bucket writable by staff with TOTP, audited admin RPCs; voiding spent points refused with `insufficient_coins`); bottle INSERT and x/y UPDATE revoked; URL images fetched once by `/api/admin/stamp-image`, stored as 512 px WebP; admin login never creates accounts, no role → «Sin acceso» before TOTP, editors cannot use the four real sections; `use-carnet.ts` reads stamp images; admin e2e desktop only; `db:clean-test-users` deletes accounts older than 30 min unless `--all` (agent).
 - 2026-10-03 T95: REQ-IDE-002/005 rewritten citing the D-27 draft; ADM-002/003 wording and IDE-023/AVE-034 L2 left for Hernán; Vercel needs only the two `NEXT_PUBLIC_` variables (the service key is never used at runtime, checked by the orchestrator); new questions P23–P27 (agent).
 - 2026-10-03 plan: full e2e on main: 320 passed, 81 skipped, 5 failed; rerun alone: admin, mar-paridad, mar-circuito pass (load flakes); `mar-hud.spec.ts:371` fails consistently because it still expects the collapsed card to hide «Ir en nave» → T97 (orchestrator).
+- 2026-10-03 plan: Hernán stopped T97 and the final Supabase-mode e2e run, and asked to close the plan; `mar-hud.spec.ts:371` stays failing on main until T97 is finished (Hernán).
 
 ## Proposals (new scope)
 - 2026-10-03 T95: `tools/spec/estado.py` counts only `*.spec.ts`, `*.test.ts(x)`, `test_*.py` as tests, so `*.supabase.ts` cannot back a HECHO; its `FINAL` dict is stale.
@@ -352,3 +353,6 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 16:09 T94 done · branch worktree-agent-a1de24fad11003972 → 347ed9c
 - 2026-10-03 16:12 T95 launched · attempt 1 · agent abdd6b5bc271b3e03
 - 2026-10-03 16:50 T95 done · branch worktree-agent-abdd6b5bc271b3e03 → 7444b0a
+- 2026-10-03 16:52 T97 launched · attempt 1 · agent a0bbeb85bedba6aab
+- 2026-10-03 17:05 T97 stopped by Hernán; leftovers committed as T97: WIP (79bb8fa) on worktree-agent-a0bbeb85bedba6aab
+- 2026-10-03 17:10 plan closed
