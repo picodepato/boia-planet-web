@@ -52,7 +52,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: costa, puerto, barco, boya GLBs (6 222/12 000 tris, 203/220 kB, all pass fresh-import validation) with manifest + `escena` block (camera, poses, sun/moon) for T79; golden and night stills 1600/800 webp within limits; check.py gains a landing-glb check → 6e2002a
 
 ## T79 — Scroll-bound three.js hero and the hand-off to the landing
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (for the integration of the hero and the blocks' surface restyle; T77's approved document wins over the skill's defaults)
 - Depends on: T77, T78
@@ -65,10 +65,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - a new `apps/web/e2e/landing-scroll.spec.ts` → exit 0 at 375×812 and 1280×800: Tickets CTA and «Zarpar» visible without scrolling at first paint; after the appearance the scene reports the rest phase; scrolling one viewport puts it in the sea phase and scrolling back returns it (read from `window.__boiaIntro` or a `data-` attribute the page exposes); the first block is on screen after the dive; «Zarpar» has `href` `/mar?menu=bienvenida` and lands on /mar; with `prefers-reduced-motion: reduce` there is no WebGL canvas and the still is shown; cumulative layout shift during load and a scripted scroll < 0.05 (PerformanceObserver `layout-shift`); `/#tickets` and `/?intro=0` open at rest with no appearance
   - the same spec checks that the footer shows the BOIA logo (an `img`/`svg` with accessible name «BOIA») and that the artists band has a Spotify link (`a[href*="spotify"]`, `target=_blank`, `rel` including `noopener`) and no request to a Spotify domain is made on load
   - screenshots `docs/informes/img/p007-t79-{reposo,zambullida,mar,noche,estatica}-{mobile,desktop}.png`
-- Outcome:
+- Outcome: appearance → rest with «Zarpar» + «Entradas» from first paint; scroll scrubs the dive and the sea advance with T78's props; dark editorial bands; static still for reduced motion/no WebGL/saveData; BOIA logo in the footer, Spotify links (playlist + optional per artist); cap 200 kB, landing 192.4 kB; landing-scroll.spec 10/10, 74 e2e pass → fbb310b
 
 ## T80 — Performance and budget
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -82,7 +82,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T81 — Accessibility, reduced motion and the e2e of the whole flow
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -123,7 +123,23 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - Test command → exit 0
 - Outcome:
 
+## T84 — Update the e2e specs the new hero changed
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T79
+- Goal: T79 renamed the hero links («Tickets» → «Entradas», `hero.explore` → «Zarpar» with href `/mar?menu=bienvenida`) and changed the landing flow; these e2e specs still expect the old ones and will fail the plan's full e2e run: accesos, carnet-descuento, ciclo-evento, demo, despliegue, mar-a-bordo, tickets, mar-3d. Update their selectors and expectations to the new flow without weakening what each one proves (same assertions, new names/hrefs; if a flow changed, assert the new equivalent and say why in ESTADO). Also add the key `circuit.void.offroad` to `docs/propuestas/textos-zonas.md` so regenerating the i18n files no longer drops it (T79 restored it by hand), and check that regenerating gives no diff.
+- Context: T79's ESTADO section and Decisions in this plan; `apps/web/e2e/landing-scroll.spec.ts` (the new flow), the eight specs above, `apps/web/e2e/mar-helpers.ts`; `docs/propuestas/textos-zonas.md` and the script that generates `apps/web/lib/i18n/` from it (find it in package.json or tools/).
+- Scope: may touch the eight e2e specs above and their helpers, `docs/propuestas/textos-zonas.md`, the generated i18n files only as the generator writes them / must not touch app code, the landing specs T81 owns (`landing-scroll.spec.ts`, `landing.spec.ts`, `intro.spec.ts`), `apps/web/app/mar/**`.
+- Done when:
+  - `E2E_PORT=<free> pnpm e2e accesos.spec.ts carnet-descuento.spec.ts ciclo-evento.spec.ts demo.spec.ts despliegue.spec.ts mar-a-bordo.spec.ts tickets.spec.ts mar-3d.spec.ts --workers=1` → exit 0 in both projects
+  - regenerating the i18n files from textos-zonas.md → no diff (`git status --porcelain apps/web/lib/i18n` empty)
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
+- 2026-10-03 orchestrator: added T84 (fix task) for the eight e2e specs T79's renames broke and the textos-zonas.md key it dropped
+- 2026-10-03 T79: controller `paused` is the rest for every mode, `landed` only means Zarpar finished, `fallback` is the static version; «Zarpar» + «Entradas» from the first paint (plan header wins over T77 §7.1); h1 = Admin hero title visually hidden, «BOIA» on screen is the wordmark; hero.explore → «Zarpar», hero.tickets → «Entradas» via textos-zonas.md; REQ-ENT-028 (subtitle by promotions) → PARCIAL since the design removes that line; no full-screen bloom/DOF (sprite halos); low power = saveData only; Spotify playlist = footer link «Spotify», optional `spotifyUrl` per artist (agent)
 - 2026-10-03 T78: seaward = Blender +Y / glTF −z; no baked atlas (vertex colours only); costa without normals (loader computes them); camera 10 m up, boat 105 m ahead to match §12's framing; f/1.0 DOF; grain 5.5 %; the manifest's `escena` block carries camera, poses and sun/moon for T79; stills reproducible in look but not bit-exact (EEVEE GPU) (agent)
 - 2026-10-03 Hernán: from now on every task runs on Opus 5.5 (T78, already running on fable, continues); Spotify links like observatoriofestival.com (BOIA playlist in the artists band and footer, one per artist; plain links, no embedded player) and the BOIA logo visible on the page, at least in the footer — added to T79, URLs editable in T82
 - 2026-10-03 orchestrator: T78's Goal updated to T77 v2's prop list and caps (the plan's original guess listed the mascot and clouds, which v2 dropped)
@@ -142,6 +158,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T79: the resting planet is still /mar's colourful low-poly world under a darker grade (Álvaro decides the art); the Admin artist editor drops `spotifyUrl` on save (T82)
 - 2026-10-03 T78: KHR_mesh_quantization would give ~40 % more geometry headroom; README section for tools/blender/landing (T83); the 8 quay lamps are mostly outside the still's frame but in the GLB for the scroll
 - 2026-10-03 T77: /mar could adopt the hero's cinematic grade in a later plan
 - 2026-10-03 T77: `hero.explore3d*` i18n keys look unused; the Tickets panel surface could match the blocks' new surface later; island GLBs (800–950 kB each) are too heavy for the hero, the horizon uses procedural islands
@@ -155,4 +172,5 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 02:58 T77 done · branch worktree-agent-ad894fbe35db9dba4 → 8dc402c
 - 2026-10-03 03:00 T78 launched · attempt 1 · agent a5e39e7ceb157d5b2
 - 2026-10-03 03:47 T78 done · branch worktree-agent-a5e39e7ceb157d5b2 → 6e2002a
-- 2026-10-03 03:50 T79 launched · attempt 1 · agent (pending)
+- 2026-10-03 03:50 T79 launched · attempt 1 · agent ae29bc95893bec4a2
+- 2026-10-03 05:00 T79 done · branch worktree-agent-ae29bc95893bec4a2 → fbb310b
