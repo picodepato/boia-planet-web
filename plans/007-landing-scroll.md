@@ -82,7 +82,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T81 — Accessibility, reduced motion and the e2e of the whole flow
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T79
@@ -93,7 +93,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e landing-scroll.spec.ts landing.spec.ts intro.spec.ts --workers=1` → exit 0 in both projects, with axe 0 violations at the three scroll positions
   - screenshots `docs/informes/img/p007-t81-{reposo,bloques,pie,reducido}-{mobile,desktop}.png`
   - Test command → exit 0
-- Outcome:
+- Outcome: axe 0 violations (any impact) at rest, after the dive and at the footer, with and without the panel; pixel contrast check e2e/contrast.ts, all texts pass with the design tokens; reduced motion pauses the artist rotation; 70 e2e pass; landing 192.5 kB → 37759ce
 
 ## T82 — The landing ready for real content
 - Status: pending
@@ -158,6 +158,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T81: the scroll hint sits ~7 px under the pills at 1280×800; the rest of intro.spec clicks «Zarpar» with Playwright click() and may flake under load
 - 2026-10-03 T79: the resting planet is still /mar's colourful low-poly world under a darker grade (Álvaro decides the art); the Admin artist editor drops `spotifyUrl` on save (T82)
 - 2026-10-03 T78: KHR_mesh_quantization would give ~40 % more geometry headroom; README section for tools/blender/landing (T83); the 8 quay lamps are mostly outside the still's frame but in the GLB for the scroll
 - 2026-10-03 T77: /mar could adopt the hero's cinematic grade in a later plan
@@ -177,3 +178,4 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 05:05 T80 launched · attempt 1 · agent a27a66847508007c7
 - 2026-10-03 05:05 T81 launched · attempt 1 · agent a1f05cdf5227633de
 - 2026-10-03 06:00 usage limit reached; T80 and T81 still running in their worktrees (resume: section 7, orphans)
+- 2026-10-03 06:10 T81 done · branch worktree-agent-a1f05cdf5227633de → 37759ce
