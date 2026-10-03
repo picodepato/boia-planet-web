@@ -4,6 +4,75 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-03 — plan 007 T83: Documentos: spec, ESTADO, TRASPASO y el borrador de la decisión
+
+Plan 007 en resumen (T77–T84, todo en `main`): la landing es un solo scroll.
+`/` reproduce la aparición del planeta y «BOIA» y queda en reposo con
+«Zarpar» y «Entradas» desde el primer pintado y una pista para bajar; sin
+avance automático ni «Saltar animación». El scroll lleva una escena three.js
+fija: la zambullida del planeta al mar junto al puerto y, desde ahí, la
+cámara avanza sobre el agua de la hora dorada a la noche con los bloques
+encima como bandas oscuras editoriales (diseño v2 aprobado por Hernán, T77;
+atrezzo y stills de Blender, T78; hero, T79). Versión estática con el still
+de Blender para movimiento reducido, sin WebGL o bajo consumo. Rendimiento
+(T80: motor del hero y panel en chunks aparte, calidad por niveles, sonda de
+fotogramas; p95 33,4 ms con CPU 4×), accesibilidad (T81: axe 0 de cualquier
+impacto, contraste en píxeles, teclado), contenido real sin código (T82:
+`real-content.ts`, marca «MUESTRA»), e2e al día con el hero nuevo (T84). El
+logo de BOIA en el pie y los enlaces a Spotify (Hernán). **La landing pesa
+185,3 kB de 200 kB.**
+
+Qué existe (T83, sólo documentos):
+- `docs/propuestas/2026-10-03-D-26-borrador.md`: el texto propuesto de D-26
+  para que Hernán lo pase a `DECISIONES.md` (no se ha tocado): la landing
+  como scroll, versión estática, diseño editorial (v1 rechazada), logo y
+  Spotify, tope de 200 kB, `landing_view` al pasar el hero; qué cambia en
+  D-19, D-21 y D-24 punto 4; y lo abierto (arte del hero, licencia de Druk,
+  P15/P17/P19, REQ-ENT-028, la regla `deviceMemory ≤ 4`, el still blando de
+  800 px en móviles verticales).
+- `docs/spec/02-entrada-y-landing.md` y `09-requisitos.md`: texto, título,
+  criterio y notas de REQ-ENT-001, 002, 006, 007, 008, 010, 014, 017, 026,
+  027 y 038 al flujo nuevo, citando «plan 007 (borrador D-26)»; nota de
+  REQ-ENT-028 (sin sitio en el hero; marca `[pendiente Álvaro]` intacta);
+  párrafo del plan 007 al principio del área. Fuente y alcance sin cambiar
+  (los comprueba `check.py`); el texto de REQ-ENT-003 y 005 sigue hablando
+  del 2D (viene de antes del plan 007).
+- `docs/spec/estado.md`: 27 filas con su prueba del plan 007
+  (`landing-scroll.spec.ts`, `landing-perf.spec.ts`, `intro.spec.ts`,
+  `controller.test.ts`, `planet.test.ts`, `real-content.test.ts`):
+  REQ-PRO-001, ENT-001–003, 006–010, 014, 017, 019, 020, 026, 027, 030, 032
+  y 038 siguen HECHO con la prueba nueva; REQ-PRO-018 pasa de FALTA a
+  PARCIAL (marca «MUESTRA» de T82); ENT-022, 024, 025, 028, 036 y ARQ-014,
+  015, 016 siguen PARCIAL con la evidencia y las cifras de T80/T81.
+- `docs/matriz-dispositivos.md`: las filas de la landing (móvil corto,
+  scroll, foco, contraste, movimiento reducido, sin WebGL, conexión lenta)
+  con las pruebas actuales.
+- `docs/TRASPASO.md`: estado a 2026-10-03 (planes 001–007), peso final de la
+  landing, lo que mide Hernán a mano en móvil y lo que aprueba Álvaro (arte
+  del hero, licencia de Druk, contenido).
+- `README.md`: «La landing: el hero por scroll» (cómo funciona, dónde está
+  cada cosa, versión estática, cómo depurar, tope de 200 kB) y «Arte del
+  hero de la landing (Blender)» (`tools/blender/landing/`); 192 → 200 kB en
+  «Tipografías»; la comprobación del despliegue.
+
+Comandos:
+- `python3 tools/spec/estado.py` → exit 0; «294 REQ · HECHO 151 · PARCIAL 64
+  · FALTA 32 · L2 28 · final 19» (antes PARCIAL 63, FALTA 33).
+- `python3 tools/spec/check.py` → exit 0 (294 requisitos, centinelas 10/10).
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 112 archivos, 1000 pruebas. `sh tools/spec/checks.sh` → exit 0.
+  `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; «185.3 kB total, 13 archivos · presupuesto
+  200.0 kB · OK».
+- Sin e2e (no cambia código; el orquestador corre la suite completa).
+
+Pendiente:
+- Hernán pasa D-26 a `DECISIONES.md` y responde lo abierto del borrador.
+- Las mediciones en móvil real de TRASPASO (REQ-ENT-021, REQ-ARQ-017).
+- `docs/propuestas/textos-zonas.md` aún lista `intro.skip` e
+  `intro.ticketsOnly`; las filas de `/mar` de la matriz citan pruebas del 2D
+  borrado; REQ-ENT-003 y 005 hablan aún del planeta 2D.
+
 ## 2026-10-03 — plan 007 T82: La landing lista para el contenido real
 
 Qué existe:
