@@ -1,6 +1,6 @@
 # Plan 007 — The landing as one continuous scroll
 
-Status: active
+Status: done
 Created: 2026-10-03
 Base branch: main
 Goal: Hernán and Álvaro's design of 2026-10-03 for the landing of BOIA.PLANET: a single continuous scroll that starts in the cinematic entry (planet, «BOIA», «Zarpar») and continues into the normal page (tickets, events, photos, artists) when the visitor scrolls. The hero is a three.js scene bound to the scroll — the camera dives from the planet to the sea by the port and then advances slowly over the water while the light goes from golden hour to night, with the blocks sliding over it on cards — not flat parallax layers. «Zarpar» still enters /mar (D-24); Tickets is visible from the first paint; a clear hint says the page scrolls. Codex's 2D parallax prototype is discarded: everything starts from zero. Mobile first, no jank, no layout shift; reduced motion or low power get a static version without 3D. Content stays `muestra`; the final art is Álvaro's call.
@@ -110,7 +110,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: real content in one file (packages/store/src/sample/real-content.ts, null = muestra), images in public/contenido/{artistas,carteles}, 3:4 poster slot, CSS «MUESTRA» mark on sample links, Admin artist editor keeps spotifyUrl; docs/contenido-real.md (14 rows); landing 185.3 kB → e161ba6
 
 ## T83 — Docs: spec, ESTADO, TRASPASO and the decision draft
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T80, T81, T82, T84
@@ -121,7 +121,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `python3 tools/spec/estado.py` → exit 0 with no REQ marked HECHO without a proof
   - `docs/propuestas/2026-10-03-D-26-borrador.md` exists; `docs/TRASPASO.md` states the final landing weight and the hand checks
   - Test command → exit 0
-- Outcome:
+- Outcome: spec (27 rows linked to plan 007 tests, REQ-PRO-018 → PARCIAL, ENT texts updated in 09-requisitos and 02-entrada-y-landing), TRASPASO, README, matriz-dispositivos and the D-26 draft; final landing 185.3 kB of 200 → bb61c36
 
 ## T84 — Update the e2e specs the new hero changed
 - Status: done
@@ -138,6 +138,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome: eight specs updated through a shared e2e/hero-helpers.ts (pills by i18n name, real-pointer tap, pastHero); 67 passed, 3 deliberate project skips; circuit.void.offroad in textos-zonas.md, regeneration gives no diff → 138c030
 
 ## Decisions
+- 2026-10-03 orchestrator: never run integrations while the full e2e suite runs on main (vitest timeouts under load); call integrate.py with PYTHONUTF8=1 (its JSON print crashed on cp1252)
 - 2026-10-03 T82: Álvaro's content in one file, `null` = muestra; images by id in public/contenido with a test that list and files match; «MUESTRA» mark is CSS on example.* links (label from i18n `link.sample`), «Comprar» excluded to avoid hydration shift; poster = EventCard `poster` 3:4 slot; artist photoUrl accepts a site path (agent)
 - 2026-10-03 T80: hero runtime and LandingClient are lazy chunks (lib/intro/lazy.ts, landing-client-lazy.tsx); frames at rest are full quality, frames in motion drop MSAA/resolution per a first-frames probe, under 30 fps → still; hardwareConcurrency ignored on Apple WebKit (iOS reports 4); lower-section CSS stays critical (deferring it shifts layout) (agent)
 - 2026-10-03 orchestrator: added T84 (fix task) for the eight e2e specs T79's renames broke and the textos-zonas.md key it dropped
@@ -160,6 +161,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 orchestrator: main test command passes (69 s, landing 189.6 kB); fresh-worktree probe passes at 2a60044
 
 ## Proposals (new scope)
+- 2026-10-03 T83: textos-zonas.md still lists intro.skip and intro.ticketsOnly; matriz-dispositivos /mar rows cite the deleted juego-hud.spec.ts; REQ-ENT-003 and 005 texts still describe a 2D planet; D-26 draft asks whether REQ-ENT-028 is retired
 - 2026-10-03 T82: artist Carnet answers (P17) have no field yet; the Admin has no editor for store/contact/footer links; underline runs under the «MUESTRA» pill in flex links; gallery photos have no folder (Admin → Fotos with https URL)
 - 2026-10-03 T84: record.spec.ts and record-titulo.spec.ts (only with RECORD_*=1) still click the old «Zarpar»
 - 2026-10-03 T80: `deviceMemory ≤ 4` sends many mid-range Android phones to the still (Hernán decides); portrait phones with DPR ≤ 2 get the soft 800 px still, `sizes="max(100vw,160vh)"` would fix it (+80 kB); in low power the still appears after hydration, not at first paint
@@ -189,4 +191,8 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 06:16 T84 launched · attempt 1 · agent aa4acf4468e37ac44
 - 2026-10-03 06:45 T84 done · branch worktree-agent-aa4acf4468e37ac44 → 138c030
 - 2026-10-03 06:50 T82 done · branch worktree-agent-ac871bf55b1920cb5 → e161ba6
-- 2026-10-03 06:51 T83 launched · attempt 1
+- 2026-10-03 06:51 T83 launched · attempt 1 · agent add5763b505aab793
+- 2026-10-03 07:15 T83 integration tests_failed: 2 vitest timeouts (30 s) under the concurrent full e2e run; docs-only change; main reverted (d6719fb); retry after e2e
+- 2026-10-03 07:45 T83 done · branch worktree-agent-add5763b505aab793 → bb61c36
+- 2026-10-03 07:50 full e2e on main (--workers=2): 310 passed, 3 failed (desktop: intro «enlaces compartidos…», mar-paridad «el náufrago…», «la ficha de una isla…»), 47 skipped; part of the run overlapped T83's first integration build; the two specs rerun alone on desktop: 27 passed
+- 2026-10-03 07:55 plan done · test command on main exit 0
