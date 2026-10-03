@@ -169,7 +169,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T92 — Global rankings: circuit times and all-time points
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design (to apply T87's approved rankings frame)
 - Depends on: T87, T90
@@ -181,10 +181,10 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e mar-circuito.spec.ts --workers=1` → exit 0
   - `pnpm test:supabase` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: two-tab global ranking (Circuito default, De siempre) with top 50, pinned «tú» row and «Mostrar más»; guest box with «Entrar en el ranking»; finish card «Puesto n de N», start card shows the global leader; `flushAccount()` in `lib/repo.ts`; local mode same look with samples → 904cb28
 
 ## T93 — Global message bottles
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T88, T90
@@ -285,8 +285,11 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 plan: Hernán configured a custom SMTP (Gmail) on the dev project; the Spanish templates can now be edited (Hernán).
 - 2026-10-03 T96: course gaps came from sharp turns, `roadMarks` adds buoy arcs at every vertex; offroad unchanged; whirlpool push is now a current with a calm centre; `data-remolinos`/`data-remolinos-vista` for tests; e2e clicks the pin with dispatchEvent; branch started on T89's WIP (session cwd was in that worktree) and was reset to main (agent).
 - 2026-10-03 T90: buy/equip/save Carnet wait for the server and throw the rejection, other actions notify; sign-out flushes the queue (≤ 4 s) then drops the copy; hooks `onGuestMerged`/`onBeforeSignOut` in T89's session; `cuenta-progreso.spec` runs on desktop only (agent).
+- 2026-10-03 plan: at the end of the plan the orchestrator messages the local session «DESPLEGAR WEB VERCEL ALVARO» with what is ready on main (commits, changes, env vars Vercel needs for Supabase mode) so Álvaro's Vercel can be updated; the deploy itself is decided and run there, not from this session (Hernán).
+- 2026-10-03 T92: «Circuito» is the default tab; one selector option per circuit+version (today one); rows show the neutral avatar only; an `incomplete` session counts as guest; «Descubrir a un BOIERO» moved below the list; screenshots only with `RECORD_T92=1` (6 PNGs committed) (agent).
 
 ## Proposals (new scope)
+- 2026-10-03 T92: on «De siempre» all members with 0 points share one position (ties ranked together), so a 0-point viewer may show «3» pinned under 50 others at «3»; the design may need a look.
 - 2026-10-03 T90: a `daily` reward earned offline and sent another day counts for the arrival day (`award_points` takes no date).
 - 2026-10-03 T96: with the sample whirlpool values a ship with no throttle spins gently in the centre; whether it should push the player out is a design call.
 - 2026-10-03 T89: `apps/web/app/carnet/carnet-page.tsx` has hard-coded strings (not i18n); `es-mar.ts` fails `prettier --check`.
@@ -311,3 +314,6 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 13:30 T90 launched · attempt 1 · agent a300278d46361eb2a
 - 2026-10-03 14:03 T96 done · branch worktree-agent-a358611c785a3bea3 → 594a472
 - 2026-10-03 14:31 T90 done · branch worktree-agent-a300278d46361eb2a → 67bbff5
+- 2026-10-03 14:33 T91 launched · attempt 1 · agent af6cb47b61ded8c78
+- 2026-10-03 14:33 T92 launched · attempt 1 · agent a1bd6097682d3dc69
+- 2026-10-03 15:12 T92 done · branch worktree-agent-a1bd6097682d3dc69 → 904cb28
