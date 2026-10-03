@@ -113,7 +113,7 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T80, T81, T82
+- Depends on: T80, T81, T82, T84
 - Goal: Bring the documents in line with the scroll landing: `docs/spec/estado.md` for every REQ-ENT the new flow changes (at least REQ-ENT-001, 002, 003, 006, 007, 008, 009, 010, 014, 017, 019, 038 and the performance and accessibility REQs that T80 and T81 now prove) with their proof linked; `docs/spec/09-requisitos.md` where the requirement text itself changed (cite "plan 007" and the decision draft); the top section of ESTADO.md for the plan; `docs/TRASPASO.md` (state, final landing weight, what Hernán measures by hand, what Álvaro must approve: hero art, Druk licence, content); README (how the scroll hero works, the static version, the Blender landing scripts, the 200 kB cap). Draft the decision text for Hernán as `docs/propuestas/2026-10-03-D-26-borrador.md` (the scroll landing: what changes in D-19, D-21 and D-24 point 4; «Saltar animación» removed; the 200 kB cap) — do not edit `docs/DECISIONES.md`. Report the final landing weight in the final message.
 - Context: T79–T82 Outcomes and ESTADO sections; `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `tools/spec/estado.py`; `docs/TRASPASO.md`; `README.md`; `docs/DECISIONES.md` (read only).
 - Scope: may touch `docs/**` except `docs/DECISIONES.md`, `README.md`, ESTADO.md fragment / must not touch code.
@@ -174,3 +174,6 @@ Decisions of 2026-10-03 that every task follows (interview, Hernán):
 - 2026-10-03 03:47 T78 done · branch worktree-agent-a5e39e7ceb157d5b2 → 6e2002a
 - 2026-10-03 03:50 T79 launched · attempt 1 · agent ae29bc95893bec4a2
 - 2026-10-03 05:00 T79 done · branch worktree-agent-ae29bc95893bec4a2 → fbb310b
+- 2026-10-03 05:05 T80 launched · attempt 1 · agent a27a66847508007c7
+- 2026-10-03 05:05 T81 launched · attempt 1 · agent a1f05cdf5227633de
+- 2026-10-03 06:00 usage limit reached; T80 and T81 still running in their worktrees (resume: section 7, orphans)
