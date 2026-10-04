@@ -13,7 +13,14 @@ import {
   shipSpeed,
   stepShip,
 } from '@boia/engine/headless';
-import { BoatJump, type JumpEvent, type JumpSpec, rampsOf } from '@boia/engine/circuit';
+import {
+  BoatJump,
+  TURBO_S,
+  TURBO_COOLDOWN_S,
+  type JumpEvent,
+  type JumpSpec,
+  rampsOf,
+} from '@boia/engine/circuit';
 import type { MissionHost } from '@boia/engine/mission';
 import {
   type ControlSensitivity,
@@ -348,8 +355,6 @@ const BEND_MAP = 0.00016;
 /** Eslora del barco en la escena (unidades): algo mayor que la del motor, para leerse en el móvil. */
 const SHIP_LENGTH = 3.9;
 const STEP = 1 / 60;
-const TURBO_S = 2.4;
-const TURBO_COOLDOWN_S = 7;
 /** Tope de un viaje en turbo: si no llega (encajonado), se da por llegado. muestra */
 const VOYAGE_MAX_S = 20;
 const METERS_PER_U = 0.25;
@@ -458,7 +463,8 @@ export class Mar3D {
   private readonly clouds: Clouds;
   private readonly wildlife: Wildlife;
   private readonly wildlifeMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  private readonly onWildlifeMotion = () => this.wildlife.setReducedMotion(this.wildlifeMotion.matches);
+  private readonly onWildlifeMotion = () =>
+    this.wildlife.setReducedMotion(this.wildlifeMotion.matches);
   /**
    * La ruta (T50): sólo marcas en el agua que guían, de cerca y en el mapa.
    * Desde T59 no hay boyas que unan las islas.
@@ -582,6 +588,7 @@ export class Mar3D {
   private survivors: {
     run: SurvivorsRun;
     view: SurvivorsView;
+    turboPending: boolean;
     /** El barco de la partida (vivo: la simulación lo mueve en su sitio). */
     player: { x: number; y: number; vx: number; vy: number; heading: number };
   } | null = null;
@@ -713,10 +720,13 @@ export class Mar3D {
     this.scene.add(this.clouds.group);
     this.wildlife = new Wildlife((x, z) => {
       const obstacles = [...this.runtime.solidObstacles(), ...this.decorSolids].map((o) => ({
-        x: toScene(o.x), z: toScene(o.y), radius: toScene(o.radius),
+        x: toScene(o.x),
+        z: toScene(o.y),
+        radius: toScene(o.radius),
       }));
       // Visual coastlines can extend beyond the collision circle. Exclude their full shore as well.
-      for (const island of this.islands) obstacles.push({ x: island.x, z: island.z, radius: island.R * 1.15 });
+      for (const island of this.islands)
+        obstacles.push({ x: island.x, z: island.z, radius: island.R * 1.15 });
       return waterClear(x, z, obstacles, this.periodS, 1.2);
     });
     this.onWildlifeMotion();
@@ -1110,7 +1120,19 @@ export class Mar3D {
   }
 
   turbo(): boolean {
-    if (this.turboCool > 0 || this.survivors) return false;
+    if (this.survivors) {
+      const sv = this.survivors;
+      if (
+        !this.inputEnabled ||
+        sv.run.game.status !== 'running' ||
+        sv.turboPending ||
+        sv.run.snapshot().movement.cooldownS > 1e-6
+      )
+        return false;
+      sv.turboPending = true;
+      return true;
+    }
+    if (this.turboCool > 0) return false;
     this.turboLeft = TURBO_S;
     this.turboCool = TURBO_COOLDOWN_S;
     this.fovKick = 1;
@@ -1399,7 +1421,7 @@ export class Mar3D {
   /**
    * Empieza la partida del Cañón donde está el barco (T99): la simulación
    * lo lleva desde ahora, la cámara se aleja y sube (suave) y sus piezas se
-   * pintan. Sin viaje, rumbo, turbo ni vista de mapa mientras. false si no
+   * pintan. Sin viaje, rumbo ni vista de mapa mientras. false si no
    * se puede (en vuelo, cambiando de mundo o con otra en curso).
    */
   startSurvivors(run: SurvivorsRun): boolean {
@@ -1408,6 +1430,8 @@ export class Mar3D {
     this.clearCourse();
     this.hold = null;
     this.turboLeft = 0;
+    this.jump.reset();
+    this.opts.canvas.dataset.salto = 'agua';
     this.backToBoat();
     const view = new SurvivorsView(run.config, run.game.caps, {
       quality: run.quality,
@@ -1415,7 +1439,7 @@ export class Mar3D {
     });
     this.scene.add(view.group);
     this.camTuning = run.config.camera;
-    this.survivors = { run, view, player: run.snapshot().player };
+    this.survivors = { run, view, player: run.snapshot().player, turboPending: false };
     this.syncHandling();
     run.tick(performance.now(), false);
     this.opts.canvas.dataset.canon = 'on';
@@ -1447,6 +1471,10 @@ export class Mar3D {
     this.survivors = null;
     sv.view.dispose();
     this.boat.group.visible = true;
+    this.opts.canvas.dataset.salto = 'agua';
+    delete this.opts.canvas.dataset.canonTurbo;
+    delete this.opts.canvas.dataset.canonTurboCooldown;
+    delete this.opts.canvas.dataset.canonSpeed;
     delete this.opts.canvas.dataset.derrota;
     this.prev.x = this.ship.x;
     this.prev.y = this.ship.y;
@@ -1458,6 +1486,11 @@ export class Mar3D {
   /** ¿Hay una partida del Cañón en curso? */
   get survivorsActive(): boolean {
     return this.survivors !== null;
+  }
+
+  /** Cooldown que se registra en el estado inicial de la partida del Cañón. */
+  get turboCooldownS(): number {
+    return Math.max(0, this.turboCool);
   }
 
   /** Semáforo del circuito: apagado, rojo, ámbar o verde. */
@@ -1617,7 +1650,8 @@ export class Mar3D {
       });
       if (spot.kind === 'castillo') {
         void this.castleModel.mount(g, fallback, curveTree).then((loaded) => {
-          if (!this.destroyed) this.opts.canvas.dataset.castilloModelo = loaded ? 'glb' : 'procedural';
+          if (!this.destroyed)
+            this.opts.canvas.dataset.castilloModelo = loaded ? 'glb' : 'procedural';
         });
       }
     }
@@ -2497,7 +2531,7 @@ export class Mar3D {
       this.jumpOn(e);
       this.opts.onWorldEvent(e);
     }
-    this.landJump();
+    if (!this.survivors) this.landJump();
     this.modelClock += dt;
     if (this.modelClock >= MODEL_PLAN_S) {
       this.modelClock = 0;
@@ -2522,13 +2556,32 @@ export class Mar3D {
       this.prev.x = s.x;
       this.prev.y = s.y;
       this.prev.heading = s.heading;
-      const events = sv.run.step(this.inputEnabled ? this.readInput() : IDLE_INPUT);
+      const turbo = sv.turboPending && this.inputEnabled && sv.run.game.status === 'running';
+      sv.turboPending = false;
+      const events = sv.run.step(this.inputEnabled ? this.readInput() : IDLE_INPUT, turbo);
       // Golpes y derrotas (T117): temblor (sin él con movimiento reducido) y el efecto de derrota.
       for (let k = 0; k < events.length; k++) {
         const e = events[k]!;
         if (e.type === 'hit') this.shake = Math.max(this.shake, hitShake(this.reducedMotion));
         else if (e.type === 'defeated') sv.view.defeat(e.enemy, e.id, e.x, e.y);
+        else if (e.type === 'jump') {
+          this.opts.canvas.dataset.salto = 'aire';
+          this.opts.onJump?.(e);
+        } else if (e.type === 'splash') {
+          const bp = this.boat.group.position;
+          this.splash.burst(bp.x, bp.z, 1);
+          this.shake = Math.max(this.shake, hitShake(this.reducedMotion));
+          this.opts.canvas.dataset.salto = 'agua';
+          this.opts.canvas.dataset.chapuzones = String(++this.splashes);
+          this.opts.onJump?.(e);
+        }
       }
+      const movement = sv.run.snapshot().movement;
+      this.turboLeft = movement.turboS;
+      this.turboCool = movement.cooldownS;
+      this.opts.canvas.dataset.canonTurbo = String(movement.turboS);
+      this.opts.canvas.dataset.canonTurboCooldown = String(movement.cooldownS);
+      this.opts.canvas.dataset.canonSpeed = String(Math.hypot(sv.player.vx, sv.player.vy));
       const p = sv.player;
       s.x = p.x;
       s.y = p.y;
@@ -2815,7 +2868,8 @@ export class Mar3D {
     // Barco (interpolado entre pasos, en la copia más cercana al foco).
     const s = this.ship;
     const fl = this.flight;
-    this.air = fl ? fl.pose.alt : toScene(this.jump.height(t));
+    const movement = this.survivors?.run.snapshot().movement;
+    this.air = fl ? fl.pose.alt : toScene(movement ? movement.jumpHeight : this.jump.height(t));
     const { x, z, h } = this.placeShip(alpha);
     const speed = fl ? 0 : shipSpeed(s);
     const v01 = Math.min(1.4, speed / this.cfg.maxSpeed);
@@ -2830,7 +2884,10 @@ export class Mar3D {
       body.position.y = Math.sin(t * 1.9) * 0.07 + Math.sin(t * 3.3) * 0.03 + v01 * 0.08;
       body.rotation.x =
         Math.max(-0.35, Math.min(0.35, -this.turnRate * 0.14)) + Math.sin(t * 1.5) * 0.03;
-      body.rotation.z = v01 * 0.07 + Math.sin(t * 2.1) * 0.025 + this.jump.pitch(t);
+      body.rotation.z =
+        v01 * 0.07 +
+        Math.sin(t * 2.1) * 0.025 +
+        (movement ? movement.jumpPitch : this.jump.pitch(t));
     }
     this.wings.group.position.y = body.position.y;
     this.wings.group.rotation.copy(body.rotation);
@@ -2849,7 +2906,7 @@ export class Mar3D {
     // Al levitar, sólo un rizo de espuma bajo el casco mientras está cerca del agua.
     const hovering = fl ? Math.max(0, 1 - this.air / 1.2) * 0.5 : 0;
     // En el aire de un salto (T73), sin estela.
-    const wake = this.jump.airborne ? 0 : Math.min(1, v01 * boost);
+    const wake = (movement ? movement.airborne : this.jump.airborne) ? 0 : Math.min(1, v01 * boost);
     this.wake.update(dt, sternX, sternZ, h, fl ? hovering : wake, t);
 
     this.updateCamera(dt);
@@ -2926,16 +2983,23 @@ export class Mar3D {
     this.confetti.update(dt);
     this.clouds.update(dt, cam.y, { x: fx, z: fz }, P);
     this.wildlife.update(dt, {
-      ship: { x, z }, focus: { x: fx, z: fz }, period: P, camera: this.camera,
-      zoom: this.zoom, cloudsVisible: this.clouds.group.visible, flying: !!fl,
+      ship: { x, z },
+      focus: { x: fx, z: fz },
+      period: P,
+      camera: this.camera,
+      zoom: this.zoom,
+      cloudsVisible: this.clouds.group.visible,
+      flying: !!fl,
     });
     const animals = this.wildlife.state;
     const fauna = `${animals.fish},${animals.gulls}`;
     if (this.opts.canvas.dataset.fauna !== fauna) this.opts.canvas.dataset.fauna = fauna;
     const motion = animals.reduced ? 'reduced' : 'on';
-    if (this.opts.canvas.dataset.faunaMotion !== motion) this.opts.canvas.dataset.faunaMotion = motion;
+    if (this.opts.canvas.dataset.faunaMotion !== motion)
+      this.opts.canvas.dataset.faunaMotion = motion;
     const clouds = this.clouds.group.visible ? 'on' : 'off';
-    if (this.opts.canvas.dataset.faunaClouds !== clouds) this.opts.canvas.dataset.faunaClouds = clouds;
+    if (this.opts.canvas.dataset.faunaClouds !== clouds)
+      this.opts.canvas.dataset.faunaClouds = clouds;
 
     if (this.course) {
       // El destino, en la copia del lado por el que va el barco.

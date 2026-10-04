@@ -242,7 +242,7 @@ export function useCanonMode({
       const sea = survivorsSea(
         w,
         g.runtime.bounds,
-        { x: g.ship.x, y: g.ship.y, heading: g.ship.heading },
+        { x: g.ship.x, y: g.ship.y, heading: g.ship.heading, turboCooldownS: g.turboCooldownS },
         g.solidDecor,
       );
       const run: SurvivorsRun = new SurvivorsRun(sea, {

@@ -4,10 +4,8 @@ import {
   IDLE_INPUT,
   type ShipInput,
   type ShipState,
-  collideShip,
   createShipState,
   pushOutWrapped,
-  stepShip,
 } from '../ship/controller';
 import type { QualityTier } from '../world/sectors';
 import { wrapDelta, wrapInto } from '../world/wrap';
@@ -32,6 +30,8 @@ import {
   xpToNext,
 } from './config';
 import { SpatialGrid } from './grid';
+import { SurvivorsMovement, type MovementView } from './movement';
+import type { JumpEvent } from '../circuit/jump';
 import { IslandIndex, type SurvivorsWorld } from './world';
 
 /**
@@ -66,6 +66,8 @@ export type SurvivorsStatus = 'running' | 'paused' | 'card' | 'ended';
 export interface SurvivorsInput {
   /** El mismo `ShipInput` que lleva el barco de `/mar`. */
   ship?: ShipInput;
+  /** Pulsación de turbo de este paso; forma parte del replay. */
+  turbo?: boolean;
   /** Elige la opción `choose` (0…) de la carta abierta. */
   choose?: number;
   /** true: pausa manual; false: seguir. Sin valor, no cambia. */
@@ -73,6 +75,7 @@ export interface SurvivorsInput {
 }
 
 export type SurvivorsEvent =
+  | JumpEvent
   /** Un golpe al barco: por contacto o por un disparo enemigo (`enemy` es quien lo hizo). */
   | { type: 'hit'; enemy: EnemyId; x: number; y: number; water: number }
   | { type: 'defeated'; enemy: EnemyId; id: number; x: number; y: number; elite: boolean }
@@ -168,7 +171,11 @@ export interface PlayerStats {
 /** Lo que la pantalla necesita, de sólo lectura. No se copia: no guardarlo entre pasos. */
 export interface SurvivorsSnapshot {
   readonly status: SurvivorsStatus;
-  readonly player: Readonly<ShipState> & { readonly radius: number; readonly invulnerableS: number };
+  readonly movement: MovementView;
+  readonly player: Readonly<ShipState> & {
+    readonly radius: number;
+    readonly invulnerableS: number;
+  };
   readonly enemies: readonly EnemyView[];
   readonly enemiesByType: Readonly<Partial<Record<EnemyId, readonly EnemyView[]>>>;
   /** Bolas del jugador. */
@@ -301,6 +308,7 @@ export class SurvivorsGame {
   readonly quality: QualityTier;
   readonly caps: QualityCaps;
   readonly world: SurvivorsWorld;
+  readonly movement: SurvivorsMovement;
 
   private readonly bounds: SurvivorsWorld['bounds'];
   private readonly w: number;
@@ -369,6 +377,7 @@ export class SurvivorsGame {
     this.config = config;
     this.seed = seed >>> 0 || 1;
     this.world = world;
+    this.movement = new SurvivorsMovement(world, this.seed);
     this.quality = opts.quality ?? 'alta';
     this.caps = config.caps[this.quality];
     this.bounds = world.bounds;
@@ -436,6 +445,7 @@ export class SurvivorsGame {
 
     this.view = {
       status: 'running',
+      movement: this.movement.snapshot(),
       player: Object.assign(this.player, { radius: this.shipCfg.radius, invulnerableS: 0 }),
       enemies: this.enemies,
       enemiesByType: this.byType,
@@ -487,6 +497,7 @@ export class SurvivorsGame {
   snapshot(): SurvivorsSnapshot {
     const v = this.view;
     v.status = this.status;
+    v.movement = this.movement.snapshot();
     (v.player as { invulnerableS: number; radius: number }).invulnerableS = Math.max(
       0,
       this.invulnerable,
@@ -544,6 +555,7 @@ export class SurvivorsGame {
       pt: this.pauseTotal,
       st: this.status,
       p: [p.x, p.y, p.vx, p.vy, p.heading],
+      movement: this.movement.state(),
       w: this.water,
       inv: this.invulnerable,
       lv: [this.level, this.xp, this.pendingLevels],
@@ -686,7 +698,7 @@ export class SurvivorsGame {
     this.pauseRun = 0;
     this.activeSteps++;
 
-    this.stepPlayer(input.ship ?? IDLE_INPUT, dt);
+    this.stepPlayer(input.ship ?? IDLE_INPUT, dt, input.turbo === true);
     this.spawnFromScript(dt);
     this.stepEnemies(dt);
     this.contactDamage(dt);
@@ -710,10 +722,9 @@ export class SurvivorsGame {
 
   // --- Barco -----------------------------------------------------------------
 
-  private stepPlayer(input: ShipInput, dt: number): void {
+  private stepPlayer(input: ShipInput, dt: number, turbo: boolean): void {
     const p = this.player;
-    stepShip(p, input, this.shipCfg, dt);
-    collideShip(p, { bounds: this.bounds, obstacles: this.world.obstacles, wrap: true }, this.shipCfg, dt);
+    this.events.push(...this.movement.step(p, input, turbo, this.shipCfg, dt));
     this.invulnerable -= dt;
     const bail = this.config.player.bailPerS + this.stats.bailPerS;
     if (bail > 0) this.water = Math.max(0, this.water - bail * dt);

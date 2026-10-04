@@ -71,7 +71,13 @@ function approach(v: number, target: number, rate: number): number {
 }
 
 /** Integra un paso de física del barco (sin colisiones). Muta `s`. */
-export function stepShip(s: ShipState, input: ShipInput, cfg: ShipConfig, dt: number): void {
+export function stepShip(
+  s: ShipState,
+  input: ShipInput,
+  cfg: ShipConfig,
+  dt: number,
+  options: { smoothSpeedLimit?: boolean } = {},
+): void {
   const len = Math.hypot(input.dirX, input.dirY);
   const throttle = len > 1e-6 ? clamp(input.throttle, 0, 1) : 0;
   const drifting = input.drift && throttle > 0;
@@ -137,9 +143,14 @@ export function stepShip(s: ShipState, input: ShipInput, cfg: ShipConfig, dt: nu
   s.vy = fy * vF + fx * vL;
   // Tope absoluto: ni el derrape ni deslizar por una costa superan la máxima.
   const v = Math.hypot(s.vx, s.vy);
-  if (v > cfg.maxSpeed) {
-    s.vx *= cfg.maxSpeed / v;
-    s.vy *= cfg.maxSpeed / v;
+  // En el Cañón, al expirar un impulso se pierde el exceso con el freno normal.
+  // El comportamiento predeterminado de navegar/correr conserva su tope absoluto.
+  const limit = options.smoothSpeedLimit
+    ? Math.max(cfg.maxSpeed, speed - cfg.brakeDeceleration * dt)
+    : cfg.maxSpeed;
+  if (v > limit) {
+    s.vx *= limit / v;
+    s.vy *= limit / v;
   }
 
   s.x += s.vx * dt;

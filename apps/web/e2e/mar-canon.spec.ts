@@ -44,6 +44,37 @@ const pointOf = (s: string | null) => {
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
+test('el botón de turbo acelera durante el Cañón y conserva su cooldown (T124)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  const turbo = page.getByTestId('mar-turbo');
+  await expect(turbo).toBeVisible();
+  await page.keyboard.down('ArrowRight');
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-canon-speed')), {
+      timeout: 20_000,
+    })
+    .toBeGreaterThan(140);
+  await turbo.click();
+  await expect(turbo).toHaveClass(/is-on/);
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-canon-speed')), {
+      timeout: 20_000,
+    })
+    .toBeGreaterThan(170);
+  const before = Number(await canvas(page).getAttribute('data-canon-turbo-cooldown'));
+  expect(before).toBeGreaterThan(0);
+  // Otra pulsación no reinicia el reloj del turbo.
+  await turbo.click();
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-canon-turbo-cooldown')))
+    .toBeLessThan(before);
+  await page.keyboard.up('ArrowRight');
+  expect(errors).toEqual([]);
+});
+
 test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas amarillas ni capa 2D', async ({
   page,
 }) => {
@@ -296,12 +327,9 @@ test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada t
   for (const b of [hudBox, xpBox, timeBox]) expect(b.y + b.height).toBeLessThan(vp0.height * 0.2);
   expect(hudBox.height).toBeLessThanOrEqual(64);
   expect(xpBox.height).toBeLessThanOrEqual(8);
-  const fixed = [
-    'mar-entradas',
-    'mar-enlaces',
-    'mar-minimapa',
-    'mar-saldos',
-  ].map((id) => page.getByTestId(id));
+  const fixed = ['mar-entradas', 'mar-enlaces', 'mar-minimapa', 'mar-saldos'].map((id) =>
+    page.getByTestId(id),
+  );
   for (const piece of fixed) {
     if ((await piece.count()) === 0 || !(await piece.isVisible())) continue;
     const pb = (await piece.boundingBox())!;

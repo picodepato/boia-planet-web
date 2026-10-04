@@ -4,6 +4,47 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T124: Turbo, boost arrows, jump ramps and race buoys inside the game
+
+Implemented in files; no git commands run.
+
+What exists:
+
+- `ship/boost.ts` now owns the existing turbo physics and its 2.4 s duration / 7 s cooldown / 1.6 speed multiplier. `circuit/index.ts` exports it; `steering.ts` reexports the existing helper API without changing sailing/race behavior.
+- `circuit/interactives.ts` selects active boost collisions, ramps and checkpoint buoys and strips other behaviors. `survivorsWorldOf` supplies this data to the game. The isolated `WorldRuntime` reuses existing impulse strength, duration, contact hysteresis, wrapping and strongest-boost handling. Checkpoints do not feed the race or rewards. Existing solid obstacles and restitution remain shared; lane buoys retain their nonblocking behavior.
+- New `survivors/movement.ts` owns deterministic turbo timers and `BoatJump`, advanced only on active fixed steps. `SurvivorsInput.turbo` records presses; snapshot/hash include movement. `sim.ts` changes are limited to input, player movement, snapshot and hash; enemy/weapon balance and `SURVIVORS_CONFIG` are unchanged, so no config version bump.
+- `stepShip` has an opt-in smooth speed limit used only by survivors. After turbo/pad expiry, excess speed brakes over time instead of being cut in one step. Card speed is part of the cruise config before composing boosts/turbo.
+- `Mar3D` queues one turbo press into `SurvivorsRun.step`, exposes sim turbo/cooldown to the existing visible button, and renders jump height/pitch from the active sim clock. Splash/wake follow the jump. Boat/world/enemy damage calculations remain on the same water-plane position; jumping introduces no immunity.
+- `canon-mode.tsx` captures the sailing cooldown in `SurvivorsWorld.start.turboCooldownS` before creating the game, so initial conditions are reproducible. Navigation cooldown remains on exit. No HUD layout or new UI strings were added.
+- New `turbo-ramps.test.ts`: 10 tests for turbo/pad acceleration and smooth decay, cooldown/repeated presses, pause/card freeze, speed card + pad + turbo, wrapped pad activation, BoatJump/contact damage/landing, buoy parity with the world runtime, replay snapshots/events/hash with real scripted enemies and initial cooldown, and unchanged default ship speed cap.
+- `mar-canon.spec.ts` has a desktop/mobile turbo-button check that observes activation, speed increase and cooldown progress/rejected repeat. `mar-circuito.spec.ts` remains unchanged.
+
+Reversible implementation choices:
+
+- Reuse a circuit-only `WorldRuntime` instead of copying its boost/collision rules or stepping the application's encounter/reward runtime.
+- Keep the pre-existing reset of active turbo on starting a game, while recording any outstanding cooldown in initial world data. Clear an old sailing jump on entering and return to water on leaving.
+- Freeze turbo, boost expiry and jump during pause/cards; use simulation height/pitch without introducing airborne hit filtering.
+- Add the optional controller speed-limit mode instead of retuning sailing/racing or raising cruise speed artificially.
+- User explicitly authorized the minimal `steering.ts` helper reexport and `survivors.ts` input forwarding changes. Architect reviewed the initial approach, environment errors and completed implementation; its replay concern was fixed and re-reviewed.
+
+Commands and results (PowerShell uses `pnpm.cmd`; the `pnpm.ps1` shim is blocked by the machine's execution policy):
+
+- `pnpm.cmd exec vitest run packages/engine/src/survivors packages/engine/src/ship packages/engine/src/circuit apps/web/app/mar/engine/steering.test.ts apps/web/app/mar/survivors.test.ts --configLoader native --pool threads --testTimeout=30000 --maxWorkers=2` — **PASS**, 8 files / 161 tests on final implementation. Initial card-speed test sampled after pad expiry; corrected its active-boost sampling point and reran green.
+- The same targeted Vitest command without native config loading/threads — blocked before tests by Vite's optional Windows realpath subprocess (`spawn EPERM`). Supported CLI flags resolve test startup; no dependency patches or permission changes were made.
+- `PYTHONUTF8=1 pnpm.cmd exec vitest run --exclude '**/packages/db/**' --testTimeout=30000 --configLoader native --pool threads --maxWorkers=2` — 145 files passed, 1 failed; **1334 passed / 2 failed** (run before adding the two additional card/wrap tests, both covered in the final targeted pass). Only failures: `packages/world/src/worlds/worlds.test.ts`, both CLI subprocess tests returning `status: null`. A direct `spawnSync(process.execPath, ['--version'])` diagnostic confirms `error: EPERM`. These unrelated tests were not modified.
+- `pnpm.cmd lint` — **PASS**, whole repository, including the final e2e edit.
+- `pnpm.cmd typecheck` — blocked by recursive script spawning (`spawn EPERM`). Equivalent direct `node node_modules/typescript/bin/tsc -p <workspace>/tsconfig.json` checks — **PASS** for all six workspaces: contracts, db, engine, store, world, web. Web rerun after final e2e edits also passed.
+- `PYTHONUTF8=1 sh tools/spec/checks.sh` — blocked by MSYS `CreateFileMapping`, Win32 error 5. Ran its checks directly with Python/UTF-8: `tools/spec/check.py`, `tools/spec/estado.py`, `tools/spec/test_check.py` (18 tests), `tools/spec/test_estado.py` (8 tests), `tools/blender/check.py` — **PASS**, including 62 manifests / 856 images.
+- `pnpm.cmd build` — blocked during Next production build by `spawn EPERM`.
+- `E2E_PORT=3124 pnpm.cmd e2e mar-canon.spec.ts mar-circuito.spec.ts --workers=1` — blocked before browser tests by `spawn EPERM`. New e2e check is written and typechecked; no e2e pass is claimed.
+- Prettier run on changed code files — **PASS**.
+
+Pending:
+
+- Orchestrator must rerun the complete requested command and both e2e specs outside this process-restricted sandbox. Full command is not green here; build and browser behavior remain unverified in this environment.
+- At integration with T125, verify its newly introduced enemy projectiles still damage the player while airborne. This checkout has no enemy projectiles yet; T124 does not change contact/invulnerability logic or add a jump-based damage condition.
+- Merge the localized `sim.ts` additions with T125. New tests are in a separate file; config and existing survivors tests were not edited.
+
 ## 2026-10-05 — plan 011 T125: Four new enemies, elites, growth, Marea and the full script (simulation)
 
 Qué existe (sólo `packages/engine/src/survivors/`; nada en `apps/web`):

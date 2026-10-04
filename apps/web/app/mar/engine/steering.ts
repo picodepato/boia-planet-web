@@ -57,17 +57,10 @@ export function keysInput(dx: number, dy: number, turnScale = 1): ShipInput {
   return { dirX: dx, dirY: dy, throttle: 1, drift: false, turnScale };
 }
 
-/** Velocidad del turbo (× la máxima). muestra */
-export const TURBO_SPEED = 1.6;
-/** Velocidad del viaje en turbo de «Entradas» (× la máxima): más que el turbo, que llegue pronto. muestra */
+// Física de turbo compartida con la simulación pura del Cañón.
+export { TURBO_SPEED, boostedConfig, stepShipConfig, type ShipEffects } from '@boia/engine/circuit';
+/** Velocidad del viaje en turbo de «Entradas» (× la máxima). muestra */
 export const VOYAGE_SPEED = 2.6;
-/** Aceleración en turbo y en viaje (× la normal). muestra */
-const BOOST_ACCEL = 2.4;
-
-/** Física con turbo o viaje (`k` × la velocidad máxima); el radio de giro no cambia. */
-export function boostedConfig(cfg: ShipConfig, k: number): ShipConfig {
-  return { ...cfg, maxSpeed: cfg.maxSpeed * k, acceleration: cfg.acceleration * BOOST_ACCEL };
-}
 
 // --- Carrera a 22 nudos (T109) ------------------------------------------------------
 
@@ -106,21 +99,6 @@ export const RACE_SHIP_CONFIG: ShipConfig = atCruiseSpeed(MAR_SHIP_CONFIG, RACE_
  */
 export function baseShipConfig(racing: boolean): ShipConfig {
   return racing ? RACE_SHIP_CONFIG : MAR_SHIP_CONFIG;
-}
-
-/** Lo del runtime del mundo que cambia la física (impulsos y frenos). */
-export interface ShipEffects {
-  shipConfig(base: ShipConfig): ShipConfig;
-}
-
-/**
- * La física de un paso: la base (crucero o carrera), los efectos del mundo
- * (impulsos, frenos) y encima el turbo o el viaje (`boost` × la máxima; 1,
- * sin ellos). Así componen igual a 15 que a 22 nudos.
- */
-export function stepShipConfig(base: ShipConfig, effects: ShipEffects, boost = 1): ShipConfig {
-  const cfg = effects.shipConfig(base);
-  return boost === 1 ? cfg : boostedConfig(cfg, boost);
 }
 
 /** Recorta la velocidad a `max` u/s sin cambiar su dirección. true si sobraba. */

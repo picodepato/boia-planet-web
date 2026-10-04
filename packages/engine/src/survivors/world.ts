@@ -1,4 +1,5 @@
-import type { Rect, WorldConfig } from '@boia/world';
+import type { Rect, WorldConfig, WorldObject } from '@boia/world';
+import { circuitInteractivesOf } from '../circuit/interactives';
 import type { CircleObstacle } from '../ship/controller';
 import { solidObstaclesOf } from '../world/runtime';
 import { wrapDelta, wrapInto } from '../world/wrap';
@@ -13,8 +14,10 @@ export interface SurvivorsWorld {
   bounds: Rect;
   /** Islas y decorado sólido. */
   obstacles: readonly CircleObstacle[];
+  /** Impulsos, rampas y pasos de boia del mundo, sin otras interacciones. */
+  interactives?: readonly WorldObject[];
   /** Dónde está el barco al empezar (la partida empieza donde está). */
-  start: { x: number; y: number; heading?: number };
+  start: { x: number; y: number; heading?: number; turboCooldownS?: number };
 }
 
 /**
@@ -33,6 +36,7 @@ export function survivorsWorldOf(
   return {
     bounds: period,
     obstacles: [...solidObstaclesOf(world), ...extra.map((c) => ({ ...c }))],
+    interactives: circuitInteractivesOf(world),
     start,
   };
 }

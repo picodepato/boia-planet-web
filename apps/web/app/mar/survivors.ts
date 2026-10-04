@@ -439,11 +439,13 @@ export class SurvivorsRun {
   }
 
   /** Un paso fijo con el mando del barco (y la opción de la carta elegida, si la hay). */
-  step(input: ShipInput): readonly SurvivorsEvent[] {
+  step(input: ShipInput, turbo = false): readonly SurvivorsEvent[] {
     let choose: number | null = null;
     if (this.game.status === 'card') choose = this.autoPick ? 0 : this.pendingChoice;
     this.pendingChoice = null;
-    const events = this.game.step(choose === null ? { ship: input } : { ship: input, choose });
+    const events = this.game.step(
+      choose === null ? { ship: input, turbo } : { ship: input, turbo, choose },
+    );
     this.notifyEnd();
     return events;
   }
