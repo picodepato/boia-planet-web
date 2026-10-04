@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T121: No reward from dev-shortcut starts in production; Cañón sample copy
+
+Qué existe:
+- **Partidas de prueba sin premio en producción.** `WorldMinigameSession` (`packages/engine/src/minigames/world-session.ts`) acepta `devStart` (empezada con un atajo que cambia la partida) y `devStartRewards` (si el build deja cobrar a esas partidas; por defecto, no). `testStart` = algo saltado con `&t=` (`skippedMs > 0`) o `devStart`. Sin permiso, la sesión se liquida igual (una vez, con su validación) pero el libro no se llama: ni premio, ni `win_minigame` (que `withWinSignal` emite al llamar al libro), ni logro `canon`, ni progreso de `guardacostas`. El premio sale `{ granted: false, reason: 'test_start' }` (nuevo motivo en `RewardOutcome`, `rewards.ts`); una partida de prueba perdida sigue diciendo `not_won`. Cantidades y política del premio, sin cambios.
+- **Quién decide** (`apps/web/app/mar/survivors.ts`): `devStartRewards(env)` = `pnpm dev` (`NODE_ENV !== 'production'`) o el servidor de las e2e (`navigator.webdriver`; las e2e corren contra `next build` + `next start`, así que el build es de producción); en producción con `?dev=1` (los atajos encendidos sólo por la URL), nunca. `isDevStart({ t, seed, card })`: `&t=`, `&seed=` y `&carta=1` hacen la partida de prueba; `&derrota=` no (sólo cambia cómo se ve). `useCanonMode.start` (`canon-mode.tsx`) pasa los dos a la sesión; «Otra vez» y el panel de la isla empiezan partidas normales.
+- **Pantalla final:** `prizeLine` da `mar.canon.premio.prueba` («Partida de prueba (empezada con un atajo): no da premio.», muestra) y `data-premio="test_start"`.
+- **Textos de muestra:** `minigame.canon.title` → «Que no pare la música» (el del panel; también su fila en `docs/propuestas/textos-zonas.md`, que `zonas.test.ts` compara con el catálogo); descripción del logro `canon` → «Aguanta en el Cañón hasta el amanecer.» (`packages/store/src/sample/progress.ts`). Ids, premios y lógica de logros, sin cambios.
+- **Pruebas:** `world-canon.test.ts` (sesión de prueba sin permiso → `test_start`, el libro no se llama, perdida → `not_won`, normal sigue cobrando; la prueba de `&t=` de T119 pasa `devStartRewards: true`); `survivors.test.ts` (`isDevStart`, `devStartRewards` por entorno, producción con `?dev=1` sin premio ni señal y la normal cobra una vez por temporada, dev/e2e cobran con `&t=`; el título del registro = el del panel); `canon-hud-model.test.ts` (línea de premio `test_start`); e2e nueva en `mar-canon.spec.ts`: sin `navigator.webdriver` (init script) y con `?dev=1&minijuego=canon&t=419&seed=3`, «¡Amanece!» con `data-premio="test_start"`, la línea de prueba, saldos iguales y el logro `canon` sin quedar listo.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/minigames apps/web/app/mar/survivors.test.ts apps/web/app/mar/canon-hud-model.test.ts apps/web/lib/mundo packages/store` → exit 0, 46 archivos, 404 pruebas
+- `E2E_PORT=3191 pnpm e2e mar-canon.spec.ts logros.spec.ts --workers=1` → exit 0, 36 passed, 2 skipped (las capturas de logros), móvil y escritorio
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 139 archivos, 1248 pruebas
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+
+Pendiente:
+- `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md` (líneas 50–53) aún dice que una partida de `t=` puede dar el premio; ahora sólo en local/e2e, no en producción con `?dev=1` (fuera del alcance de esta tarea).
+- Título del logro `canon` («Ni un tiburón»), `minigame.canon.summary`/`howto.*` y `docs/propuestas/logros-catalogo.md` siguen con el juego viejo (muestra; claves sin uso en código salvo el logro).
+
 ## 2026-10-04 — plan 010 T110: Blender Benidorm skyline and club asset (Codex)
 
 Place ID `fotos` ("Isla de Benidorm"). No runtime/map/collision/route change.

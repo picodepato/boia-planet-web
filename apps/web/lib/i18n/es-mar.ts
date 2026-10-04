@@ -262,4 +262,6 @@ export const esMar = {
   'mar.canon.premio.ganado': '+{puntos} puntos y +{monedas} monedas',
   'mar.canon.premio.repetido': 'Ya cobraste el premio del amanecer esta temporada.',
   'mar.canon.premio.no': 'Esta partida no da premio.',
+  // Una partida de prueba (empezada con un atajo de desarrollo) en producción (T121). muestra
+  'mar.canon.premio.prueba': 'Partida de prueba (empezada con un atajo): no da premio.',
 } as const;

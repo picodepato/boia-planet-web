@@ -422,7 +422,7 @@ export const esZonas = {
     'Los tiburones rondan la cala y asustan a los bañistas. Este cañón dispara bolas de agua: nadie sale herido, sólo mojado.',
   'world.acuarela.canon.body':
     "La Torre de l'Illeta ahuyenta tiburones a cañonazos de agua. Ni un rasguño: sólo sustos.",
-  'minigame.canon.title': 'Cañón contra tiburones',
+  'minigame.canon.title': 'Que no pare la música',
   'minigame.canon.summary':
     'Apunta, calcula dónde cae la bola y ahuyenta a tres tiburones antes de quedarte sin bolas.',
   'minigame.canon.howto.1': 'Arrastra para apuntar (o usa el ratón o las flechas).',

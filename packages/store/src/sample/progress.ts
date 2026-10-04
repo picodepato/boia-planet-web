@@ -159,7 +159,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   {
     id: 'canon',
     title: 'Ni un tiburón',
-    description: 'Gana Cañón contra tiburones.',
+    description: 'Aguanta en el Cañón hasta el amanecer.',
     trigger: 'win_minigame',
     triggerParams: { game: 'canon' },
     points: 60,

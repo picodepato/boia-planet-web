@@ -27,7 +27,18 @@ export type RewardOutcome =
   | { granted: true; points: number; coins: number }
   | {
       granted: false;
-      reason: InvalidReason | 'not_won' | 'duplicate' | 'record_only' | 'no_sink' | 'error';
+      /**
+       * `test_start`: una partida de prueba (empezada con un atajo de
+       * desarrollo que cambia el juego) en un build de producción (T121).
+       */
+      reason:
+        | InvalidReason
+        | 'not_won'
+        | 'duplicate'
+        | 'record_only'
+        | 'no_sink'
+        | 'error'
+        | 'test_start';
     };
 
 export const minigameSourceRef = (id: MinigameId) => `minigame:${id}`;

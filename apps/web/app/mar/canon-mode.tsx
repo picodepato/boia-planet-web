@@ -27,6 +27,8 @@ import {
   canonBlockKey,
   canonShortcut,
   devShortcutsEnabled,
+  devStartRewards,
+  isDevStart,
   nextDefeatStyle,
   startDefeatStyle,
   hideForGame,
@@ -49,6 +51,8 @@ import {
  * llega al amanecer, el premio de siempre (150 puntos y 50 monedas una vez
  * por temporada) y la señal `win_minigame` de los logros `canon` y
  * `guardacostas`. Salir a mitad (o 5 min en pausa) abandona la sesión.
+ * Una partida de prueba (`&t=`, `&seed=`, `&carta=1`) sólo da premio en
+ * `pnpm dev` y en las e2e; en producción, con `?dev=1`, no (T121).
  */
 
 const EMPTY: ReadonlySet<HideLayer> = new Set();
@@ -249,8 +253,10 @@ export function useCanonMode({
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (!g.startSurvivors(run)) return false;
-      if (card && devShortcutsEnabled()) run.devLevelUp();
+      const gift = card && devShortcutsEnabled();
+      if (gift) run.devLevelUp();
       // La sesión de la partida (REQ-AVE-038): su semilla y lo que se saltó con `&t=`.
+      // Una partida de prueba (atajo que la cambia) no da premio en producción (T121).
       const getSink = latest.current.rewards?.() ?? null;
       sessionRef.current = new WorldMinigameSession({
         def: canonEntry,
@@ -262,6 +268,8 @@ export function useCanonMode({
         currentConfig: () => canonConfigFor(run.config),
         seed: run.seed,
         skippedS: run.snapshot().activeS,
+        devStart: isDevStart({ t, seed, card: gift }),
+        devStartRewards: devStartRewards(),
       });
       setEnded(false);
       setReward(null);

@@ -278,7 +278,7 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
     ).toEqual({ valid: false, reason: 'mismatch' });
   });
 
-  it('el atajo `&t=`: lo saltado cuenta para la marca pero no frente al reloj, y queda en el libro', async () => {
+  it('el atajo `&t=` (donde da premio: dev y e2e): lo saltado cuenta para la marca pero no frente al reloj, y queda en el libro', async () => {
     const c = clock();
     const authority = new LocalSessionAuthority(c.now);
     const { sink, calls } = seasonLedger();
@@ -292,6 +292,7 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
       sink,
       seed,
       skippedS: game.activeS,
+      devStartRewards: true,
     });
     while (!game.ended) {
       game.step({ choose: 0 });
@@ -303,6 +304,8 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
     expect(r.reward.granted).toBe(true);
     expect(calls[0]?.metadata).toMatchObject({ skippedMs: 415_000 });
 
+    expect(s.testStart).toBe(true);
+
     // Sin decirlo a la sesión, 7:00 en 5 s de reloj no son posibles.
     const hidden = new WorldMinigameSession({ def: canon, config, authority, sink, seed });
     c.advance(5_000);
@@ -310,5 +313,51 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
       valid: false,
       reason: 'implausible_duration',
     });
+  });
+  it('una partida de prueba sin permiso (producción) se liquida pero no toca el libro (T121)', async () => {
+    const c = clock();
+    const authority = new LocalSessionAuthority(c.now);
+    const { sink } = seasonLedger();
+    const config = canonConfigFor(quiet);
+    const won = async (o: { skippedS?: number; devStart?: boolean }) => {
+      const game = createSurvivors(quiet, 31, openSea, o.skippedS ? { startAtS: o.skippedS } : {});
+      const s = new WorldMinigameSession({
+        def: canon,
+        config,
+        authority,
+        sink,
+        seed: 31,
+        skippedS: game.activeS,
+        ...(o.devStart ? { devStart: true } : {}),
+      });
+      while (!game.ended) {
+        game.step({ choose: 0 });
+        c.advance(1000 / 60);
+      }
+      expect(s.testStart).toBe(true);
+      return s.finish(canonEnd(game.snapshot().end!, game.activeS));
+    };
+    // Por defecto no se permite: `&t=` o una semilla elegida no cobran.
+    for (const o of [{ skippedS: 415 }, { devStart: true }]) {
+      const r = await won(o);
+      expect(r.validation).toEqual({ valid: true });
+      expect(r.reward).toEqual({ granted: false, reason: 'test_start' });
+    }
+    expect(sink.grantWorldReward).not.toHaveBeenCalled();
+
+    // Una partida de prueba perdida dice que se perdió, no que era de prueba.
+    const lost = new WorldMinigameSession({ def: canon, config, authority, sink, skippedS: 200 });
+    c.advance(10_000);
+    expect((await lost.finish(canonEnd('flooded', 210))).reward).toEqual({
+      granted: false,
+      reason: 'not_won',
+    });
+
+    // Una partida normal sigue cobrando.
+    const normal = new WorldMinigameSession({ def: canon, config, authority, sink });
+    expect(normal.testStart).toBe(false);
+    const { game } = playToEnd(quiet, normal.seed, c.advance);
+    expect((await normal.finish(canonEnd('survived', game.activeS))).reward.granted).toBe(true);
+    expect(sink.grantWorldReward).toHaveBeenCalledTimes(1);
   });
 });

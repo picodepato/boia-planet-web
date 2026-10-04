@@ -12,6 +12,13 @@ import type { BaseConfig, MinigameEntry, Outcome, ResultReason } from './types';
  *
  * Un abandono (más de 5 min en pausa, o salir de la página a mitad) deja la
  * sesión invalidada: no da premio.
+ *
+ * Una partida de prueba (T121) —empezada con un atajo de desarrollo que
+ * cambia el juego: saltar tiempo con `&t=`, una semilla elegida, una carta
+ * regalada…— sólo da premio si el build lo permite (`devStartRewards`: en
+ * `pnpm dev` y en las e2e, nunca en producción, ni con `?dev=1`). Si no, se
+ * liquida igual pero el libro no se toca: ni premio, ni `win_minigame`, ni
+ * logros (`test_start`). Por defecto no lo permite.
  */
 
 export interface WorldGameEnd {
@@ -37,8 +44,15 @@ export interface WorldSessionOptions<C extends BaseConfig> {
   currentConfig?: () => C;
   /** Semilla pedida (atajo `&seed=`); sin ella, la sesión elige una. */
   seed?: number;
-  /** s de juego saltados al empezar (atajo `&t=`). */
+  /** s de juego saltados al empezar (atajo `&t=`): ya la hace partida de prueba. */
   skippedS?: number;
+  /**
+   * Empezada con otro atajo de desarrollo que cambia la partida (semilla
+   * elegida, carta de nivel regalada…): partida de prueba.
+   */
+  devStart?: boolean;
+  /** ¿Una partida de prueba puede dar el premio en este build? Por defecto, no. */
+  devStartRewards?: boolean;
 }
 
 export class WorldMinigameSession<C extends BaseConfig = BaseConfig> {
@@ -57,6 +71,11 @@ export class WorldMinigameSession<C extends BaseConfig = BaseConfig> {
 
   get seed(): number {
     return this.session.seed;
+  }
+
+  /** ¿Es una partida de prueba (algo saltado o empezada con un atajo que la cambia)? */
+  get testStart(): boolean {
+    return this.session.skippedMs > 0 || this.o.devStart === true;
   }
 
   /** ¿Sigue contando para premio? */
@@ -96,7 +115,17 @@ export class WorldMinigameSession<C extends BaseConfig = BaseConfig> {
 
   private async settle(result: MinigameResult): Promise<WorldSettlement> {
     const validation = this.o.authority.settle(result, this.o.currentConfig?.());
-    const reward = await grantMinigameReward(this.o.sink, this.config.reward, result, validation);
+    // Partida de prueba sin permiso: el libro ni se entera (nada de `win_minigame`).
+    const forfeit = this.testStart && this.o.devStartRewards !== true;
+    const reward = await grantMinigameReward(
+      forfeit ? null : this.o.sink,
+      this.config.reward,
+      result,
+      validation,
+    );
+    if (forfeit && !reward.granted && reward.reason === 'no_sink') {
+      return { result, validation, reward: { granted: false, reason: 'test_start' } };
+    }
     return { result, validation, reward };
   }
 }

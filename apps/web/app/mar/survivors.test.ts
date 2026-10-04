@@ -11,9 +11,17 @@ import {
   createSurvivors,
   survivorsShipConfig,
 } from '@boia/engine/survivors';
+import {
+  LocalSessionAuthority,
+  type MinigameRewardSink,
+  WorldMinigameSession,
+  canon,
+  canonEnd,
+} from '@boia/engine/minigames';
 import { WORLD_REGISTRY } from '@boia/world';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { es } from '../../lib/i18n/es';
+import { withWinSignal } from '../../lib/mundo/minigame-layer';
 import { marWorld } from './engine/compact';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import { SurvivorsView } from './engine/survivors-view';
@@ -29,8 +37,10 @@ import {
   canonBlockKey,
   canonShortcut,
   devShortcutsEnabled,
+  devStartRewards,
   hiddenDuringGame,
   hideForGame,
+  isDevStart,
   islandPinsOnly,
   marHideHost,
   survivorsSea,
@@ -319,6 +329,116 @@ describe('bloqueo en carrera', () => {
     }
     expect(es['mar.canon.title']).toBeTruthy();
     expect(es['mar.canon.summary']).toBeTruthy();
+    // El título del registro ya no es el del cañón 2D: el mismo que el panel (T121).
+    expect(es['minigame.canon.title']).toBe(es['mar.canon.title']);
+  });
+});
+
+describe('partidas de prueba: sin premio en producción (T121)', () => {
+  it('un atajo que cambia la partida la hace de prueba; el estilo de derrota, no', () => {
+    expect(isDevStart({ t: 419 })).toBe(true);
+    expect(isDevStart({ seed: 7 })).toBe(true);
+    expect(isDevStart({ card: true })).toBe(true);
+    expect(isDevStart({})).toBe(false);
+    expect(isDevStart({ t: 0, seed: null, card: false })).toBe(false);
+    // `?minijuego=canon&derrota=puf` sólo cambia cómo se ve.
+    const sc = canonShortcut('?minijuego=canon&derrota=puf', env({ nodeEnv: 'development' }))!;
+    expect(isDevStart(sc)).toBe(false);
+    expect(isDevStart(canonShortcut('?minijuego=canon&t=419', env({ webdriver: true }))!)).toBe(
+      true,
+    );
+  });
+
+  it('una partida de prueba da premio en `pnpm dev` y en las e2e; en producción nunca, ni con ?dev=1', () => {
+    expect(devStartRewards(env({ nodeEnv: 'development' }))).toBe(true);
+    expect(devStartRewards(env({ webdriver: true }))).toBe(true);
+    expect(devStartRewards(env({ webdriver: true, search: '?dev=1' }))).toBe(true);
+    // Los atajos se encienden con ?dev=1, pero el premio no.
+    const prod = env({ search: '?dev=1&minijuego=canon&t=419' });
+    expect(devShortcutsEnabled(prod)).toBe(true);
+    expect(devStartRewards(prod)).toBe(false);
+    expect(devStartRewards(env({}))).toBe(false);
+  });
+
+  /** Una partida que llega al amanecer, con la sesión y el libro como en `canon-mode`. */
+  async function survive(
+    authority: LocalSessionAuthority,
+    advance: (ms: number) => void,
+    sink: MinigameRewardSink,
+    onWin: (game: string) => void,
+    o: { skippedS?: number; devStart?: boolean; devStartRewards: boolean },
+  ) {
+    const s = new WorldMinigameSession({
+      def: canon,
+      authority,
+      sink: withWinSignal(sink, CANON_GAME_ID, onWin),
+      ...(o.skippedS ? { skippedS: o.skippedS } : {}),
+      ...(o.devStart ? { devStart: true } : {}),
+      devStartRewards: o.devStartRewards,
+    });
+    const durationS = canon.defaults.timeLimitS;
+    advance((durationS - (o.skippedS ?? 0)) * 1000);
+    return s.finish(canonEnd('survived', durationS));
+  }
+
+  function harness() {
+    let now = Date.UTC(2026, 9, 4, 20);
+    const authority = new LocalSessionAuthority(() => now);
+    const paid = new Set<string>();
+    const sink: MinigameRewardSink = {
+      grantWorldReward: vi.fn(async (input) => {
+        if (paid.has(input.sourceRef)) return { granted: false, reason: 'duplicate' };
+        paid.add(input.sourceRef);
+        return { granted: true };
+      }),
+    };
+    const onWin = vi.fn();
+    return { authority, advance: (ms: number) => (now += ms), sink, onWin };
+  }
+
+  it('en producción, `&t=` o un atajo que cambia la partida: ni premio, ni `win_minigame`, ni logros', async () => {
+    const h = harness();
+    const rewards = devStartRewards(env({ search: '?dev=1' }));
+    const lastSecond = canon.defaults.timeLimitS - 1;
+    for (const o of [
+      { skippedS: lastSecond, devStartRewards: rewards },
+      { devStart: true, devStartRewards: rewards },
+    ]) {
+      const r = await survive(h.authority, h.advance, h.sink, h.onWin, o);
+      expect(r.validation).toEqual({ valid: true });
+      expect(r.reward).toEqual({ granted: false, reason: 'test_start' });
+    }
+    expect(h.sink.grantWorldReward).not.toHaveBeenCalled();
+    expect(h.onWin).not.toHaveBeenCalled();
+
+    // Una partida normal después sí cobra, una vez por temporada, con su señal.
+    const normal = await survive(h.authority, h.advance, h.sink, h.onWin, {
+      devStartRewards: rewards,
+    });
+    expect(normal.reward).toEqual({
+      granted: true,
+      points: canon.defaults.reward.points,
+      coins: canon.defaults.reward.coins,
+    });
+    expect(h.onWin).toHaveBeenCalledWith(CANON_GAME_ID);
+    const again = await survive(h.authority, h.advance, h.sink, h.onWin, {
+      devStartRewards: rewards,
+    });
+    expect(again.reward).toEqual({ granted: false, reason: 'duplicate' });
+  });
+
+  it('en `pnpm dev` y en las e2e, la partida de `&t=` sigue cobrando (una vez)', async () => {
+    for (const e of [env({ nodeEnv: 'development' }), env({ webdriver: true })]) {
+      const h = harness();
+      const r = await survive(h.authority, h.advance, h.sink, h.onWin, {
+        skippedS: canon.defaults.timeLimitS - 1,
+        devStart: true,
+        devStartRewards: devStartRewards(e),
+      });
+      expect(r.reward.granted).toBe(true);
+      expect(h.sink.grantWorldReward).toHaveBeenCalledTimes(1);
+      expect(h.onWin).toHaveBeenCalledWith(CANON_GAME_ID);
+    }
   });
 });
 

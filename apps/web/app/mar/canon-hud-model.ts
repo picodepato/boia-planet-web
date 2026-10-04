@@ -236,5 +236,7 @@ export function prizeLine(
   }
   if (reward.reason === 'not_won') return null;
   if (reward.reason === 'duplicate') return { key: 'mar.canon.premio.repetido' };
+  // Partida de prueba (atajo de desarrollo) en producción: sin premio (T121).
+  if (reward.reason === 'test_start') return { key: 'mar.canon.premio.prueba' };
   return { key: 'mar.canon.premio.no' };
 }

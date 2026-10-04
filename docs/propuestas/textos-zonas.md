@@ -612,7 +612,7 @@ Primera sección del Menú de a bordo (v14 §19).
 | `island.canon.name` | L'Illeta dels Banyets | Nombre común (2026-10-02); en Acuarela, «Torre de l'Illeta» |
 | `world.arcilla.canon.body` | Los tiburones rondan la cala y asustan a los bañistas. Este cañón dispara bolas de agua: nadie sale herido, sólo mojado. | |
 | `world.acuarela.canon.body` | La Torre de l'Illeta ahuyenta tiburones a cañonazos de agua. Ni un rasguño: sólo sustos. | |
-| `minigame.canon.title` | Cañón contra tiburones | |
+| `minigame.canon.title` | Que no pare la música | Desde el plan 010 (T121): el modo de sobrevivir hasta el amanecer, como `mar.canon.title` |
 | `minigame.canon.summary` | Apunta, calcula dónde cae la bola y ahuyenta a tres tiburones antes de quedarte sin bolas. | |
 | `minigame.canon.howto.1` | Arrastra para apuntar (o usa el ratón o las flechas). | |
 | `minigame.canon.howto.2` | La línea de puntos te dice más o menos dónde caerá la bola. | |

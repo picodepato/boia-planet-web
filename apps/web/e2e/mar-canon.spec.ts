@@ -22,6 +22,9 @@ import { mar, marSheet, openMar, shipAt, steerTo } from './mar-helpers';
  * final) y su premio de 150 puntos y 50 monedas una sola vez por temporada
  * (con el logro `canon` listo para reclamar), el abandono tras más de 5 min
  * en pausa y la Boia Fiestera que sigue a bordo durante una partida.
+ *
+ * T121: en producción (sin Playwright al mando, con `?dev=1`), una partida
+ * empezada con `&t=` no da premio ni logro, y la pantalla final lo dice.
  */
 
 test.describe.configure({ timeout: 240_000 });
@@ -540,6 +543,36 @@ test('llegar al amanecer da 150 puntos y 50 monedas una vez por temporada, y el 
   await expect(prize(page)).toHaveText(msg('mar.canon.premio.repetido'));
   await page.waitForTimeout(1000);
   expect(await balances(page)).toEqual(again);
+  expect(errors).toEqual([]);
+});
+
+test('en producción, con `?dev=1`, una partida de `&t=` llega al amanecer pero no da premio ni logro (T121)', async ({
+  page,
+}) => {
+  // Como un navegador cualquiera: sin `navigator.webdriver`, los atajos sólo
+  // se encienden con `?dev=1` (el servidor de las e2e es un build de producción).
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false });
+  });
+  const errors = await openMar(page, '?dev=1&minijuego=canon&t=419&seed=3');
+  expect(await page.evaluate(() => navigator.webdriver)).toBe(false);
+  await expect(game(page)).toHaveAttribute('data-semilla', '3');
+  const before = await balances(page);
+  const end = page.getByTestId('mar-canon-final');
+  await expect(end).toBeVisible({ timeout: 60_000 });
+  await expect(game(page)).toHaveAttribute('data-fin', 'survived');
+  await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.amanece'));
+  await expect(game(page)).toHaveAttribute('data-premio', 'test_start', { timeout: 15_000 });
+  await expect(prize(page)).toHaveText(msg('mar.canon.premio.prueba'));
+  await page.waitForTimeout(1000);
+  expect(await balances(page)).toEqual(before);
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  // Sin `win_minigame`: el logro «canon» no queda listo para reclamar.
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  await expect(page.getByTestId('logro-canon')).toBeVisible();
+  await expect(page.getByTestId('logro-canon')).not.toHaveAttribute('data-estado', 'ready');
   expect(errors).toEqual([]);
 });
 

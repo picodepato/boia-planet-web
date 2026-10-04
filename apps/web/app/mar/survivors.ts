@@ -80,6 +80,26 @@ export function devShortcutsEnabled(env: DevEnv = devEnv()): boolean {
   return new URLSearchParams(env.search).get(CANON_PARAMS.dev) === '1';
 }
 
+/**
+ * ¿Puede una partida de prueba (empezada con un atajo que la cambia) dar el
+ * premio de verdad? (T121) En `pnpm dev` y en el servidor de las e2e (un
+ * build de producción que maneja Playwright: `navigator.webdriver`), sí;
+ * en producción, nunca, tampoco con `?dev=1`: si no, cualquiera cobraría
+ * 150 puntos y 50 monedas con `?dev=1&minijuego=canon&t=419`.
+ */
+export function devStartRewards(env: DevEnv = devEnv()): boolean {
+  return env.nodeEnv !== 'production' || env.webdriver;
+}
+
+/**
+ * ¿La partida es de prueba? Lo es si un atajo cambia el juego: `&t=` (se
+ * salta tiempo), `&seed=` (una semilla elegida se puede ensayar) o
+ * `&carta=1` (un nivel regalado). `&derrota=` sólo cambia cómo se ve: no.
+ */
+export function isDevStart(s: { t?: number; seed?: number | null; card?: boolean }): boolean {
+  return (s.t ?? 0) > 0 || (s.seed ?? null) !== null || s.card === true;
+}
+
 export interface CanonShortcut {
   /** Segundo de la partida en el que empieza (0: desde el principio). */
   t: number;

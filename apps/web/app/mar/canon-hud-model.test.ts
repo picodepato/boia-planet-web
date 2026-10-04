@@ -209,10 +209,15 @@ describe('el premio en la pantalla final (T119)', () => {
       expect(canonPrize({ granted: false, reason })).toBe(reason);
       expect(prizeLine({ granted: false, reason })?.key).toBe('mar.canon.premio.no');
     }
+    // Partida de prueba (atajo de desarrollo) en producción: lo dice (T121).
+    const test = { granted: false as const, reason: 'test_start' as const };
+    expect(canonPrize(test)).toBe('test_start');
+    expect(prizeLine(test)?.key).toBe('mar.canon.premio.prueba');
     for (const key of [
       'mar.canon.premio.ganado',
       'mar.canon.premio.repetido',
       'mar.canon.premio.no',
+      'mar.canon.premio.prueba',
     ] as const) {
       expect(es[key]).toBeTruthy();
     }
