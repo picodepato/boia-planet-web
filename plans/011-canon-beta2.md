@@ -207,6 +207,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-05 T127: `WeaponDef` = base + levels[] with gains; `resolveWeaponStats(def, level, mods)` single hook for T129; sim API addWeapon/levelUpWeapon/weaponLevel/heldWeapons, 4-slot limit left to T129; confetti and rockets share `projectiles` (tagged weapon/kind); new cap `areas` 12/6; separate `weaponRng`; i18n keys `survivors.weapon.<id>`/.l2–.l5 only in config (texts T129/T130) (agent)
 - 2026-10-05 plan: T129 (Opus task) goes to Codex as Hernán asked; T126 stays on Opus (orchestrator)
+- 2026-10-05 plan: when T132 is integrated and the final test command passes on main, push `main` to Vercel automatically, without waiting for a Telegram answer, and send the Telegram notice with the link (Hernán, in the session; applies to this push only)
 
 ## Proposals (new scope)
 
@@ -231,3 +232,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 01:03 T127 integration tests_failed (typecheck: T124's turbo-ramps.test.ts uses WeaponDef.damage), main reverted (429dd6b); sent back to the same agent to merge main and adapt
 - 2026-10-05 01:06 T126 launched · attempt 1 · agent aaee154a770efe4d0 (opus)
 - 2026-10-05 01:12 T127 done · branch worktree-agent-afe2ea8cb160da524 → c935479
+- 2026-10-05 01:16 T129 launched · attempt 1 · Codex via wrapper agent a065490accc632542
+- 2026-10-05 01:15 Telegram wait for push-T127 crashed on a stale lock (dead pid 25728, os.kill on Windows); lock removed by hand, wait restarted
+- 2026-10-05 01:20 Hernán authorised an automatic push to Vercel once T132 is done
