@@ -6,6 +6,7 @@ import type {
   SurvivorsStatus,
   UpgradeId,
 } from '@boia/engine/survivors';
+import type { RewardOutcome } from '@boia/engine/minigames';
 import type { MessageKey } from '../../lib/i18n';
 
 /**
@@ -203,3 +204,37 @@ export const END_KEYS: Readonly<Record<CanonEndReason, { title: MessageKey; line
   survived: { title: 'mar.canon.fin.amanece', line: 'mar.canon.fin.amanece.texto' },
   flooded: { title: 'mar.canon.fin.inundado', line: 'mar.canon.fin.inundado.texto' },
 };
+
+// --- Premio (T119) ---------------------------------------------------------------
+
+/**
+ * El premio de la partida, para la pantalla final y las pruebas: `pending`
+ * mientras se liquida la sesión; después, `granted` o el motivo de que no
+ * (`not_won`, `duplicate`, `abandoned`, `implausible_duration`…).
+ */
+export type CanonPrize =
+  'pending' | 'granted' | Exclude<RewardOutcome, { granted: true }>['reason'];
+
+export function canonPrize(reward: RewardOutcome | null): CanonPrize {
+  if (!reward) return 'pending';
+  return reward.granted ? 'granted' : reward.reason;
+}
+
+/**
+ * La línea del premio en la pantalla final, o null si no hay nada que decir
+ * (aún liquidándose, o la partida no se ganó: el final ya lo dice).
+ */
+export function prizeLine(
+  reward: RewardOutcome | null,
+): { key: MessageKey; params?: Record<string, number> } | null {
+  if (!reward) return null;
+  if (reward.granted) {
+    return {
+      key: 'mar.canon.premio.ganado',
+      params: { puntos: reward.points, monedas: reward.coins },
+    };
+  }
+  if (reward.reason === 'not_won') return null;
+  if (reward.reason === 'duplicate') return { key: 'mar.canon.premio.repetido' };
+  return { key: 'mar.canon.premio.no' };
+}

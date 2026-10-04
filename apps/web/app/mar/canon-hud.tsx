@@ -16,6 +16,7 @@ import {
   cardKeys,
   formatClock,
   formatPlayed,
+  prizeLine,
   sameView,
   waterLevelOf,
 } from './canon-hud-model';
@@ -104,7 +105,13 @@ export function CanonLayer({
         <CanonCards card={view.card} capacity={view.waterCapacity} onChoose={canon.choose} />
       ) : null}
       {canon.result && !covered ? (
-        <CanonEnd result={canon.result} onAgain={canon.again} onBack={canon.backToSea} />
+        <CanonEnd
+          result={canon.result}
+          prize={canon.prize}
+          reward={canon.reward}
+          onAgain={canon.again}
+          onBack={canon.backToSea}
+        />
       ) : null}
       {canon.notice ? <CanonNotice onClose={canon.dismissNotice} /> : null}
       {canon.fading ? <div className="mar-canon-fade" aria-hidden="true" /> : null}
@@ -348,10 +355,14 @@ export function CanonCards({
 /** La pantalla final: «¡Amanece!» o «¡Barco inundado!», el tiempo, enemigos y notas. */
 function CanonEnd({
   result,
+  prize,
+  reward,
   onAgain,
   onBack,
 }: {
   result: CanonResult;
+  prize: CanonMode['prize'];
+  reward: CanonMode['reward'];
   onAgain: () => void;
   onBack: () => void;
 }) {
@@ -359,6 +370,7 @@ function CanonEnd({
   const again = useRef<HTMLButtonElement>(null);
   useEffect(() => again.current?.focus({ preventScroll: true }), []);
   const keys = END_KEYS[result.reason];
+  const line = prizeLine(reward);
   return (
     <div className="mar-canon-endwrap">
       <section
@@ -389,6 +401,15 @@ function CanonEnd({
         </dl>
         <p className="mar-canon-end__level">
           {msg('mar.canon.fin.nivel', { nivel: result.level })}
+        </p>
+        {/* El premio (T119): «+150 puntos y +50 monedas», o por qué no. */}
+        <p
+          className="mar-canon-end__prize"
+          data-testid="mar-canon-final-premio"
+          data-premio={prize ?? undefined}
+          role="status"
+        >
+          {line ? msg(line.key, line.params) : null}
         </p>
         <div className="mar-canon-end__actions">
           <button

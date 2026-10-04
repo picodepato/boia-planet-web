@@ -4,6 +4,32 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T119: Remove the 2D canon, session and reward, full e2e of the mode, docs and the beta test guide
+
+Qué existe:
+- **Cañón 2D quitado:** `packages/engine/src/minigames/canon.ts` borrado, con sus bots (`testing.ts`), su parte de `minigames.test.ts` (las pruebas compartidas con el Faro se quedan sólo con el Faro, que no cambia) y el arrastre de `host.ts`. `?minijuego=canon` ya no abre la capa 2D.
+- **El registro** guarda dos clases de juego (`types.ts`): `MinigameEntry` (id, panel, configuración y `minPlausibleMs`) y `MinigameDefinition` (la de la capa 2D, con simulación). `canon` sigue en `MINIGAME_REGISTRY` sólo para su id, sesión, validación y premio (`minigames/world-canon.ts`); `layerMinigame(id)` da sólo los de la capa (el Faro); `mountMinigame` y `MinigameLayer` rechazan el Cañón.
+- **Sesión del Cañón en el mar** (`minigames/world-session.ts`, `WorldMinigameSession`): `useCanonMode` (`apps/web/app/mar/canon-mode.tsx`) la abre al empezar con la semilla de la partida y lo saltado con `&t=`, y la liquida una vez al acabar (`canonEnd(reason, activeS)`). Configuración de sesión versión 4 (`canonConfigFor(SURVIVORS_CONFIG)`): `goal` = `timeLimitS` = 420 s, la huella de la config del modo dentro (cualquier cambio de equilibrio cambia el `configHash`), premio 150 puntos + 50 monedas `season`. Marca = segundos enteros de tiempo activo; `won` sólo con `survived`; `minPlausibleMs(score) = score·1000`.
+- **Validación por tiempo activo** (`session.ts`): las pausas no cuentan ni invalidan; un abandono (más de 5 min en pausa o salir de `/mar` a mitad) invalida; la sesión guarda `skippedMs` del atajo `&t=`, que cuenta para la marca pero no frente al reloj, y el libro lo apunta en `metadata.skippedMs`. `LocalSessionAuthority.open` acepta `{ seed, skippedMs }`.
+- **Premio y logros:** el libro es `repo.progress` (`rewards: progressApi` en `mar-client`) envuelto con `withWinSignal`, así que al ganar se emite `win_minigame` (`canon`, `guardacostas`) aunque el premio ya se cobrara. Supabase: la acción `minigame` con `minigame:canon` ya aceptaba `season`, 150/50 y metadatos ≤ 2000 bytes; no hizo falta migración.
+- **Pantalla final:** una línea de premio (`mar-canon-final-premio`): «+150 puntos y +50 monedas», «Ya cobraste el premio del amanecer esta temporada.» o «Esta partida no da premio.» (nada si se inundó). `data-premio` en `mar-canon` y en esa línea (`pending`, `granted`, `duplicate`, `not_won`, `abandoned`…). Claves `mar.canon.premio.*` (muestra).
+- **e2e nuevas** en `mar-canon.spec.ts` (móvil y escritorio): inundarse sin premio; amanecer con `&t=419` → +150/+50 una vez, logro `canon` listo, y otra visita ganada → `duplicate` sin cambiar saldos; abandono tras 5 min de pausa (pestaña oculta y reloj adelantado) con aviso y el mundo de vuelta; la Boia Fiestera sigue a bordo durante y después de una partida. `minijuegos.spec.ts`: sin el cañón 2D; la prueba de pausa y pestaña oculta pasa al Faro; una nueva comprueba que `?minijuego=canon` no abre la capa.
+- **Docs:** `docs/spec/estado.md` (REQ-MUN-026 HECHO con la nueva prueba; REQ-AVE-037 pasa a PARCIAL, pendiente de `puf`/`sumergirse`; REQ-AVE-038 HECHO con el ajuste por tiempo activo pendiente de decisión; REQ-AVE-035 y 039 PARCIAL con notas), `docs/TRASPASO.md` (sección «El Cañón en beta»), `README.md` (enlace a la guía), hoja de ruta de `docs/propuestas/2026-10-04-canon-survivors.md` renumerada (beta 1 = 010 … lanzamiento = 014) y la guía nueva `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/minigames packages/engine/src/survivors packages/store` → exit 0, 19 archivos, 214 pruebas (una corrida a la vez que un `next build` dio 2 fallos por tiempo; repetida sin carga, 0)
+- `grep -rn "minigames/canon" packages apps --include=*.ts --include=*.tsx` → sin resultados (exit 1)
+- `E2E_PORT=3219 pnpm e2e mar-canon.spec.ts minijuegos.spec.ts --workers=1` → exit 0, 34 passed (móvil y escritorio)
+- `E2E_PORT=3221 pnpm e2e logros.spec.ts mar-fiestera.spec.ts --workers=1` → exit 0, 16 passed, 2 skipped
+- `python3 tools/spec/estado.py` → exit 0 (HECHO 162, PARCIAL 66)
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 139 archivos, 1243 pruebas
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 186,9 kB de 200); `pnpm typecheck` → exit 0
+
+Pendiente:
+- Hernán: jugar la beta con la guía y apuntar las seis respuestas (entrada del plan 011).
+- Decisión final: `puf` o `sumergirse` (con `puf`, Álvaro aprueba el cambio de REQ-AVE-037) y validar por tiempo activo en el Cañón (REQ-AVE-038).
+- La descripción del logro `canon` («Gana Cañón contra tiburones.») y la clave `minigame.canon.title` aún nombran el juego viejo (contenido `muestra`, fuera de esta tarea).
+
 ## 2026-10-04 — plan 010 T118: HUD, water bar, level-up cards, pause with the /mar menu, end screen, BETA label
 
 Qué existe:

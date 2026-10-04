@@ -474,7 +474,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       );
       setMinigameOffer({ objectId: island?.identity.id ?? CANON_GAME_ID, gameId: CANON_GAME_ID });
     },
-    // La pantalla final (T118) la pinta `CanonLayer`; T119 apunta aquí la sesión y el premio.
+    // La pantalla final (T118) la pinta `CanonLayer`; la sesión y el premio, `useCanonMode` (T119).
+    rewards: progressApi,
   });
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
@@ -2220,7 +2221,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       ) : null}
 
       {/* El Cañón (T118): HUD, agua a bordo, cartas, final; su estado para las pruebas (T116). */}
-      <CanonTestHook hud={canon.hud} />
+      <CanonTestHook hud={canon.hud} prize={canon.prize} />
       <CanonDevSwitch canon={canon} />
       <CanonLayer
         canon={canon}

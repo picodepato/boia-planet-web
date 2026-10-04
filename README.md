@@ -47,6 +47,11 @@ E2E_PORT=3107 pnpm e2e --workers=2      # ~15 min; la primera vez: pnpm --filter
 - Las pruebas contra Supabase (`pnpm test:supabase` y las e2e con
   `E2E_SUPABASE=1`) van aparte: «Cuentas con Supabase», abajo. Sin las
   variables, todo lo de arriba corre en modo local.
+- El Cañón en beta (plan 010) se prueba a mano con atajos en la URL de
+  `/mar` (`?minijuego=canon&t=<s>&seed=<n>`; en producción, con `dev=1`):
+  [guía de prueba de la beta 1](docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md),
+  con los valores de manejo y cámara que se tocan en
+  `packages/engine/src/survivors/config.ts`.
 - Los textos de la interfaz viven en `apps/web/lib/i18n/` por clave
   (REQ-ARQ-020). Los de [`docs/propuestas/textos-zonas.md`](docs/propuestas/textos-zonas.md)
   se copian con `pnpm --filter @boia/web i18n:zonas`; una prueba avisa si el

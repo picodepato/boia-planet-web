@@ -3,6 +3,7 @@
 import {
   type MinigameRewardSink,
   isMinigameId,
+  layerMinigame,
   minigame,
   minigameSourceRef,
   mountMinigame,
@@ -20,13 +21,14 @@ import { t } from '../i18n';
  * `@boia/engine/minigames`, con su propia capa; aquí sólo:
  * - el panel de la isla Faro o Cañón al acercarse (evento `minigame` de
  *   INICIAR_MINIJUEGO), que explica la actividad y la abre con «Jugar»;
- * - la ruta de prueba `?minijuego=faro|canon`, que la abre directamente;
+ * - la ruta de prueba `?minijuego=faro`, que la abre directamente;
  * - la capa a pantalla completa, que al salir deja el barco donde estaba.
  *
- * Los juegos de `inWorld` (el Cañón desde el plan 009, T99) se juegan en el
+ * Los juegos de `inWorld` (el Cañón desde el plan 010) se juegan en el
  * propio mar: su panel los empieza con `onPlayInWorld` (o explica con
  * `blockedReason` por qué ahora no) y nunca se montan aquí, tampoco con
- * `?minijuego=`. El Faro sigue igual.
+ * `?minijuego=`; el Cañón ya no tiene capa 2D (T119): sólo se monta aquí lo
+ * que `layerMinigame` da (el Faro, que sigue igual).
  */
 
 export const MINIGAME_PARAM = 'minijuego';
@@ -111,12 +113,12 @@ export function MinigameLayer({
   // Ruta de prueba: ?minijuego=faro (los juegos del mar tienen su atajo en el mar).
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get(MINIGAME_PARAM);
-    if (isMinigameId(id) && !inWorldRef.current.includes(id)) setOpen(id);
+    if (id && layerMinigame(id) && !inWorldRef.current.includes(id)) setOpen(id);
   }, []);
 
   useEffect(() => {
     const host = hostRef.current;
-    if (!open || !host) return;
+    if (!open || !host || !layerMinigame(open)) return;
     const { world: w, settings: s, sink: getSink } = latest.current;
     const mounted = mountMinigame(host, {
       gameId: open,
@@ -199,6 +201,7 @@ export function MinigameLayer({
                 onPlayInWorld?.(def.id);
                 return;
               }
+              if (!layerMinigame(def.id)) return;
               setOpen(def.id);
               onDismiss();
             }}

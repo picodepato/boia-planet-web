@@ -1,21 +1,5 @@
 import { parseWorldConfig } from '@boia/world';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  CANON_DEFAULTS,
-  type CanonConfig,
-  type CanonFoe,
-  CanonSim,
-  aimFromPull,
-  ballAt,
-  canon,
-  canonMinPlausibleMs,
-  canonMultiplier,
-  canonPlan,
-  canonShot,
-  canonWave,
-  powerFor,
-  pullFor,
-} from './canon';
 import { MinigameController, STEP_S } from './controller';
 import {
   COAST_Y,
@@ -34,7 +18,7 @@ import { MINIGAME_REGISTRY } from './registry';
 import { minigameSkin } from './skin';
 import { type MinigameRewardSink, grantMinigameReward, policyText } from './rewards';
 import { LocalSessionAuthority, type MinigameResult } from './session';
-import { type Bot, canonExpert, canonWaster, faroExpert, playHeadless } from './testing';
+import { type Bot, faroExpert, playHeadless } from './testing';
 import type { BaseConfig, MinigameDefinition, SimEvent } from './types';
 import { MemoryStore } from '../ui/storage';
 import { simulate } from '../world/simulate';
@@ -76,7 +60,6 @@ function run(sim: { step: (dt: number, i: object) => SimEvent[] }, seconds: numb
 }
 
 const faroWith = (patch: Partial<FaroConfig>): FaroConfig => ({ ...FARO_DEFAULTS, ...patch });
-const canonWith = (patch: Partial<CanonConfig>): CanonConfig => ({ ...CANON_DEFAULTS, ...patch });
 
 /** Pone un barco del faro justo en la línea del haz recto (ángulo 0), listo para navegar. */
 function onBeam(sim: FaroSim, ship: FaroShip, y = 0.4) {
@@ -267,21 +250,16 @@ describe('partidas cortas (decisión 2026-10-02, T72)', () => {
   /** El ritmo de la versión 2 (T60), para comparar: 10 oleadas más lentas. */
   const V2 = {
     faro: { speed: 0.055, speedUp: 0.15 },
-    canon: { shark: 0.05, pirate: 0.035, speedUp: 0.12 },
   };
 
-  it('3 oleadas cada uno, y cada oleada más rápida que la misma de antes', () => {
-    expect([FARO_DEFAULTS.waves, CANON_DEFAULTS.waves]).toEqual([3, 3]);
+  // El cañón 2D se quitó en el plan 010 (T119); el Faro sigue igual.
+  it('3 oleadas, y cada oleada más rápida que la misma de antes', () => {
+    expect(FARO_DEFAULTS.waves).toBe(3);
     expect(faroPlan(7, FARO_DEFAULTS)).toHaveLength(3);
-    expect(canonPlan(7, CANON_DEFAULTS)).toHaveLength(3);
     for (let n = 1; n <= 3; n++) {
       expect(faroWave(FARO_DEFAULTS, n).speed).toBeGreaterThan(
         V2.faro.speed * (1 + V2.faro.speedUp * (n - 1)),
       );
-      const now = canonWave(CANON_DEFAULTS, n).speed;
-      const before = 1 + V2.canon.speedUp * (n - 1);
-      expect(CANON_DEFAULTS.shark.speed * now).toBeGreaterThan(V2.canon.shark * before);
-      expect(CANON_DEFAULTS.pirate.speed * now).toBeGreaterThan(V2.canon.pirate * before);
     }
   });
 
@@ -297,180 +275,6 @@ describe('partidas cortas (decisión 2026-10-02, T72)', () => {
 
   it('faro: terminarla da 150 puntos y 50 monedas, en menos de un minuto', () =>
     finish(faro as MinigameDefinition<BaseConfig>, faroExpert));
-
-  it('canon: terminarla da 150 puntos y 50 monedas, en menos de un minuto', () =>
-    finish(canon as MinigameDefinition<BaseConfig>, canonExpert));
-});
-
-describe('Cañón contra tiburones (T60)', () => {
-  const c = CANON_DEFAULTS;
-
-  /** Un cañón sin oleada: sólo los intrusos que se pongan a mano. */
-  function emptySim(config = c): CanonSim {
-    const sim = new CanonSim(1, config);
-    sim.foes.length = 0;
-    return sim;
-  }
-
-  function place(sim: CanonSim, kind: CanonFoe['kind'], x: number): CanonFoe {
-    const f: CanonFoe = {
-      id: 100 + sim.foes.length,
-      wave: 1,
-      kind,
-      spawnAt: 0,
-      x,
-      speed: 0,
-      hp: kind === 'pirate' ? c.pirate.hp : 1,
-      submerged: false,
-      diveTimer: 999,
-      state: 'swimming',
-    };
-    sim.foes.push(f);
-    return f;
-  }
-
-  /** Dispara con este ángulo y esta potencia y espera a que la bola caiga. */
-  function shoot(sim: CanonSim, angle: number, power: number): SimEvent[] {
-    const events = sim.step(STEP_S, { pull: pullFor(angle, power, c), action: true });
-    while (sim.balls.length) events.push(...sim.step(STEP_S, {}));
-    events.push(...run(sim, c.reloadS));
-    return events;
-  }
-
-  it('el arrastre da el ángulo (dirección) y la potencia (longitud)', () => {
-    for (const [angle, power] of [
-      [0.3, 0.4],
-      [0.8, 1],
-      [1.2, 0.2],
-    ] as const) {
-      const a = aimFromPull(pullFor(angle, power, c), c);
-      expect(a.angle).toBeCloseTo(angle, 9);
-      expect(a.power).toBeCloseTo(power, 9);
-    }
-    // Hacia atrás o hacia abajo, se queda en los topes.
-    expect(aimFromPull({ x: -0.1, y: -0.3 }, c).angle).toBe(c.angleMax);
-    expect(aimFromPull({ x: 0.3, y: 0.2 }, c).angle).toBe(c.angleMin);
-    expect(aimFromPull({ x: 3, y: 0 }, c).power).toBe(1);
-  });
-
-  it('la bola vuela en parábola y cae, con el ángulo y la potencia calculados, sobre el tiburón', () => {
-    for (const [angle, targetX] of [
-      [0.6, 0.65],
-      [0.35, 0.4],
-      [1.1, 0.9],
-    ] as const) {
-      const power = powerFor(angle, targetX, c)!;
-      expect(power).not.toBeNull();
-      const shot = canonShot(angle, power, c);
-      expect(shot.landX).toBeCloseTo(targetX, 9);
-      // Una parábola: aceleración constante hacia abajo (segunda diferencia = g·dt²).
-      const dt = shot.tLand / 10;
-      const ys = [3, 4, 5].map((i) => ballAt(shot, i * dt, c).y);
-      expect(ys[0]! - 2 * ys[1]! + ys[2]!).toBeCloseTo(c.gravity * dt * dt, 9);
-
-      const sim = emptySim();
-      const shark = place(sim, 'shark', targetX);
-      const events = shoot(sim, angle, power);
-      expect(sim.angle).toBeCloseTo(angle, 9);
-      expect(sim.power).toBeCloseTo(power, 9);
-      const splash = events.find((e) => e.kind === 'splash')!;
-      expect(splash.x).toBeCloseTo(targetX, 2);
-      expect(shark.state).toBe('fleeing');
-      expect(sim.score).toBe(c.shark.points);
-    }
-  });
-
-  it('un tiro desviado cae al agua; un tiburón sumergido no se entera', () => {
-    const sim = emptySim();
-    const shark = place(sim, 'shark', 0.6);
-    const off = powerFor(0.6, 0.6 + c.splashRadius + c.shark.radius + 0.05, c)!;
-    expect(shoot(sim, 0.6, off).map((e) => e.kind)).toContain('miss');
-    expect(shark.state).toBe('swimming');
-    shark.submerged = true;
-    shoot(sim, 0.6, powerFor(0.6, 0.6, c)!);
-    expect(shark.state).toBe('swimming');
-    expect(sim.score).toBe(0);
-    expect(Object.keys(shark).some((k) => /herid|wound|health/i.test(k))).toBe(false);
-  });
-
-  it('el combo multiplica los puntos de los aciertos seguidos y un fallo lo pone a cero', () => {
-    expect([0, 1, 2, 3, 9].map((n) => canonMultiplier(c, n))).toEqual([1, 2, 3, 4, 4]);
-    const sim = emptySim();
-    const xs = [0.4, 0.55, 0.7];
-    for (const x of xs) place(sim, 'shark', x);
-    const gained: number[] = [];
-    for (const x of xs) {
-      const before = sim.score;
-      shoot(sim, 0.7, powerFor(0.7, x, c)!);
-      gained.push(sim.score - before);
-    }
-    expect(gained).toEqual([1, 2, 3].map((m) => c.shark.points * m));
-    expect(sim.combo).toBe(3);
-    // Un fallo: combo a cero; el siguiente acierto vuelve a valer x1.
-    shoot(sim, 0.7, powerFor(0.7, 0.95, c)!);
-    expect(sim.combo).toBe(0);
-    place(sim, 'shark', 0.5);
-    const before = sim.score;
-    shoot(sim, 0.7, powerFor(0.7, 0.5, c)!);
-    expect(sim.score - before).toBe(c.shark.points);
-  });
-
-  it('a un pirata hay que darle dos veces; el segundo impacto va con combo', () => {
-    const sim = emptySim();
-    const pirate = place(sim, 'pirate', 0.7);
-    const p = powerFor(0.5, 0.7, c)!;
-    shoot(sim, 0.5, p);
-    expect(pirate.state).toBe('swimming');
-    expect(pirate.hp).toBe(c.pirate.hp - 1);
-    expect(sim.score).toBe(c.pirate.hitPoints);
-    shoot(sim, 0.5, powerFor(0.5, pirate.x, c)!);
-    expect(pirate.state).toBe('fleeing');
-    expect(sim.score).toBe(c.pirate.hitPoints + c.pirate.points * 2);
-  });
-
-  it('las oleadas van cada vez más rápidas, con más intrusos y piratas desde la segunda', () => {
-    for (let n = 1; n < c.waves; n++) {
-      expect(canonWave(c, n + 1).speed).toBeGreaterThan(canonWave(c, n).speed);
-      expect(canonWave(c, n + 1).foes).toBeGreaterThan(canonWave(c, n).foes);
-    }
-    const plan = canonPlan(4, c);
-    expect(plan[0]!.every((f) => f.kind === 'shark')).toBe(true);
-    expect(plan.flat().some((f) => f.kind === 'pirate')).toBe(true);
-    const { controller, clock: k } = setup(canon, canonWith({ waves: 2 }));
-    playHeadless(controller, canonExpert, k.advance);
-    const sim = controller.sim as CanonSim;
-    expect(sim.wave).toBe(2);
-    const sharks = (w: number) => sim.foes.filter((f) => f.wave === w && f.kind === 'shark');
-    expect(sharks(2)[0]!.speed).toBeGreaterThan(sharks(1)[0]!.speed);
-  });
-
-  it('las vidas acaban la partida: cada intruso que llega a la playa se lleva una', async () => {
-    const { controller, clock: k } = setup(canon);
-    controller.start();
-    const escapes: SimEvent[] = [];
-    while (controller.phase === 'playing') {
-      k.advance(1000 / 60);
-      escapes.push(...controller.tick(STEP_S, {}).filter((e) => e.kind === 'escape'));
-    }
-    const sim = controller.sim as CanonSim;
-    expect(sim.ended).toEqual({ outcome: 'lost', reason: 'lives' });
-    expect(sim.lives).toBe(0);
-    expect(escapes).toHaveLength(c.lives);
-    expect((await controller.settling!).reward).toEqual({ granted: false, reason: 'not_won' });
-  });
-
-  it('se gana el premio con la marca del objetivo; disparar al agua no puntúa', async () => {
-    const won = setup(canon);
-    playHeadless(won.controller, canonExpert, won.clock.advance);
-    expect(won.controller.sim?.ended).toEqual({ outcome: 'won', reason: 'waves' });
-    expect(won.controller.sim!.score).toBeGreaterThan(c.goal);
-    expect((await won.controller.settling!).reward.granted).toBe(true);
-
-    const waste = setup(canon);
-    playHeadless(waste.controller, canonWaster, waste.clock.advance);
-    expect(waste.controller.sim?.ended).toEqual({ outcome: 'lost', reason: 'lives' });
-    expect(waste.controller.sim!.score).toBe(0);
-  });
 });
 
 describe('sesión, semilla y duración (REQ-AVE-038)', () => {
@@ -566,19 +370,12 @@ describe('sesión, semilla y duración (REQ-AVE-038)', () => {
 
   it('una partida real dura al menos el mínimo de su semilla', () => {
     const short = faroWith({ waves: 4 });
-    const shortCanon = canonWith({ waves: 4 });
     for (const seed of [1, 2, 3]) {
       const f = setup(faro, short, seed);
       playHeadless(f.controller, faroExpert, f.clock.advance);
       expect(f.controller.sim!.score).toBeGreaterThan(0);
       expect(f.controller.sim!.time * 1000).toBeGreaterThanOrEqual(
         faroMinPlausibleMs(f.controller.sim!.score, seed, short),
-      );
-      const k = setup(canon, shortCanon, seed);
-      playHeadless(k.controller, canonExpert, k.clock.advance);
-      expect(k.controller.sim!.score).toBeGreaterThan(0);
-      expect(k.controller.sim!.time * 1000).toBeGreaterThanOrEqual(
-        canonMinPlausibleMs(k.controller.sim!.score, seed, shortCanon),
       );
     }
   });
@@ -598,7 +395,7 @@ describe('sesión, semilla y duración (REQ-AVE-038)', () => {
     expect(hidden.sink.grantWorldReward).not.toHaveBeenCalled();
 
     // Abandonar: la sesión queda marcada.
-    const left = setup(canon);
+    const left = setup(faro);
     left.controller.start();
     const id = left.controller.session!.id;
     left.controller.abandon();
@@ -628,7 +425,7 @@ describe('sesión, semilla y duración (REQ-AVE-038)', () => {
   });
 
   it('la pausa no cuenta como tiempo de juego', () => {
-    const { controller } = setup(canon);
+    const { controller } = setup(faro);
     controller.start();
     controller.tick(0.5, {});
     const t = controller.sim!.time;
@@ -658,8 +455,8 @@ describe('sesión, semilla y duración (REQ-AVE-038)', () => {
   });
 
   it('la marca personal se guarda en el dispositivo y sólo sube con partidas válidas', async () => {
-    const a = setup(canon, canonWith({ waves: 2 }));
-    playHeadless(a.controller, canonExpert, a.clock.advance);
+    const a = setup(faro, faroWith({ waves: 2 }));
+    playHeadless(a.controller, faroExpert, a.clock.advance);
     const first = await a.controller.settling!;
     expect(first.newBest).toBe(true);
     expect(first.best).toBe(a.controller.sim!.score);
@@ -701,34 +498,28 @@ describe('dibujo en el estilo de cada mundo', () => {
     ui: { accent: '#ff0000', onAccent: '#000000' },
   };
 
-  it.each(['arcilla', 'acuarela', 'otro'])(
-    '%s: los dos juegos se pintan de principio a fin',
-    (worldId) => {
-      const skin = minigameSkin(worldId, theme);
-      const games = [
-        [faro, faroWith({ waves: 2 }), faroExpert],
-        [canon, canonWith({ waves: 2 }), canonExpert],
-      ] as const;
-      for (const [def, config, bot] of games) {
-        for (const reducedMotion of [false, true]) {
-          const { controller, clock: c } = setup(
-            def as unknown as MinigameDefinition<BaseConfig>,
-            config as BaseConfig,
-          );
-          controller.start();
-          for (let i = 0; controller.phase === 'playing'; i++) {
-            c.advance(1000 / 60);
-            controller.tick(1 / 60, (bot as Bot)(controller.sim!));
-            if (i % 15) continue;
-            const f = fakeCtx();
-            controller.sim!.draw(f.ctx, 360, 520, skin, { reducedMotion, clock: i / 60 });
-            expect(f.calls()).toBeGreaterThan(20);
-          }
-          expect(controller.phase).toBe('ended');
+  it.each(['arcilla', 'acuarela', 'otro'])('%s: el Faro se pinta de principio a fin', (worldId) => {
+    const skin = minigameSkin(worldId, theme);
+    const games = [[faro, faroWith({ waves: 2 }), faroExpert]] as const;
+    for (const [def, config, bot] of games) {
+      for (const reducedMotion of [false, true]) {
+        const { controller, clock: c } = setup(
+          def as unknown as MinigameDefinition<BaseConfig>,
+          config as BaseConfig,
+        );
+        controller.start();
+        for (let i = 0; controller.phase === 'playing'; i++) {
+          c.advance(1000 / 60);
+          controller.tick(1 / 60, (bot as Bot)(controller.sim!));
+          if (i % 15) continue;
+          const f = fakeCtx();
+          controller.sim!.draw(f.ctx, 360, 520, skin, { reducedMotion, clock: i / 60 });
+          expect(f.calls()).toBeGreaterThan(20);
         }
+        expect(controller.phase).toBe('ended');
       }
-    },
-  );
+    }
+  });
 
   it('Arcilla y Acuarela tienen su estilo; otro mundo toma su mar y su acento', () => {
     expect(minigameSkin('arcilla').style).toBe('clay');
@@ -743,7 +534,7 @@ describe('dibujo en el estilo de cada mundo', () => {
 
 describe('textos de cada juego', () => {
   it('cada evento con aviso tiene texto; los finales dicen por qué acabó', () => {
-    for (const def of [faro, canon] as unknown as MinigameDefinition<BaseConfig>[]) {
+    for (const def of [faro] as unknown as MinigameDefinition<BaseConfig>[]) {
       expect(def.hint).not.toBe('');
       expect(def.feedback({ kind: 'escape' })?.tone).toBe('bad');
       expect(def.feedback({ kind: 'wave', wave: 2 })?.text).toContain('2');
@@ -752,6 +543,5 @@ describe('textos de cada juego', () => {
       }
     }
     expect(faro.feedback({ kind: 'hit', points: 30, combo: 2 })?.text).toContain('x2');
-    expect(canon.feedback({ kind: 'scare', points: 10, combo: 1 })?.text).toContain('+10');
   });
 });

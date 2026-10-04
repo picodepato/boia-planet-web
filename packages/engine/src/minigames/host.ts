@@ -1,5 +1,5 @@
 import { type EndSummary, MinigameController } from './controller';
-import { minigame } from './registry';
+import { layerMinigame } from './registry';
 import { type MinigameRewardSink, policyText, readBest, rewardText } from './rewards';
 import { INVALID_TEXT, LocalSessionAuthority } from './session';
 import { type WorldLook, minigameSkin } from './skin';
@@ -72,8 +72,9 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMinigame {
-  const found = minigame(o.gameId);
-  if (!found) throw new Error(`minijuego desconocido: ${o.gameId}`);
+  // Sólo los de la capa 2D (el Faro); el Cañón se juega en el mar (plan 010).
+  const found = layerMinigame(o.gameId);
+  if (!found) throw new Error(`minijuego desconocido o que no va en la capa: ${o.gameId}`);
   const def = found;
   const doc = parent.ownerDocument;
   const win = doc.defaultView ?? window;
@@ -394,50 +395,26 @@ export function mountMinigame(parent: HTMLElement, o: MountOptions): MountedMini
       y: (e.clientY - r.top) / Math.max(1, r.height),
     };
   };
-  // Faro: el haz va hacia el dedo (o sigue al ratón). Cañón: se arrastra
-  // desde cualquier sitio (dirección = ángulo, longitud = potencia) y al
-  // soltar dispara.
-  const drags = def.id === 'canon';
+  // Faro: el haz va hacia el dedo (o sigue al ratón).
   let dragging = false;
-  let dragFrom: Point | null = null;
-  const pullTo = (p: Point): Point | null =>
-    dragFrom ? { x: p.x - dragFrom.x, y: p.y - dragFrom.y } : null;
   canvas.addEventListener('pointerdown', (e) => {
     if (controller.phase !== 'playing') return;
     dragging = true;
     canvas.setPointerCapture?.(e.pointerId);
-    const p = toScene(e);
-    if (drags) {
-      dragFrom = p;
-      input.pull = null;
-    } else {
-      input.aim = p;
-    }
+    input.aim = toScene(e);
   });
   canvas.addEventListener('pointermove', (e) => {
     if (controller.phase !== 'playing') return;
-    const p = toScene(e);
-    if (drags) {
-      if (dragging) input.pull = pullTo(p);
-    } else if (dragging || e.pointerType === 'mouse') {
-      input.aim = p;
-    }
+    if (dragging || e.pointerType === 'mouse') input.aim = toScene(e);
   });
-  const release = (e: PointerEvent, fire: boolean) => {
+  const release = (e: PointerEvent) => {
     if (!dragging) return;
     dragging = false;
-    const p = toScene(e);
-    if (drags) {
-      input.pull = pullTo(p);
-      dragFrom = null;
-      if (fire && controller.phase === 'playing') input.action = true;
-      return;
-    }
-    input.aim = p;
+    input.aim = toScene(e);
     if (e.pointerType !== 'mouse') input.aim = null;
   };
-  canvas.addEventListener('pointerup', (e) => release(e, true));
-  canvas.addEventListener('pointercancel', (e) => release(e, false));
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   // Teclado: nada llega al mar mientras la capa está abierta.

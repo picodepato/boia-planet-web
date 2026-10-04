@@ -548,6 +548,18 @@
   opacity: 0.8;
 }
 
+/* El premio (T119): vacío mientras se liquida o si no se ganó. */
+.mar-canon-end__prize {
+  margin: 6px 0 0;
+  min-height: 1.2em;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.mar-canon-end__prize:empty {
+  display: none;
+}
+
 .mar-canon-end__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

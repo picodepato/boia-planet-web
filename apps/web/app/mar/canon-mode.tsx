@@ -1,11 +1,22 @@
 'use client';
 
+import {
+  type MinigameRewardSink,
+  type RewardOutcome,
+  WorldMinigameSession,
+  canon as canonEntry,
+  canonConfigFor,
+  canonEnd,
+  pageAuthority,
+} from '@boia/engine/minigames';
 import type { DefeatStyle, EndReason, SurvivorsSnapshot } from '@boia/engine/survivors';
 import type { WorldConfig } from '@boia/world';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
-import type { InWorldCopy } from '../../lib/mundo/minigame-layer';
+import { emitSignal } from '../../lib/mundo/achievements';
+import { type InWorldCopy, withWinSignal } from '../../lib/mundo/minigame-layer';
+import { gameRepository } from '../../lib/mundo/repo';
 import { type MessageKey, t as msg } from '../../lib/i18n';
-import { type CanonResult, canonResult } from './canon-hud-model';
+import { type CanonPrize, type CanonResult, canonPrize, canonResult } from './canon-hud-model';
 import type { Mar3D } from './engine/mar3d';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import {
@@ -32,6 +43,12 @@ import {
  * y devolverlo igual al acabar, el bloqueo en carrera, la pausa con la
  * pestaña oculta y el estado para las pruebas (`data-testid="mar-canon"`).
  * `mar-client` sólo lo cablea.
+ *
+ * Cada partida abre su sesión de minijuego (T119, REQ-AVE-038) con la
+ * semilla de la partida y la liquida al acabar con el tiempo activo; si se
+ * llega al amanecer, el premio de siempre (150 puntos y 50 monedas una vez
+ * por temporada) y la señal `win_minigame` de los logros `canon` y
+ * `guardacostas`. Salir a mitad (o 5 min en pausa) abandona la sesión.
  */
 
 const EMPTY: ReadonlySet<HideLayer> = new Set();
@@ -75,6 +92,10 @@ export interface CanonMode {
   backToSea(): void;
   /** El último estado (también el final, hasta la siguiente). */
   hud: CanonHook | null;
+  /** El premio de la última partida acabada (null: aún sin acabar o liquidándose). */
+  reward: RewardOutcome | null;
+  /** Lo mismo en una palabra, para las pruebas (`data-premio`). */
+  prize: CanonPrize | null;
   /** Lo que la partida tiene escondido ahora. */
   hidden: ReadonlySet<HideLayer>;
   /** Empieza donde está el barco; false si no se puede ahora. */
@@ -113,6 +134,7 @@ export function useCanonMode({
   onStart,
   onOffer,
   onEnd,
+  rewards,
 }: {
   engineRef: RefObject<Mar3D | null>;
   worldRef: RefObject<WorldConfig | null>;
@@ -131,8 +153,14 @@ export function useCanonMode({
    * ha vuelto; si no, sigue la pantalla final hasta «Volver al mar».
    */
   onEnd?: (end: CanonEnd) => void;
+  /** El libro de los premios (`repo.progress`), o null. */
+  rewards?: () => MinigameRewardSink | null;
 }): CanonMode {
   const runRef = useRef<SurvivorsRun | null>(null);
+  // La sesión de la partida en curso, hasta que se liquida (T119).
+  const sessionRef = useRef<WorldMinigameSession | null>(null);
+  const [ended, setEnded] = useState(false);
+  const [reward, setReward] = useState<RewardOutcome | null>(null);
   const restoreRef = useRef<(() => void) | null>(null);
   const pausedRef = useRef(false);
   const [active, setActive] = useState(false);
@@ -149,13 +177,15 @@ export function useCanonMode({
   const [defeatStyle, setDefeatStyle] = useState<DefeatStyle | null>(null);
   const [devSwitch, setDevSwitch] = useState(false);
   useEffect(() => setDevSwitch(devShortcutsEnabled()), []);
-  const latest = useRef({ onStart, onOffer, onEnd, isRaceActive });
-  latest.current = { onStart, onOffer, onEnd, isRaceActive };
+  const latest = useRef({ onStart, onOffer, onEnd, isRaceActive, rewards });
+  latest.current = { onStart, onOffer, onEnd, isRaceActive, rewards };
 
   /** Se acabó del todo: el barco se queda donde acabó y el mundo vuelve como estaba. */
   const teardown = useCallback(() => {
     const run = runRef.current;
     runRef.current = null;
+    sessionRef.current?.abandon();
+    sessionRef.current = null;
     engineRef.current?.stopSurvivors();
     restoreRef.current?.();
     restoreRef.current = null;
@@ -173,6 +203,15 @@ export function useCanonMode({
   const finish = useCallback(
     (run: SurvivorsRun, reason: EndReason, snapshot: SurvivorsSnapshot) => {
       if (runRef.current !== run) return;
+      // La sesión se liquida con el tiempo activo; el premio llega después.
+      const session = sessionRef.current;
+      sessionRef.current = null;
+      setEnded(true);
+      if (session) {
+        void session.finish(canonEnd(reason, snapshot.activeS)).then((s) => {
+          if (runRef.current === run || !runRef.current) setReward(s.reward);
+        });
+      }
       latest.current.onEnd?.({ reason, snapshot });
       const r = canonResult(reason, snapshot);
       if (!r) {
@@ -211,6 +250,21 @@ export function useCanonMode({
       });
       if (!g.startSurvivors(run)) return false;
       if (card && devShortcutsEnabled()) run.devLevelUp();
+      // La sesión de la partida (REQ-AVE-038): su semilla y lo que se saltó con `&t=`.
+      const getSink = latest.current.rewards?.() ?? null;
+      sessionRef.current = new WorldMinigameSession({
+        def: canonEntry,
+        config: canonConfigFor(run.config),
+        authority: pageAuthority(),
+        sink: withWinSignal(getSink, CANON_GAME_ID, (game) => {
+          void emitSignal(gameRepository(), { trigger: 'win_minigame', game });
+        }),
+        currentConfig: () => canonConfigFor(run.config),
+        seed: run.seed,
+        skippedS: run.snapshot().activeS,
+      });
+      setEnded(false);
+      setReward(null);
       setNotice(null);
       if (askedStyle) chosenStyle.current = askedStyle;
       const style = startDefeatStyle(chosenStyle.current, run.config);
@@ -301,6 +355,8 @@ export function useCanonMode({
     () => () => {
       for (const id of fadeTimers.current) window.clearTimeout(id);
       runRef.current = null;
+      sessionRef.current?.abandon();
+      sessionRef.current = null;
       restoreRef.current?.();
       restoreRef.current = null;
     },
@@ -351,6 +407,8 @@ export function useCanonMode({
     again,
     backToSea,
     hud,
+    reward,
+    prize: ended ? canonPrize(reward) : null,
     hidden,
     start,
     setPaused,
@@ -391,7 +449,13 @@ export function CanonDevSwitch({ canon }: { canon: CanonMode }) {
  * El estado de la partida para las pruebas (como el cronómetro de la
  * carrera, `data-*`), sin nada que se vea (el HUD está en `canon-hud.tsx`).
  */
-export function CanonTestHook({ hud }: { hud: CanonHook | null }) {
+export function CanonTestHook({
+  hud,
+  prize = null,
+}: {
+  hud: CanonHook | null;
+  prize?: CanonPrize | null;
+}) {
   if (!hud) return null;
   return (
     <div
@@ -413,6 +477,7 @@ export function CanonTestHook({ hud }: { hud: CanonHook | null }) {
       data-barco={hud.barco}
       data-mejoras={hud.mejoras}
       data-carta={hud.carta}
+      data-premio={prize ?? undefined}
     />
   );
 }

@@ -258,4 +258,8 @@ export const esMar = {
   'mar.canon.fin.nivel': 'Llegaste al nivel {nivel}',
   'mar.canon.fin.otra': 'Otra vez',
   'mar.canon.fin.volver': 'Volver al mar',
+  // El premio de la partida en la pantalla final (T119). muestra
+  'mar.canon.premio.ganado': '+{puntos} puntos y +{monedas} monedas',
+  'mar.canon.premio.repetido': 'Ya cobraste el premio del amanecer esta temporada.',
+  'mar.canon.premio.no': 'Esta partida no da premio.',
 } as const;

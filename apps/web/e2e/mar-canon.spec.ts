@@ -1,4 +1,6 @@
 import { circuitFromWorld } from '@boia/engine/circuit';
+import { CANON_DEFAULTS } from '@boia/engine/minigames';
+import { rescueMissionOf } from '@boia/engine/mission';
 import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { type Locator, type Page, expect, test } from '@playwright/test';
@@ -6,7 +8,7 @@ import { formatClock, formatPlayed } from '../app/mar/canon-hud-model';
 import { marWorld } from '../app/mar/engine/compact';
 import { lapTargets } from '../app/mar/race';
 import { type MessageKey, t as msg } from '../lib/i18n';
-import { mar, marSheet, openMar, shipAt } from './mar-helpers';
+import { mar, marSheet, openMar, shipAt, steerTo } from './mar-helpers';
 
 /**
  * El Cañón «Que no pare la música» dentro de /mar (plan 009, T99): el panel
@@ -14,8 +16,12 @@ import { mar, marSheet, openMar, shipAt } from './mar-helpers';
  * 2D), sin las marcas amarillas ni lo demás que la partida aparta; el atajo
  * `?minijuego=canon&t=&seed=` empieza en ese segundo con esa semilla; en
  * carrera el panel explica que ahora no; al acabar vuelve el mundo con el
- * barco donde acabó. El estado se lee de `data-testid="mar-canon"`. T102 lo
- * amplía (morir, sobrevivir, pausa, premio).
+ * barco donde acabó. El estado se lee de `data-testid="mar-canon"`.
+ *
+ * T119 cierra la beta: inundarse, llegar al amanecer (con `&t=` cerca del
+ * final) y su premio de 150 puntos y 50 monedas una sola vez por temporada
+ * (con el logro `canon` listo para reclamar), el abandono tras más de 5 min
+ * en pausa y la Boia Fiestera que sigue a bordo durante una partida.
  */
 
 test.describe.configure({ timeout: 240_000 });
@@ -458,5 +464,139 @@ test('pantalla final con tiempo, enemigos y notas; «Otra vez» empieza otra don
   );
   expect(dist(pointOf(await game(page).getAttribute('data-barco')), where)).toBeLessThan(80);
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'off');
+  expect(errors).toEqual([]);
+});
+
+// --- Sesión, premio y finales (T119) --------------------------------------------------
+
+/** Los saldos del mar: ★ puntos y 🪙 monedas. */
+async function balances(page: Page): Promise<{ points: number; coins: number }> {
+  const text = (await page.getByTestId('mar-saldos').textContent()) ?? '';
+  return {
+    points: Number(/★\s*(\d+)/.exec(text)?.[1] ?? NaN),
+    coins: Number(/🪙\s*(\d+)/.exec(text)?.[1] ?? NaN),
+  };
+}
+
+const prize = (page: Page) => page.getByTestId('mar-canon-final-premio');
+
+test('sin esquivar, el agua llena el barco: «¡Barco inundado!» y sin premio', async ({ page }) => {
+  const errors = await openMar(page, '?minijuego=canon&t=200&seed=2');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  // Nadie toca el timón: las pirañas llegan y el agua sube.
+  await expect
+    .poll(async () => Number(await game(page).getAttribute('data-agua')), { timeout: 60_000 })
+    .toBeGreaterThan(0);
+  const end = page.getByTestId('mar-canon-final');
+  await expect(end).toBeVisible({ timeout: 120_000 });
+  await expect(game(page)).toHaveAttribute('data-fin', 'flooded');
+  await expect(end).toHaveAttribute('data-fin', 'flooded');
+  await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.inundado'));
+  // La sesión se liquida: perdida, sin premio ni línea de premio.
+  await expect(game(page)).toHaveAttribute('data-premio', 'not_won');
+  await expect(prize(page)).toHaveAttribute('data-premio', 'not_won');
+  await expect(prize(page)).toHaveText('');
+  // De vuelta al mar.
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  await expect(canvas(page)).toHaveAttribute('data-ruta', 'on');
+  expect(errors).toEqual([]);
+});
+
+test('llegar al amanecer da 150 puntos y 50 monedas una vez por temporada, y el logro del Cañón', async ({
+  page,
+}) => {
+  const { points: rewardPoints, coins: rewardCoins } = CANON_DEFAULTS.reward;
+  // `&t=419`: el último segundo de la noche (atajo de desarrollo).
+  const errors = await openMar(page, '?minijuego=canon&t=419&seed=3');
+  await expect(game(page)).toHaveAttribute('data-semilla', '3');
+  const before = await balances(page);
+  const end = page.getByTestId('mar-canon-final');
+  await expect(end).toBeVisible({ timeout: 60_000 });
+  await expect(game(page)).toHaveAttribute('data-fin', 'survived');
+  await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.amanece'));
+  await expect(end.getByTestId('mar-canon-final-tiempo')).toHaveText(formatPlayed(420));
+  // La sesión valida el tiempo activo y el libro da el premio.
+  await expect(game(page)).toHaveAttribute('data-premio', 'granted', { timeout: 15_000 });
+  await expect(prize(page)).toHaveText(
+    msg('mar.canon.premio.ganado', { puntos: rewardPoints, monedas: rewardCoins }),
+  );
+  await expect
+    .poll(() => balances(page), { timeout: 15_000 })
+    .toEqual({ points: before.points + rewardPoints, coins: before.coins + rewardCoins });
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  // La señal `win_minigame`: el logro «canon» queda listo para reclamar.
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  await expect(page.getByTestId('logro-canon')).toHaveAttribute('data-estado', 'ready');
+
+  // Otra visita, otra partida ganada la misma temporada: vale, pero no paga otra vez.
+  await openMar(page, '?minijuego=canon&t=419&seed=5');
+  const again = await balances(page);
+  await expect(end).toBeVisible({ timeout: 60_000 });
+  await expect(game(page)).toHaveAttribute('data-fin', 'survived');
+  await expect(game(page)).toHaveAttribute('data-premio', 'duplicate', { timeout: 15_000 });
+  await expect(prize(page)).toHaveText(msg('mar.canon.premio.repetido'));
+  await page.waitForTimeout(1000);
+  expect(await balances(page)).toEqual(again);
+  expect(errors).toEqual([]);
+});
+
+test('más de 5 minutos en pausa abandona la partida: vuelve el mundo, con aviso y sin premio', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&seed=4');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect.poll(() => activeS(page), { timeout: 15_000 }).toBeGreaterThan(0.5);
+  // La pestaña se oculta y el reloj salta 5 min y 1 s (como si la página se congelara).
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    const real = performance.now.bind(performance);
+    performance.now = () => real() + 301_000;
+  });
+  await expect(page.getByTestId('mar-canon-aviso')).toContainText(msg('mar.canon.abandono'), {
+    timeout: 15_000,
+  });
+  await expect(game(page)).toHaveAttribute('data-fin', 'abandoned');
+  await expect(game(page)).toHaveAttribute('data-premio', 'abandoned');
+  // Sin pantalla final: el mundo ya ha vuelto.
+  await expect(page.getByTestId('mar-canon-final')).toHaveCount(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+  });
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  await expect(canvas(page)).toHaveAttribute('data-ruta', 'on');
+  await expect(canvas(page)).not.toHaveAttribute('data-escondido', /.+/);
+  expect(errors).toEqual([]);
+});
+
+test('con la Boia Fiestera a bordo, sigue a bordo durante la partida y después', async ({
+  page,
+}) => {
+  const spec = rescueMissionOf(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config)!;
+  const errors = await openMar(page, `?cerca=${spec.characterId}`);
+  await expect(mar(page)).toHaveAttribute('data-mision', 'waiting');
+  await steerTo(
+    page,
+    spec.characterId,
+    async () => (await mar(page).getAttribute('data-mision')) === 'aboard',
+  );
+  await expect(mar(page)).toHaveAttribute('data-mision', 'aboard');
+
+  // Una partida (otra visita, con el atajo): ella no se baja.
+  await openMar(page, '?minijuego=canon&t=418&seed=6');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(mar(page)).toHaveAttribute('data-mision', 'aboard');
+  await expect(page.getByTestId('mar-canon-final')).toBeVisible({ timeout: 60_000 });
+  await expect(mar(page)).toHaveAttribute('data-mision', 'aboard');
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  // La misión sigue: su «?» va con ella, camino de su destino.
+  await expect(mar(page)).toHaveAttribute('data-mision', 'aboard');
+  const minimap = page.getByTestId('mar-minimapa').locator('canvas');
+  await expect
+    .poll(async () => (await minimap.getAttribute('data-mark-places')) ?? '')
+    .toContain(spec.destination);
   expect(errors).toEqual([]);
 });

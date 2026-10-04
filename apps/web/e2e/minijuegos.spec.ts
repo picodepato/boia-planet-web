@@ -1,12 +1,15 @@
-import { CANON_DEFAULTS, LAMP, powerFor, pullFor } from '@boia/engine/minigames';
+import { LAMP } from '@boia/engine/minigames';
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Minijuegos rehechos (T60) dentro del mar 3D: cada uno se abre en su isla
- * (`/mar?ir=faro`, `/mar?ir=canon`: el barco navega hasta allí y la isla
+ * El minijuego de la capa 2D (T60) dentro del mar 3D: Vigilancia del faro
+ * se abre en su isla (`/mar?ir=faro`: el barco navega hasta allí y la isla
  * ofrece «Jugar»), se juega con entradas de guion hasta sumar puntos, se
  * deja que los intrusos lleguen a la costa hasta perder las tres vidas y,
  * desde la pantalla final (con la mejor marca), se vuelve al mar.
+ *
+ * El cañón 2D se quitó en el plan 010 (T119): el Cañón se juega en el propio
+ * mar (`mar-canon.spec.ts`); aquí sólo se comprueba que ya no abre la capa.
  */
 
 // Se juega en tiempo real: hasta perder las tres vidas pasan unos 40 s.
@@ -25,7 +28,7 @@ async function openMar(page: Page, path: string) {
 }
 
 /** Navega hasta la isla del juego, cierra su ficha y lo abre con «Jugar». */
-async function openAtIsland(page: Page, id: 'faro' | 'canon') {
+async function openAtIsland(page: Page, id: 'faro') {
   const errors = await openMar(page, `/mar?ir=${id}`);
   await expect(page.locator('main.mar')).toHaveAttribute('data-llegada', id, { timeout: 60_000 });
   const sheet = page.getByTestId('mar-ficha');
@@ -94,38 +97,18 @@ test('Vigilancia del faro, en su isla: el haz descubre piratas y las vidas acaba
   expect(errors).toEqual([]);
 });
 
-test('Cañón contra tiburones, en su isla: arrastrar apunta, la bola cae en parábola y puntúa', async ({
-  page,
-}) => {
-  const errors = await openAtIsland(page, 'canon');
-  const status = page.getByTestId('minijuego-estado');
-  await expect(status).toContainText('Vidas 3/3');
-  await expect(status).toContainText('Combo x1');
-  await expect(page.getByTestId('minijuego-accion')).toHaveText('FUEGO');
-
-  // Guion: arrastrar con el ángulo y la potencia que hacen caer la bola en x = 0,55,
-  // por donde pasan los tiburones camino de la playa; soltar dispara.
-  const angle = 0.7;
-  const pull = pullFor(angle, powerFor(angle, 0.55, CANON_DEFAULTS)!, CANON_DEFAULTS);
-  const box = (await page.locator('.mg-canvas').boundingBox())!;
-  const from = { x: box.x + box.width * 0.3, y: box.y + box.height * 0.6 };
-  const deadline = Date.now() + 60_000;
-  while ((await score(page)) === 0 && Date.now() < deadline) {
-    await page.mouse.move(from.x, from.y);
-    await page.mouse.down();
-    await page.mouse.move(from.x + pull.x * box.width, from.y + pull.y * box.height, {
-      steps: 4,
-    });
-    await page.mouse.up();
-    await page.waitForTimeout(700);
-  }
-  expect(await score(page)).toBeGreaterThan(0);
-  await loseAndReturn(page);
+test('`?minijuego=canon` ya no abre la capa 2D: el Cañón se juega en el mar', async ({ page }) => {
+  const errors = await openMar(page, '/mar?minijuego=canon&seed=3');
+  await expect(page.getByTestId('mar-canon')).toHaveAttribute('data-estado', 'running', {
+    timeout: 20_000,
+  });
+  await expect(layer(page)).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
 test('la pausa detiene la partida y ocultar la pestaña quita el premio', async ({ page }) => {
-  await openMar(page, '/mar?minijuego=canon');
+  // Con el Faro (el cañón 2D se quitó en el plan 010).
+  await openMar(page, '/mar?minijuego=faro');
   await expect(layer(page)).toBeVisible({ timeout: 20_000 });
   await page.getByTestId('minijuego-empezar').click();
   await expect(layer(page)).toHaveAttribute('data-phase', 'playing');

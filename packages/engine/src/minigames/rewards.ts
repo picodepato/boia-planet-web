@@ -57,6 +57,8 @@ export async function grantMinigameReward(
         configHash: result.configHash,
         score: result.score,
         elapsedMs: Math.round(result.elapsedMs),
+        // Una partida del atajo de desarrollo `&t=` lo deja dicho en el libro.
+        ...(result.skippedMs ? { skippedMs: Math.round(result.skippedMs) } : {}),
       },
     });
     return r.granted ? { granted: true, points, coins } : { granted: false, reason: 'duplicate' };

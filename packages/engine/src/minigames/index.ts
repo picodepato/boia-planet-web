@@ -1,12 +1,15 @@
 /**
  * Minijuegos de INICIAR_MINIJUEGO (REQ-AVE-035…039, D-20): Vigilancia del
- * faro (`faro`) y Cañón contra tiburones (`canon`), rehechos en T60. Se importa como
- * `@boia/engine/minigames`: sin Pixi, para que la capa HTML no arrastre el
- * motor del mar. `MINIGAME_REGISTRY` va al motor como `runtime.minigames`;
- * `mountMinigame` abre la capa sobre el mar.
+ * faro (`faro`, capa 2D, rehecho en T60) y el Cañón «Que no pare la música»
+ * (`canon`), que desde el plan 010 se juega en el mar de `/mar` con
+ * `@boia/engine/survivors`: aquí sólo su sesión y su premio
+ * (`WorldMinigameSession`). Se importa como `@boia/engine/minigames`: sin
+ * Pixi, para que la capa HTML no arrastre el motor del mar.
+ * `MINIGAME_REGISTRY` va al motor como `runtime.minigames`; `mountMinigame`
+ * abre la capa del Faro sobre el mar.
  */
 export * from './types';
-export { MINIGAME_IDS, MINIGAME_REGISTRY, isMinigameId, minigame } from './registry';
+export { MINIGAME_IDS, MINIGAME_REGISTRY, isMinigameId, layerMinigame, minigame } from './registry';
 export {
   COAST_Y,
   FARO_DEFAULTS,
@@ -23,30 +26,27 @@ export {
 } from './faro';
 export {
   CANON_DEFAULTS,
-  COAST_X,
-  CanonSim,
-  MUZZLE,
-  WATER_Y,
-  aimFromPull,
-  ballAt,
+  CANON_VERSION,
   canon,
-  canonMinPlausibleMs,
-  canonMultiplier,
-  canonPlan,
-  canonShot,
-  canonWave,
-  powerFor,
-  pullFor,
+  canonConfigFor,
+  canonEnd,
+  canonOutcome,
+  canonScore,
   type CanonConfig,
-  type CanonFoe,
-  type Shot,
-} from './canon';
+} from './world-canon';
+export {
+  WorldMinigameSession,
+  type WorldGameEnd,
+  type WorldSessionOptions,
+  type WorldSettlement,
+} from './world-session';
 export {
   INVALID_TEXT,
   LocalSessionAuthority,
   type InvalidReason,
   type MinigameResult,
   type MinigameSession,
+  type OpenOptions,
   type Validation,
 } from './session';
 export {

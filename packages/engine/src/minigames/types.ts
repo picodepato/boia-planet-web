@@ -1,8 +1,15 @@
 /**
  * Tipos compartidos por los minijuegos de INICIAR_MINIJUEGO (REQ-AVE-035…039).
- * La simulación de cada juego es pura (sin DOM): recibe una entrada por paso
- * fijo y devuelve lo que pasó. El anfitrión (`host.ts`) la pinta, la controla
- * con dedo, puntero o teclado y valida el resultado con la sesión local.
+ * Hay dos clases de minijuego en el registro:
+ *
+ * - los de la capa 2D (`MinigameDefinition`, hoy el Faro): la simulación es
+ *   pura (sin DOM), recibe una entrada por paso fijo y devuelve lo que pasó;
+ *   el anfitrión (`host.ts`) la pinta, la controla con dedo, puntero o
+ *   teclado y valida el resultado con la sesión local;
+ * - los que se juegan en el propio mar 3D (`MinigameEntry` sin simulación
+ *   aquí, hoy el Cañón «Que no pare la música», plan 010): el registro sólo
+ *   guarda su id, su panel, su configuración de sesión y cómo se valida; la
+ *   simulación vive en `@boia/engine/survivors` y la pinta `/mar`.
  */
 
 export type MinigameId = 'faro' | 'canon';
@@ -34,6 +41,11 @@ export interface BaseConfig {
 export type Outcome = 'won' | 'lost';
 /** Sin vidas, tras la última oleada o al tope de tiempo. */
 export type EndReason = 'lives' | 'waves' | 'time';
+/**
+ * Cómo acabó una partida, para la sesión: los de la capa 2D y los del mar
+ * (el Cañón: `survived` al amanecer, `flooded`, `abandoned` tras 5 min en pausa).
+ */
+export type ResultReason = EndReason | 'survived' | 'flooded' | 'abandoned';
 
 export interface Ending {
   outcome: Outcome;
@@ -118,28 +130,44 @@ export interface MinigameSim {
   ): void;
 }
 
-export interface MinigameDefinition<C extends BaseConfig = BaseConfig> {
+/**
+ * Lo que todo minijuego del registro tiene: su id, el texto de su panel, su
+ * configuración (versión, objetivo, tope de tiempo y premio) y la duración
+ * mínima posible de una marca, con la que la sesión lo valida.
+ */
+export interface MinigameEntry<C extends BaseConfig = BaseConfig> {
   id: MinigameId;
   title: string;
   /** Texto del panel editorial de la isla. */
   summary: string;
+  defaults: C;
+  /**
+   * El tiempo mínimo, en ms de juego, en que se puede llegar a `score` con
+   * esta semilla y esta configuración. Por debajo, la marca es imposible.
+   */
+  minPlausibleMs(score: number, seed: number, config: C): number;
+}
+
+/** Un minijuego de la capa 2D: además, su simulación y sus textos. */
+export interface MinigameDefinition<C extends BaseConfig = BaseConfig> extends MinigameEntry<C> {
   /** Instrucciones breves, una por línea. */
   instructions: readonly string[];
   /** Texto del botón de acción (DESTELLO, FUEGO). */
   actionLabel: string;
   /** Teclas, en una línea (sólo con teclado). */
   hint: string;
-  defaults: C;
   create(seed: number, config: C): MinigameSim;
-  /**
-   * El tiempo mínimo, en ms, en que se puede llegar a `score` con esta
-   * semilla y esta configuración. Por debajo, la marca es imposible.
-   */
-  minPlausibleMs(score: number, seed: number, config: C): number;
   /** Texto del final, por motivo. */
   endText(e: Ending): string;
   /** Aviso de un evento, o nada. */
   feedback(ev: SimEvent): Feedback | null;
+}
+
+/** ¿Se juega en la capa 2D (tiene simulación aquí)? */
+export function isLayerMinigame<C extends BaseConfig>(
+  def: MinigameEntry<C>,
+): def is MinigameDefinition<C> {
+  return typeof (def as Partial<MinigameDefinition<C>>).create === 'function';
 }
 
 /** Colores y trazo de un mundo para los minijuegos. */

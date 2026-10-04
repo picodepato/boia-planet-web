@@ -1,7 +1,7 @@
 # Diseño de referencia — «Que no pare la música» (rediseño del Cañón)
 
 > Diseño cerrado en la sesión del 2026-10-04 (Hernán). **No es un plan**: es la referencia que
-> leen los planes de cada beta (009, 010, …). Cada plan se escribe con `/orchestrator` a partir
+> leen los planes de cada beta (010, 011, …). Cada plan se escribe con `/orchestrator` a partir
 > de su propio prompt (el de la beta 1: `2026-10-04-plan-009-beta1.md`) y de las notas de prueba
 > de la beta anterior. Si una prueba cambia una decisión de aquí, el plan de la beta siguiente
 > actualiza este documento.
@@ -274,15 +274,17 @@ boya»). Estela de espuma y Ancla bumerán: v2.
 **Cada beta va directa a producción** (cada push a `main` despliega), sustituyendo al cañón 2D
 desde la beta 1, con una etiqueta **«BETA»** visible en el panel y en el HUD hasta el
 lanzamiento. **Un plan por beta**: al terminar cada una, Hernán la prueba y escribe sus notas; el
-plan siguiente empieza con una entrevista corta del orquestador sobre esas notas.
+plan siguiente empieza con una entrevista corta del orquestador sobre esas notas. (Números de
+plan desde el 2026-10-04: el plan 009 fue el de las mejoras del mundo de Codex, así que la beta 1
+es el plan 010 y el lanzamiento, el 014.)
 
 | Beta | Plan | Qué trae | Qué se prueba |
 |---|---|---|---|
-| **1 · Sensación** | 009 | Simulación base (paso fijo, rejilla, semilla, config versionada, pausa), integración en `/mar` (entrar y salir en el mismo mundo, ocultar líneas e interactivos, cámara, maniobrabilidad, bloqueo en carrera, colisión compartida con islas, aparición validada), **pirañas + cangrejo**, **Cañón de agua**, notas con fusión e imán, carta 1 de 3 con pocas mejoras, agua a bordo, final a los 7:00 o inundado, **puf y sumergirse con conmutador**, HUD mínimo, retirada del cañón 2D | ¿Es divertido esquivar con el barco? Maniobrabilidad, cámara, estilo de derrota |
-| **2 · Bucle sin bosses** | 010 | Los 6 enemigos con modelos, élites, crecimiento, Marea, 3 dificultades, guion completo; 7 armas, 9 vinilos, 4 evoluciones, Salvavidas, bloqueo de proyectiles por islas | ¿Engancha subir de nivel? ¿Las armas se sienten distintas? Ritmo |
-| **3 · Primer acto** | 011 | Sistema de bosses, Vecino Quejica, Tiburón Martillo (con cofre), Barco Fantasma, medallas, campaña (acto 1 → 2), tarjeta final | ¿Los bosses son divertidos? ¿Se entiende cómo ganar? |
-| **4 · Campaña completa** | 012 | Kraken, Capitán con apagón e islas iluminadas, pop-up previo (acto, dificultad, Jugar), HUD completo, sonido y accesibilidad completos | Actos 2 y 3, apagón, móvil |
-| **Lanzamiento** | 013 | Premio por medalla diario, 6 logros + cambio de `guardacostas`, Mascota + minikraken, «El Apagón», ranking por boss (local y global) en el pop-up, e2e, `docs/spec/estado.md`, borrador de decisión para Álvaro, equilibrio con bots y rendimiento en `baja`, se quita la etiqueta BETA | Revisión final; visto bueno de Álvaro |
+| **1 · Sensación** | 010 | Simulación base (paso fijo, rejilla, semilla, config versionada, pausa), integración en `/mar` (entrar y salir en el mismo mundo, ocultar líneas e interactivos, cámara, maniobrabilidad, bloqueo en carrera, colisión compartida con islas, aparición validada), **pirañas + cangrejo**, **Cañón de agua**, notas con fusión e imán, carta 1 de 3 con pocas mejoras, agua a bordo, final a los 7:00 o inundado, **puf y sumergirse con conmutador**, HUD mínimo, retirada del cañón 2D | ¿Es divertido esquivar con el barco? Maniobrabilidad, cámara, estilo de derrota |
+| **2 · Bucle sin bosses** | 011 | Los 6 enemigos con modelos, élites, crecimiento, Marea, 3 dificultades, guion completo; 7 armas, 9 vinilos, 4 evoluciones, Salvavidas, bloqueo de proyectiles por islas | ¿Engancha subir de nivel? ¿Las armas se sienten distintas? Ritmo |
+| **3 · Primer acto** | 012 | Sistema de bosses, Vecino Quejica, Tiburón Martillo (con cofre), Barco Fantasma, medallas, campaña (acto 1 → 2), tarjeta final | ¿Los bosses son divertidos? ¿Se entiende cómo ganar? |
+| **4 · Campaña completa** | 013 | Kraken, Capitán con apagón e islas iluminadas, pop-up previo (acto, dificultad, Jugar), HUD completo, sonido y accesibilidad completos | Actos 2 y 3, apagón, móvil |
+| **Lanzamiento** | 014 | Premio por medalla diario, 6 logros + cambio de `guardacostas`, Mascota + minikraken, «El Apagón», ranking por boss (local y global) en el pop-up, e2e, `docs/spec/estado.md`, borrador de decisión para Álvaro, equilibrio con bots y rendimiento en `baja`, se quita la etiqueta BETA | Revisión final; visto bueno de Álvaro |
 
 **Durante las betas**: el resultado `won` (= sobrevivir los 7:00; bronce o más cuando existan
 medallas) sigue alimentando `win_minigame`, `canon` y `guardacostas`, y el premio sigue siendo el

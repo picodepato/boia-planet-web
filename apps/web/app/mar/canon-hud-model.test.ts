@@ -9,6 +9,7 @@ import {
   UPGRADE_ICON,
   WATER_ALERT,
   WATER_DANGER,
+  canonPrize,
   canonResult,
   canonView,
   cardAmount,
@@ -17,6 +18,7 @@ import {
   formatClock,
   formatPlayed,
   percent,
+  prizeLine,
   sameView,
   waterLevelOf,
 } from './canon-hud-model';
@@ -186,5 +188,33 @@ describe('la pantalla final', () => {
     expect(msg(END_KEYS.survived.title)).toBe('¡Amanece!');
     expect(msg(END_KEYS.flooded.title)).toBe('¡Barco inundado!');
     expect(canonResult('abandoned', s)).toBeNull();
+  });
+});
+
+describe('el premio en la pantalla final (T119)', () => {
+  it('liquidándose no dice nada; ganado, lo que da; repetido o sin validez, por qué no', () => {
+    expect(canonPrize(null)).toBe('pending');
+    expect(prizeLine(null)).toBeNull();
+    const won = { granted: true as const, points: 150, coins: 50 };
+    expect(canonPrize(won)).toBe('granted');
+    const line = prizeLine(won)!;
+    expect(msg(line.key, line.params)).toBe('+150 puntos y +50 monedas');
+    expect(canonPrize({ granted: false, reason: 'duplicate' })).toBe('duplicate');
+    expect(prizeLine({ granted: false, reason: 'duplicate' })?.key).toBe(
+      'mar.canon.premio.repetido',
+    );
+    // Inundado: el final ya lo dice; no hay línea de premio.
+    expect(prizeLine({ granted: false, reason: 'not_won' })).toBeNull();
+    for (const reason of ['abandoned', 'implausible_duration', 'no_sink', 'error'] as const) {
+      expect(canonPrize({ granted: false, reason })).toBe(reason);
+      expect(prizeLine({ granted: false, reason })?.key).toBe('mar.canon.premio.no');
+    }
+    for (const key of [
+      'mar.canon.premio.ganado',
+      'mar.canon.premio.repetido',
+      'mar.canon.premio.no',
+    ] as const) {
+      expect(es[key]).toBeTruthy();
+    }
   });
 });

@@ -59,7 +59,7 @@ reglas, en [`CLAUDE.md`](../CLAUDE.md).
 | Ruta | Qué es |
 |---|---|
 | `/` | La landing como un solo scroll (plan 007): aparición del planeta y «BOIA», reposo con «Zarpar» (entra en `/mar`) y «Entradas» (panel de Tickets); el scroll lleva la escena three.js del planeta al mar y los bloques (próximo evento, eventos, artistas, fotos, tienda, contacto, pie con el logo de BOIA y Spotify) suben sobre ella. Versión estática con un still de Blender con movimiento reducido, sin WebGL o en bajo consumo |
-| `/mar` | El mundo navegable: un planeta 3D (three.js), dos mundos, Arcilla (B05) y Acuarela (B02), con islas de eventos (Halloween, Sonido y Nochevieja con modelo de Blender), náufragos, descuentos escondidos, cofres, delfín, remolinos, Boia Fiestera, minijuegos Faro, Cañón y el circuito Los Rápidos (sin líneas guía durante la carrera), logros, ranking (local, o global con cuentas: tiempos por circuito y puntos de siempre), botellas (las 10 más recientes de todos, con cuentas), Mi Carnet, tienda de barcos, Tickets dentro del mundo y cambio de mundo por agujero negro |
+| `/mar` | El mundo navegable: un planeta 3D (three.js), dos mundos, Arcilla (B05) y Acuarela (B02), con islas de eventos (Halloween, Sonido y Nochevieja con modelo de Blender), náufragos, descuentos escondidos, cofres, delfín, remolinos, Boia Fiestera, el minijuego Faro (capa 2D), el Cañón «Que no pare la música» en **beta** (plan 010, jugado en el mismo mar) y el circuito Los Rápidos (sin líneas guía durante la carrera), logros, ranking (local, o global con cuentas: tiempos por circuito y puntos de siempre), botellas (las 10 más recientes de todos, con cuentas), Mi Carnet, tienda de barcos, Tickets dentro del mundo y cambio de mundo por agujero negro |
 | `/juego` | Ya no existe (D-25, plan 005 T62): el mundo 2D (PixiJS) se borró y la ruta redirige a `/mar` con su consulta (`?ir=`, `?evento=`, `?menu=`) |
 | `/carnet` | Carnet BOIA como carné de identidad (plan 008): tarjeta naranja ID-1, delante el socio con su QR, detrás los sellos como en un pasaporte; con cuentas, «Escanear sello» y «Tu cuenta» (noticias, cerrar sesión, borrar). `/carnet/<id>`: el Carnet público, sin email |
 | `/sello` | El QR de una fiesta (`/sello?e=<evento>&c=<código>`, plan 008): con cuentas, pide el email y pone el sello (+50 puntos `muestra`) dentro de la ventana de la fiesta; en modo local explica que hacen falta cuentas |
@@ -193,6 +193,42 @@ por Hernán: [propuestas/2026-10-03-carnet.md](propuestas/2026-10-03-carnet.md).
 - **El uso de la lista de emails** (P23): qué manda BOIA a quien marcó
   noticias, cada cuánto y con qué herramienta. Hasta entonces el CSV de
   Socios y emails no se usa.
+
+## El Cañón en beta (plan 010)
+
+El Cañón dejó de ser el juego 2D de la torre: ahora es **«Que no pare la
+música»**, un modo tipo Vampire Survivors que se juega **en el propio mar de
+`/mar`**, donde está el barco, con la etiqueta **BETA** en el panel de su
+isla y en el HUD. Diseño completo y hoja de ruta por betas (beta 1 = plan
+010, … lanzamiento = plan 014):
+[propuestas/2026-10-04-canon-survivors.md](propuestas/2026-10-04-canon-survivors.md).
+
+- **Beta 1 (plan 010, la de ahora):** pirañas y cangrejo acorazado, el cañón
+  de agua automático, notas con fusión e imán, carta de nivel 1 de 3, agua a
+  bordo como vida, 7:00 para ganar («¡Amanece!») o «¡Barco inundado!»; el
+  mundo se aparta durante la partida y vuelve igual; no se puede empezar en
+  carrera. La simulación es pura y determinista
+  (`packages/engine/src/survivors/`); la escena, `apps/web/app/mar/`
+  (`survivors.ts`, `canon-mode.tsx`, `canon-hud.tsx`,
+  `engine/survivors-props.ts`).
+- **Sesión y premio:** cada partida abre y liquida su sesión de minijuego
+  (versión 4, con la huella de la config del modo) validando el **tiempo
+  activo**; ganar da lo de siempre, 150 puntos y 50 monedas una vez por
+  temporada, y la señal de los logros `canon` y `guardacostas`. En modo
+  cuentas el servidor ya aceptaba `minigame:canon` sin cambios (no hizo falta
+  migración).
+- **Atajos de desarrollo** (`?minijuego=canon&t=&seed=`, `&derrota=`,
+  `&carta=1`, `&oferta=1`): siempre en `pnpm dev` y en las e2e; en
+  producción sólo con `?dev=1`. Se quitan al lanzar.
+- **Qué hace Hernán:** jugarla con la
+  [guía de prueba de la beta 1](propuestas/2026-10-04-canon-beta1-guia-prueba.md)
+  (qué atajos usar, qué valores tocar de manejo y cámara, y las seis
+  preguntas) y apuntar las respuestas: son la entrada del plan 011. Primer
+  mando: desde los 15 nudos de T120 las pirañas van tan rápido como el barco.
+- **Pendiente de decisión** ([spec/estado.md](spec/estado.md)): REQ-AVE-037
+  queda PARCIAL hasta elegir `puf` o `sumergirse` (con `puf`, Álvaro tiene
+  que aprobar el cambio del REQ); REQ-AVE-038 valida el tiempo activo en el
+  Cañón, un ajuste técnico por confirmar.
 
 ## Qué queda
 
