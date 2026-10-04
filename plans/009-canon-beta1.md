@@ -21,7 +21,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T98 — Survivors simulation in `packages/engine/src/survivors/` with seed tests
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
@@ -48,10 +48,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - `pnpm exec vitest run packages/engine/src/survivors` → exit 0, with tests proving: determinism (two runs with the same seed and input script give the same state hash; a different seed differs); the enemy cap per quality is never exceeded over a full accelerated 7:00 game; no enemy or note ever spawns or stands on land over full games on several seeds; the game ends `survived` at exactly 7:00 of active time; a no-dodge input ends `flooded`; a 5:01 pause ends `abandoned` and pause time never counts as active; islands block cannon projectiles; notes merge and the magnet pulls; a level-up stops the clock until a card is chosen; `t=` start is deterministic
   - the existing ship, world and wrap tests pass unchanged (part of the Test command)
   - Test command → exit 0
-- Outcome:
+- Outcome: pure sim in `packages/engine/src/survivors/` (subpath `@boia/engine/survivors`), versioned config, wrap math moved to `engine/world/wrap.ts` (web re-exports), shared `pushOutWrapped` island collision, grid, 2 enemies, cannon, notes, cards, water, pause clock; 30 tests; default `defeatStyle: sumergirse` → ab1bd6b
 
 ## T99 — The mode inside `/mar`: start and end in the same world, hiding, race lock, handling, camera, dev shortcuts
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T98
@@ -64,7 +64,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Tab hidden = automatic pause (feed T98's clock); a pause over 5 minutes ends the game and returns the world. For now the end just returns to the world (T101 adds the end screen; leave a clear hook).
   - **Dev shortcuts** (header decision 2): `?minijuego=canon&t=<s>&seed=<n>` starts the mode directly at that time with that seed; one helper `devShortcutsEnabled()` (dev, e2e, or `?dev=1` in production) gates every shortcut of the mode. Also expose a stable DOM/test hook of the game state (e.g. `data-*` attributes: running, time left, water, level, enemy count, end reason) that the e2e of T102 can read, following how the race exposes its state to e2e.
   - Add focused e2e coverage for entering, the race lock and returning to the world (new spec, e.g. `apps/web/e2e/mar-canon.spec.ts`; T102 extends it).
-- Context: the header and its required docs; T98's Outcome; `apps/web/app/mar/mar-client.tsx` (race wiring: `newRace`, `raceEvents`, `setRouteHidden`, `raceAgain`; `minigameOffer`/`minigameOpen`; the Fiestera mission around `setPassenger`), `apps/web/app/mar/carrera.tsx`, `apps/web/app/mar/race.ts`, `apps/web/app/mar/engine/mar3d.ts` (`setRouteHidden`, `setBottles`, `stepShip`, `updateCamera`), `apps/web/app/mar/engine/framing.ts`, `apps/web/lib/mundo/minigame-layer.tsx`, `apps/web/lib/mundo/mission.ts`, the minimap component, how `/mar` picks its `QualityTier`, how `?ir=canon` / existing dev query params work, `apps/web/e2e/` race and minigame specs and their helpers.
+- Context: the header and its required docs; T98's Outcome; `apps/web/app/mar/mar-client.tsx` (race wiring: `newRace`, `raceEvents`, `setRouteHidden`, `raceAgain`; `minigameOffer`/`minigameOpen`; the Fiestera mission around `setPassenger`), `apps/web/app/mar/carrera.tsx`, `apps/web/app/mar/race.ts`, `apps/web/app/mar/engine/mar3d.ts` (`setRouteHidden`, `setBottles`, `stepShip`, `updateCamera`), `apps/web/app/mar/engine/framing.ts`, `apps/web/lib/mundo/minigame-layer.tsx`, `apps/web/lib/mundo/mission.ts`, the minimap component, how `/mar` picks its `QualityTier`, how `?ir=canon` / existing dev query params work, T98's Outcome note that the i18n keys `survivors.upgrade.*` referenced by the config do not exist yet (add them in `apps/web/lib/i18n/`), `apps/web/e2e/` race and minigame specs and their helpers.
 - Scope: may touch `apps/web/app/mar/**` (new `survivors*` files encouraged; keep `mar-client.tsx` changes as thin wiring), `apps/web/lib/mundo/**` where the canon mount or hiding lives, i18n keys in `apps/web/lib/i18n/`, `packages/engine/src/survivors/**` (fixes only, with tests), new e2e spec / must not touch the 2D canon files (T102 removes them), the Faro, session/rewards, `docs/DECISIONES.md`.
 - Done when:
   - unit tests cover the dev-shortcut gate (dev / e2e / `?dev=1` / production without it) and the hide/restore list (everything hidden at start is restored at end)
@@ -137,7 +137,13 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 plan: only T101 may use the frontend-design skill (Hernán)
 - 2026-10-04 setup: design docs committed (c23cdff); the identical root copy of the design was deleted (Hernán)
 
+- 2026-10-04 T98: `./survivors` subpath in engine package.json; wrap math moved to `packages/engine/src/world/wrap.ts`, re-exported by `ship/controller.ts` and `apps/web/app/mar/engine/wrap.ts` with the same names (agent)
+- 2026-10-04 T98: `collideWrapped` calls a new exported `pushOutWrapped` (same arithmetic); enemies/notes use it with restitution 0 to slide; islands = `solidObstaclesOf` (`collisionRuleOf`) plus /mar's extra solid circles (agent)
+- 2026-10-04 T98: enemy grid cell 24, max 6 neighbours (~0.1 ms/step at 150 enemies); `defeatStyle` default `sumergirse`; `t=` start gives 2.5 seeded levels per minute and pre-fills 12 s of script; `spawnEnemy`/`spawnNote`/`onLand` helpers for tests and dev (agent)
+- 2026-10-04 T99: context extended with T98's note on missing `survivors.upgrade.*` i18n keys (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
 
 ## Log
 - 2026-10-04 13:52 T98 launched · attempt 1 · agent a7dd71bedac7f77e0
