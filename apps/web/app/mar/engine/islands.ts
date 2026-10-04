@@ -43,7 +43,7 @@ import {
 
 /**
  * Las islas del mapa compartido en 3D: cada lugar con su composición (el
- * escenario del All Day, el horno de la Cala Cantalar, el faro…), hecha de
+ * escenario del All Day, el Puerto de Alicante, el faro…), hecha de
  * piezas low-poly. Medidas en unidades de escena, con el centro de la isla en
  * el origen y el sur (hacia el puerto) en +z.
  */
@@ -57,6 +57,19 @@ export interface IslandBuild {
   heightAt: (x: number, z: number) => number;
   /** Altura a la que va su rótulo. */
   labelY: number;
+  /**
+   * Su orilla en el agua (bajío y espuma), en círculos locales. Sin ella, un
+   * círculo del radio de la isla. El puerto (T108) deja su dársena sin bajío.
+   */
+  shores?: { dx: number; dz: number; r: number; w: number }[];
+}
+
+/** La orilla de una isla en el agua: la suya o un círculo de su radio (escena). */
+export function islandShores(
+  build: Pick<IslandBuild, 'shores'>,
+  R: number,
+): { dx: number; dz: number; r: number; w: number }[] {
+  return build.shores ?? [{ dx: 0, dz: 0, r: R, w: Math.min(11, 3 + R * 0.7) }];
 }
 
 interface Ring {
@@ -382,64 +395,150 @@ function allday(R: number, rnd: () => number): IslandBuild {
   return { parts, animated, update, heightAt: h, labelY: top + 6.4 };
 }
 
-// --- Cala Cantalar: el horno ----------------------------------------------
+// --- Puerto de Alicante: la dársena (T108) ---------------------------------
+
+/**
+ * Las medidas del puerto, en radios de la isla y con el frente (hacia El
+ * Varadero) en +z: las del modelo de Blender (`tools/blender/places/cala.py`,
+ * cuya fuente usa z arriba y el frente en −y), para que la composición a
+ * mano (lejos, mientras llega o si falla el GLB) tenga la misma huella. Sólo
+ * la mitad de atrás es tierra; la dársena de delante es agua, sin bajío.
+ */
+export const HARBOR_LAYOUT = {
+  /** Radio de la tierra (el semicírculo de atrás) y su alto sobre el agua. */
+  land: 0.93,
+  landTop: 0.045,
+  /** El paseo del muelle que cierra la dársena por atrás. */
+  promenade: { z: -0.08, depth: 0.22, top: 0.122 },
+  /** Los dos muelles de fuera, en x = ±x, de z0 a z1. */
+  quays: { x: 0.77, z0: -0.05, z1: 0.47, width: 0.16, top: 0.1 },
+  /** Los tres pantalanes de madera. */
+  piers: [-0.43, 0, 0.43],
+  pierZ: [-0.04, 0.56] as const,
+  /** Los seis barcos amarrados (x, z). */
+  berths: [
+    [-0.57, 0.3],
+    [-0.28, 0.25],
+    [-0.14, 0.3],
+    [0.15, 0.28],
+    [0.29, 0.32],
+    [0.57, 0.26],
+  ] as [number, number][],
+  palms: [
+    [-0.65, -0.33],
+    [0.64, -0.33],
+    [-0.46, -0.59],
+    [0.46, -0.59],
+  ] as [number, number][],
+  lamps: [-0.71, 0.71],
+} as const;
 
 function cala(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
   const k = parts.lit;
-  const h = terrain(k, R, sandy(1.2, '#9cc257'), rnd);
-  shoreRocks(k, R, 12, rnd, Math.PI / 2);
-  const top = h(0, 0);
-  // Horno de barro.
-  k.add(new SphereGeometry(1.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), C.terracotta, {
-    p: [-0.6, top - 0.05, -0.8],
-  });
-  k.add(new CylinderGeometry(0.3, 0.38, 1.6, 7), '#b25530', { p: [-1.2, top + 1.7, -1.3] });
-  parts.glow.add(new BoxGeometry(0.8, 0.6, 0.2), '#ff7a2a', { p: [-0.6, top + 0.3, 0.66] });
-  parts.glows.add([-0.6, top + 0.5, 0.9], '#ff8a3a', 4);
-  // Vasijas.
-  const pot = new LatheGeometry(
-    [0.01, 0.22, 0.3, 0.26, 0.14, 0.16].map((x, i) => new Vector2(x, i * 0.14)),
-    8,
+  const L = HARBOR_LAYOUT;
+  const top = L.landTop * R;
+  // La tierra: medio disco atrás (z ≤ 0), cerrado por delante; nada en la dársena.
+  k.add(
+    new CylinderGeometry(L.land * R, L.land * R, top + 0.4, 24, 1, false, Math.PI / 2, Math.PI),
+    C.sand,
+    { p: [0, top / 2 - 0.2, 0] },
   );
-  for (let i = 0; i < 7; i++) {
-    const x = 0.9 + (rnd() - 0.5) * 2.4;
-    const z = 0.4 + (rnd() - 0.5) * 2.2;
-    k.add(pot, rnd() > 0.5 ? C.terracotta : '#d98a55', {
-      p: [x, h(x, z), z],
-      s: 0.8 + rnd() * 0.8,
+  k.add(new BoxGeometry(2 * L.land * R, top + 0.4, 0.05), C.sandWet, {
+    p: [0, top / 2 - 0.2, -0.025],
+  });
+  // El paseo del muelle y los dos muelles de fuera (de piedra, con su paseo encima).
+  const pr = L.promenade;
+  k.add(new BoxGeometry(1.75 * R, pr.top * R + 0.3, pr.depth * R), C.wall, {
+    p: [0, (pr.top * R - 0.3) / 2, pr.z * R],
+  });
+  const q = L.quays;
+  for (const side of [-1, 1]) {
+    const len = (q.z1 - q.z0) * R;
+    k.add(new BoxGeometry(q.width * R, q.top * R + 0.3, len), C.cliff, {
+      p: [side * q.x * R, (q.top * R - 0.3) / 2, ((q.z0 + q.z1) / 2) * R],
+    });
+    k.add(new BoxGeometry(q.width * R * 0.9, 0.06, len * 0.98), C.wall, {
+      p: [side * q.x * R, q.top * R + 0.03, ((q.z0 + q.z1) / 2) * R],
     });
   }
-  k.add(new BoxGeometry(2.2, 0.08, 0.6), C.wood, { p: [1.6, top + 0.8, -1.2] });
-  k.add(new BoxGeometry(2.2, 0.08, 0.6), C.wood, { p: [1.6, top + 0.4, -1.2] });
-  ringOfPalms(k, h, R, 5, 0.66, rnd, Math.PI, Math.PI * 2.2);
-  pier(k, 0, R * 0.9, Math.PI / 2, R * 0.55);
-  torch(parts, -0.9, h(-0.9, R * 0.55), R * 0.55);
-  torch(parts, 0.9, h(0.9, R * 0.55), R * 0.55);
-  // Humo que sube de la chimenea.
-  const animated: Object3D[] = [];
-  const puffs: Mesh[] = [];
-  const smokeMat = new MeshLambertMaterial({
-    color: '#efe6da',
-    transparent: true,
-    opacity: 0.7,
-    flatShading: true,
-  });
-  for (let i = 0; i < 5; i++) {
-    const p = new Mesh(new IcosahedronGeometry(0.3, 0), smokeMat.clone());
-    puffs.push(p);
-    animated.push(p);
+  // Los pantalanes de madera, unidos al paseo.
+  for (const x of L.piers) {
+    const len = (L.pierZ[1] - L.pierZ[0]) * R;
+    k.add(new BoxGeometry(0.065 * R, 0.4, len), C.wood, {
+      p: [x * R, 0.1 * R - 0.2, ((L.pierZ[0] + L.pierZ[1]) / 2) * R],
+    });
   }
-  const update = (t: number) => {
-    for (let i = 0; i < puffs.length; i++) {
-      const p = puffs[i]!;
-      const f = (t * 0.25 + i / puffs.length) % 1;
-      p.position.set(-1.2 + f * 0.8, top + 2.6 + f * 3, -1.3 - f * 0.4);
-      p.scale.setScalar(0.6 + f * 1.8);
-      (p.material as MeshLambertMaterial).opacity = 0.7 * (1 - f);
+  // Los barcos amarrados: casco blanco, cabina y, uno sí y otro no, mástil.
+  L.berths.forEach(([x, z], i) => {
+    k.add(new SphereGeometry(1, 10, 6), C.white, {
+      p: [x * R, 0.02 * R, z * R],
+      s: [0.05 * R, 0.035 * R, 0.13 * R],
+    });
+    k.add(new BoxGeometry(0.06 * R, 0.046 * R, 0.072 * R), C.wall, {
+      p: [x * R, 0.075 * R, (z - 0.015) * R],
+    });
+    k.add(new BoxGeometry(0.046 * R, 0.016 * R, 0.01 * R), C.blueDoor, {
+      p: [x * R, 0.081 * R, (z + 0.024) * R],
+    });
+    if (i % 2 === 0) {
+      k.add(new CylinderGeometry(0.03, 0.03, 0.29 * R, 4), C.white, {
+        p: [x * R, 0.2 * R, (z + 0.014) * R],
+      });
     }
+  });
+  // La marina: un edificio blanco y bajo con su planta azul y el toldo naranja de BOIA.
+  k.add(new BoxGeometry(0.88 * R, 0.34 * R, 0.29 * R), C.wall, { p: [0, 0.225 * R, -0.42 * R] });
+  k.add(new BoxGeometry(0.38 * R, 0.16 * R, 0.3 * R), C.blueDoor, {
+    p: [0, 0.37 * R, -0.42 * R],
+  });
+  for (const side of [-1, 1]) {
+    k.add(new BoxGeometry(0.3 * R, 0.04 * R, 0.33 * R), C.white, {
+      p: [side * 0.32 * R, 0.402 * R, -0.42 * R],
+    });
+  }
+  for (let i = 0; i < 7; i++) {
+    k.add(new BoxGeometry(0.076 * R, 0.15 * R, 0.02), C.navy, {
+      p: [(i - 3) * 0.113 * R, 0.2 * R, -0.274 * R],
+    });
+  }
+  k.add(new BoxGeometry(0.72 * R, 0.022 * R, 0.16 * R), C.orange, {
+    p: [0, 0.303 * R, -0.185 * R],
+  });
+  for (const x of [-0.31, 0.31]) {
+    k.add(new CylinderGeometry(0.05, 0.05, 0.17 * R, 5), C.white, {
+      p: [x * R, 0.215 * R, -0.176 * R],
+    });
+  }
+  // Palmeras en sus jardineras y las dos farolas del paseo (de noche, sus luces).
+  for (const [x, z] of L.palms) {
+    k.add(new CylinderGeometry(0.085 * R, 0.085 * R, 0.06 * R, 10), C.cliff, {
+      p: [x * R, top + 0.03 * R, z * R],
+    });
+    palm(k, x * R, top + 0.05 * R, z * R, 0.42 * R, rnd);
+  }
+  for (const x of L.lamps) {
+    k.add(new CylinderGeometry(0.05, 0.06, 0.24 * R, 5), C.navy, {
+      p: [x * R, (0.12 + 0.12) * R, -0.2 * R],
+    });
+    parts.glow.add(new SphereGeometry(0.022 * R, 8, 6), C.bulb, { p: [x * R, 0.37 * R, -0.2 * R] });
+    parts.glows.add([x * R, 0.37 * R, -0.2 * R], '#ffcf7a', 2.6);
+  }
+  // Sobre la tierra, su alto; en la dársena (z > 0), el agua.
+  const heightAt = (x: number, z: number) =>
+    z <= 0 && Math.hypot(x, z) <= L.land * R ? top : 0;
+  return {
+    parts,
+    animated: [],
+    heightAt,
+    labelY: 0.56 * R + 1.6,
+    // El bajío sólo bajo la tierra de atrás, corto: la dársena queda en agua honda.
+    shores: [
+      { dx: 0, dz: -0.47 * R, r: 0.45 * R, w: 2 },
+      { dx: -0.5 * R, dz: -0.3 * R, r: 0.3 * R, w: 2 },
+      { dx: 0.5 * R, dz: -0.3 * R, r: 0.3 * R, w: 2 },
+    ],
   };
-  return { parts, animated, update, heightAt: h, labelY: top + 5 };
 }
 
 // --- Isla de Benidorm: las fotos ------------------------------------------

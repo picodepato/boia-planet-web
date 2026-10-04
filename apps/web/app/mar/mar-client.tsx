@@ -157,11 +157,6 @@ import { MarTienda } from './tienda';
 import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
 import { type PointMap, pointMap } from './engine/compress';
-import {
-  CASTAWAY_REVISIT,
-  discoverShipMenu,
-  markShipMenuSeen,
-} from '../../lib/mundo/ship-menu-discovery';
 import { MarMinimap, type MinimapMark } from './minimap';
 import { MarAyuda } from './guia';
 import {
@@ -277,7 +272,8 @@ function writePref(key: string, v: string): void {
 
 const PIN_ICON: Record<string, string> = {
   allday: '🔊',
-  cala: '🏺',
+  // El Puerto de Alicante (T108): donde se cambia de barco.
+  cala: '⛵',
   fotos: '📷',
   tienda: '🛍️',
   ultima: '🎆',
@@ -562,7 +558,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   // --- Eventos del mundo ------------------------------------------------------
 
-  const shipDiscoveryPending = useRef(false);
   const syncDialogue = () => {
     const d = engineRef.current?.dialogue();
     const revisit = d?.objectId === 'naufrago' && foundDiscountsRef.current.has('dto-naufrago');
@@ -570,7 +565,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       d
         ? {
             objectId: d.objectId,
-            text: revisit ? CASTAWAY_REVISIT : d.text,
+            text: revisit ? msg('naufrago.revisit') : d.text,
             last: revisit || d.reaction || d.index >= d.count - 1,
           }
         : null,
@@ -836,20 +831,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
                 });
             })
             .catch(() => undefined);
-        }
-        if (o?.identity.id === 'cala' && !r?.race.active && !shipDiscoveryPending.current) {
-          shipDiscoveryPending.current = true;
-          void discoverShipMenu(progressApi())
-            .then((first) => {
-              if (first) {
-                setSheet(null);
-                openTienda();
-              }
-            })
-            .catch(() => undefined)
-            .finally(() => {
-              shipDiscoveryPending.current = false;
-            });
         }
         if (o?.identity.category === 'remolino') whirlRef.current.enter(performance.now());
         break;
@@ -1648,9 +1629,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     return g && w ? dropSpot(seaWorld(), w, g.ship, bottleMap()) : null;
   };
 
-  /** Abre la tienda «Barco»; como cualquier panel, anula la vuelta en curso. */
+  /**
+   * Abre la tienda «Barco» (desde el menú o el «Cambiar de barco» del Puerto
+   * de Alicante, T108; nunca sola al llegar); como cualquier panel, anula la
+   * vuelta en curso.
+   */
   const openTienda = () => {
-    void markShipMenuSeen(progressApi()).catch(() => undefined);
     const r = raceRef.current;
     if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
     setMenu(false);
@@ -2431,6 +2415,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           }}
           onSteerEvent={steerToEvent}
           onGoToIsland={goToIsland}
+          onShips={openTienda}
         />
       ) : null}
 

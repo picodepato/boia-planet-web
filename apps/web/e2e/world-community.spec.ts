@@ -3,16 +3,16 @@ import { MemoryStorage, SAMPLE_DISCOUNTS, STORE_KEY, createLocalRepository } fro
 import { WORLD_REGISTRY } from '@boia/world';
 import { marWorld } from '../app/mar/engine/compact';
 import { openMar, steerTo, marSheet, shipAt, sheetIs } from './mar-helpers';
-import { CASTAWAY_REVISIT } from '../lib/mundo/ship-menu-discovery';
 import { t } from '../lib/i18n';
 
 test.describe.configure({ timeout: 120_000 });
 
-async function seed(page: Page, kind: 'discount' | 'menu') {
+// The Puerto de Alicante boat-choice popup (T108) replaced the automatic Cala
+// shop of T100: its tests live in mar-puerto.spec.ts.
+async function seed(page: Page) {
   const storage = new MemoryStorage();
   const repo = createLocalRepository({ storage, watch: false });
-  if (kind === 'discount') await repo.progress.findDiscount('dto-naufrago');
-  else await repo.progress.setPref('barco:menu-abierto', true);
+  await repo.progress.findDiscount('dto-naufrago');
   await page.addInitScript(
     ([key, data]) => {
       if (!localStorage.getItem(key)) localStorage.setItem(key, data);
@@ -21,25 +21,8 @@ async function seed(page: Page, kind: 'discount' | 'menu') {
   );
 }
 
-test('Cala introduces ship cosmetics once and remembers it after reload', async ({ page }) => {
-  await openMar(page, '?cerca=cala');
-  await steerTo(page, 'cala', async () => await page.getByTestId('mar-tienda').isVisible());
-  await expect(page.getByTestId('mar-tienda')).toBeVisible();
-  await page.getByTestId('mar-tienda-cerrar').click();
-  await openMar(page, '?cerca=cala');
-  await steerTo(page, 'cala', async () => await marSheet(page).isVisible());
-  await expect(page.getByTestId('mar-tienda')).toHaveCount(0);
-});
-
-test('manual ship-menu opening suppresses Cala introduction', async ({ page }) => {
-  await seed(page, 'menu');
-  await openMar(page, '?cerca=cala');
-  await steerTo(page, 'cala', async () => await marSheet(page).isVisible());
-  await expect(page.getByTestId('mar-tienda')).toHaveCount(0);
-});
-
 test('castaway with an earned discount uses the supplied repeat-visit text', async ({ page }) => {
-  await seed(page, 'discount');
+  await seed(page);
   // Recover the historical objective before returning to the character.
   await openMar(page);
   await page.getByTestId('mar-logros').click();
@@ -47,7 +30,7 @@ test('castaway with an earned discount uses the supplied repeat-visit text', asy
   await expect(page.getByTestId('logro-naufrago-fiesta')).toHaveAttribute('data-estado', 'ready');
   await openMar(page, '?cerca=naufrago');
   await steerTo(page, 'naufrago', async () => await page.getByTestId('mar-bocadillo').isVisible());
-  await expect(page.getByTestId('mar-bocadillo')).toContainText(CASTAWAY_REVISIT);
+  await expect(page.getByTestId('mar-bocadillo')).toContainText(t('naufrago.revisit'));
 });
 
 test('castaway rescue completes immediately, persists and grants its reward only on one manual claim', async ({

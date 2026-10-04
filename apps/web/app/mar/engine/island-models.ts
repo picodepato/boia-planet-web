@@ -8,6 +8,9 @@ import type { Mesh, MeshLambertMaterial, Object3D } from 'three';
  * acerca (por distancia, como las boias de `models.ts`); lejos, mientras
  * llega o si falla, con su composición a mano de `islands.ts`. Sin entrada,
  * siempre la de a mano.
+ *
+ * Los lugares con contrato propio (T107, `tools/blender/places/`) entran por
+ * el mismo camino con `loadPlaceManifests`: `art/places/3d/<id>/manifest.json`.
  */
 
 export const ISLAND_MODELS_URL = '/api/art/islas/3d';
@@ -16,6 +19,8 @@ export const ISLAND_MODELS_URL = '/api/art/islas/3d';
 export interface IslandModelEntry {
   id: string;
   file: string;
+  /** Dónde está el GLB, si no es `ISLAND_MODELS_URL/file` (los lugares de T107). */
+  url?: string;
   label: string;
   /** Radio de la orilla en unidades del modelo: /mar escala por radio del lugar / radius. */
   radius: number;
@@ -74,8 +79,85 @@ export async function loadIslandManifest(
   }
 }
 
-export const islandModelUrl = (e: Pick<IslandModelEntry, 'file'>) =>
-  `${ISLAND_MODELS_URL}/${e.file}`;
+export const islandModelUrl = (e: Pick<IslandModelEntry, 'file' | 'url'>) =>
+  e.url ?? `${ISLAND_MODELS_URL}/${e.file}`;
+
+// --- Lugares de Blender con contrato propio (T107, T108) -----------------------------
+
+export const PLACE_MODELS_URL = '/api/art/places/3d';
+
+/**
+ * Los lugares cuyo modelo de `art/places/3d/<id>/` sustituye en /mar a la
+ * isla entera (T108: el Puerto de Alicante, `cala`). Los demás lugares de
+ * esa carpeta esperan a su integración (T112).
+ */
+export const PLACE_MODEL_IDS: readonly string[] = ['cala'];
+
+/**
+ * La entrada de un lugar a partir de su manifiesto (`place-glb`, versión 1,
+ * `tools/blender/places/place3d.schema.json`): radio normalizado, frente +z,
+ * agua en y = 0; /mar lo escala por el radio de colisión de la isla / radius,
+ * como a las islas. Si no encaja (otro id, otro archivo, sin radio o sin
+ * alto), null: se queda la composición a mano.
+ */
+export function parsePlaceManifest(json: unknown, id: string): IslandModelEntry | null {
+  const o = json as {
+    kind?: unknown;
+    version?: unknown;
+    id?: unknown;
+    file?: unknown;
+    radius?: unknown;
+    height?: unknown;
+    tris?: unknown;
+  } | null;
+  if (!o || o.kind !== 'place-glb' || o.version !== 1 || o.id !== id) return null;
+  if (o.file !== `${id}.glb` || !/^[a-z0-9-]+$/.test(id)) return null;
+  if (typeof o.radius !== 'number' || !(o.radius > 0)) return null;
+  if (typeof o.height !== 'number' || !(o.height > 0)) return null;
+  return {
+    id,
+    file: o.file,
+    url: `${PLACE_MODELS_URL}/${id}/${o.file}`,
+    label: id,
+    radius: o.radius,
+    // Un lugar no tiene «cima del terreno» en su contrato: su suelo está a ras de agua.
+    top: 0,
+    height: o.height,
+    tris: typeof o.tris === 'number' ? o.tris : 0,
+  };
+}
+
+/** Los manifiestos de los lugares de `ids`; el que falta o falla no cuenta (su isla, a mano). */
+export async function loadPlaceManifests(
+  ids: readonly string[] = PLACE_MODEL_IDS,
+  get: (url: string) => Promise<Response> = (url) => fetch(url),
+): Promise<Map<string, IslandModelEntry>> {
+  const out = new Map<string, IslandModelEntry>();
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const r = await get(`${PLACE_MODELS_URL}/${id}/manifest.json?optional=1`);
+        if (r.status !== 200) return;
+        const e = parsePlaceManifest(await r.json(), id);
+        if (e) out.set(id, e);
+      } catch {
+        // sin manifiesto: la isla se queda con su composición a mano
+      }
+    }),
+  );
+  return out;
+}
+
+/** Todas las islas con modelo: las de `art/islas/3d` y los lugares de `art/places/3d`. */
+export async function loadIslandModels(
+  get: (url: string) => Promise<Response> = (url) => fetch(url),
+): Promise<Map<string, IslandModelEntry>> {
+  const [islands, places] = await Promise.all([
+    loadIslandManifest(get),
+    loadPlaceManifests(PLACE_MODEL_IDS, get),
+  ]);
+  return new Map([...islands, ...places]);
+}
 
 /** Escala del modelo para que su orilla caiga en el radio R (escena) de la isla del mapa. */
 export const islandScale = (e: Pick<IslandModelEntry, 'radius'>, R: number) => R / e.radius;

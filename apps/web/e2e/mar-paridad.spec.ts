@@ -1,5 +1,5 @@
 import { SAMPLE_DISCOUNTS } from '@boia/store';
-import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
+import { HARBOR_REF, WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -242,7 +242,7 @@ test('«Saltar» lleva a la isla de un salto', async ({ page }) => {
   await expect(sheet.getByTestId('banner-descuento')).toBeVisible();
 });
 
-test('la ficha de una isla: recuerdos, «Próximos eventos» y «Ver fotos de la isla»', async ({
+test('la ficha de una isla: recuerdos y «Ver fotos de la isla»; el puerto, sin «Próximos eventos»', async ({
   page,
 }) => {
   const errors = await openMar(page, `?cerca=${infoIsland.identity.id}`);
@@ -253,7 +253,19 @@ test('la ficha de una isla: recuerdos, «Próximos eventos» y «Ver fotos de la
   await expect(sheet).toHaveAttribute('data-lugar', infoIsland.identity.id);
   await expect(sheet.getByRole('heading', { name: infoIsland.identity.name })).toBeVisible();
   await sheet.getByTestId('mar-ficha-mas').click();
-  await expect(sheet.getByTestId('panel-proximos')).toBeVisible();
+  await expect(
+    sheet.getByTestId('panel-recuerdos').or(sheet.locator('.juego-panel-pending')),
+  ).toBeVisible();
+  // El Puerto de Alicante (T108) es donde se cambia de barco: no anuncia eventos.
+  const harbor = infoIsland.behaviors.some(
+    (b) => b.type === 'content' && b.params.ref === HARBOR_REF,
+  );
+  if (harbor) {
+    await expect(sheet.getByTestId('puerto-barcos')).toBeVisible();
+    await expect(sheet.getByTestId('panel-proximos')).toHaveCount(0);
+  } else {
+    await expect(sheet.getByTestId('panel-proximos')).toBeVisible();
+  }
   const photos = sheet.getByTestId('ver-fotos-isla');
   await expect(photos).toHaveText('Ver fotos de la isla');
   await expect(photos).toHaveAttribute('href', `/fotos#${infoIsland.identity.id}`);

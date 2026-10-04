@@ -100,6 +100,7 @@ import {
   amphora,
   buildIsland,
   buildSandbank,
+  islandShores,
   sleepingRing,
   textTexture,
 } from './islands';
@@ -118,7 +119,7 @@ import {
   islandModelUrl,
   islandScale,
   islandStates,
-  loadIslandManifest,
+  loadIslandModels,
 } from './island-models';
 import {
   ShipHandling,
@@ -1656,7 +1657,10 @@ export class Mar3D {
         glows.push(gl);
         this.islands.push({ x, z, R, build });
         this.islandRadius.set(id, R);
-        shores.push({ x, z, r: R, w: Math.min(11, 3 + R * 0.7) });
+        // Su orilla (el puerto, T108: sólo bajo la tierra de atrás; la dársena, honda).
+        for (const sh of islandShores(build, R)) {
+          shores.push({ x: x + sh.dx, z: z + sh.dz, r: sh.r, w: sh.w });
+        }
         this.addView({ id, obj: g, kind: cat, y: 0, phase, labelY: build.labelY });
         continue;
       }
@@ -2985,12 +2989,14 @@ export class Mar3D {
   /**
    * Las islas de Blender (T69): el manifiesto dice cuáles tienen modelo; se
    * piden y se sueltan por distancia como las boias, con su propio alcance.
+   * Los lugares de `art/places/3d` (T108: el Puerto de Alicante) igual: su
+   * modelo sustituye la isla entera (tierra, piezas y luces de a mano).
    */
   private watchIslandModels(): void {
     this.animated.push((_t, glow) => {
       for (const v of this.islandModels.values()) v.glow?.(glow);
     });
-    void loadIslandManifest().then((entries) => {
+    void loadIslandModels().then((entries) => {
       if (this.destroyed) return;
       for (const [id, entry] of entries) {
         const v = this.islandModels.get(id);

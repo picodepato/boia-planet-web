@@ -26,7 +26,8 @@ const NOW = new Date('2026-10-02T12:00:00+02:00');
 
 /** Lo que decidieron: id de lugar → nombre en Arcilla, el mundo principal. */
 const ARCILLA_NAMES: Record<string, string> = {
-  cala: 'Cala Cantalar',
+  // Desde el 2026-10-04 (T108), el puerto donde se cambia de barco.
+  cala: 'Puerto de Alicante',
   fotos: 'Isla de Benidorm',
   tienda: 'Ibiza',
   faro: 'Tabarca',

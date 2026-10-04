@@ -40,6 +40,15 @@ export const HALLOWEEN_PLACE_ID = 'halloween';
 export const HALLOWEEN_CENTER: Maq = [-1.0, 1.5];
 
 /**
+ * El Puerto de Alicante (T108; antes la Cala Cantalar): el puerto donde se
+ * cambia de barco. Conserva el id `cala` (descubrimientos, logros y premios
+ * guardados) y su sitio de `mapa.json`. muestra
+ */
+export const HARBOR_PLACE_ID = 'cala';
+/** La referencia de contenido de un puerto: su ficha ofrece cambiar de barco («Barco»). */
+export const HARBOR_REF = 'barcos';
+
+/**
  * Id del circuito para checkpoints y récords (REQ-AVE-033 añade la versión).
  * Desde T67 el circuito se llama Los Rápidos; el id sigue siendo el de El
  * Freu para no perder récords ni logros.
@@ -339,16 +348,17 @@ const PORT: PlaceInput[] = [
 // --- Islas -----------------------------------------------------------------------
 
 const ISLANDS: PlaceInput[] = [
+  // El Puerto de Alicante (T108): donde se cambia de barco; el id sigue siendo `cala`.
   island(
-    'cala',
-    'Cala Cantalar',
+    HARBOR_PLACE_ID,
+    'Puerto de Alicante',
     'zonas/cala/islas/isla',
     [8.5, 13.0],
     3.1,
     2.1,
     45,
     4.6,
-    [content('info', 'cala'), points(20), visit()],
+    [content('info', HARBOR_REF), points(20), visit()],
     [
       'zonas/cala',
       'zonas/cala/proximidad/isla',
@@ -724,7 +734,7 @@ export const BOTTLE_SPOTS: { id: string; x: number; y: number; source: string[] 
  * por el este, pasa entre Els Dents y las Rocas del Freu (el atajo de la
  * maqueta), gira al norte, cruza el centro por debajo de la Isla del Sonido,
  * baja por el oeste junto al acantilado, vuelve por el sur hacia El Varadero
- * y cierra entre la Cala Cantalar y la Isla de Halloween. Las boias quedan
+ * y cierra entre el Puerto de Alicante y la Isla de Halloween. Las boias quedan
  * lejos de las islas (en /mar, fuera de su radio de proximidad: abrir su
  * panel anularía la carrera). Impulsos y rampas de salto van siempre en
  * mitad de un tramo, apuntando a la boia siguiente; las rocas y medusas
@@ -1246,7 +1256,7 @@ const INFO: PlaceInput[] = INFO_BOIES.map((b, i) => ({
 /** Rectángulo que envuelve el contorno de cada zona (`zonas[].contorno`). */
 const ZONES: [string, string, number, number, number, number][] = [
   ['puerto', 'Puerto de salida', -7, 7, 19.2, 31],
-  ['cala', 'Cala Cantalar', 3, 15, 8, 19.2],
+  ['cala', 'Puerto de Alicante', 3, 15, 8, 19.2],
   ['fiestera', 'Encuentro de la Boia Fiestera', -7, 1.5, 3.5, 11],
   ['allday', 'Isla del Sonido', -6, 7, -21.5, -4.5],
   ['fotos', 'Isla de Benidorm', -15, -3, -15.5, -4.5],

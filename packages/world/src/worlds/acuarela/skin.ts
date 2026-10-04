@@ -37,10 +37,11 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
       body: 'Si quieres enterarte antes que nadie de la próxima fiesta, BOIA tiene un grupo de WhatsApp. Es voluntario y puedes salir cuando quieras.',
     },
   },
+  // El Puerto de Alicante (T108, antes la Cala Cantalar): aquí se cambia de barco.
   cala: {
     texts: {
-      kicker: 'Isla',
-      body: 'Aquí vive la pintora del cuaderno: lo que pinta cobra vida mientras la pintura está húmeda. Cuidado, que aún estás fresco: si te mojas mucho, se te corre el azul.',
+      kicker: 'Puerto',
+      body: 'La pintora baja al puerto a pintar barcos. Elige uno de su cuaderno, cámbialo cuando quieras y sigue la verbena.',
     },
   },
   ultima: {
@@ -114,7 +115,7 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
  */
 export const ACUARELA_NAMES: Record<string, string> = {
   puerto: 'La Explanada',
-  cala: 'Cala Cantalar',
+  cala: 'Puerto de Alicante',
   fiestera: "L'Albufereta",
   fotos: 'La Vila Joiosa',
   tienda: 'Altea',

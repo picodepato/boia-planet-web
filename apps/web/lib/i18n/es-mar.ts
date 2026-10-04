@@ -140,6 +140,10 @@ export const esMar = {
   'mar.client.volverABoiaMenu': '← Volver a BOIA',
   'mar.sheet.verMas': 'Ver más',
   'mar.sheet.verMenos': 'Ver menos',
+  // El Puerto de Alicante (T108): aquí se cambia de barco.
+  'mar.sheet.puerto.kicker': '⚓ {v1} · muestra',
+  'mar.sheet.puerto.nombre': 'Puerto',
+  'mar.sheet.puerto.cambiarBarco': '⛵ Cambiar de barco',
   // A bordo dentro del mar (T55): Mi Carnet, Ajustes, Controles y Welcome Aboard.
   'mar.client.bienvenida': '⚓ Welcome Aboard',
   'mar.client.controles': '🎮 Controles',

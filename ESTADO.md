@@ -4,6 +4,30 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T108: Puerto de Alicante identity and explicit boat-choice popup
+
+Qué existe:
+- **Identidad.** La Cala Cantalar es el **Puerto de Alicante** (id `cala` intacto: descubrimientos, logros, premios y su sitio de `mapa.json` no cambian). `HARBOR_PLACE_ID = 'cala'` y `HARBOR_REF = 'barcos'` en `packages/world/src/worlds/arcilla/map.ts` (nombre del lugar y del sector); textos de muestra de puerto en las pieles de Arcilla y Acuarela (`kicker: 'Puerto'`); en Acuarela el nombre propio pasa a «Puerto de Alicante» también en su fuente `mundos/acuarela/lugares.json` (la prueba de paridad nombres↔lugares.json sigue). Icono del rótulo ⛵ (`PIN_ICON`, `mar-client.tsx`).
+- **Ficha del puerto** (`apps/web/app/mar/sheet.tsx`): la ficha normal de un lugar (`info`, al acercarse), con «⛵ Cambiar de barco» (`data-testid="puerto-barcos"`, claves `mar.sheet.puerto.*` en `es-mar.ts`) que abre «Barco» (`onShips` → `openTienda`, compra y equipa); en otra visita, además «Explorar la isla» (REQ-AVE-013 sigue); desplegada, sin «Próximos eventos» (`IslandBlock harbor`), con recuerdos y «Ver fotos de la isla».
+- **Fuera la apertura sola de T100**: borrados `lib/mundo/ship-menu-discovery.ts` y su prueba y el enganche de `mar-client.tsx`; la preferencia vieja `barco:menu-abierto` ya no la lee nadie (perfiles nuevos y viejos ven la ficha, nunca la tienda sola). `naufrago.revisit` se usa por clave.
+- **Modelo de Blender** (`apps/web/app/mar/engine/island-models.ts`): `PLACE_MODEL_IDS = ['cala']`, `parsePlaceManifest`/`loadPlaceManifests`/`loadIslandModels` leen `art/places/3d/<id>/manifest.json` (contrato `place-glb` de T107) y el GLB entra por el mismo camino que las islas de Blender (por distancia, escala = radio de colisión / radius, sin girar, sus luces de a mano apagadas). La composición a mano de la cala (horno, humo, antorchas, terreno redondo) se sustituye por un puerto a mano con la misma huella (`HARBOR_LAYOUT`, `islands.ts`) para lejos, mientras llega o si falla el GLB; `islandShores` deja el bajío sólo bajo la tierra de atrás: la dársena queda en agua honda con modelo y sin él. Colisión y proximidad, las de siempre.
+- **Cañón**: la ficha del puerto no sale en plena partida (el runtime está parado, como en las demás islas); e2e lo prueba.
+- `tools/blender/places/README.md`: nota del enganche en /mar para T112.
+- Pruebas: `engine/harbor.test.ts` (paridad manifiesto/GLB/escala/orientación, tierra sólo atrás, cargador y respaldo, puerto a mano sin dársena rellena), `mar/sheet.test.ts` (botón, kicker, sin próximos eventos), `arcilla.test.ts` (id, nombre en los dos mundos, contenido), e2e nueva `mar-puerto.spec.ts` (perfil nuevo y con la preferencia vieja, compra/equipa desde la ficha, modelo GLB y colisión, rótulo sin pisar mandos, sin GLB, Cañón), `mar-paridad.spec.ts` y `world-community.spec.ts` ajustadas.
+- Rama: fusionado `main` (559b9c7: T109, T114, T111) sin conflictos; las comprobaciones de abajo son del estado fusionado.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 143 archivos, 1295 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm build` → exit 0 (landing 186.9/200 kB). `pnpm typecheck` → exit 0.
+- `python tools/blender/places/check.py` → exit 0 (cala 11404 tris, 427148 B); `python tools/blender/places/test_check.py` → exit 0; `python tools/blender/check.py` → exit 0.
+- `E2E_PORT=3218 pnpm e2e mar-puerto world-community comunidad mar-paridad mar-isla-modelo tienda mar-carnet-barco mar-canon mar-rotulos mar-hud --workers=1` → exit 1: 93 pasan, 10 omitidas, 3 fallan y no son de T108: `mar-hud.spec.ts:411` móvil y escritorio (la tarjeta pequeña de la Isla del Sonido espera sin «Ir en nave»: la expectativa vieja de T97 que cierra T105) y `mar-rotulos.spec.ts` «cerca de halloween» en móvil (falla igual en la base 27c7726, comprobado: 161 > 134). `mar-puerto.spec.ts` 14/14.
+- Capturas móvil y escritorio revisadas (fuera del repositorio): ficha, «Barco», modelo de día y de noche, puerto a mano sin GLB, rótulo.
+
+Pendiente:
+- En un móvil estrecho el rótulo «⛵ Puerto de Alicante» (224 px) no cabe entre el minimapa y los saldos a la distancia de `?cerca=`: se apaga lejos y sale al acercarse (regla de T75); por eso el puerto no entra en `mar-rotulos.spec.ts` y su rótulo se prueba en `mar-puerto.spec.ts`.
+- El aviso de primera llegada sigue diciendo «Isla descubierta: Puerto de Alicante» (clave común `island.firstVisit`).
+- Fuera de alcance: el Admin sigue ofreciendo el puerto como isla a la que ligar eventos (`lib/admin/world.ts`, `eventIslands`); las claves sin uso `world.*.island.cala.body` de `textos-zonas.md` y el arte 2D `art/mundos/acuarela/cala/manifest.json` conservan los textos de la cala.
+
 ## 2026-10-04 — plan 010 T111: Blender Ibiza white village and cove asset
 
 Qué existe:

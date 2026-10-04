@@ -154,8 +154,8 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
     expect(
       ['halloween', 'allday', 'ultima'].map((id) => objectIn(acuarela, id)!.identity.name),
     ).toEqual(['Isla de Halloween', 'Isla del Sonido', 'Isla de Nochevieja']);
-    // Los sitios con nombre propio se llaman distinto que en Arcilla (la Cala
-    // Cantalar, desde el 2026-10-02, se llama igual en los dos).
+    // Los sitios con nombre propio se llaman distinto que en Arcilla (el
+    // Puerto de Alicante, antes la Cala Cantalar, se llama igual en los dos).
     for (const id of ['puerto', 'fiestera', 'fotos', 'tienda', 'faro', 'canon']) {
       expect(objectIn(acuarela, id)!.identity.name).not.toBe(objectIn(arcilla, id)!.identity.name);
     }

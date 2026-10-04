@@ -11,7 +11,7 @@ import {
 } from '@boia/contracts';
 import type { FoundDiscount } from '@boia/store';
 import { MERCHANDISE_NOTICE, MERCHANDISE_PATH } from '../../lib/merchandise/catalog';
-import type { WorldConfig, WorldObject } from '@boia/world';
+import { HARBOR_REF, type WorldConfig, type WorldObject } from '@boia/world';
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import { t, formatEventDate } from '../../lib/i18n';
@@ -36,7 +36,9 @@ import { useRepoData } from '../../lib/mundo/repo';
  * el 2D (T42, T43, T45): el estado del evento con su aviso, sus recuerdos,
  * «Ver fotos de la isla», «Próximos eventos» con los satélites, el aviso
  * «Tienes un código de descuento para este evento» junto a la compra y cada
- * código con «Ir a la isla». Textos `muestra` [pendiente Álvaro].
+ * código con «Ir a la isla». El Puerto de Alicante (T108) es un lugar
+ * más, con su ficha al acercarse; su botón abre «Barco» para cambiar de
+ * barco, y no anuncia eventos. Textos `muestra` [pendiente Álvaro].
  */
 
 export type SheetState =
@@ -112,6 +114,8 @@ export interface SheetProps {
   onSteerEvent: (eventId: string) => boolean;
   /** «Ir a la isla» de un código: el barco navega solo hasta ella (T43). */
   onGoToIsland: (eventId: string) => void;
+  /** «Cambiar de barco» en el puerto (T108): abre la tienda «Barco». */
+  onShips?: () => void;
   distance: number | null;
 }
 
@@ -152,6 +156,7 @@ export function Sheet({
   onBuy,
   onSteerEvent,
   onGoToIsland,
+  onShips,
   distance,
 }: SheetProps) {
   // «Mis códigos» se pide desde el menú: se abre ya desplegada.
@@ -403,21 +408,42 @@ export function Sheet({
       </>
     );
   } else {
-    // Otra visita a una isla ya descubierta: pequeña, con «Explorar la isla» (REQ-AVE-013).
-    compact = {
-      kicker: islandKicker(object),
-      title: name,
-      meta: textOf(object, 'body'),
-      action: state.revisit ? (
+    // El puerto (T108): su botón abre «Barco»; nunca se abre solo al llegar.
+    const harbor = state.ref === HARBOR_REF;
+    const ships =
+      harbor && onShips ? (
         <button
           type="button"
           className="mar-btn mar-btn--primary"
-          data-testid="isla-explorar"
-          onClick={expand}
+          data-testid="puerto-barcos"
+          aria-haspopup="dialog"
+          onClick={onShips}
         >
-          {ISLAND_EXPLORE}
+          {t('mar.sheet.puerto.cambiarBarco')}
         </button>
-      ) : undefined,
+      ) : null;
+    // Otra visita a una isla ya descubierta: pequeña, con «Explorar la isla» (REQ-AVE-013).
+    const explore = state.revisit ? (
+      <button
+        type="button"
+        className={ships ? 'mar-btn' : 'mar-btn mar-btn--primary'}
+        data-testid="isla-explorar"
+        onClick={expand}
+      >
+        {ISLAND_EXPLORE}
+      </button>
+    ) : null;
+    compact = {
+      kicker: harbor ? harborKicker(object) : islandKicker(object),
+      title: name,
+      meta: textOf(object, 'body'),
+      action:
+        ships || explore ? (
+          <>
+            {ships}
+            {explore}
+          </>
+        ) : undefined,
     };
     body = (
       <IslandBlock
@@ -425,6 +451,8 @@ export function Sheet({
         object={object}
         revisit={!!state.revisit}
         onSteer={onSteerEvent}
+        harbor={harbor}
+        actions={ships}
       />
     );
   }
@@ -485,6 +513,12 @@ export function Sheet({
 
 function islandKicker(object: WorldObject | undefined): string {
   return t('mar.sheet.muestra2', { v1: textOf(object, 'kicker') ?? t('mar.sheet.isla2') });
+}
+
+function harborKicker(object: WorldObject | undefined): string {
+  return t('mar.sheet.puerto.kicker', {
+    v1: textOf(object, 'kicker') ?? t('mar.sheet.puerto.nombre'),
+  });
 }
 
 function kickerOf(o: WorldObject | undefined): string {
@@ -610,29 +644,35 @@ export function EventBlock({
  * Una isla sin evento, desplegada: su relato, sus recuerdos, «Ver fotos de la
  * isla» y sus «Próximos eventos» (REQ-AVE-014). En una visita posterior la
  * tarjeta pequeña ofrece el acceso directo «Explorar la isla» (REQ-AVE-013).
+ * El puerto (T108) lleva su botón «Cambiar de barco» y no anuncia eventos.
  */
-function IslandBlock({
+export function IslandBlock({
   placeId,
   object,
   revisit,
   onSteer,
+  harbor = false,
+  actions = null,
 }: {
   placeId: string;
   object: WorldObject | undefined;
   revisit: boolean;
   onSteer: (eventId: string) => boolean;
+  harbor?: boolean;
+  actions?: ReactNode;
 }) {
   const name = object?.identity.name ?? '';
   return (
-    <div data-visita={revisit ? 'otra' : 'primera'}>
-      <p className="mar-sheet__kicker">{islandKicker(object)}</p>
+    <div data-visita={revisit ? 'otra' : 'primera'} data-puerto={harbor ? 'si' : undefined}>
+      <p className="mar-sheet__kicker">{harbor ? harborKicker(object) : islandKicker(object)}</p>
       <h2 className="mar-sheet__title">{name}</h2>
       {textOf(object, 'body') ? <p>{textOf(object, 'body')}</p> : null}
+      {actions ? <div className="mar-sheet__actions">{actions}</div> : null}
       <IslandMemories placeId={placeId} />
       <p className="juego-panel-links">
         <IslandPhotosLink islandId={placeId} />
       </p>
-      <IslandUpcoming islandId={placeId} onSteer={onSteer} />
+      {harbor ? null : <IslandUpcoming islandId={placeId} onSteer={onSteer} />}
     </div>
   );
 }

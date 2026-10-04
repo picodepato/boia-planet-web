@@ -32,10 +32,11 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
       body: 'Si quieres enterarte antes que nadie de la próxima fiesta, BOIA tiene un grupo de WhatsApp. Es voluntario y puedes salir cuando quieras.',
     },
   },
+  // El Puerto de Alicante (T108, antes la Cala Cantalar): aquí se cambia de barco.
   cala: {
     texts: {
-      kicker: 'Isla',
-      body: 'Aquí se coció tu barco. Todavía está caliente. De día la cala cocina; de noche, baila.',
+      kicker: 'Puerto',
+      body: 'Aquí amarran todos los barcos de BOIA. Elige el tuyo, cámbialo cuando quieras y vuelve a la mar.',
     },
   },
   ultima: {
@@ -100,10 +101,11 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
 /**
  * Nombres propios de Arcilla (diseno.md → `propuesta_nombre`); las islas de
  * evento no. Desde el 2026-10-02 (Hernán y Álvaro) las islas de Arcilla
- * llevan nombres reales del Mediterráneo y de Alicante (Cala Cantalar, Isla
- * de Benidorm, Ibiza, Tabarca, L'Illeta dels Banyets): son los nombres
- * comunes del mapa (`./map`), así que aquí sólo quedan el puerto, el remanso,
- * el circuito y las boias.
+ * llevan nombres reales del Mediterráneo y de Alicante (Isla de Benidorm,
+ * Ibiza, Tabarca, L'Illeta dels Banyets; la Cala Cantalar es desde el
+ * 2026-10-04 el Puerto de Alicante, T108): son los nombres comunes del mapa
+ * (`./map`), así que aquí sólo quedan el puerto, el remanso, el circuito y
+ * las boias.
  */
 const NAMES: Record<string, string> = {
   puerto: 'El Varadero',

@@ -1,8 +1,17 @@
 # Independent BOIA 3D places
 
-These assets do **not** participate in `art/islas/3d/manifest.json` yet. T108/T112
+These assets do **not** participate in `art/islas/3d/manifest.json`. T108/T112
 own runtime hookup; no existing place ID, route, collision, content or progress
 changes here. This contract is distinct from the legacy 2D `place.schema.json`.
+
+Runtime (T108): `/mar` reads `art/places/3d/<id>/manifest.json` for each ID in
+`PLACE_MODEL_IDS` (`apps/web/app/mar/engine/island-models.ts`; today only `cala`,
+the Puerto de Alicante) and streams the GLB by distance like the Blender islands,
+scaled by collision radius / `radius`, unrotated (front +Z). The GLB replaces the
+whole island; the hand-made fallback (`islands.ts`, `HARBOR_LAYOUT`) has the same
+footprint and keeps the basin as open water, with its shore only under the rear
+cap. `apps/web/app/mar/engine/harbor.test.ts` checks manifest/GLB/runtime parity.
+T112 adds `fotos`/`tienda` to `PLACE_MODEL_IDS` with their animation playback.
 
 Each place has `tools/blender/places/<id>.py` and
 `art/places/3d/<id>/{<id>.blend,<id>.glb,manifest.json}`. IDs remain `cala`, `fotos`,

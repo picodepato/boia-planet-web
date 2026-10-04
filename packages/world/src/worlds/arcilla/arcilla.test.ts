@@ -15,6 +15,8 @@ import {
   COAST_HALF_WIDTH,
   FACTOR,
   HALLOWEEN_PLACE_ID,
+  HARBOR_PLACE_ID,
+  HARBOR_REF,
   LOCAL_ANCHORS,
   TICKET_ISLAND_EVENTS,
   type Maq,
@@ -43,9 +45,12 @@ const readArt = (base: string): unknown => {
 
 const map = parseSharedMap(ARCILLA_MAP);
 
-/** Los nombres que decidieron Hernán y Álvaro el 2026-10-02 para el mundo principal. */
+/**
+ * Los nombres que decidieron Hernán y Álvaro el 2026-10-02 para el mundo
+ * principal; la Cala Cantalar es desde el 2026-10-04 el Puerto de Alicante (T108).
+ */
 const NAMES_2026_10_02: Record<string, string> = {
-  cala: 'Cala Cantalar',
+  cala: 'Puerto de Alicante',
   fotos: 'Isla de Benidorm',
   tienda: 'Ibiza',
   faro: 'Tabarca',
@@ -229,6 +234,30 @@ describe('mapa compartido de Arcilla (T20)', () => {
     expect(Object.fromEntries(Object.keys(NAMES_2026_10_02).map((id) => [id, name(id)]))).toEqual(
       NAMES_2026_10_02,
     );
+  });
+
+  it('el Puerto de Alicante (T108): conserva el id `cala` y se llama igual en los dos mundos', () => {
+    expect(HARBOR_PLACE_ID).toBe('cala');
+    const shared = map.places.find((p) => p.id === HARBOR_PLACE_ID)!;
+    expect(shared.name).toBe('Puerto de Alicante');
+    expect(map.sectors.find((s) => s.id === HARBOR_PLACE_ID)?.name).toBe(shared.name);
+    for (const id of WORLD_REGISTRY.ids()) {
+      const o = WORLD_REGISTRY.get(id).config.objects.find(
+        (x) => x.identity.id === HARBOR_PLACE_ID,
+      )!;
+      expect(o.identity.name, id).toBe(shared.name);
+      expect(o.identity.category, id).toBe('isla');
+      // Su ficha es la de un lugar (`info`) que ofrece cambiar de barco, sin evento.
+      const content = o.behaviors.filter((b) => b.type === 'content');
+      expect(
+        content.map((b) => b.params),
+        id,
+      ).toEqual([expect.objectContaining({ target: 'info', ref: HARBOR_REF })]);
+      expect(
+        o.behaviors.some((b) => b.type === 'ticket'),
+        id,
+      ).toBe(false);
+    }
   });
 
   it('la Isla de Halloween: isla con entradas en mar libre, lejos de las demás', () => {
