@@ -90,7 +90,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: codex/world-updates 608f883 merged (squashed); new hide layers `objective` and `wildlife`; handling overrides are scale factors so the game boat cruises at 15 kn; one pins effect; 1193 unit tests; race medal e2e left failing for T109 → c5c6339
 
 ## T117 — Provisional models, notes on the water and the two defeat styles
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T116, T120
@@ -149,7 +149,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T106 — Durable stamps and achievement progress across sessions
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T120
@@ -164,7 +164,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T107 — Blender Alicante harbor asset and reusable place contract
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: none
@@ -176,7 +176,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Explicit normalized placement contract, at most 12000 triangles and 600 kB GLB per place; use ceilings as limits, not proof of finish. Asset registry additions do not affect current runtime parsing before hookup.
   - Inspect reference images, graybox/proportions, multiview and day/night views at actual game distance; save requirement ledger and render/evidence paths. No redistributed reference images in public assets.
   - Relevant asset/unit validation, typecheck/lint pass. Deliver source, blend, GLB and metrics; no runtime completion claim yet.
-- Outcome:
+- Outcome: (Codex) Alicante harbor in `art/places/3d/cala/` + `tools/blender/places/` (Blender 5.2.2 LTS): 11404 tris, 427 kB GLB, 240 degenerate tris removed, placement contract/schema for cala/fotos/tienda, ledger and notes; renders kept outside the repo → 4c529e9
 
 ## T110 — Blender Benidorm skyline and club asset
 - Status: pending
@@ -256,7 +256,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T108, T109, T110, T111
 - Goal: Use the new Benidorm/Ibiza Blender assets in the actual game, replacing old decoration and playing the requested club mascot loop.
-- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
+- Context: (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
 - Scope: scene place loaders/hooks/animation/tests and required Benidorm geometry/proximity source parity adjustment. No UI/account/economy/route/icon changes.
 - Done when:
   - Both models load with fallback and no duplicated island decoration. Any modest Benidorm enlargement updates visual/collision/proximity dimensions together and leaves safe separation/approach; Ibiza shop behavior remains.
@@ -349,3 +349,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 17:47 stop message sent to the Codex orchestrator session 01a10276 via `codex exec resume`
 - 2026-10-04 17:53 T107 launched · attempt 1 · Codex via wrapper agent a51c7a2f06fefaab5
 - 2026-10-04 17:56 T120 done (option A on the medal e2e) → c5c6339
+- 2026-10-04 17:57 T117 launched · attempt 1 · agent abb47c81231627b9e
+- 2026-10-04 18:21 T107 done → 4c529e9
