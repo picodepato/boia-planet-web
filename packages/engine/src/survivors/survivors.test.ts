@@ -396,6 +396,16 @@ describe('survivors: pausa y tiempo activo', () => {
     expect(game.snapshot().pauseTotalS).toBeCloseTo(9.75, 6);
   });
 
+  it('el reloj dice cuánto del paso siguiente ya pasó (para pintar entre pasos)', () => {
+    const game = createSurvivors(SURVIVORS_CONFIG, 5, openSea());
+    const clock = new SurvivorsClock();
+    expect(clock.alpha).toBe(0);
+    expect(clock.frame(game, SURVIVORS_STEP_S * 2.5)).toBe(2);
+    expect(clock.alpha).toBeCloseTo(0.5, 6);
+    clock.frame(game, 10, true);
+    expect(clock.alpha).toBe(0);
+  });
+
   it('subir de nivel para el reloj hasta elegir carta', () => {
     const cfg = quiet((c) => {
       c.levels = { base: 1, linear: 0, quadratic: 0 };

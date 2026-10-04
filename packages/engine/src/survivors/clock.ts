@@ -19,6 +19,14 @@ export class SurvivorsClock {
 
   constructor(private readonly maxFrameS = 0.25) {}
 
+  /**
+   * Fracción (0…1) del paso siguiente ya transcurrida tras el último
+   * `frame`: para pintar entre el paso anterior y el actual (T99).
+   */
+  get alpha(): number {
+    return Math.min(1, Math.max(0, this.acc / SURVIVORS_STEP_S));
+  }
+
   /** Pasos fijos que hay que dar ahora (cada uno con `game.step(input)`). */
   frame(game: SurvivorsGame, realDtS: number, hidden = false): number {
     if (game.ended) return 0;

@@ -201,4 +201,17 @@ export const esMar = {
   'mar.ayuda.pista.fiestera': 'La Boia Fiestera espera en algún sitio del mar: búscala.',
   'mar.ayuda.pista.mission': 'La BOIA va a bordo: llévala a {place}.',
   'mar.ayuda.pista.nada': 'Ya lo has encontrado todo en este mar. ¡Date una vuelta por las islas!',
+  // El Cañón «Que no pare la música» en el mar 3D (plan 009, T99): el panel de su isla. muestra
+  'mar.canon.title': 'Que no pare la música',
+  'mar.canon.summary':
+    'Esquiva el enjambre con el barco hasta que amanezca: el Cañón de agua dispara solo y las notas que sueltan te suben de nivel. Se juega aquí mismo, donde está tu barco.',
+  'mar.canon.lock.race':
+    'Ahora no: estás en plena carrera. Termínala (o sal de ella) y vuelve a jugar.',
+  // Las mejoras de las cartas de nivel (config del modo, `survivors.upgrade.*`). muestra
+  'survivors.upgrade.damage': 'Bolas más fuertes: +{amount} de daño',
+  'survivors.upgrade.fireRate': 'Recarga más rápida: +{amount} de cadencia',
+  'survivors.upgrade.projectiles': 'Cañón doble: +{amount} bola por disparo',
+  'survivors.upgrade.speed': 'Más vela: +{amount} de velocidad',
+  'survivors.upgrade.magnet': 'Imán de notas: +{amount} de alcance',
+  'survivors.upgrade.bailing': 'Achique: el agua a bordo baja {amount} por segundo',
 } as const;

@@ -22,6 +22,8 @@ import {
   loadSettings,
   setControlSensitivity,
 } from '@boia/engine/ui';
+import { type QualityTier, detectQuality } from '@boia/engine/streaming';
+import type { SurvivorsConfig } from '@boia/engine/survivors';
 import type { WorldConfig, WorldObject } from '@boia/world';
 import type { Color, ShaderMaterial } from 'three';
 import {
@@ -136,6 +138,8 @@ import {
   roadMarkers,
 } from './race-props';
 import { createWater } from './water';
+import { SurvivorsView } from './survivors-view';
+import type { SurvivorsRun } from '../survivors';
 import {
   type Circle,
   type Period,
@@ -534,6 +538,23 @@ export class Mar3D {
   inputEnabled = true;
   /** Sin simular ni pintar (un minijuego a pantalla completa encima). */
   paused = false;
+  /**
+   * La partida del Cañón en curso (T99): la simulación lleva el barco (con
+   * su maniobrabilidad) y aquí se pinta; el runtime del mundo no corre.
+   */
+  private survivors: {
+    run: SurvivorsRun;
+    view: SurvivorsView;
+    /** El barco de la partida (vivo: la simulación lo mueve en su sitio). */
+    player: { x: number; y: number; vx: number; vy: number; heading: number };
+  } | null = null;
+  /** La cámara de la partida (0 la de siempre, 1 la de la partida). */
+  private camBlend = 0;
+  private camTuning: SurvivorsConfig['camera'] = { distanceScale: 1, heightScale: 1, blendS: 1 };
+  /** Vistas escondidas por capa (`kind` de cada vista) durante la partida. */
+  private readonly kindLayers = new Map<string, readonly string[]>();
+  private readonly hiddenKinds = new Set<string>();
+  private qualityTier: QualityTier | null = null;
   /** Lo que se enciende de cada orden del circuito (arco o boia) cuando toca pasarlo. */
   private gates = new Map<number, ((on: boolean) => void)[]>();
   /** Las boyitas de la carretera de la carrera en curso (T76). */
@@ -700,6 +721,8 @@ export class Mar3D {
 
   zoomBy(d: number): void {
     this.zoomGoal = clamp01(this.zoomGoal + d);
+    // En la partida del Cañón, sin vista de mapa.
+    if (this.survivors) this.zoomGoal = Math.min(this.zoomGoal, MAP_ZOOM - 0.1);
     if (this.zoomGoal < MAP_ZOOM) this.lastBoatZoom = this.zoomGoal;
   }
 
@@ -709,6 +732,7 @@ export class Mar3D {
 
   /** Vista de mapa ↔ vista de barco. */
   toggleMap(): void {
+    if (this.survivors) return;
     if (this.zoomGoal >= MAP_ZOOM) this.backToBoat();
     else {
       this.lastBoatZoom = this.zoomGoal;
@@ -726,8 +750,8 @@ export class Mar3D {
    * viaje en turbo en curso termina como `cancelled`.
    */
   setCourse(target: { placeId: string } | { x: number; y: number } | null): void {
-    // En el aire no se cambia de rumbo (se puede «Saltar»).
-    if (this.flight) return;
+    // En el aire no se cambia de rumbo (se puede «Saltar»); en la partida del Cañón, tampoco.
+    if (this.flight || (this.survivors && target)) return;
     this.endVoyage('cancelled');
     if (!target) {
       this.clearCourse();
@@ -916,6 +940,7 @@ export class Mar3D {
    * (sólo «Saltar», que lo posa ya). Devuelve false si el lugar no existe.
    */
   startFlight(placeId: string): boolean {
+    if (this.survivors) return false;
     if (this.flight) return this.flight.placeId === placeId;
     this.endVoyage('cancelled');
     this.clearCourse();
@@ -1030,7 +1055,7 @@ export class Mar3D {
   }
 
   turbo(): boolean {
-    if (this.turboCool > 0) return false;
+    if (this.turboCool > 0 || this.survivors) return false;
     this.turboLeft = TURBO_S;
     this.turboCool = TURBO_COOLDOWN_S;
     this.fovKick = 1;
@@ -1249,6 +1274,99 @@ export class Mar3D {
     if (this.opts.canvas.dataset.ruta !== on) this.opts.canvas.dataset.ruta = on;
   }
 
+  /** ¿Están fuera las marcas amarillas de la ruta? */
+  get routeHidden(): boolean {
+    return this.opts.canvas.dataset.ruta === 'off';
+  }
+
+  /**
+   * Esconde (o, con null, vuelve a enseñar) las vistas de esos `kind` bajo
+   * el nombre de una capa (T99: botellas, descuentos y encuentros durante la
+   * partida del Cañón). Para las pruebas, `data-escondido` del lienzo.
+   */
+  setKindsHidden(layer: string, kinds: readonly string[] | null): void {
+    if (kinds) this.kindLayers.set(layer, kinds);
+    else this.kindLayers.delete(layer);
+    this.hiddenKinds.clear();
+    for (const list of this.kindLayers.values()) for (const k of list) this.hiddenKinds.add(k);
+    const names = [...this.kindLayers.keys()].join(' ');
+    if (names) this.opts.canvas.dataset.escondido = names;
+    else delete this.opts.canvas.dataset.escondido;
+  }
+
+  isKindsHidden(layer: string): boolean {
+    return this.kindLayers.has(layer);
+  }
+
+  /** La calidad de este dispositivo (los topes de la partida del Cañón la usan). */
+  get quality(): QualityTier {
+    if (!this.qualityTier) {
+      const nav = navigator as Navigator & {
+        deviceMemory?: number;
+        connection?: { saveData?: boolean };
+      };
+      let touch = false;
+      try {
+        touch = window.matchMedia('(pointer: coarse)').matches;
+      } catch {
+        // Sin matchMedia: no se sabe, y lo que no se sabe no baja la calidad.
+      }
+      this.qualityTier = detectQuality({
+        deviceMemory: nav.deviceMemory,
+        hardwareConcurrency: nav.hardwareConcurrency,
+        saveData: nav.connection?.saveData,
+        touch,
+        maxTextureSize: this.renderer.capabilities.maxTextureSize,
+      });
+    }
+    return this.qualityTier;
+  }
+
+  /** El decorado sólido propio de `/mar` (u de motor), con el que también choca el barco. */
+  get solidDecor(): readonly Circle[] {
+    return this.decorSolids;
+  }
+
+  /**
+   * Empieza la partida del Cañón donde está el barco (T99): la simulación
+   * lo lleva desde ahora, la cámara se aleja y sube (suave) y sus piezas se
+   * pintan. Sin viaje, rumbo, turbo ni vista de mapa mientras. false si no
+   * se puede (en vuelo, cambiando de mundo o con otra en curso).
+   */
+  startSurvivors(run: SurvivorsRun): boolean {
+    if (this.survivors || this.flight || this.switcher.locked) return false;
+    this.stopVoyage();
+    this.clearCourse();
+    this.hold = null;
+    this.turboLeft = 0;
+    this.backToBoat();
+    const view = new SurvivorsView(run.config, run.game.caps);
+    this.scene.add(view.group);
+    this.camTuning = run.config.camera;
+    this.survivors = { run, view, player: run.snapshot().player };
+    run.tick(performance.now(), false);
+    this.opts.canvas.dataset.canon = 'on';
+    return true;
+  }
+
+  /** Acaba la partida (si la hay): el barco se queda donde acabó y la cámara vuelve suave. */
+  stopSurvivors(): void {
+    const sv = this.survivors;
+    if (!sv) return;
+    this.survivors = null;
+    sv.view.dispose();
+    this.prev.x = this.ship.x;
+    this.prev.y = this.ship.y;
+    this.prev.heading = this.ship.heading;
+    this.acc = 0;
+    this.opts.canvas.dataset.canon = 'off';
+  }
+
+  /** ¿Hay una partida del Cañón en curso? */
+  get survivorsActive(): boolean {
+    return this.survivors !== null;
+  }
+
   /** Semáforo del circuito: apagado, rojo, ámbar o verde. */
   setSemaphore(state: 'off' | 'red' | 'amber' | 'green'): void {
     const on = { off: -1, red: 0, amber: 1, green: 2 }[state];
@@ -1315,6 +1433,7 @@ export class Mar3D {
 
   destroy(): void {
     this.destroyed = true;
+    this.stopSurvivors();
     this.switcher.destroy();
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
@@ -2245,7 +2364,9 @@ export class Mar3D {
       }
       this.opts.onSwitch?.(mode);
     }
-    if (free) {
+    if (free && this.survivors) {
+      this.stepSurvivors(now);
+    } else if (free) {
       this.acc += dt;
       let steps = 0;
       while (this.acc >= STEP && steps < 6) {
@@ -2272,9 +2393,40 @@ export class Mar3D {
       this.modelClock = 0;
       this.streamModels();
     }
-    this.render(dt, this.acc / STEP);
+    this.render(dt, this.survivors ? this.survivors.run.alpha : this.acc / STEP);
     this.measure(dt, now);
   };
+
+  /**
+   * Los pasos de la partida del Cañón que tocan (T99): el reloj de la
+   * partida (tiempo real; la pestaña oculta es pausa) dice cuántos; cada uno
+   * lleva el mando del barco a la simulación, y el barco de la escena es el
+   * de la partida. Sin runtime: ni fichas, ni premios, ni misión mientras.
+   */
+  private stepSurvivors(now: number): void {
+    const sv = this.survivors!;
+    const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    const n = sv.run.tick(now, hidden);
+    const s = this.ship;
+    for (let i = 0; i < n && this.survivors === sv && !sv.run.ended; i++) {
+      this.prev.x = s.x;
+      this.prev.y = s.y;
+      this.prev.heading = s.heading;
+      sv.run.step(this.inputEnabled ? this.readInput() : IDLE_INPUT);
+      const p = sv.player;
+      s.x = p.x;
+      s.y = p.y;
+      s.vx = p.vx;
+      s.vy = p.vy;
+      s.heading = p.heading;
+      const dh = Math.atan2(
+        Math.sin(s.heading - this.prev.heading),
+        Math.cos(s.heading - this.prev.heading),
+      );
+      this.turnRate += (dh / STEP - this.turnRate) * Math.min(1, STEP * 6);
+    }
+    this.acc = 0;
+  }
 
   private simulate(dt: number): void {
     const s = this.ship;
@@ -2403,7 +2555,13 @@ export class Mar3D {
     if (this.zoom < 0.3) this.pan.multiplyScalar(1 - Math.min(1, dt * 3));
     const z = this.zoom;
     const dNear = 17;
-    const dist = dNear * Math.pow(this.dFar / dNear, z);
+    // La partida del Cañón (T99) aleja la cámara y la sube algo; al acabar vuelve suave.
+    const blendGoal = this.survivors ? 1 : 0;
+    const blendStep = snap ? 1 : dt / Math.max(0.05, this.camTuning.blendS);
+    this.camBlend += Math.max(-blendStep, Math.min(blendStep, blendGoal - this.camBlend));
+    const cb = smooth(0, 1, this.camBlend);
+    const dist = dNear * Math.pow(this.dFar / dNear, z) * lerp(1, this.camTuning.distanceScale, cb);
+    const raise = lerp(1, this.camTuning.heightScale, cb);
     const elev = lerp(ELEV_NEAR, 1.28, smooth(0, 1, z));
     if (snap) {
       // Sin foco previo: el barco en su sitio del mapa.
@@ -2460,7 +2618,7 @@ export class Mar3D {
       this.shake = Math.max(0, this.shake - dt * 2.5);
     }
     // En vuelo la cámara sube con el barco.
-    const camY = Math.sin(elev) * dist + this.air * 0.85;
+    const camY = Math.sin(elev) * dist * raise + this.air * 0.85;
     // En vuelo, la cámara se pone detrás del barco (mirando hacia donde va).
     const fl = this.flight;
     const yawGoal = fl ? Math.atan2(-Math.cos(fl.h1), -Math.sin(fl.h1)) : 0;
@@ -2590,6 +2748,11 @@ export class Mar3D {
       const pz = fz + wrapD(czs - fz, P.h);
       v.obj.position.x = px;
       v.obj.position.z = pz;
+      // Lo que la partida del Cañón aparta (T99) no se pinta.
+      if (this.hiddenKinds.size > 0 && this.hiddenKinds.has(v.kind)) {
+        v.obj.visible = false;
+        continue;
+      }
       v.obj.visible = true;
       if (v.update) {
         const pzUp = st?.z ? toScene(st.z) : 0;
@@ -2615,6 +2778,7 @@ export class Mar3D {
       this.opts.canvas.dataset.remolinosVista = shownWhirls;
     }
     for (const a of this.animated) a(t, glow);
+    if (this.survivors) this.survivors.view.update(this.survivors.run.snapshot(), t);
     this.routeLine.update(this.zoom);
     this.confetti.update(dt);
     this.clouds.update(dt, cam.y, { x: fx, z: fz }, P);
@@ -2976,7 +3140,8 @@ export class Mar3D {
         const R = this.islandRadius.get(p.spec.id) ?? Math.max(1, v.radius - 3);
         const top = mv?.model ? y - LABEL_GAP : v.labelY * 0.7;
         body = this.bodyRect(x, z, R, top);
-        if (body && (body.right < 0 || body.left > W || body.bottom < 0 || body.top > H)) body = null;
+        if (body && (body.right < 0 || body.left > W || body.bottom < 0 || body.top > H))
+          body = null;
         if (body && mv?.model) this.islandScreen.set(p.spec.id, body);
       }
       if (atHorizon) this.horizonPoint(x - cam.x, z - cam.z, p.w / 2, this.scr);

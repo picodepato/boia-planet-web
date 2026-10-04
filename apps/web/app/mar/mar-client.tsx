@@ -178,6 +178,8 @@ import {
   type RaceResult,
 } from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
+import { CanonTestHook, useCanonMode } from './canon-mode';
+import { CANON_GAME_ID, islandPinsOnly } from './survivors';
 import {
   type Trip,
   arrivalSheet,
@@ -440,6 +442,31 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Al llegar a la salida (T73): qué es la carrera y si empezar.
   const [raceOffer, setRaceOffer] = useState<RaceOffer | null>(null);
   const [menu, setMenu] = useState(false);
+  // El Cañón en el mar (plan 009, T99): se juega aquí, donde está el barco.
+  const canon = useCanonMode({
+    engineRef,
+    worldRef,
+    ready: status === 'ready',
+    raceActive: !!race,
+    isRaceActive: () => raceRef.current?.race.active ?? false,
+    onStart: () => {
+      setSheet(null);
+      setMinigameOffer(null);
+      setRaceOffer(null);
+      setRaceIntro(null);
+      setAyuda(null);
+      setTrip(null);
+      engineRef.current?.runtime.skipDialogue();
+      setDialogue(null);
+    },
+    onOffer: () => {
+      const island = worldRef.current?.objects.find((o) =>
+        o.behaviors.some((b) => b.type === 'start_minigame' && b.params.gameId === CANON_GAME_ID),
+      );
+      setMinigameOffer({ objectId: island?.identity.id ?? CANON_GAME_ID, gameId: CANON_GAME_ID });
+    },
+    // T101: aquí la pantalla final (¡Amanece! / ¡Barco inundado!); por ahora, el mundo vuelve y ya.
+  });
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
   const [worldId, setWorldId] = useState<string | null>(null);
@@ -715,6 +742,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   /** «Empezar» al llegar a la salida u «Otra vez» en la tarjeta de meta: la cuenta atrás. */
   const raceAgain = () => {
+    if (canon.active) return;
     const r = raceRef.current;
     setRaceResult(null);
     setRaceOffer(null);
@@ -992,7 +1020,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   const onStats = (s: Stats) => {
     setStats(s);
-    stepBottles(s);
+    if (!canon.hidden.has('bottles')) stepBottles(s);
     const r = raceRef.current;
     if (r) {
       const v = r.race.view(r.clock);
@@ -1017,6 +1045,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   };
 
   const onPin = (id: string) => {
+    // En la partida del Cañón, las islas no abren su ficha.
+    if (canon.hidden.has('sheets')) return;
     setSheet((s) => (s?.kind === 'discount' ? s : { kind: 'preview', placeId: id }));
   };
 
@@ -1061,6 +1091,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const sailTrip = (next: Trip) => {
     const g = engineRef.current;
     if (!g) return;
+    // En la partida del Cañón no se navega solo: la compra se abre ya (si la hay).
+    if (canon.active) {
+      if (next.then !== 'place' && next.then !== 'sheet') openCheckout(next.eventId);
+      return;
+    }
     setMenu(false);
     setSheet(null);
     if (prefersReducedMotion() || !g.startVoyage(next.placeId)) {
@@ -1311,11 +1346,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   }, [sessionId]);
 
   // Pines: la Fiestera deja de tener rótulo cuando sube a bordo.
+  // En la partida del Cañón, sólo los de las islas (T99).
+  const pinsHidden = canon.hidden.has('encounters');
   useEffect(() => {
     const g = engineRef.current;
     const w = worldRef.current;
-    if (g && w) g.setPins(pinsOf(w, phase));
-  }, [phase]);
+    if (!g || !w) return;
+    const list = pinsOf(w, phase);
+    g.setPins(pinsHidden ? islandPinsOnly(w, list) : list);
+  }, [phase, pinsHidden]);
 
   // El bocadillo sigue a quien habla.
   useEffect(() => {
@@ -1414,6 +1453,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   }, [sheet, minigameOffer, status]);
 
   // Encima del mar hay un diálogo modal o un minijuego: sin control (y sin pintar).
+  const canonPause = canon.setPaused;
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
@@ -1428,7 +1468,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !ranking &&
       !menu;
     g.paused = minigameOpen;
+    // Con un panel o el menú encima, la partida del Cañón espera (cuenta como pausa).
+    canonPause(!g.inputEnabled);
   }, [
+    canonPause,
     checkoutFor,
     minigameOpen,
     logros,
@@ -1674,6 +1717,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const switchWorld = (chosen: ComposedWorld) => {
     const g = engineRef.current;
     if (!g || chosen.id === (wantedWorld.current ?? worldIdRef.current)) return;
+    // Sin cambiar de mundo en plena partida del Cañón.
+    if (g.survivorsActive) return;
     wantedWorld.current = chosen.id;
     const request = ++worldRequest.current;
     setWorldPending(true);
@@ -1765,6 +1810,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Invitaciones al Carnet (T44, REQ-IDE-008/009): nunca sobre una carrera,
   // un diálogo, la compra, un panel o un cambio de mundo; esperan a que acaben.
   const inviteBlocked =
+    canon.active ||
     !!sheet ||
     !!dialogue ||
     !!race ||
@@ -1815,6 +1861,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       { id: target.id, text, icon: '🎯', accent: true, always: true },
     ];
   }, [world, phase, raceNext]);
+  const minimapPins = useMemo(
+    () => (world && canon.hidden.has('minimap') ? islandPinsOnly(world, pins) : pins),
+    [world, pins, canon.hidden],
+  );
   // Los «?» del minimapa (T59): los códigos por encontrar, donde están.
   const missionDestination = missionRef.current?.destination ?? null;
   const marks = useMemo<MinimapMark[]>(() => {
@@ -1951,8 +2001,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           <div className={`mar-globe${stats?.mapMode ? ' is-map' : ''}`}>
             <MarMinimap
               engineRef={engineRef}
-              pins={pins}
-              marks={marks}
+              pins={minimapPins}
+              marks={canon.hidden.has('discounts') ? [] : marks}
               mapMode={!!stats?.mapMode}
               onToggle={() => engineRef.current?.toggleMap()}
             />
@@ -2088,6 +2138,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           {msg('mar.client.entreDosMundos')}
         </p>
       ) : null}
+
+      {/* El estado de la partida del Cañón para las pruebas (T99; el HUD llega en T101). */}
+      <CanonTestHook hud={canon.hud} />
 
       {/* Rumbo, circuito y misión */}
       <div className="mar-chips">
@@ -2281,17 +2334,27 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       {status === 'ready' && liveRef.current && settings ? (
         <div className="mar-minigame">
           <MinigameLayer
-            offer={sheet || checkoutFor ? null : minigameOffer}
+            offer={sheet || checkoutFor || canon.active ? null : minigameOffer}
             onDismiss={() => setMinigameOffer(null)}
             world={liveRef.current}
             settings={settings}
             sink={progressApi}
+            inWorld={canon.panel.inWorld}
+            onPlayInWorld={canon.panel.onPlay}
+            blockedReason={canon.panel.blockedReason}
+            copy={canon.panel.copy}
           />
         </div>
       ) : null}
 
       {/* Botellas cerca del barco (T56), encima de la barra, cuando no hay nada más abajo. */}
-      {status === 'ready' && !sheet && !checkoutFor && !menu && !trip && !invitations.reason ? (
+      {status === 'ready' &&
+      !sheet &&
+      !checkoutFor &&
+      !menu &&
+      !trip &&
+      !invitations.reason &&
+      !canon.hidden.has('bottles') ? (
         <MarBottlesNear
           ids={nearBottles}
           bottles={bottleList ?? []}

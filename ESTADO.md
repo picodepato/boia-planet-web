@@ -4,6 +4,66 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 009 T99: The mode inside /mar: start and end in the same world, hiding, race lock, handling, camera, dev shortcuts
+
+El Cañón «Que no pare la música» ya se juega dentro de `/mar`, donde está el
+barco, con la simulación de T98. Sin HUD todavía (T101): piezas provisionales
+y el estado en atributos `data-*` para las pruebas.
+
+Qué existe:
+- **`apps/web/app/mar/survivors.ts`** (sin three.js ni React):
+  `devShortcutsEnabled()` (el único interruptor: `pnpm dev`, e2e por
+  `navigator.webdriver`, o `?dev=1` en producción), `canonShortcut()`
+  (`?minijuego=canon&t=<s>&seed=<n>`, y `&oferta=1` = sólo el panel de la
+  isla), `withoutCanonShortcut()`; las capas que la partida esconde
+  (`HIDE_LAYERS`: route, sheets, bottles, discounts, encounters, minimap;
+  `LAYER_KINDS` = `kind` de las vistas del 3D) con `hideForGame()` (devuelve
+  la restauración: sólo lo que escondió, una vez) y `marHideHost()`;
+  `survivorsSea()` (planeta de `/mar`, islas y decorado sólido, sin lo
+  escondido); `canonBlockKey()` (bloqueo en carrera); `islandPinsOnly()`;
+  `SurvivorsRun` (simulación + `SurvivorsClock` con tiempo real; pestaña
+  oculta = pausa; >5 min abandona; elige sola la primera carta de nivel hasta
+  T101; `onEnd` una vez; `hook()` para las pruebas).
+- **`apps/web/app/mar/canon-mode.tsx`**: `useCanonMode()` (empezar donde está
+  el barco, esconder/restaurar, pausa con paneles o menú encima, intervalo de
+  pestaña oculta, atajo al estar listo, props del panel) y `CanonTestHook`
+  (`data-testid="mar-canon"`: `data-estado`, `-tiempo`, `-activo`, `-agua`,
+  `-agua-max`, `-nivel`, `-enemigos`, `-derrotados`, `-notas`, `-fin`,
+  `-semilla`, `-calidad`, `-barco`). **Gancho de T101**: la opción `onEnd`
+  de `useCanonMode` (en `mar-client` hay un comentario donde va la pantalla final).
+- **`apps/web/app/mar/engine/survivors-view.ts`**: piezas PROVISIONALES
+  (`InstancedMesh` por enemigo, bolas y notas por figura, tamaño = tope de la
+  calidad; curvadas con la vuelta del planeta). T100 las sustituye.
+- **`mar3d.ts`**: `startSurvivors(run)` / `stopSurvivors()` /
+  `survivorsActive`: con partida el bucle da los pasos de la simulación (que
+  lleva el barco con la maniobrabilidad de la config) en vez de
+  `stepShip`+runtime; la cámara se aleja/sube con `config.camera` y vuelve en
+  `blendS`; sin mapa, rumbo, viaje, vuelo ni turbo. `setKindsHidden()`,
+  `routeHidden`, `quality` (`detectQuality`), `solidDecor`; lienzo
+  `data-canon` on/off y `data-escondido`.
+- **`minigame-layer.tsx`**: `inWorld`/`onPlayInWorld`/`blockedReason`/`copy`:
+  el panel del Cañón empieza el modo 3D (o explica el bloqueo,
+  `data-bloqueado`, `panel-minijuego-bloqueo`); `?minijuego=canon` ya no
+  monta el 2D. El Faro igual.
+- `mar-client.tsx`: cableado fino (hook, pines/minimapa sólo islas, sin «?»,
+  sin botellas cerca, fichas al tocar pines, invitaciones, cambio de mundo,
+  «Otra vez» de la carrera y viajes durante la partida).
+- i18n (`es-mar.ts`): `mar.canon.title|summary|lock.race`,
+  `survivors.upgrade.*` (6, con `{amount}`).
+- `SurvivorsClock.alpha` (engine, con prueba) para pintar entre pasos.
+- e2e nuevo `apps/web/e2e/mar-canon.spec.ts` (4 pruebas × móvil/escritorio).
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/survivors.test.ts packages/engine/src/survivors` → exit 0, 52 pruebas.
+- `E2E_PORT=3217 pnpm e2e mar-canon.spec.ts mar-circuito.spec.ts mar-fiestera.spec.ts --workers=1` → exit 0, 24 passed (7,0 min).
+- Comando de pruebas → exit 0: vitest 129 archivos / 1160 pruebas, checks.sh, lint, build y typecheck.
+
+Pendiente:
+- `apps/web/e2e/minijuegos.spec.ts`: las 2 pruebas del cañón 2D ya no pueden
+  pasar (el panel y `?minijuego=canon` abren el modo 3D); T102 las quita.
+- HUD, cartas, pausa con menú y pantalla final (T101); modelos y estilos de
+  derrota (T100). Mientras, la carta de nivel se elige sola.
+
 ## 2026-10-04 — plan 009 T98: Survivors simulation in packages/engine/src/survivors/ with seed tests
 
 La simulación del nuevo Cañón («Que no pare la música», beta 1), pura y

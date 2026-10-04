@@ -22,6 +22,11 @@ import { t } from '../i18n';
  *   INICIAR_MINIJUEGO), que explica la actividad y la abre con «Jugar»;
  * - la ruta de prueba `?minijuego=faro|canon`, que la abre directamente;
  * - la capa a pantalla completa, que al salir deja el barco donde estaba.
+ *
+ * Los juegos de `inWorld` (el Cañón desde el plan 009, T99) se juegan en el
+ * propio mar: su panel los empieza con `onPlayInWorld` (o explica con
+ * `blockedReason` por qué ahora no) y nunca se montan aquí, tampoco con
+ * `?minijuego=`. El Faro sigue igual.
  */
 
 export const MINIGAME_PARAM = 'minijuego';
@@ -59,12 +64,22 @@ function clearParam() {
   window.history.replaceState(window.history.state, '', url.href);
 }
 
+/** Lo que el panel dice de un juego que se juega en el mar (título y resumen). */
+export interface InWorldCopy {
+  title: string;
+  summary: string;
+}
+
 export function MinigameLayer({
   offer,
   onDismiss,
   world,
   settings,
   sink,
+  inWorld = [],
+  onPlayInWorld,
+  blockedReason,
+  copy,
 }: {
   offer: MinigameOffer | null;
   onDismiss: () => void;
@@ -72,6 +87,14 @@ export function MinigameLayer({
   settings: Settings;
   /** El libro del repositorio local (`repo.progress`). */
   sink: () => MinigameRewardSink | null;
+  /** Juegos que se juegan en el mar 3D, no en esta capa. */
+  inWorld?: readonly string[];
+  /** «Jugar» en el panel de un juego de `inWorld`. */
+  onPlayInWorld?: (gameId: string) => void;
+  /** Por qué no se puede empezar ahora (texto), o null. */
+  blockedReason?: (gameId: string) => string | null;
+  /** El título y el resumen de un juego de `inWorld`. */
+  copy?: (gameId: string) => InWorldCopy | null;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -79,10 +102,13 @@ export function MinigameLayer({
   const latest = useRef({ world, settings, sink });
   latest.current = { world, settings, sink };
 
-  // Ruta de prueba: ?minijuego=faro|canon.
+  const inWorldRef = useRef(inWorld);
+  inWorldRef.current = inWorld;
+
+  // Ruta de prueba: ?minijuego=faro (los juegos del mar tienen su atajo en el mar).
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get(MINIGAME_PARAM);
-    if (isMinigameId(id)) setOpen(id);
+    if (isMinigameId(id) && !inWorldRef.current.includes(id)) setOpen(id);
   }, []);
 
   useEffect(() => {
@@ -107,10 +133,20 @@ export function MinigameLayer({
   }, [open]);
 
   const def = offer && !open ? minigame(offer.gameId) : null;
+  const here = def ? inWorld.includes(def.id) : false;
+  const text = def && here ? (copy?.(def.id) ?? null) : null;
+  const title = text?.title ?? def?.title ?? '';
+  const blocked = def && here ? (blockedReason?.(def.id) ?? null) : null;
   return (
     <>
       {def ? (
-        <section className="juego-panel" data-testid="panel-minijuego" aria-label={def.title}>
+        <section
+          className="juego-panel"
+          data-testid="panel-minijuego"
+          data-game={def.id}
+          data-bloqueado={blocked ? 'si' : undefined}
+          aria-label={title}
+        >
           <button
             type="button"
             className="juego-panel-close"
@@ -120,19 +156,32 @@ export function MinigameLayer({
             ×
           </button>
           <p className="juego-panel-kicker">{t('minigame.kicker')}</p>
-          <h2>{def.title}</h2>
-          <p>{def.summary}</p>
+          <h2>{title}</h2>
+          <p>{text?.summary ?? def.summary}</p>
+          {blocked ? (
+            <p className="juego-panel-bloqueo" data-testid="panel-minijuego-bloqueo" role="status">
+              {blocked}
+            </p>
+          ) : null}
           <button
             type="button"
             className="juego-panel-cta"
+            disabled={!!blocked}
             style={{
               width: '100%',
               border: 0,
               font: 'inherit',
               fontWeight: 800,
-              cursor: 'pointer',
+              cursor: blocked ? 'not-allowed' : 'pointer',
+              opacity: blocked ? 0.5 : 1,
             }}
             onClick={() => {
+              if (blocked) return;
+              if (here) {
+                onDismiss();
+                onPlayInWorld?.(def.id);
+                return;
+              }
               setOpen(def.id);
               onDismiss();
             }}
