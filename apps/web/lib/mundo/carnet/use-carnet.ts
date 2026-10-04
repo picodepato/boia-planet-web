@@ -123,7 +123,7 @@ export async function stampArtFor(
         name: f?.name ?? s.eventName ?? s.eventId,
         date: f?.date ?? s.grantedAt,
         image: f?.image ?? null,
-        sample: carnet.isSample || !!f?.sample,
+        sample: !!s.isSample || carnet.isSample || !!f?.sample,
       };
     });
 }

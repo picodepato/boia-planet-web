@@ -1,3 +1,4 @@
+import { sampleStampRevokedEvents, sampleStampRevocationPref } from '../sample-stamps';
 /**
  * La copia local de una cuenta (plan 008, T90): lo que hay en el servidor se
  * pasa al documento del navegador con la forma de siempre, así todo lo que
@@ -223,7 +224,15 @@ export function snapshotOf(doc: Readonly<StoreDoc>, userId: string): MemberSnaps
       discoveries: p.discoveries,
       missions: p.missions,
       counters: p.counters,
-      prefs: p.prefs,
+      prefs: {
+        ...p.prefs,
+        ...Object.fromEntries(
+          [...sampleStampRevokedEvents(doc, userId)].map((event) => [
+            sampleStampRevocationPref(event),
+            true,
+          ]),
+        ),
+      },
       achievements: p.achievements,
       records,
     },
@@ -241,7 +250,8 @@ export function applySnapshot(doc: StoreDoc, userId: string, raw: unknown): bool
   const p = (doc.players[userId] ??= emptyPlayer());
   const player = isObject(raw.player) ? raw.player : {};
   for (const field of SNAPSHOT_FIELDS) {
-    const parsed = playerSchema.shape[field].safeParse(player[field] ?? {});
+    if (!(field in player)) continue;
+    const parsed = playerSchema.shape[field].safeParse(player[field]);
     if (!parsed.success) continue;
     if (field === 'records') {
       const circuits = Object.entries(p.records).filter(([id]) => CIRCUIT_RECORD.test(id));

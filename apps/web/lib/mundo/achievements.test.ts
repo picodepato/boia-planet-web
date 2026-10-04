@@ -340,3 +340,25 @@ it('T100: exactly the sketch-boat achievement is hidden; old entitlements surviv
     true,
   );
 });
+
+it('T106: claimed Carnet evidence recovers idempotently; a castaway coupon cannot invent delivery', async () => {
+  const { reconcileAchievementEvidence } = await import('./achievements');
+  const repo = browser()();
+  await repo.carnet.create({ nickname: 'Recuperación' });
+  await repo.progress.completeAchievement('carnet');
+  await repo.progress.claimAchievement('carnet');
+  await repo.progress.findDiscount('dto-naufrago');
+  const balance = await repo.progress.balances();
+  await reconcileAchievementEvidence(repo);
+  await reconcileAchievementEvidence(repo);
+  expect(
+    (await repo.progress.achievements()).find((a) => a.definition.id === 'naufrago-fiesta')?.state,
+  ).toBe('in_progress');
+  expect(
+    (await repo.progress.achievements()).find((a) => a.definition.id === 'carnet')?.state,
+  ).toBe('claimed');
+  expect(await repo.progress.balances()).toEqual(balance);
+  expect(
+    (await repo.progress.ledger()).filter((entry) => entry.achievementId === 'carnet'),
+  ).toHaveLength(1);
+});

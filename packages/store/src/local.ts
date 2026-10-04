@@ -1,3 +1,4 @@
+import { sampleStampRevokedEvents } from './sample-stamps';
 import {
   BOTTLES_IN_SEA_MAX,
   BOTTLE_MESSAGE_MAX,
@@ -555,12 +556,40 @@ class LocalRepository implements BoiaRepository {
 
   private stampViews(doc: StoreDoc, userId: string): StampView[] {
     const events = this.resolved('events', doc);
-    return activeEntries(doc.ledger, userId, 'stamp').map((e) => ({
-      eventId: e.eventId ?? '',
-      eventName: events.find((ev) => ev.id === e.eventId)?.name ?? null,
-      purchaseId: e.purchaseId ?? null,
-      grantedAt: e.createdAt,
-    }));
+    const samples = doc.purchases.filter((p) => p.userId === userId && p.provider === 'sandbox');
+    const ledger = activeEntries(doc.ledger, userId, 'stamp').flatMap((entry) => {
+      const purchase = samples.find((p) => p.id === entry.purchaseId);
+      if (purchase) return []; // Confirmed purchases below are the durable sample evidence.
+      return [
+        {
+          eventId: entry.eventId ?? '',
+          eventName: events.find((e) => e.id === entry.eventId)?.name ?? null,
+          purchaseId: entry.purchaseId ?? null,
+          grantedAt: entry.createdAt,
+          isSample: entry.sourceRef?.startsWith('purchase:') ?? false,
+        },
+      ];
+    });
+    const revokedSamples = sampleStampRevokedEvents(doc, userId);
+    const confirmed = samples
+      .filter((p) => p.status === 'confirmed' && !revokedSamples.has(p.eventId))
+      .map((p) => ({
+        eventId: p.eventId,
+        eventName: events.find((e) => e.id === p.eventId)?.name ?? null,
+        purchaseId: p.id,
+        grantedAt: p.confirmedAt ?? p.createdAt,
+        isSample: true,
+      }));
+    // Un sello por fiesta, sin escribir ni premiar al leer: el de la asistencia
+    // verificada (QR) manda sobre el de la compra de prueba, que nunca la suplanta.
+    const byEvent = new Map<string, StampView & { isSample: boolean }>();
+    for (const stamp of [...ledger, ...confirmed]) {
+      const seen = byEvent.get(stamp.eventId);
+      if (!seen || (seen.isSample && !stamp.isSample)) byEvent.set(stamp.eventId, stamp);
+    }
+    return [...byEvent.values()].sort((a, b) =>
+      (a.grantedAt ?? '').localeCompare(b.grantedAt ?? ''),
+    );
   }
 
   // -------------------------------------------------------------------------

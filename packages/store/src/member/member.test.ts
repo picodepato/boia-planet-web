@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SAMPLE_EVENTS } from '../sample';
 import { isStoreError } from '../errors';
 import { createLocalRepository, localDocAccess } from '../local';
 import type { BoiaRepository, RepositoryChange } from '../repository';
@@ -24,11 +25,11 @@ function device(fake: FakeSupabase, storage: StorageLike = new MemoryStorage()) 
   const events: SyncEvent[] = [];
   let cache!: BoiaRepository;
   const make = () => {
-    cache = createLocalRepository({ storage, key: `boia.cuenta.${UID}`, watch: false });
+    cache = createLocalRepository({ storage, key: `boia.cuenta.${fake.userId}`, watch: false });
     return createMemberRepository({
-      userId: UID,
+      userId: fake.userId,
       cache,
-      server: supabaseMemberServer(fake, UID),
+      server: supabaseMemberServer(fake, fake.userId),
       storage,
       onEvent: (e) => events.push(e),
       snapshotDelayMs: 60_000,
@@ -42,7 +43,7 @@ function device(fake: FakeSupabase, storage: StorageLike = new MemoryStorage()) 
 
 function withCarnet(fake: FakeSupabase, nickname = 'Marea') {
   fake.carnet = {
-    user_id: UID,
+    user_id: fake.userId,
     nickname,
     avatar_key: null,
     avatar_image: null,
@@ -277,7 +278,7 @@ describe('repositorio de un miembro: rechazos y conflictos (gana el servidor)', 
     expect((await a.repo.progress.cosmetics()).map((c) => c.id)).toEqual([]);
   });
 
-  it('dos dispositivos guardan la copia: el segundo choca y se queda con la del servidor', async () => {
+  it('dos dispositivos guardan la copia: rebase conserva los descubrimientos de ambos', async () => {
     const fake = withCarnet(new FakeSupabase(UID));
     const a = device(fake);
     const b = device(fake);
@@ -286,12 +287,15 @@ describe('repositorio de un miembro: rechazos y conflictos (gana el servidor)', 
     await a.repo.sync.saveSnapshot();
     await b.repo.progress.discover('isla:sur');
     await b.repo.sync.saveSnapshot();
-    expect(fake.snapshot?.version).toBe(1);
-    expect((await b.repo.progress.discoveries()).map((d) => d.key)).toEqual(['isla:norte']);
+    expect(fake.snapshot?.version).toBe(2);
+    expect((await b.repo.progress.discoveries()).map((d) => d.key).sort()).toEqual([
+      'isla:norte',
+      'isla:sur',
+    ]);
     // Y desde ahí sigue guardando sobre la versión del servidor.
     await b.repo.progress.discover('isla:este');
     await b.repo.sync.saveSnapshot();
-    expect(fake.snapshot?.version).toBe(2);
+    expect(fake.snapshot?.version).toBe(3);
   });
 });
 
@@ -536,4 +540,463 @@ it('T100: community reward and ship-menu awareness persist across member devices
   expect(fake.balances()).toEqual({ points: 300, coins: 50 });
   a.repo.sync.dispose();
   b.repo.sync.dispose();
+});
+
+it('T106: confirmed sample-ticket stamp survives hydration and a fresh account cache', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  const event = SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+  try {
+    await a.repo.sync.ready();
+    await a.repo.purchases.confirmSandbox({ purchaseId: 't106-sample', eventId: event.id });
+    expect((await a.repo.carnet.mine())?.stamps).toHaveLength(1);
+    await a.repo.sync.saveSnapshot();
+    await a.repo.sync.refresh();
+    expect((await a.repo.carnet.mine())?.stamps).toHaveLength(1);
+    const b = device(fake);
+    try {
+      await b.repo.sync.ready();
+      expect((await b.repo.carnet.mine())?.stamps).toHaveLength(1);
+    } finally {
+      b.repo.sync.dispose();
+    }
+    expect(fake.ledger.some((entry) => entry.kind === 'stamp')).toBe(false);
+  } finally {
+    a.repo.sync.dispose();
+  }
+});
+
+it('T106: concurrent device snapshot changes retain both completed achievements', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  const b = device(fake);
+  try {
+    await Promise.all([a.repo.sync.ready(), b.repo.sync.ready()]);
+    await a.repo.progress.completeAchievement('carnet');
+    await b.repo.progress.completeAchievement('whatsapp');
+    await a.repo.sync.saveSnapshot();
+    await b.repo.sync.saveSnapshot();
+    await b.repo.sync.saveSnapshot();
+    const fresh = device(fake);
+    try {
+      await fresh.repo.sync.ready();
+      const achievements = await fresh.repo.progress.achievements();
+      expect(achievements.find((x) => x.definition.id === 'carnet')?.state).toBe('ready');
+      expect(achievements.find((x) => x.definition.id === 'whatsapp')?.state).toBe('ready');
+    } finally {
+      fresh.repo.sync.dispose();
+    }
+    expect(fake.balances()).toEqual({ points: 0, coins: 0 });
+  } finally {
+    a.repo.sync.dispose();
+    b.repo.sync.dispose();
+  }
+});
+
+it('T106: offline snapshot and early closing retain sample/achievement progress until retry', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  const event = SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+  await a.repo.sync.ready();
+  fake.offline = true;
+  await a.repo.purchases.confirmSandbox({ purchaseId: 't106-offline', eventId: event.id });
+  await a.repo.progress.completeAchievement('naufrago-fiesta');
+  await a.repo.sync.saveSnapshot();
+  expect(a.repo.sync.snapshotPending()).toBe(true);
+  a.repo.sync.dispose();
+  fake.offline = false;
+  const again = a.reopen();
+  try {
+    await again.sync.ready();
+    await again.sync.flush();
+    expect(again.sync.snapshotPending()).toBe(false);
+    const fresh = device(fake);
+    try {
+      await fresh.repo.sync.ready();
+      expect((await fresh.repo.carnet.mine())?.stamps).toContainEqual(
+        expect.objectContaining({ purchaseId: 't106-offline', isSample: true }),
+      );
+      expect(
+        (await fresh.repo.progress.achievements()).find(
+          (x) => x.definition.id === 'naufrago-fiesta',
+        )?.state,
+      ).toBe('ready');
+      expect(fake.balances()).toEqual({ points: 0, coins: 0 });
+    } finally {
+      fresh.repo.sync.dispose();
+    }
+  } finally {
+    again.sync.dispose();
+  }
+});
+
+it('T106: failed snapshot stays pending and an edit during acknowledgement is sent afterwards', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  try {
+    await a.repo.sync.ready();
+    await a.repo.progress.setPref('theme', 'night');
+    fake.failNext('save_snapshot', 'invalid_snapshot');
+    await a.repo.sync.saveSnapshot();
+    expect(a.repo.sync.snapshotPending()).toBe(true);
+    await a.repo.sync.saveSnapshot();
+    expect(a.repo.sync.snapshotPending()).toBe(false);
+    const server = supabaseMemberServer(fake, UID);
+    const rpc = server.rpc;
+    let entered!: () => void;
+    let finish!: () => void;
+    const started = new Promise<void>((r) => {
+      entered = r;
+    });
+    const blocked = new Promise<void>((r) => {
+      finish = r;
+    });
+    server.rpc = async (fn, args) => {
+      if (fn === 'save_snapshot') {
+        entered();
+        await blocked;
+      }
+      return rpc(fn, args);
+    };
+    const store = new MemoryStorage();
+    const member = createMemberRepository({
+      userId: UID,
+      cache: createLocalRepository({ storage: store, key: 'ack-cache', watch: false }),
+      storage: store,
+      server,
+      snapshotDelayMs: 60_000,
+    });
+    try {
+      await member.sync.ready();
+      await member.progress.discover('isla:first');
+      const saving = member.sync.saveSnapshot();
+      await started;
+      await member.progress.discover('isla:while-saving');
+      finish();
+      await saving;
+      expect(member.sync.snapshotPending()).toBe(true);
+      await member.sync.saveSnapshot();
+      expect(member.sync.snapshotPending()).toBe(false);
+      const fresh = device(fake);
+      try {
+        await fresh.repo.sync.ready();
+        expect((await fresh.repo.progress.discoveries()).map((d) => d.key)).toEqual(
+          expect.arrayContaining(['isla:first', 'isla:while-saving']),
+        );
+      } finally {
+        fresh.repo.sync.dispose();
+      }
+    } finally {
+      member.sync.dispose();
+    }
+  } finally {
+    a.repo.sync.dispose();
+  }
+});
+
+it('T106: refreshing/resetting the account copy never propagates empty-cache deletions to the server', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  try {
+    await a.repo.sync.ready();
+    await a.repo.progress.setPref('theme', 'night');
+    const event = SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+    await a.repo.purchases.confirmSandbox({ purchaseId: 't106-reset', eventId: event.id });
+    await a.repo.sync.flush();
+    await a.repo.identity.reset();
+    await a.repo.sync.flush();
+    const fresh = device(fake);
+    try {
+      await fresh.repo.sync.ready();
+      expect(await fresh.repo.progress.pref('theme')).toBe('night');
+      expect((await fresh.repo.carnet.mine())?.stamps).toHaveLength(1);
+    } finally {
+      fresh.repo.sync.dispose();
+    }
+  } finally {
+    a.repo.sync.dispose();
+  }
+});
+
+for (const delayed of ['save_snapshot', 'award_points']) {
+  it(`T106: a disposed ${delayed} acknowledgement cannot overwrite the reopened account queue`, async () => {
+    const fake = withCarnet(new FakeSupabase(UID));
+    const storage = new MemoryStorage();
+    const server = supabaseMemberServer(fake, UID);
+    const rpc = server.rpc;
+    let entered!: () => void;
+    let release!: () => void;
+    const started = new Promise<void>((r) => {
+      entered = r;
+    });
+    const blocked = new Promise<void>((r) => {
+      release = r;
+    });
+    server.rpc = async (fn, args) => {
+      const result = await rpc(fn, args);
+      if (fn === delayed) {
+        entered();
+        await blocked;
+      }
+      return result;
+    };
+    const old = createMemberRepository({
+      userId: UID,
+      cache: createLocalRepository({ storage, key: `boia.cuenta.${UID}`, watch: false }),
+      server,
+      storage,
+      snapshotDelayMs: 60_000,
+    });
+    await old.sync.ready();
+    let sending: Promise<unknown>;
+    if (delayed === 'save_snapshot') {
+      await old.progress.setPref('old', true);
+      sending = old.sync.saveSnapshot();
+    } else sending = old.progress.grantWorldReward({ sourceRef: 'lugar:cala:points', points: 20 });
+    await started;
+    old.sync.dispose();
+    const again = device(fake, storage);
+    try {
+      await again.repo.sync.ready();
+      fake.offline = true;
+      await again.repo.progress.grantWorldReward({ sourceRef: 'lugar:faro:points', points: 25 });
+      await again.repo.progress.setPref('new', true);
+      const key = memberSyncKey(`boia.cuenta.${UID}`);
+      const latest = storage.getItem(key);
+      release();
+      await sending;
+      expect(storage.getItem(key)).toBe(latest);
+      expect(again.repo.sync.pending()).toBe(1);
+      fake.offline = false;
+      await again.repo.sync.flush();
+      expect(fake.balances().points).toBe(delayed === 'award_points' ? 45 : 25);
+      expect(await again.repo.progress.pref('new')).toBe(true);
+    } finally {
+      release();
+      again.repo.sync.dispose();
+    }
+  });
+}
+
+it('T106: guest sample purchase survives account snapshot continuation as a sample, never QR attendance', async () => {
+  const guest = createLocalRepository({ storage: new MemoryStorage(), watch: false });
+  const event = SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+  await guest.purchases.confirmSandbox({ purchaseId: 't106-guest', eventId: event.id });
+  const identity = (await guest.identity.current())!;
+  const snapshot = localDocAccess(guest)!.view((doc) => snapshotOf(doc, identity.id));
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  try {
+    await a.repo.sync.ready();
+    localDocAccess(a.cache)!.write(['purchases', 'progress'], (doc) =>
+      applySnapshot(doc, UID, snapshot),
+    );
+    await a.repo.sync.flush();
+    const fresh = device(fake);
+    try {
+      await fresh.repo.sync.ready();
+      expect((await fresh.repo.carnet.mine())?.stamps).toContainEqual(
+        expect.objectContaining({ purchaseId: 't106-guest', isSample: true }),
+      );
+    } finally {
+      fresh.repo.sync.dispose();
+    }
+    expect(fake.ledger.some((row) => row.kind === 'stamp')).toBe(false);
+    expect(fake.balances()).toEqual({ points: 0, coins: 0 });
+  } finally {
+    a.repo.sync.dispose();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// T106: lo ganado vuelve igual tras cerrar sesión y volver con una copia nueva
+
+const OTHER = '99999999-8888-7777-6666-555555555555';
+const onSale = () => SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+
+/** Sello de prueba, premio del Carnet y progreso del náufrago en una cuenta. */
+async function earnAll(repo: MemberRepository, purchaseId: string) {
+  await repo.purchases.confirmSandbox({ purchaseId, eventId: onSale().id });
+  await repo.progress.completeAchievement('carnet');
+  await repo.progress.claimAchievement('carnet');
+  await repo.progress.findDiscount('dto-naufrago');
+  await repo.progress.discover('personaje:rescatado:naufrago');
+  await repo.progress.completeAchievement('naufrago-fiesta');
+}
+
+async function expectEarned(repo: MemberRepository, purchaseId: string) {
+  expect((await repo.carnet.mine())?.stamps).toEqual([
+    expect.objectContaining({ eventId: onSale().id, purchaseId, isSample: true }),
+  ]);
+  const state = async (id: string) =>
+    (await repo.progress.achievements()).find((a) => a.definition.id === id)?.state;
+  expect(await state('carnet')).toBe('claimed');
+  expect(await state('naufrago-fiesta')).toBe('ready');
+  expect((await repo.progress.discounts()).map((d) => d.discount.id)).toContain('dto-naufrago');
+  expect((await repo.progress.discoveries()).map((d) => d.key)).toContain(
+    'personaje:rescatado:naufrago',
+  );
+}
+
+it('T106: sello de prueba, premio del Carnet y náufrago siguen al volver con una copia nueva, sin repetir premios', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  await a.repo.sync.ready();
+  await earnAll(a.repo, 't106-ciclo');
+  await a.repo.sync.flush();
+  expect(a.repo.sync.pending()).toBe(0);
+  expect(a.repo.sync.snapshotPending()).toBe(false);
+  const paid = fake.balances();
+  expect(paid.points).toBeGreaterThan(0);
+  a.repo.sync.dispose();
+
+  // Cerrar sesión borra la copia reconocida: cada vuelta empieza con una copia nueva.
+  for (let visit = 0; visit < 2; visit++) {
+    const back = device(fake);
+    try {
+      await back.repo.sync.ready();
+      await expectEarned(back.repo, 't106-ciclo');
+      // Volver a leer y mandar no concede nada otra vez.
+      await back.repo.sync.refresh();
+      await back.repo.sync.flush();
+      await expectEarned(back.repo, 't106-ciclo');
+    } finally {
+      back.repo.sync.dispose();
+    }
+  }
+  expect(fake.balances()).toEqual(paid);
+  expect(fake.ledger.filter((r) => r.source_ref === 'carnet')).toHaveLength(1);
+  expect(fake.ledger.some((r) => r.kind === 'stamp')).toBe(false);
+});
+
+it('T106: una copia vacía con la cola guardada no borra en el servidor lo que ya estaba', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const storage = new MemoryStorage();
+  const a = device(fake, storage);
+  await a.repo.sync.ready();
+  await a.repo.progress.setPref('theme', 'night');
+  await a.repo.purchases.confirmSandbox({ purchaseId: 't106-cola', eventId: onSale().id });
+  await a.repo.sync.flush();
+  // Sin red queda algo en la cola; se borra la copia y se queda la cola (lo que hacía antes el cierre de sesión).
+  fake.offline = true;
+  await a.repo.progress.grantWorldReward({ sourceRef: 'lugar:faro:points', points: 25 });
+  a.repo.sync.dispose();
+  storage.removeItem(`boia.cuenta.${UID}`);
+  fake.offline = false;
+  const back = device(fake, storage);
+  try {
+    // Antes de leer del servidor, la copia ya parte de lo reconocido.
+    expect(await back.cache.progress.pref('theme')).toBe('night');
+    await back.repo.sync.ready();
+    await back.repo.sync.flush();
+    expect(await back.repo.progress.pref('theme')).toBe('night');
+    expect((await back.repo.carnet.mine())?.stamps).toHaveLength(1);
+    expect(fake.balances().points).toBe(25);
+    const saved = fake.snapshot?.data as { player: { prefs: Record<string, unknown> } };
+    expect(saved.player.prefs.theme).toBe('night');
+  } finally {
+    back.repo.sync.dispose();
+  }
+});
+
+it('T106: un campo que falta en la copia del servidor no borra lo de esta copia sin mandar', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  try {
+    await a.repo.sync.ready();
+    await a.repo.progress.completeAchievement('whatsapp');
+    await a.repo.progress.discover('isla:norte');
+    // Otro cliente guardó una copia sin logros ni descubrimientos.
+    fake.snapshot = { data: { format: 1, player: { prefs: { theme: 'day' } } }, version: 5 };
+    await a.repo.sync.refresh();
+    const ach = await a.repo.progress.achievements();
+    expect(ach.find((x) => x.definition.id === 'whatsapp')?.state).toBe('ready');
+    expect((await a.repo.progress.discoveries()).map((d) => d.key)).toContain('isla:norte');
+    expect(await a.repo.progress.pref('theme')).toBe('day');
+    await a.repo.sync.flush();
+    const saved = fake.snapshot.data as { player: { achievements: Record<string, unknown> } };
+    expect(Object.keys(saved.player.achievements)).toContain('whatsapp');
+  } finally {
+    a.repo.sync.dispose();
+  }
+});
+
+it('T106: las cuentas A y B de un mismo navegador no se mezclan', async () => {
+  const storage = new MemoryStorage();
+  const fa = withCarnet(new FakeSupabase(UID), 'Ana');
+  const fb = withCarnet(new FakeSupabase(OTHER), 'Bea');
+  const a = device(fa, storage);
+  await a.repo.sync.ready();
+  await earnAll(a.repo, 't106-ana');
+  await a.repo.sync.flush();
+  a.repo.sync.dispose();
+  const b = device(fb, storage);
+  try {
+    await b.repo.sync.ready();
+    expect((await b.repo.carnet.mine())?.nickname).toBe('Bea');
+    expect((await b.repo.carnet.mine())?.stamps).toEqual([]);
+    const ach = await b.repo.progress.achievements();
+    expect(ach.find((x) => x.definition.id === 'carnet')?.state).toBe('in_progress');
+    expect(ach.find((x) => x.definition.id === 'naufrago-fiesta')?.state).toBe('in_progress');
+    expect(await b.repo.progress.discounts()).toEqual([]);
+    await b.repo.sync.flush();
+    expect(fb.balances()).toEqual({ points: 0, coins: 0 });
+    expect((fb.snapshot?.data as { purchases?: unknown[] } | undefined)?.purchases ?? []).toEqual(
+      [],
+    );
+  } finally {
+    b.repo.sync.dispose();
+  }
+  const again = device(fa, storage);
+  try {
+    await again.repo.sync.ready();
+    await expectEarned(again.repo, 't106-ana');
+  } finally {
+    again.repo.sync.dispose();
+  }
+});
+
+it('T106: lo del invitado que pasa a una cuenta nueva (merge_guest) sigue como muestra al volver', async () => {
+  const guest = createLocalRepository({ storage: new MemoryStorage(), watch: false });
+  await guest.purchases.confirmSandbox({ purchaseId: 't106-invitado', eventId: onSale().id });
+  await guest.progress.discover('personaje:rescatado:naufrago');
+  const me = (await guest.identity.current())!;
+  const fake = withCarnet(new FakeSupabase(UID));
+  // merge_guest guarda la copia del invitado si la cuenta aún no tenía (save_snapshot, base 0).
+  const data = localDocAccess(guest)!.view((d) => snapshotOf(d, me.id));
+  fake.snapshot = { data: structuredClone(data) as unknown as Record<string, unknown>, version: 1 };
+  for (let visit = 0; visit < 2; visit++) {
+    const a = device(fake);
+    try {
+      await a.repo.sync.ready();
+      await a.repo.sync.flush();
+      expect((await a.repo.carnet.mine())?.stamps).toEqual([
+        expect.objectContaining({ purchaseId: 't106-invitado', isSample: true }),
+      ]);
+      expect((await a.repo.progress.discoveries()).map((d) => d.key)).toContain(
+        'personaje:rescatado:naufrago',
+      );
+    } finally {
+      a.repo.sync.dispose();
+    }
+  }
+  expect(fake.ledger.some((row) => row.kind === 'stamp')).toBe(false);
+});
+
+it('T106: el sello del QR manda sobre el de la compra de prueba de la misma fiesta', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const event = onSale();
+  const a = device(fake);
+  try {
+    await a.repo.sync.ready();
+    await a.repo.purchases.confirmSandbox({ purchaseId: 't106-qr', eventId: event.id });
+    await a.repo.sync.flush();
+    fake.addRow({ kind: 'stamp', action: 'stamp', source_ref: `qr:${event.id}` });
+    await a.repo.sync.refresh();
+    expect((await a.repo.carnet.mine())?.stamps).toEqual([
+      expect.objectContaining({ eventId: event.id, purchaseId: `qr:${event.id}`, isSample: false }),
+    ]);
+  } finally {
+    a.repo.sync.dispose();
+  }
 });

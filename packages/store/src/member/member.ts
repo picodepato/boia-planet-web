@@ -32,7 +32,8 @@ import type {
 import { CARNET_QUESTIONS } from '@boia/contracts';
 import type { JsonValue } from '../schema';
 import type { StorageLike } from '../storage';
-import { applyServerState, CIRCUIT_RECORD, snapshotOf } from './hydrate';
+import { applyServerState, applySnapshot, CIRCUIT_RECORD, snapshotOf } from './hydrate';
+import { emptySnapshot, mergeSnapshots, remoteSnapshot } from './snapshot-merge';
 import {
   isAlreadyDone,
   pointActionFor,
@@ -69,6 +70,8 @@ export interface MemberSync {
   saveSnapshot(): Promise<void>;
   /** Acciones que esperan a ir al servidor. */
   pending(): number;
+  /** Non-economic progress not yet acknowledged by the server. */
+  snapshotPending(): boolean;
   offline(): boolean;
   dispose(): void;
 }
@@ -115,6 +118,14 @@ function readMeta(storage: StorageLike | null, key: string): SyncMeta | null {
       snapshotVersion: typeof m.snapshotVersion === 'number' ? m.snapshotVersion : null,
       snapshotJson: typeof m.snapshotJson === 'string' ? m.snapshotJson : null,
     };
+  } catch {
+    return null;
+  }
+}
+
+function parseJson(json: string): unknown {
+  try {
+    return JSON.parse(json) as unknown;
   } catch {
     return null;
   }
@@ -209,7 +220,16 @@ class MemberRepo implements MemberRepository {
     const meta = readMeta(this.storage, this.syncKey);
     this.ops = meta?.ops ?? [];
     this.snapshotVersion = meta?.snapshotVersion ?? null;
-    this.lastSnapshotJson = meta?.snapshotJson ?? this.currentSnapshotJson();
+    this.lastSnapshotJson = meta?.snapshotJson ?? JSON.stringify(emptySnapshot());
+    // Una copia vacía con la última copia reconocida guardada (p. ej. se borró
+    // la copia y quedó la cola): se parte de ella, así lo que falta en la copia
+    // vacía no se toma por borrado al fusionar con el servidor.
+    if (meta?.snapshotJson && this.isEmptyCopy()) {
+      const acknowledged = parseJson(meta.snapshotJson);
+      access.write(ALL_AREAS, (d) => {
+        applySnapshot(d, this.uid, acknowledged);
+      });
+    }
     this.unsubscribe = this.cache.subscribe(() => {
       if (!this.hydrating) this.scheduleSnapshot();
     });
@@ -252,13 +272,8 @@ class MemberRepo implements MemberRepository {
       ...c,
       // Empezar de cero en este navegador: se tira la copia y se vuelve a leer la cuenta.
       reset: async () => {
-        this.access.write(ALL_AREAS, (d) => {
-          delete d.carnets[this.uid];
-          delete d.players[this.uid];
-          d.ledger = d.ledger.filter((e) => e.userId !== this.uid);
-          d.purchases = d.purchases.filter((p) => p.userId !== this.uid);
-          d.identity = { id: this.uid, kind: 'member', createdAt: this.now().toISOString() };
-        });
+        // Refresh the account copy, not the user's progress. Emptying it here
+        // would look like intentional preference/purchase deletions to the merger.
         this.snapshotVersion = null;
         await this.sync.refresh();
         return (await c.current())!;
@@ -441,6 +456,7 @@ class MemberRepo implements MemberRepository {
   }
 
   private saveMeta(): void {
+    if (this.disposed) return;
     try {
       this.storage?.setItem(
         this.syncKey,
@@ -490,7 +506,9 @@ class MemberRepo implements MemberRepository {
       let reason: string | null = null;
       try {
         await sendOp(this.server, op);
+        if (this.disposed) return;
       } catch (e) {
+        if (this.disposed) return;
         const err = classifyServerError(e);
         if (err.transient) {
           this.goOffline();
@@ -516,6 +534,7 @@ class MemberRepo implements MemberRepository {
   }
 
   private goOffline(): void {
+    if (this.disposed) return;
     if (!this.isOffline) {
       this.isOffline = true;
       this.onEvent({ type: 'offline', pending: this.ops.length });
@@ -556,7 +575,9 @@ class MemberRepo implements MemberRepository {
       this.needsPull = true;
       return;
     }
-    const before = this.snapshotVersion;
+    const base = remoteSnapshot(parseJson(this.lastSnapshotJson), emptySnapshot(), this.uid);
+    const local = this.access.view((doc) => snapshotOf(doc, this.uid));
+    const remote = remoteSnapshot(state.snapshot?.data, base, this.uid);
     this.hydrating = true;
     try {
       this.access.write(ALL_AREAS, (d) => {
@@ -565,11 +586,12 @@ class MemberRepo implements MemberRepository {
           now: this.now,
         });
         this.snapshotVersion = r.snapshotVersion;
+        applySnapshot(d, this.uid, mergeSnapshots(base, local, remote));
       });
     } finally {
       this.hydrating = false;
     }
-    if (this.snapshotVersion !== before) this.lastSnapshotJson = this.currentSnapshotJson();
+    this.lastSnapshotJson = JSON.stringify(remote);
     this.needsPull = false;
     this.saveMeta();
     this.onEvent({ type: 'pulled' });
@@ -578,6 +600,13 @@ class MemberRepo implements MemberRepository {
 
   // -------------------------------------------------------------------------
   // Copia del resto del documento
+
+  /** La copia de este navegador aún no tiene nada de la cuenta. */
+  private isEmptyCopy(): boolean {
+    return this.access.view(
+      (d) => !d.players[this.uid] && !d.purchases.some((p) => p.userId === this.uid),
+    );
+  }
 
   private currentSnapshotJson(): string {
     return JSON.stringify(this.access.view((d) => snapshotOf(d, this.uid)));
@@ -592,7 +621,7 @@ class MemberRepo implements MemberRepository {
     }, this.snapshotDelayMs);
   }
 
-  private async saveSnapshotNow(): Promise<void> {
+  private async saveSnapshotNow(conflicts = 0): Promise<void> {
     if (this.disposed) return;
     const snapshot = this.access.view((d) => snapshotOf(d, this.uid));
     const json = JSON.stringify(snapshot);
@@ -602,24 +631,27 @@ class MemberRepo implements MemberRepository {
         p_data: snapshot,
         p_base_version: this.snapshotVersion ?? 0,
       })) as { version?: unknown } | null;
+      if (this.disposed) return;
       if (typeof r?.version === 'number') this.snapshotVersion = r.version;
       this.lastSnapshotJson = json;
       this.saveMeta();
     } catch (e) {
+      if (this.disposed) return;
       const err = classifyServerError(e);
       if (err.transient) {
         this.goOffline();
         return;
       }
       if (err.reason === 'snapshot_conflict') {
-        // Otro dispositivo guardó antes: gana el servidor.
+        // Rebase pending non-economic edits onto the other device's acknowledged snapshot.
         this.snapshotVersion = null;
         this.needsPull = true;
         await this.runFlush();
+        if (conflicts < 2) await this.saveSnapshotNow(conflicts + 1);
+        else this.scheduleSnapshot();
         return;
       }
       this.onEvent({ type: 'rejected', op: 'snapshot', reason: err.reason });
-      this.lastSnapshotJson = json;
       this.saveMeta();
     }
   }
@@ -654,6 +686,7 @@ class MemberRepo implements MemberRepository {
         return this.serial(() => this.saveSnapshotNow());
       },
       pending: () => this.ops.length,
+      snapshotPending: () => this.currentSnapshotJson() !== this.lastSnapshotJson,
       offline: () => this.isOffline,
       dispose: () => {
         this.disposed = true;

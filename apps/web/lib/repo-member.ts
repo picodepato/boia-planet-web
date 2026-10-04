@@ -30,7 +30,6 @@ import {
   createMemberRepository,
   defaultStorage,
   localDocAccess,
-  memberSyncKey,
   supabaseMemberServer,
 } from '@boia/store';
 import {
@@ -44,6 +43,8 @@ import {
 import { showAccountNotice } from './account/use-account';
 import type { MessageKey } from './i18n';
 import { repoOptions } from './repo';
+import { clearAcknowledgedMemberCopy } from './member-cache';
+import { reconcileAchievementEvidence } from './mundo/achievements';
 
 /** Lo que se espera a saber si hay sesión antes de jugar como invitado. */
 const ACCOUNT_WAIT_MS = 6000;
@@ -66,17 +67,6 @@ function hasMemberCopy(userId: string): boolean {
     return storage()?.getItem(memberCopyKey(userId)) != null;
   } catch {
     return false;
-  }
-}
-
-/** Borra la copia de la cuenta de este navegador; la cola, sólo vacía. */
-function clearMemberCopy(userId: string, pending: number): void {
-  try {
-    const s = storage();
-    s?.removeItem(memberCopyKey(userId));
-    if (pending === 0) s?.removeItem(memberSyncKey(memberCopyKey(userId)));
-  } catch {
-    // sin almacenamiento no hay nada que borrar
   }
 }
 
@@ -196,6 +186,10 @@ export function startMemberSync(sw: SwitchableRepository): Promise<void> {
       server: supabaseMemberServer(client(), uid),
       storage: storage(),
       onEvent: (e) => {
+        if (e.type === 'pulled')
+          void reconcileAchievementEvidence(repo).catch((err: unknown) =>
+            console.warn('[boia] no se pudo recuperar el progreso', err),
+          );
         const key = syncNotice(e);
         if (key) showAccountNotice(key);
       },
@@ -219,8 +213,9 @@ export function startMemberSync(sw: SwitchableRepository): Promise<void> {
     active = null;
     sw.switchTo(base);
     const pending = repo.sync.pending();
+    const snapshotPending = repo.sync.snapshotPending();
     stop();
-    clearMemberCopy(uid, pending);
+    clearAcknowledgedMemberCopy(storage(), memberCopyKey(uid), pending, snapshotPending);
   };
 
   const apply = (s: AccountState) => {

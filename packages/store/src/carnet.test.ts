@@ -4,6 +4,8 @@ import { CARNET_QUESTIONS, NICKNAME_MAX, discountStatus } from '@boia/contracts'
 import { SAMPLE_CREW, SAMPLE_DISCOUNTS, SAMPLE_EVENTS } from './sample';
 import { discountSchema } from '@boia/contracts';
 import { makeRepo } from './test-helpers';
+import { localDocAccess } from './local';
+import { applySnapshot, snapshotOf } from './member/hydrate';
 
 const MIGRATION = new URL(
   '../../../supabase/migrations/20260928100100_identity.sql',
@@ -149,4 +151,90 @@ describe('compras de prueba y sellos', () => {
     clock.advance(new Date(expired.endsAt!).getTime() - clock.now().getTime() + 1);
     expect((await repo.progress.findDiscount(expired.id)).status).toBe('expired');
   });
+});
+
+it('T106: sample projection respects cancelled/refunded purchases and explicit stamp compensation while QR stays separate', async () => {
+  const { repo } = makeRepo();
+  await repo.carnet.create({ nickname: 'Sellos separados' });
+  const event = SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+  await repo.purchases.confirmSandbox({ purchaseId: 't106-revoked', eventId: event.id });
+  const owner = (await repo.identity.current())!.id;
+  const access = localDocAccess(repo)!;
+  access.write(['progress'], (doc) => {
+    const stamp = doc.ledger.find((e) => e.purchaseId === 't106-revoked')!;
+    doc.ledger.push({
+      id: 'compensation:t106',
+      userId: owner,
+      kind: 'compensation',
+      pointsDelta: 0,
+      coinsDelta: 0,
+      seasonId: null,
+      sourceRef: undefined,
+      metadata: {},
+      createdAt: stamp.createdAt,
+      compensatesId: stamp.id,
+      reason: 'sample revoked',
+    });
+    doc.ledger.push({
+      id: 'stamp:qr:t106',
+      userId: owner,
+      kind: 'stamp',
+      eventId: event.id,
+      purchaseId: 'qr:t106',
+      pointsDelta: 0,
+      coinsDelta: 0,
+      seasonId: null,
+      sourceRef: 'qr:t106',
+      metadata: {},
+      createdAt: stamp.createdAt,
+    });
+  });
+  expect(await repo.progress.stamps()).toEqual([
+    expect.objectContaining({ isSample: false, purchaseId: 'qr:t106' }),
+  ]);
+  const snapshot = access.view((doc) => snapshotOf(doc, owner));
+  access.write(['progress'], (doc) => {
+    doc.ledger = doc.ledger.filter((e) => e.sourceRef === 'qr:t106');
+    applySnapshot(doc, owner, snapshot);
+  });
+  expect(await repo.progress.stamps()).toHaveLength(1);
+  for (const status of ['cancelled', 'refunded'] as const) {
+    const purchase = {
+      ...snapshot.purchases[0]!,
+      id: `t106-${status}`,
+      eventId: 'other-event',
+      status,
+    };
+    access.write(['purchases'], (doc) => {
+      doc.purchases.push(purchase);
+    });
+  }
+  expect(await repo.progress.stamps()).toHaveLength(1);
+  expect(await repo.progress.balances()).toEqual({ points: 0, coins: 0, seasonPoints: {} });
+});
+
+it('T106: sin cuentas (D-20), recargar conserva sello de prueba, premio del Carnet y náufrago', async () => {
+  const { repo, reload } = makeRepo();
+  const event = SAMPLE_EVENTS.find((e) => e.state === 'on_sale')!;
+  await repo.carnet.create({ nickname: 'Recarga' });
+  await repo.purchases.confirmSandbox({ purchaseId: 't106-local', eventId: event.id });
+  await repo.progress.completeAchievement('carnet');
+  await repo.progress.claimAchievement('carnet');
+  await repo.progress.findDiscount('dto-naufrago');
+  await repo.progress.discover('personaje:rescatado:naufrago');
+  await repo.progress.completeAchievement('naufrago-fiesta');
+  const balances = await repo.progress.balances();
+  const again = reload();
+  expect((await again.carnet.mine())?.stamps).toEqual([
+    expect.objectContaining({ eventId: event.id, purchaseId: 't106-local', isSample: true }),
+  ]);
+  const state = async (id: string) =>
+    (await again.progress.achievements()).find((a) => a.definition.id === id)?.state;
+  expect(await state('carnet')).toBe('claimed');
+  expect(await state('naufrago-fiesta')).toBe('ready');
+  expect((await again.progress.discounts()).map((d) => d.discount.id)).toContain('dto-naufrago');
+  expect(await again.progress.balances()).toEqual(balances);
+  // Volver a confirmar la misma compra no da otro sello.
+  await again.purchases.confirmSandbox({ purchaseId: 't106-local', eventId: event.id });
+  expect((await again.carnet.mine())?.stamps).toHaveLength(1);
 });

@@ -4,6 +4,84 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T106: Durable stamps and achievement progress across sessions
+
+Diagnóstico (reproducido con las pruebas nuevas sobre el código de main, 9 fallan):
+- Con cuenta, el sello de una compra de prueba sólo vivía en el libro local
+  (`stamp:<compra>`); cada lectura del servidor sustituye el libro por el
+  suyo, que no tiene sellos de prueba (decisión 9), así que el sello se iba
+  aunque la compra seguía en la copia `save_snapshot`.
+- Un choque de copia (`snapshot_conflict`, otro dispositivo guardó antes)
+  hacía ganar al servidor y tiraba logros completados sin reclamar,
+  descubrimientos, etc. de este dispositivo.
+- Un campo que faltaba en la copia del servidor se aplicaba como vacío.
+- Al cerrar sesión se borraba la copia de la cuenta aunque su copia
+  `save_snapshot` aún no se hubiera guardado; `identity.reset` vaciaba la
+  copia y eso se mandaba luego como borrado.
+
+Qué existe (parte del intento de Codex, revisado, más lo de esta sesión):
+- `packages/store/src/local.ts` `stampViews`: el sello de prueba se proyecta
+  desde la compra `sandbox` confirmada (prueba que persiste), marcado
+  `isSample: true`; cancelada/reembolsada o con el sello compensado
+  (`sample-stamps.ts`, guardado en la copia como ajuste
+  `sample-stamp-revoked:<fiesta>`) no sale. Un sello por fiesta: el del QR
+  (asistencia verificada, `isSample: false`) manda sobre el de prueba. Leer
+  no escribe ni premia.
+- `packages/store/src/member/snapshot-merge.ts`: fusión a tres bandas (última
+  copia reconocida, esta copia, la del servidor) sólo de lo que no tiene
+  valor: descubrimientos y logros completados se suman, ajustes/misiones/
+  récords/compras por edición respecto a la base, contadores por máximo. Un
+  campo ausente en la copia del servidor no borra nada. Saldos, sellos QR y
+  premios no pasan por aquí.
+- `member.ts`: al leer del servidor se fusiona (no gana el servidor); un
+  choque se rebasa y se reintenta (2 veces, luego programado);
+  `sync.snapshotPending()`; un acuse que llega tras `dispose` no toca la cola
+  ni la copia de la instancia nueva; `identity.reset` relee sin vaciar. Nuevo
+  en esta sesión: una copia vacía con la cola guardada parte de la última
+  copia reconocida (si no, lo ausente se tomaba por borrado y se mandaba).
+- `apps/web/lib/member-cache.ts`: al cerrar sesión la copia de la cuenta sólo
+  se borra si no queda nada sin mandar (cola vacía y copia reconocida); si
+  queda, se guarda bajo su clave, aislada del invitado y de otras cuentas.
+- `apps/web/lib/mundo/achievements.ts` `reconcileAchievementEvidence`, al
+  leer la cuenta (`repo-member.ts`): completa (nunca reclama) sólo con prueba
+  guardada: el logro del Carnet reclamado en el libro y los sellos de compra
+  para `buy_ticket`. El cupón del náufrago no prueba la entrega (T115 cambia
+  esa condición). Idempotente.
+- `use-carnet.ts`: un sello de prueba lleva la marca de muestra.
+
+Pruebas: `member.test.ts` (sello+Carnet+náufrago tras cerrar sesión y volver
+dos veces con copia nueva sin repetir premios; cuentas A/B en el mismo
+navegador; copia vacía con cola; campo ausente del servidor; sin red/cierre
+temprano/reintento; acuse durante la edición; acuses de instancias
+destruidas; dos dispositivos; invitado → cuenta nueva vía copia de
+`merge_guest`; QR manda sobre prueba), `carnet.test.ts` (recarga sin
+cuentas, revocación/cancelación), `snapshot-merge.test.ts`,
+`member-cache.test.ts`, `achievements.test.ts`, e2e `carnet.spec.ts`
+(volver y recargar el Carnet conserva el sello).
+
+Comandos (desde la raíz del worktree):
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (136 archivos, 1213 tests)
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `E2E_PORT=3871 pnpm e2e carnet.spec.ts logros.spec.ts tickets.spec.ts carnet-descuento.spec.ts --workers=2` → exit 0 (22 passed, 2 skipped: Supabase)
+
+Lo histórico que no se puede recuperar (sin prueba suficiente):
+- Logros completados sin reclamar (WhatsApp, náufrago, etc.) que un choque
+  ya tiró antes de este arreglo: no dejan fila en el libro.
+- Compras de prueba que nunca llegaron a una copia del servidor (cerrar
+  sesión antes de guardarla): su sello no tiene de dónde salir.
+- Lo reclamado (puntos, monedas, barco del Carnet) está en el libro del
+  servidor y no se perdió.
+
+Pendiente:
+- Sin e2e con Supabase real (no se escriben servicios remotos); el modo
+  cuenta se cubre con `FakeSupabase`.
+- Invitado → cuenta que ya tenía copia: `merge_guest` se queda con la de la
+  cuenta (decisión 4) y el sello de prueba del invitado no pasa; cambiarlo es
+  alcance nuevo.
+- Con lo pendiente sin mandar, la copia de la cuenta queda en el navegador
+  tras cerrar sesión (antes se borraba y se perdía).
+
 ## 2026-10-04 — plan 010 T117: Modelos provisionales, notas en el agua y los dos estilos de derrota
 
 Qué existe:

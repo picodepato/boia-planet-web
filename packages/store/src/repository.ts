@@ -125,6 +125,8 @@ export interface BadgeView {
 }
 
 export interface StampView {
+  /** Sample purchases never prove QR attendance. */
+  isSample?: boolean;
   eventId: string;
   eventName: string | null;
   purchaseId: string | null;

@@ -5,6 +5,7 @@ import {
   type AchievementDefinition,
   type AchievementProgress,
   type ProgressApi,
+  compensatedIds,
   isStableKey,
   isStoreError,
 } from '@boia/store';
@@ -506,4 +507,23 @@ function broadcast(notices: Notice[]): void {
       // un oyente roto no rompe a los demás
     }
   }
+}
+
+/** Restore only progress supported by persisted evidence. Never claim/re-award money.
+ * Purchases prove SAMPLE ticket stamps; a castaway discount does not prove delivery;
+ * an existing Carnet award proves its creation. Missing invitation history is unknowable.
+ */
+export async function reconcileAchievementEvidence(repo: Repo): Promise<void> {
+  const [ledger, stamps] = await Promise.all([repo.progress.ledger(), repo.progress.stamps()]);
+  const revoked = compensatedIds(ledger);
+  if (
+    ledger.some(
+      (entry) =>
+        entry.kind === 'achievement' && entry.achievementId === 'carnet' && !revoked.has(entry.id),
+    )
+  ) {
+    await completeBySignal(repo, { trigger: 'create_carnet' });
+  }
+  for (const stamp of stamps)
+    await completeBySignal(repo, { trigger: 'buy_ticket', eventId: stamp.eventId });
 }

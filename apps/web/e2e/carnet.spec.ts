@@ -122,6 +122,14 @@ test('la tarjeta: anverso, girar, el sello de la compra de prueba en el reverso'
   await card.getByTestId('carnet-reverso').click({ position: { x: 20, y: 20 } });
   await expect(card).toHaveAttribute('data-cara', 'front');
 
+  // Returning to the same local Carnet preserves the sample purchase stamp.
+  await page.goto('/carnet');
+  await page.getByTestId('carnet-girar').click();
+  await expect(page.getByTestId(`carnet-sello-${event.id}`)).toBeVisible();
+  await page.reload();
+  await page.getByTestId('carnet-girar').click();
+  await expect(page.getByTestId(`carnet-sello-${event.id}`)).toBeVisible();
+
   // /sello sin servidor: el aviso de la versión con cuentas.
   await page.goto('/sello?e=fiesta&c=ABCDEF123');
   await expect(page.getByTestId('sello-error')).toHaveAttribute('data-motivo', 'local');
