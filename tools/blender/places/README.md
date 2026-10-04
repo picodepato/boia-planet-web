@@ -5,13 +5,15 @@ own runtime hookup; no existing place ID, route, collision, content or progress
 changes here. This contract is distinct from the legacy 2D `place.schema.json`.
 
 Runtime (T108): `/mar` reads `art/places/3d/<id>/manifest.json` for each ID in
-`PLACE_MODEL_IDS` (`apps/web/app/mar/engine/island-models.ts`; today only `cala`,
-the Puerto de Alicante) and streams the GLB by distance like the Blender islands,
+`PLACE_MODEL_IDS` (`apps/web/app/mar/engine/island-models.ts`: `cala`, the Puerto
+de Alicante; since T112 also `fotos` and `tienda`) and streams the GLB by distance like the Blender islands,
 scaled by collision radius / `radius`, unrotated (front +Z). The GLB replaces the
 whole island; the hand-made fallback (`islands.ts`, `HARBOR_LAYOUT`) has the same
 footprint and keeps the basin as open water, with its shore only under the rear
 cap. `apps/web/app/mar/engine/harbor.test.ts` checks manifest/GLB/runtime parity.
-T112 adds `fotos`/`tienda` to `PLACE_MODEL_IDS` with their animation playback.
+T112: `fotos`/`tienda` replace their whole islands the same way, with hand-made
+fallbacks of the same silhouette (`BENIDORM_LAYOUT`, `IBIZA_LAYOUT`) and the label
+at the manifest height; `places.test.ts` checks their parity.
 
 Each place has `tools/blender/places/<id>.py` and
 `art/places/3d/<id>/{<id>.blend,<id>.glb,manifest.json}`. IDs remain `cala`, `fotos`,
@@ -45,9 +47,11 @@ moving assemblies and their descendants from the static join. Name the moving
 parent and Action/NLA clip identically to the manifest contract; key parent
 transforms for rigid groups. Export uses animations=true only for declared motion.
 The checker requires exported channels, clip duration and semantic nodes. The
-fresh-import gate confirms named actions survive. No runtime playback is claimed:
-the existing ModelStore drops GLTF clips, and T112 must retain clips, create a
-mixer per loaded instance, update from the scene clock and stop/release it.
+fresh-import gate confirms named actions survive. Runtime playback (T112,
+`apps/web/app/mar/engine/place-motion.ts`): `loadGltf` keeps the clips, the
+meshes under each animated node are merged per material at load, and each loaded
+copy gets one mixer posed from the /mar frame clock, stopped and uncached when the
+model is released or the scene is destroyed; reduced motion holds `static_frame`.
 `static_frame` is an authored Blender frame at24fps for reduced motion. T110 must
 validate actual animated phases, pivot/contact/bounds and fresh imported motion.
 

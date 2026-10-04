@@ -77,6 +77,8 @@ function lambertize(root: Object3D): void {
         ...(src.map ? { map: src.map } : {}),
         ...(glowing ? { emissive: src.emissive, emissiveIntensity: 0.9 } : {}),
       });
+      // El nombre de Blender (las pantallas del club de Benidorm se buscan por él, T112).
+      mat.name = src.name;
       cache.set(src.uuid, mat);
       src.dispose();
     }
@@ -98,9 +100,16 @@ function disposeTree(root: Object3D): void {
   }
 }
 
-/** Un glTF del arte (`/api/art/...`) como escena de three. */
-export const loadGltf = async (url: string): Promise<Object3D> =>
-  (await new GLTFLoader().loadAsync(url)).scene;
+/**
+ * Un glTF del arte (`/api/art/...`) como escena de three, con sus clips en
+ * `scene.animations` (T112: la boia del club de Benidorm): `clone` los
+ * copia, así que cada copia del almacén los lleva.
+ */
+export const loadGltf = async (url: string): Promise<Object3D> => {
+  const gltf = await new GLTFLoader().loadAsync(url);
+  gltf.scene.animations = gltf.animations;
+  return gltf.scene;
+};
 
 /** La URL del modelo de cada boia (art/barco/3d). */
 export const boiaModelUrl = (key: ModelKey) => `${SHIP_MODELS_URL}/${MODEL_FILES[key]}`;

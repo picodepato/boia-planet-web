@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T112: Benidorm and Ibiza runtime integration with bounded club animation
+
+Qué existe:
+- `PLACE_MODEL_IDS = ['cala', 'fotos', 'tienda']`: los GLB de Benidorm (T110) e Ibiza (T111) entran por el streaming de islas como el puerto (T108) y sustituyen a la isla entera; sus luces de a mano se apagan con el modelo; colisión, proximidad y mapa sin cambios (sin agrandar Benidorm, como propuso T110).
+- Composiciones a mano nuevas (lejos, mientras llega o sin GLB) con la silueta del modelo: `BENIDORM_LAYOUT` (Intempo, torres, club, escenario, barra, pantallas que brillan) e `IBIZA_LAYOUT` (casas blancas, iglesia, quiosco con toldo de BOIA, pinos); sin objetos animados ni texturas de canvas; rótulo a la altura del manifiesto (no salta al llegar el GLB).
+- `place-motion.ts`: `loadGltf` conserva los clips; `batchAnimatedNodes` junta la boia del club (46 piezas) en una malla por material al cargar; `placeMotion` crea un mezclador por copia cargada, posado con el reloj de cada fotograma de /mar (`boia-pole-dance` sobre `boia_pole_slide`, 4 s), las pantallas (`cyan`, `pink`) laten a 120 lpm sobre el brillo de la noche; con movimiento reducido, pose `static_frame` y pantallas fijas; se para y se suelta al soltar el modelo y al destruir la escena.
+- Ganchos de prueba: `data-lugares-movimiento` («fotos:baile|quieto») y `data-lugares-pose` («fotos:0.420», cada 0.25 s).
+- Pruebas: `apps/web/app/mar/engine/place-motion.test.ts` (10), `places.test.ts` (13: manifiesto/GLB/escala, huella y alto de la de a mano, rótulo, orilla, proximidad y separación por el camino más corto del planeta, Ibiza sigue siendo la tienda), `apps/web/e2e/mar-lugares-blender.spec.ts` (5 × móvil/escritorio: carga, baile en varias fases, reducido, sin GLB, ficha de Ibiza, captura de noche).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 1318 passed (una primera pasada tuvo 1 fallo suelto que no se repitió)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `E2E_PORT=3291 pnpm e2e mar-lugares-blender.spec.ts --workers=1` → exit 0, 10 passed
+- `E2E_PORT=3291 pnpm e2e mar-rotulos.spec.ts mar-isla-modelo.spec.ts mar-puerto.spec.ts mar-fiestera.spec.ts mar-paridad.spec.ts mar-3d.spec.ts --workers=2` → 73 passed, 4 skipped, 1 failed: `mar-rotulos` «cerca de halloween» en móvil (161 > 134), el fallo conocido de antes de T108 (anotado para T105)
+
+Pendiente:
+- La cámara de siempre corta las puntas de las torres de Benidorm muy cerca (T110 lo anotó); no se tocó el encuadre.
+- La colisión de Ibiza (elipse 1.9×1.5 a 45°) sigue llegando más allá de la costa visible delante-derecha y atrás-izquierda; no se cambió el mapa.
+
 ## 2026-10-04 — plan 010 T122: One world: hide Acuarela, keep it for a later port
 
 Qué existe:

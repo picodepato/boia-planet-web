@@ -110,7 +110,22 @@ import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette'
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { Glows, buoy, crag, rock } from './props';
 import { type ShipModel, createFlag, modelLength, topPoint } from './ship-model';
-import { type ModelKey, ModelStore, fitHeight, modelFor, modelSlot, planModels } from './models';
+import {
+  type ModelKey,
+  ModelStore,
+  fitHeight,
+  loadGltf,
+  modelFor,
+  modelSlot,
+  planModels,
+} from './models';
+import {
+  PLACE_SCREENS,
+  type PlaceMotion,
+  batchAnimatedNodes,
+  placeMotion,
+  placeMotionStates,
+} from './place-motion';
 import {
   ISLAND_MODEL_TUNING,
   type IslandModelEntry,
@@ -301,7 +316,12 @@ interface IslandModelView {
   glow: ((glow: number) => void) | null;
   /** Los resplandores de la composición a mano: se apagan mientras se ve el modelo (T75). */
   glows: { g: Glows; start: number } | null;
+  /** Lo que se mueve del modelo puesto (T112: la boia del club de Benidorm, sus pantallas). */
+  motion: PlaceMotion | null;
 }
+
+/** s entre dos escrituras de `data-lugares-pose` (para las pruebas). */
+const PLACE_POSE_S = 0.25;
 
 /** s entre dos repasos de qué modelos cargar. */
 const MODEL_PLAN_S = 0.3;
@@ -598,9 +618,12 @@ export class Mar3D {
   private modelClock = MODEL_PLAN_S;
   // Islas de Blender (T69): cada isla del mapa tiene su hueco; las del manifiesto, modelo por distancia.
   private readonly islandModels = new Map<string, IslandModelView>();
-  private readonly islandStore = new ModelStore<string>(undefined, (id) =>
-    islandModelUrl(this.islandModels.get(id)?.entry ?? { file: `${id}.glb` }),
+  // Con sus clips (T112): lo que mueve un clip se junta en pocas mallas al cargar.
+  private readonly islandStore = new ModelStore<string>(
+    async (url) => batchAnimatedNodes(await loadGltf(url)),
+    (id) => islandModelUrl(this.islandModels.get(id)?.entry ?? { file: `${id}.glb` }),
   );
+  private placePoseClock = 0;
 
   constructor(opts: Mar3DOptions) {
     this.opts = opts;
@@ -1521,6 +1544,10 @@ export class Mar3D {
     });
     this.modelStore.destroy();
     this.castleModel.destroy();
+    for (const v of this.islandModels.values()) {
+      v.motion?.dispose();
+      v.motion = null;
+    }
     this.islandStore.destroy();
     this.vortex.dispose();
     this.renderer.dispose();
@@ -1645,6 +1672,7 @@ export class Mar3D {
             state: 'procedural',
             glow: null,
             glows: { g: build.parts.glows, start: 0 },
+            motion: null,
           });
         } else {
           g.add(fallback);
@@ -2993,8 +3021,17 @@ export class Mar3D {
    * modelo sustituye la isla entera (tierra, piezas y luces de a mano).
    */
   private watchIslandModels(): void {
-    this.animated.push((_t, glow) => {
-      for (const v of this.islandModels.values()) v.glow?.(glow);
+    this.animated.push((t, glow) => {
+      const reduced = this.reducedMotion;
+      for (const v of this.islandModels.values()) {
+        v.glow?.(glow);
+        // Después del brillo: las pantallas laten sobre él (T112).
+        v.motion?.update(t, glow, reduced);
+      }
+      if (t - this.placePoseClock >= PLACE_POSE_S || t < this.placePoseClock) {
+        this.placePoseClock = t;
+        this.showPlaceMotion();
+      }
     });
     void loadIslandModels().then((entries) => {
       if (this.destroyed) return;
@@ -3039,6 +3076,8 @@ export class Mar3D {
       curveTree(model);
       v.glow = islandGlow(model);
       v.glow(this.mood.glow);
+      // Su movimiento (T112), del reloj de cada fotograma; sin nada que mover, null.
+      v.motion = placeMotion(model, v.entry, PLACE_SCREENS[id] ?? []);
       v.slot.remove(v.fallback);
       v.slot.add(model);
       v.model = model;
@@ -3055,6 +3094,8 @@ export class Mar3D {
 
   private releaseIsland(id: string, v: IslandModelView): void {
     v.acquired = false;
+    v.motion?.dispose();
+    v.motion = null;
     if (v.model) {
       v.slot.remove(v.model);
       v.model = null;
@@ -3079,6 +3120,22 @@ export class Mar3D {
       .map(([id]) => id)
       .sort()
       .join(' ');
+    this.showPlaceMotion();
+  }
+
+  /**
+   * Para las pruebas (T112): `data-lugares-movimiento`, «id:baile» o
+   * «id:quieto» de cada lugar con su modelo moviéndose, y
+   * `data-lugares-pose`, «id:altura» de su nodo que se mueve.
+   */
+  private showPlaceMotion(): void {
+    const { motion, pose } = placeMotionStates(
+      [...this.islandModels].map(([id, v]) => [id, v.motion] as const),
+      this.reducedMotion,
+    );
+    const ds = this.opts.canvas.dataset;
+    if (ds.lugaresMovimiento !== motion) ds.lugaresMovimiento = motion;
+    if (ds.lugaresPose !== pose) ds.lugaresPose = pose;
   }
 
   /**

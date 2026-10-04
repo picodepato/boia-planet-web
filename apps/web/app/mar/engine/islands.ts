@@ -24,12 +24,12 @@ import {
   Vector2,
 } from 'three';
 import { Kit, type Vec3, lerp, rng, seedOf, wobble } from './kit';
+import { LABEL_GAP } from './labels';
 import { C } from './palette';
 import {
   Glows,
   type Parts,
   bush,
-  crate,
   crowdGeometry,
   festoon,
   flag,
@@ -541,99 +541,225 @@ function cala(R: number, rnd: () => number): IslandBuild {
   };
 }
 
-// --- Isla de Benidorm: las fotos ------------------------------------------
+// --- Isla de Benidorm: el skyline y el club (T112) ------------------------
+
+/**
+ * Las medidas de Benidorm, en radios de la isla, con el frente en +z: las
+ * del modelo de Blender (`tools/blender/places/fotos.py`, cuya fuente usa z
+ * arriba y el frente en −y; aquí x, alto, −y), para que la composición a mano
+ * (lejos, mientras llega o si falla el GLB) tenga su misma silueta: las
+ * torres atrás, el club abierto delante. El GLB la sustituye entera.
+ */
+export const BENIDORM_LAYOUT = {
+  /** La isla redonda y su paseo claro. */
+  land: 0.94,
+  landTop: 0.045,
+  promenade: { r: 0.88, top: 0.064 },
+  /** Lo más alto (la corona del Intempo): el alto del manifiesto. */
+  height: 1.343,
+  /** Las dos torres del Intempo y su rombo de arriba. */
+  intempo: { x: -0.32, gap: 0.135, z: -0.47, w: 0.115, d: 0.16, top: 1.305, crown: 1.343 },
+  /** Las demás torres: x, z, alto, ancho (escalonadas, no una fila igual). */
+  towers: [
+    [0.2, -0.51, 1.1, 0.18],
+    [0.46, -0.46, 0.81, 0.14],
+    [0.66, -0.32, 0.63, 0.12],
+    [-0.69, -0.31, 0.66, 0.13],
+    [0.04, -0.7, 0.76, 0.12],
+  ] as [number, number, number, number][],
+  /** El club: su pared de atrás, el escenario redondo con la barra y las dos pantallas. */
+  club: { z: -0.04, w: 1.1, d: 0.1, h: 0.31 },
+  stage: { z: 0.33, r: 0.4, top: 0.15 },
+  pole: { z: 0.33, top: 1.03 },
+  screens: { x: 0.55, z: 0.025, y: 0.57, size: 0.3 },
+} as const;
 
 function fotos(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
   const k = parts.lit;
-  const h = terrain(k, R, sandy(1.3), rnd);
-  shoreRocks(k, R, 12, rnd, Math.PI / 2);
-  const top = h(0, 0);
-  // Casa blanca con tejado de teja.
-  k.add(new BoxGeometry(2.6, 1.8, 2.0), C.wall, { p: [0, top + 0.9, -1.2] });
-  k.add(new ConeGeometry(2.1, 1.0, 4), C.roof, {
-    p: [0, top + 2.3, -1.2],
-    r: [0, Math.PI / 4, 0],
-    s: [1.05, 1, 0.8],
+  const L = BENIDORM_LAYOUT;
+  const ground = L.promenade.top * R;
+  k.add(new CylinderGeometry(L.land * R, L.land * R, L.landTop * R + 0.4, 24), C.sand, {
+    p: [0, (L.landTop * R - 0.4) / 2, 0],
   });
-  k.add(new BoxGeometry(0.8, 1.2, 0.05), '#6b3f2a', { p: [0, top + 0.6, -0.18] });
-  const animated: Object3D[] = [];
-  // Marcos con «fotos» (degradados de atardecer).
-  const photo = (x: number, z: number, ry: number, hue: number) => {
-    k.add(new BoxGeometry(1.3, 1.0, 0.1), C.woodDark, { p: [x, top + 1.3, z], r: [-0.12, ry, 0] });
-    k.add(new CylinderGeometry(0.03, 0.03, 1.3, 4), C.woodDark, {
-      p: [x, top + 0.6, z - 0.2],
-      r: [0.3, ry, 0],
+  k.add(new CylinderGeometry(L.promenade.r * R, L.promenade.r * R, 0.1, 24), C.wall, {
+    p: [0, ground - 0.05, 0],
+  });
+  // El Intempo: dos torres doradas con un rombo arriba; sus cristales, azules.
+  const it = L.intempo;
+  for (const s of [-1, 1]) {
+    const x = (it.x + s * it.gap) * R;
+    const h = it.top * R - ground;
+    k.add(new BoxGeometry(it.w * R, h, it.d * R), C.gold, { p: [x, ground + h / 2, it.z * R] });
+    k.add(new BoxGeometry(it.w * R * 0.6, h * 0.94, 0.05), C.blueDoor, {
+      p: [x, ground + h / 2, (it.z + it.d / 2) * R + 0.03],
     });
-    const cv = document.createElement('canvas');
-    cv.width = 64;
-    cv.height = 48;
-    const g = cv.getContext('2d')!;
-    const grd = g.createLinearGradient(0, 0, 0, 48);
-    grd.addColorStop(0, `hsl(${hue} 80% 70%)`);
-    grd.addColorStop(0.6, `hsl(${hue + 30} 85% 60%)`);
-    grd.addColorStop(1, '#2a1f66');
-    g.fillStyle = grd;
-    g.fillRect(0, 0, 64, 48);
-    g.fillStyle = '#ffd98a';
-    g.beginPath();
-    g.arc(32, 30, 8, 0, Math.PI * 2);
-    g.fill();
-    const tex = new CanvasTexture(cv);
-    tex.colorSpace = SRGBColorSpace;
-    const pic = new Mesh(new PlaneGeometry(1.1, 0.8), new MeshBasicMaterial({ map: tex }));
-    pic.position.set(x + Math.sin(ry) * 0.06, top + 1.3, z + Math.cos(ry) * 0.06);
-    pic.rotation.set(-0.12, ry, 0);
-    animated.push(pic);
-  };
-  photo(-1.6, 0.6, 0.4, 20);
-  photo(1.7, 0.5, -0.4, 330);
-  photo(0.2, 1.3, 0, 280);
-  // Cuerda con polaroids.
-  festoon(parts, [-1.3, top + 1.9, -0.1], [-R * 0.6, h(-R * 0.6, 0) + 1.8, 0.2], 7, ['#ffffff']);
-  ringOfPalms(k, h, R, 5, 0.68, rnd, Math.PI * 0.95, Math.PI * 2.05);
-  pier(k, 0, R * 0.9, Math.PI / 2, R * 0.55);
-  torch(parts, 1.3, h(1.3, R * 0.6), R * 0.6);
-  return { parts, animated, heightAt: h, labelY: top + 4.2 };
+    k.add(new BoxGeometry(it.w * R * 1.15, (it.crown - it.top) * R, it.d * R * 1.1), C.wall, {
+      p: [x, ((it.top + it.crown) / 2) * R, it.z * R],
+    });
+  }
+  k.add(new ConeGeometry(0.17 * R, 0.25 * R, 4), C.gold, {
+    p: [it.x * R, 1.17 * R, it.z * R],
+    r: [Math.PI, Math.PI / 4, 0],
+    s: [1, 1, 0.5],
+  });
+  // Las demás torres, blancas con su franja de cristal.
+  for (const [x, z, h, w] of L.towers) {
+    k.add(new BoxGeometry(w * R, h * R, 0.14 * R), rnd() > 0.5 ? C.white : C.wall, {
+      p: [x * R, ground + (h * R) / 2, z * R],
+    });
+    k.add(new BoxGeometry(w * R * 0.59, h * R * 0.89, 0.05), C.blueDoor, {
+      p: [x * R, ground + (h * R) / 2, (z + 0.07) * R + 0.03],
+    });
+  }
+  // El club: pared morada con su franja rosa, el escenario y la barra con su pórtico.
+  const cl = L.club;
+  k.add(new BoxGeometry(cl.w * R, cl.h * R, cl.d * R), C.purpleSoft, {
+    p: [0, ground + (cl.h * R) / 2, cl.z * R],
+  });
+  const st = L.stage;
+  k.add(new CylinderGeometry(st.r * R, st.r * R, st.top * R - ground, 16), C.navy, {
+    p: [0, (ground + st.top * R) / 2, st.z * R],
+  });
+  k.add(new CylinderGeometry(0.014 * R, 0.014 * R, (L.pole.top - st.top) * R, 6), C.wall, {
+    p: [0, ((L.pole.top + st.top) / 2) * R, L.pole.z * R],
+  });
+  for (const s of [-1, 1]) {
+    k.add(new CylinderGeometry(0.016 * R, 0.016 * R, L.pole.top * R - ground, 5), C.navy, {
+      p: [s * 0.49 * R, (L.pole.top * R + ground) / 2, 0.23 * R],
+    });
+  }
+  k.add(new BoxGeometry(1.03 * R, 0.035 * R, 0.045 * R), C.navy, {
+    p: [0, L.pole.top * R, 0.23 * R],
+  });
+  // Las dos pantallas: marco azul marino y panel que brilla (cian y rosa).
+  const sc = L.screens;
+  for (const s of [-1, 1]) {
+    k.add(new BoxGeometry(sc.size * R, sc.size * R, 0.055 * R), C.navy, {
+      p: [s * sc.x * R, sc.y * R, sc.z * R],
+    });
+    parts.glow.add(
+      new BoxGeometry(sc.size * R * 0.88, sc.size * R * 0.88, 0.02),
+      s < 0 ? '#3fd6e0' : C.pink,
+      {
+        p: [s * sc.x * R, sc.y * R, (sc.z + 0.03) * R + 0.01],
+      },
+    );
+    parts.glows.add([s * sc.x * R, sc.y * R, (sc.z + 0.08) * R], s < 0 ? '#3fd6e0' : C.pink, 3);
+  }
+  const heightAt = (x: number, z: number) => (Math.hypot(x, z) <= L.land * R ? ground : 0);
+  return { parts, animated: [], heightAt, labelY: L.height * R + LABEL_GAP };
 }
 
-// --- Ibiza: la tienda -------------------------------------------------------
+// --- Ibiza: el pueblo blanco y su cala (T112) ------------------------------
+
+/**
+ * Las medidas de Ibiza, en radios de la isla y con el frente en +z: las del
+ * modelo de Blender (`tools/blender/places/tienda.py`; aquí x, alto, −y). La
+ * cala se abre hacia delante; el pueblo blanco sube por detrás hasta la
+ * iglesia, y el quiosco de la tienda está en la playa. La composición a mano
+ * (lejos, mientras llega o si falla el GLB) lo resume; el GLB la sustituye.
+ */
+export const IBIZA_LAYOUT = {
+  /** Lo más alto (la torre de la iglesia): el alto del manifiesto. */
+  height: 0.587481,
+  /** Alto del terreno en el centro de la isla. */
+  ground: 0.2,
+  /** El centro de la cala (en +z, hacia el frente) y su radio. */
+  cove: { z: 0.34, r: 0.33 },
+  /** Las casas: ángulo (grados desde atrás hacia +x) y distancia desde la cala, ancho, fondo y alto. */
+  houses: [
+    [-49, 0.585, 0.135, 0.11, 0.095],
+    [-27, 0.575, 0.125, 0.105, 0.1],
+    [41, 0.585, 0.13, 0.105, 0.1],
+    [62, 0.6, 0.12, 0.1, 0.09],
+    [-37, 0.725, 0.14, 0.11, 0.105],
+    [-15, 0.715, 0.13, 0.11, 0.11],
+    [13, 0.72, 0.14, 0.11, 0.105],
+    [34, 0.725, 0.13, 0.105, 0.1],
+    [-30, 0.885, 0.13, 0.11, 0.1],
+    [18, 0.86, 0.135, 0.11, 0.105],
+  ] as [number, number, number, number, number][],
+  church: [-5, 0.875] as [number, number],
+  shop: [12, 0.45] as [number, number],
+  /** Pinos de los cabos y de atrás (x, z, alto en radios). */
+  pines: [
+    [-0.66, 0.3, 0.2],
+    [-0.56, 0.52, 0.17],
+    [0.64, 0.28, 0.2],
+    [0.52, 0.5, 0.17],
+    [-0.62, -0.3, 0.18],
+    [0.64, -0.3, 0.18],
+    [-0.16, -0.74, 0.17],
+    [0.12, -0.76, 0.16],
+  ] as [number, number, number][],
+} as const;
+
+/** Un punto de Ibiza a `d` radios de la cala, `deg` grados desde atrás hacia +x (escena, en radios). */
+export function ibizaAround(deg: number, d: number): [number, number] {
+  const a = (deg * Math.PI) / 180;
+  return [d * Math.sin(a), IBIZA_LAYOUT.cove.z - d * Math.cos(a)];
+}
 
 function tienda(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
   const k = parts.lit;
-  const h = terrain(k, R, sandy(1.1), rnd);
+  const L = IBIZA_LAYOUT;
+  const h = terrain(k, R, sandy(L.ground * R, C.grass), rnd);
   shoreRocks(k, R, 10, rnd, Math.PI / 2);
-  const top = h(0, 0);
-  k.add(new BoxGeometry(2.6, 1.6, 1.8), '#d4692c', { p: [0, top + 0.8, -0.6] });
-  k.add(new ConeGeometry(2.0, 0.9, 4), C.woodDark, {
-    p: [0, top + 2.05, -0.6],
-    r: [0, Math.PI / 4, 0],
-    s: [1, 1, 0.75],
+  // La playa de la cala, delante.
+  const cz = L.cove.z * R;
+  k.add(new CylinderGeometry(L.cove.r * R, L.cove.r * R, 0.1, 16), C.sand, {
+    p: [0, h(0, cz) + 0.06, cz],
   });
-  // Toldo a franjas morado y blanco.
-  for (let i = 0; i < 6; i++) {
-    k.add(new BoxGeometry(0.44, 0.06, 0.9), i % 2 ? C.white : C.purpleSoft, {
-      p: [-1.1 + i * 0.44, top + 1.45, 0.62],
-      r: [0.35, 0, 0],
+  // Las casas blancas, con su azotea o su teja y una puerta.
+  L.houses.forEach(([deg, d, w, dd, hh], i) => {
+    const [x, z] = ibizaAround(deg, d);
+    const y = h(x * R, z * R);
+    const face = Math.atan2(-x, L.cove.z - z);
+    k.add(new BoxGeometry(w * R, hh * R, dd * R), C.white, {
+      p: [x * R, y + (hh * R) / 2, z * R],
+      r: [0, face, 0],
+    });
+    k.add(new BoxGeometry(w * R * 1.04, 0.012 * R, dd * R * 1.04), i % 2 ? C.terracotta : C.sand, {
+      p: [x * R, y + hh * R, z * R],
+      r: [0, face, 0],
+    });
+  });
+  // La iglesia del Puig de Missa, arriba: nave blanca, torre y cúpula de teja.
+  {
+    const [x, z] = ibizaAround(...L.church);
+    const y = h(x * R, z * R);
+    k.add(new BoxGeometry(0.16 * R, 0.16 * R, 0.24 * R), C.white, {
+      p: [x * R, y + 0.08 * R, z * R],
+    });
+    k.add(new BoxGeometry(0.08 * R, L.height * R - y, 0.08 * R), C.white, {
+      p: [(x + 0.1) * R, (y + L.height * R) / 2, (z + 0.06) * R],
+    });
+    k.add(new SphereGeometry(0.06 * R, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), C.terracotta, {
+      p: [x * R, y + 0.16 * R, (z - 0.06) * R],
     });
   }
-  k.add(new BoxGeometry(2.4, 0.5, 0.5), C.wood, { p: [0, top + 0.5, 0.55] });
-  // Tabla de surf, cajas y camisetas tendidas.
-  k.add(new BoxGeometry(0.5, 2.0, 0.1), C.purpleSoft, { p: [1.6, top + 1.0, 0.2], r: [0, 0, 0.1] });
-  crate(k, -1.7, top, 0.6, 0.5, 0.3);
-  crate(k, -1.5, top + 0.5, 0.5, 0.4, 0.8);
-  for (let i = 0; i < 4; i++) {
-    k.add(new BoxGeometry(0.34, 0.4, 0.04), [C.orange, C.white, C.purple, C.yellow][i]!, {
-      p: [-R * 0.55 + i * 0.5, h(-R * 0.4, 0.8) + 1.3, 1.1],
+  // El quiosco de la tienda en la playa: mostrador y toldo a franjas de BOIA.
+  {
+    const [x, z] = ibizaAround(...L.shop);
+    const y = h(x * R, z * R);
+    k.add(new BoxGeometry(0.18 * R, 0.09 * R, 0.1 * R), C.wood, {
+      p: [x * R, y + 0.045 * R, z * R],
     });
+    for (let i = 0; i < 4; i++) {
+      k.add(new BoxGeometry(0.05 * R, 0.01 * R, 0.13 * R), i % 2 ? C.white : C.orange, {
+        p: [(x - 0.075 + i * 0.05) * R, y + 0.13 * R, (z + 0.03) * R],
+        r: [0.3, 0, 0],
+      });
+    }
+    parts.glow.add(new SphereGeometry(0.012 * R, 6, 4), C.bulb, {
+      p: [x * R, y + 0.11 * R, (z + 0.07) * R],
+    });
+    parts.glows.add([x * R, y + 0.11 * R, (z + 0.07) * R], C.bulb, 3);
   }
-  ringOfPalms(k, h, R, 4, 0.66, rnd, Math.PI, Math.PI * 2);
-  pier(k, 0, R * 0.9, Math.PI / 2, R * 0.5);
-  torch(parts, -1.2, h(-1.2, 1.4), 1.4);
-  torch(parts, 1.2, h(1.2, 1.4), 1.4);
-  parts.glows.add([0, top + 1.2, 0.9], C.bulb, 3);
-  return { parts, animated: [], heightAt: h, labelY: top + 3.8 };
+  for (const [x, z, s] of L.pines) pine(k, x * R, h(x * R, z * R) - 0.05, z * R, s * R);
+  return { parts, animated: [], heightAt: h, labelY: L.height * R + LABEL_GAP };
 }
 
 // --- Isla de Nochevieja (`ultima`, donde baja la Fiestera) ---------------

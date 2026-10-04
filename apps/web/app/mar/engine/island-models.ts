@@ -28,6 +28,24 @@ export interface IslandModelEntry {
   top: number;
   height: number;
   tris: number;
+  /**
+   * Lo que se mueve del modelo (T110/T112: la boia del club de Benidorm), de
+   * su manifiesto de lugar: un nodo, su clip de glTF y la pose quieta.
+   */
+  motion?: PlaceMotionSpec[];
+}
+
+/**
+ * Un movimiento de un lugar (`motion[]` de `place3d.schema.json`): el clip
+ * `clip` del GLB mueve el nodo `node`, en bucle de `duration` s; con
+ * movimiento reducido se queda en `staticTime` (su `static_frame` de
+ * Blender, en s desde el principio del clip).
+ */
+export interface PlaceMotionSpec {
+  node: string;
+  clip: string;
+  duration: number;
+  staticTime: number;
 }
 
 /** Cómo se ve ahora una isla con modelo (para `data-islas-modelo` y las pruebas). */
@@ -88,10 +106,33 @@ export const PLACE_MODELS_URL = '/api/art/places/3d';
 
 /**
  * Los lugares cuyo modelo de `art/places/3d/<id>/` sustituye en /mar a la
- * isla entera (T108: el Puerto de Alicante, `cala`). Los demás lugares de
- * esa carpeta esperan a su integración (T112).
+ * isla entera: el Puerto de Alicante (`cala`, T108), la Isla de Benidorm
+ * (`fotos`, con la boia del club bailando) e Ibiza (`tienda`), T112.
  */
-export const PLACE_MODEL_IDS: readonly string[] = ['cala'];
+export const PLACE_MODEL_IDS: readonly string[] = ['cala', 'fotos', 'tienda'];
+
+/** Fotogramas por segundo de los clips de los lugares (Blender, `static_frame`). */
+export const PLACE_MOTION_FPS = 24;
+
+/** Los movimientos de un manifiesto de lugar; lo que no encaja se ignora. */
+export function parsePlaceMotion(list: unknown): PlaceMotionSpec[] {
+  if (!Array.isArray(list)) return [];
+  const out: PlaceMotionSpec[] = [];
+  for (const m of list as Record<string, unknown>[]) {
+    if (!m || typeof m.node !== 'string' || typeof m.clip !== 'string') continue;
+    if (typeof m.duration !== 'number' || !(m.duration > 0)) continue;
+    const v = m.validation as { fps?: unknown } | undefined;
+    const fps = typeof v?.fps === 'number' && v.fps > 0 ? v.fps : PLACE_MOTION_FPS;
+    const frame = typeof m.static_frame === 'number' && m.static_frame >= 1 ? m.static_frame : 1;
+    out.push({
+      node: m.node,
+      clip: m.clip,
+      duration: m.duration,
+      staticTime: Math.min(m.duration, (frame - 1) / fps),
+    });
+  }
+  return out;
+}
 
 /**
  * La entrada de un lugar a partir de su manifiesto (`place-glb`, versión 1,
@@ -109,6 +150,7 @@ export function parsePlaceManifest(json: unknown, id: string): IslandModelEntry 
     radius?: unknown;
     height?: unknown;
     tris?: unknown;
+    motion?: unknown;
   } | null;
   if (!o || o.kind !== 'place-glb' || o.version !== 1 || o.id !== id) return null;
   if (o.file !== `${id}.glb` || !/^[a-z0-9-]+$/.test(id)) return null;
@@ -124,6 +166,7 @@ export function parsePlaceManifest(json: unknown, id: string): IslandModelEntry 
     top: 0,
     height: o.height,
     tris: typeof o.tris === 'number' ? o.tris : 0,
+    motion: parsePlaceMotion(o.motion),
   };
 }
 
