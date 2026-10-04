@@ -9,6 +9,7 @@
     "./ui": "./src/ui/index.ts",
     "./bottles": "./src/bottles/index.ts",
     "./circuit": "./src/circuit/index.ts",
+    "./survivors": "./src/survivors/index.ts",
     "./mission": "./src/mission/index.ts",
     "./headless": "./src/headless.ts",
     "./streaming": "./src/streaming.ts",

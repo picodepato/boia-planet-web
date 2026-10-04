@@ -4,6 +4,70 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 009 T98: Survivors simulation in packages/engine/src/survivors/ with seed tests
+
+La simulación del nuevo Cañón («Que no pare la música», beta 1), pura y
+determinista, sin three.js ni DOM. Todavía no la usa nadie: T99 la cablea
+en `/mar`.
+
+Qué existe:
+- **`packages/engine/src/survivors/`** (nuevo; subruta `@boia/engine/survivors`):
+  - `config.ts`: `SURVIVORS_CONFIG` versionada (`version: 1`) con todo el
+    equilibrio y `survivorsConfigHash()` (FNV de `rng.ts`, para el
+    `configHash` de la sesión en T102). Tipos de los catálogos completos del
+    diseño (6 enemigos, 7 armas, 9 vinilos, evoluciones, bosses con fases,
+    guion por acto con hitos), con sólo lo de la beta: `piranha`, `crab`,
+    `canon` y 6 mejoras (`damage`, `fireRate`, `projectiles`, `speed`,
+    `magnet`, `bailing`, cada una con `i18nKey` `survivors.upgrade.<id>`,
+    stat, cantidad y tope). También `handling` (factores sobre la física de
+    `/mar`: más giro, menos inercia; `survivorsShipConfig`), `camera`
+    (`distanceScale` 1,25, `heightScale` 1,15, `blendS`), `defeatStyle`
+    (`sumergirse` por defecto), topes por `QualityTier` (alta 150/120/200,
+    baja 60/60/100 enemigos/balas/notas) y el guion del acto 1 en datos
+    (pistas con curva por puntos, 7:00). Todo `muestra`.
+  - `sim.ts`: `createSurvivors(config, seed, world, { quality, ship, startAtS })`
+    → `SurvivorsGame` con `step(input)` a 1/60 s (input = `ShipInput` +
+    `choose` + `pause`), `snapshot()` (reutilizado, sin copias), sucesos por
+    paso (`hit`, `defeated`, `fire`, `blocked`, `note`, `levelUp`, `end`),
+    `stateHash()`, `elapsePause(s)`, `setPaused`, y ganchos `spawnEnemy` /
+    `spawnNote` / `onLand` para pruebas y atajos. El barco usa `stepShip` +
+    `collideShip` de `/mar`; enemigos rodean islas (rumbo + deslizar con
+    `pushOutWrapped`), anillo fuera de cámara validado contra islas,
+    reciclado de los lejanos, tope con «presión» (más aguante en vez de más
+    enemigos), Cañón de agua al más cercano con balas que las islas paran,
+    notas por figura con fusión e imán, carta 1 de 3, agua a bordo, final
+    `survived` / `flooded` / `abandoned` (pausa seguida > 5 min).
+  - `clock.ts`: `SurvivorsClock.frame(game, realDtS, hidden)` → pasos que
+    tocan; la pestaña oculta y los huecos > 0,25 s cuentan como pausa.
+  - `grid.ts` (`SpatialGrid`, rejilla que da la vuelta) y `world.ts`
+    (`SurvivorsWorld`, `survivorsWorldOf` con `solidObstaclesOf`,
+    `IslandIndex` con listas por celda).
+- **`packages/engine/src/world/wrap.ts`** (nuevo): `wrapDelta`, `wrapInto`,
+  `Period`, `periodOf`, `shortest`. `ship/controller.ts` los reexporta y
+  `apps/web/app/mar/engine/wrap.ts` reexporta `wrapD`/`wrapIn`/`Period`/
+  `periodOf`/`shortest` desde `@boia/engine` (mismos nombres, mismo cálculo).
+- `ship/controller.ts`: `collideWrapped` usa la nueva `pushOutWrapped`
+  (exportada; mismas cuentas), compartida con los enemigos.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors` → exit 0, 30 pruebas
+  (~20 s): determinismo por hash, topes alta/baja en 7:00 enteros (y que se
+  tocan), nada en tierra en 3 mundos/semillas, `survived` justo a 7:00,
+  `flooded` sin esquivar, invulnerabilidad 0,5 s, pausa 5:01 → `abandoned`
+  sin tiempo activo, reloj con pestaña oculta, carta que para el reloj,
+  islas que paran balas, fusión de notas e imán, rodeo de islas, reciclado,
+  presión del tope, `t=` determinista.
+- Test command por pasos: vitest → exit 0 (128 archivos, 1138 pruebas);
+  `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` →
+  exit 0; `pnpm typecheck` → exit 0.
+
+Pendiente:
+- T99: cablear en `/mar` (mundo con `survivorsWorldOf(world, planetRect(…),
+  barco, decorSolids)` y `MAR_SHIP_CONFIG` como `ship`), cámara con
+  `config.camera`, claves i18n `survivors.upgrade.*`.
+- Equilibrio sin probar a mano: sin esquivar el barco se inunda en
+  menos de un minuto; ajustar tras la prueba de Hernán.
+
 ## 2026-10-03 — plan 008 T95: Docs, spec status and the decision draft
 
 El plan 008 cerrado sobre el papel: README, `.env.example`, TRASPASO, la

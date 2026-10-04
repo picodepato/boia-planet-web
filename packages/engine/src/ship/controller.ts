@@ -1,6 +1,9 @@
 import type { Rect } from '@boia/world';
 import { clamp, damp, wrapAngle } from '../math';
+import { wrapDelta, wrapInto } from '../world/wrap';
 import type { ShipConfig } from './config';
+
+export { wrapDelta, wrapInto };
 
 export interface ShipState {
   x: number;
@@ -53,23 +56,6 @@ export interface ShipEnvironment {
    * `/juego`), costas y límites como siempre (REQ-MUN-011).
    */
   wrap?: boolean;
-}
-
-/**
- * Diferencia `d` llevada al camino más corto en un mundo de periodo `period`
- * (resultado en [-period/2, period/2)). Con periodo no positivo, `d` tal cual.
- */
-export function wrapDelta(d: number, period: number): number {
-  if (!(period > 0)) return d;
-  return d - period * Math.floor(d / period + 0.5);
-}
-
-/** Lleva `v` a [min, max) dando la vuelta (mundo que da la vuelta). */
-export function wrapInto(v: number, min: number, max: number): number {
-  const period = max - min;
-  if (!(period > 0)) return v;
-  const r = (v - min) % period;
-  return (r < 0 ? r + period : r) + min;
 }
 
 export function createShipState(x: number, y: number, heading = -Math.PI / 2): ShipState {
@@ -245,25 +231,52 @@ function collideWrapped(s: ShipState, env: ShipEnvironment, cfg: ShipConfig): bo
   const r = cfg.radius;
   let hit = false;
   for (const o of env.obstacles) {
-    const dx = wrapDelta(s.x - o.x, w);
-    const dy = wrapDelta(s.y - o.y, h);
-    const minDist = o.radius + r;
-    const d2 = dx * dx + dy * dy;
-    if (d2 >= minDist * minDist) continue;
-    const d = Math.sqrt(d2);
-    const nx = d > 1e-6 ? dx / d : 0;
-    const ny = d > 1e-6 ? dy / d : 1;
-    s.x += nx * minDist - dx;
-    s.y += ny * minDist - dy;
-    const vn = s.vx * nx + s.vy * ny;
-    if (vn < 0) {
-      const e = o.restitution ?? cfg.obstacleRestitution;
-      s.vx -= (1 + e) * vn * nx;
-      s.vy -= (1 + e) * vn * ny;
-    }
-    hit = true;
+    if (pushOutWrapped(s, r, o, w, h, o.restitution ?? cfg.obstacleRestitution)) hit = true;
   }
   s.x = wrapInto(s.x, b.left, b.right);
   s.y = wrapInto(s.y, b.top, b.bottom);
   return hit;
+}
+
+/** Un cuerpo circular que se mueve por el agua: el barco, un enemigo, una nota. */
+export interface MovingBody {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+
+/**
+ * Saca un cuerpo de radio `r` de un obstáculo circular por el camino más
+ * corto de un mundo de periodo `w`×`h` (periodo no positivo: sin vuelta) y
+ * le quita la velocidad contra él con restitución `restitution` (0: desliza
+ * por el contorno). Es la colisión del barco con las islas en `/mar`
+ * (`collideShip` con `wrap`), compartida con los enemigos del modo
+ * Survivors. No lleva el cuerpo dentro del periodo. Muta `s`; devuelve si
+ * hubo contacto.
+ */
+export function pushOutWrapped(
+  s: MovingBody,
+  r: number,
+  o: CircleObstacle,
+  w: number,
+  h: number,
+  restitution: number,
+): boolean {
+  const dx = wrapDelta(s.x - o.x, w);
+  const dy = wrapDelta(s.y - o.y, h);
+  const minDist = o.radius + r;
+  const d2 = dx * dx + dy * dy;
+  if (d2 >= minDist * minDist) return false;
+  const d = Math.sqrt(d2);
+  const nx = d > 1e-6 ? dx / d : 0;
+  const ny = d > 1e-6 ? dy / d : 1;
+  s.x += nx * minDist - dx;
+  s.y += ny * minDist - dy;
+  const vn = s.vx * nx + s.vy * ny;
+  if (vn < 0) {
+    s.vx -= (1 + restitution) * vn * nx;
+    s.vy -= (1 + restitution) * vn * ny;
+  }
+  return true;
 }

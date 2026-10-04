@@ -35,3 +35,4 @@ export {
   type ShipStyleIndex,
   type ShipStyleOption,
 } from './ship-style';
+export { type Period, periodOf, shortest, wrapDelta, wrapInto } from './world/wrap';

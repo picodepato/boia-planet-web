@@ -1,3 +1,4 @@
+import { type Period, periodOf, shortest, wrapDelta, wrapInto } from '@boia/engine';
 import type { Rect } from '@boia/world';
 
 /**
@@ -27,11 +28,18 @@ export function planetRect(bounds: Rect): Rect {
   };
 }
 
+/**
+ * Las cuentas del mar que da la vuelta viven en `@boia/engine`
+ * (`world/wrap.ts`), compartidas con el barco y el modo Survivors (T98);
+ * aquí se reexportan con sus nombres de siempre.
+ */
 /** Diferencia `d` por el camino más corto en un periodo `p` (p ≤ 0: sin vuelta). */
-export function wrapD(d: number, p: number): number {
-  if (!(p > 0)) return d;
-  return d - p * Math.floor(d / p + 0.5);
-}
+export const wrapD: (d: number, p: number) => number = wrapDelta;
+
+/** `v` dentro de [min, max) dando la vuelta. */
+export const wrapIn: (v: number, min: number, max: number) => number = wrapInto;
+
+export { type Period, periodOf, shortest };
 
 /**
  * Cuánto se puede arrastrar la carta (vista de mapa) desde su centro, en un
@@ -44,32 +52,6 @@ export const MAP_PAN_SLACK = 0.12;
 export function mapPanLimit(period: number, view: number, slack = MAP_PAN_SLACK): number {
   if (!(period > 0)) return 0;
   return Math.max(period * slack, (period - Math.max(0, view)) / 2);
-}
-
-/** `v` dentro de [min, max) dando la vuelta. */
-export function wrapIn(v: number, min: number, max: number): number {
-  const p = max - min;
-  if (!(p > 0)) return v;
-  const r = (v - min) % p;
-  return (r < 0 ? r + p : r) + min;
-}
-
-export interface Period {
-  w: number;
-  h: number;
-}
-
-export const periodOf = (r: Rect): Period => ({ w: r.right - r.left, h: r.bottom - r.top });
-
-/** De `a` a `b` por el camino más corto (sin periodo: en línea recta). */
-export function shortest(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-  period: Period | null,
-): { dx: number; dy: number } {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  return period ? { dx: wrapD(dx, period.w), dy: wrapD(dy, period.h) } : { dx, dy };
 }
 
 export interface Circle {
