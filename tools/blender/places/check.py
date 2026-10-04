@@ -248,6 +248,14 @@ def verify(directory):
             errors.append('transformed bounds mismatch')
         if radial>1.001 or abs(radial-man['bounds']['radial'])>1e-5: errors.append('normalized radius mismatch')
         if abs(maximum[2]-man['height'])>1e-5: errors.append('height mismatch')
+        # Optional open-water approach (T111 cove mouth): within the clear sector,
+        # from `from_radius` outwards, no exported geometry rises above max_height.
+        channel=man['approach'].get('channel')
+        if channel:
+            low,high=man['approach']['clear_sector_degrees']
+            if any(math.hypot(x,y)>=channel['from_radius'] and low<=math.degrees(math.atan2(x,-y))<=high
+                   and z>channel['max_height']+1e-6 for x,y,z in points):
+                errors.append('approach channel obstructed')
     else: errors.append('empty placed geometry')
     if tris!=man['tris'] or tris>12000: errors.append('triangle budget/count mismatch')
     if not man['motion'] and len(doc.get('meshes',[]))!=1: errors.append('static place must be batched to one mesh')

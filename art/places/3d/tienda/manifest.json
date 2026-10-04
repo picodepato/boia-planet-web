@@ -1,0 +1,59 @@
+{
+  "kind": "place-glb",
+  "version": 1,
+  "id": "tienda",
+  "file": "tienda.glb",
+  "source": "tienda.blend",
+  "generator": "tools/blender/places/tienda.py",
+  "blender": "5.2.2 LTS",
+  "units": "normalized radius 1; glTF Y up; front +Z; water Y=0",
+  "radius": 1,
+  "scale_rule": "current scene collision radius / radius",
+  "max_tris": 12000,
+  "max_bytes": 600000,
+  "tris": 10949,
+  "bytes": 402140,
+  "bounds": {
+    "min": [
+      -0.879087,
+      -0.927,
+      -0.065948
+    ],
+    "max": [
+      0.937656,
+      0.908577,
+      0.587481
+    ],
+    "coordinate_system": "Blender Z up; front -Y",
+    "radial": 0.963882
+  },
+  "height": 0.587481,
+  "static_node": "static_tienda",
+  "motion": [],
+  "approach": {
+    "side": "+Z in glTF",
+    "outside_radius": 1,
+    "clear_sector_degrees": [
+      -10,
+      10
+    ],
+    "channel": {
+      "from_radius": 0.62,
+      "max_height": 0
+    },
+    "note": "The cove mouth faces the exterior front approach; nothing rises above the water in the mouth channel. The basin is decorative and does not change the existing collision or proximity."
+  },
+  "references": [
+    "https://www.illesbalears.travel/en/ibiza/cove-salada",
+    "https://media.illesbalears.travel/rrtt-ibiza-cala-salada-img0.jpg",
+    "https://media.illesbalears.travel/rrtt-ibiza-cala-salada-img1.jpg",
+    "https://media.illesbalears.travel/rrtt-ibiza-cala-salada-img2.jpg",
+    "https://illesbalears.travel/en/ibiza/church-santa-eularia-puig-de-missa",
+    "https://media.illesbalears.travel/rrtt-ibiza-iglesia-santa-eularia-puig-de-missa-img1.jpg",
+    "https://media.illesbalears.travel/rrtt-ibiza-iglesia-santa-eularia-puig-de-missa-img2.jpg",
+    "https://www.illesbalears.travel/en/ibiza/discovering-the-white-island",
+    "https://media.illesbalears.travel/plan-ibiza-descubriendo-la-isla-blanca-img1.jpg",
+    "art/mundos/arcilla/tienda/tienda.png"
+  ],
+  "license": "Original BOIA geometry and game palette colours. Official Illes Balears tourism photographs were inspected as visual references only; no image, texture or other external media is redistributed."
+}

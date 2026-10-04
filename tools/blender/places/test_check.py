@@ -138,4 +138,31 @@ class FotosMotionTest(unittest.TestCase):
         self.assertIn('animated bounds mismatch',checker.verify(self.directory))
 
 
+class TiendaCoveTest(unittest.TestCase):
+    """T111 Ibiza: static batch plus the open cove-mouth approach channel."""
+    place_id='tienda'
+    setUp=PlaceContractTest.setUp
+    tearDown=PlaceContractTest.tearDown
+    save=PlaceContractTest.save
+    alter_glb=PlaceContractTest.alter_glb
+
+    def test_tienda_passes(self): self.assertEqual(checker.verify(self.directory),[])
+    def test_static_place_is_one_batched_mesh(self):
+        doc,_=checker.read_glb(self.directory/'tienda.glb')
+        self.assertEqual(len(doc['meshes']),1)
+        self.assertEqual(self.man['motion'],[])
+    def test_widened_channel_hits_the_headlands(self):
+        self.man['approach']['clear_sector_degrees']=[-60,60]; self.save()
+        self.assertIn('approach channel obstructed',checker.verify(self.directory))
+    def test_channel_reaching_into_the_cove_hits_the_moored_boat(self):
+        self.man['approach']['channel']['from_radius']=.1; self.save()
+        self.assertIn('approach channel obstructed',checker.verify(self.directory))
+    def test_channel_is_optional(self):
+        del self.man['approach']['channel']; self.save()
+        self.assertEqual(checker.verify(self.directory),[])
+    def test_unknown_channel_field_rejected(self):
+        self.man['approach']['channel']['width']=.3; self.save()
+        self.assertTrue(checker.verify(self.directory))
+
+
 if __name__=='__main__': unittest.main()

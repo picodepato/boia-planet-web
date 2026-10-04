@@ -4,6 +4,32 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T111: Blender Ibiza white village and cove asset
+
+Qué existe:
+- **Ibiza (`tienda`) en Blender**, sólo arte (sin enganche en el juego, que es de T112): `tools/blender/places/tienda.py` (fuente reproducible) y `art/places/3d/tienda/{tienda.blend,tienda.glb,manifest.json,reference_notes.md,requirement_ledger.md,final_report.md}`. Isla en herradura con una cala resguardada que se abre hacia el frente (la aproximación del barco, glTF +Z): playa de arena al fondo, acantilados ocres a los lados, boca estrecha con dos boias naranjas y una torre de defensa de piedra; pueblo blanco escalonado en la ladera (10 casas encaladas con azoteas o tejados de teja, puertas y ventanas azules/verdes, chimeneas ibicencas), iglesia fortificada en lo alto (espadaña con campana, porche de arcos, cúpula, baluarte; análogo del Puig de Missa) y una calle de escaleras blanca desde la playa; dos casas payesas con porxo detrás; varaderos con rampas bajo el acantilado derecho, dos llaüts, embarcadero, pinos, cipreses, palmera, sombrillas y farolas.
+- **Papel de tienda conservado:** quiosco blanco en el centro de la playa, de cara a la aproximación, con toldo a rayas naranja/blanco BOIA, mostrador con camisetas dobladas, dos farolillos, bandera, tendedero de camisetas y cartel «TIENDA» (como el arte 2D de arcilla).
+- **Medidas:** 10949 triángulos, 402140 bytes (techos 12000 / 600000), radio normalizado 0,963882, altura 0,587481 (~3,29 u de escena con el radio de colisión actual 5,59625); una malla `static_tienda` bajo `place_tienda`, 17 materiales de la paleta del juego (sRGB→lineal), sin clips, sin texturas ni luces. Línea de agua a ~0,92 R (llena su círculo como cala/fotos).
+- **Contrato de lugares:** `approach.channel` opcional en `place3d.schema.json`; `check.py` comprueba que en el sector libre (±10°) desde radio 0,62 nada asoma sobre el agua (la boca de la cala). Cala y fotos no lo declaran y siguen pasando. 6 pruebas nuevas en `test_check.py`; sección tienda en el README.
+- **Referencias abiertas de verdad** (illesbalears.travel: Cala Salada ×3, Puig de Missa ×2, calle de Dalt Vila) y observaciones en `reference_notes.md`; ninguna imagen entra en el repo.
+- Pruebas visuales fuera del repo, en `node_modules/t111-preview/` (ignorado): `graybox-final/`, `final/` (héroe día/noche, distancia de juego día/noche a 1,7 R y 1,05 R, seis vistas, primeros planos de tienda, varaderos, iglesia y boca, métricas, importación limpia, reproducibilidad, `multiview/` estándar), `fresh/` (lo mismo desde el GLB importado), `final/cull/` (GLB con back-face culling como three.js) y hojas `review-*.jpg`, todas abiertas y revisadas.
+
+Comandos (Blender 5.2.2 LTS del checkout de Codex, sólo lectura, `--background --factory-startup --python-exit-code 1`):
+- `node … tools/blender/places/distance_camera.mjs node_modules/t111-preview/distance-camera.json tienda` → exit 0 (radio 5,59625)
+- `blender … tienda.py` ×2 + `-- --preview node_modules/t111-preview/final` → exit 0; firma de geometría/normales/materiales idéntica entre ejecuciones limpias, manifiesto igual
+- `python tools/blender/places/check.py art/places/3d/{tienda,cala,fotos}` → exit 0 los tres
+- `python tools/blender/places/test_check.py` → exit 0, 29 pruebas
+- `blender … fresh_import.py -- --manifest art/places/3d/tienda/manifest.json …` → exit 0, PASS 10949 triángulos, 17 materiales
+- `blender … tienda.py -- --fresh-evidence --preview node_modules/t111-preview/fresh` → exit 0
+- skill blender-asset-validation: `inspect_asset.py` (blend y GLB) → exit 0, sin issues, 0 caras degeneradas; `render_evidence.py` → exit 0
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 139 archivos, 1248 pruebas
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+
+Pendiente (T112):
+- Sustituir toda la decoración procedural de `tienda()` en `islands.ts` (terreno, rocas, muelle, antorchas, luces, quiosco) por el GLB, con su caída a la versión procedural; el panel de la tienda, la colisión y la proximidad no cambian.
+- La colisión de Ibiza es un círculo de R más los lóbulos de cápsula de `ellipseCollision` (elipse 1,9×1,5 a 45°): el barco no entra en la cala (decorativa) y los lóbulos siguen saliendo más allá de la costa visible delante-derecha y detrás-izquierda, igual que con la isla procedural.
+- Encuadre, luz e iluminación nocturna reales (`lantern` es el único material emisivo), altura del rótulo (`labelY` ~4,9 u, por encima del nuevo techo).
+
 ## 2026-10-04 — plan 010 T114: Custom BOIA menu icons
 
 Qué existe

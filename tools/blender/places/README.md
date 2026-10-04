@@ -60,6 +60,31 @@ python tools/blender/places/test_check.py
 & $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/fotos.py -- --fresh-evidence --preview node_modules/t110-preview/fresh
 ```
 
+## Ibiza (`tienda`, T111)
+
+A static white village above a sheltered cove: the cove opens toward the front
+approach (source -Y, glTF +Z), with the beach, the BOIA kiosk (striped awning,
+counter, T-shirt line, TIENDA sign) and a jetty inside it, boathouses under the
+right cliff, a stepped lane to the church on the hilltop and a defence tower on
+the left headland. Static only (`motion: []`), batched to `static_tienda`.
+Terrain columns are rays from the cove centre: rings at fixed offsets from the
+cove edge and on the coast contours, so material bands follow mesh edges.
+
+The optional `approach.channel` declares the open-water mouth: inside
+`clear_sector_degrees` (measured from source -Y toward +X) and from `from_radius`
+outwards, `check.py` rejects any exported vertex above `max_height`. Cala and
+fotos do not declare it and are unaffected. Ledger: `art/places/3d/tienda/`.
+
+```powershell
+node --experimental-transform-types --import ./packages/world/scripts/ts-resolve.mjs tools/blender/places/distance_camera.mjs node_modules/t111-preview/distance-camera.json tienda
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/tienda.py -- --graybox --preview node_modules/t111-preview/graybox-final
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/tienda.py -- --preview node_modules/t111-preview/final
+python tools/blender/places/check.py art/places/3d/tienda
+python tools/blender/places/test_check.py
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/fresh_import.py -- --manifest art/places/3d/tienda/manifest.json --output node_modules/t111-preview/final/fresh-import.json
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/tienda.py -- --fresh-evidence --preview node_modules/t111-preview/fresh
+```
+
 `distance_camera.mjs` accepts the output path then optional place ID (default cala).
 For fotos, the retained 1.7-radius approach crops tall tower tops; additional
 1.05-radius exterior approach renders use the same camera law and show the skyline.
