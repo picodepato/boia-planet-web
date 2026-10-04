@@ -193,7 +193,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) Alicante harbor in `art/places/3d/cala/` + `tools/blender/places/` (Blender 5.2.2 LTS): 11404 tris, 427 kB GLB, 240 degenerate tris removed, placement contract/schema for cala/fotos/tienda, ledger and notes; renders kept outside the repo → 4c529e9
 
 ## T110 — Blender Benidorm skyline and club asset
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T107
@@ -205,7 +205,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Motion is reproducible in authored blend and fresh GLB import. Specify named nodes/clip, pivots, duration and reduced-motion static pose for T112. No dynamic camera access or new external media.
   - Propose modest island enlargement only if needed for legibility, recording normalized bounds for T112; same 12000-triangle/600-kB per-place ceiling.
   - Asset/animation validation, relevant unit checks/types/lint pass; source, blend/GLB and multiview/motion evidence delivered. No runtime completion claim yet.
-- Outcome:
+- Outcome: (Codex) Benidorm place `fotos`: 11768 tris, 397 kB, clip `boia-pole-dance` on empty `boia_pole_slide` (4 s loop, 24 fps, translation only, pivot [0,-0.33,0.42], reduced-motion static_frame=1), mascot in a purple club vest and hat; no enlargement; place tooling generalized for motion checks → c44a4a8
 
 ## T111 — Blender Ibiza white village and cove asset
 - Status: pending
@@ -222,7 +222,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T115 — Castaway achievement completes on rescue
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent)
 - Skills: none
 - Depends on: T106
@@ -270,7 +270,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T108, T109, T110, T111
 - Goal: Use the new Benidorm/Ibiza Blender assets in the actual game, replacing old decoration and playing the requested club mascot loop.
-- Context: (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
+- Context: (T110 note: keep the `boia-pole-dance` GLTF clip in ModelStore; the default 1.7-radius approach framing crops the Benidorm tower tops, ~1.05 radii frames the whole skyline) (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
 - Scope: scene place loaders/hooks/animation/tests and required Benidorm geometry/proximity source parity adjustment. No UI/account/economy/route/icon changes.
 - Done when:
   - Both models load with fallback and no duplicated island decoration. Any modest Benidorm enlargement updates visual/collision/proximity dimensions together and leaves safe separation/approach; Ibiza shop behavior remains.
@@ -357,7 +357,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T119: session score = active whole seconds, goal 420 s, `won` only on survived, config v4; `&t=` skipped time recorded as `skippedMs` and still rewarded; hidden tab never invalidates a Cañón session; registry split; `layerMinigame()` only 2D; REQ-AVE-037 HECHO → PARCIAL; REQ-AVE-038 HECHO with the active-time adjustment pending; Faro pause/hidden-tab e2e moved to the Faro; no Supabase migration needed (agent)
 - 2026-10-04 orchestrator: added T121 (small fix): with `?dev=1` in production the `&t=` shortcut would let anyone earn the real reward; production dev-shortcut starts never grant; also refresh the stale `canon` sample copy (orchestrator)
 
+- 2026-10-04 orchestrator: T115 launched before T111 (T115 is on the critical path T115 → T108 → T109 → T112) (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
 - 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
@@ -384,3 +387,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 19:01 T118 done → b625169
 - 2026-10-04 19:02 T119 launched · attempt 1 · agent a70863d9a7bdced71
 - 2026-10-04 19:30 T119 done → 521119d
+- 2026-10-04 19:31 T110 done → c44a4a8
