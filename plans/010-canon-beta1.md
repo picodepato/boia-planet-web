@@ -90,7 +90,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: codex/world-updates 608f883 merged (squashed); new hide layers `objective` and `wildlife`; handling overrides are scale factors so the game boat cruises at 15 kn; one pins effect; 1193 unit tests; race medal e2e left failing for T109 → c5c6339
 
 ## T117 — Provisional models, notes on the water and the two defeat styles
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T116, T120
@@ -105,10 +105,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests prove: each enemy type and each note figure builds one instanced mesh with the cap's count; both defeat styles are selectable from the config and the dev switch; reduced motion disables the blink and uses the reduced effect
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `survivors-props.ts` with instanced piranha, crab, ball and 4 note figures; `puf` and `sumergirse` with pooled effects; dev switch button «Derrota: …» + `&derrota=`; blink/shake off with reduced motion; 1211 unit tests, mar-canon e2e 10 passed → 88c9ab3
 
 ## T118 — HUD, water bar, level-up cards, pause with the `/mar` menu, end screen, BETA label
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T117
@@ -334,7 +334,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T120: hide layers `objective` (the «!» button, its panel and the marked objective, restored after) and `wildlife` (fish and gulls stopped, `data-fauna-oculta`); castaway, WhatsApp buoy and Cala first-visit popup need no hiding (runtime not stepped, pins removed); one pins effect replaces the old one; determinism test samples every 5 s (agent)
 - 2026-10-04 T120 blocked on the race medal e2e failing at 15 knots (pre-existing in Codex's branch, its T99 removed the same unit check); orchestrator chose option A: accept the merge, T109 must make that e2e pass again (added to its Done when) (orchestrator)
 
+- 2026-10-04 T117: dev switch is a dashed «Derrota: puf/sumergirse» button in the hidden «!» slot (i18n `mar.canon.dev.derrota*`), choice kept for the session, `&derrota=` shortcut, `data-derrota` on the canvas; models drawn larger than their collision radius (piranha ×1.6, crab ×1.2); sinking enemies use separate meshes outside the cap; effect pools 24/10, puf 7/4 particles; boat blinks at 8 Hz only while running; reduced motion also stops bobbing (agent)
+
 ## Proposals (new scope)
+- 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
 - 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
 
@@ -351,3 +354,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 17:56 T120 done (option A on the medal e2e) → c5c6339
 - 2026-10-04 17:57 T117 launched · attempt 1 · agent abb47c81231627b9e
 - 2026-10-04 18:21 T107 done → 4c529e9
+- 2026-10-04 18:21 T106 launched · attempt 1 · agent ab1185124c006f967
+- 2026-10-04 18:25 T117 done → 88c9ab3
