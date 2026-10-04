@@ -68,6 +68,9 @@ function clearParam() {
 export interface InWorldCopy {
   title: string;
   summary: string;
+  /** Una etiqueta junto al título (el «BETA» del Cañón, T118) y su nombre accesible. */
+  badge?: string;
+  badgeLabel?: string;
 }
 
 export function MinigameLayer({
@@ -156,7 +159,21 @@ export function MinigameLayer({
             ×
           </button>
           <p className="juego-panel-kicker">{t('minigame.kicker')}</p>
-          <h2>{title}</h2>
+          <h2>
+            {title}
+            {text?.badge ? (
+              <>
+                {' '}
+                <span
+                  className="juego-panel-badge"
+                  data-testid="panel-minijuego-beta"
+                  title={text.badgeLabel}
+                >
+                  {text.badge}
+                </span>
+              </>
+            ) : null}
+          </h2>
           <p>{text?.summary ?? def.summary}</p>
           {blocked ? (
             <p className="juego-panel-bloqueo" data-testid="panel-minijuego-bloqueo" role="status">

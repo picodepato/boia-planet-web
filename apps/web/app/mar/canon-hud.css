@@ -1,0 +1,684 @@
+/* El Cañón «Que no pare la música» en /mar (T118): HUD, agua a bordo, cartas
+   de nivel y pantalla final. Cristal oscuro y naranja como los chips de la
+   carrera; las cartas son entradas de concierto (crema, con su trepado),
+   que es lo que BOIA vende. Nada pasa por encima de «Entradas» (z 7) ni
+   del botón del menú (z 5). muestra */
+
+.mar {
+  --canon-water: #3fb6ff;
+  --canon-water-deep: #1d6fb8;
+  --canon-alert: #ffb627;
+  --canon-danger: #ff4d3d;
+  --canon-dawn: #ffd27a;
+}
+
+/* ---------- HUD arriba al centro ---------- */
+
+.mar-canon-hud {
+  position: absolute;
+  top: var(--top-space);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 3;
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  min-width: 176px;
+  max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
+  padding: 4px 4px 8px 10px;
+  border-radius: 22px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 8px 24px rgb(10 6 40 / 0.28);
+  pointer-events: auto;
+  animation: mar-in 0.3s ease-out;
+}
+
+.mar-canon-hud__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mar-canon-beta {
+  flex: none;
+  padding: 2px 7px 1px;
+  border-radius: 6px;
+  border: 1.5px dashed var(--canon-dawn);
+  color: var(--canon-dawn);
+  font: 800 0.66rem / 1.3 var(--font-title);
+  letter-spacing: 0.08em;
+  cursor: help;
+}
+
+.mar-canon-hud__time {
+  flex: 1;
+  text-align: center;
+  font: 900 1.45rem / 1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+}
+
+.mar .mar-canon-pause {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.mar .mar-canon-pause:active {
+  transform: scale(0.94);
+}
+
+.mar .mar-canon-pause:focus-visible,
+.mar .mar-canon-end button:focus-visible,
+.mar .mar-menu__resume:focus-visible {
+  outline: 3px solid var(--canon-dawn);
+  outline-offset: 2px;
+}
+
+/* Dos barras verticales, dibujadas (no un emoji que cambia con cada sistema). */
+.mar-canon-pause__icon {
+  width: 14px;
+  height: 16px;
+  background:
+    linear-gradient(var(--cream), var(--cream)) left / 5px 100% no-repeat,
+    linear-gradient(var(--cream), var(--cream)) right / 5px 100% no-repeat;
+}
+
+.mar-canon-hud__level {
+  display: grid;
+  gap: 3px;
+  padding-right: 8px;
+}
+
+.mar-canon-hud__lv {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--cream);
+  opacity: 0.9;
+}
+
+.mar-canon-xp {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.14);
+}
+
+.mar-canon-xp__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--orange), var(--orange-2));
+  transition: width 0.25s ease-out;
+}
+
+/* ---------- Agua a bordo, bajo el barco ---------- */
+
+/* El motor la coloca encima del agua, bajo el barco (`Mar3D.anchor`);
+   `translate` la baja un poco más. Tamaño fijo: se lee con la cámara lejos. */
+.mar-canon-water {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% 30px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px 3px 4px;
+  border-radius: 9px;
+  background: rgb(14 10 44 / 0.82);
+  box-shadow: 0 2px 8px rgb(10 6 40 / 0.4);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.mar-canon-water__drop {
+  width: 9px;
+  height: 12px;
+  flex: none;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--canon-water);
+  clip-path: polygon(50% 0, 100% 62%, 92% 88%, 50% 100%, 8% 88%, 0 62%);
+}
+
+.mar-canon-water__track {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.16);
+  border: 1px solid rgb(255 255 255 / 0.55);
+}
+
+/* Marcas cada cuarto, por encima del agua. */
+.mar-canon-water__track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(25% - 1px),
+    rgb(255 255 255 / 0.6) calc(25% - 1px) 25%
+  );
+  pointer-events: none;
+}
+
+.mar-canon-water__fill {
+  display: block;
+  height: 100%;
+  background:
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.28) 0 2px, transparent 2px 6px),
+    var(--canon-water);
+  transition: width 0.2s ease-out;
+}
+
+/* La mitad: ámbar y el rayado más tupido. */
+.mar-canon-water.is-alerta .mar-canon-water__fill {
+  background:
+    repeating-linear-gradient(-45deg, rgb(40 20 0 / 0.35) 0 2px, transparent 2px 4px),
+    var(--canon-alert);
+}
+
+.mar-canon-water.is-alerta .mar-canon-water__drop {
+  background: var(--canon-alert);
+}
+
+/* Tres cuartos: rojo, a cuadros y con el borde grueso. */
+.mar-canon-water.is-peligro .mar-canon-water__fill {
+  background:
+    repeating-linear-gradient(45deg, rgb(40 0 0 / 0.4) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-45deg, rgb(40 0 0 / 0.4) 0 2px, transparent 2px 5px),
+    var(--canon-danger);
+}
+
+.mar-canon-water.is-peligro .mar-canon-water__track {
+  border: 2px solid #fff;
+}
+
+.mar-canon-water.is-peligro .mar-canon-water__drop {
+  background: var(--canon-danger);
+}
+
+@media (min-width: 760px) {
+  .mar-canon-water__track {
+    width: 84px;
+    height: 11px;
+  }
+}
+
+/* ---------- Cartas de nivel: entradas de concierto ---------- */
+
+/* Entre el HUD de arriba (que sigue a la vista) y la barra de abajo:
+   «Entradas» y el menú quedan encima. */
+.mar-canon-cards {
+  --hud-h: 84px;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  padding: calc(var(--top-space) + var(--hud-h)) calc(var(--safe-r) + 12px) var(--above-bar)
+    calc(var(--safe-l) + 12px);
+  background: rgb(14 10 44 / 0.42);
+  pointer-events: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.mar-canon-cards__box {
+  width: min(640px, 100%);
+  /* Centrada si cabe; si no, empieza arriba y se desplaza (nunca se sale por arriba). */
+  margin: auto 0;
+  display: grid;
+  gap: 8px;
+  outline: none;
+}
+
+.mar-canon-cards__head {
+  text-align: center;
+  color: var(--cream);
+}
+
+.mar-canon-cards__head h2 {
+  margin: 0;
+  font: 900 1.45rem / 1 var(--font-title);
+  text-shadow: 0 3px 0 var(--orange);
+}
+
+.mar-canon-cards__head p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.mar-canon-cards__list {
+  display: grid;
+  gap: 8px;
+}
+
+.mar .mar-canon-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 2px 10px;
+  min-height: 72px;
+  padding: 9px 14px 9px 18px;
+  border: 0;
+  border-radius: 12px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--cream);
+  /* El trepado de una entrada: muescas a los lados. */
+  -webkit-mask:
+    radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  box-shadow: inset 0 0 0 0 var(--orange);
+  transition:
+    box-shadow 0.12s,
+    translate 0.12s;
+  touch-action: manipulation;
+}
+
+/* La línea de puntos del talón, entre el icono y el texto. */
+.mar .mar-canon-card::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 64px;
+  border-left: 2px dotted rgb(27 20 64 / 0.3);
+}
+
+.mar .mar-canon-card.is-focused,
+.mar .mar-canon-card:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 4px var(--orange);
+  translate: 0 -2px;
+}
+
+.mar .mar-canon-card:active {
+  translate: 0 1px;
+}
+
+.mar-canon-card__key {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  font: 800 0.72rem / 1 var(--font-title);
+  color: rgb(27 20 64 / 0.45);
+}
+
+.mar-canon-card__icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.mar-canon-card__text {
+  display: grid;
+  gap: 2px;
+  padding-left: 8px;
+}
+
+.mar-canon-card__name {
+  font: 900 1rem / 1.1 var(--font-title);
+}
+
+.mar-canon-card__effect {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.mar-canon-card__stack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #c9480f;
+}
+
+.mar-canon-card__pips {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.mar-canon-card__pips > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid rgb(27 20 64 / 0.4);
+}
+
+.mar-canon-card__pips > span.is-had {
+  background: rgb(27 20 64 / 0.55);
+  border-color: transparent;
+}
+
+.mar-canon-card__pips > span.is-new {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+.mar-canon-cards__help {
+  margin: 0;
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--cream);
+  opacity: 0.8;
+}
+
+/* En el móvil no hay teclado que explicar; en escritorio, las tres en fila. */
+@media (pointer: coarse) {
+  .mar-canon-cards__help {
+    display: none;
+  }
+}
+
+@media (min-width: 760px) {
+  .mar-canon-cards__list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .mar .mar-canon-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: start;
+    text-align: center;
+    min-height: 220px;
+    padding: 22px 16px 18px;
+    -webkit-mask:
+      radial-gradient(circle 10px at 50% 0, transparent 98%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle 10px at 50% 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+    mask:
+      radial-gradient(circle 10px at 50% 0, transparent 98%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle 10px at 50% 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+  }
+
+  .mar .mar-canon-card::before {
+    top: 76px;
+    bottom: auto;
+    left: 14px;
+    right: 14px;
+    border-left: 0;
+    border-top: 2px dotted rgb(27 20 64 / 0.3);
+  }
+
+  .mar-canon-card__icon {
+    font-size: 2.4rem;
+    margin-bottom: 18px;
+  }
+
+  .mar-canon-card__text {
+    padding-left: 0;
+    justify-items: center;
+  }
+
+  .mar-canon-card__name {
+    font-size: 1.2rem;
+  }
+
+  .mar-canon-card__effect {
+    font-size: 0.88rem;
+    line-height: 1.3;
+  }
+
+  .mar-canon-cards__head h2 {
+    font-size: 1.7rem;
+  }
+}
+
+/* ---------- Pantalla final ---------- */
+
+.mar-canon-endwrap {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: var(--top-space) calc(var(--safe-r) + 12px) var(--above-bar) calc(var(--safe-l) + 12px);
+  pointer-events: none;
+  overflow: auto;
+}
+
+.mar-canon-end {
+  pointer-events: auto;
+  position: relative;
+  width: min(340px, 100%);
+  padding: 74px 18px 16px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 12px 32px rgb(10 6 40 / 0.4);
+  color: var(--cream);
+  text-align: center;
+  animation: mar-in 0.3s ease-out;
+}
+
+/* El cielo de la tarjeta: el sol que sale por el horizonte, o el agua que sube. */
+.mar-canon-end__sky {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 64px;
+}
+
+.mar-canon-end.is-survived .mar-canon-end__sky {
+  background:
+    radial-gradient(circle 30px at 50% 100%, #fff4c2 0 96%, transparent),
+    radial-gradient(ellipse 140px 60px at 50% 100%, rgb(255 210 122 / 0.75), transparent 70%),
+    linear-gradient(180deg, #36278a, #ec4f24 78%, #ffb35c);
+}
+
+.mar-canon-end.is-flooded .mar-canon-end__sky {
+  background:
+    radial-gradient(circle 14px at 22px 38px, transparent 96%, var(--canon-water-deep)) 0 100% /
+      44px 26px repeat-x,
+    linear-gradient(180deg, #231a5c 0 60%, var(--canon-water-deep) 60%);
+}
+
+.mar-canon-end__title {
+  margin: 0;
+  font: 900 1.9rem / 1.05 var(--font-title);
+}
+
+.mar-canon-end.is-survived .mar-canon-end__title {
+  color: var(--canon-dawn);
+}
+
+.mar-canon-end__line {
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  opacity: 0.85;
+}
+
+.mar-canon-end__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 14px 0 0;
+  border-block: 1px solid var(--line);
+}
+
+.mar-canon-end__stats > div {
+  padding: 8px 2px;
+}
+
+.mar-canon-end__stats > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.mar-canon-end__stats dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.mar-canon-end__stats dd {
+  margin: 2px 0 0;
+  font: 900 1.35rem / 1.1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+}
+
+.mar-canon-end__level {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.mar-canon-end__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mar .mar-canon-end__actions button {
+  min-height: 48px;
+  border-radius: 24px;
+  font-weight: 800;
+}
+
+.mar .mar-canon-end__back {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--cream);
+}
+
+.mar .mar-canon-end__again {
+  border: 0;
+  background: var(--orange);
+  color: var(--cream);
+}
+
+/* ---------- Aviso de abandono y fundido de vuelta ---------- */
+
+.mar-canon-notice {
+  position: absolute;
+  top: var(--top-space);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 3;
+  max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
+}
+
+.mar .mar-canon-notice__chip {
+  white-space: normal;
+  background: var(--glass-strong);
+  font-size: 0.82rem;
+}
+
+.mar-canon-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: #110c33;
+  pointer-events: none;
+  animation: mar-canon-fade 0.64s ease-in-out both;
+}
+
+@keyframes mar-canon-fade {
+  0% {
+    opacity: 0;
+  }
+  45%,
+  55% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- «BETA» en el panel de la isla del Cañón ---------- */
+
+.mar .juego-panel-badge {
+  display: inline-block;
+  vertical-align: middle;
+  padding: 2px 7px 1px;
+  border-radius: 6px;
+  border: 1.5px dashed #c9480f;
+  color: #c9480f;
+  font: 800 0.7rem / 1.3 var(--font-title);
+  letter-spacing: 0.08em;
+  cursor: help;
+}
+
+/* ---------- El menú en pausa ---------- */
+
+.mar-menu__game {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgb(236 79 36 / 0.12);
+  border: 1.5px dashed rgb(236 79 36 / 0.6);
+}
+
+.mar-menu__game p {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.mar .mar-menu__resume {
+  min-height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--orange);
+  color: var(--cream);
+  font-weight: 800;
+}
+
+/* Movimiento reducido: sin desplazamientos ni transiciones (y nada parpadea nunca). */
+@media (prefers-reduced-motion: reduce) {
+  .mar .mar-canon-card,
+  .mar .mar-canon-card.is-focused,
+  .mar .mar-canon-card:focus-visible,
+  .mar .mar-canon-card:active {
+    translate: none;
+    transition: none;
+  }
+
+  .mar-canon-xp__fill,
+  .mar-canon-water__fill {
+    transition: none;
+  }
+
+  .mar-canon-fade {
+    display: none;
+  }
+}
+
+/* El interruptor de desarrollo del estilo de derrota (T117) durante la partida:
+   abajo a la izquierda, debajo de las cartas y de la pantalla final, sin
+   pisar el HUD de arriba en el móvil. */
+.mar button.mar-canon-dev {
+  top: auto;
+  bottom: calc(var(--above-bar) + 4px);
+  z-index: 3;
+}

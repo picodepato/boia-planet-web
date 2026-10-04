@@ -78,14 +78,17 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       seed: 7,
       offer: false,
       defeatStyle: null,
+      card: false,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
       t: 0,
       seed: null,
       offer: false,
       defeatStyle: null,
+      card: false,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
+    expect(canonShortcut('?minijuego=canon&carta=1', dev)?.card).toBe(true);
     // `t` dentro de la partida; basura, desde el principio.
     expect(canonShortcut('?minijuego=canon&t=99999', dev)?.t).toBe(SURVIVORS_CONFIG.durationS - 1);
     expect(canonShortcut('?minijuego=canon&t=abc&seed=-3', dev)).toEqual({
@@ -93,6 +96,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       seed: null,
       offer: false,
       defeatStyle: null,
+      card: false,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });
@@ -349,18 +353,48 @@ describe('la partida en /mar', () => {
     expect(Math.hypot(x! - spawn.x, y! - spawn.y)).toBeLessThan(40);
   });
 
-  it('elige sola la carta de nivel (hasta las cartas de T101) y avisa del final una vez', () => {
+  it('la carta de nivel espera al jugador; `choose` elige esa opción en el paso siguiente (T118)', () => {
+    const run = new SurvivorsRun(sea(), { seed: 5, quality: 'alta', ship: MAR_SHIP_CONFIG });
+    const idle = { dirX: 0, dirY: 0, throttle: 0, drift: false };
+    run.devLevelUp();
+    run.step(idle);
+    expect(run.snapshot().status).toBe('card');
+    const card = run.snapshot().card!;
+    const level = run.snapshot().xp.level;
+    // Sin elegir, la carta sigue abierta (ya no se elige sola) y el tiempo no corre.
+    const active = run.snapshot().activeS;
+    for (let i = 0; i < 120; i++) run.step(idle);
+    expect(run.snapshot().status).toBe('card');
+    expect(run.snapshot().activeS).toBe(active);
+    // Una opción que no existe no hace nada.
+    run.choose(card.options.length);
+    run.step(idle);
+    expect(run.snapshot().status).toBe('card');
+    const pick = card.options[1]!;
+    run.choose(1);
+    run.step(idle);
+    expect(run.snapshot().status).toBe('running');
+    expect(run.snapshot().upgrades[pick.upgrade]).toBe(1);
+    expect(run.snapshot().xp.level).toBe(level);
+    // Sin carta, `choose` no guarda nada para la siguiente.
+    run.choose(0);
+    run.devLevelUp();
+    run.step(idle);
+    run.step(idle);
+    expect(run.snapshot().status).toBe('card');
+  });
+
+  it('avisa del final una vez', () => {
     const ends: string[] = [];
     const run = new SurvivorsRun(sea(), {
       seed: 5,
       quality: 'alta',
       ship: MAR_SHIP_CONFIG,
       startAtS: SURVIVORS_CONFIG.durationS - 3,
+      autoPickCards: true,
       onEnd: (reason) => ends.push(reason),
     });
-    let cards = 0;
     for (let i = 0; i < 60 * 10 && !run.ended; i++) {
-      if (run.snapshot().status === 'card') cards++;
       run.step({ dirX: 1, dirY: 0, throttle: 1, drift: false });
     }
     expect(run.ended).toBe(true);
@@ -368,7 +402,6 @@ describe('la partida en /mar', () => {
     expect(['survived', 'flooded']).toContain(ends[0]);
     expect(run.hook().fin).toBe(ends[0]);
     expect(run.hook().estado).toBe('ended');
-    expect(cards).toBeLessThan(5);
     run.step({ dirX: 1, dirY: 0, throttle: 1, drift: false });
     expect(ends).toHaveLength(1);
   });

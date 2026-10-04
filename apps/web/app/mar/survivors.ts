@@ -45,6 +45,8 @@ export const CANON_PARAMS = {
   offer: 'oferta',
   /** `derrota=puf|sumergirse`: empezar con ese estilo de derrota (T117). */
   defeat: 'derrota',
+  /** `carta=1`: empezar con una carta de nivel abierta (T118, para probar las cartas). */
+  card: 'carta',
   dev: 'dev',
 } as const;
 
@@ -87,6 +89,8 @@ export interface CanonShortcut {
   offer: boolean;
   /** Estilo de derrota pedido (`&derrota=`), o null (el de la config). */
   defeatStyle: DefeatStyle | null;
+  /** Empezar con una carta de nivel abierta (`&carta=1`). */
+  card: boolean;
 }
 
 /**
@@ -108,6 +112,7 @@ export function canonShortcut(
     seed: Number.isFinite(seed) && seed > 0 ? seed : null,
     offer: q.get(CANON_PARAMS.offer) === '1',
     defeatStyle: asDefeatStyle(q.get(CANON_PARAMS.defeat)),
+    card: q.get(CANON_PARAMS.card) === '1',
   };
 }
 
@@ -120,6 +125,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.seed,
     CANON_PARAMS.offer,
     CANON_PARAMS.defeat,
+    CANON_PARAMS.card,
   ]) {
     url.searchParams.delete(p);
   }
@@ -330,8 +336,8 @@ export interface SurvivorsRunOptions {
   startAtS?: number;
   config?: SurvivorsConfig;
   /**
-   * Elegir sola la primera carta de nivel (provisional hasta las cartas de
-   * T101: sin ellas la partida se quedaría en pausa para siempre).
+   * Elegir sola la primera carta de nivel (sólo para pruebas y bots: en
+   * `/mar` las elige el jugador con `choose`, T118). Por defecto, no.
    */
   autoPickCards?: boolean;
   /** Al acabar (una vez): la razón y el estado final. */
@@ -357,6 +363,10 @@ export interface CanonHook {
   calidad: QualityTier;
   /** Dónde va el barco de la partida (u, enteros): «x,y». */
   barco: string;
+  /** Las mejoras elegidas en las cartas, «id:veces» separadas por comas, en orden (T118). */
+  mejoras: string;
+  /** Opciones de la carta de nivel abierta (0 sin carta). */
+  carta: number;
 }
 
 /**
@@ -375,12 +385,14 @@ export class SurvivorsRun {
   private readonly onEnd: SurvivorsRunOptions['onEnd'];
   private lastMs: number | null = null;
   private notified = false;
+  /** La opción de la carta que el jugador eligió, para el paso siguiente. */
+  private pendingChoice: number | null = null;
 
   constructor(world: SurvivorsWorld, opts: SurvivorsRunOptions) {
     this.config = opts.config ?? SURVIVORS_CONFIG;
     this.seed = opts.seed;
     this.quality = opts.quality;
-    this.autoPick = opts.autoPickCards ?? true;
+    this.autoPick = opts.autoPickCards ?? false;
     this.onEnd = opts.onEnd;
     this.game = createSurvivors(this.config, opts.seed, world, {
       quality: opts.quality,
@@ -406,12 +418,35 @@ export class SurvivorsRun {
     return this.clock.alpha;
   }
 
-  /** Un paso fijo con el mando del barco. */
+  /** Un paso fijo con el mando del barco (y la opción de la carta elegida, si la hay). */
   step(input: ShipInput): readonly SurvivorsEvent[] {
-    const pick = this.autoPick && this.game.status === 'card';
-    const events = this.game.step(pick ? { ship: input, choose: 0 } : { ship: input });
+    let choose: number | null = null;
+    if (this.game.status === 'card') choose = this.autoPick ? 0 : this.pendingChoice;
+    this.pendingChoice = null;
+    const events = this.game.step(choose === null ? { ship: input } : { ship: input, choose });
     this.notifyEnd();
     return events;
+  }
+
+  /**
+   * El jugador elige la opción `index` de la carta de nivel abierta (T118):
+   * se aplica en el paso siguiente. Sin carta abierta no hace nada.
+   */
+  choose(index: number): void {
+    if (this.game.status !== 'card') return;
+    const card = this.game.snapshot().card;
+    if (!card || index < 0 || index >= card.options.length) return;
+    this.pendingChoice = index;
+  }
+
+  /**
+   * Atajo de desarrollo `&carta=1` (T118): una nota con lo que falta para
+   * el nivel siguiente, encima del barco; en el primer paso se recoge y se
+   * abre la carta.
+   */
+  devLevelUp(): void {
+    const s = this.game.snapshot();
+    this.game.spawnNote(s.player.x, s.player.y, Math.max(1, s.xp.toNext - s.xp.xp));
   }
 
   /** Pausa (un panel encima, el menú): los pasos cuentan como pausa. */
@@ -443,6 +478,11 @@ export class SurvivorsRun {
       semilla: this.seed,
       calidad: this.quality,
       barco: `${Math.round(s.player.x)},${Math.round(s.player.y)}`,
+      mejoras: Object.entries(s.upgrades)
+        .map(([id, n]) => `${id}:${n}`)
+        .sort()
+        .join(','),
+      carta: s.card?.options.length ?? 0,
     };
   }
 

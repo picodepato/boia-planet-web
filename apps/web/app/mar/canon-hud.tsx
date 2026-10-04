@@ -1,0 +1,438 @@
+'use client';
+
+import type { LevelUpCard } from '@boia/engine/survivors';
+import { type RefObject, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { t as msg } from '../../lib/i18n';
+import type { CanonMode } from './canon-mode';
+import {
+  CARD_ARM_MS,
+  type CanonResult,
+  type CanonView,
+  END_KEYS,
+  UPGRADE_ICON,
+  canonView,
+  cardAmount,
+  cardKeyAction,
+  cardKeys,
+  formatClock,
+  formatPlayed,
+  sameView,
+  waterLevelOf,
+} from './canon-hud-model';
+import type { Mar3D } from './engine/mar3d';
+import './canon-hud.css';
+
+/**
+ * La interfaz del Cañón «Que no pare la música» en `/mar` (T118), al estilo
+ * de los chips de la carrera: arriba al centro la cuenta atrás hasta el
+ * amanecer, el nivel con su barra y la etiqueta «BETA» (con el botón de
+ * pausa, que abre el menú de `/mar`); bajo el barco, el agua a bordo; al
+ * subir de nivel, 1 de 3 cartas; al acabar, la pantalla final. Nada de esto
+ * tapa «Entradas» (la barra de abajo va encima) ni el botón del menú.
+ */
+
+/** Cada cuánto se lee la partida para el HUD (ms); sólo se repinta si cambia. */
+const READ_MS = 100;
+/** Cuánto se queda el aviso de una partida abandonada (ms). */
+const NOTICE_MS = 8000;
+/** El agua a bordo, a la altura del agua bajo el barco (u de escena sobre la de los rótulos). */
+const WATER_DY = -2.4;
+
+/** Lo que el HUD pinta, leído de la partida unas veces por segundo. */
+function useCanonView(canon: CanonMode): CanonView | null {
+  const [view, setView] = useState<CanonView | null>(null);
+  const read = canon.read;
+  const on = canon.active && !canon.result;
+  useEffect(() => {
+    if (!on) {
+      setView(null);
+      return;
+    }
+    const tick = () => {
+      const s = read();
+      const next = s ? canonView(s) : null;
+      setView((prev) => (sameView(prev, next) ? prev : next));
+    };
+    tick();
+    const id = window.setInterval(tick, READ_MS);
+    return () => window.clearInterval(id);
+  }, [on, read]);
+  return view;
+}
+
+/**
+ * Todo lo del Cañón encima del mar. `covered`: hay un panel o el menú
+ * encima (la partida está en pausa); las cartas y la pantalla final
+ * esperan debajo a que se cierre. `onPause`: el botón de pausa y Esc abren
+ * el menú de `/mar`.
+ */
+export function CanonLayer({
+  canon,
+  engineRef,
+  covered,
+  onPause,
+}: {
+  canon: CanonMode;
+  engineRef: RefObject<Mar3D | null>;
+  covered: boolean;
+  onPause: () => void;
+}) {
+  const view = useCanonView(canon);
+
+  // Esc: con la partida en marcha, pausa (el menú); en la pantalla final, volver al mar.
+  // Con un panel o el menú abiertos, Esc es suyo (lo cierra).
+  const latest = useRef({ canon, covered, onPause });
+  latest.current = { canon, covered, onPause };
+  useEffect(() => {
+    if (!canon.active) return;
+    const onKey = (e: KeyboardEvent) => {
+      const { canon: c, covered: busy, onPause: pause } = latest.current;
+      if (e.key !== 'Escape' || busy || !c.active || e.defaultPrevented) return;
+      e.preventDefault();
+      if (c.result) c.backToSea();
+      else pause();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canon.active]);
+
+  return (
+    <>
+      {view ? <CanonHud view={view} onPause={onPause} /> : null}
+      {view ? <CanonWater pct={view.waterPct} engineRef={engineRef} /> : null}
+      {view?.card && !covered ? (
+        <CanonCards card={view.card} capacity={view.waterCapacity} onChoose={canon.choose} />
+      ) : null}
+      {canon.result && !covered ? (
+        <CanonEnd result={canon.result} onAgain={canon.again} onBack={canon.backToSea} />
+      ) : null}
+      {canon.notice ? <CanonNotice onClose={canon.dismissNotice} /> : null}
+      {canon.fading ? <div className="mar-canon-fade" aria-hidden="true" /> : null}
+    </>
+  );
+}
+
+/** La etiqueta «BETA» (también en el panel de la isla del Cañón). */
+function BetaTag() {
+  return (
+    <span
+      className="mar-canon-beta"
+      data-testid="mar-canon-beta"
+      title={msg('mar.canon.beta.aria')}
+    >
+      {msg('mar.canon.beta')}
+    </span>
+  );
+}
+
+/** Arriba al centro: «BETA», la cuenta atrás, la pausa y, debajo, el nivel con su barra. */
+function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
+  const time = formatClock(view.timeLeftS);
+  return (
+    <section
+      className="mar-canon-hud"
+      data-testid="mar-canon-hud"
+      data-estado={view.status}
+      aria-label={msg('mar.canon.hud.aria')}
+    >
+      <div className="mar-canon-hud__row">
+        <BetaTag />
+        <span
+          className="mar-canon-hud__time"
+          data-testid="mar-canon-tiempo"
+          data-segundos={view.timeLeftS}
+          role="timer"
+          aria-live="off"
+          aria-label={msg('mar.canon.hud.tiempo', { tiempo: time })}
+        >
+          {time}
+        </span>
+        <button
+          type="button"
+          className="mar-canon-pause"
+          data-testid="mar-canon-pausa"
+          aria-label={msg('mar.canon.pausa.aria')}
+          title={msg('mar.canon.pausa')}
+          onClick={onPause}
+        >
+          <span aria-hidden="true" className="mar-canon-pause__icon" />
+        </button>
+      </div>
+      <div className="mar-canon-hud__level">
+        <span className="mar-canon-hud__lv" data-testid="mar-canon-nivel" data-nivel={view.level}>
+          {msg('mar.canon.hud.nivel', { nivel: view.level })}
+        </span>
+        <span
+          className="mar-canon-xp"
+          role="progressbar"
+          aria-label={msg('mar.canon.hud.xp', { siguiente: view.level + 1 })}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={view.xpPct}
+        >
+          <span className="mar-canon-xp__fill" style={{ width: `${view.xpPct}%` }} />
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * El agua a bordo, bajo el barco (como en Vampire Survivors): el motor la
+ * coloca y la sigue en cada fotograma (`Mar3D.anchor`). Además del color,
+ * el dibujo de la barra cambia con el peligro y lleva marcas cada cuarto.
+ */
+function CanonWater({ pct, engineRef }: { pct: number; engineRef: RefObject<Mar3D | null> }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const g = engineRef.current;
+    const el = ref.current;
+    if (!g || !el) return;
+    g.anchor(el, 'ship', WATER_DY);
+    return () => g.release(el);
+  }, [engineRef]);
+  const level = waterLevelOf(pct);
+  return (
+    <div
+      ref={ref}
+      className={`mar-canon-water is-${level}`}
+      data-testid="mar-canon-agua"
+      data-pct={pct}
+      data-nivel={level}
+      role="meter"
+      aria-label={msg('mar.canon.agua')}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      aria-valuetext={msg('mar.canon.agua.valor', { pct })}
+    >
+      <span className="mar-canon-water__drop" aria-hidden="true" />
+      <span className="mar-canon-water__track">
+        <span className="mar-canon-water__fill" style={{ width: `${pct}%` }} />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Las cartas de nivel: 1 de 3, grandes, con el dedo o con el teclado
+ * (flechas o 1–3 para moverse, Intro o espacio para elegir). Mientras están
+ * abiertas la partida espera (la simulación lo cuenta como pausa). Un
+ * momento al abrirse no se puede elegir, para no elegir sin querer.
+ */
+export function CanonCards({
+  card,
+  capacity,
+  onChoose,
+}: {
+  card: LevelUpCard;
+  capacity: number;
+  onChoose: (index: number) => void;
+}) {
+  const titleId = useId();
+  const [focused, setFocused] = useState(0);
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const armedAt = useRef(0);
+  const chosen = useRef(false);
+  const count = card.options.length;
+
+  const pick = useCallback(
+    (index: number) => {
+      if (chosen.current || performance.now() < armedAt.current) return;
+      chosen.current = true;
+      onChoose(index);
+    },
+    [onChoose],
+  );
+
+  // Una carta nueva: el foco a la primera, armada en un momento.
+  useEffect(() => {
+    chosen.current = false;
+    armedAt.current = performance.now() + CARD_ARM_MS;
+    setFocused(0);
+    const before = document.activeElement as HTMLElement | null;
+    buttons.current[0]?.focus({ preventScroll: true });
+    return () => {
+      if (before && before.isConnected && before !== document.body) {
+        before.focus({ preventScroll: true });
+      }
+    };
+  }, [card]);
+
+  // El teclado es de las cartas mientras están: no llega al barco.
+  const focusedRef = useRef(focused);
+  focusedRef.current = focused;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      const action = cardKeyAction(e.key, focusedRef.current, count);
+      if (!action) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (action.kind === 'choose') {
+        if (!e.repeat) pick(action.index);
+        return;
+      }
+      if (e.repeat) return;
+      setFocused(action.index);
+      buttons.current[action.index]?.focus({ preventScroll: true });
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [count, pick]);
+
+  return (
+    <div className="mar-canon-cards" data-testid="mar-canon-cartas" data-nivel={card.level}>
+      <section className="mar-canon-cards__box" role="dialog" aria-labelledby={titleId}>
+        <header className="mar-canon-cards__head">
+          <h2 id={titleId}>{msg('mar.canon.cartas.titulo', { nivel: card.level })}</h2>
+          <p>{msg('mar.canon.cartas.elige')}</p>
+        </header>
+        <div className="mar-canon-cards__list" role="group" aria-labelledby={titleId}>
+          {card.options.map((o, i) => {
+            const keys = cardKeys(o);
+            const fresh = o.nextStack <= 1;
+            return (
+              <button
+                key={o.upgrade}
+                ref={(el) => {
+                  buttons.current[i] = el;
+                }}
+                type="button"
+                className={`mar-canon-card${i === focused ? ' is-focused' : ''}`}
+                data-testid="mar-canon-carta"
+                data-mejora={o.upgrade}
+                data-indice={i}
+                aria-keyshortcuts={String(i + 1)}
+                onFocus={() => setFocused(i)}
+                onClick={() => pick(i)}
+              >
+                <span className="mar-canon-card__key" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className="mar-canon-card__icon" aria-hidden="true">
+                  {UPGRADE_ICON[o.upgrade]}
+                </span>
+                <span className="mar-canon-card__text">
+                  <strong className="mar-canon-card__name">{msg(keys.title)}</strong>
+                  <span className="mar-canon-card__effect">
+                    {msg(keys.effect, { amount: cardAmount(o), capacidad: capacity })}
+                  </span>
+                  <span className="mar-canon-card__stack">
+                    <span className="mar-canon-card__pips" aria-hidden="true">
+                      {Array.from({ length: o.maxStacks }, (_, k) => (
+                        <span
+                          key={k}
+                          className={
+                            k < o.nextStack - 1 ? 'is-had' : k === o.nextStack - 1 ? 'is-new' : ''
+                          }
+                        />
+                      ))}
+                    </span>
+                    {fresh
+                      ? msg('mar.canon.cartas.nueva')
+                      : msg('mar.canon.cartas.nivel', { n: o.nextStack, max: o.maxStacks })}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mar-canon-cards__help">{msg('mar.canon.cartas.ayuda')}</p>
+      </section>
+    </div>
+  );
+}
+
+/** La pantalla final: «¡Amanece!» o «¡Barco inundado!», el tiempo, enemigos y notas. */
+function CanonEnd({
+  result,
+  onAgain,
+  onBack,
+}: {
+  result: CanonResult;
+  onAgain: () => void;
+  onBack: () => void;
+}) {
+  const titleId = useId();
+  const again = useRef<HTMLButtonElement>(null);
+  useEffect(() => again.current?.focus({ preventScroll: true }), []);
+  const keys = END_KEYS[result.reason];
+  return (
+    <div className="mar-canon-endwrap">
+      <section
+        className={`mar-canon-end is-${result.reason}`}
+        data-testid="mar-canon-final"
+        data-fin={result.reason}
+        role="dialog"
+        aria-labelledby={titleId}
+      >
+        <div className="mar-canon-end__sky" aria-hidden="true" />
+        <h2 id={titleId} className="mar-canon-end__title">
+          {msg(keys.title)}
+        </h2>
+        <p className="mar-canon-end__line">{msg(keys.line)}</p>
+        <dl className="mar-canon-end__stats">
+          <div>
+            <dt>{msg('mar.canon.fin.tiempo')}</dt>
+            <dd data-testid="mar-canon-final-tiempo">{formatPlayed(result.playedS)}</dd>
+          </div>
+          <div>
+            <dt>{msg('mar.canon.fin.enemigos')}</dt>
+            <dd data-testid="mar-canon-final-enemigos">{result.defeated}</dd>
+          </div>
+          <div>
+            <dt>{msg('mar.canon.fin.notas')}</dt>
+            <dd data-testid="mar-canon-final-notas">{result.notes}</dd>
+          </div>
+        </dl>
+        <p className="mar-canon-end__level">
+          {msg('mar.canon.fin.nivel', { nivel: result.level })}
+        </p>
+        <div className="mar-canon-end__actions">
+          <button
+            type="button"
+            className="mar-canon-end__back"
+            data-testid="mar-canon-volver"
+            onClick={onBack}
+          >
+            {msg('mar.canon.fin.volver')}
+          </button>
+          <button
+            ref={again}
+            type="button"
+            className="mar-canon-end__again"
+            data-testid="mar-canon-otra"
+            onClick={onAgain}
+          >
+            {msg('mar.canon.fin.otra')}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/** El aviso corto de una partida que se abandonó por estar más de 5 minutos en pausa. */
+function CanonNotice({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const id = window.setTimeout(onClose, NOTICE_MS);
+    return () => window.clearTimeout(id);
+  }, [onClose]);
+  return (
+    <div className="mar-canon-notice" role="status">
+      <div className="mar-chip mar-canon-notice__chip" data-testid="mar-canon-aviso">
+        <span>{msg('mar.canon.abandono')}</span>
+        <button
+          type="button"
+          className="mar-chip__x"
+          aria-label={msg('mar.canon.abandono.cerrar')}
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}

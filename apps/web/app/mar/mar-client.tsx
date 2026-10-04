@@ -185,6 +185,7 @@ import {
 } from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
+import { CanonLayer } from './canon-hud';
 import { CANON_GAME_ID, islandPinsOnly } from './survivors';
 import {
   type Trip,
@@ -473,7 +474,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       );
       setMinigameOffer({ objectId: island?.identity.id ?? CANON_GAME_ID, gameId: CANON_GAME_ID });
     },
-    // T101: aquí la pantalla final (¡Amanece! / ¡Barco inundado!); por ahora, el mundo vuelve y ya.
+    // La pantalla final (T118) la pinta `CanonLayer`; T119 apunta aquí la sesión y el premio.
   });
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
@@ -1493,10 +1494,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !ranking &&
       !menu;
     g.paused = minigameOpen;
-    // Con un panel o el menú encima, la partida del Cañón espera (cuenta como pausa).
-    canonPause(!g.inputEnabled);
+    // Con un panel o el menú encima, la partida del Cañón espera (cuenta como pausa);
+    // también con una ficha (p. ej. «Mis códigos» desde el menú, T118).
+    canonPause(!g.inputEnabled || !!sheet);
   }, [
     canonPause,
+    sheet,
     checkoutFor,
     minigameOpen,
     logros,
@@ -2147,6 +2150,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onMood={chooseMood}
           onWorld={chooseWorld}
           onClose={() => setMenu(false)}
+          game={
+            canon.active && !canon.result
+              ? { warning: msg('mar.canon.menu.aviso'), resume: msg('mar.canon.menu.seguir') }
+              : undefined
+          }
         />
       ) : null}
 
@@ -2211,9 +2219,26 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </p>
       ) : null}
 
-      {/* El estado de la partida del Cañón para las pruebas (T99; el HUD llega en T101). */}
+      {/* El Cañón (T118): HUD, agua a bordo, cartas, final; su estado para las pruebas (T116). */}
       <CanonTestHook hud={canon.hud} />
       <CanonDevSwitch canon={canon} />
+      <CanonLayer
+        canon={canon}
+        engineRef={engineRef}
+        covered={
+          menu ||
+          logros ||
+          tienda ||
+          !!hoja ||
+          entradas ||
+          !!checkoutFor ||
+          !!bottleSheet ||
+          ranking ||
+          !!sheet ||
+          minigameOpen
+        }
+        onPause={openMenu}
+      />
 
       {/* Rumbo, circuito y misión */}
       <div className="mar-chips">

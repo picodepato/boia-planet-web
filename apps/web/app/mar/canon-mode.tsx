@@ -5,6 +5,7 @@ import type { WorldConfig } from '@boia/world';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { InWorldCopy } from '../../lib/mundo/minigame-layer';
 import { type MessageKey, t as msg } from '../../lib/i18n';
+import { type CanonResult, canonResult } from './canon-hud-model';
 import type { Mar3D } from './engine/mar3d';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import {
@@ -38,6 +39,16 @@ const EMPTY: ReadonlySet<HideLayer> = new Set();
 const HOOK_MS = 250;
 /** Cada cuánto, con la pestaña oculta, se apunta la pausa (ms). */
 const HIDDEN_MS = 1000;
+/** «Volver al mar» (T118): el fundido entero y cuándo, a oscuras, vuelve el mundo (ms). */
+export const FADE_MS = 640;
+const FADE_SWAP_MS = 300;
+
+function reducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  );
+}
 
 export interface CanonEnd {
   reason: EndReason;
@@ -45,8 +56,23 @@ export interface CanonEnd {
 }
 
 export interface CanonMode {
-  /** Hay partida en curso. */
+  /** Hay partida en curso (también con la pantalla final, hasta volver al mar). */
   active: boolean;
+  /** La pantalla final (T118): «¡Amanece!» o «¡Barco inundado!», o null. */
+  result: CanonResult | null;
+  /** El aviso corto de una partida abandonada (más de 5 min en pausa), o null. */
+  notice: 'abandoned' | null;
+  dismissNotice(): void;
+  /** «Volver al mar» con su fundido en curso. */
+  fading: boolean;
+  /** El estado de la partida ahora (para el HUD; no guardarlo), o null. */
+  read(): SurvivorsSnapshot | null;
+  /** Elige la opción `index` de la carta de nivel abierta. */
+  choose(index: number): void;
+  /** «Otra vez»: una partida nueva donde está el barco. */
+  again(): void;
+  /** «Volver al mar»: el mundo vuelve con un fundido corto. */
+  backToSea(): void;
   /** El último estado (también el final, hasta la siguiente). */
   hud: CanonHook | null;
   /** Lo que la partida tiene escondido ahora. */
@@ -74,6 +100,8 @@ interface StartOptions {
   seed?: number | null;
   /** Estilo de derrota pedido (`&derrota=`); sólo cuenta con los atajos encendidos. */
   defeatStyle?: DefeatStyle | null;
+  /** `&carta=1`: empezar con una carta de nivel abierta (sólo con los atajos encendidos). */
+  card?: boolean;
 }
 
 export function useCanonMode({
@@ -98,13 +126,20 @@ export function useCanonMode({
   onStart: () => void;
   /** `&oferta=1`: el panel de la isla del Cañón, sin empezar. */
   onOffer: () => void;
-  /** Al acabar, con el mundo ya de vuelta. T101 pone aquí la pantalla final. */
+  /**
+   * Al acabar la partida (una vez, en ese momento): con abandono el mundo ya
+   * ha vuelto; si no, sigue la pantalla final hasta «Volver al mar».
+   */
   onEnd?: (end: CanonEnd) => void;
 }): CanonMode {
   const runRef = useRef<SurvivorsRun | null>(null);
   const restoreRef = useRef<(() => void) | null>(null);
   const pausedRef = useRef(false);
   const [active, setActive] = useState(false);
+  const [result, setResult] = useState<CanonResult | null>(null);
+  const [notice, setNotice] = useState<'abandoned' | null>(null);
+  const [fading, setFading] = useState(false);
+  const fadeTimers = useRef<number[]>([]);
   const [hud, setHud] = useState<CanonHook | null>(null);
   const [hidden, setHiddenState] = useState<ReadonlySet<HideLayer>>(EMPTY);
   const hiddenRef = useRef<ReadonlySet<HideLayer>>(EMPTY);
@@ -117,23 +152,47 @@ export function useCanonMode({
   const latest = useRef({ onStart, onOffer, onEnd, isRaceActive });
   latest.current = { onStart, onOffer, onEnd, isRaceActive };
 
-  /** Fin de la partida: el barco se queda donde acabó y el mundo vuelve como estaba. */
+  /** Se acabó del todo: el barco se queda donde acabó y el mundo vuelve como estaba. */
+  const teardown = useCallback(() => {
+    const run = runRef.current;
+    runRef.current = null;
+    engineRef.current?.stopSurvivors();
+    restoreRef.current?.();
+    restoreRef.current = null;
+    if (run) setHud(run.hook());
+    setResult(null);
+    setActive(false);
+  }, [engineRef]);
+
+  /**
+   * Fin de la partida (T118): con «¡Amanece!» o «¡Barco inundado!» la escena
+   * se queda quieta detrás de la pantalla final hasta «Otra vez» o «Volver
+   * al mar»; un abandono (más de 5 min en pausa) devuelve ya el mundo, con
+   * un aviso corto.
+   */
   const finish = useCallback(
     (run: SurvivorsRun, reason: EndReason, snapshot: SurvivorsSnapshot) => {
       if (runRef.current !== run) return;
-      runRef.current = null;
-      engineRef.current?.stopSurvivors();
-      restoreRef.current?.();
-      restoreRef.current = null;
-      setHud(run.hook());
-      setActive(false);
       latest.current.onEnd?.({ reason, snapshot });
+      const r = canonResult(reason, snapshot);
+      if (!r) {
+        teardown();
+        setNotice('abandoned');
+        return;
+      }
+      setHud(run.hook());
+      setResult(r);
     },
-    [engineRef],
+    [teardown],
   );
 
   const start = useCallback(
-    ({ t = 0, seed = null, defeatStyle: askedStyle = null }: StartOptions = {}): boolean => {
+    ({
+      t = 0,
+      seed = null,
+      defeatStyle: askedStyle = null,
+      card = false,
+    }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
       if (!g || !w || runRef.current || latest.current.isRaceActive()) return false;
@@ -151,6 +210,8 @@ export function useCanonMode({
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (!g.startSurvivors(run)) return false;
+      if (card && devShortcutsEnabled()) run.devLevelUp();
+      setNotice(null);
       if (askedStyle) chosenStyle.current = askedStyle;
       const style = startDefeatStyle(chosenStyle.current, run.config);
       g.setSurvivorsDefeatStyle(style);
@@ -191,6 +252,31 @@ export function useCanonMode({
     runRef.current?.setPaused(paused);
   }, []);
 
+  const read = useCallback(() => runRef.current?.snapshot() ?? null, []);
+  const choose = useCallback((index: number) => runRef.current?.choose(index), []);
+  const dismissNotice = useCallback(() => setNotice(null), []);
+
+  const again = useCallback(() => {
+    teardown();
+    start();
+  }, [teardown, start]);
+
+  const backToSea = useCallback(() => {
+    if (!runRef.current || fadeTimers.current.length) return;
+    if (reducedMotion()) {
+      teardown();
+      return;
+    }
+    setFading(true);
+    fadeTimers.current = [
+      window.setTimeout(teardown, FADE_SWAP_MS),
+      window.setTimeout(() => {
+        fadeTimers.current = [];
+        setFading(false);
+      }, FADE_MS),
+    ];
+  }, [teardown]);
+
   // El estado para las pruebas, unas veces por segundo.
   useEffect(() => {
     if (!active) return;
@@ -213,6 +299,7 @@ export function useCanonMode({
   // Al irse del mar con la partida en curso, el mundo queda como estaba.
   useEffect(
     () => () => {
+      for (const id of fadeTimers.current) window.clearTimeout(id);
       runRef.current = null;
       restoreRef.current?.();
       restoreRef.current = null;
@@ -229,7 +316,7 @@ export function useCanonMode({
     if (!sc) return;
     history.replaceState(history.state, '', withoutCanonShortcut(window.location.href));
     if (sc.offer) latest.current.onOffer();
-    else start({ t: sc.t, seed: sc.seed, defeatStyle: sc.defeatStyle });
+    else start({ t: sc.t, seed: sc.seed, defeatStyle: sc.defeatStyle, card: sc.card });
   }, [ready, start]);
 
   const blockKey = canonBlockKey({ raceActive });
@@ -242,13 +329,34 @@ export function useCanonMode({
       gameId === CANON_GAME_ID && blockKey ? msg(blockKey) : null,
     copy: (gameId: string) =>
       gameId === CANON_GAME_ID
-        ? { title: msg('mar.canon.title'), summary: msg('mar.canon.summary') }
+        ? {
+            title: msg('mar.canon.title'),
+            summary: msg('mar.canon.summary'),
+            badge: msg('mar.canon.beta'),
+            badgeLabel: msg('mar.canon.beta.aria'),
+          }
         : null,
   };
 
   const dev = { enabled: devSwitch, defeatStyle, toggleDefeatStyle };
 
-  return { active, hud, hidden, start, setPaused, dev, panel };
+  return {
+    active,
+    result,
+    notice,
+    dismissNotice,
+    fading,
+    read,
+    choose,
+    again,
+    backToSea,
+    hud,
+    hidden,
+    start,
+    setPaused,
+    dev,
+    panel,
+  };
 }
 
 const DEFEAT_STYLE_KEY: Readonly<Record<DefeatStyle, MessageKey>> = {
@@ -281,7 +389,7 @@ export function CanonDevSwitch({ canon }: { canon: CanonMode }) {
 
 /**
  * El estado de la partida para las pruebas (como el cronómetro de la
- * carrera, `data-*`), sin nada que se vea: el HUD llega en T101.
+ * carrera, `data-*`), sin nada que se vea (el HUD está en `canon-hud.tsx`).
  */
 export function CanonTestHook({ hud }: { hud: CanonHook | null }) {
   if (!hud) return null;
@@ -303,6 +411,8 @@ export function CanonTestHook({ hud }: { hud: CanonHook | null }) {
       data-semilla={hud.semilla}
       data-calidad={hud.calidad}
       data-barco={hud.barco}
+      data-mejoras={hud.mejoras}
+      data-carta={hud.carta}
     />
   );
 }

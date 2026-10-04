@@ -94,6 +94,7 @@ export function MarMenu({
   onMood,
   onWorld,
   onClose,
+  game,
 }: {
   worldName: string;
   readyToClaim: number;
@@ -109,6 +110,11 @@ export function MarMenu({
   onMood: (mood: MoodId) => void;
   onWorld: (id: string) => void;
   onClose: () => void;
+  /**
+   * Con una partida del Cañón en pausa (T118): el aviso de que salir de la
+   * página la termina y «Seguir jugando» (cierra el menú).
+   */
+  game?: { warning: string; resume: string } | undefined;
 }) {
   return (
     <MarHoja
@@ -127,6 +133,19 @@ export function MarMenu({
       className="mar-menu"
       onClose={onClose}
     >
+      {game ? (
+        <section className="mar-menu__game" data-testid="mar-menu-partida" role="status">
+          <p data-testid="mar-menu-aviso-partida">{game.warning}</p>
+          <button
+            type="button"
+            className="mar-menu__resume"
+            data-testid="mar-menu-seguir"
+            onClick={onClose}
+          >
+            {game.resume}
+          </button>
+        </section>
+      ) : null}
       <nav className="mar-menu__grid" aria-label={t('mar.menu.titulo')}>
         <Tile section="logros" icon="🏆" label={t('mar.client.logros')} onOpen={onOpen}>
           <ClaimBadge count={readyToClaim} testId="mar-menu-logros-contador" />

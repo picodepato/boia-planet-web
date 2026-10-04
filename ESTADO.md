@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T118: HUD, water bar, level-up cards, pause with the /mar menu, end screen, BETA label
+
+Qué existe:
+- `apps/web/app/mar/canon-hud.tsx` + `canon-hud.css`: la interfaz del Cañón, al estilo de los chips de la carrera. `CanonLayer` (lo único que cablea `mar-client`) pinta:
+  - HUD arriba al centro (`mar-canon-hud`): «BETA», la cuenta atrás 7:00 → 0:00, el botón de pausa (44 px) y debajo «Nivel N» con su barra de experiencia. Lee la partida cada 100 ms y sólo repinta si cambia lo que se ve.
+  - Agua a bordo bajo el barco (`mar-canon-agua`), colocada y seguida por el motor (`Mar3D.anchor(el, 'ship')`): 72–84 px, marcas cada cuarto y un rayado que cambia por tramos (ok / alerta ≥50 % / peligro ≥75 %: cuadros y borde grueso), no sólo el color; `role="meter"`.
+  - Cartas de nivel (`mar-canon-cartas`): 1 de 3, entradas de concierto crema con su trepado; en el móvil en columna, en escritorio en fila; cada una dice el nombre, lo que da exactamente (`survivors.upgrade.<id>.efecto`, con % o unidades desde la config) y «Nueva» / «Nivel n de max» con sus puntos. Teclado: flechas (dan la vuelta), 1–3 para ir a una, Intro o espacio para elegir; el foco entra en la primera y vuelve al salir; 350 ms tras abrirse no se elige (sin elegir sin querer). Mientras, la partida está en `card` (pausa del reloj de T98).
+  - Pantalla final (`mar-canon-final`): «¡Amanece!» (cielo con el sol saliendo) o «¡Barco inundado!» (agua), tiempo jugado, enemigos, notas y nivel; «Otra vez» (partida nueva donde está el barco) y «Volver al mar» (el mundo vuelve con un fundido de 0,64 s; sin fundido con movimiento reducido). La escena se queda quieta detrás hasta entonces.
+  - Abandono (más de 5 min en pausa): el mundo vuelve ya y sale un aviso corto (`mar-canon-aviso`, 8 s o ×).
+- Pausa manual: el botón del HUD y Esc abren el menú normal de `/mar`; el menú, con partida, avisa «si sales de esta página (por ejemplo, para comprar entradas), la partida termina» y tiene «Seguir jugando» (`mar-menu-partida`). Cerrarlo sigue. Esc en la pantalla final = «Volver al mar».
+- Restos de T116: la carta ya no se elige sola (`SurvivorsRun.choose(i)`, `autoPickCards` por defecto false); cualquier ficha abierta durante la partida (p. ej. «Mis códigos» desde el menú) la pausa.
+- «BETA» también en el panel de la isla del Cañón (`InWorldCopy.badge`, `panel-minijuego-beta`).
+- `canon-hud-model.ts` (puro): `formatClock` / `formatPlayed`, `percent`, `waterLevelOf`, `canonView`, `cardAmount`, `cardKeys`, `cardKeyAction`, `canonResult`, `END_KEYS`.
+- Atajo de desarrollo nuevo `&carta=1` (con `devShortcutsEnabled`): empieza con una carta de nivel abierta (`SurvivorsRun.devLevelUp`). Gancho de pruebas: `data-mejoras` y `data-carta` en `mar-canon`.
+- El interruptor de desarrollo «Derrota: …» (T117) baja, durante la partida, abajo a la izquierda, para no pisar el HUD en el móvil.
+- Textos en `apps/web/lib/i18n/es-mar.ts` (`mar.canon.*`, `survivors.upgrade.*`), todos `muestra`.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 136 archivos, 1222 pruebas
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `E2E_PORT=3191 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, 20 passed (móvil y escritorio; 5 pruebas nuevas por proyecto)
+
+Pendiente:
+- T119: sesión y premio al acabar (`onEnd` de `useCanonMode` se llama en el momento del final), e2e del abandono por pausa de 5 min y de la Fiestera a bordo, `docs/spec/estado.md` (REQ-AVE-039 sigue PARCIAL) y la guía de prueba (incluir `&carta=1`).
+- Hernán: probar en el móvil el tamaño de las cartas y de la barra de agua con la cámara lejos.
+
 ## 2026-10-04 — plan 010 T106: Durable stamps and achievement progress across sessions
 
 Diagnóstico (reproducido con las pruebas nuevas sobre el código de main, 9 fallan):
