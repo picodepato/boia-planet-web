@@ -25,7 +25,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T123 — Beta 1 notes: slower enemies, smaller and higher HUD, «sumergirse» by default
-- Status: pending
+- Status: done
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: none
@@ -41,7 +41,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - `pnpm exec vitest run packages/engine/src/survivors` → exit 0, including the new bot-vs-idle and speed tests
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with a check that the countdown and XP bar sit in the top band of the viewport (desktop and mobile viewport) and do not overlap the Tickets link
   - Test command → exit 0
-- Outcome:
+- Outcome: piranhas 120 u/s (≈135 at 6:59), growth 0.01, script speedScale 1.03/1.05, softer first wave; dodging bot survives 3/4 seeds to 7:00; compact HUD pinned high; config v2; 1328 unit tests, mar-canon e2e 30 passed → 747a59b
 
 ## T124 — Turbo, boost arrows, jump ramps and race buoys inside the game
 - Status: pending
@@ -62,10 +62,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T125 — Four new enemies, elites, growth, Marea and the full script without bosses (simulation)
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: none
-- Depends on: T123
+- Depends on: none (runs in parallel with T123; integrated after T123 is pushed)
 - Goal: In the pure simulation, the 6 common enemies of the design reference (§6) and the full act-1 script (§8) without minibosses or boss:
   - **Seagull** (flier: ignores islands, flies over them); **pirate in a small boat** (stops at a distance and shoots straight water-pistol shots; **islands block straight projectiles both ways**, the player's too); **swordfish** (telegraph: a warning line on the water for a fixed time, then a straight charge); **jellyfish** (splits into 2 small ones when defeated). Data-driven in `SURVIVORS_CONFIG` like piranha and crab.
   - **Enemy projectiles** with caps per quality tier and the spatial grid.
@@ -73,7 +73,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - **«Marea»** at 5:00: a 20 s ring swarm from every side.
   - Full act-1 timeline as **data**: 0:00 piranhas + jellyfish, 1:00 seagulls, 1:30 crabs, 3:00 pirates, 3:30 swordfish + elites, 5:00 Marea, until 7:00. The slots for minibosses (2:30, 4:30) and the boss (5:30) exist in the data shape as empty/disabled entries so beta 3 only fills them.
   - Expose in the snapshot what the renderer needs (enemy type, elite flag, telegraph lines with progress, enemy projectiles).
-  - Speeds stay consistent with T123 (nothing faster than the boat's top speed except the swordfish charge, which is telegraphed).
+  - Speeds stay consistent with T123, which runs in parallel and lowers piranhas to ~120 u/s with a dodging-bot test (nothing faster than the boat's 150 u/s top speed except the swordfish charge, which is telegraphed). Add new entries to `SURVIVORS_CONFIG`; do not retune existing piranha/crab values (T123 owns them); expect a merge with T123 in `config.ts` and `survivors.test.ts`.
 - Context: header decisions 3 and 8; T123 Outcome; `packages/engine/src/survivors/*` (sim, config, grid, world, clock), the design reference §2, §3, §6, §8, §10 (technical rules: fixed step, grid, caps, data script).
 - Scope: may touch `packages/engine/src/survivors/**` only / must not touch `apps/web/**`, weapons beyond what islands blocking needs, `docs/DECISIONES.md`.
 - Done when:
@@ -192,6 +192,17 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 plan: models per task: Sonnet for T123, T130, T131; Fable for T125, T127; Opus for T124, T126, T128, T129, T132 (Hernán)
 - 2026-10-04 plan: T123 runs alone and is pushed to Vercel when integrated; the rest starts automatically after the push (Hernán)
 
+- 2026-10-04 plan: T125 moves from Fable to Codex (via a Sonnet wrapper agent) and loses its dependency on T123, so a second agent works while T123 runs; T127 stays on Fable (Hernán asked for a Codex task in parallel; orchestrator chose T125)
+- 2026-10-04 plan: Hernán prefers Fable for T125: the Codex run was stopped after ~2 min and T125 restarts from scratch on Fable; Codex will get a task assigned to Opus later, never a Fable one (Hernán)
+- 2026-10-04 plan: skipped the fresh-worktree probe: same setup and test command as plan 010 today, main tests pass (87 s) (orchestrator)
+
+- 2026-10-05 T123: piranha 150→120 u/s, growthPerMinute.speed 0.02→0.01, script speedScale 1.08/1.15→1.03/1.05 (≈135 u/s at 6:59); crab unchanged; first wave 0.35→0.25 groups/s, groups 2–4 (idle floods ~26 s); bot test asserts ≥3× idle and ≥90 s (one of 4 seeds floods at ~150 s); HUD countdown 1.05 rem, level+XP in one row, pause 32 px visible / 44 px touch; config version 2; beta 1 guide «Derrota» item reworded (agent)
+
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
+- 2026-10-04 23:58 T125 launched · attempt 1 · Codex via wrapper agent ac16b404f9920a727
+- 2026-10-05 00:02 T125 Codex run stopped by Hernán's request; worktree and branch removed, nothing kept
+- 2026-10-05 00:05 T125 relaunched from scratch · attempt 1 · agent ab77c29844c2d8c2b (fable)
+- 2026-10-05 00:03 T123 done · branch worktree-agent-ab9f2332bb3a918f4 → 747a59b
