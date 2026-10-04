@@ -44,7 +44,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: piranhas 120 u/s (≈135 at 6:59), growth 0.01, script speedScale 1.03/1.05, softer first wave; dodging bot survives 3/4 seeds to 7:00; compact HUD pinned high; config v2; 1328 unit tests, mar-canon e2e 30 passed → 747a59b
 
 ## T124 — Turbo, boost arrows, jump ramps and race buoys inside the game
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T123
@@ -59,7 +59,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests: a turbo press and a boost pad raise the sim player's speed and decay smoothly; a ramp jump does not stop enemy contact damage; two runs with the same seed and inputs (including turbo presses) give identical snapshots
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts mar-circuito.spec.ts --workers=1` → exit 0, with a new check that the turbo button works during a game
   - Test command → exit 0
-- Outcome:
+- Outcome: (Codex) turbo, boost pads, ramps and race buoys inside the game through the deterministic sim (turbo presses as inputs; shared helpers in `ship/boost.ts` and `circuit/interactives.ts`); smooth speed cap when a boost ends (game only); no immunity in the air, pirate shots hit an airborne boat; 1355 unit tests, e2e 38 passed → a595cb1
 
 ## T125 — Four new enemies, elites, growth, Marea and the full script without bosses (simulation)
 - Status: done
@@ -100,8 +100,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T125
-- Goal: A generic, data-driven weapon system in the pure simulation with the 7 weapons of the design reference §5, each with a **fixed table per level 1–5** (the card can say exactly what a level gives): Water cannon (existing, moved onto the system), **Subwoofer** (bass aura around the boat), **Festival laser** (beam rotating around the boat), **Orbital buoys** (2–3 BOIA buoys orbiting), **Confetti cannon** (fan burst where the boat sails; straight projectiles blocked by islands), **Fireworks** (rockets to random enemies that explode in an area), **Acid rain** (a cloud over a group of enemies: a zone that damages every second). Auras, lasers, rain, fireworks and orbital buoys pass over islands. The system must accept the vinyl stat modifiers and evolutions of T129 without rework (hooks for attack speed, area, damage, projectile count). Expose what the renderer needs in the snapshot. Caps for projectiles/areas per quality tier.
-- Context: header decision 8; T125 Outcome; `packages/engine/src/survivors/*`, design reference §4, §5, §10.
+- Goal: A generic, data-driven weapon system in the pure simulation with the 7 weapons of the design reference §5, each with a **fixed table per level 1–5** (the card can say exactly what a level gives): Water cannon (existing, moved onto the system), **Subwoofer** (bass aura around the boat), **Festival laser** (beam rotating around the boat), **Orbital buoys** (2–3 BOIA buoys orbiting), **Confetti cannon** (fan burst where the boat sails; straight projectiles blocked by islands), **Fireworks** (rockets to random enemies that explode in an area), **Acid rain** (a cloud over a group of enemies: a zone that damages every second). Auras, lasers, rain, fireworks and orbital buoys pass over islands. The system must accept the vinyl stat modifiers and evolutions of T129 without rework (hooks for attack speed, area, damage, projectile count). Expose what the renderer needs in the snapshot. Caps for projectiles/areas per quality tier. Bump `SURVIVORS_CONFIG_VERSION` to 3 (T123 and T125 both left it at 2). Note from T125: with the beta-1 cannon only piranhas and gulls ever die; the new weapons should be able to kill every enemy type.
+- Context: header decision 8; T125 Outcome (enemy types, `survivors-beta2.test.ts`, events `enemyFire`/`telegraph`/`split`, `blocked.owner`); `packages/engine/src/survivors/*`, design reference §4, §5, §10.
 - Scope: may touch `packages/engine/src/survivors/**` only / must not touch `apps/web/**`, vinyls/evolutions content (T129), `docs/DECISIONES.md`.
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors` → exit 0 with a test per weapon (hits what its pattern says, level table applied, islands block only straight ones) and determinism for a run holding all 7 weapons
@@ -203,6 +203,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T125: crab track starts at 1:30 (fromS 60→90); jellyfish halves keep the same EnemyId with scale/generation; elites/Marea params in config.elites/config.marea keyed by the script event ref; miniboss/boss slots are enabled:false entries; reused hit/blocked events (blocked.owner, defeated.elite) plus new enemyFire, telegraph, split; tests in survivors-beta2.test.ts; full-run tests with 60 s timeout (agent)
 - 2026-10-05 T125: its SURVIVORS_CONFIG_VERSION bump collapsed with T123's (both 1→2, merged clean at 2); main was not pushed in between, and configHash changes on its own; T127 bumps to 3 (orchestrator)
 
+- 2026-10-05 T124: small edits outside the listed scope in `apps/web/app/mar/engine/steering.ts` (re-export of the shared turbo helper) and `apps/web/app/mar/survivors.ts` (turbo press into sim input); `stepShip` gets an opt-in smooth speed limit used only by the game; no config change, no version bump; conflict with T125 in `sim.ts` (one hunk, SurvivorsEvent type) resolved by the agent (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T125: with the beta-1 cannon (nearest target) only piranhas and gulls die in 7:00; crabs, jellyfish, pirates, swordfish are never killed — for T127 weapons / T132 balance
@@ -217,3 +219,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 00:08 pushed main bfb39ba (T123) to Vercel; Telegram notice sent
 - 2026-10-05 00:10 T124 launched · attempt 1 · Codex via wrapper agent a3828345c3b543eb5
 - 2026-10-05 00:22 T125 done · branch worktree-agent-ab77c29844c2d8c2b → a561583
+- 2026-10-05 00:24 T127 launched · attempt 1 · agent afe2ea8cb160da524 (fable)
+- 2026-10-05 00:30 push offer T125: Hernán asked for a local mobile link instead (thought the old 2D game was integrated); demo server on :3100 from main, link sent, the new mode verified running; no push
+- 2026-10-05 00:55 T124 done by agent; integration conflict in survivors/sim.ts with T125 → sent back to the same agent
+- 2026-10-05 01:00 T124 done · branch worktree-agent-a3828345c3b543eb5 → a595cb1
