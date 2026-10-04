@@ -267,7 +267,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: `RACE_SHIP_CONFIG` (15-kn config scaled to 220 u/s, checked against the frozen 22-kn config) only while the race phase is `racing`; excess speed cut to the 15-kn cap on exit; record version kept; `data-manejo`; medal e2e passes again → eb968a0
 
 ## T122 — One world: hide Acuarela, keep it for a later port
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet
 - Skills: none
 - Depends on: T108
@@ -283,7 +283,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T112 — Benidorm and Ibiza runtime integration with bounded club animation
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T108, T109, T110, T111
@@ -440,3 +440,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 21:09 T111 done → 93bb950
 - 2026-10-04 21:31 T108 done → b7611cd
 - 2026-10-04 21:31 paused by Hernán to continue in a new session (context size); nothing running. Next ready: T112 (Opus) and T122 (Sonnet); then T113, T105
+- 2026-10-04 resumed in a new session; T112 (agent ada4ec2f9f381d852) and T122 (agent a45428d663505dedc) launched in parallel · attempt 1
