@@ -128,7 +128,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: HUD chips with BETA, countdown and XP/level; striped water bar under the boat; ticket-style 1-of-3 cards (keys 1–3/arrows/Enter, 350 ms guard); any sheet/menu pauses; menu leave warning; end screen «¡Amanece!»/«¡Barco inundado!» with «Otra vez»/«Volver al mar»; BETA badge on the panel; 1222 unit tests, mar-canon e2e 20 passed → b625169
 
 ## T119 — Remove the 2D canon, session and reward, full e2e of the mode, docs and the beta test guide
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T118
@@ -145,6 +145,20 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - `grep -rn "minigames/canon" packages apps --include=*.ts --include=*.tsx` → no matches
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts minijuegos.spec.ts <the achievement/reward specs that touch canon> --workers=1` → exit 0, desktop and mobile projects
   - `python3 tools/spec/estado.py` → exit 0
+  - Test command → exit 0
+- Outcome: 2D canon removed (registry split into `MinigameEntry` / 2D `MinigameDefinition`; `world-canon.ts`, `world-session.ts`); session config v4 with the survivors hash, score = active seconds, `won` on survived; reward 150/50 per season unchanged (no migration); end-screen reward line; e2e 34 + 16 passed; REQ-AVE-037 → PARCIAL; test guide `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md` → 521119d
+
+## T121 — No reward from dev-shortcut starts in production; Cañón sample copy
+- Status: running (attempt 1)
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T119
+- Goal: T119 lets a game started with the `&t=` dev shortcut earn the real reward (it records `skippedMs` but still grants), and decision 2 makes the shortcuts reachable in production with `?dev=1`, so anyone could get 150 pts + 50 coins by opening `/mar?dev=1&minijuego=canon&t=419`. Fix it: a session that skipped time (or was started by any dev shortcut that changes the game) never grants the reward and never fires `win_minigame`, the `canon` achievement or `guardacostas` progress **in a production build**; in dev and the e2e server (`devShortcutsEnabled()` without `?dev=1` in production) it may still grant, so the existing e2e that checks "reward granted once" keeps working. The end screen then says the reward was skipped because of a test start (i18n, `muestra`). Also update the stale sample copy that still describes the old 2D game: the `canon` achievement description («Gana Cañón contra tiburones.») and `minigame.canon.title`, to describe the new mode (survive until dawn, `muestra`), without changing ids, rewards or achievement logic.
+- Context: T119's Outcome and Decisions in this plan; `apps/web/app/mar/world-session.ts`, `world-canon.ts`, the survivors dev-shortcut helper (`devShortcutsEnabled`), `packages/engine/src/minigames/session.ts`, `rewards.ts`, the end-screen component and `mar.canon.premio.*` keys, `apps/web/lib/i18n/`, the achievements catalogue (`canon`), `apps/web/e2e/mar-canon.spec.ts`.
+- Scope: may touch those files, their unit tests and `mar-canon.spec.ts` / must not touch the Faro, rewards amounts or policy, Supabase migrations, `docs/DECISIONES.md`.
+- Done when:
+  - unit tests prove: a production-mode session with `skippedMs > 0` (or a game-changing dev shortcut) does not grant the reward nor fire `win_minigame`/achievements, and the end screen shows the skipped-reward line; a normal survived session still grants once per season; in dev/e2e mode the shortcut start still grants
+  - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts logros.spec.ts --workers=1` → exit 0
   - Test command → exit 0
 - Outcome:
 
@@ -340,6 +354,9 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T118: `autoPickCards` default false and `SurvivorsRun.choose`; dev `&carta=1`; hooks `data-mejoras`, `data-carta`; cards as cream concert tickets with a 350 ms pick guard; after the end screen the scene stays frozen until a button; 5-min abandon returns at once with a short message; Esc on the end screen = «Volver al mar»; water stripes change at 50 % and 75 %; upgrade keys split into name + `.efecto`; dev switch moves bottom-left during a game; BETA badge via optional `badge` in `InWorldCopy` (agent)
 
+- 2026-10-04 T119: session score = active whole seconds, goal 420 s, `won` only on survived, config v4; `&t=` skipped time recorded as `skippedMs` and still rewarded; hidden tab never invalidates a Cañón session; registry split; `layerMinigame()` only 2D; REQ-AVE-037 HECHO → PARCIAL; REQ-AVE-038 HECHO with the active-time adjustment pending; Faro pause/hidden-tab e2e moved to the Faro; no Supabase migration needed (agent)
+- 2026-10-04 orchestrator: added T121 (small fix): with `?dev=1` in production the `&t=` shortcut would let anyone earn the real reward; production dev-shortcut starts never grant; also refresh the stale `canon` sample copy (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
@@ -365,3 +382,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 18:35 T106 done → 52dcd53
 - 2026-10-04 18:35 T110 launched · attempt 1 · Codex via wrapper agent a64cb5a8c7b8fa495
 - 2026-10-04 19:01 T118 done → b625169
+- 2026-10-04 19:02 T119 launched · attempt 1 · agent a70863d9a7bdced71
+- 2026-10-04 19:30 T119 done → 521119d
