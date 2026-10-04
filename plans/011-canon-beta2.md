@@ -44,8 +44,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: piranhas 120 u/s (≈135 at 6:59), growth 0.01, script speedScale 1.03/1.05, softer first wave; dodging bot survives 3/4 seeds to 7:00; compact HUD pinned high; config v2; 1328 unit tests, mar-canon e2e 30 passed → 747a59b
 
 ## T124 — Turbo, boost arrows, jump ramps and race buoys inside the game
-- Status: pending
-- Model: opus (Opus 5.5)
+- Status: running (attempt 1)
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T123
 - Goal: During the Cañón, the turbo button (same duration and cooldown as sailing, same visible button), the boost arrows, the jump ramps and the race buoys behave **exactly as when sailing freely** outside a race; jumping gives **no immunity** (contact and projectiles still hit while airborne). Today `Mar3D.turbo()` refuses during survivors and the survivors step does not read boosts or ramps.
@@ -62,7 +62,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T125 — Four new enemies, elites, growth, Marea and the full script without bosses (simulation)
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: none (runs in parallel with T123; integrated after T123 is pushed)
@@ -79,7 +79,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors` → exit 0 with tests per behaviour: seagull crosses an island, island blocks an enemy shot and a player ball, swordfish telegraphs before charging, jellyfish splits in 2, elites appear only after the configured time, Marea spawns a ring at 5:00, caps hold under `baja`, a full accelerated 7:00 run per seed is deterministic
   - Test command → exit 0
-- Outcome:
+- Outcome: seagull, pirate (straight shots blocked by islands both ways), swordfish (telegraph + charge), jellyfish (splits); elites from 3:30, Marea ring at 5:00, act-1 timeline as data with disabled miniboss/boss slots; new tests in survivors-beta2.test.ts; 1339 unit tests → a561583
 
 ## T126 — Models and effects for the new enemies
 - Status: pending
@@ -96,7 +96,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T127 — Weapon system: the six new weapons with per-level tables (simulation)
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T125
@@ -198,7 +198,15 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-05 T123: piranha 150→120 u/s, growthPerMinute.speed 0.02→0.01, script speedScale 1.08/1.15→1.03/1.05 (≈135 u/s at 6:59); crab unchanged; first wave 0.35→0.25 groups/s, groups 2–4 (idle floods ~26 s); bot test asserts ≥3× idle and ≥90 s (one of 4 seeds floods at ~150 s); HUD countdown 1.05 rem, level+XP in one row, pause 32 px visible / 44 px touch; config version 2; beta 1 guide «Derrota» item reworded (agent)
 
+- 2026-10-05 plan: T123 pushed to Vercel (bfb39ba) on Hernán's request; T124 goes to Codex (an Opus task, as Hernán asked) in parallel with T125 on Fable (orchestrator)
+
+- 2026-10-05 T125: crab track starts at 1:30 (fromS 60→90); jellyfish halves keep the same EnemyId with scale/generation; elites/Marea params in config.elites/config.marea keyed by the script event ref; miniboss/boss slots are enabled:false entries; reused hit/blocked events (blocked.owner, defeated.elite) plus new enemyFire, telegraph, split; tests in survivors-beta2.test.ts; full-run tests with 60 s timeout (agent)
+- 2026-10-05 T125: its SURVIVORS_CONFIG_VERSION bump collapsed with T123's (both 1→2, merged clean at 2); main was not pushed in between, and configHash changes on its own; T127 bumps to 3 (orchestrator)
+
 ## Proposals (new scope)
+
+- 2026-10-05 T125: with the beta-1 cannon (nearest target) only piranhas and gulls die in 7:00; crabs, jellyfish, pirates, swordfish are never killed — for T127 weapons / T132 balance
+- 2026-10-05 T125: `pnpm exec vitest run packages/engine/src/survivors` without `--testTimeout` times out 3 full-run tests under load (the Test command uses 30 s)
 
 ## Log
 - 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
@@ -206,3 +214,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 00:02 T125 Codex run stopped by Hernán's request; worktree and branch removed, nothing kept
 - 2026-10-05 00:05 T125 relaunched from scratch · attempt 1 · agent ab77c29844c2d8c2b (fable)
 - 2026-10-05 00:03 T123 done · branch worktree-agent-ab9f2332bb3a918f4 → 747a59b
+- 2026-10-05 00:08 pushed main bfb39ba (T123) to Vercel; Telegram notice sent
+- 2026-10-05 00:10 T124 launched · attempt 1 · Codex via wrapper agent a3828345c3b543eb5
+- 2026-10-05 00:22 T125 done · branch worktree-agent-ab77c29844c2d8c2b → a561583
