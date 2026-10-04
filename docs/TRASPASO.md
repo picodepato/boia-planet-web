@@ -35,7 +35,7 @@ reglas, en [`CLAUDE.md`](../CLAUDE.md).
   del plan 008 pasó sus e2e; la corrida completa de `pnpm e2e` del plan la
   hace el orquestador al cerrarlo (la última completa, T49: 204 pasan, 36
   saltadas, 0 fallan).
-- **Requisitos:** de los 294 REQ de la spec v15, **163 HECHO**, 65 PARCIAL,
+- **Requisitos:** de los 294 REQ de la spec v15, **160 HECHO**, 68 PARCIAL,
   31 FALTA, 25 L2, 9 para la versión final y 1 retirado (REQ-ENT-028, D-26)
   ([spec/estado.md](spec/estado.md)). El plan 008 pasó de `final` a HECHO el
   acceso por código, la vuelta al contexto, el progreso del invitado, nada
@@ -229,6 +229,38 @@ isla y en el HUD. Diseño completo y hoja de ruta por betas (beta 1 = plan
   queda PARCIAL hasta elegir `puf` o `sumergirse` (con `puf`, Álvaro tiene
   que aprobar el cambio del REQ); REQ-AVE-038 valida el tiempo activo en el
   Cañón, un ajuste técnico por confirmar.
+
+## Actualizaciones del mundo (plan 010, las del antiguo plan 009)
+
+El plan 009 de Codex (mundo más vivo, manual y con identidad) se integró en el
+plan 010 (T120 lo fusionó; T105–T115 y T122 lo terminaron), así que un solo
+orquestador lleva `/mar`. Lo que cambió, sólo en el mundo **Arcilla**
+(Acuarela sigue en el código, oculta, hasta que se porte):
+
+- **Navegación:** crucero a 15 nudos y rumbo manual al objetivo; 22 nudos
+  sólo durante la carrera activa (T109, `RACE_SHIP_CONFIG`); la ruta principal
+  es transparente (puerto, cala, Halloween, All Day, Última) con islas de
+  exploración opcionales (T113).
+- **Lugares:** la Cala es el **Puerto de Alicante** (T108; el id `cala` se
+  mantiene): ficha normal y el cambio de barco lo abre el jugador a propósito,
+  sin tienda automática. Benidorm (`fotos`, con el club animado) e Ibiza
+  (`tienda`) tienen modelo de Blender propio (T107, T110–T112; fuentes en
+  `art/places/` y `tools/blender/places/`).
+- **Progreso:** sellos y logros sobreviven a cerrar sesión y a los conflictos
+  de instantánea (T106); el logro `naufrago-fiesta` se completa al rescatar
+  al náufrago (T115). Menú con iconos BOIA propios (T114).
+- **Premios de muestra (supuestos, todo `muestra`):** Cañón 150 puntos y 50
+  monedas una vez por temporada; náufrago 80/40; sello por QR 50 puntos. Una
+  partida del Cañón empezada con `t=`, `seed=` o `carta=1` es de prueba: sólo
+  paga en local y en las e2e, nunca con `?dev=1` en producción (T121). Los
+  importes los decide Álvaro (P24).
+- **Falta fuera del código:** que Álvaro apruebe el arte de los tres lugares
+  y los textos nuevos (Puerto de Alicante, el aviso de elegir barco, el
+  Cañón); Blender 5.2.2 vive en `node_modules/.tools/` de cada checkout: si
+  falta, hay que reinstalarlo para rehacer los modelos.
+- **Retoques conocidos:** el aviso de llegada al Puerto de Alicante sigue
+  diciendo «Isla descubierta» (`island.firstVisit`), y las claves
+  `world.*.island.cala.body` no usadas conservan el texto viejo.
 
 ## Qué queda
 

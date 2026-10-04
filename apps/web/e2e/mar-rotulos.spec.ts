@@ -158,9 +158,12 @@ for (const island of ISLANDS) {
     // 2. Algo más lejos, con la isla entera a la vista: el rótulo, encima de su modelo.
     const alejar = page.getByRole('button', { name: t('mar.client.alejar') });
     let seen = await settled(page, island);
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 6; i++) {
       const body = seen.islands[island];
-      if (body && body.top > seen.links.bottom + 60) break;
+      const label = seen.pins.find((p) => p.id === island);
+      // Lo bastante lejos para que el rótulo quepa encima del modelo; en el móvil los
+      // mandos de la izquierda (T65) lo bajan si la isla queda pegada a ellos.
+      if (body && label && body.top > seen.links.bottom + 60 && label.bottom <= body.top + 2) break;
       await alejar.click();
       seen = await settled(page, island);
     }

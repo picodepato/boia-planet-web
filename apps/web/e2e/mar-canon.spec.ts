@@ -292,9 +292,14 @@ test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada t
   // La cuenta atrás, «m:ss», baja desde lo que queda de la partida.
   const time = hud.getByTestId('mar-canon-tiempo');
   await expect(time).toHaveText(/^\d+:\d\d$/);
-  const secs = Number(await time.getAttribute('data-segundos'));
+  // Texto y segundos se leen en el mismo instante: el reloj sigue corriendo entre dos lecturas.
+  const read = await time.evaluate((el) => ({
+    secs: Number(el.getAttribute('data-segundos')),
+    text: el.textContent ?? '',
+  }));
+  const secs = read.secs;
   expect(secs).toBeLessThanOrEqual(SURVIVORS_CONFIG.durationS - 120);
-  await expect(time).toHaveText(formatClock(secs));
+  expect(read.text).toBe(formatClock(secs));
   await expect
     .poll(async () => Number(await time.getAttribute('data-segundos')), { timeout: 15_000 })
     .toBeLessThan(secs);

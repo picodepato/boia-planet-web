@@ -48,9 +48,9 @@ Ejemplos:
 - Desde el móvil con `pnpm demo` (imprime la URL de la Wi-Fi), añadiendo los mismos parámetros.
 
 Los atajos se borran de la URL al usarse (`dev=1` se queda, para que el interruptor siga). Una
-partida empezada con `t=` también puede dar el premio (cuenta lo saltado como jugado; el libro lo
-apunta como `skippedMs`), así que sirve para probar el premio; en modo local se vuelve a ganar
-borrando los datos del sitio.
+partida empezada con `t=`, `seed=` o `carta=1` es de prueba: sólo da el premio en local y en
+el servidor de e2e, y nunca con `?dev=1` en producción (ahí termina con el aviso «Partida de
+prueba» y no apunta premio ni logros). En local se vuelve a ganar borrando los datos del sitio.
 
 ### El interruptor de derrota
 

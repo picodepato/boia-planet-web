@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T105: Final regression coverage and world-update handoff
+
+Qué existe:
+- `mar-hud.spec.ts` «la ficha de una isla…»: la tarjeta pequeña ahora espera `mar-rumbo` y `mar-volar` a la vista (las dos maneras de ir, T96/T97 WIP 79bb8fa aplicado) y que la altura compacta siga ≤ 30 % del alto, también tras recogerla.
+- `mar-rotulos.spec.ts`: el alejamiento espera hasta que el rótulo cabe sobre el modelo (hasta 6 pasos); arregla «cerca de halloween» en móvil (161 > 134, los mandos de la izquierda bajaban el rótulo).
+- `mar-canon.spec.ts`: texto y `data-segundos` del reloj del HUD se leen en el mismo instante (era flaky).
+- `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`: un inicio con `t=`/`seed=`/`carta=1` sólo da premio en local y e2e, nunca con `?dev=1` en producción.
+- `docs/TRASPASO.md`: sección «Actualizaciones del mundo (plan 010, las del antiguo plan 009)» (cambios, premios de muestra, lo que falta fuera del código) y recuento de REQ al día (160/68). La parte del Cañón de T119 se conserva.
+
+Comandos:
+- vitest (sin packages/db, timeout 30 s) → exit 0, 145 archivos, 1323 pruebas.
+- `sh tools/spec/checks.sh` → OK; `pnpm lint`, `pnpm typecheck`, `pnpm build` → exit 0.
+- e2e `mar-paridad mar-canon mar-hud` (workers=1) → 54 passed; `mar-rotulos` → 6 passed.
+
+Pendiente:
+- El aviso de llegada sigue diciendo «Isla descubierta: Puerto de Alicante» (`island.firstVisit`) y las claves `world.*.island.cala.body` no usadas conservan el texto viejo: es copy, lo decide Hernán/Álvaro.
+- `minigame-layer.test.ts` «una partida perdida no toca el libro» no se reprodujo (3 corridas verdes); la flaky de `mar-paridad` del náufrago en móvil tampoco apareció en esta corrida.
+
 ## 2026-10-04 — plan 010 T113: Transparent main route with optional exploration islands
 
 Qué existe

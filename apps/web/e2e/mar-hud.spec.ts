@@ -416,9 +416,9 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
     const sheet = page.getByTestId('mar-ficha');
     await expect(sheet).toBeVisible();
     await expect(sheet).toHaveAttribute('data-expandida', 'no');
-    // Lo esencial y un solo botón; «Entradas» sigue a la vista, debajo.
+    // Lo esencial y las dos maneras de ir (T96); «Entradas» sigue a la vista, debajo.
     await expect(sheet.getByTestId('mar-rumbo')).toBeVisible();
-    await expect(sheet.getByTestId('mar-volar')).toHaveCount(0);
+    await expect(sheet.getByTestId('mar-volar')).toBeVisible();
     const small = await box(sheet);
     expect(small.height).toBeLessThanOrEqual(vp.height * 0.3);
     expect(small.y + small.height).toBeLessThanOrEqual(
@@ -436,7 +436,11 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
     // Y vuelve a recogerse.
     await sheet.getByTestId('mar-ficha-mas').click();
     await expect(sheet).toHaveAttribute('data-expandida', 'no');
-    await expect(sheet.getByTestId('mar-volar')).toHaveCount(0);
+    await expect(sheet.getByTestId('mar-rumbo')).toBeVisible();
+    await expect(sheet.getByTestId('mar-volar')).toBeVisible();
+    await expect
+      .poll(async () => (await box(sheet)).height)
+      .toBeLessThanOrEqual(vp.height * 0.3);
     expect(errors).toEqual([]);
   });
 
