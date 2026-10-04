@@ -82,7 +82,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: seagull, pirate (straight shots blocked by islands both ways), swordfish (telegraph + charge), jellyfish (splits); elites from 3:30, Marea ring at 5:00, act-1 timeline as data with disabled miniboss/boss slots; new tests in survivors-beta2.test.ts; 1339 unit tests → a561583
 
 ## T126 — Models and effects for the new enemies
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T124, T125
@@ -96,7 +96,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T127 — Weapon system: the six new weapons with per-level tables (simulation)
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T125
@@ -106,7 +106,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors` → exit 0 with a test per weapon (hits what its pattern says, level table applied, islands block only straight ones) and determinism for a run holding all 7 weapons
   - Test command → exit 0
-- Outcome:
+- Outcome: data-driven weapons (`WeaponDef` base + levels 2–5, `resolveWeaponStats` hook for vinyls), the 7 weapons in the sim, islands block only canon/confetti, new `areas` cap, all 7 weapons kill every enemy type in a deterministic 7:00 run; config v3; 1373 unit tests → c935479 (attempt 1 failed typecheck against T124, fixed by the same agent)
 
 ## T128 — How the six weapons look in the 3D sea
 - Status: pending
@@ -123,8 +123,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T129 — Vinyls, slots, evolutions and the Salvavidas (simulation and cards pool)
-- Status: pending
-- Model: opus (Opus 5.5)
+- Status: running (attempt 1)
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T127
 - Goal: In the pure simulation and the level-up card pool:
@@ -205,10 +205,15 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-05 T124: small edits outside the listed scope in `apps/web/app/mar/engine/steering.ts` (re-export of the shared turbo helper) and `apps/web/app/mar/survivors.ts` (turbo press into sim input); `stepShip` gets an opt-in smooth speed limit used only by the game; no config change, no version bump; conflict with T125 in `sim.ts` (one hunk, SurvivorsEvent type) resolved by the agent (agent)
 
+- 2026-10-05 T127: `WeaponDef` = base + levels[] with gains; `resolveWeaponStats(def, level, mods)` single hook for T129; sim API addWeapon/levelUpWeapon/weaponLevel/heldWeapons, 4-slot limit left to T129; confetti and rockets share `projectiles` (tagged weapon/kind); new cap `areas` 12/6; separate `weaponRng`; i18n keys `survivors.weapon.<id>`/.l2–.l5 only in config (texts T129/T130) (agent)
+- 2026-10-05 plan: T129 (Opus task) goes to Codex as Hernán asked; T126 stays on Opus (orchestrator)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T125: with the beta-1 cannon (nearest target) only piranhas and gulls die in 7:00; crabs, jellyfish, pirates, swordfish are never killed — for T127 weapons / T132 balance
 - 2026-10-05 T125: `pnpm exec vitest run packages/engine/src/survivors` without `--testTimeout` times out 3 full-run tests under load (the Test command uses 30 s)
+- 2026-10-05 T127: `&t=` dev start grants no weapons; a dev shortcut to start with weapons is for T128/T129
+- 2026-10-05 T127: `sim.ts`/`survivors.test.ts` on main are not prettier-clean (pre-existing)
 
 ## Log
 - 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
@@ -223,3 +228,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 00:30 push offer T125: Hernán asked for a local mobile link instead (thought the old 2D game was integrated); demo server on :3100 from main, link sent, the new mode verified running; no push
 - 2026-10-05 00:55 T124 done by agent; integration conflict in survivors/sim.ts with T125 → sent back to the same agent
 - 2026-10-05 01:00 T124 done · branch worktree-agent-a3828345c3b543eb5 → a595cb1
+- 2026-10-05 01:03 T127 integration tests_failed (typecheck: T124's turbo-ramps.test.ts uses WeaponDef.damage), main reverted (429dd6b); sent back to the same agent to merge main and adapt
+- 2026-10-05 01:06 T126 launched · attempt 1 · agent aaee154a770efe4d0 (opus)
+- 2026-10-05 01:12 T127 done · branch worktree-agent-afe2ea8cb160da524 → c935479
