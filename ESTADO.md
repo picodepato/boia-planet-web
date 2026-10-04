@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T107: Blender Alicante harbor asset (Codex)
+
+Qué existe (art-only; sin enlace a runtime, ni manifest vivo de islas, ni IDs de mundo):
+- `tools/blender/places/{cala.py,common.py,check.py,fresh_import.py,test_check.py,place3d.schema.json,distance_camera.mjs,README.md}`: fuente procedural, contrato de colocación normalizado (radio 1, origen en el centro, fuente Z arriba / GLB Y arriba, frente +Z, agua Y=0, escala = radio de colisión de escena / radio), esquema para cala/fotos/tienda (sólo cala construida), validador y prueba de importación limpia.
+- `art/places/3d/cala/`: `cala.blend` (1.95 MB, editable), `cala.glb` (427148 bytes), `manifest.json`, `reference_notes.md`, `requirement_ledger.md`, `final_report.md`, `work_state.md`.
+- Métricas: 11404 triángulos (límite 12000), 427148 bytes (límite 600000), 10 materiales, 0 clips, extensión radial 0.9665, altura 0.5558. Blender 5.2.2 LTS (el de node_modules del checkout de Codex, sólo lectura). Se eliminaron los 240 triángulos degenerados (fragmentos colineales de teselación) de forma reproducible.
+- Renders de evidencia (vistas, día/noche, distancia de juego) fuera del repo en `node_modules/t107-preview/` (ignorado); rutas en el ledger. Sin imágenes de referencia en assets públicos.
+
+Comandos (desde la raíz del worktree):
+- `python tools/blender/places/check.py` → exit 0 (11404 tris, 427148 bytes)
+- `python tools/blender/places/test_check.py` → exit 0
+- Blender `--background --factory-startup --python-exit-code 1 --python tools/blender/places/fresh_import.py -- --manifest art/places/3d/cala/manifest.json` → exit 0, PASS 11404 tris, 10 materiales
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (129 archivos, 1160 tests)
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+
+Pendiente:
+- T108: enlace en runtime; el puerto debe sustituir TODA la decoración anterior de la Cala (disco/orilla/props/luces) para que no llene la cuenca; mantener la cápsula de colisión y la aproximación exterior.
+- T112: reproducción de clips (ModelStore descarta clips GLTF hoy); `motion` está reservado, no validado.
+- Inspección de las fotos de referencia: heredada de la sesión anterior de Codex, no repetida.
+- La valoración estética del ledger es autoevaluación del creador, no revisión independiente.
+
 ## 2026-10-04 — plan 010 T120: Merge the Codex world updates (codex/world-updates) into main
 
 La rama de Codex (`608f883`, plan 009 T98–T104: tipografía y logo, crucero a

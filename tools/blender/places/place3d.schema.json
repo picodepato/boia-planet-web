@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Independent normalized BOIA 3D place (not the existing 2D place contract)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "version", "id", "file", "source", "generator", "blender", "units", "radius", "scale_rule", "max_tris", "max_bytes", "tris", "bytes", "bounds", "height", "static_node", "motion", "approach", "references", "license"],
+  "properties": {
+    "kind": {"const": "place-glb"}, "version": {"const": 1},
+    "id": {"enum": ["cala", "fotos", "tienda"]},
+    "file": {"type": "string", "pattern": "^(cala|fotos|tienda)\\.glb$"},
+    "source": {"type": "string", "pattern": "^(cala|fotos|tienda)\\.blend$"},
+    "generator": {"type": "string", "pattern": "^tools/blender/places/[a-z]+\\.py$"},
+    "blender": {"type": "string", "minLength": 3},
+    "units": {"const": "normalized radius 1; glTF Y up; front +Z; water Y=0"},
+    "radius": {"const": 1}, "scale_rule": {"const": "current scene collision radius / radius"},
+    "max_tris": {"const": 12000}, "max_bytes": {"const": 600000},
+    "tris": {"type": "integer", "minimum": 1, "maximum": 12000},
+    "bytes": {"type": "integer", "minimum": 20, "maximum": 600000},
+    "bounds": {"type": "object", "additionalProperties": false,
+      "required": ["min", "max", "coordinate_system", "radial"],
+      "properties": {
+        "min": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "max": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+        "coordinate_system": {"const": "Blender Z up; front -Y"},
+        "radial": {"type": "number", "minimum": 0.1, "maximum": 1.001}
+      }},
+    "height": {"type": "number", "minimum": 0.01},
+    "static_node": {"type": "string", "pattern": "^static_(cala|fotos|tienda)$"},
+    "motion": {"type": "array", "maxItems": 4, "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["node", "clip", "duration", "static_frame"],
+      "properties": {"node": {"type": "string", "minLength": 1}, "clip": {"type": "string", "minLength": 1},
+        "duration": {"type": "number", "minimum": 0.1, "maximum": 30},
+        "static_frame": {"type": "integer", "minimum": 1}}}},
+    "approach": {"type": "object", "required": ["side", "outside_radius", "clear_sector_degrees", "note"],
+      "properties": {"side": {"const": "+Z in glTF"}, "outside_radius": {"const": 1},
+        "clear_sector_degrees": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}},
+        "note": {"type": "string", "minLength": 1}}},
+    "references": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "license": {"type": "string", "minLength": 1}
+  }
+}

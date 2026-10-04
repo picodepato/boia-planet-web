@@ -1,0 +1,47 @@
+{
+  "kind": "place-glb",
+  "version": 1,
+  "id": "cala",
+  "file": "cala.glb",
+  "source": "cala.blend",
+  "generator": "tools/blender/places/cala.py",
+  "blender": "5.2.2 LTS",
+  "units": "normalized radius 1; glTF Y up; front +Z; water Y=0",
+  "radius": 1,
+  "scale_rule": "current scene collision radius / radius",
+  "max_tris": 12000,
+  "max_bytes": 600000,
+  "tris": 11404,
+  "bytes": 427148,
+  "bounds": {
+    "min": [
+      -0.929477,
+      -0.56,
+      -0.055
+    ],
+    "max": [
+      0.929477,
+      0.93,
+      0.555798
+    ],
+    "coordinate_system": "Blender Z up; front -Y",
+    "radial": 0.966512
+  },
+  "height": 0.555798,
+  "static_node": "static_cala",
+  "motion": [],
+  "approach": {
+    "side": "+Z in glTF",
+    "outside_radius": 1,
+    "clear_sector_degrees": [
+      -25,
+      25
+    ],
+    "note": "Exterior approach only; visual marina basin does not change existing collision."
+  },
+  "references": [
+    "https://nuevo.puertoalicante.com/puerto-ciudad/espacios-publicos/",
+    "https://www.puertoalicante.com/wp-content/uploads/2024/03/ocio-marina.jpg"
+  ],
+  "license": "original BOIA sample; external photographs used only as visual references"
+}

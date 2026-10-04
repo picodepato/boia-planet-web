@@ -1,0 +1,77 @@
+# Independent BOIA 3D places
+
+These assets do **not** participate in `art/islas/3d/manifest.json` yet. T108/T112
+own runtime hookup; no existing place ID, route, collision, content or progress
+changes here. This contract is distinct from the legacy 2D `place.schema.json`.
+
+Each place has `tools/blender/places/<id>.py` and
+`art/places/3d/<id>/{<id>.blend,<id>.glb,manifest.json}`. IDs remain `cala`, `fotos`,
+`tienda`. Source is reproducible with Blender 5.2.2 LTS; the .blend retains
+separate semantic objects and editable bevel/weighted-normal/leaf modifiers.
+GLB batches static geometry. No photographs, image textures, lights or evidence
+water planes are exported. Limits are 12000 triangles and 600000 bytes per GLB.
+
+## Placement
+
+Normalized radius=1; origin=place center. Source: Z up, front −Y, water Z=0.
+GLB: Y up, front +Z, water Y=0. Runtime scale is the current scene collision
+radius divided by manifest.radius. Bounds in manifest are explicitly in source
+Blender coordinates; convert `(x,y,z)` to glTF `(x,z,-y)`. Current cala central
+collision radius is approximately7.83 scene units; retain its existing capsule
+and broader proximity. All vertices are within radius1; maximum radial extent
+0.966512, height0.555798 (approximately4.35 scene units at existing scale).
+
+The marina ground occupies only the **rear** semicircular cap (source Y≥0).
+There is no terrain under the moored boats. Replace the entire previous island
+decoration, including its terrain disk, original shore fill, supplemental props,
+and decoration updates/lights; do not leave any of these filling the basin.
+Pantalanes/quays are inside the existing collision footprint. The front exterior
+approach remains unobstructed; the decorative basin does not grant new navigable
+collision space. Source hulls cross water0; quay bases extend to−0.055.
+
+## Future motion
+
+`common.export(..., motion=[{node,clip,duration,static_frame}])` excludes semantic
+moving assemblies and their descendants from the static join. Name the moving
+parent and Action/NLA clip identically to the manifest contract; key parent
+transforms for rigid groups. Export uses animations=true only for declared motion.
+The checker requires exported channels, clip duration and semantic nodes. The
+fresh-import gate confirms named actions survive. No runtime playback is claimed:
+the existing ModelStore drops GLTF clips, and T112 must retain clips, create a
+mixer per loaded instance, update from the scene clock and stop/release it.
+`static_frame` is an authored Blender frame at24fps for reduced motion. T110 must
+validate actual animated phases, pivot/contact/bounds and fresh imported motion.
+
+## Reproduce and validate
+
+Run from repository root with an explicit official Blender executable:
+
+```powershell
+node --experimental-transform-types --import ./packages/world/scripts/ts-resolve.mjs tools/blender/places/distance_camera.mjs
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/cala.py -- --preview node_modules/t107-preview/final
+python tools/blender/places/check.py
+python tools/blender/places/test_check.py
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/fresh_import.py -- --manifest art/places/3d/cala/manifest.json --output node_modules/t107-preview/final/fresh-import.json
+```
+
+Standard six-view export evidence and inspector use repository Blender validation
+scripts. Preview paths remain ignored. See cala/reference_notes.md and
+cala/requirement_ledger.md for design observations and the reviewed deliverable.
+
+`distance_camera.mjs` reads the current map/scale and camera constants without
+changing them. It records radius 7.834375, wide-screen zoom 0.2, vertical FOV 40,
+and camera distance 32.270305 scene units for a stationary exterior approach.
+Blender uses explicit vertical sensor fit. This is a flat asset review: planet
+curvature, fog, motion lead, UI inset and runtime lighting still require T108
+captures. Generate camera settings before requesting a preview; plain source
+generation and export need only Blender.
+
+The checker measures transformed GLB bounds/radial extent, valid indices and
+zero-area triangles. Fresh import compares the editable scene's material names,
+base color, roughness, metallic and effective emission against imported GLB,
+along with orientation/bounds and triangles after collapsed tessellation removal.
+The editable bevel surfaces evaluate to 11644 tessellation triangles; 240
+collinear tessellation fragments are filtered reproducibly, leaving 11404.
+No authored polygon or edge is degenerate. Split export normals legitimately
+create boundary edges: watertightness, UV textures and collision meshes are not
+requirements for this palette-based decorative asset.
