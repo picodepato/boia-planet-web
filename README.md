@@ -304,7 +304,7 @@ producción es pública.
 
 ### Camino 1: desde GitHub (el habitual)
 
-El repo `hernandiazz9/boia-planet` está conectado al proyecto:
+El repo `picodepato/boia-planet-web` (remoto `origin`) está conectado al proyecto:
 
 ```sh
 git push origin main        # despliega a producción
