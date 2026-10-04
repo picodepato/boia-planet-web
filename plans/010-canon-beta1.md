@@ -208,7 +208,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) Benidorm place `fotos`: 11768 tris, 397 kB, clip `boia-pole-dance` on empty `boia_pole_slide` (4 s loop, 24 fps, translation only, pivot [0,-0.33,0.42], reduced-motion static_frame=1), mascot in a purple club vest and hat; no enlargement; place tooling generalized for motion checks → c44a4a8
 
 ## T111 — Blender Ibiza white village and cove asset
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5) (Codex out of credits until 22:44)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T110
@@ -219,7 +219,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - White houses, roofs/doors, shore and cove are clear at game distance and from complementary views; intended approach remains readable within current footprint.
   - Clean rerun, fresh import, normalized orientation/material/bounds validation and 12000-triangle/600-kB ceiling pass; final day/night multiview evidence inspected.
   - Source/editable blend/GLB, metrics and source reference notes delivered; relevant unit/types/lint checks pass.
-- Outcome:
+- Outcome: Ibiza `tienda`: 10949 tris, 402 kB, white village, Puig de Missa church, beach kiosk with BOIA awning, decorative cove toward the approach; optional `approach.channel` check added to the place schema; 6 official references in notes → 93bb950
 
 ## T115 — Castaway achievement completes on rescue
 - Status: done
@@ -270,7 +270,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T108, T109, T110, T111
 - Goal: Use the new Benidorm/Ibiza Blender assets in the actual game, replacing old decoration and playing the requested club mascot loop.
-- Context: (T110 note: keep the `boia-pole-dance` GLTF clip in ModelStore; the default 1.7-radius approach framing crops the Benidorm tower tops, ~1.05 radii frames the whole skyline) (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
+- Context: (T111 note: Ibiza collision is a 1.9×1.5 ellipse at 45° that reaches past the visible coast front-right and back-left; replace the procedural `tienda()` decoration and set `labelY` and the night glow) (T110 note: keep the `boia-pole-dance` GLTF clip in ModelStore; the default 1.7-radius approach framing crops the Benidorm tower tops, ~1.05 radii frames the whole skyline) (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
 - Scope: scene place loaders/hooks/animation/tests and required Benidorm geometry/proximity source parity adjustment. No UI/account/economy/route/icon changes.
 - Done when:
   - Both models load with fallback and no duplicated island decoration. Any modest Benidorm enlargement updates visual/collision/proximity dimensions together and leaves safe separation/approach; Ibiza shop behavior remains.
@@ -293,7 +293,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T114 — Custom BOIA menu icons
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5) (Codex out of credits until 22:44)
 - Skills: none
 - Depends on: T118
@@ -304,7 +304,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - All main game-menu entries have consistent distinct icons, clear text labels and accessible names; icons don't shrink touch targets or impair contrast/mobile layout.
   - Existing original mascot/logo is reused where fitting; custom SVGs remain lightweight. Relevant render/a11y and mobile/desktop menu tests/types/lint pass.
   - Provide reviewed menu screenshot; if an icon has no safe clear substitute, document the narrow limitation rather than blocking functional work.
-- Outcome:
+- Outcome: SVG icon family in `apps/web/lib/mundo/menu/icons.tsx` (415–908 B each, `currentColor` + brand fills), mascot reused for Welcome, tiles ≥92 px with two-line labels (Archivo cut them), e2e checks no label is cut; 1268 unit tests → 2f2b8ee
 
 ## T105 — Final regression coverage and world-update handoff
 - Status: pending
@@ -370,6 +370,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T109: Mar3D reads the race through a `racing()` option each step; on race end extra speed is clamped to the 15-kn cap while active boosts/turbo still count (agent)
 
 ## Proposals (new scope)
+- 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
 - 2026-10-04 T109: when a world boost or turbo runs out, `stepShip` cuts speed in one step and Mar3D treats it as a collision (pre-existing, untested)
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
@@ -412,3 +413,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 20:14 T109 launched · attempt 1 · agent aadf9a7b30999bc2e
 - 2026-10-04 20:14 T114 launched · attempt 1 · agent ab0523af0f634b827
 - 2026-10-04 20:57 T109 done → eb968a0 (38 min task, 285 s integration: load with 4 agents + preview server)
+- 2026-10-04 21:09 T114 done → 2f2b8ee
+- 2026-10-04 21:09 T111 done → 93bb950
