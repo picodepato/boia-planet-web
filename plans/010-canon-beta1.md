@@ -154,7 +154,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T120
 - Goal: Diagnose and fix the user's demonstrated symptom: a stamp visible on the logged-in Carnet disappears when returning later; Carnet and castaway achievements also appear unsaved. Preserve every valid earned reward and separate persistence prevention from evidence-based recovery.
-- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) lib/repo-member.ts, account/session and sign-out lifecycle; store/member/member.ts, hydrate.ts, ops/server/snapshot; local purchase/stamp and Carnet APIs; ticketing sandbox; guest merge; member/fake-server tests. Read-only findings indicate cache removal with pending sync, snapshot-conflict server-wins, absent snapshot fields clearing progress, and sandbox stamps excluded from member snapshots; reproduce before choosing a repair. **Continue Codex's unfinished attempt:** Codex left uncommitted work for this task in `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/.claude/worktrees/p009-t106` (branch `codex/p009-t106`, base ab21e43, no commits). Read-only there: never commit, check out, stash or edit anything in the Codex checkout or its worktrees. After your fast-forward, bring its changes into your worktree (e.g. `git -C <that worktree> diff HEAD > <tmp>.patch` and `git apply --3way`, plus copying its untracked files from `git -C <that worktree> ls-files --others --exclude-standard`), review them critically, keep what helps and finish the task.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) lib/repo-member.ts, account/session and sign-out lifecycle; store/member/member.ts, hydrate.ts, ops/server/snapshot; local purchase/stamp and Carnet APIs; ticketing sandbox; guest merge; member/fake-server tests. Read-only findings indicate cache removal with pending sync, snapshot-conflict server-wins, absent snapshot fields clearing progress, and sandbox stamps excluded from member snapshots; reproduce before choosing a repair. **Continue Codex's unfinished attempt:** Codex left uncommitted work for this task in `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/.claude/worktrees/p009-t106` (branch `codex/p009-t106`, base ab21e43, no commits). Read-only there: never commit, check out, stash or edit anything in the Codex checkout or its worktrees. After your fast-forward, bring its changes into your worktree (e.g. `git -C <that worktree> diff HEAD > <tmp>.patch` and `git apply --3way`, plus copying its untracked files from `git -C <that worktree> ls-files --others --exclude-standard`), review them critically, keep what helps and finish the task. **Codex's handoff (2026-10-04 17:5x):** it reproduced the stamp lost after hydration and the achievement dropped on a snapshot conflict; the repair was reviewed and about 1150 local tests pass; final typecheck and e2e are still unconfirmed. Keep per-account isolation, sample revocations and the guard against acks from destroyed instances; reconciling must never grant rewards.
 - Scope: persistence/hydration/sync lifecycle, sample stamp storage and projection, relevant achievement reconciliation and focused UI refresh/tests. Do not change place names/catalog rewards/models/race/route/menu icons, wipe caches or queues, fabricate attendance, re-award currency by inference, apply migrations or mutate remote services.
 - Done when:
   - Tests obtain sample-ticket stamp, Carnet reward and castaway progress, flush, sign out/reopen the same account from a fresh local cache and retain them. Cover local-only reload and guest-to-member continuation.
@@ -164,12 +164,12 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T107 — Blender Alicante harbor asset and reusable place contract
-- Status: pending
-- Model: opus (Opus 5.5)
+- Status: running (attempt 1)
+- Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
-- Depends on: T120
+- Depends on: none
 - Goal: Build a recognizable BOIA-styled Alicante marina/harbor to replace the Cala decoration at runtime later, with connected quays, moored boats, promenade, palms and harbor buildings. Establish the smallest reusable contract for the three new place assets.
-- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) .claude/skills/blender-modeling-workflow and blender-asset-validation, existing island/decor exporters and schemas, current cala bounds and scene coordinates. Blender executable: integration node_modules/.tools/blender-5.2.2-windows-x64/blender.exe. Primary references from Puerto de Alicante and Marina Alicante. Blender executable (read-only): `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/node_modules/.tools/blender-5.2.2-windows-x64/blender.exe`; if missing, use any Blender ≥ 4.2 on the machine and say which. **Continue Codex's unfinished attempt:** Codex left uncommitted work for this task in `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/.claude/worktrees/p009-t107` (branch `codex/p009-t107`, base ab21e43, no commits). Read-only there: never commit, check out, stash or edit anything in the Codex checkout or its worktrees. After your fast-forward, bring its changes into your worktree (e.g. `git -C <that worktree> diff HEAD > <tmp>.patch` and `git apply --3way`, plus copying its untracked files from `git -C <that worktree> ls-files --others --exclude-standard`), review them critically, keep what helps and finish the task.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) .claude/skills/blender-modeling-workflow and blender-asset-validation, existing island/decor exporters and schemas, current cala bounds and scene coordinates. Blender executable: integration node_modules/.tools/blender-5.2.2-windows-x64/blender.exe. Primary references from Puerto de Alicante and Marina Alicante. Blender executable (read-only): `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/node_modules/.tools/blender-5.2.2-windows-x64/blender.exe`; if missing, use any Blender ≥ 4.2 on the machine and say which. **Continue Codex's unfinished attempt:** Codex left uncommitted work for this task in `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/.claude/worktrees/p009-t107` (branch `codex/p009-t107`, base ab21e43, no commits). Read-only there: never commit, check out, stash or edit anything in the Codex checkout or its worktrees. After your fast-forward, bring its changes into your worktree (e.g. `git -C <that worktree> diff HEAD > <tmp>.patch` and `git apply --3way`, plus copying its untracked files from `git -C <that worktree> ls-files --others --exclude-standard`), review them critically, keep what helps and finish the task. **Codex's handoff (2026-10-04 17:5x):** the harbor is modelled and its views reviewed; still to do: clean up 240 degenerate triangles and revalidate the export. Its work is untracked under `art/places/` and `tools/blender/places/`. At runtime (T108) the harbor must replace all the previous Cala decoration so nothing fills the basin.
 - Scope: new procedural source, editable blend, GLB, adjacent asset manifest/validator and evidence notes. Art-only: no runtime hookup, common live island manifest change, world IDs/content, client, physics or persistence.
 - Done when:
   - Source reproduces blend/GLB from a clean latest Blender process; fresh import matches orientation/materials/bounds. Keep existing cala footprint and a navigable approach; polished geometry consistent with the existing clay world.
@@ -180,7 +180,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T110 — Blender Benidorm skyline and club asset
 - Status: pending
-- Model: opus (Opus 5.5)
+- Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T107
 - Goal: Create a recognizable Benidorm island with characteristic skyscraper silhouette, screens, a club, decorative photo cameras and the BOIA buoy mascot dressed for an adult nightclub, pole-dancing with a connected up/down loop.
@@ -195,7 +195,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T111 — Blender Ibiza white village and cove asset
 - Status: pending
-- Model: opus (Opus 5.5)
+- Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T110
 - Goal: Remodel Ibiza with white Mediterranean houses and a readable sheltered cove, preserving its store role and BOIA style.
@@ -209,7 +209,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T115 — Castaway achievement completes on rescue
 - Status: pending
-- Model: codex (codex:codex-rescue agent)
+- Model: codex (via wrapper agent)
 - Skills: none
 - Depends on: T106
 - Goal: Honor the user's clarified behavior: rescuing the castaway and receiving its discount completes the castaway achievement; no unimplemented delivery-to-party mission is required.
@@ -279,7 +279,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T114 — Custom BOIA menu icons
 - Status: pending
-- Model: codex (codex:codex-rescue agent)
+- Model: codex (via wrapper agent)
 - Skills: none
 - Depends on: T113, T118
 - Goal: Replace the game's generic emoji menu icons with a coherent small custom icon family matching BOIA's mascot, rounded shapes and orange/navy palette.
@@ -326,6 +326,9 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T116 known: the two 2D-canon tests in `minijuegos.spec.ts` now fail by design (T119 removes them); «Códigos» sheet from the menu does not pause (T118); Fiestera-on-board has no e2e (T119 should add one) (agent)
 
 - 2026-10-04 plan: Codex hit its usage limit (until 16:05) with T106/T107 uncommitted; T120 merges `codex/world-updates` as it is (608f883), and T106/T107 become Opus tasks here that continue Codex's uncommitted work read-only from its worktrees; Hernán stops the Codex session (Hernán)
+- 2026-10-04 Codex as a worker: the `codex:codex-rescue` agent runs Codex read-only and Codex's sandbox cannot write the worktree's git dir, so Codex tasks run through a **wrapper**: a general-purpose Claude agent (Sonnet) in the task worktree does the fast-forward, setup, file copies, git commits, Done-when commands and final message, and calls Codex (`codex-companion.mjs task --write`, model/effort from `~/.codex/config.toml`: gpt-6.1-sol, high) for the actual work. Probe passed (orchestrator)
+- 2026-10-04 Hernán asked to delegate more to Codex: T107 (its own harbor asset, art-only) now runs on Codex with no dependency (it never needed T120), and the art chain T110/T111 follows on Codex; T114/T115 stay on Codex (Hernán + orchestrator)
+- 2026-10-04 Codex orchestrator confirmed via `codex exec resume`: plan 009 stopped, workers already gone, no commits or file changes after 11:39; its T106/T107 handoff notes added to those tasks' Context (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
@@ -336,3 +339,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 14:17 T116 (launched as T99) launched · attempt 1 · agent a807676a5504162cf
 - 2026-10-04 14:48 Codex probe: usage limit until 16:05, nothing ran; re-probe before launching T115
 - 2026-10-04 14:50 T116 done · branch worktree-agent-a807676a5504162cf → b845582
+- 2026-10-04 14:52 T120 launched · attempt 1 · agent a99ee9890bfcfe9d6
+- 2026-10-04 17:46 session restarted; T120 orphan mid-merge (no unmerged paths) → resumed same agent via SendMessage
+- 2026-10-04 17:47 stop message sent to the Codex orchestrator session 01a10276 via `codex exec resume`
