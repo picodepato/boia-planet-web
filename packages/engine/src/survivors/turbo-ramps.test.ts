@@ -89,15 +89,20 @@ describe('T124: turbo, impulsos y rampas del Cañón', () => {
 
   it('el impulso y el turbo multiplican también la velocidad de la carta', () => {
     const config = quiet();
-    config.upgrades = [{ ...config.upgrades.find((u) => u.stat === 'speedBonus')!, amount: 0.2 }];
+    config.passives = { dnb: config.passives.dnb! };
+    config.weapons = { canon: config.weapons.canon! };
+    config.evolutions = [];
+    config.salvavidas.offerChance = 0;
     const game = createSurvivors(config, 4, sea([object('impulso', 100)]));
+    while (game.levelUpWeapon(config.startingWeapon)) { /* vinyl-only pool */ }
     game.spawnNote(0, 0, game.snapshot().xp.toNext);
     game.step();
     expect(game.status).toBe('card');
     game.step({ choose: 0, ship: ahead, turbo: true });
     steps(game, 90);
-    expect(game.snapshot().stats.speedBonus).toBe(0.2);
-    expect(shipSpeed(game.snapshot().player)).toBeCloseTo(150 * 1.2 * 1.5 * TURBO_SPEED);
+    const bonus = config.passives.dnb!.levels[0]!.amount;
+    expect(game.snapshot().stats.speedBonus).toBe(bonus);
+    expect(shipSpeed(game.snapshot().player)).toBeCloseTo(DEFAULT_SHIP_CONFIG.maxSpeed * (1 + bonus) * 1.5 * TURBO_SPEED);
   });
 
   it('una carta congela turbo/cooldown y no consume pulsaciones hasta elegir', () => {

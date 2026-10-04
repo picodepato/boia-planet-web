@@ -219,7 +219,9 @@ describe('survivors armas: las 7 del diseño con tabla fija por nivel', () => {
 
   it('en la partida, las mejoras de la carta rehacen los números de todas las armas', () => {
     const cfg = only('canon', (c) => {
-      c.upgrades = c.upgrades.filter((u) => u.id === 'projectiles');
+      c.passives = { rumba: c.passives.rumba! };
+      c.salvavidas.offerChance = 0;
+      c.cardChoices = Object.keys(c.weapons).length + Object.keys(c.passives).length;
     });
     const game = createSurvivors(cfg, 1, openSea());
     expect(game.addWeapon('subwoofer')).toBe(true);
@@ -232,15 +234,16 @@ describe('survivors armas: las 7 del diseño con tabla fija por nivel', () => {
     game.spawnNote(0, 0, 10_000);
     game.step(idle);
     expect(game.status).toBe('card');
-    game.step({ ...idle, choose: 0 });
+    game.step({ ...idle, choose: game.snapshot().card!.options.findIndex((o) => o.vinylId === 'rumba') });
     const after = game.snapshot().weapons;
-    expect(after[0]!.stats.count).toBe(before[0]! + 1);
+    const gain = cfg.passives.rumba!.levels[0]!.amount;
+    expect(after[0]!.stats.count).toBe(before[0]! + gain);
     expect(after[1]!.stats.count).toBe(before[1]!);
     // Subir de nivel aplica la tabla encima de la mejora.
     expect(game.levelUpWeapon('canon')).toBe(true);
     expect(game.levelUpWeapon('canon')).toBe(true);
     expect(game.weaponLevel('canon')).toBe(3);
-    expect(game.snapshot().weapons[0]!.stats.count).toBe(lvl('canon', 3).count + 1);
+    expect(game.snapshot().weapons[0]!.stats.count).toBe(lvl('canon', 3).count + gain);
     for (let i = 0; i < 2; i++) expect(game.levelUpWeapon('canon')).toBe(true);
     expect(game.levelUpWeapon('canon')).toBe(false);
     expect(game.weaponLevel('canon')).toBe(5);
@@ -570,6 +573,11 @@ describe('survivors armas: partida con las 7 armas', () => {
   it('7:00 enteros en `baja` con todo a nivel 5: determinista, dentro de los topes, y cae algún enemigo de cada tipo', () => {
     const cfg = withConfig((c) => {
       c.player.waterCapacity = 1e12;
+      // Test all weapon shapes together; production limits are covered in T129.
+      c.slots.weapons = WEAPONS.length;
+      c.passives = {};
+      c.evolutions = [];
+      c.salvavidas.offerChance = 0;
     });
     const make = (seed: number) => {
       const game = createSurvivors(cfg, seed, archipelago(21), { quality: 'baja' });
@@ -583,8 +591,8 @@ describe('survivors armas: partida con las 7 armas', () => {
     };
     const a = make(5);
     const b = make(5);
-    expect(a.heldWeapons).toHaveLength(7);
-    for (const w of a.heldWeapons) expect(w.level).toBe(5);
+    expect(a.heldWeapons).toHaveLength(WEAPONS.length);
+    for (const w of a.heldWeapons) expect(w.level).toBe(cfg.weapons[w.id]!.maxLevel);
     const caps = cfg.caps.baja;
     const killed = new Set<EnemyId>();
     let maxProjectiles = 0;

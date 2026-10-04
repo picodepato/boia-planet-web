@@ -11,7 +11,8 @@ import type { QualityTier } from '../world/sectors';
  * cangrejo, el Cañón de agua y seis mejoras provisionales; la beta 2 (plan
  * 011) trae los 6 enemigos, las élites, la «Marea» y el guion entero del
  * acto 1 con los huecos de los bosses apagados (beta 3), y las 7 armas con
- * su tabla fija por nivel (`weapons`, `resolveWeaponStats`).
+ * su tabla fija por nivel (`weapons`, `resolveWeaponStats`), los 9 vinilos,
+ * los huecos 4+4, las evoluciones y el Salvavidas raro.
  * Cambiar cualquier valor cambia `survivorsConfigHash`, que
  * entra en el `configHash` de la sesión del minijuego; un cambio de reglas
  * sube `version`. Unidades: u de motor (las del mar de `/mar`) y segundos.
@@ -19,7 +20,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 3;
+export const SURVIVORS_CONFIG_VERSION = 4;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -37,7 +38,7 @@ export type WeaponId =
   | 'confetti'
   | 'fireworks'
   | 'acidRain';
-/** Vinilos (pasivas) del diseño (§4). Ninguno en la beta 1. */
+/** Vinilos (pasivas) del diseño (§4). */
 export type PassiveId =
   | 'techno'
   | 'reggaeton'
@@ -252,12 +253,23 @@ export interface WeaponDef {
   maxLevel: number;
   /** Los números a nivel 1. */
   base: WeaponStats;
-  /** Tabla fija de los niveles 2…`maxLevel`, en orden: `levels.length === maxLevel - 1`. */
+  /** Tabla fija de los niveles 2…`maxLevel`, en orden (maxLevel - 1 entradas).
+   * Las evoluciones son terminales: base contiene sus cifras finales y levels queda vacio.
+   */
   levels: readonly WeaponLevel[];
   /** Sólo las formas rectas: una isla para el proyectil. */
   blockedByIslands: boolean;
   /** Si `extraProjectiles` (la mejora o el vinilo Rumba) suma a `count`. */
   extraProjectilesApply: boolean;
+  /** Evoluciones: comportamiento adicional, con todos sus numeros en datos. */
+  effects?: {
+    /** area es el radio de explosion; esto es el radio de la bola en vuelo. */
+    projectileRadius?: number;
+    /** u de empuje por pulso, contra islas y con wrap. */
+    pushDistance?: number;
+    /** Destellos rectos desde cada orbital, sin bloqueo de islas. */
+    flashes?: { count: number; range: number; speed: number; radius: number; cooldownS: number };
+  };
 }
 
 /**
@@ -278,16 +290,21 @@ export interface PassiveDef {
   id: PassiveId;
   i18nKey: string;
   stat: StatId;
-  perLevel: number;
   maxLevel: number;
+  /** Incrementos fijos, no totales: levels[0] da nivel 1. */
+  levels: readonly { i18nKey: string; amount: number }[];
 }
 
 /** Arma a nivel máximo + vinilo pareja = evolución (§4). */
+export type EvolutionId = 'drop' | 'soundWall' | 'laserShow' | 'discoBall';
+
 export interface EvolutionDef {
-  id: string;
+  id: EvolutionId;
   weapon: WeaponId;
   passive: PassiveId;
   i18nKey: string;
+  /** Sustituye al arma en su hueco; se resuelve con los mismos modificadores. */
+  evolvedWeapon: WeaponDef;
 }
 
 /** Una fase de un boss: máquina de estados por fases con datos (§7). */
@@ -418,6 +435,18 @@ export interface SurvivorsConfig {
   levels: { base: number; linear: number; quadratic: number };
   /** Opciones por carta de nivel. */
   cardChoices: number;
+  slots: { weapons: number; vinyls: number };
+  /** Beta 2: cartas de nivel. Beta 3 puede cambiarlo a chest sin duplicar condiciones. */
+  evolutionSource: 'level-up' | 'chest';
+  salvavidas: {
+    i18nKey: string;
+    textKey: string;
+    /** Probabilidad por oferta; nunca se vuelve a ofrecer tras adquirirlo. */
+    offerChance: number;
+    waterFractionAfterSave: number;
+    invulnerableS: number;
+  };
+  fallback: { id: 'bailing'; i18nKey: string; textKey: string; waterRemoved: number };
   spawn: {
     /** u del barco al anillo donde aparecen (fuera de la cámara por todos los lados). */
     ringMin: number;
@@ -456,6 +485,7 @@ export interface SurvivorsConfig {
   passives: Partial<Record<PassiveId, PassiveDef>>;
   evolutions: readonly EvolutionDef[];
   bosses: Partial<Record<BossId, BossDef>>;
+  /** Compatibilidad beta 1: no participa en el pool. */
   upgrades: readonly UpgradeDef[];
   /** Guion por acto; la beta 1 sólo tiene el acto 1. */
   acts: readonly ActScript[];
@@ -487,6 +517,21 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   },
   levels: { base: 5, linear: 5, quadratic: 0.6 },
   cardChoices: 3,
+  slots: { weapons: 4, vinyls: 4 },
+  evolutionSource: 'level-up',
+  salvavidas: {
+    i18nKey: 'survivors.salvavidas',
+    textKey: 'survivors.salvavidas.efecto',
+    offerChance: 0.03,
+    waterFractionAfterSave: 0.25,
+    invulnerableS: 2,
+  },
+  fallback: {
+    id: 'bailing',
+    i18nKey: 'survivors.fallback.bailing',
+    textKey: 'survivors.fallback.bailing.efecto',
+    waterRemoved: 25,
+  },
   spawn: {
     ringMin: 900,
     ringMax: 1100,
@@ -799,52 +844,246 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     },
   },
   startingWeapon: 'canon',
-  passives: {},
-  evolutions: [],
+  passives: {
+    techno: {
+      id: 'techno',
+      i18nKey: 'survivors.vinyl.techno',
+      stat: 'fireRateBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.techno.l1', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.techno.l2', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.techno.l3', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.techno.l4', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.techno.l5', amount: 0.15 },
+      ],
+    },
+    reggaeton: {
+      id: 'reggaeton',
+      i18nKey: 'survivors.vinyl.reggaeton',
+      stat: 'areaBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.reggaeton.l1', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.reggaeton.l2', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.reggaeton.l3', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.reggaeton.l4', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.reggaeton.l5', amount: 0.15 },
+      ],
+    },
+    house: {
+      id: 'house',
+      i18nKey: 'survivors.vinyl.house',
+      stat: 'hullBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.house.l1', amount: 0.08 },
+        { i18nKey: 'survivors.vinyl.house.l2', amount: 0.08 },
+        { i18nKey: 'survivors.vinyl.house.l3', amount: 0.08 },
+        { i18nKey: 'survivors.vinyl.house.l4', amount: 0.08 },
+        { i18nKey: 'survivors.vinyl.house.l5', amount: 0.08 },
+      ],
+    },
+    dnb: {
+      id: 'dnb',
+      i18nKey: 'survivors.vinyl.dnb',
+      stat: 'speedBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.dnb.l1', amount: 0.1 },
+        { i18nKey: 'survivors.vinyl.dnb.l2', amount: 0.1 },
+        { i18nKey: 'survivors.vinyl.dnb.l3', amount: 0.1 },
+        { i18nKey: 'survivors.vinyl.dnb.l4', amount: 0.1 },
+        { i18nKey: 'survivors.vinyl.dnb.l5', amount: 0.1 },
+      ],
+    },
+    disco: {
+      id: 'disco',
+      i18nKey: 'survivors.vinyl.disco',
+      stat: 'magnetBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.disco.l1', amount: 0.4 },
+        { i18nKey: 'survivors.vinyl.disco.l2', amount: 0.4 },
+        { i18nKey: 'survivors.vinyl.disco.l3', amount: 0.4 },
+        { i18nKey: 'survivors.vinyl.disco.l4', amount: 0.4 },
+        { i18nKey: 'survivors.vinyl.disco.l5', amount: 0.4 },
+      ],
+    },
+    chill: {
+      id: 'chill',
+      i18nKey: 'survivors.vinyl.chill',
+      stat: 'bailPerS',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.chill.l1', amount: 1 },
+        { i18nKey: 'survivors.vinyl.chill.l2', amount: 1 },
+        { i18nKey: 'survivors.vinyl.chill.l3', amount: 1 },
+        { i18nKey: 'survivors.vinyl.chill.l4', amount: 1 },
+        { i18nKey: 'survivors.vinyl.chill.l5', amount: 1 },
+      ],
+    },
+    hardstyle: {
+      id: 'hardstyle',
+      i18nKey: 'survivors.vinyl.hardstyle',
+      stat: 'damageBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.hardstyle.l1', amount: 0.2 },
+        { i18nKey: 'survivors.vinyl.hardstyle.l2', amount: 0.2 },
+        { i18nKey: 'survivors.vinyl.hardstyle.l3', amount: 0.2 },
+        { i18nKey: 'survivors.vinyl.hardstyle.l4', amount: 0.2 },
+        { i18nKey: 'survivors.vinyl.hardstyle.l5', amount: 0.2 },
+      ],
+    },
+    pop: {
+      id: 'pop',
+      i18nKey: 'survivors.vinyl.pop',
+      stat: 'xpBonus',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.pop.l1', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.pop.l2', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.pop.l3', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.pop.l4', amount: 0.15 },
+        { i18nKey: 'survivors.vinyl.pop.l5', amount: 0.15 },
+      ],
+    },
+    rumba: {
+      id: 'rumba',
+      i18nKey: 'survivors.vinyl.rumba',
+      stat: 'extraProjectiles',
+      maxLevel: 5,
+      levels: [
+        { i18nKey: 'survivors.vinyl.rumba.l1', amount: 1 },
+        { i18nKey: 'survivors.vinyl.rumba.l2', amount: 1 },
+        { i18nKey: 'survivors.vinyl.rumba.l3', amount: 1 },
+        { i18nKey: 'survivors.vinyl.rumba.l4', amount: 1 },
+        { i18nKey: 'survivors.vinyl.rumba.l5', amount: 1 },
+      ],
+    },
+  },
+  evolutions: [
+    {
+      id: 'drop',
+      weapon: 'canon',
+      passive: 'hardstyle',
+      i18nKey: 'survivors.evolution.drop',
+      evolvedWeapon: {
+        id: 'canon',
+        kind: 'projectile',
+        i18nKey: 'survivors.evolution.drop',
+        maxLevel: 5,
+        base: {
+          damage: 28,
+          cooldownS: 0.6,
+          tickS: 0,
+          count: 2,
+          area: 90,
+          range: 650,
+          speed: 680,
+          spreadRad: 0.16,
+          pierce: 0,
+          durationS: 0,
+        },
+        levels: [],
+        blockedByIslands: true,
+        extraProjectilesApply: true,
+        effects: { projectileRadius: 6 },
+      },
+    },
+    {
+      id: 'soundWall',
+      weapon: 'subwoofer',
+      passive: 'house',
+      i18nKey: 'survivors.evolution.soundWall',
+      evolvedWeapon: {
+        id: 'subwoofer',
+        kind: 'aura',
+        i18nKey: 'survivors.evolution.soundWall',
+        maxLevel: 5,
+        base: {
+          damage: 18,
+          cooldownS: 0,
+          tickS: 0.3,
+          count: 1,
+          area: 260,
+          range: 0,
+          speed: 0,
+          spreadRad: 0,
+          pierce: 0,
+          durationS: 0,
+        },
+        levels: [],
+        blockedByIslands: false,
+        extraProjectilesApply: false,
+        effects: { pushDistance: 35 },
+      },
+    },
+    {
+      id: 'laserShow',
+      weapon: 'laser',
+      passive: 'techno',
+      i18nKey: 'survivors.evolution.laserShow',
+      evolvedWeapon: {
+        id: 'laser',
+        kind: 'beam',
+        i18nKey: 'survivors.evolution.laserShow',
+        maxLevel: 5,
+        base: {
+          damage: 22,
+          cooldownS: 0,
+          tickS: 0.16,
+          count: 4,
+          area: 16,
+          range: 420,
+          speed: 1.8,
+          spreadRad: 0,
+          pierce: 0,
+          durationS: 0,
+        },
+        levels: [],
+        blockedByIslands: false,
+        extraProjectilesApply: false,
+      },
+    },
+    {
+      id: 'discoBall',
+      weapon: 'buoys',
+      passive: 'disco',
+      i18nKey: 'survivors.evolution.discoBall',
+      evolvedWeapon: {
+        id: 'buoys',
+        kind: 'orbit',
+        i18nKey: 'survivors.evolution.discoBall',
+        maxLevel: 5,
+        base: {
+          damage: 36,
+          cooldownS: 0,
+          tickS: 0.3,
+          count: 1,
+          area: 42,
+          range: 90,
+          speed: 1.6,
+          spreadRad: 0,
+          pierce: 0,
+          durationS: 0,
+        },
+        levels: [],
+        blockedByIslands: false,
+        extraProjectilesApply: false,
+        effects: { flashes: { count: 6, range: 420, speed: 560, radius: 6, cooldownS: 0.8 } },
+      },
+    },
+  ],
   bosses: {},
   upgrades: [
-    {
-      id: 'damage',
-      i18nKey: 'survivors.upgrade.damage',
-      stat: 'damageBonus',
-      amount: 0.25,
-      maxStacks: 5,
-    },
-    {
-      id: 'fireRate',
-      i18nKey: 'survivors.upgrade.fireRate',
-      stat: 'fireRateBonus',
-      amount: 0.2,
-      maxStacks: 5,
-    },
-    {
-      id: 'projectiles',
-      i18nKey: 'survivors.upgrade.projectiles',
-      stat: 'extraProjectiles',
-      amount: 1,
-      maxStacks: 4,
-    },
-    {
-      id: 'speed',
-      i18nKey: 'survivors.upgrade.speed',
-      stat: 'speedBonus',
-      amount: 0.1,
-      maxStacks: 5,
-    },
-    {
-      id: 'magnet',
-      i18nKey: 'survivors.upgrade.magnet',
-      stat: 'magnetBonus',
-      amount: 0.4,
-      maxStacks: 5,
-    },
-    {
-      id: 'bailing',
-      i18nKey: 'survivors.upgrade.bailing',
-      stat: 'bailPerS',
-      amount: 1,
-      maxStacks: 5,
-    },
+    { id: 'damage', i18nKey: 'survivors.vinyl.hardstyle', stat: 'damageBonus', amount: 0.2, maxStacks: 5 },
+    { id: 'fireRate', i18nKey: 'survivors.vinyl.techno', stat: 'fireRateBonus', amount: 0.15, maxStacks: 5 },
+    { id: 'projectiles', i18nKey: 'survivors.vinyl.rumba', stat: 'extraProjectiles', amount: 1, maxStacks: 5 },
+    { id: 'speed', i18nKey: 'survivors.vinyl.dnb', stat: 'speedBonus', amount: 0.1, maxStacks: 5 },
+    { id: 'magnet', i18nKey: 'survivors.vinyl.disco', stat: 'magnetBonus', amount: 0.4, maxStacks: 5 },
+    { id: 'bailing', i18nKey: 'survivors.vinyl.chill', stat: 'bailPerS', amount: 1, maxStacks: 5 },
   ],
   acts: [
     {

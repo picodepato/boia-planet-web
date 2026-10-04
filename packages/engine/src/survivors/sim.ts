@@ -18,10 +18,10 @@ import {
   type NoteFigure,
   type QualityCaps,
   type ScriptEvent,
-  type StatId,
+  type PassiveId,
+  type EvolutionId,
   SURVIVORS_STEP_S,
   type SurvivorsConfig,
-  type UpgradeDef,
   type UpgradeId,
   type WeaponDef,
   type WeaponId,
@@ -33,6 +33,8 @@ import {
   trackAt,
   xpToNext,
 } from './config';
+import { buildCardPool, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
+export type { CardOption } from './cards';
 import { SpatialGrid } from './grid';
 import { SurvivorsMovement, type MovementView } from './movement';
 import type { JumpEvent } from '../circuit/jump';
@@ -99,6 +101,8 @@ export type SurvivorsEvent =
   | { type: 'split'; enemy: EnemyId; id: number; x: number; y: number; count: number }
   | { type: 'note'; figure: NoteFigure; value: number; x: number; y: number }
   | { type: 'levelUp'; level: number }
+  | { type: 'saved'; item: 'salvavidas'; x: number; y: number; water: number }
+  | { type: 'evolved'; weapon: WeaponId; evolutionId: EvolutionId }
   | { type: 'end'; reason: EndReason };
 
 export interface EnemyView {
@@ -133,6 +137,7 @@ export interface ProjectileView {
 export interface PlayerProjectileView extends ProjectileView {
   readonly weapon: WeaponId;
   readonly kind: WeaponKind;
+  readonly evolutionId: EvolutionId | null;
 }
 
 /** El aura de un arma alrededor del barco (Subwoofer). */
@@ -180,9 +185,18 @@ export interface ZoneView {
 }
 
 /** Un arma del barco: su nivel y los números con que ataca ahora (ya con mejoras). */
+export interface VinylView {
+  readonly id: PassiveId;
+  readonly level: number;
+  readonly maxLevel: number;
+  readonly nameKey: string;
+}
+
 export interface WeaponView {
   readonly id: WeaponId;
   readonly kind: WeaponKind;
+  readonly evolutionId: EvolutionId | null;
+  readonly nameKey: string;
   readonly level: number;
   readonly maxLevel: number;
   readonly stats: Readonly<WeaponStats>;
@@ -211,16 +225,6 @@ export interface NoteView {
   readonly figure: NoteFigure;
   /** El imán ya la arrastra. */
   readonly magnet: boolean;
-}
-
-export interface CardOption {
-  readonly upgrade: UpgradeId;
-  readonly i18nKey: string;
-  readonly stat: StatId;
-  readonly amount: number;
-  /** Veces elegida contando esta. */
-  readonly nextStack: number;
-  readonly maxStacks: number;
 }
 
 export interface LevelUpCard {
@@ -258,6 +262,9 @@ export interface SurvivorsSnapshot {
   readonly telegraphs: readonly TelegraphView[];
   /** Las armas del barco, en el orden en que se cogieron. */
   readonly weapons: readonly WeaponView[];
+  readonly vinyls: readonly VinylView[];
+  readonly salvavidas: SalvavidasState;
+  readonly slots: Readonly<SurvivorsConfig['slots']>;
   readonly auras: readonly AuraView[];
   readonly beams: readonly BeamView[];
   readonly orbitals: readonly OrbitalView[];
@@ -284,6 +291,7 @@ export interface SurvivorsSnapshot {
   readonly notesPicked: number;
   readonly notesValue: number;
   readonly stats: Readonly<PlayerStats>;
+  /** Transitional selection counts by beta-1 icon alias; use weapons/vinyls for real levels. */
   readonly upgrades: Readonly<Partial<Record<UpgradeId, number>>>;
 }
 
@@ -343,6 +351,7 @@ interface Projectile {
   id: number;
   weapon: WeaponId;
   kind: WeaponKind;
+  evolutionId: EvolutionId | null;
   x: number;
   y: number;
   vx: number;
@@ -382,6 +391,7 @@ interface Zone {
 /** Un arma del barco: su definición, nivel, números resueltos y relojes. */
 interface WeaponSlot {
   def: WeaponDef;
+  evolutionId: EvolutionId | null;
   level: number;
   stats: WeaponStats;
   /** s hasta el próximo disparo (formas con `cooldownS`). */
@@ -444,6 +454,8 @@ export class SurvivorsGame {
   private readonly baseShip: ShipConfig;
   private shipCfg: ShipConfig;
   private readonly weapons: WeaponSlot[] = [];
+  private readonly vinyls: VinylView[] = [];
+  private salvavidas: SalvavidasState = 'absent';
   private readonly maxEnemyRadius: number;
   private readonly maxShotRadius: number;
   /** s de partida desde los que salen élites (Infinity: nunca) y su definición. */
@@ -580,6 +592,9 @@ export class SurvivorsGame {
       enemyProjectiles: this.enemyShots,
       telegraphs: this.telegraphs,
       weapons: this.weaponViews,
+      vinyls: this.vinyls,
+      salvavidas: this.salvavidas,
+      slots: config.slots,
       auras: this.auras,
       beams: this.beams,
       orbitals: this.orbitals,
@@ -647,6 +662,7 @@ export class SurvivorsGame {
     v.pauseRunS = this.pauseRun;
     v.pauseTotalS = this.pauseTotal;
     v.card = this.card;
+    v.salvavidas = this.salvavidas;
     v.end = this.endReason;
     v.defeated = this.defeated;
     v.pressure = this.overflow;
@@ -681,6 +697,8 @@ export class SurvivorsGame {
       this.weaponViews.push({
         id: w.def.id,
         kind: w.def.kind,
+        evolutionId: w.evolutionId,
+        nameKey: w.def.i18nKey,
         level: w.level,
         maxLevel: w.def.maxLevel,
         stats: st,
@@ -741,14 +759,15 @@ export class SurvivorsGame {
 
   /**
    * Coge un arma nueva a nivel `level` (1…`maxLevel`). false si ya la lleva
-   * o no existe en la config. El tope de huecos lo pone quien ofrece las
-   * cartas (T129): aquí sólo se guarda.
+   * o no existe en la config, o no quedan huecos.
    */
   addWeapon(id: WeaponId, level = 1): boolean {
     const def = this.config.weapons[id];
-    if (!def || this.weapons.some((w) => w.def.id === id)) return false;
+    if (!def || !Number.isFinite(level) || this.weapons.length >= this.config.slots.weapons ||
+      this.weapons.some((w) => w.def.id === id)) return false;
     const slot: WeaponSlot = {
       def,
+      evolutionId: null,
       level: Math.min(def.maxLevel, Math.max(1, Math.floor(level))),
       stats: resolveWeaponStats(def, 1, this.stats),
       cooldown: 0,
@@ -763,7 +782,7 @@ export class SurvivorsGame {
   /** Sube un nivel el arma (hasta `maxLevel`). false si no la lleva o ya está al máximo. */
   levelUpWeapon(id: WeaponId): boolean {
     const w = this.weapons.find((x) => x.def.id === id);
-    if (!w || w.level >= w.def.maxLevel) return false;
+    if (!w || w.evolutionId || w.level >= w.def.maxLevel) return false;
     w.level++;
     w.stats = resolveWeaponStats(w.def, w.level, this.stats);
     return true;
@@ -772,6 +791,70 @@ export class SurvivorsGame {
   /** Rehace los números de todas las armas (tras una mejora o un vinilo). */
   private refreshWeapons(): void {
     for (const w of this.weapons) w.stats = resolveWeaponStats(w.def, w.level, this.stats);
+  }
+
+  get heldVinyls(): readonly VinylView[] {
+    return this.vinyls;
+  }
+
+  vinylLevel(id: PassiveId): number {
+    return this.vinyls.find((v) => v.id === id)?.level ?? 0;
+  }
+
+  addVinyl(id: PassiveId, level = 1): boolean {
+    const def = this.config.passives[id];
+    if (!def || !Number.isFinite(level) || this.vinylLevel(id) > 0 ||
+      this.vinyls.length >= this.config.slots.vinyls) return false;
+    const top = Math.min(def.maxLevel, Math.max(1, Math.floor(level)));
+    this.vinyls.push({ id, level: top, maxLevel: def.maxLevel, nameKey: def.i18nKey });
+    for (const gain of def.levels.slice(0, top)) this.stats[def.stat] += gain.amount;
+    this.refreshStats();
+    return true;
+  }
+
+  levelUpVinyl(id: PassiveId): boolean {
+    const index = this.vinyls.findIndex((v) => v.id === id);
+    const v = this.vinyls[index];
+    const def = this.config.passives[id];
+    if (!v || !def || v.level >= def.maxLevel) return false;
+    this.stats[def.stat] += def.levels[v.level]!.amount;
+    this.vinyls[index] = { ...v, level: v.level + 1 };
+    this.refreshStats();
+    return true;
+  }
+
+  private refreshStats(): void {
+    this.shipCfg = survivorsShipConfig(this.baseShip, this.config.handling, this.stats.speedBonus);
+    this.refreshWeapons();
+  }
+
+  private inventory() {
+    return {
+      weapons: this.weapons.map((w) => ({ id: w.def.id, level: w.level, evolutionId: w.evolutionId })),
+      vinyls: this.vinyls,
+      salvavidas: this.salvavidas,
+    };
+  }
+
+  /** No RNG: the same hook is available to a future chest. */
+  evolveWeapon(id: EvolutionId): boolean {
+    const e = eligibleEvolutions(this.config, this.inventory()).find((e) => e.id === id);
+    if (!e) return false;
+    const w = this.weapons.find((w) => w.def.id === e.weapon)!;
+    w.def = e.evolvedWeapon;
+    w.evolutionId = e.id;
+    w.stats = resolveWeaponStats(w.def, w.level, this.stats);
+    w.cooldown = 0;
+    w.tick = 0;
+    this.events.push({ type: 'evolved', weapon: e.weapon, evolutionId: e.id });
+    return true;
+  }
+
+  /** Rare level-up item, not an equipment slot; permanently unavailable after acquisition. */
+  addSalvavidas(): boolean {
+    if (this.salvavidas !== 'absent') return false;
+    this.salvavidas = 'held';
+    return true;
   }
 
   private mareaActive(): boolean {
@@ -792,13 +875,15 @@ export class SurvivorsGame {
       w: this.water,
       inv: this.invulnerable,
       lv: [this.level, this.xp, this.pendingLevels],
-      wp: this.weapons.map((w) => [w.def.id, w.level, w.cooldown, w.tick, w.angle]),
+      wp: this.weapons.map((w) => [w.def.id, w.level, w.evolutionId, w.cooldown, w.tick, w.angle]),
       z: this.zones.map((z) => [z.id, z.x, z.y, z.life, z.tick]),
       of: this.overflow,
       acc: this.trackAcc,
       mn: this.mareaNext,
       up: this.stacks,
-      card: this.card?.options.map((o) => o.upgrade) ?? null,
+      vinyls: this.vinyls.map((v) => [v.id, v.level]),
+      salvavidas: this.salvavidas,
+      card: this.card?.options.map((o) => [o.id, o.targetLevel]) ?? null,
       e: this.enemies.map((e) => [
         e.id,
         e.type,
@@ -943,6 +1028,12 @@ export class SurvivorsGame {
     this.compactEnemies();
     this.stepNotes(dt);
 
+    if (this.water >= this.config.player.waterCapacity && this.salvavidas === 'held') {
+      this.salvavidas = 'consumed';
+      this.water = this.config.player.waterCapacity * this.config.salvavidas.waterFractionAfterSave;
+      this.invulnerable = this.config.salvavidas.invulnerableS;
+      this.events.push({ type: 'saved', item: 'salvavidas', x: this.player.x, y: this.player.y, water: this.water });
+    }
     if (this.water >= this.config.player.waterCapacity) this.finish('flooded');
     else if (this.activeSteps >= this.durationSteps) this.finish('survived');
     else this.checkLevelUp();
@@ -1473,8 +1564,8 @@ export class SurvivorsGame {
   }
 
   /** Hiere a todo lo vivo que toca el círculo (x, y, r). Devuelve cuántos. */
-  private hurtCircle(x: number, y: number, r: number, damage: number): number {
-    const near = this.enemyGrid.query(x, y, r + this.maxEnemyRadius, this.scratch);
+  private hurtCircle(x: number, y: number, r: number, damage: number, push = 0): number {
+    const near = this.enemyGrid.query(x, y, r + this.maxEnemyRadius, this.scratch2);
     let n = 0;
     for (const i of near) {
       const e = this.enemies[i]!;
@@ -1484,8 +1575,20 @@ export class SurvivorsGame {
       const min = r + e.radius;
       if (dx * dx + dy * dy > min * min) continue;
       this.hurt(e, damage);
+      if (!e.dead && push > 0) {
+        const d = Math.hypot(dx, dy);
+        const ux = d > 0 ? dx / d : 1;
+        const uy = d > 0 ? dy / d : 0;
+        this.setWrapped(e, e.x + ux * push, e.y + uy * push);
+        if (!e.def.ignoresIslands) {
+          this.slideOffIslands(e, e.radius);
+          const spot = this.islands.toWater(e.x, e.y, e.radius);
+          if (spot) this.setWrapped(e, spot.x, spot.y);
+        }
+      }
       n++;
     }
+    if (push > 0 && n > 0) this.rebuildEnemyGrid();
     return n;
   }
 
@@ -1511,7 +1614,9 @@ export class SurvivorsGame {
           if (this.ready(w, dt)) this.castZones(w);
           break;
         case 'aura':
-          if (this.ticks(w, dt)) this.hurtCircle(this.player.x, this.player.y, st.area, st.damage);
+          if (this.ticks(w, dt)) {
+            this.hurtCircle(this.player.x, this.player.y, st.area, st.damage, w.def.effects?.pushDistance);
+          }
           break;
         case 'beam':
           w.angle = wrapAngle(w.angle + st.speed * dt);
@@ -1520,6 +1625,7 @@ export class SurvivorsGame {
         case 'orbit':
           w.angle = wrapAngle(w.angle + st.speed * dt);
           if (this.ticks(w, dt)) this.hurtOrbitals(w);
+          if (w.def.effects?.flashes && this.ready(w, dt)) this.fireOrbitalFlashes(w);
           break;
         default:
           break;
@@ -1543,27 +1649,32 @@ export class SurvivorsGame {
   }
 
   /** Un proyectil del arma `w` desde el barco con rumbo `a`. false si el tope no deja. */
-  private shoot(w: WeaponSlot, a: number, target = -1): boolean {
+  private shoot(w: WeaponSlot, a: number, target = -1, origin = this.player, flash = false): boolean {
     if (this.projectiles.length >= this.caps.projectiles) return false;
     const st = w.stats;
-    const p = this.player;
+    const p = origin;
+    const f = flash ? w.def.effects?.flashes : undefined;
+    const speed = f?.speed ?? st.speed;
+    const range = f?.range ?? st.range;
     const rocket = w.def.kind === 'rocket';
     this.projectiles.push({
       id: this.nextId++,
       weapon: w.def.id,
       kind: w.def.kind,
+      evolutionId: w.evolutionId,
       x: p.x,
       y: p.y,
-      vx: Math.cos(a) * st.speed,
-      vy: Math.sin(a) * st.speed,
-      radius: rocket ? ROCKET_RADIUS : st.area,
-      life: (st.range / st.speed) * 1.2,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      radius: f ? f.radius * (1 + this.stats.areaBonus) :
+        rocket ? ROCKET_RADIUS : w.def.effects?.projectileRadius ?? st.area,
+      life: (range / speed) * 1.2,
       damage: st.damage,
       pierce: st.pierce,
       blocked: w.def.blockedByIslands,
       target,
-      burst: rocket ? st.area : 0,
-      speed: st.speed,
+      burst: rocket || w.def.effects?.projectileRadius ? st.area : 0,
+      speed,
       lastHit: -1,
       dead: false,
     });
@@ -1730,6 +1841,26 @@ export class SurvivorsGame {
     }
   }
 
+  /** Bola de Discoteca: destellos desde la bola gigante en orbita, bajo el tope de proyectiles. */
+  private fireOrbitalFlashes(w: WeaponSlot): void {
+    const f = w.def.effects!.flashes!;
+    const st = w.stats;
+    let count = 0;
+    for (let k = 0; k < st.count; k++) {
+      const a = beamAngle(w.angle, k, st.count);
+      const origin = { ...this.player,
+        x: this.player.x + Math.cos(a) * st.range,
+        y: this.player.y + Math.sin(a) * st.range };
+      const flashes = f.count + Math.round(this.stats.extraProjectiles);
+      for (let j = 0; j < flashes; j++) {
+        if (!this.shoot(w, beamAngle(w.angle, j, flashes), -1, origin, true)) break;
+        count++;
+      }
+    }
+    w.cooldown += Math.max(SURVIVORS_STEP_S, f.cooldownS / (1 + this.stats.fireRateBonus));
+    this.fired(w, count);
+  }
+
   /** Las nubes: cada tic hieren a lo que tienen debajo; se deshacen al acabar. */
   private stepZones(dt: number): void {
     for (const z of this.zones) {
@@ -1833,6 +1964,11 @@ export class SurvivorsGame {
         }
       }
       if (hit) {
+        if (b.burst > 0) {
+          this.setWrapped(b, b.x + sx * hitT, b.y + sy * hitT);
+          this.explode(b);
+          continue;
+        }
         b.lastHit = hit.id;
         this.hurt(hit, b.damage);
         if (b.pierce <= 0) {
@@ -1844,7 +1980,10 @@ export class SurvivorsGame {
       b.x = wrapInto(b.x + sx, this.bounds.left, this.bounds.right);
       b.y = wrapInto(b.y + sy, this.bounds.top, this.bounds.bottom);
       b.life -= dt;
-      if (b.life <= 0) b.dead = true;
+      if (b.life <= 0) {
+        if (b.burst > 0) this.explode(b);
+        else b.dead = true;
+      }
     }
     let n = 0;
     for (const b of this.projectiles) if (!b.dead) this.projectiles[n++] = b;
@@ -2018,55 +2157,57 @@ export class SurvivorsGame {
     this.openCard();
   }
 
-  private available(): UpgradeDef[] {
-    return this.config.upgrades.filter((u) => (this.stacks[u.id] ?? 0) < u.maxStacks);
+  private available(): CardOption[] {
+    const rare = this.salvavidas === 'absent' && this.cardRng() < this.config.salvavidas.offerChance;
+    return buildCardPool(this.config, this.inventory(), rare);
   }
 
   private openCard(): void {
-    while (!this.card && this.pendingLevels > 0) {
-      const pool = this.available();
-      if (pool.length === 0) {
-        // Todo al máximo: el nivel sube sin carta.
-        this.pendingLevels = 0;
-        return;
-      }
-      const picks: UpgradeDef[] = [];
-      while (picks.length < this.config.cardChoices && pool.length > 0) {
-        const k = Math.floor(this.cardRng() * pool.length);
-        picks.push(pool.splice(k, 1)[0]!);
-      }
-      this.card = {
-        level: this.level - this.pendingLevels + 1,
-        options: picks.map((u) => ({
-          upgrade: u.id,
-          i18nKey: u.i18nKey,
-          stat: u.stat,
-          amount: u.amount,
-          nextStack: (this.stacks[u.id] ?? 0) + 1,
-          maxStacks: u.maxStacks,
-        })),
-      };
+    if (this.card || this.pendingLevels <= 0) return;
+    const pool = this.available();
+    const picks: CardOption[] = [];
+    const limit = Math.max(1, this.config.cardChoices);
+    // An eligible evolution is visibly offered, rather than relying on a lucky draw.
+    const evolutions = pool.filter((o) => o.kind === 'evolution');
+    if (evolutions.length > 0) {
+      const e = evolutions[Math.floor(this.cardRng() * evolutions.length)]!;
+      picks.push(pool.splice(pool.indexOf(e), 1)[0]!);
     }
+    const rare = pool.findIndex((o) => o.kind === 'salvavidas');
+    if (rare >= 0 && picks.length < limit) picks.push(pool.splice(rare, 1)[0]!);
+    while (picks.length < limit && pool.length > 0) {
+      const k = Math.floor(this.cardRng() * pool.length);
+      picks.push(pool.splice(k, 1)[0]!);
+    }
+    this.card = { level: this.level - this.pendingLevels + 1, options: picks };
   }
 
   private choose(index: number): void {
     const opt = this.card?.options[index];
-    if (!opt) return;
-    this.apply(opt.upgrade);
+    if (!opt || !this.applyCard(opt)) return;
     this.card = null;
     this.pendingLevels--;
     this.openCard();
   }
 
-  private apply(id: UpgradeId): void {
-    const u = this.config.upgrades.find((x) => x.id === id);
-    if (!u) return;
-    this.stacks[id] = (this.stacks[id] ?? 0) + 1;
-    this.stats[u.stat] += u.amount;
-    if (u.stat === 'speedBonus') {
-      this.shipCfg = survivorsShipConfig(this.baseShip, this.config.handling, this.stats.speedBonus);
+  private applyCard(opt: CardOption): boolean {
+    const applied = this.applyCardEffect(opt);
+    if (applied) this.stacks[opt.upgrade] = (this.stacks[opt.upgrade] ?? 0) + 1;
+    return applied;
+  }
+
+  private applyCardEffect(opt: CardOption): boolean {
+    switch (opt.kind) {
+      case 'weapon-new': return this.addWeapon(opt.weaponId!);
+      case 'weapon-level': return this.levelUpWeapon(opt.weaponId!);
+      case 'vinyl-new': return this.addVinyl(opt.vinylId!);
+      case 'vinyl-level': return this.levelUpVinyl(opt.vinylId!);
+      case 'evolution': return this.evolveWeapon(opt.evolutionId!);
+      case 'salvavidas': return this.addSalvavidas();
+      case 'fallback':
+        this.water = Math.max(0, this.water - this.config.fallback.waterRemoved);
+        return true;
     }
-    this.refreshWeapons();
   }
 
   // --- Atajo &t= ------------------------------------------------------------
@@ -2085,7 +2226,7 @@ export class SurvivorsGame {
       this.level++;
       const pool = this.available();
       if (pool.length === 0) continue;
-      this.apply(pool[Math.floor(this.cardRng() * pool.length)]!.id);
+      this.applyCard(pool[Math.floor(this.cardRng() * pool.length)]!);
     }
     const act = this.config.acts[0];
     if (!act) return;

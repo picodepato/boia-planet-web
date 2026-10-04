@@ -201,7 +201,7 @@ describe('survivors: configuración', () => {
     expect(c.caps.alta.enemies).toBeGreaterThan(c.caps.baja.enemies);
     // Cada mejora: efecto fijo y su clave de texto.
     for (const u of c.upgrades) {
-      expect(u.i18nKey).toBe(`survivors.upgrade.${u.id}`);
+      expect(Object.values(c.passives).some((v) => v?.i18nKey === u.i18nKey)).toBe(true);
       expect(u.amount).toBeGreaterThan(0);
     }
     expect(c.upgrades.map((u) => u.id).sort()).toEqual(
@@ -338,7 +338,10 @@ describe('survivors: partidas completas', () => {
             if (g.onLand(n.x, n.y)) throw new Error(`nota ${n.id} en tierra a ${g.activeS}s`);
             notes++;
           }
-          for (const e of ev) if (e.type === 'defeated' && g.onLand(e.x, e.y)) defeatedOnLand++;
+          // Las armas que pasan sobre islas pueden derrotar gaviotas mientras vuelan sobre tierra.
+          for (const e of ev) {
+            if (e.type === 'defeated' && !unsinkable.enemies[e.enemy]!.ignoresIslands && g.onLand(e.x, e.y)) defeatedOnLand++;
+          }
         },
       );
       expect(game.snapshot().end).toBe('survived');
@@ -517,7 +520,7 @@ describe('survivors: pausa y tiempo activo', () => {
     const s = game.snapshot();
     expect(s.status).toBe('card');
     expect(s.card?.options).toHaveLength(cfg.cardChoices);
-    expect(new Set(s.card?.options.map((o) => o.upgrade)).size).toBe(cfg.cardChoices);
+    expect(new Set(s.card?.options.map((o) => o.id)).size).toBe(cfg.cardChoices);
     const frozen = game.activeS;
     for (let i = 0; i < 120; i++) game.step({ ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } });
     expect(game.activeS).toBe(frozen);
@@ -526,8 +529,12 @@ describe('survivors: pausa y tiempo activo', () => {
     game.step({ choose: 1 });
     const after = game.snapshot();
     expect(after.status).toBe('running');
-    expect(after.upgrades[pick.upgrade]).toBe(1);
-    expect(after.stats[pick.stat]).toBeCloseTo(pick.amount, 9);
+    if (pick.weaponId) expect(game.weaponLevel(pick.weaponId)).toBe(pick.targetLevel);
+    if (pick.vinylId) {
+      expect(game.vinylLevel(pick.vinylId)).toBe(pick.targetLevel);
+      expect(after.stats[pick.stat]).toBeCloseTo(pick.amount, 9);
+    }
+    if (pick.kind === 'salvavidas') expect(after.salvavidas).toBe('held');
     expect(game.activeS).toBeCloseTo(frozen + SURVIVORS_STEP_S, 9);
   });
 
@@ -618,10 +625,13 @@ describe('survivors: cañón, notas e islas', () => {
   it('la mejora de imán agranda el radio', () => {
     const cfg = quiet((c) => {
       c.levels = { base: 1, linear: 0, quadratic: 0 };
-      c.upgrades = c.upgrades.filter((u) => u.id === 'magnet');
+      c.passives = { disco: c.passives.disco! };
+      c.weapons = { canon: c.weapons.canon! };
+      c.evolutions = [];
+      c.salvavidas.offerChance = 0;
       c.cardChoices = 1;
     });
-    const mr = cfg.player.magnetRadius * (1 + cfg.upgrades[0]!.amount);
+    const mr = cfg.player.magnetRadius * (1 + cfg.passives.disco!.levels[0]!.amount);
     // Sin la mejora, una nota a `mr − 5` no se mueve.
     const plain = createSurvivors(cfg, 1, openSea());
     plain.spawnNote(0, mr - 5, 1);
@@ -629,10 +639,11 @@ describe('survivors: cañón, notas e islas', () => {
     expect(plain.snapshot().notes[0]!.magnet).toBe(false);
     // Con ella, sí.
     const game = createSurvivors(cfg, 1, openSea());
+    while (game.levelUpWeapon(cfg.startingWeapon)) { /* max weapon, vinyl-only pool */ }
     game.spawnNote(20, 0, 1);
     for (let i = 0; i < 30 && game.snapshot().status !== 'card'; i++) game.step();
     game.step({ choose: 0 });
-    expect(game.snapshot().upgrades.magnet).toBe(1);
+    expect(game.vinylLevel('disco')).toBe(1);
     game.spawnNote(0, mr - 5, 1);
     game.step();
     const note = game.snapshot().notes.find((n) => n.x === 0);
