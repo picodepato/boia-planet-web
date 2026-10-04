@@ -10,8 +10,7 @@ import type { QualityTier } from '../world/sectors';
  * por acto, minibosses y bosses). La beta 1 (plan 010) trajo pirañas,
  * cangrejo, el Cañón de agua y seis mejoras provisionales; la beta 2 (plan
  * 011) trae los 6 enemigos, las élites, la «Marea» y el guion entero del
- * acto 1 con los huecos de los bosses apagados (beta 3), y las 7 armas con
- * su tabla fija por nivel (`weapons`, `resolveWeaponStats`).
+ * acto 1 con los huecos de los bosses apagados (beta 3).
  * Cambiar cualquier valor cambia `survivorsConfigHash`, que
  * entra en el `configHash` de la sesión del minijuego; un cambio de reglas
  * sube `version`. Unidades: u de motor (las del mar de `/mar`) y segundos.
@@ -19,7 +18,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 3;
+export const SURVIVORS_CONFIG_VERSION = 2;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -28,7 +27,7 @@ export const SURVIVORS_STEP_S = 1 / 60;
 
 /** Enemigos comunes del diseño (§6). La beta 1 trae `piranha` y `crab`. */
 export type EnemyId = 'piranha' | 'crab' | 'gull' | 'pirate' | 'swordfish' | 'jellyfish';
-/** Armas del diseño (§5): las 7 de la beta 2. */
+/** Armas del diseño (§5). La beta 1 trae `canon`. */
 export type WeaponId =
   | 'canon'
   | 'subwoofer'
@@ -188,89 +187,34 @@ export interface MareaDef {
   speedScale: number;
 }
 
-/**
- * Cómo ataca un arma (§5). Las formas rectas (`projectile`, `cone`) son
- * proyectiles que las islas paran; las demás pasan por encima.
- * - `projectile`: bola(s) al enemigo más cercano (Cañón de agua).
- * - `cone`: ráfaga en abanico hacia donde navega el barco (Cañón de confeti).
- * - `aura`: círculo alrededor del barco que golpea cada tic (Subwoofer).
- * - `beam`: rayo(s) que giran alrededor del barco y golpean cada tic (Láser).
- * - `orbit`: boyas que orbitan el barco y golpean cada tic (Boyas orbitales).
- * - `rocket`: cohete(s) a enemigos al azar que explotan en área (Fuegos).
- * - `zone`: nube quieta sobre un grupo que daña cada segundo (Lluvia ácida).
- */
-export type WeaponKind = 'projectile' | 'aura' | 'beam' | 'orbit' | 'cone' | 'rocket' | 'zone';
-
-/**
- * Los números de un arma en un nivel. Qué significa cada uno depende de la
- * forma (`WeaponKind`); los que no usa van a 0:
- * - `damage`: por golpe (proyectil, cohete al explotar) o por tic (aura, rayo, boya, nube).
- * - `cooldownS`: s entre disparos (proyectil, abanico, cohete, nube).
- * - `tickS`: s entre golpes de un aura, rayo, boya o nube.
- * - `count`: bolas por ráfaga, cohetes por disparo, rayos, boyas o nubes por disparo.
- * - `area` (u): radio de la bola o del cohete en vuelo, del aura, de la boya,
- *   de la explosión, de la nube; medio ancho del rayo.
- * - `range` (u): alcance para buscar blanco y vida de bolas y cohetes; largo
- *   del rayo; radio de la órbita de las boyas.
- * - `speed`: u/s de bolas y cohetes; rad/s del giro del rayo y de las boyas.
- * - `spreadRad`: rad entre proyectiles de una misma ráfaga.
- * - `pierce`: enemigos que una bola atraviesa antes de deshacerse.
- * - `durationS`: s que dura una nube.
- */
-export interface WeaponStats {
-  damage: number;
-  cooldownS: number;
-  tickS: number;
-  count: number;
-  area: number;
-  range: number;
-  speed: number;
-  spreadRad: number;
-  pierce: number;
-  durationS: number;
-}
-
-export type WeaponStatId = keyof WeaponStats;
-
-/** Lo que un nivel suma (o resta, en los tiempos) a un número del arma. */
-export interface WeaponGain {
-  stat: WeaponStatId;
-  amount: number;
-}
-
-/** Un nivel de un arma (2…`maxLevel`): lo que gana respecto al anterior (la carta lo dice tal cual). */
+/** Un nivel de un arma: lo que gana respecto al anterior (la carta lo dice). */
 export interface WeaponLevel {
   i18nKey: string;
-  gains: readonly WeaponGain[];
+  stat: StatId;
+  amount: number;
 }
 
 export interface WeaponDef {
   id: WeaponId;
-  kind: WeaponKind;
-  /** Clave de texto del nombre (`apps/web/lib/i18n/`). */
-  i18nKey: string;
+  /** `projectile`: bola recta que las islas bloquean. Las demás formas, en betas siguientes. */
+  kind: 'projectile' | 'aura' | 'beam' | 'orbit' | 'cone' | 'rocket' | 'zone';
   maxLevel: number;
-  /** Los números a nivel 1. */
-  base: WeaponStats;
-  /** Tabla fija de los niveles 2…`maxLevel`, en orden: `levels.length === maxLevel - 1`. */
-  levels: readonly WeaponLevel[];
-  /** Sólo las formas rectas: una isla para el proyectil. */
+  damage: number;
+  cooldownS: number;
+  projectiles: number;
+  /** rad entre proyectiles de una misma ráfaga. */
+  spreadRad: number;
+  /** u/s del proyectil. */
+  speed: number;
+  /** u: alcance para buscar blanco y vida del proyectil. */
+  range: number;
+  /** u de choque del proyectil. */
+  radius: number;
+  /** Enemigos que atraviesa antes de deshacerse (0: el primero lo para). */
+  pierce: number;
   blockedByIslands: boolean;
-  /** Si `extraProjectiles` (la mejora o el vinilo Rumba) suma a `count`. */
-  extraProjectilesApply: boolean;
-}
-
-/**
- * Lo que las mejoras y los vinilos (T129) cambian de todas las armas a la
- * vez: fracciones (0,25 = +25 %) salvo `extraProjectiles`, que suma unidades.
- * Es el gancho del sistema de armas: `resolveWeaponStats` lo aplica.
- */
-export interface WeaponModifiers {
-  damageBonus: number;
-  /** Acorta `cooldownS` y `tickS` (÷ (1 + bonus)). */
-  fireRateBonus: number;
-  areaBonus: number;
-  extraProjectiles: number;
+  /** Tabla fija de niveles 2…`maxLevel` (vacía en la beta 1: las cartas son mejoras). */
+  levels: readonly WeaponLevel[];
 }
 
 /** Vinilo: una pasiva por género, hasta nivel 5 (§4). */
@@ -366,8 +310,6 @@ export interface QualityCaps {
   projectiles: number;
   /** Disparos de los enemigos (pistolas de agua). */
   enemyProjectiles: number;
-  /** Zonas de daño en el agua (nubes de lluvia ácida). */
-  areas: number;
   notes: number;
 }
 
@@ -469,8 +411,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   handling: { turnRateScale: 1.35, accelerationScale: 1.6, brakeScale: 1.6, lateralGripScale: 1.5 },
   camera: { distanceScale: 1.25, heightScale: 1.15, blendS: 0.8 },
   caps: {
-    alta: { enemies: 150, projectiles: 120, enemyProjectiles: 80, areas: 12, notes: 200 },
-    baja: { enemies: 60, projectiles: 60, enemyProjectiles: 40, areas: 6, notes: 100 },
+    alta: { enemies: 150, projectiles: 120, enemyProjectiles: 80, notes: 200 },
+    baja: { enemies: 60, projectiles: 60, enemyProjectiles: 40, notes: 100 },
   },
   player: {
     waterCapacity: 100,
@@ -602,200 +544,21 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   marea: {
     marea: { enemy: 'piranha', count: 20, burstEveryS: 2.5, hpScale: 1, speedScale: 1 },
   },
-  // Las 7 armas (§5), cada una con su tabla fija: la carta dice exactamente
-  // qué da cada nivel («Nivel 3: +1 boya»). Lo que no es recto pasa por
-  // encima de las islas. Las claves de texto las rellena la beta 2 (T129/T130).
   weapons: {
     canon: {
       id: 'canon',
       kind: 'projectile',
-      i18nKey: 'survivors.weapon.canon',
       maxLevel: 5,
-      base: {
-        damage: 10,
-        cooldownS: 0.9,
-        tickS: 0,
-        count: 1,
-        area: 6,
-        range: 560,
-        speed: 620,
-        spreadRad: 0.16,
-        pierce: 0,
-        durationS: 0,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.canon.l2', gains: [{ stat: 'damage', amount: 5 }] },
-        { i18nKey: 'survivors.weapon.canon.l3', gains: [{ stat: 'count', amount: 1 }] },
-        { i18nKey: 'survivors.weapon.canon.l4', gains: [{ stat: 'cooldownS', amount: -0.2 }] },
-        { i18nKey: 'survivors.weapon.canon.l5', gains: [{ stat: 'pierce', amount: 1 }] },
-      ],
+      damage: 10,
+      cooldownS: 0.9,
+      projectiles: 1,
+      spreadRad: 0.16,
+      speed: 620,
+      range: 560,
+      radius: 6,
+      pierce: 0,
       blockedByIslands: true,
-      extraProjectilesApply: true,
-    },
-    // Subwoofer: aura de graves; golpea a todo lo que entra cada medio segundo.
-    subwoofer: {
-      id: 'subwoofer',
-      kind: 'aura',
-      i18nKey: 'survivors.weapon.subwoofer',
-      maxLevel: 5,
-      base: {
-        damage: 6,
-        cooldownS: 0,
-        tickS: 0.5,
-        count: 1,
-        area: 110,
-        range: 0,
-        speed: 0,
-        spreadRad: 0,
-        pierce: 0,
-        durationS: 0,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.subwoofer.l2', gains: [{ stat: 'area', amount: 20 }] },
-        { i18nKey: 'survivors.weapon.subwoofer.l3', gains: [{ stat: 'damage', amount: 4 }] },
-        { i18nKey: 'survivors.weapon.subwoofer.l4', gains: [{ stat: 'area', amount: 25 }] },
-        { i18nKey: 'survivors.weapon.subwoofer.l5', gains: [{ stat: 'tickS', amount: -0.15 }] },
-      ],
-      blockedByIslands: false,
-      extraProjectilesApply: false,
-    },
-    // Láser de festival: un rayo que gira alrededor del barco (dos a nivel 5).
-    laser: {
-      id: 'laser',
-      kind: 'beam',
-      i18nKey: 'survivors.weapon.laser',
-      maxLevel: 5,
-      base: {
-        damage: 8,
-        cooldownS: 0,
-        tickS: 0.25,
-        count: 1,
-        area: 10,
-        range: 260,
-        speed: 1.6,
-        spreadRad: 0,
-        pierce: 0,
-        durationS: 0,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.laser.l2', gains: [{ stat: 'range', amount: 60 }] },
-        { i18nKey: 'survivors.weapon.laser.l3', gains: [{ stat: 'damage', amount: 5 }] },
-        { i18nKey: 'survivors.weapon.laser.l4', gains: [{ stat: 'tickS', amount: -0.05 }] },
-        { i18nKey: 'survivors.weapon.laser.l5', gains: [{ stat: 'count', amount: 1 }] },
-      ],
-      blockedByIslands: false,
-      extraProjectilesApply: false,
-    },
-    // Boyas orbitales: 2 boyas BOIA en órbita (3 a nivel 3) que golpean al pasar.
-    buoys: {
-      id: 'buoys',
-      kind: 'orbit',
-      i18nKey: 'survivors.weapon.buoys',
-      maxLevel: 5,
-      base: {
-        damage: 12,
-        cooldownS: 0,
-        tickS: 0.4,
-        count: 2,
-        area: 14,
-        range: 70,
-        speed: 2.2,
-        spreadRad: 0,
-        pierce: 0,
-        durationS: 0,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.buoys.l2', gains: [{ stat: 'damage', amount: 6 }] },
-        { i18nKey: 'survivors.weapon.buoys.l3', gains: [{ stat: 'count', amount: 1 }] },
-        { i18nKey: 'survivors.weapon.buoys.l4', gains: [{ stat: 'area', amount: 4 }] },
-        { i18nKey: 'survivors.weapon.buoys.l5', gains: [{ stat: 'damage', amount: 10 }] },
-      ],
-      blockedByIslands: false,
-      extraProjectilesApply: false,
-    },
-    // Cañón de confeti: ráfaga en abanico hacia donde navega el barco; recta,
-    // las islas la paran; cada confeti atraviesa un enemigo.
-    confetti: {
-      id: 'confetti',
-      kind: 'cone',
-      i18nKey: 'survivors.weapon.confetti',
-      maxLevel: 5,
-      base: {
-        damage: 6,
-        cooldownS: 1.4,
-        tickS: 0,
-        count: 5,
-        area: 5,
-        range: 320,
-        speed: 520,
-        spreadRad: 0.22,
-        pierce: 1,
-        durationS: 0,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.confetti.l2', gains: [{ stat: 'count', amount: 2 }] },
-        { i18nKey: 'survivors.weapon.confetti.l3', gains: [{ stat: 'damage', amount: 4 }] },
-        { i18nKey: 'survivors.weapon.confetti.l4', gains: [{ stat: 'cooldownS', amount: -0.3 }] },
-        { i18nKey: 'survivors.weapon.confetti.l5', gains: [{ stat: 'pierce', amount: 1 }] },
-      ],
-      blockedByIslands: true,
-      extraProjectilesApply: true,
-    },
-    // Fuegos artificiales: cohetes a enemigos al azar (a tiro) que explotan
-    // en área al llegar; vuelan por encima de las islas.
-    fireworks: {
-      id: 'fireworks',
-      kind: 'rocket',
-      i18nKey: 'survivors.weapon.fireworks',
-      maxLevel: 5,
-      base: {
-        damage: 25,
-        cooldownS: 2.2,
-        tickS: 0,
-        count: 1,
-        area: 60,
-        range: 700,
-        speed: 380,
-        spreadRad: 0,
-        pierce: 0,
-        durationS: 0,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.fireworks.l2', gains: [{ stat: 'area', amount: 15 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l3', gains: [{ stat: 'count', amount: 1 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l4', gains: [{ stat: 'damage', amount: 15 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l5', gains: [{ stat: 'cooldownS', amount: -0.6 }] },
-      ],
-      blockedByIslands: false,
-      extraProjectilesApply: true,
-    },
-    // Lluvia ácida: una nube sobre el grupo más apretado a tiro; daña cada
-    // segundo a lo que tiene debajo mientras dura.
-    acidRain: {
-      id: 'acidRain',
-      kind: 'zone',
-      i18nKey: 'survivors.weapon.acidRain',
-      maxLevel: 5,
-      base: {
-        damage: 7,
-        cooldownS: 5,
-        tickS: 1,
-        count: 1,
-        area: 90,
-        range: 600,
-        speed: 0,
-        spreadRad: 0,
-        pierce: 0,
-        durationS: 4,
-      },
-      levels: [
-        { i18nKey: 'survivors.weapon.acidRain.l2', gains: [{ stat: 'area', amount: 25 }] },
-        { i18nKey: 'survivors.weapon.acidRain.l3', gains: [{ stat: 'damage', amount: 5 }] },
-        { i18nKey: 'survivors.weapon.acidRain.l4', gains: [{ stat: 'durationS', amount: 2 }] },
-        { i18nKey: 'survivors.weapon.acidRain.l5', gains: [{ stat: 'cooldownS', amount: -1.5 }] },
-      ],
-      blockedByIslands: false,
-      extraProjectilesApply: false,
+      levels: [],
     },
   },
   startingWeapon: 'canon',
@@ -963,45 +726,6 @@ export function survivorsShipConfig(
   };
   if (base.turnRadius !== undefined) out.turnRadius = base.turnRadius / handling.turnRateScale;
   return out;
-}
-
-/** Los números de un arma a nivel `level` (1…`maxLevel`), sólo la tabla: sin mejoras ni vinilos. */
-export function weaponStatsAt(def: WeaponDef, level: number): WeaponStats {
-  const out: WeaponStats = { ...def.base };
-  const top = Math.min(def.maxLevel, Math.max(1, Math.floor(level)));
-  for (let l = 2; l <= top; l++) {
-    for (const g of def.levels[l - 2]?.gains ?? []) out[g.stat] += g.amount;
-  }
-  return out;
-}
-
-export const NO_WEAPON_MODIFIERS: Readonly<WeaponModifiers> = {
-  damageBonus: 0,
-  fireRateBonus: 0,
-  areaBonus: 0,
-  extraProjectiles: 0,
-};
-
-/**
- * Los números con que un arma ataca de verdad: su tabla a ese nivel más lo
- * que las mejoras y los vinilos cambian a todas (`WeaponModifiers`). Los
- * tiempos nunca bajan de un paso; `count` y `pierce` quedan enteros.
- */
-export function resolveWeaponStats(
-  def: WeaponDef,
-  level: number,
-  mods: Readonly<WeaponModifiers> = NO_WEAPON_MODIFIERS,
-): WeaponStats {
-  const s = weaponStatsAt(def, level);
-  const rate = 1 + Math.max(0, mods.fireRateBonus);
-  s.damage *= 1 + mods.damageBonus;
-  s.area *= 1 + mods.areaBonus;
-  if (s.cooldownS > 0) s.cooldownS = Math.max(SURVIVORS_STEP_S, s.cooldownS / rate);
-  if (s.tickS > 0) s.tickS = Math.max(SURVIVORS_STEP_S, s.tickS / rate);
-  if (def.extraProjectilesApply) s.count += Math.round(mods.extraProjectiles);
-  s.count = Math.max(0, Math.round(s.count));
-  s.pierce = Math.max(0, Math.round(s.pierce));
-  return s;
 }
 
 /** La curva de una pista en el segundo `t` (null fuera de su tramo). */

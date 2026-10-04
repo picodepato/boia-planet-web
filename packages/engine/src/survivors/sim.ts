@@ -24,11 +24,7 @@ import {
   type UpgradeDef,
   type UpgradeId,
   type WeaponDef,
-  type WeaponId,
-  type WeaponKind,
-  type WeaponStats,
   figureOf,
-  resolveWeaponStats,
   survivorsShipConfig,
   trackAt,
   xpToNext,
@@ -56,11 +52,7 @@ import { IslandIndex, type SurvivorsWorld } from './world';
  * - Desde el hito `elites` del guion una parte sale élite (más aguante,
  *   mejor nota); la «Marea» echa anillos enteros durante 20 s; con el tope
  *   lleno la oleada gana fuerza en vez de número.
- * - Las armas (§5) son datos: cada una lleva su forma (`WeaponKind`) y su
- *   tabla por nivel; `resolveWeaponStats` le aplica las mejoras y los
- *   vinilos. El Cañón de agua y el de confeti disparan recto y las islas los
- *   paran; el aura del Subwoofer, el Láser que gira, las Boyas orbitales, los
- *   cohetes de los Fuegos y la nube de la Lluvia ácida pasan por encima.
+ * - El Cañón de agua dispara solo al más cercano; las islas paran sus bolas.
  * - Las notas se funden y el imán las atrae; subir de nivel abre una carta
  *   (1 de 3) y la partida queda en pausa hasta elegir.
  * - Agua a bordo = vida; llena, inundado. A los 7:00 de tiempo activo,
@@ -87,10 +79,7 @@ export type SurvivorsEvent =
   /** Un golpe al barco: por contacto o por un disparo enemigo (`enemy` es quien lo hizo). */
   | { type: 'hit'; enemy: EnemyId; x: number; y: number; water: number }
   | { type: 'defeated'; enemy: EnemyId; id: number; x: number; y: number; elite: boolean }
-  /** Un arma dispara: `count` bolas, confetis, cohetes o nubes salen de (x, y). */
-  | { type: 'fire'; weapon: WeaponId; x: number; y: number; count: number }
-  /** Un cohete explota en (x, y) con ese radio. */
-  | { type: 'explode'; weapon: WeaponId; x: number; y: number; radius: number }
+  | { type: 'fire'; x: number; y: number; count: number }
   /** Una bola del jugador o un disparo enemigo (`owner`) parado por una isla. */
   | { type: 'blocked'; x: number; y: number; owner: 'player' | 'enemy' }
   | { type: 'enemyFire'; enemy: EnemyId; id: number; x: number; y: number }
@@ -127,67 +116,6 @@ export interface ProjectileView {
   readonly vx: number;
   readonly vy: number;
   readonly radius: number;
-}
-
-/** Una bola, un confeti o un cohete del jugador: `weapon` y `kind` dicen cuál pintar. */
-export interface PlayerProjectileView extends ProjectileView {
-  readonly weapon: WeaponId;
-  readonly kind: WeaponKind;
-}
-
-/** El aura de un arma alrededor del barco (Subwoofer). */
-export interface AuraView {
-  readonly weapon: WeaponId;
-  readonly x: number;
-  readonly y: number;
-  readonly radius: number;
-  /** 0 justo tras un golpe, 1 al siguiente: el pulso. */
-  readonly progress: number;
-}
-
-/** Un rayo desde el barco (Láser de festival). */
-export interface BeamView {
-  readonly weapon: WeaponId;
-  readonly x: number;
-  readonly y: number;
-  readonly angle: number;
-  readonly length: number;
-  readonly halfWidth: number;
-}
-
-/** Una boya en órbita (Boyas orbitales). */
-export interface OrbitalView {
-  readonly weapon: WeaponId;
-  readonly index: number;
-  readonly x: number;
-  readonly y: number;
-  readonly radius: number;
-  readonly angle: number;
-}
-
-/** Una zona que daña en el agua (la nube de la Lluvia ácida). */
-export interface ZoneView {
-  readonly id: number;
-  readonly weapon: WeaponId;
-  readonly x: number;
-  readonly y: number;
-  readonly radius: number;
-  /** s que le quedan y lo que duró al nacer. */
-  readonly lifeS: number;
-  readonly durationS: number;
-  /** 0 justo tras un golpe, 1 al siguiente. */
-  readonly progress: number;
-}
-
-/** Un arma del barco: su nivel y los números con que ataca ahora (ya con mejoras). */
-export interface WeaponView {
-  readonly id: WeaponId;
-  readonly kind: WeaponKind;
-  readonly level: number;
-  readonly maxLevel: number;
-  readonly stats: Readonly<WeaponStats>;
-  /** s hasta el próximo disparo (0 si dispara en cuanto haya blanco). */
-  readonly cooldownS: number;
 }
 
 /** La línea de aviso de una embestida, para pintarla en el agua. */
@@ -250,18 +178,12 @@ export interface SurvivorsSnapshot {
   };
   readonly enemies: readonly EnemyView[];
   readonly enemiesByType: Readonly<Partial<Record<EnemyId, readonly EnemyView[]>>>;
-  /** Bolas, confetis y cohetes del jugador (todas las armas que vuelan). */
-  readonly projectiles: readonly PlayerProjectileView[];
+  /** Bolas del jugador. */
+  readonly projectiles: readonly ProjectileView[];
   /** Disparos de los enemigos (pistolas de agua). */
   readonly enemyProjectiles: readonly ProjectileView[];
   /** Avisos de embestida en curso. */
   readonly telegraphs: readonly TelegraphView[];
-  /** Las armas del barco, en el orden en que se cogieron. */
-  readonly weapons: readonly WeaponView[];
-  readonly auras: readonly AuraView[];
-  readonly beams: readonly BeamView[];
-  readonly orbitals: readonly OrbitalView[];
-  readonly zones: readonly ZoneView[];
   readonly notes: readonly NoteView[];
   /** Ya salen élites (hito `elites` del guion). */
   readonly elitesActive: boolean;
@@ -341,8 +263,6 @@ interface EnemyShot {
 
 interface Projectile {
   id: number;
-  weapon: WeaponId;
-  kind: WeaponKind;
   x: number;
   y: number;
   vx: number;
@@ -351,45 +271,8 @@ interface Projectile {
   life: number;
   damage: number;
   pierce: number;
-  /** Las islas lo paran (las formas rectas). */
-  blocked: boolean;
-  /** Cohetes: el enemigo al que va (−1: ninguno) y el radio de la explosión. */
-  target: number;
-  burst: number;
-  speed: number;
   lastHit: number;
   dead: boolean;
-}
-
-/** Una nube de lluvia ácida: quieta, daña cada `tickS` a lo que tiene debajo. */
-interface Zone {
-  id: number;
-  weapon: WeaponId;
-  x: number;
-  y: number;
-  radius: number;
-  damage: number;
-  tickS: number;
-  tick: number;
-  life: number;
-  durationS: number;
-  /** Para la pantalla (`ZoneView`), puestos en `snapshot()`. */
-  lifeS: number;
-  progress: number;
-  dead: boolean;
-}
-
-/** Un arma del barco: su definición, nivel, números resueltos y relojes. */
-interface WeaponSlot {
-  def: WeaponDef;
-  level: number;
-  stats: WeaponStats;
-  /** s hasta el próximo disparo (formas con `cooldownS`). */
-  cooldown: number;
-  /** s hasta el próximo golpe (formas con `tickS`). */
-  tick: number;
-  /** rad: giro del rayo o de las boyas. */
-  angle: number;
 }
 
 interface Note {
@@ -405,8 +288,6 @@ interface Note {
 }
 
 const NOTE_RADIUS = 4;
-/** u de choque de un cohete en vuelo (la explosión es `area`). */
-const ROCKET_RADIUS = 6;
 const PAUSE_EPS = 1e-6;
 
 const ZERO_STATS = (): PlayerStats => ({
@@ -439,11 +320,9 @@ export class SurvivorsGame {
   private readonly noteGrid: SpatialGrid;
   private readonly spawnRng: () => number;
   private readonly cardRng: () => number;
-  /** El azar de las armas (blancos de los cohetes): aparte, para no mover el guion. */
-  private readonly weaponRng: () => number;
   private readonly baseShip: ShipConfig;
   private shipCfg: ShipConfig;
-  private readonly weapons: WeaponSlot[] = [];
+  private readonly weapon: WeaponDef;
   private readonly maxEnemyRadius: number;
   private readonly maxShotRadius: number;
   /** s de partida desde los que salen élites (Infinity: nunca) y su definición. */
@@ -458,17 +337,11 @@ export class SurvivorsGame {
   private readonly projectiles: Projectile[] = [];
   private readonly enemyShots: EnemyShot[] = [];
   private readonly telegraphs: TelegraphView[] = [];
-  private readonly zones: Zone[] = [];
-  private readonly weaponViews: WeaponView[] = [];
-  private readonly auras: AuraView[] = [];
-  private readonly beams: BeamView[] = [];
-  private readonly orbitals: OrbitalView[] = [];
   private readonly notes: Note[] = [];
   private readonly byType: Partial<Record<EnemyId, Enemy[]>> = {};
   private readonly events: SurvivorsEvent[] = [];
   private readonly scratch: number[] = [];
   private readonly scratch2: number[] = [];
-  private readonly scratchEnemies: Enemy[] = [];
   private readonly trackAcc: number[];
   private readonly stats: PlayerStats = ZERO_STATS();
   private readonly stacks: Partial<Record<UpgradeId, number>> = {};
@@ -486,6 +359,7 @@ export class SurvivorsGame {
   private invulnerable = 0;
   private level = 1;
   private xp = 0;
+  private cooldown = 0;
   private overflow = 0;
   private defeated = 0;
   private notesPicked = 0;
@@ -515,12 +389,11 @@ export class SurvivorsGame {
     this.noteGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.notes);
     this.spawnRng = rng(this.seed);
     this.cardRng = rng((this.seed ^ 0x9e3779b9) >>> 0);
-    this.weaponRng = rng((this.seed ^ 0x7f4a7c15) >>> 0);
     this.baseShip = opts.ship ?? DEFAULT_SHIP_CONFIG;
     this.shipCfg = survivorsShipConfig(this.baseShip, config.handling, 0);
-    if (!config.weapons[config.startingWeapon]) {
-      throw new Error(`survivors: no weapon ${config.startingWeapon}`);
-    }
+    const weapon = config.weapons[config.startingWeapon];
+    if (!weapon) throw new Error(`survivors: no weapon ${config.startingWeapon}`);
+    this.weapon = weapon;
     // Hitos del guion: élites (desde cuándo) y Mareas (cuáles). Sin hito de
     // élites el guion no las echa, pero la definición sigue valiendo para
     // las puestas a mano (`spawnEnemy(…, true)`).
@@ -579,11 +452,6 @@ export class SurvivorsGame {
       projectiles: this.projectiles,
       enemyProjectiles: this.enemyShots,
       telegraphs: this.telegraphs,
-      weapons: this.weaponViews,
-      auras: this.auras,
-      beams: this.beams,
-      orbitals: this.orbitals,
-      zones: this.zones,
       notes: this.notes,
       elitesActive: false,
       mareaActive: false,
@@ -603,7 +471,6 @@ export class SurvivorsGame {
       upgrades: this.stacks,
     };
     for (const id of Object.keys(config.enemies) as EnemyId[]) this.byType[id] = [];
-    this.addWeapon(config.startingWeapon);
 
     if (opts.startAtS && opts.startAtS > 0) this.fastForward(opts.startAtS);
   }
@@ -671,107 +538,7 @@ export class SurvivorsGame {
         });
       }
     }
-    this.weaponViews.length = 0;
-    this.auras.length = 0;
-    this.beams.length = 0;
-    this.orbitals.length = 0;
-    const p = this.player;
-    for (const w of this.weapons) {
-      const st = w.stats;
-      this.weaponViews.push({
-        id: w.def.id,
-        kind: w.def.kind,
-        level: w.level,
-        maxLevel: w.def.maxLevel,
-        stats: st,
-        cooldownS: Math.max(0, w.cooldown),
-      });
-      const progress = st.tickS > 0 ? Math.min(1, Math.max(0, 1 - w.tick / st.tickS)) : 0;
-      switch (w.def.kind) {
-        case 'aura':
-          this.auras.push({ weapon: w.def.id, x: p.x, y: p.y, radius: st.area, progress });
-          break;
-        case 'beam':
-          for (let k = 0; k < st.count; k++) {
-            this.beams.push({
-              weapon: w.def.id,
-              x: p.x,
-              y: p.y,
-              angle: beamAngle(w.angle, k, st.count),
-              length: st.range,
-              halfWidth: st.area,
-            });
-          }
-          break;
-        case 'orbit':
-          for (let k = 0; k < st.count; k++) {
-            const a = beamAngle(w.angle, k, st.count);
-            this.orbitals.push({
-              weapon: w.def.id,
-              index: k,
-              x: wrapInto(p.x + Math.cos(a) * st.range, this.bounds.left, this.bounds.right),
-              y: wrapInto(p.y + Math.sin(a) * st.range, this.bounds.top, this.bounds.bottom),
-              radius: st.area,
-              angle: a,
-            });
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    for (const z of this.zones) {
-      z.lifeS = Math.max(0, z.life);
-      z.progress = Math.min(1, Math.max(0, 1 - z.tick / z.tickS));
-    }
     return v;
-  }
-
-  // --- Armas: lectura y mando (determinista: no gastan azar) ------------------
-
-  /** Las armas que lleva el barco, en orden; cada una con su nivel. */
-  get heldWeapons(): readonly { id: WeaponId; level: number }[] {
-    return this.weapons.map((w) => ({ id: w.def.id, level: w.level }));
-  }
-
-  /** Nivel del arma (0 si no la lleva). */
-  weaponLevel(id: WeaponId): number {
-    return this.weapons.find((w) => w.def.id === id)?.level ?? 0;
-  }
-
-  /**
-   * Coge un arma nueva a nivel `level` (1…`maxLevel`). false si ya la lleva
-   * o no existe en la config. El tope de huecos lo pone quien ofrece las
-   * cartas (T129): aquí sólo se guarda.
-   */
-  addWeapon(id: WeaponId, level = 1): boolean {
-    const def = this.config.weapons[id];
-    if (!def || this.weapons.some((w) => w.def.id === id)) return false;
-    const slot: WeaponSlot = {
-      def,
-      level: Math.min(def.maxLevel, Math.max(1, Math.floor(level))),
-      stats: resolveWeaponStats(def, 1, this.stats),
-      cooldown: 0,
-      tick: 0,
-      angle: 0,
-    };
-    slot.stats = resolveWeaponStats(def, slot.level, this.stats);
-    this.weapons.push(slot);
-    return true;
-  }
-
-  /** Sube un nivel el arma (hasta `maxLevel`). false si no la lleva o ya está al máximo. */
-  levelUpWeapon(id: WeaponId): boolean {
-    const w = this.weapons.find((x) => x.def.id === id);
-    if (!w || w.level >= w.def.maxLevel) return false;
-    w.level++;
-    w.stats = resolveWeaponStats(w.def, w.level, this.stats);
-    return true;
-  }
-
-  /** Rehace los números de todas las armas (tras una mejora o un vinilo). */
-  private refreshWeapons(): void {
-    for (const w of this.weapons) w.stats = resolveWeaponStats(w.def, w.level, this.stats);
   }
 
   private mareaActive(): boolean {
@@ -792,8 +559,7 @@ export class SurvivorsGame {
       w: this.water,
       inv: this.invulnerable,
       lv: [this.level, this.xp, this.pendingLevels],
-      wp: this.weapons.map((w) => [w.def.id, w.level, w.cooldown, w.tick, w.angle]),
-      z: this.zones.map((z) => [z.id, z.x, z.y, z.life, z.tick]),
+      cd: this.cooldown,
       of: this.overflow,
       acc: this.trackAcc,
       mn: this.mareaNext,
@@ -813,7 +579,7 @@ export class SurvivorsGame {
         e.timer,
         e.chargeLeft,
       ]),
-      b: this.projectiles.map((b) => [b.id, b.x, b.y, b.life, b.target]),
+      b: this.projectiles.map((b) => [b.id, b.x, b.y, b.life]),
       s: this.enemyShots.map((b) => [b.id, b.x, b.y, b.life]),
       n: this.notes.map((n) => [n.id, n.x, n.y, n.value]),
       k: [this.defeated, this.notesPicked, this.notesValue, this.nextId],
@@ -937,9 +703,8 @@ export class SurvivorsGame {
     this.stepEnemies(dt);
     this.contactDamage(dt);
     this.stepEnemyShots(dt);
-    this.stepWeapons(dt);
+    this.fireWeapon(dt);
     this.stepProjectiles(dt);
-    this.stepZones(dt);
     this.compactEnemies();
     this.stepNotes(dt);
 
@@ -1426,7 +1191,7 @@ export class SurvivorsGame {
     this.enemies.length = n;
   }
 
-  // --- Armas -----------------------------------------------------------------
+  // --- Cañón de agua ---------------------------------------------------------
 
   private nearestEnemy(range: number): Enemy | null {
     const p = this.player;
@@ -1450,351 +1215,49 @@ export class SurvivorsGame {
     return best;
   }
 
-  /** Los enemigos vivos a menos de `range` del barco (por la rejilla), en `out`. */
-  private enemiesInRange(range: number, out: Enemy[]): Enemy[] {
-    out.length = 0;
-    const p = this.player;
-    const near = this.enemyGrid.query(p.x, p.y, range + this.maxEnemyRadius, this.scratch);
-    for (const i of near) {
-      const e = this.enemies[i]!;
-      if (e.dead) continue;
-      const dx = wd(e.x - p.x, this.w);
-      const dy = wd(e.y - p.y, this.h);
-      if (dx * dx + dy * dy <= range * range) out.push(e);
-    }
-    return out;
-  }
-
-  /** Hiere a `e`; si cae, lo derrota. */
-  private hurt(e: Enemy, damage: number): void {
-    if (e.dead) return;
-    e.hp -= damage;
-    if (e.hp <= 0) this.defeat(e);
-  }
-
-  /** Hiere a todo lo vivo que toca el círculo (x, y, r). Devuelve cuántos. */
-  private hurtCircle(x: number, y: number, r: number, damage: number): number {
-    const near = this.enemyGrid.query(x, y, r + this.maxEnemyRadius, this.scratch);
-    let n = 0;
-    for (const i of near) {
-      const e = this.enemies[i]!;
-      if (e.dead) continue;
-      const dx = wd(e.x - x, this.w);
-      const dy = wd(e.y - y, this.h);
-      const min = r + e.radius;
-      if (dx * dx + dy * dy > min * min) continue;
-      this.hurt(e, damage);
-      n++;
-    }
-    return n;
-  }
-
-  /**
-   * Cada arma ataca según su forma. Las que disparan (`cooldownS`) esperan
-   * su turno y, sin blanco a tiro, quedan listas para el primero que entre;
-   * las que golpean por tic (`tickS`) lo hacen a todo lo que toca su forma.
-   */
-  private stepWeapons(dt: number): void {
-    for (const w of this.weapons) {
-      const st = w.stats;
-      switch (w.def.kind) {
-        case 'projectile':
-          if (this.ready(w, dt)) this.fireAtNearest(w);
-          break;
-        case 'cone':
-          if (this.ready(w, dt)) this.fireCone(w);
-          break;
-        case 'rocket':
-          if (this.ready(w, dt)) this.fireRockets(w);
-          break;
-        case 'zone':
-          if (this.ready(w, dt)) this.castZones(w);
-          break;
-        case 'aura':
-          if (this.ticks(w, dt)) this.hurtCircle(this.player.x, this.player.y, st.area, st.damage);
-          break;
-        case 'beam':
-          w.angle = wrapAngle(w.angle + st.speed * dt);
-          if (this.ticks(w, dt)) this.hurtBeams(w);
-          break;
-        case 'orbit':
-          w.angle = wrapAngle(w.angle + st.speed * dt);
-          if (this.ticks(w, dt)) this.hurtOrbitals(w);
-          break;
-        default:
-          break;
-      }
-    }
-  }
-
-  /** Baja el reloj de disparo; true cuando toca disparar (el que dispara lo rearma). */
-  private ready(w: WeaponSlot, dt: number): boolean {
-    w.cooldown -= dt;
-    return w.cooldown <= 0;
-  }
-
-  /** Baja el reloj de tic; true (y rearmado) cuando toca golpear. */
-  private ticks(w: WeaponSlot, dt: number): boolean {
-    w.tick -= dt;
-    if (w.tick > 0) return false;
-    w.tick += w.stats.tickS;
-    if (w.tick <= 0) w.tick = w.stats.tickS;
-    return true;
-  }
-
-  /** Un proyectil del arma `w` desde el barco con rumbo `a`. false si el tope no deja. */
-  private shoot(w: WeaponSlot, a: number, target = -1): boolean {
-    if (this.projectiles.length >= this.caps.projectiles) return false;
-    const st = w.stats;
-    const p = this.player;
-    const rocket = w.def.kind === 'rocket';
-    this.projectiles.push({
-      id: this.nextId++,
-      weapon: w.def.id,
-      kind: w.def.kind,
-      x: p.x,
-      y: p.y,
-      vx: Math.cos(a) * st.speed,
-      vy: Math.sin(a) * st.speed,
-      radius: rocket ? ROCKET_RADIUS : st.area,
-      life: (st.range / st.speed) * 1.2,
-      damage: st.damage,
-      pierce: st.pierce,
-      blocked: w.def.blockedByIslands,
-      target,
-      burst: rocket ? st.area : 0,
-      speed: st.speed,
-      lastHit: -1,
-      dead: false,
-    });
-    return true;
-  }
-
-  /** Cañón de agua: `count` bolas en abanico al enemigo más cercano a tiro. */
-  private fireAtNearest(w: WeaponSlot): void {
-    const st = w.stats;
-    const target = this.nearestEnemy(st.range);
+  private fireWeapon(dt: number): void {
+    const wpn = this.weapon;
+    this.cooldown -= dt * (1 + this.stats.fireRateBonus);
+    if (this.cooldown > 0) return;
+    const target = this.nearestEnemy(wpn.range);
     if (!target) {
-      w.cooldown = 0;
+      this.cooldown = 0;
       return;
     }
     const p = this.player;
     const aim = Math.atan2(wd(target.y - p.y, this.h), wd(target.x - p.x, this.w));
-    this.burst(w, aim);
-  }
-
-  /** Cañón de confeti: `count` confetis en abanico hacia donde navega el barco, si hay algo a tiro. */
-  private fireCone(w: WeaponSlot): void {
-    if (!this.nearestEnemy(w.stats.range)) {
-      w.cooldown = 0;
-      return;
-    }
-    this.burst(w, this.player.heading);
-  }
-
-  /** Una ráfaga de `count` proyectiles centrada en `aim`, separados `spreadRad`. */
-  private burst(w: WeaponSlot, aim: number): void {
-    const st = w.stats;
+    const count = wpn.projectiles + Math.round(this.stats.extraProjectiles);
     let fired = 0;
-    for (let k = 0; k < st.count; k++) {
-      if (!this.shoot(w, aim + (k - (st.count - 1) / 2) * st.spreadRad)) break;
-      fired++;
-    }
-    w.cooldown += st.cooldownS;
-    this.fired(w, fired);
-  }
-
-  /** Avisa de que el arma `w` ha disparado `count` cosas desde el barco. */
-  private fired(w: WeaponSlot, count: number): void {
-    if (count <= 0) return;
-    const p = this.player;
-    this.events.push({ type: 'fire', weapon: w.def.id, x: p.x, y: p.y, count });
-  }
-
-  /** Fuegos artificiales: `count` cohetes, cada uno a un enemigo al azar a tiro (pueden repetir). */
-  private fireRockets(w: WeaponSlot): void {
-    const st = w.stats;
-    const pool = this.enemiesInRange(st.range, this.scratchEnemies);
-    if (pool.length === 0) {
-      w.cooldown = 0;
-      return;
-    }
-    const p = this.player;
-    let fired = 0;
-    for (let k = 0; k < st.count; k++) {
-      const e = pool[Math.floor(this.weaponRng() * pool.length)]!;
-      const a = Math.atan2(wd(e.y - p.y, this.h), wd(e.x - p.x, this.w));
-      if (!this.shoot(w, a, e.id)) break;
-      fired++;
-    }
-    w.cooldown += st.cooldownS;
-    this.fired(w, fired);
-  }
-
-  /**
-   * Lluvia ácida: `count` nubes, cada una sobre el enemigo a tiro con más
-   * vecinos debajo de la nube (empate: el de id menor); ninguna sin blanco.
-   */
-  private castZones(w: WeaponSlot): void {
-    const st = w.stats;
-    const pool = this.enemiesInRange(st.range, this.scratchEnemies);
-    if (pool.length === 0) {
-      w.cooldown = 0;
-      return;
-    }
-    let made = 0;
-    for (let k = 0; k < st.count && this.zones.length < this.caps.areas; k++) {
-      let best: Enemy | null = null;
-      let bestN = -1;
-      for (const e of pool) {
-        if (e.dead) continue;
-        let n = 0;
-        const under = this.enemyGrid.query(e.x, e.y, st.area + this.maxEnemyRadius, this.scratch);
-        for (const j of under) {
-          const o = this.enemies[j]!;
-          if (o.dead) continue;
-          const dx = wd(o.x - e.x, this.w);
-          const dy = wd(o.y - e.y, this.h);
-          if (dx * dx + dy * dy <= st.area * st.area) n++;
-        }
-        // Una nube ya puesta encima no cuenta: la siguiente va a otro grupo.
-        for (const z of this.zones) {
-          const dx = wd(z.x - e.x, this.w);
-          const dy = wd(z.y - e.y, this.h);
-          if (dx * dx + dy * dy <= z.radius * z.radius) n = -1;
-        }
-        if (n > bestN || (n === bestN && best && e.id < best.id)) {
-          best = e;
-          bestN = n;
-        }
-      }
-      if (!best || bestN < 0) break;
-      this.zones.push({
+    for (let k = 0; k < count; k++) {
+      if (this.projectiles.length >= this.caps.projectiles) break;
+      const a = aim + (k - (count - 1) / 2) * wpn.spreadRad;
+      this.projectiles.push({
         id: this.nextId++,
-        weapon: w.def.id,
-        x: best.x,
-        y: best.y,
-        radius: st.area,
-        damage: st.damage,
-        tickS: st.tickS,
-        tick: 0,
-        life: st.durationS,
-        durationS: st.durationS,
-        lifeS: st.durationS,
-        progress: 0,
+        x: p.x,
+        y: p.y,
+        vx: Math.cos(a) * wpn.speed,
+        vy: Math.sin(a) * wpn.speed,
+        radius: wpn.radius * (1 + this.stats.areaBonus),
+        life: (wpn.range / wpn.speed) * 1.2,
+        damage: wpn.damage * (1 + this.stats.damageBonus),
+        pierce: wpn.pierce,
+        lastHit: -1,
         dead: false,
       });
-      this.events.push({ type: 'fire', weapon: w.def.id, x: best.x, y: best.y, count: 1 });
-      made++;
+      fired++;
     }
-    w.cooldown += made > 0 ? st.cooldownS : 0;
+    this.cooldown += wpn.cooldownS;
+    if (fired > 0) this.events.push({ type: 'fire', x: p.x, y: p.y, count: fired });
   }
 
-  /** Láser: cada rayo hiere a lo que toca el segmento desde el barco (medio ancho `area`, largo `range`). */
-  private hurtBeams(w: WeaponSlot): void {
-    const st = w.stats;
-    const p = this.player;
-    for (let k = 0; k < st.count; k++) {
-      const a = beamAngle(w.angle, k, st.count);
-      const ux = Math.cos(a);
-      const uy = Math.sin(a);
-      const near = this.enemyGrid.query(
-        p.x + (ux * st.range) / 2,
-        p.y + (uy * st.range) / 2,
-        st.range / 2 + st.area + this.maxEnemyRadius,
-        this.scratch,
-      );
-      for (const i of near) {
-        const e = this.enemies[i]!;
-        if (e.dead) continue;
-        const dx = wd(e.x - p.x, this.w);
-        const dy = wd(e.y - p.y, this.h);
-        const along = dx * ux + dy * uy;
-        if (along < -e.radius || along > st.range + e.radius) continue;
-        const across = Math.abs(-dx * uy + dy * ux);
-        if (across > st.area + e.radius) continue;
-        this.hurt(e, st.damage);
-      }
-    }
-  }
-
-  /** Boyas orbitales: cada boya hiere a lo que toca. */
-  private hurtOrbitals(w: WeaponSlot): void {
-    const st = w.stats;
-    const p = this.player;
-    for (let k = 0; k < st.count; k++) {
-      const a = beamAngle(w.angle, k, st.count);
-      const bx = p.x + Math.cos(a) * st.range;
-      const by = p.y + Math.sin(a) * st.range;
-      this.hurtCircle(bx, by, st.area, st.damage);
-    }
-  }
-
-  /** Las nubes: cada tic hieren a lo que tienen debajo; se deshacen al acabar. */
-  private stepZones(dt: number): void {
-    for (const z of this.zones) {
-      z.tick -= dt;
-      if (z.tick <= 0) {
-        z.tick += z.tickS;
-        this.hurtCircle(z.x, z.y, z.radius, z.damage);
-      }
-      z.life -= dt;
-      if (z.life <= 0) z.dead = true;
-    }
-    let n = 0;
-    for (const z of this.zones) if (!z.dead) this.zones[n++] = z;
-    this.zones.length = n;
-  }
-
-  /** Un cohete explota en (x, y): hiere a todo en su radio. */
-  private explode(b: Projectile): void {
-    b.dead = true;
-    this.hurtCircle(b.x, b.y, b.burst, b.damage);
-    this.events.push({ type: 'explode', weapon: b.weapon, x: b.x, y: b.y, radius: b.burst });
-  }
-
-  private enemyById(id: number): Enemy | null {
-    if (id < 0) return null;
-    for (const e of this.enemies) if (e.id === id) return e.dead ? null : e;
-    return null;
-  }
-
-  /**
-   * Bolas, confetis y cohetes avanzan recto. Las formas rectas (`blocked`)
-   * las paran las islas y hieren al primero que tocan (atravesando `pierce`);
-   * los cohetes siguen a su blanco por encima de todo y explotan al llegar
-   * (o donde estén si el blanco cayó o se les acaba la mecha).
-   */
   private stepProjectiles(dt: number): void {
     for (const b of this.projectiles) {
-      if (b.kind === 'rocket') {
-        const target = this.enemyById(b.target);
-        if (!target) {
-          this.explode(b);
-          continue;
-        }
-        const dx = wd(target.x - b.x, this.w);
-        const dy = wd(target.y - b.y, this.h);
-        const d = Math.hypot(dx, dy);
-        if (d <= target.radius + b.radius + b.speed * dt) {
-          this.setWrapped(b, target.x, target.y);
-          this.explode(b);
-          continue;
-        }
-        b.vx = (dx / d) * b.speed;
-        b.vy = (dy / d) * b.speed;
-        b.x = wrapInto(b.x + b.vx * dt, this.bounds.left, this.bounds.right);
-        b.y = wrapInto(b.y + b.vy * dt, this.bounds.top, this.bounds.bottom);
-        b.life -= dt;
-        if (b.life <= 0) this.explode(b);
-        continue;
-      }
       const sx = b.vx * dt;
       const sy = b.vy * dt;
       const len = Math.hypot(sx, sy);
       const ss = sx * sx + sy * sy;
       // Islas: el tramo de este paso contra cada isla cercana.
-      if (b.blocked) {
+      if (this.weapon.blockedByIslands) {
         const blockT = this.islandBlock(b, sx, sy, ss);
         if (blockT !== Infinity) {
           b.dead = true;
@@ -1833,8 +1296,9 @@ export class SurvivorsGame {
         }
       }
       if (hit) {
+        hit.hp -= b.damage;
         b.lastHit = hit.id;
-        this.hurt(hit, b.damage);
+        if (hit.hp <= 0) this.defeat(hit);
         if (b.pierce <= 0) {
           b.dead = true;
           continue;
@@ -2066,7 +1530,6 @@ export class SurvivorsGame {
     if (u.stat === 'speedBonus') {
       this.shipCfg = survivorsShipConfig(this.baseShip, this.config.handling, this.stats.speedBonus);
     }
-    this.refreshWeapons();
   }
 
   // --- Atajo &t= ------------------------------------------------------------
@@ -2117,17 +1580,6 @@ function wd(d: number, p: number): number {
   if (d >= h) return d - p < h ? d - p : wrapDelta(d, p);
   if (d < -h) return d + p >= -h ? d + p : wrapDelta(d, p);
   return d;
-}
-
-/** Rumbo del rayo o boya `k` de `count`, repartidos a ángulos iguales desde `base`. */
-function beamAngle(base: number, k: number, count: number): number {
-  return base + (k / Math.max(1, count)) * Math.PI * 2;
-}
-
-/** Ángulo llevado a [0, 2π) para que el giro no crezca sin fin. */
-function wrapAngle(a: number): number {
-  const two = Math.PI * 2;
-  return ((a % two) + two) % two;
 }
 
 /**
