@@ -143,7 +143,7 @@ alguna con `carta=1`), con los dos estilos de derrota.
    hay que bajar `enemies.piranha.speed`?
 2. **Cámara.** ¿Se ven venir los enemigos con tiempo, también en el móvil en vertical? ¿Más lejos
    o más alta (`camera.distanceScale`, `camera.heightScale`)?
-3. **Derrota.** ¿`puf` o `sumergirse`? (Si es `puf`, Álvaro tiene que aprobar el cambio de
+3. **Derrota.** Decidido tras la beta 1: `sumergirse` es el estilo por defecto y `puf` queda como opción secreta (el interruptor de desarrollo). (Si algún día se elige `puf`, Álvaro tiene que aprobar el cambio de
    REQ-AVE-037: los enemigos se destruyen, sin heridas visibles.)
 4. **Islas.** ¿Sirven de cobertura (las bolas no las atraviesan, los enemigos las rodean) o los
    enemigos se quedan atascados detrás?

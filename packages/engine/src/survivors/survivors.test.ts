@@ -11,6 +11,7 @@ import {
   figureOf,
   survivorsConfigHash,
   survivorsShipConfig,
+  trackAt,
   xpToNext,
 } from './config';
 import { SpatialGrid } from './grid';
@@ -100,6 +101,47 @@ function fleeInput(game: SurvivorsGame): SurvivorsInput {
     fy += dy / d2;
   }
   if (Math.hypot(fx, fy) < 1e-9) return { choose: 0 };
+  return { ship: { dirX: fx, dirY: fy, throttle: 1, drift: false }, choose: 0 };
+}
+
+/**
+ * Un esquivador sencillo: huye de los enemigos cercanos (más peso cuanto más
+ * cerca) y se aparta de las islas que tiene delante. Elige la carta 0.
+ */
+function dodgeInput(game: SurvivorsGame): SurvivorsInput {
+  const s = game.snapshot();
+  const p = s.player;
+  const b = game.world.bounds;
+  const w = b.right - b.left;
+  const h = b.bottom - b.top;
+  let fx = 0;
+  let fy = 0;
+  for (const e of s.enemies) {
+    const dx = wrapDelta(p.x - e.x, w);
+    const dy = wrapDelta(p.y - e.y, h);
+    const d = Math.hypot(dx, dy);
+    if (d > 420) continue;
+    const k = 1 / Math.max(40, d) ** 2;
+    fx += dx * k;
+    fy += dy * k;
+  }
+  const norm = Math.hypot(fx, fy);
+  if (norm > 1e-12) {
+    fx /= norm;
+    fy /= norm;
+  }
+  for (const o of game.world.obstacles) {
+    const dx = wrapDelta(p.x - o.x, w);
+    const dy = wrapDelta(p.y - o.y, h);
+    const d = Math.hypot(dx, dy);
+    const reach = o.radius + 160;
+    if (d < reach) {
+      const k = (reach - d) / 160;
+      fx += (dx / Math.max(1, d)) * k * 2;
+      fy += (dy / Math.max(1, d)) * k * 2;
+    }
+  }
+  if (Math.hypot(fx, fy) < 1e-9) return { ship: { dirX: 0, dirY: 0, throttle: 0, drift: false }, choose: 0 };
   return { ship: { dirX: fx, dirY: fy, throttle: 1, drift: false }, choose: 0 };
 }
 
@@ -345,6 +387,49 @@ describe('survivors: partidas completas', () => {
       SURVIVORS_CONFIG.player.invulnerableS - 1e-9,
     );
   });
+});
+
+describe('survivors: equilibrio de la beta 1 (T123)', () => {
+  it('ningún enemigo común alcanza la velocidad máxima del barco en los 7:00 (salvo el telegrafiado)', () => {
+    const cfg = SURVIVORS_CONFIG;
+    const top = DEFAULT_SHIP_CONFIG.maxSpeed;
+    for (const act of cfg.acts) {
+      for (const track of act.tracks) {
+        const def = cfg.enemies[track.enemy]!;
+        if (def.behavior === 'charger') continue;
+        for (let t = track.fromS; t < track.toS; t += 1) {
+          const key = trackAt(track, t)!;
+          const speed = def.speed * key.speedScale * (1 + def.growthPerMinute.speed * (t / 60));
+          expect(speed, `${def.id} a ${t}s`).toBeLessThan(top * 0.95);
+        }
+        const end = trackAt(track, track.toS - 1e-6)!;
+        const last =
+          def.speed * end.speedScale * (1 + def.growthPerMinute.speed * (cfg.durationS / 60));
+        expect(last).toBeLessThan(top * 0.95);
+      }
+    }
+    expect(cfg.enemies.piranha!.speed).toBeCloseTo(top * 0.8, -1);
+  });
+
+  const seeds: [number, () => SurvivorsWorld][] = [
+    [1, () => archipelago(31)],
+    [2, () => archipelago(32)],
+    [3, arcillaWorld],
+    [4, () => archipelago(34)],
+  ];
+  for (const [seed, make] of seeds) {
+    it(`un esquivador aguanta mucho más que un barco parado (semilla ${seed})`, () => {
+      const idle = createSurvivors(SURVIVORS_CONFIG, seed, make());
+      const idleRun = play(idle, () => ({ choose: 0 }));
+      const bot = createSurvivors(SURVIVORS_CONFIG, seed, make());
+      const botRun = play(bot, (_i, g) => dodgeInput(g));
+      const idleS = idleRun.game.snapshot().activeS;
+      const botS = botRun.game.snapshot().activeS;
+      expect(idleRun.game.snapshot().end).toBe('flooded');
+      expect(botS).toBeGreaterThan(idleS * 3);
+      expect(botS).toBeGreaterThan(90);
+    });
+  }
 });
 
 describe('survivors: pausa y tiempo activo', () => {

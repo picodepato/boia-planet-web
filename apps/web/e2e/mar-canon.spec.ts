@@ -288,6 +288,25 @@ test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada t
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   const hud = page.getByTestId('mar-canon-hud');
   await expectOnScreen(page, hud);
+  // T123: pequeño y pegado arriba (la banda alta de la pantalla), sin pisar nada fijo.
+  const vp0 = page.viewportSize()!;
+  const hudBox = (await hud.boundingBox())!;
+  const xpBox = (await hud.getByRole('progressbar').boundingBox())!;
+  const timeBox = (await hud.getByTestId('mar-canon-tiempo').boundingBox())!;
+  for (const b of [hudBox, xpBox, timeBox]) expect(b.y + b.height).toBeLessThan(vp0.height * 0.2);
+  expect(hudBox.height).toBeLessThanOrEqual(64);
+  expect(xpBox.height).toBeLessThanOrEqual(8);
+  const fixed = [
+    'mar-entradas',
+    'mar-enlaces',
+    'mar-minimapa',
+    'mar-saldos',
+  ].map((id) => page.getByTestId(id));
+  for (const piece of fixed) {
+    if ((await piece.count()) === 0 || !(await piece.isVisible())) continue;
+    const pb = (await piece.boundingBox())!;
+    expect(overlaps(hudBox, pb), (await piece.getAttribute('data-testid')) ?? '').toBe(false);
+  }
   await expect(hud.getByTestId('mar-canon-beta')).toHaveText(msg('mar.canon.beta'));
   // La cuenta atrás, «m:ss», baja desde lo que queda de la partida.
   const time = hud.getByTestId('mar-canon-tiempo');

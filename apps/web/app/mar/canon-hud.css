@@ -10,28 +10,38 @@
   --canon-alert: #ffb627;
   --canon-danger: #ff4d3d;
   --canon-dawn: #ffd27a;
+  /* Beta 2 (T123): el HUD de la partida va pegado arriba, compacto: en el móvil
+     en la fila del minimapa (bajo los enlaces); en escritorio, justo bajo los
+     enlaces centrados. */
+  --canon-hud-top: calc(var(--safe-t) + var(--links-h) + 10px);
+}
+
+@media (min-width: 760px) {
+  .mar {
+    --canon-hud-top: calc(var(--safe-t) + 14px + 34px + 8px);
+  }
 }
 
 /* ---------- HUD arriba al centro ---------- */
 
 .mar-canon-hud {
   position: absolute;
-  top: var(--top-space);
+  top: var(--canon-hud-top);
   left: 50%;
   translate: -50% 0;
   z-index: 3;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   width: max-content;
-  min-width: 176px;
+  min-width: 132px;
   max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
-  padding: 4px 4px 8px 10px;
-  border-radius: 22px;
+  padding: 3px 4px 5px 8px;
+  border-radius: 16px;
   background: var(--glass-strong);
   border: 1px solid var(--line);
   backdrop-filter: blur(12px) saturate(1.3);
   -webkit-backdrop-filter: blur(12px) saturate(1.3);
-  box-shadow: 0 8px 24px rgb(10 6 40 / 0.28);
+  box-shadow: 0 4px 14px rgb(10 6 40 / 0.26);
   pointer-events: auto;
   animation: mar-in 0.3s ease-out;
 }
@@ -39,16 +49,16 @@
 .mar-canon-hud__row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .mar-canon-beta {
   flex: none;
-  padding: 2px 7px 1px;
-  border-radius: 6px;
+  padding: 1px 5px 0;
+  border-radius: 5px;
   border: 1.5px dashed var(--canon-dawn);
   color: var(--canon-dawn);
-  font: 800 0.66rem / 1.3 var(--font-title);
+  font: 800 0.58rem / 1.3 var(--font-title);
   letter-spacing: 0.08em;
   cursor: help;
 }
@@ -56,7 +66,7 @@
 .mar-canon-hud__time {
   flex: 1;
   text-align: center;
-  font: 900 1.45rem / 1 var(--font-title);
+  font: 900 1.05rem / 1 var(--font-title);
   font-variant-numeric: tabular-nums;
   color: var(--cream);
   letter-spacing: 0.02em;
@@ -66,12 +76,20 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  position: relative;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: rgb(255 255 255 / 0.12);
+}
+
+/* El botón se ve pequeño pero se toca con 44 px. */
+.mar .mar-canon-pause::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 
 .mar .mar-canon-pause:active {
@@ -87,21 +105,23 @@
 
 /* Dos barras verticales, dibujadas (no un emoji que cambia con cada sistema). */
 .mar-canon-pause__icon {
-  width: 14px;
-  height: 16px;
+  width: 11px;
+  height: 13px;
   background:
-    linear-gradient(var(--cream), var(--cream)) left / 5px 100% no-repeat,
-    linear-gradient(var(--cream), var(--cream)) right / 5px 100% no-repeat;
+    linear-gradient(var(--cream), var(--cream)) left / 4px 100% no-repeat,
+    linear-gradient(var(--cream), var(--cream)) right / 4px 100% no-repeat;
 }
 
 .mar-canon-hud__level {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding-right: 8px;
 }
 
 .mar-canon-hud__lv {
-  font-size: 0.74rem;
+  flex: none;
+  font-size: 0.64rem;
   font-weight: 800;
   color: var(--cream);
   opacity: 0.9;
@@ -109,8 +129,10 @@
 
 .mar-canon-xp {
   display: block;
-  height: 8px;
-  border-radius: 4px;
+  flex: 1;
+  min-width: 48px;
+  height: 5px;
+  border-radius: 3px;
   overflow: hidden;
   background: rgb(255 255 255 / 0.14);
 }
@@ -225,13 +247,13 @@
 /* Entre el HUD de arriba (que sigue a la vista) y la barra de abajo:
    «Entradas» y el menú quedan encima. */
 .mar-canon-cards {
-  --hud-h: 84px;
+  --hud-h: 64px;
   position: absolute;
   inset: 0;
   z-index: 4;
   display: grid;
   justify-items: center;
-  padding: calc(var(--top-space) + var(--hud-h)) calc(var(--safe-r) + 12px) var(--above-bar)
+  padding: calc(var(--canon-hud-top) + var(--hud-h)) calc(var(--safe-r) + 12px) var(--above-bar)
     calc(var(--safe-l) + 12px);
   background: rgb(14 10 44 / 0.42);
   pointer-events: auto;

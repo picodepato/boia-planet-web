@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 011 T123: Notas de la beta 1 (enemigos más lentos, HUD pequeño y alto, «sumergirse»)
+
+Qué existe
+- `SURVIVORS_CONFIG_VERSION` 1 → 2. Piraña 150 → 120 u/s (80 % del máximo del barco, 150); crecimiento de velocidad de la piraña 0,02 → 0,01 por minuto y `speedScale` de la pista 1,08/1,15 → 1,03/1,05: a los 6:59 la piraña va a ~135 u/s (~90 % del barco sin mejoras). Cangrejo sin tocar (55 u/s, 0,01/min, ×1,1: ~65 u/s al final). Primera ola de pirañas algo más suave (0,35 → 0,25 grupos/s, grupos de 3-5 → 2-4) para que un barco parado dure ~26 s en vez de ~21 s y se vean las notas en el agua; el resto del equilibrio no cambia. `defeatStyle` sigue en `'sumergirse'` y el interruptor de desarrollo mantiene «puf».
+- Pruebas nuevas (`survivors.test.ts`, «equilibrio de la beta 1»): ninguna pista de enemigo común (salvo `charger`) llega al 95 % de la velocidad máxima del barco en los 7:00, leído de la config; un esquivador sencillo (huye de los cercanos y se aparta de las islas) aguanta más de 3× lo que un barco parado y más de 90 s en 4 semillas (3 sobreviven los 7:00, una se inunda a ~150 s).
+- HUD (`canon-hud.css`): cuenta atrás 1,45 → 1,05 rem, nivel y barra en una sola fila (barra de 5 px), «BETA» y pausa más pequeños (pausa 32 px visibles con 44 px de zona táctil); pegado arriba (`--canon-hud-top`: bajo los enlaces en el móvil, junto a la fila del minimapa; bajo los enlaces centrados en escritorio). Las cartas de nivel usan el mismo hueco.
+- E2E (`mar-canon.spec.ts`): el HUD, la barra de XP y la cuenta atrás quedan en el 20 % superior (móvil y escritorio), el HUD mide ≤ 64 px, y no se solapa con «Entradas», enlaces, minimapa ni saldos.
+- Guía de prueba de la beta 1: el punto «Derrota» ya no es una pregunta abierta.
+
+Comandos
+- `pnpm exec vitest run packages/engine/src/survivors apps/web/app/mar/canon-hud-model.test.ts` → exit 0, 47 pruebas.
+- `E2E_PORT=3217 pnpm e2e mar-canon.spec.ts -g "HUD con BETA" --workers=1` → exit 0, 2 pruebas (mobile y desktop).
+
+Pendiente
+- Que Hernán pruebe el ritmo de una partida entera con estos valores.
+
 ## 2026-10-04 — plan 010 T105: Final regression coverage and world-update handoff
 
 Qué existe:

@@ -16,7 +16,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 1;
+export const SURVIVORS_CONFIG_VERSION = 2;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -349,13 +349,13 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       id: 'piranha',
       behavior: 'chase',
       radius: 9,
-      speed: 150,
+      speed: 120,
       acceleration: 420,
       hp: 10,
       contactWater: 5,
       ignoresIslands: false,
       noteValue: 1,
-      growthPerMinute: { hp: 0.12, speed: 0.02 },
+      growthPerMinute: { hp: 0.12, speed: 0.01 },
     },
     crab: {
       id: 'crab',
@@ -445,10 +445,10 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           fromS: 0,
           toS: 420,
           keys: [
-            { atS: 0, groupsPerS: 0.35, group: [3, 5], hpScale: 1, speedScale: 1 },
+            { atS: 0, groupsPerS: 0.25, group: [2, 4], hpScale: 1, speedScale: 1 },
             { atS: 120, groupsPerS: 0.5, group: [4, 7], hpScale: 1.4, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.7, group: [5, 9], hpScale: 2, speedScale: 1.08 },
-            { atS: 420, groupsPerS: 1, group: [6, 12], hpScale: 3, speedScale: 1.15 },
+            { atS: 240, groupsPerS: 0.7, group: [5, 9], hpScale: 2, speedScale: 1.03 },
+            { atS: 420, groupsPerS: 1, group: [6, 12], hpScale: 3, speedScale: 1.05 },
           ],
         },
         {
