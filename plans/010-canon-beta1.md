@@ -250,10 +250,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T109 — Twenty-two knots only during the active race
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T108
+- Depends on: T106
 - Goal: Restore 22-knot base handling during actual racing, returning to 15-knots for exploration on completion, cancellation or abandonment.
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) steering historical config and T99 tests, race lifecycle/client, Mar3D ship-config application, boost/penalty/boat modifiers, circuit manual bot. Cañón note: the survivors handling overrides (plan 010 T98/T116/T120) must keep composing with the 15/22-knot selection; a Cañón game is never a race.
 - Scope: race configuration selection/application, minimal engine config API if needed, lifecycle/physics tests and E2E. No medal-threshold/economy changes, art, place content, route topology or persisted record deletion.
@@ -293,10 +293,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T114 — Custom BOIA menu icons
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5) (Codex out of credits until 22:44)
 - Skills: none
-- Depends on: T113, T118
+- Depends on: T118
 - Goal: Replace the game's generic emoji menu icons with a coherent small custom icon family matching BOIA's mascot, rounded shapes and orange/navy palette.
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar/menu.tsx and menu section metadata/shared menu components, original logo assets, existing scoped game CSS. Cañón note: T118 added a leave-the-page warning to the `/mar` menu during a Cañón pause; keep it.
 - Scope: code-native SVG/components, menu icon mapping and focused style/a11y tests only. Do not redraw the original logo, change feature behavior or replace unrelated world/map emoji.
@@ -363,6 +363,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 Hernán: when Codex runs out of credits, Claude continues. Codex wrappers stop at once on a usage-limit error with a `WIP` commit and STATUS: failed («codex usage limit»); the orchestrator continues the task with an Opus continuation agent (not counted as a failed attempt), and later Codex tasks go to Opus until Codex is back (Hernán)
 
+- 2026-10-04 Hernán: up to 4 agents at once from now on. To use them, T109 (race handling) no longer waits for T108 and T114 (menu icons) no longer waits for T113: those links only serialized `/mar` files, and merge conflicts are handled at integration (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
@@ -401,3 +403,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 19:54 T111 Codex hit its usage limit (until 22:44) before writing anything; WIP had only a status note → dropped; relaunched on Opus from main (same attempt). T114 moved to Opus too
 - 2026-10-04 19:54 T111 relaunched on Opus · attempt 1 · agent ad8be04b9f8b7e142
 - 2026-10-04 20:00 T115 done → 20ca11a
+- 2026-10-04 20:00 T108 launched · attempt 1 · agent ac18bcaf2344b2d6e
