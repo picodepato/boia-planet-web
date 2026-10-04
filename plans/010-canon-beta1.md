@@ -75,7 +75,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: Cañón 3D mode runs in /mar from the panel or `?minijuego=canon&t=&seed=`; world hidden/blocked during play and restored; race lock; handling/camera overrides; `devShortcutsEnabled()` (dev, `navigator.webdriver`, `?dev=1`); data-* test hooks; 24 e2e passed → b845582
 
 ## T120 — Merge the Codex world updates (`codex/world-updates`) into main
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T116
@@ -87,7 +87,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests prove the hide/restore list covers Codex's new interactive world elements and the survivors handling overrides compose with the new ship config
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts <the race, Fiestera, and the e2e specs the Codex branch added or changed> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: codex/world-updates 608f883 merged (squashed); new hide layers `objective` and `wildlife`; handling overrides are scale factors so the game boat cruises at 15 kn; one pins effect; 1193 unit tests; race medal e2e left failing for T109 → c5c6339
 
 ## T117 — Provisional models, notes on the water and the two defeat styles
 - Status: pending
@@ -137,7 +137,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - **Session**: the 3D mode opens and closes a minigame session (`session.ts`) with a new config version whose `configHash` covers T98's config; result `won` = survived 7:00; the validation checks **active time**, not wall time (a technical adjustment of REQ-AVE-038 for this game, documented). The reward stays 150 pts + 50 coins once per season, in local mode and in Supabase mode (check the RPC/server validation accepts the new config version and durations; adjust a migration only if strictly needed and say so). Achievements `canon` and `guardacostas` keep working the same; the `win_minigame` signal fires on a win.
   - **e2e** of the mode with the dev shortcuts, desktop and mobile: enter, die (flooded), survive (start near the end with `&t=`), pause, return to the world, lock during the race, reward granted once. Remove or update every e2e that relied on the 2D canon.
   - **Docs**: `ESTADO.md` is written through the status fragment; `docs/spec/estado.md` updated for the REQs this plan moved (REQ-MUN-026, REQ-AVE-037, REQ-AVE-038 and any other), each with its test (`python3 tools/spec/estado.py` must pass), noting that REQ-AVE-037 and 038 remain pending the final decision (puf vs sumergirse needs Álvaro; active-time validation). `docs/TRASPASO.md`: the new mode in beta. Never edit `docs/DECISIONES.md`. In `docs/propuestas/2026-10-04-canon-survivors.md` update the roadmap's plan numbers (beta 1 = plan 010, beta 2 = 011, … launch = 014), since the Codex plan took 009.
-  - **Beta 1 test guide for Hernán** in `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md` (Spanish): how to enable the shortcuts locally and in production (`?dev=1`), the `t`/`seed` parameters, the defeat-style switch, exactly which config values to touch for handling and camera (file and field names), and the six questions to answer: dodging feel (more/less turn and inertia); whether the camera shows enemies coming, also on mobile; `puf` or `sumergirse`; whether islands work as cover or enemies get stuck; whether the level-up and notes rhythm hooks; performance on a mid-range phone at the enemy cap. Answers are saved as notes and feed plan 011's interview.
+  - **Beta 1 test guide for Hernán** in `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md` (Spanish): how to enable the shortcuts locally and in production (`?dev=1`), the `t`/`seed` parameters, the defeat-style switch, exactly which config values to touch for handling and camera (file and field names), and a note that since T120 the boat cruises at 15 knots and piranhas (150 u/s) now match its top speed, so escape is much harder (first knob to try), and the six questions to answer: dodging feel (more/less turn and inertia); whether the camera shows enemies coming, also on mobile; `puf` or `sumergirse`; whether islands work as cover or enemies get stuck; whether the level-up and notes rhythm hooks; performance on a mid-range phone at the enemy cap. Answers are saved as notes and feed plan 011's interview.
 - Context: the header and its required docs; T98–T118 Outcomes; `packages/engine/src/minigames/` (`canon.ts`, `host.ts`, `registry.ts`, `types.ts`, `controller.ts`, `session.ts`, `rewards.ts`, `rng.ts`, `minigames.test.ts`), `apps/web/lib/mundo/minigame-layer.tsx`, `apps/web/e2e/minijuegos.spec.ts`, `apps/web/e2e/mar-canon.spec.ts`; achievements (`canon`, `guardacostas`) in `packages/store`; Supabase reward path (`supabase/migrations/20261003100100_economy.sql`, `packages/db/src/supabase/economy.supabase.ts`); `docs/spec/estado.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`, `README.md`.
 - Scope: may touch `packages/engine/src/minigames/**`, `packages/engine/src/survivors/**` (fixes), `apps/web/app/mar/**` survivors files and their wiring, `apps/web/lib/mundo/**`, `packages/store/**` only if achievements need it, `supabase/migrations/**` (new migration only if strictly needed), `apps/web/e2e/**`, `docs/spec/**`, `docs/TRASPASO.md`, `README.md`, `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, `docs/propuestas/2026-10-04-canon-survivors.md` (roadmap numbers only) / must not touch the Faro's behaviour, `docs/DECISIONES.md`.
 - Done when:
@@ -244,6 +244,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) steering historical config and T99 tests, race lifecycle/client, Mar3D ship-config application, boost/penalty/boat modifiers, circuit manual bot. Cañón note: the survivors handling overrides (plan 010 T98/T116/T120) must keep composing with the 15/22-knot selection; a Cañón game is never a race.
 - Scope: race configuration selection/application, minimal engine config API if needed, lifecycle/physics tests and E2E. No medal-threshold/economy changes, art, place content, route topology or persisted record deletion.
 - Done when:
+  - `mar-circuito.spec.ts` medal test (line ~203, «…medalla…», failing since the 15-knot change merged in T120) passes again on desktop and mobile with the 22-knot race handling, without weakening it
   - Countdown/offering/result/exploration use 15 base; active race uses the complete historical 22-kn handling proportions. Turbo and boat modifiers compose consistently.
   - Finish/cancel/invalidate/leave/reset cannot retain race speed; clamp excess speed appropriately on return and preserve strict steering/collision behavior. Existing record version stays unless a demonstrated comparability issue is reviewed.
   - Meaningful lifecycle/physics and targeted race E2E pass; full safe suite, typecheck/lint exit 0.
@@ -330,7 +331,11 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 Hernán asked to delegate more to Codex: T107 (its own harbor asset, art-only) now runs on Codex with no dependency (it never needed T120), and the art chain T110/T111 follows on Codex; T114/T115 stay on Codex (Hernán + orchestrator)
 - 2026-10-04 Codex orchestrator confirmed via `codex exec resume`: plan 009 stopped, workers already gone, no commits or file changes after 11:39; its T106/T107 handoff notes added to those tasks' Context (orchestrator)
 
+- 2026-10-04 T120: hide layers `objective` (the «!» button, its panel and the marked objective, restored after) and `wildlife` (fish and gulls stopped, `data-fauna-oculta`); castaway, WhatsApp buoy and Cala first-visit popup need no hiding (runtime not stepped, pins removed); one pins effect replaces the old one; determinism test samples every 5 s (agent)
+- 2026-10-04 T120 blocked on the race medal e2e failing at 15 knots (pre-existing in Codex's branch, its T99 removed the same unit check); orchestrator chose option A: accept the merge, T109 must make that e2e pass again (added to its Done when) (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
 
 ## Log
@@ -342,3 +347,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 14:52 T120 launched · attempt 1 · agent a99ee9890bfcfe9d6
 - 2026-10-04 17:46 session restarted; T120 orphan mid-merge (no unmerged paths) → resumed same agent via SendMessage
 - 2026-10-04 17:47 stop message sent to the Codex orchestrator session 01a10276 via `codex exec resume`
+- 2026-10-04 17:53 T107 launched · attempt 1 · Codex via wrapper agent a51c7a2f06fefaab5
+- 2026-10-04 17:56 T120 done (option A on the medal e2e) → c5c6339

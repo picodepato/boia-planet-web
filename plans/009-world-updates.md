@@ -1,6 +1,6 @@
 # Plan 009 — Manual exploration, BOIA identity and a livelier world
 
-Status: active
+Status: absorbed into plans/010-canon-beta1.md on 2026-10-04 (T98–T104 merged by T120 → c5c6339; T105–T115 continue there)
 Created: 2026-10-03
 Base branch: codex/world-updates
 Goal: Implement the world updates explicitly requested by Álvaro: coherent BOIA identity, manual exploration, durable progress, corrected encounters, visible Carnet questions, Blender Mediterranean landmarks, bounded wildlife, sample merchandise, the Alicante harbor boat-choice popup, race-only 22-knot handling, a clear main route and custom menu icons. The 2026-10-04 steering supersedes the earlier automatic Cala shop opening and all-island route.
