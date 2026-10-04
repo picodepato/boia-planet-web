@@ -238,7 +238,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) `naufrago-fiesta` completes on rescue (`trigger: rescue_character`), a persisted rescue discount (even used/expired) is evidence, recovery never reclaims; id, 80/40 reward, discount and repeat phrase unchanged; conflict with T121 (CRLF→LF) resolved by the wrapper; 1257 unit tests, 22 e2e → 20ca11a
 
 ## T108 — Puerto de Alicante identity and explicit boat-choice popup
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T106, T107, T115
@@ -249,7 +249,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Fresh and existing profiles (including old menu-seen preference) see the harbor popup, never an automatic shop; CTA opens boat selection and its purchase/equip UI. No next-events section for this place.
   - Harbor Blender asset replaces its previous decoration, with functional fallback, existing collision/approach compatibility, labels in both worlds and source/runtime parity.
   - Relevant unit/E2E, full safe suite, typecheck/lint and asset checks pass; mobile/desktop evidence reviewed.
-- Outcome:
+- Outcome: Cala renamed Puerto de Alicante (id `cala` kept), normal place sheet + CTA to Mi Barco, no auto shop (T100 discovery module deleted, old pref ignored), harbor GLB via island-model streaming (`PLACE_MODEL_IDS=['cala']`) with a hand-made fallback; 1295 unit tests, mar-puerto 14/14 → b7611cd
 
 ## T109 — Twenty-two knots only during the active race
 - Status: done
@@ -288,7 +288,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T108, T109, T110, T111
 - Goal: Use the new Benidorm/Ibiza Blender assets in the actual game, replacing old decoration and playing the requested club mascot loop.
-- Context: (T111 note: Ibiza collision is a 1.9×1.5 ellipse at 45° that reaches past the visible coast front-right and back-left; replace the procedural `tienda()` decoration and set `labelY` and the night glow) (T110 note: keep the `boia-pole-dance` GLTF clip in ModelStore; the default 1.7-radius approach framing crops the Benidorm tower tops, ~1.05 radii frames the whole skyline) (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
+- Context: (from T108: place GLBs load through island-model streaming, add ids to `PLACE_MODEL_IDS`) (T111 note: Ibiza collision is a 1.9×1.5 ellipse at 45° that reaches past the visible coast front-right and back-left; replace the procedural `tienda()` decoration and set `labelY` and the night glow) (T110 note: keep the `boia-pole-dance` GLTF clip in ModelStore; the default 1.7-radius approach framing crops the Benidorm tower tops, ~1.05 radii frames the whole skyline) (T107 note: `ModelStore` drops GLTF animation clips today; keep them for the club loop) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
 - Scope: scene place loaders/hooks/animation/tests and required Benidorm geometry/proximity source parity adjustment. No UI/account/economy/route/icon changes.
 - Done when:
   - Both models load with fallback and no duplicated island decoration. Any modest Benidorm enlargement updates visual/collision/proximity dimensions together and leaves safe separation/approach; Ibiza shop behavior remains.
@@ -330,7 +330,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
 - Goal: Update the stale mobile-card test from T97 against the final intended UI; reconcile tests and document the requested changes, sample reward assumptions and remaining external setup.
-- Context: (from T121: fix lines ~50–53 of `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, which still say a `t=` start earns the reward; now only locally and in e2e, never with `?dev=1` in production) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
+- Context: (from T108: `mar-rotulos` «cerca de halloween» fails on mobile (161 > 134) since before T108; `mar-canon` HUD clock check is flaky (reads seconds then text while ticking); `mar-paridad` castaway invitation flaky on mobile; arrival notice still says «Isla descubierta: Puerto de Alicante»; unused `world.*.island.cala.body` keys keep the old text) (from T121: fix lines ~50–53 of `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, which still say a `t=` start earns the reward; now only locally and in e2e, never with `?dev=1` in production) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
 - Scope: may touch relevant tests and concise docs/change notes / must not introduce new product behavior, modify existing decision history, apply migrations or edit plans/.
 - Done when:
   - Mobile-card assertions preserve compact height and intentional travel controls; fresh/existing player behavior for this batch is covered.
@@ -392,6 +392,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 Hernán: from now on all changes are made only in the main world (Arcilla); world 2 (Acuarela) is hidden and unreachable until a later update ports everything to it. New task T122 hides it (Sonnet, after T108). Every later task (T112, T113, T105) works on Arcilla only: requirements that said «both worlds» / «labels in both worlds» / «source/runtime parity in both worlds» now mean Arcilla only (Hernán)
 
 ## Proposals (new scope)
+- 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
 - 2026-10-04 T109: when a world boost or turbo runs out, `stepShip` cuts speed in one step and Mar3D treats it as a collision (pre-existing, untested)
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
@@ -437,3 +438,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 20:57 T109 done → eb968a0 (38 min task, 285 s integration: load with 4 agents + preview server)
 - 2026-10-04 21:09 T114 done → 2f2b8ee
 - 2026-10-04 21:09 T111 done → 93bb950
+- 2026-10-04 21:31 T108 done → b7611cd
+- 2026-10-04 21:31 paused by Hernán to continue in a new session (context size); nothing running. Next ready: T112 (Opus) and T122 (Sonnet); then T113, T105
