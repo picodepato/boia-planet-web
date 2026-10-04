@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Plan a batch of about ten large tasks with Hernán through a grilling interview, then run them unattended as background agents in git worktrees, integrating each one into main, and come back to him only when the plan ends, a task fails, or a decision of his is needed (on Telegram, which he can answer). Start or resume with /orchestrator.
+description: Plan a batch of about ten large tasks with Hernán through a grilling interview, then run them unattended as background agents in git worktrees, integrating each one into main, and report to him on Telegram (which he can answer) when a task is done, the plan ends, a task fails, or a decision of his is needed; each report offers to push main so the test version deploys. Start or resume with /orchestrator.
 disable-model-invocation: true
 argument-hint: "[what the next batch should achieve]"
 hooks:
@@ -37,8 +37,11 @@ Telegram depends on Hernán's machine: it needs `TELEGRAM_CONFIG` pointing at a 
 
 The guard hook of this skill is active for the rest of the session, agents included: it blocks
 `git push`, deploys and publishes, `git reset --hard`, `git clean` and recursive `rm` outside the
-current checkout. Do not work around it. If Hernán asks you to push or deploy, tell him the
-guard blocks it in this session and give him the exact command to run himself.
+current checkout. Do not work around it. One exception: exactly `git push origin main` from the
+main checkout, which deploys the test version (Hernán, 2026-10-04). Run it only when Hernán says
+yes to a push offer on Telegram (`R/telegram.md`) or asks for it in the session, and never while
+an integration is running. Anything else he asks to push or deploy: tell him the guard blocks it
+and give him the exact command to run himself.
 
 ## 0. Target repository, then start or resume
 
@@ -166,7 +169,9 @@ task's status fragment (`.orchestrator/status/T04.md`) into that shared file ins
 commit, so parallel tasks never conflict on it.
 It prints one JSON line:
 - `merged`: set Status `done`, Outcome = one line + commit. Remove the worktree and branch:
-  `git worktree remove --force <WORKTREE>` then `git branch -D <BRANCH>`.
+  `git worktree remove --force <WORKTREE>` then `git branch -D <BRANCH>`. Then send the "task
+  done" message with its push offer (`R/telegram.md`): the mini summary comes from the agent's
+  final message, rewritten in plain Spanish for someone trying the web.
 - `conflict` (main untouched): send the agent the conflict message from `R/agent-prompt.md`
   (SendMessage to its agent id). If SendMessage fails, use a continuation agent (section 8).
   Integrate again when it reports done. If it cannot resolve the conflict, treat it as a
@@ -220,7 +225,8 @@ and worktree (Log, `git worktree list`) and classify it:
   continuation agent (interrupted).
 - **no worktree, no branch or no changes**: relaunch it from scratch with the same attempt number.
 
-Questions still pending on Telegram (`python3 S/tg.py pending`): start their waits again.
+Questions still pending on Telegram (`python3 S/tg.py pending`): start their waits again,
+except push offers (`-push-` ids), which you cancel.
 Tell Hernán in a few lines what you found before continuing.
 
 ## 8. Continuation agent
@@ -248,14 +254,16 @@ because something they depend on failed or was skipped.
    - what stayed failed or skipped and why, and which worktrees were kept;
    - new-scope proposals;
    - what to try by hand;
-   - the next step: push or deploy if he wants (he runs them), then plan the next batch
-     with `/orchestrator`.
-4. Send the "plan finished" Telegram message.
+   - the next step: push to deploy the test version if he has not (you can, on his yes), then
+     plan the next batch in a clean context: `/clear`, then `/orchestrator <goal>`.
+4. Send the "plan finished" Telegram message with its push offer, then the "next plan" message
+   (`R/telegram.md`).
 
 ## Always
 
 - Never write project code yourself or run a task's work in the main checkout.
-- Never push, deploy or do anything irreversible or outward-facing (section 5).
+- Never push, deploy or do anything irreversible or outward-facing (section 5), except
+  `git push origin main` on Hernán's yes (see the guard paragraph above).
 - Keep your context small. Never read agent transcripts or full logs; scripts print short
   results. Delegate code reading to an `Explore` agent that answers in a few lines.
 - Before each merge, main must be clean apart from the plan file; `integrate.py` checks it.

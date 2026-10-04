@@ -52,7 +52,7 @@ class Api:
 
     def __init__(self):
         path = os.environ.get("TELEGRAM_CONFIG", DEFAULT_CONFIG)
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             tg = json.load(f)["telegram"]
         self._token = str(tg["bot_token"])
         self.chat_id = str(tg["chat_id"])
@@ -128,7 +128,7 @@ class State:
     # -- files ---------------------------------------------------------------
     def _write(self, path, text):
         tmp = path + ".tmp"
-        with open(tmp, "w") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             f.write(text)
         os.replace(tmp, path)
 
@@ -150,7 +150,7 @@ class State:
 
     def get_pending(self, qid):
         try:
-            with open(self.pending_path(qid)) as f:
+            with open(self.pending_path(qid), encoding="utf-8") as f:
                 return json.load(f)
         except (OSError, ValueError):
             return None
@@ -169,7 +169,7 @@ class State:
 
     def take_reply(self, qid):
         try:
-            with open(self.inbox_path(qid)) as f:
+            with open(self.inbox_path(qid), encoding="utf-8") as f:
                 text = f.read()
         except OSError:
             return None
@@ -307,7 +307,7 @@ def wait(api, state, qid, timeout=None, sleep=time.sleep):
 # -- CLI --------------------------------------------------------------------
 def _text(args):
     if getattr(args, "file", None):
-        with open(args.file) as f:
+        with open(args.file, encoding="utf-8") as f:
             return f.read().strip()
     return (args.text or "").strip()
 
@@ -340,6 +340,8 @@ def main(argv=None):
     sp.add_argument("--id", type=_qid, required=True)
     args = p.parse_args(argv)
 
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8")
     state = State()
     if args.cmd == "pending":
         for qid, info in state.all_pending().items():

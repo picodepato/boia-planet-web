@@ -3,6 +3,9 @@
 including its agents). It blocks the Bash commands that decision 16 reserves for Hernán:
 git push, deploys and publishes, git reset --hard, git clean, and recursive rm outside the
 current checkout (the agent's worktree, or the main checkout for the orchestrator).
+One push is allowed: exactly `git push origin main` from the main checkout (not from an agent
+worktree), which deploys the test version on Vercel. The orchestrator runs it only after Hernán
+says yes, on Telegram or in the session (Hernán, 2026-10-04).
 
 Reads the hook JSON on stdin. Exit 2 with a reason on stderr blocks the call; exit 0 allows it.
 Run `guard.py --explain '<command>' [cwd]` to test a command by hand.
@@ -100,14 +103,14 @@ def check(command, cwd):
             rest = [a for a in rest if a not in {"-y", "--yes"}]
             if rest:
                 name, args = os.path.basename(rest[0]), rest[1:]
-        reason = (check_git(name, args) or check_deploy(name, args)
+        reason = (check_git(name, args, cwd) or check_deploy(name, args)
                   or check_rm(name, args, cwd))
         if reason:
             return reason
     return None
 
 
-def check_git(name, args):
+def check_git(name, args, cwd=None):
     if name != "git":
         return None
     i = 0
@@ -117,6 +120,8 @@ def check_git(name, args):
         return None
     sub, rest = args[i], args[i + 1:]
     if sub == "push":
+        if rest == ["origin", "main"] and cwd and "/.claude/worktrees/" not in cwd.replace("\\", "/") + "/":
+            return None
         return "`git push` is Hernán's decision."
     if sub == "reset" and "--hard" in rest:
         return "`git reset --hard` discards work."
