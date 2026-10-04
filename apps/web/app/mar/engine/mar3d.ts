@@ -23,7 +23,7 @@ import {
   setControlSensitivity,
 } from '@boia/engine/ui';
 import { type QualityTier, detectQuality } from '@boia/engine/streaming';
-import type { SurvivorsConfig } from '@boia/engine/survivors';
+import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
 import type { WorldConfig, WorldObject } from '@boia/world';
 import type { Color, ShaderMaterial } from 'three';
 import {
@@ -140,6 +140,7 @@ import {
   roadMarkers,
 } from './race-props';
 import { createWater } from './water';
+import { boatVisible, hitShake } from './survivors-props';
 import { SurvivorsView } from './survivors-view';
 import type { SurvivorsRun } from '../survivors';
 import {
@@ -1373,13 +1374,34 @@ export class Mar3D {
     this.hold = null;
     this.turboLeft = 0;
     this.backToBoat();
-    const view = new SurvivorsView(run.config, run.game.caps);
+    const view = new SurvivorsView(run.config, run.game.caps, {
+      quality: run.quality,
+      reduced: this.reducedMotion,
+    });
     this.scene.add(view.group);
     this.camTuning = run.config.camera;
     this.survivors = { run, view, player: run.snapshot().player };
     run.tick(performance.now(), false);
     this.opts.canvas.dataset.canon = 'on';
+    this.opts.canvas.dataset.derrota = view.defeatStyle;
     return true;
+  }
+
+  /**
+   * El estilo de derrota de la partida en curso (T117): `puf` o
+   * `sumergirse`. El interruptor de desarrollo lo cambia en vivo para
+   * compararlos; sin partida no hace nada.
+   */
+  setSurvivorsDefeatStyle(style: DefeatStyle): void {
+    const sv = this.survivors;
+    if (!sv) return;
+    sv.view.setDefeatStyle(style);
+    this.opts.canvas.dataset.derrota = style;
+  }
+
+  /** El usuario prefiere menos movimiento (sin parpadeo, sin temblor, efectos mínimos). */
+  private get reducedMotion(): boolean {
+    return this.wildlifeMotion.matches;
   }
 
   /** Acaba la partida (si la hay): el barco se queda donde acabó y la cámara vuelve suave. */
@@ -1388,6 +1410,8 @@ export class Mar3D {
     if (!sv) return;
     this.survivors = null;
     sv.view.dispose();
+    this.boat.group.visible = true;
+    delete this.opts.canvas.dataset.derrota;
     this.prev.x = this.ship.x;
     this.prev.y = this.ship.y;
     this.prev.heading = this.ship.heading;
@@ -2454,7 +2478,13 @@ export class Mar3D {
       this.prev.x = s.x;
       this.prev.y = s.y;
       this.prev.heading = s.heading;
-      sv.run.step(this.inputEnabled ? this.readInput() : IDLE_INPUT);
+      const events = sv.run.step(this.inputEnabled ? this.readInput() : IDLE_INPUT);
+      // Golpes y derrotas (T117): temblor (sin él con movimiento reducido) y el efecto de derrota.
+      for (let k = 0; k < events.length; k++) {
+        const e = events[k]!;
+        if (e.type === 'hit') this.shake = Math.max(this.shake, hitShake(this.reducedMotion));
+        else if (e.type === 'defeated') sv.view.defeat(e.enemy, e.id, e.x, e.y);
+      }
       const p = sv.player;
       s.x = p.x;
       s.y = p.y;
@@ -2820,7 +2850,19 @@ export class Mar3D {
       this.opts.canvas.dataset.remolinosVista = shownWhirls;
     }
     for (const a of this.animated) a(t, glow);
-    if (this.survivors) this.survivors.view.update(this.survivors.run.snapshot(), t);
+    if (this.survivors) {
+      const sv = this.survivors;
+      const snap = sv.run.snapshot();
+      const reduced = this.reducedMotion;
+      sv.view.reduced = reduced;
+      sv.view.update(snap, t);
+      // El barco golpeado parpadea mientras es invulnerable (T117; nunca con movimiento reducido).
+      this.boat.group.visible = boatVisible({
+        invulnerableS: snap.player.invulnerableS,
+        running: snap.status === 'running',
+        reduced,
+      });
+    }
     this.routeLine.update(this.zoom);
     this.confetti.update(dt);
     this.clouds.update(dt, cam.y, { x: fx, z: fz }, P);

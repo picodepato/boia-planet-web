@@ -207,6 +207,11 @@ export const esMar = {
     'Esquiva el enjambre con el barco hasta que amanezca: el Cañón de agua dispara solo y las notas que sueltan te suben de nivel. Se juega aquí mismo, donde está tu barco.',
   'mar.canon.lock.race':
     'Ahora no: estás en plena carrera. Termínala (o sal de ella) y vuelve a jugar.',
+  // El interruptor de desarrollo del estilo de derrota (T117; sólo con los atajos de desarrollo).
+  'mar.canon.dev.derrota': 'Derrota: {estilo}',
+  'mar.canon.dev.derrota.aria': 'Cambiar el estilo de derrota (desarrollo)',
+  'mar.canon.dev.derrota.puf': 'puf',
+  'mar.canon.dev.derrota.sumergirse': 'sumergirse',
   // Las mejoras de las cartas de nivel (config del modo, `survivors.upgrade.*`). muestra
   'survivors.upgrade.damage': 'Bolas más fuertes: +{amount} de daño',
   'survivors.upgrade.fireRate': 'Recarga más rápida: +{amount} de cadencia',

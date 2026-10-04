@@ -2331,3 +2331,21 @@ button.mar-logros__carnet {
     animation: none;
   }
 }
+
+/* El interruptor de desarrollo del estilo de derrota del Cañón (T117): en el
+   hueco del «!» de objetivos, que la partida esconde. Sólo con los atajos de
+   desarrollo; se quita al lanzar. */
+.mar .mar-canon-dev {
+  position: absolute;
+  top: calc(var(--top-space) + 54px + 8px);
+  left: calc(var(--safe-l) + 10px);
+  z-index: 5;
+  padding: 6px 10px;
+  border: 2px dashed #12233f;
+  border-radius: 999px;
+  background: rgba(255, 244, 226, 0.92);
+  color: #12233f;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+}

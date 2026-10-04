@@ -1,10 +1,10 @@
 'use client';
 
-import type { EndReason, SurvivorsSnapshot } from '@boia/engine/survivors';
+import type { DefeatStyle, EndReason, SurvivorsSnapshot } from '@boia/engine/survivors';
 import type { WorldConfig } from '@boia/world';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { InWorldCopy } from '../../lib/mundo/minigame-layer';
-import { t as msg } from '../../lib/i18n';
+import { type MessageKey, t as msg } from '../../lib/i18n';
 import type { Mar3D } from './engine/mar3d';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import {
@@ -14,6 +14,9 @@ import {
   SurvivorsRun,
   canonBlockKey,
   canonShortcut,
+  devShortcutsEnabled,
+  nextDefeatStyle,
+  startDefeatStyle,
   hideForGame,
   marHideHost,
   randomSeed,
@@ -49,9 +52,14 @@ export interface CanonMode {
   /** Lo que la partida tiene escondido ahora. */
   hidden: ReadonlySet<HideLayer>;
   /** Empieza donde está el barco; false si no se puede ahora. */
-  start(opts?: { t?: number; seed?: number | null }): boolean;
+  start(opts?: StartOptions): boolean;
   /** Pausa (un panel o el menú encima) o sigue. */
   setPaused(paused: boolean): void;
+  /**
+   * El interruptor de desarrollo del estilo de derrota (T117): sólo con los
+   * atajos de desarrollo encendidos (`devShortcutsEnabled`).
+   */
+  dev: { enabled: boolean; defeatStyle: DefeatStyle | null; toggleDefeatStyle(): void };
   /** Lo que el panel de la isla necesita para el Cañón. */
   panel: {
     inWorld: readonly string[];
@@ -59,6 +67,13 @@ export interface CanonMode {
     blockedReason: (gameId: string) => string | null;
     copy: (gameId: string) => InWorldCopy | null;
   };
+}
+
+interface StartOptions {
+  t?: number;
+  seed?: number | null;
+  /** Estilo de derrota pedido (`&derrota=`); sólo cuenta con los atajos encendidos. */
+  defeatStyle?: DefeatStyle | null;
 }
 
 export function useCanonMode({
@@ -93,6 +108,12 @@ export function useCanonMode({
   const [hud, setHud] = useState<CanonHook | null>(null);
   const [hidden, setHiddenState] = useState<ReadonlySet<HideLayer>>(EMPTY);
   const hiddenRef = useRef<ReadonlySet<HideLayer>>(EMPTY);
+  // El estilo de derrota elegido con el interruptor (se queda para la siguiente partida).
+  const chosenStyle = useRef<DefeatStyle | null>(null);
+  const styleRef = useRef<DefeatStyle | null>(null);
+  const [defeatStyle, setDefeatStyle] = useState<DefeatStyle | null>(null);
+  const [devSwitch, setDevSwitch] = useState(false);
+  useEffect(() => setDevSwitch(devShortcutsEnabled()), []);
   const latest = useRef({ onStart, onOffer, onEnd, isRaceActive });
   latest.current = { onStart, onOffer, onEnd, isRaceActive };
 
@@ -112,7 +133,7 @@ export function useCanonMode({
   );
 
   const start = useCallback(
-    ({ t = 0, seed = null }: { t?: number; seed?: number | null } = {}): boolean => {
+    ({ t = 0, seed = null, defeatStyle: askedStyle = null }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
       if (!g || !w || runRef.current || latest.current.isRaceActive()) return false;
@@ -130,6 +151,11 @@ export function useCanonMode({
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (!g.startSurvivors(run)) return false;
+      if (askedStyle) chosenStyle.current = askedStyle;
+      const style = startDefeatStyle(chosenStyle.current, run.config);
+      g.setSurvivorsDefeatStyle(style);
+      styleRef.current = style;
+      setDefeatStyle(style);
       runRef.current = run;
       latest.current.onStart();
       run.setPaused(pausedRef.current);
@@ -148,6 +174,17 @@ export function useCanonMode({
     },
     [engineRef, worldRef, finish],
   );
+
+  const toggleDefeatStyle = useCallback(() => {
+    const g = engineRef.current;
+    const run = runRef.current;
+    if (!g || !run || !devShortcutsEnabled()) return;
+    const next = nextDefeatStyle(styleRef.current ?? run.config.defeatStyle);
+    chosenStyle.current = next;
+    styleRef.current = next;
+    g.setSurvivorsDefeatStyle(next);
+    setDefeatStyle(next);
+  }, [engineRef]);
 
   const setPaused = useCallback((paused: boolean) => {
     pausedRef.current = paused;
@@ -192,7 +229,7 @@ export function useCanonMode({
     if (!sc) return;
     history.replaceState(history.state, '', withoutCanonShortcut(window.location.href));
     if (sc.offer) latest.current.onOffer();
-    else start({ t: sc.t, seed: sc.seed });
+    else start({ t: sc.t, seed: sc.seed, defeatStyle: sc.defeatStyle });
   }, [ready, start]);
 
   const blockKey = canonBlockKey({ raceActive });
@@ -209,7 +246,37 @@ export function useCanonMode({
         : null,
   };
 
-  return { active, hud, hidden, start, setPaused, panel };
+  const dev = { enabled: devSwitch, defeatStyle, toggleDefeatStyle };
+
+  return { active, hud, hidden, start, setPaused, dev, panel };
+}
+
+const DEFEAT_STYLE_KEY: Readonly<Record<DefeatStyle, MessageKey>> = {
+  puf: 'mar.canon.dev.derrota.puf',
+  sumergirse: 'mar.canon.dev.derrota.sumergirse',
+};
+
+/**
+ * El interruptor de desarrollo del estilo de derrota (T117): un botoncito
+ * durante la partida que cambia entre `puf` y `sumergirse` en vivo, para
+ * compararlos. Sólo con los atajos de desarrollo (`pnpm dev`, e2e o
+ * `?dev=1`); se quita al lanzar, con los demás atajos.
+ */
+export function CanonDevSwitch({ canon }: { canon: CanonMode }) {
+  const style = canon.dev.defeatStyle;
+  if (!canon.active || !canon.dev.enabled || !style) return null;
+  return (
+    <button
+      type="button"
+      className="mar-canon-dev"
+      data-testid="mar-canon-derrota"
+      data-derrota={style}
+      aria-label={msg('mar.canon.dev.derrota.aria')}
+      onClick={canon.dev.toggleDefeatStyle}
+    >
+      {msg('mar.canon.dev.derrota', { estilo: msg(DEFEAT_STYLE_KEY[style]) })}
+    </button>
+  );
 }
 
 /**

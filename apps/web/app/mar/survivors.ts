@@ -1,6 +1,7 @@
 import type { ShipConfig, ShipInput } from '@boia/engine/headless';
 import type { QualityTier } from '@boia/engine/streaming';
 import {
+  type DefeatStyle,
   type EndReason,
   SURVIVORS_CONFIG,
   SurvivorsClock,
@@ -42,6 +43,8 @@ export const CANON_PARAMS = {
   seed: 'seed',
   /** `oferta=1`: en vez de empezar, el panel de la isla del Cañón (pruebas del bloqueo). */
   offer: 'oferta',
+  /** `derrota=puf|sumergirse`: empezar con ese estilo de derrota (T117). */
+  defeat: 'derrota',
   dev: 'dev',
 } as const;
 
@@ -82,6 +85,8 @@ export interface CanonShortcut {
   seed: number | null;
   /** Sólo abrir el panel de la isla del Cañón, sin empezar. */
   offer: boolean;
+  /** Estilo de derrota pedido (`&derrota=`), o null (el de la config). */
+  defeatStyle: DefeatStyle | null;
 }
 
 /**
@@ -102,16 +107,52 @@ export function canonShortcut(
     t: Number.isFinite(t) && t > 0 ? Math.min(t, config.durationS - 1) : 0,
     seed: Number.isFinite(seed) && seed > 0 ? seed : null,
     offer: q.get(CANON_PARAMS.offer) === '1',
+    defeatStyle: asDefeatStyle(q.get(CANON_PARAMS.defeat)),
   };
 }
 
 /** La URL sin el atajo (se consume al usarlo, como la ruta de prueba de antes); `dev` se queda. */
 export function withoutCanonShortcut(href: string): string {
   const url = new URL(href);
-  for (const p of [CANON_PARAMS.game, CANON_PARAMS.t, CANON_PARAMS.seed, CANON_PARAMS.offer]) {
+  for (const p of [
+    CANON_PARAMS.game,
+    CANON_PARAMS.t,
+    CANON_PARAMS.seed,
+    CANON_PARAMS.offer,
+    CANON_PARAMS.defeat,
+  ]) {
     url.searchParams.delete(p);
   }
   return url.href;
+}
+
+// --- Estilo de derrota (T117) ----------------------------------------------------------
+
+/** Los dos estilos de derrota que la beta compara, en el orden del interruptor. */
+export const DEFEAT_STYLES: readonly DefeatStyle[] = ['puf', 'sumergirse'];
+
+/** El estilo si `v` es uno de ellos; si no, null. */
+export function asDefeatStyle(v: string | null | undefined): DefeatStyle | null {
+  return DEFEAT_STYLES.find((s) => s === v) ?? null;
+}
+
+/** El estilo siguiente al pulsar el interruptor (de uno al otro). */
+export function nextDefeatStyle(style: DefeatStyle): DefeatStyle {
+  const i = DEFEAT_STYLES.indexOf(style);
+  return DEFEAT_STYLES[(i + 1) % DEFEAT_STYLES.length]!;
+}
+
+/**
+ * El estilo con que empieza una partida: el que se eligió con el
+ * interruptor (o `&derrota=`) si los atajos de desarrollo están encendidos;
+ * si no, siempre el de la config.
+ */
+export function startDefeatStyle(
+  chosen: DefeatStyle | null,
+  config: SurvivorsConfig = SURVIVORS_CONFIG,
+  env: DevEnv = devEnv(),
+): DefeatStyle {
+  return chosen && devShortcutsEnabled(env) ? chosen : config.defeatStyle;
 }
 
 // --- Lo que se esconde durante la partida ----------------------------------------

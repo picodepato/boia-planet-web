@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T117: Modelos provisionales, notas en el agua y los dos estilos de derrota
+
+Qué existe:
+- `apps/web/app/mar/engine/survivors-props.ts` (nuevo): modelos low-poly hechos en código con `Kit` y la paleta `C`, como `race-props.ts`. Piraña roja con lomo azul marino, dientes y ojos grandes (larga hacia +x); cangrejo naranja con coraza de hierro remachada, pinzas, patas y ojos en palitos (más ancho que largo); bola del cañón de agua (gota azul clara con brillo y estela); notas por figura (corchea con corchete, negra rellena, blanca hueca con plica, redonda hueca sin plica), recostadas hacia la cámara y con un aro de espuma en el agua. Cada pieza se pinta más grande que su radio de choque (piraña ×1.6, cangrejo ×1.2), para leerse en el móvil con la cámara más lejos. Los enemigos que lleguen en betas posteriores usan un modelo genérico. muestra
+- Efectos de derrota: `PufFx` (`puf`: una nubecilla de partículas; todas las derrotas en una sola `InstancedMesh`) y `SinkFx` (`sumergirse`: el mismo enemigo da un saltito y se hunde de cabeza con un aro de espuma, sin heridas, REQ-AVE-037; los hundidos van en su propia `InstancedMesh` por tipo, compartiendo geometría y material, así que no cuentan en el tope). Piscinas fijas por calidad (`alta` 24, `baja` 10; `puf` 7 partículas en `alta`, 4 en `baja`); llena, se reusa la más vieja. `defeatPlan(style, {quality, reduced})` sale de una tabla fija.
+- Movimiento reducido (el mismo `matchMedia` que ya usa la fauna de `Mar3D`): el barco no parpadea, la cámara no tiembla con los golpes (`hitShake`), los enemigos y las notas no se mecen, `puf` es una sola nubecilla que se apaga en su sitio y `sumergirse` un hundimiento corto sin salto ni chapoteo.
+- Golpe en el barco: parpadeo a 8 Hz mientras dura la invulnerabilidad (0,5 s en la config), sólo jugando (en pausa o con la carta abierta el barco se ve siempre); temblor de cámara pequeño con cada golpe.
+- `survivors-view.ts` reescrita con los modelos: una `InstancedMesh` por enemigo de la config y por figura de nota, con el tope de la calidad; nada se crea al pintar (bucles por índice, sin `Map` ni arrays por fotograma). `Mar3D`: `startSurvivors` pasa calidad y movimiento reducido; los eventos `hit`/`defeated` de cada paso llegan a la vista; `setSurvivorsDefeatStyle(style)`; `data-derrota` en el lienzo durante la partida.
+- Interruptor de desarrollo del estilo de derrota: botoncito «Derrota: puf/sumergirse» (`data-testid="mar-canon-derrota"`) en el hueco del «!» de objetivos (que la partida esconde), sólo con `devShortcutsEnabled()`; cambia el estilo en vivo y lo recuerda para la siguiente partida de la sesión. El atajo `&derrota=puf|sumergirse` empieza con ese estilo (y se consume de la URL como los demás). Sin los atajos, siempre el de la config (`sumergirse`). Textos `mar.canon.dev.derrota*` en `es-mar.ts`.
+- Pruebas: `survivors-props.test.ts` (18): una `InstancedMesh` con el tope por enemigo y por figura en `alta` y `baja`; cada nota en la pieza de su figura; colores y siluetas de los modelos; `baja` más barata; mismas matrices fotograma a fotograma; los dos estilos desde la config y desde el interruptor (y el interruptor gateado por los atajos); movimiento reducido sin parpadeo, sin temblor y con el efecto mínimo. `survivors.test.ts` al día (`defeatStyle` del atajo, notas por figura). e2e nueva en `mar-canon.spec.ts`: el interruptor cambia el estilo en vivo con `&derrota=puf` y siguen cayendo enemigos.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (135 archivos, 1211 pruebas)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `E2E_PORT=4517 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0 (10 pasadas, móvil y escritorio)
+
+Pendiente:
+- El HUD, las cartas, la pausa y la pantalla final son de T118; quitar el interruptor y `&derrota=` al lanzar (plan 013) con los demás atajos.
+- Notas en pantalla se ven poco en partidas normales: casi todos los enemigos mueren pegados al barco y el imán (90 u) recoge la nota al instante; con el barco quieto se inunda en ~20 s. Es equilibrio (propuesta de T98/T120), para la prueba de Hernán.
+
 ## 2026-10-04 — plan 010 T107: Blender Alicante harbor asset (Codex)
 
 Qué existe (art-only; sin enlace a runtime, ni manifest vivo de islas, ni IDs de mundo):

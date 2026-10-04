@@ -95,6 +95,32 @@ test('`?minijuego=canon&t=<s>&seed=<n>` empieza en ese segundo con esa semilla',
   expect(errors).toEqual([]);
 });
 
+test('el interruptor de desarrollo cambia en vivo el estilo de derrota (T117)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&t=120&seed=7&derrota=puf');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  const toggle = page.getByTestId('mar-canon-derrota');
+  await expect(toggle).toHaveAttribute('data-derrota', 'puf');
+  await expect(canvas(page)).toHaveAttribute('data-derrota', 'puf');
+  await expect(toggle).toContainText(msg('mar.canon.dev.derrota.puf'));
+  // El cañón dispara solo: caen enemigos con el estilo de ahora.
+  await expect
+    .poll(async () => Number(await game(page).getAttribute('data-derrotados')), { timeout: 30_000 })
+    .toBeGreaterThan(0);
+  await toggle.dispatchEvent('click');
+  await expect(toggle).toHaveAttribute('data-derrota', 'sumergirse');
+  await expect(canvas(page)).toHaveAttribute('data-derrota', 'sumergirse');
+  await expect(toggle).toContainText(msg('mar.canon.dev.derrota.sumergirse'));
+  const before = Number(await game(page).getAttribute('data-derrotados'));
+  await expect
+    .poll(async () => Number(await game(page).getAttribute('data-derrotados')), { timeout: 30_000 })
+    .toBeGreaterThan(before);
+  // El atajo `derrota` también se consume.
+  expect(new URL(page.url()).searchParams.has('derrota')).toBe(false);
+  expect(errors).toEqual([]);
+});
+
 test('al acabar vuelve el mundo, con el barco donde acabó la partida', async ({ page }) => {
   const errors = await openMar(page, '?minijuego=canon&t=416&seed=3');
   await expect(game(page)).toHaveAttribute('data-estado', 'running');

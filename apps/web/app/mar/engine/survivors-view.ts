@@ -1,133 +1,192 @@
 import type {
+  DefeatStyle,
   EnemyId,
-  NoteFigure,
+  EnemyView,
   QualityCaps,
   SurvivorsConfig,
   SurvivorsSnapshot,
 } from '@boia/engine/survivors';
-import {
-  BoxGeometry,
-  type BufferGeometry,
-  Color,
-  ConeGeometry,
-  Group,
-  InstancedMesh,
-  MeshLambertMaterial,
-  Object3D,
-  SphereGeometry,
-} from 'three';
+import { NOTE_FIGURES } from '@boia/engine/survivors';
+import type { QualityTier } from '@boia/engine/streaming';
+import { Group, type InstancedMesh, type Material, Object3D } from 'three';
 import { toScene } from './compress';
-import { C } from './palette';
 import { curveTree } from './planet';
+import {
+  BALL_MIN,
+  BALL_SCALE,
+  NOTE_SIZE,
+  PufFx,
+  SinkFx,
+  ballMaterial,
+  cannonBallGeometry,
+  defeatPlan,
+  enemyModel,
+  instanced,
+  noteGeometry,
+  propsMaterial,
+} from './survivors-props';
 
 /**
- * Lo que se pinta de una partida del Cañón en el mar 3D (T99): enemigos,
- * bolas del cañón y notas, con piezas PROVISIONALES sencillas (T100 las
- * cambia por los modelos de la beta). Un `InstancedMesh` por tipo, del
- * tamaño del tope de la calidad: pintar es mover matrices, sin crear nada
- * por fotograma. Cada pieza va en su sitio del mapa (u de motor → escena) y
- * el material la lleva a la copia más cercana al foco (`curveTree` con la
- * vuelta del planeta).
+ * Lo que se pinta de una partida del Cañón en el mar 3D (T116, T117):
+ * enemigos, bolas del cañón y notas con los modelos de la beta
+ * (`survivors-props.ts`), y el efecto de derrota del estilo elegido. Un
+ * `InstancedMesh` por tipo (y por figura de nota), del tamaño del tope de la
+ * calidad: pintar es mover matrices, sin crear nada por fotograma. Cada
+ * pieza va en su sitio del mapa (u de motor → escena) y el material la lleva
+ * a la copia más cercana al foco (`curveTree` con la vuelta del planeta).
  */
 
-/** Cómo se ve, provisionalmente, cada enemigo (forma, color, altura sobre el agua). */
-const ENEMY_LOOK: Readonly<Record<EnemyId, { shape: 'cone' | 'box'; color: string }>> = {
-  piranha: { shape: 'cone', color: C.red },
-  crab: { shape: 'box', color: C.orange },
-  gull: { shape: 'cone', color: C.white },
-  pirate: { shape: 'box', color: C.navy },
-  swordfish: { shape: 'cone', color: C.blueDoor },
-  jellyfish: { shape: 'box', color: C.purple },
-};
+const EMPTY: readonly EnemyView[] = [];
 
-/** El color de cada figura de nota (de menos a más valor). */
-const NOTE_COLOR: Readonly<Record<NoteFigure, string>> = {
-  corchea: C.yellow,
-  negra: C.white,
-  blanca: '#7fe3e0',
-  redonda: C.pink,
-};
-
-const BALL_COLOR = '#bfe9ff';
-
-function enemyGeometry(shape: 'cone' | 'box'): BufferGeometry {
-  if (shape === 'cone') {
-    // Radio 1, la punta hacia +x (hacia donde nada).
-    const g = new ConeGeometry(0.8, 2.2, 6);
-    g.rotateZ(-Math.PI / 2);
-    return g;
-  }
-  return new BoxGeometry(2, 0.9, 1.6);
+export interface SurvivorsViewOptions {
+  /** Calidad de `/mar` (efectos más baratos en `baja`). Sin valor, `alta`. */
+  quality?: QualityTier;
+  /** Estilo de derrota (sin valor, el de la config). */
+  defeatStyle?: DefeatStyle;
+  /** Movimiento reducido (efecto mínimo). */
+  reduced?: boolean;
 }
 
 export class SurvivorsView {
   readonly group = new Group();
-  private readonly enemies = new Map<EnemyId, InstancedMesh>();
+  readonly quality: QualityTier;
+  /** Movimiento reducido ahora (se puede cambiar en vivo). */
+  reduced: boolean;
+  private style: DefeatStyle;
+  private readonly enemyIds: EnemyId[] = [];
+  private readonly enemyMeshes: InstancedMesh[] = [];
+  private readonly enemyScale: number[] = [];
+  private readonly enemyBob: number[] = [];
+  private readonly enemyRadius: number[] = [];
   private readonly balls: InstancedMesh;
-  private readonly notes: InstancedMesh;
+  private readonly noteMeshes: InstancedMesh[];
+  private readonly noteCounts: number[];
+  private readonly puf: PufFx;
+  private readonly sink: SinkFx;
   private readonly dummy = new Object3D();
-  private readonly color = new Color();
-  private readonly noteColors: Record<NoteFigure, Color>;
+  private last: SurvivorsSnapshot | null = null;
+  private now = 0;
 
-  constructor(config: SurvivorsConfig, caps: QualityCaps) {
+  constructor(config: SurvivorsConfig, caps: QualityCaps, opts: SurvivorsViewOptions = {}) {
+    this.quality = opts.quality ?? 'alta';
+    this.reduced = opts.reduced ?? false;
+    this.style = opts.defeatStyle ?? config.defeatStyle;
+    const kinds: { geometry: InstancedMesh['geometry']; material: Material; name: string }[] = [];
     for (const id of Object.keys(config.enemies) as EnemyId[]) {
-      const look = ENEMY_LOOK[id];
-      const mesh = new InstancedMesh(
-        enemyGeometry(look.shape),
-        new MeshLambertMaterial({ color: look.color }),
-        caps.enemies,
-      );
-      mesh.count = 0;
-      mesh.name = `survivors-${id}`;
-      this.enemies.set(id, mesh);
+      const model = enemyModel(id);
+      const mesh = instanced(model.build(), propsMaterial(), caps.enemies, `survivors-${id}`);
+      this.enemyIds.push(id);
+      this.enemyMeshes.push(mesh);
+      this.enemyScale.push(model.scale);
+      this.enemyBob.push(model.bob);
+      this.enemyRadius.push(config.enemies[id]?.radius ?? 10);
+      kinds.push({ geometry: mesh.geometry, material: mesh.material as Material, name: mesh.name });
       this.group.add(mesh);
     }
-    this.balls = new InstancedMesh(
-      new SphereGeometry(1, 8, 6),
-      new MeshLambertMaterial({ color: BALL_COLOR, emissive: BALL_COLOR, emissiveIntensity: 0.4 }),
+    this.balls = instanced(
+      cannonBallGeometry(),
+      ballMaterial(),
       caps.projectiles,
+      'survivors-balls',
     );
-    this.balls.count = 0;
-    this.notes = new InstancedMesh(
-      new SphereGeometry(1, 8, 6),
-      new MeshLambertMaterial({ color: '#ffffff', emissive: '#333333' }),
-      caps.notes,
+    this.noteMeshes = NOTE_FIGURES.map((f) =>
+      instanced(noteGeometry(f), propsMaterial(), caps.notes, `survivors-note-${f}`),
     );
-    this.notes.count = 0;
-    this.noteColors = {
-      corchea: new Color(NOTE_COLOR.corchea),
-      negra: new Color(NOTE_COLOR.negra),
-      blanca: new Color(NOTE_COLOR.blanca),
-      redonda: new Color(NOTE_COLOR.redonda),
-    };
-    // Que exista el color por pieza antes del primer pintado.
-    this.notes.setColorAt(0, this.color.set('#ffffff'));
-    this.group.add(this.balls, this.notes);
+    this.noteCounts = NOTE_FIGURES.map(() => 0);
+    this.puf = new PufFx(this.quality);
+    this.sink = new SinkFx(this.quality, kinds);
+    this.group.add(
+      this.balls,
+      ...this.noteMeshes,
+      this.puf.mesh,
+      ...this.sink.meshes,
+      this.sink.rings,
+    );
     curveTree(this.group, true);
+  }
+
+  /** El estilo de derrota de ahora. */
+  get defeatStyle(): DefeatStyle {
+    return this.style;
+  }
+
+  /** Cambia el estilo de derrota en vivo (el interruptor de desarrollo); lo que estaba en curso se apaga. */
+  setDefeatStyle(style: DefeatStyle): void {
+    if (style === this.style) return;
+    this.style = style;
+    this.puf.clear();
+    this.sink.clear();
   }
 
   /** Cuántas piezas de cada tipo caben (el tope de la calidad), para las pruebas. */
   capacity(): Record<string, number> {
-    const out: Record<string, number> = {
-      projectiles: this.balls.instanceMatrix.count,
-      notes: this.notes.instanceMatrix.count,
-    };
-    for (const [id, m] of this.enemies) out[id] = m.instanceMatrix.count;
+    const out: Record<string, number> = { projectiles: this.balls.instanceMatrix.count };
+    this.enemyIds.forEach((id, i) => {
+      out[id] = this.enemyMeshes[i]!.instanceMatrix.count;
+    });
+    NOTE_FIGURES.forEach((f, i) => {
+      out[`note-${f}`] = this.noteMeshes[i]!.instanceMatrix.count;
+    });
     return out;
   }
 
-  /** Pinta la partida de ahora (`t`: s de la escena, para el vaivén). */
+  /** La pieza instanciada de cada cosa, por nombre (para las pruebas). */
+  meshes(): Record<string, InstancedMesh> {
+    const out: Record<string, InstancedMesh> = {};
+    this.group.traverse((o) => {
+      const m = o as InstancedMesh;
+      if (m.isInstancedMesh) out[m.name] = m;
+    });
+    return out;
+  }
+
+  /** Efectos de derrota en curso. */
+  get defeatsShown(): number {
+    return this.style === 'puf' ? this.puf.active : this.sink.active;
+  }
+
+  /**
+   * Un enemigo derrotado (evento `defeated` de la simulación, en u): su
+   * efecto, en el estilo de ahora. El rumbo sale del último pintado.
+   */
+  defeat(type: EnemyId, id: number, x: number, y: number): void {
+    const ti = this.enemyIds.indexOf(type);
+    const radius = ti >= 0 ? this.enemyRadius[ti]! : 10;
+    const size = toScene(radius) * (ti >= 0 ? this.enemyScale[ti]! : 1.2);
+    const sx = toScene(x);
+    const sz = toScene(y);
+    if (this.style === 'puf') {
+      this.puf.spawn(sx, sz, size, this.now);
+      return;
+    }
+    if (ti < 0) return;
+    let heading = 0;
+    const list = this.last?.enemiesByType[type] ?? EMPTY;
+    for (let i = 0; i < list.length; i++) {
+      if (list[i]!.id === id) {
+        heading = list[i]!.heading;
+        break;
+      }
+    }
+    this.sink.spawn(ti, sx, sz, heading, size, this.now);
+  }
+
+  /** Pinta la partida de ahora (`t`: s de la escena, para el vaivén y los efectos). */
   update(s: SurvivorsSnapshot, t: number): void {
+    this.last = s;
+    this.now = t;
     const d = this.dummy;
-    for (const [id, mesh] of this.enemies) {
-      const list = s.enemiesByType[id] ?? [];
+    for (let ti = 0; ti < this.enemyIds.length; ti++) {
+      const mesh = this.enemyMeshes[ti]!;
+      const list = s.enemiesByType[this.enemyIds[ti]!] ?? EMPTY;
       const n = Math.min(list.length, mesh.instanceMatrix.count);
+      const k = this.enemyScale[ti]!;
+      const bob = this.reduced ? 0 : this.enemyBob[ti]!;
       for (let i = 0; i < n; i++) {
         const e = list[i]!;
-        const r = toScene(e.radius);
-        d.position.set(toScene(e.x), 0.25 + Math.sin(t * 6 + e.id) * 0.06, toScene(e.y));
+        d.position.set(toScene(e.x), Math.sin(t * 6 + e.id) * bob, toScene(e.y));
         d.rotation.set(0, -e.heading, 0);
-        d.scale.setScalar(r);
+        d.scale.setScalar(toScene(e.radius) * k);
         d.updateMatrix();
         mesh.setMatrixAt(i, d.matrix);
       }
@@ -138,36 +197,53 @@ export class SurvivorsView {
     for (let i = 0; i < nb; i++) {
       const p = s.projectiles[i]!;
       d.position.set(toScene(p.x), 0.6, toScene(p.y));
-      d.rotation.set(0, 0, 0);
-      d.scale.setScalar(Math.max(0.2, toScene(p.radius)));
+      d.rotation.set(0, -Math.atan2(p.vy, p.vx), 0);
+      d.scale.setScalar(Math.max(BALL_MIN, toScene(p.radius) * BALL_SCALE));
       d.updateMatrix();
       this.balls.setMatrixAt(i, d.matrix);
     }
     this.balls.count = nb;
     this.balls.instanceMatrix.needsUpdate = true;
-    const nn = Math.min(s.notes.length, this.notes.instanceMatrix.count);
-    for (let i = 0; i < nn; i++) {
+    this.updateNotes(s, t);
+    const plan = defeatPlan(this.style, { quality: this.quality, reduced: this.reduced });
+    if (this.style === 'puf') this.puf.update(t, plan);
+    else this.sink.update(t, plan);
+  }
+
+  private updateNotes(s: SurvivorsSnapshot, t: number): void {
+    const d = this.dummy;
+    const counts = this.noteCounts;
+    for (let i = 0; i < counts.length; i++) counts[i] = 0;
+    const bob = this.reduced ? 0 : 0.12;
+    for (let i = 0; i < s.notes.length; i++) {
       const note = s.notes[i]!;
-      const size = 0.25 + Math.min(0.35, note.value * 0.02);
-      d.position.set(toScene(note.x), 0.35 + Math.sin(t * 3 + note.id) * 0.1, toScene(note.y));
-      d.rotation.set(0, 0, 0);
-      d.scale.setScalar(size);
+      const fi = NOTE_FIGURES.indexOf(note.figure);
+      const mesh = this.noteMeshes[fi]!;
+      if (counts[fi]! >= mesh.instanceMatrix.count) continue;
+      d.position.set(toScene(note.x), 0.05 + Math.sin(t * 3 + note.id) * bob, toScene(note.y));
+      d.rotation.set(0, this.reduced ? 0 : Math.sin(t * 1.5 + note.id) * 0.35, 0);
+      d.scale.setScalar(NOTE_SIZE[note.figure]);
       d.updateMatrix();
-      this.notes.setMatrixAt(i, d.matrix);
-      this.notes.setColorAt(i, this.noteColors[note.figure]);
+      mesh.setMatrixAt(counts[fi]!++, d.matrix);
     }
-    this.notes.count = nn;
-    this.notes.instanceMatrix.needsUpdate = true;
-    if (this.notes.instanceColor) this.notes.instanceColor.needsUpdate = true;
+    for (let i = 0; i < this.noteMeshes.length; i++) {
+      const m = this.noteMeshes[i]!;
+      m.count = counts[i]!;
+      m.instanceMatrix.needsUpdate = true;
+    }
   }
 
   dispose(): void {
     this.group.removeFromParent();
+    const done = new Set<unknown>();
     this.group.traverse((o) => {
       const m = o as InstancedMesh;
       if (!m.isInstancedMesh) return;
-      m.geometry.dispose();
-      (m.material as MeshLambertMaterial).dispose();
+      for (const r of [m.geometry, m.material as Material]) {
+        if (done.has(r)) continue;
+        done.add(r);
+        r.dispose();
+      }
       m.dispose();
     });
   }

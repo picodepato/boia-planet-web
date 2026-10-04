@@ -5,7 +5,12 @@ import {
   shipSpeed,
   stepShip,
 } from '@boia/engine/headless';
-import { SURVIVORS_CONFIG, createSurvivors, survivorsShipConfig } from '@boia/engine/survivors';
+import {
+  NOTE_FIGURES,
+  SURVIVORS_CONFIG,
+  createSurvivors,
+  survivorsShipConfig,
+} from '@boia/engine/survivors';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { es } from '../../lib/i18n/es';
@@ -72,8 +77,14 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       t: 120,
       seed: 7,
       offer: false,
+      defeatStyle: null,
     });
-    expect(canonShortcut('?minijuego=canon', dev)).toEqual({ t: 0, seed: null, offer: false });
+    expect(canonShortcut('?minijuego=canon', dev)).toEqual({
+      t: 0,
+      seed: null,
+      offer: false,
+      defeatStyle: null,
+    });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
     // `t` dentro de la partida; basura, desde el principio.
     expect(canonShortcut('?minijuego=canon&t=99999', dev)?.t).toBe(SURVIVORS_CONFIG.durationS - 1);
@@ -81,6 +92,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       t: 0,
       seed: null,
       offer: false,
+      defeatStyle: null,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });
@@ -94,7 +106,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
   it('al usarlo se quita de la URL; `dev` y lo demás se quedan', () => {
     const out = new URL(
       withoutCanonShortcut(
-        'https://x.test/mar?minijuego=canon&t=5&seed=2&oferta=1&dev=1&cerca=faro',
+        'https://x.test/mar?minijuego=canon&t=5&seed=2&oferta=1&derrota=puf&dev=1&cerca=faro',
       ),
     );
     expect([...out.searchParams.keys()].sort()).toEqual(['cerca', 'dev']);
@@ -377,8 +389,8 @@ describe('la partida en /mar', () => {
   });
 });
 
-describe('las piezas provisionales de la partida', () => {
-  it('una pieza por tipo con el tope de cada calidad', () => {
+describe('las piezas de la partida', () => {
+  it('una pieza por tipo (y por figura de nota) con el tope de cada calidad', () => {
     for (const q of ['alta', 'baja'] as const) {
       const caps = SURVIVORS_CONFIG.caps[q];
       const view = new SurvivorsView(SURVIVORS_CONFIG, caps);
@@ -386,7 +398,7 @@ describe('las piezas provisionales de la partida', () => {
       for (const id of Object.keys(SURVIVORS_CONFIG.enemies))
         expect(cap[id], id).toBe(caps.enemies);
       expect(cap.projectiles).toBe(caps.projectiles);
-      expect(cap.notes).toBe(caps.notes);
+      for (const f of NOTE_FIGURES) expect(cap[`note-${f}`], f).toBe(caps.notes);
       view.dispose();
     }
   });

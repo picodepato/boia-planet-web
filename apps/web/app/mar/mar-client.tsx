@@ -184,7 +184,7 @@ import {
   type RaceResult,
 } from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
-import { CanonTestHook, useCanonMode } from './canon-mode';
+import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
 import { CANON_GAME_ID, islandPinsOnly } from './survivors';
 import {
   type Trip,
@@ -2213,6 +2213,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
       {/* El estado de la partida del Cañón para las pruebas (T99; el HUD llega en T101). */}
       <CanonTestHook hud={canon.hud} />
+      <CanonDevSwitch canon={canon} />
 
       {/* Rumbo, circuito y misión */}
       <div className="mar-chips">
