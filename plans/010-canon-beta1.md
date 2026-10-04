@@ -250,7 +250,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T109 — Twenty-two knots only during the active race
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T106
@@ -262,7 +262,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Countdown/offering/result/exploration use 15 base; active race uses the complete historical 22-kn handling proportions. Turbo and boat modifiers compose consistently.
   - Finish/cancel/invalidate/leave/reset cannot retain race speed; clamp excess speed appropriately on return and preserve strict steering/collision behavior. Existing record version stays unless a demonstrated comparability issue is reviewed.
   - Meaningful lifecycle/physics and targeted race E2E pass; full safe suite, typecheck/lint exit 0.
-- Outcome:
+- Outcome: `RACE_SHIP_CONFIG` (15-kn config scaled to 220 u/s, checked against the frozen 22-kn config) only while the race phase is `racing`; excess speed cut to the 15-kn cap on exit; record version kept; `data-manejo`; medal e2e passes again → eb968a0
 
 ## T112 — Benidorm and Ibiza runtime integration with bounded club animation
 - Status: pending
@@ -365,7 +365,12 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 Hernán: up to 4 agents at once from now on. To use them, T109 (race handling) no longer waits for T108 and T114 (menu icons) no longer waits for T113: those links only serialized `/mar` files, and merge conflicts are handled at integration (orchestrator)
 
+- 2026-10-04 Hernán: if 4 agents make things slower, go back down. Signal: task durations clearly above the ~25–35 min of the 2-agent tasks, or e2e failing by timeouts under load; then launch no new agent until at most 2 are running (orchestrator applies)
+
+- 2026-10-04 T109: Mar3D reads the race through a `racing()` option each step; on race end extra speed is clamped to the 15-kn cap while active boosts/turbo still count (agent)
+
 ## Proposals (new scope)
+- 2026-10-04 T109: when a world boost or turbo runs out, `stepShip` cuts speed in one step and Mar3D treats it as a collision (pre-existing, untested)
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
@@ -404,3 +409,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 19:54 T111 relaunched on Opus · attempt 1 · agent ad8be04b9f8b7e142
 - 2026-10-04 20:00 T115 done → 20ca11a
 - 2026-10-04 20:00 T108 launched · attempt 1 · agent ac18bcaf2344b2d6e
+- 2026-10-04 20:14 T109 launched · attempt 1 · agent aadf9a7b30999bc2e
+- 2026-10-04 20:14 T114 launched · attempt 1 · agent ab0523af0f634b827
+- 2026-10-04 20:57 T109 done → eb968a0 (38 min task, 285 s integration: load with 4 agents + preview server)
