@@ -325,7 +325,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: SVG icon family in `apps/web/lib/mundo/menu/icons.tsx` (415–908 B each, `currentColor` + brand fills), mascot reused for Welcome, tiles ≥92 px with two-line labels (Archivo cut them), e2e checks no label is cut; 1268 unit tests → 2f2b8ee
 
 ## T105 — Final regression coverage and world-update handoff
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet
 - Skills: none
 - Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
@@ -335,7 +335,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Done when:
   - Mobile-card assertions preserve compact height and intentional travel controls; fresh/existing player behavior for this batch is covered.
   - Test command exits 0. Orchestrator separately runs final build/budget, validators and combined relevant E2E, then obtains architect review before completion.
-- Outcome:
+- Outcome: mobile card keeps both travel buttons (T96 intent, WIP 79bb8fa applied); mar-rotulos zoom-out loop fixed; mar-canon clock read in one evaluate; guide `t=` text fixed; TRASPASO «Actualizaciones del mundo» section, REQ counts 160 HECHO / 68 PARCIAL → 398ffce
 
 ## Decisions
 - 2026-10-04 plan: five serial tasks instead of the prompt's four (T116 split into world integration and models/defeat styles) (Hernán)
@@ -400,6 +400,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T113 integration paused on a dirty main (tg.py edited by another session, then committed as cfdada9/0e6dcc0); integrated after (orchestrator)
 - 2026-10-04 another session: `origin` is now picodepato/boia-planet-web (the Vercel repo), hernandiazz9's is `hernan`; the guard allows exactly `git push origin main` from the main checkout, only when Hernán asks (orchestrator notes)
 
+- 2026-10-04 T105: compact island card shows «Navegar» and «Ir en nave» (T96 intended UI); mar-rotulos loop zooms out up to 6 steps; minigame-layer and mar-paridad castaway flakes not reproduced, unchanged (agent)
+
 ## Proposals (new scope)
 - 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
@@ -408,6 +410,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
 - 2026-10-04 T122: the black-hole vortex in mar3d has no trigger and no e2e while only one world is playable
 - 2026-10-04 T112: the normal camera cuts the Benidorm tower tops when very close and the label sits over them on desktop; the Ibiza collision ellipse still reaches past the visible coast
+- 2026-10-04 T105: arrival notice still «Isla descubierta: Puerto de Alicante» (`island.firstVisit`) and unused `world.*.island.cala.body` keys keep old text (copy decision)
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
 - 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
@@ -456,4 +459,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T112 done → 36f2cab (27 min task, 89 s integration)
 - 2026-10-04 T113 launched · attempt 1 · agent a1bc7d23fa6dafb31
 - 2026-10-04 T113 done → 7eeceb9 (11 min task, 89 s integration)
-- 2026-10-04 T105 launched · attempt 1
+- 2026-10-04 T105 launched · attempt 1 · agent a435cec3f363b26f3
+- 2026-10-04 T105 done → 398ffce (15 min task, 87 s integration); final full e2e started on main
