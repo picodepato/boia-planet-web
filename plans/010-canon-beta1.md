@@ -108,7 +108,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: `survivors-props.ts` with instanced piranha, crab, ball and 4 note figures; `puf` and `sumergirse` with pooled effects; dev switch button «Derrota: …» + `&derrota=`; blink/shake off with reduced motion; 1211 unit tests, mar-canon e2e 10 passed → 88c9ab3
 
 ## T118 — HUD, water bar, level-up cards, pause with the `/mar` menu, end screen, BETA label
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T117
@@ -125,10 +125,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests for the cards' keyboard handling and the countdown/water formatting
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, extended to: HUD with BETA, countdown and level visible; a level-up card can be chosen by keyboard and by tap; Esc opens the `/mar` menu with the leave warning and closing it resumes; the end screen shows and «Volver al mar» returns the world; on a mobile viewport the HUD, water bar and cards are visible and do not cover the Tickets link
   - Test command → exit 0
-- Outcome:
+- Outcome: HUD chips with BETA, countdown and XP/level; striped water bar under the boat; ticket-style 1-of-3 cards (keys 1–3/arrows/Enter, 350 ms guard); any sheet/menu pauses; menu leave warning; end screen «¡Amanece!»/«¡Barco inundado!» with «Otra vez»/«Volver al mar»; BETA badge on the panel; 1222 unit tests, mar-canon e2e 20 passed → b625169
 
 ## T119 — Remove the 2D canon, session and reward, full e2e of the mode, docs and the beta test guide
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T118
@@ -138,7 +138,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - **e2e** of the mode with the dev shortcuts, desktop and mobile: enter, die (flooded), survive (start near the end with `&t=`), pause, return to the world, lock during the race, reward granted once. Remove or update every e2e that relied on the 2D canon.
   - **Docs**: `ESTADO.md` is written through the status fragment; `docs/spec/estado.md` updated for the REQs this plan moved (REQ-MUN-026, REQ-AVE-037, REQ-AVE-038 and any other), each with its test (`python3 tools/spec/estado.py` must pass), noting that REQ-AVE-037 and 038 remain pending the final decision (puf vs sumergirse needs Álvaro; active-time validation). `docs/TRASPASO.md`: the new mode in beta. Never edit `docs/DECISIONES.md`. In `docs/propuestas/2026-10-04-canon-survivors.md` update the roadmap's plan numbers (beta 1 = plan 010, beta 2 = 011, … launch = 014), since the Codex plan took 009.
   - **Beta 1 test guide for Hernán** in `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md` (Spanish): how to enable the shortcuts locally and in production (`?dev=1`), the `t`/`seed` parameters, the defeat-style switch, exactly which config values to touch for handling and camera (file and field names), and a note that since T120 the boat cruises at 15 knots and piranhas (150 u/s) now match its top speed, so escape is much harder (first knob to try), and the six questions to answer: dodging feel (more/less turn and inertia); whether the camera shows enemies coming, also on mobile; `puf` or `sumergirse`; whether islands work as cover or enemies get stuck; whether the level-up and notes rhythm hooks; performance on a mid-range phone at the enemy cap. Answers are saved as notes and feed plan 011's interview.
-- Context: the header and its required docs; T98–T118 Outcomes; `packages/engine/src/minigames/` (`canon.ts`, `host.ts`, `registry.ts`, `types.ts`, `controller.ts`, `session.ts`, `rewards.ts`, `rng.ts`, `minigames.test.ts`), `apps/web/lib/mundo/minigame-layer.tsx`, `apps/web/e2e/minijuegos.spec.ts`, `apps/web/e2e/mar-canon.spec.ts`; achievements (`canon`, `guardacostas`) in `packages/store`; Supabase reward path (`supabase/migrations/20261003100100_economy.sql`, `packages/db/src/supabase/economy.supabase.ts`); `docs/spec/estado.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`, `README.md`.
+- Context: (from T118: the `onEnd` hook for session and reward fires when the game ends, not when the world returns; no e2e yet for the 5-minute pause abandon (add one with the dev shortcuts); REQ-AVE-039 still PARCIAL; dev shortcuts now include `&carta=1`, `&derrota=`, `&oferta=1`; from T116: add an e2e for the Fiestera on board during a game) the header and its required docs; T98–T118 Outcomes; `packages/engine/src/minigames/` (`canon.ts`, `host.ts`, `registry.ts`, `types.ts`, `controller.ts`, `session.ts`, `rewards.ts`, `rng.ts`, `minigames.test.ts`), `apps/web/lib/mundo/minigame-layer.tsx`, `apps/web/e2e/minijuegos.spec.ts`, `apps/web/e2e/mar-canon.spec.ts`; achievements (`canon`, `guardacostas`) in `packages/store`; Supabase reward path (`supabase/migrations/20261003100100_economy.sql`, `packages/db/src/supabase/economy.supabase.ts`); `docs/spec/estado.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`, `README.md`.
 - Scope: may touch `packages/engine/src/minigames/**`, `packages/engine/src/survivors/**` (fixes), `apps/web/app/mar/**` survivors files and their wiring, `apps/web/lib/mundo/**`, `packages/store/**` only if achievements need it, `supabase/migrations/**` (new migration only if strictly needed), `apps/web/e2e/**`, `docs/spec/**`, `docs/TRASPASO.md`, `README.md`, `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, `docs/propuestas/2026-10-04-canon-survivors.md` (roadmap numbers only) / must not touch the Faro's behaviour, `docs/DECISIONES.md`.
 - Done when:
   - `pnpm exec vitest run packages/engine/src/minigames packages/engine/src/survivors packages/store` → exit 0, with tests that a survived session validates and grants the reward once per season, an impossible active time is rejected, and the Faro's tests are untouched and passing
@@ -338,6 +338,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T106: kept Codex's repair after review; added start-from-last-confirmed-snapshot for an empty account copy with a queue; one stamp per event; sample label if stamp, Carnet or event is a sample; sign-out keeps an unsent copy under its own key; unrecoverable data listed in its ESTADO section (agent)
 
+- 2026-10-04 T118: `autoPickCards` default false and `SurvivorsRun.choose`; dev `&carta=1`; hooks `data-mejoras`, `data-carta`; cards as cream concert tickets with a 350 ms pick guard; after the end screen the scene stays frozen until a button; 5-min abandon returns at once with a short message; Esc on the end screen = «Volver al mar»; water stripes change at 50 % and 75 %; upgrade keys split into name + `.efecto`; dev switch moves bottom-left during a game; BETA badge via optional `badge` in `InWorldCopy` (agent)
+
 ## Proposals (new scope)
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
@@ -361,3 +363,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 18:25 T117 done → 88c9ab3
 - 2026-10-04 18:25 T118 launched · attempt 1 · agent aeff101b5188b33d3
 - 2026-10-04 18:35 T106 done → 52dcd53
+- 2026-10-04 18:35 T110 launched · attempt 1 · Codex via wrapper agent a64cb5a8c7b8fa495
+- 2026-10-04 19:01 T118 done → b625169
