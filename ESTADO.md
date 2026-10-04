@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T131: Three difficulties chosen on the island panel
+
+Qué existe:
+- `SURVIVORS_CONFIG.difficulties` (`tranquila` / `normal` / `tormenta`, ids en `DIFFICULTY_IDS`, por defecto `normal`): multiplicadores `enemyDamage` (agua por golpe, contacto y disparos), `enemyHp` (aguante al aparecer, también élites; los trozos de medusa lo heredan) y `enemyCount` (grupos por segundo del guion y anillos de la Marea; el tope por calidad sigue mandando). Valores `muestra`: tranquila 0,7 / 0,8 / 0,75; normal 1 / 1 / 1; tormenta 1,3 / 1,3 / 1,4. Config v5.
+- `createSurvivors(…, { difficulty })`; el snapshot lleva `difficulty`. Misma semilla + dificultad = misma partida. Premio, `won` y duración no cambian.
+- Sesión: `canonConfigFor(cfg, difficulty)` mete la dificultad en `survivors.difficulty`, así que entra en el `configHash` de la sesión (`world-canon.ts`).
+- Panel de la isla: `CanonDifficultyPicker` (grupo de opciones con tres botones, Normal marcada, flechas y Tab, 44 px de alto para el dedo) sobre «Jugar», por la nueva prop `extra` de `MinigameLayer`. La elección se recuerda mientras dure la visita (estado del hook, `useCanonMode`), también para «Otra vez». El bloqueo en carrera sigue explicado igual.
+- Atajo de desarrollo `&dificultad=tranquila|normal|tormenta` (`CANON_PARAMS.difficulty`, mismo `devShortcutsEnabled`; se consume de la URL y se recuerda). No cuenta como partida de prueba para el premio.
+- `data-dificultad` en `mar-canon` (hook de pruebas). Textos por clave en `es-mar.ts` (`mar.canon.dificultad.*`, `survivors.dificultad.*`).
+
+Pruebas:
+- `packages/engine/src/survivors/survivors-difficulty.test.ts` (daño, aguante, número, determinismo, huella de la sesión); `apps/web/app/mar/survivors.test.ts` (atajo).
+- e2e `mar-canon.spec.ts`: dos pruebas nuevas (panel con Normal marcada, teclado, Tormenta empieza una partida Tormenta; atajo).
+
+Comandos: ver el informe final de la tarea (resultados al integrar).
+
+Pendiente: nada de esta tarea; la ventana previa a la partida completa sigue siendo de la beta 4.
+
 ## 2026-10-05 — plan 011 T126: Models and effects for the new enemies
 
 What exists:

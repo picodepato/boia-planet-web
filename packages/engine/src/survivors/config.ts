@@ -20,7 +20,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 4;
+export const SURVIVORS_CONFIG_VERSION = 5;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -73,6 +73,32 @@ export type StatId =
 /** Figuras de las notas, de menos a más valor (los bosses: clave de sol, más adelante). */
 export type NoteFigure = 'corchea' | 'negra' | 'blanca' | 'redonda';
 export const NOTE_FIGURES: readonly NoteFigure[] = ['corchea', 'negra', 'blanca', 'redonda'];
+
+/** Dificultades que se eligen en el panel de la isla (beta 2, plan 011 T131). */
+export type DifficultyId = 'tranquila' | 'normal' | 'tormenta';
+export const DIFFICULTY_IDS: readonly DifficultyId[] = ['tranquila', 'normal', 'tormenta'];
+/** La que va marcada de entrada. */
+export const DEFAULT_DIFFICULTY: DifficultyId = 'normal';
+
+/**
+ * Una dificultad: sólo multiplicadores sobre lo enemigo. No toca el premio,
+ * la duración ni `won`. `muestra`.
+ */
+export interface DifficultyDef {
+  id: DifficultyId;
+  i18nKey: string;
+  /** Sobre el agua que mete cada golpe (contacto y disparos). */
+  enemyDamage: number;
+  /** Sobre el aguante de cada enemigo que aparece. */
+  enemyHp: number;
+  /** Sobre cuántos enemigos echa el guion (grupos por segundo y anillos de la Marea). */
+  enemyCount: number;
+}
+
+/** El id si `v` es una dificultad; si no, null. */
+export function asDifficulty(v: string | null | undefined): DifficultyId | null {
+  return DIFFICULTY_IDS.find((d) => d === v) ?? null;
+}
 
 /** Cómo desaparece un enemigo (§3); Hernán elige tras la beta. */
 export type DefeatStyle = 'puf' | 'sumergirse';
@@ -484,6 +510,8 @@ export interface SurvivorsConfig {
   startingWeapon: WeaponId;
   passives: Partial<Record<PassiveId, PassiveDef>>;
   evolutions: readonly EvolutionDef[];
+  /** Tranquila / Normal / Tormenta (T131). */
+  difficulties: Record<DifficultyId, DifficultyDef>;
   bosses: Partial<Record<BossId, BossDef>>;
   /** Compatibilidad beta 1: no participa en el pool. */
   upgrades: readonly UpgradeDef[];
@@ -1076,6 +1104,11 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       },
     },
   ],
+  difficulties: {
+    tranquila: { id: 'tranquila', i18nKey: 'survivors.dificultad.tranquila', enemyDamage: 0.7, enemyHp: 0.8, enemyCount: 0.75 },
+    normal: { id: 'normal', i18nKey: 'survivors.dificultad.normal', enemyDamage: 1, enemyHp: 1, enemyCount: 1 },
+    tormenta: { id: 'tormenta', i18nKey: 'survivors.dificultad.tormenta', enemyDamage: 1.3, enemyHp: 1.3, enemyCount: 1.4 },
+  },
   bosses: {},
   upgrades: [
     { id: 'damage', i18nKey: 'survivors.vinyl.hardstyle', stat: 'damageBonus', amount: 0.2, maxStacks: 5 },

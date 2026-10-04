@@ -1,4 +1,10 @@
-import { SURVIVORS_CONFIG, type SurvivorsConfig, survivorsConfigHash } from '../survivors/config';
+import {
+  DEFAULT_DIFFICULTY,
+  type DifficultyId,
+  SURVIVORS_CONFIG,
+  type SurvivorsConfig,
+  survivorsConfigHash,
+} from '../survivors/config';
 import type { BaseConfig, MinigameEntry, Outcome, ResultReason } from './types';
 import type { WorldGameEnd } from './world-session';
 
@@ -16,26 +22,30 @@ import type { WorldGameEnd } from './world-session';
  *   imposible no vale.
  * - La versión 4 sustituye a la 3 del cañón 2D; `survivors` lleva la versión
  *   y la huella de la configuración entera del modo, así que cualquier cambio
- *   de equilibrio cambia el `configHash` de la sesión.
+ *   de equilibrio cambia el `configHash` de la sesión; también lleva la
+ *   dificultad elegida (T131), y el premio y `won` no cambian con ella.
  * - El premio, como antes: 150 puntos y 50 monedas, una vez por temporada.
  *   Todo `muestra`.
  */
 
 export interface CanonConfig extends BaseConfig {
   /** La configuración del modo Survivors con que se juega: su versión y su huella. */
-  survivors: { version: number; hash: string };
+  survivors: { version: number; hash: string; difficulty: DifficultyId };
 }
 
 /** Versión de las reglas de sesión del Cañón (la 3 era el cañón 2D, T72). */
 export const CANON_VERSION = 4;
 
 /** La configuración de sesión del Cañón para una configuración del modo. */
-export function canonConfigFor(cfg: SurvivorsConfig = SURVIVORS_CONFIG): CanonConfig {
+export function canonConfigFor(
+  cfg: SurvivorsConfig = SURVIVORS_CONFIG,
+  difficulty: DifficultyId = DEFAULT_DIFFICULTY,
+): CanonConfig {
   return {
     version: CANON_VERSION,
     goal: cfg.durationS,
     timeLimitS: cfg.durationS,
-    survivors: { version: cfg.version, hash: survivorsConfigHash(cfg) },
+    survivors: { version: cfg.version, hash: survivorsConfigHash(cfg), difficulty },
     reward: { policy: 'season', points: 150, coins: 50, maxPoints: 150, maxCoins: 50 },
   };
 }

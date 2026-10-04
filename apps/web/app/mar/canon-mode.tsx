@@ -9,9 +9,16 @@ import {
   canonEnd,
   pageAuthority,
 } from '@boia/engine/minigames';
-import type { DefeatStyle, EndReason, SurvivorsSnapshot } from '@boia/engine/survivors';
+import {
+  DEFAULT_DIFFICULTY,
+  DIFFICULTY_IDS,
+  type DefeatStyle,
+  type DifficultyId,
+  type EndReason,
+  type SurvivorsSnapshot,
+} from '@boia/engine/survivors';
 import type { WorldConfig } from '@boia/world';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { emitSignal } from '../../lib/mundo/achievements';
 import { type InWorldCopy, withWinSignal } from '../../lib/mundo/minigame-layer';
 import { gameRepository } from '../../lib/mundo/repo';
@@ -117,7 +124,11 @@ export interface CanonMode {
     onPlay: (gameId: string) => void;
     blockedReason: (gameId: string) => string | null;
     copy: (gameId: string) => InWorldCopy | null;
+    /** Las tres dificultades junto a «Jugar» (T131). */
+    extra: (gameId: string) => ReactNode;
   };
+  /** La dificultad elegida para las próximas partidas (se recuerda durante la visita). */
+  difficulty: DifficultyId;
 }
 
 interface StartOptions {
@@ -127,6 +138,8 @@ interface StartOptions {
   defeatStyle?: DefeatStyle | null;
   /** `&carta=1`: empezar con una carta de nivel abierta (sólo con los atajos encendidos). */
   card?: boolean;
+  /** Dificultad pedida (`&dificultad=`); sólo cuenta con los atajos encendidos y se recuerda. */
+  difficulty?: DifficultyId | null;
 }
 
 export function useCanonMode({
@@ -179,6 +192,9 @@ export function useCanonMode({
   const chosenStyle = useRef<DefeatStyle | null>(null);
   const styleRef = useRef<DefeatStyle | null>(null);
   const [defeatStyle, setDefeatStyle] = useState<DefeatStyle | null>(null);
+  // La dificultad elegida en el panel de la isla: se recuerda mientras dure la visita (T131).
+  const difficultyRef = useRef<DifficultyId>(DEFAULT_DIFFICULTY);
+  const [difficulty, setDifficulty] = useState<DifficultyId>(DEFAULT_DIFFICULTY);
   const [devSwitch, setDevSwitch] = useState(false);
   useEffect(() => setDevSwitch(devShortcutsEnabled()), []);
   const latest = useRef({ onStart, onOffer, onEnd, isRaceActive, rewards });
@@ -235,6 +251,7 @@ export function useCanonMode({
       seed = null,
       defeatStyle: askedStyle = null,
       card = false,
+      difficulty: askedDifficulty = null,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
@@ -245,7 +262,12 @@ export function useCanonMode({
         { x: g.ship.x, y: g.ship.y, heading: g.ship.heading, turboCooldownS: g.turboCooldownS },
         g.solidDecor,
       );
+      if (askedDifficulty) {
+        difficultyRef.current = askedDifficulty;
+        setDifficulty(askedDifficulty);
+      }
       const run: SurvivorsRun = new SurvivorsRun(sea, {
+        difficulty: difficultyRef.current,
         seed: seed ?? randomSeed(),
         quality: g.quality,
         ship: MAR_SHIP_CONFIG,
@@ -260,12 +282,12 @@ export function useCanonMode({
       const getSink = latest.current.rewards?.() ?? null;
       sessionRef.current = new WorldMinigameSession({
         def: canonEntry,
-        config: canonConfigFor(run.config),
+        config: canonConfigFor(run.config, run.difficulty),
         authority: pageAuthority(),
         sink: withWinSignal(getSink, CANON_GAME_ID, (game) => {
           void emitSignal(gameRepository(), { trigger: 'win_minigame', game });
         }),
-        currentConfig: () => canonConfigFor(run.config),
+        currentConfig: () => canonConfigFor(run.config, run.difficulty),
         seed: run.seed,
         skippedS: run.snapshot().activeS,
         devStart: isDevStart({ t, seed, card: gift }),
@@ -380,7 +402,15 @@ export function useCanonMode({
     if (!sc) return;
     history.replaceState(history.state, '', withoutCanonShortcut(window.location.href));
     if (sc.offer) latest.current.onOffer();
-    else start({ t: sc.t, seed: sc.seed, defeatStyle: sc.defeatStyle, card: sc.card });
+    else {
+      start({
+        t: sc.t,
+        seed: sc.seed,
+        defeatStyle: sc.defeatStyle,
+        card: sc.card,
+        difficulty: sc.difficulty,
+      });
+    }
   }, [ready, start]);
 
   const blockKey = canonBlockKey({ raceActive });
@@ -391,6 +421,16 @@ export function useCanonMode({
     },
     blockedReason: (gameId: string) =>
       gameId === CANON_GAME_ID && blockKey ? msg(blockKey) : null,
+    extra: (gameId: string) =>
+      gameId === CANON_GAME_ID ? (
+        <CanonDifficultyPicker
+          value={difficulty}
+          onChange={(d) => {
+            difficultyRef.current = d;
+            setDifficulty(d);
+          }}
+        />
+      ) : null,
     copy: (gameId: string) =>
       gameId === CANON_GAME_ID
         ? {
@@ -422,8 +462,78 @@ export function useCanonMode({
     setPaused,
     dev,
     panel,
+    difficulty,
   };
 }
+
+/**
+ * Tranquila / Normal / Tormenta junto a «Jugar» en el panel de la isla (T131):
+ * tres botones pequeños de un grupo de opciones (Normal marcado de entrada).
+ * Se manejan con el teclado (Tab y flechas) y con el dedo.
+ */
+export function CanonDifficultyPicker({
+  value,
+  onChange,
+}: {
+  value: DifficultyId;
+  onChange: (d: DifficultyId) => void;
+}) {
+  const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const move = (from: number, delta: number) => {
+    const n = DIFFICULTY_IDS.length;
+    const next = (from + delta + n) % n;
+    onChange(DIFFICULTY_IDS[next]!);
+    refs.current[next]?.focus();
+  };
+  return (
+    <div
+      className="mar-canon-dificultad"
+      role="radiogroup"
+      aria-label={msg('mar.canon.dificultad.aria')}
+      data-testid="mar-canon-dificultad"
+      data-dificultad={value}
+    >
+      {DIFFICULTY_IDS.map((id, i) => (
+        <button
+          key={id}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={value === id}
+          tabIndex={value === id ? 0 : -1}
+          className="mar-canon-dificultad-opcion"
+          data-testid={`mar-canon-dificultad-${id}`}
+          title={msg(DIFFICULTY_TEXT_KEY[id])}
+          onClick={() => onChange(id)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              move(i, 1);
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              move(i, -1);
+            }
+          }}
+        >
+          {msg(DIFFICULTY_LABEL_KEY[id])}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const DIFFICULTY_LABEL_KEY: Readonly<Record<DifficultyId, MessageKey>> = {
+  tranquila: 'mar.canon.dificultad.tranquila',
+  normal: 'mar.canon.dificultad.normal',
+  tormenta: 'mar.canon.dificultad.tormenta',
+};
+const DIFFICULTY_TEXT_KEY: Readonly<Record<DifficultyId, MessageKey>> = {
+  tranquila: 'mar.canon.dificultad.tranquila.texto',
+  normal: 'mar.canon.dificultad.normal.texto',
+  tormenta: 'mar.canon.dificultad.tormenta.texto',
+};
 
 const DEFEAT_STYLE_KEY: Readonly<Record<DefeatStyle, MessageKey>> = {
   puf: 'mar.canon.dev.derrota.puf',
@@ -481,6 +591,7 @@ export function CanonTestHook({
       data-notas={hud.notas}
       data-fin={hud.fin ?? undefined}
       data-semilla={hud.semilla}
+      data-dificultad={hud.dificultad}
       data-calidad={hud.calidad}
       data-barco={hud.barco}
       data-mejoras={hud.mejoras}

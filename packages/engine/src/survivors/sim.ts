@@ -27,6 +27,9 @@ import {
   type WeaponId,
   type WeaponKind,
   type WeaponStats,
+  DEFAULT_DIFFICULTY,
+  type DifficultyDef,
+  type DifficultyId,
   figureOf,
   resolveWeaponStats,
   survivorsShipConfig,
@@ -247,6 +250,8 @@ export interface PlayerStats {
 /** Lo que la pantalla necesita, de sólo lectura. No se copia: no guardarlo entre pasos. */
 export interface SurvivorsSnapshot {
   readonly status: SurvivorsStatus;
+  /** La dificultad de la partida. */
+  readonly difficulty: DifficultyId;
   readonly movement: MovementView;
   readonly player: Readonly<ShipState> & {
     readonly radius: number;
@@ -302,6 +307,8 @@ export interface SurvivorsOptions {
   ship?: ShipConfig;
   /** Empezar en el segundo `t` de la partida (atajo `&t=`); determinista por semilla. */
   startAtS?: number;
+  /** Dificultad (T131): multiplicadores de `config.difficulties`. Sin valor, `normal`. */
+  difficulty?: DifficultyId;
 }
 
 interface Enemy {
@@ -492,6 +499,8 @@ export class SurvivorsGame {
   private pauseTotal = 0;
   private manualPause = false;
   private card: LevelUpCard | null = null;
+  readonly difficulty: DifficultyId;
+  private readonly diff: DifficultyDef;
   private pendingLevels = 0;
   private endReason: EndReason | null = null;
   private water = 0;
@@ -517,6 +526,10 @@ export class SurvivorsGame {
     this.world = world;
     this.movement = new SurvivorsMovement(world, this.seed);
     this.quality = opts.quality ?? 'alta';
+    this.difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
+    const diff = config.difficulties[this.difficulty];
+    if (!diff) throw new Error(`survivors: no difficulty ${this.difficulty}`);
+    this.diff = diff;
     this.caps = config.caps[this.quality];
     this.bounds = world.bounds;
     this.w = world.bounds.right - world.bounds.left;
@@ -584,6 +597,7 @@ export class SurvivorsGame {
 
     this.view = {
       status: 'running',
+      difficulty: this.difficulty,
       movement: this.movement.snapshot(),
       player: Object.assign(this.player, { radius: this.shipCfg.radius, invulnerableS: 0 }),
       enemies: this.enemies,
@@ -917,7 +931,7 @@ export class SurvivorsGame {
     if (!def || this.enemies.length >= this.caps.enemies) return null;
     const spot = this.islands.toWater(x, y, def.radius);
     if (!spot) return null;
-    const e = this.makeEnemy(def, spot.x, spot.y, def.hp, def.speed, elite);
+    const e = this.makeEnemy(def, spot.x, spot.y, def.hp * this.diff.enemyHp, def.speed, elite);
     this.enemies.push(e);
     this.rebuildEnemyGrid();
     return e;
@@ -1069,7 +1083,7 @@ export class SurvivorsGame {
     act.tracks.forEach((track, i) => {
       const key = trackAt(track, t);
       if (!key) return;
-      let acc = this.trackAcc[i]! + key.groupsPerS * dt;
+      let acc = this.trackAcc[i]! + key.groupsPerS * this.diff.enemyCount * dt;
       while (acc >= 1) {
         acc -= 1;
         const size = Math.round(key.group[0] + (key.group[1] - key.group[0]) * this.spawnRng());
@@ -1082,7 +1096,7 @@ export class SurvivorsGame {
       const end = ev.atS + (ev.durationS ?? 0);
       if (t < ev.atS || t >= end) return;
       while (this.mareaNext[i]! <= t + 1e-9 && this.mareaNext[i]! < end) {
-        this.spawnRing(def.enemy, def.count, def.hpScale, def.speedScale);
+        this.spawnRing(def.enemy, Math.round(def.count * this.diff.enemyCount), def.hpScale, def.speedScale);
         this.mareaNext[i] = this.mareaNext[i]! + def.burstEveryS;
       }
     });
@@ -1112,7 +1126,7 @@ export class SurvivorsGame {
       return false;
     }
     const minutes = this.minutes();
-    const hp = def.hp * hpScale * (1 + def.growthPerMinute.hp * minutes) * (1 + this.overflow);
+    const hp = def.hp * hpScale * this.diff.enemyHp * (1 + def.growthPerMinute.hp * minutes) * (1 + this.overflow);
     const speed = def.speed * speedScale * (1 + def.growthPerMinute.speed * minutes);
     const elite =
       this.elitesDef !== null &&
@@ -1408,7 +1422,7 @@ export class SurvivorsGame {
 
   /** Mete `amount` de agua a bordo (menos el casco) y da la invulnerabilidad del golpe. */
   private damagePlayer(amount: number, by: EnemyId, x: number, y: number): void {
-    const water = amount * Math.max(0, 1 - this.stats.hullBonus);
+    const water = amount * this.diff.enemyDamage * Math.max(0, 1 - this.stats.hullBonus);
     this.water = Math.min(this.config.player.waterCapacity, this.water + water);
     this.invulnerable = this.config.player.invulnerableS;
     this.events.push({ type: 'hit', enemy: by, x, y, water: this.water });
@@ -2233,7 +2247,7 @@ export class SurvivorsGame {
     for (const track of act.tracks) {
       const key = trackAt(track, this.activeS);
       if (!key) continue;
-      const groups = Math.round(key.groupsPerS * this.config.devStart.prefillS);
+      const groups = Math.round(key.groupsPerS * this.diff.enemyCount * this.config.devStart.prefillS);
       for (let g = 0; g < groups; g++) {
         const size = Math.round(key.group[0] + (key.group[1] - key.group[0]) * this.spawnRng());
         this.spawnGroup(track.enemy, size, key.hpScale, key.speedScale);

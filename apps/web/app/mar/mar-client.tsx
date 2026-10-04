@@ -2431,6 +2431,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             onPlayInWorld={canon.panel.onPlay}
             blockedReason={canon.panel.blockedReason}
             copy={canon.panel.copy}
+            extra={canon.panel.extra}
           />
         </div>
       ) : null}

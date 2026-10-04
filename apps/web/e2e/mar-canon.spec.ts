@@ -704,3 +704,41 @@ test('con la Boia Fiestera a bordo, sigue a bordo durante la partida y después'
     .toContain(spec.destination);
   expect(errors).toEqual([]);
 });
+
+test('el panel de la isla ofrece tres dificultades con Normal marcada y la elegida empieza la partida (T131)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  const group = panel(page).getByTestId('mar-canon-dificultad');
+  await expect(group).toBeVisible();
+  const option = (id: string) => panel(page).getByTestId(`mar-canon-dificultad-${id}`);
+  for (const id of ['tranquila', 'normal', 'tormenta']) {
+    await expect(option(id)).toHaveText(msg(`mar.canon.dificultad.${id}` as MessageKey));
+    await expect(option(id)).toHaveAttribute('aria-checked', id === 'normal' ? 'true' : 'false');
+  }
+  // Con el teclado: la flecha mueve la selección; con el dedo o el ratón: un toque.
+  await option('normal').focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(option('tranquila')).toHaveAttribute('aria-checked', 'true');
+  await option('tormenta').dispatchEvent('click');
+  await expect(option('tormenta')).toHaveAttribute('aria-checked', 'true');
+  await expect(option('normal')).toHaveAttribute('aria-checked', 'false');
+  await panel(page)
+    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
+    .click();
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  expect(errors).toEqual([]);
+});
+
+test('`&dificultad=tormenta` (atajo de desarrollo) empieza con esa dificultad; sin él, Normal (T131)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&seed=7&dificultad=tormenta');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  const again = await openMar(page, '?minijuego=canon&seed=7');
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'normal');
+  expect([...errors, ...again]).toEqual([]);
+});

@@ -660,6 +660,36 @@
   cursor: help;
 }
 
+/* ---------- Las tres dificultades en el panel de la isla (T131) ---------- */
+
+.mar .mar-canon-dificultad {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.mar .mar-canon-dificultad-opcion {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 2px solid #1b1b1b;
+  background: #fff;
+  color: #1b1b1b;
+  font: 800 0.82rem / 1.2 var(--font-title);
+  cursor: pointer;
+}
+
+.mar .mar-canon-dificultad-opcion[aria-checked='true'] {
+  background: #1b1b1b;
+  color: #fff;
+}
+
+.mar .mar-canon-dificultad-opcion:focus-visible {
+  outline: 3px solid #c9480f;
+  outline-offset: 2px;
+}
+
 /* ---------- El menú en pausa ---------- */
 
 .mar-menu__game {

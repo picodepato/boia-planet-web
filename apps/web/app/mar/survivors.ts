@@ -2,9 +2,11 @@ import type { ShipConfig, ShipInput } from '@boia/engine/headless';
 import type { QualityTier } from '@boia/engine/streaming';
 import {
   type DefeatStyle,
+  type DifficultyId,
   type EndReason,
   SURVIVORS_CONFIG,
   SurvivorsClock,
+  asDifficulty,
   type SurvivorsConfig,
   type SurvivorsEvent,
   type SurvivorsGame,
@@ -47,6 +49,8 @@ export const CANON_PARAMS = {
   defeat: 'derrota',
   /** `carta=1`: empezar con una carta de nivel abierta (T118, para probar las cartas). */
   card: 'carta',
+  /** `dificultad=tranquila|normal|tormenta`: empezar con esa dificultad (T131). */
+  difficulty: 'dificultad',
   dev: 'dev',
 } as const;
 
@@ -111,6 +115,8 @@ export interface CanonShortcut {
   defeatStyle: DefeatStyle | null;
   /** Empezar con una carta de nivel abierta (`&carta=1`). */
   card: boolean;
+  /** Dificultad pedida (`&dificultad=`), o null (la elegida en el panel). */
+  difficulty: DifficultyId | null;
 }
 
 /**
@@ -133,6 +139,7 @@ export function canonShortcut(
     offer: q.get(CANON_PARAMS.offer) === '1',
     defeatStyle: asDefeatStyle(q.get(CANON_PARAMS.defeat)),
     card: q.get(CANON_PARAMS.card) === '1',
+    difficulty: asDifficulty(q.get(CANON_PARAMS.difficulty)),
   };
 }
 
@@ -146,6 +153,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.offer,
     CANON_PARAMS.defeat,
     CANON_PARAMS.card,
+    CANON_PARAMS.difficulty,
   ]) {
     url.searchParams.delete(p);
   }
@@ -355,6 +363,8 @@ export interface SurvivorsRunOptions {
   /** Empezar en ese segundo (atajo `&t=`). */
   startAtS?: number;
   config?: SurvivorsConfig;
+  /** Dificultad (T131); sin valor, Normal. */
+  difficulty?: DifficultyId;
   /**
    * Elegir sola la primera carta de nivel (sólo para pruebas y bots: en
    * `/mar` las elige el jugador con `choose`, T118). Por defecto, no.
@@ -380,6 +390,8 @@ export interface CanonHook {
   notas: number;
   fin: EndReason | null;
   semilla: number;
+  /** Dificultad de la partida: tranquila, normal o tormenta (T131). */
+  dificultad: DifficultyId;
   calidad: QualityTier;
   /** Dónde va el barco de la partida (u, enteros): «x,y». */
   barco: string;
@@ -400,6 +412,7 @@ export class SurvivorsRun {
   readonly config: SurvivorsConfig;
   readonly seed: number;
   readonly quality: QualityTier;
+  readonly difficulty: DifficultyId;
   private readonly clock = new SurvivorsClock();
   private readonly autoPick: boolean;
   private readonly onEnd: SurvivorsRunOptions['onEnd'];
@@ -412,11 +425,13 @@ export class SurvivorsRun {
     this.config = opts.config ?? SURVIVORS_CONFIG;
     this.seed = opts.seed;
     this.quality = opts.quality;
+    this.difficulty = opts.difficulty ?? 'normal';
     this.autoPick = opts.autoPickCards ?? false;
     this.onEnd = opts.onEnd;
     this.game = createSurvivors(this.config, opts.seed, world, {
       quality: opts.quality,
       ship: opts.ship,
+      ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
       ...(opts.startAtS ? { startAtS: opts.startAtS } : {}),
     });
   }
@@ -498,6 +513,7 @@ export class SurvivorsRun {
       notas: s.notesPicked,
       fin: s.end,
       semilla: this.seed,
+      dificultad: s.difficulty,
       calidad: this.quality,
       barco: `${Math.round(s.player.x)},${Math.round(s.player.y)}`,
       mejoras: Object.entries(s.upgrades)

@@ -10,7 +10,7 @@ import {
 } from '@boia/engine/minigames';
 import { type Settings, browserStore, channelGain } from '@boia/engine/ui';
 import type { ComposedWorld } from '@boia/world';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { emitSignal } from './achievements';
 import { gameRepository } from './repo';
 import { t } from '../i18n';
@@ -85,6 +85,7 @@ export function MinigameLayer({
   onPlayInWorld,
   blockedReason,
   copy,
+  extra,
 }: {
   offer: MinigameOffer | null;
   onDismiss: () => void;
@@ -100,6 +101,8 @@ export function MinigameLayer({
   blockedReason?: (gameId: string) => string | null;
   /** El título y el resumen de un juego de `inWorld`. */
   copy?: (gameId: string) => InWorldCopy | null;
+  /** Algo junto a «Jugar» de un juego de `inWorld` (las dificultades del Cañón, T131). */
+  extra?: (gameId: string) => ReactNode;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -182,6 +185,7 @@ export function MinigameLayer({
               {blocked}
             </p>
           ) : null}
+          {here ? (extra?.(def.id) ?? null) : null}
           <button
             type="button"
             className="juego-panel-cta"

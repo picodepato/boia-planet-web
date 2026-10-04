@@ -211,6 +211,17 @@ export const esMar = {
     'Esquiva el enjambre con el barco hasta que amanezca: el Cañón de agua dispara solo y las notas que sueltan te suben de nivel. Se juega aquí mismo, donde está tu barco.',
   'mar.canon.lock.race':
     'Ahora no: estás en plena carrera. Termínala (o sal de ella) y vuelve a jugar.',
+  // Las tres dificultades junto a «Jugar» en el panel de la isla (plan 011, T131). muestra
+  'mar.canon.dificultad.aria': 'Dificultad',
+  'mar.canon.dificultad.tranquila': 'Tranquila',
+  'mar.canon.dificultad.tranquila.texto': 'Enemigos más flojos y menos numerosos.',
+  'mar.canon.dificultad.normal': 'Normal',
+  'mar.canon.dificultad.normal.texto': 'La dificultad de referencia.',
+  'mar.canon.dificultad.tormenta': 'Tormenta',
+  'mar.canon.dificultad.tormenta.texto': 'Más enemigos, más duros y que mojan más. El premio es el mismo.',
+  'survivors.dificultad.tranquila': 'Tranquila',
+  'survivors.dificultad.normal': 'Normal',
+  'survivors.dificultad.tormenta': 'Tormenta',
   // El interruptor de desarrollo del estilo de derrota (T117; sólo con los atajos de desarrollo).
   'mar.canon.dev.derrota': 'Derrota: {estilo}',
   'mar.canon.dev.derrota.aria': 'Cambiar el estilo de derrota (desarrollo)',

@@ -89,6 +89,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       offer: false,
       defeatStyle: null,
       card: false,
+      difficulty: null,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
       t: 0,
@@ -96,9 +97,19 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       offer: false,
       defeatStyle: null,
       card: false,
+      difficulty: null,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
     expect(canonShortcut('?minijuego=canon&carta=1', dev)?.card).toBe(true);
+    // `dificultad=` (T131): una de las tres; otra cosa, la del panel.
+    for (const d of ['tranquila', 'normal', 'tormenta']) {
+      expect(canonShortcut(`?minijuego=canon&dificultad=${d}`, dev)?.difficulty).toBe(d);
+    }
+    expect(canonShortcut('?minijuego=canon&dificultad=imposible', dev)?.difficulty).toBeNull();
+    expect(canonShortcut('?minijuego=canon&dificultad=tormenta', env({}))).toBeNull();
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&dificultad=tormenta&dev=1')).toBe(
+      'http://x/mar?dev=1',
+    );
     // `t` dentro de la partida; basura, desde el principio.
     expect(canonShortcut('?minijuego=canon&t=99999', dev)?.t).toBe(SURVIVORS_CONFIG.durationS - 1);
     expect(canonShortcut('?minijuego=canon&t=abc&seed=-3', dev)).toEqual({
@@ -107,6 +118,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       offer: false,
       defeatStyle: null,
       card: false,
+      difficulty: null,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });
