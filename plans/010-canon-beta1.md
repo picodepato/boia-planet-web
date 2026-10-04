@@ -283,7 +283,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: `WorldRegistry` hidden-ids list (Acuarela hidden in `catalog.ts`), `playableIds()`/`isPlayable()`; URL/stored `acuarela` fall back to Arcilla; «Mundos» menu entry and Admin pickers show Arcilla only; `mundo-unico.spec.ts`; REQ-MUN-037/039 → PARCIAL → afa8521
 
 ## T112 — Benidorm and Ibiza runtime integration with bounded club animation
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T108, T109, T110, T111
@@ -294,10 +294,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Both models load with fallback and no duplicated island decoration. Any modest Benidorm enlargement updates visual/collision/proximity dimensions together and leaves safe separation/approach; Ibiza shop behavior remains.
   - Dance/screens motion runs from existing frame clock, bounded resources, with reduced-motion static pose and proper stop/dispose on scene destruction. Named exported clips/nodes actually used; review multiple in-game motion phases.
   - Geometry/wrap/lifecycle/asset tests and mobile/desktop loading/fallback/reduced-motion E2E pass; full safe suite/types/lint exit 0.
-- Outcome:
+- Outcome: Benidorm/Ibiza GLBs in the scene with outline-matched fallbacks (`BENIDORM_LAYOUT`, `IBIZA_LAYOUT`), Benidorm not enlarged; club mascot merged to one mesh per material, dance from the /mar frame time, screens pulse at 120 bpm, static with reduced motion; `mar-lugares-blender.spec.ts` 10 passed → 36f2cab
 
 ## T113 — Transparent main route with optional exploration islands
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet
 - Skills: none
 - Depends on: T108, T109, T112
@@ -394,6 +394,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T122: hidden ids as a 4th `WorldRegistry` argument; `list()`/`resolve()` skip hidden, `ids()`/`get()`/`skin()` keep them; `chooseWorld` and Admin `setActiveWorld` reject hidden worlds; «Mundos» entry hidden when ≤1 world; `mundo-acuarela.spec.ts` → `mundo-unico.spec.ts`; «Mundos» switch tests in `mar-paridad.spec.ts` and all of `agujero-negro.spec.ts` retired (need two worlds); two-world unit tests use a local registry (agent)
 - 2026-10-04 T122: its Done-when e2e had 2 failures in mar-hud «ficha de una isla»; the orchestrator reproduced them on main (pre-existing), accepted the merge and passed them to T105 (orchestrator)
 
+- 2026-10-04 T112: Benidorm kept at its size (T110 advised against enlarging), map/collision/proximity unchanged; club mascot parts merged per material with own material copies; animation set from frame time `t`; club screens pulse 120 bpm (`muestra`); hooks `data-lugares-movimiento`, `data-lugares-pose` (agent)
+
 ## Proposals (new scope)
 - 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
@@ -401,6 +403,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
 - 2026-10-04 T122: the black-hole vortex in mar3d has no trigger and no e2e while only one world is playable
+- 2026-10-04 T112: the normal camera cuts the Benidorm tower tops when very close and the label sits over them on desktop; the Ibiza collision ellipse still reaches past the visible coast
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
 - 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
@@ -446,3 +449,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 21:31 paused by Hernán to continue in a new session (context size); nothing running. Next ready: T112 (Opus) and T122 (Sonnet); then T113, T105
 - 2026-10-04 resumed in a new session; T112 (agent ada4ec2f9f381d852) and T122 (agent a45428d663505dedc) launched in parallel · attempt 1
 - 2026-10-04 T122 done → afa8521 (12 min task, 125 s integration)
+- 2026-10-04 T112 done → 36f2cab (27 min task, 89 s integration)
+- 2026-10-04 T113 launched · attempt 1
