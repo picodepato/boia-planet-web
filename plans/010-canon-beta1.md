@@ -75,15 +75,15 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: Cañón 3D mode runs in /mar from the panel or `?minijuego=canon&t=&seed=`; world hidden/blocked during play and restored; race lock; handling/camera overrides; `devShortcutsEnabled()` (dev, `navigator.webdriver`, `?dev=1`); data-* test hooks; 24 e2e passed → b845582
 
 ## T120 — Merge the Codex world updates (`codex/world-updates`) into main
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T116, and Codex having integrated its T106 and T107 into `codex/world-updates` (the orchestrator checks `plans/009-world-updates.md` in the Codex checkout before launching)
-- Goal: Bring the parallel Codex plan's finished work into main now (Hernán, 2026-10-04), so the Cañón tasks build on it. In this worktree run `git merge --no-ff --no-edit <SHA>` where `<SHA>` is the tip of branch `codex/world-updates` **at the moment you start** (record it; the Codex checkout is `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan`, its branch lives in this same repository; read-only there: never commit, check out or edit anything in that checkout or its worktrees). Resolve every conflict keeping both intents: Codex's world updates (typography, 15-knot cruising and manual objective navigation, characters, landmarks, fish and gulls, merchandise, Carnet questions, and whatever else its plan marks done) and the Cañón mode from T98/T116 (survivors wiring in `mar-client.tsx`/`mar3d.ts`, hiding of route lines, bottles, discounts and encounters during the game, the race lock, camera and handling overrides). In particular: the Cañón's handling overrides must still apply on top of the new ship config (express them relative to the boat's current config if they were absolute, and keep the survivors tests green); everything Codex added to the world that is interactive (new encounters, fish, gulls, characters, secrets, markers) must be hidden/disabled during a Cañón game and restored after, like the rest of T116's hide list. Codex's pending tasks (T105, T108–T115) are **not** part of this merge: plan 010 absorbed them as its own tasks; do not start them. Do not edit `plans/009-world-updates.md` beyond what the merge brings.
+- Depends on: T116
+- Goal: Bring the parallel Codex plan's finished work into main now (Hernán, 2026-10-04), so the Cañón tasks build on it. In this worktree run `git merge --no-ff --no-edit 608f883` (the tip of branch `codex/world-updates`, Codex's T98–T104; the Codex checkout is `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan`, its branch lives in this same repository; read-only there: never commit, check out or edit anything in that checkout or its worktrees). Resolve every conflict keeping both intents: Codex's world updates (typography, 15-knot cruising and manual objective navigation, characters, landmarks, fish and gulls, merchandise, Carnet questions, and whatever else its plan marks done) and the Cañón mode from T98/T116 (survivors wiring in `mar-client.tsx`/`mar3d.ts`, hiding of route lines, bottles, discounts and encounters during the game, the race lock, camera and handling overrides). In particular: the Cañón's handling overrides must still apply on top of the new ship config (express them relative to the boat's current config if they were absolute, and keep the survivors tests green); everything Codex added to the world that is interactive (new encounters, fish, gulls, characters, secrets, markers) must be hidden/disabled during a Cañón game and restored after, like the rest of T116's hide list. Codex's unfinished tasks (T105–T115, including the uncommitted T106/T107 work in its worktrees) are **not** part of this merge: plan 010 absorbed them as its own tasks; do not start them. Do not edit `plans/009-world-updates.md` beyond what the merge brings.
 - Context: `plans/009-world-updates.md` (as merged: its Goal, the Outcomes of its done tasks), T98 and T116 Outcomes in this plan, `apps/web/app/mar/mar-client.tsx`, `apps/web/app/mar/engine/mar3d.ts`, `apps/web/app/mar/minimap.tsx`, `packages/engine/src/ship/config.ts` and its tests, `packages/engine/src/survivors/`, T116's hide/restore list and its tests, `apps/web/e2e/` specs of both lines.
 - Scope: may touch any file the merge brings or conflicts on, plus the minimal fixes to make both lines work together (with tests) / must not touch the Codex checkout or its worktrees, `docs/DECISIONES.md`; no new features.
 - Done when:
-  - `git log -1 --format=%P` on the merge commit lists main's tip and the recorded `codex/world-updates` SHA; `git status` clean
+  - `git log -1 --format=%P` on the merge commit lists main's tip and 608f883; `git status` clean
   - unit tests prove the hide/restore list covers Codex's new interactive world elements and the survivors handling overrides compose with the new ship config
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts <the race, Fiestera, and the e2e specs the Codex branch added or changed> --workers=1` → exit 0
   - Test command → exit 0
@@ -148,11 +148,41 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Test command → exit 0
 - Outcome:
 
-## T110 — Blender Benidorm skyline and club asset
+## T106 — Durable stamps and achievement progress across sessions
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T120
+- Goal: Diagnose and fix the user's demonstrated symptom: a stamp visible on the logged-in Carnet disappears when returning later; Carnet and castaway achievements also appear unsaved. Preserve every valid earned reward and separate persistence prevention from evidence-based recovery.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) lib/repo-member.ts, account/session and sign-out lifecycle; store/member/member.ts, hydrate.ts, ops/server/snapshot; local purchase/stamp and Carnet APIs; ticketing sandbox; guest merge; member/fake-server tests. Read-only findings indicate cache removal with pending sync, snapshot-conflict server-wins, absent snapshot fields clearing progress, and sandbox stamps excluded from member snapshots; reproduce before choosing a repair. **Continue Codex's unfinished attempt:** Codex left uncommitted work for this task in `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/.claude/worktrees/p009-t106` (branch `codex/p009-t106`, base ab21e43, no commits). Read-only there: never commit, check out, stash or edit anything in the Codex checkout or its worktrees. After your fast-forward, bring its changes into your worktree (e.g. `git -C <that worktree> diff HEAD > <tmp>.patch` and `git apply --3way`, plus copying its untracked files from `git -C <that worktree> ls-files --others --exclude-standard`), review them critically, keep what helps and finish the task.
+- Scope: persistence/hydration/sync lifecycle, sample stamp storage and projection, relevant achievement reconciliation and focused UI refresh/tests. Do not change place names/catalog rewards/models/race/route/menu icons, wipe caches or queues, fabricate attendance, re-award currency by inference, apply migrations or mutate remote services.
+- Done when:
+  - Tests obtain sample-ticket stamp, Carnet reward and castaway progress, flush, sign out/reopen the same account from a fresh local cache and retain them. Cover local-only reload and guest-to-member continuation.
+  - Offline/failed snapshot, early sign-out, retries and two-device conflicts recover without duplicating rewards; accounts A/B remain isolated. Missing server fields cannot silently erase valid unsynced evidence.
+  - Sample purchase stamps remain explicitly samples, separate from verified QR attendance. Recovery uses persisted purchase/discount/ledger evidence only and is idempotent; report any historical data that lacks enough evidence.
+  - Relevant local/fake-member lifecycle and browser tests pass; full safe suite, typecheck/lint exit 0. No remote writes required for validation.
+- Outcome:
+
+## T107 — Blender Alicante harbor asset and reusable place contract
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T120
+- Goal: Build a recognizable BOIA-styled Alicante marina/harbor to replace the Cala decoration at runtime later, with connected quays, moored boats, promenade, palms and harbor buildings. Establish the smallest reusable contract for the three new place assets.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) .claude/skills/blender-modeling-workflow and blender-asset-validation, existing island/decor exporters and schemas, current cala bounds and scene coordinates. Blender executable: integration node_modules/.tools/blender-5.2.2-windows-x64/blender.exe. Primary references from Puerto de Alicante and Marina Alicante. Blender executable (read-only): `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/node_modules/.tools/blender-5.2.2-windows-x64/blender.exe`; if missing, use any Blender ≥ 4.2 on the machine and say which. **Continue Codex's unfinished attempt:** Codex left uncommitted work for this task in `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/.claude/worktrees/p009-t107` (branch `codex/p009-t107`, base ab21e43, no commits). Read-only there: never commit, check out, stash or edit anything in the Codex checkout or its worktrees. After your fast-forward, bring its changes into your worktree (e.g. `git -C <that worktree> diff HEAD > <tmp>.patch` and `git apply --3way`, plus copying its untracked files from `git -C <that worktree> ls-files --others --exclude-standard`), review them critically, keep what helps and finish the task.
+- Scope: new procedural source, editable blend, GLB, adjacent asset manifest/validator and evidence notes. Art-only: no runtime hookup, common live island manifest change, world IDs/content, client, physics or persistence.
+- Done when:
+  - Source reproduces blend/GLB from a clean latest Blender process; fresh import matches orientation/materials/bounds. Keep existing cala footprint and a navigable approach; polished geometry consistent with the existing clay world.
+  - Explicit normalized placement contract, at most 12000 triangles and 600 kB GLB per place; use ceilings as limits, not proof of finish. Asset registry additions do not affect current runtime parsing before hookup.
+  - Inspect reference images, graybox/proportions, multiview and day/night views at actual game distance; save requirement ledger and render/evidence paths. No redistributed reference images in public assets.
+  - Relevant asset/unit validation, typecheck/lint pass. Deliver source, blend, GLB and metrics; no runtime completion claim yet.
+- Outcome:
+
+## T110 — Blender Benidorm skyline and club asset
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: blender-modeling-workflow, blender-asset-validation
+- Depends on: T107
 - Goal: Create a recognizable Benidorm island with characteristic skyscraper silhouette, screens, a club, decorative photo cameras and the BOIA buoy mascot dressed for an adult nightclub, pole-dancing with a connected up/down loop.
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) Benidorm place ID from current map, T107 reusable contract, original BOIA references, primary VisitBenidorm/Intempo skyline images, Blender modeling/validation and animation guidance when available. Blender executable (read-only, never write in that checkout): `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/node_modules/.tools/blender-5.2.2-windows-x64/blender.exe`; if it is missing, use any Blender ≥ 4.2 found on the machine and say which.
 - Scope: Benidorm source/blend/GLB/asset manifest and named motion nodes or exported clips; no runtime/client/map geometry/persistence/race/route changes yet.
@@ -181,7 +211,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Status: pending
 - Model: codex (codex:codex-rescue agent)
 - Skills: none
-- Depends on: T120
+- Depends on: T106
 - Goal: Honor the user's clarified behavior: rescuing the castaway and receiving its discount completes the castaway achievement; no unimplemented delivery-to-party mission is required.
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) current naufrago-fiesta achievement, discount encounter and signal hooks; durable discount/achievement state and ledger after T106.
 - Scope: castaway achievement wording and rescue trigger, evidence-based readiness recovery, focused tests. Preserve stable achievement ID, reward amount, claimed history, earned discount and repeated phrase; no persistence infrastructure, world art or other catalog changes.
@@ -195,7 +225,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T120, T115
+- Depends on: T106, T107, T115
 - Goal: Rename Cala Cantalar to Puerto de Alicante and show its normal place popup on approach: this is the harbor where the player can change their boat. Clicking its CTA opens Mi Barco; approaching must not automatically open the shop or show upcoming events.
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) cala persistent ID, source mapa.json, map.ts/content, place sheet/client, T100 ship-menu-discovery, optional island model loader and T107 asset contract.
 - Scope: harbor labels/content/popup and explicit shop action, remove superseded auto-open hookup, minimal harbor loader/fallback hookup and tests. Preserve persistent cala ID and earned discoveries; no race, other-island art, persistence implementation or route topology.
@@ -265,7 +295,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T108, T109, T110, T111, T112, T113, T114, T115, T119
+- Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
 - Goal: Update the stale mobile-card test from T97 against the final intended UI; reconcile tests and document the requested changes, sample reward assumptions and remaining external setup.
 - Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
 - Scope: may touch relevant tests and concise docs/change notes / must not introduce new product behavior, modify existing decision history, apply migrations or edit plans/.
@@ -294,6 +324,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T116: e2e detected via `navigator.webdriver`; a level-up auto-picks the first card until T118; any panel or the menu pauses the game; while playing the runtime is not stepped and crocodiles, dolphin, Fiestera, jellyfish, whirlpools, bottles, secrets, chests and wreckage are hidden and not solid; only island labels on sea and minimap; map view, course, sailing, flight, turbo and world switching blocked; dev `&oferta=1` shows the Cañón panel; shortcut params removed from the URL after use (`dev=1` stays); `detectQuality` in mar3d; `SurvivorsClock.alpha` for interpolation; panel title/summary i18n keys `muestra` (agent)
 - 2026-10-04 T116 known: the two 2D-canon tests in `minijuegos.spec.ts` now fail by design (T119 removes them); «Códigos» sheet from the menu does not pause (T118); Fiestera-on-board has no e2e (T119 should add one) (agent)
+
+- 2026-10-04 plan: Codex hit its usage limit (until 16:05) with T106/T107 uncommitted; T120 merges `codex/world-updates` as it is (608f883), and T106/T107 become Opus tasks here that continue Codex's uncommitted work read-only from its worktrees; Hernán stops the Codex session (Hernán)
 
 ## Proposals (new scope)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
