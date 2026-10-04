@@ -8,6 +8,8 @@ Test command: export PYTHONUTF8=1 && pnpm exec vitest run --exclude '**/packages
 Worktree setup: pnpm install --frozen-lockfile
 Status file: ESTADO.md
 
+**Single world (Hernán, 2026-10-04):** from T122 on, work only on the main world **Arcilla**; **Acuarela** is hidden and must not be changed or kept in parity (it will be ported in a later update). Wherever a task says «both worlds», read «Arcilla».
+
 Notes for every task (this machine is Windows 10, Git Bash): the two `packages/db` suites need a local Postgres that this machine does not have, hence the exclude; `PYTHONUTF8=1` makes the Python checks read UTF-8; if a guard blocks the chained test command, run its steps one by one. E2E: `E2E_PORT=<free port> pnpm e2e <spec files> --workers=1` (first time in a worktree: `pnpm --filter @boia/web exec playwright install chromium`); the machine is slow under load, rerun only failing specs; the full e2e run is done once by the orchestrator at the end of the plan, never per task. UI strings only by key in `apps/web/lib/i18n/`, never loose strings in components. Content (names, texts, point amounts) stays `muestra`. Never commit `apps/web/public/atlas/`, `.claude/launch.json` or any `.env*` file other than `.env.example`. Never push or deploy. Never edit `docs/DECISIONES.md`. Local mode (D-20, no Supabase env vars) must keep working exactly as today; Supabase mode must not break. Skills: each task's block names the skills it may invoke with the Skill tool; invoke none other. Every task runs on Opus 5.5 unless its block says Model: codex.
 
 **Required reading for every task:** `docs/propuestas/2026-10-04-canon-survivors.md` (the full design reference of the mode; this beta builds only part of it, but every structure must be ready for the rest) and `docs/propuestas/2026-10-04-plan-009-beta1.md` (what beta 1 includes and excludes). Where this plan and those documents disagree, this plan wins.
@@ -264,6 +266,22 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Meaningful lifecycle/physics and targeted race E2E pass; full safe suite, typecheck/lint exit 0.
 - Outcome: `RACE_SHIP_CONFIG` (15-kn config scaled to 220 u/s, checked against the frozen 22-kn config) only while the race phase is `racing`; excess speed cut to the 15-kn cap on exit; record version kept; `data-manejo`; medal e2e passes again → eb968a0
 
+## T122 — One world: hide Acuarela, keep it for a later port
+- Status: pending
+- Model: sonnet
+- Skills: none
+- Depends on: T108
+- Goal: From now on BOIA.PLANET is played in a single world, **Arcilla** (the default, main world). **Acuarela** (world 2) stays in the code and data, untouched, for a later update that will port everything to it, but nobody can reach it (Hernán, 2026-10-04). Concretely: the «Mundos» selector in the `/mar` menu and any other player-facing way to switch world disappear (if a selector with one option makes no sense, remove the entry); `?mundo=acuarela` and a stored choice of `acuarela` (`boia:mundo`, `boia:mundo-activo`) fall back silently to Arcilla without losing progress; the Admin no longer offers Acuarela either. Keep Acuarela's skin, map data, art and their unit tests compiling and passing (mark it hidden in one place, e.g. a `hidden`/`playable` flag in the registry, rather than deleting it). Update or retire the e2e that switch to Acuarela or assert parity across both worlds so they test Arcilla only, without weakening Arcilla's checks.
+- Context: `packages/world/src/worlds/catalog.ts` (`WORLD_REGISTRY`, Arcilla default), `registry.ts`, `selection.ts` (`WORLD_PARAM`, storage keys), the `/mar` menu «Mundos» section and world switching in `apps/web/app/mar/mar-client.tsx`, T116's block on world switching during a Cañón game, Admin world pickers (`apps/web/lib/admin/`), e2e that mention `acuarela` or `mundo=` (`grep -rln acuarela apps/web/e2e`), `docs/spec/estado.md` REQs about worlds (note the change; never edit `docs/DECISIONES.md`).
+- Scope: may touch the world registry/selection, the menu and world-switch UI, Admin pickers, i18n keys, related unit and e2e tests, `docs/spec/estado.md`, `docs/TRASPASO.md` (one line) / must not delete Acuarela's skin, map, art or tests, nor touch the Cañón, race, route or place art.
+- Done when:
+  - unit tests prove: the playable world list is only Arcilla; `?mundo=acuarela` and a stored `acuarela` choice resolve to Arcilla; Acuarela's registry entry and skin still exist and pass their tests
+  - `grep -rn "acuarela" apps/web/app apps/web/lib --include=*.tsx` shows no player-facing switch to it
+  - `E2E_PORT=<free> pnpm e2e <the world/menu/parity specs touched> --workers=1` → exit 0
+  - `python3 tools/spec/estado.py` → exit 0
+  - Test command → exit 0
+- Outcome:
+
 ## T112 — Benidorm and Ibiza runtime integration with bounded club animation
 - Status: pending
 - Model: opus (Opus 5.5)
@@ -280,7 +298,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T113 — Transparent main route with optional exploration islands
 - Status: pending
-- Model: opus (Opus 5.5)
+- Model: sonnet
 - Skills: none
 - Depends on: T108, T109, T112
 - Goal: Make route lines more transparent and connect only Inicio → Puerto de Alicante → Isla de Halloween → Isla del Sonido → Isla de Nochevieja, reducing confusing crossings. Other islands stay optional destinations found through exploration/minimap.
@@ -308,7 +326,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T105 — Final regression coverage and world-update handoff
 - Status: pending
-- Model: opus (Opus 5.5)
+- Model: sonnet
 - Skills: none
 - Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
 - Goal: Update the stale mobile-card test from T97 against the final intended UI; reconcile tests and document the requested changes, sample reward assumptions and remaining external setup.
@@ -368,6 +386,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 Hernán: if 4 agents make things slower, go back down. Signal: task durations clearly above the ~25–35 min of the 2-agent tasks, or e2e failing by timeouts under load; then launch no new agent until at most 2 are running (orchestrator applies)
 
 - 2026-10-04 T109: Mar3D reads the race through a `racing()` option each step; on race end extra speed is clamped to the 15-kn cap while active boosts/turbo still count (agent)
+
+- 2026-10-04 Hernán asked to use Sonnet where tasks are simple: T113 (route topology/opacity) and T105 (test fix + docs) go to Sonnet; T112 (GLB runtime loading, animation clips, Benidorm/Ibiza collision parity) stays on Opus (orchestrator)
+
+- 2026-10-04 Hernán: from now on all changes are made only in the main world (Arcilla); world 2 (Acuarela) is hidden and unreachable until a later update ports everything to it. New task T122 hides it (Sonnet, after T108). Every later task (T112, T113, T105) works on Arcilla only: requirements that said «both worlds» / «labels in both worlds» / «source/runtime parity in both worlds» now mean Arcilla only (Hernán)
 
 ## Proposals (new scope)
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
