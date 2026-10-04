@@ -12,6 +12,7 @@ import {
   ROUTE,
   ROUTE_NEIGHBOURS,
   ROUTE_STOPS,
+  WHIRLPOOL_NEAR,
   contentBounds,
   decorCircles,
   decorSpots,
@@ -143,38 +144,38 @@ describe('el mundo compacto de /mar (T50)', () => {
 });
 
 describe('la ruta (marcas en el agua)', () => {
-  it('visita las paradas en el orden de la historia y vuelve al puerto', () => {
-    expect(route.stops).toEqual([
-      'puerto',
-      'cala',
-      'fiestera',
-      'halloween',
-      'allday',
-      'fotos',
-      'tienda',
-      'canon',
-      'faro',
-      'ultima',
-    ]);
+  it('une sólo la ruta principal, en orden, sin vuelta al puerto (T113)', () => {
+    expect(route.stops).toEqual(['puerto', 'cala', 'halloween', 'allday', 'ultima']);
     expect(route.stops).toEqual([...ROUTE_STOPS]);
-    // La línea pasa por cada parada, en orden, y la última vuelta acaba en el anillo.
-    expect(route.stopAt).toHaveLength(route.stops.length + 1);
+    // La línea pasa por cada parada, en orden, y acaba en la última isla.
+    expect(route.stopAt).toHaveLength(route.stops.length);
     route.stops.forEach((id, i) => {
       const p = route.path[route.stopAt[i]!]!;
       const at = id === 'puerto' ? world.spawn! : byId(world, id).position;
       expect(around(p, at), id).toBeLessThan(0.01);
     });
-    const last = route.path[route.stopAt[route.stops.length]!]!;
-    expect(last).toBe(route.path[route.path.length - 1]);
-    expect(around(last, world.spawn!)).toBeLessThan(0.01);
+    expect(route.stopAt[route.stops.length - 1]).toBe(route.path.length - 1);
     expect(route.stopAt).toEqual([...route.stopAt].sort((a, b) => a - b));
   });
 
-  it('la Fiestera sube en su parada y baja en la última isla de la ruta (su destino)', () => {
+  it('las islas opcionales no están en la ruta pero siguen en el mundo, accesibles', () => {
+    for (const id of ['fotos', 'tienda', 'canon', 'faro']) {
+      expect(route.stops, id).not.toContain(id);
+      const o = byId(world, id);
+      expect(o.identity.active, id).toBe(true);
+      expect(o.position, id).toBeDefined();
+    }
+    const rt = new WorldRuntime({ ...world, bounds: rect }, { wrap: true });
+    for (const id of ['fotos', 'tienda', 'canon', 'faro']) {
+      const o = byId(world, id);
+      const pt = rt.safePoint(o.position.x, o.position.y + footprintOf(o) + 60, 18);
+      expect(around(pt, o.position), id).toBeGreaterThan(0);
+    }
+  });
+
+  it('la Fiestera baja en la última isla de la ruta (su destino)', () => {
     const spec = rescueMissionOf(world)!;
     const dest = missionDestinationId(world, spec.missionId);
-    const iFiestera = route.stops.indexOf(spec.characterId);
-    expect(iFiestera).toBeGreaterThan(0);
     expect(route.stops.indexOf(dest!)).toBe(route.stops.length - 1);
   });
 
@@ -231,8 +232,10 @@ describe('la ruta (marcas en el agua)', () => {
     );
     expect(near.length).toBeGreaterThan(0);
     for (const o of near) {
+      // El remolino, que además huye de las fichas y de la carretera, puede quedar algo más lejos.
+      const limit = o.identity.category === 'remolino' ? WHIRLPOOL_NEAR : ROUTE.near;
       expect(nearestOnRoute(route, o.position, period).d, o.identity.id).toBeLessThanOrEqual(
-        ROUTE.near + 1,
+        limit + 1,
       );
     }
     for (let i = 0; i < near.length; i++) {

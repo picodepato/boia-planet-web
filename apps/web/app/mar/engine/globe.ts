@@ -208,6 +208,8 @@ export function drawGlobe(
 
   // La ruta (las marcas en el agua): trazos amarillos, cortados en la costura.
   if (s.route.length > 1) {
+    ctx.save();
+    ctx.globalAlpha = 0.6; // más transparente (T113)
     ctx.strokeStyle = GLOBE_COLORS.route;
     ctx.lineWidth = Math.max(1, px * 1.4);
     ctx.setLineDash([px * 3, px * 2.5]);
@@ -222,6 +224,7 @@ export function drawGlobe(
     }
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.restore();
   }
 
   // Brillo arriba a la izquierda y el borde; lo de encima (islas, barco) sin recortar.

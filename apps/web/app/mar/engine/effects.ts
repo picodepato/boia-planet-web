@@ -319,7 +319,9 @@ export class CourseMarker {
  * con el planeta (cada vértice en su copia más cercana).
  */
 /** Lo que se ven las marcas de cerca (0…1), con el barco. muestra */
-export const NEAR_MARKS = 0.55;
+export const NEAR_MARKS = 0.4;
+/** Y la opacidad máxima de las marcas (más transparentes desde T113). muestra */
+export const MARKS_ALPHA = 0.55;
 
 export class RouteLine {
   readonly mesh: InstancedMesh;
@@ -363,7 +365,7 @@ export class RouteLine {
   /** `zoom` 0 (barco) … 1 (mapa). */
   update(zoom: number): void {
     const a = NEAR_MARKS + (1 - NEAR_MARKS) * smooth(0.3, 0.6, zoom);
-    this.mat.opacity = a * 0.95;
+    this.mat.opacity = a * MARKS_ALPHA;
     this.mesh.visible = !this.suppressed && a > 0.01 && this.dashes.length > 0;
     if (!this.mesh.visible) return;
     const k = 1 + smooth(0.3, 1, zoom) * 1.2;

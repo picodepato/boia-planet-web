@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T113: Transparent main route with optional exploration islands
+
+Qué existe
+- `ROUTE_STOPS` (`apps/web/app/mar/engine/compact.ts`) es ahora sólo la ruta principal: Inicio (`puerto`) → Puerto de Alicante (`cala`) → Isla de Halloween → Isla del Sonido → Isla de Nochevieja. Sin vuelta al puerto (`stopAt` tiene una entrada por parada). Benidorm, Ibiza, el cañón, Tabarca y la Fiestera quedan fuera de la línea: siguen en el mundo, con pin, ficha y misiones, y se encuentran explorando o con el minimapa.
+- Opacidad reducida: marcas 3D de 0,52 de cerca y 0,95 en el mapa a 0,22 y 0,55 (`NEAR_MARKS` 0,4, `MARKS_ALPHA` 0,55 en `effects.ts`); la línea del minimapa redondo a `globalAlpha` 0,6.
+- El mar vivo se acerca a la nueva ruta; el remolino, además, huye de la carretera de la carrera (`offRoad`) y, si la ruta no le deja sitio, queda a como mucho `WHIRLPOOL_NEAR` (640 u).
+- La ocultación durante el Cañón y la carrera no cambia (`setRouteHidden`).
+- Pruebas: `compact.test.ts` (orden exacto, sin vuelta, islas opcionales presentes y alcanzables, Fiestera baja en la última).
+- Sólo Arcilla; Acuarela sin tocar.
+
+Comandos
+- `pnpm exec vitest run apps/web/app/mar` → exit 0, 274 tests.
+- e2e `mar-3d`, `mar-remolino`, `mar-fiestera` (escritorio y móvil) → 38 passed.
+- Suite completa: vitest 145 archivos / 1323 tests exit 0 (una pasada previa falló 1 test intermitente, la siguiente 0); `tools/spec/checks.sh` OK; lint, typecheck, build exit 0.
+- Evidencia: captura del mapa en `/tmp/orchestrator-attach/boia-planet-hernan-T113/overview-mapa.png`.
+
+Pendiente
+- Ajustar a ojo la opacidad (`NEAR_MARKS`, `MARKS_ALPHA`) si Hernán la quiere más o menos visible.
+
 ## 2026-10-04 — plan 010 T112: Benidorm and Ibiza runtime integration with bounded club animation
 
 Qué existe:

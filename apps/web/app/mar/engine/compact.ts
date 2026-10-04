@@ -1,5 +1,8 @@
 import { sheetRadius } from '@boia/engine/bottles';
-import type { Rect, WorldConfig, WorldObject } from '@boia/world';
+import { circuitFromWorld } from '@boia/engine/circuit';
+import { CIRCUIT_ID, type Rect, type WorldConfig, type WorldObject } from '@boia/world';
+import { roadPath } from '../race';
+import { ROAD_HALF_WIDTH, distToPath } from '../road';
 import { compressWorld, fromScene, toScene } from './compress';
 import { type Circle, type Period, periodOf, planetRect, shortest, wrapIn } from './wrap';
 
@@ -152,25 +155,14 @@ export function contentBounds(world: WorldConfig, decor: readonly Circle[]): Rec
 // --- La ruta de boyas ---------------------------------------------------------------
 
 /**
- * El orden de la historia: del puerto (El Varadero) a la Cala Cantalar, el
- * remanso de la Boia Fiestera (la rescatas ahí), la Isla de Halloween y la
- * Isla del Sonido (islas con entradas, T67), la Isla de Benidorm (fotos),
- * Ibiza (la tienda), L'Illeta dels Banyets (el cañón) y Tabarca (el faro), y
- * la Isla de Nochevieja (la última, donde la Fiestera baja: su misión la
- * lleva hasta el final de la ruta). Luego vuelve al puerto.
+ * La ruta principal (T113): sólo el hilo de la historia, Inicio (El Varadero) →
+ * Puerto de Alicante (la Cala) → Isla de Halloween → Isla del Sonido → Isla de
+ * Nochevieja (la última, donde la Fiestera baja). El resto de islas (Benidorm,
+ * Ibiza, el cañón, Tabarca…) son destinos opcionales: se encuentran
+ * explorando o con el minimapa, sin línea que las una. No vuelve al puerto:
+ * esa vuelta cruzaba el mapa entero.
  */
-export const ROUTE_STOPS = [
-  'puerto',
-  'cala',
-  'fiestera',
-  'halloween',
-  'allday',
-  'fotos',
-  'tienda',
-  'canon',
-  'faro',
-  'ultima',
-] as const;
+export const ROUTE_STOPS = ['puerto', 'cala', 'halloween', 'allday', 'ultima'] as const;
 
 /** Medidas de la ruta (u). muestra */
 export const ROUTE = {
@@ -189,6 +181,9 @@ export const ROUTE = {
 } as const;
 
 /** El mar vivo que sale al paso: se acerca a la ruta (categorías, lo grande primero). */
+/** Un remolino sin sitio junto a la ruta principal queda como mucho a esto de ella (T113). muestra */
+export const WHIRLPOOL_NEAR = 640;
+
 export const ROUTE_NEIGHBOURS = ['naufrago', 'remolino', 'delfin', 'cofre', 'restos'] as const;
 
 /**
@@ -214,7 +209,7 @@ export interface SeaRoute {
   stops: string[];
   /** La línea, seguida (sin cortes en el borde: cada tramo por el camino corto). */
   path: Point[];
-  /** Índice en `path` de cada parada; la última entrada es la vuelta al puerto. */
+  /** Índice en `path` de cada parada. */
   stopAt: number[];
   /**
    * Las marcas en el agua que guían (T50; desde T59, lo único de la ruta que
@@ -295,8 +290,7 @@ export const periodOfWorld = (world: WorldConfig): Period => periodOf(planetRect
 /**
  * La ruta: sale recta por la bocana del puerto y une las paradas en
  * orden, cada tramo por el camino más corto del planeta (dando la vuelta si
- * lo es), rodeando las islas que no son parada y el decorado, y vuelve al
- * puerto. Sólo decorado: sin choques ni premios.
+ * lo es), rodeando las islas que no son parada y el decorado. Sólo decorado: sin choques ni premios.
  */
 export function seaRoute(world: WorldConfig): SeaRoute {
   const rect = planetRect(world.bounds);
@@ -326,8 +320,8 @@ export function seaRoute(world: WorldConfig): SeaRoute {
       path.push({ x: at[0]!.x + Math.cos(h) * ROUTE.exit, y: at[0]!.y + Math.sin(h) * ROUTE.exit });
     }
   }
-  for (let i = 1; i <= at.length && at.length > 1; i++) {
-    const k = i % at.length;
+  for (let i = 1; i < at.length; i++) {
+    const k = i;
     const a = path[path.length - 1]!;
     const s = shortest(a, at[k]!, period);
     const b = { x: a.x + s.dx, y: a.y + s.dy };
@@ -454,6 +448,11 @@ export function pullToRoute(world: WorldConfig, route: SeaRoute): WorldConfig {
     }
   }
   const sheets = sheetZones(world);
+  // La carretera de la carrera: el remolino no cae encima (T96; con la ruta de T113 hay que decirlo).
+  const spec = circuitFromWorld(world, CIRCUIT_ID);
+  const road = spec ? roadPath(world, spec) : [];
+  const offRoad = (cx: number, cy: number, size: number) =>
+    road.length < 2 || distToPath(road, { x: cx, y: cy }, period) > ROAD_HALF_WIDTH + size + 1;
   const placed: Circle[] = [];
   /** Agua libre que queda hasta lo ya colocado (negativa: se pisan). */
   const room = (x: number, y: number, size: number) =>
@@ -506,19 +505,27 @@ export function pullToRoute(world: WorldConfig, route: SeaRoute): WorldConfig {
         const s = shortest(c, { x: cx, y: cy }, period);
         return Math.hypot(s.dx, s.dy) >= c.radius + size + extra;
       });
-    if (whirl && !clear(x, y, sheets, WHIRLPOOL_SHEET_MARGIN)) {
-      search: for (let k = 1; k <= 48; k++) {
-        const along = Math.ceil(k / 2) * ROUTE.spread * (k % 2 ? 1 : -1);
-        const r = routeAt(route, n.arc + along);
-        for (const s of [side, -side]) {
-          const c = { x: r.p.x - r.dir.y * s * off, y: r.p.y + r.dir.x * s * off };
-          if (
-            clear(c.x, c.y, sheets, WHIRLPOOL_SHEET_MARGIN) &&
-            clear(c.x, c.y, keepOut, 40) &&
-            room(c.x, c.y, size) >= 0
-          ) {
-            ({ x, y } = c);
-            break search;
+    if (whirl && !(clear(x, y, sheets, WHIRLPOOL_SHEET_MARGIN) && offRoad(x, y, size))) {
+      // Primero junto a la ruta (`ROUTE.near`); si la ruta principal no deja sitio
+      // (fichas de islas y carretera de la carrera), algo más lejos (T113).
+      search: for (const reach of [ROUTE.near, WHIRLPOOL_NEAR]) {
+        const offs = [off, off + 40, off + 80, off + 120, reach].map((f) => Math.min(f, reach));
+        for (let k = 1; k <= 48; k++) {
+          const along = Math.ceil(k / 2) * ROUTE.spread * (k % 2 ? 1 : -1);
+          const r = routeAt(route, n.arc + along);
+          for (const o2 of offs) {
+            for (const s of [side, -side]) {
+              const c = { x: r.p.x - r.dir.y * s * o2, y: r.p.y + r.dir.x * s * o2 };
+              if (
+                clear(c.x, c.y, sheets, WHIRLPOOL_SHEET_MARGIN) &&
+                offRoad(c.x, c.y, size) &&
+                clear(c.x, c.y, keepOut, 40) &&
+                room(c.x, c.y, size) >= 0
+              ) {
+                ({ x, y } = c);
+                break search;
+              }
+            }
           }
         }
       }
