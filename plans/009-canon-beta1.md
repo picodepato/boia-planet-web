@@ -21,7 +21,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T98 — Survivors simulation in `packages/engine/src/survivors/` with seed tests
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
@@ -140,3 +140,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-04 13:52 T98 launched · attempt 1 · agent a7dd71bedac7f77e0
+- 2026-10-04 14:16 T98 done · branch worktree-agent-a7dd71bedac7f77e0 → ab1bd6b
