@@ -4,6 +4,30 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T110: Blender Benidorm skyline and club asset (Codex)
+
+Place ID `fotos` ("Isla de Benidorm"). No runtime/map/collision/route change.
+
+Exists:
+- `tools/blender/places/fotos.py` (source), `art/places/3d/fotos/{fotos.blend,fotos.glb,manifest.json,reference_notes.md,requirement_ledger.md,final_report.md}`.
+- Shared tooling generalized (cala still passes): `common.py`, `check.py` (97-phase motion/contact checks), `fresh_import.py`, `test_check.py`, `distance_camera.mjs` (takes a place id), `place3d.schema.json`, README.
+- GLB: 11768 tris (ceiling 12000), 397380 bytes (ceiling 600000). Blender-source bounds min [-0.94,-0.94,-0.045], max [0.94,0.94,1.343], radial 0.94, height 1.343. No enlargement proposed (scale = fotos collision radius 7.0875, height ~9.52 scene units).
+- Motion for T112: moving empty `boia_pole_slide`, clip `boia-pole-dance`, 4 s loop, 24 fps, frames 1..97 (t=(f-1)/24), translation only, z=0.42+0.085*(1-cos(2*pi*t/4)) (travel 0.17). Pivot Blender [0,-0.33,0.42] (glTF [0,0.42,0.33]) on the pole axis. Pole Blender [0,-0.33,0.15] to [0,-0.33,1.03], radius 0.014. Hand contacts `boia_hand_high` local [0,-0.024,0.105], `boia_hand_low` local [0,0.024,0.005]. Reduced motion: static_frame=1 (low pose, dressed, hands on pole; exported default pose equals it), so seek clip to t=0 and stop updating. Static batch `static_fotos`, root `place_fotos`.
+- Mascot dressed (purple club vest, hat), hands on the pole; tasteful, non-explicit. Cameras and equalizer screens are decorative geometry only; no photos, textures or dynamic camera access.
+- Evidence (outside repo, ignored): `node_modules/t110-preview/` (final/ authored views, hero, distance, 9 motion frames; fresh/ from fresh GLB import; review-*.jpg sheets). `node_modules/t110-verify/` has the wrapper's re-runs.
+
+Commands (wrapper re-run, from this worktree):
+- `python tools/blender/places/check.py art/places/3d/fotos` -> exit 0 (11768 tris, 397380 B, 1 clip)
+- `python tools/blender/places/check.py art/places/3d/cala` -> exit 0
+- `python tools/blender/places/test_check.py` -> exit 0
+- Blender 5.2.2 `fresh_import.py --manifest art/places/3d/fotos/manifest.json` -> exit 0
+- vitest (excluding packages/db, 30 s timeout) -> exit 0 (137 files, 1231 tests)
+- `sh tools/spec/checks.sh` -> exit 0; `pnpm lint` -> 0; `pnpm typecheck` -> 0; `pnpm build` -> 0
+
+Pending:
+- Primary VisitBenidorm/Intempo photographs could not be visually inspected by Codex (see reference_notes.md); the skyline is stylized from the brief.
+- T112: retain the GLTF clip in ModelStore, mixer lifecycle, reduced-motion handling, live framing/lighting (default exterior approach at 1.7 radii crops tower tops; 1.05 radii frames the whole skyline). No runtime completion claim.
+
 ## 2026-10-04 — plan 010 T119: Remove the 2D canon, session and reward, full e2e of the mode, docs and the beta test guide
 
 Qué existe:

@@ -1,0 +1,135 @@
+{
+  "kind": "place-glb",
+  "version": 1,
+  "id": "fotos",
+  "file": "fotos.glb",
+  "source": "fotos.blend",
+  "generator": "tools/blender/places/fotos.py",
+  "blender": "5.2.2 LTS",
+  "units": "normalized radius 1; glTF Y up; front +Z; water Y=0",
+  "radius": 1,
+  "scale_rule": "current scene collision radius / radius",
+  "max_tris": 12000,
+  "max_bytes": 600000,
+  "tris": 11768,
+  "bytes": 397380,
+  "bounds": {
+    "min": [
+      -0.94,
+      -0.94,
+      -0.045
+    ],
+    "max": [
+      0.94,
+      0.94,
+      1.343
+    ],
+    "coordinate_system": "Blender Z up; front -Y",
+    "radial": 0.94
+  },
+  "height": 1.343,
+  "static_node": "static_fotos",
+  "motion": [
+    {
+      "node": "boia_pole_slide",
+      "clip": "boia-pole-dance",
+      "duration": 4,
+      "static_frame": 1,
+      "validation": {
+        "coordinate_system": "Blender Z up; local contacts relative to moving node",
+        "fps": 24,
+        "first_frame": 1,
+        "last_frame": 97,
+        "pivot": [
+          0,
+          -0.33,
+          0.42
+        ],
+        "pole": {
+          "bottom": [
+            0,
+            -0.33,
+            0.15
+          ],
+          "top": [
+            0,
+            -0.33,
+            1.03
+          ],
+          "radius": 0.014
+        },
+        "contacts": [
+          {
+            "node": "boia_hand_high",
+            "local": [
+              0,
+              -0.024,
+              0.105
+            ],
+            "radius": 0.018
+          },
+          {
+            "node": "boia_hand_low",
+            "local": [
+              0,
+              0.024,
+              0.005
+            ],
+            "radius": 0.018
+          }
+        ],
+        "sample_frames": [
+          1,
+          7,
+          13,
+          19,
+          25,
+          31,
+          37,
+          43,
+          49,
+          55,
+          61,
+          67,
+          73,
+          79,
+          85,
+          91,
+          97
+        ],
+        "min_vertical_travel": 0.16,
+        "stage_top": 0.15,
+        "support_bottom": 1.03,
+        "moving_bounds": {
+          "min": [
+            -0.355,
+            -0.495,
+            0.212
+          ],
+          "max": [
+            0.018,
+            -0.165,
+            0.818135
+          ]
+        },
+        "note": "Rigid vertical cosine slide; hands enclose pole surface. No rotation, camera or media access."
+      }
+    }
+  ],
+  "approach": {
+    "side": "+Z in glTF",
+    "outside_radius": 1,
+    "clear_sector_degrees": [
+      -25,
+      25
+    ],
+    "note": "Decorative club inside original footprint; no collision or route enlargement proposed."
+  },
+  "references": [
+    "art/marca/boia-mascota.jpg",
+    "tools/blender/mascota.py",
+    "https://www.visitbenidorm.es/",
+    "https://www.intemposkyresort.es/"
+  ],
+  "license": "Original BOIA geometry; local BOIA reference image inspected. Primary reference pages consulted; primary photographs could not be visually inspected. No redistributed images or textures."
+}

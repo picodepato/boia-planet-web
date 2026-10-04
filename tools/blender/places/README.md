@@ -44,6 +44,27 @@ validate actual animated phases, pivot/contact/bounds and fresh imported motion.
 
 ## Reproduce and validate
 
+T110 `fotos` uses a rigid dressed mascot sliding on a supported club pole.
+Its optional `motion[].validation` records source-space pivots, visible hand
+nodes, pole endpoints/radius, phase frames and the moving envelope. The independent
+checker samples all 97 exported phases, including actual pole circumference and
+mitten geometry; fresh import compares moving bounds, pivots and hands at 17 phases.
+See `art/places/3d/fotos/requirement_ledger.md` for the T112 playback handoff.
+
+```powershell
+node --experimental-transform-types --import ./packages/world/scripts/ts-resolve.mjs tools/blender/places/distance_camera.mjs node_modules/t110-preview/distance-camera.json fotos
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/fotos.py -- --preview node_modules/t110-preview/final
+python tools/blender/places/check.py art/places/3d/fotos
+python tools/blender/places/test_check.py
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/fresh_import.py -- --manifest art/places/3d/fotos/manifest.json --output node_modules/t110-preview/final/fresh-import.json
+& $blender --background --factory-startup --python-exit-code 1 --python tools/blender/places/fotos.py -- --fresh-evidence --preview node_modules/t110-preview/fresh
+```
+
+`distance_camera.mjs` accepts the output path then optional place ID (default cala).
+For fotos, the retained 1.7-radius approach crops tall tower tops; additional
+1.05-radius exterior approach renders use the same camera law and show the skyline.
+These evidence adjustments do not modify the live camera or island geometry.
+
 Run from repository root with an explicit official Blender executable:
 
 ```powershell

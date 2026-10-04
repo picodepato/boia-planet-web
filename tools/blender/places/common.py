@@ -35,7 +35,7 @@ def start(place_id, palette):
     return root, mats
 
 
-def export(place_id, root, source, references, approach, motion=None):
+def export(place_id, root, source, references, approach, motion=None, license_note=None):
     """Static batching preserves separate semantic animated assemblies when provided.
 
     motion: [{node, clip, duration, static_frame}], rigid node transforms only.
@@ -99,7 +99,7 @@ def export(place_id, root, source, references, approach, motion=None):
                   'coordinate_system':'Blender Z up; front -Y','radial':round(radial,6)},
         'height':round(maximum[2],6),'static_node':'static_'+place_id,
         'motion':motion or [],'approach':approach,'references':references,
-        'license':'original BOIA sample; external photographs used only as visual references'}
+        'license':license_note or 'original BOIA sample; external photographs used only as visual references'}
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
     print('[place]', place_id, tris, 'triangles', path.stat().st_size, 'bytes; radius', radial)
     return out
@@ -146,7 +146,7 @@ def clean_collapsed_triangles(path):
     return removed
 
 
-def render_preview(root, directory, gray=False, distance_camera=None):
+def render_preview(root, directory, gray=False, distance_camera=None, target_height=.1, ortho_scale=2.7):
     directory = Path(directory).resolve()
     directory.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
@@ -173,8 +173,8 @@ def render_preview(root, directory, gray=False, distance_camera=None):
     cam = bpy.context.object
     cam.name = 'harbor_hero'
     cam.data.type = 'ORTHO'
-    cam.data.ortho_scale = 2.7
-    cam.rotation_euler = (Vector((0,0,.1))-cam.location).to_track_quat('-Z','Y').to_euler()
+    cam.data.ortho_scale = ortho_scale
+    cam.rotation_euler = (Vector((0,0,target_height))-cam.location).to_track_quat('-Z','Y').to_euler()
     scene.camera = cam
     bpy.ops.object.light_add(type='SUN')
     sun=bpy.context.object

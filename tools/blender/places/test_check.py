@@ -13,19 +13,20 @@ checker=importlib.util.module_from_spec(spec); spec.loader.exec_module(checker)
 
 
 class PlaceContractTest(unittest.TestCase):
+    place_id='cala'
     def setUp(self):
         scratch=checker.REPO/'node_modules/t107-preview/tests'
         scratch.mkdir(parents=True,exist_ok=True)
         self.tmp=tempfile.TemporaryDirectory(dir=scratch)
-        self.directory=Path(self.tmp.name)/'cala'
-        shutil.copytree(checker.REPO/'art/places/3d/cala',self.directory)
+        self.directory=Path(self.tmp.name)/self.place_id
+        shutil.copytree(checker.REPO/'art/places/3d'/self.place_id,self.directory)
         self.path=self.directory/'manifest.json'
         self.man=json.loads(self.path.read_text(encoding='utf-8'))
 
     def tearDown(self): self.tmp.cleanup()
     def save(self): self.path.write_text(json.dumps(self.man),encoding='utf-8')
     def alter_glb(self, change):
-        path=self.directory/'cala.glb'
+        path=self.directory/(self.place_id+'.glb')
         doc,binary=checker.read_glb(path); binary=bytearray(binary)
         change(doc,binary)
         encoded=json.dumps(doc,separators=(',',':')).encode()
@@ -83,6 +84,58 @@ class PlaceContractTest(unittest.TestCase):
         path=self.directory/'cala.glb'; before=checker.geometry_signature(path)
         self.alter_glb(lambda doc,binary: doc['materials'][0]['pbrMetallicRoughness'].update(roughnessFactor=.1))
         self.assertNotEqual(before,checker.geometry_signature(path))
+
+
+class FotosMotionTest(unittest.TestCase):
+    place_id='fotos'
+    setUp=PlaceContractTest.setUp
+    tearDown=PlaceContractTest.tearDown
+    save=PlaceContractTest.save
+    alter_glb=PlaceContractTest.alter_glb
+
+    def test_fotos_passes(self): self.assertEqual(checker.verify(self.directory),[])
+    def test_static_frame_outside_clip(self):
+        self.man['motion'][0]['static_frame']=98; self.save()
+        self.assertIn('static frame outside clip',checker.verify(self.directory))
+    def test_wrong_channel_target(self):
+        self.alter_glb(lambda d,b: d['animations'][0]['channels'][0]['target'].update(node=next(i for i,n in enumerate(d['nodes']) if n['name']=='static_fotos')))
+        self.assertIn('motion channel target mismatch',checker.verify(self.directory))
+    def test_wrong_reduced_pose(self):
+        self.man['motion'][0]['static_frame']=49; self.save()
+        self.assertIn('default pose differs from reduced motion frame',checker.verify(self.directory))
+    def alter_positions(self,transform):
+        def change(d,b):
+            a=d['accessors'][d['animations'][0]['samplers'][0]['output']]; view=d['bufferViews'][a['bufferView']]
+            offset=view.get('byteOffset',0)+a.get('byteOffset',0); stride=view.get('byteStride',12)
+            values=[struct.unpack_from('<fff',b,offset+i*stride) for i in range(a['count'])]
+            for i,p in enumerate(values): struct.pack_into('<fff',b,offset+i*stride,*transform(i,p,values))
+        self.alter_glb(change)
+    def test_no_vertical_travel(self):
+        self.alter_positions(lambda i,p,v:v[0])
+        self.assertIn('motion has no vertical travel',checker.verify(self.directory))
+    def test_nonfinite_animation_output(self):
+        self.alter_positions(lambda i,p,v:(float('nan') if i==12 else p[0],p[1],p[2]))
+        self.assertIn('non finite animation',checker.verify(self.directory))
+    def test_open_loop(self):
+        self.alter_positions(lambda i,p,v:(p[0],p[1]+(.02 if i==len(v)-1 else 0),p[2]))
+        self.assertIn('motion loop open',checker.verify(self.directory))
+    def test_detached_hand_geometry(self):
+        def change(d,b):
+            node=next(n for n in d['nodes'] if n['name']=='boia_hand_high'); node['translation'][0]+=.08
+        self.alter_glb(change)
+        self.assertIn('hand detached from pole',checker.verify(self.directory))
+    def test_outside_pole_span(self):
+        self.man['motion'][0]['validation']['pole']['top'][2]=.5; self.save()
+        self.assertIn('declared pole does not match static geometry',checker.verify(self.directory))
+    def test_false_pole_radius(self):
+        self.man['motion'][0]['validation']['pole']['radius']+=.006; self.save()
+        self.assertIn('declared pole does not match static geometry',checker.verify(self.directory))
+    def test_animated_radius_exceeded(self):
+        self.alter_positions(lambda i,p,v:(p[0]+(1.2 if i==len(v)//2 else 0),p[1],p[2]))
+        self.assertIn('animated normalized radius exceeded',checker.verify(self.directory))
+    def test_wrong_envelope(self):
+        self.man['motion'][0]['validation']['moving_bounds']['max'][2]+=.1; self.save()
+        self.assertIn('animated bounds mismatch',checker.verify(self.directory))
 
 
 if __name__=='__main__': unittest.main()

@@ -14,7 +14,8 @@ const constant = (name) => {
   return Number(match[1]);
 };
 const world = marWorld(WORLD_REGISTRY.resolve().config);
-const radius = toScene(world.objects.find((o) => o.identity.id === 'cala').geometry.collision.radius);
+const placeId = process.argv[3] ?? 'cala';
+const radius = toScene(world.objects.find((o) => o.identity.id === placeId).geometry.collision.radius);
 const rect = planetRect(world.bounds);
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -32,6 +33,7 @@ const elev = constant('ELEV_NEAR') + (1.28 - constant('ELEV_NEAR')) * smooth(0, 
 // Stationary boat at 1.7 island radii on the +Z exterior approach; zero UI inset/pan/kick.
 const focus = 1.7 * radius - distance * lookAhead(aspect).ahead;
 const result = {
+  place_id: placeId,
   fov_vertical_degrees: fov, aspect, zoom, radius, d_far: far,
   camera_distance_scene: distance, elevation_radians: elev, boat_distance_radii: 1.7,
   location_blender: [0, -(focus + Math.cos(elev) * distance) / radius, Math.sin(elev) * distance / radius],

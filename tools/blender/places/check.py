@@ -17,7 +17,7 @@ def read_accessor(doc, binary, index):
     acc = doc['accessors'][index]
     if acc.get('sparse'): raise ValueError('sparse accessor outside place contract')
     view = doc['bufferViews'][acc['bufferView']]
-    count = {'SCALAR':1, 'VEC3':3}[acc['type']]
+    count = {'SCALAR':1, 'VEC3':3, 'VEC4':4}[acc['type']]
     kind = {5121:'B', 5123:'H', 5125:'I', 5126:'f'}[acc['componentType']]
     fmt = '<' + kind * count
     size = struct.calcsize(fmt)
@@ -29,12 +29,12 @@ def read_accessor(doc, binary, index):
     return [struct.unpack_from(fmt, binary, start+i*stride) for i in range(acc['count'])]
 
 
-def mesh_instances(doc):
+def node_worlds(doc, overrides=None):
     """World transforms of meshes reachable from the default glTF scene."""
     identity = [[float(i == j) for j in range(4)] for i in range(4)]
     def visit(index, parent, ancestors):
         if index in ancestors: raise ValueError('cyclic node hierarchy')
-        node = doc['nodes'][index]
+        node = dict(doc['nodes'][index]); node.update((overrides or {}).get(index, {}))
         if 'matrix' in node:
             local = [[node['matrix'][c*4+r] for c in range(4)] for r in range(4)]
         else:
@@ -46,10 +46,122 @@ def mesh_instances(doc):
             for r in range(3):
                 for c in range(3): local[r][c] *= s[c]
         world = [[sum(parent[r][k]*local[k][c] for k in range(4)) for c in range(4)] for r in range(4)]
-        if 'mesh' in node: yield node['mesh'], world
+        yield index, world
         for child in node.get('children', []): yield from visit(child, world, ancestors | {index})
     for node in doc['scenes'][doc.get('scene', 0)]['nodes']:
         yield from visit(node, identity, set())
+
+
+def mesh_instances(doc, overrides=None):
+    for index, matrix in node_worlds(doc, overrides):
+        if 'mesh' in doc['nodes'][index]: yield doc['nodes'][index]['mesh'], matrix
+
+
+def sample_clip(doc, binary, clip, time):
+    """Independent glTF transform sampling; our rigid export uses LINEAR/STEP."""
+    pose = {}
+    for channel in clip.get('channels', []):
+        sampler = clip['samplers'][channel['sampler']]
+        times = [v[0] for v in read_accessor(doc, binary, sampler['input'])]
+        values = read_accessor(doc, binary, sampler['output'])
+        if sampler.get('interpolation', 'LINEAR') not in ['LINEAR', 'STEP']:
+            raise ValueError('unsupported motion interpolation')
+        k = next((i for i in range(len(times)-1) if time <= times[i+1]), len(times)-2)
+        k = max(0, k)
+        u = max(0, min(1, (time-times[k])/(times[k+1]-times[k]))) if len(times)>1 else 0
+        if sampler.get('interpolation') == 'STEP': u = 0
+        value = tuple(a+(b-a)*u for a,b in zip(values[k],values[min(k+1,len(values)-1)]))
+        if channel['target']['path'] == 'rotation':
+            # Our authored motion has no rotation. Reject it rather than approximate slerp.
+            raise ValueError('pole contract permits translation only')
+        pose.setdefault(channel['target']['node'], {})[channel['target']['path']] = value
+    return pose
+
+
+def blender_point(point): return (point[0], -point[2], point[1])
+def gltf_point(point): return (point[0], point[2], -point[1])
+
+
+def motion_errors(doc, binary, motion):
+    errors=[]; v=motion.get('validation')
+    if not v: return ['motion validation metadata missing']
+    nodes=doc['nodes']; names={n.get('name'):i for i,n in enumerate(nodes)}
+    clip=next((c for c in doc.get('animations',[]) if c.get('name')==motion['clip']),None)
+    index=names.get(motion['node'])
+    if clip is None or index is None: return errors
+    if any(c['target']['node']!=index or c['target']['path']!='translation' for c in clip['channels']):
+        return ['motion channel target mismatch']
+    if not v['first_frame']<=motion['static_frame']<=v['last_frame']: errors.append('static frame outside clip')
+    if abs((v['last_frame']-v['first_frame'])/v['fps']-motion['duration'])>1e-6: errors.append('authored frame duration mismatch')
+    inputs=[read_accessor(doc,binary,s['input']) for s in clip['samplers']]
+    if any(not math.isfinite(x) for s in clip['samplers'] for value in read_accessor(doc,binary,s['output']) for x in value):
+        return ['non finite animation']
+    start=min(t[0] for values in inputs for t in values); end=max(t[0] for values in inputs for t in values)
+    if any(not math.isfinite(t[0]) for values in inputs for t in values): errors.append('non finite animation')
+    for values in inputs:
+        if any(a[0]>=b[0] for a,b in zip(values,values[1:])): errors.append('non increasing animation times')
+    phases=[start+(end-start)*i/96 for i in range(97)]
+    positions=[]; moving_points=[]
+    def descendants(i):
+        return {i}.union(*(descendants(c) for c in nodes[i].get('children',[])))
+    moving=descendants(index)
+    # Static batching removes the semantic pole object. Locate its actual two
+    # circumference rings in world geometry, tying metadata to exported support.
+    static_points=[]
+    default_worlds=dict(node_worlds(doc))
+    for ni in default_worlds:
+        if ni in moving or 'mesh' not in nodes[ni]: continue
+        for p in doc['meshes'][nodes[ni]['mesh']]['primitives']:
+            static_points.extend(blender_point(world_point(default_worlds[ni],point)) for point in read_accessor(doc,binary,p['attributes']['POSITION']))
+    for endpoint in [v['pole']['bottom'],v['pole']['top']]:
+        ring=[p for p in static_points if abs(p[2]-endpoint[2])<1e-5 and abs(math.hypot(p[0]-endpoint[0],p[1]-endpoint[1])-v['pole']['radius'])<1e-5]
+        if len(ring)<16: errors.append('declared pole does not match static geometry')
+    for contact in v['contacts']:
+        ci=names.get(contact['node'])
+        if ci not in moving or ci is None or 'mesh' not in nodes[ci]: errors.append('visible hand contact node missing')
+    if errors: return errors
+    for time in phases:
+        pose=sample_clip(doc,binary,clip,time); worlds=dict(node_worlds(doc,pose))
+        positions.append(blender_point(world_point(worlds[index],(0,0,0))))
+        for contact in v['contacts']:
+            ci=names[contact['node']]
+            expected=blender_point(world_point(worlds[index],gltf_point(contact['local'])))
+            actual=blender_point(world_point(worlds[ci],(0,0,0)))
+            if math.dist(expected,actual)>1e-5: errors.append('hand/local contact mismatch')
+            radial=math.hypot(actual[0]-v['pole']['bottom'][0],actual[1]-v['pole']['bottom'][1])
+            if abs(radial-v['pole']['radius'])>contact['radius'] or not v['pole']['bottom'][2]<actual[2]<v['pole']['top'][2]:
+                errors.append('hand detached from pole')
+            # Validate actual visible mitten geometry, not just a metadata point.
+            hand=[]
+            for p in doc['meshes'][nodes[ci]['mesh']]['primitives']:
+                hand.extend(blender_point(world_point(worlds[ci],pnt)) for pnt in read_accessor(doc,binary,p['attributes']['POSITION']))
+            if min(abs(math.hypot(p[0]-v['pole']['bottom'][0],p[1]-v['pole']['bottom'][1])-v['pole']['radius']) for p in hand)>.008:
+                errors.append('hand geometry misses pole')
+        phase=[]
+        for ni in moving:
+            if 'mesh' not in nodes[ni]: continue
+            for p in doc['meshes'][nodes[ni]['mesh']]['primitives']:
+                phase.extend(blender_point(world_point(worlds[ni],pnt)) for pnt in read_accessor(doc,binary,p['attributes']['POSITION']))
+        moving_points.extend(phase)
+        if any(math.hypot(p[0],p[1])>1.001 for p in phase): errors.append('animated normalized radius exceeded')
+        if min(p[2] for p in phase)<v['stage_top'] or max(p[2] for p in phase)>v['support_bottom']:
+            errors.append('mascot intersects stage/support')
+    if math.dist(positions[0],v['pivot'])>1e-5: errors.append('motion pivot mismatch')
+    static_time=start+(motion['static_frame']-v['first_frame'])/v['fps']
+    static_pose=dict(node_worlds(doc,sample_clip(doc,binary,clip,static_time)))
+    default_pose=dict(node_worlds(doc))
+    if math.dist(world_point(static_pose[index],(0,0,0)),world_point(default_pose[index],(0,0,0)))>1e-5:
+        errors.append('default pose differs from reduced motion frame')
+    if max(p[2] for p in positions)-min(p[2] for p in positions)<v['min_vertical_travel']: errors.append('motion has no vertical travel')
+    if any(math.dist(p[:2],positions[0][:2])>1e-5 for p in positions): errors.append('motion leaves pole axis')
+    if math.dist(positions[0],positions[-1])>1e-5: errors.append('motion loop open')
+    # One-sided seam velocities must be close to zero (normalized units/second).
+    if max(math.dist(positions[0],positions[1]),math.dist(positions[-1],positions[-2]))*24>.015:
+        errors.append('motion loop seam velocity discontinuity')
+    for axis in range(3):
+        if abs(min(p[axis] for p in moving_points)-v['moving_bounds']['min'][axis])>1e-5 or abs(max(p[axis] for p in moving_points)-v['moving_bounds']['max'][axis])>1e-5:
+            errors.append('animated bounds mismatch')
+    return sorted(set(errors))
 
 
 def world_point(matrix, point):
@@ -110,6 +222,7 @@ def verify(directory):
             accessor=doc['accessors'][sampler['input']]
             times.extend(accessor.get('min',[])+accessor.get('max',[]))
         if times and abs(max(times)-min(times)-motion['duration'])>.05: errors.append('motion duration mismatch')
+        if pid=='fotos' or 'validation' in motion: errors.extend(motion_errors(doc,binary,motion))
     tris=0; points=[]
     for mesh_index, matrix in mesh_instances(doc):
         mesh = doc['meshes'][mesh_index]
