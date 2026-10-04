@@ -123,7 +123,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T129 — Vinyls, slots, evolutions and the Salvavidas (simulation and cards pool)
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T127
@@ -138,7 +138,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors` → exit 0 with tests: slot limits hold, offers never exceed limits, each evolution triggers only with its pair at the right levels, Salvavidas saves once, vinyl stats apply to weapons and boat, determinism with a scripted card-choosing bot
   - Test command → exit 0
-- Outcome:
+- Outcome: (Codex) 9 vinyls, 4+4 slots up to level 5, card pool in `survivors/cards.ts`, 4 evolutions offered as cards, Salvavidas saves once, old 6 upgrades replaced, es-mar texts `muestra`, config v4; 1395 unit tests → 059c91b
 
 ## T130 — Upgrade interface: new cards and the weapons/vinyls row
 - Status: pending
@@ -155,7 +155,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T131 — Three difficulties chosen on the island panel
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T129
@@ -208,6 +208,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T127: `WeaponDef` = base + levels[] with gains; `resolveWeaponStats(def, level, mods)` single hook for T129; sim API addWeapon/levelUpWeapon/weaponLevel/heldWeapons, 4-slot limit left to T129; confetti and rockets share `projectiles` (tagged weapon/kind); new cap `areas` 12/6; separate `weaponRng`; i18n keys `survivors.weapon.<id>`/.l2–.l5 only in config (texts T129/T130) (agent)
 - 2026-10-05 plan: T129 (Opus task) goes to Codex as Hernán asked; T126 stays on Opus (orchestrator)
 - 2026-10-05 plan: when T132 is integrated and the final test command passes on main, push `main` to Vercel automatically, without waiting for a Telegram answer, and send the Telegram notice with the link (Hernán, in the session; applies to this push only)
+- 2026-10-05 T129: Codex's design choices (card offer shape, Salvavidas, chest hook) are in its ESTADO section; diff not reviewed line by line by the wrapper; edited tests of the old upgrades (survivors.test.ts, survivors-weapons.test.ts, turbo-ramps.test.ts); config version 4; the HUD adapter in apps/web/app/mar still reads the old upgrade fields: T130 adapts it (agent)
 
 ## Proposals (new scope)
 
@@ -235,3 +236,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 01:16 T129 launched · attempt 1 · Codex via wrapper agent a065490accc632542
 - 2026-10-05 01:15 Telegram wait for push-T127 crashed on a stale lock (dead pid 25728, os.kill on Windows); lock removed by hand, wait restarted
 - 2026-10-05 01:20 Hernán authorised an automatic push to Vercel once T132 is done
+- 2026-10-05 01:25 T129 done · branch worktree-agent-a065490accc632542 → 059c91b
