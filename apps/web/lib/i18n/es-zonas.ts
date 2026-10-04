@@ -170,6 +170,9 @@ export const esZonas = {
   'naufrago.reward.title': 'Regalo del náufrago',
   'naufrago.reward.body': 'Un {percent} de descuento en tu próxima entrada: {code}.',
   'naufrago.reward.again': 'Ya te di mi regalo. Lo tienes en «Mis códigos».',
+  'naufrago.revisit': '¿Otra vez he acabado aquí? Cómo se puede ser tan manija...',
+  'achievements.castaway.description':
+    'Rescata al náufrago y recibe su descuento para una fiesta de BOIA.',
   'island.kicker.event': 'Isla de evento',
   'island.kicker.island': 'Isla',
   'island.firstVisit': 'Isla descubierta: {place}',

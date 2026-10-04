@@ -2,8 +2,13 @@
 
 import type { AchievementProgress, BoiaRepository, ShipUnlock } from '@boia/store';
 import { useEffect, useRef, useState } from 'react';
-import { type AchievementFacts, achievementFacts } from '../mundo/achievements';
+import {
+  type AchievementFacts,
+  achievementFacts,
+  reconcileAchievementEvidence,
+} from '../mundo/achievements';
 import { useRepoData } from '../mundo/repo';
+import { capturePlayerRepository } from '../repo';
 import { type CosmeticNames, readyCount } from './model';
 import { t as msg } from '../i18n';
 
@@ -22,6 +27,8 @@ export interface LogrosData {
 }
 
 export async function readLogros(r: BoiaRepository): Promise<LogrosData> {
+  r = await capturePlayerRepository(r);
+  await reconcileAchievementEvidence(r);
   const [list, balances, facts, ranks, cosmetics] = await Promise.all([
     r.progress.achievements(),
     r.progress.balances(),

@@ -308,12 +308,11 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
-    // Se podrá completar cuando el náufrago tenga su misión de llevarlo a una
-    // fiesta (hoy sólo deja su código al arrimarse, REQ-AVE-020).
+    // El rescate y su descuento completan el objetivo (decisión T115). muestra
     id: 'naufrago-fiesta',
     title: 'Náufrago de fiesta',
-    description: 'Lleva al náufrago a una fiesta de BOIA.',
-    trigger: 'deliver_character',
+    description: 'Rescata al náufrago y recibe su descuento para una fiesta de BOIA.',
+    trigger: 'rescue_character',
     triggerParams: { character: 'naufrago' },
     points: 80,
     coins: 40,

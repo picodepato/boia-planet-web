@@ -510,11 +510,18 @@ function broadcast(notices: Notice[]): void {
 }
 
 /** Restore only progress supported by persisted evidence. Never claim/re-award money.
- * Purchases prove SAMPLE ticket stamps; a castaway discount does not prove delivery;
+ * Purchases prove SAMPLE ticket stamps; the castaway discount proves its rescue;
  * an existing Carnet award proves its creation. Missing invitation history is unknowable.
  */
 export async function reconcileAchievementEvidence(repo: Repo): Promise<void> {
-  const [ledger, stamps] = await Promise.all([repo.progress.ledger(), repo.progress.stamps()]);
+  const [ledger, stamps, discounts] = await Promise.all([
+    repo.progress.ledger(),
+    repo.progress.stamps(),
+    repo.progress.discounts(),
+  ]);
+  if (discounts.some((found) => found.discount.id === 'dto-naufrago')) {
+    await completeBySignal(repo, { trigger: 'rescue_character', character: 'naufrago' });
+  }
   const revoked = compensatedIds(ledger);
   if (
     ledger.some(

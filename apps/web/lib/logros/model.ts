@@ -142,7 +142,10 @@ export function logroRows(
   const rows = list
     .filter((a) => a.definition.active || a.state !== 'in_progress')
     .map((a): LogroRow => {
-      const d = a.definition;
+      const d =
+        a.definition.sample && a.definition.id === 'naufrago-fiesta'
+          ? { ...a.definition, description: t('achievements.castaway.description') }
+          : a.definition;
       const reward = rewardText(a.reward, names);
       if (a.hidden) {
         return {

@@ -87,6 +87,22 @@ export function gameRepository(): BoiaRepository {
   return switcher.repo;
 }
 
+/** Capture one player after session loading, so evidence cannot cross an account switch. */
+export async function capturePlayerRepository(repo: BoiaRepository): Promise<BoiaRepository> {
+  if (switcher?.repo !== repo) return repo;
+  // The routed read waits for the existing session gate before selecting its owner.
+  await repo.identity.current();
+  return switcher.current();
+}
+
+/** The same capture for world hooks that receive only the progress API. */
+export async function capturePlayerProgress(
+  progress: BoiaRepository['progress'],
+): Promise<BoiaRepository['progress']> {
+  if (switcher?.repo.progress !== progress) return progress;
+  return (await capturePlayerRepository(switcher.repo)).progress;
+}
+
 /**
  * Manda ya a la cuenta lo que esté en la cola (T92: el tiempo de una carrera
  * antes de leer su puesto en el ranking). Sin cuenta o en modo local, nada.

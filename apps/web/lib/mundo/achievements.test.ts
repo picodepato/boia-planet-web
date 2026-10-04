@@ -4,7 +4,12 @@ import {
   type BoiaRepository,
   MemoryStorage,
   createLocalRepository,
+  createMemberRepository,
+  localDocAccess,
+  supabaseMemberServer,
 } from '@boia/store';
+import { FakeSupabase } from '../../../../packages/store/src/member/fake-supabase';
+import { readLogros } from '../logros/use-logros';
 import type { Notice } from '@boia/engine/ui';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
@@ -18,6 +23,7 @@ import {
   emitSignal,
   onAchievementNotices,
   recordSignal,
+  reconcileAchievementEvidence,
   signalFromWorldEvent,
 } from './achievements';
 
@@ -341,8 +347,7 @@ it('T100: exactly the sketch-boat achievement is hidden; old entitlements surviv
   );
 });
 
-it('T106: claimed Carnet evidence recovers idempotently; a castaway coupon cannot invent delivery', async () => {
-  const { reconcileAchievementEvidence } = await import('./achievements');
+it('T115: claimed Carnet evidence and a castaway coupon recover idempotently without paying', async () => {
   const repo = browser()();
   await repo.carnet.create({ nickname: 'Recuperación' });
   await repo.progress.completeAchievement('carnet');
@@ -353,7 +358,7 @@ it('T106: claimed Carnet evidence recovers idempotently; a castaway coupon canno
   await reconcileAchievementEvidence(repo);
   expect(
     (await repo.progress.achievements()).find((a) => a.definition.id === 'naufrago-fiesta')?.state,
-  ).toBe('in_progress');
+  ).toBe('ready');
   expect(
     (await repo.progress.achievements()).find((a) => a.definition.id === 'carnet')?.state,
   ).toBe('claimed');
@@ -361,4 +366,135 @@ it('T106: claimed Carnet evidence recovers idempotently; a castaway coupon canno
   expect(
     (await repo.progress.ledger()).filter((entry) => entry.achievementId === 'carnet'),
   ).toHaveLength(1);
+});
+
+it('T115: only the castaway discount proves rescue; historical expired discounts still count', async () => {
+  const repo = browser()();
+  await repo.progress.findDiscount('dto-cofre');
+  await reconcileAchievementEvidence(repo);
+  const state = async (r: BoiaRepository) =>
+    (await r.progress.achievements()).find((a) => a.definition.id === 'naufrago-fiesta')?.state;
+  expect(await state(repo)).toBe('in_progress');
+  const storage = new MemoryStorage();
+  const first = createLocalRepository({ storage, watch: false });
+  await first.progress.findDiscount('dto-naufrago');
+  const expired = createLocalRepository({
+    storage,
+    watch: false,
+    now: () => new Date('2100-01-01'),
+  });
+  expect((await expired.progress.discounts())[0]?.status).toBe('expired');
+  await reconcileAchievementEvidence(expired);
+  expect(await state(expired)).toBe('ready');
+  expect(await expired.progress.ledger()).toEqual([]);
+});
+
+it('T115: a used discount recovers rescue; an old claimed ledger remains authoritative', async () => {
+  const open = browser();
+  const first = open();
+  const discount = await first.progress.findDiscount('dto-naufrago');
+  await first.purchases.confirmSandbox({
+    purchaseId: 't115-usado',
+    eventId: discount.discount.eventId!,
+    discountId: 'dto-naufrago',
+  });
+  const back = open();
+  expect((await back.progress.discounts())[0]?.usedIn).toBe('t115-usado');
+  await reconcileAchievementEvidence(back);
+  expect(
+    (await back.progress.achievements()).find((a) => a.definition.id === 'naufrago-fiesta')?.state,
+  ).toBe('ready');
+  await back.progress.claimAchievement('naufrago-fiesta');
+  const paid = await back.progress.balances();
+  const ledger = await back.progress.ledger();
+  const later = open();
+  // A historical claim remains authoritative even if its readiness record was lost.
+  const identity = (await later.identity.current())!;
+  localDocAccess(later)!.write(['progress'], (doc) => {
+    delete doc.players[identity.id]!.achievements['naufrago-fiesta'];
+  });
+  await reconcileAchievementEvidence(later);
+  await reconcileAchievementEvidence(later);
+  expect(
+    (await later.progress.achievements()).find((a) => a.definition.id === 'naufrago-fiesta')?.state,
+  ).toBe('claimed');
+  expect((await later.progress.claimAchievement('naufrago-fiesta')).claimed).toBe(false);
+  expect(await later.progress.balances()).toEqual(paid);
+  expect(await later.progress.ledger()).toEqual(ledger);
+});
+
+it('T115: opening local achievements recovers a historical discount without another encounter', async () => {
+  const open = browser();
+  await open().progress.findDiscount('dto-naufrago');
+  const back = open();
+  const data = await readLogros(back);
+  expect(data.list.find((a) => a.definition.id === 'naufrago-fiesta')?.state).toBe('ready');
+  expect(data.facts.rescued).toContain('naufrago');
+  expect(data.facts.delivered).not.toContain('naufrago');
+  expect(data.balances).toEqual({ points: 0, coins: 0 });
+  expect(await back.progress.ledger()).toEqual([]);
+  const revision = back.revision();
+  await readLogros(back);
+  expect(back.revision()).toBe(revision);
+});
+
+it('T115: fake-member historical rescue survives fresh caches, claims once and stays isolated from account B', async () => {
+  const storage = new MemoryStorage();
+  const a = new FakeSupabase('11111111-2222-3333-4444-555555555555');
+  const b = new FakeSupabase('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+  const device = (fake: FakeSupabase, visit: string) =>
+    createMemberRepository({
+      userId: fake.userId,
+      cache: createLocalRepository({ storage, key: `${fake.userId}:${visit}`, watch: false }),
+      server: supabaseMemberServer(fake, fake.userId),
+      storage,
+      snapshotDelayMs: 60_000,
+      retryMs: [60_000],
+    });
+  const seed = device(a, 'seed');
+  try {
+    await seed.sync.ready();
+    await seed.progress.findDiscount('dto-naufrago');
+    await seed.sync.flush();
+  } finally {
+    seed.sync.dispose();
+  }
+  for (const visit of ['recovery', 'return']) {
+    const repo = device(a, visit);
+    try {
+      await repo.sync.ready();
+      const balance = await repo.progress.balances();
+      const ledger = await repo.progress.ledger();
+      await reconcileAchievementEvidence(repo);
+      await reconcileAchievementEvidence(repo);
+      expect(await repo.progress.balances()).toEqual(balance);
+      expect(await repo.progress.ledger()).toEqual(ledger);
+      expect(
+        (await repo.progress.achievements()).find((x) => x.definition.id === 'naufrago-fiesta')
+          ?.state,
+      ).toBe(visit === 'recovery' ? 'ready' : 'claimed');
+      expect((await repo.progress.claimAchievement('naufrago-fiesta')).claimed).toBe(
+        visit === 'recovery',
+      );
+      await repo.sync.flush();
+    } finally {
+      repo.sync.dispose();
+    }
+  }
+  expect(a.balances()).toEqual({ points: 80, coins: 40 });
+  expect(a.ledger.filter((row) => row.source_ref === 'naufrago-fiesta')).toHaveLength(1);
+  const other = device(b, 'other');
+  try {
+    await other.sync.ready();
+    await reconcileAchievementEvidence(other);
+    expect(
+      (await other.progress.achievements()).find((x) => x.definition.id === 'naufrago-fiesta')
+        ?.state,
+    ).toBe('in_progress');
+    expect((await other.progress.claimAchievement('naufrago-fiesta')).claimed).toBe(false);
+    expect(await other.progress.discounts()).toEqual([]);
+    expect(b.balances()).toEqual({ points: 0, coins: 0 });
+  } finally {
+    other.sync.dispose();
+  }
 });

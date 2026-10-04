@@ -3,6 +3,7 @@ import type { Notice } from '@boia/engine/ui';
 import { type FoundDiscount, type ProgressApi, isStoreError } from '@boia/store';
 import { recordSignal } from './achievements';
 import { t } from '../i18n';
+import { capturePlayerProgress } from '../repo';
 
 /**
  * Del mar al repositorio local (T20, D-20): lo que el motor emite (premios,
@@ -86,15 +87,22 @@ export async function discountFound(
   discountId: string,
   ctx: ProgressContext,
 ): Promise<ProgressOutcome[]> {
+  progress = await capturePlayerProgress(progress);
   try {
     const f = await progress.findDiscount(discountId, { worldId: ctx.worldId });
-    if (!f.first) return [];
+    const notices =
+      discountId === 'dto-naufrago'
+        ? await recordSignal({ progress }, { trigger: 'rescue_character', character: 'naufrago' })
+        : [];
+    const out: ProgressOutcome[] = notices.map((notice) => ({ kind: 'notice', notice }));
+    if (!f.first) return out;
     return [
       {
         kind: 'discount',
         found: f,
         notice: { id: `descuento:${discountId}`, kind: 'reward', title: discountTitle(f) },
       },
+      ...out,
     ];
   } catch (err) {
     if (isStoreError(err, 'not_found')) return [];

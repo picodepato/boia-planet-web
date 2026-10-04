@@ -1,6 +1,7 @@
 import { createLocalRepository } from '@boia/store';
 import { describe, expect, it } from 'vitest';
 import { achievementFacts, achievementGoal, completeBySignal } from '../mundo/achievements';
+import { t } from '../i18n';
 import {
   CLAIMED_HINT,
   HIDDEN_HINT,
@@ -34,6 +35,14 @@ async function snapshot(r: ReturnType<typeof repo>) {
 }
 
 describe('filas del panel', () => {
+  it('T115: el objetivo visible del náufrago pide rescate y descuento por clave i18n', async () => {
+    const { rows } = await snapshot(repo());
+    const castaway = rows.find((row) => row.id === 'naufrago-fiesta')!;
+    expect(castaway.hidden).toBe(false);
+    expect(castaway.description).toBe(t('achievements.castaway.description'));
+    expect(castaway.hint).toContain('rescata al náufrago y recibe su descuento');
+    expect(castaway.reward).toBe('+80 ★ · +40 🪙');
+  });
   it('sin jugar: todo en curso, los ocultos como «???» y nada que reclamar', async () => {
     const { list, rows } = await snapshot(repo());
     expect(readyCount(list)).toBe(0);

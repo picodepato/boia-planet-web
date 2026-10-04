@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { MemoryStorage, STORE_KEY, createLocalRepository } from '@boia/store';
+import { MemoryStorage, SAMPLE_DISCOUNTS, STORE_KEY, createLocalRepository } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { marWorld } from '../app/mar/engine/compact';
-import { openMar, steerTo, marSheet, shipAt } from './mar-helpers';
+import { openMar, steerTo, marSheet, shipAt, sheetIs } from './mar-helpers';
 import { CASTAWAY_REVISIT } from '../lib/mundo/ship-menu-discovery';
+import { t } from '../lib/i18n';
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -39,9 +40,46 @@ test('manual ship-menu opening suppresses Cala introduction', async ({ page }) =
 
 test('castaway with an earned discount uses the supplied repeat-visit text', async ({ page }) => {
   await seed(page, 'discount');
+  // Recover the historical objective before returning to the character.
+  await openMar(page);
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  await expect(page.getByTestId('logro-naufrago-fiesta')).toHaveAttribute('data-estado', 'ready');
   await openMar(page, '?cerca=naufrago');
   await steerTo(page, 'naufrago', async () => await page.getByTestId('mar-bocadillo').isVisible());
   await expect(page.getByTestId('mar-bocadillo')).toContainText(CASTAWAY_REVISIT);
+});
+
+test('castaway rescue completes immediately, persists and grants its reward only on one manual claim', async ({
+  page,
+}) => {
+  await openMar(page, '?cerca=naufrago');
+  await steerTo(page, 'naufrago', sheetIs(page, 'discount'));
+  await expect(marSheet(page)).toContainText(
+    SAMPLE_DISCOUNTS.find((d) => d.id === 'dto-naufrago')!.code,
+  );
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  const row = page.getByTestId('logro-naufrago-fiesta');
+  await expect(row).toHaveAttribute('data-estado', 'ready');
+  await expect(row).toContainText(t('achievements.castaway.description'));
+  await openMar(page);
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  await expect(row).toHaveAttribute('data-estado', 'ready');
+  await page.getByTestId('logro-reclamar-naufrago-fiesta').click();
+  await expect(page.getByTestId('logro-premio-puntos')).toHaveText('+80 ★');
+  await expect(page.getByTestId('logro-premio-monedas')).toHaveText('+40 🪙');
+  await expect(row).toHaveAttribute('data-estado', 'claimed');
+  await openMar(page, '?cerca=naufrago');
+  await steerTo(page, 'naufrago', async () => await page.getByTestId('mar-bocadillo').isVisible());
+  await expect(page.getByTestId('mar-bocadillo')).toContainText(
+    '¿Otra vez he acabado aquí? Cómo se puede ser tan manija...',
+  );
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  await expect(row).toHaveAttribute('data-estado', 'claimed');
+  await expect(page.getByTestId('logro-reclamar-naufrago-fiesta')).toHaveCount(0);
 });
 
 test('opening the WhatsApp invitation completes the visible achievement once', async ({

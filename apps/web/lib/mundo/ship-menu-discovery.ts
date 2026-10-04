@@ -1,4 +1,5 @@
 import type { ProgressApi } from '@boia/store';
+import { t } from '../i18n';
 
 /** Profile preference: opening Mi Barco manually also completes the introduction. */
 export const SHIP_MENU_SEEN = 'barco:menu-abierto';
@@ -13,4 +14,4 @@ export async function discoverShipMenu(progress: ProgressApi): Promise<boolean> 
   return true;
 }
 
-export const CASTAWAY_REVISIT = '¿Otra vez he acabado aquí? Cómo se puede ser tan manija...';
+export const CASTAWAY_REVISIT = t('naufrago.revisit');

@@ -61,7 +61,7 @@ describe('descuentos escondidos (REQ-COM-021)', () => {
         discountEvent(h.objectId, h.ref),
         ctx('a'),
       );
-      expect(out).toHaveLength(1);
+      expect(out).toHaveLength(h.ref === 'dto-naufrago' ? 2 : 1);
       expect(out[0]!.kind).toBe('discount');
       // Otra vez en la misma visita: nada.
       expect(
@@ -98,5 +98,50 @@ describe('descuentos escondidos (REQ-COM-021)', () => {
   it('un descuento que ya no existe no hace nada', async () => {
     const repo = browser()();
     expect(await discountFound(repo.progress, 'no-existe', ctx('a'))).toEqual([]);
+  });
+
+  it('T115: el primer rescate completa sin pagar; recargar y reclamar conserva el descuento y paga una vez', async () => {
+    const visit = browser();
+    const repo = visit();
+    const event = discountEvent('naufrago', 'dto-naufrago');
+    const out = await persistWorldEvent(repo.progress, event, ctx('rescate'));
+    expect(out.map((o) => o.notice.id)).toEqual([
+      'descuento:dto-naufrago',
+      'logro:naufrago-fiesta',
+    ]);
+    expect(
+      (await repo.progress.achievements()).find((a) => a.definition.id === 'naufrago-fiesta'),
+    ).toMatchObject({
+      state: 'ready',
+      hidden: false,
+      definition: { trigger: 'rescue_character', points: 80, coins: 40, sample: true },
+    });
+    expect(await repo.progress.balances()).toMatchObject({ points: 0, coins: 0 });
+    expect(await repo.progress.ledger()).toEqual([]);
+    expect((await repo.progress.discoveries()).map((d) => d.key)).not.toContain(
+      'personaje:entregado:naufrago',
+    );
+
+    const back = visit();
+    expect(await persistWorldEvent(back.progress, event, ctx('vuelta'))).toEqual([]);
+    expect((await back.progress.claimAchievement('naufrago-fiesta')).claimed).toBe(true);
+    const later = visit();
+    expect(await persistWorldEvent(later.progress, event, ctx('otra'))).toEqual([]);
+    expect((await later.progress.claimAchievement('naufrago-fiesta')).claimed).toBe(false);
+    expect(await later.progress.balances()).toMatchObject({ points: 80, coins: 40 });
+    expect((await later.progress.discounts()).map((d) => d.discount.id)).toContain('dto-naufrago');
+    expect(
+      (await later.progress.ledger()).filter((e) => e.achievementId === 'naufrago-fiesta'),
+    ).toHaveLength(1);
+  });
+
+  it('T115: repetir el encuentro con un descuento antiguo recupera el rescate sin conceder otro descuento', async () => {
+    const visit = browser();
+    await visit().progress.findDiscount('dto-naufrago');
+    const back = visit();
+    const out = await discountFound(back.progress, 'dto-naufrago', ctx('vuelta'));
+    expect(out.map((o) => o.notice.id)).toEqual(['logro:naufrago-fiesta']);
+    expect(await discountFound(back.progress, 'dto-naufrago', ctx('otra'))).toEqual([]);
+    expect(await back.progress.ledger()).toEqual([]);
   });
 });

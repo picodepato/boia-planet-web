@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T115: Castaway achievement completes on rescue (Codex)
+
+Qué existe
+- `naufrago-fiesta` conserva su ID, recompensa de muestra (80 puntos / 40 monedas), descuento y frase de repetición; ahora se completa al rescatar al náufrago y recibir su descuento (ya no exige entrega a la fiesta). Cambios en `packages/store/src/sample/progress.ts`, `apps/web/lib/mundo/{achievements,world-progress,ship-menu-discovery}.ts`, `apps/web/lib/repo.ts`, `apps/web/lib/logros/{model,use-logros}.ts`, `apps/web/lib/i18n/es-zonas.ts`.
+- `reconcileAchievementEvidence` completa el logro a partir de un descuento de rescate persistido (incluso usado o caducado), sólo la preparación: nunca reclama puntos ni monedas; el ledger de reclamados sigue siendo la autoridad y la recompensa no se repite entre sesiones ni cuentas.
+- Pruebas: nueve unitarias nuevas más las de recuperación/repetición actualizadas (`achievements.test.ts`, `world-progress.test.ts`, `logros/model.test.ts`, `logros/castaway-account.test.ts` nuevo) y un escenario E2E nuevo en `world-community.spec.ts`.
+
+Comandos
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 140 archivos, 1252 pruebas.
+- Python de `tools/spec/checks.sh` (check, estado, test_check, test_estado, blender/check) → exit 0 cada uno (el script `sh` no corre desde PowerShell/guardia, se lanzaron uno a uno).
+- `pnpm lint` → exit 0. `pnpm typecheck` → exit 0. `pnpm build` → exit 0 (presupuesto 186.9 kB / 200 kB).
+- `E2E_PORT=3217 pnpm e2e logros.spec.ts world-community.spec.ts descuentos.spec.ts --workers=1` → exit 0, 22 pasan, 2 omitidas (capturas del informe).
+
+Pendiente
+- Nada de T115. Subida de REQ en `docs/spec/estado.md` no se tocó (fuera de alcance de esta tarea).
+
 ## 2026-10-04 — plan 010 T121: No reward from dev-shortcut starts in production; Cañón sample copy
 
 Qué existe:
