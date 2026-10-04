@@ -203,7 +203,7 @@ describe('volver a la muestra y auditoría', () => {
       ],
       ['skins', () => actions.setPlaceTexts(registry.defaultId, eventIsland.id, { body: 'Hola' })],
       ['skins', () => actions.setHiddenInWorld(registry.defaultId, solidIsland.id, true)],
-      ['activeWorld', () => actions.setActiveWorld(registry.ids().at(-1)!)],
+      ['activeWorld', () => actions.setActiveWorld(registry.playableIds().at(-1)!)],
       ['bottles', () => actions.removeBottle(SAMPLE_BOTTLES[0]!.id, 'prueba de moderación')],
       ['places', () => actions.reset('places')],
     ];
@@ -234,10 +234,10 @@ describe('volver a la muestra y auditoría', () => {
     await actions.editPlace(eventIsland.id, { x: eventIsland.position.x + 600 });
     await actions.setMapPoint('port', { x: map.spawn.x, y: map.spawn.y - 40 });
     await actions.renamePlace(solidIsland.id, 'Otro nombre', 'all');
-    await actions.setActiveWorld(registry.ids().at(-1)!);
+    await actions.setActiveWorld(registry.playableIds().at(-1)!);
     await repo.admin.setText('hero.explore', 'Zarpa');
     await repo.admin.upsert('artists', { id: 'nuevo', name: 'Nuevo', genres: ['House'] });
-    expect(await repo.content.activeWorldId()).toBe(registry.ids().at(-1));
+    expect(await repo.content.activeWorldId()).toBe(registry.playableIds().at(-1));
     expect(Object.keys(await repo.content.places())).toContain(MAP_POINTS.port);
 
     await actions.reset('all');

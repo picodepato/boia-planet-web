@@ -215,20 +215,22 @@ export function MarMenu({
         </div>
       </section>
 
-      {/* Plegado: la lista de mundos, con sus barcos, es lo más largo del menú. */}
-      <details className="mar-menu__group mar-menu__mundos" data-testid="mar-menu-mundos">
-        <summary data-testid="mar-menu-mundos-abrir">
-          <MenuIcon name="mundos" /> {t('mar.client.mundos')}
-          {worldName ? <small className="mar-menu__sub">{worldName}</small> : null}
-        </summary>
-        <MundosPicker
-          worlds={worlds}
-          current={worldId}
-          pending={worldPending}
-          catalog={catalog}
-          onChoose={onWorld}
-        />
-      </details>
+      {/* Sin elección no hay entrada: con un solo mundo jugable (Arcilla) no se muestra «Mundos». */}
+      {worlds.length > 1 ? (
+        <details className="mar-menu__group mar-menu__mundos" data-testid="mar-menu-mundos">
+          <summary data-testid="mar-menu-mundos-abrir">
+            <MenuIcon name="mundos" /> {t('mar.client.mundos')}
+            {worldName ? <small className="mar-menu__sub">{worldName}</small> : null}
+          </summary>
+          <MundosPicker
+            worlds={worlds}
+            current={worldId}
+            pending={worldPending}
+            catalog={catalog}
+            onChoose={onWorld}
+          />
+        </details>
+      ) : null}
 
       <Link className="mar-menu__home" href="/" aria-label={t('mar.client.volverABoia')}>
         {t('mar.client.volverABoiaMenu')}

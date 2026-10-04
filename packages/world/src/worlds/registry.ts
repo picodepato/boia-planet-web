@@ -27,6 +27,8 @@ export interface WorldSummary {
 export class WorldRegistry {
   readonly map: SharedMap;
   readonly defaultId: string;
+  /** Mundos que existen (datos, piel, pruebas) pero que nadie puede alcanzar todavía. */
+  readonly hiddenIds: ReadonlySet<string>;
   private readonly skins = new Map<string, WorldSkin>();
   private readonly composed = new Map<string, ComposedWorld>();
 
@@ -34,6 +36,7 @@ export class WorldRegistry {
     map: SharedMap | SharedMapInput,
     skins: (WorldSkin | WorldSkinInput)[],
     defaultId?: string,
+    hidden: readonly string[] = [],
   ) {
     this.map = parseSharedMap(map);
     const issues: SkinIssue[] = [];
@@ -49,6 +52,21 @@ export class WorldRegistry {
     const d = defaultId ?? first;
     if (!this.skins.has(d)) throw new Error(`mundo por defecto desconocido: ${d}`);
     this.defaultId = d;
+    for (const h of hidden) {
+      if (!this.skins.has(h)) throw new Error(`mundo oculto desconocido: ${h}`);
+    }
+    if (hidden.includes(d)) throw new Error(`el mundo por defecto no puede estar oculto: ${d}`);
+    this.hiddenIds = new Set(hidden);
+  }
+
+  /** Los mundos jugables: los registrados menos los ocultos. */
+  playableIds(): string[] {
+    return this.ids().filter((id) => !this.hiddenIds.has(id));
+  }
+
+  /** ¿Se puede jugar? (existe y no está oculto) */
+  isPlayable(id: string): boolean {
+    return this.skins.has(id) && !this.hiddenIds.has(id);
   }
 
   ids(): string[] {
@@ -77,7 +95,7 @@ export class WorldRegistry {
 
   /** El primer id válido de la lista (elección del visitante, del Admin…) o el por defecto. */
   resolve(...requested: (string | null | undefined)[]): ComposedWorld {
-    const id = requested.find((r): r is string => !!r && this.skins.has(r));
+    const id = requested.find((r): r is string => !!r && this.isPlayable(r));
     return this.get(id ?? this.defaultId);
   }
 
@@ -87,7 +105,7 @@ export class WorldRegistry {
    */
   renamePlace(placeId: string, name: string, scope: RenameScope): WorldRegistry {
     const next = renamePlace(this.map, [...this.skins.values()], placeId, name, scope);
-    return new WorldRegistry(next.map, next.skins, this.defaultId);
+    return new WorldRegistry(next.map, next.skins, this.defaultId, [...this.hiddenIds]);
   }
 
   /** Un registro nuevo con el lugar en otro sitio: en el mapa compartido, así en todos los mundos. */
@@ -96,12 +114,13 @@ export class WorldRegistry {
       movePlace(this.map, placeId, x, y),
       [...this.skins.values()],
       this.defaultId,
+      [...this.hiddenIds],
     );
   }
 
-  /** Para el selector de mundos del menú y del Admin, en orden de registro. */
+  /** Para el selector de mundos del menú y del Admin: sólo los jugables, en orden de registro. */
   list(): WorldSummary[] {
-    return [...this.skins.values()].map((s) => ({
+    return [...this.skins.values()].filter((s) => !this.hiddenIds.has(s.id)).map((s) => ({
       id: s.id,
       name: s.name,
       ...(s.tagline ? { tagline: s.tagline } : {}),

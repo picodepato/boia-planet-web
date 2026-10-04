@@ -207,8 +207,7 @@ for (const view of VIEWS) {
       }
       expect(icons.size).toBe(MENU_ITEMS.length);
       await expect(menu.getByTestId('mar-menu-momento').locator('[data-icon]')).toHaveCount(3);
-      await expect(menu.getByTestId('mar-menu-mundos-abrir').locator('[data-icon]')).toBeVisible();
-      // Logros, Mi Carnet, Barco, Ajustes, día/noche, Mundos y «Cómo jugar».
+      // Logros, Mi Carnet, Barco, Ajustes, día/noche y «Cómo jugar».
       await expect(menu.getByTestId('mar-menu-logros')).toContainText(t('mar.client.logros'));
       await expect(menu.getByTestId('mar-barco')).toContainText(t('mar.tienda.barco'));
       await expect(menu.getByTestId('mar-menu-ajustes')).toContainText(t('mar.menu.ajustes'));
@@ -217,9 +216,8 @@ for (const view of VIEWS) {
       await expect(howTo.getByTestId('mar-menu-controles')).toBeVisible();
       await expect(howTo.getByTestId('mar-menu-bienvenida')).toBeVisible();
       await expect(menu.getByTestId('mar-menu-momento').getByRole('radio')).toHaveCount(3);
-      await expect(menu.getByTestId('mar-menu-mundos-abrir')).toContainText(t('mar.client.mundos'));
-      await menu.getByTestId('mar-menu-mundos-abrir').click();
-      await expect(menu.getByTestId('mundos')).toBeVisible();
+      // Un solo mundo jugable (T122): el menú ya no ofrece «Mundos».
+      await expect(menu.getByTestId('mar-menu-mundos')).toHaveCount(0);
       await snap(page, `p005-t65-menu-${view.project}.png`);
 
       // El momento del día se cambia aquí mismo.

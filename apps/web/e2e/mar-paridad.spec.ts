@@ -12,8 +12,7 @@ import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
  * náufrago con «Ir a la isla» (el barco navega solo) y, al llegar, «Tienes
  * un código de descuento para este evento» junto a la compra, que lo aplica
  * (T43); la ficha de una isla con «Ver fotos de la isla» hacia «Fotos y
- * eventos» (T42); el cambio de mundo por el agujero negro con el barco
- * quieto (T41), también con movimiento reducido; y una boia informativa con
+ * eventos» (T42); una boia informativa con
  * su diálogo, su aviso «Boia encontrada» y su modelo de Blender (T45, T39).
  * Todo sale del mapa, de la muestra y del registro de mundos.
  *
@@ -23,7 +22,6 @@ import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 test.describe.configure({ timeout: 120_000 });
 
 const first = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId);
-const second = WORLD_REGISTRY.get(WORLD_REGISTRY.ids().find((id) => id !== first.id)!);
 const objects = first.config.objects;
 const castaway = objects.find((o) => o.identity.category === 'naufrago')!;
 const rewardRef = (o: WorldObject) =>
@@ -85,11 +83,6 @@ async function sailNorthUntil(page: Page, until: () => Promise<void>) {
 
 /** Dónde queda el barco cuando deja de moverse (tras arrancar, puede asentarse un poco). */
 /** «Mundos», en el menú del juego (T65): plegado; se abre para elegir. */
-async function openMundos(page: Page) {
-  await page.getByTestId('mar-logros').click();
-  await page.getByTestId('mar-menu-mundos-abrir').click();
-}
-
 async function shipSettled(page: Page) {
   let last = '';
   await expect
@@ -273,68 +266,6 @@ test('la ficha de una isla: recuerdos y «Ver fotos de la isla»; el puerto, sin
   await photos.click();
   await expect(page).toHaveURL(new RegExp(`/fotos#${infoIsland.identity.id}$`));
   expect(errors).toEqual([]);
-});
-
-test('«Mundos»: el mar cae al agujero negro y vuelve con el barco en su sitio', async ({
-  page,
-}) => {
-  const errors = await openMar(page, `?cerca=${infoIsland.identity.id}`);
-  await expect(mar(page)).toHaveAttribute('data-mundo', first.id);
-  const ship = await shipSettled(page);
-
-  await openMundos(page);
-  await page.getByTestId(`mundo-${second.id}`).click();
-  // El menú se cierra para ver el vórtice; mientras dura, nada responde.
-  await expect(page.locator('.mar-menu')).toHaveCount(0);
-  await expect(mar(page)).toHaveAttribute('data-cambio-mundo', 'vortice');
-  await expect(page.getByTestId('cambio-mundo')).toBeVisible();
-  await page.waitForTimeout(700);
-  await snap(page, 'p004-t51-agujero-negro.png');
-  // Acelerar durante la transición no mueve el barco.
-  await page.keyboard.down('ArrowUp');
-  await page.waitForTimeout(300);
-  await page.keyboard.up('ArrowUp');
-
-  await expect(mar(page)).toHaveAttribute('data-mundo', second.id, { timeout: 20_000 });
-  await expect(mar(page)).not.toHaveAttribute('data-cambio-mundo', /.+/, { timeout: 20_000 });
-  await expect(page.getByTestId('cambio-mundo')).toHaveCount(0);
-  expect(await mar(page).getAttribute('data-barco')).toBe(ship);
-  // El nombre del mundo va en la cabecera del menú (T53).
-  await page.getByTestId('mar-logros').click();
-  await expect(page.locator('.mar-menu__world')).toContainText(second.theme.name);
-  await page.getByTestId('mar-menu-cerrar').click();
-  await expect(page.locator('.mar-menu')).toHaveCount(0);
-  await snap(page, 'p004-t51-otro-mundo.png');
-
-  // Y la entrada vuelve: ahora el barco sí navega.
-  await page.keyboard.down('ArrowUp');
-  await expect.poll(() => mar(page).getAttribute('data-barco'), { timeout: 10_000 }).not.toBe(ship);
-  await page.keyboard.up('ArrowUp');
-  expect(errors).toEqual([]);
-});
-
-test.describe('con movimiento reducido', () => {
-  test.use({ reducedMotion: 'reduce' });
-
-  test('el cambio de mundo es un fundido', async ({ page }) => {
-    await openMar(page);
-    const ship = await shipSettled(page);
-    const seen: string[] = [];
-    await page.exposeFunction('__cambio', (v: string) => seen.push(v));
-    await page.evaluate(() => {
-      const el = document.querySelector('main.mar')!;
-      new MutationObserver(() => {
-        const v = el.getAttribute('data-cambio-mundo');
-        if (v) (window as unknown as { __cambio: (v: string) => void }).__cambio(v);
-      }).observe(el, { attributes: true, attributeFilter: ['data-cambio-mundo'] });
-    });
-    await openMundos(page);
-    await page.getByTestId(`mundo-${second.id}`).click();
-    await expect(mar(page)).toHaveAttribute('data-mundo', second.id, { timeout: 20_000 });
-    await expect(mar(page)).not.toHaveAttribute('data-cambio-mundo', /.+/, { timeout: 20_000 });
-    expect([...new Set(seen)]).toEqual(['fundido']);
-    expect(await mar(page).getAttribute('data-barco')).toBe(ship);
-  });
 });
 
 test('una boia informativa habla, cuenta como boia encontrada y lleva la mascota de Blender', async ({

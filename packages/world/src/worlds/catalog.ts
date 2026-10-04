@@ -14,4 +14,7 @@ export const WORLD_REGISTRY = new WorldRegistry(
   ARCILLA_MAP,
   [ARCILLA_SKIN, ACUARELA_SKIN],
   ARCILLA_WORLD_ID,
+  // Acuarela (mundo 2) sigue en código y datos para una actualización futura,
+  // pero nadie puede alcanzarla (Hernán, 2026-10-04): un mundo, Arcilla.
+  [ACUARELA_SKIN.id],
 );

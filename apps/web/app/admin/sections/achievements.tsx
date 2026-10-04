@@ -133,7 +133,7 @@ function AchievementForm({
   const choices: TriggerChoices = {
     circuits: circuitIds(world),
     games: MINIGAMES,
-    worlds: ctx.registry.ids(),
+    worlds: ctx.registry.playableIds(),
   };
   const original = initial.id ? initial : null;
   const conditionChanged =

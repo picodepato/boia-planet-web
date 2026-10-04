@@ -836,7 +836,7 @@ export function createAdminActions(deps: AdminDeps) {
 
     /** Oculta (o vuelve a mostrar) un lugar sólo en un mundo. */
     async setHiddenInWorld(worldId: string, placeId: string, hidden: boolean) {
-      if (!registry.has(worldId))
+      if (!registry.isPlayable(worldId))
         throw new AdminError(msg('admin.actions.noExisteElMundo', { worldId }));
       if (!registry.map.places.some((p) => p.id === placeId)) {
         throw new AdminError(msg('admin.actions.noExisteElLugar', { placeId }));
@@ -861,7 +861,7 @@ export function createAdminActions(deps: AdminDeps) {
      * Vive sólo en el repositorio: el mar lo lee de ahí (`adminWorldId`, T24).
      */
     async setActiveWorld(worldId: string | null) {
-      if (worldId !== null && !registry.has(worldId)) {
+      if (worldId !== null && !registry.isPlayable(worldId)) {
         throw new AdminError(msg('admin.actions.noExisteElMundo', { worldId }));
       }
       await repo.admin.setActiveWorld(worldId, opts(msg('admin.actions.temporadaActiva')));

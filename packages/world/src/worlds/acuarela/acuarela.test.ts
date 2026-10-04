@@ -55,9 +55,12 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
       wave: sea.ola.toLowerCase(),
       crest: sea.cresta.toLowerCase(),
     });
-    const summary = WORLD_REGISTRY.list().find((w) => w.id === ACUARELA_WORLD_ID)!;
-    expect(summary.tagline).toMatch(/Sant Joan/);
-    expect(summary.shipStyle).toBe('acuarela');
+    // Oculta (T122): sigue registrada y con su piel, pero fuera del selector.
+    expect(WORLD_REGISTRY.isPlayable(ACUARELA_WORLD_ID)).toBe(false);
+    expect(WORLD_REGISTRY.list().some((w) => w.id === ACUARELA_WORLD_ID)).toBe(false);
+    expect(acuarela.theme.name).toBeTruthy();
+    expect(WORLD_REGISTRY.skin(ACUARELA_WORLD_ID).tagline).toMatch(/Sant Joan/);
+    expect(WORLD_REGISTRY.skin(ACUARELA_WORLD_ID).ship.style).toBe('acuarela');
   });
 
   it('cada lugar del mapa compartido tiene piel de Acuarela con arte de T19', () => {

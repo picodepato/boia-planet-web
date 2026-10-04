@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { WorldSummary } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { t } from '../../lib/i18n';
 import { MENU_ICON_NAMES } from '../../lib/mundo/menu/icons';
@@ -15,7 +16,7 @@ const noop = () => {};
 const SHIP = 'Llaüt';
 const GAME = { warning: t('mar.canon.menu.aviso'), resume: t('mar.canon.menu.seguir') };
 
-function renderMenu(game?: typeof GAME) {
+function renderMenu(game?: typeof GAME, worlds: WorldSummary[] = []) {
   return renderToStaticMarkup(
     createElement(MarMenu, {
       worldName: 'Mar',
@@ -23,7 +24,7 @@ function renderMenu(game?: typeof GAME) {
       mood: 'dia',
       shipName: SHIP,
       hasShips: true,
-      worlds: [],
+      worlds,
       worldId: 'mar',
       worldPending: false,
       catalog: null,
@@ -100,7 +101,15 @@ describe('menú del juego: iconos de BOIA (T114)', () => {
       expect(radio![1], m).toContain('aria-hidden="true"');
       expect(accessibleText(radio![1]!), m).toBe(MOOD_LABEL[m]);
     }
-    const summary = html.match(/<summary[^>]*>(.*?)<\/summary>/)?.[1] ?? '';
+    // Sólo con más de un mundo jugable hay «Mundos» (T122: ahora sólo Arcilla).
+    expect(html).not.toContain('mar-menu-mundos');
+    const two: WorldSummary[] = ['a', 'b'].map((id) => ({
+      id,
+      name: id,
+      shipStyle: 'x',
+      accent: '#000',
+    }));
+    const summary = renderMenu(undefined, two).match(/<summary[^>]*>(.*?)<\/summary>/)?.[1] ?? '';
     expect(summary).toContain('data-icon="mundos"');
     expect(summary).toContain(t('mar.client.mundos'));
   });

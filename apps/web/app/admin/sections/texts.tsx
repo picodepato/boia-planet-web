@@ -140,7 +140,7 @@ function MusicPanel({ ctx }: { ctx: AdminContext }) {
         {msg('admin.texts.musicaDeAmbienteY', {
           v1: ' ',
           v2: ctx.registry
-            .ids()
+            .playableIds()
             .map((id) => {
               const w = ctx.registry.get(id);
               return `${w.theme.name}: ${w.theme.music ?? msg('admin.texts.loopGenerado')}`;

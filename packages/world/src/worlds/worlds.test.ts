@@ -76,7 +76,7 @@ describe('mapa compartido y mundos (D-20)', () => {
     expect(a!.theme.sea).not.toEqual(b!.theme.sea);
     expect(a!.theme.ui.accent).not.toBe(b!.theme.ui.accent);
     expect(WORLD_REGISTRY.list().map((s) => s.shipStyle)).toEqual(
-      WORLD_REGISTRY.ids().map((id) => WORLD_REGISTRY.skin(id).ship.style),
+      WORLD_REGISTRY.playableIds().map((id) => WORLD_REGISTRY.skin(id).ship.style),
     );
   });
 
@@ -223,13 +223,64 @@ describe('nombres: común y propio de cada mundo', () => {
   });
 });
 
+/** Los mismos mundos del catálogo con todos jugables: para probar la lógica de elección. */
+const OPEN_REGISTRY = new WorldRegistry(
+  WORLD_REGISTRY.map,
+  WORLD_REGISTRY.ids().map((id) => WORLD_REGISTRY.skin(id)),
+  WORLD_REGISTRY.defaultId,
+);
+
+describe('un solo mundo jugable (T122)', () => {
+  it('sólo Arcilla es jugable; Acuarela sigue registrada, con su piel, y oculta', () => {
+    expect(WORLD_REGISTRY.playableIds()).toEqual([WORLD_REGISTRY.defaultId]);
+    expect(WORLD_REGISTRY.list().map((w) => w.id)).toEqual([WORLD_REGISTRY.defaultId]);
+    const hidden = [...WORLD_REGISTRY.hiddenIds];
+    expect(hidden.length).toBeGreaterThan(0);
+    for (const id of hidden) {
+      expect(WORLD_REGISTRY.has(id)).toBe(true);
+      expect(WORLD_REGISTRY.isPlayable(id)).toBe(false);
+      expect(WORLD_REGISTRY.get(id).config.objects.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('`?mundo=` y una elección guardada de un mundo oculto resuelven a Arcilla', () => {
+    const hidden = [...WORLD_REGISTRY.hiddenIds][0]!;
+    const s = new MapStorage();
+    const visitor = storedWorldChoice(s, WORLD_STORAGE_KEY);
+    const admin = storedWorldChoice(s, ACTIVE_WORLD_STORAGE_KEY);
+    expect(
+      activeWorld(WORLD_REGISTRY, { search: `?mundo=${hidden}`, visitor, admin }).id,
+    ).toBe(WORLD_REGISTRY.defaultId);
+    visitor.set(hidden);
+    expect(activeWorld(WORLD_REGISTRY, { visitor, admin }).id).toBe(WORLD_REGISTRY.defaultId);
+    visitor.set('nada');
+    admin.set(hidden);
+    expect(activeWorld(WORLD_REGISTRY, { visitor, admin }).id).toBe(WORLD_REGISTRY.defaultId);
+  });
+
+  it('elegir un mundo oculto no guarda nada', () => {
+    const s = new MapStorage();
+    const visitor = storedWorldChoice(s, WORLD_STORAGE_KEY);
+    const hidden = [...WORLD_REGISTRY.hiddenIds][0]!;
+    expect(chooseWorld(WORLD_REGISTRY, visitor, hidden)).toBeNull();
+    expect(visitor.get()).toBeNull();
+  });
+
+  it('el mundo por defecto no puede ocultarse ni se oculta un mundo desconocido', () => {
+    const d = WORLD_REGISTRY.defaultId;
+    const skins2 = WORLD_REGISTRY.ids().map((id) => WORLD_REGISTRY.skin(id));
+    expect(() => new WorldRegistry(WORLD_REGISTRY.map, skins2, d, [d])).toThrow();
+    expect(() => new WorldRegistry(WORLD_REGISTRY.map, skins2, d, ['nada'])).toThrow();
+  });
+});
+
 describe('elección de mundo', () => {
   it('URL, después el visitante, después el Admin, después el por defecto; ids desconocidos se saltan', () => {
     const s = new MapStorage();
     const visitor = storedWorldChoice(s, WORLD_STORAGE_KEY);
     const admin = storedWorldChoice(s, ACTIVE_WORLD_STORAGE_KEY);
-    const pick = (search = '') => activeWorld(WORLD_REGISTRY, { search, visitor, admin }).id;
-    const [first, second] = WORLD_REGISTRY.ids() as [string, string];
+    const pick = (search = '') => activeWorld(OPEN_REGISTRY, { search, visitor, admin }).id;
+    const [first, second] = OPEN_REGISTRY.ids() as [string, string];
     expect(pick()).toBe(WORLD_REGISTRY.defaultId);
     admin.set(second);
     expect(pick()).toBe(second);
@@ -244,10 +295,10 @@ describe('elección de mundo', () => {
   it('elegir un mundo desconocido no guarda nada', () => {
     const s = new MapStorage();
     const visitor = storedWorldChoice(s, WORLD_STORAGE_KEY);
-    expect(chooseWorld(WORLD_REGISTRY, visitor, 'nada')).toBeNull();
+    expect(chooseWorld(OPEN_REGISTRY, visitor, 'nada')).toBeNull();
     expect(visitor.get()).toBeNull();
-    const id = WORLD_REGISTRY.ids().at(-1)!;
-    expect(chooseWorld(WORLD_REGISTRY, visitor, id)?.id).toBe(id);
+    const id = OPEN_REGISTRY.ids().at(-1)!;
+    expect(chooseWorld(OPEN_REGISTRY, visitor, id)?.id).toBe(id);
     expect(s.getItem(WORLD_STORAGE_KEY)).toBe(id);
   });
 

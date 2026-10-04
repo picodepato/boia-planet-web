@@ -23,7 +23,7 @@ import { BOARDED_NOTICE, deliveryRewardRef, loadMission, persistMissionEvent } f
 const DT = 1 / 60;
 const worlds = WORLD_REGISTRY;
 const home = worlds.get(worlds.defaultId);
-const other = worlds.get(worlds.list().find((w) => w.id !== home.id)!.id);
+const other = worlds.get(worlds.ids().find((id) => id !== home.id)!);
 
 function browser() {
   const storage = new MemoryStorage();

@@ -74,7 +74,7 @@ export function chooseWorld(
   choice: WorldChoice,
   id: string,
 ): ComposedWorld | null {
-  if (!registry.has(id)) return null;
+  if (!registry.isPlayable(id)) return null;
   choice.set(id);
   return registry.get(id);
 }

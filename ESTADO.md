@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T122: One world: hide Acuarela, keep it for a later port
+
+Qué existe:
+- `WorldRegistry` acepta una lista de mundos ocultos (4.º argumento); `catalog.ts` oculta Acuarela. Nuevos `playableIds()`, `isPlayable()`, `hiddenIds`; `list()` (selector del menú y del Admin) y `resolve()` sólo ven los jugables; `ids()`/`get()`/`skin()` siguen viendo todos (piel, mapa, arte y pruebas de Acuarela intactos). El mundo por defecto no puede ocultarse.
+- `?mundo=acuarela`, `boia:mundo` y `boia:mundo-activo` con `acuarela` caen en silencio en Arcilla; el progreso no se toca. `chooseWorld` y `setActiveWorld` (Admin) rechazan mundos ocultos.
+- El menú de /mar no muestra «Mundos» con un solo mundo jugable; el Admin sólo ofrece Arcilla (temporadas, textos, logros, ranking).
+- e2e: `mundo-acuarela.spec.ts` pasa a `mundo-unico.spec.ts` (el oculto cae en Arcilla, por URL y por elección guardada; sin «Mundos»); se retiran el test de cambio de mundo de `mar-paridad.spec.ts` y `agujero-negro.spec.ts` (necesitaban dos mundos); `mar-hud.spec.ts` ya no espera «Mundos». `docs/spec/estado.md` REQ-MUN-037/039 a PARCIAL; una línea en `docs/TRASPASO.md`.
+
+Comandos:
+- vitest (sin packages/db, 30 s) → exit 0, 143 ficheros, 1299 pruebas
+- `sh tools/spec/checks.sh` → 0; `python3 tools/spec/estado.py` → 0; `pnpm lint` → 0; `pnpm typecheck` → 0; `pnpm build` → 0
+- `E2E_PORT=3218 pnpm e2e e2e/mar-paridad.spec.ts --workers=1` → 12 pasan
+- `E2E_PORT=3217 pnpm e2e e2e/mundo-unico.spec.ts e2e/mar-hud.spec.ts --workers=1` → 14 pasan, 2 fallan (mar-hud «la ficha de una isla: una tarjeta pequeña…», `mar-volar` presente; no toca mundos, ficha de isla), 8 saltadas
+
+Pendiente: revisar el fallo de mar-hud (ficha de isla, `mar-volar`); portar todo a Acuarela en la actualización futura (quitar el mundo de `hidden` en `catalog.ts` y devolver las pruebas de cambio de mundo).
+
 ## 2026-10-04 — plan 010 T108: Puerto de Alicante identity and explicit boat-choice popup
 
 Qué existe:

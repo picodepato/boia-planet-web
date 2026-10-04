@@ -4,6 +4,7 @@ import { MemoryStorage, createLocalRepository } from '@boia/store';
 import {
   type ComposedWorld,
   WORLD_REGISTRY,
+  WorldRegistry,
   type WorldObject,
   chooseWorld,
   storedWorldChoice,
@@ -18,7 +19,13 @@ import { discoverPlace, discoveredPlaces, persistWorldEvent } from './world-prog
  * lugares y premios se leen de los datos del mundo.
  */
 
-const [first, second] = WORLD_REGISTRY.ids().map((id) => WORLD_REGISTRY.get(id)) as [
+/** Todos los mundos registrados, ocultos o no: cambiar de mundo conserva el progreso en general. */
+const OPEN_REGISTRY = new WorldRegistry(
+  WORLD_REGISTRY.map,
+  WORLD_REGISTRY.ids().map((id) => WORLD_REGISTRY.skin(id)),
+  WORLD_REGISTRY.defaultId,
+);
+const [first, second] = OPEN_REGISTRY.ids().map((id) => OPEN_REGISTRY.get(id)) as [
   ComposedWorld,
   ComposedWorld,
 ];
@@ -86,7 +93,7 @@ describe('cambiar de mundo conserva el progreso (T24)', () => {
     const before = await inFirst.progress.balances();
 
     // Cambia a Acuarela (y recarga): nada se pierde ni se vuelve a dar.
-    expect(chooseWorld(WORLD_REGISTRY, choice, second.id)?.id).toBe(second.id);
+    expect(chooseWorld(OPEN_REGISTRY, choice, second.id)?.id).toBe(second.id);
     expect(choice.get()).toBe(second.id);
     const inSecond = repo();
     expect(await discoveredPlaces(inSecond.progress)).toContain(island.id);
@@ -118,7 +125,7 @@ describe('cambiar de mundo conserva el progreso (T24)', () => {
     expect((await inSecond.progress.discounts()).map((d) => d.discount.id)).toEqual([discountRef]);
 
     // Y de vuelta a Arcilla, igual.
-    expect(chooseWorld(WORLD_REGISTRY, choice, first.id)?.id).toBe(first.id);
+    expect(chooseWorld(OPEN_REGISTRY, choice, first.id)?.id).toBe(first.id);
     const back = repo();
     expect(await discoveredPlaces(back.progress)).toContain(island.id);
     expect(await back.progress.balances()).toEqual(before);
