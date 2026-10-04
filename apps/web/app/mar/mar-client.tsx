@@ -152,7 +152,7 @@ import {
 import { MarEntradas } from './entradas';
 import { worldTickets } from './entradas-model';
 import { MarLogros } from './logros';
-import { MarMenu, type MenuSection } from './menu';
+import { MarMenu, MarMenuButtonIcon, type MenuSection } from './menu';
 import { MarTienda } from './tienda';
 import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
@@ -2104,7 +2104,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           title={claimLabel(msg('mar.menu.titulo'), readyToClaim)}
           onClick={() => (menu ? setMenu(false) : openMenu())}
         >
-          <span aria-hidden="true">🏆</span>
+          <span aria-hidden="true">
+            <MarMenuButtonIcon />
+          </span>
           <small aria-hidden="true">{msg('mar.client.menu')}</small>
           <ClaimBadge count={readyToClaim} testId="mar-logros-contador" />
         </button>

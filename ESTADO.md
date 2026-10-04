@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T114: Custom BOIA menu icons
+
+Qué existe
+- `apps/web/lib/mundo/menu/icons.tsx`: familia propia de iconos del menú, SVG en código (32×32, 415–908 bytes cada uno, sin texto ni imágenes), al estilo de la mascota: formas redondas, contorno grueso en `currentColor` (tinta en la hoja crema, blanco en el botón de cristal) y rellenos de `ICON_PALETTE` (naranja, morado de la gorra, crema, blanco y el amarillo del objetivo, todos de mar.css). Iconos: trofeo (Logros y botón del menú), carnet, barco, etiqueta con % (Mis códigos), botella con mensaje, podio (Ranking), engranaje (Ajustes), mando (Controles), planeta con anillo (Mundos), sol/atardecer/luna (momento del día). «Welcome Aboard» reutiliza la mascota original (`_marca/boia-mascota.svg`, sin redibujar) vía `.boia-icon--mascota`. Decorativos (`aria-hidden`, `focusable="false"`); el nombre accesible es siempre la etiqueta de texto. El módulo no importa CSS (los estilos van en mar.css), así se puede leer desde las pruebas de Node y de Playwright.
+- `apps/web/app/mar/menu.tsx`: `MENU_ICON` (sección → icono, todos distintos), `MarMenuButtonIcon`; moods y Mundos con su icono; sin emoji en el menú. Aviso de partida del Cañón (T118) intacto.
+- `mar-client.tsx`: el botón «Menú» lleva el trofeo propio en lugar de 🏆 (dos líneas).
+- `mar.css`: `.boia-icon`, mascota, tamaños (26 px en casillas, 24 px en el botón, 20 px en moods, 22 px en Mundos). Casillas de 92 px mínimo y nombre en hasta dos líneas: con Archivo los nombres salían recortados («Welco…», «Mi Carn…») en móvil y escritorio; ahora se leen enteros (3 columnas en móvil, 4 en escritorio).
+- Pruebas: `lib/mundo/menu/icons.test.ts` (SVG decorativo, ligero <1,5 kB, distintos, sólo colores de la paleta, paleta = mar.css, mascota = archivo de art/marca/logo) y `app/mar/menu.test.ts` (icono distinto por sección, decorativo, nombre accesible = etiqueta, moods y Mundos, ningún emoji en el menú también con el aviso del Cañón, botón con el trofeo). `e2e/mar-hud.spec.ts`: el botón lleva `[data-icon="logros"]` y se nombra «Menú del juego»; cada casilla con icono visible y distinto, `aria-hidden`, nombre accesible = etiqueta, nombre entero (sin recorte), zona táctil ≥ 44 px, icono ≥ 20 px dentro de la casilla y contraste del contorno ≥ 3:1 con la hoja; móvil y escritorio.
+- Capturas revisadas (fuera del repo): `C:/Users/alvar/AppData/Local/Temp/orchestrator-attach/boia-planet-hernan-T114/t114-{menu,menu-sheet,hud}-{mobile,desktop}.png`.
+
+Comandos
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 142 archivos, 1268 pruebas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm build` → exit 0 (186.9 kB / 200 kB). `pnpm typecheck` → exit 0.
+- `E2E_PORT=3714 pnpm e2e mar-hud.spec.ts mar-a-bordo.spec.ts mar-ayuda.spec.ts --workers=1` → exit 1: 34 passed, 16 skipped, 2 failed. Los 2 fallos son «la ficha de una isla…» (mar-hud.spec.ts:411, móvil y escritorio: `mar-volar` visible en la tarjeta plegada), la expectativa vieja de T97 que T105 debe actualizar; no toca el menú. Todas las pruebas del menú pasan en móvil y escritorio.
+
+Pendiente
+- Títulos de las hojas de cada sección siguen con emoji en i18n («🏆 Logros», «🪪 Mi Carnet»…): fuera del alcance (otras hojas, textos).
+- `lib/mundo/menu/onboard-menu.tsx` y el `icon` de `lib/mundo/menu/sections/*` (menú de /juego) no se montan en ninguna parte; se dejaron con sus emoji.
+
 ## 2026-10-04 — plan 010 T109: Twenty-two knots only during the active race
 
 Qué existe

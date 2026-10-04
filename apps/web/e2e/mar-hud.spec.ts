@@ -117,7 +117,9 @@ for (const view of VIEWS) {
       await expectOnTop(menuBtn);
       const m = await box(menuBtn);
       expect(m.x + m.width / 2).toBeLessThan(vp.width / 3);
-      await expect(menuBtn).toContainText('🏆');
+      // El icono de Logros de la familia de BOIA (T114), decorativo: el nombre es el del menú.
+      await expect(menuBtn.locator('[data-icon="logros"]')).toBeVisible();
+      await expect(menuBtn).toHaveAccessibleName(new RegExp(`^${t('mar.menu.titulo')}`));
       await expectOnTop(page.getByTestId('mar-minimapa'));
       await expect(page.getByTestId('mar-saldos')).toBeVisible();
 
@@ -168,6 +170,44 @@ for (const view of VIEWS) {
       await expect(menu).toBeVisible();
       await expect(menuBtn).toHaveAttribute('aria-expanded', 'true');
       for (const id of MENU_ITEMS) await expect(menu.getByTestId(id), id).toBeVisible();
+      // Iconos de BOIA (T114): uno distinto por entrada, decorativo, con su nombre en
+      // texto; no encoge la zona táctil y su contorno contrasta con la hoja (≥ 3:1).
+      const icons = new Set<string>();
+      for (const id of MENU_ITEMS) {
+        const tile = menu.getByTestId(id);
+        const icon = tile.locator('.mar-menu__icon [data-icon]');
+        await expect(icon, id).toBeVisible();
+        await expect(tile.locator('.mar-menu__icon'), id).toHaveAttribute('aria-hidden', 'true');
+        icons.add((await icon.getAttribute('data-icon'))!);
+        const name = tile.locator('.mar-menu__name');
+        const label = (await name.innerText()).replace(/\s+/g, ' ').trim();
+        expect(label, id).not.toBe('');
+        const whole = await name.evaluate((el) => el.scrollWidth <= el.clientWidth);
+        expect(whole, `${id}: el nombre se lee entero`).toBe(true);
+        await expect(tile, id).toHaveAccessibleName(new RegExp(`^${label}`));
+        const tb = await box(tile);
+        const ib = await box(icon);
+        expect(Math.min(tb.width, tb.height), id).toBeGreaterThanOrEqual(44);
+        expect(ib.width, id).toBeGreaterThanOrEqual(20);
+        expect(ib.x >= tb.x && ib.x + ib.width <= tb.x + tb.width, id).toBe(true);
+        const contrast = await icon.evaluate((el) => {
+          const lum = (css: string) => {
+            const [r, g, b] = css
+              .match(/[\d.]+/g)!
+              .slice(0, 3)
+              .map((v) => Number(v) / 255)
+              .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+            return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+          };
+          const a = lum(getComputedStyle(el).color);
+          const b = lum(getComputedStyle(el.closest('.mar-logros__sheet')!).backgroundColor);
+          return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        });
+        expect(contrast, id).toBeGreaterThanOrEqual(3);
+      }
+      expect(icons.size).toBe(MENU_ITEMS.length);
+      await expect(menu.getByTestId('mar-menu-momento').locator('[data-icon]')).toHaveCount(3);
+      await expect(menu.getByTestId('mar-menu-mundos-abrir').locator('[data-icon]')).toBeVisible();
       // Logros, Mi Carnet, Barco, Ajustes, día/noche, Mundos y «Cómo jugar».
       await expect(menu.getByTestId('mar-menu-logros')).toContainText(t('mar.client.logros'));
       await expect(menu.getByTestId('mar-barco')).toContainText(t('mar.tienda.barco'));

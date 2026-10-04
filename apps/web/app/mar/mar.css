@@ -196,10 +196,12 @@
   white-space: nowrap;
 }
 
+/* Casillas de 92 px como mínimo (T114): con la letra Archivo los nombres
+   caben enteros (tres por fila en el móvil, cuatro en escritorio). */
 .mar-menu__grid,
 .mar-menu__row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: 6px;
 }
 
@@ -225,12 +227,39 @@
   transform: scale(0.96);
 }
 
-.mar-menu__icon {
-  font-size: 1.3rem;
-  line-height: 1;
+/* Los iconos propios de BOIA (T114, lib/mundo/menu/icons.tsx): el contorno
+   toma el color del texto (tinta en la hoja crema, blanco en el botón). */
+.boia-icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
 }
 
-.mar-menu__name,
+/* «Welcome Aboard»: la mascota original, la de la bienvenida (sin redibujar). */
+.boia-icon--mascota {
+  background: url('../(landing)/_marca/boia-mascota.svg') center / contain no-repeat;
+}
+
+.mar-menu__icon {
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+
+.mar-menu__icon > .boia-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* El nombre se lee entero: si no cabe en una línea, pasa a dos (T114). */
+.mar-menu__name {
+  max-width: 100%;
+  text-wrap: balance;
+}
+
 .mar-menu__sub {
   max-width: 100%;
   white-space: nowrap;
@@ -268,6 +297,11 @@
   cursor: pointer;
 }
 
+.mar-menu__mundos > summary > .boia-icon {
+  width: 22px;
+  height: 22px;
+}
+
 .mar-menu__mundos[open] > summary {
   margin-bottom: 8px;
 }
@@ -288,14 +322,22 @@
 }
 
 .mar .mar-menu__mood {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 14px 0 10px;
   border: 1px solid rgb(27 20 64 / 0.15);
   border-radius: 18px;
   background: rgb(27 20 64 / 0.05);
   color: var(--ink) !important;
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.mar-menu__mood > .boia-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .mar-menu__mood.is-on {
@@ -351,6 +393,12 @@
 .mar-menu-btn > span {
   font-size: 1.25rem;
   line-height: 1;
+}
+
+.mar-menu-btn > span > .boia-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 .mar-menu-btn > small {

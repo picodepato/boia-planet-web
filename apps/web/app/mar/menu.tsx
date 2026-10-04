@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { ShipCatalog } from '../../lib/barco/catalog';
 import { ClaimBadge } from '../../lib/logros/claim-badge';
 import type { WorldSummary } from '@boia/world';
+import { MenuIcon, type MenuIconName } from '../../lib/mundo/menu/icons';
 import { MundosPicker } from '../../lib/mundo/menu/sections/mundos';
 import { t } from '../../lib/i18n';
 import { MOOD_IDS, MOOD_LABEL, type MoodId } from './engine/palette';
@@ -17,7 +18,8 @@ import { MarHoja } from './hoja';
  * Ranking, Ajustes y «Cómo jugar»: Controles y Welcome Aboard) se abre en su
  * hoja con «‹ Menú» para volver; el momento del día y los mundos (plegados)
  * se eligen aquí mismo. En el móvil es una tarjeta de abajo; en escritorio, centrada.
- * Textos `muestra` [pendiente Álvaro].
+ * Los iconos son la familia propia de BOIA (T114, `lib/mundo/menu/icons.tsx`),
+ * siempre junto a su nombre en texto. Textos `muestra` [pendiente Álvaro].
  */
 
 /** Las secciones del menú que se abren en su propia hoja. */
@@ -47,17 +49,37 @@ export const MENU_TEST_ID: Record<MenuSection, string> = {
   bienvenida: 'mar-menu-bienvenida',
 };
 
-const MOOD_ICON: Record<MoodId, string> = { dia: '☀️', tarde: '🌅', noche: '🌙' };
+/** El icono de cada sección (T114): uno distinto por sección; Welcome Aboard es la mascota. */
+export const MENU_ICON: Record<MenuSection, MenuIconName> = {
+  logros: 'logros',
+  carnet: 'carnet',
+  barco: 'barco',
+  codigos: 'codigos',
+  botella: 'botella',
+  ranking: 'ranking',
+  ajustes: 'ajustes',
+  controles: 'controles',
+  bienvenida: 'bienvenida',
+};
+
+/**
+ * El icono del botón que abre el menú: el de Logros, porque lleva el número
+ * de premios por reclamar (T65).
+ */
+export function MarMenuButtonIcon() {
+  return <MenuIcon name={MENU_ICON.logros} />;
+}
+
+/** El icono de cada momento del día, junto a su nombre. */
+const MOOD_ICON: Record<MoodId, MenuIconName> = { dia: 'dia', tarde: 'tarde', noche: 'noche' };
 
 function Tile({
   section,
-  icon,
   label,
   onOpen,
   children,
 }: {
   section: MenuSection;
-  icon: string;
   label: string;
   onOpen: (section: MenuSection) => void;
   children?: ReactNode;
@@ -72,7 +94,7 @@ function Tile({
       onClick={() => onOpen(section)}
     >
       <span className="mar-menu__icon" aria-hidden="true">
-        {icon}
+        <MenuIcon name={MENU_ICON[section]} />
       </span>
       <span className="mar-menu__name">{label}</span>
       {children}
@@ -147,26 +169,26 @@ export function MarMenu({
         </section>
       ) : null}
       <nav className="mar-menu__grid" aria-label={t('mar.menu.titulo')}>
-        <Tile section="logros" icon="🏆" label={t('mar.client.logros')} onOpen={onOpen}>
+        <Tile section="logros" label={t('mar.client.logros')} onOpen={onOpen}>
           <ClaimBadge count={readyToClaim} testId="mar-menu-logros-contador" />
         </Tile>
-        <Tile section="carnet" icon="🪪" label={t('mar.menu.miCarnet')} onOpen={onOpen} />
+        <Tile section="carnet" label={t('mar.menu.miCarnet')} onOpen={onOpen} />
         {hasShips ? (
-          <Tile section="barco" icon="⛵" label={t('mar.tienda.barco')} onOpen={onOpen}>
+          <Tile section="barco" label={t('mar.tienda.barco')} onOpen={onOpen}>
             {shipName ? <small className="mar-menu__sub">{shipName}</small> : null}
           </Tile>
         ) : null}
-        <Tile section="codigos" icon="🏷️" label={t('mar.menu.misCodigos')} onOpen={onOpen} />
-        <Tile section="botella" icon="✉️" label={t('mar.menu.miBotella')} onOpen={onOpen} />
-        <Tile section="ranking" icon="🏅" label={t('mar.menu.ranking')} onOpen={onOpen} />
-        <Tile section="ajustes" icon="⚙️" label={t('mar.menu.ajustes')} onOpen={onOpen} />
+        <Tile section="codigos" label={t('mar.menu.misCodigos')} onOpen={onOpen} />
+        <Tile section="botella" label={t('mar.menu.miBotella')} onOpen={onOpen} />
+        <Tile section="ranking" label={t('mar.menu.ranking')} onOpen={onOpen} />
+        <Tile section="ajustes" label={t('mar.menu.ajustes')} onOpen={onOpen} />
       </nav>
 
       <section className="mar-menu__group" data-testid="mar-menu-como-jugar">
         <h3 className="mar-menu__label">{t('mar.menu.comoJugar')}</h3>
         <div className="mar-menu__row">
-          <Tile section="controles" icon="🎮" label={t('mar.menu.controles')} onOpen={onOpen} />
-          <Tile section="bienvenida" icon="⚓" label={t('mar.menu.bienvenida')} onOpen={onOpen} />
+          <Tile section="controles" label={t('mar.menu.controles')} onOpen={onOpen} />
+          <Tile section="bienvenida" label={t('mar.menu.bienvenida')} onOpen={onOpen} />
         </div>
       </section>
 
@@ -187,7 +209,7 @@ export function MarMenu({
               data-testid={`mar-momento-${m}`}
               onClick={() => onMood(m)}
             >
-              {MOOD_ICON[m]} {MOOD_LABEL[m]}
+              <MenuIcon name={MOOD_ICON[m]} /> {MOOD_LABEL[m]}
             </button>
           ))}
         </div>
@@ -196,7 +218,7 @@ export function MarMenu({
       {/* Plegado: la lista de mundos, con sus barcos, es lo más largo del menú. */}
       <details className="mar-menu__group mar-menu__mundos" data-testid="mar-menu-mundos">
         <summary data-testid="mar-menu-mundos-abrir">
-          <span aria-hidden="true">🌍</span> {t('mar.client.mundos')}
+          <MenuIcon name="mundos" /> {t('mar.client.mundos')}
           {worldName ? <small className="mar-menu__sub">{worldName}</small> : null}
         </summary>
         <MundosPicker
