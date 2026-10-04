@@ -110,7 +110,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T128 — How the six weapons look in the 3D sea
 - Status: running (attempt 1)
-- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Model: opus (Opus 5.5) (Codex out of credits until ~04:50)
 - Skills: none
 - Depends on: T126, T127
 - Goal: Render every weapon of T127 in `/mar`, cheap and readable on mobile: subwoofer pulse rings, rotating festival laser (no dangerous flashing, reduced-motion variant), orbiting BOIA buoys, confetti fan, firework rockets and their bursts, acid-green rain zone. Batched/instanced, within the `baja` budget; nothing breaks with all 7 weapons at max level. Reduced motion respected.
@@ -145,7 +145,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T128, T129
-- Goal: The level-up cards show every kind of offer from T129 (new weapon, weapon level, new vinyl, vinyl level, evolution, Salvavidas) with a simple icon, its level and exactly what the level gives («Nivel 3: +1 boya»); evolutions stand out. The HUD gets the small row of the 4 weapons and 4 vinyls with their level: **bottom on desktop, top-left on mobile** so it does not collide with the touch controls, and it does not cover T123's compact countdown/XP or the Tickets link. Keyboard and touch behaviour of the cards stays as in beta 1. Text by key, `muestra`.
+- Goal: The level-up cards show every kind of offer from T129 (new weapon, weapon level, new vinyl, vinyl level, evolution, Salvavidas) with a simple icon, its level and exactly what the level gives («Nivel 3: +1 boya»); evolutions stand out. The HUD gets the small row of the 4 weapons and 4 vinyls with their level: **bottom on desktop, top-left on mobile** so it does not collide with the touch controls, and it does not cover T123's compact countdown/XP or the Tickets link. Keyboard and touch behaviour of the cards stays as in beta 1. Text by key, `muestra`. Also fix the e2e `sin esquivar, el agua llena el barco` (mar-canon.spec.ts): since T129's card pool an idle player at `t=200` sits at `estado=card` (level-up card open) and never floods; make the test pick a card (or use the existing `autoPick`) instead of weakening what it checks.
 - Context: T123, T128, T129 Outcomes; `apps/web/app/mar/canon-hud.tsx`, `canon-hud.css`, `canon-hud-model.ts`, the cards component, i18n files, `apps/web/e2e/mar-canon.spec.ts`.
 - Scope: may touch `apps/web/app/mar/canon-*`, the cards component, `apps/web/app/mar/survivors*.ts`, i18n files, e2e spec / must not touch `packages/engine/src/survivors/**` beyond trivial typing fixes, `mar3d.ts` rendering, `docs/DECISIONES.md`.
 - Done when:
@@ -155,7 +155,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T131 — Three difficulties chosen on the island panel
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T129
@@ -166,7 +166,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests: each difficulty changes damage/hp/count as configured; same seed + difficulty is deterministic
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with: the panel shows the three buttons with Normal selected, choosing Tormenta starts a Tormenta game (`dataset` shows it), the dev shortcut works
   - Test command → exit 0
-- Outcome:
+- Outcome: Tranquila/Normal/Tormenta as config data (damage 0.7/1/1.3, hp 0.8/1/1.3, count 0.75/1/1.4), radiogroup of three buttons above «Jugar», `dificultad=` shortcut, difficulty in the session `configHash`, config v5; 1402 unit tests, 4 new e2e cases pass; e2e `sin esquivar, el agua llena el barco` fails on main since T129 (card pool) → cceeee7
 
 ## T132 — Balance with bots, `baja` performance, e2e, docs and the beta 2 test guide
 - Status: pending
@@ -211,6 +211,9 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T129: Codex's design choices (card offer shape, Salvavidas, chest hook) are in its ESTADO section; diff not reviewed line by line by the wrapper; edited tests of the old upgrades (survivors.test.ts, survivors-weapons.test.ts, turbo-ramps.test.ts); config version 4; the HUD adapter in apps/web/app/mar still reads the old upgrade fields: T130 adapts it (agent)
 - 2026-10-05 T126: also edited `apps/web/app/mar/engine/survivors-view.ts` (not named in Scope): empty meshes invisible, warning = two instances (dark strip + growing fill), gulls fly 3.2 u above `groundAt`, elite gold ring (static with reduced motion), enemy shots pink, `data-canon-vista`/`data-canon-vistos` on the canvas for e2e; piece count updated in survivors.test.ts (agent)
 - 2026-10-05 plan: T128 goes to Codex (an Opus task) while T131 runs on Sonnet (orchestrator)
+- 2026-10-05 T128: Codex hit its usage limit (until ~04:50) mid-task, leaving a WIP commit 54d48d5 (new survivors-weapons.ts + test, survivors-view/mar3d/survivors/canon-mode edits, e2e edits; unreviewed); not a counted failure: continued by an Opus agent that merges that branch; later Codex tasks go to Opus until Codex is back (memory codex-fallback) (orchestrator)
+- 2026-10-05 T131: multipliers (muestra) Tranquila dmg 0.7/hp 0.8/count 0.75, Normal 1/1/1, Tormenta 1.3/1.3/1.4; `enemyCount` scales script groups per second and the Marea ring size, not group size; hp scaled at spawn (jellyfish halves inherit); damage scaled in `damagePlayer` (contact and shots); `survivors.difficulty` in the session config; choice kept in memory for the visit; optional `extra` slot on `MinigameLayer`; loosened `SURVIVORS_CONFIG_VERSION` assertion in survivors-vinyls.test.ts to >=4; config v5 (agent)
+- 2026-10-05 T129 regression found by T131: e2e `sin esquivar, el agua llena el barco` fails on main (card opens at t=200 and an idle player never picks it); the Test command does not run e2e so it went unnoticed; fix added to T130's goal (orchestrator)
 
 ## Proposals (new scope)
 
@@ -242,3 +245,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 01:25 T129 done · branch worktree-agent-a065490accc632542 → 059c91b
 - 2026-10-05 01:27 T131 launched · attempt 1 · agent a7f7e6115b4826d65 (sonnet)
 - 2026-10-05 01:35 T126 done · branch worktree-agent-aaee154a770efe4d0 → 3ea66f6
+- 2026-10-05 01:38 T128 launched · attempt 1 · Codex via wrapper agent a4e0bde2ef6b573bd
+- 2026-10-05 01:50 T128 Codex usage limit; continuation on Opus from branch worktree-agent-a4e0bde2ef6b573bd (54d48d5)
+- 2026-10-05 01:53 T128 continuation launched · attempt 1 · agent a5c9a7b63986f03d0 (opus), merges worktree-agent-a4e0bde2ef6b573bd
+- 2026-10-05 02:05 T131 done · branch worktree-agent-a7f7e6115b4826d65 → cceeee7
