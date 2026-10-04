@@ -1,7 +1,9 @@
 import type { DefeatStyle, EnemyId, NoteFigure } from '@boia/engine/survivors';
 import type { QualityTier } from '@boia/engine/streaming';
 import {
-  type BufferGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  CircleGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
@@ -32,6 +34,12 @@ import { C } from './palette';
  * un chapoteo, sin heridas: REQ-AVE-037). Con movimiento reducido, un efecto
  * mínimo sin saltos ni partículas, el barco no parpadea y la cámara no tiembla.
  *
+ * T126 (plan 011) suma los enemigos de la beta 2: la gaviota (vuela sobre
+ * las islas, con su sombra), el pirata en su botecito, el pez espada y la
+ * medusa (sus trozos, la misma pieza más pequeña); el aro dorado de las
+ * élites, la línea de aviso del pez espada en el agua y los disparos de la
+ * pistola de agua del pirata.
+ *
  * Todo en unidades de escena; cada modelo mira a +x (rumbo 0 del motor), con
  * el agua en y = 0. Nada se crea por fotograma: las piezas viven en
  * `InstancedMesh` del tamaño del tope de la calidad y en piscinas fijas.
@@ -39,11 +47,30 @@ import { C } from './palette';
 
 // --- Colores ------------------------------------------------------------------
 
-/** Colores de los enemigos: rojo la piraña, naranja con coraza de hierro el cangrejo. */
+/**
+ * Colores de los enemigos: rojo la piraña, naranja con coraza de hierro el
+ * cangrejo; blanca y gris la gaviota, rayas rojas y sombrero negro el
+ * pirata, azul con espada clara el pez espada y lila la medusa (T126).
+ */
 export const ENEMY_COLORS = {
   piranha: { body: C.red, back: C.navy, belly: C.yellow, teeth: C.white },
   crab: { shell: C.orange, armour: C.rockLight, rivet: C.iron, claw: C.orangeDeep },
+  gull: { body: C.white, wing: '#b4c0d4', tip: '#22232b', beak: C.yellow },
+  pirate: {
+    hull: C.woodDark,
+    rim: C.wood,
+    stripe: C.red,
+    hat: '#1b1820',
+    beard: C.iron,
+    pistol: C.yellow,
+    tank: '#36c2ff',
+  },
+  swordfish: { back: '#2a5fa8', belly: '#d9e3ec', sword: '#eef3f6', fin: '#1d3f7a' },
+  jellyfish: { bell: '#b38cff', rim: '#8a5ee6', core: '#e3d2ff', spot: C.cream },
 } as const;
+
+/** El brillo propio de la medusa (se lee de noche y de lejos). */
+export const JELLY_GLOW = '#9d6bff';
 
 /** El color de cada figura de nota (de menos a más valor); el aro del agua, blanco. */
 export const NOTE_COLORS: Readonly<Record<NoteFigure, string>> = {
@@ -145,6 +172,162 @@ export function crabGeometry(): BufferGeometry {
   return k.build();
 }
 
+/**
+ * La gaviota aguafiestas (T126): cuerpo blanco, alas grises muy abiertas con
+ * puntas negras, pico amarillo y cola corta. Vista desde arriba es una cruz
+ * ancha: no se confunde con nada del agua. El cuerpo en y = 0; la pantalla
+ * la sube a su altura de vuelo. Envergadura ~4,4. Radio 1 ≈ su radio de choque.
+ */
+export function gullGeometry(): BufferGeometry {
+  const c = ENEMY_COLORS.gull;
+  const k = new Kit();
+  k.add(new SphereGeometry(0.55, 8, 6), c.body, { s: [1.7, 0.75, 0.75] });
+  k.add(new SphereGeometry(0.36, 7, 5), c.body, { p: [0.8, 0.18, 0] });
+  // Pico amarillo con la punta naranja.
+  k.add(new ConeGeometry(0.12, 0.5, 5), c.beak, { p: [1.25, 0.12, 0], r: [0, 0, -Math.PI / 2] });
+  k.add(new SphereGeometry(0.06, 4, 3), C.orange, { p: [1.47, 0.1, 0] });
+  for (const s of [-1, 1]) {
+    // Alas en dos tramos (algo en V), punta negra.
+    k.add(new BoxGeometry(0.75, 0.08, 1.0), c.wing, {
+      p: [0.05, 0.12, s * 0.75],
+      r: [s * -0.18, 0, 0],
+    });
+    k.add(new BoxGeometry(0.6, 0.07, 0.8), c.wing, {
+      p: [-0.08, 0.3, s * 1.55],
+      r: [s * -0.32, s * 0.2, 0],
+    });
+    k.add(new ConeGeometry(0.3, 0.6, 4), c.tip, {
+      p: [-0.18, 0.44, s * 2.15],
+      r: [(s * Math.PI) / 2, 0, 0],
+      s: [1, 1, 0.25],
+    });
+    k.add(new SphereGeometry(0.07, 4, 3), EYE, { p: [0.98, 0.3, s * 0.22] });
+  }
+  // Cola en abanico.
+  k.add(new ConeGeometry(0.35, 0.6, 4), c.wing, {
+    p: [-1.05, 0.05, 0],
+    r: [0, 0, Math.PI / 2],
+    s: [1, 1, 0.3],
+  });
+  return k.build();
+}
+
+/**
+ * El pirata en su botecito (T126): un bote de madera oscura con la proa
+ * hacia +x, el pirata de pie con camiseta a rayas rojas, sombrero de tres
+ * picos negro y la pistola de agua amarilla apuntando al frente, y una
+ * banderita negra en popa. Alto ~2,4, largo ~2,6. Radio 1 ≈ su radio de choque.
+ */
+export function pirateGeometry(): BufferGeometry {
+  const c = ENEMY_COLORS.pirate;
+  const k = new Kit();
+  // El bote: casco, borda clara y proa en punta.
+  k.add(new BoxGeometry(1.7, 0.5, 1.1), c.hull, { p: [-0.15, 0.15, 0] });
+  k.add(new ConeGeometry(0.55, 0.8, 4), c.hull, {
+    p: [1.1, 0.15, 0],
+    r: [Math.PI / 4, 0, -Math.PI / 2],
+    s: [1, 1, 0.65],
+  });
+  k.add(new BoxGeometry(1.8, 0.08, 1.2), c.rim, { p: [-0.15, 0.42, 0] });
+  // El pirata: piernas, camiseta a rayas, cabeza, barba y sombrero.
+  k.add(new BoxGeometry(0.4, 0.4, 0.45), C.navy, { p: [-0.1, 0.62, 0] });
+  for (let i = 0; i < 4; i++) {
+    k.add(new CylinderGeometry(0.3, 0.32, 0.16, 8), i % 2 === 0 ? c.stripe : C.white, {
+      p: [-0.1, 0.9 + i * 0.16, 0],
+    });
+  }
+  k.add(new SphereGeometry(0.28, 7, 6), C.skin, { p: [-0.1, 1.72, 0] });
+  k.add(new ConeGeometry(0.22, 0.3, 5), c.beard, { p: [0.04, 1.52, 0], r: [0, 0, Math.PI] });
+  // Parche en un ojo, el otro abierto.
+  k.add(new BoxGeometry(0.06, 0.12, 0.14), c.hat, { p: [0.17, 1.78, 0.1] });
+  k.add(new SphereGeometry(0.05, 4, 3), EYE, { p: [0.17, 1.78, -0.1] });
+  k.add(new CylinderGeometry(0.62, 0.62, 0.1, 3), c.hat, { p: [-0.1, 1.95, 0] });
+  k.add(new ConeGeometry(0.3, 0.4, 6), c.hat, { p: [-0.1, 2.18, 0] });
+  // El brazo y la pistola de agua (depósito azul), apuntando al frente.
+  k.add(new BoxGeometry(0.6, 0.14, 0.14), C.skin, { p: [0.3, 1.25, 0.28] });
+  k.add(new BoxGeometry(0.45, 0.22, 0.18), c.pistol, { p: [0.7, 1.28, 0.28] });
+  k.add(new BoxGeometry(0.14, 0.26, 0.14), c.pistol, { p: [0.58, 1.08, 0.28] });
+  k.add(new SphereGeometry(0.16, 6, 5), c.tank, { p: [0.62, 1.48, 0.28] });
+  k.add(new CylinderGeometry(0.05, 0.05, 0.3, 5), c.pistol, {
+    p: [1.05, 1.3, 0.28],
+    r: [0, 0, Math.PI / 2],
+  });
+  // Banderita negra en popa con su calavera (un punto blanco).
+  k.add(new CylinderGeometry(0.03, 0.03, 1.5, 4), C.woodDark, { p: [-0.9, 1.1, 0] });
+  k.add(new BoxGeometry(0.6, 0.4, 0.04), c.hat, { p: [-1.2, 1.65, 0] });
+  k.add(new SphereGeometry(0.09, 5, 4), C.white, { p: [-1.2, 1.68, 0.03] });
+  return k.build();
+}
+
+/**
+ * El pez espada (T126): largo y estrecho, lomo azul y vientre plateado, la
+ * espada larga al frente, una vela alta en el lomo y la cola en media luna.
+ * Largo ~4,6 (unas cuatro veces su ancho): la silueta más larga del mar.
+ * Radio 1 ≈ su radio de choque.
+ */
+export function swordfishGeometry(): BufferGeometry {
+  const c = ENEMY_COLORS.swordfish;
+  const k = new Kit();
+  k.add(new SphereGeometry(0.6, 9, 6), c.back, { p: [0, 0.3, 0], s: [2.1, 0.8, 0.75] });
+  k.add(new SphereGeometry(0.5, 8, 5), c.belly, { p: [0.1, 0.12, 0], s: [2.2, 0.6, 0.75] });
+  // La espada.
+  k.add(new ConeGeometry(0.11, 1.9, 5), c.sword, { p: [2.15, 0.36, 0], r: [0, 0, -Math.PI / 2] });
+  // La vela del lomo (alta, se ve desde lejos) y las aletas.
+  k.add(new ConeGeometry(0.55, 1.1, 3), c.fin, {
+    p: [0.1, 1.1, 0],
+    r: [0, 0, 0.35],
+    s: [1.4, 1, 0.2],
+  });
+  for (const s of [-1, 1]) {
+    k.add(new ConeGeometry(0.2, 0.7, 3), c.fin, {
+      p: [0.4, 0.05, s * 0.45],
+      r: [s * 1.2, 0, 0.6],
+      s: [1, 1, 0.3],
+    });
+    // Cola en media luna.
+    k.add(new ConeGeometry(0.22, 0.9, 4), c.fin, {
+      p: [-1.55, 0.3 + s * 0.38, 0],
+      r: [0, 0, Math.PI / 2 + s * 0.85],
+      s: [1, 1, 0.3],
+    });
+    k.add(new SphereGeometry(0.12, 5, 4), C.white, { p: [0.95, 0.48, s * 0.28] });
+    k.add(new SphereGeometry(0.07, 4, 3), EYE, { p: [1.02, 0.49, s * 0.32] });
+  }
+  return k.build();
+}
+
+/**
+ * La medusa (T126): una campana lila que asoma del agua con lunares claros,
+ * un borde ondulado y tentáculos cortos que flotan detrás. Brilla un poco
+ * (`JELLY_GLOW`). Ancho ~2,6, alto ~1,1. Sus trozos usan la misma pieza, más
+ * pequeños (`scale` del enemigo). Radio 1 ≈ su radio de choque.
+ */
+export function jellyfishGeometry(): BufferGeometry {
+  const c = ENEMY_COLORS.jellyfish;
+  const k = new Kit();
+  k.add(new SphereGeometry(0.95, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), c.bell, {
+    p: [0, 0.1, 0],
+    s: [1, 1.05, 1],
+  });
+  k.add(new TorusGeometry(0.92, 0.12, 4, 14), c.rim, { p: [0, 0.12, 0], r: [Math.PI / 2, 0, 0] });
+  k.add(new SphereGeometry(0.4, 7, 5), c.core, { p: [0, 0.6, 0], s: [1, 0.8, 1] });
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.3;
+    k.add(new SphereGeometry(0.13, 5, 4), c.spot, {
+      p: [Math.cos(a) * 0.62, 0.72, Math.sin(a) * 0.62],
+    });
+  }
+  // Tentáculos sobre el agua, hacia atrás y a los lados (avanza hacia +x).
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI * 0.55 + (i / 5) * Math.PI * 0.9;
+    k.add(new ConeGeometry(0.1, 1.1, 4), c.rim, {
+      p: [Math.cos(a) * 1.25, 0.06, Math.sin(a) * 1.25],
+      r: [0, -a, Math.PI / 2],
+    });
+  }
+  return k.build();
+}
+
 /** Un enemigo sin modelo propio todavía (las betas siguientes): una boya oscura con ojos. */
 export function genericEnemyGeometry(): BufferGeometry {
   const k = new Kit();
@@ -223,12 +406,25 @@ export interface EnemyModel {
   scale: number;
   /** Cuánto se mece arriba y abajo (escena). */
   bob: number;
+  /** Vuela: altura (escena) sobre el suelo que tiene debajo (agua o isla). */
+  fly?: number;
+  /** Late (la campana de la medusa): cuánto se estira en alto, sin movimiento reducido. */
+  pulse?: number;
+  /** Brillo propio (`emissive`) del material. */
+  glow?: string;
 }
 
-/** El modelo de cada enemigo de la beta; los que llegan después usan `genericEnemyGeometry`. */
+/**
+ * El modelo de cada enemigo; los que lleguen después usan
+ * `genericEnemyGeometry`. La gaviota vuela por encima de las islas (T126).
+ */
 export const ENEMY_MODELS: Readonly<Partial<Record<EnemyId, EnemyModel>>> = {
   piranha: { build: piranhaGeometry, scale: 1.6, bob: 0.08 },
   crab: { build: crabGeometry, scale: 1.2, bob: 0.03 },
+  gull: { build: gullGeometry, scale: 1.1, bob: 0.25, fly: 3.2 },
+  pirate: { build: pirateGeometry, scale: 1.2, bob: 0.06 },
+  swordfish: { build: swordfishGeometry, scale: 1.2, bob: 0.05 },
+  jellyfish: { build: jellyfishGeometry, scale: 1.25, bob: 0.04, pulse: 0.12, glow: JELLY_GLOW },
 };
 const GENERIC_MODEL: EnemyModel = { build: genericEnemyGeometry, scale: 1.2, bob: 0.05 };
 
@@ -259,6 +455,123 @@ export function ballMaterial(): MeshLambertMaterial {
   m.emissive = new Color(BALL_COLOR);
   m.emissiveIntensity = 0.35;
   return m;
+}
+
+/** El material de un enemigo: el de las piezas, con su brillo si lo tiene (la medusa). */
+export function enemyMaterial(model: EnemyModel): MeshLambertMaterial {
+  const m = litMaterial();
+  if (model.glow) {
+    m.emissive = new Color(model.glow);
+    m.emissiveIntensity = 0.3;
+  }
+  return m;
+}
+
+// --- Disparos, élites, avisos y sombras (T126) -----------------------------------------
+
+/** Rosa de peligro de los disparos enemigos (la bola del barco es azul clara). */
+export const ENEMY_SHOT_COLOR = C.pink;
+
+/**
+ * El disparo de la pistola de agua del pirata: un chorro rosa alargado con
+ * el centro claro y una estela, mirando a +x. Radio 1. Se distingue de la
+ * bola del barco por el color y la forma de chorro.
+ */
+export function enemyShotGeometry(): BufferGeometry {
+  const k = new Kit();
+  k.add(new IcosahedronGeometry(1, 1), ENEMY_SHOT_COLOR, { s: [1.5, 0.85, 0.85] });
+  k.add(new IcosahedronGeometry(0.45, 0), C.white, { p: [0.55, 0.3, 0] });
+  k.add(new ConeGeometry(0.6, 1.8, 6), '#ff9fc0', { p: [-1.5, 0, 0], r: [0, 0, Math.PI / 2] });
+  return k.build();
+}
+
+export function enemyShotMaterial(): MeshLambertMaterial {
+  const m = litMaterial();
+  m.emissive = new Color(ENEMY_SHOT_COLOR);
+  m.emissiveIntensity = 0.45;
+  return m;
+}
+
+/** Tamaño del disparo enemigo sobre su radio, y su mínimo (escena). */
+export const SHOT_SCALE = 1.4;
+export const SHOT_MIN = 0.3;
+
+/** Dorado de las élites. */
+export const ELITE_COLOR = C.gold;
+
+/**
+ * El brillo de una élite: un aro dorado plano alrededor del enemigo (a su
+ * altura: en el agua o, la gaviota, en el aire). Radio exterior 1.
+ */
+export function eliteHaloGeometry(): BufferGeometry {
+  const g = new RingGeometry(0.72, 1, 20);
+  g.rotateX(-Math.PI / 2);
+  return g;
+}
+
+export function eliteHaloMaterial(): MeshBasicMaterial {
+  return new MeshBasicMaterial({
+    color: ELITE_COLOR,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    side: DoubleSide,
+  });
+}
+
+/** Tamaño del aro sobre el tamaño del enemigo, y cuánto late (sin movimiento reducido). */
+export const HALO_SCALE = 1.35;
+export const HALO_PULSE = 0.12;
+
+/** Colores de la línea de aviso del pez espada: el tramo entero y lo que ya se ha llenado. */
+export const WARNING_COLORS = { track: '#7a1d24', fill: '#ff4a2e' } as const;
+
+/**
+ * La línea de aviso de una embestida: una franja plana sobre el agua que va
+ * de x = 0 a x = 1 (ancho 1, centrada en z) con la punta en flecha; la
+ * pantalla la estira al largo de la embestida. Cada aviso pinta dos: el
+ * tramo entero, oscuro, y encima el que se llena con el progreso, vivo.
+ */
+export function warningLineGeometry(): BufferGeometry {
+  const g = new BufferGeometry();
+  // Franja de 0 a 0,9 y punta de 0,9 a 1 (en el plano y = 0, de cara arriba).
+  const v = [
+    0, 0, -0.5, 0.9, 0, 0.5, 0.9, 0, -0.5, 0, 0, -0.5, 0, 0, 0.5, 0.9, 0, 0.5, 0.9, 0, -0.8, 0.9, 0,
+    0.8, 1, 0, 0,
+  ];
+  g.setAttribute('position', new BufferAttribute(new Float32Array(v), 3));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  return g;
+}
+
+export function warningLineMaterial(): MeshBasicMaterial {
+  return new MeshBasicMaterial({
+    color: '#ffffff',
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    side: DoubleSide,
+  });
+}
+
+/** Ancho de la línea de aviso sobre el diámetro del enemigo. */
+export const WARNING_WIDTH = 0.9;
+
+/** La sombra de lo que vuela: un disco oscuro en el suelo. Radio 1. */
+export function shadowGeometry(): BufferGeometry {
+  const g = new CircleGeometry(1, 12);
+  g.rotateX(-Math.PI / 2);
+  return g;
+}
+
+export function shadowMaterial(): MeshBasicMaterial {
+  return new MeshBasicMaterial({
+    color: '#0b1a2c',
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+  });
 }
 
 /** Una `InstancedMesh` vacía de `cap` piezas. */
@@ -397,6 +710,8 @@ interface Slot {
   on: boolean;
   type: number;
   x: number;
+  /** Altura (escena) donde cae: 0 en el agua; la gaviota, en el aire. */
+  y: number;
   z: number;
   heading: number;
   size: number;
@@ -406,7 +721,7 @@ interface Slot {
 function slots(n: number): Slot[] {
   const out: Slot[] = [];
   for (let i = 0; i < n; i++) {
-    out.push({ on: false, type: 0, x: 0, z: 0, heading: 0, size: 1, start: 0 });
+    out.push({ on: false, type: 0, x: 0, y: 0, z: 0, heading: 0, size: 1, start: 0 });
   }
   return out;
 }
@@ -438,11 +753,12 @@ export class PufFx {
     this.pool = slots(POOL[quality]);
   }
 
-  spawn(x: number, z: number, size: number, now: number): void {
+  spawn(x: number, z: number, size: number, now: number, y = 0): void {
     const s = this.pool[this.next]!;
     this.next = (this.next + 1) % this.pool.length;
     s.on = true;
     s.x = x;
+    s.y = y;
     s.z = z;
     s.size = size;
     s.start = now;
@@ -475,7 +791,7 @@ export class PufFx {
         const big = p === 0 && plan.parts > 1 ? 0.55 : 0.32;
         o.position.set(
           s.x + Math.cos(a) * r,
-          0.4 + easeOut(k) * s.size * 0.8,
+          s.y + 0.4 + easeOut(k) * s.size * 0.8,
           s.z + Math.sin(a) * r,
         );
         o.rotation.set(k * 3 + p, k * 2, 0);
@@ -532,12 +848,22 @@ export class SinkFx {
     this.counts = kinds.map(() => 0);
   }
 
-  spawn(type: number, x: number, z: number, heading: number, size: number, now: number): void {
+  /** Una derrota de la pieza `type`; `y`: la altura donde cae (lo que vuela, cae al agua). */
+  spawn(
+    type: number,
+    x: number,
+    z: number,
+    heading: number,
+    size: number,
+    now: number,
+    y = 0,
+  ): void {
     const s = this.pool[this.next]!;
     this.next = (this.next + 1) % this.pool.length;
     s.on = true;
     s.type = type;
     s.x = x;
+    s.y = y;
     s.z = z;
     s.heading = heading;
     s.size = size;
@@ -567,14 +893,14 @@ export class SinkFx {
       let y: number;
       let pitch: number;
       if (k < hopEnd) {
-        // Saltito con la nariz hacia arriba.
+        // Saltito con la nariz hacia arriba (lo que vuela, cae desde su altura).
         const h = k / hopEnd;
-        y = Math.sin(h * Math.PI) * s.size * 0.9;
+        y = s.y * (1 - h) + Math.sin(h * Math.PI) * s.size * 0.9;
         pitch = 0.6 * (1 - h) - 0.9 * h;
       } else {
         // Se hunde de cabeza.
         const d = (k - hopEnd) / (1 - hopEnd);
-        y = -d * s.size * 1.8;
+        y = (plan.hop ? 0 : s.y * (1 - Math.min(1, d * 2))) - d * s.size * 1.8;
         pitch = plan.hop ? -0.9 : -0.3 * d;
       }
       o.position.set(s.x, y, s.z);

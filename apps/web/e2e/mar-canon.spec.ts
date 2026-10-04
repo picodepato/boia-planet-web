@@ -141,6 +141,23 @@ test('`?minijuego=canon&t=<s>&seed=<n>` empieza en ese segundo con esa semilla',
   expect(errors).toEqual([]);
 });
 
+test('ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos, sin errores (T126)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&t=240&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  expect(Number(await game(page).getAttribute('data-tiempo'))).toBeLessThan(420 - 210);
+  // `data-canon-vistos`: los tipos que han salido dentro de la vista de la cámara en la partida.
+  const all = Object.keys(SURVIVORS_CONFIG.enemies).sort();
+  await expect
+    .poll(
+      async () => ((await canvas(page).getAttribute('data-canon-vistos')) ?? '').split(' ').sort(),
+      { timeout: 90_000 },
+    )
+    .toEqual(all);
+  expect(errors).toEqual([]);
+});
+
 test('el interruptor de desarrollo cambia en vivo el estilo de derrota (T117)', async ({
   page,
 }) => {

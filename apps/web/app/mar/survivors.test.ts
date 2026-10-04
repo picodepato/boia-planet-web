@@ -570,7 +570,19 @@ describe('las piezas de la partida', () => {
       (n, m) => n + (m as unknown as { count: number }).count,
       0,
     );
-    expect(total).toBe(s.enemies.length + s.projectiles.length + s.notes.length);
+    // T126: además, el aro de cada élite, la sombra de lo que vuela, los
+    // disparos enemigos y dos piezas por aviso de embestida.
+    const flyers = s.enemies.filter((e) => e.type === 'gull').length;
+    const elites = s.enemies.filter((e) => e.elite).length;
+    expect(total).toBe(
+      s.enemies.length +
+        s.projectiles.length +
+        s.notes.length +
+        elites +
+        flyers +
+        s.enemyProjectiles.length +
+        s.telegraphs.length * 2,
+    );
     view.dispose();
   });
 });

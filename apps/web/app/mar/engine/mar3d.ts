@@ -591,6 +591,10 @@ export class Mar3D {
     turboPending: boolean;
     /** El barco de la partida (vivo: la simulación lo mueve en su sitio). */
     player: { x: number; y: number; vx: number; vy: number; heading: number };
+    /** Tipos de enemigo que han salido en pantalla en la partida (T126, para las pruebas). */
+    seen: Set<string>;
+    /** s de la escena en que se miró la última vez qué hay en pantalla. */
+    seenAt: number;
   } | null = null;
   /** La cámara de la partida (0 la de siempre, 1 la de la partida). */
   private camBlend = 0;
@@ -1436,10 +1440,19 @@ export class Mar3D {
     const view = new SurvivorsView(run.config, run.game.caps, {
       quality: run.quality,
       reduced: this.reducedMotion,
+      // La gaviota vuela por encima de las islas (T126).
+      groundAt: (x, z) => this.groundAt(x, z),
     });
     this.scene.add(view.group);
     this.camTuning = run.config.camera;
-    this.survivors = { run, view, player: run.snapshot().player, turboPending: false };
+    this.survivors = {
+      run,
+      view,
+      player: run.snapshot().player,
+      turboPending: false,
+      seen: new Set(),
+      seenAt: -1,
+    };
     this.syncHandling();
     run.tick(performance.now(), false);
     this.opts.canvas.dataset.canon = 'on';
@@ -1476,11 +1489,49 @@ export class Mar3D {
     delete this.opts.canvas.dataset.canonTurboCooldown;
     delete this.opts.canvas.dataset.canonSpeed;
     delete this.opts.canvas.dataset.derrota;
+    delete this.opts.canvas.dataset.canonVista;
+    delete this.opts.canvas.dataset.canonVistos;
     this.prev.x = this.ship.x;
     this.prev.y = this.ship.y;
     this.prev.heading = this.ship.heading;
     this.acc = 0;
     this.opts.canvas.dataset.canon = 'off';
+  }
+
+  /**
+   * Qué tipos de enemigo se ven ahora en pantalla (T126): cada pieza en su
+   * copia más cercana al foco, bajada por la curva del planeta, dentro de la
+   * vista y no tras el horizonte. Va a `data-canon-vista` (ahora) y
+   * `data-canon-vistos` (en toda la partida), para las pruebas.
+   */
+  private markSurvivorsOnScreen(
+    sv: NonNullable<Mar3D['survivors']>,
+    t: number,
+    fx: number,
+    fz: number,
+  ): void {
+    sv.seenAt = t;
+    const P = this.periodS;
+    const cam = this.camera.position;
+    const bend = this.bend;
+    const now = sv.view.typesWhere((x, y, z, r) => {
+      const px = fx + wrapD(x - fx, P.w);
+      const pz = fz + wrapD(z - fz, P.h);
+      const d = Math.hypot(px - cam.x, pz - cam.z);
+      const drop = bendDrop(bend, d);
+      tmpSphere.center.set(px, y - drop, pz);
+      tmpSphere.radius = r;
+      return (
+        this.frustum.intersectsSphere(tmpSphere) &&
+        !behindPlanet(cam.y, Math.max(0, d - r), y + r - drop, bend)
+      );
+    });
+    for (const id of now) sv.seen.add(id);
+    const vista = now.join(' ');
+    const ds = this.opts.canvas.dataset;
+    if (ds.canonVista !== vista) ds.canonVista = vista;
+    const vistos = [...sv.seen].sort().join(' ');
+    if (ds.canonVistos !== vistos) ds.canonVistos = vistos;
   }
 
   /** ¿Hay una partida del Cañón en curso? */
@@ -2972,6 +3023,7 @@ export class Mar3D {
       const reduced = this.reducedMotion;
       sv.view.reduced = reduced;
       sv.view.update(snap, t);
+      if (t - sv.seenAt >= 0.25 || t < sv.seenAt) this.markSurvivorsOnScreen(sv, t, fx, fz);
       // El barco golpeado parpadea mientras es invulnerable (T117; nunca con movimiento reducido).
       this.boat.group.visible = boatVisible({
         invulnerableS: snap.player.invulnerableS,

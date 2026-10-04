@@ -4,6 +4,56 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T126: Models and effects for the new enemies
+
+What exists:
+
+- `apps/web/app/mar/engine/survivors-props.ts`: low-poly code models (`Kit` + palette `C`) for the
+  **seagull** (white body, wide grey wings with black tips; a wide cross seen from above),
+  the **pirate in a small boat** (dark wooden boat, red/white striped shirt, black tricorne,
+  yellow water pistol with a blue tank, black stern flag), the **swordfish** (long blue body,
+  long pale sword, tall sail fin) and the **jellyfish** (lilac glowing bell, rim and trailing
+  tentacles; its halves use the same piece scaled by `EnemyView.scale`). Also the enemy
+  water-pistol shot (pink jet, distinct from the light-blue player ball), the elite halo
+  (gold ring), the swordfish warning line (flat strip with an arrow tip) and a shadow disc
+  for flyers. `ENEMY_MODELS` now covers all 6 enemies (`fly`, `pulse`, `glow` fields).
+- `survivors-view.ts`: one `InstancedMesh` per enemy type, plus one each for enemy shots,
+  elite halos, gull shadows and warning lines (2 instances per telegraph: dark track +
+  bright fill growing with `progress`, colours per instance). Gulls fly 3.2 scene units above
+  the ground under them or a little ahead (`groundAt` from `Mar3D`), rising fast and
+  descending slowly, so they cross islands above them. Empty meshes are `visible = false`
+  (no draw call): in `baja` only types on screen are drawn. Both defeat styles work for every
+  type: the size comes from the defeated enemy (small jellyfish halves sink small) and gulls
+  fall from their altitude (`puf` bursts at their height). Reduced motion: no bob, bank,
+  jellyfish pulse or halo pulse; the warning line never flashes in either mode.
+- `mar3d.ts` (survivors render only): passes `groundAt` to the view and, every 0.25 s, writes
+  the enemy types inside the camera view (wrap + planet curve + frustum + horizon) to
+  `data-canon-vista` (now) and `data-canon-vistos` (whole game) on the canvas, for tests.
+- Tests: `survivors-props.test.ts` +16 tests (each new model's colours and silhouette,
+  jellyfish glow, shot and warning-line geometry, all types drawn late in a game, empty
+  meshes not drawn, gull altitude over an island with shadow, jellyfish halves smaller,
+  elite halos incl. gull, reduced motion, warning line length/fill/heading/colours in both
+  motion modes, a real game telegraphs before charging, enemy shots, both defeat styles for
+  every type, half-jellyfish sink size). `survivors.test.ts` piece count now includes halos,
+  shadows, enemy shots and warning lines. `mar-canon.spec.ts`: new test starting at
+  `t=240&seed=7` that waits until all six enemy types have been on screen
+  (`data-canon-vistos`) with no console errors (desktop and mobile).
+
+Commands and results:
+
+- `pnpm exec vitest run apps/web/app/mar/engine/survivors-props.test.ts` → exit 0, 34 passed.
+- `E2E_PORT=3197 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, 34 passed (5.4 min).
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0,
+  147 files, 1371 passed.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0;
+  `pnpm typecheck` → exit 0.
+
+Pending:
+
+- Weapons are not rendered (T128).
+- In `baja` (cap 60 enemies) a late game can lack some types (e.g. crabs at `t=240`, seed 5)
+  because piranhas fill the cap: sim balance, for T132.
+
 ## 2026-10-05 — plan 011 T129: Vinyls, slots, evolutions and the Salvavidas
 
 ### What exists
