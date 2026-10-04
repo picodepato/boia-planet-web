@@ -209,7 +209,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T111 — Blender Ibiza white village and cove asset
 - Status: running (attempt 1)
-- Model: codex (via wrapper agent)
+- Model: opus (Opus 5.5) (Codex out of credits until 22:44)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T110
 - Goal: Remodel Ibiza with white Mediterranean houses and a readable sheltered cove, preserving its store role and BOIA style.
@@ -222,7 +222,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T115 — Castaway achievement completes on rescue
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent)
 - Skills: none
 - Depends on: T106
@@ -233,10 +233,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - First rescue/discount completes the visible achievement; returning later retains completion and uses the supplied repeat phrase. Existing persisted rescue discount legitimately proves this newly defined rescue objective.
   - Recovery only completes readiness, never automatically reclaims points/coins; claimed ledger remains authoritative and reward cannot repeat across sessions/accounts.
   - Relevant local/fake-member and encounter E2E tests, full safe suite/types/lint pass.
-- Outcome:
+- Outcome: (Codex) `naufrago-fiesta` completes on rescue (`trigger: rescue_character`), a persisted rescue discount (even used/expired) is evidence, recovery never reclaims; id, 80/40 reward, discount and repeat phrase unchanged; conflict with T121 (CRLF→LF) resolved by the wrapper; 1257 unit tests, 22 e2e → 20ca11a
 
 ## T108 — Puerto de Alicante identity and explicit boat-choice popup
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T106, T107, T115
@@ -294,7 +294,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 ## T114 — Custom BOIA menu icons
 - Status: pending
-- Model: codex (via wrapper agent)
+- Model: opus (Opus 5.5) (Codex out of credits until 22:44)
 - Skills: none
 - Depends on: T113, T118
 - Goal: Replace the game's generic emoji menu icons with a coherent small custom icon family matching BOIA's mascot, rounded shapes and orange/navy palette.
@@ -361,6 +361,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T121: `?dev=1` turns shortcuts on but never the reward; test start = `&t=`, `&seed=` (a known seed can be practised) or `&carta=1`; `&derrota=` does not count; new `RewardOutcome` reason `test_start`; `textos-zonas.md` row updated for `zonas.test.ts` (agent)
 
+- 2026-10-04 Hernán: when Codex runs out of credits, Claude continues. Codex wrappers stop at once on a usage-limit error with a `WIP` commit and STATUS: failed («codex usage limit»); the orchestrator continues the task with an Opus continuation agent (not counted as a failed attempt), and later Codex tasks go to Opus until Codex is back (Hernán)
+
 ## Proposals (new scope)
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
@@ -394,3 +396,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 19:32 T121 launched · attempt 1 · agent aeebcee5633965fc2
 - 2026-10-04 19:32 T115 launched · attempt 1 · Codex via wrapper agent a4497e05c0ef20f2e
 - 2026-10-04 19:48 T121 done → 8bd4390
+- 2026-10-04 19:49 T111 launched · attempt 1 · Codex via wrapper agent a9521295766dd3aa6
+- 2026-10-04 19:52 T115 done by agent; integration conflict in packages/store/src/sample/progress.ts → sent back to the same agent
+- 2026-10-04 19:54 T111 Codex hit its usage limit (until 22:44) before writing anything; WIP had only a status note → dropped; relaunched on Opus from main (same attempt). T114 moved to Opus too
+- 2026-10-04 19:54 T111 relaunched on Opus · attempt 1 · agent ad8be04b9f8b7e142
+- 2026-10-04 20:00 T115 done → 20ca11a
