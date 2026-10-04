@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T109: Twenty-two knots only during the active race
+
+Qué existe
+- **Física de carrera a 22 nudos** (`apps/web/app/mar/engine/steering.ts`): `atCruiseSpeed(cfg, u/s)` escala lo que va con la velocidad (aceleración, freno, radio de giro, freno de la vuelta corta) y deja lo demás; `RACE_SHIP_CONFIG = atCruiseSpeed(MAR_SHIP_CONFIG, 220)` es entera la física de 22 nudos de antes de T99 (la prueba la compara campo a campo con la congelada de T99). `MAR_SHIP_CONFIG` (15 nudos) no cambia.
+- **Selección y composición:** `baseShipConfig(racing)` (22 sólo con el cronómetro corriendo, fase `racing`; la oferta, la cuenta atrás, la tarjeta de meta, explorar y el Cañón van a 15); `stepShipConfig(base, efectos, boost)` = base → impulsos/frenos del runtime → turbo o viaje, igual a 15 que a 22.
+- **Ciclo de vida:** `ShipHandling.sync(racing, ship, cap)` antes de cada paso. Al dejar de correr (meta, anulada por panel/fuera de la carretera/tiempo, otro mundo que cambia la carrera, «Otra vez») vuelve a 15 y recorta en el acto la velocidad que sobra al tope de crucero de ese momento (con los impulsos del mundo y el turbo que sigan), sin mover ni girar el barco; así el paso siguiente no lo toma por un golpe (sin recorte perdería >60 u/s de una vez: temblor y chapoteo).
+- **Mar3D** (`engine/mar3d.ts`): `cfg` es ahora la base de `ShipHandling`; `syncHandling()` al empezar cada `simulate` y al empezar una partida del Cañón (nunca es carrera: `!this.survivors && opts.racing()`); `stepConfig()` compone la física del paso; atributo `data-manejo="crucero|carrera"` en el lienzo para las e2e. `mar-client.tsx`: una línea, `racing: () => raceRef.current?.race.racing ?? false`.
+- **Pruebas:** `steering.test.ts` (física de carrera = la histórica; mismos tiempos de giro y círculo proporcional; turbo/impulsos/frenos con un `WorldRuntime` real componen igual; seis formas de dejar de correr recortan a 15 sin mover el barco; con turbo o impulso se queda el tope de crucero de ese momento; la maniobrabilidad del Cañón va sobre cualquiera de las dos bases y la suya es la de 15). `race.test.ts`: el piloto elige la física como Mar3D; vuelve la aserción de antes de T99 (sin turbo, al menos bronce y no oro); cada paso usa 22 sólo en `racing`; cruza la meta a velocidad de carrera y al dejarla se queda con el tope de crucero (con el impulso de la última boia); con turbo llega antes. `mar-circuito.spec.ts`: `data-manejo` crucero en la oferta y la cuenta atrás, carrera corriendo y en «Otra vez», crucero tras la meta y al anular (panel, fuera de la carretera); el velocímetro no pasa de 15 hasta la salida y llega a 22 corriendo. `mar-canon.spec.ts`: la partida del Cañón va en crucero.
+- Récord: la versión del circuito no cambia (los tiempos a 22 son los de siempre; los hechos a 15 desde T120 son más lentos, nada que comparar a favor).
+
+Comandos
+- `E2E_PORT=3193 pnpm e2e mar-circuito.spec.ts --workers=1` → exit 0, 6 passed (el test de medalla, móvil y escritorio).
+- `E2E_PORT=3193 pnpm e2e mar-canon.spec.ts --workers=1 -g "desde el panel de su isla|en plena carrera"` → exit 0, 4 passed.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 140 archivos, 1270 pruebas.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (186.9 / 200 kB); `pnpm typecheck` → exit 0.
+
+Pendiente
+- Ninguno de T109. Sin cambios de umbrales de medalla, economía ni versión del récord.
+- Ya existía antes: cuando acaba un impulso del mundo o el turbo, `stepShip` recorta la velocidad de golpe y Mar3D lo toma por un golpe (temblor y chapoteo); no se tocó.
+
 ## 2026-10-04 — plan 010 T115: Castaway achievement completes on rescue (Codex)
 
 Qué existe

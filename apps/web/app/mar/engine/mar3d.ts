@@ -121,11 +121,11 @@ import {
   loadIslandManifest,
 } from './island-models';
 import {
-  MAR_SHIP_CONFIG,
+  ShipHandling,
   TURBO_SPEED,
   VOYAGE_SPEED,
-  boostedConfig,
   keysInput,
+  stepShipConfig,
   stickInput,
 } from './steering';
 import { VortexPass } from './vortex';
@@ -249,6 +249,11 @@ export interface Mar3DOptions {
   onImpact?(speed: number): void;
   /** Rótulo del arco de salida y meta del circuito (T61; la web lo da traducido). */
   raceStartLabel?: string;
+  /**
+   * ¿Corre el cronómetro de la carrera? Con él, la física de 22 nudos (T109);
+   * se pregunta antes de cada paso, así que nada la deja puesta al acabar.
+   */
+  racing?(): boolean;
   /** Los mandos que los rótulos no pisan (la barra de enlaces, el minimapa…; T75). */
   avoid?(): Iterable<Element>;
   /** Una rampa del circuito lanzó el barco o el barco cayó al agua (T73). Para el sonido. */
@@ -460,7 +465,12 @@ export class Mar3D {
   /** Centro del mapa en la copia de la vista de mapa (se elige al alejarse). */
   private readonly mapC = new Vector2();
   private readonly frustum = new Frustum();
-  private readonly cfg: ShipConfig = MAR_SHIP_CONFIG;
+  /** Crucero (15 nudos) o carrera (22, sólo con el cronómetro corriendo; T109). */
+  private readonly handling = new ShipHandling();
+  /** La física de base de ahora (sin efectos del mundo ni turbo). */
+  private get cfg(): ShipConfig {
+    return this.handling.config;
+  }
   private sternX = -1.3;
   private moods: Record<MoodId, Mood>;
   private moodId: MoodId;
@@ -662,6 +672,7 @@ export class Mar3D {
       [...this.views.values()].filter((v) => v.kind === 'remolino').length,
     );
     opts.canvas.dataset.ruta = 'on';
+    opts.canvas.dataset.manejo = 'crucero';
     this.water.setShores(shores);
     this.glow = glowPoints(glows);
     // Cada isla con hueco sabe dónde están sus resplandores, para apagarlos con el modelo (T75).
@@ -1381,6 +1392,7 @@ export class Mar3D {
     this.scene.add(view.group);
     this.camTuning = run.config.camera;
     this.survivors = { run, view, player: run.snapshot().player };
+    this.syncHandling();
     run.tick(performance.now(), false);
     this.opts.canvas.dataset.canon = 'on';
     this.opts.canvas.dataset.derrota = view.defeatStyle;
@@ -2500,7 +2512,25 @@ export class Mar3D {
     this.acc = 0;
   }
 
+  /** La física de este paso: la base, los efectos del mundo y el turbo o el viaje. */
+  private stepConfig(base: ShipConfig): ShipConfig {
+    const boost = this.voyage ? VOYAGE_SPEED : this.turboLeft > 0 ? TURBO_SPEED : 1;
+    return stepShipConfig(base, this.runtime, boost);
+  }
+
+  /**
+   * Los 22 nudos sólo con el cronómetro corriendo (T109): al dejar la
+   * carrera, la velocidad que sobra se recorta al tope de crucero de ahora.
+   * La partida del Cañón nunca es carrera.
+   */
+  private syncHandling(): void {
+    const racing = !this.survivors && (this.opts.racing?.() ?? false);
+    if (!this.handling.sync(racing, this.ship, (base) => this.stepConfig(base).maxSpeed)) return;
+    this.opts.canvas.dataset.manejo = racing ? 'carrera' : 'crucero';
+  }
+
   private simulate(dt: number): void {
+    this.syncHandling();
     const s = this.ship;
     this.prev.x = s.x;
     this.prev.y = s.y;
@@ -2519,10 +2549,7 @@ export class Mar3D {
       return;
     }
     const input = this.readInput();
-    let cfg = this.runtime.shipConfig(this.cfg);
-    if (this.turboLeft > 0 || this.voyage) {
-      cfg = boostedConfig(cfg, this.voyage ? VOYAGE_SPEED : TURBO_SPEED);
-    }
+    const cfg = this.stepConfig(this.cfg);
     if (this.turboLeft > 0) this.turboLeft -= dt;
     if (this.voyage) {
       this.voyage.t += dt;

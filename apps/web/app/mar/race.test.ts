@@ -5,19 +5,26 @@ import {
   GhostRecorder,
   type JumpEvent,
   type RaceEvent,
+  type RacePhase,
   circuitFromWorld,
   circuitRecordId,
   ghostPose,
   medalFor,
   rampsOf,
 } from '@boia/engine/circuit';
-import { WorldRuntime, createShipState, stepShip } from '@boia/engine/headless';
+import { WorldRuntime, createShipState, shipSpeed, stepShip } from '@boia/engine/headless';
 import { createLocalRepository } from '@boia/store';
 import { CIRCUIT_ID, WORLD_REGISTRY, type WorldConfig } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { finishLap } from '../../lib/mundo/circuit-hud';
 import { footprintOf, marWorld } from './engine/compact';
-import { MAR_SHIP_CONFIG, TURBO_SPEED, boostedConfig } from './engine/steering';
+import {
+  MAR_SHIP_CONFIG,
+  RACE_SHIP_CONFIG,
+  ShipHandling,
+  TURBO_SPEED,
+  stepShipConfig,
+} from './engine/steering';
 import { periodOf, planetRect, shortest } from './engine/wrap';
 import { ghostKey, lapTargets, loadGhost, raceCheckpoint, saveGhost, startPose } from './race';
 
@@ -27,7 +34,8 @@ import { ghostKey, lapTargets, loadGhost, raceCheckpoint, saveGhost, startPose }
  * corre con la física y el runtime de /mar; en la salida pulsa «Empezar» (la
  * carrera ya no arranca sola), las boias llegan por id de objeto, las rampas
  * lo lanzan al aire y caer salpica, la meta da medalla y la carrera se graba
- * para el fantasma.
+ * para el fantasma. La física la elige como `Mar3D` (T109): 22 nudos sólo
+ * con el cronómetro corriendo, 15 en lo demás.
  */
 
 const worlds = WORLD_REGISTRY.ids().map((id) => ({
@@ -47,6 +55,14 @@ interface BotRun {
   jumps: JumpEvent[];
   /** Avisos de la salida sin carrera (`ready`): cada uno, un «¿Empezar?». */
   ready: number;
+  /** Cada paso: la fase al empezarlo, la velocidad máxima de base y la velocidad al acabarlo. */
+  steps: { phase: RacePhase; base: number; speed: number }[];
+  /** Velocidad al cruzar la meta y justo después, ya sin la física de carrera (T109). */
+  atFinish: number;
+  afterFinish: number;
+  /** Tope de crucero justo después de la meta (con los impulsos del mundo que sigan) y su factor. */
+  cruiseCap: number;
+  effects: number;
 }
 
 /** Una carrera entera con el piloto: cuenta atrás quieto en la salida y luego a fondo. */
@@ -66,6 +82,8 @@ function botRace(w: WorldConfig, maxS = 200, useTurbo = false): BotRun {
   const jumps: JumpEvent[] = [];
   const ramps = rampsOf(w);
   const jump = new BoatJump();
+  const handling = new ShipHandling();
+  const steps: BotRun['steps'] = [];
   let ready = 0;
   let finish: BotRun['finish'] = null;
   let ghost: GhostRun | null = null;
@@ -74,22 +92,25 @@ function botRace(w: WorldConfig, maxS = 200, useTurbo = false): BotRun {
     const t = i * dt;
     last = t;
     const v = race.view(t);
+    // Explicit pulses: 2.4 s every 10 s, conservatively beyond the UI's 7 s cooldown.
+    const turbo = useTurbo && race.racing && (race.elapsedMs(t) / 1000) % 10 < 2.4;
+    const boost = turbo ? TURBO_SPEED : 1;
+    // Como Mar3D antes de cada paso: la física de carrera sólo con el cronómetro corriendo.
+    handling.sync(race.racing, ship, (base) => stepShipConfig(base, runtime, boost).maxSpeed);
     if (v.phase === 'countdown') {
       Object.assign(ship, { ...hold, vx: 0, vy: 0 });
     } else {
       const target = v.phase === 'idle' ? hold : targets[v.next - 1]!;
       const { dx, dy } = shortest(ship, target, period);
-      // Explicit pulses: 2.4 s every 10 s, conservatively beyond the UI's 7 s cooldown.
-      const turbo = useTurbo && race.racing && (race.elapsedMs(t) / 1000) % 10 < 2.4;
-      const cfg = turbo ? boostedConfig(MAR_SHIP_CONFIG, TURBO_SPEED) : MAR_SHIP_CONFIG;
       stepShip(
         ship,
         { dirX: dx, dirY: dy, throttle: 1, drift: false },
-        runtime.shipConfig(cfg),
+        stepShipConfig(handling.config, runtime, boost),
         dt,
       );
     }
-    runtime.step(ship, MAR_SHIP_CONFIG, dt);
+    runtime.step(ship, handling.config, dt);
+    steps.push({ phase: v.phase, base: handling.config.maxSpeed, speed: shipSpeed(ship) });
     const out = race.tick(t);
     jumps.push(...jump.tick(t));
     for (const e of runtime.drainEvents()) {
@@ -115,7 +136,14 @@ function botRace(w: WorldConfig, maxS = 200, useTurbo = false): BotRun {
   }
   // Si la meta llega en pleno salto, el chapuzón cae un poco después.
   for (let k = 1; jump.airborne && k <= 5 * 60; k++) jumps.push(...jump.tick(last + k * dt));
-  return { events, finish, ghost, opened, jumps, ready };
+  // El paso siguiente a la meta: vuelve el crucero y la velocidad que sobra se recorta.
+  const atFinish = shipSpeed(ship);
+  handling.sync(race.racing, ship, (base) => stepShipConfig(base, runtime).maxSpeed);
+  const afterFinish = shipSpeed(ship);
+  const cruiseCap = stepShipConfig(handling.config, runtime).maxSpeed;
+  const effects = runtime.speedFactor();
+  const speeds = { atFinish, afterFinish, cruiseCap, effects };
+  return { events, finish, ghost, opened, jumps, ready, steps, ...speeds };
 }
 
 const run = botRace(world);
@@ -139,11 +167,44 @@ describe('Los Rápidos en /mar: tres vueltas por las boias', () => {
     expect(run.opened).toEqual([]);
   });
 
-  it('el piloto con pulsos explícitos de turbo gana medalla con los límites existentes', () => {
+  it('a 22 nudos (T109) el piloto, sin turbo, gana al menos el bronce; el oro pide turbo e impulsos', () => {
+    const medal = medalFor(run.finish!.ms, spec.medals);
+    expect(medal).not.toBeNull();
+    expect(medal).not.toBe('gold');
+  });
+
+  it('T109: 22 nudos sólo con el cronómetro corriendo; la oferta y la cuenta atrás, a 15', () => {
+    const phases = new Set(run.steps.map((s) => s.phase));
+    expect([...phases].sort()).toEqual(['countdown', 'idle', 'racing']);
+    for (const s of run.steps) {
+      expect(s.base, s.phase).toBe(
+        s.phase === 'racing' ? RACE_SHIP_CONFIG.maxSpeed : MAR_SHIP_CONFIG.maxSpeed,
+      );
+    }
+    // Antes de la carrera no pasa del crucero; corriendo, llega a los 22 nudos.
+    const top = (phase: RacePhase) =>
+      Math.max(...run.steps.filter((s) => s.phase === phase).map((s) => s.speed));
+    expect(top('idle')).toBeLessThanOrEqual(MAR_SHIP_CONFIG.maxSpeed + 1e-6);
+    expect(top('racing')).toBeGreaterThan(RACE_SHIP_CONFIG.maxSpeed * 0.99);
+    // Cruza la meta a velocidad de carrera (con el impulso de la última boia) y, al dejarla,
+    // se queda con lo que daría ese impulso explorando, a 15 nudos: nada de la carrera.
+    expect(run.cruiseCap).toBeCloseTo(MAR_SHIP_CONFIG.maxSpeed * run.effects, 6);
+    expect(run.atFinish).toBeGreaterThan(run.cruiseCap);
+    expect(run.afterFinish).toBeCloseTo(run.cruiseCap, 6);
+    expect(run.atFinish / run.afterFinish).toBeCloseTo(
+      RACE_SHIP_CONFIG.maxSpeed / MAR_SHIP_CONFIG.maxSpeed,
+      2,
+    );
+  });
+
+  it('el turbo se suma a la física de carrera: con pulsos explícitos llega antes y con medalla', () => {
     const boosted = botRace(world, 200, true);
     expect(boosted.finish, 'llega a meta con turbo').not.toBeNull();
     expect(boosted.opened).toEqual([]);
+    expect(boosted.finish!.ms).toBeLessThan(run.finish!.ms);
     expect(medalFor(boosted.finish!.ms, spec.medals)).not.toBeNull();
+    const top = Math.max(...boosted.steps.map((s) => s.speed));
+    expect(top).toBeGreaterThan(RACE_SHIP_CONFIG.maxSpeed * 1.2);
   });
 
   it('la salida no arranca sola (T73): avisa, el piloto pulsa «Empezar» y luego cuenta atrás', () => {

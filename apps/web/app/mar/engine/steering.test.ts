@@ -1,19 +1,37 @@
+import { CircuitRace, circuitFromWorld } from '@boia/engine/circuit';
 import {
   DEFAULT_SHIP_CONFIG,
   type ShipConfig,
   type ShipInput,
+  type ShipState,
+  WorldRuntime,
   createShipState,
+  shipSpeed,
   stepShip,
 } from '@boia/engine/headless';
+import { SURVIVORS_CONFIG, survivorsShipConfig } from '@boia/engine/survivors';
+import { CIRCUIT_ID, WORLD_REGISTRY, type WorldObjectInput, parseWorldConfig } from '@boia/world';
 import { describe, expect, it } from 'vitest';
+import { marWorld } from './compact';
 import {
   MAR_SHIP_CONFIG,
   MAR_STICK,
+  RACE_MAX_SPEED,
+  RACE_SHIP_CONFIG,
+  type ShipEffects,
+  ShipHandling,
   TURBO_SPEED,
   VOYAGE_SPEED,
+  baseShipConfig,
   boostedConfig,
+  stepShipConfig,
   stickInput,
 } from './steering';
+
+const spec = circuitFromWorld(
+  marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config),
+  CIRCUIT_ID,
+)!;
 
 const DT = 1 / 60;
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -153,25 +171,28 @@ it('T99: crucero base de 15 nudos; turbo conserva su multiplicador', () => {
   expect(Math.hypot(ship.vx, ship.vy) / 10).toBeCloseTo(24);
 });
 
+/** La física de /mar a 22 nudos, congelada como estaba antes de T99. */
+const HISTORICAL_22KN: ShipConfig = {
+  maxSpeed: 220,
+  acceleration: 240,
+  brakeDeceleration: 170,
+  turnRate: 3.4,
+  minTurnFactor: 0.75,
+  lateralGrip: 6,
+  gripToForward: 0.8,
+  drift: { turnMultiplier: 1.8, lateralGrip: 1.1, gripToForward: 0.35 },
+  radius: 18,
+  wallRestitution: 0.15,
+  obstacleRestitution: 0.45,
+  openEdgeCurrent: 260,
+  openEdgeSoftZone: 200,
+  steerFloor: 0.8,
+  turnRadius: 220 / 3.4,
+  reverseTurn: { turnBoost: 1.9, brake: 520 },
+};
+
 it('T99: preserves turn times and proportional distances against the frozen 22-knot configuration', () => {
-  const baseline: ShipConfig = {
-    maxSpeed: 220,
-    acceleration: 240,
-    brakeDeceleration: 170,
-    turnRate: 3.4,
-    minTurnFactor: 0.75,
-    lateralGrip: 6,
-    gripToForward: 0.8,
-    drift: { turnMultiplier: 1.8, lateralGrip: 1.1, gripToForward: 0.35 },
-    radius: 18,
-    wallRestitution: 0.15,
-    obstacleRestitution: 0.45,
-    openEdgeCurrent: 260,
-    openEdgeSoftZone: 200,
-    steerFloor: 0.8,
-    turnRadius: 220 / 3.4,
-    reverseTurn: { turnBoost: 1.9, brake: 520 },
-  };
+  const baseline = HISTORICAL_22KN;
   expect(MAR_SHIP_CONFIG.maxSpeed / MAR_SHIP_CONFIG.acceleration).toBeCloseTo(
     baseline.maxSpeed / baseline.acceleration,
   );
@@ -190,4 +211,211 @@ it('T99: preserves turn times and proportional distances against the frozen 22-k
       if (process.env.RECORD_T99) console.log({ multiplier, reverse, oldTurn, newTurn });
     }
   }
+});
+
+/**
+ * Un efecto del mundo fijo (`k` × la máxima): un `WorldRuntime` de verdad,
+ * con un impulso (o un freno) activo de ese factor.
+ */
+function worldEffect(k: number): ShipEffects {
+  const params =
+    k > 1
+      ? { mode: 'boost' as const, intensity: k - 1, duration: 10 }
+      : { mode: 'slow' as const, intensity: 1 - k, duration: 10 };
+  const pad: WorldObjectInput = {
+    identity: { id: 'efecto', name: 'efecto', category: 'prueba' },
+    appearance: { asset: 'placeholder:prueba' },
+    position: { x: 0, y: 0 },
+    geometry: { activation: { shape: 'circle', radius: 30 } },
+    behaviors: [{ type: 'collision', params }],
+  };
+  const runtime = new WorldRuntime(
+    parseWorldConfig({
+      id: 'prueba',
+      version: 0,
+      bounds: { left: -1000, right: 1000, top: -1000, bottom: 1000 },
+      objects: k === 1 ? [] : [pad],
+    }),
+  );
+  // El barco pasa por encima: el efecto queda activo (10 s, de sobra para cada prueba).
+  runtime.step(createShipState(0, 0, 0), MAR_SHIP_CONFIG, DT);
+  expect(runtime.speedFactor()).toBeCloseTo(k, 9);
+  return runtime;
+}
+
+/** A fondo hacia el este `s` segundos con la física de `cfg`. */
+function sail(ship: ShipState, cfg: ShipConfig, s: number): void {
+  const ahead: ShipInput = { dirX: 1, dirY: 0, throttle: 1, drift: false };
+  for (let i = 0; i < s * 60; i++) stepShip(ship, ahead, cfg, DT);
+}
+
+describe('T109: 22 nudos sólo durante la carrera', () => {
+  it('la física de carrera es entera la de 22 nudos de antes de T99', () => {
+    const flat = (c: ShipConfig) =>
+      Object.entries({ ...c, ...c.drift, ...c.reverseTurn, drift: 0, reverseTurn: 0 });
+    const got = Object.fromEntries(flat(RACE_SHIP_CONFIG));
+    for (const [k, v] of flat(HISTORICAL_22KN)) expect(got[k], k).toBeCloseTo(v as number, 9);
+    expect(Object.keys(got).sort()).toEqual(
+      flat(HISTORICAL_22KN)
+        .map(([k]) => k)
+        .sort(),
+    );
+    expect(RACE_SHIP_CONFIG.maxSpeed).toBe(RACE_MAX_SPEED);
+    // Fuera de la carrera, el crucero de 15 nudos.
+    expect(baseShipConfig(true)).toBe(RACE_SHIP_CONFIG);
+    expect(baseShipConfig(false)).toBe(MAR_SHIP_CONFIG);
+    expect(new ShipHandling().config).toBe(MAR_SHIP_CONFIG);
+  });
+
+  it('a 22 nudos gira en el mismo tiempo que a 15, en un círculo proporcional', () => {
+    const ship = createShipState(0, 0, 0);
+    sail(ship, RACE_SHIP_CONFIG, 3);
+    expect(shipSpeed(ship) / 10).toBeCloseTo(22);
+    for (const reverse of [false, true]) {
+      const race = uTurn(RACE_SHIP_CONFIG, RACE_SHIP_CONFIG.maxSpeed, reverse);
+      const cruise = uTurn(MAR_SHIP_CONFIG, MAR_SHIP_CONFIG.maxSpeed, reverse);
+      expect(race.time).toBeCloseTo(cruise.time, 6);
+      expect(race.width / cruise.width).toBeCloseTo(RACE_MAX_SPEED / MAR_SHIP_CONFIG.maxSpeed, 6);
+    }
+    // El mismo radio de choque: las colisiones no cambian.
+    expect(RACE_SHIP_CONFIG.radius).toBe(MAR_SHIP_CONFIG.radius);
+  });
+
+  it('el turbo y los impulsos o frenos del mundo se componen igual a 15 que a 22 nudos', () => {
+    for (const k of [1, 0.5, 1.5]) {
+      for (const boost of [1, TURBO_SPEED, VOYAGE_SPEED]) {
+        const effects = worldEffect(k);
+        const cruise = stepShipConfig(MAR_SHIP_CONFIG, effects, boost);
+        const race = stepShipConfig(RACE_SHIP_CONFIG, effects, boost);
+        expect(cruise.maxSpeed).toBeCloseTo(MAR_SHIP_CONFIG.maxSpeed * k * boost, 9);
+        expect(race.maxSpeed).toBeCloseTo(RACE_SHIP_CONFIG.maxSpeed * k * boost, 9);
+        // El turbo no abre el círculo de ninguna de las dos.
+        expect(race.turnRadius).toBe(RACE_SHIP_CONFIG.turnRadius);
+        expect(cruise.turnRadius).toBe(MAR_SHIP_CONFIG.turnRadius);
+        expect(race.turnRate).toBe(cruise.turnRate);
+      }
+    }
+    const turbo = createShipState(0, 0, 0);
+    sail(turbo, stepShipConfig(RACE_SHIP_CONFIG, worldEffect(1), TURBO_SPEED), 4);
+    expect(shipSpeed(turbo) / 10).toBeCloseTo(22 * TURBO_SPEED);
+  });
+
+  /**
+   * Cada forma de dejar de correr: meta, anulada (panel, fuera de la
+   * carretera, tiempo), otro mundo (la carrera se cambia por otra) y otra
+   * vez desde la tarjeta (cuenta atrás).
+   */
+  const endings: [string, (r: CircuitRace, now: number) => CircuitRace][] = [
+    [
+      'meta',
+      (r, now) => {
+        for (let lap = 1; lap <= spec.laps; lap++) {
+          for (let order = 1; order <= spec.buoys; order++) r.checkpoint(order, now);
+          r.checkpoint(0, now);
+        }
+        return r;
+      },
+    ],
+    ['panel', (r) => (r.invalidate('panel'), r)],
+    ['fuera de la carretera', (r) => (r.invalidate('offroad'), r)],
+    ['tiempo', (r, now) => (r.tick(now + spec.maxDuration + 1), r)],
+    ['otro mundo', () => new CircuitRace(spec)],
+    [
+      'otra vez',
+      (r, now) => {
+        r.invalidate('panel');
+        r.start(now);
+        return r;
+      },
+    ],
+  ];
+
+  for (const [name, end] of endings) {
+    it(`al dejar de correr (${name}) vuelve a 15 nudos y no le queda velocidad de carrera`, () => {
+      const effects = worldEffect(1);
+      const cap = (b: ShipConfig) => stepShipConfig(b, effects).maxSpeed;
+      const handling = new ShipHandling();
+      const ship = createShipState(0, 0, 0.3);
+      let race = new CircuitRace(spec);
+      race.start(0);
+      expect(handling.sync(race.racing, ship, cap)).toBe(false);
+      expect(handling.config).toBe(MAR_SHIP_CONFIG);
+      race.tick(spec.countdown);
+      expect(handling.sync(race.racing, ship, cap)).toBe(true);
+      expect(handling.config).toBe(RACE_SHIP_CONFIG);
+      const ahead: ShipInput = {
+        dirX: Math.cos(0.3),
+        dirY: Math.sin(0.3),
+        throttle: 1,
+        drift: false,
+      };
+      const step = () => stepShip(ship, ahead, stepShipConfig(handling.config, effects), DT);
+      for (let i = 0; i < 4 * 60; i++) step();
+      expect(shipSpeed(ship)).toBeCloseTo(RACE_MAX_SPEED);
+
+      race = end(race, spec.countdown + 4);
+      expect(race.racing).toBe(false);
+      const pose = { x: ship.x, y: ship.y, heading: ship.heading };
+      const dir = Math.atan2(ship.vy, ship.vx);
+      // Sin recortar, el primer paso a 15 nudos perdería más que un golpe (el temblor de Mar3D, 60 u/s).
+      const unclamped = { ...ship };
+      stepShip(unclamped, ahead, stepShipConfig(MAR_SHIP_CONFIG, effects), DT);
+      expect(shipSpeed(ship) - shipSpeed(unclamped)).toBeGreaterThan(60);
+      expect(handling.sync(race.racing, ship, cap)).toBe(true);
+      expect(handling.config).toBe(MAR_SHIP_CONFIG);
+      // Recortada en el acto al crucero, sin moverlo ni girarlo.
+      expect(shipSpeed(ship)).toBeCloseTo(MAR_SHIP_CONFIG.maxSpeed, 9);
+      expect(Math.atan2(ship.vy, ship.vx)).toBeCloseTo(dir, 9);
+      expect({ x: ship.x, y: ship.y, heading: ship.heading }).toEqual(pose);
+      // Recortada, el paso siguiente no la toma por un golpe.
+      const before = shipSpeed(ship);
+      step();
+      expect(before - shipSpeed(ship)).toBeLessThan(1);
+      // Y ya no sube de 15 nudos.
+      for (let i = 0; i < 3 * 60; i++) step();
+      expect(shipSpeed(ship)).toBeLessThanOrEqual(MAR_SHIP_CONFIG.maxSpeed + 1e-9);
+    });
+  }
+
+  it('al dejar la carrera con turbo o un impulso, se queda con el tope de crucero de ese momento', () => {
+    const cases: [number, number][] = [
+      [1, TURBO_SPEED],
+      [1.5, 1],
+      [1.5, TURBO_SPEED],
+      [0.5, 1],
+    ];
+    for (const [k, boost] of cases) {
+      const effects = worldEffect(k);
+      const handling = new ShipHandling();
+      const ship = createShipState(0, 0, 0);
+      handling.sync(true, ship, () => Infinity);
+      sail(ship, stepShipConfig(handling.config, effects, boost), 4);
+      expect(shipSpeed(ship)).toBeCloseTo(RACE_MAX_SPEED * k * boost);
+      handling.sync(false, ship, (b) => stepShipConfig(b, effects, boost).maxSpeed);
+      expect(shipSpeed(ship), `${k} × ${boost}`).toBeCloseTo(
+        MAR_SHIP_CONFIG.maxSpeed * k * boost,
+        9,
+      );
+    }
+    // Más despacio que el tope de crucero no se toca.
+    const handling = new ShipHandling();
+    const slow = createShipState(0, 0, 0);
+    slow.vx = 100;
+    handling.sync(true, slow, () => Infinity);
+    handling.sync(false, slow, () => MAR_SHIP_CONFIG.maxSpeed);
+    expect(slow.vx).toBe(100);
+  });
+
+  it('una partida del Cañón no es carrera: su maniobrabilidad va sobre la base de crucero', () => {
+    const h = SURVIVORS_CONFIG.handling;
+    for (const base of [baseShipConfig(false), baseShipConfig(true)]) {
+      const s = survivorsShipConfig(base, h);
+      // Factores sobre la base que toque: se componen igual con las dos.
+      expect(s.maxSpeed).toBe(base.maxSpeed);
+      expect(s.turnRate).toBeCloseTo(base.turnRate * h.turnRateScale, 9);
+      expect(s.acceleration).toBeCloseTo(base.acceleration * h.accelerationScale, 9);
+    }
+    // La de la partida es la de crucero: a 15 nudos.
+    expect(survivorsShipConfig(baseShipConfig(false), h).maxSpeed / 10).toBe(15);
+  });
 });

@@ -1318,6 +1318,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // Las rampas de Los Rápidos (T73): despegue y chapuzón.
         onJump: (e) => (e.type === 'jump' ? whoosh() : plop()),
         raceStartLabel: msg('mar.race.startBanner'),
+        // 22 nudos sólo con el cronómetro de Los Rápidos corriendo (T109).
+        racing: () => raceRef.current?.race.racing ?? false,
         onSwitch: (mode) => setSwitching(mode),
       });
       engineRef.current = engine;

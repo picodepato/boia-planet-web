@@ -71,6 +71,8 @@ test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas
     .click();
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   await expect(canvas(page)).toHaveAttribute('data-canon', 'on');
+  // Una partida del Cañón nunca es carrera: el barco, sin los 22 nudos (T109).
+  await expect(canvas(page)).toHaveAttribute('data-manejo', 'crucero');
   // Sin marcas amarillas, ni botellas, descuentos o encuentros en el mar.
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'off');
   for (const layer of ['bottles', 'discounts', 'encounters']) {

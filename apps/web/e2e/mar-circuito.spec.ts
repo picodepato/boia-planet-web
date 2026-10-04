@@ -6,6 +6,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
+import { MAR_SHIP_CONFIG, RACE_SHIP_CONFIG } from '../app/mar/engine/steering';
 import { lapTargets } from '../app/mar/race';
 import { SAMPLE_CIRCUIT_MS } from '../lib/mundo/ranking-circuit';
 
@@ -18,7 +19,8 @@ import { SAMPLE_CIRCUIT_MS } from '../lib/mundo/ranking-circuit';
  * boia que tocan. Una carrera con el teclado (a cada boia en orden, tres
  * vueltas) termina con medalla, tiempo, récord y el puesto entre la
  * tripulación de muestra en una tarjeta pequeña, y «Otra vez» corre contra
- * el fantasma de esa carrera. Móvil y escritorio.
+ * el fantasma de esa carrera. Móvil y escritorio. Se explora y se espera
+ * la salida a 15 nudos; sólo con el cronómetro corriendo, a 22 (T109).
  *
  * Con RECORD_T61=1 deja capturas en docs/informes/img/ p005-t61-*.png (móvil).
  */
@@ -40,6 +42,16 @@ const timedCrew = SAMPLE_CREW.filter((c) => SAMPLE_CIRCUIT_MS[c.userId] !== unde
 const crono = (page: Page) => page.getByTestId('mar-crono');
 /** Las marcas amarillas de la ruta entre islas (decisión 13, T88): `on` u `off`. */
 const ruta = (page: Page) => page.getByTestId('mar-canvas');
+/**
+ * La física del barco (T109): `carrera` (22 nudos) sólo con el cronómetro
+ * corriendo; si no, `crucero` (15).
+ */
+const manejo = (page: Page) => page.getByTestId('mar-canvas');
+/** Lo más rápido que marcó el velocímetro durante el último `pilot` (nudos). */
+const topKnots = (page: Page) =>
+  page.evaluate(() => (window as unknown as { topNudos?: number }).topNudos ?? 0);
+const CRUISE_KNOTS = MAR_SHIP_CONFIG.maxSpeed / 10;
+const RACE_KNOTS = RACE_SHIP_CONFIG.maxSpeed / 10;
 
 const OUT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -109,6 +121,10 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
         press(keys);
       };
       const until = performance.now() + ms;
+      // Lo más rápido que marca el velocímetro mientras pilota (T109).
+      const top = window as unknown as { topNudos?: number };
+      top.topNudos = 0;
+      const knots = () => Number(document.querySelector('.mar-speed strong')?.textContent ?? 0);
       // Si se acaba sin meta, por qué: los avisos a la vista y dónde estaba.
       const why = () =>
         [...document.querySelectorAll('[data-testid="mar-aviso"]')]
@@ -117,6 +133,7 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
       let skipped = false;
       try {
         while (performance.now() < until) {
+          top.topNudos = Math.max(top.topNudos ?? 0, knots());
           const chip = q('mar-crono');
           if (goal === 'intro') {
             const intro = q('mar-carrera-salida');
@@ -158,6 +175,9 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
  */
 async function startRace(page: Page) {
   expect(await pilot(page, 'offer')).toBe('offer');
+  // Hasta la salida, a 15 nudos como siempre que no se corre (T109).
+  expect(await topKnots(page)).toBeLessThanOrEqual(CRUISE_KNOTS);
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   const offer = page.getByTestId('mar-carrera-oferta');
   await expect(offer).toBeVisible();
   await expect(offer).toContainText(placeName);
@@ -174,6 +194,8 @@ async function startRace(page: Page) {
   await expect(crono(page)).toHaveAttribute('data-fase', 'countdown');
   // Desde la cuenta atrás, sin marcas amarillas (decisión 13, T88).
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
+  // La cuenta atrás aún no es carrera: crucero (T109).
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   // La posición se publica cuatro veces por segundo: la primera puede ser de antes de
   // quedarse en la salida. Desde que está en ella, no se mueve hasta «¡Ya!».
   const moved = await page.evaluate(async (p) => {
@@ -198,6 +220,8 @@ async function startRace(page: Page) {
   expect(moved, 'quieto en la salida durante la cuenta atrás').toBeLessThan(2);
   await expect(crono(page)).toHaveAttribute('data-fase', 'racing');
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
+  // Con el cronómetro corriendo, la física de carrera: 22 nudos (T109).
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'carrera');
 }
 
 test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, récord y puesto; la segunda, contra el fantasma', async ({
@@ -223,10 +247,13 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   await snap(page, 'p005-t61-carrera.png');
 
   expect(await pilot(page, 'race')).toBe('ok');
+  // Corriendo, el velocímetro llega a los 22 nudos de carrera (T109).
+  expect(await topKnots(page)).toBeGreaterThanOrEqual(RACE_KNOTS);
   const card = page.getByTestId('mar-carrera-final');
   await expect(card).toBeVisible();
-  // En meta vuelven las marcas amarillas.
+  // En meta vuelven las marcas amarillas y el crucero de 15 nudos (T109).
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   await expect(card).toHaveAttribute('data-medalla', /^(gold|silver|bronze)$/);
   await expect(page.getByTestId('mar-carrera-tiempo')).toContainText(/\d+,\d/);
   await expect(page.getByTestId('mar-carrera-record')).toBeVisible();
@@ -247,6 +274,7 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   await expect(card).toHaveCount(0);
   await expect(crono(page)).toHaveAttribute('data-fase', 'racing', { timeout: 10_000 });
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'off');
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'carrera');
   await expect(crono(page)).toHaveAttribute('data-fantasma', 'si');
   await expect(page.getByTestId('mar-canvas')).toHaveAttribute('data-ghost', 'on');
   await snap(page, 'p005-t61-fantasma.png');
@@ -266,6 +294,8 @@ test('saltarse una boia no cuenta la vuelta: el aviso dice cuál falta', async (
   await page.getByTestId('mar-menu').getByTestId('mar-ranking-abrir').click();
   await expect(crono(page)).toHaveCount(0);
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
+  // Anulada, vuelve el crucero de 15 nudos (T109).
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   expect(errors).toEqual([]);
 });
 
@@ -340,8 +370,9 @@ test('fuera de la carretera: boyitas a los lados, entrar y salir no la acaba, 5 
   // …y sin volver, la carrera se acaba (por salirse) y las boyitas se van.
   await expect(crono(page)).toHaveCount(0, { timeout: 20_000 });
   await expect(page.getByTestId('mar-canvas')).toHaveAttribute('data-carretera', 'off');
-  // Anulada, vuelven las marcas amarillas (T88).
+  // Anulada, vuelven las marcas amarillas (T88) y el crucero de 15 nudos (T109).
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
+  await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   await expect(page.getByTestId('mar-aviso').filter({ hasText: /te saliste/i })).toBeVisible();
   expect(errors).toEqual([]);
 });
