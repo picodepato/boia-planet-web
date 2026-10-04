@@ -149,7 +149,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T106 — Durable stamps and achievement progress across sessions
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T120
@@ -161,7 +161,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Offline/failed snapshot, early sign-out, retries and two-device conflicts recover without duplicating rewards; accounts A/B remain isolated. Missing server fields cannot silently erase valid unsynced evidence.
   - Sample purchase stamps remain explicitly samples, separate from verified QR attendance. Recovery uses persisted purchase/discount/ledger evidence only and is idempotent; report any historical data that lacks enough evidence.
   - Relevant local/fake-member lifecycle and browser tests pass; full safe suite, typecheck/lint exit 0. No remote writes required for validation.
-- Outcome:
+- Outcome: three-way merge of the account copy, recovery from the last confirmed snapshot, sample stamps from confirmed sandbox purchases (QR stamp wins), unsent copy kept on sign-out, achievement recovery completes but never claims; 9 reproducing tests; 1213 unit tests, 22 e2e passed → 52dcd53
 
 ## T107 — Blender Alicante harbor asset and reusable place contract
 - Status: done
@@ -179,7 +179,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) Alicante harbor in `art/places/3d/cala/` + `tools/blender/places/` (Blender 5.2.2 LTS): 11404 tris, 427 kB GLB, 240 degenerate tris removed, placement contract/schema for cala/fotos/tienda, ledger and notes; renders kept outside the repo → 4c529e9
 
 ## T110 — Blender Benidorm skyline and club asset
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T107
@@ -213,7 +213,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T106
 - Goal: Honor the user's clarified behavior: rescuing the castaway and receiving its discount completes the castaway achievement; no unimplemented delivery-to-party mission is required.
-- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) current naufrago-fiesta achievement, discount encounter and signal hooks; durable discount/achievement state and ledger after T106.
+- Context: (T106 note: add the castaway completion from its discount in `reconcileAchievementEvidence`) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) current naufrago-fiesta achievement, discount encounter and signal hooks; durable discount/achievement state and ledger after T106.
 - Scope: castaway achievement wording and rescue trigger, evidence-based readiness recovery, focused tests. Preserve stable achievement ID, reward amount, claimed history, earned discount and repeated phrase; no persistence infrastructure, world art or other catalog changes.
 - Done when:
   - First rescue/discount completes the visible achievement; returning later retains completion and uses the supplied repeat phrase. Existing persisted rescue discount legitimately proves this newly defined rescue objective.
@@ -336,7 +336,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T117: dev switch is a dashed «Derrota: puf/sumergirse» button in the hidden «!» slot (i18n `mar.canon.dev.derrota*`), choice kept for the session, `&derrota=` shortcut, `data-derrota` on the canvas; models drawn larger than their collision radius (piranha ×1.6, crab ×1.2); sinking enemies use separate meshes outside the cap; effect pools 24/10, puf 7/4 particles; boat blinks at 8 Hz only while running; reduced motion also stops bobbing (agent)
 
+- 2026-10-04 T106: kept Codex's repair after review; added start-from-last-confirmed-snapshot for an empty account copy with a queue; one stamp per event; sample label if stamp, Carnet or event is a sample; sign-out keeps an unsent copy under its own key; unrecoverable data listed in its ESTADO section (agent)
+
 ## Proposals (new scope)
+- 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
 - 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
@@ -356,3 +359,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 18:21 T107 done → 4c529e9
 - 2026-10-04 18:21 T106 launched · attempt 1 · agent ab1185124c006f967
 - 2026-10-04 18:25 T117 done → 88c9ab3
+- 2026-10-04 18:25 T118 launched · attempt 1 · agent aeff101b5188b33d3
+- 2026-10-04 18:35 T106 done → 52dcd53
