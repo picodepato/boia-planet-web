@@ -144,7 +144,7 @@ describe('survivors beta 2: guion del acto 1 en datos', () => {
 describe('survivors beta 2: gaviota', () => {
   it('cruza una isla en línea recta para llegar al barco', () => {
     const cfg = quiet((c) => {
-      c.weapons.canon!.damage = 0;
+      c.weapons.canon!.base.damage = 0;
     });
     const world = openSea([{ x: 300, y: 0, radius: 100 }]);
     const game = createSurvivors(cfg, 1, world);
@@ -176,7 +176,7 @@ describe('survivors beta 2: pirata en botecito', () => {
     // Sin cañón: que el pirata llegue a ponerse a tiro (el bloqueo por islas va en la siguiente).
     const game = createSurvivors(
       quiet((c) => {
-        c.weapons.canon!.damage = 0;
+        c.weapons.canon!.base.damage = 0;
       }),
       1,
       openSea(),
@@ -237,7 +237,7 @@ describe('survivors beta 2: pirata en botecito', () => {
 
   it('el tope de disparos enemigos de `baja` se toca y nunca se pasa', () => {
     const cfg = quiet((c) => {
-      c.weapons.canon!.damage = 0;
+      c.weapons.canon!.base.damage = 0;
       c.enemies.pirate!.speed = 0;
       c.enemies.pirate!.shooter!.cooldownS = 0.1;
       c.enemies.pirate!.shooter!.projectile.range = 4000;
@@ -273,7 +273,7 @@ describe('survivors beta 2: pez espada', () => {
     const ch = SURVIVORS_CONFIG.enemies.swordfish!.charger!;
     const game = createSurvivors(
       quiet((c) => {
-        c.weapons.canon!.damage = 0;
+        c.weapons.canon!.base.damage = 0;
       }),
       1,
       openSea(),
@@ -452,7 +452,7 @@ describe('survivors beta 2: «Marea»', () => {
     const cfg = withConfig((c) => {
       c.acts = [{ ...c.acts[0]!, tracks: [], events: [mareaEvent] }];
       c.player.waterCapacity = 1e12;
-      c.weapons.canon!.damage = 0;
+      c.weapons.canon!.base.damage = 0;
     });
     const game = createSurvivors(cfg, 3, openSea());
     const before = steps(mareaEvent.atS) - 1;

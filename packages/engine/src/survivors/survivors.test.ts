@@ -193,7 +193,7 @@ describe('survivors: configuración', () => {
       expect(e!.behavior !== 'splitter' || e!.split !== undefined).toBe(true);
       expect(e!.behavior === 'flyer').toBe(e!.ignoresIslands);
     }
-    expect(Object.keys(c.weapons)).toEqual([c.startingWeapon]);
+    expect(Object.keys(c.weapons)).toContain(c.startingWeapon);
     expect(c.weapons.canon?.blockedByIslands).toBe(true);
     expect(c.acts.map((a) => a.act)).toEqual([1]);
     expect(c.acts[0]!.durationS).toBe(c.durationS);
@@ -644,7 +644,7 @@ describe('survivors: cañón, notas e islas', () => {
 describe('survivors: enemigos', () => {
   it('rodean una isla para llegar al barco (sin buscar caminos)', () => {
     const cfg = quiet((c) => {
-      c.weapons.canon!.damage = 0;
+      c.weapons.canon!.base.damage = 0;
       c.player.waterCapacity = 1e12;
     });
     const world = openSea([{ x: 300, y: 0, radius: 100 }]);
@@ -679,7 +679,7 @@ describe('survivors: enemigos', () => {
     const cfg = withConfig((c) => {
       c.player.waterCapacity = 1e12;
       c.caps.baja.enemies = 10;
-      c.weapons.canon!.damage = 0;
+      c.weapons.canon!.base.damage = 0;
     });
     const game = createSurvivors(cfg, 1, archipelago(5), { quality: 'baja' });
     play(game, (i) => scriptedInput(i), () => {}, 60 * 60);
