@@ -82,7 +82,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: seagull, pirate (straight shots blocked by islands both ways), swordfish (telegraph + charge), jellyfish (splits); elites from 3:30, Marea ring at 5:00, act-1 timeline as data with disabled miniboss/boss slots; new tests in survivors-beta2.test.ts; 1339 unit tests → a561583
 
 ## T126 — Models and effects for the new enemies
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T124, T125
@@ -93,7 +93,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - `pnpm exec vitest run apps/web/app/mar/engine/survivors-props.test.ts` → exit 0 with tests for each new model and the warning line
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with a late-time start (`t=` past 3:30) showing every enemy type on screen without console errors
   - Test command → exit 0
-- Outcome:
+- Outcome: models for seagull, pirate, swordfish, jellyfish (+halves); elite gold ring; swordfish warning strip; pink enemy shots; e2e sees all six types late; `data-canon-vista`/`data-canon-vistos`; 1371 unit tests, mar-canon e2e 34 passed → 3ea66f6
 
 ## T127 — Weapon system: the six new weapons with per-level tables (simulation)
 - Status: done
@@ -109,8 +109,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: data-driven weapons (`WeaponDef` base + levels 2–5, `resolveWeaponStats` hook for vinyls), the 7 weapons in the sim, islands block only canon/confetti, new `areas` cap, all 7 weapons kill every enemy type in a deterministic 7:00 run; config v3; 1373 unit tests → c935479 (attempt 1 failed typecheck against T124, fixed by the same agent)
 
 ## T128 — How the six weapons look in the 3D sea
-- Status: pending
-- Model: opus (Opus 5.5)
+- Status: running (attempt 1)
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T126, T127
 - Goal: Render every weapon of T127 in `/mar`, cheap and readable on mobile: subwoofer pulse rings, rotating festival laser (no dangerous flashing, reduced-motion variant), orbiting BOIA buoys, confetti fan, firework rockets and their bursts, acid-green rain zone. Batched/instanced, within the `baja` budget; nothing breaks with all 7 weapons at max level. Reduced motion respected.
@@ -209,6 +209,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 plan: T129 (Opus task) goes to Codex as Hernán asked; T126 stays on Opus (orchestrator)
 - 2026-10-05 plan: when T132 is integrated and the final test command passes on main, push `main` to Vercel automatically, without waiting for a Telegram answer, and send the Telegram notice with the link (Hernán, in the session; applies to this push only)
 - 2026-10-05 T129: Codex's design choices (card offer shape, Salvavidas, chest hook) are in its ESTADO section; diff not reviewed line by line by the wrapper; edited tests of the old upgrades (survivors.test.ts, survivors-weapons.test.ts, turbo-ramps.test.ts); config version 4; the HUD adapter in apps/web/app/mar still reads the old upgrade fields: T130 adapts it (agent)
+- 2026-10-05 T126: also edited `apps/web/app/mar/engine/survivors-view.ts` (not named in Scope): empty meshes invisible, warning = two instances (dark strip + growing fill), gulls fly 3.2 u above `groundAt`, elite gold ring (static with reduced motion), enemy shots pink, `data-canon-vista`/`data-canon-vistos` on the canvas for e2e; piece count updated in survivors.test.ts (agent)
+- 2026-10-05 plan: T128 goes to Codex (an Opus task) while T131 runs on Sonnet (orchestrator)
 
 ## Proposals (new scope)
 
@@ -216,6 +218,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T125: `pnpm exec vitest run packages/engine/src/survivors` without `--testTimeout` times out 3 full-run tests under load (the Test command uses 30 s)
 - 2026-10-05 T127: `&t=` dev start grants no weapons; a dev shortcut to start with weapons is for T128/T129
 - 2026-10-05 T127: `sim.ts`/`survivors.test.ts` on main are not prettier-clean (pre-existing)
+- 2026-10-05 T126: in `baja` (60-enemy cap) a late game can have no crabs at all (`t=240`, seed 5) because piranhas fill the cap: simulation balance for T132
 
 ## Log
 - 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
@@ -237,3 +240,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 01:15 Telegram wait for push-T127 crashed on a stale lock (dead pid 25728, os.kill on Windows); lock removed by hand, wait restarted
 - 2026-10-05 01:20 Hernán authorised an automatic push to Vercel once T132 is done
 - 2026-10-05 01:25 T129 done · branch worktree-agent-a065490accc632542 → 059c91b
+- 2026-10-05 01:27 T131 launched · attempt 1 · agent a7f7e6115b4826d65 (sonnet)
+- 2026-10-05 01:35 T126 done · branch worktree-agent-aaee154a770efe4d0 → 3ea66f6
