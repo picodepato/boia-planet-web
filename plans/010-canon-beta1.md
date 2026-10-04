@@ -149,7 +149,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: 2D canon removed (registry split into `MinigameEntry` / 2D `MinigameDefinition`; `world-canon.ts`, `world-session.ts`); session config v4 with the survivors hash, score = active seconds, `won` on survived; reward 150/50 per season unchanged (no migration); end-screen reward line; e2e 34 + 16 passed; REQ-AVE-037 → PARCIAL; test guide `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md` → 521119d
 
 ## T121 — No reward from dev-shortcut starts in production; Cañón sample copy
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T119
@@ -160,7 +160,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests prove: a production-mode session with `skippedMs > 0` (or a game-changing dev shortcut) does not grant the reward nor fire `win_minigame`/achievements, and the end screen shows the skipped-reward line; a normal survived session still grants once per season; in dev/e2e mode the shortcut start still grants
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts logros.spec.ts --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: production test starts (`&t=`, `&seed=`, `&carta=1`) settle with reason `test_start` and never pay or fire achievements; `devStartRewards` = dev or webdriver; end-screen line «Partida de prueba…»; `canon` copy «Aguanta en el Cañón hasta el amanecer.», title «Que no pare la música»; 1248 unit tests, 36 e2e → 8bd4390
 
 ## T106 — Durable stamps and achievement progress across sessions
 - Status: done
@@ -208,7 +208,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) Benidorm place `fotos`: 11768 tris, 397 kB, clip `boia-pole-dance` on empty `boia_pole_slide` (4 s loop, 24 fps, translation only, pivot [0,-0.33,0.42], reduced-motion static_frame=1), mascot in a purple club vest and hat; no enlargement; place tooling generalized for motion checks → c44a4a8
 
 ## T111 — Blender Ibiza white village and cove asset
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Depends on: T110
@@ -312,7 +312,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
 - Goal: Update the stale mobile-card test from T97 against the final intended UI; reconcile tests and document the requested changes, sample reward assumptions and remaining external setup.
-- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
+- Context: (from T121: fix lines ~50–53 of `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, which still say a `t=` start earns the reward; now only locally and in e2e, never with `?dev=1` in production) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
 - Scope: may touch relevant tests and concise docs/change notes / must not introduce new product behavior, modify existing decision history, apply migrations or edit plans/.
 - Done when:
   - Mobile-card assertions preserve compact height and intentional travel controls; fresh/existing player behavior for this batch is covered.
@@ -359,7 +359,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 orchestrator: T115 launched before T111 (T115 is on the critical path T115 → T108 → T109 → T112) (orchestrator)
 
+- 2026-10-04 T121: `?dev=1` turns shortcuts on but never the reward; test start = `&t=`, `&seed=` (a known seed can be practised) or `&carta=1`; `&derrota=` does not count; new `RewardOutcome` reason `test_start`; `textos-zonas.md` row updated for `zonas.test.ts` (agent)
+
 ## Proposals (new scope)
+- 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
@@ -388,3 +391,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 19:02 T119 launched · attempt 1 · agent a70863d9a7bdced71
 - 2026-10-04 19:30 T119 done → 521119d
 - 2026-10-04 19:31 T110 done → c44a4a8
+- 2026-10-04 19:32 T121 launched · attempt 1 · agent aeebcee5633965fc2
+- 2026-10-04 19:32 T115 launched · attempt 1 · Codex via wrapper agent a4497e05c0ef20f2e
+- 2026-10-04 19:48 T121 done → 8bd4390
