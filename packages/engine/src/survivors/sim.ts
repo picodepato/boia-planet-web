@@ -12,10 +12,14 @@ import {
 import type { QualityTier } from '../world/sectors';
 import { wrapDelta, wrapInto } from '../world/wrap';
 import {
+  type ElitesDef,
   type EnemyDef,
   type EnemyId,
+  type EnemyPhase,
+  type MareaDef,
   type NoteFigure,
   type QualityCaps,
+  type ScriptEvent,
   type StatId,
   SURVIVORS_STEP_S,
   type SurvivorsConfig,
@@ -31,7 +35,7 @@ import { SpatialGrid } from './grid';
 import { IslandIndex, type SurvivorsWorld } from './world';
 
 /**
- * La simulación del modo Survivors del Cañón (plan 009, beta 1), pura y
+ * La simulación del modo Survivors del Cañón (planes 010 y 011), pura y
  * determinista, sin three.js ni DOM: `createSurvivors(config, seed, world)`
  * y `step(input)` a paso fijo de 1/60 s. Misma semilla + mismas entradas =
  * misma partida (`stateHash`). La pinta y la cablea `/mar` (T99–T101).
@@ -39,8 +43,15 @@ import { IslandIndex, type SurvivorsWorld } from './world';
  * - El barco se mueve con el controlador de `/mar` (`stepShip`) con la
  *   maniobrabilidad de la config, y choca con las islas con `collideShip`.
  * - Todo se mide por el camino más corto del mar que da la vuelta.
- * - Enemigos (pirañas, cangrejo) aparecen en un anillo fuera de cámara,
- *   rodean las islas (rumbo + deslizar por el contorno) y dañan por contacto.
+ * - Los enemigos aparecen en un anillo fuera de cámara según el guion por
+ *   datos (`acts`) y dañan por contacto. Por comportamiento (§6): pirañas,
+ *   cangrejos y medusas rodean las islas (rumbo + deslizar por el
+ *   contorno); la gaviota vuela por encima; el pirata se para a distancia
+ *   y dispara recto (las islas paran sus disparos); el pez espada avisa con
+ *   una línea en el agua y embiste recto; la medusa se parte en dos al caer.
+ * - Desde el hito `elites` del guion una parte sale élite (más aguante,
+ *   mejor nota); la «Marea» echa anillos enteros durante 20 s; con el tope
+ *   lleno la oleada gana fuerza en vez de número.
  * - El Cañón de agua dispara solo al más cercano; las islas paran sus bolas.
  * - Las notas se funden y el imán las atrae; subir de nivel abre una carta
  *   (1 de 3) y la partida queda en pausa hasta elegir.
@@ -62,10 +73,16 @@ export interface SurvivorsInput {
 }
 
 export type SurvivorsEvent =
+  /** Un golpe al barco: por contacto o por un disparo enemigo (`enemy` es quien lo hizo). */
   | { type: 'hit'; enemy: EnemyId; x: number; y: number; water: number }
-  | { type: 'defeated'; enemy: EnemyId; id: number; x: number; y: number }
+  | { type: 'defeated'; enemy: EnemyId; id: number; x: number; y: number; elite: boolean }
   | { type: 'fire'; x: number; y: number; count: number }
-  | { type: 'blocked'; x: number; y: number }
+  /** Una bola del jugador o un disparo enemigo (`owner`) parado por una isla. */
+  | { type: 'blocked'; x: number; y: number; owner: 'player' | 'enemy' }
+  | { type: 'enemyFire'; enemy: EnemyId; id: number; x: number; y: number }
+  /** Empieza el aviso de una embestida: la línea en el agua desde (x, y), `length` u. */
+  | { type: 'telegraph'; enemy: EnemyId; id: number; x: number; y: number; heading: number; length: number }
+  | { type: 'split'; enemy: EnemyId; id: number; x: number; y: number; count: number }
   | { type: 'note'; figure: NoteFigure; value: number; x: number; y: number }
   | { type: 'levelUp'; level: number }
   | { type: 'end'; reason: EndReason };
@@ -81,6 +98,12 @@ export interface EnemyView {
   readonly hp: number;
   readonly maxHp: number;
   readonly radius: number;
+  /** Élite: brilla y suelta mejor nota. */
+  readonly elite: boolean;
+  /** Tamaño respecto al tipo (1; los trozos de una medusa, menos). */
+  readonly scale: number;
+  /** Qué hace: quieto apuntando, avisando, embistiendo, descansando o moviéndose. */
+  readonly phase: EnemyPhase;
 }
 
 export interface ProjectileView {
@@ -90,6 +113,19 @@ export interface ProjectileView {
   readonly vx: number;
   readonly vy: number;
   readonly radius: number;
+}
+
+/** La línea de aviso de una embestida, para pintarla en el agua. */
+export interface TelegraphView {
+  /** El enemigo que avisa. */
+  readonly id: number;
+  readonly type: EnemyId;
+  readonly x: number;
+  readonly y: number;
+  readonly heading: number;
+  readonly length: number;
+  /** 0 al empezar el aviso, 1 cuando embiste. */
+  readonly progress: number;
 }
 
 export interface NoteView {
@@ -135,8 +171,17 @@ export interface SurvivorsSnapshot {
   readonly player: Readonly<ShipState> & { readonly radius: number; readonly invulnerableS: number };
   readonly enemies: readonly EnemyView[];
   readonly enemiesByType: Readonly<Partial<Record<EnemyId, readonly EnemyView[]>>>;
+  /** Bolas del jugador. */
   readonly projectiles: readonly ProjectileView[];
+  /** Disparos de los enemigos (pistolas de agua). */
+  readonly enemyProjectiles: readonly ProjectileView[];
+  /** Avisos de embestida en curso. */
+  readonly telegraphs: readonly TelegraphView[];
   readonly notes: readonly NoteView[];
+  /** Ya salen élites (hito `elites` del guion). */
+  readonly elitesActive: boolean;
+  /** La «Marea» está cayendo. */
+  readonly mareaActive: boolean;
   readonly water: { readonly level: number; readonly capacity: number };
   readonly xp: { readonly level: number; readonly xp: number; readonly toNext: number };
   /** s de tiempo activo. */
@@ -179,6 +224,33 @@ interface Enemy {
   maxHp: number;
   radius: number;
   speed: number;
+  elite: boolean;
+  scale: number;
+  /** Nota que suelta (ya con élite y trozo aplicados). */
+  noteValue: number;
+  /** Veces que ya se partió (medusas). */
+  generation: number;
+  phase: EnemyPhase;
+  /** s que quedan de la fase (aviso, descanso) o hasta el próximo disparo. */
+  timer: number;
+  /** Embestida: rumbo fijo y u que quedan. */
+  chargeX: number;
+  chargeY: number;
+  chargeLeft: number;
+  dead: boolean;
+}
+
+/** Un disparo enemigo (pistola de agua): recto, lo paran las islas y el barco. */
+interface EnemyShot {
+  id: number;
+  enemy: EnemyId;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  life: number;
+  water: number;
   dead: boolean;
 }
 
@@ -236,6 +308,7 @@ export class SurvivorsGame {
   private readonly islands: IslandIndex;
   private readonly enemyGrid: SpatialGrid;
   private readonly projectileGrid: SpatialGrid;
+  private readonly enemyShotGrid: SpatialGrid;
   private readonly noteGrid: SpatialGrid;
   private readonly spawnRng: () => number;
   private readonly cardRng: () => number;
@@ -243,10 +316,19 @@ export class SurvivorsGame {
   private shipCfg: ShipConfig;
   private readonly weapon: WeaponDef;
   private readonly maxEnemyRadius: number;
+  private readonly maxShotRadius: number;
+  /** s de partida desde los que salen élites (Infinity: nunca) y su definición. */
+  private readonly elitesFromS: number;
+  private readonly elitesDef: ElitesDef | null;
+  /** Hitos «Marea» activos del guion y, para cada uno, cuándo cae el próximo anillo. */
+  private readonly mareas: { ev: ScriptEvent; def: MareaDef }[];
+  private readonly mareaNext: number[];
 
   private readonly player: ShipState;
   private readonly enemies: Enemy[] = [];
   private readonly projectiles: Projectile[] = [];
+  private readonly enemyShots: EnemyShot[] = [];
+  private readonly telegraphs: TelegraphView[] = [];
   private readonly notes: Note[] = [];
   private readonly byType: Partial<Record<EnemyId, Enemy[]>> = {};
   private readonly events: SurvivorsEvent[] = [];
@@ -294,6 +376,7 @@ export class SurvivorsGame {
     this.h = world.bounds.bottom - world.bounds.top;
     this.enemyGrid = new SpatialGrid(world.bounds, config.enemyGridCell, this.caps.enemies);
     this.projectileGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.projectiles);
+    this.enemyShotGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.enemyProjectiles);
     this.noteGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.notes);
     this.spawnRng = rng(this.seed);
     this.cardRng = rng((this.seed ^ 0x9e3779b9) >>> 0);
@@ -302,9 +385,35 @@ export class SurvivorsGame {
     const weapon = config.weapons[config.startingWeapon];
     if (!weapon) throw new Error(`survivors: no weapon ${config.startingWeapon}`);
     this.weapon = weapon;
+    // Hitos del guion: élites (desde cuándo) y Mareas (cuáles). Sin hito de
+    // élites el guion no las echa, pero la definición sigue valiendo para
+    // las puestas a mano (`spawnEnemy(…, true)`).
+    const events = (config.acts[0]?.events ?? []).filter((ev) => ev.enabled !== false);
+    let elitesFrom = Infinity;
+    let elitesDef: ElitesDef | null = Object.values(config.elites)[0] ?? null;
+    for (const ev of events) {
+      const def = ev.type === 'elites' ? config.elites[ev.ref] : undefined;
+      if (def && ev.atS < elitesFrom) {
+        elitesFrom = ev.atS;
+        elitesDef = def;
+      }
+    }
+    this.elitesFromS = elitesFrom;
+    this.elitesDef = elitesDef;
+    this.mareas = events.flatMap((ev) => {
+      const def = ev.type === 'marea' ? config.marea[ev.ref] : undefined;
+      return def ? [{ ev, def }] : [];
+    });
+    this.mareaNext = this.mareas.map((m) => m.ev.atS);
     let maxR = 0;
-    for (const def of Object.values(config.enemies)) if (def && def.radius > maxR) maxR = def.radius;
-    this.maxEnemyRadius = maxR;
+    let maxShot = 0;
+    for (const def of Object.values(config.enemies)) {
+      if (!def) continue;
+      if (def.radius > maxR) maxR = def.radius;
+      if (def.shooter && def.shooter.projectile.radius > maxShot) maxShot = def.shooter.projectile.radius;
+    }
+    this.maxEnemyRadius = maxR * Math.max(1, elitesDef?.radiusScale ?? 1);
+    this.maxShotRadius = maxShot;
     // Las consultas de islas de un paso (rodeo, deslizar, balas, notas) caben en `reach`.
     this.islands = new IslandIndex(
       world.bounds,
@@ -331,7 +440,11 @@ export class SurvivorsGame {
       enemies: this.enemies,
       enemiesByType: this.byType,
       projectiles: this.projectiles,
+      enemyProjectiles: this.enemyShots,
+      telegraphs: this.telegraphs,
       notes: this.notes,
+      elitesActive: false,
+      mareaActive: false,
       water: { level: 0, capacity: config.player.waterCapacity },
       xp: { level: 1, xp: 0, toNext: xpToNext(config, 1) },
       activeS: 0,
@@ -395,9 +508,31 @@ export class SurvivorsGame {
     v.pressure = this.overflow;
     v.notesPicked = this.notesPicked;
     v.notesValue = this.notesValue;
+    v.elitesActive = this.activeS >= this.elitesFromS;
+    v.mareaActive = this.mareaActive();
     for (const list of Object.values(this.byType)) if (list) list.length = 0;
-    for (const e of this.enemies) this.byType[e.type]?.push(e);
+    this.telegraphs.length = 0;
+    for (const e of this.enemies) {
+      this.byType[e.type]?.push(e);
+      if (e.phase === 'telegraph' && e.def.charger) {
+        const ch = e.def.charger;
+        this.telegraphs.push({
+          id: e.id,
+          type: e.type,
+          x: e.x,
+          y: e.y,
+          heading: Math.atan2(e.chargeY, e.chargeX),
+          length: ch.chargeDistance,
+          progress: Math.min(1, Math.max(0, 1 - e.timer / ch.telegraphS)),
+        });
+      }
+    }
     return v;
+  }
+
+  private mareaActive(): boolean {
+    const t = this.activeS;
+    return this.mareas.some(({ ev }) => t >= ev.atS && t < ev.atS + (ev.durationS ?? 0));
   }
 
   /** Huella del estado entero: dos partidas iguales dan la misma. */
@@ -415,10 +550,25 @@ export class SurvivorsGame {
       cd: this.cooldown,
       of: this.overflow,
       acc: this.trackAcc,
+      mn: this.mareaNext,
       up: this.stacks,
       card: this.card?.options.map((o) => o.upgrade) ?? null,
-      e: this.enemies.map((e) => [e.id, e.type, e.x, e.y, e.vx, e.vy, e.hp]),
+      e: this.enemies.map((e) => [
+        e.id,
+        e.type,
+        e.x,
+        e.y,
+        e.vx,
+        e.vy,
+        e.hp,
+        e.elite ? 1 : 0,
+        e.generation,
+        e.phase,
+        e.timer,
+        e.chargeLeft,
+      ]),
       b: this.projectiles.map((b) => [b.id, b.x, b.y, b.life]),
+      s: this.enemyShots.map((b) => [b.id, b.x, b.y, b.life]),
       n: this.notes.map((n) => [n.id, n.x, n.y, n.value]),
       k: [this.defeated, this.notesPicked, this.notesValue, this.nextId],
       end: this.endReason,
@@ -431,29 +581,55 @@ export class SurvivorsGame {
    * Pone un enemigo en (x, y), llevado al agua; null si no cabe (tope o
    * tierra). Para pruebas y atajos de desarrollo.
    */
-  spawnEnemy(type: EnemyId, x: number, y: number): EnemyView | null {
+  spawnEnemy(type: EnemyId, x: number, y: number, elite = false): EnemyView | null {
     const def = this.config.enemies[type];
     if (!def || this.enemies.length >= this.caps.enemies) return null;
     const spot = this.islands.toWater(x, y, def.radius);
     if (!spot) return null;
+    const e = this.makeEnemy(def, spot.x, spot.y, def.hp, def.speed, elite);
+    this.enemies.push(e);
+    this.rebuildEnemyGrid();
+    return e;
+  }
+
+  /** Un enemigo nuevo en (x, y) con ese aguante y velocidad (élite: se le aplica lo suyo). */
+  private makeEnemy(
+    def: EnemyDef,
+    x: number,
+    y: number,
+    hp: number,
+    speed: number,
+    elite: boolean,
+  ): Enemy {
+    const el = elite && this.elitesDef ? this.elitesDef : null;
+    const finalHp = hp * (el?.hpScale ?? 1);
     const e: Enemy = {
       id: this.nextId++,
-      type,
+      type: def.id,
       def,
       x: 0,
       y: 0,
       vx: 0,
       vy: 0,
       heading: 0,
-      hp: def.hp,
-      maxHp: def.hp,
-      radius: def.radius,
-      speed: def.speed,
+      hp: finalHp,
+      maxHp: finalHp,
+      radius: def.radius * (el?.radiusScale ?? 1),
+      speed: speed * (el?.speedScale ?? 1),
+      elite: el !== null,
+      scale: el?.radiusScale ?? 1,
+      noteValue: def.noteValue * (el?.noteScale ?? 1),
+      generation: 0,
+      phase: 'move',
+      timer: 0,
+      chargeX: 1,
+      chargeY: 0,
+      chargeLeft: 0,
       dead: false,
     };
-    this.setWrapped(e, spot.x, spot.y);
-    this.enemies.push(e);
-    this.rebuildEnemyGrid();
+    this.setWrapped(e, x, y);
+    const p = this.player;
+    e.heading = Math.atan2(wd(p.y - e.y, this.h), wd(p.x - e.x, this.w));
     return e;
   }
 
@@ -514,6 +690,7 @@ export class SurvivorsGame {
     this.spawnFromScript(dt);
     this.stepEnemies(dt);
     this.contactDamage(dt);
+    this.stepEnemyShots(dt);
     this.fireWeapon(dt);
     this.stepProjectiles(dt);
     this.compactEnemies();
@@ -563,24 +740,61 @@ export class SurvivorsGame {
       }
       this.trackAcc[i] = acc;
     });
+    // «Marea»: durante el hito, un anillo entero cada `burstEveryS` s.
+    this.mareas.forEach(({ ev, def }, i) => {
+      const end = ev.atS + (ev.durationS ?? 0);
+      if (t < ev.atS || t >= end) return;
+      while (this.mareaNext[i]! <= t + 1e-9 && this.mareaNext[i]! < end) {
+        this.spawnRing(def.enemy, def.count, def.hpScale, def.speedScale);
+        this.mareaNext[i] = this.mareaNext[i]! + def.burstEveryS;
+      }
+    });
     if (this.enemies.length < this.caps.enemies * 0.8 && this.overflow > 0) {
       this.overflow = Math.max(0, this.overflow - 0.01 * dt);
     }
+  }
+
+  /** Un punto del anillo de aparición en el ángulo `a` (null si cae en tierra). */
+  private ringSpot(a: number, radius: number): { x: number; y: number } | null {
+    const sp = this.config.spawn;
+    const p = this.player;
+    const r = sp.ringMin + (sp.ringMax - sp.ringMin) * this.spawnRng();
+    return this.islands.toWater(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, radius);
+  }
+
+  /**
+   * Un enemigo del guion en (x, y) con el crecimiento por minuto, la fuerza
+   * del tope y, desde el hito `elites`, la tirada de élite. Con el tope
+   * lleno no aparece y la oleada gana fuerza. Devuelve si apareció.
+   */
+  private placeEnemy(def: EnemyDef, x: number, y: number, hpScale: number, speedScale: number): boolean {
+    const sp = this.config.spawn;
+    if (this.enemies.length >= this.caps.enemies) {
+      // Tope: la oleada sube de fuerza en vez de en número.
+      this.overflow = Math.min(sp.overflowMax, this.overflow + sp.overflowStrength);
+      return false;
+    }
+    const minutes = this.minutes();
+    const hp = def.hp * hpScale * (1 + def.growthPerMinute.hp * minutes) * (1 + this.overflow);
+    const speed = def.speed * speedScale * (1 + def.growthPerMinute.speed * minutes);
+    const elite =
+      this.elitesDef !== null &&
+      this.activeS >= this.elitesFromS &&
+      this.spawnRng() < this.elitesDef.chance;
+    this.enemies.push(this.makeEnemy(def, x, y, hp, speed, elite));
+    return true;
   }
 
   private spawnGroup(type: EnemyId, size: number, hpScale: number, speedScale: number): void {
     const def = this.config.enemies[type];
     if (!def || size <= 0) return;
     const sp = this.config.spawn;
-    const p = this.player;
     // El centro del grupo en el anillo, en tierra no: hasta 6 intentos.
     let cx = 0;
     let cy = 0;
     let found = false;
     for (let tries = 0; tries < 6 && !found; tries++) {
-      const a = this.spawnRng() * Math.PI * 2;
-      const r = sp.ringMin + (sp.ringMax - sp.ringMin) * this.spawnRng();
-      const spot = this.islands.toWater(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, def.radius);
+      const spot = this.ringSpot(this.spawnRng() * Math.PI * 2, def.radius);
       if (spot) {
         cx = spot.x;
         cy = spot.y;
@@ -588,10 +802,8 @@ export class SurvivorsGame {
       }
     }
     if (!found) return;
-    const minutes = this.minutes();
     for (let k = 0; k < size; k++) {
       if (this.enemies.length >= this.caps.enemies) {
-        // Tope: la oleada sube de fuerza en vez de en número.
         this.overflow = Math.min(sp.overflowMax, this.overflow + sp.overflowStrength);
         continue;
       }
@@ -599,28 +811,19 @@ export class SurvivorsGame {
       const jy = (this.spawnRng() * 2 - 1) * sp.groupSpread;
       const spot = this.islands.toWater(cx + jx, cy + jy, def.radius);
       if (!spot) continue;
-      const hp =
-        def.hp * hpScale * (1 + def.growthPerMinute.hp * minutes) * (1 + this.overflow);
-      const e: Enemy = {
-        id: this.nextId++,
-        type,
-        def,
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        heading: 0,
-        hp,
-        maxHp: hp,
-        radius: def.radius,
-        speed: def.speed * speedScale * (1 + def.growthPerMinute.speed * minutes),
-        dead: false,
-      };
-      this.setWrapped(e, spot.x, spot.y);
-      const dx = wd(p.x - e.x, this.w);
-      const dy = wd(p.y - e.y, this.h);
-      e.heading = Math.atan2(dy, dx);
-      this.enemies.push(e);
+      this.placeEnemy(def, spot.x, spot.y, hpScale, speedScale);
+    }
+  }
+
+  /** Un anillo de `count` enemigos a ángulos iguales alrededor del barco (la «Marea»). */
+  private spawnRing(type: EnemyId, count: number, hpScale: number, speedScale: number): void {
+    const def = this.config.enemies[type];
+    if (!def || count <= 0) return;
+    const phase = this.spawnRng() * Math.PI * 2;
+    for (let k = 0; k < count; k++) {
+      const spot = this.ringSpot(phase + (k / count) * Math.PI * 2, def.radius);
+      if (!spot) continue;
+      this.placeEnemy(def, spot.x, spot.y, hpScale, speedScale);
     }
   }
 
@@ -672,6 +875,99 @@ export class SurvivorsGame {
       dy = dist > 1e-6 ? dy / dist : 0;
       let wantX = dx * e.speed;
       let wantY = dy * e.speed;
+      // `direct`: la velocidad va fijada (quieto o embistiendo), sin inercia ni rodeos.
+      let direct = false;
+      switch (e.def.behavior) {
+        case 'flyer': {
+          // Vuela en eses: un vaivén lateral que la hace reconocible (y algo menos directa).
+          const weave = Math.sin(this.activeS * 2.5 + e.id) * 0.35 * e.speed;
+          wantX += -dy * weave;
+          wantY += dx * weave;
+          break;
+        }
+        case 'shooter': {
+          const sh = e.def.shooter;
+          if (!sh) break;
+          if (e.phase === 'aim' && dist > sh.resume) e.phase = 'move';
+          else if (e.phase !== 'aim' && dist <= sh.standoff) {
+            e.phase = 'aim';
+            e.timer = sh.firstShotS;
+          }
+          if (e.phase === 'aim') {
+            wantX = 0;
+            wantY = 0;
+            e.timer -= dt;
+            if (e.timer <= 0) {
+              if (dist <= sh.range && this.fireShot(e, dx, dy)) e.timer += sh.cooldownS;
+              else e.timer = 0;
+            }
+          }
+          break;
+        }
+        case 'charger': {
+          const ch = e.def.charger;
+          if (!ch) break;
+          if (e.phase === 'move' && dist <= ch.windupRange) {
+            e.phase = 'telegraph';
+            e.timer = ch.telegraphS;
+            e.chargeX = dx;
+            e.chargeY = dy;
+            this.events.push({
+              type: 'telegraph',
+              enemy: e.type,
+              id: e.id,
+              x: e.x,
+              y: e.y,
+              heading: Math.atan2(dy, dx),
+              length: ch.chargeDistance,
+            });
+          }
+          if (e.phase === 'telegraph') {
+            direct = true;
+            e.vx = 0;
+            e.vy = 0;
+            e.heading = Math.atan2(e.chargeY, e.chargeX);
+            e.timer -= dt;
+            if (e.timer <= 0) {
+              e.phase = 'charge';
+              e.chargeLeft = ch.chargeDistance;
+            }
+          } else if (e.phase === 'charge') {
+            direct = true;
+            e.vx = e.chargeX * ch.chargeSpeed;
+            e.vy = e.chargeY * ch.chargeSpeed;
+            e.chargeLeft -= ch.chargeSpeed * dt;
+            if (e.chargeLeft <= 0) {
+              e.phase = 'rest';
+              e.timer = ch.restS;
+            }
+          } else if (e.phase === 'rest') {
+            wantX *= 0.3;
+            wantY *= 0.3;
+            e.timer -= dt;
+            if (e.timer <= 0) e.phase = 'move';
+          }
+          break;
+        }
+        default:
+          break;
+      }
+      if (direct) {
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        const touching = !e.def.ignoresIslands && this.slideOffIslands(e, e.radius);
+        e.x = wrapInto(e.x, this.bounds.left, this.bounds.right);
+        e.y = wrapInto(e.y, this.bounds.top, this.bounds.bottom);
+        if (touching && e.phase === 'charge') {
+          // La embestida choca con una isla: se acaba ahí.
+          e.phase = 'rest';
+          e.timer = e.def.charger?.restS ?? 0;
+          e.vx = 0;
+          e.vy = 0;
+        }
+        if (touching && isl.onLand(e.x, e.y) && !this.recycle(e)) e.dead = true;
+        continue;
+      }
       // Rodear islas: la que está delante empuja de lado (sin buscar caminos).
       if (!e.def.ignoresIslands) {
         const near = isl.near(e.x, e.y, ai.lookAhead + e.radius, this.scratch);
@@ -768,12 +1064,114 @@ export class SurvivorsGame {
       const dy = wd(e.y - p.y, this.h);
       const min = pr + e.radius;
       if (dx * dx + dy * dy >= min * min) continue;
-      const amount = e.def.contactWater * Math.max(0, 1 - this.stats.hullBonus);
-      this.water = Math.min(this.config.player.waterCapacity, this.water + amount);
-      this.invulnerable = this.config.player.invulnerableS;
-      this.events.push({ type: 'hit', enemy: e.type, x: e.x, y: e.y, water: this.water });
+      this.damagePlayer(e.def.contactWater, e.type, e.x, e.y);
       return;
     }
+  }
+
+  /** Mete `amount` de agua a bordo (menos el casco) y da la invulnerabilidad del golpe. */
+  private damagePlayer(amount: number, by: EnemyId, x: number, y: number): void {
+    const water = amount * Math.max(0, 1 - this.stats.hullBonus);
+    this.water = Math.min(this.config.player.waterCapacity, this.water + water);
+    this.invulnerable = this.config.player.invulnerableS;
+    this.events.push({ type: 'hit', enemy: by, x, y, water: this.water });
+  }
+
+  // --- Disparos enemigos -----------------------------------------------------
+
+  /** El tirador `e` dispara recto hacia (dx, dy) (unitario). false si el tope no deja. */
+  private fireShot(e: Enemy, dx: number, dy: number): boolean {
+    const sh = e.def.shooter;
+    if (!sh || this.enemyShots.length >= this.caps.enemyProjectiles) return false;
+    const pr = sh.projectile;
+    const start = e.radius + pr.radius + 1;
+    this.enemyShots.push({
+      id: this.nextId++,
+      enemy: e.type,
+      x: wrapInto(e.x + dx * start, this.bounds.left, this.bounds.right),
+      y: wrapInto(e.y + dy * start, this.bounds.top, this.bounds.bottom),
+      vx: dx * pr.speed,
+      vy: dy * pr.speed,
+      radius: pr.radius,
+      life: pr.range / pr.speed,
+      water: pr.water,
+      dead: false,
+    });
+    e.heading = Math.atan2(dy, dx);
+    this.events.push({ type: 'enemyFire', enemy: e.type, id: e.id, x: e.x, y: e.y });
+    return true;
+  }
+
+  /**
+   * Los disparos enemigos avanzan recto: las islas los paran (como a las
+   * bolas del jugador) y el barco los recibe (un golpe, con su
+   * invulnerabilidad; invulnerable, el disparo se deshace sin daño).
+   */
+  private stepEnemyShots(dt: number): void {
+    const p = this.player;
+    const pr = this.shipCfg.radius;
+    for (const b of this.enemyShots) {
+      const sx = b.vx * dt;
+      const sy = b.vy * dt;
+      const ss = sx * sx + sy * sy;
+      const blockT = this.islandBlock(b, sx, sy, ss);
+      if (blockT !== Infinity) {
+        b.dead = true;
+        this.events.push({
+          type: 'blocked',
+          owner: 'enemy',
+          x: wrapInto(b.x + sx * blockT, this.bounds.left, this.bounds.right),
+          y: wrapInto(b.y + sy * blockT, this.bounds.top, this.bounds.bottom),
+        });
+        continue;
+      }
+      const t = segmentHit(wd(b.x - p.x, this.w), wd(b.y - p.y, this.h), sx, sy, ss, pr + b.radius);
+      if (t !== Infinity) {
+        b.dead = true;
+        if (this.invulnerable <= 0) this.damagePlayer(b.water, b.enemy, b.x, b.y);
+        continue;
+      }
+      b.x = wrapInto(b.x + sx, this.bounds.left, this.bounds.right);
+      b.y = wrapInto(b.y + sy, this.bounds.top, this.bounds.bottom);
+      b.life -= dt;
+      if (b.life <= 0) b.dead = true;
+    }
+    let n = 0;
+    for (const b of this.enemyShots) if (!b.dead) this.enemyShots[n++] = b;
+    this.enemyShots.length = n;
+    const g = this.enemyShotGrid;
+    g.clear();
+    this.enemyShots.forEach((b, i) => g.insert(i, b.x, b.y));
+  }
+
+  /** Disparos enemigos a menos de `r` u del punto (por la rejilla). Para la pantalla y las pruebas. */
+  enemyShotsNear(x: number, y: number, r: number): readonly ProjectileView[] {
+    const out: ProjectileView[] = [];
+    for (const i of this.enemyShotGrid.query(x, y, r + this.maxShotRadius, this.scratch)) {
+      const b = this.enemyShots[i]!;
+      const dx = wd(b.x - x, this.w);
+      const dy = wd(b.y - y, this.h);
+      const min = r + b.radius;
+      if (dx * dx + dy * dy <= min * min) out.push(b);
+    }
+    return out;
+  }
+
+  /**
+   * Primer instante (0…1) del tramo de este paso de un proyectil recto en
+   * que toca una isla; Infinity si ninguna.
+   */
+  private islandBlock(b: { x: number; y: number; radius: number }, sx: number, sy: number, ss: number): number {
+    const isl = this.islands;
+    const len = Math.sqrt(ss);
+    let blockT = Infinity;
+    const near = isl.near(b.x + sx / 2, b.y + sy / 2, len / 2 + b.radius, this.scratch);
+    for (const k of near) {
+      const o = isl.obstacles[k]!;
+      const t = segmentHit(wd(b.x - o.x, this.w), wd(b.y - o.y, this.h), sx, sy, ss, o.radius + b.radius);
+      if (t < blockT) blockT = t;
+    }
+    return blockT;
   }
 
   private compactEnemies(): void {
@@ -842,7 +1240,6 @@ export class SurvivorsGame {
   }
 
   private stepProjectiles(dt: number): void {
-    const isl = this.islands;
     for (const b of this.projectiles) {
       const sx = b.vx * dt;
       const sy = b.vy * dt;
@@ -850,24 +1247,12 @@ export class SurvivorsGame {
       const ss = sx * sx + sy * sy;
       // Islas: el tramo de este paso contra cada isla cercana.
       if (this.weapon.blockedByIslands) {
-        let blockT = Infinity;
-        const near = isl.near(b.x + sx / 2, b.y + sy / 2, len / 2 + b.radius, this.scratch);
-        for (const k of near) {
-          const o = isl.obstacles[k]!;
-          const t = segmentHit(
-            wd(b.x - o.x, this.w),
-            wd(b.y - o.y, this.h),
-            sx,
-            sy,
-            ss,
-            o.radius + b.radius,
-          );
-          if (t < blockT) blockT = t;
-        }
+        const blockT = this.islandBlock(b, sx, sy, ss);
         if (blockT !== Infinity) {
           b.dead = true;
           this.events.push({
             type: 'blocked',
+            owner: 'player',
             x: wrapInto(b.x + sx * blockT, this.bounds.left, this.bounds.right),
             y: wrapInto(b.y + sy * blockT, this.bounds.top, this.bounds.bottom),
           });
@@ -925,8 +1310,33 @@ export class SurvivorsGame {
   private defeat(e: Enemy): void {
     e.dead = true;
     this.defeated++;
-    this.events.push({ type: 'defeated', enemy: e.type, id: e.id, x: e.x, y: e.y });
-    this.dropNote(e.x, e.y, e.def.noteValue);
+    this.events.push({ type: 'defeated', enemy: e.type, id: e.id, x: e.x, y: e.y, elite: e.elite });
+    this.dropNote(e.x, e.y, e.noteValue);
+    const split = e.def.split;
+    if (!split || e.generation >= split.generations) return;
+    // Divisor: los trozos salen a los lados, más pequeños, con parte del aguante y de la nota.
+    let made = 0;
+    for (let k = 0; k < split.count; k++) {
+      if (this.enemies.length >= this.caps.enemies) {
+        this.overflow = Math.min(this.config.spawn.overflowMax, this.overflow + this.config.spawn.overflowStrength);
+        continue;
+      }
+      const a = e.heading + Math.PI / 2 + (k / split.count) * Math.PI * 2;
+      const r = e.radius * (1 + split.scale);
+      const spot = this.islands.toWater(e.x + Math.cos(a) * r, e.y + Math.sin(a) * r, e.radius * split.scale);
+      if (!spot) continue;
+      const child = this.makeEnemy(e.def, spot.x, spot.y, e.maxHp * split.hpScale, e.speed, false);
+      child.radius = e.def.radius * split.scale;
+      child.scale = split.scale;
+      child.noteValue = e.def.noteValue * split.noteScale;
+      child.generation = e.generation + 1;
+      child.vx = Math.cos(a) * e.speed;
+      child.vy = Math.sin(a) * e.speed;
+      // Lo que ya se iteró en este paso no vuelve a tocarse: la rejilla se rehace al siguiente.
+      this.enemies.push(child);
+      made++;
+    }
+    if (made > 0) this.events.push({ type: 'split', enemy: e.type, id: e.id, x: e.x, y: e.y, count: made });
   }
 
   // --- Notas -----------------------------------------------------------------

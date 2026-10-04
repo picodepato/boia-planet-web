@@ -181,9 +181,18 @@ describe('survivors: configuración', () => {
     expect(survivorsConfigHash(tweaked)).not.toBe(survivorsConfigHash());
   });
 
-  it('trae lo de la beta 1 en catálogos con hueco para el diseño completo', () => {
+  it('trae los 6 enemigos y el cañón en catálogos con hueco para el diseño completo', () => {
     const c = SURVIVORS_CONFIG;
-    expect(Object.keys(c.enemies).sort()).toEqual(['crab', 'piranha']);
+    expect(Object.keys(c.enemies).sort()).toEqual(
+      ['crab', 'gull', 'jellyfish', 'pirate', 'piranha', 'swordfish'].sort(),
+    );
+    for (const e of Object.values(c.enemies)) {
+      expect(e!.id in c.enemies).toBe(true);
+      expect(e!.behavior !== 'shooter' || e!.shooter !== undefined).toBe(true);
+      expect(e!.behavior !== 'charger' || e!.charger !== undefined).toBe(true);
+      expect(e!.behavior !== 'splitter' || e!.split !== undefined).toBe(true);
+      expect(e!.behavior === 'flyer').toBe(e!.ignoresIslands);
+    }
     expect(Object.keys(c.weapons)).toEqual([c.startingWeapon]);
     expect(c.weapons.canon?.blockedByIslands).toBe(true);
     expect(c.acts.map((a) => a.act)).toEqual([1]);
@@ -320,7 +329,9 @@ describe('survivors: partidas completas', () => {
         (g, ev) => {
           const s = g.snapshot();
           for (const e of s.enemies) {
-            if (g.onLand(e.x, e.y)) throw new Error(`enemigo ${e.id} en tierra a ${g.activeS}s`);
+            // Las gaviotas vuelan por encima de las islas: a ellas sí se les permite.
+            if (unsinkable.enemies[e.type]!.ignoresIslands) continue;
+            if (g.onLand(e.x, e.y)) throw new Error(`enemigo ${e.id} (${e.type}) en tierra a ${g.activeS}s`);
             checked++;
           }
           for (const n of s.notes) {

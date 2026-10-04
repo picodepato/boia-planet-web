@@ -4,6 +4,29 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T125: Four new enemies, elites, growth, Marea and the full script (simulation)
+
+Qué existe (sólo `packages/engine/src/survivors/`; nada en `apps/web`):
+- `config.ts` (`SURVIVORS_CONFIG_VERSION` 1 → 2): los 6 enemigos comunes del diseño (§6) como datos. Nuevos: **gaviota** (`gull`, `flyer`, `ignoresIslands`, 110 u/s), **pirata en botecito** (`pirate`, `shooter`: se para a `standoff` 320 u, dispara recto cada 2,2 s con `projectile` 300 u/s, 6 de agua), **pez espada** (`swordfish`, `charger`: a 380 u se para, avisa 0,9 s y embiste 560 u a 400 u/s, descansa 1,2 s), **medusa** (`jellyfish`, `splitter`: al caer, 2 trozos a escala 0,6 con la mitad del aguante que ya no se parten). Pirañas y cangrejo sin tocar (T123). Tipos nuevos `ShooterDef`, `ChargerDef`, `SplitDef`, `ElitesDef`, `MareaDef`, `EnemyPhase`; `QualityCaps.enemyProjectiles` (80 alta / 40 baja); `ScriptEvent.enabled`.
+- **Élites** (`elites.elites`): desde el hito `elites` del guion (3:30) un 10 % de lo que aparece sale élite: ×3 aguante, ×4 nota, ×1,25 radio, misma velocidad; `EnemyView.elite` para la pantalla. **Crecimiento por minuto** (`growthPerMinute`) en los 6 tipos; con el tope lleno la oleada gana fuerza (`overflow`), también los trozos de medusa y los anillos de la Marea.
+- **«Marea»** (`marea.marea`): hito a 5:00 durante 20 s; cada 2,5 s un anillo de 20 pirañas a ángulos iguales alrededor del barco (todos los octantes).
+- **Guion del acto 1 en datos** (`acts[0]`): pirañas + medusas 0:00, gaviotas 1:00, cangrejos 1:30 (antes 1:00), piratas 3:00, peces espada 3:30, élites 3:30, Marea 5:00, hasta 7:00. Huecos de los minibosses (2:30 `vecino`, 4:30 `martillo`) y del boss (5:30 `fantasma`) como `enabled: false`: la beta 3 sólo los enciende.
+- `sim.ts`: comportamiento por tipo en `stepEnemies` (vaivén de la gaviota, parada y disparo del pirata, máquina de fases del pez espada move → telegraph → charge → rest, con la embestida cortada por las islas), **disparos enemigos** (`stepEnemyShots`, lista propia con su rejilla `enemyShotGrid` y tope por calidad; **las islas los paran igual que a las bolas del jugador**, `islandBlock` compartido), reparto de la medusa en `defeat`, `placeEnemy`/`spawnRing` con élites y fuerza del tope, `makeEnemy` común. `spawnEnemy(type, x, y, elite?)` y `enemyShotsNear()` para pruebas y atajos.
+- **Instantánea** (`SurvivorsSnapshot`): `enemyProjectiles`, `telegraphs` (`{id, type, x, y, heading, length, progress 0…1}`), `elitesActive`, `mareaActive`; `EnemyView` suma `elite`, `scale`, `phase`. **Sucesos** nuevos: `enemyFire`, `telegraph`, `split`; `defeated.elite`; `blocked.owner: 'player' | 'enemy'`; `hit` también para un disparo (`enemy` = quien disparó). `stateHash` cubre fases, disparos y la Marea.
+- Velocidades: nada nuevo navega por encima de los 150 u/s del barco (prueba sobre `growthPerMinute`, `speedScale` del guion y la élite); sólo la embestida avisada del pez espada (400 u/s).
+- Pruebas en `survivors-beta2.test.ts` (16): guion en datos, velocidades, gaviota cruza una isla, pirata se para y dispara, una isla para el disparo enemigo y la bola del cañón en los dos sentidos, tope de disparos de `baja` se toca y no se pasa, pez espada avisa quieto y luego embiste (progreso de la línea creciente, la embestida acaba contra una isla), medusa se parte en 2 y los trozos no, élites sólo desde el hito (y una élite a mano suelta ×4 de nota), Marea a 5:00 (anillo en los 8 octantes, 20 s, un hito apagado no hace nada), partida entera de 7:00 determinista por semilla con los 6 tipos, élites, avisos, disparos y la Marea; topes de `baja` en 7:00 con el guion completo; `&t=305` determinista. `survivors.test.ts`: la lista de enemigos y «nada en tierra» exime a los que vuelan.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors --testTimeout=30000` → exit 0, 2 archivos, 47 pruebas.
+- `pnpm exec vitest run packages/engine/src/survivors` (tal cual el Done-when, timeout por defecto de 5 s) → exit 0, 47 pruebas; las tres partidas enteras de `survivors-beta2.test.ts` llevan timeout propio de 60 s porque dos partidas de 7:00 tardan ~8 s en esta máquina.
+- `pnpm --filter @boia/engine typecheck`, `pnpm --filter @boia/web typecheck`, `pnpm lint` → exit 0.
+- Comando de prueba del plan: vitest (sin `packages/db`, timeout 30 s) → exit 0, 146 archivos, 1339 pruebas; `sh tools/spec/checks.sh` → OK (exit 0); `pnpm lint`, `pnpm build`, `pnpm typecheck` → exit 0.
+
+Pendiente / observaciones:
+- Con el piloto de prueba que no esquiva, en 7:00 sólo caen pirañas (213) y gaviotas (11): el cañón de la beta 1 dispara al más cercano y las pirañas van pegadas al casco, así que cangrejos, medusas, piratas y peces espada se ven pero no mueren. Lo cambian las armas de T127 y el equilibrio con bots de T132; aquí se deja tal cual.
+- `SURVIVORS_CONFIG_VERSION` sube a 2 también en T123: al integrar, dejar una sola subida por tarea (3 tras las dos).
+- Los modelos, la línea de aviso en el agua, el brillo de élite y los disparos en 3D son de T126; hasta entonces los tipos nuevos salen con `genericEnemyGeometry`.
+
 ## 2026-10-04 — plan 011 T123: Notas de la beta 1 (enemigos más lentos, HUD pequeño y alto, «sumergirse»)
 
 Qué existe
