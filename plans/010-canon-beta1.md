@@ -53,7 +53,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: pure sim in `packages/engine/src/survivors/` (subpath `@boia/engine/survivors`), versioned config, wrap math moved to `engine/world/wrap.ts` (web re-exports), shared `pushOutWrapped` island collision, grid, 2 enemies, cannon, notes, cards, water, pause clock; 30 tests; default `defeatStyle: sumergirse` → ab1bd6b
 
 ## T116 — The mode inside `/mar`: start and end in the same world, hiding, race lock, handling, camera, dev shortcuts
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T98
@@ -72,7 +72,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests cover the dev-shortcut gate (dev / e2e / `?dev=1` / production without it) and the hide/restore list (everything hidden at start is restored at end)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts <the race and Fiestera specs> --workers=1` → exit 0, proving: starting from the Cañón panel enters the mode with guide lines hidden; `?minijuego=canon&t=<s>&seed=<n>` starts at that time; the panel refuses to start during a race; at the end the world is back with the boat where it finished; existing race and Fiestera specs still pass
   - Test command → exit 0
-- Outcome:
+- Outcome: Cañón 3D mode runs in /mar from the panel or `?minijuego=canon&t=&seed=`; world hidden/blocked during play and restored; race lock; handling/camera overrides; `devShortcutsEnabled()` (dev, `navigator.webdriver`, `?dev=1`); data-* test hooks; 24 e2e passed → b845582
 
 ## T120 — Merge the Codex world updates (`codex/world-updates`) into main
 - Status: pending
@@ -292,6 +292,9 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 plan: Codex (agent `codex:codex-rescue`) runs only the smallest tasks, T115 and T114, after a probe confirms it works in its own worktree and keeps the final-message format; otherwise Opus runs them (Hernán: «Codex las mínimas»; orchestrator chose which)
 - 2026-10-04 plan: Blender tasks T110/T111 may use the blender-modeling-workflow and blender-asset-validation skills; T105 runs last, after T119 (orchestrator)
 
+- 2026-10-04 T116: e2e detected via `navigator.webdriver`; a level-up auto-picks the first card until T118; any panel or the menu pauses the game; while playing the runtime is not stepped and crocodiles, dolphin, Fiestera, jellyfish, whirlpools, bottles, secrets, chests and wreckage are hidden and not solid; only island labels on sea and minimap; map view, course, sailing, flight, turbo and world switching blocked; dev `&oferta=1` shows the Cañón panel; shortcut params removed from the URL after use (`dev=1` stays); `detectQuality` in mar3d; `SurvivorsClock.alpha` for interpolation; panel title/summary i18n keys `muestra` (agent)
+- 2026-10-04 T116 known: the two 2D-canon tests in `minijuegos.spec.ts` now fail by design (T119 removes them); «Códigos» sheet from the menu does not pause (T118); Fiestera-on-board has no e2e (T119 should add one) (agent)
+
 ## Proposals (new scope)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
 
@@ -299,3 +302,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 13:52 T98 launched · attempt 1 · agent a7dd71bedac7f77e0
 - 2026-10-04 14:16 T98 done · branch worktree-agent-a7dd71bedac7f77e0 → ab1bd6b
 - 2026-10-04 14:17 T116 (launched as T99) launched · attempt 1 · agent a807676a5504162cf
+- 2026-10-04 14:48 Codex probe: usage limit until 16:05, nothing ran; re-probe before launching T115
+- 2026-10-04 14:50 T116 done · branch worktree-agent-a807676a5504162cf → b845582
