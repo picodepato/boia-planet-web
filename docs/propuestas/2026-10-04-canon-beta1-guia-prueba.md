@@ -157,9 +157,14 @@ alguna con `carta=1`), con los dos estilos de derrota.
 Apuntar aquí (o en un archivo hermano `2026-10-04-canon-beta1-notas.md`) lo que salga de cada
 pregunta, con el dispositivo y los valores probados. El orquestador las lee al empezar el plan 011.
 
-1. Esquivar:
-2. Cámara:
-3. Derrota:
-4. Islas:
-5. Ritmo:
-6. Rendimiento:
+Respuestas de Hernán, 2026-10-04 (escritorio y iPhone 11, `pnpm demo`, config por defecto):
+
+1. Esquivar: esquiva bien.
+2. Cámara: se ve bien; además, como la cámara se puede ajustar como se quiera, es perfecto.
+3. Derrota: **sumergirse** (casi seguro definitivo); `puf` se queda como opción secreta.
+4. Islas: los enemigos no parecen atascarse.
+5. Ritmo: no se pudo probar: las pirañas son demasiado rápidas y matan antes. Bajar su velocidad
+   es lo primero de la beta 2.
+6. Rendimiento: fluido en un iPhone 11, así que vale para un móvil medio.
+7. Extra (HUD): la cuenta atrás y la barra de nivel deben ser más pequeñas y estar más arriba;
+   ahora quedan en medio de la vista y ocupan mucho, en móvil y en escritorio.
