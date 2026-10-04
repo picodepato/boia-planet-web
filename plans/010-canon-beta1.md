@@ -3,12 +3,12 @@
 Status: active
 Created: 2026-10-04
 Base branch: main
-Goal: Answer one question: is it fun to dodge a swarm with the boat in the 3D sea? The Cañón minigame stops being a separate 2D scene and becomes a Vampire-Survivors-like mode played in the same `/mar` world where the boat is (same pattern as Los Rápidos), shipped to production with a «BETA» label, playable end to end with little content: 2 enemies (piranhas, armoured crab), the water cannon, music notes with merge and magnet, a 1-of-3 level-up card, «water on board» as health, 7:00 to win or flooded to lose. The simulation is pure and deterministic in `packages/engine/src/survivors/` and its architecture is born ready for everything in the design reference (more enemies, weapons, vinyls, evolutions, bosses, campaign, medals, ranking) without building it yet. At the end Hernán tunes the feel (handling, camera, defeat style) with a test guide.
+Goal: Answer one question: is it fun to dodge a swarm with the boat in the 3D sea? The Cañón minigame stops being a separate 2D scene and becomes a Vampire-Survivors-like mode played in the same `/mar` world where the boat is (same pattern as Los Rápidos), shipped to production with a «BETA» label, playable end to end with little content: 2 enemies (piranhas, armoured crab), the water cannon, music notes with merge and magnet, a 1-of-3 level-up card, «water on board» as health, 7:00 to win or flooded to lose. The simulation is pure and deterministic in `packages/engine/src/survivors/` and its architecture is born ready for everything in the design reference (more enemies, weapons, vinyls, evolutions, bosses, campaign, medals, ranking) without building it yet. At the end Hernán tunes the feel (handling, camera, defeat style) with a test guide. Since 2026-10-04 this plan also merges the Codex world updates (T120) and runs the Codex plan 009's pending tasks (T105, T108–T115: Puerto de Alicante, race-only 22 knots, Blender Benidorm and Ibiza, the main route, menu icons, the castaway achievement, final regression), so a single orchestrator owns `/mar`.
 Test command: export PYTHONUTF8=1 && pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000 && sh tools/spec/checks.sh && pnpm lint && pnpm build && pnpm typecheck
 Worktree setup: pnpm install --frozen-lockfile
 Status file: ESTADO.md
 
-Notes for every task (this machine is Windows 10, Git Bash): the two `packages/db` suites need a local Postgres that this machine does not have, hence the exclude; `PYTHONUTF8=1` makes the Python checks read UTF-8; if a guard blocks the chained test command, run its steps one by one. E2E: `E2E_PORT=<free port> pnpm e2e <spec files> --workers=1` (first time in a worktree: `pnpm --filter @boia/web exec playwright install chromium`); the machine is slow under load, rerun only failing specs; the full e2e run is done once by the orchestrator at the end of the plan, never per task. UI strings only by key in `apps/web/lib/i18n/`, never loose strings in components. Content (names, texts, point amounts) stays `muestra`. Never commit `apps/web/public/atlas/`, `.claude/launch.json` or any `.env*` file other than `.env.example`. Never push or deploy. Never edit `docs/DECISIONES.md`. Local mode (D-20, no Supabase env vars) must keep working exactly as today; Supabase mode must not break. Skills: each task's block names the skills it may invoke with the Skill tool; invoke none other. Every task runs on Opus 5.5.
+Notes for every task (this machine is Windows 10, Git Bash): the two `packages/db` suites need a local Postgres that this machine does not have, hence the exclude; `PYTHONUTF8=1` makes the Python checks read UTF-8; if a guard blocks the chained test command, run its steps one by one. E2E: `E2E_PORT=<free port> pnpm e2e <spec files> --workers=1` (first time in a worktree: `pnpm --filter @boia/web exec playwright install chromium`); the machine is slow under load, rerun only failing specs; the full e2e run is done once by the orchestrator at the end of the plan, never per task. UI strings only by key in `apps/web/lib/i18n/`, never loose strings in components. Content (names, texts, point amounts) stays `muestra`. Never commit `apps/web/public/atlas/`, `.claude/launch.json` or any `.env*` file other than `.env.example`. Never push or deploy. Never edit `docs/DECISIONES.md`. Local mode (D-20, no Supabase env vars) must keep working exactly as today; Supabase mode must not break. Skills: each task's block names the skills it may invoke with the Skill tool; invoke none other. Every task runs on Opus 5.5 unless its block says Model: codex.
 
 **Required reading for every task:** `docs/propuestas/2026-10-04-canon-survivors.md` (the full design reference of the mode; this beta builds only part of it, but every structure must be ready for the rest) and `docs/propuestas/2026-10-04-plan-009-beta1.md` (what beta 1 includes and excludes). Where this plan and those documents disagree, this plan wins.
 
@@ -78,8 +78,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T116
-- Goal: Bring the parallel Codex plan's finished work into main now (Hernán, 2026-10-04), so the Cañón tasks build on it. In this worktree run `git merge --no-ff --no-edit <SHA>` where `<SHA>` is the tip of branch `codex/world-updates` **at the moment you start** (record it; the Codex checkout is `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan`, its branch lives in this same repository; read-only there: never commit, check out or edit anything in that checkout or its worktrees). Resolve every conflict keeping both intents: Codex's world updates (typography, 15-knot cruising and manual objective navigation, characters, landmarks, fish and gulls, merchandise, Carnet questions, and whatever else its plan marks done) and the Cañón mode from T98/T116 (survivors wiring in `mar-client.tsx`/`mar3d.ts`, hiding of route lines, bottles, discounts and encounters during the game, the race lock, camera and handling overrides). In particular: the Cañón's handling overrides must still apply on top of the new ship config (express them relative to the boat's current config if they were absolute, and keep the survivors tests green); everything Codex added to the world that is interactive (new encounters, fish, gulls, characters, secrets, markers) must be hidden/disabled during a Cañón game and restored after, like the rest of T116's hide list. Codex tasks still running or pending in its plan (T105–T115) are **not** part of this merge; do not try to finish them. Do not edit `plans/009-world-updates.md` beyond what the merge brings.
+- Depends on: T116, and Codex having integrated its T106 and T107 into `codex/world-updates` (the orchestrator checks `plans/009-world-updates.md` in the Codex checkout before launching)
+- Goal: Bring the parallel Codex plan's finished work into main now (Hernán, 2026-10-04), so the Cañón tasks build on it. In this worktree run `git merge --no-ff --no-edit <SHA>` where `<SHA>` is the tip of branch `codex/world-updates` **at the moment you start** (record it; the Codex checkout is `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan`, its branch lives in this same repository; read-only there: never commit, check out or edit anything in that checkout or its worktrees). Resolve every conflict keeping both intents: Codex's world updates (typography, 15-knot cruising and manual objective navigation, characters, landmarks, fish and gulls, merchandise, Carnet questions, and whatever else its plan marks done) and the Cañón mode from T98/T116 (survivors wiring in `mar-client.tsx`/`mar3d.ts`, hiding of route lines, bottles, discounts and encounters during the game, the race lock, camera and handling overrides). In particular: the Cañón's handling overrides must still apply on top of the new ship config (express them relative to the boat's current config if they were absolute, and keep the survivors tests green); everything Codex added to the world that is interactive (new encounters, fish, gulls, characters, secrets, markers) must be hidden/disabled during a Cañón game and restored after, like the rest of T116's hide list. Codex's pending tasks (T105, T108–T115) are **not** part of this merge: plan 010 absorbed them as its own tasks; do not start them. Do not edit `plans/009-world-updates.md` beyond what the merge brings.
 - Context: `plans/009-world-updates.md` (as merged: its Goal, the Outcomes of its done tasks), T98 and T116 Outcomes in this plan, `apps/web/app/mar/mar-client.tsx`, `apps/web/app/mar/engine/mar3d.ts`, `apps/web/app/mar/minimap.tsx`, `packages/engine/src/ship/config.ts` and its tests, `packages/engine/src/survivors/`, T116's hide/restore list and its tests, `apps/web/e2e/` specs of both lines.
 - Scope: may touch any file the merge brings or conflicts on, plus the minimal fixes to make both lines work together (with tests) / must not touch the Codex checkout or its worktrees, `docs/DECISIONES.md`; no new features.
 - Done when:
@@ -148,6 +148,132 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Test command → exit 0
 - Outcome:
 
+## T110 — Blender Benidorm skyline and club asset
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: blender-modeling-workflow, blender-asset-validation
+- Depends on: T120
+- Goal: Create a recognizable Benidorm island with characteristic skyscraper silhouette, screens, a club, decorative photo cameras and the BOIA buoy mascot dressed for an adult nightclub, pole-dancing with a connected up/down loop.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) Benidorm place ID from current map, T107 reusable contract, original BOIA references, primary VisitBenidorm/Intempo skyline images, Blender modeling/validation and animation guidance when available. Blender executable (read-only, never write in that checkout): `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/node_modules/.tools/blender-5.2.2-windows-x64/blender.exe`; if it is missing, use any Blender ≥ 4.2 found on the machine and say which.
+- Scope: Benidorm source/blend/GLB/asset manifest and named motion nodes or exported clips; no runtime/client/map geometry/persistence/race/route changes yet.
+- Done when:
+  - Skyline, club, cameras/screens and dressed mascot are visible in reviewed game-distance views; pole has support and mascot stays connected through sampled animation phases. Preserve BOIA clay identity and finished silhouettes.
+  - Motion is reproducible in authored blend and fresh GLB import. Specify named nodes/clip, pivots, duration and reduced-motion static pose for T112. No dynamic camera access or new external media.
+  - Propose modest island enlargement only if needed for legibility, recording normalized bounds for T112; same 12000-triangle/600-kB per-place ceiling.
+  - Asset/animation validation, relevant unit checks/types/lint pass; source, blend/GLB and multiview/motion evidence delivered. No runtime completion claim yet.
+- Outcome:
+
+## T111 — Blender Ibiza white village and cove asset
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: blender-modeling-workflow, blender-asset-validation
+- Depends on: T110
+- Goal: Remodel Ibiza with white Mediterranean houses and a readable sheltered cove, preserving its store role and BOIA style.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) current tienda persistent ID, T107 place contract, primary Ibiza tourism references for white architecture/coastal coves. Blender executable (read-only, never write in that checkout): `C:/Users/alvar/.codex/worktrees/0b17/boia-planet-hernan/node_modules/.tools/blender-5.2.2-windows-x64/blender.exe`; if it is missing, use any Blender ≥ 4.2 found on the machine and say which.
+- Scope: Ibiza source/blend/GLB/asset manifest and evidence only; no merchandise logic, gameplay/client/map geometry/route/persistence changes.
+- Done when:
+  - White houses, roofs/doors, shore and cove are clear at game distance and from complementary views; intended approach remains readable within current footprint.
+  - Clean rerun, fresh import, normalized orientation/material/bounds validation and 12000-triangle/600-kB ceiling pass; final day/night multiview evidence inspected.
+  - Source/editable blend/GLB, metrics and source reference notes delivered; relevant unit/types/lint checks pass.
+- Outcome:
+
+## T115 — Castaway achievement completes on rescue
+- Status: pending
+- Model: codex (codex:codex-rescue agent)
+- Skills: none
+- Depends on: T120
+- Goal: Honor the user's clarified behavior: rescuing the castaway and receiving its discount completes the castaway achievement; no unimplemented delivery-to-party mission is required.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) current naufrago-fiesta achievement, discount encounter and signal hooks; durable discount/achievement state and ledger after T106.
+- Scope: castaway achievement wording and rescue trigger, evidence-based readiness recovery, focused tests. Preserve stable achievement ID, reward amount, claimed history, earned discount and repeated phrase; no persistence infrastructure, world art or other catalog changes.
+- Done when:
+  - First rescue/discount completes the visible achievement; returning later retains completion and uses the supplied repeat phrase. Existing persisted rescue discount legitimately proves this newly defined rescue objective.
+  - Recovery only completes readiness, never automatically reclaims points/coins; claimed ledger remains authoritative and reward cannot repeat across sessions/accounts.
+  - Relevant local/fake-member and encounter E2E tests, full safe suite/types/lint pass.
+- Outcome:
+
+## T108 — Puerto de Alicante identity and explicit boat-choice popup
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T120, T115
+- Goal: Rename Cala Cantalar to Puerto de Alicante and show its normal place popup on approach: this is the harbor where the player can change their boat. Clicking its CTA opens Mi Barco; approaching must not automatically open the shop or show upcoming events.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) cala persistent ID, source mapa.json, map.ts/content, place sheet/client, T100 ship-menu-discovery, optional island model loader and T107 asset contract.
+- Scope: harbor labels/content/popup and explicit shop action, remove superseded auto-open hookup, minimal harbor loader/fallback hookup and tests. Preserve persistent cala ID and earned discoveries; no race, other-island art, persistence implementation or route topology.
+- Done when:
+  - Fresh and existing profiles (including old menu-seen preference) see the harbor popup, never an automatic shop; CTA opens boat selection and its purchase/equip UI. No next-events section for this place.
+  - Harbor Blender asset replaces its previous decoration, with functional fallback, existing collision/approach compatibility, labels in both worlds and source/runtime parity.
+  - Relevant unit/E2E, full safe suite, typecheck/lint and asset checks pass; mobile/desktop evidence reviewed.
+- Outcome:
+
+## T109 — Twenty-two knots only during the active race
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T108
+- Goal: Restore 22-knot base handling during actual racing, returning to 15-knots for exploration on completion, cancellation or abandonment.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) steering historical config and T99 tests, race lifecycle/client, Mar3D ship-config application, boost/penalty/boat modifiers, circuit manual bot. Cañón note: the survivors handling overrides (plan 010 T98/T116/T120) must keep composing with the 15/22-knot selection; a Cañón game is never a race.
+- Scope: race configuration selection/application, minimal engine config API if needed, lifecycle/physics tests and E2E. No medal-threshold/economy changes, art, place content, route topology or persisted record deletion.
+- Done when:
+  - Countdown/offering/result/exploration use 15 base; active race uses the complete historical 22-kn handling proportions. Turbo and boat modifiers compose consistently.
+  - Finish/cancel/invalidate/leave/reset cannot retain race speed; clamp excess speed appropriately on return and preserve strict steering/collision behavior. Existing record version stays unless a demonstrated comparability issue is reviewed.
+  - Meaningful lifecycle/physics and targeted race E2E pass; full safe suite, typecheck/lint exit 0.
+- Outcome:
+
+## T112 — Benidorm and Ibiza runtime integration with bounded club animation
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T108, T109, T110, T111
+- Goal: Use the new Benidorm/Ibiza Blender assets in the actual game, replacing old decoration and playing the requested club mascot loop.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) T107/108 place loader, T110/111 models, mar3d scene/update/destroy, current island bounds/collisions/proximity/wrap.
+- Scope: scene place loaders/hooks/animation/tests and required Benidorm geometry/proximity source parity adjustment. No UI/account/economy/route/icon changes.
+- Done when:
+  - Both models load with fallback and no duplicated island decoration. Any modest Benidorm enlargement updates visual/collision/proximity dimensions together and leaves safe separation/approach; Ibiza shop behavior remains.
+  - Dance/screens motion runs from existing frame clock, bounded resources, with reduced-motion static pose and proper stop/dispose on scene destruction. Named exported clips/nodes actually used; review multiple in-game motion phases.
+  - Geometry/wrap/lifecycle/asset tests and mobile/desktop loading/fallback/reduced-motion E2E pass; full safe suite/types/lint exit 0.
+- Outcome:
+
+## T113 — Transparent main route with optional exploration islands
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T108, T109, T112
+- Goal: Make route lines more transparent and connect only Inicio → Puerto de Alicante → Isla de Halloween → Isla del Sonido → Isla de Nochevieja, reducing confusing crossings. Other islands stay optional destinations found through exploration/minimap.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) canonical route/world source, compact scene route line/materials, route and reachability tests, guide/mission/event pins. Cañón note: during a Cañón game the route lines stay hidden (T116's hide list); keep that working with the new topology.
+- Scope: route topology/opacity and necessary route tests/source parity. No reward/catalog changes, art remodeling, race handling or menu icons.
+- Done when:
+  - Exact main sequence is the only main connector path in both worlds; labels are correct and opacity is visibly reduced without losing useful legibility.
+  - Benidorm, Ibiza and other optional islands stay reachable/visible as appropriate, with missions/events still usable and no stale all-islands path requirement.
+  - Route geometry/reachability and relevant map E2E pass; full safe suite/types/lint exit 0. Capture overview evidence.
+- Outcome:
+
+## T114 — Custom BOIA menu icons
+- Status: pending
+- Model: codex (codex:codex-rescue agent)
+- Skills: none
+- Depends on: T113, T118
+- Goal: Replace the game's generic emoji menu icons with a coherent small custom icon family matching BOIA's mascot, rounded shapes and orange/navy palette.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar/menu.tsx and menu section metadata/shared menu components, original logo assets, existing scoped game CSS. Cañón note: T118 added a leave-the-page warning to the `/mar` menu during a Cañón pause; keep it.
+- Scope: code-native SVG/components, menu icon mapping and focused style/a11y tests only. Do not redraw the original logo, change feature behavior or replace unrelated world/map emoji.
+- Done when:
+  - All main game-menu entries have consistent distinct icons, clear text labels and accessible names; icons don't shrink touch targets or impair contrast/mobile layout.
+  - Existing original mascot/logo is reused where fitting; custom SVGs remain lightweight. Relevant render/a11y and mobile/desktop menu tests/types/lint pass.
+  - Provide reviewed menu screenshot; if an icon has no safe clear substitute, document the narrow limitation rather than blocking functional work.
+- Outcome:
+
+## T105 — Final regression coverage and world-update handoff
+- Status: pending
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T108, T109, T110, T111, T112, T113, T114, T115, T119
+- Goal: Update the stale mobile-card test from T97 against the final intended UI; reconcile tests and document the requested changes, sample reward assumptions and remaining external setup.
+- Context: (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
+- Scope: may touch relevant tests and concise docs/change notes / must not introduce new product behavior, modify existing decision history, apply migrations or edit plans/.
+- Done when:
+  - Mobile-card assertions preserve compact height and intentional travel controls; fresh/existing player behavior for this batch is covered.
+  - Test command exits 0. Orchestrator separately runs final build/budget, validators and combined relevant E2E, then obtains architect review before completion.
+- Outcome:
+
 ## Decisions
 - 2026-10-04 plan: five serial tasks instead of the prompt's four (T116 split into world integration and models/defeat styles) (Hernán)
 - 2026-10-04 plan: dev shortcuts also in production behind `?dev=1` for the beta (Hernán)
@@ -161,6 +287,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 plan: renumbered to plan 010, tasks T116–T119 (the Codex plan 009 owns T98–T115); T98 keeps its id as history (Hernán)
 - 2026-10-04 plan: new task T120 merges `codex/world-updates` into main after T116 and before T117 (Hernán chose integrating Codex now; Codex's later work must merge main before it lands)
+
+- 2026-10-04 plan: one orchestrator. The Codex session finishes T106/T107 in `codex/world-updates` and stops; T120 merges it; the Codex plan's pending tasks T105, T108–T115 move into this plan with their ids and texts, `Depends on` remapped (T106/T107 → T120) and serialized where they share `/mar` files (Hernán)
+- 2026-10-04 plan: Codex (agent `codex:codex-rescue`) runs only the smallest tasks, T115 and T114, after a probe confirms it works in its own worktree and keeps the final-message format; otherwise Opus runs them (Hernán: «Codex las mínimas»; orchestrator chose which)
+- 2026-10-04 plan: Blender tasks T110/T111 may use the blender-modeling-workflow and blender-asset-validation skills; T105 runs last, after T119 (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-04 T98: balance untested by hand: with no dodging the boat floods in under a minute; tune after Hernán's test (plan 010 input)
