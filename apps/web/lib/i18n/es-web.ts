@@ -92,6 +92,7 @@ const base = {
   'store.intro': 'Camisetas, tote bags y pegatinas de BOIA.',
   'store.cta': 'Ir a la tienda',
   'store.cta.aria': 'Ir a la tienda de BOIA (se abre en otra pestaña)',
+  'store.internal.aria': 'Ver la tienda de BOIA',
 
   'contact.heading': 'Contacto',
   'contact.email': 'Escríbenos',

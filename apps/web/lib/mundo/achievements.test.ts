@@ -315,3 +315,28 @@ describe('del mundo a las señales', () => {
     });
   });
 });
+
+it('T100: WhatsApp invitation completes once, reward is claimed once after reload', async () => {
+  const open = browser();
+  const first = open();
+  const signal: AchievementSignal = { trigger: 'complete_encounter', encounter: 'whatsapp' };
+  expect((await recordSignal(first, signal)).map((n) => n.id)).toContain('logro:whatsapp');
+  expect(await first.progress.balances()).toMatchObject({ points: 0, coins: 0 });
+  const again = open();
+  expect(await recordSignal(again, signal)).toEqual([]);
+  expect((await again.progress.claimAchievement('whatsapp')).claimed).toBe(true);
+  expect((await again.progress.claimAchievement('whatsapp')).claimed).toBe(false);
+  expect(await again.progress.balances()).toMatchObject({ points: 300, coins: 50 });
+});
+
+it('T100: exactly the sketch-boat achievement is hidden; old entitlements survive', async () => {
+  const repo = browser()();
+  const hidden = (await repo.content.list('achievements')).filter((d) => d.secret);
+  expect(hidden).toHaveLength(1);
+  expect(hidden[0]).toMatchObject({ id: 'secretos', cosmeticKey: 'barco-boceto-lapiz' });
+  await repo.progress.completeAchievement('delfin');
+  await repo.progress.claimAchievement('delfin');
+  expect((await repo.progress.shop()).find((i) => i.cosmetic.id === 'estela-burbujas')?.owned).toBe(
+    true,
+  );
+});

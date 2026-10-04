@@ -1,0 +1,73 @@
+.merchandise {
+  margin: 1.5rem 0 2rem;
+}
+.merchandise__sample {
+  max-width: 42rem;
+  color: inherit;
+  opacity: 0.8;
+}
+.merchandise__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+.merchandise__card {
+  overflow: hidden;
+  border: 1px solid rgba(33, 30, 38, 0.14);
+  border-radius: 1.2rem;
+  background: #fffaf3;
+  color: #211e26;
+}
+.merchandise__card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.merchandise__copy {
+  padding: 1.2rem;
+}
+.merchandise__copy h3 {
+  margin: 0.5rem 0;
+  font-family: var(--font-title), sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+.merchandise__copy p {
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+}
+.merchandise__badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 1rem;
+  background: #f2dfca;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.merchandise-notice {
+  font-weight: 700;
+}
+.merchandise-page__nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+.merchandise-page__nav a {
+  color: inherit;
+}
+.merchandise-page__brand {
+  width: 7rem;
+}
+@media (max-width: 640px) {
+  .merchandise__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

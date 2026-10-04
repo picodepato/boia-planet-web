@@ -32,6 +32,16 @@ export const CARTOON_SHIP_PRICE = 120;
  */
 export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   {
+    id: 'whatsapp',
+    title: 'La tripulación BOIA',
+    description: 'Abre la invitación al grupo de WhatsApp.',
+    trigger: 'complete_encounter',
+    triggerParams: { encounter: 'whatsapp' },
+    points: 300,
+    coins: 50,
+    sample: true,
+  },
+  {
     id: 'primera-boia',
     title: 'Primera boia',
     description: 'Habla con tu primera boia.',
@@ -123,7 +133,6 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     points: 60,
     coins: 0,
     cosmeticKey: 'bandera-cuadros',
-    secret: true,
     sample: true,
   },
   {
@@ -189,7 +198,6 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     points: 50,
     coins: 0,
     cosmeticKey: 'estela-burbujas',
-    secret: true,
     sample: true,
   },
   {

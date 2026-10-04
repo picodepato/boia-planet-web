@@ -8,7 +8,7 @@ import {
   charLength,
 } from '@boia/contracts';
 import { type BoiaRepository, type CarnetView, isStoreError } from '@boia/store';
-import { type FormEvent, useId, useState } from 'react';
+import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { requireAccount } from '../../account/gate';
 import { accountSnapshot } from '../../account/session';
 import { emitCarnetReward, emitSignal } from '../achievements';
@@ -211,6 +211,20 @@ export function draftFrom(carnet: CarnetView | null): CarnetDraft {
   };
 }
 
+/** Registration may create the account's identity card while its questionnaire waits.
+ * Keep existing answers and photo unless this fresh draft actually supplies a change.
+ */
+export function continueCarnetDraft(current: CarnetView, draft: CarnetDraft): CarnetDraft {
+  const base = draftFrom(current);
+  return {
+    ...base,
+    answers: { ...base.answers, ...draft.answers },
+    ...(draft.avatarImage || draft.avatarKey !== DEFAULT_AVATAR.key
+      ? { avatarKey: draft.avatarKey, avatarImage: draft.avatarImage }
+      : {}),
+  };
+}
+
 /** Texto para la interfaz de un error del repositorio al guardar el Carnet. muestra */
 export function carnetErrorText(e: unknown): string {
   if (isStoreError(e, 'conflict')) {
@@ -229,7 +243,12 @@ export async function saveCarnet(
   before: CarnetView | null,
   draft: CarnetDraft,
   questions: readonly CarnetQuestion[],
+  canSave: () => boolean = () => true,
 ): Promise<CarnetView> {
+  const check = () => {
+    if (!canSave()) throw new Error('Carnet save cancelled');
+  };
+  check();
   const nickname = draft.nickname.trim();
   if (charLength(nickname) < NICKNAME_MIN) {
     throw Object.assign(new Error(`apodo: entre ${NICKNAME_MIN} y ${NICKNAME_MAX} caracteres`), {
@@ -238,6 +257,7 @@ export async function saveCarnet(
   }
   let view: CarnetView;
   if (!before) {
+    check();
     view = await repo.carnet.create({
       nickname,
       avatarKey: draft.avatarKey,
@@ -248,6 +268,7 @@ export async function saveCarnet(
     draft.avatarKey !== before.avatarKey ||
     draft.avatarImage !== before.avatarImage
   ) {
+    check();
     view = await repo.carnet.update({
       nickname,
       avatarKey: draft.avatarKey,
@@ -260,10 +281,12 @@ export async function saveCarnet(
   for (const q of questions) {
     const next = (draft.answers[q.id] ?? '').trim();
     if (next === (old[q.id] ?? '')) continue;
+    check();
     view = await repo.carnet.answer(q.id, next || null);
   }
   // Logros del Carnet (T36): tener Carnet (su premio llega ya, decisión
   // 2026-10-02) y las preguntas contestadas.
+  check();
   await emitCarnetReward(repo);
   if (view.answers.length > 0) {
     void emitSignal(repo, {
@@ -272,6 +295,32 @@ export async function saveCarnet(
     });
   }
   return view;
+}
+
+/** Resume a questionnaire after the account gate switched its stable repository. */
+export async function saveCarnetContinuation(
+  repo: BoiaRepository,
+  before: CarnetView | null,
+  draft: CarnetDraft,
+  questions: readonly CarnetQuestion[],
+  isActive: () => boolean = () => true,
+  expectedOwner: string | null = accountSnapshot().userId,
+): Promise<CarnetView | undefined> {
+  const account = accountSnapshot();
+  if (!isActive() || account.userId !== expectedOwner) return;
+  const current = await repo.carnet.mine();
+  const owner = (await repo.identity.current())?.id;
+  const canSave = () => isActive() && accountSnapshot().userId === expectedOwner;
+  if (!canSave() || (account.userId && owner !== account.userId)) return;
+  const switched = draft.isNew || before?.userId !== current?.userId;
+  const toSave =
+    switched && current
+      ? continueCarnetDraft(current, draft)
+      : !before && account.profile
+        ? { ...draft, nickname: account.profile.nickname }
+        : draft;
+  const view = await saveCarnet(repo, current, toSave, questions, canSave);
+  return canSave() ? view : undefined;
 }
 
 /** Formulario conectado al repositorio. */
@@ -288,6 +337,14 @@ export function CarnetEditor({
   onDone: (view: CarnetView) => void;
   onCancel?: () => void;
 }) {
+  const originOwner = useRef(accountSnapshot().userId);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -296,9 +353,18 @@ export function CarnetEditor({
       initial={draftFrom(before)}
       busy={busy}
       error={error}
-      onCancel={onCancel}
+      onCancel={
+        onCancel
+          ? () => {
+              alive.current = false;
+              onCancel();
+            }
+          : undefined
+      }
       onPhoto={shrinkPhoto}
       onSubmit={(draft) => {
+        // Only the account gate may move an offered guest draft to a member.
+        if (accountSnapshot().userId !== originOwner.current) return;
         setBusy(true);
         setError(null);
         // Guardar el Carnet pide la cuenta (plan 008, T89, decisión 1); en
@@ -315,13 +381,23 @@ export function CarnetEditor({
               },
             })
         )
-          .then((ok) => {
-            if (!ok) return undefined;
-            const profile = accountSnapshot().profile;
-            const toSave = !before && profile ? { ...draft, nickname: profile.nickname } : draft;
-            return saveCarnet(repo, before, toSave, questions).then(onDone);
+          .then(async (ok) => {
+            if (!ok || !alive.current) return;
+            if (originOwner.current && accountSnapshot().userId !== originOwner.current) return;
+            // Bind the retained draft to the member authorized by this gate, including retries.
+            originOwner.current ??= accountSnapshot().userId;
+            const view = await saveCarnetContinuation(
+              repo,
+              before,
+              draft,
+              questions,
+              () => alive.current,
+              originOwner.current ?? accountSnapshot().userId,
+            );
+            if (view) onDone(view);
           })
           .then(undefined, (e: unknown) => {
+            if (!alive.current) return;
             const invalidLocal = (e as { code?: string }).code === 'invalid';
             setError(
               invalidLocal
@@ -329,7 +405,9 @@ export function CarnetEditor({
                 : carnetErrorText(e),
             );
           })
-          .finally(() => setBusy(false));
+          .finally(() => {
+            if (alive.current) setBusy(false);
+          });
       }}
     />
   );

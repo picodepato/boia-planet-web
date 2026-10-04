@@ -215,8 +215,10 @@ describe('survivors: determinismo', () => {
       play(
         game,
         (i) => scriptedInput(i),
+        // Cada 5 s de tiempo activo: no depende de cuánto aguante el guion
+        // (el barco de base pasó de 22 a 15 nudos en la fusión de T120).
         (g) => {
-          if (g.activeS > 0 && Math.round(g.activeS * 60) % 1200 === 0) hashes.push(g.stateHash());
+          if (g.activeS > 0 && Math.round(g.activeS * 60) % 300 === 0) hashes.push(g.stateHash());
         },
         6000,
       );

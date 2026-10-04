@@ -207,7 +207,7 @@ describe('giro ágil (steerFloor, turnRadius, reverseTurn; /mar, T54)', () => {
     expect(turnOnce(c, 200, back)).toBeGreaterThan(turnOnce(cfg, 200, back) * 1.9);
     const speedAfter = (k: typeof cfg) => {
       const s = createShipState(0, 0, 0);
-      s.vx = 200;
+      s.vx = cfg.maxSpeed;
       stepShip(s, back, k, DT);
       return shipSpeed(s);
     };

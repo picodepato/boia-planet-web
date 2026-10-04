@@ -16,7 +16,7 @@ export interface RealContent {
   links: {
     /** Ticket link per event id (the ticketera's page; P2/D-06 decides the ticketera). */
     tickets: Readonly<Record<string, string>>;
-    /** BOIA's external store (REQ-COM-033). */
+    /** Legacy external store value, retained for existing content. T103 uses /tienda. */
     store: string | null;
     /** The WhatsApp group or chat (`https://chat.whatsapp.com/…` or `https://wa.me/…`). */
     whatsapp: string | null;

@@ -108,6 +108,15 @@ test('landing: el h1 con la display, el texto con Inter, y las dos cargan', asyn
 
 test('/mar: el título de la hoja con la display y su texto con Inter', async ({ page }) => {
   const errors = await openMar(page, '?menu=bienvenida');
+  expect(await firstFamily(page.getByTestId('mar-bienvenida-titulo'))).toBe(
+    await familyOf(page, '--font-display'),
+  );
+  expect(await firstFamily(page.getByTestId('mar-bienvenida-navegar'))).toBe(
+    await familyOf(page, '--font-display'),
+  );
+  expect(await firstFamily(page.getByTestId('bienvenida-texto'))).toBe(
+    await familyOf(page, '--font-text'),
+  );
   await page.getByTestId('mar-bienvenida-entradas').click();
   const sheet = page.getByTestId('mar-entradas-panel');
   await expect(sheet).toBeVisible();

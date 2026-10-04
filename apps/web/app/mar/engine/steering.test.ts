@@ -141,3 +141,53 @@ describe('gobierno del barco en /mar (T54)', () => {
     expect(turned(0.5)).toBeLessThan(turned(1));
   });
 });
+
+it('T99: crucero base de 15 nudos; turbo conserva su multiplicador', () => {
+  const ship = createShipState(0, 0, 0);
+  const input: ShipInput = { dirX: 1, dirY: 0, throttle: 1, drift: false };
+  expect(MAR_SHIP_CONFIG.maxSpeed).toBe(150);
+  for (let i = 0; i < 180; i++) stepShip(ship, input, MAR_SHIP_CONFIG, DT);
+  expect(Math.hypot(ship.vx, ship.vy) / 10).toBeCloseTo(15);
+  const turbo = boostedConfig(MAR_SHIP_CONFIG, TURBO_SPEED);
+  for (let i = 0; i < 180; i++) stepShip(ship, input, turbo, DT);
+  expect(Math.hypot(ship.vx, ship.vy) / 10).toBeCloseTo(24);
+});
+
+it('T99: preserves turn times and proportional distances against the frozen 22-knot configuration', () => {
+  const baseline: ShipConfig = {
+    maxSpeed: 220,
+    acceleration: 240,
+    brakeDeceleration: 170,
+    turnRate: 3.4,
+    minTurnFactor: 0.75,
+    lateralGrip: 6,
+    gripToForward: 0.8,
+    drift: { turnMultiplier: 1.8, lateralGrip: 1.1, gripToForward: 0.35 },
+    radius: 18,
+    wallRestitution: 0.15,
+    obstacleRestitution: 0.45,
+    openEdgeCurrent: 260,
+    openEdgeSoftZone: 200,
+    steerFloor: 0.8,
+    turnRadius: 220 / 3.4,
+    reverseTurn: { turnBoost: 1.9, brake: 520 },
+  };
+  expect(MAR_SHIP_CONFIG.maxSpeed / MAR_SHIP_CONFIG.acceleration).toBeCloseTo(
+    baseline.maxSpeed / baseline.acceleration,
+  );
+  expect(MAR_SHIP_CONFIG.maxSpeed / MAR_SHIP_CONFIG.brakeDeceleration).toBeCloseTo(
+    baseline.maxSpeed / baseline.brakeDeceleration,
+  );
+  for (const multiplier of [1, TURBO_SPEED, VOYAGE_SPEED]) {
+    for (const reverse of [false, true]) {
+      const oldConfig = multiplier === 1 ? baseline : boostedConfig(baseline, multiplier);
+      const newConfig =
+        multiplier === 1 ? MAR_SHIP_CONFIG : boostedConfig(MAR_SHIP_CONFIG, multiplier);
+      const oldTurn = uTurn(oldConfig, oldConfig.maxSpeed, reverse);
+      const newTurn = uTurn(newConfig, newConfig.maxSpeed, reverse);
+      expect(newTurn.time).toBeCloseTo(oldTurn.time, 6);
+      expect(newTurn.width / oldTurn.width).toBeCloseTo(150 / 220, 6);
+      if (process.env.RECORD_T99) console.log({ multiplier, reverse, oldTurn, newTurn });
+    }
+  }
+});

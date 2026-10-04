@@ -1,5 +1,8 @@
 'use client';
 
+import { emitSignal } from '../../lib/mundo/achievements';
+import { gameRepository } from '../../lib/mundo/repo';
+
 import {
   type BoiaEvent,
   EVENT_STATE_BEHAVIOR,
@@ -7,6 +10,7 @@ import {
   foundDiscountState,
 } from '@boia/contracts';
 import type { FoundDiscount } from '@boia/store';
+import { MERCHANDISE_NOTICE, MERCHANDISE_PATH } from '../../lib/merchandise/catalog';
 import type { WorldConfig, WorldObject } from '@boia/world';
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, useState } from 'react';
@@ -345,14 +349,18 @@ export function Sheet({
     );
   } else if (state.target === 'store') {
     const sb = block('store');
-    const url = sb?.type === 'store' ? sb.url : undefined;
     const products = sb?.type === 'store' ? sb.products : [];
-    const text = textOf(object, 'body') ?? t('mar.sheet.camisetasToteBagsY');
-    const shop = url ? (
-      <a className="mar-btn mar-btn--primary" href={url} target="_blank" rel="noopener noreferrer">
+    const text = MERCHANDISE_NOTICE;
+    const shop = (
+      <Link
+        className="mar-btn mar-btn--primary"
+        href={`${MERCHANDISE_PATH}?from=mar`}
+        prefetch={false}
+        data-testid="mar-merchandise-open"
+      >
         {t('discount.goToStore')}
-      </a>
-    ) : undefined;
+      </Link>
+    );
     compact = { kicker: t('mar.sheet.tiendaMuestra'), title: name, meta: text, action: shop };
     body = (
       <>
@@ -372,6 +380,13 @@ export function Sheet({
       <a
         className="mar-btn mar-btn--primary"
         href={wa.url}
+        data-testid="whatsapp-invitacion"
+        onClick={() =>
+          void emitSignal(gameRepository(), {
+            trigger: 'complete_encounter',
+            encounter: 'whatsapp',
+          })
+        }
         target="_blank"
         rel="noopener noreferrer"
       >

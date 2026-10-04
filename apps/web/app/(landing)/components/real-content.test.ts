@@ -147,7 +147,10 @@ describe('the landing ready for real content (plan 007 T82)', () => {
     // P15: every real link is on the page, and nothing is marked «muestra».
     const l = FIXTURE.links;
     const shown = hrefs(html);
-    for (const url of [l.store, l.whatsapp, l.instagram, l.tiktok, l.spotifyPlaylist]) {
+    // Merchandise stays internal even when legacy content still has an external store URL.
+    expect(shown).toContain('/tienda');
+    expect(shown).not.toContain(l.store);
+    for (const url of [l.whatsapp, l.instagram, l.tiktok, l.spotifyPlaylist]) {
       expect(shown, String(url)).toContain(url);
     }
     expect(shown).toContain(`mailto:${l.email}`);

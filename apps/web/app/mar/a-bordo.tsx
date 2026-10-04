@@ -131,14 +131,12 @@ export function MarABordo({
           onClose={onClose}
           {...menu}
         >
-          {/* Corta (decisión del 2026-10-02): la boia de la entrada con el título
+          {/* Corta (decisión del 2026-10-02): el logo original de BOIA con el título
               en negrita, una frase, el objetivo, dos consejos y dos botones. */}
           <WelcomeBody
             title={
               <div className="mar-bienvenida__boia" data-testid="mar-bienvenida-boia">
-                <span className="mar-bienvenida__avatar" aria-hidden="true">
-                  <span className="mar-splash__boia" />
-                </span>
+                <span className="mar-bienvenida__logo" role="img" aria-label="BOIA" />
                 <p>
                   <strong data-testid="mar-bienvenida-titulo">{t('mar.bienvenida.titulo')}</strong>
                 </p>

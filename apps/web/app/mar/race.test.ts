@@ -17,7 +17,7 @@ import { CIRCUIT_ID, WORLD_REGISTRY, type WorldConfig } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { finishLap } from '../../lib/mundo/circuit-hud';
 import { footprintOf, marWorld } from './engine/compact';
-import { MAR_SHIP_CONFIG } from './engine/steering';
+import { MAR_SHIP_CONFIG, TURBO_SPEED, boostedConfig } from './engine/steering';
 import { periodOf, planetRect, shortest } from './engine/wrap';
 import { ghostKey, lapTargets, loadGhost, raceCheckpoint, saveGhost, startPose } from './race';
 
@@ -50,7 +50,7 @@ interface BotRun {
 }
 
 /** Una carrera entera con el piloto: cuenta atrás quieto en la salida y luego a fondo. */
-function botRace(w: WorldConfig, maxS = 200): BotRun {
+function botRace(w: WorldConfig, maxS = 200, useTurbo = false): BotRun {
   const s = circuitFromWorld(w, CIRCUIT_ID)!;
   const rect = planetRect(w.bounds);
   const period = periodOf(rect);
@@ -79,10 +79,13 @@ function botRace(w: WorldConfig, maxS = 200): BotRun {
     } else {
       const target = v.phase === 'idle' ? hold : targets[v.next - 1]!;
       const { dx, dy } = shortest(ship, target, period);
+      // Explicit pulses: 2.4 s every 10 s, conservatively beyond the UI's 7 s cooldown.
+      const turbo = useTurbo && race.racing && (race.elapsedMs(t) / 1000) % 10 < 2.4;
+      const cfg = turbo ? boostedConfig(MAR_SHIP_CONFIG, TURBO_SPEED) : MAR_SHIP_CONFIG;
       stepShip(
         ship,
         { dirX: dx, dirY: dy, throttle: 1, drift: false },
-        runtime.shipConfig(MAR_SHIP_CONFIG),
+        runtime.shipConfig(cfg),
         dt,
       );
     }
@@ -125,7 +128,7 @@ describe('Los Rápidos en /mar: tres vueltas por las boias', () => {
     expect(spec.laps).toBe(3);
   });
 
-  it('el piloto termina las tres vueltas, sin abrir paneles por el camino, y gana medalla', () => {
+  it('el piloto termina las tres vueltas, sin abrir paneles por el camino', () => {
     expect(run.finish, 'llega a meta').not.toBeNull();
     const types = run.events.map((e) => e.type);
     expect(types.filter((t) => t === 'checkpoint')).toHaveLength(spec.buoys * spec.laps);
@@ -134,10 +137,13 @@ describe('Los Rápidos en /mar: tres vueltas por las boias', () => {
     expect(run.finish!.laps).toHaveLength(spec.laps);
     // Nada del camino abre un panel (abrirlo anularía la carrera, REQ-AVE-032).
     expect(run.opened).toEqual([]);
-    // El piloto, sin turbo, gana al menos el bronce; el oro pide turbo e impulsos.
-    const medal = medalFor(run.finish!.ms, spec.medals);
-    expect(medal).not.toBeNull();
-    expect(medal).not.toBe('gold');
+  });
+
+  it('el piloto con pulsos explícitos de turbo gana medalla con los límites existentes', () => {
+    const boosted = botRace(world, 200, true);
+    expect(boosted.finish, 'llega a meta con turbo').not.toBeNull();
+    expect(boosted.opened).toEqual([]);
+    expect(medalFor(boosted.finish!.ms, spec.medals)).not.toBeNull();
   });
 
   it('la salida no arranca sola (T73): avisa, el piloto pulsa «Empezar» y luego cuenta atrás', () => {
@@ -189,7 +195,11 @@ describe('Los Rápidos en /mar: tres vueltas por las boias', () => {
 });
 
 /** Distancia de `p` al segmento `a`–`b` y fracción del segmento en su punto más cercano. */
-function toSegment(p: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) {
+function toSegment(
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
@@ -202,7 +212,9 @@ describe('Los Rápidos v3 (T73): el trazado por el mapa de /mar', () => {
   const course = [start, ...lapTargets(world, spec)];
   const legs = course.slice(0, -1).map((a, i) => ({ a, b: course[i + 1]! }));
   const active = world.objects.filter((o) => o.identity.active);
-  const pads = active.filter((o) => o.identity.category === 'impulso' || o.identity.category === 'rampa');
+  const pads = active.filter(
+    (o) => o.identity.category === 'impulso' || o.identity.category === 'rampa',
+  );
   const islands = active.filter((o) => o.identity.category === 'isla');
   const obstacles = active.filter(
     (o) =>
@@ -226,7 +238,9 @@ describe('Los Rápidos v3 (T73): el trazado por el mapa de /mar', () => {
       const off = Math.atan2(Math.sin(heading - want), Math.cos(heading - want));
       expect(Math.abs(off), `${o.identity.id}: hacia la boia siguiente`).toBeLessThan(0.1);
       // Y dan impulso al pasar (las rampas, además, el salto).
-      expect(o.behaviors.some((b) => b.type === 'collision' && b.params.mode === 'boost')).toBe(true);
+      expect(o.behaviors.some((b) => b.type === 'collision' && b.params.mode === 'boost')).toBe(
+        true,
+      );
       if (o.identity.category === 'rampa') expect(rampsOf(world).has(o.identity.id)).toBe(true);
     }
   });
@@ -237,7 +251,9 @@ describe('Los Rápidos v3 (T73): el trazado por el mapa de /mar', () => {
       const c = pos(isl);
       const reach = isl.geometry.proximityRadius ?? 0;
       for (const [i, { a, b }] of legs.entries()) {
-        expect(toSegment(c, a, b).d, `tramo ${i} y ${isl.identity.id}`).toBeGreaterThan(reach + ship);
+        expect(toSegment(c, a, b).d, `tramo ${i} y ${isl.identity.id}`).toBeGreaterThan(
+          reach + ship,
+        );
       }
       for (const o of [...pads, ...obstacles]) {
         const d = Math.hypot(o.position.x - c.x, o.position.y - c.y);
@@ -269,7 +285,8 @@ describe('Los Rápidos v3 (T73): el trazado por el mapa de /mar', () => {
     // Pero no tapan el paso: ninguno a menos de su radio más el del barco de la línea recta.
     for (const o of obstacles.filter((x) => x.identity.category !== 'cocodrilo')) {
       const r = footprintOf(o) + MAR_SHIP_CONFIG.radius;
-      for (const { a, b } of legs) expect(toSegment(pos(o), a, b).d, o.identity.id).toBeGreaterThan(r);
+      for (const { a, b } of legs)
+        expect(toSegment(pos(o), a, b).d, o.identity.id).toBeGreaterThan(r);
     }
   });
 });

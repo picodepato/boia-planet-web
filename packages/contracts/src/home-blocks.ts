@@ -82,8 +82,8 @@ export const photosBlockSchema = z.object({
 export const storeBlockSchema = z.object({
   ...blockBase,
   type: z.literal('store'),
-  /** Tienda externa de BOIA en L1 (REQ-COM-033). */
-  url: z.url(),
+  /** Internal showcase; retain old external values when reading existing content. */
+  url: z.union([z.url(), z.literal('/tienda')]),
   products: z.array(z.string().min(1)),
 });
 

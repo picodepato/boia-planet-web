@@ -1,4 +1,11 @@
-import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
+import {
+  DEFAULT_SHIP_CONFIG,
+  type ShipInput,
+  createShipState,
+  shipSpeed,
+  stepShip,
+} from '@boia/engine/headless';
+import { SURVIVORS_CONFIG, createSurvivors, survivorsShipConfig } from '@boia/engine/survivors';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { es } from '../../lib/i18n/es';
@@ -94,16 +101,23 @@ describe('atajos de desarrollo: un solo interruptor', () => {
   });
 });
 
-/** Un `Mar3D` de mentira: las marcas de la ruta y las vistas escondidas por capa. */
-function fakeEngine(route = false) {
+/** Un `Mar3D` de mentira: las marcas de la ruta, la fauna y las vistas escondidas por capa. */
+function fakeEngine(route = false, wildlife = false) {
   const kinds = new Map<string, readonly string[]>();
   let routeHidden = route;
+  let wildlifeHidden = wildlife;
   const engine: EngineHideTarget = {
     get routeHidden() {
       return routeHidden;
     },
     setRouteHidden: (h) => {
       routeHidden = h;
+    },
+    get wildlifeHidden() {
+      return wildlifeHidden;
+    },
+    setWildlifeHidden: (h) => {
+      wildlifeHidden = h;
     },
     isKindsHidden: (l) => kinds.has(l),
     setKindsHidden: (l, k) => {
@@ -115,6 +129,7 @@ function fakeEngine(route = false) {
   const host = marHideHost(engine, { get: () => ui, set: (n) => (ui = n) });
   const state = () => ({
     route: routeHidden,
+    wildlife: wildlifeHidden,
     kinds: [...kinds.entries()].sort(([a], [b]) => a.localeCompare(b)),
     ui: [...ui].sort(),
   });
@@ -122,9 +137,18 @@ function fakeEngine(route = false) {
 }
 
 describe('lo que se esconde durante la partida', () => {
-  it('esconde todas las capas: ruta, fichas, botellas, descuentos, encuentros y minimapa', () => {
+  it('esconde todas las capas: ruta, fichas, botellas, descuentos, encuentros, minimapa, objetivo y fauna', () => {
     expect([...HIDE_LAYERS].sort()).toEqual(
-      ['bottles', 'discounts', 'encounters', 'minimap', 'route', 'sheets'].sort(),
+      [
+        'bottles',
+        'discounts',
+        'encounters',
+        'minimap',
+        'objective',
+        'route',
+        'sheets',
+        'wildlife',
+      ].sort(),
     );
     const f = fakeEngine();
     hideForGame(f.host);
@@ -150,10 +174,23 @@ describe('lo que se esconde durante la partida', () => {
   });
 
   it('lo que ya estaba escondido sigue escondido al acabar', () => {
-    const f = fakeEngine(true);
+    const f = fakeEngine(true, true);
     const restore = hideForGame(f.host);
     restore();
     expect(f.state().route).toBe(true);
+    expect(f.state().wildlife).toBe(true);
+  });
+
+  it('lo nuevo del mundo (T120): peces y gaviotas en el 3D, y el objetivo marcado, se van y vuelven', () => {
+    const f = fakeEngine();
+    const restore = hideForGame(f.host);
+    // La fauna, en el motor (los peces se confundirían con enemigos).
+    expect(f.state().wildlife).toBe(true);
+    // El «!» de objetivos, su panel y el objetivo marcado (rótulo y marca del minimapa), en la interfaz.
+    expect(f.state().ui).toContain('objective');
+    restore();
+    expect(f.state().wildlife).toBe(false);
+    expect(f.state().ui).not.toContain('objective');
   });
 
   it('cada cosa que la partida aparta del mundo tiene su vista escondida en el 3D', () => {
@@ -196,6 +233,59 @@ describe('el mar de la partida', () => {
     const extra = [{ x: 12345, y: 0, radius: 9 }];
     const sea = survivorsSea(world, period, { x: 0, y: 0 }, extra);
     expect(sea.obstacles).toContainEqual(extra[0]);
+  });
+});
+
+describe('la maniobrabilidad de la partida sobre el barco de /mar (T120)', () => {
+  const h = SURVIVORS_CONFIG.handling;
+
+  it('se aplica como factores sobre la config de ahora del barco, sin valores absolutos', () => {
+    const s = survivorsShipConfig(MAR_SHIP_CONFIG, h);
+    // La velocidad de crucero es la del barco de /mar (la de la fusión: la del motor).
+    expect(MAR_SHIP_CONFIG.maxSpeed).toBe(DEFAULT_SHIP_CONFIG.maxSpeed);
+    expect(s.maxSpeed).toBe(MAR_SHIP_CONFIG.maxSpeed);
+    expect(s.acceleration).toBeCloseTo(MAR_SHIP_CONFIG.acceleration * h.accelerationScale, 9);
+    expect(s.brakeDeceleration).toBeCloseTo(MAR_SHIP_CONFIG.brakeDeceleration * h.brakeScale, 9);
+    expect(s.turnRate).toBeCloseTo(MAR_SHIP_CONFIG.turnRate * h.turnRateScale, 9);
+    expect(s.lateralGrip).toBeCloseTo(MAR_SHIP_CONFIG.lateralGrip * h.lateralGripScale, 9);
+    expect(s.turnRadius).toBeCloseTo(MAR_SHIP_CONFIG.turnRadius! / h.turnRateScale, 9);
+    // Lo demás del barco de /mar se queda (radio, giro marcha atrás…).
+    expect(s.radius).toBe(MAR_SHIP_CONFIG.radius);
+    expect(s.reverseTurn).toEqual(MAR_SHIP_CONFIG.reverseTurn);
+    // Más giro, menos inercia que fuera de la partida.
+    expect(s.turnRate).toBeGreaterThan(MAR_SHIP_CONFIG.turnRate);
+    expect(s.acceleration).toBeGreaterThan(MAR_SHIP_CONFIG.acceleration);
+  });
+
+  it('en la partida el barco llega a su crucero de /mar (no más) y antes que fuera', () => {
+    const ahead: ShipInput = { dirX: 1, dirY: 0, throttle: 1, drift: false };
+    const goal = MAR_SHIP_CONFIG.maxSpeed * 0.9;
+    // Mar abierto: sin islas, para medir sólo el barco.
+    const open = { bounds: period, obstacles: [], start: { x: 0, y: 0, heading: 0 } };
+    const game = createSurvivors(SURVIVORS_CONFIG, 4, open, {
+      quality: 'alta',
+      ship: MAR_SHIP_CONFIG,
+    });
+    let top = 0;
+    let inGame: number | null = null;
+    for (let i = 0; i < 60 * 6 && !game.ended; i++) {
+      game.step({ ship: ahead });
+      const p = game.snapshot().player;
+      const v = Math.hypot(p.vx, p.vy);
+      top = Math.max(top, v);
+      if (inGame === null && v >= goal) inGame = i + 1;
+    }
+    // El mismo mando con el barco de /mar fuera de la partida.
+    const free = createShipState(0, 0, 0);
+    let outside: number | null = null;
+    for (let i = 0; i < 60 * 6 && outside === null; i++) {
+      stepShip(free, ahead, MAR_SHIP_CONFIG, 1 / 60);
+      if (shipSpeed(free) >= goal) outside = i + 1;
+    }
+    expect(top).toBeLessThanOrEqual(MAR_SHIP_CONFIG.maxSpeed + 1e-6);
+    expect(inGame).not.toBeNull();
+    expect(outside).not.toBeNull();
+    expect(inGame!).toBeLessThan(outside!);
   });
 });
 

@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "required": ["kind", "version", "id", "file", "source", "generator", "blender", "license", "tris", "bytes", "max_tris", "max_bytes", "radius", "units", "materials", "references"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {"const": "decor-glb"}, "version": {"const": 1}, "id": {"const": "santa-barbara"},
+    "file": {"const": "santa-barbara.glb"}, "source": {"const": "santa-barbara.blend"},
+    "generator": {"const": "tools/blender/decor/santa_barbara.py"}, "blender": {"type": "string", "minLength": 3},
+    "license": {"const": "muestra interna"}, "tris": {"type": "integer", "minimum": 1, "maximum": 15000},
+    "bytes": {"type": "integer", "minimum": 20, "maximum": 600000},
+    "max_tris": {"const": 15000}, "max_bytes": {"const": 600000}, "radius": {"const": 13},
+    "units": {"const": "mar scene units; Y up; front +Z; water Y=0"},
+    "materials": {"type": "array", "minItems": 1, "maxItems": 8, "items": {"type": "string"}},
+    "references": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}
+  }
+}

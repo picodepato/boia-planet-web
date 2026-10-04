@@ -94,7 +94,7 @@ export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'h
       id: 'store',
       type: 'store',
       visible: true,
-      url: l.store ?? `${SANDBOX}/tienda`,
+      url: '/tienda',
       products: ['Camisetas', 'Tote bags', 'Packs de pegatinas'],
     },
     {

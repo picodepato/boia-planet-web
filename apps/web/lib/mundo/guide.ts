@@ -187,3 +187,17 @@ export function helpNow(
     ),
   };
 }
+
+/** Keep a selected marker only while that exact objective/hint is still pending. */
+export function pendingGuideMark(
+  mark: GuideSpot | null,
+  spots: readonly GuideSpot[],
+): GuideSpot | null {
+  if (!mark) return null;
+  return (
+    spots.find(
+      (spot) =>
+        spot.placeId === mark.placeId && spot.objectId === mark.objectId && spot.kind === mark.kind,
+    ) ?? null
+  );
+}

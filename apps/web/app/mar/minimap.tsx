@@ -2,7 +2,7 @@
 
 import { MinimapGesture, TAP_SLOP_PX } from '@boia/engine/ui';
 import { type PointerEvent, type RefObject, useEffect, useRef } from 'react';
-import { type GlobePin, drawGlobe } from './engine/globe';
+import { type GlobePin, drawGlobe, globeProject } from './engine/globe';
 import type { Mar3D, PinSpec } from './engine/mar3d';
 import { t as msg } from '../../lib/i18n';
 
@@ -41,14 +41,22 @@ export function MarMinimap({
   pins,
   marks = [],
   mapMode,
+  objective = null,
   onToggle,
 }: {
   engineRef: RefObject<Mar3D | null>;
   pins: readonly PinSpec[];
   marks?: readonly MinimapMark[];
   mapMode: boolean;
+  objective?: { placeId: string; x: number; y: number } | null;
   onToggle: () => void;
 }) {
+  const objectiveRef = useRef(objective);
+  const markerRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    objectiveRef.current = objective;
+    drawRef.current();
+  }, [objective]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gesture = useRef(new MinimapGesture());
   const from = useRef({ x: 0, y: 0 });
@@ -108,6 +116,15 @@ export function MarMinimap({
         route: g.route.path,
         course: g.courseTarget,
       });
+      const target = objectiveRef.current;
+      const marker = markerRef.current;
+      if (target && marker) {
+        const state = g.runtime.objectState(target.placeId);
+        const point = globeProject(state?.x ?? target.x, state?.y ?? target.y, g.planetBounds, 0);
+        const radius = (canvas.clientWidth || 84) * (0.5 - 5 / 88);
+        marker.style.left = `${(canvas.clientWidth || 84) / 2 + point.x * radius}px`;
+        marker.style.top = `${(canvas.clientWidth || 84) / 2 + point.y * radius}px`;
+      }
       // Para las pruebas: que se repinta y qué pinta.
       frames++;
       canvas.dataset.frames = String(frames);
@@ -175,6 +192,17 @@ export function MarMinimap({
       }}
     >
       <canvas ref={canvasRef} aria-hidden="true" />
+      {objective ? (
+        <span
+          ref={markerRef}
+          className="mar-minimap__objective"
+          data-testid="mar-objective-marker"
+          data-destino={objective.placeId}
+          aria-hidden="true"
+        >
+          !
+        </span>
+      ) : null}
       <span className="mar-minimap__tag" aria-hidden="true">
         {mapMode ? msg('mar.minimap.barco') : msg('mar.minimap.mapa')}
       </span>

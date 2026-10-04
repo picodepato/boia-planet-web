@@ -68,6 +68,8 @@ import {
 import { fromScene, toScene } from './compress';
 import { FOCUS_RATE, lookAhead, startZoom } from './framing';
 import { buildDecor } from './decor';
+import { DecorModel } from './decor-model';
+import { Wildlife, waterClear } from './wildlife';
 import type { ShipDressing } from '../../../lib/barco/dressing';
 import {
   Clouds,
@@ -427,6 +429,9 @@ export class Mar3D {
   private readonly marker = new CourseMarker();
   private readonly confetti = new Confetti();
   private readonly clouds: Clouds;
+  private readonly wildlife: Wildlife;
+  private readonly wildlifeMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  private readonly onWildlifeMotion = () => this.wildlife.setReducedMotion(this.wildlifeMotion.matches);
   /**
    * La ruta (T50): sólo marcas en el agua que guían, de cerca y en el mapa.
    * Desde T59 no hay boyas que unan las islas.
@@ -576,6 +581,7 @@ export class Mar3D {
   private switchingMode: SwitchMode | null = null;
   // Modelos de Blender por distancia (T51).
   private readonly modelStore = new ModelStore();
+  private readonly castleModel = new DecorModel();
   private readonly modelViews = new Map<string, ModelView>();
   private modelClock = MODEL_PLAN_S;
   // Islas de Blender (T69): cada isla del mapa tiene su hueco; las del manifiesto, modelo por distancia.
@@ -669,8 +675,21 @@ export class Mar3D {
 
     this.clouds = new Clouds(this.b);
     this.scene.add(this.clouds.group);
+    this.wildlife = new Wildlife((x, z) => {
+      const obstacles = [...this.runtime.solidObstacles(), ...this.decorSolids].map((o) => ({
+        x: toScene(o.x), z: toScene(o.y), radius: toScene(o.radius),
+      }));
+      // Visual coastlines can extend beyond the collision circle. Exclude their full shore as well.
+      for (const island of this.islands) obstacles.push({ x: island.x, z: island.z, radius: island.R * 1.15 });
+      return waterClear(x, z, obstacles, this.periodS, 1.2);
+    });
+    this.onWildlifeMotion();
+    this.wildlifeMotion.addEventListener('change', this.onWildlifeMotion);
+    this.scene.add(this.wildlife.fish);
     // Todo lo demás se curva con el planeta (lo que ya está curvado se queda como está).
     curveTree(this.scene);
+    // The flock crosses the camera's cloud plane; it does not bend with the sea surface.
+    this.scene.add(this.wildlife.gulls);
     this.watchIslandModels();
 
     this.missionHost = {
@@ -1280,6 +1299,20 @@ export class Mar3D {
   }
 
   /**
+   * Los peces y las gaviotas fuera (T120: durante la partida del Cañón) o de
+   * vuelta. Para las pruebas, `data-fauna-oculta` del lienzo.
+   */
+  setWildlifeHidden(hidden: boolean): void {
+    this.wildlife.setHidden(hidden);
+    if (hidden) this.opts.canvas.dataset.faunaOculta = 'on';
+    else delete this.opts.canvas.dataset.faunaOculta;
+  }
+
+  get wildlifeHidden(): boolean {
+    return this.wildlife.isHidden;
+  }
+
+  /**
    * Esconde (o, con null, vuelve a enseñar) las vistas de esos `kind` bajo
    * el nombre de una capa (T99: botellas, descuentos y encuentros durante la
    * partida del Cañón). Para las pruebas, `data-escondido` del lienzo.
@@ -1440,6 +1473,8 @@ export class Mar3D {
     this.unbindInput();
     for (const p of this.pins) p.el.remove();
     this.stickEl.remove();
+    this.wildlifeMotion.removeEventListener('change', this.onWildlifeMotion);
+    this.wildlife.dispose();
     this.scene.traverse((o) => {
       const m = o as Mesh;
       m.geometry?.dispose();
@@ -1448,6 +1483,7 @@ export class Mar3D {
       else mat?.dispose();
     });
     this.modelStore.destroy();
+    this.castleModel.destroy();
     this.islandStore.destroy();
     this.vortex.dispose();
     this.renderer.dispose();
@@ -1482,7 +1518,8 @@ export class Mar3D {
       const build = buildDecor(spot.kind);
       const g = new Group();
       g.position.set(spot.x, 0, spot.z);
-      g.add(new Mesh(build.parts.lit.build(), lit));
+      const fallback = new Mesh(build.parts.lit.build(), lit);
+      g.add(fallback);
       for (const a of build.animated) g.add(a);
       const gl = build.parts.glows;
       for (let i = 0; i < gl.pos.length; i += 3) {
@@ -1514,6 +1551,11 @@ export class Mar3D {
         phase: 0,
         labelY: build.labelY,
       });
+      if (spot.kind === 'castillo') {
+        void this.castleModel.mount(g, fallback, curveTree).then((loaded) => {
+          if (!this.destroyed) this.opts.canvas.dataset.castilloModelo = loaded ? 'glb' : 'procedural';
+        });
+      }
     }
     return shores;
   }
@@ -2782,6 +2824,17 @@ export class Mar3D {
     this.routeLine.update(this.zoom);
     this.confetti.update(dt);
     this.clouds.update(dt, cam.y, { x: fx, z: fz }, P);
+    this.wildlife.update(dt, {
+      ship: { x, z }, focus: { x: fx, z: fz }, period: P, camera: this.camera,
+      zoom: this.zoom, cloudsVisible: this.clouds.group.visible, flying: !!fl,
+    });
+    const animals = this.wildlife.state;
+    const fauna = `${animals.fish},${animals.gulls}`;
+    if (this.opts.canvas.dataset.fauna !== fauna) this.opts.canvas.dataset.fauna = fauna;
+    const motion = animals.reduced ? 'reduced' : 'on';
+    if (this.opts.canvas.dataset.faunaMotion !== motion) this.opts.canvas.dataset.faunaMotion = motion;
+    const clouds = this.clouds.group.visible ? 'on' : 'off';
+    if (this.opts.canvas.dataset.faunaClouds !== clouds) this.opts.canvas.dataset.faunaClouds = clouds;
 
     if (this.course) {
       // El destino, en la copia del lado por el que va el barco.

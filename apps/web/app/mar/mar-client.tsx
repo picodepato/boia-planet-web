@@ -85,6 +85,7 @@ import {
   discountMarks,
   guideSpots,
   helpNow,
+  pendingGuideMark,
   missionDiscountOf,
   nearestSpot,
 } from '../../lib/mundo/guide';
@@ -156,6 +157,11 @@ import { MarTienda } from './tienda';
 import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
 import { type PointMap, pointMap } from './engine/compress';
+import {
+  CASTAWAY_REVISIT,
+  discoverShipMenu,
+  markShipMenuSeen,
+} from '../../lib/mundo/ship-menu-discovery';
 import { MarMinimap, type MinimapMark } from './minimap';
 import { MarAyuda } from './guia';
 import {
@@ -381,6 +387,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [dolphinTo, setDolphinTo] = useState<string | null>(null);
   // El «?» de ayuda (T68): el objetivo y una pista, sólo si se pregunta.
   const [ayuda, setAyuda] = useState<HelpNow | null>(null);
+  const [objectiveMark, setObjectiveMark] = useState<GuideSpot | null>(null);
+  const objectiveMarkRef = useRef<GuideSpot | null>(null);
   // Los códigos ya encontrados (T59): sus «?» se quitan y nadie guía hasta ellos.
   const { data: foundDiscountList } = useRepoData((r) => r.progress.discounts());
   const foundDiscountsRef = useRef(new Set<string>());
@@ -552,10 +560,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   // --- Eventos del mundo ------------------------------------------------------
 
+  const shipDiscoveryPending = useRef(false);
   const syncDialogue = () => {
     const d = engineRef.current?.dialogue();
+    const revisit = d?.objectId === 'naufrago' && foundDiscountsRef.current.has('dto-naufrago');
     setDialogue(
-      d ? { objectId: d.objectId, text: d.text, last: d.reaction || d.index >= d.count - 1 } : null,
+      d
+        ? {
+            objectId: d.objectId,
+            text: revisit ? CASTAWAY_REVISIT : d.text,
+            last: revisit || d.reaction || d.index >= d.count - 1,
+          }
+        : null,
     );
   };
 
@@ -819,6 +835,20 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             })
             .catch(() => undefined);
         }
+        if (o?.identity.id === 'cala' && !r?.race.active && !shipDiscoveryPending.current) {
+          shipDiscoveryPending.current = true;
+          void discoverShipMenu(progressApi())
+            .then((first) => {
+              if (first) {
+                setSheet(null);
+                openTienda();
+              }
+            })
+            .catch(() => undefined)
+            .finally(() => {
+              shipDiscoveryPending.current = false;
+            });
+        }
         if (o?.identity.category === 'remolino') whirlRef.current.enter(performance.now());
         break;
       }
@@ -1020,6 +1050,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   const onStats = (s: Stats) => {
     setStats(s);
+    const marked = objectiveMarkRef.current;
+    const w = worldRef.current;
+    if (marked && w && !pendingGuideMark(marked, spotsNow(w))) {
+      objectiveMarkRef.current = null;
+      setObjectiveMark(null);
+    }
     if (!canon.hidden.has('bottles')) stepBottles(s);
     const r = raceRef.current;
     if (r) {
@@ -1345,17 +1381,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     };
   }, [sessionId]);
 
-  // Pines: la Fiestera deja de tener rótulo cuando sube a bordo.
-  // En la partida del Cañón, sólo los de las islas (T99).
-  const pinsHidden = canon.hidden.has('encounters');
-  useEffect(() => {
-    const g = engineRef.current;
-    const w = worldRef.current;
-    if (!g || !w) return;
-    const list = pinsOf(w, phase);
-    g.setPins(pinsHidden ? islandPinsOnly(w, list) : list);
-  }, [phase, pinsHidden]);
-
   // El bocadillo sigue a quien habla.
   useEffect(() => {
     const g = engineRef.current;
@@ -1619,6 +1644,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   /** Abre la tienda «Barco»; como cualquier panel, anula la vuelta en curso. */
   const openTienda = () => {
+    void markShipMenuSeen(progressApi()).catch(() => undefined);
     const r = raceRef.current;
     if (r?.race.active) raceEvents([r.race.invalidate('panel')!].filter(Boolean));
     setMenu(false);
@@ -1672,6 +1698,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     g.setCourse({ placeId });
     if (g.zoomLevel >= 0.5) g.backToBoat();
     setSheet(null);
+    setAyuda(null);
+  };
+
+  /** Objective navigation changes only a marker; sailing remains under player control. */
+  const markObjective = (placeId: string) => {
+    const w = worldRef.current;
+    const target = w ? (spotsNow(w).find((spot) => spot.placeId === placeId) ?? null) : null;
+    objectiveMarkRef.current = target;
+    setObjectiveMark(target);
     setAyuda(null);
   };
 
@@ -1845,9 +1880,26 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Los rótulos también van al minimapa (la isla del evento, destacada).
   // En carrera (T73), también la boia que toca, destacada: el trazado cruza el mapa.
   const raceNext = race?.phase === 'racing' ? race.next : null;
+  // El objetivo marcado (T99 de Codex); en la partida del Cañón no se enseña (T120).
+  const shownObjective = canon.hidden.has('objective') ? null : objectiveMark;
+  // Pines (la Fiestera deja de tener rótulo cuando sube a bordo), el objetivo y la boia de la carrera.
   const pins = useMemo(() => {
     if (!world) return [];
-    const list = pinsOf(world, phase);
+    const base = pinsOf(world, phase);
+    const list = shownObjective
+      ? [
+          ...base.filter((p) => p.id !== shownObjective.placeId),
+          {
+            id: shownObjective.placeId,
+            text:
+              world.objects.find((o) => o.identity.id === shownObjective.placeId)?.identity.name ??
+              shownObjective.placeId,
+            icon: '!',
+            accent: true,
+            always: true,
+          },
+        ]
+      : base;
     const r = raceRef.current;
     if (raceNext === null || !r) return list;
     const target = lapTargets(world, r.spec)[raceNext - 1];
@@ -1860,7 +1912,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       ...list.filter((p) => p.id !== target.id),
       { id: target.id, text, icon: '🎯', accent: true, always: true },
     ];
-  }, [world, phase, raceNext]);
+  }, [world, phase, raceNext, shownObjective]);
+  // Rótulos del mar: en la partida del Cañón, sólo los de las islas (T116).
+  const pinsHidden = canon.hidden.has('encounters');
+  useEffect(() => {
+    const g = engineRef.current;
+    if (!g || !world) return;
+    g.setPins(pinsHidden ? islandPinsOnly(world, pins) : pins);
+    for (const el of overlayRef.current?.querySelectorAll<HTMLElement>('[data-pin]') ?? []) {
+      el.classList.toggle('mar-pin--objective', el.dataset.pin === shownObjective?.placeId);
+    }
+  }, [world, pins, pinsHidden, shownObjective]);
   const minimapPins = useMemo(
     () => (world && canon.hidden.has('minimap') ? islandPinsOnly(world, pins) : pins),
     [world, pins, canon.hidden],
@@ -1920,6 +1982,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       data-cambio-mundo={
         switching === 'vortex' ? 'vortice' : switching === 'fade' ? 'fundido' : undefined
       }
+      data-objective-target={objectiveMark?.placeId}
+      data-heading={stats?.heading}
+      data-autopilot={stats?.course?.placeId ?? 'none'}
       data-barco={stats ? `${Math.round(stats.x)},${Math.round(stats.y)}` : undefined}
       data-delfin={dolphinOut ? 'guiando' : undefined}
       data-delfin-hacia={dolphinOut && dolphinTo ? dolphinTo : undefined}
@@ -2003,6 +2068,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               engineRef={engineRef}
               pins={minimapPins}
               marks={canon.hidden.has('discounts') ? [] : marks}
+              objective={shownObjective}
               mapMode={!!stats?.mapMode}
               onToggle={() => engineRef.current?.toggleMap()}
             />
@@ -2038,8 +2104,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </button>
       ) : null}
 
-      {/* Debajo, el «?» de ayuda (T68): el objetivo y una pista, con su rumbo. */}
-      {status === 'ready' ? (
+      {/* Debajo, el «!» de objetivos (T68): el objetivo y una pista, con su rumbo.
+          En la partida del Cañón no está (T120). */}
+      {status === 'ready' && !canon.hidden.has('objective') ? (
         <button
           type="button"
           className="mar-ayuda-btn"
@@ -2049,11 +2116,16 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           aria-expanded={!!ayuda}
           onClick={toggleAyuda}
         >
-          ?
+          !
         </button>
       ) : null}
-      {ayuda && status === 'ready' ? (
-        <MarAyuda help={ayuda} world={world} onCourse={courseTo} onClose={() => setAyuda(null)} />
+      {ayuda && status === 'ready' && !canon.hidden.has('objective') ? (
+        <MarAyuda
+          help={ayuda}
+          world={world}
+          onCourse={markObjective}
+          onClose={() => setAyuda(null)}
+        />
       ) : null}
 
       {menu ? (

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { t } from '../lib/i18n';
 import { WELCOME_TIPS } from '../lib/mundo/menu/sections/welcome';
-import { openMar, steerTo } from './mar-helpers';
+import { openMar, steerTo, shipAt } from './mar-helpers';
 
 /**
  * Decisiones de Hernán y Álvaro del 2026-10-02 (T68), en el móvil (375×812,
@@ -28,7 +28,7 @@ test.describe.configure({ timeout: 150_000 });
 
 const OUT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../../docs/informes/img',
+  process.env.T98_SCREENSHOTS ?? '../../../docs/informes/img',
 );
 
 async function snap(page: Page, name: string) {
@@ -66,6 +66,11 @@ for (const view of VIEWS) {
       await expect(welcome).toBeVisible();
       const title = welcome.getByTestId('mar-bienvenida-titulo');
       await expect(title).toHaveText(t('mar.bienvenida.titulo'));
+      const logo = welcome.getByRole('img', { name: 'BOIA' });
+      await expect(logo).toBeVisible();
+      expect(await logo.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('.svg');
+      expect(await logo.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+      await expect(welcome.locator('.mar-splash__boia')).toHaveCount(0);
       expect(await title.evaluate((el) => el.tagName)).toBe('STRONG');
       const text = welcome.getByTestId('bienvenida-texto');
       await expect(text).toHaveText(t('mar.bienvenida.texto'));
@@ -124,14 +129,20 @@ for (const view of VIEWS) {
       expect(errors).toEqual([]);
     });
 
-    test('el «?» bajo el menú: el objetivo, una pista y su «Rumbo a…»', async ({ page }) => {
+    test('el «!» bajo el menú: el objetivo, una pista y su «Rumbo a…»', async ({ page }) => {
       const errors = await openMar(page);
       const menuBtn = (await page.getByTestId('mar-logros').boundingBox())!;
       const open = page.getByTestId('mar-ayuda-abrir');
       await expect(open).toBeVisible();
       const q = (await open.boundingBox())!;
-      // Pequeño y justo debajo del botón del menú, en su columna.
-      expect(q.width).toBeLessThan(menuBtn.width);
+      // Mismo tamaño y justo debajo del menú, en su columna.
+      expect(q.width).toBe(menuBtn.width);
+      expect(q.height).toBe(menuBtn.height);
+      await expect(open).toHaveText('!');
+      await expect(open).toHaveAccessibleName(t('mar.ayuda.boton'));
+      expect(await open.evaluate((el) => getComputedStyle(el).animationName)).toBe(
+        'mar-objective-pulse',
+      );
       expect(q.y).toBeGreaterThanOrEqual(menuBtn.y + menuBtn.height);
       expect(q.y - (menuBtn.y + menuBtn.height)).toBeLessThan(24);
       expect(Math.abs(q.x + q.width / 2 - (menuBtn.x + menuBtn.width / 2))).toBeLessThan(2);
@@ -149,7 +160,8 @@ for (const view of VIEWS) {
       await expect(hint).toBeVisible();
       await hint.click();
       await expect(help).toHaveCount(0);
-      await expect(page.getByTestId('mar-rumbo-activo')).toBeVisible();
+      await expect(page.getByTestId('mar-rumbo-activo')).toHaveCount(0);
+      await expect(page.getByTestId('mar-objective-marker')).toBeVisible();
 
       // El del objetivo, también (a la Boia Fiestera).
       await open.click();
@@ -158,7 +170,8 @@ for (const view of VIEWS) {
       await expect(objective).toHaveAttribute('data-destino', /.+/);
       await objective.click();
       await expect(help).toHaveCount(0);
-      await expect(page.getByTestId('mar-rumbo-activo')).toBeVisible();
+      await expect(page.getByTestId('mar-rumbo-activo')).toHaveCount(0);
+      await expect(page.getByTestId('mar-objective-marker')).toBeVisible();
 
       // Otro toque al «?» la abre y otro la cierra.
       await open.click();
@@ -211,3 +224,54 @@ for (const view of VIEWS) {
     });
   });
 }
+
+test('T98: los objetivos siguen visibles sin parpadeo con movimiento reducido', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const errors = await openMar(page);
+  const objectives = page.getByTestId('mar-ayuda-abrir');
+  await expect(objectives).toBeVisible();
+  await expect(objectives).toHaveText('!');
+  expect(await objectives.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+  expect(await objectives.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+  await objectives.click();
+  await expect(page.getByTestId('mar-ayuda')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('T99: marcar objetivo no gobierna el barco y el mapa lo muestra', async ({ page }) => {
+  const errors = await openMar(page);
+  const root = page.locator('main.mar');
+  const before = await shipAt(page);
+  const heading = await root.getAttribute('data-heading');
+  await page.getByTestId('mar-ayuda-abrir').click();
+  const target = await page.getByTestId('mar-ayuda-rumbo-objetivo').getAttribute('data-destino');
+  await page.getByTestId('mar-ayuda-rumbo-objetivo').click();
+  await expect(root).toHaveAttribute('data-objective-target', target!);
+  await expect(root).toHaveAttribute('data-autopilot', 'none');
+  await page.waitForTimeout(1000);
+  expect(await shipAt(page)).toEqual(before);
+  expect(await root.getAttribute('data-heading')).toBe(heading);
+  const marker = page.getByTestId('mar-objective-marker');
+  await expect(marker).toHaveAttribute('data-destino', target!);
+  await page.getByTestId('mar-minimapa').click();
+  await expect(page.locator(`.mar-pin--objective[data-pin="${target}"]`)).toBeVisible();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await marker.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
+  expect(
+    await page
+      .locator('.mar-pin--objective .mar-pin__icon')
+      .evaluate((el) => getComputedStyle(el).animationName),
+  ).toBe('none');
+  await page.getByTestId('mar-minimapa').click();
+  await page.keyboard.down('ArrowUp');
+  await expect
+    .poll(async () =>
+      Math.hypot((await shipAt(page)).x - before.x, (await shipAt(page)).y - before.y),
+    )
+    .toBeGreaterThan(30);
+  await page.keyboard.up('ArrowUp');
+  await expect(root).toHaveAttribute('data-autopilot', 'none');
+  expect(errors).toEqual([]);
+});

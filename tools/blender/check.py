@@ -1353,6 +1353,59 @@ def expected_resources():
     raise ValueError("render.py no define RESOURCES")
 
 
+def check_decor_3d(art):
+    """Standalone decor contract: editable source, local GLB, fixed navigable footprint."""
+    label = "decor/3d"
+    folder = os.path.join(art, "decor", "3d")
+    fails = []
+    try:
+        with open(os.path.join(folder, "manifest.json"), encoding="utf-8") as f:
+            man = json.load(f)
+        with open(os.path.join(HERE, "decor3d.schema.json"), encoding="utf-8") as f:
+            schema = json.load(f)
+        fails += validate(man, schema, schema)
+        if fails:
+            return label, "decor-glb", fails, [], 0
+        path = os.path.join(folder, man["file"])
+        tris, mats, meshes, _ = glb_summary(path)
+        size = os.path.getsize(path)
+        if tris != man["tris"] or tris > man["max_tris"]:
+            fails.append("GLB triangle count / budget mismatch")
+        if size != man["bytes"] or size > man["max_bytes"]:
+            fails.append("GLB byte count / budget mismatch")
+        if meshes != 1 or mats > 8:
+            fails.append("expected one mesh and at most eight materials")
+        with open(os.path.join(folder, man["source"]), "rb") as f:
+            if not f.read(7).startswith(b"BLENDER"):
+                fails.append("editable Blender source missing or invalid")
+        with open(path, "rb") as f:
+            data = f.read()
+        length = struct.unpack_from("<I", data, 12)[0]
+        doc = json.loads(data[20:20 + length])
+        binary = data[28 + length:]
+        if doc.get("images") or any("uri" in b for b in doc.get("buffers", [])):
+            fails.append("decor must be self-contained without textures")
+        if any(any(k in node for k in ("matrix", "translation", "rotation", "scale")) for node in doc.get("nodes", [])):
+            fails.append("decor transforms must be baked into scene units")
+        for mesh in doc["meshes"]:
+            for prim in mesh["primitives"]:
+                acc = doc["accessors"][prim["attributes"]["POSITION"]]
+                view = doc["bufferViews"][acc["bufferView"]]
+                if acc["componentType"] != 5126 or acc["type"] != "VEC3":
+                    fails.append("expected float VEC3 positions")
+                    continue
+                offset = view.get("byteOffset", 0) + acc.get("byteOffset", 0)
+                stride = view.get("byteStride", 12)
+                for i in range(acc["count"]):
+                    x, y, z = struct.unpack_from("<fff", binary, offset + i * stride)
+                    if not all(math.isfinite(v) for v in (x, y, z)) or math.hypot(x, z) > man["radius"] + .001:
+                        fails.append("geometry exceeds the existing radius-13 navigable footprint")
+                        break
+        return label, "decor-glb", fails, ["%d triangles, %d bytes, %d materials" % (tris, size, mats)], 1
+    except (OSError, ValueError, KeyError, IndexError, struct.error) as err:
+        return label, "decor-glb", [str(err)], [], 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--art", default=os.path.join(REPO, "art"), help="raíz con una carpeta por recurso")
@@ -1385,6 +1438,7 @@ def main():
     batches.append([check_titulo.check_title(a.art, Png, a.diff)])   # art/intro/titulo/ (T27)
     batches.append([check_islas_3d(a.art)])   # art/islas/3d/ (T69)
     batches.append([check_landing_3d(a.art)])   # art/landing/3d/ y los stills (T78)
+    batches.append([check_decor_3d(a.art)])   # art/decor/3d/ (T101)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:

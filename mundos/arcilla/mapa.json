@@ -396,8 +396,8 @@
           "id": "whatsapp",
           "nombre": "Boia de WhatsApp",
           "pos": [
-            -4.8,
-            21.4
+            -3.4,
+            18.8
           ]
         },
         {
@@ -421,10 +421,10 @@
         {
           "objeto": "whatsapp",
           "centro": [
-            -4.8,
-            21.4
+            -3.4,
+            18.8
           ],
-          "radio": 1.6
+          "radio": 3.2
         }
       ],
       "piezas": [

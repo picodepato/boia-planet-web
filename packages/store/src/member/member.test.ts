@@ -506,3 +506,34 @@ describe('copia local de la cuenta', () => {
     expect(memberSyncKey('boia.cuenta.x')).toBe('boia.cuenta.x.sync');
   });
 });
+
+it('T100: community reward and ship-menu awareness persist across member devices once', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  await a.repo.sync.ready();
+  await a.repo.progress.discover('encuentro:whatsapp');
+  await a.repo.progress.completeAchievement('whatsapp');
+  await a.repo.progress.setPref('barco:menu-abierto', true);
+  await a.repo.sync.saveSnapshot();
+  await a.repo.progress.claimAchievement('whatsapp');
+  await a.repo.sync.flush();
+  expect(fake.calls.find((c) => c.fn === 'award_points')).toMatchObject({
+    args: {
+      p_action: 'achievement',
+      p_ref: 'whatsapp',
+      p_points: 300,
+      p_coins: 50,
+      p_policy: 'once',
+    },
+  });
+  const b = device(fake);
+  await b.repo.sync.ready();
+  expect(await b.repo.progress.pref('barco:menu-abierto')).toBe(true);
+  expect(await b.repo.progress.discover('encuentro:whatsapp')).toEqual({ first: false });
+  expect((await b.repo.progress.claimAchievement('whatsapp')).claimed).toBe(false);
+  await b.repo.sync.flush();
+  expect(fake.calls.filter((c) => c.fn === 'award_points')).toHaveLength(1);
+  expect(fake.balances()).toEqual({ points: 300, coins: 50 });
+  a.repo.sync.dispose();
+  b.repo.sync.dispose();
+});

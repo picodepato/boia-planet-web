@@ -123,9 +123,20 @@ export function withoutCanonShortcut(href: string): string {
  * - `bottles`: las botellas (y su aviso de «leer» cerca);
  * - `discounts`: los descuentos escondidos (secretos, cofres, restos) y sus «?» del minimapa;
  * - `encounters`: la Fiestera, cocodrilos, delfín, medusas y remolinos, y sus rótulos;
- * - `minimap`: el minimapa enseña sólo las islas (nunca los enemigos comunes).
+ * - `minimap`: el minimapa enseña sólo las islas (nunca los enemigos comunes);
+ * - `objective`: el «!» de objetivos, su panel y el objetivo marcado (su rótulo
+ *   en el mar y su marca en el minimapa), que se conserva para después (T120);
+ * - `wildlife`: los peces que saltan y las gaviotas (T120): no se confunden con enemigos.
  */
-export type HideLayer = 'route' | 'sheets' | 'bottles' | 'discounts' | 'encounters' | 'minimap';
+export type HideLayer =
+  | 'route'
+  | 'sheets'
+  | 'bottles'
+  | 'discounts'
+  | 'encounters'
+  | 'minimap'
+  | 'objective'
+  | 'wildlife';
 export const HIDE_LAYERS: readonly HideLayer[] = [
   'route',
   'sheets',
@@ -133,6 +144,8 @@ export const HIDE_LAYERS: readonly HideLayer[] = [
   'discounts',
   'encounters',
   'minimap',
+  'objective',
+  'wildlife',
 ];
 
 /** Lo que cada capa esconde en el mar 3D: el `kind` de las vistas de `Mar3D`. */
@@ -187,10 +200,12 @@ export function hideForGame(
   };
 }
 
-/** Lo que `Mar3D` ofrece para esconder (las marcas de la ruta y vistas por `kind`). */
+/** Lo que `Mar3D` ofrece para esconder (las marcas de la ruta, la fauna y vistas por `kind`). */
 export interface EngineHideTarget {
   readonly routeHidden: boolean;
   setRouteHidden(hidden: boolean): void;
+  readonly wildlifeHidden: boolean;
+  setWildlifeHidden(hidden: boolean): void;
   isKindsHidden(layer: string): boolean;
   setKindsHidden(layer: string, kinds: readonly string[] | null): void;
 }
@@ -207,11 +222,13 @@ export function marHideHost(
   return {
     isHidden: (l) => {
       if (l === 'route') return engine.routeHidden;
+      if (l === 'wildlife') return engine.wildlifeHidden;
       if (LAYER_KINDS[l]) return engine.isKindsHidden(l);
       return ui.get().has(l);
     },
     setHidden: (l, hidden) => {
       if (l === 'route') engine.setRouteHidden(hidden);
+      if (l === 'wildlife') engine.setWildlifeHidden(hidden);
       const kinds = LAYER_KINDS[l];
       if (kinds) engine.setKindsHidden(l, hidden ? kinds : null);
       const next = new Set(ui.get());

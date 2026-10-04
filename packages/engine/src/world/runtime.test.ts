@@ -99,7 +99,7 @@ describe('COLISIÓN', () => {
       const r = simulate(w, {
         seconds: 4,
         start: { x: 500, y: 1400 },
-        input: (t) => (t < 2.2 ? north : IDLE_INPUT),
+        input: (t) => (t < 400 / cfg.maxSpeed + 0.5 ? north : IDLE_INPUT),
       });
       for (const s of r.trace) {
         expect(Math.hypot(s.x - 500, s.y - 1000)).toBeGreaterThanOrEqual(40 + cfg.radius - 1e-6);
@@ -117,7 +117,11 @@ describe('COLISIÓN', () => {
         { type: 'collision', params: { mode: 'brake', intensity: 0.5 } },
       ]),
     );
-    const r = simulate(w, { seconds: 3, start: { x: 500, y: 1500 }, input: () => north });
+    const r = simulate(w, {
+      seconds: 500 / cfg.maxSpeed + 1,
+      start: { x: 500, y: 1500 },
+      input: () => north,
+    });
     const e = ofType(r.events, 'effect');
     expect(e).toHaveLength(1);
     expect(e[0]).toMatchObject({ effect: 'brake', factor: 0.5 });
@@ -129,7 +133,11 @@ describe('COLISIÓN', () => {
         { type: 'collision', params: { mode: 'boost', intensity: 0.5, duration: 2 } },
       ]),
     );
-    const r = simulate(w, { seconds: 5, start: { x: 500, y: 1500 }, input: () => north });
+    const r = simulate(w, {
+      seconds: 500 / cfg.maxSpeed + 3,
+      start: { x: 500, y: 1500 },
+      input: () => north,
+    });
     const hit = r.trace.findIndex((s) => s.events.some((e) => e.type === 'effect'));
     const s = r.trace[hit + 10]!;
     expect(Math.hypot(s.vx, s.vy)).toBeCloseTo(cfg.maxSpeed * 1.5, 3);
@@ -146,7 +154,11 @@ describe('COLISIÓN', () => {
         { type: 'collision', params: { mode: 'boost', intensity: 0.5, duration: 3 } },
       ]),
     );
-    const r = simulate(w, { seconds: 3, start: { x: 500, y: 1500 }, input: () => north });
+    const r = simulate(w, {
+      seconds: 500 / cfg.maxSpeed + 1,
+      start: { x: 500, y: 1500 },
+      input: () => north,
+    });
     expect(ofType(r.events, 'effect')).toHaveLength(2);
     const top = Math.max(...r.trace.map((s) => Math.hypot(s.vx, s.vy)));
     expect(top).toBeCloseTo(cfg.maxSpeed * 1.5, 3);

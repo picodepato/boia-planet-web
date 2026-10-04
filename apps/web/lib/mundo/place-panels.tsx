@@ -1,5 +1,8 @@
 'use client';
 
+import { emitSignal } from './achievements';
+import { gameRepository } from './repo';
+
 import {
   type BoiaEvent,
   type FoundDiscountState,
@@ -304,7 +307,18 @@ export function PlacePanel({
         <h2>{textOf(object, 'title') ?? name}</h2>
         <p>{textOf(object, 'body') ?? msg('juego.placePanels.elGrupoDeWhatsapp')}</p>
         {wa ? (
-          <a className="juego-panel-cta" href={wa.url} target="_blank" rel="noopener noreferrer">
+          <a
+            className="juego-panel-cta"
+            href={wa.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              void emitSignal(gameRepository(), {
+                trigger: 'complete_encounter',
+                encounter: 'whatsapp',
+              })
+            }
+          >
             {msg('whatsapp.cta')}
           </a>
         ) : null}

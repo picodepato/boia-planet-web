@@ -16,8 +16,14 @@ import {
 /** Giro a velocidad de crucero (rad/s). muestra */
 const MAR_TURN_RATE = 3.4;
 
+// Preserve the original time-to-cruise and turn/braking proportions when
+// slowing exploration from 22 to 15 knots (the 220 u/s handling baseline).
+const CRUISE_SCALE = DEFAULT_SHIP_CONFIG.maxSpeed / 220;
+
 export const MAR_SHIP_CONFIG: ShipConfig = {
   ...DEFAULT_SHIP_CONFIG,
+  acceleration: DEFAULT_SHIP_CONFIG.acceleration * CRUISE_SCALE,
+  brakeDeceleration: DEFAULT_SHIP_CONFIG.brakeDeceleration * CRUISE_SCALE,
   // Radio de choque acorde con el barco que se ve (más grande que en el 2D).
   radius: 18,
   turnRate: MAR_TURN_RATE,
@@ -25,7 +31,7 @@ export const MAR_SHIP_CONFIG: ShipConfig = {
   steerFloor: 0.8,
   // El círculo del crucero: el turbo y el viaje no lo abren.
   turnRadius: DEFAULT_SHIP_CONFIG.maxSpeed / MAR_TURN_RATE,
-  reverseTurn: { turnBoost: 1.9, brake: 520 },
+  reverseTurn: { turnBoost: 1.9, brake: 520 * CRUISE_SCALE },
 };
 
 /** Joystick táctil: zona muerta y recorrido hasta el acelerador a fondo, en px CSS. muestra */

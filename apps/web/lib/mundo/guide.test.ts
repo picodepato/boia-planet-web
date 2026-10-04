@@ -14,6 +14,7 @@ import {
   discountRefOf,
   guideSpots,
   helpNow,
+  pendingGuideMark,
   missionDiscountOf,
   nearestSpot,
 } from './guide';
@@ -252,4 +253,35 @@ describe('el premio de la misión central (T59)', () => {
     });
     expect(await open().progress.equip('ship', ship.id)).toMatchObject({ ship: ship.id });
   });
+});
+
+it('T99: markers clear on completed hints and mission-stage change', () => {
+  const spots = guideSpots(objects, fresh);
+  const mission = spots.find((spot) => spot.kind === 'mission')!;
+  expect(pendingGuideMark(mission, spots)).toEqual(mission);
+  expect(pendingGuideMark(mission, guideSpots(objects, { ...fresh, phase: 'aboard' }))).toBeNull();
+  expect(
+    pendingGuideMark(mission, guideSpots(objects, { ...fresh, phase: 'delivered' })),
+  ).toBeNull();
+  const hint = spots.find((spot) => spot.kind === 'discount')!;
+  expect(
+    pendingGuideMark(
+      hint,
+      guideSpots(objects, {
+        ...fresh,
+        foundDiscounts: new Set([hint.discountId!]),
+      }),
+    ),
+  ).toBeNull();
+  const game = spots.find((spot) => spot.kind === 'minigame')!;
+  expect(
+    pendingGuideMark(
+      game,
+      guideSpots(objects, {
+        ...fresh,
+        found: new Set([game.placeId]),
+      }),
+    ),
+  ).toBeNull();
+  expect(pendingGuideMark(null, spots)).toBeNull();
 });

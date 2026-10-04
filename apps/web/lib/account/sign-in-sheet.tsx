@@ -404,6 +404,7 @@ function SignInSheet({ request }: { request: GateRequest }) {
         ? prefill.avatarImage
         : null;
       const profile = await createProfile({ nickname: trimmed, avatarKey, avatarImage, news });
+      request.onRegistered?.();
       setMemberNumber(profile.member_number);
       setStep('welcome');
     } catch (err) {

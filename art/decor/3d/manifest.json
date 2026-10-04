@@ -1,0 +1,30 @@
+{
+  "kind": "decor-glb",
+  "version": 1,
+  "id": "santa-barbara",
+  "file": "santa-barbara.glb",
+  "source": "santa-barbara.blend",
+  "generator": "tools/blender/decor/santa_barbara.py",
+  "blender": "5.2.2 LTS",
+  "license": "muestra interna",
+  "tris": 1318,
+  "bytes": 75876,
+  "max_tris": 15000,
+  "max_bytes": 600000,
+  "radius": 13,
+  "units": "mar scene units; Y up; front +Z; water Y=0",
+  "materials": [
+    "rock",
+    "shadow",
+    "stone",
+    "sand",
+    "paving",
+    "green",
+    "orange",
+    "glow"
+  ],
+  "references": [
+    "https://www.turismoalicante.es/es/alicante/castillo/castillo-de-santa-barbara-en-alicante",
+    "https://www.turismoalicante.es/es/alicante/playa/playa-del-postiguet-en-alicante"
+  ]
+}

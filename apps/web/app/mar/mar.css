@@ -373,24 +373,44 @@
   right: -3px;
 }
 
-/* El «?» de ayuda (T68): pequeño, justo debajo del botón del menú; abre
+/* El «!» de objetivos: del tamaño del menú, justo debajo; abre
    una tarjetita a su lado con el objetivo y una pista. */
 .mar-ayuda-btn {
   position: absolute;
   top: calc(var(--top-space) + 54px + 8px);
-  left: calc(var(--safe-l) + 10px + (var(--mini) - 34px) / 2);
+  left: calc(var(--safe-l) + 10px + (var(--mini) - 54px) / 2);
   z-index: 5;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 54px;
+  height: 54px;
   padding: 0;
   border-radius: 50%;
   color: #fff !important;
-  font-size: 1.05rem;
+  font-size: 1.65rem;
   font-weight: 900;
   line-height: 1;
   animation: mar-in 0.3s ease-out;
+}
+
+.mar-ayuda-btn[aria-expanded='false'] {
+  animation: mar-objective-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes mar-objective-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-ayuda-btn[aria-expanded='false'] {
+    animation: none;
+  }
 }
 
 .mar-ayuda-btn[aria-expanded='true'] {
@@ -1979,16 +1999,13 @@ button.mar-logros__carnet {
   font-weight: 700;
 }
 
-.mar-bienvenida__avatar {
+/* El SVG original servido también en la landing; sin mascota CSS animada. */
+.mar-bienvenida__logo {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 54px;
+  display: block;
+  width: 64px;
   height: 64px;
-}
-
-.mar-bienvenida__avatar .mar-splash__boia {
-  zoom: 0.62;
+  background: url('../(landing)/_marca/boia-mascota.svg') center / contain no-repeat;
 }
 
 /* Los dos botones (2026-10-02): «A navegar», grande y naranja, y debajo
@@ -2275,4 +2292,42 @@ button.mar-logros__carnet {
 
 .mar-codes {
   margin-top: 6px !important;
+}
+
+/* Archivo para la identidad del juego; Inter sigue en párrafos y formularios.
+   Las variables son las mismas que usa la landing, sin fuentes adicionales. */
+.mar button:not(.mar-logros__x, .mar-sheet__x, .mar-sheet__more),
+.mar-btn,
+.mar-links__item,
+.mar-menu__logo,
+.mar-bienvenida__boia strong {
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+
+/* Selected objective: pulse independently of engine positioning/opacity. */
+.mar-minimap__objective {
+  position: absolute;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: #ffd23f;
+  color: var(--ink);
+  font: 700 13px var(--font-title);
+  pointer-events: none;
+  animation: mar-objective-pulse 1.4s ease-in-out infinite;
+}
+.mar-pin--objective .mar-pin__icon {
+  color: #ffd23f;
+  animation: mar-objective-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mar-minimap__objective,
+  .mar-pin--objective .mar-pin__icon {
+    animation: none;
+  }
 }

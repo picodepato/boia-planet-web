@@ -46,6 +46,11 @@ test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas
   await expect(panel(page)).toHaveAttribute('data-game', 'canon');
   await expect(panel(page)).toContainText(msg('mar.canon.title'));
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'on');
+  // Un objetivo marcado con el «!» (T99 de Codex) antes de jugar.
+  await page.getByTestId('mar-ayuda-abrir').dispatchEvent('click');
+  await page.getByTestId('mar-ayuda-rumbo-objetivo').dispatchEvent('click');
+  await expect(page.getByTestId('mar-objective-marker')).toBeVisible();
+  await expect(canvas(page)).not.toHaveAttribute('data-fauna-oculta', /.+/);
   const before = await shipAt(page);
 
   await panel(page)
@@ -58,6 +63,10 @@ test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas
   for (const layer of ['bottles', 'discounts', 'encounters']) {
     await expect(canvas(page)).toHaveAttribute('data-escondido', new RegExp(`\\b${layer}\\b`));
   }
+  // Ni peces ni gaviotas, ni el «!» de objetivos ni el objetivo marcado (T120).
+  await expect(canvas(page)).toHaveAttribute('data-fauna-oculta', 'on');
+  await expect(page.getByTestId('mar-ayuda-abrir')).toHaveCount(0);
+  await expect(page.getByTestId('mar-objective-marker')).toHaveCount(0);
   // Ni la capa 2D del cañón ni el panel.
   await expect(page.getByTestId('minijuego')).toHaveCount(0);
   await expect(panel(page)).toHaveCount(0);
@@ -90,6 +99,7 @@ test('al acabar vuelve el mundo, con el barco donde acabó la partida', async ({
   const errors = await openMar(page, '?minijuego=canon&t=416&seed=3');
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'off');
+  await expect(canvas(page)).toHaveAttribute('data-fauna-oculta', 'on');
   const start = pointOf(await game(page).getAttribute('data-barco'));
   // Navega un poco durante la partida.
   await page.keyboard.down('ArrowLeft');
@@ -101,6 +111,8 @@ test('al acabar vuelve el mundo, con el barco donde acabó la partida', async ({
   await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'on');
   await expect(canvas(page)).not.toHaveAttribute('data-escondido', /.+/);
+  await expect(canvas(page)).not.toHaveAttribute('data-fauna-oculta', /.+/);
+  await expect(page.getByTestId('mar-ayuda-abrir')).toBeVisible();
   // El barco sigue donde acabó (no vuelve a donde empezó).
   const end = pointOf(await game(page).getAttribute('data-barco'));
   expect(dist(end, start)).toBeGreaterThan(20);

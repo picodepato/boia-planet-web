@@ -325,10 +325,10 @@ const PORT: PlaceInput[] = [
     name: 'Boia de WhatsApp',
     category: 'boia',
     tags: TAGS,
-    position: { ...port([-4.8, 21.4]), zone: 'puerto' },
+    position: { ...port([-3.4, 18.8]), zone: 'puerto' },
     geometry: {
       collision: { shape: 'circle', radius: size(0.32) },
-      proximityRadius: proximity(1.6, 'encuentro'),
+      proximityRadius: proximity(3.2, 'encuentro'),
     },
     // REQ-AVE-023: acceso voluntario al WhatsApp de BOIA [provisional].
     behaviors: [bounce(0.3), prox(), content('info', 'whatsapp')],

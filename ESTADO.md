@@ -4,6 +4,57 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-04 — plan 010 T120: Merge the Codex world updates (codex/world-updates) into main
+
+La rama de Codex (`608f883`, plan 009 T98–T104: tipografía y logo, crucero a
+15 nudos y «!» que sólo marca el objetivo, náufrago/WhatsApp/Cala, Santa
+Bárbara de Blender, peces y gaviotas, tienda de muestra, preguntas del
+Carnet) está fusionada en main con un merge `--no-ff` (padres: main 1fda6ef y
+608f883). Las tareas sin terminar de Codex (T105–T115) no entran.
+
+Qué existe:
+- Único conflicto, `apps/web/app/mar/mar-client.tsx`, con las dos
+  intenciones: el objetivo marcado se limpia al cumplirse y las botellas se
+  paran en la partida; un solo efecto manda los rótulos al mar (objetivo `!`
+  y boia de carrera de Codex; en la partida del Cañón sólo islas); el
+  minimapa recibe `objective` y los rótulos/«?» filtrados de T116. Se quitó
+  el efecto viejo `pinsOf` (pisaba al nuevo). Finales de línea CRLF como en main.
+- Lista de lo que la partida esconde (`apps/web/app/mar/survivors.ts`,
+  `HIDE_LAYERS`), con dos capas nuevas para lo interactivo/vivo que trajo Codex:
+  - `objective`: el botón «!», su panel y el objetivo marcado (rótulo en el
+    mar y marca del minimapa); el objetivo se conserva y vuelve al acabar.
+  - `wildlife`: peces y gaviotas fuera (`Wildlife.setHidden`, sin relojes
+    mientras; `Mar3D.setWildlifeHidden`/`wildlifeHidden`; lienzo
+    `data-fauna-oculta="on"`).
+  Lo demás de Codex ya quedaba cubierto: el náufrago, la boia de WhatsApp y
+  la Cala sólo actúan por eventos del runtime, que no corre en la partida, y
+  sus rótulos ya los quita `islandPinsOnly`.
+- Maniobrabilidad: `survivorsShipConfig` ya era relativa (factores sobre la
+  config del barco); en la partida el barco hereda el crucero de 15 nudos de
+  `MAR_SHIP_CONFIG` con más giro y aceleración. Pruebas nuevas lo comprueban.
+- Pruebas: `survivors.test.ts` (capas nuevas, se van y vuelven; factores
+  sobre `MAR_SHIP_CONFIG`; en la partida llega a su crucero de /mar, no más,
+  y antes que fuera), `wildlife.test.ts` (oculta = sin fauna, vuelve como
+  nueva), `mar-canon.spec.ts` (fauna oculta, sin «!» ni marca de objetivo
+  durante la partida; de vuelta al acabar). En
+  `packages/engine/src/survivors/survivors.test.ts` el muestreo de
+  determinismo pasa a cada 5 s (la partida guionada dura menos a 15 nudos).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 134 archivos / 1193 pruebas.
+- `sh tools/spec/checks.sh`, `pnpm lint`, `pnpm build` (186,9/200 kB), `pnpm typecheck` → exit 0.
+- `E2E_PORT=3241 pnpm e2e mar-canon mar-circuito mar-fiestera carnet-questions mar-ayuda mar-decor mar-wildlife merchandise tipografia world-community --workers=1` → exit 1: 77 passed, 8 skipped, 3 failed (mar-circuito «Los Rápidos… medalla» en móvil y escritorio; mar-decor móvil, que pasó al repetirlo).
+- `E2E_PORT=3243 pnpm e2e mar-decor.spec.ts mar-circuito.spec.ts --workers=1` → exit 1: 8 passed, 2 failed (las dos de medalla).
+
+Pendiente:
+- `mar-circuito.spec.ts` «Los Rápidos: … medalla…» falla: a 15 nudos el piloto
+  de la prueba (sin turbo) acaba con `data-medalla="ninguna"`. Viene de la
+  rama de Codex (su T99 ya quitó esa comprobación de la prueba unitaria: «la
+  medalla pide turbo»), no de la fusión. Lo arregla T109 (22 nudos sólo en la
+  carrera); probar turbo en el piloto de la e2e no basta (en móvil anula la carrera).
+- Equilibrio del Cañón: las pirañas van a 150 u/s, igual que el barco a 15
+  nudos (antes 220); escapar es más difícil. Para el ajuste de sensaciones de Hernán.
+
 ## 2026-10-04 — plan 009 T99: The mode inside /mar: start and end in the same world, hiding, race lock, handling, camera, dev shortcuts
 
 El Cañón «Que no pare la música» ya se juega dentro de `/mar`, donde está el

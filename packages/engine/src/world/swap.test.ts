@@ -11,6 +11,7 @@ import {
 } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import type { ShipInput } from '../ship/controller';
+import { DEFAULT_SHIP_CONFIG } from '../ship/config';
 import { simulate } from './simulate';
 import { resolveObjectVisual, shipArtScale } from './visual';
 
@@ -40,12 +41,15 @@ const ship = parseShipManifest(JSON.parse(readFileSync(`${ART}barco/manifest.jso
 const scale = shipArtScale(ship.ok ? ship.manifest : null);
 
 /** Recto al norte 5 s (atraviesa lo que haya en x = 500); después zigzag con drift. */
-const route = (t: number): ShipInput => ({
-  dirX: t < 5 ? 0 : Math.sin(t * 0.9) * 0.6,
-  dirY: -1,
-  throttle: t % 7 < 6 ? 1 : 0,
-  drift: t > 5 && t % 5 > 4,
-});
+const route = (seconds: number): ShipInput => {
+  const t = (seconds * DEFAULT_SHIP_CONFIG.maxSpeed) / 220;
+  return {
+    dirX: t < 5 ? 0 : Math.sin(t * 0.9) * 0.6,
+    dirY: -1,
+    throttle: t % 7 < 6 ? 1 : 0,
+    drift: t > 5 && t % 5 > 4,
+  };
+};
 
 function withAsset(o: WorldObjectInput, asset: string): WorldObjectInput {
   return { ...o, appearance: { ...o.appearance, asset } };

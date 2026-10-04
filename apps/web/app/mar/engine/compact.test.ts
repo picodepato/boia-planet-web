@@ -283,7 +283,7 @@ describe('la ruta (marcas en el agua)', () => {
     };
     // Del puerto a la isla del evento (lo que hace «Entradas» sin turbo).
     const toEvent = sail(world.spawn!, 'allday');
-    expect(toEvent.t).toBeLessThan(10);
+    expect(toEvent.t).toBeLessThan(10 * (220 / cfg.maxSpeed));
     // Y a lo largo de la ruta, parada tras parada.
     let at: { x: number; y: number } = world.spawn!;
     const legs: number[] = [];
@@ -292,8 +292,8 @@ describe('la ruta (marcas en el agua)', () => {
       legs.push(leg.t);
       at = leg.at;
     }
-    expect(Math.max(...legs)).toBeLessThan(12);
-    expect(median(legs)).toBeLessThan(8);
+    expect(Math.max(...legs)).toBeLessThan(12 * (220 / cfg.maxSpeed));
+    expect(median(legs)).toBeLessThan(8 * (220 / cfg.maxSpeed));
     console.info(
       `T50 piloto sin turbo: puerto → allday ${toEvent.t.toFixed(1)} s; tramos ${legs
         .map((t) => t.toFixed(1))

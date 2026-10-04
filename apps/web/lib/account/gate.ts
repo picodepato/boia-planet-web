@@ -34,6 +34,8 @@ export interface AccountGateOptions {
   /** Nombre de la fiesta del sello (motivo `stamp`). */
   event?: string | undefined;
   prefill?: AccountPrefill | undefined;
+  /** A new registration may continue into its optional Carnet questionnaire. */
+  onRegistered?: (() => void) | undefined;
 }
 
 export interface GateRequest extends AccountGateOptions {

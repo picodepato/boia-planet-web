@@ -5,11 +5,11 @@ import type { GuideSpot, HelpNow } from '../../lib/mundo/guide';
 import { t as msg } from '../../lib/i18n';
 
 /**
- * El «?» de ayuda (T68, decisión de Hernán y Álvaro del 2026-10-02): el mar
+ * El «!» de ayuda (T68, decisión de Hernán y Álvaro del 2026-10-02): el mar
  * ya no pone chips de rumbo solo (ni las boies informativas ni la misión);
- * quien quiera, toca el «?» bajo el menú y ve el objetivo de ahora y una
+ * quien quiera, toca el «!» bajo el menú y ve el objetivo de ahora y una
  * pista (un código escondido o un minijuego), cada uno con un «Rumbo a…»
- * opcional que fija el rumbo. Un código escondido no dice dónde está: sólo
+ * opcional que marca el destino para navegar manualmente. Un código escondido no dice dónde está: sólo
  * «un código escondido». El delfín sigue guiando como antes. muestra
  */
 export function guideLabel(spot: GuideSpot, world: WorldConfig | null): string {
@@ -64,7 +64,7 @@ function CourseButton({
   );
 }
 
-/** La tarjetita del «?»: el objetivo y una pista, con su «Rumbo a…». */
+/** La tarjetita del «!»: el objetivo y una pista, con su «Rumbo a…». */
 export function MarAyuda({
   help,
   world,

@@ -66,7 +66,7 @@ export interface ShipConfig {
 }
 
 export const DEFAULT_SHIP_CONFIG: ShipConfig = {
-  maxSpeed: 220,
+  maxSpeed: 150,
   acceleration: 240,
   brakeDeceleration: 170,
   turnRate: 2.4,
