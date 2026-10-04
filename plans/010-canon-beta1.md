@@ -297,7 +297,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: Benidorm/Ibiza GLBs in the scene with outline-matched fallbacks (`BENIDORM_LAYOUT`, `IBIZA_LAYOUT`), Benidorm not enlarged; club mascot merged to one mesh per material, dance from the /mar frame time, screens pulse at 120 bpm, static with reduced motion; `mar-lugares-blender.spec.ts` 10 passed → 36f2cab
 
 ## T113 — Transparent main route with optional exploration islands
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet
 - Skills: none
 - Depends on: T108, T109, T112
@@ -308,7 +308,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - Exact main sequence is the only main connector path in both worlds; labels are correct and opacity is visibly reduced without losing useful legibility.
   - Benidorm, Ibiza and other optional islands stay reachable/visible as appropriate, with missions/events still usable and no stale all-islands path requirement.
   - Route geometry/reachability and relevant map E2E pass; full safe suite/types/lint exit 0. Capture overview evidence.
-- Outcome:
+- Outcome: `ROUTE_STOPS` = puerto, cala, halloween, allday, ultima (no closing leg, Fiestera no longer a stop); route marks 0.22 near / 0.55 map, minimap 0.6; whirlpools may sit up to 640 u from the route → 7eeceb9
 
 ## T114 — Custom BOIA menu icons
 - Status: done
@@ -325,7 +325,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: SVG icon family in `apps/web/lib/mundo/menu/icons.tsx` (415–908 B each, `currentColor` + brand fills), mascot reused for Welcome, tiles ≥92 px with two-line labels (Archivo cut them), e2e checks no label is cut; 1268 unit tests → 2f2b8ee
 
 ## T105 — Final regression coverage and world-update handoff
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet
 - Skills: none
 - Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
@@ -396,6 +396,10 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T112: Benidorm kept at its size (T110 advised against enlarging), map/collision/proximity unchanged; club mascot parts merged per material with own material copies; animation set from frame time `t`; club screens pulse 120 bpm (`muestra`); hooks `data-lugares-movimiento`, `data-lugares-pose` (agent)
 
+- 2026-10-04 T113: closing leg back to the start dropped (it crossed the whole map); `fiestera` no longer a route stop, the Fiestera test checks she gets off at the last stop; `WHIRLPOOL_NEAR` = 640 u for whirlpools only; Cañón `setRouteHidden` unchanged (agent)
+- 2026-10-04 T113 integration paused on a dirty main (tg.py edited by another session, then committed as cfdada9/0e6dcc0); integrated after (orchestrator)
+- 2026-10-04 another session: `origin` is now picodepato/boia-planet-web (the Vercel repo), hernandiazz9's is `hernan`; the guard allows exactly `git push origin main` from the main checkout, only when Hernán asks (orchestrator notes)
+
 ## Proposals (new scope)
 - 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
@@ -450,4 +454,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 resumed in a new session; T112 (agent ada4ec2f9f381d852) and T122 (agent a45428d663505dedc) launched in parallel · attempt 1
 - 2026-10-04 T122 done → afa8521 (12 min task, 125 s integration)
 - 2026-10-04 T112 done → 36f2cab (27 min task, 89 s integration)
-- 2026-10-04 T113 launched · attempt 1
+- 2026-10-04 T113 launched · attempt 1 · agent a1bc7d23fa6dafb31
+- 2026-10-04 T113 done → 7eeceb9 (11 min task, 89 s integration)
+- 2026-10-04 T105 launched · attempt 1
