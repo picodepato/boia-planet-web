@@ -267,7 +267,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: `RACE_SHIP_CONFIG` (15-kn config scaled to 220 u/s, checked against the frozen 22-kn config) only while the race phase is `racing`; excess speed cut to the 15-kn cap on exit; record version kept; `data-manejo`; medal e2e passes again → eb968a0
 
 ## T122 — One world: hide Acuarela, keep it for a later port
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet
 - Skills: none
 - Depends on: T108
@@ -280,7 +280,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e <the world/menu/parity specs touched> --workers=1` → exit 0
   - `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `WorldRegistry` hidden-ids list (Acuarela hidden in `catalog.ts`), `playableIds()`/`isPlayable()`; URL/stored `acuarela` fall back to Arcilla; «Mundos» menu entry and Admin pickers show Arcilla only; `mundo-unico.spec.ts`; REQ-MUN-037/039 → PARCIAL → afa8521
 
 ## T112 — Benidorm and Ibiza runtime integration with bounded club animation
 - Status: running (attempt 1)
@@ -330,7 +330,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Skills: none
 - Depends on: T106, T107, T108, T109, T110, T111, T112, T113, T114, T115, T119
 - Goal: Update the stale mobile-card test from T97 against the final intended UI; reconcile tests and document the requested changes, sample reward assumptions and remaining external setup.
-- Context: (from T108: `mar-rotulos` «cerca de halloween» fails on mobile (161 > 134) since before T108; `mar-canon` HUD clock check is flaky (reads seconds then text while ticking); `mar-paridad` castaway invitation flaky on mobile; arrival notice still says «Isla descubierta: Puerto de Alicante»; unused `world.*.island.cala.body` keys keep the old text) (from T121: fix lines ~50–53 of `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, which still say a `t=` start earns the reward; now only locally and in e2e, never with `?dev=1` in production) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
+- Context: (from T122: `mar-hud.spec.ts` «la ficha de una isla: una tarjeta pequeña…» fails on desktop and mobile on main since before T122, expecting no `mar-volar` on the small card; `minigame-layer.test.ts` «una partida perdida no toca el libro» flaked once) (from T108: `mar-rotulos` «cerca de halloween» fails on mobile (161 > 134) since before T108; `mar-canon` HUD clock check is flaky (reads seconds then text while ticking); `mar-paridad` castaway invitation flaky on mobile; arrival notice still says «Isla descubierta: Puerto de Alicante»; unused `world.*.island.cala.body` keys keep the old text) (from T121: fix lines ~50–53 of `docs/propuestas/2026-10-04-canon-beta1-guia-prueba.md`, which still say a `t=` start earns the reward; now only locally and in e2e, never with `?dev=1` in production) (absorbed from Codex `plans/009-world-updates.md`, which T120 merges into main; its Decisions apply) mar-hud.spec.ts T97 and WIP 79bb8fa; relevant E2E files; docs/TRASPASO.md, spec/estado.md and user updates. Also reconcile `docs/TRASPASO.md` and `docs/spec/estado.md` with plan 010's Cañón beta (T119 already wrote its part: keep it).
 - Scope: may touch relevant tests and concise docs/change notes / must not introduce new product behavior, modify existing decision history, apply migrations or edit plans/.
 - Done when:
   - Mobile-card assertions preserve compact height and intentional travel controls; fresh/existing player behavior for this batch is covered.
@@ -391,12 +391,16 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 Hernán: from now on all changes are made only in the main world (Arcilla); world 2 (Acuarela) is hidden and unreachable until a later update ports everything to it. New task T122 hides it (Sonnet, after T108). Every later task (T112, T113, T105) works on Arcilla only: requirements that said «both worlds» / «labels in both worlds» / «source/runtime parity in both worlds» now mean Arcilla only (Hernán)
 
+- 2026-10-04 T122: hidden ids as a 4th `WorldRegistry` argument; `list()`/`resolve()` skip hidden, `ids()`/`get()`/`skin()` keep them; `chooseWorld` and Admin `setActiveWorld` reject hidden worlds; «Mundos» entry hidden when ≤1 world; `mundo-acuarela.spec.ts` → `mundo-unico.spec.ts`; «Mundos» switch tests in `mar-paridad.spec.ts` and all of `agujero-negro.spec.ts` retired (need two worlds); two-world unit tests use a local registry (agent)
+- 2026-10-04 T122: its Done-when e2e had 2 failures in mar-hud «ficha de una isla»; the orchestrator reproduced them on main (pre-existing), accepted the merge and passed them to T105 (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
 - 2026-10-04 T109: when a world boost or turbo runs out, `stepShip` cuts speed in one step and Mar3D treats it as a collision (pre-existing, untested)
 - 2026-10-04 T121: sample copy still describing the old 2D canon: `canon` achievement title «Ni un tiburón», `minigame.canon.summary`, `howto.*` (unused), `docs/propuestas/logros-catalogo.md`; for Hernán/Álvaro with the launch copy
 - 2026-10-04 T110: Codex could not view the VisitBenidorm/Intempo photos, so the skyline is stylized from the brief; a review against real references is still open
+- 2026-10-04 T122: the black-hole vortex in mar3d has no trigger and no e2e while only one world is playable
 - 2026-10-04 T106: when a guest signs in to an account that already has a saved copy, `merge_guest` keeps the account's copy, so the guest's sample stamp is lost; carrying it over is new scope
 - 2026-10-04 T117: balance: enemies die next to the boat, so the 90 u magnet picks notes at once and notes are rarely seen on the water; an idle boat floods in ~20 s (for the feel test)
 - 2026-10-04 T120: Cañón balance: piranhas at 150 u/s equal the boat's new 15-knot top speed (was 220); for Hernán's feel test (noted in T119's guide)
@@ -441,3 +445,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 21:31 T108 done → b7611cd
 - 2026-10-04 21:31 paused by Hernán to continue in a new session (context size); nothing running. Next ready: T112 (Opus) and T122 (Sonnet); then T113, T105
 - 2026-10-04 resumed in a new session; T112 (agent ada4ec2f9f381d852) and T122 (agent a45428d663505dedc) launched in parallel · attempt 1
+- 2026-10-04 T122 done → afa8521 (12 min task, 125 s integration)
