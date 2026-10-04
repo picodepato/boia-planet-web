@@ -404,6 +404,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 plan closed at Hernán's request so a new orchestrator can start; final full e2e on main 398ffce: 397 passed, 4 failed, 85 skipped (mundo-arcilla «tienda: enlace externo» mobile+desktop, mar-canon «llegar al amanecer…» desktop, mar-circuito «Los Rápidos…» desktop); serial rerun of those specs still running at closing, its result goes to the next plan (orchestrator)
 
+- 2026-10-04 final e2e serial rerun (mundo-arcilla, mar-canon, mar-circuito, --workers=1): 38 passed, 2 failed. mar-canon and mar-circuito failures were load-only. Real failure: mundo-arcilla.spec.ts:57 «tienda: enlace externo en otra pestaña» (mobile+desktop): no `a[target="_blank"]` inside `mar-ficha`; for the next plan (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
