@@ -1,6 +1,6 @@
 # Plan 010 — Cañón «Que no pare la música», BETA 1 (feel)
 
-Status: active
+Status: done
 Created: 2026-10-04
 Base branch: main
 Goal: Answer one question: is it fun to dodge a swarm with the boat in the 3D sea? The Cañón minigame stops being a separate 2D scene and becomes a Vampire-Survivors-like mode played in the same `/mar` world where the boat is (same pattern as Los Rápidos), shipped to production with a «BETA» label, playable end to end with little content: 2 enemies (piranhas, armoured crab), the water cannon, music notes with merge and magnet, a 1-of-3 level-up card, «water on board» as health, 7:00 to win or flooded to lose. The simulation is pure and deterministic in `packages/engine/src/survivors/` and its architecture is born ready for everything in the design reference (more enemies, weapons, vinyls, evolutions, bosses, campaign, medals, ranking) without building it yet. At the end Hernán tunes the feel (handling, camera, defeat style) with a test guide. Since 2026-10-04 this plan also merges the Codex world updates (T120) and runs the Codex plan 009's pending tasks (T105, T108–T115: Puerto de Alicante, race-only 22 knots, Blender Benidorm and Ibiza, the main route, menu icons, the castaway achievement, final regression), so a single orchestrator owns `/mar`.
@@ -402,6 +402,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 
 - 2026-10-04 T105: compact island card shows «Navegar» and «Ir en nave» (T96 intended UI); mar-rotulos loop zooms out up to 6 steps; minigame-layer and mar-paridad castaway flakes not reproduced, unchanged (agent)
 
+- 2026-10-04 plan closed at Hernán's request so a new orchestrator can start; final full e2e on main 398ffce: 397 passed, 4 failed, 85 skipped (mundo-arcilla «tienda: enlace externo» mobile+desktop, mar-canon «llegar al amanecer…» desktop, mar-circuito «Los Rápidos…» desktop); serial rerun of those specs still running at closing, its result goes to the next plan (orchestrator)
+
 ## Proposals (new scope)
 - 2026-10-04 T108: Admin `eventIslands` still lets events be linked to the harbor
 - 2026-10-04 T114: section sheet titles still carry emoji in their i18n strings («🏆 Logros»…); the old /juego menu (`onboard-menu.tsx`, `sections/*` icon fields) is unused dead code
@@ -461,3 +463,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-04 T113 done → 7eeceb9 (11 min task, 89 s integration)
 - 2026-10-04 T105 launched · attempt 1 · agent a435cec3f363b26f3
 - 2026-10-04 T105 done → 398ffce (15 min task, 87 s integration); final full e2e started on main
+- 2026-10-04 plan done (closed by Hernán for a new orchestrator); old done-task worktrees T88, T92, T96, T97 WIP, T111 WIP, T121 removed
