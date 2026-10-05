@@ -160,7 +160,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T141 — Act 2 final boss: the Kraken (simulation)
-- Status: pending
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T137
@@ -170,7 +170,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors --testTimeout=60000` → exit 0 with tests: submerged = no damage, every tentacle and rock telegraphed, tentacle hits expose the head, island grab only on reachable islands, defeat emits the ending event, determinism of a full act-2 run
   - Test command → exit 0
-- Outcome:
+- Outcome: Kraken in `kraken.ts` (submerged → emerging → emerged | grabbing → diving), tentacles and rocks telegraphed, tentacle kill exposes the head 4 s, island grab only when reachable, phases at hp 0.65/0.3; weapons hit `bossTargets` (body + tentacles); act 2 final slot on (reachable only with `act: 2`); config v10; 1517 unit tests → 6b702dd
 
 ## T142 — The Kraken in the 3D sea
 - Status: pending
@@ -284,11 +284,17 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T137: bosses separate from enemies with own events (`bossSpawn/Phase/Telegraph/Attack/Summon/Hit/Damaged/Defeated/Retreated`, `chest`, `chestOpened`) and snapshot fields (`act`, `bosses`, `bossWarnings`, `chests`, `bossesDefeated`, `finalBossDefeated`); act 2 = `harderAct(act1)` (crab −30 s, pirate/swordfish −60 s, enemy hp ×1.25, boss hp ×1.5); `&t=` spawns the latest slot's boss; telegraphed boss hits ignore the 0.5 s contact i-frames; invulnerable bosses not targeted; big note = `redonda`; no new EndReason; i18n key `survivors.boss.prueba` referenced but not added; merge with T134 → config v9 (agent)
 
+- 2026-10-05 plan: T141 (Kraken sim) launched ahead of T136/T138/T140/T143 because its chain (T141→T142→T144) is the longest; no separate push offer for T137 (nothing visible changes; the open T134 offer covers main) (orchestrator)
+
+- 2026-10-05 T141: generic-code change: weapons iterate `bossTargets` with `hurtTarget` → `hurtBoss`/`hurtTentacle`; hooks `bossInvulnerable`, `contactDamage`, `stepBosses`, `stateHash`, `validateBoss`; `harderAct` gets `finalBossEnabled`; one player hit per tentacle/rock volley; Kraken never emerges under the boat; defeating it does not end the game (T144) (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
 - 2026-10-05 T134: HUD slot icon for Traca still 🎆 (`canon-hud-model.ts`); beta 3 guide must describe Traca and Focos (T147)
 - 2026-10-05 T137: a `clave` note figure needs a web model; camera shake on `bossHit` (mar3d shakes only on `hit`) — for T143/T147
+- 2026-10-05 T141: i18n key `survivors.boss.kraken` missing (web); Kraken balance is a first cut for T147
+- 2026-10-05 T135: the T146 desktop ramp e2e failed once and passed alone: possibly flaky (T147)
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -303,3 +309,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 13:22 T135 launched · attempt 1 · agent a0cb6eecadc388549 (opus)
 - 2026-10-05 13:25 T137 done by agent; integration conflict with T134 in survivors/sim.ts → sent back to the same agent
 - 2026-10-05 14:00 T137 done · branch worktree-agent-a11a931ea96d7dfdb → 8885519
+- 2026-10-05 14:02 T141 launched · attempt 1 · agent af95bee9f08210542 (fable)
+- 2026-10-05 14:30 T135 done by agent; integration conflict with T137 in survivors/bots.ts, index.ts, sim.ts → sent back to the same agent (also wires the Llama to bosses)
+- 2026-10-05 14:45 T141 done · branch worktree-agent-af95bee9f08210542 → 6b702dd; T135 agent told to merge main again
