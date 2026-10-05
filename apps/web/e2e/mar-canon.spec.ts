@@ -148,13 +148,21 @@ test('ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos, sin 
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   expect(Number(await game(page).getAttribute('data-tiempo'))).toBeLessThan(420 - 210);
   // `data-canon-vistos`: los tipos que han salido dentro de la vista de la cámara en la partida.
+  // T132: navegando a toda máquina (un barco parado se inunda en ~20 s, antes de que
+  // las medusas lentas y los piratas, que se paran a distancia, entren en la vista);
+  // lo que se recicla aparece por delante, hacia donde va el barco.
   const all = Object.keys(SURVIVORS_CONFIG.enemies).sort();
+  await page.keyboard.down('ArrowRight');
   await expect
     .poll(
-      async () => ((await canvas(page).getAttribute('data-canon-vistos')) ?? '').split(' ').sort(),
-      { timeout: 90_000 },
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        return ((await canvas(page).getAttribute('data-canon-vistos')) ?? '').split(' ').sort();
+      },
+      { timeout: 90_000, intervals: [500] },
     )
     .toEqual(all);
+  await page.keyboard.up('ArrowRight');
   expect(errors).toEqual([]);
 });
 
@@ -859,4 +867,139 @@ test('`&dificultad=tormenta` (atajo de desarrollo) empieza con esa dificultad; s
   const again = await openMar(page, '?minijuego=canon&seed=7');
   await expect(game(page)).toHaveAttribute('data-dificultad', 'normal');
   expect([...errors, ...again]).toEqual([]);
+});
+
+/**
+ * T132: el bucle entero de la beta 2 de un vistazo, sin esperar 7 minutos.
+ * Lo demás del bucle ya tiene su prueba en este archivo: los seis enemigos
+ * tarde (T126), las siete armas dibujadas (T128), una carta de cada clase
+ * (T130), las dificultades en el panel (T131) y el turbo (T124).
+ */
+test('bucle de la beta 2: Tormenta, una evolución ofrecida, un arma nueva elegida y el turbo en marcha (T132)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&seed=3&carta=surtido&dificultad=tormenta');
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  const cards = page.getByTestId('mar-canon-carta');
+  await expect(cards).toHaveCount(6);
+  // La ayuda dice cuántas cartas hay (no un «1–3» fijo).
+  await expect(page.locator('.mar-canon-cards__help')).toHaveText(
+    msg('mar.canon.cartas.ayuda', { n: 6 }),
+  );
+  // La evolución se ofrece (su condición se cumple con el atajo).
+  await expect(page.locator('[data-testid="mar-canon-carta"][data-tipo="evolution"]')).toHaveCount(1);
+  // Se elige el arma nueva y entra en la fila de armas.
+  const kinds = await cards.evaluateAll((els) => els.map((e) => e.getAttribute('data-tipo')));
+  const index = kinds.indexOf('weapon-new');
+  expect(index).toBeGreaterThanOrEqual(0);
+  const id = ((await cards.nth(index).getAttribute('data-carta')) ?? '').split(':')[1]!;
+  expect(Object.keys(SURVIVORS_CONFIG.weapons)).toContain(id);
+  const row = page.getByTestId('mar-canon-equipo').locator('[data-fila="armas"]');
+  await expect(row.locator(`[data-id="${id}"]`)).toHaveCount(0);
+  await page.waitForTimeout(500);
+  await page.keyboard.press(String(index + 1));
+  await page.keyboard.press('Enter');
+  await expect(cards).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(row.locator(`[data-id="${id}"]`)).toHaveCount(1);
+  // Los interactivos del mundo siguen en la partida: el turbo acelera.
+  const turbo = page.getByTestId('mar-turbo');
+  await turbo.click();
+  await expect(turbo).toHaveClass(/is-on/);
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-canon-turbo')), { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  await expect
+    .poll(async () => Number(await game(page).getAttribute('data-activo')), { timeout: 20_000 })
+    .toBeGreaterThan(2);
+  expect(errors).toEqual([]);
+});
+
+function percentile(values: readonly number[], p: number): number {
+  const s = [...values].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))] ?? 0;
+}
+
+/** ms que se miden los fotogramas con los topes llenos. */
+const PERF_MS = 8000;
+/**
+ * Tope holgado del percentil 95 del tiempo entre fotogramas (medido en T132:
+ * 33 ms; con la CPU 4×, 50 ms): la máquina de pruebas va cargada, así que
+ * esto sólo pilla que algo se dispare, no los 60 fps de un móvil de verdad
+ * (las cifras van a la sección de T132 de ESTADO).
+ */
+const PERF_P95_MAX_MS = 100;
+
+test('rendimiento en `baja`: a las 6:00 con los topes llenos y las siete armas, el tiempo por fotograma se mide y no se dispara (T132)', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'mobile', 'se mide una vez, en el teléfono');
+  // Calidad `baja` forzada: un teléfono con 2 GB.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 2 });
+  });
+  const errors = await openMar(page, '?minijuego=canon&t=360&armas=1&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+  const cap = SURVIVORS_CONFIG.caps.baja.enemies;
+  // Las cartas se contestan con Intro; se espera a tener el mar lleno.
+  await expect
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        return Number(await game(page).getAttribute('data-enemigos'));
+      },
+      { timeout: 60_000, intervals: [300] },
+    )
+    .toBeGreaterThanOrEqual(cap * 0.8);
+  const measure = async (label: string) => {
+    if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+    const enemies = Number(await game(page).getAttribute('data-enemigos'));
+    const frames = await page.evaluate(async (ms) => {
+      const deltas: number[] = [];
+      await new Promise<void>((done) => {
+        let t0 = 0;
+        let last = 0;
+        const state = document.querySelector<HTMLElement>('[data-testid="mar-canon"]');
+        const step = (now: number) => {
+          if (!t0) t0 = last = now;
+          else {
+            deltas.push(now - last);
+            last = now;
+          }
+          // Una carta que se abre a media medida se contesta (Intro), para medir jugando.
+          if (state?.dataset.estado === 'card') {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+          }
+          if (now - t0 < ms) requestAnimationFrame(step);
+          else done();
+        };
+        requestAnimationFrame(step);
+      });
+      return deltas;
+    }, PERF_MS);
+    const report = {
+      label,
+      frames: frames.length,
+      p50: +percentile(frames, 50).toFixed(1),
+      p95: +percentile(frames, 95).toFixed(1),
+      worst: +Math.max(...frames).toFixed(1),
+      enemies,
+      cap,
+      armas: (await canvas(page).getAttribute('data-canon-armas')) ?? '',
+      estado: await game(page).getAttribute('data-estado'),
+    };
+    console.log(`[perf-canon] ${JSON.stringify(report)}`);
+    info.annotations.push({ type: 'perf', description: JSON.stringify(report) });
+    expect(frames.length, label).toBeGreaterThan(10);
+    return report;
+  };
+  const free = await measure('sin limitar la CPU');
+  expect(free.p95, 'percentil 95 del tiempo por fotograma (ms)').toBeLessThanOrEqual(PERF_P95_MAX_MS);
+  // Lo mismo con la CPU 4× más lenta (como en landing-perf): sólo se apunta.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await measure('CPU 4×');
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  expect(errors).toEqual([]);
 });

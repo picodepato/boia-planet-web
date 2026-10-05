@@ -1118,9 +1118,16 @@ export class SurvivorsGame {
    * del tope y, desde el hito `elites`, la tirada de élite. Con el tope
    * lleno no aparece y la oleada gana fuerza. Devuelve si apareció.
    */
-  private placeEnemy(def: EnemyDef, x: number, y: number, hpScale: number, speedScale: number): boolean {
+  private placeEnemy(
+    def: EnemyDef,
+    x: number,
+    y: number,
+    hpScale: number,
+    speedScale: number,
+    ignoreShare = false,
+  ): boolean {
     const sp = this.config.spawn;
-    if (this.enemies.length >= this.caps.enemies) {
+    if (this.enemies.length >= this.caps.enemies || (!ignoreShare && this.overShare(def))) {
       // Tope: la oleada sube de fuerza en vez de en número.
       this.overflow = Math.min(sp.overflowMax, this.overflow + sp.overflowStrength);
       return false;
@@ -1134,6 +1141,19 @@ export class SurvivorsGame {
       this.spawnRng() < this.elitesDef.chance;
     this.enemies.push(this.makeEnemy(def, x, y, hp, speed, elite));
     return true;
+  }
+
+  /**
+   * ¿Ya ocupa este tipo su parte del tope (`capShare`)? Así, con el tope
+   * bajo de `baja`, las pirañas no llenan solas el mar y el guion tardío
+   * sigue enseñando los demás tipos (T126/T132).
+   */
+  private overShare(def: EnemyDef): boolean {
+    if (def.capShare === undefined || def.capShare >= 1) return false;
+    const max = Math.max(1, Math.floor(this.caps.enemies * def.capShare));
+    let n = 0;
+    for (const e of this.enemies) if (!e.dead && e.type === def.id && ++n >= max) return true;
+    return false;
   }
 
   private spawnGroup(type: EnemyId, size: number, hpScale: number, speedScale: number): void {
@@ -1174,7 +1194,8 @@ export class SurvivorsGame {
     for (let k = 0; k < count; k++) {
       const spot = this.ringSpot(phase + (k / count) * Math.PI * 2, def.radius);
       if (!spot) continue;
-      this.placeEnemy(def, spot.x, spot.y, hpScale, speedScale);
+      // La Marea es un enjambre a propósito: no mira la parte del tope de su tipo.
+      this.placeEnemy(def, spot.x, spot.y, hpScale, speedScale, true);
     }
   }
 
@@ -2105,11 +2126,17 @@ export class SurvivorsGame {
       let d = Math.hypot(dx, dy);
       if (d > pickup) {
         const stepLen = Math.min(d, pull * dt);
+        const fromX = n.x;
+        const fromY = n.y;
         n.vx = (dx / d) * pull;
         n.vy = (dy / d) * pull;
         n.x += (dx / d) * stepLen;
         n.y += (dy / d) * stepLen;
-        this.slideOffIslands(n, NOTE_RADIUS);
+        // Encajada entre dos islas, el deslizar la puede dejar en tierra: se queda donde estaba.
+        if (this.slideOffIslands(n, NOTE_RADIUS) && this.islands.onLand(n.x, n.y)) {
+          n.x = fromX;
+          n.y = fromY;
+        }
         n.x = wrapInto(n.x, this.bounds.left, this.bounds.right);
         n.y = wrapInto(n.y, this.bounds.top, this.bounds.bottom);
         dx = wd(p.x - n.x, this.w);
@@ -2244,14 +2271,20 @@ export class SurvivorsGame {
     }
     const act = this.config.acts[0];
     if (!act) return;
-    for (const track of act.tracks) {
-      const key = trackAt(track, this.activeS);
-      if (!key) continue;
-      const groups = Math.round(key.groupsPerS * this.diff.enemyCount * this.config.devStart.prefillS);
-      for (let g = 0; g < groups; g++) {
+    // Por turnos entre pistas: con el tope bajo de `baja`, la primera (las
+    // pirañas) no se queda con todo el sitio y salen todos los tipos del guion.
+    const keys = act.tracks.map((track) => trackAt(track, this.activeS));
+    const groups = keys.map((key) =>
+      key ? Math.round(key.groupsPerS * this.diff.enemyCount * this.config.devStart.prefillS) : 0,
+    );
+    const rounds = Math.max(0, ...groups);
+    for (let g = 0; g < rounds; g++) {
+      act.tracks.forEach((track, i) => {
+        const key = keys[i];
+        if (!key || g >= groups[i]!) return;
         const size = Math.round(key.group[0] + (key.group[1] - key.group[0]) * this.spawnRng());
         this.spawnGroup(track.enemy, size, key.hpScale, key.speedScale);
-      }
+      });
     }
   }
 
