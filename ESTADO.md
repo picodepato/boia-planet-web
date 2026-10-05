@@ -4,6 +4,18 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T143: Boss HUD: bar, name, phase and warnings
+
+Qué existe:
+- `apps/web/app/mar/canon-hud-model.ts`: modelo sin React del HUD de bosses: `bossBarView` (vida %, marcas de fase desde `SURVIVORS_CONFIG.bosses[x].phases`, estado `normal|ghost|shielded|submerged|exposed` desde `fantasma.ghostness` / `kraken.exposed` / `invulnerable`, ángulo y lejanía), `phaseMarks`, `sameBossBar`, `bossNotices` (llegada, cae si está en `bossesDefeated`, huye si no; derivado de las diferencias entre lecturas del snapshot), `noticeActive` / `BOSS_BANNER_MS` (3,5 s), `BOSS_NOTICE_KEYS`.
+- `canon-hud.tsx`: barra del boss dentro del HUD de arriba (no tapa cuenta atrás, nivel, pausa, BETA, «Entradas» ni mandos), estilo miniboss (roja) y final (dorada, más alta, rayada), nombre por clave, «Fase n/N» (sólo escritorio), chip de estado (Fantasma / Protegido / Sumergido / ¡Cabeza al aire!, y la barra rayada gris cuando no recibe daño), aviso «¡Llega X!» / «¡X cae!» / «X se retira», y flecha en el borde hacia un boss fuera de pantalla (usa `data-canon-boss-vista` del lienzo). La fila de equipo baja 30 px en móvil mientras hay boss.
+- i18n `es-mar.ts`: `mar.canon.boss.*`, `survivors.boss.prueba`, `survivors.boss.capitan` (`muestra`). Movimiento reducido: sin transiciones ni animación del aviso.
+- Pruebas: 6 unitarias nuevas en `canon-hud-model.test.ts`; e2e `boss HUD: barra arriba…` (T143) en `mar-canon.spec.ts`, escritorio y móvil, mide en una sola lectura barra, aviso, HUD y lo fijo y comprueba que no se pisan.
+
+Comandos: ver el informe final de la tarea (vitest, e2e mar-canon.spec.ts, lint, typecheck, build).
+
+Pendiente: la flecha usa el ángulo en pantalla sin proyectar la cámara (válido con la cámara sin giro); las marcas de fase de bosses por tiempo (`untilS`) no se pintan; el aviso sólo enseña el último si llegan varios a la vez.
+
 ## 2026-10-05 — plan 012 T144: Medals, campaign act 1 → 2, act and difficulty on the panel
 
 Qué existe:

@@ -12,6 +12,7 @@ import {
   type SurvivorsStatus,
   type UpgradeId,
   type WeaponId,
+  SURVIVORS_CONFIG,
   survivorsMedal,
 } from '@boia/engine/survivors';
 import type { RewardOutcome } from '@boia/engine/minigames';
@@ -118,6 +119,136 @@ export function sameView(a: CanonView | null, b: CanonView | null): boolean {
     a.flamePct === b.flamePct
   );
 }
+
+// --- Bosses (T143) -------------------------------------------------------------
+
+/** Cuánto se queda el aviso de llegada / retirada / caída de un boss (ms). */
+export const BOSS_BANNER_MS = 3500;
+/** Más lejos que esto (u del mundo) un boss está casi seguro fuera de pantalla. */
+export const BOSS_FAR_U = 420;
+
+/** Qué le pasa al boss ahora, para enseñarlo en la barra (cosas que no reciben daño, T140/T141). */
+export type BossBarState = 'normal' | 'ghost' | 'shielded' | 'submerged' | 'exposed';
+
+export interface BossBarView {
+  id: number;
+  boss: BossId;
+  kind: 'miniboss' | 'boss';
+  nameKey: MessageKey;
+  /** % de vida (0…100, entero) y los % donde cambia de fase (marcas en la barra). */
+  hpPct: number;
+  marks: readonly number[];
+  phase: number;
+  phaseCount: number;
+  state: BossBarState;
+  /** Dirección del boss respecto al barco, en grados (0 = derecha, 90 = abajo en pantalla) y si está lejos. */
+  angleDeg: number;
+  far: boolean;
+}
+
+/** Las marcas de fase de un boss: dónde su vida cruza de una fase a otra (por vida, sin la última). */
+export function phaseMarks(boss: BossId): number[] {
+  const def = SURVIVORS_CONFIG.bosses[boss];
+  if (!def) return [];
+  const out: number[] = [];
+  for (const p of def.phases.slice(0, -1)) {
+    const pct = Math.round(p.untilHpFraction * 100);
+    if (pct > 0 && pct < 100 && !out.includes(pct)) out.push(pct);
+  }
+  return out.sort((a, b) => b - a);
+}
+
+/** El estado visible del boss: fantasma (invulnerable), sumergido o cabeza expuesta del Kraken, o escudado. */
+export function bossBarState(b: SurvivorsSnapshot['bosses'][number]): BossBarState {
+  if (b.fantasma) return b.fantasma.ghostness >= 0.5 ? 'ghost' : 'normal';
+  if (b.kraken) return b.kraken.exposed ? 'exposed' : 'submerged';
+  return b.invulnerable ? 'shielded' : 'normal';
+}
+
+/** La barra del boss que se enseña: el más importante (final antes que miniboss), o null. */
+export function bossBarView(s: SurvivorsSnapshot): BossBarView | null {
+  if (!s.bosses.length) return null;
+  const b = s.bosses.find((x) => x.kind === 'boss') ?? s.bosses[0]!;
+  const dx = b.x - s.player.x;
+  const dy = b.y - s.player.y;
+  return {
+    id: b.id,
+    boss: b.boss,
+    kind: b.kind,
+    nameKey: b.nameKey as MessageKey,
+    hpPct: percent(b.hp, b.maxHp),
+    marks: phaseMarks(b.boss),
+    phase: b.phase,
+    phaseCount: b.phaseCount,
+    state: bossBarState(b),
+    angleDeg: Math.round((Math.atan2(dy, dx) * 180) / Math.PI),
+    far: Math.hypot(dx, dy) > BOSS_FAR_U,
+  };
+}
+
+export function sameBossBar(a: BossBarView | null, b: BossBarView | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.id === b.id &&
+    a.hpPct === b.hpPct &&
+    a.phase === b.phase &&
+    a.state === b.state &&
+    a.far === b.far &&
+    Math.abs(a.angleDeg - b.angleDeg) < 4
+  );
+}
+
+export type BossNoticeKind = 'arrival' | 'defeated' | 'retreated';
+export interface BossNotice {
+  kind: BossNoticeKind;
+  boss: BossId;
+  bossKind: 'miniboss' | 'boss';
+  nameKey: MessageKey;
+  /** Instante (ms) en que se levantó. */
+  atMs: number;
+}
+
+/**
+ * Los avisos que nacen al pasar de los bosses de antes a los de ahora: llega
+ * uno nuevo; uno que ya no está, o cayó (`bossesDefeated`) o se retiró.
+ * `prev` es lo visto en la lectura anterior (por id).
+ */
+export function bossNotices(
+  prev: ReadonlyMap<number, { boss: BossId; kind: 'miniboss' | 'boss'; nameKey: string }>,
+  s: Pick<SurvivorsSnapshot, 'bosses' | 'bossesDefeated'>,
+  nowMs: number,
+): BossNotice[] {
+  const out: BossNotice[] = [];
+  const alive = new Set(s.bosses.map((b) => b.id));
+  for (const b of s.bosses) {
+    if (!prev.has(b.id))
+      out.push({ kind: 'arrival', boss: b.boss, bossKind: b.kind, nameKey: b.nameKey as MessageKey, atMs: nowMs });
+  }
+  for (const [id, b] of prev) {
+    if (alive.has(id)) continue;
+    out.push({
+      kind: s.bossesDefeated.includes(b.boss) ? 'defeated' : 'retreated',
+      boss: b.boss,
+      bossKind: b.kind,
+      nameKey: b.nameKey as MessageKey,
+      atMs: nowMs,
+    });
+  }
+  return out;
+}
+
+/** ¿Sigue puesto el aviso? */
+export function noticeActive(n: Pick<BossNotice, 'atMs'>, nowMs: number): boolean {
+  return nowMs - n.atMs < BOSS_BANNER_MS;
+}
+
+/** La clave del texto de un aviso. */
+export const BOSS_NOTICE_KEYS: Readonly<Record<BossNoticeKind, MessageKey>> = {
+  arrival: 'mar.canon.boss.llega',
+  defeated: 'mar.canon.boss.cae',
+  retreated: 'mar.canon.boss.huye',
+};
 
 // --- Cartas de nivel -----------------------------------------------------------
 

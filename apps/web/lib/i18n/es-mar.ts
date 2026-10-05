@@ -540,6 +540,19 @@ export const esMar = {
   'survivors.evolution.discoBall.efecto': 'Sustituye a las Boyas: una bola de radio 42 orbita a 90, 50 de daño cada 0,3 s; lanza 6 destellos cada 0,8 s, de alcance 420 y 50 de daño. Pasa sobre las islas. Valores base; tus vinilos también se aplican.',
   // Los bosses (T137–T141): su nombre en la barra. muestra
   'survivors.boss.martillo': 'Tiburón Martillo',
+  'survivors.boss.prueba': 'Barco de prueba',
+  'survivors.boss.capitan': 'El Capitán',
+  // La barra y los avisos de los bosses (T143). muestra
+  'mar.canon.boss.llega': '¡Llega {nombre}!',
+  'mar.canon.boss.cae': '¡{nombre} cae!',
+  'mar.canon.boss.huye': '{nombre} se retira',
+  'mar.canon.boss.vida': 'Vida de {nombre}',
+  'mar.canon.boss.fase': 'Fase {n}/{total}',
+  'mar.canon.boss.flecha': '{nombre} está fuera de pantalla, en esa dirección',
+  'mar.canon.boss.estado.fantasma': 'Fantasma',
+  'mar.canon.boss.estado.escudo': 'Protegido',
+  'mar.canon.boss.estado.sumergido': 'Bajo el agua',
+  'mar.canon.boss.estado.expuesto': '¡Cabeza al aire!',
   // La carta rara (T129) se llama «Segunda vida» desde T135: «Salvavidas» es ya el objeto del botín.
   'survivors.salvavidas': 'Segunda vida',
   'survivors.salvavidas.efecto': 'Objeto raro: evita una inundación, deja el agua al 25 % y da 2 s de invulnerabilidad. Se consume una vez; no ocupa hueco.',

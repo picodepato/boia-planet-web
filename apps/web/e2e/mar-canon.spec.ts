@@ -1355,3 +1355,89 @@ test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre u
   expect(chestCard).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto del HUD (T143)', async ({
+  page,
+}) => {
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.ref === 'vecino')!;
+  const errors = await openMar(page, `?minijuego=canon&t=${slot.atS - 6}&seed=7`);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  await expect(page.getByTestId('mar-canon-jefe')).toHaveCount(0);
+  // Navegando (un barco parado se inunda) hasta que llegue el Vecino: el aviso dura unos segundos,
+  // así que todo se mide en una sola lectura.
+  await page.keyboard.down('ArrowRight');
+  const ids = [
+    'mar-canon-hud',
+    'mar-canon-jefe',
+    'mar-canon-jefe-aviso',
+    'mar-canon-pausa',
+    'mar-canon-beta',
+    'mar-canon-tiempo',
+    'mar-entradas',
+    'mar-enlaces',
+    'mar-minimapa',
+    'mar-saldos',
+    'mar-turbo',
+    'mar-canon-equipo',
+    'mar-touch',
+  ];
+  type Seen = { boxes: Record<string, Box>; name: string; text: string; kind: string };
+  let seen: Seen | null = null;
+  await expect
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        seen = await page.evaluate((list) => {
+          const q = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+          const banner = q('mar-canon-jefe-aviso');
+          const bar = q('mar-canon-jefe');
+          if (!banner || !bar) return null;
+          const boxes: Record<string, { x: number; y: number; width: number; height: number }> = {};
+          for (const id of list) {
+            const el = q(id);
+            if (!el) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) boxes[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
+          }
+          return {
+            boxes,
+            name: q('mar-canon-jefe-nombre')?.textContent ?? '',
+            text: banner.textContent ?? '',
+            kind: banner.getAttribute('data-aviso') ?? '',
+          };
+        }, ids);
+        return seen !== null;
+      },
+      { timeout: 60_000, intervals: [150] },
+    )
+    .toBe(true);
+  await page.keyboard.up('ArrowRight');
+  const s = seen as unknown as Seen;
+  expect(s.kind).toBe('arrival');
+  expect(s.name).toBe(msg('survivors.boss.vecino'));
+  expect(s.text).toBe(msg('mar.canon.boss.llega', { nombre: msg('survivors.boss.vecino') }));
+  const vp = page.viewportSize()!;
+  const { boxes } = s;
+  const inScreen = (b: Box) =>
+    b.x >= 0 && b.y >= 0 && b.x + b.width <= vp.width + 0.5 && b.y + b.height <= vp.height + 0.5;
+  const hud = boxes['mar-canon-hud']!;
+  const bar = boxes['mar-canon-jefe']!;
+  const banner = boxes['mar-canon-jefe-aviso']!;
+  expect(inScreen(bar)).toBe(true);
+  expect(inScreen(banner)).toBe(true);
+  // La barra va dentro del HUD de arriba, en la banda alta.
+  expect(bar.y + bar.height).toBeLessThan(vp.height * 0.35);
+  expect(bar.x).toBeGreaterThanOrEqual(hud.x - 0.5);
+  expect(bar.x + bar.width).toBeLessThanOrEqual(hud.x + hud.width + 0.5);
+  expect(overlaps(banner, hud)).toBe(false);
+  // No tapa la cuenta atrás, la pausa ni «BETA», y ni la barra ni el aviso pisan lo fijo ni los mandos.
+  for (const id of ['mar-canon-pausa', 'mar-canon-beta', 'mar-canon-tiempo'])
+    expect(overlaps(bar, boxes[id]!), id).toBe(false);
+  for (const id of ['mar-entradas', 'mar-enlaces', 'mar-minimapa', 'mar-saldos', 'mar-turbo', 'mar-canon-equipo', 'mar-touch']) {
+    const b = boxes[id];
+    if (!b) continue;
+    expect(overlaps(hud, b), id).toBe(false);
+    expect(overlaps(banner, b), id).toBe(false);
+  }
+  expect(errors).toEqual([]);
+});

@@ -953,6 +953,220 @@
   background: linear-gradient(135deg, #fffbe9, #ffe7a8);
 }
 
+/* ---------- Bosses (T143): barra dentro del HUD, aviso y flecha ---------- */
+
+.mar-canon-hud[data-jefe] {
+  min-width: 140px;
+}
+
+/* Con un boss el HUD es más alto: en el móvil la fila de equipo baja para no pisarlo. */
+.mar-canon-slots.is-boss-on {
+  top: calc(var(--canon-hud-top) + var(--mini) + 8px + 30px);
+}
+
+@media (min-width: 760px) {
+  .mar-canon-slots.is-boss-on {
+    top: auto;
+  }
+}
+
+/* El móvil no tiene más sitio (minimapa y saldos a los lados): la fase sólo en escritorio. */
+.mar-canon-boss__phase {
+  display: none;
+}
+
+@media (min-width: 760px) {
+  .mar-canon-hud[data-jefe] {
+    min-width: 236px;
+  }
+
+  .mar-canon-boss__phase {
+    display: inline;
+  }
+}
+
+.mar-canon-boss {
+  display: grid;
+  gap: 2px;
+  padding-right: 8px;
+}
+
+.mar-canon-boss__head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--cream);
+}
+
+.mar-canon-boss__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mar-canon-boss.is-boss .mar-canon-boss__name {
+  color: var(--canon-dawn);
+}
+
+.mar-canon-boss__phase,
+.mar-canon-boss__state {
+  flex: none;
+  opacity: 0.85;
+  font-size: 0.58rem;
+}
+
+.mar-canon-boss__state {
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgb(255 244 226 / 0.2);
+}
+
+.mar-canon-boss__bar {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgb(255 244 226 / 0.18);
+}
+
+.mar-canon-boss.is-boss .mar-canon-boss__bar {
+  height: 11px;
+  outline: 1.5px solid var(--canon-dawn);
+}
+
+.mar-canon-boss__fill {
+  display: block;
+  height: 100%;
+  background: var(--canon-danger);
+  transition: width 0.25s linear;
+}
+
+.mar-canon-boss.is-boss .mar-canon-boss__fill {
+  background: repeating-linear-gradient(135deg, #ff4d3d 0 6px, #ff7a3d 6px 12px);
+}
+
+/* Fantasma o sumergido: no recibe daño; además del texto, la barra se ve rayada y apagada. */
+.mar-canon-boss.is-ghost .mar-canon-boss__fill,
+.mar-canon-boss.is-submerged .mar-canon-boss__fill,
+.mar-canon-boss.is-shielded .mar-canon-boss__fill {
+  background: repeating-linear-gradient(135deg, #8f98b8 0 4px, #5d6585 4px 8px);
+}
+
+.mar-canon-boss.is-exposed .mar-canon-boss__state {
+  background: var(--canon-alert);
+  color: #2a1608;
+}
+
+.mar-canon-boss__mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--cream);
+  opacity: 0.8;
+}
+
+.mar-canon-boss-banner {
+  position: absolute;
+  /* Móvil: bajo la fila de equipo (arriba a la izquierda); escritorio: justo bajo el HUD. */
+  top: calc(var(--canon-hud-top) + var(--mini) + 8px + 30px + 76px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 3;
+  max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  color: var(--cream);
+  font: 800 0.95rem / 1.2 var(--font-title);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  animation: mar-canon-boss-banner 3.5s ease-out both;
+}
+
+.mar-canon-boss-banner.is-boss {
+  border-color: var(--canon-dawn);
+  color: var(--canon-dawn);
+  font-size: 1.1rem;
+}
+
+.mar-canon-boss-banner.is-defeated {
+  border-color: var(--canon-alert);
+}
+
+@media (min-width: 760px) {
+  .mar-canon-boss-banner {
+    top: calc(var(--canon-hud-top) + 112px);
+  }
+}
+
+@keyframes mar-canon-boss-banner {
+  0% {
+    opacity: 0;
+    scale: 0.9;
+  }
+  8%,
+  80% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.mar-canon-boss-arrow {
+  position: absolute;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--glass-strong);
+  border: 1.5px solid var(--canon-danger);
+  pointer-events: none;
+}
+
+.mar-canon-boss-arrow.is-boss {
+  border-color: var(--canon-dawn);
+}
+
+.mar-canon-boss-arrow__tip {
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 9px;
+  border-color: transparent transparent transparent var(--cream);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-canon-boss__fill {
+    transition: none;
+  }
+
+  .mar-canon-boss-banner {
+    animation: none;
+  }
+}
+
 /* ---------- Los actos en el panel de la isla (T144) ---------- */
 
 .mar .mar-canon-acto {

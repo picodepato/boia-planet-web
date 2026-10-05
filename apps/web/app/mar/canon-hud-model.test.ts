@@ -1,4 +1,4 @@
-import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
+import { type BossId, SURVIVORS_CONFIG } from '@boia/engine/survivors';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { t as msg } from '../../lib/i18n';
@@ -15,6 +15,14 @@ import {
   WEAPON_ICON,
   WATER_ALERT,
   WATER_DANGER,
+  BOSS_BANNER_MS,
+  BOSS_NOTICE_KEYS,
+  bossBarState,
+  bossBarView,
+  bossNotices,
+  noticeActive,
+  phaseMarks,
+  sameBossBar,
   canonPrize,
   canonResult,
   canonView,
@@ -394,5 +402,80 @@ describe('la fila de armas y vinilos (T130)', () => {
     }
     expect(msg('mar.canon.equipo.nivel', { nombre: 'X', n: 2, max: 5 })).toBe('X, nivel 2 de 5');
     expect(msg('mar.canon.equipo.evolucionada', { nombre: 'X' })).not.toMatch(/[{}]/);
+  });
+});
+
+describe('la barra del boss y sus avisos (T143)', () => {
+  const bossAt = (id: BossId, startAtS: number) => {
+    const r = run({ startAtS });
+    const b = r.game.spawnBoss(id, spawn.x + 200, spawn.y);
+    expect(b).not.toBeNull();
+    return r;
+  };
+
+  it('sin boss no hay barra; con uno, la vida es su fracción y las marcas salen de sus fases', () => {
+    expect(bossBarView(run().snapshot())).toBeNull();
+    const r = bossAt('vecino', 0);
+    const bar = bossBarView(r.snapshot())!;
+    expect(bar.boss).toBe('vecino');
+    expect(bar.hpPct).toBe(100);
+    expect(bar.kind).toBe(SURVIVORS_CONFIG.bosses.vecino!.kind);
+    expect(bar.nameKey).toBe(SURVIVORS_CONFIG.bosses.vecino!.i18nKey);
+    expect(bar.marks).toEqual(phaseMarks('vecino'));
+    for (const m of bar.marks) expect(m).toBeGreaterThan(0);
+    expect(es[bar.nameKey], bar.nameKey).toBeTruthy();
+  });
+
+  it('la fracción de vida sigue a hp/maxHp y las marcas van de mayor a menor', () => {
+    const snap = { ...bossAt('martillo', 0).snapshot() };
+    const b = { ...snap.bosses[0]!, hp: snap.bosses[0]!.maxHp / 4 };
+    const bar = bossBarView({ ...snap, bosses: [b] })!;
+    expect(bar.hpPct).toBe(25);
+    const marks = phaseMarks('martillo');
+    expect([...marks].sort((x, y) => y - x)).toEqual(marks);
+  });
+
+  it('el estado: fantasma, sumergido y cabeza expuesta se distinguen de lo normal', () => {
+    const base = bossAt('vecino', 0).snapshot().bosses[0]!;
+    expect(bossBarState({ ...base, invulnerable: false })).toBe('normal');
+    expect(bossBarState({ ...base, invulnerable: true })).toBe('shielded');
+    const g = (ghostness: number) =>
+      ({ ...base, fantasma: { mode: 'ghost', progress: 0, leftS: 1, ghostness } }) as never;
+    expect(bossBarState(g(1))).toBe('ghost');
+    expect(bossBarState(g(0))).toBe('normal');
+    const k = (exposed: boolean) => ({ ...base, kraken: { exposed } }) as never;
+    expect(bossBarState(k(true))).toBe('exposed');
+    expect(bossBarState(k(false))).toBe('submerged');
+  });
+
+  it('el aviso: llega uno nuevo, y al irse es «cae» si está entre los vencidos o «huye» si no', () => {
+    const r = bossAt('vecino', 0);
+    const s = r.snapshot();
+    const b = s.bosses[0]!;
+    const arrival = bossNotices(new Map(), s, 1000);
+    expect(arrival).toHaveLength(1);
+    expect(arrival[0]).toMatchObject({ kind: 'arrival', boss: 'vecino', nameKey: b.nameKey, atMs: 1000 });
+    const prev = new Map([[b.id, { boss: b.boss, kind: b.kind, nameKey: b.nameKey }]]);
+    expect(bossNotices(prev, s, 2000)).toEqual([]);
+    expect(bossNotices(prev, { bosses: [], bossesDefeated: [] }, 2000)[0]!.kind).toBe('retreated');
+    expect(bossNotices(prev, { bosses: [], bossesDefeated: ['vecino'] }, 2000)[0]!.kind).toBe('defeated');
+    for (const k of Object.values(BOSS_NOTICE_KEYS)) {
+      expect(msg(k, { nombre: 'X' }), k).not.toMatch(/[{}]/);
+    }
+  });
+
+  it('el aviso dura BOSS_BANNER_MS y ni un ms más', () => {
+    const n = { atMs: 5000 };
+    expect(noticeActive(n, 5000)).toBe(true);
+    expect(noticeActive(n, 5000 + BOSS_BANNER_MS - 1)).toBe(true);
+    expect(noticeActive(n, 5000 + BOSS_BANNER_MS)).toBe(false);
+  });
+
+  it('sameBossBar ignora el ruido de ángulo y ve el cambio de vida o de fase', () => {
+    const bar = bossBarView(bossAt('vecino', 0).snapshot())!;
+    expect(sameBossBar(bar, { ...bar, angleDeg: bar.angleDeg + 2 })).toBe(true);
+    expect(sameBossBar(bar, { ...bar, hpPct: bar.hpPct - 1 })).toBe(false);
+    expect(sameBossBar(bar, { ...bar, phase: bar.phase + 1 })).toBe(false);
+    expect(sameBossBar(bar, null)).toBe(false);
   });
 });

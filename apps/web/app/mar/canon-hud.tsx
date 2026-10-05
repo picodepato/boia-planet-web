@@ -1,10 +1,14 @@
 'use client';
 
-import type { LevelUpCard } from '@boia/engine/survivors';
+import type { BossId, LevelUpCard } from '@boia/engine/survivors';
 import { type RefObject, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { t as msg } from '../../lib/i18n';
 import type { CanonMode } from './canon-mode';
 import {
+  BOSS_BANNER_MS,
+  BOSS_NOTICE_KEYS,
+  type BossBarView,
+  type BossNotice,
   CARD_ARM_MS,
   type CanonResult,
   type CanonView,
@@ -13,7 +17,11 @@ import {
   SALVAVIDAS_ICON,
   type SlotView,
   type SlotsView,
+  bossBarView,
+  bossNotices,
   canonView,
+  noticeActive,
+  sameBossBar,
   cardAmount,
   cardKeyAction,
   cardView,
@@ -43,25 +51,66 @@ const NOTICE_MS = 8000;
 /** El agua a bordo, a la altura del agua bajo el barco (u de escena sobre la de los rótulos). */
 const WATER_DY = -2.4;
 
+/** El boss que se enseña, si sale de la pantalla y los avisos vivos (T143). */
+interface BossHud {
+  bar: BossBarView | null;
+  offscreen: boolean;
+  notices: readonly BossNotice[];
+}
+const NO_BOSS: BossHud = { bar: null, offscreen: false, notices: [] };
+
+/** ¿El boss está fuera de la vista? La pantalla lo apunta en el lienzo (`data-canon-boss-vista`). */
+function bossOffscreen(bar: BossBarView | null): boolean {
+  if (!bar) return false;
+  const el = document.querySelector<HTMLElement>('[data-testid="mar-canvas"]');
+  const vista = el?.dataset.canonBossVista;
+  if (vista === undefined) return bar.far;
+  return !vista.split(' ').some((v) => v.split(':')[0] === bar.boss);
+}
+
 /** Lo que el HUD pinta, leído de la partida unas veces por segundo. */
-function useCanonView(canon: CanonMode): { view: CanonView | null; slots: SlotsView | null } {
-  const [state, setState] = useState<{ view: CanonView | null; slots: SlotsView | null }>({
-    view: null,
-    slots: null,
-  });
+function useCanonView(canon: CanonMode): {
+  view: CanonView | null;
+  slots: SlotsView | null;
+  boss: BossHud;
+} {
+  const [state, setState] = useState<{
+    view: CanonView | null;
+    slots: SlotsView | null;
+    boss: BossHud;
+  }>({ view: null, slots: null, boss: NO_BOSS });
+  const seen = useRef(new Map<number, { boss: BossId; kind: 'miniboss' | 'boss'; nameKey: string }>());
   const read = canon.read;
   const on = canon.active && !canon.result;
   useEffect(() => {
     if (!on) {
-      setState({ view: null, slots: null });
+      seen.current.clear();
+      setState({ view: null, slots: null, boss: NO_BOSS });
       return;
     }
     const tick = () => {
       const s = read();
       const next = s ? canonView(s) : null;
-      setState((prev) =>
-        sameView(prev.view, next) ? prev : { view: next, slots: s ? slotsView(s) : null },
-      );
+      const now = performance.now();
+      const bar = s ? bossBarView(s) : null;
+      const fresh = s ? bossNotices(seen.current, s, now) : [];
+      if (s) {
+        seen.current = new Map(s.bosses.map((b) => [b.id, { boss: b.boss, kind: b.kind, nameKey: b.nameKey }]));
+      }
+      const offscreen = bossOffscreen(bar);
+      setState((prev) => {
+        const live = [...prev.boss.notices, ...fresh].filter((n) => noticeActive(n, now));
+        const sameNotices =
+          live.length === prev.boss.notices.length && live.every((n, i) => n === prev.boss.notices[i]);
+        const sameBoss =
+          sameNotices && sameBossBar(prev.boss.bar, bar) && prev.boss.offscreen === offscreen;
+        if (sameView(prev.view, next) && sameBoss) return prev;
+        return {
+          view: next,
+          slots: s ? slotsView(s) : null,
+          boss: sameBoss ? prev.boss : { bar, offscreen, notices: live },
+        };
+      });
     };
     tick();
     const id = window.setInterval(tick, READ_MS);
@@ -87,7 +136,7 @@ export function CanonLayer({
   covered: boolean;
   onPause: () => void;
 }) {
-  const { view, slots } = useCanonView(canon);
+  const { view, slots, boss } = useCanonView(canon);
 
   // Esc: con la partida en marcha, pausa (el menú); en la pantalla final, volver al mar.
   // Con un panel o el menú abiertos, Esc es suyo (lo cierra).
@@ -108,8 +157,10 @@ export function CanonLayer({
 
   return (
     <>
-      {view ? <CanonHud view={view} onPause={onPause} /> : null}
-      {view && slots ? <CanonSlots slots={slots} /> : null}
+      {view ? <CanonHud view={view} bar={boss.bar} onPause={onPause} /> : null}
+      {view && boss.bar && boss.offscreen ? <BossArrow bar={boss.bar} /> : null}
+      {view && boss.notices.length ? <BossBanner notice={boss.notices[boss.notices.length - 1]!} /> : null}
+      {view && slots ? <CanonSlots slots={slots} bossOn={!!boss.bar} /> : null}
       {view ? <CanonWater pct={view.waterPct} engineRef={engineRef} /> : null}
       {view?.card && !covered ? (
         <CanonCards card={view.card} capacity={view.waterCapacity} onChoose={canon.choose} />
@@ -143,7 +194,15 @@ function BetaTag() {
 }
 
 /** Arriba al centro: «BETA», la cuenta atrás, la pausa y, debajo, el nivel con su barra. */
-function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
+function CanonHud({
+  view,
+  bar,
+  onPause,
+}: {
+  view: CanonView;
+  bar: BossBarView | null;
+  onPause: () => void;
+}) {
   const time = formatClock(view.timeLeftS);
   return (
     <section
@@ -151,6 +210,7 @@ function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
       data-testid="mar-canon-hud"
       data-estado={view.status}
       aria-label={msg('mar.canon.hud.aria')}
+      data-jefe={bar ? bar.kind : undefined}
     >
       <div className="mar-canon-hud__row">
         <BetaTag />
@@ -190,6 +250,7 @@ function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
           <span className="mar-canon-xp__fill" style={{ width: `${view.xpPct}%` }} />
         </span>
       </div>
+      {bar ? <BossBar bar={bar} /> : null}
       {view.flameS > 0 ? (
         <div
           className="mar-canon-hud__llama"
@@ -209,15 +270,108 @@ function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
   );
 }
 
+/** Los textos del estado visible de un boss que no recibe daño o está oculto. */
+const BOSS_STATE_KEYS = {
+  ghost: 'mar.canon.boss.estado.fantasma',
+  shielded: 'mar.canon.boss.estado.escudo',
+  submerged: 'mar.canon.boss.estado.sumergido',
+  exposed: 'mar.canon.boss.estado.expuesto',
+} as const;
+
+/** La barra del boss, dentro del HUD de arriba (nunca tapa el resto): nombre, vida, marcas de fase y estado. */
+function BossBar({ bar }: { bar: BossBarView }) {
+  const name = msg(bar.nameKey);
+  const stateKey = bar.state === 'normal' ? null : BOSS_STATE_KEYS[bar.state];
+  return (
+    <div
+      className={`mar-canon-boss is-${bar.kind} is-${bar.state}`}
+      data-testid="mar-canon-jefe"
+      data-jefe={bar.boss}
+      data-tipo={bar.kind}
+      data-estado={bar.state}
+      data-vida={bar.hpPct}
+      data-fase={bar.phase + 1}
+    >
+      <div className="mar-canon-boss__head">
+        <span className="mar-canon-boss__name" data-testid="mar-canon-jefe-nombre">
+          {name}
+        </span>
+        {stateKey ? (
+          <span className="mar-canon-boss__state" data-testid="mar-canon-jefe-estado">
+            {msg(stateKey)}
+          </span>
+        ) : null}
+        {bar.phaseCount > 1 ? (
+          <span className="mar-canon-boss__phase">
+            {msg('mar.canon.boss.fase', { n: bar.phase + 1, total: bar.phaseCount })}
+          </span>
+        ) : null}
+      </div>
+      <span
+        className="mar-canon-boss__bar"
+        role="progressbar"
+        aria-label={msg('mar.canon.boss.vida', { nombre: name })}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={bar.hpPct}
+      >
+        <span className="mar-canon-boss__fill" style={{ width: `${bar.hpPct}%` }} />
+        {bar.marks.map((m) => (
+          <span key={m} className="mar-canon-boss__mark" style={{ left: `${m}%` }} aria-hidden="true" />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+/** El aviso grande bajo el HUD: llega, huye o cae un boss. Se quita solo (el estado lo filtra). */
+function BossBanner({ notice }: { notice: BossNotice }) {
+  const name = msg(notice.nameKey);
+  return (
+    <div
+      className={`mar-canon-boss-banner is-${notice.kind} is-${notice.bossKind}`}
+      data-testid="mar-canon-jefe-aviso"
+      data-aviso={notice.kind}
+      data-jefe={notice.boss}
+      role="status"
+      style={{ animationDuration: `${BOSS_BANNER_MS}ms` }}
+    >
+      {msg(BOSS_NOTICE_KEYS[notice.kind], { nombre: name })}
+    </div>
+  );
+}
+
+/** La flecha en el borde de la pantalla hacia un boss fuera de vista (desde el centro, hacia su ángulo). */
+function BossArrow({ bar }: { bar: BossBarView }) {
+  const rad = (bar.angleDeg * Math.PI) / 180;
+  const cx = Math.cos(rad);
+  const cy = Math.sin(rad);
+  // Sobre una elipse inscrita en la pantalla (el 38 % del ancho y el 34 % del alto): lejos de los bordes con mandos.
+  const left = 50 + cx * 38;
+  const top = 50 + cy * 34;
+  return (
+    <div
+      className={`mar-canon-boss-arrow is-${bar.kind}`}
+      data-testid="mar-canon-jefe-flecha"
+      data-angulo={bar.angleDeg}
+      style={{ left: `${left}%`, top: `${top}%` }}
+      role="img"
+      aria-label={msg('mar.canon.boss.flecha', { nombre: msg(bar.nameKey) })}
+    >
+      <span className="mar-canon-boss-arrow__tip" style={{ rotate: `${bar.angleDeg}deg` }} aria-hidden="true" />
+    </div>
+  );
+}
+
 /**
  * La fila pequena de armas y vinilos con su nivel (T130): abajo en
  * escritorio, arriba a la izquierda (bajo el minimapa) en el movil, para no
  * chocar con los mandos tactiles, con la cuenta atras ni con «Entradas».
  */
-function CanonSlots({ slots }: { slots: SlotsView }) {
+function CanonSlots({ slots, bossOn }: { slots: SlotsView; bossOn: boolean }) {
   return (
     <section
-      className="mar-canon-slots"
+      className={bossOn ? 'mar-canon-slots is-boss-on' : 'mar-canon-slots'}
       data-testid="mar-canon-equipo"
       aria-label={msg('mar.canon.equipo.aria')}
     >
