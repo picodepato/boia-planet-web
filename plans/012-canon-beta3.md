@@ -62,7 +62,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: Traca (id `fireworks`, kind `trail`, firecrackers ≥24 u apart, cap 48/24) and Focos (1→3 beams locking on, 5 dmg / 0.25 s), Show de Láseres = 7-beam front fan sweeping; config v8; 1478 unit tests, mar-canon e2e 53 passed → 8f0f20b
 
 ## T135 — Elite drops: Imán total, Llama and Salvavidas
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T133
@@ -78,7 +78,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - `pnpm exec vitest run packages/engine/src/survivors apps/web/app/mar --testTimeout=60000` → exit 0 with tests: drop chance and uniform type over many seeds, each pickup's effect, flame kills a common in 0.4 s, determinism
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with `botin=1` showing a pickup collected
   - Test command → exit 0
-- Outcome:
+- Outcome: elites drop (5 %, own rng) Imán total / Llama (10 s, 110 u ±0.45 rad, burns bosses via `hurtTarget` at `bossFight.flameDps` 120/s) / Salvavidas (−40 water); card renamed «Segunda vida»; pickup models, Llama HUD hint, `botin=1`; Traca icon 🧨; config v11; 1537 unit tests → d6d5192
 
 ## T136 — «Mostrar vida» and «Mostrar daño» options
 - Status: pending
@@ -173,7 +173,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: Kraken in `kraken.ts` (submerged → emerging → emerged | grabbing → diving), tentacles and rocks telegraphed, tentacle kill exposes the head 4 s, island grab only when reachable, phases at hp 0.65/0.3; weapons hit `bossTargets` (body + tentacles); act 2 final slot on (reachable only with `act: 2`); config v10; 1517 unit tests → 6b702dd
 
 ## T142 — The Kraken in the 3D sea
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T141
@@ -232,7 +232,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T146 — Plan 011 loose ends: failing e2e, flaky test, boost pads and ramps e2e
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet (Sonnet 5.5)
 - Skills: none
 - Depends on: none
@@ -247,7 +247,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e mundo-arcilla.spec.ts mar-decor.spec.ts --workers=1` → exit 0
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1 -g "impulso|rampa"` (or the names chosen) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: store e2e now checks the WhatsApp link (test was wrong), zoom e2e polls the settled 46–52 %, flaky minigame-layer test fixed with a fixed seed sequence, two e2e for boost pad and ramp during a game → 4e74bfc
 
 ## T147 — Balance with bosses, `baja` performance, e2e, docs and the beta 3 test guide
 - Status: pending
@@ -294,6 +294,12 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T138: Codex edited existing survivors tests (beta2, bosses, fantasma, kraken, survivors), not reviewed beyond the passing run; only generic change `ringObstacles` in boss warnings; wrapper ran only the Vecino e2e, the full `mar-canon.spec.ts` run is left to T147 (agent/orchestrator)
 
+- 2026-10-05 plan: Codex out of credits until 2026-10-10 03:09; T142 relaunched from scratch on Opus (not a counted failure; Codex had changed nothing); no more Codex tasks in this plan (orchestrator, memory codex-fallback)
+
+- 2026-10-05 T146: store e2e was wrong (the store sheet is an in-app Link; the only target=_blank is WhatsApp), zoom e2e was wrong (46–52 % range, read while easing), flaky test fixed with a fixed seed sequence in `browser()`; new e2e use `?cerca=<id>&minijuego=canon&seed=7` (agent)
+- 2026-10-05 T135: drops use their own rng and pickup id counter (no-pickup games unchanged); pickups float 25 s, max 6, touch radius 16; `botin=1` = 100 % drops + three pickups next to the boat at start; data attributes `data-botin`, `data-botin-agua`, `data-botin-cerca`, `data-llama`; small edits in `canon-mode.tsx` outside listed scope; Llama damage single source `bossFight.flameDps` (agent)
+- 2026-10-05 plan: the T135 and T146 «done» edits to this file were lost (restored by the orchestrator at 18:00 from the integration results) (orchestrator)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -302,6 +308,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T141: i18n key `survivors.boss.kraken` missing (web); Kraken balance is a first cut for T147
 - 2026-10-05 T135: the T146 desktop ramp e2e failed once and passed alone: possibly flaky (T147)
 - 2026-10-05 T140: flaky e2e dawn reward at t=419 reads balances racily under load (passes alone); i18n keys `survivors.boss.prueba`/`kraken` missing; HUD readouts of `ghostness`/`leftS` for T143
+- 2026-10-05 T135: flaky e2e «HUD con BETA» on desktop (level changes between read and check) — for T147
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -327,3 +334,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 16:55 T138 launched · attempt 1 · Codex via wrapper agent a0cfbccfd80958e1c (sonnet); T140 worktree locked, branch kept until plan end
 - 2026-10-05 17:00 T139 done by agent; integration conflict with T140 in 9 files (view, e2e, sim, config, tests) → sent back to the same agent
 - 2026-10-05 17:25 T138 done · branch worktree-agent-a0cfbccfd80958e1c → 08d098b; T139 agent told to merge main again
+- 2026-10-05 17:28 T142 launched · attempt 1 · Codex via wrapper agent a3dbb4e881cf171a9 (sonnet); its prompt adds the dev shortcut `acto=2` (T144 makes it real)
+- 2026-10-05 17:35 T142 Codex usage limit (until 2026-10-10), nothing changed; relaunched · attempt 1 · agent aac36e30132ff7385 (opus)
+- 2026-10-05 17:40 Hernán said yes to push offer T140; pushed main 02fde9d (T133–T138, T140, T141, T146) to Vercel; Telegram notice sent
