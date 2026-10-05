@@ -27,7 +27,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T133 — Beta 2 notes: stronger weapons, reachable evolutions
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none
@@ -232,7 +232,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T146 — Plan 011 loose ends: failing e2e, flaky test, boost pads and ramps e2e
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet (Sonnet 5.5)
 - Skills: none
 - Depends on: none
@@ -279,3 +279,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
+- 2026-10-05 12:02 T133 launched · attempt 1 · agent a182b9911515b38cc (opus)
+- 2026-10-05 12:02 T146 launched · attempt 1 · agent a270200b1b81ed99e (sonnet)
