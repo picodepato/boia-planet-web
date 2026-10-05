@@ -373,3 +373,4 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 21:32 T136 done · branch worktree-agent-addb8d08ba9c5100e → c5b5e2c
 - 2026-10-05 21:35 T147 launched · attempt 1 · agent a87fc1e464e614bdb (opus), with the Proposals items addressed to it
 - 2026-10-05 22:35 T147 stopped on Hernán's request; WIP integrated → 6d46652 (Test command pass, 155 s); plan done
+- 2026-10-05 22:45 Hernán said yes to the end push offer; pushed main bd2e407 to Vercel; Telegram notice sent
