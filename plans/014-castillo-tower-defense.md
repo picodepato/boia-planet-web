@@ -1,6 +1,6 @@
 # Plan 014 — The lighthouse becomes the map board, and «Defensa del Castillo» (tower defense)
 
-Status: approved — waiting (not launched; /orchestrator starts it once plan 013 is done)
+Status: active
 Created: 2026-10-05
 Base branch: main
 Goal: Two changes to the Arcilla world. (1) The lighthouse (`faro`) moves to where the Santa Bárbara castle stands today, loses its minigame («Vigilancia del faro» is removed from the web, achievement included) and becomes the **map board**: close to the start, it tells people about the two games and the race and takes them there. (2) The castle moves next to **Boia 7** and becomes a new minigame island: **«Defensa del Castillo»** (name `muestra`), a by-the-book tower defense. All islands sink, only the castle remains; the Cañón's enemies, minibosses and bosses come in waves along **one curved path marked with the race buoys**; the player flies the boat in its **plane version** (the wings of the «Entradas» flight) under a higher camera, shoots, and builds the **existing islands** as towers (no new models), each with its own attack; the castle has life, and the player wins by holding out for the chosen time (5, 7 or 10 min).
@@ -57,7 +57,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T158 — Tower defense simulation: path, waves, castle, plane, coins, medals, score
-- Status: pending
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: none (after plan 013 is done)
@@ -74,10 +74,10 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - unit tests: path sampling; enemies reach the castle in the expected time; castle loss; win at 5/7/10 min; plane shot and its 3 levels; coins on kill; medal thresholds (>50 %, ≤50 %, fell after half); score; determinism (same seed → same result); a game with no towers is lost in Normal → pass
   - `pnpm exec vitest run packages/engine/src/defense packages/engine/src/survivors --testTimeout=60000` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: headless sim `@boia/engine/defense` (spiral path from the vortex, waves, castle, plane, medals, score, tower hooks); castle at (0,0), castle r 208, islandRadius 70, path width 90, vortex at 980 r 90, arena 1120 · 535b4e6
 
 ## T159 — The seven islands: attacks, levels, building, upgrade and sell
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T158
@@ -194,7 +194,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T167 — Remove the boat flag option from the boat menu
-- Status: pending
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: none
@@ -210,7 +210,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - `grep -rn "barco.shop.bandera\|sinBandera\|FLAG_LOOKS" apps packages` → nothing left
   - `E2E_PORT=<free> pnpm e2e tienda.spec.ts --workers=1` (no «Bandera» section; boats, wake and mascot still equip) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: «Bandera» section and flag drawing removed; saved flags dropped on load (local and Supabase), no refund; done by Codex · 0ffe77f
 
 ## T165 — Close: balance, performance, full e2e, docs, Álvaro draft
 - Status: pending
@@ -232,6 +232,12 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T158: subpath export `@boia/engine/defense` in packages/engine/package.json (outside listed scope, follows ./survivors) (agent)
+- 2026-10-06 T158: wave schedule independent of the seed (same waves for everyone in a table); seed only sets lane offsets; enemy speed = pace × length / normalWalkS (40 s) (agent)
+- 2026-10-06 T158: geometry relative to the castle at (0,0): castle r 208, islandRadius 70, path width 90, vortex at 980 u (r 90), arena 1120; zigzag teeth point inward so the turn gap stays 437 u (370 needed) (agent)
+- 2026-10-06 T158: life bonus only when the castle holds; quit/abandoned/startAtS/unranked → ranked:false; plane-only seed 7 falls in Normal/Tormenta, holds Tranquila 5 min with 24 % (muestra, T165 balances) (agent)
+- 2026-10-06 T167: flag fields dropped from the saved document on load (local and Supabase merge), no refund; Codex also touched mar3d.ts, mar-client.tsx, shop-model.ts, ship-look.ts, menu/sections/barco.tsx, packages/store/src/local.ts (agent)
+- 2026-10-05 run: started in parallel with plan 013's close at Hernán's request; only tasks that do not clash with T156 run before it (T158, T167); T157 waits for T156 (both touch achievements, minigame e2e and `docs/spec/estado.md`); 3 agents at once while T156 runs (orchestrator)
 - 2026-10-05 plan: no building on the vortex (T159); vortex test checks the open-sea side away from Boia 7 and the race lines (T160); `baja` performance includes the vortex and the barriers (T165) (Hernán, orchestrator)
 - 2026-10-05 plan: T167 added, remove the boat flag option from the boat menu (buggy, not important); saved flags ignored on load, no refund (Hernán, orchestrator)
 - 2026-10-06 plan: the path starts at an interdimensional vortex (lilac and black spinning spiral) from which enemies appear (Hernán)
@@ -241,6 +247,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T158/T167: the full vitest suite times out under load (survivors sims) when 3 agents run; consider splitting the slow survivors sims out of the default run (agent)
 - 2026-10-05 plan: a world prize per medal and achievements for the castle, like the Cañón's (decision 13; for Hernán and Álvaro)
 - 2026-10-05 plan: boss attacks against islands or the plane in a later version (decision 6 keeps them path-only)
 
@@ -253,3 +260,9 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 amended: vortex at the path's start (decision 5, T160)
 - 2026-10-05 amended: T167 remove the boat flag option (T165 depends on it)
 - 2026-10-05 amended: vortex build rule (T159), vortex placement test (T160), vortex and barriers in the performance check (T165)
+- 2026-10-05 23:12 T158 launched · attempt 1 · agent ae2687a0324910a9e (opus)
+- 2026-10-05 23:12 T167 launched · attempt 1 · Codex via wrapper agent adf4124efda2d70e1 (sonnet)
+- 2026-10-06 00:44 T158 integrated → 535b4e6 (tests ok); worktree and branch removed
+- 2026-10-06 00:45 T167 done by agent (Codex) → integrating
+- 2026-10-06 00:46 T159 launched · attempt 1 · agent a154089e69d570357 (opus)
+- 2026-10-06 00:48 T167 integrated → 0ffe77f (tests ok); worktree and branch removed
