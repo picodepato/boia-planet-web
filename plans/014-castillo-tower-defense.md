@@ -20,7 +20,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 5. **One path.** Enemies come along **one fixed path with a few curves** from the edge of the arena to the castle, marked on both sides with the **race buoys** (`apps/web/app/mar/engine/race-props.ts`). Enemies follow it by distance; they never leave it and never collide with islands. **Nothing can be built on the path** (minimum distance from its centre line). An enemy that reaches the castle damages it and disappears.
 6. **Enemies.** The Cañón's common enemies, minibosses and bosses with their models, in waves; each kind has its own path speed and life here. Bosses and minibosses only follow the path (no attack patterns, no summons in this plan), with much more life and more castle damage. Each kill gives coins straight to the purse (no pickups).
 7. **Plane.** The player flies the boat with the «Entradas» wings (`apps/web/app/mar/engine/flight.ts` `Wings`) freely over the arena (keyboard and touch, like sailing). It **shoots on its own** at the nearest enemy in range (like the Cañón's basic `canon` weapon) and its damage can be upgraded with coins to level 3. It cannot be hit. Building happens only **inside a ring around the plane**.
-8. **Building.** A «Construir» button opens the seven islands with their cost; the player places one inside the plane's ring, off the path, not overlapping another island or the castle (live valid/invalid preview). Tapping a built island shows **Mejorar** (to level 3, more damage) and **Vender** (part of what it cost back, `muestra`). Islands are the existing models (`buildIsland` in `apps/web/app/mar/engine/islands.ts`) scaled down.
+8. **Building.** A «Construir» button opens the seven islands with their cost; the player places one inside the plane's ring, off the path, not overlapping another island or the castle (live valid/invalid preview). Tapping a built island shows **Mejorar** (to level 3, more damage) and **Vender** (part of what it cost back, `muestra`). Islands are the existing models (`buildIsland` in `apps/web/app/mar/engine/islands.ts`, or the Blender glb when it is loaded) **normalized to the same footprint**: each is built at its normal size, measured once per kind (bounding box; the glb manifest's `radius`) and scaled uniformly so every island covers the same circle on the water, about **1/3 of the castle's diameter**; height stays free (uniform scale, no squashing: Benidorm stays taller than Ibiza). Each level adds **+10 %** (level 3 = 1.2×); the build footprint uses the level-3 size, so upgrading never makes islands overlap. **No limit** on how many islands: only coins and free space.
 9. **The seven islands** (attacks reuse the Cañón's weapon kinds where they fit):
    - **Faro** (`faro`): a light beam that sweeps around and damages what it touches (`laser`/beam).
    - **Nochevieja** (`ultima`): a cannon of **white snowballs** that also **stun** briefly; each shot picks a **different enemy** than the last when it can (`canon`/projectile).
@@ -82,7 +82,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Skills: none
 - Depends on: T158
 - Goal: Header decisions 8 and 9 inside the sim.
-  - Build rule: inside the plane's ring, at a minimum distance from the path's centre line, no overlap with other islands or the castle; cost; returns a reason when invalid (for the HUD preview).
+  - Build rule: inside the plane's ring, at a minimum distance from the path's centre line, no overlap with other islands or the castle; cost; returns a reason when invalid (for the HUD preview). Every island kind has the **same footprint radius** in the config (header decision 8: the level-3 size, about 1/3 of the castle's diameter), no per-kind radius; no cap on the number of islands.
   - The seven towers with levels 1–3 (damage and, where it fits, range/rate): Faro sweeping beam; Nochevieja snowballs with short stun and a different target each shot when possible; Halloween fire cone with burn over time; Puerto fireworks mortar with area explosion; Ibiza farm with coins every few seconds; Isla del Sonido bass aura; Benidorm long-range sniper on the strongest enemy in range. Reuse the Cañón's weapon kinds' targeting/geometry helpers where they fit.
   - Upgrade (to 3) and sell (part of the money back); state exposes each tower's last shot/effect for the view.
   - Bot tests: a simple building bot can hold Tranquila with gold, Normal with a real fight; record numbers (T165 balances them).
@@ -103,12 +103,12 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - Entering the game: every other island and decor sinks (short animation, instant with reduced motion), world layers hide (Cañón `HideLayer`), the camera rises to the higher top-down view on the castle; at the end everything comes back exactly as it was.
   - The path marked on both sides with the race buoys; enemies and bosses with the Cañón's models (`survivors-view.ts`, `survivors-props.ts`, kraken/fantasma/shark/vecino views) moving along it; castle damage feedback.
   - The plane: the boat with the «Entradas» wings, flying at a fixed height, steered with the sailing controls; its shots; the build ring drawn around it when building.
-  - Built islands: `buildIsland(id, R)` scaled down, a level mark, and their effects (beam, snowballs, fire, fireworks, coins popping on Ibiza, bass wave, Benidorm's sniper tracer).
+  - Built islands: normalized per header decision 8 (build at normal size, measure once per kind and cache, uniform scale to the shared footprint ≈ 1/3 of the castle's diameter, +10 % per level; same rule for the glb models via the manifest `radius`), a level mark, and their effects (beam, snowballs, fire, fireworks, coins popping on Ibiza, bass wave, Benidorm's sniper tracer).
   - Performance: `baja` quality with the longest run's peak wave and seven islands at level 3 keeps a reasonable frame time (measured in the e2e browser, numbers recorded).
 - Context: `apps/web/app/mar/survivors.ts` (`HideLayer`), `canon-mode.tsx` (how the Cañón enters and leaves), `engine/mar3d.ts` (camera, decor, `Wings`), `engine/flight.ts`, `engine/race-props.ts`, `engine/islands.ts`, `engine/survivors-view.ts`, the castle model (`decor-model.ts`).
 - Scope: may touch `apps/web/app/mar/engine/**` (new defense view files, small hooks in `mar3d.ts`), `apps/web/app/mar/` game mode file for the castle, tests / must not touch the Cañón's behaviour, the engine sim rules, `docs/DECISIONES.md`.
 - Done when:
-  - unit tests: sinking state and restore; camera pose for the arena; path buoy placement → pass
+  - unit tests: sinking state and restore; camera pose for the arena; path buoy placement; island normalization (all seven kinds give the same footprint within 5 % at each level, level 3 = 1.2× level 1, footprint matches the sim's radius) → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "arena"` (start with a test shortcut: islands hidden, castle visible, enemies on the path, plane moves; leaving restores the world) → exit 0
   - Test command → exit 0
 - Outcome:
@@ -184,7 +184,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Depends on: T157, T158, T159, T160, T161, T162, T163, T164
 - Goal: Close the plan.
   - **Balance with bots** for 3 run lengths × 3 difficulties: Tranquila winnable with a plain build, Normal a real fight, Tormenta hard; no single island strategy dominates (each island used by the best bot builds at least sometimes); Ibiza pays back in a reasonable time; record curves and win rates; bump `DEFENSE_CONFIG_VERSION` if numbers changed.
-  - **Performance in `baja`** at the 10-min peak with bosses, seven islands at level 3 and sound on; fix obvious hot spots only.
+  - **Performance in `baja`** at the 10-min peak with bosses, a full arena of islands at level 3 (no cap: as many as fit) and sound on; fix obvious hot spots only.
   - **E2E**: the full castle spec and the **full suite** (`E2E_PORT=<free> pnpm e2e --workers=2`), both exit 0.
   - **Docs**: `docs/spec/estado.md` (REQ-AVE-036 retired; the castle game noted as new scope pending Álvaro's REQ), `ESTADO.md` via the status fragment, a Spanish test guide `docs/propuestas/<date>-castillo-guia-prueba.md` with an empty «Notas» section, and a Spanish **decision draft for Álvaro** `docs/propuestas/<date>-castillo-decision-alvaro.md` (lighthouse without game and its board, «Vigilancia del faro» removed with its achievement, the new game, names and texts, whether it gives a world prize or achievements) — not in `docs/DECISIONES.md`.
 - Context: all Outcomes, Decisions and Proposals of this plan; `python3 tools/spec/estado.py`.
@@ -197,6 +197,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-05 plan: islands as towers normalized to one footprint (≈ 1/3 of the castle, height free, +10 % per level, footprint at level 3), no cap on islands (Hernán, orchestrator)
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
@@ -205,4 +206,5 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 
 ## Log
 - 2026-10-05 drafted in the session with Hernán
+- 2026-10-05 amended: island size normalization (decision 8, T159, T160, T165)
 - 2026-10-05 approved by Hernán; not launched, waits for plan 013 to finish (then `/orchestrator` resumes it and sets `Status: active`)
