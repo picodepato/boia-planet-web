@@ -545,6 +545,14 @@
     linear-gradient(180deg, #36278a, #ec4f24 78%, #ffb35c);
 }
 
+/* El boss final vencido (T140): la misma noche ganada, con el celeste del Fantasma. */
+.mar-canon-end.is-victory .mar-canon-end__sky {
+  background:
+    radial-gradient(circle 30px at 50% 100%, #d9f7ff 0 96%, transparent),
+    radial-gradient(ellipse 140px 60px at 50% 100%, rgb(95 217 255 / 0.55), transparent 70%),
+    linear-gradient(180deg, #36278a, #1f3d7a 78%, #5fd9ff);
+}
+
 .mar-canon-end.is-flooded .mar-canon-end__sky {
   background:
     radial-gradient(circle 14px at 22px 38px, transparent 96%, var(--canon-water-deep)) 0 100% /
@@ -559,6 +567,10 @@
 
 .mar-canon-end.is-survived .mar-canon-end__title {
   color: var(--canon-dawn);
+}
+
+.mar-canon-end.is-victory .mar-canon-end__title {
+  color: #9bf3ff;
 }
 
 .mar-canon-end__line {

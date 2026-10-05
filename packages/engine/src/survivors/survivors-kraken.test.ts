@@ -158,13 +158,14 @@ describe('kraken T141: datos', () => {
     expect(validateBoss(bad).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('el Kraken es el hueco final del acto 2, encendido; el acto 1 sigue sin bosses', () => {
+  it('el Kraken es el hueco final del acto 2, encendido; el acto 1 tiene el suyo (el Fantasma)', () => {
     const a1 = actOf(SURVIVORS_CONFIG, 1)!;
     const a2 = actOf(SURVIVORS_CONFIG, 2)!;
     const final2 = a2.events.find((e) => e.type === 'boss')!;
     expect(final2.ref).toBe('kraken');
     expect(final2.enabled).toBe(true);
-    for (const e of a1.events.filter((e) => e.type === 'boss' || e.type === 'miniboss')) expect(e.enabled).toBe(false);
+    for (const e of a1.events.filter((e) => e.type === 'miniboss')) expect(e.enabled).toBe(false);
+    expect(a1.events.find((e) => e.type === 'boss')).toMatchObject({ ref: 'fantasma' });
     // Los demás hitos del 2 son los del 1.
     expect(a2.events.filter((e) => e.type !== 'boss')).toEqual(a1.events.filter((e) => e.type !== 'boss'));
     // En el acto 2 el Kraken entra a su segundo, sumergido, delante del barco.
@@ -177,10 +178,10 @@ describe('kraken T141: datos', () => {
     expect(b.kind).toBe('boss');
     expect(b.kraken!.mode).toBe('submerged');
     expect(b.invulnerable).toBe(true);
-    // Y en el acto 1, nada.
+    // Y en el acto 1, su propio boss final (T140), nunca el Kraken.
     const g1 = createSurvivors(act2(), 5, openSea(), { act: 1, startAtS: final2.atS - 1 });
     run(g1, 2);
-    expect(g1.snapshot().bosses).toEqual([]);
+    expect(g1.snapshot().bosses.map((b) => b.boss)).toEqual(['fantasma']);
   });
 });
 
@@ -563,7 +564,8 @@ describe('kraken T141: fases, derrota y determinismo', () => {
     expect(b.hashes).toEqual(a.hashes);
     expect(a.hashes.length).toBeGreaterThan(10);
     expect(go(32).hashes.at(-1)).not.toBe(a.hashes.at(-1));
-    expect(a.s.end).toBe('survived');
+    // Insumergible: amanece, o vence al Kraken antes (T140: el boss final acaba la partida).
+    expect(['survived', 'victory']).toContain(a.s.end);
     expect(a.s.act).toBe(2);
     const spawns = of(a.events, 'bossSpawn');
     expect(spawns.map((e) => e.boss)).toEqual(['kraken']);

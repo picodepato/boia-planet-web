@@ -934,3 +934,120 @@ export class SinkFx {
     this.rings.count = 0;
   }
 }
+
+// --- El Barco Pirata Fantasma (T140) ------------------------------------------------
+
+/**
+ * Colores del Barco Pirata Fantasma: casco azul noche desteñido, velas
+ * hechas jirones de un celeste pálido, farol de popa que brilla y bandera
+ * negra. Los piratas que llama son el modelo del pirata teñido de ese celeste.
+ */
+export const GHOST_COLORS = {
+  hull: '#2b3650',
+  rim: '#5d7392',
+  deck: '#3c4a66',
+  mast: '#1c2436',
+  sail: '#cfe8ff',
+  sailTorn: '#9fc8ea',
+  flag: '#0f131c',
+  lantern: '#9bf3ff',
+  skull: C.white,
+  /** Brillo propio: se lee de noche y de lejos, en los dos modos. */
+  glow: '#5fd9ff',
+  /** Tinte de los piratas fantasma (multiplica el color del modelo). */
+  tint: '#a6dcff',
+} as const;
+
+/** Opacidad fija de cada material translúcido (una por material, sin animar: T128). */
+export const GHOST_OPACITY = 0.38;
+export const GHOST_PIRATE_OPACITY = 0.55;
+
+/** Tamaño de la pieza sobre su radio de choque. */
+export const GHOST_SHIP_SCALE = 1.15;
+/** Lo que flota por encima del agua desvanecido (escena; fijo, sin animar). */
+export const GHOST_HOVER = 0.35;
+
+/**
+ * El Barco Pirata Fantasma: un galeón bajo y largo (~3 de largo, mira a +x)
+ * con casco azul noche, dos mástiles con velas rasgadas, castillo de popa con
+ * su farol brillante y bandera negra con calavera. Radio 1 ≈ su radio de
+ * choque. El mismo modelo sirve sólido y desvanecido: cambia el material.
+ */
+export function ghostShipGeometry(): BufferGeometry {
+  const c = GHOST_COLORS;
+  const k = new Kit();
+  // Casco: caja larga, proa en punta y popa alta.
+  k.add(new BoxGeometry(2.2, 0.55, 0.9), c.hull, { p: [-0.1, 0.2, 0] });
+  k.add(new ConeGeometry(0.46, 1, 4), c.hull, {
+    p: [1.45, 0.2, 0],
+    r: [Math.PI / 4, 0, -Math.PI / 2],
+    s: [1, 1, 0.55],
+  });
+  k.add(new BoxGeometry(0.7, 0.75, 0.86), c.hull, { p: [-1.1, 0.5, 0] });
+  k.add(new BoxGeometry(2.3, 0.08, 1), c.rim, { p: [-0.1, 0.5, 0] });
+  k.add(new BoxGeometry(0.72, 0.08, 0.95), c.rim, { p: [-1.1, 0.9, 0] });
+  k.add(new BoxGeometry(2, 0.05, 0.7), c.deck, { p: [0, 0.53, 0] });
+  // Mástiles, vergas y velas rasgadas (dos jirones por vela, de cara a +x).
+  for (const [x, h] of [
+    [0.45, 1.9],
+    [-0.45, 2.2],
+  ] as const) {
+    k.add(new CylinderGeometry(0.05, 0.07, h, 5), c.mast, { p: [x, 0.5 + h / 2, 0] });
+    k.add(new CylinderGeometry(0.035, 0.035, 1.3, 4), c.mast, {
+      p: [x, 0.5 + h * 0.8, 0],
+      r: [Math.PI / 2, 0, 0],
+    });
+    k.add(new BoxGeometry(0.04, h * 0.42, 1.15), c.sail, { p: [x + 0.09, 0.5 + h * 0.57, 0] });
+    k.add(new BoxGeometry(0.04, h * 0.2, 0.5), c.sailTorn, { p: [x + 0.11, 0.5 + h * 0.3, 0.3] });
+    k.add(new BoxGeometry(0.04, h * 0.14, 0.32), c.sailTorn, { p: [x + 0.11, 0.5 + h * 0.3, -0.38] });
+  }
+  // Bauprés con su vela pequeña, en proa.
+  k.add(new CylinderGeometry(0.035, 0.035, 0.9, 4), c.mast, {
+    p: [1.6, 0.75, 0],
+    r: [0, 0, Math.PI / 2 - 0.35],
+  });
+  k.add(new BoxGeometry(0.5, 0.35, 0.04), c.sailTorn, { p: [1.35, 0.95, 0], r: [0, 0, -0.5] });
+  // Farol de popa (brilla) y bandera negra con calavera en el palo mayor.
+  k.add(new CylinderGeometry(0.03, 0.03, 0.5, 4), c.mast, { p: [-1.5, 1.15, 0] });
+  k.add(new SphereGeometry(0.14, 6, 5), c.lantern, { p: [-1.5, 1.45, 0] });
+  k.add(new BoxGeometry(0.55, 0.36, 0.04), c.flag, { p: [-0.72, 2.75, 0] });
+  k.add(new SphereGeometry(0.08, 5, 4), c.skull, { p: [-0.72, 2.78, 0.03] });
+  return k.build();
+}
+
+/**
+ * El material del Fantasma. Sólido: el de las piezas con el brillo celeste
+ * (se le puede herir: se ve entero). Desvanecido: translúcido con una
+ * opacidad fija y más brillo, sin escribir profundidad (barato y sin
+ * parpadeo). Nunca se anima la opacidad.
+ */
+export function ghostShipMaterial(ghost: boolean): MeshLambertMaterial {
+  const m = litMaterial();
+  m.emissive = new Color(GHOST_COLORS.glow);
+  m.emissiveIntensity = ghost ? 0.55 : 0.2;
+  if (ghost) {
+    m.transparent = true;
+    m.opacity = GHOST_OPACITY;
+    m.depthWrite = false;
+  }
+  return m;
+}
+
+/** Los piratas fantasma: el modelo del pirata teñido de celeste, translúcido con opacidad fija. */
+export function ghostPirateMaterial(): MeshLambertMaterial {
+  const m = litMaterial();
+  m.color = new Color(GHOST_COLORS.tint);
+  m.emissive = new Color(GHOST_COLORS.glow);
+  m.emissiveIntensity = 0.3;
+  m.transparent = true;
+  m.opacity = GHOST_PIRATE_OPACITY;
+  m.depthWrite = false;
+  return m;
+}
+
+/** Tope de piratas fantasma pintados a la vez (los llama el boss de tres en tres). */
+export const GHOST_PIRATE_CAP = 24;
+/** Tope de líneas de aviso de boss (andanadas: dos costados por ataque). */
+export const BOSS_WARNING_CAP = 8;
+/** Ancho mínimo (escena) de una línea de aviso de boss. */
+export const BOSS_WARNING_MIN_WIDTH = 0.5;

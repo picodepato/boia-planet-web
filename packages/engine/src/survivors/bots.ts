@@ -4,6 +4,7 @@ import type { CardOption } from './cards';
 import type { BossId, DifficultyId, EnemyId, PassiveId, SurvivorsConfig, WeaponId } from './config';
 import { SURVIVORS_STEP_S } from './config';
 import {
+  type EndReason,
   type SurvivorsGame,
   type SurvivorsInput,
   type SurvivorsOptions,
@@ -193,7 +194,7 @@ export interface BotRun {
   bot: BotKind;
   difficulty: DifficultyId;
   seed: number;
-  end: 'survived' | 'flooded' | 'abandoned' | null;
+  end: EndReason | null;
   /** s de tiempo activo jugados. */
   endS: number;
   /** s de tiempo activo de cada subida de nivel, en orden. */

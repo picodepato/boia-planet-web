@@ -96,7 +96,7 @@ const elitesDef = SURVIVORS_CONFIG.elites[elitesEvent.ref]!;
 // --- Guion y velocidades ------------------------------------------------------
 
 describe('survivors beta 2: guion del acto 1 en datos', () => {
-  it('cada tipo entra a su minuto; Marea a 5:00 20 s; élites desde 3:30; huecos de bosses apagados', () => {
+  it('cada tipo entra a su minuto; Marea a 5:00 20 s; élites desde 3:30; minibosses apagados, boss final encendido', () => {
     const from = Object.fromEntries(act.tracks.map((t) => [t.enemy, t.fromS]));
     expect(from).toEqual({
       piranha: 0,
@@ -110,12 +110,13 @@ describe('survivors beta 2: guion del acto 1 en datos', () => {
     expect(elitesEvent.atS).toBe(210);
     expect(mareaEvent).toMatchObject({ atS: 300, durationS: 20 });
     expect(mareaDef.enemy in SURVIVORS_CONFIG.enemies).toBe(true);
-    // Los huecos de la beta 3 existen y están apagados.
+    // Los huecos de los minibosses existen y están apagados (T138, T139); el
+    // del boss final va encendido con el Barco Pirata Fantasma (T140).
     const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
-    expect(slots.map((e) => [e.type, e.atS, e.enabled])).toEqual([
-      ['miniboss', 150, false],
-      ['miniboss', 270, false],
-      ['boss', 330, false],
+    expect(slots.map((e) => [e.type, e.atS, e.enabled !== false, e.ref])).toEqual([
+      ['miniboss', 150, false, 'vecino'],
+      ['miniboss', 270, false, 'martillo'],
+      ['boss', 330, true, 'fantasma'],
     ]);
     expect(act.durationS).toBe(420);
   });
@@ -401,7 +402,8 @@ describe('survivors beta 2: élites', () => {
         }
       },
     );
-    expect(game.snapshot().end).toBe('survived');
+    // Insumergible: amanece, o vence al Barco Fantasma antes (T140).
+    expect(['survived', 'victory']).toContain(game.snapshot().end);
     expect(activeBefore).toBe(false);
     expect(activeAfter).toBe(true);
     const all = [...firstSeen.values()];

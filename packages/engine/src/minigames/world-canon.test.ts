@@ -15,6 +15,7 @@ import {
   type CanonConfig,
   canon,
   canonConfigFor,
+  canonEarliestWinS,
   canonEnd,
   canonScore,
 } from './world-canon';
@@ -130,6 +131,22 @@ describe('el Cañón en el registro (plan 010, T119)', () => {
     expect(canonEnd('flooded', 61.5)).toMatchObject({ outcome: 'lost', score: 61 });
     expect(canon.minPlausibleMs(300, 1, CANON_DEFAULTS)).toBe(300_000);
   });
+
+  it('vencer al boss final (T140) gana con la marca del objetivo; no se puede ganar antes de que entre el boss', () => {
+    const boss = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.type === 'boss')!;
+    expect(boss.enabled).not.toBe(false);
+    expect(canonEarliestWinS()).toBe(boss.atS);
+    expect(canonEarliestWinS({ ...SURVIVORS_CONFIG, acts: [] })).toBe(SURVIVORS_CONFIG.durationS);
+    expect(canonEnd('victory', 352.4)).toEqual({
+      outcome: 'won',
+      reason: 'victory',
+      score: SURVIVORS_CONFIG.durationS,
+      elapsedMs: 352_400,
+    });
+    // La cota de duración: la marca del amanecer se puede tener desde que entra el boss, no antes.
+    expect(canon.minPlausibleMs(SURVIVORS_CONFIG.durationS, 1, CANON_DEFAULTS)).toBe(boss.atS * 1000);
+    expect(canon.minPlausibleMs(200, 1, CANON_DEFAULTS)).toBe(200_000);
+  });
 });
 
 describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
@@ -209,6 +226,20 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
       (await early.finish({ ...canonEnd('flooded', 300), outcome: 'won' })).validation,
     ).toEqual({ valid: false, reason: 'implausible_score' });
     expect(sink.grantWorldReward).not.toHaveBeenCalled();
+
+    // Vencer al boss final (T140) a los 5:52 vale la noche entera y da el premio;
+    // «vencerlo» antes de que entre el boss, no.
+    const gold = open();
+    c.advance(360_000);
+    const g = await gold.finish(canonEnd('victory', 352));
+    expect(g.validation).toEqual({ valid: true });
+    expect(g.reward.granted).toBe(true);
+    const tooEarly = open();
+    c.advance(200_000);
+    expect((await tooEarly.finish(canonEnd('victory', 200))).validation).toEqual({
+      valid: false,
+      reason: 'implausible_duration',
+    });
   });
 
   it('inundarse no da premio; abandonar (5 min en pausa o salir) invalida la sesión', async () => {

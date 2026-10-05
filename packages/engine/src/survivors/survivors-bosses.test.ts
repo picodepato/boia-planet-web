@@ -152,23 +152,24 @@ describe('bosses T137: datos', () => {
     for (const def of Object.values(SURVIVORS_CONFIG.bosses)) expect(validateBoss(def!)).toEqual([]);
     const kinds = new Set(Object.values(PRUEBA.attacks).map((a) => a.kind));
     expect([...kinds].sort()).toEqual(['broadside', 'circles', 'line', 'ring', 'summon']);
-    // Los huecos de los bosses que aún no existen van apagados; sólo el Kraken
-    // (T141, acto 2) está encendido, y el acto 2 no se juega en producción
-    // hasta la campaña (T144).
+    // Los huecos de los minibosses que aún no existen van apagados; los de
+    // los bosses finales están encendidos: el Barco Pirata Fantasma (T140,
+    // acto 1) y el Kraken (T141, acto 2; el acto 2 no se juega en producción
+    // hasta la campaña, T144).
     for (const act of SURVIVORS_CONFIG.acts) {
       const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
       expect(slots.length).toBe(3);
       for (const s of slots) {
-        expect(s.enabled).toBe(s.ref === 'kraken' && act.act === 2);
+        expect(s.enabled !== false).toBe(s.type === 'boss');
         expect(s.ref).not.toBe('prueba');
-        if (s.enabled) expect(SURVIVORS_CONFIG.bosses[s.ref as BossId]).toBeDefined();
+        if (s.enabled !== false) expect(SURVIVORS_CONFIG.bosses[s.ref as BossId]).toBeDefined();
       }
     }
-    // Y la simulación de verdad no saca ningún boss en ningún hueco del acto
-    // 1, ni empezando después del último; en el 2, el Kraken.
+    // Y la simulación de verdad no saca ningún miniboss en el acto 1; empezando
+    // después del último hueco entra el boss final de cada acto.
     const g1 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 1 });
     run(g1, 2);
-    expect(g1.snapshot().bosses).toEqual([]);
+    expect(g1.snapshot().bosses.map((b) => b.boss)).toEqual(['fantasma']);
     const g2 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 2 });
     run(g2, 2);
     expect(g2.snapshot().bosses.map((b) => b.boss)).toEqual(['kraken']);
@@ -347,7 +348,9 @@ describe('bosses T137: fases y daño', () => {
     expect(of(ev, 'bossDefeated')[0]!.kind).toBe('boss');
     expect(of(ev, 'chest')).toEqual([]);
     expect(g.snapshot().finalBossDefeated).toBe(true);
-    expect(g.snapshot().end).toBeNull();
+    // Vencer al boss final acaba la partida con su final (T140; la medalla, T144).
+    expect(g.snapshot().end).toBe('victory');
+    expect(of(ev, 'end')).toEqual([{ type: 'end', reason: 'victory' }]);
   });
 });
 

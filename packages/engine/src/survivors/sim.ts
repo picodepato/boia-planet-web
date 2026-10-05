@@ -43,7 +43,21 @@ import {
   trackAt,
   xpToNext,
 } from './config';
-import { attackAt, inRingGap, nextPhase, ringRadiusAt, ringTouches } from './bosses';
+import { attackFrom, inRingGap, nextPhase, ringRadiusAt, ringTouches } from './bosses';
+import {
+  type GhostShipEvent,
+  type GhostShipHost,
+  type GhostShipState,
+  type GhostShipView,
+  createGhostShip,
+  ghostAttackPlan,
+  ghostHash,
+  ghostInvulnerable,
+  ghostShipView,
+  ghostSolid,
+  ghostSpeedScale,
+  stepGhostShip,
+} from './fantasma';
 import {
   type KrakenEvent,
   type KrakenHost,
@@ -101,7 +115,8 @@ import { IslandIndex, type SurvivorsWorld } from './world';
  *   amanece. Una pausa seguida de más de 5 min abandona la partida.
  */
 
-export type EndReason = 'survived' | 'flooded' | 'abandoned';
+/** Cómo acaba: amanece, se inunda, abandono (5 min en pausa) o cae el boss final del acto (`victory`, T140). */
+export type EndReason = 'survived' | 'flooded' | 'abandoned' | 'victory';
 export type SurvivorsStatus = 'running' | 'paused' | 'card' | 'ended';
 
 /** Entrada de un paso: el mando del barco y las órdenes de la partida. */
@@ -161,6 +176,8 @@ export type SurvivorsEvent =
   | { type: 'chestOpened'; boss: BossId; id: number; x: number; y: number }
   // --- El Kraken (T141): sus estados, tentáculos, rocas y la cabeza expuesta (`kraken.ts`) ---
   | KrakenEvent
+  // --- El Barco Pirata Fantasma (T140): sólido ↔ fantasma (`fantasma.ts`) ---
+  | GhostShipEvent
   | { type: 'end'; reason: EndReason };
 
 export interface EnemyView {
@@ -180,6 +197,8 @@ export interface EnemyView {
   readonly scale: number;
   /** Qué hace: quieto apuntando, avisando, embistiendo, descansando o moviéndose. */
   readonly phase: EnemyPhase;
+  /** Fantasma (llamado por el Barco Fantasma, T140): igual en la simulación; la pantalla lo pinta translúcido. */
+  readonly ghost: boolean;
 }
 
 export interface ProjectileView {
@@ -358,6 +377,8 @@ export interface BossView {
   readonly attackStage: 'warning' | 'hit' | null;
   /** Sólo el Kraken (T141): estado, tentáculos, rocas y cabeza expuesta; null en los demás. */
   readonly kraken: KrakenView | null;
+  /** Sólo el Barco Pirata Fantasma (T140): sólido o fantasma y cuánto le queda; null en los demás. */
+  readonly fantasma: GhostShipView | null;
 }
 
 /**
@@ -524,6 +545,8 @@ interface Enemy {
   chargeX: number;
   chargeY: number;
   chargeLeft: number;
+  /** Pirata fantasma (T140): la pantalla lo pinta translúcido. */
+  ghost: boolean;
   dead: boolean;
 }
 
@@ -694,6 +717,8 @@ interface Boss {
   attack: BossAttack | null;
   /** Sólo el Kraken (T141): su estado propio (`kraken.ts`); null en los demás. */
   kraken: KrakenState | null;
+  /** Sólo el Barco Pirata Fantasma (T140): su ciclo sólido ↔ fantasma (`fantasma.ts`); null en los demás. */
+  fantasma: GhostShipState | null;
   dead: boolean;
 }
 
@@ -793,6 +818,8 @@ export class SurvivorsGame {
   /** Lo que el Kraken necesita de la partida (T141) y el Kraken al que se lo da ahora. */
   private readonly krakenHost: KrakenHost;
   private krakenBoss: Boss | null = null;
+  /** Lo que el Fantasma necesita de la partida (T140): sólo sus sucesos. */
+  private readonly ghostHost: GhostShipHost;
   private readonly bossViews: BossView[] = [];
   private readonly bossWarnings: BossWarningView[] = [];
   private readonly chests: Chest[] = [];
@@ -970,6 +997,7 @@ export class SurvivorsGame {
       },
       emit: (ev) => this.events.push(ev),
     };
+    this.ghostHost = { emit: (ev) => this.events.push(ev) };
 
     const s = world.start;
     this.player = createShipState(
@@ -1382,6 +1410,7 @@ export class SurvivorsGame {
         b.attackIndex,
         b.attack ? [b.attack.name, b.attack.stage, b.attack.timer, b.attack.x, b.attack.y, b.attack.left, b.attack.landed ? 1 : 0] : null,
         b.kraken ? krakenHash(b.kraken) : null,
+        b.fantasma ? ghostHash(b.fantasma) : null,
       ]),
       ch: this.chests.map((c) => [c.id, c.boss, c.x, c.y]),
       bd: this.bossesDefeated,
@@ -1439,6 +1468,7 @@ export class SurvivorsGame {
       chargeX: 1,
       chargeY: 0,
       chargeLeft: 0,
+      ghost: false,
       dead: false,
     };
     this.setWrapped(e, x, y);
@@ -1536,11 +1566,13 @@ export class SurvivorsGame {
       // Amanece: un boss vivo se retira (§8); la partida se sobrevive igual.
       this.retreatBosses();
       this.finish('survived');
-    } else this.checkLevelUp();
+    } else if (!this.endReason) this.checkLevelUp();
     return this.events;
   }
 
+  /** Acaba la partida (una sola vez: la primera razón manda; vencer al boss final acaba a medio paso, T140). */
   private finish(reason: EndReason): void {
+    if (this.endReason) return;
     this.endReason = reason;
     this.card = null;
     this.events.push({ type: 'end', reason });
@@ -1968,6 +2000,8 @@ export class SurvivorsGame {
       if (b.dead) continue;
       // El Kraken bajo el agua (o saliendo / hundiéndose) es una sombra: no toca.
       if (b.kraken && !krakenSolid(b.kraken)) continue;
+      // El Fantasma desvanecido (T140) tampoco.
+      if (b.fantasma && !ghostSolid(b.fantasma)) continue;
       const dx = wd(b.x - p.x, this.w);
       const dy = wd(b.y - p.y, this.h);
       const min = pr + b.radius;
@@ -3311,6 +3345,7 @@ export class SurvivorsGame {
       attackIndex: 0,
       attack: null,
       kraken: null,
+      fantasma: def.fantasma ? createGhostShip(def.fantasma) : null,
       dead: false,
     };
     if (def.kraken) {
@@ -3390,12 +3425,14 @@ export class SurvivorsGame {
       attack: b.attack?.name ?? null,
       attackStage: b.attack?.stage ?? null,
       kraken: b.kraken ? krakenView(b.kraken) : null,
+      fantasma: b.fantasma ? ghostShipView(b.fantasma, b) : null,
     };
   }
 
-  /** No recibe daño: por la fase o por el ataque en curso; el Kraken, salvo con la cabeza expuesta. */
+  /** No recibe daño: por la fase o por el ataque en curso; el Kraken, salvo con la cabeza expuesta; el Fantasma, desvanecido. */
   private bossInvulnerable(b: Boss): boolean {
     if (b.kraken) return !krakenVulnerable(b.kraken);
+    if (b.fantasma && ghostInvulnerable(b.fantasma)) return true;
     return (b.def.phases[b.phase]?.invulnerable ?? false) || (b.attack?.def.invulnerable ?? false);
   }
 
@@ -3421,14 +3458,24 @@ export class SurvivorsGame {
         this.krakenBoss = null;
         continue;
       }
-      // Ataques: el que está en curso avanza; si no hay, baja el reloj y lanza el siguiente de la fase.
-      if (b.attack) this.stepBossAttack(b, b.attack, phase.attackEveryS, dt);
-      else if (phase.attacks.length > 0) {
+      // El Fantasma (T140): su ciclo sólido ↔ fantasma; al cambiar, otra lista de ataques y el reloj de nuevo.
+      let plan = { attacks: phase.attacks, everyS: phase.attackEveryS, firstS: phase.firstAttackS };
+      if (b.fantasma) {
+        const changed = stepGhostShip(b.fantasma, b, this.ghostHost, dt, b.attack !== null);
+        plan = ghostAttackPlan(b.fantasma, phase);
+        if (changed) {
+          b.attackIndex = 0;
+          b.attackTimer = plan.firstS;
+        }
+      }
+      // Ataques: el que está en curso avanza; si no hay, baja el reloj y lanza el siguiente de la lista.
+      if (b.attack) this.stepBossAttack(b, b.attack, plan.everyS, dt);
+      else if (plan.attacks.length > 0) {
         b.attackTimer -= dt;
         if (b.attackTimer <= 0) {
-          const next = attackAt(b.def, phase, b.attackIndex++);
+          const next = attackFrom(b.def, plan.attacks, b.attackIndex++);
           if (next) this.startBossAttack(b, next.name, next.def);
-          else b.attackTimer = phase.attackEveryS;
+          else b.attackTimer = plan.everyS;
         }
       }
       // Movimiento: quieto si el aviso lo pide; la embestida mueve sola; si no, el patrón de la fase.
@@ -3449,7 +3496,7 @@ export class SurvivorsGame {
     const dist = Math.hypot(dx, dy);
     dx = dist > 1e-6 ? dx / dist : 1;
     dy = dist > 1e-6 ? dy / dist : 0;
-    const speed = b.def.speed * phase.speedScale;
+    const speed = b.def.speed * phase.speedScale * (b.fantasma ? ghostSpeedScale(b.fantasma) : 1);
     let wantX = 0;
     let wantY = 0;
     switch (phase.movement) {
@@ -3705,7 +3752,9 @@ export class SurvivorsGame {
       if (!spot) continue;
       const hp = def.hp * s.hpScale * this.diff.enemyHp * (this.act.enemyHpScale ?? 1) * (1 + def.growthPerMinute.hp * minutes);
       const speed = def.speed * (1 + def.growthPerMinute.speed * minutes);
-      this.enemies.push(this.makeEnemy(def, spot.x, spot.y, hp, speed, s.elite));
+      const e = this.makeEnemy(def, spot.x, spot.y, hp, speed, s.elite);
+      e.ghost = s.ghost === true;
+      this.enemies.push(e);
       made++;
     }
     if (made > 0) {
@@ -3743,7 +3792,6 @@ export class SurvivorsGame {
     if (b.kraken) clearKraken(b.kraken);
     this.rebuildBossTargets();
     this.bossesDefeated.push(b.def.id);
-    if (b.def.kind === 'boss') this.finalBossDefeated = true;
     this.events.push({ type: 'bossDefeated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
     // La nota grande (la clave de sol: la figura mayor que no pasa de su valor).
     this.dropNote(b.x, b.y, b.def.noteValue);
@@ -3753,6 +3801,11 @@ export class SurvivorsGame {
       this.setWrapped(c, spot.x, spot.y);
       this.chests.push(c);
       this.events.push({ type: 'chest', boss: c.boss, id: c.id, x: c.x, y: c.y });
+    }
+    // El boss final del acto cae: la partida acaba ahí con su final (la medalla de oro, T144).
+    if (b.def.kind === 'boss') {
+      this.finalBossDefeated = true;
+      this.finish('victory');
     }
   }
 

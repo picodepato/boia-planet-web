@@ -7,6 +7,7 @@ import {
   type DifficultyId,
   type EnemyId,
   SURVIVORS_CONFIG,
+  type SurvivorsConfig,
   trackAt,
 } from './config';
 import { createSurvivors } from './sim';
@@ -19,7 +20,21 @@ import { type SurvivorsWorld, survivorsWorldOf } from './world';
  * se fija la forma: el barco parado pierde pronto, el que esquiva llega a los
  * últimos minutos en Normal, Tranquila es claramente más fácil y Tormenta más
  * difícil, y los niveles llegan a buen ritmo.
+ *
+ * Es el equilibrio del bucle **sin bosses** (la beta 2): los pilotos juegan
+ * con los huecos de boss del guion apagados (`WAVES_ONLY`). El equilibrio con
+ * los bosses (el Barco Pirata Fantasma entra a las 5:30 desde T140) se mide
+ * aparte, en T147.
  */
+
+/** La config de verdad con los huecos de boss apagados: sólo las oleadas. */
+const WAVES_ONLY: SurvivorsConfig = {
+  ...SURVIVORS_CONFIG,
+  acts: SURVIVORS_CONFIG.acts.map((a) => ({
+    ...a,
+    events: a.events.map((ev) => (ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev)),
+  })),
+};
 
 /** El mapa compartido, con sus islas. */
 function arcillaWorld(): SurvivorsWorld {
@@ -56,7 +71,7 @@ function runs(difficulty: DifficultyId, bot: BotKind, quality: 'alta' | 'baja' =
   let out = cache.get(key);
   if (!out) {
     out = SEEDS.map((seed) =>
-      runBot(SURVIVORS_CONFIG, bot, seed, worldFor(seed), { difficulty, quality }),
+      runBot(WAVES_ONLY, bot, seed, worldFor(seed), { difficulty, quality }),
     );
     cache.set(key, out);
   }

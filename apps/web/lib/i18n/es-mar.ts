@@ -222,6 +222,8 @@ export const esMar = {
   'survivors.dificultad.tranquila': 'Tranquila',
   'survivors.dificultad.normal': 'Normal',
   'survivors.dificultad.tormenta': 'Tormenta',
+  // Los bosses (plan 012): el nombre de la barra del boss (`BossDef.i18nKey`). muestra
+  'survivors.boss.fantasma': 'Barco Pirata Fantasma',
   // El interruptor de desarrollo del estilo de derrota (T117; sólo con los atajos de desarrollo).
   'mar.canon.dev.derrota': 'Derrota: {estilo}',
   'mar.canon.dev.derrota.aria': 'Cambiar el estilo de derrota (desarrollo)',
@@ -570,6 +572,9 @@ export const esMar = {
   'mar.canon.fin.amanece.texto': 'La música no paró en toda la noche.',
   'mar.canon.fin.inundado': '¡Barco inundado!',
   'mar.canon.fin.inundado.texto': 'El agua llenó el barco antes del amanecer.',
+  // Vencer al boss final del acto acaba la partida (T140; la medalla de oro y la tarjeta, T144/T145). muestra
+  'mar.canon.fin.victoria': '¡Barco Fantasma hundido!',
+  'mar.canon.fin.victoria.texto': 'El boss del acto se fue al fondo: la música sigue hasta el amanecer.',
   'mar.canon.fin.tiempo': 'Tiempo',
   'mar.canon.fin.enemigos': 'Enemigos',
   'mar.canon.fin.notas': 'Notas',

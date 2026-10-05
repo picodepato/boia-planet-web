@@ -7,3 +7,4 @@ export * from './cards';
 export * from './drops';
 export * from './bosses';
 export * from './kraken';
+export * from './fantasma';

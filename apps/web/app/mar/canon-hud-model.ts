@@ -392,6 +392,8 @@ export function canonResult(reason: EndReason, s: SurvivorsSnapshot): CanonResul
 export const END_KEYS: Readonly<Record<CanonEndReason, { title: MessageKey; line: MessageKey }>> = {
   survived: { title: 'mar.canon.fin.amanece', line: 'mar.canon.fin.amanece.texto' },
   flooded: { title: 'mar.canon.fin.inundado', line: 'mar.canon.fin.inundado.texto' },
+  // El boss final del acto vencido (T140): el final especial; la medalla y la tarjeta, T144/T145.
+  victory: { title: 'mar.canon.fin.victoria', line: 'mar.canon.fin.victoria.texto' },
 };
 
 // --- Premio (T119) ---------------------------------------------------------------

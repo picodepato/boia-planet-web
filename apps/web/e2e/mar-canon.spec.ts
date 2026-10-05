@@ -203,6 +203,31 @@ test('ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos, sin 
   expect(errors).toEqual([]);
 });
 
+test('pasadas las 5:30 (`t=`) el Barco Pirata Fantasma está en la partida y entra en pantalla, sin errores (T140)', async ({
+  page,
+}) => {
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.type === 'boss')!;
+  expect(slot.ref).toBe('fantasma');
+  const errors = await openMar(page, `?minijuego=canon&t=${slot.atS + 5}&seed=7`);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  // El hueco del boss final ya pasó: `&t=` saca el boss del último hueco, sólido o desvanecido.
+  // `data-canon-boss`: los bosses vivos («fantasma:solid»); `data-canon-boss-vista`: los que están en la vista.
+  await expect(canvas(page)).toHaveAttribute('data-canon-boss', /fantasma:(solid|ghost)/, { timeout: 20_000 });
+  // Navegando (un barco parado se inunda), el Fantasma, que gira alrededor del barco, entra en la vista.
+  await page.keyboard.down('ArrowRight');
+  await expect
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        return (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '';
+      },
+      { timeout: 90_000, intervals: [400] },
+    )
+    .toMatch(/fantasma:(solid|ghost)/);
+  await page.keyboard.up('ArrowRight');
+  expect(errors).toEqual([]);
+});
+
 for (const reduced of [false, true]) {
   test(`all max-level weapons are drawn without console errors (T128, reduced=${reduced})`, async ({
     page,
@@ -253,18 +278,19 @@ test('el interruptor de desarrollo cambia en vivo el estilo de derrota (T117)', 
   await expect(toggle).toHaveAttribute('data-derrota', 'puf');
   await expect(canvas(page)).toHaveAttribute('data-derrota', 'puf');
   await expect(toggle).toContainText(msg('mar.canon.dev.derrota.puf'));
-  // El cañón dispara solo: caen enemigos con el estilo de ahora.
-  await expect
-    .poll(async () => Number(await game(page).getAttribute('data-derrotados')), { timeout: 30_000 })
-    .toBeGreaterThan(0);
+  // El cañón dispara solo: caen enemigos con el estilo de ahora. (Una carta de
+  // nivel que se abra mientras tanto para la partida: se contesta con Intro.)
+  const defeated = async () => {
+    if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+    return Number(await game(page).getAttribute('data-derrotados'));
+  };
+  await expect.poll(defeated, { timeout: 30_000 }).toBeGreaterThan(0);
   await toggle.dispatchEvent('click');
   await expect(toggle).toHaveAttribute('data-derrota', 'sumergirse');
   await expect(canvas(page)).toHaveAttribute('data-derrota', 'sumergirse');
   await expect(toggle).toContainText(msg('mar.canon.dev.derrota.sumergirse'));
   const before = Number(await game(page).getAttribute('data-derrotados'));
-  await expect
-    .poll(async () => Number(await game(page).getAttribute('data-derrotados')), { timeout: 30_000 })
-    .toBeGreaterThan(before);
+  await expect.poll(defeated, { timeout: 30_000 }).toBeGreaterThan(before);
   // El atajo `derrota` también se consume.
   expect(new URL(page.url()).searchParams.has('derrota')).toBe(false);
   expect(errors).toEqual([]);
@@ -446,8 +472,15 @@ test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada t
   const secs = read.secs;
   expect(secs).toBeLessThanOrEqual(SURVIVORS_CONFIG.durationS - 120);
   expect(read.text).toBe(formatClock(secs));
+  // (Una carta de nivel que se abra mientras tanto para el reloj: se contesta con Intro, como en las demás.)
   await expect
-    .poll(async () => Number(await time.getAttribute('data-segundos')), { timeout: 15_000 })
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        return Number(await time.getAttribute('data-segundos'));
+      },
+      { timeout: 15_000 },
+    )
     .toBeLessThan(secs);
   // El nivel, encima de su barra (el del atajo `t=`: ya subió).
   const level = hud.getByTestId('mar-canon-nivel');

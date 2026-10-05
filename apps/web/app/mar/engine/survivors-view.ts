@@ -8,12 +8,17 @@ import type {
 } from '@boia/engine/survivors';
 import { NOTE_FIGURES } from '@boia/engine/survivors';
 import type { QualityTier } from '@boia/engine/streaming';
-import { Color, Group, type InstancedMesh, type Material, Object3D } from 'three';
+import { Color, Group, type InstancedMesh, type Material, Mesh, Object3D } from 'three';
 import { toScene } from './compress';
 import { SurvivorsPickups } from './survivors-pickups';
 import { SurvivorsWeapons } from './survivors-weapons';
 import { curveTree } from './planet';
 import {
+  BOSS_WARNING_CAP,
+  BOSS_WARNING_MIN_WIDTH,
+  GHOST_HOVER,
+  GHOST_PIRATE_CAP,
+  GHOST_SHIP_SCALE,
   HALO_PULSE,
   HALO_SCALE,
   NOTE_SIZE,
@@ -30,6 +35,9 @@ import {
   enemyModel,
   enemyShotGeometry,
   enemyShotMaterial,
+  ghostPirateMaterial,
+  ghostShipGeometry,
+  ghostShipMaterial,
   instanced,
   noteGeometry,
   propsMaterial,
@@ -106,6 +114,15 @@ export class SurvivorsView {
   private readonly halos: InstancedMesh;
   private readonly warnings: InstancedMesh;
   private readonly shadows: InstancedMesh;
+  /**
+   * El Barco Pirata Fantasma (T140): el mismo modelo con dos materiales,
+   * sólido y desvanecido; sólo uno se ve. Null si la config no lo tiene.
+   */
+  private readonly ghostShip: { solid: Mesh; ghost: Mesh } | null;
+  /** Los piratas fantasma que llama (el modelo del pirata teñido y translúcido), por tipo. */
+  private readonly ghostMeshes: (InstancedMesh | null)[] = [];
+  /** Las líneas de aviso de los bosses (andanadas, embestidas): dos piezas por línea, como `warnings`. */
+  private readonly bossWarnings: InstancedMesh;
   private readonly groundAt: (x: number, z: number) => number;
   /** Altura de vuelo de cada enemigo que vuela (por id), y el fotograma en que se vio. */
   private readonly flyY = new Map<number, { y: number; seen: number }>();
@@ -141,6 +158,39 @@ export class SurvivorsView {
       this.enemyRadius.push(config.enemies[id]?.radius ?? 10);
       kinds.push({ geometry: mesh.geometry, material: mesh.material as Material, name: mesh.name });
       this.group.add(mesh);
+      // Los piratas fantasma (T140): la misma geometría, otro material, en su propia pieza.
+      if (id === 'pirate' && config.bosses.fantasma) {
+        const ghost = instanced(
+          mesh.geometry,
+          ghostPirateMaterial(),
+          Math.min(caps.enemies, GHOST_PIRATE_CAP),
+          `survivors-${id}-ghost`,
+        );
+        this.ghostMeshes.push(ghost);
+        this.group.add(ghost);
+      } else this.ghostMeshes.push(null);
+    }
+    if (config.bosses.fantasma) {
+      const geometry = ghostShipGeometry();
+      const solid = new Mesh(geometry, ghostShipMaterial(false));
+      solid.name = 'survivors-boss-fantasma';
+      const ghost = new Mesh(geometry, ghostShipMaterial(true));
+      ghost.name = 'survivors-boss-fantasma-ghost';
+      solid.rotation.order = ghost.rotation.order = 'YXZ';
+      solid.visible = ghost.visible = false;
+      this.ghostShip = { solid, ghost };
+      this.group.add(solid, ghost);
+    } else this.ghostShip = null;
+    this.bossWarnings = instanced(
+      warningLineGeometry(),
+      warningLineMaterial(),
+      BOSS_WARNING_CAP * 2,
+      'survivors-boss-warning',
+    );
+    {
+      const track = new Color(WARNING_COLORS.track);
+      const fill = new Color(WARNING_COLORS.fill);
+      for (let i = 0; i < BOSS_WARNING_CAP * 2; i++) this.bossWarnings.setColorAt(i, i % 2 ? fill : track);
     }
     this.weapons = new SurvivorsWeapons(config, caps, this.groundAt);
     this.pickups = new SurvivorsPickups(config, this.quality, this.groundAt);
@@ -176,6 +226,7 @@ export class SurvivorsView {
     this.group.add(
       this.shadows,
       this.warnings,
+      this.bossWarnings,
       this.halos,
       this.shots,
       ...Object.values(this.weapons.meshes),
@@ -210,9 +261,12 @@ export class SurvivorsView {
       enemyProjectiles: this.shots.instanceMatrix.count,
       elites: this.halos.instanceMatrix.count,
       warnings: this.warnings.instanceMatrix.count / 2,
+      bossWarnings: this.bossWarnings.instanceMatrix.count / 2,
     };
     this.enemyIds.forEach((id, i) => {
       out[id] = this.enemyMeshes[i]!.instanceMatrix.count;
+      const ghost = this.ghostMeshes[i];
+      if (ghost) out[`${id}-ghost`] = ghost.instanceMatrix.count;
     });
     NOTE_FIGURES.forEach((f, i) => {
       out[`note-${f}`] = this.noteMeshes[i]!.instanceMatrix.count;
@@ -279,15 +333,31 @@ export class SurvivorsView {
   typesWhere(test: (x: number, y: number, z: number, r: number) => boolean): EnemyId[] {
     const out: EnemyId[] = [];
     for (let ti = 0; ti < this.enemyIds.length; ti++) {
-      const mesh = this.enemyMeshes[ti]!;
-      const a = mesh.instanceMatrix.array;
-      for (let i = 0; i < mesh.count; i++) {
-        const o = i * 16;
-        const r = Math.hypot(a[o]!, a[o + 1]!, a[o + 2]!) * 1.5;
-        if (test(a[o + 12]!, a[o + 13]!, a[o + 14]!, r)) {
-          out.push(this.enemyIds[ti]!);
-          break;
-        }
+      // Los piratas fantasma cuentan como piratas.
+      for (const mesh of [this.enemyMeshes[ti]!, this.ghostMeshes[ti]]) {
+        if (!mesh || !instanceWhere(mesh, test)) continue;
+        out.push(this.enemyIds[ti]!);
+        break;
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Los bosses con su pieza visible donde `test` dice (escena), para las
+   * pruebas: el Fantasma, sólido o desvanecido, como `fantasma:solid`.
+   */
+  bossesWhere(test: (x: number, y: number, z: number, r: number) => boolean): string[] {
+    const out: string[] = [];
+    const g = this.ghostShip;
+    if (g) {
+      for (const [mesh, mode] of [
+        [g.solid, 'solid'],
+        [g.ghost, 'ghost'],
+      ] as const) {
+        if (!mesh.visible) continue;
+        const p = mesh.position;
+        if (test(p.x, p.y, p.z, mesh.scale.x * 1.5)) out.push(`fantasma:${mode}`);
       }
     }
     return out;
@@ -313,6 +383,7 @@ export class SurvivorsView {
     }
     show(this.shots, ns);
     this.updateWarnings(s);
+    this.updateBosses(s, t);
     this.updateNotes(s, t);
     this.pickups.update(s, t, this.reduced);
     const plan = defeatPlan(this.style, { quality: this.quality, reduced: this.reduced });
@@ -332,14 +403,21 @@ export class SurvivorsView {
     let nsh = 0;
     for (let ti = 0; ti < this.enemyIds.length; ti++) {
       const mesh = this.enemyMeshes[ti]!;
+      const ghostMesh = this.ghostMeshes[ti];
       const list = s.enemiesByType[this.enemyIds[ti]!] ?? EMPTY;
-      const n = Math.min(list.length, mesh.instanceMatrix.count);
+      const cap = mesh.instanceMatrix.count;
+      const ghostCap = ghostMesh?.instanceMatrix.count ?? 0;
       const k = this.enemyScale[ti]!;
       const bob = reduced ? 0 : this.enemyBob[ti]!;
       const fly = this.enemyFly[ti]!;
       const pulse = reduced ? 0 : this.enemyPulse[ti]!;
-      for (let i = 0; i < n; i++) {
-        const e = list[i]!;
+      let n = 0;
+      let ng = 0;
+      for (let li = 0; li < list.length; li++) {
+        const e = list[li]!;
+        // Los fantasmas (T140) van a su pieza translúcida; sin ella, con los demás.
+        const asGhost = e.ghost && ghostMesh !== null && ghostMesh !== undefined;
+        if (asGhost ? ng >= ghostCap : n >= cap) continue;
         const x = toScene(e.x);
         const z = toScene(e.y);
         const size = toScene(e.radius) * k;
@@ -357,7 +435,8 @@ export class SurvivorsView {
           d.scale.set(size * (1 - p * 0.5), size * (1 + p), size * (1 - p * 0.5));
         } else d.scale.setScalar(size);
         d.updateMatrix();
-        mesh.setMatrixAt(i, d.matrix);
+        if (asGhost) ghostMesh.setMatrixAt(ng++, d.matrix);
+        else mesh.setMatrixAt(n++, d.matrix);
         if (e.elite && nh < haloCap) {
           const beat = reduced ? 1 : 1 + Math.sin(t * 4 + e.id) * HALO_PULSE;
           d.position.set(x, y + 0.08, z);
@@ -375,6 +454,7 @@ export class SurvivorsView {
         }
       }
       show(mesh, n);
+      if (ghostMesh) show(ghostMesh, ng);
     }
     show(this.halos, nh);
     show(this.shadows, nsh);
@@ -443,6 +523,58 @@ export class SurvivorsView {
     show(this.warnings, w);
   }
 
+  /**
+   * Los bosses (T140): el Barco Pirata Fantasma en su sitio, con la pieza de
+   * su modo (sólido: se le puede herir; desvanecido: translúcido, flotando un
+   * poco más alto, fijo), y las líneas de aviso de sus andanadas (una por
+   * costado, el tramo entero y lo llenado con el progreso; durante los
+   * disparos, llena). Sin parpadeos; con movimiento reducido, sin vaivén.
+   */
+  private updateBosses(s: SurvivorsSnapshot, t: number): void {
+    const g = this.ghostShip;
+    if (g) {
+      let seen = false;
+      for (let i = 0; i < s.bosses.length && !seen; i++) {
+        const b = s.bosses[i]!;
+        if (b.boss !== 'fantasma' || !b.fantasma) continue;
+        seen = true;
+        const ghost = b.fantasma.mode === 'ghost';
+        const mesh = ghost ? g.ghost : g.solid;
+        const other = ghost ? g.solid : g.ghost;
+        const bob = this.reduced ? 0 : Math.sin(t * 1.4 + b.id) * 0.08;
+        mesh.position.set(toScene(b.x), (ghost ? GHOST_HOVER : 0) + bob, toScene(b.y));
+        mesh.rotation.set(0, -b.heading, this.reduced ? 0 : Math.sin(t * 0.9 + b.id) * 0.04);
+        mesh.scale.setScalar(toScene(b.radius) * GHOST_SHIP_SCALE);
+        mesh.updateMatrix();
+        mesh.visible = true;
+        other.visible = false;
+      }
+      if (!seen) g.solid.visible = g.ghost.visible = false;
+    }
+    const d = this.dummy;
+    const cap = this.bossWarnings.instanceMatrix.count;
+    let w = 0;
+    for (let i = 0; i < s.bossWarnings.length && w + 1 < cap; i++) {
+      const v = s.bossWarnings[i]!;
+      if (v.kind !== 'broadside' && v.kind !== 'line') continue;
+      const width = Math.max(BOSS_WARNING_MIN_WIDTH, toScene(v.thickness) * 2 * WARNING_WIDTH);
+      const len = Math.max(0.01, toScene(v.length));
+      const x = toScene(v.x);
+      const z = toScene(v.y);
+      d.rotation.set(0, -v.heading, 0);
+      d.position.set(x, 0.07, z);
+      d.scale.set(len, 1, width);
+      d.updateMatrix();
+      this.bossWarnings.setMatrixAt(w++, d.matrix);
+      const p = v.hit ? 1 : Math.min(1, Math.max(0, v.progress));
+      d.position.set(x, 0.1, z);
+      d.scale.set(Math.max(0.001, len * p), 1, width * 0.7);
+      d.updateMatrix();
+      this.bossWarnings.setMatrixAt(w++, d.matrix);
+    }
+    show(this.bossWarnings, w);
+  }
+
   private updateNotes(s: SurvivorsSnapshot, t: number): void {
     const d = this.dummy;
     const counts = this.noteCounts;
@@ -470,13 +602,24 @@ export class SurvivorsView {
     const done = new Set<unknown>();
     this.group.traverse((o) => {
       const m = o as InstancedMesh;
-      if (!m.isInstancedMesh) return;
+      if (!(m as Mesh).isMesh) return;
       for (const r of [m.geometry, m.material as Material]) {
         if (done.has(r)) continue;
         done.add(r);
         r.dispose();
       }
-      m.dispose();
+      if (m.isInstancedMesh) m.dispose();
     });
   }
+}
+
+/** ¿Alguna pieza pintada de `mesh` pasa `test` (escena: x, y, z y radio)? Lee las matrices: no crea nada. */
+function instanceWhere(mesh: InstancedMesh, test: (x: number, y: number, z: number, r: number) => boolean): boolean {
+  const a = mesh.instanceMatrix.array;
+  for (let i = 0; i < mesh.count; i++) {
+    const o = i * 16;
+    const r = Math.hypot(a[o]!, a[o + 1]!, a[o + 2]!) * 1.5;
+    if (test(a[o + 12]!, a[o + 13]!, a[o + 14]!, r)) return true;
+  }
+  return false;
 }

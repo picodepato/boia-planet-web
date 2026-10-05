@@ -676,10 +676,12 @@ describe('las piezas de la partida', () => {
     const view = new SurvivorsView(run.config, run.game.caps);
     view.update(run.snapshot(), 0);
     const s = run.snapshot();
-    const total = view.group.children.reduce(
-      (n, m) => n + (m as unknown as { count: number }).count,
-      0,
-    );
+    // Sólo las piezas instanciadas: el Barco Pirata Fantasma (T140) son dos
+    // `Mesh` sueltas (sólido y desvanecido), escondidas sin boss.
+    const total = view.group.children.reduce((n, m) => {
+      const piece = m as unknown as { isInstancedMesh?: boolean; count: number };
+      return n + (piece.isInstancedMesh ? piece.count : 0);
+    }, 0);
     // T126: además, el aro de cada élite, la sombra de lo que vuela, los
     // disparos enemigos y dos piezas por aviso de embestida.
     const flyers = s.enemies.filter((e) => e.type === 'gull').length;

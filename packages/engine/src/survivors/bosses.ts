@@ -1,4 +1,5 @@
 import type { BossAttackDef, BossDef, BossPhase } from './config';
+import { validateGhostShip } from './fantasma';
 import { validateKraken } from './kraken';
 
 /**
@@ -60,8 +61,13 @@ export function nextPhase(def: BossDef, index: number, hpFraction: number, phase
 
 /** El ataque `k` (cíclico) de una fase; null si la fase no ataca. */
 export function attackAt(def: BossDef, phase: BossPhase, k: number): { name: string; def: BossAttackDef } | null {
-  if (phase.attacks.length === 0) return null;
-  const name = phase.attacks[((k % phase.attacks.length) + phase.attacks.length) % phase.attacks.length]!;
+  return attackFrom(def, phase.attacks, k);
+}
+
+/** El ataque `k` (cíclico) de una lista de nombres; null si está vacía (el Fantasma cambia de lista por modo, T140). */
+export function attackFrom(def: BossDef, names: readonly string[], k: number): { name: string; def: BossAttackDef } | null {
+  if (names.length === 0) return null;
+  const name = names[((k % names.length) + names.length) % names.length]!;
   const attack = def.attacks[name];
   return attack ? { name, def: attack } : null;
 }
@@ -100,7 +106,8 @@ export function validateBoss(def: BossDef): string[] {
     if (a.kind === 'circles' && !(a.count > 0 && a.radius > 0)) out.push(`${def.id}: ${name} círculos`);
     if (a.kind === 'broadside' && !(a.count > 0 && a.speed > 0 && a.length > 0)) out.push(`${def.id}: ${name} andanada`);
   }
-  // El Kraken (T141) trae sus propios números.
+  // El Kraken (T141) y el Fantasma (T140) traen sus propios números.
   out.push(...validateKraken(def));
+  out.push(...validateGhostShip(def));
   return out;
 }

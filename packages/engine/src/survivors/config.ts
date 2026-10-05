@@ -16,7 +16,8 @@ import type { DropsDef } from './drops';
  * los huecos 4+4, las evoluciones y el Salvavidas raro; la beta 3 (plan 012)
  * trae el sistema genérico de bosses (`bosses`, `bossFight`: fases, ataques
  * avisados, llamadas), el acto 2 (`acts[1]`, `harderAct`) y su boss final, el
- * Kraken (`bosses.kraken.kraken`, T141).
+ * Kraken (`bosses.kraken.kraken`, T141) y el boss final del acto 1, el Barco
+ * Pirata Fantasma (`bosses.fantasma.fantasma`, T140), ya en el hueco del guion.
  * Cambiar cualquier valor cambia `survivorsConfigHash`, que
  * entra en el `configHash` de la sesión del minijuego; un cambio de reglas
  * sube `version`. Unidades: u de motor (las del mar de `/mar`) y segundos.
@@ -414,8 +415,12 @@ export interface BossAttackDef {
   invulnerable: boolean;
   /** El boss se queda quieto durante el aviso. */
   still: boolean;
-  /** summon (y, de regalo, cualquier otro): lo que llama al golpear. */
-  summon?: { enemy: EnemyId; count: number; elite: boolean; hpScale: number };
+  /**
+   * summon (y, de regalo, cualquier otro): lo que llama al golpear. Con
+   * `ghost`, fantasmas (T140): en la simulación son iguales; la pantalla los
+   * pinta translúcidos y teñidos.
+   */
+  summon?: { enemy: EnemyId; count: number; elite: boolean; hpScale: number; ghost?: boolean };
 }
 
 /** Cómo se mueve el boss en una fase. */
@@ -472,6 +477,34 @@ export interface BossDef {
    * lee sus números de `kraken.phases[i]`.
    */
   kraken?: KrakenDef;
+  /**
+   * El Barco Pirata Fantasma (T140): con esto, el boss alterna ventanas
+   * sólidas (hiere, le hieren, los ataques de la fase) y fantasma
+   * (invulnerable, translúcido, sólo las llamadas de `ghostAttacks`); lo lleva
+   * `fantasma.ts` encima del sistema genérico.
+   */
+  fantasma?: GhostShipDef;
+}
+
+// --- El Barco Pirata Fantasma (§7, T140) ---------------------------------------
+
+/**
+ * Los números del ciclo fantasma del Barco Pirata Fantasma. Sólido, es un
+ * boss genérico (sus fases y ataques: andanadas por los costados); al cumplir
+ * `solidS` de la fase (y acabado el ataque en curso) se desvanece `ghostS` s:
+ * nada lo daña, no toca el casco, va a `ghostSpeedScale` de su velocidad y
+ * lanza las llamadas de `ghostAttacks` cada `ghostAttackEveryS` s (la
+ * primera a los `ghostFirstAttackS`). `fadeS` es la rampa que la pantalla y
+ * el HUD pueden leer en `ghostness` (la opacidad de cada material es fija).
+ */
+export interface GhostShipDef {
+  fadeS: number;
+  ghostSpeedScale: number;
+  ghostAttacks: readonly string[];
+  ghostAttackEveryS: number;
+  ghostFirstAttackS: number;
+  /** Por fase (el índice es la fase de `phases`): s sólido y s fantasma. */
+  phases: readonly { solidS: number; ghostS: number }[];
 }
 
 // --- El Kraken (§7, T141) -------------------------------------------------------
@@ -820,14 +853,15 @@ const ACT_1: ActScript = {
       ],
     },
   ],
-  // Los huecos de los minibosses (2:30, 4:30) y del boss (5:30) existen
-  // apagados: la beta 3 sólo los enciende.
+  // Los huecos de los minibosses (2:30, 4:30) existen apagados hasta que
+  // cada miniboss exista (T138, T139); el del boss (5:30) ya va encendido.
   events: [
     { atS: 150, type: 'miniboss', ref: 'vecino', enabled: false },
     { atS: 210, type: 'elites', ref: 'elites' },
     { atS: 270, type: 'miniboss', ref: 'martillo', enabled: false },
     { atS: 300, type: 'marea', ref: 'marea', durationS: 20 },
-    { atS: 330, type: 'boss', ref: 'fantasma', enabled: false },
+    // El Barco Pirata Fantasma existe (T140): su hueco va encendido.
+    { atS: 330, type: 'boss', ref: 'fantasma' },
   ],
 };
 
@@ -1582,6 +1616,108 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           firstAttackS: 1,
         },
       ],
+    },
+    // El Barco Pirata Fantasma (T140): boss final del acto 1 (hueco `boss` del
+    // guion, 5:30). Gira alrededor del barco presentando el costado y suelta
+    // andanadas avisadas (las islas paran los disparos); a ratos se desvanece
+    // (`fantasma`): invulnerable, no toca, llama a piratas fantasma. Fases por
+    // vida: más rápido, andanadas más seguidas y ventanas sólidas más cortas.
+    fantasma: {
+      id: 'fantasma',
+      kind: 'boss',
+      i18nKey: 'survivors.boss.fantasma',
+      hp: 1600,
+      radius: 48,
+      speed: 170,
+      acceleration: 200,
+      contactWater: 12,
+      ignoresIslands: false,
+      noteValue: 100,
+      chest: false,
+      attacks: {
+        andanada: {
+          kind: 'broadside',
+          telegraphS: 1.1,
+          activeS: 0.2,
+          water: 7,
+          radius: 0,
+          thickness: 9,
+          gaps: 0,
+          gapRad: 0,
+          length: 560,
+          speed: 300,
+          count: 4,
+          spread: 0,
+          blockedByIslands: true,
+          invulnerable: false,
+          still: true,
+        },
+        tripulacion: {
+          kind: 'summon',
+          telegraphS: 0,
+          activeS: 0.1,
+          water: 0,
+          radius: 0,
+          thickness: 0,
+          gaps: 0,
+          gapRad: 0,
+          length: 0,
+          speed: 0,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: false,
+          summon: { enemy: 'pirate', count: 3, elite: false, hpScale: 0.8, ghost: true },
+        },
+      },
+      phases: [
+        {
+          untilHpFraction: 0.6,
+          untilS: 0,
+          movement: 'orbit',
+          standoff: 300,
+          speedScale: 1,
+          invulnerable: false,
+          attacks: ['andanada'],
+          attackEveryS: 3.5,
+          firstAttackS: 2.5,
+        },
+        {
+          untilHpFraction: 0.25,
+          untilS: 0,
+          movement: 'orbit',
+          standoff: 280,
+          speedScale: 1.15,
+          invulnerable: false,
+          attacks: ['andanada'],
+          attackEveryS: 2.8,
+          firstAttackS: 1.5,
+        },
+        {
+          untilHpFraction: 0,
+          untilS: 0,
+          movement: 'orbit',
+          standoff: 260,
+          speedScale: 1.3,
+          invulnerable: false,
+          attacks: ['andanada'],
+          attackEveryS: 2.2,
+          firstAttackS: 1,
+        },
+      ],
+      fantasma: {
+        fadeS: 0.6,
+        ghostSpeedScale: 1.35,
+        ghostAttacks: ['tripulacion'],
+        ghostAttackEveryS: 3,
+        ghostFirstAttackS: 0.8,
+        phases: [
+          { solidS: 12, ghostS: 5 },
+          { solidS: 10, ghostS: 6 },
+          { solidS: 8, ghostS: 7 },
+        ],
+      },
     },
     // El Kraken (T141): boss final del acto 2 (`acts[1]`, hueco `boss`). Sus
     // ataques los lleva `kraken.ts` con los números de `kraken`; las fases

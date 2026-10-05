@@ -410,6 +410,7 @@ function enemy(over: Partial<EnemyView> & Pick<EnemyView, 'id' | 'type'>): Enemy
     heading: 0,
     hp: def.hp,
     maxHp: def.hp,
+    ghost: false,
     radius: def.radius,
     elite: false,
     scale: 1,

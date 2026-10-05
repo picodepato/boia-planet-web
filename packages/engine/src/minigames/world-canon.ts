@@ -16,10 +16,13 @@ import type { WorldGameEnd } from './world-session';
  *
  * - La marca (`score`) son los segundos enteros de tiempo activo que aguantó
  *   el barco; el objetivo (`goal`) y el tope (`timeLimitS`) son los 7:00 de
- *   la partida: `won` es llegar al amanecer (`survived`).
- * - `minPlausibleMs(score) = score · 1000`: nadie aguanta N s de juego en
- *   menos de N s de juego. Con el tope y el reloj de la sesión, una duración
- *   imposible no vale.
+ *   la partida: `won` es llegar al amanecer (`survived`) o vencer al boss
+ *   final del acto (`victory`, T140): la noche cuenta entera (la marca es el
+ *   objetivo), porque la medalla de oro vale más que la de bronce (T144).
+ * - `minPlausibleMs(score) = min(score, boss final) · 1000`: nadie aguanta N s
+ *   de juego en menos de N s de juego, y nadie vence al boss final antes de
+ *   que entre (`canonEarliestWinS`). Con el tope y el reloj de la sesión, una
+ *   duración imposible no vale.
  * - La versión 4 sustituye a la 3 del cañón 2D; `survivors` lleva la versión
  *   y la huella de la configuración entera del modo, así que cualquier cambio
  *   de equilibrio cambia el `configHash` de la sesión; también lleva la
@@ -57,9 +60,26 @@ export function canonScore(activeS: number): number {
   return Number.isFinite(activeS) ? Math.max(0, Math.floor(activeS + 1e-6)) : 0;
 }
 
-/** Ganada sólo al amanecer. */
+/** Ganada al amanecer o al vencer al boss final del acto (T140). */
 export function canonOutcome(reason: ResultReason): Outcome {
-  return reason === 'survived' ? 'won' : 'lost';
+  return reason === 'survived' || reason === 'victory' ? 'won' : 'lost';
+}
+
+/**
+ * El segundo de partida más temprano en que se puede ganar: cuando entra el
+ * boss final más temprano de los actos (su hueco `boss` encendido); sin
+ * ninguno, el amanecer.
+ */
+export function canonEarliestWinS(cfg: SurvivorsConfig = SURVIVORS_CONFIG): number {
+  let earliest = cfg.durationS;
+  for (const act of cfg.acts) {
+    for (const ev of act.events) {
+      if (ev.type === 'boss' && ev.enabled !== false && cfg.bosses[ev.ref as keyof typeof cfg.bosses] && ev.atS < earliest) {
+        earliest = ev.atS;
+      }
+    }
+  }
+  return earliest;
 }
 
 export const canon: MinigameEntry<CanonConfig> = {
@@ -68,15 +88,16 @@ export const canon: MinigameEntry<CanonConfig> = {
   summary:
     'Aguanta en tu barco hasta el amanecer: pirañas y cangrejos vienen a por ti y el cañón de agua dispara solo.',
   defaults: CANON_DEFAULTS,
-  minPlausibleMs: (score) => Math.max(0, score) * 1000,
+  minPlausibleMs: (score) => Math.min(Math.max(0, score), canonEarliestWinS()) * 1000,
 };
 
 /** Cómo acabó una partida del Cañón, para su sesión (tiempo activo en s). */
-export function canonEnd(reason: ResultReason, activeS: number): WorldGameEnd {
+export function canonEnd(reason: ResultReason, activeS: number, cfg: SurvivorsConfig = SURVIVORS_CONFIG): WorldGameEnd {
   return {
     outcome: canonOutcome(reason),
     reason,
-    score: canonScore(activeS),
+    // Vencer al boss final (T140) vale la noche entera: la marca del objetivo.
+    score: reason === 'victory' ? canonScore(cfg.durationS) : canonScore(activeS),
     elapsedMs: Math.max(0, activeS) * 1000,
   };
 }

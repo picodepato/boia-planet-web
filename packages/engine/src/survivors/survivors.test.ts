@@ -65,6 +65,15 @@ const unsinkable = withConfig((c) => {
   c.player.waterCapacity = 1e12;
 });
 
+/** Insumergible y sin bosses (T140: vencer al boss final acaba la partida antes del amanecer). */
+const unsinkableNoBosses = withConfig((c) => {
+  c.player.waterCapacity = 1e12;
+  c.acts = c.acts.map((a) => ({
+    ...a,
+    events: a.events.map((ev) => (ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev)),
+  }));
+});
+
 /** Sin guion: sólo lo que la prueba pone. */
 const quiet = (patch: (c: SurvivorsConfig) => void = () => {}) =>
   withConfig((c) => {
@@ -353,7 +362,7 @@ describe('survivors: partidas completas', () => {
   }
 
   it('termina «survived» justo a los 7:00 de tiempo activo', () => {
-    const game = createSurvivors(unsinkable, 4, archipelago(9));
+    const game = createSurvivors(unsinkableNoBosses, 4, archipelago(9));
     let endAt = -1;
     let before = -1;
     play(

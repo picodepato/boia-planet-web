@@ -1496,6 +1496,8 @@ export class Mar3D {
     delete this.opts.canvas.dataset.canonArmas;
     delete this.opts.canvas.dataset.canonArmasVista;
     delete this.opts.canvas.dataset.canonArmasVistas;
+    delete this.opts.canvas.dataset.canonBoss;
+    delete this.opts.canvas.dataset.canonBossVista;
     this.prev.x = this.ship.x;
     this.prev.y = this.ship.y;
     this.prev.heading = this.ship.heading;
@@ -1538,6 +1540,14 @@ export class Mar3D {
     if (ds.canonVista !== vista) ds.canonVista = vista;
     const vistos = [...sv.seen].sort().join(' ');
     if (ds.canonVistos !== vistos) ds.canonVistos = vistos;
+    // T140: los bosses vivos («fantasma:solid») y los que están en pantalla, para las pruebas.
+    const boss = sv.run
+      .snapshot()
+      .bosses.map((b) => (b.fantasma ? `${b.boss}:${b.fantasma.mode}` : b.boss))
+      .join(' ');
+    const bossVista = sv.view.bossesWhere(onScreen).join(' ');
+    if (ds.canonBoss !== boss) ds.canonBoss = boss;
+    if (ds.canonBossVista !== bossVista) ds.canonBossVista = bossVista;
     // T128: populated mesh matrices, not inventory. Retain intermittent shots.
     const counts = sv.view.weapons.counts();
     const visible = sv.view.weapons.counts(onScreen);

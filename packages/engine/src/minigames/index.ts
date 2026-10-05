@@ -31,6 +31,7 @@ export {
   canonConfigFor,
   canonEnd,
   canonOutcome,
+  canonEarliestWinS,
   canonScore,
   type CanonConfig,
 } from './world-canon';

@@ -204,7 +204,7 @@ describe('las cartas de nivel', () => {
 describe('la pantalla final', () => {
   it('amanecer o inundado tienen pantalla, con el tiempo, enemigos, notas y nivel; el abandono no', () => {
     const s = run({ startAtS: 60 }).snapshot();
-    for (const reason of ['survived', 'flooded'] as const) {
+    for (const reason of ['survived', 'flooded', 'victory'] as const) {
       expect(canonResult(reason, s)).toEqual({
         reason,
         playedS: s.activeS,
@@ -217,6 +217,9 @@ describe('la pantalla final', () => {
     }
     expect(msg(END_KEYS.survived.title)).toBe('¡Amanece!');
     expect(msg(END_KEYS.flooded.title)).toBe('¡Barco inundado!');
+    // El boss final vencido (T140) tiene su final propio, distinto del amanecer.
+    expect(END_KEYS.victory.title).not.toBe(END_KEYS.survived.title);
+    expect(msg(END_KEYS.victory.title)).toMatch(/Fantasma/);
     expect(canonResult('abandoned', s)).toBeNull();
   });
 });
