@@ -12,6 +12,7 @@ import type { QualityTier } from '@boia/engine/streaming';
 import { Color, Group, type InstancedMesh, type Material, Mesh, Object3D } from 'three';
 import { toScene } from './compress';
 import { SurvivorsPickups } from './survivors-pickups';
+import { SurvivorsReadouts } from './survivors-readouts';
 import { SurvivorsShark } from './survivors-shark';
 import { SurvivorsWeapons } from './survivors-weapons';
 import { SurvivorsVecino } from './survivors-vecino';
@@ -106,6 +107,7 @@ export interface SurvivorsViewOptions {
 export class SurvivorsView {
   readonly group = new Group();
   readonly quality: QualityTier;
+  readonly readouts: SurvivorsReadouts;
   /** Movimiento reducido ahora (se puede cambiar en vivo). */
   reduced: boolean;
   private style: DefeatStyle;
@@ -257,6 +259,8 @@ export class SurvivorsView {
       ...this.sink.meshes,
       this.sink.rings,
     );
+    this.readouts = new SurvivorsReadouts(this.quality, (type, id) => this.heightOf(type, id));
+    this.group.add(this.readouts.group);
     this.all = Object.values(this.meshes());
     for (const m of this.all) m.visible = false;
     curveTree(this.group, true);
@@ -404,6 +408,7 @@ export class SurvivorsView {
     this.now = t;
     this.frame++;
     this.updateEnemies(s, t, dt);
+    this.readouts.update(s, this.reduced);
     const d = this.dummy;
     this.weapons.update(s, t, this.reduced);
     const ns = Math.min(s.enemyProjectiles.length, this.shots.instanceMatrix.count);
@@ -634,6 +639,7 @@ export class SurvivorsView {
   }
 
   dispose(): void {
+    this.readouts.dispose();
     this.vecino?.dispose();
     this.kraken?.dispose();
     this.weapons.dispose();

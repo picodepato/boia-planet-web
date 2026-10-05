@@ -4,6 +4,7 @@ import type { BossId, LevelUpCard } from '@boia/engine/survivors';
 import { type RefObject, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { t as msg } from '../../lib/i18n';
 import type { CanonMode } from './canon-mode';
+import { CanonReadoutMenu } from './canon-readout-menu';
 import {
   BOSS_BANNER_MS,
   BOSS_NOTICE_KEYS,
@@ -157,10 +158,12 @@ export function CanonLayer({
 
   return (
     <>
+      {view ? <CanonReadoutMenu covered={covered} /> : null}
       {view ? <CanonHud view={view} bar={boss.bar} onPause={onPause} /> : null}
       {view && boss.bar && boss.offscreen ? <BossArrow bar={boss.bar} /> : null}
       {view && boss.notices.length ? <BossBanner notice={boss.notices[boss.notices.length - 1]!} /> : null}
       {view && slots ? <CanonSlots slots={slots} bossOn={!!boss.bar} /> : null}
+
       {view ? <CanonWater pct={view.waterPct} engineRef={engineRef} /> : null}
       {view?.card && !covered ? (
         <CanonCards card={view.card} capacity={view.waterCapacity} onChoose={canon.choose} />

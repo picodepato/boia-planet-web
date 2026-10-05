@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T136: «Mostrar vida» and «Mostrar daño» options
+
+Implemented by Codex (wrapper verified and committed).
+
+What exists
+- Two toggles in the Cañón pause menu (`canon-readout-menu.tsx`), off by default, persisted per browser with try/catch storage (`canon-readout-preferences.ts`).
+- «Mostrar vida»: one canvas overlay draws hp bars over damaged non-boss enemies. «Mostrar daño»: damage numbers aggregated per enemy in 160 ms windows, capped, no float under reduced motion (`engine/survivors-readouts*.ts`, `survivors-readout-model.ts`). Read-only snapshot field in `packages/engine/src/survivors/sim.ts`.
+- i18n keys in `es-mar.ts` (`muestra`); data attributes for e2e; e2e case in `mar-canon.spec.ts`.
+
+Commands
+- vitest (excluding packages/db): 169 files, 1637 tests passed.
+- `sh tools/spec/checks.sh`: OK. `pnpm lint`: exit 0. `pnpm typecheck`: exit 0.
+- `pnpm build`: exit 0, landing 186.9 kB of 200 kB.
+- `pnpm e2e mar-canon.spec.ts --workers=1`: 70 passed, 1 skipped, 1 failed (dawn reward, known flaky); rerun alone: 2 passed.
+
+Pending
+- None.
+
 ## 2026-10-05 — plan 012 T145: Final card
 
 Qué existe:

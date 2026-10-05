@@ -44,6 +44,58 @@ const pointOf = (s: string | null) => {
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
+for (const reduced of [false, true]) {
+  test(`lecturas de vida y daño desde la pausa, recordadas por navegador (T136, reducido=${reduced})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' });
+    const errors = await openMar(page, '?minijuego=canon&t=120&seed=7&dificultad=tormenta');
+    await expect(game(page)).toHaveAttribute('data-estado', 'running');
+    await expect(page.getByTestId('mar-canon-readouts')).toHaveCount(0);
+    await page.getByTestId('mar-canon-pausa').click();
+    const menu = page.getByTestId('mar-menu');
+    const health = menu.getByRole('switch', { name: msg('mar.canon.mostrarVida') });
+    const damage = menu.getByRole('switch', { name: msg('mar.canon.mostrarDano') });
+    await expect(health).toHaveAttribute('aria-checked', 'false');
+    await expect(damage).toHaveAttribute('aria-checked', 'false');
+    await health.focus();
+    await page.keyboard.press('Space');
+    await damage.click();
+    await expect(health).toHaveAttribute('aria-checked', 'true');
+    await expect(damage).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+    const overlay = page.getByTestId('mar-canon-readouts');
+    await expect(overlay).toBeVisible();
+    await expect(overlay).toHaveAttribute('data-canon-health-overlay', 'on');
+    await expect(overlay).toHaveAttribute('data-canon-damage-overlay', 'on');
+    await expect(overlay).toHaveAttribute('data-reduced-motion', String(reduced));
+    // These counters are updated only when bars and numbers were actually drawn on-screen.
+    await expect
+      .poll(
+        async () => {
+          const card = page.getByTestId('mar-canon-carta').first();
+          if ((await card.isVisible()) && (await card.isEnabled())) await card.click();
+          return (
+            Number(await overlay.getAttribute('data-health-seen')) > 0 &&
+            Number(await overlay.getAttribute('data-damage-seen')) > 0
+          );
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(true);
+    await openMar(page, '?minijuego=canon&seed=7');
+    await page.getByTestId('mar-canon-pausa').click();
+    await expect(health).toHaveAttribute('aria-checked', 'true');
+    await expect(damage).toHaveAttribute('aria-checked', 'true');
+    await health.click();
+    await damage.click();
+    await page.getByTestId('mar-menu-seguir').click();
+    await expect(page.getByTestId('mar-canon-readouts')).toBeHidden();
+    expect(errors).toEqual([]);
+  });
+}
+
 test('el botón de turbo acelera durante el Cañón y conserva su cooldown (T124)', async ({
   page,
 }) => {

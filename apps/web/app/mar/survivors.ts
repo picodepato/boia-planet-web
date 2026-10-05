@@ -21,6 +21,8 @@ import {
   survivorsWorldOf,
 } from '@boia/engine/survivors';
 import type { Rect, WorldConfig, WorldObject } from '@boia/world';
+import { readoutPreferences } from './canon-readout-preferences';
+import { DamageNumbers, type DamageNumber } from './engine/survivors-readout-model';
 
 /**
  * El Cañón «Que no pare la música» dentro de `/mar` (plan 009, T99), sin
@@ -552,6 +554,10 @@ export function lootConfig(config: SurvivorsConfig): SurvivorsConfig {
   return { ...config, drops: { ...config.drops, chance: 1 } };
 }
 
+export interface SurvivorsRenderSnapshot extends SurvivorsSnapshot {
+  readonly damageNumbers: readonly DamageNumber[];
+}
+
 export class SurvivorsRun {
   readonly game: SurvivorsGame;
   readonly config: SurvivorsConfig;
@@ -566,6 +572,8 @@ export class SurvivorsRun {
   private lastMs: number | null = null;
   private notified = false;
   private readonly devWin: boolean;
+  private readonly damageNumbers: DamageNumbers;
+  private renderSnapshot: SurvivorsRenderSnapshot | null = null;
   /** La opción de la carta que el jugador eligió, para el paso siguiente. */
   private pendingChoice: number | null = null;
 
@@ -580,6 +588,7 @@ export class SurvivorsRun {
     this.config = opts.devLoot && devShortcutsEnabled() ? lootConfig(base) : base;
     this.seed = opts.seed;
     this.quality = opts.quality;
+    this.damageNumbers = new DamageNumbers(opts.quality === 'baja' ? 12 : 24);
     this.difficulty = opts.difficulty ?? 'normal';
     this.act = opts.act ?? 1;
     this.devWin = opts.devWin === true && devShortcutsEnabled();
@@ -619,6 +628,14 @@ export class SurvivorsRun {
     const events = this.game.step(
       choose === null ? { ship: input, turbo } : { ship: input, turbo, choose },
     );
+    // Consume each fixed step immediately: a frame can contain several steps.
+    if (readoutPreferences().get().damage) {
+      for (const hit of this.game.snapshot().enemyHits)
+        this.damageNumbers.add({ ...hit, kind: 'enemy' }, this.game.activeS);
+      for (const ev of events)
+        if (ev.type === 'bossDamaged')
+          this.damageNumbers.add({ ...ev, kind: 'boss' }, this.game.activeS);
+    } else this.damageNumbers.clear();
     // `&vencer=1` (T144): el boss que haya aparecido cae ya.
     if (this.devWin) this.game.defeatBossesNow();
     this.notifyEnd();
@@ -699,8 +716,14 @@ export class SurvivorsRun {
     return this.game.ended;
   }
 
-  snapshot(): SurvivorsSnapshot {
-    return this.game.snapshot();
+  snapshot(): SurvivorsRenderSnapshot {
+    const s = this.game.snapshot();
+    if (!readoutPreferences().get().damage) this.damageNumbers.clear();
+    const damageNumbers = this.damageNumbers.read(s.activeS);
+    // Own wrapper: never attach browser display state to the sim's cached snapshot.
+    if (!this.renderSnapshot) this.renderSnapshot = { ...s, damageNumbers };
+    else Object.assign(this.renderSnapshot, s, { damageNumbers });
+    return this.renderSnapshot;
   }
 
   hook(): CanonHook {

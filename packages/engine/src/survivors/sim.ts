@@ -180,6 +180,15 @@ export type SurvivorsEvent =
   | GhostShipEvent
   | { type: 'end'; reason: EndReason };
 
+/** Enemy weapon hits from the latest fixed step, including lethal hits (display only). */
+export interface EnemyHitView {
+  readonly id: number;
+  readonly enemy: EnemyId;
+  readonly x: number;
+  readonly y: number;
+  readonly damage: number;
+}
+
 export interface EnemyView {
   readonly id: number;
   readonly type: EnemyId;
@@ -455,6 +464,7 @@ export interface SurvivorsSnapshot {
     readonly invulnerableS: number;
   };
   readonly enemies: readonly EnemyView[];
+  readonly enemyHits: readonly EnemyHitView[];
   readonly enemiesByType: Readonly<Partial<Record<EnemyId, readonly EnemyView[]>>>;
   /** Bolas y confetis del jugador (todas las armas que vuelan). */
   readonly projectiles: readonly PlayerProjectileView[];
@@ -838,6 +848,7 @@ export class SurvivorsGame {
 
   private readonly player: ShipState;
   private readonly enemies: Enemy[] = [];
+  private readonly enemyHits: EnemyHitView[] = [];
   private readonly projectiles: Projectile[] = [];
   private readonly enemyShots: EnemyShot[] = [];
   private readonly telegraphs: TelegraphView[] = [];
@@ -1026,6 +1037,7 @@ export class SurvivorsGame {
       movement: this.movement.snapshot(),
       player: Object.assign(this.player, { radius: this.shipCfg.radius, invulnerableS: 0 }),
       enemies: this.enemies,
+      enemyHits: this.enemyHits,
       enemiesByType: this.byType,
       projectiles: this.projectiles,
       enemyProjectiles: this.enemyShots,
@@ -1555,6 +1567,7 @@ export class SurvivorsGame {
    */
   step(input: SurvivorsInput = {}): readonly SurvivorsEvent[] {
     this.events.length = 0;
+    this.enemyHits.length = 0;
     if (this.endReason) return this.events;
     if (input.pause !== undefined) this.manualPause = input.pause;
     if (input.choose !== undefined && this.card) this.choose(input.choose);
@@ -2272,8 +2285,13 @@ export class SurvivorsGame {
   /** Hiere a `e`; si cae, lo derrota. */
   private hurt(e: Enemy, damage: number): void {
     if (e.dead) return;
+    this.recordEnemyHit(e, damage);
     e.hp -= damage;
     if (e.hp <= 0) this.defeat(e);
+  }
+
+  private recordEnemyHit(e: Enemy, damage: number): void {
+    this.enemyHits.push({ id: e.id, enemy: e.type, x: e.x, y: e.y, damage });
   }
 
   /** Hiere a todo lo vivo que toca el círculo (x, y, r), bosses incluidos. Devuelve cuántos. */
@@ -3010,7 +3028,9 @@ export class SurvivorsGame {
       const dx = wd(e.x - p.x, this.w);
       const dy = wd(e.y - p.y, this.h);
       if (!inFlame(def, p.heading, dx, dy, e.radius)) continue;
-      e.hp -= flameDamage(def, e, dt);
+      const damage = flameDamage(def, e, dt);
+      this.recordEnemyHit(e, damage);
+      e.hp -= damage;
       // Sin restos de coma flotante: a los `killS` s justos, cae.
       if (e.hp <= e.maxHp * 1e-9) this.defeat(e);
     }

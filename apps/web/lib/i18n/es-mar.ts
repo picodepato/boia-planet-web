@@ -4,6 +4,10 @@
  * usa la clave de allí (es-zonas.ts). Todo `muestra` hasta que Álvaro lo apruebe.
  */
 export const esMar = {
+  // T136: muestra, pending copy approval.
+  'mar.canon.lecturas': 'Lecturas de combate',
+  'mar.canon.mostrarVida': 'Mostrar vida',
+  'mar.canon.mostrarDano': 'Mostrar daño',
   'mar.logros.logros': 'Logros',
   'mar.logros.logros2': '🏆 Logros',
   'mar.logros.miCarnet': '🪪 Mi Carnet',
