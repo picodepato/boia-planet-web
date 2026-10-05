@@ -405,6 +405,8 @@ export interface BossWarningView {
   readonly gapRad: number;
   readonly gapPhase: number;
   readonly ringRadius: number;
+  /** Islas relativas al origen de un anillo, para dibujar su sombra radial (T138). */
+  readonly ringObstacles?: readonly { readonly x: number; readonly y: number; readonly radius: number }[];
   readonly progress: number;
   readonly hit: boolean;
 }
@@ -3878,6 +3880,12 @@ export class SurvivorsGame {
           gapRad: def.gapRad,
           gapPhase: a.gapPhase,
           ringRadius: hit ? ringRadiusAt(def, progress) : 0,
+          ringObstacles: def.blockedByIslands
+            ? this.islands.near(a.x, a.y, def.radius, this.scratch).map((k) => {
+                const o = this.islands.obstacles[k]!;
+                return { x: wd(o.x - a.x, this.w), y: wd(o.y - a.y, this.h), radius: o.radius };
+              })
+            : [],
         });
         break;
       case 'line':

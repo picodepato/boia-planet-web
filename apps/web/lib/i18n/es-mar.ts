@@ -224,6 +224,8 @@ export const esMar = {
   'survivors.dificultad.tormenta': 'Tormenta',
   // Los bosses (plan 012): el nombre de la barra del boss (`BossDef.i18nKey`). muestra
   'survivors.boss.fantasma': 'Barco Pirata Fantasma',
+  'survivors.boss.vecino': 'El Vecino Quejica',
+  'survivors.boss.vecino.grito': '¡BAJAD LA MÚSICA!',
   // El interruptor de desarrollo del estilo de derrota (T117; sólo con los atajos de desarrollo).
   'mar.canon.dev.derrota': 'Derrota: {estilo}',
   'mar.canon.dev.derrota.aria': 'Cambiar el estilo de derrota (desarrollo)',

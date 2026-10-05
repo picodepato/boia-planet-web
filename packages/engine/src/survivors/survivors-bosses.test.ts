@@ -152,21 +152,20 @@ describe('bosses T137: datos', () => {
     for (const def of Object.values(SURVIVORS_CONFIG.bosses)) expect(validateBoss(def!)).toEqual([]);
     const kinds = new Set(Object.values(PRUEBA.attacks).map((a) => a.kind));
     expect([...kinds].sort()).toEqual(['broadside', 'circles', 'line', 'ring', 'summon']);
-    // Los huecos de los minibosses que aún no existen van apagados; los de
-    // los bosses finales están encendidos: el Barco Pirata Fantasma (T140,
+    // Vecino (T138) y los bosses finales están encendidos; Martillo espera T139:
+    // el Barco Pirata Fantasma (T140,
     // acto 1) y el Kraken (T141, acto 2; el acto 2 no se juega en producción
     // hasta la campaña, T144).
     for (const act of SURVIVORS_CONFIG.acts) {
       const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
       expect(slots.length).toBe(3);
       for (const s of slots) {
-        expect(s.enabled !== false).toBe(s.type === 'boss');
+        expect(s.enabled !== false).toBe(s.type === 'boss' || s.ref === 'vecino');
         expect(s.ref).not.toBe('prueba');
         if (s.enabled !== false) expect(SURVIVORS_CONFIG.bosses[s.ref as BossId]).toBeDefined();
       }
     }
-    // Y la simulación de verdad no saca ningún miniboss en el acto 1; empezando
-    // después del último hueco entra el boss final de cada acto.
+    // Empezando después del último hueco entra el boss final de cada acto.
     const g1 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 1 });
     run(g1, 2);
     expect(g1.snapshot().bosses.map((b) => b.boss)).toEqual(['fantasma']);

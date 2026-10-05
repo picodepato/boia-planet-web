@@ -203,6 +203,35 @@ test('ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos, sin 
   expect(errors).toEqual([]);
 });
 
+test('antes de las 2:30 (`t=`) llega el Vecino Quejica y entra en pantalla, sin errores (T138)', async ({
+  page,
+}) => {
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.ref === 'vecino')!;
+  expect(slot.enabled).toBe(true);
+  const consoleErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  const errors = await openMar(page, `?minijuego=canon&t=${slot.atS - 10}&seed=7`);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  await expect(canvas(page)).not.toHaveAttribute('data-canon-boss', /vecino/);
+  await page.keyboard.down('ArrowRight');
+  await expect
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
+        return (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '';
+      },
+      { timeout: 90_000, intervals: [400] },
+    )
+    .toMatch(/vecino/);
+  await expect(canvas(page)).toHaveAttribute('data-canon-boss', /vecino/);
+  await page.keyboard.up('ArrowRight');
+  expect(errors).toEqual([]);
+  expect(consoleErrors).toEqual([]);
+});
+
 test('pasadas las 5:30 (`t=`) el Barco Pirata Fantasma está en la partida y entra en pantalla, sin errores (T140)', async ({
   page,
 }) => {

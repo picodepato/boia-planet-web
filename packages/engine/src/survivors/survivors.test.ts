@@ -74,6 +74,14 @@ const unsinkableNoBosses = withConfig((c) => {
   }));
 });
 
+/** Equilibrio de oleadas T123 sin encuentros de beta 3, igual que T132/T133. */
+const wavesOnly = withConfig((c) => {
+  c.acts = c.acts.map((a) => ({
+    ...a,
+    events: a.events.map((ev) => (ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev)),
+  }));
+});
+
 /** Sin guion: sólo lo que la prueba pone. */
 const quiet = (patch: (c: SurvivorsConfig) => void = () => {}) =>
   withConfig((c) => {
@@ -443,9 +451,9 @@ describe('survivors: equilibrio de la beta 1 (T123)', () => {
   ];
   for (const [seed, make] of seeds) {
     it(`un esquivador aguanta mucho más que un barco parado (semilla ${seed})`, () => {
-      const idle = createSurvivors(SURVIVORS_CONFIG, seed, make());
+      const idle = createSurvivors(wavesOnly, seed, make());
       const idleRun = play(idle, () => ({ choose: 0 }));
-      const bot = createSurvivors(SURVIVORS_CONFIG, seed, make());
+      const bot = createSurvivors(wavesOnly, seed, make());
       const botRun = play(bot, (_i, g) => dodgeInput(g));
       const idleS = idleRun.game.snapshot().activeS;
       const botS = botRun.game.snapshot().activeS;

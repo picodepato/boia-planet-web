@@ -12,6 +12,7 @@ import { Color, Group, type InstancedMesh, type Material, Mesh, Object3D } from 
 import { toScene } from './compress';
 import { SurvivorsPickups } from './survivors-pickups';
 import { SurvivorsWeapons } from './survivors-weapons';
+import { SurvivorsVecino } from './survivors-vecino';
 import { curveTree } from './planet';
 import {
   BOSS_WARNING_CAP,
@@ -119,6 +120,7 @@ export class SurvivorsView {
    * sólido y desvanecido; sólo uno se ve. Null si la config no lo tiene.
    */
   private readonly ghostShip: { solid: Mesh; ghost: Mesh } | null;
+  readonly vecino: SurvivorsVecino | null;
   /** Los piratas fantasma que llama (el modelo del pirata teñido y translúcido), por tipo. */
   private readonly ghostMeshes: (InstancedMesh | null)[] = [];
   /** Las líneas de aviso de los bosses (andanadas, embestidas): dos piezas por línea, como `warnings`. */
@@ -181,6 +183,8 @@ export class SurvivorsView {
       this.ghostShip = { solid, ghost };
       this.group.add(solid, ghost);
     } else this.ghostShip = null;
+    this.vecino = config.bosses.vecino ? new SurvivorsVecino(this.quality) : null;
+    if (this.vecino) this.group.add(this.vecino.group);
     this.bossWarnings = instanced(
       warningLineGeometry(),
       warningLineMaterial(),
@@ -190,7 +194,8 @@ export class SurvivorsView {
     {
       const track = new Color(WARNING_COLORS.track);
       const fill = new Color(WARNING_COLORS.fill);
-      for (let i = 0; i < BOSS_WARNING_CAP * 2; i++) this.bossWarnings.setColorAt(i, i % 2 ? fill : track);
+      for (let i = 0; i < BOSS_WARNING_CAP * 2; i++)
+        this.bossWarnings.setColorAt(i, i % 2 ? fill : track);
     }
     this.weapons = new SurvivorsWeapons(config, caps, this.groundAt);
     this.pickups = new SurvivorsPickups(config, this.quality, this.groundAt);
@@ -349,6 +354,12 @@ export class SurvivorsView {
    */
   bossesWhere(test: (x: number, y: number, z: number, r: number) => boolean): string[] {
     const out: string[] = [];
+    const vecino = this.vecino?.barge;
+    if (
+      vecino?.visible &&
+      test(vecino.position.x, vecino.position.y, vecino.position.z, vecino.scale.x * 1.5)
+    )
+      out.push('vecino');
     const g = this.ghostShip;
     if (g) {
       for (const [mesh, mode] of [
@@ -531,6 +542,7 @@ export class SurvivorsView {
    * disparos, llena). Sin parpadeos; con movimiento reducido, sin vaivén.
    */
   private updateBosses(s: SurvivorsSnapshot, t: number): void {
+    this.vecino?.update(s, t, this.reduced);
     const g = this.ghostShip;
     if (g) {
       let seen = false;
@@ -597,6 +609,7 @@ export class SurvivorsView {
   }
 
   dispose(): void {
+    this.vecino?.dispose();
     this.weapons.dispose();
     this.group.removeFromParent();
     const done = new Set<unknown>();
@@ -614,7 +627,10 @@ export class SurvivorsView {
 }
 
 /** ¿Alguna pieza pintada de `mesh` pasa `test` (escena: x, y, z y radio)? Lee las matrices: no crea nada. */
-function instanceWhere(mesh: InstancedMesh, test: (x: number, y: number, z: number, r: number) => boolean): boolean {
+function instanceWhere(
+  mesh: InstancedMesh,
+  test: (x: number, y: number, z: number, r: number) => boolean,
+): boolean {
   const a = mesh.instanceMatrix.array;
   for (let i = 0; i < mesh.count; i++) {
     const o = i * 16;

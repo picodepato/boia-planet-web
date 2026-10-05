@@ -110,11 +110,10 @@ describe('survivors beta 2: guion del acto 1 en datos', () => {
     expect(elitesEvent.atS).toBe(210);
     expect(mareaEvent).toMatchObject({ atS: 300, durationS: 20 });
     expect(mareaDef.enemy in SURVIVORS_CONFIG.enemies).toBe(true);
-    // Los huecos de los minibosses existen y están apagados (T138, T139); el
-    // del boss final va encendido con el Barco Pirata Fantasma (T140).
+    // Vecino (T138) y Fantasma (T140) ya están encendidos; Martillo espera T139.
     const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
     expect(slots.map((e) => [e.type, e.atS, e.enabled !== false, e.ref])).toEqual([
-      ['miniboss', 150, false, 'vecino'],
+      ['miniboss', 150, true, 'vecino'],
       ['miniboss', 270, false, 'martillo'],
       ['boss', 330, true, 'fantasma'],
     ]);

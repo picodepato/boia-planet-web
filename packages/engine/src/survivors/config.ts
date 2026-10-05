@@ -2,6 +2,7 @@ import { configHash } from '../minigames/rng';
 import type { ShipConfig } from '../ship/config';
 import type { QualityTier } from '../world/sectors';
 import type { DropsDef } from './drops';
+import { VECINO } from './vecino';
 
 /**
  * La configuración única y versionada del modo Survivors del Cañón («Que no
@@ -25,7 +26,7 @@ import type { DropsDef } from './drops';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 11;
+export const SURVIVORS_CONFIG_VERSION = 12;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -853,10 +854,9 @@ const ACT_1: ActScript = {
       ],
     },
   ],
-  // Los huecos de los minibosses (2:30, 4:30) existen apagados hasta que
-  // cada miniboss exista (T138, T139); el del boss (5:30) ya va encendido.
+  // El Vecino (T138, 2:30) y el boss final están encendidos; Martillo espera T139.
   events: [
-    { atS: 150, type: 'miniboss', ref: 'vecino', enabled: false },
+    { atS: 150, type: 'miniboss', ref: 'vecino', enabled: true },
     { atS: 210, type: 'elites', ref: 'elites' },
     { atS: 270, type: 'miniboss', ref: 'martillo', enabled: false },
     { atS: 300, type: 'marea', ref: 'marea', durationS: 20 },
@@ -1475,11 +1475,10 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     normal: { id: 'normal', i18nKey: 'survivors.dificultad.normal', enemyDamage: 1, enemyHp: 1, enemyCount: 1 },
     tormenta: { id: 'tormenta', i18nKey: 'survivors.dificultad.tormenta', enemyDamage: 1.6, enemyHp: 1.6, enemyCount: 1.6 },
   },
-  // Bosses (T137). Sólo el de pruebas del sistema genérico, con un ataque de
-  // cada forma y una ventana de invulnerabilidad al cambiar de fase; ningún
-  // hueco del guion lo llama, así que no sale en una partida normal. Los de
-  // verdad (T138–T141) se escriben con esta misma plantilla.
+  // Bosses: prueba (T137) nunca entra en producción; Vecino (T138),
+  // Fantasma (T140) y Kraken (T141) usan sus huecos reales del guion.
   bosses: {
+    vecino: VECINO,
     prueba: {
       id: 'prueba',
       kind: 'miniboss',

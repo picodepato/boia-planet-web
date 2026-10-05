@@ -164,7 +164,7 @@ describe('kraken T141: datos', () => {
     const final2 = a2.events.find((e) => e.type === 'boss')!;
     expect(final2.ref).toBe('kraken');
     expect(final2.enabled).toBe(true);
-    for (const e of a1.events.filter((e) => e.type === 'miniboss')) expect(e.enabled).toBe(false);
+    for (const e of a1.events.filter((e) => e.type === 'miniboss')) expect(e.enabled).toBe(e.ref === 'vecino');
     expect(a1.events.find((e) => e.type === 'boss')).toMatchObject({ ref: 'fantasma' });
     // Los demás hitos del 2 son los del 1.
     expect(a2.events.filter((e) => e.type !== 'boss')).toEqual(a1.events.filter((e) => e.type !== 'boss'));
@@ -181,7 +181,7 @@ describe('kraken T141: datos', () => {
     // Y en el acto 1, su propio boss final (T140), nunca el Kraken.
     const g1 = createSurvivors(act2(), 5, openSea(), { act: 1, startAtS: final2.atS - 1 });
     run(g1, 2);
-    expect(g1.snapshot().bosses.map((b) => b.boss)).toEqual(['fantasma']);
+    expect(g1.snapshot().bosses.map((b) => b.boss)).toEqual(['vecino', 'fantasma']);
   });
 });
 
@@ -568,8 +568,8 @@ describe('kraken T141: fases, derrota y determinismo', () => {
     expect(['survived', 'victory']).toContain(a.s.end);
     expect(a.s.act).toBe(2);
     const spawns = of(a.events, 'bossSpawn');
-    expect(spawns.map((e) => e.boss)).toEqual(['kraken']);
-    expect(spawns[0]!.atS).toBeGreaterThanOrEqual(actOf(SURVIVORS_CONFIG, 2)!.events.find((e) => e.type === 'boss')!.atS);
+    expect(spawns.map((e) => e.boss)).toEqual(['vecino', 'kraken']);
+    expect(spawns.find((e) => e.boss === 'kraken')!.atS).toBeGreaterThanOrEqual(actOf(SURVIVORS_CONFIG, 2)!.events.find((e) => e.type === 'boss')!.atS);
     expect(a.shadowSteps).toBeGreaterThan(0);
     expect(a.modes.has('emerged')).toBe(true);
     expect(a.tentaclesSeen).toBeGreaterThan(0);
@@ -584,7 +584,7 @@ describe('kraken T141: fases, derrota y determinismo', () => {
       expect(rocks.some((e) => e.stage === 'thrown' && e.rock === l.rock && e.atS <= l.atS - K.grab.rock.flightS + SURVIVORS_STEP_S * 1.5)).toBe(true);
     }
     // Acaba vencido o retirado, nunca en el limbo.
-    expect(of(a.events, 'bossDefeated').length + of(a.events, 'bossRetreated').length).toBe(1);
+    expect(of(a.events, 'bossDefeated').length + of(a.events, 'bossRetreated').length).toBe(2);
     expect(a.s.bosses).toEqual([]);
   }, 120_000);
 

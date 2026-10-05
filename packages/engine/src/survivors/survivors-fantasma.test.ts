@@ -456,8 +456,8 @@ describe('fantasma T140: fases, derrota y determinismo', () => {
     expect(['survived', 'victory']).toContain(a.s.end);
     expect(a.s.act).toBe(1);
     const spawns = of(a.events, 'bossSpawn');
-    expect(spawns.map((e) => e.boss)).toEqual(['fantasma']);
-    expect(spawns[0]!.atS).toBeGreaterThanOrEqual(SLOT.atS);
+    expect(spawns.map((e) => e.boss)).toEqual(['vecino', 'fantasma']);
+    expect(spawns.find((e) => e.boss === 'fantasma')!.atS).toBeGreaterThanOrEqual(SLOT.atS);
     expect(a.modes.has('solid')).toBe(true);
     expect(a.modes.has('ghost')).toBe(true);
     expect(a.ghostPirates).toBeGreaterThan(0);
@@ -471,7 +471,7 @@ describe('fantasma T140: fases, derrota y determinismo', () => {
       expect(h.atS - t.atS).toBeGreaterThanOrEqual(FANTASMA.attacks.andanada!.telegraphS - SURVIVORS_STEP_S * 1.5);
     }
     // Acaba vencido o retirado, nunca en el limbo.
-    expect(of(a.events, 'bossDefeated').length + of(a.events, 'bossRetreated').length).toBe(1);
+    expect(of(a.events, 'bossDefeated').length + of(a.events, 'bossRetreated').length).toBe(2);
     expect(a.s.bosses).toEqual([]);
     expect(a.s.end === 'victory').toBe(a.s.finalBossDefeated);
   }, 120_000);

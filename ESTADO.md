@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T138: El Vecino Quejica
+
+Implemented by Codex (wrapper verified).
+
+Qué existe:
+- Engine: `packages/engine/src/survivors/vecino.ts` (miniboss a ~2:30 en acto 1, dos fases, anillos de ondas con huecos, telegrafiados, las islas bloquean tramos; acto 2 con x1.5 HP), cofre y nota grande. `SURVIVORS_CONFIG_VERSION` 11 -> 12. Única extensión genérica: `ringObstacles` en los avisos de jefe.
+- Web: `apps/web/app/mar/engine/survivors-vecino.ts` (barcaza + megáfono, anillos baratos, movimiento reducido respetado), enganche en `survivors-view.ts`, clave i18n en `es-mar.ts` (`muestra`).
+- Pruebas: `survivors-vecino.test.ts` (engine y web), e2e en `mar-canon.spec.ts`.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors apps/web/app/mar --testTimeout=60000` -> exit 0, 552 tests, 47 archivos
+- `pnpm lint` -> exit 0; `pnpm typecheck` -> exit 0; `pnpm build` -> exit 0
+- `E2E_PORT=3217 pnpm e2e --workers=1 -g Vecino mar-canon` -> 2 passed (mobile, desktop)
+
+Pendiente: nada propio; e2e completo no corrido.
+
 ## 2026-10-05 — plan 012 T140: Boss final del acto 1: Barco Pirata Fantasma
 
 Qué existe:
