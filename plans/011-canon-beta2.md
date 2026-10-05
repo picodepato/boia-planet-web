@@ -141,7 +141,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) 9 vinyls, 4+4 slots up to level 5, card pool in `survivors/cards.ts`, 4 evolutions offered as cards, Salvavidas saves once, old 6 upgrades replaced, es-mar texts `muestra`, config v4; 1395 unit tests → 059c91b
 
 ## T130 — Upgrade interface: new cards and the weapons/vinyls row
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T128, T129
@@ -152,7 +152,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests for the HUD model of the slots row and card texts per offer kind
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with: a card of each kind can be shown (`carta=1` or a dev shortcut), the slots row is visible on desktop at the bottom and on a mobile viewport at the top-left, nothing covers the Tickets link
   - Test command → exit 0
-- Outcome:
+- Outcome: cards for all 7 offer kinds (icon, kind tag, «Nivel n: …», pips; evolutions gold), slots row 4+4 (bottom centre desktop, top-left mobile, star on evolved weapon), dev shortcut `carta=surtido`; 1460 unit tests, T130 e2e subset 8 passed (full mar-canon run left to T132) → 47f9f1d
 
 ## T131 — Three difficulties chosen on the island panel
 - Status: done
@@ -169,13 +169,14 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: Tranquila/Normal/Tormenta as config data (damage 0.7/1/1.3, hp 0.8/1/1.3, count 0.75/1/1.4), radiogroup of three buttons above «Jugar», `dificultad=` shortcut, difficulty in the session `configHash`, config v5; 1402 unit tests, 4 new e2e cases pass; e2e `sin esquivar, el agua llena el barco` fails on main since T129 (card pool) → cceeee7
 
 ## T132 — Balance with bots, `baja` performance, e2e, docs and the beta 2 test guide
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T123, T124, T125, T126, T127, T128, T129, T130, T131
 - Goal: Close beta 2.
   - **Balance with bots**: sim tests running accelerated full games with simple bots (idle, dodging, dodging + greedy card picks) per difficulty and seed; tune `SURVIVORS_CONFIG` so an idle boat loses early, a dodging bot reaches the late minutes in Normal, Tranquila is clearly easier and Tormenta harder, and level-ups come at a steady rhythm (record the measured curves in the status section).
   - **Performance in `baja`**: with caps full at `t=360` and all weapons, frame-time stays acceptable in the e2e browser with `calidad=baja` forced (measure and report; fix obvious hot spots only).
+  - **Full e2e run**: T130's agent could not finish the whole `mar-canon.spec.ts` (machine too slow) and ran only a subset; run the whole file (and the rest of the e2e suite the orchestrator would run at the end of a plan, with `--workers=2`), and fix what fails or report it precisely.
   - **E2E**: `mar-canon.spec.ts` covers the whole beta 2 loop at a smoke level (new enemies present late, a weapon card chosen, an evolution offered via dev shortcut, difficulty selected, interactives during the game), without waiting 7 minutes.
   - **Docs**: `docs/spec/estado.md` rows touched by the mode, `ESTADO.md` via the status fragment, and a new test guide `docs/propuestas/2026-10-04-canon-beta2-guia-prueba.md` in Spanish like the beta 1 guide: what is in beta 2, dev shortcuts (including `dificultad=`), what to tune and where, and 6–8 questions for Hernán (levelling hook, weapons feeling different, rhythm, difficulties, interactives, mobile performance) with an empty «Notas» section. The design reference's roadmap row is not rewritten.
   - Bump `SURVIVORS_CONFIG_VERSION` if balance changed.
@@ -215,6 +216,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T131: multipliers (muestra) Tranquila dmg 0.7/hp 0.8/count 0.75, Normal 1/1/1, Tormenta 1.3/1.3/1.4; `enemyCount` scales script groups per second and the Marea ring size, not group size; hp scaled at spawn (jellyfish halves inherit); damage scaled in `damagePlayer` (contact and shots); `survivors.difficulty` in the session config; choice kept in memory for the visit; optional `extra` slot on `MinigameLayer`; loosened `SURVIVORS_CONFIG_VERSION` assertion in survivors-vinyls.test.ts to >=4; config v5 (agent)
 - 2026-10-05 T129 regression found by T131: e2e `sin esquivar, el agua llena el barco` fails on main (card opens at t=200 and an idle player never picks it); the Test command does not run e2e so it went unnoticed; fix added to T130's goal (orchestrator)
 - 2026-10-05 T128: fixed the Codex WIP (laser drew half its reach; bursts tinted purple by the subwoofer material); heights per weapon; one steady opacity per transparent material, laser dimmer with reduced motion but still turning; kept Codex's `armas=1` dev shortcut (all 7 weapons at max level, counts as a test start); the idle-boat e2e now answers cards with Enter, which also resolves the T129 regression noted above, so it is removed from T130's goal (agent)
+- 2026-10-05 T130: card key and `data-carta` are the offer `id` (the old `upgrade` alias is no longer unique), `data-mejora` kept, `data-tipo` gives the kind; `carta=surtido` dev shortcut trims the config (3 weapons, 2 vinyls, El Drop, Salvavidas, 6 choices); changed the keyboard-card e2e to not look up a title via `config.upgrades` (agent)
 
 ## Proposals (new scope)
 
@@ -224,6 +226,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T127: `sim.ts`/`survivors.test.ts` on main are not prettier-clean (pre-existing)
 - 2026-10-05 T126: in `baja` (60-enemy cap) a late game can have no crabs at all (`t=240`, seed 5) because piranhas fill the cap: simulation balance for T132
 - 2026-10-05 T128: the all-weapons game in `baja` was not measured on a real iPhone 11: T132
+- 2026-10-05 T130: card help text still says «1–3» hard-coded (looks wrong only with the 6-card dev shortcut)
 
 ## Log
 - 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
@@ -253,3 +256,6 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 02:05 T131 done · branch worktree-agent-a7f7e6115b4826d65 → cceeee7
 - 2026-10-05 02:30 T128 done by agent; integration conflict with T131 in canon-mode.tsx, survivors.ts, survivors.test.ts → sent back to the same agent
 - 2026-10-05 02:35 T128 done · branch worktree-agent-a5c9a7b63986f03d0 → c6ee3e8
+- 2026-10-05 02:40 T130 launched · attempt 1 · agent accee6ea6d45c71ab (sonnet)
+- 2026-10-05 02:50 T130 done · branch worktree-agent-accee6ea6d45c71ab → 47f9f1d
+- 2026-10-05 02:52 T132 launched · attempt 1 · agent (opus)
