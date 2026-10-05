@@ -265,3 +265,4 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 02:50 T130 done · branch worktree-agent-accee6ea6d45c71ab → 47f9f1d
 - 2026-10-05 02:52 T132 launched · attempt 1 · agent a4eb9ea566bcb22f8 (opus)
 - 2026-10-05 04:40 T132 done · branch worktree-agent-a4eb9ea566bcb22f8 → 280ec63
+- 2026-10-05 04:45 plan done; pushed main 3294d69 to Vercel (authorised by Hernán); Telegram notice sent
