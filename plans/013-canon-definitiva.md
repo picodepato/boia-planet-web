@@ -121,7 +121,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: per-medal daily prize (`RewardRule.tiers`, `CANON_VERSION` 5), 5 new achievements + guardacostas v2, triggers `play_minigame`/`defeat_boss`, local doc v8, Supabase migration (not applied), `mascot` slot + `mascota-minikraken` and `bandera-fantasma` cosmetics → 74350af
 
 ## T154 — Minikraken mascot
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T153
@@ -132,7 +132,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit test: mascot can be equipped only when owned; state migrates
   - `E2E_PORT=<free> pnpm e2e <the Mi Barco spec> --workers=1 -g "mascota"` (granted via a dev helper, equip, visible on deck) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: «Mascota» category in Mi Barco with the minikraken (equip only when owned, rides at the stern of every boat, waves near places, cheap in `baja`), Supabase migration `20261005100100_mascot_equip.sql` (not applied) → b025c2e
 
 ## T155 — Per-boss ranking, local and global
 - Status: running (attempt 1)
@@ -149,7 +149,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T157 — Tabarca lighthouse island redesigned in Blender
-- Status: pending
+- Status: skipped (moved to the next plan, the castle game, at Hernán's request)
 - Model: fable (Fable 5.1)
 - Skills: blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: none
@@ -168,7 +168,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T148, T149, T150, T151, T152, T153, T154, T155, T157
+- Depends on: T148, T149, T150, T151, T152, T153, T154, T155
 - Goal: Close the definitive version.
   - **Balance with bots** for both acts and three difficulties with the new healing vinyl and Vecino ring: minibosses beaten most of the time in Tranquila and Normal; final bosses beatable in Tranquila, a real fight in Normal, hard in Tormenta; record curves and win rates. Bump `SURVIVORS_CONFIG_VERSION` if balance changed.
   - **Performance in `baja`** with a boss, caps full, all weapons, sound on and the mascot active: frame time measured in the e2e browser; fix obvious hot spots only.
@@ -196,8 +196,12 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T152: standalone audio module loaded on pop-up open/game start; existing sea ambience (`setAmbientWorld`) silenced in game and restored; unlock only on trusted gesture; boss loop also for minibosses; site Ajustes music/effects multiply Cañón volume; music at 30 % while paused; default 70 %, key `boia.canon.sonido.v1`; `SurvivorsRun.onEvents`; reduced motion disables all camera shake in `mar3d.ts`; REQ-AVE-039 stays PARCIAL (agent)
 - 2026-10-05 T153: shortcut games still pay in `pnpm dev`/e2e (`devStartRewards`) but never on the test version (incl. `?dev=1`); quit/invalid games unlock nothing, flooded valid game counts as played; secret `canon-tormenta` now = Kraken in Tormenta (no Capitán); guardacostas v2 = win Faro + play Cañón; Supabase enum also gets T36's 7 triggers; `bandera-fantasma` cosmetic added (an achievement prize must exist in the catalog); conflict with T152 resolved by the agent (agent)
 - 2026-10-06 T157 added at Hernán's request (Tabarca lighthouse island in Blender); model Fable 5.1 chosen by the orchestrator (best visual/3D work in plan 012's boss models); T156 now also depends on it (orchestrator)
+- 2026-10-06 T157 moved out of this plan to the next one (castle game) at Hernán's request; T156 no longer depends on it (Hernán)
+- 2026-10-06 T154: dev helper `/mar?mascota=1` claims `canon-kraken` only where `devStartRewards` (dev/e2e), never on the test version; doc schema stays v8; mascot at 0.43 boat length back on the highest surface, facing the stern; waves within 45 units of a place; still with reduced motion; canvas `data-mascota`; generic `MASCOT_KINDS` (agent)
 
 ## Proposals (new scope)
+- 2026-10-06 T154: minikraken shape, size and spot per boat need an art review (Hernán/Álvaro); no Postgres test of equipping it (no local Postgres)
+- 2026-10-06 T157 (Hernán): next plan, castle game — include the Tabarca lighthouse island redesign in Blender (task block kept above as T157)
 - 2026-10-05 T153: equipping the mascot in Supabase (`equipped_cosmetics`, `equip_cosmetic`, `lib/account/merge.ts` SLOTS) left for T154
 - 2026-10-05 T152: REQ-AVE-039 needs its written accessibility review (T156); synthesized music/SFX are `muestra`, Hernán should listen before launch
 - 2026-10-05 T149: in Tranquila both final bosses are nearly always beaten (Kraken 16/16, Fantasma 15/16): act-2 ≥ act-1 test at ceiling — T156 balance
@@ -228,3 +232,4 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-06 00:00 T154 launched · attempt 1 · agent a9b0ae0902693064b (opus)
 - 2026-10-06 00:00 T155 launched · attempt 1 · agent a2a1488a7d82747ca (opus)
 - 2026-10-06 00:05 pushed main to Vercel on Hernán's request (82c96aa, T148–T153); shortcut links sent on Telegram
+- 2026-10-06 00:30 T154 done · branch worktree-agent-a9b0ae0902693064b → b025c2e; push offer T154 sent
