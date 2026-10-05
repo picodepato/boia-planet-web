@@ -218,6 +218,7 @@ describe('la pantalla final', () => {
     for (const reason of ['survived', 'flooded', 'victory'] as const) {
       expect(canonResult(reason, s)).toEqual({
         reason,
+        ranked: true,
         playedS: s.activeS,
         defeated: s.defeated,
         notes: s.notesPicked,
@@ -238,6 +239,31 @@ describe('la pantalla final', () => {
     // El boss final vencido (T140) tiene su final propio, distinto del amanecer.
     expect(END_KEYS.victory.title).not.toBe(END_KEYS.survived.title);
     expect(canonResult('abandoned', s)).toBeNull();
+  });
+
+  it('«Terminar partida» (T148): «Partida terminada», con tiempo, enemigos y notas; sin medalla y fuera del ranking', () => {
+    const r = run({ startAtS: 60 });
+    r.quit();
+    const s = r.snapshot();
+    expect(s.end).toBe('quit');
+    const result = canonResult('quit', s)!;
+    expect(result).toMatchObject({
+      reason: 'quit',
+      ranked: false,
+      medal: null,
+      playedS: s.activeS,
+      defeated: s.defeated,
+      notes: s.notesPicked,
+    });
+    expect(msg(END_KEYS.quit.title)).toBe('Partida terminada');
+    expect(es[END_KEYS.quit.line]).toBeTruthy();
+    const card = endCardModel(result);
+    expect(card.title).toBe(END_KEYS.quit.title);
+    expect(card.medal.id).toBeNull();
+    // Las demás que tienen pantalla sí cuentan para el ranking.
+    for (const reason of ['survived', 'flooded', 'victory'] as const)
+      expect(canonResult(reason, s)!.ranked).toBe(true);
+    expect(canonPrize(null)).toBe('pending');
   });
 });
 

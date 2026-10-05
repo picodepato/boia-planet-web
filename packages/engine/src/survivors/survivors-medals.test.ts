@@ -32,7 +32,7 @@ function runToEnd(g: SurvivorsGame, maxS = 30): void {
 }
 
 const ACTS = SURVIVORS_CONFIG.acts.map((a) => a.act);
-const REASONS: readonly (EndReason | null)[] = ['survived', 'flooded', 'abandoned', 'victory', null];
+const REASONS: readonly (EndReason | null)[] = ['survived', 'flooded', 'abandoned', 'victory', 'quit', null];
 
 describe('medallas T144: una por resultado', () => {
   it('los actos tienen sus minibosses y su boss final en el guion', () => {
@@ -57,7 +57,7 @@ describe('medallas T144: una por resultado', () => {
       for (const id of minis) {
         expect(survivorsMedal({ end: 'survived', bossesDefeated: minis.filter((m) => m !== id), act })).toBe('bronce');
       }
-      for (const end of ['flooded', 'abandoned', null] as const) {
+      for (const end of ['flooded', 'abandoned', 'quit', null] as const) {
         expect(survivorsMedal({ end, bossesDefeated: all, act })).toBeNull();
       }
     }

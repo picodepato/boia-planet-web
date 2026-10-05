@@ -505,6 +505,12 @@ export type CanonEndReason = Exclude<EndReason, 'abandoned'>;
 
 export interface CanonResult {
   reason: CanonEndReason;
+  /**
+   * ¿Cuenta para el ranking? (T148) false si se acabó con «Terminar partida»
+   * (`quit`): ni medalla, ni premio, ni puesto. El envío al ranking (T155)
+   * debe saltarse las que no cuentan.
+   */
+  ranked: boolean;
   /** s de tiempo activo jugado. */
   playedS: number;
   defeated: number;
@@ -537,6 +543,7 @@ export function canonResult(reason: EndReason, s: SurvivorsSnapshot): CanonResul
   if (reason === 'abandoned') return null;
   return {
     reason,
+    ranked: reason !== 'quit',
     playedS: s.activeS,
     defeated: s.defeated,
     notes: s.notesPicked,
@@ -568,6 +575,8 @@ export const END_KEYS: Readonly<Record<CanonEndReason, { title: MessageKey; line
   flooded: { title: 'mar.canon.fin.inundado', line: 'mar.canon.fin.inundado.texto' },
   // El boss final del acto vencido (T140): el final especial; la medalla y la tarjeta, T144/T145.
   victory: { title: 'mar.canon.fin.victoria', line: 'mar.canon.fin.victoria.texto' },
+  // «Terminar partida» desde la pausa (T148): sin medalla, premio ni ranking.
+  quit: { title: 'mar.canon.fin.terminada', line: 'mar.canon.fin.terminada.texto' },
 };
 
 /** Los textos de cada medalla (T145). */
@@ -630,7 +639,11 @@ export function endCardModel(
  * (`not_won`, `duplicate`, `abandoned`, `implausible_duration`…).
  */
 export type CanonPrize =
-  'pending' | 'granted' | Exclude<RewardOutcome, { granted: true }>['reason'];
+  | 'pending'
+  | 'granted'
+  | Exclude<RewardOutcome, { granted: true }>['reason']
+  // «Terminar partida» (T148): la sesión se abandonó sin liquidar.
+  | 'quit';
 
 export function canonPrize(reward: RewardOutcome | null): CanonPrize {
   if (!reward) return 'pending';

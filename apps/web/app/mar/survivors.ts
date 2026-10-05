@@ -276,7 +276,9 @@ export function startDefeatStyle(
  * - `minimap`: el minimapa enseña sólo las islas (nunca los enemigos comunes);
  * - `objective`: el «!» de objetivos, su panel y el objetivo marcado (su rótulo
  *   en el mar y su marca en el minimapa), que se conserva para después (T120);
- * - `wildlife`: los peces que saltan y las gaviotas (T120): no se confunden con enemigos.
+ * - `wildlife`: los peces que saltan y las gaviotas (T120): no se confunden con enemigos;
+ * - `balances`: los puntos ★ y las monedas 🪙 del mundo (T148): en su sitio,
+ *   arriba a la derecha, van las armas y los vinilos.
  */
 export type HideLayer =
   | 'route'
@@ -286,7 +288,8 @@ export type HideLayer =
   | 'encounters'
   | 'minimap'
   | 'objective'
-  | 'wildlife';
+  | 'wildlife'
+  | 'balances';
 export const HIDE_LAYERS: readonly HideLayer[] = [
   'route',
   'sheets',
@@ -296,6 +299,7 @@ export const HIDE_LAYERS: readonly HideLayer[] = [
   'minimap',
   'objective',
   'wildlife',
+  'balances',
 ];
 
 /** Lo que cada capa esconde en el mar 3D: el `kind` de las vistas de `Mar3D`. */
@@ -710,6 +714,15 @@ export class SurvivorsRun {
   /** Pausa (un panel encima, el menú): los pasos cuentan como pausa. */
   setPaused(paused: boolean): void {
     this.game.setPaused(paused);
+  }
+
+  /**
+   * «Terminar partida» desde la pausa (T148): acaba ya con `quit` y avisa
+   * (`onEnd`) en el momento. Con la partida acabada no hace nada.
+   */
+  quit(): void {
+    this.game.quit();
+    this.notifyEnd();
   }
 
   get ended(): boolean {

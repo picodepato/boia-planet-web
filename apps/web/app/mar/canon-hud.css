@@ -14,11 +14,29 @@
      en la fila del minimapa (bajo los enlaces); en escritorio, justo bajo los
      enlaces centrados. */
   --canon-hud-top: calc(var(--safe-t) + var(--links-h) + 10px);
+  /* Beta 3 (T148): las armas y los vinilos van arriba a la derecha, donde
+     estaban los saldos (que se apartan en la partida). En el móvil, en
+     columnas de 3 huecos pequeños (del ancho del minimapa, a su espejo); el
+     HUD de en medio cabe entre los dos sin tocarlos. */
+  --canon-slot: 22px;
+  --canon-slot-gap: 3px;
+  --canon-slot-cols: 3;
+  /* El ancho de la caja de huecos: columnas, huecos entre ellas, relleno y borde. */
+  --canon-slots-w: calc(
+    var(--canon-slot-cols) * var(--canon-slot) + (var(--canon-slot-cols) - 1) *
+      var(--canon-slot-gap) + 12px
+  );
+  /* Lo que el HUD de en medio deja a cada lado: lo más ancho de minimapa o huecos. */
+  --canon-hud-side: calc(max(var(--mini), var(--canon-slots-w)) + 10px + 6px);
 }
 
 @media (min-width: 760px) {
   .mar {
     --canon-hud-top: calc(var(--safe-t) + 14px + 34px + 8px);
+    /* Escritorio: una fila de armas y otra de vinilos (hasta 7 por fila). */
+    --canon-slot: 28px;
+    --canon-slot-gap: 4px;
+    --canon-slot-cols: 7;
   }
 }
 
@@ -33,10 +51,11 @@
   display: grid;
   gap: 2px;
   width: max-content;
-  min-width: 132px;
-  max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
-  padding: 3px 4px 5px 8px;
-  border-radius: 16px;
+  min-width: 112px;
+  /* Entre el minimapa y los huecos de armas y vinilos, sin tocar ninguno (T148). */
+  max-width: calc(100% - 2 * (max(var(--safe-l), var(--safe-r)) + var(--canon-hud-side)));
+  padding: 2px 3px 4px 7px;
+  border-radius: 14px;
   background: var(--glass-strong);
   border: 1px solid var(--line);
   backdrop-filter: blur(12px) saturate(1.3);
@@ -66,7 +85,7 @@
 .mar-canon-hud__time {
   flex: 1;
   text-align: center;
-  font: 900 1.05rem / 1 var(--font-title);
+  font: 900 0.94rem / 1 var(--font-title);
   font-variant-numeric: tabular-nums;
   color: var(--cream);
   letter-spacing: 0.02em;
@@ -77,8 +96,8 @@
   display: grid;
   place-items: center;
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -89,7 +108,7 @@
 .mar .mar-canon-pause::before {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -8px;
 }
 
 .mar .mar-canon-pause:active {
@@ -121,7 +140,7 @@
 
 .mar-canon-hud__lv {
   flex: none;
-  font-size: 0.64rem;
+  font-size: 0.6rem;
   font-weight: 800;
   color: var(--cream);
   opacity: 0.9;
@@ -130,9 +149,9 @@
 .mar-canon-xp {
   display: block;
   flex: 1;
-  min-width: 48px;
-  height: 5px;
-  border-radius: 3px;
+  min-width: 44px;
+  height: 4px;
+  border-radius: 2px;
   overflow: hidden;
   background: rgb(255 255 255 / 0.14);
 }
@@ -560,6 +579,15 @@
     linear-gradient(180deg, #231a5c 0 60%, var(--canon-water-deep) 60%);
 }
 
+/* «Partida terminada» (T148): la noche sigue, con el mar en calma y las dos
+   barras de la pausa en lugar del sol. */
+.mar-canon-end.is-quit .mar-canon-end__sky {
+  background:
+    linear-gradient(var(--cream), var(--cream)) calc(50% - 7px) 18px / 6px 24px no-repeat,
+    linear-gradient(var(--cream), var(--cream)) calc(50% + 7px) 18px / 6px 24px no-repeat,
+    linear-gradient(180deg, #231a5c 0 74%, #2b2470 74% 80%, var(--canon-water-deep) 80%);
+}
+
 .mar-canon-end__title {
   margin: 0;
   font: 900 1.9rem / 1.05 var(--font-title);
@@ -810,6 +838,52 @@
   font-weight: 800;
 }
 
+/* «Seguir jugando» manda; «Terminar partida» (T148) va al lado, en contorno. */
+.mar-menu__game-actions,
+.mar-menu__confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mar .mar-menu__quit {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid rgb(27 20 64 / 0.55);
+  border-radius: 22px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.mar .mar-menu__quit.is-yes {
+  border-color: #b3261e;
+  background: #b3261e;
+  color: var(--cream);
+}
+
+.mar .mar-menu__quit:focus-visible {
+  outline: 3px solid var(--canon-dawn);
+  outline-offset: 2px;
+}
+
+.mar-menu__confirm {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1.5px dashed rgb(236 79 36 / 0.5);
+}
+
+.mar .mar-menu__game .mar-menu__confirm-q {
+  font: 900 1rem / 1.2 var(--font-title);
+  color: var(--ink);
+}
+
+.mar .mar-menu__game .mar-menu__confirm-text {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
 /* Movimiento reducido: sin desplazamientos ni transiciones (y nada parpadea nunca). */
 @media (prefers-reduced-motion: reduce) {
   .mar .mar-canon-card,
@@ -845,18 +919,22 @@
   z-index: 3;
 }
 
-/* ---------- Fila de armas y vinilos (T130) ---------- */
+/* ---------- Armas y vinilos (T130; arriba a la derecha desde T148) ---------- */
 
-/* Móvil: arriba a la izquierda, bajo el minimapa (los mandos táctiles quedan
-   abajo; la cuenta atrás, arriba al centro). Escritorio: abajo al centro, justo
-   encima de la barra (que lleva «Entradas»). Dos filas pequeñas de 4 huecos. */
+/* Arriba a la derecha, a la altura del HUD, donde fuera de la partida están
+   los saldos (que se apartan): lejos del botón de pausa (en el HUD de en
+   medio), del menú (a la izquierda, bajo el minimapa), del agua a bordo
+   (bajo el barco) y de «Entradas» y los mandos (abajo). En el móvil, columnas
+   de 3 huecos pequeños; en escritorio, una fila de armas y otra de vinilos. */
 .mar-canon-slots {
   position: absolute;
   z-index: 3;
-  top: calc(var(--canon-hud-top) + var(--mini) + 8px);
-  left: calc(var(--safe-l) + 10px);
+  top: var(--canon-hud-top);
+  right: calc(var(--safe-r) + 10px);
   display: grid;
-  gap: 3px;
+  justify-items: end;
+  gap: var(--canon-slot-gap);
+  max-width: var(--canon-slots-w);
   padding: 4px 5px;
   border-radius: 12px;
   background: var(--glass-strong);
@@ -868,8 +946,9 @@
 }
 
 .mar-canon-slots__row {
-  display: flex;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: repeat(var(--canon-slot-cols), var(--canon-slot));
+  gap: var(--canon-slot-gap);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -879,12 +958,12 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: var(--canon-slot);
+  height: var(--canon-slot);
+  border-radius: 6px;
   background: rgb(255 244 226 / 0.14);
   border: 1px solid rgb(255 244 226 / 0.28);
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   line-height: 1;
 }
 
@@ -897,12 +976,12 @@
   position: absolute;
   right: -3px;
   bottom: -4px;
-  min-width: 13px;
+  min-width: 12px;
   padding: 1px 2px 0;
   border-radius: 6px;
   background: var(--orange);
   color: var(--cream);
-  font: 900 0.6rem / 1.1 var(--font-title);
+  font: 900 0.55rem / 1.1 var(--font-title);
   text-align: center;
 }
 
@@ -922,14 +1001,13 @@
   color: var(--canon-dawn);
 }
 
+/* La Segunda vida (el Salvavidas guardado): una boya bajo los huecos, a la derecha. */
 .mar-canon-slots__life {
-  position: absolute;
-  top: -8px;
-  right: -8px;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: var(--canon-slot);
+  height: var(--canon-slot);
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--cream);
   border: 2px solid var(--orange);
@@ -937,13 +1015,21 @@
 }
 
 @media (min-width: 760px) {
-  .mar-canon-slots {
-    top: auto;
-    left: 50%;
-    translate: -50% 0;
-    bottom: calc(var(--above-bar) + 4px);
+  .mar-canon-slot {
+    border-radius: 7px;
+    font-size: 0.95rem;
+  }
+
+  .mar-canon-slot__lv {
+    min-width: 13px;
+    font-size: 0.6rem;
+  }
+
+  /* Escritorio: cada fila tan larga como sus huecos (sin columnas vacías). */
+  .mar-canon-slots__row {
+    grid-template-columns: none;
     grid-auto-flow: column;
-    gap: 10px;
+    grid-auto-columns: var(--canon-slot);
   }
 }
 
@@ -1012,17 +1098,6 @@
 
 .mar-canon-hud[data-jefe] {
   min-width: 140px;
-}
-
-/* Con un boss el HUD es más alto: en el móvil la fila de equipo baja para no pisarlo. */
-.mar-canon-slots.is-boss-on {
-  top: calc(var(--canon-hud-top) + var(--mini) + 8px + 30px);
-}
-
-@media (min-width: 760px) {
-  .mar-canon-slots.is-boss-on {
-    top: auto;
-  }
 }
 
 /* El móvil no tiene más sitio (minimapa y saldos a los lados): la fase sólo en escritorio. */

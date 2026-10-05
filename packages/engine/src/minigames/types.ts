@@ -44,9 +44,10 @@ export type EndReason = 'lives' | 'waves' | 'time';
 /**
  * Cómo acabó una partida, para la sesión: los de la capa 2D y los del mar
  * (el Cañón: `survived` al amanecer, `victory` al vencer al boss final del acto
- * (T140), `flooded`, `abandoned` tras 5 min en pausa).
+ * (T140), `flooded`, `abandoned` tras 5 min en pausa, `quit` con «Terminar
+ * partida», T148: la página no la liquida, se abandona la sesión).
  */
-export type ResultReason = EndReason | 'survived' | 'victory' | 'flooded' | 'abandoned';
+export type ResultReason = EndReason | 'survived' | 'victory' | 'flooded' | 'abandoned' | 'quit';
 
 export interface Ending {
   outcome: Outcome;

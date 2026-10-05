@@ -4,6 +4,41 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T148: Pause «Terminar partida» and the battle HUD layout
+
+Qué existe:
+- **«Terminar partida»** en la pausa (`menu.tsx`, `MenuGame`): junto a «Seguir
+  jugando»; pide confirmación («¿Terminar la partida ahora?», «Sí, terminar» /
+  «No, seguir»). En la pregunta, Esc y «No, seguir» vuelven atrás sin cerrar el
+  menú (el foco vuelve a «Terminar partida»). «Sí, terminar» acaba la partida y
+  cierra el menú.
+- Nueva razón de fin `quit` en la simulación (y en `ResultReason`; una sesión
+  liquidada con `quit` se invalida como `abandoned`) (`SurvivorsGame.quit()`,
+  `SurvivorsRun.quit()`): sin medalla. `settleCanonSession` (`canon-settle.ts`)
+  abandona la sesión en vez de liquidarla: sin premio ni `win_minigame`.
+  `CanonResult.ranked` (false con `quit`) es la marca para que el ranking (T155)
+  se salte esas partidas; la tarjeta lleva `data-ranking="no"` y la prueba
+  `data-premio="quit"`.
+- Tarjeta final «Partida terminada» corta: tiempo, enemigos y notas, «Volver al
+  mar» y «Otra vez»; sin medalla, equipo, bosses ni línea de premio; cielo de
+  noche en calma con las dos barras de la pausa.
+- **HUD de batalla**: los saldos ★/🪙 (`mar-saldos`) se apartan con la capa
+  `balances` de `HideLayer` y vuelven al volver al mar. Armas, vinilos y Segunda
+  vida van arriba a la derecha (móvil: columnas de 3 huecos de 22 px, espejo del
+  minimapa; escritorio: una fila de armas y otra de vinilos de 28 px). La píldora
+  de tiempo/nivel/XP, más pequeña (pausa 28 px con 44 px de toque) y con un
+  ancho máximo que deja sitio al minimapa y a los huecos.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/canon-settle.test.ts` (quit no paga ni da `win_minigame`, ni liquidada a mano; control al amanecer sí) → exit 0.
+- `E2E_PORT=3148 pnpm e2e mar-canon.spec.ts --workers=1 -g "Terminar|HUD|armas y vinilos"` → exit 0, 14 passed (móvil y escritorio; incluye las 3 nuevas y la de T130 actualizada a arriba a la derecha).
+- Comando de prueba del plan (vitest sin db, checks, lint, build, typecheck) → exit 0; vitest 171 archivos, 1662 pruebas.
+
+Pendiente:
+- El peor caso «6 armas + 6 vinilos» no se puede forzar (la config da 4 vinilos);
+  la e2e usa `armas=1` (7 armas) y un boss en pantalla en 360×640, 390×844,
+  768×1024 y 1440×900. Los iconos siguen siendo emoji (T150).
+
 ## 2026-10-05 — plan 012 T136: «Mostrar vida» and «Mostrar daño» options
 
 Implemented by Codex (wrapper verified and committed).

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ShipCatalog } from '../../lib/barco/catalog';
 import { ClaimBadge } from '../../lib/logros/claim-badge';
 import type { WorldSummary } from '@boia/world';
@@ -134,9 +134,10 @@ export function MarMenu({
   onClose: () => void;
   /**
    * Con una partida del Cañón en pausa (T118): el aviso de que salir de la
-   * página la termina y «Seguir jugando» (cierra el menú).
+   * página la termina, «Seguir jugando» (cierra el menú) y, con `onQuit`,
+   * «Terminar partida» con su confirmación (T148).
    */
-  game?: { warning: string; resume: string } | undefined;
+  game?: { warning: string; resume: string; onQuit?: () => void } | undefined;
 }) {
   return (
     <MarHoja
@@ -155,19 +156,7 @@ export function MarMenu({
       className="mar-menu"
       onClose={onClose}
     >
-      {game ? (
-        <section className="mar-menu__game" data-testid="mar-menu-partida" role="status">
-          <p data-testid="mar-menu-aviso-partida">{game.warning}</p>
-          <button
-            type="button"
-            className="mar-menu__resume"
-            data-testid="mar-menu-seguir"
-            onClick={onClose}
-          >
-            {game.resume}
-          </button>
-        </section>
-      ) : null}
+      {game ? <MenuGame game={game} onClose={onClose} /> : null}
       <nav className="mar-menu__grid" aria-label={t('mar.menu.titulo')}>
         <Tile section="logros" label={t('mar.client.logros')} onOpen={onOpen}>
           <ClaimBadge count={readyToClaim} testId="mar-menu-logros-contador" />
@@ -236,5 +225,118 @@ export function MarMenu({
         {t('mar.client.volverABoiaMenu')}
       </Link>
     </MarHoja>
+  );
+}
+
+/**
+ * La partida en pausa, arriba del menú (T118): el aviso, «Seguir jugando» y
+ * «Terminar partida» (T148), que primero pregunta. En la pregunta, Esc (o
+ * «No, seguir») vuelve atrás sin cerrar el menú; «Sí, terminar» acaba la
+ * partida y cierra el menú, que deja ver la tarjeta «Partida terminada».
+ */
+function MenuGame({
+  game,
+  onClose,
+}: {
+  game: { warning: string; resume: string; onQuit?: () => void };
+  onClose: () => void;
+}) {
+  const [confirm, setConfirm] = useState(false);
+  const noRef = useRef<HTMLButtonElement>(null);
+  const quitRef = useRef<HTMLButtonElement>(null);
+  // Al volver de la pregunta, el foco al botón que la abrió.
+  const back = useRef(false);
+  useEffect(() => {
+    if (confirm) noRef.current?.focus({ preventScroll: true });
+    else if (back.current) quitRef.current?.focus({ preventScroll: true });
+    back.current = false;
+  }, [confirm]);
+  // Esc en la pregunta: sólo la cierra (antes que la hoja, que cerraría el menú).
+  useEffect(() => {
+    if (!confirm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      back.current = true;
+      setConfirm(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [confirm]);
+  const { onQuit } = game;
+  return (
+    <section
+      className="mar-menu__game"
+      data-testid="mar-menu-partida"
+      data-confirmar={confirm ? 'si' : undefined}
+      role="status"
+    >
+      <p data-testid="mar-menu-aviso-partida">{game.warning}</p>
+      {confirm && onQuit ? (
+        <div
+          className="mar-menu__confirm"
+          role="alertdialog"
+          aria-labelledby="mar-menu-terminar-pregunta"
+          aria-describedby="mar-menu-terminar-texto"
+          data-testid="mar-menu-terminar-confirmar"
+        >
+          <p id="mar-menu-terminar-pregunta" className="mar-menu__confirm-q">
+            {t('mar.canon.menu.terminar.pregunta')}
+          </p>
+          <p id="mar-menu-terminar-texto" className="mar-menu__confirm-text">
+            {t('mar.canon.menu.terminar.texto')}
+          </p>
+          <div className="mar-menu__confirm-actions">
+            <button
+              ref={noRef}
+              type="button"
+              className="mar-menu__resume"
+              data-testid="mar-menu-terminar-no"
+              onClick={() => {
+                back.current = true;
+                setConfirm(false);
+              }}
+            >
+              {t('mar.canon.menu.terminar.no')}
+            </button>
+            <button
+              type="button"
+              className="mar-menu__quit is-yes"
+              data-testid="mar-menu-terminar-si"
+              onClick={() => {
+                onQuit();
+                onClose();
+              }}
+            >
+              {t('mar.canon.menu.terminar.si')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mar-menu__game-actions">
+          <button
+            type="button"
+            className="mar-menu__resume"
+            data-testid="mar-menu-seguir"
+            onClick={onClose}
+          >
+            {game.resume}
+          </button>
+          {onQuit ? (
+            <button
+              ref={quitRef}
+              type="button"
+              className="mar-menu__quit"
+              data-testid="mar-menu-terminar"
+              aria-haspopup="dialog"
+              onClick={() => setConfirm(true)}
+            >
+              {t('mar.canon.menu.terminar')}
+            </button>
+          ) : null}
+        </div>
+      )}
+    </section>
   );
 }

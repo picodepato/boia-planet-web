@@ -368,9 +368,10 @@ function BossArrow({ bar }: { bar: BossBarView }) {
 }
 
 /**
- * La fila pequena de armas y vinilos con su nivel (T130): abajo en
- * escritorio, arriba a la izquierda (bajo el minimapa) en el movil, para no
- * chocar con los mandos tactiles, con la cuenta atras ni con «Entradas».
+ * Las armas y los vinilos con su nivel (T130) y la Segunda vida: arriba a la
+ * derecha, en el sitio de los saldos, que se apartan durante la partida
+ * (T148), en el móvil y en escritorio; sin chocar con la pausa, el menú, el
+ * agua a bordo, la barra del boss, el minimapa ni «Entradas».
  */
 function CanonSlots({ slots, bossOn }: { slots: SlotsView; bossOn: boolean }) {
   return (
@@ -628,7 +629,11 @@ export function CanonCards({
   );
 }
 
-/** La pantalla final: «¡Amanece!» o «¡Barco inundado!», el tiempo, enemigos y notas. */
+/**
+ * La pantalla final: «¡Amanece!» o «¡Barco inundado!», el tiempo, enemigos y
+ * notas. Con «Terminar partida» (T148), «Partida terminada» sólo con el
+ * tiempo, los enemigos y las notas: sin medalla, equipo ni premio.
+ */
 function CanonEnd({
   result,
   unlocked,
@@ -649,12 +654,15 @@ function CanonEnd({
   useEffect(() => again.current?.focus({ preventScroll: true }), []);
   const card = endCardModel(result, unlocked);
   const line = prizeLine(reward);
+  // «Terminar partida» (T148): la tarjeta corta.
+  const full = result.reason !== 'quit';
   return (
     <div className="mar-canon-endwrap">
       <section
         className={`mar-canon-end is-${result.reason}`}
         data-testid="mar-canon-final"
         data-fin={result.reason}
+        data-ranking={result.ranked ? 'si' : 'no'}
         role="dialog"
         aria-labelledby={titleId}
       >
@@ -663,28 +671,32 @@ function CanonEnd({
           {msg(card.title)}
         </h2>
         <p className="mar-canon-end__line">{msg(card.line)}</p>
-        <p
-          className="mar-canon-end__medal"
-          data-testid="mar-canon-final-medalla"
-          data-medalla={card.medal.id ?? 'ninguna'}
-        >
-          {msg(card.medal.key)}
-        </p>
-        <p className="mar-canon-end__run" data-testid="mar-canon-final-partida">
-          {msg('mar.canon.fin.partida', {
-            acto: card.act.n,
-            dificultad: msg(card.difficulty),
-          })}
-        </p>
-        {card.unlock ? (
-          <p
-            className="mar-canon-end__unlock"
-            data-testid="mar-canon-final-desbloqueo"
-            data-acto={card.unlock.n}
-            role="status"
-          >
-            {msg(card.unlock.key, { n: card.unlock.n })}
-          </p>
+        {full ? (
+          <>
+            <p
+              className="mar-canon-end__medal"
+              data-testid="mar-canon-final-medalla"
+              data-medalla={card.medal.id ?? 'ninguna'}
+            >
+              {msg(card.medal.key)}
+            </p>
+            <p className="mar-canon-end__run" data-testid="mar-canon-final-partida">
+              {msg('mar.canon.fin.partida', {
+                acto: card.act.n,
+                dificultad: msg(card.difficulty),
+              })}
+            </p>
+            {card.unlock ? (
+              <p
+                className="mar-canon-end__unlock"
+                data-testid="mar-canon-final-desbloqueo"
+                data-acto={card.unlock.n}
+                role="status"
+              >
+                {msg(card.unlock.key, { n: card.unlock.n })}
+              </p>
+            ) : null}
+          </>
         ) : null}
         <dl className="mar-canon-end__stats">
           <div>
@@ -700,40 +712,44 @@ function CanonEnd({
             <dd data-testid="mar-canon-final-notas">{result.notes}</dd>
           </div>
         </dl>
-        <p className="mar-canon-end__level">
-          {msg('mar.canon.fin.nivel', { nivel: result.level })}
-        </p>
-        <div
-          className="mar-canon-end__gear"
-          data-testid="mar-canon-final-equipo"
-          role="group"
-          aria-label={msg('mar.canon.fin.equipo')}
-        >
-          {[...result.weapons, ...result.vinyls].map((g) => (
-            <span
-              key={g.id}
-              className={`mar-canon-end__item${g.evolved ? ' is-evolved' : ''}`}
-              data-item={g.id}
+        {full ? (
+          <>
+            <p className="mar-canon-end__level">
+              {msg('mar.canon.fin.nivel', { nivel: result.level })}
+            </p>
+            <div
+              className="mar-canon-end__gear"
+              data-testid="mar-canon-final-equipo"
+              role="group"
+              aria-label={msg('mar.canon.fin.equipo')}
             >
-              {msg('mar.canon.fin.nivelitem', { nombre: msg(g.name), nivel: g.level })}
-            </span>
-          ))}
-        </div>
-        <p className="mar-canon-end__bosses" data-testid="mar-canon-final-bosses">
-          <span>{msg('mar.canon.fin.bosses')}: </span>
-          {card.bosses.length
-            ? card.bosses.map((k) => msg(k)).join(', ')
-            : msg('mar.canon.fin.bosses.ninguno')}
-        </p>
-        {/* El premio (T119): «+150 puntos y +50 monedas», o por qué no. */}
-        <p
-          className="mar-canon-end__prize"
-          data-testid="mar-canon-final-premio"
-          data-premio={prize ?? undefined}
-          role="status"
-        >
-          {line ? msg(line.key, line.params) : null}
-        </p>
+              {[...result.weapons, ...result.vinyls].map((g) => (
+                <span
+                  key={g.id}
+                  className={`mar-canon-end__item${g.evolved ? ' is-evolved' : ''}`}
+                  data-item={g.id}
+                >
+                  {msg('mar.canon.fin.nivelitem', { nombre: msg(g.name), nivel: g.level })}
+                </span>
+              ))}
+            </div>
+            <p className="mar-canon-end__bosses" data-testid="mar-canon-final-bosses">
+              <span>{msg('mar.canon.fin.bosses')}: </span>
+              {card.bosses.length
+                ? card.bosses.map((k) => msg(k)).join(', ')
+                : msg('mar.canon.fin.bosses.ninguno')}
+            </p>
+            {/* El premio (T119): «+150 puntos y +50 monedas», o por qué no. */}
+            <p
+              className="mar-canon-end__prize"
+              data-testid="mar-canon-final-premio"
+              data-premio={prize ?? undefined}
+              role="status"
+            >
+              {line ? msg(line.key, line.params) : null}
+            </p>
+          </>
+        ) : null}
         <div className="mar-canon-end__actions">
           <button
             type="button"

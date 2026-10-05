@@ -486,6 +486,22 @@ describe('survivors: pausa y tiempo activo', () => {
     expect(game.activeS).toBe(active);
   });
 
+  it('«Terminar partida» (T148): acaba ya con `quit`, una vez, sin más pasos ni medalla', () => {
+    const game = createSurvivors(SURVIVORS_CONFIG, 5, openSea());
+    for (let i = 0; i < 120; i++) game.step();
+    game.step({ pause: true });
+    const active = game.activeS;
+    game.quit();
+    expect(game.ended).toBe(true);
+    expect(game.snapshot().end).toBe('quit');
+    expect(game.snapshot().status).toBe('ended');
+    // Ya acabada: ni otro final ni tiempo activo de más.
+    game.quit();
+    for (let i = 0; i < 60; i++) game.step();
+    expect(game.snapshot().end).toBe('quit');
+    expect(game.activeS).toBe(active);
+  });
+
   it('la pestaña oculta cuenta como pausa en el reloj; seguir jugando la reinicia', () => {
     const game = createSurvivors(SURVIVORS_CONFIG, 5, openSea());
     const clock = new SurvivorsClock();

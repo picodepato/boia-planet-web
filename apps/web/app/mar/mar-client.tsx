@@ -2064,10 +2064,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             />
           </div>
         ) : null}
+        {/* En la partida del Cañón no están (T148): en su sitio van las armas y los vinilos. */}
         <div
           className="mar-balances"
           data-testid="mar-saldos"
           aria-label={msg('mar.client.saldos')}
+          hidden={canon.hidden.has('balances')}
         >
           <span title={msg('mar.client.puntos')}>★ {balances?.points ?? '–'}</span>
           <span title={msg('mar.client.monedas')}>🪙 {balances?.coins ?? '–'}</span>
@@ -2141,7 +2143,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onClose={() => setMenu(false)}
           game={
             canon.active && !canon.result
-              ? { warning: msg('mar.canon.menu.aviso'), resume: msg('mar.canon.menu.seguir') }
+              ? {
+                  warning: msg('mar.canon.menu.aviso'),
+                  resume: msg('mar.canon.menu.seguir'),
+                  onQuit: canon.quit,
+                }
               : undefined
           }
         />

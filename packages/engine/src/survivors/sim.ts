@@ -115,8 +115,12 @@ import { IslandIndex, type SurvivorsWorld } from './world';
  *   amanece. Una pausa seguida de más de 5 min abandona la partida.
  */
 
-/** Cómo acaba: amanece, se inunda, abandono (5 min en pausa) o cae el boss final del acto (`victory`, T140). */
-export type EndReason = 'survived' | 'flooded' | 'abandoned' | 'victory';
+/**
+ * Cómo acaba: amanece, se inunda, abandono (5 min en pausa), cae el boss
+ * final del acto (`victory`, T140) o el jugador la termina desde la pausa
+ * («Terminar partida», `quit`, T148: sin medalla, premio ni ranking).
+ */
+export type EndReason = 'survived' | 'flooded' | 'abandoned' | 'victory' | 'quit';
 export type SurvivorsStatus = 'running' | 'paused' | 'card' | 'ended';
 
 /** Entrada de un paso: el mando del barco y las órdenes de la partida. */
@@ -1536,6 +1540,14 @@ export class SurvivorsGame {
   /** ¿Es tierra (una isla) el punto, o el círculo de radio `r`? */
   onLand(x: number, y: number, r = 0): boolean {
     return this.islands.onLand(x, y, r);
+  }
+
+  /**
+   * «Terminar partida» (T148): el jugador acaba la partida desde la pausa.
+   * Acaba ya con `quit` (sin medalla); con la partida acabada no hace nada.
+   */
+  quit(): void {
+    this.finish('quit');
   }
 
   // --- Pausa -----------------------------------------------------------------

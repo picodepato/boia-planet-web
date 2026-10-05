@@ -93,7 +93,8 @@ export class WorldMinigameSession<C extends BaseConfig = BaseConfig> {
   finish(end: WorldGameEnd): Promise<WorldSettlement> {
     if (this.settling) return this.settling;
     this.closed = true;
-    if (end.reason === 'abandoned') {
+    // Abandonada, o terminada desde la pausa (T148): nunca paga.
+    if (end.reason === 'abandoned' || end.reason === 'quit') {
       this.o.authority.invalidate(this.session.id, 'abandoned');
     }
     const s = this.session;

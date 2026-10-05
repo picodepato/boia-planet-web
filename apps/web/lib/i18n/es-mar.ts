@@ -601,6 +601,14 @@ export const esMar = {
   'mar.canon.menu.aviso':
     'Partida en pausa. Si sales de esta página (por ejemplo, para comprar entradas), la partida termina.',
   'mar.canon.menu.seguir': 'Seguir jugando',
+  // «Terminar partida» en la pausa, con su confirmación (T148). muestra
+  'mar.canon.menu.terminar': 'Terminar partida',
+  'mar.canon.menu.terminar.pregunta': '¿Terminar la partida ahora?',
+  'mar.canon.menu.terminar.texto': 'No da medalla ni premio y no cuenta para el ranking.',
+  'mar.canon.menu.terminar.si': 'Sí, terminar',
+  'mar.canon.menu.terminar.no': 'No, seguir',
+  'mar.canon.fin.terminada': 'Partida terminada',
+  'mar.canon.fin.terminada.texto': 'La terminaste desde la pausa: sin medalla, sin premio y fuera del ranking.',
   'mar.canon.abandono': 'La partida terminó: estuvo más de 5 minutos en pausa.',
   'mar.canon.abandono.cerrar': 'Cerrar el aviso',
   'mar.canon.fin.amanece': '¡Amanece!',

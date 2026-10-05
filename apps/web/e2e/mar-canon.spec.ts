@@ -725,10 +725,7 @@ test('carta de nivel con el teclado: flechas, números e Intro; mientras, la par
   expect(errors).toEqual([]);
 });
 
-test('la fila de armas y vinilos: abajo en escritorio, arriba a la izquierda en móvil; nada tapa «Entradas» (T130)', async ({
-  page,
-  isMobile,
-}) => {
+test('armas y vinilos arriba a la derecha (T130, T148); nada tapa «Entradas»', async ({ page }) => {
   const errors = await openMar(page, '?minijuego=canon&t=120&seed=7');
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   const row = page.getByTestId('mar-canon-equipo');
@@ -740,13 +737,10 @@ test('la fila de armas y vinilos: abajo en escritorio, arriba a la izquierda en 
   await expect(
     row.locator('[data-fila="armas"] [data-id]:not([data-id=""])').first(),
   ).toBeVisible();
-  if (isMobile) {
-    expect(b.y).toBeLessThan(vp.height * 0.4);
-    expect(b.x + b.width / 2).toBeLessThan(vp.width * 0.5);
-  } else {
-    expect(b.y).toBeGreaterThan(vp.height * 0.6);
-    expect(Math.abs(b.x + b.width / 2 - vp.width / 2)).toBeLessThan(vp.width * 0.1);
-  }
+  // Arriba a la derecha, donde fuera de la partida están los saldos (T148), en el móvil y en escritorio.
+  expect(b.y).toBeLessThan(vp.height * 0.25);
+  expect(b.x).toBeGreaterThan(vp.width * 0.5);
+  expect(vp.width - (b.x + b.width)).toBeLessThan(24);
   // No tapa la cuenta atrás ni el nivel, ni «Entradas», ni lo demás fijo, ni el agua.
   const hud = page.getByTestId('mar-canon-hud');
   const water = page.getByTestId('mar-canon-agua');
@@ -757,6 +751,210 @@ test('la fila de armas y vinilos: abajo en escritorio, arriba a la izquierda en 
     expect(overlaps(b, (await piece.boundingBox())!), id).toBe(false);
   }
   expect(overlaps(b, (await hud.boundingBox())!)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+// --- «Terminar partida» y el HUD de la beta 3 (T148) ------------------------------------
+
+/** Las cajas de varias piezas en una sola lectura (lo que no está o no se ve, fuera). */
+async function boxesOf(page: Page, ids: readonly string[]): Promise<Record<string, Box>> {
+  return page.evaluate((list) => {
+    const out: Record<string, { x: number; y: number; width: number; height: number }> = {};
+    for (const id of list) {
+      const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) out[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
+    }
+    return out;
+  }, ids);
+}
+
+test('Terminar partida: pregunta (Esc y «No» vuelven), acaba en «Partida terminada» sin premio ni cambio de saldos (T148)', async ({
+  page,
+}) => {
+  // Los saldos antes, en una visita sin partida.
+  const errors = await openMar(page);
+  const before = await balances(page);
+  errors.push(...(await openMar(page, '?minijuego=canon&seed=5')));
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect.poll(() => activeS(page), { timeout: 15_000 }).toBeGreaterThan(1);
+  const menu = page.getByTestId('mar-menu');
+  const quit = page.getByTestId('mar-menu-terminar');
+  const confirm = page.getByTestId('mar-menu-terminar-confirmar');
+
+  // Pausa (Esc): «Terminar partida» junto a «Seguir jugando».
+  await answerCard(page);
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-estado', 'paused');
+  await expect(quit).toHaveText(msg('mar.canon.menu.terminar'));
+  // Esc en la pregunta: vuelve atrás sin cerrar el menú ni acabar.
+  await quit.click();
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toContainText(msg('mar.canon.menu.terminar.pregunta'));
+  await expect(page.getByTestId('mar-menu-terminar-no')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(confirm).toHaveCount(0);
+  await expect(menu).toBeVisible();
+  await expect(quit).toBeFocused();
+  await expect(game(page)).toHaveAttribute('data-estado', 'paused');
+  // «No, seguir»: lo mismo.
+  await quit.click();
+  await page.getByTestId('mar-menu-terminar-no').click();
+  await expect(confirm).toHaveCount(0);
+  await expect(menu).toBeVisible();
+  await expect(game(page)).not.toHaveAttribute('data-fin', /.+/);
+
+  // «Sí, terminar»: se cierra el menú y queda la tarjeta final corta.
+  await quit.click();
+  await page.getByTestId('mar-menu-terminar-si').click();
+  await expect(menu).toHaveCount(0);
+  const end = page.getByTestId('mar-canon-final');
+  await expect(end).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-estado', 'ended');
+  await expect(game(page)).toHaveAttribute('data-fin', 'quit');
+  await expect(end).toHaveAttribute('data-fin', 'quit');
+  await expect(end).toHaveAttribute('data-ranking', 'no');
+  await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.terminada'));
+  await expect(end.getByTestId('mar-canon-final-enemigos')).toHaveText(
+    (await game(page).getAttribute('data-derrotados'))!,
+  );
+  await expect(end.getByTestId('mar-canon-final-notas')).toHaveText(
+    (await game(page).getAttribute('data-notas'))!,
+  );
+  await expect(end.getByTestId('mar-canon-final-tiempo')).toHaveText(
+    formatPlayed(Number(await game(page).getAttribute('data-activo'))),
+  );
+  // Sin medalla, sin línea de premio: la sesión se abandonó sin liquidar.
+  await expect(end.getByTestId('mar-canon-final-medalla')).toHaveCount(0);
+  await expect(end.getByTestId('mar-canon-final-premio')).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-premio', 'quit');
+  await page.waitForTimeout(1000);
+  expect(await balances(page)).toEqual(before);
+
+  // De vuelta al mar: los saldos, iguales; el logro del Cañón no queda listo.
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  await expect(page.getByTestId('mar-saldos')).toBeVisible();
+  expect(await balances(page)).toEqual(before);
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  await expect(page.getByTestId('logro-canon')).toBeVisible();
+  await expect(page.getByTestId('logro-canon')).not.toHaveAttribute('data-estado', 'ready');
+  expect(errors).toEqual([]);
+});
+
+test('HUD: los saldos se apartan durante la partida y vuelven al volver al mar (T148)', async ({
+  page,
+}) => {
+  const errors = await openMar(page);
+  const saldos = page.getByTestId('mar-saldos');
+  await expect(saldos).toBeVisible();
+  // `&t=412`: casi el final de la noche, para llegar a la tarjeta final enseguida.
+  errors.push(...(await openMar(page, '?minijuego=canon&t=412&seed=3')));
+  await expect(page.getByTestId('mar-canon-hud')).toBeVisible();
+  await expect(saldos).toBeHidden();
+  // En su sitio, arriba a la derecha, las armas y los vinilos.
+  await expect(page.getByTestId('mar-canon-equipo')).toBeVisible();
+  const end = page.getByTestId('mar-canon-final');
+  // Las cartas que se abran paran el reloj: se contestan con Intro.
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return end.isVisible();
+      },
+      { timeout: 60_000, intervals: [300] },
+    )
+    .toBe(true);
+  await expect(saldos).toBeHidden();
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  await expect(saldos).toBeVisible();
+  await expect(page.getByTestId('mar-canon-equipo')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+/** Los tamaños de pantalla de la beta 3 (T148): dos teléfonos, una tableta y un escritorio. */
+const HUD_SIZES = [
+  { width: 360, height: 640 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1440, height: 900 },
+] as const;
+
+test('HUD: con un boss y las siete armas, los huecos arriba a la derecha no pisan la pausa, el menú, el agua, la barra del boss ni el minimapa (T148)', async ({
+  page,
+}) => {
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.ref === 'vecino')!;
+  // `armas=1`: todas las armas (la fila más larga); el Vecino entra enseguida.
+  const errors = await openMar(page, `?minijuego=canon&armas=1&t=${slot.atS - 1}&seed=7`);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  const slots = page.getByTestId('mar-canon-equipo');
+  await expect(slots.locator('[data-fila="armas"] [data-testid="mar-canon-hueco"]')).toHaveCount(
+    Object.keys(SURVIVORS_CONFIG.weapons).length,
+  );
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return page.getByTestId('mar-canon-jefe').isVisible();
+      },
+      { timeout: 60_000, intervals: [250] },
+    )
+    .toBe(true);
+  // En pausa (el menú encima no mueve el HUD): el boss sigue en su barra mientras se mide.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-menu')).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-estado', 'paused');
+  const ids = [
+    'mar-canon-equipo',
+    'mar-canon-hud',
+    'mar-canon-pausa',
+    'mar-canon-tiempo',
+    'mar-canon-jefe',
+    'mar-canon-agua',
+    'mar-logros',
+    'mar-minimapa',
+    'mar-enlaces',
+    'mar-entradas',
+    'mar-turbo',
+    'mar-touch',
+  ];
+  for (const size of HUD_SIZES) {
+    await page.setViewportSize(size);
+    let boxes: Record<string, Box> = {};
+    await expect
+      .poll(
+        async () => {
+          boxes = await boxesOf(page, ids);
+          return !!boxes['mar-canon-equipo'] && !!boxes['mar-canon-hud'] && !!boxes['mar-canon-jefe'];
+        },
+        { timeout: 30_000, intervals: [200] },
+      )
+      .toBe(true);
+    const where = `${size.width}×${size.height}`;
+    const eq = boxes['mar-canon-equipo']!;
+    const hud = boxes['mar-canon-hud']!;
+    // Dentro de la pantalla y arriba a la derecha.
+    expect(eq.x, where).toBeGreaterThanOrEqual(0);
+    expect(eq.y, where).toBeGreaterThanOrEqual(0);
+    expect(eq.x + eq.width, where).toBeLessThanOrEqual(size.width + 0.5);
+    expect(eq.x + eq.width / 2, where).toBeGreaterThan(size.width / 2);
+    expect(eq.y, where).toBeLessThan(size.height * 0.2);
+    for (const id of ids.slice(1)) {
+      const b = boxes[id];
+      if (!b) continue;
+      expect(overlaps(eq, b), `${where}: equipo × ${id}`).toBe(false);
+    }
+    // El HUD de en medio, más pequeño, tampoco pisa el minimapa, los enlaces ni el menú.
+    expect(hud.height, where).toBeLessThanOrEqual(76);
+    for (const id of ['mar-minimapa', 'mar-enlaces', 'mar-logros', 'mar-entradas']) {
+      const b = boxes[id];
+      if (b) expect(overlaps(hud, b), `${where}: hud × ${id}`).toBe(false);
+    }
+  }
   expect(errors).toEqual([]);
 });
 

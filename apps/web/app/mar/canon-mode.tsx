@@ -6,7 +6,6 @@ import {
   WorldMinigameSession,
   canon as canonEntry,
   canonConfigFor,
-  canonEnd,
   pageAuthority,
 } from '@boia/engine/minigames';
 import {
@@ -33,6 +32,7 @@ import {
   recordFinalBoss,
 } from './canon-campaign';
 import { type CanonPrize, type CanonResult, canonPrize, canonResult } from './canon-hud-model';
+import { settleCanonSession } from './canon-settle';
 import type { Mar3D } from './engine/mar3d';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import {
@@ -67,6 +67,9 @@ import {
  * llega al amanecer, el premio de siempre (150 puntos y 50 monedas una vez
  * por temporada) y la señal `win_minigame` de los logros `canon` y
  * `guardacostas`. Salir a mitad (o 5 min en pausa) abandona la sesión.
+ * «Terminar partida» en la pausa (T148) también la abandona, pero enseña la
+ * tarjeta final «Partida terminada»: sin medalla, premio, `win_minigame` ni
+ * ranking.
  * Una partida de prueba (`&t=`, `&seed=`, `&carta=1`) sólo da premio en
  * `pnpm dev` y en las e2e; en producción, con `?dev=1`, no (T121).
  */
@@ -110,6 +113,11 @@ export interface CanonMode {
   again(): void;
   /** «Volver al mar»: el mundo vuelve con un fundido corto. */
   backToSea(): void;
+  /**
+   * «Terminar partida» desde la pausa (T148): acaba ya con `quit` y deja la
+   * tarjeta «Partida terminada». Sin partida en marcha no hace nada.
+   */
+  quit(): void;
   /** El último estado (también el final, hasta la siguiente). */
   hud: CanonHook | null;
   /** El premio de la última partida acabada (null: aún sin acabar o liquidándose). */
@@ -205,6 +213,8 @@ export function useCanonMode({
   const sessionRef = useRef<WorldMinigameSession | null>(null);
   const [ended, setEnded] = useState(false);
   const [reward, setReward] = useState<RewardOutcome | null>(null);
+  // La última partida acabó con «Terminar partida» (T148).
+  const [quit, setQuit] = useState(false);
   const restoreRef = useRef<(() => void) | null>(null);
   const pausedRef = useRef(false);
   const [active, setActive] = useState(false);
@@ -264,10 +274,13 @@ export function useCanonMode({
       sessionRef.current = null;
       setEnded(true);
       setUnlocked(null);
-      if (session) {
+      setQuit(reason === 'quit');
+      // «Terminar partida» (T148): la sesión se abandona, sin liquidar ni premio.
+      const settling = session ? settleCanonSession(session, reason, snapshot.activeS) : null;
+      if (session && settling) {
         // La campaña (T144) cuenta como el premio: una partida de prueba sólo donde el premio vale.
         const counts = !session.testStart || devStartRewards();
-        void session.finish(canonEnd(reason, snapshot.activeS)).then((s) => {
+        void settling.then((s) => {
           if (runRef.current === run || !runRef.current) setReward(s.reward);
           if (reason !== 'victory' || !counts || !s.validation.valid) return;
           const next = run.act + 1;
@@ -368,6 +381,7 @@ export function useCanonMode({
         devStartRewards: devStartRewards(),
       });
       setEnded(false);
+      setQuit(false);
       setReward(null);
       setNotice(null);
       if (askedStyle) chosenStyle.current = askedStyle;
@@ -408,6 +422,11 @@ export function useCanonMode({
   const setPaused = useCallback((paused: boolean) => {
     pausedRef.current = paused;
     runRef.current?.setPaused(paused);
+  }, []);
+
+  const quitGame = useCallback(() => {
+    const run = runRef.current;
+    if (run && !run.ended) run.quit();
   }, []);
 
   const read = useCallback(() => runRef.current?.snapshot() ?? null, []);
@@ -543,9 +562,10 @@ export function useCanonMode({
     choose,
     again,
     backToSea,
+    quit: quitGame,
     hud,
     reward,
-    prize: ended ? canonPrize(reward) : null,
+    prize: ended ? (quit ? 'quit' : canonPrize(reward)) : null,
     hidden,
     start,
     setPaused,

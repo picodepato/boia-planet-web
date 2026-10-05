@@ -179,6 +179,11 @@
   flex: none;
 }
 
+/* En la partida del Cañón (T148) los saldos se apartan: su sitio es de las armas y vinilos. */
+.mar-balances[hidden] {
+  display: none;
+}
+
 /* ---------- El menú del juego (T65) ----------
    Una hoja crema (MarHoja) con todo: secciones en mosaico (cada una abre su
    hoja con «‹ Menú»), «Cómo jugar», el momento del día y los mundos. */

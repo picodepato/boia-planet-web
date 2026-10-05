@@ -368,7 +368,7 @@ describe('T144 atajo vencer=1 y la medalla en el estado', () => {
 });
 
 describe('lo que se esconde durante la partida', () => {
-  it('esconde todas las capas: ruta, fichas, botellas, descuentos, encuentros, minimapa, objetivo y fauna', () => {
+  it('esconde todas las capas: ruta, fichas, botellas, descuentos, encuentros, minimapa, objetivo, fauna y saldos', () => {
     expect([...HIDE_LAYERS].sort()).toEqual(
       [
         'bottles',
@@ -379,6 +379,7 @@ describe('lo que se esconde durante la partida', () => {
         'route',
         'sheets',
         'wildlife',
+        'balances',
       ].sort(),
     );
     const f = fakeEngine();
