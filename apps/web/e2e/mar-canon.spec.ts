@@ -75,6 +75,43 @@ test('el botón de turbo acelera durante el Cañón y conserva su cooldown (T124
   expect(errors).toEqual([]);
 });
 
+/**
+ * T146: los impulsos y las rampas del circuito funcionan durante una partida
+ * del Cañón como navegando libre (T124): el impulso sube la velocidad por
+ * encima del turbo y la rampa lanza el barco al aire (`data-salto`).
+ */
+for (const [kind, id] of [
+  ['impulso', 'circuito-impulso-1'],
+  ['rampa', 'circuito-rampa-1'],
+] as const) {
+  test(`navegando por encima de ${kind === 'impulso' ? 'un impulso' : 'una rampa'} durante el Cañón ${
+    kind === 'impulso' ? 'acelera el barco' : 'lanza el barco al aire'
+  } (T146)`, async ({ page }) => {
+    const errors = await openMar(page, `?cerca=${id}&minijuego=canon&seed=7`);
+    await expect(game(page)).toHaveAttribute('data-estado', 'running');
+    const speed = async () => Number(await canvas(page).getAttribute('data-canon-speed'));
+    let max = 0;
+    await steerTo(
+      page,
+      id,
+      async () => {
+        max = Math.max(max, await speed());
+        return kind === 'impulso'
+          ? max > 190
+          : (await canvas(page).getAttribute('data-salto')) === 'aire';
+      },
+      { ms: 60_000 },
+    );
+    if (kind === 'impulso') expect(max).toBeGreaterThan(190);
+    else await expect(canvas(page)).toHaveAttribute('data-salto', 'aire');
+    if (kind === 'rampa') {
+      // Y cae al agua: chapuzón.
+      await expect(canvas(page)).toHaveAttribute('data-salto', 'agua', { timeout: 20_000 });
+    }
+    expect(errors).toEqual([]);
+  });
+}
+
 test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas amarillas ni capa 2D', async ({
   page,
 }) => {

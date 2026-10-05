@@ -15,7 +15,21 @@ test('Santa Bárbara loads as local Blender scenery from the normal sailing came
   });
   await page.getByRole('button', { name: 'Alejar' }).click();
   await page.getByRole('button', { name: 'Alejar' }).click();
-  await expect(page.locator('.mar-zoom span')).toHaveAttribute('style', /height: (52|46)%;/);
+  // Two zoom-out steps (+0.28) from the start zoom, which depends on the aspect
+  // ratio (0.2 wide .. 0.26 portrait): the bar settles between 46 % and 52 %
+  // (47 % at 360x640). Poll the settled value instead of one exact percentage.
+  await expect
+    .poll(async () => {
+      const style = (await page.locator('.mar-zoom span').getAttribute('style')) ?? '';
+      return Number(/height:\s*(\d+)%/.exec(style)?.[1] ?? NaN);
+    })
+    .toBeGreaterThanOrEqual(46);
+  await expect
+    .poll(async () => {
+      const style = (await page.locator('.mar-zoom span').getAttribute('style')) ?? '';
+      return Number(/height:\s*(\d+)%/.exec(style)?.[1] ?? NaN);
+    })
+    .toBeLessThanOrEqual(52);
   await page.screenshot({
     path: path.resolve(`node_modules/t101-preview/overview-${info.project.name}.png`),
   });

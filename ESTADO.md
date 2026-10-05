@@ -4,6 +4,15 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T146: Plan 011 loose ends
+
+- `mundo-arcilla.spec.ts` «tienda»: the test was stale, not the app. The store sheet links to the in-app merchandise page (`/tienda?from=mar`, a Next `Link`, testid `mar-merchandise-open`); the only `target=_blank` link in the sheets is WhatsApp. The test now checks that link and its href.
+- `mar-decor.spec.ts:4` zoom: the app is right. Two zoom-out steps add 0.28 to a start zoom that depends on aspect (0.20 wide .. 0.26 portrait), so the bar settles at 46-52 % (47 % at 360x640); the test hardcoded 52|46 and read it while still easing. It now polls the settled value within 46..52.
+- `minigame-layer.test.ts` «una partida perdida»: cause was the random session seed (`freshSeed`); an idle Faro sometimes wins on some seeds. The `browser()` helper now gives `LocalSessionAuthority` a fixed seed sequence. The assertions are unchanged.
+- New e2e in `mar-canon.spec.ts`: sailing over `circuito-impulso-1` during a Cañón game raises `data-canon-speed` above 190 (turbo alone peaks ~170+); over `circuito-rampa-1` it sets `data-salto=aire` and then `agua` (splash).
+- Commands: minigame-layer test x5 → 5 passes; `e2e mundo-arcilla mar-decor --workers=1` → 8 passed; `e2e mar-canon -g "impulso|rampa" --workers=1` → 4 passed.
+- Pending: none.
+
 ## 2026-10-05 — plan 011 T132: Equilibrio con pilotos, rendimiento en `baja`, e2e, documentos y la guía de prueba de la beta 2
 
 Qué existe:

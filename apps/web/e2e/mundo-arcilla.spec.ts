@@ -7,7 +7,7 @@ import { marSheet, openMar, sheetIs, steerTo } from './mar-helpers';
  * El mundo Arcilla en el mar 3D (T20; desde T62, D-25, el único mundo
  * navegable): con el teclado, desde `?cerca=<lugar>`, se llega al descuento
  * escondido (se copia y sólo se concede una vez, REQ-COM-022) y a la tienda
- * (enlace externo en otra pestaña). La isla de evento, el náufrago y el
+ * (enlace a la página de merchandising). La isla de evento, el náufrago y el
  * Puerto de Fotos los prueban mar-a-bordo.spec.ts y mar-paridad.spec.ts.
  * Corre en móvil 360×640 y en escritorio.
  */
@@ -54,12 +54,14 @@ test('descuento escondido: se copia con un toque y sólo se concede una vez', as
   await expect(sheet.and(page.locator('[data-tipo="discount"]'))).toHaveCount(0);
 });
 
-test('tienda: enlace externo en otra pestaña', async ({ page }) => {
+test('tienda: la ficha lleva a la tienda de merchandising', async ({ page }) => {
   const id = shop.identity.id;
   const sheet = marSheet(page);
   await openMar(page, `?cerca=${id}`);
   await steerTo(page, id, sheetIs(page, 'store'));
   await expect(sheet).toHaveAttribute('data-lugar', id);
-  const link = sheet.locator('a[target="_blank"]').first();
-  await expect(link).toHaveAttribute('href', /^https?:\/\//);
+  // The store sheet links to the in-app merchandise page (`/tienda?from=mar`),
+  // not to an external site; the external new-tab link is the WhatsApp one.
+  const link = sheet.getByTestId('mar-merchandise-open');
+  await expect(link).toHaveAttribute('href', /^\/tienda\?from=mar$/);
 });

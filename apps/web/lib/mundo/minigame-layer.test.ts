@@ -24,10 +24,12 @@ import { describe, expect, it } from 'vitest';
 function browser(start = '2026-09-29T18:00:00Z') {
   const storage = new MemoryStorage();
   let t = new Date(start).getTime();
+  // Fixed seed sequence: the default random seed made an idle Faro sometimes win.
+  let seed = 1000;
   const clock = { now: () => t, advance: (ms: number) => (t += ms) };
   const visit = () => {
     const repo = createLocalRepository({ storage, now: () => new Date(t), watch: false });
-    const authority = new LocalSessionAuthority(clock.now);
+    const authority = new LocalSessionAuthority(clock.now, () => (seed += 7919));
     return {
       repo,
       async play<C extends BaseConfig>(def: MinigameDefinition<C>, bot: Bot, config?: C) {
