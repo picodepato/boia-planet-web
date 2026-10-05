@@ -81,7 +81,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: elites drop (5 %, own rng) Imán total / Llama (10 s, 110 u ±0.45 rad, burns bosses via `hurtTarget` at `bossFight.flameDps` 120/s) / Salvavidas (−40 water); card renamed «Segunda vida»; pickup models, Llama HUD hint, `botin=1`; Traca icon 🧨; config v11; 1537 unit tests → d6d5192
 
 ## T136 — «Mostrar vida» and «Mostrar daño» options
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Sonnet if Codex is out of credits)
 - Skills: frontend-design
 - Depends on: T133
@@ -95,7 +95,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests for the aggregation of damage numbers and the toggle persistence (with and without storage)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with both toggles switched on from the pause menu and their overlays present
   - Test command → exit 0
-- Outcome:
+- Outcome: (Codex) pause-menu toggles «Mostrar vida» (one canvas overlay of hp bars, not for bosses) and «Mostrar daño» (numbers aggregated per 160 ms, cap 12/24, no float with reduced motion), off by default, remembered per browser; read-only snapshot field in sim; 1637 unit tests, mar-canon e2e 70 passed + 1 flaky (before the T145 merge) → c5b5e2c
 
 ## T137 — Generic boss system (simulation)
 - Status: done
@@ -312,6 +312,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T145: special ending chosen per act's final boss (`endCardModel`, `VICTORY_KEYS`), `mar.canon.fin.victoria` now a neutral fallback; `CanonResult` gains `weapons`/`vinyls`; shared race card untouched; focus on «Otra vez», Esc back to the sea (agent)
 
+- 2026-10-05 T136: merges with T143 (`canon-hud.tsx` keeps `CanonReadoutMenu` and the boss bar) and T145 (`canon-hud.css` both blocks; `mar-canon.spec.ts` normalised to main's LF) resolved by the wrapper agent (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -365,3 +367,4 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 20:33 T145 launched · attempt 1 · agent a1ea64d4d63096876 (sonnet)
 - 2026-10-05 21:20 T145 done · branch worktree-agent-a1ea64d4d63096876 → c840f41
 - 2026-10-05 21:22 T136 done by agent; integration conflict with T145 in canon-hud.css, mar-canon.spec.ts → sent back to the same wrapper agent (resolves itself, no Codex)
+- 2026-10-05 21:32 T136 done · branch worktree-agent-addb8d08ba9c5100e → c5b5e2c
