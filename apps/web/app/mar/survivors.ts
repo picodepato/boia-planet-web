@@ -461,6 +461,8 @@ export interface SurvivorsRunOptions {
   autoPickCards?: boolean;
   /** Al acabar (una vez): la razón y el estado final. */
   onEnd?: (reason: EndReason, snapshot: SurvivorsSnapshot) => void;
+  /** Lo que pasó en cada paso fijo (el sonido, T152); no debe tocar la partida. */
+  onEvents?: (events: readonly SurvivorsEvent[]) => void;
 }
 
 /** El estado de la partida para las pruebas (atributos `data-*`, como el cronómetro de la carrera). */
@@ -573,6 +575,7 @@ export class SurvivorsRun {
   private readonly clock = new SurvivorsClock();
   private readonly autoPick: boolean;
   private readonly onEnd: SurvivorsRunOptions['onEnd'];
+  private readonly onEvents: SurvivorsRunOptions['onEvents'];
   private lastMs: number | null = null;
   private notified = false;
   private readonly devWin: boolean;
@@ -598,6 +601,7 @@ export class SurvivorsRun {
     this.devWin = opts.devWin === true && devShortcutsEnabled();
     this.autoPick = opts.autoPickCards ?? false;
     this.onEnd = opts.onEnd;
+    this.onEvents = opts.onEvents;
     this.game = createSurvivors(this.config, opts.seed, world, {
       quality: opts.quality,
       ship: opts.ship,
@@ -642,6 +646,14 @@ export class SurvivorsRun {
     } else this.damageNumbers.clear();
     // `&vencer=1` (T144): el boss que haya aparecido cae ya.
     if (this.devWin) this.game.defeatBossesNow();
+    if (events.length && this.onEvents) {
+      try {
+        this.onEvents(events);
+      } catch (err) {
+        // Quien escucha (el sonido) nunca para la partida.
+        console.warn('[boia] fallo al escuchar la partida del Cañón', err);
+      }
+    }
     this.notifyEnd();
     return events;
   }

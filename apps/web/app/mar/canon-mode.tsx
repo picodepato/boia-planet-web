@@ -15,6 +15,7 @@ import {
   type EndReason,
   type SurvivorsSnapshot,
 } from '@boia/engine/survivors';
+import { type Settings, channelGain } from '@boia/engine/ui';
 import type { WorldConfig } from '@boia/world';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { emitSignal } from '../../lib/mundo/achievements';
@@ -33,6 +34,8 @@ import {
 } from './canon-campaign';
 import { type CanonPrize, type CanonResult, canonPrize, canonResult } from './canon-hud-model';
 import { settleCanonSession } from './canon-settle';
+import type { CanonAudio, CanonAudioState } from './canon-audio';
+import { soundPreferences } from './canon-sound-preferences';
 import type { Mar3D } from './engine/mar3d';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import {
@@ -160,6 +163,10 @@ export interface CanonMode {
    * para anunciarlo en la tarjeta final), o null.
    */
   unlocked: number | null;
+  /** El sonido (T152): null hasta que se carga el módulo de audio. */
+  sound: CanonAudioState | null;
+  /** Los Ajustes de la web (música y efectos): su silencio también calla el Cañón. */
+  setAudioSettings(settings: Settings | null): void;
 }
 
 export interface CanonPrep {
@@ -204,6 +211,7 @@ export function useCanonMode({
   onOffer,
   onEnd,
   rewards,
+  onSea,
 }: {
   engineRef: RefObject<Mar3D | null>;
   worldRef: RefObject<WorldConfig | null>;
@@ -224,6 +232,11 @@ export function useCanonMode({
   onEnd?: (end: CanonEnd) => void;
   /** El libro de los premios (`repo.progress`), o null. */
   rewards?: () => MinigameRewardSink | null;
+  /**
+   * El ambiente del mar de `/mar` (T152): se calla durante la partida y
+   * vuelve al acabar, cuando el bucle de batalla se funde.
+   */
+  onSea?: (on: boolean) => void;
 }): CanonMode {
   const runRef = useRef<SurvivorsRun | null>(null);
   // La sesión de la partida en curso, hasta que se liquida (T119).
@@ -262,8 +275,48 @@ export function useCanonMode({
   campaignRef.current = campaign;
   const [devSwitch, setDevSwitch] = useState(false);
   useEffect(() => setDevSwitch(devShortcutsEnabled()), []);
-  const latest = useRef({ onStart, onOffer, onEnd, isRaceActive, rewards });
-  latest.current = { onStart, onOffer, onEnd, isRaceActive, rewards };
+  const latest = useRef({ onStart, onOffer, onEnd, isRaceActive, rewards, onSea });
+  latest.current = { onStart, onOffer, onEnd, isRaceActive, rewards, onSea };
+
+  // El sonido (T152): el módulo se carga aparte, al abrir el pop-up o al empezar.
+  const audioRef = useRef<CanonAudio | null>(null);
+  const audioLoading = useRef(false);
+  const audioSettings = useRef<Settings | null>(null);
+  const [sound, setSound] = useState<CanonAudioState | null>(null);
+  const applyGlobal = useCallback((audio: CanonAudio) => {
+    const s = audioSettings.current;
+    if (s) audio.setGlobal({ music: channelGain(s.music), sfx: channelGain(s.sfx) });
+  }, []);
+  const loadAudio = useCallback(() => {
+    if (audioRef.current || audioLoading.current || typeof window === 'undefined') return;
+    audioLoading.current = true;
+    import('./canon-audio')
+      .then((m) => {
+        const audio = m.createPageCanonAudio(soundPreferences(), (on) => latest.current.onSea?.(on));
+        audioRef.current = audio;
+        applyGlobal(audio);
+        audio.setPaused(pausedRef.current);
+        // Si la partida ya empezó mientras se cargaba, su bucle.
+        const run = runRef.current;
+        if (run && !run.ended) {
+          audio.setMusic('battle');
+          audio.setBoss(run.hook().jefes !== '');
+        }
+        audio.subscribe(() => setSound(audio.state()));
+        setSound(audio.state());
+      })
+      .catch((err: unknown) => {
+        audioLoading.current = false;
+        console.warn('[boia] no se pudo cargar el sonido del Cañón', err);
+      });
+  }, [applyGlobal]);
+  const setAudioSettings = useCallback(
+    (settings: Settings | null) => {
+      audioSettings.current = settings;
+      if (audioRef.current) applyGlobal(audioRef.current);
+    },
+    [applyGlobal],
+  );
 
   /** Se acabó del todo: el barco se queda donde acabó y el mundo vuelve como estaba. */
   const teardown = useCallback(() => {
@@ -314,6 +367,9 @@ export function useCanonMode({
         });
       }
       latest.current.onEnd?.({ reason, snapshot });
+      // El bucle se funde y vuelve el mar (sin el módulo cargado aún, sólo el mar).
+      if (audioRef.current) audioRef.current.end(reason, run.hook().medalla || null);
+      else latest.current.onSea?.(true);
       const r = canonResult(reason, snapshot);
       if (!r) {
         teardown();
@@ -368,6 +424,7 @@ export function useCanonMode({
         act: playAct,
         devWin,
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
+        onEvents: (events) => audioRef.current?.events(events),
       });
       if (weapons) run.devAllWeapons();
       if (loot) run.devLoot();
@@ -423,9 +480,18 @@ export function useCanonMode({
       );
       setHud(run.hook());
       setActive(true);
+      // El sonido: dentro del gesto de «Jugar» si ya está cargado (iOS lo pide así).
+      const audio = audioRef.current;
+      if (audio) {
+        audio.unlock();
+        audio.setMusic('battle');
+      } else {
+        latest.current.onSea?.(false);
+        loadAudio();
+      }
       return true;
     },
-    [engineRef, worldRef, finish],
+    [engineRef, worldRef, finish, loadAudio],
   );
 
   const toggleDefeatStyle = useCallback(() => {
@@ -442,6 +508,7 @@ export function useCanonMode({
   const setPaused = useCallback((paused: boolean) => {
     pausedRef.current = paused;
     runRef.current?.setPaused(paused);
+    audioRef.current?.setPaused(paused);
   }, []);
 
   const quitGame = useCallback(() => {
@@ -450,7 +517,12 @@ export function useCanonMode({
   }, []);
 
   const read = useCallback(() => runRef.current?.snapshot() ?? null, []);
-  const choose = useCallback((index: number) => runRef.current?.choose(index), []);
+  const choose = useCallback((index: number) => {
+    const run = runRef.current;
+    if (!run || run.game.status !== 'card') return;
+    run.choose(index);
+    audioRef.current?.play('card');
+  }, []);
   const dismissNotice = useCallback(() => setNotice(null), []);
 
   const again = useCallback(() => {
@@ -479,7 +551,11 @@ export function useCanonMode({
     if (!active) return;
     const id = window.setInterval(() => {
       const run = runRef.current;
-      if (run) setHud(run.hook());
+      if (!run) return;
+      const hook = run.hook();
+      setHud(hook);
+      // El bucle de boss mientras haya uno vivo (T152).
+      if (!run.ended) audioRef.current?.setBoss(hook.jefes !== '');
     }, HOOK_MS);
     return () => window.clearInterval(id);
   }, [active]);
@@ -502,6 +578,8 @@ export function useCanonMode({
       sessionRef.current = null;
       restoreRef.current?.();
       restoreRef.current = null;
+      audioRef.current?.dispose();
+      audioRef.current = null;
     },
     [],
   );
@@ -536,7 +614,10 @@ export function useCanonMode({
     inWorld: [CANON_GAME_ID],
     // «Jugar» en el panel abre el pop-up (T151); la partida empieza desde él.
     onPlay: (gameId: string) => {
-      if (gameId === CANON_GAME_ID && !runRef.current) setPrepOpen(true);
+      if (gameId === CANON_GAME_ID && !runRef.current) {
+        setPrepOpen(true);
+        loadAudio();
+      }
     },
     blockedReason: (gameId: string) =>
       gameId === CANON_GAME_ID && blockKey ? msg(blockKey) : null,
@@ -600,8 +681,17 @@ export function useCanonMode({
     prep,
     acts: campaignActs(campaign),
     unlocked,
+    sound,
+    setAudioSettings,
   };
 }
+
+/** El bucle que suena, para las pruebas (`data-musica`). */
+const MUSIC_ATTR: Readonly<Record<CanonAudioState['music'], string>> = {
+  battle: 'batalla',
+  boss: 'jefe',
+  sea: 'mar',
+};
 
 const DEFEAT_STYLE_KEY: Readonly<Record<DefeatStyle, MessageKey>> = {
   puf: 'mar.canon.dev.derrota.puf',
@@ -639,11 +729,14 @@ export function CanonTestHook({
   hud,
   prize = null,
   unlocked = null,
+  sound = null,
 }: {
   hud: CanonHook | null;
   prize?: CanonPrize | null;
   /** El acto que abrió la última partida (T144), o null. */
   unlocked?: number | null;
+  /** El sonido (T152), o null sin cargar. */
+  sound?: CanonAudioState | null;
 }) {
   if (!hud) return null;
   return (
@@ -678,6 +771,8 @@ export function CanonTestHook({
       data-jefes={hud.jefes || undefined}
       data-cofre-cerca={hud.cofreCerca || undefined}
       data-premio={prize ?? undefined}
+      data-sonido={sound ? (sound.unlocked ? (sound.hidden ? 'oculto' : 'activo') : 'bloqueado') : undefined}
+      data-musica={sound ? MUSIC_ATTR[sound.music] : undefined}
     />
   );
 }

@@ -160,6 +160,7 @@ export function CanonLayer({
 
   return (
     <>
+      <CanonAnnouncer view={view} notices={boss.notices} result={canon.result} />
       {view ? <CanonReadoutMenu covered={covered} /> : null}
       {view ? <CanonHud view={view} bar={boss.bar} onPause={onPause} /> : null}
       {view && boss.bar && boss.offscreen ? <BossArrow bar={boss.bar} /> : null}
@@ -183,6 +184,65 @@ export function CanonLayer({
       {canon.notice ? <CanonNotice onClose={canon.dismissNotice} /> : null}
       {canon.fading ? <div className="mar-canon-fade" aria-hidden="true" /> : null}
     </>
+  );
+}
+
+/**
+ * Los avisos para lectores de pantalla (T152): subir de nivel (o abrir un
+ * cofre), la llegada de un boss y el resultado. Una región `aria-live` que
+ * está siempre en la página (las que aparecen de golpe no siempre se leen) y
+ * no se ve.
+ */
+function CanonAnnouncer({
+  view,
+  notices,
+  result,
+}: {
+  view: CanonView | null;
+  notices: readonly BossNotice[];
+  result: CanonResult | null;
+}) {
+  const [text, setText] = useState('');
+  const card = view?.card ?? null;
+  const arrival = [...notices].reverse().find((n) => n.kind === 'arrival') ?? null;
+  const seen = useRef({ card, arrival });
+  seen.current = { card, arrival };
+  // Sólo cuando se abre otra carta o llega otro boss, no en cada lectura de la partida.
+  const cardKey = card ? `${card.level}:${card.source}` : '';
+  const arrivalKey = arrival ? `${arrival.boss}:${arrival.atMs}` : '';
+  useEffect(() => {
+    const c = seen.current.card;
+    if (!c) return;
+    setText(
+      c.source === 'chest'
+        ? msg('mar.canon.anuncio.cofre')
+        : msg('mar.canon.anuncio.nivel', { nivel: c.level }),
+    );
+  }, [cardKey]);
+  useEffect(() => {
+    const a = seen.current.arrival;
+    if (!a) return;
+    setText(msg(BOSS_NOTICE_KEYS.arrival, { nombre: msg(a.nameKey) }));
+  }, [arrivalKey]);
+  useEffect(() => {
+    if (!result) return;
+    const end = endCardModel(result);
+    setText(
+      result.reason === 'quit'
+        ? msg(end.title)
+        : `${msg(end.title)}. ${msg(end.medal.key)}`,
+    );
+  }, [result]);
+  return (
+    <div
+      className="mar-canon-sr"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="mar-canon-anuncio"
+    >
+      {text}
+    </div>
   );
 }
 

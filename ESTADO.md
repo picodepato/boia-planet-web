@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T152: Sonido y accesibilidad
+
+Qué existe:
+- `apps/web/app/mar/canon-audio.ts`: el sonido del Cañón, todo sintetizado con Web Audio (sin archivos, `muestra`). Efectos: disparo, golpe recibido, enemigo abajo, nota (sube de tono en racha), subir de nivel, elegir carta, botín de élite (y cofre), aviso de boss, aviso suave por cada ataque telegrafiado, boss abajo, medalla, barco inundado; con separación mínima entre efectos iguales. Bucle drum and bass a 170 BPM (bombo, caja con fantasmas, charles, sub bajo) en tres frases de 8 compases que se turnan (dos pasos, amen, rodando, respiro, relleno) y la variante de boss (más bombo, bajo «reese», alarma) que entra con fundido de 1,6 s mientras haya un boss vivo (también minibosses). Al acabar la partida el bucle se funde (2,2 s) y vuelve el ambiente del mar de `/mar` (`setAmbientWorld`, que ya existía en `lib/mundo/sound.ts`); durante la partida el mar se calla. Programador con ventana de 140 ms. Se carga con import dinámico (chunk aparte: al abrir el pop-up o al empezar), fuera de la primera carga.
+- Nada se crea ni suena antes del primer gesto de verdad (`isTrusted`) tras cargar el módulo; con el pop-up abierto el módulo ya está, así que «Jugar» es ese gesto; con un atajo de URL, la primera tecla o toque. Pestaña oculta: contexto suspendido. El silencio y volumen de los Ajustes de la web (música y efectos) se multiplican con los del Cañón; con la partida en pausa la música baja al 30 %.
+- `canon-sound-preferences.ts`: volumen (70 % por defecto) y silencio del Cañón en `localStorage` `boia.canon.sonido.v1`, con try/catch. En la pausa (`canon-readout-menu.tsx`, junto a «Lecturas de combate»): interruptor «Sonido del juego» y deslizador de volumen, de 44 px.
+- `SurvivorsRun` acepta `onEvents` (los eventos de cada paso; un fallo de quien escucha nunca para la partida); `useCanonMode` conecta el sonido (`sound`, `setAudioSettings`, `onSea`); `CanonTestHook` publica `data-sonido` (bloqueado/activo/oculto) y `data-musica` (batalla/jefe/mar).
+- Accesibilidad: región `aria-live` siempre presente (`mar-canon-anuncio`) que anuncia subir de nivel (o cofre), la llegada de cada boss y el resultado; con movimiento reducido la cámara de `/mar` no tiembla nunca (`mar3d.ts`, también saltos y choques; `data-temblor` en el lienzo para las pruebas). Telegrafías: revisadas, cada ataque dañino de los bosses de producción tiene su aviso visible (anillo del Vecino, líneas de embestida/andanada, círculos del Kraken; los `summon` sólo invocan). Pausa (44 px con su `::before`), cartas y pop-up ya cumplían ≥ 44 px; ahora hay prueba.
+- Textos nuevos por clave en `es-mar.ts` (`mar.canon.sonido*`, `mar.canon.anuncio.*`), `muestra`.
+- `docs/spec/estado.md`: REQ-AVE-039 sigue PARCIAL (falta la revisión documentada) con las dos pruebas nuevas enlazadas.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/canon-audio.test.ts` → exit 0, 10 pruebas (nada antes del gesto; efectos en su bus; batalla → boss → mar con fundidos; pestaña oculta; volumen y silencio aplicados y recordados; silencio global; almacenamiento que falla; variaciones del bucle; dispose).
+- `E2E_PORT=3217 pnpm e2e mar-canon.spec.ts --workers=1 -g "sonido|teclado|accesib|lecturas|Terminar partida|pop-up previo: se abre"` → exit 0, 16 passed (incluye las 3 pruebas nuevas × móvil y escritorio).
+- Test command: vitest → exit 0 (173 archivos, 1676 pruebas); `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (ruta crítica de la landing 187,0 de 200 kB); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- La música y los efectos son `muestra`: Hernán y Álvaro deben escucharlos; las pistas reales de BOIA, más adelante (hueco: `CanonAudio.setMusic`).
+- Revisión documentada de accesibilidad de REQ-AVE-039 (T156).
+
 ## 2026-10-05 — plan 013 T149: Healing vinyl redesign and the Vecino ring
 
 ### Qué existe

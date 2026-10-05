@@ -2018,3 +2018,213 @@ test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto d
   }
   expect(errors).toEqual([]);
 });
+
+// --- T152: sonido y accesibilidad ---------------------------------------------------
+
+/** Pulsa Tab hasta que el foco llegue a `testId` (o falla tras `max` pulsaciones). */
+async function tabTo(page: Page, testId: string, max = 40): Promise<void> {
+  for (let i = 0; i < max; i++) {
+    const at = await page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? '');
+    if (at === testId) return;
+    await page.keyboard.press('Tab');
+  }
+  throw new Error(`el foco no llega a ${testId}`);
+}
+
+/** La pausa con Esc (también con una carta abierta, que espera debajo del menú). */
+async function pauseWithEsc(page: Page): Promise<void> {
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-menu')).toBeVisible();
+}
+
+/** «Terminar partida» desde la pausa (T148), para acabar rápido. */
+async function quitFromPause(page: Page): Promise<void> {
+  await pauseWithEsc(page);
+  await page.getByTestId('mar-menu-terminar').click();
+  await page.getByTestId('mar-menu-terminar-si').click();
+  await expect(game(page)).toHaveAttribute('data-fin', 'quit');
+}
+
+test('sonido: callado hasta el primer gesto; bucle de batalla, de boss al llegar el Vecino y el mar al acabar; volumen y silencio en la pausa, recordados (T152)', async ({
+  page,
+}) => {
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.ref === 'vecino')!;
+  const errors = await openMar(page, `?minijuego=canon&t=${slot.atS - 6}&seed=7`);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  // Empezada por el atajo, sin tocar nada: el módulo carga, pero nada suena aún.
+  await expect(game(page)).toHaveAttribute('data-sonido', 'bloqueado', { timeout: 15_000 });
+  await expect(game(page)).toHaveAttribute('data-musica', 'batalla');
+  // El primer gesto (una tecla) lo desbloquea.
+  await page.keyboard.press('ArrowLeft');
+  await expect(game(page)).toHaveAttribute('data-sonido', 'activo');
+  await expect(game(page)).toHaveAttribute('data-musica', 'batalla');
+  // Llega el Vecino: entra el bucle de boss.
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return (await game(page).getAttribute('data-jefes')) ?? '';
+      },
+      { timeout: 60_000, intervals: [400] },
+    )
+    .toMatch(/vecino/);
+  await expect(game(page)).toHaveAttribute('data-musica', 'jefe');
+
+  // En la pausa: el sonido del juego y su volumen, con áreas de 44 px.
+  await pauseWithEsc(page);
+  const menu = page.getByTestId('mar-menu');
+  const sound = menu.getByRole('switch', { name: msg('mar.canon.sonido.juego') });
+  const volume = menu.getByRole('slider', { name: msg('mar.canon.sonido.volumen.aria') });
+  await expect(sound).toHaveAttribute('aria-checked', 'true');
+  await expect(volume).toHaveValue('70');
+  for (const el of [sound, volume]) {
+    expect((await el.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  await volume.fill('40');
+  await sound.click();
+  await expect(sound).toHaveAttribute('aria-checked', 'false');
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('boia.canon.sonido.v1') ?? 'null')),
+  ).toEqual({ volume: 0.4, muted: true });
+  await page.getByTestId('mar-menu-seguir').click();
+
+  // Al acabar, el bucle se funde y vuelve el mar.
+  await quitFromPause(page);
+  await expect(game(page)).toHaveAttribute('data-musica', 'mar');
+
+  // Otra visita: lo elegido sigue.
+  errors.push(...(await openMar(page, '?minijuego=canon&seed=7')));
+  await page.getByTestId('mar-canon-pausa').click();
+  await expect(sound).toHaveAttribute('aria-checked', 'false');
+  await expect(volume).toHaveValue('40');
+  await sound.click();
+  await expect(sound).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('mar-menu-seguir').click();
+  expect(errors).toEqual([]);
+});
+
+test('teclado: sólo con el teclado se abre el pop-up, se elige, se juega, se pausa y se silencia (T152)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  // «Jugar» del panel con el teclado.
+  await panel(page).getByRole('button', { name: msg('juego.minigameLayer.jugar') }).focus();
+  await page.keyboard.press('Enter');
+  const box = previa(page);
+  await expect(box).toBeVisible();
+  await expect(box.getByTestId('mar-canon-acto-1')).toBeFocused();
+  // La dificultad con las flechas y «Jugar» con Intro.
+  await tabTo(page, 'mar-canon-dificultad-normal');
+  await page.keyboard.press('ArrowRight');
+  await expect(box).toHaveAttribute('data-dificultad', 'tormenta');
+  await tabTo(page, 'mar-canon-previa-jugar');
+  await page.keyboard.press('Enter');
+  await expect(box).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running', { timeout: 20_000 });
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  // El teclado ya fue un gesto: el sonido suena.
+  await expect(game(page)).toHaveAttribute('data-sonido', 'activo', { timeout: 15_000 });
+  // El barco navega con las flechas.
+  const from = pointOf(await game(page).getAttribute('data-barco'));
+  await page.keyboard.down('ArrowUp');
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return dist(pointOf(await game(page).getAttribute('data-barco')), from);
+      },
+      { timeout: 20_000 },
+    )
+    .toBeGreaterThan(20);
+  await page.keyboard.up('ArrowUp');
+  // Esc pausa; Tab llega al sonido del juego y Espacio lo apaga; Esc sigue.
+  await answerCard(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-menu')).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-estado', 'paused');
+  await tabTo(page, 'mar-canon-sonido');
+  await page.keyboard.press('Space');
+  await expect(page.getByTestId('mar-canon-sonido')).toHaveAttribute('aria-checked', 'false');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-menu')).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  expect(errors).toEqual([]);
+});
+
+test('accesibilidad: avisos aria-live de nivel, boss y resultado; sin temblor de cámara con movimiento reducido; pausa y cartas de 44 px (T152)', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.ref === 'vecino')!;
+  const errors = await openMar(page, `?minijuego=canon&t=${slot.atS - 6}&seed=7&carta=1`);
+  const say = page.getByTestId('mar-canon-anuncio');
+  await expect(say).toHaveAttribute('aria-live', 'polite');
+  // Subir de nivel: la carta y su aviso.
+  const cards = page.getByTestId('mar-canon-cartas');
+  await expect(cards).toBeVisible({ timeout: 15_000 });
+  const level = Number(await cards.getAttribute('data-nivel'));
+  await expect(say).toHaveText(msg('mar.canon.anuncio.nivel', { nivel: level }));
+  for (const card of await page.getByTestId('mar-canon-carta').all()) {
+    const b = (await card.boundingBox())!;
+    expect(b.height).toBeGreaterThanOrEqual(44);
+    expect(b.width).toBeGreaterThanOrEqual(44);
+  }
+  await page.waitForTimeout(600);
+  await page.keyboard.press('Enter');
+  await expect(cards).toHaveCount(0);
+  // La pausa se ve pequeña pero se toca en 44 px: a 20 px del centro sigue siendo ella.
+  const pause = page.getByTestId('mar-canon-pausa');
+  const p = (await pause.boundingBox())!;
+  const cx = p.x + p.width / 2;
+  const cy = p.y + p.height / 2;
+  const around = [
+    [cx - 20, cy],
+    [cx + 20, cy],
+    [cx, cy - 20],
+    [cx, cy + 20],
+  ];
+  // Sin carta encima (una nueva puede abrirse en cualquier momento y tapa la pantalla).
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return page.evaluate((points) => {
+          if (document.querySelector('[data-testid="mar-canon-cartas"]')) return null;
+          return points.map(
+            ([x, y]) =>
+              document.elementFromPoint(x!, y!)?.closest('[data-testid]')?.getAttribute('data-testid') ??
+              '',
+          );
+        }, around);
+      },
+      { timeout: 20_000 },
+    )
+    .toEqual(around.map(() => 'mar-canon-pausa'));
+  // Llega el Vecino: su aviso. Mientras, sin esquivar, al barco le entra agua.
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return (await say.textContent()) ?? '';
+      },
+      { timeout: 60_000, intervals: [400] },
+    )
+    .toBe(msg('mar.canon.boss.llega', { nombre: msg('survivors.boss.vecino') }));
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        return Number(await game(page).getAttribute('data-agua'));
+      },
+      { timeout: 60_000, intervals: [400] },
+    )
+    .toBeGreaterThan(0);
+  // Con movimiento reducido la cámara no tiembla con los golpes.
+  await expect(canvas(page)).not.toHaveAttribute('data-temblor', /.+/);
+  // El resultado también se anuncia.
+  await quitFromPause(page);
+  const title = page.getByTestId('mar-canon-final').getByRole('heading');
+  await expect(say).toHaveText((await title.textContent())!);
+  expect(errors).toEqual([]);
+});

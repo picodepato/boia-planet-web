@@ -2890,7 +2890,11 @@ export class Mar3D {
     this.look.z += mapLift;
     let ox = 0;
     let oz = 0;
+    // Movimiento reducido (T152): ningún golpe de cámara (choques, saltos, golpes del Cañón).
+    if (this.shake > 0 && this.reducedMotion) this.shake = 0;
     if (this.shake > 0) {
+      // Para las pruebas: la cámara ya tembló alguna vez en esta página.
+      if (!this.opts.canvas.dataset.temblor) this.opts.canvas.dataset.temblor = 'si';
       ox = (Math.random() - 0.5) * this.shake * 0.5;
       oz = (Math.random() - 0.5) * this.shake * 0.5;
       this.shake = Math.max(0, this.shake - dt * 2.5);

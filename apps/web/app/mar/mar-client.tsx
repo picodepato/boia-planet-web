@@ -473,6 +473,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     },
     // La pantalla final (T118) la pinta `CanonLayer`; la sesión y el premio, `useCanonMode` (T119).
     rewards: progressApi,
+    // El sonido del Cañón (T152): el mar se calla durante la partida y vuelve al acabar.
+    onSea: (on) => setAmbientWorld(on ? worldIdRef.current : null),
   });
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
@@ -1400,6 +1402,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   useEffect(() => {
     if (worldId) setAmbientWorld(worldId);
   }, [worldId]);
+  // Los Ajustes (música y efectos, el silencio de la web) también valen para el Cañón (T152).
+  const setCanonAudioSettings = canon.setAudioSettings;
+  useEffect(() => setCanonAudioSettings(settings), [settings, setCanonAudioSettings]);
 
   // La posición del barco (REQ-IDE-004, T44): cada poco mientras se navega y
   // al irse; una recarga la restaura (arranque, arriba).
@@ -2219,7 +2224,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       ) : null}
 
       {/* El Cañón (T118): HUD, agua a bordo, cartas, final; su estado para las pruebas (T116). */}
-      <CanonTestHook hud={canon.hud} prize={canon.prize} unlocked={canon.unlocked} />
+      <CanonTestHook
+        hud={canon.hud}
+        prize={canon.prize}
+        unlocked={canon.unlocked}
+        sound={canon.sound}
+      />
       <CanonDevSwitch canon={canon} />
       <CanonLayer
         canon={canon}
