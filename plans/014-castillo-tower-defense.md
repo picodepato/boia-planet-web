@@ -193,11 +193,30 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - Test command → exit 0
 - Outcome:
 
+## T167 — Remove the boat flag option from the boat menu
+- Status: pending
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Skills: none
+- Depends on: none
+- Goal: The «Bandera» choice in the boat menu (the Barco shop/dressing: `slot="flag"`, `FLAG_LOOKS`) is buggy and not important; remove it (Hernán, 2026-10-05).
+  - The boat menu no longer shows the «Bandera» section, and nothing else in the UI offers to change the flag; the shop intro text no longer lists the flag.
+  - The boat no longer draws an equipped flag from that choice; boats look right without it (no empty mast slot, no errors). Any flag that is part of a boat's own model stays as it is.
+  - Saved progress that holds owned or equipped flags keeps loading (local mode and Supabase mode): the flag fields are ignored or dropped on load, no crash, nothing else in the document changes; no refund (coins `muestra`).
+  - Remove the now-unused flag code, catalog entries and i18n keys; the other slots (boats, skins, wake, mascot) work exactly as before.
+- Context: `apps/web/lib/barco/shop.tsx` (l.55, 64, 71-73, 251-256), `apps/web/lib/barco/dressing.ts` (`FLAG_LOOKS`), `apps/web/app/mar/engine/ship-model.ts` (flag drawing), `apps/web/lib/i18n/es-lib.ts` (`barco.shop.bandera`, `barco.shop.sinBandera`, `barco.shop.barcosSkinsBanderaY`), `packages/engine/src/world/runtime.test.ts`, `apps/web/e2e/tienda.spec.ts`; find any other reader of the equipped flag with grep.
+- Scope: may touch the files above, the store schema/load code for the flag fields, tests and e2e / must not touch the other cosmetic slots' behaviour, the castle game files, `docs/DECISIONES.md`.
+- Done when:
+  - unit tests: a saved document with an owned and equipped flag loads without error and without the flag; the boat model builds with no flag → pass
+  - `grep -rn "barco.shop.bandera\|sinBandera\|FLAG_LOOKS" apps packages` → nothing left
+  - `E2E_PORT=<free> pnpm e2e tienda.spec.ts --workers=1` (no «Bandera» section; boats, wake and mascot still equip) → exit 0
+  - Test command → exit 0
+- Outcome:
+
 ## T165 — Close: balance, performance, full e2e, docs, Álvaro draft
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T157, T158, T159, T160, T161, T162, T163, T164, T166
+- Depends on: T157, T158, T159, T160, T161, T162, T163, T164, T166, T167
 - Goal: Close the plan.
   - **Balance with bots** for 3 run lengths × 3 difficulties: Tranquila winnable with a plain build, Normal a real fight, Tormenta hard; no single island strategy dominates (each island used by the best bot builds at least sometimes); Ibiza pays back in a reasonable time; record curves and win rates; bump `DEFENSE_CONFIG_VERSION` if numbers changed.
   - **Performance in `baja`** at the 10-min peak with bosses, a full arena of islands at level 3 (no cap: as many as fit) and sound on; fix obvious hot spots only.
@@ -213,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-05 plan: T167 added, remove the boat flag option from the boat menu (buggy, not important); saved flags ignored on load, no refund (Hernán, orchestrator)
 - 2026-10-06 plan: the path starts at an interdimensional vortex (lilac and black spinning spiral) from which enemies appear (Hernán)
 - 2026-10-06 plan: path = spiral inward around the castle with S and zigzag sections, same for every game, ≈ 40 s for a normal enemy; lane marked with continuous floating barriers (clearer from the high camera and cheaper than many buoys), race buoys only as accents; no approval stops for the path or the Tabarca island (Hernán accepts in advance) (Hernán, orchestrator)
 - 2026-10-06 plan: T166 added, the Tabarca lighthouse island in Blender moved from plan 013 (its T157, skipped there); renumbered T166 because T157 is taken here; the lighthouse big and the protagonist at the entrance; model Fable 5.1 (Hernán, orchestrator)
@@ -230,3 +250,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 amended: T166 Tabarca lighthouse island (from plan 013)
 - 2026-10-06 amended: path shape and floating barriers (decision 5, T158, T160); T166 without approval stop
 - 2026-10-06 amended: vortex at the path's start (decision 5, T160)
+- 2026-10-05 amended: T167 remove the boat flag option (T165 depends on it)
