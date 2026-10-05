@@ -64,8 +64,9 @@ import { IslandIndex, type SurvivorsWorld } from './world';
  * - Las armas (§5) son datos: cada una lleva su forma (`WeaponKind`) y su
  *   tabla por nivel; `resolveWeaponStats` le aplica las mejoras y los
  *   vinilos. El Cañón de agua y el de confeti disparan recto y las islas los
- *   paran; el aura del Subwoofer, el Láser que gira, las Boyas orbitales, los
- *   cohetes de los Fuegos y la nube de la Lluvia ácida pasan por encima.
+ *   paran; el aura del Subwoofer, los Focos (y el Show de Láseres), las
+ *   Boyas orbitales, los petardos de la Traca y la nube de la Lluvia ácida
+ *   pasan por encima.
  * - Las notas se funden y el imán las atrae; subir de nivel abre una carta
  *   (1 de 3) y la partida queda en pausa hasta elegir.
  * - Agua a bordo = vida; llena, inundado. A los 7:00 de tiempo activo,
@@ -92,9 +93,9 @@ export type SurvivorsEvent =
   /** Un golpe al barco: por contacto o por un disparo enemigo (`enemy` es quien lo hizo). */
   | { type: 'hit'; enemy: EnemyId; x: number; y: number; water: number }
   | { type: 'defeated'; enemy: EnemyId; id: number; x: number; y: number; elite: boolean }
-  /** Un arma dispara: `count` bolas, confetis, cohetes o nubes salen de (x, y). */
+  /** Un arma dispara: `count` bolas, confetis, petardos o nubes salen de (x, y). */
   | { type: 'fire'; weapon: WeaponId; x: number; y: number; count: number }
-  /** Un cohete explota en (x, y) con ese radio. */
+  /** Un petardo de la Traca o una bola de El Drop estalla en (x, y) con ese radio. */
   | { type: 'explode'; weapon: WeaponId; x: number; y: number; radius: number }
   /** Una bola del jugador o un disparo enemigo (`owner`) parado por una isla. */
   | { type: 'blocked'; x: number; y: number; owner: 'player' | 'enemy' }
@@ -136,7 +137,7 @@ export interface ProjectileView {
   readonly radius: number;
 }
 
-/** Una bola, un confeti o un cohete del jugador: `weapon` y `kind` dicen cuál pintar. */
+/** Una bola o un confeti del jugador: `weapon` y `kind` dicen cuál pintar. */
 export interface PlayerProjectileView extends ProjectileView {
   readonly weapon: WeaponId;
   readonly kind: WeaponKind;
@@ -153,7 +154,11 @@ export interface AuraView {
   readonly progress: number;
 }
 
-/** Un rayo desde el barco (Láser de festival). */
+/**
+ * Un haz desde el barco: un foco (Focos) que acaba en una mancha de luz de
+ * radio `spot` sobre su blanco, o un rayo del Show de Láseres (`spot` 0) de
+ * medio ancho `halfWidth`. Va de (x, y) con rumbo `angle` y largo `length`.
+ */
 export interface BeamView {
   readonly weapon: WeaponId;
   readonly x: number;
@@ -161,6 +166,25 @@ export interface BeamView {
   readonly angle: number;
   readonly length: number;
   readonly halfWidth: number;
+  /** Radio de la mancha de luz del foco (0: rayo del abanico, sin mancha). */
+  readonly spot: number;
+  /** Enemigo al que sigue el foco (−1: ninguno; siempre −1 en el abanico). */
+  readonly target: number;
+}
+
+/** Un petardo de la Traca flotando en la estela: estalla al tocarlo un enemigo. */
+export interface CrackerView {
+  readonly id: number;
+  readonly weapon: WeaponId;
+  readonly x: number;
+  readonly y: number;
+  /** u de choque con un enemigo. */
+  readonly radius: number;
+  /** u del estallido. */
+  readonly burst: number;
+  /** s que le quedan antes de apagarse sin estallar y lo que duraba al caer. */
+  readonly lifeS: number;
+  readonly durationS: number;
 }
 
 /** Una boya en órbita (Boyas orbitales). */
@@ -259,7 +283,7 @@ export interface SurvivorsSnapshot {
   };
   readonly enemies: readonly EnemyView[];
   readonly enemiesByType: Readonly<Partial<Record<EnemyId, readonly EnemyView[]>>>;
-  /** Bolas, confetis y cohetes del jugador (todas las armas que vuelan). */
+  /** Bolas y confetis del jugador (todas las armas que vuelan). */
   readonly projectiles: readonly PlayerProjectileView[];
   /** Disparos de los enemigos (pistolas de agua). */
   readonly enemyProjectiles: readonly ProjectileView[];
@@ -274,6 +298,8 @@ export interface SurvivorsSnapshot {
   readonly beams: readonly BeamView[];
   readonly orbitals: readonly OrbitalView[];
   readonly zones: readonly ZoneView[];
+  /** Petardos de la Traca en el agua. */
+  readonly crackers: readonly CrackerView[];
   readonly notes: readonly NoteView[];
   /** Ya salen élites (hito `elites` del guion). */
   readonly elitesActive: boolean;
@@ -369,8 +395,7 @@ interface Projectile {
   pierce: number;
   /** Las islas lo paran (las formas rectas). */
   blocked: boolean;
-  /** Cohetes: el enemigo al que va (−1: ninguno) y el radio de la explosión. */
-  target: number;
+  /** El Drop: radio del estallido al chocar (0: no estalla). */
   burst: number;
   speed: number;
   lastHit: number;
@@ -395,6 +420,27 @@ interface Zone {
   dead: boolean;
 }
 
+/** Un petardo de la Traca: quieto en el agua hasta que lo toca un enemigo o se apaga. */
+interface Cracker {
+  id: number;
+  weapon: WeaponId;
+  x: number;
+  y: number;
+  radius: number;
+  burst: number;
+  damage: number;
+  lifeS: number;
+  durationS: number;
+  dead: boolean;
+}
+
+/** Un foco: su mancha respecto al barco (u) y el enemigo que sigue (−1: ninguno). */
+interface Spot {
+  dx: number;
+  dy: number;
+  target: number;
+}
+
 /** Un arma del barco: su definición, nivel, números resueltos y relojes. */
 interface WeaponSlot {
   def: WeaponDef;
@@ -405,8 +451,19 @@ interface WeaponSlot {
   cooldown: number;
   /** s hasta el próximo golpe (formas con `tickS`). */
   tick: number;
-  /** rad: giro del rayo o de las boyas. */
+  /** rad: giro de las boyas. */
   angle: number;
+  /** s de vida del arma (el «respirar» del abanico del Show de Láseres). */
+  phase: number;
+  /** Traca: petardos de la ristra en curso que quedan por soltar y s hasta el siguiente. */
+  pending: number;
+  dropT: number;
+  /** Traca: dónde cayó el último petardo (para no amontonarlos con el barco quieto). */
+  dropped: boolean;
+  lastX: number;
+  lastY: number;
+  /** Focos: uno por foco. */
+  spots: Spot[];
 }
 
 interface Note {
@@ -422,8 +479,8 @@ interface Note {
 }
 
 const NOTE_RADIUS = 4;
-/** u de choque de un cohete en vuelo (la explosión es `area`). */
-const ROCKET_RADIUS = 6;
+/** Fracción del alcance a la que espera la mancha de un foco sin blanco, por delante del barco. */
+const SPOT_REST = 0.35;
 const PAUSE_EPS = 1e-6;
 
 const ZERO_STATS = (): PlayerStats => ({
@@ -456,8 +513,6 @@ export class SurvivorsGame {
   private readonly noteGrid: SpatialGrid;
   private readonly spawnRng: () => number;
   private readonly cardRng: () => number;
-  /** El azar de las armas (blancos de los cohetes): aparte, para no mover el guion. */
-  private readonly weaponRng: () => number;
   private readonly baseShip: ShipConfig;
   private shipCfg: ShipConfig;
   private readonly weapons: WeaponSlot[] = [];
@@ -478,6 +533,7 @@ export class SurvivorsGame {
   private readonly enemyShots: EnemyShot[] = [];
   private readonly telegraphs: TelegraphView[] = [];
   private readonly zones: Zone[] = [];
+  private readonly crackers: Cracker[] = [];
   private readonly weaponViews: WeaponView[] = [];
   private readonly auras: AuraView[] = [];
   private readonly beams: BeamView[] = [];
@@ -540,7 +596,6 @@ export class SurvivorsGame {
     this.noteGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.notes);
     this.spawnRng = rng(this.seed);
     this.cardRng = rng((this.seed ^ 0x9e3779b9) >>> 0);
-    this.weaponRng = rng((this.seed ^ 0x7f4a7c15) >>> 0);
     this.baseShip = opts.ship ?? DEFAULT_SHIP_CONFIG;
     this.shipCfg = survivorsShipConfig(this.baseShip, config.handling, 0);
     if (!config.weapons[config.startingWeapon]) {
@@ -613,6 +668,7 @@ export class SurvivorsGame {
       beams: this.beams,
       orbitals: this.orbitals,
       zones: this.zones,
+      crackers: this.crackers,
       notes: this.notes,
       elitesActive: false,
       mareaActive: false,
@@ -724,15 +780,32 @@ export class SurvivorsGame {
           this.auras.push({ weapon: w.def.id, x: p.x, y: p.y, radius: st.area, progress });
           break;
         case 'beam':
-          for (let k = 0; k < st.count; k++) {
-            this.beams.push({
-              weapon: w.def.id,
-              x: p.x,
-              y: p.y,
-              angle: beamAngle(w.angle, k, st.count),
-              length: st.range,
-              halfWidth: st.area,
-            });
+          if (w.def.effects?.sweep) {
+            for (let k = 0; k < st.count; k++) {
+              this.beams.push({
+                weapon: w.def.id,
+                x: p.x,
+                y: p.y,
+                angle: this.sweepAngle(w, k),
+                length: st.range,
+                halfWidth: st.area,
+                spot: 0,
+                target: -1,
+              });
+            }
+          } else {
+            for (const sp of w.spots) {
+              this.beams.push({
+                weapon: w.def.id,
+                x: p.x,
+                y: p.y,
+                angle: Math.atan2(sp.dy, sp.dx),
+                length: Math.hypot(sp.dx, sp.dy),
+                halfWidth: st.area,
+                spot: st.area,
+                target: sp.target,
+              });
+            }
           }
           break;
         case 'orbit':
@@ -787,6 +860,13 @@ export class SurvivorsGame {
       cooldown: 0,
       tick: 0,
       angle: 0,
+      phase: 0,
+      pending: 0,
+      dropT: 0,
+      dropped: false,
+      lastX: 0,
+      lastY: 0,
+      spots: [],
     };
     slot.stats = resolveWeaponStats(def, slot.level, this.stats);
     this.weapons.push(slot);
@@ -860,6 +940,7 @@ export class SurvivorsGame {
     w.stats = resolveWeaponStats(w.def, w.level, this.stats);
     w.cooldown = 0;
     w.tick = 0;
+    w.spots.length = 0;
     this.events.push({ type: 'evolved', weapon: e.weapon, evolutionId: e.id });
     return true;
   }
@@ -889,8 +970,21 @@ export class SurvivorsGame {
       w: this.water,
       inv: this.invulnerable,
       lv: [this.level, this.xp, this.pendingLevels],
-      wp: this.weapons.map((w) => [w.def.id, w.level, w.evolutionId, w.cooldown, w.tick, w.angle]),
+      wp: this.weapons.map((w) => [
+        w.def.id,
+        w.level,
+        w.evolutionId,
+        w.cooldown,
+        w.tick,
+        w.angle,
+        w.phase,
+        w.pending,
+        w.dropT,
+        w.dropped ? [w.lastX, w.lastY] : null,
+        w.spots.map((sp) => [sp.dx, sp.dy, sp.target]),
+      ]),
       z: this.zones.map((z) => [z.id, z.x, z.y, z.life, z.tick]),
+      cr: this.crackers.map((c) => [c.id, c.x, c.y, c.lifeS]),
       of: this.overflow,
       acc: this.trackAcc,
       mn: this.mareaNext,
@@ -912,7 +1006,7 @@ export class SurvivorsGame {
         e.timer,
         e.chargeLeft,
       ]),
-      b: this.projectiles.map((b) => [b.id, b.x, b.y, b.life, b.target]),
+      b: this.projectiles.map((b) => [b.id, b.x, b.y, b.life]),
       s: this.enemyShots.map((b) => [b.id, b.x, b.y, b.life]),
       n: this.notes.map((n) => [n.id, n.x, n.y, n.value]),
       k: [this.defeated, this.notesPicked, this.notesValue, this.nextId],
@@ -1039,6 +1133,7 @@ export class SurvivorsGame {
     this.stepWeapons(dt);
     this.stepProjectiles(dt);
     this.stepZones(dt);
+    this.stepCrackers(dt);
     this.compactEnemies();
     this.stepNotes(dt);
 
@@ -1642,8 +1737,8 @@ export class SurvivorsGame {
         case 'cone':
           if (this.ready(w, dt)) this.fireCone(w);
           break;
-        case 'rocket':
-          if (this.ready(w, dt)) this.fireRockets(w);
+        case 'trail':
+          this.stepTrail(w, dt);
           break;
         case 'zone':
           if (this.ready(w, dt)) this.castZones(w);
@@ -1654,8 +1749,13 @@ export class SurvivorsGame {
           }
           break;
         case 'beam':
-          w.angle = wrapAngle(w.angle + st.speed * dt);
-          if (this.ticks(w, dt)) this.hurtBeams(w);
+          if (w.def.effects?.sweep) {
+            w.phase += dt;
+            if (this.ticks(w, dt)) this.hurtBeams(w);
+          } else {
+            this.aimSpots(w, dt);
+            if (this.ticks(w, dt)) this.hurtSpots(w);
+          }
           break;
         case 'orbit':
           w.angle = wrapAngle(w.angle + st.speed * dt);
@@ -1684,14 +1784,13 @@ export class SurvivorsGame {
   }
 
   /** Un proyectil del arma `w` desde el barco con rumbo `a`. false si el tope no deja. */
-  private shoot(w: WeaponSlot, a: number, target = -1, origin = this.player, flash = false): boolean {
+  private shoot(w: WeaponSlot, a: number, origin = this.player, flash = false): boolean {
     if (this.projectiles.length >= this.caps.projectiles) return false;
     const st = w.stats;
     const p = origin;
     const f = flash ? w.def.effects?.flashes : undefined;
     const speed = f?.speed ?? st.speed;
     const range = f?.range ?? st.range;
-    const rocket = w.def.kind === 'rocket';
     this.projectiles.push({
       id: this.nextId++,
       weapon: w.def.id,
@@ -1701,14 +1800,12 @@ export class SurvivorsGame {
       y: p.y,
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
-      radius: f ? f.radius * (1 + this.stats.areaBonus) :
-        rocket ? ROCKET_RADIUS : w.def.effects?.projectileRadius ?? st.area,
+      radius: f ? f.radius * (1 + this.stats.areaBonus) : w.def.effects?.projectileRadius ?? st.area,
       life: (range / speed) * 1.2,
       damage: st.damage,
       pierce: st.pierce,
       blocked: w.def.blockedByIslands,
-      target,
-      burst: rocket || w.def.effects?.projectileRadius ? st.area : 0,
+      burst: w.def.effects?.projectileRadius ? st.area : 0,
       speed,
       lastHit: -1,
       dead: false,
@@ -1757,24 +1854,97 @@ export class SurvivorsGame {
     this.events.push({ type: 'fire', weapon: w.def.id, x: p.x, y: p.y, count });
   }
 
-  /** Fuegos artificiales: `count` cohetes, cada uno a un enemigo al azar a tiro (pueden repetir). */
-  private fireRockets(w: WeaponSlot): void {
+  /**
+   * Traca: cada `cooldownS` empieza una ristra de `count` petardos, que caen
+   * de uno en uno por la popa cada `dropEveryS` s y así quedan en la estela.
+   * No necesita blanco: la ristra cae al ritmo, haya o no enemigos cerca;
+   * pero cada petardo cae a `minSpacing` u del anterior como poco, así que
+   * con el barco quieto la ristra espera (premia navegar, no plantarse).
+   * Una ristra nueva sustituye a lo que quedara de la anterior.
+   */
+  private stepTrail(w: WeaponSlot, dt: number): void {
     const st = w.stats;
-    const pool = this.enemiesInRange(st.range, this.scratchEnemies);
-    if (pool.length === 0) {
-      w.cooldown = 0;
-      return;
+    const trail = w.def.effects?.trail;
+    if (!trail) return;
+    if (this.ready(w, dt)) {
+      w.cooldown += st.cooldownS;
+      if (st.count > 0) {
+        w.pending = st.count;
+        w.dropT = 0;
+        const p = this.player;
+        this.events.push({ type: 'fire', weapon: w.def.id, x: p.x, y: p.y, count: st.count });
+      }
     }
+    if (w.pending <= 0) return;
+    w.dropT = Math.max(0, w.dropT - dt);
     const p = this.player;
-    let fired = 0;
-    for (let k = 0; k < st.count; k++) {
-      const e = pool[Math.floor(this.weaponRng() * pool.length)]!;
-      const a = Math.atan2(wd(e.y - p.y, this.h), wd(e.x - p.x, this.w));
-      if (!this.shoot(w, a, e.id)) break;
-      fired++;
+    const back = this.shipCfg.radius + trail.triggerRadius;
+    while (w.pending > 0 && w.dropT <= 0) {
+      const x = wrapInto(p.x - Math.cos(p.heading) * back, this.bounds.left, this.bounds.right);
+      const y = wrapInto(p.y - Math.sin(p.heading) * back, this.bounds.top, this.bounds.bottom);
+      // Sin estela no hay ristra: el petardo espera a que el barco se aparte del anterior.
+      if (w.dropped && Math.hypot(wd(x - w.lastX, this.w), wd(y - w.lastY, this.h)) < trail.minSpacing) break;
+      this.dropCracker(w, x, y, trail.triggerRadius);
+      w.pending--;
+      w.dropT += Math.max(SURVIVORS_STEP_S, trail.dropEveryS);
     }
-    w.cooldown += st.cooldownS;
-    this.fired(w, fired);
+  }
+
+  /** Un petardo en (x, y); con el tope lleno, el más viejo se apaga para dejarle sitio. */
+  private dropCracker(w: WeaponSlot, x: number, y: number, triggerRadius: number): void {
+    w.dropped = true;
+    w.lastX = x;
+    w.lastY = y;
+    if (this.caps.crackers <= 0) return;
+    if (this.crackers.length >= this.caps.crackers) this.crackers.shift();
+    const st = w.stats;
+    this.crackers.push({
+      id: this.nextId++,
+      weapon: w.def.id,
+      x,
+      y,
+      radius: triggerRadius,
+      burst: st.area,
+      damage: st.damage,
+      lifeS: st.durationS,
+      durationS: st.durationS,
+      dead: false,
+    });
+  }
+
+  /**
+   * Los petardos: el que toca un enemigo vivo estalla (daño a todo lo que
+   * hay en su radio, pequeño); el que se queda sin mecha se apaga sin más.
+   */
+  private stepCrackers(dt: number): void {
+    if (this.crackers.length === 0) return;
+    for (const c of this.crackers) {
+      c.lifeS -= dt;
+      if (c.lifeS <= 0) {
+        c.dead = true;
+        continue;
+      }
+      const near = this.enemyGrid.query(c.x, c.y, c.radius + this.maxEnemyRadius, this.scratch);
+      let touched = false;
+      for (const i of near) {
+        const e = this.enemies[i]!;
+        if (e.dead) continue;
+        const dx = wd(e.x - c.x, this.w);
+        const dy = wd(e.y - c.y, this.h);
+        const min = c.radius + e.radius;
+        if (dx * dx + dy * dy <= min * min) {
+          touched = true;
+          break;
+        }
+      }
+      if (!touched) continue;
+      c.dead = true;
+      this.hurtCircle(c.x, c.y, c.burst, c.damage);
+      this.events.push({ type: 'explode', weapon: c.weapon, x: c.x, y: c.y, radius: c.burst });
+    }
+    let n = 0;
+    for (const c of this.crackers) if (!c.dead) this.crackers[n++] = c;
+    this.crackers.length = n;
   }
 
   /**
@@ -1836,12 +2006,125 @@ export class SurvivorsGame {
     w.cooldown += made > 0 ? st.cooldownS : 0;
   }
 
-  /** Láser: cada rayo hiere a lo que toca el segmento desde el barco (medio ancho `area`, largo `range`). */
+  /**
+   * Rumbo del rayo `k` del abanico del Show de Láseres: los rayos se abren
+   * en `arcRad` delante del barco y el abanico entero barre de lado a lado
+   * (±`swingRad`, `swingHz` veces por segundo). Lo de detrás queda fuera:
+   * hay que apuntar con el barco.
+   */
+  private sweepAngle(w: WeaponSlot, k: number): number {
+    const sw = w.def.effects!.sweep!;
+    const n = w.stats.count;
+    const f = n > 1 ? k / (n - 1) - 0.5 : 0;
+    const swing = sw.swingRad * Math.sin(w.phase * sw.swingHz * Math.PI * 2);
+    return this.player.heading + swing + f * sw.arcRad;
+  }
+
+  /** ¿Sigue valiendo `id` como blanco de un foco (vivo y a tiro)? */
+  private spotTarget(id: number, range: number): Enemy | null {
+    const e = this.enemyById(id);
+    if (!e) return null;
+    const p = this.player;
+    const dx = wd(e.x - p.x, this.w);
+    const dy = wd(e.y - p.y, this.h);
+    const r = range + e.radius;
+    return dx * dx + dy * dy <= r * r ? e : null;
+  }
+
+  /**
+   * Focos: cada foco sigue a su blanco mientras viva y esté a tiro; si no,
+   * se fija en el enemigo más cercano que no lleve ya otro foco (si todos lo
+   * llevan, el más cercano). La mancha va hacia el blanco a `speed` u/s, así
+   * que pasa suave de uno a otro; sin blanco vuelve por delante del barco.
+   */
+  private aimSpots(w: WeaponSlot, dt: number): void {
+    const st = w.stats;
+    const p = this.player;
+    const count = Math.max(0, st.count);
+    while (w.spots.length < count) {
+      const rest = st.range * SPOT_REST;
+      w.spots.push({ dx: Math.cos(p.heading) * rest, dy: Math.sin(p.heading) * rest, target: -1 });
+    }
+    w.spots.length = count;
+    let pool: Enemy[] | null = null;
+    for (let k = 0; k < w.spots.length; k++) {
+      const sp = w.spots[k]!;
+      let target = this.spotTarget(sp.target, st.range);
+      if (!target) {
+        pool ??= this.enemiesInRange(st.range, this.scratchEnemies);
+        let free: Enemy | null = null;
+        let freeD = Infinity;
+        let any: Enemy | null = null;
+        let anyD = Infinity;
+        for (const e of pool) {
+          if (e.dead) continue;
+          const dx = wd(e.x - p.x, this.w);
+          const dy = wd(e.y - p.y, this.h);
+          const d = dx * dx + dy * dy;
+          if (d < anyD || (d === anyD && any && e.id < any.id)) {
+            any = e;
+            anyD = d;
+          }
+          const taken = w.spots.some((o, j) => j !== k && o.target === e.id);
+          if (!taken && (d < freeD || (d === freeD && free && e.id < free.id))) {
+            free = e;
+            freeD = d;
+          }
+        }
+        target = free ?? any;
+        sp.target = target ? target.id : -1;
+      }
+      let gx: number;
+      let gy: number;
+      if (target) {
+        gx = wd(target.x - p.x, this.w);
+        gy = wd(target.y - p.y, this.h);
+      } else {
+        const rest = st.range * SPOT_REST;
+        gx = Math.cos(p.heading) * rest;
+        gy = Math.sin(p.heading) * rest;
+      }
+      const ex = gx - sp.dx;
+      const ey = gy - sp.dy;
+      const d = Math.hypot(ex, ey);
+      const stepLen = st.speed * dt;
+      if (d <= stepLen || d === 0) {
+        sp.dx = gx;
+        sp.dy = gy;
+      } else {
+        sp.dx += (ex / d) * stepLen;
+        sp.dy += (ey / d) * stepLen;
+      }
+      // La mancha nunca pasa del alcance.
+      const len = Math.hypot(sp.dx, sp.dy);
+      if (len > st.range) {
+        sp.dx *= st.range / len;
+        sp.dy *= st.range / len;
+      }
+    }
+  }
+
+  /** Focos: cada mancha quema a lo que tiene debajo (el blanco y lo que pase por ahí). */
+  private hurtSpots(w: WeaponSlot): void {
+    const st = w.stats;
+    const p = this.player;
+    for (const sp of w.spots) {
+      if (sp.target < 0) continue;
+      this.hurtCircle(
+        wrapInto(p.x + sp.dx, this.bounds.left, this.bounds.right),
+        wrapInto(p.y + sp.dy, this.bounds.top, this.bounds.bottom),
+        st.area,
+        st.damage,
+      );
+    }
+  }
+
+  /** Show de Láseres: cada rayo del abanico hiere a lo que toca el segmento desde el barco. */
   private hurtBeams(w: WeaponSlot): void {
     const st = w.stats;
     const p = this.player;
     for (let k = 0; k < st.count; k++) {
-      const a = beamAngle(w.angle, k, st.count);
+      const a = this.sweepAngle(w, k);
       const ux = Math.cos(a);
       const uy = Math.sin(a);
       const near = this.enemyGrid.query(
@@ -1888,7 +2171,7 @@ export class SurvivorsGame {
         y: this.player.y + Math.sin(a) * st.range };
       const flashes = f.count + Math.round(this.stats.extraProjectiles);
       for (let j = 0; j < flashes; j++) {
-        if (!this.shoot(w, beamAngle(w.angle, j, flashes), -1, origin, true)) break;
+        if (!this.shoot(w, beamAngle(w.angle, j, flashes), origin, true)) break;
         count++;
       }
     }
@@ -1912,7 +2195,7 @@ export class SurvivorsGame {
     this.zones.length = n;
   }
 
-  /** Un cohete explota en (x, y): hiere a todo en su radio. */
+  /** Una bola de El Drop estalla en (x, y): hiere a todo en su radio. */
   private explode(b: Projectile): void {
     b.dead = true;
     this.hurtCircle(b.x, b.y, b.burst, b.damage);
@@ -1926,35 +2209,12 @@ export class SurvivorsGame {
   }
 
   /**
-   * Bolas, confetis y cohetes avanzan recto. Las formas rectas (`blocked`)
-   * las paran las islas y hieren al primero que tocan (atravesando `pierce`);
-   * los cohetes siguen a su blanco por encima de todo y explotan al llegar
-   * (o donde estén si el blanco cayó o se les acaba la mecha).
+   * Bolas y confetis avanzan recto. Las formas rectas (`blocked`) las paran
+   * las islas y hieren al primero que tocan (atravesando `pierce`); las de
+   * El Drop estallan al chocar.
    */
   private stepProjectiles(dt: number): void {
     for (const b of this.projectiles) {
-      if (b.kind === 'rocket') {
-        const target = this.enemyById(b.target);
-        if (!target) {
-          this.explode(b);
-          continue;
-        }
-        const dx = wd(target.x - b.x, this.w);
-        const dy = wd(target.y - b.y, this.h);
-        const d = Math.hypot(dx, dy);
-        if (d <= target.radius + b.radius + b.speed * dt) {
-          this.setWrapped(b, target.x, target.y);
-          this.explode(b);
-          continue;
-        }
-        b.vx = (dx / d) * b.speed;
-        b.vy = (dy / d) * b.speed;
-        b.x = wrapInto(b.x + b.vx * dt, this.bounds.left, this.bounds.right);
-        b.y = wrapInto(b.y + b.vy * dt, this.bounds.top, this.bounds.bottom);
-        b.life -= dt;
-        if (b.life <= 0) this.explode(b);
-        continue;
-      }
       const sx = b.vx * dt;
       const sy = b.vy * dt;
       const len = Math.hypot(sx, sy);

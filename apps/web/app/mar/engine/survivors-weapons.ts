@@ -36,28 +36,38 @@ import {
 } from './survivors-props';
 
 /**
- * Heights (scene units) above the local ground. Auras and puddles lie on the
- * water; the laser sweeps at deck height; buoys float; rockets fly. What the
- * sim lets pass over islands (laser, buoys, rockets, rain) is lifted by the
- * ground under it so it never sinks into a hill.
+ * Heights (scene units) above the local ground. Auras, puddles and the
+ * spotlights' pools of light lie on the water; beams run at deck height;
+ * buoys and firecrackers float. What the sim lets pass over islands (beams,
+ * buoys, firecrackers, rain) is lifted by the ground under it so it never
+ * sinks into a hill.
  */
 export const WEAPON_Y = {
   shot: 0.6,
   aura: 0.15,
   beam: 1.1,
+  spot: 0.12,
   orbit: 0.5,
-  rocket: 2.6,
+  cracker: 0.3,
   zone: 0.1,
-  burst: 1.2,
+  burst: 0.8,
 } as const;
-/** s a burst stays on screen (rockets, El Drop). */
-export const BURST_S = 0.65;
+/** s a burst stays on screen (firecrackers, El Drop): short and crisp. */
+export const BURST_S = 0.45;
+/** Scene size of a firecracker per sim unit of its trigger radius. */
+export const CRACKER_SCALE = 0.9;
 
 /** Low-poly, merged pieces: one draw per active weapon, no lights or textures. */
 export function weaponGeometry(id: WeaponId) {
   if (id === 'canon') return cannonBallGeometry();
-  // A flat strip from the boat (x = 0) to the beam's reach (x = 1), 1 wide.
-  if (id === 'laser') return new PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0.5, 0, 0);
+  // A flat stage-light cone from the boat (x = 0, narrow) to the beam's end (x = 1, 1 wide).
+  if (id === 'laser') {
+    const g = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0.5, 0, 0);
+    const pos = g.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) if (pos.getX(i) < 0.5) pos.setZ(i, pos.getZ(i) * BEAM_ROOT);
+    pos.needsUpdate = true;
+    return g;
+  }
   if (id === 'subwoofer') return new RingGeometry(0.94, 1, 32).rotateX(-Math.PI / 2);
   const k = new Kit();
   // Kit clones its inputs; release the short-lived modelling primitives as well.
@@ -79,9 +89,18 @@ export function weaponGeometry(id: WeaponId) {
       });
     }
   } else if (id === 'fireworks') {
-    add(new CylinderGeometry(0.3, 0.3, 1.5, 6), '#ff64be', { r: [0, 0, -Math.PI / 2] });
-    add(new ConeGeometry(0.43, 0.7, 6), '#ffd650', { p: [1.1, 0, 0], r: [0, 0, -Math.PI / 2] });
-    add(new ConeGeometry(0.3, 1, 5), '#ffa352', { p: [-1.1, 0, 0], r: [0, 0, Math.PI / 2] });
+    // A firecracker of the Traca: red tube, gold bands, a short dark fuse.
+    add(new CylinderGeometry(0.32, 0.32, 1.3, 6), '#e8303f', { r: [0, 0, -Math.PI / 2] });
+    for (const x of [-0.5, 0.5]) {
+      add(new CylinderGeometry(0.34, 0.34, 0.14, 6), '#ffd650', {
+        p: [x, 0, 0],
+        r: [0, 0, -Math.PI / 2],
+      });
+    }
+    add(new CylinderGeometry(0.05, 0.05, 0.5, 4), '#2b1d14', {
+      p: [0.85, 0.12, 0],
+      r: [0, 0, -Math.PI / 3],
+    });
   } else {
     add(new RingGeometry(0.92, 1, 24).rotateX(-Math.PI / 2), '#b5ff35');
     add(new CircleGeometry(0.95, 20).rotateX(-Math.PI / 2), '#70bb18', { p: [0, 0.02, 0] });
@@ -119,8 +138,24 @@ export function weaponMaterial(id: WeaponId) {
   return propsMaterial();
 }
 
-/** The laser is dimmer with reduced motion (it still turns: that is the attack). */
+/** The beams are dimmer with reduced motion (they still move: that is the attack). */
 export const LASER_OPACITY = { normal: 0.5, reduced: 0.28 } as const;
+/** Width of a beam at the boat, as a fraction of its width at the far end (a light cone). */
+export const BEAM_ROOT = 0.25;
+/** Opacity of a spotlight's pool of light on the water (steady; dimmer with reduced motion). */
+export const SPOT_OPACITY = { normal: 0.3, reduced: 0.2 } as const;
+
+/** The pool of light a spotlight leaves on its target: a soft disc and a brighter rim. */
+export function spotGeometry(): BufferGeometry {
+  const k = new Kit();
+  const disc = new CircleGeometry(1, 20).rotateX(-Math.PI / 2);
+  k.add(disc, '#ffffff', { s: 0.92 });
+  disc.dispose();
+  const rim = new RingGeometry(0.88, 1, 24).rotateX(-Math.PI / 2);
+  k.add(rim, '#ffffff', { p: [0, 0.01, 0] });
+  rim.dispose();
+  return k.build();
+}
 
 /** Count maxima come from the actual level/evolution tables, including Rumba. */
 export function weaponVisualCapacity(config: SurvivorsConfig, id: WeaponId): number {
@@ -178,6 +213,7 @@ export class SurvivorsWeapons {
   private readonly batches: Batch[] = [];
   private readonly byId = new Map<WeaponId, Batch>();
   private readonly flashes: Batch;
+  private readonly spots: Batch;
   private readonly bursts: Batch;
   private readonly pool: (Burst | null)[];
   private readonly dummy = new Object3D();
@@ -217,9 +253,11 @@ export class SurvivorsWeapons {
       const cap =
         kind === 'zone'
           ? caps.areas
-          : ['projectile', 'cone', 'rocket'].includes(kind)
-            ? caps.projectiles
-            : weaponVisualCapacity(config, id) * (kind === 'aura' ? 2 : 1);
+          : kind === 'trail'
+            ? caps.crackers
+            : ['projectile', 'cone'].includes(kind)
+              ? caps.projectiles
+              : weaponVisualCapacity(config, id) * (kind === 'aura' ? 2 : 1);
       this.byId.set(
         id,
         batch(
@@ -235,6 +273,13 @@ export class SurvivorsWeapons {
       cannonBallGeometry(),
       glow('#ffe8a6', 0.6),
       caps.projectiles,
+    );
+    // The spotlights' pools of light on the water (Focos): one per beam at most.
+    this.spots = batch(
+      'survivors-laser-spots',
+      spotGeometry(),
+      glow('#fff2c4', SPOT_OPACITY.normal),
+      weaponVisualCapacity(config, 'laser'),
     );
     // The effect pool scales with the quality's area budget; rings and rays share one draw.
     this.bursts = batch(
@@ -301,8 +346,8 @@ export class SurvivorsWeapons {
       if (!b) continue;
       const x = toScene(p.x);
       const z = toScene(p.y);
-      // Rockets fly over islands (the sim lets them); balls and confetti skim the water.
-      const y = p.kind === 'rocket' ? this.lift(x, z) + WEAPON_Y.rocket : WEAPON_Y.shot;
+      // Balls and confetti skim the water.
+      const y = WEAPON_Y.shot;
       const size = Math.max(BALL_MIN, toScene(p.radius) * BALL_SCALE) * (p.evolutionId ? 1.5 : 1);
       this.place(
         b,
@@ -348,11 +393,15 @@ export class SurvivorsWeapons {
         ? LASER_OPACITY.reduced
         : LASER_OPACITY.normal;
     }
+    (this.spots.mesh.material as MeshBasicMaterial).opacity = reduced
+      ? SPOT_OPACITY.reduced
+      : SPOT_OPACITY.normal;
     for (const beam of s.beams) {
       const b = this.byId.get(beam.weapon);
       if (!b) continue;
-      // Steady alpha, never a strobe. It still turns with reduced motion: that is the attack.
-      const len = toScene(beam.length);
+      // Steady alpha, never a strobe. Beams still move with reduced motion:
+      // that is the attack. A spotlight's cone opens to the size of its pool.
+      const len = Math.max(0.01, toScene(beam.length));
       const width = Math.max(0.3, toScene(beam.halfWidth) * 2);
       const x = toScene(beam.x);
       const z = toScene(beam.y);
@@ -369,6 +418,49 @@ export class SurvivorsWeapons {
         beam.angle,
         tint,
         len * 0.5,
+      );
+      if (beam.spot <= 0) continue;
+      // The pool of light on the target: on the water, lifted over islands.
+      const r = Math.max(0.3, toScene(beam.spot));
+      const sx = x + Math.cos(beam.angle) * len;
+      const sz = z + Math.sin(beam.angle) * len;
+      this.place(
+        this.spots,
+        beam.weapon,
+        sx,
+        this.lift(sx, sz) + WEAPON_Y.spot,
+        sz,
+        r,
+        1,
+        r,
+        0,
+        beam.target >= 0 ? '#ffffff' : '#9a9a9a',
+        r,
+      );
+    }
+    for (const c of s.crackers) {
+      const b = this.byId.get(c.weapon);
+      if (!b) continue;
+      const x = toScene(c.x);
+      const z = toScene(c.y);
+      const size = Math.max(0.35, toScene(c.radius) * CRACKER_SCALE);
+      // A fizzling firecracker darkens (colour, not alpha: no blinking); it
+      // bobs a little on the water unless motion is reduced.
+      const life = Math.min(1, Math.max(0, c.lifeS / Math.max(0.001, c.durationS)));
+      this.color.setRGB(0.55 + life * 0.45, 0.55 + life * 0.45, 0.55 + life * 0.45);
+      const bob = reduced ? 0 : Math.sin(t * 3 + c.id) * 0.06;
+      this.place(
+        b,
+        c.weapon,
+        x,
+        this.lift(x, z) + WEAPON_Y.cracker + bob,
+        z,
+        size,
+        size,
+        size,
+        (c.id % 7) * 0.45,
+        this.color,
+        size * 1.5,
       );
     }
     for (const o of s.orbitals) {

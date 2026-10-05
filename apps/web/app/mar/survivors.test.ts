@@ -650,7 +650,9 @@ describe('las piezas de la partida', () => {
         s.auras.length * 2 +
         s.beams.length +
         s.orbitals.length +
-        s.zones.length,
+        s.zones.length +
+        s.crackers.length +
+        s.beams.filter((b) => b.spot > 0).length,
     );
     view.dispose();
   });

@@ -4,6 +4,47 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T134: Redesign Fireworks and Festival laser
+
+Qué existe:
+- **Traca** (antes Fuegos artificiales; id `fireworks`, nueva forma `trail`): cada
+  `cooldownS` (2,4 s) el barco suelta por la popa una ristra de `count` petardos (3),
+  uno cada `dropEveryS` (0,12 s) y nunca a menos de `minSpacing` (24 u) del anterior:
+  con el barco quieto no hay estela y no se amontonan. Cada petardo flota `durationS`
+  (7 s) y estalla al tocarlo un enemigo: `damage` 36 en radio `area` 34 (evento
+  `explode`). Niveles: +1 petardo, +16 daño, −0,6 s, +2 petardos; Rumba suma
+  petardos. Tope nuevo `caps.crackers` (alta 48, baja 24; el más viejo se apaga).
+  Foto: `snapshot.crackers`. Ya no hay cohetes (`rocket`) ni `weaponRng`.
+- **Focos** (antes Láser de festival; id `laser`, forma `beam`): `count` focos (1→3)
+  que se fijan en el enemigo más cercano a tiro (`range` 300, +80 a nivel 4), cada
+  uno en uno distinto si puede, lo siguen mientras viva y esté a tiro y queman la
+  mancha de radio `area` 24 cada `tickS` (5 de daño cada 0,25 s; +4 a nivel 3). La
+  mancha pasa de blanco a blanco a `speed` 700 u/s (suave); sin blanco espera
+  delante del barco. `BeamView` gana `spot` y `target`.
+- **Show de Láseres** (Focos 5 + Techno, sin cambios en la pareja): 7 rayos en
+  abanico de 1,6 rad delante del barco que barren de lado a lado (±0,7 rad, 0,5 Hz),
+  alcance 440, 30 de daño cada 0,16 s (`effects.sweep`).
+- Ninguno lo paran las islas. Vista: petardo low-poly instanciado (flota, se
+  oscurece al apagarse; quieto con movimiento reducido), estallido pequeño y corto
+  (`BURST_S` 0,45), haz en cono + mancha de luz instanciada
+  (`survivors-laser-spots`), opacidad fija, más tenue con movimiento reducido.
+  Textos de cartas en `es-mar.ts` (Focos, Traca, Show, Rumba).
+- `SURVIVORS_CONFIG_VERSION` 7 → 8.
+- Equilibrio: el piloto parado de Normal en la semilla 6 (archipiélago), que con
+  T133 se inundaba a los 119 s, ahora aguanta con los Focos hasta sacar el Show
+  (≈270 s). La prueba de T132 pasa a: como mucho una semilla de Normal pasa de
+  los 120 s, ninguna de 330 s, y la comparación Tranquila/Normal usa la mediana
+  de Normal.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors apps/web/app/mar/engine --testTimeout=60000` → exit 0 (348 tests)
+- `E2E_PORT=3417 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0 (53 passed, 1 skipped; `armas=1` con y sin movimiento reducido sin errores)
+- Test command (pasos uno a uno) → vitest exit 0 (152 archivos, 1478 tests), checks.sh OK, lint 0 avisos, build OK (186,9 kB de 200), typecheck OK.
+
+Pendiente:
+- Los Focos y la Traca en las notas de prueba de la beta 3 (T148) y el icono del
+  HUD de la Traca (`canon-hud-model.ts` sigue con 🎆).
+
 ## 2026-10-05 — plan 012 T133: Notas de la beta 2: armas más fuertes, evoluciones a mano
 
 Qué existe:

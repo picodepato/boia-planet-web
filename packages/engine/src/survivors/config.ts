@@ -20,7 +20,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 7;
+export const SURVIVORS_CONFIG_VERSION = 8;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -227,28 +227,32 @@ export interface MareaDef {
  * - `projectile`: bola(s) al enemigo más cercano (Cañón de agua).
  * - `cone`: ráfaga en abanico hacia donde navega el barco (Cañón de confeti).
  * - `aura`: círculo alrededor del barco que golpea cada tic (Subwoofer).
- * - `beam`: rayo(s) que giran alrededor del barco y golpean cada tic (Láser).
+ * - `beam`: focos que se fijan en los enemigos más cercanos y los queman
+ *   cada tic (Focos); con `effects.sweep`, rayos en abanico que barren
+ *   delante del barco de lado a lado (Show de Láseres).
  * - `orbit`: boyas que orbitan el barco y golpean cada tic (Boyas orbitales).
- * - `rocket`: cohete(s) a enemigos al azar que explotan en área (Fuegos).
+ * - `trail`: una ristra de petardos que el barco suelta en su estela; cada
+ *   uno estalla cuando lo toca un enemigo (Traca).
  * - `zone`: nube quieta sobre un grupo que daña cada segundo (Lluvia ácida).
  */
-export type WeaponKind = 'projectile' | 'aura' | 'beam' | 'orbit' | 'cone' | 'rocket' | 'zone';
+export type WeaponKind = 'projectile' | 'aura' | 'beam' | 'orbit' | 'cone' | 'trail' | 'zone';
 
 /**
  * Los números de un arma en un nivel. Qué significa cada uno depende de la
  * forma (`WeaponKind`); los que no usa van a 0:
- * - `damage`: por golpe (proyectil, cohete al explotar) o por tic (aura, rayo, boya, nube).
- * - `cooldownS`: s entre disparos (proyectil, abanico, cohete, nube).
- * - `tickS`: s entre golpes de un aura, rayo, boya o nube.
- * - `count`: bolas por ráfaga, cohetes por disparo, rayos, boyas o nubes por disparo.
- * - `area` (u): radio de la bola o del cohete en vuelo, del aura, de la boya,
- *   de la explosión, de la nube; medio ancho del rayo.
- * - `range` (u): alcance para buscar blanco y vida de bolas y cohetes; largo
- *   del rayo; radio de la órbita de las boyas.
- * - `speed`: u/s de bolas y cohetes; rad/s del giro del rayo y de las boyas.
+ * - `damage`: por golpe (proyectil, petardo al estallar) o por tic (aura, foco, rayo, boya, nube).
+ * - `cooldownS`: s entre disparos (proyectil, abanico, ristra de petardos, nube).
+ * - `tickS`: s entre golpes de un aura, foco, rayo, boya o nube.
+ * - `count`: bolas por ráfaga, petardos por ristra, focos o rayos, boyas o nubes por disparo.
+ * - `area` (u): radio de la bola, del aura, de la boya, del estallido de un
+ *   petardo, de la nube, de la mancha de luz de un foco; medio ancho del rayo.
+ * - `range` (u): alcance para buscar blanco y vida de las bolas; hasta dónde
+ *   llega un foco; largo del rayo; radio de la órbita de las boyas.
+ * - `speed`: u/s de las bolas y de la mancha de un foco al pasar de un
+ *   blanco a otro; rad/s del giro de las boyas.
  * - `spreadRad`: rad entre proyectiles de una misma ráfaga.
  * - `pierce`: enemigos que una bola atraviesa antes de deshacerse.
- * - `durationS`: s que dura una nube.
+ * - `durationS`: s que dura una nube o un petardo sin estallar.
  */
 export interface WeaponStats {
   damage: number;
@@ -301,6 +305,18 @@ export interface WeaponDef {
     pushDistance?: number;
     /** Destellos rectos desde cada orbital, sin bloqueo de islas. */
     flashes?: { count: number; range: number; speed: number; radius: number; cooldownS: number };
+    /**
+     * Traca (`trail`): s entre petardo y petardo de una ristra (la ristra se
+     * dibuja en la estela), u de choque de cada petardo con un enemigo y u
+     * mínimas entre un petardo y el anterior (con el barco quieto no caen).
+     */
+    trail?: { dropEveryS: number; triggerRadius: number; minSpacing: number };
+    /**
+     * Show de Láseres (`beam` en abanico): los `count` rayos se abren en
+     * `arcRad` rad delante del barco y el abanico barre de lado a lado
+     * ±`swingRad` rad, `swingHz` veces por segundo.
+     */
+    sweep?: { arcRad: number; swingRad: number; swingHz: number };
   };
 }
 
@@ -417,6 +433,8 @@ export interface QualityCaps {
   enemyProjectiles: number;
   /** Zonas de daño en el agua (nubes de lluvia ácida). */
   areas: number;
+  /** Petardos de la Traca en el agua a la vez (el más viejo se apaga para el nuevo). */
+  crackers: number;
   notes: number;
 }
 
@@ -542,8 +560,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   handling: { turnRateScale: 1.35, accelerationScale: 1.6, brakeScale: 1.6, lateralGripScale: 1.5 },
   camera: { distanceScale: 1.25, heightScale: 1.15, blendS: 0.8 },
   caps: {
-    alta: { enemies: 150, projectiles: 120, enemyProjectiles: 80, areas: 12, notes: 200 },
-    baja: { enemies: 60, projectiles: 60, enemyProjectiles: 40, areas: 6, notes: 100 },
+    alta: { enemies: 150, projectiles: 120, enemyProjectiles: 80, areas: 12, crackers: 48, notes: 200 },
+    baja: { enemies: 60, projectiles: 60, enemyProjectiles: 40, areas: 6, crackers: 24, notes: 100 },
   },
   player: {
     waterCapacity: 100,
@@ -750,28 +768,30 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       blockedByIslands: false,
       extraProjectilesApply: false,
     },
-    // Láser de festival: un rayo que gira alrededor del barco (dos a nivel 5).
+    // Focos (antes «Láser de festival», T134): 1–3 focos de escenario; cada
+    // uno se fija en un enemigo cercano y lo quema mientras siga a tiro, y
+    // pasa suave al siguiente. Pasan por encima de las islas.
     laser: {
       id: 'laser',
       kind: 'beam',
       i18nKey: 'survivors.weapon.laser',
       maxLevel: 5,
       base: {
-        damage: 12,
+        damage: 5,
         cooldownS: 0,
         tickS: 0.25,
         count: 1,
-        area: 10,
-        range: 260,
-        speed: 1.6,
+        area: 24,
+        range: 300,
+        speed: 700,
         spreadRad: 0,
         pierce: 0,
         durationS: 0,
       },
       levels: [
-        { i18nKey: 'survivors.weapon.laser.l2', gains: [{ stat: 'range', amount: 60 }] },
-        { i18nKey: 'survivors.weapon.laser.l3', gains: [{ stat: 'damage', amount: 8 }] },
-        { i18nKey: 'survivors.weapon.laser.l4', gains: [{ stat: 'tickS', amount: -0.05 }] },
+        { i18nKey: 'survivors.weapon.laser.l2', gains: [{ stat: 'count', amount: 1 }] },
+        { i18nKey: 'survivors.weapon.laser.l3', gains: [{ stat: 'damage', amount: 4 }] },
+        { i18nKey: 'survivors.weapon.laser.l4', gains: [{ stat: 'range', amount: 80 }] },
         { i18nKey: 'survivors.weapon.laser.l5', gains: [{ stat: 'count', amount: 1 }] },
       ],
       blockedByIslands: false,
@@ -832,33 +852,36 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       blockedByIslands: true,
       extraProjectilesApply: true,
     },
-    // Fuegos artificiales: cohetes a enemigos al azar (a tiro) que explotan
-    // en área al llegar; vuelan por encima de las islas.
+    // Traca (antes «Fuegos artificiales», T134): cada pocos segundos el barco
+    // suelta una ristra de petardos en su estela; cada petardo estalla
+    // (pequeño y seco) cuando lo toca un enemigo. Premia arrastrar a los
+    // enemigos por tu estela. No le afectan las islas.
     fireworks: {
       id: 'fireworks',
-      kind: 'rocket',
+      kind: 'trail',
       i18nKey: 'survivors.weapon.fireworks',
       maxLevel: 5,
       base: {
-        damage: 40,
-        cooldownS: 2.2,
+        damage: 36,
+        cooldownS: 2.4,
         tickS: 0,
-        count: 1,
-        area: 60,
-        range: 700,
-        speed: 380,
+        count: 3,
+        area: 34,
+        range: 0,
+        speed: 0,
         spreadRad: 0,
         pierce: 0,
-        durationS: 0,
+        durationS: 7,
       },
       levels: [
-        { i18nKey: 'survivors.weapon.fireworks.l2', gains: [{ stat: 'area', amount: 15 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l3', gains: [{ stat: 'count', amount: 1 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l4', gains: [{ stat: 'damage', amount: 20 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l5', gains: [{ stat: 'cooldownS', amount: -0.6 }] },
+        { i18nKey: 'survivors.weapon.fireworks.l2', gains: [{ stat: 'count', amount: 1 }] },
+        { i18nKey: 'survivors.weapon.fireworks.l3', gains: [{ stat: 'damage', amount: 16 }] },
+        { i18nKey: 'survivors.weapon.fireworks.l4', gains: [{ stat: 'cooldownS', amount: -0.6 }] },
+        { i18nKey: 'survivors.weapon.fireworks.l5', gains: [{ stat: 'count', amount: 2 }] },
       ],
       blockedByIslands: false,
       extraProjectilesApply: true,
+      effects: { trail: { dropEveryS: 0.12, triggerRadius: 10, minSpacing: 24 } },
     },
     // Lluvia ácida: una nube sobre el grupo más apretado a tiro; daña cada
     // segundo a lo que tiene debajo mientras dura.
@@ -1071,6 +1094,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       weapon: 'laser',
       passive: 'techno',
       i18nKey: 'survivors.evolution.laserShow',
+      // Muchos rayos en abanico que barren alrededor del barco: de quemar de
+      // uno en uno a barrer a todos.
       evolvedWeapon: {
         id: 'laser',
         kind: 'beam',
@@ -1080,10 +1105,10 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           damage: 30,
           cooldownS: 0,
           tickS: 0.16,
-          count: 4,
-          area: 16,
-          range: 420,
-          speed: 1.8,
+          count: 7,
+          area: 14,
+          range: 440,
+          speed: 0,
           spreadRad: 0,
           pierce: 0,
           durationS: 0,
@@ -1091,6 +1116,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         levels: [],
         blockedByIslands: false,
         extraProjectilesApply: false,
+        effects: { sweep: { arcRad: 1.6, swingRad: 0.7, swingHz: 0.5 } },
       },
     },
     {

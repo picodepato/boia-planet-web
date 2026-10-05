@@ -14,6 +14,7 @@ import { toScene } from './compress';
 import { MAR_SHIP_CONFIG } from './steering';
 import { SurvivorsView } from './survivors-view';
 import {
+  BEAM_ROOT,
   LASER_OPACITY,
   SurvivorsWeapons,
   WEAPON_Y,
@@ -55,17 +56,23 @@ function sample(id: WeaponId, evolution?: string) {
   g.step();
   return g.snapshot();
 }
+/** Instances of the weapon's own batch. */
 function expected(s: SurvivorsSnapshot, id: WeaponId) {
   return (
     s.projectiles.filter((p) => p.weapon === id).length +
     s.auras.filter((a) => a.weapon === id).length * 2 +
     s.beams.filter((b) => b.weapon === id).length +
     s.orbitals.filter((o) => o.weapon === id).length +
-    s.zones.filter((z) => z.weapon === id).length
+    s.zones.filter((z) => z.weapon === id).length +
+    s.crackers.filter((c) => c.weapon === id).length
   );
 }
+/** Everything drawn for the weapon: its batch plus the spotlights' pools of light. */
+function drawn(s: SurvivorsSnapshot, id: WeaponId) {
+  return expected(s, id) + s.beams.filter((b) => b.weapon === id && b.spot > 0).length;
+}
 function empty(s: SurvivorsSnapshot): SurvivorsSnapshot {
-  return { ...s, projectiles: [], auras: [], beams: [], orbitals: [], zones: [] };
+  return { ...s, projectiles: [], auras: [], beams: [], orbitals: [], zones: [], crackers: [] };
 }
 
 describe.each(ids)('T128 visual builder: %s', (id) => {
@@ -84,9 +91,11 @@ describe.each(ids)('T128 visual builder: %s', (id) => {
       const cap =
         kind === 'zone'
           ? caps.areas
-          : ['projectile', 'cone', 'rocket'].includes(kind)
-            ? caps.projectiles
-            : weaponVisualCapacity(SURVIVORS_CONFIG, id) * (kind === 'aura' ? 2 : 1);
+          : kind === 'trail'
+            ? caps.crackers
+            : ['projectile', 'cone'].includes(kind)
+              ? caps.projectiles
+              : weaponVisualCapacity(SURVIVORS_CONFIG, id) * (kind === 'aura' ? 2 : 1);
       expect(m.instanceMatrix.count).toBe(cap);
       expect(m.count).toBe(0);
       expect(m.visible).toBe(false);
@@ -108,10 +117,15 @@ describe.each(ids)('T128 visual builder: %s', (id) => {
     v.update(s, 1, false);
     expect(m.count).toBe(expected(s, id));
     expect(m.visible).toBe(true);
-    expect(v.counts()[id]).toBe(expected(s, id));
-    const source = [...s.projectiles, ...s.auras, ...s.beams, ...s.orbitals, ...s.zones].find(
-      (a) => a.weapon === id,
-    )!;
+    expect(v.counts()[id]).toBe(drawn(s, id));
+    const source = [
+      ...s.projectiles,
+      ...s.auras,
+      ...s.beams,
+      ...s.orbitals,
+      ...s.zones,
+      ...s.crackers,
+    ].find((a) => a.weapon === id)!;
     expect(matrices[12]).toBeCloseTo(toScene(source.x));
     expect(matrices[14]).toBeCloseTo(toScene(source.y));
     const shift = <T extends { x: number }>(a: T): T => ({ ...a, x: a.x + 40 });
@@ -123,6 +137,7 @@ describe.each(ids)('T128 visual builder: %s', (id) => {
         beams: s.beams.map(shift),
         orbitals: s.orbitals.map(shift),
         zones: s.zones.map(shift),
+        crackers: s.crackers.map(shift),
       },
       2,
       false,
@@ -226,7 +241,7 @@ describe('T128 evolutions, pools and integration', () => {
     v.dispose();
   });
 
-  it('the laser strip reaches the full beam range, from the boat outwards', () => {
+  it('a spotlight cone runs from the boat to its target and leaves a pool of light there', () => {
     const s = sample('laser');
     const v = new SurvivorsWeapons(SURVIVORS_CONFIG, SURVIVORS_CONFIG.caps.baja);
     const m = v.meshes[meshName('laser')]!;
@@ -245,7 +260,46 @@ describe('T128 evolutions, pools and integration', () => {
     g.computeBoundingBox();
     expect(g.boundingBox!.min.x).toBeCloseTo(0);
     expect(g.boundingBox!.max.x).toBeCloseTo(1);
+    // A cone: narrow at the boat, as wide as the pool at the far end.
+    const pos = g.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) {
+      expect(Math.abs(pos.getZ(i))).toBeCloseTo(pos.getX(i) < 0.5 ? 0.5 * BEAM_ROOT : 0.5);
+    }
     expect((m.material as MeshBasicMaterial).opacity).toBe(LASER_OPACITY.normal);
+    // One pool of light per spotlight, at the beam's end, the size of the burning spot.
+    const pools = v.meshes['survivors-laser-spots']!;
+    expect(pools.count).toBe(s.beams.filter((b) => b.spot > 0).length);
+    expect(pools.count).toBeGreaterThan(0);
+    for (let i = 0; i < pools.count; i++) {
+      const e = new Matrix4().fromArray(pools.instanceMatrix.array, i * 16).elements;
+      const beam = s.beams[i]!;
+      expect(e[12]).toBeCloseTo(toScene(beam.x + Math.cos(beam.angle) * beam.length));
+      expect(e[14]).toBeCloseTo(toScene(beam.y + Math.sin(beam.angle) * beam.length));
+      expect(e[0]).toBeCloseTo(Math.max(0.3, toScene(beam.spot)));
+    }
+    // The Show de Láseres has no pools: just the fan of beams.
+    v.update(sample('laser', 'laserShow'), 1, false);
+    expect(pools.count).toBe(0);
+    expect(pools.visible).toBe(false);
+    v.dispose();
+  });
+
+  it('firecrackers float in the wake, steady with reduced motion, darker as their fuse runs out', () => {
+    const s = sample('fireworks');
+    expect(s.crackers.length).toBeGreaterThan(0);
+    const v = new SurvivorsWeapons(SURVIVORS_CONFIG, SURVIVORS_CONFIG.caps.baja);
+    const m = v.meshes[meshName('fireworks')]!;
+    v.update(s, 1, false);
+    const moving = Array.from(m.instanceMatrix.array.slice(0, 16));
+    v.update(s, 1.4, false);
+    expect(Array.from(m.instanceMatrix.array.slice(0, 16))).not.toEqual(moving);
+    v.update(s, 1, true);
+    const steady = Array.from(m.instanceMatrix.array.slice(0, 16));
+    v.update(s, 5, true);
+    expect(Array.from(m.instanceMatrix.array.slice(0, 16))).toEqual(steady);
+    const fresh = m.instanceColor!.array[0]!;
+    v.update({ ...s, crackers: s.crackers.map((c) => ({ ...c, lifeS: c.durationS * 0.1 })) }, 5, true);
+    expect(m.instanceColor!.array[0]).toBeLessThan(fresh);
     v.dispose();
   });
 
@@ -259,7 +313,7 @@ describe('T128 evolutions, pools and integration', () => {
       if (id === 'subwoofer') expect(y(id)).toBeCloseTo(WEAPON_Y.aura);
       else expect(y(id)).toBeGreaterThanOrEqual(ground);
     }
-    expect(y('fireworks')).toBeCloseTo(ground + WEAPON_Y.rocket);
+    expect(y('fireworks')).toBeCloseTo(ground + WEAPON_Y.cracker);
     v.dispose();
   });
 
@@ -269,7 +323,7 @@ describe('T128 evolutions, pools and integration', () => {
       const caps = SURVIVORS_CONFIG.caps[quality];
       const v = new SurvivorsWeapons(SURVIVORS_CONFIG, caps);
       const projectileIds = ids.filter((id) =>
-        ['projectile', 'cone', 'rocket'].includes(SURVIVORS_CONFIG.weapons[id]!.kind),
+        ['projectile', 'cone'].includes(SURVIVORS_CONFIG.weapons[id]!.kind),
       );
       const projectiles = Array.from(
         { length: caps.projectiles * projectileIds.length },

@@ -133,7 +133,7 @@ describe('survivors armas: las 7 del diseño con tabla fija por nivel', () => {
       laser: 'beam',
       buoys: 'orbit',
       confetti: 'cone',
-      fireworks: 'rocket',
+      fireworks: 'trail',
       acidRain: 'zone',
     };
     for (const id of WEAPONS) {
@@ -205,7 +205,7 @@ describe('survivors armas: las 7 del diseño con tabla fija por nivel', () => {
         base.durationS,
       ]);
     }
-    // Rumba («+1 proyectil») entra en bolas, confetis y cohetes; no en auras, rayos, boyas ni nubes.
+    // Rumba («+1 proyectil») entra en bolas, confetis y petardos; no en auras, focos, boyas ni nubes.
     expect(
       WEAPONS.filter((id) => SURVIVORS_CONFIG.weapons[id]!.extraProjectilesApply).sort(),
     ).toEqual(['canon', 'confetti', 'fireworks'].sort());
@@ -316,58 +316,159 @@ describe('survivors armas: Subwoofer (aura)', () => {
   });
 });
 
-describe('survivors armas: Láser de festival (rayo que gira)', () => {
-  it('barre una vuelta entera y pega a lo que cruza, por encima de las islas; nivel 2 llega más lejos; nivel 5 son 2 rayos', () => {
+describe('survivors armas: Focos (antes Láser de festival; T134)', () => {
+  it('el foco se fija en el enemigo más cercano a tiro y lo quema, por encima de una isla; el de lejos, nada', () => {
     const l1 = lvl('laser', 1);
-    const l2 = lvl('laser', 2);
-    expect(l2.range).toBeGreaterThan(l1.range);
-    const turnS = (Math.PI * 2) / l1.speed;
-    const dist = (l1.range + l2.range) / 2;
-    for (const level of [1, 2]) {
-      const game = createSurvivors(only('laser'), 1, openSea([{ x: 0, y: 90, radius: 30 }]));
-      if (level === 2) game.levelUpWeapon('laser');
-      const around = (['piranha', 'crab', 'jellyfish', 'pirate'] as EnemyId[]).map((t, i) =>
-        game.spawnEnemy(
-          t,
-          Math.cos((i / 4) * Math.PI * 2) * 180,
-          Math.sin((i / 4) * Math.PI * 2) * 180,
-        )!,
-      );
-      const edge = game.spawnEnemy('crab', dist, 0)!;
-      const ev = run(game, turnS * 1.1);
-      expect(ev.some((e) => e.type === 'blocked')).toBe(false);
-      // Los cuatro, también el que tiene la isla delante (0, 180).
-      for (const e of around) expect(e.hp).toBeLessThan(e.maxHp);
-      if (level === 1) expect(edge.hp).toBe(edge.maxHp);
-      else expect(edge.hp).toBeLessThan(edge.maxHp);
-      const s = game.snapshot();
-      expect(s.beams).toHaveLength(1);
-      expect(s.beams[0]).toMatchObject({
-        weapon: 'laser',
-        length: level === 1 ? l1.range : l2.range,
-        halfWidth: l1.area,
-      });
-      expect(s.projectiles).toHaveLength(0);
-    }
-    const game = createSurvivors(only('laser'), 1, openSea());
-    for (let l = 1; l < 5; l++) game.levelUpWeapon('laser');
-    game.step(idle);
-    const beams = game.snapshot().beams;
-    expect(beams).toHaveLength(lvl('laser', 5).count);
-    expect(beams).toHaveLength(2);
-    expect(Math.abs(((beams[1]!.angle - beams[0]!.angle) % (Math.PI * 2)) - Math.PI)).toBeLessThan(
-      1e-6,
-    );
+    // Una isla entre el barco y el blanco: el foco pasa por encima.
+    const cfg = only('laser', (c) => {
+      c.enemies.crab!.hp = 1e6;
+    });
+    const game = createSurvivors(cfg, 1, openSea([{ x: 100, y: 0, radius: 30 }]));
+    const near = game.spawnEnemy('crab', 200, 0)!;
+    const far = game.spawnEnemy('crab', 0, l1.range + 120)!;
+    const ev = run(game, 2);
+    expect(ev.some((e) => e.type === 'blocked')).toBe(false);
+    expect(near.hp).toBeLessThan(near.maxHp);
+    expect(far.hp).toBe(far.maxHp);
+    const s = game.snapshot();
+    expect(s.beams).toHaveLength(1);
+    expect(s.beams[0]).toMatchObject({ weapon: 'laser', target: near.id, spot: l1.area });
+    // El haz acaba en el blanco.
+    expect(s.beams[0]!.length).toBeCloseTo(200, 6);
+    expect(s.beams[0]!.angle).toBeCloseTo(0, 6);
+    expect(s.projectiles).toHaveLength(0);
   });
 
-  it('el rayo gira: su ángulo avanza a su velocidad', () => {
+  it('quema sin parar mientras el blanco siga a tiro: un tic de daño cada `tickS`', () => {
+    const l1 = lvl('laser', 1);
     const game = createSurvivors(only('laser'), 1, openSea());
+    // Justo en la mancha de espera: el foco llega en el primer paso.
+    const e = game.spawnEnemy('crab', l1.range * 0.35, 0)!;
+    run(game, 1);
+    const ticks = Math.floor(1 / l1.tickS + 1e-6);
+    expect(e.maxHp - e.hp).toBeGreaterThanOrEqual((ticks - 1) * l1.damage - 1e-6);
+    expect(e.maxHp - e.hp).toBeLessThanOrEqual((ticks + 1) * l1.damage + 1e-6);
+  });
+
+  it('se queda fijo en su blanco aunque llegue otro más cerca; al caer, pasa suave al siguiente', () => {
+    const l1 = lvl('laser', 1);
+    const cfg = only('laser', (c) => {
+      c.enemies.piranha!.hp = 30;
+      c.enemies.crab!.hp = 1e6;
+    });
+    const game = createSurvivors(cfg, 1, openSea());
+    const first = game.spawnEnemy('piranha', 150, 0)!;
+    run(game, 0.3);
+    expect(game.snapshot().beams[0]!.target).toBe(first.id);
+    // Otro más cerca después: el foco no suelta al primero.
+    const second = game.spawnEnemy('crab', 0, -100)!;
     game.step(idle);
-    const a0 = game.snapshot().beams[0]!.angle;
+    expect(game.snapshot().beams[0]!.target).toBe(first.id);
+    // Cuando el primero cae, pasa al otro sin saltar: la mancha avanza a `speed` u/s.
+    let prev = { x: 0, y: 0 };
+    let switched = false;
+    let maxStep = 0;
+    run(game, 3, undefined, (g) => {
+      const b = g.snapshot().beams[0]!;
+      const tip = { x: Math.cos(b.angle) * b.length, y: Math.sin(b.angle) * b.length };
+      if (switched) maxStep = Math.max(maxStep, Math.hypot(tip.x - prev.x, tip.y - prev.y));
+      if (b.target === second.id) switched = true;
+      prev = tip;
+    });
+    expect(first.hp).toBeLessThanOrEqual(0);
+    expect(switched).toBe(true);
+    expect(maxStep).toBeLessThanOrEqual(l1.speed * SURVIVORS_STEP_S + 1e-6);
+    expect(second.hp).toBeLessThan(second.maxHp);
+    const b = game.snapshot().beams[0]!;
+    expect(b.length).toBeCloseTo(100, 6);
+  });
+
+  it('los niveles: +1 foco (cada uno a un blanco distinto), daño, alcance y un tercer foco', () => {
+    const [l1, l2, l3, l4, l5] = [1, 2, 3, 4, 5].map((l) => lvl('laser', l));
+    expect(l2!.count).toBe(l1!.count + 1);
+    expect(l3!.damage).toBeGreaterThan(l2!.damage);
+    expect(l4!.range).toBeGreaterThan(l3!.range);
+    expect(l5!.count).toBe(3);
+    const game = createSurvivors(only('laser'), 1, openSea());
+    game.levelUpWeapon('laser');
+    const a = game.spawnEnemy('crab', 120, 0)!;
+    const b = game.spawnEnemy('crab', -150, 0)!;
+    run(game, 1);
+    const targets = game.snapshot().beams.map((x) => x.target).sort();
+    expect(targets).toEqual([a.id, b.id].sort());
+    expect(a.hp).toBeLessThan(a.maxHp);
+    expect(b.hp).toBeLessThan(b.maxHp);
+    // Más alcance a nivel 4: el que antes quedaba fuera ahora se quema.
+    const dist = (l3!.range + l4!.range) / 2;
+    for (const level of [3, 4]) {
+      const g = createSurvivors(only('laser'), 1, openSea());
+      for (let l = 1; l < level; l++) g.levelUpWeapon('laser');
+      const edge = g.spawnEnemy('crab', dist, 0)!;
+      run(g, 2);
+      if (level === 3) expect(edge.hp).toBe(edge.maxHp);
+      else expect(edge.hp).toBeLessThan(edge.maxHp);
+    }
+  });
+
+  it('sin blancos, los focos esperan por delante del barco y no queman nada', () => {
+    const l1 = lvl('laser', 1);
+    const game = createSurvivors(only('laser'), 1, openSea());
     run(game, 0.5);
-    const a1 = game.snapshot().beams[0]!.angle;
-    const turned = (((a1 - a0) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    expect(turned).toBeCloseTo(lvl('laser', 1).speed * 0.5, 3);
+    const b = game.snapshot().beams[0]!;
+    expect(b.target).toBe(-1);
+    expect(b.length).toBeCloseTo(l1.range * 0.35, 6);
+  });
+});
+
+describe('survivors armas: Show de Láseres (Focos 5 + Techno; T134)', () => {
+  const e = SURVIVORS_CONFIG.evolutions.find((x) => x.id === 'laserShow')!;
+
+  it('sale de los Focos a nivel 5 con el vinilo Techno (no antes) y son muchos rayos en abanico que barren', () => {
+    expect(e.weapon).toBe('laser');
+    expect(e.passive).toBe('techno');
+    const sweep = e.evolvedWeapon.effects!.sweep!;
+    const cfg = only('laser', (c) => {
+      for (const en of Object.values(c.enemies)) en!.hp = 1e6;
+    });
+    const game = createSurvivors(cfg, 1, openSea());
+    for (let l = 1; l < 4; l++) game.levelUpWeapon('laser');
+    expect(game.addVinyl('techno')).toBe(true);
+    expect(game.evolveWeapon('laserShow')).toBe(false);
+    expect(game.levelUpWeapon('laser')).toBe(true);
+    expect(game.evolveWeapon('laserShow')).toBe(true);
+    game.step(idle);
+    const s0 = game.snapshot();
+    expect(s0.weapons[0]).toMatchObject({ id: 'laser', evolutionId: 'laserShow' });
+    expect(s0.beams).toHaveLength(e.evolvedWeapon.base.count);
+    expect(s0.beams.length).toBeGreaterThan(lvl('laser', 5).count);
+    for (const b of s0.beams) {
+      expect(b.spot).toBe(0);
+      expect(b.target).toBe(-1);
+      expect(b.length).toBe(e.evolvedWeapon.base.range);
+    }
+    // Un abanico delante del barco: `arcRad` de punta a punta, en orden, centrado
+    // en el rumbo (que barre ±`swingRad`).
+    const angles = s0.beams.map((b) => b.angle);
+    expect(angles[angles.length - 1]! - angles[0]!).toBeCloseTo(sweep.arcRad, 9);
+    for (let i = 1; i < angles.length; i++) expect(angles[i]!).toBeGreaterThan(angles[i - 1]!);
+    const centre = (angles[0]! + angles[angles.length - 1]!) / 2 - s0.player.heading;
+    expect(Math.abs(centre)).toBeLessThanOrEqual(sweep.swingRad + 1e-9);
+    // Barre de lado a lado: alcanza delante y a los lados; lo de detrás queda fuera.
+    const ahead = [-1.2, -0.6, 0, 0.6, 1.2].map((a) =>
+      game.spawnEnemy('crab', Math.cos(a) * 250, Math.sin(a) * 250)!,
+    );
+    const behind = game.spawnEnemy('crab', -250, 0)!;
+    let minC = Infinity;
+    let maxC = -Infinity;
+    run(game, 2 / sweep.swingHz, undefined, (g) => {
+      const bs = g.snapshot().beams;
+      const c = (bs[0]!.angle + bs[bs.length - 1]!.angle) / 2;
+      minC = Math.min(minC, c);
+      maxC = Math.max(maxC, c);
+    });
+    expect(maxC - minC).toBeGreaterThan(sweep.swingRad);
+    for (const x of ahead) expect(x.hp).toBeLessThan(x.maxHp);
+    expect(behind.hp).toBe(behind.maxHp);
   });
 });
 
@@ -430,82 +531,149 @@ describe('survivors armas: Cañón de confeti (abanico recto)', () => {
   });
 });
 
-describe('survivors armas: Fuegos artificiales (cohetes que explotan)', () => {
-  it('el cohete vuela por encima de una isla hasta su blanco y explota en área; a nivel 3 salen 2', () => {
+describe('survivors armas: Traca (antes Fuegos artificiales; T134)', () => {
+  it('cada `cooldownS` suelta una ristra de `count` petardos por la popa, de uno en uno; a nivel 2, uno más', () => {
     const l1 = lvl('fireworks', 1);
-    const l3 = lvl('fireworks', 3);
-    expect(l3.count).toBe(l1.count + 1);
-    for (const level of [1, 3]) {
-      const game = createSurvivors(only('fireworks'), 1, openSea([{ x: 250, y: 0, radius: 70 }]));
-      if (level === 3) for (let l = 1; l < 3; l++) game.levelUpWeapon('fireworks');
-      const stats = level === 1 ? l1 : l3;
-      const target = game.spawnEnemy('crab', 500, 0)!;
-      const beside = game.spawnEnemy('crab', 500 + l1.area * 0.6, 0)!;
-      const ev = run(game, 500 / l1.speed + 0.5);
+    const l2 = lvl('fireworks', 2);
+    expect(l2.count).toBe(l1.count + 1);
+    const trail = SURVIVORS_CONFIG.weapons.fireworks!.effects!.trail!;
+    for (const level of [1, 2]) {
+      const game = createSurvivors(only('fireworks'), 1, openSea());
+      if (level === 2) game.levelUpWeapon('fireworks');
+      const stats = level === 1 ? l1 : l2;
+      const seen: number[] = [];
+      const forward: SurvivorsInput = { ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } };
+      const ev = run(game, 2, () => forward, (g) => seen.push(g.snapshot().crackers.length));
       const fires = ev.filter((e) => e.type === 'fire');
-      expect(fires.length).toBeGreaterThan(0);
+      expect(fires).toHaveLength(1);
       if (fires[0]!.type === 'fire') expect(fires[0]!.count).toBe(stats.count);
-      expect(ev.some((e) => e.type === 'blocked')).toBe(false);
-      const booms = ev.filter((e) => e.type === 'explode');
-      expect(booms.length).toBeGreaterThan(0);
-      for (const b of booms) {
-        if (b.type !== 'explode') continue;
-        expect(b.weapon).toBe('fireworks');
-        // Nivel 2: «+15 de área».
-        expect(b.radius).toBe(stats.area);
-        // Estalla encima del blanco.
-        expect(Math.hypot(b.x - 500, b.y)).toBeLessThan(l1.area);
+      // Caen de uno en uno, no de golpe.
+      expect(seen[0]).toBe(1);
+      expect(Math.max(...seen)).toBe(stats.count);
+      const s = game.snapshot();
+      for (const c of s.crackers) {
+        expect(c).toMatchObject({ weapon: 'fireworks', burst: stats.area, durationS: stats.durationS });
+        // Detrás del barco (rumbo 0: a la izquierda).
+        expect(c.x).toBeLessThan(s.player.x);
       }
-      // El blanco y el de al lado (dentro del área) reciben la explosión.
-      expect(target.hp).toBeLessThan(target.maxHp);
-      expect(beside.hp).toBeLessThan(beside.maxHp);
-    }
-  });
-
-  it('elige blancos al azar entre los que tiene a tiro (determinista por semilla)', () => {
-    const cfg = only('fireworks', (c) => {
-      c.weapons.fireworks!.base.damage = 1;
-    });
-    const hits = (seed: number) => {
-      const game = createSurvivors(cfg, seed, openSea());
-      const ring = Array.from({ length: 8 }, (_, i) =>
-        game.spawnEnemy(
-          'crab',
-          Math.cos((i / 8) * Math.PI * 2) * 300,
-          Math.sin((i / 8) * Math.PI * 2) * 300,
-        )!,
+      // Nunca más deprisa que uno cada `dropEveryS`, ni más juntos que `minSpacing`.
+      const firstAt = seen.indexOf(1);
+      const fullAt = seen.indexOf(stats.count);
+      expect((fullAt - firstAt) * SURVIVORS_STEP_S).toBeGreaterThanOrEqual(
+        trail.dropEveryS * (stats.count - 1) - 1e-9,
       );
-      run(game, 30);
-      return ring.map((e) => e.maxHp - e.hp);
-    };
-    const a = hits(3);
-    expect(a.filter((d) => d > 0).length).toBeGreaterThan(2);
-    expect(hits(3)).toEqual(a);
-    expect(hits(4)).not.toEqual(a);
+      for (let i = 1; i < s.crackers.length; i++) {
+        const a = s.crackers[i - 1]!;
+        const b = s.crackers[i]!;
+        expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeGreaterThanOrEqual(trail.minSpacing - 1e-9);
+      }
+      // Sin enemigos ninguno estalla, y se apagan al acabar la mecha.
+      expect(ev.some((e) => e.type === 'explode')).toBe(false);
+    }
+    // Con el barco quieto no hay estela: cae uno y los demás esperan (no se amontonan).
+    const still = createSurvivors(only('fireworks'), 1, openSea());
+    run(still, 2);
+    expect(still.snapshot().crackers).toHaveLength(1);
+    // Sin enemigos, se apagan al acabar la mecha.
+    run(still, l1.durationS);
+    expect(still.snapshot().crackers).toHaveLength(0);
   });
 
-  it('un cohete en vuelo lleva su arma en la foto; si el blanco cae antes, estalla donde está', () => {
-    // La nube de la Lluvia ácida (daño enorme) tumba al blanco en el mismo
-    // paso en que sale el cohete: al siguiente, el cohete ya no tiene a quién ir.
+  it('navegando, la ristra queda en la estela: petardos separados a lo largo del camino', () => {
+    const game = createSurvivors(only('fireworks'), 1, openSea());
+    const forward: SurvivorsInput = { ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } };
+    run(game, 1.5, () => forward);
+    const xs = game.snapshot().crackers.map((c) => c.x);
+    expect(xs.length).toBeGreaterThanOrEqual(lvl('fireworks', 1).count);
+    for (let i = 1; i < xs.length; i++) expect(xs[i]!).toBeGreaterThan(xs[i - 1]!);
+    // Todos detrás del barco.
+    for (const x of xs) expect(x).toBeLessThan(game.snapshot().player.x);
+  });
+
+  it('un petardo estalla al tocarlo un enemigo, también con una isla al lado; los que nadie toca siguen ahí', () => {
+    const l1 = lvl('fireworks', 1);
     const cfg = only('fireworks', (c) => {
-      c.weapons.acidRain!.base.damage = 1e6;
+      c.weapons.fireworks!.base.cooldownS = 100;
     });
-    const game = createSurvivors(cfg, 1, openSea());
-    game.spawnEnemy('piranha', 550, 0);
-    game.step(idle);
-    const s = game.snapshot();
-    expect(s.projectiles).toHaveLength(1);
-    expect(s.projectiles[0]).toMatchObject({ weapon: 'fireworks', kind: 'rocket' });
-    expect(s.enemies).toHaveLength(1);
-    game.addWeapon('acidRain');
-    const ev = run(game, 0.2);
-    expect(ev.filter((e) => e.type === 'defeated')).toHaveLength(1);
+    const game = createSurvivors(cfg, 1, openSea([{ x: -150, y: 40, radius: 20 }]));
+    // Navegando: la ristra queda repartida por la estela.
+    const forward: SurvivorsInput = { ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } };
+    run(game, 1, () => forward);
+    run(game, 1);
+    const crackers = game.snapshot().crackers.map((c) => ({ ...c }));
+    expect(crackers.length).toBe(l1.count);
+    const c = crackers[0]!;
+    // Un enemigo lejos de la estela: nada.
+    const away = game.spawnEnemy('piranha', c.x, c.y + 200)!;
+    expect(run(game, 0.1).some((e) => e.type === 'explode')).toBe(false);
+    // Un enemigo encima del primer petardo (como al cruzar la estela): estalla ese.
+    const trigger = game.spawnEnemy('piranha', c.x - 12, c.y)!;
+    const ev = run(game, 0.05);
     const booms = ev.filter((e) => e.type === 'explode');
     expect(booms).toHaveLength(1);
-    // Lejos del blanco: estalló donde iba.
-    if (booms[0]!.type === 'explode')
-      expect(Math.hypot(booms[0]!.x - 550, booms[0]!.y)).toBeGreaterThan(400);
-    expect(game.snapshot().projectiles).toHaveLength(0);
+    if (booms[0]!.type === 'explode') {
+      expect(booms[0]!).toMatchObject({ weapon: 'fireworks', radius: l1.area });
+      expect(Math.hypot(booms[0]!.x - c.x, booms[0]!.y - c.y)).toBeLessThan(1e-6);
+    }
+    expect(ev.some((e) => e.type === 'blocked')).toBe(false);
+    expect(trigger.hp).toBeLessThanOrEqual(trigger.maxHp - l1.damage + 1e-6);
+    expect(away.hp).toBe(away.maxHp);
+    const left = game.snapshot().crackers;
+    expect(left.some((x) => x.id === c.id)).toBe(false);
+    expect(left).toHaveLength(crackers.length - 1);
+  });
+
+  it('el estallido es pequeño: hiere a lo que está en su radio y a nada más', () => {
+    const l1 = lvl('fireworks', 1);
+    const cfg = only('fireworks', (c) => {
+      c.weapons.fireworks!.base.cooldownS = 100;
+      c.weapons.fireworks!.base.count = 1;
+      c.weapons.fireworks!.base.damage = 5;
+    });
+    const game = createSurvivors(cfg, 1, openSea());
+    game.step(idle);
+    const c = { ...game.snapshot().crackers[0]! };
+    const inside = game.spawnEnemy('crab', c.x, c.y + l1.area * 0.9)!;
+    const outside = game.spawnEnemy('crab', c.x, c.y - l1.area - 25)!;
+    const trigger = game.spawnEnemy('piranha', c.x + 5, c.y)!;
+    const ev = run(game, 0.1);
+    expect(ev.filter((e) => e.type === 'explode')).toHaveLength(1);
+    expect(trigger.hp).toBeLessThan(trigger.maxHp);
+    expect(inside.hp).toBeCloseTo(inside.maxHp - 5, 6);
+    expect(outside.hp).toBe(outside.maxHp);
+  });
+
+  it('el tope de petardos de la calidad: se llega, nunca se pasa, y el más viejo deja sitio al nuevo', () => {
+    const cfg = only('fireworks', (c) => {
+      c.weapons.fireworks!.base.cooldownS = 0.2;
+      c.weapons.fireworks!.base.durationS = 60;
+    });
+    for (const quality of ['alta', 'baja'] as const) {
+      const game = createSurvivors(cfg, 1, openSea(), { quality });
+      let max = 0;
+      let firstId = -1;
+      run(game, 40, scriptedInput, (g) => {
+        const cs = g.snapshot().crackers;
+        if (firstId < 0 && cs[0]) firstId = cs[0].id;
+        max = Math.max(max, cs.length);
+      });
+      expect(max).toBe(SURVIVORS_CONFIG.caps[quality].crackers);
+      expect(game.snapshot().crackers[0]!.id).toBeGreaterThan(firstId);
+    }
+    expect(SURVIVORS_CONFIG.caps.alta.crackers).toBeGreaterThan(SURVIVORS_CONFIG.caps.baja.crackers);
+  });
+
+  it('determinista: misma semilla y mismo rumbo, mismos petardos y estallidos', () => {
+    const make = () => {
+      const game = createSurvivors(only('fireworks'), 5, openSea());
+      game.addWeapon('laser');
+      for (let i = 0; i < 12; i++)
+        game.spawnEnemy('piranha', Math.cos(i) * 300, Math.sin(i) * 300);
+      const ev = run(game, 10, scriptedInput);
+      return [game.stateHash(), ev.filter((e) => e.type === 'explode').length] as const;
+    };
+    const a = make();
+    expect(make()).toEqual(a);
   });
 });
 
