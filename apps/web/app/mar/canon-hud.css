@@ -176,6 +176,20 @@
   color: #ffd650;
 }
 
+/* Los iconos del Cañón (T150, canon-icons.tsx): el contorno toma el color del texto. */
+.canon-icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+}
+
+.mar-canon-hud__llama-icon {
+  color: var(--cream);
+  font-size: 1rem;
+}
+
 .mar-canon-llama-bar {
   display: block;
   flex: 1;
@@ -400,9 +414,10 @@
 }
 
 .mar-canon-card__icon {
-  font-size: 1.6rem;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
   line-height: 1;
-  text-align: center;
 }
 
 .mar-canon-card__text {
@@ -497,7 +512,7 @@
   }
 
   .mar-canon-card__icon {
-    font-size: 2.4rem;
+    font-size: 2.8rem;
     margin-bottom: 18px;
   }
 
@@ -666,11 +681,18 @@
 }
 
 .mar-canon-end__item {
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
   border-radius: 10px;
   border: 1px solid var(--line);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.mar-canon-end__item-icon {
+  font-size: 1.3rem;
 }
 
 .mar-canon-end__item.is-evolved {
@@ -963,8 +985,15 @@
   border-radius: 6px;
   background: rgb(255 244 226 / 0.14);
   border: 1px solid rgb(255 244 226 / 0.28);
+  color: var(--cream);
   font-size: 0.8rem;
   line-height: 1;
+}
+
+/* Los iconos SVG (T150, canon-icons.tsx): casi todo el hueco; se leen a 20 px. */
+.mar-canon-slot__icon {
+  width: 86%;
+  height: 86%;
 }
 
 .mar-canon-slot.is-empty {
@@ -991,6 +1020,7 @@
 }
 
 .mar-canon-slot.is-evolved {
+  color: var(--ink);
   background: linear-gradient(135deg, #ffe39a, #ff9d3d);
   border-color: #fff4e2;
   box-shadow: 0 0 8px rgb(255 190 80 / 0.7);
@@ -1011,7 +1041,13 @@
   border-radius: 50%;
   background: var(--cream);
   border: 2px solid var(--orange);
+  color: var(--ink);
   font-size: 0.7rem;
+}
+
+.mar-canon-slots__life > .canon-icon {
+  width: 78%;
+  height: 78%;
 }
 
 @media (min-width: 760px) {

@@ -4,6 +4,21 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T150: SVG icons for every skill
+
+Qué existe:
+- `apps/web/app/mar/canon-icons.tsx`: 31 iconos SVG de 32×32 en la familia de T114 (`lib/mundo/menu/icons.tsx`: formas redondas, contorno 2.4 en `currentColor`, rellenos de `ICON_PALETTE` más agua, ácido y rojo del Cañón en `CANON_ICON_PALETTE`): 7 armas, 9 vinilos (todos sobre el disco morado), 4 evoluciones, 6 mejoras, el botín (Imán total, Llama, Salvavidas: cada uno el suyo, ya no la boya), Segunda vida (dos corazones), la llama encendida y el cofre del miniboss. `<CanonIcon name>` (decorativo, `aria-hidden`).
+- `canon-hud-model.ts`: `WEAPON_ICON`, `VINYL_ICON`, `EVOLUTION_ICON`, `UPGRADE_ICON`, `DROP_ICON` (nuevo), `SALVAVIDAS_ICON`, `FLAME_ICON`, `FALLBACK_ICON` (= achique) y `CHEST_ICON` dan nombres de icono, no emoji; `cardIcon` ya no cae en emoji; `CanonGearItem.icon` para la tarjeta final.
+- `canon-hud.tsx` / `canon-hud.css`: los iconos SVG en los huecos de la fila (86 % del hueco), la Segunda vida, las cartas de nivel y del cofre, el aviso de la Llama y el equipo de la tarjeta final (icono + nombre y nivel).
+- `canon-icons.test.ts`: cada arma, vinilo, evolución, mejora y objeto del botín de la config tiene su icono SVG sin emoji; todos distintos; cualquier tipo de carta saca un icono dibujado; los rellenos salen de la paleta.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/canon-icons.test.ts apps/web/app/mar/canon-hud-model.test.ts` → exit 0 (2 archivos, 35 pruebas)
+- Comando de prueba completo: vitest → exit 0 (172 archivos, 1666 pruebas); `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (186.9 kB de 200 kB); `pnpm typecheck` → exit 0
+- Hoja de contacto (64 y 20 px, sobre crema y sobre el cristal del HUD, más una carta en escritorio y el HUD en móvil): **aprobada por Hernán el 2026-10-05 tal cual (opción A)**, sin cambios.
+
+Pendiente: nada de T150. Fuera de alcance: las medallas de la tarjeta final (🥉🥈🥇 en `es-mar.ts`) y los avisos/pines del mundo siguen con emoji.
+
 ## 2026-10-05 — plan 013 T148: Pause «Terminar partida» and the battle HUD layout
 
 Qué existe:

@@ -3,6 +3,7 @@ import {
   type CardKind,
   type CardOption,
   type DifficultyId,
+  type DropId,
   type EndReason,
   type EvolutionId,
   type LevelUpCard,
@@ -18,6 +19,7 @@ import {
 } from '@boia/engine/survivors';
 import type { RewardOutcome } from '@boia/engine/minigames';
 import type { MessageKey } from '../../lib/i18n';
+import type { CanonIconName } from './canon-icons';
 
 /**
  * Lo que la interfaz del Cañón (T118) enseña, sin React: la cuenta atrás,
@@ -253,58 +255,72 @@ export const BOSS_NOTICE_KEYS: Readonly<Record<BossNoticeKind, MessageKey>> = {
 
 // --- Cartas de nivel -----------------------------------------------------------
 
-/** El icono de cada mejora en su carta. */
-export const UPGRADE_ICON: Readonly<Record<UpgradeId, string>> = {
-  damage: '💥',
-  fireRate: '⏩',
-  projectiles: '🔱',
-  speed: '⛵',
-  magnet: '🧲',
-  bailing: '🪣',
+// Los iconos son SVG propios (T150, `canon-icons.tsx`), por nombre; ningún emoji.
+
+/** El icono de cada mejora (la carta de achique cuando ya no queda nada, T130). */
+export const UPGRADE_ICON: Readonly<Record<UpgradeId, CanonIconName>> = {
+  damage: 'mejora-damage',
+  fireRate: 'mejora-fireRate',
+  projectiles: 'mejora-projectiles',
+  speed: 'mejora-speed',
+  magnet: 'mejora-magnet',
+  bailing: 'mejora-bailing',
 };
 
-/** El icono de cada arma (T130; simple, como los de las mejoras). muestra */
-export const WEAPON_ICON: Readonly<Record<WeaponId, string>> = {
-  canon: '💦',
-  subwoofer: '🔊',
-  laser: '🔦',
-  buoys: '🛟',
-  confetti: '🎊',
-  fireworks: '🧨',
-  acidRain: '🌧️',
+/** El icono de cada arma (T130). muestra */
+export const WEAPON_ICON: Readonly<Record<WeaponId, CanonIconName>> = {
+  canon: 'arma-canon',
+  subwoofer: 'arma-subwoofer',
+  laser: 'arma-laser',
+  buoys: 'arma-buoys',
+  confetti: 'arma-confetti',
+  fireworks: 'arma-fireworks',
+  acidRain: 'arma-acidRain',
 };
 
-/** El icono de cada vinilo (T130). muestra */
-export const VINYL_ICON: Readonly<Record<PassiveId, string>> = {
-  techno: '⏩',
-  reggaeton: '🔆',
-  house: '🛡️',
-  dnb: '⛵',
-  disco: '🧲',
-  chill: '🪣',
-  hardstyle: '💥',
-  pop: '⭐',
-  rumba: '🔱',
+/** El icono de cada vinilo (T130): todos sobre el disco morado. muestra */
+export const VINYL_ICON: Readonly<Record<PassiveId, CanonIconName>> = {
+  techno: 'vinilo-techno',
+  reggaeton: 'vinilo-reggaeton',
+  house: 'vinilo-house',
+  dnb: 'vinilo-dnb',
+  disco: 'vinilo-disco',
+  chill: 'vinilo-chill',
+  hardstyle: 'vinilo-hardstyle',
+  pop: 'vinilo-pop',
+  rumba: 'vinilo-rumba',
 };
 
-/** El icono de cada evolución y del Salvavidas (T130). muestra */
-export const EVOLUTION_ICON: Readonly<Record<EvolutionId, string>> = {
-  drop: '🌊',
-  soundWall: '🔈',
-  laserShow: '🌈',
-  discoBall: '🪩',
+/** El icono de cada evolución (T130). muestra */
+export const EVOLUTION_ICON: Readonly<Record<EvolutionId, CanonIconName>> = {
+  drop: 'evo-drop',
+  soundWall: 'evo-soundWall',
+  laserShow: 'evo-laserShow',
+  discoBall: 'evo-discoBall',
 };
-export const SALVAVIDAS_ICON = '🛟';
+
+/** El icono de cada objeto del botín de las élites (T135), cada uno el suyo (T150). */
+export const DROP_ICON: Readonly<Record<DropId, CanonIconName>> = {
+  iman: 'botin-iman',
+  llama: 'botin-llama',
+  salvavidas: 'botin-salvavidas',
+};
+
+/** La Segunda vida (la carta rara y su hueco en la fila): ya no comparte la boya. */
+export const SALVAVIDAS_ICON: CanonIconName = 'segunda-vida';
 /** El aviso de la Llama del botín mientras dura (T135). */
-export const FLAME_ICON = '🔥';
-export const FALLBACK_ICON = '🪣';
+export const FLAME_ICON: CanonIconName = 'llama';
+/** La carta de achique: la mejora de achique. */
+export const FALLBACK_ICON: CanonIconName = UPGRADE_ICON.bailing;
+/** El cofre de un miniboss (T139). */
+export const CHEST_ICON: CanonIconName = 'cofre';
 
 /** Lo que una carta enseña, ya resuelto para pintarla (T130). */
 export interface CardView {
   /** Único en la oferta: la clave de React y `data-carta`. */
   id: string;
   kind: CardKind;
-  icon: string;
+  icon: CanonIconName;
   title: MessageKey;
   effect: MessageKey;
   /** El nivel al que sube (1 = nueva) y el máximo, para los puntos. */
@@ -329,16 +345,18 @@ const CARD_TAGS: Readonly<Record<CardKind, MessageKey>> = {
 };
 
 /** El icono de una opción según lo que es (arma, vinilo, evolución…). */
-export function cardIcon(o: Pick<CardOption, 'kind' | 'weaponId' | 'vinylId' | 'evolutionId'>): string {
+export function cardIcon(
+  o: Pick<CardOption, 'kind' | 'weaponId' | 'vinylId' | 'evolutionId'>,
+): CanonIconName {
   switch (o.kind) {
     case 'weapon-new':
     case 'weapon-level':
-      return (o.weaponId && WEAPON_ICON[o.weaponId]) || '🎵';
+      return (o.weaponId && WEAPON_ICON[o.weaponId]) || FALLBACK_ICON;
     case 'vinyl-new':
     case 'vinyl-level':
-      return (o.vinylId && VINYL_ICON[o.vinylId]) || '💿';
+      return (o.vinylId && VINYL_ICON[o.vinylId]) || FALLBACK_ICON;
     case 'evolution':
-      return (o.evolutionId && EVOLUTION_ICON[o.evolutionId]) || '✨';
+      return (o.evolutionId && EVOLUTION_ICON[o.evolutionId]) || FALLBACK_ICON;
     case 'salvavidas':
       return SALVAVIDAS_ICON;
     case 'fallback':
@@ -368,7 +386,8 @@ export function cardView(o: CardOption): CardView {
 export interface SlotView {
   /** null: hueco libre. */
   id: string | null;
-  icon: string;
+  /** null: hueco libre. */
+  icon: CanonIconName | null;
   name: MessageKey | null;
   level: number;
   maxLevel: number;
@@ -384,7 +403,7 @@ export interface SlotsView {
 
 const emptySlot = (): SlotView => ({
   id: null,
-  icon: '',
+  icon: null,
   name: null,
   level: 0,
   maxLevel: 0,
@@ -531,6 +550,8 @@ export interface CanonResult {
 /** Un arma o vinilo de la tarjeta final, con su nivel. */
 export interface CanonGearItem {
   id: string;
+  /** Su icono (T150): el de la evolución si evolucionó. */
+  icon: CanonIconName;
   name: MessageKey;
   level: number;
   maxLevel: number;
@@ -554,6 +575,7 @@ export function canonResult(reason: EndReason, s: SurvivorsSnapshot): CanonResul
     bosses: [...s.bossesDefeated],
     weapons: s.weapons.map((w) => ({
       id: w.evolutionId ?? w.id,
+      icon: w.evolutionId ? EVOLUTION_ICON[w.evolutionId] : WEAPON_ICON[w.id],
       name: w.nameKey as MessageKey,
       level: w.level,
       maxLevel: w.maxLevel,
@@ -561,6 +583,7 @@ export function canonResult(reason: EndReason, s: SurvivorsSnapshot): CanonResul
     })),
     vinyls: s.vinyls.map((v) => ({
       id: v.id,
+      icon: VINYL_ICON[v.id],
       name: v.nameKey as MessageKey,
       level: v.level,
       maxLevel: v.maxLevel,

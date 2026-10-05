@@ -3,6 +3,7 @@
 import type { BossId, LevelUpCard } from '@boia/engine/survivors';
 import { type RefObject, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { t as msg } from '../../lib/i18n';
+import { CanonIcon } from './canon-icons';
 import type { CanonMode } from './canon-mode';
 import { CanonReadoutMenu } from './canon-readout-menu';
 import {
@@ -11,6 +12,7 @@ import {
   type BossBarView,
   type BossNotice,
   CARD_ARM_MS,
+  CHEST_ICON,
   type CanonResult,
   type CanonView,
   endCardModel,
@@ -263,7 +265,7 @@ function CanonHud({
           role="status"
           aria-label={msg('mar.canon.llama.aria', { s: view.flameS })}
         >
-          <span aria-hidden="true">{FLAME_ICON}</span>
+          <CanonIcon name={FLAME_ICON} className="mar-canon-hud__llama-icon" />
           <span aria-hidden="true">{msg('mar.canon.llama', { s: view.flameS })}</span>
           <span className="mar-canon-llama-bar" aria-hidden="true">
             <span className="mar-canon-llama-bar__fill" style={{ width: `${view.flamePct}%` }} />
@@ -390,7 +392,7 @@ function CanonSlots({ slots, bossOn }: { slots: SlotsView; bossOn: boolean }) {
           aria-label={msg('mar.canon.equipo.salvavidas')}
           title={msg('mar.canon.equipo.salvavidas')}
         >
-          {SALVAVIDAS_ICON}
+          <CanonIcon name={SALVAVIDAS_ICON} />
         </span>
       ) : null}
     </section>
@@ -419,11 +421,9 @@ function SlotRow({ kind, label, items }: { kind: string; label: string; items: S
             title={text}
             aria-label={text}
           >
-            {it.id ? (
+            {it.id && it.icon ? (
               <>
-                <span aria-hidden="true" className="mar-canon-slot__icon">
-                  {it.icon}
-                </span>
+                <CanonIcon name={it.icon} className="mar-canon-slot__icon" />
                 <span aria-hidden="true" className="mar-canon-slot__lv">
                   {it.evolved ? '★' : it.level}
                 </span>
@@ -472,9 +472,6 @@ function CanonWater({ pct, engineRef }: { pct: number; engineRef: RefObject<Mar3
     </div>
   );
 }
-
-/** El icono de la carta del cofre de un miniboss (T139). */
-const CHEST_ICON = '🎁';
 
 /**
  * Las cartas de nivel: 1 de 3, grandes, con el dedo o con el teclado
@@ -557,7 +554,7 @@ export function CanonCards({
         <header className="mar-canon-cards__head">
           {chest ? (
             <span className="mar-canon-cards__chest" aria-hidden="true">
-              {CHEST_ICON}
+              <CanonIcon name={CHEST_ICON} />
             </span>
           ) : null}
           <h2 id={titleId}>
@@ -589,7 +586,7 @@ export function CanonCards({
                   {i + 1}
                 </span>
                 <span className="mar-canon-card__icon" aria-hidden="true">
-                  {v.icon}
+                  <CanonIcon name={v.icon} />
                 </span>
                 <span className="mar-canon-card__text">
                   <span className="mar-canon-card__tag">{msg(v.tag)}</span>
@@ -729,6 +726,7 @@ function CanonEnd({
                   className={`mar-canon-end__item${g.evolved ? ' is-evolved' : ''}`}
                   data-item={g.id}
                 >
+                  <CanonIcon name={g.icon} className="mar-canon-end__item-icon" />
                   {msg('mar.canon.fin.nivelitem', { nombre: msg(g.name), nivel: g.level })}
                 </span>
               ))}
