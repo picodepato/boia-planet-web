@@ -49,6 +49,8 @@ const NOUNS: Partial<Record<AchievementDefinition['trigger'], [string, string]>>
   find_buoy: ['boia', 'boies'],
   visit_island: ['isla', 'islas'],
   win_minigame: [t('logros.model.partidaGanada'), t('logros.model.partidasGanadas')],
+  play_minigame: [t('logros.model.partidaJugada'), t('logros.model.partidasJugadas')],
+  defeat_boss: [t('logros.model.bossVencido'), t('logros.model.bossesVencidos')],
   read_bottle: ['botella', 'botellas'],
   throw_bottle: ['botella', 'botellas'],
   answer_question: ['pregunta', 'preguntas'],
@@ -91,8 +93,10 @@ export function remainingText(def: AchievementDefinition, goal: AchievementGoal)
       ? t('logros.model.teQueda1Minuto')
       : t('logros.model.teQuedanMinutosA', { left });
   }
-  // Una sola cosa concreta (rescatar, el atajo…): qué hay que hacer.
-  if (goal.need === 1 && def.description)
+  // Una sola cosa concreta (rescatar, el atajo…) o dos distintas (ganar el
+  // Faro y jugar el Cañón, T153): qué hay que hacer.
+  const mixed = def.trigger === 'win_minigame' && 'played' in def.triggerParams;
+  if ((goal.need === 1 || mixed) && def.description)
     return t('logros.model.teQueda', { asTask: asTask(def.description) });
   return left === 1
     ? t('logros.model.teQueda1', { noun: noun(def, 1) })

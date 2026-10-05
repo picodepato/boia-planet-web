@@ -17,9 +17,11 @@ export const LEDGER_KINDS = [
 export type LedgerKind = (typeof LEDGER_KINDS)[number];
 
 /**
- * Condiciones de logro que ya tiene el esquema de T06 (enum
- * `achievement_trigger` de supabase/migrations). Una prueba de `@boia/store`
- * las compara con `Constants` de `@boia/db`.
+ * Condiciones de logro del enum `achievement_trigger` de supabase/migrations:
+ * las de T06, las del catálogo aprobado de T36 y las del Cañón definitivo
+ * (plan 013 T153: `play_minigame`, `defeat_boss`), que añade la migración
+ * `20261005100000_canon_launch.sql` (escrita y probada, sin aplicar). Una
+ * prueba de `@boia/store` las compara con `Constants` de `@boia/db`.
  */
 export const ACHIEVEMENT_TRIGGERS_DB = [
   'visit_island',
@@ -30,14 +32,6 @@ export const ACHIEVEMENT_TRIGGERS_DB = [
   'buy_ticket',
   'rescue_character',
   'deliver_character',
-] as const;
-
-/**
- * Condiciones nuevas del catálogo aprobado de logros (T36,
- * docs/propuestas/logros-catalogo.md). Sólo existen en la demo del
- * navegador: en Supabase falta la migración que las añade al enum.
- */
-export const ACHIEVEMENT_TRIGGERS_NEW = [
   'win_minigame',
   'complete_encounter',
   'read_bottle',
@@ -45,7 +39,15 @@ export const ACHIEVEMENT_TRIGGERS_NEW = [
   'create_carnet',
   'answer_question',
   'visit_world',
+  'play_minigame',
+  'defeat_boss',
 ] as const;
+
+/**
+ * Condiciones que sólo existen en la demo del navegador, a la espera de su
+ * migración en Supabase. Hoy, ninguna.
+ */
+export const ACHIEVEMENT_TRIGGERS_NEW = [] as const;
 
 /** Catálogo de condiciones de logro (REQ-ADM-021). */
 export const ACHIEVEMENT_TRIGGERS = [

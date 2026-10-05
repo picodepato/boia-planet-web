@@ -27,6 +27,8 @@ export interface WorldGameEnd {
   score: number;
   /** ms de tiempo activo, contando lo saltado con `&t=`. */
   elapsedMs: number;
+  /** El escalón del premio (la medalla del Cañón, T153), si lo hay. */
+  tier?: string;
 }
 
 export interface WorldSettlement {
@@ -109,6 +111,7 @@ export class WorldMinigameSession<C extends BaseConfig = BaseConfig> {
       score: end.score,
       elapsedMs: end.elapsedMs,
       ...(s.skippedMs ? { skippedMs: s.skippedMs } : {}),
+      ...(end.tier ? { tier: end.tier } : {}),
     };
     this.settling = this.settle(result);
     return this.settling;

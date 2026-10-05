@@ -36,11 +36,18 @@ export type MemberOp = MemberOpInput & {
 export type MemberOpKind = MemberOp['kind'];
 
 /**
+ * Origen de un premio de minijuego: `minigame:faro` o, desde T153, una
+ * medalla del Cañón (`minigame:canon:oro`). El mismo patrón que la acción
+ * `minigame` de `point_actions` (migración `20261005100000_canon_launch.sql`).
+ */
+export const MINIGAME_REF = /^minigame:[a-z0-9_-]+(:(bronce|plata|oro))?$/;
+
+/**
  * La acción del servidor de un premio del mundo por la forma de su origen
  * (`point_actions.ref_pattern`); null si el servidor no la conoce.
  */
 export function pointActionFor(sourceRef: string): string | null {
-  if (/^minigame:[a-z0-9_-]+$/.test(sourceRef)) return 'minigame';
+  if (MINIGAME_REF.test(sourceRef)) return 'minigame';
   if (/^mision:[a-z0-9_-]+:entrega$/.test(sourceRef)) return 'mission';
   if (/^lugar:[a-z0-9_.-]+:(seguir|[0-9]+s)$/.test(sourceRef)) return 'encounter';
   if (/^lugar:[a-z0-9_.-]+:(points|coins)(:visita:[a-z0-9-]+)?$/.test(sourceRef)) return 'world';

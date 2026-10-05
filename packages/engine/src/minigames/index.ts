@@ -26,12 +26,14 @@ export {
 } from './faro';
 export {
   CANON_DEFAULTS,
+  CANON_MEDAL_PRIZES,
   CANON_VERSION,
   canon,
   canonConfigFor,
   canonEnd,
   canonOutcome,
   canonEarliestWinS,
+  canonReward,
   canonScore,
   type CanonConfig,
 } from './world-canon';
@@ -54,6 +56,7 @@ export {
   RECORDS_KEY,
   grantMinigameReward,
   minigameSourceRef,
+  minigameTierRef,
   policyText,
   readBest,
   rewardText,

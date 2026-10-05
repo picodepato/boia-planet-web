@@ -1,5 +1,5 @@
 import { circuitFromWorld } from '@boia/engine/circuit';
-import { CANON_DEFAULTS } from '@boia/engine/minigames';
+import { CANON_MEDAL_PRIZES } from '@boia/engine/minigames';
 import { rescueMissionOf } from '@boia/engine/mission';
 import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
@@ -19,7 +19,7 @@ import { mar, marSheet, openMar, shipAt, steerTo } from './mar-helpers';
  * barco donde acabó. El estado se lee de `data-testid="mar-canon"`.
  *
  * T119 cierra la beta: inundarse, llegar al amanecer (con `&t=` cerca del
- * final) y su premio de 150 puntos y 50 monedas una sola vez por temporada
+ * final) y su premio (desde T153, el del bronce, una vez al día por medalla)
  * (con el logro `canon` listo para reclamar), el abandono tras más de 5 min
  * en pausa y la Boia Fiestera que sigue a bordo durante una partida.
  *
@@ -1182,10 +1182,10 @@ test('sin esquivar, el agua llena el barco: «¡Barco inundado!» y sin premio',
   expect(errors).toEqual([]);
 });
 
-test('llegar al amanecer da 150 puntos y 50 monedas una vez por temporada, y el logro del Cañón', async ({
+test('llegar al amanecer da el premio del bronce una vez al día (T153), y el logro del Cañón', async ({
   page,
 }) => {
-  const { points: rewardPoints, coins: rewardCoins } = CANON_DEFAULTS.reward;
+  const { points: rewardPoints, coins: rewardCoins } = CANON_MEDAL_PRIZES.bronce;
   // Los saldos antes de jugar, en una visita sin partida: con `&t=419` la
   // partida acaba en un segundo y el premio podría llegar antes de leerlos.
   const errors = await openMar(page);
@@ -1221,7 +1221,7 @@ test('llegar al amanecer da 150 puntos y 50 monedas una vez por temporada, y el 
   await page.getByTestId('mar-menu-logros').click();
   await expect(page.getByTestId('logro-canon')).toHaveAttribute('data-estado', 'ready');
 
-  // Otra visita, otra partida ganada la misma temporada: vale, pero no paga otra vez.
+  // Otra visita, otro bronce el mismo día: vale, pero no paga otra vez.
   await openMar(page);
   const again = await balances(page);
   await openMar(page, '?minijuego=canon&t=419&seed=5');

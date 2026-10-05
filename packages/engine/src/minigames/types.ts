@@ -24,6 +24,26 @@ export interface RewardRule {
   /** Límites de lo que una partida puede conceder, por si la regla cambia. */
   maxPoints: number;
   maxCoins: number;
+  /**
+   * Premios por escalones (el Cañón, plan 013 T153: bronce, plata y oro), de
+   * menos a más. Con ellos, una partida ganada cobra su escalón y los de
+   * debajo que aún no tuviera, cada uno con su origen
+   * (`minigame:<id>:<escalón>`) y la política de la regla; `points` y
+   * `coins` son la suma de todos y `maxPoints`/`maxCoins` el tope de cada uno.
+   */
+  tiers?: readonly RewardTier[];
+}
+
+/** Un escalón del premio (una medalla). Todo `muestra`. */
+export interface RewardTier {
+  /** Clave estable del escalón (`bronce`, `plata`, `oro`). */
+  id: string;
+  points: number;
+  coins: number;
+  /** ms de juego mínimos para conseguirlo (el oro, no antes de que entre el boss final). */
+  minMs: number;
+  /** Cómo puede acabar una partida con este escalón (el oro, sólo `victory`). */
+  reasons: readonly ResultReason[];
 }
 
 /** Lo que toda configuración de minijuego lleva. Todo `muestra`. */

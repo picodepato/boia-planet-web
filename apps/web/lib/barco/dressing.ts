@@ -22,6 +22,8 @@ export const FLAG_LOOKS: Readonly<Record<string, FlagLook>> = {
   'bandera-boia': { colors: [0xec4f24, 0x36278a], pattern: 'solid' },
   'bandera-fiestera': { colors: [0xf2557a, 0xffd23f], pattern: 'stripes' },
   'bandera-cuadros': { colors: [0x16122e, 0xfff4e2], pattern: 'checker' },
+  // El premio de vencer al Barco Fantasma (logro `canon-fantasma`, T153).
+  'bandera-fantasma': { colors: [0x2a3a4a, 0x9fe8d8], pattern: 'stripes' },
 };
 const DEFAULT_FLAG: FlagLook = { colors: [0xec4f24, 0x36278a], pattern: 'solid' };
 

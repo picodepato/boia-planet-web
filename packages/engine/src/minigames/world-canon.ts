@@ -5,7 +5,8 @@ import {
   type SurvivorsConfig,
   survivorsConfigHash,
 } from '../survivors/config';
-import type { BaseConfig, MinigameEntry, Outcome, ResultReason } from './types';
+import type { SurvivorsMedal } from '../survivors/medals';
+import type { BaseConfig, MinigameEntry, Outcome, ResultReason, RewardRule } from './types';
 import type { WorldGameEnd } from './world-session';
 
 /**
@@ -29,8 +30,13 @@ import type { WorldGameEnd } from './world-session';
  *   dificultad elegida (T131) y el acto jugado (T144), y el premio y `won`
  *   no cambian con ellos. `won` es la medalla de bronce o más (T144:
  *   `survivorsMedal`).
- * - El premio, como antes: 150 puntos y 50 monedas, una vez por temporada.
- *   Todo `muestra`.
+ * - El premio (plan 013 T153, §9 del diseño): **cada medalla se cobra una
+ *   vez al día, por separado** (`minigame:canon:bronce@<día>`, `…:plata@…`,
+ *   `…:oro@…`): bronce 30 puntos y 10 monedas, plata 60 y 20, oro 100 y 40;
+ *   una medalla cobra también las de debajo que aún no tuvieras hoy (un oro
+ *   de primeras, 190 y 70). Sustituye al premio de la beta (150 y 50 una vez
+ *   por temporada). El oro no vale antes de que entre el boss final del acto
+ *   (5:30) y el bronce y la plata, antes del amanecer. Todo `muestra`.
  */
 
 export interface CanonConfig extends BaseConfig {
@@ -38,8 +44,49 @@ export interface CanonConfig extends BaseConfig {
   survivors: { version: number; hash: string; difficulty: DifficultyId; act: number };
 }
 
-/** Versión de las reglas de sesión del Cañón (la 3 era el cañón 2D, T72). */
-export const CANON_VERSION = 4;
+/**
+ * Versión de las reglas de sesión del Cañón (la 3 era el cañón 2D, T72; la 5,
+ * el premio por medalla de T153).
+ */
+export const CANON_VERSION = 5;
+
+/** Lo que paga cada medalla, una vez al día cada una (T153). muestra */
+export const CANON_MEDAL_PRIZES: Readonly<
+  Record<SurvivorsMedal, { points: number; coins: number }>
+> = {
+  bronce: { points: 30, coins: 10 },
+  plata: { points: 60, coins: 20 },
+  oro: { points: 100, coins: 40 },
+};
+
+/** El segundo en que entra el boss final del acto `act` (sin él, el más temprano de todos). */
+function finalBossAtS(cfg: SurvivorsConfig, act: number): number {
+  const ev = cfg.acts
+    .find((a) => a.act === act)
+    ?.events.find(
+      (e) =>
+        e.type === 'boss' && e.enabled !== false && cfg.bosses[e.ref as keyof typeof cfg.bosses],
+    );
+  return ev ? ev.atS : canonEarliestWinS(cfg);
+}
+
+/** El premio del Cañón para una configuración del modo y un acto: por medalla, una vez al día. */
+export function canonReward(cfg: SurvivorsConfig = SURVIVORS_CONFIG, act = 1): RewardRule {
+  const { bronce, plata, oro } = CANON_MEDAL_PRIZES;
+  const nightMs = cfg.durationS * 1000;
+  return {
+    policy: 'daily',
+    points: bronce.points + plata.points + oro.points,
+    coins: bronce.coins + plata.coins + oro.coins,
+    maxPoints: Math.max(bronce.points, plata.points, oro.points),
+    maxCoins: Math.max(bronce.coins, plata.coins, oro.coins),
+    tiers: [
+      { id: 'bronce', ...bronce, minMs: nightMs, reasons: ['survived'] },
+      { id: 'plata', ...plata, minMs: nightMs, reasons: ['survived'] },
+      { id: 'oro', ...oro, minMs: finalBossAtS(cfg, act) * 1000, reasons: ['victory'] },
+    ],
+  };
+}
 
 /** La configuración de sesión del Cañón para una configuración del modo. */
 export function canonConfigFor(
@@ -52,7 +99,7 @@ export function canonConfigFor(
     goal: cfg.durationS,
     timeLimitS: cfg.durationS,
     survivors: { version: cfg.version, hash: survivorsConfigHash(cfg), difficulty, act },
-    reward: { policy: 'season', points: 150, coins: 50, maxPoints: 150, maxCoins: 50 },
+    reward: canonReward(cfg, act),
   };
 }
 
@@ -77,7 +124,12 @@ export function canonEarliestWinS(cfg: SurvivorsConfig = SURVIVORS_CONFIG): numb
   let earliest = cfg.durationS;
   for (const act of cfg.acts) {
     for (const ev of act.events) {
-      if (ev.type === 'boss' && ev.enabled !== false && cfg.bosses[ev.ref as keyof typeof cfg.bosses] && ev.atS < earliest) {
+      if (
+        ev.type === 'boss' &&
+        ev.enabled !== false &&
+        cfg.bosses[ev.ref as keyof typeof cfg.bosses] &&
+        ev.atS < earliest
+      ) {
         earliest = ev.atS;
       }
     }
@@ -94,9 +146,27 @@ export const canon: MinigameEntry<CanonConfig> = {
   minPlausibleMs: (score) => Math.min(Math.max(0, score), canonEarliestWinS()) * 1000,
 };
 
-/** Cómo acabó una partida del Cañón, para su sesión (tiempo activo en s). */
-export function canonEnd(reason: ResultReason, activeS: number, cfg: SurvivorsConfig = SURVIVORS_CONFIG): WorldGameEnd {
+/**
+ * Cómo acabó una partida del Cañón, para su sesión (tiempo activo en s) y su
+ * medalla (T153: el escalón del premio). Sin medalla dicha, la de la razón:
+ * oro al vencer al boss final, bronce al amanecer.
+ */
+export function canonEnd(
+  reason: ResultReason,
+  activeS: number,
+  cfg: SurvivorsConfig = SURVIVORS_CONFIG,
+  medal?: SurvivorsMedal | null,
+): WorldGameEnd {
+  const tier =
+    medal === undefined
+      ? reason === 'victory'
+        ? 'oro'
+        : reason === 'survived'
+          ? 'bronce'
+          : null
+      : medal;
   return {
+    ...(tier ? { tier } : {}),
     outcome: canonOutcome(reason),
     reason,
     // Vencer al boss final (T140) vale la noche entera: la marca del objetivo.

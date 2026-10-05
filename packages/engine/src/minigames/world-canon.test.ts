@@ -12,6 +12,7 @@ import { LocalSessionAuthority, type MinigameResult } from './session';
 import { isLayerMinigame } from './types';
 import {
   CANON_DEFAULTS,
+  CANON_MEDAL_PRIZES,
   CANON_VERSION,
   type CanonConfig,
   canon,
@@ -26,8 +27,9 @@ import { WorldMinigameSession } from './world-session';
 /**
  * El Cañón en el mar (plan 010, T119): el registro lo guarda sólo para su
  * id, su sesión, su validación y su premio; la sesión valida el tiempo
- * activo de la partida (sin pausas) y el premio sigue siendo 150 puntos y
- * 50 monedas una vez por temporada.
+ * activo de la partida (sin pausas). El premio, desde T153 (plan 013), es
+ * por medalla y una vez al día cada una (`canon-prize.test.ts` en la web lo
+ * prueba con el libro de verdad).
  */
 
 /** Reloj de la autoridad (ms), que la prueba avanza a mano. */
@@ -103,14 +105,14 @@ describe('el Cañón en el registro (plan 010, T119)', () => {
     // Ganar es aguantar los 7:00 enteros, y una partida no dura más.
     expect(CANON_DEFAULTS.goal).toBe(SURVIVORS_CONFIG.durationS);
     expect(CANON_DEFAULTS.timeLimitS).toBe(SURVIVORS_CONFIG.durationS);
-    // El premio de siempre.
-    expect(CANON_DEFAULTS.reward).toEqual({
-      policy: 'season',
-      points: 150,
-      coins: 50,
-      maxPoints: 150,
-      maxCoins: 50,
+    // El premio por medalla, una vez al día cada una (T153).
+    const { bronce, plata, oro } = CANON_MEDAL_PRIZES;
+    expect(CANON_DEFAULTS.reward).toMatchObject({
+      policy: 'daily',
+      points: bronce.points + plata.points + oro.points,
+      coins: bronce.coins + plata.coins + oro.coins,
     });
+    expect(CANON_DEFAULTS.reward.tiers?.map((t) => t.id)).toEqual(['bronce', 'plata', 'oro']);
     // Cualquier cambio de equilibrio del modo cambia la huella de la sesión.
     expect(configHash(canonConfigFor(SURVIVORS_CONFIG))).toBe(configHash(CANON_DEFAULTS));
     const faster = structuredClone(SURVIVORS_CONFIG);
@@ -125,6 +127,7 @@ describe('el Cañón en el registro (plan 010, T119)', () => {
     expect(canonScore(419.99)).toBe(419);
     expect(canonScore(420 - 1e-9)).toBe(420);
     expect(canonEnd('survived', 420)).toEqual({
+      tier: 'bronce',
       outcome: 'won',
       reason: 'survived',
       score: 420,
@@ -140,6 +143,7 @@ describe('el Cañón en el registro (plan 010, T119)', () => {
     expect(canonEarliestWinS()).toBe(boss.atS);
     expect(canonEarliestWinS({ ...SURVIVORS_CONFIG, acts: [] })).toBe(SURVIVORS_CONFIG.durationS);
     expect(canonEnd('victory', 352.4)).toEqual({
+      tier: 'oro',
       outcome: 'won',
       reason: 'victory',
       score: SURVIVORS_CONFIG.durationS,
@@ -152,7 +156,7 @@ describe('el Cañón en el registro (plan 010, T119)', () => {
 });
 
 describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
-  it('una partida que llega al amanecer valida y da 150 puntos y 50 monedas una vez por temporada', async () => {
+  it('una partida que llega al amanecer valida y da el bronce una vez (T153: una vez al día)', async () => {
     const c = clock();
     const authority = new LocalSessionAuthority(c.now);
     const { sink, calls } = seasonLedger();
@@ -163,16 +167,16 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
     expect(game.snapshot().end).toBe('survived');
     const won = await first.finish(canonEnd('survived', game.activeS));
     expect(won.validation).toEqual({ valid: true });
-    expect(won.reward).toEqual({ granted: true, points: 150, coins: 50 });
+    const { bronce } = CANON_MEDAL_PRIZES;
+    expect(won.reward).toEqual({ granted: true, ...bronce, tiers: ['bronce'] });
     expect(calls[0]).toMatchObject({
-      sourceRef: 'minigame:canon',
-      points: 150,
-      coins: 50,
-      policy: 'season',
-      metadata: { version: CANON_VERSION, configHash: configHash(config), score: 420 },
+      sourceRef: 'minigame:canon:bronce',
+      ...bronce,
+      policy: 'daily',
+      metadata: { version: CANON_VERSION, configHash: configHash(config), score: 420, tier: 'bronce' },
     });
 
-    // Otra partida ganada la misma temporada: vale, pero el premio ya se cobró.
+    // Otra partida ganada el mismo periodo: vale, pero el premio ya se cobró.
     const second = new WorldMinigameSession({ def: canon, config, authority, sink });
     const again = playToEnd(quiet, second.seed, c.advance);
     const r = await second.finish(canonEnd('survived', again.game.activeS));
@@ -414,7 +418,9 @@ describe('canon T144: acto y dificultad en la sesión; `won` es bronce o más', 
       configHash(canonConfigFor(SURVIVORS_CONFIG, 'normal', 1)),
     );
     for (const act of acts) {
-      expect(canonConfigFor(SURVIVORS_CONFIG, 'tormenta', act).reward).toEqual(CANON_DEFAULTS.reward);
+      expect(canonConfigFor(SURVIVORS_CONFIG, 'tormenta', act).reward).toEqual(
+        canonConfigFor(SURVIVORS_CONFIG, 'normal', act).reward,
+      );
       expect(canonConfigFor(SURVIVORS_CONFIG, 'tormenta', act).goal).toBe(CANON_DEFAULTS.goal);
     }
   });

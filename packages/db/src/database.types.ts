@@ -1837,7 +1837,16 @@ export type Database = {
         | 'time_played'
         | 'buy_ticket'
         | 'rescue_character'
-        | 'deliver_character';
+        | 'deliver_character'
+        | 'win_minigame'
+        | 'complete_encounter'
+        | 'read_bottle'
+        | 'throw_bottle'
+        | 'create_carnet'
+        | 'answer_question'
+        | 'visit_world'
+        | 'play_minigame'
+        | 'defeat_boss';
       bottle_status: 'active' | 'retired' | 'removed';
       cancelled_island_mode: 'memory' | 'notice';
       event_state:
@@ -1884,6 +1893,15 @@ export const Constants = {
         'buy_ticket',
         'rescue_character',
         'deliver_character',
+        'win_minigame',
+        'complete_encounter',
+        'read_bottle',
+        'throw_bottle',
+        'create_carnet',
+        'answer_question',
+        'visit_world',
+        'play_minigame',
+        'defeat_boss',
       ],
       bottle_status: ['active', 'retired', 'removed'],
       cancelled_island_mode: ['memory', 'notice'],

@@ -40,6 +40,10 @@ export type AchievementSignal =
   | { trigger: 'buy_ticket'; eventId: string }
   /** Partida ganada y válida de un minijuego (`faro`, `canon`). */
   | { trigger: 'win_minigame'; game: string }
+  /** Partida jugada y válida de un minijuego (T153: el Cañón, gane o pierda). */
+  | { trigger: 'play_minigame'; game: string }
+  /** Boss vencido en el Cañón (T153), con la dificultad de la partida. */
+  | { trigger: 'defeat_boss'; boss: string; difficulty?: string }
   /** Encuentro del mar vivo terminado (el delfín hasta el final de sus saltos). */
   | { trigger: 'complete_encounter'; encounter: string }
   /** Botella de otra persona leída. */
@@ -80,6 +84,8 @@ const KEY = {
   /** Mejor vuelta por circuito (récord del libro de logros). */
   lap: (circuit: string) => `logro-vuelta:${circuit}`,
   game: 'minijuego:',
+  played: 'partida:',
+  boss: 'jefe:',
   encounter: 'encuentro:',
   bottleRead: 'botella:leida:',
   bottleThrown: 'botella:echada:',
@@ -102,6 +108,10 @@ export interface AchievementFacts {
   circuits: Record<string, { via: string[]; bestMs: number | null }>;
   /** Minijuegos ganados (distintos). */
   games: string[];
+  /** Minijuegos jugados en una partida válida (distintos; T153). */
+  played: string[];
+  /** Bosses vencidos (`kraken`) y con su dificultad (`kraken:tormenta`) (T153). */
+  bosses: string[];
   encounters: string[];
   bottlesRead: number;
   bottlesThrown: number;
@@ -161,6 +171,8 @@ export async function achievementFacts(progress: ProgressApi): Promise<Achieveme
     delivered: after(keys, KEY.delivered),
     circuits,
     games: after(keys, KEY.game),
+    played: after(keys, KEY.played),
+    bosses: after(keys, KEY.boss),
     encounters: after(keys, KEY.encounter),
     bottlesRead: after(keys, KEY.bottleRead).length,
     bottlesThrown: after(keys, KEY.bottleThrown).length,
@@ -249,8 +261,25 @@ export function achievementGoal(
       if (via) return tally(laps.some((c) => c.via.includes(via)) ? 1 : 0, 1);
       return tally(laps.length > 0 ? 1 : 0, 1);
     }
-    case 'win_minigame':
-      return oneOrMany(facts.games, text(def, 'game'), count(def));
+    case 'win_minigame': {
+      // Guardacostas (T153): ganar un juego y jugar otro (`played`).
+      const played = text(def, 'played');
+      const game = text(def, 'game');
+      if (played) {
+        const won = game ? facts.games.includes(game) : facts.games.length > 0;
+        return tally((won ? 1 : 0) + (facts.played.includes(played) ? 1 : 0), 2);
+      }
+      return oneOrMany(facts.games, game, count(def));
+    }
+    case 'play_minigame':
+      return oneOrMany(facts.played, text(def, 'game'), count(def));
+    case 'defeat_boss': {
+      const boss = text(def, 'boss');
+      const difficulty = text(def, 'difficulty');
+      const want = boss && difficulty ? `${boss}:${difficulty}` : boss;
+      const plain = facts.bosses.filter((b) => !b.includes(':'));
+      return want ? tally(facts.bosses.includes(want) ? 1 : 0, 1) : tally(plain.length, count(def));
+    }
     case 'complete_encounter':
       return oneOrMany(facts.encounters, text(def, 'encounter'), count(def));
     case 'read_bottle':
@@ -305,6 +334,12 @@ async function record(progress: ProgressApi, s: AchievementSignal): Promise<void
       return;
     case 'win_minigame':
       return discover(progress, `${KEY.game}${s.game}`);
+    case 'play_minigame':
+      return discover(progress, `${KEY.played}${s.game}`);
+    case 'defeat_boss':
+      await discover(progress, `${KEY.boss}${s.boss}`);
+      if (s.difficulty) await discover(progress, `${KEY.boss}${s.boss}:${s.difficulty}`);
+      return;
     case 'complete_encounter':
       return discover(progress, `${KEY.encounter}${s.encounter}`);
     case 'read_bottle':
@@ -343,6 +378,20 @@ export function achievementNotice(def: AchievementDefinition): Notice {
 }
 
 /**
+ * Disparadores que una señal vuelve a mirar además del suyo: jugar una
+ * partida también puede completar un logro de `win_minigame` que pide jugar
+ * otro juego (Guardacostas, T153).
+ */
+const ALSO_CHECKS: Partial<Record<AchievementTrigger, readonly AchievementTrigger[]>> = {
+  play_minigame: ['win_minigame'],
+};
+
+/** ¿La señal `signal` puede completar un logro con el disparador `trigger`? */
+export function signalChecks(signal: AchievementTrigger, trigger: AchievementTrigger): boolean {
+  return signal === trigger || (ALSO_CHECKS[signal]?.includes(trigger) ?? false);
+}
+
+/**
  * Apunta la señal y completa los logros que ya tocan (listos para reclamar).
  * Devuelve los que se completaron ahora; uno ya completado o reclamado no
  * vuelve a salir.
@@ -354,7 +403,9 @@ export async function completeBySignal(
   await record(repo.progress, signal);
   const pending = (await repo.progress.achievements()).filter(
     (a) =>
-      a.state === 'in_progress' && a.definition.active && a.definition.trigger === signal.trigger,
+      a.state === 'in_progress' &&
+      a.definition.active &&
+      signalChecks(signal.trigger, a.definition.trigger),
   );
   if (pending.length === 0) return [];
   const facts = await achievementFacts(repo.progress);
@@ -491,6 +542,17 @@ export function emitSignal(repo: Repo, signal: AchievementSignal): Promise<void>
   );
 }
 
+/**
+ * Como `emitSignal`, varias señales una detrás de otra (la siguiente ve lo
+ * que apuntó la anterior): las de una partida del Cañón (T153).
+ */
+export async function emitSignals(
+  repo: Repo,
+  signals: readonly AchievementSignal[],
+): Promise<void> {
+  for (const s of signals) await emitSignal(repo, s);
+}
+
 /** Como `emitSignal`, para el Carnet recién creado: su premio llega ya (`grantCarnetReward`). */
 export function emitCarnetReward(repo: Repo): Promise<void> {
   return grantCarnetReward(repo).then(broadcast, (err: unknown) =>
@@ -533,4 +595,17 @@ export async function reconcileAchievementEvidence(repo: Repo): Promise<void> {
   }
   for (const stamp of stamps)
     await completeBySignal(repo, { trigger: 'buy_ticket', eventId: stamp.eventId });
+  // Las huellas del Cañón (T153; las de la beta las deja la migración v8):
+  // partidas jugadas y bosses vencidos completan sus logros nuevos.
+  const facts = await achievementFacts(repo.progress);
+  for (const game of facts.played) await completeBySignal(repo, { trigger: 'play_minigame', game });
+  for (const key of facts.bosses) {
+    const [boss, difficulty] = key.split(':');
+    if (!boss) continue;
+    await completeBySignal(repo, {
+      trigger: 'defeat_boss',
+      boss,
+      ...(difficulty ? { difficulty } : {}),
+    });
+  }
 }

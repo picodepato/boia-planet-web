@@ -98,8 +98,33 @@ function stepsFor(d: AchievementDefinition): Step[] {
     }
     case 'win_minigame': {
       const game = param(d, 'game');
+      const played = param(d, 'played');
+      // Guardacostas (T153): ganar uno y jugar otro, en cualquier orden.
+      if (typeof game === 'string' && typeof played === 'string') {
+        return [
+          signal({ trigger: 'play_minigame', game: played }),
+          signal({ trigger: d.trigger, game }),
+        ];
+      }
       if (typeof game === 'string') return [signal({ trigger: d.trigger, game })];
       return times(n, (i) => signal({ trigger: 'win_minigame', game: `juego-${i}` }));
+    }
+    case 'play_minigame': {
+      const game = param(d, 'game');
+      if (typeof game === 'string') return [signal({ trigger: d.trigger, game })];
+      return times(n, (i) => signal({ trigger: 'play_minigame', game: `juego-${i}` }));
+    }
+    case 'defeat_boss': {
+      const boss = str(param(d, 'boss'), 'jefe');
+      const difficulty = param(d, 'difficulty');
+      if (typeof difficulty === 'string') {
+        // Vencerlo en otra dificultad no basta.
+        return [
+          signal({ trigger: d.trigger, boss, difficulty: 'normal' }),
+          signal({ trigger: d.trigger, boss, difficulty }),
+        ];
+      }
+      return [signal({ trigger: d.trigger, boss, difficulty: 'normal' })];
     }
     case 'complete_encounter':
       return [signal({ trigger: d.trigger, encounter: str(param(d, 'encounter'), 'encuentro') })];
@@ -143,6 +168,8 @@ describe('cada logro del catálogo se completa una vez y se reclama una vez', ()
       'create_carnet',
       'answer_question',
       'visit_world',
+      'play_minigame',
+      'defeat_boss',
     ] as const) {
       expect(triggers, t).toContain(t);
     }
@@ -335,11 +362,14 @@ it('T100: WhatsApp invitation completes once, reward is claimed once after reloa
   expect(await again.progress.balances()).toMatchObject({ points: 300, coins: 50 });
 });
 
-it('T100: exactly the sketch-boat achievement is hidden; old entitlements survive', async () => {
+it('T100/T153: only the sketch-boat and the Cañón storm achievements are hidden; old entitlements survive', async () => {
   const repo = browser()();
   const hidden = (await repo.content.list('achievements')).filter((d) => d.secret);
-  expect(hidden).toHaveLength(1);
-  expect(hidden[0]).toMatchObject({ id: 'secretos', cosmeticKey: 'barco-boceto-lapiz' });
+  // T153 (§9 of the Cañón design): «Ojo del huracán» is the second hidden one.
+  expect(hidden.map((d) => d.id)).toEqual(['canon-tormenta', 'secretos']);
+  expect(hidden.find((d) => d.id === 'secretos')).toMatchObject({
+    cosmeticKey: 'barco-boceto-lapiz',
+  });
   await repo.progress.completeAchievement('delfin');
   await repo.progress.claimAchievement('delfin');
   expect((await repo.progress.shop()).find((i) => i.cosmetic.id === 'estela-burbujas')?.owned).toBe(

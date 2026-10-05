@@ -56,6 +56,8 @@ export interface MinigameResult {
   elapsedMs: number;
   /** Lo que se saltó al empezar (el de la sesión); sin valor, 0. */
   skippedMs?: number;
+  /** El escalón del premio conseguido (la medalla del Cañón, T153), si la regla los tiene. */
+  tier?: string;
 }
 
 export type InvalidReason =

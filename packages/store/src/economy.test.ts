@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isStoreError } from './errors';
 import { V7_SHIP_PREF, V7_SOURCE, migrate } from './migrations';
 import { SAMPLE_COSMETICS } from './sample';
+import { SCHEMA_VERSION } from './schema';
 import { STORE_KEY } from './storage';
 import { makeRepo } from './test-helpers';
 
@@ -213,7 +214,7 @@ describe('migración v6 → v7', () => {
     const m = migrate(v6({ style: coinShip.assetKey, skin: skin.assetKey, label: 'x' }));
     expect(m.status).toBe('ok');
     const repo = open(v6({ style: coinShip.assetKey, skin: skin.assetKey, label: 'x' }));
-    expect(repo.status().schemaVersion).toBe(7);
+    expect(repo.status().schemaVersion).toBe(SCHEMA_VERSION);
     const owned = (await repo.progress.shop()).filter((i) => i.owned).map((i) => i.cosmetic.id);
     expect(owned).toEqual(expect.arrayContaining([coinShip.id, skin.id, 'bandera-boia']));
     expect(await repo.progress.equipped()).toEqual({

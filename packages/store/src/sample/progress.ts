@@ -14,6 +14,15 @@ export const FAST_LAP_MS = 73_400;
 // se desbloquean 3 barcos y alguna skin (lo prueba
 // `apps/web/lib/mundo/economy.test.ts`). muestra
 
+/** La bandera que da vencer al Barco Fantasma (logro `canon-fantasma`, T153). muestra */
+export const CANON_GHOST_FLAG = 'bandera-fantasma';
+/**
+ * La mascota minikraken (logro `canon-kraken`, T153): el premio queda en el
+ * libro como cosmético; el objeto, su ranura «Mascota» y cómo se ve en
+ * cubierta los hace T154. muestra
+ */
+export const MINIKRAKEN = 'mascota-minikraken';
+
 /** El barco que regala el Carnet BOIA: ni de base, ni de misión, ni de otro logro. */
 export const CARNET_SHIP = 'barco-low-poly';
 /** Puntos (umbral, no se gastan) del barco Semi-realista «El Veterano». */
@@ -156,10 +165,25 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     coins: 30,
     sample: true,
   },
+  // Los logros del Cañón definitivo (plan 013 T153, §9 del diseño de
+  // referencia; sin el acto 3: ni `canon-capitan` ni «El Apagón»). Sólo
+  // cuentan las partidas que valen: ni las de un atajo de desarrollo ni las
+  // acabadas con «Terminar partida». muestra (P14)
   {
+    id: 'canon-zarpa',
+    title: 'Zafarrancho',
+    description: 'Juega una partida del Cañón.',
+    trigger: 'play_minigame',
+    triggerParams: { game: 'canon' },
+    points: 20,
+    coins: 10,
+    sample: true,
+  },
+  {
+    // Id estable: el de la beta («Ni un tiburón»); ganar es bronce o más.
     id: 'canon',
-    title: 'Ni un tiburón',
-    description: 'Aguanta en el Cañón hasta el amanecer.',
+    title: 'Hasta que amanezca',
+    description: 'Sobrevive una partida del Cañón: llega al amanecer o vence a su boss.',
     trigger: 'win_minigame',
     triggerParams: { game: 'canon' },
     points: 60,
@@ -167,11 +191,49 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
+    id: 'canon-fantasma',
+    title: 'Exorcista',
+    description: 'Vence al Barco Fantasma en el Cañón.',
+    trigger: 'defeat_boss',
+    triggerParams: { boss: 'fantasma' },
+    points: 80,
+    coins: 0,
+    cosmeticKey: CANON_GHOST_FLAG,
+    sample: true,
+  },
+  {
+    // La mascota la construye T154; el premio ya queda en el libro.
+    id: 'canon-kraken',
+    title: 'Rompetentáculos',
+    description: 'Vence al Kraken en el Cañón.',
+    trigger: 'defeat_boss',
+    triggerParams: { boss: 'kraken' },
+    points: 120,
+    coins: 0,
+    cosmeticKey: MINIKRAKEN,
+    sample: true,
+  },
+  {
+    // En el diseño, el Capitán en Tormenta; sin acto 3, el último boss: el Kraken.
+    id: 'canon-tormenta',
+    title: 'Ojo del huracán',
+    description: 'Vence al Kraken en Tormenta.',
+    trigger: 'defeat_boss',
+    triggerParams: { boss: 'kraken', difficulty: 'tormenta' },
+    points: 150,
+    coins: 50,
+    secret: true,
+    sample: true,
+  },
+  {
+    // Versión 2 (T153): antes pedía ganar los dos minijuegos; ahora basta con
+    // jugar el Cañón, para que nadie se quede sin el barco por su dispositivo.
     id: 'guardacostas',
+    version: 2,
     title: 'Guardacostas',
-    description: 'Gana los dos minijuegos.',
+    description: 'Gana Vigilancia del faro y juega una partida del Cañón.',
     trigger: 'win_minigame',
-    triggerParams: { count: 2 },
+    triggerParams: { game: 'faro', played: 'canon' },
     points: 150,
     coins: 0,
     cosmeticKey: 'barco-cel-shaded',
@@ -363,6 +425,15 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     sample: true,
   },
   { id: 'estela-rayo', name: 'Estela de rayo', slot: 'wake', priceCoins: null, sample: true },
+  {
+    id: CANON_GHOST_FLAG,
+    name: 'Bandera fantasma',
+    slot: 'flag',
+    priceCoins: null,
+    sample: true,
+  },
+  // La primera mascota (T153 la concede con `canon-kraken`; T154 la pone en cubierta).
+  { id: MINIKRAKEN, name: 'Minikraken', slot: 'mascot', priceCoins: null, sample: true },
   // Barcos de estilo (T40, D-23 punto 1 y O5; precios `muestra`, rebajados el
   // 2026-10-02). Primero los que se ganan con un logro (D-22, T36: bloqueados
   // hasta reclamarlo).

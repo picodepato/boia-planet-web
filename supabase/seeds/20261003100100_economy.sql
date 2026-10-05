@@ -46,6 +46,8 @@ values
   ('bandera-cuadros', 'Bandera a cuadros', 'flag', null, null, 'circuito-atajo', null, null, false, true),
   ('estela-burbujas', 'Estela de burbujas', 'wake', null, null, 'delfin', null, null, false, true),
   ('estela-rayo', 'Estela de rayo', 'wake', null, null, 'circuito-rapido', null, null, false, true),
+  ('bandera-fantasma', 'Bandera fantasma', 'flag', null, null, 'canon-fantasma', null, null, false, true),
+  ('mascota-minikraken', 'Minikraken', 'mascot', null, null, 'canon-kraken', null, null, false, true),
   ('barco-cel-shaded', 'Cel-shaded cómic', 'ship', null, null, 'guardacostas', null, null, false, true),
   ('barco-boceto-lapiz', 'Boceto a lápiz', 'ship', null, null, 'secretos', null, null, false, true),
   ('barco-pixel-art', 'Pixel art', 'ship', null, null, 'minutos-60', null, null, false, true),

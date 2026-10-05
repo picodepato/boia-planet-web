@@ -14,12 +14,13 @@ import {
   type DifficultyId,
   type EndReason,
   type SurvivorsSnapshot,
+  survivorsMedal,
 } from '@boia/engine/survivors';
 import { type Settings, channelGain } from '@boia/engine/ui';
 import type { WorldConfig } from '@boia/world';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
-import { emitSignal } from '../../lib/mundo/achievements';
-import { type InWorldCopy, withWinSignal } from '../../lib/mundo/minigame-layer';
+import { emitSignals } from '../../lib/mundo/achievements';
+import type { InWorldCopy } from '../../lib/mundo/minigame-layer';
 import { gameRepository, useRepoData } from '../../lib/mundo/repo';
 import { type MessageKey, t as msg } from '../../lib/i18n';
 import {
@@ -33,7 +34,7 @@ import {
   recordFinalBoss,
 } from './canon-campaign';
 import { type CanonPrize, type CanonResult, canonPrize, canonResult } from './canon-hud-model';
-import { settleCanonSession } from './canon-settle';
+import { canonSignals, settleCanonSession } from './canon-settle';
 import type { CanonAudio, CanonAudioState } from './canon-audio';
 import { soundPreferences } from './canon-sound-preferences';
 import type { Mar3D } from './engine/mar3d';
@@ -67,9 +68,10 @@ import {
  *
  * Cada partida abre su sesión de minijuego (T119, REQ-AVE-038) con la
  * semilla de la partida y la liquida al acabar con el tiempo activo; si se
- * llega al amanecer, el premio de siempre (150 puntos y 50 monedas una vez
- * por temporada) y la señal `win_minigame` de los logros `canon` y
- * `guardacostas`. Salir a mitad (o 5 min en pausa) abandona la sesión.
+ * gana medalla, su premio (T153: cada medalla una vez al día, y las de debajo
+ * que aún no tuviera) y las señales de los logros del Cañón (`canonSignals`:
+ * jugada, ganada y bosses vencidos). Salir a mitad (o 5 min en pausa)
+ * abandona la sesión.
  * «Terminar partida» en la pausa (T148) también la abandona, pero enseña la
  * tarjeta final «Partida terminada»: sin medalla, premio, `win_minigame` ni
  * ranking.
@@ -348,12 +350,27 @@ export function useCanonMode({
       setUnlocked(null);
       setQuit(reason === 'quit');
       // «Terminar partida» (T148): la sesión se abandona, sin liquidar ni premio.
-      const settling = session ? settleCanonSession(session, reason, snapshot.activeS) : null;
+      const medal = survivorsMedal(
+        { end: reason, bossesDefeated: snapshot.bossesDefeated, act: run.act },
+        run.config,
+      );
+      const settling = session
+        ? settleCanonSession(session, reason, snapshot.activeS, medal, run.config)
+        : null;
       if (session && settling) {
-        // La campaña (T144) cuenta como el premio: una partida de prueba sólo donde el premio vale.
+        // La campaña (T144) y los logros (T153) cuentan como el premio: una
+        // partida de prueba sólo donde el premio vale.
         const counts = !session.testStart || devStartRewards();
         void settling.then((s) => {
           if (runRef.current === run || !runRef.current) setReward(s.reward);
+          void emitSignals(
+            gameRepository(),
+            canonSignals(s, counts, {
+              medal,
+              bosses: snapshot.bossesDefeated,
+              difficulty: run.difficulty,
+            }),
+          );
           if (reason !== 'victory' || !counts || !s.validation.valid) return;
           const next = run.act + 1;
           const opened =
@@ -439,9 +456,7 @@ export function useCanonMode({
         def: canonEntry,
         config: canonConfigFor(run.config, run.difficulty, run.act),
         authority: pageAuthority(),
-        sink: withWinSignal(getSink, CANON_GAME_ID, (game) => {
-          void emitSignal(gameRepository(), { trigger: 'win_minigame', game });
-        }),
+        sink: getSink,
         currentConfig: () => canonConfigFor(run.config, run.difficulty, run.act),
         seed: run.seed,
         skippedS: run.snapshot().activeS,

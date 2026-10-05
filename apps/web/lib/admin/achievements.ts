@@ -26,6 +26,8 @@ export const TRIGGER_LABELS: Record<AchievementTrigger, string> = {
   create_carnet: t('admin.achievements.hacerseElCarnet'),
   answer_question: t('admin.achievements.contestarPreguntasDelCarnet'),
   visit_world: t('admin.achievements.navegarEnMundos'),
+  play_minigame: t('admin.achievements.jugarUnMinijuego'),
+  defeat_boss: t('admin.achievements.vencerAUnBoss'),
 };
 
 /** De dónde salen las opciones de un parámetro de elección. */
@@ -106,6 +108,39 @@ export const TRIGGER_PARAMS: Record<AchievementTrigger, readonly TriggerParam[]>
       optional: true,
     },
     { ...count(20, t('admin.achievements.minijuegosDistintos')), optional: true },
+    // Guardacostas (T153): ganar el juego de arriba y jugar una partida de este.
+    {
+      key: 'played',
+      label: t('admin.achievements.yJugarAOtro'),
+      kind: 'choice',
+      source: 'games',
+      optional: true,
+    },
+  ],
+  play_minigame: [
+    {
+      key: 'game',
+      label: t('admin.achievements.minijuegoVacioCualquiera'),
+      kind: 'choice',
+      source: 'games',
+      optional: true,
+    },
+    { ...count(20, t('admin.achievements.minijuegosDistintos')), optional: true },
+  ],
+  defeat_boss: [
+    {
+      key: 'boss',
+      label: t('admin.achievements.bossVacioCualquiera'),
+      kind: 'text',
+      optional: true,
+    },
+    {
+      key: 'difficulty',
+      label: t('admin.achievements.dificultadVacioCualquiera'),
+      kind: 'text',
+      optional: true,
+    },
+    { ...count(20, t('admin.achievements.bossesDistintos')), optional: true },
   ],
   complete_encounter: [
     {

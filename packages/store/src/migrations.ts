@@ -373,6 +373,60 @@ function v6ToV7(doc: Record<string, unknown>): Record<string, unknown> {
   return { ...doc, players, ledger };
 }
 
+/**
+ * Huellas del Cañón definitivo (plan 013 T153), copia fija de las claves de
+ * `apps/web/lib/mundo/achievements.ts` y de la campaña (`canon-campaign.ts`):
+ * una migración no lee el código vivo.
+ */
+export const V8_WON_CANON = 'minijuego:canon';
+export const V8_PLAYED_CANON = 'partida:canon';
+/** Contador de la campaña (veces que cayó el boss final del acto) → huella del boss vencido. */
+export const V8_CAMPAIGN_BOSSES: Readonly<Record<string, string>> = {
+  'canon:acto-1:boss-final': 'jefe:fantasma',
+  'canon:acto-2:boss-final': 'jefe:kraken',
+};
+
+/**
+ * v7 → v8 (T153): los logros nuevos del Cañón cuentan partidas jugadas
+ * (`play_minigame`) y bosses vencidos (`defeat_boss`), y Guardacostas pasa a
+ * pedir jugar el Cañón en vez de ganarlo. Lo que ya se hizo en la beta sigue
+ * contando: quien ganó el Cañón lo jugó (`partida:canon`) y quien venció al
+ * boss final de un acto (el contador de la campaña) venció a ese boss
+ * (`jefe:<boss>`). Sólo se añaden huellas: el libro (saldos, logros
+ * reclamados, premios ya cobrados) y los logros completados no cambian.
+ */
+function v7ToV8(doc: Record<string, unknown>): Record<string, unknown> {
+  if (!isObject(doc.players)) return doc;
+  const identity = isObject(doc.identity) ? doc.identity : null;
+  const fallbackAt =
+    identity && typeof identity.createdAt === 'string'
+      ? identity.createdAt
+      : '2026-10-05T00:00:00.000Z';
+  const players: Record<string, unknown> = {};
+  for (const [userId, raw] of Object.entries(doc.players)) {
+    if (!isObject(raw) || !isObject(raw.discoveries)) {
+      players[userId] = raw;
+      continue;
+    }
+    const discoveries: Record<string, unknown> = { ...raw.discoveries };
+    const add = (key: string, from: unknown) => {
+      if (discoveries[key] !== undefined) return;
+      const at = isObject(from) && typeof from.at === 'string' ? from.at : fallbackAt;
+      const worldId = isObject(from) && typeof from.worldId === 'string' ? from.worldId : null;
+      discoveries[key] = { at, worldId };
+    };
+    const won = discoveries[V8_WON_CANON];
+    if (won !== undefined) add(V8_PLAYED_CANON, won);
+    const counters = isObject(raw.counters) ? raw.counters : {};
+    for (const [counter, key] of Object.entries(V8_CAMPAIGN_BOSSES)) {
+      const n = counters[counter];
+      if (typeof n === 'number' && n > 0) add(key, null);
+    }
+    players[userId] = { ...raw, discoveries };
+  }
+  return { ...doc, players };
+}
+
 export const MIGRATIONS: readonly Migration[] = [
   { from: 1, to: 2, name: 'logros que se reclaman (T36)', up: v1ToV2 },
   { from: 2, to: 3, name: 'eventos con formato, precio y estado por fechas (T42)', up: v2ToV3 },
@@ -394,6 +448,12 @@ export const MIGRATIONS: readonly Migration[] = [
     to: 7,
     name: 'barcos y skins que se compran; lo que se llevaba sigue siendo suyo (T40)',
     up: v6ToV7,
+  },
+  {
+    from: 7,
+    to: 8,
+    name: 'logros del Cañón: partidas jugadas y bosses vencidos en la beta (T153)',
+    up: v7ToV8,
   },
 ];
 

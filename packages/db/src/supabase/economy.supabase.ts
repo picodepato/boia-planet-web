@@ -58,6 +58,33 @@ describe('award_points: acciones conocidas con tope por acción y por día', () 
     expect(await balances(m)).toEqual({ points: 20, coins: 0 });
   });
 
+  it('Cañón (T153, migración 20261005100000): cada medalla una vez al día, por separado', async () => {
+    const before = await balances(m);
+    const medal = (name: string, points: number, coins: number) =>
+      m.client.rpc('award_points', {
+        p_action: 'minigame',
+        p_ref: `minigame:canon:${name}`,
+        p_points: points,
+        p_coins: coins,
+        p_policy: 'daily',
+      });
+    for (const [name, points, coins] of [
+      ['bronce', 30, 10],
+      ['plata', 60, 20],
+      ['oro', 100, 40],
+    ] as const) {
+      const first = (await ok(medal(name, points, coins))) as unknown as AwardResult;
+      expect(first.granted).toBe(true);
+      const again = (await ok(medal(name, points, coins))) as unknown as AwardResult;
+      expect(again).toMatchObject({ granted: false, reason: 'duplicate' });
+    }
+    expect(await balances(m)).toEqual({
+      points: before.points + 190,
+      coins: before.coins + 70,
+    });
+    await expectRejected(medal('diamante', 10, 0), 'invalid_ref');
+  });
+
   it('rechaza acciones, orígenes, políticas y cantidades que no son', async () => {
     const rpc = (a: Record<string, unknown>) =>
       m.client.rpc('award_points', {

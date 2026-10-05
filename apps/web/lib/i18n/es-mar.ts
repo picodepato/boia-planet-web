@@ -665,7 +665,8 @@ export const esMar = {
   'mar.canon.fin.volver': 'Volver al mar',
   // El premio de la partida en la pantalla final (T119). muestra
   'mar.canon.premio.ganado': '+{puntos} puntos y +{monedas} monedas',
-  'mar.canon.premio.repetido': 'Ya cobraste el premio del amanecer esta temporada.',
+  // T153: cada medalla se cobra una vez al día. muestra
+  'mar.canon.premio.repetido': 'Hoy ya cobraste el premio de esta medalla: vuelve mañana.',
   'mar.canon.premio.no': 'Esta partida no da premio.',
   // Una partida de prueba (empezada con un atajo de desarrollo) en producción (T121). muestra
   'mar.canon.premio.prueba': 'Partida de prueba (empezada con un atajo): no da premio.',

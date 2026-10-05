@@ -29,7 +29,7 @@ import { STABLE_KEY, STABLE_KEY_MAX } from './ids';
  * Subir `SCHEMA_VERSION` exige añadir la migración en `migrations.ts` con su
  * prueba.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 const iso = z.string().min(1);
 const stableKey = z.string().max(STABLE_KEY_MAX).regex(STABLE_KEY);
@@ -346,8 +346,10 @@ export type AchievementDefinition = z.infer<typeof achievementDefinitionSchema>;
  * Ranuras de cosmético. `ship` es un barco de estilo (`assetKey`: el id del
  * estilo de `art/barco/estilos/`): mientras exista como cosmético, el estilo
  * está bloqueado hasta tenerlo (por un logro o, con precio, en una tienda).
+ * `mascot` (plan 013 T153): la mascota de cubierta (el minikraken del logro
+ * `canon-kraken`); su sitio en Mi Barco y cómo se ve los hace T154.
  */
-export const COSMETIC_SLOTS = ['flag', 'accessory', 'skin', 'wake', 'ship'] as const;
+export const COSMETIC_SLOTS = ['flag', 'accessory', 'skin', 'wake', 'ship', 'mascot'] as const;
 export type CosmeticSlot = (typeof COSMETIC_SLOTS)[number];
 
 /**

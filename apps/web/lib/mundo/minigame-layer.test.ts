@@ -1,6 +1,7 @@
 import {
   type BaseConfig,
   CANON_DEFAULTS,
+  CANON_MEDAL_PRIZES,
   FARO_DEFAULTS,
   LocalSessionAuthority,
   MinigameController,
@@ -100,24 +101,31 @@ describe('premios de minijuego en el repositorio local', () => {
     expect(ids.every((id) => id.startsWith('world_reward:minigame:faro@'))).toBe(true);
   });
 
-  it('«por temporada»: el Cañón en el mar da 150 + 50 al amanecer una vez, también tras recargar', async () => {
-    expect(CANON_DEFAULTS.reward.policy).toBe('season');
-    const b = browser();
+  it('«por medalla y día» (T153): el bronce del Cañón al amanecer se cobra una vez al día, también tras recargar', async () => {
+    expect(CANON_DEFAULTS.reward.policy).toBe('daily');
+    const { bronce } = CANON_MEDAL_PRIZES;
+    const b = browser('2026-09-29T08:00:00Z');
     const first = b.visit();
     // 7:00 activos con pausas por medio: el tiempo activo es lo que cuenta.
     const won = await first.playCanon('survived', 420, 200);
     expect(won.validation).toEqual({ valid: true });
-    expect(won.reward).toEqual({ granted: true, points: 150, coins: 50 });
-    b.clock.advance(2 * 24 * 3600 * 1000);
-    const later = b.visit();
-    expect((await later.playCanon('survived', 420)).reward).toEqual({
+    expect(won.reward).toEqual({ granted: true, ...bronce, tiers: ['bronce'] });
+    // El mismo día, otra carga de página: ya cobrado.
+    const same = b.visit();
+    expect((await same.playCanon('survived', 420)).reward).toEqual({
       granted: false,
       reason: 'duplicate',
     });
-    expect(await later.repo.progress.balances()).toMatchObject({ points: 150, coins: 50 });
+    b.clock.advance(2 * 24 * 3600 * 1000);
+    const later = b.visit();
+    expect((await later.playCanon('survived', 420)).reward.granted).toBe(true);
+    expect(await later.repo.progress.balances()).toMatchObject({
+      points: 2 * bronce.points,
+      coins: 2 * bronce.coins,
+    });
     const ids = (await later.repo.progress.ledger()).map((e) => e.id);
-    expect(ids).toHaveLength(1);
-    expect(ids[0]).toMatch(/^world_reward:minigame:canon@/);
+    expect(ids).toHaveLength(2);
+    expect(ids.every((id) => id.startsWith('world_reward:minigame:canon:bronce@'))).toBe(true);
   });
 
   it('una partida perdida no toca el libro', async () => {

@@ -12,6 +12,7 @@ import {
   survivorsShipConfig,
 } from '@boia/engine/survivors';
 import {
+  CANON_MEDAL_PRIZES,
   LocalSessionAuthority,
   type MinigameRewardSink,
   WorldMinigameSession,
@@ -21,7 +22,7 @@ import {
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it, vi } from 'vitest';
 import { es } from '../../lib/i18n/es';
-import { withWinSignal } from '../../lib/mundo/minigame-layer';
+import { canonSignals } from './canon-settle';
 import { marWorld } from './engine/compact';
 import { MAR_SHIP_CONFIG } from './engine/steering';
 import { SurvivorsView } from './engine/survivors-view';
@@ -566,7 +567,10 @@ describe('partidas de prueba: sin premio en producción (T121)', () => {
     expect(devStartRewards(env({}))).toBe(false);
   });
 
-  /** Una partida que llega al amanecer, con la sesión y el libro como en `canon-mode`. */
+  /**
+   * Una partida que llega al amanecer, con la sesión y el libro como en
+   * `canon-mode`; las señales de logro (T153) se apuntan en `onWin`.
+   */
   async function survive(
     authority: LocalSessionAuthority,
     advance: (ms: number) => void,
@@ -577,14 +581,23 @@ describe('partidas de prueba: sin premio en producción (T121)', () => {
     const s = new WorldMinigameSession({
       def: canon,
       authority,
-      sink: withWinSignal(sink, CANON_GAME_ID, onWin),
+      sink,
       ...(o.skippedS ? { skippedS: o.skippedS } : {}),
       ...(o.devStart ? { devStart: true } : {}),
       devStartRewards: o.devStartRewards,
     });
     const durationS = canon.defaults.timeLimitS;
     advance((durationS - (o.skippedS ?? 0)) * 1000);
-    return s.finish(canonEnd('survived', durationS));
+    const r = await s.finish(canonEnd('survived', durationS));
+    const counts = !s.testStart || o.devStartRewards;
+    for (const signal of canonSignals(r, counts, {
+      medal: 'bronce',
+      bosses: [],
+      difficulty: 'normal',
+    })) {
+      if (signal.trigger === 'win_minigame') onWin(signal.game);
+    }
+    return r;
   }
 
   function harness() {
@@ -617,15 +630,11 @@ describe('partidas de prueba: sin premio en producción (T121)', () => {
     expect(h.sink.grantWorldReward).not.toHaveBeenCalled();
     expect(h.onWin).not.toHaveBeenCalled();
 
-    // Una partida normal después sí cobra, una vez por temporada, con su señal.
+    // Una partida normal después sí cobra su medalla, una vez al día, con su señal.
     const normal = await survive(h.authority, h.advance, h.sink, h.onWin, {
       devStartRewards: rewards,
     });
-    expect(normal.reward).toEqual({
-      granted: true,
-      points: canon.defaults.reward.points,
-      coins: canon.defaults.reward.coins,
-    });
+    expect(normal.reward).toEqual({ granted: true, ...CANON_MEDAL_PRIZES.bronce, tiers: ['bronce'] });
     expect(h.onWin).toHaveBeenCalledWith(CANON_GAME_ID);
     const again = await survive(h.authority, h.advance, h.sink, h.onWin, {
       devStartRewards: rewards,

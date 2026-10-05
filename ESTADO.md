@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T153: Per-medal daily prize and the new achievements
+
+### Qué existe
+
+- **Premio por medalla, una vez al día cada una** (§9 del diseño, `muestra`): bronce 30 ★ + 10 🪙, plata 60 + 20, oro 100 + 40 (`CANON_MEDAL_PRIZES`). Origen `minigame:canon:<medalla>` con política `daily` (en el libro, `world_reward:minigame:canon:oro@2026-10-05`); una medalla cobra también las de debajo que no tuvieras ese día (un oro de primeras, 190 + 70). Sustituye al premio de la beta (150 + 50 por temporada); lo ya cobrado sigue en el libro. Sin premio por acto (el diseño no lo pide).
+- Motor (`packages/engine/src/minigames`, sin tocar equilibrio): `RewardRule.tiers` (escalones con `minMs` y `reasons`), `MinigameResult.tier`/`WorldGameEnd.tier`, `grantMinigameReward` cobra por escalones; `canonReward(cfg, act)`, `canonEnd(..., medal)`; `CANON_VERSION` 4 → 5. Antitrampas: el oro antes de que entre el boss final del acto (5:30) no vale (validación de la sesión y, además, el `minMs` del escalón); bronce y plata antes del amanecer, o una medalla que no casa con cómo acabó, no cobran. Partidas con atajo de desarrollo (donde el build no lo permite: producción, también con `?dev=1`) y las de «Terminar partida» no pagan ni dan logros.
+- Web: `canon-settle.ts` liquida con la medalla y `canonSignals` da las señales de una partida que vale (jugada, ganada, bosses vencidos con dificultad); `canon-mode.tsx` las manda en orden (`emitSignals`) y ya no usa `withWinSignal` para el Cañón.
+- **Logros** (catálogo `packages/store/src/sample/progress.ts`, `muestra`): `canon-zarpa` «Zafarrancho» (jugar, 20 + 10), `canon` ahora «Hasta que amanezca» (mismo id, 60 + 30), `canon-fantasma` «Exorcista» (80 ★ + bandera fantasma), `canon-kraken` «Rompetentáculos» (120 ★ + mascota `mascota-minikraken`), `canon-tormenta` «Ojo del huracán» (oculto, Kraken en Tormenta, 150 + 50); sin `canon-capitan`. Guardacostas v2: ganar el Faro y jugar el Cañón (en cualquier orden). Disparadores nuevos `play_minigame` y `defeat_boss` (huellas `partida:<juego>`, `jefe:<boss>` y `jefe:<boss>:<dificultad>`); jugar vuelve a mirar los logros de `win_minigame`. Admin: etiquetas y parámetros de los disparadores nuevos y `played`.
+- **Mascota para T154**: ranura `mascot` en `COSMETIC_SLOTS` y el cosmético `mascota-minikraken` (`MINIKRAKEN`) en el catálogo; reclamar `canon-kraken` deja su fila `cosmetic` en el libro (probado). Bandera fantasma (`bandera-fantasma`) con su aspecto en `dressing.ts`.
+- **Documento local v7 → v8**: quien en la beta ganó el Cañón gana la huella de jugado, y quien venció al boss final de un acto (contador de la campaña) la del boss; saldos, premios, logros y lo ganado no cambian. `reconcileAchievementEvidence` completa los logros nuevos con esas huellas.
+- **Supabase** `supabase/migrations/20261005100000_canon_launch.sql` (escrita y probada en estático, **sin aplicar**): el enum `achievement_trigger` gana las 7 de T36 y `play_minigame`, `defeat_boss` (contracts: todas en `ACHIEVEMENT_TRIGGERS_DB`, `database.types.ts` a mano); `point_actions.minigame` acepta `minigame:<id>(:bronce|plata|oro)` (igual que `MINIGAME_REF` de `pointActionFor`); ranura `mascot` en `cosmetics`. Semillas: bandera fantasma y minikraken con su logro. Caso nuevo en `economy.supabase.ts` (necesita la base de desarrollo).
+- `docs/spec/estado.md`: enlaces de REQ-AVE-037/038 a las pruebas renombradas y nota en REQ-IDE-025.
+
+### Comandos y resultados
+
+- `pnpm exec vitest run apps/web/app/mar/canon-settle.test.ts` → exit 0, 14 pruebas (cada medalla una vez al día; bronce+plata+oro el mismo día pagan tres veces y otra vez al día siguiente; oro de primeras; oro antes de 5:30; escalón que no casa; partida demasiado corta; atajo y «Terminar partida» sin premio ni logros; logros nuevos y Guardacostas; topes de la base).
+- `pnpm exec vitest run packages/store/src/canon-migration.test.ts packages/store/src/canon-launch-sql.test.ts` → exit 0 (migración v7 → v8 conserva saldos y logros; SQL igual al navegador).
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 177 archivos, 1704 pruebas (tras fusionar main con T152: conflictos en `canon-mode.tsx`, imports de audio y señales, y `docs/spec/estado.md`, REQ-AVE-037/038 de T153 y REQ-AVE-039 de T152).
+- `sh tools/spec/checks.sh` → exit 0 (294 REQ, OK). `pnpm lint` → exit 0. `pnpm build` → exit 0. `pnpm typecheck` → exit 0.
+- `E2E_PORT=3973 pnpm e2e mar-canon.spec.ts --workers=1 -g "premio del bronce|Terminar partida|producción"` → exit 0, 6 pasadas.
+
+### Pendiente
+
+- Aplicar la migración y las semillas en Supabase (Hernán). Equipar la mascota en la base (`equipped_cosmetics`, `equip_cosmetic`, `lib/account/merge.ts` SLOTS) y su sitio en Mi Barco: T154.
+- Los atajos de desarrollo siguen pagando en `pnpm dev` y en las e2e (`devStartRewards`), como hasta ahora; en producción (la versión de prueba, también con `?dev=1`) nunca.
+- Cantidades, nombres y textos `muestra` hasta Álvaro (P14).
+
 ## 2026-10-05 — plan 013 T152: Sonido y accesibilidad
 
 Qué existe:
