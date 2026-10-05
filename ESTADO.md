@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 014 T158: Tower defense simulation: path, waves, castle, plane, coins, medals, score
+
+Qué existe:
+- `packages/engine/src/defense/` (import `@boia/engine/defense`, subpath nuevo en `packages/engine/package.json`): simulación sin DOM y determinista de «Defensa del Castillo» (`muestra`), paso fijo `DEFENSE_STEP_S` (= el del Cañón), `DEFENSE_CONFIG` + `DEFENSE_CONFIG_VERSION` (1) + `defenseConfigHash`.
+  - `config.ts`: castillo (radio 208 u = 13 de escena, vida 100), arena 1120 u, `vortexRadius` 90, `islandRadius` 70 (huella común de las islas a nivel 3, ≈ 1/3 del diámetro del castillo; T159 la reutiliza), camino, avión, enemigos y bosses del Cañón (ids importados; radio de `SURVIVORS_CONFIG` vía `defenseEnemyRadius`) con `pace`/vida/daño al castillo/monedas/puntos propios, dificultades, oleadas, duraciones 5/7/10 con sus bosses, bono de vida. Tipos de torre `DEFENSE_TOWER_KINDS` (faro, ultima, halloween, cala, tienda, allday, fotos).
+  - `path.ts`: `buildDefensePath` — espiral de 1¼ vueltas (980 → 430 u) con eses en la vuelta de fuera y zigzag de dientes hacia el castillo dentro, recta final a la muralla; `sampleAt(d)` por longitud de arco (posición, rumbo, normal), `distanceTo(x,y)` (para la regla de construir), `start` (el vórtice: donde la vista lo pone), `end`, `corners` (esquinas vivas para las boyas de acento), `turnOf`. Largo ≈ 6400 u; hueco mínimo entre vueltas 437 u (pide 90 + 4·70 = 370).
+  - `waves.ts`: `defenseSchedule(cfg, runMin, difficulty)` — sin azar (todos los de una tabla ven lo mismo): oleada cada 15 s, mezcla por turno ponderado, bosses a su fracción (el gordo ≥ 70 %).
+  - `sim.ts`: `DefenseGame`/`createDefense` — enemigos por distancia en su carril, llegada = daño al castillo y desaparece; avión libre en el disco (`input.move`), disparo automático al más cercano a su alcance con anticipación, daño nivel 1–3 (`upgradePlane`, `input.upgradePlane`); monedas por caída directas al monedero; fin `held`/`fallen`/`abandoned`/`quit`; pausa y `elapsePause` como el Cañón; `startAtS`/`unranked` = atajo (no rankea); `snapshot()`, `result()` (medalla, puntos, `ranked`, duración, dificultad, caídas por tipo, bosses…), `stateHash()`, eventos para sonido/vista. Para T159: `addTower`/`removeTower`/`spend`/`refund`, `enemiesInRange`.
+  - `towers.ts`: el enganche `DefenseTowerHooks` (`targets`, `onTick`) con `DefenseTowerContext` (enemigos, camino, rng, `damageEnemy`, `stunEnemy`, `addCoins`); `DEFENSE_TOWER_HOOKS` vacío hasta T159; la partida corre con cero torres.
+  - `medals.ts`: `defenseMedal` (oro > 50 %, plata ≤ 50 %, bronce si cae pasada la mitad) y `defenseScore` (puntos por caída + bono de vida si aguanta). `clock.ts`: `DefenseClock`. `bots.ts`: `idlePlaneBot`, `chasePlaneBot`.
+- Avión solo (sin torres), semilla 7: Normal y Tormenta caen en 5/7/10 min (perseguidor a nivel 3 cae a ~230–250 s en Normal); Tranquila 5 min el perseguidor aguanta con 24 % de vida. Números para T159/T165.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` → exit 0, 33 tests.
+- `pnpm exec vitest run packages/engine/src/defense packages/engine/src/survivors --testTimeout=60000` → con la máquina cargada (otros agentes corriendo vitest y e2e) 3 pruebas lentas del Cañón (no tocadas) se pasaron de tiempo; repetidas: `pnpm exec vitest run <los 7 ficheros que se pasaron de tiempo en el run completo> packages/engine/src/survivors packages/engine/src/defense --testTimeout=30000 --maxWorkers=2` → exit 0, 24 ficheros, 328 tests.
+- Test command: vitest → exit 1 sólo por 24 «Test timed out» bajo carga (ninguna aserción falla; 1753 passed), repetidos arriba → exit 0; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+
+Pendiente:
+- T159: torres, regla de construir (usar `path.distanceTo`, `path.start` + `vortexRadius`, `islandRadius`, `plane.buildRing`), costes; T160: girar el camino con `path.startAngleRad` hacia mar abierto cuando T157 fije el sitio del castillo (sube la huella de config).
+
 ## 2026-10-05 — plan 013 T155: Per-boss ranking, local and global
 
 ### Qué existe
