@@ -165,7 +165,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T156 — Close: balance, `baja` performance, full e2e, docs, Álvaro draft, remove BETA
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T148, T149, T150, T151, T152, T153, T154, T155
@@ -236,3 +236,4 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-06 01:00 T155 done by agent; integration conflict with T154 in docs/spec/estado.md → sent back to the same agent
 - 2026-10-06 resumed in a new session: T155 branch committed and clean (conflict resolved in 1a62382) → integrating; push offer T154 cancelled
 - 2026-10-05 23:15 T155 integrated → 4314dd4 (tests ok); worktree and branch removed; duplicated T155 section in ESTADO.md dropped
+- 2026-10-05 23:20 T156 launched · attempt 1 · agent ae1a3a0815e2c330c (opus); Hernán: push to Vercel once T156 is integrated
