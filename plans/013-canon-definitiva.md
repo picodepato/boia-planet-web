@@ -27,7 +27,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 ## Tasks
 
 ## T148 — Pause «Terminar partida» and the battle HUD layout
-- Status: pending
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: none
@@ -41,10 +41,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit test: ending with «Terminar partida» pays nothing and sends no `win_minigame` → passes
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1 -g "Terminar|HUD"` (new tests: quit flow ends on the card with no balance change; balances hidden in game and back after; slot bounding boxes do not intersect the pause button at mobile and desktop) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: «Terminar partida» with confirm → «Partida terminada» card, no pay/medal, `ranked:false`; balances hidden in game; slots top-right, smaller pill → c51a76c
 
 ## T149 — Healing vinyl redesign and the Vecino ring
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: none
@@ -61,7 +61,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T150 — SVG icons for every skill
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T148
@@ -173,6 +173,13 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 ## Decisions
 - 2026-10-05 plan: act 3 dropped; Capitán achievement and «El Apagón» appearance dropped; shortcut games never pay or rank (orchestrator, from Hernán's answers)
 
+- 2026-10-05 T148: new end reason `quit` (`SurvivorsGame.quit()`); quit session abandoned, not settled; `CanonResult.ranked=false` for T155; card shows time/enemies/notes + «Volver al mar»/«Otra vez»; balances hidden via a `balances` HideLayer until «Volver al mar»; confirm focuses «No, seguir», Esc cancels the step; mobile slots 3 columns of 22 px, desktop rows at 28 px; worst case tested with `armas=1` (7 weapons + 4 vinyls) (agent)
+
 ## Proposals (new scope)
+- 2026-10-05 T148: the boss arrow can sit briefly under the top-right slots box (T156)
 
 ## Log
+- 2026-10-05 approved by Hernán in the session; main tests pass; commit 370eb78
+- 2026-10-05 T148 launched · attempt 1 · agent a58d2b4672f5c0ca2 (opus)
+- 2026-10-05 T149 launched · attempt 1 · Codex via wrapper agent a5d014c5aa4533926 (sonnet)
+- 2026-10-05 20:48 T148 done · branch worktree-agent-a58d2b4672f5c0ca2 → c51a76c; worktree locked by its agent, remove at plan end
