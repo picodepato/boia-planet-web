@@ -43,7 +43,6 @@ export interface ShopShipRow {
 
 export interface ShopRows {
   ships: ShopShipRow[];
-  flags: ShopItem[];
   wakes: ShopItem[];
   /** Mascotas de cubierta (T154): las que se tienen o se pueden ganar. */
   mascots: ShopItem[];
@@ -52,7 +51,7 @@ export interface ShopRows {
 /**
  * Filas de la tienda: los barcos que tienen arte (en el orden del catálogo,
  * el del registro B01…B08), cada uno con su base y las skins que se venden y
- * tienen arte; y las banderas y estelas. Un estilo del arte sin cosmético (el
+ * tienen arte; y las estelas y mascotas. Un estilo del arte sin cosmético (el
  * «muestra» de antes de T17) no se ofrece.
  */
 export function shopRows(catalog: ShipCatalog | null, items: readonly ShopItem[]): ShopRows {
@@ -86,7 +85,7 @@ export function shopRows(catalog: ShipCatalog | null, items: readonly ShopItem[]
   }
   const active = (slot: string) =>
     items.filter((i) => i.cosmetic.slot === slot && (i.cosmetic.active || i.owned));
-  return { ships, flags: active('flag'), wakes: active('wake'), mascots: active('mascot') };
+  return { ships, wakes: active('wake'), mascots: active('mascot') };
 }
 
 /** Títulos de los logros por id; null si es oculto y no se ha completado. */

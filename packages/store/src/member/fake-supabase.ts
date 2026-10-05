@@ -24,7 +24,7 @@ const COSMETICS: Record<string, FakeCosmetic> = {
   'barco-arcilla': { slot: 'ship', price: null, base: true },
   'barco-cartoon-30': { slot: 'ship', price: 120 },
   'skin-arcilla-noche': { slot: 'skin', price: 50, forShip: 'barco-arcilla' },
-  'bandera-boia': { slot: 'flag', price: 20 },
+  'estela-naranja': { slot: 'wake', price: 30 },
 };
 
 type Row = Record<string, unknown>;

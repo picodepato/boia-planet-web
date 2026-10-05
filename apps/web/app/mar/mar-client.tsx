@@ -1985,7 +1985,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       data-flight={stats?.flight ?? undefined}
       data-ship-style={shipLook?.style}
       data-ship-skin={shipLook?.skin}
-      data-ship-flag={shipLook ? equippedNow?.flag : undefined}
       data-ship-wake={shipLook ? equippedNow?.wake : undefined}
       data-ship-mascot={shipLook ? equippedNow?.mascot : undefined}
       data-mundo={worldId ?? undefined}

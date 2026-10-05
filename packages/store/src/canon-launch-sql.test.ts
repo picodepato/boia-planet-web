@@ -59,7 +59,11 @@ describe('migración del Cañón definitivo (T153)', () => {
   it('la ranura `mascot` y los premios de los logros nuevos están en la base', () => {
     const check = /check \(slot in \(([^)]*)\)\)/.exec(LAUNCH);
     expect(check).not.toBeNull();
-    expect([...check![1]!.matchAll(/'([a-z]+)'/g)].map((m) => m[1])).toEqual([...COSMETIC_SLOTS]);
+    // The historical database schema retains flag rows for compatibility (T167).
+    expect([...check![1]!.matchAll(/'([a-z]+)'/g)].map((m) => m[1])).toEqual([
+      'flag',
+      ...COSMETIC_SLOTS,
+    ]);
     for (const a of SAMPLE_ACHIEVEMENTS.filter((x) => x.id.startsWith('canon-') && x.cosmeticKey)) {
       const c = SAMPLE_COSMETICS.find((x) => x.id === a.cosmeticKey)!;
       expect(c, a.id).toBeDefined();

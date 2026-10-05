@@ -16,7 +16,7 @@ import { ACHIEVEMENT_READY_BODY } from '../lib/mundo/achievements';
 /**
  * La tienda «Barco» (T40, D-23 punto 1, O5), en el mar 3D: el
  * visitante trae unas monedas guardadas, gana las que le faltan reclamando
- * «Primera boia», compra un barco (con confirmación) y una bandera, los
+ * «Primera boia», compra un barco (con confirmación) y una estela, los
  * equipa, recarga y los sigue llevando. Móvil y escritorio.
  *
  * Con RECORD_T40=1 guarda además las capturas del informe a 390×844 en
@@ -37,17 +37,17 @@ const talkingBoia = world.config.objects.find(
 const firstBuoy = SAMPLE_ACHIEVEMENTS.find(
   (a) => a.trigger === 'find_buoy' && (a.triggerParams as { count?: number }).count === 1,
 )!;
-// El barco más barato de la tienda y una bandera a la venta.
+// El barco más barato de la tienda y una estela a la venta.
 const ship = SAMPLE_COSMETICS.filter((c) => c.slot === 'ship' && !c.base && c.priceCoins).sort(
   (a, b) => a.priceCoins! - b.priceCoins!,
 )[0]!;
 const STYLE = ship.assetKey!;
-const flag = SAMPLE_COSMETICS.find((c) => c.slot === 'flag' && c.priceCoins)!;
-const COST = ship.priceCoins! + flag.priceCoins!;
+const wake = SAMPLE_COSMETICS.find((c) => c.slot === 'wake' && c.priceCoins)!;
+const COST = ship.priceCoins! + wake.priceCoins!;
 
 /**
  * Un navegador que ya había jugado: le faltan justo las monedas de «Primera
- * boia» para el barco y la bandera. Sólo si el navegador está vacío (recargar
+ * boia» para el barco y la estela. Sólo si el navegador está vacío (recargar
  * no lo pisa).
  */
 async function seedCoins(page: Page) {
@@ -110,8 +110,11 @@ async function buy(shop: Locator, buyId: string, optionId: string) {
   await expect(shop.getByTestId(optionId)).not.toHaveAttribute('data-bloqueado', 'si');
 }
 
-/** Barco y bandera: antes, bloqueados con lo que falta; comprados y equipados después. */
+/** Barco y estela: antes, bloqueados con lo que falta; comprados y equipados después. */
 async function shopFlow(page: Page, shop: Locator, info: TestInfo | null, root: Locator) {
+  await expect(shop.locator('#tienda-flag')).toHaveCount(0);
+  await expect(shop.getByRole('heading', { name: 'Bandera', exact: true })).toHaveCount(0);
+  await expect(shop.locator('.tienda-intro')).not.toContainText(/bandera/i);
   const saldo = shop.getByTestId('barco-saldo');
   await expect(saldo).toHaveAttribute('data-coins', String(COST));
   await expect(shop.getByTestId(`barco-estilo-${STYLE}`)).toHaveAttribute('data-bloqueado', 'si');
@@ -124,8 +127,8 @@ async function shopFlow(page: Page, shop: Locator, info: TestInfo | null, root: 
   await expect(saldo).toHaveAttribute('data-coins', String(COST));
 
   await buy(shop, `barco-comprar-${STYLE}`, `barco-estilo-${STYLE}`);
-  await expect(saldo).toHaveAttribute('data-coins', String(flag.priceCoins));
-  await buy(shop, `barco-comprar-${flag.id}`, `barco-bandera-${flag.id}`);
+  await expect(saldo).toHaveAttribute('data-coins', String(wake.priceCoins));
+  await buy(shop, `barco-comprar-${wake.id}`, `barco-estela-${wake.id}`);
   await expect(saldo).toHaveAttribute('data-coins', '0');
   // Los puntos no se tocan al gastar monedas.
   await expect(saldo).toHaveAttribute('data-points', String(1 + firstBuoy.points));
@@ -133,13 +136,14 @@ async function shopFlow(page: Page, shop: Locator, info: TestInfo | null, root: 
   await shop.getByTestId(`barco-estilo-${STYLE}`).click();
   await expect(root).toHaveAttribute('data-ship-style', STYLE);
   await expect(shop.getByTestId(`barco-estilo-${STYLE}`)).toHaveAttribute('aria-checked', 'true');
-  await shop.getByTestId(`barco-bandera-${flag.id}`).click();
-  await expect(root).toHaveAttribute('data-ship-flag', flag.id);
+  await shop.getByTestId(`barco-estela-${wake.id}`).click();
+  await expect(root).toHaveAttribute('data-ship-wake', wake.id);
 }
 
 test.describe.configure({ timeout: 150_000 });
 
-test('/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar', async ({
+// Referencia histórica de la spec: «/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar».
+test('/mar: ganar monedas, comprar un barco y una estela, equiparlos y recargar', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -174,7 +178,7 @@ test('/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar
   await page.reload();
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
   await expect(root).toHaveAttribute('data-ship-style', STYLE);
-  await expect(root).toHaveAttribute('data-ship-flag', flag.id);
+  await expect(root).toHaveAttribute('data-ship-wake', wake.id);
   expect(errors).toEqual([]);
 });
 

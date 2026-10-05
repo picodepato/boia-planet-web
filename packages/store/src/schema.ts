@@ -1,3 +1,4 @@
+import { withoutFlag } from './removed-flags';
 import { z } from 'zod';
 import {
   ACHIEVEMENT_SCOPES,
@@ -211,7 +212,7 @@ export const playerSchema = z.object({
   /** Contadores (segundos jugados, boies recogidas…). */
   counters: z.record(z.string(), z.number().int().nonnegative()),
   /** Cosmético equipado por ranura. */
-  equipped: z.record(z.string(), z.string()),
+  equipped: z.record(z.string(), z.string()).transform(withoutFlag),
   /** Preferencias del invitado (aspecto del barco…), REQ-IDE-004 y REQ-IDE-033. */
   prefs: jsonObject,
   /** Logros completados por id de logro (listos o ya reclamados). Desde la v2. */
@@ -325,7 +326,7 @@ export const achievementDefinitionSchema = z.object({
   points: z.number().int().nonnegative(),
   coins: z.number().int().nonnegative(),
   /**
-   * Cosmético que concede al reclamarlo (REQ-IDE-031): bandera, estela,
+   * Cosmético que concede al reclamarlo (REQ-IDE-031): estela,
    * color o, en la ranura `ship`, un barco de estilo (REQ-IDE-052).
    */
   cosmeticKey: z.string().optional(),
@@ -349,7 +350,7 @@ export type AchievementDefinition = z.infer<typeof achievementDefinitionSchema>;
  * `mascot` (plan 013 T153): la mascota de cubierta (el minikraken del logro
  * `canon-kraken`); su sitio en Mi Barco y cómo se ve los hace T154.
  */
-export const COSMETIC_SLOTS = ['flag', 'accessory', 'skin', 'wake', 'ship', 'mascot'] as const;
+export const COSMETIC_SLOTS = ['accessory', 'skin', 'wake', 'ship', 'mascot'] as const;
 export type CosmeticSlot = (typeof COSMETIC_SLOTS)[number];
 
 /**

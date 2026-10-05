@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { dressingFor } from './dressing';
 
 /**
- * REQ-IDE-032 (T40): ni el barco de estilo, ni la skin, ni la bandera, ni la
+ * REQ-IDE-032 (T40): ni el barco de estilo, ni la skin, ni la
  * estela cambian cómo navega el barco. Se da la misma vuelta al circuito del
  * mundo con cada cosmético equipado, con la física tal como la montan el 2D
  * y /mar (la configuración del barco y el runtime del mundo), y el tiempo de
@@ -82,7 +82,7 @@ function lap(cfg: ShipConfig, dressed: ReturnType<typeof dressedShip>, into?: 'c
 }
 
 describe('los cosméticos no cambian la navegación (REQ-IDE-032)', () => {
-  it('mismo tiempo de vuelta, mismos choques y misma traza con cualquier barco, skin, bandera o estela', () => {
+  it('mismo tiempo de vuelta, mismos choques y misma traza con cualquier barco, skin o estela', () => {
     const cfg = { ...DEFAULT_SHIP_CONFIG };
     const reference = lap(cfg, dressedShip({}));
     const bumped = lap(cfg, dressedShip({}), 'coast');
@@ -91,10 +91,9 @@ describe('los cosméticos no cambian la navegación (REQ-IDE-032)', () => {
     expect(bumped.hits).toBeGreaterThan(0);
     const combos: Record<string, string>[] = [];
     for (const c of SAMPLE_COSMETICS) combos.push({ [c.slot]: c.id });
-    const flag = SAMPLE_COSMETICS.find((c) => c.slot === 'flag')!;
     const wake = SAMPLE_COSMETICS.find((c) => c.slot === 'wake')!;
     for (const ship of SAMPLE_COSMETICS.filter((c) => c.slot === 'ship'))
-      combos.push({ ship: ship.id, flag: flag.id, wake: wake.id });
+      combos.push({ ship: ship.id, wake: wake.id });
     for (const equipped of combos) {
       const got = lap(cfg, dressedShip(equipped));
       expect(got, JSON.stringify(equipped)).toEqual(reference);
@@ -102,7 +101,7 @@ describe('los cosméticos no cambian la navegación (REQ-IDE-032)', () => {
     }
     // Y nada de lo que se pinta lleva un parámetro de la física del barco.
     const physics = new Set(Object.keys(DEFAULT_SHIP_CONFIG));
-    const drawn = dressedShip({ flag: flag.id, wake: wake.id });
+    const drawn = dressedShip({ wake: wake.id });
     expect(Object.keys(drawn.dressing).filter((k) => physics.has(k))).toEqual([]);
     expect(cfg).toEqual(DEFAULT_SHIP_CONFIG);
   });

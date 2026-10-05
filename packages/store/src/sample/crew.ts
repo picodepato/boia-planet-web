@@ -59,7 +59,7 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
       seasonPoints: { arcilla: 90, acuarela: 40 },
       achievementIds: ['primera-boia', 'islas-3', 'entrada'],
       stampEventIds: ['ev-finalizado'],
-      cosmeticIds: ['bandera-boia'],
+      cosmeticIds: [],
     },
   },
   {
@@ -96,7 +96,7 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
       seasonPoints: { arcilla: 150, acuarela: 220 },
       achievementIds: ['primera-boia', 'carnet', 'islas-3', 'entrada', 'fiestera-entregada'],
       stampEventIds: ['ev-finalizado'],
-      cosmeticIds: ['bandera-fiestera', 'estela-naranja'],
+      cosmeticIds: ['estela-naranja'],
     },
   },
 ];

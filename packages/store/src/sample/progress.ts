@@ -14,8 +14,6 @@ export const FAST_LAP_MS = 73_400;
 // se desbloquean 3 barcos y alguna skin (lo prueba
 // `apps/web/lib/mundo/economy.test.ts`). muestra
 
-/** La bandera que da vencer al Barco Fantasma (logro `canon-fantasma`, T153). muestra */
-export const CANON_GHOST_FLAG = 'bandera-fantasma';
 /**
  * La mascota minikraken (logro `canon-kraken`, T153): el premio queda en el
  * libro como cosmético; el objeto, su ranura «Mascota» y cómo se ve en
@@ -120,7 +118,6 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     triggerParams: { character: 'boia-fiestera' },
     points: 200,
     coins: 0,
-    cosmeticKey: 'bandera-fiestera',
     sample: true,
   },
   {
@@ -141,7 +138,6 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     triggerParams: { circuit: FREU, via: 'circuito-cp-a' },
     points: 60,
     coins: 0,
-    cosmeticKey: 'bandera-cuadros',
     sample: true,
   },
   {
@@ -198,7 +194,6 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     triggerParams: { boss: 'fantasma' },
     points: 80,
     coins: 0,
-    cosmeticKey: CANON_GHOST_FLAG,
     sample: true,
   },
   {
@@ -400,23 +395,8 @@ const SHIP_SKIN_OWNERS = [
 ] as const;
 
 export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
-  { id: 'bandera-boia', name: 'Bandera BOIA', slot: 'flag', priceCoins: 20, sample: true },
   { id: 'estela-naranja', name: 'Estela naranja', slot: 'wake', priceCoins: 30, sample: true },
   { id: 'farolillo', name: 'Farolillo de proa', slot: 'accessory', priceCoins: 25, sample: true },
-  {
-    id: 'bandera-fiestera',
-    name: 'Bandera de la Fiestera',
-    slot: 'flag',
-    priceCoins: null,
-    sample: true,
-  },
-  {
-    id: 'bandera-cuadros',
-    name: 'Bandera a cuadros',
-    slot: 'flag',
-    priceCoins: null,
-    sample: true,
-  },
   {
     id: 'estela-burbujas',
     name: 'Estela de burbujas',
@@ -425,13 +405,6 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     sample: true,
   },
   { id: 'estela-rayo', name: 'Estela de rayo', slot: 'wake', priceCoins: null, sample: true },
-  {
-    id: CANON_GHOST_FLAG,
-    name: 'Bandera fantasma',
-    slot: 'flag',
-    priceCoins: null,
-    sample: true,
-  },
   // La primera mascota (T153 la concede con `canon-kraken`; T154 la pone en cubierta).
   { id: MINIKRAKEN, name: 'Minikraken', slot: 'mascot', priceCoins: null, sample: true },
   // Barcos de estilo (T40, D-23 punto 1 y O5; precios `muestra`, rebajados el

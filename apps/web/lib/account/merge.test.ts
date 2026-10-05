@@ -127,18 +127,19 @@ describe('lo del invitado pasa a la cuenta (decisión 4, merge_guest)', () => {
     const p = mergePayloadFrom({
       userId: 'yo',
       ledger: [
-        { ...base, id: '1', kind: 'cosmetic', coinsDelta: -20, cosmeticKey: 'bandera-boia' },
+        { ...base, id: '1', kind: 'cosmetic', coinsDelta: -20, cosmeticKey: 'estela-naranja' },
+        { ...base, id: 'old-flag', kind: 'cosmetic', coinsDelta: -20, cosmeticKey: 'bandera-boia' },
         { ...base, id: '2', kind: 'cosmetic', coinsDelta: 0, cosmeticKey: 'regalo' },
         { ...base, id: '3', kind: 'achievement', coinsDelta: 30, achievementId: 'primera-boia' },
         { ...base, id: '4', userId: 'otro', kind: 'cosmetic', coinsDelta: -9, cosmeticKey: 'x' },
       ],
-      equipped: { flag: 'bandera-boia', raro: 'x' },
+      equipped: { flag: 'bandera-boia', wake: 'estela-naranja', raro: 'x' },
       discounts: [],
       purchases: [],
       records: { 'circuito:el-freu@v1': { bestMs: 1, bestAt: base.createdAt } },
     });
-    expect(p.cosmetics).toEqual(['bandera-boia']);
-    expect(p.equipped).toEqual({ flag: 'bandera-boia' });
+    expect(p.cosmetics).toEqual(['estela-naranja', 'bandera-boia']);
+    expect(p.equipped).toEqual({ wake: 'estela-naranja' });
     expect(p.rewards).toEqual([
       expect.objectContaining({ action: 'achievement', ref: 'primera-boia', coins: 30 }),
     ]);
@@ -154,7 +155,7 @@ describe('lo del invitado pasa a la cuenta (decisión 4, merge_guest)', () => {
       purchases: [],
       records: {},
     });
-    expect(p.equipped).toEqual({ flag: 'bandera-boia', mascot: MINIKRAKEN });
+    expect(p.equipped).toEqual({ mascot: MINIKRAKEN });
   });
 
   it('el resumen de la bienvenida cuenta lo aceptado', async () => {

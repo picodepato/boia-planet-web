@@ -31,8 +31,7 @@ describe('filas de la tienda', () => {
     // Todos con la base, que va con el barco; el estilo «muestra» (sin cosmético) no sale.
     for (const r of rows.ships) expect(r.skins[0]).toMatchObject({ skin: 'base', item: null });
     expect(rows.ships.some((r) => r.style === catalog.defaultId)).toBe(false);
-    // Banderas y estelas.
-    expect(rows.flags.every((i) => i.cosmetic.slot === 'flag')).toBe(true);
+    expect(rows).not.toHaveProperty('flags');
     expect(rows.wakes.every((i) => i.cosmetic.slot === 'wake')).toBe(true);
   });
 
@@ -111,12 +110,12 @@ describe('aspecto al entrar', () => {
     });
   });
 
-  it('bandera y estela equipadas se pintan; sin nada, ni bandera ni tinte', () => {
-    expect(dressingFor({})).toEqual({ flag: null, wakeTint: null, mascot: null });
-    const flag = SAMPLE_COSMETICS.find((c) => c.slot === 'flag')!;
+  it('la estela se pinta y una bandera antigua se ignora', () => {
+    expect(dressingFor({})).toEqual({ wakeTint: null, mascot: null });
     const wake = SAMPLE_COSMETICS.find((c) => c.slot === 'wake')!;
-    const d = dressingFor({ flag: flag.id, wake: wake.id, ship: coinShip.id });
-    expect(d.flag).not.toBeNull();
+    const d = dressingFor({ flag: 'bandera-boia', wake: wake.id, ship: coinShip.id });
+    expect(d).not.toHaveProperty('flag');
+    expect(dressingKey(d)).toBe(dressingKey(dressingFor({ wake: wake.id })));
     expect(d.wakeTint).not.toBeNull();
     expect(d.mascot).toBeNull();
   });

@@ -132,15 +132,19 @@ describe('catálogo de la sección «Barco»', () => {
           on,
         }),
       );
+      expect(html).not.toContain('tienda-flag');
+      expect(html).not.toContain('barco-bandera-');
+      expect(html).not.toMatch(/<h3[^>]*>Bandera<\/h3>/);
+      expect(html.match(/<p class="tienda-intro">([^<]*)<\/p>/)?.[1]).not.toMatch(/bandera/i);
       for (const s of rows.ships) {
         expect(html).toContain(`data-testid="barco-estilo-${s.style}"`);
         expect(html).toContain(s.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;'));
       }
       expect(html.match(/data-testid="barco-skin-(?!item)/g)?.length).toBe(row.skins.length);
       for (const k of row.skins) expect(html).toContain(`data-testid="barco-skin-${k.skin}"`);
-      // El barco y su skin base marcados; «Sin bandera», «Espuma blanca» y
+      // El barco y su skin base marcados; «Espuma blanca» y
       // «Sin mascota» (T154), también: uno por lista con algo que elegir.
-      const lists = [rows.flags, rows.wakes, rows.mascots].filter((l) => l.length > 0).length;
+      const lists = [rows.wakes, rows.mascots].filter((l) => l.length > 0).length;
       expect(html.match(/role="radio" aria-checked="true"/g)?.length).toBe(2 + lists);
       // La mascota, con su dibujo, bloqueada hasta ganarla.
       for (const m of rows.mascots) {

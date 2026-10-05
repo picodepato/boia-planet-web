@@ -100,6 +100,7 @@ export function mergePayloadFrom(guest: GuestState): MergePayload {
   }
 
   // Comprados con monedas (los regalados por un logro no cobran nada).
+  // También se conservan las compras históricas de banderas para mantener sus débitos (T167).
   const cosmetics = [
     ...new Set(
       mine

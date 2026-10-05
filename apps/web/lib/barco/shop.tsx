@@ -5,7 +5,7 @@ import { type ReactNode, useState } from 'react';
 import { requireAccount } from '../account/gate';
 import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
-import { FLAG_LOOKS, WAKE_TINTS, hexOf } from './dressing';
+import { WAKE_TINTS, hexOf } from './dressing';
 import { MascotIcon } from './mascot-icon';
 import {
   type AchievementTitles,
@@ -26,7 +26,7 @@ import { t as msg } from '../i18n';
  * el Menú de a bordo del 2D y en el selector de barco de /mar: cada barco
  * con su precio o su condición («te faltan N monedas/puntos»), comprar con
  * confirmación, equipar, lo propio marcado; las skins del barco que se lleva,
- * la bandera, la estela y la mascota de cubierta (T154). Sólo cambia cómo se
+ * la estela y la mascota de cubierta (T154). Sólo cambia cómo se
  * ve el barco.
  */
 
@@ -52,7 +52,7 @@ export async function readShop(r: BoiaRepository): Promise<ShopData> {
 }
 
 export const SHOP_COPY = {
-  intro: msg('barco.shop.barcosSkinsBanderaY'),
+  intro: msg('barco.shop.barcosSkinsEstelaY'),
   noArt: msg('barco.shop.elBarcoDeMuestra'),
   loading: msg('barco.shop.cargandoLaTienda'),
   buy: msg('barco.shop.comprar'),
@@ -61,16 +61,14 @@ export const SHOP_COPY = {
   noCoins: msg('barco.shop.noTeLleganLas'),
   failed: msg('barco.shop.noSePudoComprar'),
   firstShip: msg('barco.shop.primeroElBarco'),
-  noFlag: msg('barco.shop.sinBandera'),
   plainWake: msg('barco.shop.espumaBlanca'),
   noMascot: msg('barco.shop.sinMascota'),
   mascotNote: msg('barco.shop.mascotaNota'),
 } as const;
 
 /** Ranuras que se eligen de una lista (con «ninguna»). */
-export type ListSlot = 'flag' | 'wake' | 'mascot';
+export type ListSlot = 'wake' | 'mascot';
 const LIST_PREFIX: Record<ListSlot, string> = {
-  flag: 'barco-bandera',
   wake: 'barco-estela',
   mascot: 'barco-mascota',
 };
@@ -248,21 +246,6 @@ export function BarcoShopView({
       ) : null}
 
       <CosmeticList
-        title={msg('barco.shop.bandera')}
-        slot="flag"
-        none={SHOP_COPY.noFlag}
-        items={rows.flags}
-        swatch={(id) => {
-          const f = FLAG_LOOKS[id];
-          return f
-            ? `linear-gradient(135deg, ${hexOf(f.colors[0])} 55%, ${hexOf(f.colors[1])} 55%)`
-            : null;
-        }}
-        text={text}
-        on={on}
-        buy={buyButton}
-      />
-      <CosmeticList
         title={msg('barco.shop.estela')}
         slot="wake"
         none={SHOP_COPY.plainWake}
@@ -422,7 +405,7 @@ function CosmeticList({
 /**
  * La tienda con el repositorio: lee y vuelve a leer con cada cambio (también
  * de otra pestaña). Equipar un barco o una skin lo guarda y avisa a la vista
- * con `onEquip` para que lo ponga en el agua; bandera y estela las pinta la
+ * con `onEquip` para que lo ponga en el agua; estela y mascota las pinta la
  * vista al ver cambiar lo equipado.
  */
 export function BarcoShop({

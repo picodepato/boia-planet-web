@@ -38,7 +38,7 @@ export function legacyLook(): { style: string | null; skin: string | null } {
 }
 
 /**
- * El aspecto que toca ahora, con lo equipado (bandera y estela incluidas):
+ * El aspecto que toca ahora, con lo equipado (estela y mascota incluidas):
  * lee la tienda del repositorio y la URL.
  */
 export async function storedLook(

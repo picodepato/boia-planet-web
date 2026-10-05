@@ -270,9 +270,9 @@ describe('migración de la v1: lo concedido cuenta como reclamado', () => {
       (s) => s.cosmeticId === V2_NEW_COSMETICS.secretos,
     );
     expect(ship).toMatchObject({ owned: true, achievementId: 'secretos' });
-    // La bandera que ya tenía no se duplica; lo demás del jugador sigue ahí.
+    // La bandera antigua se ignora; lo demás del jugador sigue ahí.
     const cosmetics = (await repo.progress.cosmetics()).map((c) => c.id).sort();
-    expect(cosmetics).toEqual(['bandera-fiestera', V2_NEW_COSMETICS.secretos].sort());
+    expect(cosmetics).toEqual([V2_NEW_COSMETICS.secretos]);
     expect((await repo.progress.discoveries()).map((d) => d.key)).toEqual(['boia:boia-tutorial']);
     // Queda guardado en la versión nueva.
     const saved = JSON.parse(storage.getItem(STORE_KEY) ?? '{}');

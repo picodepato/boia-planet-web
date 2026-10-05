@@ -260,22 +260,55 @@ describe('repositorio de un miembro: rechazos y conflictos (gana el servidor)', 
       metadata: { policy: 'once', key: 'lugar:cofre:coins' },
     });
     const a = device(fake);
-    await a.repo.progress.buyCosmetic('bandera-boia');
-    await a.repo.progress.equip('flag', 'bandera-boia');
-    expect(await a.repo.progress.equipped()).toEqual({ flag: 'bandera-boia' });
-    // En otro dispositivo se quita la bandera y el Admin anula la compra.
+    await a.repo.progress.buyCosmetic('estela-naranja');
+    await a.repo.progress.equip('wake', 'estela-naranja');
+    expect(await a.repo.progress.equipped()).toEqual({ wake: 'estela-naranja' });
+    // En otro dispositivo se quita la estela y el Admin anula la compra.
     fake.equipped = {};
     const buy = fake.ledger.find((r) => r.kind === 'cosmetic')!;
     fake.addRow({
       kind: 'compensation',
       compensates_id: buy.id,
-      coins_delta: 20,
+      coins_delta: 30,
       reason: 'duplicada',
     });
     await a.repo.sync.refresh();
     expect(await a.repo.progress.equipped()).toEqual({});
     expect(await a.repo.progress.balances()).toMatchObject({ coins: 50 });
     expect((await a.repo.progress.cosmetics()).map((c) => c.id)).toEqual([]);
+  });
+
+  it('ignora banderas antiguas del servidor en cada lectura sin devolver monedas', async () => {
+    const fake = withCarnet(new FakeSupabase(UID));
+    fake.addRow({
+      kind: 'world_reward',
+      coins_delta: 50,
+      source_ref: 'lugar:cofre:coins',
+      action: 'world',
+      metadata: { policy: 'once', key: 'lugar:cofre:coins' },
+    });
+    fake.addRow({
+      kind: 'cosmetic',
+      coins_delta: -20,
+      cosmetic_key: 'bandera-boia',
+      source_ref: 'coins',
+    });
+    fake.equipped = { flag: 'bandera-boia', ship: 'barco-arcilla', wake: 'estela-naranja' };
+    const ledger = structuredClone(fake.ledger);
+    const equipped = structuredClone(fake.equipped);
+    const a = device(fake);
+    await a.repo.sync.ready();
+    for (let n = 0; n < 2; n++) {
+      await a.repo.sync.refresh();
+      expect(await a.repo.progress.equipped()).toEqual({
+        ship: 'barco-arcilla',
+        wake: 'estela-naranja',
+      });
+      expect(await a.repo.progress.cosmetics()).toEqual([]);
+      expect(await a.repo.progress.balances()).toMatchObject({ coins: 30 });
+      expect(fake.ledger).toEqual(ledger);
+      expect(fake.equipped).toEqual(equipped);
+    }
   });
 
   it('dos dispositivos guardan la copia: rebase conserva los descubrimientos de ambos', async () => {

@@ -116,7 +116,7 @@ import { type SeaRoute, decorSpots, seaRoute } from './compact';
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { Glows, buoy, crag, rock } from './props';
-import { type ShipModel, createFlag, modelLength, surfaceY, topPoint } from './ship-model';
+import { type ShipModel, modelLength, surfaceY } from './ship-model';
 import {
   type ModelKey,
   ModelStore,
@@ -458,15 +458,13 @@ export class Mar3D {
   private readonly sky = new Sky();
   private readonly water;
   private readonly boat: Boat;
-  /** Cosméticos pintados (T40) y dónde va la bandera (null: barco provisional). */
-  private dressing: ShipDressing = { flag: null, wakeTint: null, mascot: null };
+  /** Cosméticos pintados (T40). */
+  private dressing: ShipDressing = { wakeTint: null, mascot: null };
   /** La mascota de cubierta (T154) y su hueco en el casco, aparte del de la pasajera. */
   private mascot: Minikraken | null = null;
   private readonly mascotSlot = new Group();
   private mascotWave = false;
   private mascotCheck = 0;
-  private mastTop: Vector3 | null = null;
-  private flag: Mesh | null = null;
   private readonly faces: FaceTextures;
   private readonly wake = new Wake();
   private readonly marker = new CourseMarker();
@@ -1161,13 +1159,11 @@ export class Mar3D {
   }
 
   /**
-   * Bandera y estela del barco (T40): la bandera en lo más alto del modelo,
-   * ondeando hacia popa, y la espuma con su tinte. No tocan la física.
+   * Estela del barco con su tinte; no toca la física.
    */
   setShipDressing(d: ShipDressing): void {
     this.dressing = d;
     this.wake.setTint(d.wakeTint);
-    this.placeFlag();
     this.placeMascot();
   }
 
@@ -1215,30 +1211,8 @@ export class Mar3D {
     return near;
   }
 
-  private removeFlag(): void {
-    if (this.flag) {
-      this.flag.parent?.remove(this.flag);
-      this.flag.geometry.dispose();
-      const mat = this.flag.material as MeshBasicMaterial;
-      mat.map?.dispose();
-      mat.dispose();
-      this.flag = null;
-    }
-  }
-
-  private placeFlag(): void {
-    this.removeFlag();
-    const look = this.dressing.flag;
-    if (!look || !this.mastTop) return;
-    const flag = createFlag(look, SHIP_LENGTH * 0.3);
-    flag.position.copy(this.mastTop);
-    this.boat.body.add(flag);
-    this.flag = flag;
-  }
-
   /** Pone el barco del 2D (su modelo de Blender) en lugar del provisional. */
   setShipModel(m: ShipModel): void {
-    this.removeFlag();
     const body = this.boat.body;
     for (const c of [...body.children]) {
       if (c === this.boat.crewSlot || c === this.mascotSlot) continue;
@@ -1264,10 +1238,6 @@ export class Mar3D {
     const mz = SHIP_LENGTH * MASCOT_SIDE;
     this.mascotSlot.position.set(mx, surfaceY(m.object, mx, mz) ?? this.boat.crewSlot.position.y, mz);
     this.sternX = -SHIP_LENGTH / 2;
-    // Tope del modelo, en coordenadas del casco: ahí cuelga la bandera (T40).
-    const top = topPoint(m.object);
-    this.mastTop = new Vector3(top.x * k + m.object.position.x, top.y * k, top.z * k);
-    this.placeFlag();
   }
 
   setPassenger(on: boolean): void {

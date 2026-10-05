@@ -216,9 +216,8 @@ describe('migración v6 → v7', () => {
     const repo = open(v6({ style: coinShip.assetKey, skin: skin.assetKey, label: 'x' }));
     expect(repo.status().schemaVersion).toBe(SCHEMA_VERSION);
     const owned = (await repo.progress.shop()).filter((i) => i.owned).map((i) => i.cosmetic.id);
-    expect(owned).toEqual(expect.arrayContaining([coinShip.id, skin.id, 'bandera-boia']));
+    expect(owned).toEqual(expect.arrayContaining([coinShip.id, skin.id]));
     expect(await repo.progress.equipped()).toEqual({
-      flag: 'bandera-boia',
       ship: coinShip.id,
       skin: skin.id,
     });
@@ -233,9 +232,9 @@ describe('migración v6 → v7', () => {
     expect((await repo.progress.shop()).find((i) => i.cosmetic.id === reward.id)?.owned).toBe(
       false,
     );
-    expect(await repo.progress.equipped()).toEqual({ flag: 'bandera-boia' });
+    expect(await repo.progress.equipped()).toEqual({});
     const plain = open(v6(undefined));
-    expect(await plain.progress.equipped()).toEqual({ flag: 'bandera-boia' });
+    expect(await plain.progress.equipped()).toEqual({});
     expect((await plain.progress.ledger()).filter((e) => e.sourceRef === V7_SOURCE)).toHaveLength(
       0,
     );

@@ -4,6 +4,17 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T167: Remove the boat flag option
+
+Done by Codex (wrapper verified). The Bandera section, FLAG_LOOKS, flag catalog entries, equipped-flag drawing and i18n keys are removed; saved documents with owned/equipped flags load without them; ship-model.test.ts covers the boat model without a flag.
+
+- grep for barco.shop.bandera|sinBandera|FLAG_LOOKS in apps packages: nothing left
+- pnpm e2e tienda.spec.ts --workers=1: 4 passed
+- spec checks, lint, typecheck, build: pass
+- vitest (excl. db): 1748 pass; 2-3 survivors sim/balance tests time out under machine load (different ones each run); survivors.test.ts passes alone 37/37; those files are untouched.
+
+Pending: none.
+
 ## 2026-10-05 — plan 014 T158: Tower defense simulation: path, waves, castle, plane, coins, medals, score
 
 Qué existe:

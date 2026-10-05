@@ -1,3 +1,4 @@
+import { withoutFlag } from '../removed-flags';
 import { sampleStampRevokedEvents, sampleStampRevocationPref } from '../sample-stamps';
 /**
  * La copia local de una cuenta (plan 008, T90): lo que hay en el servidor se
@@ -306,7 +307,7 @@ export function applyServerState(
   ];
 
   const p = (doc.players[userId] ??= emptyPlayer());
-  p.equipped = { ...state.equipped };
+  p.equipped = withoutFlag(state.equipped);
   const prevDiscounts = p.discounts;
   p.discounts = Object.fromEntries(
     state.discounts.map((d) => [

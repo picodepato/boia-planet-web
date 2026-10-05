@@ -1,3 +1,4 @@
+import { isRemovedFlag } from './removed-flags';
 import { sampleStampRevokedEvents } from './sample-stamps';
 import {
   BOTTLES_IN_SEA_MAX,
@@ -597,16 +598,17 @@ class LocalRepository implements BoiaRepository {
 
   /** Premio de un logro según su definición y el catálogo de cosméticos. */
   private rewardOf(def: AchievementDefinition, doc: StoreDoc = this.doc): AchievementReward {
-    const cosmetic = def.cosmeticKey
-      ? this.resolved('cosmetics', doc).find((c) => c.id === def.cosmeticKey)
+    const cosmeticKey = isRemovedFlag(def.cosmeticKey, doc) ? undefined : def.cosmeticKey;
+    const cosmetic = cosmeticKey
+      ? this.resolved('cosmetics', doc).find((c) => c.id === cosmeticKey)
       : undefined;
     const shipStyle = cosmetic?.slot === 'ship' ? (cosmetic.assetKey ?? cosmetic.id) : null;
     return {
-      kind: def.badgeKey ? 'badge' : shipStyle ? 'ship' : def.cosmeticKey ? 'cosmetic' : 'coins',
+      kind: def.badgeKey ? 'badge' : shipStyle ? 'ship' : cosmeticKey ? 'cosmetic' : 'coins',
       points: def.points,
       coins: def.coins,
       badgeKey: def.badgeKey ?? null,
-      cosmeticKey: def.cosmeticKey ?? null,
+      cosmeticKey: cosmeticKey ?? null,
       shipStyle,
     };
   }
@@ -797,7 +799,9 @@ class LocalRepository implements BoiaRepository {
         achievements,
         badges: this.badgeViews(doc, userId),
         stamps: this.stampViews(doc, userId),
-        cosmeticIds: activeEntries(doc.ledger, userId, 'cosmetic').map((e) => e.cosmeticKey ?? ''),
+        cosmeticIds: activeEntries(doc.ledger, userId, 'cosmetic')
+          .filter((e) => !isRemovedFlag(e.cosmeticKey, doc))
+          .map((e) => e.cosmeticKey ?? ''),
         equipped: { ...(doc.players[userId]?.equipped ?? {}) },
         isMine: userId === me,
         isSample: false,
@@ -1265,7 +1269,7 @@ class LocalRepository implements BoiaRepository {
             return { claimed: false, reason: 'duplicate', entry: r.entry };
           }
           let cosmetic: LedgerEntry | null = null;
-          if (def.cosmeticKey) {
+          if (def.cosmeticKey && !isRemovedFlag(def.cosmeticKey, d)) {
             const key = def.cosmeticKey;
             const owned = activeEntries(d.ledger, me.id, 'cosmetic').some(
               (e) => e.cosmeticKey === key,
@@ -1347,18 +1351,21 @@ class LocalRepository implements BoiaRepository {
         const id = myId();
         if (!id) return [];
         const catalog = this.resolved('cosmetics');
-        return activeEntries(this.doc.ledger, id, 'cosmetic').map((e): OwnedCosmetic => ({
-          id: e.cosmeticKey ?? '',
-          cosmetic: clone(catalog.find((c) => c.id === e.cosmeticKey) ?? null),
-          unlockedAt: e.createdAt,
-          source: e.sourceRef ?? 'coins',
-        }));
+        return activeEntries(this.doc.ledger, id, 'cosmetic')
+          .filter((e) => !isRemovedFlag(e.cosmeticKey, this.doc))
+          .map((e): OwnedCosmetic => ({
+            id: e.cosmeticKey ?? '',
+            cosmetic: clone(catalog.find((c) => c.id === e.cosmeticKey) ?? null),
+            unlockedAt: e.createdAt,
+            source: e.sourceRef ?? 'coins',
+          }));
       },
       equip: async (slot, cosmeticId) =>
         this.mutate(['progress'], (d) => {
           if (!(COSMETIC_SLOTS as readonly string[]).includes(slot)) invalid(`ranura ${slot}`);
           const me = this.ensureIdentity(d);
           const p = this.player(d, me.id);
+          if (isRemovedFlag(cosmeticId, d)) invalid(`cosmético retirado ${cosmeticId}`);
           if (cosmeticId === null) delete p.equipped[slot];
           else {
             const item = this.shopItems(d, me.id).find((i) => i.cosmetic.id === cosmeticId);

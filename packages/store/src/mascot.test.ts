@@ -42,7 +42,7 @@ describe('mascota minikraken (T154)', () => {
     await claimKraken(repo);
     const item = (await repo.progress.shop()).find((i) => i.cosmetic.id === MINIKRAKEN)!;
     expect(item.owned).toBe(true);
-    const wrong = await repo.progress.equip('flag', MINIKRAKEN).catch((e: unknown) => e);
+    const wrong = await repo.progress.equip('wake', MINIKRAKEN).catch((e: unknown) => e);
     expect(isStoreError(wrong)).toBe(true);
     expect(await repo.progress.equip('mascot', MINIKRAKEN)).toEqual({ mascot: MINIKRAKEN });
     // Al recargar sigue puesta.
@@ -80,7 +80,8 @@ describe('mascota minikraken (T154)', () => {
     );
     // El check de `equipped_cosmetics` y el de `private.equip_cosmetic`.
     expect(lists).toHaveLength(2);
-    for (const l of lists) expect(l).toEqual([...COSMETIC_SLOTS]);
+    // Historical SQL still accepts flag rows; the client ignores them on load (T167).
+    for (const l of lists) expect(l).toEqual(['flag', ...COSMETIC_SLOTS]);
     expect(sql).toContain('equipped_cosmetics_slot_check');
     expect(sql).toContain('create or replace function private.equip_cosmetic(');
   });
