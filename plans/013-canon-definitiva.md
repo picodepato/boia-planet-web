@@ -148,11 +148,27 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - Test command → exit 0
 - Outcome:
 
+## T157 — Tabarca lighthouse island redesigned in Blender
+- Status: pending
+- Model: fable (Fable 5.1)
+- Skills: blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
+- Depends on: none
+- Goal: Redesign the Faro minigame island of `/mar` (place `faro`, `minijuegos/faro` in `tools/blender/lugares.json`) as the **Faro de Tabarca** (Isla de Nueva Tabarca, Alicante): a low, flat, rocky island with dry scrub and the real lighthouse's silhouette — the 19th-century stone keeper's house with its central square tower and lantern — readable from the boat's camera. Built reproducibly with the repo's Blender pipeline (`tools/blender/`, Blender 4.0 at `C:/Program Files/Blender Foundation/Blender 4.0`), in the main world **Arcilla**'s style (match the other island and boat models: palette, low-poly clay look, triangle budget like the other islands), exported as GLB and wired where the current Faro island is drawn, with the collision footprint still matching the island. Animated lantern light (cheap) if the other models animate; cheap in `baja`.
+  - **Approval:** before finishing, render a contact sheet (the island from 4 angles + the in-game view from the boat, mobile and desktop) and stop with `blocked`, attaching it, so the orchestrator sends it to Hernán on Telegram. Apply his changes, then finish.
+- Context: `tools/blender/` (`lugares.json`, `places/`, `islas/`, `export_islas_glb.py`, `isla3d.schema.json`, `style.py`, `mundo_arcilla.py`), `art/islas/3d/manifest.json`, `apps/web/app/mar/engine/island-models.ts`, `islands.ts`, `compact.ts` (Tabarca), `apps/web/lib/i18n/es-zonas.ts`; design reference «Segunda versión» mentions a Faro redesign inside the map — this task does only the island's look, not the minigame.
+- Scope: may touch `tools/blender/**` (new script for this island), `art/islas/3d/**` (new GLB + manifest), `apps/web/app/mar/engine/island-models.ts`/`islands.ts` wiring, `apps/web/public/` model output if that is where GLBs ship, tests / must not touch the Faro minigame logic, other islands, `apps/web/public/atlas/`, `docs/DECISIONES.md`.
+- Done when:
+  - the Blender script rebuilds the GLB from scratch (command recorded in the status section) and `tools/blender/check.py` (or the islands' validation) passes
+  - Hernán approved the contact sheet (recorded in the status section)
+  - an e2e or unit test checks the Faro island loads the new model → passes
+  - Test command → exit 0
+- Outcome:
+
 ## T156 — Close: balance, `baja` performance, full e2e, docs, Álvaro draft, remove BETA
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T148, T149, T150, T151, T152, T153, T154, T155
+- Depends on: T148, T149, T150, T151, T152, T153, T154, T155, T157
 - Goal: Close the definitive version.
   - **Balance with bots** for both acts and three difficulties with the new healing vinyl and Vecino ring: minibosses beaten most of the time in Tranquila and Normal; final bosses beatable in Tranquila, a real fight in Normal, hard in Tormenta; record curves and win rates. Bump `SURVIVORS_CONFIG_VERSION` if balance changed.
   - **Performance in `baja`** with a boss, caps full, all weapons, sound on and the mascot active: frame time measured in the e2e browser; fix obvious hot spots only.
@@ -179,6 +195,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T149: Kraken test failure came from Codex's half-done bot, not healing; bot now aims at the gap at its distance + 40 and counts inside ring up to `RING_MARGIN` 120; Vecino stress (40 seeds, 120 s): v14 30/40 survive vs v15 40/40 with 0 hits; legacy `bailing` upgrade label set to 0.4; `canon-hud-model.test.ts` expects decimal comma (agent)
 - 2026-10-05 T152: standalone audio module loaded on pop-up open/game start; existing sea ambience (`setAmbientWorld`) silenced in game and restored; unlock only on trusted gesture; boss loop also for minibosses; site Ajustes music/effects multiply Cañón volume; music at 30 % while paused; default 70 %, key `boia.canon.sonido.v1`; `SurvivorsRun.onEvents`; reduced motion disables all camera shake in `mar3d.ts`; REQ-AVE-039 stays PARCIAL (agent)
 - 2026-10-05 T153: shortcut games still pay in `pnpm dev`/e2e (`devStartRewards`) but never on the test version (incl. `?dev=1`); quit/invalid games unlock nothing, flooded valid game counts as played; secret `canon-tormenta` now = Kraken in Tormenta (no Capitán); guardacostas v2 = win Faro + play Cañón; Supabase enum also gets T36's 7 triggers; `bandera-fantasma` cosmetic added (an achievement prize must exist in the catalog); conflict with T152 resolved by the agent (agent)
+- 2026-10-06 T157 added at Hernán's request (Tabarca lighthouse island in Blender); model Fable 5.1 chosen by the orchestrator (best visual/3D work in plan 012's boss models); T156 now also depends on it (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-05 T153: equipping the mascot in Supabase (`equipped_cosmetics`, `equip_cosmetic`, `lib/account/merge.ts` SLOTS) left for T154
@@ -208,3 +225,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 23:05 local preview for Hernán: detached worktree .claude/worktrees/preview-013 at b554768, launch config plan013 on port 3102 (remove at plan end)
 - 2026-10-05 23:30 T153 done by agent; integration conflict with T152 in canon-mode.tsx, estado.md → sent back to the same agent
 - 2026-10-05 23:58 T153 done · branch worktree-agent-ad565e00d1afaafa6 → 74350af; push offer T152 cancelled, push offer T153 sent
+- 2026-10-06 00:00 T154 launched · attempt 1 · agent a9b0ae0902693064b (opus)
+- 2026-10-06 00:00 T155 launched · attempt 1 · agent a2a1488a7d82747ca (opus)
+- 2026-10-06 00:05 pushed main to Vercel on Hernán's request (82c96aa, T148–T153); shortcut links sent on Telegram
