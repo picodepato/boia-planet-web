@@ -26,7 +26,7 @@ import { VECINO } from './vecino';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 13;
+export const SURVIVORS_CONFIG_VERSION = 14;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -37,24 +37,10 @@ export const SURVIVORS_STEP_S = 1 / 60;
 export type EnemyId = 'piranha' | 'crab' | 'gull' | 'pirate' | 'swordfish' | 'jellyfish';
 /** Armas del diseño (§5): las 7 de la beta 2. */
 export type WeaponId =
-  | 'canon'
-  | 'subwoofer'
-  | 'laser'
-  | 'buoys'
-  | 'confetti'
-  | 'fireworks'
-  | 'acidRain';
+  'canon' | 'subwoofer' | 'laser' | 'buoys' | 'confetti' | 'fireworks' | 'acidRain';
 /** Vinilos (pasivas) del diseño (§4). */
 export type PassiveId =
-  | 'techno'
-  | 'reggaeton'
-  | 'house'
-  | 'dnb'
-  | 'disco'
-  | 'chill'
-  | 'hardstyle'
-  | 'pop'
-  | 'rumba';
+  'techno' | 'reggaeton' | 'house' | 'dnb' | 'disco' | 'chill' | 'hardstyle' | 'pop' | 'rumba';
 /**
  * Minibosses y bosses del diseño (§7). `prueba` es el boss de pruebas del
  * sistema genérico (T137): existe en la config pero ningún hueco del guion
@@ -874,8 +860,22 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   handling: { turnRateScale: 1.35, accelerationScale: 1.6, brakeScale: 1.6, lateralGripScale: 1.5 },
   camera: { distanceScale: 1.25, heightScale: 1.15, blendS: 0.8 },
   caps: {
-    alta: { enemies: 150, projectiles: 120, enemyProjectiles: 80, areas: 12, crackers: 48, notes: 200 },
-    baja: { enemies: 60, projectiles: 60, enemyProjectiles: 40, areas: 6, crackers: 24, notes: 100 },
+    alta: {
+      enemies: 150,
+      projectiles: 120,
+      enemyProjectiles: 80,
+      areas: 12,
+      crackers: 48,
+      notes: 200,
+    },
+    baja: {
+      enemies: 60,
+      projectiles: 60,
+      enemyProjectiles: 40,
+      areas: 6,
+      crackers: 24,
+      notes: 100,
+    },
   },
   player: {
     waterCapacity: 100,
@@ -1472,9 +1472,27 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     },
   ],
   difficulties: {
-    tranquila: { id: 'tranquila', i18nKey: 'survivors.dificultad.tranquila', enemyDamage: 0.7, enemyHp: 0.8, enemyCount: 0.75 },
-    normal: { id: 'normal', i18nKey: 'survivors.dificultad.normal', enemyDamage: 1, enemyHp: 1, enemyCount: 1 },
-    tormenta: { id: 'tormenta', i18nKey: 'survivors.dificultad.tormenta', enemyDamage: 1.6, enemyHp: 1.6, enemyCount: 1.6 },
+    tranquila: {
+      id: 'tranquila',
+      i18nKey: 'survivors.dificultad.tranquila',
+      enemyDamage: 0.7,
+      enemyHp: 0.8,
+      enemyCount: 0.75,
+    },
+    normal: {
+      id: 'normal',
+      i18nKey: 'survivors.dificultad.normal',
+      enemyDamage: 1,
+      enemyHp: 1,
+      enemyCount: 1,
+    },
+    tormenta: {
+      id: 'tormenta',
+      i18nKey: 'survivors.dificultad.tormenta',
+      enemyDamage: 1.6,
+      enemyHp: 1.6,
+      enemyCount: 1.6,
+    },
   },
   // Bosses: prueba (T137) nunca entra en producción; Vecino (T138),
   // Fantasma (T140) y Kraken (T141) usan sus huecos reales del guion.
@@ -1627,7 +1645,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       id: 'martillo',
       kind: 'miniboss',
       i18nKey: 'survivors.boss.martillo',
-      hp: 1400,
+      // T147: 1400 → 2400 (el piloto lo hundía en 8–33 s).
+      hp: 2400,
       radius: 32,
       speed: 100,
       acceleration: 220,
@@ -1741,7 +1760,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       id: 'fantasma',
       kind: 'boss',
       i18nKey: 'survivors.boss.fantasma',
-      hp: 1600,
+      // T147: 1600 → 2600 (caía en Normal en 5–40 s; ahora es una pelea).
+      hp: 2600,
       radius: 48,
       speed: 170,
       acceleration: 200,
@@ -1842,7 +1862,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       id: 'kraken',
       kind: 'boss',
       i18nKey: 'survivors.boss.kraken',
-      hp: 1800,
+      // T147: 1800 → 1500 (en Tranquila se ganaba sólo en la mitad).
+      hp: 1500,
       radius: 56,
       speed: 150,
       acceleration: 220,
@@ -1935,11 +1956,35 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     flameDps: 120,
   },
   upgrades: [
-    { id: 'damage', i18nKey: 'survivors.vinyl.hardstyle', stat: 'damageBonus', amount: 0.2, maxStacks: 5 },
-    { id: 'fireRate', i18nKey: 'survivors.vinyl.techno', stat: 'fireRateBonus', amount: 0.15, maxStacks: 5 },
-    { id: 'projectiles', i18nKey: 'survivors.vinyl.rumba', stat: 'extraProjectiles', amount: 1, maxStacks: 5 },
+    {
+      id: 'damage',
+      i18nKey: 'survivors.vinyl.hardstyle',
+      stat: 'damageBonus',
+      amount: 0.2,
+      maxStacks: 5,
+    },
+    {
+      id: 'fireRate',
+      i18nKey: 'survivors.vinyl.techno',
+      stat: 'fireRateBonus',
+      amount: 0.15,
+      maxStacks: 5,
+    },
+    {
+      id: 'projectiles',
+      i18nKey: 'survivors.vinyl.rumba',
+      stat: 'extraProjectiles',
+      amount: 1,
+      maxStacks: 5,
+    },
     { id: 'speed', i18nKey: 'survivors.vinyl.dnb', stat: 'speedBonus', amount: 0.1, maxStacks: 5 },
-    { id: 'magnet', i18nKey: 'survivors.vinyl.disco', stat: 'magnetBonus', amount: 0.4, maxStacks: 5 },
+    {
+      id: 'magnet',
+      i18nKey: 'survivors.vinyl.disco',
+      stat: 'magnetBonus',
+      amount: 0.4,
+      maxStacks: 5,
+    },
     { id: 'bailing', i18nKey: 'survivors.vinyl.chill', stat: 'bailPerS', amount: 1, maxStacks: 5 },
   ],
   acts: [

@@ -286,6 +286,8 @@ es el plan 010 y el lanzamiento, el 014.)
 | **4 · Campaña completa** | 013 | Kraken, Capitán con apagón e islas iluminadas, pop-up previo (acto, dificultad, Jugar), HUD completo, sonido y accesibilidad completos | Actos 2 y 3, apagón, móvil |
 | **Lanzamiento** | 014 | Premio por medalla diario, 6 logros + cambio de `guardacostas`, Mascota + minikraken, «El Apagón», ranking por boss (local y global) en el pop-up, e2e, `docs/spec/estado.md`, borrador de decisión para Álvaro, equilibrio con bots y rendimiento en `baja`, se quita la etiqueta BETA | Revisión final; visto bueno de Álvaro |
 
+> **Cambio del plan 012 (2026-10-05):** el **Kraken** pasó a la beta 3 (boss final del acto 2, con la campaña acto 1 → 2); la beta 4 trae el resto de su fila.
+
 **Durante las betas**: el resultado `won` (= sobrevivir los 7:00; bronce o más cuando existan
 medallas) sigue alimentando `win_minigame`, `canon` y `guardacostas`, y el premio sigue siendo el
 de ahora (150 pts + 50 monedas, una vez por temporada) hasta que el lanzamiento ponga el premio

@@ -24,7 +24,7 @@ import { type SurvivorsWorld, survivorsWorldOf } from './world';
  * Es el equilibrio del bucle **sin bosses** (la beta 2): los pilotos juegan
  * con los huecos de boss del guion apagados (`WAVES_ONLY`). El equilibrio con
  * los bosses (el Barco Pirata Fantasma entra a las 5:30 desde T140) se mide
- * aparte, en T147.
+ * aparte, en `survivors-boss-balance.test.ts` (T147).
  */
 
 /** La config de verdad con los huecos de boss apagados: sólo las oleadas. */
@@ -32,7 +32,9 @@ const WAVES_ONLY: SurvivorsConfig = {
   ...SURVIVORS_CONFIG,
   acts: SURVIVORS_CONFIG.acts.map((a) => ({
     ...a,
-    events: a.events.map((ev) => (ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev)),
+    events: a.events.map((ev) =>
+      ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev,
+    ),
   })),
 };
 
@@ -85,7 +87,7 @@ const median = (xs: readonly number[]): number => {
   const m = s.length >> 1;
   return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
 };
-const survived =(rs: readonly BotRun[]): number => rs.filter((r) => r.end === 'survived').length;
+const survived = (rs: readonly BotRun[]): number => rs.filter((r) => r.end === 'survived').length;
 /**
  * Lo bien que acabó una partida: los s aguantados y, si amaneció, el agua
  * que quedaba por llenar. Más es más fácil.

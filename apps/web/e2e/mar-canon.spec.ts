@@ -3,7 +3,7 @@ import { CANON_DEFAULTS } from '@boia/engine/minigames';
 import { rescueMissionOf } from '@boia/engine/mission';
 import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
-import { type Locator, type Page, expect, test } from '@playwright/test';
+import { type Locator, type Page, type TestInfo, expect, test } from '@playwright/test';
 import { formatClock, formatPlayed } from '../app/mar/canon-hud-model';
 import { marWorld } from '../app/mar/engine/compact';
 import { lapTargets } from '../app/mar/race';
@@ -24,7 +24,14 @@ import { mar, marSheet, openMar, shipAt, steerTo } from './mar-helpers';
  * en pausa y la Boia Fiestera que sigue a bordo durante una partida.
  *
  * T121: en producción (sin Playwright al mando, con `?dev=1`), una partida
- * empezada con `&t=` no da premio ni logro, y la pantalla final lo dice.
+ * empezada con `&t=` no da premio ni logro, y la pantalla final lo dice. *
+ * T147 cierra la beta 3 a nivel de humo, sin esperar 7 minutos: cada boss
+ * llega con `t=`/`acto=` (Vecino, Tiburón, Barco Fantasma, Kraken), la carta
+ * del cofre, el botín (`botin=1`), «Mostrar vida/daño», la barra del boss, las
+ * medallas en la tarjeta final (ninguna, bronce, oro) y el acto 2 que se abre;
+ * más el rendimiento en `baja` con cada boss final en pantalla. Las esperas
+ * contestan las cartas que se abren a medias (`answerCard`) y leen a la vez
+ * lo que cambia junto, para no fallar bajo carga.
  */
 
 test.describe.configure({ timeout: 240_000 });
@@ -41,6 +48,15 @@ const pointOf = (s: string | null) => {
   const [x, y] = (s ?? '0,0').split(',').map(Number);
   return { x: x!, y: y! };
 };
+/**
+ * Una carta de nivel abierta para la partida (el barco, el reloj y el turbo
+ * se quedan quietos): se contesta con Intro. Las esperas largas la llaman en
+ * cada vuelta para no depender de cuándo sube de nivel (T147).
+ */
+async function answerCard(page: Page): Promise<void> {
+  if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+}
+
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -103,25 +119,53 @@ test('el botón de turbo acelera durante el Cañón y conserva su cooldown (T124
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   const turbo = page.getByTestId('mar-turbo');
   await expect(turbo).toBeVisible();
+  // Una carta de nivel que se abra a medias para la partida: se contesta (T147).
+  const speed = async () => {
+    await answerCard(page);
+    return Number(await canvas(page).getAttribute('data-canon-speed'));
+  };
   await page.keyboard.down('ArrowRight');
-  await expect
-    .poll(async () => Number(await canvas(page).getAttribute('data-canon-speed')), {
-      timeout: 20_000,
-    })
-    .toBeGreaterThan(140);
-  await turbo.click();
-  await expect(turbo).toHaveClass(/is-on/);
-  await expect
-    .poll(async () => Number(await canvas(page).getAttribute('data-canon-speed')), {
-      timeout: 20_000,
-    })
-    .toBeGreaterThan(170);
+  await expect.poll(speed, { timeout: 20_000 }).toBeGreaterThan(140);
+  // El turbo dura 2,4 s: la velocidad y el botón se miran en cada fotograma
+  // (bajo carga, una espera con sondeo se lo podía perder). Si una carta se
+  // abrió justo al pulsar, el turbo no entra: se contesta y se pulsa otra vez.
+  let peak = { speed: 0, turboS: 0, on: false };
+  for (let attempt = 0; attempt < 5 && peak.turboS <= 0; attempt++) {
+    await answerCard(page);
+    await turbo.click();
+    peak = await page.evaluate(async () => {
+      const el = document.querySelector<HTMLElement>('[data-testid="mar-canvas"]')!;
+      const button = document.querySelector<HTMLElement>('[data-testid="mar-turbo"]');
+      const out = { speed: 0, turboS: 0, on: false };
+      const t0 = performance.now();
+      await new Promise<void>((done) => {
+        const step = () => {
+          out.speed = Math.max(out.speed, Number(el.dataset.canonSpeed ?? 0));
+          out.turboS = Math.max(out.turboS, Number(el.dataset.canonTurbo ?? 0));
+          out.on ||= button?.classList.contains('is-on') ?? false;
+          if (performance.now() - t0 < 3000) requestAnimationFrame(step);
+          else done();
+        };
+        requestAnimationFrame(step);
+      });
+      return out;
+    });
+  }
+  expect(peak.turboS).toBeGreaterThan(0);
+  expect(peak.on).toBe(true);
+  expect(peak.speed).toBeGreaterThan(170);
   const before = Number(await canvas(page).getAttribute('data-canon-turbo-cooldown'));
   expect(before).toBeGreaterThan(0);
   // Otra pulsación no reinicia el reloj del turbo.
   await turbo.click();
   await expect
-    .poll(async () => Number(await canvas(page).getAttribute('data-canon-turbo-cooldown')))
+    .poll(
+      async () => {
+        await answerCard(page);
+        return Number(await canvas(page).getAttribute('data-canon-turbo-cooldown'));
+      },
+      { timeout: 20_000 },
+    )
     .toBeLessThan(before);
   await page.keyboard.up('ArrowRight');
   expect(errors).toEqual([]);
@@ -147,6 +191,7 @@ for (const [kind, id] of [
       page,
       id,
       async () => {
+        await answerCard(page);
         max = Math.max(max, await speed());
         return kind === 'impulso'
           ? max > 190
@@ -157,8 +202,16 @@ for (const [kind, id] of [
     if (kind === 'impulso') expect(max).toBeGreaterThan(190);
     else await expect(canvas(page)).toHaveAttribute('data-salto', 'aire');
     if (kind === 'rampa') {
-      // Y cae al agua: chapuzón.
-      await expect(canvas(page)).toHaveAttribute('data-salto', 'agua', { timeout: 20_000 });
+      // Y cae al agua: chapuzón (una carta que se abra en el aire para la partida: se contesta).
+      await expect
+        .poll(
+          async () => {
+            await answerCard(page);
+            return canvas(page).getAttribute('data-salto');
+          },
+          { timeout: 20_000 },
+        )
+        .toBe('agua');
     }
     expect(errors).toEqual([]);
   });
@@ -245,7 +298,8 @@ test('ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos, sin 
   await expect
     .poll(
       async () => {
-        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
         return ((await canvas(page).getAttribute('data-canon-vistos')) ?? '').split(' ').sort();
       },
       { timeout: 90_000, intervals: [500] },
@@ -293,13 +347,16 @@ test('pasadas las 5:30 (`t=`) el Barco Pirata Fantasma está en la partida y ent
   await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
   // El hueco del boss final ya pasó: `&t=` saca el boss del último hueco, sólido o desvanecido.
   // `data-canon-boss`: los bosses vivos («fantasma:solid»); `data-canon-boss-vista`: los que están en la vista.
-  await expect(canvas(page)).toHaveAttribute('data-canon-boss', /fantasma:(solid|ghost)/, { timeout: 20_000 });
+  await expect(canvas(page)).toHaveAttribute('data-canon-boss', /fantasma:(solid|ghost)/, {
+    timeout: 20_000,
+  });
   // Navegando (un barco parado se inunda), el Fantasma, que gira alrededor del barco, entra en la vista.
   await page.keyboard.down('ArrowRight');
   await expect
     .poll(
       async () => {
-        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
         return (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '';
       },
       { timeout: 90_000, intervals: [400] },
@@ -329,11 +386,14 @@ test('acto 2 pasadas las 5:30 (`acto=2&t=`): el Kraken persigue bajo el agua, sa
   await expect
     .poll(
       async () => {
-        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
         const vista = (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '';
         for (const m of vista.matchAll(/kraken:(\w+)/g)) seen.add(m[1]!);
         // Visto en pantalla y, alguna vez, fuera del agua (cabeza y tentáculos).
-        return seen.size > 0 && (seen.has('emerged') || seen.has('grabbing') || seen.has('emerging'));
+        return (
+          seen.size > 0 && (seen.has('emerged') || seen.has('grabbing') || seen.has('emerging'))
+        );
       },
       { timeout: 90_000, intervals: [300] },
     )
@@ -388,7 +448,7 @@ test('el interruptor de desarrollo cambia en vivo el estilo de derrota (T117)', 
   page,
 }) => {
   const errors = await openMar(page, '?minijuego=canon&t=120&seed=7&derrota=puf');
-  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/, { timeout: 20_000 });
   const toggle = page.getByTestId('mar-canon-derrota');
   await expect(toggle).toHaveAttribute('data-derrota', 'puf');
   await expect(canvas(page)).toHaveAttribute('data-derrota', 'puf');
@@ -396,7 +456,8 @@ test('el interruptor de desarrollo cambia en vivo el estilo de derrota (T117)', 
   // El cañón dispara solo: caen enemigos con el estilo de ahora. (Una carta de
   // nivel que se abra mientras tanto para la partida: se contesta con Intro.)
   const defeated = async () => {
-    if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+    if ((await game(page).getAttribute('data-estado')) === 'card')
+      await page.keyboard.press('Enter');
     return Number(await game(page).getAttribute('data-derrotados'));
   };
   await expect.poll(defeated, { timeout: 30_000 }).toBeGreaterThan(0);
@@ -591,17 +652,22 @@ test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada t
   await expect
     .poll(
       async () => {
-        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
         return Number(await time.getAttribute('data-segundos'));
       },
       { timeout: 15_000 },
     )
     .toBeLessThan(secs);
-  // El nivel, encima de su barra (el del atajo `t=`: ya subió).
+  // El nivel, encima de su barra (el del atajo `t=`: ya subió). Número y texto
+  // se leen en el mismo instante: el nivel puede subir entre dos lecturas.
   const level = hud.getByTestId('mar-canon-nivel');
-  const lv = Number(await level.getAttribute('data-nivel'));
-  expect(lv).toBeGreaterThan(1);
-  await expect(level).toHaveText(msg('mar.canon.hud.nivel', { nivel: lv }));
+  const lvRead = await level.evaluate((el) => ({
+    lv: Number(el.getAttribute('data-nivel')),
+    text: el.textContent ?? '',
+  }));
+  expect(lvRead.lv).toBeGreaterThan(1);
+  expect(lvRead.text).toBe(msg('mar.canon.hud.nivel', { nivel: lvRead.lv }));
   await expect(hud.getByRole('progressbar')).toBeVisible();
   // El agua a bordo, bajo el barco: de un tamaño que se lee y en medio del mar.
   const water = page.getByTestId('mar-canon-agua');
@@ -632,7 +698,10 @@ test('carta de nivel con el teclado: flechas, números e Intro; mientras, la par
     const card = cards.nth(i);
     await expect(card.locator('.mar-canon-card__name')).not.toBeEmpty();
     await expect(card.locator('.mar-canon-card__effect')).toHaveText(/\d/);
-    await expect(card).toHaveAttribute('data-tipo', /^(weapon|vinyl|evolution|salvavidas|fallback)/);
+    await expect(card).toHaveAttribute(
+      'data-tipo',
+      /^(weapon|vinyl|evolution|salvavidas|fallback)/,
+    );
   }
   // La partida no corre con la carta abierta.
   const before = await activeS(page);
@@ -668,7 +737,9 @@ test('la fila de armas y vinilos: abajo en escritorio, arriba a la izquierda en 
   // 4 armas + 4 vinilos (los que dice la config), con el arma inicial ya a bordo.
   const slots = SURVIVORS_CONFIG.slots.weapons + SURVIVORS_CONFIG.slots.vinyls;
   await expect(row.getByTestId('mar-canon-hueco')).toHaveCount(slots);
-  await expect(row.locator('[data-fila="armas"] [data-id]:not([data-id=""])').first()).toBeVisible();
+  await expect(
+    row.locator('[data-fila="armas"] [data-id]:not([data-id=""])').first(),
+  ).toBeVisible();
   if (isMobile) {
     expect(b.y).toBeLessThan(vp.height * 0.4);
     expect(b.x + b.width / 2).toBeLessThan(vp.width * 0.5);
@@ -878,13 +949,19 @@ test('sin esquivar, el agua llena el barco: «¡Barco inundado!» y sin premio',
   await expect(end).toHaveAttribute('data-fin', 'flooded');
   await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.inundado'));
   // La tarjeta final (T145): sin medalla, acto y dificultad, equipo y bosses.
-  await expect(end.getByTestId('mar-canon-final-medalla')).toHaveText(msg('mar.canon.fin.medalla.ninguna'));
+  await expect(end.getByTestId('mar-canon-final-medalla')).toHaveText(
+    msg('mar.canon.fin.medalla.ninguna'),
+  );
   await expect(end.getByTestId('mar-canon-final-partida')).toHaveText(
     msg('mar.canon.fin.partida', { acto: 1, dificultad: msg('mar.canon.dificultad.normal') }),
   );
   await expect(end.getByTestId('mar-canon-final-desbloqueo')).toHaveCount(0);
-  expect(await end.getByTestId('mar-canon-final-equipo').locator('[data-item]').count()).toBeGreaterThan(0);
-  await expect(end.getByTestId('mar-canon-final-bosses')).toContainText(msg('mar.canon.fin.bosses'));
+  expect(
+    await end.getByTestId('mar-canon-final-equipo').locator('[data-item]').count(),
+  ).toBeGreaterThan(0);
+  await expect(end.getByTestId('mar-canon-final-bosses')).toContainText(
+    msg('mar.canon.fin.bosses'),
+  );
   // La sesión se liquida: perdida, sin premio ni línea de premio.
   await expect(game(page)).toHaveAttribute('data-premio', 'not_won');
   await expect(prize(page)).toHaveAttribute('data-premio', 'not_won');
@@ -900,14 +977,25 @@ test('llegar al amanecer da 150 puntos y 50 monedas una vez por temporada, y el 
   page,
 }) => {
   const { points: rewardPoints, coins: rewardCoins } = CANON_DEFAULTS.reward;
-  // `&t=419`: el último segundo de la noche (atajo de desarrollo).
-  const errors = await openMar(page, '?minijuego=canon&t=419&seed=3');
-  await expect(game(page)).toHaveAttribute('data-semilla', '3');
+  // Los saldos antes de jugar, en una visita sin partida: con `&t=419` la
+  // partida acaba en un segundo y el premio podría llegar antes de leerlos.
+  const errors = await openMar(page);
   const before = await balances(page);
+  // `&t=419`: el último segundo de la noche (atajo de desarrollo).
+  errors.push(...(await openMar(page, '?minijuego=canon&t=419&seed=3')));
+  await expect(game(page)).toHaveAttribute('data-semilla', '3');
   const end = page.getByTestId('mar-canon-final');
   await expect(end).toBeVisible({ timeout: 60_000 });
   await expect(game(page)).toHaveAttribute('data-fin', 'survived');
   await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.amanece'));
+  // Amanecer sin los minibosses vencidos: bronce (T144, en la tarjeta: T147).
+  await expect(end.getByTestId('mar-canon-final-medalla')).toHaveAttribute(
+    'data-medalla',
+    'bronce',
+  );
+  await expect(end.getByTestId('mar-canon-final-medalla')).toHaveText(
+    msg('mar.canon.fin.medalla.bronce'),
+  );
   await expect(end.getByTestId('mar-canon-final-tiempo')).toHaveText(formatPlayed(420));
   // La sesión valida el tiempo activo y el libro da el premio.
   await expect(game(page)).toHaveAttribute('data-premio', 'granted', { timeout: 15_000 });
@@ -925,8 +1013,9 @@ test('llegar al amanecer da 150 puntos y 50 monedas una vez por temporada, y el 
   await expect(page.getByTestId('logro-canon')).toHaveAttribute('data-estado', 'ready');
 
   // Otra visita, otra partida ganada la misma temporada: vale, pero no paga otra vez.
-  await openMar(page, '?minijuego=canon&t=419&seed=5');
+  await openMar(page);
   const again = await balances(page);
+  await openMar(page, '?minijuego=canon&t=419&seed=5');
   await expect(end).toBeVisible({ timeout: 60_000 });
   await expect(game(page)).toHaveAttribute('data-fin', 'survived');
   await expect(game(page)).toHaveAttribute('data-premio', 'duplicate', { timeout: 15_000 });
@@ -1046,7 +1135,7 @@ test('el panel de la isla ofrece tres dificultades con Normal marcada y la elegi
   await panel(page)
     .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
     .click();
-  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running', { timeout: 20_000 });
   await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
   expect(errors).toEqual([]);
 });
@@ -1064,7 +1153,9 @@ test('`&dificultad=tormenta` (atajo de desarrollo) empieza con esa dificultad; s
 
 /** El hueco del boss final del acto `act` en el guion (T144). */
 const finalSlot = (act: number) =>
-  SURVIVORS_CONFIG.acts.find((a) => a.act === act)!.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
+  SURVIVORS_CONFIG.acts
+    .find((a) => a.act === act)!
+    .events.find((e) => e.type === 'boss' && e.enabled !== false)!;
 
 test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer=1`) lo abre y el panel empieza el acto 2 (T144)', async ({
   page,
@@ -1099,6 +1190,11 @@ test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer
   await expect(game(page)).toHaveAttribute('data-medalla', 'oro');
   await expect(game(page)).toHaveAttribute('data-vencidos', new RegExp(slot.ref));
   await expect(game(page)).toHaveAttribute('data-desbloqueado', '2', { timeout: 15_000 });
+  // La tarjeta final lo dice (T147): el oro y el acto 2 abierto.
+  const medal = page.getByTestId('mar-canon-final-medalla');
+  await expect(medal).toHaveAttribute('data-medalla', 'oro');
+  await expect(medal).toHaveText(msg('mar.canon.fin.medalla.oro'));
+  await expect(page.getByTestId('mar-canon-final-desbloqueo')).toHaveAttribute('data-acto', '2');
   await page.getByTestId('mar-canon-volver').click();
   await expect(page.getByTestId('mar-canon-final')).toHaveCount(0);
 
@@ -1153,7 +1249,9 @@ test('bucle de la beta 2: Tormenta, una evolución ofrecida, un arma nueva elegi
     msg('mar.canon.cartas.ayuda', { n: 6 }),
   );
   // La evolución se ofrece (su condición se cumple con el atajo).
-  await expect(page.locator('[data-testid="mar-canon-carta"][data-tipo="evolution"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="mar-canon-carta"][data-tipo="evolution"]')).toHaveCount(
+    1,
+  );
   // Se elige el arma nueva y entra en la fila de armas.
   const kinds = await cards.evaluateAll((els) => els.map((e) => e.getAttribute('data-tipo')));
   const index = kinds.indexOf('weapon-new');
@@ -1173,7 +1271,9 @@ test('bucle de la beta 2: Tormenta, una evolución ofrecida, un arma nueva elegi
   await turbo.click();
   await expect(turbo).toHaveClass(/is-on/);
   await expect
-    .poll(async () => Number(await canvas(page).getAttribute('data-canon-turbo')), { timeout: 10_000 })
+    .poll(async () => Number(await canvas(page).getAttribute('data-canon-turbo')), {
+      timeout: 10_000,
+    })
     .toBeGreaterThan(0);
   await expect
     .poll(async () => Number(await game(page).getAttribute('data-activo')), { timeout: 20_000 })
@@ -1196,79 +1296,151 @@ const PERF_MS = 8000;
  */
 const PERF_P95_MAX_MS = 100;
 
-test('rendimiento en `baja`: a las 6:00 con los topes llenos y las siete armas, el tiempo por fotograma se mide y no se dispara (T132)', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name !== 'mobile', 'se mide una vez, en el teléfono');
-  // Calidad `baja` forzada: un teléfono con 2 GB.
+/** Una medida de fotogramas jugando (`label`), apuntada en la consola y en el informe. */
+interface PerfReport {
+  label: string;
+  frames: number;
+  p50: number;
+  p95: number;
+  worst: number;
+  enemies: number;
+  cap: number;
+  armas: string;
+  jefes: string;
+  jefesVista: string;
+  estado: string | null;
+}
+
+/**
+ * Mide `PERF_MS` ms de fotogramas jugando: las cartas que se abran a media
+ * medida se contestan con Intro. Apunta la medida (`[perf-canon]`).
+ */
+async function measureFrames(page: Page, info: TestInfo, label: string): Promise<PerfReport> {
+  if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+  const enemies = Number(await game(page).getAttribute('data-enemigos'));
+  const frames = await page.evaluate(async (ms) => {
+    const deltas: number[] = [];
+    await new Promise<void>((done) => {
+      let t0 = 0;
+      let last = 0;
+      const state = document.querySelector<HTMLElement>('[data-testid="mar-canon"]');
+      const step = (now: number) => {
+        if (!t0) t0 = last = now;
+        else {
+          deltas.push(now - last);
+          last = now;
+        }
+        // Una carta que se abre a media medida se contesta (Intro), para medir jugando.
+        if (state?.dataset.estado === 'card') {
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        }
+        if (now - t0 < ms) requestAnimationFrame(step);
+        else done();
+      };
+      requestAnimationFrame(step);
+    });
+    return deltas;
+  }, PERF_MS);
+  const report: PerfReport = {
+    label,
+    frames: frames.length,
+    p50: +percentile(frames, 50).toFixed(1),
+    p95: +percentile(frames, 95).toFixed(1),
+    worst: +Math.max(...frames).toFixed(1),
+    enemies,
+    cap: SURVIVORS_CONFIG.caps.baja.enemies,
+    armas: (await canvas(page).getAttribute('data-canon-armas')) ?? '',
+    jefes: (await game(page).getAttribute('data-jefes')) ?? '',
+    jefesVista: (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '',
+    estado: await game(page).getAttribute('data-estado'),
+  };
+  console.log(`[perf-canon] ${JSON.stringify(report)}`);
+  info.annotations.push({ type: 'perf', description: JSON.stringify(report) });
+  expect(frames.length, label).toBeGreaterThan(10);
+  return report;
+}
+
+/** Calidad `baja` forzada: un teléfono con 2 GB. */
+async function forceLowQuality(page: Page): Promise<void> {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 2 });
   });
-  const errors = await openMar(page, '?minijuego=canon&t=360&armas=1&seed=7');
-  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
-  await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+}
+
+/** Contesta las cartas con Intro hasta tener el mar casi lleno (80 % del tope de `baja`). */
+async function fillSea(page: Page): Promise<void> {
   const cap = SURVIVORS_CONFIG.caps.baja.enemies;
-  // Las cartas se contestan con Intro; se espera a tener el mar lleno.
   await expect
     .poll(
       async () => {
-        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
         return Number(await game(page).getAttribute('data-enemigos'));
       },
       { timeout: 60_000, intervals: [300] },
     )
     .toBeGreaterThanOrEqual(cap * 0.8);
-  const measure = async (label: string) => {
-    if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
-    const enemies = Number(await game(page).getAttribute('data-enemigos'));
-    const frames = await page.evaluate(async (ms) => {
-      const deltas: number[] = [];
-      await new Promise<void>((done) => {
-        let t0 = 0;
-        let last = 0;
-        const state = document.querySelector<HTMLElement>('[data-testid="mar-canon"]');
-        const step = (now: number) => {
-          if (!t0) t0 = last = now;
-          else {
-            deltas.push(now - last);
-            last = now;
-          }
-          // Una carta que se abre a media medida se contesta (Intro), para medir jugando.
-          if (state?.dataset.estado === 'card') {
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-          }
-          if (now - t0 < ms) requestAnimationFrame(step);
-          else done();
-        };
-        requestAnimationFrame(step);
-      });
-      return deltas;
-    }, PERF_MS);
-    const report = {
-      label,
-      frames: frames.length,
-      p50: +percentile(frames, 50).toFixed(1),
-      p95: +percentile(frames, 95).toFixed(1),
-      worst: +Math.max(...frames).toFixed(1),
-      enemies,
-      cap,
-      armas: (await canvas(page).getAttribute('data-canon-armas')) ?? '',
-      estado: await game(page).getAttribute('data-estado'),
-    };
-    console.log(`[perf-canon] ${JSON.stringify(report)}`);
-    info.annotations.push({ type: 'perf', description: JSON.stringify(report) });
-    expect(frames.length, label).toBeGreaterThan(10);
-    return report;
-  };
-  const free = await measure('sin limitar la CPU');
-  expect(free.p95, 'percentil 95 del tiempo por fotograma (ms)').toBeLessThanOrEqual(PERF_P95_MAX_MS);
+}
+
+test('rendimiento en `baja`: a las 6:00 con los topes llenos y las siete armas, el tiempo por fotograma se mide y no se dispara (T132)', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'mobile', 'se mide una vez, en el teléfono');
+  await forceLowQuality(page);
+  const errors = await openMar(page, '?minijuego=canon&t=360&armas=1&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+  await fillSea(page);
+  const free = await measureFrames(page, info, 'sin limitar la CPU');
+  expect(free.p95, 'percentil 95 del tiempo por fotograma (ms)').toBeLessThanOrEqual(
+    PERF_P95_MAX_MS,
+  );
   // Lo mismo con la CPU 4× más lenta (como en landing-perf): sólo se apunta.
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-  await measure('CPU 4×');
+  await measureFrames(page, info, 'CPU 4×');
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   expect(errors).toEqual([]);
 });
+
+/**
+ * T147: lo mismo con cada boss final en la partida (el Barco Fantasma del
+ * acto 1 y el Kraken del acto 2), las siete armas y el mar lleno, en `baja`.
+ * En Tormenta para que el boss aguante toda la medida con las armas al máximo.
+ */
+for (const act of [1, 2] as const) {
+  test(`rendimiento en \`baja\` con el boss final del acto ${act} en pantalla, los topes llenos y las siete armas (T147)`, async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== 'mobile', 'se mide una vez, en el teléfono');
+    const boss = finalSlot(act).ref;
+    await forceLowQuality(page);
+    const errors = await openMar(
+      page,
+      `?minijuego=canon&acto=${act}&t=${finalSlot(act).atS + 2}&armas=1&dificultad=tormenta&seed=7`,
+    );
+    await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+    await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+    await expect(game(page)).toHaveAttribute('data-jefes', new RegExp(boss), { timeout: 20_000 });
+    await fillSea(page);
+    // El boss entra en la vista (el Kraken, también su sombra bajo el agua).
+    await expect
+      .poll(async () => (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '', {
+        timeout: 30_000,
+      })
+      .toContain(boss);
+    const free = await measureFrames(page, info, `${boss}, sin limitar la CPU`);
+    expect(free.jefes, 'el boss sigue en la partida durante la medida').toContain(boss);
+    expect(free.p95, 'percentil 95 del tiempo por fotograma (ms)').toBeLessThanOrEqual(
+      PERF_P95_MAX_MS,
+    );
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await measureFrames(page, info, `${boss}, CPU 4×`);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    expect(errors).toEqual([]);
+  });
+}
 
 test('`botin=1`: los tres objetos del botín flotan junto al barco y se cogen tocándolos; la Llama avisa en el HUD (T135)', async ({
   page,
@@ -1330,13 +1502,22 @@ test('`botin=1`: los tres objetos del botín flotan junto al barco y se cogen to
   expect(errors).toEqual([]);
 });
 
-test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre una carta de cofre (T139)', async ({
+test('a las 4:30 (`t=270`) entra el Tiburón Martillo; vencido, su cofre abre una carta de cofre (T139)', async ({
   page,
 }) => {
-  // Las siete armas al máximo (`armas=1`) y Tranquila: el tiburón cae en un rato.
-  const errors = await openMar(page, '?minijuego=canon&t=262&armas=1&dificultad=tranquila&seed=7');
-  await expect(game(page)).toHaveAttribute('data-estado', 'running');
-  expect(Number(await game(page).getAttribute('data-tiempo'))).toBeGreaterThan(420 - 270);
+  // Las siete armas al máximo (`armas=1`): el tiburón cae en un rato. T147: en
+  // Normal (en Tranquila, con el móvil cargado, a veces caía antes de entrar en
+  // la vista) y a las 4:30 justas, con el tiburón como último hueco pasado (con
+  // `t=` antes del 4:30 entraba también el Vecino y su cofre se confundía con
+  // el del tiburón).
+  const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.ref === 'martillo')!;
+  const errors = await openMar(
+    page,
+    `?minijuego=canon&t=${slot.atS}&armas=1&dificultad=normal&seed=7`,
+  );
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  await expect(game(page)).toHaveAttribute('data-jefes', /martillo/, { timeout: 20_000 });
+  expect((await game(page).getAttribute('data-jefes')) ?? '').not.toContain('vecino');
   const held = new Set<string>();
   const hold = async (keys: string[]) => {
     for (const k of [...held]) {
@@ -1350,16 +1531,25 @@ test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre u
       held.add(k);
     }
   };
+  // `data-canon-jefes-vistos` junta lo que estuvo en pantalla en toda la partida.
   let sharkSeen = false;
+  const lookForShark = async () => {
+    const vistos = (await canvas(page).getAttribute('data-canon-jefes-vistos')) ?? '';
+    if (vistos.split(' ').includes('martillo')) sharkSeen = true;
+  };
   let chestCard = false;
   try {
     const until = Date.now() + 180_000;
     while (Date.now() < until && !chestCard) {
+      await lookForShark();
       if ((await game(page).getAttribute('data-estado')) === 'card') {
         await hold([]);
         const cards = page.getByTestId('mar-canon-cartas');
         // La carta puede acabar de cerrarse (el estado va un paso por detrás): sin esperar.
-        const origin = (await cards.count()) > 0 ? await cards.getAttribute('data-origen', { timeout: 1000 }).catch(() => null) : null;
+        const origin =
+          (await cards.count()) > 0
+            ? await cards.getAttribute('data-origen', { timeout: 1000 }).catch(() => null)
+            : null;
         if (origin === null) {
           await page.waitForTimeout(100);
           continue;
@@ -1376,9 +1566,13 @@ test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre u
           await page.waitForTimeout(500);
           await page.keyboard.press('Enter');
           // Se cierra (si quedaba una carta de nivel pendiente, se abre ahora esa).
-          await expect(page.locator('[data-testid="mar-canon-cartas"][data-origen="cofre"]')).toHaveCount(0);
+          await expect(
+            page.locator('[data-testid="mar-canon-cartas"][data-origen="cofre"]'),
+          ).toHaveCount(0);
           // Gratis: no gasta nivel.
           expect(await game(page).getAttribute('data-nivel')).toBe(level);
+          // Es el cofre del tiburón: el único miniboss de esta partida, ya vencido.
+          expect((await game(page).getAttribute('data-vencidos')) ?? '').toContain('martillo');
           chestCard = true;
           break;
         }
@@ -1386,8 +1580,6 @@ test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre u
         await page.keyboard.press('Enter');
         continue;
       }
-      const vistos = (await canvas(page).getAttribute('data-canon-jefes-vistos')) ?? '';
-      if (vistos.split(' ').includes('martillo')) sharkSeen = true;
       const target = await game(page).getAttribute('data-cofre-cerca');
       if (!target) {
         // Mientras pelea: a vueltas suaves, sin alejarse.
@@ -1411,6 +1603,7 @@ test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre u
   } finally {
     await hold([]);
   }
+  await lookForShark();
   expect(sharkSeen).toBe(true);
   expect(chestCard).toBe(true);
   expect(errors).toEqual([]);
@@ -1446,7 +1639,8 @@ test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto d
   await expect
     .poll(
       async () => {
-        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        if ((await game(page).getAttribute('data-estado')) === 'card')
+          await page.keyboard.press('Enter');
         seen = await page.evaluate((list) => {
           const q = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
           const banner = q('mar-canon-jefe-aviso');
@@ -1457,7 +1651,8 @@ test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto d
             const el = q(id);
             if (!el) continue;
             const r = el.getBoundingClientRect();
-            if (r.width > 0 && r.height > 0) boxes[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
+            if (r.width > 0 && r.height > 0)
+              boxes[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
           }
           return {
             boxes,
@@ -1493,7 +1688,15 @@ test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto d
   // No tapa la cuenta atrás, la pausa ni «BETA», y ni la barra ni el aviso pisan lo fijo ni los mandos.
   for (const id of ['mar-canon-pausa', 'mar-canon-beta', 'mar-canon-tiempo'])
     expect(overlaps(bar, boxes[id]!), id).toBe(false);
-  for (const id of ['mar-entradas', 'mar-enlaces', 'mar-minimapa', 'mar-saldos', 'mar-turbo', 'mar-canon-equipo', 'mar-touch']) {
+  for (const id of [
+    'mar-entradas',
+    'mar-enlaces',
+    'mar-minimapa',
+    'mar-saldos',
+    'mar-turbo',
+    'mar-canon-equipo',
+    'mar-touch',
+  ]) {
     const b = boxes[id];
     if (!b) continue;
     expect(overlaps(hud, b), id).toBe(false);

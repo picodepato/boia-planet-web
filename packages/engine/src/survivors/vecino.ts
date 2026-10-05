@@ -5,7 +5,8 @@ export const VECINO: BossDef = {
   id: 'vecino',
   kind: 'miniboss',
   i18nKey: 'survivors.boss.vecino',
-  hp: 750,
+  // T147: 750 → 1200 (caía en ~10 s).
+  hp: 1200,
   radius: 38,
   speed: 125,
   acceleration: 180,

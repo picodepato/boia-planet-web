@@ -7,6 +7,7 @@ import {
   type EndReason,
   type SurvivorsGame,
   type SurvivorsInput,
+  type BossWarningView,
   type SurvivorsOptions,
   createSurvivors,
 } from './sim';
@@ -26,6 +27,11 @@ import type { SurvivorsWorld } from './world';
  *   una evolución»: sube antes que nada su arma foco (la que más nivel tiene
  *   de las que evolucionan; al empezar, el Cañón de agua) y coge su vinilo
  *   pareja en cuanto sale.
+ *
+ * Desde T147 (plan 012) los dos que esquivan también temen a los bosses de
+ * cerca y salen de las formas avisadas de sus ataques (`warningEscape`), como
+ * haría quien mira el agua; y la partida guarda cada combate (`bossFights`),
+ * la vida que le quedó a cada boss y las élites hundidas.
  */
 export type BotKind = 'idle' | 'dodge' | 'greedy';
 
@@ -95,11 +101,27 @@ export function dodgeShip(game: SurvivorsGame, notes = false): ShipInput {
     fx += dx * k;
     fy += dy * k;
   }
+  // Los bosses asustan de cerca (su golpe por contacto), contando su tamaño;
+  // el Kraken bajo el agua no toca (T147).
+  for (const boss of s.bosses) {
+    if (boss.kraken && boss.kraken.mode === 'submerged') continue;
+    const dx = wrapDelta(p.x - boss.x, w);
+    const dy = wrapDelta(p.y - boss.y, h);
+    const d = Math.max(1, Math.hypot(dx, dy) - boss.radius);
+    if (d > BOSS_REACH) continue;
+    const k = BOSS_WEIGHT / Math.max(40, d) ** 2;
+    fx += dx * k;
+    fy += dy * k;
+  }
   const norm = Math.hypot(fx, fy);
   if (norm > 1e-12) {
     fx /= norm;
     fy /= norm;
   }
+  // Y, como quien mira el agua, sale de las formas avisadas (T147).
+  const away = warningEscape(s.bossWarnings, p.x, p.y, w, h);
+  fx += away.x * WARNING_WEIGHT;
+  fy += away.y * WARNING_WEIGHT;
   for (const o of game.world.obstacles) {
     const dx = wrapDelta(p.x - o.x, w);
     const dy = wrapDelta(p.y - o.y, h);
@@ -113,6 +135,89 @@ export function dodgeShip(game: SurvivorsGame, notes = false): ShipInput {
   }
   if (Math.hypot(fx, fy) < 1e-9) return { dirX: 0, dirY: 0, throttle: 0, drift: false };
   return { dirX: fx, dirY: fy, throttle: 1, drift: false };
+}
+
+/** u: un boss más lejos que esto (desde su borde) no asusta. */
+const BOSS_REACH = 220;
+/** Cuánto más asusta un boss que un enemigo a la misma distancia. */
+const BOSS_WEIGHT = 3;
+/** u: margen alrededor de una forma avisada (el casco y un poco más). */
+const WARNING_MARGIN = 40;
+/** Peso de salir de un aviso frente a la huida normalizada (1). */
+const WARNING_WEIGHT = 3;
+
+/**
+ * Hacia dónde salir de los avisos de boss que pisan (x, y), sumado y sin
+ * normalizar (cada aviso pesa 0…1, más cuanto más dentro). Anillo: hacia el
+ * hueco más cercano (rodeando el centro); línea y andanada: de lado, lejos de
+ * la línea; círculo: lejos del centro. Las llamadas no se esquivan.
+ */
+export function warningEscape(
+  warnings: readonly BossWarningView[],
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): { x: number; y: number } {
+  let ox = 0;
+  let oy = 0;
+  for (const wn of warnings) {
+    const dx = wrapDelta(x - wn.x, w);
+    const dy = wrapDelta(y - wn.y, h);
+    const d = Math.hypot(dx, dy);
+    switch (wn.kind) {
+      case 'circles': {
+        const reach = wn.radius + WARNING_MARGIN;
+        if (d >= reach) break;
+        const k = (reach - d) / reach;
+        ox += (dx / Math.max(1, d)) * k;
+        oy += (dy / Math.max(1, d)) * k;
+        break;
+      }
+      case 'line':
+      case 'broadside': {
+        const ux = Math.cos(wn.heading);
+        const uy = Math.sin(wn.heading);
+        const along = dx * ux + dy * uy;
+        if (along < -WARNING_MARGIN || along > wn.length + WARNING_MARGIN) break;
+        const side = -dx * uy + dy * ux;
+        const reach = wn.thickness + WARNING_MARGIN;
+        if (Math.abs(side) >= reach) break;
+        const k = (reach - Math.abs(side)) / reach;
+        const sgn = side >= 0 ? 1 : -1;
+        ox += -uy * sgn * k;
+        oy += ux * sgn * k;
+        break;
+      }
+      case 'ring': {
+        // Ya pasada la onda, a salvo; fuera del radio, también.
+        if (wn.hit && d < wn.ringRadius - wn.thickness) break;
+        if (d > wn.radius + WARNING_MARGIN || d < 1) break;
+        if (wn.gaps <= 0) {
+          ox += dx / d;
+          oy += dy / d;
+          break;
+        }
+        const a = Math.atan2(dy, dx);
+        const step = (Math.PI * 2) / wn.gaps;
+        // Centro de hueco más cercano al ángulo del barco.
+        const g0 = wn.gapPhase;
+        const kGap = Math.round((a - g0) / step);
+        const g = g0 + kGap * step;
+        let da = a - g;
+        da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (Math.abs(da) < wn.gapRad / 3) break;
+        // Rodear el centro hacia el hueco (tangente).
+        const t = da > 0 ? -1 : 1;
+        ox += (-dy / d) * t;
+        oy += (dx / d) * t;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return { x: ox, y: oy };
 }
 
 /** Vinilo que hace pareja con cada arma para su evolución (de la config). */
@@ -231,12 +336,39 @@ export interface BotRun {
   screenClearsS: number[];
   /** Objetos del botín soltados por las élites (T135). */
   drops: number;
+  /** T147: élites hundidas (cada una tira el dado del botín). */
+  elitesDefeated: number;
   /** Los cogidos, «tipo@s» en orden. */
   pickups: string[];
   /** Bosses (T137): golpes de boss recibidos, agua que metieron y los vencidos en orden. */
   bossHits: number;
   bossWater: number;
   bossesDefeated: BossId[];
+  /** T147: cada boss que entró, en orden: cuándo, cuándo acabó y cómo. */
+  bossFights: BossFight[];
+  /** T147: golpes y agua de boss por boss. */
+  bossHitsBy: Partial<Record<BossId, number>>;
+  bossWaterBy: Partial<Record<BossId, number>>;
+  /** T147: la vida (0…1) que le quedaba a cada boss la última vez que se le vio (0 si cayó). */
+  bossHpLeft: Partial<Record<BossId, number>>;
+}
+
+/** Un combate con un boss en una partida de piloto (T147). */
+export interface BossFight {
+  boss: BossId;
+  /** Id de la entidad (único en la partida). */
+  id: number;
+  /** s activos de la entrada y del final (null: seguía vivo al acabar la partida). */
+  spawnS: number;
+  endS: number | null;
+  outcome: 'defeated' | 'retreated' | null;
+}
+
+function closeFight(run: BotRun, id: number, at: number, outcome: 'defeated' | 'retreated'): void {
+  const f = run.bossFights.find((x) => x.id === id && x.outcome === null);
+  if (!f) return;
+  f.endS = at;
+  f.outcome = outcome;
 }
 
 /** u: radio de lo que se ve alrededor del barco (el anillo de aparición está más lejos). */
@@ -283,10 +415,15 @@ export function runBot(
     evolvedS: null,
     screenClearsS: [],
     drops: 0,
+    elitesDefeated: 0,
     pickups: [],
     bossHits: 0,
     bossWater: 0,
     bossesDefeated: [],
+    bossFights: [],
+    bossHitsBy: {},
+    bossWaterBy: {},
+    bossHpLeft: {},
   };
   const seen = new Set<number>();
   const bw = world.bounds.right - world.bounds.left;
@@ -310,6 +447,7 @@ export function runBot(
       } else if (e.type === 'defeated') {
         run.defeatedByType[e.enemy] = (run.defeatedByType[e.enemy] ?? 0) + 1;
         run.defeated++;
+        if (e.elite) run.elitesDefeated++;
         killsSincePeak++;
       } else if (e.type === 'drop') {
         run.drops++;
@@ -321,12 +459,27 @@ export function runBot(
         run.hits++;
         run.bossHits++;
         run.bossWater += e.water - water;
+        run.bossHitsBy[e.boss] = (run.bossHitsBy[e.boss] ?? 0) + 1;
+        run.bossWaterBy[e.boss] = (run.bossWaterBy[e.boss] ?? 0) + (e.water - water);
       } else if (e.type === 'bossDefeated') {
         run.bossesDefeated.push(e.boss);
+        run.bossHpLeft[e.boss] = 0;
+        closeFight(run, e.id, game.activeS, 'defeated');
+      } else if (e.type === 'bossSpawn') {
+        run.bossFights.push({
+          boss: e.boss,
+          id: e.id,
+          spawnS: game.activeS,
+          endS: null,
+          outcome: null,
+        });
+      } else if (e.type === 'bossRetreated') {
+        closeFight(run, e.id, game.activeS, 'retreated');
       }
     }
     {
       const s = game.snapshot();
+      for (const b of s.bosses) run.bossHpLeft[b.boss] = b.hpFraction;
       let onScreen = 0;
       for (const e of s.enemies) {
         seen.add(e.id);
