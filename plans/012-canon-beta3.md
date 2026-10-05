@@ -218,7 +218,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: medals (bronze 7:00, silver + every miniboss, gold = final boss), `won` = bronze+, campaign counter per act in the existing progress store (guest repo / `save_snapshot`, no migration), act buttons Acto 1/2 (+3 «próximamente») on the panel, act + difficulty in configHash, `CanonResult` with medal/act/difficulty/bosses, dev shortcut `vencer=1`; 1614 unit tests, mar-canon e2e 65 passed + 2 flaky → da62d09
 
 ## T145 — Final card
-- Status: pending
+- Status: done
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T144
@@ -229,7 +229,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests for the final card model (each medal, flooded, act unlock line)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with the card after a flooded game and after a dev-forced gold, «Otra vez» starting a new game and «Volver al mar» returning to sailing
   - Test command → exit 0
-- Outcome:
+- Outcome: Cañón final card (`CanonEnd`): medal or flooded, «Acto N · dificultad», time/enemies/notes/level, weapon and vinyl chips, bosses defeated, «¡Acto N desbloqueado!», special ending per act boss (Kraken no longer says «Fantasma»), «Otra vez»/«Volver al mar», compact layout on short screens; 1624 unit tests; full e2e had flaky failures under load that passed on rerun → c840f41
 
 ## T146 — Plan 011 loose ends: failing e2e, flaky test, boost pads and ramps e2e
 - Status: done
@@ -310,6 +310,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T143: boss events derived by diffing boss ids between snapshots; off-screen arrow reads `data-canon-boss-vista` and assumes an unrotated camera; mobile equipment row moves down 30 px during a boss; i18n `mar.canon.boss.*`, `survivors.boss.prueba`, `survivors.boss.capitan` (agent)
 
+- 2026-10-05 T145: special ending chosen per act's final boss (`endCardModel`, `VICTORY_KEYS`), `mar.canon.fin.victoria` now a neutral fallback; `CanonResult` gains `weapons`/`vinyls`; shared race card untouched; focus on «Otra vez», Esc back to the sea (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -323,6 +325,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T142: the T139 shark e2e can miss the shark on mobile under load (passes alone) — for T147
 - 2026-10-05 T144: special-ending title says «Fantasma» after a Kraken win (T145); REQ-AVE-038 note in `docs/spec/estado.md` still says «won = aguantar 7:00» (T147); flaky e2e T131 difficulty panel under load
 - 2026-10-05 T143: phase marks for time-based phases not drawn; simultaneous arrivals show only the last banner; some files in main carry CRLF line endings (check in T147)
+- 2026-10-05 T145: more e2e flaky under load: T124 turbo (mobile), Tiburón Martillo (desktop) — for T147 to stabilise the known-flaky list
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -359,3 +362,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 19:45 T144 done · branch worktree-agent-a30400bc81ea4bde7 → da62d09 (integration 643 s)
 - 2026-10-05 19:48 T136 launched · attempt 1 · Codex via wrapper agent addb8d08ba9c5100e (sonnet)
 - 2026-10-05 20:30 T143 done · branch worktree-agent-a5dfabd193a7d61bd → 0593f37
+- 2026-10-05 20:33 T145 launched · attempt 1 · agent a1ea64d4d63096876 (sonnet)
+- 2026-10-05 21:20 T145 done · branch worktree-agent-a1ea64d4d63096876 → c840f41
+- 2026-10-05 21:22 T136 done by agent; integration conflict with T145 in canon-hud.css, mar-canon.spec.ts → sent back to the same wrapper agent (resolves itself, no Codex)
