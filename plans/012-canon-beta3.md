@@ -62,7 +62,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: Traca (id `fireworks`, kind `trail`, firecrackers ≥24 u apart, cap 48/24) and Focos (1→3 beams locking on, 5 dmg / 0.25 s), Show de Láseres = 7-beam front fan sweeping; config v8; 1478 unit tests, mar-canon e2e 53 passed → 8f0f20b
 
 ## T135 — Elite drops: Imán total, Llama and Salvavidas
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T133
@@ -98,7 +98,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T137 — Generic boss system (simulation)
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T133
@@ -115,7 +115,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors --testTimeout=60000` → exit 0 with tests: phases advance by hp/time, telegraph precedes every hit, commons slow during a boss, boss retreats at 7:00, act 2 data loads, determinism of a full run with the test boss
   - Test command → exit 0
-- Outcome:
+- Outcome: bosses as separate sim entities (phases, telegraphed attacks, summons, invulnerable windows, chest + big note), script slots 2:30/4:30/5:30 with a test boss kept out of production games, commons slow during bosses, retreat at 7:00, act 2 derived by `harderAct` (final boss `kraken`), Focos target bosses; config v9; 1500 unit tests → 8885519
 
 ## T138 — Miniboss 1: El Vecino Quejica
 - Status: pending
@@ -282,10 +282,13 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T134: rocket kind and weaponRng removed; new `caps.crackers`; Focos damage lowered to 5/0.25 s because idle bots survived; Show de Láseres front fan (full circle made an idle boat untouchable); T132 idle-boat balance test relaxed to «at most one Normal seed past 120 s, none past 330 s» and median comparison — review in T147 (agent)
 
+- 2026-10-05 T137: bosses separate from enemies with own events (`bossSpawn/Phase/Telegraph/Attack/Summon/Hit/Damaged/Defeated/Retreated`, `chest`, `chestOpened`) and snapshot fields (`act`, `bosses`, `bossWarnings`, `chests`, `bossesDefeated`, `finalBossDefeated`); act 2 = `harderAct(act1)` (crab −30 s, pirate/swordfish −60 s, enemy hp ×1.25, boss hp ×1.5); `&t=` spawns the latest slot's boss; telegraphed boss hits ignore the 0.5 s contact i-frames; invulnerable bosses not targeted; big note = `redonda`; no new EndReason; i18n key `survivors.boss.prueba` referenced but not added; merge with T134 → config v9 (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
 - 2026-10-05 T134: HUD slot icon for Traca still 🎆 (`canon-hud-model.ts`); beta 3 guide must describe Traca and Focos (T147)
+- 2026-10-05 T137: a `clave` note figure needs a web model; camera shake on `bossHit` (mar3d shakes only on `hit`) — for T143/T147
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -296,3 +299,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 12:41 T137 launched · attempt 1 · agent a11a931ea96d7dfdb (fable)
 - 2026-10-05 12:41 T134 launched · attempt 1 · agent ae60eb0e7dd197709 (opus)
 - 2026-10-05 13:20 T134 done · branch worktree-agent-ae60eb0e7dd197709 → 8f0f20b
+- 2026-10-05 13:22 push offer T133 cancelled (no answer), push offer T134 sent
+- 2026-10-05 13:22 T135 launched · attempt 1 · agent a0cb6eecadc388549 (opus)
+- 2026-10-05 13:25 T137 done by agent; integration conflict with T134 in survivors/sim.ts → sent back to the same agent
+- 2026-10-05 14:00 T137 done · branch worktree-agent-a11a931ea96d7dfdb → 8885519
