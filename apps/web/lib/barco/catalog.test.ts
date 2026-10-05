@@ -138,8 +138,17 @@ describe('catálogo de la sección «Barco»', () => {
       }
       expect(html.match(/data-testid="barco-skin-(?!item)/g)?.length).toBe(row.skins.length);
       for (const k of row.skins) expect(html).toContain(`data-testid="barco-skin-${k.skin}"`);
-      // El barco y su skin base marcados; «Sin bandera» y «Espuma blanca», también.
-      expect(html.match(/role="radio" aria-checked="true"/g)?.length).toBe(4);
+      // El barco y su skin base marcados; «Sin bandera», «Espuma blanca» y
+      // «Sin mascota» (T154), también: uno por lista con algo que elegir.
+      const lists = [rows.flags, rows.wakes, rows.mascots].filter((l) => l.length > 0).length;
+      expect(html.match(/role="radio" aria-checked="true"/g)?.length).toBe(2 + lists);
+      // La mascota, con su dibujo, bloqueada hasta ganarla.
+      for (const m of rows.mascots) {
+        expect(html).toContain(`data-testid="barco-mascota-${m.cosmetic.id}"`);
+        expect(html).toContain(`data-mascota="${m.cosmetic.id}"`);
+      }
+      expect(rows.mascots.length).toBeGreaterThan(0);
+      expect(html).toContain('data-testid="barco-mascota-ninguna"');
     }
   });
 });

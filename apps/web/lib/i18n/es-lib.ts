@@ -249,7 +249,7 @@ export const esLib = {
   'barco.shopModel.noDisponible': 'No disponible',
   'barco.shopModel.comprarPorTeQuedaran': '¿Comprar {name} por {price} 🪙? Te quedarán {v3}.',
   'barco.shop.barcosSkinsBanderaY':
-    'Barcos, skins, bandera y estela. Sólo cambian cómo se ve tu barco, nunca cómo navega.',
+    'Barcos, skins, bandera, estela y mascota. Sólo cambian cómo se ve tu barco, nunca cómo navega.',
   'barco.shop.elBarcoDeMuestra': 'El barco de muestra todavía no tiene estilos.',
   'barco.shop.cargandoLaTienda': 'Cargando la tienda…',
   'barco.shop.comprar': 'Comprar',
@@ -269,6 +269,10 @@ export const esLib = {
   'barco.shop.deSerie': 'De serie',
   'barco.shop.bandera': 'Bandera',
   'barco.shop.estela': 'Estela',
+  'barco.shop.mascota': 'Mascota',
+  'barco.shop.sinMascota': 'Sin mascota',
+  'barco.shop.mascotaNota':
+    'Va contigo en cubierta: navegando, en las carreras y en el Cañón. Te acompaña, no ayuda a jugar.',
   'logros.claimBadge.n1Premio': '1 premio',
   'logros.model.logroOcultoSigueExplorando': 'Logro oculto. Sigue explorando…',
   'logros.model.completadoReclamaTuPremio': '¡Completado! Reclama tu premio',

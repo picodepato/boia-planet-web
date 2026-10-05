@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T154: Minikraken mascot
+
+Qué existe:
+- **Categoría «Mascota» en Mi Barco** (`lib/barco/shop.tsx`, `shop-model.ts` `rows.mascots`): «Sin mascota» (desactivar) y una fila por mascota con su dibujo SVG (`lib/barco/mascot-icon.tsx`), bloqueada con «Se gana con el logro «Rompetentáculos»» hasta reclamar `canon-kraken`; una línea dice que va en cubierta y no ayuda a jugar. Lista genérica (`ListSlot`), lista para más mascotas: cosmético `mascot` + fila en `MASCOT_KINDS` (`lib/barco/dressing.ts`) + modelo.
+- **Minikraken en cubierta** (`app/mar/engine/minikraken.ts`): low-poly de barro pintado (cúpula morada con franja naranja BOIA, ojos grandes, seis tentáculos), 3 mallas con un material; flota, se mece y **saluda con un tentáculo cerca de una isla/lugar** (a < 45 u, mirado dos veces por segundo). En `baja`: menos caras y sin mecer el faldón; con movimiento reducido, quieto. Va en `boat.body` (`mar3d.ts` `placeMascot`), así que sale navegando, en las carreras y en el Cañón; con un barco de Blender se pone hacia popa sobre lo más alto que haya ahí (`surfaceY` en `ship-model.ts`: cubierta o toldo), mirando a popa. El lienzo lo cuenta en `data-mascota`; `main.mar` en `data-ship-mascot`.
+- **Atajo `/mar?mascota=1`** (`app/mar/mascota-dev.ts`): completa y reclama el logro que da la mascota; sólo con `devStartRewards` (pnpm dev, e2e), nunca en la versión de prueba (ni con `?dev=1`).
+- **Supabase**: `supabase/migrations/20261005100100_mascot_equip.sql` (escrita, NO aplicada): `equipped_cosmetics.slot` y `private.equip_cosmetic` aceptan `mascot`. `EquippedMap` (`packages/db/src/rpc.ts`) y `SLOTS` de `lib/account/merge.ts` (ahora `COSMETIC_SLOTS`) con `mascot`: lo equipado pasa a la cuenta.
+- El documento local no cambia de versión: `equipped` ya era un registro libre y T153 añadió la ranura.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 180 archivos, 1717 pruebas, 0 fallos (nuevas: `packages/store/src/mascot.test.ts`, `apps/web/app/mar/engine/minikraken.test.ts`, `apps/web/app/mar/mascota-dev.test.ts`, casos en `merge.test.ts`, `shop-model.test.ts`, `catalog.test.ts`)
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0 avisos; `pnpm build` → OK (landing 187,0 de 200 kB, sin cambio); `pnpm typecheck` → OK
+- `E2E_PORT=3291 pnpm e2e tienda.spec.ts --workers=1 -g "mascota"` → 2 passed (móvil y escritorio)
+
+Pendiente:
+- Revisión de arte del minikraken (forma, colores, tamaño, sitio en cada barco) por Hernán/Álvaro; `muestra`.
+- «Se esconde en los apagones» (§9 del diseño) no aplica: sin acto 3.
+- `economy.supabase.ts` no tiene un caso de equipar la mascota contra Postgres (esta máquina no tiene Postgres); la migración se prueba leyendo el SQL.
+
 ## 2026-10-05 — plan 013 T153: Per-medal daily prize and the new achievements
 
 ### Qué existe

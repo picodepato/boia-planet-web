@@ -116,7 +116,7 @@ import { type SeaRoute, decorSpots, seaRoute } from './compact';
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { Glows, buoy, crag, rock } from './props';
-import { type ShipModel, createFlag, modelLength, topPoint } from './ship-model';
+import { type ShipModel, createFlag, modelLength, surfaceY, topPoint } from './ship-model';
 import {
   type ModelKey,
   ModelStore,
@@ -163,6 +163,7 @@ import {
   roadMarkers,
 } from './race-props';
 import { createWater } from './water';
+import { MINIKRAKEN_WAVE_DISTANCE, type Minikraken, createMinikraken } from './minikraken';
 import { boatVisible, hitShake } from './survivors-props';
 import { SurvivorsView } from './survivors-view';
 import type { SurvivorsRun } from '../survivors';
@@ -354,6 +355,11 @@ const ELEV_NEAR = 0.64;
 const BEND_MAP = 0.00016;
 /** Eslora del barco en la escena (unidades): algo mayor que la del motor, para leerse en el móvil. */
 const SHIP_LENGTH = 3.9;
+/** Dónde va la mascota (T154), en esloras desde el centro: hacia popa y a estribor. */
+const MASCOT_BACK = 0.43;
+const MASCOT_SIDE = 0;
+/** Hacia dónde mira la mascota: a popa, un poco a estribor (rad). */
+const MASCOT_YAW = Math.PI * 0.8;
 const STEP = 1 / 60;
 /** Tope de un viaje en turbo: si no llega (encajonado), se da por llegado. muestra */
 const VOYAGE_MAX_S = 20;
@@ -453,7 +459,12 @@ export class Mar3D {
   private readonly water;
   private readonly boat: Boat;
   /** Cosméticos pintados (T40) y dónde va la bandera (null: barco provisional). */
-  private dressing: ShipDressing = { flag: null, wakeTint: null };
+  private dressing: ShipDressing = { flag: null, wakeTint: null, mascot: null };
+  /** La mascota de cubierta (T154) y su hueco en el casco, aparte del de la pasajera. */
+  private mascot: Minikraken | null = null;
+  private readonly mascotSlot = new Group();
+  private mascotWave = false;
+  private mascotCheck = 0;
   private mastTop: Vector3 | null = null;
   private flag: Mesh | null = null;
   private readonly faces: FaceTextures;
@@ -685,6 +696,11 @@ export class Mar3D {
     this.faces = createFaceTextures();
     this.boat = createBoat(this.faces);
     this.boat.body.scale.setScalar(SHIP_LENGTH / 3);
+    // Mascota en el barco provisional: en cubierta, entre el mástil y la capitana, a estribor.
+    this.mascotSlot.position.set(-0.3, 0.43, 0.28);
+    // Mirando hacia popa y estribor: a quien lleva el timón (la cámara va detrás).
+    this.mascotSlot.rotation.y = MASCOT_YAW;
+    this.boat.body.add(this.mascotSlot);
     this.scene.add(this.boat.group);
     this.scene.add(this.wake.mesh, this.marker.group, this.confetti.mesh);
     this.wings = new Wings(SHIP_LENGTH / 3);
@@ -1152,6 +1168,51 @@ export class Mar3D {
     this.dressing = d;
     this.wake.setTint(d.wakeTint);
     this.placeFlag();
+    this.placeMascot();
+  }
+
+  /**
+   * La mascota de cubierta (plan 013 T154): va en el barco en todo /mar
+   * (navegando, en las carreras y en el Cañón), animada, y no toca la física.
+   * Se rehace sólo si cambia. El lienzo lo cuenta en `data-mascota` (pruebas).
+   */
+  private placeMascot(): void {
+    const kind = this.dressing.mascot;
+    if (this.mascot && kind === 'minikraken') return;
+    if (this.mascot) {
+      this.mascotSlot.remove(this.mascot.group);
+      this.mascot.dispose();
+      this.mascot = null;
+    }
+    if (kind === 'minikraken') {
+      this.mascot = createMinikraken(this.quality);
+      curveTree(this.mascot.group);
+      this.mascotSlot.add(this.mascot.group);
+      this.opts.canvas.dataset.mascota = kind;
+    } else {
+      delete this.opts.canvas.dataset.mascota;
+    }
+  }
+
+  /** ¿Hay un lugar cerca del barco? (la mascota saluda). Se mira dos veces por segundo. */
+  private nearPlace(dt: number): boolean {
+    this.mascotCheck -= dt;
+    if (this.mascotCheck > 0) return this.mascotWave;
+    this.mascotCheck = 0.5;
+    const bx = this.boat.group.position.x;
+    const bz = this.boat.group.position.z;
+    const r2 = MINIKRAKEN_WAVE_DISTANCE * MINIKRAKEN_WAVE_DISTANCE;
+    let near = false;
+    for (const v of this.views.values()) {
+      const dx = v.obj.position.x - bx;
+      const dz = v.obj.position.z - bz;
+      if (dx * dx + dz * dz < r2) {
+        near = true;
+        break;
+      }
+    }
+    this.mascotWave = near;
+    return near;
   }
 
   private removeFlag(): void {
@@ -1180,7 +1241,7 @@ export class Mar3D {
     this.removeFlag();
     const body = this.boat.body;
     for (const c of [...body.children]) {
-      if (c === this.boat.crewSlot) continue;
+      if (c === this.boat.crewSlot || c === this.mascotSlot) continue;
       body.remove(c);
       c.traverse((o) => (o as Mesh).geometry?.dispose());
     }
@@ -1197,6 +1258,11 @@ export class Mar3D {
     body.add(m.object);
     curveTree(m.object);
     this.boat.crewSlot.position.set(m.slot.x * k + m.object.position.x, m.slot.y * k, m.slot.z * k);
+    // La mascota (T154): hacia popa, de cara a la cámara, sobre lo más alto
+    // que haya ahí (la cubierta o, si hay toldo, el techo).
+    const mx = -SHIP_LENGTH * MASCOT_BACK;
+    const mz = SHIP_LENGTH * MASCOT_SIDE;
+    this.mascotSlot.position.set(mx, surfaceY(m.object, mx, mz) ?? this.boat.crewSlot.position.y, mz);
     this.sternX = -SHIP_LENGTH / 2;
     // Tope del modelo, en coordenadas del casco: ahí cuelga la bandera (T40).
     const top = topPoint(m.object);
@@ -2998,6 +3064,13 @@ export class Mar3D {
     }
     if (this.boat.captain) this.boat.captain.rotation.y = Math.sin(t * 1.3) * 0.25;
     if (this.crew) this.crew.position.y = Math.abs(Math.sin(t * 5)) * 0.08;
+    if (this.mascot) {
+      this.mascot.update(t, dt, {
+        waving: this.nearPlace(dt),
+        quality: this.mascot.quality,
+        reduced: this.reducedMotion,
+      });
+    }
     const sternX = x + Math.cos(h) * this.sternX;
     const sternZ = z + Math.sin(h) * this.sternX;
     const boost = this.turboLeft > 0 || this.voyage ? 1.4 : 1;

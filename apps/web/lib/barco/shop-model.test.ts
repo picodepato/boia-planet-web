@@ -2,7 +2,7 @@ import { SAMPLE_COSMETICS, createLocalRepository } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { loadShipCatalog, repoRoot } from './load';
-import { dressingFor } from './dressing';
+import { dressingFor, dressingKey } from './dressing';
 import { confirmText, resolveLook, shopRows, unlockText } from './shop-model';
 
 /**
@@ -112,11 +112,22 @@ describe('aspecto al entrar', () => {
   });
 
   it('bandera y estela equipadas se pintan; sin nada, ni bandera ni tinte', () => {
-    expect(dressingFor({})).toEqual({ flag: null, wakeTint: null });
+    expect(dressingFor({})).toEqual({ flag: null, wakeTint: null, mascot: null });
     const flag = SAMPLE_COSMETICS.find((c) => c.slot === 'flag')!;
     const wake = SAMPLE_COSMETICS.find((c) => c.slot === 'wake')!;
     const d = dressingFor({ flag: flag.id, wake: wake.id, ship: coinShip.id });
     expect(d.flag).not.toBeNull();
     expect(d.wakeTint).not.toBeNull();
+    expect(d.mascot).toBeNull();
+  });
+
+  it('cada mascota del catálogo tiene modelo en cubierta; sin mascota, nada (T154)', () => {
+    const mascots = SAMPLE_COSMETICS.filter((c) => c.slot === 'mascot');
+    expect(mascots.length).toBeGreaterThan(0);
+    for (const m of mascots) expect(dressingFor({ mascot: m.id }).mascot, m.id).not.toBeNull();
+    expect(dressingFor({ mascot: 'mascota-que-no-existe' }).mascot).toBeNull();
+    expect(dressingKey(dressingFor({ mascot: mascots[0]!.id }))).not.toBe(
+      dressingKey(dressingFor({})),
+    );
   });
 });

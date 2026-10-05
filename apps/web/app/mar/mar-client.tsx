@@ -183,6 +183,7 @@ import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
 import { CanonLayer } from './canon-hud';
 import { CanonPrevia } from './canon-previa';
 import { CANON_GAME_ID, islandPinsOnly } from './survivors';
+import { devGrantMascot } from './mascota-dev';
 import {
   type Trip,
   arrivalSheet,
@@ -1515,11 +1516,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     g.setBottles(placed);
   }, [bottleList, status, worldId]);
 
-  // Bandera y estela equipadas (T40), también si cambian desde otra pestaña.
+  // Bandera, estela y mascota equipadas (T40, T154), también si cambian desde otra pestaña.
   useEffect(() => {
     if (status !== 'ready' || !equippedNow) return;
     engineRef.current?.setShipDressing(dressingFor(equippedNow));
   }, [equippedNow, status]);
+
+  // Atajo de desarrollo `?mascota=1` (T154): el minikraken sin jugar el Cañón.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    devGrantMascot(progressApi()).catch((err: unknown) =>
+      console.warn('[boia] atajo de la mascota', err),
+    );
+  }, [status]);
 
   /** Abre el panel de logros; como cualquier panel, anula la vuelta en curso (REQ-AVE-032). */
   const openLogros = () => {
@@ -1977,6 +1986,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       data-ship-skin={shipLook?.skin}
       data-ship-flag={shipLook ? equippedNow?.flag : undefined}
       data-ship-wake={shipLook ? equippedNow?.wake : undefined}
+      data-ship-mascot={shipLook ? equippedNow?.mascot : undefined}
       data-mundo={worldId ?? undefined}
       data-cambio-mundo={
         switching === 'vortex' ? 'vortice' : switching === 'fade' ? 'fundido' : undefined

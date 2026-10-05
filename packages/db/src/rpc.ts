@@ -104,8 +104,10 @@ export type BuyResult =
   | { granted: true; tx_id: string; coins: number; balance: number }
   | { granted: false; reason: 'duplicate' };
 
-/** equip_cosmetic: ranura → cosmético. */
-export type EquippedMap = Partial<Record<'flag' | 'accessory' | 'skin' | 'wake' | 'ship', string>>;
+/** equip_cosmetic: ranura → cosmético (`mascot` desde `20261005100100_mascot_equip.sql`, T154). */
+export type EquippedMap = Partial<
+  Record<'flag' | 'accessory' | 'skin' | 'wake' | 'ship' | 'mascot', string>
+>;
 
 /** claim_stamp */
 export type StampResult =

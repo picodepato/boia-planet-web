@@ -126,6 +126,31 @@
   background: #fff;
   box-shadow: inset 0 0 0 1px rgb(18 35 63 / 0.35);
 }
+/* La mascota (T154): su dibujo en lugar de la muestra de color. */
+.tienda-icono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+.tienda-icono:empty::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgb(18 35 63 / 0.3);
+}
+.tienda-opcion.is-locked .tienda-icono svg {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.tienda-nota {
+  margin: -2px 0 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  opacity: 0.85;
+}
 .tienda-comprar,
 .tienda-cancelar {
   min-height: 36px;

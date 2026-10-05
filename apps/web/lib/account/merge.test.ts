@@ -1,4 +1,5 @@
 import {
+  MINIKRAKEN,
   MemoryStorage,
   STORE_KEY,
   createLocalRepository,
@@ -142,6 +143,18 @@ describe('lo del invitado pasa a la cuenta (decisión 4, merge_guest)', () => {
       expect.objectContaining({ action: 'achievement', ref: 'primera-boia', coins: 30 }),
     ]);
     expect(p).not.toHaveProperty('times');
+  });
+
+  it('la mascota equipada pasa a la cuenta con lo demás (T154)', () => {
+    const p = mergePayloadFrom({
+      userId: 'yo',
+      ledger: [],
+      equipped: { mascot: MINIKRAKEN, flag: 'bandera-boia' },
+      discounts: [],
+      purchases: [],
+      records: {},
+    });
+    expect(p.equipped).toEqual({ flag: 'bandera-boia', mascot: MINIKRAKEN });
   });
 
   it('el resumen de la bienvenida cuenta lo aceptado', async () => {

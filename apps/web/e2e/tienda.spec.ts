@@ -1,4 +1,5 @@
 import {
+  MINIKRAKEN,
   MemoryStorage,
   SAMPLE_ACHIEVEMENTS,
   SAMPLE_COSMETICS,
@@ -174,5 +175,56 @@ test('/mar: ganar monedas, comprar un barco y una bandera, equiparlos y recargar
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
   await expect(root).toHaveAttribute('data-ship-style', STYLE);
   await expect(root).toHaveAttribute('data-ship-flag', flag.id);
+  expect(errors).toEqual([]);
+});
+
+/**
+ * La mascota de cubierta (plan 013 T154): con el atajo de desarrollo
+ * `?mascota=1` el minikraken es tuyo (como al vencer al Kraken); en Mi Barco
+ * se activa y se desactiva en su categoría «Mascota» y, activa, va en
+ * cubierta (el lienzo lo dice en `data-mascota`), también al volver sin el
+ * atajo.
+ */
+test('/mar: la mascota minikraken se gana, se equipa en Mi Barco y va en cubierta', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/mar?mascota=1');
+  const canvas = page.getByTestId('mar-canvas');
+  await expect(canvas).toBeVisible();
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+  const root = page.locator('main.mar');
+  await expect(root).toHaveAttribute('data-ship-style', world.theme.ship.style);
+  await expect(canvas).not.toHaveAttribute('data-mascota', /.+/);
+
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-barco').click();
+  const sheet = page.getByTestId('mar-tienda');
+  await expect(sheet).toBeVisible();
+  const shop = sheet.getByTestId('barco');
+  const option = shop.getByTestId(`barco-mascota-${MINIKRAKEN}`);
+  const none = shop.getByTestId('barco-mascota-ninguna');
+  // Ganada con el atajo: ya no está bloqueada, y aún no va puesta.
+  await expect(option).not.toHaveAttribute('data-bloqueado', 'si');
+  await expect(none).toHaveAttribute('aria-checked', 'true');
+  await option.click();
+  await expect(option).toHaveAttribute('aria-checked', 'true');
+  await expect(root).toHaveAttribute('data-ship-mascot', MINIKRAKEN);
+  await expect(canvas).toHaveAttribute('data-mascota', 'minikraken');
+
+  // Desactivar: fuera de cubierta. Y otra vez dentro.
+  await none.click();
+  await expect(none).toHaveAttribute('aria-checked', 'true');
+  await expect(canvas).not.toHaveAttribute('data-mascota', /.+/);
+  await option.click();
+  await expect(canvas).toHaveAttribute('data-mascota', 'minikraken');
+  await page.getByTestId('mar-tienda-cerrar').click();
+
+  // Sin el atajo: sigue siendo tuya y sigue en cubierta.
+  await page.goto('/mar');
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+  await expect(root).toHaveAttribute('data-ship-mascot', MINIKRAKEN);
+  await expect(canvas).toHaveAttribute('data-mascota', 'minikraken');
   expect(errors).toEqual([]);
 });

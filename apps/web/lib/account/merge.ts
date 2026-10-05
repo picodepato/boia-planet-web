@@ -20,6 +20,7 @@
  */
 import type { MergePayload, MergeResult } from '@boia/db/rpc';
 import {
+  COSMETIC_SLOTS,
   type FoundDiscount,
   type LedgerEntry,
   type Purchase,
@@ -31,7 +32,8 @@ type Reward = NonNullable<MergePayload['rewards']>[number];
 type Policy = NonNullable<Reward['policy']>;
 
 const POLICIES: readonly Policy[] = ['once', 'daily', 'season'];
-const SLOTS = ['flag', 'accessory', 'skin', 'wake', 'ship'] as const;
+/** Las ranuras que se equipan, las de la tienda (con `mascot` desde T154). */
+const SLOTS: readonly (keyof NonNullable<MergePayload['equipped']>)[] = COSMETIC_SLOTS;
 const METADATA_MAX_BYTES = 2000;
 const RECORD_ID = /^circuito:([a-z0-9]+(?:-[a-z0-9]+)*):v(\d+)$/;
 

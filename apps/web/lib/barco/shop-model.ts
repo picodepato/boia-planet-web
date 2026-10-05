@@ -45,6 +45,8 @@ export interface ShopRows {
   ships: ShopShipRow[];
   flags: ShopItem[];
   wakes: ShopItem[];
+  /** Mascotas de cubierta (T154): las que se tienen o se pueden ganar. */
+  mascots: ShopItem[];
 }
 
 /**
@@ -84,7 +86,7 @@ export function shopRows(catalog: ShipCatalog | null, items: readonly ShopItem[]
   }
   const active = (slot: string) =>
     items.filter((i) => i.cosmetic.slot === slot && (i.cosmetic.active || i.owned));
-  return { ships, flags: active('flag'), wakes: active('wake') };
+  return { ships, flags: active('flag'), wakes: active('wake'), mascots: active('mascot') };
 }
 
 /** Títulos de los logros por id; null si es oculto y no se ha completado. */

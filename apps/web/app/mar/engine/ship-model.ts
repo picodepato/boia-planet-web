@@ -12,6 +12,7 @@ import {
   Mesh as ThreeMesh,
   type Object3D,
   PlaneGeometry,
+  Raycaster,
   SRGBColorSpace,
   Vector3,
 } from 'three';
@@ -164,6 +165,21 @@ export function topPoint(o: Object3D): Vector3 {
     }
   });
   return Number.isFinite(best.y) ? best : new Vector3();
+}
+
+/**
+ * La superficie más alta del modelo en (x, z) de su padre (T154): cubierta o,
+ * si hay toldo, el techo. Un rayo de arriba abajo; null si no da con nada.
+ * La altura vuelve en coordenadas del padre.
+ */
+export function surfaceY(o: Object3D, x: number, z: number): number | null {
+  const parent = o.parent;
+  if (!parent) return null;
+  parent.updateMatrixWorld(true);
+  const from = parent.localToWorld(new Vector3(x, 1e3, z));
+  const dir = parent.localToWorld(new Vector3(x, -1e3, z)).sub(from).normalize();
+  const hit = new Raycaster(from, dir).intersectObject(o, true)[0];
+  return hit ? parent.worldToLocal(hit.point.clone()).y : null;
 }
 
 const css = (c: number) => `#${c.toString(16).padStart(6, '0')}`;

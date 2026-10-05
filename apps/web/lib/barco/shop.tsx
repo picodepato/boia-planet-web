@@ -6,6 +6,7 @@ import { requireAccount } from '../account/gate';
 import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
 import { FLAG_LOOKS, WAKE_TINTS, hexOf } from './dressing';
+import { MascotIcon } from './mascot-icon';
 import {
   type AchievementTitles,
   BASE_SKIN,
@@ -25,7 +26,8 @@ import { t as msg } from '../i18n';
  * el Menú de a bordo del 2D y en el selector de barco de /mar: cada barco
  * con su precio o su condición («te faltan N monedas/puntos»), comprar con
  * confirmación, equipar, lo propio marcado; las skins del barco que se lleva,
- * la bandera y la estela. Sólo cambia cómo se ve el barco.
+ * la bandera, la estela y la mascota de cubierta (T154). Sólo cambia cómo se
+ * ve el barco.
  */
 
 export interface ShopData {
@@ -61,12 +63,22 @@ export const SHOP_COPY = {
   firstShip: msg('barco.shop.primeroElBarco'),
   noFlag: msg('barco.shop.sinBandera'),
   plainWake: msg('barco.shop.espumaBlanca'),
+  noMascot: msg('barco.shop.sinMascota'),
+  mascotNote: msg('barco.shop.mascotaNota'),
 } as const;
+
+/** Ranuras que se eligen de una lista (con «ninguna»). */
+export type ListSlot = 'flag' | 'wake' | 'mascot';
+const LIST_PREFIX: Record<ListSlot, string> = {
+  flag: 'barco-bandera',
+  wake: 'barco-estela',
+  mascot: 'barco-mascota',
+};
 
 export interface ShopHandlers {
   equipShip: (row: ShopShipRow) => void;
   equipSkin: (row: ShopShipRow, skin: ShopSkinRow) => void;
-  equipSlot: (slot: 'flag' | 'wake', item: ShopItem | null) => void;
+  equipSlot: (slot: ListSlot, item: ShopItem | null) => void;
   ask: (item: ShopItem) => void;
   confirm: () => void;
   cancel: () => void;
@@ -263,6 +275,18 @@ export function BarcoShopView({
         on={on}
         buy={buyButton}
       />
+      <CosmeticList
+        title={msg('barco.shop.mascota')}
+        slot="mascot"
+        none={SHOP_COPY.noMascot}
+        note={SHOP_COPY.mascotNote}
+        items={rows.mascots}
+        swatch={() => null}
+        icon={(id) => <MascotIcon id={id} />}
+        text={text}
+        on={on}
+        buy={buyButton}
+      />
 
       {asking ? (
         <div
@@ -309,27 +333,34 @@ function CosmeticList({
   title,
   slot,
   none,
+  note,
   items,
   swatch,
+  icon,
   text,
   on,
   buy,
 }: {
   title: string;
-  slot: 'flag' | 'wake';
+  slot: ListSlot;
   none: string;
+  /** Una línea bajo el título (la mascota: dónde va y que no ayuda a jugar). */
+  note?: string;
   items: ShopItem[];
   swatch: (id: string) => string | null;
+  /** En vez de la muestra de color, un dibujo (la mascota). */
+  icon?: (id: string) => ReactNode;
   text: (i: ShopItem) => string;
   on: ShopHandlers;
   buy: (i: ShopItem, testId: string) => ReactNode;
 }) {
   if (items.length === 0) return null;
-  const prefix = slot === 'flag' ? 'barco-bandera' : 'barco-estela';
+  const prefix = LIST_PREFIX[slot];
   const noneOn = !items.some((i) => i.equipped);
   return (
     <>
       <h3 id={`tienda-${slot}`}>{title}</h3>
+      {note ? <p className="tienda-nota">{note}</p> : null}
       <ul className="tienda-cosmeticos" role="radiogroup" aria-labelledby={`tienda-${slot}`}>
         <li>
           <button
@@ -340,7 +371,11 @@ function CosmeticList({
             data-testid={`${prefix}-ninguna`}
             onClick={() => on.equipSlot(slot, null)}
           >
-            <span className="tienda-muestra" aria-hidden="true" />
+            {icon ? (
+              <span className="tienda-icono" aria-hidden="true" />
+            ) : (
+              <span className="tienda-muestra" aria-hidden="true" />
+            )}
             <span className="tienda-nombre">{none}</span>
           </button>
         </li>
@@ -358,11 +393,17 @@ function CosmeticList({
                 data-bloqueado={i.owned ? undefined : 'si'}
                 onClick={() => (i.owned ? on.equipSlot(slot, i) : undefined)}
               >
-                <span
-                  className="tienda-muestra"
-                  aria-hidden="true"
-                  style={bg ? { background: bg } : undefined}
-                />
+                {icon ? (
+                  <span className="tienda-icono" aria-hidden="true">
+                    {icon(i.cosmetic.id)}
+                  </span>
+                ) : (
+                  <span
+                    className="tienda-muestra"
+                    aria-hidden="true"
+                    style={bg ? { background: bg } : undefined}
+                  />
+                )}
                 <span className="tienda-nombre">
                   {i.owned ? null : <span aria-hidden="true">🔒 </span>}
                   {i.cosmetic.name}
