@@ -82,14 +82,14 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Skills: none
 - Depends on: T158
 - Goal: Header decisions 8 and 9 inside the sim.
-  - Build rule: inside the plane's ring, at a minimum distance from the path's centre line, no overlap with other islands or the castle; cost; returns a reason when invalid (for the HUD preview). Every island kind has the **same footprint radius** in the config (header decision 8: the level-3 size, about 1/3 of the castle's diameter), no per-kind radius; no cap on the number of islands.
+  - Build rule: inside the plane's ring, at a minimum distance from the path's centre line, not on or next to the vortex at the path's start (minimum distance from it), no overlap with other islands or the castle; cost; returns a reason when invalid (for the HUD preview). Every island kind has the **same footprint radius** in the config (header decision 8: the level-3 size, about 1/3 of the castle's diameter), no per-kind radius; no cap on the number of islands.
   - The seven towers with levels 1–3 (damage and, where it fits, range/rate): Faro sweeping beam; Nochevieja snowballs with short stun and a different target each shot when possible; Halloween fire cone with burn over time; Puerto fireworks mortar with area explosion; Ibiza farm with coins every few seconds; Isla del Sonido bass aura; Benidorm long-range sniper on the strongest enemy in range. Reuse the Cañón's weapon kinds' targeting/geometry helpers where they fit.
   - Upgrade (to 3) and sell (part of the money back); state exposes each tower's last shot/effect for the view.
   - Bot tests: a simple building bot can hold Tranquila with gold, Normal with a real fight; record numbers (T165 balances them).
 - Context: T158 Outcome, `packages/engine/src/survivors/config.ts` weapons (`laser`, `canon`, `confetti`, `fireworks`, `subwoofer`) and their code in `sim.ts`.
 - Scope: may touch `packages/engine/src/defense/**`, shared helpers as in T158 / must not touch the Cañón's balance, the web app, `docs/DECISIONES.md`.
 - Done when:
-  - unit tests: each tower hits what it should (beam sweep, stun duration and target rotation, burn ticks, area radius, farm income, aura, sniper picks the strongest in range); build rule rejects path/overlap/outside-ring; upgrade/sell money; bot results recorded → pass
+  - unit tests: each tower hits what it should (beam sweep, stun duration and target rotation, burn ticks, area radius, farm income, aura, sniper picks the strongest in range); build rule rejects path/vortex/overlap/outside-ring; upgrade/sell money; bot results recorded → pass
   - `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` → exit 0
   - Test command → exit 0
 - Outcome:
@@ -108,7 +108,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Context: `apps/web/app/mar/survivors.ts` (`HideLayer`), `canon-mode.tsx` (how the Cañón enters and leaves), `engine/mar3d.ts` (camera, decor, `Wings`), `engine/flight.ts`, `engine/race-props.ts`, `engine/islands.ts`, `engine/survivors-view.ts`, the castle model (`decor-model.ts`).
 - Scope: may touch `apps/web/app/mar/engine/**` (new defense view files, small hooks in `mar3d.ts`), `apps/web/app/mar/` game mode file for the castle, tests / must not touch the Cañón's behaviour, the engine sim rules, `docs/DECISIONES.md`.
 - Done when:
-  - unit tests: vortex placed at the path's start and removed on exit; sinking state and restore; camera pose for the arena; barrier placement along both sides of the path (no gaps, never on the castle); island normalization (all seven kinds give the same footprint within 5 % at each level, level 3 = 1.2× level 1, footprint matches the sim's radius) → pass
+  - unit tests: vortex placed at the path's start, on the open-sea side of the arena, at a minimum distance from Boia 7 and clear of the race lines (legs Boia 6 → 7 and 7 → 8), and removed on exit; sinking state and restore; camera pose for the arena; barrier placement along both sides of the path (no gaps, never on the castle); island normalization (all seven kinds give the same footprint within 5 % at each level, level 3 = 1.2× level 1, footprint matches the sim's radius) → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "arena"` (start with a test shortcut: islands hidden, castle visible, enemies on the path, plane moves; leaving restores the world) → exit 0
   - Test command → exit 0
 - Outcome:
@@ -219,7 +219,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Depends on: T157, T158, T159, T160, T161, T162, T163, T164, T166, T167
 - Goal: Close the plan.
   - **Balance with bots** for 3 run lengths × 3 difficulties: Tranquila winnable with a plain build, Normal a real fight, Tormenta hard; no single island strategy dominates (each island used by the best bot builds at least sometimes); Ibiza pays back in a reasonable time; record curves and win rates; bump `DEFENSE_CONFIG_VERSION` if numbers changed.
-  - **Performance in `baja`** at the 10-min peak with bosses, a full arena of islands at level 3 (no cap: as many as fit) and sound on; fix obvious hot spots only.
+  - **Performance in `baja`** at the 10-min peak with bosses, the vortex spinning and enemies emerging from it, the full floating barriers along the path, a full arena of islands at level 3 (no cap: as many as fit) and sound on; fix obvious hot spots only.
   - **E2E**: the full castle spec and the **full suite** (`E2E_PORT=<free> pnpm e2e --workers=2`), both exit 0.
   - **Docs**: `docs/spec/estado.md` (REQ-AVE-036 retired; the castle game noted as new scope pending Álvaro's REQ), `ESTADO.md` via the status fragment, a Spanish test guide `docs/propuestas/<date>-castillo-guia-prueba.md` with an empty «Notas» section, and a Spanish **decision draft for Álvaro** `docs/propuestas/<date>-castillo-decision-alvaro.md` (lighthouse without game and its board, «Vigilancia del faro» removed with its achievement, the new game, names and texts, whether it gives a world prize or achievements) — not in `docs/DECISIONES.md`.
 - Context: all Outcomes, Decisions and Proposals of this plan; `python3 tools/spec/estado.py`.
@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-05 plan: no building on the vortex (T159); vortex test checks the open-sea side away from Boia 7 and the race lines (T160); `baja` performance includes the vortex and the barriers (T165) (Hernán, orchestrator)
 - 2026-10-05 plan: T167 added, remove the boat flag option from the boat menu (buggy, not important); saved flags ignored on load, no refund (Hernán, orchestrator)
 - 2026-10-06 plan: the path starts at an interdimensional vortex (lilac and black spinning spiral) from which enemies appear (Hernán)
 - 2026-10-06 plan: path = spiral inward around the castle with S and zigzag sections, same for every game, ≈ 40 s for a normal enemy; lane marked with continuous floating barriers (clearer from the high camera and cheaper than many buoys), race buoys only as accents; no approval stops for the path or the Tabarca island (Hernán accepts in advance) (Hernán, orchestrator)
@@ -251,3 +252,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 amended: path shape and floating barriers (decision 5, T158, T160); T166 without approval stop
 - 2026-10-06 amended: vortex at the path's start (decision 5, T160)
 - 2026-10-05 amended: T167 remove the boat flag option (T165 depends on it)
+- 2026-10-05 amended: vortex build rule (T159), vortex placement test (T160), vortex and barriers in the performance check (T165)
