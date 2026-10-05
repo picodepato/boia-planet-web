@@ -132,7 +132,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T139 — Miniboss 2: Tiburón Martillo and the chest
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T135, T137
@@ -146,7 +146,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T140 — Act 1 final boss: Barco Pirata Fantasma
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T134, T137
@@ -157,7 +157,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests: invulnerable windows ignore damage, broadsides telegraphed and blocked by islands, summons, defeat emits the ending event, determinism
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with a `t=` start past 5:30 showing the ghost ship without console errors
   - Test command → exit 0
-- Outcome:
+- Outcome: Ghost ship in `fantasma.ts` (solid/ghost windows per phase, ghost = invulnerable and only summons, telegraphed broadsides blocked by islands, ghost pirates), translucent model with steady opacities, act-1 final slot on; defeating any final boss ends the game with new EndReason `victory` (won, reward granted); balance tests run with boss slots off (`WAVES_ONLY`); config v11; 1557 unit tests, mar-canon e2e 56 passed + 1 flaky rerun → 4284140
 
 ## T141 — Act 2 final boss: the Kraken (simulation)
 - Status: done
@@ -290,6 +290,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 plan: T140 launched next (Fable, on the path to T144); its prompt allows turning on act 1's final-boss slot in normal games (beta 3 content) (orchestrator)
 
+- 2026-10-05 T140: generic touches `attackFrom`, plan hook in `stepBosses`, `ghostSpeedScale`, `summon.ghost` → `EnemyView.ghost`, `finish` accepts only the first reason, no card after end; new EndReason `victory` for any final boss (Kraken too) = won with score = goal, `minPlausibleMs` bounded by `canonEarliestWinS()` (330 s); T132 balance tests and 7:00 dawn test run with boss slots off; two older e2e now answer the seed-7 card at 128.2 s (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -297,6 +299,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T137: a `clave` note figure needs a web model; camera shake on `bossHit` (mar3d shakes only on `hit`) — for T143/T147
 - 2026-10-05 T141: i18n key `survivors.boss.kraken` missing (web); Kraken balance is a first cut for T147
 - 2026-10-05 T135: the T146 desktop ramp e2e failed once and passed alone: possibly flaky (T147)
+- 2026-10-05 T140: flaky e2e dawn reward at t=419 reads balances racily under load (passes alone); i18n keys `survivors.boss.prueba`/`kraken` missing; HUD readouts of `ghostness`/`leftS` for T143
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -315,3 +318,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 14:30 T135 done by agent; integration conflict with T137 in survivors/bots.ts, index.ts, sim.ts → sent back to the same agent (also wires the Llama to bosses)
 - 2026-10-05 14:45 T141 done · branch worktree-agent-af95bee9f08210542 → 6b702dd; T135 agent told to merge main again
 - 2026-10-05 14:47 T140 launched · attempt 1 · agent a012b3b9cca4dd07b (fable)
+- 2026-10-05 15:03 T135 worktree locked by its agent process (pid 14216): branch and worktree left, remove at plan end
+- 2026-10-05 15:03 T139 launched · attempt 1 · agent a65dc2c0dd0e2b4cd (opus); push offer T134 cancelled, push offer T135 sent
+- 2026-10-05 16:10 T139 agent stopped by API 529 (overloaded); resumed the same agent (not a counted failure)
+- 2026-10-05 16:50 T140 done · branch worktree-agent-a012b3b9cca4dd07b → 4284140
