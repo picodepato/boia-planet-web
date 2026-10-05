@@ -44,7 +44,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: weapons ~1.6× damage (canon 16 every 0.7 s), card weighting toward owned weapons/paired vinyls (evolution before 5:00 in 6/6 Normal seeds), Tormenta 1.6/1.6/1.6, kill share Tranquila 0.97 / Normal 0.96 / Tormenta 0.91, config v7; 1470 unit tests → 8b471b7
 
 ## T134 — Redesign Fireworks and Festival laser
-- Status: pending
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T133
@@ -59,7 +59,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - `pnpm exec vitest run packages/engine/src/survivors apps/web/app/mar/engine --testTimeout=60000` → exit 0 with tests: firecrackers burst on contact, spotlights lock and switch targets, Show de Láseres from Focos at 5 + Techno, determinism
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0 (including `armas=1` without console errors)
   - Test command → exit 0
-- Outcome:
+- Outcome: Traca (id `fireworks`, kind `trail`, firecrackers ≥24 u apart, cap 48/24) and Focos (1→3 beams locking on, 5 dmg / 0.25 s), Show de Láseres = 7-beam front fan sweeping; config v8; 1478 unit tests, mar-canon e2e 53 passed → 8f0f20b
 
 ## T135 — Elite drops: Imán total, Llama and Salvavidas
 - Status: pending
@@ -98,7 +98,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T137 — Generic boss system (simulation)
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T133
@@ -278,12 +278,21 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T133: all 7 weapons and 4 evolutions ~1.6× damage (base and per level); card offer weights (owned weapon/vinyl and the vinyl pairing a held weapon weigh 3, new 1; `cardWeights`); XP curve and evolution condition unchanged; Tormenta multipliers 1.3/1.3/1.4 → 1.6/1.6/1.6 because the bot survived every Tormenta seed with the new weapons; greedy bot chases notes up to 900 u; four older tests loosened (idle Normal floods before 2:00, idle Tranquila may survive one seed on the dense test archipelago, beta-1 dodge ×2.5 idle, jellyfish test stops at the split); config v7 (agent)
 
+- 2026-10-05 plan: T137 launched before T135/T136 (out of plan order) because it is the critical path for five tasks; T134 with it since T138/T140 need both; the next tasks keep running while the T133 push offer is open (orchestrator)
+
+- 2026-10-05 T134: rocket kind and weaponRng removed; new `caps.crackers`; Focos damage lowered to 5/0.25 s because idle bots survived; Show de Láseres front fan (full circle made an idle boat untouchable); T132 idle-boat balance test relaxed to «at most one Normal seed past 120 s, none past 330 s» and median comparison — review in T147 (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
+- 2026-10-05 T134: HUD slot icon for Traca still 🎆 (`canon-hud-model.ts`); beta 3 guide must describe Traca and Focos (T147)
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
 - 2026-10-05 12:02 T133 launched · attempt 1 · agent a182b9911515b38cc (opus)
 - 2026-10-05 12:02 T146 launched · attempt 1 · agent a270200b1b81ed99e (sonnet)
 - 2026-10-05 12:35 T133 done · branch worktree-agent-a182b9911515b38cc → 8b471b7
+- 2026-10-05 12:40 push offer T133 sent (T146 offer cancelled)
+- 2026-10-05 12:41 T137 launched · attempt 1 · agent a11a931ea96d7dfdb (fable)
+- 2026-10-05 12:41 T134 launched · attempt 1 · agent ae60eb0e7dd197709 (opus)
+- 2026-10-05 13:20 T134 done · branch worktree-agent-ae60eb0e7dd197709 → 8f0f20b
