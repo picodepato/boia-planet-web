@@ -75,6 +75,10 @@ export interface CanonView {
   card: LevelUpCard | null;
   /** La fila de armas y vinilos (T130), en texto para comparar sin más. */
   slotsKey: string;
+  /** s que le quedan a la Llama del botín (T135), enteros hacia arriba; 0 apagada. */
+  flameS: number;
+  /** % que le queda a la Llama (para su barrita). */
+  flamePct: number;
 }
 
 /** El HUD desde el estado de la partida (se lee varias veces por segundo). */
@@ -88,6 +92,8 @@ export function canonView(s: SurvivorsSnapshot): CanonView {
     waterCapacity: s.water.capacity,
     card: s.card,
     slotsKey: slotsKey(s),
+    flameS: s.flame ? Math.max(0, Math.ceil(s.flame.leftS - 1e-6)) : 0,
+    flamePct: s.flame ? percent(s.flame.leftS, s.flame.durationS) : 0,
   };
 }
 
@@ -103,7 +109,9 @@ export function sameView(a: CanonView | null, b: CanonView | null): boolean {
     a.waterPct === b.waterPct &&
     a.waterCapacity === b.waterCapacity &&
     a.card === b.card &&
-    a.slotsKey === b.slotsKey
+    a.slotsKey === b.slotsKey &&
+    a.flameS === b.flameS &&
+    a.flamePct === b.flamePct
   );
 }
 
@@ -126,7 +134,7 @@ export const WEAPON_ICON: Readonly<Record<WeaponId, string>> = {
   laser: '🔦',
   buoys: '🛟',
   confetti: '🎊',
-  fireworks: '🎆',
+  fireworks: '🧨',
   acidRain: '🌧️',
 };
 
@@ -151,6 +159,8 @@ export const EVOLUTION_ICON: Readonly<Record<EvolutionId, string>> = {
   discoBall: '🪩',
 };
 export const SALVAVIDAS_ICON = '🛟';
+/** El aviso de la Llama del botín mientras dura (T135). */
+export const FLAME_ICON = '🔥';
 export const FALLBACK_ICON = '🪣';
 
 /** Lo que una carta enseña, ya resuelto para pintarla (T130). */

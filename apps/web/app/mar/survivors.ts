@@ -3,6 +3,7 @@ import type { QualityTier } from '@boia/engine/streaming';
 import {
   type DefeatStyle,
   type DifficultyId,
+  DROP_IDS,
   type EndReason,
   SURVIVORS_CONFIG,
   SurvivorsClock,
@@ -58,6 +59,11 @@ export const CANON_PARAMS = {
   weapons: 'armas',
   /** `dificultad=tranquila|normal|tormenta`: empezar con esa dificultad (T131). */
   difficulty: 'dificultad',
+  /**
+   * `botin=1` (T135): toda élite derrotada suelta objeto (100 %) y la
+   * partida empieza con los tres objetos del botín flotando junto al barco.
+   */
+  loot: 'botin',
   dev: 'dev',
 } as const;
 
@@ -108,16 +114,23 @@ export function devStartRewards(env: DevEnv = devEnv()): boolean {
 /**
  * ¿La partida es de prueba? Lo es si un atajo cambia el juego: `&t=` (se
  * salta tiempo), `&seed=` (una semilla elegida se puede ensayar),
- * `&carta=1` (un nivel regalado) o `&armas=1` (todas las armas). `&derrota=`
- * sólo cambia cómo se ve: no.
+ * `&carta=1` (un nivel regalado), `&armas=1` (todas las armas) o `&botin=1`
+ * (el botín de regalo, T135). `&derrota=` sólo cambia cómo se ve: no.
  */
 export function isDevStart(s: {
   t?: number;
   seed?: number | null;
   card?: boolean;
   weapons?: boolean;
+  loot?: boolean;
 }): boolean {
-  return (s.t ?? 0) > 0 || (s.seed ?? null) !== null || s.card === true || s.weapons === true;
+  return (
+    (s.t ?? 0) > 0 ||
+    (s.seed ?? null) !== null ||
+    s.card === true ||
+    s.weapons === true ||
+    s.loot === true
+  );
 }
 
 export interface CanonShortcut {
@@ -137,6 +150,8 @@ export interface CanonShortcut {
   weapons: boolean;
   /** Dificultad pedida (`&dificultad=`), o null (la elegida en el panel). */
   difficulty: DifficultyId | null;
+  /** El botín siempre y de regalo al empezar (`&botin=1`, T135). */
+  loot: boolean;
 }
 
 /**
@@ -162,6 +177,7 @@ export function canonShortcut(
     mix: q.get(CANON_PARAMS.card) === CARD_MIX,
     weapons: q.get(CANON_PARAMS.weapons) === '1',
     difficulty: asDifficulty(q.get(CANON_PARAMS.difficulty)),
+    loot: q.get(CANON_PARAMS.loot) === '1',
   };
 }
 
@@ -177,6 +193,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.card,
     CANON_PARAMS.weapons,
     CANON_PARAMS.difficulty,
+    CANON_PARAMS.loot,
   ]) {
     url.searchParams.delete(p);
   }
@@ -389,6 +406,8 @@ export interface SurvivorsRunOptions {
   devWeapons?: boolean;
   /** Sólo atajo `&carta=surtido` (T130): una config recortada para que salga una carta de cada clase. */
   devMix?: boolean;
+  /** Sólo atajo `&botin=1` (T135): toda élite suelta objeto en esta partida de prueba. */
+  devLoot?: boolean;
   config?: SurvivorsConfig;
   /** Dificultad (T131); sin valor, Normal. */
   difficulty?: DifficultyId;
@@ -426,6 +445,13 @@ export interface CanonHook {
   mejoras: string;
   /** Opciones de la carta de nivel abierta (0 sin carta). */
   carta: number;
+  /** Objetos del botín cogidos (T135) y los que flotan ahora. */
+  botin: number;
+  botinAgua: number;
+  /** Dónde flota el objeto del botín más cercano al barco (u, enteros): «x,y»; '' sin ninguno. */
+  botinCerca: string;
+  /** s que le quedan a la Llama (hacia arriba; 0 apagada). */
+  llama: number;
 }
 
 /**
@@ -452,6 +478,28 @@ export function mixConfig(config: SurvivorsConfig): SurvivorsConfig {
   };
 }
 
+/** El objeto del botín más cercano al barco, «x,y» (u, enteros), o '' sin ninguno (para las pruebas). */
+export function nearestPickup(s: Pick<SurvivorsSnapshot, 'pickups' | 'player'>): string {
+  let best: { x: number; y: number } | null = null;
+  let bestD = Infinity;
+  for (const o of s.pickups) {
+    const d = Math.hypot(o.x - s.player.x, o.y - s.player.y);
+    if (d < bestD) {
+      best = o;
+      bestD = d;
+    }
+  }
+  return best ? `${Math.round(best.x)},${Math.round(best.y)}` : '';
+}
+
+/** u del barco a los que el atajo `&botin=1` deja los objetos del botín. */
+export const LOOT_DISTANCE = 90;
+
+/** La config del atajo `&botin=1` (T135): toda élite suelta objeto. */
+export function lootConfig(config: SurvivorsConfig): SurvivorsConfig {
+  return { ...config, drops: { ...config.drops, chance: 1 } };
+}
+
 export class SurvivorsRun {
   readonly game: SurvivorsGame;
   readonly config: SurvivorsConfig;
@@ -468,12 +516,13 @@ export class SurvivorsRun {
 
   constructor(world: SurvivorsWorld, opts: SurvivorsRunOptions) {
     const config = opts.config ?? SURVIVORS_CONFIG;
-    this.config =
+    const base =
       opts.devWeapons && devShortcutsEnabled()
         ? { ...config, slots: { ...config.slots, weapons: Object.keys(config.weapons).length } }
         : opts.devMix && devShortcutsEnabled()
           ? mixConfig(config)
           : config;
+    this.config = opts.devLoot && devShortcutsEnabled() ? lootConfig(base) : base;
     this.seed = opts.seed;
     this.quality = opts.quality;
     this.difficulty = opts.difficulty ?? 'normal';
@@ -567,6 +616,20 @@ export class SurvivorsRun {
     }
   }
 
+  /**
+   * Atajo `&botin=1` (T135): los tres objetos del botín flotando alrededor
+   * del barco, el primero justo delante (a un par de cascos), para verlos y
+   * cogerlos sin esperar a una élite. Sólo con los atajos encendidos.
+   */
+  devLoot(env: DevEnv = devEnv()): void {
+    if (!devShortcutsEnabled(env)) return;
+    const p = this.game.snapshot().player;
+    DROP_IDS.forEach((item, k) => {
+      const a = p.heading + (k * Math.PI * 2) / DROP_IDS.length;
+      this.game.spawnPickup(item, p.x + Math.cos(a) * LOOT_DISTANCE, p.y + Math.sin(a) * LOOT_DISTANCE);
+    });
+  }
+
   /** Pausa (un panel encima, el menú): los pasos cuentan como pausa. */
   setPaused(paused: boolean): void {
     this.game.setPaused(paused);
@@ -602,6 +665,10 @@ export class SurvivorsRun {
         .sort()
         .join(','),
       carta: s.card?.options.length ?? 0,
+      botin: s.pickupsTaken,
+      botinAgua: s.pickups.length,
+      botinCerca: nearestPickup(s),
+      llama: s.flame ? Math.ceil(s.flame.leftS - 1e-6) : 0,
     };
   }
 

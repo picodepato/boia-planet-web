@@ -8,6 +8,7 @@ import {
   END_KEYS,
   EVOLUTION_ICON,
   FALLBACK_ICON,
+  FLAME_ICON,
   SALVAVIDAS_ICON,
   UPGRADE_ICON,
   VINYL_ICON,
@@ -106,6 +107,26 @@ describe('las barras', () => {
     expect(sameView(v, { ...v, waterPct: v.waterPct + 1 })).toBe(false);
     expect(sameView(v, null)).toBe(false);
     expect(sameView(null, null)).toBe(true);
+  });
+
+  it('la Llama del botín (T135): sus segundos y su barrita mientras dura; apagada, 0', () => {
+    const r = run();
+    expect(canonView(r.snapshot())).toMatchObject({ flameS: 0, flamePct: 0 });
+    const p = r.snapshot().player;
+    r.game.spawnPickup('llama', p.x, p.y);
+    r.step(idle);
+    const d = SURVIVORS_CONFIG.drops.llama.durationS;
+    const on = canonView(r.snapshot());
+    expect(on.flameS).toBe(d);
+    expect(on.flamePct).toBe(100);
+    for (let i = 0; i < 60 * 3; i++) r.step(idle);
+    const later = canonView(r.snapshot());
+    expect(later.flameS).toBe(Math.ceil(r.snapshot().flame!.leftS - 1e-6));
+    expect(later.flameS).toBeLessThan(d);
+    expect(later.flamePct).toBe(percent(r.snapshot().flame!.leftS, d));
+    expect(sameView(on, later)).toBe(false);
+    expect(FLAME_ICON).toBeTruthy();
+    expect(msg('mar.canon.llama', { s: 7 })).toContain('7');
   });
 });
 

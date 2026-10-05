@@ -1040,3 +1040,63 @@ test('rendimiento en `baja`: a las 6:00 con los topes llenos y las siete armas, 
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   expect(errors).toEqual([]);
 });
+
+test('`botin=1`: los tres objetos del botín flotan junto al barco y se cogen tocándolos; la Llama avisa en el HUD (T135)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&botin=1&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  expect(new URL(page.url()).searchParams.has('botin')).toBe(false);
+  await expect(game(page)).toHaveAttribute('data-botin-agua', '3');
+  await expect(game(page)).toHaveAttribute('data-botin', '0');
+  // Se gobierna con las flechas hacia el objeto más cercano hasta cogerlos todos.
+  const held = new Set<string>();
+  const hold = async (keys: string[]) => {
+    for (const k of [...held]) {
+      if (keys.includes(k)) continue;
+      await page.keyboard.up(k);
+      held.delete(k);
+    }
+    for (const k of keys) {
+      if (held.has(k)) continue;
+      await page.keyboard.down(k);
+      held.add(k);
+    }
+  };
+  let flameSeen = false;
+  try {
+    const until = Date.now() + 60_000;
+    while (Date.now() < until) {
+      if ((await game(page).getAttribute('data-estado')) === 'card') {
+        await hold([]);
+        await page.keyboard.press('Enter');
+      }
+      if ((await page.getByTestId('mar-canon-llama').count()) > 0) flameSeen = true;
+      if (Number(await game(page).getAttribute('data-botin')) >= 3) break;
+      const target = await game(page).getAttribute('data-botin-cerca');
+      if (!target) break;
+      const t = pointOf(target);
+      const s = pointOf(await game(page).getAttribute('data-barco'));
+      const dx = t.x - s.x;
+      const dy = t.y - s.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const keys: string[] = [];
+      if (dx / d > 0.35) keys.push('ArrowRight');
+      if (dx / d < -0.35) keys.push('ArrowLeft');
+      if (dy / d > 0.35) keys.push('ArrowDown');
+      if (dy / d < -0.35) keys.push('ArrowUp');
+      await hold(keys);
+      await page.waitForTimeout(100);
+    }
+  } finally {
+    await hold([]);
+  }
+  expect(Number(await game(page).getAttribute('data-botin'))).toBeGreaterThanOrEqual(1);
+  // La Llama (10 s): su aviso con los segundos que quedan, mientras dura.
+  if (!flameSeen && Number(await game(page).getAttribute('data-llama')) > 0) {
+    await expect(page.getByTestId('mar-canon-llama')).toBeVisible();
+    flameSeen = true;
+  }
+  if (Number(await game(page).getAttribute('data-botin')) >= 3) expect(flameSeen).toBe(true);
+  expect(errors).toEqual([]);
+});

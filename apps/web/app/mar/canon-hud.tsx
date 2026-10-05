@@ -9,6 +9,7 @@ import {
   type CanonResult,
   type CanonView,
   END_KEYS,
+  FLAME_ICON,
   SALVAVIDAS_ICON,
   type SlotView,
   type SlotsView,
@@ -189,6 +190,21 @@ function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
           <span className="mar-canon-xp__fill" style={{ width: `${view.xpPct}%` }} />
         </span>
       </div>
+      {view.flameS > 0 ? (
+        <div
+          className="mar-canon-hud__llama"
+          data-testid="mar-canon-llama"
+          data-segundos={view.flameS}
+          role="status"
+          aria-label={msg('mar.canon.llama.aria', { s: view.flameS })}
+        >
+          <span aria-hidden="true">{FLAME_ICON}</span>
+          <span aria-hidden="true">{msg('mar.canon.llama', { s: view.flameS })}</span>
+          <span className="mar-canon-llama-bar" aria-hidden="true">
+            <span className="mar-canon-llama-bar__fill" style={{ width: `${view.flamePct}%` }} />
+          </span>
+        </div>
+      ) : null}
     </section>
   );
 }

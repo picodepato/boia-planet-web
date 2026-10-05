@@ -1,6 +1,7 @@
 import { configHash } from '../minigames/rng';
 import type { ShipConfig } from '../ship/config';
 import type { QualityTier } from '../world/sectors';
+import type { DropsDef } from './drops';
 
 /**
  * La configuración única y versionada del modo Survivors del Cañón («Que no
@@ -23,7 +24,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 10;
+export const SURVIVORS_CONFIG_VERSION = 11;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -698,6 +699,8 @@ export interface SurvivorsConfig {
     invulnerableS: number;
   };
   fallback: { id: 'bailing'; i18nKey: string; textKey: string; waterRemoved: number };
+  /** El botín de las élites (T135): Imán total, Llama y Salvavidas (`drops.ts`). */
+  drops: DropsDef;
   spawn: {
     /** u del barco al anillo donde aparecen (fuera de la cámara por todos los lados). */
     ringMin: number;
@@ -869,6 +872,15 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     i18nKey: 'survivors.fallback.bailing',
     textKey: 'survivors.fallback.bailing.efecto',
     waterRemoved: 25,
+  },
+  drops: {
+    chance: 0.05,
+    types: ['iman', 'llama', 'salvavidas'],
+    radius: 16,
+    lifeS: 25,
+    max: 6,
+    llama: { durationS: 10, range: 110, halfAngle: 0.45, killS: 0.4 },
+    salvavidas: { waterFraction: 0.4 },
   },
   spawn: {
     ringMin: 900,

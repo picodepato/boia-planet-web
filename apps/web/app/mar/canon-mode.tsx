@@ -143,6 +143,8 @@ interface StartOptions {
   mix?: boolean;
   /** Dificultad pedida (`&dificultad=`); sólo cuenta con los atajos encendidos y se recuerda. */
   difficulty?: DifficultyId | null;
+  /** `&botin=1` (T135): el botín siempre y de regalo al empezar. */
+  loot?: boolean;
 }
 
 export function useCanonMode({
@@ -257,6 +259,7 @@ export function useCanonMode({
       weapons = false,
       mix = false,
       difficulty: askedDifficulty = null,
+      loot = false,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
@@ -279,9 +282,11 @@ export function useCanonMode({
         startAtS: t,
         devWeapons: weapons && devShortcutsEnabled(),
         devMix: mix && devShortcutsEnabled(),
+        devLoot: loot && devShortcutsEnabled(),
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (weapons) run.devAllWeapons();
+      if (loot) run.devLoot();
       if (!g.startSurvivors(run)) return false;
       const gift = card && devShortcutsEnabled();
       if (gift && mix) run.devMixCard();
@@ -299,7 +304,13 @@ export function useCanonMode({
         currentConfig: () => canonConfigFor(run.config, run.difficulty),
         seed: run.seed,
         skippedS: run.snapshot().activeS,
-        devStart: isDevStart({ t, seed, card: gift, weapons: weapons && devShortcutsEnabled() }),
+        devStart: isDevStart({
+          t,
+          seed,
+          card: gift,
+          weapons: weapons && devShortcutsEnabled(),
+          loot: loot && devShortcutsEnabled(),
+        }),
         devStartRewards: devStartRewards(),
       });
       setEnded(false);
@@ -420,6 +431,7 @@ export function useCanonMode({
         difficulty: sc.difficulty,
         weapons: sc.weapons,
         mix: sc.mix,
+        loot: sc.loot,
       });
     }
   }, [ready, start]);
@@ -607,6 +619,10 @@ export function CanonTestHook({
       data-barco={hud.barco}
       data-mejoras={hud.mejoras}
       data-carta={hud.carta}
+      data-botin={hud.botin}
+      data-botin-agua={hud.botinAgua}
+      data-botin-cerca={hud.botinCerca || undefined}
+      data-llama={hud.llama}
       data-premio={prize ?? undefined}
     />
   );

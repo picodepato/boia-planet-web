@@ -523,7 +523,8 @@ export const esMar = {
   'survivors.evolution.laserShow.efecto': 'Sustituye a los Focos: 7 rayos en abanico delante del barco que barren de lado a lado, de alcance 440 y medio ancho 14, 30 de daño cada 0,16 s; pasan sobre las islas. Valores base; tus vinilos también se aplican.',
   'survivors.evolution.discoBall': 'Bola de Discoteca',
   'survivors.evolution.discoBall.efecto': 'Sustituye a las Boyas: una bola de radio 42 orbita a 90, 50 de daño cada 0,3 s; lanza 6 destellos cada 0,8 s, de alcance 420 y 50 de daño. Pasa sobre las islas. Valores base; tus vinilos también se aplican.',
-  'survivors.salvavidas': 'Salvavidas',
+  // La carta rara (T129) se llama «Segunda vida» desde T135: «Salvavidas» es ya el objeto del botín.
+  'survivors.salvavidas': 'Segunda vida',
   'survivors.salvavidas.efecto': 'Objeto raro: evita una inundación, deja el agua al 25 % y da 2 s de invulnerabilidad. Se consume una vez; no ocupa hueco.',
   'survivors.fallback.bailing': 'Achique de emergencia',
   'survivors.fallback.bailing.efecto': 'Retira 25 de agua a bordo ahora; no ocupa hueco.',
@@ -556,7 +557,10 @@ export const esMar = {
   'mar.canon.equipo.hueco': 'Hueco libre',
   'mar.canon.equipo.nivel': '{nombre}, nivel {n} de {max}',
   'mar.canon.equipo.evolucionada': '{nombre}, evolucionada',
-  'mar.canon.equipo.salvavidas': 'Salvavidas listo: te salva de una inundación',
+  'mar.canon.equipo.salvavidas': 'Segunda vida lista: te salva de una inundación',
+  // El botín de las élites (T135). muestra
+  'mar.canon.llama': 'Llama: {s} s',
+  'mar.canon.llama.aria': 'Llama encendida delante del barco: quedan {s} segundos',
   'mar.canon.menu.aviso':
     'Partida en pausa. Si sales de esta página (por ejemplo, para comprar entradas), la partida termina.',
   'mar.canon.menu.seguir': 'Seguir jugando',

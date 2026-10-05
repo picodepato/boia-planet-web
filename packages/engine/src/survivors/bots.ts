@@ -227,6 +227,10 @@ export interface BotRun {
    * hundido al menos tantos como había (no vale sólo escapar).
    */
   screenClearsS: number[];
+  /** Objetos del botín soltados por las élites (T135). */
+  drops: number;
+  /** Los cogidos, «tipo@s» en orden. */
+  pickups: string[];
   /** Bosses (T137): golpes de boss recibidos, agua que metieron y los vencidos en orden. */
   bossHits: number;
   bossWater: number;
@@ -276,6 +280,8 @@ export function runBot(
     defeated: 0,
     evolvedS: null,
     screenClearsS: [],
+    drops: 0,
+    pickups: [],
     bossHits: 0,
     bossWater: 0,
     bossesDefeated: [],
@@ -303,6 +309,10 @@ export function runBot(
         run.defeatedByType[e.enemy] = (run.defeatedByType[e.enemy] ?? 0) + 1;
         run.defeated++;
         killsSincePeak++;
+      } else if (e.type === 'drop') {
+        run.drops++;
+      } else if (e.type === 'pickup') {
+        run.pickups.push(`${e.item}@${Math.round(game.activeS)}`);
       } else if (e.type === 'evolved' && run.evolvedS === null) {
         run.evolvedS = game.activeS;
       } else if (e.type === 'bossHit') {

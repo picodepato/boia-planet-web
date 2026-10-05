@@ -63,6 +63,7 @@ import {
 } from './kraken';
 import { buildCardPool, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
 export type { CardOption } from './cards';
+import { type DropId, flameDamage, inFlame } from './drops';
 import { SpatialGrid } from './grid';
 import { SurvivorsMovement, type MovementView } from './movement';
 import type { JumpEvent } from '../circuit/jump';
@@ -94,6 +95,8 @@ import { IslandIndex, type SurvivorsWorld } from './world';
  *   pasan por encima.
  * - Las notas se funden y el imán las atrae; subir de nivel abre una carta
  *   (1 de 3) y la partida queda en pausa hasta elegir.
+ * - Botín (T135): una élite que cae suelta a veces un objeto que flota
+ *   (Imán total, Llama o Salvavidas, `drops.ts`) y se coge tocándolo.
  * - Agua a bordo = vida; llena, inundado. A los 7:00 de tiempo activo,
  *   amanece. Una pausa seguida de más de 5 min abandona la partida.
  */
@@ -132,6 +135,10 @@ export type SurvivorsEvent =
   | { type: 'levelUp'; level: number }
   | { type: 'saved'; item: 'salvavidas'; x: number; y: number; water: number }
   | { type: 'evolved'; weapon: WeaponId; evolutionId: EvolutionId }
+  /** Una élite suelta un objeto del botín (T135) que flota en (x, y). */
+  | { type: 'drop'; item: DropId; id: number; x: number; y: number }
+  /** El barco coge un objeto del botín: su efecto empieza ya. */
+  | { type: 'pickup'; item: DropId; id: number; x: number; y: number }
   // --- Bosses (T137) ---
   /** Entra un boss por delante del barco (`id` es el de la entidad, único en la partida). */
   | { type: 'bossSpawn'; boss: BossId; id: number; kind: BossDef['kind']; nameKey: string; x: number; y: number }
@@ -301,6 +308,30 @@ export interface NoteView {
   readonly magnet: boolean;
 }
 
+/** Un objeto del botín flotando en el agua (T135). */
+export interface PickupView {
+  readonly id: number;
+  readonly item: DropId;
+  readonly x: number;
+  readonly y: number;
+  /** s que le quedan antes de hundirse y lo que flotaba al caer. */
+  readonly lifeS: number;
+  readonly durationS: number;
+}
+
+/** La Llama encendida delante del barco (T135): un sector de agua que quema. */
+export interface FlameView {
+  readonly x: number;
+  readonly y: number;
+  /** El rumbo del barco: hacia donde sale la llama. */
+  readonly heading: number;
+  readonly range: number;
+  readonly halfAngle: number;
+  /** s que le quedan y lo que dura entera. */
+  readonly leftS: number;
+  readonly durationS: number;
+}
+
 /** Un boss vivo, para la pantalla y el HUD (T137). */
 export interface BossView {
   readonly id: number;
@@ -413,6 +444,12 @@ export interface SurvivorsSnapshot {
   /** Petardos de la Traca en el agua. */
   readonly crackers: readonly CrackerView[];
   readonly notes: readonly NoteView[];
+  /** Objetos del botín flotando (T135). */
+  readonly pickups: readonly PickupView[];
+  /** La Llama, mientras dura (null apagada). */
+  readonly flame: FlameView | null;
+  /** Objetos del botín cogidos en la partida. */
+  readonly pickupsTaken: number;
   /** Ya salen élites (hito `elites` del guion). */
   readonly elitesActive: boolean;
   /** La «Marea» está cayendo. */
@@ -605,6 +642,16 @@ interface Note {
   dead: boolean;
 }
 
+/** Un objeto del botín en el agua (T135). */
+interface Pickup {
+  id: number;
+  item: DropId;
+  x: number;
+  y: number;
+  lifeS: number;
+  durationS: number;
+}
+
 /** Un ataque de boss en curso: su definición, en qué está y la geometría fijada al avisar. */
 interface BossAttack {
   name: string;
@@ -719,6 +766,8 @@ export class SurvivorsGame {
   private readonly noteGrid: SpatialGrid;
   private readonly spawnRng: () => number;
   private readonly cardRng: () => number;
+  /** Azar del botín (T135): aparte, para que soltar objetos no cambie lo que aparece. */
+  private readonly dropRng: () => number;
   private readonly baseShip: ShipConfig;
   private shipCfg: ShipConfig;
   private readonly weapons: WeaponSlot[] = [];
@@ -763,6 +812,24 @@ export class SurvivorsGame {
   private readonly beams: BeamView[] = [];
   private readonly orbitals: OrbitalView[] = [];
   private readonly notes: Note[] = [];
+  private readonly pickups: Pickup[] = [];
+  /** s que le quedan a la Llama (0: apagada). */
+  private flameS = 0;
+  private pickupsTaken = 0;
+  /**
+   * Ids de los objetos del botín, aparte de `nextId`: soltar uno no cambia
+   * los ids de lo que aparece después (y con ellos la partida).
+   */
+  private nextPickupId = 1;
+  private readonly flameView: { -readonly [K in keyof FlameView]: FlameView[K] } = {
+    x: 0,
+    y: 0,
+    heading: 0,
+    range: 0,
+    halfAngle: 0,
+    leftS: 0,
+    durationS: 0,
+  };
   private readonly byType: Partial<Record<EnemyId, Enemy[]>> = {};
   private readonly events: SurvivorsEvent[] = [];
   private readonly scratch: number[] = [];
@@ -820,6 +887,7 @@ export class SurvivorsGame {
     this.noteGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.notes);
     this.spawnRng = rng(this.seed);
     this.cardRng = rng((this.seed ^ 0x9e3779b9) >>> 0);
+    this.dropRng = rng((this.seed ^ 0x85ebca6b) >>> 0);
     this.bossRng = rng((this.seed ^ 0x3c6ef372) >>> 0);
     this.baseShip = opts.ship ?? DEFAULT_SHIP_CONFIG;
     this.shipCfg = survivorsShipConfig(this.baseShip, config.handling, 0);
@@ -933,6 +1001,9 @@ export class SurvivorsGame {
       zones: this.zones,
       crackers: this.crackers,
       notes: this.notes,
+      pickups: this.pickups,
+      flame: null,
+      pickupsTaken: 0,
       elitesActive: false,
       mareaActive: false,
       act: act.act,
@@ -1007,6 +1078,8 @@ export class SurvivorsGame {
     v.pressure = this.overflow;
     v.notesPicked = this.notesPicked;
     v.notesValue = this.notesValue;
+    v.pickupsTaken = this.pickupsTaken;
+    v.flame = this.flameS > 0 ? this.updateFlameView() : null;
     v.elitesActive = this.activeS >= this.elitesFromS;
     v.mareaActive = this.mareaActive();
     for (const list of Object.values(this.byType)) if (list) list.length = 0;
@@ -1289,7 +1362,9 @@ export class SurvivorsGame {
       ]),
       b: this.projectiles.map((b) => [b.id, b.x, b.y, b.life]),
       s: this.enemyShots.map((b) => [b.id, b.x, b.y, b.life]),
-      n: this.notes.map((n) => [n.id, n.x, n.y, n.value]),
+      n: this.notes.map((n) => [n.id, n.x, n.y, n.value, n.magnet ? 1 : 0]),
+      pk: this.pickups.map((o) => [o.id, o.item, o.x, o.y, o.lifeS]),
+      fl: [this.flameS, this.pickupsTaken, this.nextPickupId],
       k: [this.defeated, this.notesPicked, this.notesValue, this.nextId],
       act: this.act.act,
       bs: this.bossSlots.map((s) => (s.done ? 1 : 0)),
@@ -1377,6 +1452,14 @@ export class SurvivorsGame {
     this.dropNote(x, y, value);
   }
 
+  /**
+   * Suelta un objeto del botín en (x, y), llevado al agua (T135). Para
+   * pruebas y el atajo `&botin=1`. Devuelve su id.
+   */
+  spawnPickup(item: DropId, x: number, y: number): number {
+    return this.dropPickup(item, x, y);
+  }
+
   /** ¿Es tierra (una isla) el punto, o el círculo de radio `r`? */
   onLand(x: number, y: number, r = 0): boolean {
     return this.islands.onLand(x, y, r);
@@ -1432,10 +1515,12 @@ export class SurvivorsGame {
     this.contactDamage(dt);
     this.stepEnemyShots(dt);
     this.stepWeapons(dt);
+    this.stepFlame(dt);
     this.stepProjectiles(dt);
     this.stepZones(dt);
     this.stepCrackers(dt);
     this.compactEnemies();
+    this.stepPickups(dt);
     this.compactBosses();
     this.stepNotes(dt);
     this.stepChests();
@@ -2755,6 +2840,7 @@ export class SurvivorsGame {
     this.defeated++;
     this.events.push({ type: 'defeated', enemy: e.type, id: e.id, x: e.x, y: e.y, elite: e.elite });
     this.dropNote(e.x, e.y, e.noteValue);
+    if (e.elite) this.rollDrop(e.x, e.y);
     const split = e.def.split;
     if (!split || e.generation >= split.generations) return;
     // Divisor: los trozos salen a los lados, más pequeños, con parte del aguante y de la nota.
@@ -2780,6 +2866,116 @@ export class SurvivorsGame {
       made++;
     }
     if (made > 0) this.events.push({ type: 'split', enemy: e.type, id: e.id, x: e.x, y: e.y, count: made });
+  }
+
+  // --- Botín de las élites (T135) ---------------------------------------------
+
+  /** Tirada del botín al caer una élite: `chance`, y el tipo a partes iguales. */
+  private rollDrop(x: number, y: number): void {
+    const d = this.config.drops;
+    if (d.types.length === 0 || !(d.chance > 0)) return;
+    if (this.dropRng() >= d.chance) return;
+    const item = d.types[Math.min(d.types.length - 1, Math.floor(this.dropRng() * d.types.length))]!;
+    this.dropPickup(item, x, y);
+  }
+
+  private dropPickup(item: DropId, x: number, y: number): number {
+    const d = this.config.drops;
+    // Tope: el más viejo se hunde para el nuevo.
+    while (this.pickups.length >= Math.max(1, d.max)) this.pickups.shift();
+    const spot = this.islands.toWater(x, y, d.radius) ?? { x, y };
+    const o: Pickup = { id: this.nextPickupId++, item, x: 0, y: 0, lifeS: d.lifeS, durationS: d.lifeS };
+    this.setWrapped(o, spot.x, spot.y);
+    this.pickups.push(o);
+    this.events.push({ type: 'drop', item, id: o.id, x: o.x, y: o.y });
+    return o.id;
+  }
+
+  /** Los objetos flotan y se hunden con el tiempo; el casco los coge al tocarlos. */
+  private stepPickups(dt: number): void {
+    if (this.pickups.length === 0) return;
+    const p = this.player;
+    const reach = this.config.drops.radius + this.shipCfg.radius;
+    let k = 0;
+    for (const o of this.pickups) {
+      const dx = wd(o.x - p.x, this.w);
+      const dy = wd(o.y - p.y, this.h);
+      if (dx * dx + dy * dy <= reach * reach) {
+        this.takePickup(o);
+        continue;
+      }
+      o.lifeS -= dt;
+      if (o.lifeS > 0) this.pickups[k++] = o;
+    }
+    this.pickups.length = k;
+  }
+
+  private takePickup(o: Pickup): void {
+    const d = this.config.drops;
+    this.pickupsTaken++;
+    this.events.push({ type: 'pickup', item: o.item, id: o.id, x: o.x, y: o.y });
+    switch (o.item) {
+      case 'iman':
+        // Todas las notas del mar vuelan al barco (el imán ya no las suelta).
+        for (const n of this.notes) n.magnet = true;
+        break;
+      case 'llama':
+        this.flameS = d.llama.durationS;
+        break;
+      case 'salvavidas':
+        this.water = Math.max(0, this.water - this.config.player.waterCapacity * d.salvavidas.waterFraction);
+        break;
+    }
+  }
+
+  /**
+   * La Llama: lo que toca su sector delante del barco pierde su vida máxima
+   * en `killS` s (`flameDamage`); pasa por encima de las islas. A los
+   * bosses que toca les hace el daño fijo de `bossFight.flameDps` (y nada si
+   * están invulnerables).
+   */
+  private stepFlame(dt: number): void {
+    if (this.flameS <= 0) return;
+    const def = this.config.drops.llama;
+    const p = this.player;
+    const near = this.enemyGrid.query(p.x, p.y, def.range + this.maxEnemyRadius, this.scratch2);
+    for (const i of near) {
+      const e = this.enemies[i];
+      if (!e || e.dead) continue;
+      const dx = wd(e.x - p.x, this.w);
+      const dy = wd(e.y - p.y, this.h);
+      if (!inFlame(def, p.heading, dx, dy, e.radius)) continue;
+      e.hp -= flameDamage(def, e, dt);
+      // Sin restos de coma flotante: a los `killS` s justos, cae.
+      if (e.hp <= e.maxHp * 1e-9) this.defeat(e);
+    }
+    // Lo golpeable de los bosses (cuerpos vulnerables y tentáculos del Kraken,
+    // T141): el daño fijo por segundo de `bossFight.flameDps`. Lo que entra en
+    // la lista en este paso (la cabeza que expone un tentáculo caído) arde en el siguiente.
+    const bossDps = this.config.bossFight.flameDps;
+    const targets = this.bossTargets;
+    for (let i = 0, n = targets.length; i < n; i++) {
+      const b = targets[i]!;
+      if (b.dead) continue;
+      const dx = wd(b.x - p.x, this.w);
+      const dy = wd(b.y - p.y, this.h);
+      if (!inFlame(def, p.heading, dx, dy, b.radius)) continue;
+      this.hurtTarget(b, flameDamage(def, { maxHp: b.boss.maxHp, bossDps }, dt));
+    }
+    this.flameS = Math.max(0, this.flameS - dt);
+  }
+
+  private updateFlameView(): FlameView {
+    const f = this.flameView;
+    const def = this.config.drops.llama;
+    f.x = this.player.x;
+    f.y = this.player.y;
+    f.heading = this.player.heading;
+    f.range = def.range;
+    f.halfAngle = def.halfAngle;
+    f.leftS = this.flameS;
+    f.durationS = def.durationS;
+    return f;
   }
 
   // --- Notas -----------------------------------------------------------------
@@ -3074,7 +3270,8 @@ export class SurvivorsGame {
    * Devuelve cuántos tocó.
    */
   flameBosses(x: number, y: number, r: number, dt: number): number {
-    return this.hurtBossesCircle(x, y, r, this.config.bossFight.flameDps * dt);
+    const damage = flameDamage(this.config.drops.llama, { maxHp: 0, bossDps: this.config.bossFight.flameDps }, dt);
+    return this.hurtBossesCircle(x, y, r, damage);
   }
 
   /** Un boss del guion entra por delante del barco (`bossFight.entryDistance`), en agua. */

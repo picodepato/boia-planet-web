@@ -43,6 +43,7 @@ import {
   isDevStart,
   islandPinsOnly,
   marHideHost,
+  LOOT_DISTANCE,
   survivorsSea,
   withoutCanonShortcut,
 } from './survivors';
@@ -92,6 +93,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       weapons: false,
       mix: false,
       difficulty: null,
+      loot: false,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
       t: 0,
@@ -102,6 +104,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       weapons: false,
       mix: false,
       difficulty: null,
+      loot: false,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
     expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({ card: true, mix: false });
@@ -126,6 +129,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       weapons: false,
       mix: false,
       difficulty: null,
+      loot: false,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });
@@ -224,6 +228,47 @@ describe('T128 dev all-weapons start', () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe('T135 atajo botin=1', () => {
+  it('se lee sólo con los atajos encendidos, se quita de la URL y marca la partida como de prueba', () => {
+    const dev = env({ nodeEnv: 'development' });
+    expect(canonShortcut('?minijuego=canon&botin=1', dev)?.loot).toBe(true);
+    expect(canonShortcut('?minijuego=canon&botin=0', dev)?.loot).toBe(false);
+    expect(canonShortcut('?minijuego=canon&botin=1', env({}))).toBeNull();
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&botin=1&dev=1')).toBe('http://x/mar?dev=1');
+    expect(isDevStart({ loot: true })).toBe(true);
+    expect(isDevStart({ loot: false })).toBe(false);
+  });
+
+  it('toda élite suelta objeto, los tres flotan junto al barco y uno se coge al avanzar', () => {
+    const make = (devLoot = false) =>
+      new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }), {
+        seed: 7,
+        quality: 'baja',
+        ship: MAR_SHIP_CONFIG,
+        devLoot,
+      });
+    const ordinary = make();
+    expect(ordinary.config).toBe(SURVIVORS_CONFIG);
+    ordinary.devLoot(env({}));
+    expect(ordinary.snapshot().pickups).toHaveLength(0);
+    const run = make(true);
+    expect(run.config.drops.chance).toBe(1);
+    expect(SURVIVORS_CONFIG.drops.chance).toBeLessThan(1);
+    run.devLoot(env({ nodeEnv: 'development' }));
+    const s = run.snapshot();
+    expect(s.pickups.map((o) => o.item).sort()).toEqual(['iman', 'llama', 'salvavidas']);
+    for (const o of s.pickups) {
+      expect(Math.hypot(o.x - s.player.x, o.y - s.player.y)).toBeLessThan(LOOT_DISTANCE + 60);
+    }
+    expect(run.hook()).toMatchObject({ botin: 0, botinAgua: 3, llama: 0 });
+    for (let i = 0; i < 180 && run.hook().botin === 0; i++) {
+      run.step({ dirX: Math.cos(s.player.heading), dirY: Math.sin(s.player.heading), throttle: 1, drift: false });
+    }
+    expect(run.hook().botin).toBeGreaterThanOrEqual(1);
+    expect(run.hook().botinAgua).toBeLessThanOrEqual(2);
   });
 });
 

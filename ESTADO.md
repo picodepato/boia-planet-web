@@ -4,6 +4,65 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T135: Elite drops: Imán total, Llama and Salvavidas
+
+Qué existe:
+- **Botín de las élites** (`packages/engine/src/survivors/drops.ts`, `config.drops`):
+  al caer una élite, con `chance` 0,05 sale un objeto, el tipo a partes iguales entre
+  `types` (`iman`, `llama`, `salvavidas`). La tirada usa un generador propio de la
+  partida (`dropRng`, semilla ^ 0x85ebca6b) y los objetos llevan ids aparte
+  (`nextPickupId`): soltar uno no cambia lo que aparece después (sin objetos cogidos,
+  la partida es idéntica a la de v8). Flotan `lifeS` 25 s y se cogen tocándolos con el
+  casco (`radius` 16 + radio del barco); el imán de notas no los arrastra; tope `max`
+  6 (el más viejo se hunde). Eventos `drop` y `pickup`; foto `pickups`, `flame`,
+  `pickupsTaken`; `spawnPickup(item, x, y)` para pruebas y el atajo.
+- **Imán total**: todas las notas del mar pasan a `magnet` y vuelan al barco.
+- **Llama**: 10 s (`llama.durationS`), un sector de 110 u y ±0,45 rad delante del barco
+  (sigue su rumbo; pasa sobre las islas). A un común o élite le quita su vida máxima en
+  `killS` 0,4 s de contacto (cae justo al paso 24). **Bosses** (T137, ya en main): a
+  los minibosses y bosses que toca el sector les hace el daño fijo de
+  `bossFight.flameDps` (120/s, la cifra de T137, única fuente: `drops.llama` ya no
+  lleva la suya) con `flameDamage(def, { maxHp, bossDps }, dt)` por `hurtTarget` de T141
+  sobre `bossTargets` (cuerpos vulnerables y tentáculos del Kraken; nada si están
+  invulnerables o sumergidos); `flameBosses` de T137 pasa por el mismo `flameDamage`.
+- **Salvavidas** (objeto): achica `salvavidas.waterFraction` 0,4 de la capacidad (40 de
+  agua), sin bajar de 0. La carta rara de T129 se llama ahora **«Segunda vida»** (sólo
+  i18n: `survivors.salvavidas`, `mar.canon.equipo.salvavidas`; ids sin cambios).
+- `SURVIVORS_CONFIG_VERSION` → 11 (main, con T137 y T141, estaba en 10; fusionado con main). Los pilotos (`bots.ts`) apuntan `drops` y `pickups`.
+- **3D** (`apps/web/app/mar/engine/survivors-pickups.ts`, colgado de `SurvivorsView`):
+  imán de herradura, brasero con llama y aro salvavidas, low-poly con el `Kit`, cada uno
+  con un aro dorado en el agua; una `InstancedMesh` por tipo (tope `drops.max`); flotan
+  con vaivén y giro y encogen sus últimos 3 s (sin parpadeo). La Llama: abanico de
+  lenguas planas instanciadas (7 en alta, 4 en baja) y una mancha naranja en el agua,
+  opacidad fija; con movimiento reducido, sin vaivén ni chisporroteo.
+- **HUD**: bajo el nivel, «🔥 Llama: N s» con una barrita que se vacía
+  (`data-testid="mar-canon-llama"`) mientras dura.
+- **Atajo `&botin=1`** (`canonShortcut`, mismo interruptor que los demás; partida de
+  prueba en `isDevStart`): toda élite suelta objeto (`lootConfig`, chance 1) y la
+  partida empieza con los tres objetos a 90 u del barco (el primero delante). Gancho de
+  pruebas: `data-botin` (cogidos), `data-botin-agua` (flotando), `data-botin-cerca`
+  (el más cercano, «x,y») y `data-llama` (s que le quedan).
+- Icono de la Traca en la fila de armas: 🎆 → 🧨.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors apps/web/app/mar --testTimeout=60000`
+  → exit 0, 43 archivos, 519 pruebas, ya con T137 y T141 de main (nuevas:
+  `survivors-drops.test.ts` 13, con la Llama contra un boss; `survivors-pickups.test.ts`
+  4; más las del atajo y del HUD).
+- Medido con los pilotos (codicioso, Tormenta, semillas 1–6): con el botín, la misma
+  partida que sin él salvo la semilla 4 (cogió un Salvavidas a 3:52 y aguantó 8 s más);
+  las pruebas de equilibrio de T132/T133 siguen en verde.
+- `E2E_PORT=3473 pnpm e2e mar-canon.spec.ts --workers=1` (tras fusionar T141) → 54
+  passed, 1 skipped, 1 failed: «HUD con BETA…» en escritorio (el nivel subió de 6 a 7
+  entre leerlo y comprobar el texto, una carrera de la prueba); repetida sola → 1
+  passed. En la pasada anterior falló una vez la rampa de T146 (también pasó sola). La
+  nueva de `botin=1` pasa en móvil y escritorio.
+- Comando de pruebas del plan → vitest 156 archivos / 1537 pruebas, checks OK, lint 0,
+  build 0 (186,9 kB de 200), typecheck 0.
+
+Pendiente:
+- Toda cifra es `muestra` (5 %, 10 s, 40 de agua; 120 dps a bosses es de T137).
+
 ## 2026-10-05 — plan 012 T141: Boss final del acto 2: el Kraken (simulación)
 
 Qué existe:

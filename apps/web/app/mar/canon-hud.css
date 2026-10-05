@@ -145,6 +145,36 @@
   transition: width 0.25s ease-out;
 }
 
+/* La Llama del botín (T135): una línea pequeña bajo el nivel mientras dura,
+   con sus segundos y una barrita que se vacía. Sin parpadeos. */
+.mar-canon-hud__llama {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 8px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #ffd650;
+}
+
+.mar-canon-llama-bar {
+  display: block;
+  flex: 1;
+  min-width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.14);
+}
+
+.mar-canon-llama-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff4a1f, #ffd650);
+  transition: width 0.25s linear;
+}
+
 /* ---------- Agua a bordo, bajo el barco ---------- */
 
 /* El motor la coloca encima del agua, bajo el barco (`Mar3D.anchor`);
@@ -729,6 +759,7 @@
   }
 
   .mar-canon-xp__fill,
+  .mar-canon-llama-bar__fill,
   .mar-canon-water__fill {
     transition: none;
   }
