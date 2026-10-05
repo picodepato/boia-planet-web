@@ -132,7 +132,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: (Codex) Vecino Quejica as own boss module: rings with gaps, island shadows (`ringObstacles`), phases, act 2 ×1.5 hp, act-1 2:30 slot on, barge/megaphone model; config v12; 552 targeted unit tests, Vecino e2e 2 passed (full mar-canon file not run) → 08d098b
 
 ## T139 — Miniboss 2: Tiburón Martillo and the chest
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T135, T137
@@ -143,7 +143,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests: charges always telegraphed, summons piranhas, chest gives an evolution when the condition holds and an upgrade otherwise, determinism
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with a `t=` start before 4:30 showing the shark and a chest card
   - Test command → exit 0
-- Outcome:
+- Outcome: Tiburón Martillo as data on the boss system (telegraphed line charges, piranha summons, 2 phases, hp 1400, act-1 4:30 slot on); chest = one free card (evolution if its condition holds, else level-up of something owned) for both minibosses; config v13; 1587 unit tests, mar-canon e2e 59 passed + 2 known flaky → 7307241
 
 ## T140 — Act 1 final boss: Barco Pirata Fantasma
 - Status: done
@@ -300,6 +300,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T135: drops use their own rng and pickup id counter (no-pickup games unchanged); pickups float 25 s, max 6, touch radius 16; `botin=1` = 100 % drops + three pickups next to the boat at start; data attributes `data-botin`, `data-botin-agua`, `data-botin-cerca`, `data-llama`; small edits in `canon-mode.tsx` outside listed scope; Llama damage single source `bossFight.flameDps` (agent)
 - 2026-10-05 plan: the T135 and T146 «done» edits to this file were lost (restored by the orchestrator at 18:00 from the integration results) (orchestrator)
 
+- 2026-10-05 T139: generic touches `LevelUpCard.source`/`boss`, `spawnChest`; chest never gives Segunda vida, spends no level, a pending level card waits; single boss warning-line drawer (view); slot tests «on iff its boss exists»; T140/T141 whole-game tests filter by their own boss; greedy bot goes for chests; hooks `data-jefes`, `data-cofre-cerca` (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -309,6 +311,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T135: the T146 desktop ramp e2e failed once and passed alone: possibly flaky (T147)
 - 2026-10-05 T140: flaky e2e dawn reward at t=419 reads balances racily under load (passes alone); i18n keys `survivors.boss.prueba`/`kraken` missing; HUD readouts of `ghostness`/`leftS` for T143
 - 2026-10-05 T135: flaky e2e «HUD con BETA» on desktop (level changes between read and check) — for T147
+- 2026-10-05 T139: shark balance (greedy bot wins in 8–33 s; dodge bot ignores boss warnings) and prettier on `mar-canon.spec.ts` — for T147
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -337,3 +340,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 17:28 T142 launched · attempt 1 · Codex via wrapper agent a3dbb4e881cf171a9 (sonnet); its prompt adds the dev shortcut `acto=2` (T144 makes it real)
 - 2026-10-05 17:35 T142 Codex usage limit (until 2026-10-10), nothing changed; relaunched · attempt 1 · agent aac36e30132ff7385 (opus)
 - 2026-10-05 17:40 Hernán said yes to push offer T140; pushed main 02fde9d (T133–T138, T140, T141, T146) to Vercel; Telegram notice sent
+- 2026-10-05 18:20 T139 done · branch worktree-agent-a65dc2c0dd0e2b4cd → 7307241
+- 2026-10-05 18:24 T142 done by agent; integration conflict with T139 in canon-mode.tsx, survivors-view.ts, survivors.ts → sent back to the same agent
