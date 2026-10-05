@@ -6,13 +6,20 @@ import { es } from '../../lib/i18n/es';
 import {
   CARD_ARM_MS,
   END_KEYS,
+  EVOLUTION_ICON,
+  FALLBACK_ICON,
+  SALVAVIDAS_ICON,
   UPGRADE_ICON,
+  VINYL_ICON,
+  WEAPON_ICON,
   WATER_ALERT,
   WATER_DANGER,
   canonPrize,
   canonResult,
   canonView,
   cardAmount,
+  cardIcon,
+  cardView,
   cardKeyAction,
   cardKeys,
   formatClock,
@@ -20,6 +27,8 @@ import {
   percent,
   prizeLine,
   sameView,
+  slotsKey,
+  slotsView,
   waterLevelOf,
 } from './canon-hud-model';
 import { marWorld } from './engine/compact';
@@ -221,5 +230,140 @@ describe('el premio en la pantalla final (T119)', () => {
     ] as const) {
       expect(es[key]).toBeTruthy();
     }
+  });
+});
+
+describe('las cartas de la beta 2 (T130): una por clase de oferta', () => {
+  const mix = (): SurvivorsRun => {
+    const r = new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y }), {
+      seed: 11,
+      quality: 'alta',
+      ship: MAR_SHIP_CONFIG,
+      devMix: true,
+    });
+    r.devMixCard();
+    r.step(idle);
+    return r;
+  };
+
+  it('el atajo surtido abre una carta con las seis clases, cada una con sus textos y su nivel', () => {
+    const r = mix();
+    const card = r.snapshot().card!;
+    expect(card).not.toBeNull();
+    const kinds = card.options.map((o) => o.kind).sort();
+    expect(kinds).toEqual(
+      ['evolution', 'salvavidas', 'vinyl-level', 'vinyl-new', 'weapon-level', 'weapon-new'].sort(),
+    );
+    const ids = new Set<string>();
+    for (const o of card.options) {
+      const v = cardView(o);
+      ids.add(v.id);
+      expect(v.icon, o.kind).toBeTruthy();
+      expect(es[v.title], v.title).toBeTruthy();
+      expect(es[v.effect], v.effect).toBeTruthy();
+      expect(es[v.tag], v.tag).toBeTruthy();
+      const text = msg(v.effect, { amount: cardAmount(o), capacidad: 100 });
+      expect(text, o.kind).not.toMatch(/[{}]/);
+      // Las de nivel dicen su nivel y lo que dan («Nivel 3: …»).
+      if (o.kind === 'weapon-level' || o.kind === 'vinyl-level') {
+        expect(text).toContain(`Nivel ${o.targetLevel}`);
+        expect(v.level).toBe(o.targetLevel);
+        expect(v.fresh).toBe(false);
+      }
+      if (o.kind === 'weapon-new' || o.kind === 'vinyl-new') expect(v.fresh).toBe(true);
+      expect(v.evolution).toBe(o.kind === 'evolution');
+    }
+    // Cada opción de la oferta tiene identidad propia (clave de React y de pruebas).
+    expect(ids.size).toBe(card.options.length);
+  });
+
+  it('el icono sale de lo que es la carta, no de un alias de la beta 1', () => {
+    const card = mix().snapshot().card!;
+    const by = (k: string) => card.options.find((o) => o.kind === k)!;
+    expect(cardIcon(by('evolution'))).toBe(EVOLUTION_ICON[by('evolution').evolutionId!]);
+    expect(cardIcon(by('weapon-new'))).toBe(WEAPON_ICON[by('weapon-new').weaponId!]);
+    expect(cardIcon(by('vinyl-new'))).toBe(VINYL_ICON[by('vinyl-new').vinylId!]);
+    expect(cardIcon(by('salvavidas'))).toBe(SALVAVIDAS_ICON);
+    expect(cardIcon({ kind: 'fallback' })).toBe(FALLBACK_ICON);
+  });
+
+  it('cada arma, vinilo y evolución de la config tiene icono', () => {
+    for (const id of Object.keys(SURVIVORS_CONFIG.weapons)) {
+      expect(WEAPON_ICON[id as keyof typeof WEAPON_ICON], id).toBeTruthy();
+    }
+    for (const id of Object.keys(SURVIVORS_CONFIG.passives)) {
+      expect(VINYL_ICON[id as keyof typeof VINYL_ICON], id).toBeTruthy();
+    }
+    for (const e of SURVIVORS_CONFIG.evolutions) expect(EVOLUTION_ICON[e.id], e.id).toBeTruthy();
+  });
+
+  it('elegir la evolución la deja en la fila, destacada', () => {
+    const r = mix();
+    const i = r.snapshot().card!.options.findIndex((o) => o.kind === 'evolution');
+    r.choose(i);
+    r.step(idle);
+    const slots = slotsView(r.snapshot());
+    const evolved = slots.weapons.filter((w) => w.evolved);
+    expect(evolved).toHaveLength(1);
+    expect(evolved[0]!.icon).toBe(EVOLUTION_ICON.drop);
+  });
+});
+
+describe('la fila de armas y vinilos (T130)', () => {
+  it('empieza con el arma inicial y los huecos libres que da la config', () => {
+    const s = run().snapshot();
+    const v = slotsView(s);
+    expect(v.weapons).toHaveLength(SURVIVORS_CONFIG.slots.weapons);
+    expect(v.vinyls).toHaveLength(SURVIVORS_CONFIG.slots.vinyls);
+    expect(v.weapons[0]).toMatchObject({
+      id: SURVIVORS_CONFIG.startingWeapon,
+      level: 1,
+      evolved: false,
+    });
+    expect(v.weapons.filter((w) => w.id === null)).toHaveLength(SURVIVORS_CONFIG.slots.weapons - 1);
+    expect(v.vinyls.every((x) => x.id === null)).toBe(true);
+    expect(v.salvavidas).toBe(false);
+  });
+
+  it('refleja los niveles y el vinilo, y su clave cambia sólo si cambia lo que se ve', () => {
+    const r = run();
+    const before = canonView(r.snapshot());
+    r.game.addVinyl('techno');
+    r.game.levelUpWeapon(SURVIVORS_CONFIG.startingWeapon);
+    const s = r.snapshot();
+    const v = slotsView(s);
+    expect(v.weapons[0]!.level).toBe(2);
+    expect(v.vinyls[0]).toMatchObject({ id: 'techno', level: 1, maxLevel: 5 });
+    const after = canonView(s);
+    expect(after.slotsKey).not.toBe(before.slotsKey);
+    expect(sameView(before, after)).toBe(false);
+    expect(slotsKey(run().snapshot())).toBe(slotsKey(run().snapshot()));
+  });
+
+  it('las plazas se leen de la config y nunca se pasan de ella', () => {
+    const s = run().snapshot();
+    const fake = {
+      ...s,
+      slots: { weapons: 2, vinyls: 1 },
+      weapons: [s.weapons[0]!, s.weapons[0]!, s.weapons[0]!],
+    };
+    expect(slotsView(fake).weapons).toHaveLength(3);
+    expect(slotsView({ ...fake, weapons: [] }).weapons).toHaveLength(2);
+    expect(slotsView({ ...fake, salvavidas: 'held' }).salvavidas).toBe(true);
+    expect(slotsView({ ...fake, salvavidas: 'consumed' }).salvavidas).toBe(false);
+  });
+
+  it('los textos de la fila existen y no dejan huecos por rellenar', () => {
+    for (const key of [
+      'mar.canon.equipo.aria',
+      'mar.canon.equipo.armas',
+      'mar.canon.equipo.vinilos',
+      'mar.canon.equipo.hueco',
+      'mar.canon.equipo.salvavidas',
+    ] as const) {
+      expect(es[key], key).toBeTruthy();
+    }
+    expect(msg('mar.canon.equipo.nivel', { nombre: 'X', n: 2, max: 5 })).toBe('X, nivel 2 de 5');
+    expect(msg('mar.canon.equipo.evolucionada', { nombre: 'X' })).not.toMatch(/[{}]/);
   });
 });

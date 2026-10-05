@@ -366,10 +366,6 @@ async function expectOnScreen(page: Page, piece: Locator): Promise<Box> {
 
 const activeS = async (page: Page) => Number(await game(page).getAttribute('data-activo'));
 
-/** El nombre de una mejora, desde su id (la clave de la config). */
-const upgradeTitle = (id: string | null) =>
-  msg(SURVIVORS_CONFIG.upgrades.find((u) => u.id === id)!.i18nKey as MessageKey);
-
 test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada tapa «Entradas»', async ({
   page,
 }) => {
@@ -441,8 +437,9 @@ test('carta de nivel con el teclado: flechas, números e Intro; mientras, la par
   // Cada carta dice qué mejora es y lo que da.
   for (let i = 0; i < n; i++) {
     const card = cards.nth(i);
-    await expect(card).toContainText(upgradeTitle(await card.getAttribute('data-mejora')));
+    await expect(card.locator('.mar-canon-card__name')).not.toBeEmpty();
     await expect(card.locator('.mar-canon-card__effect')).toHaveText(/\d/);
+    await expect(card).toHaveAttribute('data-tipo', /^(weapon|vinyl|evolution|salvavidas|fallback)/);
   }
   // La partida no corre con la carta abierta.
   const before = await activeS(page);
@@ -463,6 +460,74 @@ test('carta de nivel con el teclado: flechas, números e Intro; mientras, la par
   await expect(game(page)).toHaveAttribute('data-mejoras', `${pick}:1`);
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   await expect.poll(() => activeS(page), { timeout: 15_000 }).toBeGreaterThan(before);
+  expect(errors).toEqual([]);
+});
+
+test('la fila de armas y vinilos: abajo en escritorio, arriba a la izquierda en móvil; nada tapa «Entradas» (T130)', async ({
+  page,
+  isMobile,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&t=120&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  const row = page.getByTestId('mar-canon-equipo');
+  const b = await expectOnScreen(page, row);
+  const vp = page.viewportSize()!;
+  // 4 armas + 4 vinilos (los que dice la config), con el arma inicial ya a bordo.
+  const slots = SURVIVORS_CONFIG.slots.weapons + SURVIVORS_CONFIG.slots.vinyls;
+  await expect(row.getByTestId('mar-canon-hueco')).toHaveCount(slots);
+  await expect(row.locator('[data-fila="armas"] [data-id]:not([data-id=""])').first()).toBeVisible();
+  if (isMobile) {
+    expect(b.y).toBeLessThan(vp.height * 0.4);
+    expect(b.x + b.width / 2).toBeLessThan(vp.width * 0.5);
+  } else {
+    expect(b.y).toBeGreaterThan(vp.height * 0.6);
+    expect(Math.abs(b.x + b.width / 2 - vp.width / 2)).toBeLessThan(vp.width * 0.1);
+  }
+  // No tapa la cuenta atrás ni el nivel, ni «Entradas», ni lo demás fijo, ni el agua.
+  const hud = page.getByTestId('mar-canon-hud');
+  const water = page.getByTestId('mar-canon-agua');
+  await expectTicketsFree(page, [row, hud, water]);
+  for (const id of ['mar-enlaces', 'mar-minimapa', 'mar-saldos', 'mar-turbo']) {
+    const piece = page.getByTestId(id);
+    if ((await piece.count()) === 0 || !(await piece.isVisible())) continue;
+    expect(overlaps(b, (await piece.boundingBox())!), id).toBe(false);
+  }
+  expect(overlaps(b, (await hud.boundingBox())!)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('el atajo carta=surtido enseña una carta de cada clase; la evolución destaca y deja su arma dorada en la fila (T130)', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&seed=3&carta=surtido');
+  const cards = page.getByTestId('mar-canon-carta');
+  await expect(cards).toHaveCount(6);
+  const kinds = await cards.evaluateAll((els) => els.map((e) => e.getAttribute('data-tipo')));
+  expect([...kinds].sort()).toEqual(
+    ['evolution', 'salvavidas', 'vinyl-level', 'vinyl-new', 'weapon-level', 'weapon-new'].sort(),
+  );
+  // Cada una: nombre, lo que da y su clase; las de nivel dicen «Nivel n: …».
+  for (let i = 0; i < 6; i++) {
+    const card = cards.nth(i);
+    await expect(card.locator('.mar-canon-card__name')).not.toBeEmpty();
+    await expect(card.locator('.mar-canon-card__tag')).not.toBeEmpty();
+    const effect = card.locator('.mar-canon-card__effect');
+    await expect(effect).not.toBeEmpty();
+    await expect(effect).not.toContainText(/[{}]/);
+    const kind = kinds[i]!;
+    if (kind.endsWith('-level')) await expect(effect).toContainText(/^Nivel \d/);
+  }
+  // La evolución destaca (clase aparte) y ya ocupa su sitio en la oferta.
+  const evo = page.locator('[data-testid="mar-canon-carta"][data-tipo="evolution"]');
+  await expect(evo).toHaveCount(1);
+  await expect(evo).toHaveClass(/is-evolution/);
+  const evoIndex = kinds.indexOf('evolution');
+  await page.waitForTimeout(500);
+  await page.keyboard.press(String(evoIndex + 1));
+  await page.keyboard.press('Enter');
+  await expect(cards).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(page.locator('[data-testid="mar-canon-hueco"].is-evolved')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 

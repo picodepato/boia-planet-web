@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T130: Upgrade interface: new cards and the weapons/vinyls row
+
+Qué existe:
+- Cartas de nivel con las siete clases de oferta de T129 (arma nueva, nivel de arma, vinilo nuevo, nivel de vinilo, evolución, Salvavidas, achique de reserva). Cada una: icono por arma/vinilo/evolución, etiqueta de clase, nombre, lo que da («Nivel 3: +1 bola por disparo», texto por clave de `es-mar.ts`), puntos de nivel y «Nueva» / «Nivel n de 5» / «¡Máximo!». La evolución destaca (fondo dorado, borde grueso, etiqueta oscura). La clave de React y `data-carta` es el `id` de la opción (antes el alias `upgrade`, que ya no es único); `data-mejora` se mantiene y `data-tipo` dice la clase. El teclado y el tacto de las cartas no cambian.
+- Fila de armas y vinilos (`CanonSlots` en `canon-hud.tsx`, modelo `slotsView`/`slotsKey` en `canon-hud-model.ts`): 4 + 4 huecos con icono y nivel (estrella dorada si el arma evolucionó, borde de color si está al máximo) y la insignia del Salvavidas si está a bordo. Abajo al centro encima de la barra en escritorio; arriba a la izquierda, bajo el minimapa, en móvil. No toma eventos; no pisa la cuenta atrás compacta de T123, «Entradas», los saldos, el minimapa ni el turbo (lo comprueba el e2e).
+- Atajo de desarrollo `&carta=surtido` (`mixConfig`, `SurvivorsRun.devMixCard`, sólo con los atajos encendidos): config recortada (3 armas, 2 vinilos, evolución El Drop, Salvavidas siempre) y Cañón a nivel 5 + Subwoofer + Hardstyle, para abrir una carta con una opción de cada clase. `&carta=1` queda igual.
+- Textos nuevos por clave en `apps/web/lib/i18n/es-mar.ts` (`mar.canon.carta.tipo.*`, `mar.canon.equipo.*`, `mar.canon.cartas.maximo`), `muestra`.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/canon-hud-model.test.ts` → exit 0, 19 tests (incluye: cartas por clase con textos e icono, la evolución en la fila, la fila y su clave, textos sin huecos).
+- `E2E_PORT=3141 pnpm e2e mar-canon.spec.ts --workers=1 -g "T130|carta de nivel"` → exit 0, 8 passed (móvil y escritorio: fila abajo/arriba-izquierda sin tapar «Entradas», carta=surtido con las seis clases y la evolución destacada, cartas con teclado y con dedo). El archivo entero (46 tests) no se terminó aquí por lentitud de la máquina: lo corre el orquestador.
+- Test command: vitest 1460 passed (151 files), checks.sh OK, lint 0, typecheck 0, build 0.
+
+Pendiente:
+- El `pnpm e2e` completo de la ronda lo corre el orquestador al final del plan.
+- El texto de ayuda de las cartas dice «1–3» (fijo); con `carta=surtido` hay 6 opciones, sólo de desarrollo.
+
 ## 2026-10-05 — plan 011 T128: Cómo se ven las armas en el mar 3D
 
 Qué existe:

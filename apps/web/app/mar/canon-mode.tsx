@@ -139,6 +139,8 @@ interface StartOptions {
   /** `&carta=1`: empezar con una carta de nivel abierta (sólo con los atajos encendidos). */
   card?: boolean;
   weapons?: boolean;
+  /** `&carta=surtido`: la carta con una opción de cada clase (T130). */
+  mix?: boolean;
   /** Dificultad pedida (`&dificultad=`); sólo cuenta con los atajos encendidos y se recuerda. */
   difficulty?: DifficultyId | null;
 }
@@ -253,6 +255,7 @@ export function useCanonMode({
       defeatStyle: askedStyle = null,
       card = false,
       weapons = false,
+      mix = false,
       difficulty: askedDifficulty = null,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
@@ -275,12 +278,14 @@ export function useCanonMode({
         ship: MAR_SHIP_CONFIG,
         startAtS: t,
         devWeapons: weapons && devShortcutsEnabled(),
+        devMix: mix && devShortcutsEnabled(),
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (weapons) run.devAllWeapons();
       if (!g.startSurvivors(run)) return false;
       const gift = card && devShortcutsEnabled();
-      if (gift) run.devLevelUp();
+      if (gift && mix) run.devMixCard();
+      else if (gift) run.devLevelUp();
       // La sesión de la partida (REQ-AVE-038): su semilla y lo que se saltó con `&t=`.
       // Una partida de prueba (atajo que la cambia) no da premio en producción (T121).
       const getSink = latest.current.rewards?.() ?? null;
@@ -414,6 +419,7 @@ export function useCanonMode({
         card: sc.card,
         difficulty: sc.difficulty,
         weapons: sc.weapons,
+        mix: sc.mix,
       });
     }
   }, [ready, start]);

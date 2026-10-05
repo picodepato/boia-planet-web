@@ -9,15 +9,18 @@ import {
   type CanonResult,
   type CanonView,
   END_KEYS,
-  UPGRADE_ICON,
+  SALVAVIDAS_ICON,
+  type SlotView,
+  type SlotsView,
   canonView,
   cardAmount,
   cardKeyAction,
-  cardKeys,
+  cardView,
   formatClock,
   formatPlayed,
   prizeLine,
   sameView,
+  slotsView,
   waterLevelOf,
 } from './canon-hud-model';
 import type { Mar3D } from './engine/mar3d';
@@ -40,25 +43,30 @@ const NOTICE_MS = 8000;
 const WATER_DY = -2.4;
 
 /** Lo que el HUD pinta, leído de la partida unas veces por segundo. */
-function useCanonView(canon: CanonMode): CanonView | null {
-  const [view, setView] = useState<CanonView | null>(null);
+function useCanonView(canon: CanonMode): { view: CanonView | null; slots: SlotsView | null } {
+  const [state, setState] = useState<{ view: CanonView | null; slots: SlotsView | null }>({
+    view: null,
+    slots: null,
+  });
   const read = canon.read;
   const on = canon.active && !canon.result;
   useEffect(() => {
     if (!on) {
-      setView(null);
+      setState({ view: null, slots: null });
       return;
     }
     const tick = () => {
       const s = read();
       const next = s ? canonView(s) : null;
-      setView((prev) => (sameView(prev, next) ? prev : next));
+      setState((prev) =>
+        sameView(prev.view, next) ? prev : { view: next, slots: s ? slotsView(s) : null },
+      );
     };
     tick();
     const id = window.setInterval(tick, READ_MS);
     return () => window.clearInterval(id);
   }, [on, read]);
-  return view;
+  return state;
 }
 
 /**
@@ -78,7 +86,7 @@ export function CanonLayer({
   covered: boolean;
   onPause: () => void;
 }) {
-  const view = useCanonView(canon);
+  const { view, slots } = useCanonView(canon);
 
   // Esc: con la partida en marcha, pausa (el menú); en la pantalla final, volver al mar.
   // Con un panel o el menú abiertos, Esc es suyo (lo cierra).
@@ -100,6 +108,7 @@ export function CanonLayer({
   return (
     <>
       {view ? <CanonHud view={view} onPause={onPause} /> : null}
+      {view && slots ? <CanonSlots slots={slots} /> : null}
       {view ? <CanonWater pct={view.waterPct} engineRef={engineRef} /> : null}
       {view?.card && !covered ? (
         <CanonCards card={view.card} capacity={view.waterCapacity} onChoose={canon.choose} />
@@ -181,6 +190,74 @@ function CanonHud({ view, onPause }: { view: CanonView; onPause: () => void }) {
         </span>
       </div>
     </section>
+  );
+}
+
+/**
+ * La fila pequena de armas y vinilos con su nivel (T130): abajo en
+ * escritorio, arriba a la izquierda (bajo el minimapa) en el movil, para no
+ * chocar con los mandos tactiles, con la cuenta atras ni con «Entradas».
+ */
+function CanonSlots({ slots }: { slots: SlotsView }) {
+  return (
+    <section
+      className="mar-canon-slots"
+      data-testid="mar-canon-equipo"
+      aria-label={msg('mar.canon.equipo.aria')}
+    >
+      <SlotRow kind="armas" label={msg('mar.canon.equipo.armas')} items={slots.weapons} />
+      <SlotRow kind="vinilos" label={msg('mar.canon.equipo.vinilos')} items={slots.vinyls} />
+      {slots.salvavidas ? (
+        <span
+          className="mar-canon-slots__life"
+          data-testid="mar-canon-salvavidas"
+          role="img"
+          aria-label={msg('mar.canon.equipo.salvavidas')}
+          title={msg('mar.canon.equipo.salvavidas')}
+        >
+          {SALVAVIDAS_ICON}
+        </span>
+      ) : null}
+    </section>
+  );
+}
+
+function SlotRow({ kind, label, items }: { kind: string; label: string; items: SlotView[] }) {
+  return (
+    <ul className="mar-canon-slots__row" data-fila={kind} aria-label={label}>
+      {items.map((it, i) => {
+        const name = it.name ? msg(it.name) : '';
+        const text = !it.id
+          ? msg('mar.canon.equipo.hueco')
+          : it.evolved
+            ? msg('mar.canon.equipo.evolucionada', { nombre: name })
+            : msg('mar.canon.equipo.nivel', { nombre: name, n: it.level, max: it.maxLevel });
+        return (
+          <li
+            key={`${i}:${it.id ?? ''}`}
+            className={`mar-canon-slot${it.id ? '' : ' is-empty'}${it.evolved ? ' is-evolved' : ''}${
+              it.id && it.level >= it.maxLevel ? ' is-max' : ''
+            }`}
+            data-testid="mar-canon-hueco"
+            data-id={it.id ?? ''}
+            data-nivel={it.level}
+            title={text}
+            aria-label={text}
+          >
+            {it.id ? (
+              <>
+                <span aria-hidden="true" className="mar-canon-slot__icon">
+                  {it.icon}
+                </span>
+                <span aria-hidden="true" className="mar-canon-slot__lv">
+                  {it.evolved ? '★' : it.level}
+                </span>
+              </>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -298,18 +375,19 @@ export function CanonCards({
         </header>
         <div className="mar-canon-cards__list" role="group" aria-labelledby={titleId}>
           {card.options.map((o, i) => {
-            const keys = cardKeys(o);
-            const fresh = o.nextStack <= 1;
+            const v = cardView(o);
             return (
               <button
-                key={o.upgrade}
+                key={v.id}
                 ref={(el) => {
                   buttons.current[i] = el;
                 }}
                 type="button"
-                className={`mar-canon-card${i === focused ? ' is-focused' : ''}`}
+                className={`mar-canon-card is-${v.kind}${i === focused ? ' is-focused' : ''}`}
                 data-testid="mar-canon-carta"
                 data-mejora={o.upgrade}
+                data-carta={v.id}
+                data-tipo={v.kind}
                 data-indice={i}
                 aria-keyshortcuts={String(i + 1)}
                 onFocus={() => setFocused(i)}
@@ -319,27 +397,30 @@ export function CanonCards({
                   {i + 1}
                 </span>
                 <span className="mar-canon-card__icon" aria-hidden="true">
-                  {UPGRADE_ICON[o.upgrade]}
+                  {v.icon}
                 </span>
                 <span className="mar-canon-card__text">
-                  <strong className="mar-canon-card__name">{msg(keys.title)}</strong>
+                  <span className="mar-canon-card__tag">{msg(v.tag)}</span>
+                  <strong className="mar-canon-card__name">{msg(v.title)}</strong>
                   <span className="mar-canon-card__effect">
-                    {msg(keys.effect, { amount: cardAmount(o), capacidad: capacity })}
+                    {msg(v.effect, { amount: cardAmount(o), capacidad: capacity })}
                   </span>
                   <span className="mar-canon-card__stack">
                     <span className="mar-canon-card__pips" aria-hidden="true">
-                      {Array.from({ length: o.maxStacks }, (_, k) => (
+                      {Array.from({ length: v.maxLevel }, (_, k) => (
                         <span
                           key={k}
                           className={
-                            k < o.nextStack - 1 ? 'is-had' : k === o.nextStack - 1 ? 'is-new' : ''
+                            k < v.level - 1 ? 'is-had' : k === v.level - 1 ? 'is-new' : ''
                           }
                         />
                       ))}
                     </span>
-                    {fresh
-                      ? msg('mar.canon.cartas.nueva')
-                      : msg('mar.canon.cartas.nivel', { n: o.nextStack, max: o.maxStacks })}
+                    {v.evolution
+                      ? msg('mar.canon.cartas.maximo')
+                      : v.fresh
+                        ? msg('mar.canon.cartas.nueva')
+                        : msg('mar.canon.cartas.nivel', { n: v.level, max: v.maxLevel })}
                   </span>
                 </span>
               </button>

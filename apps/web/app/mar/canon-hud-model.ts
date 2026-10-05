@@ -1,10 +1,14 @@
 import type {
+  CardKind,
   CardOption,
   EndReason,
+  EvolutionId,
   LevelUpCard,
+  PassiveId,
   SurvivorsSnapshot,
   SurvivorsStatus,
   UpgradeId,
+  WeaponId,
 } from '@boia/engine/survivors';
 import type { RewardOutcome } from '@boia/engine/minigames';
 import type { MessageKey } from '../../lib/i18n';
@@ -69,6 +73,8 @@ export interface CanonView {
   waterCapacity: number;
   /** La carta de nivel abierta (la misma mientras siga abierta), o null. */
   card: LevelUpCard | null;
+  /** La fila de armas y vinilos (T130), en texto para comparar sin más. */
+  slotsKey: string;
 }
 
 /** El HUD desde el estado de la partida (se lee varias veces por segundo). */
@@ -81,6 +87,7 @@ export function canonView(s: SurvivorsSnapshot): CanonView {
     waterPct: percent(s.water.level, s.water.capacity),
     waterCapacity: s.water.capacity,
     card: s.card,
+    slotsKey: slotsKey(s),
   };
 }
 
@@ -95,7 +102,8 @@ export function sameView(a: CanonView | null, b: CanonView | null): boolean {
     a.xpPct === b.xpPct &&
     a.waterPct === b.waterPct &&
     a.waterCapacity === b.waterCapacity &&
-    a.card === b.card
+    a.card === b.card &&
+    a.slotsKey === b.slotsKey
   );
 }
 
@@ -110,6 +118,177 @@ export const UPGRADE_ICON: Readonly<Record<UpgradeId, string>> = {
   magnet: '🧲',
   bailing: '🪣',
 };
+
+/** El icono de cada arma (T130; simple, como los de las mejoras). muestra */
+export const WEAPON_ICON: Readonly<Record<WeaponId, string>> = {
+  canon: '💦',
+  subwoofer: '🔊',
+  laser: '🔦',
+  buoys: '🛟',
+  confetti: '🎊',
+  fireworks: '🎆',
+  acidRain: '🌧️',
+};
+
+/** El icono de cada vinilo (T130). muestra */
+export const VINYL_ICON: Readonly<Record<PassiveId, string>> = {
+  techno: '⏩',
+  reggaeton: '🔆',
+  house: '🛡️',
+  dnb: '⛵',
+  disco: '🧲',
+  chill: '🪣',
+  hardstyle: '💥',
+  pop: '⭐',
+  rumba: '🔱',
+};
+
+/** El icono de cada evolución y del Salvavidas (T130). muestra */
+export const EVOLUTION_ICON: Readonly<Record<EvolutionId, string>> = {
+  drop: '🌊',
+  soundWall: '🔈',
+  laserShow: '🌈',
+  discoBall: '🪩',
+};
+export const SALVAVIDAS_ICON = '🛟';
+export const FALLBACK_ICON = '🪣';
+
+/** Lo que una carta enseña, ya resuelto para pintarla (T130). */
+export interface CardView {
+  /** Único en la oferta: la clave de React y `data-carta`. */
+  id: string;
+  kind: CardKind;
+  icon: string;
+  title: MessageKey;
+  effect: MessageKey;
+  /** El nivel al que sube (1 = nueva) y el máximo, para los puntos. */
+  level: number;
+  maxLevel: number;
+  /** Una carta nueva (arma, vinilo, Salvavidas, achique): lleva la etiqueta «Nueva». */
+  fresh: boolean;
+  /** Las evoluciones destacan. */
+  evolution: boolean;
+  /** La etiqueta de lo que es (arma, vinilo, evolución…), por clave. */
+  tag: MessageKey;
+}
+
+const CARD_TAGS: Readonly<Record<CardKind, MessageKey>> = {
+  'weapon-new': 'mar.canon.carta.tipo.arma',
+  'weapon-level': 'mar.canon.carta.tipo.arma',
+  'vinyl-new': 'mar.canon.carta.tipo.vinilo',
+  'vinyl-level': 'mar.canon.carta.tipo.vinilo',
+  evolution: 'mar.canon.carta.tipo.evolucion',
+  salvavidas: 'mar.canon.carta.tipo.salvavidas',
+  fallback: 'mar.canon.carta.tipo.achique',
+};
+
+/** El icono de una opción según lo que es (arma, vinilo, evolución…). */
+export function cardIcon(o: Pick<CardOption, 'kind' | 'weaponId' | 'vinylId' | 'evolutionId'>): string {
+  switch (o.kind) {
+    case 'weapon-new':
+    case 'weapon-level':
+      return (o.weaponId && WEAPON_ICON[o.weaponId]) || '🎵';
+    case 'vinyl-new':
+    case 'vinyl-level':
+      return (o.vinylId && VINYL_ICON[o.vinylId]) || '💿';
+    case 'evolution':
+      return (o.evolutionId && EVOLUTION_ICON[o.evolutionId]) || '✨';
+    case 'salvavidas':
+      return SALVAVIDAS_ICON;
+    case 'fallback':
+      return FALLBACK_ICON;
+  }
+}
+
+/** Una opción de la carta de nivel, lista para pintar (T130). */
+export function cardView(o: CardOption): CardView {
+  const keys = cardKeys(o);
+  return {
+    id: o.id,
+    kind: o.kind,
+    icon: cardIcon(o),
+    title: keys.title,
+    effect: keys.effect,
+    level: o.targetLevel,
+    maxLevel: o.kind === 'evolution' ? 1 : o.maxStacks,
+    fresh: o.kind === 'weapon-new' || o.kind === 'vinyl-new' || o.kind === 'salvavidas' || o.kind === 'fallback',
+    evolution: o.kind === 'evolution',
+    tag: CARD_TAGS[o.kind],
+  };
+}
+
+// --- La fila de armas y vinilos (T130) -------------------------------------------
+
+export interface SlotView {
+  /** null: hueco libre. */
+  id: string | null;
+  icon: string;
+  name: MessageKey | null;
+  level: number;
+  maxLevel: number;
+  /** El arma evolucionada. */
+  evolved: boolean;
+}
+
+export interface SlotsView {
+  weapons: SlotView[];
+  vinyls: SlotView[];
+  salvavidas: boolean;
+}
+
+const emptySlot = (): SlotView => ({
+  id: null,
+  icon: '',
+  name: null,
+  level: 0,
+  maxLevel: 0,
+  evolved: false,
+});
+
+/** Cada fila con sus huecos libres hasta completar los que da la config. */
+export function slotsView(s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slots' | 'salvavidas'>): SlotsView {
+  const fill = (items: SlotView[], count: number): SlotView[] => {
+    const out = items.slice(0, Math.max(count, items.length));
+    while (out.length < count) out.push(emptySlot());
+    return out;
+  };
+  return {
+    weapons: fill(
+      s.weapons.map((w) => ({
+        id: w.id,
+        icon: w.evolutionId ? EVOLUTION_ICON[w.evolutionId] : WEAPON_ICON[w.id],
+        name: w.nameKey as MessageKey,
+        level: w.level,
+        maxLevel: w.maxLevel,
+        evolved: !!w.evolutionId,
+      })),
+      s.slots.weapons,
+    ),
+    vinyls: fill(
+      s.vinyls.map((v) => ({
+        id: v.id,
+        icon: VINYL_ICON[v.id],
+        name: v.nameKey as MessageKey,
+        level: v.level,
+        maxLevel: v.maxLevel,
+        evolved: false,
+      })),
+      s.slots.vinyls,
+    ),
+    salvavidas: s.salvavidas === 'held',
+  };
+}
+
+/** Lo que cambia en la fila, en una cadena (para no repintar sin motivo). */
+export function slotsKey(s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slots' | 'salvavidas'>): string {
+  return [
+    s.slots.weapons,
+    s.slots.vinyls,
+    s.salvavidas,
+    s.weapons.map((w) => `${w.id}:${w.level}:${w.evolutionId ?? ''}`).join(','),
+    s.vinyls.map((v) => `${v.id}:${v.level}`).join(','),
+  ].join('|');
+}
 
 /**
  * Lo que da una opción, en número para su texto: los `…Bonus` son

@@ -746,3 +746,154 @@
   bottom: calc(var(--above-bar) + 4px);
   z-index: 3;
 }
+
+/* ---------- Fila de armas y vinilos (T130) ---------- */
+
+/* Móvil: arriba a la izquierda, bajo el minimapa (los mandos táctiles quedan
+   abajo; la cuenta atrás, arriba al centro). Escritorio: abajo al centro, justo
+   encima de la barra (que lleva «Entradas»). Dos filas pequeñas de 4 huecos. */
+.mar-canon-slots {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--canon-hud-top) + var(--mini) + 8px);
+  left: calc(var(--safe-l) + 10px);
+  display: grid;
+  gap: 3px;
+  padding: 4px 5px;
+  border-radius: 12px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 3px 10px rgb(10 6 40 / 0.26);
+  pointer-events: none;
+}
+
+.mar-canon-slots__row {
+  display: flex;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mar-canon-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgb(255 244 226 / 0.14);
+  border: 1px solid rgb(255 244 226 / 0.28);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.mar-canon-slot.is-empty {
+  background: transparent;
+  border: 1px dashed rgb(255 244 226 / 0.28);
+}
+
+.mar-canon-slot__lv {
+  position: absolute;
+  right: -3px;
+  bottom: -4px;
+  min-width: 13px;
+  padding: 1px 2px 0;
+  border-radius: 6px;
+  background: var(--orange);
+  color: var(--cream);
+  font: 900 0.6rem / 1.1 var(--font-title);
+  text-align: center;
+}
+
+/* Nivel máximo: borde del color del amanecer; evolucionada: dorada, con estrella. */
+.mar-canon-slot.is-max {
+  border-color: var(--canon-dawn);
+}
+
+.mar-canon-slot.is-evolved {
+  background: linear-gradient(135deg, #ffe39a, #ff9d3d);
+  border-color: #fff4e2;
+  box-shadow: 0 0 8px rgb(255 190 80 / 0.7);
+}
+
+.mar-canon-slot.is-evolved .mar-canon-slot__lv {
+  background: var(--ink);
+  color: var(--canon-dawn);
+}
+
+.mar-canon-slots__life {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 2px solid var(--orange);
+  font-size: 0.7rem;
+}
+
+@media (min-width: 760px) {
+  .mar-canon-slots {
+    top: auto;
+    left: 50%;
+    translate: -50% 0;
+    bottom: calc(var(--above-bar) + 4px);
+    grid-auto-flow: column;
+    gap: 10px;
+  }
+}
+
+/* ---------- Cartas: etiqueta de clase y evolución (T130) ---------- */
+
+.mar-canon-card__tag {
+  justify-self: start;
+  padding: 1px 6px 0;
+  border-radius: 6px;
+  background: rgb(27 20 64 / 0.1);
+  font: 800 0.6rem / 1.4 var(--font-title);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(27 20 64 / 0.7);
+}
+
+.mar .mar-canon-card.is-evolution {
+  background: linear-gradient(135deg, #fff1c2, #ffc861 55%, #ff9d3d);
+  box-shadow: inset 0 0 0 3px #c9480f;
+}
+
+.mar .mar-canon-card.is-evolution.is-focused,
+.mar .mar-canon-card.is-evolution:focus-visible {
+  box-shadow: inset 0 0 0 4px var(--ink);
+}
+
+.mar-canon-card.is-evolution .mar-canon-card__tag {
+  background: var(--ink);
+  color: var(--canon-dawn);
+}
+
+.mar-canon-card.is-evolution .mar-canon-card__icon {
+  filter: drop-shadow(0 0 8px rgb(255 140 30 / 0.9));
+}
+
+.mar-canon-card.is-salvavidas .mar-canon-card__tag {
+  background: var(--canon-water);
+  color: var(--ink);
+}
+
+@media (min-width: 760px) {
+  .mar-canon-card__tag {
+    justify-self: center;
+  }
+
+  /* Con muchas opciones (atajo de desarrollo `&carta=surtido`): tres por fila, más bajas. */
+  .mar-canon-cards__list:has(> :nth-child(4)) .mar-canon-card {
+    min-height: 150px;
+    padding-top: 14px;
+  }
+}

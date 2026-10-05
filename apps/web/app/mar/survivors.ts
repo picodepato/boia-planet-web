@@ -48,7 +48,11 @@ export const CANON_PARAMS = {
   offer: 'oferta',
   /** `derrota=puf|sumergirse`: empezar con ese estilo de derrota (T117). */
   defeat: 'derrota',
-  /** `carta=1`: empezar con una carta de nivel abierta (T118, para probar las cartas). */
+  /**
+   * `carta=1`: empezar con una carta de nivel abierta (T118, para probar las
+   * cartas); `carta=surtido` (T130): una carta con una opción de cada clase
+   * (arma nueva, nivel de arma, vinilo nuevo, nivel de vinilo, evolución y Salvavidas).
+   */
   card: 'carta',
   /** `armas=1`: empezar con las siete armas a nivel máximo (T128, para probar cómo se ven). */
   weapons: 'armas',
@@ -56,6 +60,9 @@ export const CANON_PARAMS = {
   difficulty: 'dificultad',
   dev: 'dev',
 } as const;
+
+/** El valor de `&carta=` que abre la carta con una opción de cada clase (T130). */
+export const CARD_MIX = 'surtido';
 
 export interface DevEnv {
   /** `process.env.NODE_ENV` del build. */
@@ -122,8 +129,10 @@ export interface CanonShortcut {
   offer: boolean;
   /** Estilo de derrota pedido (`&derrota=`), o null (el de la config). */
   defeatStyle: DefeatStyle | null;
-  /** Empezar con una carta de nivel abierta (`&carta=1`). */
+  /** Empezar con una carta de nivel abierta (`&carta=1` o `&carta=surtido`). */
   card: boolean;
+  /** La carta de nivel con una opción de cada clase (`&carta=surtido`, T130). */
+  mix: boolean;
   /** Empezar con todas las armas a nivel máximo (`&armas=1`). */
   weapons: boolean;
   /** Dificultad pedida (`&dificultad=`), o null (la elegida en el panel). */
@@ -149,7 +158,8 @@ export function canonShortcut(
     seed: Number.isFinite(seed) && seed > 0 ? seed : null,
     offer: q.get(CANON_PARAMS.offer) === '1',
     defeatStyle: asDefeatStyle(q.get(CANON_PARAMS.defeat)),
-    card: q.get(CANON_PARAMS.card) === '1',
+    card: q.get(CANON_PARAMS.card) === '1' || q.get(CANON_PARAMS.card) === CARD_MIX,
+    mix: q.get(CANON_PARAMS.card) === CARD_MIX,
     weapons: q.get(CANON_PARAMS.weapons) === '1',
     difficulty: asDifficulty(q.get(CANON_PARAMS.difficulty)),
   };
@@ -377,6 +387,8 @@ export interface SurvivorsRunOptions {
   startAtS?: number;
   /** Sólo atajo `&armas=1`: huecos para todas las armas en esta partida de prueba. */
   devWeapons?: boolean;
+  /** Sólo atajo `&carta=surtido` (T130): una config recortada para que salga una carta de cada clase. */
+  devMix?: boolean;
   config?: SurvivorsConfig;
   /** Dificultad (T131); sin valor, Normal. */
   difficulty?: DifficultyId;
@@ -422,6 +434,24 @@ export interface CanonHook {
  * y cuenta como pausa la pestaña oculta y los huecos largos; `step` da uno
  * con el mando del barco.
  */
+/**
+ * La config recortada del atajo `&carta=surtido`: tres armas, dos vinilos, la
+ * evolución del Cañón y el Salvavidas siempre a mano, y seis opciones por
+ * carta. Así la carta trae justo una de cada clase.
+ */
+export function mixConfig(config: SurvivorsConfig): SurvivorsConfig {
+  const pick = <T,>(all: Partial<Record<string, T>>, ids: string[]) =>
+    Object.fromEntries(ids.filter((id) => all[id]).map((id) => [id, all[id]]));
+  return {
+    ...config,
+    cardChoices: 6,
+    weapons: pick(config.weapons, ['canon', 'subwoofer', 'laser']) as SurvivorsConfig['weapons'],
+    passives: pick(config.passives, ['hardstyle', 'house']) as SurvivorsConfig['passives'],
+    evolutions: config.evolutions.filter((e) => e.id === 'drop'),
+    salvavidas: { ...config.salvavidas, offerChance: 1 },
+  };
+}
+
 export class SurvivorsRun {
   readonly game: SurvivorsGame;
   readonly config: SurvivorsConfig;
@@ -441,7 +471,9 @@ export class SurvivorsRun {
     this.config =
       opts.devWeapons && devShortcutsEnabled()
         ? { ...config, slots: { ...config.slots, weapons: Object.keys(config.weapons).length } }
-        : config;
+        : opts.devMix && devShortcutsEnabled()
+          ? mixConfig(config)
+          : config;
     this.seed = opts.seed;
     this.quality = opts.quality;
     this.difficulty = opts.difficulty ?? 'normal';
@@ -503,6 +535,21 @@ export class SurvivorsRun {
   devLevelUp(): void {
     const s = this.game.snapshot();
     this.game.spawnNote(s.player.x, s.player.y, Math.max(1, s.xp.toNext - s.xp.xp));
+  }
+
+  /**
+   * Atajo `&carta=surtido` (T130): con la config recortada de `mixConfig`, el
+   * Cañón a nivel 5 y el Subwoofer y el vinilo Hardstyle cogidos; la carta
+   * lleva una opción de cada clase. Sólo con los atajos encendidos.
+   */
+  devMixCard(env: DevEnv = devEnv()): void {
+    if (!devShortcutsEnabled(env)) return;
+    this.game.addWeapon('subwoofer');
+    while (this.game.levelUpWeapon('canon')) {
+      /* hasta el último nivel del Cañón */
+    }
+    this.game.addVinyl('hardstyle');
+    this.devLevelUp();
   }
 
   /**

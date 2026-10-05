@@ -90,6 +90,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       defeatStyle: null,
       card: false,
       weapons: false,
+      mix: false,
       difficulty: null,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
@@ -99,10 +100,12 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       defeatStyle: null,
       card: false,
       weapons: false,
+      mix: false,
       difficulty: null,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
-    expect(canonShortcut('?minijuego=canon&carta=1', dev)?.card).toBe(true);
+    expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({ card: true, mix: false });
+    expect(canonShortcut('?minijuego=canon&carta=surtido', dev)).toMatchObject({ card: true, mix: true });
     // `dificultad=` (T131): una de las tres; otra cosa, la del panel.
     for (const d of ['tranquila', 'normal', 'tormenta']) {
       expect(canonShortcut(`?minijuego=canon&dificultad=${d}`, dev)?.difficulty).toBe(d);
@@ -121,6 +124,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       defeatStyle: null,
       card: false,
       weapons: false,
+      mix: false,
       difficulty: null,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
