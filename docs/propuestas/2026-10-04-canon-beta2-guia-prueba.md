@@ -107,8 +107,9 @@ Tormenta más difícil, niveles a buen ritmo). Los pilotos están en `survivors/
 | Lo duros que son los enemigos | `enemies.<id>.hp`, `growthPerMinute.hp` (0.08: +8 % por minuto), los `hpScale` del guion (`acts[0].tracks`) |
 | Lo que duele cada golpe | `enemies.<id>.contactWater` (piraña 5, cangrejo 10, medusa 6…), `shooter.projectile.water` del pirata, `player.waterCapacity` (100) |
 | Cuántos salen y cuándo | `acts[0].tracks` (grupos por segundo y tamaño por minuto), `acts[0].events` (élites a 3:30, Marea a 5:00), `marea.marea`, `elites.elites` |
-| Las dificultades | `difficulties` (Tranquila 0.7 / 0.8 / 0.75, Normal 1 / 1 / 1, Tormenta 1.3 / 1.3 / 1.4 sobre daño / aguante / cuántos) |
+| Las dificultades | `difficulties` (Tranquila 0.7 / 0.8 / 0.75, Normal 1 / 1 / 1, Tormenta 1.6 / 1.6 / 1.6 sobre daño / aguante / cuántos; Tormenta era 1.3 / 1.3 / 1.4 hasta la config v7) |
 | Cada arma | `weapons.<id>.base` (nivel 1) y `levels` (lo que da cada nivel 2–5); evoluciones en `evolutions[].evolvedWeapon` |
+| Lo fácil que es evolucionar | `cardWeights` (`owned` 3: subir algo que ya llevas; `pairedVinyl` 3: el vinilo pareja de un arma que llevas; `new` 1: lo demás nuevo) |
 | Los vinilos | `passives.<id>.levels` (lo que suma cada nivel) |
 | El Salvavidas | `salvavidas.offerChance` (0.03 por carta), `waterFractionAfterSave` |
 | El móvil en `baja` | `caps.baja` (60 enemigos, 60 bolas, 40 disparos, 6 nubes, 100 notas) y `enemies.piranha.capShare` (0.7: las pirañas sólo llenan el 70 % del tope con el guion, para que en `baja` se vean los demás tipos) |
@@ -140,3 +141,33 @@ otra en Tormenta, varias con `t=` (3:30, 5:00, 6:00) y alguna con `armas=1` y `c
 
 Apuntar aquí (o en un archivo hermano `2026-10-04-canon-beta2-notas.md`) lo que salga de cada
 pregunta, con el dispositivo, la dificultad y los valores probados.
+
+### 2026-10-05 — Hernán, jugando en Tranquila
+
+> «He hecho la prueba jugando en fácil, no he alcanzado nunca el daño suficiente para limpiar
+> ninguna oleada, hay que subir el daño que hacen las armas más. No me gusta el diseño de algunas
+> armas, por ejemplo el cohete que explota en zona, el láser de festival tampoco. Ni he
+> conseguido hacer las fusiones de armas mejoradas.»
+
+Lo que cambió (plan 012 T133, config v6 → v7; el rediseño de Fuegos y Láser es T134):
+
+- **Daño de las armas**, base y por nivel: Cañón de agua 10 → 16 y 0,9 → 0,7 s entre disparos
+  (nivel 2: +5 → +8); Subwoofer 6 → 10 (nivel 3: +4 → +6); Láser 8 → 12 (nivel 3: +5 → +8);
+  Boyas 12 → 18 (nivel 2: +6 → +8, nivel 5: +10 → +12); Confeti 6 → 10 (nivel 3: +4 → +6);
+  Fuegos 25 → 40 (nivel 4: +15 → +20); Lluvia ácida 7 → 12 (nivel 3: +5 → +8). Evoluciones: El
+  Drop 28 → 40, Muro de Sonido 18 → 26, Show de Láseres 22 → 30, Bola de Discoteca 36 → 50.
+- **Evoluciones a mano**: la oferta de cartas ya no es a la par; subir de nivel lo que llevas y
+  el vinilo pareja de un arma que llevas pesan 3 veces más que lo nuevo (`cardWeights`). Así
+  quien va a por un arma y su vinilo la ve subir a nivel 5 sin depender de la suerte. Se eligió
+  esto antes que tocar la curva de experiencia o la condición (nivel 5 + vinilo), que siguen
+  igual.
+- **Tormenta** 1.3 / 1.3 / 1.4 → 1.6 / 1.6 / 1.6 (daño / aguante / cuántos), para que con las
+  armas nuevas siga siendo un reto. El crecimiento del aguante de los enemigos (+8 % por minuto)
+  no cambia.
+
+Medido con los pilotos (6 semillas por dificultad; «hunde» = derrotados / aparecidos del piloto
+que esquiva y elige bien), v6 → v7: Tranquila hunde 94 % → 97 %, Normal 92 % → 96 %, Tormenta
+80 % → 91 %; llega a una evolución antes de las 5:00 en 4 → 6 semillas de Tranquila, 3 → 6 de
+Normal y 1 → 5 de Tormenta; en Tranquila limpia la pantalla en los 2 primeros minutos en las 6
+semillas (antes, 3). Normal sigue pidiendo esquivar: el piloto que sólo esquiva aguanta los 7:00
+en 5 de 6, y el barco parado se hunde antes de los 2:00.

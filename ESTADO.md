@@ -4,6 +4,41 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T133: Notas de la beta 2: armas más fuertes, evoluciones a mano
+
+Qué existe:
+- Daño de las armas (`SURVIVORS_CONFIG`, versión 6 → **7**), base y por nivel: Cañón de agua 10 → 16 y `cooldownS` 0,9 → 0,7 (nivel 2: +5 → +8); Subwoofer 6 → 10 (nivel 3: +4 → +6); Láser 8 → 12 (nivel 3: +5 → +8); Boyas 12 → 18 (nivel 2: +6 → +8, nivel 5: +10 → +12); Confeti 6 → 10 (nivel 3: +4 → +6); Fuegos 25 → 40 (nivel 4: +15 → +20); Lluvia ácida 7 → 12 (nivel 3: +5 → +8). Evoluciones: El Drop 28 → 40, Muro de Sonido 18 → 26, Show de Láseres 22 → 30, Bola de Discoteca 36 → 50. Los textos de las cartas con esas cifras, en `apps/web/lib/i18n/es-mar.ts`. Fuegos y Láser sólo cambian de daño (su rediseño es T134).
+- Evoluciones a mano: `SURVIVORS_CONFIG.cardWeights` (`new` 1, `owned` 3, `pairedVinyl` 3) y sorteo ponderado sin reemplazo en `openCard` (`sim.ts`, `cardWeight`): subir lo que ya llevas y el vinilo pareja de un arma que llevas sin evolucionar salen 3 veces más que lo nuevo. Se eligió esto, y no la curva de experiencia ni la condición (nivel 5 + vinilo), porque el ritmo de niveles ya era bueno (T132) y el atasco era el sorteo a la par entre 16 cartas.
+- Tormenta 1,3 / 1,3 / 1,4 → **1,6 / 1,6 / 1,6** (daño / aguante / cuántos): con las armas nuevas el piloto codicioso amanecía en las 6 semillas de Tormenta. Crecimiento del aguante de los enemigos (0,08 por minuto, T132) sin tocar.
+- Pilotos (`survivors/bots.ts`): el `greedy` va a por una evolución (`focusWeapon`: sube primero su arma con evolución de más nivel, coge su vinilo pareja en cuanto sale) y va a por notas hasta 900 u (700 dejaba un hueco de 100 s sin subir en la semilla 5 de Normal, con notas caídas lejos por las armas de largo alcance). `runBot` mide además aparecidos (ids distintos), derrotados, `evolvedS` y `screenClearsS` (pantalla limpia: con ≥ 6 enemigos a < 600 u, el barco los deja a cero habiendo hundido al menos tantos); `killShare(run)`.
+- `survivors-balance.test.ts`, bloque nuevo «armas más fuertes y evoluciones a mano (T133)»: por dificultad, el `greedy` hunde más que con la v6 y lo que queda sin hundir baja ≥ 30 % (referencia v6 medida, en la prueba); en Tranquila limpia la pantalla en los 2 primeros minutos en las 6 semillas; evolución antes de 5:00 en > la mitad y ≥ 4 de 6 semillas de Normal, Tranquila igual o más, Tormenta ≥ la mitad; las cartas de lo que ya llevas salen > 1,5 × lo de un sorteo a la par (400 semillas). Ajustes a pruebas viejas: barco parado en Normal < 120 s (era < 60 s); en Tranquila se inunda siempre en el mapa Arcilla y de media antes de la mitad (en el archipiélago denso, semilla 6, aguanta); el esquivador de la beta 1 ×2,5 el parado (era ×3); la prueba de la medusa para en el reparto en vez de a los 2,5 s.
+- Guía de la beta 2: entrada en «Notas» con las palabras de Hernán y los valores cambiados; fila nueva `cardWeights` y Tormenta nueva en «Qué tocar y dónde».
+
+Medido (6 semillas, `alta`, impares en Arcilla y pares en archipiélago; «hunde» = derrotados / aparecidos; «evo» = s de la primera evolución; «limpia» = pantallas limpias antes de 2:00):
+
+| Dificultad | Piloto | Hunde v6 → v7 | Amanece v6 → v7 | Evo antes de 5:00 v6 → v7 | Evo por semilla v7 | Limpia < 2:00 v7 |
+|---|---|---|---|---|---|---|
+| Tranquila | greedy | 0,940 → 0,970 | 6 → 6 | 4 → 6 | 220 / 112 / 117 / 151 / 222 / 160 | 8 / 1 / 4 / 5 / 2 / 4 (v6: 3 semillas con alguna) |
+| Normal | greedy | 0,916 → 0,964 | 6 → 6 | 3 → 6 | 199 / 92 / 107 / 128 / 264 / 156 | 7 / 1 / 2 / 3 / 1 / 0 |
+| Tormenta | greedy | 0,798 → 0,908 | 3 → 3 | 1 → 5 | 169 / 87 / 115 / 118 / — / 172 | — |
+| Tranquila | dodge | 0,750 → 0,829 | 6 → 6 | 0 → 0 | | |
+| Normal | dodge | 0,675 → 0,816 | 3 → 5 | 0 → 0 | | |
+| Tormenta | dodge | 0,544 → 0,646 | 2 → 3 | 0 → 0 | | |
+| Tranquila | idle | 0,848 → 0,894 | 0 → 1 | | fin 150 / 147 / 100 / 161 / 123 / 420 | |
+| Normal | idle | 0,609 → 0,827 | 0 → 0 | | fin 91 / 67 / 53 / 105 / 83 / 119 | |
+| Tormenta | idle | 0,475 → 0,440 | 0 → 0 | | fin 24 / 23 / 29 / 26 / 25 / 21 | |
+
+Normal sigue siendo pelea para quien no elige bien: el `dodge` acaba con agua 74 / 0 / 11 / 100 / 0 / 0 y se hunde en una semilla; el `greedy` recibe 0–10 golpes. Ritmo de niveles en Normal (`greedy`): 27–34 subidas por partida, hueco máximo ≤ 54 s.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors --testTimeout=60000` → exit 0, 7 archivos, 120 pruebas.
+- Test command, paso a paso: `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 152 archivos, 1470 pruebas; `sh tools/spec/checks.sh` → exit 0 (OK); `pnpm lint` → exit 0; `pnpm build` → exit 0 (186,9 kB de 200 kB); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Que Hernán lo pruebe en Tranquila (push a Vercel, decisión 8 del plan): ¿se limpian las oleadas, llega la evolución?
+- Los pilotos esquivan mejor que una persona; si en manos de Hernán Normal resulta fácil, el mando es `difficulties.normal.enemyHp` o los `hpScale` del guion antes que bajar las armas.
+- e2e no corrido (la tarea no cambia la interfaz más que las cifras de los textos).
+
 ## 2026-10-05 — plan 012 T146: Plan 011 loose ends
 
 - `mundo-arcilla.spec.ts` «tienda»: the test was stale, not the app. The store sheet links to the in-app merchandise page (`/tienda?from=mar`, a Next `Link`, testid `mar-merchandise-open`); the only `target=_blank` link in the sheets is WhatsApp. The test now checks that link and its href.

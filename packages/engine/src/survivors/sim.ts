@@ -2216,11 +2216,39 @@ export class SurvivorsGame {
     }
     const rare = pool.findIndex((o) => o.kind === 'salvavidas');
     if (rare >= 0 && picks.length < limit) picks.push(pool.splice(rare, 1)[0]!);
+    // Weighted draw without replacement: owned weapons/vinyls and the vinyl that
+    // pairs with a held weapon come up more often (config.cardWeights, T133).
+    const weights = pool.map((o) => this.cardWeight(o));
     while (picks.length < limit && pool.length > 0) {
-      const k = Math.floor(this.cardRng() * pool.length);
+      let total = 0;
+      for (const w of weights) total += w;
+      let r = this.cardRng() * total;
+      let k = 0;
+      while (k < pool.length - 1 && r >= weights[k]!) r -= weights[k++]!;
       picks.push(pool.splice(k, 1)[0]!);
+      weights.splice(k, 1);
     }
     this.card = { level: this.level - this.pendingLevels + 1, options: picks };
+  }
+
+  /** Peso de una carta en la oferta (`config.cardWeights`). */
+  private cardWeight(o: CardOption): number {
+    const w = this.config.cardWeights;
+    switch (o.kind) {
+      case 'weapon-level':
+      case 'vinyl-level':
+        return w.owned;
+      case 'vinyl-new':
+        return this.config.evolutions.some(
+          (e) =>
+            e.passive === o.vinylId &&
+            this.weapons.some((h) => h.def.id === e.weapon && !h.evolutionId),
+        )
+          ? w.pairedVinyl
+          : w.new;
+      default:
+        return w.new;
+    }
   }
 
   private choose(index: number): void {

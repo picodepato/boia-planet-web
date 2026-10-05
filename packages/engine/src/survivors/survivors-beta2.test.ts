@@ -355,15 +355,12 @@ describe('survivors beta 2: medusa', () => {
     });
     const game = createSurvivors(cfg, 1, openSea());
     const mother = game.spawnEnemy('jellyfish', 220, 0)!;
+    // Hasta el reparto (el cañón la hunde a su ritmo, sea cual sea su daño).
     let splitEv: SurvivorsEvent | undefined;
-    play(
-      game,
-      () => ({}),
-      (g, ev) => {
-        splitEv ??= ev.find((e) => e.type === 'split');
-      },
-      steps(2.5),
-    );
+    for (let i = 0; i < steps(10) && !splitEv; i++) {
+      const ev = game.step({}).find((e) => e.type === 'split');
+      if (ev) splitEv = { ...ev };
+    }
     expect(splitEv).toMatchObject({ type: 'split', enemy: 'jellyfish', id: mother.id, count: split.count });
     const kids = game.snapshot().enemies.filter((e) => e.type === 'jellyfish');
     expect(kids).toHaveLength(split.count);

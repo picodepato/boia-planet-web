@@ -1,7 +1,7 @@
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { rng } from '../minigames/rng';
-import { type BotKind, type BotRun, levelGaps, runBot } from './bots';
+import { type BotKind, type BotRun, killShare, levelGaps, runBot } from './bots';
 import {
   DIFFICULTY_IDS,
   type DifficultyId,
@@ -91,13 +91,21 @@ describe('survivors: equilibrio de la beta 2 con pilotos (T132)', () => {
         DifficultyId,
         BotRun[]
       >;
+      // Normal y Tormenta: siempre. Tranquila: siempre en el mapa de verdad
+      // (semillas impares); con las armas de T133 un barco parado en Tranquila
+      // puede aguantar entre las islas de un archipiélago denso.
       for (const d of DIFFICULTY_IDS) {
-        for (const r of byDiff[d]) expect(r.end, `${d} semilla ${r.seed}`).toBe('flooded');
+        for (const r of byDiff[d]) {
+          if (d === 'tranquila' && r.seed % 2 === 0) continue;
+          expect(r.end, `${d} semilla ${r.seed}`).toBe('flooded');
+        }
       }
-      // Normal: dentro del primer minuto, siempre.
-      for (const r of byDiff.normal) expect(r.endS, `semilla ${r.seed}`).toBeLessThan(60);
-      // Tranquila: nunca pasa de la mitad de la partida sin moverse.
-      for (const r of byDiff.tranquila) expect(r.endS).toBeLessThan(SURVIVORS_CONFIG.durationS / 2);
+      // Normal: dentro de los dos primeros minutos, siempre (antes de T133, del primero).
+      for (const r of byDiff.normal) expect(r.endS, `semilla ${r.seed}`).toBeLessThan(120);
+      // Tranquila: de media no pasa de la mitad de la partida sin moverse.
+      expect(mean(byDiff.tranquila.map((r) => r.endS))).toBeLessThan(
+        SURVIVORS_CONFIG.durationS / 2,
+      );
       const t = byDiff.tranquila.map((r) => r.endS);
       const n = byDiff.normal.map((r) => r.endS);
       const s = byDiff.tormenta.map((r) => r.endS);
@@ -196,4 +204,92 @@ describe('survivors: equilibrio de la beta 2 con pilotos (T132)', () => {
     },
     SLOW,
   );
+});
+
+/**
+ * Las notas de la beta 2 (plan 012 T133): jugando en Tranquila las armas no
+ * limpiaban ninguna oleada y nunca se llegaba a una evolución. Partidas con
+ * el piloto que esquiva y elige bien (`greedy`, que va a por una evolución).
+ */
+describe('survivors: armas más fuertes y evoluciones a mano (T133)', () => {
+  /**
+   * Parte de los enemigos aparecidos que el piloto `greedy` hundía con la
+   * config v6 (las armas de la beta 2), medida con estos mismos pilotos,
+   * semillas y mundos antes de subir el daño (ver la sección de T133 en
+   * `ESTADO.md`). Es historia: no cambia con la config.
+   */
+  const V6_KILL_SHARE: Record<DifficultyId, number> = {
+    tranquila: 0.94,
+    normal: 0.916,
+    tormenta: 0.798,
+  };
+  /** s activos: la evolución debe llegar antes de esto (las 5:00). */
+  const EVOLVE_BY_S = 300;
+
+  it(
+    'en cada dificultad, quien esquiva y elige bien hunde claramente más que con la v6',
+    () => {
+      for (const d of DIFFICULTY_IDS) {
+        const k = mean(runs(d, 'greedy').map(killShare));
+        expect(k, d).toBeGreaterThan(V6_KILL_SHARE[d]);
+        // «Claramente»: lo que se queda sin hundir baja al menos un 30 %.
+        expect(1 - k, d).toBeLessThanOrEqual((1 - V6_KILL_SHARE[d]) * 0.7);
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'en Tranquila se limpia la pantalla al menos una vez en los 2 primeros minutos',
+    () => {
+      for (const r of runs('tranquila', 'greedy')) {
+        const early = r.screenClearsS.filter((t) => t < 120);
+        expect(early.length, `semilla ${r.seed}`).toBeGreaterThanOrEqual(1);
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'yendo a por un arma y su vinilo, la evolución llega antes de las 5:00',
+    () => {
+      // Normal: en la mayoría de semillas (y, si llega, antes de acabar).
+      const normal = runs('normal', 'greedy');
+      const early = normal.filter((r) => r.evolvedS !== null && r.evolvedS < EVOLVE_BY_S);
+      expect(early.length).toBeGreaterThan(SEEDS.length / 2);
+      expect(early.length).toBeGreaterThanOrEqual(SEEDS.length - 2);
+      // Tranquila, igual o mejor; Tormenta, al menos en la mitad.
+      const tranquila = runs('tranquila', 'greedy').filter(
+        (r) => r.evolvedS !== null && r.evolvedS < EVOLVE_BY_S,
+      );
+      expect(tranquila.length).toBeGreaterThanOrEqual(early.length);
+      const tormenta = runs('tormenta', 'greedy').filter(
+        (r) => r.evolvedS !== null && r.evolvedS < EVOLVE_BY_S,
+      );
+      expect(tormenta.length).toBeGreaterThanOrEqual(SEEDS.length / 2);
+    },
+    SLOW,
+  );
+
+  it('las cartas de lo que ya llevas salen más (pesos de la oferta)', () => {
+    const w = SURVIVORS_CONFIG.cardWeights;
+    expect(w.owned).toBeGreaterThan(w.new);
+    expect(w.pairedVinyl).toBeGreaterThan(w.new);
+    // Con sólo el arma inicial, su carta de nivel sale mucho más que 3 de 16 a la par.
+    const pool =
+      Object.keys(SURVIVORS_CONFIG.weapons).length + Object.keys(SURVIVORS_CONFIG.passives).length;
+    let seen = 0;
+    const N = 400;
+    for (let seed = 1; seed <= N; seed++) {
+      const game = createSurvivors(SURVIVORS_CONFIG, seed, archipelago(seed));
+      const s = game.snapshot();
+      game.spawnNote(s.player.x, s.player.y, s.xp.toNext - s.xp.xp);
+      game.step();
+      const card = game.snapshot().card;
+      expect(card).not.toBeNull();
+      const start = SURVIVORS_CONFIG.startingWeapon;
+      if (card?.options.some((o) => o.kind === 'weapon-level' && o.weaponId === start)) seen++;
+    }
+    expect(seen / N).toBeGreaterThan((SURVIVORS_CONFIG.cardChoices / pool) * 1.5);
+  });
 });

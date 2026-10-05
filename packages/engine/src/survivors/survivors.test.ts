@@ -440,7 +440,8 @@ describe('survivors: equilibrio de la beta 1 (T123)', () => {
       const idleS = idleRun.game.snapshot().activeS;
       const botS = botRun.game.snapshot().activeS;
       expect(idleRun.game.snapshot().end).toBe('flooded');
-      expect(botS).toBeGreaterThan(idleS * 3);
+      // ×2,5 desde T133: con el Cañón más fuerte el barco parado también aguanta más.
+      expect(botS).toBeGreaterThan(idleS * 2.5);
       expect(botS).toBeGreaterThan(90);
     });
   }

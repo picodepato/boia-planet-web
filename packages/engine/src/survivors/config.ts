@@ -20,7 +20,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 6;
+export const SURVIVORS_CONFIG_VERSION = 7;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -467,6 +467,15 @@ export interface SurvivorsConfig {
   levels: { base: number; linear: number; quadratic: number };
   /** Opciones por carta de nivel. */
   cardChoices: number;
+  /**
+   * Peso de cada carta al sacar la oferta (T133): sin ellos todas pesan
+   * igual y, con 16 armas y vinilos en el mazo, subir un arma a nivel 5
+   * para evolucionarla era cuestión de suerte. `owned`, subir de nivel un
+   * arma o vinilo que llevas; `pairedVinyl`, el vinilo nuevo pareja de un
+   * arma que llevas sin evolucionar; `new`, lo demás nuevo. La evolución y
+   * el Salvavidas no pasan por aquí (salen siempre que tocan).
+   */
+  cardWeights: { new: number; owned: number; pairedVinyl: number };
   slots: { weapons: number; vinyls: number };
   /** Beta 2: cartas de nivel. Beta 3 puede cambiarlo a chest sin duplicar condiciones. */
   evolutionSource: 'level-up' | 'chest';
@@ -551,6 +560,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   },
   levels: { base: 3, linear: 2.5, quadratic: 0.25 },
   cardChoices: 3,
+  cardWeights: { new: 1, owned: 3, pairedVinyl: 3 },
   slots: { weapons: 4, vinyls: 4 },
   evolutionSource: 'level-up',
   salvavidas: {
@@ -693,8 +703,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.canon',
       maxLevel: 5,
       base: {
-        damage: 10,
-        cooldownS: 0.9,
+        damage: 16,
+        cooldownS: 0.7,
         tickS: 0,
         count: 1,
         area: 6,
@@ -705,7 +715,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         durationS: 0,
       },
       levels: [
-        { i18nKey: 'survivors.weapon.canon.l2', gains: [{ stat: 'damage', amount: 5 }] },
+        { i18nKey: 'survivors.weapon.canon.l2', gains: [{ stat: 'damage', amount: 8 }] },
         { i18nKey: 'survivors.weapon.canon.l3', gains: [{ stat: 'count', amount: 1 }] },
         { i18nKey: 'survivors.weapon.canon.l4', gains: [{ stat: 'cooldownS', amount: -0.2 }] },
         { i18nKey: 'survivors.weapon.canon.l5', gains: [{ stat: 'pierce', amount: 1 }] },
@@ -720,7 +730,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.subwoofer',
       maxLevel: 5,
       base: {
-        damage: 6,
+        damage: 10,
         cooldownS: 0,
         tickS: 0.5,
         count: 1,
@@ -733,7 +743,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       },
       levels: [
         { i18nKey: 'survivors.weapon.subwoofer.l2', gains: [{ stat: 'area', amount: 20 }] },
-        { i18nKey: 'survivors.weapon.subwoofer.l3', gains: [{ stat: 'damage', amount: 4 }] },
+        { i18nKey: 'survivors.weapon.subwoofer.l3', gains: [{ stat: 'damage', amount: 6 }] },
         { i18nKey: 'survivors.weapon.subwoofer.l4', gains: [{ stat: 'area', amount: 25 }] },
         { i18nKey: 'survivors.weapon.subwoofer.l5', gains: [{ stat: 'tickS', amount: -0.15 }] },
       ],
@@ -747,7 +757,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.laser',
       maxLevel: 5,
       base: {
-        damage: 8,
+        damage: 12,
         cooldownS: 0,
         tickS: 0.25,
         count: 1,
@@ -760,7 +770,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       },
       levels: [
         { i18nKey: 'survivors.weapon.laser.l2', gains: [{ stat: 'range', amount: 60 }] },
-        { i18nKey: 'survivors.weapon.laser.l3', gains: [{ stat: 'damage', amount: 5 }] },
+        { i18nKey: 'survivors.weapon.laser.l3', gains: [{ stat: 'damage', amount: 8 }] },
         { i18nKey: 'survivors.weapon.laser.l4', gains: [{ stat: 'tickS', amount: -0.05 }] },
         { i18nKey: 'survivors.weapon.laser.l5', gains: [{ stat: 'count', amount: 1 }] },
       ],
@@ -774,7 +784,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.buoys',
       maxLevel: 5,
       base: {
-        damage: 12,
+        damage: 18,
         cooldownS: 0,
         tickS: 0.4,
         count: 2,
@@ -786,10 +796,10 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         durationS: 0,
       },
       levels: [
-        { i18nKey: 'survivors.weapon.buoys.l2', gains: [{ stat: 'damage', amount: 6 }] },
+        { i18nKey: 'survivors.weapon.buoys.l2', gains: [{ stat: 'damage', amount: 8 }] },
         { i18nKey: 'survivors.weapon.buoys.l3', gains: [{ stat: 'count', amount: 1 }] },
         { i18nKey: 'survivors.weapon.buoys.l4', gains: [{ stat: 'area', amount: 4 }] },
-        { i18nKey: 'survivors.weapon.buoys.l5', gains: [{ stat: 'damage', amount: 10 }] },
+        { i18nKey: 'survivors.weapon.buoys.l5', gains: [{ stat: 'damage', amount: 12 }] },
       ],
       blockedByIslands: false,
       extraProjectilesApply: false,
@@ -802,7 +812,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.confetti',
       maxLevel: 5,
       base: {
-        damage: 6,
+        damage: 10,
         cooldownS: 1.4,
         tickS: 0,
         count: 5,
@@ -815,7 +825,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       },
       levels: [
         { i18nKey: 'survivors.weapon.confetti.l2', gains: [{ stat: 'count', amount: 2 }] },
-        { i18nKey: 'survivors.weapon.confetti.l3', gains: [{ stat: 'damage', amount: 4 }] },
+        { i18nKey: 'survivors.weapon.confetti.l3', gains: [{ stat: 'damage', amount: 6 }] },
         { i18nKey: 'survivors.weapon.confetti.l4', gains: [{ stat: 'cooldownS', amount: -0.3 }] },
         { i18nKey: 'survivors.weapon.confetti.l5', gains: [{ stat: 'pierce', amount: 1 }] },
       ],
@@ -830,7 +840,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.fireworks',
       maxLevel: 5,
       base: {
-        damage: 25,
+        damage: 40,
         cooldownS: 2.2,
         tickS: 0,
         count: 1,
@@ -844,7 +854,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       levels: [
         { i18nKey: 'survivors.weapon.fireworks.l2', gains: [{ stat: 'area', amount: 15 }] },
         { i18nKey: 'survivors.weapon.fireworks.l3', gains: [{ stat: 'count', amount: 1 }] },
-        { i18nKey: 'survivors.weapon.fireworks.l4', gains: [{ stat: 'damage', amount: 15 }] },
+        { i18nKey: 'survivors.weapon.fireworks.l4', gains: [{ stat: 'damage', amount: 20 }] },
         { i18nKey: 'survivors.weapon.fireworks.l5', gains: [{ stat: 'cooldownS', amount: -0.6 }] },
       ],
       blockedByIslands: false,
@@ -858,7 +868,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       i18nKey: 'survivors.weapon.acidRain',
       maxLevel: 5,
       base: {
-        damage: 7,
+        damage: 12,
         cooldownS: 5,
         tickS: 1,
         count: 1,
@@ -871,7 +881,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       },
       levels: [
         { i18nKey: 'survivors.weapon.acidRain.l2', gains: [{ stat: 'area', amount: 25 }] },
-        { i18nKey: 'survivors.weapon.acidRain.l3', gains: [{ stat: 'damage', amount: 5 }] },
+        { i18nKey: 'survivors.weapon.acidRain.l3', gains: [{ stat: 'damage', amount: 8 }] },
         { i18nKey: 'survivors.weapon.acidRain.l4', gains: [{ stat: 'durationS', amount: 2 }] },
         { i18nKey: 'survivors.weapon.acidRain.l5', gains: [{ stat: 'cooldownS', amount: -1.5 }] },
       ],
@@ -1011,7 +1021,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         i18nKey: 'survivors.evolution.drop',
         maxLevel: 5,
         base: {
-          damage: 28,
+          damage: 40,
           cooldownS: 0.6,
           tickS: 0,
           count: 2,
@@ -1039,7 +1049,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         i18nKey: 'survivors.evolution.soundWall',
         maxLevel: 5,
         base: {
-          damage: 18,
+          damage: 26,
           cooldownS: 0,
           tickS: 0.3,
           count: 1,
@@ -1067,7 +1077,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         i18nKey: 'survivors.evolution.laserShow',
         maxLevel: 5,
         base: {
-          damage: 22,
+          damage: 30,
           cooldownS: 0,
           tickS: 0.16,
           count: 4,
@@ -1094,7 +1104,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         i18nKey: 'survivors.evolution.discoBall',
         maxLevel: 5,
         base: {
-          damage: 36,
+          damage: 50,
           cooldownS: 0,
           tickS: 0.3,
           count: 1,
@@ -1115,7 +1125,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
   difficulties: {
     tranquila: { id: 'tranquila', i18nKey: 'survivors.dificultad.tranquila', enemyDamage: 0.7, enemyHp: 0.8, enemyCount: 0.75 },
     normal: { id: 'normal', i18nKey: 'survivors.dificultad.normal', enemyDamage: 1, enemyHp: 1, enemyCount: 1 },
-    tormenta: { id: 'tormenta', i18nKey: 'survivors.dificultad.tormenta', enemyDamage: 1.3, enemyHp: 1.3, enemyCount: 1.4 },
+    tormenta: { id: 'tormenta', i18nKey: 'survivors.dificultad.tormenta', enemyDamage: 1.6, enemyHp: 1.6, enemyCount: 1.6 },
   },
   bosses: {},
   upgrades: [

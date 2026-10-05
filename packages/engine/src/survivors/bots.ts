@@ -21,7 +21,10 @@ import type { SurvivorsWorld } from './world';
  *   de las islas; elige siempre la primera carta.
  * - `greedy`: esquiva igual, va a por las notas cuando no tiene enemigos
  *   cerca y elige la carta que más puntúa (evolución, Salvavidas, armas y sus
- *   niveles, el vinilo pareja de un arma que lleva…).
+ *   niveles, el vinilo pareja de un arma que lleva…). Desde T133 juega «a por
+ *   una evolución»: sube antes que nada su arma foco (la que más nivel tiene
+ *   de las que evolucionan; al empezar, el Cañón de agua) y coge su vinilo
+ *   pareja en cuanto sale.
  */
 export type BotKind = 'idle' | 'dodge' | 'greedy';
 
@@ -33,7 +36,7 @@ const ISLAND_MARGIN = 160;
 /** u: el codicioso va a por notas sólo sin enemigos más cerca que esto. */
 const SAFE_DISTANCE = 130;
 /** u: notas más lejos que esto no le atraen. */
-const NOTE_REACH = 700;
+const NOTE_REACH = 900;
 
 /**
  * El mando del esquivador para este paso (sin la carta). Con `notes`, cuando
@@ -117,20 +120,41 @@ function pairedVinyls(config: SurvivorsConfig, held: readonly WeaponId[]): Set<P
   return out;
 }
 
+/**
+ * El arma que el codicioso quiere evolucionar: de las que llevan evolución y
+ * no han evolucionado, la de más nivel (a igualdad, la primera que cogió).
+ */
+export function focusWeapon(game: SurvivorsGame): WeaponId | null {
+  let best: WeaponId | null = null;
+  let bestLevel = 0;
+  for (const w of game.snapshot().weapons) {
+    if (w.evolutionId) continue;
+    if (!game.config.evolutions.some((e) => e.weapon === w.id)) continue;
+    if (w.level > bestLevel) {
+      best = w.id;
+      bestLevel = w.level;
+    }
+  }
+  return best;
+}
+
 /** Lo que vale una carta para el piloto codicioso (más es mejor). */
 export function greedyScore(game: SurvivorsGame, opt: CardOption): number {
   const held = game.heldWeapons.map((w) => w.id);
+  const focus = focusWeapon(game);
   switch (opt.kind) {
     case 'evolution':
       return 100;
     case 'salvavidas':
       return 90;
     case 'weapon-level':
-      return 50 + opt.targetLevel;
+      return opt.weaponId === focus ? 80 : 50 + opt.targetLevel;
     case 'weapon-new':
       return 60 - held.length * 4;
     case 'vinyl-new':
     case 'vinyl-level': {
+      const focusVinyl = focus && game.config.evolutions.find((e) => e.weapon === focus)?.passive;
+      if (opt.kind === 'vinyl-new' && opt.vinylId === focusVinyl) return 75;
       const paired = opt.vinylId && pairedVinyls(game.config, held).has(opt.vinylId);
       if (paired) return 48;
       if (opt.vinylId === 'house' || opt.vinylId === 'chill') return 40;
@@ -191,6 +215,28 @@ export interface BotRun {
   finalWater: number;
   /** Agua metida por cada tipo de enemigo. */
   waterByType: Partial<Record<EnemyId, number>>;
+  /** Enemigos distintos que llegaron a estar en el mar (un reciclado cuenta una vez). */
+  spawned: number;
+  /** Derrotados en total. */
+  defeated: number;
+  /** s activos de la primera evolución (null si no evolucionó). */
+  evolvedS: number | null;
+  /**
+   * s activos de cada «pantalla limpia»: con `CLEAR_MIN` enemigos o más a
+   * menos de `SCREEN_RADIUS` u, el barco los deja a cero y entre medias ha
+   * hundido al menos tantos como había (no vale sólo escapar).
+   */
+  screenClearsS: number[];
+}
+
+/** u: radio de lo que se ve alrededor del barco (el anillo de aparición está más lejos). */
+export const SCREEN_RADIUS = 600;
+/** Enemigos a la vista para que dejarlos a cero cuente como limpiar la pantalla. */
+export const CLEAR_MIN = 6;
+
+/** Derrotados / aparecidos de una partida (0…1). */
+export function killShare(run: BotRun): number {
+  return run.defeated / Math.max(1, run.spawned);
 }
 
 /**
@@ -222,7 +268,17 @@ export function runBot(
     hits: 0,
     finalWater: 0,
     waterByType: {},
+    spawned: 0,
+    defeated: 0,
+    evolvedS: null,
+    screenClearsS: [],
   };
+  const seen = new Set<number>();
+  const bw = world.bounds.right - world.bounds.left;
+  const bh = world.bounds.bottom - world.bounds.top;
+  // Pantalla limpia: el máximo a la vista desde la última, y los hundidos desde ese máximo.
+  let peak = 0;
+  let killsSincePeak = 0;
   const minuteSteps = Math.round(60 / SURVIVORS_STEP_S);
   const maxSteps = Math.round(maxS / SURVIVORS_STEP_S) + 200_000;
   let guard = 0;
@@ -238,6 +294,28 @@ export function runBot(
         run.waterByType[e.enemy] = (run.waterByType[e.enemy] ?? 0) + (e.water - water);
       } else if (e.type === 'defeated') {
         run.defeatedByType[e.enemy] = (run.defeatedByType[e.enemy] ?? 0) + 1;
+        run.defeated++;
+        killsSincePeak++;
+      } else if (e.type === 'evolved' && run.evolvedS === null) {
+        run.evolvedS = game.activeS;
+      }
+    }
+    {
+      const s = game.snapshot();
+      let onScreen = 0;
+      for (const e of s.enemies) {
+        seen.add(e.id);
+        const dx = wrapDelta(e.x - s.player.x, bw);
+        const dy = wrapDelta(e.y - s.player.y, bh);
+        if (dx * dx + dy * dy < SCREEN_RADIUS * SCREEN_RADIUS) onScreen++;
+      }
+      if (onScreen > peak) {
+        peak = onScreen;
+        killsSincePeak = 0;
+      } else if (onScreen === 0 && peak >= CLEAR_MIN) {
+        if (killsSincePeak >= peak) run.screenClearsS.push(game.activeS);
+        peak = 0;
+        killsSincePeak = 0;
       }
     }
     const active = Math.round(game.activeS / SURVIVORS_STEP_S);
@@ -254,6 +332,7 @@ export function runBot(
   const s = game.snapshot();
   run.end = s.end;
   run.endS = s.activeS;
+  run.spawned = seen.size;
   run.finalWater = s.water.level;
   run.weapons = s.weapons.map((w) => `${w.evolutionId ?? w.id}${w.evolutionId ? '' : w.level}`);
   run.vinyls = s.vinyls.map((v) => `${v.id}${v.level}`);
