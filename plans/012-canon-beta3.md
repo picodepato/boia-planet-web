@@ -146,7 +146,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T140 — Act 1 final boss: Barco Pirata Fantasma
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: none
 - Depends on: T134, T137
@@ -288,6 +288,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T141: generic-code change: weapons iterate `bossTargets` with `hurtTarget` → `hurtBoss`/`hurtTentacle`; hooks `bossInvulnerable`, `contactDamage`, `stepBosses`, `stateHash`, `validateBoss`; `harderAct` gets `finalBossEnabled`; one player hit per tentacle/rock volley; Kraken never emerges under the boat; defeating it does not end the game (T144) (agent)
 
+- 2026-10-05 plan: T140 launched next (Fable, on the path to T144); its prompt allows turning on act 1's final-boss slot in normal games (beta 3 content) (orchestrator)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -312,3 +314,4 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 14:02 T141 launched · attempt 1 · agent af95bee9f08210542 (fable)
 - 2026-10-05 14:30 T135 done by agent; integration conflict with T137 in survivors/bots.ts, index.ts, sim.ts → sent back to the same agent (also wires the Llama to bosses)
 - 2026-10-05 14:45 T141 done · branch worktree-agent-af95bee9f08210542 → 6b702dd; T135 agent told to merge main again
+- 2026-10-05 14:47 T140 launched · attempt 1 · agent a012b3b9cca4dd07b (fable)
