@@ -118,7 +118,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: bosses as separate sim entities (phases, telegraphed attacks, summons, invulnerable windows, chest + big note), script slots 2:30/4:30/5:30 with a test boss kept out of production games, commons slow during bosses, retreat at 7:00, act 2 derived by `harderAct` (final boss `kraken`), Focos target bosses; config v9; 1500 unit tests → 8885519
 
 ## T138 — Miniboss 1: El Vecino Quejica
-- Status: pending
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T134, T137
@@ -129,7 +129,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests: rings have gaps, islands block a ring segment, phase change, act 2 stronger, model builder creates/disposes
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with a `t=` start before 2:30 showing the Vecino on screen without console errors
   - Test command → exit 0
-- Outcome:
+- Outcome: (Codex) Vecino Quejica as own boss module: rings with gaps, island shadows (`ringObstacles`), phases, act 2 ×1.5 hp, act-1 2:30 slot on, barge/megaphone model; config v12; 552 targeted unit tests, Vecino e2e 2 passed (full mar-canon file not run) → 08d098b
 
 ## T139 — Miniboss 2: Tiburón Martillo and the chest
 - Status: running (attempt 1)
@@ -292,6 +292,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T140: generic touches `attackFrom`, plan hook in `stepBosses`, `ghostSpeedScale`, `summon.ghost` → `EnemyView.ghost`, `finish` accepts only the first reason, no card after end; new EndReason `victory` for any final boss (Kraken too) = won with score = goal, `minPlausibleMs` bounded by `canonEarliestWinS()` (330 s); T132 balance tests and 7:00 dawn test run with boss slots off; two older e2e now answer the seed-7 card at 128.2 s (agent)
 
+- 2026-10-05 T138: Codex edited existing survivors tests (beta2, bosses, fantasma, kraken, survivors), not reviewed beyond the passing run; only generic change `ringObstacles` in boss warnings; wrapper ran only the Vecino e2e, the full `mar-canon.spec.ts` run is left to T147 (agent/orchestrator)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -322,3 +324,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 15:03 T139 launched · attempt 1 · agent a65dc2c0dd0e2b4cd (opus); push offer T134 cancelled, push offer T135 sent
 - 2026-10-05 16:10 T139 agent stopped by API 529 (overloaded); resumed the same agent (not a counted failure)
 - 2026-10-05 16:50 T140 done · branch worktree-agent-a012b3b9cca4dd07b → 4284140
+- 2026-10-05 16:55 T138 launched · attempt 1 · Codex via wrapper agent a0cfbccfd80958e1c (sonnet); T140 worktree locked, branch kept until plan end
+- 2026-10-05 17:00 T139 done by agent; integration conflict with T140 in 9 files (view, e2e, sim, config, tests) → sent back to the same agent
+- 2026-10-05 17:25 T138 done · branch worktree-agent-a0cfbccfd80958e1c → 08d098b; T139 agent told to merge main again
