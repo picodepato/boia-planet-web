@@ -44,6 +44,23 @@ import {
   xpToNext,
 } from './config';
 import { attackAt, inRingGap, nextPhase, ringRadiusAt, ringTouches } from './bosses';
+import {
+  type KrakenEvent,
+  type KrakenHost,
+  type KrakenState,
+  type KrakenView,
+  type Tentacle,
+  clearKraken,
+  createKraken,
+  hurtTentacle,
+  krakenHash,
+  krakenSolid,
+  krakenView,
+  krakenVulnerable,
+  krakenWarnings,
+  stepKraken,
+  tentacleHittable,
+} from './kraken';
 import { buildCardPool, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
 export type { CardOption } from './cards';
 import { SpatialGrid } from './grid';
@@ -135,6 +152,8 @@ export type SurvivorsEvent =
   | { type: 'chest'; boss: BossId; id: number; x: number; y: number }
   /** El barco toca el cofre: lo que da lo resuelve quien escucha (T139). */
   | { type: 'chestOpened'; boss: BossId; id: number; x: number; y: number }
+  // --- El Kraken (T141): sus estados, tentáculos, rocas y la cabeza expuesta (`kraken.ts`) ---
+  | KrakenEvent
   | { type: 'end'; reason: EndReason };
 
 export interface EnemyView {
@@ -306,6 +325,8 @@ export interface BossView {
   /** Ataque en curso y en qué está (`warning` avisando, `hit` golpeando); null entre ataques. */
   readonly attack: string | null;
   readonly attackStage: 'warning' | 'hit' | null;
+  /** Sólo el Kraken (T141): estado, tentáculos, rocas y cabeza expuesta; null en los demás. */
+  readonly kraken: KrakenView | null;
 }
 
 /**
@@ -624,7 +645,25 @@ interface Boss {
   /** Ataques lanzados en la fase (para el orden cíclico). */
   attackIndex: number;
   attack: BossAttack | null;
+  /** Sólo el Kraken (T141): su estado propio (`kraken.ts`); null en los demás. */
+  kraken: KrakenState | null;
   dead: boolean;
+}
+
+/**
+ * Lo que las armas pueden golpear de un boss (T141): su cuerpo (si no está
+ * invulnerable) y, en el Kraken, cada tentáculo arriba. La lista se rehace
+ * en cada paso tras mover los bosses y vale hasta el siguiente; `dead` se
+ * pone al caer la parte dentro del paso. Comparte el `Target` de las armas.
+ */
+interface BossTarget {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  dead: boolean;
+  boss: Boss;
+  tentacle: Tentacle | null;
 }
 
 interface Chest {
@@ -700,6 +739,11 @@ export class SurvivorsGame {
   /** El azar de los bosses (huecos del anillo, dónde caen los círculos): aparte del guion. */
   private readonly bossRng: () => number;
   private readonly bosses: Boss[] = [];
+  /** Lo golpeable de los bosses vivos en este paso (`rebuildBossTargets`). */
+  private readonly bossTargets: BossTarget[] = [];
+  /** Lo que el Kraken necesita de la partida (T141) y el Kraken al que se lo da ahora. */
+  private readonly krakenHost: KrakenHost;
+  private krakenBoss: Boss | null = null;
   private readonly bossViews: BossView[] = [];
   private readonly bossWarnings: BossWarningView[] = [];
   private readonly chests: Chest[] = [];
@@ -834,6 +878,30 @@ export class SurvivorsGame {
     );
     this.trackAcc = act.tracks.map(() => 0);
     this.durationSteps = Math.round(config.durationS / SURVIVORS_STEP_S);
+    // El Kraken (T141) ve la partida por aquí: barco, azar de los bosses, islas, golpes y sucesos.
+    this.krakenHost = {
+      bounds: this.bounds,
+      obstacles: world.obstacles,
+      player: () => this.player,
+      shipRadius: () => this.shipCfg.radius,
+      rng: () => this.bossRng(),
+      nextId: () => this.nextId++,
+      toWater: (x, y, r) => this.islands.toWater(x, y, r),
+      hitLands: () => this.bossHitLands(),
+      hitPlayer: (water, attack, x, y) => {
+        const b = this.krakenBoss;
+        if (b) this.damagePlayerByBoss(water, b, attack, x, y);
+      },
+      telegraph: (attack, x, y) => {
+        const b = this.krakenBoss;
+        if (b) this.events.push({ type: 'bossTelegraph', boss: b.def.id, id: b.id, attack, kind: 'circles', x, y, heading: 0 });
+      },
+      attack: (attack, x, y) => {
+        const b = this.krakenBoss;
+        if (b) this.events.push({ type: 'bossAttack', boss: b.def.id, id: b.id, attack, kind: 'circles', x, y });
+      },
+      emit: (ev) => this.events.push(ev),
+    };
 
     const s = world.start;
     this.player = createShipState(
@@ -1036,6 +1104,7 @@ export class SurvivorsGame {
     for (const b of this.bosses) {
       this.bossViews.push(this.bossView(b));
       if (b.attack) this.pushWarnings(b, b.attack);
+      if (b.kraken) krakenWarnings(b.kraken, b, this.bossWarnings);
     }
     this.chestViews.length = 0;
     for (const c of this.chests) {
@@ -1237,6 +1306,7 @@ export class SurvivorsGame {
         b.attackTimer,
         b.attackIndex,
         b.attack ? [b.attack.name, b.attack.stage, b.attack.timer, b.attack.x, b.attack.y, b.attack.left, b.attack.landed ? 1 : 0] : null,
+        b.kraken ? krakenHash(b.kraken) : null,
       ]),
       ch: this.chests.map((c) => [c.id, c.boss, c.x, c.y]),
       bd: this.bossesDefeated,
@@ -1811,6 +1881,8 @@ export class SurvivorsGame {
     // barco esté en los segundos de gracia de un golpe de contacto.
     for (const b of this.bosses) {
       if (b.dead) continue;
+      // El Kraken bajo el agua (o saliendo / hundiéndose) es una sombra: no toca.
+      if (b.kraken && !krakenSolid(b.kraken)) continue;
       const dx = wd(b.x - p.x, this.w);
       const dy = wd(b.y - p.y, this.h);
       const min = pr + b.radius;
@@ -1988,12 +2060,12 @@ export class SurvivorsGame {
     return best;
   }
 
-  /** El boss vivo y vulnerable más cercano a (x, y) a menos de `range`; null si ninguno. */
-  private nearestBoss(x: number, y: number, range: number): Boss | null {
-    let best: Boss | null = null;
+  /** Lo golpeable de un boss (cuerpo vulnerable o tentáculo) más cercano a (x, y) a menos de `range`; null si nada. */
+  private nearestBoss(x: number, y: number, range: number): BossTarget | null {
+    let best: BossTarget | null = null;
     let bestD = range * range;
-    for (const b of this.bosses) {
-      if (b.dead || this.bossInvulnerable(b)) continue;
+    for (const b of this.bossTargets) {
+      if (b.dead) continue;
       const dx = wd(b.x - x, this.w);
       const dy = wd(b.y - y, this.h);
       const d2 = dx * dx + dy * dy;
@@ -2023,8 +2095,8 @@ export class SurvivorsGame {
     out.length = 0;
     for (const e of this.enemiesInRange(range, this.scratchEnemies)) out.push(e);
     const p = this.player;
-    for (const b of this.bosses) {
-      if (b.dead || this.bossInvulnerable(b)) continue;
+    for (const b of this.bossTargets) {
+      if (b.dead) continue;
       const dx = wd(b.x - p.x, this.w);
       const dy = wd(b.y - p.y, this.h);
       if (dx * dx + dy * dy <= range * range) out.push(b);
@@ -2325,8 +2397,8 @@ export class SurvivorsGame {
       let bestN = -1;
       for (const e of pool) {
         if (e.dead) continue;
-        // Un boss cuenta como un grupo de 3 debajo de la nube (vale la pena regarlo).
-        let n = this.bosses.includes(e as Boss) ? 3 : 0;
+        // Un boss (o un tentáculo) cuenta como un grupo de 3 debajo de la nube (vale la pena regarlo).
+        let n = this.bossTargets.includes(e as BossTarget) ? 3 : 0;
         const under = this.enemyGrid.query(e.x, e.y, st.area + this.maxEnemyRadius, this.scratch);
         for (const j of under) {
           const o = this.enemies[j]!;
@@ -2507,14 +2579,14 @@ export class SurvivorsGame {
         if (across > st.area + e.radius) continue;
         this.hurt(e, st.damage);
       }
-      for (const b of this.bosses) {
+      for (const b of this.bossTargets) {
         if (b.dead) continue;
         const dx = wd(b.x - p.x, this.w);
         const dy = wd(b.y - p.y, this.h);
         const along = dx * ux + dy * uy;
         if (along < -b.radius || along > st.range + b.radius) continue;
         if (Math.abs(-dx * uy + dy * ux) > st.area + b.radius) continue;
-        this.hurtBoss(b, st.damage);
+        this.hurtTarget(b, st.damage);
       }
     }
   }
@@ -2578,7 +2650,7 @@ export class SurvivorsGame {
   private targetById(id: number): Target | null {
     if (id < 0) return null;
     for (const e of this.enemies) if (e.id === id) return e.dead ? null : e;
-    for (const b of this.bosses) if (b.id === id) return b.dead || this.bossInvulnerable(b) ? null : b;
+    for (const b of this.bossTargets) if (b.id === id) return b.dead ? null : b;
     return null;
   }
 
@@ -2632,10 +2704,10 @@ export class SurvivorsGame {
           hitT = t;
         }
       }
-      // Los bosses: pocos, sin rejilla; invulnerables, la bola los atraviesa.
-      let hitBoss: Boss | null = null;
-      for (const o of this.bosses) {
-        if (o.dead || o.id === b.lastHit || this.bossInvulnerable(o)) continue;
+      // Los bosses: pocos, sin rejilla; invulnerables, la bola los atraviesa (sólo lo golpeable está en la lista).
+      let hitBoss: BossTarget | null = null;
+      for (const o of this.bossTargets) {
+        if (o.dead || o.id === b.lastHit) continue;
         const t = segmentHit(wd(b.x - o.x, this.w), wd(b.y - o.y, this.h), sx, sy, ss, o.radius + b.radius);
         if (t < hitT) {
           hitBoss = o;
@@ -2651,7 +2723,7 @@ export class SurvivorsGame {
         }
         if (hitBoss) {
           b.lastHit = hitBoss.id;
-          this.hurtBoss(hitBoss, b.damage);
+          this.hurtTarget(hitBoss, b.damage);
         } else if (hit) {
           b.lastHit = hit.id;
           this.hurt(hit, b.damage);
@@ -3041,14 +3113,63 @@ export class SurvivorsGame {
       attackTimer: def.phases[0]?.firstAttackS ?? 0,
       attackIndex: 0,
       attack: null,
+      kraken: null,
       dead: false,
     };
+    if (def.kraken) {
+      // Los tentáculos aguantan como el boss: por el acto y la dificultad.
+      b.kraken = createKraken(def.kraken, def.kraken.tentacle.hp * (this.act.bossHpScale ?? 1) * this.diff.enemyHp);
+    }
     this.setWrapped(b, x, y);
     const p = this.player;
     b.heading = Math.atan2(wd(p.y - b.y, this.h), wd(p.x - b.x, this.w));
     this.bosses.push(b);
     this.events.push({ type: 'bossSpawn', boss: def.id, id: b.id, kind: def.kind, nameKey: def.i18nKey, x: b.x, y: b.y });
+    if (b.kraken) {
+      this.events.push({ type: 'krakenState', id: b.id, state: b.kraken.mode, x: b.x, y: b.y, island: -1 });
+    }
+    this.rebuildBossTargets();
     return b;
+  }
+
+  /**
+   * Rehace lo golpeable de los bosses (T141): el cuerpo de cada boss vivo y
+   * vulnerable y, en el Kraken, cada tentáculo arriba. Se llama tras mover
+   * los bosses en cada paso y cuando entra o cae uno.
+   */
+  private rebuildBossTargets(): void {
+    const out = this.bossTargets;
+    out.length = 0;
+    for (const b of this.bosses) {
+      if (b.dead) continue;
+      if (!this.bossInvulnerable(b)) out.push({ id: b.id, x: b.x, y: b.y, radius: b.radius, dead: false, boss: b, tentacle: null });
+      if (b.kraken) {
+        for (const t of b.kraken.tentacles) {
+          if (tentacleHittable(t)) out.push({ id: t.id, x: t.x, y: t.y, radius: t.radius, dead: false, boss: b, tentacle: t });
+        }
+      }
+    }
+  }
+
+  /** Hiere una parte golpeable de un boss: el cuerpo (`hurtBoss`) o un tentáculo del Kraken. */
+  private hurtTarget(t: BossTarget, damage: number): void {
+    if (t.dead) return;
+    if (t.tentacle) {
+      if (!t.boss.kraken) return;
+      this.krakenBoss = t.boss;
+      hurtTentacle(t.boss.kraken, t.boss, this.krakenHost, t.tentacle, damage);
+      this.krakenBoss = null;
+      if (!t.tentacle.dead) return;
+      t.dead = true;
+      // Tumbarlo expone la cabeza: entra en la lista ya, en este mismo paso.
+      const b = t.boss;
+      if (!this.bossInvulnerable(b) && !this.bossTargets.some((o) => o.boss === b && !o.tentacle && !o.dead)) {
+        this.bossTargets.push({ id: b.id, x: b.x, y: b.y, radius: b.radius, dead: false, boss: b, tentacle: null });
+      }
+      return;
+    }
+    this.hurtBoss(t.boss, damage);
+    if (t.boss.dead || this.bossInvulnerable(t.boss)) t.dead = true;
   }
 
   private bossView(b: Boss): BossView {
@@ -3071,11 +3192,13 @@ export class SurvivorsGame {
       invulnerable: this.bossInvulnerable(b),
       attack: b.attack?.name ?? null,
       attackStage: b.attack?.stage ?? null,
+      kraken: b.kraken ? krakenView(b.kraken) : null,
     };
   }
 
-  /** No recibe daño: por la fase o por el ataque en curso. */
+  /** No recibe daño: por la fase o por el ataque en curso; el Kraken, salvo con la cabeza expuesta. */
   private bossInvulnerable(b: Boss): boolean {
+    if (b.kraken) return !krakenVulnerable(b.kraken);
     return (b.def.phases[b.phase]?.invulnerable ?? false) || (b.attack?.def.invulnerable ?? false);
   }
 
@@ -3094,6 +3217,13 @@ export class SurvivorsGame {
       }
       const phase = b.def.phases[b.phase];
       if (!phase) continue;
+      // El Kraken (T141) va por su cuenta: sumergido, tentáculos, agarre y rocas (`kraken.ts`).
+      if (b.kraken) {
+        this.krakenBoss = b;
+        stepKraken(b.kraken, b, this.krakenHost, dt);
+        this.krakenBoss = null;
+        continue;
+      }
       // Ataques: el que está en curso avanza; si no hay, baja el reloj y lanza el siguiente de la fase.
       if (b.attack) this.stepBossAttack(b, b.attack, phase.attackEveryS, dt);
       else if (phase.attacks.length > 0) {
@@ -3112,6 +3242,7 @@ export class SurvivorsGame {
         b.vy = 0;
       } else this.moveBoss(b, phase, dt);
     }
+    this.rebuildBossTargets();
   }
 
   private moveBoss(b: Boss, phase: BossDef['phases'][number], dt: number): void {
@@ -3394,16 +3525,16 @@ export class SurvivorsGame {
     if (b.hp <= 0) this.defeatBoss(b);
   }
 
-  /** Hiere a los bosses que toca el círculo (x, y, r). Devuelve cuántos. */
+  /** Hiere lo golpeable de los bosses (cuerpos y tentáculos) que toca el círculo (x, y, r). Devuelve cuántos. */
   private hurtBossesCircle(x: number, y: number, r: number, damage: number): number {
     let n = 0;
-    for (const b of this.bosses) {
-      if (b.dead || this.bossInvulnerable(b)) continue;
+    for (const b of this.bossTargets) {
+      if (b.dead) continue;
       const dx = wd(b.x - x, this.w);
       const dy = wd(b.y - y, this.h);
       const min = r + b.radius;
       if (dx * dx + dy * dy > min * min) continue;
-      this.hurtBoss(b, damage);
+      this.hurtTarget(b, damage);
       n++;
     }
     return n;
@@ -3412,6 +3543,8 @@ export class SurvivorsGame {
   private defeatBoss(b: Boss): void {
     b.dead = true;
     b.attack = null;
+    if (b.kraken) clearKraken(b.kraken);
+    this.rebuildBossTargets();
     this.bossesDefeated.push(b.def.id);
     if (b.def.kind === 'boss') this.finalBossDefeated = true;
     this.events.push({ type: 'bossDefeated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
@@ -3432,9 +3565,11 @@ export class SurvivorsGame {
       if (b.dead) continue;
       b.dead = true;
       b.attack = null;
+      if (b.kraken) clearKraken(b.kraken);
       this.events.push({ type: 'bossRetreated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
     }
     this.compactBosses();
+    this.rebuildBossTargets();
   }
 
   private compactBosses(): void {

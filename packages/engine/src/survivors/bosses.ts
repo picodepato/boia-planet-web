@@ -1,4 +1,5 @@
 import type { BossAttackDef, BossDef, BossPhase } from './config';
+import { validateKraken } from './kraken';
 
 /**
  * Las reglas puras del sistema genérico de bosses (§7, T137): la máquina de
@@ -99,5 +100,7 @@ export function validateBoss(def: BossDef): string[] {
     if (a.kind === 'circles' && !(a.count > 0 && a.radius > 0)) out.push(`${def.id}: ${name} círculos`);
     if (a.kind === 'broadside' && !(a.count > 0 && a.speed > 0 && a.length > 0)) out.push(`${def.id}: ${name} andanada`);
   }
+  // El Kraken (T141) trae sus propios números.
+  out.push(...validateKraken(def));
   return out;
 }

@@ -14,7 +14,8 @@ import type { QualityTier } from '../world/sectors';
  * su tabla fija por nivel (`weapons`, `resolveWeaponStats`), los 9 vinilos,
  * los huecos 4+4, las evoluciones y el Salvavidas raro; la beta 3 (plan 012)
  * trae el sistema genérico de bosses (`bosses`, `bossFight`: fases, ataques
- * avisados, llamadas) y el acto 2 (`acts[1]`, `harderAct`).
+ * avisados, llamadas), el acto 2 (`acts[1]`, `harderAct`) y su boss final, el
+ * Kraken (`bosses.kraken.kraken`, T141).
  * Cambiar cualquier valor cambia `survivorsConfigHash`, que
  * entra en el `configHash` de la sesión del minijuego; un cambio de reglas
  * sube `version`. Unidades: u de motor (las del mar de `/mar`) y segundos.
@@ -22,7 +23,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 9;
+export const SURVIVORS_CONFIG_VERSION = 10;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -463,6 +464,80 @@ export interface BossDef {
   chest: boolean;
   attacks: Record<string, BossAttackDef>;
   phases: readonly BossPhase[];
+  /**
+   * El Kraken (T141): con esto, el boss no usa `attacks` ni el movimiento de
+   * la fase; lo lleva `kraken.ts` (sumergido, tentáculos, agarre a islas,
+   * rocas). Las fases siguen siendo las de `phases` (por vida); cada una
+   * lee sus números de `kraken.phases[i]`.
+   */
+  kraken?: KrakenDef;
+}
+
+// --- El Kraken (§7, T141) -------------------------------------------------------
+
+/**
+ * Los números del Kraken, el boss final del acto 2. Nada bajo el agua (una
+ * sombra que no se puede golpear ni moja) persiguiendo al barco y emerge
+ * cerca; emergido saca tentáculos alrededor del barco (un círculo de aviso
+ * en el agua por tentáculo, luego sube y moja a quien esté dentro, y se queda
+ * arriba un rato donde las armas lo pueden tumbar); tumbar un tentáculo
+ * expone la cabeza `exposeS` s (la única ventana de daño, salvo `grab.
+ * exposesHead`). Cuando una fase lo permite y hay una isla al alcance, en vez
+ * de sacar tentáculos se agarra a ella y lanza rocas (círculo de caída
+ * avisado durante el vuelo). Después se sumerge y vuelve a perseguir.
+ */
+export interface KrakenDef {
+  /** u del barco a los que emerge, s mínimos y máximos bajo el agua entre salidas. */
+  emergeDistance: number;
+  /** u del barco por debajo de los cuales no emerge (se aparta: nunca sale justo debajo). */
+  emergeMinDistance: number;
+  minSubmergedS: number;
+  maxSubmergedS: number;
+  /** Velocidad bajo el agua (fracción de `speed`). */
+  submergedSpeedScale: number;
+  /** s que tarda en emerger y en sumergirse (no se le puede golpear). */
+  emergeS: number;
+  diveS: number;
+  /** s que se queda emergido sacando tentáculos (la ventana expuesta lo alarga). */
+  emergedS: number;
+  /** s de cabeza expuesta al tumbar un tentáculo (se renueva, no se suma). */
+  exposeS: number;
+  tentacle: {
+    /** s de aviso (el círculo), s que tarda en subir, s que se queda arriba. */
+    telegraphS: number;
+    riseS: number;
+    upS: number;
+    /** Aguante base (por el acto y la dificultad, como el boss) y radio. */
+    hp: number;
+    radius: number;
+    /** Agua que mete a quien esté en el círculo al subir. */
+    water: number;
+    /** u alrededor del barco donde salen (el primero, encima). */
+    spread: number;
+    /** s entre salidas de tentáculos mientras está emergido. */
+    everyS: number;
+    /** u de la cabeza hasta donde llegan: con el barco más lejos, no saca más y se hunde a perseguir. */
+    reach: number;
+  };
+  grab: {
+    /** u (del borde de la isla al Kraken) a los que una isla está al alcance. */
+    range: number;
+    /** s agarrado y s entre andanadas de rocas. */
+    holdS: number;
+    everyS: number;
+    /** La cabeza recibe daño mientras está agarrado. */
+    exposesHead: boolean;
+    rock: {
+      /** s de vuelo (el aviso es el círculo de caída, que dura el vuelo). */
+      flightS: number;
+      radius: number;
+      water: number;
+      /** u alrededor del barco donde caen. */
+      spread: number;
+    };
+  };
+  /** Por fase (el índice es la fase de `phases`): tentáculos por salida, rocas por andanada y si se agarra a islas. */
+  phases: readonly { tentacles: number; rocks: number; grabs: boolean }[];
 }
 
 /** Lo que cambia en la partida mientras hay un boss vivo (T137). */
@@ -1496,6 +1571,98 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
         },
       ],
     },
+    // El Kraken (T141): boss final del acto 2 (`acts[1]`, hueco `boss`). Sus
+    // ataques los lleva `kraken.ts` con los números de `kraken`; las fases
+    // (por vida) van aquí, sin ataques genéricos. Bajo el agua pasa por
+    // debajo de las islas (`ignoresIslands`); emerge siempre en agua.
+    kraken: {
+      id: 'kraken',
+      kind: 'boss',
+      i18nKey: 'survivors.boss.kraken',
+      hp: 1800,
+      radius: 56,
+      speed: 150,
+      acceleration: 220,
+      contactWater: 14,
+      ignoresIslands: true,
+      noteValue: 100,
+      chest: false,
+      attacks: {},
+      phases: [
+        {
+          untilHpFraction: 0.65,
+          untilS: 0,
+          movement: 'chase',
+          standoff: 0,
+          speedScale: 1,
+          invulnerable: false,
+          attacks: [],
+          attackEveryS: 0,
+          firstAttackS: 0,
+        },
+        {
+          untilHpFraction: 0.3,
+          untilS: 0,
+          movement: 'chase',
+          standoff: 0,
+          speedScale: 1.15,
+          invulnerable: false,
+          attacks: [],
+          attackEveryS: 0,
+          firstAttackS: 0,
+        },
+        {
+          untilHpFraction: 0,
+          untilS: 0,
+          movement: 'chase',
+          standoff: 0,
+          speedScale: 1.3,
+          invulnerable: false,
+          attacks: [],
+          attackEveryS: 0,
+          firstAttackS: 0,
+        },
+      ],
+      kraken: {
+        emergeDistance: 240,
+        emergeMinDistance: 110,
+        minSubmergedS: 3,
+        maxSubmergedS: 14,
+        submergedSpeedScale: 1.3,
+        emergeS: 1.2,
+        diveS: 0.8,
+        emergedS: 9,
+        exposeS: 4,
+        tentacle: {
+          telegraphS: 1.2,
+          riseS: 0.3,
+          upS: 5,
+          hp: 50,
+          radius: 30,
+          water: 18,
+          spread: 170,
+          everyS: 3.5,
+          reach: 520,
+        },
+        grab: {
+          range: 420,
+          holdS: 9,
+          everyS: 2.5,
+          exposesHead: true,
+          rock: {
+            flightS: 1.5,
+            radius: 60,
+            water: 16,
+            spread: 150,
+          },
+        },
+        phases: [
+          { tentacles: 3, rocks: 0, grabs: false },
+          { tentacles: 4, rocks: 3, grabs: true },
+          { tentacles: 5, rocks: 4, grabs: true },
+        ],
+      },
+    },
   },
   bossFight: {
     commonSpeedScale: 0.7,
@@ -1520,6 +1687,9 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       bossHpScale: 1.5,
       earlierS: { crab: 30, pirate: 60, swordfish: 60 },
       finalBoss: 'kraken',
+      // El Kraken existe (T141): su hueco va encendido. El acto 2 sólo se
+      // juega con `act: 2` (pruebas y atajos) hasta la campaña (T144).
+      finalBossEnabled: true,
     }),
   ],
 };
@@ -1621,6 +1791,8 @@ export function harderAct(
     bossHpScale: number;
     earlierS: Partial<Record<EnemyId, number>>;
     finalBoss: BossId;
+    /** Si el hueco del boss final va encendido (sin valor, como en el acto base). */
+    finalBossEnabled?: boolean;
   },
 ): ActScript {
   return {
@@ -1637,7 +1809,12 @@ export function harderAct(
         keys: t.keys.map((k) => ({ ...k, atS: Math.max(0, k.atS - earlier) })),
       };
     }),
-    events: base.events.map((ev) => (ev.type === 'boss' ? { ...ev, ref: by.finalBoss } : ev)),
+    events: base.events.map((ev) => {
+      if (ev.type !== 'boss') return ev;
+      const out: ScriptEvent = { ...ev, ref: by.finalBoss };
+      if (by.finalBossEnabled !== undefined) out.enabled = by.finalBossEnabled;
+      return out;
+    }),
   };
 }
 

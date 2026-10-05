@@ -152,20 +152,26 @@ describe('bosses T137: datos', () => {
     for (const def of Object.values(SURVIVORS_CONFIG.bosses)) expect(validateBoss(def!)).toEqual([]);
     const kinds = new Set(Object.values(PRUEBA.attacks).map((a) => a.kind));
     expect([...kinds].sort()).toEqual(['broadside', 'circles', 'line', 'ring', 'summon']);
+    // Los huecos de los bosses que aún no existen van apagados; sólo el Kraken
+    // (T141, acto 2) está encendido, y el acto 2 no se juega en producción
+    // hasta la campaña (T144).
     for (const act of SURVIVORS_CONFIG.acts) {
       const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
       expect(slots.length).toBe(3);
       for (const s of slots) {
-        expect(s.enabled).toBe(false);
+        expect(s.enabled).toBe(s.ref === 'kraken' && act.act === 2);
         expect(s.ref).not.toBe('prueba');
+        if (s.enabled) expect(SURVIVORS_CONFIG.bosses[s.ref as BossId]).toBeDefined();
       }
     }
-    // Y la simulación de verdad no saca ningún boss en ningún hueco, ni empezando después del último.
-    for (const act of [1, 2]) {
-      const g = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act });
-      run(g, 2);
-      expect(g.snapshot().bosses).toEqual([]);
-    }
+    // Y la simulación de verdad no saca ningún boss en ningún hueco del acto
+    // 1, ni empezando después del último; en el 2, el Kraken.
+    const g1 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 1 });
+    run(g1, 2);
+    expect(g1.snapshot().bosses).toEqual([]);
+    const g2 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 2 });
+    run(g2, 2);
+    expect(g2.snapshot().bosses.map((b) => b.boss)).toEqual(['kraken']);
   });
 
   it('el acto 2 es el guion del 1 más duro: tipos peligrosos antes, más aguante, el Kraken al final', () => {

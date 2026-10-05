@@ -5,3 +5,4 @@ export * from './sim';
 export * from './clock';
 export * from './cards';
 export * from './bosses';
+export * from './kraken';
