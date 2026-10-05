@@ -26,7 +26,7 @@ import { VECINO } from './vecino';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 12;
+export const SURVIVORS_CONFIG_VERSION = 13;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -858,7 +858,8 @@ const ACT_1: ActScript = {
   events: [
     { atS: 150, type: 'miniboss', ref: 'vecino', enabled: true },
     { atS: 210, type: 'elites', ref: 'elites' },
-    { atS: 270, type: 'miniboss', ref: 'martillo', enabled: false },
+    // El Tiburón Martillo (T139) existe: su hueco va encendido.
+    { atS: 270, type: 'miniboss', ref: 'martillo' },
     { atS: 300, type: 'marea', ref: 'marea', durationS: 20 },
     // El Barco Pirata Fantasma existe (T140): su hueco va encendido.
     { atS: 330, type: 'boss', ref: 'fantasma' },
@@ -1613,6 +1614,121 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           attacks: ['embestida', 'rocas', 'onda'],
           attackEveryS: 2.5,
           firstAttackS: 1,
+        },
+      ],
+    },
+    // El Tiburón Martillo (T139): el miniboss del 4:30. Embiste en línea
+    // recta varias veces (cada embestida avisa con su línea en el agua y se
+    // queda quieto mientras) y, entre medias, llama a un banco de pirañas.
+    // Con media vida se enfurece: avisa algo menos, embiste más rápido y
+    // llama a más. En el acto 2 aguanta más (`bossHpScale`) y sus pirañas
+    // también (`enemyHpScale`). Suelta el cofre y la nota grande. muestra
+    martillo: {
+      id: 'martillo',
+      kind: 'miniboss',
+      i18nKey: 'survivors.boss.martillo',
+      hp: 1400,
+      radius: 32,
+      speed: 100,
+      acceleration: 220,
+      contactWater: 12,
+      ignoresIslands: false,
+      noteValue: 60,
+      chest: true,
+      attacks: {
+        embestida: {
+          kind: 'line',
+          telegraphS: 1.2,
+          activeS: 2,
+          water: 15,
+          radius: 0,
+          thickness: 30,
+          gaps: 0,
+          gapRad: 0,
+          length: 600,
+          speed: 430,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: true,
+        },
+        furia: {
+          kind: 'line',
+          telegraphS: 0.9,
+          activeS: 2,
+          water: 15,
+          radius: 0,
+          thickness: 30,
+          gaps: 0,
+          gapRad: 0,
+          length: 680,
+          speed: 520,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: true,
+        },
+        banco: {
+          kind: 'summon',
+          telegraphS: 0.7,
+          activeS: 0.1,
+          water: 0,
+          radius: 0,
+          thickness: 0,
+          gaps: 0,
+          gapRad: 0,
+          length: 0,
+          speed: 0,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: false,
+          summon: { enemy: 'piranha', count: 5, elite: false, hpScale: 1 },
+        },
+        bancoGrande: {
+          kind: 'summon',
+          telegraphS: 0.7,
+          activeS: 0.1,
+          water: 0,
+          radius: 0,
+          thickness: 0,
+          gaps: 0,
+          gapRad: 0,
+          length: 0,
+          speed: 0,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: false,
+          summon: { enemy: 'piranha', count: 8, elite: false, hpScale: 1 },
+        },
+      },
+      phases: [
+        {
+          untilHpFraction: 0.5,
+          untilS: 0,
+          movement: 'chase',
+          standoff: 300,
+          speedScale: 1,
+          invulnerable: false,
+          attacks: ['embestida', 'embestida', 'embestida', 'banco'],
+          attackEveryS: 1.6,
+          firstAttackS: 1.5,
+        },
+        {
+          untilHpFraction: 0,
+          untilS: 0,
+          movement: 'chase',
+          standoff: 260,
+          speedScale: 1.2,
+          invulnerable: false,
+          attacks: ['furia', 'furia', 'furia', 'bancoGrande'],
+          attackEveryS: 1.1,
+          firstAttackS: 0.8,
         },
       ],
     },

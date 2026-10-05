@@ -76,6 +76,43 @@ const legacyIcon = (stat: StatId): UpgradeId => {
   }
 };
 
+const card = (
+  id: string,
+  kind: CardKind,
+  nameKey: string,
+  textKey: string,
+  targetLevel: number,
+  maxLevel: number,
+  rest: Partial<CardOption> = {},
+): CardOption => ({
+  id,
+  kind,
+  nameKey,
+  textKey,
+  targetLevel,
+  gains: [],
+  upgrade: 'damage',
+  i18nKey: textKey.match(/\.l\d$/) ? `${textKey}.card` : nameKey,
+  stat: 'damageBonus',
+  amount: 0,
+  nextStack: targetLevel,
+  maxStacks: maxLevel,
+  ...rest,
+});
+
+/** La carta de una evolución (la de nivel y la del cofre son la misma). */
+function evolutionCard(e: EvolutionDef): CardOption {
+  return card(
+    `evolution:${e.id}`,
+    'evolution',
+    e.i18nKey,
+    `${e.i18nKey}.efecto`,
+    e.evolvedWeapon.maxLevel,
+    e.evolvedWeapon.maxLevel,
+    { weaponId: e.weapon, vinylId: e.passive, evolutionId: e.id },
+  );
+}
+
 /** Pure pool builder. Random draws and rare-item rolls belong to the seeded simulation. */
 export function buildCardPool(
   config: SurvivorsConfig,
@@ -83,29 +120,6 @@ export function buildCardPool(
   includeSalvavidas = false,
 ): CardOption[] {
   const pool: CardOption[] = [];
-  const card = (
-    id: string,
-    kind: CardKind,
-    nameKey: string,
-    textKey: string,
-    targetLevel: number,
-    maxLevel: number,
-    rest: Partial<CardOption> = {},
-  ): CardOption => ({
-    id,
-    kind,
-    nameKey,
-    textKey,
-    targetLevel,
-    gains: [],
-    upgrade: 'damage',
-    i18nKey: textKey.match(/\.l\d$/) ? `${textKey}.card` : nameKey,
-    stat: 'damageBonus',
-    amount: 0,
-    nextStack: targetLevel,
-    maxStacks: maxLevel,
-    ...rest,
-  });
   for (const def of Object.values(config.weapons)) {
     if (!def) continue;
     const held = inventory.weapons.find((w) => w.id === def.id);
@@ -154,23 +168,7 @@ export function buildCardPool(
     );
   }
   if (config.evolutionSource === 'level-up') {
-    for (const e of eligibleEvolutions(config, inventory)) {
-      pool.push(
-        card(
-          `evolution:${e.id}`,
-          'evolution',
-          e.i18nKey,
-          `${e.i18nKey}.efecto`,
-          e.evolvedWeapon.maxLevel,
-          e.evolvedWeapon.maxLevel,
-          {
-            weaponId: e.weapon,
-            vinylId: e.passive,
-            evolutionId: e.id,
-          },
-        ),
-      );
-    }
+    for (const e of eligibleEvolutions(config, inventory)) pool.push(evolutionCard(e));
   }
   if (includeSalvavidas && inventory.salvavidas === 'absent') {
     pool.push(
@@ -188,4 +186,21 @@ export function buildCardPool(
     );
   }
   return pool;
+}
+
+/**
+ * Lo que puede dar el cofre de un miniboss (§4, T139): las evoluciones cuya
+ * condición se cumple (el mismo gancho que las cartas de nivel,
+ * `eligibleEvolutions`, venga de donde venga `evolutionSource`); si no hay
+ * ninguna, una mejora gratis del mazo: subir de nivel un arma o vinilo que
+ * llevas y, si no queda ninguna, lo nuevo que quepa. Nunca el Salvavidas;
+ * con el mazo vacío, el achique de siempre. El sorteo entre las candidatas
+ * lo hace la simulación con su azar.
+ */
+export function chestCandidates(config: SurvivorsConfig, inventory: Inventory): CardOption[] {
+  const evolutions = eligibleEvolutions(config, inventory);
+  if (evolutions.length > 0) return evolutions.map(evolutionCard);
+  const pool = buildCardPool({ ...config, evolutionSource: 'chest' }, inventory, false);
+  const levels = pool.filter((o) => o.kind === 'weapon-level' || o.kind === 'vinyl-level');
+  return levels.length > 0 ? levels : pool;
 }

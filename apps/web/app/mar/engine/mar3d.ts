@@ -1496,6 +1496,8 @@ export class Mar3D {
     delete this.opts.canvas.dataset.canonArmas;
     delete this.opts.canvas.dataset.canonArmasVista;
     delete this.opts.canvas.dataset.canonArmasVistas;
+    delete this.opts.canvas.dataset.canonJefesVista;
+    delete this.opts.canvas.dataset.canonJefesVistos;
     delete this.opts.canvas.dataset.canonBoss;
     delete this.opts.canvas.dataset.canonBossVista;
     this.prev.x = this.ship.x;
@@ -1558,6 +1560,12 @@ export class Mar3D {
     if (ds.canonArmas !== armas) ds.canonArmas = armas;
     if (ds.canonArmasVista !== armasVista) ds.canonArmasVista = armasVista;
     if (ds.canonArmasVistas !== armasVistas) ds.canonArmasVistas = armasVistas;
+    // T139: el Tiburón Martillo y los cofres, ahora y en toda la partida.
+    const jefes = sv.view.shark.markSeen(onScreen);
+    const jefesVista = jefes.now.join(' ');
+    const jefesVistos = jefes.seen.join(' ');
+    if (ds.canonJefesVista !== jefesVista) ds.canonJefesVista = jefesVista;
+    if (ds.canonJefesVistos !== jefesVistos) ds.canonJefesVistos = jefesVistos;
   }
 
   /** ¿Hay una partida del Cañón en curso? */

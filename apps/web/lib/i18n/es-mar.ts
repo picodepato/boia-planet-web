@@ -527,6 +527,8 @@ export const esMar = {
   'survivors.evolution.laserShow.efecto': 'Sustituye a los Focos: 7 rayos en abanico delante del barco que barren de lado a lado, de alcance 440 y medio ancho 14, 30 de daño cada 0,16 s; pasan sobre las islas. Valores base; tus vinilos también se aplican.',
   'survivors.evolution.discoBall': 'Bola de Discoteca',
   'survivors.evolution.discoBall.efecto': 'Sustituye a las Boyas: una bola de radio 42 orbita a 90, 50 de daño cada 0,3 s; lanza 6 destellos cada 0,8 s, de alcance 420 y 50 de daño. Pasa sobre las islas. Valores base; tus vinilos también se aplican.',
+  // Los bosses (T137–T141): su nombre en la barra. muestra
+  'survivors.boss.martillo': 'Tiburón Martillo',
   // La carta rara (T129) se llama «Segunda vida» desde T135: «Salvavidas» es ya el objeto del botín.
   'survivors.salvavidas': 'Segunda vida',
   'survivors.salvavidas.efecto': 'Objeto raro: evita una inundación, deja el agua al 25 % y da 2 s de invulnerabilidad. Se consume una vez; no ocupa hueco.',
@@ -550,6 +552,9 @@ export const esMar = {
   'mar.canon.cartas.nivel': 'Nivel {n} de {max}',
   'mar.canon.cartas.nueva': 'Nueva',
   'mar.canon.cartas.maximo': '¡Máximo!',
+  // El cofre de los minibosses (T139): una carta, una mejora gratis. muestra
+  'mar.canon.cofre.titulo': '¡Cofre!',
+  'mar.canon.cofre.elige': 'Un regalo del miniboss: esta mejora es gratis. La partida espera.',
   'mar.canon.carta.tipo.arma': 'Arma',
   'mar.canon.carta.tipo.vinilo': 'Vinilo',
   'mar.canon.carta.tipo.evolucion': 'Evolución',

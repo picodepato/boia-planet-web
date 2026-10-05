@@ -67,7 +67,8 @@ export function dodgeShip(game: SurvivorsGame, notes = false): ShipInput {
     let best = NOTE_REACH;
     let nx = 0;
     let ny = 0;
-    for (const n of s.notes) {
+    // Las notas y, como quien juega, los cofres de los minibosses (T139).
+    for (const n of s.chests.length > 0 ? [...s.notes, ...s.chests] : s.notes) {
       const dx = wrapDelta(n.x - p.x, w);
       const dy = wrapDelta(n.y - p.y, h);
       const d = Math.hypot(dx, dy);

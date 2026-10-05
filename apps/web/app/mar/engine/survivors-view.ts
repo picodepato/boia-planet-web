@@ -11,6 +11,7 @@ import type { QualityTier } from '@boia/engine/streaming';
 import { Color, Group, type InstancedMesh, type Material, Mesh, Object3D } from 'three';
 import { toScene } from './compress';
 import { SurvivorsPickups } from './survivors-pickups';
+import { SurvivorsShark } from './survivors-shark';
 import { SurvivorsWeapons } from './survivors-weapons';
 import { SurvivorsVecino } from './survivors-vecino';
 import { curveTree } from './planet';
@@ -111,6 +112,8 @@ export class SurvivorsView {
   readonly weapons: SurvivorsWeapons;
   /** El botín de las élites y la Llama (T135). */
   readonly pickups: SurvivorsPickups;
+  /** El Tiburón Martillo, los avisos de sus embestidas y llamadas, y los cofres (T139). */
+  readonly shark: SurvivorsShark;
   private readonly shots: InstancedMesh;
   private readonly halos: InstancedMesh;
   private readonly warnings: InstancedMesh;
@@ -199,6 +202,7 @@ export class SurvivorsView {
     }
     this.weapons = new SurvivorsWeapons(config, caps, this.groundAt);
     this.pickups = new SurvivorsPickups(config, this.quality, this.groundAt);
+    this.shark = new SurvivorsShark(config);
     this.shots = instanced(
       enemyShotGeometry(),
       enemyShotMaterial(),
@@ -237,6 +241,7 @@ export class SurvivorsView {
       ...Object.values(this.weapons.meshes),
       ...this.noteMeshes,
       ...this.pickups.meshes,
+      ...this.shark.meshes,
       this.puf.mesh,
       ...this.sink.meshes,
       this.sink.rings,
@@ -397,6 +402,7 @@ export class SurvivorsView {
     this.updateBosses(s, t);
     this.updateNotes(s, t);
     this.pickups.update(s, t, this.reduced);
+    this.shark.update(s, t, this.reduced);
     const plan = defeatPlan(this.style, { quality: this.quality, reduced: this.reduced });
     if (this.style === 'puf') this.puf.update(t, plan);
     else this.sink.update(t, plan);

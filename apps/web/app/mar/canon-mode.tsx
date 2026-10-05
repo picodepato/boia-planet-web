@@ -623,6 +623,8 @@ export function CanonTestHook({
       data-botin-agua={hud.botinAgua}
       data-botin-cerca={hud.botinCerca || undefined}
       data-llama={hud.llama}
+      data-jefes={hud.jefes || undefined}
+      data-cofre-cerca={hud.cofreCerca || undefined}
       data-premio={prize ?? undefined}
     />
   );

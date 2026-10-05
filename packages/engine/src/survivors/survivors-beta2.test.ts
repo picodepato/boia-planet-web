@@ -110,13 +110,16 @@ describe('survivors beta 2: guion del acto 1 en datos', () => {
     expect(elitesEvent.atS).toBe(210);
     expect(mareaEvent).toMatchObject({ atS: 300, durationS: 20 });
     expect(mareaDef.enemy in SURVIVORS_CONFIG.enemies).toBe(true);
-    // Vecino (T138) y Fantasma (T140) ya están encendidos; Martillo espera T139.
+    // Los huecos de la beta 3 existen; cada uno se enciende cuando su boss existe (T138–T140).
     const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
-    expect(slots.map((e) => [e.type, e.atS, e.enabled !== false, e.ref])).toEqual([
-      ['miniboss', 150, true, 'vecino'],
-      ['miniboss', 270, false, 'martillo'],
-      ['boss', 330, true, 'fantasma'],
+    expect(slots.map((e) => [e.type, e.atS])).toEqual([
+      ['miniboss', 150],
+      ['miniboss', 270],
+      ['boss', 330],
     ]);
+    for (const e of slots) {
+      expect(e.enabled !== false).toBe(SURVIVORS_CONFIG.bosses[e.ref as keyof typeof SURVIVORS_CONFIG.bosses] !== undefined);
+    }
     expect(act.durationS).toBe(420);
   });
 

@@ -362,7 +362,8 @@ describe('survivors: partidas completas', () => {
           }
         },
       );
-      expect(game.snapshot().end).toBe('survived');
+      // Llega al amanecer o vence antes al boss final (T140).
+      expect(['survived', 'victory']).toContain(game.snapshot().end);
       expect(checked).toBeGreaterThan(100_000);
       expect(notes).toBeGreaterThan(1000);
       expect(defeatedOnLand).toBe(0);

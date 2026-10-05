@@ -152,26 +152,26 @@ describe('bosses T137: datos', () => {
     for (const def of Object.values(SURVIVORS_CONFIG.bosses)) expect(validateBoss(def!)).toEqual([]);
     const kinds = new Set(Object.values(PRUEBA.attacks).map((a) => a.kind));
     expect([...kinds].sort()).toEqual(['broadside', 'circles', 'line', 'ring', 'summon']);
-    // Vecino (T138) y los bosses finales están encendidos; Martillo espera T139:
-    // el Barco Pirata Fantasma (T140,
-    // acto 1) y el Kraken (T141, acto 2; el acto 2 no se juega en producción
-    // hasta la campaña, T144).
+    // Los huecos de los bosses que aún no existen van apagados; cada uno se
+    // enciende con su boss (T138–T141). El de pruebas no sale nunca.
+    const latest = new Map<number, string>();
     for (const act of SURVIVORS_CONFIG.acts) {
       const slots = act.events.filter((e) => e.type === 'miniboss' || e.type === 'boss');
       expect(slots.length).toBe(3);
       for (const s of slots) {
-        expect(s.enabled !== false).toBe(s.type === 'boss' || s.ref === 'vecino');
         expect(s.ref).not.toBe('prueba');
-        if (s.enabled !== false) expect(SURVIVORS_CONFIG.bosses[s.ref as BossId]).toBeDefined();
+        expect(s.enabled !== false).toBe(SURVIVORS_CONFIG.bosses[s.ref as BossId] !== undefined);
+        if (s.enabled !== false) latest.set(act.act, s.ref);
       }
     }
-    // Empezando después del último hueco entra el boss final de cada acto.
-    const g1 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 1 });
-    run(g1, 2);
-    expect(g1.snapshot().bosses.map((b) => b.boss)).toEqual(['fantasma']);
-    const g2 = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act: 2 });
-    run(g2, 2);
-    expect(g2.snapshot().bosses.map((b) => b.boss)).toEqual(['kraken']);
+    expect(latest.get(2)).toBe('kraken');
+    // Y la simulación de verdad, empezando después del último hueco, entra en
+    // la pelea del último encendido (en el 2, el Kraken).
+    for (const act of [1, 2]) {
+      const g = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act });
+      run(g, 2);
+      expect(g.snapshot().bosses.map((b) => b.boss)).toEqual(latest.has(act) ? [latest.get(act)] : []);
+    }
   });
 
   it('el acto 2 es el guion del 1 más duro: tipos peligrosos antes, más aguante, el Kraken al final', () => {

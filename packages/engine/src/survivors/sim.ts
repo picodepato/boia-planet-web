@@ -75,7 +75,7 @@ import {
   stepKraken,
   tentacleHittable,
 } from './kraken';
-import { buildCardPool, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
+import { buildCardPool, chestCandidates, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
 export type { CardOption } from './cards';
 import { type DropId, flameDamage, inFlame } from './drops';
 import { SpatialGrid } from './grid';
@@ -423,6 +423,13 @@ export interface ChestView {
 export interface LevelUpCard {
   readonly level: number;
   readonly options: readonly CardOption[];
+  /**
+   * De dónde sale (T139): `level`, la carta de subir de nivel; `chest`, la
+   * del cofre de un miniboss (una sola opción, gratis: no gasta nivel).
+   */
+  readonly source: 'level' | 'chest';
+  /** El miniboss que soltó el cofre (null en las de nivel). */
+  readonly boss: BossId | null;
 }
 
 export interface PlayerStats {
@@ -878,6 +885,8 @@ export class SurvivorsGame {
   readonly difficulty: DifficultyId;
   private readonly diff: DifficultyDef;
   private pendingLevels = 0;
+  /** Cofres tocados cuya carta aún no se ha abierto (el miniboss de cada uno), en orden. */
+  private readonly pendingChests: BossId[] = [];
   private endReason: EndReason | null = null;
   private water = 0;
   private invulnerable = 0;
@@ -1354,6 +1363,7 @@ export class SurvivorsGame {
       w: this.water,
       inv: this.invulnerable,
       lv: [this.level, this.xp, this.pendingLevels],
+      pc: [...this.pendingChests],
       wp: this.weapons.map((w) => [
         w.def.id,
         w.level,
@@ -1375,7 +1385,7 @@ export class SurvivorsGame {
       up: this.stacks,
       vinyls: this.vinyls.map((v) => [v.id, v.level]),
       salvavidas: this.salvavidas,
-      card: this.card?.options.map((o) => [o.id, o.targetLevel]) ?? null,
+      card: this.card ? [this.card.source, ...this.card.options.map((o) => [o.id, o.targetLevel])] : null,
       e: this.enemies.map((e) => [
         e.id,
         e.type,
@@ -3158,7 +3168,12 @@ export class SurvivorsGame {
   }
 
   private openCard(): void {
-    if (this.card || this.pendingLevels <= 0) return;
+    if (this.card) return;
+    if (this.pendingChests.length > 0) {
+      this.openChestCard(this.pendingChests[0]!);
+      return;
+    }
+    if (this.pendingLevels <= 0) return;
     const pool = this.available();
     const picks: CardOption[] = [];
     const limit = Math.max(1, this.config.cardChoices);
@@ -3182,7 +3197,29 @@ export class SurvivorsGame {
       picks.push(pool.splice(k, 1)[0]!);
       weights.splice(k, 1);
     }
-    this.card = { level: this.level - this.pendingLevels + 1, options: picks };
+    this.card = { level: this.level - this.pendingLevels + 1, options: picks, source: 'level', boss: null };
+  }
+
+  /**
+   * La carta del cofre (§4, T139): una sola opción, gratis. Si se cumple la
+   * condición de una evolución, la evolución (al azar entre las que se
+   * cumplan); si no, una mejora del mazo con los pesos de la oferta
+   * (`chestCandidates`, `cardWeights`).
+   */
+  private openChestCard(boss: BossId): void {
+    const pool = chestCandidates(this.config, this.inventory());
+    let pick: CardOption;
+    if (pool[0]?.kind === 'evolution') pick = pool[Math.floor(this.cardRng() * pool.length)]!;
+    else {
+      const weights = pool.map((o) => this.cardWeight(o));
+      let total = 0;
+      for (const w of weights) total += w;
+      let r = this.cardRng() * total;
+      let k = 0;
+      while (k < pool.length - 1 && r >= weights[k]!) r -= weights[k++]!;
+      pick = pool[k]!;
+    }
+    this.card = { level: this.level, options: [pick], source: 'chest', boss };
   }
 
   /** Peso de una carta en la oferta (`config.cardWeights`). */
@@ -3208,8 +3245,9 @@ export class SurvivorsGame {
   private choose(index: number): void {
     const opt = this.card?.options[index];
     if (!opt || !this.applyCard(opt)) return;
+    if (this.card!.source === 'chest') this.pendingChests.shift();
+    else this.pendingLevels--;
     this.card = null;
-    this.pendingLevels--;
     this.openCard();
   }
 
@@ -3298,6 +3336,21 @@ export class SurvivorsGame {
     const spot = def.ignoresIslands ? { x, y } : this.islands.toWater(x, y, def.radius);
     if (!spot) return null;
     return this.bossView(this.makeBoss(def, spot.x, spot.y));
+  }
+
+  /**
+   * Deja un cofre de `boss` flotando en (x, y), llevado al agua (T139): el
+   * mismo que suelta un miniboss al caer. Para pruebas y atajos de
+   * desarrollo; no gasta azar.
+   */
+  spawnChest(boss: BossId, x: number, y: number): ChestView {
+    const r = this.config.bossFight.chestRadius;
+    const spot = this.islands.toWater(x, y, r) ?? { x, y };
+    const c: Chest = { id: this.nextId++, boss, x: 0, y: 0, dead: false };
+    this.setWrapped(c, spot.x, spot.y);
+    this.chests.push(c);
+    this.events.push({ type: 'chest', boss: c.boss, id: c.id, x: c.x, y: c.y });
+    return { id: c.id, boss, x: c.x, y: c.y, radius: r };
   }
 
   /**
@@ -3797,13 +3850,7 @@ export class SurvivorsGame {
     this.events.push({ type: 'bossDefeated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
     // La nota grande (la clave de sol: la figura mayor que no pasa de su valor).
     this.dropNote(b.x, b.y, b.def.noteValue);
-    if (b.def.chest) {
-      const spot = this.islands.toWater(b.x, b.y, this.config.bossFight.chestRadius) ?? { x: b.x, y: b.y };
-      const c: Chest = { id: this.nextId++, boss: b.def.id, x: 0, y: 0, dead: false };
-      this.setWrapped(c, spot.x, spot.y);
-      this.chests.push(c);
-      this.events.push({ type: 'chest', boss: c.boss, id: c.id, x: c.x, y: c.y });
-    }
+    if (b.def.chest) this.spawnChest(b.def.id, b.x, b.y);
     // El boss final del acto cae: la partida acaba ahí con su final (la medalla de oro, T144).
     if (b.def.kind === 'boss') {
       this.finalBossDefeated = true;
@@ -3840,6 +3887,7 @@ export class SurvivorsGame {
       const dy = wd(c.y - p.y, this.h);
       if (dx * dx + dy * dy > reach * reach) continue;
       c.dead = true;
+      this.pendingChests.push(c.boss);
       this.events.push({ type: 'chestOpened', boss: c.boss, id: c.id, x: c.x, y: c.y });
     }
     let n = 0;

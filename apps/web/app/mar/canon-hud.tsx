@@ -314,6 +314,9 @@ function CanonWater({ pct, engineRef }: { pct: number; engineRef: RefObject<Mar3
   );
 }
 
+/** El icono de la carta del cofre de un miniboss (T139). */
+const CHEST_ICON = '🎁';
+
 /**
  * Las cartas de nivel: 1 de 3, grandes, con el dedo o con el teclado
  * (flechas o 1–n para moverse, Intro o espacio para elegir). Mientras están
@@ -335,6 +338,8 @@ export function CanonCards({
   const armedAt = useRef(0);
   const chosen = useRef(false);
   const count = card.options.length;
+  // La carta del cofre de un miniboss (T139): una sola opción, gratis.
+  const chest = card.source === 'chest';
 
   const pick = useCallback(
     (index: number) => {
@@ -383,11 +388,23 @@ export function CanonCards({
   }, [count, pick]);
 
   return (
-    <div className="mar-canon-cards" data-testid="mar-canon-cartas" data-nivel={card.level}>
+    <div
+      className={`mar-canon-cards${chest ? ' is-chest' : ''}`}
+      data-testid="mar-canon-cartas"
+      data-nivel={card.level}
+      data-origen={chest ? 'cofre' : 'nivel'}
+    >
       <section className="mar-canon-cards__box" role="dialog" aria-labelledby={titleId}>
         <header className="mar-canon-cards__head">
-          <h2 id={titleId}>{msg('mar.canon.cartas.titulo', { nivel: card.level })}</h2>
-          <p>{msg('mar.canon.cartas.elige')}</p>
+          {chest ? (
+            <span className="mar-canon-cards__chest" aria-hidden="true">
+              {CHEST_ICON}
+            </span>
+          ) : null}
+          <h2 id={titleId}>
+            {chest ? msg('mar.canon.cofre.titulo') : msg('mar.canon.cartas.titulo', { nivel: card.level })}
+          </h2>
+          <p>{chest ? msg('mar.canon.cofre.elige') : msg('mar.canon.cartas.elige')}</p>
         </header>
         <div className="mar-canon-cards__list" role="group" aria-labelledby={titleId}>
           {card.options.map((o, i) => {
@@ -399,7 +416,7 @@ export function CanonCards({
                   buttons.current[i] = el;
                 }}
                 type="button"
-                className={`mar-canon-card is-${v.kind}${i === focused ? ' is-focused' : ''}`}
+                className={`mar-canon-card is-${v.kind}${chest ? ' is-chest' : ''}${i === focused ? ' is-focused' : ''}`}
                 data-testid="mar-canon-carta"
                 data-mejora={o.upgrade}
                 data-carta={v.id}

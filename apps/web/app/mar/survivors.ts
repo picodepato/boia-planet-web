@@ -452,6 +452,10 @@ export interface CanonHook {
   botinCerca: string;
   /** s que le quedan a la Llama (hacia arriba; 0 apagada). */
   llama: number;
+  /** Los bosses vivos (sus `BossId`, separados por espacios; '' sin ninguno, T139). */
+  jefes: string;
+  /** Dónde flota el cofre más cercano al barco (u, enteros): «x,y»; '' sin ninguno (T139). */
+  cofreCerca: string;
 }
 
 /**
@@ -480,10 +484,15 @@ export function mixConfig(config: SurvivorsConfig): SurvivorsConfig {
 
 /** El objeto del botín más cercano al barco, «x,y» (u, enteros), o '' sin ninguno (para las pruebas). */
 export function nearestPickup(s: Pick<SurvivorsSnapshot, 'pickups' | 'player'>): string {
+  return nearestOf(s.pickups, s.player);
+}
+
+/** Lo más cercano de `list` a `from`, «x,y» (u, enteros), o '' si no hay nada. */
+function nearestOf(list: readonly { x: number; y: number }[], from: { x: number; y: number }): string {
   let best: { x: number; y: number } | null = null;
   let bestD = Infinity;
-  for (const o of s.pickups) {
-    const d = Math.hypot(o.x - s.player.x, o.y - s.player.y);
+  for (const o of list) {
+    const d = Math.hypot(o.x - from.x, o.y - from.y);
     if (d < bestD) {
       best = o;
       bestD = d;
@@ -669,6 +678,8 @@ export class SurvivorsRun {
       botinAgua: s.pickups.length,
       botinCerca: nearestPickup(s),
       llama: s.flame ? Math.ceil(s.flame.leftS - 1e-6) : 0,
+      jefes: s.bosses.map((b) => b.boss).join(' '),
+      cofreCerca: nearestOf(s.chests, s.player),
     };
   }
 

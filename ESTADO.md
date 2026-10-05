@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T139: Miniboss 2: Tiburón Martillo and the chest
+
+Qué existe:
+- `SURVIVORS_CONFIG.bosses.martillo` (miniboss, sólo datos sobre el sistema genérico de T137): hp 1400, embestidas en línea siempre avisadas (`embestida` 1,2 s de aviso; `furia` 0,9 s con media vida) y llamadas de pirañas entre ellas (`banco` 5, `bancoGrande` 8); dos fases por vida; en el acto 2 aguanta ×1,5 (`bossHpScale`) y sus pirañas ×1,25 (`enemyHpScale`). El hueco de las 4:30 del acto 1 (y del 2) va encendido. Config v13 (tras integrar T140 y T138).
+- El cofre: tocarlo abre una carta de cofre (`LevelUpCard.source: 'chest'`, `boss`), una sola opción y gratis (no gasta nivel): la evolución si su condición se cumple (`eligibleEvolutions`, venga de donde venga `evolutionSource`), si no una mejora del mazo (`chestCandidates`: subir de nivel lo que llevas, con los pesos de la oferta; nunca la Segunda vida). Una carta de nivel pendiente espera a la del cofre. `game.spawnChest(boss, x, y)` para pruebas (también lo usa la caída de un miniboss).
+- El piloto codicioso va a por los cofres como a por las notas.
+- 3D: `apps/web/app/mar/engine/survivors-shark.ts` (tiburón martillo y cofre low-poly en código, aro de la llamada; instanciado, sin destellos; con movimiento reducido no se mece ni gira), colgado de `SurvivorsView`. La línea de aviso de la embestida la pinta el único dibujante de avisos de boss de la vista (T140). `data-canon-jefes-vista`/`-vistos` en el lienzo (mar3d), junto a `data-canon-boss*` de T140.
+- Carta del cofre en `CanonCards`: cabecera «¡Cofre!», 🎁, `data-origen="cofre"`, clase `is-chest`. i18n: `survivors.boss.martillo`, `mar.canon.cofre.*` (muestra). Hook de pruebas: `data-jefes`, `data-cofre-cerca`.
+
+Comandos (tras integrar main con T140 y T138):
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 162 archivos, 1587 pruebas
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0; `pnpm build` → 0; `pnpm typecheck` → 0
+- `E2E_PORT=4391 pnpm e2e mar-canon.spec.ts --workers=1` → 59 passed, 2 failed (desktop: rampa T146 y «HUD con BETA», las inestables conocidas), 1 skipped; las dos solas → 2 passed. La nueva (T139: el tiburón visto y la carta de cofre tras vencerlo, con `t=262&armas=1&dificultad=tranquila`) pasa en móvil y escritorio.
+
+Pendiente:
+- Equilibrio del tiburón (T147): el codicioso lo vence en 8–33 s; el `dodge` no esquiva avisos de boss (Tranquila, semilla 1 acaba con 98 de agua con hp 1400; con 1800 se inunda).
+- Las pruebas de partida entera de T140/T141 ahora filtran sus sucesos por su boss (los minibosses entran también); `survivors.test.ts` acepta `victory` al final.
+
 ## 2026-10-05 — plan 012 T138: El Vecino Quejica
 
 Implemented by Codex (wrapper verified).

@@ -1162,3 +1162,89 @@ test('`botin=1`: los tres objetos del botín flotan junto al barco y se cogen to
   if (Number(await game(page).getAttribute('data-botin')) >= 3) expect(flameSeen).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('antes del 4:30 (`t=`) llega el Tiburón Martillo; vencido, su cofre abre una carta de cofre (T139)', async ({
+  page,
+}) => {
+  // Las siete armas al máximo (`armas=1`) y Tranquila: el tiburón cae en un rato.
+  const errors = await openMar(page, '?minijuego=canon&t=262&armas=1&dificultad=tranquila&seed=7');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  expect(Number(await game(page).getAttribute('data-tiempo'))).toBeGreaterThan(420 - 270);
+  const held = new Set<string>();
+  const hold = async (keys: string[]) => {
+    for (const k of [...held]) {
+      if (keys.includes(k)) continue;
+      await page.keyboard.up(k);
+      held.delete(k);
+    }
+    for (const k of keys) {
+      if (held.has(k)) continue;
+      await page.keyboard.down(k);
+      held.add(k);
+    }
+  };
+  let sharkSeen = false;
+  let chestCard = false;
+  try {
+    const until = Date.now() + 180_000;
+    while (Date.now() < until && !chestCard) {
+      if ((await game(page).getAttribute('data-estado')) === 'card') {
+        await hold([]);
+        const cards = page.getByTestId('mar-canon-cartas');
+        // La carta puede acabar de cerrarse (el estado va un paso por detrás): sin esperar.
+        const origin = (await cards.count()) > 0 ? await cards.getAttribute('data-origen', { timeout: 1000 }).catch(() => null) : null;
+        if (origin === null) {
+          await page.waitForTimeout(100);
+          continue;
+        }
+        if (origin === 'cofre') {
+          // La carta del cofre: una sola, gratis, con su cabecera propia.
+          const card = page.getByTestId('mar-canon-carta');
+          await expect(card).toHaveCount(1);
+          await expect(card).toHaveClass(/is-chest/);
+          await expect(cards.locator('h2')).toHaveText(msg('mar.canon.cofre.titulo'));
+          await expect(card.locator('.mar-canon-card__name')).not.toBeEmpty();
+          await expect(card.locator('.mar-canon-card__effect')).not.toContainText(/[{}]/);
+          const level = await game(page).getAttribute('data-nivel');
+          await page.waitForTimeout(500);
+          await page.keyboard.press('Enter');
+          // Se cierra (si quedaba una carta de nivel pendiente, se abre ahora esa).
+          await expect(page.locator('[data-testid="mar-canon-cartas"][data-origen="cofre"]')).toHaveCount(0);
+          // Gratis: no gasta nivel.
+          expect(await game(page).getAttribute('data-nivel')).toBe(level);
+          chestCard = true;
+          break;
+        }
+        await page.waitForTimeout(400);
+        await page.keyboard.press('Enter');
+        continue;
+      }
+      const vistos = (await canvas(page).getAttribute('data-canon-jefes-vistos')) ?? '';
+      if (vistos.split(' ').includes('martillo')) sharkSeen = true;
+      const target = await game(page).getAttribute('data-cofre-cerca');
+      if (!target) {
+        // Mientras pelea: a vueltas suaves, sin alejarse.
+        await hold(Math.floor(Date.now() / 2500) % 2 ? ['ArrowRight'] : ['ArrowLeft']);
+        await page.waitForTimeout(150);
+        continue;
+      }
+      const t = pointOf(target);
+      const s = pointOf(await game(page).getAttribute('data-barco'));
+      const dx = t.x - s.x;
+      const dy = t.y - s.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const keys: string[] = [];
+      if (dx / d > 0.35) keys.push('ArrowRight');
+      if (dx / d < -0.35) keys.push('ArrowLeft');
+      if (dy / d > 0.35) keys.push('ArrowDown');
+      if (dy / d < -0.35) keys.push('ArrowUp');
+      await hold(keys);
+      await page.waitForTimeout(100);
+    }
+  } finally {
+    await hold([]);
+  }
+  expect(sharkSeen).toBe(true);
+  expect(chestCard).toBe(true);
+  expect(errors).toEqual([]);
+});

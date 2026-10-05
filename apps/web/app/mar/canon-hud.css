@@ -940,3 +940,15 @@
     padding-top: 14px;
   }
 }
+
+/* La carta del cofre de un miniboss (T139): una sola, con el cofre encima y fondo dorado. */
+.mar-canon-cards__chest {
+  display: block;
+  font-size: 2.4rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.mar .mar-canon-card.is-chest:not(.is-evolution) {
+  background: linear-gradient(135deg, #fffbe9, #ffe7a8);
+}
