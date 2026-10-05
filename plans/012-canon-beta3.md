@@ -81,7 +81,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: elites drop (5 %, own rng) Imán total / Llama (10 s, 110 u ±0.45 rad, burns bosses via `hurtTarget` at `bossFight.flameDps` 120/s) / Salvavidas (−40 water); card renamed «Segunda vida»; pickup models, Llama HUD hint, `botin=1`; Traca icon 🧨; config v11; 1537 unit tests → d6d5192
 
 ## T136 — «Mostrar vida» and «Mostrar daño» options
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Sonnet if Codex is out of credits)
 - Skills: frontend-design
 - Depends on: T133
@@ -187,7 +187,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: (Opus, Codex out of credits) Kraken view in `survivors-kraken.ts`: shadow, rising head with gold ring when exposed, bending tentacles, red/amber warning circles, rocks in arcs, arms on the grabbed island; `baja` fewer segments, reduced motion still; dev shortcut `acto=<n>`; 1598 unit tests, mar-canon e2e 62 passed + 1 flaky → 80b3d28
 
 ## T143 — Boss HUD: bar, name, phase and warnings
-- Status: running (attempt 1)
+- Status: done
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T137
@@ -198,7 +198,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests for the boss HUD model (hp fraction, phase marks, banner timing)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with the bar visible during a boss on desktop and on a mobile viewport without overlapping the other HUD elements
   - Test command → exit 0
-- Outcome:
+- Outcome: boss bar inside the top HUD (gold final / red miniboss, phase marks, state chips Fantasma/Protegido/Sumergido/¡Cabeza al aire!), arrival banner, defeat/retreat messages, off-screen arrow; 1620 unit tests, T143 e2e pass mobile+desktop (full file not rerun after merge) → 0593f37
 
 ## T144 — Medals, campaign act 1 → 2, act and difficulty on the panel
 - Status: done
@@ -308,6 +308,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T144: test starts record progress only where they can earn the reward (dev, e2e); act choice kept for the visit, locked act falls back to act 1, `acto=` skips the campaign; new sim method `defeatBossesNow()` behind `vencer=1` (counts as test start); `CanonMode.unlocked` for T145 (agent)
 
+- 2026-10-05 T143: boss events derived by diffing boss ids between snapshots; off-screen arrow reads `data-canon-boss-vista` and assumes an unrotated camera; mobile equipment row moves down 30 px during a boss; i18n `mar.canon.boss.*`, `survivors.boss.prueba`, `survivors.boss.capitan` (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -320,6 +322,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T139: shark balance (greedy bot wins in 8–33 s; dodge bot ignores boss warnings) and prettier on `mar-canon.spec.ts` — for T147
 - 2026-10-05 T142: the T139 shark e2e can miss the shark on mobile under load (passes alone) — for T147
 - 2026-10-05 T144: special-ending title says «Fantasma» after a Kraken win (T145); REQ-AVE-038 note in `docs/spec/estado.md` still says «won = aguantar 7:00» (T147); flaky e2e T131 difficulty panel under load
+- 2026-10-05 T143: phase marks for time-based phases not drawn; simultaneous arrivals show only the last banner; some files in main carry CRLF line endings (check in T147)
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -354,3 +357,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 18:58 T142 done · branch worktree-agent-aac36e30132ff7385 → 80b3d28; T144 told to merge main
 - 2026-10-05 19:00 T143 launched · attempt 1 · agent a5dfabd193a7d61bd (sonnet)
 - 2026-10-05 19:45 T144 done · branch worktree-agent-a30400bc81ea4bde7 → da62d09 (integration 643 s)
+- 2026-10-05 19:48 T136 launched · attempt 1 · Codex via wrapper agent addb8d08ba9c5100e (sonnet)
+- 2026-10-05 20:30 T143 done · branch worktree-agent-a5dfabd193a7d61bd → 0593f37
