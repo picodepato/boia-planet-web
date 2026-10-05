@@ -10,10 +10,9 @@ import { NOTE_FIGURES } from '@boia/engine/survivors';
 import type { QualityTier } from '@boia/engine/streaming';
 import { Color, Group, type InstancedMesh, type Material, Object3D } from 'three';
 import { toScene } from './compress';
+import { SurvivorsWeapons } from './survivors-weapons';
 import { curveTree } from './planet';
 import {
-  BALL_MIN,
-  BALL_SCALE,
   HALO_PULSE,
   HALO_SCALE,
   NOTE_SIZE,
@@ -23,8 +22,6 @@ import {
   SinkFx,
   WARNING_COLORS,
   WARNING_WIDTH,
-  ballMaterial,
-  cannonBallGeometry,
   defeatPlan,
   eliteHaloGeometry,
   eliteHaloMaterial,
@@ -101,7 +98,7 @@ export class SurvivorsView {
   private readonly enemyRadius: number[] = [];
   private readonly enemyFly: number[] = [];
   private readonly enemyPulse: number[] = [];
-  private readonly balls: InstancedMesh;
+  readonly weapons: SurvivorsWeapons;
   private readonly shots: InstancedMesh;
   private readonly halos: InstancedMesh;
   private readonly warnings: InstancedMesh;
@@ -142,12 +139,7 @@ export class SurvivorsView {
       kinds.push({ geometry: mesh.geometry, material: mesh.material as Material, name: mesh.name });
       this.group.add(mesh);
     }
-    this.balls = instanced(
-      cannonBallGeometry(),
-      ballMaterial(),
-      caps.projectiles,
-      'survivors-balls',
-    );
+    this.weapons = new SurvivorsWeapons(config, caps, this.groundAt);
     this.shots = instanced(
       enemyShotGeometry(),
       enemyShotMaterial(),
@@ -182,7 +174,7 @@ export class SurvivorsView {
       this.warnings,
       this.halos,
       this.shots,
-      this.balls,
+      ...Object.values(this.weapons.meshes),
       ...this.noteMeshes,
       this.puf.mesh,
       ...this.sink.meshes,
@@ -209,7 +201,7 @@ export class SurvivorsView {
   /** Cuántas piezas de cada tipo caben (el tope de la calidad), para las pruebas. */
   capacity(): Record<string, number> {
     const out: Record<string, number> = {
-      projectiles: this.balls.instanceMatrix.count,
+      projectiles: this.weapons.meshes['survivors-balls']!.instanceMatrix.count,
       enemyProjectiles: this.shots.instanceMatrix.count,
       elites: this.halos.instanceMatrix.count,
       warnings: this.warnings.instanceMatrix.count / 2,
@@ -304,16 +296,7 @@ export class SurvivorsView {
     this.frame++;
     this.updateEnemies(s, t, dt);
     const d = this.dummy;
-    const nb = Math.min(s.projectiles.length, this.balls.instanceMatrix.count);
-    for (let i = 0; i < nb; i++) {
-      const p = s.projectiles[i]!;
-      d.position.set(toScene(p.x), 0.6, toScene(p.y));
-      d.rotation.set(0, -Math.atan2(p.vy, p.vx), 0);
-      d.scale.setScalar(Math.max(BALL_MIN, toScene(p.radius) * BALL_SCALE));
-      d.updateMatrix();
-      this.balls.setMatrixAt(i, d.matrix);
-    }
-    show(this.balls, nb);
+    this.weapons.update(s, t, this.reduced);
     const ns = Math.min(s.enemyProjectiles.length, this.shots.instanceMatrix.count);
     for (let i = 0; i < ns; i++) {
       const p = s.enemyProjectiles[i]!;
@@ -476,6 +459,7 @@ export class SurvivorsView {
   }
 
   dispose(): void {
+    this.weapons.dispose();
     this.group.removeFromParent();
     const done = new Set<unknown>();
     this.group.traverse((o) => {

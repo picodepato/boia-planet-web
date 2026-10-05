@@ -89,6 +89,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       offer: false,
       defeatStyle: null,
       card: false,
+      weapons: false,
       difficulty: null,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
@@ -97,6 +98,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       offer: false,
       defeatStyle: null,
       card: false,
+      weapons: false,
       difficulty: null,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
@@ -118,6 +120,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       offer: false,
       defeatStyle: null,
       card: false,
+      weapons: false,
       difficulty: null,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
@@ -132,7 +135,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
   it('al usarlo se quita de la URL; `dev` y lo demás se quedan', () => {
     const out = new URL(
       withoutCanonShortcut(
-        'https://x.test/mar?minijuego=canon&t=5&seed=2&oferta=1&derrota=puf&dev=1&cerca=faro',
+        'https://x.test/mar?minijuego=canon&t=5&seed=2&oferta=1&derrota=puf&armas=1&dev=1&cerca=faro',
       ),
     );
     expect([...out.searchParams.keys()].sort()).toEqual(['cerca', 'dev']);
@@ -173,6 +176,52 @@ function fakeEngine(route = false, wildlife = false) {
   });
   return { host, state, hiddenKinds: () => new Set([...kinds.values()].flat()) };
 }
+
+describe('T128 dev all-weapons start', () => {
+  it('parses only armas=1 behind the existing gate and marks a test start', () => {
+    const url = '?minijuego=canon&armas=1';
+    expect(canonShortcut(url, env({ nodeEnv: 'development' }))?.weapons).toBe(true);
+    expect(
+      canonShortcut('?minijuego=canon&armas=0', env({ nodeEnv: 'development' }))?.weapons,
+    ).toBe(false);
+    expect(canonShortcut(url, env({}))).toBeNull();
+    expect(isDevStart({ weapons: true })).toBe(true);
+    expect(devStartRewards(env({ search: url + '&dev=1' }))).toBe(false);
+  });
+
+  it('uses the source max levels and seven slots only in the dev run, without mutating config', () => {
+    const make = (devWeapons = false) =>
+      new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y }), {
+        seed: 7,
+        quality: 'baja',
+        ship: MAR_SHIP_CONFIG,
+        devWeapons,
+      });
+    const slots = SURVIVORS_CONFIG.slots.weapons;
+    const ordinary = make();
+    expect(ordinary.config).toBe(SURVIVORS_CONFIG);
+    const run = make(true);
+    run.devAllWeapons(env({ nodeEnv: 'development' }));
+    const defs = Object.values(SURVIVORS_CONFIG.weapons);
+    expect(run.snapshot().weapons.map((w) => [w.id, w.level])).toEqual(
+      defs.map((d) => [d!.id, d!.maxLevel]),
+    );
+    expect(run.config.slots.weapons).toBe(defs.length);
+    expect(SURVIVORS_CONFIG.slots.weapons).toBe(slots);
+    expect(ordinary.snapshot().weapons).toHaveLength(1);
+    ordinary.devAllWeapons(env({}));
+    expect(ordinary.snapshot().weapons).toHaveLength(1);
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      const gated = make(true);
+      gated.devAllWeapons();
+      expect(gated.config).toBe(SURVIVORS_CONFIG);
+      expect(gated.snapshot().weapons).toHaveLength(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
 
 describe('lo que se esconde durante la partida', () => {
   it('esconde todas las capas: ruta, fichas, botellas, descuentos, encuentros, minimapa, objetivo y fauna', () => {
@@ -593,7 +642,11 @@ describe('las piezas de la partida', () => {
         elites +
         flyers +
         s.enemyProjectiles.length +
-        s.telegraphs.length * 2,
+        s.telegraphs.length * 2 +
+        s.auras.length * 2 +
+        s.beams.length +
+        s.orbitals.length +
+        s.zones.length,
     );
     view.dispose();
   });

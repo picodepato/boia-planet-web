@@ -138,6 +138,7 @@ interface StartOptions {
   defeatStyle?: DefeatStyle | null;
   /** `&carta=1`: empezar con una carta de nivel abierta (sólo con los atajos encendidos). */
   card?: boolean;
+  weapons?: boolean;
   /** Dificultad pedida (`&dificultad=`); sólo cuenta con los atajos encendidos y se recuerda. */
   difficulty?: DifficultyId | null;
 }
@@ -251,6 +252,7 @@ export function useCanonMode({
       seed = null,
       defeatStyle: askedStyle = null,
       card = false,
+      weapons = false,
       difficulty: askedDifficulty = null,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
@@ -272,8 +274,10 @@ export function useCanonMode({
         quality: g.quality,
         ship: MAR_SHIP_CONFIG,
         startAtS: t,
+        devWeapons: weapons && devShortcutsEnabled(),
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
+      if (weapons) run.devAllWeapons();
       if (!g.startSurvivors(run)) return false;
       const gift = card && devShortcutsEnabled();
       if (gift) run.devLevelUp();
@@ -290,7 +294,7 @@ export function useCanonMode({
         currentConfig: () => canonConfigFor(run.config, run.difficulty),
         seed: run.seed,
         skippedS: run.snapshot().activeS,
-        devStart: isDevStart({ t, seed, card: gift }),
+        devStart: isDevStart({ t, seed, card: gift, weapons: weapons && devShortcutsEnabled() }),
         devStartRewards: devStartRewards(),
       });
       setEnded(false);
@@ -409,6 +413,7 @@ export function useCanonMode({
         defeatStyle: sc.defeatStyle,
         card: sc.card,
         difficulty: sc.difficulty,
+        weapons: sc.weapons,
       });
     }
   }, [ready, start]);

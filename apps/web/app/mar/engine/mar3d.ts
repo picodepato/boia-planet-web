@@ -593,6 +593,7 @@ export class Mar3D {
     player: { x: number; y: number; vx: number; vy: number; heading: number };
     /** Tipos de enemigo que han salido en pantalla en la partida (T126, para las pruebas). */
     seen: Set<string>;
+    weaponsSeen: Set<string>;
     /** s de la escena en que se miró la última vez qué hay en pantalla. */
     seenAt: number;
   } | null = null;
@@ -1451,6 +1452,7 @@ export class Mar3D {
       player: run.snapshot().player,
       turboPending: false,
       seen: new Set(),
+      weaponsSeen: new Set(),
       seenAt: -1,
     };
     this.syncHandling();
@@ -1491,6 +1493,9 @@ export class Mar3D {
     delete this.opts.canvas.dataset.derrota;
     delete this.opts.canvas.dataset.canonVista;
     delete this.opts.canvas.dataset.canonVistos;
+    delete this.opts.canvas.dataset.canonArmas;
+    delete this.opts.canvas.dataset.canonArmasVista;
+    delete this.opts.canvas.dataset.canonArmasVistas;
     this.prev.x = this.ship.x;
     this.prev.y = this.ship.y;
     this.prev.heading = this.ship.heading;
@@ -1514,7 +1519,7 @@ export class Mar3D {
     const P = this.periodS;
     const cam = this.camera.position;
     const bend = this.bend;
-    const now = sv.view.typesWhere((x, y, z, r) => {
+    const onScreen = (x: number, y: number, z: number, r: number) => {
       const px = fx + wrapD(x - fx, P.w);
       const pz = fz + wrapD(z - fz, P.h);
       const d = Math.hypot(px - cam.x, pz - cam.z);
@@ -1525,13 +1530,24 @@ export class Mar3D {
         this.frustum.intersectsSphere(tmpSphere) &&
         !behindPlanet(cam.y, Math.max(0, d - r), y + r - drop, bend)
       );
-    });
+    };
+    const now = sv.view.typesWhere(onScreen);
     for (const id of now) sv.seen.add(id);
     const vista = now.join(' ');
     const ds = this.opts.canvas.dataset;
     if (ds.canonVista !== vista) ds.canonVista = vista;
     const vistos = [...sv.seen].sort().join(' ');
     if (ds.canonVistos !== vistos) ds.canonVistos = vistos;
+    // T128: populated mesh matrices, not inventory. Retain intermittent shots.
+    const counts = sv.view.weapons.counts();
+    const visible = sv.view.weapons.counts(onScreen);
+    for (const id of Object.keys(visible)) sv.weaponsSeen.add(id);
+    const armas = Object.entries(counts).map(([id, n]) => `${id}:${n}`).sort().join(' ');
+    const armasVista = Object.entries(visible).map(([id, n]) => `${id}:${n}`).sort().join(' ');
+    const armasVistas = [...sv.weaponsSeen].sort().join(' ');
+    if (ds.canonArmas !== armas) ds.canonArmas = armas;
+    if (ds.canonArmasVista !== armasVista) ds.canonArmasVista = armasVista;
+    if (ds.canonArmasVistas !== armasVistas) ds.canonArmasVistas = armasVistas;
   }
 
   /** ¿Hay una partida del Cañón en curso? */
@@ -2615,6 +2631,7 @@ export class Mar3D {
         const e = events[k]!;
         if (e.type === 'hit') this.shake = Math.max(this.shake, hitShake(this.reducedMotion));
         else if (e.type === 'defeated') sv.view.defeat(e.enemy, e.id, e.x, e.y);
+        else if (e.type === 'explode') sv.view.weapons.explode(e.weapon, e.x, e.y, e.radius);
         else if (e.type === 'jump') {
           this.opts.canvas.dataset.salto = 'aire';
           this.opts.onJump?.(e);

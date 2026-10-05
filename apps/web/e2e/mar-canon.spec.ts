@@ -158,6 +158,47 @@ test('ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos, sin 
   expect(errors).toEqual([]);
 });
 
+for (const reduced of [false, true]) {
+  test(`all max-level weapons are drawn without console errors (T128, reduced=${reduced})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' });
+    if (reduced) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 2 });
+      });
+    }
+    const errors = await openMar(page, '?minijuego=canon&armas=1&seed=7');
+    await expect(game(page)).toHaveAttribute('data-estado', 'running');
+    if (reduced) await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+    expect(new URL(page.url()).searchParams.has('armas')).toBe(false);
+    const all = Object.keys(SURVIVORS_CONFIG.weapons).sort();
+    // Level cards pause the sim; pick with the supported keyboard input throughout the run.
+    await expect
+      .poll(
+        async () => {
+          if ((await game(page).getAttribute('data-estado')) === 'card')
+            await page.keyboard.press('Enter');
+          const seen = ((await canvas(page).getAttribute('data-canon-armas-vistas')) ?? '')
+            .split(' ')
+            .filter(Boolean)
+            .sort();
+          const active = Number(await game(page).getAttribute('data-activo'));
+          return active >= 12 && JSON.stringify(seen) === JSON.stringify(all);
+        },
+        { timeout: 90_000, intervals: [400] },
+      )
+      .toBe(true);
+    const counts = ((await canvas(page).getAttribute('data-canon-armas')) ?? '')
+      .split(' ')
+      .filter(Boolean);
+    expect(counts.length).toBeGreaterThan(0);
+    for (const count of counts) expect(count).toMatch(/^[A-Za-z]+:[1-9]\d*$/);
+    expect(errors).toEqual([]);
+  });
+}
+
 test('el interruptor de desarrollo cambia en vivo el estilo de derrota (T117)', async ({
   page,
 }) => {
@@ -562,7 +603,19 @@ test('sin esquivar, el agua llena el barco: «¡Barco inundado!» y sin premio',
     .poll(async () => Number(await game(page).getAttribute('data-agua')), { timeout: 60_000 })
     .toBeGreaterThan(0);
   const end = page.getByTestId('mar-canon-final');
-  await expect(end).toBeVisible({ timeout: 120_000 });
+  // Las armas de la beta 2 suben de nivel aun sin timón, y cada carta para la
+  // partida hasta elegir: se coge la primera con Intro, sin esquivar nada.
+  await expect
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') {
+          await page.keyboard.press('Enter');
+        }
+        return end.isVisible();
+      },
+      { timeout: 120_000, intervals: [500] },
+    )
+    .toBe(true);
   await expect(game(page)).toHaveAttribute('data-fin', 'flooded');
   await expect(end).toHaveAttribute('data-fin', 'flooded');
   await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.inundado'));

@@ -4,6 +4,43 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T128: Cómo se ven las armas en el mar 3D
+
+Qué existe:
+- `apps/web/app/mar/engine/survivors-weapons.ts`: `SurvivorsWeapons`, un
+  `InstancedMesh` (una llamada de dibujo) por arma más los destellos de la
+  Bola de Discoteca y las explosiones; los topes salen de las `caps` de la
+  calidad y de las tablas de nivel/evolución (con Rumba); un grupo vacío se
+  oculta (sin llamada de dibujo, como en T126). Cañón: bolas; Subwoofer: dos
+  anillos que viajan con el pulso; Láser: franja plana desde el barco hasta
+  su alcance, alfa fija (sin parpadeo); Boyas: boya BOIA de bajo poligonaje;
+  Confeti: tres serpentinas; Fuegos: cohete en vuelo + explosión (anillos y
+  rayos) por el evento `explode`; Lluvia ácida: charco verde, nube y cortina,
+  que se apaga en color (no en alfa) al acabarse. Evoluciones: la misma
+  silueta más grande y con tinte dorado; El Drop explota en azul.
+- Alturas `WEAPON_Y`: lo que pasa sobre las islas (láser, boyas, cohetes,
+  nube) sube con el suelo (`groundAt` de la vista); auras y charcos en el agua.
+- Movimiento reducido (REQ-AVE-039): anillos quietos marcando el borde,
+  boyas sin balanceo ni giro, explosiones a tamaño fijo, láser más tenue
+  (sigue girando: es el ataque).
+- Atajo de desarrollo `&armas=1` (tras el interruptor de atajos): la partida
+  empieza con las 7 armas a nivel máximo, sin tocar la config compartida;
+  cuenta como partida de prueba. `canon-mode.tsx` sólo pasa el atajo.
+- `data-canon-armas`, `data-canon-armas-vista`, `data-canon-armas-vistas` en
+  el lienzo (instancias pintadas, no inventario) para las pruebas.
+- e2e `mar-canon.spec.ts`: partida con todas las armas (normal, y móvil en
+  `baja` con movimiento reducido) sin errores de consola; la prueba de
+  «Barco inundado» contesta ahora las cartas de nivel (con las armas de la
+  beta 2 se sube de nivel sin timón y la carta paraba la partida).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 151 archivos, 1452 pruebas (tras unir main con T131)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0
+- `E2E_PORT=3871 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, 42 pasadas (tras unir main con T131)
+
+Pendiente:
+- Medir en un iPhone 11 la partida con `&armas=1` en `baja` (T132).
+
 ## 2026-10-05 — plan 011 T131: Three difficulties chosen on the island panel
 
 Qué existe:

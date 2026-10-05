@@ -13,6 +13,7 @@ import {
   type SurvivorsSnapshot,
   type SurvivorsStatus,
   type SurvivorsWorld,
+  type WeaponId,
   createSurvivors,
   survivorsWorldOf,
 } from '@boia/engine/survivors';
@@ -49,6 +50,8 @@ export const CANON_PARAMS = {
   defeat: 'derrota',
   /** `carta=1`: empezar con una carta de nivel abierta (T118, para probar las cartas). */
   card: 'carta',
+  /** `armas=1`: empezar con las siete armas a nivel máximo (T128, para probar cómo se ven). */
+  weapons: 'armas',
   /** `dificultad=tranquila|normal|tormenta`: empezar con esa dificultad (T131). */
   difficulty: 'dificultad',
   dev: 'dev',
@@ -97,11 +100,17 @@ export function devStartRewards(env: DevEnv = devEnv()): boolean {
 
 /**
  * ¿La partida es de prueba? Lo es si un atajo cambia el juego: `&t=` (se
- * salta tiempo), `&seed=` (una semilla elegida se puede ensayar) o
- * `&carta=1` (un nivel regalado). `&derrota=` sólo cambia cómo se ve: no.
+ * salta tiempo), `&seed=` (una semilla elegida se puede ensayar),
+ * `&carta=1` (un nivel regalado) o `&armas=1` (todas las armas). `&derrota=`
+ * sólo cambia cómo se ve: no.
  */
-export function isDevStart(s: { t?: number; seed?: number | null; card?: boolean }): boolean {
-  return (s.t ?? 0) > 0 || (s.seed ?? null) !== null || s.card === true;
+export function isDevStart(s: {
+  t?: number;
+  seed?: number | null;
+  card?: boolean;
+  weapons?: boolean;
+}): boolean {
+  return (s.t ?? 0) > 0 || (s.seed ?? null) !== null || s.card === true || s.weapons === true;
 }
 
 export interface CanonShortcut {
@@ -115,6 +124,8 @@ export interface CanonShortcut {
   defeatStyle: DefeatStyle | null;
   /** Empezar con una carta de nivel abierta (`&carta=1`). */
   card: boolean;
+  /** Empezar con todas las armas a nivel máximo (`&armas=1`). */
+  weapons: boolean;
   /** Dificultad pedida (`&dificultad=`), o null (la elegida en el panel). */
   difficulty: DifficultyId | null;
 }
@@ -139,6 +150,7 @@ export function canonShortcut(
     offer: q.get(CANON_PARAMS.offer) === '1',
     defeatStyle: asDefeatStyle(q.get(CANON_PARAMS.defeat)),
     card: q.get(CANON_PARAMS.card) === '1',
+    weapons: q.get(CANON_PARAMS.weapons) === '1',
     difficulty: asDifficulty(q.get(CANON_PARAMS.difficulty)),
   };
 }
@@ -153,6 +165,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.offer,
     CANON_PARAMS.defeat,
     CANON_PARAMS.card,
+    CANON_PARAMS.weapons,
     CANON_PARAMS.difficulty,
   ]) {
     url.searchParams.delete(p);
@@ -362,6 +375,8 @@ export interface SurvivorsRunOptions {
   ship: ShipConfig;
   /** Empezar en ese segundo (atajo `&t=`). */
   startAtS?: number;
+  /** Sólo atajo `&armas=1`: huecos para todas las armas en esta partida de prueba. */
+  devWeapons?: boolean;
   config?: SurvivorsConfig;
   /** Dificultad (T131); sin valor, Normal. */
   difficulty?: DifficultyId;
@@ -422,7 +437,11 @@ export class SurvivorsRun {
   private pendingChoice: number | null = null;
 
   constructor(world: SurvivorsWorld, opts: SurvivorsRunOptions) {
-    this.config = opts.config ?? SURVIVORS_CONFIG;
+    const config = opts.config ?? SURVIVORS_CONFIG;
+    this.config =
+      opts.devWeapons && devShortcutsEnabled()
+        ? { ...config, slots: { ...config.slots, weapons: Object.keys(config.weapons).length } }
+        : config;
     this.seed = opts.seed;
     this.quality = opts.quality;
     this.difficulty = opts.difficulty ?? 'normal';
@@ -484,6 +503,21 @@ export class SurvivorsRun {
   devLevelUp(): void {
     const s = this.game.snapshot();
     this.game.spawnNote(s.player.x, s.player.y, Math.max(1, s.xp.toNext - s.xp.xp));
+  }
+
+  /**
+   * Atajo `&armas=1` (T128): las siete armas a su nivel máximo, por las API de
+   * la simulación y sin tocar la config compartida (los huecos de más los da
+   * `devWeapons` al crear la partida). Sólo con los atajos encendidos.
+   */
+  devAllWeapons(env: DevEnv = devEnv()): void {
+    if (!devShortcutsEnabled(env)) return;
+    for (const id of Object.keys(this.config.weapons) as WeaponId[]) {
+      this.game.addWeapon(id);
+      while (this.game.levelUpWeapon(id)) {
+        /* hasta el último nivel de su tabla */
+      }
+    }
   }
 
   /** Pausa (un panel encima, el menú): los pasos cuentan como pausa. */
