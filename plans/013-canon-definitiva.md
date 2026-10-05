@@ -44,7 +44,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: «Terminar partida» with confirm → «Partida terminada» card, no pay/medal, `ranked:false`; balances hidden in game; slots top-right, smaller pill → c51a76c
 
 ## T149 — Healing vinyl redesign and the Vecino ring
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5; started on Codex, which ran out of credits)
 - Skills: none
 - Depends on: none
@@ -58,7 +58,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Done when:
   - `pnpm exec vitest run packages/engine/src/survivors --testTimeout=60000` → exit 0 with the new tests
   - Test command → exit 0
-- Outcome:
+- Outcome: chill N1 0.4/s, N2–N3 +15 capacity, N4 0.8/s, N5 shield (6 s, 20 s recharge, ring on boat); Vecino 8 gaps of 2.5 boat widths; dodge bot fixed; config v15 → 6858e3f
 
 ## T150 — SVG icons for every skill
 - Status: done
@@ -105,7 +105,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T153 — Per-medal daily prize and the new achievements
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T148
@@ -176,8 +176,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T148: new end reason `quit` (`SurvivorsGame.quit()`); quit session abandoned, not settled; `CanonResult.ranked=false` for T155; card shows time/enemies/notes + «Volver al mar»/«Otra vez»; balances hidden via a `balances` HideLayer until «Volver al mar»; confirm focuses «No, seguir», Esc cancels the step; mobile slots 3 columns of 22 px, desktop rows at 28 px; worst case tested with `armas=1` (7 weapons + 4 vinyls) (agent)
 - 2026-10-05 T150: vinyls share a purple disc behind their symbol; `CANON_ICON_PALETTE` = `ICON_PALETTE` + water blue, acid green, red; Llama drop = brazier, flame alone = HUD notice; Segunda vida = two hearts; final card gear list shows icons (agent)
 - 2026-10-05 T151: pop-up closes with Esc/×/tap outside and returns to the island panel; boat locked and bottles chip hidden while open; no per-act/difficulty medal state exists, so only «Superado» per act is shown; `useCanonMode` exposes `prep` and `acts`; pop-up shows BETA (T156 removes); updated REQ-AVE-037 proof link in `docs/spec/estado.md` to the renamed e2e (agent)
+- 2026-10-05 T149: Kraken test failure came from Codex's half-done bot, not healing; bot now aims at the gap at its distance + 40 and counts inside ring up to `RING_MARGIN` 120; Vecino stress (40 seeds, 120 s): v14 30/40 survive vs v15 40/40 with 0 hits; legacy `bailing` upgrade label set to 0.4; `canon-hud-model.test.ts` expects decimal comma (agent)
 
 ## Proposals (new scope)
+- 2026-10-05 T149: in Tranquila both final bosses are nearly always beaten (Kraken 16/16, Fantasma 15/16): act-2 ≥ act-1 test at ceiling — T156 balance
 - 2026-10-05 T151: act-2 sky «tentacle» is a CSS curve, could use an SVG icon (T156)
 - 2026-10-05 T150: medal texts still use emoji (🥉🥈🥇 in `es-mar.ts`), world notices/pins in `mar-client.tsx` too; first-load JS at 186.9 of 200 kB budget — watch in T152/T154 (T156)
 - 2026-10-05 T148: the boss arrow can sit briefly under the top-right slots box (T156)
@@ -195,3 +197,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 21:30 T149 Codex usage limit (WIP e1f06d5 on worktree-agent-a5d014c5aa4533926: Kraken tranquila balance test failing, full checks not run) → Opus continuation, not a counted failure
 - 2026-10-05 21:32 T149 continuation launched · agent ab0f59486779a0601 (opus), merges worktree-agent-a5d014c5aa4533926
 - 2026-10-05 21:45 T151 done · branch worktree-agent-a74b970390ca1beed → f66e051; push offer T150 cancelled, push offer T151 sent
+- 2026-10-05 21:47 T152 launched · attempt 1 · agent a2610e06d4ddf9e6b (opus)
+- 2026-10-05 22:20 T149 done · branch worktree-agent-ab0f59486779a0601 → 6858e3f; push offer T151 cancelled, push offer T149 sent
