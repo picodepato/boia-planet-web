@@ -1,7 +1,7 @@
 import type { ShipInput } from '../ship/controller';
 import { wrapDelta } from '../world/wrap';
 import type { CardOption } from './cards';
-import type { DifficultyId, EnemyId, PassiveId, SurvivorsConfig, WeaponId } from './config';
+import type { BossId, DifficultyId, EnemyId, PassiveId, SurvivorsConfig, WeaponId } from './config';
 import { SURVIVORS_STEP_S } from './config';
 import {
   type SurvivorsGame,
@@ -227,6 +227,10 @@ export interface BotRun {
    * hundido al menos tantos como había (no vale sólo escapar).
    */
   screenClearsS: number[];
+  /** Bosses (T137): golpes de boss recibidos, agua que metieron y los vencidos en orden. */
+  bossHits: number;
+  bossWater: number;
+  bossesDefeated: BossId[];
 }
 
 /** u: radio de lo que se ve alrededor del barco (el anillo de aparición está más lejos). */
@@ -272,6 +276,9 @@ export function runBot(
     defeated: 0,
     evolvedS: null,
     screenClearsS: [],
+    bossHits: 0,
+    bossWater: 0,
+    bossesDefeated: [],
   };
   const seen = new Set<number>();
   const bw = world.bounds.right - world.bounds.left;
@@ -298,6 +305,12 @@ export function runBot(
         killsSincePeak++;
       } else if (e.type === 'evolved' && run.evolvedS === null) {
         run.evolvedS = game.activeS;
+      } else if (e.type === 'bossHit') {
+        run.hits++;
+        run.bossHits++;
+        run.bossWater += e.water - water;
+      } else if (e.type === 'bossDefeated') {
+        run.bossesDefeated.push(e.boss);
       }
     }
     {

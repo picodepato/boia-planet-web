@@ -195,8 +195,9 @@ describe('survivors: configuración', () => {
     }
     expect(Object.keys(c.weapons)).toContain(c.startingWeapon);
     expect(c.weapons.canon?.blockedByIslands).toBe(true);
-    expect(c.acts.map((a) => a.act)).toEqual([1]);
-    expect(c.acts[0]!.durationS).toBe(c.durationS);
+    // Los actos van numerados seguidos desde el 1 (la beta 3 trae el 2, T137).
+    expect(c.acts.map((a) => a.act)).toEqual(c.acts.map((_, i) => i + 1));
+    for (const a of c.acts) expect(a.durationS).toBe(c.durationS);
     expect(['puf', 'sumergirse']).toContain(c.defeatStyle);
     expect(c.caps.alta.enemies).toBeGreaterThan(c.caps.baja.enemies);
     // Cada mejora: efecto fijo y su clave de texto.

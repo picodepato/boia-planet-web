@@ -10,6 +10,11 @@ import {
 import type { QualityTier } from '../world/sectors';
 import { wrapDelta, wrapInto } from '../world/wrap';
 import {
+  type ActScript,
+  type BossAttackDef,
+  type BossAttackKind,
+  type BossDef,
+  type BossId,
   type ElitesDef,
   type EnemyDef,
   type EnemyId,
@@ -30,12 +35,15 @@ import {
   DEFAULT_DIFFICULTY,
   type DifficultyDef,
   type DifficultyId,
+  actOf,
+  bossHpFor,
   figureOf,
   resolveWeaponStats,
   survivorsShipConfig,
   trackAt,
   xpToNext,
 } from './config';
+import { attackAt, inRingGap, nextPhase, ringRadiusAt, ringTouches } from './bosses';
 import { buildCardPool, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
 export type { CardOption } from './cards';
 import { SpatialGrid } from './grid';
@@ -107,6 +115,26 @@ export type SurvivorsEvent =
   | { type: 'levelUp'; level: number }
   | { type: 'saved'; item: 'salvavidas'; x: number; y: number; water: number }
   | { type: 'evolved'; weapon: WeaponId; evolutionId: EvolutionId }
+  // --- Bosses (T137) ---
+  /** Entra un boss por delante del barco (`id` es el de la entidad, único en la partida). */
+  | { type: 'bossSpawn'; boss: BossId; id: number; kind: BossDef['kind']; nameKey: string; x: number; y: number }
+  | { type: 'bossPhase'; boss: BossId; id: number; phase: number }
+  /** Empieza el aviso de un ataque: la forma en el agua (ver `BossWarningView`). */
+  | { type: 'bossTelegraph'; boss: BossId; id: number; attack: string; kind: BossAttackKind; x: number; y: number; heading: number }
+  /** Acaba el aviso: el golpe empieza. */
+  | { type: 'bossAttack'; boss: BossId; id: number; attack: string; kind: BossAttackKind; x: number; y: number }
+  | { type: 'bossSummon'; boss: BossId; id: number; enemy: EnemyId; count: number; x: number; y: number }
+  /** Un golpe de boss al barco (`attack` null: por contacto). */
+  | { type: 'bossHit'; boss: BossId; attack: string | null; x: number; y: number; water: number }
+  /** El boss recibe `damage` (lo que le queda en `hp`). */
+  | { type: 'bossDamaged'; boss: BossId; id: number; damage: number; hp: number; x: number; y: number }
+  | { type: 'bossDefeated'; boss: BossId; id: number; kind: BossDef['kind']; x: number; y: number }
+  /** Amanece con el boss vivo: se retira. */
+  | { type: 'bossRetreated'; boss: BossId; id: number; kind: BossDef['kind']; x: number; y: number }
+  /** Un miniboss suelta el cofre en (x, y); flota hasta que el barco lo toca. */
+  | { type: 'chest'; boss: BossId; id: number; x: number; y: number }
+  /** El barco toca el cofre: lo que da lo resuelve quien escucha (T139). */
+  | { type: 'chestOpened'; boss: BossId; id: number; x: number; y: number }
   | { type: 'end'; reason: EndReason };
 
 export interface EnemyView {
@@ -254,6 +282,69 @@ export interface NoteView {
   readonly magnet: boolean;
 }
 
+/** Un boss vivo, para la pantalla y el HUD (T137). */
+export interface BossView {
+  readonly id: number;
+  readonly boss: BossId;
+  readonly kind: BossDef['kind'];
+  readonly nameKey: string;
+  readonly x: number;
+  readonly y: number;
+  readonly vx: number;
+  readonly vy: number;
+  readonly heading: number;
+  readonly radius: number;
+  readonly hp: number;
+  readonly maxHp: number;
+  /** hp / maxHp, 0…1. */
+  readonly hpFraction: number;
+  /** Fase (0…) y cuántas tiene. */
+  readonly phase: number;
+  readonly phaseCount: number;
+  /** No recibe daño ahora (fase o ataque): la pantalla lo puede pintar translúcido. */
+  readonly invulnerable: boolean;
+  /** Ataque en curso y en qué está (`warning` avisando, `hit` golpeando); null entre ataques. */
+  readonly attack: string | null;
+  readonly attackStage: 'warning' | 'hit' | null;
+}
+
+/**
+ * Una forma de aviso (y luego de golpe) de un boss en el agua. `progress` va
+ * 0→1 durante el aviso y otra vez 0→1 durante el golpe (`hit` true).
+ * - `ring`: centro (x, y), `radius` final, `thickness`, `gaps` huecos de
+ *   `gapRad` rad desde `gapPhase`; durante el golpe `ringRadius` es el de la onda.
+ * - `line`: desde (x, y) con `heading`, `length` u, medio ancho `thickness`.
+ * - `circles`: un aviso por círculo: centro (x, y), `radius`.
+ * - `broadside`: una por costado: desde (x, y) con `heading`, `length`, `thickness`.
+ */
+export interface BossWarningView {
+  readonly id: number;
+  readonly boss: BossId;
+  readonly attack: string;
+  readonly kind: BossAttackKind;
+  readonly x: number;
+  readonly y: number;
+  readonly heading: number;
+  readonly length: number;
+  readonly radius: number;
+  readonly thickness: number;
+  readonly gaps: number;
+  readonly gapRad: number;
+  readonly gapPhase: number;
+  readonly ringRadius: number;
+  readonly progress: number;
+  readonly hit: boolean;
+}
+
+/** El cofre que suelta un miniboss, flotando hasta que el barco lo toca. */
+export interface ChestView {
+  readonly id: number;
+  readonly boss: BossId;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
+
 export interface LevelUpCard {
   readonly level: number;
   readonly options: readonly CardOption[];
@@ -305,6 +396,16 @@ export interface SurvivorsSnapshot {
   readonly elitesActive: boolean;
   /** La «Marea» está cayendo. */
   readonly mareaActive: boolean;
+  /** El acto que se juega (1…). */
+  readonly act: number;
+  /** Bosses vivos (T137), sus avisos en el agua y los cofres sin recoger. */
+  readonly bosses: readonly BossView[];
+  readonly bossWarnings: readonly BossWarningView[];
+  readonly chests: readonly ChestView[];
+  /** Los bosses vencidos en la partida, en orden. */
+  readonly bossesDefeated: readonly BossId[];
+  /** El boss final del acto cayó (la medalla de oro, T144). */
+  readonly finalBossDefeated: boolean;
   readonly water: { readonly level: number; readonly capacity: number };
   readonly xp: { readonly level: number; readonly xp: number; readonly toNext: number };
   /** s de tiempo activo. */
@@ -335,6 +436,8 @@ export interface SurvivorsOptions {
   startAtS?: number;
   /** Dificultad (T131): multiplicadores de `config.difficulties`. Sin valor, `normal`. */
   difficulty?: DifficultyId;
+  /** Acto (T137): el guion `config.acts` con ese `act`. Sin valor, el 1. */
+  act?: number;
 }
 
 interface Enemy {
@@ -366,10 +469,13 @@ interface Enemy {
   dead: boolean;
 }
 
-/** Un disparo enemigo (pistola de agua): recto, lo paran las islas y el barco. */
+/** Un disparo enemigo (pistola de agua, andanada de un boss): recto, lo paran las islas y el barco. */
 interface EnemyShot {
   id: number;
-  enemy: EnemyId;
+  /** Quién lo tiró: un tipo de enemigo o un boss con su ataque. */
+  enemy: EnemyId | null;
+  boss: BossId | null;
+  attack: string | null;
   x: number;
   y: number;
   vx: number;
@@ -478,6 +584,67 @@ interface Note {
   dead: boolean;
 }
 
+/** Un ataque de boss en curso: su definición, en qué está y la geometría fijada al avisar. */
+interface BossAttack {
+  name: string;
+  def: BossAttackDef;
+  stage: 'warning' | 'hit';
+  /** s que quedan de la etapa. */
+  timer: number;
+  /** Ancla: el boss (ring, line, broadside) o donde estaba el barco (circles). */
+  x: number;
+  y: number;
+  heading: number;
+  /** ring: desde dónde van los huecos. */
+  gapPhase: number;
+  /** circles: dónde cae cada uno. */
+  circles: { x: number; y: number }[];
+  /** line: u que quedan de embestida. */
+  left: number;
+  /** Ya mojó al barco en este golpe (un golpe por ataque). */
+  landed: boolean;
+}
+
+interface Boss {
+  id: number;
+  def: BossDef;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  heading: number;
+  hp: number;
+  maxHp: number;
+  radius: number;
+  phase: number;
+  /** s en la fase. */
+  phaseS: number;
+  /** s hasta el próximo ataque. */
+  attackTimer: number;
+  /** Ataques lanzados en la fase (para el orden cíclico). */
+  attackIndex: number;
+  attack: BossAttack | null;
+  dead: boolean;
+}
+
+interface Chest {
+  id: number;
+  boss: BossId;
+  x: number;
+  y: number;
+  dead: boolean;
+}
+
+/** Un hueco de boss del guion: cuándo, cuál y si ya se atendió. */
+interface BossSlot {
+  ev: ScriptEvent;
+  def: BossDef;
+  done: boolean;
+}
+
+/** Lo que un arma puede tener por blanco: un enemigo o un boss (ids del mismo contador). */
+type Target = Pick<Enemy, 'id' | 'x' | 'y' | 'radius' | 'dead'>;
+
 const NOTE_RADIUS = 4;
 /** Fracción del alcance a la que espera la mancha de un foco sin blanco, por delante del barco. */
 const SPOT_REST = 0.35;
@@ -526,6 +693,19 @@ export class SurvivorsGame {
   /** Hitos «Marea» activos del guion y, para cada uno, cuándo cae el próximo anillo. */
   private readonly mareas: { ev: ScriptEvent; def: MareaDef }[];
   private readonly mareaNext: number[];
+  /** El guion del acto que se juega (T137). */
+  readonly act: ActScript;
+  /** Huecos de boss activos del guion cuyo boss existe en la config. */
+  private readonly bossSlots: BossSlot[];
+  /** El azar de los bosses (huecos del anillo, dónde caen los círculos): aparte del guion. */
+  private readonly bossRng: () => number;
+  private readonly bosses: Boss[] = [];
+  private readonly bossViews: BossView[] = [];
+  private readonly bossWarnings: BossWarningView[] = [];
+  private readonly chests: Chest[] = [];
+  private readonly chestViews: ChestView[] = [];
+  private readonly bossesDefeated: BossId[] = [];
+  private finalBossDefeated = false;
 
   private readonly player: ShipState;
   private readonly enemies: Enemy[] = [];
@@ -596,15 +776,30 @@ export class SurvivorsGame {
     this.noteGrid = new SpatialGrid(world.bounds, config.gridCell, this.caps.notes);
     this.spawnRng = rng(this.seed);
     this.cardRng = rng((this.seed ^ 0x9e3779b9) >>> 0);
+    this.bossRng = rng((this.seed ^ 0x3c6ef372) >>> 0);
     this.baseShip = opts.ship ?? DEFAULT_SHIP_CONFIG;
     this.shipCfg = survivorsShipConfig(this.baseShip, config.handling, 0);
     if (!config.weapons[config.startingWeapon]) {
       throw new Error(`survivors: no weapon ${config.startingWeapon}`);
     }
+    // El acto (T137): su guion; sin actos en la config, uno vacío.
+    const actN = opts.act ?? 1;
+    const act =
+      actOf(config, actN) ??
+      (opts.act === undefined
+        ? config.acts[0] ?? { act: 1, durationS: config.durationS, tracks: [], events: [] }
+        : null);
+    if (!act) throw new Error(`survivors: no act ${actN}`);
+    this.act = act;
     // Hitos del guion: élites (desde cuándo) y Mareas (cuáles). Sin hito de
     // élites el guion no las echa, pero la definición sigue valiendo para
     // las puestas a mano (`spawnEnemy(…, true)`).
-    const events = (config.acts[0]?.events ?? []).filter((ev) => ev.enabled !== false);
+    const events = act.events.filter((ev) => ev.enabled !== false);
+    // Huecos de boss: sólo los activos cuyo boss existe (los demás, nada, como en T125).
+    this.bossSlots = events.flatMap((ev) => {
+      const def = ev.type === 'miniboss' || ev.type === 'boss' ? config.bosses[ev.ref as BossId] : undefined;
+      return def ? [{ ev, def, done: false }] : [];
+    });
     let elitesFrom = Infinity;
     let elitesDef: ElitesDef | null = Object.values(config.elites)[0] ?? null;
     for (const ev of events) {
@@ -637,7 +832,7 @@ export class SurvivorsGame {
       config.gridCell,
       config.enemyAI.lookAhead + maxR + 16,
     );
-    this.trackAcc = (config.acts[0]?.tracks ?? []).map(() => 0);
+    this.trackAcc = act.tracks.map(() => 0);
     this.durationSteps = Math.round(config.durationS / SURVIVORS_STEP_S);
 
     const s = world.start;
@@ -672,6 +867,12 @@ export class SurvivorsGame {
       notes: this.notes,
       elitesActive: false,
       mareaActive: false,
+      act: act.act,
+      bosses: this.bossViews,
+      bossWarnings: this.bossWarnings,
+      chests: this.chestViews,
+      bossesDefeated: this.bossesDefeated,
+      finalBossDefeated: false,
       water: { level: 0, capacity: config.player.waterCapacity },
       xp: { level: 1, xp: 0, toNext: xpToNext(config, 1) },
       activeS: 0,
@@ -828,6 +1029,17 @@ export class SurvivorsGame {
     for (const z of this.zones) {
       z.lifeS = Math.max(0, z.life);
       z.progress = Math.min(1, Math.max(0, 1 - z.tick / z.tickS));
+    }
+    v.finalBossDefeated = this.finalBossDefeated;
+    this.bossViews.length = 0;
+    this.bossWarnings.length = 0;
+    for (const b of this.bosses) {
+      this.bossViews.push(this.bossView(b));
+      if (b.attack) this.pushWarnings(b, b.attack);
+    }
+    this.chestViews.length = 0;
+    for (const c of this.chests) {
+      this.chestViews.push({ id: c.id, boss: c.boss, x: c.x, y: c.y, radius: this.config.bossFight.chestRadius });
     }
     return v;
   }
@@ -1010,6 +1222,24 @@ export class SurvivorsGame {
       s: this.enemyShots.map((b) => [b.id, b.x, b.y, b.life]),
       n: this.notes.map((n) => [n.id, n.x, n.y, n.value]),
       k: [this.defeated, this.notesPicked, this.notesValue, this.nextId],
+      act: this.act.act,
+      bs: this.bossSlots.map((s) => (s.done ? 1 : 0)),
+      bo: this.bosses.map((b) => [
+        b.id,
+        b.def.id,
+        b.x,
+        b.y,
+        b.vx,
+        b.vy,
+        b.hp,
+        b.phase,
+        b.phaseS,
+        b.attackTimer,
+        b.attackIndex,
+        b.attack ? [b.attack.name, b.attack.stage, b.attack.timer, b.attack.x, b.attack.y, b.attack.left, b.attack.landed ? 1 : 0] : null,
+      ]),
+      ch: this.chests.map((c) => [c.id, c.boss, c.x, c.y]),
+      bd: this.bossesDefeated,
       end: this.endReason,
     });
   }
@@ -1128,6 +1358,7 @@ export class SurvivorsGame {
     this.stepPlayer(input.ship ?? IDLE_INPUT, dt, input.turbo === true);
     this.spawnFromScript(dt);
     this.stepEnemies(dt);
+    this.stepBosses(dt);
     this.contactDamage(dt);
     this.stepEnemyShots(dt);
     this.stepWeapons(dt);
@@ -1135,7 +1366,9 @@ export class SurvivorsGame {
     this.stepZones(dt);
     this.stepCrackers(dt);
     this.compactEnemies();
+    this.compactBosses();
     this.stepNotes(dt);
+    this.stepChests();
 
     if (this.water >= this.config.player.waterCapacity && this.salvavidas === 'held') {
       this.salvavidas = 'consumed';
@@ -1144,8 +1377,11 @@ export class SurvivorsGame {
       this.events.push({ type: 'saved', item: 'salvavidas', x: this.player.x, y: this.player.y, water: this.water });
     }
     if (this.water >= this.config.player.waterCapacity) this.finish('flooded');
-    else if (this.activeSteps >= this.durationSteps) this.finish('survived');
-    else this.checkLevelUp();
+    else if (this.activeSteps >= this.durationSteps) {
+      // Amanece: un boss vivo se retira (§8); la partida se sobrevive igual.
+      this.retreatBosses();
+      this.finish('survived');
+    } else this.checkLevelUp();
     return this.events;
   }
 
@@ -1172,13 +1408,20 @@ export class SurvivorsGame {
   }
 
   private spawnFromScript(dt: number): void {
-    const act = this.config.acts[0];
-    if (!act) return;
+    const act = this.act;
     const t = this.activeS;
+    // Huecos de boss: al llegar su segundo, entra el boss.
+    for (const slot of this.bossSlots) {
+      if (slot.done || t < slot.ev.atS) continue;
+      slot.done = true;
+      this.enterBoss(slot.def);
+    }
+    // Con un boss vivo los comunes bajan de ritmo (§8).
+    const pace = this.bosses.length > 0 ? this.config.bossFight.commonSpawnScale : 1;
     act.tracks.forEach((track, i) => {
       const key = trackAt(track, t);
       if (!key) return;
-      let acc = this.trackAcc[i]! + key.groupsPerS * this.diff.enemyCount * dt;
+      let acc = this.trackAcc[i]! + key.groupsPerS * this.diff.enemyCount * pace * dt;
       while (acc >= 1) {
         acc -= 1;
         const size = Math.round(key.group[0] + (key.group[1] - key.group[0]) * this.spawnRng());
@@ -1228,7 +1471,13 @@ export class SurvivorsGame {
       return false;
     }
     const minutes = this.minutes();
-    const hp = def.hp * hpScale * this.diff.enemyHp * (1 + def.growthPerMinute.hp * minutes) * (1 + this.overflow);
+    const hp =
+      def.hp *
+      hpScale *
+      this.diff.enemyHp *
+      (this.act.enemyHpScale ?? 1) *
+      (1 + def.growthPerMinute.hp * minutes) *
+      (1 + this.overflow);
     const speed = def.speed * speedScale * (1 + def.growthPerMinute.speed * minutes);
     const elite =
       this.elitesDef !== null &&
@@ -1329,6 +1578,8 @@ export class SurvivorsGame {
     const p = this.player;
     const ai = this.config.enemyAI;
     const isl = this.islands;
+    // Con un boss vivo los comunes van más despacio (§8, `bossFight.commonSpeedScale`).
+    const slow = this.bosses.length > 0 ? this.config.bossFight.commonSpeedScale : 1;
     for (let i = 0; i < this.enemies.length; i++) {
       const e = this.enemies[i]!;
       let dx = wd(p.x - e.x, this.w);
@@ -1340,14 +1591,15 @@ export class SurvivorsGame {
       }
       dx = dist > 1e-6 ? dx / dist : 1;
       dy = dist > 1e-6 ? dy / dist : 0;
-      let wantX = dx * e.speed;
-      let wantY = dy * e.speed;
+      const speed = e.speed * slow;
+      let wantX = dx * speed;
+      let wantY = dy * speed;
       // `direct`: la velocidad va fijada (quieto o embistiendo), sin inercia ni rodeos.
       let direct = false;
       switch (e.def.behavior) {
         case 'flyer': {
           // Vuela en eses: un vaivén lateral que la hace reconocible (y algo menos directa).
-          const weave = Math.sin(this.activeS * 2.5 + e.id) * 0.35 * e.speed;
+          const weave = Math.sin(this.activeS * 2.5 + e.id) * 0.35 * speed;
           wantX += -dy * weave;
           wantY += dx * weave;
           break;
@@ -1401,9 +1653,9 @@ export class SurvivorsGame {
             }
           } else if (e.phase === 'charge') {
             direct = true;
-            e.vx = e.chargeX * ch.chargeSpeed;
-            e.vy = e.chargeY * ch.chargeSpeed;
-            e.chargeLeft -= ch.chargeSpeed * dt;
+            e.vx = e.chargeX * ch.chargeSpeed * slow;
+            e.vy = e.chargeY * ch.chargeSpeed * slow;
+            e.chargeLeft -= ch.chargeSpeed * slow * dt;
             if (e.chargeLeft <= 0) {
               e.phase = 'rest';
               e.timer = ch.restS;
@@ -1437,21 +1689,9 @@ export class SurvivorsGame {
       }
       // Rodear islas: la que está delante empuja de lado (sin buscar caminos).
       if (!e.def.ignoresIslands) {
-        const near = isl.near(e.x, e.y, ai.lookAhead + e.radius, this.scratch);
-        for (const k of near) {
-          const o = isl.obstacles[k]!;
-          const ox = wd(o.x - e.x, this.w);
-          const oy = wd(o.y - e.y, this.h);
-          const proj = ox * dx + oy * dy;
-          if (proj < -o.radius || proj > ai.lookAhead + o.radius) continue;
-          const lat = -ox * dy + oy * dx;
-          const clear = o.radius + e.radius + 8;
-          if (Math.abs(lat) >= clear) continue;
-          const push = (clear - Math.abs(lat)) / clear;
-          const side = lat > 0 ? -1 : 1;
-          wantX += -dy * side * push * ai.avoidStrength * e.speed;
-          wantY += dx * side * push * ai.avoidStrength * e.speed;
-        }
+        const push = this.avoidIslands(e.x, e.y, dx, dy, e.radius, speed);
+        wantX += push.x;
+        wantY += push.y;
       }
       // Separarse de los vecinos: el enjambre no se apelotona en un punto.
       const neigh = this.enemyGrid.query(e.x, e.y, e.radius + this.maxEnemyRadius, this.scratch2);
@@ -1483,7 +1723,7 @@ export class SurvivorsGame {
         e.vy = wantY;
       }
       const sp = Math.hypot(e.vx, e.vy);
-      const top = e.speed * 1.5;
+      const top = speed * 1.5;
       if (sp > top) {
         e.vx *= top / sp;
         e.vy *= top / sp;
@@ -1498,6 +1738,37 @@ export class SurvivorsGame {
       if (touching && isl.onLand(e.x, e.y) && !this.recycle(e)) e.dead = true;
     }
     this.rebuildEnemyGrid();
+  }
+
+  /**
+   * El empuje lateral para rodear la isla que hay delante de un cuerpo en
+   * (x, y) de radio `r` que quiere ir hacia (dx, dy) (unitario) a `speed`:
+   * la parte del rodeo del `chase` de los enemigos, compartida con los
+   * bosses. Devuelve el vector a sumar a la velocidad deseada.
+   */
+  private readonly avoidOut = { x: 0, y: 0 };
+  private avoidIslands(x: number, y: number, dx: number, dy: number, r: number, speed: number): { x: number; y: number } {
+    const ai = this.config.enemyAI;
+    const isl = this.islands;
+    const out = this.avoidOut;
+    out.x = 0;
+    out.y = 0;
+    const near = isl.near(x, y, ai.lookAhead + r, this.scratch);
+    for (const k of near) {
+      const o = isl.obstacles[k]!;
+      const ox = wd(o.x - x, this.w);
+      const oy = wd(o.y - y, this.h);
+      const proj = ox * dx + oy * dy;
+      if (proj < -o.radius || proj > ai.lookAhead + o.radius) continue;
+      const lat = -ox * dy + oy * dx;
+      const clear = o.radius + r + 8;
+      if (Math.abs(lat) >= clear) continue;
+      const push = (clear - Math.abs(lat)) / clear;
+      const side = lat > 0 ? -1 : 1;
+      out.x += -dy * side * push * ai.avoidStrength * speed;
+      out.y += dx * side * push * ai.avoidStrength * speed;
+    }
+    return out;
   }
 
   /**
@@ -1520,28 +1791,67 @@ export class SurvivorsGame {
   }
 
   private contactDamage(_dt: number): void {
-    if (this.invulnerable > 0) return;
     const p = this.player;
     const pr = this.shipCfg.radius;
-    const near = this.enemyGrid.query(p.x, p.y, pr + this.maxEnemyRadius, this.scratch);
-    for (const i of near) {
-      const e = this.enemies[i]!;
-      if (e.dead) continue;
-      const dx = wd(e.x - p.x, this.w);
-      const dy = wd(e.y - p.y, this.h);
-      const min = pr + e.radius;
+    if (this.invulnerable <= 0) {
+      const near = this.enemyGrid.query(p.x, p.y, pr + this.maxEnemyRadius, this.scratch);
+      for (const i of near) {
+        const e = this.enemies[i]!;
+        if (e.dead) continue;
+        const dx = wd(e.x - p.x, this.w);
+        const dy = wd(e.y - p.y, this.h);
+        const min = pr + e.radius;
+        if (dx * dx + dy * dy >= min * min) continue;
+        this.damagePlayer(e.def.contactWater, e.type, e.x, e.y);
+        break;
+      }
+    }
+    // Los bosses: pocos, sin rejilla. Tocar el casco moja como un enemigo;
+    // la embestida (`line` en golpe) moja lo del ataque una vez, aunque el
+    // barco esté en los segundos de gracia de un golpe de contacto.
+    for (const b of this.bosses) {
+      if (b.dead) continue;
+      const dx = wd(b.x - p.x, this.w);
+      const dy = wd(b.y - p.y, this.h);
+      const min = pr + b.radius;
       if (dx * dx + dy * dy >= min * min) continue;
-      this.damagePlayer(e.def.contactWater, e.type, e.x, e.y);
+      const charging = b.attack && b.attack.stage === 'hit' && b.attack.def.kind === 'line' ? b.attack : null;
+      if (charging) {
+        if (charging.landed || !this.bossHitLands()) continue;
+        charging.landed = true;
+        this.damagePlayerByBoss(charging.def.water, b, charging.name, b.x, b.y);
+      } else if (this.invulnerable <= 0) {
+        this.damagePlayerByBoss(b.def.contactWater, b, null, b.x, b.y);
+      }
       return;
     }
   }
 
-  /** Mete `amount` de agua a bordo (menos el casco) y da la invulnerabilidad del golpe. */
-  private damagePlayer(amount: number, by: EnemyId, x: number, y: number): void {
+  /**
+   * ¿Moja ahora un ataque avisado de boss? Sí salvo que el barco lleve una
+   * invulnerabilidad larga (la del Salvavidas): los segundos de gracia de un
+   * golpe de contacto no lo salvan de un ataque avisado, o un boss rodeado
+   * de pirañas no tocaría nunca.
+   */
+  private bossHitLands(): boolean {
+    return this.invulnerable <= this.config.player.invulnerableS;
+  }
+
+  /** Mete `amount` de agua a bordo (menos la dificultad y el casco) y da la invulnerabilidad del golpe. */
+  private takeWater(amount: number): void {
     const water = amount * this.diff.enemyDamage * Math.max(0, 1 - this.stats.hullBonus);
     this.water = Math.min(this.config.player.waterCapacity, this.water + water);
     this.invulnerable = this.config.player.invulnerableS;
+  }
+
+  private damagePlayer(amount: number, by: EnemyId, x: number, y: number): void {
+    this.takeWater(amount);
     this.events.push({ type: 'hit', enemy: by, x, y, water: this.water });
+  }
+
+  private damagePlayerByBoss(amount: number, b: Boss, attack: string | null, x: number, y: number): void {
+    this.takeWater(amount);
+    this.events.push({ type: 'bossHit', boss: b.def.id, attack, x, y, water: this.water });
   }
 
   // --- Disparos enemigos -----------------------------------------------------
@@ -1555,6 +1865,8 @@ export class SurvivorsGame {
     this.enemyShots.push({
       id: this.nextId++,
       enemy: e.type,
+      boss: null,
+      attack: null,
       x: wrapInto(e.x + dx * start, this.bounds.left, this.bounds.right),
       y: wrapInto(e.y + dy * start, this.bounds.top, this.bounds.bottom),
       vx: dx * pr.speed,
@@ -1595,7 +1907,12 @@ export class SurvivorsGame {
       const t = segmentHit(wd(b.x - p.x, this.w), wd(b.y - p.y, this.h), sx, sy, ss, pr + b.radius);
       if (t !== Infinity) {
         b.dead = true;
-        if (this.invulnerable <= 0) this.damagePlayer(b.water, b.enemy, b.x, b.y);
+        if (b.enemy !== null) {
+          if (this.invulnerable <= 0) this.damagePlayer(b.water, b.enemy, b.x, b.y);
+        } else if (b.boss !== null && this.bossHitLands()) {
+          this.takeWater(b.water);
+          this.events.push({ type: 'bossHit', boss: b.boss, attack: b.attack, x: b.x, y: b.y, water: this.water });
+        }
         continue;
       }
       b.x = wrapInto(b.x + sx, this.bounds.left, this.bounds.right);
@@ -1671,6 +1988,50 @@ export class SurvivorsGame {
     return best;
   }
 
+  /** El boss vivo y vulnerable más cercano a (x, y) a menos de `range`; null si ninguno. */
+  private nearestBoss(x: number, y: number, range: number): Boss | null {
+    let best: Boss | null = null;
+    let bestD = range * range;
+    for (const b of this.bosses) {
+      if (b.dead || this.bossInvulnerable(b)) continue;
+      const dx = wd(b.x - x, this.w);
+      const dy = wd(b.y - y, this.h);
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD || (d2 === bestD && best && b.id < best.id)) {
+        best = b;
+        bestD = d2;
+      }
+    }
+    return best;
+  }
+
+  /** Lo más cercano a tiro para apuntar: un enemigo o un boss vulnerable (el más cercano de los dos). */
+  private nearestTarget(range: number): { x: number; y: number } | null {
+    const p = this.player;
+    const e = this.nearestEnemy(range);
+    const b = this.nearestBoss(p.x, p.y, range);
+    if (!e || !b) return e ?? b;
+    const de = Math.hypot(wd(e.x - p.x, this.w), wd(e.y - p.y, this.h));
+    const db = Math.hypot(wd(b.x - p.x, this.w), wd(b.y - p.y, this.h));
+    return db < de ? b : e;
+  }
+
+  /** Enemigos y bosses vulnerables a menos de `range` del barco: los blancos de cohetes y nubes. */
+  private readonly scratchTargets: Target[] = [];
+  private targetsInRange(range: number): Target[] {
+    const out = this.scratchTargets;
+    out.length = 0;
+    for (const e of this.enemiesInRange(range, this.scratchEnemies)) out.push(e);
+    const p = this.player;
+    for (const b of this.bosses) {
+      if (b.dead || this.bossInvulnerable(b)) continue;
+      const dx = wd(b.x - p.x, this.w);
+      const dy = wd(b.y - p.y, this.h);
+      if (dx * dx + dy * dy <= range * range) out.push(b);
+    }
+    return out;
+  }
+
   /** Los enemigos vivos a menos de `range` del barco (por la rejilla), en `out`. */
   private enemiesInRange(range: number, out: Enemy[]): Enemy[] {
     out.length = 0;
@@ -1693,10 +2054,10 @@ export class SurvivorsGame {
     if (e.hp <= 0) this.defeat(e);
   }
 
-  /** Hiere a todo lo vivo que toca el círculo (x, y, r). Devuelve cuántos. */
+  /** Hiere a todo lo vivo que toca el círculo (x, y, r), bosses incluidos. Devuelve cuántos. */
   private hurtCircle(x: number, y: number, r: number, damage: number, push = 0): number {
     const near = this.enemyGrid.query(x, y, r + this.maxEnemyRadius, this.scratch2);
-    let n = 0;
+    let n = this.hurtBossesCircle(x, y, r, damage);
     for (const i of near) {
       const e = this.enemies[i]!;
       if (e.dead) continue;
@@ -1816,7 +2177,7 @@ export class SurvivorsGame {
   /** Cañón de agua: `count` bolas en abanico al enemigo más cercano a tiro. */
   private fireAtNearest(w: WeaponSlot): void {
     const st = w.stats;
-    const target = this.nearestEnemy(st.range);
+    const target = this.nearestTarget(st.range);
     if (!target) {
       w.cooldown = 0;
       return;
@@ -1828,7 +2189,7 @@ export class SurvivorsGame {
 
   /** Cañón de confeti: `count` confetis en abanico hacia donde navega el barco, si hay algo a tiro. */
   private fireCone(w: WeaponSlot): void {
-    if (!this.nearestEnemy(w.stats.range)) {
+    if (!this.nearestTarget(w.stats.range)) {
       w.cooldown = 0;
       return;
     }
@@ -1953,18 +2314,19 @@ export class SurvivorsGame {
    */
   private castZones(w: WeaponSlot): void {
     const st = w.stats;
-    const pool = this.enemiesInRange(st.range, this.scratchEnemies);
+    const pool = this.targetsInRange(st.range);
     if (pool.length === 0) {
       w.cooldown = 0;
       return;
     }
     let made = 0;
     for (let k = 0; k < st.count && this.zones.length < this.caps.areas; k++) {
-      let best: Enemy | null = null;
+      let best: Target | null = null;
       let bestN = -1;
       for (const e of pool) {
         if (e.dead) continue;
-        let n = 0;
+        // Un boss cuenta como un grupo de 3 debajo de la nube (vale la pena regarlo).
+        let n = this.bosses.includes(e as Boss) ? 3 : 0;
         const under = this.enemyGrid.query(e.x, e.y, st.area + this.maxEnemyRadius, this.scratch);
         for (const j of under) {
           const o = this.enemies[j]!;
@@ -2020,9 +2382,9 @@ export class SurvivorsGame {
     return this.player.heading + swing + f * sw.arcRad;
   }
 
-  /** ¿Sigue valiendo `id` como blanco de un foco (vivo y a tiro)? */
-  private spotTarget(id: number, range: number): Enemy | null {
-    const e = this.enemyById(id);
+  /** ¿Sigue valiendo `id` como blanco de un foco (vivo, el boss vulnerable, y a tiro)? */
+  private spotTarget(id: number, range: number): Target | null {
+    const e = this.targetById(id);
     if (!e) return null;
     const p = this.player;
     const dx = wd(e.x - p.x, this.w);
@@ -2046,15 +2408,16 @@ export class SurvivorsGame {
       w.spots.push({ dx: Math.cos(p.heading) * rest, dy: Math.sin(p.heading) * rest, target: -1 });
     }
     w.spots.length = count;
-    let pool: Enemy[] | null = null;
+    // Los focos se fijan en enemigos y en bosses vulnerables (T137).
+    let pool: Target[] | null = null;
     for (let k = 0; k < w.spots.length; k++) {
       const sp = w.spots[k]!;
       let target = this.spotTarget(sp.target, st.range);
       if (!target) {
-        pool ??= this.enemiesInRange(st.range, this.scratchEnemies);
-        let free: Enemy | null = null;
+        pool ??= this.targetsInRange(st.range);
+        let free: Target | null = null;
         let freeD = Infinity;
-        let any: Enemy | null = null;
+        let any: Target | null = null;
         let anyD = Infinity;
         for (const e of pool) {
           if (e.dead) continue;
@@ -2144,6 +2507,15 @@ export class SurvivorsGame {
         if (across > st.area + e.radius) continue;
         this.hurt(e, st.damage);
       }
+      for (const b of this.bosses) {
+        if (b.dead) continue;
+        const dx = wd(b.x - p.x, this.w);
+        const dy = wd(b.y - p.y, this.h);
+        const along = dx * ux + dy * uy;
+        if (along < -b.radius || along > st.range + b.radius) continue;
+        if (Math.abs(-dx * uy + dy * ux) > st.area + b.radius) continue;
+        this.hurtBoss(b, st.damage);
+      }
     }
   }
 
@@ -2202,9 +2574,11 @@ export class SurvivorsGame {
     this.events.push({ type: 'explode', weapon: b.weapon, x: b.x, y: b.y, radius: b.burst });
   }
 
-  private enemyById(id: number): Enemy | null {
+  /** El enemigo o boss (vivo y, el boss, vulnerable) con ese id; null si ya no está. */
+  private targetById(id: number): Target | null {
     if (id < 0) return null;
     for (const e of this.enemies) if (e.id === id) return e.dead ? null : e;
+    for (const b of this.bosses) if (b.id === id) return b.dead || this.bossInvulnerable(b) ? null : b;
     return null;
   }
 
@@ -2258,14 +2632,30 @@ export class SurvivorsGame {
           hitT = t;
         }
       }
-      if (hit) {
+      // Los bosses: pocos, sin rejilla; invulnerables, la bola los atraviesa.
+      let hitBoss: Boss | null = null;
+      for (const o of this.bosses) {
+        if (o.dead || o.id === b.lastHit || this.bossInvulnerable(o)) continue;
+        const t = segmentHit(wd(b.x - o.x, this.w), wd(b.y - o.y, this.h), sx, sy, ss, o.radius + b.radius);
+        if (t < hitT) {
+          hitBoss = o;
+          hit = null;
+          hitT = t;
+        }
+      }
+      if (hit || hitBoss) {
         if (b.burst > 0) {
           this.setWrapped(b, b.x + sx * hitT, b.y + sy * hitT);
           this.explode(b);
           continue;
         }
-        b.lastHit = hit.id;
-        this.hurt(hit, b.damage);
+        if (hitBoss) {
+          b.lastHit = hitBoss.id;
+          this.hurtBoss(hitBoss, b.damage);
+        } else if (hit) {
+          b.lastHit = hit.id;
+          this.hurt(hit, b.damage);
+        }
         if (b.pierce <= 0) {
           b.dead = true;
           continue;
@@ -2557,8 +2947,16 @@ export class SurvivorsGame {
       if (pool.length === 0) continue;
       this.applyCard(pool[Math.floor(this.cardRng() * pool.length)]!);
     }
-    const act = this.config.acts[0];
-    if (!act) return;
+    const act = this.act;
+    // Bosses: el hueco más reciente ya pasado entra ahora (la pelea en la
+    // que estarías); los anteriores se dan por pasados, sin contar como vencidos.
+    let latest: BossSlot | null = null;
+    for (const slot of this.bossSlots) {
+      if (slot.ev.atS > this.activeS) continue;
+      slot.done = true;
+      if (!latest || slot.ev.atS >= latest.ev.atS) latest = slot;
+    }
+    if (latest) this.enterBoss(latest.def);
     // Por turnos entre pistas: con el tope bajo de `baja`, la primera (las
     // pirañas) no se queda con todo el sitio y salen todos los tipos del guion.
     const keys = act.tracks.map((track) => trackAt(track, this.activeS));
@@ -2573,6 +2971,546 @@ export class SurvivorsGame {
         const size = Math.round(key.group[0] + (key.group[1] - key.group[0]) * this.spawnRng());
         this.spawnGroup(track.enemy, size, key.hpScale, key.speedScale);
       });
+    }
+  }
+
+  // --- Bosses (T137) ---------------------------------------------------------
+  //
+  // Los bosses son entidades aparte de los enemigos (pocos, sin rejilla; la
+  // pantalla pinta los enemigos por `EnemyId`). Todo lo que hacen sale de su
+  // `BossDef`: la máquina de fases (`nextPhase`), los ataques avisados
+  // (`startBossAttack` → `landBossAttack`), las llamadas por el sistema de
+  // aparición y el movimiento por fase. Las armas los hieren por
+  // `hurtBoss`; invulnerables, las bolas los atraviesan y nada los daña.
+
+  /**
+   * Pone el boss `id` en (x, y), llevado al agua, con el aguante del acto y
+   * la dificultad; null si no existe o cae en tierra. Para pruebas y atajos
+   * de desarrollo (los huecos del guion entran solos).
+   */
+  spawnBoss(id: BossId, x: number, y: number): BossView | null {
+    const def = this.config.bosses[id];
+    if (!def) return null;
+    const spot = def.ignoresIslands ? { x, y } : this.islands.toWater(x, y, def.radius);
+    if (!spot) return null;
+    return this.bossView(this.makeBoss(def, spot.x, spot.y));
+  }
+
+  /**
+   * Gancho de la Llama (T135): quema a los bosses que toca el círculo (x, y,
+   * r) con el daño por segundo fijo de `bossFight.flameDps` durante `dt` s.
+   * Devuelve cuántos tocó.
+   */
+  flameBosses(x: number, y: number, r: number, dt: number): number {
+    return this.hurtBossesCircle(x, y, r, this.config.bossFight.flameDps * dt);
+  }
+
+  /** Un boss del guion entra por delante del barco (`bossFight.entryDistance`), en agua. */
+  private enterBoss(def: BossDef): void {
+    const p = this.player;
+    const d = this.config.bossFight.entryDistance;
+    for (let k = 0; k < 8; k++) {
+      // Delante del barco; en tierra, probando a un lado y a otro.
+      const a = p.heading + (k % 2 === 0 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 4);
+      const x = p.x + Math.cos(a) * d;
+      const y = p.y + Math.sin(a) * d;
+      const spot = def.ignoresIslands ? { x, y } : this.islands.toWater(x, y, def.radius);
+      if (spot) {
+        this.makeBoss(def, spot.x, spot.y);
+        return;
+      }
+    }
+    this.makeBoss(def, p.x + Math.cos(p.heading) * d, p.y + Math.sin(p.heading) * d);
+  }
+
+  private makeBoss(def: BossDef, x: number, y: number): Boss {
+    const hp = bossHpFor(def, this.act, this.diff);
+    const b: Boss = {
+      id: this.nextId++,
+      def,
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      heading: 0,
+      hp,
+      maxHp: hp,
+      radius: def.radius,
+      phase: 0,
+      phaseS: 0,
+      attackTimer: def.phases[0]?.firstAttackS ?? 0,
+      attackIndex: 0,
+      attack: null,
+      dead: false,
+    };
+    this.setWrapped(b, x, y);
+    const p = this.player;
+    b.heading = Math.atan2(wd(p.y - b.y, this.h), wd(p.x - b.x, this.w));
+    this.bosses.push(b);
+    this.events.push({ type: 'bossSpawn', boss: def.id, id: b.id, kind: def.kind, nameKey: def.i18nKey, x: b.x, y: b.y });
+    return b;
+  }
+
+  private bossView(b: Boss): BossView {
+    return {
+      id: b.id,
+      boss: b.def.id,
+      kind: b.def.kind,
+      nameKey: b.def.i18nKey,
+      x: b.x,
+      y: b.y,
+      vx: b.vx,
+      vy: b.vy,
+      heading: b.heading,
+      radius: b.radius,
+      hp: b.hp,
+      maxHp: b.maxHp,
+      hpFraction: Math.min(1, Math.max(0, b.hp / b.maxHp)),
+      phase: b.phase,
+      phaseCount: b.def.phases.length,
+      invulnerable: this.bossInvulnerable(b),
+      attack: b.attack?.name ?? null,
+      attackStage: b.attack?.stage ?? null,
+    };
+  }
+
+  /** No recibe daño: por la fase o por el ataque en curso. */
+  private bossInvulnerable(b: Boss): boolean {
+    return (b.def.phases[b.phase]?.invulnerable ?? false) || (b.attack?.def.invulnerable ?? false);
+  }
+
+  private stepBosses(dt: number): void {
+    for (const b of this.bosses) {
+      if (b.dead) continue;
+      b.phaseS += dt;
+      // Fases: por vida o por tiempo (`nextPhase`); al cambiar, el reloj de ataque arranca de nuevo.
+      const next = nextPhase(b.def, b.phase, b.hp / b.maxHp, b.phaseS);
+      if (next !== null) {
+        b.phase = next;
+        b.phaseS = 0;
+        b.attackIndex = 0;
+        b.attackTimer = b.def.phases[next]!.firstAttackS;
+        this.events.push({ type: 'bossPhase', boss: b.def.id, id: b.id, phase: next });
+      }
+      const phase = b.def.phases[b.phase];
+      if (!phase) continue;
+      // Ataques: el que está en curso avanza; si no hay, baja el reloj y lanza el siguiente de la fase.
+      if (b.attack) this.stepBossAttack(b, b.attack, phase.attackEveryS, dt);
+      else if (phase.attacks.length > 0) {
+        b.attackTimer -= dt;
+        if (b.attackTimer <= 0) {
+          const next = attackAt(b.def, phase, b.attackIndex++);
+          if (next) this.startBossAttack(b, next.name, next.def);
+          else b.attackTimer = phase.attackEveryS;
+        }
+      }
+      // Movimiento: quieto si el aviso lo pide; la embestida mueve sola; si no, el patrón de la fase.
+      const a = b.attack;
+      if (a && a.stage === 'hit' && a.def.kind === 'line') this.chargeBoss(b, a, dt);
+      else if (a && a.stage === 'warning' && a.def.still) {
+        b.vx = 0;
+        b.vy = 0;
+      } else this.moveBoss(b, phase, dt);
+    }
+  }
+
+  private moveBoss(b: Boss, phase: BossDef['phases'][number], dt: number): void {
+    const p = this.player;
+    let dx = wd(p.x - b.x, this.w);
+    let dy = wd(p.y - b.y, this.h);
+    const dist = Math.hypot(dx, dy);
+    dx = dist > 1e-6 ? dx / dist : 1;
+    dy = dist > 1e-6 ? dy / dist : 0;
+    const speed = b.def.speed * phase.speedScale;
+    let wantX = 0;
+    let wantY = 0;
+    switch (phase.movement) {
+      case 'chase':
+        if (dist > phase.standoff) {
+          wantX = dx * speed;
+          wantY = dy * speed;
+        }
+        break;
+      case 'orbit': {
+        // Tangente alrededor del barco más la corrección radial hacia `standoff`.
+        const radial = Math.max(-1, Math.min(1, (dist - phase.standoff) / 120));
+        wantX = (-dy + dx * radial) * speed;
+        wantY = (dx + dy * radial) * speed;
+        const l = Math.hypot(wantX, wantY);
+        if (l > speed) {
+          wantX *= speed / l;
+          wantY *= speed / l;
+        }
+        break;
+      }
+      default:
+        break;
+    }
+    const wl = Math.hypot(wantX, wantY);
+    if (!b.def.ignoresIslands && wl > 1e-6) {
+      const push = this.avoidIslands(b.x, b.y, wantX / wl, wantY / wl, b.radius, speed);
+      wantX += push.x;
+      wantY += push.y;
+    }
+    const ddx = wantX - b.vx;
+    const ddy = wantY - b.vy;
+    const dl = Math.hypot(ddx, ddy);
+    const maxDv = b.def.acceleration * dt;
+    if (dl > maxDv) {
+      b.vx += (ddx / dl) * maxDv;
+      b.vy += (ddy / dl) * maxDv;
+    } else {
+      b.vx = wantX;
+      b.vy = wantY;
+    }
+    const sp = Math.hypot(b.vx, b.vy);
+    const top = speed * 1.5;
+    if (sp > top) {
+      b.vx *= top / sp;
+      b.vy *= top / sp;
+    }
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    // Navegando, mira hacia donde va; parado, al barco.
+    b.heading = sp > 1 ? Math.atan2(b.vy, b.vx) : Math.atan2(dy, dx);
+    if (!b.def.ignoresIslands) this.slideOffIslands(b, b.radius);
+    this.setWrapped(b, b.x, b.y);
+  }
+
+  /** Empieza un ataque: fija su geometría (hacia donde está el barco ahora) y avisa. */
+  private startBossAttack(b: Boss, name: string, def: BossAttackDef): void {
+    const p = this.player;
+    const toPlayer = Math.atan2(wd(p.y - b.y, this.h), wd(p.x - b.x, this.w));
+    const a: BossAttack = {
+      name,
+      def,
+      stage: 'warning',
+      timer: def.telegraphS,
+      x: b.x,
+      y: b.y,
+      // La andanada va por los costados del rumbo actual; lo demás, hacia el barco.
+      heading: def.kind === 'broadside' ? b.heading : toPlayer,
+      gapPhase: this.bossRng() * Math.PI * 2,
+      circles: [],
+      left: def.length,
+      landed: false,
+    };
+    if (def.kind === 'circles') {
+      // Fijados donde está el barco al avisar: el primero encima, los demás alrededor.
+      a.x = p.x;
+      a.y = p.y;
+      for (let k = 0; k < def.count; k++) {
+        const ang = this.bossRng() * Math.PI * 2;
+        const r = k === 0 ? 0 : Math.sqrt(this.bossRng()) * def.spread;
+        a.circles.push({
+          x: wrapInto(p.x + Math.cos(ang) * r, this.bounds.left, this.bounds.right),
+          y: wrapInto(p.y + Math.sin(ang) * r, this.bounds.top, this.bounds.bottom),
+        });
+      }
+    }
+    if (def.kind === 'line') b.heading = a.heading;
+    b.attack = a;
+    this.events.push({
+      type: 'bossTelegraph',
+      boss: b.def.id,
+      id: b.id,
+      attack: name,
+      kind: def.kind,
+      x: a.x,
+      y: a.y,
+      heading: a.heading,
+    });
+    if (def.telegraphS <= 0) this.landBossAttack(b, a);
+  }
+
+  private stepBossAttack(b: Boss, a: BossAttack, attackEveryS: number, dt: number): void {
+    a.timer -= dt;
+    if (a.stage === 'warning') {
+      // El ancla sigue al boss hasta el golpe (los círculos quedan donde estaba el barco).
+      if (a.def.kind !== 'circles') {
+        a.x = b.x;
+        a.y = b.y;
+        if (a.def.kind === 'broadside') a.heading = b.heading;
+      }
+      if (a.timer <= 0) this.landBossAttack(b, a);
+      return;
+    }
+    switch (a.def.kind) {
+      case 'ring':
+        this.ringHit(b, a);
+        break;
+      case 'circles':
+        this.circlesHit(b, a);
+        break;
+      default:
+        // line: el contacto moja (`contactDamage`); broadside y summon ya hicieron lo suyo al golpear.
+        break;
+    }
+    if (a.timer <= 0 || (a.def.kind === 'line' && a.left <= 0)) {
+      // La embestida acaba en seco: la inercia no la alarga.
+      if (a.def.kind === 'line') {
+        b.vx = 0;
+        b.vy = 0;
+      }
+      b.attack = null;
+      b.attackTimer = attackEveryS;
+    }
+  }
+
+  /** Acaba el aviso: el golpe empieza (lo instantáneo, aquí; lo que dura, en `stepBossAttack`). */
+  private landBossAttack(b: Boss, a: BossAttack): void {
+    a.stage = 'hit';
+    a.timer = a.def.activeS;
+    this.events.push({ type: 'bossAttack', boss: b.def.id, id: b.id, attack: a.name, kind: a.def.kind, x: a.x, y: a.y });
+    switch (a.def.kind) {
+      case 'line':
+        a.left = a.def.length;
+        b.heading = a.heading;
+        break;
+      case 'broadside':
+        this.fireBroadside(b, a);
+        break;
+      default:
+        break;
+    }
+    if (a.def.summon) this.summon(b, a.def.summon);
+  }
+
+  /** La onda del anillo: moja al barco si lo pasa por encima fuera de un hueco y sin isla entre medias. */
+  private ringHit(b: Boss, a: BossAttack): void {
+    if (a.landed || !this.bossHitLands()) return;
+    const p = this.player;
+    const def = a.def;
+    const progress = 1 - a.timer / def.activeS;
+    const r = ringRadiusAt(def, progress);
+    const dx = wd(p.x - a.x, this.w);
+    const dy = wd(p.y - a.y, this.h);
+    const dist = Math.hypot(dx, dy);
+    if (!ringTouches(r, def.thickness, dist, this.shipCfg.radius)) return;
+    if (inRingGap(Math.atan2(dy, dx), def.gaps, def.gapRad, a.gapPhase)) return;
+    if (def.blockedByIslands && this.islandBetween(a.x, a.y, dx, dy)) return;
+    a.landed = true;
+    this.damagePlayerByBoss(def.water, b, a.name, p.x, p.y);
+  }
+
+  /** Los círculos caen: moja al barco si está dentro de alguno. */
+  private circlesHit(b: Boss, a: BossAttack): void {
+    if (a.landed || !this.bossHitLands()) return;
+    const p = this.player;
+    const reach = a.def.radius + this.shipCfg.radius;
+    for (const c of a.circles) {
+      const dx = wd(p.x - c.x, this.w);
+      const dy = wd(p.y - c.y, this.h);
+      if (dx * dx + dy * dy > reach * reach) continue;
+      a.landed = true;
+      this.damagePlayerByBoss(a.def.water, b, a.name, p.x, p.y);
+      return;
+    }
+  }
+
+  /** ¿Hay una isla en el tramo desde (x, y) avanzando (dx, dy)? */
+  private islandBetween(x: number, y: number, dx: number, dy: number): boolean {
+    return this.islandBlock({ x, y, radius: 0 }, dx, dy, dx * dx + dy * dy) !== Infinity;
+  }
+
+  /** La embestida: recta a `speed` hasta agotar `length`; contra una isla (si no las ignora), se acaba. */
+  private chargeBoss(b: Boss, a: BossAttack, dt: number): void {
+    const step = Math.min(a.def.speed * dt, a.left);
+    const ux = Math.cos(a.heading);
+    const uy = Math.sin(a.heading);
+    b.vx = ux * a.def.speed;
+    b.vy = uy * a.def.speed;
+    b.heading = a.heading;
+    b.x += ux * step;
+    b.y += uy * step;
+    a.left -= step;
+    if (!b.def.ignoresIslands && this.slideOffIslands(b, b.radius)) {
+      a.left = 0;
+      b.vx = 0;
+      b.vy = 0;
+    }
+    this.setWrapped(b, b.x, b.y);
+  }
+
+  /** Andanada: `count` disparos rectos por cada costado, repartidos a lo largo del casco. */
+  private fireBroadside(b: Boss, a: BossAttack): void {
+    const def = a.def;
+    const hx = Math.cos(a.heading);
+    const hy = Math.sin(a.heading);
+    for (const side of [-1, 1]) {
+      const pa = a.heading + side * (Math.PI / 2);
+      const px = Math.cos(pa);
+      const py = Math.sin(pa);
+      for (let k = 0; k < def.count; k++) {
+        if (this.enemyShots.length >= this.caps.enemyProjectiles) return;
+        const along = (k - (def.count - 1) / 2) * ((2 * b.radius) / Math.max(1, def.count));
+        const out = b.radius + def.thickness + 1;
+        this.enemyShots.push({
+          id: this.nextId++,
+          enemy: null,
+          boss: b.def.id,
+          attack: a.name,
+          x: wrapInto(b.x + hx * along + px * out, this.bounds.left, this.bounds.right),
+          y: wrapInto(b.y + hy * along + py * out, this.bounds.top, this.bounds.bottom),
+          vx: px * def.speed,
+          vy: py * def.speed,
+          radius: def.thickness,
+          life: def.length / def.speed,
+          water: def.water,
+          dead: false,
+        });
+      }
+    }
+  }
+
+  /** Llama a `count` enemigos alrededor del boss por el sistema de aparición (bajo el tope). */
+  private summon(b: Boss, s: NonNullable<BossAttackDef['summon']>): void {
+    const def = this.config.enemies[s.enemy];
+    if (!def) return;
+    let made = 0;
+    const minutes = this.minutes();
+    for (let k = 0; k < s.count; k++) {
+      if (this.enemies.length >= this.caps.enemies) break;
+      const ang = (k / s.count) * Math.PI * 2 + b.heading;
+      const r = b.radius + def.radius + 30;
+      const spot = this.islands.toWater(b.x + Math.cos(ang) * r, b.y + Math.sin(ang) * r, def.radius);
+      if (!spot) continue;
+      const hp = def.hp * s.hpScale * this.diff.enemyHp * (this.act.enemyHpScale ?? 1) * (1 + def.growthPerMinute.hp * minutes);
+      const speed = def.speed * (1 + def.growthPerMinute.speed * minutes);
+      this.enemies.push(this.makeEnemy(def, spot.x, spot.y, hp, speed, s.elite));
+      made++;
+    }
+    if (made > 0) {
+      this.rebuildEnemyGrid();
+      this.events.push({ type: 'bossSummon', boss: b.def.id, id: b.id, enemy: s.enemy, count: made, x: b.x, y: b.y });
+    }
+  }
+
+  /** Hiere al boss (nada si está invulnerable); si cae, lo vence. */
+  private hurtBoss(b: Boss, damage: number): void {
+    if (b.dead || damage <= 0 || this.bossInvulnerable(b)) return;
+    b.hp -= damage;
+    this.events.push({ type: 'bossDamaged', boss: b.def.id, id: b.id, damage, hp: Math.max(0, b.hp), x: b.x, y: b.y });
+    if (b.hp <= 0) this.defeatBoss(b);
+  }
+
+  /** Hiere a los bosses que toca el círculo (x, y, r). Devuelve cuántos. */
+  private hurtBossesCircle(x: number, y: number, r: number, damage: number): number {
+    let n = 0;
+    for (const b of this.bosses) {
+      if (b.dead || this.bossInvulnerable(b)) continue;
+      const dx = wd(b.x - x, this.w);
+      const dy = wd(b.y - y, this.h);
+      const min = r + b.radius;
+      if (dx * dx + dy * dy > min * min) continue;
+      this.hurtBoss(b, damage);
+      n++;
+    }
+    return n;
+  }
+
+  private defeatBoss(b: Boss): void {
+    b.dead = true;
+    b.attack = null;
+    this.bossesDefeated.push(b.def.id);
+    if (b.def.kind === 'boss') this.finalBossDefeated = true;
+    this.events.push({ type: 'bossDefeated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
+    // La nota grande (la clave de sol: la figura mayor que no pasa de su valor).
+    this.dropNote(b.x, b.y, b.def.noteValue);
+    if (b.def.chest) {
+      const spot = this.islands.toWater(b.x, b.y, this.config.bossFight.chestRadius) ?? { x: b.x, y: b.y };
+      const c: Chest = { id: this.nextId++, boss: b.def.id, x: 0, y: 0, dead: false };
+      this.setWrapped(c, spot.x, spot.y);
+      this.chests.push(c);
+      this.events.push({ type: 'chest', boss: c.boss, id: c.id, x: c.x, y: c.y });
+    }
+  }
+
+  /** Amanece: los bosses vivos se retiran (no cuentan como vencidos). */
+  private retreatBosses(): void {
+    for (const b of this.bosses) {
+      if (b.dead) continue;
+      b.dead = true;
+      b.attack = null;
+      this.events.push({ type: 'bossRetreated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
+    }
+    this.compactBosses();
+  }
+
+  private compactBosses(): void {
+    let n = 0;
+    for (const b of this.bosses) if (!b.dead) this.bosses[n++] = b;
+    this.bosses.length = n;
+  }
+
+  /** Los cofres flotan donde cayó el miniboss hasta que el barco los toca. */
+  private stepChests(): void {
+    if (this.chests.length === 0) return;
+    const p = this.player;
+    const reach = this.shipCfg.radius + this.config.bossFight.chestRadius;
+    for (const c of this.chests) {
+      const dx = wd(c.x - p.x, this.w);
+      const dy = wd(c.y - p.y, this.h);
+      if (dx * dx + dy * dy > reach * reach) continue;
+      c.dead = true;
+      this.events.push({ type: 'chestOpened', boss: c.boss, id: c.id, x: c.x, y: c.y });
+    }
+    let n = 0;
+    for (const c of this.chests) if (!c.dead) this.chests[n++] = c;
+    this.chests.length = n;
+  }
+
+  /** Las formas de aviso/golpe del ataque `a` de `b`, para la pantalla. */
+  private pushWarnings(b: Boss, a: BossAttack): void {
+    const def = a.def;
+    const hit = a.stage === 'hit';
+    const total = hit ? def.activeS : def.telegraphS;
+    const progress = total > 0 ? Math.min(1, Math.max(0, 1 - a.timer / total)) : 1;
+    const base = {
+      id: b.id,
+      boss: b.def.id,
+      attack: a.name,
+      kind: def.kind,
+      heading: a.heading,
+      length: 0,
+      radius: 0,
+      thickness: def.thickness,
+      gaps: 0,
+      gapRad: 0,
+      gapPhase: 0,
+      ringRadius: 0,
+      progress,
+      hit,
+    };
+    switch (def.kind) {
+      case 'ring':
+        this.bossWarnings.push({
+          ...base,
+          x: a.x,
+          y: a.y,
+          radius: def.radius,
+          gaps: def.gaps,
+          gapRad: def.gapRad,
+          gapPhase: a.gapPhase,
+          ringRadius: hit ? ringRadiusAt(def, progress) : 0,
+        });
+        break;
+      case 'line':
+        this.bossWarnings.push({ ...base, x: a.x, y: a.y, length: def.length });
+        break;
+      case 'circles':
+        for (const c of a.circles) this.bossWarnings.push({ ...base, x: c.x, y: c.y, radius: def.radius });
+        break;
+      case 'broadside':
+        for (const side of [-1, 1]) {
+          this.bossWarnings.push({ ...base, x: a.x, y: a.y, heading: a.heading + side * (Math.PI / 2), length: def.length });
+        }
+        break;
+      case 'summon':
+        if (!hit) this.bossWarnings.push({ ...base, x: a.x, y: a.y, radius: b.radius * 1.5 });
+        break;
+      default:
+        break;
     }
   }
 

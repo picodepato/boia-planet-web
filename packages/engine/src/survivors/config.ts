@@ -12,7 +12,9 @@ import type { QualityTier } from '../world/sectors';
  * 011) trae los 6 enemigos, las élites, la «Marea» y el guion entero del
  * acto 1 con los huecos de los bosses apagados (beta 3), y las 7 armas con
  * su tabla fija por nivel (`weapons`, `resolveWeaponStats`), los 9 vinilos,
- * los huecos 4+4, las evoluciones y el Salvavidas raro.
+ * los huecos 4+4, las evoluciones y el Salvavidas raro; la beta 3 (plan 012)
+ * trae el sistema genérico de bosses (`bosses`, `bossFight`: fases, ataques
+ * avisados, llamadas) y el acto 2 (`acts[1]`, `harderAct`).
  * Cambiar cualquier valor cambia `survivorsConfigHash`, que
  * entra en el `configHash` de la sesión del minijuego; un cambio de reglas
  * sube `version`. Unidades: u de motor (las del mar de `/mar`) y segundos.
@@ -20,7 +22,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 8;
+export const SURVIVORS_CONFIG_VERSION = 9;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -49,8 +51,12 @@ export type PassiveId =
   | 'hardstyle'
   | 'pop'
   | 'rumba';
-/** Minibosses y bosses del diseño (§7). Ninguno en la beta 1. */
-export type BossId = 'vecino' | 'martillo' | 'fantasma' | 'kraken' | 'capitan';
+/**
+ * Minibosses y bosses del diseño (§7). `prueba` es el boss de pruebas del
+ * sistema genérico (T137): existe en la config pero ningún hueco del guion
+ * lo llama; los de verdad son T138–T141.
+ */
+export type BossId = 'prueba' | 'vecino' | 'martillo' | 'fantasma' | 'kraken' | 'capitan';
 /** Mejoras provisionales de la carta de nivel de la beta 1. */
 export type UpgradeId = 'damage' | 'fireRate' | 'projectiles' | 'speed' | 'magnet' | 'bailing';
 
@@ -355,19 +361,122 @@ export interface EvolutionDef {
   evolvedWeapon: WeaponDef;
 }
 
-/** Una fase de un boss: máquina de estados por fases con datos (§7). */
+// --- Bosses (§7, T137): máquina de fases y ataques avisados, todo en datos ---
+
+/**
+ * Forma de un ataque de boss. Todos menos `summon` avisan primero (la forma
+ * en el agua con progreso 0→1 durante `telegraphS`) y golpean después
+ * (`activeS`):
+ * - `ring`: una onda en anillo con `gaps` huecos que crece desde el boss
+ *   hasta `radius` en `activeS`; moja al barco si lo pasa por encima fuera
+ *   de un hueco (y, con `blockedByIslands`, sin isla entre medias).
+ * - `line`: embestida recta de `length` u a `speed` u/s hacia donde estaba
+ *   el barco al avisar; el boss moja por contacto con `water`.
+ * - `circles`: `count` círculos de `radius` u que caen alrededor del barco
+ *   (a menos de `spread` u); mojan a quien esté dentro al caer.
+ * - `broadside`: andanada por los dos costados: `count` disparos por lado,
+ *   rectos, perpendiculares al rumbo, de `thickness` u de radio, `length` u
+ *   de alcance y `speed` u/s; las islas los paran siempre.
+ * - `summon`: llama a `summon.count` enemigos alrededor del boss por el
+ *   sistema de aparición (sin aviso si `telegraphS` es 0).
+ */
+export type BossAttackKind = 'ring' | 'line' | 'circles' | 'broadside' | 'summon';
+
+/** Los números de un ataque; los que su forma no usa van a 0 (como `WeaponStats`). */
+export interface BossAttackDef {
+  kind: BossAttackKind;
+  /** s de aviso. */
+  telegraphS: number;
+  /** s que dura el golpe tras el aviso. */
+  activeS: number;
+  /** Agua que mete al barco (por golpe o por disparo). */
+  water: number;
+  /** ring: radio final; circles: radio de cada círculo. */
+  radius: number;
+  /** ring: grosor del anillo; line: medio ancho; broadside: radio del disparo. */
+  thickness: number;
+  /** ring: huecos a ángulos iguales y anchura (rad) de cada uno. */
+  gaps: number;
+  gapRad: number;
+  /** line: largo de la embestida; broadside: alcance de los disparos. */
+  length: number;
+  /** line: u/s de la embestida; broadside: u/s de los disparos. */
+  speed: number;
+  /** circles: cuántos; broadside: disparos por costado. */
+  count: number;
+  /** circles: u alrededor del barco donde caen. */
+  spread: number;
+  /** ring: una isla entre el boss y el barco para la onda en ese sector. */
+  blockedByIslands: boolean;
+  /** El boss no recibe daño durante el ataque (aviso y golpe). */
+  invulnerable: boolean;
+  /** El boss se queda quieto durante el aviso. */
+  still: boolean;
+  /** summon (y, de regalo, cualquier otro): lo que llama al golpear. */
+  summon?: { enemy: EnemyId; count: number; elite: boolean; hpScale: number };
+}
+
+/** Cómo se mueve el boss en una fase. */
+export type BossMovement = 'chase' | 'orbit' | 'still';
+
+/**
+ * Una fase de la máquina de estados de un boss (§7). Pasa a otra por vida
+ * (`untilHpFraction`, 0: nunca) o por tiempo en la fase (`untilS`, 0:
+ * nunca), a la siguiente salvo que `nextByHp` / `nextByTime` digan otra
+ * (así se hacen ventanas de invulnerabilidad que vuelven: fase 2 → 1).
+ */
 export interface BossPhase {
   untilHpFraction: number;
+  untilS: number;
+  nextByHp?: number;
+  nextByTime?: number;
+  movement: BossMovement;
+  /** u del barco a los que se queda (`chase` se para ahí; `orbit` gira a esa distancia). */
+  standoff: number;
+  speedScale: number;
+  /** Toda la fase sin recibir daño. */
+  invulnerable: boolean;
+  /** Ataques en orden cíclico (claves de `attacks`), uno cada `attackEveryS` s. */
   attacks: readonly string[];
+  attackEveryS: number;
+  /** s de espera antes del primer ataque al entrar en la fase. */
+  firstAttackS: number;
 }
 
 export interface BossDef {
   id: BossId;
   kind: 'miniboss' | 'boss';
+  /** Clave de texto del nombre (la barra del boss). */
+  i18nKey: string;
+  /** Aguante base: se multiplica por `acts[n].bossHpScale` y la dificultad. */
   hp: number;
   radius: number;
+  /** u/s de crucero y u/s² de inercia. */
   speed: number;
+  acceleration: number;
+  /** Agua que mete tocar el casco (fuera de una embestida). */
+  contactWater: number;
+  ignoresIslands: boolean;
+  /** Valor de la nota grande que suelta al caer (la clave de sol). */
+  noteValue: number;
+  /** Suelta un cofre al caer (los minibosses; lo que da lo resuelve T139). */
+  chest: boolean;
+  attacks: Record<string, BossAttackDef>;
   phases: readonly BossPhase[];
+}
+
+/** Lo que cambia en la partida mientras hay un boss vivo (T137). */
+export interface BossFightDef {
+  /** Velocidad de los comunes (fracción). */
+  commonSpeedScale: number;
+  /** Ritmo del guion (grupos por segundo) de los comunes (fracción); la «Marea» no lo mira. */
+  commonSpawnScale: number;
+  /** u por delante del barco a las que entra un boss. */
+  entryDistance: number;
+  /** u de radio del cofre para recogerlo tocándolo. */
+  chestRadius: number;
+  /** Gancho de la Llama (T135): daño por segundo fijo contra un boss (`flameBosses`). */
+  flameDps: number;
 }
 
 /** Mejora de la carta de nivel: un efecto fijo y explícito. */
@@ -417,12 +526,20 @@ export interface ScriptEvent {
   enabled?: boolean;
 }
 
-/** El guion de un acto (§8): datos, no código. */
+/**
+ * El guion de un acto (§8): datos, no código. El acto 2 (y el 3) tienen la
+ * misma estructura con enemigos más duros y los tipos peligrosos antes
+ * (`harderAct`); su boss final va en el hueco `boss` de `events`.
+ */
 export interface ActScript {
   act: number;
   durationS: number;
   tracks: readonly SpawnTrack[];
   events: readonly ScriptEvent[];
+  /** Sobre el aguante de todo lo que echa el guion (sin valor, 1). */
+  enemyHpScale?: number;
+  /** Sobre el aguante de los bosses del acto (sin valor, 1). */
+  bossHpScale?: number;
 }
 
 export interface QualityCaps {
@@ -545,12 +662,96 @@ export interface SurvivorsConfig {
   evolutions: readonly EvolutionDef[];
   /** Tranquila / Normal / Tormenta (T131). */
   difficulties: Record<DifficultyId, DifficultyDef>;
+  /** Minibosses y bosses (T137): los huecos del guion los llaman por `BossId`. */
   bosses: Partial<Record<BossId, BossDef>>;
+  bossFight: BossFightDef;
   /** Compatibilidad beta 1: no participa en el pool. */
   upgrades: readonly UpgradeDef[];
-  /** Guion por acto; la beta 1 sólo tiene el acto 1. */
+  /** Guion por acto (`acts[n - 1]` es el acto n): el 1 y, desde la beta 3, el 2. */
   acts: readonly ActScript[];
 }
+
+/**
+ * El guion del acto 1 (§8). El acto 2 sale de él con `harderAct`: mismo
+ * guion, enemigos más duros, los tipos peligrosos antes y el Kraken en el
+ * hueco del boss final. Los huecos de los bosses siguen apagados hasta que
+ * cada boss exista (T138–T141).
+ */
+const ACT_1: ActScript = {
+  act: 1,
+  durationS: 420,
+  tracks: [
+    {
+      enemy: 'piranha',
+      fromS: 0,
+      toS: 420,
+      keys: [
+        { atS: 0, groupsPerS: 0.25, group: [2, 4], hpScale: 1, speedScale: 1 },
+        { atS: 120, groupsPerS: 0.5, group: [4, 7], hpScale: 1.25, speedScale: 1 },
+        { atS: 240, groupsPerS: 0.7, group: [5, 9], hpScale: 1.6, speedScale: 1.03 },
+        { atS: 420, groupsPerS: 1, group: [6, 12], hpScale: 2.2, speedScale: 1.05 },
+      ],
+    },
+    {
+      enemy: 'jellyfish',
+      fromS: 0,
+      toS: 420,
+      keys: [
+        { atS: 0, groupsPerS: 0.1, group: [1, 2], hpScale: 1, speedScale: 1 },
+        { atS: 240, groupsPerS: 0.16, group: [2, 3], hpScale: 1.4, speedScale: 1 },
+        { atS: 420, groupsPerS: 0.22, group: [2, 4], hpScale: 1.8, speedScale: 1.05 },
+      ],
+    },
+    {
+      enemy: 'gull',
+      fromS: 60,
+      toS: 420,
+      keys: [
+        { atS: 60, groupsPerS: 0.12, group: [2, 3], hpScale: 1, speedScale: 1 },
+        { atS: 240, groupsPerS: 0.2, group: [3, 5], hpScale: 1.3, speedScale: 1 },
+        { atS: 420, groupsPerS: 0.28, group: [3, 6], hpScale: 1.8, speedScale: 1.05 },
+      ],
+    },
+    {
+      enemy: 'crab',
+      fromS: 90,
+      toS: 420,
+      keys: [
+        { atS: 90, groupsPerS: 0.08, group: [1, 1], hpScale: 1, speedScale: 1 },
+        { atS: 240, groupsPerS: 0.18, group: [1, 2], hpScale: 1.4, speedScale: 1 },
+        { atS: 420, groupsPerS: 0.3, group: [1, 3], hpScale: 2, speedScale: 1.1 },
+      ],
+    },
+    {
+      enemy: 'pirate',
+      fromS: 180,
+      toS: 420,
+      keys: [
+        { atS: 180, groupsPerS: 0.06, group: [1, 1], hpScale: 1, speedScale: 1 },
+        { atS: 300, groupsPerS: 0.1, group: [1, 2], hpScale: 1.25, speedScale: 1 },
+        { atS: 420, groupsPerS: 0.14, group: [1, 2], hpScale: 1.6, speedScale: 1 },
+      ],
+    },
+    {
+      enemy: 'swordfish',
+      fromS: 210,
+      toS: 420,
+      keys: [
+        { atS: 210, groupsPerS: 0.05, group: [1, 1], hpScale: 1, speedScale: 1 },
+        { atS: 420, groupsPerS: 0.12, group: [1, 2], hpScale: 1.6, speedScale: 1 },
+      ],
+    },
+  ],
+  // Los huecos de los minibosses (2:30, 4:30) y del boss (5:30) existen
+  // apagados: la beta 3 sólo los enciende.
+  events: [
+    { atS: 150, type: 'miniboss', ref: 'vecino', enabled: false },
+    { atS: 210, type: 'elites', ref: 'elites' },
+    { atS: 270, type: 'miniboss', ref: 'martillo', enabled: false },
+    { atS: 300, type: 'marea', ref: 'marea', durationS: 20 },
+    { atS: 330, type: 'boss', ref: 'fantasma', enabled: false },
+  ],
+};
 
 export const SURVIVORS_CONFIG: SurvivorsConfig = {
   version: SURVIVORS_CONFIG_VERSION,
@@ -1153,7 +1354,156 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     normal: { id: 'normal', i18nKey: 'survivors.dificultad.normal', enemyDamage: 1, enemyHp: 1, enemyCount: 1 },
     tormenta: { id: 'tormenta', i18nKey: 'survivors.dificultad.tormenta', enemyDamage: 1.6, enemyHp: 1.6, enemyCount: 1.6 },
   },
-  bosses: {},
+  // Bosses (T137). Sólo el de pruebas del sistema genérico, con un ataque de
+  // cada forma y una ventana de invulnerabilidad al cambiar de fase; ningún
+  // hueco del guion lo llama, así que no sale en una partida normal. Los de
+  // verdad (T138–T141) se escriben con esta misma plantilla.
+  bosses: {
+    prueba: {
+      id: 'prueba',
+      kind: 'miniboss',
+      i18nKey: 'survivors.boss.prueba',
+      hp: 600,
+      radius: 40,
+      speed: 90,
+      acceleration: 160,
+      contactWater: 15,
+      ignoresIslands: false,
+      noteValue: 60,
+      chest: true,
+      attacks: {
+        onda: {
+          kind: 'ring',
+          telegraphS: 1.2,
+          activeS: 1.4,
+          water: 18,
+          radius: 420,
+          thickness: 24,
+          gaps: 3,
+          gapRad: 0.5,
+          length: 0,
+          speed: 0,
+          count: 0,
+          spread: 0,
+          blockedByIslands: true,
+          invulnerable: false,
+          still: true,
+        },
+        embestida: {
+          kind: 'line',
+          telegraphS: 1,
+          activeS: 1.5,
+          water: 20,
+          radius: 0,
+          thickness: 40,
+          gaps: 0,
+          gapRad: 0,
+          length: 520,
+          speed: 420,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: true,
+        },
+        rocas: {
+          kind: 'circles',
+          telegraphS: 1.3,
+          activeS: 0.4,
+          water: 16,
+          radius: 70,
+          thickness: 0,
+          gaps: 0,
+          gapRad: 0,
+          length: 0,
+          speed: 0,
+          count: 3,
+          spread: 160,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: false,
+        },
+        andanada: {
+          kind: 'broadside',
+          telegraphS: 0.9,
+          activeS: 0.1,
+          water: 8,
+          radius: 0,
+          thickness: 8,
+          gaps: 0,
+          gapRad: 0,
+          length: 520,
+          speed: 320,
+          count: 4,
+          spread: 0,
+          blockedByIslands: true,
+          invulnerable: false,
+          still: true,
+        },
+        refuerzos: {
+          kind: 'summon',
+          telegraphS: 0,
+          activeS: 0.1,
+          water: 0,
+          radius: 0,
+          thickness: 0,
+          gaps: 0,
+          gapRad: 0,
+          length: 0,
+          speed: 0,
+          count: 0,
+          spread: 0,
+          blockedByIslands: false,
+          invulnerable: false,
+          still: false,
+          summon: { enemy: 'piranha', count: 6, elite: false, hpScale: 1 },
+        },
+      },
+      phases: [
+        {
+          untilHpFraction: 0.5,
+          untilS: 0,
+          movement: 'chase',
+          standoff: 260,
+          speedScale: 1,
+          invulnerable: false,
+          attacks: ['onda', 'refuerzos', 'andanada'],
+          attackEveryS: 3,
+          firstAttackS: 2,
+        },
+        // Ventana invulnerable de 2 s al pasar a la segunda mitad.
+        {
+          untilHpFraction: 0,
+          untilS: 2,
+          movement: 'still',
+          standoff: 0,
+          speedScale: 1,
+          invulnerable: true,
+          attacks: [],
+          attackEveryS: 0,
+          firstAttackS: 0,
+        },
+        {
+          untilHpFraction: 0,
+          untilS: 0,
+          movement: 'orbit',
+          standoff: 300,
+          speedScale: 1.2,
+          invulnerable: false,
+          attacks: ['embestida', 'rocas', 'onda'],
+          attackEveryS: 2.5,
+          firstAttackS: 1,
+        },
+      ],
+    },
+  },
+  bossFight: {
+    commonSpeedScale: 0.7,
+    commonSpawnScale: 0.5,
+    entryDistance: 700,
+    chestRadius: 18,
+    flameDps: 120,
+  },
   upgrades: [
     { id: 'damage', i18nKey: 'survivors.vinyl.hardstyle', stat: 'damageBonus', amount: 0.2, maxStacks: 5 },
     { id: 'fireRate', i18nKey: 'survivors.vinyl.techno', stat: 'fireRateBonus', amount: 0.15, maxStacks: 5 },
@@ -1163,81 +1513,14 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     { id: 'bailing', i18nKey: 'survivors.vinyl.chill', stat: 'bailPerS', amount: 1, maxStacks: 5 },
   ],
   acts: [
-    {
-      act: 1,
-      durationS: 420,
-      tracks: [
-        {
-          enemy: 'piranha',
-          fromS: 0,
-          toS: 420,
-          keys: [
-            { atS: 0, groupsPerS: 0.25, group: [2, 4], hpScale: 1, speedScale: 1 },
-            { atS: 120, groupsPerS: 0.5, group: [4, 7], hpScale: 1.25, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.7, group: [5, 9], hpScale: 1.6, speedScale: 1.03 },
-            { atS: 420, groupsPerS: 1, group: [6, 12], hpScale: 2.2, speedScale: 1.05 },
-          ],
-        },
-        {
-          enemy: 'jellyfish',
-          fromS: 0,
-          toS: 420,
-          keys: [
-            { atS: 0, groupsPerS: 0.1, group: [1, 2], hpScale: 1, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.16, group: [2, 3], hpScale: 1.4, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.22, group: [2, 4], hpScale: 1.8, speedScale: 1.05 },
-          ],
-        },
-        {
-          enemy: 'gull',
-          fromS: 60,
-          toS: 420,
-          keys: [
-            { atS: 60, groupsPerS: 0.12, group: [2, 3], hpScale: 1, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.2, group: [3, 5], hpScale: 1.3, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.28, group: [3, 6], hpScale: 1.8, speedScale: 1.05 },
-          ],
-        },
-        {
-          enemy: 'crab',
-          fromS: 90,
-          toS: 420,
-          keys: [
-            { atS: 90, groupsPerS: 0.08, group: [1, 1], hpScale: 1, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.18, group: [1, 2], hpScale: 1.4, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.3, group: [1, 3], hpScale: 2, speedScale: 1.1 },
-          ],
-        },
-        {
-          enemy: 'pirate',
-          fromS: 180,
-          toS: 420,
-          keys: [
-            { atS: 180, groupsPerS: 0.06, group: [1, 1], hpScale: 1, speedScale: 1 },
-            { atS: 300, groupsPerS: 0.1, group: [1, 2], hpScale: 1.25, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.14, group: [1, 2], hpScale: 1.6, speedScale: 1 },
-          ],
-        },
-        {
-          enemy: 'swordfish',
-          fromS: 210,
-          toS: 420,
-          keys: [
-            { atS: 210, groupsPerS: 0.05, group: [1, 1], hpScale: 1, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.12, group: [1, 2], hpScale: 1.6, speedScale: 1 },
-          ],
-        },
-      ],
-      // Los huecos de los minibosses (2:30, 4:30) y del boss (5:30) existen
-      // apagados: la beta 3 sólo los enciende.
-      events: [
-        { atS: 150, type: 'miniboss', ref: 'vecino', enabled: false },
-        { atS: 210, type: 'elites', ref: 'elites' },
-        { atS: 270, type: 'miniboss', ref: 'martillo', enabled: false },
-        { atS: 300, type: 'marea', ref: 'marea', durationS: 20 },
-        { atS: 330, type: 'boss', ref: 'fantasma', enabled: false },
-      ],
-    },
+    ACT_1,
+    harderAct(ACT_1, {
+      act: 2,
+      enemyHpScale: 1.25,
+      bossHpScale: 1.5,
+      earlierS: { crab: 30, pirate: 60, swordfish: 60 },
+      finalBoss: 'kraken',
+    }),
   ],
 };
 
@@ -1318,6 +1601,54 @@ export function resolveWeaponStats(
   s.count = Math.max(0, Math.round(s.count));
   s.pierce = Math.max(0, Math.round(s.pierce));
   return s;
+}
+
+// --- Actos y bosses (T137) ----------------------------------------------------
+
+/**
+ * Un acto más duro a partir de otro (§8: «misma estructura, enemigos más
+ * duros y tipos peligrosos antes»): las pistas de `earlierS` empiezan esos
+ * segundos antes (su curva se adelanta igual, sin bajar de 0), el aguante de
+ * todo lo del guion y el de los bosses se multiplican, y el hueco `boss` del
+ * final llama a `finalBoss`. Los hitos (élites, Marea, minibosses) se quedan
+ * donde están, con su `enabled`.
+ */
+export function harderAct(
+  base: ActScript,
+  by: {
+    act: number;
+    enemyHpScale: number;
+    bossHpScale: number;
+    earlierS: Partial<Record<EnemyId, number>>;
+    finalBoss: BossId;
+  },
+): ActScript {
+  return {
+    act: by.act,
+    durationS: base.durationS,
+    enemyHpScale: (base.enemyHpScale ?? 1) * by.enemyHpScale,
+    bossHpScale: (base.bossHpScale ?? 1) * by.bossHpScale,
+    tracks: base.tracks.map((t) => {
+      const earlier = Math.min(by.earlierS[t.enemy] ?? 0, t.fromS);
+      if (earlier <= 0) return t;
+      return {
+        ...t,
+        fromS: t.fromS - earlier,
+        keys: t.keys.map((k) => ({ ...k, atS: Math.max(0, k.atS - earlier) })),
+      };
+    }),
+    events: base.events.map((ev) => (ev.type === 'boss' ? { ...ev, ref: by.finalBoss } : ev)),
+  };
+}
+
+/** El guion del acto `act` (1…); null si la config no lo tiene. */
+export function actOf(cfg: SurvivorsConfig, act: number): ActScript | null {
+  return cfg.acts.find((a) => a.act === act) ?? null;
+}
+
+/** El aguante con que entra un boss: el suyo por el del acto y por la dificultad. */
+export function bossHpFor(def: BossDef, act: ActScript | null, diff: DifficultyDef): number {
+  return def.hp * (act?.bossHpScale ?? 1) * diff.enemyHp;
 }
 
 /** La curva de una pista en el segundo `t` (null fuera de su tramo). */
