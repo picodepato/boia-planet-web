@@ -61,7 +61,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T150 — SVG icons for every skill
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T148
@@ -73,10 +73,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit test: every weapon, vinyl, evolution, upgrade and drop id has an icon (no emoji fallback left) → passes
   - Hernán approved the contact sheet (recorded in the status section)
   - Test command → exit 0
-- Outcome:
+- Outcome: 31 SVG icons (`canon-icons.tsx`, incl. miniboss chest) in HUD slots, cards and final card gear list; approved by Hernán → 5fcfb9e
 
 ## T151 — Pre-game pop-up (act, difficulty, ranking slot, Jugar)
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T148
@@ -174,8 +174,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 plan: act 3 dropped; Capitán achievement and «El Apagón» appearance dropped; shortcut games never pay or rank (orchestrator, from Hernán's answers)
 
 - 2026-10-05 T148: new end reason `quit` (`SurvivorsGame.quit()`); quit session abandoned, not settled; `CanonResult.ranked=false` for T155; card shows time/enemies/notes + «Volver al mar»/«Otra vez»; balances hidden via a `balances` HideLayer until «Volver al mar»; confirm focuses «No, seguir», Esc cancels the step; mobile slots 3 columns of 22 px, desktop rows at 28 px; worst case tested with `armas=1` (7 weapons + 4 vinyls) (agent)
+- 2026-10-05 T150: vinyls share a purple disc behind their symbol; `CANON_ICON_PALETTE` = `ICON_PALETTE` + water blue, acid green, red; Llama drop = brazier, flame alone = HUD notice; Segunda vida = two hearts; final card gear list shows icons (agent)
 
 ## Proposals (new scope)
+- 2026-10-05 T150: medal texts still use emoji (🥉🥈🥇 in `es-mar.ts`), world notices/pins in `mar-client.tsx` too; first-load JS at 186.9 of 200 kB budget — watch in T152/T154 (T156)
 - 2026-10-05 T148: the boss arrow can sit briefly under the top-right slots box (T156)
 
 ## Log
@@ -183,3 +185,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T148 launched · attempt 1 · agent a58d2b4672f5c0ca2 (opus)
 - 2026-10-05 T149 launched · attempt 1 · Codex via wrapper agent a5d014c5aa4533926 (sonnet)
 - 2026-10-05 20:48 T148 done · branch worktree-agent-a58d2b4672f5c0ca2 → c51a76c; worktree locked by its agent, remove at plan end
+- 2026-10-05 20:50 push offer T148 sent; T150 launched · attempt 1 · agent a307081c1eaa72edc (opus)
+- 2026-10-05 21:05 T150 blocked · contact sheet approval asked on Telegram (boia-planet-013-T150-1)
+- 2026-10-05 21:07 T151 launched · attempt 1 · agent a74b970390ca1beed (opus)
+- 2026-10-05 21:15 T150 icons approved by Hernán in the session (A); answer sent to the agent
+- 2026-10-05 21:25 T150 done · branch worktree-agent-a307081c1eaa72edc → 5fcfb9e; push offer T148 cancelled, push offer T150 sent
