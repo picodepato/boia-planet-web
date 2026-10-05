@@ -1,6 +1,6 @@
 # Plan 012 — Cañón «Que no pare la música», BETA 3 (acts 1 and 2 with bosses)
 
-Status: active
+Status: done
 Created: 2026-10-05
 Base branch: main
 Goal: Apply Hernán's beta 2 notes (weapons too weak to clear waves even in Tranquila, evolutions never reached, two weapons redesigned, rare elite drops, optional HP and damage readouts), then build the boss layer of the design reference: the generic boss system, both minibosses (Vecino Quejica, Tiburón Martillo with its chest), the act-1 final boss (Barco Pirata Fantasma) and, pulled forward from beta 4, the act-2 final boss (Kraken); medals, the campaign act 1 → act 2 with act and difficulty chosen on the island panel, the boss HUD and the final card. Also closes the e2e loose ends of plan 011. Ends with bot balance including bosses, `baja` performance, e2e, docs and the beta 3 test guide.
@@ -250,7 +250,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: store e2e now checks the WhatsApp link (test was wrong), zoom e2e polls the settled 46–52 %, flaky minigame-layer test fixed with a fixed seed sequence, two e2e for boost pad and ramp during a game → 4e74bfc
 
 ## T147 — Balance with bosses, `baja` performance, e2e, docs and the beta 3 test guide
-- Status: pending
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T133, T134, T135, T136, T137, T138, T139, T140, T141, T142, T143, T144, T145, T146
@@ -266,7 +266,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0
   - `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: stopped before its final checks on Hernán's request (he tests by hand): boss balance + boss-aware dodge bot, beta 3 guide `docs/propuestas/2026-10-05-canon-beta3-guia-prueba.md`, estado rows, roadmap note, e2e hardening (turbo, shark…), boss perf, medals on the card; integrated with the Test command passing; full mar-canon e2e and its ESTADO section not done → 6d46652
 
 ## Decisions
 - 2026-10-05 plan: elite drop chance 5 % per elite, type uniform among the three; the Llama's 100 %-in-0.4 s applies to commons and elites, bosses take a fixed dps instead; pickup named «Salvavidas», old card renamed «Segunda vida» (orchestrator, from Hernán's answers)
@@ -314,6 +314,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T136: merges with T143 (`canon-hud.tsx` keeps `CanonReadoutMenu` and the boss bar) and T145 (`canon-hud.css` both blocks; `mar-canon.spec.ts` normalised to main's LF) resolved by the wrapper agent (agent)
 
+- 2026-10-05 plan: Hernán cancelled T147's final test run to try beta 3 himself; its WIP commits were integrated as they were (Test command passed on main); the full e2e run of the plan end is skipped (Hernán)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -328,6 +330,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T144: special-ending title says «Fantasma» after a Kraken win (T145); REQ-AVE-038 note in `docs/spec/estado.md` still says «won = aguantar 7:00» (T147); flaky e2e T131 difficulty panel under load
 - 2026-10-05 T143: phase marks for time-based phases not drawn; simultaneous arrivals show only the last banner; some files in main carry CRLF line endings (check in T147)
 - 2026-10-05 T145: more e2e flaky under load: T124 turbo (mobile), Tiburón Martillo (desktop) — for T147 to stabilise the known-flaky list
+- 2026-10-05 T147: full `mar-canon.spec.ts` e2e and the full e2e suite not run at plan end; T147 left no ESTADO.md section; leftover locked worktrees in `.claude/worktrees/` (T135, T140, T142, T143, T144, T145 branches) to clean up
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -368,3 +371,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 21:20 T145 done · branch worktree-agent-a1ea64d4d63096876 → c840f41
 - 2026-10-05 21:22 T136 done by agent; integration conflict with T145 in canon-hud.css, mar-canon.spec.ts → sent back to the same wrapper agent (resolves itself, no Codex)
 - 2026-10-05 21:32 T136 done · branch worktree-agent-addb8d08ba9c5100e → c5b5e2c
+- 2026-10-05 21:35 T147 launched · attempt 1 · agent a87fc1e464e614bdb (opus), with the Proposals items addressed to it
+- 2026-10-05 22:35 T147 stopped on Hernán's request; WIP integrated → 6d46652 (Test command pass, 155 s); plan done
