@@ -82,7 +82,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 ## T136 — «Mostrar vida» and «Mostrar daño» options
 - Status: pending
-- Model: sonnet (Sonnet 5.5)
+- Model: codex (via wrapper agent; Sonnet if Codex is out of credits)
 - Skills: frontend-design
 - Depends on: T133
 - Goal: Header decision 3. Two toggles in the Cañón pause menu, off by default, remembered per browser (storage wrapped in try/catch, works without it):
@@ -187,7 +187,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: (Opus, Codex out of credits) Kraken view in `survivors-kraken.ts`: shadow, rising head with gold ring when exposed, bending tentacles, red/amber warning circles, rocks in arcs, arms on the grabbed island; `baja` fewer segments, reduced motion still; dev shortcut `acto=<n>`; 1598 unit tests, mar-canon e2e 62 passed + 1 flaky → 80b3d28
 
 ## T143 — Boss HUD: bar, name, phase and warnings
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T137
@@ -201,7 +201,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T144 — Medals, campaign act 1 → 2, act and difficulty on the panel
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T138, T139, T140, T141
@@ -215,7 +215,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests: medal per outcome, `won` for bronze+, unlock persisted and read back in local mode, act + difficulty in `configHash`
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with: act 2 locked on a fresh visitor, unlocked after a dev-forced boss defeat, `acto=2` starts the act-2 script
   - Test command → exit 0
-- Outcome:
+- Outcome: medals (bronze 7:00, silver + every miniboss, gold = final boss), `won` = bronze+, campaign counter per act in the existing progress store (guest repo / `save_snapshot`, no migration), act buttons Acto 1/2 (+3 «próximamente») on the panel, act + difficulty in configHash, `CanonResult` with medal/act/difficulty/bosses, dev shortcut `vencer=1`; 1614 unit tests, mar-canon e2e 65 passed + 2 flaky → da62d09
 
 ## T145 — Final card
 - Status: pending
@@ -304,6 +304,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T142: `SurvivorsView` gets a `sea` option (world) for the grab arms; `data-canon-boss` = `kraken:<mode>`; `acto=<n>` only existing acts, counts as test start, `CanonHook.acto`, `data-acto`; act not in configHash (T144); CRLF line endings fixed back to LF (agent)
 
+- 2026-10-05 plan: Codex available again (Hernán); T136 moves from Sonnet to Codex, launched at the next free slot (orchestrator)
+
+- 2026-10-05 T144: test starts record progress only where they can earn the reward (dev, e2e); act choice kept for the visit, locked act falls back to act 1, `acto=` skips the campaign; new sim method `defeatBossesNow()` behind `vencer=1` (counts as test start); `CanonMode.unlocked` for T145 (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -315,6 +319,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T135: flaky e2e «HUD con BETA» on desktop (level changes between read and check) — for T147
 - 2026-10-05 T139: shark balance (greedy bot wins in 8–33 s; dodge bot ignores boss warnings) and prettier on `mar-canon.spec.ts` — for T147
 - 2026-10-05 T142: the T139 shark e2e can miss the shark on mobile under load (passes alone) — for T147
+- 2026-10-05 T144: special-ending title says «Fantasma» after a Kraken win (T145); REQ-AVE-038 note in `docs/spec/estado.md` still says «won = aguantar 7:00» (T147); flaky e2e T131 difficulty panel under load
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -347,3 +352,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 18:24 T142 done by agent; integration conflict with T139 in canon-mode.tsx, survivors-view.ts, survivors.ts → sent back to the same agent
 - 2026-10-05 18:28 T144 launched · attempt 1 · agent a30400bc81ea4bde7 (opus)
 - 2026-10-05 18:58 T142 done · branch worktree-agent-aac36e30132ff7385 → 80b3d28; T144 told to merge main
+- 2026-10-05 19:00 T143 launched · attempt 1 · agent a5dfabd193a7d61bd (sonnet)
+- 2026-10-05 19:45 T144 done · branch worktree-agent-a30400bc81ea4bde7 → da62d09 (integration 643 s)
