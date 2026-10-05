@@ -177,11 +177,27 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - Test command → exit 0
 - Outcome:
 
+## T166 — Tabarca lighthouse island redesigned in Blender (the board at the entrance)
+- Status: pending
+- Model: fable (Fable 5.1)
+- Skills: blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
+- Depends on: T157
+- Goal: Redesign the `faro` island of `/mar` (`minijuegos/faro` in `tools/blender/lugares.json`), now at the old castle spot near the start (T157), as the **Faro de Tabarca** (Isla de Nueva Tabarca, Alicante): a low, flat, rocky island with dry scrub and the real lighthouse's silhouette — the 19th-century stone keeper's house with its central square tower and lantern. **The lighthouse is the protagonist and fairly big**: it stands at the entrance of the world, where the castle used to look good, so it must read from far away from the boat's camera like the castle did (similar visual weight). Built reproducibly with the repo's Blender pipeline (`tools/blender/`, Blender 4.0 at `C:/Program Files/Blender Foundation/Blender 4.0`), in the main world **Arcilla**'s style (match the other island and boat models: palette, low-poly clay look, triangle budget like the other islands), exported as GLB and wired where the Faro island is drawn, with the collision footprint matching the island at its new spot. Animated lantern light (cheap) if the other models animate; cheap in `baja`. In the castle game the Faro tower uses the same model, normalized per header decision 8.
+  - **Approval:** before finishing, render a contact sheet (the island from 4 angles + the in-game view from the boat arriving at the start, mobile and desktop) and stop with `blocked`, attaching it, so the orchestrator sends it to Hernán on Telegram. Apply his changes, then finish.
+- Context: plan 013's skipped T157 (same task, moved here); T157 Outcome (new spot of `faro`); `tools/blender/` (`lugares.json`, `places/`, `islas/`, `export_islas_glb.py`, `isla3d.schema.json`, `style.py`, `mundo_arcilla.py`), `art/islas/3d/manifest.json`, `apps/web/app/mar/engine/island-models.ts`, `islands.ts`, `compact.ts`, `decor-model.ts` (the castle's size at that spot, as the reference for visual weight), `apps/web/lib/i18n/es-zonas.ts`. Only the island's look: the «Tablón del faro» panel is T157's.
+- Scope: may touch `tools/blender/**` (new script for this island), `art/islas/3d/**` (new GLB + manifest), `apps/web/app/mar/engine/island-models.ts`/`islands.ts` wiring, the `faro` place's size/collision in `packages/world/src/worlds/arcilla/map.ts` if the bigger lighthouse needs it (no overlap with other places, buoys on water), `apps/web/public/` model output if that is where GLBs ship, tests / must not touch the board panel, the castle game, other islands, `apps/web/public/atlas/`, `docs/DECISIONES.md`.
+- Done when:
+  - the Blender script rebuilds the GLB from scratch (command recorded in the status section) and `tools/blender/check.py` (or the islands' validation) passes
+  - Hernán approved the contact sheet (recorded in the status section)
+  - an e2e or unit test checks the Faro island loads the new model; world places still do not overlap → pass
+  - Test command → exit 0
+- Outcome:
+
 ## T165 — Close: balance, performance, full e2e, docs, Álvaro draft
 - Status: pending
 - Model: opus (Opus 5.5)
 - Skills: none
-- Depends on: T157, T158, T159, T160, T161, T162, T163, T164
+- Depends on: T157, T158, T159, T160, T161, T162, T163, T164, T166
 - Goal: Close the plan.
   - **Balance with bots** for 3 run lengths × 3 difficulties: Tranquila winnable with a plain build, Normal a real fight, Tormenta hard; no single island strategy dominates (each island used by the best bot builds at least sometimes); Ibiza pays back in a reasonable time; record curves and win rates; bump `DEFENSE_CONFIG_VERSION` if numbers changed.
   - **Performance in `baja`** at the 10-min peak with bosses, a full arena of islands at level 3 (no cap: as many as fit) and sound on; fix obvious hot spots only.
@@ -197,6 +213,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 plan: T166 added, the Tabarca lighthouse island in Blender moved from plan 013 (its T157, skipped there); renumbered T166 because T157 is taken here; the lighthouse big and the protagonist at the entrance; model Fable 5.1 (Hernán, orchestrator)
 - 2026-10-05 plan: islands as towers normalized to one footprint (≈ 1/3 of the castle, height free, +10 % per level, footprint at level 3), no cap on islands (Hernán, orchestrator)
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
@@ -208,3 +225,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 drafted in the session with Hernán
 - 2026-10-05 amended: island size normalization (decision 8, T159, T160, T165)
 - 2026-10-05 approved by Hernán; not launched, waits for plan 013 to finish (then `/orchestrator` resumes it and sets `Status: active`)
+- 2026-10-06 amended: T166 Tabarca lighthouse island (from plan 013)
