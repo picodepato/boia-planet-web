@@ -89,7 +89,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: pre-game pop-up `canon-previa.tsx` (act 1/2, act 3 «Próximamente», difficulty, ranking empty state with `ranking(act,boss)` prop, Jugar) replaces panel pickers → f66e051
 
 ## T152 — Sound and accessibility
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T148, T151
@@ -102,7 +102,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests: audio module schedules nothing before a user gesture, mute and volume persist, loop switches battle → boss → sea → pass (with a mocked AudioContext)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1 -g "sonido|teclado|accesib"` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: lazy `canon-audio.ts` (synth SFX, DnB battle loop + boss variant, sea ambience restored after), volume/mute in pause, reduced motion, keyboard, aria-live → d7de982
 
 ## T153 — Per-medal daily prize and the new achievements
 - Status: running (attempt 1)
@@ -177,8 +177,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T150: vinyls share a purple disc behind their symbol; `CANON_ICON_PALETTE` = `ICON_PALETTE` + water blue, acid green, red; Llama drop = brazier, flame alone = HUD notice; Segunda vida = two hearts; final card gear list shows icons (agent)
 - 2026-10-05 T151: pop-up closes with Esc/×/tap outside and returns to the island panel; boat locked and bottles chip hidden while open; no per-act/difficulty medal state exists, so only «Superado» per act is shown; `useCanonMode` exposes `prep` and `acts`; pop-up shows BETA (T156 removes); updated REQ-AVE-037 proof link in `docs/spec/estado.md` to the renamed e2e (agent)
 - 2026-10-05 T149: Kraken test failure came from Codex's half-done bot, not healing; bot now aims at the gap at its distance + 40 and counts inside ring up to `RING_MARGIN` 120; Vecino stress (40 seeds, 120 s): v14 30/40 survive vs v15 40/40 with 0 hits; legacy `bailing` upgrade label set to 0.4; `canon-hud-model.test.ts` expects decimal comma (agent)
+- 2026-10-05 T152: standalone audio module loaded on pop-up open/game start; existing sea ambience (`setAmbientWorld`) silenced in game and restored; unlock only on trusted gesture; boss loop also for minibosses; site Ajustes music/effects multiply Cañón volume; music at 30 % while paused; default 70 %, key `boia.canon.sonido.v1`; `SurvivorsRun.onEvents`; reduced motion disables all camera shake in `mar3d.ts`; REQ-AVE-039 stays PARCIAL (agent)
 
 ## Proposals (new scope)
+- 2026-10-05 T152: REQ-AVE-039 needs its written accessibility review (T156); synthesized music/SFX are `muestra`, Hernán should listen before launch
 - 2026-10-05 T149: in Tranquila both final bosses are nearly always beaten (Kraken 16/16, Fantasma 15/16): act-2 ≥ act-1 test at ceiling — T156 balance
 - 2026-10-05 T151: act-2 sky «tentacle» is a CSS curve, could use an SVG icon (T156)
 - 2026-10-05 T150: medal texts still use emoji (🥉🥈🥇 in `es-mar.ts`), world notices/pins in `mar-client.tsx` too; first-load JS at 186.9 of 200 kB budget — watch in T152/T154 (T156)
@@ -199,3 +201,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 21:45 T151 done · branch worktree-agent-a74b970390ca1beed → f66e051; push offer T150 cancelled, push offer T151 sent
 - 2026-10-05 21:47 T152 launched · attempt 1 · agent a2610e06d4ddf9e6b (opus)
 - 2026-10-05 22:20 T149 done · branch worktree-agent-ab0f59486779a0601 → 6858e3f; push offer T151 cancelled, push offer T149 sent
+- 2026-10-05 22:22 T153 launched · attempt 1 · agent ad565e00d1afaafa6 (opus)
+- 2026-10-05 22:58 T152 done · branch worktree-agent-a2610e06d4ddf9e6b → d7de982; push offer T149 cancelled, push offer T152 sent
