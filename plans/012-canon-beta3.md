@@ -173,7 +173,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: Kraken in `kraken.ts` (submerged → emerging → emerged | grabbing → diving), tentacles and rocks telegraphed, tentacle kill exposes the head 4 s, island grab only when reachable, phases at hp 0.65/0.3; weapons hit `bossTargets` (body + tentacles); act 2 final slot on (reachable only with `act: 2`); config v10; 1517 unit tests → 6b702dd
 
 ## T142 — The Kraken in the 3D sea
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T141
@@ -184,7 +184,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests for the Kraken view builders (create/update/dispose, reduced motion)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with an act-2 `t=` start past 5:30 (`acto=2`, or a temporary dev shortcut until T144 if needed) showing the Kraken without console errors
   - Test command → exit 0
-- Outcome:
+- Outcome: (Opus, Codex out of credits) Kraken view in `survivors-kraken.ts`: shadow, rising head with gold ring when exposed, bending tentacles, red/amber warning circles, rocks in arcs, arms on the grabbed island; `baja` fewer segments, reduced motion still; dev shortcut `acto=<n>`; 1598 unit tests, mar-canon e2e 62 passed + 1 flaky → 80b3d28
 
 ## T143 — Boss HUD: bar, name, phase and warnings
 - Status: pending
@@ -201,7 +201,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T144 — Medals, campaign act 1 → 2, act and difficulty on the panel
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T138, T139, T140, T141
@@ -302,6 +302,8 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 
 - 2026-10-05 T139: generic touches `LevelUpCard.source`/`boss`, `spawnChest`; chest never gives Segunda vida, spends no level, a pending level card waits; single boss warning-line drawer (view); slot tests «on iff its boss exists»; T140/T141 whole-game tests filter by their own boss; greedy bot goes for chests; hooks `data-jefes`, `data-cofre-cerca` (agent)
 
+- 2026-10-05 T142: `SurvivorsView` gets a `sea` option (world) for the grab arms; `data-canon-boss` = `kraken:<mode>`; `acto=<n>` only existing acts, counts as test start, `CanonHook.acto`, `data-acto`; act not in configHash (T144); CRLF line endings fixed back to LF (agent)
+
 ## Proposals (new scope)
 
 - 2026-10-05 T133: e2e not run (only card texts changed in the UI); Normal may feel easy to a person since bots dodge better: first lever is Normal enemy toughness, not weaker weapons — for T147
@@ -312,6 +314,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T140: flaky e2e dawn reward at t=419 reads balances racily under load (passes alone); i18n keys `survivors.boss.prueba`/`kraken` missing; HUD readouts of `ghostness`/`leftS` for T143
 - 2026-10-05 T135: flaky e2e «HUD con BETA» on desktop (level changes between read and check) — for T147
 - 2026-10-05 T139: shark balance (greedy bot wins in 8–33 s; dodge bot ignores boss warnings) and prettier on `mar-canon.spec.ts` — for T147
+- 2026-10-05 T142: the T139 shark e2e can miss the shark on mobile under load (passes alone) — for T147
 
 ## Log
 - 2026-10-05 12:00 plan approved by Hernán on Telegram (A); main tests pass (175 s)
@@ -342,3 +345,5 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 17:40 Hernán said yes to push offer T140; pushed main 02fde9d (T133–T138, T140, T141, T146) to Vercel; Telegram notice sent
 - 2026-10-05 18:20 T139 done · branch worktree-agent-a65dc2c0dd0e2b4cd → 7307241
 - 2026-10-05 18:24 T142 done by agent; integration conflict with T139 in canon-mode.tsx, survivors-view.ts, survivors.ts → sent back to the same agent
+- 2026-10-05 18:28 T144 launched · attempt 1 · agent a30400bc81ea4bde7 (opus)
+- 2026-10-05 18:58 T142 done · branch worktree-agent-aac36e30132ff7385 → 80b3d28; T144 told to merge main
