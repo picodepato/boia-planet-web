@@ -178,3 +178,5 @@ algunas con los atajos (`t=145`, `t=265`, `t=325`, `acto=2&t=325`, `botin=1`, `a
 
 Apuntar aquí (o en un archivo hermano `2026-10-05-canon-beta3-notas.md`) lo que salga de cada
 pregunta, con el dispositivo, la dificultad, el acto y los valores probados.
+
+- 2026-10-05 · T149 (config v15, muestra): Chill N1 achica 0,4/s; N2 y N3 suman +15 de capacidad cada uno (100 → 115 → 130); N4 achica 0,8/s total; N5 absorbe el próximo golpe (también de boss), deja 6 s de invulnerabilidad y recarga a los 20 s desde el golpe. Un aro turquesa indica que está listo. Onda y bronca del Vecino tienen 8 huecos de ~2,5 veces el ancho de colisión del barco, calculados con el radio del frente; la segunda onda gira medio paso (π/8). Las islas siguen cortando la onda.

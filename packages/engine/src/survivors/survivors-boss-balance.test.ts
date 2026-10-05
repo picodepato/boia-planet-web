@@ -173,6 +173,7 @@ describe('survivors: equilibrio con los bosses (T147)', () => {
           const rs = runs(act, d);
           const hits = rs.reduce((a, r) => a + r.bossHits, 0);
           const fought = rs.reduce((a, r) => a + r.bossFights.length, 0);
+          expect(fought, `acto ${act} ${d}`).toBeGreaterThan(0);
           expect(hits / fought, `acto ${act} ${d}`).toBeLessThan(1);
         }
       }
@@ -248,7 +249,7 @@ describe('survivors: el piloto sale de los avisos de boss (T147)', () => {
     expect(warningEscape([l], 200, 200, W, W)).toEqual({ x: 0, y: 0 });
   });
 
-  it('anillo: rodea el centro hacia el hueco más cercano; ya pasada la onda, nada', () => {
+  it('anillo: va hacia el hueco más cercano y sale por él; ya pasada la onda, nada', () => {
     const r = warning({
       kind: 'ring',
       radius: 440,
@@ -257,13 +258,18 @@ describe('survivors: el piloto sale de los avisos de boss (T147)', () => {
       gapRad: 0.6,
       gapPhase: 0,
     });
-    // A 100 u del centro, un poco por encima del hueco de ángulo 0: gira hacia abajo (−y).
+    // A 100 u del centro, por encima del hueco 0: gira hacia él (−y, tangente)
+    // y a la vez se aleja del centro, sin rodear sólo por la tangente.
     const a = 0.5;
     const out = warningEscape([r], Math.cos(a) * 100, Math.sin(a) * 100, W, W);
     const tangentDown = { x: Math.sin(a), y: -Math.cos(a) };
-    expect(out.x * tangentDown.x + out.y * tangentDown.y).toBeGreaterThan(0.9);
-    // Ya en el hueco: quieto.
-    expect(warningEscape([r], 100, 0, W, W)).toEqual({ x: 0, y: 0 });
+    const outward = { x: Math.cos(a), y: Math.sin(a) };
+    expect(out.x * tangentDown.x + out.y * tangentDown.y).toBeGreaterThan(0.5);
+    expect(out.x * outward.x + out.y * outward.y).toBeGreaterThan(0);
+    // Ya en el hueco: sale recto por él, sin perder el ángulo.
+    const inGap = warningEscape([r], 100, 0, W, W);
+    expect(inGap.x).toBeGreaterThan(0.99);
+    expect(inGap.y).toBeCloseTo(0);
     // La onda ya pasó por encima: a salvo.
     const passed = { ...r, hit: true, ringRadius: 300 };
     expect(warningEscape([passed], Math.cos(a) * 100, Math.sin(a) * 100, W, W)).toEqual({

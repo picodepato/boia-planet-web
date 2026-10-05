@@ -35,9 +35,13 @@ describe('El Vecino Quejica (T138)', () => {
     expect(validateBoss(VECINO)).toEqual([]);
     expect(VECINO.phases).toHaveLength(2);
     for (const attack of Object.values(VECINO.attacks)) {
-      expect(attack).toMatchObject({ kind: 'ring', gaps: 3, blockedByIslands: true });
+      expect(attack).toMatchObject({
+        kind: 'ring',
+        gaps: 8,
+        gapBoatWidths: 2.5,
+        blockedByIslands: true,
+      });
       expect(attack.telegraphS).toBeGreaterThanOrEqual(1.2);
-      expect(attack.gapRad).toBeGreaterThan(0.5);
     }
     for (const act of [1, 2]) {
       const g = createSurvivors(SURVIVORS_CONFIG, 7, sea(), { act, startAtS: 149 });
@@ -56,10 +60,16 @@ describe('El Vecino Quejica (T138)', () => {
       g.spawnBoss('vecino', 300, 0);
       const before = run(g, 0.2);
       const w = g.snapshot().bossWarnings[0]!;
-      expect(w).toMatchObject({ kind: 'ring', hit: false, gaps: 3, ringRadius: 0 });
+      expect(w).toMatchObject({ kind: 'ring', hit: false, gaps: 8, ringRadius: 0 });
       expect(before.some((e) => e.type === 'bossAttack')).toBe(false);
       expect(before.some((e) => e.type === 'bossTelegraph')).toBe(true);
-      const gap = inRingGap(Math.PI, w.gaps, w.gapRad, w.gapPhase);
+      // The physical gap has constant width; its angle widens at the nearer front.
+      const gap = inRingGap(
+        Math.PI,
+        w.gaps,
+        (2.5 * g.snapshot().player.radius * 2) / 300,
+        w.gapPhase,
+      );
       const events = run(g, 3.4);
       const hit = events.filter((e) => e.type === 'bossHit');
       expect(hit).toHaveLength(gap ? 0 : 1);
@@ -74,7 +84,7 @@ describe('El Vecino Quejica (T138)', () => {
   });
 
   it('an island blocks only its ring segment, including across the map seam', () => {
-    // Select a seed with the boat outside all three real gaps.
+    // Select a seed with the boat outside the actual gaps at contact radius.
     let seed = 1;
     for (; seed <= 16; seed++) {
       const g = createSurvivors(quiet(), seed, sea());
@@ -82,8 +92,8 @@ describe('El Vecino Quejica (T138)', () => {
       run(g, 0.2);
       const w = g.snapshot().bossWarnings[0]!;
       if (
-        !inRingGap(Math.PI, w.gaps, w.gapRad, w.gapPhase) &&
-        !inRingGap(0, w.gaps, w.gapRad, w.gapPhase)
+        !inRingGap(Math.PI, w.gaps, (2.5 * g.snapshot().player.radius * 2) / 270, w.gapPhase) &&
+        !inRingGap(0, w.gaps, (2.5 * g.snapshot().player.radius * 2) / 270, w.gapPhase)
       )
         break;
     }

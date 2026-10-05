@@ -44,6 +44,7 @@ import {
   xpToNext,
 } from './config';
 import { attackFrom, inRingGap, nextPhase, ringRadiusAt, ringTouches } from './bosses';
+import { vecinoGapRad } from './vecino';
 import {
   type GhostShipEvent,
   type GhostShipHost,
@@ -452,6 +453,7 @@ export interface PlayerStats {
   speedBonus: number;
   magnetBonus: number;
   bailPerS: number;
+  waterCapacityBonus: number;
   areaBonus: number;
   hullBonus: number;
   xpBonus: number;
@@ -509,6 +511,12 @@ export interface SurvivorsSnapshot {
   /** El boss final del acto cayó (la medalla de oro, T144). */
   readonly finalBossDefeated: boolean;
   readonly water: { readonly level: number; readonly capacity: number };
+  readonly shield: {
+    readonly enabled: boolean;
+    readonly ready: boolean;
+    readonly rechargeS: number;
+    readonly invulnerableS: number;
+  };
   readonly xp: { readonly level: number; readonly xp: number; readonly toNext: number };
   /** s de tiempo activo. */
   readonly activeS: number;
@@ -737,6 +745,9 @@ interface Boss {
   attackTimer: number;
   /** Ataques lanzados en la fase (para el orden cíclico). */
   attackIndex: number;
+  /** Vecino keeps consecutive waves half a gap step apart, across phases. */
+  ringPhase: number | null;
+  ringWaves: number;
   attack: BossAttack | null;
   /** Sólo el Kraken (T141): su estado propio (`kraken.ts`); null en los demás. */
   kraken: KrakenState | null;
@@ -791,6 +802,7 @@ const ZERO_STATS = (): PlayerStats => ({
   speedBonus: 0,
   magnetBonus: 0,
   bailPerS: 0,
+  waterCapacityBonus: 0,
   areaBonus: 0,
   hullBonus: 0,
   xpBonus: 0,
@@ -905,6 +917,8 @@ export class SurvivorsGame {
   private endReason: EndReason | null = null;
   private water = 0;
   private invulnerable = 0;
+  private shieldRechargeStep = 0;
+  private shieldInvulnerableStep = 0;
   private level = 1;
   private xp = 0;
   private overflow = 0;
@@ -1068,6 +1082,7 @@ export class SurvivorsGame {
       bossesDefeated: this.bossesDefeated,
       finalBossDefeated: false,
       water: { level: 0, capacity: config.player.waterCapacity },
+      shield: { enabled: false, ready: false, rechargeS: 0, invulnerableS: 0 },
       xp: { level: 1, xp: 0, toNext: xpToNext(config, 1) },
       activeS: 0,
       timeLeftS: config.durationS,
@@ -1116,8 +1131,19 @@ export class SurvivorsGame {
       this.invulnerable,
     );
     (v.player as { radius: number }).radius = this.shipCfg.radius;
-    const water = v.water as { level: number };
+    const water = v.water as { level: number; capacity: number };
     water.level = this.water;
+    water.capacity = this.waterCapacity;
+    const shield = v.shield as {
+      enabled: boolean;
+      ready: boolean;
+      rechargeS: number;
+      invulnerableS: number;
+    };
+    shield.enabled = this.shieldDef !== undefined;
+    shield.rechargeS = Math.max(0, this.shieldRechargeStep - this.activeSteps) * SURVIVORS_STEP_S;
+    shield.invulnerableS = this.shieldInvulnerableS;
+    shield.ready = shield.enabled && shield.rechargeS === 0;
     const xp = v.xp as { level: number; xp: number; toNext: number };
     xp.level = this.level;
     xp.xp = this.xp;
@@ -1310,7 +1336,7 @@ export class SurvivorsGame {
       this.vinyls.length >= this.config.slots.vinyls) return false;
     const top = Math.min(def.maxLevel, Math.max(1, Math.floor(level)));
     this.vinyls.push({ id, level: top, maxLevel: def.maxLevel, nameKey: def.i18nKey });
-    for (const gain of def.levels.slice(0, top)) this.stats[def.stat] += gain.amount;
+    for (const gain of def.levels.slice(0, top)) this.stats[gain.stat ?? def.stat] += gain.amount;
     this.refreshStats();
     return true;
   }
@@ -1320,7 +1346,8 @@ export class SurvivorsGame {
     const v = this.vinyls[index];
     const def = this.config.passives[id];
     if (!v || !def || v.level >= def.maxLevel) return false;
-    this.stats[def.stat] += def.levels[v.level]!.amount;
+    const gain = def.levels[v.level]!;
+    this.stats[gain.stat ?? def.stat] += gain.amount;
     this.vinyls[index] = { ...v, level: v.level + 1 };
     this.refreshStats();
     return true;
@@ -1329,6 +1356,20 @@ export class SurvivorsGame {
   private refreshStats(): void {
     this.shipCfg = survivorsShipConfig(this.baseShip, this.config.handling, this.stats.speedBonus);
     this.refreshWeapons();
+  }
+
+  private get waterCapacity(): number {
+    return this.config.player.waterCapacity + this.stats.waterCapacityBonus;
+  }
+
+  private get shieldDef() {
+    return this.config.passives.chill?.levels
+      .slice(0, this.vinylLevel('chill'))
+      .find((gain) => gain.shield)?.shield;
+  }
+
+  private get shieldInvulnerableS(): number {
+    return Math.max(0, this.shieldInvulnerableStep - this.activeSteps) * SURVIVORS_STEP_S;
   }
 
   private inventory() {
@@ -1378,6 +1419,7 @@ export class SurvivorsGame {
       movement: this.movement.state(),
       w: this.water,
       inv: this.invulnerable,
+      shield: [this.shieldRechargeStep, this.shieldInvulnerableStep],
       lv: [this.level, this.xp, this.pendingLevels],
       pc: [...this.pendingChests],
       wp: this.weapons.map((w) => [
@@ -1436,6 +1478,8 @@ export class SurvivorsGame {
         b.phaseS,
         b.attackTimer,
         b.attackIndex,
+        b.ringPhase,
+        b.ringWaves,
         b.attack ? [b.attack.name, b.attack.stage, b.attack.timer, b.attack.x, b.attack.y, b.attack.left, b.attack.landed ? 1 : 0] : null,
         b.kraken ? krakenHash(b.kraken) : null,
         b.fantasma ? ghostHash(b.fantasma) : null,
@@ -1611,13 +1655,13 @@ export class SurvivorsGame {
     this.stepNotes(dt);
     this.stepChests();
 
-    if (this.water >= this.config.player.waterCapacity && this.salvavidas === 'held') {
+    if (this.water >= this.waterCapacity && this.salvavidas === 'held') {
       this.salvavidas = 'consumed';
-      this.water = this.config.player.waterCapacity * this.config.salvavidas.waterFractionAfterSave;
+      this.water = this.waterCapacity * this.config.salvavidas.waterFractionAfterSave;
       this.invulnerable = this.config.salvavidas.invulnerableS;
       this.events.push({ type: 'saved', item: 'salvavidas', x: this.player.x, y: this.player.y, water: this.water });
     }
-    if (this.water >= this.config.player.waterCapacity) this.finish('flooded');
+    if (this.water >= this.waterCapacity) this.finish('flooded');
     else if (this.activeSteps >= this.durationSteps) {
       // Amanece: un boss vivo se retira (§8); la partida se sobrevive igual.
       this.retreatBosses();
@@ -1639,7 +1683,7 @@ export class SurvivorsGame {
   private stepPlayer(input: ShipInput, dt: number, turbo: boolean): void {
     const p = this.player;
     this.events.push(...this.movement.step(p, input, turbo, this.shipCfg, dt));
-    this.invulnerable -= dt;
+    this.invulnerable = Math.max(0, this.invulnerable - dt, this.shieldInvulnerableS);
     const bail = this.config.player.bailPerS + this.stats.bailPerS;
     if (bail > 0) this.water = Math.max(0, this.water - bail * dt);
   }
@@ -2081,23 +2125,33 @@ export class SurvivorsGame {
    * de pirañas no tocaría nunca.
    */
   private bossHitLands(): boolean {
-    return this.invulnerable <= this.config.player.invulnerableS;
+    return this.shieldInvulnerableS === 0 && this.invulnerable <= this.config.player.invulnerableS;
   }
 
   /** Mete `amount` de agua a bordo (menos la dificultad y el casco) y da la invulnerabilidad del golpe. */
-  private takeWater(amount: number): void {
+  private takeWater(amount: number): boolean {
+    if (this.shieldInvulnerableS > 0) return false;
+    const shield = this.shieldDef;
+    if (amount > 0 && shield && this.activeSteps >= this.shieldRechargeStep) {
+      this.shieldRechargeStep = this.activeSteps + Math.round(shield.rechargeS / SURVIVORS_STEP_S);
+      this.shieldInvulnerableStep =
+        this.activeSteps + Math.round(shield.invulnerableS / SURVIVORS_STEP_S);
+      this.invulnerable = shield.invulnerableS;
+      return false;
+    }
     const water = amount * this.diff.enemyDamage * Math.max(0, 1 - this.stats.hullBonus);
-    this.water = Math.min(this.config.player.waterCapacity, this.water + water);
+    this.water = Math.min(this.waterCapacity, this.water + water);
     this.invulnerable = this.config.player.invulnerableS;
+    return true;
   }
 
   private damagePlayer(amount: number, by: EnemyId, x: number, y: number): void {
-    this.takeWater(amount);
+    if (!this.takeWater(amount)) return;
     this.events.push({ type: 'hit', enemy: by, x, y, water: this.water });
   }
 
   private damagePlayerByBoss(amount: number, b: Boss, attack: string | null, x: number, y: number): void {
-    this.takeWater(amount);
+    if (!this.takeWater(amount)) return;
     this.events.push({ type: 'bossHit', boss: b.def.id, attack, x, y, water: this.water });
   }
 
@@ -2156,8 +2210,7 @@ export class SurvivorsGame {
         b.dead = true;
         if (b.enemy !== null) {
           if (this.invulnerable <= 0) this.damagePlayer(b.water, b.enemy, b.x, b.y);
-        } else if (b.boss !== null && this.bossHitLands()) {
-          this.takeWater(b.water);
+        } else if (b.boss !== null && this.bossHitLands() && this.takeWater(b.water)) {
           this.events.push({ type: 'bossHit', boss: b.boss, attack: b.attack, x: b.x, y: b.y, water: this.water });
         }
         continue;
@@ -3018,7 +3071,7 @@ export class SurvivorsGame {
         this.flameS = d.llama.durationS;
         break;
       case 'salvavidas':
-        this.water = Math.max(0, this.water - this.config.player.waterCapacity * d.salvavidas.waterFraction);
+        this.water = Math.max(0, this.water - this.waterCapacity * d.salvavidas.waterFraction);
         break;
     }
   }
@@ -3449,6 +3502,8 @@ export class SurvivorsGame {
       phaseS: 0,
       attackTimer: def.phases[0]?.firstAttackS ?? 0,
       attackIndex: 0,
+      ringPhase: null,
+      ringWaves: 0,
       attack: null,
       kraken: null,
       fantasma: def.fantasma ? createGhostShip(def.fantasma) : null,
@@ -3676,6 +3731,10 @@ export class SurvivorsGame {
       left: def.length,
       landed: false,
     };
+    if (b.def.id === 'vecino' && def.kind === 'ring' && def.gapBoatWidths !== undefined) {
+      b.ringPhase ??= a.gapPhase;
+      a.gapPhase = b.ringPhase + ((b.ringWaves++ % 2) * Math.PI) / def.gaps;
+    }
     if (def.kind === 'circles') {
       // Fijados donde está el barco al avisar: el primero encima, los demás alrededor.
       a.x = p.x;
@@ -3768,10 +3827,16 @@ export class SurvivorsGame {
     const dy = wd(p.y - a.y, this.h);
     const dist = Math.hypot(dx, dy);
     if (!ringTouches(r, def.thickness, dist, this.shipCfg.radius)) return;
-    if (inRingGap(Math.atan2(dy, dx), def.gaps, def.gapRad, a.gapPhase)) return;
+    if (inRingGap(Math.atan2(dy, dx), def.gaps, this.ringGapRad(def, r), a.gapPhase)) return;
     if (def.blockedByIslands && this.islandBetween(a.x, a.y, dx, dy)) return;
     a.landed = true;
     this.damagePlayerByBoss(def.water, b, a.name, p.x, p.y);
+  }
+
+  private ringGapRad(def: BossAttackDef, radius: number): number {
+    return def.gapBoatWidths === undefined
+      ? def.gapRad
+      : vecinoGapRad(radius, this.shipCfg.radius, def.gaps, def.gapBoatWidths);
   }
 
   /** Los círculos caen: moja al barco si está dentro de alguno. */
@@ -3976,7 +4041,7 @@ export class SurvivorsGame {
           y: a.y,
           radius: def.radius,
           gaps: def.gaps,
-          gapRad: def.gapRad,
+          gapRad: this.ringGapRad(def, hit ? ringRadiusAt(def, progress) : def.radius),
           gapPhase: a.gapPhase,
           ringRadius: hit ? ringRadiusAt(def, progress) : 0,
           ringObstacles: def.blockedByIslands

@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T149: Healing vinyl redesign and the Vecino ring
+
+### Qué existe
+
+- Config v15 (`SURVIVORS_CONFIG_VERSION` 14 → 15, un único incremento). Chill / Ambient: N1 achica 0,4/s; N2 y N3 +15 de capacidad máxima cada uno (100 → 115 → 130); N4 achica 0,8/s en total; N5 escudo: el siguiente golpe (enemigo, contacto de boss o ataque avisado: `takeWater` y `bossHitLands`) no mete agua y deja 6 s de invulnerabilidad; vuelve 20 s activos después de gastarse (la pausa no cuenta). Los niveles de vinilo admiten `stat` propio y `shield` (`PassiveDef.levels`); stat nuevo `waterCapacityBonus`.
+- La capacidad efectiva la usan inundación, Segunda vida, Salvavidas y `snapshot.water.capacity` (la barra de agua ya la lee). `snapshot.shield` (`enabled`, `ready`, `rechargeS`, `invulnerableS`) y, en la vista, un aro turquesa mínimo alrededor del barco cuando está listo (`survivors-view.ts`, malla `survivors-shield-ready`, también en baja). Textos de carta por nivel en `es-mar.ts` (CRLF conservado). La mejora heredada `bailing` refleja el N1 (0,4).
+- Vecino, `onda` y `bronca`: 8 huecos equidistantes, cada uno 2,5 × el diámetro de colisión del barco, con `gapRad` derivado del radio del frente (`vecinoGapRad`, `gapBoatWidths: 2.5`); la segunda onda gira medio paso (π/8), también al cambiar de fase; las islas siguen cortando. Colisión y vista usan el mismo ángulo.
+- Piloto (bots): ante un anillo apunta al hueco más cercano a su propia distancia y sale recto por él (no rodea sólo por la tangente, que se pasaba de largo en huecos estrechos); cuenta como «dentro» hasta 120 u más allá del alcance del anillo, y el codicioso no persigue notas mientras el anillo le amenaza (antes volvía a entrar tras una nota y lo pillaba fuera de hueco). `BotRun.bossAttackHits` cuenta aparte los golpes avisados.
+- Nota en «Notas» de la guía beta 3 con los valores cambiados.
+
+### Cifras (antes / después)
+
+- Anillos del Vecino, 40 semillas, 120 s, sin armas ni curación, media vida (alternan onda y bronca), capacidad 20 / 100: config v14 con el piloto v14 **30/40 sobreviven, 10 golpes / 40/40, 12 golpes**; config v15 con el piloto nuevo **40/40, 0 golpes / 40/40, 0 golpes**. Mismo piloto nuevo sobre los anillos v14: 16/40, 24 golpes. El piloto v14 sobre los anillos v15: 0/40 (rodeaba sin entrar en huecos de 68 u).
+- Partida entera, codicioso, Normal, 8 semillas por acto: golpes del Vecino 2 con anillos v15 y el piloto final; con el piloto a medias de la tarea, 12 (y 2 con ese piloto sobre los anillos v14).
+- La prueba «el Kraken cuesta más que el Barco Fantasma» fallaba (Tranquila 6 > 5) por ese piloto a medias (aproximación hacia r = 480 y sin margen fuera del anillo), que cambiaba las trayectorias de toda la partida. La curación no influía (mismas cifras con el chill de v14 y sin escudo). Con el piloto corregido pasa sin tocar la prueba; «casi no se come los golpes avisados» vuelve a contar `bossHits` (todos), como en v14.
+
+### Comandos y resultados
+
+- `pnpm exec vitest run packages/engine/src/survivors --testTimeout=60000` → exit 0, 16 archivos, 235 pruebas.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 174 archivos, 1674 pruebas.
+- `sh tools/spec/checks.sh` → exit 0 (294 REQ, OK). `pnpm lint` → exit 0. `pnpm build` → exit 0. `pnpm typecheck` → exit 0.
+
+### Pendiente
+
+- Probar a mano en la beta (Hernán): huecos del Vecino y aro del escudo en móvil.
+- `canon-hud-model.test.ts` compara ahora el número de la carta con coma decimal (0,4), porque el texto de chill lleva decimales.
+
 ## 2026-10-05 — plan 013 T151: Pre-game pop-up (act, difficulty, ranking slot, Jugar)
 
 Qué existe:

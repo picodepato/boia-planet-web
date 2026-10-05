@@ -77,11 +77,13 @@ describe('T129: vinyl tables and slots', () => {
     );
     for (const def of Object.values(SURVIVORS_CONFIG.passives)) {
       expect(def!.levels).toHaveLength(def!.maxLevel);
-      expect(def!.levels.every((l) => l.amount > 0)).toBe(true);
+      expect(def!.levels.every((l) => l.amount > 0 || l.shield)).toBe(true);
       const game = createSurvivors(quiet(), 1, world);
       expect(game.addVinyl(def!.id)).toBe(true);
       for (let level = 1; level <= def!.maxLevel; level++) {
-        const total = def!.levels.slice(0, level).reduce((sum, l) => sum + l.amount, 0);
+        const total = def!.levels
+          .slice(0, level)
+          .reduce((sum, l) => sum + ((l.stat ?? def!.stat) === def!.stat ? l.amount : 0), 0);
         expect(game.snapshot().stats[def!.stat]).toBeCloseTo(total);
         expect(game.vinylLevel(def!.id)).toBe(level);
         if (level < def!.maxLevel) expect(game.levelUpVinyl(def!.id)).toBe(true);

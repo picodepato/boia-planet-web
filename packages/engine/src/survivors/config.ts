@@ -26,7 +26,7 @@ import { VECINO } from './vecino';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 14;
+export const SURVIVORS_CONFIG_VERSION = 15;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -62,6 +62,7 @@ export type StatId =
   | 'speedBonus'
   | 'magnetBonus'
   | 'bailPerS'
+  | 'waterCapacityBonus'
   | 'areaBonus'
   | 'hullBonus'
   | 'xpBonus';
@@ -336,7 +337,13 @@ export interface PassiveDef {
   stat: StatId;
   maxLevel: number;
   /** Incrementos fijos, no totales: levels[0] da nivel 1. */
-  levels: readonly { i18nKey: string; amount: number }[];
+  levels: readonly {
+    i18nKey: string;
+    amount: number;
+    /** Overrides the passive's stat for this level's increment. */
+    stat?: StatId;
+    shield?: { invulnerableS: number; rechargeS: number };
+  }[];
 }
 
 /** Arma a nivel máximo + vinilo pareja = evolución (§4). */
@@ -388,6 +395,8 @@ export interface BossAttackDef {
   /** ring: huecos a ángulos iguales y anchura (rad) de cada uno. */
   gaps: number;
   gapRad: number;
+  /** Physical gap width, in boat hit diameters, at the current ring front. */
+  gapBoatWidths?: number;
   /** line: largo de la embestida; broadside: alcance de los disparos. */
   length: number;
   /** line: u/s de la embestida; broadside: u/s de los disparos. */
@@ -1308,11 +1317,15 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       stat: 'bailPerS',
       maxLevel: 5,
       levels: [
-        { i18nKey: 'survivors.vinyl.chill.l1', amount: 1 },
-        { i18nKey: 'survivors.vinyl.chill.l2', amount: 1 },
-        { i18nKey: 'survivors.vinyl.chill.l3', amount: 1 },
-        { i18nKey: 'survivors.vinyl.chill.l4', amount: 1 },
-        { i18nKey: 'survivors.vinyl.chill.l5', amount: 1 },
+        { i18nKey: 'survivors.vinyl.chill.l1', amount: 0.4 },
+        { i18nKey: 'survivors.vinyl.chill.l2', stat: 'waterCapacityBonus', amount: 15 },
+        { i18nKey: 'survivors.vinyl.chill.l3', stat: 'waterCapacityBonus', amount: 15 },
+        { i18nKey: 'survivors.vinyl.chill.l4', amount: 0.4 },
+        {
+          i18nKey: 'survivors.vinyl.chill.l5',
+          amount: 0,
+          shield: { invulnerableS: 6, rechargeS: 20 },
+        },
       ],
     },
     hardstyle: {
@@ -1985,7 +1998,13 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       amount: 0.4,
       maxStacks: 5,
     },
-    { id: 'bailing', i18nKey: 'survivors.vinyl.chill', stat: 'bailPerS', amount: 1, maxStacks: 5 },
+    {
+      id: 'bailing',
+      i18nKey: 'survivors.vinyl.chill',
+      stat: 'bailPerS',
+      amount: 0.4,
+      maxStacks: 5,
+    },
   ],
   acts: [
     ACT_1,

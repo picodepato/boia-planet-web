@@ -153,8 +153,8 @@ describe('las cartas de nivel', () => {
         capacidad: SURVIVORS_CONFIG.player.waterCapacity,
       });
       expect(text, u.id).not.toMatch(/[{}]/);
-      // Dice el número exacto que da.
-      expect(text, u.id).toContain(String(cardAmount(u)));
+      // Dice el número exacto que da (con la coma decimal del español: 0,4).
+      expect(text, u.id).toContain(String(cardAmount(u)).replace('.', ','));
     }
   });
 

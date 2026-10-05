@@ -69,7 +69,14 @@ export function dodgeShip(game: SurvivorsGame, notes = false): ShipInput {
     fx += dx * k;
     fy += dy * k;
   }
-  if (notes && nearest > SAFE_DISTANCE) {
+  const ringThreat = s.bossWarnings.some((warning) => {
+    if (warning.kind !== 'ring') return false;
+    const distance = Math.hypot(wrapDelta(p.x - warning.x, w), wrapDelta(p.y - warning.y, h));
+    return distance <= warning.radius + RING_MARGIN &&
+      (!warning.hit || distance >= warning.ringRadius - warning.thickness);
+  });
+  // Stay aligned with the gap until the front passes, before resuming note collection.
+  if (notes && nearest > SAFE_DISTANCE && !ringThreat) {
     let best = NOTE_REACH;
     let nx = 0;
     let ny = 0;
@@ -145,6 +152,12 @@ const BOSS_WEIGHT = 3;
 const WARNING_MARGIN = 40;
 /** Peso de salir de un aviso frente a la huida normalizada (1). */
 const WARNING_WEIGHT = 3;
+/**
+ * u: band outside a ring's reach that still counts as inside it (T149):
+ * without it, a boat that just got beyond the front drifts back in after
+ * notes and is caught away from a gap.
+ */
+const RING_MARGIN = 120;
 
 /**
  * Hacia dónde salir de los avisos de boss que pisan (x, y), sumado y sin
@@ -192,7 +205,7 @@ export function warningEscape(
       case 'ring': {
         // Ya pasada la onda, a salvo; fuera del radio, también.
         if (wn.hit && d < wn.ringRadius - wn.thickness) break;
-        if (d > wn.radius + WARNING_MARGIN || d < 1) break;
+        if (d > wn.radius + RING_MARGIN || d < 1) break;
         if (wn.gaps <= 0) {
           ox += dx / d;
           oy += dy / d;
@@ -206,11 +219,15 @@ export function warningEscape(
         const g = g0 + kGap * step;
         let da = a - g;
         da = Math.atan2(Math.sin(da), Math.cos(da));
-        if (Math.abs(da) < wn.gapRad / 3) break;
-        // Rodear el centro hacia el hueco (tangente).
-        const t = da > 0 ? -1 : 1;
-        ox += (-dy / d) * t;
-        oy += (dx / d) * t;
+        // Aim through the gap and beyond the front. Pure tangential steering
+        // at full throttle overshoots narrow gaps and keeps circling the boss;
+        // once aligned, sailing straight out along the gap keeps the angle.
+        const targetRadius = d + WARNING_MARGIN;
+        const tx = Math.cos(g) * targetRadius - dx;
+        const ty = Math.sin(g) * targetRadius - dy;
+        const length = Math.max(1, Math.hypot(tx, ty));
+        ox += tx / length;
+        oy += ty / length;
         break;
       }
       default:
@@ -342,6 +359,8 @@ export interface BotRun {
   pickups: string[];
   /** Bosses (T137): golpes de boss recibidos, agua que metieron y los vencidos en orden. */
   bossHits: number;
+  /** Hits from a telegraphed attack, excluding ordinary boss contact. */
+  bossAttackHits: number;
   bossWater: number;
   bossesDefeated: BossId[];
   /** T147: cada boss que entró, en orden: cuándo, cuándo acabó y cómo. */
@@ -418,6 +437,7 @@ export function runBot(
     elitesDefeated: 0,
     pickups: [],
     bossHits: 0,
+    bossAttackHits: 0,
     bossWater: 0,
     bossesDefeated: [],
     bossFights: [],
@@ -458,6 +478,7 @@ export function runBot(
       } else if (e.type === 'bossHit') {
         run.hits++;
         run.bossHits++;
+        if (e.attack !== null) run.bossAttackHits++;
         run.bossWater += e.water - water;
         run.bossHitsBy[e.boss] = (run.bossHitsBy[e.boss] ?? 0) + 1;
         run.bossWaterBy[e.boss] = (run.bossWaterBy[e.boss] ?? 0) + (e.water - water);

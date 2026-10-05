@@ -9,7 +9,16 @@ import type {
 } from '@boia/engine/survivors';
 import { NOTE_FIGURES } from '@boia/engine/survivors';
 import type { QualityTier } from '@boia/engine/streaming';
-import { Color, Group, type InstancedMesh, type Material, Mesh, Object3D } from 'three';
+import {
+  Color,
+  Group,
+  type InstancedMesh,
+  type Material,
+  Mesh,
+  MeshBasicMaterial,
+  Object3D,
+  RingGeometry,
+} from 'three';
 import { toScene } from './compress';
 import { SurvivorsPickups } from './survivors-pickups';
 import { SurvivorsReadouts } from './survivors-readouts';
@@ -125,6 +134,7 @@ export class SurvivorsView {
   readonly shark: SurvivorsShark;
   private readonly shots: InstancedMesh;
   private readonly halos: InstancedMesh;
+  private readonly shieldRing: InstancedMesh;
   private readonly warnings: InstancedMesh;
   private readonly shadows: InstancedMesh;
   /**
@@ -228,6 +238,12 @@ export class SurvivorsView {
       caps.enemies,
       'survivors-elite',
     );
+    this.shieldRing = instanced(
+      new RingGeometry(1, 1.12, this.quality === 'baja' ? 24 : 40).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: '#7cdbc9' }),
+      1,
+      'survivors-shield-ready',
+    );
     // Dos por aviso: el tramo entero y lo que ya se ha llenado (el color va por pieza).
     this.warnings = instanced(
       warningLineGeometry(),
@@ -250,6 +266,7 @@ export class SurvivorsView {
       this.warnings,
       this.bossWarnings,
       this.halos,
+      this.shieldRing,
       this.shots,
       ...Object.values(this.weapons.meshes),
       ...this.noteMeshes,
@@ -410,6 +427,18 @@ export class SurvivorsView {
     this.updateEnemies(s, t, dt);
     this.readouts.update(s, this.reduced);
     const d = this.dummy;
+    if (s.shield.ready) {
+      d.position.set(
+        toScene(s.player.x),
+        this.groundAt(toScene(s.player.x), toScene(s.player.y)) + 0.15,
+        toScene(s.player.y),
+      );
+      d.rotation.set(0, 0, 0);
+      d.scale.setScalar(Math.max(1.5, toScene(s.player.radius) * 1.6));
+      d.updateMatrix();
+      this.shieldRing.setMatrixAt(0, d.matrix);
+    }
+    show(this.shieldRing, s.shield.ready ? 1 : 0);
     this.weapons.update(s, t, this.reduced);
     const ns = Math.min(s.enemyProjectiles.length, this.shots.instanceMatrix.count);
     for (let i = 0; i < ns; i++) {

@@ -706,9 +706,26 @@ describe('bosses T137: guion', () => {
   }, 60_000);
 
   it('el piloto cuenta los golpes de boss y los vencidos', () => {
-    const r = runBot(scripted(), 'greedy', 1, openSea(), { startAtS: 140 }, 200);
-    expect(r.bossHits + r.bossesDefeated.length).toBeGreaterThan(0);
-    expect(r.hits).toBeGreaterThanOrEqual(r.bossHits);
-    for (const id of r.bossesDefeated) expect(id satisfies BossId).toBe('prueba');
+    // Accounting must exercise both event paths regardless of how well greedy dodges.
+    const hit = runBot(scripted((c) => {
+      c.acts = [{ ...c.acts[0]!, tracks: [], events: [{ atS: 0.1, type: 'miniboss', ref: 'prueba', enabled: true }] }];
+      c.weapons.canon!.base.damage = 0;
+      stillBoss(c, ['onda']);
+      c.bosses.prueba!.attacks.onda!.gaps = 0;
+      c.bosses.prueba!.attacks.onda!.radius = c.bossFight.entryDistance + 100;
+    }), 'idle', 1, openSea(), {}, 10);
+    expect(hit.bossAttackHits).toBeGreaterThan(0);
+    expect(hit.bossHits).toBeGreaterThanOrEqual(hit.bossAttackHits);
+    expect(hit.hits).toBeGreaterThanOrEqual(hit.bossHits);
+    const defeated = runBot(scripted((c) => {
+      c.acts = [{ ...c.acts[0]!, tracks: [], events: [{ atS: 0.1, type: 'miniboss', ref: 'prueba', enabled: true }] }];
+      c.bosses.prueba!.hp = 1;
+      c.bossFight.entryDistance = 40;
+      c.weapons.canon!.base.range = c.bossFight.entryDistance + 100;
+      stillBoss(c, []);
+    }), 'idle', 1, openSea(), {}, 10);
+    expect(defeated.bossesDefeated).toEqual(['prueba'] satisfies BossId[]);
+    expect(defeated.bossHits).toBeGreaterThan(0);
+    expect(defeated.bossAttackHits).toBe(0);
   }, 60_000);
 });

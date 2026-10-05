@@ -22,8 +22,9 @@ export const VECINO: BossDef = {
       water: 16,
       radius: 440,
       thickness: 22,
-      gaps: 3,
-      gapRad: 0.65,
+      gaps: 8,
+      gapRad: 0,
+      gapBoatWidths: 2.5,
       length: 0,
       speed: 0,
       count: 0,
@@ -39,8 +40,9 @@ export const VECINO: BossDef = {
       water: 20,
       radius: 480,
       thickness: 26,
-      gaps: 3,
-      gapRad: 0.55,
+      gaps: 8,
+      gapRad: 0,
+      gapBoatWidths: 2.5,
       length: 0,
       speed: 0,
       count: 0,
@@ -85,6 +87,17 @@ export interface RingObstacle {
 export interface RingArc {
   from: number;
   to: number;
+}
+
+/** Arc width is 2.5 hit diameters; near the origin gaps meet without overlapping. */
+export function vecinoGapRad(
+  radius: number,
+  boatRadius: number,
+  gaps: number,
+  boatWidths: number,
+): number {
+  if (gaps <= 0) return 0;
+  return Math.min((Math.PI * 2) / gaps, (boatWidths * boatRadius * 2) / Math.max(1, radius));
 }
 
 /**
