@@ -145,6 +145,8 @@ interface StartOptions {
   difficulty?: DifficultyId | null;
   /** `&botin=1` (T135): el botín siempre y de regalo al empezar. */
   loot?: boolean;
+  /** `&acto=<n>` (T142): jugar ese acto; sólo con los atajos encendidos. */
+  act?: number | null;
 }
 
 export function useCanonMode({
@@ -260,6 +262,7 @@ export function useCanonMode({
       mix = false,
       difficulty: askedDifficulty = null,
       loot = false,
+      act = null,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
@@ -274,6 +277,7 @@ export function useCanonMode({
         difficultyRef.current = askedDifficulty;
         setDifficulty(askedDifficulty);
       }
+      const devAct = act !== null && devShortcutsEnabled() ? act : null;
       const run: SurvivorsRun = new SurvivorsRun(sea, {
         difficulty: difficultyRef.current,
         seed: seed ?? randomSeed(),
@@ -283,6 +287,7 @@ export function useCanonMode({
         devWeapons: weapons && devShortcutsEnabled(),
         devMix: mix && devShortcutsEnabled(),
         devLoot: loot && devShortcutsEnabled(),
+        ...(devAct ? { act: devAct } : {}),
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (weapons) run.devAllWeapons();
@@ -310,6 +315,7 @@ export function useCanonMode({
           card: gift,
           weapons: weapons && devShortcutsEnabled(),
           loot: loot && devShortcutsEnabled(),
+          act: devAct,
         }),
         devStartRewards: devStartRewards(),
       });
@@ -432,6 +438,7 @@ export function useCanonMode({
         weapons: sc.weapons,
         mix: sc.mix,
         loot: sc.loot,
+        act: sc.act,
       });
     }
   }, [ready, start]);
@@ -623,6 +630,7 @@ export function CanonTestHook({
       data-botin-agua={hud.botinAgua}
       data-botin-cerca={hud.botinCerca || undefined}
       data-llama={hud.llama}
+      data-acto={hud.acto}
       data-jefes={hud.jefes || undefined}
       data-cofre-cerca={hud.cofreCerca || undefined}
       data-premio={prize ?? undefined}

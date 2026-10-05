@@ -5,6 +5,7 @@ import type {
   QualityCaps,
   SurvivorsConfig,
   SurvivorsSnapshot,
+  SurvivorsWorld,
 } from '@boia/engine/survivors';
 import { NOTE_FIGURES } from '@boia/engine/survivors';
 import type { QualityTier } from '@boia/engine/streaming';
@@ -14,6 +15,7 @@ import { SurvivorsPickups } from './survivors-pickups';
 import { SurvivorsShark } from './survivors-shark';
 import { SurvivorsWeapons } from './survivors-weapons';
 import { SurvivorsVecino } from './survivors-vecino';
+import { SurvivorsKraken } from './survivors-kraken';
 import { curveTree } from './planet';
 import {
   BOSS_WARNING_CAP,
@@ -94,6 +96,11 @@ export interface SurvivorsViewOptions {
    * pasa por encima de las islas. Sin valor, agua en todas partes.
    */
   groundAt?: (x: number, z: number) => number;
+  /**
+   * El mar de la partida (u): sus límites y sus islas, para que el Kraken
+   * tienda los brazos hacia la isla que agarra (T142). Sin valor, a su espalda.
+   */
+  sea?: Pick<SurvivorsWorld, 'bounds' | 'obstacles'>;
 }
 
 export class SurvivorsView {
@@ -124,6 +131,8 @@ export class SurvivorsView {
    */
   private readonly ghostShip: { solid: Mesh; ghost: Mesh } | null;
   readonly vecino: SurvivorsVecino | null;
+  /** El Kraken (T142): sombra, cabeza, tentáculos, rocas y avisos. Null si la config no lo tiene. */
+  readonly kraken: SurvivorsKraken | null;
   /** Los piratas fantasma que llama (el modelo del pirata teñido y translúcido), por tipo. */
   private readonly ghostMeshes: (InstancedMesh | null)[] = [];
   /** Las líneas de aviso de los bosses (andanadas, embestidas): dos piezas por línea, como `warnings`. */
@@ -188,6 +197,8 @@ export class SurvivorsView {
     } else this.ghostShip = null;
     this.vecino = config.bosses.vecino ? new SurvivorsVecino(this.quality) : null;
     if (this.vecino) this.group.add(this.vecino.group);
+    this.kraken = config.bosses.kraken ? new SurvivorsKraken(this.quality, opts.sea ?? null) : null;
+    if (this.kraken) this.group.add(this.kraken.group);
     this.bossWarnings = instanced(
       warningLineGeometry(),
       warningLineMaterial(),
@@ -365,6 +376,13 @@ export class SurvivorsView {
       test(vecino.position.x, vecino.position.y, vecino.position.z, vecino.scale.x * 1.5)
     )
       out.push('vecino');
+    // El Kraken (T142): `kraken:<modo>` si se ve su cabeza o su sombra.
+    const kraken = this.kraken?.shown();
+    if (kraken && this.last) {
+      const p = kraken.mesh.position;
+      const mode = this.last.bosses.find((b) => b.kraken)?.kraken?.mode ?? 'submerged';
+      if (test(p.x, Math.max(0, p.y), p.z, kraken.mesh.scale.x * 1.5)) out.push(`kraken:${mode}`);
+    }
     const g = this.ghostShip;
     if (g) {
       for (const [mesh, mode] of [
@@ -549,6 +567,7 @@ export class SurvivorsView {
    */
   private updateBosses(s: SurvivorsSnapshot, t: number): void {
     this.vecino?.update(s, t, this.reduced);
+    this.kraken?.update(s, t, this.reduced);
     const g = this.ghostShip;
     if (g) {
       let seen = false;
@@ -616,6 +635,7 @@ export class SurvivorsView {
 
   dispose(): void {
     this.vecino?.dispose();
+    this.kraken?.dispose();
     this.weapons.dispose();
     this.group.removeFromParent();
     const done = new Set<unknown>();

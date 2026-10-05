@@ -35,6 +35,7 @@ import {
   LAYER_KINDS,
   SurvivorsRun,
   canonBlockKey,
+  asAct,
   canonShortcut,
   devShortcutsEnabled,
   devStartRewards,
@@ -94,6 +95,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       mix: false,
       difficulty: null,
       loot: false,
+      act: null,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
       t: 0,
@@ -105,6 +107,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       mix: false,
       difficulty: null,
       loot: false,
+      act: null,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
     expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({ card: true, mix: false });
@@ -130,6 +133,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       mix: false,
       difficulty: null,
       loot: false,
+      act: null,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });
@@ -269,6 +273,44 @@ describe('T135 atajo botin=1', () => {
     }
     expect(run.hook().botin).toBeGreaterThanOrEqual(1);
     expect(run.hook().botinAgua).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('T142 atajo acto=<n>', () => {
+  it('sólo actos que la config tiene, con los atajos encendidos; se quita de la URL y marca la partida como de prueba', () => {
+    const dev = env({ nodeEnv: 'development' });
+    for (const a of SURVIVORS_CONFIG.acts) {
+      expect(canonShortcut(`?minijuego=canon&acto=${a.act}`, dev)?.act).toBe(a.act);
+    }
+    const missing = Math.max(...SURVIVORS_CONFIG.acts.map((a) => a.act)) + 1;
+    for (const bad of [String(missing), '0', '-1', '1.5', 'dos', '']) {
+      expect(canonShortcut(`?minijuego=canon&acto=${bad}`, dev)?.act).toBeNull();
+    }
+    expect(asAct('2', SURVIVORS_CONFIG)).toBe(SURVIVORS_CONFIG.acts.some((a) => a.act === 2) ? 2 : null);
+    expect(canonShortcut('?minijuego=canon&acto=2', env({}))).toBeNull();
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&acto=2&dev=1')).toBe('http://x/mar?dev=1');
+    expect(isDevStart({ act: 2 })).toBe(true);
+    expect(isDevStart({ act: 1 })).toBe(true);
+    expect(isDevStart({ act: null })).toBe(false);
+  });
+
+  it('la partida juega ese acto y lo cuenta en `acto`; pasado su último hueco, el boss final del acto 2 es el Kraken', () => {
+    const act2 = SURVIVORS_CONFIG.acts.find((a) => a.act === 2)!;
+    const slot = act2.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
+    expect(slot.ref).toBe('kraken');
+    const make = (act?: number) =>
+      new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }), {
+        seed: 7,
+        quality: 'baja',
+        ship: MAR_SHIP_CONFIG,
+        startAtS: slot.atS + 5,
+        ...(act ? { act } : {}),
+      });
+    expect(make().hook().acto).toBe(1);
+    const run = make(2);
+    expect(run.hook().acto).toBe(2);
+    for (let i = 0; i < 10; i++) run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
+    expect(run.snapshot().bosses.map((b) => b.boss)).toContain('kraken');
   });
 });
 

@@ -4,6 +4,30 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T142: El Kraken en el mar 3D
+
+Qué existe:
+- **`apps/web/app/mar/engine/survivors-kraken.ts`** (módulo propio, `SurvivorsKraken`): pinta lo que `BossView.kraken` (T141) cuenta, sin crear nada durante `update`. Ocho piezas, todas baratas: la **sombra** (disco alargado en su rumbo, opacidad fija 0,5, a ras de agua) mientras está sumergido y al salir/hundirse (se encoge con el progreso); la **cabeza** (una geometría low-poly con manto, manchas, morro y ojos mirando a +x; sube desde bajo el agua con el progreso de `emerging` y baja con `diving`; fuera asoma, y con la **cabeza expuesta** sube un poco más y la rodea un **aro dorado fijo**, sin parpadeo); los **tentáculos** (dos `InstancedMesh`, base y punta que se dobla, tope 10) que salen de su círculo al subir (`rising`: alto = progreso; `up`: entero; `down`: lo que queda fuera) inclinados hacia fuera del Kraken; los **círculos de aviso** (`bossWarnings` de forma `circles` del Kraken: aro + relleno que crece con el progreso, lleno al golpear; rojo para tentáculos, ámbar para rocas; tope 16); las **rocas** (icosaedro instanciado, tope 8) volando en arco desde el Kraken hasta su círculo; y el **agarre**: dos brazos tendidos sobre la isla agarrada (dirección con el mar de la partida y la vuelta del planeta). En `baja`, menos segmentos en círculos y piezas. **Movimiento reducido**: sin vaivén de cabeza, sombra, tentáculos ni giro de rocas; la cabeza cambia de altura sin animación. Colores y tamaños como constantes `muestra` (`KRAKEN_COLORS`, `KRAKEN_HEAD_Y`, `TENTACLE_SIZE`…).
+- `survivors-view.ts`: crea `SurvivorsKraken` si la config tiene `bosses.kraken` (antes del `curveTree`, así se curva con el planeta), lo pinta en `updateBosses`, lo suelta en `dispose`; `bossesWhere` añade `kraken:<modo>` si se ve la cabeza o la sombra; opción nueva `sea` (límites + islas) para los brazos del agarre. `mar3d.ts` (sólo partida): pasa `sea: run.game.world` y `data-canon-boss` lleva `kraken:<modo>`.
+- **Atajo `acto=<n>`** (temporal hasta T144): `CANON_PARAMS.act`, `asAct` (sólo actos que la config tiene), `canonShortcut().act`, se quita de la URL, `isDevStart({ act })` la marca de prueba (sin premio en producción); `SurvivorsRunOptions.act` → `createSurvivors({ act })`; `CanonHook.acto` y `data-acto` en `canon-mode.tsx`. El acto **no** entra aún en `configHash` (T144).
+- i18n: `survivors.boss.kraken` = «El Kraken» (`muestra`).
+- Pruebas: `survivors-kraken.test.ts` (9): modelos (cabeza con ojos, tentáculo de y 0→1, clave i18n), `headOut` por modo, partida real (sombra sumergido → cabeza fuera → círculo de aviso → tentáculos donde la simulación los pone; sin boss nada pintado), cabeza expuesta con aro fijo, círculos con progreso y colores, rocas en arco, brazos hacia la isla, movimiento reducido quieto (y sin reducir, se mueve), `dispose` de cada geometría/material una vez (sola y desde la vista). `survivors.test.ts` (2 nuevas): el atajo y que `acto=2` pasado el hueco trae al Kraken. e2e `mar-canon.spec.ts`: `?minijuego=canon&acto=2&t=<hueco+5>&seed=7` → `data-acto=2`, el Kraken entra en pantalla y se le ve fuera del agua, sin errores de consola.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/survivors.test.ts apps/web/app/mar/engine --testTimeout=60000` → exit 0, 27 archivos, 282 pruebas.
+- `E2E_PORT=4371 pnpm e2e mar-canon.spec.ts --workers=1 -g Kraken` → exit 0, 2 pasadas (móvil 4,7 s, escritorio 4,8 s).
+- `E2E_PORT=4371 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, 61 pasadas, 1 saltada (rendimiento, sólo móvil), 13,4 min.
+- Test command, paso a paso: `pnpm exec vitest run --exclude "**/packages/db/**" --testTimeout=30000` (161 archivos, 1582 pruebas), `sh tools/spec/checks.sh`, `pnpm lint`, `pnpm build`, `pnpm typecheck` → los cinco exit 0.
+
+Tras unir main con T139 (conflictos sólo en `canon-mode.tsx`, `survivors-view.ts`, `survivors.ts`: se quedan los dos lados, `data-acto` junto a `data-jefes`/`data-cofre-cerca`, `acto` junto a `jefes`/`cofreCerca`; además se devolvieron `canon-mode.tsx` y `survivors-view.ts` a finales de línea LF como en main):
+- `pnpm exec vitest run apps/web/app/mar --testTimeout=60000` → exit 0, 37 archivos, 368 pruebas.
+- `E2E_PORT=4371 pnpm e2e mar-canon.spec.ts --workers=1` → 62 pasadas, 1 saltada, 1 fallada (12,3 min): «Tiburón Martillo… carta de cofre (T139)» en móvil no vio al tiburón con la máquina cargada; sola (`-g Martillo`) → exit 0, 2 pasadas.
+- Test command paso a paso → los cinco exit 0; vitest 163 archivos, 1598 pruebas.
+
+Pendiente:
+- El acto elegido en el panel, la campaña y el acto en `configHash` (T144); quitar o mantener `acto=` como atajo lo decide T144.
+- La barra del Kraken en el HUD (T143); medir el fotograma en `baja` con el Kraken (T147).
+
 ## 2026-10-05 — plan 012 T139: Miniboss 2: Tiburón Martillo and the chest
 
 Qué existe:

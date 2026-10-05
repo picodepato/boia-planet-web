@@ -1443,6 +1443,8 @@ export class Mar3D {
       reduced: this.reducedMotion,
       // La gaviota vuela por encima de las islas (T126).
       groundAt: (x, z) => this.groundAt(x, z),
+      // El Kraken tiende los brazos hacia la isla que agarra (T142).
+      sea: run.game.world,
     });
     this.scene.add(view.group);
     this.camTuning = run.config.camera;
@@ -1542,10 +1544,16 @@ export class Mar3D {
     if (ds.canonVista !== vista) ds.canonVista = vista;
     const vistos = [...sv.seen].sort().join(' ');
     if (ds.canonVistos !== vistos) ds.canonVistos = vistos;
-    // T140: los bosses vivos («fantasma:solid») y los que están en pantalla, para las pruebas.
+    // T140: los bosses vivos («fantasma:solid», T142: «kraken:submerged») y los que están en pantalla, para las pruebas.
     const boss = sv.run
       .snapshot()
-      .bosses.map((b) => (b.fantasma ? `${b.boss}:${b.fantasma.mode}` : b.boss))
+      .bosses.map((b) =>
+        b.fantasma
+          ? `${b.boss}:${b.fantasma.mode}`
+          : b.kraken
+            ? `${b.boss}:${b.kraken.mode}`
+            : b.boss,
+      )
       .join(' ');
     const bossVista = sv.view.bossesWhere(onScreen).join(' ');
     if (ds.canonBoss !== boss) ds.canonBoss = boss;

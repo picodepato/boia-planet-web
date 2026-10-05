@@ -64,6 +64,11 @@ export const CANON_PARAMS = {
    * partida empieza con los tres objetos del botín flotando junto al barco.
    */
   loot: 'botin',
+  /**
+   * `acto=<n>` (T142): jugar el acto `n` del guion (el 2 trae al Kraken).
+   * Atajo temporal hasta que el panel elija el acto (T144).
+   */
+  act: 'acto',
   dev: 'dev',
 } as const;
 
@@ -115,7 +120,8 @@ export function devStartRewards(env: DevEnv = devEnv()): boolean {
  * ¿La partida es de prueba? Lo es si un atajo cambia el juego: `&t=` (se
  * salta tiempo), `&seed=` (una semilla elegida se puede ensayar),
  * `&carta=1` (un nivel regalado), `&armas=1` (todas las armas) o `&botin=1`
- * (el botín de regalo, T135). `&derrota=` sólo cambia cómo se ve: no.
+ * (el botín de regalo, T135) o `&acto=` (otro acto, T142). `&derrota=` sólo
+ * cambia cómo se ve: no.
  */
 export function isDevStart(s: {
   t?: number;
@@ -123,13 +129,15 @@ export function isDevStart(s: {
   card?: boolean;
   weapons?: boolean;
   loot?: boolean;
+  act?: number | null;
 }): boolean {
   return (
     (s.t ?? 0) > 0 ||
     (s.seed ?? null) !== null ||
     s.card === true ||
     s.weapons === true ||
-    s.loot === true
+    s.loot === true ||
+    (s.act ?? null) !== null
   );
 }
 
@@ -152,6 +160,8 @@ export interface CanonShortcut {
   difficulty: DifficultyId | null;
   /** El botín siempre y de regalo al empezar (`&botin=1`, T135). */
   loot: boolean;
+  /** Acto pedido (`&acto=<n>`, T142), o null (el primero). Sólo actos que la config tiene. */
+  act: number | null;
 }
 
 /**
@@ -178,7 +188,15 @@ export function canonShortcut(
     weapons: q.get(CANON_PARAMS.weapons) === '1',
     difficulty: asDifficulty(q.get(CANON_PARAMS.difficulty)),
     loot: q.get(CANON_PARAMS.loot) === '1',
+    act: asAct(q.get(CANON_PARAMS.act), config),
   };
+}
+
+/** El acto `v` si la config lo tiene (`acts[].act`); si no, null. */
+export function asAct(v: string | null | undefined, config: SurvivorsConfig = SURVIVORS_CONFIG): number | null {
+  if (v === null || v === undefined || !/^\d+$/.test(v)) return null;
+  const n = Number(v);
+  return config.acts.some((a) => a.act === n) ? n : null;
 }
 
 /** La URL sin el atajo (se consume al usarlo, como la ruta de prueba de antes); `dev` se queda. */
@@ -194,6 +212,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.weapons,
     CANON_PARAMS.difficulty,
     CANON_PARAMS.loot,
+    CANON_PARAMS.act,
   ]) {
     url.searchParams.delete(p);
   }
@@ -411,6 +430,8 @@ export interface SurvivorsRunOptions {
   config?: SurvivorsConfig;
   /** Dificultad (T131); sin valor, Normal. */
   difficulty?: DifficultyId;
+  /** Acto del guion (atajo `&acto=`, T142); sin valor, el primero. */
+  act?: number;
   /**
    * Elegir sola la primera carta de nivel (sólo para pruebas y bots: en
    * `/mar` las elige el jugador con `choose`, T118). Por defecto, no.
@@ -452,6 +473,8 @@ export interface CanonHook {
   botinCerca: string;
   /** s que le quedan a la Llama (hacia arriba; 0 apagada). */
   llama: number;
+  /** Acto que se juega (T142). */
+  acto: number;
   /** Los bosses vivos (sus `BossId`, separados por espacios; '' sin ninguno, T139). */
   jefes: string;
   /** Dónde flota el cofre más cercano al barco (u, enteros): «x,y»; '' sin ninguno (T139). */
@@ -541,6 +564,7 @@ export class SurvivorsRun {
       quality: opts.quality,
       ship: opts.ship,
       ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
+      ...(opts.act ? { act: opts.act } : {}),
       ...(opts.startAtS ? { startAtS: opts.startAtS } : {}),
     });
   }
@@ -678,6 +702,7 @@ export class SurvivorsRun {
       botinAgua: s.pickups.length,
       botinCerca: nearestPickup(s),
       llama: s.flame ? Math.ceil(s.flame.leftS - 1e-6) : 0,
+      acto: s.act,
       jefes: s.bosses.map((b) => b.boss).join(' '),
       cofreCerca: nearestOf(s.chests, s.player),
     };

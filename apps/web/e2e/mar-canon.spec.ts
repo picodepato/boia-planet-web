@@ -257,6 +257,40 @@ test('pasadas las 5:30 (`t=`) el Barco Pirata Fantasma está en la partida y ent
   expect(errors).toEqual([]);
 });
 
+test('acto 2 pasadas las 5:30 (`acto=2&t=`): el Kraken persigue bajo el agua, sale y entra en pantalla, sin errores (T142)', async ({
+  page,
+}) => {
+  const act2 = SURVIVORS_CONFIG.acts.find((a) => a.act === 2)!;
+  const slot = act2.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
+  expect(slot.ref).toBe('kraken');
+  const consoleErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  const errors = await openMar(page, `?minijuego=canon&acto=2&t=${slot.atS + 5}&seed=7`);
+  await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
+  await expect(game(page)).toHaveAttribute('data-acto', '2');
+  // `data-canon-boss`: «kraken:<modo>» (submerged, emerging, emerged, grabbing, diving).
+  await expect(canvas(page)).toHaveAttribute('data-canon-boss', /kraken:/, { timeout: 20_000 });
+  await page.keyboard.down('ArrowRight');
+  const seen = new Set<string>();
+  await expect
+    .poll(
+      async () => {
+        if ((await game(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+        const vista = (await canvas(page).getAttribute('data-canon-boss-vista')) ?? '';
+        for (const m of vista.matchAll(/kraken:(\w+)/g)) seen.add(m[1]!);
+        // Visto en pantalla y, alguna vez, fuera del agua (cabeza y tentáculos).
+        return seen.size > 0 && (seen.has('emerged') || seen.has('grabbing') || seen.has('emerging'));
+      },
+      { timeout: 90_000, intervals: [300] },
+    )
+    .toBe(true);
+  await page.keyboard.up('ArrowRight');
+  expect(errors).toEqual([]);
+  expect(consoleErrors).toEqual([]);
+});
+
 for (const reduced of [false, true]) {
   test(`all max-level weapons are drawn without console errors (T128, reduced=${reduced})`, async ({
     page,
