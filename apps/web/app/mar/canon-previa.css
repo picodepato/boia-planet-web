@@ -1,0 +1,327 @@
+/* El pop-up antes de la partida del Cañón (plan 013, T151). La misma noche de
+   cristal oscuro que la tarjeta final (abre y cierra la partida igual): cada
+   acto es una ventanita de cielo con su boss final (el celeste del Barco
+   Fantasma, el azul hondo del Kraken, la niebla de lo que aún no existe).
+   Abajo en el móvil, centrado en escritorio; nunca encima de «Entradas» (z 7).
+   muestra */
+
+.mar-canon-previa-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  /* Modal: puede tapar el minimapa y los enlaces de arriba, nunca la barra de abajo. */
+  padding: calc(var(--safe-t) + 10px) calc(var(--safe-r) + 10px) var(--above-bar)
+    calc(var(--safe-l) + 10px);
+  background: rgb(10 6 40 / 0.32);
+}
+
+.mar-canon-previa {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 14px 14px 14px;
+  border-radius: 20px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 12px 32px rgb(10 6 40 / 0.4);
+  color: var(--cream);
+  animation: mar-up 0.28s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.mar-canon-previa__head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 2px 10px;
+  margin-bottom: 10px;
+}
+
+.mar-canon-previa__title {
+  margin: 0;
+  font: 900 1.3rem / 1.1 var(--font-title);
+  color: var(--canon-dawn);
+}
+
+.mar-canon-previa__beta {
+  display: inline-block;
+  vertical-align: middle;
+  padding: 2px 6px 1px;
+  border-radius: 6px;
+  border: 1.5px dashed var(--canon-dawn);
+  font: 800 0.62rem / 1.3 var(--font-title);
+  letter-spacing: 0.08em;
+  cursor: help;
+}
+
+.mar-canon-previa__text {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.mar .mar-canon-previa__close {
+  width: 44px;
+  height: 44px;
+  margin: -8px -8px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cream);
+  font: 700 1.6rem / 1 var(--font-title);
+  cursor: pointer;
+}
+
+.mar-canon-previa__label {
+  margin: 12px 0 6px;
+  font: 800 0.86rem / 1.2 var(--font-title);
+}
+
+/* ---------- Los actos: tres ventanas de cielo ---------- */
+
+.mar .mar-canon-acto {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mar .mar-canon-acto-opcion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 96px;
+  padding: 0 0 8px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: rgb(255 255 255 / 0.06);
+  color: var(--cream);
+  text-align: center;
+  cursor: pointer;
+}
+
+.mar-canon-acto-sky {
+  display: block;
+  height: 30px;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, #231a5c, #2b2470);
+}
+
+/* Acto 1: la luna celeste del Barco Fantasma sobre el agua. */
+.mar-canon-acto-opcion[data-testid='mar-canon-acto-1'] .mar-canon-acto-sky {
+  background:
+    radial-gradient(circle 9px at 70% 46%, #d9f7ff 0 92%, transparent),
+    radial-gradient(ellipse 50px 22px at 70% 46%, rgb(95 217 255 / 0.4), transparent 70%),
+    linear-gradient(180deg, #36278a, #1f3d7a 78%, #5fd9ff 78%);
+}
+
+/* Acto 2: el mar hondo del Kraken, con la curva de un tentáculo. */
+.mar-canon-acto-opcion[data-testid='mar-canon-acto-2'] .mar-canon-acto-sky {
+  background:
+    radial-gradient(circle 9px at 30% 100%, transparent 0 55%, #0e2f5c 58% 92%, transparent),
+    linear-gradient(180deg, #231a5c 0 52%, var(--canon-water-deep) 52%);
+}
+
+/* Lo que aún no existe: niebla. */
+.mar-canon-acto-opcion[data-estado='soon'] .mar-canon-acto-sky {
+  background: repeating-linear-gradient(
+    -24deg,
+    rgb(255 255 255 / 0.12) 0 6px,
+    rgb(255 255 255 / 0.04) 6px 12px
+  );
+}
+
+.mar-canon-acto-nombre {
+  font: 900 0.92rem / 1.15 var(--font-title);
+}
+
+.mar-canon-acto-boss {
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.85;
+}
+
+.mar-canon-acto-nota {
+  align-self: center;
+  margin-top: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  font: 800 0.64rem / 1.4 var(--font-title);
+}
+
+.mar .mar-canon-acto-opcion[aria-checked='true'] {
+  border-color: var(--canon-dawn);
+  background: rgb(255 210 122 / 0.14);
+  box-shadow: 0 0 0 1px var(--canon-dawn);
+}
+
+/* Superado: el boss final ya cayó (la campaña, T144). */
+.mar-canon-acto-opcion[data-superado='si'] .mar-canon-acto-nota {
+  background: var(--canon-dawn);
+  color: var(--ink);
+}
+
+/* Cerrado o próximamente: se ve, dice por qué, pero no se marca. */
+.mar .mar-canon-acto-opcion[aria-disabled='true'] {
+  border-style: dashed;
+  background: transparent;
+  color: rgb(255 244 226 / 0.6);
+  cursor: not-allowed;
+}
+
+.mar .mar-canon-acto-opcion[aria-disabled='true'] .mar-canon-acto-sky {
+  opacity: 0.45;
+}
+
+/* ---------- La dificultad ---------- */
+
+.mar .mar-canon-dificultad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.08);
+}
+
+.mar .mar-canon-dificultad-opcion {
+  min-height: 44px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--cream);
+  font: 800 0.84rem / 1.2 var(--font-title);
+  cursor: pointer;
+}
+
+.mar .mar-canon-dificultad-opcion[aria-checked='true'] {
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.mar .mar-canon-dificultad-opcion[aria-checked='true'][data-dificultad='tormenta'] {
+  background: var(--orange);
+  color: var(--cream);
+}
+
+.mar-canon-previa__hint {
+  min-height: 2.4em;
+  margin: 6px 2px 0;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  opacity: 0.8;
+}
+
+/* ---------- El ranking del boss (T155 lo llena) ---------- */
+
+.mar-canon-previa__ranking {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--line);
+}
+
+.mar-canon-previa__ranking-title {
+  margin: 0 0 4px;
+  font: 800 0.86rem / 1.2 var(--font-title);
+}
+
+.mar-canon-previa__empty {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  opacity: 0.75;
+}
+
+/* ---------- Jugar ---------- */
+
+.mar-canon-previa__lock {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--canon-alert);
+}
+
+.mar .mar-canon-previa__play {
+  /* Siempre a la vista, aunque el resto haga scroll en pantallas bajas. */
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  width: 100%;
+  min-height: 56px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--orange);
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.mar .mar-canon-previa__play:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mar-canon-previa__play-main {
+  font: 900 1.15rem / 1.15 var(--font-title);
+}
+
+.mar-canon-previa__play-sub {
+  font-size: 0.76rem;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.mar .mar-canon-previa button:focus-visible {
+  outline: 3px solid var(--canon-dawn);
+  outline-offset: 2px;
+}
+
+@media (max-width: 400px) {
+  .mar .mar-canon-acto-opcion {
+    min-height: 84px;
+  }
+
+  .mar-canon-acto-sky {
+    height: 22px;
+  }
+
+  .mar-canon-previa__label {
+    margin-top: 10px;
+  }
+}
+
+@media (min-width: 760px) {
+  .mar-canon-previa-wrap {
+    align-items: center;
+  }
+
+  .mar-canon-previa {
+    padding: 18px 18px 16px;
+  }
+
+  .mar-canon-previa__title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-canon-previa {
+    animation: none;
+  }
+}

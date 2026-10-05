@@ -43,6 +43,17 @@ const raceStart = lapTargets(world, spec).at(-1)!;
 const game = (page: Page) => page.getByTestId('mar-canon');
 const canvas = (page: Page) => page.getByTestId('mar-canvas');
 const panel = (page: Page) => page.getByTestId('panel-minijuego');
+const previa = (page: Page) => page.getByTestId('mar-canon-previa');
+
+/** «Jugar» en el panel de la isla abre el pop-up antes de la partida (T151). */
+async function openPrevia(page: Page): Promise<Locator> {
+  await panel(page)
+    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
+    .click();
+  await expect(previa(page)).toBeVisible({ timeout: 15_000 });
+  await expect(panel(page)).toHaveCount(0);
+  return previa(page);
+}
 
 const pointOf = (s: string | null) => {
   const [x, y] = (s ?? '0,0').split(',').map(Number);
@@ -239,9 +250,9 @@ test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas
   await expect(canvas(page)).not.toHaveAttribute('data-fauna-oculta', /.+/);
   const before = await shipAt(page);
 
-  await panel(page)
-    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
-    .click();
+  // «Jugar» abre el pop-up previo (T151); su «Jugar» empieza.
+  await (await openPrevia(page)).getByTestId('mar-canon-previa-jugar').click();
+  await expect(previa(page)).toHaveCount(0);
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   await expect(canvas(page)).toHaveAttribute('data-canon', 'on');
   // Una partida del Cañón nunca es carrera: el barco, sin los 22 nudos (T109).
@@ -1311,30 +1322,43 @@ test('con la Boia Fiestera a bordo, sigue a bordo durante la partida y después'
   expect(errors).toEqual([]);
 });
 
-test('el panel de la isla ofrece tres dificultades con Normal marcada y la elegida empieza la partida (T131)', async ({
+test('el pop-up previo ofrece tres dificultades con Normal marcada y la elegida empieza la partida (T131, T151)', async ({
   page,
 }) => {
   const errors = await openMar(page, '?minijuego=canon&oferta=1');
   await expect(panel(page)).toBeVisible({ timeout: 15_000 });
-  const group = panel(page).getByTestId('mar-canon-dificultad');
+  // Ya no van en el panel de la isla: en el pop-up que abre su «Jugar».
+  await expect(panel(page).getByTestId('mar-canon-dificultad')).toHaveCount(0);
+  const box = await openPrevia(page);
+  const group = box.getByTestId('mar-canon-dificultad');
   await expect(group).toBeVisible();
-  const option = (id: string) => panel(page).getByTestId(`mar-canon-dificultad-${id}`);
+  const option = (id: string) => box.getByTestId(`mar-canon-dificultad-${id}`);
   for (const id of ['tranquila', 'normal', 'tormenta']) {
     await expect(option(id)).toHaveText(msg(`mar.canon.dificultad.${id}` as MessageKey));
     await expect(option(id)).toHaveAttribute('aria-checked', id === 'normal' ? 'true' : 'false');
   }
+  await expect(box.getByTestId('mar-canon-previa-dificultad-texto')).toHaveText(
+    msg('mar.canon.dificultad.normal.texto'),
+  );
   // Con el teclado: la flecha mueve la selección; con el dedo o el ratón: un toque.
   await option('normal').focus();
   await page.keyboard.press('ArrowLeft');
   await expect(option('tranquila')).toHaveAttribute('aria-checked', 'true');
+  await expect(option('tranquila')).toBeFocused();
   await option('tormenta').dispatchEvent('click');
   await expect(option('tormenta')).toHaveAttribute('aria-checked', 'true');
   await expect(option('normal')).toHaveAttribute('aria-checked', 'false');
-  await panel(page)
-    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
-    .click();
+  await expect(box).toHaveAttribute('data-dificultad', 'tormenta');
+  await expect(box.getByTestId('mar-canon-previa-dificultad-texto')).toHaveText(
+    msg('mar.canon.dificultad.tormenta.texto'),
+  );
+  await expect(box.getByTestId('mar-canon-previa-jugar')).toContainText(
+    msg('mar.canon.previa.eleccion', { n: 1, dificultad: msg('mar.canon.dificultad.tormenta') }),
+  );
+  await box.getByTestId('mar-canon-previa-jugar').click();
   await expect(game(page)).toHaveAttribute('data-estado', 'running', { timeout: 20_000 });
   await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  await expect(game(page)).toHaveAttribute('data-acto', '1');
   expect(errors).toEqual([]);
 });
 
@@ -1355,17 +1379,18 @@ const finalSlot = (act: number) =>
     .find((a) => a.act === act)!
     .events.find((e) => e.type === 'boss' && e.enabled !== false)!;
 
-test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer=1`) lo abre y el panel empieza el acto 2 (T144)', async ({
+test('campaña en el pop-up previo: el acto 2 cerrado de primeras y el 3 «Próximamente»; vencer al Barco Fantasma (`vencer=1`) abre el 2 y «Jugar» lo empieza (T144, T151)', async ({
   page,
 }) => {
   // Un visitante nuevo: Acto 1 marcado, Acto 2 cerrado, Acto 3 «próximamente».
   const errors = await openMar(page, '?minijuego=canon&oferta=1');
   await expect(panel(page)).toBeVisible({ timeout: 15_000 });
-  const acts = panel(page).getByTestId('mar-canon-acto');
-  const act = (n: number) => panel(page).getByTestId(`mar-canon-acto-${n}`);
+  await openPrevia(page);
+  const acts = previa(page).getByTestId('mar-canon-acto');
+  const act = (n: number) => previa(page).getByTestId(`mar-canon-acto-${n}`);
   await expect(acts).toBeVisible();
   // Junto a las dificultades y «Jugar».
-  await expect(panel(page).getByTestId('mar-canon-dificultad')).toBeVisible();
+  await expect(previa(page).getByTestId('mar-canon-dificultad')).toBeVisible();
   await expect(act(1)).toHaveAttribute('aria-checked', 'true');
   await expect(act(1)).toHaveAttribute('data-estado', 'open');
   await expect(act(2)).toHaveAttribute('data-estado', 'locked');
@@ -1373,6 +1398,14 @@ test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer
   await expect(act(2)).toContainText(msg('mar.canon.acto.cerrado'));
   await expect(act(3)).toHaveAttribute('data-estado', 'soon');
   await expect(act(3)).toContainText(msg('mar.canon.acto.proximamente'));
+  await expect(act(3)).toHaveAttribute('aria-disabled', 'true');
+  // Cada acto dice su boss final; el ranking es el del acto marcado.
+  await expect(act(1)).toContainText(msg('survivors.boss.fantasma'));
+  await expect(act(2)).toContainText(msg('survivors.boss.kraken'));
+  await expect(previa(page).getByTestId('mar-canon-previa-ranking')).toHaveAttribute(
+    'data-boss',
+    finalSlot(1).ref,
+  );
   // Ni el dedo ni las flechas marcan un acto cerrado.
   await act(2).dispatchEvent('click');
   await expect(act(1)).toHaveAttribute('aria-checked', 'true');
@@ -1380,6 +1413,9 @@ test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer
   await page.keyboard.press('ArrowRight');
   await expect(act(1)).toHaveAttribute('aria-checked', 'true');
   await expect(act(2)).toHaveAttribute('aria-checked', 'false');
+  await act(3).dispatchEvent('click');
+  await expect(act(1)).toHaveAttribute('aria-checked', 'true');
+  await expect(previa(page)).toHaveAttribute('data-acto', '1');
 
   // Vencer al boss final del acto 1 (atajo: cae en cuanto aparece): oro, y se abre el acto 2.
   const slot = finalSlot(1);
@@ -1396,9 +1432,11 @@ test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer
   await page.getByTestId('mar-canon-volver').click();
   await expect(page.getByTestId('mar-canon-final')).toHaveCount(0);
 
-  // Otra visita: el acto 2 abierto (y el 1, superado); el panel lo empieza.
+  // Otra visita: el acto 2 abierto (y el 1, superado); el pop-up lo empieza.
   const again = await openMar(page, '?minijuego=canon&oferta=1');
   await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  await openPrevia(page);
+  await expect(act(1)).toContainText(msg('mar.canon.acto.superado'));
   await expect(act(1)).toHaveAttribute('data-superado', 'si');
   await expect(act(2)).toHaveAttribute('data-estado', 'open');
   await expect(act(2)).not.toHaveAttribute('aria-disabled', 'true');
@@ -1407,12 +1445,90 @@ test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer
   await page.keyboard.press('ArrowRight');
   await expect(act(2)).toHaveAttribute('aria-checked', 'true');
   await expect(act(2)).toBeFocused();
-  await panel(page)
-    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
-    .click();
+  await expect(previa(page).getByTestId('mar-canon-previa-ranking')).toHaveAttribute(
+    'data-boss',
+    finalSlot(2).ref,
+  );
+  await previa(page).getByTestId('mar-canon-previa-jugar').click();
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
   await expect(game(page)).toHaveAttribute('data-acto', '2');
   expect([...errors, ...won, ...again]).toEqual([]);
+});
+
+test('pop-up previo: se abre con «Jugar» del panel, entero en pantalla y sin tapar «Entradas»; ranking vacío del boss; Tab no sale; Esc y la × vuelven al panel (T151)', async ({
+  page,
+  isMobile,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  const box = await openPrevia(page);
+  await expect(box).toHaveAttribute('role', 'dialog');
+  await expect(box).toHaveAttribute('aria-modal', 'true');
+  await expect(box).toContainText(msg('mar.canon.title'));
+  await expect(box.getByTestId('mar-canon-previa-beta')).toHaveText(msg('mar.canon.beta'));
+  // De entrada: Acto 1, Normal, con el foco en el acto marcado.
+  await expect(box).toHaveAttribute('data-acto', '1');
+  await expect(box).toHaveAttribute('data-dificultad', 'normal');
+  await expect(box.getByTestId('mar-canon-acto-1')).toBeFocused();
+  // Entero en pantalla, «Jugar» incluido, y «Entradas» a mano.
+  await expectOnScreen(page, box);
+  await expectOnScreen(page, box.getByTestId('mar-canon-previa-jugar'));
+  await expectTicketsFree(page, [box]);
+  // Áreas táctiles amplias.
+  for (const id of ['mar-canon-acto-1', 'mar-canon-dificultad-normal', 'mar-canon-previa-cerrar']) {
+    const b = (await box.getByTestId(id).boundingBox())!;
+    expect(b.height, id).toBeGreaterThanOrEqual(44);
+  }
+  const playBox = (await box.getByTestId('mar-canon-previa-jugar').boundingBox())!;
+  expect(playBox.height).toBeGreaterThanOrEqual(48);
+  // El ranking del boss final del acto elegido, vacío hasta que haya partidas (T155).
+  const ranking = box.getByTestId('mar-canon-previa-ranking');
+  await expect(ranking).toHaveAttribute('data-boss', finalSlot(1).ref);
+  await expect(ranking).toContainText(
+    msg('mar.canon.previa.ranking', { nombre: msg('survivors.boss.fantasma') }),
+  );
+  await expect(box.getByTestId('mar-canon-previa-ranking-vacio')).toHaveText(
+    msg('mar.canon.previa.ranking.vacio'),
+  );
+  // Tab da la vuelta dentro del diálogo; mientras, el barco no se mueve.
+  const before = await shipAt(page);
+  const inside = () => box.evaluate((el) => el.contains(document.activeElement));
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab');
+    expect(await inside()).toBe(true);
+  }
+  await page.keyboard.press('Shift+Tab');
+  expect(await inside()).toBe(true);
+  await page.keyboard.down('ArrowUp');
+  await page.waitForTimeout(400);
+  await page.keyboard.up('ArrowUp');
+  expect(dist(await shipAt(page), before)).toBeLessThan(5);
+  // Esc lo cierra (sin abrir el menú) y vuelve el panel de la isla.
+  await page.keyboard.press('Escape');
+  await expect(previa(page)).toHaveCount(0);
+  await expect(panel(page)).toBeVisible();
+  await expect(page.getByTestId('mar-menu')).toHaveCount(0);
+  await expect(game(page)).toHaveCount(0);
+  // Otra vez, ahora con el dedo (o el ratón): la ×.
+  const again = await openPrevia(page);
+  const close = again.getByTestId('mar-canon-previa-cerrar');
+  if (isMobile) await close.tap();
+  else await close.click();
+  await expect(previa(page)).toHaveCount(0);
+  await expect(panel(page)).toBeVisible();
+  // Y «Jugar» con el dedo empieza la partida elegida.
+  const third = await openPrevia(page);
+  const tormenta = third.getByTestId('mar-canon-dificultad-tormenta');
+  if (isMobile) await tormenta.tap();
+  else await tormenta.click();
+  const play = third.getByTestId('mar-canon-previa-jugar');
+  if (isMobile) await play.tap();
+  else await play.click();
+  await expect(previa(page)).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running', { timeout: 20_000 });
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  await expect(game(page)).toHaveAttribute('data-acto', '1');
+  expect(errors).toEqual([]);
 });
 
 test('`&acto=2` (atajo de desarrollo) juega el guion del acto 2 sin campaña: su boss final es el Kraken (T144)', async ({

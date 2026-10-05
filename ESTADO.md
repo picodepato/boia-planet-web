@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T151: Pre-game pop-up (act, difficulty, ranking slot, Jugar)
+
+Qué existe:
+- «Jugar» en el panel de la isla del Cañón ya no empieza: abre el pop-up previo (`apps/web/app/mar/canon-previa.tsx` + `canon-previa.css`, `data-testid="mar-canon-previa"`), diálogo modal de cristal oscuro como la tarjeta final. Acto 1/2/3 como ventanas de cielo con su boss final (Acto 2 «Cerrado» hasta vencer al Barco Fantasma, Acto 3 «Próximamente»; «Superado» si su boss final ya cayó), Tranquila/Normal/Tormenta con su texto, el hueco del ranking del boss final del acto elegido (vacío y dicho, `mar-canon-previa-ranking`, `data-boss`; prop `ranking(act, boss)` para T155) y «Jugar» (con «Acto N en <dificultad>»).
+- Teclado (foco al acto marcado, flechas, Tab atrapado en el diálogo); Esc, la × o tocar fuera lo cierran y vuelve el panel de la isla; áreas ≥ 44 px; en el móvil ocupa la pantalla salvo la barra de abajo, «Jugar» pegado abajo si hace falta scroll; nunca tapa «Entradas». Mientras está abierto el barco no se maneja y las botellas cercanas se apartan.
+- `useCanonMode`: `prep` (open, blocked, chooseAct, chooseDifficulty, play, close) y `acts`; `panel.extra` y los selectores del panel se quitan (viven ahora en `canon-previa.tsx`, con los mismos `data-testid`). Los atajos `acto=` y `dificultad=` siguen empezando directamente.
+- Medallas por acto y dificultad: ese estado no existe; sólo «Superado» (boss final caído, campaña T144).
+- i18n `mar.canon.previa.*` (muestra). La prueba de REQ-AVE-037 en `docs/spec/estado.md` apunta al nuevo título de la e2e de campaña.
+
+Comandos:
+- `E2E_PORT=3291 pnpm e2e mar-canon.spec.ts --workers=1 -g "pop-up|acto|dificultad"` → exit 0 (14 passed, 2 skipped: rendimiento en escritorio, saltado por diseño); «desde el panel de su isla…» y «en plena carrera…» también pasan en móvil y escritorio.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (171 files, 1662 tests); `sh tools/spec/checks.sh` → 0; `pnpm lint` → 0; `pnpm build` → 0; `pnpm typecheck` → 0.
+
+Pendiente:
+- T155 llena el ranking (prop `ranking` de `CanonPrevia`, hueco `mar-canon-previa-ranking`).
+- Medallas por acto y dificultad en el pop-up cuando exista ese estado (T153/T155).
+
 ## 2026-10-05 — plan 013 T150: SVG icons for every skill
 
 Qué existe:

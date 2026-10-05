@@ -10,14 +10,13 @@ import {
 } from '@boia/engine/minigames';
 import {
   DEFAULT_DIFFICULTY,
-  DIFFICULTY_IDS,
   type DefeatStyle,
   type DifficultyId,
   type EndReason,
   type SurvivorsSnapshot,
 } from '@boia/engine/survivors';
 import type { WorldConfig } from '@boia/world';
-import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { emitSignal } from '../../lib/mundo/achievements';
 import { type InWorldCopy, withWinSignal } from '../../lib/mundo/minigame-layer';
 import { gameRepository, useRepoData } from '../../lib/mundo/repo';
@@ -26,6 +25,7 @@ import {
   type CampaignAct,
   type CampaignProgress,
   EMPTY_CAMPAIGN,
+  actUnlocked,
   campaignActs,
   playableAct,
   readCampaign,
@@ -141,9 +141,14 @@ export interface CanonMode {
     onPlay: (gameId: string) => void;
     blockedReason: (gameId: string) => string | null;
     copy: (gameId: string) => InWorldCopy | null;
-    /** Las tres dificultades junto a «Jugar» (T131). */
-    extra: (gameId: string) => ReactNode;
   };
+  /**
+   * El pop-up antes de la partida (T151): «Jugar» en el panel de la isla lo
+   * abre; en él se eligen acto y dificultad y se juega.
+   */
+  prep: CanonPrep;
+  /** Los actos de la campaña tal y como salen en el pop-up (T144, T151). */
+  acts: readonly CampaignAct[];
   /** La dificultad elegida para las próximas partidas (se recuerda durante la visita). */
   difficulty: DifficultyId;
   /** El acto elegido en el panel para las próximas partidas (T144; se recuerda durante la visita). */
@@ -155,6 +160,18 @@ export interface CanonMode {
    * para anunciarlo en la tarjeta final), o null.
    */
   unlocked: number | null;
+}
+
+export interface CanonPrep {
+  open: boolean;
+  /** Por qué ahora no se puede empezar (en plena carrera), o null. */
+  blocked: string | null;
+  chooseAct(act: number): void;
+  chooseDifficulty(d: DifficultyId): void;
+  /** «Jugar»: cierra el pop-up y empieza el acto y la dificultad elegidos. */
+  play(): void;
+  /** Esc, la × o tocar fuera: se cierra y vuelve el panel de la isla. */
+  close(): void;
 }
 
 interface StartOptions {
@@ -236,6 +253,8 @@ export function useCanonMode({
   const actRef = useRef(1);
   const [act, setAct] = useState(1);
   const [unlocked, setUnlocked] = useState<number | null>(null);
+  // El pop-up antes de la partida (T151).
+  const [prepOpen, setPrepOpen] = useState(false);
   // La campaña del progreso (local o de la cuenta), releída con cada cambio del repositorio.
   const { data: campaignData } = useRepoData((repo) => readCampaign(repo.progress));
   const campaign = campaignData ?? EMPTY_CAMPAIGN;
@@ -380,6 +399,7 @@ export function useCanonMode({
         }),
         devStartRewards: devStartRewards(),
       });
+      setPrepOpen(false);
       setEnded(false);
       setQuit(false);
       setReward(null);
@@ -514,31 +534,12 @@ export function useCanonMode({
   const blockKey = canonBlockKey({ raceActive });
   const panel = {
     inWorld: [CANON_GAME_ID],
+    // «Jugar» en el panel abre el pop-up (T151); la partida empieza desde él.
     onPlay: (gameId: string) => {
-      if (gameId === CANON_GAME_ID) start();
+      if (gameId === CANON_GAME_ID && !runRef.current) setPrepOpen(true);
     },
     blockedReason: (gameId: string) =>
       gameId === CANON_GAME_ID && blockKey ? msg(blockKey) : null,
-    extra: (gameId: string) =>
-      gameId === CANON_GAME_ID ? (
-        <>
-          <CanonActPicker
-            acts={campaignActs(campaign)}
-            value={playableAct(campaign, act)}
-            onChange={(a) => {
-              actRef.current = a;
-              setAct(a);
-            }}
-          />
-          <CanonDifficultyPicker
-            value={difficulty}
-            onChange={(d) => {
-              difficultyRef.current = d;
-              setDifficulty(d);
-            }}
-          />
-        </>
-      ) : null,
     copy: (gameId: string) =>
       gameId === CANON_GAME_ID
         ? {
@@ -551,6 +552,28 @@ export function useCanonMode({
   };
 
   const dev = { enabled: devSwitch, defeatStyle, toggleDefeatStyle };
+
+  const prep: CanonPrep = {
+    open: prepOpen,
+    blocked: blockKey ? msg(blockKey) : null,
+    chooseAct: (a: number) => {
+      if (!actUnlocked(campaignRef.current, a)) return;
+      actRef.current = a;
+      setAct(a);
+    },
+    chooseDifficulty: (d: DifficultyId) => {
+      difficultyRef.current = d;
+      setDifficulty(d);
+    },
+    play: () => {
+      if (blockKey) return;
+      if (start()) setPrepOpen(false);
+    },
+    close: () => {
+      setPrepOpen(false);
+      latest.current.onOffer();
+    },
+  };
 
   return {
     active,
@@ -574,175 +597,11 @@ export function useCanonMode({
     difficulty,
     act: playableAct(campaign, act),
     campaign,
+    prep,
+    acts: campaignActs(campaign),
     unlocked,
   };
 }
-
-/**
- * Acto 1 / Acto 2 / Acto 3 junto a las dificultades y «Jugar» en el panel
- * de la isla (T144): un grupo de opciones como el de las dificultades. Sólo
- * los actos abiertos se eligen; los cerrados (falta vencer al boss final
- * del anterior) y los que aún no existen («próximamente») se ven pero no se
- * pueden marcar, y dicen por qué. Teclado (Tab y flechas, que saltan los
- * cerrados) y dedo.
- */
-export function CanonActPicker({
-  acts,
-  value,
-  onChange,
-}: {
-  acts: readonly CampaignAct[];
-  value: number;
-  onChange: (act: number) => void;
-}) {
-  const refs = useRef<Array<HTMLButtonElement | null>>([]);
-  const open = acts.filter((a) => a.state === 'open');
-  const move = (delta: number) => {
-    const i = open.findIndex((a) => a.act === value);
-    if (i < 0) return;
-    const next = open[(i + delta + open.length) % open.length]!;
-    onChange(next.act);
-    refs.current[acts.indexOf(next)]?.focus();
-  };
-  return (
-    <div
-      className="mar-canon-acto"
-      role="radiogroup"
-      aria-label={msg('mar.canon.acto.aria')}
-      data-testid="mar-canon-acto"
-      data-acto={value}
-    >
-      {acts.map((a, i) => {
-        const playable = a.state === 'open';
-        const checked = playable && a.act === value;
-        const note =
-          a.state === 'soon'
-            ? msg('mar.canon.acto.proximamente')
-            : a.state === 'locked'
-              ? msg('mar.canon.acto.cerrado')
-              : a.beaten
-                ? msg('mar.canon.acto.superado')
-                : null;
-        const help =
-          a.state === 'soon'
-            ? msg('mar.canon.acto.proximamente.texto')
-            : a.state === 'locked'
-              ? msg('mar.canon.acto.cerrado.texto', { n: a.act - 1 })
-              : a.beaten
-                ? msg('mar.canon.acto.superado.texto')
-                : msg('mar.canon.acto.abierto.texto');
-        const label = msg('mar.canon.acto', { n: a.act });
-        return (
-          <button
-            key={a.act}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            aria-disabled={playable ? undefined : true}
-            aria-label={note ? `${label}, ${note}. ${help}` : label}
-            tabIndex={checked ? 0 : -1}
-            className="mar-canon-acto-opcion"
-            data-testid={`mar-canon-acto-${a.act}`}
-            data-estado={a.state}
-            data-superado={a.beaten ? 'si' : undefined}
-            title={help}
-            onClick={() => {
-              if (playable) onChange(a.act);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                move(1);
-              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                move(-1);
-              }
-            }}
-          >
-            <span className="mar-canon-acto-nombre">{label}</span>
-            {note ? (
-              <span className="mar-canon-acto-nota" aria-hidden="true">
-                {note}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * Tranquila / Normal / Tormenta junto a «Jugar» en el panel de la isla (T131):
- * tres botones pequeños de un grupo de opciones (Normal marcado de entrada).
- * Se manejan con el teclado (Tab y flechas) y con el dedo.
- */
-export function CanonDifficultyPicker({
-  value,
-  onChange,
-}: {
-  value: DifficultyId;
-  onChange: (d: DifficultyId) => void;
-}) {
-  const refs = useRef<Array<HTMLButtonElement | null>>([]);
-  const move = (from: number, delta: number) => {
-    const n = DIFFICULTY_IDS.length;
-    const next = (from + delta + n) % n;
-    onChange(DIFFICULTY_IDS[next]!);
-    refs.current[next]?.focus();
-  };
-  return (
-    <div
-      className="mar-canon-dificultad"
-      role="radiogroup"
-      aria-label={msg('mar.canon.dificultad.aria')}
-      data-testid="mar-canon-dificultad"
-      data-dificultad={value}
-    >
-      {DIFFICULTY_IDS.map((id, i) => (
-        <button
-          key={id}
-          ref={(el) => {
-            refs.current[i] = el;
-          }}
-          type="button"
-          role="radio"
-          aria-checked={value === id}
-          tabIndex={value === id ? 0 : -1}
-          className="mar-canon-dificultad-opcion"
-          data-testid={`mar-canon-dificultad-${id}`}
-          title={msg(DIFFICULTY_TEXT_KEY[id])}
-          onClick={() => onChange(id)}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-              e.preventDefault();
-              move(i, 1);
-            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-              e.preventDefault();
-              move(i, -1);
-            }
-          }}
-        >
-          {msg(DIFFICULTY_LABEL_KEY[id])}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-const DIFFICULTY_LABEL_KEY: Readonly<Record<DifficultyId, MessageKey>> = {
-  tranquila: 'mar.canon.dificultad.tranquila',
-  normal: 'mar.canon.dificultad.normal',
-  tormenta: 'mar.canon.dificultad.tormenta',
-};
-const DIFFICULTY_TEXT_KEY: Readonly<Record<DifficultyId, MessageKey>> = {
-  tranquila: 'mar.canon.dificultad.tranquila.texto',
-  normal: 'mar.canon.dificultad.normal.texto',
-  tormenta: 'mar.canon.dificultad.tormenta.texto',
-};
 
 const DEFEAT_STYLE_KEY: Readonly<Record<DefeatStyle, MessageKey>> = {
   puf: 'mar.canon.dev.derrota.puf',

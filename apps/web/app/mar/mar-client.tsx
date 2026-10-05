@@ -181,6 +181,7 @@ import {
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
 import { CanonLayer } from './canon-hud';
+import { CanonPrevia } from './canon-previa';
 import { CANON_GAME_ID, islandPinsOnly } from './survivors';
 import {
   type Trip,
@@ -1464,11 +1465,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   // Encima del mar hay un diálogo modal o un minijuego: sin control (y sin pintar).
   const canonPause = canon.setPaused;
+  const canonPrep = canon.prep.open;
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
     g.inputEnabled =
       !checkoutFor &&
+      !canonPrep &&
       !minigameOpen &&
       !logros &&
       !tienda &&
@@ -1483,6 +1486,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     canonPause(!g.inputEnabled || !!sheet);
   }, [
     canonPause,
+    canonPrep,
     sheet,
     checkoutFor,
     minigameOpen,
@@ -2428,7 +2432,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       {status === 'ready' && liveRef.current && settings ? (
         <div className="mar-minigame">
           <MinigameLayer
-            offer={sheet || checkoutFor || canon.active ? null : minigameOffer}
+            offer={sheet || checkoutFor || canon.active || canon.prep.open ? null : minigameOffer}
             onDismiss={() => setMinigameOffer(null)}
             world={liveRef.current}
             settings={settings}
@@ -2437,10 +2441,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             onPlayInWorld={canon.panel.onPlay}
             blockedReason={canon.panel.blockedReason}
             copy={canon.panel.copy}
-            extra={canon.panel.extra}
           />
         </div>
       ) : null}
+      {/* El pop-up antes de la partida del Cañón (T151): acto, dificultad, ranking y «Jugar». */}
+      {status === 'ready' ? <CanonPrevia canon={canon} /> : null}
 
       {/* Botellas cerca del barco (T56), encima de la barra, cuando no hay nada más abajo. */}
       {status === 'ready' &&
@@ -2449,6 +2454,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !menu &&
       !trip &&
       !invitations.reason &&
+      !canon.prep.open &&
       !canon.hidden.has('bottles') ? (
         <MarBottlesNear
           ids={nearBottles}
