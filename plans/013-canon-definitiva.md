@@ -135,7 +135,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: «Mascota» category in Mi Barco with the minikraken (equip only when owned, rides at the stern of every boat, waves near places, cheap in `baja`), Supabase migration `20261005100100_mascot_equip.sql` (not applied) → b025c2e
 
 ## T155 — Per-boss ranking, local and global
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T151, T153
@@ -146,7 +146,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - unit tests: score formula, per-boss separation, rejected submissions (shortcut, quit, impossible times) → pass
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1 -g "ranking"` (local mode: sample crew + own score after a game via shortcuts-free path or test helper) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: per-boss ranking (Fantasma, Kraken) with score formula, sample crew in local mode, global RPC + migration (not applied); shortcut/quit games never submitted · 4314dd4
 
 ## T157 — Tabarca lighthouse island redesigned in Blender
 - Status: skipped (moved to the next plan, the castle game, at Hernán's request)
@@ -233,3 +233,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-06 00:00 T155 launched · attempt 1 · agent a2a1488a7d82747ca (opus)
 - 2026-10-06 00:05 pushed main to Vercel on Hernán's request (82c96aa, T148–T153); shortcut links sent on Telegram
 - 2026-10-06 00:30 T154 done · branch worktree-agent-a9b0ae0902693064b → b025c2e; push offer T154 sent
+- 2026-10-06 01:00 T155 done by agent; integration conflict with T154 in docs/spec/estado.md → sent back to the same agent
+- 2026-10-06 resumed in a new session: T155 branch committed and clean (conflict resolved in 1a62382) → integrating; push offer T154 cancelled
+- 2026-10-05 23:15 T155 integrated → 4314dd4 (tests ok); worktree and branch removed; duplicated T155 section in ESTADO.md dropped
