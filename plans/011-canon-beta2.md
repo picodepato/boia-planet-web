@@ -1,6 +1,6 @@
 # Plan 011 — Cañón «Que no pare la música», BETA 2 (loop without bosses)
 
-Status: active
+Status: done
 Created: 2026-10-04
 Base branch: main
 Goal: Turn the beta 1 feel test into a full run loop without bosses, and answer: does levelling up hook, do the weapons feel different, is the rhythm right? First apply Hernán's beta 1 notes (slower enemies, smaller and higher HUD, «sumergirse» as the default) and ship that alone so he can play a whole game; then make the world's interactives work inside the game (turbo, boost arrows, jump ramps, race buoys), and build the rest of beta 2 from the design reference: the 6 common enemies with models, elites, per-minute growth, the «Marea», the full 7-minute act-1 script without bosses; the 7 weapons with per-level tables, the 9 vinyls, 4+4 slots up to level 5, the 4 evolutions and the Salvavidas; the cards and HUD for all that; and 3 difficulties picked on the island panel. Ends with bot balance, `baja` performance, e2e, docs and the beta 2 test guide.
@@ -169,7 +169,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: Tranquila/Normal/Tormenta as config data (damage 0.7/1/1.3, hp 0.8/1/1.3, count 0.75/1/1.4), radiogroup of three buttons above «Jugar», `dificultad=` shortcut, difficulty in the session `configHash`, config v5; 1402 unit tests, 4 new e2e cases pass; e2e `sin esquivar, el agua llena el barco` fails on main since T129 (card pool) → cceeee7
 
 ## T132 — Balance with bots, `baja` performance, e2e, docs and the beta 2 test guide
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T123, T124, T125, T126, T127, T128, T129, T130, T131
@@ -187,7 +187,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0
   - `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: balance by bots (XP curve 3/2.5/0.25, magnet 130, enemy hp growth 0.08, gentler script hpScale, crab 10 / jellyfish 6 hit), `capShare` 0.7 for piranhas so all six types show late in `baja`, config v6; perf in `baja` p95 33 ms (50 ms at 4× CPU); card help «1–{n}»; guide `docs/propuestas/2026-10-04-canon-beta2-guia-prueba.md`; 1466 unit tests, mar-canon e2e 49 passed; full e2e 414 passed, 6 failed (3 outside the Cañón remain) → 280ec63
 
 ## Decisions
 - 2026-10-04 plan: models per task: Sonnet for T123, T130, T131; Fable for T125, T127; Opus for T124, T126, T128, T129, T132 (Hernán)
@@ -217,6 +217,8 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T129 regression found by T131: e2e `sin esquivar, el agua llena el barco` fails on main (card opens at t=200 and an idle player never picks it); the Test command does not run e2e so it went unnoticed; fix added to T130's goal (orchestrator)
 - 2026-10-05 T128: fixed the Codex WIP (laser drew half its reach; bursts tinted purple by the subwoofer material); heights per weapon; one steady opacity per transparent material, laser dimmer with reduced motion but still turning; kept Codex's `armas=1` dev shortcut (all 7 weapons at max level, counts as a test start); the idle-boat e2e now answers cards with Enter, which also resolves the T129 regression noted above, so it is removed from T130's goal (agent)
 - 2026-10-05 T130: card key and `data-carta` are the offer `id` (the old `upgrade` alias is no longer unique), `data-mejora` kept, `data-tipo` gives the kind; `carta=surtido` dev shortcut trims the config (3 weapons, 2 vinyls, El Drop, Salvavidas, 6 choices); changed the keyboard-card e2e to not look up a title via `config.upgrades` (agent)
+- 2026-10-05 T132: balance changes (config v5→v6): `levels` 5/5/0.6→3/2.5/0.25, magnet 90→130, enemy hp growth 0.08 for all six, gentler script hpScale, crab hit 14→10, jellyfish hit 7→6 (a note-collecting bot now levels up every ~21 s instead of 62 s); new optional `EnemyDef.capShare` (piranhas 0.7; the Marea ignores it); `t=` dev start prefills tracks in turns; bots in `survivors/bots.ts` (not exported); fixed a magnet-pulled note stuck on land between two islands; T126's e2e now sails and answers cards; one ~860 ms spike at 4× CPU lands on the frame a level card opens (game paused), left as is (agent)
+- 2026-10-05 integration: the first attempt of T132 failed `minigame-layer.test.ts` «una partida perdida no toca el libro» (Faro 2D reported 'won'), a flaky test already noted at T106; it passed 3/3 alone on the branch and the retry merged (orchestrator)
 
 ## Proposals (new scope)
 
@@ -227,6 +229,9 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T126: in `baja` (60-enemy cap) a late game can have no crabs at all (`t=240`, seed 5) because piranhas fill the cap: simulation balance for T132
 - 2026-10-05 T128: the all-weapons game in `baja` was not measured on a real iPhone 11: T132
 - 2026-10-05 T130: card help text still says «1–3» hard-coded (looks wrong only with the 6-card dev shortcut)
+- 2026-10-05 T132: full `pnpm e2e --workers=2` → 414 passed, 86 skipped, 6 failed; 4 pass on rerun; `mundo-arcilla.spec.ts:57` «tienda: enlace externo» fails on mobile and desktop (no `a[target=_blank]`) and `mar-decor.spec.ts:4` fails on mobile (zoom 47% vs 52/46): outside the Cañón, not checked on main
+- 2026-10-05 T132: boost pads and ramps during a game have no e2e (unit tests only); the all-weapons `baja` game is not measured on a real iPhone 11 / Android (guide question 7)
+- 2026-10-05 T132: flaky `minigame-layer.test.ts` «una partida perdida no toca el libro» again (see integration decision)
 
 ## Log
 - 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
@@ -258,4 +263,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 02:35 T128 done · branch worktree-agent-a5c9a7b63986f03d0 → c6ee3e8
 - 2026-10-05 02:40 T130 launched · attempt 1 · agent accee6ea6d45c71ab (sonnet)
 - 2026-10-05 02:50 T130 done · branch worktree-agent-accee6ea6d45c71ab → 47f9f1d
-- 2026-10-05 02:52 T132 launched · attempt 1 · agent (opus)
+- 2026-10-05 02:52 T132 launched · attempt 1 · agent a4eb9ea566bcb22f8 (opus)
+- 2026-10-05 04:40 T132 done · branch worktree-agent-a4eb9ea566bcb22f8 → 280ec63
