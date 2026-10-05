@@ -109,7 +109,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: data-driven weapons (`WeaponDef` base + levels 2–5, `resolveWeaponStats` hook for vinyls), the 7 weapons in the sim, islands block only canon/confetti, new `areas` cap, all 7 weapons kill every enemy type in a deterministic 7:00 run; config v3; 1373 unit tests → c935479 (attempt 1 failed typecheck against T124, fixed by the same agent)
 
 ## T128 — How the six weapons look in the 3D sea
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5) (Codex out of credits until ~04:50)
 - Skills: none
 - Depends on: T126, T127
@@ -120,7 +120,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
   - unit tests for each weapon's visual builder (instances created/updated/disposed, reduced-motion variant)
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, with a game holding all weapons running without console errors
   - Test command → exit 0
-- Outcome:
+- Outcome: all 7 weapons drawn (subwoofer rings, laser to full reach, orbital buoys, confetti, rockets + bursts, acid zone, evolutions as stronger base weapons), per-weapon heights (water vs ground-following), reduced-motion variants, empty meshes hidden, dev shortcut `armas=1`; also fixed the e2e `sin esquivar…` by picking cards with Enter; 1452 unit tests, mar-canon e2e 42 passed → c6ee3e8 (Codex WIP 54d48d5 continued by Opus)
 
 ## T129 — Vinyls, slots, evolutions and the Salvavidas (simulation and cards pool)
 - Status: done
@@ -141,11 +141,11 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - Outcome: (Codex) 9 vinyls, 4+4 slots up to level 5, card pool in `survivors/cards.ts`, 4 evolutions offered as cards, Salvavidas saves once, old 6 upgrades replaced, es-mar texts `muestra`, config v4; 1395 unit tests → 059c91b
 
 ## T130 — Upgrade interface: new cards and the weapons/vinyls row
-- Status: pending
+- Status: running (attempt 1)
 - Model: sonnet (Sonnet 5.5)
 - Skills: frontend-design
 - Depends on: T128, T129
-- Goal: The level-up cards show every kind of offer from T129 (new weapon, weapon level, new vinyl, vinyl level, evolution, Salvavidas) with a simple icon, its level and exactly what the level gives («Nivel 3: +1 boya»); evolutions stand out. The HUD gets the small row of the 4 weapons and 4 vinyls with their level: **bottom on desktop, top-left on mobile** so it does not collide with the touch controls, and it does not cover T123's compact countdown/XP or the Tickets link. Keyboard and touch behaviour of the cards stays as in beta 1. Text by key, `muestra`. Also fix the e2e `sin esquivar, el agua llena el barco` (mar-canon.spec.ts): since T129's card pool an idle player at `t=200` sits at `estado=card` (level-up card open) and never floods; make the test pick a card (or use the existing `autoPick`) instead of weakening what it checks.
+- Goal: The level-up cards show every kind of offer from T129 (new weapon, weapon level, new vinyl, vinyl level, evolution, Salvavidas) with a simple icon, its level and exactly what the level gives («Nivel 3: +1 boya»); evolutions stand out. The HUD gets the small row of the 4 weapons and 4 vinyls with their level: **bottom on desktop, top-left on mobile** so it does not collide with the touch controls, and it does not cover T123's compact countdown/XP or the Tickets link. Keyboard and touch behaviour of the cards stays as in beta 1. Text by key, `muestra`. (The e2e `sin esquivar, el agua llena el barco` was already fixed by T128, which picks cards with Enter; keep it passing.)
 - Context: T123, T128, T129 Outcomes; `apps/web/app/mar/canon-hud.tsx`, `canon-hud.css`, `canon-hud-model.ts`, the cards component, i18n files, `apps/web/e2e/mar-canon.spec.ts`.
 - Scope: may touch `apps/web/app/mar/canon-*`, the cards component, `apps/web/app/mar/survivors*.ts`, i18n files, e2e spec / must not touch `packages/engine/src/survivors/**` beyond trivial typing fixes, `mar3d.ts` rendering, `docs/DECISIONES.md`.
 - Done when:
@@ -214,6 +214,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T128: Codex hit its usage limit (until ~04:50) mid-task, leaving a WIP commit 54d48d5 (new survivors-weapons.ts + test, survivors-view/mar3d/survivors/canon-mode edits, e2e edits; unreviewed); not a counted failure: continued by an Opus agent that merges that branch; later Codex tasks go to Opus until Codex is back (memory codex-fallback) (orchestrator)
 - 2026-10-05 T131: multipliers (muestra) Tranquila dmg 0.7/hp 0.8/count 0.75, Normal 1/1/1, Tormenta 1.3/1.3/1.4; `enemyCount` scales script groups per second and the Marea ring size, not group size; hp scaled at spawn (jellyfish halves inherit); damage scaled in `damagePlayer` (contact and shots); `survivors.difficulty` in the session config; choice kept in memory for the visit; optional `extra` slot on `MinigameLayer`; loosened `SURVIVORS_CONFIG_VERSION` assertion in survivors-vinyls.test.ts to >=4; config v5 (agent)
 - 2026-10-05 T129 regression found by T131: e2e `sin esquivar, el agua llena el barco` fails on main (card opens at t=200 and an idle player never picks it); the Test command does not run e2e so it went unnoticed; fix added to T130's goal (orchestrator)
+- 2026-10-05 T128: fixed the Codex WIP (laser drew half its reach; bursts tinted purple by the subwoofer material); heights per weapon; one steady opacity per transparent material, laser dimmer with reduced motion but still turning; kept Codex's `armas=1` dev shortcut (all 7 weapons at max level, counts as a test start); the idle-boat e2e now answers cards with Enter, which also resolves the T129 regression noted above, so it is removed from T130's goal (agent)
 
 ## Proposals (new scope)
 
@@ -222,6 +223,7 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 T127: `&t=` dev start grants no weapons; a dev shortcut to start with weapons is for T128/T129
 - 2026-10-05 T127: `sim.ts`/`survivors.test.ts` on main are not prettier-clean (pre-existing)
 - 2026-10-05 T126: in `baja` (60-enemy cap) a late game can have no crabs at all (`t=240`, seed 5) because piranhas fill the cap: simulation balance for T132
+- 2026-10-05 T128: the all-weapons game in `baja` was not measured on a real iPhone 11: T132
 
 ## Log
 - 2026-10-04 23:55 T123 launched · attempt 1 · agent ab9f2332bb3a918f4 (sonnet)
@@ -249,3 +251,5 @@ Decisions of 2026-10-04 that every task follows (interview, Hernán):
 - 2026-10-05 01:50 T128 Codex usage limit; continuation on Opus from branch worktree-agent-a4e0bde2ef6b573bd (54d48d5)
 - 2026-10-05 01:53 T128 continuation launched · attempt 1 · agent a5c9a7b63986f03d0 (opus), merges worktree-agent-a4e0bde2ef6b573bd
 - 2026-10-05 02:05 T131 done · branch worktree-agent-a7f7e6115b4826d65 → cceeee7
+- 2026-10-05 02:30 T128 done by agent; integration conflict with T131 in canon-mode.tsx, survivors.ts, survivors.test.ts → sent back to the same agent
+- 2026-10-05 02:35 T128 done · branch worktree-agent-a5c9a7b63986f03d0 → c6ee3e8
