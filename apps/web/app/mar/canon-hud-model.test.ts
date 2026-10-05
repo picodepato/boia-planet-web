@@ -6,6 +6,9 @@ import { es } from '../../lib/i18n/es';
 import {
   CARD_ARM_MS,
   END_KEYS,
+  MEDAL_KEYS,
+  VICTORY_KEYS,
+  endCardModel,
   EVOLUTION_ICON,
   FALLBACK_ICON,
   FLAME_ICON,
@@ -224,6 +227,8 @@ describe('la pantalla final', () => {
         act: s.act,
         difficulty: s.difficulty,
         bosses: s.bossesDefeated,
+        weapons: expect.any(Array),
+        vinyls: expect.any(Array),
       });
       expect(es[END_KEYS[reason].title]).toBeTruthy();
       expect(es[END_KEYS[reason].line]).toBeTruthy();
@@ -232,7 +237,6 @@ describe('la pantalla final', () => {
     expect(msg(END_KEYS.flooded.title)).toBe('¡Barco inundado!');
     // El boss final vencido (T140) tiene su final propio, distinto del amanecer.
     expect(END_KEYS.victory.title).not.toBe(END_KEYS.survived.title);
-    expect(msg(END_KEYS.victory.title)).toMatch(/Fantasma/);
     expect(canonResult('abandoned', s)).toBeNull();
   });
 });
@@ -477,5 +481,59 @@ describe('la barra del boss y sus avisos (T143)', () => {
     expect(sameBossBar(bar, { ...bar, hpPct: bar.hpPct - 1 })).toBe(false);
     expect(sameBossBar(bar, { ...bar, phase: bar.phase + 1 })).toBe(false);
     expect(sameBossBar(bar, null)).toBe(false);
+  });
+});
+
+describe('la tarjeta final (T145)', () => {
+  const base = canonResult('survived', run({ startAtS: 60 }).snapshot())!;
+  const mk = (over: Partial<typeof base>) => ({ ...base, ...over });
+
+  it('cada medalla tiene su texto; inundado dice «Sin medalla» y su propio título', () => {
+    for (const medal of ['bronce', 'plata', 'oro'] as const) {
+      const m = endCardModel(mk({ medal }));
+      expect(m.medal).toEqual({ key: MEDAL_KEYS[medal], id: medal });
+      expect(es[m.medal.key]).toBeTruthy();
+    }
+    const flooded = endCardModel(mk({ reason: 'flooded', medal: null }));
+    expect(flooded.medal.id).toBeNull();
+    expect(flooded.title).toBe(END_KEYS.flooded.title);
+    expect(msg(flooded.title)).toBe('¡Barco inundado!');
+    expect(msg(flooded.medal.key)).toBe('Sin medalla');
+  });
+
+  it('el final especial es el de su boss final: Fantasma en el acto 1, Kraken en el 2', () => {
+    const a1 = endCardModel(mk({ reason: 'victory', medal: 'oro', act: 1 }));
+    const a2 = endCardModel(mk({ reason: 'victory', medal: 'oro', act: 2 }));
+    expect(a1.title).toBe(VICTORY_KEYS.fantasma!.title);
+    expect(a2.title).toBe(VICTORY_KEYS.kraken!.title);
+    expect(msg(a1.title)).toMatch(/Fantasma/);
+    expect(msg(a2.title)).toMatch(/Kraken/);
+    for (const k of Object.values(VICTORY_KEYS)) {
+      expect(es[k!.title]).toBeTruthy();
+      expect(es[k!.line]).toBeTruthy();
+    }
+    // El amanecer no usa el final de ningún boss.
+    expect(endCardModel(mk({ reason: 'survived', act: 2 })).title).toBe(END_KEYS.survived.title);
+  });
+
+  it('acto, dificultad y bosses vencidos salen del resultado; el acto abierto se anuncia sólo si lo hay', () => {
+    const m = endCardModel(mk({ act: 2, difficulty: 'tormenta', bosses: ['vecino', 'kraken'] }), 3);
+    expect(m.act).toEqual({ key: 'mar.canon.acto', n: 2 });
+    expect(msg(m.difficulty)).toBe(msg('mar.canon.dificultad.tormenta'));
+    expect(m.bosses.map((k) => msg(k))).toEqual([
+      msg(SURVIVORS_CONFIG.bosses.vecino!.i18nKey as never),
+      msg(SURVIVORS_CONFIG.bosses.kraken!.i18nKey as never),
+    ]);
+    expect(m.unlock).toEqual({ key: 'mar.canon.fin.desbloqueo', n: 3 });
+    expect(msg('mar.canon.fin.desbloqueo', { n: 3 })).toContain('3');
+    expect(endCardModel(mk({}), null).unlock).toBeNull();
+  });
+
+  it('el resultado trae las armas y vinilos con su nivel, en orden', () => {
+    const s = run({ startAtS: 60 }).snapshot();
+    const r = canonResult('survived', s)!;
+    expect(r.weapons.map((w) => w.level)).toEqual(s.weapons.map((w) => w.level));
+    expect(r.vinyls.map((v) => v.id)).toEqual(s.vinyls.map((v) => v.id));
+    expect(r.weapons.length).toBeGreaterThan(0);
   });
 });

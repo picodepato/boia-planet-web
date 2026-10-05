@@ -825,6 +825,14 @@ test('sin esquivar, el agua llena el barco: «¡Barco inundado!» y sin premio',
   await expect(game(page)).toHaveAttribute('data-fin', 'flooded');
   await expect(end).toHaveAttribute('data-fin', 'flooded');
   await expect(end.getByRole('heading')).toHaveText(msg('mar.canon.fin.inundado'));
+  // La tarjeta final (T145): sin medalla, acto y dificultad, equipo y bosses.
+  await expect(end.getByTestId('mar-canon-final-medalla')).toHaveText(msg('mar.canon.fin.medalla.ninguna'));
+  await expect(end.getByTestId('mar-canon-final-partida')).toHaveText(
+    msg('mar.canon.fin.partida', { acto: 1, dificultad: msg('mar.canon.dificultad.normal') }),
+  );
+  await expect(end.getByTestId('mar-canon-final-desbloqueo')).toHaveCount(0);
+  expect(await end.getByTestId('mar-canon-final-equipo').locator('[data-item]').count()).toBeGreaterThan(0);
+  await expect(end.getByTestId('mar-canon-final-bosses')).toContainText(msg('mar.canon.fin.bosses'));
   // La sesión se liquida: perdida, sin premio ni línea de premio.
   await expect(game(page)).toHaveAttribute('data-premio', 'not_won');
   await expect(prize(page)).toHaveAttribute('data-premio', 'not_won');

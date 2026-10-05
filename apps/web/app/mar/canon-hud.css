@@ -606,6 +606,56 @@
   font-variant-numeric: tabular-nums;
 }
 
+.mar-canon-end__medal {
+  margin: 8px 0 0;
+  font: 900 1.05rem / 1.1 var(--font-title);
+}
+
+.mar-canon-end__run {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.mar-canon-end__unlock {
+  margin: 8px 0 0;
+  padding: 5px 10px;
+  border-radius: 12px;
+  background: rgb(155 243 255 / 0.18);
+  border: 1px solid #9bf3ff;
+  color: #9bf3ff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  animation: mar-in 0.3s ease-out;
+}
+
+.mar-canon-end__gear {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mar-canon-end__item {
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mar-canon-end__item.is-evolved {
+  border-color: var(--canon-dawn);
+  color: var(--canon-dawn);
+}
+
+.mar-canon-end__bosses {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
 .mar-canon-end__level {
   margin: 8px 0 0;
   font-size: 0.8rem;
@@ -778,6 +828,11 @@
 
   .mar-canon-fade {
     display: none;
+  }
+
+  .mar-canon-end,
+  .mar-canon-end__unlock {
+    animation: none;
   }
 }
 
@@ -1226,4 +1281,56 @@
 .mar .mar-canon-acto-opcion:focus-visible {
   outline: 3px solid #c9480f;
   outline-offset: 2px;
+}
+
+/* La tarjeta final lleva más cosas (T145): en pantallas bajas se compacta
+   para no pisar «Entradas» ni el borde. */
+@media (max-height: 860px) {
+  .mar-canon-end {
+    padding: 52px 14px 12px;
+  }
+
+  .mar-canon-end__sky {
+    height: 44px;
+  }
+
+  .mar-canon-end__title {
+    font-size: 1.5rem;
+  }
+
+  .mar-canon-end__line {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .mar-canon-end__medal {
+    margin-top: 6px;
+    font-size: 0.95rem;
+  }
+
+  .mar-canon-end__stats {
+    margin-top: 8px;
+  }
+
+  .mar-canon-end__stats > div {
+    padding: 4px 2px;
+  }
+
+  .mar-canon-end__stats dd {
+    font-size: 1.1rem;
+  }
+
+  .mar-canon-end__level,
+  .mar-canon-end__bosses {
+    margin-top: 4px;
+  }
+
+  .mar-canon-end__gear {
+    margin-top: 4px;
+  }
+
+  .mar-canon-end__actions {
+    margin-top: 8px;
+  }
 }

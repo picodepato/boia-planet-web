@@ -4,6 +4,17 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T145: Final card
+
+Qué existe:
+- `CanonResult` lleva ahora las armas y vinilos (con nivel) de la partida; `endCardModel(result, unlockedAct)` en `canon-hud-model.ts` da título/línea (el final propio de cada boss final: Fantasma en el acto 1, Kraken en el 2; el genérico `mar.canon.fin.victoria` queda de reserva), medalla (o «Sin medalla»), acto y dificultad, bosses vencidos y la línea «¡Acto N desbloqueado!».
+- `CanonEnd` (`canon-hud.tsx`) pinta todo con `data-testid` `mar-canon-final-medalla|partida|desbloqueo|equipo|bosses`; el foco empieza en «Otra vez», Esc vuelve al mar, el desvanecido de «Volver al mar» ya existía; movimiento reducido sin animación. Textos por clave en `es-mar.ts` (`muestra`). Sin cambios en el sim, premios ni la carrera.
+- Corregido: el título del final tras vencer al Kraken ya no dice «Fantasma».
+
+Comandos: pruebas unitarias de la tarjeta en `canon-hud-model.test.ts`; e2e en `mar-canon.spec.ts` (tarjeta tras inundación, tras oro forzado con `vencer=1`, «Otra vez», «Volver al mar»). Resultados en el informe de la tarea.
+
+Pendiente: nada propio.
+
 ## 2026-10-05 — plan 012 T143: Boss HUD: bar, name, phase and warnings
 
 Qué existe:

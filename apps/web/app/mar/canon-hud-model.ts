@@ -13,6 +13,7 @@ import {
   type UpgradeId,
   type WeaponId,
   SURVIVORS_CONFIG,
+  actFinalBoss,
   survivorsMedal,
 } from '@boia/engine/survivors';
 import type { RewardOutcome } from '@boia/engine/minigames';
@@ -516,6 +517,19 @@ export interface CanonResult {
   difficulty: DifficultyId;
   /** Los bosses vencidos, en orden. */
   bosses: readonly BossId[];
+  /** Las armas y los vinilos con que acabó (T145), en el orden en que se cogieron. */
+  weapons: readonly CanonGearItem[];
+  vinyls: readonly CanonGearItem[];
+}
+
+/** Un arma o vinilo de la tarjeta final, con su nivel. */
+export interface CanonGearItem {
+  id: string;
+  name: MessageKey;
+  level: number;
+  maxLevel: number;
+  /** El arma evolucionada. */
+  evolved: boolean;
 }
 
 /** El resumen de la pantalla final, o null si la partida no la tiene (abandono). */
@@ -531,6 +545,20 @@ export function canonResult(reason: EndReason, s: SurvivorsSnapshot): CanonResul
     act: s.act,
     difficulty: s.difficulty,
     bosses: [...s.bossesDefeated],
+    weapons: s.weapons.map((w) => ({
+      id: w.evolutionId ?? w.id,
+      name: w.nameKey as MessageKey,
+      level: w.level,
+      maxLevel: w.maxLevel,
+      evolved: !!w.evolutionId,
+    })),
+    vinyls: s.vinyls.map((v) => ({
+      id: v.id,
+      name: v.nameKey as MessageKey,
+      level: v.level,
+      maxLevel: v.maxLevel,
+      evolved: false,
+    })),
   };
 }
 
@@ -541,6 +569,58 @@ export const END_KEYS: Readonly<Record<CanonEndReason, { title: MessageKey; line
   // El boss final del acto vencido (T140): el final especial; la medalla y la tarjeta, T144/T145.
   victory: { title: 'mar.canon.fin.victoria', line: 'mar.canon.fin.victoria.texto' },
 };
+
+/** Los textos de cada medalla (T145). */
+export const MEDAL_KEYS: Readonly<Record<SurvivorsMedal, MessageKey>> = {
+  bronce: 'mar.canon.fin.medalla.bronce',
+  plata: 'mar.canon.fin.medalla.plata',
+  oro: 'mar.canon.fin.medalla.oro',
+};
+
+/** El final especial de cada boss final (T145); el resto, el genérico de `END_KEYS.victory`. */
+export const VICTORY_KEYS: Readonly<Partial<Record<BossId, { title: MessageKey; line: MessageKey }>>> = {
+  fantasma: { title: 'mar.canon.fin.victoria.fantasma', line: 'mar.canon.fin.victoria.fantasma.texto' },
+  kraken: { title: 'mar.canon.fin.victoria.kraken', line: 'mar.canon.fin.victoria.kraken.texto' },
+};
+
+/** Lo que la tarjeta final pinta, sin React (T145). */
+export interface EndCardModel {
+  title: MessageKey;
+  line: MessageKey;
+  /** La medalla (o «Sin medalla» si se inundó). */
+  medal: { key: MessageKey; id: SurvivorsMedal | null };
+  act: { key: 'mar.canon.acto'; n: number };
+  difficulty: MessageKey;
+  /** Los nombres de los bosses vencidos, en orden. */
+  bosses: MessageKey[];
+  /** El acto que esta partida abrió (T144), o null. */
+  unlock: { key: 'mar.canon.fin.desbloqueo'; n: number } | null;
+}
+
+/**
+ * El modelo de la tarjeta final: título y línea (el final de su boss final si
+ * se venció), medalla, acto y dificultad, bosses y el aviso del acto abierto.
+ */
+export function endCardModel(
+  result: CanonResult,
+  unlockedAct: number | null = null,
+  cfg: typeof SURVIVORS_CONFIG = SURVIVORS_CONFIG,
+): EndCardModel {
+  const final = result.reason === 'victory' ? actFinalBoss(result.act, cfg) : null;
+  const keys = (final && VICTORY_KEYS[final]) || END_KEYS[result.reason];
+  return {
+    title: keys.title,
+    line: keys.line,
+    medal: {
+      key: result.medal ? MEDAL_KEYS[result.medal] : 'mar.canon.fin.medalla.ninguna',
+      id: result.medal,
+    },
+    act: { key: 'mar.canon.acto', n: result.act },
+    difficulty: `mar.canon.dificultad.${result.difficulty}` as MessageKey,
+    bosses: result.bosses.map((id) => (cfg.bosses[id]?.i18nKey ?? `survivors.boss.${id}`) as MessageKey),
+    unlock: unlockedAct ? { key: 'mar.canon.fin.desbloqueo', n: unlockedAct } : null,
+  };
+}
 
 // --- Premio (T119) ---------------------------------------------------------------
 

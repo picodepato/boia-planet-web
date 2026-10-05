@@ -12,7 +12,7 @@ import {
   CARD_ARM_MS,
   type CanonResult,
   type CanonView,
-  END_KEYS,
+  endCardModel,
   FLAME_ICON,
   SALVAVIDAS_ICON,
   type SlotView,
@@ -168,6 +168,7 @@ export function CanonLayer({
       {canon.result && !covered ? (
         <CanonEnd
           result={canon.result}
+          unlocked={canon.unlocked}
           prize={canon.prize}
           reward={canon.reward}
           onAgain={canon.again}
@@ -627,12 +628,14 @@ export function CanonCards({
 /** La pantalla final: «¡Amanece!» o «¡Barco inundado!», el tiempo, enemigos y notas. */
 function CanonEnd({
   result,
+  unlocked,
   prize,
   reward,
   onAgain,
   onBack,
 }: {
   result: CanonResult;
+  unlocked: number | null;
   prize: CanonMode['prize'];
   reward: CanonMode['reward'];
   onAgain: () => void;
@@ -641,7 +644,7 @@ function CanonEnd({
   const titleId = useId();
   const again = useRef<HTMLButtonElement>(null);
   useEffect(() => again.current?.focus({ preventScroll: true }), []);
-  const keys = END_KEYS[result.reason];
+  const card = endCardModel(result, unlocked);
   const line = prizeLine(reward);
   return (
     <div className="mar-canon-endwrap">
@@ -654,9 +657,32 @@ function CanonEnd({
       >
         <div className="mar-canon-end__sky" aria-hidden="true" />
         <h2 id={titleId} className="mar-canon-end__title">
-          {msg(keys.title)}
+          {msg(card.title)}
         </h2>
-        <p className="mar-canon-end__line">{msg(keys.line)}</p>
+        <p className="mar-canon-end__line">{msg(card.line)}</p>
+        <p
+          className="mar-canon-end__medal"
+          data-testid="mar-canon-final-medalla"
+          data-medalla={card.medal.id ?? 'ninguna'}
+        >
+          {msg(card.medal.key)}
+        </p>
+        <p className="mar-canon-end__run" data-testid="mar-canon-final-partida">
+          {msg('mar.canon.fin.partida', {
+            acto: card.act.n,
+            dificultad: msg(card.difficulty),
+          })}
+        </p>
+        {card.unlock ? (
+          <p
+            className="mar-canon-end__unlock"
+            data-testid="mar-canon-final-desbloqueo"
+            data-acto={card.unlock.n}
+            role="status"
+          >
+            {msg(card.unlock.key, { n: card.unlock.n })}
+          </p>
+        ) : null}
         <dl className="mar-canon-end__stats">
           <div>
             <dt>{msg('mar.canon.fin.tiempo')}</dt>
@@ -673,6 +699,28 @@ function CanonEnd({
         </dl>
         <p className="mar-canon-end__level">
           {msg('mar.canon.fin.nivel', { nivel: result.level })}
+        </p>
+        <div
+          className="mar-canon-end__gear"
+          data-testid="mar-canon-final-equipo"
+          role="group"
+          aria-label={msg('mar.canon.fin.equipo')}
+        >
+          {[...result.weapons, ...result.vinyls].map((g) => (
+            <span
+              key={g.id}
+              className={`mar-canon-end__item${g.evolved ? ' is-evolved' : ''}`}
+              data-item={g.id}
+            >
+              {msg('mar.canon.fin.nivelitem', { nombre: msg(g.name), nivel: g.level })}
+            </span>
+          ))}
+        </div>
+        <p className="mar-canon-end__bosses" data-testid="mar-canon-final-bosses">
+          <span>{msg('mar.canon.fin.bosses')}: </span>
+          {card.bosses.length
+            ? card.bosses.map((k) => msg(k)).join(', ')
+            : msg('mar.canon.fin.bosses.ninguno')}
         </p>
         {/* El premio (T119): «+150 puntos y +50 monedas», o por qué no. */}
         <p
