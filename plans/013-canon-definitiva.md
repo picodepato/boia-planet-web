@@ -105,7 +105,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome: lazy `canon-audio.ts` (synth SFX, DnB battle loop + boss variant, sea ambience restored after), volume/mute in pause, reduced motion, keyboard, aria-live → d7de982
 
 ## T153 — Per-medal daily prize and the new achievements
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T148
@@ -118,10 +118,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Done when:
   - unit tests: each medal pays once per day; bronze+silver+gold same day pay three times, again next day; shortcut and quit games pay nothing; gold before 5:30 rejected; migration from the previous document version keeps balances and achievements → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: per-medal daily prize (`RewardRule.tiers`, `CANON_VERSION` 5), 5 new achievements + guardacostas v2, triggers `play_minigame`/`defeat_boss`, local doc v8, Supabase migration (not applied), `mascot` slot + `mascota-minikraken` and `bandera-fantasma` cosmetics → 74350af
 
 ## T154 — Minikraken mascot
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T153
@@ -135,7 +135,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T155 — Per-boss ranking, local and global
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T151, T153
@@ -178,8 +178,10 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 T151: pop-up closes with Esc/×/tap outside and returns to the island panel; boat locked and bottles chip hidden while open; no per-act/difficulty medal state exists, so only «Superado» per act is shown; `useCanonMode` exposes `prep` and `acts`; pop-up shows BETA (T156 removes); updated REQ-AVE-037 proof link in `docs/spec/estado.md` to the renamed e2e (agent)
 - 2026-10-05 T149: Kraken test failure came from Codex's half-done bot, not healing; bot now aims at the gap at its distance + 40 and counts inside ring up to `RING_MARGIN` 120; Vecino stress (40 seeds, 120 s): v14 30/40 survive vs v15 40/40 with 0 hits; legacy `bailing` upgrade label set to 0.4; `canon-hud-model.test.ts` expects decimal comma (agent)
 - 2026-10-05 T152: standalone audio module loaded on pop-up open/game start; existing sea ambience (`setAmbientWorld`) silenced in game and restored; unlock only on trusted gesture; boss loop also for minibosses; site Ajustes music/effects multiply Cañón volume; music at 30 % while paused; default 70 %, key `boia.canon.sonido.v1`; `SurvivorsRun.onEvents`; reduced motion disables all camera shake in `mar3d.ts`; REQ-AVE-039 stays PARCIAL (agent)
+- 2026-10-05 T153: shortcut games still pay in `pnpm dev`/e2e (`devStartRewards`) but never on the test version (incl. `?dev=1`); quit/invalid games unlock nothing, flooded valid game counts as played; secret `canon-tormenta` now = Kraken in Tormenta (no Capitán); guardacostas v2 = win Faro + play Cañón; Supabase enum also gets T36's 7 triggers; `bandera-fantasma` cosmetic added (an achievement prize must exist in the catalog); conflict with T152 resolved by the agent (agent)
 
 ## Proposals (new scope)
+- 2026-10-05 T153: equipping the mascot in Supabase (`equipped_cosmetics`, `equip_cosmetic`, `lib/account/merge.ts` SLOTS) left for T154
 - 2026-10-05 T152: REQ-AVE-039 needs its written accessibility review (T156); synthesized music/SFX are `muestra`, Hernán should listen before launch
 - 2026-10-05 T149: in Tranquila both final bosses are nearly always beaten (Kraken 16/16, Fantasma 15/16): act-2 ≥ act-1 test at ceiling — T156 balance
 - 2026-10-05 T151: act-2 sky «tentacle» is a CSS curve, could use an SVG icon (T156)
@@ -203,3 +205,6 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-05 22:20 T149 done · branch worktree-agent-ab0f59486779a0601 → 6858e3f; push offer T151 cancelled, push offer T149 sent
 - 2026-10-05 22:22 T153 launched · attempt 1 · agent ad565e00d1afaafa6 (opus)
 - 2026-10-05 22:58 T152 done · branch worktree-agent-a2610e06d4ddf9e6b → d7de982; push offer T149 cancelled, push offer T152 sent
+- 2026-10-05 23:05 local preview for Hernán: detached worktree .claude/worktrees/preview-013 at b554768, launch config plan013 on port 3102 (remove at plan end)
+- 2026-10-05 23:30 T153 done by agent; integration conflict with T152 in canon-mode.tsx, estado.md → sent back to the same agent
+- 2026-10-05 23:58 T153 done · branch worktree-agent-ad565e00d1afaafa6 → 74350af; push offer T152 cancelled, push offer T153 sent
