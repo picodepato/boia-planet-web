@@ -19,12 +19,18 @@ import { circuitName } from './ranking-circuit';
 /** Filas por página: el top y cada «Mostrar más». */
 export const RANKING_PAGE_SIZE = 50;
 
-/** Qué tabla: puntos de siempre o los tiempos de un circuito (su versión). */
+/**
+ * Qué tabla: puntos de siempre, los tiempos de un circuito (su versión) o
+ * las puntuaciones del Cañón contra un boss final (plan 013 T155).
+ */
 export type RankingBoard =
-  { kind: 'points' } | { kind: 'circuit'; circuit: string; version: number };
+  | { kind: 'points' }
+  | { kind: 'circuit'; circuit: string; version: number }
+  | { kind: 'canon'; boss: string; version: number };
 
 export function boardKey(b: RankingBoard): string {
-  return b.kind === 'points' ? 'points' : `circuit:${b.circuit}:v${b.version}`;
+  if (b.kind === 'points') return 'points';
+  return b.kind === 'circuit' ? `circuit:${b.circuit}:v${b.version}` : `canon:${b.boss}:v${b.version}`;
 }
 
 export interface GlobalRow {
@@ -34,7 +40,7 @@ export interface GlobalRow {
   nickname: string;
   memberNumber: number;
   isArtist: boolean;
-  /** Puntos, o milisegundos en un circuito. */
+  /** Puntos, milisegundos en un circuito o la puntuación del Cañón. */
   value: number;
   isMine: boolean;
   /** Avatar neutro del Carnet (la foto no viaja en la lista). */
@@ -96,14 +102,24 @@ export async function fetchRankingPage(
   const res =
     board.kind === 'points'
       ? await client.rpc('ranking_points', { p_limit: limit, p_offset: offset })
-      : await client.rpc('ranking_race', {
-          p_circuit: board.circuit,
-          p_version: board.version,
-          p_limit: limit,
-          p_offset: offset,
-        });
+      : board.kind === 'circuit'
+        ? await client.rpc('ranking_race', {
+            p_circuit: board.circuit,
+            p_version: board.version,
+            p_limit: limit,
+            p_offset: offset,
+          })
+        : await client.rpc('ranking_canon', {
+            p_boss: board.boss,
+            p_version: board.version,
+            p_limit: limit,
+            p_offset: offset,
+          });
   if (res.error) {
-    if (res.error.message === 'unknown_circuit') return { ...EMPTY, offset };
+    // Una tabla que el servidor aún no tiene (otro trazado, otro boss o versión): vacía.
+    if (res.error.message === 'unknown_circuit' || res.error.message === 'unknown_board') {
+      return { ...EMPTY, offset };
+    }
     throw new Error(`ranking: ${res.error.message ?? 'error'}`);
   }
   const page = res.data as RankingPage;

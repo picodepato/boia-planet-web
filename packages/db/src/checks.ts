@@ -30,6 +30,9 @@ export const CLIENT_READ_ONLY_TABLES = [
   'point_actions',
   'race_times',
   'user_discounts',
+  // Plan 013 T155: el ranking del Cañón, sólo con submit_canon_score.
+  'canon_boards',
+  'canon_scores',
 ] as const;
 
 /** Derivados del libro: sólo los escribe su disparador, ni service_role. */

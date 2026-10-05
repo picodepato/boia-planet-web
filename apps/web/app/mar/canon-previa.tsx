@@ -32,10 +32,11 @@ import './canon-previa.css';
 /** El nombre del boss final de un acto (clave del catálogo), o null si el acto aún no existe. */
 export function actBossKey(act: number): MessageKey | null {
   const id = actFinalBoss(act);
-  return id ? bossKey(id) : null;
+  return id ? canonBossKey(id) : null;
 }
 
-function bossKey(id: BossId): MessageKey {
+/** El nombre de un boss (clave del catálogo). */
+export function canonBossKey(id: BossId): MessageKey {
   return (SURVIVORS_CONFIG.bosses[id]?.i18nKey ?? `survivors.boss.${id}`) as MessageKey;
 }
 
@@ -98,7 +99,7 @@ export function CanonPrevia({
   if (!prep.open) return null;
   const act = canon.act;
   const boss = actFinalBoss(act);
-  const bossName = boss ? msg(bossKey(boss)) : null;
+  const bossName = boss ? msg(canonBossKey(boss)) : null;
   const difficulty = msg(DIFFICULTY_LABEL_KEY[canon.difficulty]);
   return (
     <div

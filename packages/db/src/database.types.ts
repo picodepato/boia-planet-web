@@ -281,6 +281,101 @@ export type Database = {
           },
         ];
       };
+      canon_boards: {
+        Row: {
+          boss: string;
+          created_at: string;
+          dawn_ms: number;
+          gold_min_ms: number;
+          is_active: boolean;
+          max_ms: number;
+          max_score: number;
+          min_ms: number;
+          name: string;
+          version: number;
+        };
+        Insert: {
+          boss: string;
+          created_at?: string;
+          dawn_ms: number;
+          gold_min_ms: number;
+          is_active?: boolean;
+          max_ms: number;
+          max_score: number;
+          min_ms: number;
+          name: string;
+          version: number;
+        };
+        Update: {
+          boss?: string;
+          created_at?: string;
+          dawn_ms?: number;
+          gold_min_ms?: number;
+          is_active?: boolean;
+          max_ms?: number;
+          max_score?: number;
+          min_ms?: number;
+          name?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      canon_scores: {
+        Row: {
+          attempts: number;
+          best_at: string;
+          best_score: number;
+          board_version: number;
+          boss: string;
+          difficulty: string;
+          duration_ms: number;
+          medal: string | null;
+          updated_at: string;
+          user_id: string;
+          void_reason: string | null;
+          voided_at: string | null;
+          voided_by: string | null;
+        };
+        Insert: {
+          attempts?: number;
+          best_at?: string;
+          best_score: number;
+          board_version: number;
+          boss: string;
+          difficulty: string;
+          duration_ms: number;
+          medal?: string | null;
+          updated_at?: string;
+          user_id: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Update: {
+          attempts?: number;
+          best_at?: string;
+          best_score?: number;
+          board_version?: number;
+          boss?: string;
+          difficulty?: string;
+          duration_ms?: number;
+          medal?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'canon_scores_boss_board_version_fkey';
+            columns: ['boss', 'board_version'];
+            isOneToOne: false;
+            referencedRelation: 'canon_boards';
+            referencedColumns: ['boss', 'version'];
+          },
+        ];
+      };
       carnet_answers: {
         Row: {
           answer: string;
@@ -1764,6 +1859,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      ranking_canon: {
+        Args: {
+          p_boss: string;
+          p_version?: number;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
       ranking_points: {
         Args: {
           p_limit?: number;
@@ -1808,6 +1912,17 @@ export type Database = {
       set_news_opt_in: {
         Args: {
           p_news: boolean;
+        };
+        Returns: Json;
+      };
+      submit_canon_score: {
+        Args: {
+          p_boss: string;
+          p_version: number;
+          p_score: number;
+          p_ms: number;
+          p_medal?: string;
+          p_difficulty?: string;
         };
         Returns: Json;
       };

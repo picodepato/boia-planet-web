@@ -1,13 +1,14 @@
 import { circuitFromWorld } from '@boia/engine/circuit';
 import { CANON_MEDAL_PRIZES } from '@boia/engine/minigames';
 import { rescueMissionOf } from '@boia/engine/mission';
-import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
+import { type BossId, SURVIVORS_CONFIG, type SurvivorsMedal } from '@boia/engine/survivors';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { type Locator, type Page, type TestInfo, expect, test } from '@playwright/test';
 import { formatClock, formatPlayed } from '../app/mar/canon-hud-model';
 import { marWorld } from '../app/mar/engine/compact';
 import { lapTargets } from '../app/mar/race';
 import { type MessageKey, t as msg } from '../lib/i18n';
+import { SAMPLE_CANON_SCORES, canonGameScore, crewCanonPlace } from '../lib/mundo/ranking-canon';
 import { mar, marSheet, openMar, shipAt, steerTo } from './mar-helpers';
 
 /**
@@ -1455,7 +1456,7 @@ test('campaña en el pop-up previo: el acto 2 cerrado de primeras y el 3 «Próx
   expect([...errors, ...won, ...again]).toEqual([]);
 });
 
-test('pop-up previo: se abre con «Jugar» del panel, entero en pantalla y sin tapar «Entradas»; ranking vacío del boss; Tab no sale; Esc y la × vuelven al panel (T151)', async ({
+test('pop-up previo: se abre con «Jugar» del panel, entero en pantalla y sin tapar «Entradas»; ranking del boss; Tab no sale; Esc y la × vuelven al panel (T151)', async ({
   page,
   isMobile,
 }) => {
@@ -1481,14 +1482,15 @@ test('pop-up previo: se abre con «Jugar» del panel, entero en pantalla y sin t
   }
   const playBox = (await box.getByTestId('mar-canon-previa-jugar').boundingBox())!;
   expect(playBox.height).toBeGreaterThanOrEqual(48);
-  // El ranking del boss final del acto elegido, vacío hasta que haya partidas (T155).
+  // El ranking del boss final del acto elegido (T155; en modo local, la tripulación de muestra).
   const ranking = box.getByTestId('mar-canon-previa-ranking');
   await expect(ranking).toHaveAttribute('data-boss', finalSlot(1).ref);
   await expect(ranking).toContainText(
     msg('mar.canon.previa.ranking', { nombre: msg('survivors.boss.fantasma') }),
   );
-  await expect(box.getByTestId('mar-canon-previa-ranking-vacio')).toHaveText(
-    msg('mar.canon.previa.ranking.vacio'),
+  await expect(ranking.getByTestId('mar-canon-ranking-tabla')).toHaveAttribute(
+    'data-boss',
+    finalSlot(1).ref,
   );
   // Tab da la vuelta dentro del diálogo; mientras, el barco no se mueve.
   const before = await shipAt(page);
@@ -1528,6 +1530,112 @@ test('pop-up previo: se abre con «Jugar» del panel, entero en pantalla y sin t
   await expect(game(page)).toHaveAttribute('data-estado', 'running', { timeout: 20_000 });
   await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
   await expect(game(page)).toHaveAttribute('data-acto', '1');
+  expect(errors).toEqual([]);
+});
+
+/** Las filas del ranking del pop-up (T155) y la tuya. */
+const rankingRows = (page: Page) => previa(page).getByTestId('mar-canon-ranking-fila');
+const myRankingRow = (page: Page) => rankingRows(page).and(page.locator('[data-mio="si"]'));
+/** Las puntuaciones de las filas, en orden (null: tú sin partida). */
+const rankingScores = (page: Page) =>
+  rankingRows(page).evaluateAll((els) => els.map((e) => e.getAttribute('data-puntos')));
+
+test('ranking por boss (T155): en el pop-up, la tripulación de muestra del boss; tras una partida, tu puntuación, tu mejor y tu puesto en la tarjeta final y en el pop-up; las de atajo no entran', async ({
+  page,
+}) => {
+  const boss = finalSlot(1).ref as BossId;
+  const crew = Object.values(SAMPLE_CANON_SCORES[boss]!).sort((a, b) => b - a);
+  // Un visitante nuevo: los de muestra, de más a menos, y tú al final sin partida.
+  const errors = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  await openPrevia(page);
+  const ranking = () => previa(page).getByTestId('mar-canon-ranking');
+  await expect(ranking()).toHaveAttribute('data-ranking', 'local');
+  await expect(ranking().getByTestId('mar-canon-ranking-tabla')).toHaveAttribute('data-boss', boss);
+  expect(await rankingScores(page)).toEqual([...crew.map(String), null]);
+  await expect(myRankingRow(page)).toContainText(msg('mar.canon.ranking.tu.sin'));
+
+  // Una partida de atajo (`&t=`) no entra en el ranking, y la tarjeta lo dice.
+  errors.push(...(await openMar(page, '?minijuego=canon&t=419&seed=3')));
+  const end = page.getByTestId('mar-canon-final');
+  const rank = end.getByTestId('mar-canon-final-ranking');
+  await expect(end).toBeVisible({ timeout: 60_000 });
+  await expect(rank).toHaveAttribute('data-ranking', 'off', { timeout: 15_000 });
+  await expect(rank).toHaveAttribute('data-motivo', 'test');
+  await expect(end.getByTestId('mar-canon-final-puesto')).toHaveText(
+    msg('mar.canon.fin.ranking.prueba'),
+  );
+  await expect(end.getByTestId('mar-canon-final-mejor')).toHaveCount(0);
+
+  // Con el ayudante de las pruebas (`&ranking=1`, sólo en dev y e2e) entra en el ranking local.
+  errors.push(...(await openMar(page, '?minijuego=canon&t=419&seed=3&ranking=1')));
+  await expect(end).toBeVisible({ timeout: 60_000 });
+  await expect(game(page)).toHaveAttribute('data-fin', 'survived');
+  await expect(rank).toHaveAttribute('data-ranking', 'local', { timeout: 15_000 });
+  const defeated = Number(await end.getByTestId('mar-canon-final-enemigos').textContent());
+  const notes = Number(await end.getByTestId('mar-canon-final-notas').textContent());
+  const medal = (await end.getByTestId('mar-canon-final-medalla').getAttribute('data-medalla')) as
+    | SurvivorsMedal
+    | 'ninguna';
+  const score = canonGameScore({
+    defeated,
+    notes,
+    medal: medal === 'ninguna' ? null : medal,
+    playedS: SURVIVORS_CONFIG.durationS,
+    difficulty: 'normal',
+  }).total;
+  expect(score).toBeGreaterThan(0);
+  const place = crewCanonPlace(score, boss);
+  await expect(rank).toHaveAttribute('data-boss', boss);
+  await expect(rank).toHaveAttribute('data-puntos', String(score));
+  await expect(rank).toHaveAttribute('data-mejor', String(score));
+  await expect(rank).toHaveAttribute('data-puesto', String(place.position));
+  await expect(end.getByTestId('mar-canon-final-puntos')).toContainText(
+    new Intl.NumberFormat('es-ES').format(score),
+  );
+  await expect(end.getByTestId('mar-canon-final-mejor')).toHaveText(
+    msg('mar.canon.fin.ranking.nuevo'),
+  );
+  await expect(end.getByTestId('mar-canon-final-puesto')).toHaveText(
+    msg('mar.canon.fin.ranking.puesto', { puesto: place.position, total: place.of }),
+  );
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+
+  // De vuelta en el pop-up: tu mejor en su puesto entre los de muestra.
+  errors.push(...(await openMar(page, '?minijuego=canon&oferta=1')));
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  await openPrevia(page);
+  await expect(myRankingRow(page)).toHaveAttribute('data-puntos', String(score));
+  await expect(myRankingRow(page)).toHaveAttribute('data-puesto', String(place.position));
+  await expect(myRankingRow(page)).toContainText(msg('mar.canon.ranking.tu'));
+  expect(await rankingScores(page)).toEqual([...crew, score].sort((a, b) => b - a).map(String));
+  expect(errors).toEqual([]);
+});
+
+test('ranking por boss (T155): una partida del pop-up acabada con «Terminar partida» no se puntúa ni entra', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  const box = await openPrevia(page);
+  await box.getByTestId('mar-canon-previa-jugar').click();
+  await expect(game(page)).toHaveAttribute('data-estado', 'running', { timeout: 20_000 });
+  await expect.poll(() => activeS(page), { timeout: 15_000 }).toBeGreaterThan(1);
+  await answerCard(page);
+  await quitFromPause(page);
+  const end = page.getByTestId('mar-canon-final');
+  await expect(end).toHaveAttribute('data-ranking', 'no');
+  await page.waitForTimeout(1000);
+  await expect(end.getByTestId('mar-canon-final-ranking')).toHaveCount(0);
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(canvas(page)).toHaveAttribute('data-canon', 'off');
+  // En el pop-up sigues sin partida.
+  errors.push(...(await openMar(page, '?minijuego=canon&oferta=1')));
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  await openPrevia(page);
+  await expect(myRankingRow(page)).toContainText(msg('mar.canon.ranking.tu.sin'));
+  await expect(myRankingRow(page)).not.toHaveAttribute('data-puntos', /.+/);
   expect(errors).toEqual([]);
 });
 

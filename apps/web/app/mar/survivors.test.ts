@@ -98,6 +98,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       loot: false,
       act: null,
       win: false,
+      rank: false,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
       t: 0,
@@ -111,8 +112,12 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       loot: false,
       act: null,
       win: false,
+      rank: false,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
+    // `ranking=1` (T155): el ayudante de las pruebas del ranking local.
+    expect(canonShortcut('?minijuego=canon&t=419&ranking=1', dev)?.rank).toBe(true);
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&ranking=1')).toBe('http://x/mar');
     expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({ card: true, mix: false });
     expect(canonShortcut('?minijuego=canon&carta=surtido', dev)).toMatchObject({ card: true, mix: true });
     // `dificultad=` (T131): una de las tres; otra cosa, la del panel.
@@ -138,6 +143,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       loot: false,
       act: null,
       win: false,
+      rank: false,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });

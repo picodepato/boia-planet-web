@@ -19,7 +19,11 @@ import {
 import { type Settings, channelGain } from '@boia/engine/ui';
 import type { WorldConfig } from '@boia/world';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { accountSnapshot } from '../../lib/account/session';
 import { emitSignals } from '../../lib/mundo/achievements';
+import { memberCanonStanding } from '../../lib/mundo/ranking-canon-global';
+import { browserCanonStorage } from '../../lib/mundo/ranking-canon';
+import { isSupabaseConfigured } from '../../lib/supabase/config';
 import type { InWorldCopy } from '../../lib/mundo/minigame-layer';
 import { gameRepository, useRepoData } from '../../lib/mundo/repo';
 import { type MessageKey, t as msg } from '../../lib/i18n';
@@ -34,6 +38,7 @@ import {
   recordFinalBoss,
 } from './canon-campaign';
 import { type CanonPrize, type CanonResult, canonPrize, canonResult } from './canon-hud-model';
+import { type CanonRankDeps, type CanonRankingOutcome, rankCanonGame } from './canon-ranking-model';
 import { canonSignals, settleCanonSession } from './canon-settle';
 import type { CanonAudio, CanonAudioState } from './canon-audio';
 import { soundPreferences } from './canon-sound-preferences';
@@ -77,7 +82,22 @@ import {
  * ranking.
  * Una partida de prueba (`&t=`, `&seed=`, `&carta=1`) sólo da premio en
  * `pnpm dev` y en las e2e; en producción, con `?dev=1`, no (T121).
+ *
+ * El ranking por boss (T155): cada partida que vale (ni de atajo ni de
+ * «Terminar partida», validada por la sesión) se puntúa, se apunta como tu
+ * mejor de este navegador y, con cuenta, va al ranking global; la tarjeta
+ * final enseña la puntuación, tu mejor y tu puesto (`ranking`).
  */
+
+/** El modo del ranking ahora: local sin Supabase; con él, miembro o invitado. */
+function canonRankDeps(): CanonRankDeps {
+  const mode = !isSupabaseConfigured()
+    ? 'local'
+    : accountSnapshot().status === 'member'
+      ? 'member'
+      : 'guest';
+  return { mode, storage: browserCanonStorage(), submit: (s) => memberCanonStanding(s) };
+}
 
 const EMPTY: ReadonlySet<HideLayer> = new Set();
 /** Cada cuánto se publica el estado de la partida (ms). */
@@ -129,6 +149,12 @@ export interface CanonMode {
   reward: RewardOutcome | null;
   /** Lo mismo en una palabra, para las pruebas (`data-premio`). */
   prize: CanonPrize | null;
+  /**
+   * El ranking de la última partida acabada (T155): puntuación, tu mejor y
+   * tu puesto, o por qué no entra; null sin acabar, liquidándose o con
+   * «Terminar partida».
+   */
+  ranking: CanonRankingOutcome | null;
   /** Lo que la partida tiene escondido ahora. */
   hidden: ReadonlySet<HideLayer>;
   /** Empieza donde está el barco; false si no se puede ahora. */
@@ -201,6 +227,8 @@ interface StartOptions {
   act?: number | null;
   /** `&vencer=1` (T144): los bosses caen en cuanto aparecen; sólo con los atajos encendidos. */
   win?: boolean;
+  /** `&ranking=1` (T155): la partida de atajo entra en el ranking local; sólo donde los atajos dan premio. */
+  rank?: boolean;
 }
 
 export function useCanonMode({
@@ -245,6 +273,9 @@ export function useCanonMode({
   const sessionRef = useRef<WorldMinigameSession | null>(null);
   const [ended, setEnded] = useState(false);
   const [reward, setReward] = useState<RewardOutcome | null>(null);
+  const [ranking, setRanking] = useState<CanonRankingOutcome | null>(null);
+  // El ayudante `&ranking=1` de la partida en curso (T155).
+  const rankHelperRef = useRef(false);
   // La última partida acabó con «Terminar partida» (T148).
   const [quit, setQuit] = useState(false);
   const restoreRef = useRef<(() => void) | null>(null);
@@ -357,12 +388,28 @@ export function useCanonMode({
       const settling = session
         ? settleCanonSession(session, reason, snapshot.activeS, medal, run.config)
         : null;
+      const r = canonResult(reason, snapshot);
+      const rankHelper = rankHelperRef.current;
+      setRanking(null);
       if (session && settling) {
         // La campaña (T144) y los logros (T153) cuentan como el premio: una
         // partida de prueba sólo donde el premio vale.
         const counts = !session.testStart || devStartRewards();
         void settling.then((s) => {
-          if (runRef.current === run || !runRef.current) setReward(s.reward);
+          const current = () => runRef.current === run || !runRef.current;
+          if (current()) setReward(s.reward);
+          // El ranking (T155): la puntuación ya; con cuenta, el puesto después.
+          if (r) {
+            const { now, later } = rankCanonGame(
+              { result: r, testStart: session.testStart, testHelper: rankHelper, valid: s.validation.valid },
+              canonRankDeps(),
+              run.config,
+            );
+            if (current()) setRanking(now);
+            void later?.then((o) => {
+              if (current()) setRanking(o);
+            });
+          }
           void emitSignals(
             gameRepository(),
             canonSignals(s, counts, {
@@ -387,7 +434,6 @@ export function useCanonMode({
       // El bucle se funde y vuelve el mar (sin el módulo cargado aún, sólo el mar).
       if (audioRef.current) audioRef.current.end(reason, run.hook().medalla || null);
       else latest.current.onSea?.(true);
-      const r = canonResult(reason, snapshot);
       if (!r) {
         teardown();
         setNotice('abandoned');
@@ -411,6 +457,7 @@ export function useCanonMode({
       loot = false,
       act = null,
       win = false,
+      rank = false,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
@@ -475,6 +522,8 @@ export function useCanonMode({
       setEnded(false);
       setQuit(false);
       setReward(null);
+      setRanking(null);
+      rankHelperRef.current = rank && devStartRewards();
       setNotice(null);
       if (askedStyle) chosenStyle.current = askedStyle;
       const style = startDefeatStyle(chosenStyle.current, run.config);
@@ -620,6 +669,7 @@ export function useCanonMode({
         loot: sc.loot,
         act: sc.act,
         win: sc.win,
+        rank: sc.rank,
       });
     }
   }, [ready, start]);
@@ -685,6 +735,7 @@ export function useCanonMode({
     hud,
     reward,
     prize: ended ? (quit ? 'quit' : canonPrize(reward)) : null,
+    ranking: ended && !quit ? ranking : null,
     hidden,
     start,
     setPaused,

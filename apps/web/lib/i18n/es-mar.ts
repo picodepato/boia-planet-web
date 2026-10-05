@@ -250,7 +250,26 @@ export const esMar = {
   'mar.canon.previa.boss.oculto': '¿?',
   'mar.canon.previa.ranking': 'Ranking contra {nombre}',
   'mar.canon.previa.ranking.vacio':
-    'Aún no hay ranking para este boss. Pronto verás aquí las mejores partidas contra él.',
+    'Aún no hay partidas contra este boss. ¡Sé la primera tripulación del ranking!',
+  // El ranking por boss (plan 013, T155): en el pop-up y en la tarjeta final. muestra
+  'mar.canon.ranking.tu': 'Tú',
+  'mar.canon.ranking.tu.sin': 'Tú (aún sin partida)',
+  'mar.canon.ranking.cargando': 'Cargando el ranking…',
+  'mar.canon.ranking.fila': '{puesto}. {nombre}: {puntos} puntos',
+  'mar.canon.ranking.local':
+    'Tu mejor partida en este navegador, entre la tripulación de muestra.',
+  'mar.canon.ranking.formula':
+    'Puntos: enemigos, notas, medalla y rapidez al vencer al boss, por la dificultad.',
+  'mar.canon.fin.puntos': 'Puntos',
+  'mar.canon.fin.ranking.nuevo': '¡Tu mejor!',
+  'mar.canon.fin.ranking.mejor': 'Tu mejor: {puntos}',
+  'mar.canon.fin.ranking.puesto': 'Puesto {puesto} de {total}',
+  'mar.canon.fin.ranking.cargando': 'Buscando tu puesto…',
+  'mar.canon.fin.ranking.invitado': 'Sin cuenta: tu mejor queda en este navegador.',
+  'mar.canon.fin.ranking.sinDato': 'Tu puesto no está disponible ahora.',
+  'mar.canon.fin.ranking.prueba': 'Partida de prueba: fuera del ranking.',
+  'mar.canon.fin.ranking.corta': 'Muy corta: fuera del ranking.',
+  'mar.canon.fin.ranking.fuera': 'Fuera del ranking.',
   'mar.canon.previa.jugar': 'Jugar',
   'mar.canon.previa.jugar.aria': 'Jugar el acto {n} en {dificultad}',
   'mar.canon.previa.eleccion': 'Acto {n} en {dificultad}',

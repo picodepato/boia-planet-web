@@ -182,6 +182,7 @@ import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKe
 import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
 import { CanonLayer } from './canon-hud';
 import { CanonPrevia } from './canon-previa';
+import { CanonBossRanking } from './canon-ranking';
 import { CANON_GAME_ID, islandPinsOnly } from './survivors';
 import { devGrantMascot } from './mascota-dev';
 import {
@@ -2465,7 +2466,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
       {/* El pop-up antes de la partida del Cañón (T151): acto, dificultad, ranking y «Jugar». */}
-      {status === 'ready' ? <CanonPrevia canon={canon} /> : null}
+      {status === 'ready' ? (
+        <CanonPrevia canon={canon} ranking={(_act, boss) => <CanonBossRanking boss={boss} />} />
+      ) : null}
 
       {/* Botellas cerca del barco (T56), encima de la barra, cuando no hay nada más abajo. */}
       {status === 'ready' &&

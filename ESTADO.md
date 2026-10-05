@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 013 T155: Per-boss ranking, local and global
+
+### Qué existe
+
+- **Puntuación de partida** (`apps/web/lib/mundo/ranking-canon.ts`, `muestra`): enemigos × 10 + notas × 5 + medalla (bronce 2 000, plata 4 000, oro 8 000) + rapidez (100 por segundo que faltaba para el amanecer al vencer al boss final), × dificultad (Tranquila 0,75, Normal 1, Tormenta 1,5). Una tabla por boss final (`fantasma` acto 1, `kraken` acto 2) y versión de la fórmula `CANON_RANKING_VERSION` 1 (no cambia con `SURVIVORS_CONFIG_VERSION`).
+- **Antitrampas** (`canonRankRejection`, igual en la base): nunca «Terminar partida» ni partidas de atajo; la sesión debe validarla; 30 s mínimo, 7:01 máximo; oro no antes de la entrada del boss final (5:30), bronce/plata no antes del amanecer; tope 170 000 puntos.
+- **Modo local**: tu mejor por boss en `localStorage` `boia.canon.ranking.v1` (try/catch) entre la tripulación de muestra (`SAMPLE_CANON_SCORES`). **Con Supabase**: un miembro manda la partida al acabar (`submit_canon_score`, directo, no por la cola) y lee su puesto (`ranking_canon`); un invitado se queda con su mejor del navegador.
+- **Pop-up previo** (hueco de T151): `CanonBossRanking` enseña la tabla del boss del acto elegido (local: muestra + «Tú»; global: los 5 primeros + tu fila; vacío o cargando con su texto).
+- **Tarjeta final**: «Puntos» como cuarta cifra y una línea con el puesto y «¡Tu mejor!» / «Tu mejor: N», o por qué no entra. Compactada la tarjeta en pantallas bajas (iconos del equipo 1,1 rem, márgenes) para no pisar «Entradas» en 360×640.
+- **Ayudante de pruebas** `&ranking=1`: una partida de atajo entra en el ranking local sólo donde los atajos dan premio (`pnpm dev`, e2e); nunca en el global ni en la versión de prueba.
+- **Supabase** `supabase/migrations/20261005100200_canon_ranking.sql` (escrita, **sin aplicar**): `canon_boards` (sembradas las dos tablas), `canon_scores`, RLS de sólo lectura, `submit_canon_score` (miembros) y `ranking_canon` (cualquiera). `database.types.ts` a mano, `RPC_REJECTIONS` (+5), `CLIENT_READ_ONLY_TABLES`, caso `canon-ranking.supabase.ts` (necesita la base de desarrollo).
+- `docs/spec/estado.md`: REQ-AVE-037 (sigue PARCIAL) con la nota y las pruebas del ranking.
+
+### Comandos y resultados
+
+- `pnpm exec vitest run apps/web/lib/mundo/ranking-canon.test.ts apps/web/lib/mundo/ranking-canon-global.test.ts apps/web/lib/mundo/ranking-canon-sql.test.ts apps/web/app/mar/canon-ranking-model.test.ts` → exit 0 (fórmula, separación por boss, rechazos: atajo, «Terminar partida», tiempos imposibles, puntuación de más; SQL igual al navegador).
+- `E2E_PORT=3569 pnpm e2e mar-canon.spec.ts --workers=1 -g "ranking"` → exit 0, 6 passed.
+- `E2E_PORT=3568 pnpm e2e mar-canon.spec.ts --workers=1 -g "pantalla final con tiempo|campaña en el pop-up|ranking|premio del bronce|Terminar partida"` → exit 0, 14 passed.
+- Test command: vitest → exit 0 (181 archivos, 1731 pruebas); `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (187,0 de 200 kB); `pnpm typecheck` → exit 0.
+
+### Pendiente
+
+- Aplicar la migración en Supabase (Hernán) y correr `canon-ranking.supabase.ts` contra la base de desarrollo.
+- Sin cola: un miembro sin red no manda la partida (se queda su mejor en el navegador); no pasa a la cuenta al entrar.
+- Las tablas del Cañón no salen en el panel «Ranking» del menú del mundo, sólo en el pop-up.
+- Puntos, topes y tripulación de muestra `muestra` hasta Álvaro.
+
 ## 2026-10-05 — plan 013 T154: Minikraken mascot
 
 Qué existe:

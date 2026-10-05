@@ -50,6 +50,12 @@ export const RPC_REJECTIONS = [
   'invalid_time',
   'too_fast',
   'too_slow',
+  // Ranking del Cañón (plan 013 T155; los tiempos, too_fast y too_slow)
+  'unknown_board',
+  'invalid_score',
+  'score_too_high',
+  'invalid_medal',
+  'invalid_difficulty',
   // Descuentos
   'unknown_discount',
   'discount_not_found',
@@ -205,9 +211,9 @@ export interface RankingRow {
   nickname: string;
   member_number: number;
   is_artist: boolean;
-  /** Puntos, o milisegundos en ranking_race. */
+  /** Puntos, milisegundos en ranking_race o la puntuación en ranking_canon. */
   value: number;
-  /** Sólo en ranking_race. */
+  /** Sólo en ranking_race y ranking_canon. */
   best_at?: string;
   is_mine: boolean;
 }
@@ -223,7 +229,20 @@ export interface RankingPage {
   season_id?: string | null;
   /** ranking_race */
   circuit?: string;
+  /** ranking_race y ranking_canon */
   version?: number;
+  /** ranking_canon (plan 013 T155) */
+  boss?: string;
+}
+
+/** submit_canon_score (plan 013 T155) */
+export interface CanonScoreResult {
+  best: boolean;
+  best_score: number;
+  best_at: string;
+  attempts: number;
+  boss: string;
+  version: number;
 }
 
 /** admin_set_stamp_code */

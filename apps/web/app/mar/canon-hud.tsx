@@ -5,6 +5,7 @@ import { type RefObject, useCallback, useEffect, useId, useRef, useState } from 
 import { t as msg } from '../../lib/i18n';
 import { CanonIcon } from './canon-icons';
 import type { CanonMode } from './canon-mode';
+import { CanonEndRanking, CanonEndScore } from './canon-ranking';
 import { CanonReadoutMenu } from './canon-readout-menu';
 import {
   BOSS_BANNER_MS,
@@ -177,6 +178,7 @@ export function CanonLayer({
           unlocked={canon.unlocked}
           prize={canon.prize}
           reward={canon.reward}
+          ranking={canon.ranking}
           onAgain={canon.again}
           onBack={canon.backToSea}
         />
@@ -696,6 +698,7 @@ function CanonEnd({
   unlocked,
   prize,
   reward,
+  ranking = null,
   onAgain,
   onBack,
 }: {
@@ -703,6 +706,8 @@ function CanonEnd({
   unlocked: number | null;
   prize: CanonMode['prize'];
   reward: CanonMode['reward'];
+  /** El ranking de la partida (T155): puntuación, tu mejor y tu puesto. */
+  ranking?: CanonMode['ranking'];
   onAgain: () => void;
   onBack: () => void;
 }) {
@@ -768,6 +773,7 @@ function CanonEnd({
             <dt>{msg('mar.canon.fin.notas')}</dt>
             <dd data-testid="mar-canon-final-notas">{result.notes}</dd>
           </div>
+          {full && ranking ? <CanonEndScore ranking={ranking} /> : null}
         </dl>
         {full ? (
           <>
@@ -806,6 +812,7 @@ function CanonEnd({
             >
               {line ? msg(line.key, line.params) : null}
             </p>
+            {ranking ? <CanonEndRanking ranking={ranking} /> : null}
           </>
         ) : null}
         <div className="mar-canon-end__actions">

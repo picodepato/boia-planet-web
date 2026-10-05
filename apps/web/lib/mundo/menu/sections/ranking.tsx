@@ -616,12 +616,15 @@ function GuestBox({ board, onEntered }: { board: RankingBoard; onEntered: () => 
     async (r) =>
       board.kind === 'points'
         ? { points: (await r.progress.ranking({})).mine.points, ms: null }
-        : {
-            points: 0,
-            ms:
-              (await readRecord(r.progress, { id: board.circuit, version: board.version }))
-                ?.bestMs ?? null,
-          },
+        : board.kind === 'circuit'
+          ? {
+              points: 0,
+              ms:
+                (await readRecord(r.progress, { id: board.circuit, version: board.version }))
+                  ?.bestMs ?? null,
+            }
+          : // Las tablas del Cañón (T155) no salen en este panel: están en su pop-up.
+            { points: 0, ms: null },
     [boardKey(board)],
   );
   const text =

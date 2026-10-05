@@ -624,7 +624,9 @@
 
 .mar-canon-end__stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Tiempo, enemigos, notas y, si entra en juego el ranking (T155), los puntos. */
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   margin: 14px 0 0;
   border-block: 1px solid var(--line);
 }
@@ -1365,11 +1367,11 @@
    para no pisar «Entradas» ni el borde. */
 @media (max-height: 860px) {
   .mar-canon-end {
-    padding: 52px 14px 12px;
+    padding: 48px 14px 12px;
   }
 
   .mar-canon-end__sky {
-    height: 44px;
+    height: 40px;
   }
 
   .mar-canon-end__title {
@@ -1401,15 +1403,25 @@
 
   .mar-canon-end__level,
   .mar-canon-end__bosses {
+    margin-top: 2px;
+  }
+
+  .mar-canon-end__prize {
     margin-top: 4px;
   }
 
   .mar-canon-end__gear {
     margin-top: 4px;
+    gap: 2px;
+  }
+
+  /* T155: sitio para la línea del ranking sin pisar «Entradas» en 360×640. */
+  .mar-canon-end__item-icon {
+    font-size: 1.1rem;
   }
 
   .mar-canon-end__actions {
-    margin-top: 8px;
+    margin-top: 6px;
   }
 }
 

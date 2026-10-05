@@ -79,6 +79,13 @@ export const CANON_PARAMS = {
    * medallas y la campaña sin luchar.
    */
   win: 'vencer',
+  /**
+   * `ranking=1` (T155): ayudante de las pruebas. Una partida de atajo entra
+   * en el ranking local de este navegador, sólo donde los atajos dan premio
+   * (`devStartRewards`: `pnpm dev` y las e2e); nunca en el ranking global
+   * ni en la versión de prueba.
+   */
+  rank: 'ranking',
   dev: 'dev',
 } as const;
 
@@ -176,6 +183,8 @@ export interface CanonShortcut {
   act: number | null;
   /** Los bosses caen en cuanto aparecen (`&vencer=1`, T144). */
   win: boolean;
+  /** La partida de atajo entra en el ranking local (`&ranking=1`, T155; ayudante de las pruebas). */
+  rank: boolean;
 }
 
 /**
@@ -204,6 +213,7 @@ export function canonShortcut(
     loot: q.get(CANON_PARAMS.loot) === '1',
     act: asAct(q.get(CANON_PARAMS.act), config),
     win: q.get(CANON_PARAMS.win) === '1',
+    rank: q.get(CANON_PARAMS.rank) === '1',
   };
 }
 
@@ -229,6 +239,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.loot,
     CANON_PARAMS.act,
     CANON_PARAMS.win,
+    CANON_PARAMS.rank,
   ]) {
     url.searchParams.delete(p);
   }
