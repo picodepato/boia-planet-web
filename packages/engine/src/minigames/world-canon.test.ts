@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SURVIVORS_CONFIG, type SurvivorsConfig } from '../survivors/config';
+import { DIFFICULTY_IDS, SURVIVORS_CONFIG, type SurvivorsConfig } from '../survivors/config';
+import { actFinalBoss, actMinibosses, survivorsMedal } from '../survivors/medals';
 import { createSurvivors } from '../survivors/sim';
 import type { SurvivorsWorld } from '../survivors/world';
 import { faro } from './faro';
@@ -17,6 +18,7 @@ import {
   canonConfigFor,
   canonEarliestWinS,
   canonEnd,
+  canonOutcome,
   canonScore,
 } from './world-canon';
 import { WorldMinigameSession } from './world-session';
@@ -390,5 +392,42 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
     const { game } = playToEnd(quiet, normal.seed, c.advance);
     expect((await normal.finish(canonEnd('survived', game.activeS))).reward.granted).toBe(true);
     expect(sink.grantWorldReward).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('canon T144: acto y dificultad en la sesión; `won` es bronce o más', () => {
+  it('el acto y la dificultad van en la configuración de la sesión y cambian su `configHash`', () => {
+    expect(CANON_DEFAULTS.survivors.act).toBe(1);
+    const acts = SURVIVORS_CONFIG.acts.map((a) => a.act);
+    const hashes = new Set<string>();
+    for (const act of acts) {
+      for (const d of DIFFICULTY_IDS) {
+        const cfg = canonConfigFor(SURVIVORS_CONFIG, d, act);
+        expect(cfg.survivors).toMatchObject({ act, difficulty: d });
+        hashes.add(configHash(cfg));
+      }
+    }
+    // Cada combinación, su huella.
+    expect(hashes.size).toBe(acts.length * DIFFICULTY_IDS.length);
+    // Sin acto, el 1; el premio y el objetivo no cambian con ellos.
+    expect(configHash(canonConfigFor(SURVIVORS_CONFIG, 'normal'))).toBe(
+      configHash(canonConfigFor(SURVIVORS_CONFIG, 'normal', 1)),
+    );
+    for (const act of acts) {
+      expect(canonConfigFor(SURVIVORS_CONFIG, 'tormenta', act).reward).toEqual(CANON_DEFAULTS.reward);
+      expect(canonConfigFor(SURVIVORS_CONFIG, 'tormenta', act).goal).toBe(CANON_DEFAULTS.goal);
+    }
+  });
+
+  it('la sesión gana exactamente cuando hay medalla (bronce, plata u oro)', () => {
+    for (const act of SURVIVORS_CONFIG.acts.map((a) => a.act)) {
+      const all = [...actMinibosses(act), actFinalBoss(act)!];
+      for (const reason of ['survived', 'flooded', 'abandoned', 'victory'] as const) {
+        for (const beaten of [[], actMinibosses(act), all]) {
+          const medal = survivorsMedal({ end: reason, bossesDefeated: beaten, act });
+          expect(canonOutcome(reason)).toBe(medal ? 'won' : 'lost');
+        }
+      }
+    }
   });
 });

@@ -952,3 +952,64 @@
 .mar .mar-canon-card.is-chest:not(.is-evolution) {
   background: linear-gradient(135deg, #fffbe9, #ffe7a8);
 }
+
+/* ---------- Los actos en el panel de la isla (T144) ---------- */
+
+.mar .mar-canon-acto {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.mar .mar-canon-acto-opcion {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 48px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  border: 2px solid #1b1b1b;
+  background: #fff;
+  color: #1b1b1b;
+  cursor: pointer;
+}
+
+.mar .mar-canon-acto-nombre {
+  font: 800 0.82rem / 1.2 var(--font-title);
+}
+
+.mar .mar-canon-acto-nota {
+  font: 700 0.62rem / 1.2 var(--font-title);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mar .mar-canon-acto-opcion[aria-checked='true'] {
+  background: #1b1b1b;
+  color: #fff;
+}
+
+.mar .mar-canon-acto-opcion[data-superado='si'] .mar-canon-acto-nota {
+  color: #a63a0b;
+}
+
+.mar .mar-canon-acto-opcion[data-superado='si'][aria-checked='true'] .mar-canon-acto-nota {
+  color: #ffb08a;
+}
+
+/* Cerrado o próximamente: se ve, dice por qué, pero no se marca. */
+.mar .mar-canon-acto-opcion[aria-disabled='true'] {
+  border-style: dashed;
+  border-color: rgb(27 27 27 / 0.45);
+  background: rgb(255 255 255 / 0.55);
+  color: rgb(27 27 27 / 0.55);
+  cursor: not-allowed;
+}
+
+.mar .mar-canon-acto-opcion:focus-visible {
+  outline: 3px solid #c9480f;
+  outline-offset: 2px;
+}

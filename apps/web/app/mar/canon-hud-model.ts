@@ -1,14 +1,18 @@
-import type {
-  CardKind,
-  CardOption,
-  EndReason,
-  EvolutionId,
-  LevelUpCard,
-  PassiveId,
-  SurvivorsSnapshot,
-  SurvivorsStatus,
-  UpgradeId,
-  WeaponId,
+import {
+  type BossId,
+  type CardKind,
+  type CardOption,
+  type DifficultyId,
+  type EndReason,
+  type EvolutionId,
+  type LevelUpCard,
+  type PassiveId,
+  type SurvivorsMedal,
+  type SurvivorsSnapshot,
+  type SurvivorsStatus,
+  type UpgradeId,
+  type WeaponId,
+  survivorsMedal,
 } from '@boia/engine/survivors';
 import type { RewardOutcome } from '@boia/engine/minigames';
 import type { MessageKey } from '../../lib/i18n';
@@ -374,6 +378,13 @@ export interface CanonResult {
   defeated: number;
   notes: number;
   level: number;
+  /** La medalla (T144): bronce al amanecer, plata con los minibosses, oro con el boss final; null inundado. */
+  medal: SurvivorsMedal | null;
+  /** El acto y la dificultad jugados (T144). */
+  act: number;
+  difficulty: DifficultyId;
+  /** Los bosses vencidos, en orden. */
+  bosses: readonly BossId[];
 }
 
 /** El resumen de la pantalla final, o null si la partida no la tiene (abandono). */
@@ -385,6 +396,10 @@ export function canonResult(reason: EndReason, s: SurvivorsSnapshot): CanonResul
     defeated: s.defeated,
     notes: s.notesPicked,
     level: s.xp.level,
+    medal: survivorsMedal({ end: reason, bossesDefeated: s.bossesDefeated, act: s.act }),
+    act: s.act,
+    difficulty: s.difficulty,
+    bosses: [...s.bossesDefeated],
   };
 }
 

@@ -26,14 +26,16 @@ import type { WorldGameEnd } from './world-session';
  * - La versión 4 sustituye a la 3 del cañón 2D; `survivors` lleva la versión
  *   y la huella de la configuración entera del modo, así que cualquier cambio
  *   de equilibrio cambia el `configHash` de la sesión; también lleva la
- *   dificultad elegida (T131), y el premio y `won` no cambian con ella.
+ *   dificultad elegida (T131) y el acto jugado (T144), y el premio y `won`
+ *   no cambian con ellos. `won` es la medalla de bronce o más (T144:
+ *   `survivorsMedal`).
  * - El premio, como antes: 150 puntos y 50 monedas, una vez por temporada.
  *   Todo `muestra`.
  */
 
 export interface CanonConfig extends BaseConfig {
   /** La configuración del modo Survivors con que se juega: su versión y su huella. */
-  survivors: { version: number; hash: string; difficulty: DifficultyId };
+  survivors: { version: number; hash: string; difficulty: DifficultyId; act: number };
 }
 
 /** Versión de las reglas de sesión del Cañón (la 3 era el cañón 2D, T72). */
@@ -43,12 +45,13 @@ export const CANON_VERSION = 4;
 export function canonConfigFor(
   cfg: SurvivorsConfig = SURVIVORS_CONFIG,
   difficulty: DifficultyId = DEFAULT_DIFFICULTY,
+  act = 1,
 ): CanonConfig {
   return {
     version: CANON_VERSION,
     goal: cfg.durationS,
     timeLimitS: cfg.durationS,
-    survivors: { version: cfg.version, hash: survivorsConfigHash(cfg), difficulty },
+    survivors: { version: cfg.version, hash: survivorsConfigHash(cfg), difficulty, act },
     reward: { policy: 'season', points: 150, coins: 50, maxPoints: 150, maxCoins: 50 },
   };
 }

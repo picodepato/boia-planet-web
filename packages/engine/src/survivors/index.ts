@@ -9,3 +9,4 @@ export * from './bosses';
 export * from './kraken';
 export * from './fantasma';
 export * from './vecino';
+export * from './medals';

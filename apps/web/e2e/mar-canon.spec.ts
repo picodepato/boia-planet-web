@@ -1002,6 +1002,79 @@ test('`&dificultad=tormenta` (atajo de desarrollo) empieza con esa dificultad; s
   expect([...errors, ...again]).toEqual([]);
 });
 
+/** El hueco del boss final del acto `act` en el guion (T144). */
+const finalSlot = (act: number) =>
+  SURVIVORS_CONFIG.acts.find((a) => a.act === act)!.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
+
+test('campaña: el acto 2 cerrado de primeras; vencer al Barco Fantasma (`vencer=1`) lo abre y el panel empieza el acto 2 (T144)', async ({
+  page,
+}) => {
+  // Un visitante nuevo: Acto 1 marcado, Acto 2 cerrado, Acto 3 «próximamente».
+  const errors = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  const acts = panel(page).getByTestId('mar-canon-acto');
+  const act = (n: number) => panel(page).getByTestId(`mar-canon-acto-${n}`);
+  await expect(acts).toBeVisible();
+  // Junto a las dificultades y «Jugar».
+  await expect(panel(page).getByTestId('mar-canon-dificultad')).toBeVisible();
+  await expect(act(1)).toHaveAttribute('aria-checked', 'true');
+  await expect(act(1)).toHaveAttribute('data-estado', 'open');
+  await expect(act(2)).toHaveAttribute('data-estado', 'locked');
+  await expect(act(2)).toHaveAttribute('aria-disabled', 'true');
+  await expect(act(2)).toContainText(msg('mar.canon.acto.cerrado'));
+  await expect(act(3)).toHaveAttribute('data-estado', 'soon');
+  await expect(act(3)).toContainText(msg('mar.canon.acto.proximamente'));
+  // Ni el dedo ni las flechas marcan un acto cerrado.
+  await act(2).dispatchEvent('click');
+  await expect(act(1)).toHaveAttribute('aria-checked', 'true');
+  await act(1).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(act(1)).toHaveAttribute('aria-checked', 'true');
+  await expect(act(2)).toHaveAttribute('aria-checked', 'false');
+
+  // Vencer al boss final del acto 1 (atajo: cae en cuanto aparece): oro, y se abre el acto 2.
+  const slot = finalSlot(1);
+  const won = await openMar(page, `?minijuego=canon&t=${slot.atS + 1}&seed=7&vencer=1`);
+  await expect(game(page)).toHaveAttribute('data-fin', 'victory', { timeout: 30_000 });
+  await expect(game(page)).toHaveAttribute('data-medalla', 'oro');
+  await expect(game(page)).toHaveAttribute('data-vencidos', new RegExp(slot.ref));
+  await expect(game(page)).toHaveAttribute('data-desbloqueado', '2', { timeout: 15_000 });
+  await page.getByTestId('mar-canon-volver').click();
+  await expect(page.getByTestId('mar-canon-final')).toHaveCount(0);
+
+  // Otra visita: el acto 2 abierto (y el 1, superado); el panel lo empieza.
+  const again = await openMar(page, '?minijuego=canon&oferta=1');
+  await expect(panel(page)).toBeVisible({ timeout: 15_000 });
+  await expect(act(1)).toHaveAttribute('data-superado', 'si');
+  await expect(act(2)).toHaveAttribute('data-estado', 'open');
+  await expect(act(2)).not.toHaveAttribute('aria-disabled', 'true');
+  await expect(act(3)).toHaveAttribute('data-estado', 'soon');
+  await act(1).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(act(2)).toHaveAttribute('aria-checked', 'true');
+  await expect(act(2)).toBeFocused();
+  await panel(page)
+    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
+    .click();
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-acto', '2');
+  expect([...errors, ...won, ...again]).toEqual([]);
+});
+
+test('`&acto=2` (atajo de desarrollo) juega el guion del acto 2 sin campaña: su boss final es el Kraken (T144)', async ({
+  page,
+}) => {
+  const slot = finalSlot(2);
+  const errors = await openMar(page, `?minijuego=canon&acto=2&seed=7&t=${slot.atS + 2}`);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-acto', '2');
+  await expect(game(page)).toHaveAttribute('data-jefes', new RegExp(slot.ref), { timeout: 20_000 });
+  // Sin atajo, el acto 1.
+  const again = await openMar(page, '?minijuego=canon&seed=7');
+  await expect(game(page)).toHaveAttribute('data-acto', '1');
+  expect([...errors, ...again]).toEqual([]);
+});
+
 /**
  * T132: el bucle entero de la beta 2 de un vistazo, sin esperar 7 minutos.
  * Lo demás del bucle ya tiene su prueba en este archivo: los seis enemigos

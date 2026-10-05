@@ -1502,6 +1502,25 @@ export class SurvivorsGame {
     return this.dropPickup(item, x, y);
   }
 
+  /**
+   * Vence ya a los bosses vivos, como si su vida llegara a 0 (T144: el atajo
+   * de desarrollo `&vencer=1` y las pruebas de medallas y campaña). Un
+   * miniboss suelta su cofre y su nota; el boss final acaba la partida con
+   * `victory`. Devuelve cuántos cayeron.
+   */
+  defeatBossesNow(): number {
+    if (this.endReason) return 0;
+    let n = 0;
+    for (const b of this.bosses) {
+      if (b.dead || this.endReason) continue;
+      b.hp = 0;
+      this.defeatBoss(b);
+      n++;
+    }
+    this.compactBosses();
+    return n;
+  }
+
   /** ¿Es tierra (una isla) el punto, o el círculo de radio `r`? */
   onLand(x: number, y: number, r = 0): boolean {
     return this.islands.onLand(x, y, r);

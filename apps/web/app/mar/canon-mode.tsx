@@ -21,8 +21,17 @@ import type { WorldConfig } from '@boia/world';
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { emitSignal } from '../../lib/mundo/achievements';
 import { type InWorldCopy, withWinSignal } from '../../lib/mundo/minigame-layer';
-import { gameRepository } from '../../lib/mundo/repo';
+import { gameRepository, useRepoData } from '../../lib/mundo/repo';
 import { type MessageKey, t as msg } from '../../lib/i18n';
+import {
+  type CampaignAct,
+  type CampaignProgress,
+  EMPTY_CAMPAIGN,
+  campaignActs,
+  playableAct,
+  readCampaign,
+  recordFinalBoss,
+} from './canon-campaign';
 import { type CanonPrize, type CanonResult, canonPrize, canonResult } from './canon-hud-model';
 import type { Mar3D } from './engine/mar3d';
 import { MAR_SHIP_CONFIG } from './engine/steering';
@@ -129,6 +138,15 @@ export interface CanonMode {
   };
   /** La dificultad elegida para las próximas partidas (se recuerda durante la visita). */
   difficulty: DifficultyId;
+  /** El acto elegido en el panel para las próximas partidas (T144; se recuerda durante la visita). */
+  act: number;
+  /** La campaña (T144): los actos cuyo boss final ya cayó. */
+  campaign: CampaignProgress;
+  /**
+   * El acto que abrió la última partida al vencer a su boss final (T144,
+   * para anunciarlo en la tarjeta final), o null.
+   */
+  unlocked: number | null;
 }
 
 interface StartOptions {
@@ -147,6 +165,8 @@ interface StartOptions {
   loot?: boolean;
   /** `&acto=<n>` (T142): jugar ese acto; sólo con los atajos encendidos. */
   act?: number | null;
+  /** `&vencer=1` (T144): los bosses caen en cuanto aparecen; sólo con los atajos encendidos. */
+  win?: boolean;
 }
 
 export function useCanonMode({
@@ -202,6 +222,15 @@ export function useCanonMode({
   // La dificultad elegida en el panel de la isla: se recuerda mientras dure la visita (T131).
   const difficultyRef = useRef<DifficultyId>(DEFAULT_DIFFICULTY);
   const [difficulty, setDifficulty] = useState<DifficultyId>(DEFAULT_DIFFICULTY);
+  // El acto elegido en el panel (T144): se recuerda mientras dure la visita; sólo los abiertos.
+  const actRef = useRef(1);
+  const [act, setAct] = useState(1);
+  const [unlocked, setUnlocked] = useState<number | null>(null);
+  // La campaña del progreso (local o de la cuenta), releída con cada cambio del repositorio.
+  const { data: campaignData } = useRepoData((repo) => readCampaign(repo.progress));
+  const campaign = campaignData ?? EMPTY_CAMPAIGN;
+  const campaignRef = useRef<CampaignProgress>(campaign);
+  campaignRef.current = campaign;
   const [devSwitch, setDevSwitch] = useState(false);
   useEffect(() => setDevSwitch(devShortcutsEnabled()), []);
   const latest = useRef({ onStart, onOffer, onEnd, isRaceActive, rewards });
@@ -234,9 +263,22 @@ export function useCanonMode({
       const session = sessionRef.current;
       sessionRef.current = null;
       setEnded(true);
+      setUnlocked(null);
       if (session) {
+        // La campaña (T144) cuenta como el premio: una partida de prueba sólo donde el premio vale.
+        const counts = !session.testStart || devStartRewards();
         void session.finish(canonEnd(reason, snapshot.activeS)).then((s) => {
           if (runRef.current === run || !runRef.current) setReward(s.reward);
+          if (reason !== 'victory' || !counts || !s.validation.valid) return;
+          const next = run.act + 1;
+          const opened =
+            campaignActs(campaignRef.current, run.config).find((a) => a.act === next)?.state === 'locked';
+          void recordFinalBoss(gameRepository().progress, run.act, run.config).then(
+            (ok) => {
+              if (ok && opened && (runRef.current === run || !runRef.current)) setUnlocked(next);
+            },
+            (err: unknown) => console.warn('[boia] no se pudo guardar la campaña del Cañón', err),
+          );
         });
       }
       latest.current.onEnd?.({ reason, snapshot });
@@ -263,6 +305,7 @@ export function useCanonMode({
       difficulty: askedDifficulty = null,
       loot = false,
       act = null,
+      win = false,
     }: StartOptions = {}): boolean => {
       const g = engineRef.current;
       const w = worldRef.current;
@@ -278,6 +321,9 @@ export function useCanonMode({
         setDifficulty(askedDifficulty);
       }
       const devAct = act !== null && devShortcutsEnabled() ? act : null;
+      // El acto del panel (T144), si está abierto; el atajo `&acto=` se salta la campaña.
+      const playAct = devAct ?? playableAct(campaignRef.current, actRef.current);
+      const devWin = win && devShortcutsEnabled();
       const run: SurvivorsRun = new SurvivorsRun(sea, {
         difficulty: difficultyRef.current,
         seed: seed ?? randomSeed(),
@@ -287,7 +333,8 @@ export function useCanonMode({
         devWeapons: weapons && devShortcutsEnabled(),
         devMix: mix && devShortcutsEnabled(),
         devLoot: loot && devShortcutsEnabled(),
-        ...(devAct ? { act: devAct } : {}),
+        act: playAct,
+        devWin,
         onEnd: (reason, snapshot) => finish(run, reason, snapshot),
       });
       if (weapons) run.devAllWeapons();
@@ -301,12 +348,12 @@ export function useCanonMode({
       const getSink = latest.current.rewards?.() ?? null;
       sessionRef.current = new WorldMinigameSession({
         def: canonEntry,
-        config: canonConfigFor(run.config, run.difficulty),
+        config: canonConfigFor(run.config, run.difficulty, run.act),
         authority: pageAuthority(),
         sink: withWinSignal(getSink, CANON_GAME_ID, (game) => {
           void emitSignal(gameRepository(), { trigger: 'win_minigame', game });
         }),
-        currentConfig: () => canonConfigFor(run.config, run.difficulty),
+        currentConfig: () => canonConfigFor(run.config, run.difficulty, run.act),
         seed: run.seed,
         skippedS: run.snapshot().activeS,
         devStart: isDevStart({
@@ -316,6 +363,7 @@ export function useCanonMode({
           weapons: weapons && devShortcutsEnabled(),
           loot: loot && devShortcutsEnabled(),
           act: devAct,
+          win: devWin,
         }),
         devStartRewards: devStartRewards(),
       });
@@ -439,6 +487,7 @@ export function useCanonMode({
         mix: sc.mix,
         loot: sc.loot,
         act: sc.act,
+        win: sc.win,
       });
     }
   }, [ready, start]);
@@ -453,13 +502,23 @@ export function useCanonMode({
       gameId === CANON_GAME_ID && blockKey ? msg(blockKey) : null,
     extra: (gameId: string) =>
       gameId === CANON_GAME_ID ? (
-        <CanonDifficultyPicker
-          value={difficulty}
-          onChange={(d) => {
-            difficultyRef.current = d;
-            setDifficulty(d);
-          }}
-        />
+        <>
+          <CanonActPicker
+            acts={campaignActs(campaign)}
+            value={playableAct(campaign, act)}
+            onChange={(a) => {
+              actRef.current = a;
+              setAct(a);
+            }}
+          />
+          <CanonDifficultyPicker
+            value={difficulty}
+            onChange={(d) => {
+              difficultyRef.current = d;
+              setDifficulty(d);
+            }}
+          />
+        </>
       ) : null,
     copy: (gameId: string) =>
       gameId === CANON_GAME_ID
@@ -493,7 +552,107 @@ export function useCanonMode({
     dev,
     panel,
     difficulty,
+    act: playableAct(campaign, act),
+    campaign,
+    unlocked,
   };
+}
+
+/**
+ * Acto 1 / Acto 2 / Acto 3 junto a las dificultades y «Jugar» en el panel
+ * de la isla (T144): un grupo de opciones como el de las dificultades. Sólo
+ * los actos abiertos se eligen; los cerrados (falta vencer al boss final
+ * del anterior) y los que aún no existen («próximamente») se ven pero no se
+ * pueden marcar, y dicen por qué. Teclado (Tab y flechas, que saltan los
+ * cerrados) y dedo.
+ */
+export function CanonActPicker({
+  acts,
+  value,
+  onChange,
+}: {
+  acts: readonly CampaignAct[];
+  value: number;
+  onChange: (act: number) => void;
+}) {
+  const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const open = acts.filter((a) => a.state === 'open');
+  const move = (delta: number) => {
+    const i = open.findIndex((a) => a.act === value);
+    if (i < 0) return;
+    const next = open[(i + delta + open.length) % open.length]!;
+    onChange(next.act);
+    refs.current[acts.indexOf(next)]?.focus();
+  };
+  return (
+    <div
+      className="mar-canon-acto"
+      role="radiogroup"
+      aria-label={msg('mar.canon.acto.aria')}
+      data-testid="mar-canon-acto"
+      data-acto={value}
+    >
+      {acts.map((a, i) => {
+        const playable = a.state === 'open';
+        const checked = playable && a.act === value;
+        const note =
+          a.state === 'soon'
+            ? msg('mar.canon.acto.proximamente')
+            : a.state === 'locked'
+              ? msg('mar.canon.acto.cerrado')
+              : a.beaten
+                ? msg('mar.canon.acto.superado')
+                : null;
+        const help =
+          a.state === 'soon'
+            ? msg('mar.canon.acto.proximamente.texto')
+            : a.state === 'locked'
+              ? msg('mar.canon.acto.cerrado.texto', { n: a.act - 1 })
+              : a.beaten
+                ? msg('mar.canon.acto.superado.texto')
+                : msg('mar.canon.acto.abierto.texto');
+        const label = msg('mar.canon.acto', { n: a.act });
+        return (
+          <button
+            key={a.act}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="button"
+            role="radio"
+            aria-checked={checked}
+            aria-disabled={playable ? undefined : true}
+            aria-label={note ? `${label}, ${note}. ${help}` : label}
+            tabIndex={checked ? 0 : -1}
+            className="mar-canon-acto-opcion"
+            data-testid={`mar-canon-acto-${a.act}`}
+            data-estado={a.state}
+            data-superado={a.beaten ? 'si' : undefined}
+            title={help}
+            onClick={() => {
+              if (playable) onChange(a.act);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                move(1);
+              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                move(-1);
+              }
+            }}
+          >
+            <span className="mar-canon-acto-nombre">{label}</span>
+            {note ? (
+              <span className="mar-canon-acto-nota" aria-hidden="true">
+                {note}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /**
@@ -600,9 +759,12 @@ export function CanonDevSwitch({ canon }: { canon: CanonMode }) {
 export function CanonTestHook({
   hud,
   prize = null,
+  unlocked = null,
 }: {
   hud: CanonHook | null;
   prize?: CanonPrize | null;
+  /** El acto que abrió la última partida (T144), o null. */
+  unlocked?: number | null;
 }) {
   if (!hud) return null;
   return (
@@ -631,6 +793,9 @@ export function CanonTestHook({
       data-botin-cerca={hud.botinCerca || undefined}
       data-llama={hud.llama}
       data-acto={hud.acto}
+      data-medalla={hud.medalla || undefined}
+      data-vencidos={hud.vencidos || undefined}
+      data-desbloqueado={unlocked ?? undefined}
       data-jefes={hud.jefes || undefined}
       data-cofre-cerca={hud.cofreCerca || undefined}
       data-premio={prize ?? undefined}

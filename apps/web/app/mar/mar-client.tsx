@@ -2209,7 +2209,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       ) : null}
 
       {/* El Cañón (T118): HUD, agua a bordo, cartas, final; su estado para las pruebas (T116). */}
-      <CanonTestHook hud={canon.hud} prize={canon.prize} />
+      <CanonTestHook hud={canon.hud} prize={canon.prize} unlocked={canon.unlocked} />
       <CanonDevSwitch canon={canon} />
       <CanonLayer
         canon={canon}

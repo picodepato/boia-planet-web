@@ -96,6 +96,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       difficulty: null,
       loot: false,
       act: null,
+      win: false,
     });
     expect(canonShortcut('?minijuego=canon', dev)).toEqual({
       t: 0,
@@ -108,6 +109,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       difficulty: null,
       loot: false,
       act: null,
+      win: false,
     });
     expect(canonShortcut('?minijuego=canon&oferta=1', dev)?.offer).toBe(true);
     expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({ card: true, mix: false });
@@ -134,6 +136,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       difficulty: null,
       loot: false,
       act: null,
+      win: false,
     });
     expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
   });
@@ -311,6 +314,56 @@ describe('T142 atajo acto=<n>', () => {
     expect(run.hook().acto).toBe(2);
     for (let i = 0; i < 10; i++) run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
     expect(run.snapshot().bosses.map((b) => b.boss)).toContain('kraken');
+  });
+});
+
+describe('T144 atajo vencer=1 y la medalla en el estado', () => {
+  it('sólo con los atajos encendidos; se quita de la URL y marca la partida como de prueba', () => {
+    const dev = env({ nodeEnv: 'development' });
+    expect(canonShortcut('?minijuego=canon&vencer=1', dev)?.win).toBe(true);
+    expect(canonShortcut('?minijuego=canon&vencer=si', dev)?.win).toBe(false);
+    expect(canonShortcut('?minijuego=canon&vencer=1', env({}))).toBeNull();
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&vencer=1&acto=2&dev=1')).toBe('http://x/mar?dev=1');
+    expect(isDevStart({ win: true })).toBe(true);
+    expect(isDevStart({ win: false })).toBe(false);
+  });
+
+  it('con `vencer=1` el boss final cae en cuanto aparece: oro, y la partida guarda su acto', () => {
+    for (const a of SURVIVORS_CONFIG.acts) {
+      const slot = a.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
+      let ended: string | null = null;
+      const run = new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }), {
+        seed: 7,
+        quality: 'baja',
+        ship: MAR_SHIP_CONFIG,
+        startAtS: slot.atS + 1,
+        act: a.act,
+        devWin: true,
+        onEnd: (reason) => {
+          ended = reason;
+        },
+      });
+      expect(run.act).toBe(a.act);
+      expect(run.hook().medalla).toBe('');
+      for (let i = 0; i < 120 && !run.ended; i++) run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
+      expect(ended).toBe('victory');
+      expect(run.hook()).toMatchObject({ fin: 'victory', medalla: 'oro', acto: a.act });
+      expect(run.hook().vencidos.split(' ')).toContain(slot.ref);
+    }
+  });
+
+  it('sin `vencer=1` el boss sigue vivo', () => {
+    const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
+    const run = new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }), {
+      seed: 7,
+      quality: 'baja',
+      ship: MAR_SHIP_CONFIG,
+      startAtS: slot.atS + 1,
+    });
+    for (let i = 0; i < 30; i++) run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
+    expect(run.ended).toBe(false);
+    expect(run.hook().jefes).toContain(slot.ref);
+    expect(run.hook().vencidos).toBe('');
   });
 });
 

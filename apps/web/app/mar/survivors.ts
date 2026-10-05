@@ -11,11 +11,13 @@ import {
   type SurvivorsConfig,
   type SurvivorsEvent,
   type SurvivorsGame,
+  type SurvivorsMedal,
   type SurvivorsSnapshot,
   type SurvivorsStatus,
   type SurvivorsWorld,
   type WeaponId,
   createSurvivors,
+  survivorsMedal,
   survivorsWorldOf,
 } from '@boia/engine/survivors';
 import type { Rect, WorldConfig, WorldObject } from '@boia/world';
@@ -69,6 +71,12 @@ export const CANON_PARAMS = {
    * Atajo temporal hasta que el panel elija el acto (T144).
    */
   act: 'acto',
+  /**
+   * `vencer=1` (T144): cada boss cae en cuanto aparece (los minibosses
+   * sueltan su cofre; el final acaba la partida con el oro). Para probar las
+   * medallas y la campaña sin luchar.
+   */
+  win: 'vencer',
   dev: 'dev',
 } as const;
 
@@ -120,8 +128,8 @@ export function devStartRewards(env: DevEnv = devEnv()): boolean {
  * ¿La partida es de prueba? Lo es si un atajo cambia el juego: `&t=` (se
  * salta tiempo), `&seed=` (una semilla elegida se puede ensayar),
  * `&carta=1` (un nivel regalado), `&armas=1` (todas las armas) o `&botin=1`
- * (el botín de regalo, T135) o `&acto=` (otro acto, T142). `&derrota=` sólo
- * cambia cómo se ve: no.
+ * (el botín de regalo, T135), `&acto=` (otro acto, T142) o `&vencer=1`
+ * (los bosses caen solos, T144). `&derrota=` sólo cambia cómo se ve: no.
  */
 export function isDevStart(s: {
   t?: number;
@@ -130,6 +138,7 @@ export function isDevStart(s: {
   weapons?: boolean;
   loot?: boolean;
   act?: number | null;
+  win?: boolean;
 }): boolean {
   return (
     (s.t ?? 0) > 0 ||
@@ -137,7 +146,8 @@ export function isDevStart(s: {
     s.card === true ||
     s.weapons === true ||
     s.loot === true ||
-    (s.act ?? null) !== null
+    (s.act ?? null) !== null ||
+    s.win === true
   );
 }
 
@@ -162,6 +172,8 @@ export interface CanonShortcut {
   loot: boolean;
   /** Acto pedido (`&acto=<n>`, T142), o null (el primero). Sólo actos que la config tiene. */
   act: number | null;
+  /** Los bosses caen en cuanto aparecen (`&vencer=1`, T144). */
+  win: boolean;
 }
 
 /**
@@ -189,6 +201,7 @@ export function canonShortcut(
     difficulty: asDifficulty(q.get(CANON_PARAMS.difficulty)),
     loot: q.get(CANON_PARAMS.loot) === '1',
     act: asAct(q.get(CANON_PARAMS.act), config),
+    win: q.get(CANON_PARAMS.win) === '1',
   };
 }
 
@@ -213,6 +226,7 @@ export function withoutCanonShortcut(href: string): string {
     CANON_PARAMS.difficulty,
     CANON_PARAMS.loot,
     CANON_PARAMS.act,
+    CANON_PARAMS.win,
   ]) {
     url.searchParams.delete(p);
   }
@@ -430,8 +444,10 @@ export interface SurvivorsRunOptions {
   config?: SurvivorsConfig;
   /** Dificultad (T131); sin valor, Normal. */
   difficulty?: DifficultyId;
-  /** Acto del guion (atajo `&acto=`, T142); sin valor, el primero. */
+  /** Acto del guion (el panel o el atajo `&acto=`, T142/T144); sin valor, el primero. */
   act?: number;
+  /** Sólo atajo `&vencer=1` (T144): cada boss cae en cuanto aparece. */
+  devWin?: boolean;
   /**
    * Elegir sola la primera carta de nivel (sólo para pruebas y bots: en
    * `/mar` las elige el jugador con `choose`, T118). Por defecto, no.
@@ -475,6 +491,10 @@ export interface CanonHook {
   llama: number;
   /** Acto que se juega (T142). */
   acto: number;
+  /** La medalla de la partida acabada (T144): bronce, plata u oro; '' sin medalla o sin acabar. */
+  medalla: SurvivorsMedal | '';
+  /** Los bosses vencidos, en orden (sus `BossId` separados por espacios; '' ninguno, T144). */
+  vencidos: string;
   /** Los bosses vivos (sus `BossId`, separados por espacios; '' sin ninguno, T139). */
   jefes: string;
   /** Dónde flota el cofre más cercano al barco (u, enteros): «x,y»; '' sin ninguno (T139). */
@@ -538,11 +558,14 @@ export class SurvivorsRun {
   readonly seed: number;
   readonly quality: QualityTier;
   readonly difficulty: DifficultyId;
+  /** El acto que se juega (T144). */
+  readonly act: number;
   private readonly clock = new SurvivorsClock();
   private readonly autoPick: boolean;
   private readonly onEnd: SurvivorsRunOptions['onEnd'];
   private lastMs: number | null = null;
   private notified = false;
+  private readonly devWin: boolean;
   /** La opción de la carta que el jugador eligió, para el paso siguiente. */
   private pendingChoice: number | null = null;
 
@@ -558,6 +581,8 @@ export class SurvivorsRun {
     this.seed = opts.seed;
     this.quality = opts.quality;
     this.difficulty = opts.difficulty ?? 'normal';
+    this.act = opts.act ?? 1;
+    this.devWin = opts.devWin === true && devShortcutsEnabled();
     this.autoPick = opts.autoPickCards ?? false;
     this.onEnd = opts.onEnd;
     this.game = createSurvivors(this.config, opts.seed, world, {
@@ -594,6 +619,8 @@ export class SurvivorsRun {
     const events = this.game.step(
       choose === null ? { ship: input, turbo } : { ship: input, turbo, choose },
     );
+    // `&vencer=1` (T144): el boss que haya aparecido cae ya.
+    if (this.devWin) this.game.defeatBossesNow();
     this.notifyEnd();
     return events;
   }
@@ -703,6 +730,8 @@ export class SurvivorsRun {
       botinCerca: nearestPickup(s),
       llama: s.flame ? Math.ceil(s.flame.leftS - 1e-6) : 0,
       acto: s.act,
+      medalla: survivorsMedal(s, this.config) ?? '',
+      vencidos: s.bossesDefeated.join(' '),
       jefes: s.bosses.map((b) => b.boss).join(' '),
       cofreCerca: nearestOf(s.chests, s.player),
     };

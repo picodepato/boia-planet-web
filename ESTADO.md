@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 012 T144: Medals, campaign act 1 → 2, act and difficulty on the panel
+
+Qué existe:
+
+- **Medallas** (`packages/engine/src/survivors/medals.ts`, §8): `survivorsMedal({ end, bossesDefeated, act })` → `oro` si cae el boss final (`victory`), `plata` al amanecer con todos los minibosses del guion del acto vencidos, `bronce` al amanecer, `null` inundado/abandonado. Un acto sin minibosses no da plata. `medalWon` = bronce o más, que es exactamente el `won` de la sesión (`canonOutcome`; probado para todo resultado y acto). `actMinibosses` / `actFinalBoss` leen los huecos encendidos del guion. Premio y logros sin tocar.
+- **Atajo `&vencer=1`** (dev, cuenta como partida de prueba): cada boss cae en cuanto aparece (`SurvivorsGame.defeatBossesNow()`, nuevo método público de la simulación; deja la vida a 0 y pasa por la derrota normal: cofre y nota de los minibosses, `victory` del final). Sirve para forzar el oro (T144, T145).
+- **Campaña** (`apps/web/app/mar/canon-campaign.ts`): un contador por acto en el progreso (`canon:acto-<n>:boss-final`, `ProgressApi.counter/increment`). Modo local: el repositorio del invitado; con cuenta: la misma copia, que viaja con `save_snapshot` y se mezcla con el máximo por contador. Sin tablas ni migraciones. Acto 1 siempre abierto; el `n` se abre al vencer el boss final del `n-1`; los actos que la config aún no tiene (el 3) salen «próximamente». Se apunta al liquidar una partida `victory` válida que cuente como el premio (normal, o de prueba sólo en `pnpm dev`/e2e).
+- **Panel**: Acto 1 / Acto 2 / Acto 3 (radiogroup, sobre las tres dificultades y «Jugar»); los cerrados y «próximamente» se ven, con aviso y `aria-disabled`, y no se marcan ni con el dedo ni con las flechas (que saltan a los abiertos). El acto elegido se recuerda en la visita; si no está abierto, se juega el 1. El bloqueo en carrera sigue igual.
+- **Sesión**: `canonConfigFor(cfg, difficulty, act)` lleva `survivors.act` → acto y dificultad en el `configHash`. Atajo `&acto=<n>` de T142 reutilizado (mismo código), salta la campaña.
+- Para T145: `CanonResult` lleva `medal`, `act`, `difficulty`, `bosses`; `CanonMode.unlocked` (el acto que abrió la última partida), `CanonMode.act`, `CanonMode.campaign`. Estado de pruebas: `data-medalla`, `data-vencidos`, `data-desbloqueado`.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 165 files, 1614 tests (nuevos: `survivors-medals.test.ts`, `canon-campaign.test.ts`, bloques T144 en `world-canon.test.ts` y `survivors.test.ts`)
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0; `pnpm build` → 0; `pnpm typecheck` → 0 (tras `git merge main` con T142)
+- `E2E_PORT=3471 pnpm e2e mar-canon.spec.ts --workers=1` → 65 passed, 2 failed por carga (amanecer en t=419: el saldo se leyó tras el premio; T131 panel: carta abierta tras 5 min de test lento); los dos solos → 4 passed. Los dos e2e de T144 pasan en móvil y escritorio
+
+Pendiente:
+
+- La tarjeta final (T145) enseña la medalla y el acto abierto; el título del final especial aún dice «Fantasma» también para el Kraken (T145).
+- Premios por medalla, logros de boss y el pop-up previo: beta 4 (decisión 7).
+
 ## 2026-10-05 — plan 012 T142: El Kraken en el mar 3D
 
 Qué existe:

@@ -211,6 +211,11 @@ describe('la pantalla final', () => {
         defeated: s.defeated,
         notes: s.notesPicked,
         level: s.xp.level,
+        // T144: la medalla de cada final (sin minibosses vencidos, el amanecer es bronce).
+        medal: reason === 'victory' ? 'oro' : reason === 'survived' ? 'bronce' : null,
+        act: s.act,
+        difficulty: s.difficulty,
+        bosses: s.bossesDefeated,
       });
       expect(es[END_KEYS[reason].title]).toBeTruthy();
       expect(es[END_KEYS[reason].line]).toBeTruthy();
