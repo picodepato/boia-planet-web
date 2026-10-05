@@ -4,25 +4,6 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
-## 2026-10-06 — plan 014 T159: The seven islands: attacks, levels, building, upgrade and sell
-
-Qué existe:
-- `packages/engine/src/defense/config.ts`: bloque `towers` (`DefenseTowersDef`): `pathClearance` 10, `vortexClearance` 40, `sellRefund` 0,6, `bossStunScale` 0,25 y las siete islas (`kinds`, tipadas por tipo con `DefenseTowerStatsByKind`) con coste, `upgradeCost` [→2, →3] y tres niveles. Una sola huella para todas: `islandRadius` (70 u, la de nivel 3); ningún radio por tipo. `defenseTowerStats(cfg, kind, level)`. `DEFENSE_CONFIG_VERSION` 1 → 2 (reglas nuevas). Todo `muestra`.
-- `build.ts`: la regla de construir. `defenseBuildCheck(world, kind, x, y)` → `{ok, cost}` o `{ok:false, reason, cost}` con `reason` ∈ `ended | ring | arena | path | vortex | castle | overlap | coins` (sitio antes que dinero; para la vista previa del HUD). `defenseSiteReason` (sólo el sitio), `defenseTowerUpgradeCost`, `defenseTowerSellValue` (floor(gastado × 0,6)). Sin tope de islas.
-- `towers.ts`: `DEFENSE_TOWER_HOOKS` con las siete (decisión 9): Faro haces que giran (1/2/3 haces, daño por segundo de contacto); Nochevieja bola de nieve al más adelantado, distinto del último si hay otro, aturde (a bosses × 0,25); Halloween bocanada en cono hacia el más adelantado, deja ardiendo; Puerto mortero: cohete al sitio donde estará el blanco a los `flightS`, estallido en `blastRadius`; Ibiza granja (monedas cada 10 s); Isla del Sonido onda a todo en su radio cada 1,2 s; Benidorm francotirador al más fuerte a su alcance (boss > miniboss > común, luego más aguante; `strongestEnemy`). `TowerShotView` documentado por tipo, con `flightS` y `amount` nuevos. El contexto de la torre lleva `config` y `burnEnemy`; `DefenseEnemyView` lleva `burnS`/`burnDps`.
-- `geometry.ts`: `beamTouches`, `coneTouches`, `angleDiff`, `wrapAngle` (las mismas pruebas que el haz y el cono del Cañón, sin el mar que se repite; las del Cañón son privadas de su `sim.ts` y van con `wrapDelta`, no se han tocado).
-- `sim.ts`: `buildCheck`, `build` (cobra), `upgradeTower` (hasta 3), `sellTower` (devuelve parte), `towerUpgradeCost`, `towerSellValue`; entradas `build`, `upgradeTower`, `sellTower` en `DefenseInput`; quemadura por paso (también aturdido; la caída es de la torre que lo prendió); sucesos `towerBuilt`, `towerUpgrade`, `towerSold`, `towerShot` (cuando cambia `lastShot`; el haz del Faro se pone al día en el mismo objeto y no avisa cada paso); `stateHash` cuenta las torres.
-- `bots.ts`: `buildingBot(cfg)`: puntúa una rejilla de sitios por camino cercano, construye las siete en orden (la granja en el peor sitio), compra el avión desde la 3.ª isla y luego alterna subir la isla más baja con construir otra.
-- Bot (semilla 7), para T165: Tranquila 5/7/10 min aguanta, oro, 100 % (10/16/25 islas); Normal 5 min aguanta con 75 % (oro; le llega un miniboss), 7 y 10 min 100 % (18/31 islas); Tormenta cae a 129/138/158 s con 3–4 islas (el dinero del principio no llega: el salto Normal → Tormenta es grande).
-
-Comandos:
-- `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` → exit 0, 2 ficheros, 50 pruebas (17 nuevas en `towers.test.ts`: barrido del haz, aturdir y cambiar de blanco, quemadura en la partida, radio del estallido, granja, onda, francotirador, regla de construir con cada motivo, sin tope, construir/mejorar/vender, `towerShot`, bot en Tranquila y Normal).
-- Test command: vitest → 1794 passed, 6 «Test timed out» en suites del Cañón no tocadas (máquina cargada); repetidas `pnpm exec vitest run <los 5 ficheros de survivors> --testTimeout=30000 --maxWorkers=2` → exit 0, 92 pruebas. `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
-
-Pendiente:
-- T165: equilibrar (Tormenta cae pronto incluso construyendo; Normal 7/10 min salen al 100 %).
-- T160/T161: pintar `lastShot` de cada isla, la vista previa con `buildCheck(...).reason` y Mejorar/Vender con `towerUpgradeCost`/`towerSellValue`.
-
 ## 2026-10-06 — plan 014 T167: Remove the boat flag option
 
 Done by Codex (wrapper verified). The Bandera section, FLAG_LOOKS, flag catalog entries, equipped-flag drawing and i18n keys are removed; saved documents with owned/equipped flags load without them; ship-model.test.ts covers the boat model without a flag.

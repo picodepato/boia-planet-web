@@ -11,12 +11,6 @@ import {
   defenseEnemyDef,
   defenseEnemyRadius,
 } from './config';
-import {
-  type DefenseBuildCheck,
-  defenseBuildCheck,
-  defenseTowerSellValue,
-  defenseTowerUpgradeCost,
-} from './build';
 import { type DefenseMedal, defenseMedal, defenseScore } from './medals';
 import { type DefensePath, type PathSample, buildDefensePath } from './path';
 import {
@@ -26,7 +20,6 @@ import {
   type DefenseTowerContext,
   type DefenseTowerHooks,
   type DefenseTowerState,
-  type TowerShotView,
 } from './towers';
 import { type DefenseSpawn, defenseSchedule } from './waves';
 
@@ -42,12 +35,8 @@ import { type DefenseSpawn, defenseSchedule } from './waves';
  *   cercano a su alcance; su daño sube a nivel 2 y 3 con monedas.
  * - Cada enemigo que cae da sus monedas (al monedero de la partida, nunca al
  *   del mundo) y sus puntos.
- * - Las torres (islas construidas, T159) se ponen con `build` (la regla de
- *   `build.ts`: dentro del anillo del avión, fuera del camino y del vórtice,
- *   sin montarse; cobra su coste), se suben con `upgradeTower` hasta el
- *   nivel 3 y se venden con `sellTower` (una parte de lo gastado vuelve).
- *   Lo que hace cada una está en `DEFENSE_TOWER_HOOKS`; sin ninguna, la
- *   partida corre igual.
+ * - Las torres (islas construidas) se enganchan por `DEFENSE_TOWER_HOOKS`
+ *   (T159); sin ninguna, la partida corre igual.
  * - Castillo a 0: cae (`fallen`). Llegar a la duración elegida: aguantó
  *   (`held`). Una pausa seguida de más de `maxPauseS`: abandono. «Terminar
  *   partida»: `quit`.
@@ -64,12 +53,6 @@ export interface DefenseInput {
   pause?: boolean;
   /** Comprar el siguiente nivel de daño del avión (si llega el dinero). */
   upgradePlane?: boolean;
-  /** Construir una isla ahí (si la regla lo deja y llega el dinero). */
-  build?: { kind: DefenseTowerKind; x: number; y: number };
-  /** Subir de nivel la isla con este id. */
-  upgradeTower?: number;
-  /** Vender la isla con este id. */
-  sellTower?: number;
 }
 
 export interface DefenseOptions {
@@ -106,17 +89,6 @@ export type DefenseEvent =
   | { type: 'planeShot'; shotId: number; targetId: number }
   | { type: 'planeUpgrade'; level: number; cost: number }
   | { type: 'coins'; amount: number; towerId: number | null }
-  | {
-      type: 'towerBuilt';
-      towerId: number;
-      kind: DefenseTowerKind;
-      x: number;
-      y: number;
-      cost: number;
-    }
-  | { type: 'towerUpgrade'; towerId: number; kind: DefenseTowerKind; level: number; cost: number }
-  | { type: 'towerSold'; towerId: number; kind: DefenseTowerKind; refund: number }
-  | { type: 'towerShot'; towerId: number; kind: DefenseTowerKind; shot: TowerShotView }
   | { type: 'end'; reason: DefenseEndReason };
 
 /** Una bala del avión. */
@@ -214,9 +186,6 @@ interface Enemy {
   radius: number;
   speed: number;
   stunS: number;
-  burnS: number;
-  burnDps: number;
-  burnTowerId: number | null;
   ageS: number;
   dead: boolean;
 }
@@ -304,7 +273,6 @@ export class DefenseGame {
       get enemies() {
         return enemies();
       },
-      config,
       path: this.path,
       rng: () => this.rand(),
       enemiesInRange: (x, y, r) => this.enemiesInRange(x, y, r),
@@ -313,13 +281,6 @@ export class DefenseGame {
       stunEnemy: (e, s) => {
         const en = e as Enemy;
         if (!en.dead) en.stunS = Math.max(en.stunS, s);
-      },
-      burnEnemy: (e, dps, s, towerId) => {
-        const en = e as Enemy;
-        if (en.dead || !(dps > 0) || !(s > 0)) return;
-        if (dps >= en.burnDps) en.burnTowerId = towerId ?? null;
-        en.burnDps = Math.max(en.burnDps, dps);
-        en.burnS = Math.max(en.burnS, s);
       },
       addCoins: (amount, towerId) => this.earn(amount, towerId ?? null),
     };
@@ -456,7 +417,6 @@ export class DefenseGame {
       kills: this.kills,
       plane: [r(this.plane.x), r(this.plane.y), this.plane.level],
       enemies: this.enemies.map((e) => [e.id, e.kind, r(e.distance), r(e.laneOffset), r(e.hp)]),
-      towers: this.towerList.map((t) => [t.id, t.kind, t.level, r(t.x), r(t.y)]),
       shots: this.shots.map((s) => [s.id, r(s.x), r(s.y)]),
       end: this.endReason,
     });
@@ -505,69 +465,9 @@ export class DefenseGame {
     return true;
   }
 
-  /** ¿Se puede construir `kind` en (x, y) ahora? Si no, por qué (la vista previa del HUD). */
-  buildCheck(kind: DefenseTowerKind, x: number, y: number): DefenseBuildCheck {
-    return defenseBuildCheck(
-      {
-        config: this.config,
-        path: this.path,
-        plane: this.plane,
-        towers: this.towerList,
-        coins: this.coins,
-        ended: this.ended,
-      },
-      kind,
-      x,
-      y,
-    );
-  }
-
-  /** Construye `kind` en (x, y) si la regla lo deja: cobra y la pone a nivel 1. Si no, null. */
-  build(kind: DefenseTowerKind, x: number, y: number): DefenseTowerState | null {
-    const check = this.buildCheck(kind, x, y);
-    if (!check.ok || !this.spend(check.cost)) return null;
-    const t = this.addTower(kind, x, y, { spent: check.cost });
-    this.events.push({ type: 'towerBuilt', towerId: t.id, kind, x, y, cost: check.cost });
-    return t;
-  }
-
-  /** Lo que cuesta subir la isla `id` al siguiente nivel; null en el 3 o si no está. */
-  towerUpgradeCost(id: number): number | null {
-    const t = this.towerList.find((tw) => tw.id === id);
-    return t ? defenseTowerUpgradeCost(this.config, t) : null;
-  }
-
-  /** Lo que devolvería vender la isla `id`; null si no está. */
-  towerSellValue(id: number): number | null {
-    const t = this.towerList.find((tw) => tw.id === id);
-    return t ? defenseTowerSellValue(this.config, t) : null;
-  }
-
-  /** Sube la isla `id` un nivel (hasta el 3) si llega el dinero. */
-  upgradeTower(id: number): boolean {
-    const t = this.towerList.find((tw) => tw.id === id);
-    const cost = t ? defenseTowerUpgradeCost(this.config, t) : null;
-    if (!t || cost === null || !this.spend(cost)) return false;
-    t.level++;
-    t.spent += cost;
-    this.events.push({ type: 'towerUpgrade', towerId: t.id, kind: t.kind, level: t.level, cost });
-    return true;
-  }
-
-  /** Vende la isla `id`: la quita y devuelve una parte de lo gastado. Lo devuelto, o null. */
-  sellTower(id: number): number | null {
-    if (this.endReason) return null;
-    const t = this.removeTower(id);
-    if (!t) return null;
-    const refund = defenseTowerSellValue(this.config, t);
-    this.refund(refund);
-    this.events.push({ type: 'towerSold', towerId: t.id, kind: t.kind, refund });
-    return refund;
-  }
-
   /**
-   * Pone una torre sin cobrar ni mirar el sitio (lo hace `build`, que llama
-   * aquí; las pruebas lo usan directo). `spent` es lo que costó.
+   * Pone una torre (sin cobrar ni mirar el sitio: eso es la regla de
+   * construir de T159, que llama aquí después). `spent` es lo que costó.
    */
   addTower(
     kind: DefenseTowerKind,
@@ -591,21 +491,21 @@ export class DefenseGame {
     return t;
   }
 
-  /** Quita una torre sin devolver nada (vender es `sellTower`). */
+  /** Quita una torre (vender: el dinero lo da T159). */
   removeTower(id: number): DefenseTowerState | null {
     const i = this.towerList.findIndex((t) => t.id === id);
     if (i < 0) return null;
     return this.towerList.splice(i, 1)[0]!;
   }
 
-  /** Gasta monedas (construir, mejorar). false si no llegan. */
+  /** Gasta monedas (construir, mejorar: T159). false si no llegan. */
   spend(amount: number): boolean {
     if (this.endReason || amount < 0 || this.coins < amount) return false;
     this.coins -= amount;
     return true;
   }
 
-  /** Devuelve monedas (vender). No cuentan como ganadas. */
+  /** Devuelve monedas (vender, T159). No cuentan como ganadas. */
   refund(amount: number): void {
     if (amount > 0) this.coins += amount;
   }
@@ -627,9 +527,6 @@ export class DefenseGame {
     this.activeSteps++;
 
     if (input.upgradePlane) this.upgradePlane();
-    if (input.sellTower !== undefined) this.sellTower(input.sellTower);
-    if (input.upgradeTower !== undefined) this.upgradeTower(input.upgradeTower);
-    if (input.build) this.build(input.build.kind, input.build.x, input.build.y);
     this.spawnDue();
     this.stepEnemies(dt);
     this.stepPlane(input.move, dt);
@@ -714,9 +611,6 @@ export class DefenseGame {
         radius,
         speed: def.pace * speedUnit,
         stunS: 0,
-        burnS: 0,
-        burnDps: 0,
-        burnTowerId: null,
         ageS: 0,
         dead: false,
       };
@@ -742,16 +636,6 @@ export class DefenseGame {
     for (const e of this.enemies) {
       if (e.dead) continue;
       e.ageS += dt;
-      if (e.burnS > 0) {
-        // Arde también aturdido; quemado, la caída es de la torre que lo prendió.
-        const burn = Math.min(dt, e.burnS);
-        e.burnS = Math.max(0, e.burnS - dt);
-        if (this.damage(e, e.burnDps * burn, 'tower', e.burnTowerId)) continue;
-        if (e.burnS <= 0) {
-          e.burnDps = 0;
-          e.burnTowerId = null;
-        }
-      }
       if (e.stunS > 0) {
         e.stunS = Math.max(0, e.stunS - dt);
         continue;
@@ -885,11 +769,7 @@ export class DefenseGame {
     for (const t of this.towerList) {
       const hooks = this.hooks[t.kind] ?? NO_HOOKS;
       t.targets = hooks.targets(t, this.ctx);
-      const before = t.lastShot;
       hooks.onTick(t, this.ctx, dt);
-      const shot = t.lastShot;
-      if (shot && shot !== before)
-        this.events.push({ type: 'towerShot', towerId: t.id, kind: t.kind, shot });
     }
   }
 

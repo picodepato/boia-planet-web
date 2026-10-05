@@ -32,7 +32,7 @@ import {
  */
 
 /** Sube con cada cambio de reglas: el resultado y el ranking la llevan. */
-export const DEFENSE_CONFIG_VERSION = 2;
+export const DEFENSE_CONFIG_VERSION = 1;
 
 /** Paso fijo de la simulación (s): el del Cañón. */
 export const DEFENSE_STEP_S = SURVIVORS_STEP_S;
@@ -53,7 +53,7 @@ export { DIFFICULTY_IDS as DEFENSE_DIFFICULTY_IDS, type DifficultyId };
 
 /**
  * Las islas que se construyen como torres (decisión 9): sus ids de lugar del
- * mapa. Sus números, en `DefenseConfig.towers`.
+ * mapa. Los números de cada una los pone T159.
  */
 export type DefenseTowerKind =
   'faro' | 'ultima' | 'halloween' | 'cala' | 'tienda' | 'allday' | 'fotos';
@@ -66,79 +66,6 @@ export const DEFENSE_TOWER_KINDS: readonly DefenseTowerKind[] = [
   'allday',
   'fotos',
 ];
-
-/**
- * Lo de cada nivel (1…3) de cada isla (decisión 9). `range` es el alcance
- * (u desde el centro de la isla hasta el borde del enemigo; 0 en la granja).
- */
-export interface DefenseTowerStatsByKind {
-  /** Faro: haces que giran y hieren lo que tocan, `damagePerS` por segundo de contacto. */
-  faro: {
-    range: number;
-    damagePerS: number;
-    /** Haces a ángulos iguales. */
-    beams: number;
-    /** u de medio ancho del haz. */
-    beamWidth: number;
-    sweepRadPerS: number;
-  };
-  /** Nochevieja: bolas de nieve a un blanco distinto cada vez si puede; aturden. */
-  ultima: { range: number; damage: number; cooldownS: number; stunS: number };
-  /** Halloween: bocanada en cono hacia el más adelantado; deja ardiendo. */
-  halloween: {
-    range: number;
-    damage: number;
-    cooldownS: number;
-    /** rad de medio ángulo del cono. */
-    coneRad: number;
-    burnDps: number;
-    burnS: number;
-  };
-  /** Puerto: mortero de fuegos artificiales; cae donde estará el blanco y estalla en área. */
-  cala: {
-    range: number;
-    damage: number;
-    cooldownS: number;
-    blastRadius: number;
-    /** s del disparo al estallido. */
-    flightS: number;
-  };
-  /** Ibiza: granja; `coins` cada `cooldownS`. */
-  tienda: { range: number; coins: number; cooldownS: number };
-  /** Isla del Sonido: onda de graves a todo lo que tiene alrededor cada `cooldownS`. */
-  allday: { range: number; damage: number; cooldownS: number };
-  /** Benidorm: francotirador; un tiro fuerte al más fuerte a su alcance (bosses antes). */
-  fotos: { range: number; damage: number; cooldownS: number };
-}
-
-/** Una isla: lo que cuesta, lo que cuesta subirla y lo de cada nivel. */
-export interface DefenseTowerDef<K extends DefenseTowerKind = DefenseTowerKind> {
-  kind: K;
-  /** Monedas para construirla (nivel 1). */
-  cost: number;
-  /** Monedas para subir a nivel 2 y a nivel 3. */
-  upgradeCost: readonly [number, number];
-  levels: readonly [
-    DefenseTowerStatsByKind[K],
-    DefenseTowerStatsByKind[K],
-    DefenseTowerStatsByKind[K],
-  ];
-}
-
-export interface DefenseTowersDef {
-  /**
-   * u de agua libre entre el borde de una isla y el borde del carril (la
-   * isla, con su huella `islandRadius`, nunca pisa el camino).
-   */
-  pathClearance: number;
-  /** u de agua libre entre el borde de una isla y el del vórtice. */
-  vortexClearance: number;
-  /** Parte de lo gastado en una isla (construir y mejorar) que devuelve venderla. */
-  sellRefund: number;
-  /** A minibosses y bosses el aturdimiento les dura esta parte. */
-  bossStunScale: number;
-  kinds: { [K in DefenseTowerKind]: DefenseTowerDef<K> };
-}
 
 /** Qué baja por el camino: un tipo común del Cañón o uno de sus bosses. */
 export type DefenseEnemyKind = EnemyId | BossId;
@@ -246,8 +173,6 @@ export interface DefenseConfig {
    */
   islandRadius: number;
   path: DefensePathDef;
-  /** Las islas que se construyen (decisiones 8 y 9): regla de construir y torres. */
-  towers: DefenseTowersDef;
   /** Monedero al empezar (decisión 11: sólo dentro de la partida). */
   startCoins: number;
   plane: {
@@ -344,84 +269,6 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     sampleStepRad: 0.01,
     normalWalkS: 40,
     cornerMinRad: 0.6,
-  },
-  towers: {
-    pathClearance: 10,
-    vortexClearance: 40,
-    sellRefund: 0.6,
-    bossStunScale: 0.25,
-    kinds: {
-      faro: {
-        kind: 'faro',
-        cost: 100,
-        upgradeCost: [80, 130],
-        levels: [
-          { range: 260, damagePerS: 63, beams: 1, beamWidth: 16, sweepRadPerS: 2 },
-          { range: 280, damagePerS: 77, beams: 2, beamWidth: 16, sweepRadPerS: 2 },
-          { range: 300, damagePerS: 91, beams: 3, beamWidth: 18, sweepRadPerS: 2 },
-        ],
-      },
-      ultima: {
-        kind: 'ultima',
-        cost: 80,
-        upgradeCost: [70, 110],
-        levels: [
-          { range: 300, damage: 10, cooldownS: 1, stunS: 0.5 },
-          { range: 320, damage: 15, cooldownS: 0.85, stunS: 0.65 },
-          { range: 340, damage: 22, cooldownS: 0.7, stunS: 0.8 },
-        ],
-      },
-      halloween: {
-        kind: 'halloween',
-        cost: 90,
-        upgradeCost: [75, 120],
-        levels: [
-          { range: 190, damage: 3.5, cooldownS: 0.4, coneRad: 0.45, burnDps: 5.5, burnS: 3 },
-          { range: 205, damage: 5.5, cooldownS: 0.4, coneRad: 0.5, burnDps: 8.5, burnS: 3 },
-          { range: 220, damage: 8.5, cooldownS: 0.4, coneRad: 0.55, burnDps: 12.5, burnS: 3.5 },
-        ],
-      },
-      cala: {
-        kind: 'cala',
-        cost: 120,
-        upgradeCost: [100, 150],
-        levels: [
-          { range: 520, damage: 28, cooldownS: 2.4, blastRadius: 80, flightS: 0.9 },
-          { range: 540, damage: 45, cooldownS: 2.1, blastRadius: 95, flightS: 0.9 },
-          { range: 560, damage: 66, cooldownS: 1.8, blastRadius: 110, flightS: 0.9 },
-        ],
-      },
-      tienda: {
-        kind: 'tienda',
-        cost: 70,
-        upgradeCost: [60, 90],
-        levels: [
-          { range: 0, coins: 10, cooldownS: 10 },
-          { range: 0, coins: 16, cooldownS: 10 },
-          { range: 0, coins: 24, cooldownS: 10 },
-        ],
-      },
-      allday: {
-        kind: 'allday',
-        cost: 100,
-        upgradeCost: [80, 130],
-        levels: [
-          { range: 170, damage: 11, cooldownS: 1.2 },
-          { range: 185, damage: 18, cooldownS: 1.2 },
-          { range: 200, damage: 27, cooldownS: 1.2 },
-        ],
-      },
-      fotos: {
-        kind: 'fotos',
-        cost: 130,
-        upgradeCost: [110, 170],
-        levels: [
-          { range: 650, damage: 98, cooldownS: 3 },
-          { range: 700, damage: 160, cooldownS: 2.6 },
-          { range: 760, damage: 245, cooldownS: 2.2 },
-        ],
-      },
-    },
   },
   startCoins: 120,
   plane: {
@@ -544,15 +391,4 @@ export function defenseEnemyRadius(kind: DefenseEnemyKind): number {
   const e = SURVIVORS_CONFIG.enemies[kind as EnemyId];
   if (e) return e.radius;
   return SURVIVORS_CONFIG.bosses[kind as BossId]?.radius ?? 20;
-}
-
-/** Lo de una isla a su nivel (1…3, acotado). */
-export function defenseTowerStats<K extends DefenseTowerKind>(
-  cfg: DefenseConfig,
-  kind: K,
-  level: number,
-): DefenseTowerStatsByKind[K] {
-  const def = cfg.towers.kinds[kind] as DefenseTowerDef<K>;
-  const i = Math.min(3, Math.max(1, Math.round(level))) - 1;
-  return def.levels[i]!;
 }
