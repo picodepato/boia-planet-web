@@ -300,7 +300,7 @@ function CanonWater({ pct, engineRef }: { pct: number; engineRef: RefObject<Mar3
 
 /**
  * Las cartas de nivel: 1 de 3, grandes, con el dedo o con el teclado
- * (flechas o 1–3 para moverse, Intro o espacio para elegir). Mientras están
+ * (flechas o 1–n para moverse, Intro o espacio para elegir). Mientras están
  * abiertas la partida espera (la simulación lo cuenta como pausa). Un
  * momento al abrirse no se puede elegir, para no elegir sin querer.
  */
@@ -427,7 +427,11 @@ export function CanonCards({
             );
           })}
         </div>
-        <p className="mar-canon-cards__help">{msg('mar.canon.cartas.ayuda')}</p>
+        <p className="mar-canon-cards__help">
+          {count > 1
+            ? msg('mar.canon.cartas.ayuda', { n: Math.min(count, 9) })
+            : msg('mar.canon.cartas.ayuda.una')}
+        </p>
       </section>
     </div>
   );

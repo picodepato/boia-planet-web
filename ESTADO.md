@@ -4,6 +4,65 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-05 — plan 011 T132: Equilibrio con pilotos, rendimiento en `baja`, e2e, documentos y la guía de prueba de la beta 2
+
+Qué existe:
+- `packages/engine/src/survivors/bots.ts`: pilotos para medir el equilibrio contra la simulación pura (sin pantalla): `idle` (barco quieto, carta 0), `dodge` (huye de enemigos y disparos cercanos y se aparta de las islas, carta 0) y `greedy` (esquiva, va a por la nota más cercana cuando no hay enemigos a menos de 130 u y elige la carta que más puntúa: evolución > Salvavidas > arma nueva/nivel > vinilo pareja > House/Chill > resto). `runBot` mide fin, nivel y agua por minuto, enemigos vivos por tipo por minuto, subidas de nivel, golpes y agua por tipo. Deterministas.
+- `survivors-balance.test.ts` (6 pruebas, 6 semillas: impares en el mapa Arcilla, pares en un archipiélago): el barco parado se inunda en todas las dificultades (Normal < 60 s; antes cuanto más difícil); en Normal el que esquiva llega a ≥ 4:00 siempre (media ≥ 5:30) y el codicioso a ≥ 4:30; Tranquila > Normal > Tormenta en puntuación media y en partidas que amanecen (Tranquila 6/6, Tormenta < 6/6) para `dodge` y `greedy`; ritmo de niveles en Normal (1.ª subida < 30 s, < 35 s por subida, ningún hueco > 90 s, nivel ≥ 8 a las 3:00); en `baja` el guion tardío enseña todos los tipos.
+- Equilibrio (`SURVIVORS_CONFIG`, versión 5 → **6**): `levels` 5/5/0.6 → 3/2.5/0.25; `player.magnetRadius` 90 → 130; `growthPerMinute.hp` de los seis enemigos → 0.08 (eran 0.12–0.15); `hpScale` del guion más suave (pirañas 1/1.4/2/3 → 1/1.25/1.6/2.2; medusa, gaviota, cangrejo, pirata y pez espada igual, hacia 1.6–2 al final); `contactWater` cangrejo 14 → 10 y medusa 7 → 6. Motivo: con la v5 los niveles se atascaban (Normal, piloto codicioso: 1.ª subida a 36 s de media, ~62 s por subida, nivel 4–6 a los 7:00) porque el aguante de los enemigos crecía ~5× y las armas no daban abasto; ahora el ritmo es de ~20 s por subida y da para llegar a evoluciones.
+- `EnemyDef.capShare` (nuevo, opcional) y piraña `capShare: 0.7`: lo que echa el guion de un tipo no pasa de esa parte del tope (en `baja`, 42 de 60 pirañas); la Marea no lo mira; lo que no cabe da fuerza a la oleada como con el tope lleno. El atajo `&t=` reparte el prellenado por turnos entre pistas (antes las pirañas, la primera pista, se quedaban todo el tope). Resuelve el hallazgo de T126 (en `baja`, `t=240`, semilla 5, sin cangrejos): ahora a `t=240/300/360` salen los seis tipos en las 8 semillas probadas, sin subir el tope.
+- Arreglo en `sim.ts`: una nota arrastrada por el imán ya no puede quedar en tierra encajada entre dos islas (vuelve a donde estaba); salió con el imán más grande en «nada aparece ni se queda en tierra (archipiélago B, semilla 2)».
+- La ayuda de las cartas cuenta las cartas que hay: `mar.canon.cartas.ayuda` = «Flechas o 1–{n}…» y `mar.canon.cartas.ayuda.una` con una sola carta (`canon-hud.tsx`).
+- e2e `mar-canon.spec.ts`: «bucle de la beta 2: Tormenta, una evolución ofrecida, un arma nueva elegida y el turbo en marcha (T132)» (con `carta=surtido&dificultad=tormenta`; la ayuda dice 1–6) y «rendimiento en `baja`: a las 6:00 con los topes llenos y las siete armas…» (sólo en el proyecto móvil, `deviceMemory` 2, `t=360&armas=1`; p95 ≤ 100 ms sin limitar la CPU y la medida con CPU 4× apuntada).
+- Documentos: guía nueva `docs/propuestas/2026-10-04-canon-beta2-guia-prueba.md` (qué hay, atajos con `dificultad=`, `armas=1`, `carta=surtido`, qué tocar y dónde, 7 preguntas, «Notas» vacía); `docs/spec/estado.md`: REQ-AVE-037 (beta 2, `sumergirse` decidido, pruebas nuevas), REQ-AVE-039 (beta 2) y REQ-ARQ-015 (medida del Cañón en `baja`), sin cambiar estados.
+
+Curvas medidas (6 semillas, calidad `alta`; «fin» en s activos; el nivel por minuto es la media de las partidas aún vivas):
+
+Config v6 (la nueva):
+
+| Dificultad | Piloto | Amanece | Fin por semilla 1–6 | Agua final (si amanece) | Nivel a 1:00…7:00 | 1.ª subida (s) | s por subida |
+|---|---|---|---|---|---|---|---|
+| Tranquila | idle | 0/6 | 118 / 109 / 58 / 195 / 78 / 83 | — | 4 · 8 · 12 | 32 | 18 |
+| Tranquila | dodge | 6/6 | 420 ×6 | 28 | 2 · 4 · 6 · 8 · 9 · 12 · 13 | 58 | 56 |
+| Tranquila | greedy | 6/6 | 420 ×6 | 3 | 6 · 9 · 12 · 16 · 19 · 23 · 25 | 12 | 18 |
+| Normal | idle | 0/6 | 52 / 26 / 36 / 56 / 36 / 38 | — | — | 17 | 16 |
+| Normal | dodge | 3/6 | 291 / 342 / 420 / 420 / 420 / 296 | 13 | 2 · 4 · 6 · 8 · 10 · 9 · 11 | 67 | 49 |
+| Normal | greedy | 6/6 | 420 ×6 | 17 | 5 · 9 · 12 · 16 · 19 · 21 · 22 | 17 | 21 |
+| Tormenta | idle | 0/6 | 29 / 21 / 26 / 28 / 26 / 25 | — | — | 15 | 14 |
+| Tormenta | dodge | 2/6 | 262 / 157 / 420 / 203 / 420 / 129 | 18 | 2 · 3 · 4 · 4 · 4 · 5 · 5 | 78 | 59 |
+| Tormenta | greedy | 4/6 | 420 / 209 / 420 / 185 / 420 / 420 | 24 | 5 · 8 · 11 · 14 · 15 · 16 · 17 | 16 | 24 |
+
+Config v5 (antes de T132, mismos pilotos):
+
+| Dificultad | Piloto | Amanece | Fin por semilla 1–6 | Nivel a 1:00…7:00 | 1.ª subida (s) | s por subida |
+|---|---|---|---|---|---|---|
+| Tranquila | idle | 0/6 | 72 / 47 / 57 / 70 / 69 / 62 | 3 | 38 | 27 |
+| Tranquila | greedy | 4/6 | 420 / 420 / 420 / 254 / 420 / 180 | 4 · 6 · 7 · 8 · 9 · 10 · 10 | 18 | 44 |
+| Normal | idle | 0/6 | 26 / 25 / 34 / 30 / 32 / 31 | — | 23 | 24 |
+| Normal | dodge | 4/6 | 420 / 297 / 420 / 420 / 420 / 228 | 1 · 2 · 3 · 3 · 4 · 4 · 4 | 102 | 188 |
+| Normal | greedy | 1/6 | 338 / 232 / 263 / 165 / 420 / 188 | 2 · 3 · 5 · 4 · 4 · 5 · 6 | 36 | 62 |
+| Tormenta | greedy | 0/6 | 172 / 136 / 224 / 170 / 202 / 183 | 2 · 3 · 2 | 54 | 106 |
+
+Lectura: el que sólo esquiva (sin ir a por notas) sube poco de nivel en todas: es el «no veo las notas» de la beta 1; quien recoge notas sube cada ~20 s en Normal. El piloto `dodge` aguanta en Arcilla más que en los archipiélagos densos (más sitio para huir). En `baja` (Normal, codicioso) amanecen 6/6 y en el último minuto hay cangrejos y ≥ 4 tipos en todas.
+
+Rendimiento:
+- Simulación (Node, `t=360`, las 7 armas a nivel 5): 0,057 ms por paso en `baja` (56 enemigos) y 0,050 ms en `alta`; no es cuello de botella.
+- Navegador de las e2e (Chromium, 360×640, `deviceMemory` 2 → `baja`, `t=360&armas=1`, 60/60 enemigos, 7 armas pintando): p50 16,7 ms, p95 33,4 ms, peor 100–117 ms; con la CPU 4×: p50 33,3 ms, p95 50 ms, peor ~860 ms. Ese pico único coincide con el fotograma en que se abre una carta de nivel (la partida está en pausa en ese momento; ~200 ms sin limitar la CPU). No se tocó: no es un punto caliente del juego en marcha.
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/survivors` → exit 0, 7 archivos, 116 pruebas.
+- `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0.
+- Test command por pasos: vitest → exit 0, 152 archivos, 1466 pruebas; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+- `E2E_PORT=3291 pnpm e2e mar-canon.spec.ts --workers=1` (main, antes de cambiar nada) → exit 0, 46 pasadas.
+- `E2E_PORT=3291 pnpm e2e mar-canon.spec.ts --workers=1` (final) → exit 0, 49 pasadas, 1 saltada (la de rendimiento sólo corre en móvil). La primera vuelta falló «ya tarde (`t=` pasadas las 3:30) salen en pantalla los seis enemigos» (móvil y escritorio: faltaban medusa y pirata): con el barco parado se inunda en ~20 s, antes de que las medusas lentas y los piratas (se paran a 320 u) entren en la vista. La prueba ahora navega con la flecha (lo reciclado sale por delante) y contesta las cartas: pasa en ~22 s.
+- `E2E_PORT=3292 pnpm e2e --workers=2` (suite completa) → exit 1: 414 pasadas, 86 saltadas, 6 fallidas. Repetidas solas (`--workers=1`): pasan 4 (`mar-canon` «HUD con BETA…» y «llegar al amanecer…», `mar-circuito` «fuera de la carretera…», `mar-decor` en escritorio: carga con 2 trabajadores). Siguen fallando 3, ajenas al Cañón y a los archivos de T132: `mundo-arcilla.spec.ts:57` «tienda: enlace externo en otra pestaña» (móvil y escritorio: la ficha de la tienda no tiene ningún `a[target=_blank]`) y `mar-decor.spec.ts:4` «Santa Bárbara loads…» en móvil (el zoom queda en `height: 47%` y la prueba espera 52 o 46 %).
+
+Pendiente:
+- Medir en un iPhone 11 y un Android de gama media con `t=360&armas=1` (lo pide la guía, pregunta 7).
+- Las flechas de impulso y las rampas dentro de la partida sólo tienen pruebas unitarias (T124, `turbo-ramps.test.ts`); el e2e cubre el turbo.
+- El pico al abrirse una carta con la CPU 4× (ver Rendimiento), si en el móvil se nota.
+- Las dos e2e ajenas que fallan en la suite completa (`mundo-arcilla` tienda, `mar-decor` zoom en móvil): mirar si fallan también en main.
+
 ## 2026-10-05 — plan 011 T130: Upgrade interface: new cards and the weapons/vinyls row
 
 Qué existe:

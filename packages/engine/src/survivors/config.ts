@@ -20,7 +20,7 @@ import type { QualityTier } from '../world/sectors';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 5;
+export const SURVIVORS_CONFIG_VERSION = 6;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -185,6 +185,12 @@ export interface EnemyDef {
   noteValue: number;
   /** Crecimiento por minuto de partida (fracción: 0,1 = +10 % por minuto). */
   growthPerMinute: { hp: number; speed: number };
+  /**
+   * Parte del tope de enemigos (`caps[…].enemies`) que este tipo puede ocupar
+   * con lo que echa el guion (la «Marea» no la mira). Sin valor, todo el tope.
+   * Con el tope bajo de `baja`, deja sitio a los demás tipos.
+   */
+  capShare?: number;
   /** Sólo los `shooter`. */
   shooter?: ShooterDef;
   /** Sólo los `charger`. */
@@ -534,7 +540,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     waterCapacity: 100,
     invulnerableS: 0.5,
     bailPerS: 0,
-    magnetRadius: 90,
+    magnetRadius: 130,
     pickupRadius: 14,
     magnetSpeed: 420,
   },
@@ -543,7 +549,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
     mergeRadius: 36,
     mergeEveryS: 0.5,
   },
-  levels: { base: 5, linear: 5, quadratic: 0.6 },
+  levels: { base: 3, linear: 2.5, quadratic: 0.25 },
   cardChoices: 3,
   slots: { weapons: 4, vinyls: 4 },
   evolutionSource: 'level-up',
@@ -583,7 +589,9 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       contactWater: 5,
       ignoresIslands: false,
       noteValue: 1,
-      growthPerMinute: { hp: 0.12, speed: 0.01 },
+      growthPerMinute: { hp: 0.08, speed: 0.01 },
+      // Las pirañas son el enjambre: sin tope propio llenarían solas los 60 de `baja`.
+      capShare: 0.7,
     },
     crab: {
       id: 'crab',
@@ -592,10 +600,10 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       speed: 55,
       acceleration: 120,
       hp: 60,
-      contactWater: 14,
+      contactWater: 10,
       ignoresIslands: false,
       noteValue: 8,
-      growthPerMinute: { hp: 0.15, speed: 0.01 },
+      growthPerMinute: { hp: 0.08, speed: 0.01 },
     },
     // Gaviota aguafiestas: vuela por encima de las islas; débil y algo rápida
     // (por debajo de los 150 u/s del barco, como todo lo que no avisa).
@@ -609,7 +617,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       contactWater: 6,
       ignoresIslands: true,
       noteValue: 3,
-      growthPerMinute: { hp: 0.12, speed: 0.015 },
+      growthPerMinute: { hp: 0.08, speed: 0.015 },
     },
     // Pirata en un botecito: se para a distancia y dispara con la pistola de
     // agua, recto; las islas paran sus disparos (y los del barco).
@@ -623,7 +631,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       contactWater: 8,
       ignoresIslands: false,
       noteValue: 8,
-      growthPerMinute: { hp: 0.15, speed: 0.01 },
+      growthPerMinute: { hp: 0.08, speed: 0.01 },
       shooter: {
         standoff: 320,
         resume: 420,
@@ -645,7 +653,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       contactWater: 12,
       ignoresIslands: false,
       noteValue: 8,
-      growthPerMinute: { hp: 0.15, speed: 0.01 },
+      growthPerMinute: { hp: 0.08, speed: 0.01 },
       charger: {
         windupRange: 380,
         telegraphS: 0.9,
@@ -662,10 +670,10 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       speed: 50,
       acceleration: 90,
       hp: 30,
-      contactWater: 7,
+      contactWater: 6,
       ignoresIslands: false,
       noteValue: 3,
-      growthPerMinute: { hp: 0.12, speed: 0.01 },
+      growthPerMinute: { hp: 0.08, speed: 0.01 },
       split: { count: 2, scale: 0.6, hpScale: 0.5, noteScale: 0.34, generations: 1 },
     },
   },
@@ -1129,9 +1137,9 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           toS: 420,
           keys: [
             { atS: 0, groupsPerS: 0.25, group: [2, 4], hpScale: 1, speedScale: 1 },
-            { atS: 120, groupsPerS: 0.5, group: [4, 7], hpScale: 1.4, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.7, group: [5, 9], hpScale: 2, speedScale: 1.03 },
-            { atS: 420, groupsPerS: 1, group: [6, 12], hpScale: 3, speedScale: 1.05 },
+            { atS: 120, groupsPerS: 0.5, group: [4, 7], hpScale: 1.25, speedScale: 1 },
+            { atS: 240, groupsPerS: 0.7, group: [5, 9], hpScale: 1.6, speedScale: 1.03 },
+            { atS: 420, groupsPerS: 1, group: [6, 12], hpScale: 2.2, speedScale: 1.05 },
           ],
         },
         {
@@ -1140,8 +1148,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           toS: 420,
           keys: [
             { atS: 0, groupsPerS: 0.1, group: [1, 2], hpScale: 1, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.16, group: [2, 3], hpScale: 1.6, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.22, group: [2, 4], hpScale: 2.2, speedScale: 1.05 },
+            { atS: 240, groupsPerS: 0.16, group: [2, 3], hpScale: 1.4, speedScale: 1 },
+            { atS: 420, groupsPerS: 0.22, group: [2, 4], hpScale: 1.8, speedScale: 1.05 },
           ],
         },
         {
@@ -1150,8 +1158,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           toS: 420,
           keys: [
             { atS: 60, groupsPerS: 0.12, group: [2, 3], hpScale: 1, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.2, group: [3, 5], hpScale: 1.5, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.28, group: [3, 6], hpScale: 2.2, speedScale: 1.05 },
+            { atS: 240, groupsPerS: 0.2, group: [3, 5], hpScale: 1.3, speedScale: 1 },
+            { atS: 420, groupsPerS: 0.28, group: [3, 6], hpScale: 1.8, speedScale: 1.05 },
           ],
         },
         {
@@ -1160,8 +1168,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           toS: 420,
           keys: [
             { atS: 90, groupsPerS: 0.08, group: [1, 1], hpScale: 1, speedScale: 1 },
-            { atS: 240, groupsPerS: 0.18, group: [1, 2], hpScale: 1.6, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.3, group: [1, 3], hpScale: 2.4, speedScale: 1.1 },
+            { atS: 240, groupsPerS: 0.18, group: [1, 2], hpScale: 1.4, speedScale: 1 },
+            { atS: 420, groupsPerS: 0.3, group: [1, 3], hpScale: 2, speedScale: 1.1 },
           ],
         },
         {
@@ -1170,8 +1178,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           toS: 420,
           keys: [
             { atS: 180, groupsPerS: 0.06, group: [1, 1], hpScale: 1, speedScale: 1 },
-            { atS: 300, groupsPerS: 0.1, group: [1, 2], hpScale: 1.4, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.14, group: [1, 2], hpScale: 1.8, speedScale: 1 },
+            { atS: 300, groupsPerS: 0.1, group: [1, 2], hpScale: 1.25, speedScale: 1 },
+            { atS: 420, groupsPerS: 0.14, group: [1, 2], hpScale: 1.6, speedScale: 1 },
           ],
         },
         {
@@ -1180,7 +1188,7 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
           toS: 420,
           keys: [
             { atS: 210, groupsPerS: 0.05, group: [1, 1], hpScale: 1, speedScale: 1 },
-            { atS: 420, groupsPerS: 0.12, group: [1, 2], hpScale: 1.8, speedScale: 1 },
+            { atS: 420, groupsPerS: 0.12, group: [1, 2], hpScale: 1.6, speedScale: 1 },
           ],
         },
       ],
