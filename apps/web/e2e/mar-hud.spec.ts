@@ -340,19 +340,26 @@ for (const view of VIEWS) {
             ),
           );
         // Quieta: dos lecturas seguidas iguales (la cámara llega suave).
-        let prev = await read();
-        for (let i = 0; i < 40; i++) {
-          await page.waitForTimeout(250);
-          const now = await read();
-          const same =
-            Object.keys(now).length === Object.keys(prev).length &&
-            Object.entries(now).every(
-              ([id, p]) => prev[id] && Math.hypot(p.x - prev[id]!.x, p.y - prev[id]!.y) < 1,
-            );
-          if (same) return now;
-          prev = now;
-        }
-        return prev;
+        let prev: Awaited<ReturnType<typeof read>> | undefined;
+        await expect
+          .poll(
+            async () => {
+              const now = await read();
+              const previous = prev;
+              const same =
+                !!previous &&
+                Object.keys(now).length === Object.keys(previous).length &&
+                Object.entries(now).every(
+                  ([id, p]) =>
+                    previous[id] && Math.hypot(p.x - previous[id]!.x, p.y - previous[id]!.y) < 1,
+                );
+              prev = now;
+              return same;
+            },
+            { intervals: [250], timeout: 30_000 },
+          )
+          .toBe(true);
+        return prev!;
       };
       const start = await pins();
       const ids = Object.keys(start);
@@ -438,9 +445,7 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
     await expect(sheet).toHaveAttribute('data-expandida', 'no');
     await expect(sheet.getByTestId('mar-rumbo')).toBeVisible();
     await expect(sheet.getByTestId('mar-volar')).toBeVisible();
-    await expect
-      .poll(async () => (await box(sheet)).height)
-      .toBeLessThanOrEqual(vp.height * 0.3);
+    await expect.poll(async () => (await box(sheet)).height).toBeLessThanOrEqual(vp.height * 0.3);
     expect(errors).toEqual([]);
   });
 

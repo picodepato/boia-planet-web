@@ -161,14 +161,27 @@ test('cerca, el modelo de Blender sustituye a la isla entera; la colisión es la
   const radius = harbor.geometry.collision!.radius;
   await page.keyboard.down('ArrowUp');
   let closest = Infinity;
+  const frames = () =>
+    page.getByTestId('mar-minimapa').locator('canvas').getAttribute('data-frames');
   try {
+    await expect
+      .poll(
+        async () => {
+          closest = Math.min(closest, await distance(page));
+          return closest;
+        },
+        { timeout: 60_000 },
+      )
+      .toBeLessThan(radius + 60);
     for (let i = 0; i < 30; i++) {
-      await page.waitForTimeout(200);
+      const before = await frames();
+      await expect.poll(frames, { timeout: 15_000 }).not.toBe(before);
       closest = Math.min(closest, await distance(page));
     }
   } finally {
     await page.keyboard.up('ArrowUp');
   }
+  expect(closest, 'el barco alcanza el muelle').toBeLessThan(radius + 60);
   expect(closest).toBeGreaterThan(radius * 0.9);
   await shot(page, 'puerto-muelle');
   expect(errors).toEqual([]);

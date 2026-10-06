@@ -41,6 +41,11 @@ E2E_PORT=3107 pnpm e2e --workers=2      # ~15 min; la primera vez: pnpm --filter
   el estado por requisito (`tools/spec/estado.py`, REQ-PRO-017), sus pruebas
   y todo el arte de `art/` (`tools/blender/check.py`, ~1 min). Necesita
   `python3` del sistema. `pnpm test apps/web/lib` corre sólo esas pruebas.
+- Las simulaciones de balance con bots (`packages/*/src/**/*-balance.test.ts`:
+  survivors, jefes y defensa del castillo; ~75 s) no corren con `pnpm test`:
+  tienen su propia orden, `pnpm test:slow` (`vitest.slow.config.ts`). Córrela
+  al tocar el balance o la dificultad. Con ellas fuera, `pnpm test` pasa de
+  ~86 s a ~35 s.
 - El estado de cada requisito (HECHO, PARCIAL, FALTA, L2, final) y su prueba
   está en [`docs/spec/estado.md`](docs/spec/estado.md); `pnpm spec:estado`
   lo comprueba y cuenta.

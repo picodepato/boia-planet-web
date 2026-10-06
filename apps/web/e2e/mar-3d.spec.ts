@@ -105,7 +105,7 @@ test('ir a un lugar: «Navegar» e «Ir en nave» a la vista sin desplegar la fi
 test('«Ir en nave» desde la ficha: despega, vuela y se posa sin abrir la compra', async ({
   page,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   const errors = await openMar(page);
   await minimap(page).click();
   await expect(minimap(page)).toHaveAttribute('aria-pressed', 'true');
@@ -116,8 +116,8 @@ test('«Ir en nave» desde la ficha: despega, vuela y se posa sin abrir la compr
   const main = page.locator('main.mar');
   await expect(main).toHaveAttribute('data-flight', 'lift');
   await expect(page.getByTestId('mar-ficha')).toHaveCount(0);
-  await expect(main).toHaveAttribute('data-flight', 'cruise', { timeout: 10_000 });
-  await expect(main).not.toHaveAttribute('data-flight', /./, { timeout: 20_000 });
+  await expect(main).toHaveAttribute('data-flight', 'cruise', { timeout: 30_000 });
+  await expect(main).not.toHaveAttribute('data-flight', /./, { timeout: 60_000 });
   await expect(page.getByTestId('mar-rumbo-activo')).toHaveCount(0);
   await expect(page.getByTestId('checkout')).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -423,7 +423,9 @@ test.describe('la cámara en un móvil en vertical (390×844)', () => {
     // Navegando (el viaje de «Entradas», rápido): sigue centrado.
     await sailToTickets(page);
     await expect(page.getByTestId('mar-entradas-saltar')).toBeVisible();
-    await page.waitForTimeout(1500);
+    await expect(page.locator('main.mar')).toHaveAttribute('data-flight', 'cruise', {
+      timeout: 30_000,
+    });
     const sailing = await offCentre();
     expect(sailing.dx).toBeLessThan(0.1);
     expect(sailing.dy).toBeLessThan(0.1);

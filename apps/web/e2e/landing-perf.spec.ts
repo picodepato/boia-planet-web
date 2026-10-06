@@ -76,7 +76,12 @@ test('scroll del hero al pie con la CPU a 4×: p95 ≤ 50 ms y sin tareas largas
   await page.waitForFunction(() => (window.__boiaIntro?.props ?? 0) > 0, null, {
     timeout: 60_000,
   });
-  await page.waitForTimeout(500);
+  const rendered = await page.evaluate(() => window.__boiaIntro!.framesRendered);
+  await page.waitForFunction(
+    (before) => (window.__boiaIntro?.framesRendered ?? 0) > before,
+    rendered,
+    { timeout: 30_000 },
+  );
 
   const frames = await page.evaluate(async (ms) => {
     const max = document.documentElement.scrollHeight - innerHeight;
@@ -99,7 +104,9 @@ test('scroll del hero al pie con la CPU a 4×: p95 ≤ 50 ms y sin tareas largas
     });
     return deltas;
   }, SCROLL_MS);
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => (window.__boiaIntro?.scroll.light ?? 0) > 0.99, null, {
+    timeout: 30_000,
+  });
 
   const d = (await page.evaluate(() => window.__boiaIntro))!;
   expect(d.fallback, 'the scene stays live (not the static version)').toBe(false);
@@ -142,7 +149,9 @@ test.describe('movimiento reducido', () => {
     await page.goto('/');
     await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused');
     await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight }));
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() => (window.__boiaIntro?.scroll.light ?? 0) > 0.99, null, {
+      timeout: 30_000,
+    });
     expect(await page.evaluate(() => window.__boiaIntro?.fallback)).toBe(true);
     await expect(page.locator('html')).toHaveAttribute('data-hero', 'still');
     expect(await glContexts(page)).toBe(0);
@@ -204,7 +213,17 @@ for (const [name, script] of LOW_POWER) {
     await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused', null, {
       timeout: 30_000,
     });
-    await page.waitForTimeout(1500);
+    await expect(page.locator('html')).toHaveAttribute('data-hero', 'still');
+    await expect
+      .poll(
+        () =>
+          page
+            .locator('.hero__still-img')
+            .first()
+            .evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
     const d = (await page.evaluate(() => window.__boiaIntro))!;
     expect(d.fallback).toBe(true);
     expect(d.scenesCreated).toBe(0);

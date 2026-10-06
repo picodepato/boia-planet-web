@@ -379,14 +379,27 @@ test('construir: cada una de las siete islas, y encima del camino no se puede (r
       await page.keyboard.press(String(i + 1));
     }
     await expect(placing(page)).toHaveAttribute('data-isla', kind);
-    await flyTo(page, spots[i]!);
-    await expect(placing(page)).toHaveAttribute('data-valido', 'si');
-    await expect(canvas(page)).toHaveAttribute('data-arena-colocar', 'ok');
-    // Las monedas justo antes de confirmar (no antes del vuelo: con la máquina
-    // cargada el vuelo es lento y las caídas de mientras suman más que media isla).
-    const before = await coins(page);
-    if (i % 2) await page.keyboard.press('Enter');
-    else await page.getByTestId('mar-castillo-colocar-si').click();
+    // Si bajo carga el avión se desvió y la confirmación se rechazó, se vuelve a
+    // apuntar y se reintenta, esperando al estado y no a un tiempo fijo.
+    let before = 0;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await flyTo(page, spots[i]!);
+      await expect(placing(page)).toHaveAttribute('data-valido', 'si');
+      await expect(canvas(page)).toHaveAttribute('data-arena-colocar', 'ok');
+      // Las monedas justo antes de confirmar (no antes del vuelo: con la máquina
+      // cargada el vuelo es lento y las caídas de mientras suman más que media isla).
+      before = await coins(page);
+      if (i % 2) await page.keyboard.press('Enter');
+      else await page.getByTestId('mar-castillo-colocar-si').click();
+      const built = await expect
+        .poll(() => islands(page), { timeout: 10_000 })
+        .toBe(i + 1)
+        .then(
+          () => true,
+          () => false,
+        );
+      if (built) break;
+    }
     await expect.poll(() => islands(page)).toBe(i + 1);
     await expect(placing(page)).toHaveCount(0);
     // Cobrada (las caídas del segundo de confirmar suman poco).

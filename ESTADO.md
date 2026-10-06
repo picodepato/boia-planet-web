@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T177: Line endings and slow test suites
+
+Qué existe:
+- `.gitattributes` (`* text=auto eol=lf`, binarios marcados) y renormalización en un commit aparte (solo finales de línea). `git ls-files --eol | grep -c "i/crlf"` → 0.
+- Vitest: las simulaciones `packages/*/src/**/*-balance.test.ts` (survivors-balance 83 s, survivors-boss-balance 58 s, defense-balance 27 s en paralelo) salen de `vitest.config.ts` y corren con `pnpm test:slow` (`vitest.slow.config.ts`, testTimeout 120 s). Documentado en README.
+- E2E (de-flake, sin borrar pruebas): `mar-castillo` (construir: reintento de confirmación esperando al estado, ya no tiempos fijos), `mar-3d`, `mar-puerto`, `mar-hud`, `landing-perf` (esperas por estado en lugar de `waitForTimeout`).
+
+Comandos:
+- Vitest por defecto antes: 86 s, 1911 tests, exit 0. Después: 34 s, 1885 tests, 199 archivos, exit 0.
+- `pnpm test:slow` → 3 archivos, 26 tests, 75 s, exit 0 (1885 + 26 = 1911).
+- Test command completo (vitest, checks.sh, lint, build, typecheck) → exit 0.
+- `pnpm e2e mar-castillo mar-3d mar-puerto mar-hud landing-perf mar-paridad --workers=2` → 91 passed, 13 skipped, 2 failed (solo `mar-paridad` «al recargar», cambio de Codex, revertido).
+
+Pendiente:
+- `mar-canon` y `mar-paridad` no se tocaron (el cambio probado falló o no se probó); sus esperas fijas siguen.
+- Sin pasada completa de e2e (~15 min).
+
 ## 2026-10-06 — plan 015 T174: Vecino quejica remodelled in Blender (Cañón and castle)
 
 Qué existe:
