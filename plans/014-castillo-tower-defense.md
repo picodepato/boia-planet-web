@@ -178,7 +178,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T166 — Tabarca lighthouse island redesigned in Blender (the board at the entrance)
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: T157
@@ -191,7 +191,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - the contact sheet is saved and its path recorded in the status section
   - an e2e or unit test checks the Faro island loads the new model; world places still do not overlap → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: Faro de Tabarca GLB (12.2k tris) from tools/blender/export_islas_glb.py --only faro, LIGHTHOUSE_RADIUS 2.3 u_maq, procedural beam kept via `IslandBuild.keep`; contact sheet outside the repo (orchestrator-attach/boia-planet-hernan-T166/faro-tabarca-hoja.png) · f7d1610
 
 ## T167 — Remove the boat flag option from the boat menu
 - Status: done
@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T166: faro collision one circle, LIGHTHOUSE_RADIUS 2.3 u_maq (dome ~16.6 scene vs old castle 13 r); no beam in the GLB, procedural beam kept through new optional `IslandBuild.keep` on the island group (sinks/restores with T160); procedural faro redrawn to the model layout; mar3d.ts back to LF after T160 committed it CRLF (agent)
 - 2026-10-06 T160: arena rotated in the view (`arenaFrame`, vortex along CASTLE_OPEN_SEA_BEARING), sim config untouched; planet wrap centred on the castle in the arena; camera elevation 1.2 rad, landscape shows the whole arena, portrait full height and 3/4 width following the plane; boat restored to its pre-game spot on exit; built islands use the hand-made `buildIsland` model (manifest radius accepted); glow points hide at ~1/3 sunk (castle glows too); test shortcut `?minijuego=castillo&duracion=&dificultad=&t=&seed=&islas=1` never ranks; dev «Salir de la arena» button until T161 (agent)
 - 2026-10-06 T157: castle island at Maq [-14.48, 14.21] = (-1080, 1060) in /mar, r 208 u, ~443 u from Boia 7, clear of legs 6→7 and 7→8; open-sea bearing `CASTLE_OPEN_SEA_BEARING` 2.09 rad in engine/compact.ts; the 1120 u arena crosses the planet wrap edge (agent)
 - 2026-10-06 T157: faro proximity 3.4 → 2.8 u_maq (board must not open from the start ring nor overlap the WhatsApp buoy panel); fast chest 1 moved to [-10.6, 15.2] (was inside the castle) (agent)
@@ -254,6 +255,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T166: from the start ring the faro sits at the left edge of the frame (castle's old framing); a `.gitattributes` eol=lf rule (CRLF keeps coming back) (agent)
 - 2026-10-06 T160: Blender glb models for the built islands; clouds drift over the arena; the saved boat position can be the plane's during a game (moved to free water on reload) (agent)
 - 2026-10-06 T157: `mundos/arcilla/mapa.json` still describes the lighthouse minigame; generic `win_minigame`+`played` achievement logic now unused; es-zonas.ts has 2 keys not in textos-zonas.md (`naufrago.revisit`, `achievements.castaway.description`) so the i18n-zonas generator would delete them (agent)
 - 2026-10-06 T159: Tormenta too harsh (bot falls before 160 s, cannot afford early islands); Normal 7/10 min too easy — for T165 (agent)
@@ -286,3 +288,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 04:51 T160 integrated → a3eb373 (tests ok); worktree and branch removed
 - 2026-10-06 04:54 T166 done by agent; integration conflict with T160 in mar3d.ts → sent back to the same agent
 - 2026-10-06 04:55 T161 launched · attempt 1 · agent a00ad88501b2c5a66 (opus)
+- 2026-10-06 05:03 T166 integrated → f7d1610 (tests ok); worktree and branch removed
