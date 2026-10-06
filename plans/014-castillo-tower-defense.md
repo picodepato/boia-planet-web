@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 run: T159 integration failed only by vitest timeouts (23, all "Test timed out", incl. untouched barco/world suites) while T156 runs the full e2e; main reverted (a2245f5/838bfca); not counted as a failure, re-integrate the same branch once T156 is done (orchestrator)
 - 2026-10-06 T158: subpath export `@boia/engine/defense` in packages/engine/package.json (outside listed scope, follows ./survivors) (agent)
 - 2026-10-06 T158: wave schedule independent of the seed (same waves for everyone in a table); seed only sets lane offsets; enemy speed = pace × length / normalWalkS (40 s) (agent)
 - 2026-10-06 T158: geometry relative to the castle at (0,0): castle r 208, islandRadius 70, path width 90, vortex at 980 u (r 90), arena 1120; zigzag teeth point inward so the turn gap stays 437 u (370 needed) (agent)
@@ -266,3 +267,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 00:45 T167 done by agent (Codex) → integrating
 - 2026-10-06 00:46 T159 launched · attempt 1 · agent a154089e69d570357 (opus)
 - 2026-10-06 00:48 T167 integrated → 0ffe77f (tests ok); worktree and branch removed
+- 2026-10-06 01:44 T159 done by agent (0e1f5bb); integration tests_failed by timeouts only under load → reverted, re-integrate after T156
