@@ -4,12 +4,31 @@ import {
   SURVIVORS_STEP_S,
   type SurvivorsConfig,
 } from '@boia/engine/survivors';
-import { Box3, Color, type Material, Vector3 } from 'three';
+import {
+  Box3,
+  BoxGeometry,
+  Color,
+  Group,
+  type Material,
+  Mesh,
+  MeshStandardMaterial,
+  type Object3D,
+  Vector3,
+} from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '../../../lib/i18n';
 import { toScene } from './compress';
+import { EnemyModel } from './enemy-models';
 import { SurvivorsVecino, VECINO_COLORS, vecinoGeometry } from './survivors-vecino';
 import { SurvivorsView } from './survivors-view';
+
+/** Un «GLB» del Vecino ya cargado: una caja de otro tamaño, para distinguirla de la de a mano. */
+function fakeVecinoScene(): Object3D {
+  const root = new Group();
+  root.add(new Mesh(new BoxGeometry(4, 1, 2), new MeshStandardMaterial({ color: '#123456' })));
+  return root;
+}
+const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 function setup(reduced = false, quality: 'alta' | 'baja' = 'alta') {
   const config: SurvivorsConfig = structuredClone(SURVIVORS_CONFIG);
@@ -175,5 +194,96 @@ describe('Vecino low-poly model and view', () => {
     model.barge.geometry.addEventListener('dispose', disposed);
     model.dispose();
     expect(disposed).toHaveBeenCalledOnce();
+  });
+});
+
+describe('the Vecino with its Blender model (T174)', () => {
+  it('starts with the handmade barge and swaps to the GLB geometry when it loads; bob and heading keep working', async () => {
+    const model = new EnemyModel({ file: 'vecino.glb', radius: 1 }, async () => fakeVecinoScene());
+    const { game, view } = setup();
+    // The view built here has no model: give one to a fresh Vecino in the same way the view does.
+    view.dispose();
+    const v = new SurvivorsVecino('alta', model);
+    const handmade = v.barge.geometry;
+    expect(v.modelState).toBe('cargando');
+    expect(handmade.getAttribute('color')).toBeTruthy();
+    const handmadeDisposed = vi.fn();
+    handmade.addEventListener('dispose', handmadeDisposed);
+    await tick();
+    expect(v.modelState).toBe('glb');
+    expect(v.barge.geometry).not.toBe(handmade);
+    expect(v.barge.geometry).toBe(model.loaded);
+    expect(handmadeDisposed).toHaveBeenCalledOnce();
+    // Same material (vertex colours, flat shading) and the same attributes as the handmade piece.
+    expect(v.barge.geometry.getAttribute('color')).toBeTruthy();
+    expect(v.barge.geometry.index).toBeNull();
+    const size = new Box3().setFromBufferAttribute(v.barge.geometry.getAttribute('position') as never).getSize(new Vector3());
+    expect(size.x).toBeCloseTo(4, 5);
+    // The animation is on the mesh, not the geometry: it keeps running after the swap.
+    const b = game.spawnBoss('vecino', 300, 0)!;
+    v.update(game.snapshot(), 1, false);
+    expect(v.barge.visible).toBe(true);
+    expect(v.barge.position.x).toBe(toScene(b.x));
+    expect(v.barge.scale.x).toBe(toScene(b.radius));
+    expect(v.barge.rotation.y).toBe(-b.heading);
+    expect(v.barge.position.y).not.toBe(0);
+    // Disposing the view releases the model but never destroys the shared geometry itself.
+    const shared = model.loaded!;
+    const sharedDisposed = vi.fn();
+    shared.addEventListener('dispose', sharedDisposed);
+    // A second user keeps it alive.
+    await model.acquire();
+    v.dispose();
+    expect(sharedDisposed).not.toHaveBeenCalled();
+    expect(model.loaded).toBe(shared);
+    model.release();
+    expect(sharedDisposed).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the handmade barge when the GLB fails to load', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const model = new EnemyModel({ file: 'vecino.glb', radius: 1 }, async () => {
+      throw new Error('no');
+    });
+    const v = new SurvivorsVecino('baja', model);
+    const handmade = v.barge.geometry;
+    await tick();
+    expect(v.modelState).toBe('error');
+    expect(v.barge.geometry).toBe(handmade);
+    const disposed = vi.fn();
+    handmade.addEventListener('dispose', disposed);
+    v.dispose();
+    expect(disposed).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
+  it('a view disposed before the GLB arrives ignores it', async () => {
+    let resolve!: (o: Object3D) => void;
+    const model = new EnemyModel(
+      { file: 'vecino.glb', radius: 1 },
+      () => new Promise<Object3D>((r) => (resolve = r)),
+    );
+    const v = new SurvivorsVecino('baja', model);
+    v.dispose();
+    resolve(fakeVecinoScene());
+    await tick();
+    expect(v.modelState).toBe('cargando');
+    expect(model.loaded).toBeNull();
+  });
+
+  it('the SurvivorsView passes the model to its Vecino', async () => {
+    const model = new EnemyModel({ file: 'vecino.glb', radius: 1 }, async () => fakeVecinoScene());
+    const config: SurvivorsConfig = structuredClone(SURVIVORS_CONFIG);
+    const game = createSurvivors(config, 7, {
+      bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 },
+      obstacles: [],
+      start: { x: 0, y: 0 },
+    });
+    const view = new SurvivorsView(config, game.caps, { quality: 'baja', vecinoModel: model });
+    await tick();
+    expect(view.vecino!.modelState).toBe('glb');
+    expect(view.vecino!.barge.geometry).toBe(model.loaded);
+    view.dispose();
+    expect(model.loaded).toBeNull();
   });
 });

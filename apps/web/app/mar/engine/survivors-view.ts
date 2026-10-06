@@ -24,6 +24,7 @@ import { SurvivorsPickups } from './survivors-pickups';
 import { SurvivorsReadouts } from './survivors-readouts';
 import { SurvivorsShark } from './survivors-shark';
 import { SurvivorsWeapons } from './survivors-weapons';
+import type { EnemyModel } from './enemy-models';
 import { SurvivorsVecino } from './survivors-vecino';
 import { SurvivorsKraken } from './survivors-kraken';
 import { curveTree } from './planet';
@@ -111,6 +112,8 @@ export interface SurvivorsViewOptions {
    * tienda los brazos hacia la isla que agarra (T142). Sin valor, a su espalda.
    */
   sea?: Pick<SurvivorsWorld, 'bounds' | 'obstacles'>;
+  /** El modelo de Blender del Vecino (T174); sin él, la barcaza de a mano. */
+  vecinoModel?: EnemyModel | null;
 }
 
 export class SurvivorsView {
@@ -207,7 +210,9 @@ export class SurvivorsView {
       this.ghostShip = { solid, ghost };
       this.group.add(solid, ghost);
     } else this.ghostShip = null;
-    this.vecino = config.bosses.vecino ? new SurvivorsVecino(this.quality) : null;
+    this.vecino = config.bosses.vecino
+      ? new SurvivorsVecino(this.quality, opts.vecinoModel ?? null)
+      : null;
     if (this.vecino) this.group.add(this.vecino.group);
     this.kraken = config.bosses.kraken ? new SurvivorsKraken(this.quality, opts.sea ?? null) : null;
     if (this.kraken) this.group.add(this.kraken.group);

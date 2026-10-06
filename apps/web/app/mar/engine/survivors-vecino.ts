@@ -20,6 +20,7 @@ import {
 import { t } from '../../../lib/i18n';
 import { litMaterial } from './characters';
 import { toScene } from './compress';
+import type { EnemyModel, EnemyModelState } from './enemy-models';
 import { Kit, type Place } from './kit';
 
 /** Colores muestra: barcaza naranja, megáfono crema con boca oscura. */
@@ -91,7 +92,15 @@ function shoutTexture(): CanvasTexture | null {
   return texture;
 }
 
-/** Barcaza + un lote de arcos, sin crear geometrías/materiales durante update. */
+/**
+ * Barcaza + un lote de arcos, sin crear geometrías/materiales durante update.
+ *
+ * La barcaza empieza con la geometría de a mano (`vecinoGeometry`) y, si se
+ * le da el modelo de Blender (T174, `enemy-models.ts`), cambia a su
+ * geometría cuando llega: la misma `Mesh`, el mismo material y el mismo
+ * vaivén, giro y escala (el radio de choque no cambia). Si falla, se queda
+ * la de a mano. `modelState` lo dice (`data-canon-vecino`).
+ */
 export class SurvivorsVecino {
   readonly group = new Group();
   readonly barge = new Mesh(vecinoGeometry(), litMaterial());
@@ -103,12 +112,33 @@ export class SurvivorsVecino {
   private readonly segments: number;
   private readonly warning = new Color(VECINO_COLORS.warning);
   private readonly hit = new Color(VECINO_COLORS.hit);
+  private readonly model: EnemyModel | null;
+  /** La geometría del modelo puesta en la barcaza (es del modelo: no se destruye aquí). */
+  private glb: BufferGeometry | null = null;
+  private disposed = false;
+  modelState: EnemyModelState = 'procedural';
 
-  constructor(quality: QualityTier) {
+  constructor(quality: QualityTier, model: EnemyModel | null = null) {
     this.group.name = 'survivors-vecino';
     this.barge.name = 'survivors-boss-vecino';
     this.barge.rotation.order = 'YXZ';
     this.barge.visible = false;
+    this.model = model;
+    if (model) {
+      this.modelState = 'cargando';
+      void model.acquire().then((g) => {
+        if (this.disposed) return;
+        if (!g) {
+          this.modelState = 'error';
+          return;
+        }
+        const handmade = this.barge.geometry;
+        this.barge.geometry = g;
+        this.glb = g;
+        handmade.dispose();
+        this.modelState = 'glb';
+      });
+    }
     this.segments = quality === 'baja' ? 64 : 96;
     const capacity = 4 * (this.segments + 32) * 6;
     this.positions = new BufferAttribute(new Float32Array(capacity * 3), 3).setUsage(
@@ -199,13 +229,17 @@ export class SurvivorsVecino {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.group.removeFromParent();
     this.texture?.dispose();
     this.group.traverse((o) => {
       const mesh = o as Mesh;
       if (!mesh.isMesh) return;
-      mesh.geometry.dispose();
+      // La geometría del modelo es compartida: la suelta `release`, no se destruye aquí.
+      if (mesh.geometry !== this.glb) mesh.geometry.dispose();
       (mesh.material as Material).dispose();
     });
+    this.glb = null;
+    this.model?.release();
   }
 }

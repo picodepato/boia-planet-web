@@ -1,0 +1,19 @@
+{
+ "status": "muestra",
+ "nota": "Generado por tools/blender/export_enemigos_glb.py desde tools/blender/enemigos/<id>.py. No editar.",
+ "unidades": "Blender: frente (rumbo 0) a +X, que en glTF (y arriba) sigue siendo +x; agua en y = 0; centro en el origen; /mar escala el modelo por su radio de escena / radius",
+ "max_tris": 9000,
+ "enemigos": [
+  {
+   "id": "vecino",
+   "file": "vecino.glb",
+   "label": "El Vecino Quejica",
+   "radius": 1.0,
+   "length": 2.66,
+   "height": 2.18,
+   "tris": 5912,
+   "kb": 131,
+   "doc": "barcaza de obra naranja con neumáticos y barandilla; encima, el vecino de arriba en batita azul, gorro de dormir y zapatillas, barrigón y furioso (cejas en pico, boca abierta, venita en la frente), con el periódico enrollado en alto y la otra mano en un megáfono enorme de color crema que apunta al frente"
+  }
+ ]
+}

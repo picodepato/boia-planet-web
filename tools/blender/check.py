@@ -1201,6 +1201,87 @@ def check_islas_3d(art):
     return label, "island-glb", fails, info, len(man["islas"])
 
 
+# --- Enemigos de Blender del mar 3D (plan 015, T174): art/enemigos/3d/ ------------------------------
+ENEMIGOS_SUBDIR = os.path.join("enemigos", "3d")
+ENEMIGOS_DIR = os.path.join(HERE, "enemigos")
+ENEMIGOS_NOT_ENEMIES = {"__init__"}
+
+
+def export_enemigos_max_tris():
+    """MAX_TRIS de export_enemigos_glb.py: el presupuesto de triángulos de cada enemigo."""
+    return module_constants(os.path.join(HERE, "export_enemigos_glb.py"), ["MAX_TRIS"])["MAX_TRIS"]
+
+
+def check_enemigos_3d(art):
+    """-> (label, kind, fails, info, n_glb). Cada enemigo de tools/blender/enemigos/ con su GLB, en presupuesto,
+    una sola malla, sin texturas ni transformaciones en los nodos (/mar lo aplana a una geometría con el color
+    en los vértices y lo escala por `radius`)."""
+    label = ENEMIGOS_SUBDIR.replace(os.sep, "/")
+    fails, info = [], []
+    res = os.path.join(art, ENEMIGOS_SUBDIR)
+    mpath = os.path.join(res, "manifest.json")
+    modules = sorted(f[:-3] for f in os.listdir(ENEMIGOS_DIR)
+                     if f.endswith(".py") and f[:-3] not in ENEMIGOS_NOT_ENEMIES)
+    if not os.path.exists(mpath):
+        return label, "enemy-glb", ["falta %s (Blender -b -P tools/blender/export_enemigos_glb.py)"
+                                    % os.path.relpath(mpath, REPO)], info, 0
+    with open(mpath, encoding="utf-8") as f:
+        man = json.load(f)
+    with open(os.path.join(HERE, "enemigo3d.schema.json"), encoding="utf-8") as f:
+        schema = json.load(f)
+    errs = validate(man, schema, schema)
+    if errs:
+        return label, "enemy-glb", errs, info, 0
+    budget = export_enemigos_max_tris()
+    if man["max_tris"] != budget:
+        fails.append("max_tris %d; export_enemigos_glb.MAX_TRIS es %d (vuelve a exportar)" % (man["max_tris"], budget))
+    ids = [e["id"] for e in man["enemigos"]]
+    if len(set(ids)) != len(ids):
+        fails.append("ids repetidos: %s" % ids)
+    for m in modules:
+        if m not in ids:
+            fails.append("tools/blender/enemigos/%s.py sin GLB en el manifiesto (exporta con --only %s)" % (m, m))
+    on_disk = sorted(f for f in os.listdir(res) if f.endswith(".glb"))
+    listed = sorted(e["file"] for e in man["enemigos"])
+    if on_disk != listed:
+        fails.append("GLB en la carpeta %s; en el manifiesto %s" % (on_disk, listed))
+    for e in man["enemigos"]:
+        eid = e["id"]
+        if eid not in modules:
+            fails.append("%s: sin módulo tools/blender/enemigos/%s.py" % (eid, eid))
+        else:
+            consts = module_constants(os.path.join(ENEMIGOS_DIR, eid + ".py"), ["RADIUS"])
+            if abs(consts["RADIUS"] - e["radius"]) > 1e-9:
+                fails.append("%s: radius %r en el manifiesto; RADIUS %r en el módulo" % (eid, e["radius"], consts["RADIUS"]))
+        if e["file"] != eid + ".glb":
+            fails.append("%s: el archivo se llama %r (se espera %s.glb)" % (eid, e["file"], eid))
+        path = os.path.join(res, e["file"])
+        if not os.path.exists(path):
+            fails.append("%s: falta %s" % (eid, e["file"]))
+            continue
+        try:
+            tris, n_mats, n_meshes, n_glow = glb_summary(path)
+            doc = glb_doc(path)
+        except (ValueError, KeyError, IndexError, json.JSONDecodeError) as err:
+            fails.append("%s: %s ilegible: %s" % (eid, e["file"], err))
+            continue
+        if tris > budget:
+            fails.append("%s: %d triángulos > presupuesto %d" % (eid, tris, budget))
+        if tris != e["tris"]:
+            fails.append("%s: el GLB tiene %d triángulos; el manifiesto dice %d" % (eid, tris, e["tris"]))
+        if n_meshes != 1:
+            fails.append("%s: %d mallas (se juntan en una: una llamada de dibujo por material)" % (eid, n_meshes))
+        if doc.get("images") or doc.get("textures") or any("uri" in b for b in doc.get("buffers", [])):
+            fails.append("%s: con texturas o archivos aparte (tiene que ir solo, un color plano por material)" % eid)
+        if any(any(k in n for k in ("matrix", "translation", "rotation", "scale")) for n in doc.get("nodes", [])):
+            fails.append("%s: nodos con transformación (la malla va en unidades del modelo, sin mover)" % eid)
+        if e["length"] <= 0 or e["height"] <= 0:
+            fails.append("%s: largo %r y alto %r tienen que ser positivos" % (eid, e["length"], e["height"]))
+        info.append("%s: %d/%d triángulos, %d materiales (%d emisivos), %d kB"
+                    % (eid, tris, budget, n_mats, n_glow, os.path.getsize(path) // 1024))
+    return label, "enemy-glb", fails, info, len(man["enemigos"])
+
+
 # --- Props del hero de la landing (T78): art/landing/3d/ y los stills ----------------------------
 LANDING_SUBDIR = os.path.join("landing", "3d")
 LANDING_TOOLS = os.path.join(HERE, "landing")
@@ -1439,6 +1520,7 @@ def main():
     batches.append([check_islas_3d(a.art)])   # art/islas/3d/ (T69)
     batches.append([check_landing_3d(a.art)])   # art/landing/3d/ y los stills (T78)
     batches.append([check_decor_3d(a.art)])   # art/decor/3d/ (T101)
+    batches.append([check_enemigos_3d(a.art)])   # art/enemigos/3d/ (plan 015, T174)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:

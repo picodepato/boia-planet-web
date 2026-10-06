@@ -24,6 +24,7 @@ import {
 import { litMaterial } from './characters';
 import { toScene } from './compress';
 import { type ArenaFrame, barrierLines, cornerBuoys } from './defense-arena';
+import type { EnemyModel, EnemyModelState } from './enemy-models';
 import { DefenseFx } from './defense-fx';
 import { TowerIslands } from './defense-islands';
 import { Kit } from './kit';
@@ -151,6 +152,8 @@ export interface DefenseViewOptions {
   frame: ArenaFrame;
   quality?: QualityTier;
   reduced?: boolean;
+  /** El modelo de Blender del Vecino (T174); sin él, la barcaza de a mano. */
+  vecinoModel?: EnemyModel | null;
 }
 
 export class DefenseView {
@@ -182,6 +185,11 @@ export class DefenseView {
   private building = false;
   /** Enemigos pintados en el último `update` (pruebas). */
   drawn = 0;
+  /** El modelo de Blender del Vecino (T174) y su geometría puesta en su pieza (del modelo: no se destruye aquí). */
+  private readonly vecinoModel: EnemyModel | null;
+  private vecinoGlb: BufferGeometry | null = null;
+  private disposed = false;
+  vecinoState: EnemyModelState = 'procedural';
 
   constructor(o: DefenseViewOptions) {
     this.cfg = o.config;
@@ -241,6 +249,24 @@ export class DefenseView {
       if (!geo) continue;
       const mat = id === 'fantasma' ? ghostShipMaterial(false) : id === 'martillo' ? propsMaterial() : litMaterial();
       this.addKind(id, instanced(geo, mat, BOSS_CAP, `defense-boss-${id}`), BOSS_SCALE[id] ?? 1, 0.06, 0, id === 'kraken' ? KRAKEN_HEAD_Y.exposed : 0);
+    }
+    // El Vecino de Blender (T174): cuando llega, su geometría en la misma pieza instanciada.
+    this.vecinoModel = o.vecinoModel ?? null;
+    const vecinoMesh = this.meshes.get('vecino');
+    if (this.vecinoModel && vecinoMesh) {
+      this.vecinoState = 'cargando';
+      void this.vecinoModel.acquire().then((g) => {
+        if (this.disposed) return;
+        if (!g) {
+          this.vecinoState = 'error';
+          return;
+        }
+        const handmade = vecinoMesh.geometry;
+        vecinoMesh.geometry = g;
+        this.vecinoGlb = g;
+        handmade.dispose();
+        this.vecinoState = 'glb';
+      });
     }
 
     // El golpe al castillo y el anillo de construir.
@@ -435,12 +461,16 @@ export class DefenseView {
     this.group.remove(this.islands.group, ...this.fx.meshes);
     this.islands.dispose();
     this.fx.dispose();
+    this.disposed = true;
     this.group.traverse((o) => {
       const m = o as Mesh;
-      m.geometry?.dispose();
+      // La geometría del Vecino de Blender es del modelo compartido: la suelta `release`.
+      if (m.geometry !== this.vecinoGlb) m.geometry?.dispose();
       const mat = m.material as Material | Material[] | undefined;
       if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
       else mat?.dispose();
     });
+    this.vecinoGlb = null;
+    this.vecinoModel?.release();
   }
 }

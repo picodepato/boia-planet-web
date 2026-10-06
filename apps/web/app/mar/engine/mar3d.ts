@@ -76,6 +76,7 @@ import { fromScene, toScene } from './compress';
 import { FOCUS_RATE, lookAhead, startZoom } from './framing';
 import { buildDecor } from './decor';
 import { DecorModel } from './decor-model';
+import { EnemyModel } from './enemy-models';
 import { Wildlife, waterClear } from './wildlife';
 import type { ShipDressing } from '../../../lib/barco/dressing';
 import {
@@ -677,6 +678,8 @@ export class Mar3D {
   // Modelos de Blender por distancia (T51).
   private readonly modelStore = new ModelStore();
   private readonly castleModel = new DecorModel();
+  // El Vecino Quejica de Blender (T174): lo comparten el Cañón y el castillo; se carga al pedirlo la primera vista.
+  private readonly vecinoModel = new EnemyModel();
   private readonly modelViews = new Map<string, ModelView>();
   private modelClock = MODEL_PLAN_S;
   // Islas de Blender (T69): cada isla del mapa tiene su hueco; las del manifiesto, modelo por distancia.
@@ -1527,6 +1530,7 @@ export class Mar3D {
       groundAt: (x, z) => this.groundAt(x, z),
       // El Kraken tiende los brazos hacia la isla que agarra (T142).
       sea: run.game.world,
+      vecinoModel: this.vecinoModel,
     });
     this.scene.add(view.group);
     this.camTuning = run.config.camera;
@@ -1584,6 +1588,7 @@ export class Mar3D {
     delete this.opts.canvas.dataset.canonJefesVistos;
     delete this.opts.canvas.dataset.canonBoss;
     delete this.opts.canvas.dataset.canonBossVista;
+    delete this.opts.canvas.dataset.canonVecino;
     this.prev.x = this.ship.x;
     this.prev.y = this.ship.y;
     this.prev.heading = this.ship.heading;
@@ -1682,6 +1687,7 @@ export class Mar3D {
       frame,
       quality: run.quality,
       reduced: this.reducedMotion,
+      vecinoModel: this.vecinoModel,
     });
     this.scene.add(view.group);
     const s = this.ship;
@@ -1742,6 +1748,7 @@ export class Mar3D {
       'arenaElegida',
       'arenaIslasPantalla',
       'arenaToque',
+      'arenaVecino',
     ])
       delete ds[k];
   }
@@ -1833,6 +1840,7 @@ export class Mar3D {
     set('castilloVista', castle?.obj.visible ? 'si' : 'no');
     set('arenaEnemigos', String(df.view.drawn));
     set('arenaTipos', df.view.drawnKinds().join(' '));
+    set('arenaVecino', df.view.vecinoState);
     const snap = df.run.snapshot();
     const path = df.run.game.path;
     let out = 0;
@@ -1958,6 +1966,7 @@ export class Mar3D {
     });
     this.modelStore.destroy();
     this.castleModel.destroy();
+    this.vecinoModel.destroy();
     for (const v of this.islandModels.values()) {
       v.motion?.dispose();
       v.motion = null;
@@ -2999,6 +3008,10 @@ export class Mar3D {
       this.opts.canvas.dataset.canonTurbo = String(movement.turboS);
       this.opts.canvas.dataset.canonTurboCooldown = String(movement.cooldownS);
       this.opts.canvas.dataset.canonSpeed = String(Math.hypot(sv.player.vx, sv.player.vy));
+      // El Vecino: con su modelo de Blender o con la barcaza de a mano (T174).
+      const vecinoState = sv.view.vecino?.modelState ?? 'procedural';
+      if (this.opts.canvas.dataset.canonVecino !== vecinoState)
+        this.opts.canvas.dataset.canonVecino = vecinoState;
       const p = sv.player;
       s.x = p.x;
       s.y = p.y;
