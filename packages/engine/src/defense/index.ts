@@ -6,3 +6,5 @@ export * from './sim';
 export * from './medals';
 export * from './clock';
 export * from './bots';
+export * from './build';
+export * from './geometry';
