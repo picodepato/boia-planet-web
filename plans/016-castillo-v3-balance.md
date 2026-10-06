@@ -1,6 +1,6 @@
 # Plan 016 — Castle v3: Ibiza, +15 % damage, camera, wider U-turns; Fiestera and /mar fixes
 
-Status: active
+Status: done
 Created: 2026-10-06
 Base branch: main
 Goal: Third round on the «Defensa del Castillo» from Hernán's notes and answers of 2026-10-06 (`plans/016-notes.md`, folded below). (1) Ibiza paid back in 45/30/20 s with smaller payouts for extra Ibizas, with a big golden «+N» on each payout; +15 % damage for every island but Halloween and Sonido. (2) Wider U-turns, a camera that centres the plane when zoomed in, the castle upgrade sound, no turbo in the arena. (3) The Boia Fiestera to the right of the yellow route line just before the Puerto de Alicante. (4) /mar fixes: arrows dead after «Mi Barco», guide bubbles pointing at the plane and the island, and achievement texts.
@@ -100,7 +100,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: migration 20261006100600 (not applied): one-row counter as column default in the same insert (no gaps, existing numbers kept), admin «Cambiar nº» to a free number with audit, artist link `/artista/<code>` (hashed, rotated from admin Socios), «ARTISTA» stamp top-centre on the front (dark ink, muestra); SQL tests written, not run · 9403d5a
 
 ## T185 — Close: full e2e, balance check, docs, test guide
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T180, T181, T183, T184, T186
 - Model: opus
 - Goal: Close the plan: full e2e, a last balance check with everything in, docs and spec status, and a short test guide for Hernán.
@@ -112,7 +112,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - `python3 tools/spec/estado.py` → exit 0
   - test guide `docs/propuestas/2026-10-06-castillo-v3-guia-prueba.md` (what changed, how to try it, what to answer)
   - Test command → exit 0
-- Outcome:
+- Outcome: guide docs/propuestas/2026-10-06-castillo-v3-guia-prueba.md, spec estado and TRASPASO updated; test:slow 29/29 (bot holds every difficulty at 100 %; Puerto or Benidorm alone + Ibiza hold Tormenta); estado.py OK; full e2e NOT run (machine shutdown, Hernán chose to close); attempt 2 fixed an estado.md citation that defused test_estado.py · 4451df3
 
 ## Decisions
 - 2026-10-06 plan: decisions 1–12 above from Hernán's notes and answers in the session; extra Ibizas 100/70/50 %; Ibiza money collected by tap, key or plane pass, pile capped at 60 s of payout, no guide step; turbo hidden only in the castle (Hernán)
@@ -151,3 +151,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 21:06 T186 launched · attempt 1 · agent abef4ce5425b18c02 (opus)
 - 2026-10-06 21:18 T183 integrated → da0d95f (tests ok); worktree and branch removed
 - 2026-10-06 21:27 T186 integrated → 9403d5a (tests ok); worktree and branch removed
+- 2026-10-06 21:29 T185 launched · attempt 1 · agent a98da2ba6e1382abf (opus)
+- 2026-10-06 pushed main 2576de4 to Vercel and applied migrations 20261006100500, 20261006100600 to the dev Supabase (pnpm db:migrate:dev OK; db:types:dev no diff) on Hernán's Telegram reply («Aplica a supabase y sube a main»)
+- 2026-10-06 pnpm test:supabase on dev after the migrations: 93/93 (11 files), exit 0
+- 2026-10-06 T185 orphaned by a session restart: leftovers committed as 9734fb0 «T185: WIP», same agent resumed via SendMessage
+- 2026-10-06 22:05 Hernán: close without the full e2e (cut by a machine shutdown); T185 committed 60a0c54, integration tests_failed (tools/spec/test_estado.py test_titulo_que_no_existe), reverted 4b5e155
+- 2026-10-06 22:06 T185 continuation · attempt 2 · agent ad7a8a320e0704b9d (opus)
+- 2026-10-06 22:12 T185 integrated → 4451df3 (tests ok); worktrees and branches removed; plan done
