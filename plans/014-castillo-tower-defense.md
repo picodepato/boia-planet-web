@@ -151,7 +151,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: castle pop-up (3 difficulties × 5/7/10 min, best medal per pair, ranking area), final card with medal/score/«Otra vez», medals as progress counters `castillo:<min>-<dif>:medalla`, board shows the best; `vencer=1`, `oferta=1` · efaa1b0
 
 ## T163 — Castle ranking per run length × difficulty, local and global
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T162
@@ -162,7 +162,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - unit tests: table separation, score order, rejected submissions (shortcut, quit, impossible) → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "ranking"` (local mode: sample crew + own score) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: nine castle ranking tables (length × difficulty), sample crew locally, global RPC with anti-cheat (migration 20261006100300_castle_ranking.sql, checked statically only, not applied), shown in the pop-up and on the card; done by Codex · b39237f
 
 ## T164 — Sound for the castle
 - Status: done
@@ -213,7 +213,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: «Bandera» section and flag drawing removed; saved flags dropped on load (local and Supabase), no refund; done by Codex · 0ffe77f
 
 ## T165 — Close: balance, performance, full e2e, docs, Álvaro draft
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T157, T158, T159, T160, T161, T162, T163, T164, T166, T167
@@ -258,6 +258,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T163: the castle ranking migration was never run against Postgres (none on this machine); Hernán applies and tests it on a real project (agent)
 - 2026-10-06 T162: the T161 «construir…» castle e2e on desktop depends on coins earned during slow flights and flakes under load — for T165 (agent)
 - 2026-10-06 T161: turbo and the speed readout stay visible during the castle game (agent)
 - 2026-10-06 T166: from the start ring the faro sits at the left edge of the frame (castle's old framing); a `.gitattributes` eol=lf rule (CRLF keeps coming back) (agent)
@@ -303,3 +304,5 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 06:55 T162 integrated → efaa1b0 (tests ok); worktree and branch removed
 - 2026-10-06 06:56 T163 launched · attempt 1 · Codex via wrapper agent a84b410b9f9bd60bd (sonnet)
 - 2026-10-06 push offer T157 wait hit the 2 h tool limit, not restarted; Hernán told in the session
+- 2026-10-06 07:19 T163 integrated → b39237f (tests ok); worktree and branch removed
+- 2026-10-06 07:21 T165 launched · attempt 1 · agent af58835bcd86a253d (opus)
