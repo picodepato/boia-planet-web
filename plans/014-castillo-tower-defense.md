@@ -312,3 +312,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 07:21 T165 launched · attempt 1 · agent af58835bcd86a253d (opus)
 - 2026-10-06 pushed main to Vercel (6826256, T157–T164 + T166/T167) on Hernán's Telegram yes
 - 2026-10-06 09:52 T165 integrated → 77c68db (tests ok); final test on main pass; plan done
+- 2026-10-06 pushed main to Vercel (c02b4b5, whole plan) on Hernán's Telegram yes; T165 worktree and branch removed
