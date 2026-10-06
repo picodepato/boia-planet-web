@@ -4,6 +4,74 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T170: Castle arena v2
+
+Qué existe (la vista 3D de la arena; sin tocar las reglas de la partida):
+
+- **Zoom de la arena** (decisiones 3 y 4): `ArenaZoom` y `arenaCameraPose({ zoom })`
+  en `apps/web/app/mar/engine/defense-arena.ts`. 1 = la vista de salida de siempre
+  (la más abierta: no se aleja más), 0 = `ARENA_ZOOM_NEAR` (0,3) de esa distancia. Lo
+  mueven los mandos del juego (carril +/−, rueda, pellizco, teclas +/−) vía
+  `Mar3D.zoomBy` y el pellizco; el foco se corre hacia el avión lo justo para que lo
+  que se ve nunca pase del borde de la arena (de cerca sigue al avión). En la arena
+  no se arrastra el mapa (el dedo lleva el avión). Abrir «Construir» o empezar a
+  colocar (`DefenseRun.building`) vuelve a la vista de salida; el zoom sigue
+  disponible. El carril del zoom ya se ve en la arena (encima de la franja; en
+  pantallas < 900 px se aparta mientras la franja enseña lista, colocar o ficha).
+- **Toques** (decisión 6): `DefenseRun.tap` devuelve `CastleTap`: colocando, la isla
+  queda en el sitio tocado (`CastlePlacing.at`; sin toque sigue bajo el avión, para
+  el teclado); en una isla construida, la elige (el HUD abre su ficha); en el mar,
+  `moveTo` acotado con `defenseClampToArena` y cierra la ficha. Aro crema en el
+  destino del avión.
+- **Alcance** (decisión 5): aro + velo del `range` de la isla que se coloca (nivel 1,
+  verde/rojo con el motivo de la partida) y de la isla elegida a su nivel
+  (`towerRangeScene`); sin vuelta del planeta (en el borde de la arena pasaba de
+  medio planeta), puesto en la copia del castillo que se ve.
+- **Camino v2** (decisión 7): barreras, boyas de esquina y vórtice ya salían del
+  camino de la partida; nuevas boyas de acento por fuera de cada U (`uTurnBuoys`).
+- **Barras de vida y números de daño** (decisión 11): `defense-overlays.ts`.
+  `HealthBars` (2 `InstancedMesh`, sólo enemigos tocados, tope 96 en `baja`/160),
+  `DamageNumbers` (grupo fijo de 24/48 números × 4 cifras en una `InstancedMesh` con
+  cifras de un atlas, miran a la cámara, suben y se apagan; lleno → el más viejo),
+  `DamageTracker` (el daño se lee de la vida entre fotogramas, juntado en 0,4 s; al
+  caer, la vida que le quedaba). Interruptores: `DefenseView.setOverlays`,
+  `Mar3D.setDefenseOverlays`, y en `useCastleMode` `overlays`/`setOverlays`
+  (guardado en `localStorage` `boia:castillo:marcas`, los dos encendidos al
+  principio). El interruptor en la pausa es de T171.
+- **Nubes** (decisión 17): `defense-clouds.ts`, 4 nubes (3 en `baja`) bajas y medio
+  transparentes que derivan por la arena; se apagan al acercar el zoom; quietas con
+  movimiento reducido. Las nubes altas del mundo no se pintan en la arena.
+- Turbo y nudos: ya se veían en la arena (los cuenta la prueba de solapes de T161);
+  el turbo no hace nada en la arena (la partida no tiene turbo del avión).
+- Lienzo para pruebas: `data-arena-zoom`, `-motivo`, `-alcance` (u), `-destino`,
+  `-barras`, `-numeros`, `-nubes`, `-toque-tipo`.
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/app/mar/engine/defense-arena-v2.test.ts` → 17 passed
+  (zoom: límites y que nunca se ve fuera de la arena; toque → destino acotado; radio
+  del alcance = `range`; barras/números: topes, reutilización y apagados; opciones
+  guardadas; nubes).
+- `E2E_PORT=3171 pnpm e2e mar-castillo.spec.ts --workers=1 -g "arena|zoom|tap"` →
+  exit 0, 12 passed, 2 skipped (las de rendimiento sólo en móvil). Nuevas: «zoom: …»,
+  «tap: …», «arena: barras de vida y números de daño …».
+- Rendimiento en `baja` (móvil 360×640), en esa corrida: pico 10 min Tormenta con
+  siete islas a nivel 3: p50 16,7 / p95 33,4 / peor 50 ms (49 enemigos), CPU 4×
+  p95 50,1. Arena llena (75 islas con el camino v2): p95 50,1 en esa corrida, con
+  otros dos agentes; medida aparte en el mismo build (`next start`, sin la suite):
+  con barras y números p50 16,7 / p95 33,4; apagados p50 16,7 / p95 33,3-33,4: las
+  marcas no cuestan.
+- Test command por pasos: vitest 202 files / 1930 tests passed (exit 0);
+  `sh tools/spec/checks.sh` exit 0; `pnpm lint` exit 0; `pnpm build` exit 0;
+  `pnpm typecheck` exit 0.
+
+Pendiente:
+
+- T171: los interruptores de barras y números en la pausa (`castle.setOverlays`), el
+  botón «Instalar isla» y lo demás del HUD.
+- El turbo en la arena sigue sin efecto (haría falta un turbo del avión en la
+  partida).
+
 ## 2026-10-06 — plan 015 T168: Tabarca lighthouse near the start and the board pop-up v2
 
 What exists:

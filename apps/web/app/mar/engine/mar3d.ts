@@ -171,13 +171,19 @@ import type { SurvivorsRun } from '../survivors';
 import type { DefenseRun } from '../castillo';
 import {
   ARENA_CAMERA_S,
+  ARENA_ZOOM_NEAR,
   type ArenaFrame,
   ArenaSink,
+  ArenaZoom,
   SinkOffsets,
   arenaCameraPose,
   arenaFrame,
   vortexSpot,
 } from './defense-arena';
+import {
+  DEFAULT_DEFENSE_OVERLAYS,
+  type DefenseOverlayPrefs,
+} from './defense-overlays';
 import { DefenseView } from './defense-view';
 import {
   type Circle,
@@ -644,6 +650,14 @@ export class Mar3D {
   private arenaRadiusS = 70;
   /** El castillo de la arena en la escena, también mientras la cámara vuelve. */
   private readonly arenaCastle = new Vector2();
+  /** Lo mismo, en la copia del planeta que se ve ahora (las nubes de la arena). */
+  private readonly arenaCastleSeen = new Vector2();
+  /** El zoom de la arena (plan 015 T170): 1 la vista de salida, 0 lo más cerca. */
+  private readonly arenaZoom = new ArenaZoom();
+  /** Se estaba construyendo en el fotograma anterior (al abrir «Construir», la vista de salida). */
+  private arenaBuilding = false;
+  /** Las barras de vida y los números de daño de la arena (las opciones de la pausa). */
+  private defenseOverlays: DefenseOverlayPrefs = { ...DEFAULT_DEFENSE_OVERLAYS };
   /** El resto del mundo bajo el agua durante la partida del castillo. */
   private readonly sink = new ArenaSink();
   private readonly sinkOffsets = new SinkOffsets();
@@ -850,8 +864,11 @@ export class Mar3D {
   }
 
   zoomBy(d: number): void {
-    // En la arena del castillo, la cámara es la suya (T160).
-    if (this.defense) return;
+    // En la arena del castillo, su zoom (plan 015 T170): nunca más abierto que la vista de salida.
+    if (this.defense) {
+      this.arenaZoom.by(d);
+      return;
+    }
     this.zoomGoal = clamp01(this.zoomGoal + d);
     // En la partida del Cañón, sin vista de mapa.
     if (this.survivors) this.zoomGoal = Math.min(this.zoomGoal, MAP_ZOOM - 0.1);
@@ -1689,7 +1706,11 @@ export class Mar3D {
       reduced: this.reducedMotion,
       vecinoModel: this.vecinoModel,
     });
+    view.setOverlays(this.defenseOverlays);
     this.scene.add(view.group);
+    // Cada partida empieza en la vista de salida (plan 015 T170).
+    this.arenaZoom.reset(true);
+    this.arenaBuilding = false;
     const s = this.ship;
     this.defense = {
       run,
@@ -1748,7 +1769,15 @@ export class Mar3D {
       'arenaElegida',
       'arenaIslasPantalla',
       'arenaToque',
+      'arenaToqueTipo',
       'arenaVecino',
+      'arenaMotivo',
+      'arenaZoom',
+      'arenaAlcance',
+      'arenaDestino',
+      'arenaBarras',
+      'arenaNumeros',
+      'arenaNubes',
     ])
       delete ds[k];
   }
@@ -1761,6 +1790,21 @@ export class Mar3D {
   /** El anillo de construir alrededor del avión (T161 lo enciende al construir). */
   setDefenseBuilding(on: boolean): void {
     this.defense?.view.setBuilding(on);
+  }
+
+  /**
+   * Las barras de vida y los números de daño de la arena (plan 015 T170,
+   * decisión 11): las opciones de la pausa; valen también para la partida
+   * siguiente.
+   */
+  setDefenseOverlays(prefs: DefenseOverlayPrefs): void {
+    this.defenseOverlays = { bars: prefs.bars, numbers: prefs.numbers };
+    this.defense?.view.setOverlays(this.defenseOverlays);
+  }
+
+  /** El zoom de la arena ahora (1 la vista de salida, 0 lo más cerca; pruebas). */
+  get arenaZoomLevel(): number {
+    return this.arenaZoom.value;
   }
 
   /** El barco donde está el avión de la partida (u del planeta). */
@@ -1862,6 +1906,17 @@ export class Mar3D {
     // elegida y dónde se ve cada isla en la pantalla (px del lienzo), para tocarla.
     set('arenaColocar', df.view.marked.preview);
     set('arenaElegida', df.view.marked.selected ? 'si' : 'no');
+    // Plan 015 T170: el motivo de la vista previa roja, el alcance pintado
+    // (u de la partida), el zoom de la arena, adonde vuela el avión tras un
+    // toque, las barras de vida y los números de daño pintados y las nubes.
+    set('arenaMotivo', df.view.marked.reason);
+    set('arenaAlcance', String(Math.round(fromScene(df.view.range))));
+    set('arenaZoom', this.arenaZoom.value.toFixed(2));
+    const tg = snap.plane.target;
+    set('arenaDestino', tg ? `${Math.round(tg.x)},${Math.round(tg.y)}` : '');
+    set('arenaBarras', String(df.view.bars.drawn));
+    set('arenaNumeros', String(df.view.numbers.live));
+    set('arenaNubes', df.view.clouds.group.visible ? 'si' : 'no');
     const spots: string[] = [];
     for (const tw of snap.towers) {
       const p = df.view.at(tw.x, tw.y);
@@ -2687,7 +2742,10 @@ export class Mar3D {
     } else if (this.pointers.size === 2) {
       this.endStick();
       this.mode = 'pinch';
-      this.pinch = { d: this.pinchDistance(), zoom: this.zoomGoal };
+      this.pinch = {
+        d: this.pinchDistance(),
+        zoom: this.defense ? this.arenaZoom.goal : this.zoomGoal,
+      };
     }
   };
 
@@ -2702,13 +2760,22 @@ export class Mar3D {
       const d = this.pinchDistance();
       if (this.pinch.d > 0 && d > 0) {
         const ratio = Math.log(this.pinch.d / d) / Math.log(this.dFar / 16);
+        if (this.defense) {
+          // En la arena, su zoom (plan 015 T170): el mismo gesto, entre lo más cerca y la vista de salida.
+          // (la distancia de la cámara sigue a los dedos: separarlos el doble, la mitad de lejos).
+          this.arenaZoom.set(
+            this.pinch.zoom + Math.log(this.pinch.d / d) / Math.log(1 / ARENA_ZOOM_NEAR),
+          );
+          return;
+        }
         this.zoomGoal = clamp01(this.pinch.zoom + ratio);
         if (this.zoomGoal < MAP_ZOOM) this.lastBoatZoom = this.zoomGoal;
       }
       return;
     }
     if (this.mode === 'pending' && Math.hypot(p.x - p.sx, p.y - p.sy) > 9) {
-      if (this.zoom >= MAP_ZOOM) {
+      // En la arena no se arrastra el mapa (nunca se ve fuera de ella): el dedo lleva el avión.
+      if (this.zoom >= MAP_ZOOM && !this.defense) {
         this.mode = 'pan';
       } else {
         this.mode = 'stick';
@@ -2806,14 +2873,16 @@ export class Mar3D {
     const cam = ray.origin;
     const on = rayOnPlanet(cam.y, ray.direction.x, ray.direction.y, ray.direction.z, this.bend);
     const hit = tmpV.copy(ray.direction).multiplyScalar(on.t).add(cam);
-    // En la arena del castillo (T161): el toque es del HUD (colocar o elegir una isla).
+    // En la arena del castillo (T161; plan 015 T170, decisión 6): colocando,
+    // la isla va ahí; en una isla, se elige; en el mar, el avión vuela ahí.
     if (this.defense) {
       const df = this.defense;
       const dx = wrapD(hit.x - df.castle.x, this.periodS.w);
       const dz = wrapD(hit.z - df.castle.z, this.periodS.h);
       const p = df.frame.toSim(df.frame.cx + fromScene(dx), df.frame.cy + fromScene(dz));
-      df.run.tap(p.x, p.y);
+      const what = df.run.tap(p.x, p.y);
       this.opts.canvas.dataset.arenaToque = `${Math.round(p.x)},${Math.round(p.y)}`;
+      this.opts.canvas.dataset.arenaToqueTipo = what.type;
       return;
     }
     // ¿Cerca de un lugar con rótulo? Rumbo a él.
@@ -3229,12 +3298,21 @@ export class Mar3D {
     // El castillo de la arena, en la copia de alrededor de lo que se ve ahora.
     const acx = this.wrapC.x + wrapD(this.arenaCastle.x - this.wrapC.x, P.w);
     const acz = this.wrapC.y + wrapD(this.arenaCastle.y - this.wrapC.y, P.h);
+    this.arenaCastleSeen.set(acx, acz);
+    if (this.defense) {
+      // Al abrir «Construir» (o empezar a colocar), la vista de salida (plan 015 T170, decisión 4).
+      const building = this.defense.run.building;
+      if (building && !this.arenaBuilding) this.arenaZoom.reset();
+      this.arenaBuilding = building;
+    }
+    this.arenaZoom.step(dt, snap || this.reducedMotion);
     if (ab > 0) {
       const pose = arenaCameraPose({
         aspect: this.camera.aspect,
         fovDeg: 40,
         arenaRadius: this.arenaRadiusS,
         plane: { x: ship.x - acx, z: ship.z - acz },
+        zoom: this.arenaZoom.value,
       });
       dist = lerp(dist, pose.distance, ab);
       elev = lerp(elev, pose.elevation, ab);
@@ -3482,10 +3560,22 @@ export class Mar3D {
       df.view.reduced = this.reducedMotion;
       const snap = df.run.snapshot();
       const pl = df.run.placement(snap);
+      const selId = df.run.selected;
+      const sel = selId === null ? undefined : snap.towers.find((tw) => tw.id === selId);
       df.view.update(snap, t, { x, z }, {
-        preview: pl ? { x: pl.x, y: pl.y, ok: pl.check.ok } : null,
-        selected: df.run.selectedSpot(snap),
+        preview: pl
+          ? {
+              x: pl.x,
+              y: pl.y,
+              ok: pl.check.ok,
+              kind: pl.kind,
+              reason: pl.check.ok ? null : pl.check.reason,
+            }
+          : null,
+        selected: sel ? { x: sel.x, y: sel.y, kind: sel.kind, level: sel.level } : null,
+        target: snap.plane.target,
       });
+      df.view.sky(dt, { x: this.arenaCastleSeen.x, z: this.arenaCastleSeen.y }, this.arenaZoom.value);
       if (t - df.seenAt >= 0.25 || t < df.seenAt) this.markArena(t);
     }
     if (this.survivors) {
@@ -3504,7 +3594,8 @@ export class Mar3D {
     }
     this.routeLine.update(this.zoom);
     this.confetti.update(dt);
-    this.clouds.update(dt, cam.y, { x: fx, z: fz }, P);
+    // En la arena, las nubes son las suyas (bajas y pocas, plan 015 T170): las del mundo, fuera.
+    this.clouds.update(dt, this.defense ? 0 : cam.y, { x: fx, z: fz }, P);
     // El aviso de `change` de la preferencia no siempre llega (T165: con la
     // preferencia cambiada en caliente, la fauna seguía): se mira cada fotograma.
     if (this.reducedMotion !== this.wildlife.isReduced) this.onWildlifeMotion();
@@ -4057,7 +4148,8 @@ export class Mar3D {
     this.opts.onStats?.({
       fps: Math.round(this.fps),
       knots: Math.round(shipSpeed(this.ship) / 10),
-      zoom: this.zoom,
+      // En la arena, su zoom (1 la vista de salida): el carril lo enseña igual.
+      zoom: this.defense ? this.arenaZoom.value : this.zoom,
       mapMode: this.zoomGoal >= MAP_ZOOM,
       turbo: this.voyage || this.flight ? 1 : Math.max(0, this.turboLeft / TURBO_S),
       turboReady: 1 - Math.max(0, this.turboCool) / TURBO_COOLDOWN_S,

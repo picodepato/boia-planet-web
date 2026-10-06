@@ -32,6 +32,11 @@ import {
   withoutCastleShortcut,
 } from './castillo';
 import type { Mar3D } from './engine/mar3d';
+import {
+  type DefenseOverlayPrefs,
+  readDefenseOverlays,
+  saveDefenseOverlays,
+} from './engine/defense-overlays';
 import type { CanonAudioState } from './canon-audio';
 import { useCastleAudio } from './castillo-audio-mode';
 import { type HideLayer, devStartRewards, hideForGame, marHideHost, randomSeed } from './survivors';
@@ -123,6 +128,13 @@ export interface CastleMode {
   record: CastleMedalRecord | null;
   /** Tu mejor puntuación y puesto de esta partida (T163). */
   ranking: CastleRankingOutcome | null;
+  /**
+   * Barras de vida y números de daño en la arena (plan 015 T170, decisión
+   * 11): encendidos al principio y guardados en el dispositivo. El
+   * interruptor de la pausa (T171) llama a `setOverlays`.
+   */
+  overlays: DefenseOverlayPrefs;
+  setOverlays(prefs: DefenseOverlayPrefs): void;
 }
 
 export function useCastleMode({
@@ -180,6 +192,16 @@ export function useCastleMode({
   const medals = medalData ?? EMPTY_CASTLE_MEDALS;
   const [record, setRecord] = useState<CastleMedalRecord | null>(null);
   const [ranking, setRanking] = useState<CastleRankingOutcome | null>(null);
+  // Las barras y los números (decisión 11): lo guardado, al montar (en el servidor, lo de siempre).
+  const [overlays, setOverlayState] = useState<DefenseOverlayPrefs>(() => readDefenseOverlays(null));
+  useEffect(() => setOverlayState(readDefenseOverlays()), []);
+  useEffect(() => {
+    engineRef.current?.setDefenseOverlays(overlays);
+  }, [engineRef, overlays, active]);
+  const setOverlays = useCallback((prefs: DefenseOverlayPrefs) => {
+    saveDefenseOverlays(prefs);
+    setOverlayState({ bars: prefs.bars, numbers: prefs.numbers });
+  }, []);
 
   const leave = useCallback(() => {
     const run = runRef.current;
@@ -397,6 +419,8 @@ export function useCastleMode({
     sound,
     prepareAudio,
     setAudioSettings,
+    overlays,
+    setOverlays,
   };
 }
 

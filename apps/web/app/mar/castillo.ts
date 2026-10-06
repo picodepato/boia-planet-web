@@ -18,6 +18,7 @@ import {
   type DifficultyId,
   asDefenseRunMin,
   createDefense,
+  defenseClampToArena,
   defenseSiteReason,
 } from '@boia/engine/defense';
 import { asDifficulty } from '@boia/engine/survivors';
@@ -166,15 +167,27 @@ export function devArenaSpots(
 }
 
 /**
- * La isla que se está colocando (T161): su tipo y dónde va respecto al
- * avión (u de la partida). Al elegirla va justo debajo del avión; un toque en
- * el agua la mueve (a cualquier sitio de la arena). Sigue al avión.
+ * La isla que se está colocando (T161): su tipo y dónde va (u de la
+ * partida). Al elegirla va justo debajo del avión y lo sigue (con el
+ * teclado se lleva volando); un toque en el agua la deja en ese sitio de la
+ * arena (`at`, plan 015 T170, decisión 6) y ahí se queda.
  */
 export interface CastlePlacing {
   kind: DefenseTowerKind;
-  ox: number;
-  oy: number;
+  /** El sitio tocado, o null: debajo del avión. */
+  at: { x: number; y: number } | null;
 }
+
+/**
+ * Lo que hizo un toque en el agua de la arena (plan 015 T170, decisión 6):
+ * mover la isla que se coloca, elegir una isla construida (el HUD abre su
+ * ficha) o mandar el avión allí (ya acotado a la arena).
+ */
+export type CastleTap =
+  | { type: 'place'; x: number; y: number }
+  | { type: 'select'; towerId: number }
+  | { type: 'move'; x: number; y: number }
+  | { type: 'none' };
 
 /** La vista previa: dónde caería la isla y si se puede (con el motivo de T159). */
 export interface CastlePlacement {
@@ -327,9 +340,22 @@ export class DefenseRun {
   /** La isla construida que está elegida (su ficha abierta), o null. */
   selected: number | null = null;
 
+  /** La lista de «Construir» está abierta (el HUD lo dice: la cámara va a la vista de salida). */
+  buildMenu = false;
+
+  /** Se está construyendo: la lista abierta o una isla colocándose (plan 015 T170, decisión 4). */
+  get building(): boolean {
+    return this.buildMenu || this.placing !== null;
+  }
+
+  /** El HUD abre o cierra la lista de «Construir». */
+  setBuildMenu(open: boolean): void {
+    this.buildMenu = open;
+  }
+
   /** Empieza a colocar una isla: debajo del avión. */
   startPlacing(kind: DefenseTowerKind): void {
-    this.placing = { kind, ox: 0, oy: 0 };
+    this.placing = { kind, at: null };
     this.selected = null;
   }
 
@@ -341,8 +367,8 @@ export class DefenseRun {
   placement(s: Pick<DefenseSnapshot, 'plane'> = this.game.snapshot()): CastlePlacement | null {
     const p = this.placing;
     if (!p) return null;
-    const x = s.plane.x + p.ox;
-    const y = s.plane.y + p.oy;
+    const x = p.at ? p.at.x : s.plane.x;
+    const y = p.at ? p.at.y : s.plane.y;
     return { kind: p.kind, x, y, check: this.game.buildCheck(p.kind, x, y) };
   }
 
@@ -356,17 +382,28 @@ export class DefenseRun {
   }
 
   /**
-   * Un toque en el agua de la arena (u de la partida): colocando, mueve la
-   * isla ahí (se construye en cualquier sitio de la arena: plan 015 T169;
-   * el sitio lo juzga `buildCheck`); si no, elige la isla tocada (o ninguna).
+   * Un toque en el agua de la arena (u de la partida; plan 015 T170,
+   * decisión 6): colocando, deja ahí la isla (se construye en cualquier
+   * sitio de la arena; el sitio lo juzga `buildCheck`); si no, en una isla
+   * construida la elige (el HUD abre su ficha), y en el mar manda el avión
+   * allí (`moveTo`, acotado a la arena) y cierra la ficha que hubiera.
    */
-  tap(x: number, y: number): void {
+  tap(x: number, y: number): CastleTap {
+    if (!Number.isFinite(x) || !Number.isFinite(y) || this.ended) return { type: 'none' };
     const s = this.game.snapshot();
     if (this.placing) {
-      this.placing = { ...this.placing, ox: x - s.plane.x, oy: y - s.plane.y };
-      return;
+      this.placing = { ...this.placing, at: { x, y } };
+      return { type: 'place', x, y };
     }
-    this.selected = towerAt(s.towers, x, y, this.config.islandRadius * TOWER_TAP_SLACK);
+    const hit = towerAt(s.towers, x, y, this.config.islandRadius * TOWER_TAP_SLACK);
+    if (hit !== null) {
+      this.selected = hit;
+      return { type: 'select', towerId: hit };
+    }
+    this.selected = null;
+    const to = defenseClampToArena(this.config, x, y);
+    this.request({ moveTo: to });
+    return { type: 'move', x: to.x, y: to.y };
   }
 
   /** Elige una isla (o ninguna). */

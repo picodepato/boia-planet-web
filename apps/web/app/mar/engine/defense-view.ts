@@ -3,6 +3,7 @@ import type {
   DefenseEnemyKind,
   DefensePath,
   DefenseSnapshot,
+  DefenseTowerKind,
 } from '@boia/engine/defense';
 import type { BossId, EnemyId } from '@boia/engine/survivors';
 import type { QualityTier } from '@boia/engine/streaming';
@@ -23,7 +24,21 @@ import {
 } from 'three';
 import { litMaterial } from './characters';
 import { toScene } from './compress';
-import { type ArenaFrame, barrierLines, cornerBuoys } from './defense-arena';
+import {
+  type ArenaFrame,
+  barrierLines,
+  cornerBuoys,
+  towerRangeScene,
+  uTurnBuoys,
+} from './defense-arena';
+import { ArenaClouds } from './defense-clouds';
+import {
+  DEFAULT_DEFENSE_OVERLAYS,
+  DamageNumbers,
+  DamageTracker,
+  type DefenseOverlayPrefs,
+  HealthBars,
+} from './defense-overlays';
 import type { EnemyModel, EnemyModelState } from './enemy-models';
 import { DefenseFx } from './defense-fx';
 import { TowerIslands } from './defense-islands';
@@ -41,9 +56,12 @@ import { VECINO_SCALE, vecinoGeometry } from './survivors-vecino';
  * Lo que se pinta de «Defensa del Castillo» en el mar 3D (plan 014 T160):
  * las dos barreras flotantes del camino y las boyas de la carrera en sus
  * esquinas, el vórtice del que sale todo, los enemigos y los bosses del
- * Cañón por el camino (con su salida del vórtice), el golpe al castillo, el
- * anillo de construir alrededor del avión, las islas construidas y sus
- * efectos. Sin lógica de juego: todo sale de la instantánea de la partida.
+ * Cañón por el camino (con su salida del vórtice), el golpe al castillo, las
+ * islas construidas y sus efectos. Plan 015 T170: el círculo de alcance de
+ * la isla que se coloca o de la elegida, el punto al que vuela el avión, las
+ * boyas de las U del camino v2, las barras de vida, los números de daño
+ * (`defense-overlays.ts`) y las nubes (`defense-clouds.ts`). Sin lógica de
+ * juego: todo sale de la instantánea de la partida.
  * Lo fijo (barreras, boyas, vórtice) se construye una vez en su sitio del
  * mar; lo que se mueve son matrices de `InstancedMesh`. Escena salvo donde
  * se diga; cada vértice va a la copia del planeta más cercana al foco.
@@ -140,11 +158,30 @@ function barrierGeometry(line: readonly { x: number; z: number }[], low: boolean
 export const PREVIEW_OK = '#3ddc84';
 export const PREVIEW_BAD = '#ff4d3d';
 
-/** Lo que el HUD (T161) marca en el agua: la isla que se coloca y la isla elegida (u de la partida). */
+/**
+ * Lo que el HUD (T161) marca en el agua (u de la partida): la isla que se
+ * coloca (verde o roja, con el motivo de la partida, y el círculo de su
+ * alcance si se da su tipo: plan 015 T170), la isla elegida (con su alcance a
+ * su nivel) y el punto al que vuela el avión tras un toque.
+ */
 export interface DefenseMarks {
-  preview: { x: number; y: number; ok: boolean } | null;
-  selected: { x: number; y: number } | null;
+  preview: {
+    x: number;
+    y: number;
+    ok: boolean;
+    kind?: DefenseTowerKind;
+    /** Por qué no se puede (`DefenseBuildReason`), o null. */
+    reason?: string | null;
+  } | null;
+  selected: { x: number; y: number; kind?: DefenseTowerKind; level?: number } | null;
+  target?: { x: number; y: number } | null;
 }
+
+/** Cuántas nubes pasan por la arena. muestra */
+const CLOUDS = { baja: 3, other: 4 } as const;
+/** Tope de barras de vida y de números de daño a la vez. muestra */
+const BARS_CAP = { baja: 96, other: 160 } as const;
+const NUMBERS_CAP = { baja: 24, other: 48 } as const;
 
 export interface DefenseViewOptions {
   config: DefenseConfig;
@@ -177,6 +214,17 @@ export class DefenseView {
   private readonly preview: Mesh;
   private readonly previewEdge: Mesh;
   private readonly selectRing: Mesh;
+  private readonly rangeRing: Mesh;
+  private readonly rangeFill: Mesh;
+  private readonly targetRing: Mesh;
+  /** Escena: de la copia del castillo en el mapa a la que se ve (lo que no da la vuelta). */
+  private readonly seen = { x: 0, z: 0 };
+  readonly bars: HealthBars;
+  readonly numbers: DamageNumbers;
+  readonly clouds: ArenaClouds;
+  private readonly damage = new DamageTracker();
+  /** Barras de vida y números de daño (decisión 11): los dos al principio. */
+  overlays: DefenseOverlayPrefs = { ...DEFAULT_DEFENSE_OVERLAYS };
   private readonly puf: PufFx;
   private readonly d = new Object3D();
   private readonly tmp = { x: 0, y: 0 };
@@ -207,7 +255,7 @@ export class DefenseView {
       this.group.add(m);
     }
     const k = new Kit();
-    for (const b of cornerBuoys(o.path)) {
+    for (const b of [...cornerBuoys(o.path), ...uTurnBuoys(o.path)]) {
       const p = this.at(b.x, b.y);
       buoy(k, p.x, p.z, ROAD_BUOY.body, ROAD_BUOY.band, BUOY_SIZE);
     }
@@ -296,13 +344,45 @@ export class DefenseView {
     );
     this.selectRing.name = 'defense-selected';
     this.selectRing.visible = false;
+    // El alcance de la isla que se coloca o de la elegida (plan 015 T170): un aro fino y un velo.
+    this.rangeRing = new Mesh(
+      new RingGeometry(0.985, 1, low ? 48 : 96).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.85, depthWrite: false }),
+    );
+    this.rangeRing.name = 'defense-range';
+    this.rangeRing.visible = false;
+    this.rangeFill = new Mesh(
+      new CircleGeometry(1, low ? 48 : 96).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.1, depthWrite: false }),
+    );
+    this.rangeFill.name = 'defense-range-fill';
+    this.rangeFill.visible = false;
+    // Sin la vuelta del planeta: en el borde de la arena el alcance pasa de
+    // medio planeta y sus vértices saltarían a la otra copia. Se pone en la
+    // copia del castillo que se ve (`sky`).
+    for (const m of [this.rangeRing, this.rangeFill]) curveMaterial(m.material as Material, false);
+    // Adonde vuela el avión tras un toque: un aro crema pequeño.
+    this.targetRing = new Mesh(
+      new RingGeometry(0.7, 1, low ? 16 : 32).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: '#fff4e2', transparent: true, opacity: 0.8, depthWrite: false }),
+    );
+    this.targetRing.name = 'defense-plane-target';
+    this.targetRing.visible = false;
+    // Las barras de vida y los números de daño (decisión 11).
+    this.bars = new HealthBars(low ? BARS_CAP.baja : BARS_CAP.other);
+    this.numbers = new DamageNumbers(low ? NUMBERS_CAP.baja : NUMBERS_CAP.other);
     this.puf = new PufFx(this.quality);
     this.group.add(
       this.castleRing,
       this.preview,
       this.previewEdge,
       this.selectRing,
+      this.rangeFill,
+      this.rangeRing,
+      this.targetRing,
       this.puf.mesh,
+      ...this.bars.meshes,
+      this.numbers.mesh,
     );
 
     this.islands = new TowerIslands(o.config);
@@ -311,6 +391,26 @@ export class DefenseView {
     // Todo con la curva y la vuelta del planeta (las islas y los efectos ya la llevan).
     curveTree(this.group, true);
     curveMaterial(this.vortex.material as ShaderMaterial, true);
+    // Las nubes van sin curva (como las del mundo), por encima de todo.
+    this.clouds = new ArenaClouds(toScene(o.config.arenaRadius), low ? CLOUDS.baja : CLOUDS.other);
+    this.group.add(this.clouds.group);
+  }
+
+  /** Las barras de vida y los números de daño, encendidos o no (las opciones de la pausa). */
+  setOverlays(prefs: DefenseOverlayPrefs): void {
+    this.overlays = { bars: prefs.bars, numbers: prefs.numbers };
+  }
+
+  /**
+   * Las nubes de la arena (decisión 17): `dt` del fotograma, `center` el
+   * castillo en la escena (en la copia que se ve) y `zoom` el de la arena
+   * (1 la vista de salida; de cerca se apagan).
+   */
+  sky(dt: number, center: { x: number; z: number }, zoom: number): void {
+    const c = this.at(0, 0);
+    this.seen.x = center.x - c.x;
+    this.seen.z = center.z - c.z;
+    this.clouds.update(dt, center, zoom, this.reduced);
   }
 
   /** Un punto de la partida (u) en la escena (x, z), seguido alrededor del castillo. */
@@ -362,7 +462,9 @@ export class DefenseView {
   }
 
   /** Lo marcado en el último `update` (pruebas): la vista previa ('ok', 'no' o '') y la isla elegida. */
-  marked = { preview: '', selected: false };
+  marked = { preview: '', reason: '', selected: false };
+  /** Radio (escena) del alcance pintado en el último `update`, o 0 (pruebas). */
+  range = 0;
 
   /**
    * Un fotograma: `s` la partida, `t` la hora de la escena, `_plane` dónde
@@ -380,6 +482,8 @@ export class DefenseView {
     const d = this.d;
     for (const k of this.kinds) this.counts.set(k, 0);
     let drawn = 0;
+    const bars = this.overlays.bars;
+    this.bars.begin();
     for (const e of s.enemies) {
       if (e.dead) continue;
       const mesh = this.meshes.get(e.kind);
@@ -399,7 +503,16 @@ export class DefenseView {
       mesh.setMatrixAt(n, d.matrix);
       this.counts.set(e.kind, n + 1);
       drawn++;
+      if (bars) this.bars.add(p.x, p.z, size, Math.max(0, y), e.hp, e.maxHp);
     }
+    this.bars.end(bars);
+    // Los números de daño: lo que bajó la vida de cada uno (se sigue siempre, se pinten o no).
+    this.damage.update(s.enemies, s.activeS, (x, y, radius, amount) => {
+      if (!this.overlays.numbers) return;
+      const q = this.at(x, y);
+      this.numbers.spawn(q.x, q.z, amount, t, toScene(radius) * 0.8);
+    });
+    this.numbers.update(t, this.overlays.numbers, reduced);
     for (const [kind, mesh] of this.meshes) {
       const n = this.counts.get(kind) ?? 0;
       mesh.count = n;
@@ -435,7 +548,37 @@ export class DefenseView {
       this.selectRing.position.set(p.x, 0.36, p.z);
       this.selectRing.scale.set(r, 1, r);
     }
-    this.marked = { preview: pv ? (pv.ok ? 'ok' : 'no') : '', selected: sel !== null };
+    // El alcance (decisión 5): el de la isla que se coloca (nivel 1, de su color) o el de la elegida.
+    const rangeAt = pv?.kind ? pv : sel?.kind ? sel : null;
+    const range = pv?.kind
+      ? towerRangeScene(this.cfg, pv.kind, 1)
+      : sel?.kind
+        ? towerRangeScene(this.cfg, sel.kind, sel.level ?? 1)
+        : 0;
+    this.rangeRing.visible = this.rangeFill.visible = range > 0 && rangeAt !== null;
+    if (rangeAt && range > 0) {
+      const p = this.at(rangeAt.x, rangeAt.y);
+      const color = pv ? (pv.ok ? PREVIEW_OK : PREVIEW_BAD) : '#fff4e2';
+      for (const m of [this.rangeFill, this.rangeRing]) {
+        m.position.set(p.x + this.seen.x, m === this.rangeRing ? 0.33 : 0.32, p.z + this.seen.z);
+        m.scale.set(range, 1, range);
+        (m.material as MeshBasicMaterial).color.set(color);
+      }
+    }
+    this.range = this.rangeRing.visible ? range : 0;
+    const tg = marks.target ?? null;
+    this.targetRing.visible = tg !== null;
+    if (tg) {
+      const p = this.at(tg.x, tg.y);
+      const r = reduced ? 1.4 : 1.2 + 0.25 * Math.sin(t * 6);
+      this.targetRing.position.set(p.x, 0.35, p.z);
+      this.targetRing.scale.set(r, 1, r);
+    }
+    this.marked = {
+      preview: pv ? (pv.ok ? 'ok' : 'no') : '',
+      reason: pv && !pv.ok ? (pv.reason ?? '') : '',
+      selected: sel !== null,
+    };
     this.puf.update(t, defeatPlan('puf', { quality: this.quality, reduced }));
     this.puf.mesh.visible = this.puf.mesh.count > 0;
     this.islands.sync(s.towers, (x, y) => this.at(x, y));
@@ -448,6 +591,10 @@ export class DefenseView {
     this.group.remove(this.islands.group, ...this.fx.meshes);
     this.islands.dispose();
     this.fx.dispose();
+    this.group.remove(...this.bars.meshes, this.numbers.mesh, this.clouds.group);
+    this.bars.dispose();
+    this.numbers.dispose();
+    this.clouds.dispose();
     this.disposed = true;
     this.group.traverse((o) => {
       const m = o as Mesh;

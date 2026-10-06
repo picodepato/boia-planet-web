@@ -4,11 +4,13 @@ import {
   buildDefensePath,
   createDefense,
   defenseSiteReason,
+  defenseTowerStats,
 } from '@boia/engine/defense';
 import { CASTLE_PLACE_ID, LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { type Page, type TestInfo, expect, test } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
 import { arenaFrame, vortexSpot } from '../app/mar/engine/defense-arena';
+import { DEFENSE_OVERLAYS_KEY } from '../app/mar/engine/defense-overlays';
 import { planetRect, wrapIn } from '../app/mar/engine/wrap';
 import { t } from '../lib/i18n';
 import { mar, openMar } from './mar-helpers';
@@ -667,6 +669,217 @@ test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, co
     }
     await page.setViewportSize(HUD_SIZES[3]);
   }
+  expect(errors).toEqual([]);
+});
+
+// --- Plan 015 T170: zoom, toques, alcance, barras de vida, números de daño y nubes ---
+
+const arenaZoom = async (page: Page) => Number(await canvas(page).getAttribute('data-arena-zoom'));
+
+/** Toca la pantalla en `p` (px de la página): con el dedo en el móvil, con el ratón en escritorio. */
+async function tapScreen(page: Page, p: { x: number; y: number }): Promise<void> {
+  if (test.info().project.name === 'mobile') await page.touchscreen.tap(p.x, p.y);
+  else await page.mouse.click(p.x, p.y);
+}
+
+/** Un punto de la pantalla donde sólo está el lienzo (nada del HUD encima), lejos de las islas. */
+async function freeSea(page: Page): Promise<{ x: number; y: number }> {
+  const vp = page.viewportSize()!;
+  const spots = ((await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((s) => pointOf(s.split(':')[1]!));
+  const tries = [
+    [0.08, 0.5],
+    [0.92, 0.5],
+    [0.08, 0.35],
+    [0.92, 0.35],
+    [0.3, 0.6],
+    [0.7, 0.6],
+    [0.5, 0.3],
+  ] as const;
+  for (const [fx, fy] of tries) {
+    const p = { x: Math.round(vp.width * fx), y: Math.round(vp.height * fy) };
+    if (spots.some((s) => Math.hypot(s.x - p.x, s.y - p.y) < 60)) continue;
+    const free = await page.evaluate(
+      ({ x, y }) => document.elementFromPoint(x, y)?.getAttribute('data-testid') === 'mar-canvas',
+      p,
+    );
+    if (free) return p;
+  }
+  throw new Error('no hay mar libre en la pantalla');
+}
+
+test('zoom: en la arena se acerca con el carril, la rueda y las teclas, nunca más abierto que la vista de salida; «Construir» vuelve a ella', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=castillo&seed=7&dificultad=tranquila');
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-arena-zoom', '1.00');
+  // El carril del zoom se ve en la arena (T161 lo escondía).
+  const rail = page.locator('.mar-rail');
+  await expect(rail).toBeVisible();
+  // Alejar desde la vista de salida no hace nada.
+  await rail.getByRole('button', { name: t('mar.client.alejar') }).click();
+  await page.keyboard.press('-');
+  await page.waitForTimeout(400);
+  expect(await arenaZoom(page)).toBe(1);
+  // El carril y las teclas acercan.
+  await rail.getByRole('button', { name: t('mar.client.acercar') }).click();
+  await expect.poll(() => arenaZoom(page)).toBeLessThan(0.95);
+  await page.keyboard.press('+');
+  await page.keyboard.press('+');
+  await expect.poll(() => arenaZoom(page)).toBeLessThan(0.7);
+  // La rueda: hacia fuera, hasta la vista de salida y no más.
+  const vp = page.viewportSize()!;
+  await page.mouse.move(vp.width / 2, vp.height / 2);
+  await page.mouse.wheel(0, 3000);
+  await expect.poll(() => arenaZoom(page)).toBe(1);
+  await page.mouse.wheel(0, -400);
+  await expect.poll(() => arenaZoom(page)).toBeLessThan(0.9);
+  for (let i = 0; i < 8; i++) await page.keyboard.press('+');
+  await expect.poll(() => arenaZoom(page)).toBe(0);
+  await expect(canvas(page)).toHaveAttribute('data-castillo-vista', 'si');
+  // «Construir»: la vista de salida.
+  await page.getByTestId('mar-castillo-construir').click();
+  await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
+  await expect.poll(() => arenaZoom(page)).toBe(1);
+  // Con la lista abierta el zoom sigue: se acerca y ahí se queda.
+  await page.keyboard.press('+');
+  await expect.poll(() => arenaZoom(page)).toBeLessThan(1);
+  expect(errors).toEqual([]);
+});
+
+test('tap: el mar manda el avión allí (acotado a la arena), una isla se elige y, construyendo, la vista previa va donde se toca con su alcance', async ({
+  page,
+}) => {
+  const errors = await openMar(
+    page,
+    '?minijuego=castillo&seed=7&dificultad=tranquila&islas=1&monedas=2000',
+  );
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-arena-islas-pantalla', /\d/);
+  await expect(canvas(page)).toHaveAttribute('data-hundido', '1.00', { timeout: 15_000 });
+  const R = DEFENSE_CONFIG.arenaRadius;
+
+  // El mar: el avión vuela allí (si se toca fuera de la arena, a su borde).
+  const sea = await freeSea(page);
+  await tapScreen(page, sea);
+  await expect(canvas(page)).toHaveAttribute('data-arena-toque-tipo', 'move');
+  await expect(canvas(page)).toHaveAttribute('data-arena-destino', /\d/);
+  const touched = pointOf(await canvas(page).getAttribute('data-arena-toque'));
+  const to = pointOf(await canvas(page).getAttribute('data-arena-destino'));
+  expect(Math.hypot(to.x, to.y)).toBeLessThanOrEqual(R + 1);
+  if (Math.hypot(touched.x, touched.y) > R) expect(Math.hypot(to.x, to.y)).toBeGreaterThan(R - 2);
+  else expect(Math.hypot(to.x - touched.x, to.y - touched.y)).toBeLessThan(2);
+  const d0 = Math.hypot(to.x - start.x, to.y - start.y);
+  await expect
+    .poll(async () => {
+      const p = await planeAt(page);
+      return Math.hypot(to.x - p.x, to.y - p.y);
+    })
+    .toBeLessThan(d0 / 2);
+
+  // Una isla: se elige (su ficha).
+  const box = (await canvas(page).boundingBox())!;
+  let at: { x: number; y: number } | null = null;
+  await expect
+    .poll(async () => {
+      const spots = ((await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '').split(' ');
+      for (const s of spots) {
+        const m = s.match(/^\d+:(-?\d+),(-?\d+)/);
+        if (!m) continue;
+        const p = { x: box.x + Number(m[1]), y: box.y + Number(m[2]) };
+        const free = await page.evaluate(
+          ({ x, y }) =>
+            document.elementFromPoint(x, y)?.getAttribute('data-testid') === 'mar-canvas',
+          p,
+        );
+        if (free) {
+          at = p;
+          return true;
+        }
+      }
+      return false;
+    })
+    .toBe(true);
+  await tapScreen(page, at as unknown as { x: number; y: number });
+  await expect(canvas(page)).toHaveAttribute('data-arena-toque-tipo', 'select');
+  await expect(page.getByTestId('mar-castillo-ficha')).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-arena-elegida', 'si');
+  // Su alcance, a su nivel (3).
+  const chosen = await page.getByTestId('mar-castillo-ficha').getAttribute('data-isla');
+  const kind = kinds.find((k) => k === chosen)!;
+  const chosenRange = defenseTowerStats(DEFENSE_CONFIG, kind, 3).range;
+  if (chosenRange > 0)
+    await expect(canvas(page)).toHaveAttribute('data-arena-alcance', String(chosenRange));
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-castillo-ficha')).toHaveCount(0);
+
+  // Construyendo: el toque deja ahí la vista previa, con el alcance de la isla (nivel 1).
+  await page.getByTestId('mar-castillo-construir').click();
+  await page.locator('[data-testid="mar-castillo-isla"][data-isla="cala"]').click();
+  await expect(placing(page)).toHaveAttribute('data-isla', 'cala');
+  const destino = await canvas(page).getAttribute('data-arena-destino');
+  const here = await freeSea(page);
+  await tapScreen(page, here);
+  await expect(canvas(page)).toHaveAttribute('data-arena-toque-tipo', 'place');
+  await expect(canvas(page)).toHaveAttribute('data-arena-colocar', /^(ok|no)$/);
+  await expect(canvas(page)).toHaveAttribute(
+    'data-arena-alcance',
+    String(defenseTowerStats(DEFENSE_CONFIG, 'cala', 1).range),
+  );
+  // Roja con el motivo de la partida, o verde.
+  const ok = (await canvas(page).getAttribute('data-arena-colocar')) === 'ok';
+  if (!ok) await expect(canvas(page)).toHaveAttribute('data-arena-motivo', /\w/);
+  await expect(placing(page)).toHaveAttribute('data-valido', ok ? 'si' : 'no');
+  // El avión no cambia de rumbo por colocar.
+  expect(await canvas(page).getAttribute('data-arena-destino')).toBe(destino);
+  expect(errors).toEqual([]);
+});
+
+test('arena: barras de vida y números de daño encendidos al principio; apagados (guardado en el dispositivo), ninguno; nubes encima', async ({
+  page,
+}) => {
+  const q = '?minijuego=castillo&seed=7&dificultad=tranquila&islas=1&t=150';
+  let errors = await openMar(page, q);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-arena-barras')), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(0);
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-arena-numeros')), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(0);
+  await expect(canvas(page)).toHaveAttribute('data-arena-nubes', 'si');
+  expect(errors).toEqual([]);
+
+  // Apagadas en las opciones (lo guardado en el dispositivo): ninguna, aunque caigan enemigos.
+  await page.addInitScript(
+    ([key]) => window.localStorage.setItem(key!, JSON.stringify({ bars: false, numbers: false })),
+    [DEFENSE_OVERLAYS_KEY],
+  );
+  errors = await openMar(page, q);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  const kills = Number(await game(page).getAttribute('data-derrotados'));
+  const seen = { bars: 0, numbers: 0 };
+  await expect
+    .poll(
+      async () => {
+        seen.bars = Math.max(seen.bars, Number(await canvas(page).getAttribute('data-arena-barras')));
+        seen.numbers = Math.max(
+          seen.numbers,
+          Number(await canvas(page).getAttribute('data-arena-numeros')),
+        );
+        return Number(await game(page).getAttribute('data-derrotados'));
+      },
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(kills + 2);
+  expect(seen).toEqual({ bars: 0, numbers: 0 });
   expect(errors).toEqual([]);
 });
 

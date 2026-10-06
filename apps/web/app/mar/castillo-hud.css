@@ -11,9 +11,24 @@
   --castle-coin: #ffc53d;
 }
 
-/* En la arena la cámara es fija: el zoom sobra y deja sitio a la franja. */
-.mar:has(.mar-castle-hud, .mar-castle-end) .mar-rail {
+/* En la arena el zoom (plan 015 T170) va de lo más cerca a la vista de salida;
+   en la tarjeta final sobra. */
+.mar:has(.mar-castle-end) .mar-rail {
   display: none;
+}
+
+/* Encima de la franja en reposo («Construir» y el avión), que va a lo ancho. */
+.mar:has(.mar-castle-hud) .mar-rail {
+  bottom: calc(var(--above-bar) + 62px);
+}
+
+/* Con la lista, la isla que se coloca o la ficha abiertas, en pantallas
+   estrechas la franja ocupa el sitio del carril: se aparta (el zoom sigue con
+   los dedos, la rueda y las teclas). */
+@media (max-width: 899px) {
+  .mar:has(.mar-castle-dock:not(.is-idle)) .mar-rail {
+    display: none;
+  }
 }
 
 /* ---------- Arriba: tiempo, vida, oleada y monedas ---------- */

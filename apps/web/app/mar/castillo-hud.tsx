@@ -180,6 +180,10 @@ export function CastleLayer({
   useEffect(() => {
     if (!playing) setTray(false);
   }, [playing]);
+  // La lista abierta lleva la cámara a la vista de salida (plan 015 T170).
+  useEffect(() => {
+    run()?.setBuildMenu(tray);
+  }, [tray, run, playing]);
 
   // El foco, al cambiar lo que enseña la franja (para seguir con el teclado).
   const dock = useRef<HTMLDivElement>(null);

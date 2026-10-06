@@ -1,4 +1,9 @@
-import type { DefenseConfig, DefensePath } from '@boia/engine/defense';
+import {
+  type DefenseConfig,
+  type DefensePath,
+  type DefenseTowerKind,
+  defenseTowerStats,
+} from '@boia/engine/defense';
 import { CASTLE_OPEN_SEA_BEARING } from './compact';
 import { toScene } from './compress';
 import { clamp01, smooth } from './kit';
@@ -102,10 +107,20 @@ export interface ArenaCameraPose {
 }
 
 /**
- * La cámara de la arena (decisión 4): alta, casi cenital y centrada en el
- * castillo. En apaisado cabe la arena entera; en vertical, toda su altura y
- * `ARENA_PORTRAIT_WIDTH` de su ancho, y el foco se corre hacia el avión lo
- * justo para que no se salga. `plane`: el avión respecto al castillo (escena).
+ * Lo más cerca que se acerca el zoom de la arena: esa parte de la distancia
+ * de la vista entera (plan 015 T170, decisión 3). muestra
+ */
+export const ARENA_ZOOM_NEAR = 0.3;
+
+/**
+ * La cámara de la arena (decisión 4 del plan 014; zoom, decisión 3 del plan
+ * 015): alta, casi cenital y centrada en el castillo. Con `zoom` 1 (la vista
+ * de salida, la más abierta) en apaisado cabe la arena entera; en vertical,
+ * toda su altura y `ARENA_PORTRAIT_WIDTH` de su ancho. Más cerca (`zoom` → 0,
+ * hasta `ARENA_ZOOM_NEAR` de la distancia), el foco sigue al avión. El foco
+ * se corre hacia el avión lo justo para que no se salga, y lo que se ve nunca
+ * pasa del borde de la arena (con su margen): no se ve el resto del mundo.
+ * `plane`: el avión respecto al castillo (escena).
  */
 export function arenaCameraPose(o: {
   aspect: number;
@@ -113,17 +128,68 @@ export function arenaCameraPose(o: {
   /** Radio de la arena (escena). */
   arenaRadius: number;
   plane: { x: number; z: number };
+  /** 1 la vista entera (sin valor), 0 lo más cerca. */
+  zoom?: number;
 }): ArenaCameraPose {
   const t = Math.tan((o.fovDeg * Math.PI) / 360);
   const fit = o.arenaRadius * ARENA_FIT;
   const aspect = Math.max(0.1, o.aspect);
-  const distance = fit / (t * Math.min(1, aspect / ARENA_PORTRAIT_WIDTH));
+  const zoom = clamp01(o.zoom ?? 1);
+  const widest = fit / (t * Math.min(1, aspect / ARENA_PORTRAIT_WIDTH));
+  const distance = widest * Math.pow(ARENA_ZOOM_NEAR, 1 - zoom);
   // Lo que se ve a cada lado del foco; el avión se queda dentro (con margen).
   const halfW = distance * t * aspect;
   const halfH = distance * t;
   const kx = clamp01(1 - halfW / fit);
   const kz = clamp01(1 - halfH / fit);
   return { distance, elevation: ARENA_ELEVATION, fx: o.plane.x * kx, fz: o.plane.z * kz };
+}
+
+/** s que tarda el zoom de la arena en llegar a lo pedido (casi). muestra */
+export const ARENA_ZOOM_RATE = 6;
+
+/**
+ * El zoom de la arena (plan 015 T170, decisiones 3 y 4): 1 la vista de
+ * salida (la más abierta: no se aleja más), 0 lo más cerca. Lo mueven los
+ * mandos del juego (el carril, la rueda, el pellizco y las teclas, como al
+ * navegar: positivo aleja); al abrir «Construir» vuelve a la vista de salida
+ * y ahí se queda hasta que se vuelva a mover.
+ */
+export class ArenaZoom {
+  private v = 1;
+  private g = 1;
+
+  /** Ahora (0…1). */
+  get value(): number {
+    return this.v;
+  }
+
+  /** Lo pedido (0…1). */
+  get goal(): number {
+    return this.g;
+  }
+
+  /** Acerca (d < 0) o aleja (d > 0), acotado a 0…1. */
+  by(d: number): void {
+    if (Number.isFinite(d)) this.g = clamp01(this.g + d);
+  }
+
+  /** Pide un zoom (0…1). */
+  set(goal: number): void {
+    if (Number.isFinite(goal)) this.g = clamp01(goal);
+  }
+
+  /** La vista de salida: «Construir» y el principio de cada partida. */
+  reset(snap = false): void {
+    this.g = 1;
+    if (snap) this.v = 1;
+  }
+
+  step(dt: number, snap = false): void {
+    const k = snap ? 1 : 1 - Math.exp(-Math.max(0, dt) * ARENA_ZOOM_RATE);
+    this.v += (this.g - this.v) * k;
+    if (Math.abs(this.g - this.v) < 1e-4) this.v = this.g;
+  }
 }
 
 // --- El mundo se hunde ------------------------------------------------------------------
@@ -317,6 +383,40 @@ export function cornerBuoys(
     const sign = c.turnRad > 0 ? -1 : 1;
     return { x: c.x + s.nx * off * sign, y: c.y + s.ny * off * sign };
   });
+}
+
+/**
+ * Los acentos de las curvas en U del camino v2 (plan 015 T169/T170): una
+ * boya de la carrera por fuera de cada U, en su punta (la mitad de la media
+ * vuelta), detrás de la barrera; así se leen las U desde la cámara alta.
+ */
+export function uTurnBuoys(
+  path: Pick<DefensePath, 'uTurns' | 'width' | 'sampleAt'>,
+  gap = 14,
+): Point[] {
+  const off = path.width / 2 + gap;
+  return path.uTurns.map((u) => {
+    const s = path.sampleAt(u.distance);
+    // Por fuera: lejos del centro de la U.
+    const dx = s.x - u.x;
+    const dy = s.y - u.y;
+    const d = Math.hypot(dx, dy) || 1;
+    return { x: s.x + (dx / d) * off, y: s.y + (dy / d) * off };
+  });
+}
+
+// --- El alcance de una isla (decisión 5 del plan 015) ------------------------------------
+
+/**
+ * El radio (escena) del círculo de alcance de una isla a su nivel: el
+ * `range` de la partida (`defenseTowerStats`). 0 si no ataca (Ibiza).
+ */
+export function towerRangeScene(
+  cfg: DefenseConfig,
+  kind: DefenseTowerKind,
+  level = 1,
+): number {
+  return toScene(Math.max(0, defenseTowerStats(cfg, kind, level).range));
 }
 
 // --- El tamaño de las islas construidas (decisión 8) --------------------------------
