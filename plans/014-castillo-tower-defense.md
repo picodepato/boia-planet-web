@@ -114,7 +114,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: 3D arena in engine/defense-*.ts: world sinks, top-down camera, barriers, lilac/black vortex along CASTLE_OPEN_SEA_BEARING, Cañón enemies, plane, normalized islands with effects; baja p95 33 ms at the 10-min Tormenta peak with 7 level-3 islands · a3eb373
 
 ## T161 — HUD and controls: Construir, placing, Mejorar/Vender, life, time, coins
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T159, T160
@@ -133,7 +133,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: castle HUD (life, time, wave, coins, boss bar), Construir/placing/Mejorar/Vender with touch and keyboard, pause menu with sound and «Terminar partida», minimal end card; dev `monedas=N` · ff56a4f
 
 ## T162 — The castle's pre-game pop-up, final card and medals
-- Status: done
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T161
@@ -151,7 +151,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T163 — Castle ranking per run length × difficulty, local and global
-- Status: running (attempt 1)
+- Status: pending
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T162
