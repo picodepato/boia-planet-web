@@ -86,6 +86,11 @@ export const carnetSchema = z.object({
   answers: z.record(z.string(), carnetAnswerSchema),
   version: z.number().int().positive(),
   updatedAt: iso,
+  /**
+   * Creado con el enlace de artistas (plan 016 T186). Sólo en modo local
+   * (D-20, demo): con cuentas lo decide el servidor (`carnets.is_artist`).
+   */
+  isArtist: z.boolean().optional(),
 });
 export type CarnetRecord = z.infer<typeof carnetSchema>;
 

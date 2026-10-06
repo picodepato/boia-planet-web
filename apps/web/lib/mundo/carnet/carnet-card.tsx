@@ -70,7 +70,8 @@ export function cardViewOf(
     avatarKey: carnet.avatarKey,
     avatarImage: carnet.avatarImage,
     photoModerated: carnet.moderated.photo,
-    artist: !!carnet.artist || !!extras.isArtist,
+    // Artista del contenido, marcado en el servidor o (modo local, demo) por el enlace de artistas.
+    artist: !!carnet.artist || !!extras.isArtist || !!carnet.isArtist,
     isSample: carnet.isSample,
     stamps:
       extras.stamps ??

@@ -86,6 +86,11 @@ export const RPC_REJECTIONS = [
   'unknown_time',
   'unknown_entry',
   'invalid_entry',
+  // Números de socio y enlace de artistas (plan 016 T186)
+  'invalid_number',
+  'number_taken',
+  'member_number_busy',
+  'member_counter_missing',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -155,7 +160,10 @@ export interface SnapshotResult {
   updated_at: string;
 }
 
-/** save_profile, admin_set_artist: la fila del Carnet y los consentimientos vigentes. */
+/**
+ * save_profile, admin_set_artist, admin_set_member_number: la fila del Carnet
+ * y los consentimientos vigentes.
+ */
 export interface ProfileResult {
   user_id: string;
   nickname: string;
@@ -261,6 +269,18 @@ export interface CastleScoreResult {
   run_min: number;
   difficulty: string;
   version: number;
+}
+
+/** admin_rotate_artist_link (T186): el código nuevo se ve sólo aquí; se guarda con hash. */
+export interface ArtistLinkRotation {
+  code: string;
+  rotated_at: string;
+}
+
+/** admin_artist_link_info (T186) */
+export interface ArtistLinkInfo {
+  active: boolean;
+  rotated_at: string | null;
 }
 
 /** admin_set_stamp_code */

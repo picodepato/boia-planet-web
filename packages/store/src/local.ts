@@ -809,6 +809,7 @@ class LocalRepository implements BoiaRepository {
         isMine: userId === me,
         isSample: false,
         moderated: { photo: false, nickname: false, answers: 0 },
+        ...(own.isArtist ? { isArtist: true } : {}),
       };
     }
     const crew = this.sample.crew.find((c) => c.userId === userId);
@@ -1026,6 +1027,7 @@ class LocalRepository implements BoiaRepository {
             answers: {},
             version: 1,
             updatedAt: at,
+            ...(input.artistCode?.trim() ? { isArtist: true } : {}),
           };
           return this.carnetView(me.id, d) as CarnetView;
         }),

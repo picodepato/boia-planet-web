@@ -19,6 +19,15 @@ export const esCarnet = {
   'carnet.card.qrAltOther': 'QR del Carnet de {nickname}',
   'carnet.card.specimen': 'MUESTRA',
   'carnet.card.noNumber': '—',
+  // Sello de goma «ARTISTA» en el anverso (plan 016 T186, muestra)
+  'carnet.card.artistStamp': 'ARTISTA',
+  'carnet.card.artistStampSub': 'BOIA · ALICANTE',
+  // El enlace de artistas (T186)
+  'carnet.artistLink.opening': 'Abriendo tu alta de artista…',
+  'carnet.artistLink.go': 'Crear mi Carnet de artista',
+  'carnet.artistLink.bad': 'Este enlace de artista no es válido.',
+  'carnet.artistLink.notice':
+    'Has entrado con el enlace de artistas: si está vigente, tu Carnet será de artista.',
   'carnet.card.economyNotice':
     'Los rangos y los puntos son de muestra: BOIA los ajustará antes de abrir.', // T91
 

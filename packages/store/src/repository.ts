@@ -162,6 +162,11 @@ export interface CarnetView {
    * los que toca.
    */
   artist?: { artistId: string; genres: string[] };
+  /**
+   * Carnet propio creado con el enlace de artistas (plan 016 T186; modo
+   * local, demo). Con cuentas, el «es artista» lo da el servidor.
+   */
+  isArtist?: boolean;
 }
 
 /** Un Carnet que «Descubrir a un BOIERO» puede enseñar (T66). */
@@ -176,6 +181,12 @@ export interface CarnetInput {
   nickname: string;
   avatarKey?: string | null | undefined;
   avatarImage?: string | null | undefined;
+  /**
+   * El código del enlace de artistas con el que se abrió el alta (plan 016
+   * T186). En modo local (D-20, sin servidor que lo compruebe) cualquier
+   * código no vacío marca el Carnet como artista: es sólo una demo.
+   */
+  artistCode?: string | null | undefined;
 }
 
 export interface CarnetApi {

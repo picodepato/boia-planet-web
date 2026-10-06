@@ -16,6 +16,7 @@ import type { MergePayload, MergeResult, ProfileResult } from '@boia/db/rpc';
 import type { BoiaSupabase } from '../supabase/browser';
 import { isSupabaseConfigured } from '../supabase/config';
 import { PRIVACY_POLICY_VERSION } from './config';
+import { clearArtistCode, pendingArtistCode } from './artist-link';
 
 export type AccountStatus = 'local' | 'loading' | 'guest' | 'incomplete' | 'member';
 
@@ -279,8 +280,11 @@ export async function createProfile(p: NewProfile): Promise<ProfileResult> {
     p_avatar_image: p.avatarImage,
     p_privacy_version: PRIVACY_POLICY_VERSION,
     p_news: p.news,
+    // El enlace de artistas (T186): el servidor comprueba el código.
+    p_artist_code: pendingArtistCode(),
   } as never);
   if (error) throw error;
+  clearArtistCode();
   await refreshAccount();
   return data as unknown as ProfileResult;
 }

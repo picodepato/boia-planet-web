@@ -49,6 +49,8 @@ const REJECTION_TEXT: Partial<Record<string, MessageKey>> = {
   unknown_entry: 'admin.real.error.notFound',
   invalid_entry: 'admin.real.error.invalidEntry',
   insufficient_coins: 'admin.real.error.coinsSpent',
+  number_taken: 'admin.real.error.numberTaken',
+  invalid_number: 'admin.real.error.invalidNumber',
 };
 
 /** Lo que se le dice al equipo de un error de Supabase (una RPC, la RLS, la red). */

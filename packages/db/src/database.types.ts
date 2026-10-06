@@ -469,7 +469,7 @@ export type Database = {
           avatar_key?: string | null;
           created_at?: string;
           is_artist?: boolean;
-          member_number?: never;
+          member_number?: number;
           member_since?: string;
           nickname: string;
           updated_at?: string;
@@ -481,7 +481,7 @@ export type Database = {
           avatar_key?: string | null;
           created_at?: string;
           is_artist?: boolean;
-          member_number?: never;
+          member_number?: number;
           member_since?: string;
           nickname?: string;
           updated_at?: string;
@@ -1788,6 +1788,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      admin_artist_link_info: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_delete_member: {
         Args: {
           p_user: string;
@@ -1832,10 +1836,24 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_rotate_artist_link: {
+        Args: {
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_set_artist: {
         Args: {
           p_user: string;
           p_is_artist: boolean;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_set_member_number: {
+        Args: {
+          p_user: string;
+          p_number: number;
           p_reason?: string;
         };
         Returns: Json;
@@ -2004,6 +2022,7 @@ export type Database = {
           p_avatar_image?: string;
           p_privacy_version?: string;
           p_news?: boolean;
+          p_artist_code?: string;
         };
         Returns: Json;
       };

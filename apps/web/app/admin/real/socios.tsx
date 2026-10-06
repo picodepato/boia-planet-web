@@ -1,6 +1,8 @@
 'use client';
 
+import type { ArtistLinkInfo, ArtistLinkRotation } from '@boia/db/rpc';
 import { useCallback, useEffect, useState } from 'react';
+import { artistLinkHref } from '../../../lib/account/artist-link';
 import { t } from '../../../lib/i18n';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { SectionHead, StatusLine } from '../ui';
@@ -20,6 +22,8 @@ function MemberCard({
   onChanged: () => void;
 }) {
   const [deleting, setDeleting] = useState(false);
+  const [renumber, setRenumber] = useState(false);
+  const [number, setNumber] = useState('');
   const [typed, setTyped] = useState('');
   const [reason, setReason] = useState('');
   const { status, busy, run } = useRun();
@@ -89,6 +93,18 @@ function MemberCard({
           <button
             type="button"
             className="admin-button admin-button--ghost"
+            disabled={busy || !m.nickname}
+            data-testid={`socio-numero-${m.user_id}`}
+            onClick={() => {
+              setRenumber((v) => !v);
+              setNumber(m.member_number ? String(m.member_number) : '');
+            }}
+          >
+            {t('admin.real.socios.number')}
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
             disabled={busy}
             data-testid={`socio-borrar-${m.user_id}`}
             onClick={() => {
@@ -100,6 +116,54 @@ function MemberCard({
           </button>
         </div>
       </div>
+      {renumber ? (
+        <form
+          className="admin-row admin-row--end"
+          data-testid="socio-numero-panel"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              await must(
+                sb.rpc('admin_set_member_number', {
+                  p_user: m.user_id,
+                  p_number: Number(number),
+                  p_reason: t('admin.real.socios.numberReason'),
+                }),
+              );
+              setRenumber(false);
+              onChanged();
+            }, t('admin.real.socios.numberSaved'));
+          }}
+        >
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.real.socios.numberLabel')}</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              data-testid="socio-numero-input"
+            />
+          </label>
+          <button
+            type="submit"
+            className="admin-button"
+            disabled={busy || !/^[1-9][0-9]{0,7}$/.test(number.trim())}
+            data-testid="socio-numero-guardar"
+          >
+            {t('admin.real.socios.numberSave')}
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            onClick={() => setRenumber(false)}
+          >
+            {t('carnet.cancel')}
+          </button>
+        </form>
+      ) : null}
       {deleting ? (
         <div
           className="admin-card admin-delete__panel"
@@ -156,6 +220,108 @@ function MemberCard({
       ) : null}
       <StatusLine status={status} />
     </li>
+  );
+}
+
+/**
+ * El enlace de artistas (plan 016 T186): cuándo se cambió por última vez y
+ * el botón para crear uno nuevo. El código se ve una sola vez, al crearlo
+ * (el servidor sólo guarda su hash).
+ */
+function ArtistLinkPanel({ sb }: { sb: BoiaSupabase }) {
+  const [info, setInfo] = useState<ArtistLinkInfo | null>(null);
+  const [fresh, setFresh] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const { status, busy, run } = useRun();
+  const copier = useRun();
+
+  useEffect(() => {
+    let alive = true;
+    void must(sb.rpc('admin_artist_link_info')).then(
+      (d) => alive && setInfo(d as unknown as ArtistLinkInfo),
+      () => alive && setInfo({ active: false, rotated_at: null }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [sb, revision]);
+
+  const rotate = () =>
+    void run(async () => {
+      const res = (await must(
+        sb.rpc('admin_rotate_artist_link', { p_reason: t('admin.real.artistLink.reason') }),
+      )) as unknown as ArtistLinkRotation;
+      setFresh(artistLinkHref(res.code, window.location.origin));
+      setConfirming(false);
+      setRevision((r) => r + 1);
+    }, t('admin.real.artistLink.created'));
+
+  return (
+    <div className="admin-card" data-testid="enlace-artistas">
+      <h3>{t('admin.real.artistLink.title')}</h3>
+      <p className="admin-meta">{t('admin.real.artistLink.lead')}</p>
+      <p className="admin-meta" data-testid="enlace-artistas-estado">
+        {info === null
+          ? t('empty.loading')
+          : info.active
+            ? t('admin.real.artistLink.since', { date: when(info.rotated_at) })
+            : t('admin.real.artistLink.none')}
+      </p>
+      {fresh ? (
+        <div className="admin-row admin-row--end">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.real.artistLink.copyNow')}</span>
+            <input readOnly value={fresh} data-testid="enlace-artistas-url" />
+          </label>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            onClick={() =>
+              void copier.run(
+                () => navigator.clipboard.writeText(fresh),
+                t('admin.real.artistLink.copied'),
+              )
+            }
+          >
+            {t('admin.real.artistLink.copy')}
+          </button>
+        </div>
+      ) : null}
+      <div className="admin-row">
+        {info?.active && !confirming ? (
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            disabled={busy}
+            data-testid="enlace-artistas-cambiar"
+            onClick={() => setConfirming(true)}
+          >
+            {t('admin.real.artistLink.rotate')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={info?.active ? 'admin-button admin-button--danger' : 'admin-button'}
+            disabled={busy || info === null}
+            data-testid="enlace-artistas-crear"
+            onClick={rotate}
+          >
+            {info?.active ? t('admin.real.artistLink.confirm') : t('admin.real.artistLink.create')}
+          </button>
+        )}
+        {confirming ? (
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            onClick={() => setConfirming(false)}
+          >
+            {t('carnet.cancel')}
+          </button>
+        ) : null}
+      </div>
+      <StatusLine status={copier.status.kind === 'idle' ? status : copier.status} />
+    </div>
   );
 }
 
@@ -236,6 +402,7 @@ export function SociosSection() {
         </button>
       </SectionHead>
       <NeedsAdmin>
+        {sb ? <ArtistLinkPanel sb={sb} /> : null}
         <StatusLine status={exporter.status} />
         <form
           className="admin-row admin-row--end"
@@ -285,7 +452,7 @@ export function SociosSection() {
             <ul className="admin-list" data-testid="socios-lista">
               {rows.map((m) => (
                 <MemberCard
-                  key={`${m.user_id}|${m.is_artist}`}
+                  key={`${m.user_id}|${m.is_artist}|${m.member_number}`}
                   sb={sb}
                   m={m}
                   onChanged={() => setRevision((r) => r + 1)}

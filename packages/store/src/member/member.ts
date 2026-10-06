@@ -306,7 +306,9 @@ class MemberRepo implements MemberRepository {
     return {
       ...c,
       // La cuenta ya tiene su Carnet desde el alta (T89): crear es guardar.
-      create: async (input) => {
+      // El enlace de artistas lo comprueba el servidor al crear la cuenta
+      // (save_profile, T186): la copia local no se marca sola.
+      create: async ({ artistCode: _code, ...input }) => {
         const view = (await c.mine()) ? await c.update(input) : await c.create(input);
         await this.saveProfile();
         return mine(view);

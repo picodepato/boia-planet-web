@@ -10,6 +10,7 @@ import {
 import { type BoiaRepository, type CarnetView, isStoreError } from '@boia/store';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { requireAccount } from '../../account/gate';
+import { clearArtistCode, pendingArtistCode } from '../../account/artist-link';
 import { accountSnapshot } from '../../account/session';
 import { emitCarnetReward, emitSignal } from '../achievements';
 import { Avatar, DEFAULT_AVATAR, NEUTRAL_AVATARS, shrinkPhoto } from './avatar';
@@ -53,6 +54,9 @@ export function CarnetForm({
   const id = useId();
   const set = (patch: Partial<CarnetDraft>) => setDraft((d) => ({ ...d, ...patch }));
   const creating = initial.isNew;
+  // Tras abrir el enlace de artistas (T186); se lee en el cliente.
+  const [artistLink, setArtistLink] = useState(false);
+  useEffect(() => setArtistLink(pendingArtistCode() !== null), []);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -64,6 +68,11 @@ export function CarnetForm({
       {creating ? (
         <p className="carnet-notice">
           {PUBLIC_FIELDS_NOTICE} {LOCAL_ONLY_NOTICE}
+        </p>
+      ) : null}
+      {creating && artistLink ? (
+        <p className="carnet-notice" data-testid="carnet-aviso-artista">
+          {t('carnet.artistLink.notice')}
         </p>
       ) : null}
       <label className="juego-field">
@@ -262,7 +271,10 @@ export async function saveCarnet(
       nickname,
       avatarKey: draft.avatarKey,
       avatarImage: draft.avatarImage,
+      // El enlace de artistas (T186): en modo local marca este Carnet (demo).
+      artistCode: pendingArtistCode(),
     });
+    clearArtistCode();
   } else if (
     nickname !== before.nickname ||
     draft.avatarKey !== before.avatarKey ||

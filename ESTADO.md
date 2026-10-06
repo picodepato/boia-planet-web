@@ -4,6 +4,66 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 016 T186: Números de socio por orden de llegada, enlace de artistas y sello «ARTISTA»
+
+Qué existe:
+
+- **Migración `supabase/migrations/20261006100600_member_numbers_artist_link.sql`**
+  (escrita, **NO aplicada** a ningún proyecto; la aplica Hernán):
+  - `carnets.member_number` deja de ser identidad (una secuencia quema
+    números en las altas fallidas). Ahora su valor por defecto es
+    `private.next_member_number()`, que sube un contador de una fila
+    (`private.member_counter`) en la misma sentencia/transacción del INSERT:
+    si el alta falla, el contador se deshace y no queda hueco. Artistas y
+    socios, misma serie. El contador arranca en `max(member_number)`: los
+    números existentes no cambian. Salta números que el Admin haya dado a mano
+    por delante.
+  - `admin_set_member_number(p_user, p_number, p_reason)`: sólo admin con
+    aal2; rechaza `number_taken` / `invalid_number` / `unknown_member`; toma
+    el cerrojo del contador; fila `set_member_number` en `audit_log` con el
+    anterior y el nuevo.
+  - Enlace de artistas: `private.artist_link` guarda sólo el hash SHA-256 del
+    código. `admin_rotate_artist_link(p_reason)` crea uno nuevo (32 hex), lo
+    devuelve una sola vez y deja de valer el anterior; la auditoría guarda la
+    fecha, nunca el código. `admin_artist_link_info()` dice si hay enlace y
+    desde cuándo. `save_profile` acepta `p_artist_code` y sólo cuenta al
+    **crear** el Carnet; un código equivocado o rotado da un Carnet de socio.
+    Sin fila en `artist_link` (estado inicial) ningún código vale.
+- `packages/db`: tipos (`database.types.ts`, a mano con la forma exacta de
+  `gen-types`: `member_number?: number` en Insert/Update, `p_artist_code`, las
+  tres RPC nuevas), `rpc.ts` (rechazos nuevos, `ArtistLinkRotation`,
+  `ArtistLinkInfo`), pruebas SQL
+  `packages/db/src/supabase/member-numbers.supabase.ts` (para `pnpm
+  test:supabase`; aquí no corren).
+- Web: ruta `/artista/<código>` (recuerda el código en la pestaña y abre el
+  alta del Carnet en `/mar?menu=carnet`, con aviso en el formulario);
+  `createProfile` lo manda a `save_profile`; en modo local el Carnet creado
+  así queda marcado como artista (demo, cualquier código; sin número, «—»).
+  Sello de goma «ARTISTA» (`ArtistStamp`, misma tinta/textura que los sellos
+  de las fiestas, tinta oscura, girado −7°) arriba en el anverso, entre la
+  cabecera y el nº, en todo Carnet de artista (`muestra` hasta que lo vea
+  Álvaro). Admin → Socios: panel «Enlace de artistas» (crear / cambiar con
+  confirmación, el enlace se ve una vez con «Copiar») y «Cambiar nº» por
+  socio.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 216 archivos, 2058 pruebas
+- `sh tools/spec/checks.sh` → OK
+- `pnpm lint` → exit 0 · `pnpm build` → exit 0 · `pnpm typecheck` → exit 0
+- `E2E_PORT=3186 pnpm e2e e2e/carnet-artista.spec.ts --workers=1` → exit 0, 6 pasan
+- `E2E_PORT=3187 pnpm e2e e2e/carnet.spec.ts e2e/carnet-questions.spec.ts e2e/admin-real.spec.ts --workers=1` → exit 0, 10 pasan, 2 omitidas (Supabase)
+- Capturas del anverso (socio y artista, móvil y escritorio):
+  `/tmp/orchestrator-attach/boia-planet-hernan-T186/t186-{mobile,desktop}-{artista,socio}.png`
+
+Pendiente:
+
+- Hernán: aplicar la migración al proyecto de desarrollo, `pnpm db:types:dev`
+  (debe dar el mismo `database.types.ts`) y `pnpm test:supabase`
+  (`member-numbers.supabase.ts` es nuevo; rota el enlace del proyecto de
+  desarrollo). Después, crear el enlace real desde Admin → Socios.
+- Álvaro: el aspecto y el texto del sello «ARTISTA» (`muestra`).
+
 ## 2026-10-06 — plan 016 T183: Castle arena v3: camera follow, Ibiza money on screen, upgrade sound, no turbo
 
 What exists

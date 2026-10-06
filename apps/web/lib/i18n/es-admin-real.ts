@@ -68,6 +68,8 @@ export const esAdminReal = {
   'admin.real.error.invalidImage': 'La imagen tiene que ser una copia guardada aquí.',
   'admin.real.error.notFound': 'Ya no está: vuelve a cargar.',
   'admin.real.error.invalidEntry': 'Una compensación no se anula.',
+  'admin.real.error.numberTaken': 'Ese número ya es de otro socio: elige uno libre.',
+  'admin.real.error.invalidNumber': 'El número de socio es un entero de 1 en adelante.',
   'admin.real.error.coinsSpent':
     'Las monedas de esa entrada ya se gastaron: no se puede deshacer entera.',
   'admin.real.error.network': 'Sin conexión. Vuelve a probar.',
@@ -142,6 +144,27 @@ export const esAdminReal = {
   'admin.real.socios.deleteWarning':
     'Vas a borrar la cuenta de «{who}» y todo lo suyo (Carnet, puntos, sellos, tiempos, botellas). No se puede deshacer; queda una línea en la auditoría con el motivo.',
   'admin.real.socios.deleted': 'Cuenta borrada.',
+  // Número de socio (plan 016 T186)
+  'admin.real.socios.number': 'Cambiar nº',
+  'admin.real.socios.numberLabel': 'Nº de socio nuevo (libre)',
+  'admin.real.socios.numberSave': 'Guardar número',
+  'admin.real.socios.numberReason': 'número cambiado en el Admin',
+  'admin.real.socios.numberSaved': 'Número cambiado; queda en la auditoría.',
+  // Enlace de artistas (T186)
+  'admin.real.artistLink.title': 'Enlace de artistas',
+  'admin.real.artistLink.lead':
+    'Un único enlace: quien crea su Carnet con él es artista. Al cambiarlo, el anterior deja de valer.',
+  'admin.real.artistLink.none': 'Todavía no hay enlace.',
+  'admin.real.artistLink.since': 'Enlace vigente desde {date}.',
+  'admin.real.artistLink.create': 'Crear enlace',
+  'admin.real.artistLink.rotate': 'Cambiar enlace',
+  'admin.real.artistLink.confirm': 'Sí, cambiarlo (el anterior deja de valer)',
+  'admin.real.artistLink.reason': 'enlace de artistas cambiado en el Admin',
+  'admin.real.artistLink.created': 'Enlace nuevo listo.',
+  'admin.real.artistLink.copyNow':
+    'Cópialo ahora: sólo se guarda cifrado y no se vuelve a ver. Si se pierde, crea otro.',
+  'admin.real.artistLink.copy': 'Copiar',
+  'admin.real.artistLink.copied': 'Copiado.',
 
   // Moderación de botellas
   'admin.real.botellas.title': 'Botellas reportadas',

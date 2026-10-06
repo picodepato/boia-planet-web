@@ -179,6 +179,18 @@
   background: url('../../../app/(landing)/_marca/boia-mascota.svg') center / contain no-repeat;
   transform: rotate(-12deg);
 }
+/* El sello «ARTISTA» (plan 016 T186): arriba, en el hueco entre la cabecera y el número. */
+.idc-front .idc-artist {
+  position: absolute;
+  left: 43cqw;
+  top: 2.2cqw;
+  width: 25cqw;
+  height: auto;
+  aspect-ratio: 200 / 104;
+  overflow: visible;
+  pointer-events: none;
+  transform: rotate(-7deg);
+}
 .idc-qr {
   position: absolute;
   right: 4.6cqw;

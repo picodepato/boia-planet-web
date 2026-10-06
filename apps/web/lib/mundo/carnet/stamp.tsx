@@ -515,3 +515,71 @@ export function RubberStamp({
     </svg>
   );
 }
+
+/**
+ * El sello de goma «ARTISTA» del anverso de un Carnet de artista (plan 016
+ * T186, `muestra` hasta que lo vea Álvaro): el mismo tratamiento de tinta
+ * que los sellos de las fiestas (bordes temblones y tinta comida), en forma
+ * rectangular y tinta oscura (la roja apenas se lee sobre el naranja); el
+ * giro lo pone quien lo coloca. Decorativo: la
+ * cabecera de la tarjeta ya dice «Carnet de artista».
+ */
+export function ArtistStamp({ className }: { className?: string | undefined }) {
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const ink = STAMP_INKS.ink;
+  return (
+    <svg
+      viewBox="0 0 200 104"
+      className={className ? `stamp stamp--artist ${className}` : 'stamp stamp--artist'}
+      data-testid="carnet-sello-artista"
+      aria-hidden="true"
+    >
+      <InkDefs id={id} ink={ink} />
+      <g filter={`url(#${id}-ink)`} opacity={0.9}>
+        <rect
+          x="6"
+          y="6"
+          width="188"
+          height="92"
+          rx="10"
+          fill="none"
+          stroke={ink}
+          strokeWidth="6"
+        />
+        <rect
+          x="16"
+          y="16"
+          width="168"
+          height="72"
+          rx="5"
+          fill="none"
+          stroke={ink}
+          strokeWidth="2"
+        />
+        <text
+          className={TITLE}
+          x="100"
+          y="62"
+          textAnchor="middle"
+          fontSize="38"
+          fill={ink}
+          textLength="146"
+          lengthAdjust="spacingAndGlyphs"
+        >
+          {t('carnet.card.artistStamp')}
+        </text>
+        <text
+          className={BODY}
+          x="100"
+          y="80"
+          textAnchor="middle"
+          fontSize="11"
+          letterSpacing="3"
+          fill={ink}
+        >
+          {t('carnet.card.artistStampSub')}
+        </text>
+      </g>
+    </svg>
+  );
+}

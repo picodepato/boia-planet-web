@@ -208,6 +208,62 @@ describe('el Carnet con su tarjeta', () => {
   });
 });
 
+describe('el sello «ARTISTA» del anverso (plan 016 T186)', () => {
+  const own = (nickname: string): Parameters<typeof cardViewOf>[0] => ({
+    userId: `u-${nickname}`,
+    nickname,
+    avatarKey: null,
+    avatarImage: null,
+    memberSince: '2026-06-01T10:00:00Z',
+    answers: [],
+    points: 0,
+    rank: null,
+    achievements: [],
+    badges: [],
+    stamps: [],
+    cosmeticIds: [],
+    equipped: {},
+    isMine: true,
+    isSample: false,
+    moderated: { photo: false, nickname: false, answers: 0 },
+  });
+  const front = (html: string) =>
+    html.slice(
+      html.indexOf('data-testid="carnet-anverso"'),
+      html.indexOf('data-testid="carnet-reverso"'),
+    );
+
+  it('un Carnet de artista lleva el sello en el anverso; uno de socio, no', () => {
+    const artist = renderToStaticMarkup(
+      createElement(IdCard, { card: cardViewOf(own('Artista'), { isArtist: true }, null) }),
+    );
+    const member = renderToStaticMarkup(
+      createElement(IdCard, { card: cardViewOf(own('Socia'), { memberNumber: 12 }, null) }),
+    );
+    expect(front(artist)).toContain('data-testid="carnet-sello-artista"');
+    expect(front(artist)).toContain(t('carnet.card.artistStamp'));
+    expect(front(artist)).toContain(t('carnet.card.docArtist'));
+    // El sello va con la textura de tinta de los sellos de las fiestas.
+    expect(front(artist)).toMatch(/carnet-sello-artista[\s\S]*feTurbulence/);
+    expect(member).not.toContain('carnet-sello-artista');
+    expect(member).toContain(t('carnet.card.docMember'));
+  });
+
+  it('modo local: el Carnet creado con el enlace de artistas es de artista (demo); sin él, no', async () => {
+    const { createLocalRepository } = await import('@boia/store');
+    const withLink = createLocalRepository({ storage: null });
+    const plain = createLocalRepository({ storage: null });
+    const a = await withLink.carnet.create({ nickname: 'Con Enlace', artistCode: 'muestra' });
+    const b = await plain.carnet.create({ nickname: 'Sin Enlace', artistCode: '  ' });
+    expect(a.isArtist).toBe(true);
+    expect(b.isArtist).toBeUndefined();
+    expect(cardViewOf(a, {}, null).artist).toBe(true);
+    expect(cardViewOf(b, {}, null).artist).toBe(false);
+    // Sin servidor no hay número (D-20).
+    expect(memberNumberLabel(cardViewOf(a, {}, null).memberNumber)).toBe('—');
+  });
+});
+
 describe('el resultado de un sello', () => {
   it('la ventana del QR sale del detalle de outside_window', () => {
     expect(

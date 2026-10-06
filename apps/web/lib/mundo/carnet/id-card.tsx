@@ -13,7 +13,7 @@ import {
   sinceShort,
 } from './id-card-model';
 import { QrCode } from './qr-code';
-import { RubberStamp, stampLabel } from './stamp';
+import { ArtistStamp, RubberStamp, stampLabel } from './stamp';
 import './id-card.css';
 
 /**
@@ -118,6 +118,7 @@ function Front({ card }: { card: CardView }) {
         )}
       </div>
       <span className="idc-seal" aria-hidden="true" />
+      {card.artist ? <ArtistStamp className="idc-artist" /> : null}
       {card.publicUrl ? (
         <div className="idc-qr">
           <QrCode
