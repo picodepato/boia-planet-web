@@ -1,5 +1,5 @@
 import { circuitFromWorld } from '@boia/engine/circuit';
-import { SAMPLE_CREW } from '@boia/store';
+import { RACE_FAST_ACHIEVEMENT, SAMPLE_ACHIEVEMENTS, SAMPLE_CREW } from '@boia/store';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -374,5 +374,37 @@ test('fuera de la carretera: boyitas a los lados, entrar y salir no la acaba, 5 
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
   await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   await expect(page.getByTestId('mar-aviso').filter({ hasText: /te saliste/i })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+/**
+ * Plan 015 T176 (decisión 16): terminar la regata deja «Primera regata»
+ * lista para reclamar, una vez; «Rápido» está en «Logros» con el tiempo que
+ * pide (lo cumple sólo una regata por debajo).
+ */
+test('logro: terminar la regata deja «Primera regata» lista para reclamar', async ({ page }) => {
+  const first = SAMPLE_ACHIEVEMENTS.find((a) => a.id === 'circuito')!;
+  const fast = SAMPLE_ACHIEVEMENTS.find((a) => a.id === RACE_FAST_ACHIEVEMENT)!;
+  const errors = await openMar(page, `?cerca=${start.id}`);
+  // El piloto de teclado a veces se sale de la carretera en el navegador lento
+  // de las pruebas (la carrera se anula): otra salida, hasta tres.
+  let outcome = '';
+  for (let i = 0; i < 3 && outcome !== 'ok'; i++) {
+    await startRace(page);
+    outcome = await pilot(page, 'race');
+  }
+  expect(outcome).toBe('ok');
+  await expect(page.getByTestId('mar-carrera-final')).toBeVisible();
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  const panel = page.getByTestId('mar-logros-panel');
+  const row = panel.getByTestId(`logro-${first.id}`);
+  await expect(row).toHaveAttribute('data-estado', 'ready');
+  await expect(row).toContainText(first.title);
+  const rapido = panel.getByTestId(`logro-${fast.id}`);
+  await expect(rapido).toContainText(fast.title);
+  await expect(rapido).toHaveAttribute('data-estado', /^(ready|in_progress)$/);
+  await panel.getByTestId(`logro-reclamar-${first.id}`).click();
+  await expect(row).toHaveAttribute('data-estado', 'claimed');
   expect(errors).toEqual([]);
 });

@@ -106,6 +106,24 @@ function stepsFor(d: AchievementDefinition): Step[] {
           signal({ trigger: d.trigger, game }),
         ];
       }
+      // El castillo (plan 015 T176): ganar en otra dificultad, o más corta, no basta.
+      const difficulty = param(d, 'difficulty');
+      const runMin = param(d, 'runMin');
+      if (typeof game === 'string' && typeof difficulty === 'string') {
+        const other = difficulty === 'normal' ? 'tranquila' : 'normal';
+        if (typeof runMin === 'number') {
+          return [
+            signal({ trigger: d.trigger, game, difficulty: other, runMin }),
+            signal({ trigger: d.trigger, game, difficulty, runMin: runMin - 1 }),
+            signal({ trigger: d.trigger, game, difficulty, runMin }),
+          ];
+        }
+        return [
+          signal({ trigger: d.trigger, game: 'otro', difficulty }),
+          signal({ trigger: d.trigger, game, difficulty: other, runMin: 5 }),
+          signal({ trigger: d.trigger, game, difficulty, runMin: 5 }),
+        ];
+      }
       if (typeof game === 'string') return [signal({ trigger: d.trigger, game })];
       return times(n, (i) => signal({ trigger: 'win_minigame', game: `juego-${i}` }));
     }

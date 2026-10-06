@@ -10,6 +10,22 @@ const FREU = 'el-freu';
  */
 export const FAST_LAP_MS = 73_400;
 
+/**
+ * «Rápido» (plan 015 T176, decisión 16): la regata de tres vueltas en menos
+ * de 80 s. Medido con el piloto de las pruebas (`botRace`, 67,3 s a fondo y
+ * sin turbo) y un modelo de jugador normal que apunta con un error que
+ * aprende de un intento a otro (`apps/web/app/mar/race-rapido.test.ts`):
+ * la mediana lo consigue en el intento 4 (3–5 la mayoría). Más fácil que
+ * «Rayo de Los Rápidos» (`FAST_LAP_MS`), que sigue siendo el reto de arriba.
+ * muestra
+ */
+export const RACE_FAST_MS = 80_000;
+
+/** El minijuego del castillo en las señales de logro (`win_minigame`). */
+export const CASTLE_GAME = 'castillo';
+/** La duración de la partida larga del castillo, la del logro del vórtice (min). */
+export const CASTLE_LONG_RUN_MIN = 10;
+
 // Economía de la decisión 2026-10-02 (T72): en unos 10 minutos de juego normal
 // se desbloquean 3 barcos y alguna skin (lo prueba
 // `apps/web/lib/mundo/economy.test.ts`). muestra
@@ -23,13 +39,17 @@ export const MINIKRAKEN = 'mascota-minikraken';
 
 /**
  * Los premios de plan 015 (decisión 16; T175 los modela y dibuja, T176 los
- * concede con sus logros): dos mascotas más y una estela. Hasta que T176
- * ponga sus logros no se consiguen más que con el atajo de desarrollo
- * (`apps/web/app/mar/mascota-dev.ts`). Nombres y diseños `muestra`.
+ * concede con sus logros): dos mascotas más y una estela. El atajo de
+ * desarrollo (`apps/web/app/mar/mascota-dev.ts`) las da por su logro.
+ * Nombres y diseños `muestra`.
  */
 export const CANONCITO = 'mascota-canoncito';
 export const TORTUGA_TURBO = 'mascota-tortuga-turbo';
 export const ESTELA_VORTICE = 'estela-vortice';
+/** Los logros que los regalan (T176). */
+export const CASTLE_STORM_ACHIEVEMENT = 'castillo-tormenta';
+export const CASTLE_VORTEX_ACHIEVEMENT = 'castillo-vortice';
+export const RACE_FAST_ACHIEVEMENT = 'regata-rapida';
 
 /** El barco que regala el Carnet BOIA: ni de base, ni de misión, ni de otro logro. */
 export const CARNET_SHIP = 'barco-low-poly';
@@ -131,9 +151,11 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
+    // Id estable; desde plan 015 T176 es «Primera regata» (decisión 16): la
+    // misma condición, terminar por primera vez la regata de tres vueltas.
     id: 'circuito',
-    title: 'Por Los Rápidos',
-    description: 'Termina una vuelta al circuito.',
+    title: 'Primera regata',
+    description: 'Termina tu primera regata en Los Rápidos.',
     trigger: 'complete_circuit',
     triggerParams: { circuit: FREU },
     points: 60,
@@ -159,6 +181,65 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     points: 120,
     coins: 0,
     cosmeticKey: 'estela-rayo',
+    sample: true,
+  },
+  {
+    // Plan 015 T176 (decisión 16): una regata decente regala la mascota que nada detrás del barco.
+    id: RACE_FAST_ACHIEVEMENT,
+    title: 'Rápido',
+    description: 'Termina la regata de tres vueltas en menos de 80 s.',
+    trigger: 'complete_circuit',
+    triggerParams: { circuit: FREU, maxMs: RACE_FAST_MS },
+    points: 80,
+    coins: 40,
+    cosmeticKey: TORTUGA_TURBO,
+    sample: true,
+  },
+  // «Defensa del Castillo» (plan 015 T176, decisión 16): ganar es aguantar
+  // la partida entera (oro o plata), de cualquier duración, en cada
+  // dificultad; Tormenta regala el Cañoncito y Tormenta de 10 min, la Estela
+  // del vórtice. Sólo cuentan las partidas que valen: ni las de un atajo de
+  // desarrollo ni las acabadas con «Terminar partida». muestra (P14)
+  {
+    id: 'castillo-tranquila',
+    title: 'Castillo en calma',
+    description: 'Gana una partida del castillo en Tranquila.',
+    trigger: 'win_minigame',
+    triggerParams: { game: CASTLE_GAME, difficulty: 'tranquila' },
+    points: 40,
+    coins: 20,
+    sample: true,
+  },
+  {
+    id: 'castillo-normal',
+    title: 'Muralla firme',
+    description: 'Gana una partida del castillo en Normal.',
+    trigger: 'win_minigame',
+    triggerParams: { game: CASTLE_GAME, difficulty: 'normal' },
+    points: 60,
+    coins: 30,
+    sample: true,
+  },
+  {
+    id: CASTLE_STORM_ACHIEVEMENT,
+    title: 'Castillo en la tormenta',
+    description: 'Gana una partida del castillo en Tormenta.',
+    trigger: 'win_minigame',
+    triggerParams: { game: CASTLE_GAME, difficulty: 'tormenta' },
+    points: 120,
+    coins: 50,
+    cosmeticKey: CANONCITO,
+    sample: true,
+  },
+  {
+    id: CASTLE_VORTEX_ACHIEVEMENT,
+    title: 'Ojo del vórtice',
+    description: 'Gana la partida de 10 minutos del castillo en Tormenta.',
+    trigger: 'win_minigame',
+    triggerParams: { game: CASTLE_GAME, difficulty: 'tormenta', runMin: CASTLE_LONG_RUN_MIN },
+    points: 150,
+    coins: 50,
+    cosmeticKey: ESTELA_VORTICE,
     sample: true,
   },
   // Los logros del Cañón definitivo (plan 013 T153, §9 del diseño de

@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T176: Castle and race achievements, prizes and mascot unlocks
+
+Qué existe:
+- Catálogo (`packages/store/src/sample/progress.ts`, `muestra`): `castillo-tranquila` (40 ★ + 20), `castillo-normal` (60 + 30), `castillo-tormenta` (120 + 50 + Cañoncito), `castillo-vortice` (Tormenta de 10 min: 150 + 50 + Estela del vórtice), todos `win_minigame` del castillo con `difficulty` (y `runMin`); `circuito` retitulado «Primera regata» (misma condición, 60 + 30); `regata-rapida` «Rápido» (`complete_circuit` con `maxMs: RACE_FAST_MS` = 80 s, 80 + 40 + Tortuga turbo). «Rayo de Los Rápidos» (73,4 s) sigue siendo el reto de arriba.
+- Umbral de «Rápido» medido con `botRace` (sacado a `apps/web/app/mar/race-test-helpers.ts`, con un error de puntería opcional) y un modelo de jugador normal (error de puntería sinusoidal de 1 rad que baja un 20 % por intento, 24 jugadores, sin turbo): piloto 67,3 s; con 80 s, primer éxito 2 (1), 3 (10), 4 (5), 5 (2), 6 (2), 7 (4), mediana 4 (`race-rapido.test.ts`, `MEDIR=1` lo imprime). 78 s → mediana 5; 82 s → 3.
+- Castillo: `apps/web/app/mar/castillo-logros.ts` (`castleSignals`: sólo `end === 'held'` y partida que cuenta, la misma regla que la medalla: ni atajo donde no dan premio, ni «Terminar partida», ni caer/abandonar; `recordCastleWin`). `castillo-mode.tsx` lo llama al acabar; la tarjeta final (`mar-castillo-final-logros`, `data-logro`) dice qué logro y qué premio se desbloquea, por reclamar en «Logros».
+- `lib/mundo/achievements.ts`: `win_minigame` con dificultad/duración (huellas `minijuego:castillo[:dif[:min]]`), `emitSignalsCompleted`, y `reconcileAchievementEvidence` completa victorias del castillo y récords de la regata de antes. Admin: `castillo` en `MINIGAMES`, parámetros `difficulty` y `runMin` en `win_minigame`.
+- Documento local schema 10: v9 → v10 añade las huellas de victoria de cada par con plata u oro guardada (contadores `castillo:<min>-<dif>:medalla`); nada más cambia.
+- Supabase (escrita, sin aplicar): `supabase/migrations/20261006100400_castle_race_prizes.sql` (los tres cosméticos con su `unlock_achievement`, y las mismas huellas en `account_snapshots`); la siembra `20261003100100_economy.sql` con las mismas filas; caso en `packages/db/src/supabase/economy.supabase.ts` (no corrido: sin Postgres).
+- El atajo `?mascota=canoncito…&estela=vortice` ya da los premios por su logro (completado y reclamado).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (212 files, 2003 tests)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → 0; `pnpm build` → 0; `pnpm typecheck` → 0
+- `E2E_PORT=3176 pnpm e2e mar-castillo.spec.ts mar-circuito.spec.ts --workers=1 -g "logro|mascota"` → 4 passed (primer intento: el móvil de la regata falló porque el piloto de teclado anuló la carrera; el test ahora reintenta la salida hasta 3 veces)
+
+Pendiente:
+- Nombres, títulos y cantidades `muestra` (Álvaro). FOR HERNÁN: «Primera regata» es el logro `circuito` retitulado (no uno nuevo que saltaría a la vez).
+- Aplicar la migración de Supabase y correr `economy.supabase.ts` (Hernán).
+
 ## 2026-10-06 — plan 015 T175: Mascots «Cañoncito» and «Tortuga turbo», and the «Estela del vórtice»
 
 Qué existe (decisión 16, los aspectos; T176 cablea los logros):

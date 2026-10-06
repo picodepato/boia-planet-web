@@ -15,6 +15,7 @@ import { planetRect, wrapIn } from '../app/mar/engine/wrap';
 import { t } from '../lib/i18n';
 import { mar, openMar } from './mar-helpers';
 import { CASTLE_BEST_KEY, recordCastleBest } from '../lib/mundo/ranking-castle';
+import { CANONCITO, CASTLE_STORM_ACHIEVEMENT, CASTLE_VORTEX_ACHIEVEMENT, SAMPLE_COSMETICS } from '@boia/store';
 
 /**
  * «Defensa del Castillo» (plan 014). T160, la arena: con el atajo
@@ -1133,5 +1134,52 @@ test('ranking local: muestra + puntuación propia, nueve tablas y atajo/Terminar
   await page.getByTestId('mar-menu-terminar-si').click();
   await expect(endRank).toHaveAttribute('data-motivo', 'quit');
   expect(await page.evaluate((key) => localStorage.getItem(key), CASTLE_BEST_KEY)).toBe(saved);
+  expect(errors).toEqual([]);
+});
+
+/**
+ * Plan 015 T176 (decisión 16): ganar en Tormenta completa su logro y la
+ * tarjeta final dice que desbloquea el Cañoncito (5 min: el del vórtice no);
+ * reclamado en «Logros», el Cañoncito es tuyo en Mi Barco. Con `vencer=1`:
+ * en las e2e los atajos dan premio (como la medalla).
+ */
+test('logro y mascota: ganar en Tormenta desbloquea el Cañoncito; reclamado, es tuyo en Mi Barco', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=castillo&vencer=1&duracion=5&dificultad=tormenta');
+  const end = page.getByTestId('mar-castillo-final');
+  await expect(end).toBeVisible({ timeout: 30_000 });
+  await expect(end).toHaveAttribute('data-fin', 'held');
+  const unlocked = page.getByTestId('mar-castillo-final-logros');
+  const storm = unlocked.locator(`[data-logro="${CASTLE_STORM_ACHIEVEMENT}"]`);
+  const name = SAMPLE_COSMETICS.find((c) => c.id === CANONCITO)!.name;
+  await expect(storm).toContainText(name);
+  await expect(unlocked.locator(`[data-logro="${CASTLE_VORTEX_ACHIEVEMENT}"]`)).toHaveCount(0);
+  await page.getByTestId('mar-castillo-volver').click();
+  await expect(end).toHaveCount(0);
+
+  // «Logros»: listo para reclamar; reclamarlo da la mascota.
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-menu-logros').click();
+  const panel = page.getByTestId('mar-logros-panel');
+  const row = panel.getByTestId(`logro-${CASTLE_STORM_ACHIEVEMENT}`);
+  await expect(row).toHaveAttribute('data-estado', 'ready');
+  await panel.getByTestId(`logro-reclamar-${CASTLE_STORM_ACHIEVEMENT}`).click();
+  await expect(row).toHaveAttribute('data-estado', 'claimed');
+  await expect(panel.getByTestId(`logro-${CASTLE_VORTEX_ACHIEVEMENT}`)).toHaveAttribute(
+    'data-estado',
+    'in_progress',
+  );
+  await page.getByTestId('mar-logros-cerrar').click();
+  await expect(panel).toHaveCount(0);
+
+  // Mi Barco: el Cañoncito ya no está bloqueado y se equipa.
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-barco').click();
+  const shop = page.getByTestId('mar-tienda').getByTestId('barco');
+  const option = shop.getByTestId(`barco-mascota-${CANONCITO}`);
+  await expect(option).not.toHaveAttribute('data-bloqueado', 'si');
+  await option.click();
+  await expect(option).toHaveAttribute('aria-checked', 'true');
   expect(errors).toEqual([]);
 });

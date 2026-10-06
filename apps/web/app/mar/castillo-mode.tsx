@@ -39,6 +39,7 @@ import {
 } from './engine/defense-overlays';
 import type { CanonAudioState } from './canon-audio';
 import { useCastleAudio } from './castillo-audio-mode';
+import { type CastleUnlock, castleSignals, recordCastleWin } from './castillo-logros';
 import { type HideLayer, devStartRewards, hideForGame, marHideHost, randomSeed } from './survivors';
 
 /**
@@ -53,6 +54,7 @@ import { type HideLayer, devStartRewards, hideForGame, marHideHost, randomSeed }
  */
 
 const EMPTY: ReadonlySet<HideLayer> = new Set();
+const NONE: readonly CastleUnlock[] = [];
 /** Cada cuánto se publica el estado de la partida (ms). */
 const HOOK_MS = 250;
 /** Cada cuánto, con la pestaña oculta, se apunta la pausa (ms). */
@@ -128,6 +130,8 @@ export interface CastleMode {
   record: CastleMedalRecord | null;
   /** Tu mejor puntuación y puesto de esta partida (T163). */
   ranking: CastleRankingOutcome | null;
+  /** Los logros que esta partida acaba de completar (plan 015 T176), para la tarjeta. */
+  unlocked: readonly CastleUnlock[];
   /**
    * Barras de vida y números de daño en la arena (plan 015 T170, decisión
    * 11): encendidos al principio y guardados en el dispositivo. El
@@ -192,6 +196,7 @@ export function useCastleMode({
   const medals = medalData ?? EMPTY_CASTLE_MEDALS;
   const [record, setRecord] = useState<CastleMedalRecord | null>(null);
   const [ranking, setRanking] = useState<CastleRankingOutcome | null>(null);
+  const [unlocked, setUnlocked] = useState<readonly CastleUnlock[]>(NONE);
   // Las barras y los números (decisión 11): lo guardado, al montar (en el servidor, lo de siempre).
   const [overlays, setOverlayState] = useState<DefenseOverlayPrefs>(() => readDefenseOverlays(null));
   useEffect(() => setOverlayState(readDefenseOverlays()), []);
@@ -214,6 +219,7 @@ export function useCastleMode({
     setResult(null);
     setRecord(null);
     setRanking(null);
+    setUnlocked(NONE);
     setActive(false);
   }, [engineRef]);
 
@@ -262,9 +268,17 @@ export function useCastleMode({
               if (runRef.current === run) setRanking(outcome);
             });
           }
-          // La medalla (T162): la mejor de su par se queda en el progreso. Una
-          // partida de atajo sólo donde los atajos dan premio (como el Cañón, T121).
-          if (!r?.medal || (run.devStart && !devStartRewards())) return;
+          // Una partida de atajo sólo cuenta donde los atajos dan premio (como el Cañón, T121).
+          const counts = !run.devStart || devStartRewards();
+          // Los logros (plan 015 T176): ganar en cada dificultad; la tarjeta dice qué se desbloqueó.
+          void recordCastleWin(gameRepository(), castleSignals(r, counts)).then(
+            (u) => {
+              if (runRef.current === run && u.length > 0) setUnlocked(u);
+            },
+            (err: unknown) => console.warn('[boia] no se pudo apuntar el logro del castillo', err),
+          );
+          // La medalla (T162): la mejor de su par se queda en el progreso.
+          if (!r?.medal || !counts) return;
           const medal = r.medal;
           void recordCastleMedal(gameRepository().progress, r.runMin, r.difficulty, medal).then(
             (o) => {
@@ -281,6 +295,7 @@ export function useCastleMode({
       setPrepOpen(false);
       setRecord(null);
       setRanking(null);
+      setUnlocked(NONE);
       startAudio();
       latest.current.onStart();
       run.setPaused(pausedRef.current);
@@ -416,6 +431,7 @@ export function useCastleMode({
     medals,
     record: result ? record : null,
     ranking: result ? ranking : null,
+    unlocked: result ? unlocked : NONE,
     sound,
     prepareAudio,
     setAudioSettings,

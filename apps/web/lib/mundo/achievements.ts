@@ -38,8 +38,11 @@ export type AchievementSignal =
   /** Vuelta válida: su tiempo y los arcos por los que pasó (la rama), si se saben. */
   | { trigger: 'complete_circuit'; circuit: string; ms?: number; via?: readonly string[] }
   | { trigger: 'buy_ticket'; eventId: string }
-  /** Partida ganada y válida de un minijuego (`canon`). */
-  | { trigger: 'win_minigame'; game: string }
+  /**
+   * Partida ganada y válida de un minijuego (`canon`, `castillo`); el
+   * castillo (plan 015 T176) dice además su dificultad y su duración (min).
+   */
+  | { trigger: 'win_minigame'; game: string; difficulty?: string; runMin?: number }
   /** Partida jugada y válida de un minijuego (T153: el Cañón, gane o pierda). */
   | { trigger: 'play_minigame'; game: string }
   /** Boss vencido en el Cañón (T153), con la dificultad de la partida. */
@@ -108,6 +111,11 @@ export interface AchievementFacts {
   circuits: Record<string, { via: string[]; bestMs: number | null }>;
   /** Minijuegos ganados (distintos). */
   games: string[];
+  /**
+   * Victorias con su dificultad y su duración (`castillo:tormenta`,
+   * `castillo:tormenta:10`; plan 015 T176).
+   */
+  wins: string[];
   /** Minijuegos jugados en una partida válida (distintos; T153). */
   played: string[];
   /** Bosses vencidos (`kraken`) y con su dificultad (`kraken:tormenta`) (T153). */
@@ -170,7 +178,8 @@ export async function achievementFacts(progress: ProgressApi): Promise<Achieveme
     rescued: after(keys, KEY.rescued),
     delivered: after(keys, KEY.delivered),
     circuits,
-    games: after(keys, KEY.game),
+    games: after(keys, KEY.game).filter((g) => !g.includes(':')),
+    wins: after(keys, KEY.game).filter((g) => g.includes(':')),
     played: after(keys, KEY.played),
     bosses: after(keys, KEY.boss),
     encounters: after(keys, KEY.encounter),
@@ -269,6 +278,13 @@ export function achievementGoal(
         const won = game ? facts.games.includes(game) : facts.games.length > 0;
         return tally((won ? 1 : 0) + (facts.played.includes(played) ? 1 : 0), 2);
       }
+      // El castillo (plan 015 T176): ganar en una dificultad y, si lo pide, con una duración.
+      const difficulty = text(def, 'difficulty');
+      const runMin = param(def, 'runMin');
+      if (game && difficulty) {
+        const want = [game, difficulty, ...(typeof runMin === 'number' ? [runMin] : [])].join(':');
+        return tally(facts.wins.includes(want) ? 1 : 0, 1);
+      }
       return oneOrMany(facts.games, game, count(def));
     }
     case 'play_minigame':
@@ -333,7 +349,14 @@ async function record(progress: ProgressApi, s: AchievementSignal): Promise<void
       }
       return;
     case 'win_minigame':
-      return discover(progress, `${KEY.game}${s.game}`);
+      await discover(progress, `${KEY.game}${s.game}`);
+      if (s.difficulty) {
+        await discover(progress, `${KEY.game}${s.game}:${s.difficulty}`);
+        if (s.runMin !== undefined) {
+          await discover(progress, `${KEY.game}${s.game}:${s.difficulty}:${s.runMin}`);
+        }
+      }
+      return;
     case 'play_minigame':
       return discover(progress, `${KEY.played}${s.game}`);
     case 'defeat_boss':
@@ -553,6 +576,28 @@ export async function emitSignals(
   for (const s of signals) await emitSignal(repo, s);
 }
 
+/**
+ * Como `emitSignals`, esperando: devuelve los logros completados ahora (sus
+ * avisos van también a quien escuche). La tarjeta final del castillo (plan
+ * 015 T176) dice qué se ha desbloqueado. Un fallo sólo se apunta en consola.
+ */
+export async function emitSignalsCompleted(
+  repo: Repo,
+  signals: readonly AchievementSignal[],
+): Promise<AchievementProgress[]> {
+  const out: AchievementProgress[] = [];
+  for (const s of signals) {
+    try {
+      const done = await completeBySignal(repo, s);
+      broadcast(done.map((a) => achievementNotice(a.definition)));
+      out.push(...done);
+    } catch (err) {
+      console.warn('[boia] no se pudo apuntar el logro', err);
+    }
+  }
+  return out;
+}
+
 /** Como `emitSignal`, para el Carnet recién creado: su premio llega ya (`grantCarnetReward`). */
 export function emitCarnetReward(repo: Repo): Promise<void> {
   return grantCarnetReward(repo).then(broadcast, (err: unknown) =>
@@ -599,6 +644,22 @@ export async function reconcileAchievementEvidence(repo: Repo): Promise<void> {
   // partidas jugadas y bosses vencidos completan sus logros nuevos.
   const facts = await achievementFacts(repo.progress);
   for (const game of facts.played) await completeBySignal(repo, { trigger: 'play_minigame', game });
+  // La regata (plan 015 T176): un récord de antes bajo el tiempo de «Rápido» ya lo cumple.
+  for (const [circuit, c] of Object.entries(facts.circuits)) {
+    if (c.bestMs !== null) await completeBySignal(repo, { trigger: 'complete_circuit', circuit });
+  }
+  // Las victorias del castillo (plan 015 T176; las de antes las deja la migración v10).
+  for (const key of facts.wins) {
+    const [game, difficulty, minutes] = key.split(':');
+    if (!game || !difficulty) continue;
+    const runMin = minutes ? Number(minutes) : undefined;
+    await completeBySignal(repo, {
+      trigger: 'win_minigame',
+      game,
+      difficulty,
+      ...(runMin !== undefined && Number.isFinite(runMin) ? { runMin } : {}),
+    });
+  }
   for (const key of facts.bosses) {
     const [boss, difficulty] = key.split(':');
     if (!boss) continue;

@@ -53,6 +53,7 @@ export const esLib = {
   'admin.achievements.yJugarAOtro': 'Y jugar una partida de (opcional)',
   'admin.achievements.bossVacioCualquiera': 'Boss (vacío: cualquiera)',
   'admin.achievements.dificultadVacioCualquiera': 'Dificultad (vacío: cualquiera)',
+  'admin.achievements.duracionMinOpcional': 'Duración de la partida en minutos (opcional)',
   'admin.achievements.bossesDistintos': 'Bosses distintos',
   'admin.achievements.condicionDesconocida': 'condición desconocida: {trigger}',
   'admin.achievements.noEsUnParametro': '«{key}» no es un parámetro de esta condición',

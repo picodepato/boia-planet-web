@@ -112,6 +112,24 @@ describe('award_points: acciones conocidas con tope por acción y por día', () 
     )) as unknown as AwardResult;
     expect(r).toMatchObject({ granted: true, cosmetics: ['barco-low-poly'] });
   });
+
+  it('castillo y carrera (plan 015 T176, migración 20261006100400): cada logro regala su premio', async () => {
+    for (const [ref, points, coins, cosmetic] of [
+      ['castillo-tormenta', 120, 50, 'mascota-canoncito'],
+      ['castillo-vortice', 150, 50, 'estela-vortice'],
+      ['regata-rapida', 80, 40, 'mascota-tortuga-turbo'],
+    ] as const) {
+      const r = (await ok(
+        m.client.rpc('award_points', {
+          p_action: 'achievement',
+          p_ref: ref,
+          p_points: points,
+          p_coins: coins,
+        }),
+      )) as unknown as AwardResult;
+      expect(r, ref).toMatchObject({ granted: true, cosmetics: [cosmetic] });
+    }
+  });
 });
 
 describe('cosméticos: comprar con monedas y equipar lo propio', () => {

@@ -108,6 +108,21 @@ export const TRIGGER_PARAMS: Record<AchievementTrigger, readonly TriggerParam[]>
       optional: true,
     },
     { ...count(20, t('admin.achievements.minijuegosDistintos')), optional: true },
+    // El castillo (plan 015 T176): ganar en esa dificultad y, si se pide, con esa duración.
+    {
+      key: 'difficulty',
+      label: t('admin.achievements.dificultadVacioCualquiera'),
+      kind: 'text',
+      optional: true,
+    },
+    {
+      key: 'runMin',
+      label: t('admin.achievements.duracionMinOpcional'),
+      kind: 'int',
+      min: 1,
+      max: 60,
+      optional: true,
+    },
     // Guardacostas (T153): ganar el juego de arriba y jugar una partida de este.
     {
       key: 'played',
@@ -169,9 +184,9 @@ export const TRIGGER_PARAMS: Record<AchievementTrigger, readonly TriggerParam[]>
 
 /**
  * Minijuegos registrados (T23). El minijuego del faro se quitó en el plan
- * 014 (T157); el Castillo entra cuando se pueda jugar (T162).
+ * 014 (T157); el Castillo entra con sus logros (plan 015 T176).
  */
-export const MINIGAMES = ['canon'] as const;
+export const MINIGAMES = ['canon', 'castillo'] as const;
 
 export interface TriggerChoices {
   circuits: readonly string[];

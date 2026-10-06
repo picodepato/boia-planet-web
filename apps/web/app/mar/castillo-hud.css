@@ -558,3 +558,10 @@
     transition: none;
   }
 }
+
+/* Los logros que la partida desbloquea (plan 015 T176), en la tarjeta final. */
+.mar-castle-end__logros {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

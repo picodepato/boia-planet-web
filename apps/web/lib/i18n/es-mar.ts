@@ -303,6 +303,8 @@ export const esMar = {
   'mar.castillo.fin.medalla.mejor': '¡Tu mejor medalla en {eleccion}!',
   'mar.castillo.fin.puntos': 'Puntos',
   'mar.castillo.fin.prueba': 'Partida de prueba: fuera del ranking.',
+  'mar.castillo.fin.logro': '¡Logro «{logro}»! Reclámalo en Logros.',
+  'mar.castillo.fin.logro.premio': '¡Logro «{logro}»: desbloqueas {premio}! Reclámalo en Logros.',
   // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
   'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
   'mar.bienvenida.texto':

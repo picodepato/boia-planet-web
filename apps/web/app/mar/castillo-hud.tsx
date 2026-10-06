@@ -353,6 +353,7 @@ export function CastleLayer({
           result={castle.result}
           record={castle.record}
           ranking={castle.ranking}
+          unlocked={castle.unlocked}
           onAgain={castle.again}
           onBack={castle.leave}
         />
@@ -785,12 +786,15 @@ function CastleEnd({
   result,
   record,
   ranking,
+  unlocked = [],
   onAgain,
   onBack,
 }: {
   result: DefenseResult;
   record: CastleMode['record'];
   ranking: CastleMode['ranking'];
+  /** Los logros que acaba de completar (plan 015 T176): lo desbloqueado, por reclamar en «Logros». */
+  unlocked?: CastleMode['unlocked'];
   onAgain: () => void;
   onBack: () => void;
 }) {
@@ -866,6 +870,18 @@ function CastleEnd({
             </div>
           )}
         </dl>
+        {unlocked.length > 0 ? (
+          <ul className="mar-castle-end__logros" data-testid="mar-castillo-final-logros" role="status">
+            {unlocked.map((u) => (
+              <li key={u.id} className="mar-canon-end__unlock" data-logro={u.id}>
+                {msg(u.prize ? 'mar.castillo.fin.logro.premio' : 'mar.castillo.fin.logro', {
+                  logro: u.title,
+                  premio: u.prize ?? '',
+                })}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {ranking ? <CastleEndRanking ranking={ranking} /> : null}
         {!ranking && !card.short && !card.ranked ? (
           <p className="mar-canon-end__prize" data-testid="mar-castillo-final-prueba">

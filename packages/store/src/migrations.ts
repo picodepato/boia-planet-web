@@ -464,6 +464,66 @@ function v8ToV9(doc: Record<string, unknown>): Record<string, unknown> {
   return { ...doc, players };
 }
 
+/**
+ * Las medallas del castillo (plan 014 T162), copia fija de
+ * `apps/web/lib/mundo/castle-medals.ts`: un contador por par duración ×
+ * dificultad con el rango de la mejor medalla (1 bronce, 2 plata, 3 oro).
+ * Plata y oro son aguantar la partida entera: ganarla. Una migración no lee
+ * el código vivo.
+ */
+export const V10_CASTLE_RUN_MINS: readonly number[] = [5, 7, 10];
+export const V10_CASTLE_DIFFICULTIES: readonly string[] = ['tranquila', 'normal', 'tormenta'];
+export const V10_CASTLE_WON_RANK = 2;
+export const v10CastleMedalCounter = (runMin: number, difficulty: string) =>
+  `castillo:${runMin}-${difficulty}:medalla`;
+/** Las huellas de una partida del castillo ganada (las de `win_minigame` de la web). */
+export const v10CastleWinKeys = (runMin: number, difficulty: string): string[] => [
+  'minijuego:castillo',
+  `minijuego:castillo:${difficulty}`,
+  `minijuego:castillo:${difficulty}:${runMin}`,
+];
+
+/**
+ * v9 → v10 (plan 015 T176): los logros nuevos del castillo cuentan partidas
+ * ganadas por dificultad (y la de 10 min en Tormenta) con huellas
+ * `minijuego:castillo:…`. Lo que ya se ganó antes también cuenta: cada par
+ * con plata u oro guardada deja las huellas de esa victoria (la fecha, la de
+ * la identidad; no se sabe cuándo fue). Sólo se añaden huellas: el libro,
+ * los logros, los contadores y lo demás no cambian. Los de la carrera
+ * («Rápido») salen del récord que ya está en el progreso.
+ */
+function v9ToV10(doc: Record<string, unknown>): Record<string, unknown> {
+  if (!isObject(doc.players)) return doc;
+  const identity = isObject(doc.identity) ? doc.identity : null;
+  const at =
+    identity && typeof identity.createdAt === 'string'
+      ? identity.createdAt
+      : '2026-10-06T00:00:00.000Z';
+  const players: Record<string, unknown> = {};
+  for (const [userId, raw] of Object.entries(doc.players)) {
+    if (!isObject(raw) || !isObject(raw.discoveries) || !isObject(raw.counters)) {
+      players[userId] = raw;
+      continue;
+    }
+    const counters = raw.counters;
+    const discoveries: Record<string, unknown> = { ...raw.discoveries };
+    let added = false;
+    for (const runMin of V10_CASTLE_RUN_MINS) {
+      for (const difficulty of V10_CASTLE_DIFFICULTIES) {
+        const rank = counters[v10CastleMedalCounter(runMin, difficulty)];
+        if (typeof rank !== 'number' || rank < V10_CASTLE_WON_RANK) continue;
+        for (const key of v10CastleWinKeys(runMin, difficulty)) {
+          if (discoveries[key] !== undefined) continue;
+          discoveries[key] = { at, worldId: null };
+          added = true;
+        }
+      }
+    }
+    players[userId] = added ? { ...raw, discoveries } : raw;
+  }
+  return { ...doc, players };
+}
+
 export const MIGRATIONS: readonly Migration[] = [
   { from: 1, to: 2, name: 'logros que se reclaman (T36)', up: v1ToV2 },
   { from: 2, to: 3, name: 'eventos con formato, precio y estado por fechas (T42)', up: v2ToV3 },
@@ -497,6 +557,12 @@ export const MIGRATIONS: readonly Migration[] = [
     to: 9,
     name: 'sin la Vigilancia del faro: su logro y su huella de victoria (plan 014 T157)',
     up: v8ToV9,
+  },
+  {
+    from: 9,
+    to: 10,
+    name: 'logros del castillo: las partidas ganadas antes dejan su huella (plan 015 T176)',
+    up: v9ToV10,
   },
 ];
 
