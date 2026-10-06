@@ -29,7 +29,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 ## Tasks
 
 ## T180 — Boia Fiestera to the right of the route line before the Puerto de Alicante
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Move the Boia Fiestera so that, sailing the yellow route line toward the Puerto de Alicante, it appears to the right of the line, close to it, just before the Puerto (decision 1).
@@ -39,7 +39,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - a screenshot from the start camera sailing toward the Puerto (mobile 390×844 and desktop) shows the Fiestera to the right of the yellow line, before the Puerto, no overlap with other places, on water → saved under /tmp/orchestrator-attach/boia-planet-hernan-T180/
   - `E2E_PORT=<free> pnpm e2e <fiestera specs and mar-ruta/route specs touched> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: Fiestera at [8.0, 16.5], starboard of the last route leg before the Puerto (~2.5 u from the line); its zone fixed x 1.5–13.3 · y 15–19.2, `cala` zone shrunk to y 8–15 (disjoint, tested); buoy `boia-descubrir` to [2.0, 17.0]; screenshots in C:/tmp/orchestrator-attach/boia-planet-hernan-T180/; done by Codex + wrapper · f180433
 
 ## T181 — Castle sim v3: wider U-turns, Ibiza paybacks, extra-Ibiza payouts, +15 % damage
 - Status: done
@@ -85,7 +85,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: focus restored when sheets close (arrows work after «Mi Barco», e2e closes it 3 ways), public world→screen hook in mar3d.ts, «mover»/«ficha» bubbles with tails on the plane / last installed island, «Por Los Rápidos» gone, «Rápido» own progress wording; done by Codex + wrapper · b4319b1
 
 ## T186 — Member numbers by order of arrival, artist link and artist stamp
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Goal: Hernán, 2026-10-06 (added mid-plan). (1) Member numbers are given by order of arrival, the same sequence for artists and members, **with no gaps** (a failed sign-up never burns a number), stored safely and never random. (2) From the admin a member's number can be changed (to a free number only; the change is logged). (3) **One shared artist link**, changeable from the admin: whoever creates their carnet through it is an artist. (4) Artist carnets show a rubber **«ARTISTA» stamp on the front**, same style as the event stamps on the back, tilted in a free corner (`muestra` until Álvaro sees it).
@@ -143,3 +143,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 20:34 T184 integrated → b4319b1 (tests ok); worktree and branch removed
 - 2026-10-06 20:36 T183 launched · attempt 1 · agent a87ecd71b26c89416 (opus)
 - 2026-10-06 pushed main 956d11c to Vercel on Hernán's Telegram reply («Si sube»)
+- 2026-10-06 21:05 T180 integrated → f180433 (tests ok); worktree and branch removed
