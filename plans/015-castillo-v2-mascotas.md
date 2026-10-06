@@ -117,7 +117,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: seven WebP renders (96/192 px, alpha) in apps/web/public/castillo/islas/ from tools/islas-construir/render.ts, manifest `CASTLE_ISLAND_IMAGES` in apps/web/lib/mundo/castle-island-images.ts; done by Opus (Codex out of credits) · 4cdd40f
 
 ## T175 — Mascots «Cañoncito» and «Tortuga turbo», and the «Estela del vórtice»
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: T177
@@ -133,7 +133,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - unit tests: both mascots and the wake exist in the catalog, equip in the mascot/wake slots; the turtle stays behind the boat at speed and turbo → pass
   - `E2E_PORT=<free> pnpm e2e tienda.spec.ts --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: Cañoncito (2.9k tris) and Tortuga turbo (3.3k tris) GLBs in parts from tools/blender/export_mascotas_glb.py in art/mascotas/3d/, turtle follows the stern trail, vortex wake on the shared `Wake`; cosmetics `mascota-canoncito`, `mascota-tortuga-turbo`, `estela-vortice` (not in shop), dev `?mascota=…&estela=vortice` via `grantCosmetic`; contact sheet C:/tmp/orchestrator-attach/boia-planet-hernan-T175/mascotas-hoja.png · c074fd3
 
 ## T170 — Castle arena v2: camera, zoom, taps, range preview, path view, bars and numbers
 - Status: done
@@ -187,7 +187,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T176 — Castle and race achievements, prizes and mascot unlocks
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T169, T175
@@ -223,6 +223,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T175: mascot GLBs in parts (one node per piece, pivot = node translation) in `art/mascotas/3d/` with own schema/check; no procedural fallback (invisible until the GLB loads); `ProgressApi.grantCosmetic(id,{sourceRef})` local-only for the dev/e2e shortcut, which prefers an achievement once one grants the cosmetic; turtle 2.6 u behind by path (≥1.3 u, re-snaps on jumps >20 u), hidden while flying and in the castle; Cañoncito ×1.35, shoots every 6.5 s; vortex wake lilac #b98cff bands over black #15081f (agent)
 - 2026-10-06 T170: drag in the arena always steers the plane (never pans); zoom rail above the bottom strip under 900 px, hidden while the strip shows list/placing/card; preview follows the plane until the sea is tapped; hooks outside scope: `castillo.ts` (`tap` returns what it did, `building`, `setBuildMenu`) and one effect in `castillo-hud.tsx`; damage numbers from life deltas grouped every 0.4 s (sim has no per-hit damage); range circle drawn on the visible castle copy (no wrap); world high clouds hidden in the arena (agent)
 - 2026-10-06 T168: faro at [-2.32, 10.26] instead of beside the náufrago [-5.6, 16.4]: that spot is off-screen with the mobile start camera and the visible spots near it cut the race circuit (reversible) — FOR HERNÁN; `mar3d.ts` `onKey` lets a focused button/link keep Enter/Space (an active dialogue near the faro swallowed it); travel sheet buttons checked ≥ 40 px (shared sheet's are 42 px) (agent)
 - 2026-10-06 T172: Faro image from the hand-made `buildIsland('faro')` the castle builds (not the Tabarca GLB, which it copies to scale); normal game camera (40° fov, 0.71 rad elevation, from the pier side, day light), below-water cut; each island fitted and centred with the same camera and margin (one shared fit left small islands unrecognisable); WebP 96/192 px, 3–10 kB; render needs node `--experimental-transform-types`, stub `document` only for unused stage text (agent)
@@ -235,6 +236,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T175: pre-existing bug — after opening and closing Mi Barco from the menu, keyboard arrows stop steering the boat (plain `/mar`); `export_enemigos_glb.py` writes its manifest with CRLF on Windows (agent)
 - 2026-10-06 T170: the turbo button shows in the arena but does nothing (the sim has no plane turbo; would change engine rules) (agent)
 - 2026-10-06 T168: the faro right beside the náufrago needs a wider mobile start framing in `framing.ts` (agent)
 - 2026-10-06 T169: no sound for the castle upgrade; HUD wave counter uses `activeS` instead of `snapshot.waveS` (T171) (agent)
@@ -260,3 +262,5 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 14:36 T168 integrated → ba309db (tests ok); worktree and branch removed
 - 2026-10-06 14:39 T170 integrated → 9932bd0 (tests ok); worktree and branch removed
 - 2026-10-06 14:39 pushed main 9932bd0 to Vercel on Hernán's Telegram reply («Sube»)
+- 2026-10-06 14:40 T171 launched · attempt 1 · agent ab90a413fa19c9cfb (opus)
+- 2026-10-06 15:04 T175 integrated → c074fd3 (tests ok); worktree and branch removed
