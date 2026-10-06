@@ -2402,3 +2402,98 @@ button.mar-logros__carnet {
   line-height: 1.2;
   cursor: pointer;
 }
+
+/* El «Tablón del faro» (plan 014 T157): tres tarjetas clavadas en el tablón,
+   cada una con su rumbo. En el móvil, una debajo de otra; en escritorio, la
+   ficha se ensancha y van en tres columnas. */
+.mar-tablon {
+  list-style: none;
+  margin: 10px 0 2px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.mar-tablon__card {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  grid-template-areas:
+    'icon text'
+    'go go';
+  gap: 8px 12px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgb(27 20 64 / 0.05);
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.mar-tablon__card.is-marcado {
+  border-color: var(--orange);
+  background: rgb(236 79 36 / 0.08);
+}
+
+.mar-tablon__icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--purple);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.mar-tablon__text {
+  grid-area: text;
+  min-width: 0;
+}
+
+.mar-tablon__title {
+  margin: 2px 0 2px;
+  font: 800 1rem/1.2 var(--font-title);
+}
+
+.mar-sheet .mar-tablon__line {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.mar-sheet .mar-tablon__medal {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.mar-tablon__go {
+  grid-area: go;
+  width: 100%;
+  min-height: 44px;
+}
+
+@media (min-width: 760px) {
+  .mar-sheet.is-tablon.is-expanded {
+    width: min(600px, calc(100% - var(--safe-l) - var(--safe-r) - 120px));
+  }
+
+  .mar-tablon {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mar-tablon__card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      'icon'
+      'text'
+      'go';
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-tablon__card {
+    transition: none;
+  }
+}

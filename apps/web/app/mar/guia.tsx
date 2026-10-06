@@ -15,6 +15,8 @@ import { t as msg } from '../../lib/i18n';
 export function guideLabel(spot: GuideSpot, world: WorldConfig | null): string {
   if (spot.kind === 'discount') return msg('mar.guide.discount');
   if (spot.kind === 'minigame') return msg('mar.guide.minigame', { place: placeName(spot, world) });
+  // Un lugar marcado desde el tablón del faro (T157).
+  if (spot.kind === 'place') return msg('mar.guide.place', { place: placeName(spot, world) });
   // La misión: a ella mientras espera; a su destino, a bordo.
   return spot.placeId === spot.objectId
     ? msg('mar.guide.fiestera')

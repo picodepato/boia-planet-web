@@ -167,8 +167,11 @@ export const TRIGGER_PARAMS: Record<AchievementTrigger, readonly TriggerParam[]>
   ],
 };
 
-/** Minijuegos registrados (T23). */
-export const MINIGAMES = ['faro', 'canon'] as const;
+/**
+ * Minijuegos registrados (T23). El minijuego del faro se quitó en el plan
+ * 014 (T157); el Castillo entra cuando se pueda jugar (T162).
+ */
+export const MINIGAMES = ['canon'] as const;
 
 export interface TriggerChoices {
   circuits: readonly string[];

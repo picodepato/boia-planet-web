@@ -141,7 +141,8 @@ describe('migración v7 → v8 (T153)', () => {
       (await repo.progress.achievements()).find((a) => a.definition.id === id)?.state;
     expect(await state('canon')).toBe('claimed');
     expect(await state('guardacostas')).toBe('claimed');
-    expect(await state('faro')).toBe('ready');
+    // El logro del faro se retiró después (v8 → v9, plan 014 T157): ya no está.
+    expect(await state('faro')).toBeUndefined();
     expect(
       (await repo.progress.shop()).find((i) => i.cosmetic.id === 'barco-cel-shaded')?.owned,
     ).toBe(true);

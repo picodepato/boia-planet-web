@@ -93,8 +93,8 @@ export function remainingText(def: AchievementDefinition, goal: AchievementGoal)
       ? t('logros.model.teQueda1Minuto')
       : t('logros.model.teQuedanMinutosA', { left });
   }
-  // Una sola cosa concreta (rescatar, el atajo…) o dos distintas (ganar el
-  // Faro y jugar el Cañón, T153): qué hay que hacer.
+  // Una sola cosa concreta (rescatar, el atajo…) o dos distintas (ganar un
+  // juego y jugar otro, T153): qué hay que hacer.
   const mixed = def.trigger === 'win_minigame' && 'played' in def.triggerParams;
   if ((goal.need === 1 || mixed) && def.description)
     return t('logros.model.teQueda', { asTask: asTask(def.description) });

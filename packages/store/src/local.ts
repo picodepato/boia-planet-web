@@ -1,4 +1,5 @@
 import { isRemovedFlag } from './removed-flags';
+import { isRetiredAchievement } from './retired-achievements';
 import { sampleStampRevokedEvents } from './sample-stamps';
 import {
   BOTTLES_IN_SEA_MAX,
@@ -711,6 +712,8 @@ class LocalRepository implements BoiaRepository {
   private badgeViews(doc: StoreDoc, userId: string): BadgeView[] {
     const defs = this.resolved('achievements', doc);
     return activeEntries(doc.ledger, userId, 'achievement').flatMap((e) => {
+      // Un logro retirado (T157) no deja insignia, aunque su fila siga en el libro.
+      if (isRetiredAchievement(e.achievementId)) return [];
       const def = defs.find((d) => d.id === e.achievementId);
       const stored = e.metadata.badge;
       const key = typeof stored === 'string' ? stored : def?.badgeKey;
@@ -772,8 +775,9 @@ class LocalRepository implements BoiaRepository {
       });
     if (own) {
       const points = deriveBalances(doc.ledger, userId).points;
-      const achievements: AchievementView[] = activeEntries(doc.ledger, userId, 'achievement').map(
-        (e) => {
+      const achievements: AchievementView[] = activeEntries(doc.ledger, userId, 'achievement')
+        .filter((e) => !isRetiredAchievement(e.achievementId))
+        .map((e) => {
           const d = defs.find((x) => x.id === e.achievementId);
           return {
             id: e.achievementId ?? '',
@@ -782,8 +786,7 @@ class LocalRepository implements BoiaRepository {
             iconKey: d?.iconKey ?? null,
             obtainedAt: e.createdAt,
           };
-        },
-      );
+        });
       return {
         userId,
         nickname: own.nickname,

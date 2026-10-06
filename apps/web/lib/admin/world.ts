@@ -1,6 +1,7 @@
 import { EVENT_STATE_BEHAVIOR, type BoiaEvent, type Discount } from '@boia/contracts';
 import type { PlacePatch, SkinPatch } from '@boia/store';
 import {
+  BOARD_REF,
   type Behavior,
   type ComposedWorld,
   MISSING_SKIN_ASSET,
@@ -165,16 +166,20 @@ function contentOf(p: Pick<Place, 'behaviors'>): ContentBehavior | undefined {
   return p.behaviors.find((b): b is ContentBehavior => b.type === 'content');
 }
 
+/** El faro desde el plan 014 (T157): su ficha es el «Tablón del faro», no la de una isla. */
+const isBoard = (p: Pick<Place, 'behaviors'>) => contentOf(p)?.params.ref === BOARD_REF;
+
 /**
  * Islas a las que se puede ligar un evento: las de categoría isla cuyo panel
- * es de evento o de isla (no el Puerto de Fotos, la tienda ni las de
- * minijuego). Hoy: las tres islas con entradas (Halloween, Sonido y
- * Nochevieja) y la Cala Cantalar.
+ * es de evento o de isla (no el Puerto de Fotos, la tienda, las de minijuego
+ * ni el faro con su tablón). Hoy: las tres islas con entradas (Halloween,
+ * Sonido y Nochevieja) y el Puerto de Alicante.
  */
 export function eventIslands(map: SharedMap): Place[] {
   return map.places.filter((p) => {
     if (p.category !== 'isla') return false;
     if (p.behaviors.some((b) => b.type === 'start_minigame')) return false;
+    if (isBoard(p)) return false;
     const c = contentOf(p);
     return !c || c.params.target === 'event' || c.params.target === 'info';
   });
@@ -318,15 +323,16 @@ export function hideDiscounts(map: SharedMap, discounts: readonly Discount[]): S
 // Destino de las misiones (REQ-AVE-010, REQ-AVE-011; T45)
 
 /**
- * Puede ser destino de una misión: una isla activa sin minijuego, con radio
- * de llegada (la entrega salta al entrar en él). No un punto, una roca ni un
- * lugar escondido.
+ * Puede ser destino de una misión: una isla activa sin minijuego ni tablón
+ * (el faro, T157), con radio de llegada (la entrega salta al entrar en él).
+ * No un punto, una roca ni un lugar escondido.
  */
 export function isDestinationPlace(
   p: Pick<Place, 'category' | 'active' | 'behaviors' | 'geometry'>,
 ): boolean {
   if (!p.active || p.category !== 'isla') return false;
   if (p.behaviors.some((b) => b.type === 'start_minigame')) return false;
+  if (isBoard(p)) return false;
   return (
     p.geometry.proximityRadius !== undefined || p.behaviors.some((b) => b.type === 'proximity')
   );

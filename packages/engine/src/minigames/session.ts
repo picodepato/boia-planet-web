@@ -176,6 +176,13 @@ export class LocalSessionAuthority {
   }
 }
 
+let tabAuthority: LocalSessionAuthority | null = null;
+/** La autoridad de esta pestaña: sus sesiones mueren con la página. */
+export function pageAuthority(): LocalSessionAuthority {
+  tabAuthority ??= new LocalSessionAuthority();
+  return tabAuthority;
+}
+
 /** Textos (muestra) de por qué una partida no cuenta. */
 export const INVALID_TEXT: Record<InvalidReason, string> = {
   unknown_session: 'La partida no es de esta visita (¿se recargó la página?).',

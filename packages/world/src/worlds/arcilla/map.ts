@@ -34,6 +34,37 @@ export const TICKET_ISLAND_EVENTS = {
 /** Id del evento ligado a la isla `allday`, la Isla del Sonido (el de la landing y de `@boia/store`). */
 export const ALLDAY_EVENT_ID = TICKET_ISLAND_EVENTS.allday;
 
+/**
+ * Plan 014 T157 (decisiones 1 y 3 del 2026-10-05): el faro deja su minijuego
+ * y se muda al sitio del castillo de Santa Bárbara, junto a la salida, donde
+ * hace de tablón («Tablón del faro»: el Cañón, el Castillo y la carrera); el
+ * castillo pasa a ser la isla del minijuego «Defensa del Castillo», junto a
+ * la Boia 7. Ninguno de los dos sitios está en mapa.json: su fuente es el plan.
+ */
+const T157 = 'plan:T157';
+/** El faro (Tabarca): id estable de siempre (descubrimientos y logros de visita). */
+export const LIGHTHOUSE_PLACE_ID = 'faro';
+/** La referencia de contenido del faro: su ficha es el «Tablón del faro». */
+export const BOARD_REF = 'tablon';
+/**
+ * Dónde está el faro: en /mar cae justo donde estaba el decorado del castillo
+ * (28 de escena al oeste y 10 al norte del anillo de salida; el faro es su
+ * propia zona, así que en /mar queda en sus posiciones × 0,2). muestra
+ */
+export const LIGHTHOUSE_CENTER: Maq = [-6.0046, 21.7423];
+/** La isla del castillo y el id de su minijuego (`start_minigame`). */
+export const CASTLE_PLACE_ID = 'castillo';
+export const CASTLE_GAME_ID = 'castillo';
+/**
+ * Dónde está el castillo: al suroeste de la Boia 7 (`circuito-delfin`), por
+ * fuera de la curva de la carrera (a más de su radio más la carretera de los
+ * tramos Boia 6 → 7 y 7 → 8), con mar abierto hacia el suroeste para la
+ * arena del juego. muestra
+ */
+export const CASTLE_CENTER: Maq = [-14.48, 14.21];
+/** Radio de la isla (u_maq): en /mar, × 2,4 = 208 u, el del decorado del castillo. */
+const CASTLE_RADIUS = 3.485;
+
 /** La Isla de Halloween (T67): sin maqueta en mapa.json, su fuente es el plan. */
 export const HALLOWEEN_PLACE_ID = 'halloween';
 /** Dónde está: mar libre en el centro, entre el remanso de la Fiestera, Ibiza y la Isla del Sonido. muestra */
@@ -461,15 +492,42 @@ const ISLANDS: PlaceInput[] = [
     4.0,
     [...tickets(TICKET_ISLAND_EVENTS.halloween), points(20), visit()],
   ),
-  // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `faro` y `canon`.
-  island('faro', 'Tabarca', 'minijuegos/faro/isla', [-10.5, -25.2], 1.9, 1.3, 30, 3.4, [
-    { type: 'start_minigame', params: { gameId: 'faro' } },
-    visit(),
-  ], ['minijuegos/faro']),
+  // El faro (Tabarca) desde el plan 014 T157: sin minijuego, en el sitio del
+  // antiguo castillo junto a la salida; al acercarse abre el «Tablón del faro».
+  island(
+    LIGHTHOUSE_PLACE_ID,
+    'Tabarca',
+    T157,
+    LIGHTHOUSE_CENTER,
+    1.9,
+    1.3,
+    30,
+    // Proximidad algo menor que la de antes (3,4): junto a la salida, el tablón no
+    // se abre desde el anillo ni pisa la ficha de la boia de WhatsApp. muestra
+    2.8,
+    [content('info', BOARD_REF), visit()],
+    ['minijuegos/faro/isla', 'minijuegos/faro'],
+  ),
+  // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `canon` y, desde el plan 014, `castillo`.
   island('canon', "L'Illeta dels Banyets", 'minijuegos/canon/isla', [-9.0, -18.6], 1.5, 1.1, -15, 3.0, [
     { type: 'start_minigame', params: { gameId: 'canon' } },
     visit(),
   ], ['minijuegos/canon']),
+  // «Defensa del Castillo» (plan 014): el castillo de Santa Bárbara, ahora isla
+  // de minijuego junto a la Boia 7, fuera de la carrera. Isla redonda del radio
+  // de su decorado (13 de escena = 208 u en /mar, el `castle.radius` de
+  // `@boia/engine/defense`).
+  island(
+    CASTLE_PLACE_ID,
+    'Castillo de Santa Bárbara',
+    T157,
+    CASTLE_CENTER,
+    CASTLE_RADIUS,
+    CASTLE_RADIUS,
+    0,
+    4.0,
+    [{ type: 'start_minigame', params: { gameId: CASTLE_GAME_ID } }, visit()],
+  ),
 ];
 
 // --- El Remanso de los Cocodrilos (composición local; la misión es de T21) ------
@@ -639,7 +697,8 @@ const MAR_VIVO: PlaceInput[] = [
   }),
   ...(
     [
-      [-12.6, 13.8],
+      // El primero se apartó en T157 (estaba en [-12,6; 13,8]): ahí está la isla del castillo.
+      [-10.6, 15.2],
       [-5.4, -1.8],
     ] as Maq[]
   ).map((p, i): PlaceInput => {
@@ -666,7 +725,11 @@ const MAR_VIVO: PlaceInput[] = [
         coins(COFRE_COINS, 'session'),
         points(COFRE_POINTS, undefined, 'session'),
       ],
-      source: [`zonas/marvivo/lugares/cofre_${i + 1}`, `zonas/marvivo/proximidad/cofre_${i + 1}`],
+      source: [
+        ...(i === 0 ? [T157] : []),
+        `zonas/marvivo/lugares/cofre_${i + 1}`,
+        `zonas/marvivo/proximidad/cofre_${i + 1}`,
+      ],
     };
   }),
   {
@@ -1166,8 +1229,8 @@ export const INFO_BOIES: {
   lines: string[];
   /**
    * Lo que señala al terminar de hablar (T59): el id de la misión central, de
-   * un sitio con descuento o de un minijuego. Si ya está hecho, la web manda
-   * a lo pendiente más cercano. muestra
+   * un sitio con descuento, de un minijuego o del «Tablón del faro» (T157).
+   * Si ya está hecho, la web manda a lo pendiente más cercano. muestra
    */
   guide: string;
 }[] = [
@@ -1225,7 +1288,8 @@ export const INFO_BOIES: {
     name: 'La boia de los secretos',
     at: [6.6, -24.4],
     zone: 'ultima',
-    guide: 'faro',
+    // Desde el plan 014 (T157), el faro es el «Tablón del faro»: manda al tablón.
+    guide: LIGHTHOUSE_PLACE_ID,
     lines: ['Psst. No todo sale en el minimapa.', 'BOIA premia la curiosidad. Desvíate un poco.'],
   },
 ];

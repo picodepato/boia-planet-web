@@ -1,7 +1,7 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
  * (T38, `muestra`): las del resto (el 2D, /mar, el Admin…). No se edita a mano: se cambia el documento y se
- * vuelve a generar. 536 claves.
+ * vuelve a generar. 519 claves.
  */
 export const esZonas = {
   'intro.enter': 'Zarpar',
@@ -383,28 +383,9 @@ export const esZonas = {
   'welcome.sample': 'Textos de muestra, pendientes de Álvaro.',
   'island.faro.name': 'Tabarca',
   'world.arcilla.faro.body':
-    'Desde aquí se vigila la bocana. Los piratas llegan de noche y se disfrazan de mercantes: hace falta buen ojo.',
+    'Desde el faro de Tabarca se ve todo el mar: el Cañón, el Castillo y la carrera. Elige rumbo.',
   'world.acuarela.faro.body':
-    "Desde el faro del Cap de l'Horta se vigila el cuaderno: por aquí intentan colarse los piratas.",
-  'minigame.faro.title': 'Vigilancia del faro',
-  'minigame.faro.summary':
-    'Es de noche. Mueve el haz, ilumina los barcos que se acercan y da la alarma sólo cuando veas un pirata.',
-  'minigame.faro.howto.1': 'Mueve el haz con el dedo, el ratón o las flechas.',
-  'minigame.faro.howto.2': 'Deja la luz sobre un barco un momento para ver su bandera.',
-  'minigame.faro.howto.3': 'Calavera con huesos cruzados = pirata: pulsa ALARMA (o Espacio).',
-  'minigame.faro.howto.4':
-    'Los mercantes y los barcos de rayas tienen que llegar a puerto. Ojo con las banderas parecidas.',
-  'minigame.faro.action': 'ALARMA',
-  'minigame.faro.status.pirates': 'Piratas',
-  'minigame.faro.status.false': 'Falsas alarmas',
-  'minigame.faro.status.ships': 'Barcos',
-  'minigame.faro.hit': '¡Pirata! Da media vuelta.',
-  'minigame.faro.falseAlarm': 'Falsa alarma. Era un mercante con mala suerte.',
-  'minigame.faro.escaped': 'Se ha colado un pirata.',
-  'minigame.faro.win': '¡Bocana a salvo! Cinco piratas han dado media vuelta.',
-  'minigame.faro.lose.false': 'Demasiadas falsas alarmas: el puerto ya no se fía.',
-  'minigame.faro.lose.ships': 'Ya no quedan barcos por pasar esta noche.',
-  'minigame.faro.lose.time': 'Se acabó la guardia de esta noche.',
+    "Desde el faro del Cap de l'Horta se ve todo el cuaderno: elige rumbo.",
   'minigame.kicker': 'Minijuego',
   'minigame.play': 'Jugar',
   'minigame.start': 'Empezar',

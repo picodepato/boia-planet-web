@@ -1,6 +1,11 @@
 import type { WorldEvent } from '@boia/engine';
-import { LocalSessionAuthority, MinigameController, faro } from '@boia/engine/minigames';
-import { faroExpert, playHeadless } from '@boia/engine/minigames/testing';
+import {
+  LocalSessionAuthority,
+  WorldMinigameSession,
+  canon,
+  canonEnd,
+} from '@boia/engine/minigames';
+import { SURVIVORS_CONFIG } from '@boia/engine/survivors';
 import { type BoiaRepository, MemoryStorage, createLocalRepository } from '@boia/store';
 import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { describe, expect, it } from 'vitest';
@@ -21,8 +26,9 @@ import { type ProgressContext, persistWorldEvent } from './world-progress';
  * muestra: nada de cifras escritas aquí, todo sale de lo que el juego da.
  *
  * La ruta, prudente: 6 de los 8 restos flotantes, un Cofre fugaz, 4 islas
- * (Cala, Isla del Sonido, Ibiza y la del faro, donde se juega una partida),
- * 3 boies, el Carnet BOIA y 10 minutos a bordo. Sin secretos, sin delfín, sin
+ * (Cala, Isla del Sonido, Ibiza y la del Cañón, donde se juega una partida
+ * hasta el amanecer; desde el plan 014 ya no hay minijuego en el faro), 3
+ * boies, el Carnet BOIA y 10 minutos a bordo. Sin secretos, sin delfín, sin
  * circuito ni misión de la Fiestera. Al final se reclama lo completado y se
  * compra en la tienda lo que llegue, como haría quien juega.
  */
@@ -75,21 +81,22 @@ describe('10 minutos de juego (decisión 2026-10-02)', () => {
     for (const o of restos.slice(0, 6)) await reach(repo, o, ctx);
     await reach(repo, byCategory('cofre')[0]!, ctx);
 
-    // Cuatro islas, la del faro entre ellas.
-    for (const id of ['cala', 'allday', 'tienda', 'faro']) await reach(repo, object(id), ctx);
+    // Cuatro islas, la del Cañón entre ellas.
+    for (const id of ['cala', 'allday', 'tienda', 'canon']) await reach(repo, object(id), ctx);
 
     // Tres boies.
     for (const id of worldBuoys(world).slice(0, 3)) {
       await recordSignal(repo, { trigger: 'find_buoy', objectId: id });
     }
 
-    // Una partida al faro, entera (unos 40 s), con su premio y su logro.
+    // Una partida del Cañón hasta el amanecer, con su premio (el bronce) y sus logros.
     const authority = new LocalSessionAuthority(() => t);
-    const controller = new MinigameController({ def: faro, authority, sink: repo.progress });
-    playHeadless(controller, faroExpert, (ms) => (t += ms));
-    const played = await controller.settling!;
+    const session = new WorldMinigameSession({ def: canon, authority, sink: repo.progress });
+    t += SURVIVORS_CONFIG.durationS * 1000;
+    const played = await session.finish(canonEnd('survived', SURVIVORS_CONFIG.durationS));
     expect(played.reward.granted).toBe(true);
-    await recordSignal(repo, { trigger: 'win_minigame', game: 'faro' });
+    await recordSignal(repo, { trigger: 'play_minigame', game: 'canon' });
+    await recordSignal(repo, { trigger: 'win_minigame', game: 'canon' });
 
     // El Carnet BOIA: su premio llega al crearlo.
     await repo.carnet.create({ nickname: 'Diez minutos' });

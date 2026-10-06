@@ -8,6 +8,7 @@ export * from './ids';
 export * from './ledger';
 export * from './content';
 export * from './migrations';
+export * from './retired-achievements';
 export * from './storage';
 export * from './schema';
 export * from './sample';

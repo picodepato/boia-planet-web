@@ -1,4 +1,5 @@
 import { withoutFlag } from '../removed-flags';
+import { withoutRetiredAchievements, withoutRetiredDiscoveries } from '../retired-achievements';
 import { sampleStampRevokedEvents, sampleStampRevocationPref } from '../sample-stamps';
 /**
  * La copia local de una cuenta (plan 008, T90): lo que hay en el servidor se
@@ -260,6 +261,11 @@ export function applySnapshot(doc: StoreDoc, userId: string, raw: unknown): bool
         ([id]) => !CIRCUIT_RECORD.test(id),
       );
       p.records = Object.fromEntries([...others, ...circuits]);
+    } else if (field === 'achievements') {
+      // Un logro retirado (T157) no vuelve con la copia del servidor.
+      p.achievements = withoutRetiredAchievements(parsed.data as PlayerState['achievements']);
+    } else if (field === 'discoveries') {
+      p.discoveries = withoutRetiredDiscoveries(parsed.data as PlayerState['discoveries']);
     } else {
       (p as Record<string, unknown>)[field] = parsed.data;
     }

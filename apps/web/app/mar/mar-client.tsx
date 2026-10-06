@@ -29,6 +29,7 @@ import {
   setControlSensitivity,
 } from '@boia/engine/ui';
 import {
+  CASTLE_GAME_ID,
   CIRCUIT_ID,
   type ComposedWorld,
   type WorldConfig,
@@ -88,6 +89,7 @@ import {
   pendingGuideMark,
   missionDiscountOf,
   nearestSpot,
+  placeSpot,
 } from '../../lib/mundo/guide';
 import { useNoticeQueue } from '../../lib/mundo/notices';
 import { gameRepository, seaWorld, useRepoData } from '../../lib/mundo/repo';
@@ -283,6 +285,7 @@ const PIN_ICON: Record<string, string> = {
   halloween: '🎃',
   faro: '🗼',
   canon: '💣',
+  castillo: '🏰',
 };
 
 /** El icono de cada aviso en su chip (T53). */
@@ -824,6 +827,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         break;
       }
       case 'proximity_enter': {
+        // Un lugar marcado desde el tablón del faro (T157) se desmarca al llegar.
+        if (
+          objectiveMarkRef.current?.kind === 'place' &&
+          objectiveMarkRef.current.placeId === e.objectId
+        ) {
+          objectiveMarkRef.current = null;
+          setObjectiveMark(null);
+        }
         const o = world.objects.find((x) => x.identity.id === e.objectId);
         if (o?.identity.category === 'isla') {
           void discoverPlace(progressApi(), e.objectId, ctx)
@@ -898,7 +909,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       case 'minigame':
         // Llegar a un minijuego: el delfín y las boies ya no guían hasta él (T59).
         foundObjectsRef.current.add(e.objectId);
-        if (e.available && e.gameId) setMinigameOffer({ objectId: e.objectId, gameId: e.gameId });
+        // El Castillo (plan 014) aún no está en el registro: su panel sale igual, «Próximamente».
+        if (e.gameId && (e.available || e.gameId === CASTLE_GAME_ID))
+          setMinigameOffer({ objectId: e.objectId, gameId: e.gameId });
         break;
       case 'contact':
         if (e.mode === 'block' || e.mode === 'bounce') navigator.vibrate?.(12);
@@ -1710,6 +1723,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setAyuda(null);
   };
 
+  /**
+   * «Rumbo a…» del tablón del faro (T157): marca un lugar como el objetivo del
+   * «!» (sólo la marca; navegar sigue siendo cosa de quien juega). La ficha
+   * del tablón sigue abierta, con la tarjeta marcada.
+   */
+  const markPlace = (placeId: string) => {
+    const w = worldRef.current;
+    const target = w ? placeSpot(w.objects, placeId) : null;
+    objectiveMarkRef.current = target;
+    setObjectiveMark(target);
+  };
+
   /** Objective navigation changes only a marker; sailing remains under player control. */
   const markObjective = (placeId: string) => {
     const w = worldRef.current;
@@ -2446,6 +2471,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onSteerEvent={steerToEvent}
           onGoToIsland={goToIsland}
           onShips={openTienda}
+          world={worldRef.current}
+          onMarkPlace={markPlace}
+          markedPlace={objectiveMark?.placeId ?? null}
         />
       ) : null}
 
@@ -2454,13 +2482,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           <MinigameLayer
             offer={sheet || checkoutFor || canon.active || canon.prep.open ? null : minigameOffer}
             onDismiss={() => setMinigameOffer(null)}
-            world={liveRef.current}
-            settings={settings}
-            sink={progressApi}
-            inWorld={canon.panel.inWorld}
+            inWorld={[...canon.panel.inWorld, CASTLE_GAME_ID]}
             onPlayInWorld={canon.panel.onPlay}
-            blockedReason={canon.panel.blockedReason}
-            copy={canon.panel.copy}
+            blockedReason={(id) =>
+              id === CASTLE_GAME_ID
+                ? msg('mar.castillo.proximamente')
+                : canon.panel.blockedReason(id)
+            }
+            copy={(id) =>
+              id === CASTLE_GAME_ID
+                ? { title: msg('mar.castillo.titulo'), summary: msg('mar.castillo.resumen') }
+                : canon.panel.copy(id)
+            }
           />
         </div>
       ) : null}

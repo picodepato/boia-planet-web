@@ -3,13 +3,10 @@ import { DIFFICULTY_IDS, SURVIVORS_CONFIG, type SurvivorsConfig } from '../survi
 import { actFinalBoss, actMinibosses, survivorsMedal } from '../survivors/medals';
 import { createSurvivors } from '../survivors/sim';
 import type { SurvivorsWorld } from '../survivors/world';
-import { faro } from './faro';
-import { mountMinigame } from './host';
-import { MINIGAME_REGISTRY, layerMinigame, minigame } from './registry';
+import { MINIGAME_REGISTRY, isMinigameId, minigame } from './registry';
 import type { MinigameRewardSink } from './rewards';
 import { configHash } from './rng';
 import { LocalSessionAuthority, type MinigameResult } from './session';
-import { isLayerMinigame } from './types';
 import {
   CANON_DEFAULTS,
   CANON_MEDAL_PRIZES,
@@ -88,15 +85,12 @@ function playToEnd(
 }
 
 describe('el Cañón en el registro (plan 010, T119)', () => {
-  it('sigue en el registro con su id, pero ya no se monta en la capa 2D; el Faro sí', () => {
-    expect([...MINIGAME_REGISTRY.keys()]).toEqual(['faro', 'canon']);
+  it('sigue en el registro con su id; el minijuego del faro ya no está (plan 014, T157)', () => {
+    expect([...MINIGAME_REGISTRY.keys()]).toEqual(['canon']);
     expect(minigame('canon')).toBe(canon);
-    expect(isLayerMinigame(canon)).toBe(false);
-    expect(layerMinigame('canon')).toBeNull();
-    expect(layerMinigame('faro')).toBe(faro);
-    expect(() => mountMinigame({} as HTMLElement, { gameId: 'canon', onExit: () => {} })).toThrow(
-      /capa/,
-    );
+    expect(minigame('faro')).toBeNull();
+    expect(isMinigameId('canon')).toBe(true);
+    expect(isMinigameId('faro')).toBe(false);
   });
 
   it('una versión nueva cuya huella cubre la configuración entera del modo', () => {

@@ -7,7 +7,7 @@ import type { MinigameId, RewardRule, RewardTier } from './types';
  * ganó, con la política de la regla (única, diaria, por temporada o sólo
  * marca personal) y sus límites. La idempotencia es del libro: el origen
  * `minigame:<id>` y la política dan el id estable de la transacción
- * (`world_reward:minigame:faro@2026-09-29`…), así que repetir no duplica.
+ * (`world_reward:minigame:canon:oro@2026-10-05`…), así que repetir no duplica.
  *
  * `MinigameRewardSink` es la parte de `@boia/store` que hace falta
  * (`repo.progress` la cumple); el motor no depende del repositorio.

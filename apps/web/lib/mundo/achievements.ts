@@ -38,7 +38,7 @@ export type AchievementSignal =
   /** Vuelta válida: su tiempo y los arcos por los que pasó (la rama), si se saben. */
   | { trigger: 'complete_circuit'; circuit: string; ms?: number; via?: readonly string[] }
   | { trigger: 'buy_ticket'; eventId: string }
-  /** Partida ganada y válida de un minijuego (`faro`, `canon`). */
+  /** Partida ganada y válida de un minijuego (`canon`). */
   | { trigger: 'win_minigame'; game: string }
   /** Partida jugada y válida de un minijuego (T153: el Cañón, gane o pierda). */
   | { trigger: 'play_minigame'; game: string }
@@ -262,7 +262,7 @@ export function achievementGoal(
       return tally(laps.length > 0 ? 1 : 0, 1);
     }
     case 'win_minigame': {
-      // Guardacostas (T153): ganar un juego y jugar otro (`played`).
+      // Ganar un juego y jugar otro (`played`): Guardacostas v2 (T153); desde el plan 014 ningún logro de muestra lo pide.
       const played = text(def, 'played');
       const game = text(def, 'game');
       if (played) {

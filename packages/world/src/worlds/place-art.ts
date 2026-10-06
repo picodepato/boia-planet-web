@@ -69,10 +69,12 @@ const RESTOS_VARIANTS = ['a', 'b', 'c'];
 /**
  * Lugares sin pieza de arte todavía, con un marcador a propósito
  * (`placeholder:<forma>`): la Isla de Halloween (T67) hasta que T69 la
- * modele. En /mar la dibuja su composición 3D.
+ * modele, y la isla del castillo (plan 014, T157), que en /mar es el modelo
+ * del castillo de Santa Bárbara. En /mar las dibuja su composición 3D.
  */
 export const PLACE_MARKERS: Readonly<Record<string, string>> = {
   halloween: 'placeholder:isla',
+  castillo: 'placeholder:isla',
 };
 
 /**

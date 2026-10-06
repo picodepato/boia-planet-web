@@ -145,7 +145,7 @@ describe('atajos de desarrollo: un solo interruptor', () => {
       win: false,
       rank: false,
     });
-    expect(canonShortcut('?minijuego=faro', dev)).toBeNull();
+    expect(canonShortcut('?minijuego=otro', dev)).toBeNull();
   });
 
   it('en producción sin ?dev=1 el atajo no hace nada; con él, sí', () => {

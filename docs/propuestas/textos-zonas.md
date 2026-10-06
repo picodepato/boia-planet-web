@@ -37,7 +37,7 @@ las que pide D-23 o que la v14 no inventariaba.
 | 17 | Errores y estados vacíos | v14 §31.2 · Errores/estados vacíos | 19 |
 | 18 | Privacidad y moderación | v14 §31.2 · Privacidad/moderación; D-23 O9 | 22 |
 | 19 | Welcome Aboard | v14 §19 · Welcome Aboard | 20 |
-| 20 | Faro · Vigilancia del faro | D-20, REQ-AVE-036 (con las cadenas comunes de los minijuegos) | 34 |
+| 20 | Faro · Tablón del faro | plan 014 T157 (con las cadenas comunes de los minijuegos) | 17 |
 | 21 | Cañón · Cañón contra tiburones | D-20, REQ-AVE-037 | 17 |
 | 22 | Boia de WhatsApp e Instagram | REQ-AVE-023; D-23 O13 | 10 |
 | 23 | Cinco boies informativas | D-23 O12 | 31 |
@@ -50,7 +50,7 @@ las que pide D-23 o que la v14 no inventariaba.
 | 30 | Fotos y eventos | D-23 punto 7 | 11 |
 | 31 | Pie de página | REQ-ENT-032 | 9 |
 | 32 | Legales: aviso legal, privacidad y cookies | D-23 O14; P21 | 33 |
-| | **Total** | | **618** |
+| | **Total** | | **601** |
 
 ## Cómo se lee
 
@@ -566,31 +566,16 @@ Primera sección del Menú de a bordo (v14 §19).
 | `welcome.world` | Estás en {world}. Puedes cambiar de mundo en «Mundos»: todo sigue en su sitio. | |
 | `welcome.sample` | Textos de muestra, pendientes de Álvaro. | |
 
-## 20 · Faro · Vigilancia del faro
+## 20 · Faro · Tablón del faro
+
+Desde el plan 014 (T157) el faro no tiene minijuego: es el «Tablón del faro», junto a la salida (REQ-AVE-036 retirado). Sus textos, en `mar.tablon.*` (`apps/web/lib/i18n/es-mar.ts`).
 
 | Clave | Texto | Nota |
 |---|---|---|
 | `island.faro.name` | Tabarca | Nombre común (2026-10-02); en Acuarela, «Cap de l'Horta» |
-| `world.arcilla.faro.body` | Desde aquí se vigila la bocana. Los piratas llegan de noche y se disfrazan de mercantes: hace falta buen ojo. | Panel editorial (REQ-AVE-036) |
-| `world.acuarela.faro.body` | Desde el faro del Cap de l'Horta se vigila el cuaderno: por aquí intentan colarse los piratas. | |
-| `minigame.faro.title` | Vigilancia del faro | |
-| `minigame.faro.summary` | Es de noche. Mueve el haz, ilumina los barcos que se acercan y da la alarma sólo cuando veas un pirata. | |
-| `minigame.faro.howto.1` | Mueve el haz con el dedo, el ratón o las flechas. | |
-| `minigame.faro.howto.2` | Deja la luz sobre un barco un momento para ver su bandera. | |
-| `minigame.faro.howto.3` | Calavera con huesos cruzados = pirata: pulsa ALARMA (o Espacio). | |
-| `minigame.faro.howto.4` | Los mercantes y los barcos de rayas tienen que llegar a puerto. Ojo con las banderas parecidas. | |
-| `minigame.faro.action` | ALARMA | |
-| `minigame.faro.status.pirates` | Piratas | |
-| `minigame.faro.status.false` | Falsas alarmas | |
-| `minigame.faro.status.ships` | Barcos | |
-| `minigame.faro.hit` | ¡Pirata! Da media vuelta. | |
-| `minigame.faro.falseAlarm` | Falsa alarma. Era un mercante con mala suerte. | |
-| `minigame.faro.escaped` | Se ha colado un pirata. | |
-| `minigame.faro.win` | ¡Bocana a salvo! Cinco piratas han dado media vuelta. | |
-| `minigame.faro.lose.false` | Demasiadas falsas alarmas: el puerto ya no se fía. | |
-| `minigame.faro.lose.ships` | Ya no quedan barcos por pasar esta noche. | |
-| `minigame.faro.lose.time` | Se acabó la guardia de esta noche. | |
-| `minigame.kicker` | Minijuego | Común a Faro y Cañón |
+| `world.arcilla.faro.body` | Desde el faro de Tabarca se ve todo el mar: el Cañón, el Castillo y la carrera. Elige rumbo. | Tablón del faro (T157) |
+| `world.acuarela.faro.body` | Desde el faro del Cap de l'Horta se ve todo el cuaderno: elige rumbo. | |
+| `minigame.kicker` | Minijuego | Común a los minijuegos |
 | `minigame.play` | Jugar | |
 | `minigame.start` | Empezar | |
 | `minigame.back` | Volver al mar | |

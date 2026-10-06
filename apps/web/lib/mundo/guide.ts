@@ -17,12 +17,14 @@ import type { WorldObject } from '@boia/world';
  *
  * Los descuentos pendientes son los «?» del minimapa; el delfín lleva hasta
  * cualquiera de estos sitios y el «?» de ayuda (T68) da el objetivo y una
- * pista con su rumbo. Desde el 2026-10-02 las boies informativas ya no
+ * pista con su rumbo. El «Tablón del faro» (plan 014 T157) marca igual un
+ * lugar cualquiera (`placeSpot`, de tipo `place`), que sigue marcado hasta
+ * llegar a él. Desde el 2026-10-02 las boies informativas ya no
  * ponen un chip de rumbo al hablar. Los secretos sin premio no salen aquí:
  * siguen escondidos (REQ-AVE-015).
  */
 
-export type GuideKind = 'mission' | 'discount' | 'minigame';
+export type GuideKind = 'mission' | 'discount' | 'minigame' | 'place';
 
 export interface GuideSpot {
   kind: GuideKind;
@@ -188,12 +190,26 @@ export function helpNow(
   };
 }
 
-/** Keep a selected marker only while that exact objective/hint is still pending. */
+/**
+ * Un lugar marcado a mano (el «Rumbo a…» del «Tablón del faro», T157): el
+ * objeto activo `placeId` como destino, o null si el mundo no lo tiene.
+ */
+export function placeSpot(objects: readonly WorldObject[], placeId: string): GuideSpot | null {
+  const o = objects.find((x) => x.identity.id === placeId && x.identity.active);
+  return o ? spotAt('place', o, o, null) : null;
+}
+
+/**
+ * Keep a selected marker only while that exact objective/hint is still
+ * pending. A place marked from the lighthouse board (`place`) is not a
+ * pending spot: it stays until the ship arrives (the page clears it).
+ */
 export function pendingGuideMark(
   mark: GuideSpot | null,
   spots: readonly GuideSpot[],
 ): GuideSpot | null {
   if (!mark) return null;
+  if (mark.kind === 'place') return mark;
   return (
     spots.find(
       (spot) =>

@@ -31,7 +31,7 @@ import {
 } from '@boia/engine/ui';
 import { type QualityTier, detectQuality } from '@boia/engine/streaming';
 import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
-import type { WorldConfig, WorldObject } from '@boia/world';
+import { CASTLE_PLACE_ID, type WorldConfig, type WorldObject } from '@boia/world';
 import type { Color, ShaderMaterial } from 'three';
 import {
   Box3,
@@ -1734,8 +1734,9 @@ export class Mar3D {
   }
 
   /**
-   * El decorado propio del planeta (castillo, Explanada, islote de la cueva):
-   * vistas sin lugar del mapa, sólidas para el barco. Devuelve sus orillas.
+   * El decorado propio del planeta (Explanada, islote de la cueva): vistas
+   * sin lugar del mapa, sólidas para el barco. Devuelve sus orillas. El
+   * castillo es desde T157 una isla del mapa (`buildPlaces`).
    */
   private buildDecor(glows: Glows[]): { x: number; z: number; r: number; w: number }[] {
     const shores: { x: number; z: number; r: number; w: number }[] = [];
@@ -1777,12 +1778,6 @@ export class Mar3D {
         phase: 0,
         labelY: build.labelY,
       });
-      if (spot.kind === 'castillo') {
-        void this.castleModel.mount(g, fallback, curveTree).then((loaded) => {
-          if (!this.destroyed)
-            this.opts.canvas.dataset.castilloModelo = loaded ? 'glb' : 'procedural';
-        });
-      }
     }
     return shores;
   }
@@ -1809,7 +1804,14 @@ export class Mar3D {
 
       if (cat === 'isla' || cat === 'naufrago') {
         const R = cat === 'isla' ? r : Math.max(1.5, r * 1.2);
-        const build = cat === 'isla' ? buildIsland(id, R) : buildSandbank(R);
+        // El castillo (T157): la isla del minijuego es el castillo de Santa Bárbara de
+        // siempre (su composición a mano y, al llegar, su modelo de Blender).
+        const castle = id === CASTLE_PLACE_ID;
+        const build = castle
+          ? buildDecor('castillo')
+          : cat === 'isla'
+            ? buildIsland(id, R)
+            : buildSandbank(R);
         const g = new Group();
         g.position.set(x, 0, z);
         // La composición a mano va en un hueco: si la isla tiene modelo de Blender (T69), lo sustituye de cerca.
@@ -1822,7 +1824,13 @@ export class Mar3D {
         }
         for (const a of build.animated) fallback.add(a);
         if (build.update) this.animated.push(build.update);
-        if (cat === 'isla') {
+        if (castle) {
+          g.add(fallback);
+          void this.castleModel.mount(g, fallback, curveTree).then((loaded) => {
+            if (!this.destroyed)
+              this.opts.canvas.dataset.castilloModelo = loaded ? 'glb' : 'procedural';
+          });
+        } else if (cat === 'isla') {
           const slot = modelSlot(fallback);
           g.add(slot);
           this.islandModels.set(id, {

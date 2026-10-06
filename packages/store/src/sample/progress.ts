@@ -151,16 +151,6 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     cosmeticKey: 'estela-rayo',
     sample: true,
   },
-  {
-    id: 'faro',
-    title: 'Vigía del faro',
-    description: 'Gana Vigilancia del faro.',
-    trigger: 'win_minigame',
-    triggerParams: { game: 'faro' },
-    points: 60,
-    coins: 30,
-    sample: true,
-  },
   // Los logros del Cañón definitivo (plan 013 T153, §9 del diseño de
   // referencia; sin el acto 3: ni `canon-capitan` ni «El Apagón»). Sólo
   // cuentan las partidas que valen: ni las de un atajo de desarrollo ni las
@@ -221,14 +211,16 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
-    // Versión 2 (T153): antes pedía ganar los dos minijuegos; ahora basta con
-    // jugar el Cañón, para que nadie se quede sin el barco por su dispositivo.
+    // Versión 2 (T153): antes pedía ganar los dos minijuegos; desde entonces
+    // basta con jugar el Cañón, para que nadie se quede sin el barco por su
+    // dispositivo. Versión 3 (plan 014 T157): sin el minijuego del faro, sólo
+    // eso, jugar una partida del Cañón. muestra
     id: 'guardacostas',
-    version: 2,
+    version: 3,
     title: 'Guardacostas',
-    description: 'Gana Vigilancia del faro y juega una partida del Cañón.',
-    trigger: 'win_minigame',
-    triggerParams: { game: 'faro', played: 'canon' },
+    description: 'Juega una partida del Cañón.',
+    trigger: 'play_minigame',
+    triggerParams: { game: 'canon' },
     points: 150,
     coins: 0,
     cosmeticKey: 'barco-cel-shaded',

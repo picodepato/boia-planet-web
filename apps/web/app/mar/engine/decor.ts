@@ -18,14 +18,17 @@ import { crag, flag, house, palm, pine } from './props';
 
 /**
  * El decorado propio del planeta de agua de `/mar` (D-22, REQ-MUN-038): lo
- * que en el 2D es costa aquí son islas en el mar. El castillo en su monte y
- * la Explanada con su mosaico de olas (Alicante) flanquean la salida del
- * puerto, y el islote de la cueva guarda el secreto que en el 2D está en el
- * acantilado oeste. No son lugares del mapa compartido (sin id, sin
- * comportamientos, fuera del runtime): sólo se ven y no se atraviesan. Las
- * posiciones del mapa no cambian. Dónde va cada pieza y sus círculos sólidos
- * están en `compact.ts` (T50: se mueven con el mundo compacto). Unidades de
- * escena. Todo `muestra`.
+ * que en el 2D es costa aquí son islas en el mar. La Explanada con su mosaico
+ * de olas (Alicante) flanquea la salida del puerto, y el islote de la cueva
+ * guarda el secreto que en el 2D está en el acantilado oeste. No son lugares
+ * del mapa compartido (sin id, sin comportamientos, fuera del runtime): sólo
+ * se ven y no se atraviesan. Dónde va cada pieza y sus círculos sólidos están
+ * en `compact.ts` (T50: se mueven con el mundo compacto). Unidades de escena.
+ * Todo `muestra`.
+ *
+ * El castillo en su monte se construye aquí igual, pero desde el plan 014
+ * (T157) no es decorado: es la isla del minijuego `castillo` del mapa, junto a
+ * la Boia 7 (`mar3d.ts` la dibuja con `buildDecor('castillo')`).
  */
 
 export interface DecorBuild extends IslandBuild {
@@ -103,7 +106,15 @@ function castillo(rnd: () => number): DecorBuild {
     const a = Math.PI + (i / 5) * Math.PI * 0.9;
     pine(k, Math.cos(a) * 7.5, 4 + rnd() * 2, Math.sin(a) * 6.5 - 1.5, 2.2 + rnd());
   }
-  return { parts, animated: [], heightAt: h, labelY: cy + 4, solids: [...DECOR_SOLIDS.castillo] };
+  return {
+    parts,
+    animated: [],
+    heightAt: h,
+    labelY: cy + 4,
+    solids: [...DECOR_SOLIDS.castillo],
+    // La orilla de cuando era decorado: el bajío de su círculo, 9 de ancho.
+    shores: [{ dx: 0, dz: 0, r: R, w: 9 }],
+  };
 }
 
 /** La Explanada: el paseo de las palmeras y el mosaico de olas, como isla alargada. */

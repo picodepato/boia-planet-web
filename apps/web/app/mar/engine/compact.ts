@@ -9,7 +9,7 @@ import { type Circle, type Period, periodOf, planetRect, shortest, wrapIn } from
 /**
  * El mundo compacto de `/mar` (T50), sin three.js: el mapa compartido a la
  * escala del mar 3D (`compressWorld`, con las zonas a la mitad de distancia
- * que en T33), el decorado propio (castillo, Explanada, islote de la cueva),
+ * que en T33), el decorado propio (Explanada, islote de la cueva),
  * los límites del planeta ajustados a lo que hay y la ruta (marcas en el agua) que une
  * las islas en el orden de la historia. Las posiciones del mapa compartido
  * no cambian (el 2D sigue igual): todo se deriva al cargar `/mar`, y el
@@ -31,7 +31,10 @@ export interface DecorSpot {
   z: number;
 }
 
-/** Medidas del decorado (escena): `decor.ts` lo dibuja con ellas. */
+/**
+ * Medidas del decorado (escena): `decor.ts` lo dibuja con ellas. El castillo
+ * es desde T157 la isla de su minijuego, del mismo radio.
+ */
 export const DECOR_SIZE = {
   /** Radio de la isla del castillo. */
   castillo: 13,
@@ -54,16 +57,33 @@ export const DECOR_SOLIDS: Record<DecorKind, readonly { dx: number; dz: number; 
 };
 
 /**
- * Dónde va cada pieza (escena): el castillo al oeste y la Explanada al este
- * del puerto, un poco al norte (se ven al zarpar y flanquean la bocana sin
- * taparla ni pisar la ruta hacia la Cala), y el islote al oeste del punto de
- * la cueva, con la boca hacia él. Se mueven con el puerto y con la cueva.
+ * Dónde va cada pieza (escena): la Explanada al este del puerto, un poco al
+ * norte (se ve al zarpar y flanquea la bocana sin taparla ni pisar la ruta
+ * hacia la Cala), y el islote al oeste del punto de la cueva, con la boca
+ * hacia él. Se mueven con el puerto y con la cueva.
+ *
+ * El castillo de Santa Bárbara ya no es decorado (plan 014, T157): es la isla
+ * del minijuego `castillo`, junto a la Boia 7, y en su sitio de antes, al
+ * oeste de la bocana (`LIGHTHOUSE_OFFSET`), está el faro con su tablón.
  */
 export const DECOR_OFFSET = {
-  castillo: { x: -28, z: -10 },
   explanada: { x: 34, z: -12 },
   cueva: { x: -4.2, z: 0 },
 } as const;
+
+/** Donde estaba el castillo hasta T157 (escena, desde el anillo de salida): ahí va el faro. */
+export const LIGHTHOUSE_OFFSET = { x: -28, z: -10 } as const;
+
+/**
+ * Hacia dónde queda el mar abierto desde la isla del castillo (plan 014,
+ * T157, para la arena de T160): rad en el plano del mundo (0 = +x, este;
+ * π/2 = +y, sur), unos 120°: al sur-suroeste, del lado contrario a la Boia 7
+ * y lejos de los tramos Boia 6 → 7 y 7 → 8 de la carrera. El vórtice de
+ * «Defensa del Castillo» va a `DEFENSE_CONFIG.path.outerRadius` del castillo
+ * en esta dirección (la arena se gira para que su `startAngleRad` caiga
+ * aquí). muestra
+ */
+export const CASTLE_OPEN_SEA_BEARING = 2.09;
 
 export function decorSpots(world: WorldConfig): DecorSpot[] {
   const sp = world.spawn ?? { x: 0, y: 0 };
@@ -71,7 +91,6 @@ export function decorSpots(world: WorldConfig): DecorSpot[] {
   const sx = toScene(sp.x);
   const sz = toScene(sp.y);
   const out: DecorSpot[] = [
-    { kind: 'castillo', x: sx + DECOR_OFFSET.castillo.x, z: sz + DECOR_OFFSET.castillo.z },
     { kind: 'explanada', x: sx + DECOR_OFFSET.explanada.x, z: sz + DECOR_OFFSET.explanada.z },
   ];
   if (cave) {

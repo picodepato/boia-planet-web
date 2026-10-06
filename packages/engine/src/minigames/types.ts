@@ -1,18 +1,13 @@
 /**
  * Tipos compartidos por los minijuegos de INICIAR_MINIJUEGO (REQ-AVE-035…039).
- * Hay dos clases de minijuego en el registro:
- *
- * - los de la capa 2D (`MinigameDefinition`, hoy el Faro): la simulación es
- *   pura (sin DOM), recibe una entrada por paso fijo y devuelve lo que pasó;
- *   el anfitrión (`host.ts`) la pinta, la controla con dedo, puntero o
- *   teclado y valida el resultado con la sesión local;
- * - los que se juegan en el propio mar 3D (`MinigameEntry` sin simulación
- *   aquí, hoy el Cañón «Que no pare la música», plan 010): el registro sólo
- *   guarda su id, su panel, su configuración de sesión y cómo se valida; la
- *   simulación vive en `@boia/engine/survivors` y la pinta `/mar`.
+ * Todos se juegan en el propio mar 3D (`MinigameEntry`, hoy el Cañón «Que no
+ * pare la música», plan 010): el registro sólo guarda su id, su panel, su
+ * configuración de sesión y cómo se valida; la simulación vive aparte
+ * (`@boia/engine/survivors`) y la pinta `/mar`. La capa 2D de la Vigilancia
+ * del faro se quitó en el plan 014 (T157).
  */
 
-export type MinigameId = 'faro' | 'canon';
+export type MinigameId = 'canon';
 
 /** Política de recompensa (REQ-AVE-038). `record_only`: sólo marca personal. */
 export type MinigamePolicy = 'once' | 'daily' | 'season' | 'record_only';
@@ -62,95 +57,13 @@ export type Outcome = 'won' | 'lost';
 /** Sin vidas, tras la última oleada o al tope de tiempo. */
 export type EndReason = 'lives' | 'waves' | 'time';
 /**
- * Cómo acabó una partida, para la sesión: los de la capa 2D y los del mar
- * (el Cañón: `survived` al amanecer, `victory` al vencer al boss final del acto
- * (T140), `flooded`, `abandoned` tras 5 min en pausa, `quit` con «Terminar
- * partida», T148: la página no la liquida, se abandona la sesión).
+ * Cómo acabó una partida, para la sesión. `lives`, `waves` y `time` eran de
+ * la capa 2D (quitada en el plan 014, T157); los del mar son los del Cañón:
+ * `survived` al amanecer, `victory` al vencer al boss final del acto (T140),
+ * `flooded`, `abandoned` tras 5 min en pausa y `quit` con «Terminar
+ * partida» (T148: la página no la liquida, se abandona la sesión).
  */
 export type ResultReason = EndReason | 'survived' | 'victory' | 'flooded' | 'abandoned' | 'quit';
-
-export interface Ending {
-  outcome: Outcome;
-  reason: EndReason;
-}
-
-/** Punto en el espacio lógico de la escena: 0..1 en ambos ejes. */
-export interface Point {
-  x: number;
-  y: number;
-}
-
-/**
- * Entrada de un paso. `aim` es el punto que señala el dedo o el puntero;
- * `pull` es el arrastre en curso (del punto donde empezó al de ahora, en
- * unidades de escena); `turn` y `lift` (-1..1) vienen del teclado; `action`
- * es DESTELLO o FUEGO y vale sólo en el paso en que se pulsa.
- */
-export interface MinigameInput {
-  aim?: Point | null;
-  pull?: Point | null;
-  turn?: number;
-  lift?: number;
-  action?: boolean;
-}
-
-/** Lo que pasó en un paso, para el sonido, los avisos y las marcas en pantalla. */
-export interface SimEvent {
-  kind:
-    | 'hit'
-    | 'false_alarm'
-    | 'escape'
-    | 'fire'
-    | 'splash'
-    | 'scare'
-    | 'miss'
-    | 'flash'
-    | 'wave'
-    | 'end';
-  x?: number;
-  y?: number;
-  /** Puntos que dio y multiplicador con que los dio. */
-  points?: number;
-  combo?: number;
-  /** Oleada que empieza. */
-  wave?: number;
-}
-
-/** Aviso en texto de un evento (también se oye; REQ-AVE-039). */
-export interface Feedback {
-  text: string;
-  tone: 'good' | 'bad';
-}
-
-/** Una línea de estado legible sin audio (REQ-AVE-039). */
-export interface StatusItem {
-  label: string;
-  value: string;
-}
-
-export interface DrawOptions {
-  reducedMotion: boolean;
-  /** s de reloj real, sólo para animaciones decorativas. */
-  clock: number;
-}
-
-export interface MinigameSim {
-  /** s simulados de juego (no cuenta la pausa). */
-  readonly time: number;
-  readonly score: number;
-  readonly ended: Ending | null;
-  step(dt: number, input: MinigameInput): SimEvent[];
-  status(): StatusItem[];
-  /** El punto de apuntado actual (para que el teclado parta de él). */
-  aim(): Point;
-  draw(
-    ctx: CanvasRenderingContext2D,
-    w: number,
-    h: number,
-    skin: MinigameSkin,
-    o: DrawOptions,
-  ): void;
-}
 
 /**
  * Lo que todo minijuego del registro tiene: su id, el texto de su panel, su
@@ -168,43 +81,4 @@ export interface MinigameEntry<C extends BaseConfig = BaseConfig> {
    * esta semilla y esta configuración. Por debajo, la marca es imposible.
    */
   minPlausibleMs(score: number, seed: number, config: C): number;
-}
-
-/** Un minijuego de la capa 2D: además, su simulación y sus textos. */
-export interface MinigameDefinition<C extends BaseConfig = BaseConfig> extends MinigameEntry<C> {
-  /** Instrucciones breves, una por línea. */
-  instructions: readonly string[];
-  /** Texto del botón de acción (DESTELLO, FUEGO). */
-  actionLabel: string;
-  /** Teclas, en una línea (sólo con teclado). */
-  hint: string;
-  create(seed: number, config: C): MinigameSim;
-  /** Texto del final, por motivo. */
-  endText(e: Ending): string;
-  /** Aviso de un evento, o nada. */
-  feedback(ev: SimEvent): Feedback | null;
-}
-
-/** ¿Se juega en la capa 2D (tiene simulación aquí)? */
-export function isLayerMinigame<C extends BaseConfig>(
-  def: MinigameEntry<C>,
-): def is MinigameDefinition<C> {
-  return typeof (def as Partial<MinigameDefinition<C>>).create === 'function';
-}
-
-/** Colores y trazo de un mundo para los minijuegos. */
-export interface MinigameSkin {
-  /** `clay`: contornos gruesos (Arcilla); `wash`: aguadas suaves (Acuarela). */
-  style: 'plain' | 'clay' | 'wash';
-  night: string;
-  sea: string;
-  wave: string;
-  crest: string;
-  land: string;
-  ink: string;
-  beam: string;
-  accent: string;
-  onAccent: string;
-  good: string;
-  bad: string;
 }

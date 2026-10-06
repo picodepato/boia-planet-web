@@ -427,6 +427,43 @@ function v7ToV8(doc: Record<string, unknown>): Record<string, unknown> {
   return { ...doc, players };
 }
 
+/**
+ * Lo que retira el plan 014 (T157), copia fija de `retired-achievements.ts`:
+ * el logro «Vigía del faro» y la huella de haber ganado la Vigilancia del
+ * faro. Una migración no lee el código vivo.
+ */
+export const V9_RETIRED_ACHIEVEMENT = 'faro';
+export const V9_RETIRED_DISCOVERY = 'minijuego:faro';
+
+/**
+ * v8 → v9 (plan 014 T157): la Vigilancia del faro sale de la web y quien
+ * ganó su logro no lo conserva. Se quita de cada jugador el logro completado
+ * (`achievements.faro`) y la huella de la victoria (`minijuego:faro`). El
+ * libro no cambia (es historia: lo cobrado sigue sumando; el repositorio ya
+ * no enseña el logro retirado) ni nada más del documento.
+ */
+function v8ToV9(doc: Record<string, unknown>): Record<string, unknown> {
+  if (!isObject(doc.players)) return doc;
+  const players: Record<string, unknown> = {};
+  for (const [userId, raw] of Object.entries(doc.players)) {
+    if (!isObject(raw)) {
+      players[userId] = raw;
+      continue;
+    }
+    const next: Record<string, unknown> = { ...raw };
+    const without = (v: Record<string, unknown>, key: string) =>
+      Object.fromEntries(Object.entries(v).filter(([k]) => k !== key));
+    if (isObject(raw.achievements) && V9_RETIRED_ACHIEVEMENT in raw.achievements) {
+      next.achievements = without(raw.achievements, V9_RETIRED_ACHIEVEMENT);
+    }
+    if (isObject(raw.discoveries) && V9_RETIRED_DISCOVERY in raw.discoveries) {
+      next.discoveries = without(raw.discoveries, V9_RETIRED_DISCOVERY);
+    }
+    players[userId] = next;
+  }
+  return { ...doc, players };
+}
+
 export const MIGRATIONS: readonly Migration[] = [
   { from: 1, to: 2, name: 'logros que se reclaman (T36)', up: v1ToV2 },
   { from: 2, to: 3, name: 'eventos con formato, precio y estado por fechas (T42)', up: v2ToV3 },
@@ -454,6 +491,12 @@ export const MIGRATIONS: readonly Migration[] = [
     to: 8,
     name: 'logros del Cañón: partidas jugadas y bosses vencidos en la beta (T153)',
     up: v7ToV8,
+  },
+  {
+    from: 8,
+    to: 9,
+    name: 'sin la Vigilancia del faro: su logro y su huella de victoria (plan 014 T157)',
+    up: v8ToV9,
   },
 ];
 

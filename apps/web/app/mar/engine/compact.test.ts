@@ -4,11 +4,23 @@ import {
   createShipState,
   stepShip,
 } from '@boia/engine/headless';
+import { DEFENSE_CONFIG } from '@boia/engine/defense';
 import { missionDestinationId, rescueMissionOf } from '@boia/engine/mission';
-import { WORLD_REGISTRY, type WorldConfig } from '@boia/world';
-import { describe, expect, it } from 'vitest';
-import { MAR3D_SCALE } from './compress';
 import {
+  BOARD_REF,
+  CASTLE_GAME_ID,
+  CASTLE_PLACE_ID,
+  LIGHTHOUSE_PLACE_ID,
+  WORLD_REGISTRY,
+  type WorldConfig,
+} from '@boia/world';
+import { describe, expect, it } from 'vitest';
+import { ROAD_HALF_WIDTH } from '../road';
+import { MAR3D_SCALE, fromScene, toScene } from './compress';
+import {
+  CASTLE_OPEN_SEA_BEARING,
+  DECOR_SIZE,
+  LIGHTHOUSE_OFFSET,
   ROUTE,
   ROUTE_NEIGHBOURS,
   ROUTE_STOPS,
@@ -302,5 +314,142 @@ describe('la ruta (marcas en el agua)', () => {
         .map((t) => t.toFixed(1))
         .join(' / ')} s`,
     );
+  });
+});
+
+describe('el faro y el castillo cambian de sitio (plan 014, T157)', () => {
+  const faro = byId(world, LIGHTHOUSE_PLACE_ID);
+  const castle = byId(world, CASTLE_PLACE_ID);
+  /** Las boias de la carrera por orden: el tramo i va de la boia i a la i + 1 (0 = la salida). */
+  const course = [
+    'circuito',
+    ...world.objects
+      .flatMap((o) =>
+        o.behaviors.flatMap((b) =>
+          b.type === 'checkpoint' && b.params.order > 0 && o.identity.active
+            ? [{ id: o.identity.id, order: b.params.order }]
+            : [],
+        ),
+      )
+      .sort((a, b) => a.order - b.order)
+      .map((g) => g.id),
+  ].map((id) => byId(world, id).position);
+  const buoy = (n: number) => course[n]!;
+  /** Distancia (por el camino corto del planeta) de un punto a un tramo. */
+  const toLeg = (
+    p: { x: number; y: number },
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ) => {
+    let best = Infinity;
+    for (const ox of [-period.w, 0, period.w]) {
+      for (const oy of [-period.h, 0, period.h]) {
+        const q = { x: p.x + ox, y: p.y + oy };
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const t = Math.max(
+          0,
+          Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / (dx * dx + dy * dy)),
+        );
+        best = Math.min(best, Math.hypot(a.x + dx * t - q.x, a.y + dy * t - q.y));
+      }
+    }
+    return best;
+  };
+
+  it('el faro está donde estaba el castillo, junto a la salida, y abre el tablón sin minijuego', () => {
+    const s = world.spawn!;
+    const spot = {
+      x: fromScene(toScene(s.x) + LIGHTHOUSE_OFFSET.x),
+      y: fromScene(toScene(s.y) + LIGHTHOUSE_OFFSET.z),
+    };
+    expect(dist(faro.position, spot)).toBeLessThan(1);
+    expect(faro.behaviors.some((b) => b.type === 'start_minigame')).toBe(false);
+    expect(faro.behaviors.find((b) => b.type === 'content')?.params).toMatchObject({
+      target: 'info',
+      ref: BOARD_REF,
+    });
+    // El tablón no se abre desde el anillo de salida.
+    expect(around(faro.position, s)).toBeGreaterThan(faro.geometry.proximityRadius! + 60);
+    // El castillo ya no es decorado.
+    expect(decorSpots(world).map((d) => d.kind)).not.toContain('castillo');
+  });
+
+  it('el castillo es la isla de su minijuego, del tamaño de su decorado, junto a la Boia 7', () => {
+    expect(castle.behaviors.find((b) => b.type === 'start_minigame')?.params.gameId).toBe(
+      CASTLE_GAME_ID,
+    );
+    // Su radio, el del decorado (13 de escena) y el `castle.radius` del juego.
+    expect(castle.geometry.collision!.radius).toBeCloseTo(fromScene(DECOR_SIZE.castillo), 0);
+    expect(castle.geometry.collision!.radius).toBeCloseTo(DEFENSE_CONFIG.castle.radius, 0);
+    // Junto a la Boia 7…
+    const b7 = buoy(7);
+    expect(around(castle.position, b7)).toBeLessThan(600);
+    // …y fuera de la carrera: ni la isla ni su ficha tocan la carretera de los tramos 6 → 7 y 7 → 8.
+    for (const [a, b] of [
+      [buoy(6), b7],
+      [b7, buoy(8)],
+    ] as const) {
+      expect(toLeg(castle.position, a, b)).toBeGreaterThan(footprintOf(castle) + ROAD_HALF_WIDTH);
+      expect(toLeg(castle.position, a, b)).toBeGreaterThan(
+        castle.geometry.proximityRadius! + DEFAULT_SHIP_CONFIG.radius,
+      );
+    }
+  });
+
+  it('ninguna boia ni nada del mar cae en tierra (islas y decorado), con la vuelta del planeta', () => {
+    const land = [
+      ...islands(world).map((o) => ({
+        id: o.identity.id,
+        x: o.position.x,
+        y: o.position.y,
+        r: footprintOf(o),
+      })),
+      ...decorCircles(decorSpots(world)).map((c) => ({ id: c.kind, x: c.x, y: c.y, r: c.radius })),
+    ];
+    const floating = world.objects.filter(
+      (o) =>
+        o.identity.active &&
+        ['boia', 'circuito', 'carril', 'impulso', 'rampa', 'restos', 'cofre', 'secreto'].includes(
+          o.identity.category,
+        ),
+    );
+    expect(floating.length).toBeGreaterThan(20);
+    for (const o of floating) {
+      for (const l of land) {
+        // El secreto de la cueva está a propósito en la boca de su islote.
+        if (o.identity.id === 'secreto-cueva' && l.id === 'cueva') continue;
+        expect(around(o.position, l), `${o.identity.id} en ${l.id}`).toBeGreaterThan(
+          l.r + footprintOf(o),
+        );
+      }
+    }
+  });
+
+  it('mar abierto para la arena: el vórtice cae lejos de la Boia 7 y de sus tramos', () => {
+    const b7 = buoy(7);
+    const toB7 = Math.atan2(b7.y - castle.position.y, b7.x - castle.position.x);
+    const turn = Math.abs(
+      Math.atan2(
+        Math.sin(CASTLE_OPEN_SEA_BEARING - toB7),
+        Math.cos(CASTLE_OPEN_SEA_BEARING - toB7),
+      ),
+    );
+    // Del lado contrario a la Boia 7.
+    expect(turn).toBeGreaterThan(Math.PI * 0.75);
+    const r = DEFENSE_CONFIG.path.outerRadius;
+    const vortex = {
+      x: castle.position.x + Math.cos(CASTLE_OPEN_SEA_BEARING) * r,
+      y: castle.position.y + Math.sin(CASTLE_OPEN_SEA_BEARING) * r,
+    };
+    expect(around(vortex, b7)).toBeGreaterThan(r);
+    for (const [a, b] of [
+      [buoy(6), b7],
+      [b7, buoy(8)],
+    ] as const) {
+      expect(toLeg(vortex, a, b)).toBeGreaterThan(
+        DEFENSE_CONFIG.vortexRadius + ROAD_HALF_WIDTH + DEFENSE_CONFIG.path.width,
+      );
+    }
   });
 });

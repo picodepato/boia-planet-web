@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T157: Lighthouse ↔ castle swap, remove «Vigilancia del faro», the «Tablón del faro»
+
+Qué existe:
+- **El faro** (`faro`, Tabarca) está en el sitio del antiguo decorado del castillo, junto a la salida (`LIGHTHOUSE_CENTER`; en /mar, el anillo + `LIGHTHOUSE_OFFSET`). Sin `start_minigame`: lleva `content('info', BOARD_REF)` y al llegar abre el **«Tablón del faro»** (`app/mar/tablon.tsx`, modelo en `lib/mundo/board.ts`): tres tarjetas Cañón / Castillo / Carrera con su línea, la mejor medalla si la hay (Cañón: la mejor de sus tablas locales; Carrera: la del mejor tiempo; Castillo: ninguna hasta T162) y «Rumbo a…», que marca el destino como el «!» (`placeSpot`, tipo `place`, se desmarca al llegar). La ficha se abre ya desplegada; tres columnas en escritorio. Su proximidad baja de 3,4 a 2,8 u_maq (no se abre desde el anillo ni pisa la ficha de WhatsApp).
+- **El castillo** ya no es decorado: es la isla `castillo` (`start_minigame` `castillo`) en `CASTLE_CENTER` ([-14,48; 14,21] u_maq → /mar (-1080, 1060)), radio 208 u (= 13 de escena = `DEFENSE_CONFIG.castle.radius`), a ~443 u de la Boia 7 y a más de su radio + la carretera (180) de los tramos 6 → 7 y 7 → 8. Se dibuja con `buildDecor('castillo')` y su GLB (`DecorModel`, `data-castillo-modelo`). Su panel es el de los minijuegos (`MinigameLayer`) con «Próximamente» y «Jugar» apagado hasta T162. `CASTLE_OPEN_SEA_BEARING` = 2,09 rad (~120°, sur-suroeste) en `engine/compact.ts`: dirección del vórtice para T160. El cofre fugaz 1 se apartó a [-10,6; 15,2] (caía dentro del castillo).
+- **Vigilancia del faro, fuera**: borrados `faro.ts`, `testing.ts` y toda la capa 2D (`controller.ts`, `host.ts`, `skin.ts`, `sound.ts`, `styles.ts`; `pageAuthority` pasa a `session.ts`); el registro sólo tiene `canon`; `?minijuego=` ya no abre capa; `MINIGAMES` del Admin = `['canon']`; el faro no sale como isla de evento ni destino de misión en el Admin; claves `minigame.faro.*` fuera del catálogo y de `textos-zonas.md`. Logro «Vigía del faro» quitado; Guardacostas v3 = jugar una partida del Cañón. Migración local v8 → v9 (`SCHEMA_VERSION` 9) quita `achievements.faro` y `minijuego:faro`; la hidratación de una copia de Supabase los quita también; las vistas (Carnet, insignias) ignoran el logro retirado aunque su fila cobrada siga en el libro (puntos y monedas se quedan). Supabase: `20261006100000_faro_retired.sql` (escrita, sin aplicar). `docs/spec/estado.md`: REQ-AVE-036 retirado.
+
+Comandos:
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 190 archivos, 1791 pruebas (nuevas: `packages/store/src/faro-retired.test.ts`, `apps/web/lib/mundo/board.test.ts`, el bloque T157 de `apps/web/app/mar/engine/compact.test.ts`)
+- `sh tools/spec/checks.sh` → OK (estado.md: retirado 2) · `pnpm lint` → exit 0 · `pnpm build` → exit 0 (187,0 kB, presupuesto OK) · `pnpm typecheck` → exit 0
+- `E2E_PORT=3917 pnpm e2e mar-decor.spec.ts mar-puerto.spec.ts mar-tablon.spec.ts minijuegos.spec.ts --workers=1` → 21 passed, 2 skipped (captura nocturna), 1 failed en móvil (Enter con teclado); cambiado a toque en móvil y `pnpm e2e mar-tablon.spec.ts --workers=1` → 4 passed, exit 0
+- `grep -rn "Vigilancia del faro\|minijuego=faro" apps packages` → sólo la migración v8 → v9, `retired-achievements.ts` y su prueba
+
+Pendiente:
+- T160: la arena (radio 1120) cruza el borde del planeta (ancho ~2700 u); el vórtice va a 980 u en `CASTLE_OPEN_SEA_BEARING`.
+- T162: conectar el panel del castillo y su medalla en el tablón.
+- T165 (borrador Álvaro): la decisión que retira REQ-AVE-036 aún no tiene número D-NN; Guardacostas v3 y que lo cobrado del logro del faro se quede en el libro.
+- T166: el modelo del Faro de Tabarca en su sitio nuevo.
+
 ## 2026-10-06 — plan 014 T159: The seven islands: attacks, levels, building, upgrade and sell
 
 Qué existe:

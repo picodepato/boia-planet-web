@@ -196,6 +196,31 @@ export const esMar = {
   'mar.guide.mission': '🎈 Rumbo a {place}',
   'mar.guide.discount': '❓ Rumbo a un código escondido',
   'mar.guide.minigame': '🎮 Rumbo a {place}',
+  'mar.guide.place': '🧭 Rumbo a {place}',
+  // El «Tablón del faro» (plan 014 T157): el faro, junto a la salida, cuenta los
+  // dos juegos y la carrera y marca el rumbo hasta ellos. muestra
+  'mar.tablon.kicker': 'Tablón del faro · muestra',
+  'mar.tablon.titulo': 'Tablón del faro',
+  'mar.tablon.intro': 'Desde el faro se ve todo el mar. Elige adónde ir y te marco el rumbo.',
+  'mar.tablon.ver': 'Ver el tablón',
+  'mar.tablon.canon.titulo': 'Cañón',
+  'mar.tablon.canon.linea': 'Que no pare la música: aguanta la noche a cañonazos hasta el amanecer.',
+  'mar.tablon.castillo.titulo': 'Castillo',
+  'mar.tablon.castillo.linea':
+    'Defensa del Castillo: levanta islas como torres y que nada llegue a la muralla.',
+  'mar.tablon.carrera.titulo': 'Carrera',
+  'mar.tablon.carrera.linea': 'Los Rápidos: tres vueltas por las boias, contra el reloj.',
+  'mar.tablon.rumbo': 'Rumbo a {place}',
+  'mar.tablon.marcado': '✓ Rumbo marcado',
+  'mar.tablon.medalla': 'Tu mejor medalla: {medal}',
+  'mar.tablon.medalla.oro': '🥇 oro',
+  'mar.tablon.medalla.plata': '🥈 plata',
+  'mar.tablon.medalla.bronce': '🥉 bronce',
+  // La isla del castillo (plan 014): su panel dice «Próximamente» hasta T162. muestra
+  'mar.castillo.titulo': 'Defensa del Castillo',
+  'mar.castillo.resumen':
+    'Los enemigos del Cañón llegan en oleadas por un camino en espiral. Vuela en avioneta, dispara y levanta las islas del mar como torres para que el castillo aguante.',
+  'mar.castillo.proximamente': 'Próximamente: el castillo aún se está fortificando.',
   // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
   'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
   'mar.bienvenida.texto':

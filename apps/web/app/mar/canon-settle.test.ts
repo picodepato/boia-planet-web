@@ -9,7 +9,6 @@ import {
   canonConfigFor,
   canonEarliestWinS,
   canonEnd,
-  FARO_DEFAULTS,
   grantMinigameReward,
 } from '@boia/engine/minigames';
 import {
@@ -278,7 +277,11 @@ describe('los logros nuevos del Cañón (T153)', () => {
     const b = browser();
     const flooded = await b.play('flooded', 95, null);
     expect(flooded.signals).toEqual([{ trigger: 'play_minigame', game: CANON_GAME_ID }]);
-    expect(flooded.notices.map((n) => n.id)).toEqual(['logro:canon-zarpa']);
+    // Y Guardacostas, que desde el plan 014 (T157) también pide sólo jugar el Cañón.
+    expect(flooded.notices.map((n) => n.id).sort()).toEqual([
+      'logro:canon-zarpa',
+      'logro:guardacostas',
+    ]);
     const dawn = await b.play('survived', NIGHT_S, 'bronce');
     expect(dawn.notices.map((n) => n.id)).toEqual(['logro:canon']);
   });
@@ -313,27 +316,23 @@ describe('los logros nuevos del Cañón (T153)', () => {
     expect(ids).not.toContain('logro:canon-tormenta');
   });
 
-  it('Guardacostas pide ganar el Faro y jugar el Cañón (sin ganarlo), en cualquier orden', async () => {
+  it('Guardacostas (v3, plan 014 T157: sin el minijuego del faro) pide jugar el Cañón, sin ganarlo', async () => {
     const b = browser();
-    const progress = { progress: b.repo.progress };
-    expect(await recordSignal(progress, { trigger: 'win_minigame', game: 'faro' })).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: 'logro:guardacostas' })]),
-    );
     const flooded = await b.play('flooded', 60, null);
     expect(flooded.notices.map((n) => n.id)).toContain('logro:guardacostas');
-
+    // Una señal del faro, que ya no existe, no completa nada.
     const other = browser();
-    await other.play('flooded', 60, null);
-    const faro = await recordSignal(
-      { progress: other.repo.progress },
-      { trigger: 'win_minigame', game: 'faro' },
-    );
-    expect(faro.map((n) => n.id)).toContain('logro:guardacostas');
+    expect(
+      await recordSignal(
+        { progress: other.repo.progress },
+        { trigger: 'win_minigame', game: 'faro' },
+      ),
+    ).toEqual([]);
   });
 });
 
 describe('el premio cabe en la base (Supabase, T153)', () => {
-  it('cada medalla cabe en el tope por acción de `minigame`, y las tres con el Faro en el diario', () => {
+  it('cada medalla cabe en el tope por acción de `minigame`, y las tres juntas en el diario', () => {
     const sql = readFileSync(
       new URL('../../../../supabase/migrations/20261003100100_economy.sql', import.meta.url),
       'utf8',
@@ -350,7 +349,7 @@ describe('el premio cabe en la base (Supabase, T153)', () => {
     }
     const day = medals.reduce(
       (a, m) => ({ points: a.points + m.points, coins: a.coins + m.coins }),
-      { points: FARO_DEFAULTS.reward.points, coins: FARO_DEFAULTS.reward.coins },
+      { points: 0, coins: 0 },
     );
     expect(day.points).toBeLessThanOrEqual(dailyPoints!);
     expect(day.coins).toBeLessThanOrEqual(dailyCoins!);

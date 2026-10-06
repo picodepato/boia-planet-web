@@ -11,7 +11,7 @@ import {
 } from '@boia/contracts';
 import type { FoundDiscount } from '@boia/store';
 import { MERCHANDISE_NOTICE, MERCHANDISE_PATH } from '../../lib/merchandise/catalog';
-import { HARBOR_REF, type WorldConfig, type WorldObject } from '@boia/world';
+import { BOARD_REF, HARBOR_REF, type WorldConfig, type WorldObject } from '@boia/world';
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import { t, formatEventDate } from '../../lib/i18n';
@@ -27,6 +27,7 @@ import {
   IslandUpcoming,
 } from '../../lib/mundo/place-panels';
 import { useRepoData } from '../../lib/mundo/repo';
+import { MarTablon } from './tablon';
 
 /**
  * La ficha de abajo del mar 3D: lo que abre un lugar al acercarse (evento,
@@ -38,7 +39,9 @@ import { useRepoData } from '../../lib/mundo/repo';
  * «Tienes un código de descuento para este evento» junto a la compra y cada
  * código con «Ir a la isla». El Puerto de Alicante (T108) es un lugar
  * más, con su ficha al acercarse; su botón abre «Barco» para cambiar de
- * barco, y no anuncia eventos. Textos `muestra` [pendiente Álvaro].
+ * barco, y no anuncia eventos. El faro (plan 014 T157) abre el «Tablón del
+ * faro»: se abre ya desplegado, con sus tres tarjetas y su «Rumbo a…».
+ * Textos `muestra` [pendiente Álvaro].
  */
 
 export type SheetState =
@@ -117,6 +120,12 @@ export interface SheetProps {
   /** «Cambiar de barco» en el puerto (T108): abre la tienda «Barco». */
   onShips?: () => void;
   distance: number | null;
+  /** El mundo de ahora, para el «Tablón del faro» (T157). */
+  world?: WorldConfig | null;
+  /** «Rumbo a…» del tablón: marca ese lugar como destino. */
+  onMarkPlace?: (placeId: string) => void;
+  /** El lugar marcado ahora como destino, o null. */
+  markedPlace?: string | null;
 }
 
 /** La clave de una ficha: otra ficha (otro lugar u otro tipo) vuelve a abrirse pequeña. */
@@ -158,9 +167,13 @@ export function Sheet({
   onGoToIsland,
   onShips,
   distance,
+  world = null,
+  onMarkPlace,
+  markedPlace = null,
 }: SheetProps) {
-  // «Mis códigos» se pide desde el menú: se abre ya desplegada.
-  const [expanded, setExpanded] = useState(state.kind === 'codes');
+  const board = state.kind === 'content' && state.ref === BOARD_REF;
+  // «Mis códigos» se pide desde el menú y el tablón del faro sale al llegar: ya desplegados.
+  const [expanded, setExpanded] = useState(state.kind === 'codes' || board);
   const name = object?.identity.name ?? '';
   let body: ReactNode;
   let compact: Compact;
@@ -407,6 +420,32 @@ export function Sheet({
         {join ? <div className="mar-sheet__actions">{join}</div> : null}
       </>
     );
+  } else if (board) {
+    // El «Tablón del faro» (T157): los dos juegos y la carrera, con su rumbo.
+    label = t('mar.tablon.titulo');
+    compact = {
+      kicker: t('mar.tablon.kicker'),
+      title: t('mar.tablon.titulo'),
+      meta: t('mar.tablon.intro'),
+      action: (
+        <button
+          type="button"
+          className="mar-btn mar-btn--primary"
+          data-testid="tablon-ver"
+          onClick={expand}
+        >
+          {t('mar.tablon.ver')}
+        </button>
+      ),
+    };
+    body = (
+      <>
+        <p className="mar-sheet__kicker">{t('mar.tablon.kicker')}</p>
+        <h2 className="mar-sheet__title">{t('mar.tablon.titulo')}</h2>
+        <p className="mar-sheet__meta">{t('mar.tablon.intro')}</p>
+        <MarTablon world={world} marked={markedPlace} onMark={(id) => onMarkPlace?.(id)} />
+      </>
+    );
   } else {
     // El puerto (T108): su botón abre «Barco»; nunca se abre solo al llegar.
     const harbor = state.ref === HARBOR_REF;
@@ -460,7 +499,7 @@ export function Sheet({
   const more = expanded ? t('mar.sheet.verMenos') : t('mar.sheet.verMas');
   return (
     <section
-      className={`mar-sheet ${expanded ? 'is-expanded' : 'is-compact'}`}
+      className={`mar-sheet ${expanded ? 'is-expanded' : 'is-compact'}${board ? ' is-tablon' : ''}`}
       data-testid="mar-ficha"
       data-tipo={state.kind === 'content' ? state.target : state.kind}
       data-lugar={'placeId' in state ? state.placeId : undefined}
