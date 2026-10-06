@@ -56,7 +56,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: U-turn radius 135→150 (inner 210 u), Ibiza build 63 / upgrades 45·60 with 14/29/59 per 10 s (45/30/20 s), extra Ibizas 70/50 % by build order, +15 % damage Faro/Puerto/Nochevieja/Benidorm, balance tests: bot holds Normal and Tormenta; DEFENSE_CONFIG_VERSION 6, migration 20261006100500 (not applied) · 4e900ff
 
 ## T183 — Castle arena v3: camera follow, Ibiza money on screen, upgrade sound, no turbo
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T181
 - Model: opus
 - Goal: Decisions 2, 7 (view side), 8 and 9. Camera centres the plane from half zoom inward with a smooth blend to the fixed top view; each Ibiza payout shows a big golden «+N» rising from the island, always visible even with many effects (replaces the small pop-up); the Ibiza card has a collapsible, very short explanation (pays N every 10 s, the real amount from `DefenseGame.farmPayout(id)`; extra Ibizas pay less); the castle upgrade plays its own sound; turbo button and speed readout hidden in the castle arena.
@@ -68,7 +68,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - screenshots (mobile and desktop) of the «+N» and the Ibiza card → /tmp/orchestrator-attach/boia-planet-hernan-T183/
   - baja-quality p95 frame time at the Tormenta 10-min peak not worse than plan 015's 33.4 ms by more than 10 %
   - Test command → exit 0
-- Outcome:
+- Outcome: camera centres the plane from zoom 0.5 inward (smoothstep blend to the top view), big golden «+N» on every Ibiza payout above all effects, Ibiza card «¿Cómo paga?» with real 70/50 %, castle upgrade sound (thud + fanfare), turbo and speed hidden in the castle; baja p95 33.4 ms · da0d95f
 
 ## T184 — /mar fixes: arrows after «Mi Barco», guide bubbles on the plane and island, texts
 - Status: done
@@ -125,8 +125,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T181: balance tests now expect the bot to hold Normal and Tormenta; still check a one-island build falls, no Ibiza falls, Tormenta never easier than Normal, no one-island build beats the simple one (agent)
 - 2026-10-06 T184: arrows fix is defensive (focus restore); root cause not proven, new e2e passes (agent)
 - 2026-10-06 run: Hernán added T186 (carnet numbers by arrival with no gaps, admin can change a number, one shared changeable artist link, «ARTISTA» stamp on the front) to this plan; local mode keeps «—», artist link marks the local carnet in demo; admin number change only to a free number, logged (Hernán; last two orchestrator)
+- 2026-10-06 T183: zoomed in, the view may go past the arena edge (decision 2 over plan 015's rule, which now holds only at zoom 1); «+N» fixed screen size, 1.8 s, kept inside a safe band under the HUD (agent)
 
 ## Proposals (new scope)
+- 2026-10-06 T183: «Construir» Ibiza detail shows the first Ibiza's payout, not the 70/50 % of the next one; «guía: mover» e2e flaked once under load (agent)
 - 2026-10-06 T181: bot ends at 100 % everywhere; Puerto-only and Benidorm-only builds hold Tormenta at full life (agent)
 - 2026-10-06 T181: Ibiza card in the HUD shows the base payout; T183 should use `DefenseGame.farmPayout(id)` (agent)
 
@@ -144,3 +146,5 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 20:36 T183 launched · attempt 1 · agent a87ecd71b26c89416 (opus)
 - 2026-10-06 pushed main 956d11c to Vercel on Hernán's Telegram reply («Si sube»)
 - 2026-10-06 21:05 T180 integrated → f180433 (tests ok); worktree and branch removed
+- 2026-10-06 21:06 T186 launched · attempt 1 · agent abef4ce5425b18c02 (opus)
+- 2026-10-06 21:18 T183 integrated → da0d95f (tests ok); worktree and branch removed
