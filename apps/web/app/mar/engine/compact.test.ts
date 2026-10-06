@@ -12,8 +12,12 @@ import {
   CASTLE_GAME_ID,
   CASTLE_PLACE_ID,
   CIRCUIT_ID,
+  FIESTERA_ANCHOR,
+  HARBOR_PLACE_ID,
   LIGHTHOUSE_PLACE_ID,
+  POS,
   WORLD_REGISTRY,
+  at,
   type WorldConfig,
 } from '@boia/world';
 import { describe, expect, it } from 'vitest';
@@ -193,6 +197,59 @@ describe('la ruta (marcas en el agua)', () => {
     const spec = rescueMissionOf(world)!;
     const dest = missionDestinationId(world, spec.missionId);
     expect(route.stops.indexOf(dest!)).toBe(route.stops.length - 1);
+  });
+
+  it('el ancla de la Fiestera queda a estribor, cerca del último tramo antes de Alicante y en agua libre', () => {
+    const spec = rescueMissionOf(world)!;
+    const fiestera = byId(world, spec.characterId);
+    expect(byId(shared, spec.characterId).position).toMatchObject(at(FIESTERA_ANCHOR));
+    const end = route.stopAt[route.stops.indexOf(HARBOR_PLACE_ID)]!;
+    const a = route.path[end - 1]!;
+    const b = route.path[end]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const offset = shortest(a, fiestera.position, period);
+    const len = Math.hypot(dx, dy);
+    const t = (offset.dx * dx + offset.dy * dy) / (len * len);
+    // heading 0 = +x, pi/2 = +y; y del motor pasa a z de escena.
+    // Estribor es (-sin(heading), cos(heading)): producto cruzado positivo.
+    const right = (dx * offset.dy - dy * offset.dx) / len;
+    const maqScale = (POS * MAR3D_SCALE.compact) / MAR3D_SCALE.spread;
+    expect(t).toBeGreaterThan(0.5);
+    expect(t).toBeLessThan(1);
+    expect(right / maqScale).toBeGreaterThanOrEqual(1.5);
+    expect(right / maqScale).toBeLessThanOrEqual(3);
+    expect(nearestOnRoute(route, fiestera.position, period).d).toBeCloseTo(right, 2);
+
+    // Toda la composición queda libre de TODOS los demás lugares de map.ts,
+    // tanto en el mapa fuente como tras crecer las islas y acercar el mar vivo.
+    // La composición propia se compara con lugares externos, no entre sus piezas.
+    for (const w of [shared, world]) {
+      const localRect = planetRect(w.bounds);
+      const localPeriod = periodOf(localRect);
+      const group = w.objects.filter(
+        (o) =>
+          o.identity.id.startsWith(`${spec.characterId}-`) || o.identity.id === spec.characterId,
+      );
+      const others = w.objects.filter((o) => !group.includes(o));
+      const solids = [
+        ...others.map((o) => ({ id: o.identity.id, ...o.position, radius: footprintOf(o) })),
+        ...(w === world ? decorCircles(decorSpots(w)).map((c) => ({ ...c, id: c.kind })) : []),
+      ];
+      for (const f of group) {
+        const radius = footprintOf(f);
+        expect(f.position.x - radius).toBeGreaterThan(w.bounds.left);
+        expect(f.position.x + radius).toBeLessThan(w.bounds.right);
+        expect(f.position.y - radius).toBeGreaterThan(w.bounds.top);
+        expect(f.position.y + radius).toBeLessThan(w.bounds.bottom);
+        for (const o of solids) {
+          const d = shortest(f.position, o, localPeriod);
+          expect(Math.hypot(d.dx, d.dy), `${w.id}: ${f.identity.id} / ${o.id}`).toBeGreaterThan(
+            radius + o.radius,
+          );
+        }
+      }
+    }
   });
 
   it('cada tramo va por el camino más corto del planeta', () => {

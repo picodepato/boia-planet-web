@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 016 T180: Boia Fiestera to the right of the route line before the Puerto de Alicante
+
+What exists:
+- `FIESTERA_ANCHOR` moved from `[-3.8, 7.6]` to `[8.0, 16.5]` in `packages/world/src/worlds/arcilla/map.ts`: starboard of the last route leg before the Puerto de Alicante (about 2.46 map units from the line), on water. The crocodile/rock offsets are kept relative to the old source anchor; the `fiestera` encounter zone is now derived from the anchor.
+- The info buoy `boia-descubrir` was inside the old Fiestera zone; moved to `[5.2, 14.4]` (port side of the line, inside the new zone) so the buoys test still holds.
+- New source-driven geometry tests in `apps/web/app/mar/engine/compact.test.ts` and `packages/world/src/worlds/arcilla/arcilla.test.ts` (right of the line, close, clear of other places). Route line and other places untouched.
+- Screenshots (start camera, mobile 390x844 and desktop): `/tmp/orchestrator-attach/boia-planet-hernan-T180/` (the yellow line itself is not drawn in the start view, so the side is proven by the tests, not by the picture).
+
+Commands:
+- vitest (test command, excluding db) → exit 0, 2033/2033
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → 0; `pnpm typecheck` → 0; `pnpm build` → 0
+- e2e mar-fiestera mar-canon mar-islas --workers=1 → see the final report
+
+Follow-up (coordinator): zones made disjoint. `fiestera` zone is now x 1.5..13.3, y 15..19.2; `cala` shrunk to y 8..15; `boia-descubrir` moved to [2.0, 17.0] (port side of the line, inside the fiestera zone). New test asserts the fiestera/cala/puerto zones do not overlap. Screenshot with the yellow route visible: /tmp/orchestrator-attach/boia-planet-hernan-T180/line-desktop.png (and line-mobile.png): the Remanso de los Cocodrilos label sits right of the line before the Puerto.
+E2E one spec at a time, --workers=1: mar-fiestera 10/10, mar-ayuda 12 passed/8 skipped, mar-islas + carnet-descuento 12/12, mar-canon 92 passed (1 timing flake "Terminar partida", passes on rerun 2/2). Vitest 2034/2034, lint, typecheck, build, checks all exit 0.
+
+Pending: none.
+
 ## 2026-10-06 — plan 016 T184: /mar fixes: arrows after «Mi Barco», guide bubbles on the plane and island, texts
 
 Qué existe

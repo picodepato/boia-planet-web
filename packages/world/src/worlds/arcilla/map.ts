@@ -114,8 +114,13 @@ const TAGS = ['muestra'];
 
 /** El anillo de salida (`zonas/puerto/lugares/salida`): ancla del puerto. */
 export const PORT_ANCHOR: Maq = [0, 25.3];
-/** La Boia Fiestera (`zonas/fiestera/lugares/fiestera`): ancla del remanso. */
-export const FIESTERA_ANCHOR: Maq = [-3.8, 7.6];
+/**
+ * La Boia Fiestera: a estribor del último tramo de la ruta antes de Alicante,
+ * a unos 2,46 u_maq de la línea en /mar, fuera de la isla y los restos.
+ */
+export const FIESTERA_ANCHOR: Maq = [8.0, 16.5];
+/** Ancla original de mapa.json y del arte: conserva los offsets del remanso. */
+const FIESTERA_SOURCE_ANCHOR: Maq = [-3.8, 7.6];
 /** La Isla de Nochevieja, antes «la última isla» (`zonas/ultima/islas/isla`), y el nicho de la Fiestera (`zonas/ultima/lugares/nicho`). */
 export const ULTIMA_CENTER: Maq = [4.4, -27.4];
 const NICHO: Maq = [4.0, -28.2];
@@ -547,7 +552,11 @@ const ISLANDS: PlaceInput[] = [
 /** Radio en que los cocodrilos se sumergen (`zonas/fiestera/proximidad/cocodrilos`). */
 const CROC_RADIUS = proximity(4.0, 'encuentro');
 
-const remanso = (p: Maq) => near(FIESTERA_ANCHOR, p);
+const remanso = (p: Maq) =>
+  near(FIESTERA_ANCHOR, [
+    FIESTERA_ANCHOR[0] + p[0] - FIESTERA_SOURCE_ANCHOR[0],
+    FIESTERA_ANCHOR[1] + p[1] - FIESTERA_SOURCE_ANCHOR[1],
+  ]);
 
 const CROCS: [number, number, number][] = [
   [-5.4139, 7.9431, 0.5175],
@@ -567,7 +576,7 @@ const FIESTERA: PlaceInput[] = [
     name: 'La Boia Fiestera',
     category: 'encuentro',
     tags: TAGS,
-    position: { ...remanso(FIESTERA_ANCHOR), zone: 'fiestera' },
+    position: { ...at(FIESTERA_ANCHOR), zone: 'fiestera' },
     geometry: {
       collision: { shape: 'circle', radius: size(0.48) },
       proximityRadius: proximity(2.6, 'encuentro'),
@@ -597,7 +606,7 @@ const FIESTERA: PlaceInput[] = [
     category: 'decorado',
     tags: TAGS,
     appearance: { layer: 'water' },
-    position: { ...remanso(FIESTERA_ANCHOR), zone: 'fiestera' },
+    position: { ...at(FIESTERA_ANCHOR), zone: 'fiestera' },
     geometry: {},
     behaviors: [deco()],
     source: ['art:fiestera#posidonia'],
@@ -1259,10 +1268,10 @@ export const INFO_BOIES: {
     ],
   },
   {
-    // Entre la primera isla y el encuentro de la Fiestera ([2,2; 9,6] → [-0,9; 7,8]).
+    // Antes del encuentro de la Fiestera, a babor de la ruta hacia Alicante.
     id: 'boia-descubrir',
     name: 'La boia de descubrir',
-    at: [1.3, 9.0],
+    at: [2.0, 17.0],
     zone: 'fiestera',
     guide: 'fiestera',
     lines: [
@@ -1332,8 +1341,8 @@ const INFO: PlaceInput[] = INFO_BOIES.map((b, i) => ({
 /** Rectángulo que envuelve el contorno de cada zona (`zonas[].contorno`). */
 const ZONES: [string, string, number, number, number, number][] = [
   ['puerto', 'Puerto de salida', -7, 7, 19.2, 31],
-  ['cala', 'Puerto de Alicante', 3, 15, 8, 19.2],
-  ['fiestera', 'Encuentro de la Boia Fiestera', -7, 1.5, 3.5, 11],
+  ['cala', 'Puerto de Alicante', 3, 15, 8, 15],
+  ['fiestera', 'Encuentro de la Boia Fiestera', 1.5, 13.3, 15, 19.2],
   ['allday', 'Isla del Sonido', -6, 7, -21.5, -4.5],
   ['fotos', 'Isla de Benidorm', -15, -3, -15.5, -4.5],
   ['tienda', 'Ibiza', 1.5, 9.8, -4.5, 8],

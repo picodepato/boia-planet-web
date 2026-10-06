@@ -161,7 +161,17 @@ describe('mapa compartido de Arcilla (T20)', () => {
       const anchor = LOCAL_ANCHORS.find(
         ([prefix]) => p.id === prefix || p.id.startsWith(`${prefix}-`),
       );
-      const want = anchor ? near(anchor[1], point) : at(point);
+      // El remanso se traslada entero respecto al ancla original de la fuente.
+      const original =
+        anchor?.[0] === 'fiestera' ? sourcePoint('zonas/fiestera/lugares/fiestera')! : anchor?.[1];
+      const local =
+        anchor && original
+          ? ([
+              anchor[1][0] + point[0] - original[0],
+              anchor[1][1] + point[1] - original[1],
+            ] as const)
+          : point;
+      const want = anchor ? near(anchor[1], local) : at(point);
       expect(p.position.x, p.id).toBeCloseTo(want.x, 1);
       expect(p.position.y, p.id).toBeCloseTo(want.y, 1);
       // Y el mundo compuesto lo lleva igual, con su id estable.
@@ -226,6 +236,18 @@ describe('mapa compartido de Arcilla (T20)', () => {
       for (const place of events) expect(WORLD_REGISTRY.skin(id).names[place]).toBeUndefined();
     }
     expect(ARCILLA_SKIN.names?.puerto).toBe('El Varadero');
+  });
+
+  it('la zona de la Fiestera no pisa la del Puerto de Alicante ni la del puerto de salida', () => {
+    const area = (id: string) => map.sectors.find((s) => s.id === id)!.area;
+    const overlap = (a: string, b: string) => {
+      const p = area(a);
+      const q = area(b);
+      return p.left < q.right && q.left < p.right && p.top < q.bottom && q.top < p.bottom;
+    };
+    expect(overlap('fiestera', HARBOR_PLACE_ID)).toBe(false);
+    expect(overlap('fiestera', 'puerto')).toBe(false);
+    expect(overlap(HARBOR_PLACE_ID, 'puerto')).toBe(false);
   });
 
   it('nombres de Arcilla del 2026-10-02: islas del Mediterráneo y Los Rápidos', () => {
