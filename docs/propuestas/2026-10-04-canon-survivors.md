@@ -288,6 +288,15 @@ es el plan 010 y el lanzamiento, el 014.)
 
 > **Cambio del plan 012 (2026-10-05):** el **Kraken** pasó a la beta 3 (boss final del acto 2, con la campaña acto 1 → 2); la beta 4 trae el resto de su fila.
 
+> **Cambio del plan 013 (2026-10-05, Hernán):** la beta 4 y el lanzamiento se juntan en el plan
+> 013, la **versión definitiva con dos actos**: la campaña acaba con el Kraken. El **acto 3** (el
+> Capitán Aguafiestas, el apagón, las islas iluminadas, el logro `canon-capitan` y «El Apagón»)
+> **no se construye**: sale «Próximamente» en el pop-up y queda para una versión posterior. Sin la
+> etiqueta BETA desde el cierre (T156); los atajos de desarrollo se quedan, pero una partida de
+> atajo nunca paga, desbloquea logros ni entra en el ranking. Guía:
+> [2026-10-05-canon-definitiva-guia-prueba.md](2026-10-05-canon-definitiva-guia-prueba.md);
+> lo que espera a Álvaro: [2026-10-05-canon-decision-alvaro.md](2026-10-05-canon-decision-alvaro.md).
+
 **Durante las betas**: el resultado `won` (= sobrevivir los 7:00; bronce o más cuando existan
 medallas) sigue alimentando `win_minigame`, `canon` y `guardacostas`, y el premio sigue siendo el
 de ahora (150 pts + 50 monedas, una vez por temporada) hasta que el lanzamiento ponga el premio

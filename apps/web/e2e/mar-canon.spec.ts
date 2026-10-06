@@ -199,20 +199,21 @@ for (const [kind, id] of [
     await expect(game(page)).toHaveAttribute('data-estado', 'running');
     const speed = async () => Number(await canvas(page).getAttribute('data-canon-speed'));
     let max = 0;
+    // El salto se apunta al verlo: bajo carga, cuando se vuelve a leer ya puede haber caído (T156).
+    let airborne = false;
     await steerTo(
       page,
       id,
       async () => {
         await answerCard(page);
         max = Math.max(max, await speed());
-        return kind === 'impulso'
-          ? max > 190
-          : (await canvas(page).getAttribute('data-salto')) === 'aire';
+        if ((await canvas(page).getAttribute('data-salto')) === 'aire') airborne = true;
+        return kind === 'impulso' ? max > 190 : airborne;
       },
       { ms: 60_000 },
     );
     if (kind === 'impulso') expect(max).toBeGreaterThan(190);
-    else await expect(canvas(page)).toHaveAttribute('data-salto', 'aire');
+    else expect(airborne).toBe(true);
     if (kind === 'rampa') {
       // Y cae al agua: chapuzón (una carta que se abra en el aire para la partida: se contesta).
       await expect
@@ -241,8 +242,8 @@ test('desde el panel de su isla, el Cañón se juega en el mismo mar, sin marcas
   await expect(panel(page)).toBeVisible({ timeout: 15_000 });
   await expect(panel(page)).toHaveAttribute('data-game', 'canon');
   await expect(panel(page)).toContainText(msg('mar.canon.title'));
-  // La etiqueta «BETA» también en el panel (T118).
-  await expect(panel(page).getByTestId('panel-minijuego-beta')).toHaveText(msg('mar.canon.beta'));
+  // La versión definitiva (T156) ya no lleva la etiqueta «BETA».
+  await expect(panel(page).getByTestId('panel-minijuego-beta')).toHaveCount(0);
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'on');
   // Un objetivo marcado con el «!» (T99 de Codex) antes de jugar.
   await page.getByTestId('mar-ayuda-abrir').dispatchEvent('click');
@@ -490,9 +491,19 @@ test('al acabar vuelve el mundo, con el barco donde acabó la partida', async ({
   await expect(canvas(page)).toHaveAttribute('data-ruta', 'off');
   await expect(canvas(page)).toHaveAttribute('data-fauna-oculta', 'on');
   const start = pointOf(await game(page).getAttribute('data-barco'));
-  // Navega un poco durante la partida.
+  // Navega un poco durante la partida, hasta moverse de verdad (T156: una
+  // carta de nivel que se abra a medias para la partida y el barco; se contesta).
   await page.keyboard.down('ArrowLeft');
-  await page.waitForTimeout(1500);
+  await expect
+    .poll(
+      async () => {
+        await answerCard(page);
+        if ((await game(page).getAttribute('data-estado')) === 'ended') return Infinity;
+        return dist(pointOf(await game(page).getAttribute('data-barco')), start);
+      },
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(40);
   await page.keyboard.up('ArrowLeft');
   await expect(game(page)).toHaveAttribute('data-estado', 'ended', { timeout: 60_000 });
   await expect(game(page)).toHaveAttribute('data-fin', /^(survived|flooded)$/);
@@ -625,7 +636,7 @@ async function expectOnScreen(page: Page, piece: Locator): Promise<Box> {
 
 const activeS = async (page: Page) => Number(await game(page).getAttribute('data-activo'));
 
-test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada tapa «Entradas»', async ({
+test('HUD con cuenta atrás y nivel, sin BETA; el agua a bordo bajo el barco; nada tapa «Entradas»', async ({
   page,
 }) => {
   const errors = await openMar(page, '?minijuego=canon&t=120&seed=7');
@@ -648,7 +659,7 @@ test('HUD con BETA, cuenta atrás y nivel; el agua a bordo bajo el barco; nada t
     const pb = (await piece.boundingBox())!;
     expect(overlaps(hudBox, pb), (await piece.getAttribute('data-testid')) ?? '').toBe(false);
   }
-  await expect(hud.getByTestId('mar-canon-beta')).toHaveText(msg('mar.canon.beta'));
+  await expect(hud.getByTestId('mar-canon-beta')).toHaveCount(0);
   // La cuenta atrás, «m:ss», baja desde lo que queda de la partida.
   const time = hud.getByTestId('mar-canon-tiempo');
   await expect(time).toHaveText(/^\d+:\d\d$/);
@@ -1466,7 +1477,7 @@ test('pop-up previo: se abre con «Jugar» del panel, entero en pantalla y sin t
   await expect(box).toHaveAttribute('role', 'dialog');
   await expect(box).toHaveAttribute('aria-modal', 'true');
   await expect(box).toContainText(msg('mar.canon.title'));
-  await expect(box.getByTestId('mar-canon-previa-beta')).toHaveText(msg('mar.canon.beta'));
+  await expect(box.getByTestId('mar-canon-previa-beta')).toHaveCount(0);
   // De entrada: Acto 1, Normal, con el foco en el acto marcado.
   await expect(box).toHaveAttribute('data-acto', '1');
   await expect(box).toHaveAttribute('data-dificultad', 'normal');
@@ -1826,24 +1837,49 @@ test('rendimiento en `baja`: a las 6:00 con los topes llenos y las siete armas, 
 });
 
 /**
+ * La mascota minikraken en cubierta (T154): `?mascota=1` la da (como al
+ * vencer al Kraken) y se equipa en Mi Barco; se queda puesta en las visitas
+ * siguientes del mismo navegador.
+ */
+async function equipMascot(page: Page): Promise<void> {
+  await openMar(page, '?mascota=1');
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-barco').click();
+  const shop = page.getByTestId('mar-tienda').getByTestId('barco');
+  const option = shop.getByTestId('barco-mascota-mascota-minikraken');
+  await expect(option).not.toHaveAttribute('data-bloqueado', 'si');
+  await option.click();
+  await expect(option).toHaveAttribute('aria-checked', 'true');
+  await expect(canvas(page)).toHaveAttribute('data-mascota', 'minikraken');
+}
+
+/**
  * T147: lo mismo con cada boss final en la partida (el Barco Fantasma del
  * acto 1 y el Kraken del acto 2), las siete armas y el mar lleno, en `baja`.
  * En Tormenta para que el boss aguante toda la medida con las armas al máximo.
+ * T156: además con el sonido sonando (bucle de boss) y la mascota en cubierta.
  */
 for (const act of [1, 2] as const) {
-  test(`rendimiento en \`baja\` con el boss final del acto ${act} en pantalla, los topes llenos y las siete armas (T147)`, async ({
+  test(`rendimiento en \`baja\` con el boss final del acto ${act} en pantalla, los topes llenos, las siete armas, el sonido y la mascota (T147, T156)`, async ({
     page,
   }, info) => {
     test.skip(info.project.name !== 'mobile', 'se mide una vez, en el teléfono');
     const boss = finalSlot(act).ref;
     await forceLowQuality(page);
+    await equipMascot(page);
     const errors = await openMar(
       page,
       `?minijuego=canon&acto=${act}&t=${finalSlot(act).atS + 2}&armas=1&dificultad=tormenta&seed=7`,
     );
     await expect(game(page)).toHaveAttribute('data-estado', /running|card/);
     await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+    await expect(canvas(page)).toHaveAttribute('data-mascota', 'minikraken');
     await expect(game(page)).toHaveAttribute('data-jefes', new RegExp(boss), { timeout: 20_000 });
+    // El primer gesto (una tecla) enciende el sonido; con el boss, su bucle.
+    await expect(game(page)).toHaveAttribute('data-sonido', /bloqueado|activo/, { timeout: 15_000 });
+    await page.keyboard.press('ArrowLeft');
+    await expect(game(page)).toHaveAttribute('data-sonido', 'activo');
+    await expect(game(page)).toHaveAttribute('data-musica', 'jefe', { timeout: 10_000 });
     await fillSea(page);
     // El boss entra en la vista (el Kraken, también su sombra bajo el agua).
     await expect
@@ -2046,7 +2082,6 @@ test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto d
     'mar-canon-jefe',
     'mar-canon-jefe-aviso',
     'mar-canon-pausa',
-    'mar-canon-beta',
     'mar-canon-tiempo',
     'mar-entradas',
     'mar-enlaces',
@@ -2107,8 +2142,8 @@ test('boss HUD: barra arriba con nombre y aviso de llegada, sin pisar el resto d
   expect(bar.x).toBeGreaterThanOrEqual(hud.x - 0.5);
   expect(bar.x + bar.width).toBeLessThanOrEqual(hud.x + hud.width + 0.5);
   expect(overlaps(banner, hud)).toBe(false);
-  // No tapa la cuenta atrás, la pausa ni «BETA», y ni la barra ni el aviso pisan lo fijo ni los mandos.
-  for (const id of ['mar-canon-pausa', 'mar-canon-beta', 'mar-canon-tiempo'])
+  // No tapa la cuenta atrás ni la pausa, y ni la barra ni el aviso pisan lo fijo ni los mandos.
+  for (const id of ['mar-canon-pausa', 'mar-canon-tiempo'])
     expect(overlaps(bar, boxes[id]!), id).toBe(false);
   for (const id of [
     'mar-entradas',

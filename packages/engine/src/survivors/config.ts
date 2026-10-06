@@ -26,7 +26,7 @@ import { VECINO } from './vecino';
  */
 
 /** Sube con cada cambio de reglas: la sesión la lleva y valida con ella. */
-export const SURVIVORS_CONFIG_VERSION = 15;
+export const SURVIVORS_CONFIG_VERSION = 16;
 
 /** Paso fijo de la simulación (s). */
 export const SURVIVORS_STEP_S = 1 / 60;
@@ -90,6 +90,11 @@ export interface DifficultyDef {
   enemyHp: number;
   /** Sobre cuántos enemigos echa el guion (grupos por segundo y anillos de la Marea). */
   enemyCount: number;
+  /**
+   * T156: sobre el aguante de los bosses, además de `enemyHp` (sin él, 1).
+   * Endurece la pelea con el boss sin tocar a los enemigos comunes.
+   */
+  bossHp?: number;
 }
 
 /** El id si `v` es una dificultad; si no, null. */
@@ -1505,6 +1510,8 @@ export const SURVIVORS_CONFIG: SurvivorsConfig = {
       enemyDamage: 1.6,
       enemyHp: 1.6,
       enemyCount: 1.6,
+      // T156: el piloto ganaba al Barco Fantasma en 8 de 12 semillas en Tormenta.
+      bossHp: 1.25,
     },
   },
   // Bosses: prueba (T137) nunca entra en producción; Vecino (T138),
@@ -2152,7 +2159,7 @@ export function actOf(cfg: SurvivorsConfig, act: number): ActScript | null {
 
 /** El aguante con que entra un boss: el suyo por el del acto y por la dificultad. */
 export function bossHpFor(def: BossDef, act: ActScript | null, diff: DifficultyDef): number {
-  return def.hp * (act?.bossHpScale ?? 1) * diff.enemyHp;
+  return def.hp * (act?.bossHpScale ?? 1) * diff.enemyHp * (diff.bossHp ?? 1);
 }
 
 /** La curva de una pista en el segundo `t` (null fuera de su tramo). */

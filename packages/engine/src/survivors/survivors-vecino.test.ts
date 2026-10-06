@@ -132,7 +132,7 @@ describe('El Vecino Quejica (T138)', () => {
     const b = one.spawnBoss('vecino', 300, 0)!;
     expect(two.spawnBoss('vecino', 300, 0)!.maxHp).toBe(b.maxHp * 1.5);
     expect(storm.spawnBoss('vecino', 300, 0)!.maxHp).toBeCloseTo(
-      b.maxHp * 1.5 * c.difficulties.tormenta.enemyHp,
+      b.maxHp * 1.5 * c.difficulties.tormenta.enemyHp * (c.difficulties.tormenta.bossHp ?? 1),
     );
     one.flameBosses(b.x, b.y, 1, (b.maxHp * 0.51) / c.bossFight.flameDps);
     expect(one.step()).toContainEqual({ type: 'bossPhase', boss: 'vecino', id: b.id, phase: 1 });

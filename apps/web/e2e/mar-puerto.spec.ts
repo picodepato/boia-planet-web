@@ -263,6 +263,8 @@ test('en plena partida del Cañón, el puerto no abre su ficha ni la tienda', as
     page,
     HARBOR_PLACE_ID,
     async () => {
+      // Una carta de nivel que se abra por el camino para la partida: se contesta (T156).
+      if ((await game.getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
       closest = Math.min(closest, await distance(page));
       return closest < reach * 0.7 || (await marSheet(page).count()) > 0;
     },
@@ -270,7 +272,8 @@ test('en plena partida del Cañón, el puerto no abre su ficha ni la tienda', as
   );
   expect(closest).toBeLessThan(reach);
   await page.waitForTimeout(1500);
-  await expect(game).toHaveAttribute('data-estado', 'running');
+  // Sigue la partida (jugando o con una carta de nivel abierta), sin ficha ni tienda.
+  await expect(game).toHaveAttribute('data-estado', /^(running|card)$/);
   await expect(marSheet(page)).toHaveCount(0);
   await expect(page.getByTestId('mar-tienda')).toHaveCount(0);
   expect(errors).toEqual([]);

@@ -4,6 +4,43 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 013 T156: Close: balance, baja performance, full e2e, docs, Álvaro draft, remove BETA
+
+### Qué existe
+
+- **Sin «BETA»**: fuera la etiqueta del HUD (`BetaTag` en `canon-hud.tsx`), del pop-up previo (`canon-previa.tsx`), del panel de la isla (`badge` de `canon-mode.tsx` y el soporte de `badge` en `lib/mundo/minigame-layer.tsx`, que sólo usaba el Cañón), su CSS y las claves `mar.canon.beta*`. Las e2e comprueban que ya no están (`toHaveCount(0)`). Los atajos de desarrollo siguen (decisión 8).
+- **Equilibrio, config v16** (`SURVIVORS_CONFIG_VERSION` 15 → 16): nuevo `DifficultyDef.bossHp` (multiplica sólo el aguante de los bosses, en `bossHpFor`); Tormenta 1,25. Medido con el piloto `greedy`, 12 semillas por acto y dificultad (victorias = oro; entre paréntesis, v15):
+  - Acto 1 (Barco Fantasma): Tranquila 11/12 (11), Normal 11/12 (11), Tormenta 4/12 (8). Combate medio 32 / 43 / 68 s.
+  - Acto 2 (Kraken): Tranquila 10/12 (10), Normal 6/12 (6), Tormenta 2/12 (3). Combate medio 54 / 59 / 64 s; en Tormenta le queda un 77 % de vida de media.
+  - Minibosses: 12/12 en Tranquila y Normal en los dos actos (Vecino del acto 2 en Tranquila, 11/12).
+  - Descartado: Fantasma 2600 → 3000 (Tranquila acto 1 bajaba a 10/12, 4/6 en las semillas de la prueba, y Normal no cambiaba).
+- **Rendimiento en `baja`**: las dos e2e de boss final (T147) ahora también equipan el minikraken (`equipMascot`, por Mi Barco tras `?mascota=1`) y encienden el sonido (tecla → `data-sonido=activo`, `data-musica=jefe`). En 360×640 con el mar lleno (60/60), siete armas: p95 33,4 ms sin limitar la CPU con el Fantasma y con el Kraken; con la CPU 4×, 33,4 y 50 ms. Sin puntos calientes que arreglar.
+- **Finales de línea**: 49 archivos de `main` con CRLF pasados a LF (código, e2e, docs, manifiestos de arte, scripts de Blender). Quedan con CRLF, a propósito, `apps/web/lib/barco/*`, `ship-model.ts` y `tienda.spec.ts` (los toca en paralelo una tarea del plan 014), `plans/` y las skills de Blender de `.claude/skills/`.
+- **Docs**: `docs/propuestas/2026-10-05-canon-definitiva-guia-prueba.md` (guía en español, con equilibrio, rendimiento, la revisión de accesibilidad de REQ-AVE-039 y «Notas» vacía); `docs/propuestas/2026-10-05-canon-decision-alvaro.md` (borrador para Álvaro: qué es el Cañón; nombres, textos, premios, logros, mascota, ranking, música, cambios de REQ-AVE-037/038/039, atajos); hoja de ruta del diseño de referencia (dos actos, acto 3 más adelante); `docs/spec/estado.md`: notas de REQ-AVE-037 (versión definitiva, sin BETA) y REQ-AVE-039 (revisión escrita; sigue PARCIAL por el Faro 2D). REQ-AVE-038 ya decía `won` = bronce o más.
+- **E2E inestables**: los de la lista del plan 012 (amanecer en t=419, HUD, turbo móvil, Tiburón Martillo, panel/pop-up de dificultad, tiburón en móvil) ya estaban endurecidos en T147 y pasaron en las cuatro pasadas completas. Endurecidos ahora: la rampa (T146; el salto se apunta al verlo, al volver a leer ya había caído), «al acabar vuelve el mundo» (navega hasta moverse 40 u contestando cartas; a t=416 una carta paraba el barco) y el puerto en plena partida (`mar-puerto.spec.ts`: contesta las cartas por el camino y acepta `running|card`).
+- Fusionado `main` (plan 014 T158/T159 y su reversión): conflictos sólo de finales de línea en `mar3d.ts`, `mar-client.tsx` y `es-lib.ts` (versión de main, pasada a LF).
+
+### Comandos y resultados
+
+- `pnpm exec vitest run packages/engine/src/survivors --testTimeout=60000` → exit 0, 16 archivos, 235 pruebas (corrido solo; con la e2e a la vez, las partidas enteras pasaban de su tiempo).
+- `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0.
+- `grep -rn "BETA" apps/web/app/mar apps/web/lib/i18n` → sin resultados.
+- Test command, paso a paso: vitest → exit 0 (184 archivos, 1744 pruebas); `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (187,0 de 200 kB); `pnpm typecheck` → exit 0.
+- `E2E_PORT=3161 pnpm e2e mar-canon.spec.ts --workers=1 -g "rendimiento|BETA|panel de su isla|pop-up previo: se abre|boss HUD"` → exit 0, 13 passed, 3 skipped.
+- Primera `E2E_PORT=3161 pnpm e2e --workers=2` (antes del equilibrio v16) → 454 passed, 12 failed, 88 skipped: once en escritorio mientras corría a la vez la suite de `survivors`, más los chips de aviso en móvil. `--last-failed --workers=1` → 11 passed, 1 failed (Los Rápidos en escritorio, «sin carrera»), que pasa solo (2 passed).
+- Tras fusionar main: vitest → exit 0 (187 archivos, 1783 pruebas); checks, lint, typecheck, `estado.py` → exit 0; build → exit 0 (187,0 de 200 kB).
+- Segunda y tercera `pnpm e2e --workers=2` → exit 1: 457 passed / 9 failed y 464 / 2; todas las caídas, al repetirlas solas → passed (9 passed; 2 passed más la del puerto arreglada).
+- Cuarta `E2E_PORT=3161 pnpm e2e --workers=2` (tras fusionar main) → **exit 1**: 463 passed, 3 failed, 88 skipped (rampa y «al acabar vuelve el mundo», arregladas; Los Rápidos en escritorio). `pnpm e2e mar-canon.spec.ts mar-circuito.spec.ts --workers=1 --repeat-each=2 -g "una rampa durante el Cañón|al acabar vuelve el mundo|Los Rápidos: pregunta"` → exit 0, 12 passed.
+- **Los Rápidos** (`mar-circuito.spec.ts` «Los Rápidos: pregunta en la salida…», escritorio) cae en 3 de 4 pasadas completas bajo carga (sin medalla por lento, o «sin carrera» en el mismo tramo) y pasa sola: el piloto de la prueba no es del Cañón ni de la lista; queda como propuesta.
+
+### Pendiente
+
+- Hernán prueba la versión definitiva con la guía y apunta en «Notas»; Álvaro, el borrador (nombres, textos, premios, logros, mascota, ranking, música, REQ).
+- Normal del acto 1 se gana casi siempre con el piloto (11/12; combate de 43 s): si jugando se hace fácil, el mando es `bosses.fantasma.hp`, mirando Tranquila.
+- REQ-AVE-037 sigue PARCIAL hasta que Álvaro cambie sus criterios; REQ-AVE-039, PARCIAL por el Faro 2D.
+- La suite e2e entera no salió con exit 0 de una sola pasada en esta máquina (cargada con otros dos agentes): endurecer el piloto de Los Rápidos.
+- Quedan con CRLF `apps/web/lib/barco/*`, `ship-model.ts`, `tienda.spec.ts` y `ESTADO.md` (zona del plan 014 / archivo del orquestador).
+
 ## 2026-10-06 — plan 014 T167: Remove the boat flag option
 
 Done by Codex (wrapper verified). The Bandera section, FLAG_LOOKS, flag catalog entries, equipped-flag drawing and i18n keys are removed; saved documents with owned/equipped flags load without them; ship-model.test.ts covers the boat model without a flag.

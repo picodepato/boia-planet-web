@@ -42,7 +42,7 @@ import './canon-hud.css';
 /**
  * La interfaz del Cañón «Que no pare la música» en `/mar` (T118), al estilo
  * de los chips de la carrera: arriba al centro la cuenta atrás hasta el
- * amanecer, el nivel con su barra y la etiqueta «BETA» (con el botón de
+ * amanecer, el nivel con su barra (con el botón de
  * pausa, que abre el menú de `/mar`); bajo el barco, el agua a bordo; al
  * subir de nivel, 1 de 3 cartas; al acabar, la pantalla final. Nada de esto
  * tapa «Entradas» (la barra de abajo va encima) ni el botón del menú.
@@ -248,20 +248,7 @@ function CanonAnnouncer({
   );
 }
 
-/** La etiqueta «BETA» (también en el panel de la isla del Cañón). */
-function BetaTag() {
-  return (
-    <span
-      className="mar-canon-beta"
-      data-testid="mar-canon-beta"
-      title={msg('mar.canon.beta.aria')}
-    >
-      {msg('mar.canon.beta')}
-    </span>
-  );
-}
-
-/** Arriba al centro: «BETA», la cuenta atrás, la pausa y, debajo, el nivel con su barra. */
+/** Arriba al centro: la cuenta atrás, la pausa y, debajo, el nivel con su barra. */
 function CanonHud({
   view,
   bar,
@@ -281,7 +268,6 @@ function CanonHud({
       data-jefe={bar ? bar.kind : undefined}
     >
       <div className="mar-canon-hud__row">
-        <BetaTag />
         <span
           className="mar-canon-hud__time"
           data-testid="mar-canon-tiempo"

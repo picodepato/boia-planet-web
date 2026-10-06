@@ -123,14 +123,7 @@ export function CanonPrevia({
       >
         <header className="mar-canon-previa__head">
           <h2 id={titleId} className="mar-canon-previa__title">
-            {msg('mar.canon.title')}{' '}
-            <span
-              className="mar-canon-previa__beta"
-              data-testid="mar-canon-previa-beta"
-              title={msg('mar.canon.beta.aria')}
-            >
-              {msg('mar.canon.beta')}
-            </span>
+            {msg('mar.canon.title')}
           </h2>
           <button
             type="button"

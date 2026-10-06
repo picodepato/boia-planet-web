@@ -606,8 +606,6 @@ export const esMar = {
   'survivors.fallback.bailing': 'Achique de emergencia',
   'survivors.fallback.bailing.efecto': 'Retira 25 de agua a bordo ahora; no ocupa hueco.',
   // La interfaz del Cañón (T118): HUD, barra de agua, cartas, pausa y final. muestra
-  'mar.canon.beta': 'BETA',
-  'mar.canon.beta.aria': 'Versión de prueba: el juego aún está en desarrollo',
   'mar.canon.hud.aria': 'Que no pare la música: tiempo hasta el amanecer y nivel',
   'mar.canon.hud.tiempo': 'Faltan {tiempo} para el amanecer',
   'mar.canon.hud.nivel': 'Nivel {nivel}',

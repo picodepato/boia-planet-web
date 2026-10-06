@@ -691,8 +691,6 @@ export function useCanonMode({
         ? {
             title: msg('mar.canon.title'),
             summary: msg('mar.canon.summary'),
-            badge: msg('mar.canon.beta'),
-            badgeLabel: msg('mar.canon.beta.aria'),
           }
         : null,
   };

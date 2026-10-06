@@ -222,11 +222,11 @@ describe('bosses T137: datos', () => {
     const d = SURVIVORS_CONFIG.difficulties;
     expect(bossHpFor(PRUEBA, actOf(SURVIVORS_CONFIG, 1), d.normal)).toBe(PRUEBA.hp);
     expect(bossHpFor(PRUEBA, actOf(SURVIVORS_CONFIG, 2), d.tormenta)).toBeCloseTo(
-      PRUEBA.hp * actOf(SURVIVORS_CONFIG, 2)!.bossHpScale! * d.tormenta.enemyHp,
+      PRUEBA.hp * actOf(SURVIVORS_CONFIG, 2)!.bossHpScale! * d.tormenta.enemyHp * (d.tormenta.bossHp ?? 1),
     );
     const g = createSurvivors(quiet(), 1, openSea(), { act: 1, difficulty: 'tranquila' });
     const b = g.spawnBoss('prueba', 400, 0)!;
-    expect(b.maxHp).toBeCloseTo(PRUEBA.hp * d.tranquila.enemyHp);
+    expect(b.maxHp).toBeCloseTo(PRUEBA.hp * d.tranquila.enemyHp * (d.tranquila.bossHp ?? 1));
     expect(b.hpFraction).toBe(1);
     expect(g.spawnBoss('capitan', 400, 0)).toBeNull();
   });

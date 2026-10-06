@@ -71,17 +71,6 @@
   gap: 6px;
 }
 
-.mar-canon-beta {
-  flex: none;
-  padding: 1px 5px 0;
-  border-radius: 5px;
-  border: 1.5px dashed var(--canon-dawn);
-  color: var(--canon-dawn);
-  font: 800 0.58rem / 1.3 var(--font-title);
-  letter-spacing: 0.08em;
-  cursor: help;
-}
-
 .mar-canon-hud__time {
   flex: 1;
   text-align: center;
@@ -788,20 +777,6 @@
   100% {
     opacity: 0;
   }
-}
-
-/* ---------- «BETA» en el panel de la isla del Cañón ---------- */
-
-.mar .juego-panel-badge {
-  display: inline-block;
-  vertical-align: middle;
-  padding: 2px 7px 1px;
-  border-radius: 6px;
-  border: 1.5px dashed #c9480f;
-  color: #c9480f;
-  font: 800 0.7rem / 1.3 var(--font-title);
-  letter-spacing: 0.08em;
-  cursor: help;
 }
 
 /* Las dificultades y los actos (T131, T144) van en el pop-up antes de la partida: canon-previa.css (T151). */
