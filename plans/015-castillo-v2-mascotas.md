@@ -187,7 +187,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T176 — Castle and race achievements, prizes and mascot unlocks
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T169, T175
@@ -201,7 +201,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - unit tests: each achievement fires once and only on a real game; unlocks grant the cosmetics and coins; migration 9 → 10 keeps everything; race threshold reached by the "normal player" model in 3–5 tries → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> <the race spec> --workers=1 -g "logro|mascota"` (win Tormenta via `vencer=1` in an e2e build where shortcuts give prizes: Cañoncito owned; race finish: «Primera regata») → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: castle wins per difficulty (held = gold/silver), Tormenta → Cañoncito, Tormenta 10 min → Estela del vórtice, «Primera regata» (renamed `circuito`), «Rápido» `RACE_FAST_MS` 80 s → Tortuga turbo; schema 10 migration + Supabase 20261006100400 (not applied, db test not run); final card lists unlocks · aaaa00a
 
 ## T178 — Close: balance, performance, full e2e, docs, Álvaro draft
 - Status: pending
@@ -223,6 +223,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T176: «won» = castle held the whole run (bronze is not a win); «Primera regata» is the existing `circuito` achievement renamed (60 ★ + 30 coins) so two identical achievements don't fire — FOR HERNÁN; «Rápido» = 80 s (bot 67.3 s; noisy-bot model: median first success at try 4, 18/24 by try 5; slower than «Rayo» 73.4 s); prizes muestra Tranquila 40+20, Normal 60+30, Tormenta 120+50+Cañoncito, Tormenta 10 min 150+50+Estela, Rápido 80+40+Tortuga (within Supabase caps); prizes claimed in «Logros», final card points there; migration marks past castle wins and old race bests under 80 s complete (not claimed); admin editor lets `win_minigame` pick castillo + difficulty + length; `botRace` moved to `race-test-helpers.ts` (agent)
 - 2026-10-06 T175: mascot GLBs in parts (one node per piece, pivot = node translation) in `art/mascotas/3d/` with own schema/check; no procedural fallback (invisible until the GLB loads); `ProgressApi.grantCosmetic(id,{sourceRef})` local-only for the dev/e2e shortcut, which prefers an achievement once one grants the cosmetic; turtle 2.6 u behind by path (≥1.3 u, re-snaps on jumps >20 u), hidden while flying and in the castle; Cañoncito ×1.35, shoots every 6.5 s; vortex wake lilac #b98cff bands over black #15081f (agent)
 - 2026-10-06 T170: drag in the arena always steers the plane (never pans); zoom rail above the bottom strip under 900 px, hidden while the strip shows list/placing/card; preview follows the plane until the sea is tapped; hooks outside scope: `castillo.ts` (`tap` returns what it did, `building`, `setBuildMenu`) and one effect in `castillo-hud.tsx`; damage numbers from life deltas grouped every 0.4 s (sim has no per-hit damage); range circle drawn on the visible castle copy (no wrap); world high clouds hidden in the arena (agent)
 - 2026-10-06 T168: faro at [-2.32, 10.26] instead of beside the náufrago [-5.6, 16.4]: that spot is off-screen with the mobile start camera and the visible spots near it cut the race circuit (reversible) — FOR HERNÁN; `mar3d.ts` `onKey` lets a focused button/link keep Enter/Space (an active dialogue near the faro swallowed it); travel sheet buttons checked ≥ 40 px (shared sheet's are 42 px) (agent)
@@ -236,6 +237,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T176: `docs/propuestas/logros-catalogo.md` still says «Por Los Rápidos»; «Rápido» progress line says «vuelta» like «Rayo» (agent)
 - 2026-10-06 T175: pre-existing bug — after opening and closing Mi Barco from the menu, keyboard arrows stop steering the boat (plain `/mar`); `export_enemigos_glb.py` writes its manifest with CRLF on Windows (agent)
 - 2026-10-06 T170: the turbo button shows in the arena but does nothing (the sim has no plane turbo; would change engine rules) (agent)
 - 2026-10-06 T168: the faro right beside the náufrago needs a wider mobile start framing in `framing.ts` (agent)
@@ -264,3 +266,5 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 14:39 pushed main 9932bd0 to Vercel on Hernán's Telegram reply («Sube»)
 - 2026-10-06 14:40 T171 launched · attempt 1 · agent ab90a413fa19c9cfb (opus)
 - 2026-10-06 15:04 T175 integrated → c074fd3 (tests ok); worktree and branch removed
+- 2026-10-06 15:05 T176 launched · attempt 1 · agent a71dede33ea1d379b (opus)
+- 2026-10-06 15:35 T176 integrated → aaaa00a (tests ok); worktree and branch removed
