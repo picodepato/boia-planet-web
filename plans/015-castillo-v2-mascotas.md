@@ -155,7 +155,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: arena zoom (1 = start view, widest; 0 = 0.3×), build returns to start view, tap sea → plane / preview, range circles, path v2 barriers + U-turn buoys, pooled health bars and damage numbers (localStorage `boia:castillo:marcas`, `overlays`/`setOverlays` for T171), arena clouds; baja p95 33.4 ms at the 10-min Tormenta peak · 9932bd0
 
 ## T171 — Castle HUD v2: island list, details, priorities, upgrades, speed, waves, options
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T169, T170, T172
@@ -170,14 +170,14 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - unit tests: HUD model (images per kind, detail texts, priorities, upgrade costs and caps, wave warning text) → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "construir|mejorar|vender|HUD|oleada"` (build anywhere with «Instalar isla», change priority, upgrade plane to 5 and castle, ×2, call wave, toggles; no overlap at the four sizes) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: castle HUD v2: «Construir» list with renders → detail → «Colocar» → «Instalar isla», island card with priority, «Mejoras» (plane speed/damage 1–5, castle life), ×2, «Llamar oleada +N», 6 s wave warning, pause toggles for bars/numbers; keys M/X/O; screenshots C:/tmp/orchestrator-attach/boia-planet-hernan-T171/ · 5a708cf
 
 ## T173 — Guided first castle game
-- Status: pending
-- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Status: running (attempt 1)
+- Model: opus (Opus 5.5) — was Codex; Codex out of credits
 - Skills: frontend-design
 - Depends on: T171
-- Goal: Header decision 14. Before the very first castle game the pop-up asks «¿Empezar con la guía?» (Sí / No, jugar); the choice is remembered (local and with the account if progress lives there) and the guide can be replayed from the pre-game pop-up. The guide: short steps over the real game (move the plane by tapping, open «Construir», place and install an island, upgrade, priority, call a wave), each with a highlight and «Siguiente», advancing also when the player does the action; a **«Saltar guía»** button always visible ends it and the game continues normally. Guided games rank like any other unless the guide changes the sim (it must not).
+- Goal: Header decision 14. Before the very first castle game the pop-up asks «¿Empezar con la guía?» (Sí / No, jugar); the choice is remembered (local and with the account if progress lives there) and the guide can be replayed from the pre-game pop-up. The guide: short steps over the real game (move the plane by tapping, open «Construir», place and install an island, upgrade, priority, call a wave), each as a **simple speech bubble** (short text, pointing at the element it talks about, no dark overlay or heavy highlight) that closes with an **✕ on the bubble** or **by doing what it asks** (then the next bubble appears); a **«Saltar guía»** button always visible ends it and the game continues normally (Hernán, 2026-10-06). Guided games rank like any other unless the guide changes the sim (it must not).
 - Context: T171 Outcome, `castillo-mode.tsx`, the castle pop-up (plan 014 T162), how other first-time hints are stored in local progress.
 - Scope: may touch castle mode/pop-up/HUD overlay files, progress flag, i18n, tests, castle e2e / must not touch the engine rules, `docs/DECISIONES.md`.
 - Done when:
@@ -223,6 +223,8 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T171: list item → detail → «Colocar» (keys 1–7 place directly); unaffordable islands grey with price crossed, open but «Colocar» disabled; ×2 left of the time, wave warning under the HUD for the last 6 s (muestra), idle bar «Construir» / «Mejoras» (dot when affordable) / «Llamar oleada +N»; keys M/X/O; bottom panel capped and scrolls, `.mar { overflow: clip }` in the arena; menu `game.options` slot (Cañón passes nothing); wave counter uses `waveS`; castle e2e expands the collapsed tablón (agent)
+- 2026-10-06 plan: T173 guide as simple speech bubbles, each closed with an ✕ or by doing what it asks (Hernán)
 - 2026-10-06 T176: «won» = castle held the whole run (bronze is not a win); «Primera regata» is the existing `circuito` achievement renamed (60 ★ + 30 coins) so two identical achievements don't fire — FOR HERNÁN; «Rápido» = 80 s (bot 67.3 s; noisy-bot model: median first success at try 4, 18/24 by try 5; slower than «Rayo» 73.4 s); prizes muestra Tranquila 40+20, Normal 60+30, Tormenta 120+50+Cañoncito, Tormenta 10 min 150+50+Estela, Rápido 80+40+Tortuga (within Supabase caps); prizes claimed in «Logros», final card points there; migration marks past castle wins and old race bests under 80 s complete (not claimed); admin editor lets `win_minigame` pick castillo + difficulty + length; `botRace` moved to `race-test-helpers.ts` (agent)
 - 2026-10-06 T175: mascot GLBs in parts (one node per piece, pivot = node translation) in `art/mascotas/3d/` with own schema/check; no procedural fallback (invisible until the GLB loads); `ProgressApi.grantCosmetic(id,{sourceRef})` local-only for the dev/e2e shortcut, which prefers an achievement once one grants the cosmetic; turtle 2.6 u behind by path (≥1.3 u, re-snaps on jumps >20 u), hidden while flying and in the castle; Cañoncito ×1.35, shoots every 6.5 s; vortex wake lilac #b98cff bands over black #15081f (agent)
 - 2026-10-06 T170: drag in the arena always steers the plane (never pans); zoom rail above the bottom strip under 900 px, hidden while the strip shows list/placing/card; preview follows the plane until the sea is tapped; hooks outside scope: `castillo.ts` (`tap` returns what it did, `building`, `setBuildMenu`) and one effect in `castillo-hud.tsx`; damage numbers from life deltas grouped every 0.4 s (sim has no per-hit damage); range circle drawn on the visible castle copy (no wrap); world high clouds hidden in the arena (agent)
@@ -237,6 +239,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T171: `TOWER_ICON` in castillo-icons.tsx unused now; `.mar-speedlines` taller than the screen (agent)
 - 2026-10-06 T176: `docs/propuestas/logros-catalogo.md` still says «Por Los Rápidos»; «Rápido» progress line says «vuelta» like «Rayo» (agent)
 - 2026-10-06 T175: pre-existing bug — after opening and closing Mi Barco from the menu, keyboard arrows stop steering the boat (plain `/mar`); `export_enemigos_glb.py` writes its manifest with CRLF on Windows (agent)
 - 2026-10-06 T170: the turbo button shows in the arena but does nothing (the sim has no plane turbo; would change engine rules) (agent)
@@ -268,3 +271,8 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 15:04 T175 integrated → c074fd3 (tests ok); worktree and branch removed
 - 2026-10-06 15:05 T176 launched · attempt 1 · agent a71dede33ea1d379b (opus)
 - 2026-10-06 15:35 T176 integrated → aaaa00a (tests ok); worktree and branch removed
+- 2026-10-06 15:43 pushed main e29f9e7 to Vercel on Hernán's request in the session
+- 2026-10-06 15:51 T171 agent stopped by API 529 Overloaded (not a task failure); resumed the same agent with SendMessage
+- 2026-10-06 15:56 T171 third API 529; leftovers committed as T171: WIP; paused until Hernán says to resume
+- 2026-10-06 16:09 T171 resumed (same agent) on Hernán's word that the API is back
+- 2026-10-06 16:22 T171 integrated → 5a708cf (tests ok); worktree and branch removed
