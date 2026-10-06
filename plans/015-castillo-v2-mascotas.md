@@ -204,18 +204,20 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: castle wins per difficulty (held = gold/silver), Tormenta → Cañoncito, Tormenta 10 min → Estela del vórtice, «Primera regata» (renamed `circuito`), «Rápido» `RACE_FAST_MS` 80 s → Tortuga turbo; schema 10 migration + Supabase 20261006100400 (not applied, db test not run); final card lists unlocks · aaaa00a
 
 ## T178 — Close: balance, performance, full e2e, docs, Álvaro draft
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T168, T169, T170, T171, T172, T173, T174, T175, T176, T177
 - Goal: Close the plan.
   - **Balance with bots** on path v2 with upgrades, priorities and the castle upgrade, 3 lengths × 3 difficulties: Tranquila winnable with a plain build, Normal a real fight, Tormenta hard; Halloween no longer holds short Tormenta runs alone; no single strategy dominates; ×2 and «Llamar oleada» do not break it; bump `DEFENSE_CONFIG_VERSION` if numbers changed.
-  - **Island DPS parity** (Hernán, 2026-10-06): define a rule so every attacking island's effective damage per second per coin spent is roughly similar at each level (measured on the path v2 against a standard wave mix, area towers counted on their typical hits), record the table before/after; Faro and the other weak ones go up, Halloween comes down. **Ibiza payback**: level 1 earns back its cost in **45 s**, the upgrade to level 2 earns back its cost in **30 s**, the upgrade to level 3 in **20 s** (numbers only; the visual payout is plan 016).
+  - **Island damage toward the middle** (Hernán, 2026-10-06, after seeing the measured table): not full parity — move every attacking island's effective damage per 100 coins **partway toward the middle**: the strong ones down a little (Halloween clearly, Sonido a bit), the weak ones up a little (Nochevieja, Puerto, Faro L1), Benidorm about the same; roughly halfway between today's values and the parity proposal below. Measure with the same method (one island at the centre of the 2nd U-turn (−524, 214), plane off, unkillable castle, Normal 5 min from 165 s, damage removed 180–240 s / 60, seed 1) and record the before/after table in the status section. Parity reference (measured, effective dmg per 100 coins L1/L2/L3): today Faro 14.7/21.2/24.0, Nochevieja 12.3/11.6/11.8, Halloween 38.8/33.7/28.6, Puerto 13.0/14.4/13.4, Sonido 25.7/25.2/22.7, Benidorm 17.9/18.4/19.0; full-parity proposal ≈ 14.7/18.5/19.3 for all (damage: faro damagePerS 63/67/73, ultima 12/24/37, halloween 1.3/3/5.2 burn 2.1/4.6/7.6, cala 32/60/87, allday 6/13/23, fotos 57/115/180). Nochevieja's stun is not in the measure: keep it a bit under the others.
+  - **Ibiza** (Hernán): level 1 earns back its build cost in **50 s**, the level-2 upgrade earns back its own cost in **40 s**, the level-3 upgrade in **30 s**; and every payout is **visible**: the coins it gives pop up above the island (a «+N» with a coin, readable from the high camera, pooled and cheap) so the player sees that and how much it pays.
+  - Then check the bots: Normal a real fight, Tormenta hard but winnable in 7–10 min; adjust difficulty multipliers, not the island table, if needed.
   - **Performance in `baja`** at the 10-min peak with bars and numbers on, clouds and the new Vecino; fix obvious hot spots only.
   - **E2E**: the castle spec and the **full suite** (`E2E_PORT=<free> pnpm e2e --workers=2`), both exit 0.
   - **Docs**: `docs/spec/estado.md`, `ESTADO.md` via the status fragment, a Spanish test guide `docs/propuestas/<date>-castillo-v2-guia-prueba.md` with an empty «Notas» section, and a Spanish **decision draft for Álvaro** `docs/propuestas/<date>-premios-mascotas-decision-alvaro.md` (the moved lighthouse and board, castle v2, the new Vecino, the two mascots and the wake with their names, the new achievements and prize amounts) — not in `docs/DECISIONES.md`.
 - Context: all Outcomes, Decisions and Proposals of this plan; `python3 tools/spec/estado.py`.
-- Scope: may touch `packages/engine/src/defense/**` (balance, bot tests), `apps/web/e2e/**`, small perf/stability fixes in `apps/web/app/mar/**`, `docs/spec/estado.md`, `docs/propuestas/` / must not touch `docs/DECISIONES.md`, the Cañón's balance, features beyond fixes.
+- Scope: may touch `packages/engine/src/defense/**` (balance, bot tests), `apps/web/e2e/**`, small perf/stability fixes in `apps/web/app/mar/**`, the Ibiza payout pop-up in the castle arena view, `docs/spec/estado.md`, `docs/propuestas/` / must not touch `docs/DECISIONES.md`, the Cañón's balance, features beyond fixes.
 - Done when:
   - `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` and the slow suites command → exit 0
   - `E2E_PORT=<free> pnpm e2e --workers=2` → exit 0
@@ -224,6 +226,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 plan: Hernán chose island damage "toward the middle" (strong down a little, weak up a little, not full parity) and Ibiza payback 50/40/30 s with a visible «+N» coin pop-up on each payout, both in T178; the measured table is in T178 (Hernán)
 - 2026-10-06 T173: question inside the pop-up after «Jugar» (Atrás/Esc goes back); after answering, a «Con la guía» switch (off) replays it; dev shortcuts and «Otra vez» start without guide; pref `castillo:guia` local + account snapshot; 9 steps (mover, construir, elegir, colocar, instalar, ficha, prioridad, mejorar, oleada), a step passes if already done, priority step skipped for non-targeting islands, no pause; «Saltar guía» inside every bubble next to «Paso n de 9» (a pill covered the minimap on mobile); bottom-strip bubbles sit above the strip; «mover»/«ficha» bubbles float without a tail (pointing in 3D needs a mar3d hook); only outside change: `guide` prop on `CastleTestHook` (agent)
 - 2026-10-06 plan: T178 waits for Hernán to choose the island damage table first (Hernán)
 - 2026-10-06 plan: T178 also sets island DPS parity and Ibiza payback 45/30/20 s; camera follow, wider U-turns, visible Ibiza payouts and the Fiestera position go to plan 016 (plans/016-notes.md) (Hernán)

@@ -13,7 +13,7 @@ Collected 2026-10-06 while plan 015 was running. `/orchestrator` turns these int
 - The **U-turns are too narrow**: placing an island inside is hard. Make them **a little wider** so an island fits well (only a bit).
 
 ## Castle game — balance
-(The DPS parity rule and the Ibiza payback numbers went into plan 015 T178; check its Outcome first. What stays here: the visible Ibiza payouts, and any balance left.)
+(Island damage toward the middle, Ibiza payback 50/40/30 s and the visible Ibiza «+N» went into plan 015 T178; check its Outcome first. What stays here: any balance left.)
 - **Faro** takes very little life; the same with many others.
 - Find a **rule so every island's DPS is roughly similar**; today the gap is large and **Halloween is by far the best**.
 - **Ibiza**: you cannot see that it gives money nor how much. It must be **visual**: every payout shows on screen.
