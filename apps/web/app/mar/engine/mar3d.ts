@@ -2061,14 +2061,18 @@ export class Mar3D {
         }
         for (const a of build.animated) fallback.add(a);
         if (build.update) this.animated.push(build.update);
+        // Lo animado que sigue con el modelo puesto (T166: el haz del faro) va fuera de la
+        // composición; cuelga del grupo de la isla, así que se hunde y vuelve con ella (T160).
+        const keep = build.keep ?? [];
         if (castle) {
-          g.add(fallback);
+          g.add(fallback, ...keep);
           void this.castleModel.mount(g, fallback, curveTree).then((loaded) => {
             if (!this.destroyed)
               this.opts.canvas.dataset.castilloModelo = loaded ? 'glb' : 'procedural';
           });
         } else if (cat === 'isla') {
           const slot = modelSlot(fallback);
+          slot.add(...keep);
           g.add(slot);
           this.islandModels.set(id, {
             slot,
@@ -2083,7 +2087,7 @@ export class Mar3D {
             motion: null,
           });
         } else {
-          g.add(fallback);
+          g.add(fallback, ...keep);
         }
         const gl = build.parts.glows;
         for (let i = 0; i < gl.pos.length; i += 3) {

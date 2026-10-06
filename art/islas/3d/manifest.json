@@ -16,6 +16,17 @@
    "doc": "sound system de rave con dos muros de altavoces, cabina de DJ, pórtico de focos y láser que brillan de noche, y boias de BOIA bailando en la pista"
   },
   {
+   "id": "faro",
+   "file": "faro.glb",
+   "label": "Faro de Tabarca",
+   "radius": 7.0,
+   "top": 1.15,
+   "height": 13.53,
+   "tris": 12218,
+   "kb": 250,
+   "doc": "isla baja y llana de roca rojiza con matorral seco y un tramo de muralla; en medio el faro de Tabarca, la casa de los fareros de piedra clara con la torre cuadrada en el centro y la linterna que brilla de noche; muelle con la boia farera y gaviotas"
+  },
+  {
    "id": "halloween",
    "file": "halloween.glb",
    "label": "Isla de Halloween",

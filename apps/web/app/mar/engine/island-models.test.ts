@@ -1,9 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { WORLD_REGISTRY } from '@boia/world';
+import { LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { Group, Mesh, MeshLambertMaterial, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
 import { repoRoot } from '../../../lib/barco/load';
+import { DECOR_SIZE, marWorld } from './compact';
+import { toScene } from './compress';
+import { FARO_LANTERN, buildIsland } from './islands';
 import {
   ISLAND_MODEL_TUNING,
   ISLAND_MODELS_URL,
@@ -46,6 +49,46 @@ describe('el manifiesto de las islas', () => {
 
   it('la Isla de Halloween tiene el suyo', () => {
     expect(entries.get('halloween')?.file).toBe('halloween.glb');
+  });
+
+  describe('el Faro de Tabarca (plan 014, T166)', () => {
+    const faro = entries.get(LIGHTHOUSE_PLACE_ID);
+    // Las medidas del módulo de Blender, tal cual están escritas en su fuente.
+    const source = readFileSync(path.join(ROOT, 'tools/blender/islas/faro.py'), 'utf8');
+    const constant = (name: string) => {
+      const m = new RegExp(`^${name} = ([0-9.]+)`, 'm').exec(source);
+      expect(m, `${name} en tools/blender/islas/faro.py`).not.toBeNull();
+      return Number(m![1]);
+    };
+
+    it('tiene su modelo, con el radio de su módulo de Blender y la linterna por encima de la casa', () => {
+      expect(faro?.file).toBe(`${LIGHTHOUSE_PLACE_ID}.glb`);
+      expect(faro?.radius).toBe(constant('RADIUS'));
+      // El faro es el protagonista: el modelo es más alto que ancho (su radio).
+      expect(faro!.height).toBeGreaterThan(faro!.radius * 1.5);
+      expect(faro!.height).toBeGreaterThan(constant('LANTERN_Z'));
+    });
+
+    it('la composición de a mano pone el haz donde el modelo tiene la linterna', () => {
+      expect(FARO_LANTERN.radius).toBe(constant('RADIUS'));
+      expect(FARO_LANTERN.z).toBe(constant('LANTERN_Z'));
+    });
+
+    it('a su escala en /mar, el faro pesa en la vista como el castillo de antes', () => {
+      const place = marWorld(WORLD_REGISTRY.get('arcilla').config).objects.find(
+        (o) => o.identity.id === LIGHTHOUSE_PLACE_ID,
+      )!;
+      // Un solo círculo: el modelo se escala por él y el juego del castillo lo normaliza por él.
+      expect(place.geometry.collisionParts).toBeUndefined();
+      const R = toScene(place.geometry.collision!.radius);
+      const top = faro!.height * islandScale(faro!, R);
+      expect(top).toBeGreaterThan(DECOR_SIZE.castillo);
+      expect(top).toBeLessThan(DECOR_SIZE.castillo * 1.6);
+      // El haz de a mano (`keep`) queda en la linterna con el modelo puesto.
+      const build = buildIsland(LIGHTHOUSE_PLACE_ID, R);
+      expect(build.keep?.length).toBe(1);
+      expect(build.keep![0]!.position.y).toBeCloseTo(FARO_LANTERN.z * islandScale(faro!, R), 5);
+    });
   });
 
   it('lo que no encaja se ignora', () => {

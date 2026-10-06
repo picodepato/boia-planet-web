@@ -52,6 +52,12 @@ export const BOARD_REF = 'tablon';
  * propia zona, así que en /mar queda en sus posiciones × 0,2). muestra
  */
 export const LIGHTHOUSE_CENTER: Maq = [-6.0046, 21.7423];
+/**
+ * Radio de la isla del faro (u_maq): en /mar, × 2,4 ≈ 137 u (8,6 de escena),
+ * donde el faro de Tabarca de T166 pesa en la vista como el castillo de antes
+ * (13 de escena) sin pisar los restos ni el náufrago vecinos. muestra
+ */
+export const LIGHTHOUSE_RADIUS = 2.3;
 /** La isla del castillo y el id de su minijuego (`start_minigame`). */
 export const CASTLE_PLACE_ID = 'castillo';
 export const CASTLE_GAME_ID = 'castillo';
@@ -494,14 +500,19 @@ const ISLANDS: PlaceInput[] = [
   ),
   // El faro (Tabarca) desde el plan 014 T157: sin minijuego, en el sitio del
   // antiguo castillo junto a la salida; al acercarse abre el «Tablón del faro».
+  // Isla redonda (T166): su modelo de Blender (tools/blender/islas/faro.py) se
+  // escala por este radio y el juego del castillo lo normaliza por él, así que
+  // el casco es un solo círculo; más grande que la elipse de antes (1,9 × 1,3)
+  // para que el faro pese a la entrada como pesaba el castillo, y a más de su
+  // radio de los restos y el náufrago vecinos. muestra
   island(
     LIGHTHOUSE_PLACE_ID,
     'Tabarca',
     T157,
     LIGHTHOUSE_CENTER,
-    1.9,
-    1.3,
-    30,
+    LIGHTHOUSE_RADIUS,
+    LIGHTHOUSE_RADIUS,
+    0,
     // Proximidad algo menor que la de antes (3,4): junto a la salida, el tablón no
     // se abre desde el anillo ni pisa la ficha de la boia de WhatsApp. muestra
     2.8,

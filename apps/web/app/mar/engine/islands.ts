@@ -50,8 +50,14 @@ import {
 
 export interface IslandBuild {
   parts: Parts;
-  /** Lo que se anima (luces del escenario, haz del faro, humo…). */
+  /** Lo que se anima (luces del escenario, humo…); va con la composición a mano. */
   animated: Object3D[];
+  /**
+   * Lo animado que se queda aunque el modelo de Blender sustituya a la
+   * composición (T166: el haz del faro, que el GLB no trae): va en el hueco
+   * del modelo, no en la composición.
+   */
+  keep?: Object3D[];
   update?: (t: number, glow: number) => void;
   /** Altura del terreno en un punto local (para poner encima a la Fiestera). */
   heightAt: (x: number, z: number) => number;
@@ -819,36 +825,77 @@ function ultima(R: number, rnd: () => number): IslandBuild {
 
 // --- Faro ---------------------------------------------------------------------
 
+/**
+ * El Faro de Tabarca de Blender (T166, `tools/blender/islas/faro.py`): el
+ * radio de su orilla y el centro de su linterna en unidades del modelo
+ * (`RADIUS` y `LANTERN_Z` de ese módulo; la prueba los compara). La
+ * composición de a mano sigue su planta a escala, para que de lejos y de
+ * cerca el faro cuadre, y el haz que gira (`keep`) queda en la linterna
+ * también con el modelo puesto.
+ */
+export const FARO_LANTERN = { radius: 7, z: 11.955 } as const;
+
 function faro(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
   const k = parts.lit;
-  const h = terrain(k, R, rocky(2.2), rnd, 20);
-  shoreRocks(k, R, 10, rnd);
-  const top = h(0, 0);
-  const tx = -0.4;
-  const tz = -0.3;
-  for (let i = 0; i < 5; i++) {
-    const r0 = 0.95 - i * 0.07;
-    k.add(new CylinderGeometry(r0 - 0.07, r0, 1.05, 12), i % 2 ? C.white : C.orange, {
-      p: [tx, top + 0.52 + i * 1.05, tz],
-    });
-  }
-  const ly = top + 5.25;
-  k.add(new CylinderGeometry(0.75, 0.75, 0.14, 12), C.iron, { p: [tx, ly, tz] });
-  parts.glow.add(new CylinderGeometry(0.45, 0.45, 0.7, 10), '#ffe7a3', { p: [tx, ly + 0.42, tz] });
-  k.add(new ConeGeometry(0.6, 0.6, 10), C.iron, { p: [tx, ly + 1.07, tz] });
-  parts.glows.add([tx, ly + 0.45, tz], '#ffe59a', 9);
-  // Casa del farero.
-  k.add(new BoxGeometry(1.4, 1.0, 1.1), C.wall, { p: [1.0, top + 0.5, 0.4] });
-  k.add(new ConeGeometry(1.05, 0.6, 4), C.roof, {
-    p: [1.0, top + 1.3, 0.4],
-    r: [0, Math.PI / 4, 0],
-    s: [1.05, 1, 0.8],
+  const s = R / FARO_LANTERN.radius;
+  const top = 1.15 * s;
+  // Isla baja y llana de roca rojiza con la meseta de hierba seca.
+  const h = terrain(
+    k,
+    R,
+    [
+      { f: 1.2, y: -1.6, c: C.cliffDark },
+      { f: 1.0, y: 0.15, c: C.cliffDark },
+      { f: 0.92, y: 0.55 * s, c: C.cliff },
+      { f: 0.8, y: top, c: C.sand },
+      { f: 0, y: top * 1.02, c: C.sand },
+    ],
+    rnd,
+    24,
+  );
+  shoreRocks(k, R, 12, rnd, Math.PI / 2);
+  // La casa de los fareros, un poco atrás, con la cornisa ocre y la puerta azul al frente.
+  const cz = -0.35 * s;
+  k.add(new BoxGeometry(5.1 * s, 2.5 * s, 3.3 * s), C.wall, { p: [0, top + 1.25 * s, cz] });
+  k.add(new BoxGeometry(5.4 * s, 0.16 * s, 3.6 * s), C.terracotta, {
+    p: [0, top + 2.56 * s, cz],
   });
-  pine(k, -1.3, h(-1.3, 0.8), 0.8, 2.1);
-  const animated: Object3D[] = [];
+  k.add(new BoxGeometry(0.7 * s, 1.1 * s, 0.1 * s), C.blueDoor, {
+    p: [0, top + 0.55 * s, cz + 1.68 * s],
+  });
+  // La torre cuadrada, más estrecha arriba, con la galería, la linterna y la cúpula.
+  const towerH = 7.4 * s;
+  const roofY = top + 2.5 * s;
+  k.add(new CylinderGeometry(0.72 * s * Math.SQRT2, 0.95 * s * Math.SQRT2, towerH, 4), C.wall, {
+    p: [0, roofY + towerH / 2, cz],
+    r: [0, Math.PI / 4, 0],
+  });
+  const galY = roofY + towerH;
+  k.add(new BoxGeometry(2.3 * s, 0.2 * s, 2.3 * s), C.terracotta, { p: [0, galY + 0.1 * s, cz] });
+  k.add(new CylinderGeometry(0.72 * s, 0.72 * s, 0.16 * s, 12), C.iron, {
+    p: [0, galY + 0.36 * s, cz],
+  });
+  const ly = FARO_LANTERN.z * s;
+  parts.glow.add(new CylinderGeometry(0.62 * s, 0.62 * s, 1.25 * s, 10), '#fff0c2', {
+    p: [0, ly, cz],
+  });
+  k.add(new ConeGeometry(0.78 * s, 0.75 * s, 10), '#5c7f78', { p: [0, ly + 1.0 * s, cz] });
+  parts.glows.add([0, ly, cz], '#ffe59a', 9);
+  // Matorral seco por la meseta, fuera de la casa y del camino del muelle.
+  for (let i = 0; i < 12; i++) {
+    const a = rnd() * Math.PI * 2;
+    const r = R * (0.4 + rnd() * 0.5);
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    if (Math.abs(x) < 3.3 * s && Math.abs(z - cz) < 2.4 * s) continue;
+    if (Math.abs(x) < 0.8 * s && z > 0) continue;
+    bush(k, x, h(x, z) - 0.1 * s, z, (0.25 + rnd() * 0.3) * s, rnd);
+  }
+  pier(k, 0, R * 0.82, Math.PI / 2, 2.8 * s);
+  // El haz que gira: en la linterna, también con el modelo de Blender puesto (`keep`).
   const beam = new Mesh(
-    new ConeGeometry(2.4, 16, 16, 1, true).translate(0, -8, 0).rotateZ(Math.PI / 2),
+    new ConeGeometry(2.4 * s, 16 * s, 16, 1, true).translate(0, -8 * s, 0).rotateZ(Math.PI / 2),
     new MeshBasicMaterial({
       color: '#fff1b8',
       transparent: true,
@@ -859,15 +906,20 @@ function faro(R: number, rnd: () => number): IslandBuild {
     }),
   );
   const beamPivot = new Group();
-  beamPivot.position.set(tx, ly + 0.42, tz);
-  beam.position.x = 0;
+  beamPivot.position.set(0, ly, cz);
   beamPivot.add(beam);
-  animated.push(beamPivot);
   const update = (t: number, glow: number) => {
     beamPivot.rotation.y = t * 0.9;
     (beam.material as MeshBasicMaterial).opacity = 0.03 + 0.2 * glow;
   };
-  return { parts, animated, update, heightAt: h, labelY: top + 7.8 };
+  return {
+    parts,
+    animated: [],
+    keep: [beamPivot],
+    update,
+    heightAt: h,
+    labelY: ly + 2.6 * s,
+  };
 }
 
 // --- Cañón --------------------------------------------------------------------
