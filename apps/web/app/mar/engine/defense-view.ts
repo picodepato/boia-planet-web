@@ -174,7 +174,6 @@ export class DefenseView {
   private readonly lift = new Map<DefenseEnemyKind, number>();
   private readonly counts = new Map<DefenseEnemyKind, number>();
   private readonly castleRing: Mesh;
-  private readonly buildRing: Mesh;
   private readonly preview: Mesh;
   private readonly previewEdge: Mesh;
   private readonly selectRing: Mesh;
@@ -182,7 +181,6 @@ export class DefenseView {
   private readonly d = new Object3D();
   private readonly tmp = { x: 0, y: 0 };
   private castleHitAt = -1e9;
-  private building = false;
   /** Enemigos pintados en el último `update` (pruebas). */
   drawn = 0;
   /** El modelo de Blender del Vecino (T174) y su geometría puesta en su pieza (del modelo: no se destruye aquí). */
@@ -278,12 +276,6 @@ export class DefenseView {
     const c = this.at(0, 0);
     this.castleRing.position.set(c.x, 0.3, c.z);
     this.castleRing.visible = false;
-    this.buildRing = new Mesh(
-      new RingGeometry(0.95, 1, low ? 32 : 64).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: '#fff4e2', transparent: true, opacity: 0.6, depthWrite: false }),
-    );
-    this.buildRing.name = 'defense-build-ring';
-    this.buildRing.visible = false;
     // La isla que se coloca (T161): un disco de su huella y su borde, verde o rojo.
     this.preview = new Mesh(
       new CircleGeometry(1, low ? 24 : 48).rotateX(-Math.PI / 2),
@@ -307,7 +299,6 @@ export class DefenseView {
     this.puf = new PufFx(this.quality);
     this.group.add(
       this.castleRing,
-      this.buildRing,
       this.preview,
       this.previewEdge,
       this.selectRing,
@@ -356,10 +347,12 @@ export class DefenseView {
     this.puf.spawn(p.x, p.z, Math.max(0.6, toScene(radius) * 1.2), t);
   }
 
-  /** El anillo de construir alrededor del avión (decisión 7): encendido mientras se construye. */
-  setBuilding(on: boolean): void {
-    this.building = on;
-  }
+  /**
+   * Se está construyendo. Ya no hay anillo alrededor del avión (plan 015
+   * T169: se construye en cualquier sitio de la arena); el alcance de la isla
+   * que se coloca lo pinta T170.
+   */
+  setBuilding(_on: boolean): void {}
 
   /** Tipos de enemigo pintados ahora (pruebas). */
   drawnKinds(): string[] {
@@ -372,14 +365,14 @@ export class DefenseView {
   marked = { preview: '', selected: false };
 
   /**
-   * Un fotograma: `s` la partida, `t` la hora de la escena, `plane` dónde se
-   * pinta el avión (escena), para su anillo de construir; `marks`, lo que el
-   * HUD marca en el agua (T161).
+   * Un fotograma: `s` la partida, `t` la hora de la escena, `_plane` dónde
+   * se pinta el avión (escena; sin uso desde que no hay anillo de construir,
+   * plan 015 T169); `marks`, lo que el HUD marca en el agua (T161).
    */
   update(
     s: DefenseSnapshot,
     t: number,
-    plane: { x: number; z: number },
+    _plane: { x: number; z: number },
     marks: DefenseMarks = { preview: null, selected: null },
   ): void {
     const reduced = this.reduced;
@@ -423,12 +416,6 @@ export class DefenseView {
       this.castleRing.scale.set(r, 1, r);
     }
     const pv = marks.preview;
-    this.buildRing.visible = this.building || pv !== null;
-    if (this.buildRing.visible) {
-      const r = toScene(s.plane.buildRing);
-      this.buildRing.position.set(plane.x, 0.3, plane.z);
-      this.buildRing.scale.set(r, 1, r);
-    }
     const ir = toScene(this.cfg.islandRadius);
     this.preview.visible = this.previewEdge.visible = pv !== null;
     if (pv) {

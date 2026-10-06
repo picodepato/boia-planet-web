@@ -33,7 +33,7 @@ export { formatClock, formatPlayed };
 
 /** El orden de las siete islas en «Construir» (el de la config). */
 export const CASTLE_TOWERS: readonly DefenseTowerKind[] = DEFENSE_TOWER_KINDS;
-/** El nivel más alto de una isla y del avión. */
+/** El nivel más alto de una isla (el del avión, en `DefensePlaneView.maxLevel`). */
 export const MAX_LEVEL = 3;
 
 /** El nombre de cada isla (decisión 9 del plan 014). */
@@ -61,7 +61,6 @@ export const TOWER_ROLE_KEYS: Readonly<Record<DefenseTowerKind, MessageKey>> = {
 /** Por qué no se puede construir ahí (los motivos de `defenseBuildCheck`, T159). */
 export const BUILD_REASON_KEYS: Readonly<Record<DefenseBuildReason, MessageKey>> = {
   ended: 'mar.castillo.motivo.ended',
-  ring: 'mar.castillo.motivo.ring',
   arena: 'mar.castillo.motivo.arena',
   path: 'mar.castillo.motivo.path',
   vortex: 'mar.castillo.motivo.vortex',
@@ -178,16 +177,17 @@ export interface PlaneView {
   level: number;
   maxLevel: number;
   damage: number;
-  /** Lo que cuesta el siguiente nivel de daño; null en el 3. */
+  /** Lo que cuesta el siguiente nivel de daño; null en el máximo. */
   nextCost: number | null;
   affordable: boolean;
 }
 
+/** La mejora de daño del avión (la de velocidad de ataque llega con el HUD v2, T171). */
 export function planeView(s: Pick<DefenseSnapshot, 'plane' | 'coins'>): PlaneView {
-  const next = s.plane.nextUpgradeCost;
+  const next = s.plane.nextDamageCost;
   return {
-    level: s.plane.level,
-    maxLevel: MAX_LEVEL,
+    level: s.plane.damageLevel,
+    maxLevel: s.plane.maxLevel,
     damage: s.plane.damage,
     nextCost: next,
     affordable: next !== null && Math.floor(s.coins) >= next,
@@ -434,14 +434,6 @@ export function nextTowerByKeyboard(
     .sort((a, b) => a.d - b.d || a.id - b.id);
   const i = current === null ? -1 : order.findIndex((o) => o.id === current);
   return order[(i + 1) % order.length]!.id;
-}
-
-/** Un punto de la vista previa respecto al avión, dentro de su anillo de construir. */
-export function clampToRing(dx: number, dy: number, ring: number): { x: number; y: number } {
-  const len = Math.hypot(dx, dy);
-  const max = ring * 0.98;
-  if (!(len > max)) return { x: dx, y: dy };
-  return { x: (dx / len) * max, y: (dy / len) * max };
 }
 
 // --- El final -------------------------------------------------------------------

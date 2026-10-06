@@ -143,7 +143,7 @@ describe('sonido del castillo (T164)', () => {
     castle.events([
       { type: 'towerBuilt', towerId: 1, kind: 'cala', x: 0, y: 0, cost: 100 },
       { type: 'towerUpgrade', towerId: 1, kind: 'cala', level: 2, cost: 100 },
-      { type: 'planeUpgrade', level: 2, cost: 100 },
+      { type: 'planeUpgrade', stat: 'damage', level: 2, cost: 100 },
       { type: 'towerSold', towerId: 1, kind: 'cala', refund: 120 },
       { type: 'castleHit', id: 1, kind: 'piranha', damage: 4, life: 96 },
       { type: 'planeShot', shotId: 1, targetId: 1 },

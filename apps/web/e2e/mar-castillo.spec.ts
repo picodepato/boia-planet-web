@@ -340,10 +340,12 @@ test('construir: cada una de las siete islas, y encima del camino no se puede (r
   await expect(hud(page)).toBeVisible();
   await expect(canvas(page)).toHaveAttribute('data-arena-avion', /\d/);
 
-  // Encima del camino: el trozo más cercano a la salida del avión.
+  // Encima del camino: el trozo más cercano a la salida del avión (donde el
+  // motivo es el camino, no el castillo ni el vórtice).
   let onPath = { x: 0, y: 0, d: Infinity };
   for (let d = 0; d < path.length; d += 10) {
     const p = path.sampleAt(d);
+    if (defenseSiteReason(DEFENSE_CONFIG, path, [], p.x, p.y) !== 'path') continue;
     const dd = Math.hypot(p.x - start.x, p.y - start.y);
     if (dd < onPath.d) onPath = { x: p.x, y: p.y, d: dd };
   }

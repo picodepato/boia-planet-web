@@ -4,6 +4,72 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T169: Castle simulation v2
+
+Qué existe (`packages/engine/src/defense/`, `DEFENSE_CONFIG_VERSION` 3 → 4):
+
+- **Camino v2** (decisión 7): `DefensePathDef.legs`, trazo de tortuga alrededor del
+  castillo: `orbit` (espiral), `u` (U hacia el castillo: recto `depth`, media vuelta
+  de radio `radius`, recto paralelo de vuelta) y `zigzag` (tramos rectos hacia el
+  castillo a ±`angleRad`). Config: vórtice a 980 u como antes (no cambia la
+  posición del vórtice ni el radio de la arena, 1120 u: siguen las pruebas de
+  Boia 7 y la carrera de plan 014), 4 U de 430 u con radio 135 (entre ellas, 3 U
+  al revés abiertas al castillo), bajada por la derecha y zigzag de 3 tramos de
+  230 u a ±40° hasta la muralla. `DefensePath.uTurns` (centro de cada media
+  vuelta) y `legOf` sustituyen a `turnOf`.
+  - Largo: **≈10 390 u** (v1: 6 399 u, ×1,62). **Tiempo de un enemigo normal:
+    `normalWalkS` 44 s** (v1: 40 s) → velocidad ≈236 u/s (v1 160 u/s): se mantiene
+    «unos 40 s» de plan 014 decisión 5.
+- **Construir en toda la arena** (decisión 5): sin anillo del avión
+  (`plane.buildRing` y el motivo `ring` quitados); la huella entera dentro del
+  borde (`arena`), fuera del camino, vórtice, castillo y otras islas.
+- **Avión**: `moveTo` (vuela a un punto acotado a la arena con
+  `defenseClampToArena`, frena y se para; el mando lo cancela); mejoras
+  `upgradePlane: 'damage' | 'speed'`, niveles 1…5 (`damage`, `damageCost`,
+  `cooldownS`, `speedCost`); snapshot `damageLevel`, `speedLevel`, `maxLevel`,
+  `nextDamageCost`, `nextSpeedCost`, `cooldownS`, `target`.
+- **Castillo**: `upgradeCastle` (+50 vida máx. y la cura, 250/400/600 monedas,
+  `muestra`); snapshot `castle.level/maxLevel/nextUpgradeCost`; medalla y bono
+  sobre la vida máxima mejorada; resultado `castleLevel`.
+- **Prioridades**: `DefenseTargetPriority` first/last/strongest/closest,
+  `pickTarget`; por defecto Nochevieja/Halloween/Puerto «first», Benidorm
+  «strongest»; Faro, Sonido e Ibiza no eligen (null). Entrada `setPriority`,
+  `setTowerPriority`, suceso `towerPriority`.
+- **×2**: `DefenseClock.scale` 1|2 (`DEFENSE_TIME_SCALES`): el doble de pasos
+  fijos por segundo real; la pausa cuenta en tiempo real.
+- **«Llamar oleada»**: reloj de calendario `waveS` = `activeS` + adelanto;
+  `callWave` salta al principio de la siguiente y paga `waves.callCoinsPerS` (1)
+  por s adelantado; suceso `waveCalled`; resultado `wavesAheadS`. La partida
+  dura lo mismo.
+- **Aviso de la siguiente**: `nextWave()` / `snapshot.nextWave` (`wave`, `startS`,
+  `inS`, `kinds` con cuenta y `boss`, `count`, `boss`); helpers
+  `defenseWaveStarts`, `defenseNextWave`.
+- **Bots**: `buildingBot` construye sin volar y sube el daño del avión hasta
+  `planeLevel` (3); `chasePlaneBot` sube el daño.
+- **Equilibrio** (para que las pruebas de forma de T165 sigan en pie; T178
+  rebalancea): `hpGrowthPerMinute` 0,25 → 0,35, Tormenta `enemyHp` 1,2 → 1,12.
+- Web, sólo para compilar y no romper: sin anillo en `defense-view.ts`
+  (`setBuilding` queda vacío), `DefenseRun.tap` sin acotar al anillo,
+  `upgradePlane(stat)`, HUD del avión con el nivel de daño y su máximo, clave
+  `mar.castillo.motivo.ring` quitada; ranking: vida máxima de cualquier nivel
+  del castillo, lo salido cuenta con `wavesAheadS`, la RPC recibe la vida
+  normalizada a la base; semilla de la migración del ranking (no aplicada) a
+  `config_version` 4, como en plan 014; e2e del castillo: el trozo de camino
+  «encima del camino» se elige donde el motivo es `path`.
+
+Comandos:
+
+- `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` → exit 0 (2 archivos, 63 pruebas)
+- `pnpm test:slow packages/engine/src/defense` → exit 0 (1 archivo, 6 pruebas)
+- Test command (vitest 201 archivos / 1913 pruebas, checks.sh OK, lint, build, typecheck) → exit 0
+
+Pendiente:
+
+- HUD (T171) y arena (T170): botones de velocidad, castillo, prioridad, ×2,
+  «Llamar oleada», aviso; el sonido de `castleUpgrade`; dibujar el alcance.
+- T178: equilibrio fino (el camino v2 y construir en cualquier sitio hacen
+  fuerte al bot; aquí sólo se reajustaron crecimiento y Tormenta).
+
 ## 2026-10-06 — plan 015 T177: Line endings and slow test suites
 
 Qué existe:

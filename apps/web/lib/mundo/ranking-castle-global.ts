@@ -1,4 +1,9 @@
-import type { DefenseResult, DefenseRunMin, DifficultyId } from '@boia/engine/defense';
+import {
+  DEFENSE_CONFIG,
+  type DefenseResult,
+  type DefenseRunMin,
+  type DifficultyId,
+} from '@boia/engine/defense';
 import { CASTLE_RANKING_VERSION, castleRankRejection } from './ranking-castle';
 import {
   type GlobalPage,
@@ -21,7 +26,9 @@ export async function submitCastleScore(
     p_ms: Math.round(r.playedS * 1000),
     p_medal: r.medal,
     p_end: r.end,
-    p_life: r.castleLife,
+    // La RPC mide la vida sobre la del castillo sin mejorar: se manda la misma
+    // parte de la vida máxima (medalla y bono salen iguales; plan 015 T169).
+    p_life: (r.castleLife * DEFENSE_CONFIG.castle.life) / r.castleMaxLife,
     p_ranked: r.ranked,
   });
   if (res.error) throw new Error(`ranking del Castillo: ${res.error.message ?? 'error'}`);

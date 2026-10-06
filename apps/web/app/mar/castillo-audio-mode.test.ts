@@ -73,7 +73,9 @@ describe('carga y ciclo del audio del castillo', () => {
     expect(audio.loop.setGlobal).toHaveBeenCalledWith({ music: 0.6, sfx: 0.8 });
     hook.setAudioSettings({ ...DEFAULT_SETTINGS, sfx: { enabled: false, volume: 0.8 } });
     expect(audio.loop.setGlobal).toHaveBeenLastCalledWith({ music: 0.6, sfx: 0 });
-    const events = [{ type: 'planeUpgrade' as const, level: 2, cost: 100 }];
+    const events = [
+      { type: 'planeUpgrade' as const, stat: 'damage' as const, level: 2, cost: 100 },
+    ];
     hook.events(events);
     expect(audio.events).toHaveBeenCalledWith(events);
     expect(audio.sync).toHaveBeenCalledWith(runRef.current!.snapshot());

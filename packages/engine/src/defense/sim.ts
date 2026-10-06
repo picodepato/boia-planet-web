@@ -1,15 +1,26 @@
 import { configHash, rng as makeRng } from '../minigames/rng';
 import {
   DEFAULT_DEFENSE_RUN_MIN,
+  DEFENSE_PLANE_MAX_LEVEL,
   DEFENSE_STEP_S,
   type DefenseConfig,
   type DefenseEnemyDef,
   type DefenseEnemyKind,
+  type DefensePlaneStat,
   type DefenseRunMin,
+  type DefenseTargetPriority,
   type DefenseTowerKind,
   type DifficultyId,
+  asDefenseTargetPriority,
+  defenseCastleMaxLevel,
+  defenseCastleMaxLife,
+  defenseCastleUpgradeCost,
+  defenseClampToArena,
   defenseEnemyDef,
   defenseEnemyRadius,
+  defensePlaneCooldown,
+  defensePlaneDamage,
+  defensePlaneUpgradeCost,
 } from './config';
 import {
   type DefenseBuildCheck,
@@ -28,7 +39,13 @@ import {
   type DefenseTowerState,
   type TowerShotView,
 } from './towers';
-import { type DefenseSpawn, defenseSchedule } from './waves';
+import {
+  type DefenseSpawn,
+  type DefenseWaveInfo,
+  defenseNextWave,
+  defenseSchedule,
+  defenseWaveStarts,
+} from './waves';
 
 /**
  * La partida de «Defensa del Castillo» (plan 014 T158), sin DOM y
@@ -38,16 +55,25 @@ import { type DefenseSpawn, defenseSchedule } from './waves';
  * - Los enemigos salen del vórtice según `defenseSchedule` y avanzan por el
  *   camino a su velocidad, cada uno en su carril; al llegar a la muralla le
  *   quitan vida al castillo y desaparecen.
- * - El avión vuela libre dentro de la arena y dispara solo al enemigo más
- *   cercano a su alcance; su daño sube a nivel 2 y 3 con monedas.
+ * - El avión vuela libre dentro de la arena (con el mando o hacia un punto
+ *   tocado, `moveTo`, siempre acotado a la arena) y dispara solo al enemigo
+ *   más cercano a su alcance; su daño y su velocidad de ataque suben cada
+ *   uno hasta el nivel 5 con monedas (plan 015, decisión 8).
+ * - El castillo sube su vida máxima con monedas (decisión 9; la mejora
+ *   también cura lo que suma).
  * - Cada enemigo que cae da sus monedas (al monedero de la partida, nunca al
  *   del mundo) y sus puntos.
  * - Las torres (islas construidas, T159) se ponen con `build` (la regla de
- *   `build.ts`: dentro del anillo del avión, fuera del camino y del vórtice,
- *   sin montarse; cobra su coste), se suben con `upgradeTower` hasta el
- *   nivel 3 y se venden con `sellTower` (una parte de lo gastado vuelve).
- *   Lo que hace cada una está en `DEFENSE_TOWER_HOOKS`; sin ninguna, la
- *   partida corre igual.
+ *   `build.ts`: en cualquier sitio de la arena fuera del camino, del vórtice
+ *   y del castillo, sin montarse; cobra su coste), se suben con
+ *   `upgradeTower` hasta el nivel 3, se venden con `sellTower` (una parte de
+ *   lo gastado vuelve) y las que eligen blanco cambian de prioridad con
+ *   `setTowerPriority` (decisión 12). Lo que hace cada una está en
+ *   `DEFENSE_TOWER_HOOKS`; sin ninguna, la partida corre igual.
+ * - Las oleadas siguen un reloj de calendario (`waveS`) que corre con la
+ *   partida; «Llamar oleada» (`callWave`, decisión 10) lo adelanta al
+ *   principio de la siguiente y paga monedas por lo adelantado. La partida
+ *   dura lo mismo. `nextWave` dice qué trae la siguiente y cuándo.
  * - Castillo a 0: cae (`fallen`). Llegar a la duración elegida: aguantó
  *   (`held`). Una pausa seguida de más de `maxPauseS`: abandono. «Terminar
  *   partida»: `quit`.
@@ -58,18 +84,32 @@ export type DefenseEndReason = 'held' | 'fallen' | 'abandoned' | 'quit';
 export type DefenseStatus = 'running' | 'paused' | 'ended';
 
 export interface DefenseInput {
-  /** Hacia dónde vuela el avión (−1…1 en cada eje; más largo que 1 se acorta). Sin valor, frena. */
+  /**
+   * Hacia dónde vuela el avión (−1…1 en cada eje; más largo que 1 se acorta).
+   * Sin valor (y sin punto pedido), frena. Un mando que empuja cancela el punto.
+   */
   move?: { x: number; y: number };
+  /**
+   * Volar hasta ese punto (u de la partida; se acota a la arena) y pararse
+   * allí: se queda pedido hasta llegar o hasta que el mando empuje. null lo cancela.
+   */
+  moveTo?: { x: number; y: number } | null;
   /** true: pausa manual; false: seguir. Sin valor, no cambia. */
   pause?: boolean;
-  /** Comprar el siguiente nivel de daño del avión (si llega el dinero). */
-  upgradePlane?: boolean;
+  /** Comprar el siguiente nivel de daño o de velocidad de ataque del avión (si llega el dinero). */
+  upgradePlane?: DefensePlaneStat;
+  /** Comprar la siguiente mejora de vida del castillo (si llega el dinero). */
+  upgradeCastle?: boolean;
   /** Construir una isla ahí (si la regla lo deja y llega el dinero). */
   build?: { kind: DefenseTowerKind; x: number; y: number };
   /** Subir de nivel la isla con este id. */
   upgradeTower?: number;
   /** Vender la isla con este id. */
   sellTower?: number;
+  /** Cambiar a quién apunta una isla que elige blanco. */
+  setPriority?: { towerId: number; priority: DefenseTargetPriority };
+  /** «Llamar oleada»: la siguiente empieza ya (si queda alguna). */
+  callWave?: boolean;
 }
 
 export interface DefenseOptions {
@@ -104,7 +144,10 @@ export type DefenseEvent =
     }
   | { type: 'castleHit'; id: number; kind: DefenseEnemyKind; damage: number; life: number }
   | { type: 'planeShot'; shotId: number; targetId: number }
-  | { type: 'planeUpgrade'; level: number; cost: number }
+  | { type: 'planeUpgrade'; stat: DefensePlaneStat; level: number; cost: number }
+  | { type: 'castleUpgrade'; level: number; maxLife: number; cost: number }
+  | { type: 'towerPriority'; towerId: number; priority: DefenseTargetPriority }
+  | { type: 'waveCalled'; wave: number; skippedS: number; coins: number }
   | { type: 'coins'; amount: number; towerId: number | null }
   | {
       type: 'towerBuilt';
@@ -137,14 +180,29 @@ export interface DefensePlaneView {
   readonly vy: number;
   /** rad: hacia dónde mira (el de la última vez que se movió). */
   readonly heading: number;
-  /** Nivel de daño 1…3. */
-  readonly level: number;
+  /** El punto al que vuela (`moveTo`, ya acotado a la arena), o null. */
+  readonly target: { readonly x: number; readonly y: number } | null;
+  /** Nivel de daño y de velocidad de ataque, 1…`maxLevel`. */
+  readonly damageLevel: number;
+  readonly speedLevel: number;
+  readonly maxLevel: number;
+  /** Daño por bala y s entre disparos a sus niveles. */
   readonly damage: number;
+  readonly cooldownS: number;
   readonly range: number;
-  /** Lo que cuesta el siguiente nivel (null en el 3). */
+  /** Lo que cuesta el siguiente nivel de cada mejora (null en el máximo). */
+  readonly nextDamageCost: number | null;
+  readonly nextSpeedCost: number | null;
+}
+
+/** El castillo: su vida, su nivel (mejoras de vida máxima) y lo que cuesta el siguiente. */
+export interface DefenseCastleView {
+  readonly life: number;
+  readonly maxLife: number;
+  readonly radius: number;
+  readonly level: number;
+  readonly maxLevel: number;
   readonly nextUpgradeCost: number | null;
-  /** u: el anillo donde se construye (T159). */
-  readonly buildRing: number;
 }
 
 export interface DefenseSnapshot {
@@ -155,7 +213,11 @@ export interface DefenseSnapshot {
   readonly activeS: number;
   readonly timeLeftS: number;
   readonly pauseRunS: number;
-  readonly castle: { readonly life: number; readonly maxLife: number; readonly radius: number };
+  /** s del reloj de las oleadas (`activeS` más lo adelantado con «Llamar oleada»). */
+  readonly waveS: number;
+  /** La oleada siguiente (qué trae, si hay boss, cuándo), o null si no quedan. */
+  readonly nextWave: DefenseWaveInfo | null;
+  readonly castle: DefenseCastleView;
   readonly plane: DefensePlaneView;
   /** Los vivos, en orden de salida. */
   readonly enemies: readonly DefenseEnemyView[];
@@ -192,7 +254,13 @@ export interface DefenseResult {
   readonly bossesDefeated: readonly DefenseEnemyKind[];
   /** Monedas ganadas en la partida (caídas y granja; sin el monedero inicial). */
   readonly coinsEarned: number;
+  /** Niveles del avión: daño (`planeLevel`) y velocidad de ataque. */
   readonly planeLevel: number;
+  readonly planeSpeedLevel: number;
+  /** Nivel del castillo (1 + mejoras de vida). */
+  readonly castleLevel: number;
+  /** s que «Llamar oleada» adelantó el calendario (el ranking cuenta lo salido con ellas). */
+  readonly wavesAheadS: number;
   readonly towersBuilt: number;
   readonly configVersion: number;
 }
@@ -264,6 +332,10 @@ export class DefenseGame {
   private towersBuilt = 0;
 
   private castleLife: number;
+  private castleLevel = 1;
+  /** s que «Llamar oleada» ha adelantado el calendario. */
+  private aheadS = 0;
+  private readonly waveStarts: readonly number[];
   private coins: number;
   private coinsEarned = 0;
   private kills = 0;
@@ -271,7 +343,17 @@ export class DefenseGame {
   private readonly killsByKind: Partial<Record<DefenseEnemyKind, number>> = {};
   private readonly bossesDefeated: DefenseEnemyKind[] = [];
 
-  private readonly plane = { x: 0, y: 0, vx: 0, vy: 0, heading: 0, level: 1, cooldown: 0 };
+  private readonly plane = {
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    heading: 0,
+    damageLevel: 1,
+    speedLevel: 1,
+    cooldown: 0,
+    target: null as { x: number; y: number } | null,
+  };
 
   constructor(
     readonly config: DefenseConfig,
@@ -283,6 +365,7 @@ export class DefenseGame {
     this.durationS = config.runs[this.runMin].durationS;
     this.path = buildDefensePath(config.path, config.castle.radius);
     this.schedule = defenseSchedule(config, this.runMin, this.difficulty);
+    this.waveStarts = defenseWaveStarts(this.schedule);
     this.rand = makeRng(seed);
     this.hooks = opts.towerHooks ?? DEFENSE_TOWER_HOOKS;
     this.castleLife = config.castle.life;
@@ -347,8 +430,18 @@ export class DefenseGame {
     return this.activeSteps * DEFENSE_STEP_S;
   }
 
+  /** s del reloj de las oleadas: `activeS` más lo adelantado con «Llamar oleada». */
+  get waveS(): number {
+    return this.activeS + this.aheadS;
+  }
+
   get life(): number {
     return this.castleLife;
+  }
+
+  /** La vida máxima del castillo a su nivel. */
+  get maxLife(): number {
+    return defenseCastleMaxLife(this.config, this.castleLevel);
   }
 
   get purse(): number {
@@ -359,9 +452,22 @@ export class DefenseGame {
     return this.towerList;
   }
 
-  /** Lo que cuesta subir el avión al siguiente nivel, o null en el 3. */
-  get planeUpgradeCost(): number | null {
-    return this.plane.level >= 3 ? null : this.config.plane.upgradeCost[this.plane.level - 1]!;
+  /** Lo que cuesta subir `stat` del avión al siguiente nivel, o null en el máximo. */
+  planeUpgradeCost(stat: DefensePlaneStat = 'damage'): number | null {
+    const level = stat === 'damage' ? this.plane.damageLevel : this.plane.speedLevel;
+    if (level >= DEFENSE_PLANE_MAX_LEVEL) return null;
+    return defensePlaneUpgradeCost(this.config, stat, level);
+  }
+
+  /** Lo que cuesta la siguiente mejora de vida del castillo, o null en el máximo. */
+  get castleUpgradeCost(): number | null {
+    return defenseCastleUpgradeCost(this.config, this.castleLevel);
+  }
+
+  /** La oleada siguiente: qué trae, si hay boss y cuándo empieza; null si no quedan. */
+  nextWave(): DefenseWaveInfo | null {
+    if (this.endReason) return null;
+    return defenseNextWave(this.schedule, this.waveStarts, this.nextSpawn, this.waveS);
   }
 
   /** El estado para pintar. Las listas son las de la partida: no guardarlas entre pasos. */
@@ -375,10 +481,15 @@ export class DefenseGame {
       activeS: this.activeS,
       timeLeftS: Math.max(0, this.durationS - this.activeS),
       pauseRunS: this.pauseRun,
+      waveS: this.waveS,
+      nextWave: this.nextWave(),
       castle: {
         life: this.castleLife,
-        maxLife: this.config.castle.life,
+        maxLife: this.maxLife,
         radius: this.config.castle.radius,
+        level: this.castleLevel,
+        maxLevel: defenseCastleMaxLevel(this.config),
+        nextUpgradeCost: this.castleUpgradeCost,
       },
       plane: {
         x: p.x,
@@ -386,11 +497,15 @@ export class DefenseGame {
         vx: p.vx,
         vy: p.vy,
         heading: p.heading,
-        level: p.level,
-        damage: this.planeDamage,
+        target: p.target,
+        damageLevel: p.damageLevel,
+        speedLevel: p.speedLevel,
+        maxLevel: DEFENSE_PLANE_MAX_LEVEL,
+        damage: defensePlaneDamage(this.config, p.damageLevel),
+        cooldownS: defensePlaneCooldown(this.config, p.speedLevel),
         range: this.config.plane.range,
-        nextUpgradeCost: this.planeUpgradeCost,
-        buildRing: this.config.plane.buildRing,
+        nextDamageCost: this.planeUpgradeCost('damage'),
+        nextSpeedCost: this.planeUpgradeCost('speed'),
       },
       enemies: this.enemies,
       shots: this.shots,
@@ -408,12 +523,13 @@ export class DefenseGame {
   result(): DefenseResult | null {
     const end = this.endReason;
     if (!end) return null;
+    const maxLife = this.maxLife;
     const score = defenseScore(
       {
         end,
         killPoints: this.killPoints,
         castleLife: this.castleLife,
-        castleMaxLife: this.config.castle.life,
+        castleMaxLife: maxLife,
       },
       this.config,
     );
@@ -423,7 +539,7 @@ export class DefenseGame {
       medal: defenseMedal({
         end,
         castleLife: this.castleLife,
-        castleMaxLife: this.config.castle.life,
+        castleMaxLife: maxLife,
         activeS: this.activeS,
         durationS: this.durationS,
       }),
@@ -435,12 +551,15 @@ export class DefenseGame {
       durationS: this.durationS,
       playedS: this.activeS,
       castleLife: this.castleLife,
-      castleMaxLife: this.config.castle.life,
+      castleMaxLife: maxLife,
       kills: this.kills,
       killsByKind: { ...this.killsByKind },
       bossesDefeated: [...this.bossesDefeated],
       coinsEarned: this.coinsEarned,
-      planeLevel: this.plane.level,
+      planeLevel: this.plane.damageLevel,
+      planeSpeedLevel: this.plane.speedLevel,
+      castleLevel: this.castleLevel,
+      wavesAheadS: this.aheadS,
       towersBuilt: this.towersBuilt,
       configVersion: this.config.version,
     };
@@ -452,11 +571,21 @@ export class DefenseGame {
     return configHash({
       t: this.activeSteps,
       life: r(this.castleLife),
+      castle: this.castleLevel,
+      ahead: r(this.aheadS),
       coins: r(this.coins),
       kills: this.kills,
-      plane: [r(this.plane.x), r(this.plane.y), this.plane.level],
+      plane: [
+        r(this.plane.x),
+        r(this.plane.y),
+        r(this.plane.vx),
+        r(this.plane.vy),
+        r(this.plane.cooldown),
+        this.plane.damageLevel,
+        this.plane.speedLevel,
+      ],
       enemies: this.enemies.map((e) => [e.id, e.kind, r(e.distance), r(e.laneOffset), r(e.hp)]),
-      towers: this.towerList.map((t) => [t.id, t.kind, t.level, r(t.x), r(t.y)]),
+      towers: this.towerList.map((t) => [t.id, t.kind, t.level, t.priority, r(t.x), r(t.y)]),
       shots: this.shots.map((s) => [s.id, r(s.x), r(s.y)]),
       end: this.endReason,
     });
@@ -495,13 +624,49 @@ export class DefenseGame {
     return this.events;
   }
 
-  /** Sube el daño del avión un nivel si llega el dinero. */
-  upgradePlane(): boolean {
-    const cost = this.planeUpgradeCost;
-    if (this.endReason || cost === null || this.coins < cost) return false;
-    this.coins -= cost;
-    this.plane.level++;
-    this.events.push({ type: 'planeUpgrade', level: this.plane.level, cost });
+  /** Sube el daño o la velocidad de ataque del avión un nivel si llega el dinero. */
+  upgradePlane(stat: DefensePlaneStat = 'damage'): boolean {
+    const cost = this.planeUpgradeCost(stat);
+    if (cost === null || !this.spend(cost)) return false;
+    const level = stat === 'damage' ? ++this.plane.damageLevel : ++this.plane.speedLevel;
+    this.events.push({ type: 'planeUpgrade', stat, level, cost });
+    return true;
+  }
+
+  /** Sube la vida máxima del castillo (y le suma esa vida) si llega el dinero. */
+  upgradeCastle(): boolean {
+    const cost = this.castleUpgradeCost;
+    if (cost === null || !this.spend(cost)) return false;
+    const before = this.maxLife;
+    this.castleLevel++;
+    const maxLife = this.maxLife;
+    this.castleLife = Math.min(maxLife, this.castleLife + (maxLife - before));
+    this.events.push({ type: 'castleUpgrade', level: this.castleLevel, maxLife, cost });
+    return true;
+  }
+
+  /** Cambia a quién apunta la isla `id` (sólo las que eligen blanco). */
+  setTowerPriority(id: number, priority: DefenseTargetPriority): boolean {
+    const p = asDefenseTargetPriority(priority);
+    const t = this.towerList.find((tw) => tw.id === id);
+    if (this.endReason || !p || !t || t.priority === null || t.priority === p) return false;
+    t.priority = p;
+    this.events.push({ type: 'towerPriority', towerId: t.id, priority: p });
+    return true;
+  }
+
+  /**
+   * «Llamar oleada»: el reloj de las oleadas salta al principio de la
+   * siguiente (sale ya, con los bosses que le tocaran antes) y paga
+   * `waves.callCoinsPerS` por cada segundo adelantado. false si no quedan.
+   */
+  callWave(): boolean {
+    const next = this.nextWave();
+    if (!next || !(next.inS > 0)) return false;
+    this.aheadS += next.inS;
+    const coins = Math.round(next.inS * this.config.waves.callCoinsPerS);
+    this.earn(coins, null);
+    this.events.push({ type: 'waveCalled', wave: next.wave, skippedS: next.inS, coins });
     return true;
   }
 
@@ -511,7 +676,6 @@ export class DefenseGame {
       {
         config: this.config,
         path: this.path,
-        plane: this.plane,
         towers: this.towerList,
         coins: this.coins,
         ended: this.ended,
@@ -581,6 +745,7 @@ export class DefenseGame {
       x,
       y,
       level: Math.min(3, Math.max(1, opts.level ?? 1)),
+      priority: this.config.towers.kinds[kind].priority,
       spent: opts.spent ?? 0,
       targets: [],
       lastShot: null,
@@ -626,10 +791,15 @@ export class DefenseGame {
     this.pauseRun = 0;
     this.activeSteps++;
 
-    if (input.upgradePlane) this.upgradePlane();
+    if (input.upgradePlane) this.upgradePlane(input.upgradePlane);
+    if (input.upgradeCastle) this.upgradeCastle();
     if (input.sellTower !== undefined) this.sellTower(input.sellTower);
     if (input.upgradeTower !== undefined) this.upgradeTower(input.upgradeTower);
+    if (input.setPriority)
+      this.setTowerPriority(input.setPriority.towerId, input.setPriority.priority);
     if (input.build) this.build(input.build.kind, input.build.x, input.build.y);
+    if (input.callWave) this.callWave();
+    if (input.moveTo !== undefined) this.setPlaneTarget(input.moveTo);
     this.spawnDue();
     this.stepEnemies(dt);
     this.stepPlane(input.move, dt);
@@ -647,8 +817,9 @@ export class DefenseGame {
 
   // --- Interno -----------------------------------------------------------------
 
-  private get planeDamage(): number {
-    return this.config.plane.damage[this.plane.level - 1]!;
+  /** El punto al que vuela el avión (acotado a la arena), o ninguno. */
+  setPlaneTarget(to: { x: number; y: number } | null): void {
+    this.plane.target = to ? defenseClampToArena(this.config, to.x, to.y) : null;
   }
 
   private finish(reason: DefenseEndReason): void {
@@ -682,7 +853,7 @@ export class DefenseGame {
   }
 
   private spawnDue(): void {
-    const now = this.activeS;
+    const now = this.waveS;
     const diff = this.config.difficulties[this.difficulty];
     const speedUnit = this.path.length / this.config.path.normalWalkS;
     while (
@@ -788,8 +959,25 @@ export class DefenseGame {
       mx /= len;
       my /= len;
     }
-    const tx = mx * cfg.maxSpeed;
-    const ty = my * cfg.maxSpeed;
+    // El mando que empuja manda: el punto pedido se olvida.
+    if (len > 1e-6) p.target = null;
+    let tx = mx * cfg.maxSpeed;
+    let ty = my * cfg.maxSpeed;
+    if (p.target) {
+      // Hacia el punto, frenando para pararse en él (v² = 2·a·d).
+      const dx = p.target.x - p.x;
+      const dy = p.target.y - p.y;
+      const d = Math.hypot(dx, dy);
+      if (d <= cfg.arriveRadius) {
+        p.target = null;
+        tx = 0;
+        ty = 0;
+      } else {
+        const v = Math.min(cfg.maxSpeed, Math.sqrt(2 * cfg.acceleration * d), d / dt);
+        tx = (dx / d) * v;
+        ty = (dy / d) * v;
+      }
+    }
     const dvx = tx - p.vx;
     const dvy = ty - p.vy;
     const dv = Math.hypot(dvx, dvy);
@@ -803,7 +991,7 @@ export class DefenseGame {
     }
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-    // Dentro de la arena: lo que empuja hacia fuera se pierde.
+    // Dentro de la arena (decisión 3 del plan 015): lo que empuja hacia fuera se pierde.
     const r = Math.hypot(p.x, p.y);
     const max = this.config.arenaRadius;
     if (r > max) {
@@ -837,12 +1025,12 @@ export class DefenseGame {
       vx: (ax / al) * cfg.shotSpeed,
       vy: (ay / al) * cfg.shotSpeed,
       radius: cfg.shotRadius,
-      damage: this.planeDamage,
+      damage: defensePlaneDamage(this.config, p.damageLevel),
       life: (cfg.range * 1.3) / cfg.shotSpeed,
       dead: false,
     };
     this.shots.push(shot);
-    p.cooldown = cfg.cooldownS;
+    p.cooldown = defensePlaneCooldown(this.config, p.speedLevel);
     this.events.push({ type: 'planeShot', shotId: shot.id, targetId: target.id });
   }
 

@@ -1,4 +1,10 @@
-import { DEFENSE_CONFIG, DEFENSE_RUN_MINS, createDefense } from '@boia/engine/defense';
+import {
+  DEFENSE_CONFIG,
+  DEFENSE_RUN_MINS,
+  chasePlaneBot,
+  createDefense,
+  defenseCastleMaxLives,
+} from '@boia/engine/defense';
 import { describe, expect, it } from 'vitest';
 import { castleResult, memoryCastleStorage as memoryStorage } from './__fixtures__/castle-result';
 import {
@@ -56,6 +62,29 @@ describe('ranking del Castillo: nueve tablas y puntuación de la sim', () => {
     expect(castleRankRejection(result)).toBeNull();
     expect(recordCastleBest(memoryStorage(), result, 'ahora')?.record.score).toBe(result.score);
     expect(castleRankRejection(castleResult({ end: 'fallen', playedS: 80 }))).toBeNull();
+  });
+  it('acepta el castillo mejorado y las oleadas llamadas antes (plan 015 T169)', () => {
+    // Un castillo con dos mejoras de vida: la vida máxima es la de su nivel.
+    const lives = defenseCastleMaxLives(DEFENSE_CONFIG);
+    const upgraded = lives[2]!;
+    expect(
+      castleRankRejection(
+        castleResult({ castleLife: upgraded * 0.8, castleMaxLife: upgraded, castleLevel: 3 }),
+      ),
+    ).toBeNull();
+    expect(
+      castleRankRejection(castleResult({ castleLife: 60, castleMaxLife: lives[0]! + 1 })),
+    ).toBe('invalid');
+    // Una partida real que llama todas las oleadas y cae: lo salido cuenta con lo adelantado.
+    const game = createDefense(DEFENSE_CONFIG, 7);
+    game.step();
+    while (game.callWave());
+    while (!game.result()) game.step(chasePlaneBot(game.snapshot()));
+    const result = game.result()!;
+    expect(result.wavesAheadS).toBeGreaterThan(0);
+    expect(result.kills).toBeGreaterThan(0);
+    expect(castleRankRejection(result)).toBeNull();
+    expect(castleRankRejection({ ...result, wavesAheadS: -1 })).toBe('invalid');
   });
   it.each([
     [{ ranked: false }, 'test'],

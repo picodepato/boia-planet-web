@@ -20,7 +20,6 @@ import {
   buildOptions,
   castleEndView,
   castleView,
-  clampToRing,
   defenseBossBar,
   defenseBossNotices,
   formatClock,
@@ -89,20 +88,11 @@ describe('la vista previa al colocar', () => {
     const g = createDefense(cfg, 7);
     const s = g.path.sampleAt(g.path.length * 0.5);
     const check = g.buildCheck('faro', s.x, s.y);
-    expect(check.ok).toBe(false);
-    // Lejos del avión el motivo es el anillo; el sitio se mira dentro del anillo (T159).
+    expect(check).toMatchObject({ ok: false, reason: 'path' });
+    // Se construye en cualquier sitio de la arena (plan 015): el motivo es el camino.
     const view = placementView(check);
     expect(view.ok).toBe(false);
-    expect(t(view.key)).toBe(t(BUILD_REASON_KEYS[view.reason!]));
-  });
-
-  it('el toque se queda dentro del anillo del avión', () => {
-    const ring = cfg.plane.buildRing;
-    expect(clampToRing(10, 20, ring)).toEqual({ x: 10, y: 20 });
-    const far = clampToRing(ring * 3, 0, ring);
-    expect(far.x).toBeLessThan(ring);
-    expect(far.x).toBeGreaterThan(ring * 0.9);
-    expect(far.y).toBe(0);
+    expect(t(view.key)).toBe(t(BUILD_REASON_KEYS.path));
   });
 });
 
@@ -162,16 +152,20 @@ describe('la ficha de una isla: nivel, Mejorar y Vender', () => {
 });
 
 describe('el avión', () => {
-  it('nivel y precio del siguiente, de la partida; en el 3, «Daño máximo»', () => {
+  it('nivel y precio del siguiente, de la partida; en el máximo, «Daño máximo»', () => {
     const g = createDefense(cfg, 7);
     g.refund(5000);
     let v = planeView(g.snapshot());
-    expect(v).toMatchObject({ level: 1, nextCost: cfg.plane.upgradeCost[0], affordable: true });
-    expect(t(planeLine(v).key, planeLine(v).params)).toContain(String(cfg.plane.upgradeCost[0]));
-    g.upgradePlane();
-    g.upgradePlane();
+    expect(v).toMatchObject({ level: 1, nextCost: cfg.plane.damageCost[0], affordable: true });
+    expect(t(planeLine(v).key, planeLine(v).params)).toContain(String(cfg.plane.damageCost[0]));
+    for (let i = 0; i < cfg.plane.damageCost.length; i++) g.upgradePlane('damage');
     v = planeView(g.snapshot());
-    expect(v).toMatchObject({ level: 3, nextCost: null, affordable: false });
+    expect(v).toMatchObject({
+      level: cfg.plane.damage.length,
+      maxLevel: cfg.plane.damage.length,
+      nextCost: null,
+      affordable: false,
+    });
     expect(planeLine(v).key).toBe('mar.castillo.avion.max');
   });
 });
@@ -271,19 +265,19 @@ describe('elegir una isla con el dedo o con el teclado', () => {
 });
 
 describe('construir, mejorar y vender desde el HUD (DefenseRun)', () => {
-  it('la isla va bajo el avión; un toque la mueve dentro del anillo; Construir la levanta', () => {
+  it('la isla va bajo el avión; un toque la mueve a cualquier sitio; Construir la levanta', () => {
     const run = new DefenseRun({ seed: 7, quality: 'alta', devCoins: 2000 });
     const s0 = run.snapshot();
     expect(run.placement()).toBeNull();
     run.startPlacing('tienda');
     const at = run.placement()!;
     expect(at).toMatchObject({ kind: 'tienda', x: s0.plane.x, y: s0.plane.y });
-    // Un sitio libre cerca del avión (lejos del camino, del castillo y del vórtice).
+    // Un sitio libre lejos del avión (fuera del camino, del castillo y del vórtice).
     let spot: { x: number; y: number } | null = null;
-    for (let a = 0; a < Math.PI * 2 && !spot; a += 0.1) {
-      for (let r = 0; r <= cfg.plane.buildRing * 0.9 && !spot; r += 20) {
-        const x = s0.plane.x + Math.cos(a) * r;
-        const y = s0.plane.y + Math.sin(a) * r;
+    for (let a = Math.PI; a < Math.PI * 3 && !spot; a += 0.1) {
+      for (let r = cfg.arenaRadius / 2; r <= cfg.arenaRadius && !spot; r += 20) {
+        const x = Math.cos(a) * r;
+        const y = Math.sin(a) * r;
         if (run.game.buildCheck('tienda', x, y).ok) spot = { x, y };
       }
     }
@@ -317,15 +311,8 @@ describe('construir, mejorar y vender desde el HUD (DefenseRun)', () => {
   it('en el camino no se construye: Construir no hace nada', () => {
     const run = new DefenseRun({ seed: 7, quality: 'alta', devCoins: 2000 });
     const g = run.game;
-    // El trozo del camino más cercano al avión.
-    const pl = run.snapshot().plane;
-    let best = { d: Infinity, x: 0, y: 0 };
-    for (let d = 0; d < g.path.length; d += 10) {
-      const p = g.path.sampleAt(d);
-      const dd = Math.hypot(p.x - pl.x, p.y - pl.y);
-      if (dd < best.d) best = { d: dd, x: p.x, y: p.y };
-    }
-    expect(best.d).toBeLessThan(cfg.plane.buildRing);
+    // Un trozo del camino lejos del castillo y del vórtice (a media partida del camino).
+    const best = g.path.sampleAt(g.path.length / 2);
     run.startPlacing('faro');
     run.tap(best.x, best.y);
     const at = run.placement()!;
@@ -363,6 +350,9 @@ describe('la tarjeta final', () => {
       bossesDefeated: [],
       coinsEarned: 0,
       planeLevel: 1,
+      planeSpeedLevel: 1,
+      castleLevel: 1,
+      wavesAheadS: 0,
       towersBuilt: 0,
       configVersion: 1,
     }) as DefenseResult;

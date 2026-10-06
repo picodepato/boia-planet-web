@@ -10,6 +10,7 @@ import {
   type DefenseEvent,
   type DefenseGame,
   type DefenseInput,
+  type DefensePlaneStat,
   type DefenseRunMin,
   type DefenseSnapshot,
   type DefenseStatus,
@@ -21,7 +22,7 @@ import {
 } from '@boia/engine/defense';
 import { asDifficulty } from '@boia/engine/survivors';
 import { CASTLE_GAME_ID } from '@boia/world';
-import { clampToRing, nextTowerByKeyboard, towerAt } from './castillo-hud-model';
+import { nextTowerByKeyboard, towerAt } from './castillo-hud-model';
 import { CANON_PARAMS, type DevEnv, devEnv, devShortcutsEnabled } from './survivors';
 
 /**
@@ -167,7 +168,7 @@ export function devArenaSpots(
 /**
  * La isla que se está colocando (T161): su tipo y dónde va respecto al
  * avión (u de la partida). Al elegirla va justo debajo del avión; un toque en
- * el agua la mueve, dentro del anillo de construir. Sigue al avión.
+ * el agua la mueve (a cualquier sitio de la arena). Sigue al avión.
  */
 export interface CastlePlacing {
   kind: DefenseTowerKind;
@@ -356,14 +357,13 @@ export class DefenseRun {
 
   /**
    * Un toque en el agua de la arena (u de la partida): colocando, mueve la
-   * isla ahí (dentro del anillo del avión); si no, elige la isla tocada (o
-   * ninguna).
+   * isla ahí (se construye en cualquier sitio de la arena: plan 015 T169;
+   * el sitio lo juzga `buildCheck`); si no, elige la isla tocada (o ninguna).
    */
   tap(x: number, y: number): void {
     const s = this.game.snapshot();
     if (this.placing) {
-      const o = clampToRing(x - s.plane.x, y - s.plane.y, s.plane.buildRing);
-      this.placing = { ...this.placing, ox: o.x, oy: o.y };
+      this.placing = { ...this.placing, ox: x - s.plane.x, oy: y - s.plane.y };
       return;
     }
     this.selected = towerAt(s.towers, x, y, this.config.islandRadius * TOWER_TAP_SLACK);
@@ -403,9 +403,9 @@ export class DefenseRun {
     this.selected = null;
   }
 
-  /** Sube el daño del avión (si llega el dinero). */
-  upgradePlane(): void {
-    this.request({ upgradePlane: true });
+  /** Sube el daño (o la velocidad de ataque) del avión, si llega el dinero. */
+  upgradePlane(stat: DefensePlaneStat = 'damage'): void {
+    this.request({ upgradePlane: stat });
   }
 
   /** Un paso fijo con el mando del avión (dirección en la partida, −1…1). */
@@ -460,7 +460,7 @@ export class DefenseRun {
       islas: s.towers.length,
       colocando: this.placing?.kind ?? '',
       seleccion: this.selected === null ? '' : String(this.selected),
-      avionNivel: s.plane.level,
+      avionNivel: s.plane.damageLevel,
       avion: `${Math.round(s.plane.x)},${Math.round(s.plane.y)}`,
       fin: s.end,
       semilla: this.seed,

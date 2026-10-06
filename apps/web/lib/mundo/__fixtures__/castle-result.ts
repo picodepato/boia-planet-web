@@ -25,7 +25,7 @@ export function castleResult(overrides: Partial<DefenseResult> = {}): DefenseRes
     killsByKind[s.kind] = (killsByKind[s.kind] ?? 0) + 1;
     killPoints += defenseEnemyDef(DEFENSE_CONFIG, s.kind)!.points;
   }
-  const castleMaxLife = DEFENSE_CONFIG.castle.life;
+  const castleMaxLife = overrides.castleMaxLife ?? DEFENSE_CONFIG.castle.life;
   const score = defenseScore({ end, killPoints, castleLife, castleMaxLife });
   return {
     end,
@@ -45,6 +45,9 @@ export function castleResult(overrides: Partial<DefenseResult> = {}): DefenseRes
     bossesDefeated: [],
     coinsEarned: 100,
     planeLevel: 1,
+    planeSpeedLevel: 1,
+    castleLevel: 1,
+    wavesAheadS: 0,
     towersBuilt: 0,
     configVersion: DEFENSE_CONFIG_VERSION,
     ...overrides,

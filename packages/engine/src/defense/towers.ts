@@ -1,6 +1,7 @@
 import {
   type DefenseConfig,
   type DefenseEnemyKind,
+  type DefenseTargetPriority,
   type DefenseTowerKind,
   defenseTowerStats,
 } from './config';
@@ -91,6 +92,8 @@ export interface DefenseTowerState {
   readonly y: number;
   /** 1…3. */
   level: number;
+  /** A quién apunta (decisión 12 del plan 015); null en las que no eligen blanco. */
+  priority: DefenseTargetPriority | null;
   /** Monedas gastadas en ella (construir y mejorar): vender devuelve una parte. */
   spent: number;
   /** Los blancos de este paso (lo que devolvió `targets`). */
@@ -150,6 +153,53 @@ function mostAdvanced(list: readonly DefenseEnemyView[]): DefenseEnemyView | nul
   return best;
 }
 
+/** El más atrasado por el camino (el último en salir que sigue vivo). */
+function leastAdvanced(list: readonly DefenseEnemyView[]): DefenseEnemyView | null {
+  let best: DefenseEnemyView | null = null;
+  for (const e of list) if (!best || e.distance < best.distance) best = e;
+  return best;
+}
+
+/** El más cercano a (x, y) por su borde; a la par, el más adelantado. */
+function closestTo(
+  list: readonly DefenseEnemyView[],
+  x: number,
+  y: number,
+): DefenseEnemyView | null {
+  let best: DefenseEnemyView | null = null;
+  let bestD = Infinity;
+  for (const e of list) {
+    const d = Math.hypot(e.x - x, e.y - y) - e.radius;
+    if (d < bestD - 1e-9 || (Math.abs(d - bestD) <= 1e-9 && best && e.distance > best.distance)) {
+      best = e;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+/**
+ * El blanco de una isla según su prioridad (decisión 12 del plan 015): el
+ * primero por el camino, el último, el más fuerte (`strongestEnemy`) o el
+ * más cercano a la isla. Sin prioridad, el primero.
+ */
+export function pickTarget(
+  list: readonly DefenseEnemyView[],
+  priority: DefenseTargetPriority | null,
+  from: { readonly x: number; readonly y: number },
+): DefenseEnemyView | null {
+  switch (priority) {
+    case 'last':
+      return leastAdvanced(list);
+    case 'strongest':
+      return strongestEnemy(list);
+    case 'closest':
+      return closestTo(list, from.x, from.y);
+    default:
+      return mostAdvanced(list);
+  }
+}
+
 /** El más fuerte: bosses, luego minibosses; dentro, el de más aguante; luego el más adelantado. */
 export function strongestEnemy(list: readonly DefenseEnemyView[]): DefenseEnemyView | null {
   let best: DefenseEnemyView | null = null;
@@ -159,7 +209,10 @@ export function strongestEnemy(list: readonly DefenseEnemyView[]): DefenseEnemyV
       continue;
     }
     const dt = TIER_RANK[e.tier] - TIER_RANK[best.tier];
-    if (dt > 0 || (dt === 0 && (e.hp > best.hp || (e.hp === best.hp && e.distance > best.distance))))
+    if (
+      dt > 0 ||
+      (dt === 0 && (e.hp > best.hp || (e.hp === best.hp && e.distance > best.distance)))
+    )
       best = e;
   }
   return best;
@@ -225,7 +278,7 @@ const ultimaHooks: DefenseTowerHooks = {
     const near = inRange(t, ctx, st.range);
     const last = t.data.lastTarget;
     const others = last === undefined ? near : near.filter((e) => e.id !== last);
-    const pick = mostAdvanced(others.length > 0 ? others : near);
+    const pick = pickTarget(others.length > 0 ? others : near, t.priority, t);
     return pick ? [pick] : [];
   },
   onTick(t, ctx, dt) {
@@ -241,12 +294,15 @@ const ultimaHooks: DefenseTowerHooks = {
   },
 };
 
-/** Halloween: una bocanada en cono hacia el más adelantado; lo que toca queda ardiendo. */
+/**
+ * Halloween: una bocanada en cono hacia su blanco (por su prioridad; de
+ * serie, el más adelantado); lo que toca queda ardiendo.
+ */
 const halloweenHooks: DefenseTowerHooks = {
   targets(t, ctx) {
     const st = defenseTowerStats(ctx.config, 'halloween', t.level);
     const near = inRange(t, ctx, st.range);
-    const aim = mostAdvanced(near);
+    const aim = pickTarget(near, t.priority, t);
     if (!aim) return [];
     const angle = Math.atan2(aim.y - t.y, aim.x - t.x);
     t.data.aim = angle;
@@ -274,14 +330,14 @@ const halloweenHooks: DefenseTowerHooks = {
 };
 
 /**
- * Puerto: un cohete al sitio donde estará el más adelantado al caer
- * (`flightS` después) y un estallido que hiere todo lo que pille en
+ * Puerto: un cohete al sitio donde estará su blanco (por su prioridad; de
+ * serie, el más adelantado) al caer (`flightS` después) y un estallido que hiere todo lo que pille en
  * `blastRadius`. Un cohete en el aire a la vez.
  */
 const calaHooks: DefenseTowerHooks = {
   targets(t, ctx) {
     const st = defenseTowerStats(ctx.config, 'cala', t.level);
-    const pick = mostAdvanced(inRange(t, ctx, st.range));
+    const pick = pickTarget(inRange(t, ctx, st.range), t.priority, t);
     return pick ? [pick] : [];
   },
   onTick(t, ctx, dt) {
@@ -372,11 +428,14 @@ const alldayHooks: DefenseTowerHooks = {
   },
 };
 
-/** Benidorm: francotirador; un tiro lento y fuerte al más fuerte a su alcance. */
+/**
+ * Benidorm: francotirador; un tiro lento y fuerte a su blanco (por su
+ * prioridad; de serie, el más fuerte).
+ */
 const fotosHooks: DefenseTowerHooks = {
   targets(t, ctx) {
     const st = defenseTowerStats(ctx.config, 'fotos', t.level);
-    const pick = strongestEnemy(inRange(t, ctx, st.range));
+    const pick = pickTarget(inRange(t, ctx, st.range), t.priority ?? 'strongest', t);
     return pick ? [pick] : [];
   },
   onTick(t, ctx, dt) {

@@ -13,15 +13,17 @@ import {
  * `muestra`, plan 014): un tower defense en el castillo, junto a Boia 7.
  * Todo el equilibrio en datos, como `SURVIVORS_CONFIG` en el Cañón:
  *
- * - el **camino** (decisión 5 del plan 014): una espiral hacia dentro de
- *   1¼ vueltas alrededor del castillo, con eses en la vuelta de fuera y un
- *   zigzag en la de dentro, que empieza en el vórtice (el borde de la arena)
- *   y acaba en la muralla. El mismo en todas las partidas;
+ * - el **camino** (decisión 5 del plan 014; v2, decisión 7 del plan 015):
+ *   empieza en el vórtice (cerca del borde de la arena), rodea el castillo
+ *   por fuera con cuatro curvas en U hacia él, baja y acaba en zigzag en la
+ *   muralla. El mismo en todas las partidas;
  * - los **enemigos** (decisión 6): los tipos, minibosses y bosses del Cañón
  *   (sus ids y su tamaño salen de `SURVIVORS_CONFIG` por import), con su
  *   ritmo, aguante, daño al castillo y monedas propios de aquí;
  * - las **oleadas** por duración (5, 7, 10 min) y dificultad (decisión 10);
- * - el **avión** (decisión 7): dispara solo, daño a nivel 1…3 con monedas;
+ * - el **avión** (decisión 7; plan 015, decisión 8): dispara solo; daño y
+ *   velocidad de ataque a nivel 1…5 con monedas; el **castillo** sube su
+ *   vida máxima (decisión 9) y las islas tienen prioridad (decisión 12);
  * - las **monedas** (decisión 11), las **medallas** y la **puntuación**
  *   (decisión 12).
  *
@@ -33,9 +35,12 @@ import {
 
 /**
  * Sube con cada cambio de reglas: el resultado y el ranking la llevan. 3: el
- * equilibrio de T165 (Benidorm, monedero, dificultades, crecimiento).
+ * equilibrio de T165 (Benidorm, monedero, dificultades, crecimiento). 4: el
+ * castillo v2 (plan 015 T169): camino con curvas en U, construir en toda la
+ * arena, avión 1…5 (daño y velocidad de ataque), vida del castillo,
+ * prioridades de las islas y «Llamar oleada».
  */
-export const DEFENSE_CONFIG_VERSION = 3;
+export const DEFENSE_CONFIG_VERSION = 4;
 
 /** Paso fijo de la simulación (s): el del Cañón. */
 export const DEFENSE_STEP_S = SURVIVORS_STEP_S;
@@ -114,9 +119,32 @@ export interface DefenseTowerStatsByKind {
   fotos: { range: number; damage: number; cooldownS: number };
 }
 
+/**
+ * A quién apunta una isla que elige blanco (decisión 12 del plan 015): el
+ * primero (el más adelantado por el camino), el último, el más fuerte o el
+ * más cercano a la isla.
+ */
+export type DefenseTargetPriority = 'first' | 'last' | 'strongest' | 'closest';
+export const DEFENSE_TARGET_PRIORITIES: readonly DefenseTargetPriority[] = [
+  'first',
+  'last',
+  'strongest',
+  'closest',
+];
+
+/** El valor si `v` es una prioridad; si no, null. */
+export function asDefenseTargetPriority(v: unknown): DefenseTargetPriority | null {
+  return DEFENSE_TARGET_PRIORITIES.find((p) => p === v) ?? null;
+}
+
 /** Una isla: lo que cuesta, lo que cuesta subirla y lo de cada nivel. */
 export interface DefenseTowerDef<K extends DefenseTowerKind = DefenseTowerKind> {
   kind: K;
+  /**
+   * La prioridad con que se construye, si la isla elige a quién disparar
+   * (null: el haz del Faro, la onda del Sonido y la granja no eligen).
+   */
+  priority: DefenseTargetPriority | null;
   /** Monedas para construirla (nivel 1). */
   cost: number;
   /** Monedas para subir a nivel 2 y a nivel 3. */
@@ -196,33 +224,32 @@ export interface DefenseRunDef {
   bosses: readonly WaveBossEntry[];
 }
 
-/** Una sección del camino, en vueltas (0 = vórtice … `turns` = fin de la espiral). */
-export interface PathSectionDef {
-  kind: 's' | 'zigzag';
-  fromTurn: number;
-  toTurn: number;
-  /** u de desvío radial (la ese a los dos lados; el zigzag sólo hacia dentro). */
-  amplitude: number;
-  /** Ondas de la ese o dientes del zigzag. */
-  waves: number;
-}
+/**
+ * Un tramo del camino v2 (decisión 7 del plan 015), en el marco del camino
+ * (el vórtice en el ángulo 0, los ángulos crecen en el sentido de la vuelta).
+ * Lo traza `buildDefensePath`.
+ */
+export type PathLegDef =
+  /** Rodea el castillo hasta `toAngleRad` (rad desde el vórtice), con el radio yendo a `toRadius`. */
+  | { kind: 'orbit'; toAngleRad: number; toRadius: number }
+  /** U hacia el castillo: `depth` u recto, media vuelta de radio `radius`, y fuera, paralelo. */
+  | { kind: 'u'; depth: number; radius: number }
+  /** `legs` tramos rectos de `legLength` u hacia el castillo, a ±`angleRad` (los extremos, medios). */
+  | { kind: 'zigzag'; legs: number; legLength: number; angleRad: number };
 
 export interface DefensePathDef {
   /** u: ancho del carril (barreras a los dos lados). */
   width: number;
   /** rad: dónde está el vórtice alrededor del castillo (0 = +x). */
   startAngleRad: number;
-  /** 1: la espiral gira en sentido +ángulo; −1, al revés. */
+  /** 1: el camino gira en sentido +ángulo; −1, al revés. */
   direction: 1 | -1;
-  /** u del castillo al vórtice (inicio de la espiral). */
+  /** u del castillo al vórtice (inicio del camino). */
   outerRadius: number;
-  /** u del castillo al fin de la espiral (de ahí, recto a la muralla). */
-  innerRadius: number;
-  /** Vueltas de la espiral. */
-  turns: number;
-  sections: readonly PathSectionDef[];
-  /** rad entre muestras de la polilínea. */
-  sampleStepRad: number;
+  /** Los tramos, del vórtice hacia dentro; del último, recto a la muralla. */
+  legs: readonly PathLegDef[];
+  /** u entre muestras de la polilínea. */
+  sampleStep: number;
   /** s que tarda un enemigo normal (`pace` 1) del vórtice a la muralla. */
   normalWalkS: number;
   /** rad: un vértice que gira más que esto es una esquina (boyas de la carrera de acento). */
@@ -236,7 +263,12 @@ export interface DefenseConfig {
   castle: {
     /** u: radio de la isla del castillo (el de su decorado en `/mar`, 13 de escena). */
     radius: number;
+    /** Vida al empezar (nivel 1). */
     life: number;
+    /** Vida máxima que suma cada mejora (decisión 9 del plan 015; también la cura). */
+    lifePerLevel: number;
+    /** Monedas de cada mejora (del nivel 1 al 2, …); su largo es el número de mejoras. */
+    upgradeCost: readonly number[];
   };
   /** u: radio de la arena (el avión no sale de él; el vórtice está en su borde). */
   arenaRadius: number;
@@ -261,15 +293,19 @@ export interface DefenseConfig {
     startDistance: number;
     /** u: alcance del disparo automático. */
     range: number;
-    cooldownS: number;
     shotSpeed: number;
     shotRadius: number;
-    /** Daño por bala a nivel 1, 2 y 3. */
-    damage: readonly [number, number, number];
-    /** Monedas para subir a nivel 2 y a nivel 3. */
-    upgradeCost: readonly [number, number];
-    /** u: radio del anillo donde se construye (decisión 7; lo usa T159). */
-    buildRing: number;
+    /**
+     * Las dos mejoras (decisión 8 del plan 015), niveles 1…`DEFENSE_PLANE_MAX_LEVEL`:
+     * daño por bala y velocidad de ataque (s entre disparos), con lo que
+     * cuesta subir a cada nivel (del 1 al 2, …).
+     */
+    damage: readonly number[];
+    damageCost: readonly number[];
+    cooldownS: readonly number[];
+    speedCost: readonly number[];
+    /** u: a esta distancia del punto pedido (`moveTo`) el avión ya ha llegado. */
+    arriveRadius: number;
   };
   enemies: Record<EnemyId, DefenseEnemyDef>;
   bosses: Partial<Record<BossId, DefenseEnemyDef>>;
@@ -286,6 +322,8 @@ export interface DefenseConfig {
     hpGrowthPerMinute: number;
     /** s antes del final sin oleadas nuevas (las últimas llegan a tiempo de verse). */
     quietTailS: number;
+    /** «Llamar oleada» (decisión 10 del plan 015): monedas por cada s que se adelanta. */
+    callCoinsPerS: number;
     mix: readonly WaveMixEntry[];
   };
   runs: Record<DefenseRunMin, DefenseRunDef>;
@@ -294,6 +332,8 @@ export interface DefenseConfig {
     lifeBonus: number;
   };
 }
+
+const DEG = Math.PI / 180;
 
 /** Lo común de los tipos (ids del Cañón); el radio sale de `SURVIVORS_CONFIG`. */
 const common = (
@@ -327,7 +367,7 @@ const boss = (
 export const DEFENSE_CONFIG: DefenseConfig = {
   version: DEFENSE_CONFIG_VERSION,
   maxPauseS: 300,
-  castle: { radius: 208, life: 100 },
+  castle: { radius: 208, life: 100, lifePerLevel: 50, upgradeCost: [250, 400, 600] },
   arenaRadius: 1120,
   vortexRadius: 90,
   islandRadius: 70,
@@ -336,16 +376,23 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     startAngleRad: 0,
     direction: 1,
     outerRadius: 980,
-    innerRadius: 430,
-    turns: 1.25,
-    sections: [
-      // Eses en la vuelta de fuera (donde no hay otra vuelta al lado).
-      { kind: 's', fromTurn: 0.3, toTurn: 0.95, amplitude: 120, waves: 2.5 },
-      // Zigzag dentro, con los dientes hacia el castillo (no estrechan el hueco con la vuelta de fuera).
-      { kind: 'zigzag', fromTurn: 1.0, toTurn: 1.22, amplitude: 90, waves: 4 },
+    // Del vórtice, por fuera; cuatro U hacia el castillo (entre ellas, U al
+    // revés abiertas al castillo); baja por la derecha y zigzag hasta la muralla.
+    legs: [
+      { kind: 'orbit', toAngleRad: 86 * DEG, toRadius: 980 },
+      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'orbit', toAngleRad: 144 * DEG, toRadius: 980 },
+      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'orbit', toAngleRad: 202 * DEG, toRadius: 980 },
+      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'orbit', toAngleRad: 260 * DEG, toRadius: 980 },
+      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'orbit', toAngleRad: 296 * DEG, toRadius: 980 },
+      { kind: 'orbit', toAngleRad: 338 * DEG, toRadius: 740 },
+      { kind: 'zigzag', legs: 3, legLength: 230, angleRad: 40 * DEG },
     ],
-    sampleStepRad: 0.01,
-    normalWalkS: 40,
+    sampleStep: 10,
+    normalWalkS: 44,
     cornerMinRad: 0.6,
   },
   towers: {
@@ -356,6 +403,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     kinds: {
       faro: {
         kind: 'faro',
+        priority: null,
         cost: 100,
         upgradeCost: [80, 130],
         levels: [
@@ -366,6 +414,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
       },
       ultima: {
         kind: 'ultima',
+        priority: 'first',
         cost: 80,
         upgradeCost: [70, 110],
         levels: [
@@ -376,6 +425,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
       },
       halloween: {
         kind: 'halloween',
+        priority: 'first',
         cost: 90,
         upgradeCost: [75, 120],
         levels: [
@@ -386,6 +436,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
       },
       cala: {
         kind: 'cala',
+        priority: 'first',
         cost: 120,
         upgradeCost: [100, 150],
         levels: [
@@ -396,6 +447,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
       },
       tienda: {
         kind: 'tienda',
+        priority: null,
         cost: 70,
         upgradeCost: [60, 90],
         levels: [
@@ -406,6 +458,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
       },
       allday: {
         kind: 'allday',
+        priority: null,
         cost: 100,
         upgradeCost: [80, 130],
         levels: [
@@ -416,6 +469,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
       },
       fotos: {
         kind: 'fotos',
+        priority: 'strongest',
         cost: 130,
         upgradeCost: [110, 170],
         levels: [
@@ -432,12 +486,13 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     acceleration: 900,
     startDistance: 320,
     range: 380,
-    cooldownS: 0.5,
     shotSpeed: 900,
     shotRadius: 8,
-    damage: [12, 20, 30],
-    upgradeCost: [90, 180],
-    buildRing: 260,
+    damage: [12, 20, 30, 42, 56],
+    damageCost: [90, 180, 280, 400],
+    cooldownS: [0.5, 0.43, 0.37, 0.32, 0.27],
+    speedCost: [80, 150, 240, 350],
+    arriveRadius: 4,
   },
   enemies: {
     piranha: common('piranha', 1.15, 26, 3, 3, 10),
@@ -471,7 +526,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     tormenta: {
       id: 'tormenta',
       i18nKey: 'survivors.dificultad.tormenta',
-      enemyHp: 1.2,
+      enemyHp: 1.12,
       enemyCount: 1.3,
       castleDamage: 1.3,
     },
@@ -482,8 +537,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     baseCount: 5,
     countPerWave: 1,
     spacingS: 0.7,
-    hpGrowthPerMinute: 0.25,
+    hpGrowthPerMinute: 0.35,
     quietTailS: 20,
+    callCoinsPerS: 1,
     mix: [
       { kind: 'piranha', fromFrac: 0, weight: 4 },
       { kind: 'crab', fromFrac: 0.1, weight: 2 },
@@ -558,4 +614,70 @@ export function defenseTowerStats<K extends DefenseTowerKind>(
   const def = cfg.towers.kinds[kind] as DefenseTowerDef<K>;
   const i = Math.min(3, Math.max(1, Math.round(level))) - 1;
   return def.levels[i]!;
+}
+
+/** El nivel más alto de cada mejora del avión (decisión 8 del plan 015). */
+export const DEFENSE_PLANE_MAX_LEVEL = 5;
+
+/** Las dos mejoras del avión. */
+export type DefensePlaneStat = 'damage' | 'speed';
+export const DEFENSE_PLANE_STATS: readonly DefensePlaneStat[] = ['damage', 'speed'];
+
+/** Lo que cuesta subir `stat` del nivel `level` al siguiente, o null en el máximo. */
+export function defensePlaneUpgradeCost(
+  cfg: DefenseConfig,
+  stat: DefensePlaneStat,
+  level: number,
+): number | null {
+  const costs = stat === 'damage' ? cfg.plane.damageCost : cfg.plane.speedCost;
+  return costs[Math.max(1, Math.round(level)) - 1] ?? null;
+}
+
+/** Daño por bala del avión a su nivel de daño (1…5, acotado). */
+export function defensePlaneDamage(cfg: DefenseConfig, level: number): number {
+  const i = Math.min(cfg.plane.damage.length, Math.max(1, Math.round(level))) - 1;
+  return cfg.plane.damage[i]!;
+}
+
+/** s entre disparos del avión a su nivel de velocidad (1…5, acotado). */
+export function defensePlaneCooldown(cfg: DefenseConfig, level: number): number {
+  const i = Math.min(cfg.plane.cooldownS.length, Math.max(1, Math.round(level))) - 1;
+  return cfg.plane.cooldownS[i]!;
+}
+
+/** El nivel más alto del castillo (1 + sus mejoras). */
+export function defenseCastleMaxLevel(cfg: DefenseConfig): number {
+  return 1 + cfg.castle.upgradeCost.length;
+}
+
+/** La vida máxima del castillo a su nivel (1…, acotado). */
+export function defenseCastleMaxLife(cfg: DefenseConfig, level: number): number {
+  const l = Math.min(defenseCastleMaxLevel(cfg), Math.max(1, Math.round(level)));
+  return cfg.castle.life + (l - 1) * cfg.castle.lifePerLevel;
+}
+
+/** Todas las vidas máximas que puede tener el castillo (para el ranking). */
+export function defenseCastleMaxLives(cfg: DefenseConfig): number[] {
+  return Array.from({ length: defenseCastleMaxLevel(cfg) }, (_, i) =>
+    defenseCastleMaxLife(cfg, i + 1),
+  );
+}
+
+/** Lo que cuesta subir el castillo del nivel `level` al siguiente, o null en el máximo. */
+export function defenseCastleUpgradeCost(cfg: DefenseConfig, level: number): number | null {
+  return cfg.castle.upgradeCost[Math.max(1, Math.round(level)) - 1] ?? null;
+}
+
+/** (x, y) llevado dentro de la arena (el avión nunca sale de ella: decisión 3 del plan 015). */
+export function defenseClampToArena(
+  cfg: DefenseConfig,
+  x: number,
+  y: number,
+): { x: number; y: number } {
+  const fx = Number.isFinite(x) ? x : 0;
+  const fy = Number.isFinite(y) ? y : 0;
+  const r = Math.hypot(fx, fy);
+  if (r <= cfg.arenaRadius) return { x: fx, y: fy };
+  const k = cfg.arenaRadius / r;
+  return { x: fx * k, y: fy * k };
 }

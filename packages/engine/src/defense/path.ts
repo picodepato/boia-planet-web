@@ -1,19 +1,25 @@
 import type { DefensePathDef } from './config';
 
 /**
- * El camino de los enemigos (decisión 5 del plan 014): una polilínea que se
- * recorre por distancia. Sale de `DefensePathDef` (los mismos datos en todas
- * las partidas) y del radio del castillo:
+ * El camino de los enemigos (decisión 5 del plan 014; v2, decisión 7 del
+ * plan 015): una polilínea que se recorre por distancia. Sale de
+ * `DefensePathDef` (los mismos datos en todas las partidas) y del radio del
+ * castillo, como un trazo de tortuga alrededor del castillo, que está en
+ * (0, 0):
  *
- * - una espiral de Arquímedes de `outerRadius` a `innerRadius` en `turns`
- *   vueltas, desde el vórtice (`startAngleRad`);
- * - las secciones `s` le suman una onda radial a los dos lados (eses) y las
- *   `zigzag`, dientes rectos hacia el castillo (esquinas vivas);
- * - de la punta de la espiral, recto hasta la muralla.
+ * - `orbit`: rodea el castillo (en el sentido `direction`) hasta un ángulo,
+ *   con el radio cambiando poco a poco (una espiral);
+ * - `u`: una curva en U hacia el castillo: entra recto `depth` u, da media
+ *   vuelta en un semicírculo de radio `radius` y sale recto, paralelo, hasta
+ *   el radio en que entró. Dentro de la U cabe una isla que alcanza los dos
+ *   lados; entre dos U seguidas queda otra U al revés (abierta al castillo);
+ * - `zigzag`: tramos rectos de `legLength` u hacia el castillo, girando
+ *   `angleRad` a un lado y al otro (esquinas vivas; en cada ángulo cabe una
+ *   isla);
+ * - de la última punta, recto hasta la muralla.
  *
- * El castillo está en (0, 0). Como cada punto de la espiral tiene un ángulo
- * mayor que el anterior, el camino no se corta mientras las vueltas no se
- * toquen (lo mira la prueba).
+ * Empieza en el vórtice (`outerRadius` u del castillo, a `startAngleRad`).
+ * Que no se corte y que haya sitio entre tramos lo miran las pruebas.
  */
 
 export interface PathPoint {
@@ -41,13 +47,26 @@ export interface PathCorner {
   turnRad: number;
 }
 
+/** Una curva en U hacia el castillo: el centro de su semicírculo (dentro de la U). */
+export interface PathUTurn {
+  /** Centro del semicírculo: el sitio de dentro de la U. */
+  x: number;
+  y: number;
+  /** u del radio del semicírculo (la mitad de lo que separa sus dos lados). */
+  radius: number;
+  /** u del vórtice a la mitad de la media vuelta. */
+  distance: number;
+  /** u de cada lado recto de la U. */
+  depth: number;
+}
+
 export interface DefensePath {
   /** Los vértices de la polilínea, del vórtice a la muralla. */
   readonly points: readonly PathPoint[];
   /** u del vórtice a cada vértice (`cum[0]` = 0). */
   readonly cum: readonly number[];
-  /** La vuelta (0…`turns`) de cada vértice; el tramo recto final repite la última. */
-  readonly turnOf: readonly number[];
+  /** El tramo de `DefensePathDef.legs` de cada vértice (−1: el recto final a la muralla). */
+  readonly legOf: readonly number[];
   /** u totales. */
   readonly length: number;
   /** El vórtice: donde aparece cada enemigo. */
@@ -56,72 +75,115 @@ export interface DefensePath {
   readonly end: PathPoint;
   readonly width: number;
   readonly corners: readonly PathCorner[];
+  /** Las curvas en U hacia el castillo, en orden. */
+  readonly uTurns: readonly PathUTurn[];
   /** El punto a `distance` u del vórtice (acotado al camino); escribe en `out` si se da. */
   sampleAt(distance: number, out?: PathSample): PathSample;
   /** u de (x, y) a la línea central del camino (para no construir encima). */
   distanceTo(x: number, y: number): number;
 }
 
-/** Desvío radial de las secciones en la vuelta `turn`. */
-function offsetAt(def: DefensePathDef, turn: number): number {
-  let off = 0;
-  for (const s of def.sections) {
-    if (turn < s.fromTurn || turn > s.toTurn) continue;
-    const u = (turn - s.fromTurn) / (s.toTurn - s.fromTurn);
-    if (s.kind === 's') off += s.amplitude * Math.sin(2 * Math.PI * s.waves * u);
-    else {
-      // Diente: 0 → 1 → 0 en cada uno; hacia el castillo.
-      const p = (u * s.waves) % 1;
-      const tri = p < 0.5 ? p * 2 : (1 - p) * 2;
-      off -= s.amplitude * tri;
-    }
-  }
-  return off;
-}
-
-/** Las vueltas donde hay una esquina del zigzag (puntas y valles), para muestrearlas exactas. */
-function zigzagKnots(def: DefensePathDef): number[] {
-  const knots: number[] = [];
-  for (const s of def.sections) {
-    if (s.kind !== 'zigzag') continue;
-    const n = Math.round(s.waves * 2);
-    for (let i = 0; i <= n; i++) knots.push(s.fromTurn + ((s.toTurn - s.fromTurn) * i) / n);
-  }
-  return knots;
-}
-
 /** Construye el camino. `castleRadius`: donde acaba (la muralla). */
 export function buildDefensePath(def: DefensePathDef, castleRadius: number): DefensePath {
-  const totalRad = def.turns * 2 * Math.PI;
-  const steps = Math.max(8, Math.ceil(totalRad / def.sampleStepRad));
-  const turns = new Set<number>();
-  for (let i = 0; i <= steps; i++) turns.add((def.turns * i) / steps);
-  for (const k of zigzagKnots(def)) turns.add(k);
-  const sorted = [...turns]
-    .sort((a, b) => a - b)
-    .filter((t, i, all) => i === 0 || t - all[i - 1]! > 1e-7);
+  // Se traza en un marco propio (vórtice en +x, giro en +ángulo) y luego se
+  // lleva al de la partida (`startAngleRad`, `direction`).
+  const step = def.sampleStep;
+  const raw: PathPoint[] = [{ x: def.outerRadius, y: 0 }];
+  const legOf: number[] = [0];
+  const uRaw: { cx: number; cy: number; radius: number; index: number; depth: number }[] = [];
+  let cx = def.outerRadius;
+  let cy = 0;
+  /** Ángulo recorrido alrededor del castillo (sin dar la vuelta a 2π). */
+  let phi = 0;
+  const push = (x: number, y: number, leg: number) => {
+    const p = raw[raw.length - 1]!;
+    if (Math.hypot(x - p.x, y - p.y) < 1e-6) return;
+    raw.push({ x, y });
+    legOf.push(leg);
+    cx = x;
+    cy = y;
+  };
+  /** El ángulo de (x, y) más cerca de `phi` (sin saltos de 2π). */
+  const unwrap = (x: number, y: number) => {
+    const a = Math.atan2(y, x);
+    return a + 2 * Math.PI * Math.round((phi - a) / (2 * Math.PI));
+  };
+  const straight = (x: number, y: number, leg: number) => {
+    const n = Math.max(1, Math.ceil(Math.hypot(x - cx, y - cy) / step));
+    const x0 = cx;
+    const y0 = cy;
+    for (let i = 1; i <= n; i++) push(x0 + ((x - x0) * i) / n, y0 + ((y - y0) * i) / n, leg);
+    phi = unwrap(cx, cy);
+  };
 
-  const points: PathPoint[] = [];
-  const turnOf: number[] = [];
-  const radiusAt = (turn: number) =>
-    def.outerRadius +
-    ((def.innerRadius - def.outerRadius) * turn) / def.turns +
-    offsetAt(def, turn);
-  for (const turn of sorted) {
-    const a = def.startAngleRad + def.direction * turn * 2 * Math.PI;
-    const r = radiusAt(turn);
-    points.push({ x: r * Math.cos(a), y: r * Math.sin(a) });
-    turnOf.push(turn);
-  }
+  def.legs.forEach((leg, li) => {
+    if (leg.kind === 'orbit') {
+      const r0 = Math.hypot(cx, cy);
+      const phi0 = phi;
+      const dPhi = leg.toAngleRad - phi0;
+      const arc = Math.abs(dPhi) * Math.max(r0, leg.toRadius);
+      const n = Math.max(1, Math.ceil(Math.hypot(arc, leg.toRadius - r0) / step));
+      for (let i = 1; i <= n; i++) {
+        const a = phi0 + (dPhi * i) / n;
+        const r = r0 + ((leg.toRadius - r0) * i) / n;
+        push(r * Math.cos(a), r * Math.sin(a), li);
+      }
+      phi = leg.toAngleRad;
+    } else if (leg.kind === 'u') {
+      const r0 = Math.hypot(cx, cy);
+      const ux = -cx / r0; // hacia el castillo
+      const uy = -cy / r0;
+      const tx = uy; // hacia delante (sentido de la vuelta)
+      const ty = -ux;
+      const ax = cx + ux * leg.depth;
+      const ay = cy + uy * leg.depth;
+      straight(ax, ay, li);
+      const ccx = ax + tx * leg.radius;
+      const ccy = ay + ty * leg.radius;
+      const n = Math.max(4, Math.ceil((Math.PI * leg.radius) / step));
+      const at = raw.length - 1;
+      for (let i = 1; i <= n; i++) {
+        const s = (Math.PI * i) / n;
+        push(
+          ccx + leg.radius * (-tx * Math.cos(s) + ux * Math.sin(s)),
+          ccy + leg.radius * (-ty * Math.cos(s) + uy * Math.sin(s)),
+          li,
+        );
+      }
+      uRaw.push({
+        cx: ccx,
+        cy: ccy,
+        radius: leg.radius,
+        index: at + Math.round(n / 2),
+        depth: leg.depth,
+      });
+      // Sale hacia fuera, paralelo a la entrada, hasta el radio en que entró.
+      const bu = cx * ux + cy * uy;
+      const b2 = cx * cx + cy * cy;
+      const s = bu + Math.sqrt(Math.max(0, bu * bu - b2 + r0 * r0));
+      straight(cx - ux * s, cy - uy * s, li);
+    } else {
+      // Zigzag hacia el castillo: medio tramo, tramos enteros y medio tramo.
+      for (let k = 0; k <= leg.legs; k++) {
+        const len = k === 0 || k === leg.legs ? leg.legLength / 2 : leg.legLength;
+        const base = Math.atan2(-cy, -cx);
+        const a = base + (k % 2 === 0 ? leg.angleRad : -leg.angleRad);
+        straight(cx + Math.cos(a) * len, cy + Math.sin(a) * len, li);
+      }
+    }
+  });
   // Recto hasta la muralla.
-  const lastA = def.startAngleRad + def.direction * totalRad;
-  const lastR = radiusAt(def.turns);
-  const legSteps = Math.max(1, Math.ceil((lastR - castleRadius) / 40));
-  for (let i = 1; i <= legSteps; i++) {
-    const r = lastR + ((castleRadius - lastR) * i) / legSteps;
-    points.push({ x: r * Math.cos(lastA), y: r * Math.sin(lastA) });
-    turnOf.push(def.turns);
-  }
+  const rEnd = Math.hypot(cx, cy);
+  if (rEnd > castleRadius) straight((cx / rEnd) * castleRadius, (cy / rEnd) * castleRadius, -1);
+
+  // Al marco de la partida.
+  const ca = Math.cos(def.startAngleRad);
+  const sa = Math.sin(def.startAngleRad);
+  const map = (p: PathPoint): PathPoint => {
+    const y = p.y * def.direction;
+    return { x: p.x * ca - y * sa, y: p.x * sa + y * ca };
+  };
+  const points = raw.map(map);
 
   const cum: number[] = [0];
   for (let i = 1; i < points.length; i++) {
@@ -144,6 +206,13 @@ export function buildDefensePath(def: DefensePathDef, castleRadius: number): Def
     if (Math.abs(d) >= def.cornerMinRad)
       corners.push({ x: q.x, y: q.y, distance: cum[i]!, turnRad: d });
   }
+
+  const uTurns: PathUTurn[] = uRaw.map((u) => ({
+    ...map({ x: u.cx, y: u.cy }),
+    radius: u.radius,
+    distance: cum[u.index]!,
+    depth: u.depth,
+  }));
 
   /** Índice del tramo que contiene `d` (búsqueda binaria). */
   const segmentOf = (d: number): number => {
@@ -198,12 +267,13 @@ export function buildDefensePath(def: DefensePathDef, castleRadius: number): Def
   return {
     points,
     cum,
-    turnOf,
+    legOf,
     length,
     start: { x: first.x, y: first.y, heading: Math.atan2(second.y - first.y, second.x - first.x) },
     end: points[points.length - 1]!,
     width: def.width,
     corners,
+    uTurns,
     sampleAt,
     distanceTo,
   };

@@ -10,6 +10,7 @@ import {
   DEFENSE_CONFIG,
   DEFENSE_RUN_MINS,
   DEFENSE_STEP_S,
+  DEFENSE_TARGET_PRIORITIES,
   DEFENSE_TOWER_KINDS,
   type DefenseConfig,
   type DefenseTowerKind,
@@ -23,6 +24,7 @@ import {
   type DefenseEnemyView,
   type DefenseTowerContext,
   type DefenseTowerState,
+  pickTarget,
   strongestEnemy,
 } from './towers';
 
@@ -107,7 +109,8 @@ function fakeCtx(enemies: FakeEnemy[], config: DefenseConfig = CFG): FakeCtx {
 }
 
 function tower(kind: DefenseTowerKind, level = 1, x = 0, y = 0): DefenseTowerState {
-  return { id: 99, kind, x, y, level, spent: 0, targets: [], lastShot: null, data: {} };
+  const priority = CFG.towers.kinds[kind].priority;
+  return { id: 99, kind, x, y, level, priority, spent: 0, targets: [], lastShot: null, data: {} };
 }
 
 /** Un paso de la torre con sus hooks de verdad. */
@@ -207,7 +210,11 @@ describe('las siete islas (decisión 9)', () => {
   it('Halloween: el cono quema lo que tiene delante, no lo de detrás', () => {
     const st = defenseTowerStats(CFG, 'halloween', 1);
     const front = enemy({ x: st.range * 0.7, y: 0, distance: 900 });
-    const side = enemy({ x: st.range * 0.7, y: st.range * 0.7 * Math.tan(st.coneRad * 0.5), distance: 800 });
+    const side = enemy({
+      x: st.range * 0.7,
+      y: st.range * 0.7 * Math.tan(st.coneRad * 0.5),
+      distance: 800,
+    });
     const back = enemy({ x: -st.range * 0.5, y: 0, distance: 100 });
     const ctx = fakeCtx([front, side, back]);
     const t = tower('halloween');
@@ -346,7 +353,7 @@ describe('las siete islas (decisión 9)', () => {
 
 // --- Construir ----------------------------------------------------------------------
 
-/** Un sitio libre (sin avión ni dinero) cerca de (x, y). */
+/** Un sitio libre (sin contar el dinero) cerca de (x, y). */
 function freeSiteNear(x: number, y: number, towers: { x: number; y: number }[] = []) {
   for (let r = 0; r < 400; r += 10)
     for (let a = 0; a < 2 * Math.PI; a += 0.1) {
@@ -357,33 +364,32 @@ function freeSiteNear(x: number, y: number, towers: { x: number; y: number }[] =
   throw new Error('sin sitio');
 }
 
-function world(p: Partial<DefenseBuildWorld> & { x: number; y: number }): DefenseBuildWorld {
+function world(p: Partial<DefenseBuildWorld> = {}): DefenseBuildWorld {
   return {
     config: CFG,
     path: PATH,
-    plane: { x: p.x, y: p.y },
     towers: [],
     coins: 1e6,
     ...p,
   };
 }
 
-describe('la regla de construir (decisión 8)', () => {
+describe('la regla de construir (decisión 8; plan 015, decisión 5)', () => {
   it('todas las islas tienen la misma huella: no hay radio por tipo', () => {
     for (const kind of DEFENSE_TOWER_KINDS)
       expect(Object.keys(CFG.towers.kinds[kind])).not.toContain('radius');
     const site = freeSiteNear(600, 0);
     const besidePath = PATH.sampleAt(1500);
     for (const kind of DEFENSE_TOWER_KINDS) {
-      expect(defenseBuildCheck(world(site), kind, site.x, site.y).ok).toBe(true);
-      expect(defenseBuildCheck(world(besidePath), kind, besidePath.x, besidePath.y)).toMatchObject({
+      expect(defenseBuildCheck(world(), kind, site.x, site.y).ok).toBe(true);
+      expect(defenseBuildCheck(world(), kind, besidePath.x, besidePath.y)).toMatchObject({
         ok: false,
         reason: 'path',
       });
     }
   });
 
-  it('rechaza el camino, el vórtice, el castillo, otra isla, fuera del anillo y de la arena', () => {
+  it('rechaza el camino, el vórtice, el castillo, otra isla y fuera de la arena (su borde)', () => {
     const minPath = CFG.path.width / 2 + R + CFG.towers.pathClearance;
     const s = PATH.sampleAt(PATH.length * 0.4);
     const reason = (w: DefenseBuildWorld, x: number, y: number) => {
@@ -392,7 +398,7 @@ describe('la regla de construir (decisión 8)', () => {
     };
     // El camino: a un pelo menos de la distancia mínima, no; a la distancia, sí (si nada más estorba).
     const close = { x: s.x + s.nx * (minPath - 2), y: s.y + s.ny * (minPath - 2) };
-    expect(reason(world(close), close.x, close.y)).toBe('path');
+    expect(reason(world(), close.x, close.y)).toBe('path');
     expect(PATH.distanceTo(close.x, close.y)).toBeLessThan(minPath);
     // El vórtice: fuera del carril pero pegado a él.
     const st = PATH.start;
@@ -401,34 +407,62 @@ describe('la regla de construir (decisión 8)', () => {
       y: st.y + Math.cos(st.heading) * (minPath + 5),
     };
     expect(PATH.distanceTo(nearVortex.x, nearVortex.y)).toBeGreaterThanOrEqual(minPath);
-    expect(reason(world(nearVortex), nearVortex.x, nearVortex.y)).toBe('vortex');
-    expect(reason(world(st), st.x, st.y)).toBe('vortex');
+    expect(reason(world(), nearVortex.x, nearVortex.y)).toBe('vortex');
+    expect(reason(world(), st.x, st.y)).toBe('vortex');
     // El castillo.
     const onCastle = { x: 0, y: CFG.castle.radius + R - 1 };
-    expect(reason(world(onCastle), onCastle.x, onCastle.y)).toBe('castle');
+    expect(reason(world(), onCastle.x, onCastle.y)).toBe('castle');
     // Otra isla: a menos de dos huellas, no; a dos, sí.
     const site = freeSiteNear(600, 0);
     const other = [{ x: site.x + 2 * R - 1, y: site.y }];
-    expect(reason(world({ ...site, towers: other }), site.x, site.y)).toBe('overlap');
+    expect(reason(world({ towers: other }), site.x, site.y)).toBe('overlap');
     const apart = [{ x: site.x + 2 * R, y: site.y }];
-    expect(reason(world({ ...site, towers: apart }), site.x, site.y)).toBeNull();
-    // Fuera del anillo del avión.
-    const plane = { x: site.x + CFG.plane.buildRing + 1, y: site.y };
-    expect(reason(world({ ...plane, plane }), site.x, site.y)).toBe('ring');
-    // Fuera de la arena (la isla entera tiene que caber).
-    const edge = { x: 0, y: -(CFG.arenaRadius - R + 1) };
-    expect(reason(world(edge), edge.x, edge.y)).toBe('arena');
+    expect(reason(world({ towers: apart }), site.x, site.y)).toBeNull();
+    // El borde de la arena: la isla entera tiene que caber. Donde el borde
+    // queda libre del camino, justo dentro sí y un pelo más fuera no.
+    const edgeR = CFG.arenaRadius - R;
+    let free = 0;
+    for (let a = 0; a < 2 * Math.PI; a += 0.05) {
+      const ux = Math.cos(a);
+      const uy = Math.sin(a);
+      if (reason(world(), ux * edgeR, uy * edgeR) !== null) continue;
+      free++;
+      expect(reason(world(), ux * (edgeR + 1), uy * (edgeR + 1))).toBe('arena');
+    }
+    expect(free).toBeGreaterThan(0);
+    expect(reason(world(), 0, -(CFG.arenaRadius + 500))).toBe('arena');
+    expect(reason(world(), Number.NaN, 0)).toBe('arena');
     // Sin dinero (el sitio vale) y partida acabada.
     const cost = CFG.towers.kinds.faro.cost;
-    expect(reason(world({ ...site, coins: cost - 1 }), site.x, site.y)).toBe('coins');
-    expect(reason(world({ ...site, coins: cost }), site.x, site.y)).toBeNull();
-    expect(reason(world({ ...site, ended: true }), site.x, site.y)).toBe('ended');
+    expect(reason(world({ coins: cost - 1 }), site.x, site.y)).toBe('coins');
+    expect(reason(world({ coins: cost }), site.x, site.y)).toBeNull();
+    expect(reason(world({ ended: true }), site.x, site.y)).toBe('ended');
+  });
+
+  it('en cualquier sitio de la arena: sin anillo alrededor del avión', () => {
+    // Islas por toda la arena, lejos y cerca del avión: vale cualquier sitio libre.
+    const g = createDefense({ ...structuredClone(CFG), startCoins: 1e6 }, 3);
+    const p = g.snapshot().plane;
+    let far = 0;
+    for (let a = 0; a < 2 * Math.PI; a += Math.PI / 8)
+      for (const r of [CFG.castle.radius + R + 5, 600, CFG.arenaRadius - R]) {
+        const x = r * Math.cos(a);
+        const y = r * Math.sin(a);
+        const site = defenseSiteReason(CFG, PATH, g.towers, x, y);
+        const check = g.buildCheck('cala', x, y);
+        expect(check.ok ? null : (check as { reason: string }).reason).toBe(site);
+        if (check.ok && Math.hypot(x - p.x, y - p.y) > CFG.arenaRadius * 0.75) {
+          expect(g.build('cala', x, y)).not.toBeNull();
+          far++;
+        }
+      }
+    expect(far).toBeGreaterThan(0);
   });
 
   it('no hay tope de islas: sólo dinero y sitio', () => {
     const site = freeSiteNear(600, 0);
     const many = Array.from({ length: 60 }, (_, i) => ({ x: -5000 - i * 200, y: 0 }));
-    expect(defenseBuildCheck(world({ ...site, towers: many }), 'cala', site.x, site.y).ok).toBe(true);
+    expect(defenseBuildCheck(world({ towers: many }), 'cala', site.x, site.y).ok).toBe(true);
   });
 });
 
@@ -443,7 +477,6 @@ describe('construir, mejorar y vender en la partida', () => {
     const g = richGame();
     const p = g.snapshot().plane;
     const site = freeSiteNear(p.x, p.y);
-    expect(Math.hypot(site.x - p.x, site.y - p.y)).toBeLessThanOrEqual(CFG.plane.buildRing);
     const def = CFG.towers.kinds.cala;
     const start = g.purse;
     expect(g.buildCheck('cala', site.x, site.y)).toEqual({ ok: true, cost: def.cost });
@@ -543,5 +576,60 @@ describe('el bot que construye', () => {
     expect(r.end).toBe('held');
     expect(r.castleLife).toBeLessThan(r.castleMaxLife);
     expect(r.castleLife).toBeGreaterThan(0);
+  });
+});
+
+// --- Prioridades (plan 015, decisión 12) ---------------------------------------------
+
+describe('la prioridad de cada isla', () => {
+  /** Cuatro enemigos a tiro, cada uno el bueno para una prioridad. */
+  function scene() {
+    const first = enemy({ x: 150, y: 0, distance: 900 });
+    const last = enemy({ x: -150, y: 0, distance: 100 });
+    const strongest = enemy({ x: 0, y: 150, distance: 500, tier: 'boss', boss: true, hp: 5000 });
+    const closest = enemy({ x: 0, y: -60, distance: 400 });
+    return { first, last, strongest, closest, all: [first, last, strongest, closest] };
+  }
+  const AIMED = DEFENSE_TOWER_KINDS.filter((k) => CFG.towers.kinds[k].priority !== null);
+
+  it('las que eligen blanco tienen su prioridad por defecto (Benidorm: el más fuerte)', () => {
+    expect([...AIMED].sort()).toEqual(['cala', 'fotos', 'halloween', 'ultima']);
+    expect(CFG.towers.kinds.fotos.priority).toBe('strongest');
+    for (const k of ['faro', 'allday', 'tienda'] as const)
+      expect(CFG.towers.kinds[k].priority).toBeNull();
+    for (const k of AIMED)
+      expect(DEFENSE_TARGET_PRIORITIES).toContain(CFG.towers.kinds[k].priority);
+  });
+
+  it('cada prioridad elige al suyo, en cada isla que apunta', () => {
+    for (const kind of AIMED)
+      for (const priority of DEFENSE_TARGET_PRIORITIES) {
+        const s = scene();
+        const t = tower(kind, 3);
+        t.priority = priority;
+        const ctx = fakeCtx(s.all);
+        const want = s[priority];
+        const got = DEFENSE_TOWER_HOOKS[kind]!.targets(t, ctx);
+        if (kind === 'halloween')
+          expect(t.data.aim, `${kind}/${priority}`).toBeCloseTo(Math.atan2(want.y, want.x), 9);
+        else expect(got[0]?.id, `${kind}/${priority}`).toBe(want.id);
+        expect(pickTarget(s.all, priority, t)?.id).toBe(want.id);
+      }
+  });
+
+  it('en la partida se cambia por la entrada del paso (sólo en las que apuntan)', () => {
+    const g = createDefense({ ...structuredClone(CFG), startCoins: 1e6 }, 3);
+    const a = freeSiteNear(600, 0);
+    const b = freeSiteNear(-600, 0, [a]);
+    const fotos = g.build('fotos', a.x, a.y)!;
+    const faro = g.build('faro', b.x, b.y)!;
+    expect(fotos.priority).toBe('strongest');
+    expect(faro.priority).toBeNull();
+    const evs = [...g.step({ setPriority: { towerId: fotos.id, priority: 'closest' } })];
+    expect(evs).toContainEqual({ type: 'towerPriority', towerId: fotos.id, priority: 'closest' });
+    expect(fotos.priority).toBe('closest');
+    expect(g.setTowerPriority(faro.id, 'last')).toBe(false);
+    expect(g.setTowerPriority(fotos.id, 'nada' as never)).toBe(false);
+    expect(faro.priority).toBeNull();
   });
 });

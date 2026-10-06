@@ -7,8 +7,8 @@ import type { DefenseEnemyView } from './towers';
 /**
  * Bots de prueba. `idlePlaneBot` se queda donde empieza; `chasePlaneBot`
  * vuela hacia el enemigo más adelantado del camino (el que antes llegaría al
- * castillo), se queda a medio alcance y compra los niveles del avión en
- * cuanto llega el dinero. Solos (sin islas) no bastan. `buildingBot` (T159)
+ * castillo), se queda a medio alcance y compra los niveles de daño del
+ * avión en cuanto llega el dinero. Solos (sin islas) no bastan. `buildingBot` (T159)
  * además construye islas en los sitios que más camino cubren, las sube y
  * compra los niveles del avión: es el jugador sencillo de las pruebas de
  * equilibrio (T165 las afina).
@@ -20,8 +20,8 @@ export const idlePlaneBot: DefenseBot = () => ({});
 
 export const chasePlaneBot: DefenseBot = (s) => {
   const input: DefenseInput = {};
-  if (s.plane.nextUpgradeCost !== null && s.coins >= s.plane.nextUpgradeCost)
-    input.upgradePlane = true;
+  if (s.plane.nextDamageCost !== null && s.coins >= s.plane.nextDamageCost)
+    input.upgradePlane = 'damage';
   chase(s, input);
   return input;
 };
@@ -43,6 +43,8 @@ export interface BuildingBotOptions {
   repeat?: readonly DefenseTowerKind[];
   /** u alrededor de un sitio en que cuenta el camino que cubre. */
   coverRadius?: number;
+  /** Hasta qué nivel de daño sube el avión (3 por defecto). */
+  planeLevel?: number;
 }
 
 /** El orden de la construcción sencilla (todas las islas) y lo que repite después. */
@@ -69,9 +71,9 @@ export const BUILDING_BOT_REPEAT: readonly DefenseTowerKind[] = [
  * tienen cerca, y luego, por turnos:
  *
  * 1. construye la siguiente isla de `order` (después, de `repeat`) en el
- *    mejor sitio libre (la granja en el peor: no necesita camino), volando
- *    hasta tenerlo dentro de su anillo;
- * 2. a partir de la tercera isla, compra los niveles del avión;
+ *    mejor sitio libre (la granja en el peor: no necesita camino);
+ * 2. a partir de la tercera isla, compra los niveles de daño del avión
+ *    hasta `planeLevel` (3 por defecto, como el avión del plan 014);
  * 3. tras las de `order`, alterna subir de nivel la isla más baja con
  *    construir otra de `repeat`.
  *
@@ -81,6 +83,7 @@ export function buildingBot(cfg: DefenseConfig, opts: BuildingBotOptions = {}): 
   const order = opts.order ?? BUILDING_BOT_ORDER;
   const repeat = opts.repeat ?? BUILDING_BOT_REPEAT;
   const coverR = opts.coverRadius ?? 230;
+  const planeLevel = opts.planeLevel ?? 3;
   const path = buildDefensePath(cfg.path, cfg.castle.radius);
 
   // Sitios: rejilla de la arena, puntuados por las muestras del camino que tienen cerca.
@@ -123,8 +126,14 @@ export function buildingBot(cfg: DefenseConfig, opts: BuildingBotOptions = {}): 
     }
     lastCount = s.towers.length;
 
-    if (built >= 3 && s.plane.nextUpgradeCost !== null && s.coins >= s.plane.nextUpgradeCost) {
-      input.upgradePlane = true;
+    const planeCost = s.plane.nextDamageCost;
+    if (
+      built >= 3 &&
+      s.plane.damageLevel < planeLevel &&
+      planeCost !== null &&
+      s.coins >= planeCost
+    ) {
+      input.upgradePlane = 'damage';
       return withChase(s, input);
     }
 
@@ -153,12 +162,9 @@ export function buildingBot(cfg: DefenseConfig, opts: BuildingBotOptions = {}): 
     }
     if (!goal) return withChase(s, input);
 
-    const dx = goal.x - s.plane.x;
-    const dy = goal.y - s.plane.y;
-    const d = Math.hypot(dx, dy);
-    if (d <= s.plane.buildRing * 0.9) input.build = { ...goal };
-    else input.move = { x: dx / d, y: dy / d };
-    return input;
+    // Se construye en cualquier sitio de la arena (plan 015): sin volar hasta allí.
+    input.build = { ...goal };
+    return withChase(s, input);
   };
 }
 

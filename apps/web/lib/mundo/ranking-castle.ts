@@ -6,6 +6,7 @@ import {
   type DefenseResult,
   type DefenseRunMin,
   type DifficultyId,
+  defenseCastleMaxLives,
   defenseEnemyDef,
   defenseMedal,
   defenseSchedule,
@@ -69,7 +70,8 @@ export function castleRankRejection(r: DefenseResult): CastleRankRejection | nul
     !Number.isFinite(r.castleLife) ||
     r.castleLife < 0 ||
     r.castleLife > r.castleMaxLife ||
-    r.castleMaxLife !== DEFENSE_CONFIG.castle.life ||
+    // La vida máxima es la de un nivel del castillo (sus mejoras: plan 015 T169).
+    !defenseCastleMaxLives(DEFENSE_CONFIG).includes(r.castleMaxLife) ||
     (r.end === 'held' ? r.castleLife <= 0 : r.castleLife !== 0)
   )
     return 'invalid';
@@ -91,9 +93,12 @@ export function castleRankRejection(r: DefenseResult): CastleRankRejection | nul
     castleMaxLife: r.castleMaxLife,
   });
   if (score.total !== r.score || score.lifeBonus !== r.lifeBonus) return 'invalid';
+  // «Llamar oleada» adelanta el calendario: sale lo de `playedS + wavesAheadS`.
+  const ahead = r.wavesAheadS ?? 0;
+  if (!Number.isFinite(ahead) || ahead < 0 || ahead > duration) return 'invalid';
   const spawned = new Map<DefenseEnemyKind, number>();
   for (const s of defenseSchedule(DEFENSE_CONFIG, r.runMin, r.difficulty)) {
-    if (s.atS <= r.playedS + 1e-6) spawned.set(s.kind, (spawned.get(s.kind) ?? 0) + 1);
+    if (s.atS <= r.playedS + ahead + 1e-6) spawned.set(s.kind, (spawned.get(s.kind) ?? 0) + 1);
   }
   let kills = 0;
   let points = 0;

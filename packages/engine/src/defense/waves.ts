@@ -66,3 +66,82 @@ export function defenseSchedule(
   }
   return out.sort((a, b) => a.atS - b.atS || Number(b.boss) - Number(a.boss));
 }
+
+/** El principio (s del calendario) de cada oleada común, por su número. */
+export function defenseWaveStarts(schedule: readonly DefenseSpawn[]): number[] {
+  const out: number[] = [];
+  for (const s of schedule) {
+    if (s.wave < 0) continue;
+    const at = out[s.wave];
+    if (at === undefined || s.atS < at) out[s.wave] = s.atS;
+  }
+  return out;
+}
+
+/** Lo que trae la oleada siguiente (el aviso del HUD: decisión 10 del plan 015). */
+export interface DefenseWaveInfo {
+  /** Número de la oleada (0…). */
+  readonly wave: number;
+  /** s del calendario a las que empieza. */
+  readonly startS: number;
+  /** s de partida que faltan para que empiece. */
+  readonly inS: number;
+  /** Cuántos de cada tipo, en el orden en que salen (los bosses, con `boss`). */
+  readonly kinds: readonly {
+    readonly kind: DefenseEnemyKind;
+    readonly count: number;
+    readonly boss: boolean;
+  }[];
+  readonly count: number;
+  /** ¿Trae un miniboss o un boss? */
+  readonly boss: boolean;
+}
+
+/**
+ * La oleada siguiente con el reloj del calendario en `waveS` y lo que falta
+ * por salir desde `fromIndex`: la primera oleada común que aún no ha
+ * empezado, con sus comunes y los bosses que salen antes de la que la sigue.
+ * null si no quedan oleadas.
+ */
+export function defenseNextWave(
+  schedule: readonly DefenseSpawn[],
+  starts: readonly number[],
+  fromIndex: number,
+  waveS: number,
+): DefenseWaveInfo | null {
+  const eps = 1e-9;
+  let wave = -1;
+  for (let w = 0; w < starts.length; w++) {
+    const at = starts[w];
+    if (at !== undefined && at > waveS + eps) {
+      wave = w;
+      break;
+    }
+  }
+  if (wave < 0) return null;
+  const startS = starts[wave]!;
+  const nextStart = starts[wave + 1] ?? Infinity;
+  const counts = new Map<
+    DefenseEnemyKind,
+    { kind: DefenseEnemyKind; count: number; boss: boolean }
+  >();
+  let count = 0;
+  let boss = false;
+  for (let i = Math.max(0, fromIndex); i < schedule.length; i++) {
+    const s = schedule[i]!;
+    if (s.wave !== wave && !(s.boss && s.atS < nextStart - eps)) continue;
+    const c = counts.get(s.kind) ?? { kind: s.kind, count: 0, boss: s.boss };
+    c.count++;
+    counts.set(s.kind, c);
+    count++;
+    if (s.boss) boss = true;
+  }
+  return {
+    wave,
+    startS,
+    inS: Math.max(0, startS - waveS),
+    kinds: [...counts.values()],
+    count,
+    boss,
+  };
+}

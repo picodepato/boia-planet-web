@@ -285,7 +285,6 @@ export const esMar = {
   'mar.castillo.colocar.si': 'Construir aquí',
   'mar.castillo.colocar.ayuda': 'Vuela el avión o toca el agua para moverla.',
   'mar.castillo.motivo.ended': 'La partida ha terminado',
-  'mar.castillo.motivo.ring': 'Fuera del alcance del avión',
   'mar.castillo.motivo.arena': 'Fuera de la arena',
   'mar.castillo.motivo.path': 'Encima del camino',
   'mar.castillo.motivo.vortex': 'Demasiado cerca del vórtice',

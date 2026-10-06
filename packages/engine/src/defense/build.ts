@@ -2,12 +2,12 @@ import type { DefenseConfig, DefenseTowerKind } from './config';
 import type { DefensePath } from './path';
 
 /**
- * La regla de construir (decisión 8 del plan 014, T159). Una isla se pone
- * en (x, y) si:
+ * La regla de construir (decisión 8 del plan 014, T159; v2, decisión 5 del
+ * plan 015: en cualquier sitio de la arena, sin anillo alrededor del avión).
+ * Una isla se pone en (x, y) si:
  *
  * - la partida no ha acabado;
- * - el punto está dentro del anillo del avión (`plane.buildRing`) y la isla
- *   entera cabe en la arena;
+ * - la isla entera cabe en la arena (su huella no pasa del borde: `arena`);
  * - no pisa el camino: su borde queda a `towers.pathClearance` u del borde
  *   del carril como poco;
  * - no pisa el vórtice ni se le pega (`towers.vortexClearance`);
@@ -21,14 +21,7 @@ import type { DefensePath } from './path';
  */
 
 export type DefenseBuildReason =
-  | 'ended'
-  | 'ring'
-  | 'arena'
-  | 'path'
-  | 'vortex'
-  | 'castle'
-  | 'overlap'
-  | 'coins';
+  'ended' | 'arena' | 'path' | 'vortex' | 'castle' | 'overlap' | 'coins';
 
 export type DefenseBuildCheck =
   | { readonly ok: true; readonly cost: number }
@@ -38,13 +31,12 @@ export type DefenseBuildCheck =
 export interface DefenseBuildWorld {
   readonly config: DefenseConfig;
   readonly path: DefensePath;
-  readonly plane: { readonly x: number; readonly y: number };
   readonly towers: readonly { readonly x: number; readonly y: number }[];
   readonly coins: number;
   readonly ended?: boolean;
 }
 
-/** Sólo el sitio: ¿cabe una isla en (x, y) sin contar el avión ni el dinero? */
+/** Sólo el sitio: ¿cabe una isla en (x, y) sin contar el dinero? */
 export function defenseSiteReason(
   config: DefenseConfig,
   path: DefensePath,
@@ -79,8 +71,6 @@ export function defenseBuildCheck(
 ): DefenseBuildCheck {
   const cost = w.config.towers.kinds[kind].cost;
   if (w.ended) return { ok: false, reason: 'ended', cost };
-  if (Math.hypot(x - w.plane.x, y - w.plane.y) > w.config.plane.buildRing)
-    return { ok: false, reason: 'ring', cost };
   const site = defenseSiteReason(w.config, w.path, w.towers, x, y);
   if (site) return { ok: false, reason: site, cost };
   if (w.coins < cost) return { ok: false, reason: 'coins', cost };
