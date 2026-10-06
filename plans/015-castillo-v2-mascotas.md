@@ -37,7 +37,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 ## Tasks
 
 ## T177 — Line endings and slow test suites
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: none
@@ -54,7 +54,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T174 — Vecino quejica remodelled in Blender (Cañón and castle)
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: none
@@ -230,3 +230,6 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 
 ## Log
 - 2026-10-06 drafted in the session with Hernán from plans/015-notes.md
+- 2026-10-06 approved by Hernán ("Lanza el plan"); notes file folded in and removed (6bc5660)
+- 2026-10-06 T177 launched · attempt 1 · Codex via wrapper agent a48cab710434cc27a (sonnet)
+- 2026-10-06 T174 launched · attempt 1 · agent ac27231ba67787e7f (fable)
