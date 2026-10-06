@@ -182,6 +182,7 @@ import {
 } from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
+import { CastleDevExit, CastleTestHook, useCastleMode } from './castillo-mode';
 import { CanonLayer } from './canon-hud';
 import { CanonPrevia } from './canon-previa';
 import { CanonBossRanking } from './canon-ranking';
@@ -453,6 +454,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Al llegar a la salida (T73): qué es la carrera y si empezar.
   const [raceOffer, setRaceOffer] = useState<RaceOffer | null>(null);
   const [menu, setMenu] = useState(false);
+  /** Al empezar una partida en el mar (el Cañón o el castillo): fuera fichas, paneles y diálogos. */
+  const closeForGame = () => {
+    setSheet(null);
+    setMinigameOffer(null);
+    setRaceOffer(null);
+    setRaceIntro(null);
+    setAyuda(null);
+    setTrip(null);
+    engineRef.current?.runtime.skipDialogue();
+    setDialogue(null);
+  };
   // El Cañón en el mar (plan 009, T99): se juega aquí, donde está el barco.
   const canon = useCanonMode({
     engineRef,
@@ -460,16 +472,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     ready: status === 'ready',
     raceActive: !!race,
     isRaceActive: () => raceRef.current?.race.active ?? false,
-    onStart: () => {
-      setSheet(null);
-      setMinigameOffer(null);
-      setRaceOffer(null);
-      setRaceIntro(null);
-      setAyuda(null);
-      setTrip(null);
-      engineRef.current?.runtime.skipDialogue();
-      setDialogue(null);
-    },
+    onStart: closeForGame,
     onOffer: () => {
       const island = worldRef.current?.objects.find((o) =>
         o.behaviors.some((b) => b.type === 'start_minigame' && b.params.gameId === CANON_GAME_ID),
@@ -481,6 +484,17 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     // El sonido del Cañón (T152): el mar se calla durante la partida y vuelve al acabar.
     onSea: (on) => setAmbientWorld(on ? worldIdRef.current : null),
   });
+  // «Defensa del Castillo» (plan 014, T160): la arena junto a la Boia 7.
+  const castle = useCastleMode({
+    engineRef,
+    ready: status === 'ready',
+    isBusy: () =>
+      !!engineRef.current?.survivorsActive || (raceRef.current?.race.active ?? false),
+    onStart: closeForGame,
+  });
+  /** Las capas del mundo que aparta la partida en curso (la del Cañón o la del castillo). */
+  const gameHidden = castle.hidden.size > 0 ? castle.hidden : canon.hidden;
+  const inGame = canon.active || castle.active;
   const [worldName, setWorldName] = useState('');
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
   const [worldId, setWorldId] = useState<string | null>(null);
@@ -763,7 +777,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   /** «Empezar» al llegar a la salida u «Otra vez» en la tarjeta de meta: la cuenta atrás. */
   const raceAgain = () => {
-    if (canon.active) return;
+    if (inGame) return;
     const r = raceRef.current;
     setRaceResult(null);
     setRaceOffer(null);
@@ -1057,7 +1071,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       objectiveMarkRef.current = null;
       setObjectiveMark(null);
     }
-    if (!canon.hidden.has('bottles')) stepBottles(s);
+    if (!gameHidden.has('bottles')) stepBottles(s);
     const r = raceRef.current;
     if (r) {
       const v = r.race.view(r.clock);
@@ -1083,7 +1097,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   const onPin = (id: string) => {
     // En la partida del Cañón, las islas no abren su ficha.
-    if (canon.hidden.has('sheets')) return;
+    if (gameHidden.has('sheets')) return;
     setSheet((s) => (s?.kind === 'discount' ? s : { kind: 'preview', placeId: id }));
   };
 
@@ -1128,8 +1142,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const sailTrip = (next: Trip) => {
     const g = engineRef.current;
     if (!g) return;
-    // En la partida del Cañón no se navega solo: la compra se abre ya (si la hay).
-    if (canon.active) {
+    // En la partida del Cañón (o del castillo) no se navega solo: la compra se abre ya (si la hay).
+    if (inGame) {
       if (next.then !== 'place' && next.then !== 'sheet') openCheckout(next.eventId);
       return;
     }
@@ -1485,6 +1499,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   // Encima del mar hay un diálogo modal o un minijuego: sin control (y sin pintar).
   const canonPause = canon.setPaused;
+  const castlePause = castle.setPaused;
   const canonPrep = canon.prep.open;
   useEffect(() => {
     const g = engineRef.current;
@@ -1504,8 +1519,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     // Con un panel o el menú encima, la partida del Cañón espera (cuenta como pausa);
     // también con una ficha (p. ej. «Mis códigos» desde el menú, T118).
     canonPause(!g.inputEnabled || !!sheet);
+    castlePause(!g.inputEnabled || !!sheet);
   }, [
     canonPause,
+    castlePause,
     canonPrep,
     sheet,
     checkoutFor,
@@ -1879,7 +1896,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Invitaciones al Carnet (T44, REQ-IDE-008/009): nunca sobre una carrera,
   // un diálogo, la compra, un panel o un cambio de mundo; esperan a que acaben.
   const inviteBlocked =
-    canon.active ||
+    inGame ||
     !!sheet ||
     !!dialogue ||
     !!race ||
@@ -1915,7 +1932,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // En carrera (T73), también la boia que toca, destacada: el trazado cruza el mapa.
   const raceNext = race?.phase === 'racing' ? race.next : null;
   // El objetivo marcado (T99 de Codex); en la partida del Cañón no se enseña (T120).
-  const shownObjective = canon.hidden.has('objective') ? null : objectiveMark;
+  const shownObjective = gameHidden.has('objective') ? null : objectiveMark;
   // Pines (la Fiestera deja de tener rótulo cuando sube a bordo), el objetivo y la boia de la carrera.
   const pins = useMemo(() => {
     if (!world) return [];
@@ -1948,18 +1965,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     ];
   }, [world, phase, raceNext, shownObjective]);
   // Rótulos del mar: en la partida del Cañón, sólo los de las islas (T116).
-  const pinsHidden = canon.hidden.has('encounters');
+  const pinsHidden = gameHidden.has('encounters');
   useEffect(() => {
     const g = engineRef.current;
     if (!g || !world) return;
-    g.setPins(pinsHidden ? islandPinsOnly(world, pins) : pins);
+    // En la arena del castillo (T160) las islas están hundidas: sin rótulos.
+    g.setPins(castle.active ? [] : pinsHidden ? islandPinsOnly(world, pins) : pins);
     for (const el of overlayRef.current?.querySelectorAll<HTMLElement>('[data-pin]') ?? []) {
       el.classList.toggle('mar-pin--objective', el.dataset.pin === shownObjective?.placeId);
     }
-  }, [world, pins, pinsHidden, shownObjective]);
+  }, [world, pins, pinsHidden, shownObjective, castle.active]);
   const minimapPins = useMemo(
-    () => (world && canon.hidden.has('minimap') ? islandPinsOnly(world, pins) : pins),
-    [world, pins, canon.hidden],
+    () => (world && gameHidden.has('minimap') ? islandPinsOnly(world, pins) : pins),
+    [world, pins, gameHidden],
   );
   // Los «?» del minimapa (T59): los códigos por encontrar, donde están.
   const missionDestination = missionRef.current?.destination ?? null;
@@ -2101,7 +2119,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             <MarMinimap
               engineRef={engineRef}
               pins={minimapPins}
-              marks={canon.hidden.has('discounts') ? [] : marks}
+              marks={gameHidden.has('discounts') ? [] : marks}
               objective={shownObjective}
               mapMode={!!stats?.mapMode}
               onToggle={() => engineRef.current?.toggleMap()}
@@ -2113,7 +2131,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           className="mar-balances"
           data-testid="mar-saldos"
           aria-label={msg('mar.client.saldos')}
-          hidden={canon.hidden.has('balances')}
+          hidden={gameHidden.has('balances')}
         >
           <span title={msg('mar.client.puntos')}>★ {balances?.points ?? '–'}</span>
           <span title={msg('mar.client.monedas')}>🪙 {balances?.coins ?? '–'}</span>
@@ -2144,7 +2162,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
       {/* Debajo, el «!» de objetivos (T68): el objetivo y una pista, con su rumbo.
           En la partida del Cañón no está (T120). */}
-      {status === 'ready' && !canon.hidden.has('objective') ? (
+      {status === 'ready' && !gameHidden.has('objective') ? (
         <button
           type="button"
           className="mar-ayuda-btn"
@@ -2157,7 +2175,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           !
         </button>
       ) : null}
-      {ayuda && status === 'ready' && !canon.hidden.has('objective') ? (
+      {ayuda && status === 'ready' && !gameHidden.has('objective') ? (
         <MarAyuda
           help={ayuda}
           world={world}
@@ -2266,6 +2284,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         sound={canon.sound}
       />
       <CanonDevSwitch canon={canon} />
+      {/* «Defensa del Castillo» (T160): su estado para las pruebas y salir (desarrollo). */}
+      <CastleTestHook hud={castle.hud} />
+      <CastleDevExit castle={castle} />
       <CanonLayer
         canon={canon}
         engineRef={engineRef}
@@ -2510,7 +2531,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !trip &&
       !invitations.reason &&
       !canon.prep.open &&
-      !canon.hidden.has('bottles') ? (
+      !gameHidden.has('bottles') ? (
         <MarBottlesNear
           ids={nearBottles}
           bottles={bottleList ?? []}

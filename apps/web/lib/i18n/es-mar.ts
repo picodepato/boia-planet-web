@@ -221,6 +221,7 @@ export const esMar = {
   'mar.castillo.resumen':
     'Los enemigos del Cañón llegan en oleadas por un camino en espiral. Vuela en avioneta, dispara y levanta las islas del mar como torres para que el castillo aguante.',
   'mar.castillo.proximamente': 'Próximamente: el castillo aún se está fortificando.',
+  'mar.castillo.dev.salir': 'Salir de la arena (desarrollo)',
   // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
   'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
   'mar.bienvenida.texto':

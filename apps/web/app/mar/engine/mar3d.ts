@@ -167,6 +167,17 @@ import { MINIKRAKEN_WAVE_DISTANCE, type Minikraken, createMinikraken } from './m
 import { boatVisible, hitShake } from './survivors-props';
 import { SurvivorsView } from './survivors-view';
 import type { SurvivorsRun } from '../survivors';
+import type { DefenseRun } from '../castillo';
+import {
+  ARENA_CAMERA_S,
+  type ArenaFrame,
+  ArenaSink,
+  SinkOffsets,
+  arenaCameraPose,
+  arenaFrame,
+  vortexSpot,
+} from './defense-arena';
+import { DefenseView } from './defense-view';
 import {
   type Circle,
   type Period,
@@ -368,6 +379,8 @@ const METERS_PER_U = 0.25;
 const FLIGHT_ZOOM = 0.34;
 /** Zoom mientras levita y le salen las alas: algo más cerca que al navegar. muestra */
 const TRANSFORM_ZOOM = 0.15;
+/** Altura (escena) a la que vuela el avión de «Defensa del Castillo» (T160). muestra */
+const PLANE_ALT = 4.5;
 
 interface FlightState {
   placeId: string;
@@ -608,6 +621,35 @@ export class Mar3D {
   } | null = null;
   /** La cámara de la partida (0 la de siempre, 1 la de la partida). */
   private camBlend = 0;
+  /**
+   * «Defensa del Castillo» en curso (plan 014 T160): la partida lleva el
+   * avión (el barco con las alas, a su altura) por la arena alrededor del
+   * castillo; el resto del mundo se hunde y la cámara sube. Null sin partida.
+   */
+  private defense: {
+    run: DefenseRun;
+    view: DefenseView;
+    frame: ArenaFrame;
+    /** El castillo en la escena (su sitio del mapa, sin dar la vuelta). */
+    castle: { x: number; z: number };
+    /** Dónde estaba el barco al empezar: vuelve ahí al acabar. */
+    before: { x: number; y: number; heading: number };
+    /** s de la escena de la última lectura para las pruebas. */
+    seenAt: number;
+  } | null = null;
+  /** La cámara de la arena (0 la de siempre, 1 la alta sobre el castillo). */
+  private arenaBlend = 0;
+  /** Radio de la arena (escena) de la última partida del castillo. */
+  private arenaRadiusS = 70;
+  /** El castillo de la arena en la escena, también mientras la cámara vuelve. */
+  private readonly arenaCastle = new Vector2();
+  /** El resto del mundo bajo el agua durante la partida del castillo. */
+  private readonly sink = new ArenaSink();
+  private readonly sinkOffsets = new SinkOffsets();
+  /** Las piezas fusionadas sin sitio propio (rocas, balizas…) y las orillas de todo y del castillo. */
+  private statics: Mesh | null = null;
+  private allShores: { x: number; z: number; r: number; w: number }[] = [];
+  private castleShores: { x: number; z: number; r: number; w: number }[] = [];
   private camTuning: SurvivorsConfig['camera'] = { distanceScale: 1, heightScale: 1, blendS: 1 };
   /** Vistas escondidas por capa (`kind` de cada vista) durante la partida. */
   private readonly kindLayers = new Map<string, readonly string[]>();
@@ -724,6 +766,7 @@ export class Mar3D {
     opts.canvas.dataset.ruta = 'on';
     opts.canvas.dataset.manejo = 'crucero';
     this.water.setShores(shores);
+    this.allShores = shores;
     this.glow = glowPoints(glows);
     // Cada isla con hueco sabe dónde están sus resplandores, para apagarlos con el modelo (T75).
     const starts = glowOffsets(glows);
@@ -804,6 +847,8 @@ export class Mar3D {
   }
 
   zoomBy(d: number): void {
+    // En la arena del castillo, la cámara es la suya (T160).
+    if (this.defense) return;
     this.zoomGoal = clamp01(this.zoomGoal + d);
     // En la partida del Cañón, sin vista de mapa.
     if (this.survivors) this.zoomGoal = Math.min(this.zoomGoal, MAP_ZOOM - 0.1);
@@ -816,7 +861,7 @@ export class Mar3D {
 
   /** Vista de mapa ↔ vista de barco. */
   toggleMap(): void {
-    if (this.survivors) return;
+    if (this.survivors || this.defense) return;
     if (this.zoomGoal >= MAP_ZOOM) this.backToBoat();
     else {
       this.lastBoatZoom = this.zoomGoal;
@@ -835,7 +880,7 @@ export class Mar3D {
    */
   setCourse(target: { placeId: string } | { x: number; y: number } | null): void {
     // En el aire no se cambia de rumbo (se puede «Saltar»); en la partida del Cañón, tampoco.
-    if (this.flight || (this.survivors && target)) return;
+    if (this.flight || ((this.survivors || this.defense) && target)) return;
     this.endVoyage('cancelled');
     if (!target) {
       this.clearCourse();
@@ -1024,7 +1069,7 @@ export class Mar3D {
    * (sólo «Saltar», que lo posa ya). Devuelve false si el lugar no existe.
    */
   startFlight(placeId: string): boolean {
-    if (this.survivors) return false;
+    if (this.survivors || this.defense) return false;
     if (this.flight) return this.flight.placeId === placeId;
     this.endVoyage('cancelled');
     this.clearCourse();
@@ -1139,6 +1184,7 @@ export class Mar3D {
   }
 
   turbo(): boolean {
+    if (this.defense) return false;
     if (this.survivors) {
       const sv = this.survivors;
       if (
@@ -1466,7 +1512,7 @@ export class Mar3D {
    * se puede (en vuelo, cambiando de mundo o con otra en curso).
    */
   startSurvivors(run: SurvivorsRun): boolean {
-    if (this.survivors || this.flight || this.switcher.locked) return false;
+    if (this.survivors || this.defense || this.flight || this.switcher.locked) return false;
     this.stopVoyage();
     this.clearCourse();
     this.hold = null;
@@ -1612,6 +1658,196 @@ export class Mar3D {
     if (ds.canonJefesVistos !== jefesVistos) ds.canonJefesVistos = jefesVistos;
   }
 
+  /**
+   * Empieza «Defensa del Castillo» (plan 014 T160, decisiones 4, 5 y 7): la
+   * partida va en el marco de la isla del castillo (el vórtice hacia el mar
+   * abierto); el resto del mundo se hunde, la cámara sube sobre el castillo y
+   * el barco vuela con las alas de «Entradas» por la arena. false si no se
+   * puede (en vuelo, cambiando de mundo, con otra partida o sin castillo).
+   */
+  startDefense(run: DefenseRun): boolean {
+    if (this.survivors || this.defense || this.flight || this.switcher.locked) return false;
+    const castle = this.world.objects.find((o) => o.identity.id === CASTLE_PLACE_ID);
+    if (!castle) return false;
+    this.stopVoyage();
+    this.clearCourse();
+    this.hold = null;
+    this.turboLeft = 0;
+    this.jump.reset();
+    this.pan.set(0, 0);
+    const frame = arenaFrame(castle.position, run.game.path);
+    const view = new DefenseView({
+      config: run.config,
+      path: run.game.path,
+      frame,
+      quality: run.quality,
+      reduced: this.reducedMotion,
+    });
+    this.scene.add(view.group);
+    const s = this.ship;
+    this.defense = {
+      run,
+      view,
+      frame,
+      castle: { x: toScene(castle.position.x), z: toScene(castle.position.y) },
+      before: { x: s.x, y: s.y, heading: s.heading },
+      seenAt: -1,
+    };
+    this.arenaCastle.set(this.defense.castle.x, this.defense.castle.z);
+    this.arenaRadiusS = toScene(run.config.arenaRadius);
+    this.sink.set(true);
+    this.water.setShores(this.castleShores);
+    this.placePlane(run);
+    Object.assign(this.prev, { x: s.x, y: s.y, heading: s.heading });
+    run.tick(performance.now(), false);
+    const ds = this.opts.canvas.dataset;
+    ds.arena = 'on';
+    const v = vortexSpot(frame, run.game.path);
+    const vp = this.inPlanet(v.x, v.y);
+    ds.vortice = `${Math.round(vp.x)},${Math.round(vp.y)}`;
+    return true;
+  }
+
+  /**
+   * Acaba la partida del castillo (si la hay): el vórtice, el camino y lo
+   * demás se van, el mundo vuelve a salir del agua, la cámara baja y el barco
+   * vuelve al agua donde estaba al empezar.
+   */
+  stopDefense(): void {
+    const df = this.defense;
+    if (!df) return;
+    this.defense = null;
+    df.view.dispose();
+    this.sink.set(false);
+    this.water.setShores(this.allShores);
+    this.air = 0;
+    this.wings.set(0, 0, this.time);
+    this.boat.group.visible = true;
+    const p = this.freePoint(df.before.x, df.before.y);
+    Object.assign(this.ship, { x: p.x, y: p.y, vx: 0, vy: 0, heading: df.before.heading });
+    Object.assign(this.prev, { x: p.x, y: p.y, heading: df.before.heading });
+    this.acc = 0;
+    const ds = this.opts.canvas.dataset;
+    ds.arena = 'off';
+    for (const k of [
+      'vortice',
+      'arenaEnemigos',
+      'arenaTipos',
+      'arenaFuera',
+      'arenaIslas',
+      'arenaEfectos',
+      'castilloVista',
+      'arenaAvion',
+    ])
+      delete ds[k];
+  }
+
+  /** ¿Hay una partida del castillo en curso? */
+  get defenseActive(): boolean {
+    return this.defense !== null;
+  }
+
+  /** El anillo de construir alrededor del avión (T161 lo enciende al construir). */
+  setDefenseBuilding(on: boolean): void {
+    this.defense?.view.setBuilding(on);
+  }
+
+  /** El barco donde está el avión de la partida (u del planeta). */
+  private placePlane(run: DefenseRun): void {
+    const df = this.defense!;
+    const pl = run.game.snapshot().plane;
+    const w = df.frame.toWorld(pl.x, pl.y);
+    const p = this.inPlanet(w.x, w.y);
+    const s = this.ship;
+    s.x = p.x;
+    s.y = p.y;
+    const v = df.frame.toWorld(pl.vx, pl.vy);
+    s.vx = v.x - df.frame.cx;
+    s.vy = v.y - df.frame.cy;
+    s.heading = df.frame.headingToWorld(pl.heading);
+  }
+
+  /**
+   * Los pasos de la partida del castillo que tocan (T160): el reloj de la
+   * partida dice cuántos; cada uno lleva el mando (las flechas o el dedo,
+   * como al navegar) girado al marco de la partida. El barco de la escena es
+   * el avión. Sin runtime del mundo mientras.
+   */
+  private stepDefense(now: number): void {
+    const df = this.defense!;
+    const run = df.run;
+    const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    const n = run.tick(now, hidden);
+    const s = this.ship;
+    for (let i = 0; i < n && this.defense === df && !run.ended; i++) {
+      this.prev.x = s.x;
+      this.prev.y = s.y;
+      this.prev.heading = s.heading;
+      const input = this.inputEnabled ? this.readInput() : IDLE_INPUT;
+      const len = Math.hypot(input.dirX, input.dirY);
+      const move =
+        len > 1e-6 && input.throttle > 0
+          ? df.frame.dirToSim(
+              (input.dirX / len) * input.throttle,
+              (input.dirY / len) * input.throttle,
+            )
+          : null;
+      const events = run.step(move);
+      for (let k = 0; k < events.length; k++) {
+        const e = events[k]!;
+        if (e.type === 'castleHit') {
+          df.view.castleHit(this.time);
+          this.shake = Math.max(this.shake, hitShake(this.reducedMotion) * 0.6);
+        } else if (e.type === 'kill') {
+          df.view.defeat(e.x, e.y, 16, this.time);
+        }
+      }
+      this.placePlane(run);
+      const dh = Math.atan2(
+        Math.sin(s.heading - this.prev.heading),
+        Math.cos(s.heading - this.prev.heading),
+      );
+      this.turnRate += (dh / STEP - this.turnRate) * Math.min(1, STEP * 6);
+    }
+    this.acc = 0;
+  }
+
+  /**
+   * Lo que se ve de la arena, para las pruebas (cada 0,25 s): el castillo en
+   * pantalla (`data-castillo-vista`), los enemigos pintados y sus tipos, los
+   * que se salen del carril (`data-arena-fuera`, siempre 0), las islas
+   * construidas, los efectos de ahora y el avión.
+   */
+  private markArena(t: number): void {
+    const df = this.defense!;
+    df.seenAt = t;
+    const ds = this.opts.canvas.dataset;
+    const castle = this.views.get(CASTLE_PLACE_ID);
+    const set = (k: string, v: string) => {
+      if (ds[k] !== v) ds[k] = v;
+    };
+    set('castilloVista', castle?.obj.visible ? 'si' : 'no');
+    set('arenaEnemigos', String(df.view.drawn));
+    set('arenaTipos', df.view.drawnKinds().join(' '));
+    const snap = df.run.snapshot();
+    const path = df.run.game.path;
+    let out = 0;
+    for (const e of snap.enemies) {
+      if (!e.dead && path.distanceTo(e.x, e.y) > path.width / 2 + 1) out++;
+    }
+    set('arenaFuera', String(out));
+    set('arenaIslas', String(df.view.islands.count));
+    set(
+      'arenaEfectos',
+      Object.entries(df.view.fx.drawn)
+        .filter(([, n]) => n > 0)
+        .map(([k]) => k)
+        .sort()
+        .join(' '),
+    );
+    set('arenaAvion', `${Math.round(snap.plane.x)},${Math.round(snap.plane.y)}`);
+  }
+
   /** ¿Hay una partida del Cañón en curso? */
   get survivorsActive(): boolean {
     return this.survivors !== null;
@@ -1689,6 +1925,7 @@ export class Mar3D {
   destroy(): void {
     this.destroyed = true;
     this.stopSurvivors();
+    this.stopDefense();
     this.switcher.destroy();
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
@@ -1859,6 +2096,8 @@ export class Mar3D {
         // Su orilla (el puerto, T108: sólo bajo la tierra de atrás; la dársena, honda).
         for (const sh of islandShores(build, R)) {
           shores.push({ x: x + sh.dx, z: z + sh.dz, r: sh.r, w: sh.w });
+          // La del castillo se queda cuando lo demás se hunde (T160).
+          if (castle) this.castleShores.push({ x: x + sh.dx, z: z + sh.dz, r: sh.r, w: sh.w });
         }
         this.addView({ id, obj: g, kind: cat, y: 0, phase, labelY: build.labelY });
         continue;
@@ -2302,6 +2541,7 @@ export class Mar3D {
       curveMaterial(m.material, true);
       m.frustumCulled = false;
       this.scene.add(m);
+      this.statics = m;
     }
     return shores;
   }
@@ -2647,6 +2887,8 @@ export class Mar3D {
     }
     if (free && this.survivors) {
       this.stepSurvivors(now);
+    } else if (free && this.defense) {
+      this.stepDefense(now);
     } else if (free) {
       this.acc += dt;
       let steps = 0;
@@ -2668,13 +2910,20 @@ export class Mar3D {
       this.jumpOn(e);
       this.opts.onWorldEvent(e);
     }
-    if (!this.survivors) this.landJump();
+    if (!this.survivors && !this.defense) this.landJump();
     this.modelClock += dt;
     if (this.modelClock >= MODEL_PLAN_S) {
       this.modelClock = 0;
       this.streamModels();
     }
-    this.render(dt, this.survivors ? this.survivors.run.alpha : this.acc / STEP);
+    this.render(
+      dt,
+      this.survivors
+        ? this.survivors.run.alpha
+        : this.defense
+          ? this.defense.run.alpha
+          : this.acc / STEP,
+    );
     this.measure(dt, now);
   };
 
@@ -2882,9 +3131,14 @@ export class Mar3D {
     const blendStep = snap ? 1 : dt / Math.max(0.05, this.camTuning.blendS);
     this.camBlend += Math.max(-blendStep, Math.min(blendStep, blendGoal - this.camBlend));
     const cb = smooth(0, 1, this.camBlend);
-    const dist = dNear * Math.pow(this.dFar / dNear, z) * lerp(1, this.camTuning.distanceScale, cb);
-    const raise = lerp(1, this.camTuning.heightScale, cb);
-    const elev = lerp(ELEV_NEAR, 1.28, smooth(0, 1, z));
+    let dist = dNear * Math.pow(this.dFar / dNear, z) * lerp(1, this.camTuning.distanceScale, cb);
+    let raise = lerp(1, this.camTuning.heightScale, cb);
+    let elev = lerp(ELEV_NEAR, 1.28, smooth(0, 1, z));
+    // La arena del castillo (T160): la cámara sube, casi cenital, sobre el castillo; al acabar baja.
+    const arenaGoal = this.defense ? 1 : 0;
+    const arenaStep = snap || this.reducedMotion ? 1 : dt / ARENA_CAMERA_S;
+    this.arenaBlend += Math.max(-arenaStep, Math.min(arenaStep, arenaGoal - this.arenaBlend));
+    const ab = smooth(0, 1, this.arenaBlend);
     if (snap) {
       // Sin foco previo: el barco en su sitio del mapa.
       this.focus.set(toScene(this.ship.x), 0, toScene(this.ship.y));
@@ -2925,11 +3179,30 @@ export class Mar3D {
     const lift = this.inset * 0.5 * perPx * (1 - w);
     // En el mapa la carta sube sin mover su centro (lo que da la vuelta no cambia de copia).
     const mapLift = MAP_LIFT_PX * perPx * w;
-    const fx = lerp(bx, this.mapC.x, w) + this.pan.x;
-    const fz = lerp(bz, this.mapC.y, w) + this.pan.y + lift;
+    let fx = lerp(bx, this.mapC.x, w) + this.pan.x;
+    let fz = lerp(bz, this.mapC.y, w) + this.pan.y + lift;
+    // El castillo de la arena, en la copia de alrededor de lo que se ve ahora.
+    const acx = this.wrapC.x + wrapD(this.arenaCastle.x - this.wrapC.x, P.w);
+    const acz = this.wrapC.y + wrapD(this.arenaCastle.y - this.wrapC.y, P.h);
+    if (ab > 0) {
+      const pose = arenaCameraPose({
+        aspect: this.camera.aspect,
+        fovDeg: 40,
+        arenaRadius: this.arenaRadiusS,
+        plane: { x: ship.x - acx, z: ship.z - acz },
+      });
+      dist = lerp(dist, pose.distance, ab);
+      elev = lerp(elev, pose.elevation, ab);
+      raise = lerp(raise, 1, ab);
+      fx = lerp(fx, acx + pose.fx, ab);
+      fz = lerp(fz, acz + pose.fz, ab);
+    }
     if (snap) this.focus.set(fx, 0, fz);
     else this.focus.lerp(tmpV.set(fx, 0, fz), 1 - Math.exp(-dt * FOCUS_RATE));
     this.wrapC.set(this.focus.x - this.pan.x, this.focus.z - this.pan.y);
+    // En la arena, la vuelta del planeta se hace alrededor del castillo: la
+    // arena (más ancha que medio planeta) nunca se parte por el borde.
+    if (ab > 0) this.wrapC.lerp(tmpV2.set(acx, acz), ab);
     this.look.copy(this.focus);
     this.look.z += mapLift;
     let ox = 0;
@@ -2944,7 +3217,7 @@ export class Mar3D {
       this.shake = Math.max(0, this.shake - dt * 2.5);
     }
     // En vuelo la cámara sube con el barco.
-    const camY = Math.sin(elev) * dist * raise + this.air * 0.85;
+    const camY = Math.sin(elev) * dist * raise + this.air * 0.85 * (1 - ab);
     // En vuelo, la cámara se pone detrás del barco (mirando hacia donde va).
     const fl = this.flight;
     const yawGoal = fl ? Math.atan2(-Math.cos(fl.h1), -Math.sin(fl.h1)) : 0;
@@ -2956,12 +3229,12 @@ export class Mar3D {
     const camZ = this.look.z + Math.cos(this.camYaw) * back;
     this.camera.position.set(camX + ox, camY, camZ + oz);
     // La curva: fuerte de cerca (horizonte y cielo), casi plana en el mapa.
-    this.bend = lerp(BEND_NEAR, BEND_MAP, smooth(0.25, 0.9, z));
+    this.bend = lerp(lerp(BEND_NEAR, BEND_MAP, smooth(0.25, 0.9, z)), BEND_MAP, ab);
     planetUniforms.uBend.value = this.bend;
     planetUniforms.uBendCenter.value.set(camX, camZ);
     planetUniforms.uPlanetFocus.value.set(this.wrapC.x, this.wrapC.y);
     // Se mira al foco ya curvado (baja un poco con la distancia).
-    this.look.y = -bendDrop(this.bend, back) + this.air * 0.85;
+    this.look.y = -bendDrop(this.bend, back) + this.air * 0.85 * (1 - ab);
     this.camera.lookAt(this.look);
     const fov = 40 + this.fovKick * 7;
     if (Math.abs(this.camera.fov - fov) > 0.01) this.camera.fov = fov;
@@ -3011,7 +3284,13 @@ export class Mar3D {
     const s = this.ship;
     const fl = this.flight;
     const movement = this.survivors?.run.snapshot().movement;
-    this.air = fl ? fl.pose.alt : toScene(movement ? movement.jumpHeight : this.jump.height(t));
+    // El avión del castillo (T160) vuela a su altura; al acabar baja al agua.
+    const plane = this.defense !== null;
+    this.air = fl
+      ? fl.pose.alt
+      : plane
+        ? PLANE_ALT
+        : toScene(movement ? movement.jumpHeight : this.jump.height(t));
     const { x, z, h } = this.placeShip(alpha);
     const speed = fl ? 0 : shipSpeed(s);
     const v01 = Math.min(1.4, speed / this.cfg.maxSpeed);
@@ -3022,6 +3301,12 @@ export class Mar3D {
       body.position.y = Math.sin(t * 2.6) * 0.05;
       body.rotation.x = Math.sin(t * 1.7) * 0.06 * p.wings;
       body.rotation.z = p.pitch;
+    } else if (plane) {
+      // El avión: se ladea al girar, con un vaivén suave (sin él con movimiento reducido).
+      const still = this.reducedMotion;
+      body.position.y = still ? 0 : Math.sin(t * 2.6) * 0.05;
+      body.rotation.x = Math.max(-0.45, Math.min(0.45, -this.turnRate * 0.2));
+      body.rotation.z = still ? 0.04 : 0.04 + Math.sin(t * 1.7) * 0.03;
     } else {
       body.position.y = Math.sin(t * 1.9) * 0.07 + Math.sin(t * 3.3) * 0.03 + v01 * 0.08;
       body.rotation.x =
@@ -3034,6 +3319,10 @@ export class Mar3D {
     this.wings.group.position.y = body.position.y;
     this.wings.group.rotation.copy(body.rotation);
     if (fl) this.flightEffects(fl, x, z, h, t, dt);
+    else if (plane) {
+      const top = this.defense!.run.config.plane.maxSpeed;
+      this.wings.set(1, Math.min(1, Math.hypot(s.vx, s.vy) / top), t, 0.4);
+    }
     this.sparks.update(dt);
     this.splash.update(dt);
     if (this.boat.sail) {
@@ -3056,7 +3345,7 @@ export class Mar3D {
     const hovering = fl ? Math.max(0, 1 - this.air / 1.2) * 0.5 : 0;
     // En el aire de un salto (T73), sin estela.
     const wake = (movement ? movement.airborne : this.jump.airborne) ? 0 : Math.min(1, v01 * boost);
-    this.wake.update(dt, sternX, sternZ, h, fl ? hovering : wake, t);
+    this.wake.update(dt, sternX, sternZ, h, fl ? hovering : plane ? 0 : wake, t);
 
     this.updateCamera(dt);
 
@@ -3077,6 +3366,12 @@ export class Mar3D {
       ghostView.bz = toScene(this.ghostAt.y);
     }
     let whirlsShown = 0;
+    // La arena del castillo (T160): todo lo demás se hunde (y vuelve a salir al acabar).
+    this.sink.step(dt, this.reducedMotion);
+    const depth = this.sink.depth;
+    const under = this.sink.under;
+    const lifting = this.sinkOffsets.size > 0;
+    let islandsShown = 0;
     for (const v of this.views.values()) {
       const st = this.runtime.objectState(v.id);
       const cxs = st ? toScene(st.x) : v.bx;
@@ -3085,8 +3380,16 @@ export class Mar3D {
       const pz = fz + wrapD(czs - fz, P.h);
       v.obj.position.x = px;
       v.obj.position.z = pz;
+      // Lo hundido vuelve a su altura antes de moverse en este fotograma.
+      if (lifting) this.sinkOffsets.lift(v.obj);
       // Lo que la partida del Cañón aparta (T99) no se pinta.
       if (this.hiddenKinds.size > 0 && this.hiddenKinds.has(v.kind)) {
+        v.obj.visible = false;
+        continue;
+      }
+      const sinks = depth > 0 && v.id !== CASTLE_PLACE_ID;
+      // Bajo el agua del todo: ni se mueve ni se pinta.
+      if (sinks && under) {
         v.obj.visible = false;
         continue;
       }
@@ -3096,6 +3399,7 @@ export class Mar3D {
         const ground = v.kind === 'encuentro' ? Math.max(this.groundAt(cxs, czs), pzUp) : 0;
         v.update(v, t, dt, st ? st.present : true, px, pz, ground);
       }
+      if (sinks) this.sinkOffsets.sink(v.obj, depth);
       if (!v.obj.visible) continue;
       const r = Math.hypot(px - cam.x, pz - cam.z);
       const drop = bendDrop(bend, r);
@@ -3108,13 +3412,32 @@ export class Mar3D {
         v.obj.visible = false;
       }
       if (v.kind === 'remolino' && v.obj.visible) whirlsShown++;
+      if (v.kind === 'isla' && v.id !== CASTLE_PLACE_ID && v.obj.visible) islandsShown++;
     }
+    // Las piezas fusionadas (rocas, balizas…) bajan con lo demás; los brillos se apagan.
+    if (this.statics) {
+      this.statics.position.y = -depth;
+      this.statics.visible = !under;
+    }
+    this.glow.visible = this.sink.level < 0.35;
+    // Para las pruebas (T160): cuánto está hundido el mundo y cuántas islas se ven.
+    const ds = this.opts.canvas.dataset;
+    const sunk = this.sink.level.toFixed(2);
+    if (ds.hundido !== sunk) ds.hundido = sunk;
+    const shownIslands = String(islandsShown);
+    if (ds.islasVista !== shownIslands) ds.islasVista = shownIslands;
     // Para las pruebas (T96): cuántos remolinos se ven ahora en pantalla.
     const shownWhirls = String(whirlsShown);
     if (this.opts.canvas.dataset.remolinosVista !== shownWhirls) {
       this.opts.canvas.dataset.remolinosVista = shownWhirls;
     }
     for (const a of this.animated) a(t, glow);
+    if (this.defense) {
+      const df = this.defense;
+      df.view.reduced = this.reducedMotion;
+      df.view.update(df.run.snapshot(), t, { x, z });
+      if (t - df.seenAt >= 0.25 || t < df.seenAt) this.markArena(t);
+    }
     if (this.survivors) {
       const sv = this.survivors;
       const snap = sv.run.snapshot();

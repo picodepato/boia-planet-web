@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T160: The 3D arena: sinking, higher camera, path buoys, enemies, islands and the plane
+
+Qué existe:
+- `apps/web/app/mar/engine/defense-arena.ts` (sin three.js): `arenaFrame` (la partida de `@boia/engine/defense`, castillo en (0,0), cae sobre la isla `castillo` de /mar girada para que el vórtice quede en `CASTLE_OPEN_SEA_BEARING`; sin tocar la config ni las reglas de la simulación), `vortexSpot`, `arenaCameraPose` (cámara alta, 1,2 rad, centrada en el castillo; en apaisado cabe la arena; en vertical toda la altura y 3/4 del ancho, el foco se corre hacia el avión lo justo), `ArenaSink` (hundir/volver en 1,2 s, de golpe con movimiento reducido) y `SinkOffsets` (cada pieza baja sin perder su altura), `barrierLines` (las dos barreras a medio carril, sin huecos ≤ 30 u, fuera del carril y del castillo), `cornerBuoys` (boyas de la carrera sólo en las esquinas vivas), `islandFootprint`/`islandScaleFor`/`islandLevelScale` (decisión 8: huella común, +10 % por nivel, nivel 3 = `islandRadius`; vale con el `radius` del manifiesto de Blender).
+- `engine/defense-view.ts` (`DefenseView`): barreras (una malla fusionada por lado: listón a franjas naranja/blanco y flotadores; en `baja`, la mitad de flotadores), boyas de esquina (`buoy` con `ROAD_BUOY`), el vórtice (shader lila y negro que gira, halo suave; quieto con movimiento reducido; malla 12×12 en `baja`), enemigos y bosses del Cañón por el camino (`enemyModel`, `vecinoGeometry`, `hammerheadGeometry`, `ghostShipGeometry`, `krakenHeadGeometry`; salida del vórtice subiendo y creciendo 0,6 s), la nubecilla al caer (`PufFx`), el aro rojo del golpe al castillo (y un temblor corto), el anillo de construir alrededor del avión (`setBuilding`, para T161). `engine/defense-islands.ts` (`TowerIslands`: `buildIsland` medida una vez por tipo y guardada, escala uniforme, perlas de nivel). `engine/defense-fx.ts` (`DefenseFx`: haz del Faro, bolas de nieve, fuego en cono, cohete y estallido, monedas de Ibiza, onda de graves, trazo del francotirador, balas del avión; todo de `lastShot` de T159).
+- `engine/mar3d.ts`: `startDefense(run)`/`stopDefense()`/`defenseActive`/`setDefenseBuilding`; paso de la partida con el mando de navegar girado al marco; el barco vuela a altura fija con las alas de «Entradas»; todo lo demás (vistas, piezas fusionadas, brillos, bajíos) se hunde y vuelve; la vuelta del planeta se hace alrededor del castillo en la arena (la arena de 1120 u es más ancha que medio planeta: así nunca se parte). Al salir, el barco vuelve al agua donde estaba al empezar. Para las pruebas en el lienzo: `data-arena`, `data-hundido`, `data-islas-vista`, `data-castillo-vista`, `data-vortice`, `data-arena-enemigos|tipos|fuera|islas|efectos|avion`.
+- `app/mar/castillo.ts` (`DefenseRun`, atajo `?minijuego=castillo&duracion=&dificultad=&t=&seed=&islas=1`, `devTowerSpots`) y `castillo-mode.tsx` (`useCastleMode`: esconde las capas como el Cañón, `CastleTestHook` `data-testid="mar-castillo"`, botón de desarrollo «Salir de la arena» hasta el HUD de T161). `mar-client.tsx` lo cablea (capas escondidas de la partida en curso, sin rótulos en la arena, pausa con paneles). Clave i18n `mar.castillo.dev.salir`.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/engine/defense-arena.test.ts apps/web/app/mar/castillo.test.ts` → 22 pruebas (vórtice en el principio del camino, hacia el mar abierto, a más de 980 u de la Boia 7 y fuera de los tramos 6 → 7 y 7 → 8, y se va al salir; hundir y volver; cámara; barreras; huella de las siete islas ±5 % por nivel, nivel 3 = 1,2 × nivel 1 = `islandRadius`; la vista con islas y efectos; atajo e islas de prueba).
+- `E2E_PORT=4873 pnpm e2e mar-castillo.spec.ts --workers=1 -g "arena"` → exit 0, 5 passed, 1 skipped (rendimiento sólo en el teléfono).
+- Rendimiento (`baja`, móvil 360×640, 10 min Tormenta `t=505`, siete islas a nivel 3, Kraken en el camino): sin limitar CPU p50 16,7 ms, p95 33,4 ms, peor 33,5 ms con 44 enemigos; CPU 4× p50 33,2, p95 33,4, peor 50 ms con 49 enemigos.
+- Test command: vitest → exit 0, 192 archivos, 1813 pruebas; `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0 (187,0 kB, presupuesto OK); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- T161: HUD, construir (vista previa con `buildCheck`, `setDefenseBuilding`), Mejorar/Vender, pausa con «Terminar partida» (quita el botón de desarrollo). T162: pop-up, «Jugar» en el panel del castillo, tarjeta final (al acabar la partida la arena se queda hasta salir).
+- Las islas construidas usan la composición a mano (`buildIsland`), no el GLB de Blender (la regla de escala ya vale con el `radius` del manifiesto); las nubes pasan por encima de la arena.
+- La posición del barco que se guarda cada poco puede ser la del avión durante la partida (al recargar, `freePoint` lo saca a agua libre).
+
 ## 2026-10-06 — plan 014 T157: Lighthouse ↔ castle swap, remove «Vigilancia del faro», the «Tablón del faro»
 
 Qué existe:
