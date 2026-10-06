@@ -173,7 +173,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: castle HUD v2: «Construir» list with renders → detail → «Colocar» → «Instalar isla», island card with priority, «Mejoras» (plane speed/damage 1–5, castle life), ×2, «Llamar oleada +N», 6 s wave warning, pause toggles for bars/numbers; keys M/X/O; screenshots C:/tmp/orchestrator-attach/boia-planet-hernan-T171/ · 5a708cf
 
 ## T173 — Guided first castle game
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5) — was Codex; Codex out of credits
 - Skills: frontend-design
 - Depends on: T171
@@ -184,7 +184,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - unit tests: first-time question shown once; skip ends the guide; steps advance on action → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "guía"` (first game asks; Sí runs the steps; «Saltar guía» returns to normal play; second game does not ask) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: first-game question in the castle pop-up («Sí» / «No, jugar»), pref `castillo:guia`, «Con la guía» switch to replay; 9 bubble steps closed by ✕ or by doing the action, «Saltar guía» inside every bubble; sim unchanged · 3bf1f53
 
 ## T176 — Castle and race achievements, prizes and mascot unlocks
 - Status: done
@@ -224,6 +224,8 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T173: question inside the pop-up after «Jugar» (Atrás/Esc goes back); after answering, a «Con la guía» switch (off) replays it; dev shortcuts and «Otra vez» start without guide; pref `castillo:guia` local + account snapshot; 9 steps (mover, construir, elegir, colocar, instalar, ficha, prioridad, mejorar, oleada), a step passes if already done, priority step skipped for non-targeting islands, no pause; «Saltar guía» inside every bubble next to «Paso n de 9» (a pill covered the minimap on mobile); bottom-strip bubbles sit above the strip; «mover»/«ficha» bubbles float without a tail (pointing in 3D needs a mar3d hook); only outside change: `guide` prop on `CastleTestHook` (agent)
+- 2026-10-06 plan: T178 waits for Hernán to choose the island damage table first (Hernán)
 - 2026-10-06 plan: T178 also sets island DPS parity and Ibiza payback 45/30/20 s; camera follow, wider U-turns, visible Ibiza payouts and the Fiestera position go to plan 016 (plans/016-notes.md) (Hernán)
 - 2026-10-06 T171: list item → detail → «Colocar» (keys 1–7 place directly); unaffordable islands grey with price crossed, open but «Colocar» disabled; ×2 left of the time, wave warning under the HUD for the last 6 s (muestra), idle bar «Construir» / «Mejoras» (dot when affordable) / «Llamar oleada +N»; keys M/X/O; bottom panel capped and scrolls, `.mar { overflow: clip }` in the arena; menu `game.options` slot (Cañón passes nothing); wave counter uses `waveS`; castle e2e expands the collapsed tablón (agent)
 - 2026-10-06 plan: T173 guide as simple speech bubbles, each closed with an ✕ or by doing what it asks (Hernán)
@@ -241,6 +243,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T173: a `mar3d.ts` hook to point guide bubbles at the plane or a built island on screen; possible 3D canvas not filling 390×844 after a viewport change (seen only in a screenshot script) (agent)
 - 2026-10-06 T171: `TOWER_ICON` in castillo-icons.tsx unused now; `.mar-speedlines` taller than the screen (agent)
 - 2026-10-06 T176: `docs/propuestas/logros-catalogo.md` still says «Por Los Rápidos»; «Rápido» progress line says «vuelta» like «Rayo» (agent)
 - 2026-10-06 T175: pre-existing bug — after opening and closing Mi Barco from the menu, keyboard arrows stop steering the boat (plain `/mar`); `export_enemigos_glb.py` writes its manifest with CRLF on Windows (agent)
@@ -279,3 +282,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 16:09 T171 resumed (same agent) on Hernán's word that the API is back
 - 2026-10-06 16:22 T171 integrated → 5a708cf (tests ok); worktree and branch removed
 - 2026-10-06 16:22 T173 launched · attempt 1 · agent a1105d29142f6b07a (opus)
+- 2026-10-06 16:49 T173 integrated → 3bf1f53 (tests ok); worktree and branch removed; T178 held for Hernán's damage table choice
