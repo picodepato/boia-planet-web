@@ -19,7 +19,9 @@ describe('el atajo `?minijuego=castillo`', () => {
   it('lee duración, dificultad, segundo, semilla e islas; sólo con los atajos encendidos', () => {
     expect(
       castleShortcut('?minijuego=castillo&duracion=10&dificultad=tormenta&t=500&seed=7&islas=1', env),
-    ).toEqual({ t: 500, seed: 7, difficulty: 'tormenta', runMin: 10, islands: true });
+    ).toEqual({ t: 500, seed: 7, difficulty: 'tormenta', runMin: 10, islands: true, coins: null });
+    // `monedas=` (T161): monedas de más al empezar.
+    expect(castleShortcut('?minijuego=castillo&monedas=800', env)?.coins).toBe(800);
     // `t` se acota a la partida elegida (5 min sin `duracion`).
     expect(castleShortcut('?minijuego=castillo&t=9999', env)?.t).toBe(
       DEFENSE_CONFIG.runs[5].durationS - 1,
@@ -32,7 +34,9 @@ describe('el atajo `?minijuego=castillo`', () => {
 
   it('se consume al usarlo (`dev` se queda)', () => {
     expect(
-      withoutCastleShortcut('https://x.test/mar?minijuego=castillo&t=3&islas=1&duracion=7&dev=1'),
+      withoutCastleShortcut(
+        'https://x.test/mar?minijuego=castillo&t=3&islas=1&duracion=7&monedas=50&dev=1',
+      ),
     ).toBe('https://x.test/mar?dev=1');
   });
 });

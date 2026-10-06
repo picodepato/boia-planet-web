@@ -333,7 +333,7 @@ const BOSS_STATE_KEYS = {
 } as const;
 
 /** La barra del boss, dentro del HUD de arriba (nunca tapa el resto): nombre, vida, marcas de fase y estado. */
-function BossBar({ bar }: { bar: BossBarView }) {
+export function BossBar({ bar }: { bar: BossBarView }) {
   const name = msg(bar.nameKey);
   const stateKey = bar.state === 'normal' ? null : BOSS_STATE_KEYS[bar.state];
   return (

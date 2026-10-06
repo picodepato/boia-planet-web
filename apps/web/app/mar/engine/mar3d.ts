@@ -1738,6 +1738,10 @@ export class Mar3D {
       'arenaEfectos',
       'castilloVista',
       'arenaAvion',
+      'arenaColocar',
+      'arenaElegida',
+      'arenaIslasPantalla',
+      'arenaToque',
     ])
       delete ds[k];
   }
@@ -1846,6 +1850,17 @@ export class Mar3D {
         .join(' '),
     );
     set('arenaAvion', `${Math.round(snap.plane.x)},${Math.round(snap.plane.y)}`);
+    // El HUD (T161): la vista previa al colocar ('ok', 'no' o nada), la isla
+    // elegida y dónde se ve cada isla en la pantalla (px del lienzo), para tocarla.
+    set('arenaColocar', df.view.marked.preview);
+    set('arenaElegida', df.view.marked.selected ? 'si' : 'no');
+    const spots: string[] = [];
+    for (const tw of snap.towers) {
+      const p = df.view.at(tw.x, tw.y);
+      this.project(p.x, 0.5, p.z, this.scr);
+      if (this.scr.on) spots.push(`${tw.id}:${Math.round(this.scr.x)},${Math.round(this.scr.y)}`);
+    }
+    set('arenaIslasPantalla', spots.join(' '));
   }
 
   /** ¿Hay una partida del Cañón en curso? */
@@ -2779,6 +2794,16 @@ export class Mar3D {
     const cam = ray.origin;
     const on = rayOnPlanet(cam.y, ray.direction.x, ray.direction.y, ray.direction.z, this.bend);
     const hit = tmpV.copy(ray.direction).multiplyScalar(on.t).add(cam);
+    // En la arena del castillo (T161): el toque es del HUD (colocar o elegir una isla).
+    if (this.defense) {
+      const df = this.defense;
+      const dx = wrapD(hit.x - df.castle.x, this.periodS.w);
+      const dz = wrapD(hit.z - df.castle.z, this.periodS.h);
+      const p = df.frame.toSim(df.frame.cx + fromScene(dx), df.frame.cy + fromScene(dz));
+      df.run.tap(p.x, p.y);
+      this.opts.canvas.dataset.arenaToque = `${Math.round(p.x)},${Math.round(p.y)}`;
+      return;
+    }
     // ¿Cerca de un lugar con rótulo? Rumbo a él.
     let best: { id: string; d: number } | null = null;
     for (const p of this.pins) {
@@ -3439,7 +3464,12 @@ export class Mar3D {
     if (this.defense) {
       const df = this.defense;
       df.view.reduced = this.reducedMotion;
-      df.view.update(df.run.snapshot(), t, { x, z });
+      const snap = df.run.snapshot();
+      const pl = df.run.placement(snap);
+      df.view.update(snap, t, { x, z }, {
+        preview: pl ? { x: pl.x, y: pl.y, ok: pl.check.ok } : null,
+        selected: df.run.selectedSpot(snap),
+      });
       if (t - df.seenAt >= 0.25 || t < df.seenAt) this.markArena(t);
     }
     if (this.survivors) {

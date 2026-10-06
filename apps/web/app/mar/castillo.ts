@@ -5,6 +5,7 @@ import {
   DefenseClock,
   type DefenseConfig,
   type DefenseEndReason,
+  type DefenseBuildCheck,
   type DefenseEvent,
   type DefenseGame,
   type DefenseInput,
@@ -19,6 +20,7 @@ import {
 } from '@boia/engine/defense';
 import { asDifficulty } from '@boia/engine/survivors';
 import { CASTLE_GAME_ID } from '@boia/world';
+import { clampToRing, nextTowerByKeyboard, towerAt } from './castillo-hud-model';
 import { CANON_PARAMS, type DevEnv, devEnv, devShortcutsEnabled } from './survivors';
 
 /**
@@ -41,6 +43,8 @@ export const CASTLE_PARAMS = {
   duration: 'duracion',
   /** `islas=1`: empezar con las siete islas construidas a nivel 3 (vista y rendimiento). */
   islands: 'islas',
+  /** `monedas=N`: N monedas más en el monedero al empezar (pruebas del HUD, T161). */
+  coins: 'monedas',
 } as const;
 
 export interface CastleShortcut {
@@ -49,6 +53,8 @@ export interface CastleShortcut {
   difficulty: DifficultyId | null;
   runMin: DefenseRunMin | null;
   islands: boolean;
+  /** Monedas de más al empezar (`monedas=`), o null. */
+  coins: number | null;
 }
 
 /** `?minijuego=castillo&…`: qué pide la URL, o null (otro juego o atajos apagados). */
@@ -64,12 +70,14 @@ export function castleShortcut(
   const duration = config.runs[runMin ?? 5].durationS;
   const t = Number(q.get(CASTLE_PARAMS.t));
   const seed = Math.floor(Number(q.get(CASTLE_PARAMS.seed)));
+  const coins = Math.floor(Number(q.get(CASTLE_PARAMS.coins)));
   return {
     t: Number.isFinite(t) && t > 0 ? Math.min(t, duration - 1) : 0,
     seed: Number.isFinite(seed) && seed > 0 ? seed : null,
     difficulty: asDifficulty(q.get(CASTLE_PARAMS.difficulty)),
     runMin,
     islands: q.get(CASTLE_PARAMS.islands) === '1',
+    coins: Number.isFinite(coins) && coins > 0 ? Math.min(coins, 99999) : null,
   };
 }
 
@@ -108,6 +116,28 @@ export function devTowerSpots(
   return out;
 }
 
+/**
+ * La isla que se está colocando (T161): su tipo y dónde va respecto al
+ * avión (u de la partida). Al elegirla va justo debajo del avión; un toque en
+ * el agua la mueve, dentro del anillo de construir. Sigue al avión.
+ */
+export interface CastlePlacing {
+  kind: DefenseTowerKind;
+  ox: number;
+  oy: number;
+}
+
+/** La vista previa: dónde caería la isla y si se puede (con el motivo de T159). */
+export interface CastlePlacement {
+  kind: DefenseTowerKind;
+  x: number;
+  y: number;
+  check: DefenseBuildCheck;
+}
+
+/** Holgura del toque para elegir una isla construida (× su radio). */
+export const TOWER_TAP_SLACK = 1.25;
+
 export interface DefenseRunOptions {
   seed: number;
   quality: QualityTier;
@@ -117,6 +147,8 @@ export interface DefenseRunOptions {
   startAtS?: number;
   /** Atajo `islas=1`: las siete islas a nivel 3 desde el principio (no entra en el ranking). */
   devIslands?: boolean;
+  /** Atajo `monedas=`: monedas de más al empezar (no entra en el ranking). */
+  devCoins?: number;
   config?: DefenseConfig;
   onEnd?: (reason: DefenseEndReason, snapshot: DefenseSnapshot) => void;
   /** Lo que pasó en cada paso fijo (el sonido, T164); no debe tocar la partida. */
@@ -136,6 +168,11 @@ export interface CastleHook {
   derrotados: number;
   /** Islas construidas. */
   islas: number;
+  /** La isla que se coloca (tipo) o ''; la isla elegida (id) o ''. T161. */
+  colocando: string;
+  seleccion: string;
+  /** Nivel de daño del avión. */
+  avionNivel: number;
   /** Dónde va el avión en la partida (u, enteros): «x,y». */
   avion: string;
   fin: DefenseEndReason | null;
@@ -171,12 +208,14 @@ export class DefenseRun {
     this.onEnd = opts.onEnd;
     this.onEvents = opts.onEvents;
     const dev = opts.devIslands === true;
+    const devCoins = Math.max(0, Math.floor(opts.devCoins ?? 0));
     this.game = createDefense(this.config, opts.seed, {
       ...(opts.runMin ? { runMin: opts.runMin } : {}),
       ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
       ...(opts.startAtS ? { startAtS: opts.startAtS } : {}),
-      ...(dev ? { unranked: true } : {}),
+      ...(dev || devCoins > 0 ? { unranked: true } : {}),
     });
+    if (devCoins > 0) this.game.refund(devCoins);
     if (dev) {
       const spots = devTowerSpots(this.game);
       DEFENSE_TOWER_KINDS.forEach((kind: DefenseTowerKind, i) => {
@@ -204,6 +243,93 @@ export class DefenseRun {
     this.pending = { ...this.pending, ...input };
   }
 
+  // --- Construir, elegir, mejorar y vender (el HUD de T161) ---------------------
+
+  /** La isla que se está colocando, o null. */
+  placing: CastlePlacing | null = null;
+  /** La isla construida que está elegida (su ficha abierta), o null. */
+  selected: number | null = null;
+
+  /** Empieza a colocar una isla: debajo del avión. */
+  startPlacing(kind: DefenseTowerKind): void {
+    this.placing = { kind, ox: 0, oy: 0 };
+    this.selected = null;
+  }
+
+  cancelPlacing(): void {
+    this.placing = null;
+  }
+
+  /** Dónde caería la isla que se coloca ahora (con el avión de `s`), o null. */
+  placement(s: Pick<DefenseSnapshot, 'plane'> = this.game.snapshot()): CastlePlacement | null {
+    const p = this.placing;
+    if (!p) return null;
+    const x = s.plane.x + p.ox;
+    const y = s.plane.y + p.oy;
+    return { kind: p.kind, x, y, check: this.game.buildCheck(p.kind, x, y) };
+  }
+
+  /** Construye la isla que se coloca, si se puede ahí (el paso siguiente la levanta). */
+  confirmPlacing(): boolean {
+    const at = this.placement();
+    if (!at || !at.check.ok) return false;
+    this.request({ build: { kind: at.kind, x: at.x, y: at.y } });
+    this.placing = null;
+    return true;
+  }
+
+  /**
+   * Un toque en el agua de la arena (u de la partida): colocando, mueve la
+   * isla ahí (dentro del anillo del avión); si no, elige la isla tocada (o
+   * ninguna).
+   */
+  tap(x: number, y: number): void {
+    const s = this.game.snapshot();
+    if (this.placing) {
+      const o = clampToRing(x - s.plane.x, y - s.plane.y, s.plane.buildRing);
+      this.placing = { ...this.placing, ox: o.x, oy: o.y };
+      return;
+    }
+    this.selected = towerAt(s.towers, x, y, this.config.islandRadius * TOWER_TAP_SLACK);
+  }
+
+  /** Elige una isla (o ninguna). */
+  select(id: number | null): void {
+    this.selected = id;
+    if (id !== null) this.placing = null;
+  }
+
+  /** Tecla I: la isla más cercana al avión, y luego la siguiente. */
+  selectNext(): number | null {
+    const s = this.game.snapshot();
+    this.select(nextTowerByKeyboard(s.towers, s.plane, this.selected));
+    return this.selected;
+  }
+
+  /** La isla elegida en la partida (para su aro en la vista), o null. */
+  selectedSpot(s: Pick<DefenseSnapshot, 'towers'> = this.game.snapshot()): { x: number; y: number } | null {
+    if (this.selected === null) return null;
+    const t = s.towers.find((x) => x.id === this.selected);
+    return t ? { x: t.x, y: t.y } : null;
+  }
+
+  /** Mejora la isla elegida (si llega el dinero; si no, no pasa nada). */
+  upgradeSelected(): void {
+    if (this.selected !== null) this.request({ upgradeTower: this.selected });
+  }
+
+  /** Vende la isla elegida (y se cierra su ficha). */
+  sellSelected(): void {
+    if (this.selected === null) return;
+    this.request({ sellTower: this.selected });
+    this.selected = null;
+  }
+
+  /** Sube el daño del avión (si llega el dinero). */
+  upgradePlane(): void {
+    this.request({ upgradePlane: true });
+  }
+
   /** Un paso fijo con el mando del avión (dirección en la partida, −1…1). */
   step(move: { x: number; y: number } | null): readonly DefenseEvent[] {
     const input: DefenseInput = { ...this.pending };
@@ -228,6 +354,8 @@ export class DefenseRun {
 
   /** «Terminar partida» (o salir): acaba ya con `quit`. */
   quit(): void {
+    this.placing = null;
+    this.selected = null;
     this.game.quit();
     this.notifyEnd();
   }
@@ -252,6 +380,9 @@ export class DefenseRun {
       enemigos: s.enemies.length,
       derrotados: s.kills,
       islas: s.towers.length,
+      colocando: this.placing?.kind ?? '',
+      seleccion: this.selected === null ? '' : String(this.selected),
+      avionNivel: s.plane.level,
       avion: `${Math.round(s.plane.x)},${Math.round(s.plane.y)}`,
       fin: s.end,
       semilla: this.seed,
@@ -264,6 +395,8 @@ export class DefenseRun {
   private notifyEnd(): void {
     if (this.notified || !this.game.ended) return;
     this.notified = true;
+    this.placing = null;
+    this.selected = null;
     const s = this.game.snapshot();
     this.onEnd?.(s.end!, s);
   }

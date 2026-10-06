@@ -9,6 +9,7 @@ import type { QualityTier } from '@boia/engine/streaming';
 import {
   BoxGeometry,
   type BufferGeometry,
+  CircleGeometry,
   CylinderGeometry,
   Group,
   type InstancedMesh,
@@ -134,6 +135,16 @@ function barrierGeometry(line: readonly { x: number; z: number }[], low: boolean
   return k.build();
 }
 
+/** La vista previa al construir: verde si se puede, roja si no. muestra */
+export const PREVIEW_OK = '#3ddc84';
+export const PREVIEW_BAD = '#ff4d3d';
+
+/** Lo que el HUD (T161) marca en el agua: la isla que se coloca y la isla elegida (u de la partida). */
+export interface DefenseMarks {
+  preview: { x: number; y: number; ok: boolean } | null;
+  selected: { x: number; y: number } | null;
+}
+
 export interface DefenseViewOptions {
   config: DefenseConfig;
   path: DefensePath;
@@ -161,6 +172,9 @@ export class DefenseView {
   private readonly counts = new Map<DefenseEnemyKind, number>();
   private readonly castleRing: Mesh;
   private readonly buildRing: Mesh;
+  private readonly preview: Mesh;
+  private readonly previewEdge: Mesh;
+  private readonly selectRing: Mesh;
   private readonly puf: PufFx;
   private readonly d = new Object3D();
   private readonly tmp = { x: 0, y: 0 };
@@ -244,8 +258,35 @@ export class DefenseView {
     );
     this.buildRing.name = 'defense-build-ring';
     this.buildRing.visible = false;
+    // La isla que se coloca (T161): un disco de su huella y su borde, verde o rojo.
+    this.preview = new Mesh(
+      new CircleGeometry(1, low ? 24 : 48).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.32, depthWrite: false }),
+    );
+    this.preview.name = 'defense-build-preview';
+    this.preview.visible = false;
+    this.previewEdge = new Mesh(
+      new RingGeometry(0.9, 1, low ? 24 : 48).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.9, depthWrite: false }),
+    );
+    this.previewEdge.name = 'defense-build-preview-edge';
+    this.previewEdge.visible = false;
+    // La isla elegida: un aro crema a su alrededor.
+    this.selectRing = new Mesh(
+      new RingGeometry(0.88, 1, low ? 24 : 48).rotateX(-Math.PI / 2),
+      new MeshBasicMaterial({ color: '#fff4e2', transparent: true, opacity: 0.85, depthWrite: false }),
+    );
+    this.selectRing.name = 'defense-selected';
+    this.selectRing.visible = false;
     this.puf = new PufFx(this.quality);
-    this.group.add(this.castleRing, this.buildRing, this.puf.mesh);
+    this.group.add(
+      this.castleRing,
+      this.buildRing,
+      this.preview,
+      this.previewEdge,
+      this.selectRing,
+      this.puf.mesh,
+    );
 
     this.islands = new TowerIslands(o.config);
     this.fx = new DefenseFx(o.config, low);
@@ -301,11 +342,20 @@ export class DefenseView {
     return out.sort();
   }
 
+  /** Lo marcado en el último `update` (pruebas): la vista previa ('ok', 'no' o '') y la isla elegida. */
+  marked = { preview: '', selected: false };
+
   /**
    * Un fotograma: `s` la partida, `t` la hora de la escena, `plane` dónde se
-   * pinta el avión (escena), para su anillo de construir.
+   * pinta el avión (escena), para su anillo de construir; `marks`, lo que el
+   * HUD marca en el agua (T161).
    */
-  update(s: DefenseSnapshot, t: number, plane: { x: number; z: number }): void {
+  update(
+    s: DefenseSnapshot,
+    t: number,
+    plane: { x: number; z: number },
+    marks: DefenseMarks = { preview: null, selected: null },
+  ): void {
     const reduced = this.reduced;
     (this.vortex.material as ShaderMaterial).uniforms.uTime!.value = reduced ? 0 : t;
     const d = this.d;
@@ -346,12 +396,33 @@ export class DefenseView {
       const r = toScene(s.castle.radius) * (reduced ? 1.1 : 1 + 0.25 * hit);
       this.castleRing.scale.set(r, 1, r);
     }
-    this.buildRing.visible = this.building;
-    if (this.building) {
+    const pv = marks.preview;
+    this.buildRing.visible = this.building || pv !== null;
+    if (this.buildRing.visible) {
       const r = toScene(s.plane.buildRing);
       this.buildRing.position.set(plane.x, 0.3, plane.z);
       this.buildRing.scale.set(r, 1, r);
     }
+    const ir = toScene(this.cfg.islandRadius);
+    this.preview.visible = this.previewEdge.visible = pv !== null;
+    if (pv) {
+      const p = this.at(pv.x, pv.y);
+      const color = pv.ok ? PREVIEW_OK : PREVIEW_BAD;
+      for (const m of [this.preview, this.previewEdge]) {
+        m.position.set(p.x, 0.34, p.z);
+        m.scale.set(ir, 1, ir);
+        (m.material as MeshBasicMaterial).color.set(color);
+      }
+    }
+    const sel = marks.selected;
+    this.selectRing.visible = sel !== null;
+    if (sel) {
+      const p = this.at(sel.x, sel.y);
+      const r = ir * (reduced ? 1.15 : 1.12 + 0.04 * Math.sin(t * 4));
+      this.selectRing.position.set(p.x, 0.36, p.z);
+      this.selectRing.scale.set(r, 1, r);
+    }
+    this.marked = { preview: pv ? (pv.ok ? 'ok' : 'no') : '', selected: sel !== null };
     this.puf.update(t, defeatPlan('puf', { quality: this.quality, reduced }));
     this.puf.mesh.visible = this.puf.mesh.count > 0;
     this.islands.sync(s.towers, (x, y) => this.at(x, y));

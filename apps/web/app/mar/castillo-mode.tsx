@@ -1,8 +1,7 @@
 'use client';
 
-import type { DefenseSnapshot } from '@boia/engine/defense';
+import type { DefenseResult, DefenseSnapshot } from '@boia/engine/defense';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
-import { t as msg } from '../../lib/i18n';
 import {
   type CastleHook,
   type CastleShortcut,
@@ -11,7 +10,7 @@ import {
   withoutCastleShortcut,
 } from './castillo';
 import type { Mar3D } from './engine/mar3d';
-import { type HideLayer, devShortcutsEnabled, hideForGame, marHideHost, randomSeed } from './survivors';
+import { type HideLayer, hideForGame, marHideHost, randomSeed } from './survivors';
 
 /**
  * «Defensa del Castillo» en `/mar` (plan 014 T160), del lado de React:
@@ -19,7 +18,9 @@ import { type HideLayer, devShortcutsEnabled, hideForGame, marHideHost, randomSe
  * `?minijuego=castillo`; el pop-up es de T162), esconder las capas del mundo
  * como el Cañón (`HideLayer`) mientras el motor hunde islas y decorado, y
  * devolverlo todo igual al acabar. El estado para las pruebas va en
- * `data-testid="mar-castillo"`. `mar-client` sólo lo cablea.
+ * `data-testid="mar-castillo"`. `mar-client` sólo lo cablea. El HUD (T161,
+ * `castillo-hud.tsx`) lee la partida con `read()` y `run()`; al acabar (o con
+ * «Terminar partida») la arena se queda con su tarjeta hasta «Volver al mar».
  */
 
 const EMPTY: ReadonlySet<HideLayer> = new Set();
@@ -35,14 +36,18 @@ export interface CastleMode {
   hidden: ReadonlySet<HideLayer>;
   /** El último estado (también el final, hasta la siguiente). */
   hud: CastleHook | null;
-  /** El estado de la partida ahora (para el HUD de T161; no guardarlo), o null. */
+  /** El estado de la partida ahora (para el HUD; no guardarlo), o null. */
   read(): DefenseSnapshot | null;
+  /** La partida en curso (construir, elegir, mejorar… van por ella), o null. */
+  run(): DefenseRun | null;
+  /** El resumen de la partida acabada (la tarjeta final), o null mientras se juega. */
+  result: DefenseResult | null;
   /** Pausa (un panel o el menú encima) o sigue. */
   setPaused(paused: boolean): void;
-  /** Acaba la partida y devuelve el mundo como estaba (sin tarjeta final hasta T162). */
+  /** «Terminar partida» (T148 en el Cañón): acaba ya; la tarjeta «Partida terminada» se queda. */
+  quit(): void;
+  /** Acaba la partida (si sigue) y devuelve el mundo como estaba. */
   leave(): void;
-  /** Los atajos de desarrollo están encendidos (el botón de salir de prueba). */
-  dev: boolean;
 }
 
 export function useCastleMode({
@@ -66,8 +71,7 @@ export function useCastleMode({
   const [hud, setHud] = useState<CastleHook | null>(null);
   const [hidden, setHiddenState] = useState<ReadonlySet<HideLayer>>(EMPTY);
   const hiddenRef = useRef<ReadonlySet<HideLayer>>(EMPTY);
-  const [dev, setDev] = useState(false);
-  useEffect(() => setDev(devShortcutsEnabled()), []);
+  const [result, setResult] = useState<DefenseResult | null>(null);
   const latest = useRef({ onStart, isBusy });
   latest.current = { onStart, isBusy };
 
@@ -79,8 +83,15 @@ export function useCastleMode({
     restoreRef.current?.();
     restoreRef.current = null;
     if (run) setHud(run.hook());
+    setResult(null);
     setActive(false);
   }, [engineRef]);
+
+  const quit = useCallback(() => {
+    const run = runRef.current;
+    if (run && !run.ended) run.quit();
+    if (run) setHud(run.hook());
+  }, []);
 
   const start = useCallback(
     (sc: CastleShortcut): boolean => {
@@ -93,6 +104,12 @@ export function useCastleMode({
         ...(sc.difficulty ? { difficulty: sc.difficulty } : {}),
         startAtS: sc.t,
         devIslands: sc.islands,
+        ...(sc.coins ? { devCoins: sc.coins } : {}),
+        onEnd: () => {
+          // En el paso del bucle del mar: la tarjeta sale en el render siguiente.
+          setResult(run.game.result());
+          setHud(run.hook());
+        },
       });
       if (!g.startDefense(run)) return false;
       runRef.current = run;
@@ -108,6 +125,7 @@ export function useCastleMode({
         }),
       );
       setHud(run.hook());
+      setResult(null);
       setActive(true);
       return true;
     },
@@ -120,6 +138,7 @@ export function useCastleMode({
   }, []);
 
   const read = useCallback(() => runRef.current?.snapshot() ?? null, []);
+  const run = useCallback(() => runRef.current, []);
 
   // El estado para las pruebas, unas veces por segundo.
   useEffect(() => {
@@ -161,7 +180,7 @@ export function useCastleMode({
     start(sc);
   }, [ready, start]);
 
-  return { active, hidden, hud, read, setPaused, leave, dev };
+  return { active, hidden, hud, read, run, result, setPaused, quit, leave };
 }
 
 /** El estado de la partida para las pruebas (`data-*`), sin nada que se vea. */
@@ -181,6 +200,9 @@ export function CastleTestHook({ hud }: { hud: CastleHook | null }) {
       data-enemigos={hud.enemigos}
       data-derrotados={hud.derrotados}
       data-islas={hud.islas}
+      data-colocando={hud.colocando || undefined}
+      data-seleccion={hud.seleccion || undefined}
+      data-avion-nivel={hud.avionNivel}
       data-avion={hud.avion}
       data-fin={hud.fin ?? undefined}
       data-semilla={hud.semilla}
@@ -188,23 +210,5 @@ export function CastleTestHook({ hud }: { hud: CastleHook | null }) {
       data-duracion={hud.duracion}
       data-calidad={hud.calidad}
     />
-  );
-}
-
-/**
- * Salir de la arena (desarrollo, T160): hasta que el HUD (T161) traiga la
- * pausa con «Terminar partida», un botoncito con los atajos encendidos.
- */
-export function CastleDevExit({ castle }: { castle: CastleMode }) {
-  if (!castle.active || !castle.dev) return null;
-  return (
-    <button
-      type="button"
-      className="mar-canon-dev"
-      data-testid="mar-castillo-salir"
-      onClick={castle.leave}
-    >
-      {msg('mar.castillo.dev.salir')}
-    </button>
   );
 }

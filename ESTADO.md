@@ -4,6 +4,27 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T161: HUD and controls: Construir, placing, Mejorar/Vender, life, time, coins
+
+Qué existe:
+- `apps/web/app/mar/castillo-hud.tsx` (`CastleLayer`) + `castillo-hud.css`: el HUD de «Defensa del Castillo» con el estilo del del Cañón (reutiliza sus clases de contenedor, pausa, barra del boss, aviso y tarjeta). Arriba al centro: tiempo y pausa, vida del castillo (barra con marcas; ámbar rayada ≤ 50 %, roja a cuadros ≤ 25 %), oleada `n/total` y monedas; debajo, la barra del boss del Cañón (`BossBar`, ahora exportada) y, apilado, el aviso de boss (sale, cae, golpea la muralla). Abajo, encima de «Entradas», una sola franja que cambia: «Construir» + daño del avión → las siete islas con icono y precio (gris y precio tachado si no llega) → colocar (verde «Aquí se puede» o roja rayada con ✕ y el motivo de T159; Cancelar / «Construir aquí · coste») → ficha de una isla (nivel con puntos, qué hace, «Mejorar · coste» / «Nivel máximo», «Vender · +n»). Teclado: B construir, 1–7 isla, Intro colocar, I elegir la isla más cercana al avión (otra vez: la siguiente), U mejorar, V vender, Esc atrás o pausa; flechas = avión. `aria-live` (`mar-castillo-anuncio`): empieza la oleada, llega un boss, el resultado. En la arena se esconde el zoom (no hace nada ahí).
+- `castillo-hud-model.ts` (sin React): `buildOptions`, `placementView` + `BUILD_REASON_KEYS`, `towerPanel`, `upgradeLine`/`sellLine`/`levelLine`, `planeView`/`planeLine`, `lifeLevelOf`, `waveAt` (del `defenseSchedule`), `castleView`, `defenseBossBar`/`defenseBossNotices`, `towerAt`, `nextTowerByKeyboard`, `clampToRing`, `castleEndView`. `castillo-icons.tsx`: siete iconos de isla y los del HUD (castillo, moneda, oleada, avión, construir), familia de T150.
+- `castillo.ts` (`DefenseRun`): estado del HUD — `placing` (la isla va bajo el avión; un toque en el agua la mueve dentro del anillo), `placement()`, `confirmPlacing()`, `tap(x, y)` (colocando mueve la isla; si no, elige la isla tocada), `select`/`selectNext`, `upgradeSelected`, `sellSelected`, `upgradePlane`. Atajo nuevo `monedas=N` (suma al monedero; no rankea). Hook: `data-colocando`, `data-seleccion`, `data-avion-nivel`.
+- `castillo-mode.tsx`: `run()`, `result`, `quit()` («Terminar partida»: la arena se queda con la tarjeta hasta «Volver al mar»); fuera el botón de desarrollo «Salir de la arena» y su clave i18n.
+- Pausa: el menú de `/mar` con «Seguir jugando» y «Terminar partida» (confirmación de T148) y el bloque de sonido/volumen del Cañón (`GameSoundMenu`: `canon-readout-menu.tsx` separa el bloque de sonido sin cambio para el Cañón). Tarjeta `mar-castillo-final`: «Partida terminada» (sin medalla ni ranking), tiempo, enemigos, vida del castillo; al aguantar/caer, su título y lo mismo (T162 pone medalla, puntuación y «Otra vez»).
+- Motor (`engine/defense-view.ts`, `mar3d.ts`): disco verde/rojo de la isla que se coloca (con el anillo), aro de la isla elegida; el toque en la arena va a `DefenseRun.tap`; lienzo: `data-arena-colocar`, `data-arena-elegida`, `data-arena-islas-pantalla` (px de cada isla, para tocarla), `data-arena-toque`.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/castillo-hud-model.test.ts apps/web/app/mar/castillo.test.ts apps/web/app/mar/engine/defense-arena.test.ts` → 45 pruebas, exit 0 (nuevas: precios y gris, motivo de la vista previa, Mejorar/Vender, vida, tiempo, oleada, boss, elegir con dedo y teclado, construir/mejorar/vender por `DefenseRun`, camino rechazado, `monedas=`, tarjeta).
+- `E2E_PORT=4917 pnpm e2e mar-castillo.spec.ts --workers=1 -g "construir|mejorar|vender|HUD"` → 8 passed, exit 0 (las siete islas, camino rechazado en rojo con «path», tocar una isla, subirla a 3, venderla, avión a nivel 2, pausa con volumen y «Partida terminada», nada se pisa y toques ≥ 44 px a 360×640, 390×844, 768×1024 y 1440×900 en reposo, construir, colocar y ficha con boss).
+- `E2E_PORT=4917 pnpm e2e mar-castillo.spec.ts --workers=1 -g arena` (las de T160, que ahora salen por la pausa) → 5 passed, 1 skipped, exit 0.
+- Test command: vitest → exit 0, 193 archivos, 1836 pruebas; `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0 (187,0 kB, presupuesto OK); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- T162: «Jugar» en el panel del castillo, pop-up, medalla y puntuación en la tarjeta, «Otra vez».
+- T164: sonidos de construir/mejorar/vender (eventos `towerBuilt`/`towerUpgrade`/`towerSold` ya salen de la partida).
+- La partida sigue mientras se construye (no se pausa); las nubes pasan por encima de la arena (de T160).
+
 ## 2026-10-06 — plan 014 T166: Tabarca lighthouse island redesigned in Blender (the board at the entrance)
 
 Qué existe:

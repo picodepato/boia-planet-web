@@ -1,0 +1,550 @@
+/* «Defensa del Castillo» en /mar (plan 014 T161): el HUD de la partida con
+   el estilo del del Cañón (cristal oscuro, naranja y crema; reutiliza sus
+   clases para el contenedor de arriba, la pausa, la barra del boss, el aviso
+   y la tarjeta final). Abajo, encima de «Entradas», una sola franja que
+   cambia (construir, colocar, la ficha de una isla): así nada se pisa.
+   Todo lo que se toca mide 44 px como poco. muestra */
+
+.mar {
+  --castle-ok: #3ddc84;
+  --castle-bad: #ff4d3d;
+  --castle-coin: #ffc53d;
+}
+
+/* En la arena la cámara es fija: el zoom sobra y deja sitio a la franja. */
+.mar:has(.mar-castle-hud, .mar-castle-end) .mar-rail {
+  display: none;
+}
+
+/* ---------- Arriba: tiempo, vida, oleada y monedas ---------- */
+
+.mar-castle-hud {
+  min-width: 150px;
+  gap: 4px;
+  padding-bottom: 6px;
+}
+
+.mar-castle-life {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 8px;
+  color: var(--cream);
+}
+
+.mar-castle-life__icon {
+  font-size: 0.95rem;
+}
+
+.mar-castle-life__track {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 56px;
+  height: 9px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.14);
+  border: 1px solid rgb(255 255 255 / 0.45);
+}
+
+/* Marcas cada cuarto, por encima. */
+.mar-castle-life__track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(25% - 1px),
+    rgb(255 255 255 / 0.5) calc(25% - 1px) 25%
+  );
+  pointer-events: none;
+}
+
+.mar-castle-life__fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2fb36b, var(--castle-ok));
+  transition: width 0.25s ease-out;
+}
+
+/* Media vida: ámbar y rayado; un cuarto: rojo a cuadros y el borde grueso
+   (un dibujo además del color, como el agua a bordo del Cañón). */
+.mar-castle-life.is-alerta .mar-castle-life__fill {
+  background:
+    repeating-linear-gradient(-45deg, rgb(40 20 0 / 0.35) 0 2px, transparent 2px 4px),
+    var(--canon-alert);
+}
+
+.mar-castle-life.is-peligro .mar-castle-life__fill {
+  background:
+    repeating-linear-gradient(45deg, rgb(40 0 0 / 0.4) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-45deg, rgb(40 0 0 / 0.4) 0 2px, transparent 2px 5px),
+    var(--canon-danger);
+}
+
+.mar-castle-life.is-peligro .mar-castle-life__track {
+  border: 2px solid #fff;
+}
+
+.mar-castle-life__pct {
+  flex: none;
+  min-width: 2ch;
+  text-align: right;
+  font: 900 0.7rem / 1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+}
+
+.mar-castle-hud__stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-right: 6px;
+}
+
+.mar-castle-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 800 0.68rem / 1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+.mar-castle-stat > .canon-icon {
+  font-size: 0.95rem;
+}
+
+.mar-castle-stat.is-coins {
+  color: var(--castle-coin);
+}
+
+.mar-castle-coin {
+  font-size: 0.95em;
+  vertical-align: -0.12em;
+}
+
+/* El HUD y, debajo, el aviso de un boss, apilados: el aviso nunca pisa el HUD
+   (que crece con la barra del boss). */
+.mar-castle-top {
+  position: absolute;
+  top: var(--canon-hud-top);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - 2 * (max(var(--safe-l), var(--safe-r)) + var(--canon-hud-side)));
+  pointer-events: none;
+}
+
+.mar-castle-top > .mar-canon-hud,
+.mar-castle-top > .mar-canon-boss-banner {
+  position: static;
+  translate: none;
+  max-width: 100%;
+}
+
+.mar-castle-top > .mar-canon-hud {
+  pointer-events: auto;
+}
+
+.mar-castle-banner.is-reached {
+  border-color: var(--canon-danger);
+  color: #ffd2cc;
+}
+
+/* ---------- Abajo: la franja ---------- */
+
+.mar-castle-dock {
+  position: absolute;
+  left: calc(var(--safe-l) + 12px);
+  right: calc(var(--safe-r) + 12px);
+  bottom: calc(var(--above-bar) + 2px);
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.mar-castle-dock > * {
+  pointer-events: auto;
+  animation: mar-in 0.2s ease-out;
+}
+
+.mar-castle-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mar .mar-castle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 6px 16px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: var(--glass-strong);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 4px 14px rgb(10 6 40 / 0.26);
+  color: var(--cream);
+  font: 800 0.9rem / 1.1 var(--font-title);
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.mar-castle-place__actions .mar-castle-btn {
+  padding-inline: 10px;
+  font-size: 0.84rem;
+}
+
+.mar .mar-castle-btn:active {
+  transform: scale(0.97);
+}
+
+.mar .mar-castle-btn:focus-visible,
+.mar .mar-castle-isla:focus-visible,
+.mar .mar-castle-x:focus-visible {
+  outline: 3px solid var(--canon-dawn);
+  outline-offset: 2px;
+}
+
+.mar .mar-castle-btn.is-build {
+  border: 0;
+  background: var(--orange);
+  font-size: 1rem;
+  padding: 6px 20px 6px 14px;
+}
+
+.mar-castle-btn__icon {
+  font-size: 1.5rem;
+}
+
+.mar-castle-btn__text {
+  display: grid;
+  text-align: left;
+  gap: 2px;
+}
+
+.mar-castle-btn__text small {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--castle-coin);
+  white-space: nowrap;
+}
+
+.mar .mar-castle-btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mar .mar-castle-btn.is-plane[aria-disabled='true'] {
+  opacity: 0.75;
+}
+
+.mar .mar-castle-btn.is-plane[aria-disabled='true'] small {
+  color: rgb(255 244 226 / 0.7);
+}
+
+.mar .mar-castle-btn.is-go {
+  border: 0;
+  background: var(--orange);
+}
+
+.mar .mar-castle-btn.is-ghost {
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: none;
+}
+
+.mar-castle-btn__cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  opacity: 0.95;
+}
+
+/* La cajita de cristal de construir, colocar y la ficha. */
+.mar-castle-tray,
+.mar-castle-place,
+.mar-castle-tower {
+  width: min(560px, 100%);
+  max-height: calc(100dvh - var(--top-space) - var(--above-bar) - 120px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 10px 10px 10px;
+  border-radius: 18px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow: 0 8px 24px rgb(10 6 40 / 0.36);
+  color: var(--cream);
+}
+
+.mar-castle-tray__head {
+  position: relative;
+  padding: 0 46px 6px 4px;
+}
+
+.mar-castle-tray__head h2 {
+  margin: 0;
+  font: 900 1rem / 1.1 var(--font-title);
+}
+
+.mar-castle-tray__help {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.mar .mar-castle-x {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--cream);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.mar-castle-tray__list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mar .mar-castle-isla {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  min-height: 76px;
+  padding: 7px 3px 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink);
+  touch-action: manipulation;
+}
+
+.mar .mar-castle-isla:active {
+  transform: translateY(1px);
+}
+
+/* No llega el dinero: en gris, con el precio tachado (no sólo el color). */
+.mar .mar-castle-isla.is-poor {
+  background: rgb(255 255 255 / 0.12);
+  color: rgb(255 244 226 / 0.55);
+  cursor: not-allowed;
+}
+
+.mar .mar-castle-isla.is-poor .mar-castle-isla__icon {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.mar .mar-castle-isla.is-poor .mar-castle-isla__cost {
+  text-decoration: line-through;
+  color: rgb(255 244 226 / 0.6);
+}
+
+.mar-castle-isla__key {
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  font: 800 0.6rem / 1 var(--font-title);
+  opacity: 0.45;
+}
+
+.mar-castle-isla__icon {
+  font-size: 1.6rem;
+}
+
+.mar-castle-isla__name {
+  font: 800 0.62rem / 1.1 var(--font-title);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.mar-castle-isla__cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font: 900 0.7rem / 1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+  color: #9a4a00;
+}
+
+/* ---------- Colocar y la ficha ---------- */
+
+.mar-castle-place,
+.mar-castle-tower {
+  display: grid;
+  gap: 8px;
+  border-width: 2px;
+}
+
+.mar-castle-place.is-ok {
+  border-color: var(--castle-ok);
+}
+
+/* Roja y con rayas: no se puede (además del ✕ y el motivo escrito). */
+.mar-castle-place.is-bad {
+  border-color: var(--castle-bad);
+  background:
+    repeating-linear-gradient(-45deg, rgb(255 77 61 / 0.12) 0 6px, transparent 6px 14px),
+    var(--glass-strong);
+}
+
+.mar-castle-place__info,
+.mar-castle-tower__info {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mar-castle-tower__info {
+  padding-right: 46px;
+}
+
+.mar-castle-place__icon {
+  flex: none;
+  font-size: 2.2rem;
+  color: var(--cream);
+}
+
+.mar-castle-place__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mar-castle-place__text strong {
+  font: 900 0.98rem / 1.1 var(--font-title);
+}
+
+.mar-castle-place__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.mar-castle-place.is-ok .mar-castle-place__state {
+  color: var(--castle-ok);
+}
+
+.mar-castle-place.is-bad .mar-castle-place__state {
+  color: #ffb3aa;
+}
+
+.mar-castle-place__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  border: 2px solid currentColor;
+}
+
+.mar-castle-place__help {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.mar-castle-place__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mar-castle-tower__level {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.mar-castle-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.mar-castle-pips > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cream);
+}
+
+.mar-castle-pips > span.is-on {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+/* La tarjeta final del castillo: un solo botón. */
+.mar-castle-end__actions {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 760px) {
+  .mar-castle-hud {
+    min-width: 200px;
+  }
+
+  .mar-castle-dock {
+    bottom: calc(var(--above-bar) + 6px);
+  }
+
+  .mar-castle-tray {
+    width: min(720px, 100%);
+  }
+
+  .mar-castle-tray__list {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .mar .mar-castle-isla {
+    min-height: 92px;
+  }
+
+  .mar-castle-isla__icon {
+    font-size: 2rem;
+  }
+
+  .mar-castle-isla__name {
+    font-size: 0.7rem;
+  }
+
+  .mar-castle-stat {
+    font-size: 0.76rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-castle-dock > * {
+    animation: none;
+  }
+
+  .mar-castle-life__fill {
+    transition: none;
+  }
+}

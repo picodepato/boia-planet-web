@@ -1,4 +1,10 @@
-import { DEFENSE_CONFIG, buildDefensePath } from '@boia/engine/defense';
+import {
+  DEFENSE_CONFIG,
+  DEFENSE_TOWER_KINDS,
+  buildDefensePath,
+  createDefense,
+  defenseSiteReason,
+} from '@boia/engine/defense';
 import { CASTLE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { type Page, type TestInfo, expect, test } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
@@ -30,6 +36,15 @@ const pointOf = (s: string | null) => {
   const [x, y] = (s ?? '0,0').split(',').map(Number);
   return { x: x!, y: y! };
 };
+
+/** Pausa (Esc) → «Terminar partida» → «Sí, terminar» → la tarjeta → «Volver al mar». */
+async function quitAndLeave(page: Page): Promise<void> {
+  await page.getByTestId('mar-castillo-pausa').click();
+  await page.getByTestId('mar-menu-terminar').click();
+  await page.getByTestId('mar-menu-terminar-si').click();
+  await expect(page.getByTestId('mar-castillo-final')).toBeVisible();
+  await page.getByTestId('mar-castillo-volver').click();
+}
 
 test('arena: el mundo se hunde, el castillo se ve, los enemigos por el camino y el avión vuela; al salir, todo vuelve', async ({
   page,
@@ -78,8 +93,8 @@ test('arena: el mundo se hunde, el castillo se ve, los enemigos por el camino y 
   const shipNow = pointOf(await mar(page).getAttribute('data-barco'));
   expect(Math.hypot(shipNow.x - shipBefore.x, shipNow.y - shipBefore.y)).toBeGreaterThan(100);
 
-  // Salir: el mundo vuelve como estaba.
-  await page.getByTestId('mar-castillo-salir').click();
+  // Salir (T161: pausa → «Terminar partida» → «Volver al mar»): el mundo vuelve como estaba.
+  await quitAndLeave(page);
   await expect(game(page)).toHaveAttribute('data-fin', 'quit');
   await expect(canvas(page)).toHaveAttribute('data-arena', 'off');
   await expect(canvas(page)).toHaveAttribute('data-hundido', '0.00', { timeout: 15_000 });
@@ -87,7 +102,7 @@ test('arena: el mundo se hunde, el castillo se ve, los enemigos por el camino y 
   await expect(canvas(page)).not.toHaveAttribute('data-escondido', /./);
   await expect(canvas(page)).not.toHaveAttribute('data-vortice', /./);
   await expect.poll(async () => pins(page).count()).toBeGreaterThan(0);
-  await expect(page.getByTestId('mar-castillo-salir')).toHaveCount(0);
+  await expect(page.getByTestId('mar-castillo-hud')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -96,7 +111,7 @@ test('arena: con movimiento reducido el mundo se hunde y vuelve de golpe', async
   const errors = await openMar(page, '?minijuego=castillo&seed=7');
   await expect(canvas(page)).toHaveAttribute('data-arena', 'on');
   await expect(canvas(page)).toHaveAttribute('data-hundido', '1.00', { timeout: 5_000 });
-  await page.getByTestId('mar-castillo-salir').click();
+  await quitAndLeave(page);
   await expect(canvas(page)).toHaveAttribute('data-hundido', '0.00', { timeout: 5_000 });
   expect(errors).toEqual([]);
 });
@@ -180,5 +195,412 @@ test('arena: rendimiento en `baja` con el pico de la partida de 10 min y las sie
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await measureFrames(page, info, 'CPU 4×');
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  expect(errors).toEqual([]);
+});
+
+// --- El HUD (T161): construir, colocar, mejorar, vender, la pausa ---------------------
+
+type Box = { x: number; y: number; width: number; height: number };
+const overlaps = (a: Box, b: Box) =>
+  a.x < b.x + b.width - 0.5 &&
+  b.x < a.x + a.width - 0.5 &&
+  a.y < b.y + b.height - 0.5 &&
+  b.y < a.y + a.height - 0.5;
+
+const frame = arenaFrame(castle.position, path);
+const start = createDefense(DEFENSE_CONFIG, 7).snapshot().plane;
+const kinds = DEFENSE_TOWER_KINDS;
+
+/**
+ * Sitios para construir con holgura (la regla de T159 los deja también 50 u
+ * alrededor, por si el avión se para un poco antes o después), cerca de la
+ * salida del avión y uno tras otro: la ruta más corta para el avión.
+ */
+function roomySpots(n: number): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
+  const cfg = DEFENSE_CONFIG;
+  const free = (x: number, y: number) => {
+    if (defenseSiteReason(cfg, path, out, x, y) !== null) return false;
+    for (let a = 0; a < 8; a++) {
+      const px = x + Math.cos((a * Math.PI) / 4) * 50;
+      const py = y + Math.sin((a * Math.PI) / 4) * 50;
+      if (defenseSiteReason(cfg, path, out, px, py) !== null) return false;
+    }
+    return out.every((p) => Math.hypot(p.x - x, p.y - y) > cfg.islandRadius * 2 + 60);
+  };
+  let from = { x: start.x, y: start.y };
+  while (out.length < n) {
+    let best: { x: number; y: number; d: number } | null = null;
+    for (let x = -cfg.arenaRadius; x <= cfg.arenaRadius; x += 30) {
+      for (let y = -cfg.arenaRadius; y <= cfg.arenaRadius; y += 30) {
+        if (!free(x, y)) continue;
+        const d = Math.hypot(x - from.x, y - from.y);
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    }
+    if (!best) break;
+    out.push({ x: best.x, y: best.y });
+    from = best;
+  }
+  return out;
+}
+
+/** El avión ahora (u de la partida), del lienzo. */
+async function planeAt(page: Page) {
+  return pointOf(await canvas(page).getAttribute('data-arena-avion'));
+}
+
+/**
+ * Lleva el avión hasta `to` (u de la partida) con las flechas, a toques
+ * cortos y mirando dónde va (las flechas van en el mar: se gira con el marco
+ * de la arena). La isla que se coloca va debajo del avión.
+ */
+async function flyTo(page: Page, to: { x: number; y: number }, tol = 28): Promise<void> {
+  const c = Math.cos(frame.rot);
+  const sn = Math.sin(frame.rot);
+  for (let i = 0; i < 80; i++) {
+    const p = await planeAt(page);
+    const dx = to.x - p.x;
+    const dy = to.y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d < tol) {
+      await page.waitForTimeout(450);
+      const q = await planeAt(page);
+      if (Math.hypot(to.x - q.x, to.y - q.y) < tol) return;
+      continue;
+    }
+    const wx = dx * c - dy * sn;
+    const wy = dx * sn + dy * c;
+    const keys: string[] = [];
+    if (Math.abs(wx) > d * 0.38) keys.push(wx > 0 ? 'ArrowRight' : 'ArrowLeft');
+    if (Math.abs(wy) > d * 0.38) keys.push(wy > 0 ? 'ArrowDown' : 'ArrowUp');
+    for (const k of keys) await page.keyboard.down(k);
+    await page.waitForTimeout(Math.max(50, Math.min(500, (d / 300) * 1000 * 0.55)));
+    for (const k of keys) await page.keyboard.up(k);
+    await page.waitForTimeout(380);
+  }
+  throw new Error(`el avión no llega a ${to.x},${to.y}`);
+}
+
+const hud = (page: Page) => page.getByTestId('mar-castillo-hud');
+const placing = (page: Page) => page.getByTestId('mar-castillo-colocar');
+const islands = async (page: Page) => Number(await game(page).getAttribute('data-islas'));
+const coins = async (page: Page) => Number(await game(page).getAttribute('data-monedas'));
+
+test('construir: cada una de las siete islas, y encima del camino no se puede (rojo con su motivo)', async ({
+  page,
+}) => {
+  const errors = await openMar(
+    page,
+    '?minijuego=castillo&seed=7&dificultad=tranquila&duracion=10&monedas=3000',
+  );
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-arena-avion', /\d/);
+
+  // Encima del camino: el trozo más cercano a la salida del avión.
+  let onPath = { x: 0, y: 0, d: Infinity };
+  for (let d = 0; d < path.length; d += 10) {
+    const p = path.sampleAt(d);
+    const dd = Math.hypot(p.x - start.x, p.y - start.y);
+    if (dd < onPath.d) onPath = { x: p.x, y: p.y, d: dd };
+  }
+  await page.getByTestId('mar-castillo-construir').click();
+  await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
+  await expect(page.getByTestId('mar-castillo-isla')).toHaveCount(kinds.length);
+  await page.locator('[data-testid="mar-castillo-isla"][data-isla="faro"]').click();
+  await expect(placing(page)).toHaveAttribute('data-isla', 'faro');
+  await expect(canvas(page)).toHaveAttribute('data-arena-colocar', /ok|no/);
+  await flyTo(page, onPath, 20);
+  await expect(placing(page)).toHaveAttribute('data-motivo', 'path');
+  await expect(placing(page)).toHaveAttribute('data-valido', 'no');
+  await expect(canvas(page)).toHaveAttribute('data-arena-colocar', 'no');
+  await expect(page.getByTestId('mar-castillo-colocar-estado')).toHaveText(/camino/i);
+  // Ni con el botón (apagado: `aria-disabled`, se le manda el clic igual) ni con Intro.
+  await page.getByTestId('mar-castillo-colocar-si').dispatchEvent('click');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(500);
+  expect(await islands(page)).toBe(0);
+  await page.getByTestId('mar-castillo-colocar-no').click();
+  await expect(placing(page)).toHaveCount(0);
+
+  // Las siete, una a una (la primera con el dedo o el ratón, el resto con B y su número).
+  const spots = roomySpots(kinds.length);
+  expect(spots).toHaveLength(kinds.length);
+  for (const [i, kind] of kinds.entries()) {
+    const before = await coins(page);
+    if (i === 0) {
+      await page.getByTestId('mar-castillo-construir').click();
+      await page.locator(`[data-testid="mar-castillo-isla"][data-isla="${kind}"]`).click();
+    } else {
+      await page.keyboard.press('b');
+      await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
+      await page.keyboard.press(String(i + 1));
+    }
+    await expect(placing(page)).toHaveAttribute('data-isla', kind);
+    await flyTo(page, spots[i]!);
+    await expect(placing(page)).toHaveAttribute('data-valido', 'si');
+    await expect(canvas(page)).toHaveAttribute('data-arena-colocar', 'ok');
+    if (i % 2) await page.keyboard.press('Enter');
+    else await page.getByTestId('mar-castillo-colocar-si').click();
+    await expect.poll(() => islands(page)).toBe(i + 1);
+    await expect(placing(page)).toHaveCount(0);
+    // Cobrada (las caídas mientras tanto suman algo).
+    expect(await coins(page)).toBeLessThan(before - DEFENSE_CONFIG.towers.kinds[kind].cost / 2);
+  }
+  await expect(canvas(page)).toHaveAttribute('data-arena-islas', String(kinds.length));
+  expect(errors).toEqual([]);
+});
+
+test('mejorar y vender: tocar una isla, subirla a nivel 3 y venderla; el avión sube su daño', async ({
+  page,
+}) => {
+  const errors = await openMar(
+    page,
+    '?minijuego=castillo&seed=7&dificultad=tranquila&duracion=10&monedas=3000',
+  );
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-arena-avion', /\d/);
+  // Una Ibiza cerca de la salida del avión.
+  await page.getByTestId('mar-castillo-construir').click();
+  await page.locator('[data-testid="mar-castillo-isla"][data-isla="tienda"]').click();
+  await flyTo(page, roomySpots(1)[0]!);
+  await page.getByTestId('mar-castillo-colocar-si').click();
+  await expect.poll(() => islands(page)).toBe(1);
+
+  // Con el dedo (o el ratón) sobre ella en la pantalla: su ficha.
+  // (Donde se ve: en el lienzo y sin nada del HUD encima.)
+  const box = (await canvas(page).boundingBox())!;
+  let at: { x: number; y: number } | null = null;
+  await expect
+    .poll(async () => {
+      const spot = (await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '';
+      const m = spot.match(/^\d+:(-?\d+),(-?\d+)/);
+      if (!m) return false;
+      const p = { x: box.x + Number(m[1]), y: box.y + Number(m[2]) };
+      const free = await page.evaluate(
+        ({ x, y }) => document.elementFromPoint(x, y)?.getAttribute('data-testid') === 'mar-canvas',
+        p,
+      );
+      at = free ? p : null;
+      return free;
+    })
+    .toBe(true);
+  const tapAt = at as unknown as { x: number; y: number };
+  if (test.info().project.name === 'mobile') await page.touchscreen.tap(tapAt.x, tapAt.y);
+  else await page.mouse.click(tapAt.x, tapAt.y);
+  const card = page.getByTestId('mar-castillo-ficha');
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute('data-isla', 'tienda');
+  await expect(card).toHaveAttribute('data-nivel', '1');
+  await expect(canvas(page)).toHaveAttribute('data-arena-elegida', 'si');
+  const up = DEFENSE_CONFIG.towers.kinds.tienda.upgradeCost;
+  await expect(page.getByTestId('mar-castillo-mejorar')).toContainText(String(up[0]));
+
+  // Mejorar dos veces (con el botón y con la U): nivel 3, «Nivel máximo».
+  await page.getByTestId('mar-castillo-mejorar').click();
+  await expect(card).toHaveAttribute('data-nivel', '2');
+  await expect(page.getByTestId('mar-castillo-mejorar')).toContainText(String(up[1]));
+  await page.keyboard.press('u');
+  await expect(card).toHaveAttribute('data-nivel', '3');
+  await expect(page.getByTestId('mar-castillo-mejorar')).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByTestId('mar-castillo-ficha-nivel')).toContainText('3/3');
+
+  // Vender: se va y devuelve lo que decía.
+  const refund = Number(
+    (await page.getByTestId('mar-castillo-vender').textContent())!.match(/\+(\d+)/)![1],
+  );
+  expect(refund).toBeGreaterThan(0);
+  const hudCoins = async () =>
+    Number(await page.getByTestId('mar-castillo-monedas').getAttribute('data-monedas'));
+  await page.waitForTimeout(400);
+  const before = await hudCoins();
+  await page.getByTestId('mar-castillo-vender').click();
+  await expect.poll(() => islands(page)).toBe(0);
+  await expect(card).toHaveCount(0);
+  await expect.poll(hudCoins).toBeGreaterThanOrEqual(before + refund);
+
+  // El daño del avión: 1 → 2.
+  await expect(game(page)).toHaveAttribute('data-avion-nivel', '1');
+  await page.getByTestId('mar-castillo-avion').click();
+  await expect(game(page)).toHaveAttribute('data-avion-nivel', '2');
+  await expect(page.getByTestId('mar-castillo-avion')).toHaveAttribute('data-nivel', '2');
+  expect(errors).toEqual([]);
+});
+
+test('HUD: arriba vida, tiempo, oleada y monedas; la pausa con el sonido y «Terminar partida» → «Partida terminada», sin medalla ni ranking', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=castillo&seed=7&duracion=5');
+  await expect(hud(page)).toBeVisible();
+  await expect(page.getByTestId('mar-castillo-vida')).toHaveAttribute('data-pct', '100');
+  await expect(page.getByTestId('mar-castillo-tiempo')).toHaveText(/^[45]:\d\d$/);
+  await expect(page.getByTestId('mar-castillo-monedas')).toHaveAttribute(
+    'data-monedas',
+    String(DEFENSE_CONFIG.startCoins),
+  );
+  // Lo que no llega va en gris (aria-disabled), según las monedas de ese momento.
+  await page.getByTestId('mar-castillo-construir').click();
+  await expect(page.getByTestId('mar-castillo-isla')).toHaveCount(kinds.length);
+  const wrong = await page.evaluate(() => {
+    const have = Number(
+      document.querySelector('[data-testid="mar-castillo-monedas"]')?.getAttribute('data-monedas'),
+    );
+    return [...document.querySelectorAll('[data-testid="mar-castillo-isla"]')]
+      .filter((el) => (Number(el.getAttribute('data-coste')) > have) !== (el.getAttribute('aria-disabled') === 'true'))
+      .map((el) => el.getAttribute('data-isla'));
+  });
+  expect(wrong).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-castillo-islas')).toHaveCount(0);
+  // Empieza la primera oleada: se anuncia.
+  await expect(page.getByTestId('mar-castillo-oleada')).toHaveAttribute('data-oleada', '1', {
+    timeout: 30_000,
+  });
+  await expect(page.getByTestId('mar-castillo-anuncio')).toHaveText(/oleada 1/i);
+
+  // Esc: la pausa (el menú de /mar) con el sonido y el volumen.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-menu')).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-estado', 'paused');
+  await expect(page.getByTestId('mar-canon-volumen')).toBeVisible();
+  await expect(page.getByTestId('mar-canon-mostrar-health')).toHaveCount(0);
+  await page.getByTestId('mar-menu-terminar').click();
+  await expect(page.getByTestId('mar-menu-terminar-confirmar')).toBeVisible();
+  await page.getByTestId('mar-menu-terminar-si').click();
+  const end = page.getByTestId('mar-castillo-final');
+  await expect(end).toBeVisible();
+  await expect(end).toHaveAttribute('data-fin', 'quit');
+  await expect(end).toHaveAttribute('data-ranking', 'no');
+  await expect(game(page)).toHaveAttribute('data-fin', 'quit');
+  await expect(end.locator('h2')).toHaveText(/partida terminada/i);
+  await expect(page.getByTestId('mar-castillo-anuncio')).toHaveText(/partida terminada/i);
+  await expect(hud(page)).toHaveCount(0);
+  await expect(page.getByTestId('mar-castillo-volver')).toBeFocused();
+  await page.getByTestId('mar-castillo-volver').click();
+  await expect(end).toHaveCount(0);
+  await expect(canvas(page)).toHaveAttribute('data-arena', 'off');
+  expect(errors).toEqual([]);
+});
+
+const HUD_SIZES = [
+  { width: 360, height: 640 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1440, height: 900 },
+] as const;
+
+/** Las cajas de lo fijo de /mar y del HUD del castillo (lo que se ve). */
+async function boxesOf(page: Page): Promise<Record<string, Box>> {
+  return page.evaluate(() => {
+    const sel: Record<string, string> = {
+      hud: '[data-testid="mar-castillo-hud"]',
+      franja: '[data-testid="mar-castillo-franja"] > *',
+      aviso: '[data-testid="mar-castillo-jefe-aviso"]',
+      menu: '[data-testid="mar-logros"]',
+      minimapa: '[data-testid="mar-minimapa"]',
+      enlaces: '[data-testid="mar-enlaces"]',
+      entradas: '[data-testid="mar-entradas"]',
+      turbo: '[data-testid="mar-turbo"]',
+      nudos: '.mar-speed',
+      zoom: '.mar-rail',
+    };
+    const out: Record<string, { x: number; y: number; width: number; height: number }> = {};
+    for (const [id, q] of Object.entries(sel)) {
+      const el = document.querySelector<HTMLElement>(q);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      const st = getComputedStyle(el);
+      if (r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && st.display !== 'none')
+        out[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
+    }
+    return out;
+  });
+}
+
+/** Lo que se toca en el HUD, con su zona de toque (la caja más el `::before` que la agranda). */
+async function touchTargets(page: Page): Promise<{ id: string; w: number; h: number }[]> {
+  return page.evaluate(() =>
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        '[data-testid="mar-castillo-hud"] button, [data-testid="mar-castillo-franja"] button',
+      ),
+    ].map((el) => {
+      const r = el.getBoundingClientRect();
+      const before = getComputedStyle(el, '::before');
+      const grow =
+        before.position === 'absolute' && before.content !== 'none'
+          ? Math.max(0, -parseFloat(before.left || '0'))
+          : 0;
+      return {
+        id: el.dataset.testid ?? el.className,
+        w: r.width + 2 * grow,
+        h: r.height + 2 * grow,
+      };
+    }),
+  );
+}
+
+test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, construir, colocar, ficha y boss) y todo se toca con 44 px', async ({
+  page,
+}) => {
+  // `islas=1`: siete islas ya puestas (para la ficha); `t=`: con el primer boss en el camino.
+  const run = DEFENSE_CONFIG.runs[5];
+  const errors = await openMar(
+    page,
+    `?minijuego=castillo&seed=7&duracion=5&dificultad=tranquila&islas=1&monedas=2000&t=${Math.round(run.bosses[0]!.atFrac * run.durationS)}`,
+  );
+  await expect(hud(page)).toBeVisible();
+  await expect(page.getByTestId('mar-canon-jefe')).toBeVisible({ timeout: 30_000 });
+  const modes: { name: string; enter: () => Promise<void> }[] = [
+    { name: 'reposo', enter: async () => {} },
+    {
+      name: 'construir',
+      enter: async () => {
+        await page.getByTestId('mar-castillo-construir').click();
+        await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
+      },
+    },
+    {
+      name: 'colocar',
+      enter: async () => {
+        await page.locator('[data-testid="mar-castillo-isla"][data-isla="cala"]').click();
+        await expect(placing(page)).toBeVisible();
+      },
+    },
+    {
+      name: 'ficha',
+      enter: async () => {
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('i');
+        await expect(page.getByTestId('mar-castillo-ficha')).toBeVisible();
+      },
+    },
+  ];
+  for (const mode of modes) {
+    await mode.enter();
+    for (const size of HUD_SIZES) {
+      await page.setViewportSize(size);
+      await page.waitForTimeout(150);
+      const where = `${mode.name} ${size.width}×${size.height}`;
+      const b = await boxesOf(page);
+      expect(b.hud, where).toBeTruthy();
+      expect(b.franja, where).toBeTruthy();
+      // Dentro de la pantalla.
+      for (const id of ['hud', 'franja'] as const) {
+        expect(b[id]!.x, `${where} ${id}`).toBeGreaterThanOrEqual(0);
+        expect(b[id]!.y, `${where} ${id}`).toBeGreaterThanOrEqual(0);
+        expect(b[id]!.x + b[id]!.width, `${where} ${id}`).toBeLessThanOrEqual(size.width + 0.5);
+        expect(b[id]!.y + b[id]!.height, `${where} ${id}`).toBeLessThanOrEqual(size.height + 0.5);
+      }
+      for (const [id, box] of Object.entries(b)) {
+        if (id !== 'hud') expect(overlaps(b.hud!, box), `${where}: hud × ${id}`).toBe(false);
+        if (id !== 'franja') expect(overlaps(b.franja!, box), `${where}: franja × ${id}`).toBe(false);
+      }
+      for (const t of await touchTargets(page)) {
+        expect(Math.min(t.w, t.h), `${where}: ${t.id}`).toBeGreaterThanOrEqual(44);
+      }
+    }
+    await page.setViewportSize(HUD_SIZES[3]);
+  }
   expect(errors).toEqual([]);
 });

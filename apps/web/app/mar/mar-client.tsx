@@ -182,7 +182,8 @@ import {
 } from './carrera';
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
-import { CastleDevExit, CastleTestHook, useCastleMode } from './castillo-mode';
+import { CastleTestHook, useCastleMode } from './castillo-mode';
+import { CastleLayer } from './castillo-hud';
 import { CanonLayer } from './canon-hud';
 import { CanonPrevia } from './canon-previa';
 import { CanonBossRanking } from './canon-ranking';
@@ -1706,6 +1707,18 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setSheet((s) => (s?.kind === 'codes' ? null : s));
     setMenu(true);
   };
+  /** Hay un panel o el menú encima de la partida (el Cañón o el castillo): espera debajo. */
+  const gameCovered =
+    menu ||
+    logros ||
+    tienda ||
+    !!hoja ||
+    entradas ||
+    !!checkoutFor ||
+    !!bottleSheet ||
+    ranking ||
+    !!sheet ||
+    minigameOpen;
 
   /** Una sección del menú del juego, en su hoja (con «‹ Menú» para volver). */
   const openSection = (section: MenuSection) => {
@@ -2210,7 +2223,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
                   resume: msg('mar.canon.menu.seguir'),
                   onQuit: canon.quit,
                 }
-              : undefined
+              : castle.active && !castle.result
+                ? {
+                    warning: msg('mar.castillo.menu.aviso'),
+                    resume: msg('mar.canon.menu.seguir'),
+                    onQuit: castle.quit,
+                  }
+                : undefined
           }
         />
       ) : null}
@@ -2284,26 +2303,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         sound={canon.sound}
       />
       <CanonDevSwitch canon={canon} />
-      {/* «Defensa del Castillo» (T160): su estado para las pruebas y salir (desarrollo). */}
+      {/* «Defensa del Castillo» (T160, T161): su estado para las pruebas y su HUD. */}
       <CastleTestHook hud={castle.hud} />
-      <CastleDevExit castle={castle} />
-      <CanonLayer
-        canon={canon}
-        engineRef={engineRef}
-        covered={
-          menu ||
-          logros ||
-          tienda ||
-          !!hoja ||
-          entradas ||
-          !!checkoutFor ||
-          !!bottleSheet ||
-          ranking ||
-          !!sheet ||
-          minigameOpen
-        }
-        onPause={openMenu}
-      />
+      <CastleLayer castle={castle} covered={gameCovered} onPause={openMenu} />
+      <CanonLayer canon={canon} engineRef={engineRef} covered={gameCovered} onPause={openMenu} />
 
       {/* Rumbo, circuito y misión */}
       <div className="mar-chips">
