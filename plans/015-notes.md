@@ -34,3 +34,21 @@ Collected 2026-10-06 after plan 014 shipped. `/orchestrator` turns these into ta
 - `.gitattributes` with `eol=lf` (CRLF caused several merge conflicts).
 - Castle ranking migration `20261006100300_castle_ranking.sql` not applied nor run against Postgres (Hernán).
 - Full e2e flakes under load (timing/piloting tests).
+
+## Hernán's answers (2026-10-06) — these override the notes above where they differ
+1. **Tabarca position:** with the camera starting on the boat, the lighthouse island must be visible on the **left**, a bit further ahead, almost next to the náufrago (replaces "further to the right").
+2. **Board pop-up:** like the other islands: appears closed with the three buttons; expanding it shows an explanation of each minigame.
+3. **No pause while building** (for now): the game keeps running.
+4. **Taps:** in build mode, tapping the sea places the island preview; outside build mode, tapping the sea moves the plane and tapping an island selects it. After choosing the spot, an **«Instalar isla»** button appears at the bottom to confirm.
+5. **Path:** even **longer**, with **pronounced U-turns** (sharper than today's curves) so islands can be placed inside each U; north curves and the right one tighter to the castle; zigzag straights longer so an island fits in each angle.
+6. **Plane upgrades:** only attack speed and damage, each up to **level 5**.
+7. **Vecino quejica:** the whole 3D model redone from zero in **Blender with Fable**; no approval stop (Hernán trusts it). Used in both the Cañón and the castle game.
+8. **Island images in «Construir»:** fixed renders with a transparent background (same front framing for all).
+9. Add **×2 speed** and **«Llamar oleada»** (call the next wave early) buttons.
+10. Add a **next-wave warning** (what comes, whether there is a boss).
+11. **Pause menu options:** toggle enemy health bars and damage numbers.
+12. **Target priority per island** (first / strongest / closest…), configurable when tapping it; each island kind has its own default.
+13. **Guided first game** (short steps).
+14. **Castle upgrade:** only raises max life; expensive, a lot of life per level.
+15. **Achievements and prize:** one achievement per difficulty (any run length); a world **prize** for winning on the hardest difficulty (any run length; amount to define); a **special achievement** for the hardest difficulty at the longest run length.
+16. **Technical:** fix the test setup so the full e2e and vitest no longer fail by timeouts (split or tune slow suites), plus `.gitattributes` `eol=lf`.
