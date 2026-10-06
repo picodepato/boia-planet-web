@@ -104,7 +104,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: path v2 (outer orbit, 4 inward U-turns, zigzag; ≈10 390 u, 44 s walk), build anywhere in the arena, plane clamp + `moveTo`, plane speed/damage 1–5, castle +50 life/level, priorities, ×2, call wave (+1 coin/s skipped), next-wave info; DEFENSE_CONFIG_VERSION 4 · 95ce0fc
 
 ## T172 — Island renders for «Construir»
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T177
@@ -114,10 +114,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Done when:
   - the script regenerates all images from scratch (command in the status section); a test checks the manifest lists seven kinds and each file exists with alpha → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: seven WebP renders (96/192 px, alpha) in apps/web/public/castillo/islas/ from tools/islas-construir/render.ts, manifest `CASTLE_ISLAND_IMAGES` in apps/web/lib/mundo/castle-island-images.ts; done by Opus (Codex out of credits) · 4cdd40f
 
 ## T175 — Mascots «Cañoncito» and «Tortuga turbo», and the «Estela del vórtice»
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: T177
@@ -136,7 +136,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T170 — Castle arena v2: camera, zoom, taps, range preview, path view, bars and numbers
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T169
@@ -223,6 +223,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T172: Faro image from the hand-made `buildIsland('faro')` the castle builds (not the Tabarca GLB, which it copies to scale); normal game camera (40° fov, 0.71 rad elevation, from the pier side, day light), below-water cut; each island fitted and centred with the same camera and margin (one shared fit left small islands unrecognisable); WebP 96/192 px, 3–10 kB; render needs node `--experimental-transform-types`, stub `document` only for unused stage text (agent)
+- 2026-10-06 run: with 4 agents, if tests start failing by timeouts under load, stop one agent (WIP commit, continuation later) instead of retrying blindly (Hernán)
+- 2026-10-06 run: 3 agents at once at Hernán's request; T170 launched before T175 (plan order) because it is on the critical path to T171/T173 (orchestrator)
+- 2026-10-06 run: Codex hit its usage limit (until ~16:41) on T172 before writing anything; T172 relaunched on Opus as a continuation (not a counted failure); later Codex tasks (T173) go to Opus until Codex is back (orchestrator, per Hernán's standing rule)
 - 2026-10-06 T169: path v2 = outer orbit + 4 inward U-turns (depth 430, radius 135) + descent + 3-leg zigzag (230 u, ±40°), ≈10 390 u (was 6 399); vortex 980 u and arena 1120 u unchanged; walk time kept ≈ 44 s so enemies are faster (≈236 u/s) — with 62 s every bot game held at full life; `hpGrowthPerMinute` 0.25 → 0.35, Tormenta `enemyHp` 1.2 → 1.12; castle upgrade +50 max life (and heal) for 250/400/600; call wave pays 1 coin per second skipped; Faro/Sonido/Ibiza have no priority, Benidorm defaults to strongest, others first; ranking accepts any castle max life, migration seed rows say config 4 (agent) — FOR HERNÁN: "longer path" was read as longer in distance, not in time
 - 2026-10-06 T177: slow set = every `packages/*/src/**/*-balance.test.ts` (survivors-balance, survivors-boss-balance, defense-balance), `vitest.slow.config.ts` reuses the list, 120 s timeout; wrapper did renormalization and split, Codex the e2e pass; Codex's `mar-paridad`/`mar-canon` changes reverted (one failed, one never run; Codex could not run Playwright: spawn EPERM); castle `flyTo` kept, retry on the island confirm added; T174 conflicts were line endings only (agent)
 - 2026-10-06 plan: header decisions 1–18 from Hernán's notes and answers (plans/015-notes.md at 15902e7); plane never leaves the arena and the widest camera view is the current arena view (decision 3); the guide asks before the first game and can be skipped with one button (decision 14) (Hernán)
@@ -242,3 +246,9 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 13:17 T169 launched · attempt 1 · agent a4f8fd0a6610f9570 (opus)
 - 2026-10-06 13:17 T168 launched · attempt 1 · Codex via wrapper agent af28ea191cd989bae (sonnet)
 - 2026-10-06 13:56 T169 integrated → 95ce0fc (tests ok); worktree and branch removed
+- 2026-10-06 13:56 T172 launched · attempt 1 · Codex via wrapper agent a2d1ad5e193eabf21 (sonnet)
+- 2026-10-06 13:59 T172 Codex usage limit (WIP c5fb891, nothing done)
+- 2026-10-06 13:59 T172 relaunched on Opus · attempt 1 · agent a665537755a24199c (opus)
+- 2026-10-06 14:01 T170 launched · attempt 1 · agent ae169763add2a5b41 (opus) — 3rd agent at Hernán's request
+- 2026-10-06 14:05 T175 launched · attempt 1 · agent a777d934b18729e6b (fable) — 4th agent, Hernán: «avanza en lo que puedas»
+- 2026-10-06 14:12 T172 integrated → 4cdd40f (tests ok); worktrees and branches removed
