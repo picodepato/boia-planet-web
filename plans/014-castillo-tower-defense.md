@@ -165,7 +165,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T164 — Sound for the castle
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T161
@@ -175,7 +175,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Done when:
   - unit tests (mocked AudioContext): nothing before a gesture; per-kind rate limit; loop switches battle → boss → sea → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: castle sound on the plan 013 Web Audio module: battle/boss loop, sea back at the end, build/upgrade/sell, seven tower attacks with per-kind rate limit, castle hit, wave, win/loss; done by Codex · aaa87fb
 
 ## T166 — Tabarca lighthouse island redesigned in Blender (the board at the entrance)
 - Status: done
@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T164: shared audio test helpers moved to `audio-test-helpers.ts`; +29 lines in `canon-audio.ts` with no Cañón change; `mar-client.tsx` and `castillo-mode.tsx` kept CRLF as in the repo (wrapper restored them after Codex converted to LF); Codex timed out during its own lint, wrapper ran Done-when itself (agent)
 - 2026-10-06 T161: placing starts under the plane and follows it, tap moves it inside the ring, game keeps running while building; keys B/1–7/Enter/I/U/V/Esc; sell in one tap without confirm; one bottom strip above «Entradas» switching content; zoom rail hidden in the arena; dev `monedas=N` never ranks; minimal end card for every ending (T162 adds medal/score/«Otra vez»); `GameSoundMenu` and `BossBar` extracted with no Cañón change; build/selection state on `DefenseRun` (agent)
 - 2026-10-06 T166: faro collision one circle, LIGHTHOUSE_RADIUS 2.3 u_maq (dome ~16.6 scene vs old castle 13 r); no beam in the GLB, procedural beam kept through new optional `IslandBuild.keep` on the island group (sinks/restores with T160); procedural faro redrawn to the model layout; mar3d.ts back to LF after T160 committed it CRLF (agent)
 - 2026-10-06 T160: arena rotated in the view (`arenaFrame`, vortex along CASTLE_OPEN_SEA_BEARING), sim config untouched; planet wrap centred on the castle in the arena; camera elevation 1.2 rad, landscape shows the whole arena, portrait full height and 3/4 width following the plane; boat restored to its pre-game spot on exit; built islands use the hand-made `buildIsland` model (manifest radius accepted); glow points hide at ~1/3 sunk (castle glows too); test shortcut `?minijuego=castillo&duracion=&dificultad=&t=&seed=&islas=1` never ranks; dev «Salir de la arena» button until T161 (agent)
@@ -295,3 +296,4 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 05:55 T161 integrated → ff56a4f (tests ok); worktree and branch removed
 - 2026-10-06 05:57 T162 launched · attempt 1 · agent af7ab6933988553d9 (opus)
 - 2026-10-06 05:57 T164 launched · attempt 1 · Codex via wrapper agent abd1a8ea108952897 (sonnet)
+- 2026-10-06 06:15 T164 integrated → aaa87fb (tests ok); worktree and branch removed
