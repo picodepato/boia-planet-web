@@ -4,55 +4,6 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
-## 2026-10-06 — plan 016 T185: Close
-
-Qué existe:
-
-- **Guía de prueba** `docs/propuestas/2026-10-06-castillo-v3-guia-prueba.md`: qué
-  cambia (castillo v3, Fiestera, arreglos de `/mar`, Carnet de artista), atajos y
-  recorridos, el equilibrio medido, rendimiento, nueve preguntas y «Notas» vacía.
-- **Docs**: `docs/spec/estado.md` (cabecera del castillo con el plan 016 y su
-  prueba; notas del plan 016 en REQ-AVE-005 (Fiestera, T180), REQ-IDE-025
-  («Rápido», T184), REQ-ARQ-015 (rendimiento, T183); REQ-IDE-010 ya lo puso
-  T186); `docs/TRASPASO.md` («Qué hace Hernán (plan 016)»: migraciones
-  20261006100500 y 20261006100600 **ya aplicadas en `boia-planet-dev`**,
-  `db:types:dev` sin diferencias, `test:supabase` 93/93; queda crear el enlace de
-  artistas real y aplicarlas en producción; fila nueva en «Depende de Álvaro»:
-  sello «ARTISTA» y el castillo con el borrador del plan 015); el borrador del
-  plan 015 para Álvaro dice qué cambió en el plan 016.
-- Sin cambios de código: nada de lo que rompió el plan apareció en la e2e
-  completa (abajo).
-
-Equilibrio con todo dentro (reglas versión 6; medido con un vitest de usar y
-tirar sobre `buildingBot`, borrado después):
-
-- La sencilla, semillas 1–6, vida al final: Tranquila 5/7/10 → 6/6 oro 100 %;
-  Normal 5/7/10 → 6/6 oro 100 %; Tormenta 5/7/10 → 6/6 oro 100 %.
-- Una isla + Ibiza, semilla 7 (Normal 5/7/10 · Tormenta 5/7/10; F = cae en s):
-  Faro 100/75/100 · 63/100/100; Nochevieja 100/100/100 · 63/100/100; Halloween
-  100/50/25 · 63/63/F508; Puerto 100 en todo; Sonido 67/50/F508 · 34/F319/F508;
-  Benidorm 100 en todo.
-- Sin Ibiza (semilla 7): Tranquila gana; Normal cae a 188–193 s; Tormenta a
-  153–163 s.
-- Igual que T181: nada se movió con T183/T184/T186.
-
-Comandos:
-
-- `pnpm test:slow` → exit 0, 3 archivos, 29 pruebas.
-- `E2E_PORT=3487 pnpm e2e --workers=2` → not finished (run cut by a machine shutdown; Hernán chose to close without it)
-- `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0 (294 REQ · HECHO 159 ·
-  PARCIAL 68 · FALTA 31 · L2 25 · final 9 · retirado 2).
-- Test command → run by the orchestrator at integration
-
-Pendiente:
-
-- Hernán: jugar con la guía v3 y contestar (sobre todo la 4: el bot gana todo al
-  100 % y Puerto o Benidorm solos aguantan Tormenta); crear el enlace de artistas
-  real en Admin → Socios.
-- Álvaro: el sello «ARTISTA» (`muestra`) y el castillo con el borrador del plan 015.
-- `docs/TRASPASO.md` sigue con la cabecera de 2026-10-03 (planes 011–015 no la
-  pusieron al día); este cierre sólo tocó lo que queda y lo que depende de Álvaro.
-
 ## 2026-10-06 — plan 016 T186: Números de socio por orden de llegada, enlace de artistas y sello «ARTISTA»
 
 Qué existe:
