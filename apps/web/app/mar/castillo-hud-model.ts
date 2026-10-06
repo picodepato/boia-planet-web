@@ -4,7 +4,9 @@ import {
   type DefenseBuildReason,
   type DefenseConfig,
   type DefenseEndReason,
+  type DefenseMedal,
   type DefenseResult,
+  type DefenseRunMin,
   type DefenseSnapshot,
   type DefenseSpawn,
   type DefenseStatus,
@@ -444,7 +446,7 @@ export function clampToRing(dx: number, dy: number, ring: number): { x: number; 
 
 // --- El final -------------------------------------------------------------------
 
-/** El título de la tarjeta final por cómo acabó (T162 añade la medalla y la puntuación). */
+/** El título de la tarjeta final por cómo acabó. */
 export const END_TITLE_KEYS: Readonly<Record<DefenseEndReason, MessageKey>> = {
   held: 'mar.castillo.fin.held',
   fallen: 'mar.castillo.fin.fallen',
@@ -452,26 +454,55 @@ export const END_TITLE_KEYS: Readonly<Record<DefenseEndReason, MessageKey>> = {
   quit: 'mar.castillo.fin.quit',
 };
 
+/** La línea bajo el título (T162): sólo al aguantar o caer. */
+export const END_LINE_KEYS: Readonly<Partial<Record<DefenseEndReason, MessageKey>>> = {
+  held: 'mar.castillo.fin.held.texto',
+  fallen: 'mar.castillo.fin.fallen.texto',
+};
+
+/** La medalla en la tarjeta final (T162), con el texto de la del Cañón. */
+export const END_MEDAL_KEYS: Readonly<Record<DefenseMedal | 'ninguna', MessageKey>> = {
+  oro: 'mar.canon.fin.medalla.oro',
+  plata: 'mar.canon.fin.medalla.plata',
+  bronce: 'mar.canon.fin.medalla.bronce',
+  ninguna: 'mar.canon.fin.medalla.ninguna',
+};
+
 export interface CastleEndView {
   reason: DefenseEndReason;
   title: MessageKey;
+  /** La línea bajo el título, o null («Terminar partida», abandono). */
+  line: MessageKey | null;
   played: string;
   kills: number;
   lifePct: number;
-  /** «Terminar partida»: sin medalla ni ranking. */
+  /** «Terminar partida» (o abandono): sin medalla, puntuación ni ranking. */
   short: boolean;
   ranked: boolean;
+  /** La medalla de la partida, o null. */
+  medal: DefenseMedal | null;
+  medalKey: MessageKey;
+  /** Los puntos (enemigos + bono del castillo). */
+  score: number;
+  runMin: DefenseRunMin;
+  difficulty: DefenseResult['difficulty'];
 }
 
 export function castleEndView(r: DefenseResult): CastleEndView {
   return {
     reason: r.end,
     title: END_TITLE_KEYS[r.end],
+    line: END_LINE_KEYS[r.end] ?? null,
     played: formatPlayed(r.playedS),
     kills: r.kills,
     lifePct: percent(r.castleLife, r.castleMaxLife),
     short: r.end === 'quit' || r.end === 'abandoned',
     ranked: r.ranked,
+    medal: r.medal,
+    medalKey: END_MEDAL_KEYS[r.medal ?? 'ninguna'],
+    score: r.score,
+    runMin: r.runMin,
+    difficulty: r.difficulty,
   };
 }
 

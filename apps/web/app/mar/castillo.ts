@@ -1,5 +1,6 @@
 import type { QualityTier } from '@boia/engine/streaming';
 import {
+  DEFAULT_DEFENSE_RUN_MIN,
   DEFENSE_CONFIG,
   DEFENSE_TOWER_KINDS,
   DefenseClock,
@@ -28,7 +29,8 @@ import { CANON_PARAMS, type DevEnv, devEnv, devShortcutsEnabled } from './surviv
  * React: la partida de `@boia/engine/defense` con su reloj de tiempo real,
  * que el bucle de `Mar3D` da paso a paso con el mando del avión, y el atajo
  * de desarrollo que la empieza (`?minijuego=castillo`). El pop-up, la
- * tarjeta final y las medallas son de T162; el HUD, de T161.
+ * tarjeta final y las medallas son de T162 (`castillo-previa.tsx`,
+ * `castillo-mode.tsx`); el HUD, de T161.
  */
 
 export { CASTLE_GAME_ID };
@@ -45,7 +47,22 @@ export const CASTLE_PARAMS = {
   islands: 'islas',
   /** `monedas=N`: N monedas más en el monedero al empezar (pruebas del HUD, T161). */
   coins: 'monedas',
+  /**
+   * `vencer=1` (T162, como el del Cañón): la partida empieza a
+   * `DEV_WIN_LEAD_S` del final, así el castillo aguanta entero (oro) sin
+   * jugar; para probar la tarjeta, las medallas y el tablón.
+   */
+  win: CANON_PARAMS.win,
+  /**
+   * `oferta=1` (T162): en vez de empezar, el panel de la isla del castillo;
+   * los demás atajos de la URL se guardan para la partida que se empiece
+   * desde su pop-up (que entonces tampoco entra en el ranking).
+   */
+  offer: CANON_PARAMS.offer,
 } as const;
+
+/** `vencer=1`: los segundos que quedan de partida al empezar. */
+export const DEV_WIN_LEAD_S = 3;
 
 export interface CastleShortcut {
   t: number;
@@ -55,6 +72,10 @@ export interface CastleShortcut {
   islands: boolean;
   /** Monedas de más al empezar (`monedas=`), o null. */
   coins: number | null;
+  /** `vencer=1`: empezar a punto de aguantar. */
+  win: boolean;
+  /** `oferta=1`: abrir el panel de la isla en vez de empezar. */
+  offer: boolean;
 }
 
 /** `?minijuego=castillo&…`: qué pide la URL, o null (otro juego o atajos apagados). */
@@ -78,6 +99,8 @@ export function castleShortcut(
     runMin,
     islands: q.get(CASTLE_PARAMS.islands) === '1',
     coins: Number.isFinite(coins) && coins > 0 ? Math.min(coins, 99999) : null,
+    win: q.get(CASTLE_PARAMS.win) === '1',
+    offer: q.get(CASTLE_PARAMS.offer) === '1',
   };
 }
 
@@ -149,6 +172,13 @@ export interface DefenseRunOptions {
   devIslands?: boolean;
   /** Atajo `monedas=`: monedas de más al empezar (no entra en el ranking). */
   devCoins?: number;
+  /** Atajo `vencer=1`: empezar a `DEV_WIN_LEAD_S` del final (no entra en el ranking). */
+  devWin?: boolean;
+  /**
+   * La partida la empezó un atajo de desarrollo (cualquiera: también
+   * `duracion=` o `dificultad=` solos, T162): nunca entra en el ranking.
+   */
+  devStart?: boolean;
   config?: DefenseConfig;
   onEnd?: (reason: DefenseEndReason, snapshot: DefenseSnapshot) => void;
   /** Lo que pasó en cada paso fijo (el sonido, T164); no debe tocar la partida. */
@@ -193,6 +223,8 @@ export class DefenseRun {
   readonly config: DefenseConfig;
   readonly seed: number;
   readonly quality: QualityTier;
+  /** La empezó un atajo de desarrollo: no entra en el ranking (T162). */
+  readonly devStart: boolean;
   private readonly clock = new DefenseClock();
   private lastMs: number | null = null;
   private notified = false;
@@ -209,11 +241,17 @@ export class DefenseRun {
     this.onEvents = opts.onEvents;
     const dev = opts.devIslands === true;
     const devCoins = Math.max(0, Math.floor(opts.devCoins ?? 0));
+    const devWin = opts.devWin === true;
+    const durationS = this.config.runs[opts.runMin ?? DEFAULT_DEFENSE_RUN_MIN].durationS;
+    const startAtS = devWin
+      ? Math.max(opts.startAtS ?? 0, durationS - DEV_WIN_LEAD_S)
+      : (opts.startAtS ?? 0);
+    this.devStart = opts.devStart === true || dev || devCoins > 0 || devWin || startAtS > 0;
     this.game = createDefense(this.config, opts.seed, {
       ...(opts.runMin ? { runMin: opts.runMin } : {}),
       ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
-      ...(opts.startAtS ? { startAtS: opts.startAtS } : {}),
-      ...(dev || devCoins > 0 ? { unranked: true } : {}),
+      ...(startAtS > 0 ? { startAtS } : {}),
+      ...(this.devStart ? { unranked: true } : {}),
     });
     if (devCoins > 0) this.game.refund(devCoins);
     if (dev) {
@@ -307,7 +345,9 @@ export class DefenseRun {
   }
 
   /** La isla elegida en la partida (para su aro en la vista), o null. */
-  selectedSpot(s: Pick<DefenseSnapshot, 'towers'> = this.game.snapshot()): { x: number; y: number } | null {
+  selectedSpot(
+    s: Pick<DefenseSnapshot, 'towers'> = this.game.snapshot(),
+  ): { x: number; y: number } | null {
     if (this.selected === null) return null;
     const t = s.towers.find((x) => x.id === this.selected);
     return t ? { x: t.x, y: t.y } : null;

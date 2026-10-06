@@ -1,8 +1,24 @@
 'use client';
 
-import type { DefenseResult, DefenseSnapshot } from '@boia/engine/defense';
+import {
+  DEFAULT_DEFENSE_RUN_MIN,
+  type DefenseMedal,
+  type DefenseResult,
+  type DefenseRunMin,
+  type DefenseSnapshot,
+  type DifficultyId,
+} from '@boia/engine/defense';
+import { DEFAULT_DIFFICULTY } from '@boia/engine/survivors';
 import type { Settings } from '@boia/engine/ui';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { t as msg } from '../../lib/i18n';
+import {
+  type CastleMedals,
+  EMPTY_CASTLE_MEDALS,
+  readCastleMedals,
+  recordCastleMedal,
+} from '../../lib/mundo/castle-medals';
+import { gameRepository, useRepoData } from '../../lib/mundo/repo';
 import {
   type CastleHook,
   type CastleShortcut,
@@ -13,12 +29,12 @@ import {
 import type { Mar3D } from './engine/mar3d';
 import type { CanonAudioState } from './canon-audio';
 import { useCastleAudio } from './castillo-audio-mode';
-import { type HideLayer, hideForGame, marHideHost, randomSeed } from './survivors';
+import { type HideLayer, devStartRewards, hideForGame, marHideHost, randomSeed } from './survivors';
 
 /**
  * «Defensa del Castillo» en `/mar` (plan 014 T160), del lado de React:
- * empezar la partida (de momento, sólo con el atajo de desarrollo
- * `?minijuego=castillo`; el pop-up es de T162), esconder las capas del mundo
+ * empezar la partida (desde el pop-up de su isla, T162, o con el atajo de
+ * desarrollo `?minijuego=castillo`), esconder las capas del mundo
  * como el Cañón (`HideLayer`) mientras el motor hunde islas y decorado, y
  * devolverlo todo igual al acabar. El estado para las pruebas va en
  * `data-testid="mar-castillo"`. `mar-client` sólo lo cablea. El HUD (T161,
@@ -31,6 +47,39 @@ const EMPTY: ReadonlySet<HideLayer> = new Set();
 const HOOK_MS = 250;
 /** Cada cuánto, con la pestaña oculta, se apunta la pausa (ms). */
 const HIDDEN_MS = 1000;
+
+/** Cómo empieza una partida: lo que se eligió en el pop-up y, si los hay, los atajos. */
+interface CastleStart {
+  runMin: DefenseRunMin;
+  difficulty: DifficultyId;
+  /** Los atajos de desarrollo de la URL (la partida no entra en el ranking), o null. */
+  dev: CastleShortcut | null;
+}
+
+/**
+ * El pop-up antes de la partida (T162, el patrón del Cañón de T151): «Jugar»
+ * en el panel de la isla lo abre; en él se eligen dificultad y duración.
+ */
+export interface CastlePrep {
+  open: boolean;
+  /** Por qué ahora no se puede empezar (en plena carrera), o null. */
+  blocked: string | null;
+  runMin: DefenseRunMin;
+  difficulty: DifficultyId;
+  chooseRunMin(m: DefenseRunMin): void;
+  chooseDifficulty(d: DifficultyId): void;
+  /** «Jugar»: cierra el pop-up y empieza con lo elegido. */
+  play(): void;
+  /** Esc, la × o tocar fuera: se cierra y vuelve el panel de la isla. */
+  close(): void;
+}
+
+/** La medalla de la última partida acabada, ya guardada (T162). */
+export interface CastleMedalRecord {
+  medal: DefenseMedal;
+  /** Es la mejor que había en su par (duración × dificultad). */
+  improved: boolean;
+}
 
 export interface CastleMode {
   sound: CanonAudioState | null;
@@ -54,13 +103,28 @@ export interface CastleMode {
   quit(): void;
   /** Acaba la partida (si sigue) y devuelve el mundo como estaba. */
   leave(): void;
+  /** «Otra vez» (T162): una partida nueva igual que la última. */
+  again(): void;
+  /** El pop-up antes de la partida (T162). */
+  prep: CastlePrep;
+  /** Lo que el panel de la isla necesita para el castillo. */
+  panel: {
+    onPlay: () => void;
+    blockedReason: () => string | null;
+  };
+  /** La mejor medalla de cada par duración × dificultad (del progreso). */
+  medals: CastleMedals;
+  /** La medalla de la última partida, si la hubo y se guardó; null si no. */
+  record: CastleMedalRecord | null;
 }
 
 export function useCastleMode({
   engineRef,
   ready,
   isBusy,
+  raceActive = false,
   onStart,
+  onOffer,
   onSea,
 }: {
   engineRef: RefObject<Mar3D | null>;
@@ -68,8 +132,12 @@ export function useCastleMode({
   ready: boolean;
   /** Hay otra cosa en marcha (el Cañón, la carrera): no empieza. */
   isBusy: () => boolean;
+  /** Hay carrera (cuenta atrás o corriendo): el panel y el pop-up lo explican y no empieza. */
+  raceActive?: boolean;
   /** Al empezar: cerrar fichas, paneles, diálogos… */
   onStart: () => void;
+  /** El panel de la isla del castillo (al cerrar el pop-up y con `oferta=1`). */
+  onOffer?: () => void;
   onSea?: (on: boolean) => void;
 }): CastleMode {
   const runRef = useRef<DefenseRun | null>(null);
@@ -90,8 +158,20 @@ export function useCastleMode({
   const [hidden, setHiddenState] = useState<ReadonlySet<HideLayer>>(EMPTY);
   const hiddenRef = useRef<ReadonlySet<HideLayer>>(EMPTY);
   const [result, setResult] = useState<DefenseResult | null>(null);
-  const latest = useRef({ onStart, isBusy });
-  latest.current = { onStart, isBusy };
+  const latest = useRef({ onStart, isBusy, onOffer });
+  latest.current = { onStart, isBusy, onOffer };
+  // El pop-up (T162): lo elegido se recuerda durante la visita.
+  const [prepOpen, setPrepOpen] = useState(false);
+  const [runMin, setRunMin] = useState<DefenseRunMin>(DEFAULT_DEFENSE_RUN_MIN);
+  const [difficulty, setDifficulty] = useState<DifficultyId>(DEFAULT_DIFFICULTY);
+  // Los atajos de `oferta=1`, para la partida que se empiece desde el pop-up.
+  const devPending = useRef<CastleShortcut | null>(null);
+  // Cómo empezó la última partida («Otra vez» empieza otra igual).
+  const lastStart = useRef<CastleStart | null>(null);
+  // Las medallas (T162): del progreso, releídas con cada cambio del repositorio.
+  const { data: medalData } = useRepoData((repo) => readCastleMedals(repo.progress));
+  const medals = medalData ?? EMPTY_CASTLE_MEDALS;
+  const [record, setRecord] = useState<CastleMedalRecord | null>(null);
 
   const leave = useCallback(() => {
     const run = runRef.current;
@@ -102,6 +182,7 @@ export function useCastleMode({
     restoreRef.current = null;
     if (run) setHud(run.hook());
     setResult(null);
+    setRecord(null);
     setActive(false);
   }, [engineRef]);
 
@@ -112,27 +193,46 @@ export function useCastleMode({
   }, []);
 
   const start = useCallback(
-    (sc: CastleShortcut): boolean => {
+    (how: CastleStart): boolean => {
       const g = engineRef.current;
       if (!g || runRef.current || latest.current.isBusy()) return false;
+      const sc = how.dev;
       const run = new DefenseRun({
-        seed: sc.seed ?? randomSeed(),
+        seed: sc?.seed ?? randomSeed(),
         quality: g.quality,
-        ...(sc.runMin ? { runMin: sc.runMin } : {}),
-        ...(sc.difficulty ? { difficulty: sc.difficulty } : {}),
-        startAtS: sc.t,
-        devIslands: sc.islands,
-        ...(sc.coins ? { devCoins: sc.coins } : {}),
+        runMin: how.runMin,
+        difficulty: how.difficulty,
+        startAtS: sc?.t ?? 0,
+        devIslands: sc?.islands ?? false,
+        ...(sc?.coins ? { devCoins: sc.coins } : {}),
+        devWin: sc?.win ?? false,
+        // Cualquier atajo (también `duracion=` o `dificultad=` solos): fuera del ranking.
+        devStart: sc !== null,
         onEvents: audioEvents,
         onEnd: (reason) => {
           endAudio(reason);
           // En el paso del bucle del mar: la tarjeta sale en el render siguiente.
-          setResult(run.game.result());
+          const r = run.game.result();
+          setResult(r);
           setHud(run.hook());
+          // La medalla (T162): la mejor de su par se queda en el progreso. Una
+          // partida de atajo sólo donde los atajos dan premio (como el Cañón, T121).
+          if (!r?.medal || (run.devStart && !devStartRewards())) return;
+          const medal = r.medal;
+          void recordCastleMedal(gameRepository().progress, r.runMin, r.difficulty, medal).then(
+            (o) => {
+              if (runRef.current === run) setRecord({ medal, improved: o.improved });
+            },
+            (err: unknown) =>
+              console.warn('[boia] no se pudo guardar la medalla del castillo', err),
+          );
         },
       });
       if (!g.startDefense(run)) return false;
       runRef.current = run;
+      lastStart.current = how;
+      setPrepOpen(false);
+      setRecord(null);
       startAudio();
       latest.current.onStart();
       run.setPaused(pausedRef.current);
@@ -164,6 +264,12 @@ export function useCastleMode({
 
   const read = useCallback(() => runRef.current?.snapshot() ?? null, []);
   const run = useCallback(() => runRef.current, []);
+
+  const again = useCallback(() => {
+    const how = lastStart.current;
+    leave();
+    if (how) start(how);
+  }, [leave, start]);
 
   // El estado para las pruebas, unas veces por segundo.
   useEffect(() => {
@@ -203,8 +309,48 @@ export function useCastleMode({
     const sc = castleShortcut(window.location.search);
     if (!sc) return;
     history.replaceState(history.state, '', withoutCastleShortcut(window.location.href));
-    start(sc);
+    if (sc.runMin) setRunMin(sc.runMin);
+    if (sc.difficulty) setDifficulty(sc.difficulty);
+    if (sc.offer) {
+      // El panel de la isla; los atajos esperan a «Jugar» en el pop-up.
+      devPending.current = sc;
+      latest.current.onOffer?.();
+      return;
+    }
+    start({
+      runMin: sc.runMin ?? DEFAULT_DEFENSE_RUN_MIN,
+      difficulty: sc.difficulty ?? DEFAULT_DIFFICULTY,
+      dev: sc,
+    });
   }, [ready, start]);
+
+  const blocked = raceActive ? msg('mar.castillo.bloqueo.carrera') : null;
+  const prep: CastlePrep = {
+    open: prepOpen,
+    blocked,
+    runMin,
+    difficulty,
+    chooseRunMin: setRunMin,
+    chooseDifficulty: setDifficulty,
+    play: () => {
+      if (blocked) return;
+      const dev = devPending.current;
+      if (start({ runMin, difficulty, dev })) devPending.current = null;
+    },
+    close: () => {
+      setPrepOpen(false);
+      latest.current.onOffer?.();
+    },
+  };
+  const panel = {
+    onPlay: () => {
+      if (runRef.current) return;
+      setPrepOpen(true);
+      // El sonido se carga ya, para sonar en el gesto de «Jugar» (como el Cañón).
+      prepareAudio();
+    },
+    blockedReason: () => blocked,
+  };
 
   return {
     active,
@@ -216,6 +362,11 @@ export function useCastleMode({
     setPaused,
     quit,
     leave,
+    again,
+    prep,
+    panel,
+    medals,
+    record: result ? record : null,
     sound,
     prepareAudio,
     setAudioSettings,

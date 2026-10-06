@@ -11,6 +11,7 @@ import {
   canonBoardMedal,
   raceBoardMedal,
 } from '../../lib/mundo/board';
+import { castleBestMedal, readCastleMedals } from '../../lib/mundo/castle-medals';
 import { browserCanonStorage } from '../../lib/mundo/ranking-canon';
 import { useRepoData } from '../../lib/mundo/repo';
 import { type MessageKey, t } from '../../lib/i18n';
@@ -18,7 +19,7 @@ import { type MessageKey, t } from '../../lib/i18n';
 /**
  * El «Tablón del faro» (plan 014 T157) dentro de la ficha del faro: tres
  * tarjetas (Cañón, Castillo, Carrera) con su línea, la mejor medalla del
- * jugador si la tiene (el Castillo, ninguna hasta T162) y «Rumbo a…», que
+ * jugador si la tiene (el Castillo, la mejor de sus nueve pares, T162) y «Rumbo a…», que
  * marca el destino en el mar y en el minimapa como el «!» de ayuda; navegar
  * sigue siendo cosa de quien juega. Botones de verdad: teclado y toque.
  */
@@ -60,10 +61,11 @@ export function MarTablon({
     (r) => (spec ? readRecord(r.progress, spec) : Promise.resolve(null)),
     [spec?.id, spec?.version],
   );
+  // Las del castillo (T162) viven en el progreso (local o de la cuenta).
+  const { data: castleMedals } = useRepoData((r) => readCastleMedals(r.progress));
   const medals: Record<BoardCardId, BoardMedal | null> = {
     canon,
-    // Hasta que T162 guarde sus medallas, el Castillo no tiene ninguna.
-    castillo: null,
+    castillo: castleMedals ? castleBestMedal(castleMedals) : null,
     carrera: spec ? raceBoardMedal(record?.bestMs, spec.medals) : null,
   };
   const nameOf = (id: string) =>

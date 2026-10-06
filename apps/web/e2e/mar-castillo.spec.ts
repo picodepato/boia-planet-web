@@ -5,11 +5,12 @@ import {
   createDefense,
   defenseSiteReason,
 } from '@boia/engine/defense';
-import { CASTLE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
+import { CASTLE_PLACE_ID, LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { type Page, type TestInfo, expect, test } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
 import { arenaFrame, vortexSpot } from '../app/mar/engine/defense-arena';
 import { planetRect, wrapIn } from '../app/mar/engine/wrap';
+import { t } from '../lib/i18n';
 import { mar, openMar } from './mar-helpers';
 
 /**
@@ -446,7 +447,11 @@ test('HUD: arriba vida, tiempo, oleada y monedas; la pausa con el sonido y «Ter
       document.querySelector('[data-testid="mar-castillo-monedas"]')?.getAttribute('data-monedas'),
     );
     return [...document.querySelectorAll('[data-testid="mar-castillo-isla"]')]
-      .filter((el) => (Number(el.getAttribute('data-coste')) > have) !== (el.getAttribute('aria-disabled') === 'true'))
+      .filter(
+        (el) =>
+          Number(el.getAttribute('data-coste')) > have !==
+          (el.getAttribute('aria-disabled') === 'true'),
+      )
       .map((el) => el.getAttribute('data-isla'));
   });
   expect(wrong).toEqual([]);
@@ -594,7 +599,8 @@ test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, co
       }
       for (const [id, box] of Object.entries(b)) {
         if (id !== 'hud') expect(overlaps(b.hud!, box), `${where}: hud × ${id}`).toBe(false);
-        if (id !== 'franja') expect(overlaps(b.franja!, box), `${where}: franja × ${id}`).toBe(false);
+        if (id !== 'franja')
+          expect(overlaps(b.franja!, box), `${where}: franja × ${id}`).toBe(false);
       }
       for (const t of await touchTargets(page)) {
         expect(Math.min(t.w, t.h), `${where}: ${t.id}`).toBeGreaterThanOrEqual(44);
@@ -602,5 +608,190 @@ test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, co
     }
     await page.setViewportSize(HUD_SIZES[3]);
   }
+  expect(errors).toEqual([]);
+});
+
+// --- T162: el pop-up antes de la partida, la tarjeta final y las medallas ------------
+
+const previa = (page: Page) => page.getByTestId('mar-castillo-previa');
+
+test('pop-up, tarjeta y medalla: 5 min + Tranquila, se gana con `vencer=1`, la tarjeta con oro y el tablón la enseña', async ({
+  page,
+}, info) => {
+  const touch = info.project.name === 'mobile';
+  // `oferta=1`: el panel de la isla del castillo; `vencer=1` espera a «Jugar» del pop-up.
+  const errors = await openMar(page, '?minijuego=castillo&oferta=1&vencer=1');
+  const panel = page.getByTestId('panel-minijuego');
+  await expect(panel).toBeVisible({ timeout: 15_000 });
+  await expect(panel).toHaveAttribute('data-game', CASTLE_PLACE_ID);
+  await expect(panel).not.toHaveAttribute('data-bloqueado', 'si');
+  const play = panel.getByRole('button', { name: t('juego.minigameLayer.jugar') });
+  if (touch) await play.tap();
+  else await play.click();
+
+  // El pop-up: el foco en la duración marcada; dificultad, medalla y ranking vacío.
+  await expect(previa(page)).toBeVisible();
+  await expect(panel).toBeHidden();
+  await expect(previa(page)).toHaveAttribute('role', 'dialog');
+  await expect(page.getByTestId('mar-castillo-duracion')).toBeVisible();
+  await expect(page.getByTestId('mar-castillo-previa-ranking-vacio')).toBeVisible();
+  await expect(page.getByTestId('mar-castillo-previa-medalla')).toHaveAttribute(
+    'data-medalla',
+    'ninguna',
+  );
+  if (touch) {
+    await page.getByTestId('mar-castillo-duracion-10').tap();
+    await page.getByTestId('mar-castillo-duracion-5').tap();
+    await previa(page).getByTestId('mar-canon-dificultad-tranquila').tap();
+  } else {
+    // Con el teclado: flechas en la duración (5 → 7 → 5) y en la dificultad.
+    await expect(page.getByTestId('mar-castillo-duracion-5')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('mar-castillo-duracion-7')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('mar-castillo-duracion-5')).toBeFocused();
+    await previa(page).getByTestId('mar-canon-dificultad-normal').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(previa(page).getByTestId('mar-canon-dificultad-tranquila')).toBeFocused();
+  }
+  await expect(previa(page)).toHaveAttribute('data-duracion', '5');
+  await expect(previa(page)).toHaveAttribute('data-dificultad', 'tranquila');
+  await expect(page.getByTestId('mar-castillo-previa-ranking')).toHaveAttribute(
+    'data-duracion',
+    '5',
+  );
+  // Todo se toca con 44 px y nada se sale de la pantalla.
+  const viewport = page.viewportSize()!;
+  for (const id of [
+    'mar-castillo-duracion-5',
+    'mar-castillo-previa-jugar',
+    'mar-castillo-previa-cerrar',
+  ]) {
+    const box = (await page.getByTestId(id).boundingBox())!;
+    expect(box.height, id).toBeGreaterThanOrEqual(44);
+    expect(box.x + box.width, id).toBeLessThanOrEqual(viewport.width + 0.5);
+  }
+
+  // Esc cierra y vuelve el panel de la isla; «Jugar» lo abre otra vez con lo elegido.
+  await page.keyboard.press('Escape');
+  await expect(previa(page)).toHaveCount(0);
+  await expect(panel).toBeVisible();
+  await expect(page.getByTestId('mar-menu')).toHaveCount(0);
+  if (touch) await play.tap();
+  else await play.click();
+  await expect(previa(page)).toHaveAttribute('data-duracion', '5');
+  await expect(previa(page)).toHaveAttribute('data-dificultad', 'tranquila');
+
+  // «Jugar»: la partida de 5 min en Tranquila; con `vencer=1`, aguanta en un momento.
+  const go = page.getByTestId('mar-castillo-previa-jugar');
+  if (touch) await go.tap();
+  else await go.click();
+  await expect(previa(page)).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-duracion', '5');
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tranquila');
+  const end = page.getByTestId('mar-castillo-final');
+  await expect(end).toBeVisible({ timeout: 30_000 });
+  await expect(game(page)).toHaveAttribute('data-fin', 'held');
+
+  // La tarjeta: título, medalla, la partida, tiempo, enemigos, vida, puntos; de prueba: sin ranking.
+  await expect(end).toHaveAttribute('data-fin', 'held');
+  await expect(end.locator('h2')).toHaveText(t('mar.castillo.fin.held'));
+  await expect(page.getByTestId('mar-castillo-final-medalla')).toHaveAttribute(
+    'data-medalla',
+    'oro',
+  );
+  await expect(page.getByTestId('mar-castillo-final-medalla')).toHaveText(
+    t('mar.canon.fin.medalla.oro'),
+  );
+  await expect(page.getByTestId('mar-castillo-final-partida')).toHaveText(/5 min/);
+  await expect(page.getByTestId('mar-castillo-final-vida')).toHaveText(/100/);
+  await expect(page.getByTestId('mar-castillo-final-tiempo')).toHaveText(/^\d+:\d\d$/);
+  await expect(page.getByTestId('mar-castillo-final-enemigos')).toHaveText(/^\d+$/);
+  const points = Number(await page.getByTestId('mar-castillo-final-puntos').textContent());
+  expect(points).toBeGreaterThan(0);
+  await expect(end).toHaveAttribute('data-puntos', String(points));
+  await expect(end).toHaveAttribute('data-ranking', 'no');
+  await expect(page.getByTestId('mar-castillo-final-prueba')).toBeVisible();
+  // La medalla se guardó: es la mejor de ese par.
+  await expect(page.getByTestId('mar-castillo-final-mejor')).toBeVisible();
+  await expect(page.getByTestId('mar-castillo-otra')).toBeFocused();
+  await expect(page.getByTestId('mar-castillo-anuncio')).toHaveText(t('mar.castillo.fin.held'));
+  await page.getByTestId('mar-castillo-volver').click();
+  await expect(end).toHaveCount(0);
+  await expect(canvas(page)).toHaveAttribute('data-arena', 'off');
+
+  // El pop-up ya enseña la medalla de ese par (y la duración, su icono).
+  await page.evaluate(() =>
+    window.history.replaceState(null, '', '/mar?minijuego=castillo&oferta=1'),
+  );
+  await page.reload();
+  await expect(page.getByTestId('mar-canvas')).toBeVisible();
+  await expect(panel).toBeVisible({ timeout: 60_000 });
+  if (touch) await play.tap();
+  else await play.click();
+  await previa(page).getByTestId('mar-canon-dificultad-tranquila').click();
+  await page.getByTestId('mar-castillo-duracion-5').click();
+  await expect(page.getByTestId('mar-castillo-previa-medalla')).toHaveAttribute(
+    'data-medalla',
+    'oro',
+  );
+  await expect(page.getByTestId('mar-castillo-duracion-5')).toHaveAttribute('data-medalla', 'oro');
+  await expect(page.getByTestId('mar-castillo-duracion-7')).not.toHaveAttribute(
+    'data-medalla',
+    /./,
+  );
+  await page.getByTestId('mar-castillo-previa-cerrar').click();
+  await expect(previa(page)).toHaveCount(0);
+
+  // El «Tablón del faro»: la tarjeta del Castillo, con su mejor medalla.
+  await openMar(page, `?ir=${LIGHTHOUSE_PLACE_ID}`);
+  await expect(mar(page)).toHaveAttribute('data-llegada', LIGHTHOUSE_PLACE_ID, { timeout: 60_000 });
+  const card = page.getByTestId('tablon-castillo');
+  await expect(card).toHaveAttribute('data-medalla', 'oro');
+  await expect(page.getByTestId('tablon-medalla-castillo')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('tarjeta: «Otra vez» empieza otra igual (10 min, Tormenta) y una partida de atajo nunca entra en el ranking', async ({
+  page,
+}) => {
+  const errors = await openMar(
+    page,
+    '?minijuego=castillo&vencer=1&duracion=10&dificultad=tormenta',
+  );
+  const end = page.getByTestId('mar-castillo-final');
+  await expect(end).toBeVisible({ timeout: 30_000 });
+  await expect(end).toHaveAttribute('data-fin', 'held');
+  await expect(end).toHaveAttribute('data-ranking', 'no');
+  await expect(page.getByTestId('mar-castillo-final-medalla')).toHaveAttribute(
+    'data-medalla',
+    'oro',
+  );
+  await expect(page.getByTestId('mar-castillo-final-partida')).toHaveText(/10 min/);
+  // El sonido (T164): al acabar suena el final y vuelve el mar.
+  await expect(game(page)).toHaveAttribute('data-musica', 'mar', { timeout: 15_000 });
+
+  // «Otra vez» (con Intro, el foco ya está): la misma duración y dificultad, desde el principio.
+  await expect(page.getByTestId('mar-castillo-otra')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(end).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(game(page)).toHaveAttribute('data-duracion', '10');
+  await expect(game(page)).toHaveAttribute('data-dificultad', 'tormenta');
+  await expect(canvas(page)).toHaveAttribute('data-arena', 'on');
+  // …y vuelve el bucle de batalla.
+  await expect(game(page)).toHaveAttribute('data-musica', /batalla|jefe/);
+  await expect(end).toBeVisible({ timeout: 30_000 });
+  await expect(end).toHaveAttribute('data-ranking', 'no');
+  await expect(game(page)).toHaveAttribute('data-musica', 'mar', { timeout: 15_000 });
+  // Ya tenía oro en ese par: no es «tu mejor».
+  await expect(page.getByTestId('mar-castillo-final-mejor')).toHaveCount(0);
+  // Esc en la tarjeta: vuelve al mar.
+  await page.keyboard.press('Escape');
+  await expect(end).toHaveCount(0);
+  await expect(canvas(page)).toHaveAttribute('data-arena', 'off');
   expect(errors).toEqual([]);
 });

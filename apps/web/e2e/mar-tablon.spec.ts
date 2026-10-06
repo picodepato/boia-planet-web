@@ -10,7 +10,7 @@ import { mar, openMar } from './mar-helpers';
  * abre el «Tablón del faro» con tres tarjetas (Cañón, Castillo, Carrera) y su
  * «Rumbo a…», que marca cada destino como el «!» de ayuda (con el ratón o el
  * dedo y con el teclado). El castillo, junto a la Boia 7, es la isla de su
- * minijuego: su panel sale como el del Cañón y dice «Próximamente» hasta T162.
+ * minijuego: su panel sale como el del Cañón y su «Jugar» abre el pop-up (T162).
  */
 
 test.describe.configure({ timeout: 180_000 });
@@ -34,7 +34,7 @@ test('el tablón del faro: tres tarjetas y «Rumbo a…» marca cada destino', a
   await expect(board(page).getByRole('heading', { name: t('mar.tablon.titulo') })).toBeVisible();
   const cards = board(page).getByTestId('tablon').locator('> li');
   await expect(cards).toHaveCount(BOARD_CARDS.length);
-  // Sin partidas, ninguna medalla (el Castillo no tendrá hasta T162).
+  // Sin partidas, ninguna medalla.
   await expect(board(page).locator('[data-testid^="tablon-medalla-"]')).toHaveCount(0);
 
   for (const [i, card] of BOARD_CARDS.entries()) {
@@ -71,7 +71,9 @@ test('el tablón del faro: tres tarjetas y «Rumbo a…» marca cada destino', a
   expect(errors).toEqual([]);
 });
 
-test('la isla del castillo, junto a la Boia 7, abre su panel: «Próximamente»', async ({ page }) => {
+test('la isla del castillo, junto a la Boia 7, abre su panel: «Jugar» abre el pop-up', async ({
+  page,
+}) => {
   // Junto a la Boia 7 de la carrera, fuera de su camino (lo comprueban las pruebas de unidad).
   const castle = at(CASTLE_PLACE_ID);
   const buoy = at('circuito-delfin');
@@ -89,12 +91,11 @@ test('la isla del castillo, junto a la Boia 7, abre su panel: «Próximamente»'
   const panel = page.getByTestId('panel-minijuego');
   await expect(panel).toBeVisible({ timeout: 15_000 });
   await expect(panel).toHaveAttribute('data-game', CASTLE_PLACE_ID);
-  await expect(panel).toHaveAttribute('data-bloqueado', 'si');
+  await expect(panel).not.toHaveAttribute('data-bloqueado', 'si');
   await expect(panel.getByRole('heading', { name: t('mar.castillo.titulo') })).toBeVisible();
-  await expect(panel.getByTestId('panel-minijuego-bloqueo')).toHaveText(
-    t('mar.castillo.proximamente'),
-  );
-  await expect(panel.getByRole('button', { name: t('juego.minigameLayer.jugar') })).toBeDisabled();
+  await panel.getByRole('button', { name: t('juego.minigameLayer.jugar') }).click();
+  await expect(page.getByTestId('mar-castillo-previa')).toBeVisible();
+  await expect(panel).toBeHidden();
   // El castillo de siempre: su modelo (o, sin él, la composición a mano).
   await expect(page.getByTestId('mar-canvas')).toHaveAttribute(
     'data-castillo-modelo',

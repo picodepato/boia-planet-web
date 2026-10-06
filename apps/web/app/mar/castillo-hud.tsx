@@ -38,6 +38,7 @@ import {
 } from './castillo-hud-model';
 import { CastleIcon, TOWER_ICON } from './castillo-icons';
 import type { CastleMode } from './castillo-mode';
+import { castlePairLabel } from './castillo-previa';
 import './castillo-hud.css';
 
 /**
@@ -343,7 +344,12 @@ export function CastleLayer({
         </div>
       ) : null}
       {castle.result && !covered ? (
-        <CastleEnd result={castle.result} onBack={castle.leave} />
+        <CastleEnd
+          result={castle.result}
+          record={castle.record}
+          onAgain={castle.again}
+          onBack={castle.leave}
+        />
       ) : null}
     </>
   );
@@ -762,16 +768,32 @@ function CastleTowerPanel({
 }
 
 /**
- * La tarjeta al acabar. Con «Terminar partida», «Partida terminada» con el
- * tiempo y los enemigos: sin medalla ni ranking. Al aguantar o caer, lo
- * mismo con su título y la vida del castillo (T162 le pone la medalla, la
- * puntuación y «Otra vez»).
+ * La tarjeta al acabar (T161, T162: la del Cañón). Al aguantar o caer:
+ * «¡Castillo a salvo!» / «El castillo ha caído», la medalla, la duración y
+ * la dificultad, el tiempo aguantado, los enemigos, la vida que le queda al
+ * castillo y los puntos; si es tu mejor medalla de ese par, lo dice. Con
+ * «Terminar partida», «Partida terminada» sin medalla ni puntos. Siempre
+ * «Volver al mar» y «Otra vez» (la misma duración y dificultad).
  */
-function CastleEnd({ result, onBack }: { result: DefenseResult; onBack: () => void }) {
+function CastleEnd({
+  result,
+  record,
+  onAgain,
+  onBack,
+}: {
+  result: DefenseResult;
+  record: CastleMode['record'];
+  onAgain: () => void;
+  onBack: () => void;
+}) {
   const titleId = useId();
+  const again = useRef<HTMLButtonElement>(null);
   const back = useRef<HTMLButtonElement>(null);
-  useEffect(() => back.current?.focus({ preventScroll: true }), []);
   const card = castleEndView(result);
+  // El foco: «Otra vez» tras aguantar o caer (como el Cañón); «Volver al mar» si se terminó.
+  const short = card.short;
+  useEffect(() => (short ? back : again).current?.focus({ preventScroll: true }), [short]);
+  const pair = castlePairLabel(card.runMin, card.difficulty);
   return (
     <div className="mar-canon-endwrap">
       <section
@@ -779,6 +801,8 @@ function CastleEnd({ result, onBack }: { result: DefenseResult; onBack: () => vo
         data-testid="mar-castillo-final"
         data-fin={card.reason}
         data-ranking={card.ranked ? 'si' : 'no'}
+        data-medalla={card.short ? undefined : (card.medal ?? 'ninguna')}
+        data-puntos={card.short ? undefined : card.score}
         role="dialog"
         aria-labelledby={titleId}
       >
@@ -788,7 +812,30 @@ function CastleEnd({ result, onBack }: { result: DefenseResult; onBack: () => vo
         </h2>
         {card.short ? (
           <p className="mar-canon-end__line">{msg('mar.castillo.fin.sinMedalla')}</p>
-        ) : null}
+        ) : (
+          <>
+            {card.line ? <p className="mar-canon-end__line">{msg(card.line)}</p> : null}
+            <p
+              className="mar-canon-end__medal"
+              data-testid="mar-castillo-final-medalla"
+              data-medalla={card.medal ?? 'ninguna'}
+            >
+              {msg(card.medalKey)}
+            </p>
+            <p className="mar-canon-end__run" data-testid="mar-castillo-final-partida">
+              {pair}
+            </p>
+            {record?.improved ? (
+              <p
+                className="mar-canon-end__unlock"
+                data-testid="mar-castillo-final-mejor"
+                role="status"
+              >
+                {msg('mar.castillo.fin.medalla.mejor', { eleccion: pair })}
+              </p>
+            ) : null}
+          </>
+        )}
         <dl className="mar-canon-end__stats">
           <div>
             <dt>{msg('mar.canon.fin.tiempo')}</dt>
@@ -804,16 +851,36 @@ function CastleEnd({ result, onBack }: { result: DefenseResult; onBack: () => vo
               {msg('mar.castillo.fin.vida', { pct: card.lifePct })}
             </dd>
           </div>
+          {card.short ? null : (
+            <div>
+              <dt>{msg('mar.castillo.fin.puntos')}</dt>
+              <dd data-testid="mar-castillo-final-puntos">{card.score}</dd>
+            </div>
+          )}
         </dl>
-        <div className="mar-canon-end__actions mar-castle-end__actions">
+        {!card.short && !card.ranked ? (
+          <p className="mar-canon-end__prize" data-testid="mar-castillo-final-prueba">
+            {msg('mar.castillo.fin.prueba')}
+          </p>
+        ) : null}
+        <div className="mar-canon-end__actions">
           <button
             ref={back}
             type="button"
-            className="mar-canon-end__again"
+            className="mar-canon-end__back"
             data-testid="mar-castillo-volver"
             onClick={onBack}
           >
             {msg('mar.canon.fin.volver')}
+          </button>
+          <button
+            ref={again}
+            type="button"
+            className="mar-canon-end__again"
+            data-testid="mar-castillo-otra"
+            onClick={onAgain}
+          >
+            {msg('mar.canon.fin.otra')}
           </button>
         </div>
       </section>

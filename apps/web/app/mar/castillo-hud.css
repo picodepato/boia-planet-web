@@ -500,11 +500,6 @@
   border-color: var(--orange);
 }
 
-/* La tarjeta final del castillo: un solo botón. */
-.mar-castle-end__actions {
-  grid-template-columns: 1fr;
-}
-
 @media (min-width: 760px) {
   .mar-castle-hud {
     min-width: 200px;

@@ -4,6 +4,29 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T162: The castle's pre-game pop-up, final card and medals
+
+Qué existe:
+- **Panel de la isla del castillo**: ya no dice «Próximamente»; «Jugar» abre el pop-up (en plena carrera, el panel y el pop-up lo explican y no empieza: `mar.castillo.bloqueo.carrera`). Clave `mar.castillo.proximamente` fuera.
+- **Pop-up** `apps/web/app/mar/castillo-previa.tsx` (+ `castillo-previa.css`, sobre las clases de `canon-previa.css`): el patrón del Cañón (T151). Duración 5 / 7 / 10 min (`CastleRunMinPicker`: grupo de opciones con flechas, cada piedra con la mejor medalla de ese par para la dificultad elegida), dificultad (`CanonDifficultyPicker` del Cañón, sin cambios), «Tu mejor medalla aquí», el hueco del ranking del par (vacío hasta T163; prop `ranking(runMin, difficulty)`), «Jugar · 5 min · Tranquila». Diálogo modal: foco en la duración marcada, Tab no sale, Esc / × / tocar fuera lo cierran y vuelve el panel de la isla. Lo elegido se recuerda durante la visita.
+- **Medallas** `apps/web/lib/mundo/castle-medals.ts`: la mejor por duración × dificultad en los contadores del progreso (`castillo:<min>-<dificultad>:medalla` = 1 bronce, 2 plata, 3 oro), como la campaña del Cañón: local en este navegador y, con cuenta, en la copia que viaja con `save_snapshot` (la mezcla toma el mayor: la mejor nunca se pierde). `recordCastleMedal` sólo sube; `castleBestMedal` para el tablón. Una partida de atajo sólo guarda medalla donde los atajos dan premio (`devStartRewards`: `pnpm dev` y e2e), como el Cañón (T121).
+- **Tarjeta final** (`castillo-hud.tsx` `CastleEnd`, modelo `castleEndView`): «¡Castillo a salvo!» / «El castillo ha caído» con su línea, la medalla (o «Sin medalla»), «5 min · Tranquila», tiempo, enemigos, vida del castillo, puntos; «¡Tu mejor medalla en …!» si mejora la del par; «Partida de prueba: fuera del ranking» si no rankea; «Volver al mar» y «Otra vez» (misma duración, dificultad y atajos). Foco en «Otra vez» (en «Volver al mar» con «Terminar partida»). `data-medalla`, `data-puntos`.
+- **«Tablón del faro»**: la tarjeta Castillo enseña la mejor medalla de los nueve pares.
+- **Atajos** (`castillo.ts`): `vencer=1` empieza a `DEV_WIN_LEAD_S` (3 s) del final, el castillo aguanta entero (oro); `oferta=1` abre el panel de la isla y guarda los demás atajos para la partida que se empiece desde el pop-up. `DefenseRun.devStart`: cualquier partida empezada por atajo (también sólo `duracion=` o `dificultad=`) va con `unranked` y su resultado sale `ranked:false`.
+- `castillo-mode.tsx`: `prep`, `panel`, `medals`, `record`, `again()`; `useCastleMode` recibe `raceActive` y `onOffer`. `mar-client.tsx` lo cablea (panel, pop-up, sin control mientras está abierto).
+- Con el sonido de T164 (merge de `main`): «Jugar» del pop-up y «Otra vez» arrancan el bucle de batalla (`startAudio`), el final suena y devuelve el mar (`endAudio` en `onEnd`, junto a la medalla); abrir el pop-up precarga el audio. `castillo-mode.tsx` y `mar-client.tsx` siguen en CRLF, como en `main`.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/castillo.test.ts apps/web/app/mar/castillo-hud-model.test.ts apps/web/lib/mundo/castle-medals.test.ts apps/web/lib/mundo/board.test.ts` → exit 0 (nuevas: medalla por par y la mejor se queda, el tablón con la mejor de todas, `vencer=1` gana con oro sin ranking, atajo → `ranked:false` con la misma partida que sí rankea, `vencer`/`oferta` en el atajo, tarjeta con medalla/puntos/línea).
+- `E2E_PORT=4962 pnpm e2e mar-castillo.spec.ts --workers=1 -g "pop-up|tarjeta|medalla"` → 6 passed, exit 0 (móvil y escritorio: pop-up con teclado y dedo, Esc, 5 min + Tranquila, `vencer=1` → tarjeta con oro y puntos, el pop-up y el tablón enseñan el oro; «Otra vez» con 10 min Tormenta).
+- `E2E_PORT=4962 pnpm e2e mar-tablon.spec.ts mar-castillo.spec.ts --workers=1` → 21 passed, 1 skipped, exit 0.
+- Tras el merge de `main` (T164): `E2E_PORT=4962 pnpm e2e mar-castillo.spec.ts --workers=1 -g "pop-up|tarjeta|medalla"` → 6 passed, exit 0 (la de «Otra vez» comprueba además `data-musica`: mar al acabar, batalla al repetir, mar otra vez). `mar-castillo.spec.ts mar-tablon.spec.ts` entero: 20 passed, 1 skipped, 1 failed («construir…» en escritorio: las monedas de las caídas durante vuelos lentos con la máquina cargada; sola → passed, 55 s; con el código de `main` también tarda 1,5 min).
+- Test command (tras el merge): vitest → exit 0, 196 archivos, 1865 pruebas; antes del merge: 194 archivos, 1847 pruebas; `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0 (187,0 kB, presupuesto OK); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- T163: llenar el hueco del ranking del pop-up (`CastlePrevia` prop `ranking`) y poner tu mejor/puesto en la tarjeta; `result.ranked` ya sale false con atajos y «Terminar partida».
+- Premio en el mundo y logros del castillo: fuera del plan (decisión 13).
+
 ## 2026-10-06 — plan 014 T164: Sound for the castle
 
 Codex did the work.

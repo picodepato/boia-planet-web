@@ -216,11 +216,31 @@ export const esMar = {
   'mar.tablon.medalla.oro': '🥇 oro',
   'mar.tablon.medalla.plata': '🥈 plata',
   'mar.tablon.medalla.bronce': '🥉 bronce',
-  // La isla del castillo (plan 014): su panel dice «Próximamente» hasta T162. muestra
+  // La isla del castillo (plan 014): su panel y «Jugar», que abre el pop-up (T162). muestra
   'mar.castillo.titulo': 'Defensa del Castillo',
   'mar.castillo.resumen':
     'Los enemigos del Cañón llegan en oleadas por un camino en espiral. Vuela en avioneta, dispara y levanta las islas del mar como torres para que el castillo aguante.',
-  'mar.castillo.proximamente': 'Próximamente: el castillo aún se está fortificando.',
+  'mar.castillo.bloqueo.carrera': 'Estás en plena carrera: termínala y vuelve a defender el castillo.',
+  // El pop-up antes de la partida (T162). muestra
+  'mar.castillo.previa.texto':
+    'Elige cuánto aguantar y la dificultad. Cuanto más larga, más enemigos.',
+  'mar.castillo.previa.cerrar': 'Cerrar y volver al panel de la isla',
+  'mar.castillo.previa.duracion': 'Duración',
+  'mar.castillo.previa.minutos': '{min} minutos',
+  'mar.castillo.previa.min': 'min',
+  'mar.castillo.previa.eleccion': '{min} min · {dificultad}',
+  'mar.castillo.previa.dificultad.tranquila': 'Enemigos más flojos y menos numerosos.',
+  'mar.castillo.previa.dificultad.normal': 'La dificultad de referencia.',
+  'mar.castillo.previa.dificultad.tormenta': 'Más enemigos, más duros y que golpean más fuerte la muralla.',
+  'mar.castillo.previa.medalla': 'Tu mejor medalla aquí: {medalla}',
+  'mar.castillo.previa.medalla.ninguna': 'Aún sin medalla en esta partida.',
+  'mar.castillo.previa.ranking': 'Ranking · {eleccion}',
+  'mar.castillo.previa.ranking.vacio':
+    'Aquí saldrá el ranking de esta duración y dificultad. Aguanta y deja tu marca.',
+  'mar.castillo.previa.jugar.aria': 'Jugar {eleccion}',
+  'mar.castillo.medalla.icono.oro': '🥇',
+  'mar.castillo.medalla.icono.plata': '🥈',
+  'mar.castillo.medalla.icono.bronce': '🥉',
   // El HUD de la partida (T161): arriba, abajo, construir, colocar y la ficha. muestra
   'mar.castillo.hud.aria': 'Defensa del Castillo: tiempo, vida del castillo, oleada y monedas',
   'mar.castillo.hud.tiempo': 'Faltan {tiempo} para aguantar',
@@ -281,6 +301,12 @@ export const esMar = {
   'mar.castillo.fin.sinMedalla': 'Sin medalla y fuera del ranking.',
   'mar.castillo.fin.castillo': 'Castillo',
   'mar.castillo.fin.vida': '{pct} %',
+  // La tarjeta final (T162): medalla, puntuación y «Otra vez». muestra
+  'mar.castillo.fin.held.texto': 'La muralla resistió hasta el final.',
+  'mar.castillo.fin.fallen.texto': 'Los enemigos llegaron a la muralla antes de tiempo.',
+  'mar.castillo.fin.medalla.mejor': '¡Tu mejor medalla en {eleccion}!',
+  'mar.castillo.fin.puntos': 'Puntos',
+  'mar.castillo.fin.prueba': 'Partida de prueba: fuera del ranking.',
   // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
   'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
   'mar.bienvenida.texto':

@@ -1,11 +1,18 @@
 import {
   DEFENSE_CONFIG,
+  DEFENSE_STEP_S,
   DEFENSE_TOWER_KINDS,
   createDefense,
   defenseSiteReason,
 } from '@boia/engine/defense';
 import { describe, expect, it } from 'vitest';
-import { DefenseRun, castleShortcut, devTowerSpots, withoutCastleShortcut } from './castillo';
+import {
+  DEV_WIN_LEAD_S,
+  DefenseRun,
+  castleShortcut,
+  devTowerSpots,
+  withoutCastleShortcut,
+} from './castillo';
 
 /**
  * «Defensa del Castillo» en `/mar` (plan 014 T160): el atajo de desarrollo
@@ -18,8 +25,25 @@ const env = { nodeEnv: 'development', webdriver: false, search: '' };
 describe('el atajo `?minijuego=castillo`', () => {
   it('lee duración, dificultad, segundo, semilla e islas; sólo con los atajos encendidos', () => {
     expect(
-      castleShortcut('?minijuego=castillo&duracion=10&dificultad=tormenta&t=500&seed=7&islas=1', env),
-    ).toEqual({ t: 500, seed: 7, difficulty: 'tormenta', runMin: 10, islands: true, coins: null });
+      castleShortcut(
+        '?minijuego=castillo&duracion=10&dificultad=tormenta&t=500&seed=7&islas=1',
+        env,
+      ),
+    ).toEqual({
+      t: 500,
+      seed: 7,
+      difficulty: 'tormenta',
+      runMin: 10,
+      islands: true,
+      coins: null,
+      win: false,
+      offer: false,
+    });
+    // `vencer=1` y `oferta=1` (T162).
+    expect(castleShortcut('?minijuego=castillo&vencer=1&oferta=1', env)).toMatchObject({
+      win: true,
+      offer: true,
+    });
     // `monedas=` (T161): monedas de más al empezar.
     expect(castleShortcut('?minijuego=castillo&monedas=800', env)?.coins).toBe(800);
     // `t` se acota a la partida elegida (5 min sin `duracion`).
@@ -27,15 +51,13 @@ describe('el atajo `?minijuego=castillo`', () => {
       DEFENSE_CONFIG.runs[5].durationS - 1,
     );
     expect(castleShortcut('?minijuego=canon', env)).toBeNull();
-    expect(
-      castleShortcut('?minijuego=castillo', { ...env, nodeEnv: 'production' }),
-    ).toBeNull();
+    expect(castleShortcut('?minijuego=castillo', { ...env, nodeEnv: 'production' })).toBeNull();
   });
 
   it('se consume al usarlo (`dev` se queda)', () => {
     expect(
       withoutCastleShortcut(
-        'https://x.test/mar?minijuego=castillo&t=3&islas=1&duracion=7&monedas=50&dev=1',
+        'https://x.test/mar?minijuego=castillo&t=3&islas=1&duracion=7&monedas=50&vencer=1&oferta=1&dev=1',
       ),
     ).toBe('https://x.test/mar?dev=1');
   });
@@ -77,6 +99,56 @@ describe('la partida en el mar', () => {
     expect(run.hook().enemigos).toBe(s.enemies.length);
     expect(run.hook().avion).toMatch(/^-?\d+,-?\d+$/);
   });
+
+  /** Da pasos hasta que acaba (o `maxS` s de partida). */
+  const playOut = (run: DefenseRun, maxS: number) => {
+    for (let i = 0; i < maxS / DEFENSE_STEP_S && !run.ended; i++) run.step(null);
+  };
+
+  it('`vencer=1` (T162): empieza a punto de aguantar, gana con oro y no entra en el ranking', () => {
+    let ended = 0;
+    const run = new DefenseRun({
+      seed: 3,
+      quality: 'baja',
+      runMin: 7,
+      difficulty: 'tranquila',
+      devWin: true,
+      onEnd: () => ended++,
+    });
+    expect(run.devStart).toBe(true);
+    const s = run.snapshot();
+    expect(s.timeLeftS).toBeLessThanOrEqual(DEV_WIN_LEAD_S + 1e-6);
+    playOut(run, DEV_WIN_LEAD_S + 2);
+    const r = run.game.result()!;
+    expect(ended).toBe(1);
+    expect(r).toMatchObject({ end: 'held', medal: 'oro', runMin: 7, difficulty: 'tranquila' });
+    expect(r.ranked).toBe(false);
+  });
+
+  it('una partida de atajo (aunque sólo cambie duración o dificultad) nunca entra en el ranking', () => {
+    const plain = new DefenseRun({ seed: 5, quality: 'baja', runMin: 5, difficulty: 'tormenta' });
+    const dev = new DefenseRun({
+      seed: 5,
+      quality: 'baja',
+      runMin: 5,
+      difficulty: 'tormenta',
+      devStart: true,
+    });
+    expect(plain.devStart).toBe(false);
+    expect(dev.devStart).toBe(true);
+    const maxS = DEFENSE_CONFIG.runs[5].durationS + 1;
+    playOut(plain, maxS);
+    playOut(dev, maxS);
+    const a = plain.game.result()!;
+    const b = dev.game.result()!;
+    // La misma partida (misma semilla, mismas entradas)…
+    expect(b.end).toBe(a.end);
+    expect(b.score).toBe(a.score);
+    expect(['held', 'fallen']).toContain(a.end);
+    // …pero sólo la de verdad cuenta.
+    expect(a.ranked).toBe(true);
+    expect(b.ranked).toBe(false);
+  }, 60_000);
 
   it('avisa una vez al acabar', () => {
     let ends = 0;

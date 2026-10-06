@@ -14,6 +14,8 @@ import {
   END_TITLE_KEYS,
   LIFE_ALERT,
   LIFE_DANGER,
+  END_LINE_KEYS,
+  END_MEDAL_KEYS,
   TOWER_NAME_KEYS,
   buildOptions,
   castleEndView,
@@ -374,6 +376,24 @@ describe('la tarjeta final', () => {
       kills: 12,
       lifePct: 50,
     });
+  });
+
+  it('al aguantar o caer (T162): su línea, la medalla y los puntos', () => {
+    const held = castleEndView({ ...result('held'), medal: 'plata', score: 1234 });
+    expect(held).toMatchObject({
+      short: false,
+      medal: 'plata',
+      medalKey: END_MEDAL_KEYS.plata,
+      score: 1234,
+      line: END_LINE_KEYS.held,
+      runMin: 5,
+      difficulty: 'normal',
+    });
+    const fallen = castleEndView(result('fallen'));
+    expect(fallen).toMatchObject({ medal: null, medalKey: END_MEDAL_KEYS.ninguna });
+    expect(t(fallen.line!)).not.toBe(END_LINE_KEYS.fallen);
+    expect(castleEndView(result('quit')).line).toBeNull();
+    for (const k of Object.values(END_MEDAL_KEYS)) expect(t(k)).not.toBe(k);
   });
 
   it('cada final tiene su título', () => {

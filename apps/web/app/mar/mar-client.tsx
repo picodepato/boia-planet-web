@@ -186,6 +186,7 @@ import { CastleTestHook, useCastleMode } from './castillo-mode';
 import { CastleLayer } from './castillo-hud';
 import { CanonLayer } from './canon-hud';
 import { CanonPrevia } from './canon-previa';
+import { CastlePrevia } from './castillo-previa';
 import { CanonBossRanking } from './canon-ranking';
 import { CANON_GAME_ID, islandPinsOnly } from './survivors';
 import { devGrantMascot } from './mascota-dev';
@@ -490,7 +491,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     engineRef,
     ready: status === 'ready',
     isBusy: () => !!engineRef.current?.survivorsActive || (raceRef.current?.race.active ?? false),
+    raceActive: !!race,
     onStart: closeForGame,
+    // Al cerrar su pop-up (T162) y con `oferta=1`: el panel de la isla del castillo.
+    onOffer: () => {
+      const island = worldRef.current?.objects.find((o) =>
+        o.behaviors.some((b) => b.type === 'start_minigame' && b.params.gameId === CASTLE_GAME_ID),
+      );
+      setMinigameOffer({ objectId: island?.identity.id ?? CASTLE_GAME_ID, gameId: CASTLE_GAME_ID });
+    },
     onSea: (on) => setAmbientWorld(on ? worldIdRef.current : null),
   });
   /** Las capas del mundo que aparta la partida en curso (la del Cañón o la del castillo). */
@@ -1507,7 +1516,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Encima del mar hay un diálogo modal o un minijuego: sin control (y sin pintar).
   const canonPause = canon.setPaused;
   const castlePause = castle.setPaused;
-  const canonPrep = canon.prep.open;
+  const canonPrep = canon.prep.open || castle.prep.open;
   useEffect(() => {
     const g = engineRef.current;
     if (!g) return;
@@ -2510,14 +2519,24 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       {status === 'ready' && liveRef.current && settings ? (
         <div className="mar-minigame">
           <MinigameLayer
-            offer={sheet || checkoutFor || canon.active || canon.prep.open ? null : minigameOffer}
+            offer={
+              sheet ||
+              checkoutFor ||
+              canon.active ||
+              canon.prep.open ||
+              castle.active ||
+              castle.prep.open
+                ? null
+                : minigameOffer
+            }
             onDismiss={() => setMinigameOffer(null)}
             inWorld={[...canon.panel.inWorld, CASTLE_GAME_ID]}
-            onPlayInWorld={canon.panel.onPlay}
+            // «Jugar» del castillo abre su pop-up (T162); el del Cañón, el suyo (T151).
+            onPlayInWorld={(id) =>
+              id === CASTLE_GAME_ID ? castle.panel.onPlay() : canon.panel.onPlay(id)
+            }
             blockedReason={(id) =>
-              id === CASTLE_GAME_ID
-                ? msg('mar.castillo.proximamente')
-                : canon.panel.blockedReason(id)
+              id === CASTLE_GAME_ID ? castle.panel.blockedReason() : canon.panel.blockedReason(id)
             }
             copy={(id) =>
               id === CASTLE_GAME_ID
@@ -2531,6 +2550,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       {status === 'ready' ? (
         <CanonPrevia canon={canon} ranking={(_act, boss) => <CanonBossRanking boss={boss} />} />
       ) : null}
+      {/* El pop-up antes de la partida del castillo (T162): duración, dificultad, medalla y «Jugar». */}
+      {status === 'ready' ? <CastlePrevia castle={castle} /> : null}
 
       {/* Botellas cerca del barco (T56), encima de la barra, cuando no hay nada más abajo. */}
       {status === 'ready' &&
@@ -2540,6 +2561,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       !trip &&
       !invitations.reason &&
       !canon.prep.open &&
+      !castle.prep.open &&
       !gameHidden.has('bottles') ? (
         <MarBottlesNear
           ids={nearBottles}

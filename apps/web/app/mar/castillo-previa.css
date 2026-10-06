@@ -1,0 +1,87 @@
+/* El pop-up antes de la partida del castillo (plan 014 T162): el del Cañón
+   (`canon-previa.css`, la misma noche de cristal) con la duración en vez del
+   acto. Cada duración es una piedra de la muralla: el número grande, «min»
+   debajo y, en la esquina, la mejor medalla de ese par. muestra */
+
+.mar .mar-castle-duracion {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mar .mar-castle-duracion-opcion {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  min-height: 64px;
+  padding: 6px 4px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px 12px 6px 6px;
+  /* Las almenas, arriba: tres dientes de luz. */
+  background:
+    linear-gradient(
+        90deg,
+        transparent 0 18%,
+        rgb(255 255 255 / 0.1) 18% 32%,
+        transparent 32% 43%,
+        rgb(255 255 255 / 0.1) 43% 57%,
+        transparent 57% 68%,
+        rgb(255 255 255 / 0.1) 68% 82%,
+        transparent 82%
+      )
+      top / 100% 6px no-repeat,
+    rgb(255 255 255 / 0.06);
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.mar-castle-duracion-num {
+  font: 900 1.5rem / 1 var(--font-title);
+}
+
+.mar-castle-duracion-min {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.mar-castle-duracion-medalla {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.mar .mar-castle-duracion-opcion[aria-checked='true'] {
+  border-color: var(--canon-dawn, #ffd27a);
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.mar-castle-previa__best {
+  margin: 8px 2px 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.mar-castle-previa__best:not([class*='is-']) {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.mar-castle-previa__best.is-oro {
+  color: var(--canon-dawn, #ffd27a);
+}
+
+@media (max-width: 400px) {
+  .mar .mar-castle-duracion-opcion {
+    min-height: 56px;
+  }
+
+  .mar-castle-duracion-num {
+    font-size: 1.3rem;
+  }
+}
