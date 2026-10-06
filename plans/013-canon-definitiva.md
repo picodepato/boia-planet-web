@@ -1,6 +1,6 @@
 # Plan 013 — Cañón «Que no pare la música», definitive version (beta 3 notes, beta 4 and launch, two acts)
 
-Status: active
+Status: done
 Created: 2026-10-05
 Base branch: main
 Goal: Apply Hernán's beta 3 notes (end-game button in the pause, HUD overlaps, the healing vinyl too strong, emoji icons off-style, the Vecino ring nearly impossible to dodge), then finish the game as the definitive version with **two acts** (act 3 / Capitán is not built): the pre-game pop-up, sound (synth sound effects, a drum-and-bass battle loop, sea ambience back afterwards) and accessibility, the per-medal daily prize and the new achievements, the minikraken mascot, the per-boss ranking (local and global), and a closing task with bot balance, `baja` performance, the full e2e, docs, the decision draft for Álvaro and removing the «BETA» label.
@@ -165,7 +165,7 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - Outcome:
 
 ## T156 — Close: balance, `baja` performance, full e2e, docs, Álvaro draft, remove BETA
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T148, T149, T150, T151, T152, T153, T154, T155
@@ -184,9 +184,12 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
   - `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0
   - `grep -rn "BETA" apps/web/app/mar apps/web/lib/i18n` → no user-visible BETA label left
   - Test command → exit 0
-- Outcome:
+- Outcome: Tormenta boss toughness (config v16), baja perf p95 33–50 ms, BETA removed, 49 files back to LF, guide and Álvaro draft; full e2e 463 passed / 3 flaky under load (pass on rerun) · 1f5f330
 
 ## Decisions
+- 2026-10-06 T156: new `DifficultyDef.bossHp`, Tormenta 1.25, SURVIVORS config v16; bot final-boss wins act1/act2: Tranquila 11/12 & 10/12, Normal 11/12 & 6/12, Tormenta 4/12 & 2/12; Fantasma HP 3000 tried and dropped (agent)
+- 2026-10-06 T156: unused panel `badge` support removed with BETA; 49 CRLF files back to LF (barco/ship-model/tienda, ESTADO.md, plans/ left); REQ-AVE-039 stays PARCIAL (Faro 2D); hardened rampa, end-of-game and puerto e2e (agent)
+- 2026-10-06 T156: accepted with the full e2e never exiting 0 in one run under load (3 flaky, all pass on rerun) (orchestrator)
 - 2026-10-05 plan: act 3 dropped; Capitán achievement and «El Apagón» appearance dropped; shortcut games never pay or rank (orchestrator, from Hernán's answers)
 
 - 2026-10-05 T148: new end reason `quit` (`SurvivorsGame.quit()`); quit session abandoned, not settled; `CanonResult.ranked=false` for T155; card shows time/enemies/notes + «Volver al mar»/«Otra vez»; balances hidden via a `balances` HideLayer until «Volver al mar»; confirm focuses «No, seguir», Esc cancels the step; mobile slots 3 columns of 22 px, desktop rows at 28 px; worst case tested with `armas=1` (7 weapons + 4 vinyls) (agent)
@@ -200,6 +203,9 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-06 T154: dev helper `/mar?mascota=1` claims `canon-kraken` only where `devStartRewards` (dev/e2e), never on the test version; doc schema stays v8; mascot at 0.43 boat length back on the highest surface, facing the stern; waves within 45 units of a place; still with reduced motion; canvas `data-mascota`; generic `MASCOT_KINDS` (agent)
 
 ## Proposals (new scope)
+- 2026-10-06 T156: Los Rápidos desktop e2e pilot flakes under load
+- 2026-10-06 T156: a `.gitattributes` with `eol=lf` to stop CRLF coming back
+- 2026-10-06 T156: boss arrow under the slots (T148), act-2 tentacle SVG (T151), medal emoji in es-mar.ts (T150) not done; act 1 Normal still won 11/12 by the bot
 - 2026-10-06 T154: minikraken shape, size and spot per boat need an art review (Hernán/Álvaro); no Postgres test of equipping it (no local Postgres)
 - 2026-10-06 T157 (Hernán): next plan, castle game — include the Tabarca lighthouse island redesign in Blender (task block kept above as T157)
 - 2026-10-05 T153: equipping the mascot in Supabase (`equipped_cosmetics`, `equip_cosmetic`, `lib/account/merge.ts` SLOTS) left for T154
@@ -237,3 +243,4 @@ Decisions of 2026-10-05 that every task follows (interview, Hernán):
 - 2026-10-06 resumed in a new session: T155 branch committed and clean (conflict resolved in 1a62382) → integrating; push offer T154 cancelled
 - 2026-10-05 23:15 T155 integrated → 4314dd4 (tests ok); worktree and branch removed; duplicated T155 section in ESTADO.md dropped
 - 2026-10-05 23:20 T156 launched · attempt 1 · agent ae1a3a0815e2c330c (opus); Hernán: push to Vercel once T156 is integrated
+- 2026-10-06 03:35 T156 integrated → 1f5f330 (tests ok); plan done
