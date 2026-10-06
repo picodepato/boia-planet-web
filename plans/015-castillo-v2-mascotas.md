@@ -210,6 +210,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Depends on: T168, T169, T170, T171, T172, T173, T174, T175, T176, T177
 - Goal: Close the plan.
   - **Balance with bots** on path v2 with upgrades, priorities and the castle upgrade, 3 lengths × 3 difficulties: Tranquila winnable with a plain build, Normal a real fight, Tormenta hard; Halloween no longer holds short Tormenta runs alone; no single strategy dominates; ×2 and «Llamar oleada» do not break it; bump `DEFENSE_CONFIG_VERSION` if numbers changed.
+  - **Island DPS parity** (Hernán, 2026-10-06): define a rule so every attacking island's effective damage per second per coin spent is roughly similar at each level (measured on the path v2 against a standard wave mix, area towers counted on their typical hits), record the table before/after; Faro and the other weak ones go up, Halloween comes down. **Ibiza payback**: level 1 earns back its cost in **45 s**, the upgrade to level 2 earns back its cost in **30 s**, the upgrade to level 3 in **20 s** (numbers only; the visual payout is plan 016).
   - **Performance in `baja`** at the 10-min peak with bars and numbers on, clouds and the new Vecino; fix obvious hot spots only.
   - **E2E**: the castle spec and the **full suite** (`E2E_PORT=<free> pnpm e2e --workers=2`), both exit 0.
   - **Docs**: `docs/spec/estado.md`, `ESTADO.md` via the status fragment, a Spanish test guide `docs/propuestas/<date>-castillo-v2-guia-prueba.md` with an empty «Notas» section, and a Spanish **decision draft for Álvaro** `docs/propuestas/<date>-premios-mascotas-decision-alvaro.md` (the moved lighthouse and board, castle v2, the new Vecino, the two mascots and the wake with their names, the new achievements and prize amounts) — not in `docs/DECISIONES.md`.
@@ -223,6 +224,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 plan: T178 also sets island DPS parity and Ibiza payback 45/30/20 s; camera follow, wider U-turns, visible Ibiza payouts and the Fiestera position go to plan 016 (plans/016-notes.md) (Hernán)
 - 2026-10-06 T171: list item → detail → «Colocar» (keys 1–7 place directly); unaffordable islands grey with price crossed, open but «Colocar» disabled; ×2 left of the time, wave warning under the HUD for the last 6 s (muestra), idle bar «Construir» / «Mejoras» (dot when affordable) / «Llamar oleada +N»; keys M/X/O; bottom panel capped and scrolls, `.mar { overflow: clip }` in the arena; menu `game.options` slot (Cañón passes nothing); wave counter uses `waveS`; castle e2e expands the collapsed tablón (agent)
 - 2026-10-06 plan: T173 guide as simple speech bubbles, each closed with an ✕ or by doing what it asks (Hernán)
 - 2026-10-06 T176: «won» = castle held the whole run (bronze is not a win); «Primera regata» is the existing `circuito` achievement renamed (60 ★ + 30 coins) so two identical achievements don't fire — FOR HERNÁN; «Rápido» = 80 s (bot 67.3 s; noisy-bot model: median first success at try 4, 18/24 by try 5; slower than «Rayo» 73.4 s); prizes muestra Tranquila 40+20, Normal 60+30, Tormenta 120+50+Cañoncito, Tormenta 10 min 150+50+Estela, Rápido 80+40+Tortuga (within Supabase caps); prizes claimed in «Logros», final card points there; migration marks past castle wins and old race bests under 80 s complete (not claimed); admin editor lets `win_minigame` pick castillo + difficulty + length; `botRace` moved to `race-test-helpers.ts` (agent)
@@ -276,3 +278,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 15:56 T171 third API 529; leftovers committed as T171: WIP; paused until Hernán says to resume
 - 2026-10-06 16:09 T171 resumed (same agent) on Hernán's word that the API is back
 - 2026-10-06 16:22 T171 integrated → 5a708cf (tests ok); worktree and branch removed
+- 2026-10-06 16:22 T173 launched · attempt 1 · agent a1105d29142f6b07a (opus)
