@@ -1,6 +1,6 @@
 # Plan 015 — Castle game v2, the lighthouse board, Vecino redesign, mascots and prizes
 
-Status: active
+Status: done
 Created: 2026-10-06
 Base branch: main
 Goal: Second round on plan 014's «Defensa del Castillo» and the Tabarca lighthouse, from Hernán's notes and answers of 2026-10-06 (folded below; the notes file `plans/015-notes.md` is in git history at 15902e7). (1) The Tabarca lighthouse moves near the start and its board becomes a closed pop-up with three buttons that open the minimap's «Navegar / Ir en nave» choice. (2) The castle game gets a longer path with U-turns, building anywhere in the arena with range preview and real island images, tap-to-move plane with upgrades, castle upgrade, target priorities, ×2 speed, «Llamar oleada», next-wave warning, health bars and damage numbers, and a guided first game. (3) The «Vecino quejica» is remodelled in Blender for the Cañón and the castle. (4) Every game's top challenge gives a prize: castle and race achievements, two new mascots («Cañoncito», «Tortuga turbo») and the «Estela del vórtice» wake. (5) Line endings and slow test suites are fixed first.
@@ -54,7 +54,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: `.gitattributes` eol=lf and repo renormalized; the three `*-balance.test.ts` sims moved to `pnpm test:slow` (default vitest 86 s → 34 s); castle «construir» e2e retries the island confirm on state · ccb1dfc
 
 ## T174 — Vecino quejica remodelled in Blender (Cañón and castle)
-- Status: running (attempt 1)
+- Status: done
 - Model: fable (Fable 5.1)
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: none
@@ -217,7 +217,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: `pnpm test:supabase` 85/85 on the dev project: anon list adds `ranking_canon`/`ranking_castle` (read-only, paged), types regenerated (order only), economy test used a member that had earned coins in other tests → own member `valor-premios`; no SQL change · 001c2e2
 
 ## T178 — Close: balance, performance, full e2e, docs, Álvaro draft
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T168, T169, T170, T171, T172, T173, T174, T175, T176, T177
@@ -236,9 +236,12 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - `E2E_PORT=<free> pnpm e2e --workers=2` → exit 0
   - `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: islands toward the middle (Halloween 38.8→26.7 per 100 coins at L1, Nochevieja 12.3→13.5…), Ibiza 14/29/59 coins every 10 s (50/40/30 s paybacks) with «+N» coin pop-up, Normal ×1.4 / Tormenta ×1.35 life, castle hit ×1.5, DEFENSE_CONFIG_VERSION 5; baja p95 33.4 ms alone; full e2e 523 passed / 5 failed (3 load flakes pass alone, `mar-remolino` spec fixed); guide and Álvaro draft in docs/propuestas · b92010a
 
 ## Decisions
+- 2026-10-06 T178: damage per 100 coins L1/L2/L3 before → after: Faro 14.8/21.4/23.9 → 16.0/20.0/21.6; Nochevieja 12.3/11.6/11.8 → 13.5/14.7/14.9; Halloween 38.8/33.7/28.6 → 26.7/26.0/24.2; Puerto 13.0/14.4/13.3 → 13.9/16.2/15.6; Sonido 25.7/25.2/22.7 → 20.1/21.8/21.2; Benidorm unchanged; Ibiza 14/29/59 coins / 10 s; Normal enemy life ×1.4, Tormenta ×1.35 and castle hit ×1.5; version 5 (seed rows of the ranking migration edited in place); bot: Tranquila gold, Normal 26–73 %, Tormenta 5 min 0/6, 7 min 3/6, 10 min 6/6; bot buys plane speed, Ibiza and castle life; «+N» shows even with damage numbers off; `mar-remolino` e2e only forbids the whirlpool's own sheet (`?cerca=` start sits at Benidorm's sheet edge) (agent)
+- 2026-10-06 T178: FOR HERNÁN — stacking Ibizas beats everything (3 at the start hold Normal and Tormenta at 100 %, already true with 70 s); Halloween alone still holds Tormenta 5/7 min (63 %) and Sonido alone 40–49 % while the plain build falls; options in the test guide's «Qué contestar» (agent)
+- 2026-10-06 T178: accepted with the full e2e not exiting 0 in one pass (3 load flakes passing alone, 2 spec fixes), as in plan 014 (orchestrator)
 - 2026-10-06 run: T179 added (small fix task): `pnpm test:supabase` after applying the migrations gave 3/85 failures (anon RPC list, versioned types, cosmetic purchase without coins); runs in parallel with T178 (packages/db only) (orchestrator)
 - 2026-10-06 plan: Hernán chose island damage "toward the middle" (strong down a little, weak up a little, not full parity) and Ibiza payback 50/40/30 s with a visible «+N» coin pop-up on each payout, both in T178; the measured table is in T178 (Hernán)
 - 2026-10-06 T173: question inside the pop-up after «Jugar» (Atrás/Esc goes back); after answering, a «Con la guía» switch (off) replays it; dev shortcuts and «Otra vez» start without guide; pref `castillo:guia` local + account snapshot; 9 steps (mover, construir, elegir, colocar, instalar, ficha, prioridad, mejorar, oleada), a step passes if already done, priority step skipped for non-targeting islands, no pause; «Saltar guía» inside every bubble next to «Paso n de 9» (a pill covered the minimap on mobile); bottom-strip bubbles sit above the strip; «mover»/«ficha» bubbles float without a tail (pointing in 3D needs a mar3d hook); only outside change: `guide` prop on `CastleTestHook` (agent)
@@ -260,6 +263,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T178: Ibiza stacking (cap, smaller payout per extra Ibiza, or longer paybacks); area islands lower still; `?cerca=` start on Benidorm's sheet edge in the compact sea layout (agent)
 - 2026-10-06 T173: a `mar3d.ts` hook to point guide bubbles at the plane or a built island on screen; possible 3D canvas not filling 390×844 after a viewport change (seen only in a screenshot script) (agent)
 - 2026-10-06 T171: `TOWER_ICON` in castillo-icons.tsx unused now; `.mar-speedlines` taller than the screen (agent)
 - 2026-10-06 T176: `docs/propuestas/logros-catalogo.md` still says «Por Los Rápidos»; «Rápido» progress line says «vuelta» like «Rayo» (agent)
@@ -305,3 +309,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 17:38 `pnpm test:supabase` on Hernán's OK → 82 passed / 3 failed (log in $TEMP/test-supabase.log); T179 added
 - 2026-10-06 17:38 T179 launched · attempt 1 · agent aabca35fcd5939e8c (opus)
 - 2026-10-06 17:48 T179 integrated → 001c2e2 (tests ok); worktree and branch removed
+- 2026-10-06 19:02 T178 integrated → b92010a (tests ok on main); worktree and branch removed; plan done
