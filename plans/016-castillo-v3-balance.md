@@ -42,7 +42,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T181 — Castle sim v3: wider U-turns, Ibiza paybacks, extra-Ibiza payouts, +15 % damage
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: Engine-side changes for decisions 3–6: wider U-turns; Ibiza 45/30/20 s paybacks; 100/70/50 % payouts by build order (still automatic); +15 % damage for Faro, Puerto, Nochevieja, Benidorm. (Amended mid-run by Hernán: no pile/collect.)
@@ -53,7 +53,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - `pnpm test:slow` → exit 0 (adjust the balance sim's expectations only where Ibiza or the +15 % moved them; bot results per difficulty in the status fragment)
   - `DEFENSE_CONFIG_VERSION` bumped
   - Test command → exit 0
-- Outcome:
+- Outcome: U-turn radius 135→150 (inner 210 u), Ibiza build 63 / upgrades 45·60 with 14/29/59 per 10 s (45/30/20 s), extra Ibizas 70/50 % by build order, +15 % damage Faro/Puerto/Nochevieja/Benidorm, balance tests: bot holds Normal and Tormenta; DEFENSE_CONFIG_VERSION 6, migration 20261006100500 (not applied) · 4e900ff
 
 ## T183 — Castle arena v3: camera follow, Ibiza money on screen, upgrade sound, no turbo
 - Status: pending
@@ -107,8 +107,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 run: Hernán changed his mind mid-T181: Ibiza collects automatically (no pile/collect), and Faro, Puerto, Nochevieja, Benidorm get +15 % damage (not Halloween, Sonido); both sent to the running T181 agent; T183 adjusted (Hernán)
 - 2026-10-06 T181: with all changes the bot holds Normal and Tormenta at 100 %; Hernán chose to keep the stronger islands and NOT toughen enemies (he finds Tormenta hard); balance tests move to the new shape (Hernán)
 - 2026-10-06 T181: U-turn radius 135→150 (inner 210 u); Ibiza build 70→63, upgrades 45/60, payouts 14/29/59 per 10 s kept; extra-Ibiza share by build order among standing Ibizas; +15 % from one table `DEFENSE_DAMAGE_T178` × 1.15; DEFENSE_CONFIG_VERSION 6, migration 20261006100500 (not applied) (agent)
+- 2026-10-06 T181: balance tests now expect the bot to hold Normal and Tormenta; still check a one-island build falls, no Ibiza falls, Tormenta never easier than Normal, no one-island build beats the simple one (agent)
 
 ## Proposals (new scope)
+- 2026-10-06 T181: bot ends at 100 % everywhere; Puerto-only and Benidorm-only builds hold Tormenta at full life (agent)
 - 2026-10-06 T181: Ibiza card in the HUD shows the base payout; T183 should use `DefenseGame.farmPayout(id)` (agent)
 
 ## Log
@@ -120,3 +122,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T184 launched · attempt 1 · Codex via wrapper agent a822a7ea74bfff4f8 (sonnet)
 - 2026-10-06 T181 answer sent (B, no tougher enemies); same agent resumed
 - 2026-10-06 T180 reported done (d979994); sent back: Fiestera zone overlaps cala zone, e2e mar-ayuda/islas/canon not run, no screenshot with the route line
+- 2026-10-06 20:30 T181 integrated → 4e900ff (tests ok); worktree and branch removed (leftover node_modules folder in .claude/worktrees/agent-afcbcafc52df3805d, guard blocks rm)
