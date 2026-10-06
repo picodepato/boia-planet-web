@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T172: Island renders for «Construir»
+
+Qué existe:
+- `tools/islas-construir/render.ts`: construye en Node las siete islas que pone el castillo (`islandTemplate` de `apps/web/app/mar/engine/defense-islands.ts`, la composición a mano de `buildIsland`; también el faro, que sigue la planta del GLB de Tabarca) y las pinta en Chromium sin ventana (Playwright de apps/web, three.js de apps/web): de frente (desde +z, el lado del muelle), cámara del juego normal (40° de campo, 0,71 rad de elevación, la del zoom de salida), luz de día del juego (`moods().dia`), lo de bajo el agua recortado, fondo transparente, el mismo encuadre para todas (cada isla llena la imagen con el mismo margen, centrada), supermuestreo 4× y reducción. Falla si una esquina no es transparente o la isla casi no se ve.
+- `apps/web/public/castillo/islas/<tipo>.webp` (96 px) y `<tipo>@2x.webp` (192 px), webp con alfa, 3–10 kB cada una; salen iguales byte a byte al regenerar.
+- `apps/web/lib/mundo/castle-island-images.ts` (generado): `CASTLE_ISLAND_IMAGES: Record<DefenseTowerKind, { src; src2x }>` y `CASTLE_ISLAND_IMAGE_SIZE` (96), para el HUD de T171.
+- `apps/web/lib/mundo/castle-island-images.test.ts`: el manifiesto trae los siete tipos de `DEFENSE_TOWER_KINDS`; cada archivo existe, es WebP con alfa y mide 96/192 px.
+
+Comandos:
+- Regenerar todo: `node --experimental-transform-types --no-warnings --import ./packages/world/scripts/ts-resolve.mjs tools/islas-construir/render.ts` (opcional `--sheet <ruta.png>` deja una hoja de contacto) → exit 0, siete islas, 29–46 % de la imagen con isla.
+- `pnpm exec vitest run apps/web/lib/mundo/castle-island-images.test.ts` → 8 passed.
+- Test command: vitest 202 archivos / 1921 pruebas passed; `sh tools/spec/checks.sh` exit 0; `pnpm lint` exit 0; `pnpm build` exit 0 (187 kB, presupuesto OK); `pnpm typecheck` exit 0.
+
+Hoja de contacto (fuera del repo): `C:/tmp/orchestrator-attach/boia-planet-hernan-T172/islas-construir.png`.
+
+Pendiente: T171 pone las imágenes en la lista de «Construir» (`srcSet` con `src2x`). Si cambia un modelo de isla, se vuelve a correr el script.
+
 ## 2026-10-06 — plan 015 T169: Castle simulation v2
 
 Qué existe (`packages/engine/src/defense/`, `DEFENSE_CONFIG_VERSION` 3 → 4):
