@@ -1,6 +1,7 @@
 'use client';
 
 import type { DefenseResult, DefenseSnapshot } from '@boia/engine/defense';
+import type { Settings } from '@boia/engine/ui';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import {
   type CastleHook,
@@ -10,6 +11,8 @@ import {
   withoutCastleShortcut,
 } from './castillo';
 import type { Mar3D } from './engine/mar3d';
+import type { CanonAudioState } from './canon-audio';
+import { useCastleAudio } from './castillo-audio-mode';
 import { type HideLayer, hideForGame, marHideHost, randomSeed } from './survivors';
 
 /**
@@ -30,6 +33,9 @@ const HOOK_MS = 250;
 const HIDDEN_MS = 1000;
 
 export interface CastleMode {
+  sound: CanonAudioState | null;
+  prepareAudio(): void;
+  setAudioSettings(settings: Settings | null): void;
   /** Hay partida del castillo en curso. */
   active: boolean;
   /** Lo que la partida tiene escondido ahora (las mismas capas que el Cañón). */
@@ -55,6 +61,7 @@ export function useCastleMode({
   ready,
   isBusy,
   onStart,
+  onSea,
 }: {
   engineRef: RefObject<Mar3D | null>;
   /** El mar está listo (el atajo de la URL se lee entonces, una vez). */
@@ -63,8 +70,19 @@ export function useCastleMode({
   isBusy: () => boolean;
   /** Al empezar: cerrar fichas, paneles, diálogos… */
   onStart: () => void;
+  onSea?: (on: boolean) => void;
 }): CastleMode {
   const runRef = useRef<DefenseRun | null>(null);
+  const {
+    start: startAudio,
+    events: audioEvents,
+    end: endAudio,
+    sync: syncAudio,
+    setPaused: pauseAudio,
+    sound,
+    prepare: prepareAudio,
+    setAudioSettings,
+  } = useCastleAudio(runRef, onSea);
   const restoreRef = useRef<(() => void) | null>(null);
   const pausedRef = useRef(false);
   const [active, setActive] = useState(false);
@@ -105,7 +123,9 @@ export function useCastleMode({
         startAtS: sc.t,
         devIslands: sc.islands,
         ...(sc.coins ? { devCoins: sc.coins } : {}),
-        onEnd: () => {
+        onEvents: audioEvents,
+        onEnd: (reason) => {
+          endAudio(reason);
           // En el paso del bucle del mar: la tarjeta sale en el render siguiente.
           setResult(run.game.result());
           setHud(run.hook());
@@ -113,6 +133,7 @@ export function useCastleMode({
       });
       if (!g.startDefense(run)) return false;
       runRef.current = run;
+      startAudio();
       latest.current.onStart();
       run.setPaused(pausedRef.current);
       restoreRef.current = hideForGame(
@@ -129,13 +150,17 @@ export function useCastleMode({
       setActive(true);
       return true;
     },
-    [engineRef],
+    [engineRef, startAudio, audioEvents, endAudio],
   );
 
-  const setPaused = useCallback((paused: boolean) => {
-    pausedRef.current = paused;
-    runRef.current?.setPaused(paused);
-  }, []);
+  const setPaused = useCallback(
+    (paused: boolean) => {
+      pausedRef.current = paused;
+      runRef.current?.setPaused(paused);
+      pauseAudio(paused);
+    },
+    [pauseAudio],
+  );
 
   const read = useCallback(() => runRef.current?.snapshot() ?? null, []);
   const run = useCallback(() => runRef.current, []);
@@ -146,9 +171,10 @@ export function useCastleMode({
     const id = window.setInterval(() => {
       const run = runRef.current;
       if (run) setHud(run.hook());
+      syncAudio();
     }, HOOK_MS);
     return () => window.clearInterval(id);
-  }, [active]);
+  }, [active, syncAudio]);
 
   // Pestaña oculta: el bucle del 3D no corre; la pausa se apunta aquí.
   useEffect(() => {
@@ -180,17 +206,42 @@ export function useCastleMode({
     start(sc);
   }, [ready, start]);
 
-  return { active, hidden, hud, read, run, result, setPaused, quit, leave };
+  return {
+    active,
+    hidden,
+    hud,
+    read,
+    run,
+    result,
+    setPaused,
+    quit,
+    leave,
+    sound,
+    prepareAudio,
+    setAudioSettings,
+  };
 }
 
 /** El estado de la partida para las pruebas (`data-*`), sin nada que se vea. */
-export function CastleTestHook({ hud }: { hud: CastleHook | null }) {
+export function CastleTestHook({
+  hud,
+  sound,
+}: {
+  hud: CastleHook | null;
+  sound?: CanonAudioState | null;
+}) {
   if (!hud) return null;
   return (
     <div
       hidden
       aria-hidden="true"
       data-testid="mar-castillo"
+      data-sonido={
+        sound ? (sound.unlocked ? (sound.hidden ? 'oculto' : 'activo') : 'bloqueado') : undefined
+      }
+      data-musica={
+        sound ? ({ battle: 'batalla', boss: 'jefe', sea: 'mar' } as const)[sound.music] : undefined
+      }
       data-estado={hud.estado}
       data-tiempo={hud.tiempo}
       data-activo={hud.activo}

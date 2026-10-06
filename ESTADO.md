@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T164: Sound for the castle
+
+Codex did the work.
+
+Qué existe:
+- `apps/web/app/mar/castillo-audio.ts`: sonidos sintetizados del castillo (construir, mejorar, vender, ataque de cada isla con limite de ritmo por tipo, golpe al castillo, inicio de oleada, victoria, derrota) y cambio de bucle batalla -> jefe -> mar. No se abre nada antes del primer gesto.
+- `castillo-audio-mode.ts`: enlace con el modo castillo (hooks pequenos en `castillo-mode.tsx` y `mar-client.tsx`).
+- `canon-audio.ts`: pequena extension compartida, sin cambiar los sonidos del Canon. Helpers de prueba en `audio-test-helpers.ts`.
+- Pruebas con AudioContext simulado: `castillo-audio.test.ts`, `castillo-audio-mode.test.ts`.
+
+Comandos:
+- vitest (sin packages/db): 195 ficheros, 1857 pruebas, todo pasa.
+- tools/spec/checks.sh: OK. pnpm lint: 0. pnpm typecheck: 0. pnpm build: 0.
+
+Pendiente: nada. Nota: mar-client.tsx y castillo-mode.tsx estan en CRLF en el repo; se conservaron en CRLF.
+
 ## 2026-10-06 — plan 014 T161: HUD and controls: Construir, placing, Mejorar/Vender, life, time, coins
 
 Qué existe:

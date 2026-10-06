@@ -78,6 +78,19 @@ export interface CanonAudioDeps {
   random?: () => number;
 }
 
+/** Voces para efectos de otros juegos, en el mismo bus y con las mismas guardas. */
+export interface SynthVoice {
+  tone(
+    from: number,
+    to: number,
+    at: number,
+    length: number,
+    peak: number,
+    type?: OscillatorType,
+  ): void;
+  noise(from: number, to: number, length: number, peak: number, type?: BiquadFilterType): void;
+}
+
 // --- El bucle ---------------------------------------------------------------------
 
 export const BPM = 170;
@@ -236,6 +249,7 @@ export class CanonAudio {
   /** Hasta cuándo suena cada capa (s del contexto; Infinity mientras es la que toca). */
   private readonly until: Record<Layer, number> = { battle: -Infinity, boss: -Infinity };
   private readonly lastAt = new Map<CanonSfx, number>();
+  private readonly effectAt = new Map<string, number>();
   private combo = 0;
   private disposed = false;
   private readonly cleanups: (() => void)[] = [];
@@ -575,6 +589,21 @@ export class CanonAudio {
   }
 
   // --- Efectos ------------------------------------------------------------------------
+
+  /** Extensión de otros juegos; no comparte límites ni voces con los efectos del Cañón. */
+  playEffect(id: string, gap: number, synth: (voice: SynthVoice) => void): void {
+    const g = this.graph;
+    if (!g || this.hidden || this.disposed) return;
+    if (soundLevel(this.deps.prefs.get()) === 0 || this.global.sfx === 0) return;
+    const now = g.ctx.currentTime;
+    const last = this.effectAt.get(id);
+    if (last !== undefined && now - last < gap) return;
+    this.effectAt.set(id, now);
+    synth({
+      tone: (from, to, at, length, peak, type) => this.tone(from, to, at, length, peak, type),
+      noise: (from, to, length, peak, type) => this.noise(from, to, length, peak, type),
+    });
+  }
 
   /** Un efecto ahora (si hay contexto, se oye algo y no acaba de sonar el mismo). */
   play(id: CanonSfx, strength = 1): void {

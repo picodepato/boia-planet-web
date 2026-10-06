@@ -489,9 +489,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const castle = useCastleMode({
     engineRef,
     ready: status === 'ready',
-    isBusy: () =>
-      !!engineRef.current?.survivorsActive || (raceRef.current?.race.active ?? false),
+    isBusy: () => !!engineRef.current?.survivorsActive || (raceRef.current?.race.active ?? false),
     onStart: closeForGame,
+    onSea: (on) => setAmbientWorld(on ? worldIdRef.current : null),
   });
   /** Las capas del mundo que aparta la partida en curso (la del Cañón o la del castillo). */
   const gameHidden = castle.hidden.size > 0 ? castle.hidden : canon.hidden;
@@ -1435,6 +1435,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Los Ajustes (música y efectos, el silencio de la web) también valen para el Cañón (T152).
   const setCanonAudioSettings = canon.setAudioSettings;
   useEffect(() => setCanonAudioSettings(settings), [settings, setCanonAudioSettings]);
+  const setCastleAudioSettings = castle.setAudioSettings;
+  useEffect(() => setCastleAudioSettings(settings), [settings, setCastleAudioSettings]);
+  const prepareCastleAudio = castle.prepareAudio;
+  useEffect(() => {
+    if (minigameOffer?.gameId === 'castillo') prepareCastleAudio();
+  }, [minigameOffer?.gameId, prepareCastleAudio]);
 
   // La posición del barco (REQ-IDE-004, T44): cada poco mientras se navega y
   // al irse; una recarga la restaura (arranque, arriba).
@@ -2304,7 +2310,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       />
       <CanonDevSwitch canon={canon} />
       {/* «Defensa del Castillo» (T160, T161): su estado para las pruebas y su HUD. */}
-      <CastleTestHook hud={castle.hud} />
+      <CastleTestHook hud={castle.hud} sound={castle.sound} />
       <CastleLayer castle={castle} covered={gameCovered} onPause={openMenu} />
       <CanonLayer canon={canon} engineRef={engineRef} covered={gameCovered} onPause={openMenu} />
 
