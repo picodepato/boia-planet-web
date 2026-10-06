@@ -12,6 +12,11 @@ import { DEFAULT_DIFFICULTY } from '@boia/engine/survivors';
 import type { Settings } from '@boia/engine/ui';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { t as msg } from '../../lib/i18n';
+import { accountSnapshot } from '../../lib/account/session';
+import { isSupabaseConfigured } from '../../lib/supabase/config';
+import { browserCastleStorage } from '../../lib/mundo/ranking-castle';
+import { memberCastleStanding } from '../../lib/mundo/ranking-castle-global';
+import { type CastleRankingOutcome, rankCastleGame } from './castillo-ranking-model';
 import {
   type CastleMedals,
   EMPTY_CASTLE_MEDALS,
@@ -116,6 +121,8 @@ export interface CastleMode {
   medals: CastleMedals;
   /** La medalla de la última partida, si la hubo y se guardó; null si no. */
   record: CastleMedalRecord | null;
+  /** Tu mejor puntuación y puesto de esta partida (T163). */
+  ranking: CastleRankingOutcome | null;
 }
 
 export function useCastleMode({
@@ -172,6 +179,7 @@ export function useCastleMode({
   const { data: medalData } = useRepoData((repo) => readCastleMedals(repo.progress));
   const medals = medalData ?? EMPTY_CASTLE_MEDALS;
   const [record, setRecord] = useState<CastleMedalRecord | null>(null);
+  const [ranking, setRanking] = useState<CastleRankingOutcome | null>(null);
 
   const leave = useCallback(() => {
     const run = runRef.current;
@@ -183,6 +191,7 @@ export function useCastleMode({
     if (run) setHud(run.hook());
     setResult(null);
     setRecord(null);
+    setRanking(null);
     setActive(false);
   }, [engineRef]);
 
@@ -215,6 +224,21 @@ export function useCastleMode({
           const r = run.game.result();
           setResult(r);
           setHud(run.hook());
+          if (r) {
+            const ranked = rankCastleGame(r, {
+              mode: !isSupabaseConfigured()
+                ? 'local'
+                : accountSnapshot().status === 'member'
+                  ? 'member'
+                  : 'guest',
+              storage: browserCastleStorage(),
+              submit: memberCastleStanding,
+            });
+            setRanking(ranked.now);
+            void ranked.later?.then((outcome) => {
+              if (runRef.current === run) setRanking(outcome);
+            });
+          }
           // La medalla (T162): la mejor de su par se queda en el progreso. Una
           // partida de atajo sólo donde los atajos dan premio (como el Cañón, T121).
           if (!r?.medal || (run.devStart && !devStartRewards())) return;
@@ -233,6 +257,7 @@ export function useCastleMode({
       lastStart.current = how;
       setPrepOpen(false);
       setRecord(null);
+      setRanking(null);
       startAudio();
       latest.current.onStart();
       run.setPaused(pausedRef.current);
@@ -367,6 +392,7 @@ export function useCastleMode({
     panel,
     medals,
     record: result ? record : null,
+    ranking: result ? ranking : null,
     sound,
     prepareAudio,
     setAudioSettings,

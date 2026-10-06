@@ -362,6 +362,23 @@ export const esMar = {
   'mar.canon.previa.ranking': 'Ranking contra {nombre}',
   'mar.canon.previa.ranking.vacio':
     'Aún no hay partidas contra este boss. ¡Sé la primera tripulación del ranking!',
+  // El ranking del Castillo, por duración y dificultad (T163). muestra
+  'mar.castillo.ranking.tu': 'Tú',
+  'mar.castillo.ranking.tu.sin': 'Tú (aún sin partida)',
+  'mar.castillo.ranking.cargando': 'Cargando el ranking…',
+  'mar.castillo.ranking.fila': '{puesto}. {nombre}: {puntos} puntos',
+  'mar.castillo.ranking.local':
+    'Tu mejor partida en este navegador, entre la tripulación de muestra.',
+  'mar.castillo.ranking.formula':
+    'Puntos: enemigos derrotados y un bono por la vida del castillo al aguantar.',
+  'mar.castillo.fin.ranking.nuevo': '¡Tu mejor!',
+  'mar.castillo.fin.ranking.mejor': 'Tu mejor: {puntos}',
+  'mar.castillo.fin.ranking.puesto': 'Puesto {puesto} de {total}',
+  'mar.castillo.fin.ranking.cargando': 'Buscando tu puesto…',
+  'mar.castillo.fin.ranking.invitado': 'Sin cuenta: tu mejor queda en este navegador.',
+  'mar.castillo.fin.ranking.sinDato': 'Tu puesto no está disponible ahora.',
+  'mar.castillo.fin.ranking.corta': 'Muy corta: fuera del ranking.',
+  'mar.castillo.fin.ranking.fuera': 'Fuera del ranking.',
   // El ranking por boss (plan 013, T155): en el pop-up y en la tarjeta final. muestra
   'mar.canon.ranking.tu': 'Tú',
   'mar.canon.ranking.tu.sin': 'Tú (aún sin partida)',

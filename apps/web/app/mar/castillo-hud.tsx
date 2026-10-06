@@ -40,6 +40,7 @@ import { CastleIcon, TOWER_ICON } from './castillo-icons';
 import type { CastleMode } from './castillo-mode';
 import { castlePairLabel } from './castillo-previa';
 import './castillo-hud.css';
+import { CastleEndRanking } from './castillo-ranking';
 
 /**
  * La interfaz de «Defensa del Castillo» en `/mar` (plan 014 T161), con el
@@ -347,6 +348,7 @@ export function CastleLayer({
         <CastleEnd
           result={castle.result}
           record={castle.record}
+          ranking={castle.ranking}
           onAgain={castle.again}
           onBack={castle.leave}
         />
@@ -778,11 +780,13 @@ function CastleTowerPanel({
 function CastleEnd({
   result,
   record,
+  ranking,
   onAgain,
   onBack,
 }: {
   result: DefenseResult;
   record: CastleMode['record'];
+  ranking: CastleMode['ranking'];
   onAgain: () => void;
   onBack: () => void;
 }) {
@@ -858,7 +862,8 @@ function CastleEnd({
             </div>
           )}
         </dl>
-        {!card.short && !card.ranked ? (
+        {ranking ? <CastleEndRanking ranking={ranking} /> : null}
+        {!ranking && !card.short && !card.ranked ? (
           <p className="mar-canon-end__prize" data-testid="mar-castillo-final-prueba">
             {msg('mar.castillo.fin.prueba')}
           </p>

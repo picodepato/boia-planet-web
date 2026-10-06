@@ -281,6 +281,101 @@ export type Database = {
           },
         ];
       };
+      castle_boards: {
+        Row: {
+          run_min: number;
+          difficulty: string;
+          version: number;
+          config_version: number;
+          min_ms: number;
+          duration_ms: number;
+          max_ms: number;
+          max_kill_points: number;
+          life_bonus: number;
+          castle_life: number;
+          is_active: boolean;
+        };
+        Insert: {
+          run_min: number;
+          difficulty: string;
+          version: number;
+          config_version: number;
+          min_ms: number;
+          duration_ms: number;
+          max_ms: number;
+          max_kill_points: number;
+          life_bonus: number;
+          castle_life: number;
+          is_active?: boolean;
+        };
+        Update: {
+          run_min?: number;
+          difficulty?: string;
+          version?: number;
+          config_version?: number;
+          min_ms?: number;
+          duration_ms?: number;
+          max_ms?: number;
+          max_kill_points?: number;
+          life_bonus?: number;
+          castle_life?: number;
+          is_active?: boolean;
+        };
+        Relationships: [];
+      };
+      castle_scores: {
+        Row: {
+          user_id: string;
+          run_min: number;
+          difficulty: string;
+          board_version: number;
+          best_score: number;
+          best_at: string;
+          medal: string | null;
+          end_reason: string;
+          castle_life: number;
+          duration_ms: number;
+          attempts: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          run_min: number;
+          difficulty: string;
+          board_version: number;
+          best_score: number;
+          best_at?: string;
+          medal?: string | null;
+          end_reason: string;
+          castle_life: number;
+          duration_ms: number;
+          attempts?: number;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          run_min?: number;
+          difficulty?: string;
+          board_version?: number;
+          best_score?: number;
+          best_at?: string;
+          medal?: string | null;
+          end_reason?: string;
+          castle_life?: number;
+          duration_ms?: number;
+          attempts?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'castle_scores_run_min_difficulty_board_version_fkey';
+            columns: ['run_min', 'difficulty', 'board_version'];
+            isOneToOne: false;
+            referencedRelation: 'castle_boards';
+            referencedColumns: ['run_min', 'difficulty', 'version'];
+          },
+        ];
+      };
       canon_boards: {
         Row: {
           boss: string;
@@ -1859,6 +1954,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      ranking_castle: {
+        Args: {
+          p_run_min: number;
+          p_difficulty: string;
+          p_version?: number;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
       ranking_canon: {
         Args: {
           p_boss: string;
@@ -1912,6 +2017,20 @@ export type Database = {
       set_news_opt_in: {
         Args: {
           p_news: boolean;
+        };
+        Returns: Json;
+      };
+      submit_castle_score: {
+        Args: {
+          p_run_min: number;
+          p_difficulty: string;
+          p_version: number;
+          p_score: number;
+          p_ms: number;
+          p_medal: string | null;
+          p_end: string;
+          p_life: number;
+          p_ranked: boolean;
         };
         Returns: Json;
       };

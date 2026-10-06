@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T163: Castle ranking per run length × difficulty
+
+Codex did the work (wrapper verified).
+
+What exists:
+- `apps/web/lib/mundo/ranking-castle.ts` (local: nine tables, 3 lengths × 3 difficulties, sample crew + own score), `ranking-castle-global.ts` (global via RPC), `ranking-global.ts` extended, with unit tests (table separation, score order, rejected submissions: shortcut, quit, impossible).
+- Migration `supabase/migrations/20261006100300_castle_ranking.sql` (RPC with anti-cheat on impossible score/time), written and statically checked, NOT applied; not run against a real Postgres (none on this machine). `packages/db` rpc/types/checks updated.
+- UI: `apps/web/app/mar/castillo-ranking.tsx` + model, shown in the pop-up ranking area and on the final card (best and position); i18n in `es-mar.ts`. Shortcut and «Terminar partida» games never submitted.
+
+Commands:
+- vitest (excluding packages/db, maxWorkers=2): 201 files, 1903 tests pass
+- tools/spec/checks.sh: exit 0; pnpm lint: exit 0; pnpm typecheck: exit 0; pnpm build: exit 0
+- E2E mar-castillo -g ranking --workers=1: 6 passed (mobile + desktop)
+
+Pending: apply the migration to the real Supabase project and test it against Postgres (Hernán).
+
 ## 2026-10-06 — plan 014 T162: The castle's pre-game pop-up, final card and medals
 
 Qué existe:

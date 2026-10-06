@@ -12,6 +12,7 @@ import { arenaFrame, vortexSpot } from '../app/mar/engine/defense-arena';
 import { planetRect, wrapIn } from '../app/mar/engine/wrap';
 import { t } from '../lib/i18n';
 import { mar, openMar } from './mar-helpers';
+import { CASTLE_BEST_KEY, recordCastleBest } from '../lib/mundo/ranking-castle';
 
 /**
  * «Defensa del Castillo» (plan 014). T160, la arena: con el atajo
@@ -629,12 +630,12 @@ test('pop-up, tarjeta y medalla: 5 min + Tranquila, se gana con `vencer=1`, la t
   if (touch) await play.tap();
   else await play.click();
 
-  // El pop-up: el foco en la duración marcada; dificultad, medalla y ranking vacío.
+  // El pop-up: el foco en la duración marcada; dificultad, medalla y ranking local.
   await expect(previa(page)).toBeVisible();
   await expect(panel).toBeHidden();
   await expect(previa(page)).toHaveAttribute('role', 'dialog');
   await expect(page.getByTestId('mar-castillo-duracion')).toBeVisible();
-  await expect(page.getByTestId('mar-castillo-previa-ranking-vacio')).toBeVisible();
+  await expect(page.getByTestId('mar-castillo-ranking')).toHaveAttribute('data-ranking', 'local');
   await expect(page.getByTestId('mar-castillo-previa-medalla')).toHaveAttribute(
     'data-medalla',
     'ninguna',
@@ -793,5 +794,73 @@ test('tarjeta: «Otra vez» empieza otra igual (10 min, Tormenta) y una partida 
   await page.keyboard.press('Escape');
   await expect(end).toHaveCount(0);
   await expect(canvas(page)).toHaveAttribute('data-arena', 'off');
+  expect(errors).toEqual([]);
+});
+
+// T163: muestra y mejor propio por duración × dificultad, sin excepciones para atajos.
+test('ranking local: muestra + puntuación propia, nueve tablas y atajo/Terminar partida no cambian el récord', async ({
+  page,
+}) => {
+  // Se juega la sim completa, sin startAtS ni unranked, y se precarga su récord.
+  // El navegador usa atajos para abrir la isla y acabar rápido; ésos jamás puntúan.
+  const sim = createDefense(DEFENSE_CONFIG, 7);
+  while (!sim.result()) sim.step();
+  const result = sim.result()!;
+  let saved = '';
+  recordCastleBest(
+    {
+      getItem: () => null,
+      setItem: (_key, value) => {
+        saved = value;
+      },
+    },
+    result,
+    '2026-10-06T00:00:00Z',
+  );
+  expect(saved).not.toBe('');
+  await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), {
+    key: CASTLE_BEST_KEY,
+    value: saved,
+  });
+  const errors = await openMar(page, '?minijuego=castillo&oferta=1&vencer=1');
+  const panel = page.getByTestId('panel-minijuego');
+  await panel.getByRole('button', { name: t('juego.minigameLayer.jugar') }).click();
+  await expect(previa(page)).toBeVisible();
+  const ranking = page.getByTestId('mar-castillo-ranking');
+  const mine = page.locator('[data-testid="mar-castillo-ranking-fila"][data-mio="si"]');
+  for (const min of [5, 7, 10])
+    for (const diff of ['tranquila', 'normal', 'tormenta']) {
+      await page.getByTestId(`mar-castillo-duracion-${min}`).click();
+      await previa(page).getByTestId(`mar-canon-dificultad-${diff}`).click();
+      await expect(ranking).toHaveAttribute('data-ranking', 'local');
+      const table = page.getByTestId('mar-castillo-ranking-tabla');
+      await expect(table).toHaveAttribute('data-duracion', String(min));
+      await expect(table).toHaveAttribute('data-dificultad', diff);
+      await expect(page.getByTestId('mar-castillo-ranking-fila')).toHaveCount(4);
+      if (min === 5 && diff === 'normal') {
+        await expect(mine).toHaveAttribute('data-puntos', String(result.score));
+        await expect(mine).toHaveAttribute('data-puesto', /[1-4]/);
+        await expect(mine).toContainText(t('mar.castillo.ranking.tu'));
+      } else {
+        await expect(mine).not.toHaveAttribute('data-puntos');
+        await expect(mine).toContainText(t('mar.castillo.ranking.tu.sin'));
+      }
+    }
+  await page.getByTestId('mar-castillo-duracion-5').click();
+  await previa(page).getByTestId('mar-canon-dificultad-normal').click();
+  await page.getByTestId('mar-castillo-previa-jugar').click();
+  const endRank = page.getByTestId('mar-castillo-final-ranking');
+  await expect(endRank).toHaveAttribute('data-ranking', 'off', { timeout: 30000 });
+  await expect(endRank).toHaveAttribute('data-motivo', 'test');
+  await expect(endRank).toHaveAttribute('data-mejor', String(result.score));
+  expect(await page.evaluate((key) => localStorage.getItem(key), CASTLE_BEST_KEY)).toBe(saved);
+  await page.getByTestId('mar-castillo-volver').click();
+  // Recargar con otra partida de atajo, esta vez terminada desde la pausa.
+  await openMar(page, '?minijuego=castillo&duracion=5');
+  await page.getByTestId('mar-castillo-pausa').click();
+  await page.getByTestId('mar-menu-terminar').click();
+  await page.getByTestId('mar-menu-terminar-si').click();
+  await expect(endRank).toHaveAttribute('data-motivo', 'quit');
+  expect(await page.evaluate((key) => localStorage.getItem(key), CASTLE_BEST_KEY)).toBe(saved);
   expect(errors).toEqual([]);
 });

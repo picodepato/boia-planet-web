@@ -11,6 +11,7 @@ import { type MessageKey, t as msg } from '../../lib/i18n';
 import { castlePairMedal } from '../../lib/mundo/castle-medals';
 import { CanonDifficultyPicker } from './canon-previa';
 import type { CastleMode } from './castillo-mode';
+import { CastlePairRanking } from './castillo-ranking';
 import './canon-previa.css';
 import './castillo-previa.css';
 
@@ -19,7 +20,7 @@ import './castillo-previa.css';
  * con el patrón del Cañón (plan 013 T151, `canon-previa.tsx`): al pulsar
  * «Jugar» en el panel de la isla del castillo se elige la dificultad (3) y
  * la duración (5, 7 o 10 min), se ve la mejor medalla de ese par y su
- * ranking (T163 lo llena; hasta entonces, un hueco vacío que lo dice) y se
+ * ranking del par (T163) y se
  * juega.
  *
  * Un diálogo modal: el foco entra en la duración marcada y no sale del
@@ -63,7 +64,7 @@ export function castlePairLabel(runMin: DefenseRunMin, difficulty: DifficultyId)
 
 export function CastlePrevia({
   castle,
-  ranking,
+  ranking = (runMin, difficulty) => <CastlePairRanking runMin={runMin} difficulty={difficulty} />,
 }: {
   castle: CastleMode;
   /** El ranking del par elegido (T163); sin él, el hueco vacío. */

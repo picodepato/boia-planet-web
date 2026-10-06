@@ -26,11 +26,15 @@ export const RANKING_PAGE_SIZE = 50;
 export type RankingBoard =
   | { kind: 'points' }
   | { kind: 'circuit'; circuit: string; version: number }
-  | { kind: 'canon'; boss: string; version: number };
+  | { kind: 'canon'; boss: string; version: number }
+  | { kind: 'castle'; runMin: number; difficulty: string; version: number };
 
 export function boardKey(b: RankingBoard): string {
   if (b.kind === 'points') return 'points';
-  return b.kind === 'circuit' ? `circuit:${b.circuit}:v${b.version}` : `canon:${b.boss}:v${b.version}`;
+  if (b.kind === 'castle') return `castle:${b.runMin}:${b.difficulty}:v${b.version}`;
+  return b.kind === 'circuit'
+    ? `circuit:${b.circuit}:v${b.version}`
+    : `canon:${b.boss}:v${b.version}`;
 }
 
 export interface GlobalRow {
@@ -109,12 +113,20 @@ export async function fetchRankingPage(
             p_limit: limit,
             p_offset: offset,
           })
-        : await client.rpc('ranking_canon', {
-            p_boss: board.boss,
-            p_version: board.version,
-            p_limit: limit,
-            p_offset: offset,
-          });
+        : board.kind === 'castle'
+          ? await client.rpc('ranking_castle', {
+              p_run_min: board.runMin,
+              p_difficulty: board.difficulty,
+              p_version: board.version,
+              p_limit: limit,
+              p_offset: offset,
+            })
+          : await client.rpc('ranking_canon', {
+              p_boss: board.boss,
+              p_version: board.version,
+              p_limit: limit,
+              p_offset: offset,
+            });
   if (res.error) {
     // Una tabla que el servidor aún no tiene (otro trazado, otro boss o versión): vacía.
     if (res.error.message === 'unknown_circuit' || res.error.message === 'unknown_board') {

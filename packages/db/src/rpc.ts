@@ -56,6 +56,10 @@ export const RPC_REJECTIONS = [
   'score_too_high',
   'invalid_medal',
   'invalid_difficulty',
+  // Ranking del Castillo (T163)
+  'unranked_game',
+  'invalid_end',
+  'invalid_life',
   // Descuentos
   'unknown_discount',
   'discount_not_found',
@@ -233,6 +237,9 @@ export interface RankingPage {
   version?: number;
   /** ranking_canon (plan 013 T155) */
   boss?: string;
+  /** ranking_castle (T163) */
+  run_min?: number;
+  difficulty?: string;
 }
 
 /** submit_canon_score (plan 013 T155) */
@@ -242,6 +249,17 @@ export interface CanonScoreResult {
   best_at: string;
   attempts: number;
   boss: string;
+  version: number;
+}
+
+/** submit_castle_score (T163) */
+export interface CastleScoreResult {
+  best: boolean;
+  best_score: number;
+  best_at: string;
+  attempts: number;
+  run_min: number;
+  difficulty: string;
   version: number;
 }
 
