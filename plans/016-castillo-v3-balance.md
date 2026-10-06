@@ -85,7 +85,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: focus restored when sheets close (arrows work after «Mi Barco», e2e closes it 3 ways), public world→screen hook in mar3d.ts, «mover»/«ficha» bubbles with tails on the plane / last installed island, «Por Los Rápidos» gone, «Rápido» own progress wording; done by Codex + wrapper · b4319b1
 
 ## T186 — Member numbers by order of arrival, artist link and artist stamp
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: Hernán, 2026-10-06 (added mid-plan). (1) Member numbers are given by order of arrival, the same sequence for artists and members, **with no gaps** (a failed sign-up never burns a number), stored safely and never random. (2) From the admin a member's number can be changed (to a free number only; the change is logged). (3) **One shared artist link**, changeable from the admin: whoever creates their carnet through it is an artist. (4) Artist carnets show a rubber **«ARTISTA» stamp on the front**, same style as the event stamps on the back, tilted in a free corner (`muestra` until Álvaro sees it).
@@ -97,10 +97,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - e2e: open the artist link, create a carnet (local mode) → the front shows the stamp → exit 0
   - screenshot of a member and an artist carnet front (mobile) → /tmp/orchestrator-attach/boia-planet-hernan-T186/
   - Test command → exit 0
-- Outcome:
+- Outcome: migration 20261006100600 (not applied): one-row counter as column default in the same insert (no gaps, existing numbers kept), admin «Cambiar nº» to a free number with audit, artist link `/artista/<code>` (hashed, rotated from admin Socios), «ARTISTA» stamp top-centre on the front (dark ink, muestra); SQL tests written, not run · 9403d5a
 
 ## T185 — Close: full e2e, balance check, docs, test guide
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T180, T181, T183, T184, T186
 - Model: opus
 - Goal: Close the plan: full e2e, a last balance check with everything in, docs and spec status, and a short test guide for Hernán.
@@ -126,8 +126,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T184: arrows fix is defensive (focus restore); root cause not proven, new e2e passes (agent)
 - 2026-10-06 run: Hernán added T186 (carnet numbers by arrival with no gaps, admin can change a number, one shared changeable artist link, «ARTISTA» stamp on the front) to this plan; local mode keeps «—», artist link marks the local carnet in demo; admin number change only to a free number, logged (Hernán; last two orchestrator)
 - 2026-10-06 T183: zoomed in, the view may go past the arena edge (decision 2 over plan 015's rule, which now holds only at zoom 1); «+N» fixed screen size, 1.8 s, kept inside a safe band under the HUD (agent)
+- 2026-10-06 T186: artist code counts only when the carnet is created; wrong/old code gives a normal carnet silently; no valid code until the admin creates the first link; stamp in dark ink (red unreadable on orange); admin controls only in Supabase-mode Socios; database.types.ts edited by hand (agent)
 
 ## Proposals (new scope)
+- 2026-10-06 T186: Hernán applies migration 20261006100600 to dev, then `pnpm db:types:dev` and `pnpm test:supabase`; Álvaro approves the stamp (agent)
 - 2026-10-06 T183: «Construir» Ibiza detail shows the first Ibiza's payout, not the 70/50 % of the next one; «guía: mover» e2e flaked once under load (agent)
 - 2026-10-06 T181: bot ends at 100 % everywhere; Puerto-only and Benidorm-only builds hold Tormenta at full life (agent)
 - 2026-10-06 T181: Ibiza card in the HUD shows the base payout; T183 should use `DefenseGame.farmPayout(id)` (agent)
@@ -148,3 +150,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 21:05 T180 integrated → f180433 (tests ok); worktree and branch removed
 - 2026-10-06 21:06 T186 launched · attempt 1 · agent abef4ce5425b18c02 (opus)
 - 2026-10-06 21:18 T183 integrated → da0d95f (tests ok); worktree and branch removed
+- 2026-10-06 21:27 T186 integrated → 9403d5a (tests ok); worktree and branch removed
