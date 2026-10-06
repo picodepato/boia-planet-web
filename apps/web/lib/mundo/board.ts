@@ -6,9 +6,8 @@ import { type CanonBestStorage, canonBoardBosses, readCanonBest } from './rankin
 /**
  * El «Tablón del faro» (plan 014 T157, decisión 1 del 2026-10-05): junto a la
  * salida, el faro cuenta los dos juegos y la carrera y lleva hasta ellos.
- * Tres tarjetas (Cañón, Castillo, Carrera), cada una con su línea, la mejor
- * medalla del jugador si la tiene y su «Rumbo a…», que marca el destino
- * como el «!» de ayuda. Sin React: de qué lugar va cada tarjeta y qué
+ * Tres botones (Cañón, Castillo, Carrera) abren la ficha de viaje del minimapa.
+ * Desplegado muestra la línea y la mejor medalla. Sin React: su destino y qué
  * medalla enseña. Textos en `mar.tablon.*`.
  */
 

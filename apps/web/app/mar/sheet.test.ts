@@ -1,10 +1,18 @@
-import { HARBOR_PLACE_ID, HARBOR_REF, WORLD_REGISTRY } from '@boia/world';
+import {
+  BOARD_REF,
+  HARBOR_PLACE_ID,
+  HARBOR_REF,
+  LIGHTHOUSE_PLACE_ID,
+  WORLD_REGISTRY,
+} from '@boia/world';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { t } from '../../lib/i18n';
 import { upcomingEvents } from '../../lib/mundo/place-panels';
 import { IslandBlock, Sheet, type SheetState } from './sheet';
+import { BOARD_CARDS, boardDestinations } from '../../lib/mundo/board';
+import { MarTablon } from './tablon';
 
 /**
  * La ficha del Puerto de Alicante (T108): la de un lugar, con «Cambiar de
@@ -28,6 +36,7 @@ function sheet(state: SheetState, onShips?: () => void): string {
       distance: null,
       onClose: noop,
       onCourse: noop,
+      onPreview: noop,
       onBuy: noop,
       onSteerEvent: () => false,
       onGoToIsland: noop,
@@ -42,6 +51,77 @@ const arrival = (revisit = false): SheetState => ({
   target: harborContent.target,
   ref: harborContent.ref,
   ...(revisit ? { revisit: true } : {}),
+});
+
+describe('el tablón compacto y la ficha de viaje compartida (T168)', () => {
+  it('al llegar sale recogido con la línea y todos los botones, sin explicaciones', () => {
+    const html = renderToStaticMarkup(
+      createElement(Sheet, {
+        state: { kind: 'content', placeId: LIGHTHOUSE_PLACE_ID, target: 'info', ref: BOARD_REF },
+        object: world.objects.find((o) => o.identity.id === LIGHTHOUSE_PLACE_ID),
+        world,
+        distance: null,
+        onClose: noop,
+        onCourse: noop,
+        onPreview: noop,
+        onBuy: noop,
+        onSteerEvent: () => false,
+        onGoToIsland: noop,
+      }),
+    );
+    expect(html).toContain('data-expandida="no"');
+    expect(html).toContain(t('mar.tablon.intro'));
+    for (const card of BOARD_CARDS) {
+      expect(html).toContain(`data-testid="tablon-ir-${card}"`);
+      expect(html).not.toContain(t(`mar.tablon.${card}.linea`));
+    }
+    expect(html).not.toContain('aria-pressed');
+  });
+
+  it('desplegado explica cada juego y usa iconos de la familia del menú', () => {
+    const html = renderToStaticMarkup(
+      createElement(MarTablon, { world, expanded: true, onPreview: noop }),
+    );
+    for (const card of BOARD_CARDS) {
+      expect(html).toContain(t(`mar.tablon.${card}.linea`));
+      expect(html).toContain(t(`mar.tablon.${card}.titulo`));
+      expect(html).toContain(`data-testid="tablon-ir-${card}"`);
+    }
+    expect(html).toContain('class="boia-icon');
+    expect(html).not.toContain('tablon-rumbo');
+  });
+
+  it('cada destino tiene la ficha preview del minimapa con ambos viajes a la vista', () => {
+    const destinations = boardDestinations(world.objects);
+    for (const card of BOARD_CARDS) {
+      const id = destinations[card]!;
+      const object = world.objects.find((o) => o.identity.id === id)!;
+      const html = renderToStaticMarkup(
+        createElement(Sheet, {
+          state: { kind: 'preview', placeId: id },
+          object,
+          world,
+          distance: null,
+          onClose: noop,
+          onCourse: noop,
+          onFly: noop,
+          onPreview: noop,
+          onBuy: noop,
+          onSteerEvent: () => false,
+          onGoToIsland: noop,
+        }),
+      );
+      expect(html).toContain(`data-lugar="${id}"`);
+      expect(html).toContain('data-expandida="no"');
+      expect(html).toContain(
+        renderToStaticMarkup(
+          createElement('h2', { className: 'mar-sheet__title' }, object.identity.name),
+        ),
+      );
+      expect(html).toContain(t('mar.sheet.navegar'));
+      expect(html).toContain(t('mar.sheet.irEnNave'));
+    }
+  });
 });
 
 describe('la ficha del Puerto de Alicante', () => {

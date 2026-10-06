@@ -2768,6 +2768,8 @@ export class Mar3D {
     else if (k === 'm') this.toggleMap();
     else if (k === 't' || k === 'shift') this.turbo();
     else if (k === ' ' || k === 'enter') {
+      // A focused button or link keeps its own Enter/Space (the faro board sits near a dialogue, T168).
+      if (t && (t.tagName === 'BUTTON' || t.tagName === 'A')) return;
       if (this.runtime.dialogue()) {
         e.preventDefault();
         this.runtime.advanceDialogue();

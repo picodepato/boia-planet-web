@@ -4,6 +4,20 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T168: Tabarca lighthouse near the start and the board pop-up v2
+
+What exists:
+- `faro` moved to `LIGHTHOUSE_CENTER = [-2.32, 10.26]` (map.ts): left half of the start view on mobile, tablet and desktop, no overlap with places or the race circuit, buoys on water. Not exactly next to the náufrago (-5.6, 16.4): that spot is off-screen on the mobile start camera and the nearby visible spots hit the race; the framing was kept unchanged (`lighthouse-framing.test.ts`, `compact.test.ts`).
+- Board: closed pop-up with the line and three buttons (Cañón, Castillo, Carrera, game icons); expanded shows one explanation per game and the best medal. Each button calls `onPreview` (the minimap's `onPin`), opening the shared `sheet.tsx` travel sheet (Navegar / Ir en nave). «Rumbo a…» and its destination mark removed (code and keys).
+- `mar3d.ts` `onKey`: a focused button or link keeps its own Enter/Space (near the faro a dialogue swallowed Enter).
+- e2e `mar-tablon.spec.ts`, `mar-decor.spec.ts` updated.
+
+Commands:
+- full vitest (excluding packages/db) → 202 files, 1909 tests pass; `sh tools/spec/checks.sh` → OK; `pnpm lint`, `pnpm typecheck`, `pnpm build` → exit 0.
+- `E2E_PORT=3187 pnpm e2e mar-tablon.spec.ts mar-decor.spec.ts --workers=1` → 22 passed, exit 0 (one earlier run had a single toHaveCSS flake).
+
+Pending: the faro could go closer to the náufrago if the mobile start framing is widened (Hernán's call).
+
 ## 2026-10-06 — plan 015 T172: Island renders for «Construir»
 
 Qué existe:

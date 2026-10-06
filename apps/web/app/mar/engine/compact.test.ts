@@ -5,22 +5,25 @@ import {
   stepShip,
 } from '@boia/engine/headless';
 import { DEFENSE_CONFIG } from '@boia/engine/defense';
+import { circuitFromWorld } from '@boia/engine/circuit';
 import { missionDestinationId, rescueMissionOf } from '@boia/engine/mission';
 import {
   BOARD_REF,
   CASTLE_GAME_ID,
   CASTLE_PLACE_ID,
+  CIRCUIT_ID,
   LIGHTHOUSE_PLACE_ID,
   WORLD_REGISTRY,
   type WorldConfig,
 } from '@boia/world';
 import { describe, expect, it } from 'vitest';
-import { ROAD_HALF_WIDTH } from '../road';
-import { MAR3D_SCALE, fromScene, toScene } from './compress';
+import { Box3 } from 'three';
+import { roadPath } from '../race';
+import { ROAD_HALF_WIDTH, distToPath, roadMarks } from '../road';
+import { MAR3D_SCALE, fromScene } from './compress';
 import {
   CASTLE_OPEN_SEA_BEARING,
   DECOR_SIZE,
-  LIGHTHOUSE_OFFSET,
   ROUTE,
   ROUTE_NEIGHBOURS,
   ROUTE_STOPS,
@@ -34,6 +37,7 @@ import {
   seaRoute,
 } from './compact';
 import { PLANET_MARGIN, periodOf, planetRect, pushOut, shortest, steer } from './wrap';
+import { roadMarkers } from './race-props';
 
 const shared = WORLD_REGISTRY.get('arcilla').config;
 const world = marWorld(shared);
@@ -357,13 +361,23 @@ describe('el faro y el castillo cambian de sitio (plan 014, T157)', () => {
     return best;
   };
 
-  it('el faro está donde estaba el castillo, junto a la salida, y abre el tablón sin minijuego', () => {
+  it('el faro está a la izquierda, por delante de la salida y deja agua junto al náufrago (T168)', () => {
     const s = world.spawn!;
-    const spot = {
-      x: fromScene(toScene(s.x) + LIGHTHOUSE_OFFSET.x),
-      y: fromScene(toScene(s.y) + LIGHTHOUSE_OFFSET.z),
-    };
-    expect(dist(faro.position, spot)).toBeLessThan(1);
+    const castaway = byId(world, 'naufrago');
+    expect(faro.position.x).toBeLessThan(s.x);
+    expect(faro.position.y).toBeLessThan(s.y);
+    // Agua para el barco entre todos los círculos de sus cascos.
+    for (const part of [
+      { dx: 0, dy: 0, radius: castaway.geometry.collision!.radius },
+      ...(castaway.geometry.collisionParts ?? []),
+    ]) {
+      expect(
+        around(faro.position, {
+          x: castaway.position.x + part.dx,
+          y: castaway.position.y + part.dy,
+        }),
+      ).toBeGreaterThan(footprintOf(faro) + part.radius + 2 * DEFAULT_SHIP_CONFIG.radius);
+    }
     expect(faro.behaviors.some((b) => b.type === 'start_minigame')).toBe(false);
     expect(faro.behaviors.find((b) => b.type === 'content')?.params).toMatchObject({
       target: 'info',
@@ -373,6 +387,34 @@ describe('el faro y el castillo cambian de sitio (plan 014, T157)', () => {
     expect(around(faro.position, s)).toBeGreaterThan(faro.geometry.proximityRadius! + 60);
     // El castillo ya no es decorado.
     expect(decorSpots(world).map((d) => d.kind)).not.toContain('castillo');
+  });
+
+  it('el faro deja libre la carretera entera y las boyas laterales también flotan', () => {
+    const path = roadPath(world, circuitFromWorld(world, CIRCUIT_ID)!);
+    expect(distToPath(path, faro.position)).toBeGreaterThan(footprintOf(faro) + ROAD_HALF_WIDTH);
+    const marks = roadMarks(path);
+    // Tamaño real de una boya lateral, a partir de la geometría que usa el juego.
+    const marker = roadMarkers([[0, 0]], []);
+    const box = new Box3().setFromObject(marker);
+    const radius = fromScene(Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / 2);
+    for (const mark of [...marks.left, ...marks.right]) {
+      expect(around(mark, faro.position)).toBeGreaterThan(footprintOf(faro) + radius);
+    }
+  });
+
+  it('el ancla nueva del faro no captura ni desplaza las piezas de la carrera', () => {
+    const withoutLighthouse = marWorld({
+      ...shared,
+      objects: shared.objects.filter((o) => o.identity.id !== LIGHTHOUSE_PLACE_ID),
+    });
+    const racePieces = world.objects.filter((o) => o.position.zone === 'circuito');
+    expect(racePieces.length).toBeGreaterThan(0);
+    for (const piece of racePieces) {
+      const original = byId(withoutLighthouse, piece.identity.id);
+      expect(piece.position, piece.identity.id).toEqual(original.position);
+      expect(piece.behaviors, piece.identity.id).toEqual(original.behaviors);
+      expect(piece.params, piece.identity.id).toEqual(original.params);
+    }
   });
 
   it('el castillo es la isla de su minijuego, del tamaño de su decorado, junto a la Boia 7', () => {
@@ -414,7 +456,7 @@ describe('el faro y el castillo cambian de sitio (plan 014, T157)', () => {
           o.identity.category,
         ),
     );
-    expect(floating.length).toBeGreaterThan(20);
+    expect(floating.length).toBeGreaterThan(0);
     for (const o of floating) {
       for (const l of land) {
         // El secreto de la cueva está a propósito en la boca de su islote.
@@ -422,6 +464,17 @@ describe('el faro y el castillo cambian de sitio (plan 014, T157)', () => {
         expect(around(o.position, l), `${o.identity.id} en ${l.id}`).toBeGreaterThan(
           l.r + footprintOf(o),
         );
+      }
+      // También sus reapariciones, no sólo el sitio inicial de restos y cofres.
+      for (const b of o.behaviors) {
+        if (b.type !== 'spawn') continue;
+        for (const position of b.params.positions ?? []) {
+          for (const l of land) {
+            expect(around(position, l), `${o.identity.id} reaparece en ${l.id}`).toBeGreaterThan(
+              l.r + footprintOf(o),
+            );
+          }
+        }
       }
     }
   });

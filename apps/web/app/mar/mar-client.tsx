@@ -89,7 +89,6 @@ import {
   pendingGuideMark,
   missionDiscountOf,
   nearestSpot,
-  placeSpot,
 } from '../../lib/mundo/guide';
 import { useNoticeQueue } from '../../lib/mundo/notices';
 import { gameRepository, seaWorld, useRepoData } from '../../lib/mundo/repo';
@@ -1768,18 +1767,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setAyuda(null);
   };
 
-  /**
-   * «Rumbo a…» del tablón del faro (T157): marca un lugar como el objetivo del
-   * «!» (sólo la marca; navegar sigue siendo cosa de quien juega). La ficha
-   * del tablón sigue abierta, con la tarjeta marcada.
-   */
-  const markPlace = (placeId: string) => {
-    const w = worldRef.current;
-    const target = w ? placeSpot(w.objects, placeId) : null;
-    objectiveMarkRef.current = target;
-    setObjectiveMark(target);
-  };
-
   /** Objective navigation changes only a marker; sailing remains under player control. */
   const markObjective = (placeId: string) => {
     const w = worldRef.current;
@@ -2511,8 +2498,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onGoToIsland={goToIsland}
           onShips={openTienda}
           world={worldRef.current}
-          onMarkPlace={markPlace}
-          markedPlace={objectiveMark?.placeId ?? null}
+          onPreview={onPin}
         />
       ) : null}
 

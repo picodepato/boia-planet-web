@@ -2403,9 +2403,7 @@ button.mar-logros__carnet {
   cursor: pointer;
 }
 
-/* El «Tablón del faro» (plan 014 T157): tres tarjetas clavadas en el tablón,
-   cada una con su rumbo. En el móvil, una debajo de otra; en escritorio, la
-   ficha se ensancha y van en tres columnas. */
+/* T168: tres botones compactos; al desplegar, explicaciones y medallas. */
 
 /* Desplegado es alto: que no tape el botón del menú (54 px bajo el minimapa,
    T165); lo que no quepa se desplaza dentro de la ficha. */
@@ -2422,43 +2420,19 @@ button.mar-logros__carnet {
 
 .mar-tablon__card {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 1fr;
   grid-template-areas:
-    'icon text'
-    'go go';
+    'go'
+    'text';
   gap: 8px 12px;
   padding: 12px;
   border-radius: 18px;
   background: rgb(27 20 64 / 0.05);
-  border: 2px solid transparent;
-  transition: border-color 0.2s;
-}
-
-.mar-tablon__card.is-marcado {
-  border-color: var(--orange);
-  background: rgb(236 79 36 / 0.08);
-}
-
-.mar-tablon__icon {
-  grid-area: icon;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: var(--purple);
-  font-size: 1.35rem;
-  line-height: 1;
 }
 
 .mar-tablon__text {
   grid-area: text;
   min-width: 0;
-}
-
-.mar-tablon__title {
-  margin: 2px 0 2px;
-  font: 800 1rem/1.2 var(--font-title);
 }
 
 .mar-sheet .mar-tablon__line {
@@ -2479,6 +2453,35 @@ button.mar-logros__carnet {
   min-height: 44px;
 }
 
+.mar-sheet.is-tablon.is-compact {
+  max-height: calc(100% - var(--top-space) - 54px - 10px - var(--above-bar));
+}
+
+.mar-tablon.is-compact {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.mar-tablon.is-compact .mar-tablon__card {
+  display: block;
+  padding: 0;
+  background: none;
+}
+
+.mar-tablon.is-compact .mar-tablon__go {
+  padding: 0 5px;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 0.8rem;
+}
+
+.mar-tablon__go .boia-icon {
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+}
+
 @media (min-width: 760px) {
   .mar-sheet.is-tablon.is-expanded {
     width: min(600px, calc(100% - var(--safe-l) - var(--safe-r) - 120px));
@@ -2490,16 +2493,9 @@ button.mar-logros__carnet {
 
   .mar-tablon__card {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr;
     grid-template-areas:
-      'icon'
-      'text'
-      'go';
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mar-tablon__card {
-    transition: none;
+      'go'
+      'text';
   }
 }

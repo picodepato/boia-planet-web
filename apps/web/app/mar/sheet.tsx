@@ -40,7 +40,7 @@ import { MarTablon } from './tablon';
  * código con «Ir a la isla». El Puerto de Alicante (T108) es un lugar
  * más, con su ficha al acercarse; su botón abre «Barco» para cambiar de
  * barco, y no anuncia eventos. El faro (plan 014 T157) abre el «Tablón del
- * faro»: se abre ya desplegado, con sus tres tarjetas y su «Rumbo a…».
+ * faro»: sale compacto, con tres botones que abren la ficha de viaje.
  * Textos `muestra` [pendiente Álvaro].
  */
 
@@ -122,10 +122,8 @@ export interface SheetProps {
   distance: number | null;
   /** El mundo de ahora, para el «Tablón del faro» (T157). */
   world?: WorldConfig | null;
-  /** «Rumbo a…» del tablón: marca ese lugar como destino. */
-  onMarkPlace?: (placeId: string) => void;
-  /** El lugar marcado ahora como destino, o null. */
-  markedPlace?: string | null;
+  /** Abre la misma ficha de destino que al tocar una isla en el minimapa. */
+  onPreview: (placeId: string) => void;
 }
 
 /** La clave de una ficha: otra ficha (otro lugar u otro tipo) vuelve a abrirse pequeña. */
@@ -168,12 +166,11 @@ export function Sheet({
   onShips,
   distance,
   world = null,
-  onMarkPlace,
-  markedPlace = null,
+  onPreview,
 }: SheetProps) {
   const board = state.kind === 'content' && state.ref === BOARD_REF;
-  // «Mis códigos» se pide desde el menú y el tablón del faro sale al llegar: ya desplegados.
-  const [expanded, setExpanded] = useState(state.kind === 'codes' || board);
+  // Las fichas se abren pequeñas; «Mis códigos» se pide desplegada desde el menú.
+  const [expanded, setExpanded] = useState(state.kind === 'codes');
   const name = object?.identity.name ?? '';
   let body: ReactNode;
   let compact: Compact;
@@ -421,29 +418,20 @@ export function Sheet({
       </>
     );
   } else if (board) {
-    // El «Tablón del faro» (T157): los dos juegos y la carrera, con su rumbo.
+    // Los mismos destinos tanto en la ficha pequeña como desplegada.
     label = t('mar.tablon.titulo');
     compact = {
       kicker: t('mar.tablon.kicker'),
       title: t('mar.tablon.titulo'),
       meta: t('mar.tablon.intro'),
-      action: (
-        <button
-          type="button"
-          className="mar-btn mar-btn--primary"
-          data-testid="tablon-ver"
-          onClick={expand}
-        >
-          {t('mar.tablon.ver')}
-        </button>
-      ),
+      action: <MarTablon world={world} expanded={false} onPreview={onPreview} />,
     };
     body = (
       <>
         <p className="mar-sheet__kicker">{t('mar.tablon.kicker')}</p>
         <h2 className="mar-sheet__title">{t('mar.tablon.titulo')}</h2>
         <p className="mar-sheet__meta">{t('mar.tablon.intro')}</p>
-        <MarTablon world={world} marked={markedPlace} onMark={(id) => onMarkPlace?.(id)} />
+        <MarTablon world={world} expanded onPreview={onPreview} />
       </>
     );
   } else {

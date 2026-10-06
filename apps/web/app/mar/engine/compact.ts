@@ -63,16 +63,13 @@ export const DECOR_SOLIDS: Record<DecorKind, readonly { dx: number; dz: number; 
  * hacia él. Se mueven con el puerto y con la cueva.
  *
  * El castillo de Santa Bárbara ya no es decorado (plan 014, T157): es la isla
- * del minijuego `castillo`, junto a la Boia 7, y en su sitio de antes, al
- * oeste de la bocana (`LIGHTHOUSE_OFFSET`), está el faro con su tablón.
+ * del minijuego `castillo`, junto a la Boia 7. El faro con su tablón está
+ * junto al náufrago desde T168; su posición viene del mapa compartido.
  */
 export const DECOR_OFFSET = {
   explanada: { x: 34, z: -12 },
   cueva: { x: -4.2, z: 0 },
 } as const;
-
-/** Donde estaba el castillo hasta T157 (escena, desde el anillo de salida): ahí va el faro. */
-export const LIGHTHOUSE_OFFSET = { x: -28, z: -10 } as const;
 
 /**
  * Hacia dónde queda el mar abierto desde la isla del castillo (plan 014,

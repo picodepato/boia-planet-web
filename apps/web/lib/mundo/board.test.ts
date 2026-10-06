@@ -13,12 +13,11 @@ import {
   canonBoardMedal,
   raceBoardMedal,
 } from './board';
-import { guideSpots, pendingGuideMark, placeSpot } from './guide';
 import { CANON_BEST_KEY, canonBoardBosses, canonBoardKey } from './ranking-canon';
 
 /**
  * El «Tablón del faro» (plan 014 T157): de qué lugar va cada tarjeta, qué
- * medalla enseña y cómo marca su destino (`placeSpot`, como el «!» de ayuda).
+ * medalla enseña. La ficha de viaje se prueba en sheet.test.ts y e2e.
  */
 
 const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
@@ -60,22 +59,15 @@ describe('el Tablón del faro (T157)', () => {
     });
   });
 
-  it('«Rumbo a…» marca el lugar como el «!»: la marca sigue hasta llegar', () => {
-    const to = boardDestinations(objects);
-    for (const card of BOARD_CARDS) {
-      const spot = placeSpot(objects, to[card]!)!;
-      expect(spot).toMatchObject({ kind: 'place', placeId: to[card], objectId: to[card] });
-      expect(spot.x).toBe(byId(to[card]!).position.x);
-      // No es una pista pendiente del «!», pero no se borra sola.
-      const spots = guideSpots(objects, {
-        phase: 'waiting',
-        destination: null,
-        found: { has: () => true },
-        foundDiscounts: { has: () => true },
-      });
-      expect(pendingGuideMark(spot, spots)).toBe(spot);
-    }
-    expect(placeSpot(objects, 'no-existe')).toBeNull();
+  it('los lugares inactivos no aparecen como destinos', () => {
+    expect(
+      boardDestinations(
+        objects.map((o) => ({
+          ...o,
+          identity: { ...o.identity, active: false },
+        })),
+      ),
+    ).toEqual(boardDestinations([]));
   });
 
   it('la medalla: la mejor del Cañón en este navegador y la del mejor tiempo de la carrera', () => {

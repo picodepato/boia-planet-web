@@ -198,11 +198,10 @@ export const esMar = {
   'mar.guide.minigame': '🎮 Rumbo a {place}',
   'mar.guide.place': '🧭 Rumbo a {place}',
   // El «Tablón del faro» (plan 014 T157): el faro, junto a la salida, cuenta los
-  // dos juegos y la carrera y marca el rumbo hasta ellos. muestra
+  // dos juegos y la carrera; sus botones abren la ficha de viaje. muestra
   'mar.tablon.kicker': 'Tablón del faro · muestra',
   'mar.tablon.titulo': 'Tablón del faro',
-  'mar.tablon.intro': 'Desde el faro se ve todo el mar. Elige adónde ir y te marco el rumbo.',
-  'mar.tablon.ver': 'Ver el tablón',
+  'mar.tablon.intro': 'Desde el faro puedes ver dónde jugar',
   'mar.tablon.canon.titulo': 'Cañón',
   'mar.tablon.canon.linea': 'Que no pare la música: aguanta la noche a cañonazos hasta el amanecer.',
   'mar.tablon.castillo.titulo': 'Castillo',
@@ -210,8 +209,6 @@ export const esMar = {
     'Defensa del Castillo: levanta islas como torres y que nada llegue a la muralla.',
   'mar.tablon.carrera.titulo': 'Carrera',
   'mar.tablon.carrera.linea': 'Los Rápidos: tres vueltas por las boias, contra el reloj.',
-  'mar.tablon.rumbo': 'Rumbo a {place}',
-  'mar.tablon.marcado': '✓ Rumbo marcado',
   'mar.tablon.medalla': 'Tu mejor medalla: {medal}',
   'mar.tablon.medalla.oro': '🥇 oro',
   'mar.tablon.medalla.plata': '🥈 plata',

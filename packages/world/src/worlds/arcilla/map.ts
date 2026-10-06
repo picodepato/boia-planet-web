@@ -47,11 +47,12 @@ export const LIGHTHOUSE_PLACE_ID = 'faro';
 /** La referencia de contenido del faro: su ficha es el «Tablón del faro». */
 export const BOARD_REF = 'tablon';
 /**
- * Dónde está el faro: en /mar cae justo donde estaba el decorado del castillo
- * (28 de escena al oeste y 10 al norte del anillo de salida; el faro es su
- * propia zona, así que en /mar queda en sus posiciones × 0,2). muestra
+ * T168: el punto de agua más cercano al náufrago ([-5.6, 16.4]) que deja
+ * libre la carrera y sus boyas laterales y se ve a la izquierda desde la
+ * cámara inicial, también en vertical. El mar compacto acerca al náufrago
+ * a la ruta; acercar más el faro invadiría los tramos 7/8. muestra
  */
-export const LIGHTHOUSE_CENTER: Maq = [-6.0046, 21.7423];
+export const LIGHTHOUSE_CENTER: Maq = [-2.32, 10.26];
 /**
  * Radio de la isla del faro (u_maq): en /mar, × 2,4 ≈ 137 u (8,6 de escena),
  * donde el faro de Tabarca de T166 pesa en la vista como el castillo de antes
@@ -498,8 +499,8 @@ const ISLANDS: PlaceInput[] = [
     4.0,
     [...tickets(TICKET_ISLAND_EVENTS.halloween), points(20), visit()],
   ),
-  // El faro (Tabarca) desde el plan 014 T157: sin minijuego, en el sitio del
-  // antiguo castillo junto a la salida; al acercarse abre el «Tablón del faro».
+  // El faro (Tabarca), sin minijuego, junto a la entrada desde T168;
+  // al acercarse abre el «Tablón del faro».
   // Isla redonda (T166): su modelo de Blender (tools/blender/islas/faro.py) se
   // escala por este radio y el juego del castillo lo normaliza por él, así que
   // el casco es un solo círculo; más grande que la elipse de antes (1,9 × 1,3)
@@ -508,7 +509,7 @@ const ISLANDS: PlaceInput[] = [
   island(
     LIGHTHOUSE_PLACE_ID,
     'Tabarca',
-    T157,
+    'plan:T168',
     LIGHTHOUSE_CENTER,
     LIGHTHOUSE_RADIUS,
     LIGHTHOUSE_RADIUS,
