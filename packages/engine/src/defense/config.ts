@@ -42,9 +42,13 @@ import {
  * (T178): el daño de las islas de ataque hacia el medio (Halloween y el
  * Sonido bajan; Nochevieja, Puerto y Faro nivel 1 suben), Ibiza se paga en
  * 50/40/30 s (nivel 1 y cada mejora); con esa economía, Normal y Tormenta
- * suben su aguante y Tormenta su daño al castillo.
+ * suben su aguante y Tormenta su daño al castillo. 6: el castillo v3 (plan
+ * 016 T181): curvas en U más anchas; Ibiza se paga en 45/30/20 s, la segunda
+ * paga el 70 % y la tercera y siguientes el 50 % (por orden de construcción
+ * entre las que están en pie); el dinero sigue entrando solo al monedero;
+ * el daño del Faro, Nochevieja, el Puerto y Benidorm sube un 15 %.
  */
-export const DEFENSE_CONFIG_VERSION = 5;
+export const DEFENSE_CONFIG_VERSION = 6;
 
 /** Paso fijo de la simulación (s): el del Cañón. */
 export const DEFENSE_STEP_S = SURVIVORS_STEP_S;
@@ -115,7 +119,7 @@ export interface DefenseTowerStatsByKind {
     /** s del disparo al estallido. */
     flightS: number;
   };
-  /** Ibiza: granja; `coins` cada `cooldownS`. */
+  /** Ibiza: granja; `coins` cada `cooldownS` (la primera; las demás, su parte: `towers.farm`). */
   tienda: { range: number; coins: number; cooldownS: number };
   /** Isla del Sonido: onda de graves a todo lo que tiene alrededor cada `cooldownS`. */
   allday: { range: number; damage: number; cooldownS: number };
@@ -172,6 +176,14 @@ export interface DefenseTowersDef {
   sellRefund: number;
   /** A minibosses y bosses el aturdimiento les dura esta parte. */
   bossStunScale: number;
+  /** Lo que paga cada Ibiza de más (decisión 6 del plan 016). */
+  farm: {
+    /**
+     * Parte del pago de cada Ibiza según su orden de construcción entre las
+     * que están en pie: la primera, la segunda y la tercera y siguientes.
+     */
+    shares: readonly number[];
+  };
   kinds: { [K in DefenseTowerKind]: DefenseTowerDef<K> };
 }
 
@@ -339,6 +351,23 @@ export interface DefenseConfig {
 
 const DEG = Math.PI / 180;
 
+/**
+ * El daño de las islas que suben en el plan 016 (Hernán, 2026-10-06): sus
+ * valores del cierre del plan 015 (T178), nivel 1…3, en un solo sitio, y lo
+ * que se multiplican. Halloween, el Sonido e Ibiza no cambian.
+ */
+export const DEFENSE_DAMAGE_T178 = {
+  faro: [68, 72, 82],
+  ultima: [11, 19, 29],
+  cala: [30, 52, 80],
+  fotos: [70, 115, 175],
+} as const satisfies Partial<Record<DefenseTowerKind, readonly [number, number, number]>>;
+export const DEFENSE_DAMAGE_BOOST_016 = 1.15;
+
+/** El daño del plan 016 de `kind` a su nivel (1…3), a dos decimales. */
+const boosted = (kind: keyof typeof DEFENSE_DAMAGE_T178, level: 1 | 2 | 3): number =>
+  Math.round(DEFENSE_DAMAGE_T178[kind][level - 1]! * DEFENSE_DAMAGE_BOOST_016 * 100) / 100;
+
 /** Lo común de los tipos (ids del Cañón); el radio sale de `SURVIVORS_CONFIG`. */
 const common = (
   kind: EnemyId,
@@ -382,15 +411,18 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     outerRadius: 980,
     // Del vórtice, por fuera; cuatro U hacia el castillo (entre ellas, U al
     // revés abiertas al castillo); baja por la derecha y zigzag hasta la muralla.
+    // Dentro de cada U, entre los bordes del carril (2·150 − 90 = 210 u), cabe
+    // lo que ocupa una isla con su agua libre (2·(70 + 10) = 160 u) y un 30 %
+    // más (decisión 3 del plan 016).
     legs: [
       { kind: 'orbit', toAngleRad: 86 * DEG, toRadius: 980 },
-      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'u', depth: 430, radius: 150 },
       { kind: 'orbit', toAngleRad: 144 * DEG, toRadius: 980 },
-      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'u', depth: 430, radius: 150 },
       { kind: 'orbit', toAngleRad: 202 * DEG, toRadius: 980 },
-      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'u', depth: 430, radius: 150 },
       { kind: 'orbit', toAngleRad: 260 * DEG, toRadius: 980 },
-      { kind: 'u', depth: 430, radius: 135 },
+      { kind: 'u', depth: 430, radius: 150 },
       { kind: 'orbit', toAngleRad: 296 * DEG, toRadius: 980 },
       { kind: 'orbit', toAngleRad: 338 * DEG, toRadius: 740 },
       { kind: 'zigzag', legs: 3, legLength: 230, angleRad: 40 * DEG },
@@ -404,6 +436,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     vortexClearance: 40,
     sellRefund: 0.6,
     bossStunScale: 0.25,
+    farm: { shares: [1, 0.7, 0.5] },
     kinds: {
       faro: {
         kind: 'faro',
@@ -411,9 +444,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 100,
         upgradeCost: [80, 130],
         levels: [
-          { range: 260, damagePerS: 68, beams: 1, beamWidth: 16, sweepRadPerS: 2 },
-          { range: 280, damagePerS: 72, beams: 2, beamWidth: 16, sweepRadPerS: 2 },
-          { range: 300, damagePerS: 82, beams: 3, beamWidth: 18, sweepRadPerS: 2 },
+          { range: 260, damagePerS: boosted('faro', 1), beams: 1, beamWidth: 16, sweepRadPerS: 2 },
+          { range: 280, damagePerS: boosted('faro', 2), beams: 2, beamWidth: 16, sweepRadPerS: 2 },
+          { range: 300, damagePerS: boosted('faro', 3), beams: 3, beamWidth: 18, sweepRadPerS: 2 },
         ],
       },
       ultima: {
@@ -422,9 +455,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 80,
         upgradeCost: [70, 110],
         levels: [
-          { range: 300, damage: 11, cooldownS: 1, stunS: 0.5 },
-          { range: 320, damage: 19, cooldownS: 0.85, stunS: 0.65 },
-          { range: 340, damage: 29, cooldownS: 0.7, stunS: 0.8 },
+          { range: 300, damage: boosted('ultima', 1), cooldownS: 1, stunS: 0.5 },
+          { range: 320, damage: boosted('ultima', 2), cooldownS: 0.85, stunS: 0.65 },
+          { range: 340, damage: boosted('ultima', 3), cooldownS: 0.7, stunS: 0.8 },
         ],
       },
       halloween: {
@@ -444,16 +477,18 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 120,
         upgradeCost: [100, 150],
         levels: [
-          { range: 520, damage: 30, cooldownS: 2.4, blastRadius: 80, flightS: 0.9 },
-          { range: 540, damage: 52, cooldownS: 2.1, blastRadius: 95, flightS: 0.9 },
-          { range: 560, damage: 80, cooldownS: 1.8, blastRadius: 110, flightS: 0.9 },
+          { range: 520, damage: boosted('cala', 1), cooldownS: 2.4, blastRadius: 80, flightS: 0.9 },
+          { range: 540, damage: boosted('cala', 2), cooldownS: 2.1, blastRadius: 95, flightS: 0.9 },
+          { range: 560, damage: boosted('cala', 3), cooldownS: 1.8, blastRadius: 110, flightS: 0.9 },
         ],
       },
       tienda: {
         kind: 'tienda',
         priority: null,
-        cost: 70,
-        upgradeCost: [60, 90],
+        // Se paga en 45 s (nivel 1) y cada mejora en 30 y 20 s (decisión 5 del
+        // plan 016): 63 / (14 / 10) = 45; 45 / (15 / 10) = 30; 60 / (30 / 10) = 20.
+        cost: 63,
+        upgradeCost: [45, 60],
         levels: [
           { range: 0, coins: 14, cooldownS: 10 },
           { range: 0, coins: 29, cooldownS: 10 },
@@ -477,9 +512,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 130,
         upgradeCost: [110, 170],
         levels: [
-          { range: 560, damage: 70, cooldownS: 3 },
-          { range: 600, damage: 115, cooldownS: 2.6 },
-          { range: 650, damage: 175, cooldownS: 2.2 },
+          { range: 560, damage: boosted('fotos', 1), cooldownS: 3 },
+          { range: 600, damage: boosted('fotos', 2), cooldownS: 2.6 },
+          { range: 650, damage: boosted('fotos', 3), cooldownS: 2.2 },
         ],
       },
     },
@@ -684,4 +719,22 @@ export function defenseClampToArena(
   if (r <= cfg.arenaRadius) return { x: fx, y: fy };
   const k = cfg.arenaRadius / r;
   return { x: fx * k, y: fy * k };
+}
+
+/**
+ * La parte del pago de una Ibiza por su puesto entre las que están en pie
+ * (0 = la primera construida; decisión 6 del plan 016).
+ */
+export function defenseFarmShare(cfg: DefenseConfig, rank: number): number {
+  const shares = cfg.towers.farm.shares;
+  if (shares.length === 0) return 1;
+  return shares[Math.min(shares.length - 1, Math.max(0, Math.floor(rank)))]!;
+}
+
+/**
+ * Monedas que paga de verdad una Ibiza de ese nivel y ese puesto cada
+ * `cooldownS` (redondeadas: lo que enseña la ficha es lo que entra).
+ */
+export function defenseFarmPayout(cfg: DefenseConfig, level: number, rank: number): number {
+  return Math.round(defenseTowerStats(cfg, 'tienda', level).coins * defenseFarmShare(cfg, rank));
 }

@@ -104,6 +104,7 @@ function fakeCtx(enemies: FakeEnemy[], config: DefenseConfig = CFG): FakeCtx {
     addCoins: (amount) => {
       ctx.coins.push(amount);
     },
+    farmRank: () => 0,
   };
   return ctx;
 }
@@ -571,10 +572,9 @@ describe('el bot que construye', () => {
     expect(r.towersBuilt).toBeGreaterThanOrEqual(DEFENSE_TOWER_KINDS.length);
   });
 
-  it('aguanta Normal, pero peleando (el castillo recibe golpes)', () => {
+  it('aguanta Normal (plan 016: islas más fuertes)', () => {
     const r = play('normal', 5);
     expect(r.end).toBe('held');
-    expect(r.castleLife).toBeLessThan(r.castleMaxLife);
     expect(r.castleLife).toBeGreaterThan(0);
   });
 });

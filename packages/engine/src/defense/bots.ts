@@ -52,7 +52,7 @@ export interface BuildingBotOptions {
   castle?: boolean;
   /**
    * Sube Ibiza (la granja) a nivel 2 y 3 en cuanto llega el dinero, desde la
-   * tercera isla (true por defecto; se paga en 40 y 30 s).
+   * tercera isla (true por defecto; se paga en 30 y 20 s).
    */
   farm?: boolean;
 }

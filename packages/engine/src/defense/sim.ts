@@ -18,6 +18,7 @@ import {
   defenseClampToArena,
   defenseEnemyDef,
   defenseEnemyRadius,
+  defenseFarmPayout,
   defensePlaneCooldown,
   defensePlaneDamage,
   defensePlaneUpgradeCost,
@@ -405,6 +406,7 @@ export class DefenseGame {
         en.burnS = Math.max(en.burnS, s);
       },
       addCoins: (amount, towerId) => this.earn(amount, towerId ?? null),
+      farmRank: (t) => this.farmRank(t.id),
     };
 
     if (opts.startAtS && opts.startAtS > 0) this.fastForward(opts.startAtS);
@@ -699,6 +701,27 @@ export class DefenseGame {
   towerUpgradeCost(id: number): number | null {
     const t = this.towerList.find((tw) => tw.id === id);
     return t ? defenseTowerUpgradeCost(this.config, t) : null;
+  }
+
+  /**
+   * El puesto de la Ibiza `id` entre las que están en pie, por orden de
+   * construcción (0 = la primera; plan 016, decisión 6). −1 si no es una Ibiza en pie.
+   */
+  farmRank(id: number): number {
+    let rank = 0;
+    for (const t of this.towerList) {
+      if (t.kind !== 'tienda') continue;
+      if (t.id === id) return rank;
+      rank++;
+    }
+    return -1;
+  }
+
+  /** Lo que paga de verdad la Ibiza `id` cada `cooldownS` (su parte); null si no es una Ibiza. */
+  farmPayout(id: number): number | null {
+    const t = this.towerList.find((tw) => tw.id === id);
+    if (!t || t.kind !== 'tienda') return null;
+    return defenseFarmPayout(this.config, t.level, this.farmRank(id));
   }
 
   /** Lo que devolvería vender la isla `id`; null si no está. */

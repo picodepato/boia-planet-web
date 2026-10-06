@@ -28,14 +28,14 @@ import { createDefense, type DefenseResult } from './sim';
  * aquí se fija la forma:
  *
  * - Tranquila se gana con oro con la construcción sencilla (todas las islas);
- * - Normal se gana, pero el castillo recibe golpes y una construcción de una
- *   sola isla puede caer;
- * - Tormenta cuesta: la construcción sencilla no siempre aguanta, pero nunca
- *   se hunde en la apertura (antes de los 160 s) y se gana en 7 y en 10 min;
- * - ninguna estrategia de una sola isla domina, y cada isla está en alguna
- *   de las mejores construcciones;
- * - Ibiza (la granja) se paga en 50 s a nivel 1 y cada mejora en 40 y 30 s
- *   (Hernán, 2026-10-06);
+ * - Normal y Tormenta los aguanta la construcción sencilla (plan 016: Hernán
+ *   quiere islas más fuertes, no enemigos más duros), pero una construcción
+ *   de una sola isla puede caer, y sin Ibiza no llega el dinero;
+ * - Tormenta nunca es más fácil que Normal;
+ * - ninguna estrategia de una sola isla gana a la sencilla, y cada isla está
+ *   en alguna de las mejores construcciones;
+ * - Ibiza (la granja) se paga en 45 s a nivel 1 y cada mejora en 30 y 20 s
+ *   (plan 016, decisión 5);
  * - «Llamar oleada» en cuanto el mar se vacía no hace más fácil Tormenta.
  */
 
@@ -147,56 +147,47 @@ describe('castillo: equilibrio con el bot que construye (T165)', () => {
       }
   }, 120_000);
 
-  it('Normal: se gana, pero el castillo recibe golpes y una sola isla puede caer', () => {
-    for (const m of DEFENSE_RUN_MINS) {
-      const rs = mixed('normal', m);
-      expect(held(rs)).toBe(rs.length);
-      // Pelea de verdad: en cada duración el castillo pierde vida casi siempre.
-      expect(median(rs.map((x) => x.r.castleLife))).toBeLessThan(CFG.castle.life);
-      // Y alguna construcción de una sola isla cae o acaba muy tocada.
-      const singles = ATTACKERS.map((k) => run('normal', m, singleIsland(k), STRATEGY_SEED).r);
-      expect(singles.some((r) => r.end === 'fallen' || r.castleLife <= r.castleMaxLife / 2)).toBe(
-        true,
-      );
-    }
-  }, 120_000);
-
-  it('Tormenta: cuesta (la sencilla no siempre aguanta), pero no se hunde en la apertura', () => {
-    let total = 0;
-    let wins = 0;
-    for (const m of DEFENSE_RUN_MINS) {
-      const rs = mixed('tormenta', m);
-      total += rs.length;
-      wins += held(rs);
-      for (const x of rs) {
-        if (x.r.end === 'fallen') expect(x.r.playedS).toBeGreaterThan(160);
-        // Aguantar en Tormenta nunca es gratis.
-        else expect(x.r.castleLife).toBeLessThan(x.r.castleMaxLife);
+  it('Normal y Tormenta: la construcción sencilla aguanta siempre', () => {
+    for (const d of ['normal', 'tormenta'] as const)
+      for (const m of DEFENSE_RUN_MINS) {
+        const rs = mixed(d, m);
+        expect(held(rs), `${d} ${m}`).toBe(rs.length);
       }
-      // Más dura que Normal en la misma duración.
-      const normal = mixed('normal', m);
-      expect(median(rs.map((x) => rank(x.r)))).toBeLessThanOrEqual(
-        median(normal.map((x) => rank(x.r))),
-      );
-    }
-    expect(wins).toBeLessThan(total);
-    expect(wins).toBeGreaterThan(0);
-    // Difícil, pero se gana en partidas de 7 y de 10 min.
-    for (const m of [7, 10] as const) expect(held(mixed('tormenta', m))).toBeGreaterThan(0);
   }, 120_000);
 
-  it('ninguna estrategia de una sola isla domina a la sencilla', () => {
-    const cells = DEFENSE_RUN_MINS.flatMap((m) =>
-      (['normal', 'tormenta'] as const).map((d) => [d, m] as const),
+  it('alguna construcción de una sola isla cae en Normal o Tormenta', () => {
+    const singles = (['normal', 'tormenta'] as const).flatMap((d) =>
+      DEFENSE_RUN_MINS.flatMap((m) =>
+        ATTACKERS.map((k) => run(d, m, singleIsland(k), STRATEGY_SEED).r),
+      ),
     );
-    for (const k of ATTACKERS) {
-      const worse = cells.filter(
-        ([d, m]) =>
-          rank(run(d, m, singleIsland(k), STRATEGY_SEED).r) <
-          rank(run(d, m, STRATEGIES[0]!, STRATEGY_SEED).r),
+    expect(singles.some((r) => r.end === 'fallen')).toBe(true);
+  }, 120_000);
+
+  it('sin Ibiza no llega el dinero: la sencilla sin granja cae en Normal y Tormenta', () => {
+    const noFarm = STRATEGIES.find((s) => s.name === 'sin-tienda')!;
+    for (const d of ['normal', 'tormenta'] as const)
+      expect(
+        DEFENSE_RUN_MINS.some((m) => run(d, m, noFarm, STRATEGY_SEED).r.end === 'fallen'),
+        d,
+      ).toBe(true);
+  }, 120_000);
+
+  it('Tormenta nunca es más fácil que Normal', () => {
+    for (const m of DEFENSE_RUN_MINS)
+      expect(median(mixed('tormenta', m).map((x) => rank(x.r)))).toBeLessThanOrEqual(
+        median(mixed('normal', m).map((x) => rank(x.r))),
       );
-      expect(worse.length, `sola-${k}`).toBeGreaterThan(0);
-    }
+  }, 120_000);
+
+  it('ninguna estrategia de una sola isla gana a la sencilla', () => {
+    for (const d of ['normal', 'tormenta'] as const)
+      for (const m of DEFENSE_RUN_MINS)
+        for (const k of ATTACKERS)
+          expect(
+            rank(run(d, m, singleIsland(k), STRATEGY_SEED).r),
+            `sola-${k} ${d} ${m}`,
+          ).toBeLessThanOrEqual(rank(run(d, m, STRATEGIES[0]!, STRATEGY_SEED).r));
   }, 120_000);
 
   it('cada isla está en alguna de las mejores construcciones', () => {
@@ -210,17 +201,19 @@ describe('castillo: equilibrio con el bot que construye (T165)', () => {
     expect([...inBest].sort()).toEqual([...DEFENSE_TOWER_KINDS].sort());
   }, 120_000);
 
-  it('Ibiza se paga en 50 s, y sus mejoras en 40 y 30 s; la granja del bot lo cumple', () => {
+  it('Ibiza se paga en 45 s, y sus mejoras en 30 y 20 s; la granja del bot lo cumple', () => {
     const def = CFG.towers.kinds.tienda;
     const income = (lvl: number) => {
       const st = defenseTowerStats(CFG, 'tienda', lvl);
       return st.coins / st.cooldownS;
     };
-    expect(def.cost / income(1)).toBeCloseTo(50, 6);
-    expect(def.upgradeCost[0] / (income(2) - income(1))).toBeCloseTo(40, 6);
-    expect(def.upgradeCost[1] / (income(3) - income(2))).toBeCloseTo(30, 6);
-    // La granja paga a saltos (cada `cooldownS`): devuelve su coste a los 50 s justos.
-    const payback = def.cost / income(1);
+    expect(def.cost / income(1)).toBeCloseTo(45, 6);
+    expect(def.upgradeCost[0] / (income(2) - income(1))).toBeCloseTo(30, 6);
+    expect(def.upgradeCost[1] / (income(3) - income(2))).toBeCloseTo(20, 6);
+    // La granja paga a saltos (cada `cooldownS`): devuelve su coste en el
+    // primer pago desde los 45 s.
+    const every = defenseTowerStats(CFG, 'tienda', 1).cooldownS;
+    const payback = Math.ceil(def.cost / income(1) / every - 1e-9) * every;
     for (const d of DEFENSE_DIFFICULTY_IDS) {
       const x = run(d, 5, STRATEGIES[0]!, STRATEGY_SEED);
       expect(x.farmPaybackS).not.toBeNull();

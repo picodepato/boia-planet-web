@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { DEFENSE_CONFIG, DEFENSE_CONFIG_VERSION, DEFENSE_RUN_MINS } from '@boia/engine/defense';
 import { RPC_REJECTIONS } from '@boia/db/rpc';
 import { describe, expect, it } from 'vitest';
@@ -11,14 +11,37 @@ import {
 
 const read = (path: string) =>
   readFileSync(new URL(`../../../../${path}`, import.meta.url), 'utf8');
-const SQL = read('supabase/migrations/20261006100300_castle_ranking.sql');
+const SEED = '20261006100300_castle_ranking.sql';
+const SQL = read(`supabase/migrations/${SEED}`);
+/**
+ * La versión de configuración que acaban teniendo las tablas: la de la
+ * siembra, o la de la última migración posterior que la cambia (plan 016:
+ * la siembra ya estaba aplicada en el proyecto de desarrollo).
+ */
+const boardConfigVersion = (seeded: number): number => {
+  const dir = new URL('../../../../supabase/migrations/', import.meta.url);
+  let v = seeded;
+  for (const f of readdirSync(dir).filter((x) => x > SEED).sort()) {
+    const m = [
+      ...read(`supabase/migrations/${f}`).matchAll(
+        /update public\.castle_boards set config_version = (\d+) where version = 1;/g,
+      ),
+    ];
+    if (m.length) v = Number(m[m.length - 1]![1]);
+  }
+  return v;
+};
 describe('migración Castillo: paridad con la sim y permisos', () => {
   it('siembra exactamente los nueve pares con los topes del calendario y tiempos propios', () => {
     const seeded = [
       ...SQL.matchAll(
         /\((5|7|10), '(tranquila|normal|tormenta)', (\d+), (\d+), (\d+), (\d+), (\d+), (\d+), (\d+), (\d+)\)/g,
       ),
-    ].map((m) => [Number(m[1]), m[2], ...m.slice(3).map(Number)]);
+    ].map((m) => {
+      const n = m.slice(3).map(Number);
+      // [version, config_version, …]: la de configuración, la que queda tras las migraciones.
+      return [Number(m[1]), m[2], n[0], boardConfigVersion(n[1]!), ...n.slice(2)];
+    });
     expect(seeded).toEqual(
       DEFENSE_RUN_MINS.flatMap((min) =>
         CASTLE_DIFFICULTIES.map((diff) => [

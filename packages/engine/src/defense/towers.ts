@@ -3,6 +3,7 @@ import {
   type DefenseEnemyKind,
   type DefenseTargetPriority,
   type DefenseTowerKind,
+  defenseFarmPayout,
   defenseTowerStats,
 } from './config';
 import { beamTouches, coneTouches, wrapAngle } from './geometry';
@@ -133,6 +134,11 @@ export interface DefenseTowerContext {
   burnEnemy(enemy: DefenseEnemyView, dps: number, seconds: number, towerId?: number): void;
   /** Monedas al monedero (la granja de Ibiza). */
   addCoins(amount: number, towerId?: number): void;
+  /**
+   * El puesto de una Ibiza entre las que están en pie, por orden de
+   * construcción (0 = la primera): decide qué parte de su pago da (plan 016).
+   */
+  farmRank(tower: DefenseTowerState): number;
 }
 
 export interface DefenseTowerHooks {
@@ -388,7 +394,7 @@ const calaHooks: DefenseTowerHooks = {
   },
 };
 
-/** Ibiza: granja; monedas cada `cooldownS`, sin atacar. */
+/** Ibiza: granja; monedas cada `cooldownS` (su parte según el puesto), sin atacar. */
 const tiendaHooks: DefenseTowerHooks = {
   targets: () => [],
   onTick(t, ctx, dt) {
@@ -399,8 +405,10 @@ const tiendaHooks: DefenseTowerHooks = {
       return;
     }
     t.data.farmT = acc - st.cooldownS;
-    ctx.addCoins(st.coins, t.id);
-    t.lastShot = { atS: ctx.activeS, targetIds: [], x: t.x, y: t.y, amount: st.coins };
+    // La primera paga entera; las demás, su parte (`towers.farm.shares`).
+    const coins = defenseFarmPayout(ctx.config, t.level, ctx.farmRank(t));
+    ctx.addCoins(coins, t.id);
+    t.lastShot = { atS: ctx.activeS, targetIds: [], x: t.x, y: t.y, amount: coins };
   },
 };
 

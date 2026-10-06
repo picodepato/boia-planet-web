@@ -4,6 +4,62 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 016 T181: Castle sim v3: wider U-turns, Ibiza paybacks, extra-Ibiza payouts and collectable money
+
+Hernán changed the scope during the task. Ibiza money goes **straight to the coins again**: no pile, no cap, no `collect` command and no pickup when the plane flies over. Faro, Nochevieja, Puerto and Benidorm get **+15 % damage**. On balance he chose B: keep the stronger islands and do **not** make enemies tougher, so the bot now holds Normal and Tormenta.
+
+What exists:
+- `DEFENSE_CONFIG_VERSION` 6.
+- **U-turns:** radius 135 → 150. The water inside the U, between the lane edges, is 210 u wide: more than 1.3 × the island's footprint (140 u) and more than 1.3 × the space an island needs to be placed with its clearance (160 u). The path grows slightly (10 000–11 000 u). Walk time stays 44 s.
+- **Ibiza costs:** build 63 coins, upgrades 45 and 60. Payouts stay 14 / 29 / 59 coins every 10 s, so payback is 45 / 30 / 20 s.
+- **Extra Ibizas:** `towers.farm.shares` = [1, 0.7, 0.5]. The share depends on build order among the Ibizas still standing; selling the first moves the others up. Payouts are rounded, so the number shown is what comes in.
+- **Helpers:** `defenseFarmShare`, `defenseFarmPayout`, `DefenseGame.farmRank(id)`, `DefenseGame.farmPayout(id)`, and `farmRank` in the tower context. T183's HUD card should show `farmPayout(id)`.
+- **Damage:** `DEFENSE_DAMAGE_T178` holds the plan 015 values in one place. Faro, Nochevieja, Puerto and Benidorm use them × `DEFENSE_DAMAGE_BOOST_016` (1.15). Halloween, Sonido and Ibiza are unchanged. Enemy HP and its growth are unchanged.
+- **Tests:** `defense-v3.test.ts` covers U-turn width, paybacks, shares, real payouts in a game, selling, determinism and the damage ratio, all derived from config.
+- **Balance tests, new shape:**
+  - Tranquila: gold.
+  - Normal and Tormenta: the simple build holds every seed and every length.
+  - Some one-island build falls.
+  - Without Ibiza the simple build falls in Normal and Tormenta.
+  - Tormenta is never easier than Normal.
+  - No one-island build beats the simple one.
+  - Every island is in some best build.
+  - The payback and «Llamar oleada» tests are kept.
+  - `towers.test.ts` «aguanta Normal» only checks that the castle holds.
+- **Migration:** `supabase/migrations/20261006100500_castle_config_v6.sql` (not applied) sets `config_version = 6` on the board rows. The seed migration was already applied on dev, so it was not edited. `ranking-castle-sql.test.ts` reads the latest update.
+
+Bot table, simple build, seeds 1–6 (end life %):
+- Tranquila 5/7/10: 6/6 held, 100 %
+- Normal 5/7/10: 6/6 held, 100 %
+- Tormenta 5/7/10: 6/6 held, 100 %
+- Before (T178): Normal 26–73 %; Tormenta 5 min 0/6, 7 min 3/6, 10 min 6/6 (1–33 %).
+
+One-island-only runs (Ibiza + one island; seed 7; T/N/S = Tranquila/Normal/Tormenta, then minutes):
+- Faro: N7 75 %, S5 63 %, the rest 100 %
+- Nochevieja: S5 63 %, the rest 100 %
+- Halloween: N7 50 %, N10 25 %, S5 63 %, S7 63 %, S10 falls at 508 s
+- Puerto: 100 % everywhere
+- Sonido: N5 67 %, N7 50 %, N10 falls at 508 s, S5 34 %, S7 falls at 319 s, S10 falls at 508 s
+- Benidorm: 100 % everywhere
+- Without Ibiza: N5/7/10 fall at 188–193 s; S5/7/10 fall at 153–163 s
+- Without Halloween: Tormenta 96 / 69 / 87 %
+- Every other «without» build: 100 %
+
+Full tables: C:/tmp/orchestrator-attach/boia-planet-hernan-T181/bot-table-final.txt, plus the per-change study in bot-table.txt.
+
+Commands:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 214 files / 2041 tests passed
+- `pnpm test:slow` → exit 0, 3 files / 29 tests passed
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0
+- `pnpm build` → exit 0
+- `pnpm typecheck` → exit 0
+
+Pending:
+- Apply migration 20261006100500 on Supabase (Hernán).
+- T183: show the real Ibiza payout on the card.
+- With the bot at 100 % everywhere, Puerto-only and Benidorm-only builds hold Tormenta at full life.
+
 ## 2026-10-06 — plan 015 T178: Close: balance, performance, full e2e, docs, Álvaro draft
 
 Qué existe:
