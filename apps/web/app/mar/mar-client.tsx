@@ -2381,10 +2381,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </button>
       </div>
 
-      <div className="mar-speed" aria-hidden="true">
-        <strong>{stats?.knots ?? 0}</strong>
-        <small>{msg('mar.client.nudos')}</small>
-      </div>
+      {/* En la arena del castillo no hay turbo ni nudos (plan 016, decisión 8). */}
+      {castle.active ? null : (
+        <div className="mar-speed" aria-hidden="true">
+          <strong>{stats?.knots ?? 0}</strong>
+          <small>{msg('mar.client.nudos')}</small>
+        </div>
+      )}
 
       {stats?.mapMode && !sheet ? (
         <div className="mar-maphint">
@@ -2474,22 +2477,24 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               ) : null}
             </button>
           </div>
-          <button
-            type="button"
-            className={`mar-turbo${turboReady ? ' is-ready' : ''}${(stats?.turbo ?? 0) > 0 ? ' is-on' : ''}`}
-            style={{ '--p': stats?.turboReady ?? 1 } as CSSProperties}
-            aria-label={msg('mar.client.turbo')}
-            data-testid="mar-turbo"
-            onClick={() => {
-              if (engineRef.current?.turbo()) {
-                navigator.vibrate?.(20);
-                whoosh();
-              }
-            }}
-          >
-            <span>⚡</span>
-            <small>{turboReady ? msg('mar.client.turbo') : '…'}</small>
-          </button>
+          {castle.active ? null : (
+            <button
+              type="button"
+              className={`mar-turbo${turboReady ? ' is-ready' : ''}${(stats?.turbo ?? 0) > 0 ? ' is-on' : ''}`}
+              style={{ '--p': stats?.turboReady ?? 1 } as CSSProperties}
+              aria-label={msg('mar.client.turbo')}
+              data-testid="mar-turbo"
+              onClick={() => {
+                if (engineRef.current?.turbo()) {
+                  navigator.vibrate?.(20);
+                  whoosh();
+                }
+              }}
+            >
+              <span>⚡</span>
+              <small>{turboReady ? msg('mar.client.turbo') : '…'}</small>
+            </button>
+          )}
         </nav>
       ) : null}
 

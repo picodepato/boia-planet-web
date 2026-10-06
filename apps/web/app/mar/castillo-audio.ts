@@ -16,7 +16,16 @@ import { waveAt } from './castillo-hud-model';
 
 /** Sonidos sintetizados de muestra (T164); el bucle y los ajustes son los de T152. */
 export type CastleSfx =
-  DefenseTowerKind | 'build' | 'upgrade' | 'sell' | 'hit' | 'wave' | 'win' | 'loss' | 'plane';
+  | DefenseTowerKind
+  | 'build'
+  | 'upgrade'
+  | 'castle'
+  | 'sell'
+  | 'hit'
+  | 'wave'
+  | 'win'
+  | 'loss'
+  | 'plane';
 
 /** Por tipo, no por torre: una flota de islas no multiplica las voces. */
 export const CASTLE_SFX_GAP: Readonly<Record<CastleSfx, number>> = {
@@ -29,6 +38,7 @@ export const CASTLE_SFX_GAP: Readonly<Record<CastleSfx, number>> = {
   fotos: 0.3,
   build: 0.12,
   upgrade: 0.15,
+  castle: 0.3,
   sell: 0.15,
   hit: 0.2,
   wave: 1,
@@ -71,6 +81,11 @@ function synth(id: CastleSfx, v: SynthVoice): void {
       break;
     case 'upgrade':
       [659.3, 830.6, 1046.5].forEach((f, i) => v.tone(f, f, i * 0.06, 0.17, 0.055, 'triangle'));
+      break;
+    case 'castle': // Mejorar el castillo (plan 016, decisión 9): un golpe de piedra y una fanfarria corta.
+      v.tone(98, 78, 0, 0.24, 0.09, 'triangle');
+      v.noise(520, 140, 0.14, 0.05, 'lowpass');
+      [523.3, 659.3, 784, 1046.5].forEach((f, i) => v.tone(f, f, 0.08 + i * 0.07, 0.2, 0.05));
       break;
     case 'sell':
       [1046.5, 784, 659.3].forEach((f, i) => v.tone(f, f, i * 0.055, 0.12, 0.045));
@@ -150,6 +165,9 @@ export class CastleAudio {
         case 'towerUpgrade':
         case 'planeUpgrade':
           this.play('upgrade');
+          break;
+        case 'castleUpgrade':
+          this.play('castle');
           break;
         case 'towerSold':
           this.play('sell');

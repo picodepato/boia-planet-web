@@ -302,6 +302,10 @@ export const esMar = {
   'mar.castillo.detalle.cala':
     'Un cohete cada {cada} s que cae donde estará su blanco y estalla: {dano} a todos en {area} a la redonda. Alcance {alcance}.',
   'mar.castillo.detalle.tienda': 'No ataca: da {monedas} monedas cada {cada} s.',
+  'mar.castillo.ibiza.como': '¿Cómo paga?',
+  'mar.castillo.ibiza.paga': 'Paga {monedas} monedas cada {cada} s; entran solas.',
+  'mar.castillo.ibiza.mas':
+    'Las Ibizas de más pagan menos: la 2.ª, el {segunda} %; las demás, el {resto} %.',
   'mar.castillo.detalle.allday':
     'Una onda de graves cada {cada} s: {dano} a todos los que tenga alrededor. Alcance {alcance}.',
   'mar.castillo.detalle.fotos': 'Un tiro cada {cada} s de {dano}, muy lejos. Alcance {alcance}.',

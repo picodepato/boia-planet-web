@@ -17,6 +17,8 @@ import {
   type DefenseTowerKind,
   type DefenseWaveInfo,
   defenseCastleMaxLife,
+  defenseFarmPayout,
+  defenseFarmShare,
   defenseTowerStats,
   defenseTowerSellValue,
   defenseTowerUpgradeCost,
@@ -336,20 +338,59 @@ export interface TowerPanelView {
   sellValue: number;
   /** A quién apunta, o null si no elige blanco (Faro, Ibiza, Isla del Sonido). */
   priority: DefenseTargetPriority | null;
-  /** Lo que hace a su nivel, con sus números. */
+  /** Lo que hace a su nivel, con sus números (Ibiza: lo que paga de verdad). */
   how: Line;
   image: CastleIslandImage;
+  /** Ibiza: la explicación que se despliega (plan 016, decisión 7); null en las demás. */
+  farm: FarmExplainView | null;
 }
 
+/** La explicación corta de Ibiza: lo que paga esta y que las de más pagan menos. */
+export interface FarmExplainView {
+  /** Lo que paga de verdad cada `everyS` (`DefenseGame.farmPayout`). */
+  coins: number;
+  everyS: number;
+  lines: Line[];
+}
+
+/**
+ * La explicación de una Ibiza: paga `coins` cada `cooldownS` sola, y las de
+ * más pagan menos (las partes de la config: la 2.ª y la 3.ª y siguientes).
+ */
+export function farmExplain(config: DefenseConfig, level: number, coins: number): FarmExplainView {
+  const everyS = defenseTowerStats(config, 'tienda', level).cooldownS;
+  const pct = (rank: number) => formatNum(Math.round(defenseFarmShare(config, rank) * 100));
+  return {
+    coins,
+    everyS,
+    lines: [
+      {
+        key: 'mar.castillo.ibiza.paga',
+        params: { monedas: formatNum(coins), cada: formatNum(everyS) },
+      },
+      { key: 'mar.castillo.ibiza.mas', params: { segunda: pct(1), resto: pct(2) } },
+    ],
+  };
+}
+
+/**
+ * La ficha de la isla `id`. `farmPayout`: lo que paga de verdad una Ibiza
+ * (`DefenseGame.farmPayout`, con su parte por orden de construcción); sin él,
+ * lo de la config para la primera.
+ */
 export function towerPanel(
   config: DefenseConfig,
   s: Pick<DefenseSnapshot, 'towers' | 'coins'>,
   id: number | null,
+  farmPayout?: (id: number) => number | null,
 ): TowerPanelView | null {
   if (id === null) return null;
   const t = s.towers.find((x) => x.id === id);
   if (!t) return null;
   const upgradeCost = defenseTowerUpgradeCost(config, t);
+  const pays =
+    t.kind === 'tienda' ? (farmPayout?.(t.id) ?? defenseFarmPayout(config, t.level, 0)) : null;
+  const how = towerHowLine(config, t.kind, t.level);
   return {
     id: t.id,
     kind: t.kind,
@@ -361,8 +402,10 @@ export function towerPanel(
     canUpgrade: upgradeCost !== null && Math.floor(s.coins) >= upgradeCost,
     sellValue: defenseTowerSellValue(config, t),
     priority: t.priority,
-    how: towerHowLine(config, t.kind, t.level),
+    how:
+      pays === null ? how : { key: how.key, params: { ...how.params, monedas: formatNum(pays) } },
     image: CASTLE_ISLAND_IMAGES[t.kind],
+    farm: pays === null ? null : farmExplain(config, t.level, pays),
   };
 }
 

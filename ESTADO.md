@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 016 T183: Castle arena v3: camera follow, Ibiza money on screen, upgrade sound, no turbo
+
+What exists
+- Camera (decision 2): `arenaCameraPose` returns `follow` (`arenaFollow(zoom)`: 0 at zoom 1, 1 from `ARENA_FOLLOW_ZOOM` = 0.5 inward, smoothstep between). Following, the focus is the plane itself, corrected for its flying height (`planeY`, so the plane and not the water under it is centred). `mar3d.ts` drops the focus lag and the map lift in proportion to `follow`. Zoom 1 is unchanged. Zoomed in, the view can now go past the arena edge (the plane wins over the old "never past the edge" rule; the v2 test keeps that rule only while `follow` is 0).
+- «+N» of Ibiza (decision 7): `COIN_POP_STYLE` is screen-sized (`screen` 0.065 of the view height per glyph, at any zoom). It rises 1.4 glyph heights over 1.8 s and is drawn above bars and damage numbers (renderOrder 20). Its anchor is clamped to NDC `COIN_POP_KEEP` [-0.8,-0.45]–[0.8,0.3], so an island under the HUD or the bottom bar still shows it whole. The canvas has a new `data-arena-moneda-ultima`.
+- Ibiza card: what the island really pays (`DefenseGame.farmPayout(id)`, passed to `towerPanel`). It has a collapsible «¿Cómo paga?» with two lines: what it pays every N s, and that extra Ibizas pay less (2nd 70 %, others 50 %, taken from `config.towers.farm.shares`). New i18n keys: `mar.castillo.ibiza.como|paga|mas`.
+- Castle upgrade sound (decision 9): new `castle` sfx (stone thud plus a short fanfare, `muestra`), played on the `castleUpgrade` event.
+- Turbo (decision 8): the `mar-turbo` button and `.mar-speed` are not rendered while `castle.active`. The Cañón and plain `/mar` are unchanged.
+- Tests: `engine/defense-arena-v3.test.ts` (projection with a three.js camera: plane within 2 px of the centre from half zoom inward, on the water or flying; zoom 1 is the same as T170's pose; smooth blend), `castillo-hud-v3.test.ts` (card payout by build order, explanation, «+N» style). The audio test now covers `castleUpgrade` → `castle`. e2e `mar-castillo.spec.ts` has 2 new tests «arena v3: …».
+
+Commands
+- `vitest` (without packages/db) → 217 files, 2055 tests, exit 0; `checks.sh`, lint, build, typecheck → exit 0.
+- `E2E_PORT=3283 pnpm e2e e2e/mar-castillo.spec.ts --workers=1 -g "arena v3|guía: mover"` → 6 passed, exit 0.
+- Earlier run of -g "zoom: en la arena|HUD: nada se pisa|barras de vida|pico de la partida de 10 min" (with the arena v3 tests): zoom, HUD sizes, overlays and perf passed. Perf `baja` at the Tormenta 10-min peak: p95 33.4 ms (plan 015: 33.4 ms), CPU 4×: p95 33.4 ms. In that run «guía: mover» failed once on desktop (the «Instalar isla» button was disabled while flying). It passed alone on both projects.
+- Screenshots (mobile and desktop: «+N» with 7 islands, «+N» of one Ibiza, the open card) in C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T183\ (= /tmp/orchestrator-attach/boia-planet-hernan-T183/ in Git Bash).
+
+Pending
+- «Construir» → island detail still shows the base Ibiza payout (the first one). An extra Ibiza would pay 70/50 % (not in scope).
+
 ## 2026-10-06 — plan 016 T180: Boia Fiestera to the right of the route line before the Puerto de Alicante
 
 What exists:

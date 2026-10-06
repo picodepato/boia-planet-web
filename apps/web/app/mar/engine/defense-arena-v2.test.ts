@@ -77,7 +77,7 @@ describe('el zoom de la arena (decisiones 3 y 4)', () => {
     }
   });
 
-  it('a cualquier zoom lo que se ve no pasa del borde de la arena y el avión siempre está dentro', () => {
+  it('sin seguir al avión lo que se ve no pasa del borde de la arena; a cualquier zoom el avión está dentro', () => {
     const fit = R * ARENA_FIT;
     for (const aspect of aspects) {
       for (let z = 0; z <= 1.0001; z += 0.25) {
@@ -87,9 +87,12 @@ describe('el zoom de la arena (decisiones 3 y 4)', () => {
             const p = arenaCameraPose({ aspect, fovDeg: FOV, arenaRadius: R, plane, zoom: z });
             const halfW = p.distance * T * aspect;
             const halfH = p.distance * T;
-            // Lo que cabe en la arena (con su margen): nunca se ve más allá de su borde.
-            if (halfW <= fit) expect(Math.abs(p.fx) + halfW).toBeLessThanOrEqual(fit + 1e-9);
-            if (halfH <= fit) expect(Math.abs(p.fz) + halfH).toBeLessThanOrEqual(fit + 1e-9);
+            // Lo que cabe en la arena (con su margen): nunca se ve más allá de su borde
+            // mientras no sigue al avión (de más cerca lo centra: plan 016, decisión 2).
+            if (p.follow === 0) {
+              if (halfW <= fit) expect(Math.abs(p.fx) + halfW).toBeLessThanOrEqual(fit + 1e-9);
+              if (halfH <= fit) expect(Math.abs(p.fz) + halfH).toBeLessThanOrEqual(fit + 1e-9);
+            }
             // Y el avión, dentro de lo que se ve.
             expect(Math.abs(plane.x - p.fx)).toBeLessThanOrEqual(halfW + 1e-9);
             expect(Math.abs(plane.z - p.fz)).toBeLessThanOrEqual(halfH + 1e-9);
@@ -393,7 +396,7 @@ describe('lo que paga Ibiza se ve (plan 015 T178)', () => {
     pops.update(1.05, true, false);
     expect(pops.live).toBe(1);
     expect(pops.mesh.count).toBe(glyphsOf(59, true).length);
-    pops.update(1 + COIN_POP_S, true, false);
+    pops.update(1 + COIN_POP_S + 1e-6, true, false);
     expect(pops.live).toBe(0);
     pops.dispose();
   });

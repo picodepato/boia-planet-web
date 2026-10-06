@@ -6,7 +6,7 @@ import {
 } from '@boia/engine/defense';
 import { CASTLE_OPEN_SEA_BEARING } from './compact';
 import { toScene } from './compress';
-import { clamp01, smooth } from './kit';
+import { clamp01, lerp, smooth } from './kit';
 
 /**
  * La arena de «Defensa del Castillo» en `/mar` (plan 014 T160), sin
@@ -104,6 +104,22 @@ export interface ArenaCameraPose {
   /** Dónde mira, respecto al castillo (escena). */
   fx: number;
   fz: number;
+  /**
+   * Cuánto sigue al avión (0 la vista fija, 1 el avión en el centro): quien
+   * mueve la cámara lo sigue sin retraso en esa parte (plan 016, decisión 2).
+   */
+  follow: number;
+}
+
+/**
+ * Desde este zoom hacia dentro el avión va siempre en el centro; entre él y
+ * la vista de salida (1), una mezcla suave (plan 016, decisión 2). muestra
+ */
+export const ARENA_FOLLOW_ZOOM = 0.5;
+
+/** 1 desde `ARENA_FOLLOW_ZOOM` hacia dentro, 0 en la vista de salida, suave entre medias. */
+export function arenaFollow(zoom: number): number {
+  return 1 - smooth(ARENA_FOLLOW_ZOOM, 1, clamp01(zoom));
 }
 
 /**
@@ -117,9 +133,11 @@ export const ARENA_ZOOM_NEAR = 0.3;
  * 015): alta, casi cenital y centrada en el castillo. Con `zoom` 1 (la vista
  * de salida, la más abierta) en apaisado cabe la arena entera; en vertical,
  * toda su altura y `ARENA_PORTRAIT_WIDTH` de su ancho. Más cerca (`zoom` → 0,
- * hasta `ARENA_ZOOM_NEAR` de la distancia), el foco sigue al avión. El foco
- * se corre hacia el avión lo justo para que no se salga, y lo que se ve nunca
- * pasa del borde de la arena (con su margen): no se ve el resto del mundo.
+ * hasta `ARENA_ZOOM_NEAR` de la distancia), el foco sigue al avión. En la
+ * vista de salida el foco se corre hacia el avión lo justo para que no se
+ * salga, y lo que se ve no pasa del borde de la arena (con su margen); desde
+ * `ARENA_FOLLOW_ZOOM` hacia dentro el avión va en el centro (plan 016,
+ * decisión 2), con una mezcla suave entre las dos.
  * `plane`: el avión respecto al castillo (escena).
  */
 export function arenaCameraPose(o: {
@@ -128,6 +146,12 @@ export function arenaCameraPose(o: {
   /** Radio de la arena (escena). */
   arenaRadius: number;
   plane: { x: number; z: number };
+  /**
+   * A qué altura vuela el avión (escena): siguiéndolo, el foco se corre lo
+   * que lo sube la perspectiva, para que el avión (no el agua debajo) quede
+   * en el centro.
+   */
+  planeY?: number;
   /** 1 la vista entera (sin valor), 0 lo más cerca. */
   zoom?: number;
 }): ArenaCameraPose {
@@ -142,7 +166,14 @@ export function arenaCameraPose(o: {
   const halfH = distance * t;
   const kx = clamp01(1 - halfW / fit);
   const kz = clamp01(1 - halfH / fit);
-  return { distance, elevation: ARENA_ELEVATION, fx: o.plane.x * kx, fz: o.plane.z * kz };
+  const follow = arenaFollow(zoom);
+  return {
+    distance,
+    elevation: ARENA_ELEVATION,
+    fx: o.plane.x * lerp(kx, 1, follow),
+    fz: o.plane.z * lerp(kz, 1, follow) - (follow * (o.planeY ?? 0)) / Math.tan(ARENA_ELEVATION),
+    follow,
+  };
 }
 
 /** s que tarda el zoom de la arena en llegar a lo pedido (casi). muestra */
@@ -243,7 +274,8 @@ export class ArenaSink {
       return;
     }
     const k = Math.max(0, dt) / SINK_S;
-    this.lv = this.goal > this.lv ? Math.min(this.goal, this.lv + k) : Math.max(this.goal, this.lv - k);
+    this.lv =
+      this.goal > this.lv ? Math.min(this.goal, this.lv + k) : Math.max(this.goal, this.lv - k);
   }
 }
 
@@ -360,7 +392,10 @@ function fillGaps(line: Point[]): Point[] {
       const d = Math.hypot(p.x - prev.x, p.y - prev.y);
       const parts = Math.ceil(d / BARRIER_MAX_GAP);
       for (let j = 1; j < parts; j++) {
-        out.push({ x: prev.x + ((p.x - prev.x) * j) / parts, y: prev.y + ((p.y - prev.y) * j) / parts });
+        out.push({
+          x: prev.x + ((p.x - prev.x) * j) / parts,
+          y: prev.y + ((p.y - prev.y) * j) / parts,
+        });
       }
     }
     out.push(p);
@@ -411,11 +446,7 @@ export function uTurnBuoys(
  * El radio (escena) del círculo de alcance de una isla a su nivel: el
  * `range` de la partida (`defenseTowerStats`). 0 si no ataca (Ibiza).
  */
-export function towerRangeScene(
-  cfg: DefenseConfig,
-  kind: DefenseTowerKind,
-  level = 1,
-): number {
+export function towerRangeScene(cfg: DefenseConfig, kind: DefenseTowerKind, level = 1): number {
   return toScene(Math.max(0, defenseTowerStats(cfg, kind, level).range));
 }
 

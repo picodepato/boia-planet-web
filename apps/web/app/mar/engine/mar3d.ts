@@ -1852,6 +1852,8 @@ export class Mar3D {
       'arenaDestino',
       'arenaBarras',
       'arenaNumeros',
+      'arenaMonedas',
+      'arenaMonedaUltima',
       'arenaNubes',
     ])
       delete ds[k];
@@ -1993,6 +1995,8 @@ export class Mar3D {
     set('arenaNumeros', String(df.view.numbers.live));
     // T178: los «+N» de Ibiza que han saltado desde el principio.
     set('arenaMonedas', String(df.view.coinPops.spawned));
+    // Plan 016 T183: lo que pagó la última («+N»).
+    set('arenaMonedaUltima', String(df.view.coinPops.lastValue));
     set('arenaNubes', df.view.clouds.group.visible ? 'si' : 'no');
     const spots: string[] = [];
     for (const tw of snap.towers) {
@@ -3386,12 +3390,15 @@ export class Mar3D {
       this.arenaBuilding = building;
     }
     this.arenaZoom.step(dt, snap || this.reducedMotion);
+    // Cuánto sigue la cámara de la arena al avión sin retraso (plan 016, decisión 2).
+    let follow = 0;
     if (ab > 0) {
       const pose = arenaCameraPose({
         aspect: this.camera.aspect,
         fovDeg: 40,
         arenaRadius: this.arenaRadiusS,
         plane: { x: ship.x - acx, z: ship.z - acz },
+        planeY: ship.y,
         zoom: this.arenaZoom.value,
       });
       dist = lerp(dist, pose.distance, ab);
@@ -3399,15 +3406,18 @@ export class Mar3D {
       raise = lerp(raise, 1, ab);
       fx = lerp(fx, acx + pose.fx, ab);
       fz = lerp(fz, acz + pose.fz, ab);
+      follow = pose.follow * ab;
     }
     if (snap) this.focus.set(fx, 0, fz);
-    else this.focus.lerp(tmpV.set(fx, 0, fz), 1 - Math.exp(-dt * FOCUS_RATE));
+    else
+      this.focus.lerp(tmpV.set(fx, 0, fz), lerp(1 - Math.exp(-dt * FOCUS_RATE), 1, follow));
     this.wrapC.set(this.focus.x - this.pan.x, this.focus.z - this.pan.y);
     // En la arena, la vuelta del planeta se hace alrededor del castillo: la
     // arena (más ancha que medio planeta) nunca se parte por el borde.
     if (ab > 0) this.wrapC.lerp(tmpV2.set(acx, acz), ab);
     this.look.copy(this.focus);
-    this.look.z += mapLift;
+    // Siguiendo al avión en la arena, nada lo corre del centro (plan 016, decisión 2).
+    this.look.z += mapLift * (1 - follow);
     let ox = 0;
     let oz = 0;
     // Movimiento reducido (T152): ningún golpe de cámara (choques, saltos, golpes del Cañón).

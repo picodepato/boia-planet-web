@@ -135,7 +135,7 @@ describe('sonido del castillo (T164)', () => {
     expect(ctx().started.length).toBe(all);
   });
 
-  it('Puerto suena al impacto e Ibiza sólo por towerShot; construir/mejorar/vender/golpe/avión se conectan', () => {
+  it('Puerto suena al impacto e Ibiza sólo por towerShot; construir/mejorar/castillo/vender/golpe/avión se conectan', () => {
     const { castle, game, audio } = castleSetup();
     audio.unlock();
     castle.start(game.snapshot(), game.config);
@@ -144,6 +144,7 @@ describe('sonido del castillo (T164)', () => {
       { type: 'towerBuilt', towerId: 1, kind: 'cala', x: 0, y: 0, cost: 100 },
       { type: 'towerUpgrade', towerId: 1, kind: 'cala', level: 2, cost: 100 },
       { type: 'planeUpgrade', stat: 'damage', level: 2, cost: 100 },
+      { type: 'castleUpgrade', level: 2, maxLife: 150, cost: 100 },
       { type: 'towerSold', towerId: 1, kind: 'cala', refund: 120 },
       { type: 'castleHit', id: 1, kind: 'piranha', damage: 4, life: 96 },
       { type: 'planeShot', shotId: 1, targetId: 1 },
@@ -166,6 +167,7 @@ describe('sonido del castillo (T164)', () => {
       'build',
       'upgrade',
       'upgrade',
+      'castle',
       'sell',
       'hit',
       'plane',

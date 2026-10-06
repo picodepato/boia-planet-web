@@ -25,6 +25,7 @@ import {
   type PlacementView,
   TOWER_NAME_KEYS,
   type TowerDetailView,
+  type FarmExplainView,
   type TowerPanelView,
   type UpgradeId,
   type UpgradeRow,
@@ -118,7 +119,8 @@ function sameState(a: HudState, b: HudState): boolean {
         ta.level === tb.level &&
         ta.priority === tb.priority &&
         ta.canUpgrade === tb.canUpgrade &&
-        ta.sellValue === tb.sellValue)) &&
+        ta.sellValue === tb.sellValue &&
+        ta.farm?.coins === tb.farm?.coins)) &&
     (a.bar === b.bar ||
       (!!a.bar && !!b.bar && a.bar.id === b.bar.id && a.bar.hpPct === b.bar.hpPct)) &&
     a.notices === b.notices
@@ -167,7 +169,7 @@ function useCastleHud(castle: CastleMode): [HudState, () => void] {
           bar: defenseBossBar(s),
           placing: run.placing?.kind ?? null,
           placement: pl ? placementView(pl.check) : null,
-          panel: towerPanel(run.config, s, run.selected),
+          panel: towerPanel(run.config, s, run.selected, (id) => run.game.farmPayout(id)),
           notices: sameNotices ? prev.notices : notices,
           scale: run.timeScale,
         };
@@ -1098,6 +1100,7 @@ function CastleTowerPanel({
           <small className="mar-castle-place__help" data-testid="mar-castillo-ficha-texto">
             {say(panel.how)}
           </small>
+          {panel.farm ? <FarmExplain farm={panel.farm} /> : null}
         </div>
         <button
           type="button"
@@ -1161,6 +1164,44 @@ function CastleTowerPanel({
         </button>
       </div>
     </section>
+  );
+}
+
+/**
+ * Ibiza: cómo paga, plegado (plan 016, decisión 7). Muy corto: lo que paga
+ * esta cada pocos segundos y que las de más pagan menos.
+ */
+function FarmExplain({ farm }: { farm: FarmExplainView }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div
+      className="mar-castle-farm"
+      data-testid="mar-castillo-ibiza"
+      data-abierto={open ? 'si' : 'no'}
+    >
+      <button
+        type="button"
+        className="mar-castle-farm__toggle"
+        data-testid="mar-castillo-ibiza-como"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {msg('mar.castillo.ibiza.como')}
+        <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      <div
+        id={id}
+        className="mar-castle-farm__text"
+        data-testid="mar-castillo-ibiza-texto"
+        hidden={!open}
+      >
+        {farm.lines.map((l) => (
+          <p key={l.key}>{say(l)}</p>
+        ))}
+      </div>
+    </div>
   );
 }
 

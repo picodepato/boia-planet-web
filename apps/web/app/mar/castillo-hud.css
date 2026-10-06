@@ -500,6 +500,47 @@
   opacity: 0.8;
 }
 
+/* Ibiza: cómo paga, plegado (plan 016 T183). El botón crece a 44 px con el ::before. */
+.mar-castle-farm {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.mar .mar-castle-farm__toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--castle-coin);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--castle-coin);
+  font: 800 0.72rem / 1 var(--font-title);
+  cursor: pointer;
+}
+
+.mar .mar-castle-farm__toggle::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.mar-castle-farm__text {
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.mar-castle-farm__text p {
+  margin: 0;
+}
+
+.mar-castle-farm__text[hidden] {
+  display: none;
+}
+
 .mar-castle-place__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -971,6 +971,107 @@ test('arena: barras de vida y números de daño encendidos al principio; apagado
   expect(errors).toEqual([]);
 });
 
+// --- Plan 016 T183: cámara que centra el avión, el «+N» de Ibiza, su ficha y sin turbo ---
+
+test('arena v3: sin turbo ni nudos; cada pago de Ibiza salta «+N» con todas las islas; de cerca el avión va en el centro; al salir, el turbo vuelve', async ({
+  page,
+}, info) => {
+  const errors = await openMar(page, '?minijuego=castillo&seed=7&dificultad=tranquila&islas=1');
+  await expect(hud(page)).toBeVisible();
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  // Decisión 8: en la arena no hay turbo ni velocidad.
+  await expect(page.getByTestId('mar-turbo')).toHaveCount(0);
+  await expect(page.locator('.mar-speed')).toHaveCount(0);
+
+  // Decisión 7: cada pago salta un «+N» encima de la isla (las monedas entran solas).
+  const pops = async () => Number(await canvas(page).getAttribute('data-arena-monedas'));
+  await expect.poll(pops, { timeout: 30_000 }).toBeGreaterThan(0);
+  const n0 = await pops();
+  await expect.poll(pops, { timeout: 30_000, intervals: [100] }).toBeGreaterThan(n0);
+  await page.screenshot({ path: info.outputPath('ibiza-mas-n-siete-islas.png') });
+  expect(Number(await canvas(page).getAttribute('data-arena-moneda-ultima'))).toBeGreaterThan(0);
+
+  // Decisión 2: de cerca, el avión en el centro del lienzo (y sigue ahí al moverse).
+  await page.locator('.mar-rail').getByRole('button', { name: t('mar.client.acercar') }).click();
+  for (let i = 0; i < 8; i++) await page.keyboard.press('+');
+  await expect.poll(() => arenaZoom(page)).toBe(0);
+  await tapScreen(page, await freeSea(page));
+  const offCentre = async () => {
+    const c = (await canvas(page).boundingBox())!;
+    const p = pointOf(await canvas(page).getAttribute('data-ship-screen'));
+    return Math.hypot(p.x - c.width / 2, p.y - c.height / 2);
+  };
+  await expect.poll(offCentre, { timeout: 10_000 }).toBeLessThan(12);
+  await page.waitForTimeout(600);
+  expect(await offCentre()).toBeLessThan(12);
+
+  // Al salir, el turbo y los nudos vuelven a /mar.
+  await quitAndLeave(page);
+  await expect(canvas(page)).toHaveAttribute('data-arena', 'off');
+  await expect(page.getByTestId('mar-turbo')).toBeVisible();
+  await expect(page.locator('.mar-speed')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('arena v3: la ficha de Ibiza dice lo que paga de verdad (su «+N») y «¿Cómo paga?» se despliega', async ({
+  page,
+}, info) => {
+  const errors = await openMar(
+    page,
+    '?minijuego=castillo&seed=7&dificultad=tranquila&duracion=10&monedas=3000',
+  );
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-arena-avion', /\d/);
+  await page.getByTestId('mar-castillo-construir').click();
+  await chooseIsland(page, 'tienda');
+  await flyTo(page, roomySpots(1)[0]!);
+  await page.getByTestId('mar-castillo-colocar-si').click();
+  await expect.poll(() => islands(page)).toBe(1);
+
+  // Su primer pago: el «+N».
+  const pops = async () => Number(await canvas(page).getAttribute('data-arena-monedas'));
+  await expect.poll(pops, { timeout: 30_000, intervals: [100] }).toBeGreaterThan(0);
+  await page.screenshot({ path: info.outputPath('ibiza-mas-n.png') });
+  const paid = Number(await canvas(page).getAttribute('data-arena-moneda-ultima'));
+  expect(paid).toBeGreaterThan(0);
+
+  // Tocarla en la pantalla (donde no hay nada del HUD encima): su ficha.
+  const box = (await canvas(page).boundingBox())!;
+  let at: { x: number; y: number } | null = null;
+  await expect
+    .poll(async () => {
+      const spot = (await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '';
+      const m = spot.match(/^\d+:(-?\d+),(-?\d+)/);
+      if (!m) return false;
+      const p = { x: box.x + Number(m[1]), y: box.y + Number(m[2]) };
+      const free = await page.evaluate(
+        ({ x, y }) => document.elementFromPoint(x, y)?.getAttribute('data-testid') === 'mar-canvas',
+        p,
+      );
+      at = free ? p : null;
+      return free;
+    })
+    .toBe(true);
+  await tapScreen(page, at as unknown as { x: number; y: number });
+  const card = page.getByTestId('mar-castillo-ficha');
+  await expect(card).toHaveAttribute('data-isla', 'tienda');
+  // La única Ibiza paga entera: lo mismo que su «+N».
+  await expect(page.getByTestId('mar-castillo-ficha-texto')).toContainText(String(paid));
+  const toggle = card.getByTestId('mar-castillo-ibiza-como');
+  const text = card.getByTestId('mar-castillo-ibiza-texto');
+  await expect(toggle).toContainText(t('mar.castillo.ibiza.como'));
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(text).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(text).toBeVisible();
+  await expect(text).toContainText(String(paid));
+  await page.screenshot({ path: info.outputPath('ibiza-ficha.png') });
+  await toggle.click();
+  await expect(text).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 // --- Plan 015 T171: el HUD v2 (construir en cualquier sitio, prioridad, oleadas, ×2, opciones) ---
 
 /** Puntos de la pantalla (px de la página) donde sólo está el lienzo, de arriba abajo. */

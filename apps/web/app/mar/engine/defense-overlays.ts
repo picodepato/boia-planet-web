@@ -13,6 +13,7 @@ import {
   RGBAFormat,
   ShaderMaterial,
   type Texture,
+  Vector4,
 } from 'three';
 import { PLANET_PARS, planetUniforms } from './planet';
 
@@ -288,6 +289,12 @@ export interface FloatNumberStyle {
   y: number;
   /** «+» delante y una moneda detrás (las monedas de la granja). */
   coin: boolean;
+  /**
+   * 0: `height` y `rise` en la escena. Más: el alto de una pieza en la
+   * pantalla, en partes de su alto (se ve igual de grande con cualquier
+   * zoom), y `rise` en altos de pieza (plan 016 T183).
+   */
+  screen: number;
 }
 
 export const DAMAGE_NUMBER_STYLE: Readonly<FloatNumberStyle> = {
@@ -298,19 +305,36 @@ export const DAMAGE_NUMBER_STYLE: Readonly<FloatNumberStyle> = {
   rise: NUMBER_RISE,
   y: NUMBER_Y,
   coin: false,
+  screen: 0,
 };
 
 /** s que se ve el «+N» de Ibiza. muestra */
-export const COIN_POP_S = 1.6;
+export const COIN_POP_S = 1.8;
+/**
+ * El «+N» de Ibiza (plan 016 T183, decisión 7): grande y dorado, del mismo
+ * tamaño en la pantalla con cualquier zoom (el alto de una cifra, en partes
+ * del alto de la pantalla), sube desde la isla y se pinta encima de todos los
+ * efectos. muestra
+ */
+export const COIN_POP_SCREEN = 0.065;
 export const COIN_POP_STYLE: Readonly<FloatNumberStyle> = {
   fill: '#ffd23d',
   stroke: '#3a1f05',
   durationS: COIN_POP_S,
-  height: 5.2,
-  rise: 4.5,
-  y: 9,
+  height: 1,
+  rise: 1.4,
+  y: 4,
   coin: true,
+  screen: COIN_POP_SCREEN,
 };
+/**
+ * Dónde puede salir el «+N» en la pantalla (NDC: x mín., y mín., x máx., y
+ * máx.): una isla bajo el HUD de arriba o la barra de abajo lo saca algo más
+ * adentro, para que se lea entero al subir. muestra
+ */
+export const COIN_POP_KEEP: readonly [number, number, number, number] = [-0.8, -0.45, 0.8, 0.3];
+/** Por encima de las barras (6, 7) y los números de daño (8): nada lo tapa. */
+export const COIN_POP_ORDER = 20;
 
 interface FloatNumber {
   x: number;
@@ -397,6 +421,8 @@ export class DamageNumbers {
   readonly style: Readonly<FloatNumberStyle>;
   /** Números lanzados desde el principio (pruebas). */
   spawned = 0;
+  /** El último número lanzado (pruebas). */
+  lastValue = 0;
   /** Números vivos en el último `update`. */
   live = 0;
   private readonly pool: FloatNumber[];
@@ -404,6 +430,7 @@ export class DamageNumbers {
   private readonly digit: InstancedBufferAttribute;
   private readonly offset: InstancedBufferAttribute;
   private readonly alpha: InstancedBufferAttribute;
+  private readonly lift: InstancedBufferAttribute;
   private readonly d = new Object3D();
 
   constructor(cap: number, style: Readonly<FloatNumberStyle> = DAMAGE_NUMBER_STYLE) {
@@ -415,7 +442,9 @@ export class DamageNumbers {
     this.digit = new InstancedBufferAttribute(new Float32Array(n), 1);
     this.offset = new InstancedBufferAttribute(new Float32Array(n), 1);
     this.alpha = new InstancedBufferAttribute(new Float32Array(n), 1);
+    this.lift = new InstancedBufferAttribute(new Float32Array(n), 1);
     geo.setAttribute('aDigit', this.digit);
+    geo.setAttribute('aLift', this.lift);
     geo.setAttribute('aOffset', this.offset);
     geo.setAttribute('aAlpha', this.alpha);
     const mat = new ShaderMaterial({
@@ -423,11 +452,19 @@ export class DamageNumbers {
       depthTest: false,
       depthWrite: false,
       defines: { PLANET_WRAP: '' },
-      uniforms: { uMap: { value: digitAtlas(style) }, ...planetUniforms },
+      uniforms: {
+        uMap: { value: digitAtlas(style) },
+        uScreen: { value: style.screen },
+        uKeep: { value: new Vector4(...COIN_POP_KEEP) },
+        ...planetUniforms,
+      },
       vertexShader: /* glsl */ `
         attribute float aDigit;
         attribute float aOffset;
         attribute float aAlpha;
+        attribute float aLift;
+        uniform float uScreen;
+        uniform vec4 uKeep;
         varying vec2 vUv;
         varying float vAlpha;
         ${PLANET_PARS}
@@ -438,8 +475,19 @@ export class DamageNumbers {
           w.xyz = planetCurve(w.xyz);
           vec4 mv = viewMatrix * w;
           float s = length(instanceMatrix[0].xyz);
-          mv.xy += vec2(position.x + aOffset * 0.62, position.y) * s;
-          gl_Position = projectionMatrix * mv;
+          vec2 q = vec2(position.x + aOffset * 0.62, position.y + aLift);
+          if (uScreen > 0.0) {
+            // On screen: a glyph is uScreen of the view height, and its anchor
+            // stays inside uKeep (NDC min x, min y, max x, max y), clear of the HUD.
+            vec4 c = projectionMatrix * mv;
+            vec2 ndc = clamp(c.xy / c.w, uKeep.xy, uKeep.zw);
+            float a = projectionMatrix[0][0] / projectionMatrix[1][1];
+            ndc += vec2(q.x * a, q.y) * s * uScreen * 2.0;
+            gl_Position = vec4(ndc * c.w, c.z, c.w);
+          } else {
+            mv.xy += q * s;
+            gl_Position = projectionMatrix * mv;
+          }
         }
       `,
       fragmentShader: /* glsl */ `
@@ -460,7 +508,7 @@ export class DamageNumbers {
     this.mesh.count = 0;
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = 8;
+    this.mesh.renderOrder = style.coin ? COIN_POP_ORDER : 8;
   }
 
   /** Un número nuevo en la escena (x, z) a la hora `t`; si no hay sitio, el más viejo. */
@@ -488,6 +536,7 @@ export class DamageNumbers {
     p.t0 = t;
     p.live = true;
     this.spawned++;
+    this.lastValue = value;
   }
 
   /** Números vivos ahora en el grupo (sin contar los que se apagan en `update`). */
@@ -513,7 +562,10 @@ export class DamageNumbers {
       live++;
       const ds = glyphsOf(p.value, st.coin);
       const a = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
-      const y = p.y + (reduced ? 0 : st.rise * (1 - (1 - k) * (1 - k)));
+      const up = reduced ? 0 : st.rise * (1 - (1 - k) * (1 - k));
+      // En la pantalla sube en altos de pieza; si no, en la escena.
+      const y = p.y + (st.screen > 0 ? 0 : up);
+      const lift = st.screen > 0 ? up : 0;
       const s = st.height * (reduced ? 1 : k < 0.15 ? 0.7 + 2 * k : 1);
       for (let i = 0; i < ds.length; i++) {
         d.position.set(p.x, y, p.z);
@@ -523,6 +575,7 @@ export class DamageNumbers {
         this.digit.setX(n, ds[i]!);
         this.offset.setX(n, i - (ds.length - 1) / 2);
         this.alpha.setX(n, a);
+        this.lift.setX(n, lift);
         n++;
       }
     }
@@ -534,6 +587,7 @@ export class DamageNumbers {
       this.digit.needsUpdate = true;
       this.offset.needsUpdate = true;
       this.alpha.needsUpdate = true;
+      this.lift.needsUpdate = true;
     }
   }
 
