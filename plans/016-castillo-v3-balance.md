@@ -59,7 +59,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Status: running (attempt 1)
 - Depends on: T181
 - Model: opus
-- Goal: Decisions 2, 7 (view side), 8 and 9. Camera centres the plane from half zoom inward with a smooth blend to the fixed top view; each Ibiza payout shows a big golden «+N» rising from the island, always visible even with many effects (replaces the small pop-up); the Ibiza card has a collapsible, very short explanation (pays N every 10 s; extra Ibizas pay less); the castle upgrade plays its own sound; turbo button and speed readout hidden in the castle arena.
+- Goal: Decisions 2, 7 (view side), 8 and 9. Camera centres the plane from half zoom inward with a smooth blend to the fixed top view; each Ibiza payout shows a big golden «+N» rising from the island, always visible even with many effects (replaces the small pop-up); the Ibiza card has a collapsible, very short explanation (pays N every 10 s, the real amount from `DefenseGame.farmPayout(id)`; extra Ibizas pay less); the castle upgrade plays its own sound; turbo button and speed readout hidden in the castle arena.
 - Context: `apps/web/app/mar/engine/defense-arena.ts` (`arenaCameraPose` l.125–146, `ARENA_ZOOM_NEAR` l.113, `ArenaZoom` l.158), `mar3d.ts` (pose use l.3352, wheel l.873, pinch l.2806, taps), `defense-view.ts` (coin pop l.187, 613), `defense-overlays.ts` (`COIN_POP_S` l.304), `castillo-hud.tsx`, `castillo-hud-model.ts`, `castillo-audio.ts` (l.106, 142–167; `castleUpgrade` event plays nothing), `mar-client.tsx` (`.mar-speed` l.2378–2381, turbo l.2427, 2472–2485, `castle.active` l.489), T181 Outcome, plan 015 T170/T171 Outcomes.
 - Scope: may touch the castle arena view, overlays, HUD, castle audio, the turbo/speed conditions in `mar-client.tsx`, castle e2e specs / must not touch engine numbers (T181), the Cañón, plain `/mar` behaviour.
 - Done when:
@@ -84,9 +84,24 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - Test command → exit 0
 - Outcome: focus restored when sheets close (arrows work after «Mi Barco», e2e closes it 3 ways), public world→screen hook in mar3d.ts, «mover»/«ficha» bubbles with tails on the plane / last installed island, «Por Los Rápidos» gone, «Rápido» own progress wording; done by Codex + wrapper · b4319b1
 
+## T186 — Member numbers by order of arrival, artist link and artist stamp
+- Status: pending
+- Depends on: none
+- Model: opus
+- Goal: Hernán, 2026-10-06 (added mid-plan). (1) Member numbers are given by order of arrival, the same sequence for artists and members, **with no gaps** (a failed sign-up never burns a number), stored safely and never random. (2) From the admin a member's number can be changed (to a free number only; the change is logged). (3) **One shared artist link**, changeable from the admin: whoever creates their carnet through it is an artist. (4) Artist carnets show a rubber **«ARTISTA» stamp on the front**, same style as the event stamps on the back, tilted in a free corner (`muestra` until Álvaro sees it).
+- Context: `supabase/migrations/20261003100000_accounts.sql` (`member_number` identity l.140–145, `save_profile` l.232–291, `is_artist` l.141, `admin_set_artist` l.345, 478, grants l.530–552), `packages/db/src/` (`database.types.ts:460`, `rpc.ts:164`), `packages/store/src/member/server.ts:251`, `packages/store/src/local.ts` (carnet l.1015–1031, artists l.878–891), `apps/web/lib/mundo/carnet/` (`id-card.tsx` Front l.54–145, title l.78; `id-card.css` `.idc-seal` l.173; `id-card-model.ts:9–10, 96`; `stamp.tsx` `RubberStamp`; `use-carnet.ts:150`; `public-carnet.ts`), `apps/web/app/carnet/`, `apps/web/app/mar/deep-link.ts` (existing `?menu=` links), `apps/web/lib/account/session.ts:276`, admin `apps/web/app/admin/real/socios.tsx:75`, `apps/web/app/admin/sections/artists.tsx`, `docs/DECISIONES.md` D-20/D-23, `docs/spec/09-requisitos.md` REQ-IDE-010/018, REQ-ADM-005.
+- Scope: may touch a new Supabase migration (gap-free counter assigned inside the same transaction as the carnet insert; existing numbers unchanged; admin RPC to change a number with uniqueness check and an audit row; artist-link code stored hashed, admin RPC to rotate it; `save_profile` accepting the code), `packages/db` types/RPC wrappers and their SQL tests, `packages/store`, the carnet card and its CSS, the join flow for the artist link, admin pages, i18n keys, e2e specs / must not touch the castle game, existing member numbers, `docs/DECISIONES.md`. Local mode (D-20): no number as today («—»); the artist link marks the local carnet as artist (demo only). Never apply migrations to a real project.
+- Done when:
+  - SQL tests (`packages/db`, written to run with `pnpm test:supabase` by Hernán; they cannot run on this machine): sequential numbers with no gap after a failed sign-up; artist and member share the sequence; admin number change rejects a taken number and logs; wrong/rotated artist code does not make an artist
+  - unit tests for the store/card: artist carnet renders the «ARTISTA» stamp on the front; member does not → pass
+  - e2e: open the artist link, create a carnet (local mode) → the front shows the stamp → exit 0
+  - screenshot of a member and an artist carnet front (mobile) → /tmp/orchestrator-attach/boia-planet-hernan-T186/
+  - Test command → exit 0
+- Outcome:
+
 ## T185 — Close: full e2e, balance check, docs, test guide
 - Status: pending
-- Depends on: T180, T181, T183, T184
+- Depends on: T180, T181, T183, T184, T186
 - Model: opus
 - Goal: Close the plan: full e2e, a last balance check with everything in, docs and spec status, and a short test guide for Hernán.
 - Context: all Outcomes, Decisions and Proposals of this plan; `python3 tools/spec/estado.py`; plan 015 T178 Outcome (how the close was done).
@@ -109,6 +124,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T181: U-turn radius 135→150 (inner 210 u); Ibiza build 70→63, upgrades 45/60, payouts 14/29/59 per 10 s kept; extra-Ibiza share by build order among standing Ibizas; +15 % from one table `DEFENSE_DAMAGE_T178` × 1.15; DEFENSE_CONFIG_VERSION 6, migration 20261006100500 (not applied) (agent)
 - 2026-10-06 T181: balance tests now expect the bot to hold Normal and Tormenta; still check a one-island build falls, no Ibiza falls, Tormenta never easier than Normal, no one-island build beats the simple one (agent)
 - 2026-10-06 T184: arrows fix is defensive (focus restore); root cause not proven, new e2e passes (agent)
+- 2026-10-06 run: Hernán added T186 (carnet numbers by arrival with no gaps, admin can change a number, one shared changeable artist link, «ARTISTA» stamp on the front) to this plan; local mode keeps «—», artist link marks the local carnet in demo; admin number change only to a free number, logged (Hernán; last two orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-06 T181: bot ends at 100 % everywhere; Puerto-only and Benidorm-only builds hold Tormenta at full life (agent)
@@ -125,3 +141,5 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T180 reported done (d979994); sent back: Fiestera zone overlaps cala zone, e2e mar-ayuda/islas/canon not run, no screenshot with the route line
 - 2026-10-06 20:30 T181 integrated → 4e900ff (tests ok); worktree and branch removed (leftover node_modules folder in .claude/worktrees/agent-afcbcafc52df3805d, guard blocks rm)
 - 2026-10-06 20:34 T184 integrated → b4319b1 (tests ok); worktree and branch removed
+- 2026-10-06 20:36 T183 launched · attempt 1 · agent a87ecd71b26c89416 (opus)
+- 2026-10-06 pushed main 956d11c to Vercel on Hernán's Telegram reply («Si sube»)
