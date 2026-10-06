@@ -45,6 +45,13 @@ Cómo probarlo: [guía de prueba](2026-10-06-castillo-v2-guia-prueba.md).
   Benidorm igual; Ibiza se paga en 50 s (y sus mejoras en 40 y 30 s); Normal y Tormenta, más
   duras para compensar. Tranquila se gana con oro, Normal se gana peleando, Tormenta se pierde a
   menudo en 5 min y se gana con poca vida en 7 y 10.
+- **Después, en el plan 016** (reglas versión 6): curvas en U más anchas; Ibiza se paga en 45 s
+  (sus mejoras en 30 y 20 s) y la segunda Ibiza paga el 70 %, las demás el 50 %, con un «+N»
+  dorado grande en cada pago; Faro, Puerto, Nochevieja y Benidorm hacen un 15 % más de daño;
+  la cámara sigue al avión al acercarse; sonido propio al mejorar el castillo; sin turbo en la
+  arena. Con eso las islas pesan más que los enemigos: el bot gana Normal y Tormenta con toda la
+  vida (Hernán prefirió no endurecer a los enemigos; está en la
+  [guía de prueba v3](2026-10-06-castillo-v3-guia-prueba.md)).
 
 ### 3. El Vecino Quejica, nuevo
 
