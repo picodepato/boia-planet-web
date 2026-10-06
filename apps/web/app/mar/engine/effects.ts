@@ -37,19 +37,28 @@ import { wrapD } from './wrap';
 
 const WAKE_N = 56;
 
+/** Cómo se dibuja la estela: espuma de un color, o el remolino lila y negro (plan 015 T175). */
+export type WakeStyleName = 'espuma' | 'vortice';
+
+/** El negro del vórtice (el lila es el tinte del cosmético, `WAKE_TINTS`). muestra */
+export const VORTEX_INK = 0x15081f;
+
 export class Wake {
   readonly mesh: Mesh;
   private readonly pts: { x: number; z: number; hx: number; hz: number; age: number; s: number }[] =
     [];
   private readonly pos: Float32Array;
   private readonly alpha: Float32Array;
+  private readonly along: Float32Array;
   private readonly side: Float32Array;
   private acc = 0;
+  private styleName: WakeStyleName = 'espuma';
 
   constructor() {
     const g = new BufferGeometry();
     this.pos = new Float32Array(WAKE_N * 2 * 3);
     this.alpha = new Float32Array(WAKE_N * 2);
+    this.along = new Float32Array(WAKE_N * 2);
     this.side = new Float32Array(WAKE_N * 2);
     const idx: number[] = [];
     for (let i = 0; i < WAKE_N - 1; i++) {
@@ -63,20 +72,29 @@ export class Wake {
     g.setIndex(idx);
     g.setAttribute('position', new BufferAttribute(this.pos, 3).setUsage(DynamicDrawUsage));
     g.setAttribute('aAlpha', new BufferAttribute(this.alpha, 1).setUsage(DynamicDrawUsage));
+    g.setAttribute('aAlong', new BufferAttribute(this.along, 1).setUsage(DynamicDrawUsage));
     g.setAttribute('aSide', new BufferAttribute(this.side, 1));
     const m = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
       side: DoubleSide,
-      uniforms: { uColor: { value: new Color('#ffffff') }, uTime: { value: 0 } },
+      uniforms: {
+        uColor: { value: new Color('#ffffff') },
+        uInk: { value: new Color(VORTEX_INK) },
+        uVortex: { value: 0 },
+        uTime: { value: 0 },
+      },
       vertexShader: /* glsl */ `
         attribute float aAlpha;
+        attribute float aAlong;
         attribute float aSide;
         varying float vAlpha;
+        varying float vAlong;
         varying float vSide;
         varying vec2 vW;
         void main() {
           vAlpha = aAlpha;
+          vAlong = aAlong;
           vSide = aSide;
           vW = position.xz;
           gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
@@ -84,15 +102,28 @@ export class Wake {
       `,
       fragmentShader: /* glsl */ `
         uniform vec3 uColor;
+        uniform vec3 uInk;
+        uniform float uVortex;
         uniform float uTime;
         varying float vAlpha;
+        varying float vAlong;
         varying float vSide;
         varying vec2 vW;
         void main() {
           float edge = 1.0 - abs(vSide);
           float streak = 0.55 + 0.45 * sin(vW.x * 3.1 + vW.y * 2.7 + uTime * 4.0);
           float a = vAlpha * (0.35 + 0.65 * smoothstep(0.0, 0.5, 1.0 - edge)) * streak;
-          gl_FragColor = vec4(uColor, a * 0.85);
+          vec3 col = uColor;
+          if (uVortex > 0.5) {
+            // El remolino: bandas que giran alrededor del eje de la estela (una espiral vista
+            // desde arriba) y corren hacia popa, lila sobre negro; más opaca que la espuma.
+            float spin = sin(vAlong * 26.0 - vSide * 2.6 - uTime * 7.0);
+            float band = smoothstep(-0.55, 0.45, spin);
+            col = mix(uInk, uColor * 1.15, band);
+            float rim = smoothstep(0.0, 0.35, 1.0 - abs(vSide));
+            a = min(1.0, vAlpha * 1.5) * (0.7 + 0.3 * rim) * (0.8 + 0.2 * band);
+          }
+          gl_FragColor = vec4(col, a * 0.85);
         }
       `,
     });
@@ -104,6 +135,16 @@ export class Wake {
   /** Color de la espuma: el cosmético de estela (T40); null, blanca. */
   setTint(color: number | null): void {
     ((this.mesh.material as ShaderMaterial).uniforms.uColor!.value as Color).set(color ?? 0xffffff);
+  }
+
+  /** Estilo de la estela (T175): `vortice` pinta el remolino lila y negro con el tinte como lila. */
+  setStyle(style: WakeStyleName): void {
+    this.styleName = style;
+    (this.mesh.material as ShaderMaterial).uniforms.uVortex!.value = style === 'vortice' ? 1 : 0;
+  }
+
+  get style(): WakeStyleName {
+    return this.styleName;
   }
 
   /** Avanza la estela: `x, z` la popa, `heading` el rumbo, `speed01` 0..1 (más con turbo). */
@@ -136,7 +177,11 @@ export class Wake {
         continue;
       }
       const k = Math.min(1, p.age / life);
-      const w = (0.35 + k * 2.2) * (0.4 + p.s * 0.8);
+      this.along[i * 2] = k;
+      this.along[i * 2 + 1] = k;
+      // El vórtice es algo más estrecho y largo que la espuma (su remolino se lee mejor así).
+      const vortex = this.styleName === 'vortice';
+      const w = (0.35 + k * (vortex ? 1.7 : 2.2)) * (0.4 + p.s * 0.8);
       // Perpendicular al rumbo en el plano del agua.
       const nx = -p.hz;
       const nz = p.hx;
@@ -154,6 +199,14 @@ export class Wake {
     const g = this.mesh.geometry;
     g.getAttribute('position').needsUpdate = true;
     g.getAttribute('aAlpha').needsUpdate = true;
+    g.getAttribute('aAlong').needsUpdate = true;
+  }
+
+  /** Cuánto se ve ahora la estela (la mayor opacidad de sus puntos; pruebas). */
+  get visibility(): number {
+    let m = 0;
+    for (let i = 0; i < this.alpha.length; i++) m = Math.max(m, this.alpha[i]!);
+    return m;
   }
 }
 

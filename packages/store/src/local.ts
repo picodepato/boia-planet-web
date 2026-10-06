@@ -1350,6 +1350,25 @@ class LocalRepository implements BoiaRepository {
             }),
           );
         }),
+      grantCosmetic: async (cosmeticId, input) =>
+        grant((d, me) => {
+          const sourceRef = requireKey(input.sourceRef, 'cosmético: origen');
+          const c = this.resolved('cosmetics', d).find((x) => x.id === cosmeticId);
+          if (!c) throw new StoreError('not_found', `cosmético ${cosmeticId}`);
+          const owned = activeEntries(d.ledger, me.id, 'cosmetic').find(
+            (e) => e.cosmeticKey === c.id,
+          );
+          if (owned) return { granted: false, reason: 'duplicate', entry: clone(owned) };
+          return this.append(
+            d,
+            this.baseEntry(me.id, {
+              id: ledgerId('cosmetic', c.id),
+              kind: 'cosmetic',
+              cosmeticKey: c.id,
+              sourceRef,
+            }),
+          );
+        }),
       cosmetics: async () => {
         const id = myId();
         if (!id) return [];

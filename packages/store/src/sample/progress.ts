@@ -21,6 +21,16 @@ export const FAST_LAP_MS = 73_400;
  */
 export const MINIKRAKEN = 'mascota-minikraken';
 
+/**
+ * Los premios de plan 015 (decisión 16; T175 los modela y dibuja, T176 los
+ * concede con sus logros): dos mascotas más y una estela. Hasta que T176
+ * ponga sus logros no se consiguen más que con el atajo de desarrollo
+ * (`apps/web/app/mar/mascota-dev.ts`). Nombres y diseños `muestra`.
+ */
+export const CANONCITO = 'mascota-canoncito';
+export const TORTUGA_TURBO = 'mascota-tortuga-turbo';
+export const ESTELA_VORTICE = 'estela-vortice';
+
 /** El barco que regala el Carnet BOIA: ni de base, ni de misión, ni de otro logro. */
 export const CARNET_SHIP = 'barco-low-poly';
 /** Puntos (umbral, no se gastan) del barco Semi-realista «El Veterano». */
@@ -399,6 +409,10 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
   { id: 'estela-rayo', name: 'Estela de rayo', slot: 'wake', priceCoins: null, sample: true },
   // La primera mascota (T153 la concede con `canon-kraken`; T154 la pone en cubierta).
   { id: MINIKRAKEN, name: 'Minikraken', slot: 'mascot', priceCoins: null, sample: true },
+  // Los premios del castillo y de la carrera (plan 015 T175; sus logros, T176). No se venden.
+  { id: CANONCITO, name: 'Cañoncito', slot: 'mascot', priceCoins: null, sample: true },
+  { id: TORTUGA_TURBO, name: 'Tortuga turbo', slot: 'mascot', priceCoins: null, sample: true },
+  { id: ESTELA_VORTICE, name: 'Estela del vórtice', slot: 'wake', priceCoins: null, sample: true },
   // Barcos de estilo (T40, D-23 punto 1 y O5; precios `muestra`, rebajados el
   // 2026-10-02). Primero los que se ganan con un logro (D-22, T36: bloqueados
   // hasta reclamarlo).

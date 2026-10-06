@@ -270,7 +270,7 @@ export const esLib = {
   'barco.shop.mascota': 'Mascota',
   'barco.shop.sinMascota': 'Sin mascota',
   'barco.shop.mascotaNota':
-    'Va contigo en cubierta: navegando, en las carreras y en el Cañón. Te acompaña, no ayuda a jugar.',
+    'Va contigo, en cubierta o nadando detrás del barco: navegando, en las carreras y en el Cañón. Te acompaña, no ayuda a jugar.',
   'logros.claimBadge.n1Premio': '1 premio',
   'logros.model.logroOcultoSigueExplorando': 'Logro oculto. Sigue explorando…',
   'logros.model.completadoReclamaTuPremio': '¡Completado! Reclama tu premio',

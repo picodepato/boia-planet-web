@@ -2,7 +2,7 @@ import { SAMPLE_COSMETICS, createLocalRepository } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { loadShipCatalog, repoRoot } from './load';
-import { dressingFor, dressingKey } from './dressing';
+import { VORTEX_COLORS, dressingFor, dressingKey, hexOf, wakeSwatch } from './dressing';
 import { confirmText, resolveLook, shopRows, unlockText } from './shop-model';
 
 /**
@@ -111,13 +111,33 @@ describe('aspecto al entrar', () => {
   });
 
   it('la estela se pinta y una bandera antigua se ignora', () => {
-    expect(dressingFor({})).toEqual({ wakeTint: null, mascot: null });
+    expect(dressingFor({})).toEqual({ wakeTint: null, wakeStyle: 'espuma', mascot: null });
     const wake = SAMPLE_COSMETICS.find((c) => c.slot === 'wake')!;
     const d = dressingFor({ flag: 'bandera-boia', wake: wake.id, ship: coinShip.id });
     expect(d).not.toHaveProperty('flag');
     expect(dressingKey(d)).toBe(dressingKey(dressingFor({ wake: wake.id })));
     expect(d.wakeTint).not.toBeNull();
     expect(d.mascot).toBeNull();
+  });
+
+  it('la estela del vórtice se pinta con su estilo y su lila; las demás, espuma (T175)', () => {
+    const vortex = SAMPLE_COSMETICS.find((c) => c.id === 'estela-vortice')!;
+    expect(vortex.slot).toBe('wake');
+    const d = dressingFor({ wake: vortex.id });
+    expect(d.wakeStyle).toBe('vortice');
+    expect(d.wakeTint).toBe(VORTEX_COLORS.lilac);
+    expect(wakeSwatch(vortex.id)).toContain(hexOf(VORTEX_COLORS.lilac));
+    expect(wakeSwatch(vortex.id)).toContain(hexOf(VORTEX_COLORS.ink));
+    for (const w of SAMPLE_COSMETICS.filter((c) => c.slot === 'wake' && c.id !== vortex.id)) {
+      expect(dressingFor({ wake: w.id }).wakeStyle, w.id).toBe('espuma');
+      expect(wakeSwatch(w.id), w.id).toMatch(/^#[0-9a-f]{6}$/);
+    }
+    expect(dressingKey(d)).not.toBe(dressingKey(dressingFor({ wake: 'estela-naranja' })));
+  });
+
+  it('las mascotas nuevas tienen su modelo: el Cañoncito en cubierta y la Tortuga turbo detrás (T175)', () => {
+    expect(dressingFor({ mascot: 'mascota-canoncito' }).mascot).toBe('canoncito');
+    expect(dressingFor({ mascot: 'mascota-tortuga-turbo' }).mascot).toBe('tortuga-turbo');
   });
 
   it('cada mascota del catálogo tiene modelo en cubierta; sin mascota, nada (T154)', () => {

@@ -1282,6 +1282,118 @@ def check_enemigos_3d(art):
     return label, "enemy-glb", fails, info, len(man["enemigos"])
 
 
+# --- Mascotas de Blender del barco del mar 3D (plan 015, T175): art/mascotas/3d/ -------------------
+MASCOTAS_SUBDIR = os.path.join("mascotas", "3d")
+MASCOTAS_DIR = os.path.join(HERE, "mascotas")
+MASCOTAS_NOT_MASCOTS = {"__init__"}
+
+
+def export_mascotas_max_tris():
+    """MAX_TRIS de export_mascotas_glb.py: el presupuesto de triángulos de cada mascota."""
+    return module_constants(os.path.join(HERE, "export_mascotas_glb.py"), ["MAX_TRIS"])["MAX_TRIS"]
+
+
+def mascot_modules():
+    """{id: (ruta, PARTS)} de los módulos de tools/blender/mascotas/ (el id es su `ID`)."""
+    out = {}
+    for f in sorted(os.listdir(MASCOTAS_DIR)):
+        if not f.endswith(".py") or f[:-3] in MASCOTAS_NOT_MASCOTS:
+            continue
+        path = os.path.join(MASCOTAS_DIR, f)
+        consts = module_constants(path, ["ID", "PARTS"])
+        out[consts["ID"]] = (path, consts["PARTS"])
+    return out
+
+
+def check_mascotas_3d(art):
+    """-> (label, kind, fails, info, n_glb). Cada mascota de tools/blender/mascotas/ con su GLB, en presupuesto,
+    una malla por pieza en un nodo con sólo traslación (su pivote, el de PARTS en coordenadas glTF), sin texturas
+    (/mar aplana cada pieza a una geometría con el color en los vértices y la anima con transformaciones)."""
+    label = MASCOTAS_SUBDIR.replace(os.sep, "/")
+    fails, info = [], []
+    res = os.path.join(art, MASCOTAS_SUBDIR)
+    mpath = os.path.join(res, "manifest.json")
+    modules = mascot_modules()
+    if not os.path.exists(mpath):
+        return label, "mascot-glb", ["falta %s (Blender -b -P tools/blender/export_mascotas_glb.py)"
+                                     % os.path.relpath(mpath, REPO)], info, 0
+    with open(mpath, encoding="utf-8") as f:
+        man = json.load(f)
+    with open(os.path.join(HERE, "mascota3d.schema.json"), encoding="utf-8") as f:
+        schema = json.load(f)
+    errs = validate(man, schema, schema)
+    if errs:
+        return label, "mascot-glb", errs, info, 0
+    budget = export_mascotas_max_tris()
+    if man["max_tris"] != budget:
+        fails.append("max_tris %d; export_mascotas_glb.MAX_TRIS es %d (vuelve a exportar)" % (man["max_tris"], budget))
+    ids = [e["id"] for e in man["mascotas"]]
+    if len(set(ids)) != len(ids):
+        fails.append("ids repetidos: %s" % ids)
+    for m in modules:
+        if m not in ids:
+            fails.append("%s (tools/blender/mascotas/) sin GLB en el manifiesto (exporta con --only %s)" % (m, m))
+    on_disk = sorted(f for f in os.listdir(res) if f.endswith(".glb"))
+    listed = sorted(e["file"] for e in man["mascotas"])
+    if on_disk != listed:
+        fails.append("GLB en la carpeta %s; en el manifiesto %s" % (on_disk, listed))
+    for e in man["mascotas"]:
+        mid = e["id"]
+        names = [p["name"] for p in e["parts"]]
+        if mid not in modules:
+            fails.append("%s: sin módulo en tools/blender/mascotas/ con ID %r" % (mid, mid))
+        else:
+            parts = modules[mid][1]
+            if list(parts) != names:
+                fails.append("%s: piezas %s en el manifiesto; PARTS %s en el módulo" % (mid, names, list(parts)))
+            for p in e["parts"]:
+                piv = parts.get(p["name"])
+                if piv is None:
+                    continue
+                want = [piv[0], piv[2], -piv[1]]
+                if any(abs(a - b) > 1e-3 for a, b in zip(p["pivot"], want)):
+                    fails.append("%s/%s: pivote %s en el manifiesto; PARTS da %s (glTF)" % (mid, p["name"], p["pivot"], want))
+        if e["file"] != mid + ".glb":
+            fails.append("%s: el archivo se llama %r (se espera %s.glb)" % (mid, e["file"], mid))
+        if sum(p["tris"] for p in e["parts"]) != e["tris"]:
+            fails.append("%s: los triángulos de las piezas no suman %d" % (mid, e["tris"]))
+        path = os.path.join(res, e["file"])
+        if not os.path.exists(path):
+            fails.append("%s: falta %s" % (mid, e["file"]))
+            continue
+        try:
+            tris, n_mats, n_meshes, n_glow = glb_summary(path)
+            doc = glb_doc(path)
+        except (ValueError, KeyError, IndexError, json.JSONDecodeError) as err:
+            fails.append("%s: %s ilegible: %s" % (mid, e["file"], err))
+            continue
+        if tris > budget:
+            fails.append("%s: %d triángulos > presupuesto %d" % (mid, tris, budget))
+        if tris != e["tris"]:
+            fails.append("%s: el GLB tiene %d triángulos; el manifiesto dice %d" % (mid, tris, e["tris"]))
+        if n_meshes != len(names):
+            fails.append("%s: %d mallas; %d piezas (una malla por pieza)" % (mid, n_meshes, len(names)))
+        if doc.get("images") or doc.get("textures") or any("uri" in b for b in doc.get("buffers", [])):
+            fails.append("%s: con texturas o archivos aparte (tiene que ir solo, un color plano por material)" % mid)
+        nodes = doc.get("nodes", [])
+        node_names = sorted(n.get("name") for n in nodes if "mesh" in n)
+        if node_names != sorted(names):
+            fails.append("%s: nodos con malla %s; piezas %s" % (mid, node_names, sorted(names)))
+        for n in nodes:
+            if any(k in n for k in ("matrix", "rotation", "scale")):
+                fails.append("%s: el nodo %r gira o escala (sólo traslación: el pivote)" % (mid, n.get("name")))
+            if "mesh" in n:
+                p = next((p for p in e["parts"] if p["name"] == n.get("name")), None)
+                if p and any(abs(a - b) > 1e-3 for a, b in zip(n.get("translation", [0, 0, 0]), p["pivot"])):
+                    fails.append("%s/%s: el nodo está en %s; el pivote del manifiesto es %s"
+                                 % (mid, n.get("name"), n.get("translation", [0, 0, 0]), p["pivot"]))
+        if e["length"] <= 0 or e["height"] <= 0:
+            fails.append("%s: largo %r y alto %r tienen que ser positivos" % (mid, e["length"], e["height"]))
+        info.append("%s: %d piezas, %d/%d triángulos, %d materiales (%d emisivos), %d kB"
+                    % (mid, len(names), tris, budget, n_mats, n_glow, os.path.getsize(path) // 1024))
+    return label, "mascot-glb", fails, info, len(man["mascotas"])
+
+
 # --- Props del hero de la landing (T78): art/landing/3d/ y los stills ----------------------------
 LANDING_SUBDIR = os.path.join("landing", "3d")
 LANDING_TOOLS = os.path.join(HERE, "landing")
@@ -1521,6 +1633,7 @@ def main():
     batches.append([check_landing_3d(a.art)])   # art/landing/3d/ y los stills (T78)
     batches.append([check_decor_3d(a.art)])   # art/decor/3d/ (T101)
     batches.append([check_enemigos_3d(a.art)])   # art/enemigos/3d/ (plan 015, T174)
+    batches.append([check_mascotas_3d(a.art)])   # art/mascotas/3d/ (plan 015, T175)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:

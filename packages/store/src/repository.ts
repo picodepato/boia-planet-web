@@ -429,6 +429,13 @@ export interface ProgressApi {
    * `forbidden`.
    */
   buyCosmetic(cosmeticId: string): Promise<GrantResult>;
+  /**
+   * Concede un cosmético del catálogo sin cobrar (plan 015 T175): una fila
+   * `cosmetic` del libro con su `sourceRef` (`dev:atajo`, un premio del
+   * mundo…). Si ya se tiene, `duplicate`. Sólo en la copia local: no viaja al
+   * servidor como una compra o un logro.
+   */
+  grantCosmetic(cosmeticId: string, input: { sourceRef: string }): Promise<GrantResult>;
   /** Cosméticos con fila en el libro (comprados o ganados); los de base y umbral no. */
   cosmetics(): Promise<OwnedCosmetic[]>;
   /**

@@ -78,7 +78,7 @@ import { buildDecor } from './decor';
 import { DecorModel } from './decor-model';
 import { EnemyModel } from './enemy-models';
 import { Wildlife, waterClear } from './wildlife';
-import type { ShipDressing } from '../../../lib/barco/dressing';
+import type { MascotKind, ShipDressing } from '../../../lib/barco/dressing';
 import {
   Clouds,
   Confetti,
@@ -164,7 +164,10 @@ import {
   roadMarkers,
 } from './race-props';
 import { createWater } from './water';
+import { type Canoncito, createCanoncito } from './canoncito';
+import { MascotModelStore } from './mascot-models';
 import { MINIKRAKEN_WAVE_DISTANCE, type Minikraken, createMinikraken } from './minikraken';
+import { type Tortuga, createTortuga } from './tortuga';
 import { boatVisible, hitShake } from './survivors-props';
 import { SurvivorsView } from './survivors-view';
 import type { SurvivorsRun } from '../survivors';
@@ -479,10 +482,13 @@ export class Mar3D {
   private readonly water;
   private readonly boat: Boat;
   /** Cosméticos pintados (T40). */
-  private dressing: ShipDressing = { wakeTint: null, mascot: null };
-  /** La mascota de cubierta (T154) y su hueco en el casco, aparte del de la pasajera. */
-  private mascot: Minikraken | null = null;
+  private dressing: ShipDressing = { wakeTint: null, wakeStyle: 'espuma', mascot: null };
+  /** La mascota de cubierta (T154, T175) y su hueco en el casco, aparte del de la pasajera. */
+  private mascot: Minikraken | Canoncito | null = null;
   private readonly mascotSlot = new Group();
+  /** La Tortuga turbo (T175): nada detrás del barco, en la escena, no en cubierta. */
+  private tortuga: Tortuga | null = null;
+  private readonly mascotModels = new MascotModelStore();
   private mascotWave = false;
   private mascotCheck = 0;
   private readonly faces: FaceTextures;
@@ -1230,30 +1236,61 @@ export class Mar3D {
   setShipDressing(d: ShipDressing): void {
     this.dressing = d;
     this.wake.setTint(d.wakeTint);
+    this.wake.setStyle(d.wakeStyle);
+    this.opts.canvas.dataset.estela = d.wakeStyle;
     this.placeMascot();
   }
 
   /**
-   * La mascota de cubierta (plan 013 T154): va en el barco en todo /mar
+   * La mascota (plan 013 T154, plan 015 T175): va con el barco en todo /mar
    * (navegando, en las carreras y en el Cañón), animada, y no toca la física.
-   * Se rehace sólo si cambia. El lienzo lo cuenta en `data-mascota` (pruebas).
+   * El minikraken y el Cañoncito, en cubierta (el mismo hueco); la Tortuga
+   * turbo, nadando detrás. Se rehace sólo si cambia. El lienzo lo cuenta en
+   * `data-mascota` y, las de Blender, en `data-mascota-modelo` (pruebas).
    */
   private placeMascot(): void {
     const kind = this.dressing.mascot;
-    if (this.mascot && kind === 'minikraken') return;
+    if (this.mascotKind === kind) return;
     if (this.mascot) {
       this.mascotSlot.remove(this.mascot.group);
       this.mascot.dispose();
       this.mascot = null;
     }
+    if (this.tortuga) {
+      this.scene.remove(this.tortuga.group);
+      this.tortuga.dispose();
+      this.tortuga = null;
+    }
     if (kind === 'minikraken') {
       this.mascot = createMinikraken(this.quality);
       curveTree(this.mascot.group);
       this.mascotSlot.add(this.mascot.group);
-      this.opts.canvas.dataset.mascota = kind;
-    } else {
-      delete this.opts.canvas.dataset.mascota;
+    } else if (kind === 'canoncito') {
+      this.mascot = createCanoncito(this.quality, this.mascotModels.get('canoncito'));
+      curveTree(this.mascot.group);
+      this.mascotSlot.add(this.mascot.group);
+    } else if (kind === 'tortuga-turbo') {
+      this.tortuga = createTortuga(this.quality, this.mascotModels.get('tortuga-turbo'));
+      curveTree(this.tortuga.group);
+      this.scene.add(this.tortuga.group);
     }
+    if (kind) this.opts.canvas.dataset.mascota = kind;
+    else delete this.opts.canvas.dataset.mascota;
+    this.noteMascotModel();
+  }
+
+  /** La mascota puesta ahora (por si `dressing` cambia a la misma). */
+  private get mascotKind(): MascotKind | null {
+    if (this.tortuga) return 'tortuga-turbo';
+    if (!this.mascot) return null;
+    return this.mascot.group.name === 'canoncito' ? 'canoncito' : 'minikraken';
+  }
+
+  /** `data-mascota-modelo`: cómo va el modelo de Blender de la mascota puesta (si lo tiene). */
+  private noteMascotModel(): void {
+    const state = this.tortuga?.modelState ?? (this.mascot as Canoncito | null)?.modelState;
+    if (state) this.opts.canvas.dataset.mascotaModelo = state;
+    else delete this.opts.canvas.dataset.mascotaModelo;
   }
 
   /** ¿Hay un lugar cerca del barco? (la mascota saluda). Se mira dos veces por segundo. */
@@ -2022,6 +2059,9 @@ export class Mar3D {
     this.modelStore.destroy();
     this.castleModel.destroy();
     this.vecinoModel.destroy();
+    this.mascot?.dispose();
+    this.tortuga?.dispose();
+    this.mascotModels.destroy();
     for (const v of this.islandModels.values()) {
       v.motion?.dispose();
       v.motion = null;
@@ -3464,6 +3504,21 @@ export class Mar3D {
     const sternX = x + Math.cos(h) * this.sternX;
     const sternZ = z + Math.sin(h) * this.sternX;
     const boost = this.turboLeft > 0 || this.voyage ? 1.4 : 1;
+    if (this.tortuga) {
+      // Nada detrás de la popa por la estela; escondida mientras el barco vuela o es el avión.
+      this.tortuga.update(t, dt, {
+        x: sternX,
+        z: sternZ,
+        heading: h,
+        speed: toScene(speed) * boost,
+        quality: this.tortuga.quality,
+        reduced: this.reducedMotion,
+        hidden: fl !== null || plane,
+      });
+      if (this.opts.canvas.dataset.mascotaModelo !== this.tortuga.modelState) this.noteMascotModel();
+    } else if (this.mascot && 'modelState' in this.mascot) {
+      if (this.opts.canvas.dataset.mascotaModelo !== this.mascot.modelState) this.noteMascotModel();
+    }
     // Al levitar, sólo un rizo de espuma bajo el casco mientras está cerca del agua.
     const hovering = fl ? Math.max(0, 1 - this.air / 1.2) * 0.5 : 0;
     // En el aire de un salto (T73), sin estela.

@@ -1,0 +1,104 @@
+{
+ "status": "muestra",
+ "nota": "Generado por tools/blender/export_mascotas_glb.py desde tools/blender/mascotas/<modulo>.py. No editar.",
+ "unidades": "Blender: frente (+x del motor) a +X, que en glTF (y arriba) sigue siendo +x; suelo en y = 0; centro en el origen; unidades de la escena de /mar; cada pieza es un nodo con su pivote (traslación) y el motor la mueve",
+ "max_tris": 4500,
+ "mascotas": [
+  {
+   "id": "canoncito",
+   "file": "canoncito.glb",
+   "label": "Cañoncito",
+   "length": 0.88,
+   "height": 0.39,
+   "parts": [
+    {
+     "name": "base",
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 1136
+    },
+    {
+     "name": "barrel",
+     "pivot": [
+      0.0,
+      0.25,
+      0.0
+     ],
+     "tris": 1406
+    },
+    {
+     "name": "puff",
+     "pivot": [
+      0.33,
+      0.25,
+      0.0
+     ],
+     "tris": 400
+    }
+   ],
+   "tris": 2942,
+   "kb": 63,
+   "doc": "cañón de juguete sobre una cureña de madera con cuatro ruedas; tubo de hierro azulado con bandas y la franja naranja de BOIA, dos ojos grandes sobre la boca, mecha con chispa por detrás y una nube de humo en la boca que sólo se ve al disparar"
+  },
+  {
+   "id": "tortuga-turbo",
+   "file": "tortuga-turbo.glb",
+   "label": "Tortuga turbo",
+   "length": 1.26,
+   "height": 0.45,
+   "parts": [
+    {
+     "name": "body",
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 2238
+    },
+    {
+     "name": "fl",
+     "pivot": [
+      0.24,
+      0.1,
+      -0.3
+     ],
+     "tris": 260
+    },
+    {
+     "name": "fr",
+     "pivot": [
+      0.24,
+      0.1,
+      0.3
+     ],
+     "tris": 260
+    },
+    {
+     "name": "bl",
+     "pivot": [
+      -0.26,
+      0.08,
+      -0.27
+     ],
+     "tris": 260
+    },
+    {
+     "name": "br",
+     "pivot": [
+      -0.26,
+      0.08,
+      0.27
+     ],
+     "tris": 260
+    }
+   ],
+   "tris": 3278,
+   "kb": 75,
+   "doc": "tortuga marina verde con las placas del caparazón, el rayo naranja de BOIA pintado encima, gafas de aviador, sonrisa, dos tubos de escape por detrás y cuatro aletas que reman detrás del barco"
+  }
+ ]
+}

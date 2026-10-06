@@ -1,6 +1,9 @@
 import {
+  CANONCITO,
+  ESTELA_VORTICE,
   MINIKRAKEN,
   MemoryStorage,
+  TORTUGA_TURBO,
   SAMPLE_ACHIEVEMENTS,
   SAMPLE_COSMETICS,
   STORE_KEY,
@@ -12,6 +15,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACHIEVEMENT_READY_BODY } from '../lib/mundo/achievements';
+import { shipAt } from './mar-helpers';
 
 /**
  * La tienda «Barco» (T40, D-23 punto 1, O5), en el mar 3D: el
@@ -230,5 +234,119 @@ test('/mar: la mascota minikraken se gana, se equipa en Mi Barco y va en cubiert
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
   await expect(root).toHaveAttribute('data-ship-mascot', MINIKRAKEN);
   await expect(canvas).toHaveAttribute('data-mascota', 'minikraken');
+  expect(errors).toEqual([]);
+});
+
+/**
+ * Los premios del castillo y la carrera (plan 015 T175, decisión 16): con
+ * el atajo `?mascota=canoncito,tortuga-turbo&estela=vortice` son tuyos; en
+ * Mi Barco se equipan (una mascota a la vez) y el mar los pinta: el
+ * Cañoncito en cubierta y la Tortuga turbo detrás, con su modelo de Blender
+ * (`data-mascota-modelo` = `glb`, los GLB a 200), y la estela con el estilo
+ * `vortice`; al volver sin el atajo siguen puestos.
+ *
+ * Con RECORD_T175=<carpeta> deja ahí las capturas de la hoja de contacto:
+ * cada mascota con el barco en el mundo y la estela en marcha, por proyecto.
+ */
+test('/mar: el Cañoncito, la Tortuga turbo y la Estela del vórtice se ganan, se equipan y se ven', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const glbs: string[] = [];
+  page.on('response', (r) => {
+    const m = /\/api\/art\/mascotas\/3d\/([a-z-]+\.glb)$/.exec(r.url());
+    if (m) glbs.push(`${m[1]} ${r.status()}`);
+  });
+  const snap = async (name: string) => {
+    const dir = process.env.RECORD_T175;
+    if (!dir) return;
+    mkdirSync(dir, { recursive: true });
+    await page.screenshot({ path: path.join(dir, `${name}-${test.info().project.name}.png`) });
+  };
+  /**
+   * Navega con una flecha (y turbo) hasta que el barco se haya movido de verdad, y un poco más para
+   * que haya estela. Al este y al oeste del punto de partida hay mar abierto (al norte, la boia del
+   * tutorial habla y para el barco).
+   */
+  const sail = async (key: 'ArrowRight' | 'ArrowLeft', turbo = false) => {
+    // Más cerca del barco, que se vean la mascota y la estela.
+    for (let i = 0; i < 3; i++) await page.keyboard.press('+');
+    const from = await shipAt(page);
+    await page.keyboard.down(key);
+    if (turbo) await page.getByTestId('mar-turbo').click();
+    await expect
+      .poll(async () => {
+        const now = await shipAt(page);
+        return Math.hypot(now.x - from.x, now.y - from.y);
+      }, { timeout: 15_000 })
+      .toBeGreaterThan(60);
+    await page.waitForTimeout(1500);
+  };
+  await page.goto('/mar?mascota=canoncito,tortuga-turbo&estela=vortice');
+  const canvas = page.getByTestId('mar-canvas');
+  await expect(canvas).toBeVisible();
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+  const root = page.locator('main.mar');
+  await expect(canvas).not.toHaveAttribute('data-mascota', /.+/);
+  await expect(canvas).toHaveAttribute('data-estela', 'espuma');
+
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-barco').click();
+  const sheet = page.getByTestId('mar-tienda');
+  await expect(sheet).toBeVisible();
+  const shop = sheet.getByTestId('barco');
+  const canon = shop.getByTestId(`barco-mascota-${CANONCITO}`);
+  const turtle = shop.getByTestId(`barco-mascota-${TORTUGA_TURBO}`);
+  const vortex = shop.getByTestId(`barco-estela-${ESTELA_VORTICE}`);
+  for (const o of [canon, turtle, vortex]) await expect(o).not.toHaveAttribute('data-bloqueado', 'si');
+  // Cada mascota con su dibujo.
+  await expect(canon.locator('svg[data-mascota]')).toHaveCount(1);
+  await expect(turtle.locator('svg[data-mascota]')).toHaveCount(1);
+
+  await canon.click();
+  await expect(canon).toHaveAttribute('aria-checked', 'true');
+  await expect(root).toHaveAttribute('data-ship-mascot', CANONCITO);
+  await expect(canvas).toHaveAttribute('data-mascota', 'canoncito');
+  await expect(canvas).toHaveAttribute('data-mascota-modelo', 'glb', { timeout: 30_000 });
+  await vortex.click();
+  await expect(vortex).toHaveAttribute('aria-checked', 'true');
+  await expect(root).toHaveAttribute('data-ship-wake', ESTELA_VORTICE);
+  await expect(canvas).toHaveAttribute('data-estela', 'vortice');
+  await page.getByTestId('mar-tienda-cerrar').click();
+  await expect(sheet).toHaveCount(0);
+  // Sin el atajo siguen puestos. Navegando: la estela del vórtice detrás y el Cañoncito en
+  // cubierta (se vuelve a abrir el mar: tras cerrar Mi Barco el teclado no gobierna, como en las
+  // demás pruebas, que navegan desde la carga).
+  await page.goto('/mar');
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+  await expect(root).toHaveAttribute('data-ship-mascot', CANONCITO);
+  await expect(root).toHaveAttribute('data-ship-wake', ESTELA_VORTICE);
+  await expect(canvas).toHaveAttribute('data-mascota', 'canoncito');
+  await expect(canvas).toHaveAttribute('data-estela', 'vortice');
+  await expect(canvas).toHaveAttribute('data-mascota-modelo', 'glb', { timeout: 30_000 });
+  await sail('ArrowRight');
+  await snap('canoncito-estela');
+  await page.keyboard.up('ArrowRight');
+
+  // La tortuga ocupa la ranura: fuera el cañón, y nada detrás (también en turbo).
+  await page.getByTestId('mar-logros').click();
+  await page.getByTestId('mar-barco').click();
+  await turtle.click();
+  await expect(turtle).toHaveAttribute('aria-checked', 'true');
+  await expect(canon).toHaveAttribute('aria-checked', 'false');
+  await expect(canvas).toHaveAttribute('data-mascota', 'tortuga-turbo');
+  await expect(canvas).toHaveAttribute('data-mascota-modelo', 'glb', { timeout: 30_000 });
+  await page.getByTestId('mar-tienda-cerrar').click();
+  await page.goto('/mar');
+  await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+  await expect(root).toHaveAttribute('data-ship-mascot', TORTUGA_TURBO);
+  await expect(canvas).toHaveAttribute('data-mascota', 'tortuga-turbo');
+  await expect(canvas).toHaveAttribute('data-mascota-modelo', 'glb', { timeout: 30_000 });
+  await sail('ArrowLeft', true);
+  await snap('tortuga-turbo');
+  await page.keyboard.up('ArrowLeft');
+  // Cada GLB se pidió (y llegó) en cada carga del mar que lo llevaba puesto.
+  expect(new Set(glbs)).toEqual(new Set(['canoncito.glb 200', 'tortuga-turbo.glb 200']));
   expect(errors).toEqual([]);
 });

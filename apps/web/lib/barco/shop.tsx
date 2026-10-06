@@ -5,7 +5,7 @@ import { type ReactNode, useState } from 'react';
 import { requireAccount } from '../account/gate';
 import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
-import { WAKE_TINTS, hexOf } from './dressing';
+import { wakeSwatch } from './dressing';
 import { MascotIcon } from './mascot-icon';
 import {
   type AchievementTitles,
@@ -250,10 +250,7 @@ export function BarcoShopView({
         slot="wake"
         none={SHOP_COPY.plainWake}
         items={rows.wakes}
-        swatch={(id) => {
-          const t = WAKE_TINTS[id];
-          return t !== undefined ? hexOf(t) : null;
-        }}
+        swatch={wakeSwatch}
         text={text}
         on={on}
         buy={buyButton}
