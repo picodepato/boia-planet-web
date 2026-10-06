@@ -520,10 +520,8 @@ describe('construir, mejorar y vender en la partida', () => {
 // --- El bot que construye -----------------------------------------------------------
 
 /**
- * Números de referencia del bot (semilla 7, T159; T165 equilibra): Tranquila
- * 5 y 10 min aguanta con el 100 %; Normal 5 min aguanta con el 75 % (le
- * llega un miniboss), 10 min con el 100 %; Tormenta cae hacia los 130–160 s
- * con 3–4 islas (le falta dinero al principio).
+ * Lo mínimo del bot que construye; el equilibrio entero (duraciones,
+ * dificultades, semillas, estrategias) está en `defense-balance.test.ts`.
  */
 describe('el bot que construye', () => {
   function play(difficulty: 'tranquila' | 'normal', runMin: 5 | 7 | 10, seed = 7) {

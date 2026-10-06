@@ -43,7 +43,11 @@ export const CASTLE_PARAMS = {
   difficulty: CANON_PARAMS.difficulty,
   /** `duracion=5|7|10`: los minutos de la partida. */
   duration: 'duracion',
-  /** `islas=1`: empezar con las siete islas construidas a nivel 3 (vista y rendimiento). */
+  /**
+   * `islas=1`: empezar con las siete islas construidas a nivel 3 (vista y
+   * rendimiento); `islas=lleno` (T165): la arena llena de islas a nivel 3,
+   * todas las que caben (sin tope), para medir el peor caso.
+   */
   islands: 'islas',
   /** `monedas=N`: N monedas más en el monedero al empezar (pruebas del HUD, T161). */
   coins: 'monedas',
@@ -70,6 +74,8 @@ export interface CastleShortcut {
   difficulty: DifficultyId | null;
   runMin: DefenseRunMin | null;
   islands: boolean;
+  /** `islas=lleno`: todas las islas que caben en la arena, no sólo siete. */
+  fullArena: boolean;
   /** Monedas de más al empezar (`monedas=`), o null. */
   coins: number | null;
   /** `vencer=1`: empezar a punto de aguantar. */
@@ -97,7 +103,8 @@ export function castleShortcut(
     seed: Number.isFinite(seed) && seed > 0 ? seed : null,
     difficulty: asDifficulty(q.get(CASTLE_PARAMS.difficulty)),
     runMin,
-    islands: q.get(CASTLE_PARAMS.islands) === '1',
+    islands: ['1', 'lleno'].includes(q.get(CASTLE_PARAMS.islands) ?? ''),
+    fullArena: q.get(CASTLE_PARAMS.islands) === 'lleno',
     coins: Number.isFinite(coins) && coins > 0 ? Math.min(coins, 99999) : null,
     win: q.get(CASTLE_PARAMS.win) === '1',
     offer: q.get(CASTLE_PARAMS.offer) === '1',
@@ -140,6 +147,24 @@ export function devTowerSpots(
 }
 
 /**
+ * Sitios para el atajo `islas=lleno` (T165): una rejilla por toda la arena
+ * donde la regla de construir deja poner una isla junto a las ya puestas
+ * (sin contar el avión ni el dinero): todas las que caben. Siempre los mismos.
+ */
+export function devArenaSpots(
+  game: Pick<DefenseGame, 'path' | 'config'>,
+): { x: number; y: number }[] {
+  const { path, config } = game;
+  const out: { x: number; y: number }[] = [];
+  const step = config.islandRadius / 2;
+  const r = config.arenaRadius;
+  for (let y = -r; y <= r; y += step)
+    for (let x = -r; x <= r; x += step)
+      if (defenseSiteReason(config, path, out, x, y) === null) out.push({ x, y });
+  return out;
+}
+
+/**
  * La isla que se está colocando (T161): su tipo y dónde va respecto al
  * avión (u de la partida). Al elegirla va justo debajo del avión; un toque en
  * el agua la mueve, dentro del anillo de construir. Sigue al avión.
@@ -170,6 +195,8 @@ export interface DefenseRunOptions {
   startAtS?: number;
   /** Atajo `islas=1`: las siete islas a nivel 3 desde el principio (no entra en el ranking). */
   devIslands?: boolean;
+  /** Atajo `islas=lleno`: todas las islas que caben, a nivel 3, por turno de tipo. */
+  devFullArena?: boolean;
   /** Atajo `monedas=`: monedas de más al empezar (no entra en el ranking). */
   devCoins?: number;
   /** Atajo `vencer=1`: empezar a `DEV_WIN_LEAD_S` del final (no entra en el ranking). */
@@ -246,7 +273,13 @@ export class DefenseRun {
     const startAtS = devWin
       ? Math.max(opts.startAtS ?? 0, durationS - DEV_WIN_LEAD_S)
       : (opts.startAtS ?? 0);
-    this.devStart = opts.devStart === true || dev || devCoins > 0 || devWin || startAtS > 0;
+    this.devStart =
+      opts.devStart === true ||
+      dev ||
+      opts.devFullArena === true ||
+      devCoins > 0 ||
+      devWin ||
+      startAtS > 0;
     this.game = createDefense(this.config, opts.seed, {
       ...(opts.runMin ? { runMin: opts.runMin } : {}),
       ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
@@ -254,7 +287,12 @@ export class DefenseRun {
       ...(this.devStart ? { unranked: true } : {}),
     });
     if (devCoins > 0) this.game.refund(devCoins);
-    if (dev) {
+    if (opts.devFullArena === true) {
+      devArenaSpots(this.game).forEach((p, i) => {
+        const kind = DEFENSE_TOWER_KINDS[i % DEFENSE_TOWER_KINDS.length]!;
+        this.game.addTower(kind, p.x, p.y, { level: 3 });
+      });
+    } else if (dev) {
       const spots = devTowerSpots(this.game);
       DEFENSE_TOWER_KINDS.forEach((kind: DefenseTowerKind, i) => {
         const p = spots[i];

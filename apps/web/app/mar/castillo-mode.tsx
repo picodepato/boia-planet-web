@@ -213,6 +213,7 @@ export function useCastleMode({
         difficulty: how.difficulty,
         startAtS: sc?.t ?? 0,
         devIslands: sc?.islands ?? false,
+        devFullArena: sc?.fullArena ?? false,
         ...(sc?.coins ? { devCoins: sc.coins } : {}),
         devWin: sc?.win ?? false,
         // Cualquier atajo (también `duracion=` o `dificultad=` solos): fuera del ranking.

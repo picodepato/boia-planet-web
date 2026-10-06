@@ -4,6 +4,32 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 014 T165: Close: balance, performance, full e2e, docs, Álvaro draft
+
+Qué existe:
+- **Equilibrio** (`packages/engine/src/defense/config.ts`, `DEFENSE_CONFIG_VERSION` 2 → 3): Benidorm más flojo (daño 98/160/245 → 70/115/175, alcance 650/700/760 → 560/600/650: era la mejor en todo Normal), monedero inicial 120 → 160 (en Tormenta el bot caía antes de 160 s sin dinero para islas), aguante +25 %/min (antes +20 %), Normal aguante ×1,15 (antes ×1: 7/10 min salían al 100 %), Tormenta aguante ×1,2, enemigos ×1,3, golpe ×1,3 (antes 1,5/1,4/1,4). La migración sin aplicar `20261006100300_castle_ranking.sql` siembra `config_version` 3 y los topes nuevos de Tormenta (6415 / 11184 / 21288), en paridad con `castleMaxKillPoints`.
+- **Prueba de equilibrio** `packages/engine/src/defense/defense-balance.test.ts` (6 pruebas): Tranquila oro en todo; Normal se gana pero el castillo recibe golpes y alguna construcción de una isla cae o acaba ≤ 50 %; Tormenta no siempre se gana, nunca cae antes de 160 s y es más dura que Normal; ninguna construcción de una sola isla (+ Ibiza) iguala a la sencilla en todas las casillas; cada isla está en alguna de las mejores; Ibiza se paga en ≤ 2 min por nivel y la del bot lo cumple. `bots.ts` exporta `BUILDING_BOT_ORDER`/`BUILDING_BOT_REPEAT`.
+- **Curvas del bot** (sencilla, 6 semillas; vida al final; caídas en s): Tranquila 5/7/10 → 6/6 oro, 100 %. Normal 5 → 6/6, 70–75 % (curva 100,100,100,72,72); 7 → 6/6, 50–75 % (100,100,100,75,75,50,50); 10 → 6/6, 69–97 % (100,100,94,94,69…). Tormenta 5 → 4/6, 26–57 %, caídas 217 s (100,100,88,56,56); 7 → 3/6, 6–36 %, caídas 236–240 s; 10 → 3/6, 29–36 %, caídas 248 s. Estrategias (semilla 7): Ibiza + una isla gana en Tranquila; en Normal cae o acaba tocada en 5/7 min y cae siempre en 10; en Tormenta sólo Halloween (5 y 7 min), Faro e Isla del Sonido (5 min) aguantan. Ibiza: 70 s a nivel 1.
+- **Rendimiento en `baja`**: atajo nuevo `islas=lleno` (`devArenaSpots` en `apps/web/app/mar/castillo.ts`, `DefenseRun.devFullArena`): la arena llena de islas a nivel 3 (109), nunca rankea. e2e nuevo «arena: rendimiento en `baja` con la arena llena de islas a nivel 3, el Kraken saliendo del vórtice y el sonido»: p50 16,7 / p95 33,4 / peor 33,5 ms (CPU 4×: 33,3 / 33,4 / 50). El de siete islas en el pico de 10 min Tormenta: p95 33,4 ms (CPU 4×: peor 50). Sin puntos calientes: nada que arreglar.
+- **e2e «construir…»** determinista: las monedas se leen justo antes de confirmar cada isla (no antes del vuelo, que con carga sumaba caídas de más de media isla).
+- **Arreglos de la suite entera** (fallaban sin relación con el castillo, de tareas anteriores del plan): `mar3d.ts` llamaba `slot.add()` vacío en cada isla sin `keep` (T166) → «THREE.Object3D.add: object not an instance» en consola (las dos e2e del Cañón con `t=` que miran la consola); la fauna no se apagaba con movimiento reducido cambiado en caliente (el `change` de `matchMedia` del motor no llegaba): ahora se mira cada fotograma (`Wildlife.isReduced`); el «Tablón del faro» desplegado tapaba el botón del menú en el móvil (`mar.css`: `max-height` deja libre la columna); el rótulo ancho de Nochevieja en 375 px rozaba por 1 px la columna de mandos de la izquierda y se apagaba: `labels.ts` `placeClearOfHud` lo desliza un poco hacia el otro lado (≤ ¼ de su ancho, punta sobre su isla) antes de bajarlo; `PinLook.x` nuevo, prueba unitaria nueva.
+- **Docs**: `docs/spec/estado.md` (párrafo «Alcance nuevo sin REQ todavía» para «Defensa del Castillo»; notas de REQ-MUN-026 y REQ-AVE-035 al día; REQ-AVE-036 ya retirado por T157); `docs/propuestas/2026-10-06-castillo-guia-prueba.md` (con «Notas» vacía) y `docs/propuestas/2026-10-06-castillo-decision-alvaro.md` (faro sin juego y tablón, «Vigilancia del faro» y su logro fuera, el juego nuevo y su REQ, nombres y textos, premio en el mundo o logros: opciones A/B/C).
+
+Comandos:
+- `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` → exit 0, 3 archivos, 56 pruebas
+- `pnpm exec vitest run apps/web/app/mar/castillo apps/web/lib/mundo/ranking-castle` → exit 0
+- `E2E_PORT=4972 pnpm e2e mar-castillo.spec.ts mar-tablon.spec.ts --workers=2` → 24 passed, 2 skipped (rendimiento sólo en móvil), exit 0
+- `E2E_PORT=4973 pnpm e2e --workers=2` (primera) → exit 1: 483 passed, 9 failed, 92 skipped (Cañón consola, fauna, tablón/menú, rótulo de Nochevieja, Los Rápidos); arreglados los cuatro primeros; Los Rápidos, solo → passed
+- `E2E_PORT=4978 pnpm e2e --workers=2` (segunda, con los arreglos) → exit 1: 490 passed, 2 failed, 92 skipped: WhatsApp en móvil (el barco paró a 80,3 u, tope 80) y la entrada con `?utm_source=` en escritorio (tiempos con carga); `pnpm e2e world-community.spec.ts:68 intro.spec.ts:259 --workers=1` → 4 passed, exit 0
+- `pnpm e2e mar-rotulos world-community mar-tablon mar-hud --workers=2` → 30 passed; `mar-wildlife` → 6 passed; `mar-canon.spec.ts:325 :382` → 4 passed
+- `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0
+- Test command: vitest → exit 0, 202 archivos, 1911 pruebas; `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0 (187,0 kB, presupuesto OK); `pnpm typecheck` → exit 0
+
+Pendiente:
+- La suite e2e entera no sale con exit 0 de una pasada en esta máquina (dos o tres pruebas de pilotaje o de tiempos caen con carga y pasan solas), como en T156.
+- Respuesta de Álvaro al borrador (D-NN que retire REQ-AVE-036, REQ nuevo del castillo, premio/logros).
+- Aplicar en Supabase las migraciones del faro retirado y del ranking del castillo (Hernán).
+
 ## 2026-10-06 — plan 014 T163: Castle ranking per run length × difficulty
 
 Codex did the work (wrapper verified).

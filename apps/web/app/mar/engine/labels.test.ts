@@ -76,6 +76,21 @@ describe('los mandos', () => {
     expect(looks[0]!.on).toBe(false);
   });
 
+  it('un mando a un lado (la columna de la izquierda) lo desliza un poco, sin apagarlo (T165)', () => {
+    // Un rótulo ancho, centrado, que roza por 1 px una columna de mandos a la izquierda.
+    const p = pin({ x: 187, y: 200, w: 221, body: { left: 60, top: 40, right: 315, bottom: 260 } });
+    const left: Rect = { left: 19, top: 146, right: 73, bottom: 262 };
+    expect(intersects(pinBox(p), left, HUD_MARGIN)).toBe(true);
+    const [look] = layoutPins([p], [left]);
+    expect(look!.on).toBe(true);
+    expect(look!.y).toBe(p.y);
+    expect(look!.x).toBeGreaterThan(p.x);
+    expect(look!.x - p.x).toBeLessThanOrEqual(p.w / 4);
+    expect(intersects(pinBox({ ...p, x: look!.x }), left, HUD_MARGIN)).toBe(false);
+    // Sin isla debajo no se desliza: se apaga como antes.
+    expect(layoutPins([{ ...p, body: null }], [left])[0]!.on).toBe(false);
+  });
+
   it('ningún rótulo encendido pisa un mando', () => {
     const hud = [BAR, { left: 300, top: 40, right: 400, bottom: 80 }];
     const pins = [
@@ -86,7 +101,7 @@ describe('los mandos', () => {
     const looks = layoutPins(pins, hud);
     looks.forEach((l, i) => {
       if (!l.on) return;
-      const box = pinBox({ ...pins[i]!, y: l.y }, l.scale);
+      const box = pinBox({ ...pins[i]!, x: l.x, y: l.y }, l.scale);
       for (const h of hud) expect(intersects(box, h, HUD_MARGIN)).toBe(false);
     });
     expect(looks.filter((l) => l.on).length).toBeGreaterThan(0);

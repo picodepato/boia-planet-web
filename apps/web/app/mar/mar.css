@@ -2406,6 +2406,12 @@ button.mar-logros__carnet {
 /* El «Tablón del faro» (plan 014 T157): tres tarjetas clavadas en el tablón,
    cada una con su rumbo. En el móvil, una debajo de otra; en escritorio, la
    ficha se ensancha y van en tres columnas. */
+
+/* Desplegado es alto: que no tape el botón del menú (54 px bajo el minimapa,
+   T165); lo que no quepa se desplaza dentro de la ficha. */
+.mar-sheet.is-tablon {
+  max-height: calc(100% - var(--top-space) - 54px - 10px - var(--above-bar));
+}
 .mar-tablon {
   list-style: none;
   margin: 10px 0 2px;

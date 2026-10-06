@@ -31,8 +31,11 @@ import {
  * reglas sube `DEFENSE_CONFIG_VERSION`. Todo es `muestra`.
  */
 
-/** Sube con cada cambio de reglas: el resultado y el ranking la llevan. */
-export const DEFENSE_CONFIG_VERSION = 2;
+/**
+ * Sube con cada cambio de reglas: el resultado y el ranking la llevan. 3: el
+ * equilibrio de T165 (Benidorm, monedero, dificultades, crecimiento).
+ */
+export const DEFENSE_CONFIG_VERSION = 3;
 
 /** Paso fijo de la simulación (s): el del Cañón. */
 export const DEFENSE_STEP_S = SURVIVORS_STEP_S;
@@ -416,14 +419,14 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 130,
         upgradeCost: [110, 170],
         levels: [
-          { range: 650, damage: 98, cooldownS: 3 },
-          { range: 700, damage: 160, cooldownS: 2.6 },
-          { range: 760, damage: 245, cooldownS: 2.2 },
+          { range: 560, damage: 70, cooldownS: 3 },
+          { range: 600, damage: 115, cooldownS: 2.6 },
+          { range: 650, damage: 175, cooldownS: 2.2 },
         ],
       },
     },
   },
-  startCoins: 120,
+  startCoins: 160,
   plane: {
     maxSpeed: 300,
     acceleration: 900,
@@ -461,16 +464,16 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     normal: {
       id: 'normal',
       i18nKey: 'survivors.dificultad.normal',
-      enemyHp: 1,
+      enemyHp: 1.15,
       enemyCount: 1,
       castleDamage: 1,
     },
     tormenta: {
       id: 'tormenta',
       i18nKey: 'survivors.dificultad.tormenta',
-      enemyHp: 1.5,
-      enemyCount: 1.4,
-      castleDamage: 1.4,
+      enemyHp: 1.2,
+      enemyCount: 1.3,
+      castleDamage: 1.3,
     },
   },
   waves: {
@@ -479,7 +482,7 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     baseCount: 5,
     countPerWave: 1,
     spacingS: 0.7,
-    hpGrowthPerMinute: 0.2,
+    hpGrowthPerMinute: 0.25,
     quietTailS: 20,
     mix: [
       { kind: 'piranha', fromFrac: 0, weight: 4 },

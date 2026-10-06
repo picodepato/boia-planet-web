@@ -45,7 +45,8 @@ export interface BuildingBotOptions {
   coverRadius?: number;
 }
 
-const DEFAULT_ORDER: readonly DefenseTowerKind[] = [
+/** El orden de la construcción sencilla (todas las islas) y lo que repite después. */
+export const BUILDING_BOT_ORDER: readonly DefenseTowerKind[] = [
   'ultima',
   'tienda',
   'cala',
@@ -54,7 +55,13 @@ const DEFAULT_ORDER: readonly DefenseTowerKind[] = [
   'fotos',
   'faro',
 ];
-const DEFAULT_REPEAT: readonly DefenseTowerKind[] = ['cala', 'allday', 'ultima', 'fotos', 'faro'];
+export const BUILDING_BOT_REPEAT: readonly DefenseTowerKind[] = [
+  'cala',
+  'allday',
+  'ultima',
+  'fotos',
+  'faro',
+];
 
 /**
  * Un jugador sencillo que construye. Al empezar puntúa una rejilla de sitios
@@ -71,8 +78,8 @@ const DEFAULT_REPEAT: readonly DefenseTowerKind[] = ['cala', 'allday', 'ultima',
  * Sin nada que hacer, persigue al más adelantado como `chasePlaneBot`.
  */
 export function buildingBot(cfg: DefenseConfig, opts: BuildingBotOptions = {}): DefenseBot {
-  const order = opts.order ?? DEFAULT_ORDER;
-  const repeat = opts.repeat ?? DEFAULT_REPEAT;
+  const order = opts.order ?? BUILDING_BOT_ORDER;
+  const repeat = opts.repeat ?? BUILDING_BOT_REPEAT;
   const coverR = opts.coverRadius ?? 230;
   const path = buildDefensePath(cfg.path, cfg.castle.radius);
 

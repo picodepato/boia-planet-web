@@ -10,6 +10,7 @@ import {
   DEV_WIN_LEAD_S,
   DefenseRun,
   castleShortcut,
+  devArenaSpots,
   devTowerSpots,
   withoutCastleShortcut,
 } from './castillo';
@@ -35,6 +36,7 @@ describe('el atajo `?minijuego=castillo`', () => {
       difficulty: 'tormenta',
       runMin: 10,
       islands: true,
+      fullArena: false,
       coins: null,
       win: false,
       offer: false,
@@ -72,6 +74,26 @@ describe('las islas del atajo `islas=1`', () => {
       const others = spots.filter((_, j) => j !== i);
       expect(defenseSiteReason(DEFENSE_CONFIG, game.path, others, p.x, p.y)).toBeNull();
     });
+  });
+
+  it('`islas=lleno`: la arena llena (todas las de la rejilla), sin pisarse ni pisar el camino', () => {
+    expect(castleShortcut('?minijuego=castillo&islas=lleno', env)).toMatchObject({
+      islands: true,
+      fullArena: true,
+    });
+    const run = new DefenseRun({ seed: 7, quality: 'baja', devFullArena: true });
+    const s = run.snapshot();
+    const spots = devArenaSpots(run.game);
+    expect(s.towers.length).toBe(spots.length);
+    expect(s.towers.length).toBeGreaterThan(DEFENSE_TOWER_KINDS.length * 4);
+    expect(new Set(s.towers.map((t) => t.kind))).toEqual(new Set(DEFENSE_TOWER_KINDS));
+    expect(s.towers.every((t) => t.level === 3)).toBe(true);
+    s.towers.forEach((t, i) => {
+      const others = s.towers.filter((_, j) => j !== i);
+      expect(defenseSiteReason(DEFENSE_CONFIG, run.game.path, others, t.x, t.y)).toBeNull();
+    });
+    run.quit();
+    expect(run.game.result()?.ranked).toBe(false);
   });
 
   it('la partida empieza con las siete a nivel 3 y no entra en el ranking', () => {

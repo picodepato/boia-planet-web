@@ -2087,7 +2087,8 @@ export class Mar3D {
           });
         } else if (cat === 'isla') {
           const slot = modelSlot(fallback);
-          slot.add(...keep);
+          // Sin nada que guardar, nada: `add()` vacío avisa en la consola (T165).
+          if (keep.length) slot.add(...keep);
           g.add(slot);
           this.islandModels.set(id, {
             slot,
@@ -3489,6 +3490,9 @@ export class Mar3D {
     this.routeLine.update(this.zoom);
     this.confetti.update(dt);
     this.clouds.update(dt, cam.y, { x: fx, z: fz }, P);
+    // El aviso de `change` de la preferencia no siempre llega (T165: con la
+    // preferencia cambiada en caliente, la fauna seguía): se mira cada fotograma.
+    if (this.reducedMotion !== this.wildlife.isReduced) this.onWildlifeMotion();
     this.wildlife.update(dt, {
       ship: { x, z },
       focus: { x: fx, z: fz },
@@ -3932,7 +3936,7 @@ export class Mar3D {
         p.vis = true;
         p.el.classList.add('is-on');
       }
-      p.el.style.transform = `translate3d(${s.x.toFixed(1)}px, ${look.y.toFixed(1)}px, 0) scale(${look.scale.toFixed(3)})`;
+      p.el.style.transform = `translate3d(${look.x.toFixed(1)}px, ${look.y.toFixed(1)}px, 0) scale(${look.scale.toFixed(3)})`;
       const key = `${far ? 'm' : ''}${s.horizon ? 'h' : ''}${look.behind ? 'b' : ''}${look.alpha.toFixed(2)}`;
       if (key !== p.look) {
         p.look = key;

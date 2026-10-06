@@ -65,6 +65,8 @@ export interface PinSight {
 /** Cómo se pone: si se ve, dónde va su punta (px), su opacidad y su escala (desde la punta). */
 export interface PinLook {
   on: boolean;
+  /** La punta en pantalla (px): `x` sólo cambia si se desliza para librar un mando de un lado. */
+  x: number;
   y: number;
   alpha: number;
   scale: number;
@@ -104,11 +106,44 @@ export const farness = (p: Pick<PinSight, 'depth' | 'horizon'>): number =>
  * cabe, null: no se enseña.
  */
 export function clearOfHud(p: PinSight, scale: number, hud: readonly Rect[]): number | null {
+  return placeClearOfHud(p, scale, hud)?.y ?? null;
+}
+
+/**
+ * Como `clearOfHud`, pero si lo que pisa es un mando que queda a un lado de
+ * la punta (los de la izquierda en el móvil), antes de bajar más prueba a
+ * deslizar el rótulo hacia el otro lado, poco (un cuarto de su ancho como
+ * mucho) y con la punta aún sobre su isla (T165: un rótulo ancho, centrado
+ * en un móvil de 375 px, rozaba por 1 px la columna de la izquierda y se
+ * apagaba).
+ */
+export function placeClearOfHud(
+  p: PinSight,
+  scale: number,
+  hud: readonly Rect[],
+): { x: number; y: number } | null {
   let y = p.y;
+  const w = p.w * scale;
   for (let k = 0; k < 4; k++) {
     const box = pinBox({ ...p, y }, scale);
     const hit = hud.find((r) => intersects(box, r, HUD_MARGIN));
-    if (!hit) return y;
+    if (!hit) return { x: p.x, y };
+    if (p.body) {
+      const nx =
+        hit.right < p.x
+          ? hit.right + HUD_MARGIN + w / 2 + 1
+          : hit.left > p.x
+            ? hit.left - HUD_MARGIN - w / 2 - 1
+            : null;
+      if (
+        nx !== null &&
+        Math.abs(nx - p.x) <= w / 4 &&
+        nx >= p.body.left &&
+        nx <= p.body.right &&
+        !hud.some((r) => intersects(pinBox({ ...p, x: nx, y }, scale), r, HUD_MARGIN))
+      )
+        return { x: nx, y };
+    }
     const below = hit.bottom + HUD_MARGIN + p.h * scale + PIN_TIP + 1;
     if (!p.body || below <= y || below > p.body.bottom) return null;
     y = below;
@@ -125,6 +160,7 @@ export function clearOfHud(p: PinSight, scale: number, hud: readonly Rect[]): nu
 export function layoutPins(pins: readonly PinSight[], hud: readonly Rect[]): PinLook[] {
   const out: PinLook[] = pins.map((p) => ({
     on: false,
+    x: p.x,
     y: p.y,
     alpha: 1,
     scale: 1,
@@ -139,17 +175,25 @@ export function layoutPins(pins: readonly PinSight[], hud: readonly Rect[]): Pin
     const far = farness(p);
     let scale = 1 - (1 - FAR_SCALE) * far;
     let alpha = 1 - (1 - FAR_ALPHA) * far;
-    let y = clearOfHud(p, scale, hud);
-    const behind = y !== null && taken.some((r) => intersects(pinBox({ ...p, y: y! }, scale), r));
+    let at = placeClearOfHud(p, scale, hud);
+    const behind = at !== null && taken.some((r) => intersects(pinBox({ ...p, ...at! }, scale), r));
     if (behind) {
       scale = Math.min(scale, BEHIND_SCALE);
       alpha = Math.min(alpha, BEHIND_ALPHA);
-      y = clearOfHud(p, scale, hud);
+      at = placeClearOfHud(p, scale, hud);
     }
-    const on = p.label !== false && y !== null && (!behind || p.always);
-    out[i] = { on, y: y ?? p.y, alpha, scale, behind, lowered: y !== null && y !== p.y };
+    const on = p.label !== false && at !== null && (!behind || p.always);
+    out[i] = {
+      on,
+      x: at?.x ?? p.x,
+      y: at?.y ?? p.y,
+      alpha,
+      scale,
+      behind,
+      lowered: at !== null && at.y !== p.y,
+    };
     if (p.body) taken.push(p.body);
-    if (on && !behind) taken.push(pinBox({ ...p, y: y! }, scale));
+    if (on && !behind) taken.push(pinBox({ ...p, ...at! }, scale));
   }
   return out;
 }

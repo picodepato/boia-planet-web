@@ -188,6 +188,10 @@ export class Wildlife {
     return this.hidden;
   }
 
+  get isReduced(): boolean {
+    return this.reduced;
+  }
+
   setReducedMotion(reduced: boolean): void {
     this.reduced = reduced;
     if (reduced) this.clear();

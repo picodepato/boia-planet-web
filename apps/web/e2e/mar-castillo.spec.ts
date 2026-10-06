@@ -200,6 +200,47 @@ test('arena: rendimiento en `baja` con el pico de la partida de 10 min y las sie
   expect(errors).toEqual([]);
 });
 
+test('arena: rendimiento en `baja` con la arena llena de islas a nivel 3, el Kraken saliendo del vórtice y el sonido', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'mobile', 'se mide una vez, en el teléfono');
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 2 });
+  });
+  // T165: `islas=lleno`, todas las islas que caben (sin tope), a nivel 3; el
+  // Kraken (el último boss de la partida de 10 min) sale a su fracción.
+  const run = DEFENSE_CONFIG.runs[10];
+  const kraken = run.bosses.find((b) => b.kind === 'kraken')!;
+  const krakenS = Math.round(kraken.atFrac * run.durationS);
+  const errors = await openMar(
+    page,
+    `?minijuego=castillo&duracion=10&dificultad=tormenta&t=${krakenS - 4}&islas=lleno&seed=7`,
+  );
+  await expect(game(page)).toHaveAttribute('data-calidad', 'baja');
+  const full = Number(await game(page).getAttribute('data-islas'));
+  expect(full).toBeGreaterThan(DEFENSE_TOWER_KINDS.length * 4);
+  await expect(canvas(page)).toHaveAttribute('data-arena-islas', String(full));
+  // El sonido encendido: el primer gesto (una tecla) lo desbloquea.
+  await page.keyboard.press('ArrowLeft');
+  await expect(game(page)).toHaveAttribute('data-sonido', 'activo', { timeout: 15_000 });
+  // El Kraken sale del vórtice (las islas lo reciben en el camino).
+  await expect
+    .poll(async () => (await canvas(page).getAttribute('data-arena-tipos')) ?? '', {
+      timeout: 120_000,
+      intervals: [250],
+    })
+    .toContain('kraken');
+  const free = await measureFrames(page, info, 'arena llena, sin limitar la CPU');
+  expect(free.p95, 'percentil 95 del tiempo por fotograma (ms)').toBeLessThanOrEqual(
+    PERF_P95_MAX_MS,
+  );
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await measureFrames(page, info, 'arena llena, CPU 4×');
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  expect(errors).toEqual([]);
+});
+
 // --- El HUD (T161): construir, colocar, mejorar, vender, la pausa ---------------------
 
 type Box = { x: number; y: number; width: number; height: number };
@@ -329,7 +370,6 @@ test('construir: cada una de las siete islas, y encima del camino no se puede (r
   const spots = roomySpots(kinds.length);
   expect(spots).toHaveLength(kinds.length);
   for (const [i, kind] of kinds.entries()) {
-    const before = await coins(page);
     if (i === 0) {
       await page.getByTestId('mar-castillo-construir').click();
       await page.locator(`[data-testid="mar-castillo-isla"][data-isla="${kind}"]`).click();
@@ -342,11 +382,14 @@ test('construir: cada una de las siete islas, y encima del camino no se puede (r
     await flyTo(page, spots[i]!);
     await expect(placing(page)).toHaveAttribute('data-valido', 'si');
     await expect(canvas(page)).toHaveAttribute('data-arena-colocar', 'ok');
+    // Las monedas justo antes de confirmar (no antes del vuelo: con la máquina
+    // cargada el vuelo es lento y las caídas de mientras suman más que media isla).
+    const before = await coins(page);
     if (i % 2) await page.keyboard.press('Enter');
     else await page.getByTestId('mar-castillo-colocar-si').click();
     await expect.poll(() => islands(page)).toBe(i + 1);
     await expect(placing(page)).toHaveCount(0);
-    // Cobrada (las caídas mientras tanto suman algo).
+    // Cobrada (las caídas del segundo de confirmar suman poco).
     expect(await coins(page)).toBeLessThan(before - DEFENSE_CONFIG.towers.kinds[kind].cost / 2);
   }
   await expect(canvas(page)).toHaveAttribute('data-arena-islas', String(kinds.length));
