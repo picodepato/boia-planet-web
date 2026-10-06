@@ -95,7 +95,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: seven towers with levels 1–3, build rule (ring, path, vortex, overlap), upgrade, sell 60 %; DEFENSE_CONFIG_VERSION 2; bot holds Tranquila with gold, Normal 5 min at 75 %, falls in Tormenta · 31ad326
 
 ## T160 — The 3D arena: sinking, higher camera, path buoys, enemies, islands and the plane
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T157, T158
@@ -111,10 +111,10 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - unit tests: vortex placed at the path's start, on the open-sea side of the arena, at a minimum distance from Boia 7 and clear of the race lines (legs Boia 6 → 7 and 7 → 8), and removed on exit; sinking state and restore; camera pose for the arena; barrier placement along both sides of the path (no gaps, never on the castle); island normalization (all seven kinds give the same footprint within 5 % at each level, level 3 = 1.2× level 1, footprint matches the sim's radius) → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "arena"` (start with a test shortcut: islands hidden, castle visible, enemies on the path, plane moves; leaving restores the world) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: 3D arena in engine/defense-*.ts: world sinks, top-down camera, barriers, lilac/black vortex along CASTLE_OPEN_SEA_BEARING, Cañón enemies, plane, normalized islands with effects; baja p95 33 ms at the 10-min Tormenta peak with 7 level-3 islands · a3eb373
 
 ## T161 — HUD and controls: Construir, placing, Mejorar/Vender, life, time, coins
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T159, T160
@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T160: arena rotated in the view (`arenaFrame`, vortex along CASTLE_OPEN_SEA_BEARING), sim config untouched; planet wrap centred on the castle in the arena; camera elevation 1.2 rad, landscape shows the whole arena, portrait full height and 3/4 width following the plane; boat restored to its pre-game spot on exit; built islands use the hand-made `buildIsland` model (manifest radius accepted); glow points hide at ~1/3 sunk (castle glows too); test shortcut `?minijuego=castillo&duracion=&dificultad=&t=&seed=&islas=1` never ranks; dev «Salir de la arena» button until T161 (agent)
 - 2026-10-06 T157: castle island at Maq [-14.48, 14.21] = (-1080, 1060) in /mar, r 208 u, ~443 u from Boia 7, clear of legs 6→7 and 7→8; open-sea bearing `CASTLE_OPEN_SEA_BEARING` 2.09 rad in engine/compact.ts; the 1120 u arena crosses the planet wrap edge (agent)
 - 2026-10-06 T157: faro proximity 3.4 → 2.8 u_maq (board must not open from the start ring nor overlap the WhatsApp buoy panel); fast chest 1 moved to [-10.6, 15.2] (was inside the castle) (agent)
 - 2026-10-06 T157: whole 2D minigame layer removed (`pageAuthority` → session.ts); castle not in the engine minigame registry yet; faro achievement points/coins stay in the ledger, views hide it; Guardacostas v3 asks for one Cañón game; local doc schema 9; REQ-AVE-036 note cites D-20 + «decisión 2 del 2026-10-05» (checker needs a D-NN) (agent)
@@ -253,6 +254,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T160: Blender glb models for the built islands; clouds drift over the arena; the saved boat position can be the plane's during a game (moved to free water on reload) (agent)
 - 2026-10-06 T157: `mundos/arcilla/mapa.json` still describes the lighthouse minigame; generic `win_minigame`+`played` achievement logic now unused; es-zonas.ts has 2 keys not in textos-zonas.md (`naufrago.revisit`, `achievements.castaway.description`) so the i18n-zonas generator would delete them (agent)
 - 2026-10-06 T159: Tormenta too harsh (bot falls before 160 s, cannot afford early islands); Normal 7/10 min too easy — for T165 (agent)
 - 2026-10-06 T158/T167: the full vitest suite times out under load (survivors sims) when 3 agents run; consider splitting the slow survivors sims out of the default run (agent)
@@ -281,3 +283,6 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 04:20 T157 integrated → 8dd9e7c (tests ok); worktree and branch removed
 - 2026-10-06 04:22 T160 launched · attempt 1 · agent acf37d2f8fd69568f (opus)
 - 2026-10-06 04:22 T166 launched · attempt 1 · agent a6c8d5b95e5013f24 (fable)
+- 2026-10-06 04:51 T160 integrated → a3eb373 (tests ok); worktree and branch removed
+- 2026-10-06 04:54 T166 done by agent; integration conflict with T160 in mar3d.ts → sent back to the same agent
+- 2026-10-06 04:55 T161 launched · attempt 1 · agent a00ad88501b2c5a66 (opus)
