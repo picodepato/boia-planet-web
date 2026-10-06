@@ -130,10 +130,10 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - unit tests: HUD model (costs, affordability, upgrade/sell texts, life/time formatting) → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "construir|mejorar|vender|HUD"` (build each island, invalid spot on the path refused, upgrade to 3, sell; no overlap at the four sizes) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: castle HUD (life, time, wave, coins, boss bar), Construir/placing/Mejorar/Vender with touch and keyboard, pause menu with sound and «Terminar partida», minimal end card; dev `monedas=N` · ff56a4f
 
 ## T162 — The castle's pre-game pop-up, final card and medals
-- Status: pending
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T161
@@ -151,7 +151,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T163 — Castle ranking per run length × difficulty, local and global
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T162
@@ -165,7 +165,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T164 — Sound for the castle
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T161
@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T161: placing starts under the plane and follows it, tap moves it inside the ring, game keeps running while building; keys B/1–7/Enter/I/U/V/Esc; sell in one tap without confirm; one bottom strip above «Entradas» switching content; zoom rail hidden in the arena; dev `monedas=N` never ranks; minimal end card for every ending (T162 adds medal/score/«Otra vez»); `GameSoundMenu` and `BossBar` extracted with no Cañón change; build/selection state on `DefenseRun` (agent)
 - 2026-10-06 T166: faro collision one circle, LIGHTHOUSE_RADIUS 2.3 u_maq (dome ~16.6 scene vs old castle 13 r); no beam in the GLB, procedural beam kept through new optional `IslandBuild.keep` on the island group (sinks/restores with T160); procedural faro redrawn to the model layout; mar3d.ts back to LF after T160 committed it CRLF (agent)
 - 2026-10-06 T160: arena rotated in the view (`arenaFrame`, vortex along CASTLE_OPEN_SEA_BEARING), sim config untouched; planet wrap centred on the castle in the arena; camera elevation 1.2 rad, landscape shows the whole arena, portrait full height and 3/4 width following the plane; boat restored to its pre-game spot on exit; built islands use the hand-made `buildIsland` model (manifest radius accepted); glow points hide at ~1/3 sunk (castle glows too); test shortcut `?minijuego=castillo&duracion=&dificultad=&t=&seed=&islas=1` never ranks; dev «Salir de la arena» button until T161 (agent)
 - 2026-10-06 T157: castle island at Maq [-14.48, 14.21] = (-1080, 1060) in /mar, r 208 u, ~443 u from Boia 7, clear of legs 6→7 and 7→8; open-sea bearing `CASTLE_OPEN_SEA_BEARING` 2.09 rad in engine/compact.ts; the 1120 u arena crosses the planet wrap edge (agent)
@@ -255,6 +256,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T161: turbo and the speed readout stay visible during the castle game (agent)
 - 2026-10-06 T166: from the start ring the faro sits at the left edge of the frame (castle's old framing); a `.gitattributes` eol=lf rule (CRLF keeps coming back) (agent)
 - 2026-10-06 T160: Blender glb models for the built islands; clouds drift over the arena; the saved boat position can be the plane's during a game (moved to free water on reload) (agent)
 - 2026-10-06 T157: `mundos/arcilla/mapa.json` still describes the lighthouse minigame; generic `win_minigame`+`played` achievement logic now unused; es-zonas.ts has 2 keys not in textos-zonas.md (`naufrago.revisit`, `achievements.castaway.description`) so the i18n-zonas generator would delete them (agent)
@@ -289,3 +291,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 04:54 T166 done by agent; integration conflict with T160 in mar3d.ts → sent back to the same agent
 - 2026-10-06 04:55 T161 launched · attempt 1 · agent a00ad88501b2c5a66 (opus)
 - 2026-10-06 05:03 T166 integrated → f7d1610 (tests ok); worktree and branch removed
+- 2026-10-06 T161 done by agent (1aacfef); integration conflict with T166 in mar3d.ts (line endings) → sent back to the same agent
+- 2026-10-06 05:55 T161 integrated → ff56a4f (tests ok); worktree and branch removed
+- 2026-10-06 05:57 T162 launched · attempt 1 · agent af7ab6933988553d9 (opus)
+- 2026-10-06 05:57 T164 launched · attempt 1 · Codex via wrapper agent abd1a8ea108952897 (sonnet)
