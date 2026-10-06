@@ -203,6 +203,19 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - Test command → exit 0
 - Outcome: castle wins per difficulty (held = gold/silver), Tormenta → Cañoncito, Tormenta 10 min → Estela del vórtice, «Primera regata» (renamed `circuito`), «Rápido» `RACE_FAST_MS` 80 s → Tortuga turbo; schema 10 migration + Supabase 20261006100400 (not applied, db test not run); final card lists unlocks · aaaa00a
 
+## T179 — Supabase tests and types after the new migrations
+- Status: done
+- Model: opus (Opus 5.5)
+- Skills: none
+- Depends on: T176
+- Goal: Small fix task (orchestrator). On 2026-10-06 the 6 pending migrations were applied to the dev project and `pnpm test:supabase` (approved by Hernán) gave 3 failures out of 85: (1) `schema.supabase.ts` «anon sólo ejecuta las RPC de lectura»: the list now also has `ranking_canon` and `ranking_castle` (read-only rankings; update the expected list if they are indeed read-only and safe for anon); (2) `schema.supabase.ts` «los tipos versionados coinciden con el esquema»: the versioned generated types lack the new tables (e.g. `castle_boards`): regenerate them with `pnpm db:types:dev` and commit; (3) `economy.supabase.ts` «sin monedas no se compra; con monedas, una vez»: buying a cosmetic with no coins no longer fails with `insufficient_coins` — find why (likely the test picks a cosmetic that is now a prize, not for sale, or the new cosmetics rows changed the shop) and fix the right side (test or migration/RPC). If a SQL fix is needed, write a new migration and apply it with `pnpm db:migrate:dev` (Hernán approved applying to the dev project).
+- Context: `packages/db/src/supabase/schema.supabase.ts`, `economy.supabase.ts`, `context.ts`, the generated types file, `supabase/migrations/20261005100100_mascot_equip.sql`, `20261006100300_castle_ranking.sql`, `20261006100400_castle_race_prizes.sql`, `supabase/seeds/`, T163/T175/T176 Decisions.
+- Scope: may touch `packages/db/**`, `supabase/**` (new migration only, never edit applied ones), generated types / must not touch the web app beyond type imports, `docs/DECISIONES.md`.
+- Done when:
+  - `pnpm test:supabase` → exit 0 (85/85 or more)
+  - Test command → exit 0
+- Outcome: `pnpm test:supabase` 85/85 on the dev project: anon list adds `ranking_canon`/`ranking_castle` (read-only, paged), types regenerated (order only), economy test used a member that had earned coins in other tests → own member `valor-premios`; no SQL change · 001c2e2
+
 ## T178 — Close: balance, performance, full e2e, docs, Álvaro draft
 - Status: running (attempt 1)
 - Model: opus (Opus 5.5)
@@ -226,6 +239,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 run: T179 added (small fix task): `pnpm test:supabase` after applying the migrations gave 3/85 failures (anon RPC list, versioned types, cosmetic purchase without coins); runs in parallel with T178 (packages/db only) (orchestrator)
 - 2026-10-06 plan: Hernán chose island damage "toward the middle" (strong down a little, weak up a little, not full parity) and Ibiza payback 50/40/30 s with a visible «+N» coin pop-up on each payout, both in T178; the measured table is in T178 (Hernán)
 - 2026-10-06 T173: question inside the pop-up after «Jugar» (Atrás/Esc goes back); after answering, a «Con la guía» switch (off) replays it; dev shortcuts and «Otra vez» start without guide; pref `castillo:guia` local + account snapshot; 9 steps (mover, construir, elegir, colocar, instalar, ficha, prioridad, mejorar, oleada), a step passes if already done, priority step skipped for non-targeting islands, no pause; «Saltar guía» inside every bubble next to «Paso n de 9» (a pill covered the minimap on mobile); bottom-strip bubbles sit above the strip; «mover»/«ficha» bubbles float without a tail (pointing in 3D needs a mar3d hook); only outside change: `guide` prop on `CastleTestHook` (agent)
 - 2026-10-06 plan: T178 waits for Hernán to choose the island damage table first (Hernán)
@@ -286,3 +300,8 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 16:22 T171 integrated → 5a708cf (tests ok); worktree and branch removed
 - 2026-10-06 16:22 T173 launched · attempt 1 · agent a1105d29142f6b07a (opus)
 - 2026-10-06 16:49 T173 integrated → 3bf1f53 (tests ok); worktree and branch removed; T178 held for Hernán's damage table choice
+- 2026-10-06 17:02 T178 launched · attempt 1 · agent afebb05dbca5bb802 (opus)
+- 2026-10-06 17:35 Supabase dev project (boia-planet-dev): `pnpm db:migrate:dev` run by the orchestrator on Hernán's request → 6 migrations applied (20261005100000, 100100, 100200, 20261006100000, 100300, 100400) + economy seed; OK
+- 2026-10-06 17:38 `pnpm test:supabase` on Hernán's OK → 82 passed / 3 failed (log in $TEMP/test-supabase.log); T179 added
+- 2026-10-06 17:38 T179 launched · attempt 1 · agent aabca35fcd5939e8c (opus)
+- 2026-10-06 17:48 T179 integrated → 001c2e2 (tests ok); worktree and branch removed
