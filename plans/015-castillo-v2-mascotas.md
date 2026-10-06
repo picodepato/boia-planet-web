@@ -86,7 +86,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T169 — Castle simulation v2: path, building anywhere, upgrades, priorities, speed, waves
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T177
@@ -101,10 +101,10 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - unit tests: path v2 geometry above; build anywhere valid/invalid reasons incl. edge; plane clamp; plane upgrades 1–5 and castle upgrade; each priority picks the right target; ×2 gives the same state as two ×1 steps; call-wave timing and bonus; next-wave info; determinism → pass
   - `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` (and the slow suite command from T177 for defense) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: path v2 (outer orbit, 4 inward U-turns, zigzag; ≈10 390 u, 44 s walk), build anywhere in the arena, plane clamp + `moveTo`, plane speed/damage 1–5, castle +50 life/level, priorities, ×2, call wave (+1 coin/s skipped), next-wave info; DEFENSE_CONFIG_VERSION 4 · 95ce0fc
 
 ## T172 — Island renders for «Construir»
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T177
@@ -223,11 +223,13 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T169: path v2 = outer orbit + 4 inward U-turns (depth 430, radius 135) + descent + 3-leg zigzag (230 u, ±40°), ≈10 390 u (was 6 399); vortex 980 u and arena 1120 u unchanged; walk time kept ≈ 44 s so enemies are faster (≈236 u/s) — with 62 s every bot game held at full life; `hpGrowthPerMinute` 0.25 → 0.35, Tormenta `enemyHp` 1.2 → 1.12; castle upgrade +50 max life (and heal) for 250/400/600; call wave pays 1 coin per second skipped; Faro/Sonido/Ibiza have no priority, Benidorm defaults to strongest, others first; ranking accepts any castle max life, migration seed rows say config 4 (agent) — FOR HERNÁN: "longer path" was read as longer in distance, not in time
 - 2026-10-06 T177: slow set = every `packages/*/src/**/*-balance.test.ts` (survivors-balance, survivors-boss-balance, defense-balance), `vitest.slow.config.ts` reuses the list, 120 s timeout; wrapper did renormalization and split, Codex the e2e pass; Codex's `mar-paridad`/`mar-canon` changes reverted (one failed, one never run; Codex could not run Playwright: spawn EPERM); castle `flyTo` kept, retry on the island confirm added; T174 conflicts were line endings only (agent)
 - 2026-10-06 plan: header decisions 1–18 from Hernán's notes and answers (plans/015-notes.md at 15902e7); plane never leaves the arena and the widest camera view is the current arena view (decision 3); the guide asks before the first game and can be skipped with one button (decision 14) (Hernán)
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T169: no sound for the castle upgrade; HUD wave counter uses `activeS` instead of `snapshot.waveS` (T171) (agent)
 - 2026-10-06 T177: `mar-canon` and `mar-paridad` e2e still use fixed waits; `survivors.test.ts` (~36 s) still in the default run (agent)
 
 ## Log
@@ -237,3 +239,6 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T174 launched · attempt 1 · agent ac27231ba67787e7f (fable)
 - 2026-10-06 13:11 T177 done by agent (Codex + wrapper); integration conflict with T174 in ESTADO.md, defense-view.ts, check.py → sent back to the same agent
 - 2026-10-06 13:16 T177 integrated → ccb1dfc (tests ok); worktree and branch removed
+- 2026-10-06 13:17 T169 launched · attempt 1 · agent a4f8fd0a6610f9570 (opus)
+- 2026-10-06 13:17 T168 launched · attempt 1 · Codex via wrapper agent af28ea191cd989bae (sonnet)
+- 2026-10-06 13:56 T169 integrated → 95ce0fc (tests ok); worktree and branch removed
