@@ -4,9 +4,11 @@ import {
   BUILDING_BOT_REPEAT,
   type BuildingBotOptions,
   buildingBot,
+  type DefenseBot,
 } from './bots';
 import {
   DEFENSE_CONFIG,
+  DEFENSE_STEP_S,
   DEFENSE_DIFFICULTY_IDS,
   DEFENSE_RUN_MINS,
   DEFENSE_TOWER_KINDS,
@@ -18,19 +20,23 @@ import {
 import { createDefense, type DefenseResult } from './sim';
 
 /**
- * Equilibrio de «Defensa del Castillo» (plan 014 T165): partidas enteras del
- * bot que construye (`buildingBot`) contra la config de verdad, por duración
- * (5, 7, 10 min), dificultad y semilla. Las curvas y los porcentajes medidos
- * están en la sección de T165 de `ESTADO.md`; aquí se fija la forma:
+ * Equilibrio de «Defensa del Castillo» (plan 014 T165; plan 015 T178 con el
+ * camino v2, las mejoras del avión y del castillo, Ibiza y las prioridades):
+ * partidas enteras del bot que construye (`buildingBot`) contra la config de
+ * verdad, por duración (5, 7, 10 min), dificultad y semilla. Las curvas y los
+ * porcentajes medidos están en las secciones de T165 y T178 de `ESTADO.md`;
+ * aquí se fija la forma:
  *
  * - Tranquila se gana con oro con la construcción sencilla (todas las islas);
  * - Normal se gana, pero el castillo recibe golpes y una construcción de una
  *   sola isla puede caer;
  * - Tormenta cuesta: la construcción sencilla no siempre aguanta, pero nunca
- *   se hunde en la apertura (antes de los 160 s);
+ *   se hunde en la apertura (antes de los 160 s) y se gana en 7 y en 10 min;
  * - ninguna estrategia de una sola isla domina, y cada isla está en alguna
  *   de las mejores construcciones;
- * - Ibiza (la granja) se paga sola en un tiempo razonable.
+ * - Ibiza (la granja) se paga en 50 s a nivel 1 y cada mejora en 40 y 30 s
+ *   (Hernán, 2026-10-06);
+ * - «Llamar oleada» en cuanto el mar se vacía no hace más fácil Tormenta.
  */
 
 const CFG = DEFENSE_CONFIG;
@@ -175,6 +181,8 @@ describe('castillo: equilibrio con el bot que construye (T165)', () => {
     }
     expect(wins).toBeLessThan(total);
     expect(wins).toBeGreaterThan(0);
+    // Difícil, pero se gana en partidas de 7 y de 10 min.
+    for (const m of [7, 10] as const) expect(held(mixed('tormenta', m))).toBeGreaterThan(0);
   }, 120_000);
 
   it('ninguna estrategia de una sola isla domina a la sencilla', () => {
@@ -202,19 +210,42 @@ describe('castillo: equilibrio con el bot que construye (T165)', () => {
     expect([...inBest].sort()).toEqual([...DEFENSE_TOWER_KINDS].sort());
   }, 120_000);
 
-  it('Ibiza se paga sola: cada nivel en menos de 2 min y la granja del bot lo cumple', () => {
+  it('Ibiza se paga en 50 s, y sus mejoras en 40 y 30 s; la granja del bot lo cumple', () => {
     const def = CFG.towers.kinds.tienda;
     const income = (lvl: number) => {
       const st = defenseTowerStats(CFG, 'tienda', lvl);
       return st.coins / st.cooldownS;
     };
-    expect(def.cost / income(1)).toBeLessThanOrEqual(120);
-    expect(def.upgradeCost[0] / (income(2) - income(1))).toBeLessThanOrEqual(120);
-    expect(def.upgradeCost[1] / (income(3) - income(2))).toBeLessThanOrEqual(120);
+    expect(def.cost / income(1)).toBeCloseTo(50, 6);
+    expect(def.upgradeCost[0] / (income(2) - income(1))).toBeCloseTo(40, 6);
+    expect(def.upgradeCost[1] / (income(3) - income(2))).toBeCloseTo(30, 6);
+    // La granja paga a saltos (cada `cooldownS`): devuelve su coste a los 50 s justos.
+    const payback = def.cost / income(1);
     for (const d of DEFENSE_DIFFICULTY_IDS) {
       const x = run(d, 5, STRATEGIES[0]!, STRATEGY_SEED);
       expect(x.farmPaybackS).not.toBeNull();
-      expect(x.farmPaybackS!).toBeLessThanOrEqual(120);
+      expect(x.farmPaybackS!).toBeLessThanOrEqual(payback + DEFENSE_STEP_S * 2);
+    }
+  }, 120_000);
+
+  it('«Llamar oleada» en cuanto el mar se vacía no hace más fácil Tormenta', () => {
+    const callWhenClear = (opts: BuildingBotOptions): DefenseBot => {
+      const bot = buildingBot(CFG, opts);
+      return (s) => {
+        const input = bot(s);
+        if (s.enemies.length === 0 && s.nextWave && s.nextWave.inS > 1) input.callWave = true;
+        return input;
+      };
+    };
+    for (const m of DEFENSE_RUN_MINS) {
+      const g = createDefense(CFG, STRATEGY_SEED, { difficulty: 'tormenta', runMin: m });
+      const bot = callWhenClear(MIXED);
+      let called = 0;
+      while (!g.ended) for (const e of g.step(bot(g.snapshot()))) if (e.type === 'waveCalled') called++;
+      expect(called).toBeGreaterThan(0);
+      expect(rank(g.result()!)).toBeLessThanOrEqual(
+        rank(run('tormenta', m, STRATEGIES[0]!, STRATEGY_SEED).r),
+      );
     }
   }, 120_000);
 });

@@ -1953,6 +1953,8 @@ export class Mar3D {
     set('arenaDestino', tg ? `${Math.round(tg.x)},${Math.round(tg.y)}` : '');
     set('arenaBarras', String(df.view.bars.drawn));
     set('arenaNumeros', String(df.view.numbers.live));
+    // T178: los «+N» de Ibiza que han saltado desde el principio.
+    set('arenaMonedas', String(df.view.coinPops.spawned));
     set('arenaNubes', df.view.clouds.group.visible ? 'si' : 'no');
     const spots: string[] = [];
     for (const tw of snap.towers) {

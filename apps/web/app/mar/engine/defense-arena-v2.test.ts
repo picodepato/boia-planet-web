@@ -21,6 +21,8 @@ import {
 } from './defense-arena';
 import { ARENA_CLOUD_ZOOM, ArenaClouds } from './defense-clouds';
 import {
+  COIN_POP_S,
+  COIN_POP_STYLE,
   DAMAGE_GAP_S,
   DEFAULT_DEFENSE_OVERLAYS,
   DEFENSE_OVERLAYS_KEY,
@@ -30,6 +32,7 @@ import {
   NUMBER_DIGITS,
   NUMBER_S,
   digitsOf,
+  glyphsOf,
   readDefenseOverlays,
   saveDefenseOverlays,
 } from './defense-overlays';
@@ -377,6 +380,48 @@ describe('las barras de vida y los números de daño (decisión 11)', () => {
     mem.set(DEFENSE_OVERLAYS_KEY, '{roto');
     expect(readDefenseOverlays(storage)).toEqual({ bars: true, numbers: true });
     expect(readDefenseOverlays(null)).toEqual({ bars: true, numbers: true });
+  });
+});
+
+describe('lo que paga Ibiza se ve (plan 015 T178)', () => {
+  it('«+N» y una moneda: más piezas por número que los de daño, y se apagan solos', () => {
+    expect(glyphsOf(14, true)).toEqual([10, 1, 4, 11]);
+    expect(glyphsOf(14, false)).toEqual([1, 4]);
+    const pops = new DamageNumbers(2, COIN_POP_STYLE);
+    expect(pops.mesh.instanceMatrix.count).toBe(2 * (NUMBER_DIGITS + 2));
+    pops.spawn(0, 0, 59, 1);
+    pops.update(1.05, true, false);
+    expect(pops.live).toBe(1);
+    expect(pops.mesh.count).toBe(glyphsOf(59, true).length);
+    pops.update(1 + COIN_POP_S, true, false);
+    expect(pops.live).toBe(0);
+    pops.dispose();
+  });
+
+  it('cada pago de la granja salta una vez encima de la isla, aunque los números de daño estén apagados', () => {
+    const run = new DefenseRun({ seed: 3, quality: 'baja' });
+    const view = new DefenseView({ config: DEFENSE_CONFIG, path, frame, quality: 'baja' });
+    view.setOverlays({ bars: false, numbers: false });
+    const farm = run.game.addTower('tienda', -600, -600);
+    const payouts = new Set<number>();
+    for (let i = 0; i < 60 * 35; i++) {
+      run.step(null);
+      if (farm.lastShot) payouts.add(farm.lastShot.atS);
+      if (i % 3) continue;
+      view.update(run.snapshot(), i / 60, { x: 0, z: 0 });
+      expect(view.coinPops.live).toBeLessThanOrEqual(view.coinPops.cap);
+    }
+    const every = DEFENSE_CONFIG.towers.kinds.tienda.levels[0].cooldownS;
+    expect(payouts.size).toBe(Math.floor(35 / every));
+    expect(view.coinPops.spawned).toBe(payouts.size);
+    // Vendida, se olvida y no salta más.
+    run.game.removeTower(farm.id);
+    for (let i = 0; i < 60 * 12; i++) {
+      run.step(null);
+      if (i % 3 === 0) view.update(run.snapshot(), 40 + i / 60, { x: 0, z: 0 });
+    }
+    expect(view.coinPops.spawned).toBe(payouts.size);
+    view.dispose();
   });
 });
 

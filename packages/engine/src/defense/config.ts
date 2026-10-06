@@ -38,9 +38,13 @@ import {
  * equilibrio de T165 (Benidorm, monedero, dificultades, crecimiento). 4: el
  * castillo v2 (plan 015 T169): camino con curvas en U, construir en toda la
  * arena, avión 1…5 (daño y velocidad de ataque), vida del castillo,
- * prioridades de las islas y «Llamar oleada».
+ * prioridades de las islas y «Llamar oleada». 5: el cierre del plan 015
+ * (T178): el daño de las islas de ataque hacia el medio (Halloween y el
+ * Sonido bajan; Nochevieja, Puerto y Faro nivel 1 suben), Ibiza se paga en
+ * 50/40/30 s (nivel 1 y cada mejora); con esa economía, Normal y Tormenta
+ * suben su aguante y Tormenta su daño al castillo.
  */
-export const DEFENSE_CONFIG_VERSION = 4;
+export const DEFENSE_CONFIG_VERSION = 5;
 
 /** Paso fijo de la simulación (s): el del Cañón. */
 export const DEFENSE_STEP_S = SURVIVORS_STEP_S;
@@ -407,9 +411,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 100,
         upgradeCost: [80, 130],
         levels: [
-          { range: 260, damagePerS: 63, beams: 1, beamWidth: 16, sweepRadPerS: 2 },
-          { range: 280, damagePerS: 77, beams: 2, beamWidth: 16, sweepRadPerS: 2 },
-          { range: 300, damagePerS: 91, beams: 3, beamWidth: 18, sweepRadPerS: 2 },
+          { range: 260, damagePerS: 68, beams: 1, beamWidth: 16, sweepRadPerS: 2 },
+          { range: 280, damagePerS: 72, beams: 2, beamWidth: 16, sweepRadPerS: 2 },
+          { range: 300, damagePerS: 82, beams: 3, beamWidth: 18, sweepRadPerS: 2 },
         ],
       },
       ultima: {
@@ -418,9 +422,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 80,
         upgradeCost: [70, 110],
         levels: [
-          { range: 300, damage: 10, cooldownS: 1, stunS: 0.5 },
-          { range: 320, damage: 15, cooldownS: 0.85, stunS: 0.65 },
-          { range: 340, damage: 22, cooldownS: 0.7, stunS: 0.8 },
+          { range: 300, damage: 11, cooldownS: 1, stunS: 0.5 },
+          { range: 320, damage: 19, cooldownS: 0.85, stunS: 0.65 },
+          { range: 340, damage: 29, cooldownS: 0.7, stunS: 0.8 },
         ],
       },
       halloween: {
@@ -429,9 +433,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 90,
         upgradeCost: [75, 120],
         levels: [
-          { range: 190, damage: 3.5, cooldownS: 0.4, coneRad: 0.45, burnDps: 5.5, burnS: 3 },
-          { range: 205, damage: 5.5, cooldownS: 0.4, coneRad: 0.5, burnDps: 8.5, burnS: 3 },
-          { range: 220, damage: 8.5, cooldownS: 0.4, coneRad: 0.55, burnDps: 12.5, burnS: 3.5 },
+          { range: 190, damage: 2.4, cooldownS: 0.4, coneRad: 0.45, burnDps: 3.8, burnS: 3 },
+          { range: 205, damage: 4.2, cooldownS: 0.4, coneRad: 0.5, burnDps: 6.5, burnS: 3 },
+          { range: 220, damage: 6.8, cooldownS: 0.4, coneRad: 0.55, burnDps: 10.1, burnS: 3.5 },
         ],
       },
       cala: {
@@ -440,9 +444,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 120,
         upgradeCost: [100, 150],
         levels: [
-          { range: 520, damage: 28, cooldownS: 2.4, blastRadius: 80, flightS: 0.9 },
-          { range: 540, damage: 45, cooldownS: 2.1, blastRadius: 95, flightS: 0.9 },
-          { range: 560, damage: 66, cooldownS: 1.8, blastRadius: 110, flightS: 0.9 },
+          { range: 520, damage: 30, cooldownS: 2.4, blastRadius: 80, flightS: 0.9 },
+          { range: 540, damage: 52, cooldownS: 2.1, blastRadius: 95, flightS: 0.9 },
+          { range: 560, damage: 80, cooldownS: 1.8, blastRadius: 110, flightS: 0.9 },
         ],
       },
       tienda: {
@@ -451,9 +455,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 70,
         upgradeCost: [60, 90],
         levels: [
-          { range: 0, coins: 10, cooldownS: 10 },
-          { range: 0, coins: 16, cooldownS: 10 },
-          { range: 0, coins: 24, cooldownS: 10 },
+          { range: 0, coins: 14, cooldownS: 10 },
+          { range: 0, coins: 29, cooldownS: 10 },
+          { range: 0, coins: 59, cooldownS: 10 },
         ],
       },
       allday: {
@@ -462,9 +466,9 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         cost: 100,
         upgradeCost: [80, 130],
         levels: [
-          { range: 170, damage: 11, cooldownS: 1.2 },
-          { range: 185, damage: 18, cooldownS: 1.2 },
-          { range: 200, damage: 27, cooldownS: 1.2 },
+          { range: 170, damage: 8.6, cooldownS: 1.2 },
+          { range: 185, damage: 15.6, cooldownS: 1.2 },
+          { range: 200, damage: 25, cooldownS: 1.2 },
         ],
       },
       fotos: {
@@ -519,16 +523,16 @@ export const DEFENSE_CONFIG: DefenseConfig = {
     normal: {
       id: 'normal',
       i18nKey: 'survivors.dificultad.normal',
-      enemyHp: 1.15,
+      enemyHp: 1.4,
       enemyCount: 1,
       castleDamage: 1,
     },
     tormenta: {
       id: 'tormenta',
       i18nKey: 'survivors.dificultad.tormenta',
-      enemyHp: 1.12,
+      enemyHp: 1.35,
       enemyCount: 1.3,
-      castleDamage: 1.3,
+      castleDamage: 1.5,
     },
   },
   waves: {

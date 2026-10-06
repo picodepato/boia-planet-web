@@ -4,6 +4,39 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T178: Close: balance, performance, full e2e, docs, Álvaro draft
+
+Qué existe:
+- **Daño de las islas hacia el medio** (`packages/engine/src/defense/config.ts`, `DEFENSE_CONFIG_VERSION` 4 → 5). Medido como pidió Hernán (una isla en el centro de la 2.ª U (−524, 214), avión sin daño, castillo inmortal, Normal 5 min desde 165 s, daño quitado 180–240 s / 60, semilla 1), daño efectivo por 100 monedas N1/N2/N3:
+
+  | Isla | Antes | Ahora | Números |
+  |---|---|---|---|
+  | Faro | 14,8 / 21,4 / 23,9 | 16,0 / 20,0 / 21,6 | `damagePerS` 63/77/91 → 68/72/82 |
+  | Nochevieja | 12,3 / 11,6 / 11,8 | 13,5 / 14,7 / 14,9 | `damage` 10/15/22 → 11/19/29 (aturde: un poco por debajo) |
+  | Halloween | 38,8 / 33,7 / 28,6 | 26,7 / 26,0 / 24,2 | `damage` 3,5/5,5/8,5 → 2,4/4,2/6,8; `burnDps` 5,5/8,5/12,5 → 3,8/6,5/10,1 |
+  | Puerto | 13,0 / 14,4 / 13,3 | 13,9 / 16,2 / 15,6 | `damage` 28/45/66 → 30/52/80 (81 salta a 17,3: umbral de muerte) |
+  | Sonido | 25,7 / 25,2 / 22,7 | 20,1 / 21,8 / 21,2 | `damage` 11/18/27 → 8,6/15,6/25 |
+  | Benidorm | 17,9 / 18,4 / 19,0 | igual | — |
+- **Ibiza**: `coins` 10/16/24 → 14/29/59 cada 10 s: nivel 1 devuelve 70 en 50 s, la mejora a 2 (60) en 40 s y a 3 (90) en 30 s.
+- **Dificultades** (con esa economía todo salía al 100 %): Normal `enemyHp` 1,15 → 1,4; Tormenta `enemyHp` 1,12 → 1,35, `castleDamage` 1,3 → 1,5. Migración sin aplicar `20261006100300_castle_ranking.sql`: `config_version` 5 (topes de puntos iguales).
+- **Bot** (`bots.ts`): `buildingBot` compra también la velocidad del avión (el nivel más bajo primero, hasta `planeLevel`), sube Ibiza en cuanto puede (`farm`) y la vida del castillo si le falta una mejora entera (`castle`); orden sencillo Ibiza, Halloween, Faro, Sonido, Benidorm, Puerto, Nochevieja; repite Sonido, Halloween, Faro, Benidorm.
+- **Curvas** (6 semillas; vida al final, F = cae en s): Tranquila 5/7/10 → 6/6 oro 100. Normal 5 → 26–55; 7 → 33–57; 10 → 36–73 (todas ganadas). Tormenta 5 → 0/6, cae 179–223 s; 7 → 3/6 (15–78), cae 241–242 s; 10 → 6/6 (1–33). Semilla 7, una isla + Ibiza: Normal 10 min caen Faro/Nochevieja/Puerto/Sonido, Halloween y Benidorm 25 %; Tormenta 5: Halloween 63, Sonido 40, el resto cae; Tormenta 7: Halloween 63, Sonido 49, Faro 9. Variantes (semilla 7): tres Ibizas al empezar → 100 en todas las casillas de Normal y Tormenta; «Llamar oleada» al vaciarse el mar → Tormenta cae en las tres duraciones (nunca mejor que sin llamar), Normal 49/82/55; todas a «más fuerte» → peor.
+- **Prueba de equilibrio** (`defense-balance.test.ts`, 7 pruebas): las de T165, Tormenta además se gana en 7 y en 10 min; Ibiza 50/40/30 s exactos (y la del bot devuelve su coste a los 50 s); «Llamar oleada» en cuanto el mar se vacía no hace más fácil Tormenta.
+- **«+N» de Ibiza** (`defense-overlays.ts`, `defense-view.ts`): `DamageNumbers` con estilo (`COIN_POP_STYLE`: «+», cifras y una moneda, dorado, 5,2 de alto, 1,6 s, sube 4,5); `DefenseView.coinPops` (tope 6 en `baja`, 12 si no) salta una vez por pago de cada granja (por `lastShot.atS`, sólo si es de hace < 0,5 s), siempre, aunque los números de daño estén apagados; las vendidas se olvidan. `data-arena-monedas` (lanzados) en el lienzo. Pruebas en `defense-arena-v2.test.ts` y e2e en «arena: barras de vida…». Captura: C:/tmp/orchestrator-attach/boia-planet-hernan-T178/ibiza-pago-desktop.png.
+- **Docs**: `docs/propuestas/2026-10-06-castillo-v2-guia-prueba.md` (con «Notas» vacía), `docs/propuestas/2026-10-06-premios-mascotas-decision-alvaro.md`, `docs/spec/estado.md` (cabecera del castillo con el plan 015; nombres de prueba viejos de REQ-AVE-036 y REQ-IDE-030 al día; mascotas en REQ-IDE-030).
+
+Comandos:
+- Medida de las islas: un `vitest` de usar y tirar fuera del repo (`createDefense` con `castle.life` 1e9, `plane.damage` 0, `startAtS` 165, `addTower(kind, −524, 214, {level})`, suma de la vida quitada 180–240 s). Las curvas: otro igual con `buildingBot` por casilla y semilla.
+- `pnpm exec vitest run packages/engine/src/defense --testTimeout=60000` → exit 0, 2 archivos, 63 pruebas · `pnpm test:slow` → exit 0, 3 archivos, 27 pruebas (`defense-balance.test.ts` 7).
+- Rendimiento en `baja` (`E2E_PORT=3433 pnpm e2e mar-castillo.spec.ts --workers=1 -g "rendimiento"`, sola) → 2 passed: pico 10 min Tormenta, 7 islas N3, barras/números/nubes/Vecino GLB/«+N»: p50 16,7 / p95 33,4 / peor 33,4 ms (CPU 4×: 33,3 / 33,4 / 50); arena llena (75 islas): 16,7 / 33,4 / 33,5 (CPU 4×: 33,3 / 33,4 / 50). Dentro de la suite entera (2 workers): p95 33,4 y 50,1 (CPU 4×: 66,7 y 100). Sin puntos calientes.
+- `E2E_PORT=3431 pnpm e2e --workers=2` → exit 1: 523 passed, 92 skipped, 5 failed (1 h). `mar-canon.spec.ts:1963` (móvil y escritorio: 6,7 min bajo carga) y `mar-decor.spec.ts:7` (móvil, opacidad del rótulo a 0 dentro de 5 s) pasan solas (`E2E_PORT=3433 pnpm e2e mar-canon.spec.ts -g "Tiburón Martillo; vencido"` → 2 passed; `mar-decor.spec.ts` → 6 passed): esperas bajo carga. `mar-remolino.spec.ts:18` fallaba siempre: la salida de `?cerca=remolino` queda a 295 u de Benidorm (ficha a 298) y se abría su ficha; la prueba ahora sólo prohíbe la ficha del remolino → 2 passed. `mar-castillo.spec.ts` entero pasó en la suite.
+- Test command: `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 213 archivos, 2032 pruebas · `sh tools/spec/checks.sh` → OK · `pnpm lint` → exit 0 · `pnpm build` → exit 0 (187,0 kB, presupuesto 200 kB OK) · `pnpm typecheck` → exit 0 · `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0.
+
+Pendiente:
+- FOR HERNÁN: **apilar Ibizas domina** (tres al empezar → 100 % en todo, también Tormenta; ya pasaba con 70 s). Opciones: tope de Ibizas por partida, pago menor por cada Ibiza extra, o tiempos más largos que 50/40/30 s.
+- FOR HERNÁN: **Halloween (y el Sonido) solos siguen aguantando Tormenta de 5 y 7 min** (63 %, antes 68 %) mientras la sencilla cae en 5 min: las islas de área solas sólo dejan pasar al Vecino; ningún multiplicador de dificultad las separa de la mezcla (la mezcla también depende de ellas). Haría falta bajarlas más que «a medio camino» o darles un punto débil.
+- Tormenta 5 min no la gana la construcción sencilla (sí Halloween/Sonido solas y tres Ibizas).
+
 ## 2026-10-06 — plan 015 T179: Supabase tests and types after the new migrations
 
 Qué existe:

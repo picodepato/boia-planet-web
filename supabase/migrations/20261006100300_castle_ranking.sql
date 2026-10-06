@@ -20,15 +20,15 @@ create table public.castle_boards (
 -- muestra: mismos topes que castleMaxKillPoints / DEFENSE_CONFIG.
 insert into public.castle_boards
   (run_min, difficulty, version, config_version, min_ms, duration_ms, max_ms, max_kill_points, life_bonus, castle_life) values
-  (5, 'tranquila', 1, 4, 30000, 300000, 301000, 4193, 1000, 100),
-  (5, 'normal', 1, 4, 30000, 300000, 301000, 5178, 1000, 100),
-  (5, 'tormenta', 1, 4, 30000, 300000, 301000, 6415, 1000, 100),
-  (7, 'tranquila', 1, 4, 30000, 420000, 421000, 7101, 1000, 100),
-  (7, 'normal', 1, 4, 30000, 420000, 421000, 8927, 1000, 100),
-  (7, 'tormenta', 1, 4, 30000, 420000, 421000, 11184, 1000, 100),
-  (10, 'tranquila', 1, 4, 30000, 600000, 601000, 13378, 1000, 100),
-  (10, 'normal', 1, 4, 30000, 600000, 601000, 16911, 1000, 100),
-  (10, 'tormenta', 1, 4, 30000, 600000, 601000, 21288, 1000, 100);
+  (5, 'tranquila', 1, 5, 30000, 300000, 301000, 4193, 1000, 100),
+  (5, 'normal', 1, 5, 30000, 300000, 301000, 5178, 1000, 100),
+  (5, 'tormenta', 1, 5, 30000, 300000, 301000, 6415, 1000, 100),
+  (7, 'tranquila', 1, 5, 30000, 420000, 421000, 7101, 1000, 100),
+  (7, 'normal', 1, 5, 30000, 420000, 421000, 8927, 1000, 100),
+  (7, 'tormenta', 1, 5, 30000, 420000, 421000, 11184, 1000, 100),
+  (10, 'tranquila', 1, 5, 30000, 600000, 601000, 13378, 1000, 100),
+  (10, 'normal', 1, 5, 30000, 600000, 601000, 16911, 1000, 100),
+  (10, 'tormenta', 1, 5, 30000, 600000, 601000, 21288, 1000, 100);
 
 alter table public.castle_boards enable row level security;
 revoke all on public.castle_boards from anon, authenticated, service_role;

@@ -10,8 +10,8 @@ import type { DefenseEnemyView } from './towers';
  * castillo), se queda a medio alcance y compra los niveles de daño del
  * avión en cuanto llega el dinero. Solos (sin islas) no bastan. `buildingBot` (T159)
  * además construye islas en los sitios que más camino cubren, las sube y
- * compra los niveles del avión: es el jugador sencillo de las pruebas de
- * equilibrio (T165 las afina).
+ * compra los niveles del avión y la vida del castillo: es el jugador sencillo de las pruebas de
+ * equilibrio (T165 las afina; T178 añade la velocidad del avión y el castillo).
  */
 
 export type DefenseBot = (s: DefenseSnapshot) => DefenseInput;
@@ -43,26 +43,39 @@ export interface BuildingBotOptions {
   repeat?: readonly DefenseTowerKind[];
   /** u alrededor de un sitio en que cuenta el camino que cubre. */
   coverRadius?: number;
-  /** Hasta qué nivel de daño sube el avión (3 por defecto). */
+  /** Hasta qué nivel suben el daño y la velocidad de ataque del avión (3 por defecto). */
   planeLevel?: number;
+  /**
+   * Sube la vida del castillo (plan 015) cuando le falta al menos lo que
+   * suma una mejora (true por defecto).
+   */
+  castle?: boolean;
+  /**
+   * Sube Ibiza (la granja) a nivel 2 y 3 en cuanto llega el dinero, desde la
+   * tercera isla (true por defecto; se paga en 40 y 30 s).
+   */
+  farm?: boolean;
 }
 
 /** El orden de la construcción sencilla (todas las islas) y lo que repite después. */
 export const BUILDING_BOT_ORDER: readonly DefenseTowerKind[] = [
-  'ultima',
   'tienda',
+  'halloween',
+  'faro',
+  'allday',
+  'fotos',
   'cala',
+  'ultima',
+];
+/**
+ * Lo que repite: las que más rinden (plan 015 T178; con Ibiza pagándose en
+ * 50 s, la granja va primero).
+ */
+export const BUILDING_BOT_REPEAT: readonly DefenseTowerKind[] = [
   'allday',
   'halloween',
-  'fotos',
   'faro',
-];
-export const BUILDING_BOT_REPEAT: readonly DefenseTowerKind[] = [
-  'cala',
-  'allday',
-  'ultima',
   'fotos',
-  'faro',
 ];
 
 /**
@@ -72,8 +85,10 @@ export const BUILDING_BOT_REPEAT: readonly DefenseTowerKind[] = [
  *
  * 1. construye la siguiente isla de `order` (después, de `repeat`) en el
  *    mejor sitio libre (la granja en el peor: no necesita camino);
- * 2. a partir de la tercera isla, compra los niveles de daño del avión
- *    hasta `planeLevel` (3 por defecto, como el avión del plan 014);
+ * 2. a partir de la tercera isla, compra los niveles del avión (daño y
+ *    velocidad de ataque, el más bajo primero) hasta `planeLevel` (3 por
+ *    defecto) y sube Ibiza (`farm`); si al castillo le falta lo que suma
+ *    una mejora de vida, la compra antes que nada (`castle`);
  * 3. tras las de `order`, alterna subir de nivel la isla más baja con
  *    construir otra de `repeat`.
  *
@@ -84,6 +99,8 @@ export function buildingBot(cfg: DefenseConfig, opts: BuildingBotOptions = {}): 
   const repeat = opts.repeat ?? BUILDING_BOT_REPEAT;
   const coverR = opts.coverRadius ?? 230;
   const planeLevel = opts.planeLevel ?? 3;
+  const castle = opts.castle ?? true;
+  const farm = opts.farm ?? true;
   const path = buildDefensePath(cfg.path, cfg.castle.radius);
 
   // Sitios: rejilla de la arena, puntuados por las muestras del camino que tienen cerca.
@@ -126,14 +143,33 @@ export function buildingBot(cfg: DefenseConfig, opts: BuildingBotOptions = {}): 
     }
     lastCount = s.towers.length;
 
-    const planeCost = s.plane.nextDamageCost;
+    const castleCost = s.castle.nextUpgradeCost;
     if (
-      built >= 3 &&
-      s.plane.damageLevel < planeLevel &&
-      planeCost !== null &&
-      s.coins >= planeCost
+      castle &&
+      castleCost !== null &&
+      s.castle.maxLife - s.castle.life >= cfg.castle.lifePerLevel &&
+      s.coins >= castleCost
     ) {
-      input.upgradePlane = 'damage';
+      input.upgradeCastle = true;
+      return withChase(s, input);
+    }
+
+    if (farm && built >= 3) {
+      for (const t of s.towers) {
+        if (t.kind !== 'tienda') continue;
+        const cost = defenseTowerUpgradeCost(cfg, t);
+        if (cost !== null && s.coins >= cost) {
+          input.upgradeTower = t.id;
+          return withChase(s, input);
+        }
+      }
+    }
+
+    const stat = s.plane.speedLevel < s.plane.damageLevel ? 'speed' : 'damage';
+    const level = stat === 'speed' ? s.plane.speedLevel : s.plane.damageLevel;
+    const planeCost = stat === 'speed' ? s.plane.nextSpeedCost : s.plane.nextDamageCost;
+    if (built >= 3 && level < planeLevel && planeCost !== null && s.coins >= planeCost) {
+      input.upgradePlane = stat;
       return withChase(s, input);
     }
 

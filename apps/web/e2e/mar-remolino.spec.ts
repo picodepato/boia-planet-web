@@ -28,8 +28,10 @@ test('los remolinos se ven en el mar y en el mapa, sin rótulo encima', async ({
   await expect.poll(shown, { timeout: 15_000 }).toBeGreaterThan(0);
   // Sin rótulo: ningún remolino tiene nombre encima.
   for (const o of whirls) await expect(page.locator(`[data-pin="${o.identity.id}"]`)).toHaveCount(0);
-  // Cerca de él no se abre ninguna ficha sola (el remolino queda fuera de las de las islas).
-  await expect(marSheet(page)).toHaveCount(0);
+  // Cerca de él no se abre su ficha (el remolino queda fuera de las de las islas).
+  // Con el mar compacto de ahora la salida de `?cerca=` cae justo en el borde de
+  // la ficha de Benidorm (295 u de 298): ésa puede abrirse; la del remolino, nunca.
+  await expect(marSheet(page).filter({ hasText: whirl.identity.name })).toHaveCount(0);
 
   // En el mapa grande también se ve, y tampoco lleva rótulo.
   const mini = page.getByTestId('mar-minimapa');

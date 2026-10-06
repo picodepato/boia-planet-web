@@ -962,6 +962,12 @@ test('arena: barras de vida y números de daño encendidos al principio; apagado
     )
     .toBeGreaterThan(kills + 2);
   expect(seen).toEqual({ bars: 0, numbers: 0 });
+  // Plan 015 T178: lo que paga Ibiza salta siempre («+N» y una moneda), con los números apagados.
+  await expect
+    .poll(async () => Number(await canvas(page).getAttribute('data-arena-monedas')), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
 

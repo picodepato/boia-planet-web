@@ -267,6 +267,51 @@ const DIGIT_H = 3.2;
 const NUMBER_RISE = 3.5;
 const NUMBER_Y = 3;
 
+/** Las piezas del atlas: las cifras 0…9, el «+» y la moneda. */
+const GLYPH_PLUS = 10;
+const GLYPH_COIN = 11;
+const GLYPHS = 12;
+
+/**
+ * Cómo se ve un grupo de números: los de daño (crema, cortos) o las monedas
+ * que paga Ibiza (plan 015 T178: «+N» y una moneda, dorados, más grandes y
+ * más rato, para leerse desde la cámara alta). muestra
+ */
+export interface FloatNumberStyle {
+  fill: string;
+  stroke: string;
+  /** s que se ve. */
+  durationS: number;
+  /** Escena: alto de una pieza, lo que sube y la altura de salida. */
+  height: number;
+  rise: number;
+  y: number;
+  /** «+» delante y una moneda detrás (las monedas de la granja). */
+  coin: boolean;
+}
+
+export const DAMAGE_NUMBER_STYLE: Readonly<FloatNumberStyle> = {
+  fill: '#fff4e2',
+  stroke: '#2a1640',
+  durationS: NUMBER_S,
+  height: DIGIT_H,
+  rise: NUMBER_RISE,
+  y: NUMBER_Y,
+  coin: false,
+};
+
+/** s que se ve el «+N» de Ibiza. muestra */
+export const COIN_POP_S = 1.6;
+export const COIN_POP_STYLE: Readonly<FloatNumberStyle> = {
+  fill: '#ffd23d',
+  stroke: '#3a1f05',
+  durationS: COIN_POP_S,
+  height: 5.2,
+  rise: 4.5,
+  y: 9,
+  coin: true,
+};
+
 interface FloatNumber {
   x: number;
   z: number;
@@ -276,8 +321,11 @@ interface FloatNumber {
   live: boolean;
 }
 
-/** Las cifras (0…9) en una fila: crema con borde oscuro. Sin `document` (pruebas), un píxel. */
-function digitAtlas(): Texture {
+/**
+ * Las piezas en una fila: las cifras (0…9), el «+» y una moneda, del color
+ * del estilo con borde oscuro. Sin `document` (pruebas), un píxel.
+ */
+function digitAtlas(style: FloatNumberStyle): Texture {
   if (typeof document === 'undefined') {
     const t = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, RGBAFormat);
     t.needsUpdate = true;
@@ -286,7 +334,7 @@ function digitAtlas(): Texture {
   const cw = 48;
   const ch = 64;
   const c = document.createElement('canvas');
-  c.width = cw * 10;
+  c.width = cw * GLYPHS;
   c.height = ch;
   const g = c.getContext('2d');
   if (g) {
@@ -295,12 +343,29 @@ function digitAtlas(): Texture {
     g.textBaseline = 'middle';
     g.lineJoin = 'round';
     g.lineWidth = 9;
-    g.strokeStyle = '#2a1640';
-    g.fillStyle = '#fff4e2';
-    for (let i = 0; i < 10; i++) {
-      g.strokeText(String(i), cw * (i + 0.5), ch * 0.54);
-      g.fillText(String(i), cw * (i + 0.5), ch * 0.54);
+    g.strokeStyle = style.stroke;
+    g.fillStyle = style.fill;
+    for (let i = 0; i <= GLYPH_PLUS; i++) {
+      const glyph = i === GLYPH_PLUS ? '+' : String(i);
+      g.strokeText(glyph, cw * (i + 0.5), ch * 0.54);
+      g.fillText(glyph, cw * (i + 0.5), ch * 0.54);
     }
+    // La moneda: un disco dorado con borde y un aro dentro.
+    const cx = cw * (GLYPH_COIN + 0.5);
+    const cy = ch * 0.52;
+    const r = cw * 0.4;
+    g.beginPath();
+    g.arc(cx, cy, r, 0, Math.PI * 2);
+    g.fillStyle = '#ffc53d';
+    g.fill();
+    g.lineWidth = 6;
+    g.strokeStyle = style.stroke;
+    g.stroke();
+    g.beginPath();
+    g.arc(cx, cy, r * 0.58, 0, Math.PI * 2);
+    g.lineWidth = 4;
+    g.strokeStyle = '#c98a12';
+    g.stroke();
   }
   const t = new CanvasTexture(c);
   t.minFilter = LinearFilter;
@@ -314,14 +379,24 @@ export function digitsOf(value: number): number[] {
   return String(v).split('').map(Number);
 }
 
+/** Las piezas que se pintan de un número: sus cifras, o «+», las cifras y la moneda. */
+export function glyphsOf(value: number, coin: boolean): number[] {
+  const ds = digitsOf(value);
+  return coin ? [GLYPH_PLUS, ...ds, GLYPH_COIN] : ds;
+}
+
 /**
  * Los números de daño: un grupo fijo de `cap` números (el más viejo se
  * reutiliza si no queda sitio) y una `InstancedMesh` de cifras que miran
  * siempre a la cámara, suben y se apagan. Con movimiento reducido, no suben.
+ * Con `COIN_POP_STYLE`, las monedas que paga Ibiza («+N» y una moneda).
  */
 export class DamageNumbers {
   readonly mesh: InstancedMesh;
   readonly cap: number;
+  readonly style: Readonly<FloatNumberStyle>;
+  /** Números lanzados desde el principio (pruebas). */
+  spawned = 0;
   /** Números vivos en el último `update`. */
   live = 0;
   private readonly pool: FloatNumber[];
@@ -331,10 +406,11 @@ export class DamageNumbers {
   private readonly alpha: InstancedBufferAttribute;
   private readonly d = new Object3D();
 
-  constructor(cap: number) {
+  constructor(cap: number, style: Readonly<FloatNumberStyle> = DAMAGE_NUMBER_STYLE) {
     this.cap = Math.max(1, cap);
+    this.style = style;
     this.pool = Array.from({ length: this.cap }, () => ({ x: 0, z: 0, y: 0, value: 0, t0: 0, live: false }));
-    const n = this.cap * NUMBER_DIGITS;
+    const n = this.cap * (NUMBER_DIGITS + (style.coin ? 2 : 0));
     const geo = new PlaneGeometry(0.75, 1);
     this.digit = new InstancedBufferAttribute(new Float32Array(n), 1);
     this.offset = new InstancedBufferAttribute(new Float32Array(n), 1);
@@ -347,7 +423,7 @@ export class DamageNumbers {
       depthTest: false,
       depthWrite: false,
       defines: { PLANET_WRAP: '' },
-      uniforms: { uMap: { value: digitAtlas() }, ...planetUniforms },
+      uniforms: { uMap: { value: digitAtlas(style) }, ...planetUniforms },
       vertexShader: /* glsl */ `
         attribute float aDigit;
         attribute float aOffset;
@@ -356,7 +432,7 @@ export class DamageNumbers {
         varying float vAlpha;
         ${PLANET_PARS}
         void main() {
-          vUv = vec2((uv.x + aDigit) / 10.0, uv.y);
+          vUv = vec2((uv.x + aDigit) / ${GLYPHS}.0, uv.y);
           vAlpha = aAlpha;
           vec4 w = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
           w.xyz = planetCurve(w.xyz);
@@ -380,7 +456,7 @@ export class DamageNumbers {
     // Ya lleva la curva del planeta (con la vuelta): `curveTree` no la toca.
     mat.userData.planet = 'wrap';
     this.mesh = new InstancedMesh(geo, mat, n);
-    this.mesh.name = 'defense-damage-numbers';
+    this.mesh.name = style.coin ? 'defense-coin-pops' : 'defense-damage-numbers';
     this.mesh.count = 0;
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
@@ -407,10 +483,11 @@ export class DamageNumbers {
     const p = this.pool[slot]!;
     p.x = x;
     p.z = z;
-    p.y = NUMBER_Y + lift;
+    p.y = this.style.y + lift;
     p.value = value;
     p.t0 = t;
     p.live = true;
+    this.spawned++;
   }
 
   /** Números vivos ahora en el grupo (sin contar los que se apagan en `update`). */
@@ -425,18 +502,19 @@ export class DamageNumbers {
     let n = 0;
     let live = 0;
     const d = this.d;
+    const st = this.style;
     for (const p of this.pool) {
       if (!p.live) continue;
-      const k = (t - p.t0) / NUMBER_S;
+      const k = (t - p.t0) / st.durationS;
       if (!on || k >= 1 || k < 0) {
         p.live = false;
         continue;
       }
       live++;
-      const ds = digitsOf(p.value);
+      const ds = glyphsOf(p.value, st.coin);
       const a = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
-      const y = p.y + (reduced ? 0 : NUMBER_RISE * (1 - (1 - k) * (1 - k)));
-      const s = DIGIT_H * (reduced ? 1 : k < 0.15 ? 0.7 + 2 * k : 1);
+      const y = p.y + (reduced ? 0 : st.rise * (1 - (1 - k) * (1 - k)));
+      const s = st.height * (reduced ? 1 : k < 0.15 ? 0.7 + 2 * k : 1);
       for (let i = 0; i < ds.length; i++) {
         d.position.set(p.x, y, p.z);
         d.scale.setScalar(s);

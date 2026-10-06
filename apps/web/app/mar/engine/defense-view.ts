@@ -33,6 +33,7 @@ import {
 } from './defense-arena';
 import { ArenaClouds } from './defense-clouds';
 import {
+  COIN_POP_STYLE,
   DEFAULT_DEFENSE_OVERLAYS,
   DamageNumbers,
   DamageTracker,
@@ -182,6 +183,10 @@ const CLOUDS = { baja: 3, other: 4 } as const;
 /** Tope de barras de vida y de números de daño a la vez. muestra */
 const BARS_CAP = { baja: 96, other: 160 } as const;
 const NUMBERS_CAP = { baja: 24, other: 48 } as const;
+/** Tope de «+N» de Ibiza a la vez (plan 015 T178). muestra */
+const COIN_POPS_CAP = { baja: 6, other: 12 } as const;
+/** s: un pago de Ibiza más viejo que esto ya no salta (al entrar con la partida empezada). */
+const COIN_POP_FRESH_S = 0.5;
 
 export interface DefenseViewOptions {
   config: DefenseConfig;
@@ -221,6 +226,10 @@ export class DefenseView {
   private readonly seen = { x: 0, z: 0 };
   readonly bars: HealthBars;
   readonly numbers: DamageNumbers;
+  /** Lo que paga Ibiza (plan 015 T178): «+N» y una moneda encima de la isla, siempre. */
+  readonly coinPops: DamageNumbers;
+  /** El último pago visto de cada granja (`atS`). */
+  private readonly paid = new Map<number, number>();
   readonly clouds: ArenaClouds;
   private readonly damage = new DamageTracker();
   /** Barras de vida y números de daño (decisión 11): los dos al principio. */
@@ -371,6 +380,7 @@ export class DefenseView {
     // Las barras de vida y los números de daño (decisión 11).
     this.bars = new HealthBars(low ? BARS_CAP.baja : BARS_CAP.other);
     this.numbers = new DamageNumbers(low ? NUMBERS_CAP.baja : NUMBERS_CAP.other);
+    this.coinPops = new DamageNumbers(low ? COIN_POPS_CAP.baja : COIN_POPS_CAP.other, COIN_POP_STYLE);
     this.puf = new PufFx(this.quality);
     this.group.add(
       this.castleRing,
@@ -383,6 +393,7 @@ export class DefenseView {
       this.puf.mesh,
       ...this.bars.meshes,
       this.numbers.mesh,
+      this.coinPops.mesh,
     );
 
     this.islands = new TowerIslands(o.config);
@@ -513,6 +524,8 @@ export class DefenseView {
       this.numbers.spawn(q.x, q.z, amount, t, toScene(radius) * 0.8);
     });
     this.numbers.update(t, this.overlays.numbers, reduced);
+    this.payouts(s, t);
+    this.coinPops.update(t, true, reduced);
     for (const [kind, mesh] of this.meshes) {
       const n = this.counts.get(kind) ?? 0;
       mesh.count = n;
@@ -585,15 +598,37 @@ export class DefenseView {
     this.fx.update(s.towers, s.shots, s.activeS, { at: (x, y) => this.at(x, y), heading: (h) => this.frame.headingToWorld(h) }, reduced);
   }
 
+  /** Cada pago nuevo de una granja: su «+N» encima de la isla. */
+  private payouts(s: DefenseSnapshot, t: number): void {
+    let farms = 0;
+    for (const tw of s.towers) {
+      if (tw.kind !== 'tienda') continue;
+      farms++;
+      const shot = tw.lastShot;
+      if (!shot || this.paid.get(tw.id) === shot.atS) continue;
+      this.paid.set(tw.id, shot.atS);
+      const amount = shot.amount ?? 0;
+      if (amount <= 0 || s.activeS - shot.atS > COIN_POP_FRESH_S) continue;
+      const p = this.at(tw.x, tw.y);
+      this.coinPops.spawn(p.x, p.z, amount, t);
+    }
+    // Las vendidas se olvidan.
+    if (this.paid.size > farms) {
+      for (const id of this.paid.keys())
+        if (!s.towers.some((tw) => tw.id === id)) this.paid.delete(id);
+    }
+  }
+
   dispose(): void {
     this.group.removeFromParent();
     // Las islas comparten la geometría de su tipo (se guarda): fuera antes de soltar lo demás.
     this.group.remove(this.islands.group, ...this.fx.meshes);
     this.islands.dispose();
     this.fx.dispose();
-    this.group.remove(...this.bars.meshes, this.numbers.mesh, this.clouds.group);
+    this.group.remove(...this.bars.meshes, this.numbers.mesh, this.coinPops.mesh, this.clouds.group);
     this.bars.dispose();
     this.numbers.dispose();
+    this.coinPops.dispose();
     this.clouds.dispose();
     this.disposed = true;
     this.group.traverse((o) => {
