@@ -1,7 +1,12 @@
 import {
   DEFENSE_CONFIG,
+  DEFENSE_PLANE_MAX_LEVEL,
+  DEFENSE_STEP_S,
+  DEFENSE_TARGET_PRIORITIES,
   DEFENSE_TOWER_KINDS,
   type DefenseEnemyKind,
+  defenseCastleMaxLevel,
+  defenseTowerStats,
   type DefenseResult,
   createDefense,
   defenseSchedule,
@@ -27,8 +32,18 @@ import {
   lifeLevelOf,
   nextTowerByKeyboard,
   placementView,
-  planeLine,
-  planeView,
+  WAVE_WARN_S,
+  anyUpgradeAffordable,
+  callWaveLine,
+  formatNum,
+  nextWaveView,
+  priorityOptions,
+  towerDetail,
+  towerHowLine,
+  towerStatRows,
+  upgradeRowLine,
+  upgradeRows,
+  waveWarningLine,
   sameCastleView,
   seenBosses,
   sellLine,
@@ -38,6 +53,7 @@ import {
   waveAt,
 } from './castillo-hud-model';
 import { DefenseRun } from './castillo';
+import { CASTLE_ISLAND_IMAGES } from '../../lib/mundo/castle-island-images';
 
 /**
  * El modelo del HUD de «Defensa del Castillo» (plan 014 T161): precios y si
@@ -151,22 +167,231 @@ describe('la ficha de una isla: nivel, Mejorar y Vender', () => {
   });
 });
 
-describe('el avión', () => {
-  it('nivel y precio del siguiente, de la partida; en el máximo, «Daño máximo»', () => {
+describe('mejoras: el avión (velocidad y daño, 1–5) y la vida del castillo (plan 015 T171)', () => {
+  const row = (rows: ReturnType<typeof upgradeRows>, id: string) => rows.find((r) => r.id === id)!;
+
+  it('las tres filas con el nivel, el precio y lo de ahora → lo del siguiente, de la config', () => {
     const g = createDefense(cfg, 7);
-    g.refund(5000);
-    let v = planeView(g.snapshot());
-    expect(v).toMatchObject({ level: 1, nextCost: cfg.plane.damageCost[0], affordable: true });
-    expect(t(planeLine(v).key, planeLine(v).params)).toContain(String(cfg.plane.damageCost[0]));
-    for (let i = 0; i < cfg.plane.damageCost.length; i++) g.upgradePlane('damage');
-    v = planeView(g.snapshot());
-    expect(v).toMatchObject({
-      level: cfg.plane.damage.length,
-      maxLevel: cfg.plane.damage.length,
-      nextCost: null,
-      affordable: false,
+    g.refund(1e5);
+    const rows = upgradeRows(cfg, g.snapshot());
+    expect(rows.map((r) => r.id)).toEqual(['speed', 'damage', 'castle']);
+    expect(row(rows, 'speed')).toMatchObject({
+      level: 1,
+      maxLevel: DEFENSE_PLANE_MAX_LEVEL,
+      cost: cfg.plane.speedCost[0],
+      affordable: true,
     });
-    expect(planeLine(v).key).toBe('mar.castillo.avion.max');
+    expect(row(rows, 'damage')).toMatchObject({ level: 1, cost: cfg.plane.damageCost[0] });
+    expect(row(rows, 'castle')).toMatchObject({
+      level: 1,
+      maxLevel: defenseCastleMaxLevel(cfg),
+      cost: cfg.castle.upgradeCost[0],
+    });
+    const dmg = row(rows, 'damage').value;
+    expect(t(dmg.key, dmg.params)).toContain(`${cfg.plane.damage[0]} → ${cfg.plane.damage[1]}`);
+    const life = row(rows, 'castle').value;
+    expect(t(life.key, life.params)).toContain(
+      `${cfg.castle.life} → ${cfg.castle.life + cfg.castle.lifePerLevel}`,
+    );
+    const spd = row(rows, 'speed').value;
+    expect(t(spd.key, spd.params)).toContain(formatNum(cfg.plane.cooldownS[1]!));
+    for (const r of rows) {
+      const l = upgradeRowLine(r);
+      expect(t(l.key, l.params)).toContain(String(r.cost));
+      expect(t(r.nameKey)).not.toBe(r.nameKey);
+    }
+    expect(anyUpgradeAffordable(rows)).toBe(true);
+  });
+
+  it('suben hasta el tope (5 el avión, el castillo hasta su último nivel) y allí «Máximo»', () => {
+    const g = createDefense(cfg, 7);
+    g.refund(1e5);
+    for (let i = 0; i < 20; i++) {
+      g.upgradePlane('speed');
+      g.upgradePlane('damage');
+      g.upgradeCastle();
+    }
+    const rows = upgradeRows(cfg, g.snapshot());
+    expect(row(rows, 'speed')).toMatchObject({ level: DEFENSE_PLANE_MAX_LEVEL, cost: null });
+    expect(row(rows, 'damage')).toMatchObject({ level: DEFENSE_PLANE_MAX_LEVEL, cost: null });
+    expect(row(rows, 'castle')).toMatchObject({ level: defenseCastleMaxLevel(cfg), cost: null });
+    for (const r of rows) {
+      expect(r.affordable).toBe(false);
+      expect(upgradeRowLine(r).key).toBe('mar.castillo.mejora.max');
+      expect(t(r.value.key, r.value.params)).not.toContain('→');
+    }
+    expect(anyUpgradeAffordable(rows)).toBe(false);
+  });
+
+  it('sin dinero no se puede pagar (y se dice)', () => {
+    const g = createDefense(cfg, 7);
+    g.spend(g.purse);
+    const rows = upgradeRows(cfg, g.snapshot());
+    expect(rows.every((r) => !r.affordable)).toBe(true);
+  });
+
+  it('DefenseRun: las mejoras del HUD llegan a la partida en el paso siguiente', () => {
+    const run = new DefenseRun({ seed: 7, quality: 'alta', devCoins: 9000 });
+    for (let i = 0; i < DEFENSE_PLANE_MAX_LEVEL + 1; i++) {
+      run.upgradePlane('speed');
+      run.step(null);
+      run.upgradePlane('damage');
+      run.step(null);
+    }
+    run.upgradeCastle();
+    run.step(null);
+    const s = run.snapshot();
+    expect(s.plane.speedLevel).toBe(DEFENSE_PLANE_MAX_LEVEL);
+    expect(s.plane.damageLevel).toBe(DEFENSE_PLANE_MAX_LEVEL);
+    expect(s.castle.level).toBe(2);
+    expect(run.hook()).toMatchObject({
+      avionVelocidad: DEFENSE_PLANE_MAX_LEVEL,
+      avionNivel: DEFENSE_PLANE_MAX_LEVEL,
+      castilloNivel: 2,
+    });
+  });
+});
+
+describe('el detalle de cada isla (decisión 13): foto, cómo hace daño y la tabla', () => {
+  it('cada isla tiene su foto de T172 en la lista, el detalle, colocar y la ficha', () => {
+    for (const o of buildOptions(cfg, 0)) expect(o.image).toBe(CASTLE_ISLAND_IMAGES[o.kind]);
+    for (const kind of DEFENSE_TOWER_KINDS)
+      expect(towerDetail(cfg, kind, 0).image).toBe(CASTLE_ISLAND_IMAGES[kind]);
+  });
+
+  it('el texto lleva los números de la config de su nivel, sin huecos sin rellenar', () => {
+    for (const kind of DEFENSE_TOWER_KINDS) {
+      for (const level of [1, 2, 3]) {
+        const l = towerHowLine(cfg, kind, level);
+        const text = t(l.key, l.params);
+        expect(text, `${kind} ${level}`).not.toMatch(/[{}]/);
+        const st = defenseTowerStats(cfg, kind, level) as unknown as Record<string, number>;
+        // El alcance (o las monedas de Ibiza) sale tal cual.
+        const shown = kind === 'tienda' ? st.coins! : st.range!;
+        expect(text, `${kind} ${level}`).toContain(formatNum(shown));
+      }
+    }
+  });
+
+  it('la tabla tiene un valor por nivel, sacado de la config', () => {
+    for (const kind of DEFENSE_TOWER_KINDS) {
+      const rows = towerStatRows(cfg, kind);
+      expect(rows.length).toBeGreaterThan(0);
+      for (const r of rows) {
+        expect(r.values).toHaveLength(3);
+        expect(t(r.labelKey)).not.toBe(r.labelKey);
+      }
+      if (kind !== 'tienda') {
+        const range = rows.find((r) => r.id === 'alcance')!;
+        expect(range.values).toEqual(kinds[kind].levels.map((l) => formatNum(l.range)));
+      }
+    }
+  });
+
+  it('detalle: precio, si llega el dinero y la prioridad con que se construye', () => {
+    const d = towerDetail(cfg, 'fotos', kinds.fotos.cost - 1);
+    expect(d).toMatchObject({ kind: 'fotos', cost: kinds.fotos.cost, affordable: false });
+    expect(d.priority).toBe(kinds.fotos.priority);
+    expect(towerDetail(cfg, 'fotos', kinds.fotos.cost).affordable).toBe(true);
+    expect(towerDetail(cfg, 'faro', 1e6).priority).toBeNull();
+  });
+
+  it('formatNum: coma decimal y dos decimales como mucho', () => {
+    expect(formatNum(0.85)).toBe('0,85');
+    expect(formatNum(1 / 3)).toBe('0,33');
+    expect(formatNum(63)).toBe('63');
+  });
+});
+
+describe('a quién apunta (decisión 12)', () => {
+  it('las cuatro, con la de la isla marcada; ninguna en las que no eligen blanco', () => {
+    const opts = priorityOptions('strongest');
+    expect(opts.map((o) => o.priority)).toEqual([...DEFENSE_TARGET_PRIORITIES]);
+    expect(opts.filter((o) => o.on).map((o) => o.priority)).toEqual(['strongest']);
+    for (const o of opts) {
+      expect(t(o.labelKey)).not.toBe(o.labelKey);
+      expect(t(o.helpKey)).not.toBe(o.helpKey);
+    }
+    expect(priorityOptions(null)).toEqual([]);
+  });
+
+  it('la ficha dice la prioridad por defecto de su tipo y DefenseRun la cambia', () => {
+    const run = new DefenseRun({ seed: 7, quality: 'alta', devIslands: true });
+    const s = run.snapshot();
+    for (const tw of s.towers) {
+      const p = towerPanel(cfg, s, tw.id)!;
+      expect(p.priority).toBe(kinds[tw.kind].priority);
+      expect(t(p.how.key, p.how.params)).not.toMatch(/[{}]/);
+    }
+    const benidorm = s.towers.find((tw) => tw.kind === 'fotos')!;
+    run.setPriority(benidorm.id, 'closest');
+    run.step(null);
+    expect(towerPanel(cfg, run.snapshot(), benidorm.id)!.priority).toBe('closest');
+  });
+});
+
+describe('la oleada siguiente (decisión 10): aviso, jefe y «Llamar oleada»', () => {
+  it('qué trae, cuándo, el bono por llamarla y cuándo avisa', () => {
+    const g = createDefense(cfg, 7);
+    const info = g.nextWave()!;
+    const v = nextWaveView(cfg, info)!;
+    expect(v.wave).toBe(info.wave + 1);
+    expect(v.inS).toBe(Math.ceil(info.inS - 1e-6));
+    expect(v.bonus).toBe(Math.round(info.inS * cfg.waves.callCoinsPerS));
+    expect(v.warn).toBe(info.inS <= WAVE_WARN_S);
+    expect(v.kinds.map((k) => k.count)).toEqual(info.kinds.map((k) => k.count));
+    for (const k of v.kinds) expect(t(k.nameKey)).not.toBe(k.nameKey);
+    expect(nextWaveView(cfg, null)).toBeNull();
+  });
+
+  it('el aviso nombra lo que viene y, si hay jefe, al jefe', () => {
+    // Una oleada con jefe, del calendario de 5 min (la del primer jefe).
+    const g = createDefense(cfg, 7, { runMin: 5 });
+    let withBoss: NonNullable<ReturnType<typeof g.nextWave>> | null = null;
+    let plain: NonNullable<ReturnType<typeof g.nextWave>> | null = null;
+    for (let i = 0; i < 400 && !(withBoss && plain); i++) {
+      const n = g.nextWave();
+      if (!n) break;
+      if (n.boss) withBoss ??= n;
+      else plain ??= n;
+      g.callWave();
+    }
+    expect(withBoss).not.toBeNull();
+    expect(plain).not.toBeNull();
+    const b = nextWaveView(cfg, withBoss)!;
+    const lb = waveWarningLine(b, t);
+    expect(lb.key).toBe('mar.castillo.anuncio.aviso.jefe');
+    expect(t(lb.key, lb.params)).toContain(t(b.bossNameKey!));
+    const p = nextWaveView(cfg, plain)!;
+    const lp = waveWarningLine(p, t);
+    expect(lp.key).toBe('mar.castillo.anuncio.aviso');
+    const text = t(lp.key, lp.params);
+    for (const k of p.kinds) expect(text).toContain(`${t(k.nameKey)} ×${k.count}`);
+    expect(t(callWaveLine(p).key, callWaveLine(p).params)).toContain(String(p.bonus));
+  });
+
+  it('DefenseRun: «Llamar oleada» adelanta el calendario y paga; ×2 da dos pasos por cada uno', () => {
+    const run = new DefenseRun({ seed: 7, quality: 'alta' });
+    run.step(null);
+    const s0 = run.snapshot();
+    const next = s0.nextWave!;
+    run.callWave();
+    run.step(null);
+    const s1 = run.snapshot();
+    expect(s1.waveS).toBeGreaterThan(s1.activeS + next.inS - 1);
+    expect(s1.coins).toBeGreaterThanOrEqual(
+      s0.coins + Math.round(next.inS * cfg.waves.callCoinsPerS),
+    );
+    // La oleada del HUD cuenta con el calendario (no con el tiempo jugado).
+    const list = defenseSchedule(cfg, s1.runMin, s1.difficulty);
+    expect(castleView(s1, list, cfg).wave).toBe(next.wave + 1);
+    expect(run.timeScale).toBe(1);
+    run.timeScale = 2;
+    expect(run.hook().escala).toBe(2);
+    const a = run.tick(1000, false);
+    const b = run.tick(1100, false);
+    expect(a).toBe(0);
+    expect(b).toBe(Math.floor((0.1 * 2) / DEFENSE_STEP_S + 1e-9));
   });
 });
 

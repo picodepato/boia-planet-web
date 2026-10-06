@@ -14,6 +14,8 @@ import {
   type DefenseRunMin,
   type DefenseSnapshot,
   type DefenseStatus,
+  type DefenseTargetPriority,
+  type DefenseTimeScale,
   type DefenseTowerKind,
   type DifficultyId,
   asDefenseRunMin,
@@ -244,6 +246,14 @@ export interface CastleHook {
   seleccion: string;
   /** Nivel de daño del avión. */
   avionNivel: number;
+  /** Nivel de velocidad de ataque del avión (plan 015 T171). */
+  avionVelocidad: number;
+  /** Nivel del castillo (sus mejoras de vida). */
+  castilloNivel: number;
+  /** ×1 o ×2. */
+  escala: DefenseTimeScale;
+  /** s que «Llamar oleada» ha adelantado el calendario (enteros). */
+  adelanto: number;
   /** Dónde va el avión en la partida (u, enteros): «x,y». */
   avion: string;
   fin: DefenseEndReason | null;
@@ -445,6 +455,30 @@ export class DefenseRun {
     this.request({ upgradePlane: stat });
   }
 
+  /** Sube la vida máxima del castillo (plan 015 T171, decisión 9), si llega el dinero. */
+  upgradeCastle(): void {
+    this.request({ upgradeCastle: true });
+  }
+
+  /** Cambia a quién apunta una isla construida (decisión 12). */
+  setPriority(towerId: number, priority: DefenseTargetPriority): void {
+    this.request({ setPriority: { towerId, priority } });
+  }
+
+  /** «Llamar oleada» (decisión 10): la siguiente sale ya, con su bono. */
+  callWave(): void {
+    this.request({ callWave: true });
+  }
+
+  /** ×1 o ×2 (decisión 10): la misma partida paso a paso, más deprisa. */
+  get timeScale(): DefenseTimeScale {
+    return this.clock.scale;
+  }
+
+  set timeScale(v: DefenseTimeScale) {
+    this.clock.scale = v;
+  }
+
   /** Un paso fijo con el mando del avión (dirección en la partida, −1…1). */
   step(move: { x: number; y: number } | null): readonly DefenseEvent[] {
     const input: DefenseInput = { ...this.pending };
@@ -498,6 +532,10 @@ export class DefenseRun {
       colocando: this.placing?.kind ?? '',
       seleccion: this.selected === null ? '' : String(this.selected),
       avionNivel: s.plane.damageLevel,
+      avionVelocidad: s.plane.speedLevel,
+      castilloNivel: s.castle.level,
+      escala: this.clock.scale,
+      adelanto: Math.round(s.waveS - s.activeS),
       avion: `${Math.round(s.plane.x)},${Math.round(s.plane.y)}`,
       fin: s.end,
       semilla: this.seed,

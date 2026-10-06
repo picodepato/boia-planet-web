@@ -472,6 +472,10 @@ export function CastleTestHook({
       data-colocando={hud.colocando || undefined}
       data-seleccion={hud.seleccion || undefined}
       data-avion-nivel={hud.avionNivel}
+      data-avion-velocidad={hud.avionVelocidad}
+      data-castillo-nivel={hud.castilloNivel}
+      data-escala={hud.escala}
+      data-adelanto={hud.adelanto}
       data-avion={hud.avion}
       data-fin={hud.fin ?? undefined}
       data-semilla={hud.semilla}

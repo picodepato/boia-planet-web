@@ -4,6 +4,67 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T171: Castle HUD v2
+
+Qué existe (el HUD de «Defensa del Castillo»; sin tocar las reglas de la partida):
+
+- **Modelo** (`apps/web/app/mar/castillo-hud-model.ts`): foto de cada isla en
+  «Construir» (`BuildOption.image`, `CASTLE_ISLAND_IMAGES` de T172); detalle de una
+  isla (`towerDetail`, `towerHowLine` con los números de la config por nivel,
+  `towerStatRows` tabla nivel 1/2/3, `formatNum` con coma decimal); prioridades
+  (`priorityOptions`, `PRIORITY_KEYS`, la ficha lleva `priority` y `how`); mejoras
+  (`upgradeRows`: velocidad y daño del avión 1–5, vida del castillo, precio, tope y
+  «ahora → luego»); oleada siguiente (`nextWaveView`, `waveWarningLine`,
+  `callWaveLine`, `WAVE_WARN_S` = 6 s, nombres de enemigos `ENEMY_NAME_KEYS`); el
+  contador de oleada usa ahora `snapshot.waveS` (lo adelanta «Llamar oleada»).
+  `planeView`/`planeLine` quitados (sustituidos por `upgradeRows`).
+- **`DefenseRun`** (`castillo.ts`): `upgradeCastle`, `setPriority`, `callWave`,
+  `timeScale` (×1/×2 del reloj); el gancho de pruebas añade `data-avion-velocidad`,
+  `data-castillo-nivel`, `data-escala`, `data-adelanto`.
+- **HUD** (`castillo-hud.tsx`, `castillo-hud.css`): arriba ×2 (izquierda del
+  tiempo, `aria-pressed`), y bajo el HUD el aviso de la oleada siguiente (qué trae,
+  «Con jefe: …») los 6 s antes, leído por la región `aria-live`. Abajo, en reposo:
+  «Construir», «Mejoras» (punto si hay alguna pagable) y «Llamar oleada +N». Lista con
+  fotos y precio (en gris y tachado si no llega; se puede abrir igual) → detalle
+  (texto, tabla, «Apunta a», «Colocar» / «Volver a la lista»; botones fijos abajo)
+  → colocar con «Instalar isla» / Cancelar → ficha con nivel, texto a su nivel,
+  «Apunta a» (Primero / Último / Más fuerte / Más cerca) en las que eligen blanco,
+  Mejorar y Vender → «Mejoras» (tres filas con pips). Teclas nuevas: M mejoras, X ×2,
+  O llamar oleada (1–7 siguen colocando directo). La franja nunca sube por encima de
+  lo de arriba (se mide y se desplaza por dentro); en la arena `.mar` no se desplaza
+  (`overflow: clip`). Iconos nuevos: mejorar, rapidez, dano, jefe.
+- **Pausa** (`menu.tsx` `game.options`, `mar-client.tsx`): interruptores «Barras de
+  vida de los enemigos» y «Números de daño» (`CastleOverlayOptions` →
+  `castle.setOverlays`, guardado en `boia:castillo:marcas`). El Cañón no cambia.
+- **i18n** en `es-mar.ts` (`mar.castillo.detalle.*`, `dato.*`, `prioridad.*`,
+  `mejora*`, `velocidad*`, `llamar*`, `aviso.*`, `anuncio.aviso*`, `enemigo.*`,
+  `opciones*`; «Construir aquí» → «Instalar isla»; claves `mar.castillo.avion*` quitadas).
+- **e2e** (`mar-castillo.spec.ts`): `chooseIsland` (lista → detalle → Colocar); fotos
+  en la lista; mejoras del avión hasta 5 y del castillo; construir tocando el agua lejos
+  del avión + «Instalar isla» + prioridad; oleada (aviso + anuncio, llamar con premio,
+  ×2 frente a ×1, interruptores guardados); sin solapes en 4 tamaños también con
+  detalle, mejoras y aviso de oleada. El paso del tablón expande el tablón (T168 lo
+  dejó cerrado).
+- Capturas (fuera del repo): `C:/tmp/orchestrator-attach/boia-planet-hernan-T171/`
+  (reposo + aviso, construir, detalle, colocar, ficha, mejoras, pausa; 360×640,
+  390×844, 768×1024, 1440×900).
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/app/mar/castillo` → 6 archivos, pasan.
+- `E2E_PORT=3961 pnpm e2e mar-castillo.spec.ts --workers=1 -g "construir|mejorar|vender|HUD|oleada"`
+  → exit 0, 14 passed (tras merge de main con T176); además `-g "tap:|zoom:|barras|pop-up|tarjeta|ranking"`
+  → 16 passed y `-g "logro|mascota|pop-up|tarjeta"` → 6 passed.
+- Test command: vitest 212 archivos / 2016 tests pasan; `sh tools/spec/checks.sh` 0;
+  `pnpm lint` 0; `pnpm build` 0; `pnpm typecheck` 0.
+
+Pendiente:
+
+- La guía (T173) puede usar los `data-testid` nuevos (`mar-castillo-mejoras`,
+  `mar-castillo-llamar`, `mar-castillo-prioridad`, `mar-castillo-detalle-colocar`).
+- `TOWER_ICON` en `castillo-icons.tsx` ya no se usa en el HUD (las fotos lo sustituyen).
+- Textos y números `muestra`.
+
 ## 2026-10-06 — plan 015 T176: Castle and race achievements, prizes and mascot unlocks
 
 Qué existe:

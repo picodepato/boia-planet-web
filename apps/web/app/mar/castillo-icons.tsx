@@ -142,6 +142,38 @@ const GLYPHS = {
       <path strokeWidth={2.2} d="M23 6v6M20 9h6" />
     </>
   ),
+  // Mejoras (plan 015 T171): una flecha hacia arriba sobre una base.
+  mejorar: (
+    <>
+      <path fill={O} d="M16 4.5l9 9.5h-5.4v8.6h-7.2V14H7z" />
+      <path stroke={A} strokeWidth={2.2} d="M7 27.4h18" />
+    </>
+  ),
+  // Velocidad de ataque del avión: un rayo.
+  rapidez: (
+    <>
+      <path fill={S} d="M18.6 3.5L7.5 18h7.2l-2.4 10.5L24.5 13h-7.4z" />
+    </>
+  ),
+  // Daño del avión: una bala que estalla.
+  dano: (
+    <>
+      <path fill={O} strokeWidth={2} d={star(8, 11.5, 5.4, 16, 16)} />
+      <circle fill={C} cx="16" cy="16" r="3.4" />
+    </>
+  ),
+  // Un jefe en la oleada: la calavera con su corona.
+  jefe: (
+    <>
+      <path fill={S} d="M8 10.5l2.6-6 3.4 3.6L16 3.5l2 4.6 3.4-3.6 2.6 6z" />
+      <path
+        fill={W}
+        d="M7.4 18.4c0-4.8 3.8-7.4 8.6-7.4s8.6 2.6 8.6 7.4c0 3-1.6 4.6-3.4 5.4v4.2H10.8v-4.2c-1.8-.8-3.4-2.4-3.4-5.4z"
+      />
+      <circle fill={P} stroke="none" cx="12.6" cy="18.6" r="2.2" />
+      <circle fill={P} stroke="none" cx="19.4" cy="18.6" r="2.2" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type CastleIconName = keyof typeof GLYPHS;

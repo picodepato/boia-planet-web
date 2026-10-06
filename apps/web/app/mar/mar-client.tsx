@@ -182,7 +182,7 @@ import {
 import { Sheet, type SheetState, eventOfPlace, findEvent, islandOfEvent, sheetKey } from './sheet';
 import { CanonDevSwitch, CanonTestHook, useCanonMode } from './canon-mode';
 import { CastleTestHook, useCastleMode } from './castillo-mode';
-import { CastleLayer } from './castillo-hud';
+import { CastleLayer, CastleOverlayOptions } from './castillo-hud';
 import { CanonLayer } from './canon-hud';
 import { CanonPrevia } from './canon-previa';
 import { CastlePrevia } from './castillo-previa';
@@ -2230,6 +2230,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
                     warning: msg('mar.castillo.menu.aviso'),
                     resume: msg('mar.canon.menu.seguir'),
                     onQuit: castle.quit,
+                    options: (
+                      <CastleOverlayOptions
+                        overlays={castle.overlays}
+                        onChange={castle.setOverlays}
+                      />
+                    ),
                   }
                 : undefined
           }

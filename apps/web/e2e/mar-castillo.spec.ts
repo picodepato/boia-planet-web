@@ -1,5 +1,6 @@
 import {
   DEFENSE_CONFIG,
+  DEFENSE_PLANE_MAX_LEVEL,
   DEFENSE_TOWER_KINDS,
   buildDefensePath,
   createDefense,
@@ -15,7 +16,13 @@ import { planetRect, wrapIn } from '../app/mar/engine/wrap';
 import { t } from '../lib/i18n';
 import { mar, openMar } from './mar-helpers';
 import { CASTLE_BEST_KEY, recordCastleBest } from '../lib/mundo/ranking-castle';
-import { CANONCITO, CASTLE_STORM_ACHIEVEMENT, CASTLE_VORTEX_ACHIEVEMENT, SAMPLE_COSMETICS } from '@boia/store';
+import { CASTLE_ISLAND_IMAGES } from '../lib/mundo/castle-island-images';
+import {
+  CANONCITO,
+  CASTLE_STORM_ACHIEVEMENT,
+  CASTLE_VORTEX_ACHIEVEMENT,
+  SAMPLE_COSMETICS,
+} from '@boia/store';
 
 /**
  * «Defensa del Castillo» (plan 014). T160, la arena: con el atajo
@@ -333,6 +340,16 @@ const placing = (page: Page) => page.getByTestId('mar-castillo-colocar');
 const islands = async (page: Page) => Number(await game(page).getAttribute('data-islas'));
 const coins = async (page: Page) => Number(await game(page).getAttribute('data-monedas'));
 
+/**
+ * En la lista de «Construir», una isla: su detalle (cómo hace daño, plan 015
+ * T171) y «Colocar» → la isla que se coloca.
+ */
+async function chooseIsland(page: Page, kind: string): Promise<void> {
+  await page.locator(`[data-testid="mar-castillo-isla"][data-isla="${kind}"]`).click();
+  await expect(page.getByTestId('mar-castillo-detalle')).toHaveAttribute('data-isla', kind);
+  await page.getByTestId('mar-castillo-detalle-colocar').click();
+}
+
 test('construir: cada una de las siete islas, y encima del camino no se puede (rojo con su motivo)', async ({
   page,
 }) => {
@@ -355,7 +372,15 @@ test('construir: cada una de las siete islas, y encima del camino no se puede (r
   await page.getByTestId('mar-castillo-construir').click();
   await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
   await expect(page.getByTestId('mar-castillo-isla')).toHaveCount(kinds.length);
-  await page.locator('[data-testid="mar-castillo-isla"][data-isla="faro"]').click();
+  // Cada isla con la foto de su modelo (T172), no un icono.
+  for (const kind of kinds) {
+    const img = page.locator(`[data-testid="mar-castillo-isla"][data-isla="${kind}"] img`);
+    await expect(img).toHaveAttribute('src', CASTLE_ISLAND_IMAGES[kind].src);
+    await expect
+      .poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth))
+      .toBeGreaterThan(0);
+  }
+  await chooseIsland(page, 'faro');
   await expect(placing(page)).toHaveAttribute('data-isla', 'faro');
   await expect(canvas(page)).toHaveAttribute('data-arena-colocar', /ok|no/);
   await flyTo(page, onPath, 20);
@@ -377,7 +402,7 @@ test('construir: cada una de las siete islas, y encima del camino no se puede (r
   for (const [i, kind] of kinds.entries()) {
     if (i === 0) {
       await page.getByTestId('mar-castillo-construir').click();
-      await page.locator(`[data-testid="mar-castillo-isla"][data-isla="${kind}"]`).click();
+      await chooseIsland(page, kind);
     } else {
       await page.keyboard.press('b');
       await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
@@ -425,7 +450,7 @@ test('mejorar y vender: tocar una isla, subirla a nivel 3 y venderla; el avión 
   await expect(canvas(page)).toHaveAttribute('data-arena-avion', /\d/);
   // Una Ibiza cerca de la salida del avión.
   await page.getByTestId('mar-castillo-construir').click();
-  await page.locator('[data-testid="mar-castillo-isla"][data-isla="tienda"]').click();
+  await chooseIsland(page, 'tienda');
   await flyTo(page, roomySpots(1)[0]!);
   await page.getByTestId('mar-castillo-colocar-si').click();
   await expect.poll(() => islands(page)).toBe(1);
@@ -482,11 +507,38 @@ test('mejorar y vender: tocar una isla, subirla a nivel 3 y venderla; el avión 
   await expect(card).toHaveCount(0);
   await expect.poll(hudCoins).toBeGreaterThanOrEqual(before + refund);
 
-  // El daño del avión: 1 → 2.
+  // «Mejoras»: velocidad y daño del avión hasta 5, y la vida del castillo.
   await expect(game(page)).toHaveAttribute('data-avion-nivel', '1');
-  await page.getByTestId('mar-castillo-avion').click();
-  await expect(game(page)).toHaveAttribute('data-avion-nivel', '2');
-  await expect(page.getByTestId('mar-castillo-avion')).toHaveAttribute('data-nivel', '2');
+  await page.getByTestId('mar-castillo-mejoras').click();
+  await expect(page.getByTestId('mar-castillo-mejoras-panel')).toBeVisible();
+  const upgrade = (id: string) =>
+    page.locator(`[data-testid="mar-castillo-mejora"][data-mejora="${id}"]`);
+  for (const [id, attr] of [
+    ['speed', 'data-avion-velocidad'],
+    ['damage', 'data-avion-nivel'],
+  ] as const) {
+    for (let level = 2; level <= DEFENSE_PLANE_MAX_LEVEL; level++) {
+      await upgrade(id).click();
+      await expect(game(page)).toHaveAttribute(attr, String(level));
+      await expect(upgrade(id)).toHaveAttribute('data-nivel', String(level));
+    }
+    // En el tope: «Máximo», apagado.
+    await expect(upgrade(id)).toHaveAttribute('aria-disabled', 'true');
+    await expect(upgrade(id)).toHaveText(t('mar.castillo.mejora.max'));
+  }
+  const life0 = Number(await game(page).getAttribute('data-vida-max'));
+  await upgrade('castle').click();
+  await expect(game(page)).toHaveAttribute('data-castillo-nivel', '2');
+  await expect(game(page)).toHaveAttribute(
+    'data-vida-max',
+    String(life0 + DEFENSE_CONFIG.castle.lifePerLevel),
+  );
+  await expect(page.getByTestId('mar-castillo-vida')).toHaveAttribute(
+    'aria-valuemax',
+    String(life0 + DEFENSE_CONFIG.castle.lifePerLevel),
+  );
+  await page.getByTestId('mar-castillo-mejoras-cerrar').click();
+  await expect(page.getByTestId('mar-castillo-mejoras-panel')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -511,8 +563,7 @@ test('HUD: arriba vida, tiempo, oleada y monedas; la pausa con el sonido y «Ter
     return [...document.querySelectorAll('[data-testid="mar-castillo-isla"]')]
       .filter(
         (el) =>
-          Number(el.getAttribute('data-coste')) > have !==
-          (el.getAttribute('aria-disabled') === 'true'),
+          Number(el.getAttribute('data-coste')) > have !== (el.getAttribute('data-pobre') === 'si'),
       )
       .map((el) => el.getAttribute('data-isla'));
   });
@@ -563,6 +614,7 @@ async function boxesOf(page: Page): Promise<Record<string, Box>> {
       hud: '[data-testid="mar-castillo-hud"]',
       franja: '[data-testid="mar-castillo-franja"] > *',
       aviso: '[data-testid="mar-castillo-jefe-aviso"]',
+      oleada: '[data-testid="mar-castillo-aviso-oleada"]',
       menu: '[data-testid="mar-logros"]',
       minimapa: '[data-testid="mar-minimapa"]',
       enlaces: '[data-testid="mar-enlaces"]',
@@ -607,7 +659,7 @@ async function touchTargets(page: Page): Promise<{ id: string; w: number; h: num
   );
 }
 
-test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, construir, colocar, ficha y boss) y todo se toca con 44 px', async ({
+test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, construir, detalle, colocar, ficha, mejoras, aviso de oleada y boss) y todo se toca con 44 px', async ({
   page,
 }) => {
   // `islas=1`: siete islas ya puestas (para la ficha); `t=`: con el primer boss en el camino.
@@ -628,9 +680,16 @@ test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, co
       },
     },
     {
-      name: 'colocar',
+      name: 'detalle',
       enter: async () => {
         await page.locator('[data-testid="mar-castillo-isla"][data-isla="cala"]').click();
+        await expect(page.getByTestId('mar-castillo-detalle')).toBeVisible();
+      },
+    },
+    {
+      name: 'colocar',
+      enter: async () => {
+        await page.getByTestId('mar-castillo-detalle-colocar').click();
         await expect(placing(page)).toBeVisible();
       },
     },
@@ -638,13 +697,28 @@ test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, co
       name: 'ficha',
       enter: async () => {
         await page.keyboard.press('Escape');
-        await page.keyboard.press('i');
-        await expect(page.getByTestId('mar-castillo-ficha')).toBeVisible();
+        // Una isla que elige blanco: con las cuatro prioridades (la ficha más alta).
+        for (let i = 0; i < kinds.length; i++) {
+          await page.keyboard.press('i');
+          await expect(page.getByTestId('mar-castillo-ficha')).toBeVisible();
+          if ((await page.getByTestId('mar-castillo-prioridad').count()) > 0) break;
+        }
+        await expect(page.getByTestId('mar-castillo-prioridad')).toHaveCount(4);
+      },
+    },
+    {
+      name: 'mejoras',
+      enter: async () => {
+        await page.keyboard.press('Escape');
+        await page.getByTestId('mar-castillo-mejoras').click();
+        await expect(page.getByTestId('mar-castillo-mejoras-panel')).toBeVisible();
       },
     },
   ];
   for (const mode of modes) {
     await mode.enter();
+    // Con el aviso de la oleada siguiente a la vista (sale unos segundos antes de cada una).
+    await expect(page.getByTestId('mar-castillo-aviso-oleada')).toBeVisible({ timeout: 30_000 });
     for (const size of HUD_SIZES) {
       await page.setViewportSize(size);
       await page.waitForTimeout(150);
@@ -660,9 +734,11 @@ test('HUD: nada se pisa en 360×640, 390×844, 768×1024 y 1440×900 (reposo, co
         expect(b[id]!.y + b[id]!.height, `${where} ${id}`).toBeLessThanOrEqual(size.height + 0.5);
       }
       for (const [id, box] of Object.entries(b)) {
-        if (id !== 'hud') expect(overlaps(b.hud!, box), `${where}: hud × ${id}`).toBe(false);
-        if (id !== 'franja')
-          expect(overlaps(b.franja!, box), `${where}: franja × ${id}`).toBe(false);
+        for (const own of ['hud', 'franja', 'oleada'] as const) {
+          if (id === own || !b[own]) continue;
+          // El aviso de la oleada y el del boss van apilados bajo el HUD (no se pisan por el hueco).
+          expect(overlaps(b[own]!, box), `${where}: ${own} × ${id}`).toBe(false);
+        }
       }
       for (const t of await touchTargets(page)) {
         expect(Math.min(t.w, t.h), `${where}: ${t.id}`).toBeGreaterThanOrEqual(44);
@@ -786,7 +862,9 @@ test('tap: el mar manda el avión allí (acotado a la arena), una isla se elige 
   let at: { x: number; y: number } | null = null;
   await expect
     .poll(async () => {
-      const spots = ((await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '').split(' ');
+      const spots = ((await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '').split(
+        ' ',
+      );
       for (const s of spots) {
         const m = s.match(/^\d+:(-?\d+),(-?\d+)/);
         if (!m) continue;
@@ -819,7 +897,7 @@ test('tap: el mar manda el avión allí (acotado a la arena), una isla se elige 
 
   // Construyendo: el toque deja ahí la vista previa, con el alcance de la isla (nivel 1).
   await page.getByTestId('mar-castillo-construir').click();
-  await page.locator('[data-testid="mar-castillo-isla"][data-isla="cala"]').click();
+  await chooseIsland(page, 'cala');
   await expect(placing(page)).toHaveAttribute('data-isla', 'cala');
   const destino = await canvas(page).getAttribute('data-arena-destino');
   const here = await freeSea(page);
@@ -870,7 +948,10 @@ test('arena: barras de vida y números de daño encendidos al principio; apagado
   await expect
     .poll(
       async () => {
-        seen.bars = Math.max(seen.bars, Number(await canvas(page).getAttribute('data-arena-barras')));
+        seen.bars = Math.max(
+          seen.bars,
+          Number(await canvas(page).getAttribute('data-arena-barras')),
+        );
         seen.numbers = Math.max(
           seen.numbers,
           Number(await canvas(page).getAttribute('data-arena-numeros')),
@@ -881,6 +962,198 @@ test('arena: barras de vida y números de daño encendidos al principio; apagado
     )
     .toBeGreaterThan(kills + 2);
   expect(seen).toEqual({ bars: 0, numbers: 0 });
+  expect(errors).toEqual([]);
+});
+
+// --- Plan 015 T171: el HUD v2 (construir en cualquier sitio, prioridad, oleadas, ×2, opciones) ---
+
+/** Puntos de la pantalla (px de la página) donde sólo está el lienzo, de arriba abajo. */
+async function seaGrid(page: Page): Promise<{ x: number; y: number }[]> {
+  const vp = page.viewportSize()!;
+  const out: { x: number; y: number }[] = [];
+  for (let fy = 0.3; fy <= 0.72; fy += 0.07) {
+    for (let fx = 0.12; fx <= 0.88; fx += 0.12) {
+      const p = { x: Math.round(vp.width * fx), y: Math.round(vp.height * fy) };
+      const free = await page.evaluate(
+        ({ x, y }) => document.elementFromPoint(x, y)?.getAttribute('data-testid') === 'mar-canvas',
+        p,
+      );
+      if (free) out.push(p);
+    }
+  }
+  return out;
+}
+
+test('construir: en cualquier sitio de la arena tocando el agua e «Instalar isla»; mejorar: a quién apunta la isla', async ({
+  page,
+}) => {
+  const errors = await openMar(
+    page,
+    '?minijuego=castillo&seed=7&dificultad=tranquila&duracion=10&monedas=3000',
+  );
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-hundido', '1.00', { timeout: 15_000 });
+
+  // El detalle: cómo hace daño, con los números de nivel 1, y la tabla por niveles.
+  await page.getByTestId('mar-castillo-construir').click();
+  await page.locator('[data-testid="mar-castillo-isla"][data-isla="fotos"]').click();
+  const detail = page.getByTestId('mar-castillo-detalle');
+  await expect(detail).toHaveAttribute('data-isla', 'fotos');
+  await expect(page.getByTestId('mar-castillo-detalle-texto')).toContainText(
+    String(defenseTowerStats(DEFENSE_CONFIG, 'fotos', 1).range),
+  );
+  await expect(
+    page.locator('[data-testid="mar-castillo-detalle-tabla"] tbody tr[data-dato="alcance"] td'),
+  ).toHaveText(DEFENSE_CONFIG.towers.kinds.fotos.levels.map((l) => String(l.range)));
+  // Volver a la lista y otra vez: «Colocar».
+  await page.getByTestId('mar-castillo-detalle-atras').click();
+  await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
+  await chooseIsland(page, 'fotos');
+  await expect(placing(page)).toHaveAttribute('data-isla', 'fotos');
+  await expect(page.getByTestId('mar-castillo-colocar-si')).toHaveText(
+    new RegExp(t('mar.castillo.colocar.si')),
+  );
+
+  // Un toque en el agua deja ahí la isla (lejos del avión: en cualquier sitio), verde o roja.
+  const box = (await canvas(page).boundingBox())!;
+  let spot: { x: number; y: number } | null = null;
+  for (const p of await seaGrid(page)) {
+    await tapScreen(page, p);
+    await expect(canvas(page)).toHaveAttribute('data-arena-toque-tipo', 'place');
+    const ok = await expect(placing(page))
+      .toHaveAttribute('data-valido', 'si', { timeout: 1500 })
+      .then(
+        () => true,
+        () => false,
+      );
+    if (ok) {
+      spot = p;
+      break;
+    }
+  }
+  expect(spot, 'un sitio libre en la pantalla').not.toBeNull();
+  const at = spot!;
+  const tapped = pointOf(await canvas(page).getAttribute('data-arena-toque'));
+  // La isla se queda donde se tocó aunque el avión siga volando.
+  await page.waitForTimeout(600);
+  await expect(placing(page)).toHaveAttribute('data-valido', 'si');
+  const before = await coins(page);
+  await page.getByTestId('mar-castillo-colocar-si').click();
+  await expect.poll(() => islands(page)).toBe(1);
+  await expect(placing(page)).toHaveCount(0);
+  expect(await coins(page)).toBeLessThan(before - DEFENSE_CONFIG.towers.kinds.fotos.cost / 2);
+  // Construida en el sitio tocado (en la pantalla, donde se tocó).
+  await expect
+    .poll(async () => {
+      const s = (await canvas(page).getAttribute('data-arena-islas-pantalla')) ?? '';
+      const m = s.match(/^\d+:(-?\d+),(-?\d+)/);
+      return m ? Math.hypot(box.x + Number(m[1]) - at.x, box.y + Number(m[2]) - at.y) : Infinity;
+    })
+    .toBeLessThan(40);
+  expect(Math.hypot(tapped.x, tapped.y)).toBeLessThanOrEqual(DEFENSE_CONFIG.arenaRadius);
+
+  // Tocarla: su ficha, con «Apunta a» y la de Benidorm por defecto (el más fuerte).
+  await tapScreen(page, at);
+  const card = page.getByTestId('mar-castillo-ficha');
+  await expect(card).toHaveAttribute('data-isla', 'fotos');
+  await expect(card).toHaveAttribute('data-prioridad', DEFENSE_CONFIG.towers.kinds.fotos.priority!);
+  await expect(page.getByTestId('mar-castillo-prioridad')).toHaveCount(4);
+  await expect(
+    page.locator('[data-testid="mar-castillo-prioridad"][aria-pressed="true"]'),
+  ).toHaveAttribute('data-prioridad', 'strongest');
+  // Cambiarla: el más cercano.
+  await page.locator('[data-testid="mar-castillo-prioridad"][data-prioridad="closest"]').click();
+  await expect(card).toHaveAttribute('data-prioridad', 'closest');
+  await expect(
+    page.locator('[data-testid="mar-castillo-prioridad"][data-prioridad="closest"]'),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('mar-castillo-ficha-cerrar').click();
+  await expect(card).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('oleada: el aviso dice qué viene (y se lee en voz alta), «Llamar oleada» la adelanta con su premio, ×2 acelera y la pausa apaga barras y números (guardado)', async ({
+  page,
+}) => {
+  const q = '?minijuego=castillo&seed=7&dificultad=tranquila&duracion=5';
+  let errors = await openMar(page, q);
+  await expect(hud(page)).toBeVisible();
+
+  // El aviso de la primera oleada, antes de que empiece, y su anuncio.
+  const warn = page.getByTestId('mar-castillo-aviso-oleada');
+  await expect(warn).toHaveAttribute('data-oleada', '1', { timeout: 15_000 });
+  await expect(warn).toContainText('×');
+  await expect(page.getByTestId('mar-castillo-anuncio')).toHaveText(/oleada 1 llega/i);
+  await expect(page.getByTestId('mar-castillo-oleada')).toHaveAttribute('data-oleada', '1', {
+    timeout: 30_000,
+  });
+
+  // «Llamar oleada»: la siguiente sale ya y paga su premio.
+  const call = page.getByTestId('mar-castillo-llamar');
+  await expect(call).toHaveAttribute('data-oleada', '2');
+  await expect.poll(async () => Number(await call.getAttribute('data-bono'))).toBeGreaterThan(2);
+  const bonus = Number(await call.getAttribute('data-bono'));
+  const before = await coins(page);
+  await call.click();
+  await expect(page.getByTestId('mar-castillo-oleada')).toHaveAttribute('data-oleada', '2');
+  await expect
+    .poll(async () => Number(await game(page).getAttribute('data-adelanto')))
+    .toBeGreaterThan(0);
+  expect(await coins(page)).toBeGreaterThanOrEqual(before + bonus - 1);
+  await expect(call).toHaveAttribute('data-oleada', '3');
+
+  // ×2: el tiempo de partida corre el doble (se compara con ×1 en la misma máquina).
+  const speed = page.getByTestId('mar-castillo-velocidad');
+  await expect(speed).toHaveAttribute('aria-pressed', 'false');
+  const rate = async () => {
+    const a = Number(await game(page).getAttribute('data-activo'));
+    const t0 = Date.now();
+    await page.waitForTimeout(2500);
+    const b = Number(await game(page).getAttribute('data-activo'));
+    return (b - a) / ((Date.now() - t0) / 1000);
+  };
+  const r1 = await rate();
+  await speed.click();
+  await expect(speed).toHaveAttribute('aria-pressed', 'true');
+  await expect(game(page)).toHaveAttribute('data-escala', '2');
+  const r2 = await rate();
+  expect(r2).toBeGreaterThan(r1 * 1.4);
+  // La X lo devuelve a ×1.
+  await page.keyboard.press('x');
+  await expect(game(page)).toHaveAttribute('data-escala', '1');
+  await expect(speed).toHaveAttribute('aria-pressed', 'false');
+
+  // La pausa: barras de vida y números de daño, encendidos; se apagan y se guarda.
+  await page.getByTestId('mar-castillo-pausa').click();
+  await expect(page.getByTestId('mar-menu')).toBeVisible();
+  const bars = page.getByTestId('mar-castillo-opcion-barras');
+  const numbers = page.getByTestId('mar-castillo-opcion-numeros');
+  await expect(bars).toHaveAttribute('aria-checked', 'true');
+  await expect(numbers).toHaveAttribute('aria-checked', 'true');
+  await bars.click();
+  await numbers.click();
+  await expect(bars).toHaveAttribute('aria-checked', 'false');
+  await expect(numbers).toHaveAttribute('aria-checked', 'false');
+  expect(
+    JSON.parse((await page.evaluate((k) => localStorage.getItem(k), DEFENSE_OVERLAYS_KEY)) ?? '{}'),
+  ).toEqual({ bars: false, numbers: false });
+  await page.getByTestId('mar-menu-seguir').click();
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await expect(canvas(page)).toHaveAttribute('data-arena-barras', '0');
+  await expect(canvas(page)).toHaveAttribute('data-arena-numeros', '0');
+  expect(errors).toEqual([]);
+
+  // Otra partida en el mismo dispositivo: siguen apagados; se vuelven a encender.
+  errors = await openMar(page, q);
+  await expect(hud(page)).toBeVisible();
+  await page.getByTestId('mar-castillo-pausa').click();
+  await expect(bars).toHaveAttribute('aria-checked', 'false');
+  await bars.click();
+  await numbers.click();
+  await expect(bars).toHaveAttribute('aria-checked', 'true');
+  expect(
+    JSON.parse((await page.evaluate((k) => localStorage.getItem(k), DEFENSE_OVERLAYS_KEY)) ?? '{}'),
+  ).toEqual({ bars: true, numbers: true });
   expect(errors).toEqual([]);
 });
 
@@ -1022,6 +1295,8 @@ test('pop-up, tarjeta y medalla: 5 min + Tranquila, se gana con `vencer=1`, la t
   // El «Tablón del faro»: la tarjeta del Castillo, con su mejor medalla.
   await openMar(page, `?ir=${LIGHTHOUSE_PLACE_ID}`);
   await expect(mar(page)).toHaveAttribute('data-llegada', LIGHTHOUSE_PLACE_ID, { timeout: 60_000 });
+  // El tablón sale cerrado (plan 015 T168): la medalla se ve al desplegarlo.
+  await page.getByTestId('mar-ficha-mas').click();
   const card = page.getByTestId('tablon-castillo');
   await expect(card).toHaveAttribute('data-medalla', 'oro');
   await expect(page.getByTestId('tablon-medalla-castillo')).toBeVisible();

@@ -135,9 +135,12 @@ export function MarMenu({
   /**
    * Con una partida del Cañón en pausa (T118): el aviso de que salir de la
    * página la termina, «Seguir jugando» (cierra el menú) y, con `onQuit`,
-   * «Terminar partida» con su confirmación (T148).
+   * «Terminar partida» con su confirmación (T148). `options`: lo propio del
+   * juego (el castillo: barras de vida y números de daño, plan 015 T171).
    */
-  game?: { warning: string; resume: string; onQuit?: () => void } | undefined;
+  game?:
+    | { warning: string; resume: string; onQuit?: () => void; options?: ReactNode }
+    | undefined;
 }) {
   return (
     <MarHoja
@@ -238,7 +241,7 @@ function MenuGame({
   game,
   onClose,
 }: {
-  game: { warning: string; resume: string; onQuit?: () => void };
+  game: { warning: string; resume: string; onQuit?: () => void; options?: ReactNode };
   onClose: () => void;
 }) {
   const [confirm, setConfirm] = useState(false);
@@ -273,6 +276,7 @@ function MenuGame({
       role="status"
     >
       <p data-testid="mar-menu-aviso-partida">{game.warning}</p>
+      {game.options && !confirm ? game.options : null}
       {confirm && onQuit ? (
         <div
           className="mar-menu__confirm"
