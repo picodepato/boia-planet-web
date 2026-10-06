@@ -37,7 +37,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 ## Tasks
 
 ## T177 — Line endings and slow test suites
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: none
@@ -51,7 +51,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - `git ls-files --eol | grep -c "i/crlf"` → 0 (outside binaries)
   - the default vitest run takes clearly less than before (times before/after recorded in the status section) and the slow suites pass in their own command → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `.gitattributes` eol=lf and repo renormalized; the three `*-balance.test.ts` sims moved to `pnpm test:slow` (default vitest 86 s → 34 s); castle «construir» e2e retries the island confirm on state · ccb1dfc
 
 ## T174 — Vecino quejica remodelled in Blender (Cañón and castle)
 - Status: running (attempt 1)
@@ -70,7 +70,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T168 — Tabarca lighthouse near the start and the board pop-up v2
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: frontend-design
 - Depends on: T177
@@ -86,7 +86,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T169 — Castle simulation v2: path, building anywhere, upgrades, priorities, speed, waves
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T177
@@ -223,13 +223,17 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T177: slow set = every `packages/*/src/**/*-balance.test.ts` (survivors-balance, survivors-boss-balance, defense-balance), `vitest.slow.config.ts` reuses the list, 120 s timeout; wrapper did renormalization and split, Codex the e2e pass; Codex's `mar-paridad`/`mar-canon` changes reverted (one failed, one never run; Codex could not run Playwright: spawn EPERM); castle `flyTo` kept, retry on the island confirm added; T174 conflicts were line endings only (agent)
 - 2026-10-06 plan: header decisions 1–18 from Hernán's notes and answers (plans/015-notes.md at 15902e7); plane never leaves the arena and the widest camera view is the current arena view (decision 3); the guide asks before the first game and can be skipped with one button (decision 14) (Hernán)
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T177: `mar-canon` and `mar-paridad` e2e still use fixed waits; `survivors.test.ts` (~36 s) still in the default run (agent)
 
 ## Log
 - 2026-10-06 drafted in the session with Hernán from plans/015-notes.md
 - 2026-10-06 approved by Hernán ("Lanza el plan"); notes file folded in and removed (6bc5660)
 - 2026-10-06 T177 launched · attempt 1 · Codex via wrapper agent a48cab710434cc27a (sonnet)
 - 2026-10-06 T174 launched · attempt 1 · agent ac27231ba67787e7f (fable)
+- 2026-10-06 13:11 T177 done by agent (Codex + wrapper); integration conflict with T174 in ESTADO.md, defense-view.ts, check.py → sent back to the same agent
+- 2026-10-06 13:16 T177 integrated → ccb1dfc (tests ok); worktree and branch removed
