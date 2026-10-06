@@ -70,7 +70,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T168 — Tabarca lighthouse near the start and the board pop-up v2
-- Status: running (attempt 1)
+- Status: done
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: frontend-design
 - Depends on: T177
@@ -83,7 +83,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - unit tests: places do not overlap and buoys are on water after the move; the faro is in the left half of the start view → pass
   - `E2E_PORT=<free> pnpm e2e mar-tablon.spec.ts mar-decor.spec.ts --workers=1` (board opens closed, expands, each button shows Navegar / Ir en nave for its island and both work) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: faro at Maq [-2.32, 10.26] (left half of the start view, not beside the náufrago), board closed with three buttons opening the shared Navegar / Ir en nave sheet, explanations when expanded, «Rumbo a…» removed; done by Codex + wrapper · ba309db
 
 ## T169 — Castle simulation v2: path, building anywhere, upgrades, priorities, speed, waves
 - Status: done
@@ -223,6 +223,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T168: faro at [-2.32, 10.26] instead of beside the náufrago [-5.6, 16.4]: that spot is off-screen with the mobile start camera and the visible spots near it cut the race circuit (reversible) — FOR HERNÁN; `mar3d.ts` `onKey` lets a focused button/link keep Enter/Space (an active dialogue near the faro swallowed it); travel sheet buttons checked ≥ 40 px (shared sheet's are 42 px) (agent)
 - 2026-10-06 T172: Faro image from the hand-made `buildIsland('faro')` the castle builds (not the Tabarca GLB, which it copies to scale); normal game camera (40° fov, 0.71 rad elevation, from the pier side, day light), below-water cut; each island fitted and centred with the same camera and margin (one shared fit left small islands unrecognisable); WebP 96/192 px, 3–10 kB; render needs node `--experimental-transform-types`, stub `document` only for unused stage text (agent)
 - 2026-10-06 run: with 4 agents, if tests start failing by timeouts under load, stop one agent (WIP commit, continuation later) instead of retrying blindly (Hernán)
 - 2026-10-06 run: 3 agents at once at Hernán's request; T170 launched before T175 (plan order) because it is on the critical path to T171/T173 (orchestrator)
@@ -233,6 +234,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 plan: T177 runs first because renormalizing line endings while other agents edit the same files causes conflicts; ×2 and «Llamar oleada» allowed in ranked games; calling a wave early gives a small coin bonus; health bars and damage numbers are drawn in T170 so the pause toggles have something to switch; prize amounts `muestra` (orchestrator, shown to Hernán)
 
 ## Proposals (new scope)
+- 2026-10-06 T168: the faro right beside the náufrago needs a wider mobile start framing in `framing.ts` (agent)
 - 2026-10-06 T169: no sound for the castle upgrade; HUD wave counter uses `activeS` instead of `snapshot.waveS` (T171) (agent)
 - 2026-10-06 T177: `mar-canon` and `mar-paridad` e2e still use fixed waits; `survivors.test.ts` (~36 s) still in the default run (agent)
 
@@ -252,3 +254,5 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 14:01 T170 launched · attempt 1 · agent ae169763add2a5b41 (opus) — 3rd agent at Hernán's request
 - 2026-10-06 14:05 T175 launched · attempt 1 · agent a777d934b18729e6b (fable) — 4th agent, Hernán: «avanza en lo que puedas»
 - 2026-10-06 14:12 T172 integrated → 4cdd40f (tests ok); worktrees and branches removed
+- 2026-10-06 14:20 pushed main 25888fb to Vercel on Hernán's Telegram reply («Puse», read as push)
+- 2026-10-06 14:36 T168 integrated → ba309db (tests ok); worktree and branch removed
