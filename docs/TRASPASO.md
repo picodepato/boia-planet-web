@@ -299,6 +299,21 @@ Las propuestas de cada tarea están en la sección «Proposals» de cada plan.
 Varias ya se hicieron en tareas posteriores: comprueba en el código antes de
 tomarlas.
 
+### Qué hace Hernán (plan 016, 2026-10-06)
+
+- **Migraciones del plan 016 ya aplicadas en `boia-planet-dev`**
+  (2026-10-06, por el orquestador a petición de Hernán):
+  `20261006100500_castle_config_v6.sql` (reglas del castillo versión 6 en
+  el ranking) y `20261006100600_member_numbers_artist_link.sql` (nº de
+  socio por orden de llegada sin huecos, «Cambiar nº» del Admin, enlace de
+  artistas). `pnpm db:types:dev` sin diferencias y `pnpm test:supabase`
+  93/93. Queda **crear el enlace de artistas real** desde Admin → Socios, y
+  aplicar las dos en producción cuando se publique con cuentas.
+- **Probar el castillo v3** con su
+  [guía de prueba](propuestas/2026-10-06-castillo-v3-guia-prueba.md) y
+  contestar sus preguntas (sobre todo: el bot gana todo al 100 %, ¿se queda
+  así?).
+
 ### Depende de Álvaro
 
 Tabla completa en [DECISIONES.md](DECISIONES.md), «Preguntas abiertas».
@@ -320,6 +335,7 @@ Tabla completa en [DECISIONES.md](DECISIONES.md), «Preguntas abiertas».
 | P23* | Uso de la lista de emails de quien aceptó noticias (qué, cada cuánto, con qué herramienta) |
 | P24* | Importes de puntos y topes del antitrampas (50 puntos por sello, topes por acción y día, tiempos mínimos) |
 | P26* | Arte final del Carnet como carné de identidad y de los sellos de cada fiesta |
+| — | El sello «ARTISTA» del anverso del Carnet de artista (plan 016 T186, `muestra`) y «Defensa del Castillo» con el [borrador del plan 015](propuestas/2026-10-06-premios-mascotas-decision-alvaro.md) |
 
 \* Propuestas en el [borrador de D-27](propuestas/2026-10-03-d27-borrador.md);
 entran en `DECISIONES.md` si Hernán lo aprueba. El mismo borrador propone
