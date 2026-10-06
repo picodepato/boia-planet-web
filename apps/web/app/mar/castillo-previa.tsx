@@ -6,7 +6,7 @@ import {
   type DefenseRunMin,
   type DifficultyId,
 } from '@boia/engine/defense';
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { type ReactNode, type RefObject, useEffect, useId, useRef } from 'react';
 import { type MessageKey, t as msg } from '../../lib/i18n';
 import { castlePairMedal } from '../../lib/mundo/castle-medals';
 import { CanonDifficultyPicker } from './canon-previa';
@@ -28,6 +28,10 @@ import './castillo-previa.css';
  * Abajo en el móvil, centrado en escritorio. Los atajos `duracion=` y
  * `dificultad=` no pasan por aquí (salvo con `oferta=1`): empiezan la
  * partida directamente.
+ *
+ * La guía (plan 015 T173): la primera vez, «Jugar» pregunta antes
+ * «¿Empezar con la guía?» (Sí / No, jugar) en el mismo diálogo; respondida,
+ * el interruptor «Con la guía» deja repetirla.
  */
 
 export const CASTLE_MEDAL_KEY: Readonly<Record<DefenseMedal, MessageKey>> = {
@@ -77,13 +81,17 @@ export function CastlePrevia({
   const latest = useRef(prep);
   latest.current = prep;
 
-  // Al abrirse, el foco en la duración marcada (lo primero que se elige).
+  // Al abrirse, el foco en la duración marcada (lo primero que se elige); en la pregunta, en «Sí».
   useEffect(() => {
     if (!prep.open) return;
     boxRef.current
-      ?.querySelector<HTMLElement>('[data-testid="mar-castillo-duracion"] [aria-checked="true"]')
+      ?.querySelector<HTMLElement>(
+        prep.asking
+          ? '[data-testid="mar-castillo-guia-si"]'
+          : '[data-testid="mar-castillo-duracion"] [aria-checked="true"]',
+      )
       ?.focus({ preventScroll: true });
-  }, [prep.open]);
+  }, [prep.open, prep.asking]);
 
   // Esc cierra (antes que nadie: no abre el menú de /mar); Tab no sale del diálogo.
   useEffect(() => {
@@ -92,7 +100,9 @@ export function CastlePrevia({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        latest.current.close();
+        // En la pregunta de la guía, Esc vuelve a elegir; si no, cierra.
+        if (latest.current.asking) latest.current.back();
+        else latest.current.close();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -118,6 +128,7 @@ export function CastlePrevia({
   }, [prep.open]);
 
   if (!prep.open) return null;
+  if (prep.asking) return <CastleGuideQuestion castle={castle} boxRef={boxRef} />;
   const { runMin, difficulty } = prep;
   const pair = castlePairLabel(runMin, difficulty);
   const best = castlePairMedal(castle.medals, runMin, difficulty);
@@ -200,6 +211,21 @@ export function CastlePrevia({
           )}
         </section>
 
+        {prep.answered ? (
+          <button
+            type="button"
+            role="switch"
+            className="mar-castle-switch mar-castle-previa__guia"
+            data-testid="mar-castillo-previa-guia"
+            aria-checked={prep.replay}
+            onClick={() => prep.setReplay(!prep.replay)}
+          >
+            <span>{msg('mar.castillo.guia.repetir')}</span>
+            <span className="mar-castle-switch__track" aria-hidden="true">
+              <span className="mar-castle-switch__knob" />
+            </span>
+          </button>
+        ) : null}
         {prep.blocked ? (
           <p
             className="mar-canon-previa__lock"
@@ -219,6 +245,95 @@ export function CastlePrevia({
         >
           <span className="mar-canon-previa__play-main">{msg('mar.canon.previa.jugar')}</span>
           <span className="mar-canon-previa__play-sub">{pair}</span>
+        </button>
+      </section>
+    </div>
+  );
+}
+
+/**
+ * La primera vez, tras «Jugar» (plan 015 T173): «¿Empezar con la guía?» con
+ * «Sí» y «No, jugar»; las dos empiezan la partida y la respuesta se guarda.
+ * «Atrás» (o Esc) vuelve a elegir; la × cierra como siempre.
+ */
+function CastleGuideQuestion({
+  castle,
+  boxRef,
+}: {
+  castle: CastleMode;
+  boxRef: RefObject<HTMLElement | null>;
+}) {
+  const { prep } = castle;
+  const titleId = useId();
+  const textId = useId();
+  return (
+    <div
+      className="mar-canon-previa-wrap"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) prep.close();
+      }}
+    >
+      <section
+        ref={boxRef}
+        className="mar-canon-previa mar-castle-previa mar-castle-pregunta"
+        data-testid="mar-castillo-guia-pregunta"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={textId}
+      >
+        <header className="mar-canon-previa__head">
+          <h2 id={titleId} className="mar-canon-previa__title">
+            {msg('mar.castillo.guia.pregunta')}
+          </h2>
+          <button
+            type="button"
+            className="mar-canon-previa__close"
+            data-testid="mar-castillo-previa-cerrar"
+            aria-label={msg('mar.castillo.previa.cerrar')}
+            onClick={prep.close}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+          <p id={textId} className="mar-canon-previa__text">
+            {msg('mar.castillo.guia.pregunta.texto')}
+          </p>
+        </header>
+        {prep.blocked ? (
+          <p className="mar-canon-previa__lock" role="status">
+            {prep.blocked}
+          </p>
+        ) : null}
+        <div className="mar-castle-pregunta__choices">
+          <button
+            type="button"
+            className="mar-canon-previa__play"
+            data-testid="mar-castillo-guia-si"
+            disabled={!!prep.blocked}
+            onClick={() => prep.answer(true)}
+          >
+            <span className="mar-canon-previa__play-main">{msg('mar.castillo.guia.si')}</span>
+            <span className="mar-canon-previa__play-sub">
+              {castlePairLabel(prep.runMin, prep.difficulty)}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="mar-castle-pregunta__no"
+            data-testid="mar-castillo-guia-no"
+            disabled={!!prep.blocked}
+            onClick={() => prep.answer(false)}
+          >
+            {msg('mar.castillo.guia.no')}
+          </button>
+        </div>
+        <button
+          type="button"
+          className="mar-castle-pregunta__back"
+          data-testid="mar-castillo-guia-atras"
+          onClick={prep.back}
+        >
+          {msg('mar.castillo.guia.atras')}
         </button>
       </section>
     </div>

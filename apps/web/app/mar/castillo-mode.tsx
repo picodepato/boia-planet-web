@@ -40,6 +40,15 @@ import {
 import type { CanonAudioState } from './canon-audio';
 import { useCastleAudio } from './castillo-audio-mode';
 import { type CastleUnlock, castleSignals, recordCastleWin } from './castillo-logros';
+import {
+  CASTLE_GUIDE_PREF,
+  type CastleGuideAnswer,
+  type CastleGuideTally,
+  EMPTY_GUIDE_TALLY,
+  guideAnswer,
+  playChoice,
+  tallyGuide,
+} from './castillo-guia-model';
 import { type HideLayer, devStartRewards, hideForGame, marHideHost, randomSeed } from './survivors';
 
 /**
@@ -66,6 +75,8 @@ interface CastleStart {
   difficulty: DifficultyId;
   /** Los atajos de desarrollo de la URL (la partida no entra en el ranking), o null. */
   dev: CastleShortcut | null;
+  /** Con la guía de la primera partida (plan 015 T173). */
+  guide: boolean;
 }
 
 /**
@@ -80,8 +91,22 @@ export interface CastlePrep {
   difficulty: DifficultyId;
   chooseRunMin(m: DefenseRunMin): void;
   chooseDifficulty(d: DifficultyId): void;
-  /** «Jugar»: cierra el pop-up y empieza con lo elegido. */
+  /**
+   * «Jugar»: cierra el pop-up y empieza con lo elegido; la primera vez
+   * (sin respuesta guardada) antes pregunta «¿Empezar con la guía?».
+   */
   play(): void;
+  /** Se está preguntando «¿Empezar con la guía?» (plan 015 T173). */
+  asking: boolean;
+  /** Ya se respondió alguna vez: el pop-up deja repetir la guía. */
+  answered: boolean;
+  /** «Con la guía» marcado (repetirla en la próxima partida). */
+  replay: boolean;
+  setReplay(on: boolean): void;
+  /** «Sí» / «No, jugar»: guarda la respuesta y empieza. */
+  answer(withGuide: boolean): void;
+  /** Vuelve de la pregunta a elegir dificultad y duración. */
+  back(): void;
   /** Esc, la × o tocar fuera: se cierra y vuelve el panel de la isla. */
   close(): void;
 }
@@ -91,6 +116,16 @@ export interface CastleMedalRecord {
   medal: DefenseMedal;
   /** Es la mejor que había en su par (duración × dificultad). */
   improved: boolean;
+}
+
+/** La guía de la partida en curso (plan 015 T173). */
+export interface CastleGuide {
+  /** La partida en curso va con la guía (hasta acabarla o saltarla). */
+  on: boolean;
+  /** Lo que el jugador ha hecho desde que empezó la guía (de los eventos de la partida). */
+  tally(): CastleGuideTally;
+  /** Acaba la guía («Saltar guía» o el último paso): la partida sigue igual. */
+  end(): void;
 }
 
 export interface CastleMode {
@@ -139,6 +174,8 @@ export interface CastleMode {
    */
   overlays: DefenseOverlayPrefs;
   setOverlays(prefs: DefenseOverlayPrefs): void;
+  /** La guía de la primera partida (plan 015 T173). */
+  guide: CastleGuide;
 }
 
 export function useCastleMode({
@@ -197,6 +234,14 @@ export function useCastleMode({
   const [record, setRecord] = useState<CastleMedalRecord | null>(null);
   const [ranking, setRanking] = useState<CastleRankingOutcome | null>(null);
   const [unlocked, setUnlocked] = useState<readonly CastleUnlock[]>(NONE);
+  // La guía (T173): la respuesta guardada, la pregunta, «Con la guía» y la de ahora.
+  const { data: guidePref } = useRepoData((repo) => repo.progress.pref(CASTLE_GUIDE_PREF));
+  const [savedAnswer, setSavedAnswer] = useState<CastleGuideAnswer | null>(null);
+  const answer = guideAnswer(guidePref) ?? savedAnswer;
+  const [asking, setAsking] = useState(false);
+  const [replay, setReplay] = useState(false);
+  const [guideOn, setGuideOn] = useState(false);
+  const guideTally = useRef<CastleGuideTally>(EMPTY_GUIDE_TALLY);
   // Las barras y los números (decisión 11): lo guardado, al montar (en el servidor, lo de siempre).
   const [overlays, setOverlayState] = useState<DefenseOverlayPrefs>(() => readDefenseOverlays(null));
   useEffect(() => setOverlayState(readDefenseOverlays()), []);
@@ -220,6 +265,7 @@ export function useCastleMode({
     setRecord(null);
     setRanking(null);
     setUnlocked(NONE);
+    setGuideOn(false);
     setActive(false);
   }, [engineRef]);
 
@@ -246,7 +292,11 @@ export function useCastleMode({
         devWin: sc?.win ?? false,
         // Cualquier atajo (también `duracion=` o `dificultad=` solos): fuera del ranking.
         devStart: sc !== null,
-        onEvents: audioEvents,
+        onEvents: (events) => {
+          // La guía sólo cuenta lo que pasó (T173): nunca toca la partida.
+          if (runRef.current === run) guideTally.current = tallyGuide(guideTally.current, events);
+          audioEvents(events);
+        },
         onEnd: (reason) => {
           endAudio(reason);
           // En el paso del bucle del mar: la tarjeta sale en el render siguiente.
@@ -291,8 +341,13 @@ export function useCastleMode({
       });
       if (!g.startDefense(run)) return false;
       runRef.current = run;
-      lastStart.current = how;
+      // «Otra vez» empieza una igual, pero sin la guía.
+      lastStart.current = { ...how, guide: false };
+      guideTally.current = EMPTY_GUIDE_TALLY;
+      setGuideOn(how.guide);
       setPrepOpen(false);
+      setAsking(false);
+      setReplay(false);
       setRecord(null);
       setRanking(null);
       setUnlocked(NONE);
@@ -384,10 +439,16 @@ export function useCastleMode({
       runMin: sc.runMin ?? DEFAULT_DEFENSE_RUN_MIN,
       difficulty: sc.difficulty ?? DEFAULT_DIFFICULTY,
       dev: sc,
+      guide: false,
     });
   }, [ready, start]);
 
   const blocked = raceActive ? msg('mar.castillo.bloqueo.carrera') : null;
+  const begin = (guide: boolean) => {
+    if (blocked) return;
+    const dev = devPending.current;
+    if (start({ runMin, difficulty, dev, guide })) devPending.current = null;
+  };
   const prep: CastlePrep = {
     open: prepOpen,
     blocked,
@@ -397,17 +458,41 @@ export function useCastleMode({
     chooseDifficulty: setDifficulty,
     play: () => {
       if (blocked) return;
-      const dev = devPending.current;
-      if (start({ runMin, difficulty, dev })) devPending.current = null;
+      const choice = playChoice(answer, replay);
+      if (choice.ask) setAsking(true);
+      else begin(choice.guide);
     },
+    asking: prepOpen && asking,
+    answered: answer !== null,
+    replay,
+    setReplay,
+    answer: (withGuide) => {
+      if (blocked) return;
+      const value: CastleGuideAnswer = withGuide ? 'si' : 'no';
+      setSavedAnswer(value);
+      void gameRepository()
+        .progress.setPref(CASTLE_GUIDE_PREF, value)
+        .catch((err: unknown) =>
+          console.warn('[boia] no se pudo guardar la respuesta de la guía del castillo', err),
+        );
+      begin(withGuide);
+    },
+    back: () => setAsking(false),
     close: () => {
       setPrepOpen(false);
+      setAsking(false);
       latest.current.onOffer?.();
     },
+  };
+  const guide: CastleGuide = {
+    on: guideOn && active,
+    tally: () => guideTally.current,
+    end: () => setGuideOn(false),
   };
   const panel = {
     onPlay: () => {
       if (runRef.current) return;
+      setAsking(false);
       setPrepOpen(true);
       // El sonido se carga ya, para sonar en el gesto de «Jugar» (como el Cañón).
       prepareAudio();
@@ -437,6 +522,7 @@ export function useCastleMode({
     setAudioSettings,
     overlays,
     setOverlays,
+    guide,
   };
 }
 
@@ -444,9 +530,12 @@ export function useCastleMode({
 export function CastleTestHook({
   hud,
   sound,
+  guide = false,
 }: {
   hud: CastleHook | null;
   sound?: CanonAudioState | null;
+  /** La partida va con la guía (T173). */
+  guide?: boolean;
 }) {
   if (!hud) return null;
   return (
@@ -482,6 +571,7 @@ export function CastleTestHook({
       data-dificultad={hud.dificultad}
       data-duracion={hud.duracion}
       data-calidad={hud.calidad}
+      data-guia={guide ? 'si' : 'no'}
     />
   );
 }

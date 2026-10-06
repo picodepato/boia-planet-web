@@ -49,6 +49,7 @@ import {
   waveKindsText,
   waveWarningLine,
 } from './castillo-hud-model';
+import { CastleGuideLayer } from './castillo-guia';
 import { CastleIcon, type CastleIconName } from './castillo-icons';
 import type { CastleMode } from './castillo-mode';
 import { castlePairLabel } from './castillo-previa';
@@ -497,6 +498,14 @@ export function CastleLayer({
             />
           ) : null}
         </div>
+      ) : null}
+      {playing ? (
+        <CastleGuideLayer
+          castle={castle}
+          mode={mode}
+          hasPriority={!!panel && panel.priority !== null}
+          covered={covered}
+        />
       ) : null}
       {castle.result && !covered ? (
         <CastleEnd

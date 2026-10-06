@@ -376,6 +376,29 @@ export const esMar = {
   'mar.castillo.fin.prueba': 'Partida de prueba: fuera del ranking.',
   'mar.castillo.fin.logro': '¡Logro «{logro}»! Reclámalo en Logros.',
   'mar.castillo.fin.logro.premio': '¡Logro «{logro}»: desbloqueas {premio}! Reclámalo en Logros.',
+  // La guía de la primera partida (plan 015 T173): la pregunta y los bocadillos. muestra
+  'mar.castillo.guia.pregunta': '¿Empezar con la guía?',
+  'mar.castillo.guia.pregunta.texto':
+    'Unos consejos cortos sobre la partida de verdad: mover el avión, construir islas y llamar oleadas. Puedes saltarla cuando quieras.',
+  'mar.castillo.guia.si': 'Sí',
+  'mar.castillo.guia.no': 'No, jugar',
+  'mar.castillo.guia.atras': 'Atrás',
+  'mar.castillo.guia.repetir': 'Con la guía',
+  'mar.castillo.guia.saltar': 'Saltar guía',
+  'mar.castillo.guia.cerrar': 'Cerrar este consejo',
+  'mar.castillo.guia.paso': 'Paso {n} de {total}',
+  'mar.castillo.guia.mover':
+    'Toca el mar: tu avión vuela hasta allí y dispara solo. Con teclado, las flechas.',
+  'mar.castillo.guia.construir': 'Las islas defienden el castillo. Abre «Construir».',
+  'mar.castillo.guia.elegir': 'Elige una isla para ver cómo ataca.',
+  'mar.castillo.guia.colocar': 'Si te llegan las monedas, toca «Colocar».',
+  'mar.castillo.guia.instalar':
+    'Toca el mar para moverla, fuera del camino. En verde cabe: «Instalar isla».',
+  'mar.castillo.guia.ficha': 'Toca tu isla en el mar para abrir su ficha.',
+  'mar.castillo.guia.prioridad': 'Elige a quién apunta: el primero, el último, el más fuerte o el más cerca.',
+  'mar.castillo.guia.mejorar':
+    'Con más monedas, «Mejorar» sube la isla de nivel. En «Mejoras», el avión y el castillo.',
+  'mar.castillo.guia.oleada': '¿Listo? «Llamar oleada» trae la siguiente ya, con monedas de premio.',
   // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
   'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
   'mar.bienvenida.texto':

@@ -2312,7 +2312,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       />
       <CanonDevSwitch canon={canon} />
       {/* «Defensa del Castillo» (T160, T161): su estado para las pruebas y su HUD. */}
-      <CastleTestHook hud={castle.hud} sound={castle.sound} />
+      <CastleTestHook hud={castle.hud} sound={castle.sound} guide={castle.guide.on} />
       <CastleLayer castle={castle} covered={gameCovered} onPause={openMenu} />
       <CanonLayer canon={canon} engineRef={engineRef} covered={gameCovered} onPause={openMenu} />
 

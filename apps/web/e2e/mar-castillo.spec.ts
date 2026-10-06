@@ -1235,6 +1235,10 @@ test('pop-up, tarjeta y medalla: 5 min + Tranquila, se gana con `vencer=1`, la t
   const go = page.getByTestId('mar-castillo-previa-jugar');
   if (touch) await go.tap();
   else await go.click();
+  // La primera partida pregunta por la guía (T173): sin ella.
+  const noGuide = page.getByTestId('mar-castillo-guia-no');
+  if (touch) await noGuide.tap();
+  else await noGuide.click();
   await expect(previa(page)).toHaveCount(0);
   await expect(game(page)).toHaveAttribute('data-duracion', '5');
   await expect(game(page)).toHaveAttribute('data-dificultad', 'tranquila');
@@ -1396,6 +1400,8 @@ test('ranking local: muestra + puntuación propia, nueve tablas y atajo/Terminar
   await page.getByTestId('mar-castillo-duracion-5').click();
   await previa(page).getByTestId('mar-canon-dificultad-normal').click();
   await page.getByTestId('mar-castillo-previa-jugar').click();
+  // La primera partida pregunta por la guía (T173): sin ella.
+  await page.getByTestId('mar-castillo-guia-no').click();
   const endRank = page.getByTestId('mar-castillo-final-ranking');
   await expect(endRank).toHaveAttribute('data-ranking', 'off', { timeout: 30000 });
   await expect(endRank).toHaveAttribute('data-motivo', 'test');
@@ -1456,5 +1462,125 @@ test('logro y mascota: ganar en Tormenta desbloquea el Cañoncito; reclamado, es
   await expect(option).not.toHaveAttribute('data-bloqueado', 'si');
   await option.click();
   await expect(option).toHaveAttribute('aria-checked', 'true');
+  expect(errors).toEqual([]);
+});
+
+/**
+ * Plan 015 T173 (decisión 14): la primera partida pregunta «¿Empezar con la
+ * guía?»; con «Sí», bocadillos sobre la partida de verdad que pasan haciendo
+ * lo que piden (mover el avión, «Construir», elegir y colocar una isla) o
+ * con su ✕ (y sale el siguiente); «Saltar guía» la acaba y la partida sigue
+ * igual. Respondida, la segunda partida (también tras recargar) no pregunta
+ * y el pop-up deja repetirla con «Con la guía».
+ */
+test('guía: la primera partida pregunta; «Sí» lleva los pasos (haciendo y con la ✕); «Saltar guía» vuelve al juego normal; la segunda no pregunta', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '?minijuego=castillo&oferta=1&seed=7&dificultad=tranquila');
+  const panel = page.getByTestId('panel-minijuego');
+  const playIsland = panel.getByRole('button', { name: t('juego.minigameLayer.jugar') });
+  await playIsland.click();
+  await expect(previa(page)).toBeVisible();
+  // Antes de responder no hay «Con la guía».
+  await expect(page.getByTestId('mar-castillo-previa-guia')).toHaveCount(0);
+  await page.getByTestId('mar-castillo-previa-jugar').click();
+  const question = page.getByTestId('mar-castillo-guia-pregunta');
+  await expect(question).toBeVisible();
+  await expect(question).toContainText(t('mar.castillo.guia.pregunta'));
+  await expect(question).toHaveAttribute('role', 'dialog');
+  for (const id of ['mar-castillo-guia-si', 'mar-castillo-guia-no']) {
+    const box = (await page.getByTestId(id).boundingBox())!;
+    expect(box.height, id).toBeGreaterThanOrEqual(44);
+  }
+  await page.getByTestId('mar-castillo-guia-si').click();
+  await expect(question).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-guia', 'si');
+  await expect(hud(page)).toBeVisible();
+  await expect(canvas(page)).toHaveAttribute('data-hundido', '1.00', { timeout: 15_000 });
+
+  const guide = page.getByTestId('mar-castillo-guia');
+  const bubble = page.getByTestId('mar-castillo-guia-bocadillo');
+  const skip = page.getByTestId('mar-castillo-guia-saltar');
+  await expect(skip).toBeVisible();
+  await expect(skip).toHaveText(t('mar.castillo.guia.saltar'));
+
+  // 1. Mover el avión tocando el mar: el bocadillo flota solo (es el mar entero).
+  await expect(guide).toHaveAttribute('data-paso', 'mover');
+  await expect(bubble).toContainText(t('mar.castillo.guia.mover'));
+  await expect(bubble).toHaveAttribute('data-lado', 'free');
+  await tapScreen(page, await freeSea(page));
+  // 2. «Construir»: el bocadillo apunta al botón, encima.
+  await expect(guide).toHaveAttribute('data-paso', 'construir', { timeout: 10_000 });
+  await expect(bubble).toContainText(t('mar.castillo.guia.construir'));
+  await expect(bubble).toHaveAttribute('data-lado', 'above');
+  const build = (await page.getByTestId('mar-castillo-construir').boundingBox())!;
+  await expect
+    .poll(async () => {
+      const b = (await bubble.boundingBox())!;
+      return b.y + b.height <= build.y && b.x <= build.x + build.width && b.x + b.width >= build.x;
+    })
+    .toBe(true);
+  await page.getByTestId('mar-castillo-construir').click();
+  // 3. Elegir una isla: se cierra con la ✕ y sale el siguiente (colocar).
+  await expect(guide).toHaveAttribute('data-paso', 'elegir');
+  await expect(bubble).toContainText(t('mar.castillo.guia.elegir'));
+  const x = page.getByTestId('mar-castillo-guia-cerrar');
+  // La ✕ se toca con 44 px (tras la entrada del bocadillo, que crece un poco).
+  await expect.poll(async () => (await x.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+  await x.click();
+  await expect(guide).toHaveAttribute('data-paso', 'colocar');
+  await expect(bubble).toContainText(t('mar.castillo.guia.colocar'));
+  // La partida no se para con la guía.
+  const t0 = Number(await game(page).getAttribute('data-tiempo'));
+  await expect.poll(async () => Number(await game(page).getAttribute('data-tiempo'))).toBeLessThan(t0);
+  // 4. Colocar la isla (la más barata, «fotos»): pasa a «Instalar isla».
+  await page.locator('[data-testid="mar-castillo-isla"][data-isla="fotos"]').click();
+  await page.getByTestId('mar-castillo-detalle-colocar').click();
+  await expect(placing(page)).toBeVisible();
+  await expect(guide).toHaveAttribute('data-paso', 'instalar');
+  await expect(bubble).toContainText(t('mar.castillo.guia.instalar'));
+  // 5. La ✕ otra vez: el siguiente (la ficha de la isla).
+  await page.getByTestId('mar-castillo-guia-cerrar').click();
+  await expect(guide).toHaveAttribute('data-paso', 'ficha');
+
+  // «Saltar guía»: se acaba y la partida sigue normal (colocando, construir, el HUD).
+  await skip.click();
+  await expect(guide).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-guia', 'no');
+  await expect(game(page)).toHaveAttribute('data-estado', 'running');
+  await page.getByTestId('mar-castillo-colocar-no').click();
+  await page.getByTestId('mar-castillo-construir').click();
+  await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mar-castillo-franja')).toHaveAttribute('data-modo', 'idle');
+  await page.waitForTimeout(600);
+  await expect(guide).toHaveCount(0);
+  await quitAndLeave(page);
+
+  // La segunda partida (tras recargar: guardado) no pregunta y va sin guía.
+  await openMar(page, '?minijuego=castillo&oferta=1&seed=7&dificultad=tranquila');
+  await expect(panel).toBeVisible({ timeout: 15_000 });
+  await playIsland.click();
+  await expect(previa(page)).toBeVisible();
+  const replay = page.getByTestId('mar-castillo-previa-guia');
+  await expect(replay).toHaveAttribute('aria-checked', 'false');
+  await page.getByTestId('mar-castillo-previa-jugar').click();
+  await expect(question).toHaveCount(0);
+  await expect(previa(page)).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-guia', 'no');
+  await expect(hud(page)).toBeVisible();
+  await expect(guide).toHaveCount(0);
+  await quitAndLeave(page);
+
+  // Repetirla desde el pop-up: «Con la guía» y «Jugar».
+  await openMar(page, '?minijuego=castillo&oferta=1&seed=7&dificultad=tranquila');
+  await expect(panel).toBeVisible({ timeout: 15_000 });
+  await playIsland.click();
+  await replay.click();
+  await expect(replay).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('mar-castillo-previa-jugar').click();
+  await expect(question).toHaveCount(0);
+  await expect(game(page)).toHaveAttribute('data-guia', 'si');
+  await expect(guide).toHaveAttribute('data-paso', 'mover');
   expect(errors).toEqual([]);
 });

@@ -85,3 +85,55 @@
     font-size: 1.3rem;
   }
 }
+
+/* La guía de la primera partida (plan 015 T173). «Con la guía»: el mismo
+   interruptor que las opciones de la pausa (`castillo-hud.css`), a lo ancho. */
+.mar .mar-castle-previa__guia {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* La pregunta «¿Empezar con la guía?»: «Sí» es el botón grande de jugar;
+   «No, jugar» va al lado, sin relleno, y «Atrás» debajo, discreto. */
+.mar-castle-pregunta__choices {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mar .mar-castle-pregunta__choices .mar-canon-previa__play {
+  position: static;
+  margin-top: 0;
+}
+
+.mar .mar-castle-pregunta__no {
+  min-height: 56px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--cream);
+  font: 800 0.95rem / 1.15 var(--font-title);
+  cursor: pointer;
+}
+
+.mar .mar-castle-pregunta__no:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mar .mar-castle-pregunta__back {
+  display: block;
+  min-height: 44px;
+  margin: 6px auto 0;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--cream);
+  font-size: 0.84rem;
+  font-weight: 700;
+  opacity: 0.8;
+  cursor: pointer;
+}

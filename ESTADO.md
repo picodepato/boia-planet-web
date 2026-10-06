@@ -4,6 +4,43 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T173: Guided first castle game
+
+Qué existe (decisión 14 del plan 015):
+- **La pregunta.** La primera vez, «Jugar» en el pop-up del castillo pide
+  «¿Empezar con la guía?» en el mismo diálogo (`mar-castillo-guia-pregunta`):
+  «Sí» / «No, jugar» empiezan la partida; «Atrás» o Esc vuelven a elegir. La
+  respuesta se guarda en la preferencia del progreso `castillo:guia`
+  (`'si'`/`'no'`): local en el navegador y, con cuenta, en la copia de
+  `save_snapshot` (los `prefs` viajan ya). Respondida, no se pregunta más y el
+  pop-up enseña el interruptor «Con la guía» (`mar-castillo-previa-guia`, apagado
+  por defecto) para repetirla. Los atajos (`?minijuego=castillo…`) y «Otra
+  vez» empiezan sin guía.
+- **La guía.** Nueve bocadillos cortos sobre la partida de verdad
+  (`castillo-guia.tsx`, `castillo-guia-model.ts`, `castillo-guia.css`): mover
+  el avión tocando el mar, «Construir», elegir isla, «Colocar», «Instalar
+  isla», tocar tu isla, a quién apunta (se salta en islas sin blanco), mejorar,
+  «Llamar oleada». Bocadillo crema con punta hacia lo que nombra (lo de la
+  franja de abajo, desde encima de la franja, sin tapar sus botones), sin velo
+  ni resaltado; pasa haciendo lo que pide (eventos de la partida y modo del
+  HUD) o con su ✕; «Paso n de 9» y «Saltar guía» siempre en el bocadillo. La
+  partida no se pausa. La guía sólo lee (`snapshot` y los eventos que ya
+  escucha el sonido): no cambia la simulación, y una partida guiada entra en el
+  ranking como cualquiera (prueba unitaria: misma partida con y sin guía, misma
+  instantánea). `data-guia` en `mar-castillo`.
+- Textos `mar.castillo.guia.*` en `es-mar.ts` (muestra).
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/castillo-guia-model.test.ts` → 14 passed
+- `E2E_PORT=3173 pnpm e2e apps/web/e2e/mar-castillo.spec.ts --workers=1 -g "guía"` → exit 0, 2 passed (mobile, desktop)
+- `… -g "pop-up|ranking local|guía"` (las dos e2e que ahora responden «No, jugar») → 6 passed
+- Test command: vitest 213 files / 2030 passed; `tools/spec/checks.sh` OK; `pnpm lint` exit 0; `pnpm build` exit 0; `pnpm typecheck` exit 0
+- Capturas (fuera del repo): `C:/tmp/orchestrator-attach/boia-planet-hernan-T173/` (390×844 y 1440×900, pregunta y pasos 1–8)
+
+Pendiente:
+- Los pasos «mueve el avión» y «toca tu isla» flotan sin punta (señalar el avión o la isla en el 3D pediría un método nuevo en `mar3d.ts`, fuera del alcance).
+- Textos `muestra` hasta el visto bueno de Álvaro.
+
 ## 2026-10-06 — plan 015 T171: Castle HUD v2
 
 Qué existe (el HUD de «Defensa del Castillo»; sin tocar las reglas de la partida):
