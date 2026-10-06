@@ -31,6 +31,8 @@ const events: string[] = [];
 
 let m: Member;
 let other: Member;
+/** Cobra medallas y logros con monedas: `m` llega sin monedas a la tienda. */
+let prizes: Member;
 
 const balances = async (who: Member) => {
   const p = await ok(who.client.from('point_balances').select('points').eq('user_id', who.id));
@@ -41,6 +43,7 @@ const balances = async (who: Member) => {
 beforeAll(async () => {
   m = await ctx.member('valor');
   other = await ctx.member('valor-otra');
+  prizes = await ctx.member('valor-premios');
 });
 
 afterAll(async () => {
@@ -59,9 +62,9 @@ describe('award_points: acciones conocidas con tope por acción y por día', () 
   });
 
   it('Cañón (T153, migración 20261005100000): cada medalla una vez al día, por separado', async () => {
-    const before = await balances(m);
+    const before = await balances(prizes);
     const medal = (name: string, points: number, coins: number) =>
-      m.client.rpc('award_points', {
+      prizes.client.rpc('award_points', {
         p_action: 'minigame',
         p_ref: `minigame:canon:${name}`,
         p_points: points,
@@ -78,7 +81,7 @@ describe('award_points: acciones conocidas con tope por acción y por día', () 
       const again = (await ok(medal(name, points, coins))) as unknown as AwardResult;
       expect(again).toMatchObject({ granted: false, reason: 'duplicate' });
     }
-    expect(await balances(m)).toEqual({
+    expect(await balances(prizes)).toEqual({
       points: before.points + 190,
       coins: before.coins + 70,
     });
@@ -120,7 +123,7 @@ describe('award_points: acciones conocidas con tope por acción y por día', () 
       ['regata-rapida', 80, 40, 'mascota-tortuga-turbo'],
     ] as const) {
       const r = (await ok(
-        m.client.rpc('award_points', {
+        prizes.client.rpc('award_points', {
           p_action: 'achievement',
           p_ref: ref,
           p_points: points,

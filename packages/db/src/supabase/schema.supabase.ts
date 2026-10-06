@@ -54,6 +54,8 @@ describe('esquema del proyecto de desarrollo', () => {
       order by 1`);
     expect(rows.map((r) => r.name)).toEqual([
       'latest_bottles',
+      'ranking_canon',
+      'ranking_castle',
       'ranking_points',
       'ranking_race',
       'ranking_season',

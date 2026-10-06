@@ -281,101 +281,6 @@ export type Database = {
           },
         ];
       };
-      castle_boards: {
-        Row: {
-          run_min: number;
-          difficulty: string;
-          version: number;
-          config_version: number;
-          min_ms: number;
-          duration_ms: number;
-          max_ms: number;
-          max_kill_points: number;
-          life_bonus: number;
-          castle_life: number;
-          is_active: boolean;
-        };
-        Insert: {
-          run_min: number;
-          difficulty: string;
-          version: number;
-          config_version: number;
-          min_ms: number;
-          duration_ms: number;
-          max_ms: number;
-          max_kill_points: number;
-          life_bonus: number;
-          castle_life: number;
-          is_active?: boolean;
-        };
-        Update: {
-          run_min?: number;
-          difficulty?: string;
-          version?: number;
-          config_version?: number;
-          min_ms?: number;
-          duration_ms?: number;
-          max_ms?: number;
-          max_kill_points?: number;
-          life_bonus?: number;
-          castle_life?: number;
-          is_active?: boolean;
-        };
-        Relationships: [];
-      };
-      castle_scores: {
-        Row: {
-          user_id: string;
-          run_min: number;
-          difficulty: string;
-          board_version: number;
-          best_score: number;
-          best_at: string;
-          medal: string | null;
-          end_reason: string;
-          castle_life: number;
-          duration_ms: number;
-          attempts: number;
-          updated_at: string;
-        };
-        Insert: {
-          user_id: string;
-          run_min: number;
-          difficulty: string;
-          board_version: number;
-          best_score: number;
-          best_at?: string;
-          medal?: string | null;
-          end_reason: string;
-          castle_life: number;
-          duration_ms: number;
-          attempts?: number;
-          updated_at?: string;
-        };
-        Update: {
-          user_id?: string;
-          run_min?: number;
-          difficulty?: string;
-          board_version?: number;
-          best_score?: number;
-          best_at?: string;
-          medal?: string | null;
-          end_reason?: string;
-          castle_life?: number;
-          duration_ms?: number;
-          attempts?: number;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'castle_scores_run_min_difficulty_board_version_fkey';
-            columns: ['run_min', 'difficulty', 'board_version'];
-            isOneToOne: false;
-            referencedRelation: 'castle_boards';
-            referencedColumns: ['run_min', 'difficulty', 'version'];
-          },
-        ];
-      };
       canon_boards: {
         Row: {
           boss: string;
@@ -584,6 +489,101 @@ export type Database = {
           version?: number;
         };
         Relationships: [];
+      };
+      castle_boards: {
+        Row: {
+          castle_life: number;
+          config_version: number;
+          difficulty: string;
+          duration_ms: number;
+          is_active: boolean;
+          life_bonus: number;
+          max_kill_points: number;
+          max_ms: number;
+          min_ms: number;
+          run_min: number;
+          version: number;
+        };
+        Insert: {
+          castle_life: number;
+          config_version: number;
+          difficulty: string;
+          duration_ms: number;
+          is_active?: boolean;
+          life_bonus: number;
+          max_kill_points: number;
+          max_ms: number;
+          min_ms: number;
+          run_min: number;
+          version: number;
+        };
+        Update: {
+          castle_life?: number;
+          config_version?: number;
+          difficulty?: string;
+          duration_ms?: number;
+          is_active?: boolean;
+          life_bonus?: number;
+          max_kill_points?: number;
+          max_ms?: number;
+          min_ms?: number;
+          run_min?: number;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      castle_scores: {
+        Row: {
+          attempts: number;
+          best_at: string;
+          best_score: number;
+          board_version: number;
+          castle_life: number;
+          difficulty: string;
+          duration_ms: number;
+          end_reason: string;
+          medal: string | null;
+          run_min: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          attempts?: number;
+          best_at?: string;
+          best_score: number;
+          board_version: number;
+          castle_life: number;
+          difficulty: string;
+          duration_ms: number;
+          end_reason: string;
+          medal?: string | null;
+          run_min: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          attempts?: number;
+          best_at?: string;
+          best_score?: number;
+          board_version?: number;
+          castle_life?: number;
+          difficulty?: string;
+          duration_ms?: number;
+          end_reason?: string;
+          medal?: string | null;
+          run_min?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'castle_scores_run_min_difficulty_board_version_fkey';
+            columns: ['run_min', 'difficulty', 'board_version'];
+            isOneToOne: false;
+            referencedRelation: 'castle_boards';
+            referencedColumns: ['run_min', 'difficulty', 'version'];
+          },
+        ];
       };
       circuits: {
         Row: {
@@ -1954,19 +1954,19 @@ export type Database = {
         };
         Returns: Json;
       };
-      ranking_castle: {
+      ranking_canon: {
         Args: {
-          p_run_min: number;
-          p_difficulty: string;
+          p_boss: string;
           p_version?: number;
           p_limit?: number;
           p_offset?: number;
         };
         Returns: Json;
       };
-      ranking_canon: {
+      ranking_castle: {
         Args: {
-          p_boss: string;
+          p_run_min: number;
+          p_difficulty: string;
           p_version?: number;
           p_limit?: number;
           p_offset?: number;
@@ -2020,20 +2020,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      submit_castle_score: {
-        Args: {
-          p_run_min: number;
-          p_difficulty: string;
-          p_version: number;
-          p_score: number;
-          p_ms: number;
-          p_medal: string | null;
-          p_end: string;
-          p_life: number;
-          p_ranked: boolean;
-        };
-        Returns: Json;
-      };
       submit_canon_score: {
         Args: {
           p_boss: string;
@@ -2042,6 +2028,20 @@ export type Database = {
           p_ms: number;
           p_medal?: string;
           p_difficulty?: string;
+        };
+        Returns: Json;
+      };
+      submit_castle_score: {
+        Args: {
+          p_run_min: number;
+          p_difficulty: string;
+          p_version: number;
+          p_score: number;
+          p_ms: number;
+          p_medal: string;
+          p_end: string;
+          p_life: number;
+          p_ranked: boolean;
         };
         Returns: Json;
       };

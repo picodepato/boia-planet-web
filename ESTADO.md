@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 015 T179: Supabase tests and types after the new migrations
+
+Qué existe:
+- `schema.supabase.ts`: la lista de RPC que anon ejecuta suma `ranking_canon` y
+  `ranking_castle`. Las dos son `stable`, sólo leen (select paginado con
+  `page_limit`) y devuelven los mismos campos públicos del carnet que los
+  demás rankings; las de escritura (`submit_canon_score`,
+  `submit_castle_score`) siguen sólo para `authenticated`.
+- `packages/db/src/database.types.ts` regenerado con `pnpm db:types:dev`: el
+  contenido ya estaba (escrito a mano en T176); sólo cambia el orden de
+  `castle_boards`/`castle_scores` y de las funciones canon/castle.
+- `economy.supabase.ts`: «sin monedas no se compra» fallaba porque la cuenta
+  `m` ya había cobrado monedas en pruebas anteriores del mismo archivo
+  (medallas del Cañón, +70; logros de castillo y carrera de T176, +140), no
+  por la base: `buy_cosmetic` no cambió y `bandera-boia` sigue a la venta.
+  Esas dos pruebas de premios usan ahora su propia cuenta (`valor-premios`) y
+  `m` llega a la tienda sin monedas. Sin migración nueva.
+
+Comandos:
+- `pnpm test:supabase` → exit 0, 10 archivos, 85/85.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 213 archivos, 2030 pruebas.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → 0; `pnpm build` → 0;
+  `pnpm typecheck` → 0.
+
+Pendiente: nada.
+
 ## 2026-10-06 — plan 015 T173: Guided first castle game
 
 Qué existe (decisión 14 del plan 015):
