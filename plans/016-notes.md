@@ -28,3 +28,9 @@ Collected 2026-10-06 while plan 015 was running. `/orchestrator` turns these int
 - **Vecino size** in the castle: fine as it is, no change.
 - **Texts**: fix them as appropriate (`docs/propuestas/logros-catalogo.md` still says «Por Los Rápidos»; the «Rápido» progress line says «vuelta» like «Rayo» — pick the right wording).
 - **Supabase**: applied on 2026-10-06 by the orchestrator at Hernán's request (`pnpm db:migrate:dev` on the current personal project: 6 migrations from plans 013–015 + economy seed, OK). Originally: Hernán applies the pending migrations himself (castle ranking `20261006100300`, prizes `20261006100400`); he may move to another Supabase account later (personal now, official with the domain). Plan 016 could include running `pnpm test:supabase` once they are applied, since these migrations were never run against Postgres.
+
+## From plan 015's close (T178), for Hernán to decide
+- **Ibiza stacking** beats everything: three Ibizas at the start hold every Normal and Tormenta game at 100 % (already true before). Options: a cap on Ibizas, a smaller payout per extra Ibiza, or longer paybacks.
+- **Area islands alone** still hold short Tormenta runs (Halloween 63 %, Sonido 40–49 %) while a plain build falls at 5 min: lower area islands further?
+- The `?cerca=` dev start sits at Benidorm's sheet edge (compact sea layout); only the e2e was adjusted.
+- Test guide and Álvaro draft: `docs/propuestas/2026-10-06-castillo-v2-guia-prueba.md`, `docs/propuestas/2026-10-06-premios-mascotas-decision-alvaro.md`.
