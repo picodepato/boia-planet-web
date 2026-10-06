@@ -38,7 +38,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 ## Tasks
 
 ## T157 — Lighthouse ↔ castle swap, remove «Vigilancia del faro», the «Tablón del faro»
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: none (after plan 013 is done)
@@ -54,7 +54,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - `grep -rn "Vigilancia del faro\|minijuego=faro" apps packages` → nothing left outside migrations/history notes
   - `E2E_PORT=<free> pnpm e2e mar-decor.spec.ts mar-puerto.spec.ts <the board spec> --workers=1` (board opens at the lighthouse, «Rumbo a…» marks each destination; the castle island opens its panel near Boia 7) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: faro on the old castle spot with the «Tablón del faro» (3 cards, «Rumbo a…»); castle minigame island at Maq [-14.48, 14.21] with «Próximamente» panel, `CASTLE_OPEN_SEA_BEARING` 2.09 rad; «Vigilancia del faro» and the 2D minigame layer removed, achievement dropped (doc schema 9 + Supabase migration not applied); REQ-AVE-036 retired · 8dd9e7c
 
 ## T158 — Tower defense simulation: path, waves, castle, plane, coins, medals, score
 - Status: done
@@ -95,7 +95,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: seven towers with levels 1–3, build rule (ring, path, vortex, overlap), upgrade, sell 60 %; DEFENSE_CONFIG_VERSION 2; bot holds Tranquila with gold, Normal 5 min at 75 %, falls in Tormenta · 31ad326
 
 ## T160 — The 3D arena: sinking, higher camera, path buoys, enemies, islands and the plane
-- Status: pending
+- Status: running (attempt 1)
 - Model: opus (Opus 5.5)
 - Skills: none
 - Depends on: T157, T158
@@ -178,7 +178,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## T166 — Tabarca lighthouse island redesigned in Blender (the board at the entrance)
-- Status: pending
+- Status: running (attempt 1)
 - Model: fable (Fable 5.1)
 - Skills: blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
 - Depends on: T157
@@ -232,6 +232,10 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T157: castle island at Maq [-14.48, 14.21] = (-1080, 1060) in /mar, r 208 u, ~443 u from Boia 7, clear of legs 6→7 and 7→8; open-sea bearing `CASTLE_OPEN_SEA_BEARING` 2.09 rad in engine/compact.ts; the 1120 u arena crosses the planet wrap edge (agent)
+- 2026-10-06 T157: faro proximity 3.4 → 2.8 u_maq (board must not open from the start ring nor overlap the WhatsApp buoy panel); fast chest 1 moved to [-10.6, 15.2] (was inside the castle) (agent)
+- 2026-10-06 T157: whole 2D minigame layer removed (`pageAuthority` → session.ts); castle not in the engine minigame registry yet; faro achievement points/coins stay in the ledger, views hide it; Guardacostas v3 asks for one Cañón game; local doc schema 9; REQ-AVE-036 note cites D-20 + «decisión 2 del 2026-10-05» (checker needs a D-NN) (agent)
+- 2026-10-06 T157: board opens expanded, three columns on desktop, stays open after «Rumbo a…», mark clears on arrival; mobile e2e step taps instead of Enter (Enter did nothing on mobile, cause not found); textos-zonas.md and es-zonas.ts edited by hand (agent)
 - 2026-10-06 T159: DEFENSE_CONFIG_VERSION 2; tower damage = draft × 0.7 (seed 7 bot: Tranquila 5/7/10 gold at 100 %, Normal 5 min 75 %, 7/10 min 100 %, Tormenta falls at 129–158 s); snowball and sniper hit instantly, one mortar rocket in the air per tower; bosses stunned 0.25×; sell = floor(60 % of spent); building allowed while paused; Faro beam updates its last shot in place; local beam/cone helpers in defense/geometry.ts (Cañón helpers private) (agent)
 - 2026-10-06 run: T159 integration failed only by vitest timeouts (23, all "Test timed out", incl. untouched barco/world suites) while T156 runs the full e2e; main reverted (a2245f5/838bfca); not counted as a failure, re-integrate the same branch once T156 is done (orchestrator)
 - 2026-10-06 T158: subpath export `@boia/engine/defense` in packages/engine/package.json (outside listed scope, follows ./survivors) (agent)
@@ -249,6 +253,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T157: `mundos/arcilla/mapa.json` still describes the lighthouse minigame; generic `win_minigame`+`played` achievement logic now unused; es-zonas.ts has 2 keys not in textos-zonas.md (`naufrago.revisit`, `achievements.castaway.description`) so the i18n-zonas generator would delete them (agent)
 - 2026-10-06 T159: Tormenta too harsh (bot falls before 160 s, cannot afford early islands); Normal 7/10 min too easy — for T165 (agent)
 - 2026-10-06 T158/T167: the full vitest suite times out under load (survivors sims) when 3 agents run; consider splitting the slow survivors sims out of the default run (agent)
 - 2026-10-05 plan: a world prize per medal and achievements for the castle, like the Cañón's (decision 13; for Hernán and Álvaro)
@@ -273,3 +278,6 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 03:33 plan 013 done; pushed main to Vercel (e7425ab) on Hernán's request
 - 2026-10-06 03:38 T159 re-integrated → 31ad326 (tests ok); worktree and branch removed
 - 2026-10-06 03:40 T157 launched · attempt 1 · agent abc6cf441cc52c360 (opus)
+- 2026-10-06 04:20 T157 integrated → 8dd9e7c (tests ok); worktree and branch removed
+- 2026-10-06 04:22 T160 launched · attempt 1 · agent acf37d2f8fd69568f (opus)
+- 2026-10-06 04:22 T166 launched · attempt 1 · agent a6c8d5b95e5013f24 (fable)
