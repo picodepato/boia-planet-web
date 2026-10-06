@@ -133,7 +133,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome: castle HUD (life, time, wave, coins, boss bar), Construir/placing/Mejorar/Vender with touch and keyboard, pause menu with sound and «Terminar partida», minimal end card; dev `monedas=N` · ff56a4f
 
 ## T162 — The castle's pre-game pop-up, final card and medals
-- Status: running (attempt 1)
+- Status: done
 - Model: opus (Opus 5.5)
 - Skills: frontend-design
 - Depends on: T161
@@ -148,10 +148,10 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
   - unit tests: medal saved per pair and best kept; shortcut flag on the result → pass
   - `E2E_PORT=<free> pnpm e2e <the castle spec> --workers=1 -g "pop-up|tarjeta|medalla"` (choose 5 min + Tranquila, win via `vencer=1`, card with medal, board shows it) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: castle pop-up (3 difficulties × 5/7/10 min, best medal per pair, ranking area), final card with medal/score/«Otra vez», medals as progress counters `castillo:<min>-<dif>:medalla`, board shows the best; `vencer=1`, `oferta=1` · efaa1b0
 
 ## T163 — Castle ranking per run length × difficulty, local and global
-- Status: pending
+- Status: running (attempt 1)
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Skills: none
 - Depends on: T162
@@ -232,6 +232,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - Outcome:
 
 ## Decisions
+- 2026-10-06 T162: medals as progress counters `castillo:<min>-<dificultad>:medalla` (rank 1–3, raised only), local and with the account, no new tables; `vencer=1` starts 3 s before the end; new `oferta=1` opens the island panel keeping shortcuts; any shortcut start never ranks; shortcut medals saved only where shortcuts give prizes (dev, e2e); pop-up reuses the Cañón difficulty picker; «Otra vez» repeats the setup and restarts the battle loop; «Próximamente» key removed (agent)
 - 2026-10-06 T164: shared audio test helpers moved to `audio-test-helpers.ts`; +29 lines in `canon-audio.ts` with no Cañón change; `mar-client.tsx` and `castillo-mode.tsx` kept CRLF as in the repo (wrapper restored them after Codex converted to LF); Codex timed out during its own lint, wrapper ran Done-when itself (agent)
 - 2026-10-06 T161: placing starts under the plane and follows it, tap moves it inside the ring, game keeps running while building; keys B/1–7/Enter/I/U/V/Esc; sell in one tap without confirm; one bottom strip above «Entradas» switching content; zoom rail hidden in the arena; dev `monedas=N` never ranks; minimal end card for every ending (T162 adds medal/score/«Otra vez»); `GameSoundMenu` and `BossBar` extracted with no Cañón change; build/selection state on `DefenseRun` (agent)
 - 2026-10-06 T166: faro collision one circle, LIGHTHOUSE_RADIUS 2.3 u_maq (dome ~16.6 scene vs old castle 13 r); no beam in the GLB, procedural beam kept through new optional `IslandBuild.keep` on the island group (sinks/restores with T160); procedural faro redrawn to the model layout; mar3d.ts back to LF after T160 committed it CRLF (agent)
@@ -257,6 +258,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-05 plan: header decisions 1–14 from the conversation with Hernán; Isla del Sonido confirmed; Benidorm added as the seventh island, as a long-range sniper (Nochevieja already stuns) (Hernán, orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-06 T162: the T161 «construir…» castle e2e on desktop depends on coins earned during slow flights and flakes under load — for T165 (agent)
 - 2026-10-06 T161: turbo and the speed readout stay visible during the castle game (agent)
 - 2026-10-06 T166: from the start ring the faro sits at the left edge of the frame (castle's old framing); a `.gitattributes` eol=lf rule (CRLF keeps coming back) (agent)
 - 2026-10-06 T160: Blender glb models for the built islands; clouds drift over the arena; the saved boat position can be the plane's during a game (moved to free water on reload) (agent)
@@ -297,3 +299,7 @@ Decisions of 2026-10-05 that every task follows (conversation with Hernán):
 - 2026-10-06 05:57 T162 launched · attempt 1 · agent af7ab6933988553d9 (opus)
 - 2026-10-06 05:57 T164 launched · attempt 1 · Codex via wrapper agent abd1a8ea108952897 (sonnet)
 - 2026-10-06 06:15 T164 integrated → aaa87fb (tests ok); worktree and branch removed
+- 2026-10-06 T162 done by agent; conflict with T164 in castillo-mode.tsx/mar-client.tsx → sent back to the same agent
+- 2026-10-06 06:55 T162 integrated → efaa1b0 (tests ok); worktree and branch removed
+- 2026-10-06 06:56 T163 launched · attempt 1 · Codex via wrapper agent a84b410b9f9bd60bd (sonnet)
+- 2026-10-06 push offer T157 wait hit the 2 h tool limit, not restarted; Hernán told in the session
