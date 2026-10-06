@@ -1479,7 +1479,7 @@ test('logro y mascota: ganar en Tormenta desbloquea el Cañoncito; reclamado, es
  * igual. Respondida, la segunda partida (también tras recargar) no pregunta
  * y el pop-up deja repetirla con «Con la guía».
  */
-test('guía: la primera partida pregunta; «Sí» lleva los pasos (haciendo y con la ✕); «Saltar guía» vuelve al juego normal; la segunda no pregunta', async ({
+test('guía: mover y ficha apuntan al avión y la isla; la primera partida pregunta y la segunda no; cerrar y saltar dejan seguir jugando', async ({
   page,
 }) => {
   const errors = await openMar(page, '?minijuego=castillo&oferta=1&seed=7&dificultad=tranquila');
@@ -1510,10 +1510,52 @@ test('guía: la primera partida pregunta; «Sí» lleva los pasos (haciendo y co
   await expect(skip).toBeVisible();
   await expect(skip).toHaveText(t('mar.castillo.guia.saltar'));
 
-  // 1. Mover el avión tocando el mar: el bocadillo flota solo (es el mar entero).
+  // La punta real del pseudo-elemento CSS, comparada con la escena, no con
+  // atributos de la propia guía. Las posiciones del renderer son px del lienzo.
+  const expectTailAt = async (target: 'plane' | 'island') => {
+    await expect
+      .poll(() =>
+        page.evaluate((kind) => {
+          const bubble = document.querySelector<HTMLElement>(
+            '[data-testid="mar-castillo-guia-bocadillo"]',
+          );
+          const canvas = document.querySelector<HTMLElement>('[data-testid="mar-canvas"]');
+          if (!bubble || !canvas || bubble.dataset.lado === 'free') return Infinity;
+          const css = getComputedStyle(bubble, '::after');
+          if (css.content === 'none' || css.display === 'none' || css.rotate !== '45deg')
+            return Infinity;
+          const b = bubble.getBoundingClientRect();
+          const c = canvas.getBoundingClientRect();
+          const w =
+            parseFloat(css.width) +
+            parseFloat(css.borderLeftWidth) +
+            parseFloat(css.borderRightWidth);
+          const h =
+            parseFloat(css.height) +
+            parseFloat(css.borderTopWidth) +
+            parseFloat(css.borderBottomWidth);
+          const tipX = b.left + parseFloat(css.left) + w / 2;
+          const tipY =
+            b.top +
+            parseFloat(css.top) +
+            h / 2 +
+            ((bubble.dataset.lado === 'above' ? 1 : -1) * (w + h)) / (2 * Math.sqrt(2));
+          const point =
+            kind === 'plane'
+              ? canvas.dataset.shipScreen
+              : canvas.dataset.arenaIslasPantalla?.match(/^\d+:(-?\d+,-?\d+)/)?.[1];
+          if (!point) return Infinity;
+          const [x, y] = point.split(',').map(Number);
+          return Math.hypot(tipX - c.left - x!, tipY - c.top - y!);
+        }, target),
+      )
+      .toBeLessThanOrEqual(40);
+  };
+
+  // 1. El bocadillo apunta al avión; moverlo tocando el mar pasa al siguiente.
   await expect(guide).toHaveAttribute('data-paso', 'mover');
   await expect(bubble).toContainText(t('mar.castillo.guia.mover'));
-  await expect(bubble).toHaveAttribute('data-lado', 'free');
+  await expectTailAt('plane');
   await tapScreen(page, await freeSea(page));
   // 2. «Construir»: el bocadillo apunta al botón, encima.
   await expect(guide).toHaveAttribute('data-paso', 'construir', { timeout: 10_000 });
@@ -1538,23 +1580,40 @@ test('guía: la primera partida pregunta; «Sí» lleva los pasos (haciendo y co
   await expect(bubble).toContainText(t('mar.castillo.guia.colocar'));
   // La partida no se para con la guía.
   const t0 = Number(await game(page).getAttribute('data-tiempo'));
-  await expect.poll(async () => Number(await game(page).getAttribute('data-tiempo'))).toBeLessThan(t0);
+  await expect
+    .poll(async () => Number(await game(page).getAttribute('data-tiempo')))
+    .toBeLessThan(t0);
   // 4. Colocar la isla (la más barata, «fotos»): pasa a «Instalar isla».
   await page.locator('[data-testid="mar-castillo-isla"][data-isla="fotos"]').click();
   await page.getByTestId('mar-castillo-detalle-colocar').click();
   await expect(placing(page)).toBeVisible();
   await expect(guide).toHaveAttribute('data-paso', 'instalar');
   await expect(bubble).toContainText(t('mar.castillo.guia.instalar'));
-  // 5. La ✕ otra vez: el siguiente (la ficha de la isla).
-  await page.getByTestId('mar-castillo-guia-cerrar').click();
+  // 5. Instalar una isla real: «ficha» debe apuntar a su posición en pantalla.
+  let installed = false;
+  for (const p of await seaGrid(page)) {
+    await tapScreen(page, p);
+    const valid = await expect(placing(page))
+      .toHaveAttribute('data-valido', 'si', { timeout: 1500 })
+      .then(
+        () => true,
+        () => false,
+      );
+    if (!valid) continue;
+    await page.getByTestId('mar-castillo-colocar-si').click();
+    installed = true;
+    break;
+  }
+  expect(installed, 'hay un sitio libre para instalar la isla de la guía').toBe(true);
+  await expect.poll(() => islands(page)).toBe(1);
   await expect(guide).toHaveAttribute('data-paso', 'ficha');
+  await expectTailAt('island');
 
-  // «Saltar guía»: se acaba y la partida sigue normal (colocando, construir, el HUD).
+  // «Saltar guía»: se acaba y la partida sigue normal, con la isla instalada.
   await skip.click();
   await expect(guide).toHaveCount(0);
   await expect(game(page)).toHaveAttribute('data-guia', 'no');
   await expect(game(page)).toHaveAttribute('data-estado', 'running');
-  await page.getByTestId('mar-castillo-colocar-no').click();
   await page.getByTestId('mar-castillo-construir').click();
   await expect(page.getByTestId('mar-castillo-islas')).toBeVisible();
   await page.keyboard.press('Escape');

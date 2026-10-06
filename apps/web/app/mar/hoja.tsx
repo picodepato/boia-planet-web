@@ -46,7 +46,18 @@ export function MarHoja({
 }) {
   const ref = useRef<HTMLElement>(null);
   // Sin desplazar el mar: la hoja entra animada desde abajo y el foco la «seguiría» (T56).
-  useEffect(() => ref.current?.focus({ preventScroll: true }), []);
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    ref.current?.focus({ preventScroll: true });
+    return () => {
+      // Al desmontar la hoja, devolver el teclado a su botón de apertura.
+      // Si venía de otra hoja (ya desmontada), el mar es el destino del foco.
+      const target = opener?.isConnected
+        ? opener
+        : document.querySelector<HTMLElement>('[data-testid="mar-canvas"]');
+      target?.focus({ preventScroll: true });
+    };
+  }, []);
   // Escape también cierra con el foco fuera de la hoja (p. ej. tras cambiar
   // de ver a editar el Carnet, el botón pulsado desaparece).
   const close = useRef(onClose);

@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-06 — plan 016 T184: /mar fixes: arrows after «Mi Barco», guide bubbles on the plane and island, texts
+
+Qué existe
+- Guía del castillo: «mover» apunta al avión y «ficha» a la isla instalada, con cola, mediante una posición de pantalla pública en `mar3d.ts` (test `engine/screen-position.test.ts`).
+- «Primera regata» sustituye a «Por Los Rápidos» en docs/propuestas/logros-catalogo.md; «Rápido» tiene su propia línea de progreso (claves i18n propias en es-lib.ts, modelo en lib/logros/model.ts).
+- Flechas tras «Mi Barco»: se restaura el foco al cerrar las hojas (hoja.tsx, mar-client.tsx). La causa original no se pudo demostrar por lectura de código; el e2e nuevo (cerrar con botón, Escape y menú) pasa.
+- e2e: `mar-a-bordo.spec.ts` («Mi Barco: ... las flechas vuelven a mover el barco») y `mar-castillo.spec.ts` (guía: mover y ficha apuntan al avión y la isla, ≤40 px).
+
+Comandos
+- e2e de ambos specs (-g "Mi Barco|guía: mover", mobile+desktop) → 6 passed.
+- vitest (sin packages/db) → 214 ficheros, 2039 tests, exit 0; checks.sh → OK; lint, build, typecheck → exit 0.
+- grep «Por Los Rápidos» en docs apps packages → 0 (quedan sólo en plans/).
+
+Pendiente
+- No se comprobó que el e2e de flechas falle sin el arreglo (revertirlo rompe el build).
+
 ## 2026-10-06 — plan 016 T181: Castle sim v3: wider U-turns, Ibiza paybacks, extra-Ibiza payouts and collectable money
 
 Hernán changed the scope during the task. Ibiza money goes **straight to the coins again**: no pile, no cap, no `collect` command and no pickup when the plane flies over. Faro, Nochevieja, Puerto and Benidorm get **+15 % damage**. On balance he chose B: keep the stronger islands and do **not** make enemies tougher, so the bot now holds Normal and Tormenta.

@@ -30,6 +30,53 @@ async function openMar(page: Page, path: string) {
   return errors;
 }
 
+test('Mi Barco: al abrir y cerrar desde el menú, las flechas vuelven a mover el barco', async ({
+  page,
+}) => {
+  const errors = await openMar(page, '/mar');
+  const boat = async () =>
+    ((await mar(page).getAttribute('data-barco')) ?? '').split(',').map(Number);
+  await expect(mar(page)).toHaveAttribute('data-barco', /^-?\d+,-?\d+$/);
+  // Repetir también con Escape y volviendo al menú: ninguna ruta necesita tocar el lienzo.
+  for (const close of ['button', 'escape', 'menu'] as const) {
+    if (close !== 'button') {
+      // Una carga nueva crea el barco sin velocidad: la deriva de la ruta
+      // anterior no puede hacer pasar la prueba con el teclado bloqueado.
+      await page.reload();
+      await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 45_000 });
+      await expect(mar(page)).toHaveAttribute('data-barco', /^-?\d+,-?\d+$/);
+    }
+    await page.getByTestId('mar-logros').click();
+    await page.getByTestId('mar-barco').click();
+    await expect(page.getByTestId('mar-tienda')).toBeVisible();
+    if (close === 'button') await page.getByTestId('mar-tienda-cerrar').click();
+    else if (close === 'escape') await page.keyboard.press('Escape');
+    else {
+      await page.getByTestId('mar-hoja-menu').click();
+      await page.getByTestId('mar-menu-cerrar').click();
+    }
+    await expect(page.getByTestId('mar-tienda')).toHaveCount(0);
+    await expect(page.getByTestId('mar-menu')).toHaveCount(0);
+    const [x, y] = await boat();
+    // Sin clicar el mar ni cambiar artificialmente el foco tras cerrar.
+    await page.keyboard.down('ArrowRight');
+    try {
+      await expect
+        .poll(
+          async () => {
+            const [nx, ny] = await boat();
+            return Math.hypot(nx! - x!, ny! - y!);
+          },
+          { timeout: 5000 },
+        )
+        .toBeGreaterThan(20);
+    } finally {
+      await page.keyboard.up('ArrowRight');
+    }
+  }
+  expect(errors).toEqual([]);
+});
+
 // Un evento a la venta con isla: su ficha ofrece «Ir a su isla».
 const islandEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.islandId)!;
 

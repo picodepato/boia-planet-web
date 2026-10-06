@@ -1369,6 +1369,44 @@ export class Mar3D {
     if (el) this.anchors.push({ el, target, dy });
   }
 
+  /** Posición visible en px de la ventana, desde u del mundo o el barco interpolado. */
+  screenPosition(
+    target: 'boat' | { x: number; y: number; height?: number } | { defense: { x: number; y: number } },
+  ): { x: number; y: number } | null {
+    let x: number, y: number, z: number;
+    if (target === 'boat') {
+      const p = this.boat.group.position;
+      x = p.x;
+      y = p.y + 0.6;
+      z = p.z;
+    } else if ('defense' in target) {
+      if (!this.defense) return null;
+      // El mismo marco y la misma copia del mundo que usa el modelo de la isla.
+      const p = this.defense.view.at(target.defense.x, target.defense.y);
+      x = p.x;
+      y = 0.5;
+      z = p.z;
+    } else {
+      x = this.wrapC.x + wrapD(toScene(target.x) - this.wrapC.x, this.periodS.w);
+      z = this.wrapC.y + wrapD(toScene(target.y) - this.wrapC.y, this.periodS.h);
+      y = target.height ?? 0.5;
+    }
+    const out = { x: 0, y: 0, on: false };
+    this.project(x, y, z, out);
+    const canvas = this.opts.canvas;
+    if (
+      !out.on ||
+      out.x < 0 ||
+      out.y < 0 ||
+      out.x > canvas.clientWidth ||
+      out.y > canvas.clientHeight ||
+      this.hidden(x, y, z)
+    )
+      return null;
+    const rect = canvas.getBoundingClientRect();
+    return { x: rect.left + out.x, y: rect.top + out.y };
+  }
+
   release(el: HTMLElement): void {
     const i = this.anchors.findIndex((a) => a.el === el);
     if (i >= 0) this.anchors.splice(i, 1);

@@ -50,6 +50,7 @@ import {
   waveWarningLine,
 } from './castillo-hud-model';
 import { CastleGuideLayer } from './castillo-guia';
+import type { Mar3D } from './engine/mar3d';
 import { CastleIcon, type CastleIconName } from './castillo-icons';
 import type { CastleMode } from './castillo-mode';
 import { castlePairLabel } from './castillo-previa';
@@ -198,7 +199,9 @@ export function CastleLayer({
   castle,
   covered,
   onPause,
+  engine,
 }: {
+  engine: () => Mar3D | null;
   castle: CastleMode;
   covered: boolean;
   onPause: () => void;
@@ -502,6 +505,7 @@ export function CastleLayer({
       {playing ? (
         <CastleGuideLayer
           castle={castle}
+          engine={engine}
           mode={mode}
           hasPriority={!!panel && panel.priority !== null}
           covered={covered}

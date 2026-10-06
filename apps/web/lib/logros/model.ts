@@ -1,6 +1,11 @@
 import type { AchievementState } from '@boia/contracts';
 import { formatRaceTime } from '@boia/engine/circuit';
-import type { AchievementDefinition, AchievementProgress, AchievementReward } from '@boia/store';
+import {
+  RACE_FAST_ACHIEVEMENT,
+  type AchievementDefinition,
+  type AchievementProgress,
+  type AchievementReward,
+} from '@boia/store';
 import {
   type AchievementFacts,
   type AchievementGoal,
@@ -81,11 +86,21 @@ const asTask = (d: string) => d.replace(/\.$/, '').replace(/^\p{Lu}/u, (c) => c.
 export function remainingText(def: AchievementDefinition, goal: AchievementGoal): string {
   if (goal.unit === 'ms') {
     if (goal.have <= 0)
-      return t('logros.model.teQuedaUnaVuelta', { formatRaceTime: formatRaceTime(goal.need) });
-    return t('logros.model.tuMejorVueltaTe', {
-      formatRaceTime: formatRaceTime(goal.have),
-      formatRaceTime2: formatRaceTime(goal.have - goal.need),
-    });
+      return t(
+        def.id === RACE_FAST_ACHIEVEMENT
+          ? 'logros.model.teQuedaUnaRegata'
+          : 'logros.model.teQuedaUnaVuelta',
+        { formatRaceTime: formatRaceTime(goal.need) },
+      );
+    return t(
+      def.id === RACE_FAST_ACHIEVEMENT
+        ? 'logros.model.tuMejorRegataTe'
+        : 'logros.model.tuMejorVueltaTe',
+      {
+        formatRaceTime: formatRaceTime(goal.have),
+        formatRaceTime2: formatRaceTime(goal.have - goal.need),
+      },
+    );
   }
   const left = Math.max(0, goal.need - goal.have);
   if (goal.unit === 'minutos') {

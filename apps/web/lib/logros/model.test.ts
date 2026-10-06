@@ -116,6 +116,19 @@ describe('filas del panel', () => {
 });
 
 describe('textos', () => {
+  it('Rápido usa el tiempo de una regata completa, sin reutilizar los mensajes de vuelta de Rayo', async () => {
+    const { list, facts } = await snapshot(repo());
+    const fast = list.find((a) => a.definition.id === 'regata-rapida')!;
+    const goal = achievementGoal(fast.definition, facts);
+    expect(remainingText(fast.definition, goal)).toBe(
+      'Te queda una regata de tres vueltas en menos de 1:20,0',
+    );
+    const slower = { ...goal, have: goal.need + 5000 };
+    expect(remainingText(fast.definition, slower)).toBe(
+      'Tu mejor regata: 1:25,0 · te quedan 5,0 s',
+    );
+    expect(goalProgress(slower)).toBeCloseTo(goal.need / slower.have);
+  });
   it('el premio: puntos, monedas y lo que dé además, con el nombre del cosmético', async () => {
     const r = repo();
     const { list, names } = await snapshot(r);

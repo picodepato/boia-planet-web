@@ -163,6 +163,24 @@ describe('los pasos', () => {
 
 describe('el bocadillo', () => {
   const view = { width: 390, height: 844 };
+  it('mover y ficha nombran el avión y la isla de la escena', () => {
+    expect(CASTLE_GUIDE_STEPS.find((s) => s.id === 'mover')?.worldAnchor).toBe('plane');
+    expect(CASTLE_GUIDE_STEPS.find((s) => s.id === 'ficha')?.worldAnchor).toBe('island');
+  });
+  it('los puntos de la escena conservan la cola a menos de 40 px, también junto a los bordes', () => {
+    for (const viewport of [view, { width: 360, height: 640 }, { width: 1440, height: 900 }]) {
+      for (const x of [1, 20, viewport.width / 2, viewport.width - 20, viewport.width - 1]) {
+        for (const y of [1, 100, viewport.height / 2, viewport.height - 1]) {
+          const p = placeGuideBubble({ left: x, top: y, width: 0, height: 0 }, viewport);
+          expect(p.side).not.toBe('free');
+          expect(p.tail).not.toBeNull();
+          // La punta CSS se extiende unos 20 px desde la base del bocadillo.
+          const tipY = p.y + (p.side === 'above' ? 20 : -20);
+          expect(Math.hypot(p.left + p.tail! - x, tipY - y)).toBeLessThanOrEqual(40);
+        }
+      }
+    }
+  });
   it('va encima de lo que nombra, con la punta en su centro y dentro de la pantalla', () => {
     const p = placeGuideBubble({ left: 300, top: 700, width: 80, height: 44 }, view);
     expect(p.side).toBe('above');
@@ -172,9 +190,7 @@ describe('el bocadillo', () => {
     expect(p.left + p.tail!).toBeCloseTo(340, -1);
   });
   it('debajo si lo que nombra está arriba; sin nada que nombrar, en el centro y sin punta', () => {
-    expect(placeGuideBubble({ left: 10, top: 40, width: 60, height: 44 }, view).side).toBe(
-      'below',
-    );
+    expect(placeGuideBubble({ left: 10, top: 40, width: 60, height: 44 }, view).side).toBe('below');
     const free = placeGuideBubble(null, view);
     expect(free.side).toBe('free');
     expect(free.tail).toBeNull();

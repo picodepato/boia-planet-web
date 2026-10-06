@@ -57,7 +57,7 @@ demo del navegador y faltan en el enum de Supabase.
 | 4 | `islas-7` | Cartógrafa | Descubre las 8 islas del mapa. | 8 · «Te quedan 5 islas» (desde T72 pide las 8 islas del mapa de T67; el id no cambia) | `visit_island` | 120 pts + 40 monedas |
 | 5 | `fiestera-rescatada` | Boia Fiestera rescatada | Saca a la Boia Fiestera de entre los cocodrilos. | 1 · «Búscala entre los cocodrilos» | `rescue_character` (`boia-fiestera`) | 80 pts + 40 monedas |
 | 6 | `fiestera-entregada` | Hasta el amanecer | Lleva a la Boia Fiestera a la Isla de Nochevieja. | 1 · «Llévala a la Isla de Nochevieja» | `deliver_character` (`boia-fiestera`) | 200 pts + **Bandera de la Fiestera** |
-| 7 | `circuito` | Por Los Rápidos | Termina una vuelta al circuito. | 1 · «Termina una vuelta» | `complete_circuit` (`finishLap`, en `circuit-hud.tsx`) | 60 pts + 30 monedas |
+| 7 | `circuito` | Primera regata | Termina tu primera regata en Los Rápidos. | 1 · «Termina una regata» | `complete_circuit` (`finishLap`, en `circuit-hud.tsx`) | 60 pts + 30 monedas |
 | 8 | `circuito-atajo` | ¿Atajo? Atajo. *(oculto)* | Termina una vuelta por el atajo. | 1 · «???» | `complete_circuit` con la ruta de la vuelta (`via`: arco `circuito-cp-a`) | 60 pts + **Bandera a cuadros** |
 | 9 | `circuito-rapido` | Rayo de Los Rápidos | Haz una vuelta en menos de 43,6 s. | 43,6 s · «Tu récord: 52 s, te sobran 8,4 s» | `complete_circuit` con el tiempo (`maxMs` 43 600) | 120 pts + **Estela de rayo** |
 | 10 | `faro` | Vigía del faro | Gana Vigilancia del faro. | 1 · «Gana una partida en el Faro» | **T36** `win_minigame` (`faro`) | 60 pts + 30 monedas |

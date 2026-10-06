@@ -16,6 +16,7 @@ import {
   skipGuide,
 } from './castillo-guia-model';
 import type { CastleMode } from './castillo-mode';
+import type { Mar3D } from './engine/mar3d';
 import './castillo-guia.css';
 
 /**
@@ -29,7 +30,7 @@ import './castillo-guia.css';
  */
 
 /** Cada cuánto se mira la partida y dónde está lo que se señala (ms). */
-const READ_MS = 150;
+const READ_MS = 50;
 
 const samePlace = (a: GuideBubblePlace | null, b: GuideBubblePlace | null) =>
   a === b ||
@@ -63,11 +64,13 @@ function findAnchor(anchors: readonly string[]): Box | null {
 
 export function CastleGuideLayer({
   castle,
+  engine,
   mode,
   hasPriority,
   covered,
 }: {
   castle: CastleMode;
+  engine: () => Mar3D | null;
   /** Lo que enseña la franja de abajo del HUD. */
   mode: CastleHudMode;
   /** La ficha abierta es de una isla que elige a quién apunta. */
@@ -79,8 +82,8 @@ export function CastleGuideLayer({
   const [state, setState] = useState<CastleGuideState>(GUIDE_START);
   const stateRef = useRef(state);
   const [place, setPlace] = useState<GuideBubblePlace | null>(null);
-  const latest = useRef({ mode, hasPriority, castle });
-  latest.current = { mode, hasPriority, castle };
+  const latest = useRef({ mode, hasPriority, castle, engine });
+  latest.current = { mode, hasPriority, castle, engine };
 
   const update = useCallback((next: CastleGuideState) => {
     stateRef.current = next;
@@ -106,8 +109,22 @@ export function CastleGuideLayer({
       });
       if (next !== stateRef.current) update(next);
       const step = guideStep(next);
+      const renderer = l.engine();
+      // La última isla instalada es la que acaba de nombrar «Abre su ficha».
+      const island = s.towers.at(-1);
+      const point =
+        step?.worldAnchor === 'plane'
+          ? renderer?.screenPosition('boat')
+          : step?.worldAnchor === 'island' && island
+            ? renderer?.screenPosition({ defense: island })
+            : null;
+      const anchor = point
+        ? { left: point.x, top: point.y, width: 0, height: 0 }
+        : step
+          ? findAnchor(step.anchors)
+          : null;
       const at = step
-        ? placeGuideBubble(findAnchor(step.anchors), {
+        ? placeGuideBubble(anchor, {
             width: window.innerWidth,
             height: window.innerHeight,
           })

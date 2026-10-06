@@ -52,7 +52,12 @@ export interface CastleGuideTally {
   called: number;
 }
 
-export const EMPTY_GUIDE_TALLY: CastleGuideTally = { built: 0, upgraded: 0, priority: 0, called: 0 };
+export const EMPTY_GUIDE_TALLY: CastleGuideTally = {
+  built: 0,
+  upgraded: 0,
+  priority: 0,
+  called: 0,
+};
 
 /** Suma a la cuenta lo que hizo el jugador en un paso de la partida. */
 export function tallyGuide(
@@ -110,6 +115,8 @@ export interface CastleGuideStep {
    * vea; vacío (o ninguno en pantalla), flota solo en el centro.
    */
   anchors: readonly string[];
+  /** Objetivo de la escena, proyectado por el renderer. */
+  worldAnchor?: 'plane' | 'island';
   /** Ya se hizo lo que pide (pasa al siguiente). */
   done(o: CastleGuideObs, from: { x: number; y: number }): boolean;
   /** Ahora no tiene sentido (se salta). */
@@ -126,6 +133,7 @@ export const CASTLE_GUIDE_STEPS: readonly CastleGuideStep[] = [
     id: 'mover',
     text: 'mar.castillo.guia.mover',
     anchors: [],
+    worldAnchor: 'plane',
     done: (o, from) => Math.hypot(o.plane.x - from.x, o.plane.y - from.y) >= GUIDE_PLANE_MOVE_U,
   },
   {
@@ -156,6 +164,7 @@ export const CASTLE_GUIDE_STEPS: readonly CastleGuideStep[] = [
     id: 'ficha',
     text: 'mar.castillo.guia.ficha',
     anchors: [],
+    worldAnchor: 'island',
     done: (o) => o.mode === 'tower' || o.tally.priority > 0 || o.tally.upgraded > 0,
   },
   {

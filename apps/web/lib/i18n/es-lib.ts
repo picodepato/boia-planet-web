@@ -281,6 +281,9 @@ export const esLib = {
   'logros.model.partidasJugadas': 'partidas',
   'logros.model.bossVencido': 'boss vencido',
   'logros.model.bossesVencidos': 'bosses vencidos',
+  'logros.model.teQuedaUnaRegata':
+    'Te queda una regata de tres vueltas en menos de {formatRaceTime}',
+  'logros.model.tuMejorRegataTe': 'Tu mejor regata: {formatRaceTime} · te quedan {formatRaceTime2}',
   'logros.model.teQuedaUnaVuelta': 'Te queda una vuelta en menos de {formatRaceTime}',
   'logros.model.tuMejorVueltaTe': 'Tu mejor vuelta: {formatRaceTime} · te quedan {formatRaceTime2}',
   'logros.model.teQueda1Minuto': 'Te queda 1 minuto a bordo',
