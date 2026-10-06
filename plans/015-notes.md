@@ -52,3 +52,14 @@ Collected 2026-10-06 after plan 014 shipped. `/orchestrator` turns these into ta
 14. **Castle upgrade:** only raises max life; expensive, a lot of life per level.
 15. **Achievements and prize:** one achievement per difficulty (any run length); a world **prize** for winning on the hardest difficulty (any run length; amount to define); a **special achievement** for the hardest difficulty at the longest run length.
 16. **Technical:** fix the test setup so the full e2e and vitest no longer fail by timeouts (split or tune slow suites), plus `.gitattributes` `eol=lf`.
+
+## Prizes and mascots (Hernán, 2026-10-06) — replaces answer 15 above
+Every game's top challenge gives a mascot, like the Cañón's minikraken («Rompetentáculos»). Names and designs `muestra` until Álvaro approves; new mascots modelled from zero in Blender with Fable, no approval stop.
+- **Castle:**
+  - One achievement per difficulty won (Tranquila, Normal, Tormenta; any run length), with its usual points.
+  - Winning on **Tormenta** (any length): achievement that gives **points and coins** and unlocks the **mascot «Cañoncito»** (a small cannon on deck).
+  - Special achievement for **Tormenta + 10 min**: unlocks the **«Estela del vórtice»** wake (lilac and black spiral), shown everywhere in the world.
+- **Race:**
+  - First time finishing: achievement «Primera regata» with some points and coins.
+  - Beating a **decent time**: achievement «Rápido» that unlocks the **mascot «Tortuga turbo»**, which **swims behind the player's boat** (not on deck). The time threshold is **measured with the race bot** (where a normal player gets it after about 3–5 tries).
+- Achievements that unlock a mascot also give coins.
