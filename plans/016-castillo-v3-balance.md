@@ -56,7 +56,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome: U-turn radius 135→150 (inner 210 u), Ibiza build 63 / upgrades 45·60 with 14/29/59 per 10 s (45/30/20 s), extra Ibizas 70/50 % by build order, +15 % damage Faro/Puerto/Nochevieja/Benidorm, balance tests: bot holds Normal and Tormenta; DEFENSE_CONFIG_VERSION 6, migration 20261006100500 (not applied) · 4e900ff
 
 ## T183 — Castle arena v3: camera follow, Ibiza money on screen, upgrade sound, no turbo
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T181
 - Model: opus
 - Goal: Decisions 2, 7 (view side), 8 and 9. Camera centres the plane from half zoom inward with a smooth blend to the fixed top view; each Ibiza payout shows a big golden «+N» rising from the island, always visible even with many effects (replaces the small pop-up); the Ibiza card has a collapsible, very short explanation (pays N every 10 s; extra Ibizas pay less); the castle upgrade plays its own sound; turbo button and speed readout hidden in the castle arena.
@@ -71,7 +71,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - Outcome:
 
 ## T184 — /mar fixes: arrows after «Mi Barco», guide bubbles on the plane and island, texts
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Decisions 10 and 11, and the pre-existing bug: after opening and closing «Mi Barco» from the menu, keyboard arrows stop steering the boat on plain `/mar`.
@@ -82,7 +82,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
   - castle guide e2e: «mover» and «ficha» bubbles have a tail and point within ~40 px of the plane / island on screen → exit 0
   - `grep -rn "Por Los Rápidos" docs apps packages` → no matches; «Rápido» progress line uses its own key
   - Test command → exit 0
-- Outcome:
+- Outcome: focus restored when sheets close (arrows work after «Mi Barco», e2e closes it 3 ways), public world→screen hook in mar3d.ts, «mover»/«ficha» bubbles with tails on the plane / last installed island, «Por Los Rápidos» gone, «Rápido» own progress wording; done by Codex + wrapper · b4319b1
 
 ## T185 — Close: full e2e, balance check, docs, test guide
 - Status: pending
@@ -108,6 +108,7 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T181: with all changes the bot holds Normal and Tormenta at 100 %; Hernán chose to keep the stronger islands and NOT toughen enemies (he finds Tormenta hard); balance tests move to the new shape (Hernán)
 - 2026-10-06 T181: U-turn radius 135→150 (inner 210 u); Ibiza build 70→63, upgrades 45/60, payouts 14/29/59 per 10 s kept; extra-Ibiza share by build order among standing Ibizas; +15 % from one table `DEFENSE_DAMAGE_T178` × 1.15; DEFENSE_CONFIG_VERSION 6, migration 20261006100500 (not applied) (agent)
 - 2026-10-06 T181: balance tests now expect the bot to hold Normal and Tormenta; still check a one-island build falls, no Ibiza falls, Tormenta never easier than Normal, no one-island build beats the simple one (agent)
+- 2026-10-06 T184: arrows fix is defensive (focus restore); root cause not proven, new e2e passes (agent)
 
 ## Proposals (new scope)
 - 2026-10-06 T181: bot ends at 100 % everywhere; Puerto-only and Benidorm-only builds hold Tormenta at full life (agent)
@@ -123,3 +124,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 T181 answer sent (B, no tougher enemies); same agent resumed
 - 2026-10-06 T180 reported done (d979994); sent back: Fiestera zone overlaps cala zone, e2e mar-ayuda/islas/canon not run, no screenshot with the route line
 - 2026-10-06 20:30 T181 integrated → 4e900ff (tests ok); worktree and branch removed (leftover node_modules folder in .claude/worktrees/agent-afcbcafc52df3805d, guard blocks rm)
+- 2026-10-06 20:34 T184 integrated → b4319b1 (tests ok); worktree and branch removed
