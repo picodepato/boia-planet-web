@@ -310,3 +310,4 @@ Decisions of 2026-10-06 that every task follows (Hernán's notes and answers):
 - 2026-10-06 17:38 T179 launched · attempt 1 · agent aabca35fcd5939e8c (opus)
 - 2026-10-06 17:48 T179 integrated → 001c2e2 (tests ok); worktree and branch removed
 - 2026-10-06 19:02 T178 integrated → b92010a (tests ok on main); worktree and branch removed; plan done
+- 2026-10-06 19:24 pushed main 4b7d714 to Vercel on Hernán's request in the session
