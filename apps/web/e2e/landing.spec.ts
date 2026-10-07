@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { ONLINE_EVENT } from './online-event';
 
 /**
  * Chunks JS que sólo usa el juego (el mar 3D, /mar) y no la landing, sacados del
@@ -105,10 +106,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   probe.on('request', (r) => loadedByBuy.add(new URL(r.url()).pathname));
   await probe.goto(LANDING);
   await heroTickets(probe).click();
-  await ticketsPanel(probe)
-    .getByRole('button', { name: /comprar entradas/i })
-    .first()
-    .click();
+  await ticketsPanel(probe).getByTestId(`comprar-${ONLINE_EVENT.id}`).click();
   // Sin Carnet, la compra pregunta antes (T66).
   await expect(probe.getByTestId('checkout-sin-carnet')).toBeVisible({ timeout: 20_000 });
   await probe.close();
@@ -155,7 +153,8 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   const panel = ticketsPanel(page);
   await expect(panel).toBeVisible();
   await expect(panel.getByRole('heading', { name: 'Elige tu evento' })).toBeFocused();
-  const buy = panel.getByRole('button', { name: /comprar entradas/i }).first();
+  // El evento con checkout online (Halloween y SONIDO van a taquilla, T199).
+  const buy = panel.getByTestId(`comprar-${ONLINE_EVENT.id}`);
   await expect(buy).toBeVisible();
   expect(new URL(page.url()).hash).toBe('#tickets');
 

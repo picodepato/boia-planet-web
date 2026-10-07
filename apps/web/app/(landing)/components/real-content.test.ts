@@ -1,4 +1,4 @@
-import { homeContentSchema, isSampleLink, type HomeContent } from '@boia/contracts';
+import { canBuy, homeContentSchema, isSampleLink, type HomeContent } from '@boia/contracts';
 import {
   artistPhotoPath,
   eventPosterPath,
@@ -160,8 +160,12 @@ describe('the landing ready for real content (plan 007 T82)', () => {
     expect(shown).toContain(l.artistSpotify[sampleTrio[1]!]);
     expect(shown.filter(isSampleLink)).toEqual([]);
     expect(anchors(html).filter(marked)).toEqual([]);
-    // The ticket link of the event is the real one (the no-JS link of «Comprar»).
-    expect(priority).toContain(`href="${l.tickets[HALLOWEEN_EVENT_ID]}"`);
+    // Halloween sells only at the box office (plan 017 T199): no ticket link,
+    // the notice instead. An online event keeps the real no-JS link of «Comprar».
+    expect(priority).not.toContain(`href="${l.tickets[HALLOWEEN_EVENT_ID]}"`);
+    expect(priority).toContain('data-testid="box-office-message"');
+    const online = content.events.find((e) => canBuy(e) && !e.boxOfficeOnly)!;
+    expect(shown).toContain(l.tickets[online.id]);
     // An artist without Spotify (null) gets no link.
     const third = content.artists.find((a) => a.id === sampleTrio[2]);
     expect(third?.spotifyUrl).toBeUndefined();

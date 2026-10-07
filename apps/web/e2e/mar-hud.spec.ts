@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { t } from '../lib/i18n';
+import { ONLINE_EVENT } from './online-event';
 
 /**
  * El HUD de /mar (T65, decisión de Hernán y Álvaro del 2026-10-02, que
@@ -455,10 +456,7 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
     const errors = await openMar(page);
     const vp = page.viewportSize()!;
     await page.getByTestId('mar-entradas').click();
-    await page
-      .getByTestId(/^mar-entradas-comprar-/)
-      .first()
-      .click();
+    await page.getByTestId(`mar-entradas-comprar-${ONLINE_EVENT.id}`).click();
     const checkout = page.getByTestId('checkout');
     // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
     await checkout.getByTestId('checkout-sin-carnet').click();

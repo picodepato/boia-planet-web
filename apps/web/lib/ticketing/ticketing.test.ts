@@ -23,8 +23,14 @@ const naufrago = discounts.find(
 )!;
 const naufragoEvent = onSale.find((e) => e.id === naufrago.eventId)!;
 const ticketAchievement = SAMPLE_ACHIEVEMENTS.find((a) => a.trigger === TICKET_TRIGGER)!;
-// «Ahora»: una semana antes de que caduque el descuento del náufrago.
-const VALID = new Date(Date.parse(naufrago.endsAt!) - 7 * DAY);
+// «Ahora»: una semana antes de que caduque el descuento del náufrago o de que
+// empiece otro evento a la venta (hace falta uno distinto, abajo).
+const VALID = new Date(
+  Math.min(
+    Date.parse(naufrago.endsAt!),
+    ...onSale.filter((e) => e.id !== naufrago.eventId).map((e) => Date.parse(e.startsAt)),
+  ) - 7 * DAY,
+);
 const EXPIRED = new Date(Date.parse(naufrago.endsAt!) + DAY);
 // Otro evento que siga a la venta en `VALID` (el estado sale de las fechas, T42).
 const otherEvent = onSale.find(

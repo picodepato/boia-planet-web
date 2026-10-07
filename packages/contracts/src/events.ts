@@ -89,6 +89,8 @@ export const eventSchema = z.object({
   priceCents: z.number().int().nonnegative().optional(),
   /** El precio es de muestra hasta que Álvaro lo fije (D-06). */
   priceSample: z.boolean().default(true),
+  /** Venta sólo en taquilla y descuento del Carnet, en céntimos. Muestra (T199). */
+  boxOfficeOnly: z.object({ carnetDiscountCents: z.number().int().nonnegative() }).optional(),
   /** Enlace a la ticketera (adaptador o sandbox hasta que Álvaro contrate, D-06). */
   ticketUrl: z.url().optional(),
   islandId: z.string().optional(),
@@ -167,7 +169,10 @@ export function effectiveEvents<E extends StateInput>(events: readonly E[], now:
  */
 export function canBuy(event: BoiaEvent, now?: Date): boolean {
   const state = now ? eventState(event, now) : event.state;
-  return EVENT_STATE_BEHAVIOR[state].purchasable && event.ticketUrl !== undefined;
+  return (
+    EVENT_STATE_BEHAVIOR[state].purchasable &&
+    (event.boxOfficeOnly !== undefined || event.ticketUrl !== undefined)
+  );
 }
 
 /** Estados que puede tener el evento prioritario: vigente, nunca cancelado ni pasado (REQ-COM-009). */

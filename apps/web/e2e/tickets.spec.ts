@@ -1,24 +1,28 @@
-import { canBuy } from '@boia/contracts';
 import { SAMPLE_ACHIEVEMENTS, SAMPLE_EVENTS } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
-import { expect, test } from '@playwright/test';
-import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { expect, test, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { t } from '../lib/i18n/web';
+import { CARNET_CREATE_HREF } from '../lib/landing/access';
 import { CHECKOUT_COPY } from '../lib/ticketing/copy';
 import { TICKET_TRIGGER } from '../lib/ticketing/sandbox';
 import { heroTickets, tap } from './hero-helpers';
 import { marSheet, openMar } from './mar-helpers';
+import { BOX_OFFICE_EVENTS, ONLINE_EVENT } from './online-event';
 
 /**
  * Compra de prueba (T25, D-20, REQ-COM-035), sin ticketera ni servidor:
- * se compra un evento desde el panel de Tickets de la landing y el de la isla
- * desde su ficha en el mar 3D; los dos sellos aparecen en Mi Carnet. Corre en
- * móvil 360×640 y en escritorio.
+ * se compra el evento con checkout online desde el panel de Tickets de la
+ * landing y otra vez desde su isla en el mar 3D; el sello sale una sola vez
+ * en Mi Carnet. Halloween y SONIDO se venden sólo en taquilla (plan 017
+ * T199, decisión 8): su «Comprar entradas» da el aviso y el Carnet, sin
+ * checkout. Corre en móvil 360×640 y en escritorio.
  */
 
-// El evento de una isla (se compra en el mar) y otro a la venta (se compra en
-// la landing). Desde T67 los tres a la venta tienen isla.
-const islandEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.islandId)!;
-const landingEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.id !== islandEvent.id)!;
+// Desde T199 sólo un evento de la muestra tiene checkout online.
+const islandEvent = ONLINE_EVENT;
+const landingEvent = ONLINE_EVENT;
 // Su isla en el mundo por defecto (Arcilla desde T20).
 const islandPlace = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config.objects.find((o) =>
   o.behaviors.some(
@@ -34,12 +38,12 @@ const ticketAchievement = SAMPLE_ACHIEVEMENTS.find((a) => a.trigger === TICKET_T
 // En la landing el checkout y el repositorio se cargan al pulsar.
 const CHECKOUT_LOAD = 20_000;
 
-test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → los dos sellos', async ({
+test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → un solo sello', async ({
   page,
 }, info) => {
   test.setTimeout(150_000);
   expect(islandEvent, 'hay un evento a la venta con isla').toBeDefined();
-  expect(landingEvent, 'hay otro evento a la venta').toBeDefined();
+  expect(landingEvent, 'hay un evento con checkout online').toBeDefined();
 
   // Landing → Tickets → «Comprar entradas». Con un parámetro, sin cinemática (D-21).
   await page.goto('/?intro=0');
@@ -77,7 +81,7 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
   await carnet.getByTestId('carnet-guardar').click();
   const stamps = carnet.getByTestId('carnet-sellos');
   await expect(stamps).toContainText(storeName(landingEvent.id));
-  await expect(stamps).not.toContainText(storeName(islandEvent.id));
+  await expect(stamps.locator('li')).toHaveCount(1);
   await carnet.getByTestId('mar-carnet-cerrar').click();
   await expect(carnet).toBeHidden();
 
@@ -97,7 +101,7 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
   await expect(checkout.getByTestId('checkout-evento')).toHaveText(storeName(islandEvent.id));
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toContainText(
-    CHECKOUT_COPY.stamp.granted,
+    CHECKOUT_COPY.stamp.already_stamped,
   );
   // El logro de la entrada ya estaba: no se repite.
   await expect(checkout.getByTestId('checkout-logro')).toHaveCount(0);
@@ -107,5 +111,63 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
   const sellos = page.getByTestId('mar-carnet').getByTestId('carnet-sellos');
   await expect(sellos).toContainText(storeName(landingEvent.id));
   await expect(sellos).toContainText(storeName(islandEvent.id));
-  await expect(sellos.locator('li')).toHaveCount(2);
+  await expect(sellos.locator('li')).toHaveCount(1);
+});
+
+// Capturas para Hernán (T199): `T199_SHOTS=<carpeta>`.
+async function shot(page: Page, name: string, project: string) {
+  const dir = process.env.T199_SHOTS;
+  if (!dir) return;
+  mkdirSync(dir, { recursive: true });
+  await page.screenshot({ path: path.join(dir, `${name}-${project}.png`) });
+}
+
+test('Halloween y SONIDO: taquilla con el descuento del Carnet, en la landing y en su isla', async ({
+  page,
+}, info) => {
+  test.setTimeout(120_000);
+  expect(BOX_OFFICE_EVENTS.length, 'hay eventos de taquilla').toBeGreaterThan(0);
+  const message = t('ticketing.boxOffice.message', { euros: '2' });
+
+  await page.goto('/?intro=0');
+  await tap(page, heroTickets(page));
+  const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
+  await expect(panel).toBeVisible();
+  for (const e of BOX_OFFICE_EVENTS) {
+    await panel.getByTestId(`comprar-${e.id}`).click();
+    const box = page.getByTestId('box-office');
+    await expect(box).toBeVisible();
+    await expect(box.getByRole('heading')).toHaveText(e.name);
+    await expect(box.getByTestId('box-office-message')).toContainText(message);
+    await expect(box.getByTestId('box-office-message')).toContainText(
+      `${t('ticketing.boxOffice.invite')} ${t('ticketing.boxOffice.carnet')}`,
+    );
+    await expect(box.getByTestId('box-office-carnet')).toHaveAttribute('href', CARNET_CREATE_HREF);
+    await expect(page.getByTestId('checkout')).toHaveCount(0);
+    await shot(page, `taquilla-landing-${e.id}`, info.project.name);
+    await box.getByTestId('box-office-close').click();
+    await expect(box).toHaveCount(0);
+  }
+  // El evento online sigue con su checkout.
+  await panel.getByTestId(`comprar-${ONLINE_EVENT.id}`).click();
+  await expect(page.getByTestId('checkout')).toBeVisible({ timeout: CHECKOUT_LOAD });
+  await expect(page.getByTestId('box-office')).toHaveCount(0);
+
+  // En el mar: la ficha de la isla de Halloween da el mismo aviso y su botón abre Mi Carnet.
+  const [halloween] = BOX_OFFICE_EVENTS;
+  await openMar(page, `?evento=${halloween!.id}`);
+  await page
+    .getByTestId('mar-entradas-saltar')
+    .click({ timeout: 5_000 })
+    .catch(() => {});
+  const sheet = marSheet(page);
+  await expect(sheet).toHaveAttribute('data-lugar', halloween!.islandId!, { timeout: 30_000 });
+  await sheet.getByTestId('mar-comprar').first().click();
+  const box = page.getByTestId('box-office');
+  await expect(box.getByTestId('box-office-message')).toContainText(message);
+  await expect(page.getByTestId('checkout-confirmar')).toHaveCount(0);
+  await shot(page, `taquilla-mar-${halloween!.id}`, info.project.name);
+  await box.getByTestId('box-office-carnet').click();
+  await expect(box).toHaveCount(0);
+  await expect(page.getByTestId('mar-carnet')).toBeVisible();
 });

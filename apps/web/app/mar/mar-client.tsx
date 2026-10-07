@@ -40,6 +40,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { liveWorld } from '../../lib/admin/live-world';
 import { track } from '../../lib/analytics';
 import { SandboxCheckout } from '../../lib/ticketing/checkout';
+import { BoxOfficeDialog } from '../../lib/ticketing/box-office';
 import { purchaseNotices } from '../../lib/ticketing/notices';
 import { ClaimBadge, claimLabel } from '../../lib/logros/claim-badge';
 import { useReadyCount } from '../../lib/logros/use-logros';
@@ -2649,7 +2650,20 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         />
       ) : null}
 
-      {checkoutFor ? (
+      {checkoutFor && findEvent(checkoutFor)?.boxOfficeOnly ? (
+        <BoxOfficeDialog
+          eventName={findEvent(checkoutFor)!.name}
+          rule={findEvent(checkoutFor)!.boxOfficeOnly!}
+          className="checkout--mar"
+          onClose={() => setCheckoutFor(null)}
+          carnet={{
+            onOpen: () => {
+              setCheckoutFor(null);
+              openPanel('carnet');
+            },
+          }}
+        />
+      ) : checkoutFor ? (
         <SandboxCheckout
           eventId={checkoutFor}
           source="world"

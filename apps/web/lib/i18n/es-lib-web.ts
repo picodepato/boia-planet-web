@@ -4,6 +4,14 @@
  * que Álvaro lo apruebe.
  */
 export const esLibWeb = {
+  // T199, decisiones 8 y 10. Textos de muestra.
+  'ticketing.boxOffice.message':
+    'Entradas sólo en taquilla, el mismo día. Enseña tu Carnet BOIA en la puerta y te descontamos {euros} €.',
+  'ticketing.boxOffice.invite': '¿Aún no tienes Carnet?',
+  'ticketing.boxOffice.carnet': 'Hazte el tuyo',
+  'ticketing.boxOffice.buyAria': 'Comprar entradas para {name}',
+  'landing.signOut': 'Cerrar sesión',
+  'landing.signOut.failed': 'No se pudo cerrar sesión. Inténtalo de nuevo.',
   'media.video.load': 'Cargar vídeo: {nombre}',
   'landing.access.sonido': 'Sonido',
   'landing.access.entrarEnElWhatsapp': 'Entrar en el WhatsApp',

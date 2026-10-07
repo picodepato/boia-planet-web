@@ -7,6 +7,8 @@ import { t } from '../../../lib/i18n/web';
 import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import type { SandboxCheckout } from '../../../lib/ticketing/checkout';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
+import type { BoiaEvent } from '@boia/contracts';
+import { BoxOfficeDialog, BoxOfficeMessage } from '../../../lib/ticketing/box-office';
 
 type Source = FunnelEventProps['ticket_click_out']['source'];
 type Checkout = typeof SandboxCheckout;
@@ -26,12 +28,14 @@ export function BuyButton({
   eventName,
   ticketUrl,
   source,
+  boxOfficeOnly,
 }: {
   eventId: string;
   eventName: string;
   /** Enlace sin JavaScript (la ticketera de muestra hasta que haya una real). */
   ticketUrl: string | undefined;
   source: Source;
+  boxOfficeOnly?: BoiaEvent['boxOfficeOnly'];
 }) {
   const [Checkout, setCheckout] = useState<ComponentType<Parameters<Checkout>[0]> | null>(null);
   const [open, setOpen] = useState(false);
@@ -50,6 +54,46 @@ export function BuyButton({
     'data-source': source,
     'data-testid': `comprar-${eventId}`,
   };
+
+  if (boxOfficeOnly) {
+    const carnet = { href: CARNET_FROM_LANDING };
+    // Sin JavaScript también se puede leer el aviso, sin abrir la ticketera.
+    if (!hydrated) {
+      return (
+        <details className="event-card__box-office">
+          <summary className="button button--buy" {...track}>
+            {t('event.buy')}
+          </summary>
+          <BoxOfficeMessage rule={boxOfficeOnly} carnet={carnet} />
+        </details>
+      );
+    }
+    return (
+      <>
+        <button
+          type="button"
+          className="button button--buy"
+          aria-label={t('ticketing.boxOffice.buyAria', { name: eventName })}
+          aria-haspopup="dialog"
+          {...track}
+          onClick={() => setOpen(true)}
+        >
+          {t('event.buy')}
+        </button>
+        {open
+          ? createPortal(
+              <BoxOfficeDialog
+                eventName={eventName}
+                rule={boxOfficeOnly}
+                carnet={carnet}
+                onClose={() => setOpen(false)}
+              />,
+              document.body,
+            )
+          : null}
+      </>
+    );
+  }
 
   if (!hydrated && ticketUrl) {
     return (

@@ -159,6 +159,7 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     priceCents: 1000,
     priceSample: true,
     ticketUrl: `${SANDBOX}/tickets/${HALLOWEEN_EVENT_ID}`,
+    boxOfficeOnly: { carnetDiscountCents: 200 }, // T199, muestra.
     islandId: TICKET_EVENT_ISLANDS[HALLOWEEN_EVENT_ID],
     sample: false,
   },
@@ -180,6 +181,7 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     priceCents: 2500,
     priceSample: true,
     ticketUrl: `${SANDBOX}/tickets/${SONIDO_EVENT_ID}`,
+    boxOfficeOnly: { carnetDiscountCents: 200 }, // T199, muestra.
     islandId: TICKET_EVENT_ISLANDS[SONIDO_EVENT_ID],
     sample: false,
   },
@@ -330,11 +332,12 @@ export const SAMPLE_DISCOUNTS: AreaInput<'discounts'>[] = [
   {
     id: 'dto-naufrago',
     code: 'NAUFRAGO10',
-    label: '-10 % en SONIDO',
-    eventId: 'sonido-2026',
+    // SONIDO se vende sólo en taquilla (plan 017 T199): el código va a Nochevieja.
+    label: '-10 % en BOIA Nochevieja',
+    eventId: NOCHEVIEJA_EVENT_ID,
     kind: 'percent',
     value: 10,
-    endsAt: '2026-12-04T23:59:00+01:00',
+    endsAt: '2026-12-30T23:59:00+01:00',
     conditions: 'Una vez por compra. Muestra: no es un código real.',
     sample: true,
   },

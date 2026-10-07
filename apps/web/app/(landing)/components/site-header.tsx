@@ -3,6 +3,7 @@ import { ACCESS_COPY, CARNET_PAGE, RANKING_PAGE } from '../../../lib/landing/acc
 import { t, type MessageKey } from '../../../lib/landing/texts';
 import { BrandLogo } from './brand-logo';
 import { SoundToggle } from './sound-toggle';
+import { LandingSignOut } from './landing-sign-out';
 
 const SECONDARY: ReadonlyArray<[MessageKey, string]> = [
   ['nav.artists', '#artistas'],
@@ -38,6 +39,7 @@ export function SiteHeader({
           {ACCESS_COPY.carnet}
         </a>
       </li>
+      <LandingSignOut />
       <li>
         <a href={RANKING_PAGE} data-testid="cabecera-ranking">
           {ACCESS_COPY.ranking}

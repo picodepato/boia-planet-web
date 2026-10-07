@@ -298,7 +298,8 @@ html[data-hero-top] .site-header__inner {
   gap: 24px;
 }
 
-.site-header__links a {
+.site-header__links a,
+.site-header__links .site-header__sign-out {
   text-decoration: none;
   color: var(--on-dark-70);
   font-size: 11px;
@@ -307,7 +308,8 @@ html[data-hero-top] .site-header__inner {
   text-transform: uppercase;
 }
 
-.site-header__links a:hover {
+.site-header__links a:hover,
+.site-header__links .site-header__sign-out:hover {
   color: var(--ink);
 }
 
@@ -339,15 +341,41 @@ html[data-hero-top] .site-header__inner {
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
-.site-header__menu-list a {
+.site-header__menu-list a,
+.site-header__menu-list .site-header__sign-out {
   display: block;
   padding: 12px;
   text-decoration: none;
   border-radius: 8px;
 }
 
-.site-header__menu-list a:hover {
+.site-header__menu-list a:hover,
+.site-header__menu-list .site-header__sign-out:hover {
   background: rgb(255 255 255 / 0.06);
+}
+
+.site-header__sign-out {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.site-header__sign-out:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.event-card__box-office summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.event-card__box-office summary::-webkit-details-marker {
+  display: none;
 }
 
 @media (min-width: 900px) {

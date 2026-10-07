@@ -133,6 +133,7 @@ export function EventPageBody({ view }: { view: EventPageView }) {
               eventId={event.id}
               eventName={event.name}
               ticketUrl={event.ticketUrl}
+              boxOfficeOnly={event.boxOfficeOnly}
               source="event_page"
             />
           ) : event.state === 'coming_soon' ? (

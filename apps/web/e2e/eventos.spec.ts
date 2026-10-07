@@ -6,6 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { eventIslands } from '../lib/admin/world';
 import { EVENTOS_COPY, FOTOS_COPY } from '../lib/landing/eventos-copy';
 import { eventHref, galleryAnchor, photosHref } from '../lib/landing/eventos';
+import { CARNET_CREATE_HREF } from '../lib/landing/access';
 import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { marSheet, openMar } from './mar-helpers';
 
@@ -99,7 +100,8 @@ test.describe('sin JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
   test('la ficha de un evento a la venta se lee y se compra', async ({ page }) => {
-    const e = SAMPLE_CONTENT.events.find((x) => canBuy(x, now) && x.islandId)!;
+    // Uno con checkout online (Halloween y SONIDO van a taquilla, T199).
+    const e = SAMPLE_CONTENT.events.find((x) => canBuy(x, now) && x.islandId && !x.boxOfficeOnly)!;
     await page.goto(eventHref(e.slug));
     const ficha = page.getByTestId('evento-ficha');
     await expect(ficha.getByRole('heading', { level: 1 })).toHaveText(e.name);
@@ -107,6 +109,19 @@ test.describe('sin JavaScript', () => {
     // Sin JavaScript, el enlace a la ticketera (de muestra).
     await expect(ficha.getByTestId(`comprar-${e.id}`)).toHaveAttribute('href', e.ticketUrl!);
     await expect(ficha.getByTestId('evento-ir-isla')).toHaveAttribute('href', /^\/mar\?/);
+  });
+
+  test('Halloween: «Comprar entradas» despliega el aviso de taquilla y el Carnet (T199)', async ({
+    page,
+  }) => {
+    test.skip(!halloween.boxOfficeOnly || !canBuy(halloween, now), 'Halloween no está en taquilla');
+    await page.goto(eventHref(halloween.slug));
+    const ficha = page.getByTestId('evento-ficha');
+    await ficha.getByTestId(`comprar-${halloween.id}`).click();
+    const message = ficha.getByTestId('box-office-message');
+    await expect(message).toBeVisible();
+    await expect(message.getByTestId('box-office-carnet')).toHaveAttribute('href', CARNET_CREATE_HREF);
+    await expect(ficha.locator(`a[href="${halloween.ticketUrl}"]`)).toHaveCount(0);
   });
 
   test('una ficha finalizada no tiene compra y enseña sus recuerdos', async ({ page }) => {

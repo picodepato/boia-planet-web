@@ -3,6 +3,7 @@ import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
+import { ONLINE_EVENT } from './online-event';
 
 /**
  * Entrada 3D con el planeta de /mar (T57, T64; plan 007 T79; D-19, D-21,
@@ -556,9 +557,8 @@ test('motor bloqueado: la versión estática y Tickets funcionando (REQ-ENT-017,
 
   await heroTickets(page).click();
   await expect(ticketsPanel(page)).toBeVisible();
-  const buy = ticketsPanel(page)
-    .getByRole('button', { name: /comprar entradas/i })
-    .first();
+  // El evento con checkout online (Halloween y SONIDO van a taquilla, T199).
+  const buy = ticketsPanel(page).getByTestId(`comprar-${ONLINE_EVENT.id}`);
   await expect(buy).toBeVisible();
   // Sin escena, la compra de prueba (D-20) se abre igual.
   await buy.click();

@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T199: Halloween/Sonido box-office tickets and landing logout
+
+Started by Codex (stopped on its usage limit, commit 4165f1a); finished by Opus.
+
+What exists:
+- Per-event rule `boxOfficeOnly: { carnetDiscountCents }` in `eventSchema` (`packages/contracts/src/events.ts`); `canBuy` accepts a box-office event without `ticketUrl`. Only Halloween and SONIDO carry it in the sample (`packages/store/src/sample/content.ts`, 200 cents, `muestra`).
+- `apps/web/lib/ticketing/box-office.tsx`: `BoxOfficeMessage` and `BoxOfficeDialog`, shared by the landing and /mar. Texts by key (`ticketing.boxOffice.*` in `es-lib-web.ts`): «Entradas sólo en taquilla, el mismo día. Enseña tu Carnet BOIA en la puerta y te descontamos 2 €.» and below «¿Aún no tienes Carnet? Hazte el tuyo». The landing (`BuyButton`, event card and event page) opens the dialog; without JavaScript a `<details>` shows the same notice; «Hazte el tuyo» links to the Carnet. In /mar every buy path (`checkoutFor`) opens the dialog for these events, and «Hazte el tuyo» opens Mi Carnet. Other events keep their checkout.
+- The castaway's hidden code NAUFRAGO10 pointed at SONIDO, which can no longer be bought online: it now applies to BOIA Nochevieja (`muestra`); a unit test checks no discount points at a box-office event.
+- «Cerrar sesión» (`landing-sign-out.tsx`, key `landing.signOut`) next to «Mi Carnet» in the landing header (desktop row and mobile «Menú»), only on `/` and only with a session (`member`/`incomplete`); it calls `signOut()` + `resetLocalGuest()` like the account section. In local mode (D-20) there is no session, so it never shows.
+- E2E: tickets.spec adds the box-office test (landing panel for both events, Halloween's island in /mar); eventos.spec adds the no-JS Halloween notice; buying specs (tickets, intro, landing, mar-hud, mar-3d, carnet-descuento, eventos no-JS) now pick the online event (`e2e/online-event.ts`); new `landing-logout.spec.ts` (local: no button; with `E2E_SUPABASE=1`: shows on the landing, not in /mar, logs out and stays out after reload). mar-3d's bubble test now translates the T195 skin key (it failed after T195).
+- `docs/spec/estado.md` REQ-IDE-001 points at the renamed tickets test title.
+
+Commands:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 235 files, 2209 passed, 1 skipped
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 192.6 kB gzip of 200); `pnpm typecheck` → exit 0
+- `E2E_PORT=3971 pnpm e2e tickets eventos carnet-descuento descuentos mar-entradas landing-logout landing intro mar-3d mar-hud --workers=1` → 124 passed, 18 skipped, 2 failed (mar-3d bubble, T195 key); after the fix `E2E_PORT=3974 pnpm e2e mar-3d.spec.ts landing-logout.spec.ts --workers=1` → exit 0, 28 passed, 4 skipped
+- Signed-in header screenshots: a temporary (uncommitted) spec with a build pointed at a fake Supabase on 127.0.0.1 and mocked responses → 2 passed (the button shows, logs out, disappears). Screenshots in /tmp/orchestrator-attach/boia-planet-hernan-T199/.
+
+Pending:
+- Hernán: `E2E_SUPABASE=1 E2E_PORT=<free> pnpm e2e landing-logout.spec.ts --workers=1` against boia-planet-dev (not run here, it creates test accounts on the remote project).
+- Admin has no control for the box-office rule yet (it is set in the content).
+
 ## 2026-10-07 — plan 017 T196: Automated tests up to date
 
 Qué existe:

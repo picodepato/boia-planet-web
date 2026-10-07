@@ -136,6 +136,7 @@ export function EventCard({
           eventId={event.id}
           eventName={event.name}
           ticketUrl={event.ticketUrl}
+          boxOfficeOnly={event.boxOfficeOnly}
           source={source}
         />
       ) : (

@@ -40,7 +40,7 @@ const codes = SAMPLE_DISCOUNTS.map((d) => discountSchema.parse(d)).filter(
 );
 const now = new Date();
 const onSale = SAMPLE_EVENTS.filter(
-  (e) => EVENT_STATE_BEHAVIOR[eventState(e, now)].purchasable && e.state !== 'draft',
+  (e) => EVENT_STATE_BEHAVIOR[eventState(e, now)].purchasable && e.state !== 'draft' && !e.boxOfficeOnly,
 );
 const carnetCents = (e: (typeof SAMPLE_EVENTS)[number]) =>
   discountCents(carnetDiscount, samplePriceCents(e));

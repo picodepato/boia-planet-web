@@ -7,6 +7,7 @@ import { startZoom } from '../app/mar/engine/framing';
 import { periodOf, planetRect, shortest } from '../app/mar/engine/wrap';
 import { t } from '../lib/i18n';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { translateSkinText } from '../lib/mundo/demo-world';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
 
 /**
@@ -21,7 +22,7 @@ import { ZARPAR_HREF } from '../lib/intro/zarpar';
 
 const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
 // El evento vigente del mar: el que se vende en una isla (el All Day de la demo).
-const islandEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.islandId)!;
+const islandEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.islandId && !e.boxOfficeOnly)!;
 const islandName = world.objects.find((o) => o.identity.id === islandEvent.islandId)!.identity.name;
 // La primera boia con diálogo (la del tutorial) y su primera línea.
 const talkingBoia = world.objects.find(
@@ -29,7 +30,8 @@ const talkingBoia = world.objects.find(
 )!;
 const firstLine = (() => {
   const b = talkingBoia.behaviors.find((x) => x.type === 'dialogue');
-  return b?.type === 'dialogue' ? b.params.lines[0]!.text : '';
+  // Desde T195 el texto de la skin es una clave i18n: se compara con el texto.
+  return b?.type === 'dialogue' ? translateSkinText(b.params.lines[0]!.text) : '';
 })();
 
 async function openMar(page: Page, query = '') {
