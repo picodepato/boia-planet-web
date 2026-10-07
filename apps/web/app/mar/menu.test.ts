@@ -114,6 +114,19 @@ describe('menú del juego: iconos de BOIA (T114)', () => {
     expect(summary).toContain(t('mar.client.mundos'));
   });
 
+  it('con un solo mundo jugable el título no lo nombra (plan 017, decisión 3); con dos, sí', () => {
+    const title = (html: string) =>
+      html.match(/<span class="mar-menu__world">(.*?)<\/span>/)?.[1] ?? '';
+    expect(title(renderMenu())).toBe(t('mar.client.mar3d', { v1: '' }));
+    const two: WorldSummary[] = ['a', 'b'].map((id) => ({
+      id,
+      name: id,
+      shipStyle: 'x',
+      accent: '#000',
+    }));
+    expect(title(renderMenu(undefined, two))).toBe(t('mar.client.mar3d', { v1: ' · Mar' }));
+  });
+
   it('no queda ningún emoji en el menú, tampoco con el aviso de la partida del Cañón (T118)', () => {
     for (const html of [renderMenu(), renderMenu(GAME)]) {
       expect(html).not.toMatch(/\p{Extended_Pictographic}/u);

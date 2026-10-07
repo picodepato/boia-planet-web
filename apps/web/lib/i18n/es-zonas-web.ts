@@ -16,6 +16,7 @@ export const esZonasWeb = {
   'hero.explore3d': 'Navegar en 3D',
   'hero.explore3d.sub': 'El mismo mar, en 3D y con zoom libre',
   'nav.carnet': 'Mi Carnet',
+  'nav.ranking': 'Ranking',
   'nav.sound.on': 'Sonido activado',
   'nav.sound.off': 'Sonido apagado',
   'nav.photos': 'Fotos y eventos',

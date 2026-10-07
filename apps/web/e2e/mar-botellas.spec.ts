@@ -143,7 +143,7 @@ test('botellas: las de muestra flotan; con Carnet se echa una de 140 y sigue al 
   expect(errors).toEqual([]);
 });
 
-test('ranking: se abre desde el Menú con Circuito y De siempre y los miembros de muestra', async ({
+test('ranking: se abre desde el Menú con la carrera y los puntos de siempre y los miembros de muestra', async ({
   page,
 }) => {
   const errors = await openMar(page);
@@ -151,12 +151,14 @@ test('ranking: se abre desde el Menú con Circuito y De siempre y los miembros d
   const panel = page.getByTestId('mar-ranking');
   const ranking = panel.getByTestId('ranking');
   await expect(ranking.getByTestId('ranking-rotulo')).toHaveText(t('ranking.localLabel'));
-  // Dos pestañas (T92): sin la de temporada hasta que se defina qué es una temporada.
+  // Cuatro pestañas (plan 017 T188): carrera, Cañón, Castillo y puntos; sin la
+  // de temporada hasta que se defina qué es una temporada. Las del Cañón y el
+  // Castillo, en ranking.spec.ts.
   const tabs = {
     circuito: ranking.getByTestId('ranking-tab-circuito'),
     siempre: ranking.getByTestId('ranking-tab-siempre'),
   };
-  await expect(ranking.getByRole('tab')).toHaveCount(2);
+  await expect(ranking.getByRole('tab')).toHaveCount(4);
   await expect(tabs.siempre).toHaveText(t('ranking.tab.allTime'));
   await expect(tabs.circuito).toHaveText(t('ranking.tab.circuit'));
   const rows = ranking.getByTestId('ranking-lista').locator('li.ranking-row');
@@ -172,9 +174,9 @@ test('ranking: se abre desde el Menú con Circuito y De siempre y los miembros d
   await expect(rows.last()).toHaveAttribute('data-testid', 'ranking-fila-mia');
   await expect(rows.last()).toContainText(t('lib.ranking.sinVuelta'));
 
-  // De siempre: el visitante entre todos los miembros de muestra (con las flechas del tablist).
+  // De siempre: el visitante entre todos los miembros de muestra (con el teclado del tablist: Fin).
   await tabs.circuito.focus();
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('End');
   await expect(tabs.siempre).toHaveAttribute('aria-selected', 'true');
   await expect(tabs.siempre).toBeFocused();
   await expect(ranking.getByTestId('ranking-lista')).toHaveAttribute('data-scope', 'all');

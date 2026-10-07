@@ -1,7 +1,7 @@
 /*
  * El ranking (T45, REQ-IDE-053; global con cuentas, T92) en el diseño
  * aprobado de T87 (docs/propuestas/2026-10-03-carnet.md, «Rankings panel»,
- * marco 15): control segmentado de dos pestañas, selector de circuito, filas
+ * marco 15): control segmentado de pestañas (cuatro desde T188), desplegables, filas
  * de 44 px (puesto y valor en Archivo Expanded con cifras tabulares), la
  * fila «tú» con tinte naranja y barra a la izquierda, «Mostrar más» fantasma
  * y la caja del invitado con el botón naranja de texto negro (5,7 : 1).
@@ -24,10 +24,11 @@
   font-weight: 700;
 }
 
-/* Pestañas: píldora blanca sobre una pista de tinta al 8 %; 44 px en total. */
+/* Pestañas: píldora blanca sobre una pista de tinta al 8 %; 44 px en total.
+   Cuatro desde el plan 017 (T188): Carrera, Cañón, Castillo y Puntos. */
 .ranking-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   box-sizing: border-box;
   min-height: 44px;
@@ -37,15 +38,19 @@
   background: rgb(27 20 64 / 0.08);
 }
 .ranking .ranking-tab {
+  min-width: 0;
   min-height: 36px;
-  padding: 0 10px;
+  padding: 0 4px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: rgb(27 20 64 / 0.78);
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 .ranking .ranking-tab[aria-selected='true'] {
@@ -62,7 +67,14 @@
   outline-offset: 3px;
 }
 
-/* Selector de circuito: un <select> nativo como campo de 44 px. */
+/* El nombre de la tabla donde no hay desplegable (la carrera: Los Rápidos). */
+.ranking-board-name {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Desplegables del Cañón y del Castillo: un <select> nativo como campo de 44 px. */
 .ranking-select {
   display: block;
   margin: 0 0 10px;

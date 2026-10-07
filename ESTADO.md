@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T188: Rankings menu: race, Cañón, Castillo and global; no visible «Arcilla»
+
+Qué existe:
+- El panel del ranking (`apps/web/lib/mundo/menu/sections/ranking.tsx`) tiene cuatro pestañas: «Carrera» (`ranking-tab-circuito`, un circuito: su nombre en `ranking-tabla-nombre`, sin desplegable), «Cañón» (`ranking-tab-canon`, desplegable `ranking-canon` con sus bosses finales: Fantasma, Kraken), «Castillo» (`ranking-tab-castillo`, desplegable `ranking-castillo` con las 9 tablas dificultad × 5/7/10 min) y «Puntos» (`ranking-tab-siempre`). Modo local: tu mejor de este navegador entre la tripulación de muestra (`canonRanking`/`castleRanking`); con Supabase: `ranking_canon`/`ranking_castle` por `fetchRankingPage`, con «Mostrar más», fila «tú» y la caja del invitado. Las tablas salen de la config de cada juego (`apps/web/lib/mundo/ranking-boards.ts`). Se quitó el selector de circuito «El Freu · Arcilla».
+- Menú de la web: «Ranking» en la cabecera de la landing (`cabecera-ranking`) abre la página nueva `/ranking` (`apps/web/app/ranking/`), el mismo panel sobre la noche de la página del Carnet.
+- Sin «Arcilla» a la vista: el mundo se llama «Mundo principal» (`skin.ts`, `world.arcilla.name`); el título del menú de /mar no nombra el mundo si sólo hay uno jugable; B05 «Botijo» (`ship.b05.name`, registro `docs/barcos/barcos.json`, cosmético de muestra «Botijo, maqueta» y sus skins «Botijo · Noche/Fiesta», también en `supabase/seeds/20261003100100_economy.sql`); texto del Admin del puerto. Ids internos (`arcilla`, `world.arcilla.*`) intactos. Una prueba unitaria impide que vuelva «Arcilla» al catálogo i18n, al nombre del mundo o a los cosméticos de muestra.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (219 archivos, 2070 pruebas)
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0 (`/ranking` 2,98 kB)
+- `E2E_PORT=4319 pnpm e2e ranking.spec.ts mar-canon.spec.ts mar-castillo.spec.ts mar-circuito.spec.ts --workers=1` → exit 0 (143 passed, 9 skipped: los de Supabase)
+- `E2E_PORT=4320 pnpm e2e accesos.spec.ts mar-botellas.spec.ts --workers=1` → exit 0 (13 passed, 1 skipped)
+- Capturas (local, escritorio y móvil 390×844, /mar y web): `RECORD_T188=<carpeta> pnpm e2e ranking.spec.ts`
+
+Pendiente:
+- En `boia-planet-dev` la semilla de cosméticos usa `on conflict do nothing`: los nombres «Arcilla, maqueta» / «Arcilla · Noche/Fiesta» ya sembrados siguen hasta que Hernán los actualice (`update public.cosmetics set name = ... where id in ('barco-arcilla','skin-arcilla-noche','skin-arcilla-fiesta')`).
+- El logro de muestra «Entre dos mundos» («Navega en Arcilla y en Acuarela») sigue a la vista e inalcanzable con Acuarela oculta: decidir si se oculta o se reescribe.
+
 ## 2026-10-07 — plan 017 T189: Admin island photos and past events
 
 Qué existe:

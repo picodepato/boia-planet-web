@@ -479,7 +479,7 @@ export const esAdmin = {
   'admin.world.ocultoEnEsteMundo': 'Oculto en este mundo',
   'admin.world.guardadoValeEnTodos': 'Guardado: vale en todos los mundos.',
   'admin.world.dondeApareceElBarco': 'Donde aparece el barco al entrar en el mar.',
-  'admin.world.elPuertoDeSalida': 'El puerto de salida (El Varadero en Arcilla).',
+  'admin.world.elPuertoDeSalida': 'El puerto de salida (El Varadero).',
   'admin.world.dondeAterrizaLaCamara':
     'Donde aterriza la cámara de la entrada (la usa la entrada desde T28).',
   'admin.world.guardarPunto': 'Guardar punto',

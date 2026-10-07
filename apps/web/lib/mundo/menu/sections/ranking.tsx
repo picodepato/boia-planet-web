@@ -1,6 +1,7 @@
 'use client';
 
 import { formatRaceTime, readRecord } from '@boia/engine/circuit';
+import type { DefenseRunMin, DifficultyId } from '@boia/engine/defense';
 import type { RankingRow } from '@boia/store';
 import Link from 'next/link';
 import {
@@ -20,6 +21,13 @@ import { carnetPath } from '../../carnet/share';
 import { useCarnet } from '../../carnet/use-carnet';
 import { worlds } from '../../demo-world';
 import { discoverRandom, pickMember } from '../../discover';
+import {
+  type BoardOption,
+  canonBoardOptions,
+  castleBoardOptions,
+} from '../../ranking-boards';
+import { browserCanonStorage, canonRanking, readCanonBest } from '../../ranking-canon';
+import { browserCastleStorage, castleRanking, readCastleBest } from '../../ranking-castle';
 import { type CircuitRow, circuitRanking } from '../../ranking-circuit';
 import {
   type CircuitOption,
@@ -48,11 +56,20 @@ export const RANKING_COPY = {
   localNotice: t('ranking.localNotice'),
   allTime: t('ranking.tab.allTime'),
   circuit: t('ranking.tab.circuit'),
+  canon: t('ranking.tab.canon'),
+  castle: t('ranking.tab.castle'),
   tabsAria: t('ranking.tabs.aria'),
-  circuitSelect: t('ranking.circuit.select'),
-  circuitOption: (circuit: string, world: string) =>
-    t('ranking.circuit.option', { circuit, world }),
+  canonSelect: t('ranking.canon.select'),
+  castleSelect: t('ranking.castle.select'),
   noTime: t('lib.ranking.sinVuelta'),
+  noScore: t('ranking.board.noScore'),
+  boardMine: (board: string, score: string, n: number) =>
+    t('ranking.board.mine', { board, score, n }),
+  boardEmpty: (board: string) => t('ranking.board.empty', { board }),
+  boardEmptyAll: (board: string) => t('ranking.board.emptyAll', { board }),
+  canonNote: t('mar.canon.ranking.local'),
+  castleNote: t('mar.castillo.ranking.local'),
+  guestScore: (points: string) => t('ranking.guest.score', { points }),
   circuitEmpty: (place: string) => t('ranking.circuit.empty', { place }),
   circuitEmptyAll: (place: string) => t('ranking.circuit.emptyAll', { place }),
   circuitMine: (place: string, time: string, n: number) =>
@@ -86,21 +103,30 @@ export const RANKING_COPY = {
 } as const;
 
 /**
- * Dos pestañas (T87): los tiempos de un circuito y los puntos de siempre. La
- * de temporada no sale hasta que Hernán defina qué es una temporada.
+ * Cuatro pestañas (plan 017 T188, decisión 2): la carrera (un circuito, sin
+ * desplegable), el Cañón (una tabla por boss final), el Castillo (duración ×
+ * dificultad) y los puntos de siempre. La de temporada no sale hasta que
+ * Hernán defina qué es una temporada.
  */
-type Tab = 'circuit' | 'all';
-const TABS: readonly Tab[] = ['circuit', 'all'];
+type Tab = 'circuit' | 'canon' | 'castle' | 'all';
+const TABS: readonly Tab[] = ['circuit', 'canon', 'castle', 'all'];
 
 const TAB_TEST_ID: Record<Tab, string> = {
-  all: 'ranking-tab-siempre',
   circuit: 'ranking-tab-circuito',
+  canon: 'ranking-tab-canon',
+  castle: 'ranking-tab-castillo',
+  all: 'ranking-tab-siempre',
 };
 
 const TAB_LABEL: Record<Tab, string> = {
-  all: RANKING_COPY.allTime,
   circuit: RANKING_COPY.circuit,
+  canon: RANKING_COPY.canon,
+  castle: RANKING_COPY.castle,
+  all: RANKING_COPY.allTime,
 };
+
+/** Lo que dice `data-scope` de la lista: qué tabla se ve. */
+type Scope = Tab;
 
 const pointsFormat = new Intl.NumberFormat('es-ES');
 const formatPoints = (n: number) => pointsFormat.format(n);
@@ -188,7 +214,7 @@ function RankList({
   listRef,
 }: {
   rows: readonly ListRow[];
-  scope: 'all' | 'circuit';
+  scope: Scope;
   pinned?: ListRow | null;
   onOwnCarnet: (() => void) | undefined;
   listRef?: React.Ref<HTMLOListElement>;
@@ -220,7 +246,12 @@ function Tabs({
   onChange: (t: Tab) => void;
   panelId: string;
 }) {
-  const refs = useRef<Record<Tab, HTMLButtonElement | null>>({ all: null, circuit: null });
+  const refs = useRef<Record<Tab, HTMLButtonElement | null>>({
+    circuit: null,
+    canon: null,
+    castle: null,
+    all: null,
+  });
   const onKey = (e: ReactKeyboardEvent) => {
     const i = TABS.indexOf(tab);
     const next =
@@ -264,27 +295,36 @@ function Tabs({
   );
 }
 
-/** El selector de circuito (sólo en la pestaña Circuito): un circuito por mundo. */
-function CircuitSelect({
+/** El nombre de la tabla que se ve, donde no hay desplegable (la carrera: un solo circuito). */
+function BoardName({ name }: { name: string }) {
+  return (
+    <p className="ranking-board-name" data-testid="ranking-tabla-nombre">
+      {name}
+    </p>
+  );
+}
+
+/** El desplegable de tablas del Cañón (sus bosses) o del Castillo (duración y dificultad). */
+function BoardSelect({
+  testId,
+  label,
   options,
   value,
   onChange,
 }: {
-  options: readonly CircuitOption[];
+  testId: string;
+  label: string;
+  options: readonly BoardOption[];
   value: string;
   onChange: (key: string) => void;
 }) {
   return (
     <label className="ranking-select">
-      <span className="ranking-select__label">{RANKING_COPY.circuitSelect}</span>
-      <select
-        data-testid="ranking-circuito"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
+      <span className="ranking-select__label">{label}</span>
+      <select data-testid={testId} value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map((o) => (
           <option key={o.key} value={o.key}>
-            {RANKING_COPY.circuitOption(o.place, o.worldName)}
+            {o.label}
           </option>
         ))}
       </select>
@@ -292,19 +332,51 @@ function CircuitSelect({
   );
 }
 
-/** Las opciones del selector y la elegida (por defecto, la del mundo que se juega). */
-function useCircuitChoice(season: string) {
-  const options = useMemo(
+/**
+ * El circuito de la carrera: el del mundo que se juega (los mundos comparten
+ * trazado, así que es uno; `circuitOptions` quita los repetidos).
+ */
+function useCircuit(season: string): CircuitOption | null {
+  return useMemo(
     () =>
       circuitOptions(
         worlds.list().map((w) => ({ id: w.id, name: w.name, config: worlds.get(w.id).config })),
         season,
-      ),
+      )[0] ?? null,
     [season],
   );
+}
+
+/** Una tabla elegida de una lista (la primera por defecto). */
+function useBoardChoice(options: readonly BoardOption[]) {
   const [picked, setPicked] = useState<string | null>(null);
   const option = options.find((o) => o.key === picked) ?? options[0] ?? null;
   return { options, option, pick: setPicked };
+}
+
+/** Las tablas del Cañón y del Castillo, con la elegida en cada uno. */
+function useScoreBoards() {
+  const canonOptions = useMemo(() => canonBoardOptions(), []);
+  const castleOptions = useMemo(() => castleBoardOptions(), []);
+  return { canon: useBoardChoice(canonOptions), castle: useBoardChoice(castleOptions) };
+}
+
+type ScoreBoards = ReturnType<typeof useScoreBoards>;
+
+/** El desplegable de la pestaña del Cañón o del Castillo (ninguno en las otras dos). */
+function ScoreBoardSelect({ tab, boards }: { tab: Tab; boards: ScoreBoards }) {
+  if (tab !== 'canon' && tab !== 'castle') return null;
+  const choice = boards[tab];
+  if (!choice.option) return null;
+  return (
+    <BoardSelect
+      testId={tab === 'canon' ? 'ranking-canon' : 'ranking-castillo'}
+      label={tab === 'canon' ? RANKING_COPY.canonSelect : RANKING_COPY.castleSelect}
+      options={choice.options}
+      value={choice.option.key}
+      onChange={choice.pick}
+    />
+  );
 }
 
 /**
@@ -448,6 +520,81 @@ function LocalPoints({ onOwnCarnet }: { onOwnCarnet: (() => void) | undefined })
   );
 }
 
+/** Una fila del Cañón o del Castillo en modo local (la propia, con el Carnet si lo hay). */
+interface LocalScoreRow {
+  userId: string;
+  nickname: string | null;
+  score: number | null;
+  position: number | null;
+  isMine: boolean;
+}
+
+function localScoreRow(
+  r: LocalScoreRow,
+  me: { userId: string; nickname: string | null } | null,
+): ListRow {
+  return {
+    userId: r.isMine ? (me?.userId ?? '') : r.userId,
+    position: r.position,
+    nickname: r.isMine ? (me?.nickname ?? null) : r.nickname,
+    avatarKey: null,
+    value: r.score !== null ? formatPoints(r.score) : RANKING_COPY.noScore,
+    isMine: r.isMine,
+    isSample: !r.isMine,
+    hasCarnet: r.isMine ? !!me : true,
+  };
+}
+
+/**
+ * Una tabla del Cañón (un boss) o del Castillo (duración y dificultad) en
+ * modo local: tu mejor partida de este navegador entre la tripulación de
+ * muestra, la misma tabla que enseña el juego antes de jugar (T155, T163).
+ */
+function LocalScoreBoard({
+  option,
+  onOwnCarnet,
+}: {
+  option: BoardOption;
+  onOwnCarnet: (() => void) | undefined;
+}) {
+  const { data: carnet } = useRepoData((r) => r.carnet.mine(), []);
+  if (carnet === undefined) return <p className="ranking-mine">{RANKING_COPY.loading}</p>;
+  const me = carnet ? { userId: carnet.userId, nickname: carnet.nickname } : null;
+  const b = option.board;
+  const table =
+    b.kind === 'canon'
+      ? canonRanking(
+          {
+            nickname: me?.nickname ?? null,
+            bestScore: readCanonBest(browserCanonStorage(), b.boss)?.score ?? null,
+          },
+          b.boss,
+        )
+      : castleRanking(
+          readCastleBest(browserCastleStorage(), b.runMin, b.difficulty)?.score ?? null,
+          b.runMin,
+          b.difficulty,
+        );
+  const mine = table.mine;
+  return (
+    <>
+      <p className="ranking-mine" data-testid="ranking-mi-puesto">
+        {mine.score !== null && mine.position !== null
+          ? RANKING_COPY.boardMine(option.label, formatPoints(mine.score), mine.position)
+          : RANKING_COPY.boardEmpty(option.label)}
+      </p>
+      <RankList
+        rows={table.rows.map((r) => localScoreRow(r, me))}
+        scope={b.kind}
+        onOwnCarnet={onOwnCarnet}
+      />
+      <p className="juego-muted">
+        {b.kind === 'canon' ? RANKING_COPY.canonNote : RANKING_COPY.castleNote}
+      </p>
+    </>
+  );
+}
+
 function LocalRanking({
   season,
   onOwnCarnet,
@@ -456,8 +603,10 @@ function LocalRanking({
   onOwnCarnet: (() => void) | undefined;
 }) {
   const [tab, setTab] = useState<Tab>('circuit');
-  const circuit = useCircuitChoice(season);
+  const circuit = useCircuit(season);
+  const boards = useScoreBoards();
   const panelId = 'ranking-panel-local';
+  const scoreOption = tab === 'canon' || tab === 'castle' ? boards[tab].option : null;
   return (
     <div className="juego-ranking ranking" data-testid="ranking" data-modo="local">
       <p className="juego-ranking-rotulo" data-testid="ranking-rotulo">
@@ -473,17 +622,22 @@ function LocalRanking({
       >
         {tab === 'circuit' ? (
           <>
-            {circuit.option ? (
-              <CircuitSelect
-                options={circuit.options}
-                value={circuit.option.key}
-                onChange={circuit.pick}
+            {circuit ? <BoardName name={circuit.place} /> : null}
+            <LocalCircuit option={circuit} onOwnCarnet={onOwnCarnet} />
+          </>
+        ) : tab === 'all' ? (
+          <LocalPoints onOwnCarnet={onOwnCarnet} />
+        ) : (
+          <>
+            <ScoreBoardSelect tab={tab} boards={boards} />
+            {scoreOption ? (
+              <LocalScoreBoard
+                key={scoreOption.key}
+                option={scoreOption}
+                onOwnCarnet={onOwnCarnet}
               />
             ) : null}
-            <LocalCircuit option={circuit.option} onOwnCarnet={onOwnCarnet} />
           </>
-        ) : (
-          <LocalPoints onOwnCarnet={onOwnCarnet} />
         )}
       </div>
       <Discover />
@@ -599,7 +753,7 @@ function globalRow(r: GlobalRow, board: RankingBoard): ListRow {
     position: r.position,
     nickname: r.nickname,
     avatarKey: r.avatarKey,
-    value: board.kind === 'points' ? formatPoints(r.value) : formatRaceTime(r.value),
+    value: board.kind === 'circuit' ? formatRaceTime(r.value) : formatPoints(r.value),
     isMine: r.isMine,
     isSample: false,
     hasCarnet: true,
@@ -623,8 +777,19 @@ function GuestBox({ board, onEntered }: { board: RankingBoard; onEntered: () => 
                 (await readRecord(r.progress, { id: board.circuit, version: board.version }))
                   ?.bestMs ?? null,
             }
-          : // Las tablas del Cañón (T155) no salen en este panel: están en su pop-up.
-            { points: 0, ms: null },
+          : {
+              // El Cañón y el Castillo: la mejor partida de este navegador en esa tabla.
+              points:
+                (board.kind === 'canon'
+                  ? readCanonBest(browserCanonStorage(), board.boss)
+                  : readCastleBest(
+                      browserCastleStorage(),
+                      board.runMin as DefenseRunMin,
+                      board.difficulty as DifficultyId,
+                    )
+                )?.score ?? 0,
+              ms: null,
+            },
     [boardKey(board)],
   );
   const text =
@@ -632,7 +797,11 @@ function GuestBox({ board, onEntered }: { board: RankingBoard; onEntered: () => 
       ? data && data.points > 0
         ? RANKING_COPY.guestPoints(formatPoints(data.points))
         : RANKING_COPY.guestNone
-      : data?.ms != null
+      : board.kind !== 'circuit'
+        ? data && data.points > 0
+          ? RANKING_COPY.guestScore(formatPoints(data.points))
+          : RANKING_COPY.guestNone
+        : data?.ms != null
         ? RANKING_COPY.guestTime(formatRaceTime(data.ms))
         : RANKING_COPY.guestNone;
   return (
@@ -711,7 +880,9 @@ function GlobalBoard({
       : RANKING_COPY.mineTime(mine.position, state.total, formatRaceTime(mine.value))
     : board.kind === 'circuit' && viewer
       ? RANKING_COPY.circuitEmpty(place)
-      : null;
+      : (board.kind === 'canon' || board.kind === 'castle') && viewer
+        ? RANKING_COPY.boardEmpty(place)
+        : null;
   const pinned = pinnedMine(state.rows, mine);
   const moreLeft = hasMore(state.rows.length, state.total, state.lastSize);
   return (
@@ -723,12 +894,16 @@ function GlobalBoard({
       ) : null}
       {state.rows.length === 0 ? (
         <p className="ranking-empty" data-testid="ranking-vacio">
-          {board.kind === 'points' ? RANKING_COPY.empty : RANKING_COPY.circuitEmptyAll(place)}
+          {board.kind === 'points'
+            ? RANKING_COPY.empty
+            : board.kind === 'circuit'
+              ? RANKING_COPY.circuitEmptyAll(place)
+              : RANKING_COPY.boardEmptyAll(place)}
         </p>
       ) : (
         <RankList
           rows={state.rows.map((r) => globalRow(r, board))}
-          scope={board.kind === 'points' ? 'all' : 'circuit'}
+          scope={board.kind === 'points' ? 'all' : board.kind}
           pinned={pinned ? globalRow(pinned, board) : null}
           onOwnCarnet={onOwnCarnet}
           listRef={listRef}
@@ -766,14 +941,18 @@ function GlobalRanking({
   const viewer = member ? account.userId : null;
   const [tab, setTab] = useState<Tab>('circuit');
   const [reloadSignal, setReloadSignal] = useState(0);
-  const circuit = useCircuitChoice(season);
+  const circuit = useCircuit(season);
+  const boards = useScoreBoards();
+  const scoreOption = tab === 'canon' || tab === 'castle' ? boards[tab].option : null;
   const board: RankingBoard | null =
     tab === 'all'
       ? { kind: 'points' }
-      : circuit.option
-        ? { kind: 'circuit', circuit: circuit.option.circuit, version: circuit.option.version }
-        : null;
-  const place = circuit.option?.place ?? RANKING_COPY.circuit;
+      : scoreOption
+        ? scoreOption.board
+        : tab === 'circuit' && circuit
+          ? { kind: 'circuit', circuit: circuit.circuit, version: circuit.version }
+          : null;
+  const place = scoreOption?.label ?? circuit?.place ?? RANKING_COPY.circuit;
   const panelId = 'ranking-panel-global';
   return (
     <div
@@ -789,13 +968,8 @@ function GlobalRanking({
         aria-labelledby={`${panelId}-tab-${tab}`}
         className="ranking-panel"
       >
-        {tab === 'circuit' && circuit.option ? (
-          <CircuitSelect
-            options={circuit.options}
-            value={circuit.option.key}
-            onChange={circuit.pick}
-          />
-        ) : null}
+        {tab === 'circuit' && circuit ? <BoardName name={circuit.place} /> : null}
+        <ScoreBoardSelect tab={tab} boards={boards} />
         {board && !member && account.status !== 'loading' ? (
           <GuestBox board={board} onEntered={() => setReloadSignal((n) => n + 1)} />
         ) : null}
@@ -809,7 +983,11 @@ function GlobalRanking({
             reloadSignal={reloadSignal}
           />
         ) : (
-          <p className="ranking-empty">{RANKING_COPY.circuitEmptyAll(place)}</p>
+          <p className="ranking-empty">
+            {tab === 'circuit'
+              ? RANKING_COPY.circuitEmptyAll(place)
+              : RANKING_COPY.boardEmptyAll(place)}
+          </p>
         )}
       </div>
       <Discover />
@@ -819,8 +997,10 @@ function GlobalRanking({
 
 /**
  * 🏆 El ranking (REQ-IDE-053, REQ-AVE-034, decisión 8 del plan 008) en el
- * diseño de T87: «Circuito» (los tiempos de un circuito, con su selector) y
- * «De siempre» (los puntos), cada fila abre su Carnet (REQ-IDE-017).
+ * diseño de T87, con las cuatro tablas del plan 017 (T188, decisión 2):
+ * «Carrera» (los tiempos de Los Rápidos), «Cañón» (desplegable con sus dos
+ * bosses), «Castillo» (desplegable con sus 9 tablas) y «Puntos» (los de
+ * siempre); cada fila abre su Carnet (REQ-IDE-017).
  *
  * - Con Supabase: las tablas globales de todos los miembros, el top 50 y
  *   «Mostrar más» hasta listar a todos, la fila «tú» en su sitio o fijada
@@ -828,13 +1008,13 @@ function GlobalRanking({
  * - En modo local (D-20): los puntos y el récord de este navegador junto a
  *   los miembros de muestra, rotulado como local.
  *
- * Lo usan el Menú de a bordo y /mar (T56).
+ * Lo usan el menú de /mar (T56) y la página /ranking del menú de la web (T188).
  */
 export function RankingPanel({
   season,
   onOwnCarnet,
 }: {
-  /** El mundo que se juega: su circuito sale primero en el selector. */
+  /** El mundo que se juega: el circuito de la carrera es el suyo. */
   season: string;
   /** Ya no se usa (era la pestaña de temporada); se acepta por compatibilidad. */
   worldName?: string;

@@ -27,6 +27,8 @@ export function ticketsSailHref(islandId: string, eventId?: string): string {
 
 /** Mi Carnet desde la cabecera: la página del propio Carnet (o su invitación). */
 export const CARNET_PAGE = '/carnet';
+/** Los rankings desde el menú de la web (plan 017 T188): carrera, Cañón, Castillo y puntos. */
+export const RANKING_PAGE = '/ranking';
 /** Crear el Carnet desde la landing: Mi Carnet dentro del mar (T55). */
 export const CARNET_CREATE_HREF = MAR_CARNET_HREF;
 
@@ -35,6 +37,7 @@ export const SEA_HREF = MAR_PATH;
 
 export const ACCESS_COPY = {
   carnet: t('nav.carnet'),
+  ranking: t('nav.ranking'),
   sound: t('landing.access.sonido'),
   soundOn: t('nav.sound.on'),
   soundOff: t('nav.sound.off'),

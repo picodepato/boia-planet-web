@@ -1,5 +1,5 @@
 import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
-import { ACCESS_COPY, CARNET_PAGE } from '../../../lib/landing/access';
+import { ACCESS_COPY, CARNET_PAGE, RANKING_PAGE } from '../../../lib/landing/access';
 import { t, type MessageKey } from '../../../lib/landing/texts';
 import { BrandLogo } from './brand-logo';
 import { SoundToggle } from './sound-toggle';
@@ -13,7 +13,7 @@ const SECONDARY: ReadonlyArray<[MessageKey, string]> = [
 
 /**
  * Cabecera fija: el logo (mascota y wordmark, T50), Tickets siempre a mano y el
- * resto de accesos, con Mi Carnet, el sonido del juego e Instagram (T44,
+ * resto de accesos, con Mi Carnet, el Ranking (T188), el sonido del juego e Instagram (T44,
  * REQ-ENT-029, O13). En móvil lo secundario va en un menú plegable que
  * funciona sin JavaScript; el sonido sólo aparece con JavaScript.
  */
@@ -36,6 +36,11 @@ export function SiteHeader({
       <li>
         <a href={CARNET_PAGE} data-testid="cabecera-carnet">
           {ACCESS_COPY.carnet}
+        </a>
+      </li>
+      <li>
+        <a href={RANKING_PAGE} data-testid="cabecera-ranking">
+          {ACCESS_COPY.ranking}
         </a>
       </li>
       {instagram ? (

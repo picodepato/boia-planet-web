@@ -708,9 +708,9 @@ Ranking local de la versión de prueba (D-23, punto 8; REQ-IDE-053).
 | `ranking.heading` | Ranking | |
 | `ranking.localLabel` | Ranking local de este navegador | Rótulo obligatorio |
 | `ranking.localNotice` | En esta versión de prueba compites contigo y con los miembros de muestra. El ranking de verdad llegará con las cuentas. | |
-| `ranking.tab.allTime` | De siempre | |
+| `ranking.tab.allTime` | Puntos | Plan 017 T188 |
 | `ranking.tab.season` | Esta temporada · {world} | |
-| `ranking.tab.circuit` | Circuito | Récord personal |
+| `ranking.tab.circuit` | Carrera | Récord personal (plan 017 T188) |
 | `ranking.col.position` | Puesto | |
 | `ranking.col.member` | Miembro | |
 | `ranking.col.points` | Puntos | |
@@ -753,7 +753,7 @@ propuesta del equipo.
 | `shop.skin.party` | Fiesta | 150 monedas |
 | `shop.color` | Color | |
 | `shop.physicsNote` | Ningún barco ni skin cambia la velocidad, el drift ni los tiempos. | |
-| `ship.b05.name` | Botijo · Arcilla | Libre al empezar |
+| `ship.b05.name` | Botijo | Libre al empezar (sin «Arcilla», plan 017) |
 | `ship.b05.desc` | Salió del horno de la Cala demasiado alegre para ser de carga. | |
 | `ship.b02.name` | La Aguada · Acuarela | Libre al empezar |
 | `ship.b02.desc` | Se escapó de un cuaderno una tarde de Sant Joan. | |
@@ -784,7 +784,7 @@ propuesta del equipo.
 | `worlds.transition.skip` | Saltar | |
 | `worlds.transition.done` | Bienvenido a {world}. Todo sigue en su sitio. | Aviso al salir del vórtice |
 | `worlds.error` | No hemos podido cambiar de mundo. Sigues en {world}. | |
-| `world.arcilla.name` | Arcilla | |
+| `world.arcilla.name` | Mundo principal | Sin «Arcilla» a la vista (plan 017) |
 | `world.arcilla.tagline` | Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla de Nochevieja. | |
 | `world.arcilla.arrive` | Huele a barro recién cocido. | Primer bocadillo al llegar |
 | `world.acuarela.name` | Acuarela | |

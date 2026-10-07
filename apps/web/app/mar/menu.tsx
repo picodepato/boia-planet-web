@@ -148,7 +148,8 @@ export function MarMenu({
         <>
           <span className="mar-menu__logo">{t('mar.client.boia')}</span>{' '}
           <span className="mar-menu__world">
-            {t('mar.client.mar3d', { v1: worldName ? ` · ${worldName}` : '' })}
+            {/* Con un solo mundo jugable no se nombra (plan 017, decisión 3: sin «Arcilla» a la vista). */}
+            {t('mar.client.mar3d', { v1: worldName && worlds.length > 1 ? ` · ${worldName}` : '' })}
           </span>
         </>
       }

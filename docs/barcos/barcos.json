@@ -168,7 +168,7 @@
     {
       "id": "B05",
       "nombre": null,
-      "estilo": "Arcilla, maqueta",
+      "estilo": "Botijo, maqueta",
       "aspecto": "Remolcador de juguete blando: casco verde redondo con franja naranja, caseta con techo de paja y palmera, guirnalda de farolillos y bandera naranja.",
       "script": "tools/blender/styles/05_arcilla_maqueta.py",
       "mundo": "docs/barcos/mundos/b05/index.html",

@@ -8,7 +8,13 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { PRIVACY_POLICY_VERSION } from '../lib/account/config';
 import { t } from '../lib/i18n';
+import { RANKING_PAGE } from '../lib/landing/access';
+import { canonBoardOptions, castleBoardOptions } from '../lib/mundo/ranking-boards';
+import { CANON_BEST_KEY, canonBoardKey, canonRanking } from '../lib/mundo/ranking-canon';
+import { CASTLE_BEST_KEY, castleBoardKey, castleRanking } from '../lib/mundo/ranking-castle';
+import { circuitName } from '../lib/mundo/ranking-circuit';
 import { RANKING_PAGE_SIZE } from '../lib/mundo/ranking-global';
+import { pastHero, tap } from './hero-helpers';
 import { openMar } from './mar-helpers';
 import {
   E2E_SUPABASE,
@@ -30,6 +36,7 @@ import { supabaseTestEnv } from './supabase-env';
  * otras cuentas: se comparan las sembradas entre sí, nunca puestos
  * absolutos. Sólo con E2E_SUPABASE=1; las cuentas se borran al acabar.
  */
+test.describe('con Supabase', () => {
 test.skip(!E2E_SUPABASE, 'sólo con E2E_SUPABASE=1');
 test.describe.configure({ mode: 'serial', timeout: 300_000 });
 
@@ -242,16 +249,18 @@ test('REQ-AVE-034: un miembro ve los tiempos del circuito y los puntos de siempr
   const errors = await openMar(page);
   const ranking = await openRanking(page);
   await expect(ranking).toHaveAttribute('data-cuenta', 'miembro');
-  // Dos pestañas, sin la de temporada (decisión 8).
-  await expect(ranking.getByRole('tab')).toHaveCount(2);
+  // Cuatro pestañas (plan 017 T188), sin la de temporada (decisión 8).
+  await expect(ranking.getByRole('tab')).toHaveCount(4);
   await expect(ranking.getByTestId('ranking-invitado')).toHaveCount(0);
 
   // Circuito: el del mundo que se juega, tiempos de menos a más.
   const circuitTab = ranking.getByTestId('ranking-tab-circuito');
   await expect(circuitTab).toHaveAttribute('aria-selected', 'true');
-  await expect(ranking.getByTestId('ranking-circuito')).toHaveValue(
-    `circuit:${spec.id}:v${spec.version}`,
+  // Un solo circuito: su nombre, sin desplegable (plan 017 T188).
+  await expect(ranking.getByTestId('ranking-tabla-nombre')).toHaveText(
+    circuitName(world, CIRCUIT_ID) ?? spec.id,
   );
+  await expect(ranking.locator('select')).toHaveCount(0);
   await expect(ranking.getByTestId('ranking-lista')).toHaveAttribute('data-scope', 'circuit');
   await expectOrder(ranking);
   await expect(ranking.getByTestId(`ranking-fila-${fast.id}`)).toContainText('46,0 s');
@@ -293,4 +302,167 @@ test('un invitado lee los rankings globales y «Entrar en el ranking» abre el a
   await expect(page.getByTestId('acceso-por-que')).toContainText(t('auth.why.ranking'));
   await expect(page.getByTestId('acceso-email-input')).toBeVisible();
   expect(errors).toEqual([]);
+});
+});
+
+/**
+ * El ranking del menú en modo local (plan 017 T188, decisión 2): cuatro
+ * pestañas (carrera, Cañón, Castillo y puntos), desplegable sólo en el Cañón
+ * (sus bosses) y en el Castillo (duración × dificultad), desde el menú de
+ * /mar y desde el menú de la web (/ranking). Las tablas salen de la
+ * configuración de cada juego (`ranking-boards.ts`), no de cuentas a mano.
+ * Con `RECORD_T188=<carpeta>` guarda las capturas para Hernán.
+ */
+test.describe('modo local: las cuatro tablas del menú', () => {
+  test.skip(E2E_SUPABASE, 'el panel local sólo sin Supabase');
+  // Las capturas del móvil, a 390 × 844 (lo que pide el plan 017).
+  test.beforeEach(async ({ page }, info) => {
+    if (process.env.RECORD_T188 && info.project.name === 'mobile') {
+      await page.setViewportSize({ width: 390, height: 844 });
+    }
+  });
+
+  const canon = canonBoardOptions();
+  const castle = castleBoardOptions();
+  const lastCanon = canon[canon.length - 1]!;
+  const lastCastle = castle[castle.length - 1]!;
+  /** Tu mejor partida de este navegador en la última tabla de cada juego. */
+  const CANON_SCORE = 33_333;
+  const CASTLE_SCORE = 4_321;
+  const formatScore = (n: number) => new Intl.NumberFormat('es-ES').format(n);
+
+  async function seedBests(page: Page) {
+    if (lastCanon.board.kind !== 'canon' || lastCastle.board.kind !== 'castle') {
+      throw new Error('tablas del Cañón y del Castillo');
+    }
+    await page.addInitScript(
+      ({ ck, ckey, cs, tk, tkey, ts }) => {
+        const at = '2026-10-07T12:00:00Z';
+        localStorage.setItem(ck, JSON.stringify({ [ckey]: { score: cs, at, games: 1 } }));
+        localStorage.setItem(tk, JSON.stringify({ [tkey]: { score: ts, at, games: 1 } }));
+      },
+      {
+        ck: CANON_BEST_KEY,
+        ckey: canonBoardKey(lastCanon.board.boss),
+        cs: CANON_SCORE,
+        tk: CASTLE_BEST_KEY,
+        tkey: castleBoardKey(lastCastle.board.runMin, lastCastle.board.difficulty),
+        ts: CASTLE_SCORE,
+      },
+    );
+  }
+
+  async function shot(page: Page, where: string, name: string, select?: Locator) {
+    const dir = process.env.RECORD_T188;
+    if (!dir) return;
+    mkdirSync(dir, { recursive: true });
+    // Un <select> nativo no se ve abierto en una captura: se despliega en la página.
+    if (select) await select.evaluate((el: HTMLSelectElement) => (el.size = el.options.length));
+    await page.screenshot({
+      path: path.join(dir, `${where}-${name}-${test.info().project.name}.png`),
+      fullPage: where === 'web' && name !== 'menu',
+    });
+    if (select) await select.evaluate((el: HTMLSelectElement) => (el.size = 0));
+  }
+
+  /** Recorre las cuatro pestañas y comprueba cada tabla. */
+  async function checkBoards(page: Page, ranking: Locator, where: string) {
+    await expect(ranking).toHaveAttribute('data-modo', 'local');
+    await expect(ranking.getByRole('tab')).toHaveText([
+      t('ranking.tab.circuit'),
+      t('ranking.tab.canon'),
+      t('ranking.tab.castle'),
+      t('ranking.tab.allTime'),
+    ]);
+    const list = ranking.getByTestId('ranking-lista');
+    const mine = ranking.getByTestId('ranking-fila-mia');
+
+    // La carrera: un circuito, con su nombre y sin desplegable.
+    await expect(ranking.getByTestId('ranking-tab-circuito')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
+    await expect(ranking.getByTestId('ranking-tabla-nombre')).toHaveText(
+      circuitName(world, CIRCUIT_ID)!,
+    );
+    await expect(ranking.locator('select')).toHaveCount(0);
+    await expect(list).toHaveAttribute('data-scope', 'circuit');
+    await shot(page, where, 'carrera');
+
+    // El Cañón: un desplegable con sus bosses.
+    await ranking.getByTestId('ranking-tab-canon').click();
+    const canonSelect = ranking.getByTestId('ranking-canon');
+    await expect(canonSelect.locator('option')).toHaveText(canon.map((o) => o.label));
+    await expect(canonSelect).toHaveValue(canon[0]!.key);
+    await expect(list).toHaveAttribute('data-scope', 'canon');
+    await expect(mine).toContainText(t('ranking.board.noScore'));
+    await canonSelect.selectOption(lastCanon.key);
+    if (lastCanon.board.kind !== 'canon') throw new Error('tabla del Cañón');
+    const canonTable = canonRanking(
+      { nickname: null, bestScore: CANON_SCORE },
+      lastCanon.board.boss,
+    );
+    await expect(list.locator('li.ranking-row')).toHaveCount(canonTable.rows.length);
+    await expect(mine).toContainText(formatScore(CANON_SCORE));
+    await expect(mine).toHaveAttribute('data-puesto', String(canonTable.mine.position));
+    await shot(page, where, 'canon', canonSelect);
+
+    // El Castillo: un desplegable con cada duración y dificultad.
+    await ranking.getByTestId('ranking-tab-castillo').click();
+    const castleSelect = ranking.getByTestId('ranking-castillo');
+    await expect(castleSelect.locator('option')).toHaveText(castle.map((o) => o.label));
+    await expect(list).toHaveAttribute('data-scope', 'castle');
+    await castleSelect.selectOption(lastCastle.key);
+    if (lastCastle.board.kind !== 'castle') throw new Error('tabla del Castillo');
+    const castleTable = castleRanking(
+      CASTLE_SCORE,
+      lastCastle.board.runMin,
+      lastCastle.board.difficulty,
+    );
+    await expect(list.locator('li.ranking-row')).toHaveCount(castleTable.rows.length);
+    await expect(mine).toContainText(formatScore(CASTLE_SCORE));
+    await expect(mine).toHaveAttribute('data-puesto', String(castleTable.mine.position));
+    await shot(page, where, 'castillo', castleSelect);
+
+    // Los puntos de siempre, sin desplegable.
+    await ranking.getByTestId('ranking-tab-siempre').click();
+    await expect(list).toHaveAttribute('data-scope', 'all');
+    await expect(ranking.locator('select')).toHaveCount(0);
+    await shot(page, where, 'puntos');
+  }
+
+  test('desde el menú de /mar', async ({ page }) => {
+    await seedBests(page);
+    const errors = await openMar(page);
+    await page.getByTestId('mar-logros').click();
+    // Con un solo mundo jugable el menú no lo nombra (decisión 3).
+    await expect(page.getByTestId('mar-menu')).not.toContainText('Arcilla');
+    await page.getByTestId('mar-menu').getByTestId('mar-ranking-abrir').click();
+    await checkBoards(page, page.getByTestId('mar-ranking').getByTestId('ranking'), 'mar');
+    expect(errors).toEqual([]);
+  });
+
+  test('desde el menú de la web: «Ranking» abre /ranking con las mismas tablas', async ({
+    page,
+  }, info) => {
+    await seedBests(page);
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/?intro=0');
+    await pastHero(page);
+    const header = page.locator('.site-header');
+    if (info.project.name === 'mobile') {
+      await tap(page, header.getByText(t('nav.menu'), { exact: true }));
+    }
+    const link = header.getByTestId('cabecera-ranking').filter({ visible: true });
+    await expect(link).toHaveAttribute('href', RANKING_PAGE);
+    await expect(link).toHaveText(t('nav.ranking'));
+    await shot(page, 'web', 'menu');
+    await tap(page, link);
+    await expect(page).toHaveURL(new RegExp(`${RANKING_PAGE}$`));
+    const ranking = page.getByTestId('ranking-pagina').getByTestId('ranking');
+    await checkBoards(page, ranking, 'web');
+    expect(errors).toEqual([]);
+  });
 });

@@ -55,7 +55,7 @@ values
   ('barco-boceto-lapiz', 'Boceto a lápiz', 'ship', null, null, 'secretos', null, null, false, true),
   ('barco-pixel-art', 'Pixel art', 'ship', null, null, 'minutos-60', null, null, false, true),
   ('barco-fiestera', 'La Fiestera', 'ship', null, null, null, 'fiestera', null, false, true),
-  ('barco-arcilla', 'Arcilla, maqueta', 'ship', null, null, null, null, null, true, true),
+  ('barco-arcilla', 'Botijo, maqueta', 'ship', null, null, null, null, null, true, true),
   ('barco-acuarela', 'Acuarela ilustrada', 'ship', null, null, null, null, null, true, true),
   ('barco-low-poly', 'Low-poly', 'ship', null, null, 'carnet', null, null, false, true),
   ('barco-cartoon-30', 'Cartoon años 30', 'ship', 120, null, null, null, null, false, true),
@@ -66,7 +66,7 @@ on conflict (id) do nothing;
 insert into public.cosmetics (id, name, slot, price_coins, for_ship, is_sample)
 select 'skin-' || s.style || '-' || k.skin, s.label || ' · ' || k.label, 'skin', 50, s.ship, true
 from (values
-  ('barco-arcilla', 'arcilla', 'Arcilla'),
+  ('barco-arcilla', 'arcilla', 'Botijo'),
   ('barco-acuarela', 'acuarela', 'Acuarela'),
   ('barco-low-poly', 'low-poly', 'Low-poly'),
   ('barco-semi-realista', 'semi-realista', 'Semi-realista'),

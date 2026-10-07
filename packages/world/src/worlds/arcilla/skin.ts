@@ -120,7 +120,8 @@ const NAMES: Record<string, string> = {
 
 export const ARCILLA_SKIN: WorldSkinInput = {
   id: ARCILLA_WORLD_ID,
-  name: 'Arcilla',
+  // Es el mundo principal: su nombre no se enseña como «Arcilla» (plan 017, decisión 3).
+  name: 'Mundo principal',
   tagline:
     'Barro cocido en la costa de Alicante: rescata a la Boia Fiestera de los cocodrilos y llévala a la Isla de Nochevieja.',
   ship: { style: 'arcilla' },

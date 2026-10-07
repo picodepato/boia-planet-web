@@ -468,7 +468,7 @@ const SOLD_SKINS = [
 ] as const;
 /** Barcos con skins a la venta: cosmético, estilo y nombre corto. */
 const SHIP_SKIN_OWNERS = [
-  ['barco-arcilla', 'arcilla', 'Arcilla'],
+  ['barco-arcilla', 'arcilla', 'Botijo'],
   ['barco-acuarela', 'acuarela', 'Acuarela'],
   ['barco-low-poly', 'low-poly', 'Low-poly'],
   ['barco-semi-realista', 'semi-realista', 'Semi-realista'],
@@ -536,7 +536,7 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
   // Los dos de los mundos iniciales: de todos desde el principio.
   {
     id: 'barco-arcilla',
-    name: 'Arcilla, maqueta',
+    name: 'Botijo, maqueta',
     slot: 'ship',
     priceCoins: null,
     assetKey: 'arcilla',

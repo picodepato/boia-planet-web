@@ -141,8 +141,20 @@ export const esCuenta = {
 
   // Rankings globales (T92; T87 «Rankings panel» e «i18n keys»).
   'ranking.tabs.aria': 'Qué ranking ver',
-  'ranking.circuit.select': 'Circuito',
-  'ranking.circuit.option': '{circuit} · {world}',
+  // Las cuatro tablas del menú (plan 017 T188, decisión 2). muestra
+  'ranking.tab.canon': 'Cañón',
+  'ranking.tab.castle': 'Castillo',
+  'ranking.canon.select': 'Tabla del Cañón',
+  'ranking.castle.select': 'Tabla del Castillo',
+  'ranking.canon.board.fantasma': 'Fantasma',
+  'ranking.canon.board.kraken': 'Kraken',
+  'ranking.castle.board': '{dificultad} · {min} min',
+  'ranking.board.noScore': 'sin partida',
+  'ranking.board.mine': 'Tu mejor en {board}: {score} puntos. Vas {n}.º.',
+  'ranking.board.empty': 'Aún no tienes partida en {board}.',
+  'ranking.board.emptyAll': 'Aún nadie tiene partida en {board}.',
+  'ranking.guest.score':
+    'Tu mejor aquí es {points}, guardada en este navegador. Entra en el ranking para aparecer.',
   'ranking.mine.time': 'Vas {n}.º de {total} con {time}',
   'ranking.mine.points': 'Vas {n}.º de {total} con {points} puntos',
   'ranking.youChip': 'tú',
