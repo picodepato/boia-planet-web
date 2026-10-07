@@ -167,7 +167,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: reusable `LazyVideo` (no content videos exist yet; e2e checks home and /fotos download no video; REQ-COM-032 → PARCIAL); Ibiza card shows 100/70/50 % via `defenseFarmPayout` on the Ibizas standing; done by Codex + wrapper · 6d89fd4
 
 ## T196 — Automated tests up to date
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T187
 - Model: sonnet
 - Goal: Bring the e2e suite and its docs up to date (decision 7): e2e that name REQ-PRO-006 and REQ-MUN-009; the device matrix without rows citing deleted 2D tests; `record.spec.ts` and `record-titulo.spec.ts` on the current «Zarpar»; the flaky «guía: mover» e2e made stable.
@@ -178,7 +178,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `E2E_PORT=<free> pnpm e2e record.spec.ts record-titulo.spec.ts <new REQ specs> --workers=1` → exit 0
   - `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: new `requisitos-motor.spec.ts` (REQ-PRO-006, REQ-MUN-009 → HECHO); matrix rows citing deleted tests replaced; record specs on the hero «Zarpar»; «guía: mover» retries another spot if the island did not install (10/10 with repeat-each=5) · 1f579c2
 
 ## T199 — Halloween/Sonido box-office tickets and landing logout
 - Status: running (attempt 1)
@@ -195,31 +195,32 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T201 — Store: rotating product images and buy-at-the-party message
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T187
-- Model: codex (via wrapper agent; Opus if Codex is out of credits)
-- Goal: Each landing store product rotates its images (alone, other angles, worn by a model, fashion-catalogue style), invented by Codex as `muestra`; pressing buy shows the Instagram message (decision 11).
+- Model: opus (Codex out of credits; images moved to T202)
+- Goal: Each landing store product rotates several images (alone, other angles, worn by a model); pressing buy shows the Instagram message (decision 11). This task builds the carousel and the message with simple `muestra` placeholder images; the invented product images come in T202.
 - Context: the landing store block and product data (grep `tienda`, `store`, `product` in `apps/web/lib/landing`, `apps/web/lib/i18n/`, `packages/contracts/src/content.ts`), the 200 kB landing cap (images must load lazily, outside the critical path), `prefers-reduced-motion`.
-- Scope: may touch product contracts (several images per product), the store block and its CSS, new image files under `apps/web/public/` (WebP, small), i18n, tests / must not touch the hero, other landing blocks, events' checkout.
+- Scope: may touch product contracts (an ordered list of images per product, each tagged alone/angle/model), the store block and its CSS, small placeholder WebP files under `apps/web/public/`, i18n, tests / must not touch the hero, other landing blocks, events' checkout.
 - Done when:
-  - each sample product has at least 3 images (alone, another angle, on a model) as WebP files; list them with sizes
+  - each sample product has at least 3 image slots (alone, another angle, on a model) filled with placeholders; the carousel rotates them (paused under reduced motion)
   - landing weight check → still under 200 kB gzip
   - screenshots of the store (rotation, buy message) → /tmp/orchestrator-attach/boia-planet-hernan-T201/
   - `E2E_PORT=<free> pnpm e2e <store/landing specs> --workers=1` → exit 0
   - Test command → exit 0
 - Outcome:
 
-## T202 — Sample event posters
+## T202 — Sample event posters and store product images
 - Status: pending
-- Depends on: T189
+- Depends on: T189, T201
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
-- Goal: Every event without a poster gets one invented by Codex (`muestra`), so the page looks complete (decision 12). No party photos.
-- Context: events' `posterUrl` and sample content (grep `posterUrl`, sample events), `docs/contenido-real.md` (real content goes under `apps/web/public/contenido/`; samples must stay marked `muestra`; the real Halloween poster is P19, Álvaro's).
-- Scope: may touch sample content data, new poster files under `apps/web/public/` (WebP, sized for the web), tests / must not touch real content, Admin code, photos/albums, the landing hero.
+- Goal: Every event without a poster gets one invented by Codex (`muestra`), so the page looks complete (decision 12); every store product gets its invented images replacing T201's placeholders: the product alone, other angles, and worn by a model in a clean fashion-catalogue style (decision 11). No party photos.
+- Context: events' `posterUrl` and sample content (grep `posterUrl`, sample events), the store product images list from T201, `docs/contenido-real.md` (real content goes under `apps/web/public/contenido/`; samples must stay marked `muestra`; the real Halloween poster is P19, Álvaro's).
+- Scope: may touch sample content data, new poster and product image files under `apps/web/public/` (WebP, sized for the web), tests / must not touch real content, Admin code, photos/albums, the landing hero, the store code beyond pointing at the new files.
 - Done when:
-  - every sample event has a poster; list the files and their total size
-  - screenshots: posters on the landing and in an island's event sheet → /tmp/orchestrator-attach/boia-planet-hernan-T202/
-  - `E2E_PORT=<free> pnpm e2e landing.spec.ts ciclo-evento.spec.ts --workers=1` → exit 0
+  - every sample event has a poster and every product has at least 3 invented images; list the files and their total size
+  - landing weight check → still under 200 kB gzip
+  - screenshots: posters on the landing and in an island's event sheet, the store carousel → /tmp/orchestrator-attach/boia-planet-hernan-T202/
+  - `E2E_PORT=<free> pnpm e2e landing.spec.ts ciclo-evento.spec.ts <store spec> --workers=1` → exit 0
   - Test command → exit 0
 - Outcome:
 
@@ -238,11 +239,14 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 run: Codex out until ~20:19 and Hernán wants the images invented by Codex → T201 builds the carousel and buy message on Opus with placeholders now; product images move to T202 (Codex, after T201) with the posters (orchestrator)
+- 2026-10-07 T196: `requisitos-motor.spec.ts` checks REQ-PRO-006 on the event schema and samples and REQ-MUN-009 by sailing with CPU throttled 3× (desktop only, CDP); record storyboard advances the paused clock by hand; «guía: mover» flake only under load («Instalar isla» disabled while the plane flies) → test retries another spot (agent)
 - 2026-10-07 T195: keys resolved in `packages/world` (`resolveSkinTexts`) since it cannot import the web catalog; non-key values stay as written (Acuarela, Admin-edited texts); console calls are developer warnings, left alone; `arcilla.test.ts` name checks now assert keys (agent)
 - 2026-10-07 T193: demo check PBKDF2-SHA-256 310k iterations, 16-byte salt, session mark `boia.admin.demo` 12 h with «Salir del Admin»; Playwright storageState pre-sets the demo session so existing /admin specs keep working; Supabase: `admin_sign_in_email(0)` returns the Carnet 000 account email (no service key on Vercel) → anyone typing 000 learns that email, agent recommends a dedicated admin account; email-code sign-in kept for other staff; backup codes ~50 bits each, salt + SHA-256, using one at aal1 deletes the lost TOTP factor; the admin's previous member number becomes a gap; conflicts with T190 resolved keeping both (agent)
 - 2026-10-07 T194: «sin puntos» without position for 0-point members; stamp feedback «Puntos a → b» / «Ahora eres …» in `/sello` and the Carnet scanner; own bottle floats without duplicates; wrapper reverted Codex's edits to ESTADO.md and plans (agent)
 - 2026-10-07 T190: objects/templates in new local repository areas with audit and trash, schemas in `packages/contracts`, no migration (Admin world still local, D-20); a published object goes at the end of the live map in every world, drafts never reach /mar; category only proposes defaults; links (ticket, achievement, reward, teleport) only in step 8; save checks land/water against the /mar sea (an island near the port otherwise broke `?ir=`); `.glb` kept as original, images get WebP 512/128 in T189's IndexedDB store; conflict with main in `admin-app.tsx` was imports only (agent)
 - 2026-10-07 T191: hidden nickname/avatar replaced in the row («Miembro de BOIA <nº>», no avatar), original in `private.carnet_moderation`, trigger blocks re-saving removed content; a hidden Carnet is unreadable to the public via RLS; removing needs a reason, restoring does not and never resolves reports; one RPC pair `admin_void_score`/`admin_restore_score` for all boards (Castillo gets void columns, its ranking function skips voided rows); real Moderación screen shows real Carnets (demo list removed); T186's `member-numbers-sql.test.ts` narrowed to member-number/`save_profile` changes (agent)
+- 2026-10-07 run: Codex out of credits until ~20:19 → T199 continued on Opus; T201, T202, T192 to Opus until Codex is back (orchestrator, standing rule)
 - 2026-10-07 plan: T202 keeps only the sample posters; the techno sample photos are dropped, Hernán will upload the real event photos (Hernán)
 - 2026-10-07 plan: Hernán added decisions 8–12 mid-plan; T193 now also does Carnet 000 Admin sign-in; new T199, T201, T202 (Codex); T192 after T201 (same store area); T198 depends on all (orchestrator)
 - 2026-10-07 T188: the landing header had no ranking and lib/mundo/menu is never mounted → added «Ranking» to the header, opening a new `/ranking` page with the same panel; tabs «Carrera / Cañón / Castillo / Puntos» («De siempre» renamed to fit 390 px); race shows the circuit name, no dropdown; world display name «Mundo principal», /mar menu title omits the world when only one is playable; B05 «Botijo» (i18n, barcos.json, sample cosmetics, Supabase seed); Admin text «El puerto de salida (El Varadero).»; guest box on Cañón/Castillo boards shows the browser's own score and invites to sign in (agent)
@@ -287,3 +291,9 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 17:11 Hernán (session): push → `git push origin main` rejected 3 times by GitHub «Internal Server Error» (githubstatus: all operational; no large files in the 14 commits)
 - 2026-10-07 17:21 T197 done · worktree-agent-af6968fcadaace994 → 6d89fd4
 - 2026-10-07 17:23 T199 launched · attempt 1 · Codex via wrapper agent ac79cb33ef51d3d91 (sonnet)
+- 2026-10-07 Hernán (session, away from home, explicit): push to the new repo → origin renamed to origin-viejo (picodepato/boia-planet-web), new origin = picodepato/boia-planet-final; `git push origin main` → new branch main (172aa9a). Vercel project for the new repo still to be created by Hernán
+- 2026-10-07 Hernán (session): test push to the old repo → origin temporarily set to picodepato/boia-planet-web, `git push origin main` bdcaa11..172aa9a OK (the earlier 500s were transient), origin set back to boia-planet-final
+- 2026-10-07 T199 Codex usage limit (until ~20:19; WIP 4165f1a, partial work) → relaunched on Opus as continuation (not a counted failure) · agent ae12ecfd880b02a68; T201, T202, T192 go to Opus until Codex is back
+- 2026-10-07 Hernán (session): origin set back to picodepato/boia-planet-web for good (new repo kept as remote `final`); Vercel deploy of 172aa9a → success, /ranking 200
+- 2026-10-07 17:44 T196 done · worktree-agent-a466b0a4c1f831e79 → 1f579c2
+- 2026-10-07 17:46 T201 launched · attempt 1 · agent ab2f131caa3fa83be · opus (carousel + buy message; images in T202)
