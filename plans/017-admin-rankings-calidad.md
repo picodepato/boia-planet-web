@@ -115,7 +115,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: Admin hides/restores Carnets (whole, nickname, avatar) and voids/restores ranking scores (race, Cañón, Castillo) with a reason; originals kept in `private.carnet_moderation`; migration 20261007100200_moderation; REQ-ADM-031 FALTA → PARCIAL · 2ead693
 
 ## T192 — Admin: editable store, contact and footer links
-- Status: running (attempt 1)
+- Status: running (attempt 2, continuation)
 - Depends on: T201
 - Model: opus (Codex out of credits)
 - Goal: Admin edits the store, contact and footer links (labels and URLs) without code; the web reads them (plan 007 proposal, decision 5).
@@ -210,7 +210,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: carousel of 3 images per product from `apps/web/lib/merchandise/products.json` (alone/angle/model, Pillow placeholders labelled MUESTRA, ~98 kB lazy), rotates every 3.5 s only on screen, paused on hover/focus/hidden/reduced motion; «Comprar» `<details>` with the Instagram text; landing 189.8 kB · 0528b12
 
 ## T202 — Sample event posters and store product images
-- Status: pending
+- Status: skipped
 - Depends on: T189, T201
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Every event without a poster gets one invented by Codex (`muestra`), so the page looks complete (decision 12); every store product gets its invented images replacing T201's placeholders: the product alone, other angles, and worn by a model in a clean fashion-catalogue style (decision 11). No party photos.
@@ -222,10 +222,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - screenshots: posters on the landing and in an island's event sheet, the store carousel → /tmp/orchestrator-attach/boia-planet-hernan-T202/
   - `E2E_PORT=<free> pnpm e2e landing.spec.ts ciclo-evento.spec.ts <store spec> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: skipped (Hernán): Codex out of credits until 20:19, nothing done; store keeps T201 placeholders, events keep current posters
 
 ## T203 — Landing header fits on desktop with «Cerrar sesión»
-- Status: running (attempt 1)
+- Status: running (attempt 2, continuation)
 - Depends on: T199
 - Model: sonnet
 - Goal: Fix what T199 broke: on desktop the landing header items crowd and wrap («MI CARNET», «CERRAR SESIÓN» on two lines) when signed in. Every item stays on one line at common widths, mobile unchanged.
@@ -239,7 +239,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 
 ## T198 — Close plan 017
 - Status: pending
-- Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T202, T203
+- Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T203 (T202 skipped by Hernán)
 - Model: opus
 - Goal: Run the full e2e, fix what this plan broke (small fixes only; report anything bigger), update docs and write the try-it guide for Hernán.
 - Context: every task's ESTADO section and Outcome in this plan; `docs/TRASPASO.md`, `docs/spec/estado.md`; previous guide `docs/propuestas/2026-10-06-castillo-v3-guia-prueba.md` as format.
@@ -252,6 +252,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 run: if Codex cannot do T202 (out of credits or unable to make the images), T202 is skipped, not retried or moved to Opus; store keeps T201's MUESTRA placeholders and events keep their current posters (Hernán)
+- 2026-10-07 run: Hernán asked to launch the Codex task at once → 3 agents running (T192, T203, T202), above the usual 2 (Hernán)
 - 2026-10-07 T199: NAUFRAGO10 now applies to Nochevieja (Sonido no longer sold online); specs buy through `e2e/online-event.ts`; box-office notice is a `<details>` (works without JS); logout checked against a fake local Supabase only (agent)
 - 2026-10-07 T201: product images as data in `products.json` (schema `merchandiseCatalogSchema`, validated by a test, zod kept out of the landing); Instagram contact in the same JSON; new keys `store.buy*`, `store.gallery.*`, `store.image.*` in `es-web.ts` base (editable in Admin) (agent)
 - 2026-10-07 run: T192 to Opus (Codex out); new small T203 fixes the desktop header wrapping T199 introduced (orchestrator)
@@ -270,6 +272,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T202 (skipped): when Codex is back, invented posters + product images: product list in `products.json` already points at 9 placeholders in `apps/web/public/contenido/tienda/`; posters need a `-muestra` fallback after `REAL_CONTENT.eventPosters` (P19 wins); update `eventos.test.ts` (~l.121, halloween posterUrl undefined) and `real-content.test.ts` («Cartel próximamente»)
 - 2026-10-07 T199: run `landing-logout.spec` with `E2E_SUPABASE=1` on boia-planet-dev; Admin has no control for the box-office rule
 - 2026-10-07 T201: `MERCHANDISE_NOTICE`, `MERCHANDISE_SAMPLE_NOTICE`, the «Muestra» badge and product names/descriptions are plain strings, not i18n keys; no store REQ updated in `docs/spec/estado.md`
 - 2026-10-07 T197: once real videos exist, use `LazyVideo` there and raise REQ-COM-032 to HECHO
@@ -317,3 +320,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 17:46 T201 launched · attempt 1 · agent ab2f131caa3fa83be · opus (carousel + buy message; images in T202)
 - 2026-10-07 18:08 T199 done · worktree-agent-ae12ecfd880b02a68 (+ Codex WIP branch ac79cb33) → 95748c1
 - 2026-10-07 18:10 T201 done · worktree-agent-ab2f131caa3fa83be → 0528b12
+- 2026-10-07 18:13 T192 launched · attempt 1 · agent abef2dabe1ad17c4b · opus
+- 2026-10-07 18:13 T203 launched · attempt 1 · agent a0f87b68f4b9525ea · sonnet
+- 2026-10-07 ~18:40 T192 and T203 agents stopped by the API session limit (reset 19:20); WIP committed 635d9f5 / 30e6fd8
+- 2026-10-07 19:50 T192 continuation (interrupted) · agent a221ef35f0e8032ad · opus · old branch worktree-agent-abef2dabe1ad17c4b
+- 2026-10-07 19:50 T203 continuation (interrupted) · agent a69c10f44897b7d47 · sonnet · old branch worktree-agent-a0f87b68f4b9525ea
+- 2026-10-07 19:53 T202 launched · attempt 1 · Codex via wrapper agent a071fe5879b91bced (sonnet) · 3 agents at once on Hernán's request
+- 2026-10-07 19:56 T202 Codex usage limit before any change → skipped per Hernán; worktree and branch removed
