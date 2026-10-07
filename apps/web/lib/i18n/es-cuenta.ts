@@ -157,6 +157,8 @@ export const esCuenta = {
     'Tu mejor aquí es {points}, guardada en este navegador. Entra en el ranking para aparecer.',
   'ranking.mine.time': 'Vas {n}.º de {total} con {time}',
   'ranking.mine.points': 'Vas {n}.º de {total} con {points} puntos',
+  'ranking.mine.noPoints': 'Aún sin puntos. Tu primer punto te dará un puesto.',
+  'ranking.noPoints': 'sin puntos',
   'ranking.youChip': 'tú',
   'ranking.more': 'Mostrar más',
   'ranking.loading': 'Cargando…',

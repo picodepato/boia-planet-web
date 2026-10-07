@@ -21,11 +21,7 @@ import { carnetPath } from '../../carnet/share';
 import { useCarnet } from '../../carnet/use-carnet';
 import { worlds } from '../../demo-world';
 import { discoverRandom, pickMember } from '../../discover';
-import {
-  type BoardOption,
-  canonBoardOptions,
-  castleBoardOptions,
-} from '../../ranking-boards';
+import { type BoardOption, canonBoardOptions, castleBoardOptions } from '../../ranking-boards';
 import { browserCanonStorage, canonRanking, readCanonBest } from '../../ranking-canon';
 import { browserCastleStorage, castleRanking, readCastleBest } from '../../ranking-castle';
 import { type CircuitRow, circuitRanking } from '../../ranking-circuit';
@@ -78,9 +74,10 @@ export const RANKING_COPY = {
   you: t('juego.ranking.tu'),
   youChip: t('ranking.youChip'),
   yourPosition: (n: number, points: number) => t('ranking.yourPosition', { n, points }),
-  mineTime: (n: number, total: number, time: string) => t('ranking.mine.time', { n, total, time }),
-  minePoints: (n: number, total: number, points: string) =>
-    t('ranking.mine.points', { n, total, points }),
+  mineTime: (n: number | null, total: number, time: string) =>
+    n === null ? t('ranking.error') : t('ranking.mine.time', { n, total, time }),
+  minePoints: (n: number | null, total: number, points: string) =>
+    n === null ? t('ranking.mine.noPoints') : t('ranking.mine.points', { n, total, points }),
   pointsNote: t('ranking.pointsNote'),
   empty: t('ranking.empty'),
   more: t('ranking.more'),
@@ -753,7 +750,12 @@ function globalRow(r: GlobalRow, board: RankingBoard): ListRow {
     position: r.position,
     nickname: r.nickname,
     avatarKey: r.avatarKey,
-    value: board.kind === 'circuit' ? formatRaceTime(r.value) : formatPoints(r.value),
+    value:
+      board.kind === 'points' && r.position === null
+        ? t('ranking.noPoints')
+        : board.kind === 'circuit'
+          ? formatRaceTime(r.value)
+          : formatPoints(r.value),
     isMine: r.isMine,
     isSample: false,
     hasCarnet: true,
@@ -802,8 +804,8 @@ function GuestBox({ board, onEntered }: { board: RankingBoard; onEntered: () => 
           ? RANKING_COPY.guestScore(formatPoints(data.points))
           : RANKING_COPY.guestNone
         : data?.ms != null
-        ? RANKING_COPY.guestTime(formatRaceTime(data.ms))
-        : RANKING_COPY.guestNone;
+          ? RANKING_COPY.guestTime(formatRaceTime(data.ms))
+          : RANKING_COPY.guestNone;
   return (
     <div className="ranking-guest" data-testid="ranking-invitado">
       <p className="ranking-guest__text">

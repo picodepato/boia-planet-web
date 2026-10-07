@@ -2,7 +2,7 @@
 
 import type { CarnetView } from '@boia/store';
 import Link from 'next/link';
-import { type ComponentType, useRef, useState } from 'react';
+import { type ComponentType, useState } from 'react';
 import { useAccount } from '../../account/use-account';
 import { t } from '../../i18n';
 import type { ScanLayerProps } from '../../scanner/scan-layer';
@@ -11,6 +11,7 @@ import { type ClaimOutcome, claimStamp } from './claim';
 import type { CardFace } from './id-card';
 import { carnetPath } from './share';
 import { StampsSheet } from './stamps-sheet';
+import { StampFeedback } from './stamp-feedback';
 
 /**
  * El Carnet propio con sus acciones (plan 008, T91; T87, «Card» y «Scan
@@ -43,22 +44,18 @@ export function OwnCarnet({
   const [sheet, setSheet] = useState(false);
   const [Scanner, setScanner] = useState<ComponentType<ScanLayerProps> | null>(null);
   const [fresh, setFresh] = useState<string | null>(null);
-  const [change, setChange] = useState<{ from: number; to: number } | null>(null);
+  const [claimed, setClaimed] = useState<Extract<ClaimOutcome, { kind: 'granted' }> | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [flipKey, setFlipKey] = useState(0);
   const stamps = extras.stamps ?? [];
   const canScan = account.status !== 'local';
-  /** Los puntos antes de escanear: la cuenta se relee antes de avisar. */
-  const before = useRef(carnet.points);
-
   const openScanner = async () => {
-    before.current = carnet.points;
     const m = await import('../../scanner/scan-layer');
     setScanner(() => m.default);
   };
 
   const granted = (o: Extract<ClaimOutcome, { kind: 'granted' }>) => {
-    setChange({ from: before.current, to: before.current + o.points });
+    setClaimed(o);
     setNotice(t('stamp.received', { event: o.event.name, points: o.points }));
     setFresh(o.event.slug);
   };
@@ -131,7 +128,6 @@ export function OwnCarnet({
         carnet={carnet}
         extras={extras}
         fresh={fresh}
-        pointsChange={change}
         dark={dark}
         controls={
           <>
@@ -140,6 +136,7 @@ export function OwnCarnet({
                 {notice}
               </p>
             ) : null}
+            {claimed ? <StampFeedback outcome={claimed} /> : null}
             {controls}
             {sheet ? <StampsSheet stamps={stamps} onClose={() => setSheet(false)} /> : null}
           </>

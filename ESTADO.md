@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T194: Ranking and stamp gaps from plan 008
+
+Done by Codex + wrapper (wrapper only removed nothing of substance; no code changes of its own).
+
+What exists:
+- Global ranking: members with 0 points show «sin puntos» and no position; positive ties are kept (`ranking-global.ts`, Cañón/Castillo readers, `ranking.tsx` row text; test `ranking-zero.test.ts`).
+- Stamp: both flows (`/sello` and the Carnet scanner) show «Puntos a → b» and «Ahora eres …» from the global reader (`carnet/stamp-feedback.tsx`, `claim.ts`; test `stamp-feedback.test.ts`).
+- Bottles: the player's own active bottle floats and lists even outside the 10 most recent, without duplicates (`packages/store/src/member/bottles.ts` + test).
+- No RPC change, so no migration (20261007100500 unused). T191 moderation preserved.
+
+Commands:
+- vitest (exclude packages/db) → exit 0, 228 files, 2156 tests
+- tools/spec/checks.sh, pnpm lint, pnpm typecheck, pnpm build → exit 0 (landing 187.9 kB / 200)
+- E2E_PORT=3194 pnpm e2e ranking.spec.ts mar-botellas.spec.ts sello.spec.ts sello-camara.spec.ts --workers=1 → exit 0, 10 passed, 12 skipped (Supabase-mode and mobile specs skip locally)
+
+Pending: Supabase-mode e2e (E2E_SUPABASE=1) not run here.
+
 ## 2026-10-07 — plan 017 T190: Admin: objeto nuevo en 10 pasos, plantillas y validación de assets
 
 Qué existe:

@@ -100,6 +100,9 @@ export const esCarnet = {
 
   // El sello
   'stamp.received': 'Sello de {event} en tu Carnet. +{points} puntos.',
+  'stamp.pointsAwarded': '+{points} puntos',
+  'stamp.nowRank': 'Ahora eres {rank}.º en el ranking.',
+  'stamp.rankUnavailable': 'Tu puesto no está disponible ahora. Puedes consultarlo en el ranking.',
   'stamp.pointsChip': 'Puntos {from} → {to}',
   'stamp.newRank': 'Ahora eres {rank}',
   'stamp.err.early.title': 'Este sello abre durante la fiesta',

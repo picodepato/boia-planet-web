@@ -231,6 +231,55 @@ const rejected = async (p: Promise<unknown>) => {
 };
 
 describe('botellas globales: lo que hay en el mar', () => {
+  it('T194: lista las diez últimas más la propia antigua y actualiza, lee y retira esa botella', async () => {
+    const { sea, api, bottles, as } = setup({ viewer: A });
+    const own = sea.seed(A, 'La mía antigua');
+    for (let i = 0; i < BOTTLES_IN_SEA_MAX; i++) {
+      sea.nicknames.set(`other${i}`, `Otro ${i}`);
+      sea.seed(`other${i}`, `Más reciente ${i}`);
+    }
+    const list = await api.list();
+    expect(list).toHaveLength(BOTTLES_IN_SEA_MAX + 1);
+    expect(list.at(-1)).toMatchObject({ id: own.id, isMine: true, message: 'La mía antigua' });
+    expect(new Set(list.map((b) => b.id)).size).toBe(list.length);
+    await expect(api.mine()).resolves.toMatchObject({ id: own.id });
+
+    let changes = 0;
+    bottles.subscribe(() => changes++);
+    // Edición desde otro dispositivo, aún fuera de las diez últimas.
+    own.message = 'Editada en otro dispositivo';
+    own.x = 42;
+    await bottles.refresh();
+    expect(changes).toBe(1);
+    expect((await api.list()).at(-1)).toMatchObject({ message: own.message, x: 42 });
+    await api.edit(own.id, { message: 'Editada aquí', x: 43 });
+    expect((await api.list()).at(-1)).toMatchObject({ message: 'Editada aquí', x: 43 });
+    await api.read(own.id);
+    expect((await api.list()).at(-1)?.read).toBe(true);
+
+    as(null);
+    expect(await api.list()).toHaveLength(BOTTLES_IN_SEA_MAX);
+    await expect(api.mine()).resolves.toBeNull();
+    as(A);
+    expect(await api.list()).toHaveLength(BOTTLES_IN_SEA_MAX + 1);
+    await api.retire(own.id);
+    expect(await api.list()).toHaveLength(BOTTLES_IN_SEA_MAX);
+    await expect(api.mine()).resolves.toBeNull();
+    await bottles.refresh();
+    expect((await api.list()).some((b) => b.id === own.id)).toBe(false);
+  });
+
+  it('T194: la propia que está entre las diez no se duplica; una retirada no vuelve al listado', async () => {
+    const { sea, api, bottles } = setup({ viewer: A });
+    sea.seed(B, 'De B');
+    const own = sea.seed(A, 'La mía reciente');
+    expect((await api.list()).map((b) => b.id)).toEqual([own.id, sea.bottles[0]!.id]);
+    own.status = 'removed';
+    await bottles.refresh();
+    expect((await api.list()).map((b) => b.message)).toEqual(['De B']);
+    await expect(api.mine()).resolves.toBeNull();
+  });
+
   it('todos ven las 10 más recientes de todas las cuentas, el invitado también', async () => {
     const { sea, api } = setup();
     const seeded = Array.from({ length: BOTTLES_IN_SEA_MAX + 1 }, (_, i) => {

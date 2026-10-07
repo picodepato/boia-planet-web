@@ -79,6 +79,50 @@ const row = (id: string, position: number, isMine = false): GlobalRow => ({
 });
 
 describe('ranking global por páginas (T92, decisión 8)', () => {
+  it('T194: los ceros no tienen puesto, tampoco la fila fijada; mantiene empates y páginas', async () => {
+    const { client } = fakeClient(62, 'u62', { failAvatars: true });
+    const table = serverTable(62, 'u62').map((r, i) => ({
+      ...r,
+      value: i < 2 ? 100 : i === 2 ? 50 : 0,
+      position: i < 2 ? 1 : i === 2 ? 3 : 4,
+      // El apodo ya moderado del servidor no se reconstruye en el lector.
+      nickname: i === 3 ? 'Miembro de BOIA 4' : r.nickname,
+    }));
+    client.rpc = (_fn, args) =>
+      Promise.resolve({
+        data: {
+          total: table.length,
+          offset: args.p_offset,
+          rows: table.slice(Number(args.p_offset), Number(args.p_offset) + Number(args.p_limit)),
+          mine: table.at(-1),
+        },
+        error: null,
+      });
+    const page = await fetchRankingPage(client, { kind: 'points' });
+    expect(page.total).toBe(62);
+    expect(page.rows).toHaveLength(50);
+    expect(page.rows.slice(0, 3).map((r) => r.position)).toEqual([1, 1, 3]);
+    expect(page.rows.slice(3).every((r) => r.position === null)).toBe(true);
+    expect(page.rows[3]).toMatchObject({ nickname: 'Miembro de BOIA 4', avatarKey: null });
+    expect(pinnedMine(page.rows, page.mine)).toMatchObject({
+      userId: 'u62',
+      position: null,
+      value: 0,
+    });
+    const next = await fetchRankingPage(client, { kind: 'points' }, 50);
+    expect(next.offset).toBe(50);
+    expect(next.rows).toHaveLength(12);
+    expect(next.rows.every((r) => r.position === null)).toBe(true);
+    expect(pinnedMine(appendPage(page.rows, next.rows), next.mine)).toBeNull();
+    // Esta política sólo se aplica a los puntos de siempre.
+    const circuit = await fetchRankingPage(client, {
+      kind: 'circuit',
+      circuit: 'el-freu',
+      version: 3,
+    });
+    expect(circuit.mine?.position).toBe(4);
+  });
+
   it('el top de RANKING_PAGE_SIZE con la fila propia aunque quede fuera', async () => {
     const { client, calls } = fakeClient(RANKING_PAGE_SIZE + 7, `u${RANKING_PAGE_SIZE + 5}`);
     const p = await fetchRankingPage(client, { kind: 'circuit', circuit: 'el-freu', version: 3 });

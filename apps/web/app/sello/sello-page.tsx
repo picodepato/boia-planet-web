@@ -16,6 +16,7 @@ import {
 import { eventMeta, outcomeCopy } from '../../lib/mundo/carnet/claim-copy';
 import { IdCard } from '../../lib/mundo/carnet/id-card';
 import { useCarnet } from '../../lib/mundo/carnet/use-carnet';
+import { StampFeedback } from '../../lib/mundo/carnet/stamp-feedback';
 import { refreshMemberAccount } from '../../lib/repo';
 import { type SelloCode, selloFromParams } from '../../lib/scanner/sello-url';
 import { isSupabaseConfigured } from '../../lib/supabase/config';
@@ -178,7 +179,7 @@ function Stamped({ outcome }: { outcome: Extract<ClaimOutcome, { kind: 'granted'
     return () => clearTimeout(timer);
   }, [landed, data]);
   return (
-    <div className="sello-done" data-testid="sello-hecho">
+    <div className="sello-done is-on-dark" data-testid="sello-hecho">
       {card && landed ? (
         <div className="sello-card is-on-dark">
           <IdCard card={card} initialFace="back" fresh={outcome.event.slug} />
@@ -191,6 +192,7 @@ function Stamped({ outcome }: { outcome: Extract<ClaimOutcome, { kind: 'granted'
       <p className="sello-ok" role="status" data-testid="sello-aviso">
         {t('sello.done', { points: outcome.points })}
       </p>
+      <StampFeedback outcome={outcome} />
       <Link className="idc-btn sello-wide" href="/carnet" data-testid="sello-ver-carnet">
         {t('sello.toCarnet')}
       </Link>

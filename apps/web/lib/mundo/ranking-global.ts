@@ -38,8 +38,8 @@ export function boardKey(b: RankingBoard): string {
 }
 
 export interface GlobalRow {
-  /** Puesto con empates compartidos (1, 2, 2, 4…). */
-  position: number;
+  /** Empates compartidos (1, 2, 2, 4…). Sin puntos de siempre: sin puesto. */
+  position: number | null;
   userId: string;
   nickname: string;
   memberNumber: number;
@@ -77,9 +77,13 @@ export interface RankingClient {
   };
 }
 
-function toRow(r: ServerRow, avatars: ReadonlyMap<string, string | null>): GlobalRow {
+function toRow(
+  r: ServerRow,
+  avatars: ReadonlyMap<string, string | null>,
+  board: RankingBoard,
+): GlobalRow {
   return {
-    position: Number(r.position),
+    position: board.kind === 'points' && Number(r.value) === 0 ? null : Number(r.position),
     userId: r.user_id,
     nickname: r.nickname,
     memberNumber: Number(r.member_number),
@@ -152,8 +156,8 @@ export async function fetchRankingPage(
   return {
     total: Number(page.total),
     offset: Number(page.offset),
-    rows: page.rows.map((r) => toRow(r, avatars)),
-    mine: page.mine ? toRow(page.mine, avatars) : null,
+    rows: page.rows.map((r) => toRow(r, avatars, board)),
+    mine: page.mine ? toRow(page.mine, avatars, board) : null,
   };
 }
 
@@ -233,7 +237,7 @@ export async function raceStanding(
   version: number,
 ): Promise<RaceStanding | null> {
   const page = await fetchRankingPage(client, { kind: 'circuit', circuit, version }, 0, 1);
-  return page.mine
+  return page.mine && page.mine.position !== null
     ? { position: page.mine.position, total: page.total, bestMs: page.mine.value }
     : null;
 }

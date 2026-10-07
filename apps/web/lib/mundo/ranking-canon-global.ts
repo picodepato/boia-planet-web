@@ -84,7 +84,7 @@ export async function memberCanonStanding(
       return null;
     });
     const page = await fetchCanonPage(c, s.boss, 0, 1, s.version);
-    if (!page.mine) return { kind: 'unavailable' };
+    if (!page.mine || page.mine.position === null) return { kind: 'unavailable' };
     return {
       kind: 'global',
       position: page.mine.position,

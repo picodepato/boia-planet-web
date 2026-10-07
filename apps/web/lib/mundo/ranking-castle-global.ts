@@ -66,7 +66,7 @@ export async function memberCastleStanding(
     if (!c) return { kind: 'unavailable' };
     const sent = await submitCastleScore(c, r);
     const page = await fetchCastlePage(c, r.runMin, r.difficulty, 0, 1);
-    return page.mine
+    return page.mine && page.mine.position !== null
       ? {
           kind: 'global',
           position: page.mine.position,

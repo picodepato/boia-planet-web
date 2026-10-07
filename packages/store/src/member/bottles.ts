@@ -1,7 +1,8 @@
 /**
  * Las botellas globales (plan 008, T93, decisión 12, REQ-IDE-040…044): con
  * Supabase, el mar de todo el mundo (invitado o miembro) enseña las 10
- * botellas activas más recientes de todas las cuentas (`latest_bottles`).
+ * botellas activas más recientes de todas las cuentas (`latest_bottles`),
+ * más la propia si queda fuera de esas diez.
  *
  * - Se leen al entrar (la primera vez que se piden) y, después, cuando la
  *   lista tiene más de `maxAgeMs` o se pide `refresh()` (la web lo pide cada
@@ -194,13 +195,14 @@ export function createGlobalBottles(opts: GlobalBottlesOptions): GlobalBottles {
     if (myGen !== gen) return;
     const next = rows.slice(0, BOTTLES_IN_SEA_MAX).map((r) => viewFromLatest(r, readHere));
     const nickname = next.find((b) => b.isMine)?.authorNickname ?? own?.authorNickname ?? null;
+    const nextOwn = me && mine ? viewFromOwn(mine, me, nickname) : null;
     const changed =
       sea === null ||
       readFor !== me ||
       JSON.stringify(next) !== JSON.stringify(sea) ||
-      (mine?.id ?? null) !== (own?.id ?? null);
+      JSON.stringify(nextOwn) !== JSON.stringify(own);
     sea = next;
-    own = me && mine ? viewFromOwn(mine, me, nickname) : null;
+    own = nextOwn;
     readAt = now();
     readFor = me;
     if (changed) emit();
@@ -279,7 +281,11 @@ export function createGlobalBottles(opts: GlobalBottlesOptions): GlobalBottles {
   const api: BottleApi = {
     list: async () => {
       await ensure();
-      return (sea ?? []).map((b) => ({ ...b, read: readHere.has(b.id) }));
+      const list = sea ?? [];
+      const activeOwn = own;
+      const visible =
+        activeOwn && !list.some((b) => b.id === activeOwn.id) ? [...list, activeOwn] : list;
+      return visible.map((b) => ({ ...b, read: readHere.has(b.id) }));
     },
 
     mine: async () => {

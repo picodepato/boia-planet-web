@@ -17,6 +17,7 @@ import { accountClient, accountSnapshot } from '../../account/session';
 import { gameRepository, refreshMemberAccount } from '../../repo';
 import type { SelloCode } from '../../scanner/sello-url';
 import { isSupabaseConfigured } from '../../supabase/config';
+import { fetchRankingPage, type RankingClient } from '../ranking-global';
 
 export interface StampEvent {
   slug: string;
@@ -31,7 +32,13 @@ export interface StampEvent {
 }
 
 export type ClaimOutcome =
-  | { kind: 'granted'; event: StampEvent; points: number }
+  | {
+      kind: 'granted';
+      event: StampEvent;
+      points: number;
+      pointsChange: { from: number; to: number } | null;
+      position: number | null;
+    }
   | { kind: 'already'; event: StampEvent; at: string | null }
   | { kind: 'early' | 'late'; event: StampEvent; from: string | null; until: string | null }
   | { kind: 'invalid'; event: StampEvent | null }
@@ -157,6 +164,13 @@ export async function claimStamp(
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return { kind: 'offline', event };
   }
+  // El mismo lector moderado que usa «De siempre». Una lectura fallida no
+  // impide reclamar el sello; sin datos no se inventa un puesto.
+  const standing = () =>
+    fetchRankingPage(sb as unknown as RankingClient, { kind: 'points' }, 0, 1)
+      .then((page) => page.mine)
+      .catch(() => null);
+  const before = await standing();
   let data: unknown = null;
   let error: RpcError | null = null;
   try {
@@ -185,7 +199,15 @@ export async function claimStamp(
   const result = (data ?? {}) as { granted?: boolean; points?: number };
   if (result.granted) {
     await refreshMemberAccount().catch(() => {});
-    return { kind: 'granted', event, points: Number(result.points ?? 0) };
+    const after = await standing();
+    const points = Number(result.points ?? 0);
+    return {
+      kind: 'granted',
+      event,
+      points,
+      pointsChange: before && after ? { from: before.value, to: after.value } : null,
+      position: after?.position ?? null,
+    };
   }
   return { kind: 'already', event, at: await ownStampAt(event.id) };
 }

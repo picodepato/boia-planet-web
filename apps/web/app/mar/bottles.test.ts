@@ -4,7 +4,7 @@ import {
   isSeaSpot,
   sheetZones,
 } from '@boia/engine/bottles';
-import { SAMPLE_BOTTLES } from '@boia/store';
+import { SAMPLE_BOTTLES, createGlobalBottles, type SupabaseLike } from '@boia/store';
 import { BOTTLE_SPOTS, WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { settleInSea } from '@boia/engine/bottles';
@@ -35,6 +35,53 @@ const islands = sheetZones(mar).filter(
 );
 
 describe('botellas en el mar 3D (T56)', () => {
+  it('T194: la propia fuera del top diez del servidor también flota y se puede encontrar', async () => {
+    const at = '2026-10-07T10:00:00Z';
+    const spot = samples[0]!;
+    const own = {
+      id: 'own-old',
+      message: 'Mía',
+      x: spot.x,
+      y: spot.y,
+      status: 'active',
+      created_at: at,
+      updated_at: at,
+    };
+    const latest = Array.from({ length: 10 }, (_, i) => ({
+      ...own,
+      id: `recent${i}`,
+      author_id: `other${i}`,
+      author_nickname: `Otro ${i}`,
+      is_mine: false,
+    }));
+    const client = {
+      rpc: async () => ({ data: latest, error: null }),
+      from: (table: string) => ({
+        select: () => {
+          const query = {
+            eq: () => query,
+            order: () => query,
+            range: () => query,
+            then: (resolve: (result: unknown) => unknown) =>
+              Promise.resolve({ data: table === 'bottles' ? [own] : [], error: null }).then(
+                resolve,
+              ),
+          };
+          return query;
+        },
+      }),
+    } as unknown as SupabaseLike;
+    const global = createGlobalBottles({ client, viewer: () => 'me' });
+    const list = await global.api.list();
+    expect(list).toHaveLength(11);
+    const placed = placeBottles(list, shared, mar);
+    expect(placed).toHaveLength(11);
+    const floatingOwn = placed.find((b) => b.id === own.id)!;
+    expect(floatingOwn).toMatchObject({ mine: true });
+    expect(marReadable(mar)(floatingOwn)).toBe(true);
+    expect(bottlesNear(floatingOwn, placed, new Set(), period)).toContain(own.id);
+  });
+
   it('las de muestra flotan todas en el agua del planeta', () => {
     const placed = placeBottles(samples, shared, mar);
     expect(placed.map((b) => b.id)).toEqual(samples.map((b) => b.id));

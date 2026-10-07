@@ -528,8 +528,8 @@ export interface BottleInput {
 
 export interface BottleApi {
   /**
-   * Botellas activas en el mar (las de muestra y las de este navegador): como
-   * mucho `BOTTLES_IN_SEA_MAX`, las más nuevas.
+   * Botellas activas en el mar: las más nuevas, hasta `BOTTLES_IN_SEA_MAX`.
+   * En Supabase se añade la propia activa si queda fuera de esas diez.
    */
   list(): Promise<BottleView[]>;
   mine(): Promise<BottleView | null>;
