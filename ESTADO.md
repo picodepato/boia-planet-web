@@ -4,6 +4,52 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T208: Parte 5, el océano `/mar`
+
+Qué existe:
+
+- `docs/presentacion/partes/05-mar.ts`: la parte 5, 14 diapositivas (25–38 de
+  la presentación de hoy): portada; llegada («Welcome Aboard»); lo que hay en
+  pantalla (HUD, menú, el «!»); mapa, «Entradas» y «Mis códigos»; el Puerto
+  de Alicante y la tienda de barcos; las nueve islas; las islas de evento;
+  Benidorm, Ibiza y Tabarca con el Tablón del faro; la misión de la Boia
+  Fiestera; personajes (boias que hablan, WhatsApp, delfín); lo que se recoge
+  (náufrago, botellas, secretos); secretos y descuentos escondidos; un «Qué
+  falta» (4 «Necesario para salir», 2 «Puede esperar») y «Preguntas y
+  propuestas» para toda la parte. Todas con notas del orador. Los minijuegos
+  sólo se nombran (parte 6). El mundo se llama «Mundo principal»; Acuarela no
+  sale (la fila del barco «Acuarela ilustrada» queda fuera de la captura de
+  la tienda).
+- `apps/web/e2e/deck/05-mar.deck.ts`: 22 specs de captura, móvil 390×844,
+  perfil nuevo en cada una: `?menu=bienvenida`, `?cerca=<lugar>` + `steerTo`
+  hasta la ficha (o el panel del minijuego en el Castillo), `?delfin=1`, la
+  boia de WhatsApp a golpes cortos (como `world-community.spec.ts`).
+- `docs/presentacion/capturas/05-mar/`: 24 JPEG (2,7 MB), todas miradas: el
+  3D pintado, sin pantalla de carga.
+- `boia-planet.pptx` y `.pdf` regenerados.
+
+Comandos:
+
+- `DECK_PORT=3255 pnpm deck:capturas 05` → exit 0, 22 passed (2,1 min tras el build).
+- `pnpm deck` → exit 0, 44 diapositivas; 05-mar 25–38 (14).
+- `pnpm deck:render` → exit 0, 44 páginas; PNG de la parte 5 revisados uno a
+  uno: nada cortado ni fuera de su caja.
+- `python3 tools/spec/check.py`, `estado.py`, `test_check.py`,
+  `test_estado.py`, `tools/blender/check.py` (con `PYTHONUTF8=1`) → exit 0
+  cada uno (`sh tools/spec/checks.sh` lo bloqueó el guardia del worktree).
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0.
+
+Pendiente:
+
+- Los emoji del HUD (la moneda) salen como cajitas en el navegador de
+  captura; si la tarea paralela lo arregla, basta `pnpm deck:capturas 05`.
+- La tienda de barcos enseña un barco «Acuarela ilustrada · De serie»: si
+  el nombre no debe verse, es cosa de la app (fuera de este plan).
+- Los «Necesario para salir» de la parte, para la hoja de ruta (T211): visto
+  bueno de Álvaro al mundo, logros y premios (P14); códigos de descuento
+  reales con su % (P16); aprobar arte de las islas y textos del mar (P22);
+  quitar los atajos de prueba al lanzar.
+
 ## 2026-10-07 — plan 018 T207: Part 4: Carnet BOIA and Ranking
 
 Qué existe:
