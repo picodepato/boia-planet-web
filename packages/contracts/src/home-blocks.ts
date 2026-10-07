@@ -85,6 +85,11 @@ export const storeBlockSchema = z.object({
   /** Internal showcase; retain old external values when reading existing content. */
   url: z.union([z.url(), z.literal('/tienda')]),
   products: z.array(z.string().min(1)),
+  /**
+   * Where buyers ask for a product (plan 017 T192, decision 11): the handle
+   * and its link in «Comprar». Unset: the one in the web's products.json.
+   */
+  contact: z.object({ handle: z.string().min(1), url: z.url() }).optional(),
 });
 
 export const contactBlockSchema = z.object({

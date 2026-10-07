@@ -8,6 +8,7 @@ import { ArtistsSection } from './sections/artists';
 import { DiscountsSection } from './sections/discounts';
 import { EventsSection } from './sections/events';
 import { HomeSection } from './sections/home';
+import { LinksSection } from './sections/links';
 import {
   AuditSection,
   IntegrationsSection,
@@ -37,6 +38,7 @@ type Section = { id: string; label: string; Component: ComponentType<{ ctx: Admi
 /** Secciones de L1 (REQ-ADM-008), con su ancla en la URL (`/admin#mundo`). */
 const SECTIONS: Section[] = [
   { id: 'inicio', label: t('admin.adminApp.paginaPrincipal'), Component: HomeSection },
+  { id: 'enlaces', label: t('admin.links.nav'), Component: LinksSection },
   { id: 'eventos', label: t('admin.adminApp.eventos'), Component: EventsSection },
   { id: 'descuentos', label: t('admin.adminApp.descuentos'), Component: DiscountsSection },
   { id: 'mundo', label: t('admin.adminApp.mundo'), Component: WorldSection },

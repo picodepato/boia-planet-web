@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LiveMerchandiseCatalog } from '../../../lib/merchandise/live-catalog';
-import { MERCHANDISE_NOTICE } from '../../../lib/merchandise/catalog';
+import { MERCHANDISE_NOTICE, merchandiseContact } from '../../../lib/merchandise/catalog';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { BrandLogo } from '../components/brand-logo';
 
@@ -39,7 +39,12 @@ export default async function MerchandisePage({
         </h1>
         <p className="section__lead">Un poco de la fiesta para llevar.</p>
         <p className="merchandise-notice">{MERCHANDISE_NOTICE}</p>
-        <LiveMerchandiseCatalog initial={store?.type === 'store' ? store.products : []} />
+        <LiveMerchandiseCatalog
+          initial={{
+            products: store?.type === 'store' ? store.products : [],
+            contact: merchandiseContact(store?.type === 'store' ? store : null),
+          }}
+        />
       </div>
     </main>
   );

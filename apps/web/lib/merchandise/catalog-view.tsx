@@ -1,14 +1,26 @@
 import { t } from '../landing/texts';
-import { MERCHANDISE_CONTACT, MERCHANDISE_PRODUCTS, MERCHANDISE_SAMPLE_NOTICE } from './catalog';
+import {
+  MERCHANDISE_CONTACT,
+  MERCHANDISE_PRODUCTS,
+  MERCHANDISE_SAMPLE_NOTICE,
+  type MerchandiseContact,
+} from './catalog';
 import { ProductGallery } from './product-gallery';
 import './merchandise.css';
 
 /**
  * Shared sample showcase for the home and Ibiza's internal shop. «Comprar» is
  * a disclosure, not a checkout (decision 11): it says the products are only
- * sold at the party and points to Instagram. It works without JavaScript.
+ * sold at the party and points to Instagram (the contact the Admin set, plan
+ * 017 T192). It works without JavaScript.
  */
-export function MerchandiseCatalog({ products }: { products?: readonly string[] }) {
+export function MerchandiseCatalog({
+  products,
+  contact = MERCHANDISE_CONTACT,
+}: {
+  products?: readonly string[];
+  contact?: MerchandiseContact;
+}) {
   const names = products ?? MERCHANDISE_PRODUCTS.map((p) => p.name);
   return (
     <div className="merchandise" data-testid="merchandise-catalog">
@@ -33,14 +45,14 @@ export function MerchandiseCatalog({ products }: { products?: readonly string[] 
                   <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
                     {t('store.buy.message')}{' '}
                     <a
-                      href={MERCHANDISE_CONTACT.url}
+                      href={contact.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={t('store.buy.instagram.aria', {
-                        handle: MERCHANDISE_CONTACT.handle,
+                        handle: contact.handle,
                       })}
                     >
-                      {MERCHANDISE_CONTACT.handle}
+                      {contact.handle}
                     </a>
                   </p>
                 </details>

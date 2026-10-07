@@ -15,5 +15,17 @@ export const MERCHANDISE_SAMPLE_NOTICE =
  */
 const catalog = data as MerchandiseCatalogData;
 export const MERCHANDISE_PRODUCTS: readonly MerchandiseProduct[] = catalog.products;
-/** Where buyers ask for a product (decision 11). */
+/** Where buyers ask for a product (decision 11): the default when the Admin sets none. */
 export const MERCHANDISE_CONTACT = catalog.contact;
+
+export type MerchandiseContact = MerchandiseCatalogData['contact'];
+
+/**
+ * The contact «Comprar» shows (plan 017 T192): the one the Admin set on the
+ * home's store block, or `products.json`'s when it set none.
+ */
+export function merchandiseContact(
+  store?: { contact?: MerchandiseContact | undefined } | null,
+): MerchandiseContact {
+  return store?.contact ?? MERCHANDISE_CONTACT;
+}

@@ -45,6 +45,7 @@ import {
   freeId,
   templateFromObject,
 } from './objects';
+import { type LinkRow, isEmail, parseLinks, parseStoreContact } from './links';
 import { circuitIds, missionDestinationProblem, worldProblem } from './validate';
 import {
   EMPTY_WORLD_CONTENT,
@@ -241,6 +242,15 @@ export function createAdminActions(deps: AdminDeps) {
     const b = (await repo.admin.draftList('homeBlocks')).find((x) => x.id === id);
     if (!b) throw new AdminError(msg('admin.actions.noExisteElBloque', { id }));
     return b;
+  };
+
+  /** El bloque de la home de ese tipo, en el borrador (la home tiene uno de cada). */
+  const blockOfType = async <T extends HomeBlock['type']>(
+    type: T,
+  ): Promise<Extract<HomeBlock, { type: T }>> => {
+    const b = (await repo.admin.draftList('homeBlocks')).find((x) => x.type === type);
+    if (!b) throw new AdminError(msg('admin.links.error.noBlock', { type }));
+    return b as Extract<HomeBlock, { type: T }>;
   };
 
   /** Un evento del formulario, comprobado: id libre, isla y artistas que existen, esquema. */
@@ -674,6 +684,47 @@ export function createAdminActions(deps: AdminDeps) {
         'homeBlocks',
         next,
         opts(msg('admin.actions.eventoPrioritario')),
+      );
+    },
+
+    // --- Enlaces de la tienda, el contacto y el pie (plan 017 T192) ---------
+
+    /**
+     * El contacto de «Comprar» de la tienda (decisión 11). Los dos vacíos:
+     * vuelve al de serie (products.json).
+     */
+    async setStoreContact(handle: string, url: string) {
+      const block = await blockOfType('store');
+      const parsed = parseStoreContact(handle, url);
+      if (!parsed.ok) throw new AdminError(parsed.error);
+      const next = { ...block };
+      if (parsed.contact) next.contact = parsed.contact;
+      else delete next.contact;
+      await repo.admin.draftUpsert('homeBlocks', next, opts(msg('admin.links.audit.store')));
+    },
+
+    /** El correo (vacío: sin correo) y los enlaces del bloque Contacto. */
+    async setContactLinks(email: string, rows: readonly LinkRow[]) {
+      const block = await blockOfType('contact');
+      const mail = email.trim();
+      if (mail && !isEmail(mail)) throw new AdminError(msg('admin.links.error.email'));
+      const parsed = parseLinks(rows);
+      if (!parsed.ok) throw new AdminError(parsed.error);
+      const next = { ...block, links: parsed.links };
+      if (mail) next.email = mail;
+      else delete next.email;
+      await repo.admin.draftUpsert('homeBlocks', next, opts(msg('admin.links.audit.contact')));
+    },
+
+    /** Los enlaces oficiales del pie (Instagram, TikTok, Spotify…). */
+    async setFooterLinks(rows: readonly LinkRow[]) {
+      const block = await blockOfType('footer');
+      const parsed = parseLinks(rows);
+      if (!parsed.ok) throw new AdminError(parsed.error);
+      await repo.admin.draftUpsert(
+        'homeBlocks',
+        { ...block, officialLinks: parsed.links },
+        opts(msg('admin.links.audit.footer')),
       );
     },
 

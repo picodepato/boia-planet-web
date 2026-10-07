@@ -17,7 +17,11 @@ import { BrandLogo } from './brand-logo';
 import { EventCard } from './event-card';
 import { HeroStills } from './hero-stills';
 import { MerchandiseCatalog } from '../../../lib/merchandise/catalog-view';
-import { MERCHANDISE_NOTICE, MERCHANDISE_PATH } from '../../../lib/merchandise/catalog';
+import {
+  MERCHANDISE_NOTICE,
+  MERCHANDISE_PATH,
+  merchandiseContact,
+} from '../../../lib/merchandise/catalog';
 
 /** Lista completa de artistas (v14 §18.1). */
 export const ARTISTS_PAGE = '/artistas';
@@ -384,7 +388,7 @@ export function BlockView({
             </h2>
             <p className="section__lead">{t('store.intro')}</p>
             <p className="merchandise-notice">{MERCHANDISE_NOTICE}</p>
-            <MerchandiseCatalog products={block.products} />
+            <MerchandiseCatalog products={block.products} contact={merchandiseContact(block)} />
             <Link
               className="button button--secondary"
               href={MERCHANDISE_PATH}

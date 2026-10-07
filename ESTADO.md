@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T192: Admin: editable store, contact and footer links
+
+Qué existe:
+- Admin, sección nueva «Enlaces» (`/admin#enlaces`, `apps/web/app/admin/sections/links.tsx`): el contacto de «Comprar» de la tienda (usuario de Instagram + enlace; los dos vacíos vuelven al de `products.json`), el correo y los enlaces del bloque Contacto y los enlaces oficiales del pie (etiqueta + dirección, añadir/quitar, hasta 8). Todo va al borrador de la home y sale en la web al «Publicar» (REQ-ADM-015).
+- Validación en `apps/web/lib/admin/links.ts`: sólo `http(s)` con dominio (nunca `javascript:`/`data:`/`mailto:`), etiqueta obligatoria (≤40), sin direcciones repetidas, filas vacías ignoradas, usuario de Instagram y correo; acciones `setStoreContact`, `setContactLinks`, `setFooterLinks` en `lib/admin/actions.ts`.
+- Contrato: `storeBlockSchema.contact` opcional (`packages/contracts/src/home-blocks.ts`). La tienda (home y `/tienda`) lee `merchandiseContact(block)` (lo del Admin o, sin nada, `products.json`). Pie y Contacto ya leían sus bloques.
+- Textos en `apps/web/lib/i18n/es-admin-enlaces.ts` (`muestra`). REQ-ADM-017 en `docs/spec/estado.md` enlaza las pruebas nuevas.
+- Sin migración: en modo Supabase la home sigue saliendo del repositorio local/muestra (nada lee `home_blocks`), y `home_blocks.config` es jsonb, así que el campo `contact` cabe sin cambios.
+
+Comandos:
+- `pnpm exec vitest run apps/web/lib/admin/links.test.ts` → 9 passed
+- `E2E_PORT=3871 pnpm e2e admin-enlaces.spec.ts --workers=1` → exit 0, 2 passed (mobile, desktop)
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 237 files, 2224 passed, 1 skipped
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 195.1 kB / 200 kB); `pnpm typecheck` → exit 0
+
+Pendiente:
+- Las etiquetas y direcciones reales las aprueba Álvaro; hasta entonces `muestra`.
+
 ## 2026-10-07 — plan 017 T201: Store rotating product images and buy-at-the-party message
 
 Qué existe:

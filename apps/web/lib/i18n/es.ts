@@ -7,6 +7,7 @@
  */
 import { esAcceso } from './es-acceso';
 import { esAdmin } from './es-admin';
+import { esAdminEnlaces } from './es-admin-enlaces';
 import { esAdminObjetos } from './es-admin-objetos';
 import { esAdminReal } from './es-admin-real';
 import { esCarnet } from './es-carnet';
@@ -28,7 +29,8 @@ export { LANDING_TEXT_KEYS } from './es-web';
  * lib/ (T49), la cuenta con email (es-cuenta.ts, plan 008) y el Carnet como
  * tarjeta con sus sellos (es-carnet.ts, plan 008 T91) y el Admin con cuentas
  * (es-admin-real.ts, T94), los objetos nuevos del Admin (es-admin-objetos.ts,
- * plan 017 T190) y la entrada con el Carnet 000, los códigos de respaldo y
+ * plan 017 T190), los enlaces editables (es-admin-enlaces.ts, plan 017
+ * T192) y la entrada con el Carnet 000, los códigos de respaldo y
  * «Descargar mis datos» (es-acceso.ts, plan 017 T193).
  */
 export const es = {
@@ -42,6 +44,7 @@ export const es = {
   ...esAdmin,
   ...esAdminReal,
   ...esAdminObjetos,
+  ...esAdminEnlaces,
   ...esLib,
   ...esCuenta,
   ...esCarnet,
