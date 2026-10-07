@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { ADMIN_CARNET_LABEL, DEMO_ADMIN_SESSION_KEY } from '../../lib/admin/demo-auth';
+import { FUENTE_EMOJI } from './fuente-emoji';
 
 /**
  * Ayudas de las capturas de la presentación (plan 018, `pnpm deck:capturas`).
@@ -32,12 +33,58 @@ const dosFotogramas = (page: Page) =>
     () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
   );
 
+const URL_EMOJI = '/__deck/noto-color-emoji.ttf';
+const conRutaEmoji = new WeakSet<Page>();
+
 /**
- * La pantalla lista para la foto: fuentes cargadas, sin pantalla de carga del
+ * Noto Color Emoji en la página (T209): Windows 10 no tiene los emoji nuevos
+ * (🪪). Se sirve la fuente que descarga `fuente-emoji.ts` y se añade, sólo
+ * para los emoji (`unicode-range`), a cada familia de fuentes de la página
+ * (las de next/font): el texto se ve igual y los emoji salen pintados. Se
+ * rehace en cada foto por si la página ha navegado o tiene fuentes nuevas.
+ */
+async function ponerEmoji(page: Page): Promise<void> {
+  if (!conRutaEmoji.has(page)) {
+    conRutaEmoji.add(page);
+    await page.route(`**${URL_EMOJI}`, (route) =>
+      route.fulfill({ path: FUENTE_EMOJI, contentType: 'font/ttf' }),
+    );
+  }
+  await page.evaluate(async (url) => {
+    const rango = 'U+200D, U+20E3, U+FE0F, U+1F000-1FAFF, U+E0020-E007F';
+    const limpia = (f: string) => f.trim().replace(/^["']|["']$/g, '');
+    const familias = new Set<string>(['DeckEmoji']);
+    document.fonts.forEach((f) => {
+      familias.add(limpia(f.family));
+    });
+    const css = [...familias]
+      .map(
+        (f) =>
+          `@font-face{font-family:"${f}";src:url("${url}") format("truetype");` +
+          'font-weight:1 1000;font-stretch:50% 200%;font-style:normal;font-display:block;' +
+          `unicode-range:${rango};}`,
+      )
+      .join('\n');
+    let estilo = document.getElementById('deck-emoji');
+    if (!estilo) {
+      estilo = document.createElement('style');
+      estilo.id = 'deck-emoji';
+      document.head.appendChild(estilo);
+    }
+    if (estilo.textContent !== css) estilo.textContent = css;
+    await Promise.all(
+      [...familias].map((f) => document.fonts.load(`20px "${f}"`, '\u{1FAAA}').catch(() => [])),
+    );
+  }, URL_EMOJI);
+}
+
+/**
+ * La pantalla lista para la foto: emoji nuevos (`ponerEmoji`), fuentes cargadas, sin pantalla de carga del
  * mar, imágenes visibles terminadas, los canvas con tamaño y un respiro para
  * que el 3D pinte.
  */
 export async function listo(page: Page, { respiro = 600 } = {}): Promise<void> {
+  await ponerEmoji(page);
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 45_000 });
   await page

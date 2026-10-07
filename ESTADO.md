@@ -4,6 +4,43 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T209: Part 6: Minigames
+
+Qué existe:
+
+- **Emoji nuevos en las capturas** (commit propio): `apps/web/e2e/deck/fuente-emoji.ts`
+  (`globalSetup` de `playwright.deck.config.ts`) descarga una vez Noto Color Emoji
+  (repositorio oficial de Google Fonts, `ofl/notocoloremoji`, SIL OFL, 25 MB) a
+  `apps/web/e2e/deck/.fuentes/` (ignorada por git). `deck-helpers.ts` la sirve con
+  `page.route` y, antes de cada foto (`listo`), añade un `@font-face` con
+  `unicode-range` de emoji a cada familia de `document.fonts`: el texto no cambia y los
+  emoji de Unicode 14+ salen pintados. Comprobado en el botón «🪪 Mi Carnet» de Logros.
+  Sin cambios en la web.
+- **Parte 6, 11 diapositivas** (`docs/presentacion/partes/06-minijuegos.ts`, 33–43 del
+  deck): portada; Los Rápidos (qué es + carrera y meta); Cañón (qué es, jugando con 3
+  capturas, jefes/armas/botín/medallas); Castillo (qué es + partida, construir y victoria
+  con Cañoncito); tabla «Dónde está cada juego y qué da»; «Qué falta» (4 necesarios, 2
+  pueden esperar); «Preguntas y propuestas». Notas en todas.
+- **12 capturas móviles** en `docs/presentacion/capturas/06-minijuegos/` desde
+  `apps/web/e2e/deck/06-minijuegos.deck.ts` (partidas de verdad llevadas al momento con
+  los atajos `?minijuego=…`; la carrera se pilota entera, ~2 min).
+
+Comandos:
+
+- `DECK_PORT=3265 pnpm deck:capturas 06` → exit 0, 10 passed (2.4 min); tras ajustar el
+  Cañón, `-g Cañón` → exit 0, 5 passed.
+- `pnpm deck` → exit 0 (47 diapositivas; 06-minijuegos 33–43, 11).
+- `pnpm deck:render` → exit 0 (47 páginas); miradas las 11 de la parte: nada cortado.
+- Python de `tools/spec/checks.sh` uno a uno → exit 0 los cinco; `pnpm lint` → 0;
+  `pnpm typecheck` → 0.
+
+Pendiente:
+
+- En las capturas de la carrera, los botones «Menú» y «!» tapan el borde izquierdo de las
+  tarjetas de salida y meta en el móvil (fallo de la web, no tocado: va en «qué falta»).
+- Necesarios para salir de la parte: quitar los atajos de prueba (y el botón «Derrota:
+  sumergirse»), arreglar ese solape, que Álvaro apruebe los tres juegos y fije los premios.
+
 ## 2026-10-07 — plan 018 T208: Parte 5, el océano `/mar`
 
 Qué existe:

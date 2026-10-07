@@ -20,6 +20,8 @@ const prefijo = parte ? `${parte}-` : '';
 
 export default defineConfig({
   testDir: './e2e/deck',
+  // Noto Color Emoji para los emoji que Windows 10 no tiene (T209): se descarga una vez.
+  globalSetup: './e2e/deck/fuente-emoji.ts',
   outputDir: './node_modules/.playwright-deck',
   fullyParallel: true,
   workers: 2,
