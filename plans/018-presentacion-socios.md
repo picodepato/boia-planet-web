@@ -1,6 +1,6 @@
 # Plan 018 — Partners deck: every feature of the site, what is missing to go live
 
-Status: active
+Status: done
 Created: 2026-10-07
 Base branch: main
 Goal: Hernán presents BOIA.PLANET to all BOIA partners. Build a PowerPoint (.pptx, ~60 slides, 8 parts) that walks every section of the site with mobile screenshots taken automatically: what each section is and has, what is missing before it can go live (each item tagged «Necesario para salir» or «Puede esperar»), and a closing «Preguntas y propuestas» slide per section. It mixes Álvaro's sign-off (what he must approve or provide) with an internal inventory, so the partners know what stands between today and publishing the site as soon as possible. No app code changes.
@@ -159,7 +159,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: part 1 = 5 slides (cover, what it is, map, status with QR), part 8 = 6 (roadmap: 35/35 items in 30 lines by who acts, global items, pending decisions, closing); qrcode helper in tools/deck; deck = 74 slides · 62eb182
 
 ## T212 — Whole-deck review and polish
-- Status: running (attempt 1)
+- Status: skipped
 - Depends on: T211
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -173,7 +173,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `docs/presentacion/boia-planet.pptx` ≤ 30 MB and the PDF exists; both paths given in the final message
   - the PDF copied to /tmp/orchestrator-attach/boia-planet-hernan-T212/
   - Test command → exit 0
-- Outcome:
+- Outcome: stopped by Hernán before the meeting; the deck as built on main (74 slides) was used
 
 ## Decisions
 - 2026-10-07 approval: plan 017 is integrated; the deck covers what it added and its open questions (Hernán)
@@ -201,6 +201,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T210: Admin captures all desktop; draft «Zarpar al mar» set before the inicio/vista-previa shots; «Admin content for everyone» tagged «Puede esperar»; section label «Todo el Admin» (agent)
 
 - 2026-10-07 T211: QR as an option of the text slide (qrcode 1.5.4); repeated items joined into one roadmap line naming their parts; «Parte» column with «global»; decisions slide asks «¿salir antes de Halloween (31-10)?» for Hernán to check (agent)
+
+- 2026-10-07 run: T212 stopped and skipped, plan closed; deck built from main copied to the Desktop for the meeting (Hernán)
 
 ## Proposals (new scope)
 - 2026-10-07 T210: Admin demo banner still says «Esto es una demo sin login» although sign-in with Carnet 000 exists since T193
@@ -233,3 +235,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 23:10 T210 done · branch worktree-agent-a61d9b9db7acdb0ce → 022bbf3
 - 2026-10-07 23:12 T211 launched · attempt 1 · agent a8785dc2a7910c33b · opus · may add a QR helper to tools/deck
 - 2026-10-07 23:25 T211 done · branch worktree-agent-a8785dc2a7910c33b → 62eb182
+- 2026-10-07 23:28 T212 launched · attempt 1 · agent a2188106382fbef4c · opus
+- 2026-10-07 23:40 T212 stopped by Hernán · plan closed
