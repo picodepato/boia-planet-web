@@ -72,7 +72,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: «Consigue descuentos» (`hero.explore.discountHint`) under Zarpar with a CSS-only glint every 8 s, off under reduced motion; landing 187.3 kB gzip; done by Codex + wrapper · 7635e98
 
 ## T193 — Account and Admin access: Carnet 000 sign-in, TOTP backup codes, data export
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Goal: Admin sign-in through Carnet 000 (decision 9); one-time TOTP backup codes for the Supabase admin; a signed-in user can download all their account data (REQ-IDE-050) (decision 6).
@@ -101,7 +101,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T191 — Admin: moderation of Carnets and the other sections with real data
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: Admin can moderate Carnets (hide/restore a public Carnet, its name and avatar) and the other user-generated sections (bottles, ranking entries) with real Supabase data, per REQ-ADM-031 (decision 5).
@@ -112,7 +112,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `E2E_PORT=<free> pnpm e2e admin-real.spec.ts <new moderation spec> --workers=1` (local/demo admin) → exit 0
   - the ESTADO section lists the migration and Supabase commands for Hernán
   - Test command → exit 0
-- Outcome:
+- Outcome: Admin hides/restores Carnets (whole, nickname, avatar) and voids/restores ranking scores (race, Cañón, Castillo) with a reason; originals kept in `private.carnet_moderation`; migration 20261007100200_moderation; REQ-ADM-031 FALTA → PARCIAL · 2ead693
 
 ## T192 — Admin: editable store, contact and footer links
 - Status: pending
@@ -238,6 +238,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T191: hidden nickname/avatar replaced in the row («Miembro de BOIA <nº>», no avatar), original in `private.carnet_moderation`, trigger blocks re-saving removed content; a hidden Carnet is unreadable to the public via RLS; removing needs a reason, restoring does not and never resolves reports; one RPC pair `admin_void_score`/`admin_restore_score` for all boards (Castillo gets void columns, its ranking function skips voided rows); real Moderación screen shows real Carnets (demo list removed); T186's `member-numbers-sql.test.ts` narrowed to member-number/`save_profile` changes (agent)
 - 2026-10-07 plan: T202 keeps only the sample posters; the techno sample photos are dropped, Hernán will upload the real event photos (Hernán)
 - 2026-10-07 plan: Hernán added decisions 8–12 mid-plan; T193 now also does Carnet 000 Admin sign-in; new T199, T201, T202 (Codex); T192 after T201 (same store area); T198 depends on all (orchestrator)
 - 2026-10-07 T188: the landing header had no ranking and lib/mundo/menu is never mounted → added «Ranking» to the header, opening a new `/ranking` page with the same panel; tabs «Carrera / Cañón / Castillo / Puntos» («De siempre» renamed to fit 390 px); race shows the circuit name, no dropdown; world display name «Mundo principal», /mar menu title omits the world when only one is playable; B05 «Botijo» (i18n, barcos.json, sample cosmetics, Supabase seed); Admin text «El puerto de salida (El Varadero).»; guest box on Cañón/Castillo boards shows the browser's own score and invites to sign in (agent)
@@ -245,6 +246,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T191: apply `20261007100200_moderation.sql` on boia-planet-dev, then `test:supabase` and `E2E_SUPABASE=1 … admin-real.spec.ts`; no per-answer moderation in Supabase; a voided Castillo score only comes back with a better score (`submit_castle_score` unchanged)
 - 2026-10-07 T188: on boia-planet-dev the seeded cosmetics keep «Arcilla, maqueta / · Noche / · Fiesta» (seed only inserts) → needs a manual UPDATE; sample achievement «Entre dos mundos» still says «Navega en Arcilla y en Acuarela»; `art/barco/*manifest.json` labels still «Arcilla, maqueta» (overridden on screen); Supabase ranking e2e not run
 - 2026-10-07 T189: Hernán applies `20261007100100_event_photos.sql` on boia-planet-dev, runs `db:types:dev` and `test:supabase` (new `event-photos.supabase.ts`) and tries an upload with `E2E_SUPABASE=1` (no Supabase e2e exists for it)
 - 2026-10-07 T189: IndexedDB image files are not deleted when a photo is binned or Admin resets to sample; photos uploaded in Supabase mode do not show in the Admin's local photo list
@@ -261,3 +263,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 15:52 T190 launched · attempt 1 · agent ac5abf7c0d1d9c934 · opus
 - 2026-10-07 15:52 T191 launched · attempt 1 · agent a63e2c276f934cb44 · opus
 - 2026-10-07 15:52 T193 and T192 held: Hernán asked for new Admin sign-in (Carnet 000 + password) and store changes; waiting for his answers
+- 2026-10-07 16:17 T191 done · worktree-agent-a63e2c276f934cb44 → 2ead693
+- 2026-10-07 16:18 T193 launched · attempt 1 · agent a2b88cd80a528a105 · opus (password only in the prompt)
