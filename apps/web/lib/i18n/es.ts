@@ -5,6 +5,7 @@
  * copy es `muestra` hasta que Álvaro lo apruebe (docs/spec/10-filosofia.md,
  * §31.2; docs/propuestas/textos-zonas.md).
  */
+import { esAcceso } from './es-acceso';
 import { esAdmin } from './es-admin';
 import { esAdminObjetos } from './es-admin-objetos';
 import { esAdminReal } from './es-admin-real';
@@ -25,8 +26,9 @@ export { LANDING_TEXT_KEYS } from './es-web';
  * textos-zonas.md y las claves del 2D, /mar, el Admin y los módulos de
  * lib/ (T49), la cuenta con email (es-cuenta.ts, plan 008) y el Carnet como
  * tarjeta con sus sellos (es-carnet.ts, plan 008 T91) y el Admin con cuentas
- * (es-admin-real.ts, T94) y los objetos nuevos del Admin (es-admin-objetos.ts,
- * plan 017 T190).
+ * (es-admin-real.ts, T94), los objetos nuevos del Admin (es-admin-objetos.ts,
+ * plan 017 T190) y la entrada con el Carnet 000, los códigos de respaldo y
+ * «Descargar mis datos» (es-acceso.ts, plan 017 T193).
  */
 export const es = {
   ...esWeb,
@@ -41,6 +43,7 @@ export const es = {
   ...esLib,
   ...esCuenta,
   ...esCarnet,
+  ...esAcceso,
 } as const;
 
 export type MessageKey = keyof typeof es;

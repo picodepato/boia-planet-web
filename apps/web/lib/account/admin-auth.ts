@@ -4,9 +4,17 @@
  * primera vez se da de alta el TOTP con el QR de la app de autenticación.
  * Sin rol del equipo no se pide TOTP: «sin acceso».
  *
+ * Plan 017 T193 (decisión 9): el Admin entra con el Carnet 000 y la
+ * contraseña de su cuenta, y después el TOTP; si pierde el móvil, un código
+ * de respaldo de un solo uso quita el TOTP y da de alta otro. El código del
+ * email sigue para el resto del equipo.
+ *
  * Usa el mismo cliente del navegador que la cuenta (`accountClient`): la
  * sesión del Admin es la de la cuenta con email.
  */
+import type { BackupCodeUse, BackupCodesResult } from '@boia/db/rpc';
+import { normalizeBackupCode } from '../admin/backup-codes';
+import { ADMIN_CARNET_NUMBER, parseCarnetNumber } from '../admin/demo-auth';
 import type { BoiaSupabase } from '../supabase/browser';
 import { accountClient } from './session';
 
@@ -76,6 +84,65 @@ export async function sendAdminCode(email: string): Promise<void> {
     return;
   }
   throw error;
+}
+
+/** El Carnet o la contraseña no valen (no se dice cuál). */
+export class WrongCarnetLogin extends Error {
+  constructor() {
+    super('wrong_carnet_login');
+  }
+}
+
+/**
+ * Entrar con el Carnet 000 y la contraseña de su cuenta (plan 017 T193,
+ * decisión 9). El servidor da el email de la cuenta del Carnet 000 (sólo de
+ * ese número) y Supabase Auth comprueba la contraseña; después va el TOTP.
+ */
+export async function signInWithCarnet(carnet: string, password: string): Promise<void> {
+  const number = parseCarnetNumber(carnet);
+  if (number !== ADMIN_CARNET_NUMBER || !password) throw new WrongCarnetLogin();
+  const sb = await client();
+  const { data: email, error } = await sb.rpc('admin_sign_in_email', { p_number: number });
+  if (error) throw error;
+  if (!email) throw new WrongCarnetLogin();
+  const res = await sb.auth.signInWithPassword({ email, password });
+  if (res.error) {
+    const code = (res.error as { code?: string }).code ?? '';
+    if (code === 'invalid_credentials' || /invalid login credentials/i.test(res.error.message)) {
+      throw new WrongCarnetLogin();
+    }
+    throw res.error;
+  }
+}
+
+/**
+ * Usa un código de respaldo (con la contraseña ya puesta, aal1): el TOTP
+ * perdido se quita y el paso siguiente da de alta uno nuevo. Devuelve los
+ * que quedan; un código que no vale o ya se usó lanza.
+ */
+export async function redeemBackupCode(code: string): Promise<number> {
+  const sb = await client();
+  const { data, error } = await sb.rpc('admin_use_backup_code', {
+    p_code: normalizeBackupCode(code),
+  });
+  if (error) throw error;
+  return (data as unknown as BackupCodeUse).left;
+}
+
+/** 10 códigos nuevos (los anteriores dejan de valer). Se enseñan una vez. */
+export async function generateBackupCodes(): Promise<string[]> {
+  const sb = await client();
+  const { data, error } = await sb.rpc('admin_generate_backup_codes');
+  if (error) throw error;
+  return (data as unknown as BackupCodesResult).codes;
+}
+
+/** Los códigos de respaldo que quedan sin usar. */
+export async function backupCodesLeft(): Promise<number> {
+  const sb = await client();
+  const { data, error } = await sb.rpc('admin_backup_codes_left');
+  if (error) throw error;
+  return data ?? 0;
 }
 
 export async function verifyAdminCode(email: string, token: string): Promise<void> {

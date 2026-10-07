@@ -63,7 +63,7 @@ reglas, en [`CLAUDE.md`](../CLAUDE.md).
 | `/juego` | Ya no existe (D-25, plan 005 T62): el mundo 2D (PixiJS) se borró y la ruta redirige a `/mar` con su consulta (`?ir=`, `?evento=`, `?menu=`) |
 | `/carnet` | Carnet BOIA como carné de identidad (plan 008): tarjeta naranja ID-1, delante el socio con su QR, detrás los sellos como en un pasaporte; con cuentas, «Escanear sello» y «Tu cuenta» (noticias, cerrar sesión, borrar). `/carnet/<id>`: el Carnet público, sin email |
 | `/sello` | El QR de una fiesta (`/sello?e=<evento>&c=<código>`, plan 008): con cuentas, pide el email y pone el sello (+50 puntos `muestra`) dentro de la ventana de la fiesta; en modo local explica que hacen falta cuentas |
-| `/admin` | Modo local: Admin sin login (D-20): eventos, descuentos, fotos, textos, artistas (con su Spotify), mundo activo, integraciones (sólo lectura), «Volver todo a la muestra». Con cuentas: código del email + TOTP y rol (`pnpm admin:grant`), y Fiestas y QR, Socios y emails, Moderación de botellas y Rankings sobre datos reales |
+| `/admin` | Modo local (D-20): Carnet 000 + contraseña (hash con sal en `lib/admin/demo-auth.ts`, plan 017 T193): eventos, descuentos, fotos, textos, artistas (con su Spotify), mundo activo, integraciones (sólo lectura), «Volver todo a la muestra». Con cuentas: Carnet 000 + contraseña (o código del email) + TOTP y rol (`pnpm admin:grant`), códigos de respaldo en «Seguridad», y Fiestas y QR, Socios y emails, Moderación de botellas y Rankings sobre datos reales |
 | `/legal/*` | Aviso legal, privacidad (con cuentas, qué se recoge y para qué) y cookies, con datos **inventados** y aviso arriba |
 | `/api/art` | Sirve el arte de `art/` (D-16), también el atrezzo del hero (`art/landing/3d`) |
 

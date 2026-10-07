@@ -29,9 +29,20 @@ describe('números de socio por orden de llegada (T186)', () => {
       (f) => f > FILE,
     );
     // Leer el número (rankings, moderación T191) no lo toca: cambiarlo, el
-    // contador o redefinir save_profile, sí.
+    // contador o redefinir save_profile, sí. El Carnet 000 del Admin (plan
+    // 017 T193) sólo pone el 0 a la cuenta del Admin, con el cerrojo del
+    // contador y sin tocarlo (lo comprueba admin-access-sql.test.ts).
+    const CARNET_ZERO = '20261007100400_admin_access_export.sql';
     for (const f of later) {
-      expect(read(`supabase/migrations/${f}`)).not.toMatch(
+      const text = read(`supabase/migrations/${f}`);
+      if (f === CARNET_ZERO) {
+        expect(text).not.toMatch(
+          /function (public|private)\.save_profile|next_member_number|alter column member_number|update private\.member_counter/,
+        );
+        expect([...text.matchAll(/set member_number = (\S+)/g)].map((m) => m[1])).toEqual(['0']);
+        continue;
+      }
+      expect(text).not.toMatch(
         /function (public|private)\.save_profile|next_member_number|member_counter|alter column member_number|set member_number/,
       );
     }

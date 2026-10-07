@@ -1886,6 +1886,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      admin_backup_codes_left: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       admin_artist_link_info: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -1902,6 +1906,10 @@ export type Database = {
           p_report: string;
           p_reason?: string;
         };
+        Returns: Json;
+      };
+      admin_generate_backup_codes: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       admin_list_carnets: {
@@ -2013,6 +2021,18 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_sign_in_email: {
+        Args: {
+          p_number: number;
+        };
+        Returns: string | null;
+      };
+      admin_use_backup_code: {
+        Args: {
+          p_code: string;
+        };
+        Returns: Json;
+      };
       admin_void_points: {
         Args: {
           p_tx: string;
@@ -2036,6 +2056,12 @@ export type Database = {
           p_circuit: string;
           p_version: number;
           p_reason: string;
+        };
+        Returns: Json;
+      };
+      assign_admin_carnet: {
+        Args: {
+          p_user: string;
         };
         Returns: Json;
       };
@@ -2066,6 +2092,10 @@ export type Database = {
       delete_my_account: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
+      };
+      export_my_data: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
       };
       equip_cosmetic: {
         Args: {

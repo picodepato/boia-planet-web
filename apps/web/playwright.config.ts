@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { demoAdminStorageState } from './e2e/admin-session';
 import { E2E_SUPABASE, webServerSupabaseEnv } from './e2e/supabase-env';
 
 /**
@@ -27,6 +28,9 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: 'retain-on-failure',
+    // /admin de la demo pide el Carnet 000 (plan 017 T193): las e2e entran
+    // con la sesión ya puesta; admin-acceso.spec.ts prueba la puerta sin ella.
+    storageState: demoAdminStorageState(BASE_URL),
   },
   projects: [
     {

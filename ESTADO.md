@@ -4,6 +4,93 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T193: Admin Carnet 000 sign-in, TOTP backup codes and account export
+
+Qué existe (decisiones 6 y 9; REQ-IDE-050 sube a HECHO; REQ-ADM-002 y REQ-ADM-039 con nota nueva):
+
+- **Admin de la demo (modo local, D-20)**: `/admin` pide el **Carnet 000 y una contraseña**
+  (`app/admin/demo-gate.tsx`). La contraseña se comprueba en el navegador con PBKDF2-SHA-256
+  (Web Crypto, 310 000 vueltas, sal de 16 bytes) contra el hash de
+  `apps/web/lib/admin/demo-auth.ts` (`DEMO_ADMIN_PASSWORD`); el texto no está en el repo. La
+  sesión es una marca en localStorage (`boia.admin.demo`, 12 h); «Salir del Admin» en el aviso
+  de la demo la quita. Es una puerta de la demo, no seguridad (todo es del navegador).
+  Cambiar la contraseña: calcular otro hash con sal nueva y sustituir `salt`/`hash`.
+- **Admin con cuentas**: la entrada empieza por **Carnet 000 + contraseña de su cuenta**
+  (`signInWithCarnet` en `lib/account/admin-auth.ts`): `admin_sign_in_email(0)` da el email de la
+  cuenta del Carnet 000 (sólo si es admin/owner; para otro número, null) y Supabase Auth comprueba
+  la contraseña; después, el TOTP de siempre (aal2). «Soy del equipo: entrar con el código del
+  email» deja el camino de antes para el resto del equipo. En el paso del TOTP, «¿Sin el móvil?
+  Usa un código de respaldo».
+- **Códigos de respaldo**: sección «Seguridad» del Admin con cuentas (`app/admin/real/seguridad.tsx`):
+  genera 10 de un solo uso (`XXXXX-XXXXX`, 50 bits, alfabeto sin I/O/0/1), se enseñan una vez con
+  descarga .txt; la base sólo guarda sal + SHA-256. Usar uno (con la contraseña ya puesta, aal1)
+  lo marca usado, **borra el TOTP perdido** (`auth.mfa_factors`) y la pantalla da de alta otro con
+  su QR.
+- **Carnet 000 reservado**: el contador de socios (T186) ya empieza en 1; ahora además
+  `check (member_number >= 0)` y el disparador `carnets_zero_reserved` impiden que un alta o un
+  cambio dé el 0 a una cuenta que no sea admin/owner; `admin_set_member_number` ya rechazaba < 1.
+  Sólo `assign_admin_carnet(p_user)` (service_role / editor SQL) lo da, con auditoría; el número
+  anterior del Admin queda libre (un hueco que el Admin puede reutilizar a mano).
+- **«Descargar mis datos»** (REQ-IDE-050): botón bajo el Carnet propio (`/carnet` y el Carnet de
+  /mar). Modo local: JSON con identidad, Carnet, saldos, libro, logros, cosméticos, equipados,
+  sellos, descubrimientos, descuentos encontrados, compras y botella propios
+  (`lib/account/export-data.ts`; nada de miembros de muestra ni de otros; `stripSecrets` quita
+  claves de contraseña/token/TOTP/códigos). Con cuenta, añade `server` = `export_my_data()`: cada
+  tabla filtrada por `auth.uid()`, sin ids de otras personas (`moderated_by`, `voided_by`,
+  `resolved_by`, `granted_by`, `created_by`) ni secretos.
+- **Migración `supabase/migrations/20261007100400_admin_access_export.sql`** (sin aplicar):
+  restricción y disparador del Carnet 000, `assign_admin_carnet`, `admin_sign_in_email` (lo único
+  para anon), tabla `private.admin_backup_codes`, `admin_generate_backup_codes`,
+  `admin_use_backup_code`, `admin_backup_codes_left`, `export_my_data`. Tipos a mano en
+  `packages/db/src/database.types.ts`, rechazos nuevos en `rpc.ts`. Pruebas contra la base:
+  `packages/db/src/supabase/admin-access.supabase.ts`.
+- e2e: `playwright.config.ts` pone la marca de la sesión del Admin de la demo en todas las e2e
+  (`e2e/admin-session.ts`), así las que abren /admin siguen igual; `admin-acceso.spec.ts` prueba
+  la puerta sin ella. `admin-real.spec.ts` (Supabase) pulsa «entrar con el código del email».
+- Textos por clave en `apps/web/lib/i18n/es-acceso.ts` (`muestra`).
+
+Lo que Hernán hace en `boia-planet-dev` (y después en producción):
+
+1. Aplicar la migración: `pnpm db:migrate:dev -- --no-seed` y regenerar tipos con
+   `pnpm db:types:dev` (deberían coincidir con los escritos a mano).
+2. La cuenta del Admin (rol admin u owner con `pnpm admin:grant -- <email> owner`) necesita
+   Carnet y contraseña: crear el Carnet entrando en la web; poner la contraseña en el panel
+   (Authentication → Users → la cuenta → «Reset password»/«Update user») o con
+   `auth.admin.updateUserById`. Recomendado: una cuenta dedicada al Admin, porque cualquiera que
+   escriba «000» puede saber su email (`admin_sign_in_email`).
+3. Darle el Carnet 000, en el editor SQL:
+   `select private.assign_admin_carnet((select id from auth.users where email = '<email>'));`
+4. Entrar en /admin con 000 + contraseña + TOTP y generar los códigos en «Seguridad».
+5. `pnpm test:supabase` (incluye `admin-access.supabase.ts`; si el 000 ya es de la cuenta de
+   verdad, esas pruebas sólo comprueban que no se puede quitar) y
+   `E2E_SUPABASE=1 E2E_PORT=<libre> pnpm e2e admin-real.spec.ts --workers=1`.
+
+Comandos y resultado (en esta máquina, modo local):
+
+- `pnpm exec vitest run apps/web/lib/admin/demo-auth.test.ts apps/web/lib/account/` → 0 fallos
+  (sin `ADMIN_DEMO_PASSWORD` se salta 1 caso; con la variable en la terminal, 12/12).
+- `ADMIN_DEMO_PASSWORD=… E2E_PORT=3193 pnpm e2e admin-acceso.spec.ts cuenta-exportar.spec.ts
+  admin.spec.ts carnet.spec.ts --workers=1` → exit 0, 14 passed.
+- Especificaciones que abren /admin (admin-endurecido, admin-fotos, admin-moderacion,
+  ciclo-evento, descuentos, eventos, tipografia, entrega, comunidad, mar-a-bordo, record-eventos)
+  con la sesión puesta (`E2E_PORT=3194 … --workers=2`): exit 0, 74 passed, 6 skipped.
+- Búsqueda de la contraseña en claro en el worktree → sin coincidencias.
+- Comando de pruebas del plan, paso a paso: vitest exit 0 (227 archivos, 2142 passed, 1 skipped);
+  `tools/spec/checks.sh` exit 0; `pnpm lint` exit 0; `pnpm build` exit 0 (landing 187.9 kB gzip);
+  `pnpm typecheck` exit 0.
+- Tras fusionar main (T190, «Objetos»; conflictos en `admin.css` y `i18n/es.ts`, se quedan los
+  dos): vitest exit 0 (229 archivos, 2174 passed, 1 skipped); checks, lint, build (187.9 kB) y
+  typecheck exit 0; `ADMIN_DEMO_PASSWORD=… E2E_PORT=3193 pnpm e2e admin-acceso.spec.ts
+  cuenta-exportar.spec.ts admin.spec.ts admin-objeto.spec.ts --workers=1` → exit 0, 10 passed;
+  contraseña en claro → sin coincidencias.
+
+Pendiente:
+
+- Aplicar la migración y correr `pnpm test:supabase` (Hernán, arriba): las pruebas contra la
+  base no se han corrido en esta máquina.
+- `/admin/vista-previa` (vista previa del borrador) no pasa por la puerta del Carnet 000; sólo
+  enseña el borrador de este navegador.
+
 ## 2026-10-07 — plan 017 T194: Ranking and stamp gaps from plan 008
 
 Done by Codex + wrapper (wrapper only removed nothing of substance; no code changes of its own).

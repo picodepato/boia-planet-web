@@ -26,6 +26,7 @@ import { RealCarnets } from './real/carnets';
 import { type RealAdmin, RealAdminProvider } from './real/common';
 import { FiestasSection } from './real/fiestas';
 import { RankingsSection } from './real/rankings';
+import { SecuritySection } from './real/seguridad';
 import { SociosSection } from './real/socios';
 import { type AdminContext, useAdminContext } from './use-admin';
 import { t } from '../../lib/i18n';
@@ -82,6 +83,11 @@ const REAL_SECTIONS: Section[] = SECTIONS.flatMap((s): Section[] => {
     ];
   }
   return [s];
+}).concat({
+  // Códigos de respaldo del TOTP (plan 017 T193).
+  id: 'seguridad',
+  label: t('admin.real.nav.seguridad'),
+  Component: SecuritySection,
 });
 
 function sectionFromHash(sections: readonly Section[]): string {
@@ -90,15 +96,20 @@ function sectionFromHash(sections: readonly Section[]): string {
 }
 
 /**
- * El Admin de la demo (T26, D-20, REQ-ADM-039): sin login, con un aviso
+ * El Admin de la demo (T26, D-20, REQ-ADM-039): con un aviso
  * permanente de que es una prueba y de que los cambios se quedan en este
  * navegador. Lee y escribe el repositorio local, el mismo que la landing y
- * el mar: lo que se cambia aquí se ve allí, en este navegador.
+ * el mar: lo que se cambia aquí se ve allí, en este navegador. Desde el
+ * plan 017 T193 (decisión 9) se entra con el Carnet 000 y su contraseña
+ * (`demo-gate.tsx`); `demo.signOut` sale.
  *
  * Con cuentas (`real`, T94) se llega aquí tras el código del email y el
  * TOTP (`real/gate.tsx`), y cuatro secciones van sobre datos reales.
  */
-export function AdminApp({ real }: { real?: RealAdmin } = {}) {
+export function AdminApp({
+  real,
+  demo,
+}: { real?: RealAdmin; demo?: { signOut: () => void } } = {}) {
   const ctx = useAdminContext();
   const sections = real ? REAL_SECTIONS : SECTIONS;
   const [active, setActive] = useState(sections[0]!.id);
@@ -134,6 +145,19 @@ export function AdminApp({ real }: { real?: RealAdmin } = {}) {
             <strong>{ADMIN_COPY.bannerTitle}.</strong> {ADMIN_COPY.banner}
             {storage?.message ? (
               <span className="admin-banner__warn"> {storage.message}</span>
+            ) : null}
+            {demo ? (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  className="admin-link"
+                  data-testid="admin-salir"
+                  onClick={demo.signOut}
+                >
+                  {t('admin.demoLogin.signOut')}
+                </button>
+              </>
             ) : null}
           </div>
         )}

@@ -96,6 +96,10 @@ export const RPC_REJECTIONS = [
   'invalid_status',
   'bottle_conflict',
   'invalid_board',
+  // Acceso del Admin con el Carnet 000 y códigos de respaldo (plan 017 T193)
+  'carnet_zero_reserved',
+  'not_admin',
+  'backup_code_invalid',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -368,4 +372,15 @@ export interface VoidedEntry {
   value: number;
   voided_at: string;
   void_reason: string | null;
+}
+
+/** admin_generate_backup_codes (plan 017 T193): se enseñan una vez. */
+export interface BackupCodesResult {
+  codes: string[];
+  created_at: string;
+}
+
+/** admin_use_backup_code (plan 017 T193): los que quedan sin usar. */
+export interface BackupCodeUse {
+  left: number;
 }

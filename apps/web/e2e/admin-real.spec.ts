@@ -262,6 +262,9 @@ test('/admin con cuentas: código + TOTP y las cuatro secciones sobre datos real
       route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
     );
     await page.goto('/admin');
+    // Lo primero es el Carnet 000 (plan 017 T193); el equipo entra con el email.
+    await expect(page.getByTestId('admin-login-carnet')).toBeVisible();
+    await page.getByTestId('admin-login-usar-email').click();
     await page.getByTestId('admin-login-email').fill(admin.email);
     await page.getByTestId('admin-login-enviar').click();
     await expect(page.getByTestId('admin-login-enviado')).toBeVisible();

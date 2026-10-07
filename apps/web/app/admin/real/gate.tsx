@@ -7,13 +7,17 @@ import {
   type TotpEnrollment,
   adminSignOut,
   adminStep,
+  WrongCarnetLogin,
   enrollTotp,
+  redeemBackupCode,
   sendAdminCode,
+  signInWithCarnet,
   verifiedTotp,
   verifyAdminCode,
   verifyTotp,
 } from '../../../lib/account/admin-auth';
 import { authProblem, looksLikeEmail } from '../../../lib/account/errors';
+import { looksLikeBackupCode } from '../../../lib/admin/backup-codes';
 import { t } from '../../../lib/i18n';
 import { AdminApp } from '../admin-app';
 
@@ -23,6 +27,10 @@ type GateState = AdminStep | { step: 'loading' } | { step: 'error' };
  * /admin con cuentas (T94, decisión 11): el código del email, después el
  * TOTP (alta con QR la primera vez) y dentro. Sin rol del equipo, «sin
  * acceso». Sin Supabase no se usa: /admin es la demo local de siempre.
+ *
+ * Plan 017 T193 (decisión 9): lo primero es el Carnet 000 con la contraseña
+ * de su cuenta; el código del email queda para el resto del equipo. En el
+ * paso del TOTP, un código de respaldo de un solo uso da de alta otro.
  */
 export function RealAdminGate() {
   const [state, setState] = useState<GateState>({ step: 'loading' });
@@ -55,7 +63,7 @@ export function RealAdminGate() {
           {t('admin.real.login.loadError')}
         </p>
       ) : null}
-      {state.step === 'email' ? <EmailCode onDone={refresh} /> : null}
+      {state.step === 'email' ? <SignIn onDone={refresh} /> : null}
       {state.step === 'mfa' ? (
         <Totp email={state.email} onDone={refresh} onSignOut={signOut} />
       ) : null}
@@ -107,6 +115,84 @@ function problemText(e: unknown, sentAt: number | null): string {
     default:
       return t('admin.real.login.unknown');
   }
+}
+
+function SignIn({ onDone }: { onDone: () => Promise<void> }) {
+  const [mode, setMode] = useState<'carnet' | 'email'>('carnet');
+  return (
+    <>
+      {mode === 'carnet' ? <CarnetPassword onDone={onDone} /> : <EmailCode onDone={onDone} />}
+      <button
+        type="button"
+        className="admin-link"
+        data-testid={mode === 'carnet' ? 'admin-login-usar-email' : 'admin-login-usar-carnet'}
+        onClick={() => setMode(mode === 'carnet' ? 'email' : 'carnet')}
+      >
+        {mode === 'carnet' ? t('admin.real.carnet.useEmail') : t('admin.real.carnet.useCarnet')}
+      </button>
+    </>
+  );
+}
+
+function CarnetPassword({ onDone }: { onDone: () => Promise<void> }) {
+  const [carnet, setCarnet] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithCarnet(carnet, password);
+      await onDone();
+    } catch (err) {
+      setError(
+        err instanceof WrongCarnetLogin ? t('admin.real.carnet.wrong') : problemText(err, null),
+      );
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <h2>{t('admin.real.carnet.title')}</h2>
+      <p className="admin-lead">{t('admin.real.carnet.lead')}</p>
+      <form className="admin-form" onSubmit={(e) => void submit(e)}>
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.real.carnet.number')}</span>
+          <input
+            inputMode="numeric"
+            autoComplete="username"
+            placeholder="000"
+            value={carnet}
+            onChange={(e) => setCarnet(e.target.value)}
+            data-testid="admin-login-carnet"
+          />
+        </label>
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.real.carnet.password')}</span>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            data-testid="admin-login-password"
+          />
+        </label>
+        <button
+          type="submit"
+          className="admin-button"
+          disabled={busy || !carnet.trim() || !password}
+          data-testid="admin-login-carnet-entrar"
+        >
+          {t('admin.real.carnet.enter')}
+        </button>
+      </form>
+      <ErrorLine text={error} />
+    </>
+  );
 }
 
 function EmailCode({ onDone }: { onDone: () => Promise<void> }) {
@@ -229,27 +315,72 @@ function Totp({
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [backup, setBackup] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const started = useRef(false);
+
+  // El TOTP verificado o, si no hay (primera vez o tras un código de
+  // respaldo), un alta nueva con su QR.
+  const start = useCallback(async () => {
+    try {
+      const verified = await verifiedTotp();
+      if (verified) {
+        setFactor(verified);
+        return;
+      }
+      const e = await enrollTotp();
+      setEnrollment(e);
+      setFactor(e.factorId);
+    } catch (err) {
+      console.warn('[boia] admin: TOTP', err);
+      setError(t('admin.real.totp.setupError'));
+    }
+  }, []);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    void (async () => {
-      try {
-        const verified = await verifiedTotp();
-        if (verified) {
-          setFactor(verified);
-          return;
-        }
-        const e = await enrollTotp();
-        setEnrollment(e);
-        setFactor(e.factorId);
-      } catch (err) {
-        console.warn('[boia] admin: TOTP', err);
-        setError(t('admin.real.totp.setupError'));
-      }
-    })();
-  }, []);
+    void start();
+  }, [start]);
+
+  const submitBackup = async (backupCode: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const left = await redeemBackupCode(backupCode);
+      setBackup(false);
+      setFactor(null);
+      setEnrollment(null);
+      setCode('');
+      setNotice(t('admin.real.backup.used', { left }));
+      await start();
+    } catch {
+      setError(t('admin.real.backup.wrong'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (backup) {
+    return (
+      <>
+        <h2>{t('admin.real.backup.useTitle')}</h2>
+        <p className="admin-meta">{t('admin.real.signedInAs', { email: email ?? '—' })}</p>
+        <BackupCodeForm busy={busy} onSubmit={(c) => void submitBackup(c)} />
+        <ErrorLine text={error} />
+        <button
+          type="button"
+          className="admin-link"
+          onClick={() => {
+            setBackup(false);
+            setError(null);
+          }}
+        >
+          {t('admin.real.backup.back')}
+        </button>
+      </>
+    );
+  }
 
   const verify = async (e: FormEvent) => {
     e.preventDefault();
@@ -315,11 +446,64 @@ function Totp({
           </button>
         </form>
       ) : null}
+      {notice ? (
+        <p className="admin-status" role="status" data-testid="admin-respaldo-aceptado">
+          {notice}
+        </p>
+      ) : null}
       <ErrorLine text={error} />
+      {!enrollment ? (
+        <button
+          type="button"
+          className="admin-link"
+          data-testid="admin-respaldo-usar"
+          onClick={() => {
+            setBackup(true);
+            setError(null);
+          }}
+        >
+          {t('admin.real.backup.useLink')}
+        </button>
+      ) : null}
       <button type="button" className="admin-link" onClick={() => void onSignOut()}>
         {t('admin.real.signOut')}
       </button>
     </>
+  );
+}
+
+function BackupCodeForm({ busy, onSubmit }: { busy: boolean; onSubmit: (code: string) => void }) {
+  const [code, setCode] = useState('');
+  return (
+    <form
+      className="admin-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(code);
+      }}
+    >
+      <p className="admin-lead">{t('admin.real.backup.useLead')}</p>
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.real.backup.code')}</span>
+        <input
+          autoComplete="one-time-code"
+          autoCapitalize="characters"
+          spellCheck={false}
+          maxLength={16}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          data-testid="admin-respaldo-codigo"
+        />
+      </label>
+      <button
+        type="submit"
+        className="admin-button"
+        disabled={busy || !looksLikeBackupCode(code)}
+        data-testid="admin-respaldo-entrar"
+      >
+        {t('admin.real.backup.use')}
+      </button>
+    </form>
   );
 }
 

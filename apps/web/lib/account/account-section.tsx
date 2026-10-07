@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../i18n';
 import './account.css';
+import { AccountExportButton } from './export-button';
 import { trapTab } from './focus';
 import { accountLayer } from './layer';
 import { resetLocalGuest } from './guest';
@@ -15,13 +16,24 @@ import { showAccountNotice, useAccount } from './use-account';
  * T87): el email (sólo lo ve su dueño), las noticias de BOIA (se quitan con
  * un toque, decisión 3), cuándo se aceptó la política, cerrar sesión y
  * borrar la cuenta escribiendo el apodo. Al salir o borrar, este navegador
- * vuelve a ser un invitado nuevo. Sin sesión (o en modo local) no pinta nada.
+ * vuelve a ser un invitado nuevo. Sin sesión no pinta nada.
+ *
+ * «Descargar mis datos» (plan 017 T193, REQ-IDE-050): con cuenta, aquí; en
+ * modo local (D-20), es lo único que se pinta (sólo va bajo el Carnet propio).
  */
 export function AccountSection() {
   const account = useAccount();
   const [saved, setSaved] = useState<'saved' | 'error' | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  if (account.status === 'local') {
+    return (
+      <section className="cuenta" data-testid="cuenta-local" aria-labelledby="cuenta-local-titulo">
+        <h3 id="cuenta-local-titulo">{t('account.export.button')}</h3>
+        <AccountExportButton withAccount={false} />
+      </section>
+    );
+  }
   if (account.status !== 'member' && account.status !== 'incomplete') return null;
 
   const news = account.consents.news?.granted ?? false;
@@ -75,6 +87,7 @@ export function AccountSection() {
           })}
         </p>
       ) : null}
+      <AccountExportButton withAccount />
       <div className="cuenta__actions">
         <button
           type="button"
