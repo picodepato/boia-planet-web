@@ -110,7 +110,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: 14 slides piece by piece (arrival, boat and shop, islands, Fiestera, characters, secrets, discounts, HUD), one «qué falta» + «preguntas y propuestas» («Todo el mar»), 22 captures · f54bcff
 
 ## T209 — Part 6: Minigames
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -124,7 +124,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of part 6: nothing overflows or is cut
   - 3 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T209/
   - Test command → exit 0
-- Outcome:
+- Outcome: Noto Color Emoji injected into deck captures (font in ignored apps/web/e2e/deck/.fuentes/); part 6 = 11 slides incl. a «Dónde está cada juego y qué da» table, 12 gameplay captures · 65be42d
 
 ## T210 — Part 7: Admin
 - Status: running (attempt 1)
@@ -194,7 +194,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 
 - 2026-10-07 T208: one «qué falta»/«preguntas» for the whole world; help button is «!» in the app so slides say «!»; L'Illeta only as a bullet (budget); boat-shop capture scrolled past the «Acuarela ilustrada» row (agent)
 
+- 2026-10-07 T209: Noto Color Emoji taken from github.com/google/fonts (ofl/notocoloremoji, 25 MB; noto-emoji repo no longer ships it), added as emoji-only fallback before each shot; 11th slide with where each game is and what it gives; game captures use dev shortcuts, race driven for real (agent)
+
 ## Proposals (new scope)
+- 2026-10-07 T209: on mobile the «Menú» and «!» buttons cover the left edge of the race start/finish cards (app bug; listed in «qué falta»)
 - 2026-10-07 T208: the boat shop shows a boat «Acuarela ilustrada · De serie» although Acuarela is hidden (app text)
 - 2026-10-07 T208: `island.secretHint` («Por aquí cerca huele a secreto») is defined but never shown in /mar
 - 2026-10-07 T205: the Admin cannot edit the Filosofía text
@@ -216,3 +219,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 22:05 T207 done · branch worktree-agent-a4413a0b26814587c → 6100627
 - 2026-10-07 22:08 T209 launched · attempt 1 · agent ac5c3a5bb0c50520c · opus · DECK_PORT 3265 · emoji font first
 - 2026-10-07 22:40 T208 done · branch worktree-agent-a15d4a39f1e9e9d1d → f54bcff (binaries kept main's side via merge=ours)
+- 2026-10-07 22:42 T210 launched · attempt 1 · agent a61d9b9db7acdb0ce · opus · DECK_PORT 3275
+- 2026-10-07 23:00 T209 done · branch worktree-agent-ac5c3a5bb0c50520c → 65be42d
