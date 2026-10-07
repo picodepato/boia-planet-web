@@ -9,6 +9,7 @@ import { mkdirSync, mkdtempSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { heroZarpar, tap } from './hero-helpers';
 
 /**
  * Grabación del título 3D «BOIA» de la entrada (T27) para la revisión visual.
@@ -53,7 +54,7 @@ function contextOptions(info: TestInfo, baseURL: string | undefined): BrowserCon
 }
 
 test('grabación del título 3D', async ({ baseURL }, info) => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000); // la GPU por software es lenta
   const vp = info.project.use.viewport!;
   const tmp = mkdtempSync(path.join(tmpdir(), 'boia-titulo-'));
   const ctx = await gpu.newContext({
@@ -73,7 +74,7 @@ test('grabación del título 3D', async ({ baseURL }, info) => {
   const name = NAME[info.project.name];
   await page.screenshot({ path: path.join(OUT, `p002-t27-titulo-${name}.png`) });
   await page.waitForTimeout(2500);
-  await page.getByRole('button', { name: 'Zarpar' }).click();
+  await tap(page, heroZarpar(page));
   await page.waitForFunction(() => window.__boiaIntro?.phase === 'landed', null, {
     timeout: 15_000,
   });
@@ -89,7 +90,9 @@ test('movimiento reducido: fotograma quieto', async ({ baseURL }, info) => {
   const ctx = await gpu.newContext({ ...contextOptions(info, baseURL), reducedMotion: 'reduce' });
   const page = await ctx.newPage();
   await page.goto('/');
-  await page.waitForFunction(() => window.__boiaIntro?.title.mode === '3d', null, {
+  // Con movimiento reducido la entrada es la versión estática (T78): sin
+  // escena ni letras 3D, «BOIA» plano en reposo.
+  await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused', null, {
     timeout: 20_000,
   });
   await page.waitForTimeout(800);

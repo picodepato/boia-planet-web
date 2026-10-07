@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T196: Automated tests up to date
+
+Qué existe:
+- `apps/web/e2e/requisitos-motor.spec.ts` (nuevo): REQ-PRO-006 (esquema con dos formatos; cada evento del contenido válido y cada All Day con isla) y REQ-MUN-009 (mismo recorrido del barco con la CPU frenada 3×, con los FPS medidos; sólo escritorio, CDP). Las dos filas de `docs/spec/estado.md` pasan a HECHO con su prueba.
+- `docs/matriz-dispositivos.md`: sin filas que citen `juego-hud.spec.ts`, `agujero-negro.spec.ts` ni el test de `accesos.spec.ts`/`carnet.spec.ts` borrados; cada título citado se comprobó contra el código.
+- `record.spec.ts` y `record-titulo.spec.ts`: «Zarpar» es ahora el enlace del hero (`heroZarpar`/`tap`); el storyboard avanza el reloj a mano hasta la aparición y acepta `landed`/`destroyed` (Zarpar entra en /mar); el fotograma de movimiento reducido espera `paused` (versión estática, sin letras 3D); plazos más largos para la GPU por software.
+- «guía: mover» (`mar-castillo.spec.ts`): al instalar la isla, si el sitio deja de valer entre leerlo y pulsar (botón desactivado mientras el avión vuela) se reintenta en otro sitio en vez de dar la isla por instalada.
+
+Comandos:
+- `E2E_PORT=3321 pnpm e2e mar-castillo.spec.ts -g "mover y ficha" --repeat-each=5 --workers=1` → exit 0, 10 passed (5 móvil + 5 escritorio).
+- `RECORD_INTRO=1 RECORD_TITLE=1 pnpm e2e record.spec.ts record-titulo.spec.ts --workers=1` → exit 0, 8 passed (sus salidas en docs/informes/img se revirtieron).
+- `pnpm e2e record.spec.ts record-titulo.spec.ts requisitos-motor.spec.ts --workers=1` → exit 0, 5 passed, 9 skipped (los record sólo con su variable).
+- `python3 tools/spec/estado.py` → exit 0.
+- vitest (excluye packages/db) → 232 files, 2188 passed, 1 skipped; `tools/spec/checks.sh`, `pnpm lint`, `pnpm typecheck`, `pnpm build` → exit 0 (landing 187.9 kB).
+
+Pendiente: nada de esta tarea.
+
 ## 2026-10-07 — plan 017 T197: Lazy videos and the castle Ibiza card's real payout
 
 Qué existe:

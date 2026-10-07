@@ -11,6 +11,7 @@ import { mkdirSync, mkdtempSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { heroZarpar, tap } from './hero-helpers';
 
 /**
  * Grabación y storyboard de la entrada «mini-mundo» para la revisión visual
@@ -63,6 +64,7 @@ function contextOptions(info: TestInfo, baseURL: string | undefined): BrowserCon
 }
 
 test('grabación de la primera visita', async ({ baseURL }, info) => {
+  test.setTimeout(90_000);
   const vp = info.project.use.viewport!;
   const tmp = mkdtempSync(path.join(tmpdir(), 'boia-intro-'));
   const ctx = await gpu.newContext({
@@ -75,7 +77,7 @@ test('grabación de la primera visita', async ({ baseURL }, info) => {
     timeout: 15_000,
   });
   await page.waitForTimeout(2000);
-  await page.getByRole('button', { name: 'Zarpar' }).click();
+  await tap(page, heroZarpar(page));
   await page.waitForFunction(() => window.__boiaIntro?.phase === 'landed', null, {
     timeout: 15_000,
   });
@@ -89,15 +91,20 @@ test('grabación de la primera visita', async ({ baseURL }, info) => {
 });
 
 test('storyboard con reloj simulado', async ({ baseURL }, info) => {
+  test.setTimeout(120_000); // la GPU por software es lenta
   const tmp = mkdtempSync(path.join(tmpdir(), 'boia-story-'));
   const ctx = await gpu.newContext(contextOptions(info, baseURL));
   const page = await ctx.newPage();
   await page.clock.install({ time: 0 });
   await page.clock.pauseAt(1000);
   await page.goto('/');
-  await page.waitForFunction(() => window.__boiaIntro?.phase === 'appearing', null, {
-    polling: 50,
-  });
+  // El reloj está parado: se avanza a mano hasta que la entrada empieza a aparecer.
+  for (let i = 0; i < 400; i++) {
+    if ((await page.evaluate(() => window.__boiaIntro?.phase)) === 'appearing') break;
+    await page.clock.runFor(50);
+    await page.waitForTimeout(20);
+  }
+  expect((await page.evaluate(() => window.__boiaIntro))?.phase).toBe('appearing');
   const frames: string[] = [];
   const shoot = async (name: string) => {
     await page.waitForTimeout(100);
@@ -117,9 +124,12 @@ test('storyboard con reloj simulado', async ({ baseURL }, info) => {
   expect((await page.evaluate(() => window.__boiaIntro))?.phase).toBe('paused');
   await page.clock.runFor(STORY_PAUSE);
   await shoot('pausa');
-  await page.getByRole('button', { name: 'Zarpar' }).click();
+  await tap(page, heroZarpar(page));
   await runTimes(STORY_LANDING, 'aterrizaje');
-  expect((await page.evaluate(() => window.__boiaIntro))?.phase).toBe('landed');
+  // «Zarpar» entra en /mar (T64): la entrada acaba `landed` y se desmonta.
+  expect(['landed', 'destroyed']).toContain(
+    (await page.evaluate(() => window.__boiaIntro))?.phase,
+  );
   await page.clock.runFor(1000);
   await shoot('landing');
   await ctx.close();

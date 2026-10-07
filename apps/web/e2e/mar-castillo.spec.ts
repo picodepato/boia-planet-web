@@ -1702,8 +1702,16 @@ test('guía: mover y ficha apuntan al avión y la isla; la primera partida pregu
       );
     if (!valid) continue;
     await page.getByTestId('mar-castillo-colocar-si').click();
-    installed = true;
-    break;
+    // El sitio puede dejar de valer entre leerlo y pulsar (el avión sigue
+    // volando, el botón queda desactivado): si no se instaló, otro sitio.
+    installed = await expect
+      .poll(() => islands(page), { timeout: 1500 })
+      .toBe(1)
+      .then(
+        () => true,
+        () => false,
+      );
+    if (installed) break;
   }
   expect(installed, 'hay un sitio libre para instalar la isla de la guía').toBe(true);
   await expect.poll(() => islands(page)).toBe(1);
