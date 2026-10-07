@@ -26,7 +26,10 @@
     "test:supabase": "pnpm --filter @boia/db test:supabase",
     "admin:grant": "pnpm --filter @boia/db admin:grant",
     "db:clean-test-users": "pnpm --filter @boia/db db:clean-test-users",
-    "spec:estado": "python3 tools/spec/estado.py"
+    "spec:estado": "python3 tools/spec/estado.py",
+    "deck": "node tools/deck/src/build.ts",
+    "deck:capturas": "node tools/deck/src/capturas.ts",
+    "deck:render": "node tools/deck/src/render.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

@@ -12,6 +12,9 @@ tools/blender/out/
 *.blend1
 __pycache__/
 
+# PNG por diapositiva de `pnpm deck:render` (revisión visual; el PDF sí se sube)
+docs/presentacion/render/
+
 # worktrees de los agentes del /orchestrator
 .claude/worktrees/
 

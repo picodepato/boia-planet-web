@@ -4,6 +4,52 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T204: Deck toolchain: generator, BOIA theme, capture harness, render check
+
+Qué existe:
+
+- `tools/deck/` (paquete `@boia/deck`, pptxgenjs 4.0.1, pdfjs-dist 6.4.299,
+  @napi-rs/canvas 1.0.10; añadido a `pnpm-workspace.yaml`). TypeScript que
+  corre Node 24 directamente (sin compilar). `deck.ts`: las piezas
+  (`portada`, `portadaParte`, `queEs`, `queTiene`, `telefonos`, `queFalta`,
+  `preguntas`, `hojaDeRuta`, `texto`) con notas obligatorias (2–4) y límites
+  de texto comprobados en el render (`LIMITE`); `dibujar.ts`: tema BOIA
+  (fondo azul noche, naranja, wordmark y mascota desde `art/marca/*.svg`,
+  Arial Black + Arial), layouts con título como marcador, teléfono/ventana
+  sin deformar, etiquetas «Necesario para salir» (naranja lleno) y «Puede
+  esperar» (violeta hueco); `build.ts`; `capturas.ts`; `render.ts`.
+- `pnpm deck` → `docs/presentacion/boia-planet.pptx` desde
+  `docs/presentacion/partes/NN-slug.ts` (descubiertas por nombre) y
+  `capturas/NN-slug/*.jpg`; si falta una captura no escribe nada y lista
+  cuáles; imprime el rango de diapositivas de cada parte
+  (`render/indice.txt`).
+- `pnpm deck:capturas [NN]` → `apps/web/playwright.deck.config.ts`
+  (proyectos `movil` 390×844 ×2 y `escritorio` 1440×900 con sesión Admin
+  para `*.escritorio.deck.ts`; puerto libre; build local) y
+  `apps/web/e2e/deck/deck-helpers.ts` (`shot`, `listo`, `comoAdmin`,
+  `carpetaDe`); `shot` falla si la pantalla sale casi lisa.
+- `pnpm deck:render` → LibreOffice (perfil propio) a
+  `docs/presentacion/boia-planet.pdf` y pdf.js a
+  `docs/presentacion/render/diapositiva-NN.png` (ignorada por git).
+- `docs/presentacion/GUIA.md`; partes 01–08 provisionales (portada de parte
+  + «Pendiente»); parte 1 con la portada real; parte 2 con el hero completo
+  (portada de parte, qué es, teléfonos, qué falta, preguntas y propuestas) y
+  sus capturas `hero.jpg` y `hero-entradas.jpg`. 19 diapositivas.
+
+Comandos:
+
+- `pnpm deck:capturas 02` → exit 0, 2 passed (hero, hero-entradas).
+- `pnpm deck` → exit 0, 19 diapositivas en 8 partes; `pnpm deck:render` →
+  exit 0, 19 páginas y 19 PNG. Revisadas todas; además una parte de prueba
+  (borrada) con cada pieza al máximo de sus límites, sin desbordes.
+- validate.py de la skill pptx → «All validations PASSED!».
+- `pnpm e2e --list` → exit 0, 692 tests en 74 archivos, 0 líneas «deck».
+- `PYTHONUTF8=1 sh tools/spec/checks.sh && pnpm lint && pnpm typecheck &&
+  pnpm deck` → exit 0.
+
+Pendiente: T205–T210 escriben sus partes y capturas; T211 las partes 1 y 8.
+Las `.pptx`/`.pdf` se regeneran tras cada integración (GUIA, «Conflictos»).
+
 ## 2026-10-07 — plan 017 T198: Close
 
 Qué existe:
