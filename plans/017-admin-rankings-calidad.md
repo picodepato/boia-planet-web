@@ -154,7 +154,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: `skin.ts` holds i18n keys (new `world.arcilla.skin.*` in `es-mundo.ts`), resolved by `resolveSkinTexts`/`WorldRegistry.mapSkins`; web `worlds` = registry with keys resolved; resolved skin identical to the old dump · 7f634fe
 
 ## T197 — Lazy videos and the castle Ibiza card's real payout
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Two small user-visible fixes (decision 7): videos load lazily and never block the page (REQ-COM-032); the castle «Construir» Ibiza card shows the next Ibiza's real payout (70 % for the second, 50 % for the third), not the first one's.
@@ -164,7 +164,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - unit test: the card's payout for the 1st/2nd/3rd Ibiza equals `farmPayout` → pass
   - `E2E_PORT=<free> pnpm e2e mar-castillo.spec.ts <video page spec> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: reusable `LazyVideo` (no content videos exist yet; e2e checks home and /fotos download no video; REQ-COM-032 → PARCIAL); Ibiza card shows 100/70/50 % via `defenseFarmPayout` on the Ibizas standing; done by Codex + wrapper · 6d89fd4
 
 ## T196 — Automated tests up to date
 - Status: running (attempt 1)
@@ -181,7 +181,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T199 — Halloween/Sonido box-office tickets and landing logout
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T187
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Halloween and Sonido «Comprar entradas» show the box-office message with the 2 € Carnet discount and the «Hazte el tuyo» link below (decision 8); a «Cerrar sesión» button next to «Carnet» at the top of the landing when signed in (decision 10).
@@ -250,6 +250,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T197: once real videos exist, use `LazyVideo` there and raise REQ-COM-032 to HECHO
+- 2026-10-07 orchestrator: the repo `picodepato/boia-planet-web` is public and holds the demo Admin password's PBKDF2 hash; «boiaplanetadmin» is guessable offline → consider a longer password (new hash, never the plain text) or moving the hash to a Vercel env var
 - 2026-10-07 T195: `packages/world/src/worlds/arcilla/map.ts` still has Spanish prose (object names, default dialogues)
 - 2026-10-07 T193: apply `20261007100400_admin_access_export.sql` on boia-planet-dev and run `admin-access.supabase.ts`; use a dedicated email for the Carnet 000 account; `/admin/vista-previa` is not behind the Carnet 000 sign-in
 - 2026-10-07 T190: uploaded assets are not drawn in the 3D sea (waits for the visual editor, REQ-ADM-009); in Supabase mode new objects still live in the browser like the rest of the Admin world
@@ -282,3 +284,6 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 16:54 T197 launched · attempt 1 · Codex via wrapper agent af6968fcadaace994 (sonnet)
 - 2026-10-07 17:04 T195 done · worktree-agent-a2c42b79cdbec13e7 → 7f634fe
 - 2026-10-07 17:05 T196 launched · attempt 1 · agent a466b0a4c1f831e79 · sonnet
+- 2026-10-07 17:11 Hernán (session): push → `git push origin main` rejected 3 times by GitHub «Internal Server Error» (githubstatus: all operational; no large files in the 14 commits)
+- 2026-10-07 17:21 T197 done · worktree-agent-af6968fcadaace994 → 6d89fd4
+- 2026-10-07 17:23 T199 launched · attempt 1 · Codex via wrapper agent ac79cb33ef51d3d91 (sonnet)
