@@ -127,7 +127,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: Noto Color Emoji injected into deck captures (font in ignored apps/web/e2e/deck/.fuentes/); part 6 = 11 slides incl. a «Dónde está cada juego y qué da» table, 12 gameplay captures · 65be42d
 
 ## T210 — Part 7: Admin
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -140,10 +140,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of part 7: nothing overflows or is cut
   - 3 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T210/
   - Test command → exit 0
-- Outcome:
+- Outcome: 10 slides, desktop captures, panels grouped Entrada/Contenido/Eventos y mundo/Control/Con cuentas, account-only panels text slide · 022bbf3
 
 ## T211 — Parts 1 and 8: summary, launch roadmap and pending decisions
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T205, T206, T207, T208, T209, T210
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -163,13 +163,13 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Depends on: T211
 - Model: opus
 - Skills: anthropic-skills:pptx
-- Goal: Read the whole deck as a partner would and make it one consistent piece: same tone (Spain Spanish, «tú/vosotros», no jargon), same tag wording, no contradictions between parts and the roadmap, nothing invented, slide total 52–66, consistent visuals, file sizes reasonable; fix what is wrong in any part.
+- Goal: Read the whole deck as a partner would and make it one consistent piece: same tone (Spain Spanish, «tú/vosotros», no jargon), same tag wording, no contradictions between parts and the roadmap, nothing invented, slide total 60–74 (~70 accepted by Hernán), consistent visuals, file sizes reasonable; fix what is wrong in any part.
 - Extra: recapture every part captured before T209's emoji font landed (parts 2, 3, 4 and 5 at least) so no emoji shows as an empty box; fix the T205 note: `portadaParte` can leave a «·» at the start of a wrapped second line.
 - Context: `docs/presentacion/GUIA.md`; decisions 1–9; the rendered PDF and PNGs; the final messages' inconsistency lists from T211.
 - Scope: may touch everything under `docs/presentacion/`, `apps/web/e2e/deck/`, `tools/deck/` (small fixes), `ESTADO.md` fragment, `docs/TRASPASO.md` (one line pointing to the deck) / must not touch app code, `docs/DECISIONES.md`.
 - Done when:
   - `pnpm deck` → exit 0; `pnpm deck:render` → exit 0; you looked at every rendered slide: nothing overflows or is cut, no placeholder «pendiente» slide is left
-  - total slides 52–66; every section ends with «Preguntas y propuestas»; every slide has speaker notes
+  - total slides 60–74 (Hernán accepted ~70 on 2026-10-07); every section ends with «Preguntas y propuestas»; every slide has speaker notes
   - `docs/presentacion/boia-planet.pptx` ≤ 30 MB and the PDF exists; both paths given in the final message
   - the PDF copied to /tmp/orchestrator-attach/boia-planet-hernan-T212/
   - Test command → exit 0
@@ -196,7 +196,14 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 
 - 2026-10-07 T209: Noto Color Emoji taken from github.com/google/fonts (ofl/notocoloremoji, 25 MB; noto-emoji repo no longer ships it), added as emoji-only fallback before each shot; 11th slide with where each game is and what it gives; game captures use dev shortcuts, race driven for real (agent)
 
+- 2026-10-07 run: deck length ~70 slides accepted; T212 only merges repeated slides (Hernán)
+
+- 2026-10-07 T210: Admin captures all desktop; draft «Zarpar al mar» set before the inicio/vista-previa shots; «Admin content for everyone» tagged «Puede esperar»; section label «Todo el Admin» (agent)
+
 ## Proposals (new scope)
+- 2026-10-07 T210: Admin demo banner still says «Esto es una demo sin login» although sign-in with Carnet 000 exists since T193
+- 2026-10-07 T210: at 1440 px the Admin nav item «Usuarios de administración» touches its column edge
+- 2026-10-07 T210: the Admin demo password could be guessed; change it before launch
 - 2026-10-07 T209: on mobile the «Menú» and «!» buttons cover the left edge of the race start/finish cards (app bug; listed in «qué falta»)
 - 2026-10-07 T208: the boat shop shows a boat «Acuarela ilustrada · De serie» although Acuarela is hidden (app text)
 - 2026-10-07 T208: `island.secretHint` («Por aquí cerca huele a secreto») is defined but never shown in /mar
@@ -221,3 +228,4 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 22:40 T208 done · branch worktree-agent-a15d4a39f1e9e9d1d → f54bcff (binaries kept main's side via merge=ours)
 - 2026-10-07 22:42 T210 launched · attempt 1 · agent a61d9b9db7acdb0ce · opus · DECK_PORT 3275
 - 2026-10-07 23:00 T209 done · branch worktree-agent-ac5c3a5bb0c50520c → 65be42d
+- 2026-10-07 23:10 T210 done · branch worktree-agent-a61d9b9db7acdb0ce → 022bbf3
