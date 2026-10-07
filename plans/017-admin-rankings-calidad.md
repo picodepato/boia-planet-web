@@ -24,7 +24,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 ## Tasks
 
 ## T188 — Rankings menu: race, Cañón, Castillo and global, with the right dropdowns; no visible «Arcilla»
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Goal: The menu's ranking panel offers four options (race, Cañón, Castillo, global points) and shows every board from the menu, with a dropdown only for the Cañón (Fantasma/Kraken) and the Castillo (9 boards) (decision 2); remove every user-visible «Arcilla» (decision 3).
@@ -38,7 +38,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T189 — Admin: upload island photos and turn the event into a past one
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: From Admin, pick an island and an event, upload real image files (WebP, resized) and mark the event as past; the island then shows that event as a memory with its gallery, in local and Supabase modes (decision 4).
@@ -49,7 +49,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `E2E_PORT=<free> pnpm e2e <new or updated admin-photos spec> <island memories spec> --workers=1` (local mode: upload a photo in Admin, mark the event past, open the island in /mar and see the memory with the photo) → exit 0
   - screenshots: Admin upload screen and the island's memory with its gallery → saved under /tmp/orchestrator-attach/boia-planet-hernan-T189/
   - Test command → exit 0
-- Outcome:
+- Outcome: Admin uploads photos (WebP ≤1600 px, IndexedDB in local mode; bucket `event-photos` + tables `event_albums`/`event_photos` in migration 20261007100100) and marks the event finished; island memory shows 6 photos + «Ver las N fotos»; e2e admin-fotos + ciclo-evento green · 6a43553
 
 ## T187 — Landing: «Consigue descuentos» under «Zarpar»
 - Status: pending
@@ -188,7 +188,13 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T189: Hernán applies `20261007100100_event_photos.sql` on boia-planet-dev, runs `db:types:dev` and `test:supabase` (new `event-photos.supabase.ts`) and tries an upload with `E2E_SUPABASE=1` (no Supabase e2e exists for it)
+- 2026-10-07 T189: IndexedDB image files are not deleted when a photo is binned or Admin resets to sample; photos uploaded in Supabase mode do not show in the Admin's local photo list
 
 ## Log
+- 2026-10-07 T188 launched · attempt 1 · agent abffc664e10cc9ab0 · opus
+- 2026-10-07 T189 launched · attempt 1 · agent ae1b8fe9c7638eab9 · opus
+- 2026-10-07 15:17 T189 done · branch worktree-agent-ae1b8fe9c7638eab9 · worktree .claude/worktrees/agent-ae1b8fe9c7638eab9 (folder left: node_modules) → 6a43553
