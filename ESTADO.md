@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T201: Store rotating product images and buy-at-the-party message
+
+Qué existe:
+- Contrato `packages/contracts/src/merchandise.ts`: `merchandiseCatalogSchema` (contacto + productos), cada producto con una lista ordenada de imágenes `{src, kind: alone|angle|model, alt}`.
+- Los datos están en `apps/web/lib/merchandise/products.json` (no en código): 3 productos × 3 imágenes (sola, otro ángulo, con modelo) y el contacto `@boia.planet` → https://instagram.com/boia.planet (decisión 11). Para cambiar una imagen basta con cambiar el archivo o su `src` en el JSON; T202/T192 pueden apuntar ahí.
+- Placeholders `muestra` nuevos (800×800 WebP, q60, rótulo «MUESTRA» en la imagen) en `apps/web/public/contenido/tienda/*-angulo-muestra.webp` y `*-modelo-muestra.webp` (6 archivos, ~98 kB en total, fuera de la ruta crítica, `loading="lazy"`); README de la carpeta al día.
+- `ProductGallery` (cliente): rota cada 3,5 s con fundido mientras la tarjeta está en pantalla; se para con `prefers-reduced-motion`, al pasar el puntero o el foco, o con la pestaña oculta; puntos para elegir imagen (sólo con JS). Sin JS se ve la primera imagen.
+- «Comprar» en cada tarjeta es un `<details>` (funciona sin JS, sin checkout): «Sólo a la venta en la fiesta. Si quieres una, escríbenos por Instagram a @boia.planet», con enlace a Instagram en otra pestaña. Textos por clave (`store.buy*`, `store.gallery.*`, `store.image.*` en `es-web.ts`). Igual en la landing y en `/tienda`.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (234 archivos, 2199 pasan, 1 saltada); nuevo `apps/web/lib/merchandise/catalog.test.ts` (6 pruebas).
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0, landing 189,8 kB gzip (antes 187,3; presupuesto 200 kB).
+- `E2E_PORT=3291 pnpm e2e merchandise.spec.ts landing.spec.ts mundo-arcilla.spec.ts --workers=1` → exit 0, 28 pasan (nuevas: rotación, movimiento reducido + puntos, mensaje de comprar; sin JS).
+- Capturas (`T201_SHOTS=<carpeta>` en `merchandise.spec.ts`) en /tmp/orchestrator-attach/boia-planet-hernan-T201/.
+
+Pendiente:
+- Las fotos inventadas de producto (sola / ángulos / con modelo) sustituyen a los placeholders en una tarea posterior; sólo cambian archivos o `products.json`.
+- Las claves `store.buy*`/`store.gallery*`/`store.image*` entran en `LANDING_TEXT_KEYS` (editables en Admin «Textos y música»); las que llevan `{variables}` no se sobrescriben.
+
 ## 2026-10-07 — plan 017 T199: Halloween/Sonido box-office tickets and landing logout
 
 Started by Codex (stopped on its usage limit, commit 4165f1a); finished by Opus.

@@ -1,7 +1,13 @@
-import { MERCHANDISE_PRODUCTS, MERCHANDISE_SAMPLE_NOTICE } from './catalog';
+import { t } from '../landing/texts';
+import { MERCHANDISE_CONTACT, MERCHANDISE_PRODUCTS, MERCHANDISE_SAMPLE_NOTICE } from './catalog';
+import { ProductGallery } from './product-gallery';
 import './merchandise.css';
 
-/** Shared sample showcase for the home and Ibiza's internal shop. */
+/**
+ * Shared sample showcase for the home and Ibiza's internal shop. «Comprar» is
+ * a disclosure, not a checkout (decision 11): it says the products are only
+ * sold at the party and points to Instagram. It works without JavaScript.
+ */
 export function MerchandiseCatalog({ products }: { products?: readonly string[] }) {
   const names = products ?? MERCHANDISE_PRODUCTS.map((p) => p.name);
   return (
@@ -12,22 +18,32 @@ export function MerchandiseCatalog({ products }: { products?: readonly string[] 
           const product = MERCHANDISE_PRODUCTS.find((p) => p.name === name);
           return (
             <li key={name} className="merchandise__card">
-              {product ? (
-                // Local compressed samples, deliberately deferred below the landing's critical content.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={product.image}
-                  alt={product.alt}
-                  width={800}
-                  height={800}
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : null}
+              {product ? <ProductGallery product={product} /> : null}
               <div className="merchandise__copy">
                 <span className="merchandise__badge">Muestra</span>
                 <h3>{name}</h3>
                 {product ? <p>{product.description}</p> : null}
+                <details className="merchandise__buy" data-testid="merchandise-buy">
+                  <summary
+                    className="button merchandise__buy-button"
+                    aria-label={t('store.buy.aria', { name })}
+                  >
+                    {t('store.buy')}
+                  </summary>
+                  <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
+                    {t('store.buy.message')}{' '}
+                    <a
+                      href={MERCHANDISE_CONTACT.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t('store.buy.instagram.aria', {
+                        handle: MERCHANDISE_CONTACT.handle,
+                      })}
+                    >
+                      {MERCHANDISE_CONTACT.handle}
+                    </a>
+                  </p>
+                </details>
               </div>
             </li>
           );

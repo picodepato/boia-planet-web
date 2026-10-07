@@ -20,12 +20,99 @@
   background: #fffaf3;
   color: #211e26;
 }
-.merchandise__card img {
+/* T201: the product's images stacked; only the active one shows. */
+.merchandise__gallery {
+  position: relative;
+}
+.merchandise__frame {
+  position: relative;
+  aspect-ratio: 1;
+  background: #f6e2d0;
+}
+.merchandise__frame img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.merchandise__frame img.is-active {
+  opacity: 1;
+}
+.merchandise__dots {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+}
+.merchandise__dot {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.merchandise__dot::before {
+  content: '';
+  display: block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin: auto;
+  border: 2px solid #211e26;
+  border-radius: 50%;
+  background: #fffaf3;
+}
+.merchandise__dot[aria-pressed='true']::before {
+  background: #211e26;
+}
+.merchandise__dot:focus-visible {
+  outline: 2px solid #211e26;
+  outline-offset: 1px;
+  border-radius: 50%;
+}
+.merchandise__buy {
+  margin-top: 1rem;
+}
+.merchandise__buy summary {
+  display: inline-flex;
+  list-style: none;
+  cursor: pointer;
+}
+.merchandise__buy .merchandise__buy-button {
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 0;
+  align-items: center;
+  background: #211e26;
+  color: #fffaf3;
+  font-weight: 700;
+}
+.merchandise__buy .merchandise__buy-button:focus-visible {
+  outline: 2px solid #211e26;
+  outline-offset: 3px;
+}
+.merchandise__buy summary::-webkit-details-marker {
+  display: none;
+}
+.merchandise__buy-message {
+  font-weight: 600;
+}
+.merchandise__buy-message a {
+  color: inherit;
+  font-weight: 700;
+}
+@media (prefers-reduced-motion: reduce) {
+  .merchandise__frame img {
+    transition: none;
+  }
 }
 .merchandise__copy {
   padding: 1.2rem;

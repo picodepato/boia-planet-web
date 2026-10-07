@@ -11,6 +11,21 @@ Saved project assets (800 × 800 WebP, quality 82):
 - `tote-muestra.webp` — 31144 bytes.
 - `pegatinas-muestra.webp` — 43646 bytes.
 
+## T201 placeholders (plan 017)
+
+Each product rotates an ordered list of images: alone, another angle, on a
+model (`apps/web/lib/merchandise/products.json`, contract
+`merchandiseCatalogSchema`). Until the invented product photos arrive, the
+angle and model slots are simple `muestra` placeholders made from the photos
+above with Pillow (tilted crop; plain silhouette), 800 × 800 WebP, quality 60,
+labelled «MUESTRA» in the image. Replace a file or repoint its `src` in
+`products.json`; no code changes. Pressing «Comprar» says the products are
+only sold at the party and links to Instagram (no checkout).
+
+- `camiseta-angulo-muestra.webp`, `camiseta-modelo-muestra.webp`
+- `tote-angulo-muestra.webp`, `tote-modelo-muestra.webp`
+- `pegatinas-angulo-muestra.webp`, `pegatinas-modelo-muestra.webp`
+
 Final prompts, built-in mode (no CLI/API fallback):
 
 1. **T-shirt:** “Use case: product-mockup. Asset type: sample BOIA merchandise catalog photograph for a website, explicitly a concept not actual stock. Subject: one off-white cotton T-shirt laid flat, full garment centered and fully visible on a warm pale peach studio background, natural cotton texture and folds, soft daylight shadows, clean premium product photography, square frame. Printed large orange BOIA wordmark on chest. Input images are brand identity references only: reproduce the existing orange BOIA wordmark lettering precisely; optional small orange smiling buoy mascot below using the supplied exact mascot. No other text, no people, no labels or watermark, no price. Keep generous margins around garment.”

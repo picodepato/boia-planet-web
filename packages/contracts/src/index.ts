@@ -7,3 +7,4 @@ export * from './carnet';
 export * from './progress';
 export * from './links';
 export * from './world-objects';
+export * from './merchandise';

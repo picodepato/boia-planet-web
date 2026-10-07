@@ -95,6 +95,16 @@ const base = {
   'store.cta': 'Ir a la tienda',
   'store.cta.aria': 'Ir a la tienda de BOIA (se abre en otra pestaña)',
   'store.internal.aria': 'Ver la tienda de BOIA',
+  // Plan 017 T201 (decisión 11), muestra: comprar no es un checkout.
+  'store.buy': 'Comprar',
+  'store.buy.aria': 'Comprar {name}',
+  'store.buy.message': 'Sólo a la venta en la fiesta. Si quieres una, escríbenos por Instagram a',
+  'store.buy.instagram.aria': '{handle} en Instagram (se abre en otra pestaña)',
+  'store.gallery.label': 'Fotos de {name}',
+  'store.gallery.show': '{name}: {kind}',
+  'store.image.alone': 'el producto',
+  'store.image.angle': 'otro ángulo',
+  'store.image.model': 'con modelo',
 
   'contact.heading': 'Contacto',
   'contact.email': 'Escríbenos',
