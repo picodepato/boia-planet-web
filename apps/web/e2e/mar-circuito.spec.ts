@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
 import { MAR_SHIP_CONFIG, RACE_SHIP_CONFIG } from '../app/mar/engine/steering';
 import { lapTargets } from '../app/mar/race';
+import { translateSkinText } from '../lib/mundo/demo-world';
 import { SAMPLE_CIRCUIT_MS } from '../lib/mundo/ranking-circuit';
 
 /**
@@ -31,10 +32,15 @@ const world = marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config);
 const spec = circuitFromWorld(world, CIRCUIT_ID)!;
 const targets = lapTargets(world, spec);
 const start = targets.at(-1)!;
-/** El nombre del circuito en el mundo (el de su salida): «Los Rápidos». */
-const placeName = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config.objects.find(
-  (o) => o.identity.id === start.id,
-)!.identity.name;
+/**
+ * El nombre del circuito en el mundo (el de su salida): «Los Rápidos». Desde
+ * T195 el nombre de la skin es una clave i18n: se compara con su texto.
+ */
+const placeName = translateSkinText(
+  WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config.objects.find(
+    (o) => o.identity.id === start.id,
+  )!.identity.name,
+);
 
 const mar = (page: Page) => page.locator('main.mar');
 /** La tripulación de muestra con tiempo en el circuito: contra ella se compite en esta versión. */

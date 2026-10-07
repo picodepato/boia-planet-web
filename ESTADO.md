@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T198: Close
+
+Qué existe:
+
+- **Guía de prueba** `docs/propuestas/2026-10-07-plan-017-guia-prueba.md`: qué cambia en el plan 017, cómo probarlo, migraciones y preguntas abiertas.
+- **Docs**: `docs/TRASPASO.md` y `docs/spec/estado.md` al día con el plan 017.
+- **E2E ajustadas** a lo que cambió el plan: `mar-circuito`, `mar-fiestera`, `mar-paridad`, `mar-puerto`, `mar-tablon` y `ranking` (`.spec.ts`).
+
+Comandos:
+
+- `E2E_PORT=<libre> pnpm e2e --workers=2`: **cortada a mitad por decisión de Hernán** (2026-10-07). La parte móvil terminó; en la de escritorio aparecieron fallos sensibles al tiempo bajo carga que no llegaron a repetirse con `--workers=1`. Sin resultado final: la última e2e completa en verde sigue siendo la del plan 015.
+- Test command: lo corre la integración (`integrate.py`).
+
+Pendiente:
+
+- Repetir la e2e completa (o al menos la parte de escritorio) en una máquina descargada.
+- Migraciones por aplicar en `boia-planet-dev`: `20261007100200_moderation.sql` (T191) y `20261007100400_admin_access_export.sql` (T193). `20261007100100_event_photos.sql` (T189) ya está aplicada.
+- T202 (carteles e imágenes de productos inventadas) quedó salteada por Hernán.
+
 ## 2026-10-07 — plan 017 T203: Landing header fits on desktop with Cerrar sesión
 
 Qué existe:

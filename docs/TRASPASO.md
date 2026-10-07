@@ -1,11 +1,12 @@
 # Traspaso
 
-Dónde está BOIA.PLANET y qué queda, para quien llegue sin contexto. Estado a
-2026-10-03, con los planes 001–007 cerrados y el 008 (cuentas por email con
-Supabase, el Carnet como carné de identidad, sellos por QR, rankings y
-botellas globales, Admin con TOTP) construido entero (último commit de
-código: `347ed9c`, T94). El detalle de cada tarea está en `ESTADO.md`; las
-reglas, en [`CLAUDE.md`](../CLAUDE.md).
+Dónde está BOIA.PLANET y qué queda, para quien llegue sin contexto. La
+pantalla de abajo se escribió el 2026-10-03 (planes 001–008); lo de los
+planes 010–017 está en sus secciones («El Cañón en beta», «Qué hace Hernán»)
+y en sus guías de prueba. Último plan cerrado: **017** (2026-10-07,
+[guía de prueba](propuestas/2026-10-07-plan-017-guia-prueba.md)). El
+detalle de cada tarea está en `ESTADO.md`; las reglas, en
+[`CLAUDE.md`](../CLAUDE.md).
 
 ## En una pantalla
 
@@ -35,9 +36,9 @@ reglas, en [`CLAUDE.md`](../CLAUDE.md).
   del plan 008 pasó sus e2e; la corrida completa de `pnpm e2e` del plan la
   hace el orquestador al cerrarlo (la última completa, T49: 204 pasan, 36
   saltadas, 0 fallan).
-- **Requisitos:** de los 294 REQ de la spec v15, **160 HECHO**, 68 PARCIAL,
-  31 FALTA, 25 L2, 9 para la versión final y 1 retirado (REQ-ENT-028, D-26)
-  ([spec/estado.md](spec/estado.md)). El plan 008 pasó de `final` a HECHO el
+- **Requisitos:** de los 294 REQ de la spec v15, **165 HECHO**, 67 PARCIAL,
+  26 FALTA, 25 L2, 9 para la versión final y 2 retirados
+  ([spec/estado.md](spec/estado.md), al cerrar el plan 017). El plan 008 pasó de `final` a HECHO el
   acceso por código, la vuelta al contexto, el progreso del invitado, nada
   competitivo desde el cliente, el alta del propietario, los permisos en la
   base, Supabase con RLS y la identidad pública sin email; y de L2 a HECHO
@@ -59,11 +60,12 @@ reglas, en [`CLAUDE.md`](../CLAUDE.md).
 | Ruta | Qué es |
 |---|---|
 | `/` | La landing como un solo scroll (plan 007): aparición del planeta y «BOIA», reposo con «Zarpar» (entra en `/mar`) y «Entradas» (panel de Tickets); el scroll lleva la escena three.js del planeta al mar y los bloques (próximo evento, eventos, artistas, fotos, tienda, contacto, pie con el logo de BOIA y Spotify) suben sobre ella. Versión estática con un still de Blender con movimiento reducido, sin WebGL o en bajo consumo |
-| `/mar` | El mundo navegable: un planeta 3D (three.js), un solo mundo jugable, Arcilla (B05; Acuarela, B02, sigue en el código oculta hasta una actualización futura), con islas de eventos (Halloween, Sonido y Nochevieja con modelo de Blender), náufragos, descuentos escondidos, cofres, delfín, remolinos, Boia Fiestera, el minijuego Faro (capa 2D), el Cañón «Que no pare la música» en **beta** (plan 010, jugado en el mismo mar) y el circuito Los Rápidos (sin líneas guía durante la carrera), logros, ranking (local, o global con cuentas: tiempos por circuito y puntos de siempre), botellas (las 10 más recientes de todos, con cuentas), Mi Carnet, tienda de barcos, Tickets dentro del mundo |
+| `/mar` | El mundo navegable: un planeta 3D (three.js), un solo mundo jugable, Arcilla (id interno; en pantalla «Mundo principal» y el barco B05 «Botijo» desde el plan 017; Acuarela, B02, sigue en el código oculta hasta una actualización futura), con islas de eventos (Halloween, Sonido y Nochevieja con modelo de Blender), náufragos, descuentos escondidos, cofres, delfín, remolinos, Boia Fiestera, el minijuego Faro (capa 2D), el Cañón «Que no pare la música» en **beta** (plan 010, jugado en el mismo mar) y el circuito Los Rápidos (sin líneas guía durante la carrera), logros, ranking (local, o global con cuentas: tiempos por circuito y puntos de siempre), botellas (las 10 más recientes de todos, con cuentas), Mi Carnet, tienda de barcos, Tickets dentro del mundo |
 | `/juego` | Ya no existe (D-25, plan 005 T62): el mundo 2D (PixiJS) se borró y la ruta redirige a `/mar` con su consulta (`?ir=`, `?evento=`, `?menu=`) |
 | `/carnet` | Carnet BOIA como carné de identidad (plan 008): tarjeta naranja ID-1, delante el socio con su QR, detrás los sellos como en un pasaporte; con cuentas, «Escanear sello» y «Tu cuenta» (noticias, cerrar sesión, borrar). `/carnet/<id>`: el Carnet público, sin email |
 | `/sello` | El QR de una fiesta (`/sello?e=<evento>&c=<código>`, plan 008): con cuentas, pide el email y pone el sello (+50 puntos `muestra`) dentro de la ventana de la fiesta; en modo local explica que hacen falta cuentas |
-| `/admin` | Modo local (D-20): Carnet 000 + contraseña (hash con sal en `lib/admin/demo-auth.ts`, plan 017 T193): eventos, descuentos, fotos, textos, artistas (con su Spotify), mundo activo, integraciones (sólo lectura), «Volver todo a la muestra». Con cuentas: Carnet 000 + contraseña (o código del email) + TOTP y rol (`pnpm admin:grant`), códigos de respaldo en «Seguridad», y Fiestas y QR, Socios y emails, Moderación de botellas y Rankings sobre datos reales |
+| `/admin` | Modo local (D-20): Carnet 000 + contraseña (hash con sal en `lib/admin/demo-auth.ts`, plan 017 T193): eventos, descuentos, fotos (también «Fotos de una isla»: subir fotos reales y pasar el evento a recuerdo, T189), objetos nuevos en 10 pasos con plantillas (T190), enlaces de tienda, contacto y pie (T192), moderación de Carnets, botellas y rankings (T191), textos, artistas (con su Spotify), mundo activo, integraciones (sólo lectura), «Volver todo a la muestra». Con cuentas: Carnet 000 + contraseña (o código del email) + TOTP y rol (`pnpm admin:grant`), códigos de respaldo en «Seguridad», y Fiestas y QR, Socios y emails, Moderación (Carnets, botellas, rankings) sobre datos reales |
+| `/ranking` | El ranking de la web (plan 017 T188), el mismo panel que el menú de `/mar`: Carrera, Cañón (Fantasma / Kraken), Castillo (9 tablas) y Puntos |
 | `/legal/*` | Aviso legal, privacidad (con cuentas, qué se recoge y para qué) y cookies, con datos **inventados** y aviso arriba |
 | `/api/art` | Sirve el arte de `art/` (D-16), también el atrezzo del hero (`art/landing/3d`) |
 
@@ -96,7 +98,8 @@ Hernán: [propuestas/2026-10-03-landing-scroll.md](propuestas/2026-10-03-landing
 
 - **Peso final: 185,3 kB** gzip de la ruta crítica de `/` (HTML, JS, CSS y
   fuentes precargadas), con el tope en **200 kB** (Hernán lo subió de 192 el
-  2026-10-03). Lo mide `apps/web/scripts/landing-budget.mjs` y `pnpm build`
+  2026-10-03). **Tras el plan 017: 195,3 kB** (la línea de descuentos, la
+  taquilla, el cierre de sesión y la tienda que rota), con poco margen. Lo mide `apps/web/scripts/landing-budget.mjs` y `pnpm build`
   falla si se pasa. three.js, el atrezzo GLB y los stills cargan aparte y no
   cuentan. Al empezar el plan pesaba 189,6 kB; T79 la subió a 192,4 y T80 la
   bajó a 184,8 (el motor del hero y el panel de Tickets en chunks aparte).
@@ -266,38 +269,65 @@ orquestador lleva `/mar`. Lo que cambió, sólo en el mundo **Arcilla**
 
 ### Se puede hacer ya (sin Álvaro)
 
-- **Repasar los 65 PARCIAL y 31 FALTA** de [spec/estado.md](spec/estado.md).
+- **Repasar los 67 PARCIAL y 26 FALTA** de [spec/estado.md](spec/estado.md).
   Muchos FALTA piden una revisión, una medición en móvil o un documento, no
   código (p. ej. REQ-PRO-008, REQ-ENT-021, REQ-ARQ-017). REQ-ENT-028
   (subtítulo según promociones) está retirado por D-26; sus textos
   `hero.explore.with*` siguen en el catálogo sin usarse.
 - **Matriz de dispositivos:** los casos a mano (áreas seguras, zoom, sin
   conexión, pérdida del contexto gráfico) en
-  [matriz-dispositivos.md](matriz-dispositivos.md); sus filas de `/mar`
-  siguen citando pruebas del mundo 2D borrado.
-- **Propuestas del plan 008** (sección «Proposals» del plan): códigos de
-  respaldo y recuperación del TOTP del Admin; pasar a datos reales la
-  moderación de Carnets y las demás secciones del Admin; la botella propia
-  fuera de las 10 más recientes no flota; tras un sello faltan el conteo de
-  puntos y «Ahora eres {rango}» del diseño; en «De siempre» todos los de 0
-  puntos empatan en un puesto; un premio diario ganado sin red cuenta para
-  el día en que llega; descargar los datos de la cuenta (REQ-IDE-050).
-  REQ-IDE-006 y REQ-ARQ-010 se prueban en `*.supabase.ts`, que
-  `tools/spec/estado.py` no cuenta como prueba.
-- **Propuestas del plan 007** (sección «Proposals» del plan): el Admin no
-  edita los enlaces de tienda, contacto y pie; las respuestas del Carnet de
-  artista (P17) no tienen campo; `record.spec.ts` y `record-titulo.spec.ts`
-  aún pulsan el «Zarpar» viejo; la pista de scroll queda ~7 px bajo las
+  [matriz-dispositivos.md](matriz-dispositivos.md) (sin filas que citen
+  pruebas borradas desde el plan 017 T196).
+- **Propuestas del plan 008** que quedan: un premio diario ganado sin red
+  cuenta para el día en que llega. REQ-IDE-006 y REQ-ARQ-010 se prueban en
+  `*.supabase.ts`, que `tools/spec/estado.py` no cuenta como prueba. (Los
+  códigos de respaldo, la moderación real, la botella propia, el conteo tras
+  un sello, los empates a 0 y la descarga de la cuenta los hizo el plan 017.)
+- **Propuestas del plan 007** que quedan: las respuestas del Carnet de
+  artista (P17) no tienen campo; la pista de scroll queda ~7 px bajo las
   píldoras en 1280×800; `/mar` podría tomar el grado cinematográfico del
-  hero.
-- **i18n:** los diálogos de cada mundo siguen en
-  `packages/world/src/worlds/*/skin.ts` (sus claves `world.<mundo>.…` ya
-  están en el catálogo, falta que el mundo las lea); los nombres de paletas de
-  `/mar` y los mensajes de consola no pasan por i18n.
+  hero. (Los enlaces editables y las grabaciones con el «Zarpar» nuevo, plan
+  017.)
+- **i18n:** los textos de `skin.ts` ya pasan por claves (plan 017 T195);
+  `packages/world/src/worlds/arcilla/map.ts` aún tiene prosa (nombres de
+  objetos, diálogos por defecto) y los textos de la tienda
+  (`MERCHANDISE_NOTICE`, la marca «Muestra», nombres de productos) no son
+  claves.
+- **Propuestas del plan 017** (sección «Proposals» del plan y la
+  [guía](propuestas/2026-10-07-plan-017-guia-prueba.md)): carteles e
+  imágenes de producto inventados (T202, saltada); la regla de taquilla no
+  se edita desde el Admin; el archivo subido de un objeto nuevo aún no se
+  dibuja en el mar; los archivos de fotos locales no se borran de IndexedDB;
+  REQ-ADM-031 pide el procedimiento a mano documentado y probado una vez.
 
 Las propuestas de cada tarea están en la sección «Proposals» de cada plan.
 Varias ya se hicieron en tareas posteriores: comprueba en el código antes de
 tomarlas.
+
+### Qué hace Hernán (plan 017, 2026-10-07)
+
+Todo con detalle en la
+[guía de prueba del plan 017](propuestas/2026-10-07-plan-017-guia-prueba.md):
+
+- **Migraciones del plan 017:** `20261007100100_event_photos.sql` ya está
+  aplicada en `boia-planet-dev` (2026-10-07, `test:supabase` 98/98);
+  **faltan** `20261007100200_moderation.sql` y
+  `20261007100400_admin_access_export.sql` (`pnpm db:migrate:dev`, después
+  `pnpm db:types:dev` y `pnpm test:supabase`). Las tres, en producción
+  cuando se publique con cuentas.
+- **La cuenta del Admin con cuentas:** rol owner, contraseña y el Carnet 000
+  con `private.assign_admin_carnet(...)` en el editor SQL (mejor una cuenta
+  dedicada: su email se puede averiguar escribiendo «000»); después generar
+  los códigos de respaldo en «Seguridad».
+- **Renombrar en `boia-planet-dev`** los cosméticos ya sembrados «Arcilla,
+  maqueta / · Noche / · Fiesta» a «Botijo…» (la semilla no los pisa; las
+  tres `update` están en la guía).
+- **E2E con cuentas** que el plan no corrió: `admin-real.spec.ts`,
+  `landing-logout.spec.ts`, `ranking.spec.ts` con `E2E_SUPABASE=1`, y una
+  subida de fotos a mano.
+- **Decidir:** la contraseña de la demo del Admin (su hash está en un repo
+  público y es adivinable), el peso de la landing (195,3 de 200 kB), si se
+  hace T202 cuando vuelva Codex y el logro «Entre dos mundos».
 
 ### Qué hace Hernán (plan 016, 2026-10-06)
 
@@ -335,6 +365,7 @@ Tabla completa en [DECISIONES.md](DECISIONES.md), «Preguntas abiertas».
 | P23* | Uso de la lista de emails de quien aceptó noticias (qué, cada cuánto, con qué herramienta) |
 | P24* | Importes de puntos y topes del antitrampas (50 puntos por sello, topes por acción y día, tiempos mínimos) |
 | P26* | Arte final del Carnet como carné de identidad y de los sellos de cada fiesta |
+| — | Los textos nuevos del plan 017 (`muestra`: «Consigue descuentos», el aviso de taquilla con los 2 € del Carnet, el mensaje de la tienda), las imágenes de los productos y los carteles que faltan |
 | — | El sello «ARTISTA» del anverso del Carnet de artista (plan 016 T186, `muestra`) y «Defensa del Castillo» con el [borrador del plan 015](propuestas/2026-10-06-premios-mascotas-decision-alvaro.md) |
 
 \* Propuestas en el [borrador de D-27](propuestas/2026-10-03-d27-borrador.md);
@@ -349,8 +380,8 @@ el login del Admin con TOTP. La rama WIP de T07 (`a4c68d3`) ya no es el
 punto de partida. Queda: el **proyecto de producción** de Supabase
 ([lista](propuestas/2026-10-03-produccion-supabase.md)), la ticketera real
 con webhook (P2), PostHog, el editor visual del Admin, el dominio y las
-cuentas de BOIA, las copias y su restauración probada, y los códigos de
-respaldo del TOTP. La lista para publicar es REQ-PRO-020 y la firma Álvaro:
+cuentas de BOIA y las copias y su restauración probada (los códigos de
+respaldo del TOTP llegaron con el plan 017, T193). La lista para publicar es REQ-PRO-020 y la firma Álvaro:
 [entrega.md](entrega.md).
 
 ## Cosas que conviene saber
@@ -368,7 +399,7 @@ respaldo del TOTP. La lista para publicar es REQ-PRO-020 y la firma Álvaro:
   '**/packages/db/**'` (las pruebas de `packages/db` piden un Postgres local)
   y `PYTHONUTF8=1`.
 - El build falla si la landing pasa de su presupuesto (200 kB gzip; está en
-  185,5).
+  195,3 tras el plan 017).
 - Vercel: Root Directory `apps/web` con los archivos de fuera incluidos
   (`packages/` y `art/`). Cada push a `main` despliega a producción. Detalle
   en el [README](../README.md).

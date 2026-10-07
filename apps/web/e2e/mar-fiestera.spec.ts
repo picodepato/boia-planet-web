@@ -32,7 +32,10 @@ const fiesteraCode = SAMPLE_DISCOUNTS.find(
   (d) => d.id === missionDiscountOf(objects, spec.destination),
 )!;
 const exclusive = SAMPLE_COSMETICS.find((c) => c.slot === 'ship' && c.unlockMission)!;
-const buyable = SAMPLE_CONTENT.events.find((e) => e.state === 'on_sale' && e.islandId)!;
+/** Con checkout online: Halloween y SONIDO son sólo de taquilla (plan 017 T199). */
+const buyable = SAMPLE_CONTENT.events.find(
+  (e) => e.state === 'on_sale' && e.islandId && !e.boxOfficeOnly,
+)!;
 /** Un secreto sin código: escondido, sin «?», con monedas o puntos. */
 const secret = objects.find(
   (o) =>

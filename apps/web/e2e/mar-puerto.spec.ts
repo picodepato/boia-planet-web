@@ -7,6 +7,7 @@ import { marWorld } from '../app/mar/engine/compact';
 import { PLACE_MODELS_URL } from '../app/mar/engine/island-models';
 import { PIN_AVOID } from '../app/mar/engine/labels';
 import { t } from '../lib/i18n';
+import { translateSkinText } from '../lib/mundo/demo-world';
 import { mar, marSheet, openMar, shipAt, steerTo } from './mar-helpers';
 
 /**
@@ -27,7 +28,8 @@ test.describe.configure({ timeout: 180_000 });
 
 const world = marWorld(WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config);
 const harbor = world.objects.find((o) => o.identity.id === HARBOR_PLACE_ID)!;
-const NAME = harbor.identity.name;
+// Desde T195 el nombre de la skin es una clave i18n: se compara con su texto.
+const NAME = translateSkinText(harbor.identity.name);
 const GLB = `**${PLACE_MODELS_URL}/${HARBOR_PLACE_ID}/${HARBOR_PLACE_ID}.glb`;
 /** El barco más barato de la tienda: el que se compra desde el puerto. */
 const ship = SAMPLE_COSMETICS.filter((c) => c.slot === 'ship' && !c.base && c.priceCoins).sort(

@@ -12,6 +12,7 @@ import { RANKING_PAGE } from '../lib/landing/access';
 import { canonBoardOptions, castleBoardOptions } from '../lib/mundo/ranking-boards';
 import { CANON_BEST_KEY, canonBoardKey, canonRanking } from '../lib/mundo/ranking-canon';
 import { CASTLE_BEST_KEY, castleBoardKey, castleRanking } from '../lib/mundo/ranking-castle';
+import { translateSkinText } from '../lib/mundo/demo-world';
 import { circuitName } from '../lib/mundo/ranking-circuit';
 import { RANKING_PAGE_SIZE } from '../lib/mundo/ranking-global';
 import { pastHero, tap } from './hero-helpers';
@@ -258,7 +259,7 @@ test('REQ-AVE-034: un miembro ve los tiempos del circuito y los puntos de siempr
   await expect(circuitTab).toHaveAttribute('aria-selected', 'true');
   // Un solo circuito: su nombre, sin desplegable (plan 017 T188).
   await expect(ranking.getByTestId('ranking-tabla-nombre')).toHaveText(
-    circuitName(world, CIRCUIT_ID) ?? spec.id,
+    translateSkinText(circuitName(world, CIRCUIT_ID) ?? spec.id),
   );
   await expect(ranking.locator('select')).toHaveCount(0);
   await expect(ranking.getByTestId('ranking-lista')).toHaveAttribute('data-scope', 'circuit');
@@ -384,7 +385,7 @@ test.describe('modo local: las cuatro tablas del menú', () => {
     );
     const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
     await expect(ranking.getByTestId('ranking-tabla-nombre')).toHaveText(
-      circuitName(world, CIRCUIT_ID)!,
+      translateSkinText(circuitName(world, CIRCUIT_ID)!),
     );
     await expect(ranking.locator('select')).toHaveCount(0);
     await expect(list).toHaveAttribute('data-scope', 'circuit');

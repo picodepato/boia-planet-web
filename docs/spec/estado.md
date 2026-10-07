@@ -44,6 +44,19 @@ Ibiza, el sonido al mejorar el castillo y la arena sin turbo
 ([mar-castillo.spec.ts](../../apps/web/e2e/mar-castillo.spec.ts), las pruebas de la arena v3);
 guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.md).
 
+**Plan 017 sin REQ propio.** El [plan 017](../../plans/017-admin-rankings-calidad.md)
+(T187–T203) suma alcance que la spec no nombra: «Consigue descuentos» bajo
+«Zarpar» ([landing.spec.ts](../../apps/web/e2e/landing.spec.ts)), la entrada
+sólo en taquilla de Halloween y el Sonido con el descuento del Carnet
+([tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts)), la tienda que rota
+sus imágenes y vende sólo en la fiesta
+([merchandise.spec.ts](../../apps/web/e2e/merchandise.spec.ts)), «Cerrar
+sesión» en la cabecera ([landing-logout.spec.ts](../../apps/web/e2e/landing-logout.spec.ts))
+y el ranking en cuatro pestañas con la página `/ranking`
+([ranking.spec.ts](../../apps/web/e2e/ranking.spec.ts)). Los REQ que tocó
+llevan su nota en la tabla; guía de prueba:
+[plan 017](../propuestas/2026-10-07-plan-017-guia-prueba.md).
+
 <!-- estado:tabla -->
 | ID | Requisito | Alcance | Estado | Evidencia | Nota |
 |---|---|---|---|---|---|
@@ -306,7 +319,7 @@ guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.
 | REQ-ADM-028 | Retirada de recompensas implausibles | L1 | HECHO | [ledger.test.ts](../../packages/store/src/ledger.test.ts) «una compensación del Admin retira el logro y su premio, una sola vez»; [admin-real.spec.ts](../../apps/web/e2e/admin-real.spec.ts) «/admin con cuentas: código + TOTP y las cuatro secciones sobre datos reales»; [admin.supabase.ts](../../packages/db/src/supabase/admin.supabase.ts) | T94: con cuentas, Rankings anula un tiempo (`admin_void_race_time`) o una entrada de puntos (`admin_void_points`, compensación del libro), con motivo y auditoría |
 | REQ-ADM-029 | Aviso de impacto y confirmación de borrado | L1 | HECHO | [admin-endurecido.spec.ts](../../apps/web/e2e/admin-endurecido.spec.ts); [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
 | REQ-ADM-030 | Papelera y purga | L1 | HECHO | [admin-endurecido.spec.ts](../../apps/web/e2e/admin-endurecido.spec.ts); [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
-| REQ-ADM-031 | Peticiones de datos a mano | L1 | PARCIAL | [moderation.test.ts](../../packages/store/src/moderation.test.ts) «un Carnet oculto desaparece de lo público y vuelve al mostrarlo»; [admin-moderacion.spec.ts](../../apps/web/e2e/admin-moderacion.spec.ts) «ocultar un Carnet lo quita de la web y mostrarlo lo devuelve»; [moderation.supabase.ts](../../packages/db/src/supabase/moderation.supabase.ts) | Plan 017 T191 (decisión 5): retirada de contenido público desde el Admin, con cuentas y en la demo: ocultar y devolver un Carnet, su apodo y su foto; devolver una botella retirada; anular y devolver una entrada de la carrera, el Cañón o el Castillo (`20261007100200_moderation.sql`). Falta la descarga de la cuenta (T193) y el procedimiento documentado |
+| REQ-ADM-031 | Peticiones de datos a mano | L1 | PARCIAL | [moderation.test.ts](../../packages/store/src/moderation.test.ts) «un Carnet oculto desaparece de lo público y vuelve al mostrarlo»; [admin-moderacion.spec.ts](../../apps/web/e2e/admin-moderacion.spec.ts) «ocultar un Carnet lo quita de la web y mostrarlo lo devuelve»; [moderation.supabase.ts](../../packages/db/src/supabase/moderation.supabase.ts) | Plan 017 T191 (decisión 5): retirada de contenido público desde el Admin, con cuentas y en la demo: ocultar y devolver un Carnet, su apodo y su foto; devolver una botella retirada; anular y devolver una entrada de la carrera, el Cañón o el Castillo (`20261007100200_moderation.sql`). La descarga de la cuenta ya existe (T193, REQ-IDE-050). Falta el procedimiento a mano documentado y probado una vez |
 | REQ-ADM-032 | Mundo activo como temporada | L1 | PARCIAL | [misc.tsx](../../apps/web/app/admin/sections/misc.tsx) | Construido; sin prueba que lo nombre |
 | REQ-ADM-033 | Duplicar temporada | L2 | L2 | — | — |
 | REQ-ADM-034 | Admin de encuestas | L2 | L2 | — | — |

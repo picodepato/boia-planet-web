@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { translateSkinText } from '../lib/mundo/demo-world';
 
 /**
  * El mar 3D con lo que el plan 004 trajo a /juego (T51): el código del
@@ -45,7 +46,8 @@ const infoBoia = objects.find(
 )!;
 const boiaLine = (() => {
   const b = infoBoia.behaviors.find((x) => x.type === 'dialogue');
-  return b?.type === 'dialogue' ? b.params.lines[0]!.text : '';
+  // Desde T195 el texto de la skin es una clave i18n: se compara con el texto.
+  return b?.type === 'dialogue' ? translateSkinText(b.params.lines[0]!.text) : '';
 })();
 
 const OUT = path.resolve(
