@@ -94,7 +94,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: 8 slides (Carnet front/back seeded for the photo, public Carnet, sello, what accounts add, 4 ranking tabs); emoji cause found (Windows 10 lacks Unicode 14 emoji such as 🪪) · 6100627
 
 ## T208 — Part 5: The ocean `/mar`
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -107,7 +107,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of part 5: nothing overflows or is cut
   - 4 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T208/
   - Test command → exit 0
-- Outcome:
+- Outcome: 14 slides piece by piece (arrival, boat and shop, islands, Fiestera, characters, secrets, discounts, HUD), one «qué falta» + «preguntas y propuestas» («Todo el mar»), 22 captures · f54bcff
 
 ## T209 — Part 6: Minigames
 - Status: running (attempt 1)
@@ -127,7 +127,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T210 — Part 7: Admin
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -192,7 +192,11 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 run: Noto Color Emoji downloaded for deck captures only, done first in T209; T212 recaptures earlier parts (Hernán)
 - 2026-10-07 run: `.gitattributes` `merge=ours` + local `merge.ours.driver true` for the deck .pptx/.pdf so binary conflicts stop; stale binaries are refreshed by the next build and T212 (orchestrator, commit 23aa0fc)
 
+- 2026-10-07 T208: one «qué falta»/«preguntas» for the whole world; help button is «!» in the app so slides say «!»; L'Illeta only as a bullet (budget); boat-shop capture scrolled past the «Acuarela ilustrada» row (agent)
+
 ## Proposals (new scope)
+- 2026-10-07 T208: the boat shop shows a boat «Acuarela ilustrada · De serie» although Acuarela is hidden (app text)
+- 2026-10-07 T208: `island.secretHint` («Por aquí cerca huele a secreto») is defined but never shown in /mar
 - 2026-10-07 T205: the Admin cannot edit the Filosofía text
 - 2026-10-07 T205: `portadaParte` can leave a «·» at the start of a wrapped second line (tools/deck) → T212
 - 2026-10-07 T206: deck capture browser has no emoji font, so emoji in the site draw as empty boxes in captures (e.g. before «Mi Carnet»)
@@ -210,3 +214,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 21:37 T208 launched · attempt 1 · agent a15d4a39f1e9e9d1d · opus · DECK_PORT 3255
 - 2026-10-07 21:55 T207 conflict on pptx/pdf only → sent back to agent to merge main and rebuild
 - 2026-10-07 22:05 T207 done · branch worktree-agent-a4413a0b26814587c → 6100627
+- 2026-10-07 22:08 T209 launched · attempt 1 · agent ac5c3a5bb0c50520c · opus · DECK_PORT 3265 · emoji font first
+- 2026-10-07 22:40 T208 done · branch worktree-agent-a15d4a39f1e9e9d1d → f54bcff (binaries kept main's side via merge=ours)
