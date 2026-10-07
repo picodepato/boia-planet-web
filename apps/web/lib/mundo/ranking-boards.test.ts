@@ -1,8 +1,8 @@
 import { DEFENSE_RUN_MINS } from '@boia/engine/defense';
 import { SAMPLE_COSMETICS } from '@boia/store';
-import { WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { es } from '../i18n/es';
+import { worlds } from './demo-world';
 import { bossLabel, canonBoardOptions, castleBoardOptions } from './ranking-boards';
 import { CANON_RANKING_VERSION, canonBoardBosses, canonBoardKey } from './ranking-canon';
 import { CASTLE_DIFFICULTIES, CASTLE_RANKING_VERSION } from './ranking-castle';
@@ -64,7 +64,7 @@ describe('ningún texto visible dice «Arcilla»', () => {
   it('ni el catálogo i18n, ni el nombre del mundo, ni los barcos y skins de muestra', () => {
     const texts = [
       ...Object.values(es),
-      ...WORLD_REGISTRY.list().map((w) => w.name),
+      ...worlds.list().map((w) => w.name),
       ...SAMPLE_COSMETICS.map((c) => c.name),
     ];
     expect(texts.filter((s) => /arcilla/i.test(s))).toEqual([]);

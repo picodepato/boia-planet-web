@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T195: World texts into i18n
+
+**What exists**
+- `packages/world/src/worlds/arcilla/skin.ts` holds only i18n keys (name, tagline, place names, dialogue lines, panel texts); no prose literals left.
+- New `resolveSkinTexts(skin, translate)` (`worlds/skin.ts`) and `WorldRegistry.mapSkins(fn)` (`worlds/registry.ts`).
+- `apps/web/lib/mundo/demo-world.ts`: `worlds` is `WORLD_REGISTRY` with every skin text resolved through the catalog (`translateSkinText`: a key gives its text, any other value stays as is, so Acuarela and Admin-edited texts are untouched). `admin/use-admin.ts` and `(landing)/fotos/page.tsx` now read `worlds`.
+- New keys in `apps/web/lib/i18n/es-mundo.ts` (`world.arcilla.skin.*`); existing keys reused where the text was identical (boia lines/names, island bodies, tutorial 2 and 5, `whatsapp.title`, `fiestera.call.1`, `naufrago.1/2`, `world.arcilla.name/tagline`).
+- No visible change: resolved skin compared one-off against a dump of the old skin, identical (name, tagline, names, texts, lines, cues). No typos fixed.
+- Tests: new `apps/web/lib/mundo/skin-textos.test.ts` (every skin text is a catalog key; resolution works); `islas-entradas.test.ts` and `ranking-boards.test.ts` read `worlds`; `arcilla.test.ts` checks only literal names in the world package.
+- «Console messages shown to users»: none exist; the `console.*` calls are developer warnings, left as they are.
+
+**Commands**
+- skin.ts prose literals: grep for quoted strings with spaces/`¡¿`, `text:`/`title:`/`body:`/`kicker:` literals, excluding keys and comments → 0.
+- `E2E_PORT=4391 pnpm e2e mar-islas.spec.ts logros.spec.ts mar-isla-nochevieja.spec.ts --workers=1` → exit 0, 15 passed, 5 skipped (pre-existing skips).
+- vitest (test command, db excluded) → 229 files, 2159 tests passed; `tools/spec/checks.sh` OK; `pnpm lint` exit 0; `pnpm typecheck` exit 0; `pnpm build` exit 0 (landing 187.9 kB / 200 kB).
+
+**Pending**
+- `packages/world/src/worlds/arcilla/map.ts` still has Spanish prose (object names, default dialogues) outside this task's scope; Acuarela skin untouched.
+
 ## 2026-10-07 — plan 017 T193: Admin Carnet 000 sign-in, TOTP backup codes and account export
 
 Qué existe (decisiones 6 y 9; REQ-IDE-050 sube a HECHO; REQ-ADM-002 y REQ-ADM-039 con nota nueva):

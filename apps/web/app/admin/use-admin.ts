@@ -1,9 +1,10 @@
 'use client';
 
 import type { BoiaRepository } from '@boia/store';
-import { WORLD_REGISTRY, type WorldRegistry } from '@boia/world';
+import type { WorldRegistry } from '@boia/world';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { AdminError, type AdminActions, createAdminActions } from '../../lib/admin/actions';
+import { worlds } from '../../lib/mundo/demo-world';
 import { gameRepository } from '../../lib/repo';
 import { t } from '../../lib/i18n';
 
@@ -27,8 +28,8 @@ export function useAdminContext(): AdminContext | null {
     const repo = gameRepository();
     setBase({
       repo,
-      registry: WORLD_REGISTRY,
-      actions: createAdminActions({ repo, registry: WORLD_REGISTRY }),
+      registry: worlds,
+      actions: createAdminActions({ repo, registry: worlds }),
     });
   }, []);
   const revision = useSyncExternalStore(

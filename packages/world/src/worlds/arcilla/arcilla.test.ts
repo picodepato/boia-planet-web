@@ -235,7 +235,8 @@ describe('mapa compartido de Arcilla (T20)', () => {
     for (const id of WORLD_REGISTRY.ids()) {
       for (const place of events) expect(WORLD_REGISTRY.skin(id).names[place]).toBeUndefined();
     }
-    expect(ARCILLA_SKIN.names?.puerto).toBe('El Varadero');
+    // Los nombres propios son claves i18n (T195); su texto se comprueba en la web (islas-entradas.test.ts).
+    expect(ARCILLA_SKIN.names?.puerto).toBe('world.arcilla.skin.name.puerto');
   });
 
   it('la zona de la Fiestera no pisa la del Puerto de Alicante ni la del puerto de salida', () => {
@@ -253,8 +254,12 @@ describe('mapa compartido de Arcilla (T20)', () => {
   it('nombres de Arcilla del 2026-10-02: islas del Mediterráneo y Los Rápidos', () => {
     const arcilla = WORLD_REGISTRY.get('arcilla');
     const name = (id: string) => arcilla.places.find((p) => p.id === id)?.name;
-    expect(Object.fromEntries(Object.keys(NAMES_2026_10_02).map((id) => [id, name(id)]))).toEqual(
-      NAMES_2026_10_02,
+    // Los nombres propios (puerto, fiestera, circuito) son claves i18n (T195):
+    // su texto se comprueba en la web, en islas-entradas.test.ts.
+    const own = Object.keys(ARCILLA_SKIN.names ?? {});
+    const literal = Object.keys(NAMES_2026_10_02).filter((id) => !own.includes(id));
+    expect(Object.fromEntries(literal.map((id) => [id, name(id)]))).toEqual(
+      Object.fromEntries(literal.map((id) => [id, NAMES_2026_10_02[id]])),
     );
   });
 

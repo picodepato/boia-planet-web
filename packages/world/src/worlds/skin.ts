@@ -81,6 +81,35 @@ export type WorldTheme = Pick<WorldSkin, 'id' | 'name' | 'ship' | 'sea' | 'ui' |
   tagline?: string;
 };
 
+/**
+ * La skin con cada texto visible pasado por `translate` (nombre, historia,
+ * nombres de lugar, bocadillos y textos de panel). Los textos de una skin son
+ * claves del catálogo i18n de la web (plan 017 T195); `translate` devuelve el
+ * texto de la clave, o el mismo valor si no es una clave (texto ya escrito,
+ * por ejemplo uno editado en el Admin).
+ */
+export function resolveSkinTexts(skin: WorldSkin, translate: (value: string) => string): WorldSkin {
+  const places: WorldSkin['places'] = {};
+  for (const [id, p] of Object.entries(skin.places)) {
+    places[id] = {
+      ...p,
+      ...(p.texts
+        ? {
+            texts: Object.fromEntries(Object.entries(p.texts).map(([k, v]) => [k, translate(v)])),
+          }
+        : {}),
+      ...(p.lines ? { lines: p.lines.map((l) => ({ ...l, text: translate(l.text) })) } : {}),
+    };
+  }
+  return {
+    ...skin,
+    name: translate(skin.name),
+    ...(skin.tagline ? { tagline: translate(skin.tagline) } : {}),
+    places,
+    names: Object.fromEntries(Object.entries(skin.names).map(([k, v]) => [k, translate(v)])),
+  };
+}
+
 /** Carpeta de arte de un lugar en un mundo, por convención. */
 export function conventionAsset(worldId: string, placeId: string): string {
   return `mundos/${worldId}/${placeId}`;

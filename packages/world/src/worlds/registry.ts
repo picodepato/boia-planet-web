@@ -108,6 +108,16 @@ export class WorldRegistry {
     return new WorldRegistry(next.map, next.skins, this.defaultId, [...this.hiddenIds]);
   }
 
+  /** Un registro nuevo con cada skin pasada por `fn` (p. ej. `resolveSkinTexts`). */
+  mapSkins(fn: (skin: WorldSkin) => WorldSkin): WorldRegistry {
+    return new WorldRegistry(
+      this.map,
+      [...this.skins.values()].map(fn),
+      this.defaultId,
+      [...this.hiddenIds],
+    );
+  }
+
   /** Un registro nuevo con el lugar en otro sitio: en el mapa compartido, así en todos los mundos. */
   movePlace(placeId: string, x: number, y: number): WorldRegistry {
     return new WorldRegistry(

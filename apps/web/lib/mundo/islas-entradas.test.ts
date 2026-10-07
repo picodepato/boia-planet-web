@@ -3,7 +3,6 @@ import { SAMPLE_EVENTS, TICKET_EVENT_ISLANDS } from '@boia/store';
 import {
   HALLOWEEN_PLACE_ID,
   TICKET_ISLAND_EVENTS,
-  WORLD_REGISTRY,
   type WorldObject,
 } from '@boia/world';
 import { describe, expect, it } from 'vitest';
@@ -13,6 +12,7 @@ import { eventOfPlace } from '../../app/mar/sheet';
 import { islandEvent } from '../admin/world';
 import { resolveTicketsPanel } from '../landing/resolve';
 import { SAMPLE_CONTENT } from '../landing/sample-content';
+import { worlds } from './demo-world';
 
 /**
  * Las islas y los eventos con entradas del 2026-10-02 (T67, decisión de
@@ -54,7 +54,7 @@ const dayInMadrid = (iso: string) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(iso));
 
 const objectIn = (worldId: string, id: string): WorldObject | undefined =>
-  WORLD_REGISTRY.get(worldId).config.objects.find((o) => o.identity.id === id);
+  worlds.get(worldId).config.objects.find((o) => o.identity.id === id);
 
 describe('islas y entradas del 2026-10-02 (T67)', () => {
   it('Arcilla lleva los nombres decididos', () => {
@@ -65,8 +65,8 @@ describe('islas y entradas del 2026-10-02 (T67)', () => {
   });
 
   it('la Isla de Halloween está en los dos mundos: isla activa que vende su evento', () => {
-    expect(WORLD_REGISTRY.ids()).toEqual(expect.arrayContaining(['arcilla', 'acuarela']));
-    for (const w of WORLD_REGISTRY.ids()) {
+    expect(worlds.ids()).toEqual(expect.arrayContaining(['arcilla', 'acuarela']));
+    for (const w of worlds.ids()) {
       const o = objectIn(w, HALLOWEEN_PLACE_ID);
       expect(o, w).toBeDefined();
       expect(o!.identity).toMatchObject({
@@ -77,7 +77,7 @@ describe('islas y entradas del 2026-10-02 (T67)', () => {
       expect(eventOfPlace(o)).toBe(TICKET_ISLAND_EVENTS.halloween);
       expect(o!.behaviors.some((b) => b.type === 'ticket')).toBe(true);
       // También en el mar 3D (el mundo compacto de /mar).
-      expect(marWorld(WORLD_REGISTRY.get(w).config).objects.map((x) => x.identity.id)).toContain(
+      expect(marWorld(worlds.get(w).config).objects.map((x) => x.identity.id)).toContain(
         HALLOWEEN_PLACE_ID,
       );
     }
@@ -111,7 +111,7 @@ describe('islas y entradas del 2026-10-02 (T67)', () => {
     const panel = resolveTicketsPanel(SAMPLE_CONTENT, NOW);
     const listed = [...(panel.featured ? [panel.featured] : []), ...panel.others];
     expect(listed.map((e) => e.name).sort()).toEqual(TICKET_EVENTS.map(([n]) => n).sort());
-    const world = marWorld(WORLD_REGISTRY.get('arcilla').config);
+    const world = marWorld(worlds.get('arcilla').config);
     const tickets = worldTickets(
       SAMPLE_CONTENT,
       NOW,

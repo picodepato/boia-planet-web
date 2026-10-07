@@ -1,4 +1,4 @@
-import { WORLD_REGISTRY } from '@boia/world';
+import { worlds } from '../../../lib/mundo/demo-world';
 import type { Metadata } from 'next';
 import '../components/paginas.css';
 import Link from 'next/link';
@@ -24,8 +24,8 @@ export const metadata: Metadata = {
 
 /** Las islas de evento del mapa compartido, con su nombre en el mundo por defecto. */
 function galleryIslands(): GalleryIsland[] {
-  const places = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).places;
-  return eventIslands(WORLD_REGISTRY.map).map((p) => ({
+  const places = worlds.get(worlds.defaultId).places;
+  return eventIslands(worlds.map).map((p) => ({
     id: p.id,
     name: places.find((x) => x.id === p.id)?.name ?? p.id,
   }));
