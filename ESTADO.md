@@ -4,6 +4,41 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T207: Part 4: Carnet BOIA and Ranking
+
+Qué existe:
+- `docs/presentacion/partes/04-carnet-ranking.ts`: la parte 4, 8 diapositivas
+  (23–30 del mazo de hoy): portada de parte; «Un carné de identidad para cada
+  BOIERO» (qué es); sellos, Carnet público y Carnet de artista; el QR de la
+  fiesta (`/sello`) y lo que traen las cuentas (número, «Escanear sello»,
+  cerrar sesión, borrar, «Descargar mis datos»); el Ranking con sus cuatro
+  tablas; Cañón, Castillo (9 tablas) y Puntos; «Qué falta» (4 «Necesario para
+  salir», 2 «Puede esperar»); «Preguntas y propuestas». Notas en todas.
+- `apps/web/e2e/deck/04-carnet-ranking.deck.ts`: 8 capturas en móvil, modo
+  local. Siembra en el navegador un Carnet con las compras de prueba (sus
+  sellos), 180 puntos, una vuelta a Los Rápidos y una partida en la primera
+  tabla del Cañón y del Castillo; los desplegables se abren en la página
+  para la foto.
+- `docs/presentacion/capturas/04-carnet-ranking/` (8 JPEG), `.pptx` y PDF
+  regenerados.
+
+Comandos:
+- `DECK_PORT=3235 pnpm deck:capturas 04` → exit 0, 8 passed.
+- `pnpm deck` → exit 0, 32 diapositivas, parte 4 = 17–24 (8).
+- `pnpm deck:render` → exit 0, 32 páginas; revisadas a ojo las PNG 17–24:
+  nada cortado ni fuera de su caja.
+- Tras unir main (con la parte 2): `pnpm deck` → exit 0, 38 diapositivas,
+  parte 4 = 23–30 (8); `pnpm deck:render` → exit 0, 38 páginas; partes 2–4
+  se ven bien.
+- `sh tools/spec/checks.sh` → 0; `pnpm lint` → 0; `pnpm typecheck` → 0.
+
+Pendiente:
+- Emoji en las capturas: el problema no es el navegador sin cabeza (🥇 y 🔎
+  salen bien), sino que la fuente de emoji de Windows 10 (Segoe UI Emoji)
+  no tiene los emoji nuevos, como 🪪 (Unicode 14) de «🪪 Mi Carnet». Usar
+  Chrome o Edge no lo arregla. Arreglo posible: cargar Noto Color Emoji en
+  las capturas, pero hay que descargar la fuente (decide Hernán).
+
 ## 2026-10-07 — plan 018 T205: Parte 2 de la presentación, la landing
 
 Qué existe:
