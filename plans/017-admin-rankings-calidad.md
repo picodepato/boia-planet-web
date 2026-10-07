@@ -1,6 +1,6 @@
 # Plan 017 — Discounts hook, rankings in the menu, Admin photos and tools, account, quality
 
-Status: active
+Status: done
 Created: 2026-10-07
 Base branch: main
 Goal: Batch chosen by Hernán on 2026-10-07. (1) The landing invites to sail with a short «Consigue descuentos» line under «Zarpar». (2) The menu's ranking shows everything: four options (race, Cañón, Castillo, global), with a dropdown only for the Cañón (2 boards) and the Castillo (9 boards), and no visible «Arcilla» left. (3) Admin: upload real photos to an island and mark its event as past, plus object creation tools, Carnet moderation and editable store/contact/footer links. (4) Account: data export, Admin TOTP backup codes and the plan 008 ranking/stamp gaps. (5) Quality: world texts into i18n, automated tests up to date, lazy videos, and the castle's Ibiza card showing its real payout.
@@ -238,7 +238,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: desktop link row from 1200 px (900–1199 px in «Menú»), logout as an icon button there (text kept for screen readers and title), tighter gaps and nowrap 1200–1359 px; e2e asserts no header item wraps · 68ae725
 
 ## T198 — Close plan 017
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T203 (T202 skipped by Hernán)
 - Model: opus
 - Goal: Run the full e2e, fix what this plan broke (small fixes only; report anything bigger), update docs and write the try-it guide for Hernán.
@@ -249,9 +249,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `docs/propuestas/2026-10-07-plan-017-guia-prueba.md` written (what changed, how to try it, the migrations Hernán must apply on `boia-planet-dev` and production, open questions)
   - `docs/TRASPASO.md` and `docs/spec/estado.md` updated; `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: guide `docs/propuestas/2026-10-07-plan-017-guia-prueba.md`, TRASPASO and estado.md updated, 6 e2e specs adjusted; full e2e cut short by Hernán mid-desktop (mobile half done, timing-sensitive desktop failures not rerun); test command green on main · 3849167
 
 ## Decisions
+- 2026-10-07 T198: Hernán stopped the full e2e mid-run and asked to integrate as is; the orchestrator wrote the T198 status note saying so (Hernán)
 - 2026-10-07 T203: header link row starts at 1200 px; logout is an icon button in the row; mobile unchanged (agent)
 - 2026-10-07 run: if Codex cannot do T202 (out of credits or unable to make the images), T202 is skipped, not retried or moved to Opus; store keeps T201's MUESTRA placeholders and events keep their current posters (Hernán)
 - 2026-10-07 run: Hernán asked to launch the Codex task at once → 3 agents running (T192, T203, T202), above the usual 2 (Hernán)
@@ -331,3 +332,6 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 19:56 T202 Codex usage limit before any change → skipped per Hernán; worktree and branch removed
 - 2026-10-07 20:00 T192 done · worktree-agent-a221ef35f0e8032ad (+ abef2dab) → 3a89dc6
 - 2026-10-07 20:01 T203 done · worktree-agent-a69c10f44897b7d47 (+ a0f87b68) → 68ae725
+- 2026-10-07 20:03 T198 launched · attempt 1 · agent a185d9a69f9b19978 · opus
+- 2026-10-07 20:43 T198 stopped by Hernán, WIP committed as e28be5f and integrated → 3849167 (test command green)
+- 2026-10-07 20:44 plan 017 done
