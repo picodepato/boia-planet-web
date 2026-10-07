@@ -167,9 +167,17 @@ export function BlockView({
             </p>
             <div className="hero__actions">
               {/* «Zarpar» enters the game (D-24): a plain link, the dive with JavaScript. */}
-              <a className="cta-explore" href={ZARPAR_HREF} data-zarpar="hero" data-testid="cta-3d">
-                <span className="cta-explore__label">{t('hero.explore')}</span>
-              </a>
+              <div className="hero__explore">
+                <a
+                  className="cta-explore"
+                  href={ZARPAR_HREF}
+                  data-zarpar="hero"
+                  data-testid="cta-3d"
+                >
+                  <span className="cta-explore__label">{t('hero.explore')}</span>
+                </a>
+                <p className="hero__discount-hint">{t('hero.explore.discountHint')}</p>
+              </div>
               <a
                 className="button button--tickets"
                 href="#tickets"

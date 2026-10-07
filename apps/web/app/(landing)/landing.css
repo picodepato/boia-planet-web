@@ -553,15 +553,64 @@ html[data-intro='play'] .hero__hint {
   left: var(--gutter);
   right: var(--gutter);
   top: 74%;
+  /* T187: reserve space without overriding the configured hero framing. */
+  margin-top: -28px;
   transform: translateY(-50%);
   display: flex;
   justify-content: center;
   gap: 12px;
 }
 
+.hero__explore {
+  position: relative;
+  flex: 195 1 0;
+  min-width: 0;
+  display: flex;
+}
+
+/* T187: the sample invitation sits below Zarpar, outside the link. */
+.hero__discount-hint {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  color: var(--on-dark-70);
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* One brief glint after a long pause; plain text with reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (background-clip: text) {
+    .hero__discount-hint {
+      background: linear-gradient(
+        110deg,
+        var(--on-dark-70) 45%,
+        rgb(255 255 255 / 0.95) 50%,
+        var(--on-dark-70) 55%
+      );
+      background-size: 250% 100%;
+      background-clip: text;
+      color: transparent;
+      animation: hero-discount-glint 8s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes hero-discount-glint {
+  0%,
+  82% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
 /* CTA dominante (D-07, REQ-ENT-026): «Zarpar», ≥ 56 px, pulso ≤ 4 % cada 3 s. */
 .cta-explore {
-  flex: 195 1 0;
+  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -602,7 +651,7 @@ html[data-intro='play'] .hero__hint {
 }
 
 @media (min-width: 600px) {
-  .cta-explore {
+  .hero__explore {
     flex: 0 0 220px;
   }
   .cta-explore__label {
@@ -739,6 +788,7 @@ html[data-intro='play'][data-intro-act='waiting'] .intro-loading {
   }
   .hero__actions {
     top: 84%;
+    margin-top: -44px;
   }
   .hero__corner {
     font-size: 12px;

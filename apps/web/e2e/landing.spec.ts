@@ -68,6 +68,34 @@ test('CTA Zarpar y Entradas se ven sin scroll', async ({ page }, info) => {
     .toEqual([expect.objectContaining({ properties: expect.objectContaining({ intro: 'none' }) })]);
 });
 
+test('Consigue descuentos aparece justo debajo de Zarpar y queda estático con movimiento reducido', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(LANDING);
+  const zarpar = hero(page).getByRole('link', { name: 'Zarpar', exact: true });
+  const discount = hero(page).locator('.hero__discount-hint');
+  await expect(zarpar).toBeVisible();
+  await expect(discount).toHaveText('Consigue descuentos');
+  await expect(discount).toBeVisible();
+  await expect(discount).toBeInViewport();
+  await expect(zarpar.locator('xpath=following-sibling::p[1]')).toHaveText('Consigue descuentos');
+  const buttonBox = (await zarpar.boundingBox())!;
+  const lineBox = (await discount.boundingBox())!;
+  const scrollHintBox = (await hero(page).locator('.hero__hint').boundingBox())!;
+  expect(lineBox.y + lineBox.height).toBeLessThan(scrollHintBox.y);
+  const gap = lineBox.y - (buttonBox.y + buttonBox.height);
+  expect(gap).toBeGreaterThanOrEqual(4);
+  expect(gap).toBeLessThanOrEqual(12);
+  expect(
+    Math.abs(lineBox.x + lineBox.width / 2 - (buttonBox.x + buttonBox.width / 2)),
+  ).toBeLessThanOrEqual(1);
+  await expect(discount).toHaveCSS('animation-name', 'none');
+  await expect(discount).toHaveCSS('background-image', 'none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(discount).toHaveCSS('animation-name', 'hero-discount-glint');
+});
+
 test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', async ({ page }) => {
   // La compra de prueba (T25) carga al pulsar el checkout y el repositorio,
   // que el juego también usa: esos chunks son compartidos, no del juego. Se

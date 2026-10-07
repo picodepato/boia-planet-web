@@ -142,13 +142,16 @@ describe('renderizador de bloques de la home', () => {
     expect(html).toMatch(new RegExp(`class="hero__corner-line">${hero.positioning}<`));
     expect(html).toContain('data-hero-hint');
     expect(html).not.toContain('Encuentra descuentos para tus entradas');
+    // T187: the short invitation follows Zarpar, outside its accessible name.
+    expect(html).toMatch(
+      /<a [^>]*data-zarpar="hero"[^>]*><span class="cta-explore__label">Zarpar<\/span><\/a><p class="hero__discount-hint">Consigue descuentos<\/p>/,
+    );
   });
 
   it('el hero lleva dos botones: «Zarpar» (/mar con la bienvenida) y «Entradas» al lado (plan 007)', () => {
     const hero = SAMPLE_CONTENT.blocks.find((b) => b.type === 'hero')!;
     const html = render(hero);
-    const actions = html.match(/<div class="hero__actions">(.*?)<\/div>/s)?.[1] ?? '';
-    const hrefs = [...actions.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    const hrefs = [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs).toEqual([ZARPAR_HREF.replace('&', '&amp;'), '#tickets']);
     expect(html).not.toContain('href="/juego"');
   });

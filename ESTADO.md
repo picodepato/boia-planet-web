@@ -4,6 +4,18 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T187: Landing «Consigue descuentos» under «Zarpar»
+
+Hecho por Codex + wrapper. Existe: línea `hero.explore.discountHint` («Consigue descuentos», `muestra`) bajo el botón Zarpar del hero (`blocks.tsx`, `landing.css`), con un destello CSS breve cada 8 s; estática con `prefers-reduced-motion`. Texto en i18n (es-web, es-zonas-web, textos-zonas.md).
+
+Comandos:
+- `pnpm build` → OK, landing 187,3 kB gzip (presupuesto 200 kB).
+- `E2E_PORT=3187 pnpm e2e landing.spec.ts --workers=1` → 12 passed; `landing-scroll.spec.ts record-titulo.spec.ts` → 22 passed, 4 skipped (grabaciones).
+- vitest (sin packages/db) → 220 ficheros, 2084 tests passed; checks.sh, lint, typecheck → OK.
+- Capturas (escritorio, móvil 390x844, movimiento reducido): /tmp/orchestrator-attach/boia-planet-hernan-T187/
+
+Pendiente: nada.
+
 ## 2026-10-07 — plan 017 T188: Rankings menu: race, Cañón, Castillo and global; no visible «Arcilla»
 
 Qué existe:

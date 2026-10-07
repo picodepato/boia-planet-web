@@ -31,6 +31,8 @@ const base = {
 
   'hero.brand': 'BOIA.PLANET',
   'hero.explore': 'Zarpar',
+  // T187: invitación bajo Zarpar, muestra.
+  'hero.explore.discountHint': 'Consigue descuentos',
   'hero.explore.withPromotions': 'Encuentra descuentos para tus entradas',
   'hero.explore.withoutPromotions': 'Descubre eventos y secretos navegando',
   'hero.explore3d': 'Navegar en 3D',
