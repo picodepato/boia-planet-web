@@ -17,10 +17,11 @@ import type { FoundDiscount } from '@boia/store';
 import type { WorldObject } from '@boia/world';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { islandMemories } from '../admin/world';
+import { type IslandMemory, islandMemoryGalleries } from '../admin/world';
 import { EVENTOS_COPY } from '../landing/eventos-copy';
 import { eventHref, galleryAnchor, photosHref } from '../landing/eventos';
 import { liveContent } from '../landing/live-content';
+import { PhotoImage } from '../photo-image';
 import { voyageHref } from './autopilot';
 import './place-panels.css';
 import { t as msg } from '../i18n';
@@ -199,12 +200,50 @@ function Poster({ event }: { event: BoiaEvent }) {
   );
 }
 
+/** Fotos que se ven en cada recuerdo; el resto, en «Fotos y eventos». */
+const MEMORY_PHOTOS = 6;
+
+/** La galería de un recuerdo (T189): sus fotos y, si hay más, el enlace a todas. */
+function MemoryGallery({ memory }: { memory: IslandMemory }) {
+  const { event, photos } = memory;
+  if (photos.length === 0) return null;
+  return (
+    <div className="juego-recuerdo-galeria">
+      <ul
+        className="juego-recuerdo-fotos"
+        aria-label={msg('juego.placePanels.fotosDelRecuerdo', { name: event.name })}
+        data-testid={`recuerdo-fotos-${event.id}`}
+      >
+        {photos.slice(0, MEMORY_PHOTOS).map((p) => (
+          <li key={p.id} data-foto={p.id}>
+            {p.src ? (
+              <PhotoImage photo={p} className="juego-recuerdo-foto" />
+            ) : (
+              <span className="juego-recuerdo-foto is-muestra" role="img" aria-label={p.alt}>
+                📷
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      {photos.length > MEMORY_PHOTOS && event.islandId ? (
+        <a
+          className="juego-panel-link"
+          href={photosHref(galleryAnchor({ islandId: event.islandId, slug: event.slug }))}
+        >
+          {msg('juego.placePanels.masFotos', { n: photos.length })}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 /**
- * Los eventos que ya pasaron por esta isla, con su cartel: la isla se queda
- * con ellos (T26, REQ-COM-002, REQ-COM-005).
+ * Los eventos que ya pasaron por esta isla, con su cartel y sus fotos: la
+ * isla se queda con ellos (T26, REQ-COM-002, REQ-COM-005; galería, T189).
  */
 export function IslandMemories({ placeId }: { placeId: string }) {
-  const memories = islandMemories(placeId, liveContent().events, new Date());
+  const memories = islandMemoryGalleries(placeId, liveContent(), new Date());
   if (memories.length === 0) {
     return <p className="juego-panel-pending">{EVENTOS_COPY.island.memoriesEmpty}</p>;
   }
@@ -212,17 +251,21 @@ export function IslandMemories({ placeId }: { placeId: string }) {
     <div className="juego-panel-block" data-testid="panel-recuerdos">
       <h3>{EVENTOS_COPY.island.memoriesHeading}</h3>
       <ul className="juego-recuerdos">
-        {memories.map((e) => (
-          <li key={e.id} data-evento={e.id} data-estado={e.state}>
-            <Poster event={e} />
-            <span>
-              <Link href={eventHref(e.slug)} prefetch={false}>
-                <strong>{e.name}</strong>
-              </Link>{' '}
-              · {formatDate(e.startsAt, e.timeZone)} <StateTag event={e} />
-            </span>
-          </li>
-        ))}
+        {memories.map((m) => {
+          const e = m.event;
+          return (
+            <li key={e.id} data-evento={e.id} data-estado={e.state}>
+              <Poster event={e} />
+              <span>
+                <Link href={eventHref(e.slug)} prefetch={false}>
+                  <strong>{e.name}</strong>
+                </Link>{' '}
+                · {formatDate(e.startsAt, e.timeZone)} <StateTag event={e} />
+              </span>
+              <MemoryGallery memory={m} />
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

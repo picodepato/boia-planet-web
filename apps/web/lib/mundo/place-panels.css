@@ -157,8 +157,39 @@
 }
 .juego-recuerdos li {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+}
+/* T189: la galería de cada recuerdo, debajo de su cartel. */
+.juego-recuerdo-galeria {
+  flex: 1 0 100%;
+  display: grid;
+  gap: 6px;
+}
+.juego-recuerdo-fotos {
+  list-style: none;
+  margin: 0;
+  padding: 0 !important;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.juego-recuerdo-fotos li {
+  display: block;
+}
+.juego-recuerdo-foto {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: linear-gradient(160deg, #1b4a73, #0b1830);
+}
+.juego-recuerdo-foto.is-muestra {
+  font-size: 18px;
 }
 .juego-cartel {
   flex: none;

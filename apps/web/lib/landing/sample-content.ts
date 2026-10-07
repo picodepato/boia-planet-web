@@ -20,6 +20,7 @@ export const SAMPLE_CONTENT: HomeContent = homeContentSchema.parse({
   events: SAMPLE_EVENTS,
   artists: SAMPLE_ARTISTS,
   photos: SAMPLE_PHOTOS,
+  albums: SAMPLE_ALBUMS,
   promotions: SAMPLE_PROMOTIONS,
 });
 

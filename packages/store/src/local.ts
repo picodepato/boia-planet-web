@@ -1810,6 +1810,7 @@ class LocalRepository implements BoiaRepository {
           events: this.resolved('events'),
           artists: this.resolved('artists'),
           photos: this.resolved('photos'),
+          albums: this.resolved('albums'),
           promotions: this.resolved('promotions'),
         }),
       events: async () => clone(this.resolved('events')),

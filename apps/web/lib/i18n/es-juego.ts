@@ -173,6 +173,8 @@ export const esJuego = {
   'juego.placePanels.puertoDeFotosMuestra': 'Isla de Benidorm · fotos · muestra',
   'juego.placePanels.todasLasFotosDe': 'Todas las fotos de BOIA se revelan aquí.',
   'juego.placePanels.galeria': 'Galería',
+  'juego.placePanels.fotosDelRecuerdo': 'Fotos de {name}',
+  'juego.placePanels.masFotos': 'Ver las {n} fotos',
   'juego.placePanels.verFotosYEventos': 'Ver «Fotos y eventos»',
   'juego.placePanels.tiendaMuestra': 'Tienda · muestra',
   'juego.placePanels.camisetasToteBagsY': 'Camisetas, tote bags y pegatinas.',

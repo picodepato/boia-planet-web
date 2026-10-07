@@ -787,6 +787,86 @@ export type Database = {
           },
         ];
       };
+      event_albums: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          event_date: string | null;
+          event_finished: boolean;
+          event_id: string;
+          id: string;
+          island_id: string;
+          title: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          event_date?: string | null;
+          event_finished?: boolean;
+          event_id: string;
+          id: string;
+          island_id: string;
+          title: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          event_date?: string | null;
+          event_finished?: boolean;
+          event_id?: string;
+          id?: string;
+          island_id?: string;
+          title?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      event_photos: {
+        Row: {
+          album_id: string;
+          alt: string;
+          created_at: string;
+          created_by: string | null;
+          height: number;
+          id: string;
+          url: string;
+          width: number;
+        };
+        Insert: {
+          album_id: string;
+          alt: string;
+          created_at?: string;
+          created_by?: string | null;
+          height: number;
+          id: string;
+          url: string;
+          width: number;
+        };
+        Update: {
+          album_id?: string;
+          alt?: string;
+          created_at?: string;
+          created_by?: string | null;
+          height?: number;
+          id?: string;
+          url?: string;
+          width?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'event_photos_album_id_fkey';
+            columns: ['album_id'];
+            isOneToOne: false;
+            referencedRelation: 'event_albums';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       event_secrets: {
         Row: {
           event_id: string;

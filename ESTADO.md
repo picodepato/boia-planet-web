@@ -4,6 +4,54 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T189: Admin island photos and past events
+
+Qué existe:
+
+- **Admin → Fotos y vídeos → «Fotos de una isla»** (`apps/web/app/admin/sections/photos.tsx`):
+  se elige la isla (`eventIslands`) y su evento (los de esa isla y los que no
+  tienen isla), se suben archivos de verdad (PNG/JPEG/WebP por los primeros
+  bytes, ≤ 15 MB, ≥ 200 px de lado corto), con texto alternativo obligatorio
+  (numerado si hay varias) y «Marcar el evento como pasado» (marcado por
+  defecto). Sin aprobación: se publica al momento (decisión 4).
+- **Copia propia** (`lib/admin/photo-upload.ts`): WebP calidad 0,82 (JPEG si el
+  navegador no sabe WebP), lado largo ≤ 1600 px, sin recortar ni agrandar.
+- **Modo local**: el archivo en IndexedDB (`lib/admin/photo-store.ts`, base
+  `boia-fotos`); la foto lo nombra `local-photo:<id>` (nuevo en `photoSchema.src`).
+  `addIslandPhotos` (`lib/admin/actions.ts`) crea/usa el álbum `album-<evento>`
+  (`eventAlbumId`), guarda las fotos y, marcado, pone el evento en `finished`
+  a mano y ligado a la isla. `PhotoImage` (`lib/photo-image.tsx`) las pinta.
+- **Supabase**: migración `supabase/migrations/20261007100100_event_photos.sql`
+  (tablas `event_albums`, `event_photos` con RLS: lectura pública, escritura
+  admin con aal2, auditoría; bucket público `event-photos`, 4 MB, WebP/JPEG,
+  escritura del equipo). El Admin con cuentas sube al bucket y escribe las
+  tablas (`saveSharedIslandPhotos`); la web las suma al contenido
+  (`lib/admin/shared-photos.ts`: álbum, fotos y el evento como finalizado) en
+  `/mar` (`refreshLiveContent`) y `/fotos`. Tipos en `database.types.ts` a mano.
+- **Isla**: los recuerdos llevan su galería (`islandMemoryGalleries` en
+  `lib/admin/world.ts`; `IslandMemories` en `place-panels.tsx`, 6 fotos y
+  «Ver las N fotos»). `HomeContent` lleva `albums` (opcional; local y muestra).
+- `docs/spec/estado.md`: notas y pruebas en REQ-AVE-014, REQ-ADM-019 (siguen
+  PARCIAL por «Próximos eventos» y artistas/textos), REQ-COM-005, REQ-COM-031.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 220 archivos, 2084 pruebas
+  (nuevas: `lib/admin/island-photos.test.ts` 15, `lib/admin/event-photos-sql.test.ts` 4).
+- `sh tools/spec/checks.sh` → OK (HECHO 159 · PARCIAL 68).
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0, landing 187,0 kB (tope 200).
+- `E2E_PORT=3189 pnpm e2e admin-fotos.spec.ts ciclo-evento.spec.ts --workers=1` → exit 0, 4 pasan.
+- Capturas (`T189_SHOTS=<carpeta>` en el spec): `/tmp/orchestrator-attach/boia-planet-hernan-T189/`
+  `admin-subida-*.png`, `admin-lista-*.png`, `isla-recuerdo-*.png` (móvil y escritorio).
+
+Pendiente (Hernán, en `boia-planet-dev`):
+
+- Aplicar `20261007100100_event_photos.sql` (`pnpm --filter @boia/db db:migrate:dev`),
+  `pnpm --filter @boia/db db:types:dev` (debería no dar diferencias con los tipos a mano),
+  `pnpm test:supabase` (nuevo `packages/db/src/supabase/event-photos.supabase.ts`) y
+  probar la subida con `E2E_SUPABASE=1` a mano en `/admin` (no hay e2e de Supabase para esto).
+- Los archivos locales que quedan en IndexedDB al borrar una foto o «Volver a la muestra» no se borran.
+
 ## 2026-10-06 — plan 016 T185: Close
 
 Qué existe:

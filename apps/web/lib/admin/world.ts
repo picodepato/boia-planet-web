@@ -1,4 +1,11 @@
-import { EVENT_STATE_BEHAVIOR, type BoiaEvent, type Discount } from '@boia/contracts';
+import {
+  type Album,
+  EVENT_STATE_BEHAVIOR,
+  type BoiaEvent,
+  type Discount,
+  type Photo,
+  eventPhotos,
+} from '@boia/contracts';
 import type { PlacePatch, SkinPatch } from '@boia/store';
 import {
   BOARD_REF,
@@ -216,6 +223,32 @@ export function islandMemories(
   return events
     .filter((e) => e.islandId === placeId && e.state !== 'draft' && !isCurrentEvent(e, now))
     .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+}
+
+/** Un recuerdo de una isla con su galería: las fotos del álbum de ese evento (T189). */
+export interface IslandMemory {
+  event: BoiaEvent;
+  photos: Photo[];
+}
+
+/**
+ * Los recuerdos de una isla con sus fotos (D-23 punto 7, REQ-COM-005): cada
+ * evento pasado de la isla, del más reciente al más antiguo, con las fotos
+ * de sus álbumes.
+ */
+export function islandMemoryGalleries(
+  placeId: string,
+  content: {
+    events: readonly BoiaEvent[];
+    albums?: readonly Album[] | undefined;
+    photos: readonly Photo[];
+  },
+  now: Date,
+): IslandMemory[] {
+  return islandMemories(placeId, content.events, now).map((event) => ({
+    event,
+    photos: eventPhotos(event.id, content.albums ?? [], content.photos),
+  }));
 }
 
 /**

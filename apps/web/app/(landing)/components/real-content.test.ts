@@ -4,6 +4,7 @@ import {
   eventPosterPath,
   HALLOWEEN_EVENT_ID,
   REAL_CONTENT,
+  SAMPLE_ALBUMS,
   SAMPLE_PHOTOS,
   SAMPLE_PROMOTIONS,
   sampleArtists,
@@ -48,6 +49,7 @@ const contentOf = (real: RealContent): HomeContent =>
     events: sampleEvents(real),
     artists: sampleArtists(real),
     photos: SAMPLE_PHOTOS,
+    albums: SAMPLE_ALBUMS,
     promotions: SAMPLE_PROMOTIONS,
   });
 

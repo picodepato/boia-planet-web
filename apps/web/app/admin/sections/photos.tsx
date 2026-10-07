@@ -1,7 +1,19 @@
 'use client';
 
-import type { Photo } from '@boia/contracts';
+import { type BoiaEvent, type Photo, effectiveEvents } from '@boia/contracts';
 import { useState } from 'react';
+import {
+  PhotoUploadError,
+  type SaveIslandPhotos,
+  preparePhotos,
+  saveLocalIslandPhotos,
+  saveSharedIslandPhotos,
+} from '../../../lib/admin/island-photos';
+import { putLocalPhoto } from '../../../lib/admin/photo-store';
+import { PHOTO_UPLOAD_LIMITS } from '../../../lib/admin/photo-upload';
+import { eventIslands } from '../../../lib/admin/world';
+import { PhotoImage } from '../../../lib/photo-image';
+import { useAdminSupabase, useMaybeRealAdmin } from '../real/common';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import {
@@ -32,6 +44,7 @@ function PhotoRow({
   const { status, busy, run } = useRun();
   return (
     <li className="admin-card" data-testid={`foto-${photo.id}`}>
+      {photo.src ? <PhotoImage photo={photo} className="admin-photo-thumb" /> : null}
       <div className="admin-grid">
         <Field
           label={t('admin.photos.textoAlternativo')}
@@ -74,6 +87,186 @@ function PhotoRow({
   );
 }
 
+type SavePhotos = (input: SaveIslandPhotos) => Promise<void>;
+
+/**
+ * Fotos de una isla (plan 017 T189, decisión 4): se elige la isla y su
+ * evento, se suben archivos de verdad (copia WebP de 1600 px como mucho) y,
+ * marcado, el evento pasa a finalizado: la isla lo enseña como recuerdo con
+ * su galería. Modo local: en este navegador; con cuentas: en Supabase.
+ */
+function IslandPhotoUpload({ ctx }: { ctx: AdminContext }) {
+  const real = useMaybeRealAdmin();
+  if (real) return <SharedIslandPhotoUpload ctx={ctx} />;
+  return (
+    <IslandPhotoForm
+      ctx={ctx}
+      shared={false}
+      save={(input) => saveLocalIslandPhotos(ctx.actions, input, putLocalPhoto)}
+    />
+  );
+}
+
+function SharedIslandPhotoUpload({ ctx }: { ctx: AdminContext }) {
+  const sb = useAdminSupabase();
+  return (
+    <IslandPhotoForm
+      ctx={ctx}
+      shared
+      save={sb ? (input) => saveSharedIslandPhotos(sb, input) : null}
+    />
+  );
+}
+
+function IslandPhotoForm({
+  ctx,
+  shared,
+  save,
+}: {
+  ctx: AdminContext;
+  shared: boolean;
+  save: SavePhotos | null;
+}) {
+  const stored = useRead(ctx, (r) => r.content.events());
+  const islands = eventIslands(ctx.registry.map);
+  const places = ctx.registry.get(ctx.registry.defaultId).places;
+  const islandName = (id: string) => places.find((p) => p.id === id)?.name ?? id;
+  const [islandId, setIslandId] = useState(islands[0]?.id ?? '');
+  const [eventId, setEventId] = useState('');
+  const [alt, setAlt] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [markPast, setMarkPast] = useState(true);
+  const [inputKey, setInputKey] = useState(0);
+  const { status, busy, run } = useRun();
+
+  // Los eventos de la isla primero; también los que aún no tienen isla (se ligan a ésta).
+  const choices: BoiaEvent[] = effectiveEvents(stored ?? [], new Date())
+    .filter((e) => e.state !== 'draft' && (e.islandId === islandId || !e.islandId))
+    .sort(
+      (a, b) => Number(!!b.islandId) - Number(!!a.islandId) || b.startsAt.localeCompare(a.startsAt),
+    );
+  const chosen = choices.find((e) => e.id === eventId) ?? choices[0];
+
+  return (
+    <form
+      className="admin-card admin-form"
+      data-testid="fotos-isla"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!save) return;
+        const event = chosen;
+        const island = islandName(islandId);
+        const n = files.length;
+        void run(
+          async () => {
+            if (!event) throw new Error(t('admin.photos.upload.needEvent'));
+            if (n === 0) throw new Error(t('admin.photos.upload.needFiles'));
+            if (!alt.trim()) throw new Error(t('admin.photos.upload.needAlt'));
+            try {
+              const photos = await preparePhotos(files, event.id, alt);
+              await save({ islandId, event, photos, markPast });
+            } catch (err) {
+              if (err instanceof PhotoUploadError) {
+                throw new Error(
+                  t(`admin.photos.upload.problem.${err.problem}`, { file: err.fileName }),
+                );
+              }
+              throw err;
+            }
+            setFiles([]);
+            setInputKey((k) => k + 1);
+          },
+          markPast
+            ? t(n === 1 ? 'admin.photos.upload.donePast1' : 'admin.photos.upload.donePast', {
+                n,
+                island,
+                event: event?.name ?? '',
+              })
+            : t(n === 1 ? 'admin.photos.upload.done1' : 'admin.photos.upload.done', { n, island }),
+        );
+      }}
+    >
+      <h3>{t('admin.photos.upload.title')}</h3>
+      <p className="admin-meta">
+        {t('admin.photos.upload.lead')}{' '}
+        {shared ? t('admin.photos.upload.leadShared') : t('admin.photos.upload.leadLocal')}
+      </p>
+      <div className="admin-grid">
+        <Field label={t('admin.photos.upload.island')}>
+          <select
+            value={islandId}
+            data-testid="fotos-isla-isla"
+            onChange={(e) => {
+              setIslandId(e.target.value);
+              setEventId('');
+            }}
+          >
+            {islands.map((p) => (
+              <option key={p.id} value={p.id}>
+                {islandName(p.id)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field
+          label={t('admin.photos.upload.event')}
+          hint={choices.length === 0 ? t('admin.photos.upload.noEvents') : undefined}
+        >
+          <select
+            value={chosen?.id ?? ''}
+            data-testid="fotos-isla-evento"
+            disabled={choices.length === 0}
+            onChange={(e) => setEventId(e.target.value)}
+          >
+            {choices.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t('admin.photos.upload.files')} hint={t('admin.photos.upload.filesHint')}>
+          <input
+            key={inputKey}
+            type="file"
+            multiple
+            accept={PHOTO_UPLOAD_LIMITS.types.join(',')}
+            data-testid="fotos-isla-archivos"
+            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          />
+        </Field>
+        <Field label={t('admin.photos.upload.alt')} hint={t('admin.photos.upload.altHint')}>
+          <input
+            value={alt}
+            data-testid="fotos-isla-alt"
+            onChange={(e) => setAlt(e.target.value)}
+          />
+        </Field>
+      </div>
+      <label className="admin-check">
+        <input
+          type="checkbox"
+          checked={markPast}
+          data-testid="fotos-isla-pasado"
+          onChange={(e) => setMarkPast(e.target.checked)}
+        />{' '}
+        {t('admin.photos.upload.markPast')}
+      </label>
+      <div className="admin-row">
+        <button
+          type="submit"
+          className="admin-button"
+          disabled={busy || !save || choices.length === 0}
+          data-testid="fotos-isla-subir"
+        >
+          {busy ? t('admin.photos.upload.working') : t('admin.photos.upload.submit')}
+        </button>
+      </div>
+      <StatusLine status={status} />
+    </form>
+  );
+}
+
 /** Fotos y vídeos (REQ-ADM-019): álbumes y fotos de la home y del Puerto de Fotos. */
 export function PhotosSection({ ctx }: { ctx: AdminContext }) {
   const photos = useRead(ctx, (r) => r.content.list('photos'));
@@ -94,6 +287,7 @@ export function PhotosSection({ ctx }: { ctx: AdminContext }) {
       <SectionHead title={t('admin.photos.fotosYVideos')} lead={t('admin.photos.losVideosYLa')}>
         <ResetButton ctx={ctx} areas={['photos', 'albums']} />
       </SectionHead>
+      <IslandPhotoUpload ctx={ctx} />
       <div className="admin-grid">
         <form
           className="admin-card admin-form"

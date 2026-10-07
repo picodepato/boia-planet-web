@@ -18,12 +18,32 @@ export const artistSchema = z.object({
 });
 export type Artist = z.infer<typeof artistSchema>;
 
+/**
+ * Una foto subida en el Admin de la demo (plan 017 T189, decisión 4): el
+ * archivo se queda en este navegador (IndexedDB) y la foto lo nombra con
+ * `local-photo:<clave>`. Con cuentas, la foto es una URL https del bucket.
+ */
+export const LOCAL_PHOTO_PREFIX = 'local-photo:';
+export const localPhotoRefSchema = z.string().regex(/^local-photo:[A-Za-z0-9_-]{1,120}$/);
+
+export function isLocalPhotoRef(src: string | undefined | null): src is string {
+  return typeof src === 'string' && src.startsWith(LOCAL_PHOTO_PREFIX);
+}
+
+/** La clave del archivo en el navegador de una referencia `local-photo:`. */
+export function localPhotoKey(src: string): string {
+  return src.slice(LOCAL_PHOTO_PREFIX.length);
+}
+
 /** Foto de un álbum. El texto alternativo es obligatorio (REQ-COM-031). */
 export const photoSchema = z.object({
   id: z.string().min(1),
   albumId: z.string().min(1),
   alt: z.string().min(1),
-  src: z.url().optional(),
+  /** La imagen: URL (https o del bucket) o un archivo de este navegador (`local-photo:`). */
+  src: z
+    .union([localPhotoRefSchema, z.url().refine((u) => !u.startsWith(LOCAL_PHOTO_PREFIX))])
+    .optional(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   /**
@@ -50,6 +70,24 @@ export const albumSchema = z.object({
   sample: z.boolean().default(false),
 });
 export type Album = z.infer<typeof albumSchema>;
+
+/**
+ * El álbum de un evento (T189): uno por evento, con id estable, al que el
+ * Admin sube las fotos de la isla cuando el evento pasa a recuerdo.
+ */
+export function eventAlbumId(eventId: string): string {
+  return `album-${eventId}`;
+}
+
+/** Las fotos de un evento: las de sus álbumes (`album.eventId`), en su orden. */
+export function eventPhotos(
+  eventId: string,
+  albums: readonly Album[],
+  photos: readonly Photo[],
+): Photo[] {
+  const ids = new Set(albums.filter((a) => a.eventId === eventId).map((a) => a.id));
+  return photos.filter((p) => ids.has(p.albumId));
+}
 
 /**
  * Descuento compartible (REQ-COM-020 a REQ-COM-022). Se esconde en el mundo
@@ -132,6 +170,11 @@ export const homeContentSchema = z.object({
   events: z.array(eventSchema),
   artists: z.array(artistSchema),
   photos: z.array(photoSchema),
+  /**
+   * Álbumes (T189): ligan las fotos a su evento o isla, para los recuerdos
+   * de cada isla del mar. Opcional: la home no los usa.
+   */
+  albums: z.array(albumSchema).optional(),
   promotions: z.array(promotionSchema),
 });
 export type HomeContent = z.infer<typeof homeContentSchema>;

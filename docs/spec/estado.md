@@ -160,7 +160,7 @@ guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.
 | REQ-AVE-011 | Cambio de destino auditado | L1 | HECHO | [world-switch.test.ts](../../apps/web/lib/mundo/world-switch.test.ts); [community.test.ts](../../apps/web/lib/admin/community.test.ts) | — |
 | REQ-AVE-012 | Islas por radio amplio | L1 | HECHO | [sample-world.test.ts](../../packages/world/src/sample-world.test.ts) «la isla de evento se activa con un radio amplio: más del doble de su costa» | — |
 | REQ-AVE-013 | Primera llegada y visitas | L1 | HECHO | [comunidad.spec.ts](../../apps/web/e2e/comunidad.spec.ts) | — |
-| REQ-AVE-014 | Recuerdos y próximos eventos en la isla | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
+| REQ-AVE-014 | Recuerdos y próximos eventos en la isla | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx); [island-photos.test.ts](../../apps/web/lib/admin/island-photos.test.ts); [admin-fotos.spec.ts](../../apps/web/e2e/admin-fotos.spec.ts) | Los recuerdos con su galería, probados (plan 017 T189); «Próximos eventos» sin prueba que lo nombre |
 | REQ-AVE-015 | Secretos insinuados | L1 | HECHO | [mar-fiestera.spec.ts](../../apps/web/e2e/mar-fiestera.spec.ts) «un secreto sin código sigue escondido y premia al encontrarlo»; [guide.test.ts](../../apps/web/lib/mundo/guide.test.ts) «los secretos sin código no se señalan y siguen ocultos, con su premio» | — |
 | REQ-AVE-016 | Restos regenerables | L1 | PARCIAL | [mar-client.tsx](../../apps/web/app/mar/mar-client.tsx); [economy-rules.test.ts](../../apps/web/lib/mundo/economy-rules.test.ts) «cada resto flotante da 10 monedas, una vez por visita» | Construido en /mar; falta la prueba de recargar y verlos en sitios nuevos. T72 (decisión del 2026-10-02): 10 monedas cada uno; antes la clave «por visita» llevaba «@» y el repositorio la rechazaba, así que no daban nada |
 | REQ-AVE-017 | Cofres fugaces | L1 | PARCIAL | [map.ts](../../packages/world/src/worlds/arcilla/map.ts); [economy-rules.test.ts](../../apps/web/lib/mundo/economy-rules.test.ts) «el Cofre fugaz da 40 monedas y 20 puntos, una vez por visita» | Construido; falta la prueba de que desaparece a su tiempo. T72 (decisión del 2026-10-02): 40 monedas y 20 puntos |
@@ -244,7 +244,7 @@ guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.
 | REQ-COM-002 | Evento e isla separados | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
 | REQ-COM-003 | Siete estados de evento | L1 | HECHO | [test_check.py](../../tools/spec/test_check.py) | — |
 | REQ-COM-004 | Transiciones por fecha | L1 | HECHO | [events.test.ts](../../packages/contracts/src/events.test.ts) | — |
-| REQ-COM-005 | Finalizar sin borrar la isla | L1 | HECHO | [event-card.test.ts](../../apps/web/app/%28landing%29/components/event-card.test.ts) | — |
+| REQ-COM-005 | Finalizar sin borrar la isla | L1 | HECHO | [event-card.test.ts](../../apps/web/app/%28landing%29/components/event-card.test.ts); [admin-fotos.spec.ts](../../apps/web/e2e/admin-fotos.spec.ts) | T189: el Admin lo marca pasado al subir sus fotos |
 | REQ-COM-006 | Evento nuevo en una isla con historia | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
 | REQ-COM-007 | Agotado sin compra inválida | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
 | REQ-COM-008 | Pospuesto y cancelado | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
@@ -270,7 +270,7 @@ guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.
 | REQ-COM-028 | 26 artistas textuales | L1 | HECHO | [artists-list.test.ts](../../apps/web/app/%28landing%29/components/artists-list.test.ts) «los datos son los de v14 §18.1, textuales» | — |
 | REQ-COM-029 | Validación de artistas | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-COM-030 | Página Filosofía | L1 | PARCIAL | [blocks.test.ts](../../apps/web/app/%28landing%29/components/blocks.test.ts) «Contacto lleva la Filosofía dentro y sus datos (T65)» | Desde T65 la Filosofía se ve dentro del bloque Contacto (decisión del 2026-10-02); textos `muestra` [pendiente Álvaro] |
-| REQ-COM-031 | Galería de fotos | L1 | HECHO | [eventos.test.ts](../../apps/web/lib/landing/eventos.test.ts) | — |
+| REQ-COM-031 | Galería de fotos | L1 | HECHO | [eventos.test.ts](../../apps/web/lib/landing/eventos.test.ts); [admin-fotos.spec.ts](../../apps/web/e2e/admin-fotos.spec.ts) | T189: las fotos subidas en el Admin salen en la galería de su isla |
 | REQ-COM-032 | Vídeos sin bloquear la carga | L1 | FALTA | — | — |
 | REQ-COM-033 | Tienda L1 con enlace externo | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-COM-034 | Tienda con checkout propio | L2 | L2 | — | — |
@@ -294,7 +294,7 @@ guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.
 | REQ-ADM-016 | Restaurar sin revertir transacciones | L1 | PARCIAL | [admin.test.ts](../../apps/web/lib/admin/admin.test.ts) | Una prueba lo cubre en parte |
 | REQ-ADM-017 | Formulario de la home | L1 | HECHO | [admin-endurecido.spec.ts](../../apps/web/e2e/admin-endurecido.spec.ts); [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
 | REQ-ADM-018 | Ciclo de vida de eventos en el Admin | L1 | HECHO | [ciclo-evento.spec.ts](../../apps/web/e2e/ciclo-evento.spec.ts) «ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer y cancelar» | — |
-| REQ-ADM-019 | Artistas, fotos y textos | L1 | PARCIAL | [artists.tsx](../../apps/web/app/admin/sections/artists.tsx) | Construido; sin prueba que lo nombre |
+| REQ-ADM-019 | Artistas, fotos y textos | L1 | PARCIAL | [artists.tsx](../../apps/web/app/admin/sections/artists.tsx); [island-photos.test.ts](../../apps/web/lib/admin/island-photos.test.ts); [admin-fotos.spec.ts](../../apps/web/e2e/admin-fotos.spec.ts) | Fotos de una isla subidas de verdad (WebP; local y Supabase, plan 017 T189), probadas; artistas y textos sin prueba que lo nombre |
 | REQ-ADM-020 | Música y efectos con licencia | L1 | HECHO | [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
 | REQ-ADM-021 | Logros por triggers | L1 | HECHO | [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts) | — |
 | REQ-ADM-022 | Versionar logros obtenidos | L1 | HECHO | [hardening.test.ts](../../apps/web/lib/admin/hardening.test.ts); [admin-hardening.test.ts](../../packages/store/src/admin-hardening.test.ts) | — |

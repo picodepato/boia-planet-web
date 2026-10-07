@@ -1,11 +1,14 @@
 import {
   EVENT_STATES,
+  type Album,
   type BoiaEvent,
   type Discount,
   type DiscountInput,
   type EventState,
   type HomeBlock,
+  type Photo,
   discountSchema,
+  eventAlbumId,
   eventSchema,
 } from '@boia/contracts';
 import {
@@ -85,6 +88,15 @@ export type DiscountFormInput = Omit<DiscountInput, 'id' | 'sample'> & {
 
 /** Códigos: letras y cifras (y guiones), en mayúsculas, como los copia la gente. */
 const DISCOUNT_CODE = /^[A-Z0-9][A-Z0-9-]{2,23}$/;
+
+/** Una foto ya subida (su archivo guardado), para `addIslandPhotos`. */
+export interface UploadedPhoto {
+  id: string;
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}
 
 export type EventInput = Omit<BoiaEvent, 'id' | 'slug' | 'sample'> & {
   id?: string;
@@ -326,6 +338,65 @@ export function createAdminActions(deps: AdminDeps) {
       if (note) next.stateNote = note;
       else delete next.stateNote;
       return repo.admin.upsert('events', next, opts(`estado: ${state}`));
+    },
+
+    /**
+     * Fotos de una isla (T189, decisión 4, D-23 punto 7): las fotos ya
+     * subidas van al álbum del evento (`album-<evento>`, se crea si no
+     * está), el evento queda ligado a la isla y, con `markPast`, pasa a
+     * finalizado a mano: la isla lo enseña como recuerdo con su galería.
+     * Sin aprobación: se publica al momento.
+     */
+    async addIslandPhotos(input: {
+      islandId: string;
+      eventId: string;
+      photos: readonly UploadedPhoto[];
+      markPast: boolean;
+    }): Promise<{ album: Album; photos: Photo[]; event: BoiaEvent }> {
+      const { islandId } = input;
+      if (!eventIslands(registry.map).some((p) => p.id === islandId)) {
+        throw new AdminError(msg('admin.actions.laIslaNoExiste', { islandId }));
+      }
+      const e = await repo.content.get('events', input.eventId);
+      if (!e) throw new AdminError(msg('admin.actions.noExisteElEvento', { id: input.eventId }));
+      if (e.state === 'draft') throw new AdminError(msg('admin.actions.fotosDeUnBorrador'));
+      if (input.photos.length === 0) throw new AdminError(msg('admin.actions.fotosSinArchivos'));
+      const why = msg('admin.actions.fotosDeLaIsla', { islandId });
+      const albumId = eventAlbumId(e.id);
+      const had = await repo.content.get('albums', albumId);
+      const album = await repo.admin.upsert(
+        'albums',
+        {
+          id: albumId,
+          title: had?.title ?? e.name,
+          eventId: e.id,
+          islandId,
+          date: had?.date ?? e.startsAt,
+          coverPhotoId: had?.coverPhotoId ?? input.photos[0]!.id,
+          sample: false,
+        },
+        opts(why),
+      );
+      const photos: Photo[] = [];
+      for (const p of input.photos) {
+        photos.push(
+          await repo.admin.upsert('photos', { ...p, albumId, selection: false }, opts(why)),
+        );
+      }
+      let event = e;
+      if (input.markPast || e.islandId !== islandId) {
+        event = await api.saveEvent(
+          {
+            ...e,
+            islandId,
+            ...(input.markPast
+              ? { state: 'finished' as const, stateSource: 'manual' as const }
+              : {}),
+          },
+          input.markPast ? msg('admin.actions.eventoPasado') : why,
+        );
+      }
+      return { album, photos, event };
     },
 
     /** Liga (o suelta, con null) un evento a una isla. La isla se queda con sus recuerdos. */

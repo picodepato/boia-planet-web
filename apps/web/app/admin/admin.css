@@ -271,6 +271,19 @@
   height: 18px;
 }
 
+/* T189: miniatura de una foto subida (en la lista de fotos). */
+.admin-photo-thumb {
+  display: block;
+  width: 120px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #e3e8f2;
+  margin-bottom: 8px;
+}
+
 .admin-button,
 .admin-icon {
   min-height: 40px;

@@ -23,6 +23,11 @@ export function useRealAdmin(): RealAdmin {
   return v;
 }
 
+/** Quién está dentro con cuentas, o null en el Admin de la demo (T189: fotos de las islas). */
+export function useMaybeRealAdmin(): RealAdmin | null {
+  return useContext(RealAdminContext);
+}
+
 /** El cliente con la sesión del Admin (aal2); null hasta que carga. */
 export function useAdminSupabase(): BoiaSupabase | null {
   const [sb, setSb] = useState<BoiaSupabase | null>(null);

@@ -1,5 +1,6 @@
 import { type HomeContent, effectiveEvents } from '@boia/contracts';
 import type { BoiaRepository } from '@boia/store';
+import { homeWithSharedPhotos } from '../admin/shared-photos';
 import { SAMPLE_CONTENT } from './sample-content';
 
 /**
@@ -23,9 +24,12 @@ export function liveContent(now: Date = new Date()): HomeContent {
   return content;
 }
 
-/** Lee el contenido del repositorio y lo deja a mano. */
+/**
+ * Lee el contenido del repositorio y lo deja a mano. Con cuentas, encima, las
+ * fotos de las islas que subió el Admin y sus eventos pasados (T189).
+ */
 export async function refreshLiveContent(repo: BoiaRepository): Promise<HomeContent> {
-  current = await repo.content.home();
+  current = await homeWithSharedPhotos(repo);
   return liveContent();
 }
 

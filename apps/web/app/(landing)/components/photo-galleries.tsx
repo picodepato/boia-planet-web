@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { homeWithSharedPhotos } from '../../../lib/admin/shared-photos';
 import { FOTOS_COPY } from '../../../lib/landing/eventos-copy';
 import {
   type Gallery,
@@ -27,8 +28,12 @@ export function LivePhotoGalleries({
   islands: GalleryIsland[];
 }) {
   const { view } = useLiveRepo(initial, async (repo) => {
-    const [home, albums] = await Promise.all([repo.content.home(), repo.content.list('albums')]);
-    return photoGalleries({ events: home.events, albums, photos: home.photos }, islands);
+    // Con cuentas, también las fotos que el Admin subió a cada isla (T189).
+    const home = await homeWithSharedPhotos(repo);
+    return photoGalleries(
+      { events: home.events, albums: home.albums ?? [], photos: home.photos },
+      islands,
+    );
   });
   return <PhotoGalleries galleries={view} />;
 }
