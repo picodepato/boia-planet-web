@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T206: Parte 3, Páginas
+
+Qué existe:
+- `docs/presentacion/partes/03-paginas.ts`: 9 diapositivas (8–16 del deck de hoy): portada de la
+  parte; ficha de evento (qué tiene); taquilla de Halloween/SONIDO con 2 € menos, actividades y
+  recuerdos (3 teléfonos); `/artistas` y el enlace de artistas `/artista/<código>` (2 teléfonos);
+  `/fotos` y `/tienda` con «Comprar» (3 teléfonos); legales con el aviso de datos inventados (qué
+  es); dos «Qué falta» (eventos y artistas: 4 necesarios, 2 pueden esperar; fotos, tienda y
+  legales: 5 necesarios, 1 puede esperar); «Preguntas y propuestas» (4 preguntas, 3 propuestas).
+  Notas del orador en todas.
+- `apps/web/e2e/deck/03-paginas.deck.ts`: 10 capturas móviles en
+  `docs/presentacion/capturas/03-paginas/` (la tienda con movimiento reducido, para que no rote).
+- `boia-planet.pptx` y `.pdf` regenerados.
+
+Comandos:
+- `DECK_PORT=3226 pnpm deck:capturas 03` → exit 0, 10 passed (el 3216 lo ocupa EA Desktop en
+  esta máquina).
+- `pnpm deck` → exit 0 (26 diapositivas; parte 3 = 8–16, 9). `pnpm deck:render` → exit 0, 26
+  páginas; miradas las 9 PNG de la parte: nada cortado ni fuera de su caja.
+- Los 5 comprobadores de Python de `tools/spec/checks.sh`, uno a uno → exit 0; `pnpm lint` → 0;
+  `pnpm typecheck` → 0.
+
+Pendiente:
+- En la captura del alta de Carnet (mar), el icono antes de «Mi Carnet» sale como cuadradito en el
+  Chromium de las capturas (falta una fuente de emoji); no se toca la app.
+- Las propuestas de «Preguntas y propuestas» son del agente: las revisa Hernán.
+
 ## 2026-10-07 — plan 018 T204: Deck toolchain: generator, BOIA theme, capture harness, render check
 
 Qué existe:
