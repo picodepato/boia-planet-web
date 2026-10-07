@@ -72,7 +72,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: «Consigue descuentos» (`hero.explore.discountHint`) under Zarpar with a CSS-only glint every 8 s, off under reduced motion; landing 187.3 kB gzip; done by Codex + wrapper · 7635e98
 
 ## T193 — Account and Admin access: Carnet 000 sign-in, TOTP backup codes, data export
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: Admin sign-in through Carnet 000 (decision 9); one-time TOTP backup codes for the Supabase admin; a signed-in user can download all their account data (REQ-IDE-050) (decision 6).
@@ -84,7 +84,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `E2E_PORT=<free> pnpm e2e <admin sign-in spec> <account export spec> --workers=1` in local mode → exit 0
   - the ESTADO section lists the migration and the commands Hernán runs on `boia-planet-dev`
   - Test command → exit 0
-- Outcome:
+- Outcome: Admin sign-in with Carnet 000 (demo: PBKDF2 hash, 12 h session; Supabase: password + TOTP), 10 server-side backup codes in a new «Seguridad» section, account JSON export in both modes; Carnet 000 reserved by constraint + trigger; migration 20261007100400_admin_access_export; REQ-IDE-050 HECHO; no plain password in the repo (checked) · 0876bfa
 
 ## T190 — Admin: new object in 10 steps, templates and asset validation
 - Status: done
@@ -128,7 +128,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T194 — Ranking and stamp gaps from plan 008
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T188
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Fix the plan 008 gaps: ties at 0 points, the stamp's score and rank line, and the player's own bottle shown even when it is not among the 10 most recent (decision 6).
@@ -138,10 +138,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - unit tests for each of the three gaps → pass
   - `E2E_PORT=<free> pnpm e2e ranking.spec.ts mar-botellas.spec.ts <stamp spec> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: 0-point members show «sin puntos» with no position (positive ties kept); both stamp flows show «Puntos a → b» and «Ahora eres …»; own active bottle listed even outside the 10 most recent; no RPC change, no migration; done by Codex + wrapper · 6ff41cf
 
 ## T195 — World texts into i18n
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T188
 - Model: sonnet
 - Goal: Move the user-visible texts still hard-coded in the world (`skin.ts` dialogs, palette names, console messages shown to users) into `apps/web/lib/i18n/` keys, with no visible change (decision 7).
@@ -154,7 +154,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T197 — Lazy videos and the castle Ibiza card's real payout
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Two small user-visible fixes (decision 7): videos load lazily and never block the page (REQ-COM-032); the castle «Construir» Ibiza card shows the next Ibiza's real payout (70 % for the second, 50 % for the third), not the first one's.
@@ -238,6 +238,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T193: demo check PBKDF2-SHA-256 310k iterations, 16-byte salt, session mark `boia.admin.demo` 12 h with «Salir del Admin»; Playwright storageState pre-sets the demo session so existing /admin specs keep working; Supabase: `admin_sign_in_email(0)` returns the Carnet 000 account email (no service key on Vercel) → anyone typing 000 learns that email, agent recommends a dedicated admin account; email-code sign-in kept for other staff; backup codes ~50 bits each, salt + SHA-256, using one at aal1 deletes the lost TOTP factor; the admin's previous member number becomes a gap; conflicts with T190 resolved keeping both (agent)
+- 2026-10-07 T194: «sin puntos» without position for 0-point members; stamp feedback «Puntos a → b» / «Ahora eres …» in `/sello` and the Carnet scanner; own bottle floats without duplicates; wrapper reverted Codex's edits to ESTADO.md and plans (agent)
 - 2026-10-07 T190: objects/templates in new local repository areas with audit and trash, schemas in `packages/contracts`, no migration (Admin world still local, D-20); a published object goes at the end of the live map in every world, drafts never reach /mar; category only proposes defaults; links (ticket, achievement, reward, teleport) only in step 8; save checks land/water against the /mar sea (an island near the port otherwise broke `?ir=`); `.glb` kept as original, images get WebP 512/128 in T189's IndexedDB store; conflict with main in `admin-app.tsx` was imports only (agent)
 - 2026-10-07 T191: hidden nickname/avatar replaced in the row («Miembro de BOIA <nº>», no avatar), original in `private.carnet_moderation`, trigger blocks re-saving removed content; a hidden Carnet is unreadable to the public via RLS; removing needs a reason, restoring does not and never resolves reports; one RPC pair `admin_void_score`/`admin_restore_score` for all boards (Castillo gets void columns, its ranking function skips voided rows); real Moderación screen shows real Carnets (demo list removed); T186's `member-numbers-sql.test.ts` narrowed to member-number/`save_profile` changes (agent)
 - 2026-10-07 plan: T202 keeps only the sample posters; the techno sample photos are dropped, Hernán will upload the real event photos (Hernán)
@@ -247,6 +249,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T193: apply `20261007100400_admin_access_export.sql` on boia-planet-dev and run `admin-access.supabase.ts`; use a dedicated email for the Carnet 000 account; `/admin/vista-previa` is not behind the Carnet 000 sign-in
 - 2026-10-07 T190: uploaded assets are not drawn in the 3D sea (waits for the visual editor, REQ-ADM-009); in Supabase mode new objects still live in the browser like the rest of the Admin world
 - 2026-10-07 T191: apply `20261007100200_moderation.sql` on boia-planet-dev, then `test:supabase` and `E2E_SUPABASE=1 … admin-real.spec.ts`; no per-answer moderation in Supabase; a voided Castillo score only comes back with a better score (`submit_castle_score` unchanged)
 - 2026-10-07 T188: on boia-planet-dev the seeded cosmetics keep «Arcilla, maqueta / · Noche / · Fiesta» (seed only inserts) → needs a manual UPDATE; sample achievement «Entre dos mundos» still says «Navega en Arcilla y en Acuarela»; `art/barco/*manifest.json` labels still «Arcilla, maqueta» (overridden on screen); Supabase ranking e2e not run
@@ -270,3 +273,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 16:50 T190 done by agent; integration conflict in apps/web/app/admin/admin-app.tsx (with T191/T189) → sent back to the same agent
 - 2026-10-07 16:27 T190 done · worktree-agent-ac5abf7c0d1d9c934 → 140a366
 - 2026-10-07 16:28 T194 launched · attempt 1 · Codex via wrapper agent a27474a3113dfee95 (sonnet)
+- 2026-10-07 T193 done by agent (no plain password in branch, checked); integration conflict in admin.css, i18n/es.ts (with T190) → sent back to the same agent
+- 2026-10-07 16:50 T194 done · worktree-agent-a27474a3113dfee95 → 6ff41cf
+- 2026-10-07 16:51 T195 launched · attempt 1 · agent a2c42b79cdbec13e7 · sonnet
+- 2026-10-07 16:53 T193 done · worktree-agent-a2b88cd80a528a105 → 0876bfa
+- 2026-10-07 16:54 T197 launched · attempt 1 · Codex via wrapper agent af6968fcadaace994 (sonnet)
