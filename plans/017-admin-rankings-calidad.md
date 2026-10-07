@@ -115,7 +115,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: Admin hides/restores Carnets (whole, nickname, avatar) and voids/restores ranking scores (race, Cañón, Castillo) with a reason; originals kept in `private.carnet_moderation`; migration 20261007100200_moderation; REQ-ADM-031 FALTA → PARCIAL · 2ead693
 
 ## T192 — Admin: editable store, contact and footer links
-- Status: running (attempt 2, continuation)
+- Status: done
 - Depends on: T201
 - Model: opus (Codex out of credits)
 - Goal: Admin edits the store, contact and footer links (labels and URLs) without code; the web reads them (plan 007 proposal, decision 5).
@@ -125,7 +125,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - unit tests (URL validation, defaults when unset) → pass
   - `E2E_PORT=<free> pnpm e2e <new admin-enlaces spec> --workers=1` (edit a footer link in Admin, see it on the web) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: new Admin «Enlaces» section (`/admin#enlaces`): store contact, contact and footer links (http(s) only, label ≤40, ≤8 per block, no duplicates), saved to the home draft and published with «Publicar»; empty store contact falls back to `products.json`; no migration · 3a89dc6
 
 ## T194 — Ranking and stamp gaps from plan 008
 - Status: done
@@ -272,6 +272,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T192: landing at 195.1 kB of the 200 kB cap (187.3 at T187); most of the rise likely from T199/T201 → worth a weight check before adding more to the landing
 - 2026-10-07 T202 (skipped): when Codex is back, invented posters + product images: product list in `products.json` already points at 9 placeholders in `apps/web/public/contenido/tienda/`; posters need a `-muestra` fallback after `REAL_CONTENT.eventPosters` (P19 wins); update `eventos.test.ts` (~l.121, halloween posterUrl undefined) and `real-content.test.ts` («Cartel próximamente»)
 - 2026-10-07 T199: run `landing-logout.spec` with `E2E_SUPABASE=1` on boia-planet-dev; Admin has no control for the box-office rule
 - 2026-10-07 T201: `MERCHANDISE_NOTICE`, `MERCHANDISE_SAMPLE_NOTICE`, the «Muestra» badge and product names/descriptions are plain strings, not i18n keys; no store REQ updated in `docs/spec/estado.md`
@@ -327,3 +328,4 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 19:50 T203 continuation (interrupted) · agent a69c10f44897b7d47 · sonnet · old branch worktree-agent-a0f87b68f4b9525ea
 - 2026-10-07 19:53 T202 launched · attempt 1 · Codex via wrapper agent a071fe5879b91bced (sonnet) · 3 agents at once on Hernán's request
 - 2026-10-07 19:56 T202 Codex usage limit before any change → skipped per Hernán; worktree and branch removed
+- 2026-10-07 20:00 T192 done · worktree-agent-a221ef35f0e8032ad (+ abef2dab) → 3a89dc6
