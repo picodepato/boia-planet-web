@@ -141,7 +141,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: 0-point members show «sin puntos» with no position (positive ties kept); both stamp flows show «Puntos a → b» and «Ahora eres …»; own active bottle listed even outside the 10 most recent; no RPC change, no migration; done by Codex + wrapper · 6ff41cf
 
 ## T195 — World texts into i18n
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T188
 - Model: sonnet
 - Goal: Move the user-visible texts still hard-coded in the world (`skin.ts` dialogs, palette names, console messages shown to users) into `apps/web/lib/i18n/` keys, with no visible change (decision 7).
@@ -151,7 +151,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `grep` for string literals in `skin.ts` shows only ids and non-visible values (report the command and its count)
   - `E2E_PORT=<free> pnpm e2e <specs that check world dialogs> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `skin.ts` holds i18n keys (new `world.arcilla.skin.*` in `es-mundo.ts`), resolved by `resolveSkinTexts`/`WorldRegistry.mapSkins`; web `worlds` = registry with keys resolved; resolved skin identical to the old dump · 7f634fe
 
 ## T197 — Lazy videos and the castle Ibiza card's real payout
 - Status: running (attempt 1)
@@ -167,7 +167,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T196 — Automated tests up to date
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T187
 - Model: sonnet
 - Goal: Bring the e2e suite and its docs up to date (decision 7): e2e that name REQ-PRO-006 and REQ-MUN-009; the device matrix without rows citing deleted 2D tests; `record.spec.ts` and `record-titulo.spec.ts` on the current «Zarpar»; the flaky «guía: mover» e2e made stable.
@@ -238,6 +238,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T195: keys resolved in `packages/world` (`resolveSkinTexts`) since it cannot import the web catalog; non-key values stay as written (Acuarela, Admin-edited texts); console calls are developer warnings, left alone; `arcilla.test.ts` name checks now assert keys (agent)
 - 2026-10-07 T193: demo check PBKDF2-SHA-256 310k iterations, 16-byte salt, session mark `boia.admin.demo` 12 h with «Salir del Admin»; Playwright storageState pre-sets the demo session so existing /admin specs keep working; Supabase: `admin_sign_in_email(0)` returns the Carnet 000 account email (no service key on Vercel) → anyone typing 000 learns that email, agent recommends a dedicated admin account; email-code sign-in kept for other staff; backup codes ~50 bits each, salt + SHA-256, using one at aal1 deletes the lost TOTP factor; the admin's previous member number becomes a gap; conflicts with T190 resolved keeping both (agent)
 - 2026-10-07 T194: «sin puntos» without position for 0-point members; stamp feedback «Puntos a → b» / «Ahora eres …» in `/sello` and the Carnet scanner; own bottle floats without duplicates; wrapper reverted Codex's edits to ESTADO.md and plans (agent)
 - 2026-10-07 T190: objects/templates in new local repository areas with audit and trash, schemas in `packages/contracts`, no migration (Admin world still local, D-20); a published object goes at the end of the live map in every world, drafts never reach /mar; category only proposes defaults; links (ticket, achievement, reward, teleport) only in step 8; save checks land/water against the /mar sea (an island near the port otherwise broke `?ir=`); `.glb` kept as original, images get WebP 512/128 in T189's IndexedDB store; conflict with main in `admin-app.tsx` was imports only (agent)
@@ -249,6 +250,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T195: `packages/world/src/worlds/arcilla/map.ts` still has Spanish prose (object names, default dialogues)
 - 2026-10-07 T193: apply `20261007100400_admin_access_export.sql` on boia-planet-dev and run `admin-access.supabase.ts`; use a dedicated email for the Carnet 000 account; `/admin/vista-previa` is not behind the Carnet 000 sign-in
 - 2026-10-07 T190: uploaded assets are not drawn in the 3D sea (waits for the visual editor, REQ-ADM-009); in Supabase mode new objects still live in the browser like the rest of the Admin world
 - 2026-10-07 T191: apply `20261007100200_moderation.sql` on boia-planet-dev, then `test:supabase` and `E2E_SUPABASE=1 … admin-real.spec.ts`; no per-answer moderation in Supabase; a voided Castillo score only comes back with a better score (`submit_castle_score` unchanged)
@@ -278,3 +280,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 16:51 T195 launched · attempt 1 · agent a2c42b79cdbec13e7 · sonnet
 - 2026-10-07 16:53 T193 done · worktree-agent-a2b88cd80a528a105 → 0876bfa
 - 2026-10-07 16:54 T197 launched · attempt 1 · Codex via wrapper agent af6968fcadaace994 (sonnet)
+- 2026-10-07 17:04 T195 done · worktree-agent-a2c42b79cdbec13e7 → 7f634fe
+- 2026-10-07 17:05 T196 launched · attempt 1 · agent a466b0a4c1f831e79 · sonnet
