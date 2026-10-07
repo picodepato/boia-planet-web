@@ -4,6 +4,35 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T205: Parte 2 de la presentación, la landing
+
+Qué existe:
+- `docs/presentacion/partes/02-landing.ts`: 11 diapositivas (3–13 de la `.pptx`) en dos
+  secciones, cada una con su «Qué falta» y su «Preguntas y propuestas»: **Hero y Entradas**
+  (portada de la parte, el hero con «Zarpar» y «Consigue descuentos», Entradas + taquilla +
+  versión quieta, qué falta, preguntas) y **las secciones de la landing** (próximo evento,
+  eventos y fotos; artistas; filosofía y contacto; tienda, pie y menú de la cabecera; qué falta;
+  preguntas). Notas de orador en todas.
+- Los tres puntos de Hernán: enlace real de cada artista, Filosofía aprobada por Álvaro tal cual
+  o cambiada, fotos de los productos reales de la tienda (los tres «Necesario para salir»).
+- `apps/web/e2e/deck/02-landing.deck.ts`: 12 capturas móviles en
+  `docs/presentacion/capturas/02-landing/` (hero, hero-entradas, taquilla, hero-quieto,
+  proximo-evento, eventos, fotos, artistas, tienda, filosofia, pie, menu).
+- «Cerrar sesión» sólo existe con cuentas (en modo local nunca se pinta): va en las notas, sin
+  captura.
+
+Comandos:
+- `DECK_PORT=3241 pnpm deck:capturas 02` → exit 0, 12 passed (el 3215 lo ocupa un servicio de
+  EA Desktop en esta máquina).
+- `pnpm deck` → exit 0, 25 diapositivas, parte 2 = 3–13 (11); `pnpm deck:render` → exit 0.
+- Miradas las 11 PNG de la parte: nada cortado ni fuera de su caja.
+- Test command por pasos: checks de Python 0 (294 requisitos, OK, OK, arte válido),
+  `pnpm lint` 0, `pnpm typecheck` 0, `pnpm deck` 0.
+
+Pendiente:
+- En la portada de la parte, la lista de secciones salta a dos líneas (el generador no lo evita;
+  se lee bien).
+
 ## 2026-10-07 — plan 018 T206: Parte 3, Páginas
 
 Qué existe:
