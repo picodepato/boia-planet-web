@@ -24,7 +24,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 ## Tasks
 
 ## T188 — Rankings menu: race, Cañón, Castillo and global, with the right dropdowns; no visible «Arcilla»
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: The menu's ranking panel offers four options (race, Cañón, Castillo, global points) and shows every board from the menu, with a dropdown only for the Cañón (Fantasma/Kraken) and the Castillo (9 boards) (decision 2); remove every user-visible «Arcilla» (decision 3).
@@ -35,7 +35,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `grep -rn "Arcilla" apps/web/lib/i18n packages/world/src` → only comments or internal ids, no user-visible strings (list what remains in the final message)
   - `E2E_PORT=<free> pnpm e2e ranking.spec.ts mar-canon.spec.ts mar-castillo.spec.ts mar-circuito.spec.ts --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: four tabs Carrera/Cañón/Castillo/Puntos in /mar menu and a new /ranking page linked from the landing header; Cañón dropdown Fantasma/Kraken, Castillo 9 boards; world shown as «Mundo principal», B05 «Botijo»; unit test guards against «Arcilla» returning · cbdf6aa
 
 ## T189 — Admin: upload island photos and turn the event into a past one
 - Status: done
@@ -52,7 +52,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: Admin uploads photos (WebP ≤1600 px, IndexedDB in local mode; bucket `event-photos` + tables `event_albums`/`event_photos` in migration 20261007100100) and marks the event finished; island memory shows 6 photos + «Ver las N fotos»; e2e admin-fotos + ciclo-evento green · 6a43553
 
 ## T187 — Landing: «Consigue descuentos» under «Zarpar»
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Add the short line «Consigue descuentos» under the landing's «Zarpar» button with a subtle shimmer/glint, to invite people to sail (decision 1).
@@ -63,7 +63,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - the landing weight check → still under 200 kB gzip (report the new number)
   - `E2E_PORT=<free> pnpm e2e <landing specs that cover the hero> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: «Consigue descuentos» (`hero.explore.discountHint`) under Zarpar with a CSS-only glint every 8 s, off under reduced motion; landing 187.3 kB gzip; done by Codex + wrapper · 7635e98
 
 ## T193 — Account: data export and Admin TOTP backup codes
 - Status: pending
@@ -188,9 +188,12 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T188: the landing header had no ranking and lib/mundo/menu is never mounted → added «Ranking» to the header, opening a new `/ranking` page with the same panel; tabs «Carrera / Cañón / Castillo / Puntos» («De siempre» renamed to fit 390 px); race shows the circuit name, no dropdown; world display name «Mundo principal», /mar menu title omits the world when only one is playable; B05 «Botijo» (i18n, barcos.json, sample cosmetics, Supabase seed); Admin text «El puerto de salida (El Varadero).»; guest box on Cañón/Castillo boards shows the browser's own score and invites to sign in (agent)
+- 2026-10-07 T187: line is a `<p>` after the Zarpar link (out of its accessible name); also listed in `docs/propuestas/textos-zonas.md`; wrapper restored the hero unit test title Codex had renamed (REQ-ENT-028 link check) (agent)
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T188: on boia-planet-dev the seeded cosmetics keep «Arcilla, maqueta / · Noche / · Fiesta» (seed only inserts) → needs a manual UPDATE; sample achievement «Entre dos mundos» still says «Navega en Arcilla y en Acuarela»; `art/barco/*manifest.json` labels still «Arcilla, maqueta» (overridden on screen); Supabase ranking e2e not run
 - 2026-10-07 T189: Hernán applies `20261007100100_event_photos.sql` on boia-planet-dev, runs `db:types:dev` and `test:supabase` (new `event-photos.supabase.ts`) and tries an upload with `E2E_SUPABASE=1` (no Supabase e2e exists for it)
 - 2026-10-07 T189: IndexedDB image files are not deleted when a photo is binned or Admin resets to sample; photos uploaded in Supabase mode do not show in the Admin's local photo list
 
@@ -198,3 +201,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T188 launched · attempt 1 · agent abffc664e10cc9ab0 · opus
 - 2026-10-07 T189 launched · attempt 1 · agent ae1b8fe9c7638eab9 · opus
 - 2026-10-07 15:17 T189 done · branch worktree-agent-ae1b8fe9c7638eab9 · worktree .claude/worktrees/agent-ae1b8fe9c7638eab9 (folder left: node_modules) → 6a43553
+- 2026-10-07 15:20 T187 launched · attempt 1 · Codex via wrapper agent a451969b9e40306b2 (sonnet)
+- 2026-10-07 15:26 Hernán (Telegram, push offer T189): «Aplica subir en supabase» → `pnpm db:migrate:dev` applied 20261007100100 on boia-planet-dev; `db:types:dev` no diff; `test:supabase` 12 files / 98 tests pass; no Vercel push (not asked)
+- 2026-10-07 Hernán (session): push → `git push origin main` 2e6576d..bdcaa11 (T189 deployed)
+- 2026-10-07 15:46 T188 done · worktree-agent-abffc664e10cc9ab0 → cbdf6aa
+- 2026-10-07 15:48 T187 done · worktree-agent-a451969b9e40306b2 → 7635e98
