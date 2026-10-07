@@ -72,3 +72,64 @@ for (const withCarnet of [false, true]) {
     }
   });
 }
+
+/**
+ * T203: con «Cerrar sesión» la cabecera de escritorio no se parte en dos líneas.
+ * Se inyecta el `li` del logout (mismas clases que el real) para probarlo sin
+ * Supabase; `T203_SHOTS=<dir>` guarda capturas.
+ */
+for (const width of [390, 1024, 1200, 1280, 1440]) {
+  test(`cabecera con logout sin saltos de línea a ${width} px`, async ({ page }, info) => {
+    test.skip(info.project.name !== (width < 600 ? 'mobile' : 'desktop'), 'un proyecto por ancho');
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/?intro=0');
+    await pastHero(page);
+    await page.evaluate((label) => {
+      const li = document.createElement('li');
+      // Mismo marcado que `LandingSignOut`: icono + texto.
+      li.innerHTML = `<button type="button" class="site-header__sign-out" data-testid="landing-sign-out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>${label}</span></button>`;
+      for (const list of document.querySelectorAll('.site-header__links, .site-header__menu-list')) {
+        const clone = li.cloneNode(true);
+        list.querySelector('[data-testid="cabecera-carnet"]')!.closest('li')!.after(clone);
+      }
+    }, t('landing.signOut'));
+    // En móvil y hasta 1199 px, lo secundario vive en «Menú»: se abre para comprobarlo.
+    if (width < 1200) await tap(page, page.locator('.site-header__menu summary'));
+    const items = page.locator(
+      '.site-header__links a, .site-header__links button, .site-header__menu-list a, .site-header__menu-list button, .site-header__nav > .button',
+    );
+    await expect(page.getByTestId('landing-sign-out').filter({ visible: true })).toHaveCount(1);
+    const lines = await items.evaluateAll((els) =>
+      els
+        .filter((el) => (el as HTMLElement).offsetParent !== null)
+        .map((el) => {
+          // El logout de la fila es un icono (texto sólo para lectores): se mide su caja.
+          if (el.matches('.site-header__links button')) {
+            return { text: el.textContent, lines: el.getBoundingClientRect().width <= 48 ? 1 : 2 };
+          }
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          // Una línea nueva empieza al menos media línea más abajo (el emoji y el texto del
+          // sonido difieren unos píxeles en vertical sin ser dos líneas).
+          const tops = [...range.getClientRects()].map((r) => r.top).sort((a, b) => a - b);
+          const lines = tops.filter((top, i) => i === 0 || top - tops[i - 1]! > 8).length;
+          return { text: el.textContent, lines };
+        }),
+    );
+    for (const l of lines) expect(l.lines, l.text ?? '').toBe(1);
+    // La fila cabe en la cabecera: nada se sale por la derecha ni solapa al logo.
+    const fit = await page.evaluate(() => {
+      const brand = document.querySelector('.site-header__brand')!.getBoundingClientRect();
+      const nav = document.querySelector('.site-header__nav')!.getBoundingClientRect();
+      return { navRight: nav.right, navLeft: nav.left, brandRight: brand.right, vw: innerWidth };
+    });
+    expect(fit.navRight).toBeLessThanOrEqual(fit.vw);
+    expect(fit.navLeft).toBeGreaterThanOrEqual(fit.brandRight);
+    if (process.env.T203_SHOTS) {
+      await page.screenshot({
+        path: `${process.env.T203_SHOTS}/header-${width}.png`,
+        clip: { x: 0, y: 0, width, height: width < 1200 ? 520 : 90 },
+      });
+    }
+  });
+}

@@ -4,6 +4,19 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T203: Landing header fits on desktop with Cerrar sesión
+
+Qué existe:
+- `landing-sign-out.tsx`: icono + texto (con `title`); `landing.css`: `nowrap` en los enlaces, la fila de escritorio empieza en 1200 px (debajo, «Menú», donde el logout sigue con texto), de 1200 a 1359 px gaps y tracking más cortos, y el logout de la fila es sólo icono (el texto queda para lectores).
+- `landing-logout.spec.ts`: prueba nueva por ancho (390, 1024, 1200, 1280, 1440) que inyecta el `li` del logout y afirma una sola línea por elemento y que la fila cabe sin solapar el logo. `T203_SHOTS=<dir>` guarda capturas.
+
+Comandos:
+- `E2E_PORT=3481 pnpm e2e landing-logout.spec.ts landing.spec.ts --workers=1` → exit 0 (19 passed, 9 skipped: las pruebas con sesión ya se saltaban sin Supabase).
+- vitest, checks.sh, lint, typecheck, build → exit 0 (landing 195.3 kB de 200).
+- Capturas en /tmp/orchestrator-attach/boia-planet-hernan-T203/ (header-390/1024/1200/1280/1440.png).
+
+Pendiente: nada. Cambio de punto de corte: la fila de escritorio pasa de 900 a 1200 px.
+
 ## 2026-10-07 — plan 017 T192: Admin: editable store, contact and footer links
 
 Qué existe:

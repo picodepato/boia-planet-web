@@ -306,6 +306,7 @@ html[data-hero-top] .site-header__inner {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .site-header__links a:hover,
@@ -378,7 +379,8 @@ html[data-hero-top] .site-header__inner {
   display: none;
 }
 
-@media (min-width: 900px) {
+/* T203: con Carnet, Ranking y logout la fila sólo cabe desde 1200 px; debajo, «Menú». */
+@media (min-width: 1200px) {
   .site-header__links {
     display: flex;
   }
@@ -1975,16 +1977,51 @@ main[data-contenido] .js .sail-link,
   padding: 0 12px;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1200px) {
   .js .sound-toggle--bar {
     display: inline-flex;
   }
 }
 
-/* Con Mi Carnet e Instagram, la fila de escritorio aprieta un poco hasta 1100 px. */
-@media (min-width: 900px) and (max-width: 1099px) {
+/* Con Mi Carnet, Ranking e Instagram la fila aprieta un poco hasta 1359 px. */
+@media (min-width: 1200px) and (max-width: 1359px) {
   .site-header__links {
     gap: 14px;
+    margin-right: 4px;
+  }
+  .site-header__links a {
+    letter-spacing: 0.08em;
+  }
+  .site-header__nav {
+    gap: 6px;
+  }
+}
+
+/* «Cerrar sesión» de la fila de escritorio es un icono (T203); el texto sigue para lectores. */
+.site-header__sign-out svg {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .site-header__links .site-header__sign-out {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    padding: 0;
+  }
+  .site-header__links .site-header__sign-out svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+  .site-header__links .site-header__sign-out span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
