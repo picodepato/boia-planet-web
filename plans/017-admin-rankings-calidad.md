@@ -225,7 +225,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: skipped (Hernán): Codex out of credits until 20:19, nothing done; store keeps T201 placeholders, events keep current posters
 
 ## T203 — Landing header fits on desktop with «Cerrar sesión»
-- Status: running (attempt 2, continuation)
+- Status: done
 - Depends on: T199
 - Model: sonnet
 - Goal: Fix what T199 broke: on desktop the landing header items crowd and wrap («MI CARNET», «CERRAR SESIÓN» on two lines) when signed in. Every item stays on one line at common widths, mobile unchanged.
@@ -235,10 +235,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - screenshots signed in at 1024, 1280 and 1440 px and mobile 390 px: no item wraps → /tmp/orchestrator-attach/boia-planet-hernan-T203/
   - `E2E_PORT=<free> pnpm e2e landing-logout.spec.ts landing.spec.ts --workers=1` → exit 0 (add an assertion that header items do not wrap)
   - Test command → exit 0
-- Outcome:
+- Outcome: desktop link row from 1200 px (900–1199 px in «Menú»), logout as an icon button there (text kept for screen readers and title), tighter gaps and nowrap 1200–1359 px; e2e asserts no header item wraps · 68ae725
 
 ## T198 — Close plan 017
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T203 (T202 skipped by Hernán)
 - Model: opus
 - Goal: Run the full e2e, fix what this plan broke (small fixes only; report anything bigger), update docs and write the try-it guide for Hernán.
@@ -252,6 +252,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T203: header link row starts at 1200 px; logout is an icon button in the row; mobile unchanged (agent)
 - 2026-10-07 run: if Codex cannot do T202 (out of credits or unable to make the images), T202 is skipped, not retried or moved to Opus; store keeps T201's MUESTRA placeholders and events keep their current posters (Hernán)
 - 2026-10-07 run: Hernán asked to launch the Codex task at once → 3 agents running (T192, T203, T202), above the usual 2 (Hernán)
 - 2026-10-07 T199: NAUFRAGO10 now applies to Nochevieja (Sonido no longer sold online); specs buy through `e2e/online-event.ts`; box-office notice is a `<details>` (works without JS); logout checked against a fake local Supabase only (agent)
@@ -329,3 +330,4 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 19:53 T202 launched · attempt 1 · Codex via wrapper agent a071fe5879b91bced (sonnet) · 3 agents at once on Hernán's request
 - 2026-10-07 19:56 T202 Codex usage limit before any change → skipped per Hernán; worktree and branch removed
 - 2026-10-07 20:00 T192 done · worktree-agent-a221ef35f0e8032ad (+ abef2dab) → 3a89dc6
+- 2026-10-07 20:01 T203 done · worktree-agent-a69c10f44897b7d47 (+ a0f87b68) → 68ae725
