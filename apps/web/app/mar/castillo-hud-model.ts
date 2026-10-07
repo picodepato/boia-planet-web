@@ -283,12 +283,24 @@ export function towerDetail(
   config: DefenseConfig,
   kind: DefenseTowerKind,
   coins: number,
+  farmCount = 0,
 ): TowerDetailView {
   const option = buildOptions(config, coins).find((o) => o.kind === kind)!;
+  const how = towerHowLine(config, kind, 1);
+  const rows = towerStatRows(config, kind);
+  // La siguiente Ibiza ocupa el puesto posterior a las que siguen en pie.
+  // Usar el mismo cálculo del motor también en la tabla por niveles.
+  if (kind === 'tienda') {
+    how.params = { ...how.params, monedas: formatNum(defenseFarmPayout(config, 1, farmCount)) };
+    const money = rows.find((r) => r.id === 'monedas')!;
+    money.values = money.values.map((_, i) =>
+      formatNum(defenseFarmPayout(config, i + 1, farmCount)),
+    );
+  }
   return {
     ...option,
-    how: towerHowLine(config, kind, 1),
-    rows: towerStatRows(config, kind),
+    how,
+    rows,
     priority: config.towers.kinds[kind].priority,
   };
 }

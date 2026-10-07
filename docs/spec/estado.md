@@ -271,7 +271,7 @@ guía de prueba: [castillo v3](../propuestas/2026-10-06-castillo-v3-guia-prueba.
 | REQ-COM-029 | Validación de artistas | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-COM-030 | Página Filosofía | L1 | PARCIAL | [blocks.test.ts](../../apps/web/app/%28landing%29/components/blocks.test.ts) «Contacto lleva la Filosofía dentro y sus datos (T65)» | Desde T65 la Filosofía se ve dentro del bloque Contacto (decisión del 2026-10-02); textos `muestra` [pendiente Álvaro] |
 | REQ-COM-031 | Galería de fotos | L1 | HECHO | [eventos.test.ts](../../apps/web/lib/landing/eventos.test.ts); [admin-fotos.spec.ts](../../apps/web/e2e/admin-fotos.spec.ts) | T189: las fotos subidas en el Admin salen en la galería de su isla |
-| REQ-COM-032 | Vídeos sin bloquear la carga | L1 | FALTA | — | — |
+| REQ-COM-032 | Vídeos sin bloquear la carga | L1 | PARCIAL | [lazy-video.test.ts](../../apps/web/lib/lazy-video.test.ts), [videos-perezosos.spec.ts](../../apps/web/e2e/videos-perezosos.spec.ts) | T197: LazyVideo probado con poster, sin precarga y montaje al intersectar. Hoy no hay vídeos de contenido; e2e de red escrito, pendiente de ejecución. |
 | REQ-COM-033 | Tienda L1 con enlace externo | L1 | PARCIAL | [place-panels.tsx](../../apps/web/lib/mundo/place-panels.tsx) | Construido; sin prueba que lo nombre |
 | REQ-COM-034 | Tienda con checkout propio | L2 | L2 | — | — |
 | REQ-COM-035 | Versión de prueba: sello por checkout sandbox | L1 | HECHO | [tickets.spec.ts](../../apps/web/e2e/tickets.spec.ts); [event-card.test.ts](../../apps/web/app/%28landing%29/components/event-card.test.ts) | Sólo en modo local; con cuentas el sello llega por el QR de la fiesta (REQ-IDE-023, plan 008) |

@@ -4,6 +4,7 @@
  * que Álvaro lo apruebe.
  */
 export const esLibWeb = {
+  'media.video.load': 'Cargar vídeo: {nombre}',
   'landing.access.sonido': 'Sonido',
   'landing.access.entrarEnElWhatsapp': 'Entrar en el WhatsApp',
   'landing.access.entrarEnElWhatsapp2': 'Entrar en el WhatsApp de BOIA (se abre en otra pestaña)',

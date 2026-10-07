@@ -83,6 +83,7 @@ const READ_MS = 100;
 const BANNER_MS = 3500;
 
 interface HudState {
+  farmCount: number;
   view: CastleView | null;
   bar: BossBarView | null;
   placing: DefenseTowerKind | null;
@@ -93,6 +94,7 @@ interface HudState {
 }
 
 const EMPTY: HudState = {
+  farmCount: 0,
   view: null,
   bar: null,
   placing: null,
@@ -108,6 +110,7 @@ function sameState(a: HudState, b: HudState): boolean {
   const ta = a.panel;
   const tb = b.panel;
   return (
+    a.farmCount === b.farmCount &&
     a.view === b.view &&
     a.placing === b.placing &&
     a.scale === b.scale &&
@@ -165,6 +168,7 @@ function useCastleHud(castle: CastleMode): [HudState, () => void] {
         const sameNotices =
           notices.length === prev.notices.length && notices.every((n, i) => n === prev.notices[i]);
         const next: HudState = {
+          farmCount: s.towers.filter((t) => t.kind === 'tienda').length,
           view: sameCastleView(prev.view, view) ? prev.view : view,
           bar: defenseBossBar(s),
           placing: run.placing?.kind ?? null,
@@ -458,7 +462,7 @@ export function CastleLayer({
             />
           ) : mode === 'detail' && detailKind ? (
             <CastleDetail
-              detail={towerDetail(config, detailKind, view.coins)}
+              detail={towerDetail(config, detailKind, view.coins, hud.farmCount)}
               onPlace={() => {
                 place(detailKind);
                 focusIn('[data-testid="mar-castillo-colocar-si"]');

@@ -4,6 +4,20 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T197: Lazy videos and the castle Ibiza card's real payout
+
+Qué existe:
+- `apps/web/lib/lazy-video.tsx` (+ test): `LazyVideo` con poster, `preload="none"` y montaje por IntersectionObserver. No hay vídeos de contenido hoy; el visor de cámara y el hero no se tocan. REQ-COM-032 sube a PARCIAL (`docs/spec/estado.md`).
+- `apps/web/e2e/videos-perezosos.spec.ts`: la home y `/fotos` cargan sin descargar vídeos.
+- La tarjeta «Construir» de Ibiza (`castillo-hud-model.ts` `towerDetail(..., farmCount)`, `castillo-hud.tsx`) muestra el pago real de la siguiente Ibiza (100/70/50 %) con `defenseFarmPayout`; el balance no cambia. Test en `castillo-hud-v3.test.ts` contra `DefenseGame.farmPayout`.
+
+Comandos:
+- vitest (sin packages/db, PYTHONUTF8=1): exit 0.
+- `E2E_PORT=3197 pnpm e2e mar-castillo.spec.ts videos-perezosos.spec.ts --workers=1`: exit 0, 42 passed, 2 skipped.
+- `sh tools/spec/checks.sh` OK; `pnpm lint` 0; `pnpm typecheck` 0; `pnpm build` 0 (187,9 kB, presupuesto 200).
+
+Pendiente: integrar `LazyVideo` cuando haya vídeos reales (REQ-COM-032 pasa a HECHO entonces).
+
 ## 2026-10-07 — plan 017 T195: World texts into i18n
 
 **What exists**

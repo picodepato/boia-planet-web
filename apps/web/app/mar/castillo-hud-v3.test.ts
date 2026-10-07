@@ -7,7 +7,7 @@ import {
 } from '@boia/engine/defense';
 import { describe, expect, it } from 'vitest';
 import { t } from '../../lib/i18n';
-import { formatNum, towerPanel } from './castillo-hud-model';
+import { formatNum, towerDetail, towerPanel } from './castillo-hud-model';
 import { COIN_POP_STYLE, DAMAGE_NUMBER_STYLE, DamageNumbers } from './engine/defense-overlays';
 
 /**
@@ -18,6 +18,48 @@ import { COIN_POP_STYLE, DAMAGE_NUMBER_STYLE, DamageNumbers } from './engine/def
  */
 
 const cfg = DEFENSE_CONFIG;
+
+describe('Construir: el pago de la siguiente Ibiza (T197)', () => {
+  it('la tarjeta de la 1.ª, 2.ª y 3.ª coincide con farmPayout al construirla', () => {
+    const g = createDefense({ ...cfg, startCoins: 5000 }, 7);
+    g.addTower('faro', 0, -700);
+    [-600, 0, 600].forEach((x, rank) => {
+      const s = g.snapshot();
+      const detail = towerDetail(
+        cfg,
+        'tienda',
+        s.coins,
+        s.towers.filter((t) => t.kind === 'tienda').length,
+      );
+      const id = g.addTower('tienda', x, 700, { level: 1 }).id;
+      const payout = g.farmPayout(id)!;
+      expect(payout).toBe(defenseFarmPayout(cfg, 1, rank));
+      expect(detail.how.params?.monedas).toBe(formatNum(payout));
+      expect(detail.rows.find((r) => r.id === 'monedas')!.values[0]).toBe(formatNum(payout));
+      for (const level of [2, 3]) {
+        expect(g.upgradeTower(id)).toBe(true);
+        expect(detail.rows.find((r) => r.id === 'monedas')!.values[level - 1]).toBe(
+          formatNum(g.farmPayout(id)!),
+        );
+      }
+    });
+  });
+
+  it('tras vender, sólo cuenta las Ibizas que siguen en pie', () => {
+    const { g, ids } = threeFarms();
+    g.sellTower(ids[0]!);
+    const s = g.snapshot();
+    const detail = towerDetail(
+      cfg,
+      'tienda',
+      s.coins,
+      s.towers.filter((t) => t.kind === 'tienda').length,
+    );
+    const id = g.addTower('tienda', -600, 700).id;
+    expect(detail.how.params?.monedas).toBe(formatNum(g.farmPayout(id)!));
+    expect(detail.how.params?.monedas).toBe(formatNum(defenseFarmPayout(cfg, 1, 2)));
+  });
+});
 
 function threeFarms() {
   const g = createDefense(cfg, 7);
