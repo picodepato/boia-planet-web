@@ -46,7 +46,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: tools/deck generator (TS run by Node 24, parts found by file name, layout text limits fail the build), deck:capturas with blank-shot guard, deck:render via LibreOffice + pdf.js; 19 placeholder slides, hero example done · e7551f1
 
 ## T205 — Part 2: Landing
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -59,7 +59,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of part 2: nothing overflows or is cut
   - 3 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T205/
   - Test command → exit 0
-- Outcome:
+- Outcome: 11 slides in two sections («Hero y Entradas», «Secciones de la landing»), each with «qué falta» and «preguntas y propuestas»; Hernán's three points in; 12 captures · 32dc555
 
 ## T206 — Part 3: Pages (events, artists, photos, store, legal)
 - Status: done
@@ -78,7 +78,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: 9 slides (events, artists + invite, photos/store, legal; 2 «qué falta», 1 «preguntas y propuestas»), 10 captures · 8d1f8c7
 
 ## T207 — Part 4: Carnet BOIA and Ranking
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -94,7 +94,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T208 — Part 5: The ocean `/mar`
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -183,7 +183,12 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T206: one «qué falta» + one «preguntas y propuestas» for the whole part to fit the budget; store captures with reduced motion; port 3226 because EA Desktop holds 3216 (agent)
 - 2026-10-07 run: Test command now ends with `git checkout -- docs/presentacion/boia-planet.pptx`: `pnpm deck` rebuilds the binary on main and left it dirty, blocking the next merge (orchestrator)
 
+- 2026-10-07 T205: two sections in part 2; contact shown on the Filosofía capture; «Cerrar sesión» only in notes (never shows in local mode); «probar admin» at launch asked as a question; port 3241 (EA Desktop holds 3215) (agent)
+- 2026-10-07 run: binary-only conflicts go back to the agent to merge main and rebuild (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-07 T205: the Admin cannot edit the Filosofía text
+- 2026-10-07 T205: `portadaParte` can leave a «·» at the start of a wrapped second line (tools/deck) → T212
 - 2026-10-07 T206: deck capture browser has no emoji font, so emoji in the site draw as empty boxes in captures (e.g. before «Mi Carnet»)
 - 2026-10-07 T204: deck:capturas passes extra Playwright args through the shell on Windows; args with spaces may split
 
@@ -193,3 +198,6 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 21:10 T205 launched · attempt 1 · agent a24b381821604ec59 · opus · DECK_PORT 3215
 - 2026-10-07 21:10 T206 launched · attempt 1 · agent a7fe0565a25277bf6 · opus · DECK_PORT 3216
 - 2026-10-07 21:15 T206 done · branch worktree-agent-a7fe0565a25277bf6 → 8d1f8c7
+- 2026-10-07 21:18 T207 launched · attempt 1 · agent a4413a0b26814587c · opus · DECK_PORT 3235 · also fixes emoji in captures
+- 2026-10-07 21:30 T205 conflict on pptx/pdf only → sent back to agent to merge main and rebuild
+- 2026-10-07 21:35 T205 done · branch worktree-agent-a24b381821604ec59 → 32dc555
