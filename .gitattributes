@@ -22,3 +22,7 @@
 *.docx binary
 *.pdf binary
 *.zip binary
+
+# plan 018: the deck binaries are rebuilt by every part task; on merge keep the current side (the next build refreshes them)
+docs/presentacion/boia-planet.pptx binary merge=ours
+docs/presentacion/boia-planet.pdf binary merge=ours
