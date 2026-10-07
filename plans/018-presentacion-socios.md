@@ -24,7 +24,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 ## Tasks
 
 ## T204 — Deck toolchain: generator, BOIA theme, capture harness, render check
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: anthropic-skills:pptx, frontend-design
@@ -43,7 +43,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `pnpm e2e --list` (normal config) does not list any deck spec
   - 3–4 rendered slide PNGs (cover, a part cover, the hero «qué falta») copied to /tmp/orchestrator-attach/boia-planet-hernan-T204/
   - Test command → exit 0
-- Outcome:
+- Outcome: tools/deck generator (TS run by Node 24, parts found by file name, layout text limits fail the build), deck:capturas with blank-shot guard, deck:render via LibreOffice + pdf.js; 19 placeholder slides, hero example done · e7551f1
 
 ## T205 — Part 2: Landing
 - Status: pending
@@ -174,7 +174,15 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 approval: plan 017 is integrated; the deck covers what it added and its open questions (Hernán)
+- 2026-10-07 setup: fresh-worktree probe skipped, same setup as plan 017 earlier today (orchestrator)
+
+- 2026-10-07 T204: tools/deck added to pnpm-workspace.yaml; parts export `titulo` + default (d: Deck) => void; captures named without extension, `NN-slug/name` for another part's; desktop captures in `NN-*.escritorio.deck.ts`; logos converted from SVG at build; PDF→PNG with pdf.js (no pdftoppm); fixed hex colors; .pptx/.pdf conflicts: keep either side and rebuild (agent)
+- 2026-10-07 run: part tasks rebuild the binary .pptx/.pdf; on integration conflicts in those two files only, the orchestrator keeps main's side and the next task (or T212) rebuilds (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-07 T204: deck:capturas passes extra Playwright args through the shell on Windows; args with spaces may split
 
 ## Log
+- 2026-10-07 20:55 T204 launched · attempt 1 · agent afe0ac150546d92a4 · opus
+- 2026-10-07 21:05 T204 done · branch worktree-agent-afe0ac150546d92a4 → e7551f1
