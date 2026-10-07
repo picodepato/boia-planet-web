@@ -87,7 +87,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T190 — Admin: new object in 10 steps, templates and asset validation
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Goal: Build REQ-ADM-010 (create a new world object in a guided 10-step flow), REQ-ADM-011 (templates) and REQ-ADM-012 (asset validation) in Admin (decision 5).
@@ -98,7 +98,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - `E2E_PORT=<free> pnpm e2e <new admin-objeto spec> --workers=1` (create an object from a template through the 10 steps, see it in /mar) → exit 0
   - REQ-ADM-010–012 updated in `docs/spec/estado.md` with their test; `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: new Admin «Objetos» section: 10-step flow, saved templates, asset validation (incl. land/water check against the /mar sea); objects and templates in local repo areas `worldObjects`/`objectTemplates`, drawn with their category model; REQ-ADM-010–012 HECHO · 140a366
 
 ## T191 — Admin: moderation of Carnets and the other sections with real data
 - Status: done
@@ -128,7 +128,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T194 — Ranking and stamp gaps from plan 008
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T188
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Fix the plan 008 gaps: ties at 0 points, the stamp's score and rank line, and the player's own bottle shown even when it is not among the 10 most recent (decision 6).
@@ -238,6 +238,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T190: objects/templates in new local repository areas with audit and trash, schemas in `packages/contracts`, no migration (Admin world still local, D-20); a published object goes at the end of the live map in every world, drafts never reach /mar; category only proposes defaults; links (ticket, achievement, reward, teleport) only in step 8; save checks land/water against the /mar sea (an island near the port otherwise broke `?ir=`); `.glb` kept as original, images get WebP 512/128 in T189's IndexedDB store; conflict with main in `admin-app.tsx` was imports only (agent)
 - 2026-10-07 T191: hidden nickname/avatar replaced in the row («Miembro de BOIA <nº>», no avatar), original in `private.carnet_moderation`, trigger blocks re-saving removed content; a hidden Carnet is unreadable to the public via RLS; removing needs a reason, restoring does not and never resolves reports; one RPC pair `admin_void_score`/`admin_restore_score` for all boards (Castillo gets void columns, its ranking function skips voided rows); real Moderación screen shows real Carnets (demo list removed); T186's `member-numbers-sql.test.ts` narrowed to member-number/`save_profile` changes (agent)
 - 2026-10-07 plan: T202 keeps only the sample posters; the techno sample photos are dropped, Hernán will upload the real event photos (Hernán)
 - 2026-10-07 plan: Hernán added decisions 8–12 mid-plan; T193 now also does Carnet 000 Admin sign-in; new T199, T201, T202 (Codex); T192 after T201 (same store area); T198 depends on all (orchestrator)
@@ -246,6 +247,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T190: uploaded assets are not drawn in the 3D sea (waits for the visual editor, REQ-ADM-009); in Supabase mode new objects still live in the browser like the rest of the Admin world
 - 2026-10-07 T191: apply `20261007100200_moderation.sql` on boia-planet-dev, then `test:supabase` and `E2E_SUPABASE=1 … admin-real.spec.ts`; no per-answer moderation in Supabase; a voided Castillo score only comes back with a better score (`submit_castle_score` unchanged)
 - 2026-10-07 T188: on boia-planet-dev the seeded cosmetics keep «Arcilla, maqueta / · Noche / · Fiesta» (seed only inserts) → needs a manual UPDATE; sample achievement «Entre dos mundos» still says «Navega en Arcilla y en Acuarela»; `art/barco/*manifest.json` labels still «Arcilla, maqueta» (overridden on screen); Supabase ranking e2e not run
 - 2026-10-07 T189: Hernán applies `20261007100100_event_photos.sql` on boia-planet-dev, runs `db:types:dev` and `test:supabase` (new `event-photos.supabase.ts`) and tries an upload with `E2E_SUPABASE=1` (no Supabase e2e exists for it)
@@ -265,3 +267,6 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 15:52 T193 and T192 held: Hernán asked for new Admin sign-in (Carnet 000 + password) and store changes; waiting for his answers
 - 2026-10-07 16:17 T191 done · worktree-agent-a63e2c276f934cb44 → 2ead693
 - 2026-10-07 16:18 T193 launched · attempt 1 · agent a2b88cd80a528a105 · opus (password only in the prompt)
+- 2026-10-07 16:50 T190 done by agent; integration conflict in apps/web/app/admin/admin-app.tsx (with T191/T189) → sent back to the same agent
+- 2026-10-07 16:27 T190 done · worktree-agent-ac5abf7c0d1d9c934 → 140a366
+- 2026-10-07 16:28 T194 launched · attempt 1 · Codex via wrapper agent a27474a3113dfee95 (sonnet)
