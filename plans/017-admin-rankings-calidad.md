@@ -25,7 +25,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 9. **Admin sign-in with Carnet 000.** Carnet number **000** is the admin. Demo/local mode: sign in with Carnet 000 + a password (given to the task agent in its prompt; only a salted hash is committed, never the plain text). Supabase mode: Carnet 000 is the admin account and signs in with the password **plus the TOTP code**.
 10. **Logout.** When signed in, a «Cerrar sesión» button at the top next to «Carnet», only on the landing page (never during a game or in /mar).
 11. **Store.** Each landing store product rotates its images: the product alone, other angles, and worn by a model in a clean fashion-catalogue style; images invented by Codex, `muestra`, replaceable later from Admin. Pressing buy shows: «Sólo a la venta en la fiesta. Si quieres una, escríbenos por Instagram a @boia.planet» with a link to https://instagram.com/boia.planet.
-12. **Sample content.** Event posters invented by Codex for every event without one (`muestra`), so the page looks complete; sample archive photos of **techno** parties from free photo banks (Unsplash/Pexels, licence allows reuse; credit kept in a credits file), loaded as past-event photos on the islands through T189's model.
+12. **Sample posters.** Event posters invented by Codex for every event without one (`muestra`), so the page looks complete. No sample party photos: Hernán will provide the real event photos and upload them through T189's Admin (2026-10-07).
 
 ## Tasks
 
@@ -209,18 +209,17 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - Test command → exit 0
 - Outcome:
 
-## T202 — Sample posters and techno party photos
+## T202 — Sample event posters
 - Status: pending
 - Depends on: T189
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
-- Goal: Every event without a poster gets one invented by Codex (`muestra`); sample techno party photos from Unsplash/Pexels are loaded as past-event photos on the islands (decision 12).
-- Context: events' `posterUrl` and sample content (grep `posterUrl`, sample events), T189's photo/album model (`packages/contracts/src/content.ts`, `apps/web/lib/admin/island-photos*`), `docs/contenido-real.md` (real content goes under `apps/web/public/contenido/`; samples must stay marked `muestra`).
-- Scope: may touch sample content data, new image files under `apps/web/public/` (posters and photos as WebP, sized for the web), a credits file listing every downloaded photo (source URL, author, licence), tests / must not touch real content, Admin code, the landing hero.
+- Goal: Every event without a poster gets one invented by Codex (`muestra`), so the page looks complete (decision 12). No party photos.
+- Context: events' `posterUrl` and sample content (grep `posterUrl`, sample events), `docs/contenido-real.md` (real content goes under `apps/web/public/contenido/`; samples must stay marked `muestra`; the real Halloween poster is P19, Álvaro's).
+- Scope: may touch sample content data, new poster files under `apps/web/public/` (WebP, sized for the web), tests / must not touch real content, Admin code, photos/albums, the landing hero.
 - Done when:
-  - every sample event has a poster and at least two islands show past events with at least 4 techno photos each; list the files and their total size
-  - credits file present and covering every downloaded photo
-  - screenshots: event poster on the landing, island memory gallery → /tmp/orchestrator-attach/boia-planet-hernan-T202/
-  - `E2E_PORT=<free> pnpm e2e landing.spec.ts admin-fotos.spec.ts ciclo-evento.spec.ts --workers=1` → exit 0
+  - every sample event has a poster; list the files and their total size
+  - screenshots: posters on the landing and in an island's event sheet → /tmp/orchestrator-attach/boia-planet-hernan-T202/
+  - `E2E_PORT=<free> pnpm e2e landing.spec.ts ciclo-evento.spec.ts --workers=1` → exit 0
   - Test command → exit 0
 - Outcome:
 
@@ -239,6 +238,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 plan: T202 keeps only the sample posters; the techno sample photos are dropped, Hernán will upload the real event photos (Hernán)
 - 2026-10-07 plan: Hernán added decisions 8–12 mid-plan; T193 now also does Carnet 000 Admin sign-in; new T199, T201, T202 (Codex); T192 after T201 (same store area); T198 depends on all (orchestrator)
 - 2026-10-07 T188: the landing header had no ranking and lib/mundo/menu is never mounted → added «Ranking» to the header, opening a new `/ranking` page with the same panel; tabs «Carrera / Cañón / Castillo / Puntos» («De siempre» renamed to fit 390 px); race shows the circuit name, no dropdown; world display name «Mundo principal», /mar menu title omits the world when only one is playable; B05 «Botijo» (i18n, barcos.json, sample cosmetics, Supabase seed); Admin text «El puerto de salida (El Varadero).»; guest box on Cañón/Castillo boards shows the browser's own score and invites to sign in (agent)
 - 2026-10-07 T187: line is a `<p>` after the Zarpar link (out of its accessible name); also listed in `docs/propuestas/textos-zonas.md`; wrapper restored the hero unit test title Codex had renamed (REQ-ENT-028 link check) (agent)
