@@ -1,4 +1,5 @@
 import type PptxGenJS from 'pptxgenjs';
+import QRCode from 'qrcode';
 import type {
   Diapositiva,
   Falta,
@@ -714,6 +715,10 @@ async function texto(nueva: Nueva, ctx: Contexto, s: Texto) {
   if (s.texto && s.puntos?.length) contenido[contenido.length - 1]!.options!.breakLine = true;
   if (s.puntos?.length) contenido.push(...vinetas(s.puntos));
   cajaTexto(sl, contenido, { x: M, y: 2.0, w: 7.6, h: 4.65 }, { lineSpacingMultiple: 1.05 });
+  if (s.qr) {
+    await qr(sl, s.qr, { x: 9.0, y: 1.75, lado: 3.7 });
+    return sl;
+  }
   const mascota = await marca('boia-mascota', 1000);
   sl.addShape('ellipse', {
     x: 9.0,
@@ -734,6 +739,53 @@ async function texto(nueva: Nueva, ctx: Contexto, s: Texto) {
     altText: 'La mascota de BOIA',
   });
   return sl;
+}
+
+/**
+ * El código QR de una dirección, en una tarjeta blanca (oscuro sobre claro
+ * para que lo lea cualquier móvil), con la dirección escrita debajo.
+ */
+async function qr(sl: Slide, url: string, caja: { x: number; y: number; lado: number }) {
+  const data = await QRCode.toDataURL(url, {
+    errorCorrectionLevel: 'M',
+    margin: 0,
+    width: 1200,
+    color: { dark: `#${COLOR.negro}`, light: '#FFFFFF' },
+  });
+  const { x, y, lado } = caja;
+  sl.addShape('roundRect', {
+    x,
+    y,
+    w: lado,
+    h: lado,
+    rectRadius: 0.18,
+    fill: { color: COLOR.blanco },
+    line: { color: COLOR.naranja, width: 3 },
+    objectName: 'QR',
+  });
+  const borde = 0.3;
+  sl.addImage({
+    data,
+    x: x + borde,
+    y: y + borde,
+    w: lado - 2 * borde,
+    h: lado - 2 * borde,
+    altText: `Código QR de ${url}`,
+  });
+  sl.addText(url.replace(/^https:\/\//, ''), {
+    x: x - 0.4,
+    y: y + lado + 0.12,
+    w: lado + 0.8,
+    h: 0.4,
+    margin: 0,
+    align: 'center',
+    fontFace: FUENTE.texto,
+    fontSize: PT.pie,
+    bold: true,
+    color: COLOR.tintaSuave,
+    isTextBox: true,
+    objectName: 'Dirección del QR',
+  });
 }
 
 /** Dibuja una diapositiva y le pone sus notas del orador. */

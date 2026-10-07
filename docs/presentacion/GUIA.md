@@ -59,7 +59,7 @@ se parte en dos diapositivas, no se achica la letra. Límites en
 | `queFalta` | Lo que falta, cada cosa con su etiqueta y quién | ≤ 6, de 120 car. |
 | `preguntas` | «Preguntas y propuestas», cierre de cada sección | ≤ 4 + ≤ 4, de 140 car. |
 | `hojaDeRuta` | Una tabla | ≤ 10 filas × 5 columnas |
-| `texto` | Texto sin captura (p. ej. paneles del Admin que piden cuentas) | 420 car. o ≤ 6 viñetas |
+| `texto` | Texto sin captura (p. ej. paneles del Admin que piden cuentas); con `qr: 'https://…'`, el QR de esa dirección en vez de la mascota | 420 car. o ≤ 6 viñetas |
 
 Títulos de 50 caracteres como mucho, sin punto final.
 

@@ -111,6 +111,8 @@ export interface Texto extends ConNotas {
   titulo: string;
   texto?: string;
   puntos?: string[];
+  /** Una dirección web (https://…): se dibuja su código QR en lugar de la mascota. */
+  qr?: string;
 }
 
 export type Diapositiva =
@@ -319,6 +321,8 @@ export class Deck {
     if (!s.texto && !s.puntos?.length) this.fallo('texto o puntos');
     this.largo('el texto', s.texto, LIMITE.textoLibre);
     if (s.puntos) this.lista('puntos', s.puntos, s.texto ? 4 : LIMITE.puntos, LIMITE.punto);
+    if (s.qr !== undefined && !/^https:\/\/\S{3,60}$/.test(s.qr))
+      this.fallo(`qr «${s.qr}»: una dirección https:// de 60 caracteres como mucho`);
     this.diapositivas.push({ tipo: 'texto', ...s });
   }
 }

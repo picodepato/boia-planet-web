@@ -4,6 +4,49 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T211: Partes 1 y 8: resumen, hoja de ruta para salir y decisiones pendientes
+
+**Qué existe**
+
+- `docs/presentacion/partes/01-portada.ts` (5 diapositivas): portada; qué es
+  BOIA.PLANET (dos formas de convertir: entradas y el planeta 3D, con la
+  captura del hero); mapa de las 8 partes; cómo se lee cada parte (las dos
+  etiquetas); dónde está hoy (versión de prueba en el navegador, contenido de
+  muestra, sin cobros) con el QR de https://boia-planet-roan.vercel.app.
+- `docs/presentacion/partes/08-cierre.ts` (6 diapositivas): portada de parte;
+  hoja de ruta en 3 tablas, 30 líneas numeradas en orden y agrupadas por quién
+  (Álvaro 1–17, Álvaro y socios 18–20, Hernán 21–29, visto bueno final 30),
+  con la parte de la que sale cada línea («global» si no es de ninguna);
+  decisiones pendientes (fecha de salida, ticketera, dominio, próximo All Day,
+  puntos y premios, lista de correos, tipografía y música); cierre con QR.
+- Los 35 «Necesario para salir» de las partes 2–7 (P2 10, P3 9, P4 4, P5 4,
+  P6 4, P7 4) están todos en la hoja de ruta; los repetidos (cartel,
+  ticketera, horas y precios, taquilla y 2 €, fotos de tienda, cuentas,
+  atajos) son una línea con sus partes. Globales añadidos: cuentas y base de
+  datos de producción (con la 21), dominio, analítica, copias, legales (con la
+  7), quitar la muestra y el visto bueno de Álvaro.
+- `tools/deck`: el `texto` acepta `qr: 'https://…'` y dibuja el QR (librería
+  `qrcode` 1.5.4) en lugar de la mascota; una línea en `GUIA.md`.
+- `boia-planet.pptx` y `boia-planet.pdf` regenerados: 74 diapositivas.
+
+**Comandos**
+
+- `pnpm deck` → exit 0 (74 diapositivas; parte 1: 1–5, parte 8: 69–74).
+- `pnpm deck:render` → exit 0 (74 páginas); miradas las 11 PNG de las partes
+  1 y 8: nada cortado ni fuera de su caja.
+- QR: la matriz de las PNG 05 y 74 coincide módulo a módulo (0 de 841
+  distintos) con la codificación de la URL de prueba; la URL responde 200.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm typecheck`
+  → exit 0.
+
+**Pendiente**
+
+- T212: unificar en las partes 2–3 las fotos de fiestas pasadas (en la 2
+  «Puede esperar», en la 3 «Necesario»), quién aprueba la taquilla y las
+  fotos de tienda, y «Sonido»/«SONIDO».
+- Hernán revisa la fecha de salida propuesta como decisión (antes de
+  Halloween) y el reparto por quién.
+
 ## 2026-10-07 — plan 018 T210: Part 7: Admin
 
 Qué existe:
