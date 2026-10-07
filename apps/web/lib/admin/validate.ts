@@ -17,6 +17,9 @@ import {
   liveMap,
   mapPoint,
 } from './world';
+import { isPublished, objectPlaceProblem } from './objects';
+import { marWorld } from '../../app/mar/engine/compact';
+import { NEAR_MARGIN } from '../mundo/arrival';
 import { t } from '../i18n';
 
 /**
@@ -428,6 +431,18 @@ export function worldProblem(registry: WorldRegistry, content: WorldContent): st
       if (why) return why;
     }
   }
+  // Objetos nuevos del Admin (T190): dentro del mapa, con id propio y parámetros seguros.
+  for (const o of content.objects ?? []) {
+    if (!isPublished(o)) continue;
+    if (known.has(o.id) || isMapPointId(o.id)) {
+      return t('admin.objects.problem.takenId', { id: o.id });
+    }
+    if (o.x < b.left || o.x > b.right || o.y < b.top || o.y > b.bottom) {
+      return t('admin.validate.quedariaFueraDelMapa', { v1: o.name });
+    }
+    const why = objectPlaceProblem(o) ?? paramProblem(o.name, o.params, b);
+    if (why) return why;
+  }
   for (const [worldId, byPlace] of Object.entries(content.skins)) {
     if (!registry.has(worldId)) return t('admin.validate.noExisteElMundo', { worldId });
     for (const id of Object.keys(byPlace)) {
@@ -473,6 +488,20 @@ export function worldProblem(registry: WorldRegistry, content: WorldContent): st
       }
     }
   }
+  for (const o of content.objects ?? []) {
+    if (!isPublished(o)) continue;
+    // Nunca en tierra: su sitio, en el agua de todo lo demás.
+    const others = solidCircles({
+      ...world,
+      objects: world.objects.filter((x) => x.identity.id !== o.id),
+    });
+    if (!isWater(world, others, o)) return t('admin.objects.problem.onLand', { name: o.name });
+    if (o.safePoint && !isWater(world, obstacles, o.safePoint)) {
+      return t('admin.objects.problem.safeOnLand', { name: o.name });
+    }
+  }
+  const sea = newObjectsAtSeaProblem(registry, content);
+  if (sea) return sea;
   const blocked = unreachablePlaces(world, obstacles);
   if (blocked.length > 0) {
     const names = blocked.slice(0, 3).map((o) => `«${o.identity.name}»`);
@@ -480,6 +509,40 @@ export function worldProblem(registry: WorldRegistry, content: WorldContent): st
       names: names.join(', '),
       v2: blocked.length > 3 ? t('admin.validate.yMas', { v1: blocked.length - 3 }) : '',
     });
+  }
+  return null;
+}
+
+/**
+ * Los objetos nuevos publicados en el mar 3D de /mar (T190), que acorta el
+ * agua y agranda las islas (`marWorld`): cada uno sigue en el agua y el sitio
+ * donde llega el barco al ir a él (al sur, fuera de sus radios, como
+ * `approachPoint`) es agua del mar, no la otra punta del planeta ni tierra.
+ */
+function newObjectsAtSeaProblem(registry: WorldRegistry, content: WorldContent): string | null {
+  const published = (content.objects ?? []).filter(isPublished);
+  if (published.length === 0) return null;
+  const sea = marWorld(composeLiveWorld(registry, registry.defaultId, content).config);
+  const solids = solidCircles(sea);
+  for (const o of published) {
+    const m = sea.objects.find((x) => x.identity.id === o.id);
+    if (!m) continue;
+    const others = solidCircles({
+      ...sea,
+      objects: sea.objects.filter((x) => x.identity.id !== o.id),
+    });
+    if (!isWater(sea, others, m.position)) {
+      return t('admin.objects.problem.onLand', { name: o.name });
+    }
+    const reach = Math.max(
+      m.geometry.proximityRadius ?? 0,
+      m.geometry.activation?.radius ?? 0,
+      m.geometry.collision?.radius ?? 0,
+    );
+    const arrival = { x: m.position.x, y: m.position.y + reach + NEAR_MARGIN };
+    if (!isWater(sea, solids, arrival)) {
+      return t('admin.objects.problem.seaArrival', { name: o.name });
+    }
   }
   return null;
 }

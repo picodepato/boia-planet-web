@@ -12,7 +12,9 @@ import {
   eventSchema,
   homeBlockSchema,
   photoSchema,
+  objectTemplateSchema,
   promotionSchema,
+  worldObjectSchema,
 } from '@boia/contracts';
 import { STABLE_KEY, STABLE_KEY_MAX } from './ids';
 
@@ -447,6 +449,10 @@ export const ENTITY_SCHEMAS = {
   cosmetics: cosmeticSchema,
   ranks: rankSchema,
   music: musicTrackSchema,
+  /** Objetos nuevos del mundo creados en el Admin (plan 017 T190, REQ-ADM-010). */
+  worldObjects: worldObjectSchema,
+  /** Plantillas de objetos guardadas o duplicadas en el Admin (REQ-ADM-011). */
+  objectTemplates: objectTemplateSchema,
 } as const;
 
 /**

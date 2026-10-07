@@ -135,6 +135,8 @@ const AREA_LABELS: Partial<Record<string, string>> = {
   achievements: msg('admin.misc.logros'),
   cosmetics: msg('admin.misc.cosmeticos'),
   ranks: msg('admin.misc.rangos'),
+  worldObjects: msg('admin.objects.area.objects'),
+  objectTemplates: msg('admin.objects.area.templates'),
   places: msg('admin.misc.mundoMapa'),
   skins: msg('admin.misc.mundoPieles'),
   texts: msg('admin.misc.textos'),

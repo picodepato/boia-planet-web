@@ -7,7 +7,8 @@ import { composeLiveWorld } from './world';
  * El mundo que se juega en el 2D con lo que dejó el Admin de la demo (T26):
  * lugares movidos, desactivados u ocultos, nombres y textos por mundo y cada
  * isla con su evento, los códigos escondidos donde los dejó (T43) y el
- * destino de la Fiestera para las partidas nuevas de ese mundo (T45). Deja
+ * destino de la Fiestera para las partidas nuevas de ese mundo (T45) y los
+ * objetos nuevos publicados en el Admin (T190). Deja
  * además el contenido (eventos) a mano en `liveContent()`. Si algo guardado ya no compone un mundo válido, se juega
  * el mundo sin cambios (y se avisa en la consola).
  */
@@ -17,12 +18,14 @@ export async function liveWorld(
   world: ComposedWorld,
 ): Promise<ComposedWorld> {
   try {
-    const [places, skins, content, discounts, missionDestinations] = await Promise.all([
+    const [places, skins, content, discounts, missionDestinations, objects] = await Promise.all([
       repo.content.places(),
       repo.content.skins(),
       refreshLiveContent(repo),
       repo.content.list('discounts'),
       repo.content.missionDestinations(),
+      // Los objetos nuevos del Admin (T190); un repositorio sin el área, ninguno.
+      repo.content.list('worldObjects').catch(() => []),
     ]);
     return composeLiveWorld(registry, world.id, {
       places,
@@ -30,6 +33,7 @@ export async function liveWorld(
       events: content.events,
       discounts,
       missionDestinations,
+      objects,
     });
   } catch (err) {
     console.warn('[boia] cambios del Admin sin aplicar al mundo', err);

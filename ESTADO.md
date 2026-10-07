@@ -4,6 +4,54 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T190: Admin: objeto nuevo en 10 pasos, plantillas y validación de assets
+
+Qué existe:
+
+- Sección **Objetos** del Admin (`/admin#objetos`, `apps/web/app/admin/sections/objects.tsx`):
+  plantillas, objetos creados (editar, publicar / pasar a borrador, duplicar,
+  papelera) y el asistente de 10 pasos de REQ-ADM-010 (añadir, categoría,
+  asset, colocar con mapa, radio/huella/zona/punto seguro, comportamientos,
+  parámetros JSON por comportamiento + textos, evento/logro/premio/destino,
+  previsualizar con el mar entero, guardar borrador o publicar, guardar como
+  plantilla). La categoría sólo propone valores; lo tocado a mano o venido de
+  una plantilla no se pisa.
+- Plantillas (REQ-ADM-011): cinco de serie (`muestra`): Obstáculo lento,
+  Boia de diálogo, Isla de evento, Cofre, Boost; duplicar plantillas y guardar
+  objetos como plantilla conservan comportamientos y parámetros.
+- Validación de assets (REQ-ADM-012, `apps/web/lib/admin/asset-validation.ts`):
+  formato real por bytes (PNG/WebP/JPEG/.glb), extensión, peso (2 MB imagen,
+  8 MB modelo), dimensiones (32–4096 px; .glb con cabecera glTF 2 y longitud
+  exacta); guarda original + variantes WebP 512 y 128 px (IndexedDB en modo
+  local, el mismo almacén que las fotos de T189).
+- Datos: contratos `worldObjectSchema` / `objectTemplateSchema`
+  (`packages/contracts/src/world-objects.ts`), dos áreas nuevas del
+  repositorio local (`worldObjects`, `objectTemplates`; con auditoría y
+  papelera). Sin migración: el mundo del Admin sigue siendo local (D-20).
+- Al mar: `liveMap` añade los objetos publicados al final del mapa
+  (`withNewObjects`) con su skin en todos los mundos; `/mar` los lee por
+  `liveWorld`. El renderer 3D no cambia: pinta el modelo de su categoría.
+- Validación del mar (`worldProblem`): un objeto nuevo publicado no puede ir
+  en tierra ni cortar el paso, y en el mar 3D compacto (`marWorld`) tiene que
+  quedar agua donde llega el barco (si no, el viaje `?ir=` acaba al otro lado
+  del planeta); el punto seguro, en el agua.
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/lib/admin/objects.test.ts apps/web/lib/admin/asset-validation.test.ts` → 23 + 9 pass
+- `E2E_PORT=3190 pnpm e2e admin-objeto.spec.ts --workers=1` → exit 0, 2 passed (mobile, desktop)
+- `E2E_PORT=3190 pnpm e2e admin.spec.ts admin-endurecido.spec.ts --workers=1` → exit 0, 8 passed
+- `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0 (ADM: HECHO 22 · PARCIAL 5 · FALTA 2)
+- Test command, por pasos: vitest (sin packages/db) → 223 archivos, 2121 pass; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 187,9 kB de 200); `pnpm typecheck` → exit 0
+
+Pendiente:
+
+- El punto seguro se guarda y se valida, pero el mar sigue calculando dónde
+  para el barco (`approachPoint`); usarlo pide tocar el viaje del mar.
+- El asset subido no se pinta en el mar 3D (pinta el modelo de la categoría)
+  hasta el editor visual (REQ-ADM-009, versión final). Con cuentas, los
+  objetos siguen en el navegador como el resto del mundo del Admin.
+
 ## 2026-10-07 — plan 017 T191: Admin moderation of Carnets and sections
 
 Qué existe (decisión 5, REQ-ADM-031 sube a PARCIAL; REQ-ADM-040 suma la parte con cuentas):

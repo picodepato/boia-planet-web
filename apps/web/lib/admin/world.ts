@@ -4,6 +4,7 @@ import {
   type BoiaEvent,
   type Discount,
   type Photo,
+  type WorldObjectRecord,
   eventPhotos,
 } from '@boia/contracts';
 import type { PlacePatch, SkinPatch } from '@boia/store';
@@ -20,6 +21,7 @@ import {
   composeWorld,
 } from '@boia/world';
 import { t } from '../i18n';
+import { isPublished, objectSkin, withNewObjects } from './objects';
 
 /**
  * El mundo con los cambios del Admin de la demo (T26, D-20), sin E/S: el
@@ -78,6 +80,11 @@ export interface WorldContent {
    * T45): mundo → misión → id de lugar. Sin él, el del mapa.
    */
   missionDestinations?: Readonly<Record<string, Readonly<Record<string, string>>>> | undefined;
+  /**
+   * Objetos nuevos creados en el Admin (plan 017 T190, REQ-ADM-010): los
+   * publicados salen en todos los mundos, al final del mapa.
+   */
+  objects?: readonly WorldObjectRecord[] | undefined;
   now?: Date;
 }
 
@@ -444,7 +451,24 @@ export function withMissionDestinations(
 export function liveMap(registry: WorldRegistry, content: WorldContent): SharedMap {
   let map = applyPlacePatches(registry.map, content.places);
   if (content.discounts) map = hideDiscounts(map, content.discounts);
-  return content.events ? linkIslandEvents(map, content.events, content.now ?? new Date()) : map;
+  if (content.events) map = linkIslandEvents(map, content.events, content.now ?? new Date());
+  // Los objetos nuevos van después: llevan sus enlaces propios (paso 8), no los de las islas.
+  return content.objects ? withNewObjects(map, content.objects) : map;
+}
+
+/** La skin de un mundo con el arte de cada objeto nuevo publicado. */
+function withObjectSkins(
+  map: SharedMap,
+  skin: WorldSkin,
+  objects: readonly WorldObjectRecord[] | undefined,
+): WorldSkin {
+  if (!objects?.length) return skin;
+  const onMap = new Set(map.places.map((p) => p.id));
+  const places: Record<string, PlaceSkin> = { ...skin.places };
+  for (const o of objects) {
+    if (isPublished(o) && onMap.has(o.id) && !skin.places[o.id]) places[o.id] = objectSkin(o);
+  }
+  return { ...skin, places };
 }
 
 /** Un mundo con los cambios del Admin. Lanza si el resultado no es un mundo válido. */
@@ -457,6 +481,7 @@ export function composeLiveWorld(
     liveMap(registry, content),
     content.missionDestinations?.[worldId] ?? {},
   );
-  const skin = applySkinPatches(map, registry.skin(worldId), content.skins[worldId] ?? {});
+  const base = withObjectSkins(map, registry.skin(worldId), content.objects);
+  const skin = applySkinPatches(map, base, content.skins[worldId] ?? {});
   return composeWorld(map, skin);
 }

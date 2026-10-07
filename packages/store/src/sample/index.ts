@@ -54,6 +54,9 @@ export const DEFAULT_SAMPLE_INPUT: SampleInput = {
   ranks: SAMPLE_RANKS,
   /** Sin pistas subidas: la música de cada mundo es el loop generado (O10). */
   music: [],
+  /** Sin objetos ni plantillas propias: las de serie las pone la web (T190). */
+  worldObjects: [],
+  objectTemplates: [],
   texts: {},
   activeWorldId: null,
   crew: SAMPLE_CREW,

@@ -17,6 +17,7 @@ import {
 } from './sections/misc';
 import { MissionSection } from './sections/mission';
 import { ModerationSection } from './sections/moderation';
+import { ObjectsSection } from './sections/objects';
 import { PhotosSection } from './sections/photos';
 import { TextsSection } from './sections/texts';
 import { WorldSection } from './sections/world';
@@ -38,6 +39,7 @@ const SECTIONS: Section[] = [
   { id: 'eventos', label: t('admin.adminApp.eventos'), Component: EventsSection },
   { id: 'descuentos', label: t('admin.adminApp.descuentos'), Component: DiscountsSection },
   { id: 'mundo', label: t('admin.adminApp.mundo'), Component: WorldSection },
+  { id: 'objetos', label: t('admin.objects.nav'), Component: ObjectsSection },
   { id: 'mision', label: t('admin.adminApp.destinoDeLaFiestera'), Component: MissionSection },
   { id: 'artistas', label: t('admin.adminApp.artistas'), Component: ArtistsSection },
   { id: 'fotos', label: t('admin.adminApp.fotosYVideos'), Component: PhotosSection },

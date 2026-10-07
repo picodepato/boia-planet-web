@@ -6,10 +6,14 @@ import {
   type DiscountInput,
   type EventState,
   type HomeBlock,
+  type ObjectTemplate,
   type Photo,
+  type WorldObjectRecord,
+  type WorldObjectRecordInput,
   discountSchema,
   eventAlbumId,
   eventSchema,
+  worldObjectSchema,
 } from '@boia/contracts';
 import {
   type AchievementDefinition,
@@ -33,6 +37,14 @@ import {
 import type { RenameScope, WorldRegistry } from '@boia/world';
 import { MINIGAMES, type TriggerChoices, triggerParamsProblem } from './achievements';
 import { type ReferenceData, danglingReferences, itemName, referencesTo } from './references';
+import {
+  BUILTIN_TEMPLATES,
+  type StepEnv,
+  duplicateTemplate,
+  firstProblem,
+  freeId,
+  templateFromObject,
+} from './objects';
 import { circuitIds, missionDestinationProblem, worldProblem } from './validate';
 import {
   EMPTY_WORLD_CONTENT,
@@ -159,25 +171,71 @@ export function createAdminActions(deps: AdminDeps) {
     skins: await repo.content.skins(),
     events: await repo.content.events(),
     missionDestinations: await repo.content.missionDestinations(),
+    objects: await repo.content.list('worldObjects'),
     now: now(),
   });
 
-  /** Rechaza el estado del mundo si no se puede jugar. */
-  const checkWorld = async (next: {
+  /** Por qué el mundo no se podría jugar con estos cambios, o null. */
+  const worldWith = async (next: {
     places?: Record<string, PlacePatch>;
     skins?: Record<string, Record<string, SkinPatch>>;
     events?: BoiaEvent[];
+    objects?: WorldObjectRecord[];
   }) => {
     const c = await content();
-    const why = worldProblem(registry, {
+    return worldProblem(registry, {
       places: next.places ?? c.places,
       skins: next.skins ?? c.skins,
       events: next.events ?? c.events,
       missionDestinations: c.missionDestinations,
+      objects: next.objects ?? c.objects,
       now: c.now,
     });
+  };
+
+  /** Rechaza el estado del mundo si no se puede jugar. */
+  const checkWorld = async (next: Parameters<typeof worldWith>[0]) => {
+    const why = await worldWith(next);
     if (why) throw new AdminError(why);
   };
+
+  /** Lo que los pasos de un objeto nuevo necesitan saber (ids usados, eventos, mapa). */
+  const objectEnv = async (editingId?: string): Promise<StepEnv> => {
+    const objects = await repo.content.list('worldObjects');
+    const used = new Set<string>([
+      ...registry.map.places.map((p) => p.id),
+      ...Object.values(MAP_POINTS),
+      ...objects.map((o) => o.id).filter((id) => id !== editingId),
+    ]);
+    const events = [...(await repo.content.events()), ...(await repo.admin.draftList('events'))];
+    return {
+      bounds: registry.map.bounds,
+      usedIds: used,
+      eventIds: new Set(events.map((e) => e.id)),
+    };
+  };
+
+  /** Un objeto nuevo comprobado: esquema y los 10 pasos (el mar entero lo mira `checkWorld`). */
+  const prepareObject = async (input: WorldObjectRecordInput): Promise<WorldObjectRecord> => {
+    const parsed = worldObjectSchema.safeParse(input);
+    if (!parsed.success) {
+      const i = parsed.error.issues[0];
+      throw new AdminError(
+        `objeto: ${i?.path.join('.') ?? ''} ${i?.message ?? msg('admin.actions.noValido')}`,
+      );
+    }
+    const o = parsed.data;
+    const problem = firstProblem(o, await objectEnv(o.id));
+    if (problem) throw new AdminError(problem.why);
+    return o;
+  };
+
+  /** Las plantillas guardadas y las de serie, para buscar ids libres. */
+  const templateIds = async () =>
+    new Set([
+      ...BUILTIN_TEMPLATES.map((x) => x.id),
+      ...(await repo.content.list('objectTemplates')).map((x) => x.id),
+    ]);
 
   const homeBlock = async (id: string): Promise<HomeBlock> => {
     const b = (await repo.admin.draftList('homeBlocks')).find((x) => x.id === id);
@@ -861,6 +919,86 @@ export function createAdminActions(deps: AdminDeps) {
     /** Mueve la salida, el puerto o el aterrizaje de la entrada. */
     async setMapPoint(key: MapPointKey, p: { x: number; y: number }) {
       return api.editPlace(MAP_POINTS[key], { x: p.x, y: p.y }, `punto del mapa: ${key}`);
+    },
+
+    // --- Objetos nuevos y plantillas (T190, REQ-ADM-010, REQ-ADM-011) -------
+
+    /** Lo que necesitan los pasos del asistente de objetos. */
+    objectEnv,
+
+    /**
+     * Previsualización (paso 9): por qué el objeto no se podría publicar, o
+     * null. Se compone el mar con él publicado, como lo jugaría el motor.
+     */
+    async objectPreviewProblem(input: WorldObjectRecordInput): Promise<string | null> {
+      try {
+        const o = await prepareObject(input);
+        const others = (await repo.content.list('worldObjects')).filter((x) => x.id !== o.id);
+        return await worldWith({ objects: [...others, { ...o, status: 'published' }] });
+      } catch (err) {
+        return err instanceof Error ? err.message : String(err);
+      }
+    },
+
+    /**
+     * Guarda un objeto (paso 10): en borrador no sale en el mar; publicado
+     * sale en todos los mundos. Se rechaza con su motivo si algún paso falla
+     * o si, publicado, el mar dejaría de jugarse.
+     */
+    async saveObject(input: WorldObjectRecordInput, publish: boolean): Promise<WorldObjectRecord> {
+      const o = await prepareObject({ ...input, status: publish ? 'published' : 'draft' });
+      const others = (await repo.content.list('worldObjects')).filter((x) => x.id !== o.id);
+      await checkWorld({ objects: [...others, o] });
+      return repo.admin.upsert(
+        'worldObjects',
+        o,
+        opts(publish ? msg('admin.objects.reason.publish') : msg('admin.objects.reason.draft')),
+      );
+    },
+
+    /** Publica o devuelve a borrador un objeto ya guardado. */
+    async setObjectStatus(id: string, publish: boolean) {
+      const o = await repo.content.get('worldObjects', id);
+      if (!o) throw new AdminError(msg('admin.objects.problem.noObject', { id }));
+      return api.saveObject(o, publish);
+    },
+
+    /** Una copia en borrador de un objeto, un poco al este, con id y nombre propios. */
+    async duplicateObject(id: string): Promise<WorldObjectRecord> {
+      const o = await repo.content.get('worldObjects', id);
+      if (!o) throw new AdminError(msg('admin.objects.problem.noObject', { id }));
+      const env = await objectEnv();
+      const name = msg('admin.objects.copyOf', { name: o.name }).slice(0, 80);
+      const copy = {
+        ...structuredClone(o),
+        id: freeId(name, env.usedIds),
+        name,
+        x: Math.min(env.bounds.right, o.x + 120),
+        status: 'draft' as const,
+      };
+      return api.saveObject(copy, false);
+    },
+
+    /** Guarda un objeto (o el borrador del asistente) como plantilla nueva. */
+    async saveObjectAsTemplate(input: WorldObjectRecordInput, name: string) {
+      if (!name.trim()) throw new AdminError(msg('admin.objects.problem.noName'));
+      const parsed = worldObjectSchema.safeParse(input);
+      if (!parsed.success) throw new AdminError(msg('admin.actions.noValido'));
+      const template = templateFromObject(parsed.data, name, await templateIds());
+      return repo.admin.upsert(
+        'objectTemplates',
+        template,
+        opts(msg('admin.objects.reason.template')),
+      );
+    },
+
+    /** Duplica una plantilla (de serie o guardada): conserva comportamientos y parámetros. */
+    async duplicateObjectTemplate(id: string): Promise<ObjectTemplate> {
+      const saved = await repo.content.list('objectTemplates');
+      const from = [...BUILTIN_TEMPLATES, ...saved].find((x) => x.id === id);
+      if (!from) throw new AdminError(msg('admin.objects.problem.noTemplate', { id }));
+      const copy = duplicateTemplate(from, await templateIds());
+      return repo.admin.upsert('objectTemplates', copy, opts(msg('admin.objects.reason.template')));
     },
 
     /** Deshace los cambios de un lugar (vuelve a la muestra). */
