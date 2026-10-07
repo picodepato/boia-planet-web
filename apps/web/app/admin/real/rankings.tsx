@@ -1,8 +1,9 @@
 'use client';
 
-import type { RankingPage, RankingRow } from '@boia/db/rpc';
+import type { RankingPage, RankingRow, VoidedEntry } from '@boia/db/rpc';
 import { formatRaceTime } from '@boia/engine/circuit';
 import { useCallback, useEffect, useState } from 'react';
+import { gameBoardOptions, scoreTarget, voidedBoardLabel } from '../../../lib/admin/moderation';
 import { t } from '../../../lib/i18n';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { SectionHead, StatusLine } from '../ui';
@@ -125,7 +126,15 @@ function usePaged(
   return { rows, total, error, more, reload: () => setRevision((r) => r + 1) };
 }
 
-function RaceTimes({ sb }: { sb: BoiaSupabase | null }) {
+function RaceTimes({
+  sb,
+  revision,
+  onChanged,
+}: {
+  sb: BoiaSupabase | null;
+  revision: number;
+  onChanged: () => void;
+}) {
   const [circuits, setCircuits] = useState<Circuit[]>([]);
   const [pick, setPick] = useState('');
   useEffect(() => {
@@ -154,7 +163,7 @@ function RaceTimes({ sb }: { sb: BoiaSupabase | null }) {
           p_offset: offset,
         }),
       )) as unknown as RankingPage,
-    [pick],
+    [pick, revision],
   );
   return (
     <div data-testid="rankings-tiempos">
@@ -208,7 +217,7 @@ function RaceTimes({ sb }: { sb: BoiaSupabase | null }) {
                         p_reason: reason,
                       }),
                     );
-                    page.reload();
+                    onChanged();
                   }}
                 />
               </li>
@@ -355,14 +364,223 @@ function Points({ sb }: { sb: BoiaSupabase | null }) {
   );
 }
 
+/** Las tablas del Cañón y del Castillo: anular una partida (plan 017 T191). */
+function GameScores({
+  sb,
+  revision,
+  onChanged,
+}: {
+  sb: BoiaSupabase | null;
+  revision: number;
+  onChanged: () => void;
+}) {
+  const options = gameBoardOptions();
+  const [pick, setPick] = useState(options[0]?.key ?? '');
+  const option = options.find((o) => o.key === pick) ?? options[0];
+  const page = usePaged(
+    option ? sb : null,
+    async (c, offset) => {
+      const b = option!.board;
+      const res =
+        b.kind === 'canon'
+          ? c.rpc('ranking_canon', {
+              p_boss: b.boss,
+              p_version: b.version,
+              p_limit: PAGE,
+              p_offset: offset,
+            })
+          : c.rpc('ranking_castle', {
+              p_run_min: b.runMin,
+              p_difficulty: b.difficulty,
+              p_version: b.version,
+              p_limit: PAGE,
+              p_offset: offset,
+            });
+      try {
+        return (await must(res)) as unknown as RankingPage;
+      } catch (e) {
+        // Una tabla que el servidor aún no tiene: vacía.
+        if (e instanceof Error && e.message === 'unknown_board') {
+          return { total: 0, limit: PAGE, offset, rows: [], mine: null } as unknown as RankingPage;
+        }
+        throw e;
+      }
+    },
+    [pick, revision],
+  );
+  return (
+    <div data-testid="rankings-juegos">
+      <h3>{t('admin.real.rankings.games')}</h3>
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.real.rankings.board')}</span>
+        <select
+          value={option?.key ?? ''}
+          onChange={(e) => setPick(e.target.value)}
+          data-testid="rankings-tabla"
+        >
+          {options.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {page.error ? (
+        <p className="admin-status admin-status--error" role="alert">
+          {page.error}
+        </p>
+      ) : null}
+      {!page.rows ? (
+        <p>{t('empty.loading')}</p>
+      ) : (
+        <>
+          <p className="admin-meta">
+            {t('admin.real.rankings.count', { shown: page.rows.length, total: page.total })}
+          </p>
+          <ol className="admin-list">
+            {page.rows.map((r) => (
+              <li
+                key={r.user_id}
+                className="admin-row admin-row--between"
+                data-testid={`rankings-partida-${r.user_id}`}
+              >
+                <span>
+                  {r.position}. <strong>{r.nickname}</strong> ·{' '}
+                  {t('admin.real.rankings.score', { value: r.value })}
+                  {r.best_at ? <span className="admin-meta"> · {when(r.best_at)}</span> : null}
+                </span>
+                <VoidButton
+                  testId={`rankings-anular-partida-${r.user_id}`}
+                  onVoid={async (reason) => {
+                    if (!sb || !option) return;
+                    await must(
+                      sb.rpc('admin_void_score', {
+                        ...scoreTarget(option.board),
+                        p_user: r.user_id,
+                        p_reason: reason,
+                      }),
+                    );
+                    onChanged();
+                  }}
+                />
+              </li>
+            ))}
+          </ol>
+          {page.rows.length < page.total ? (
+            <button type="button" className="admin-button admin-button--ghost" onClick={page.more}>
+              {t('ranking.more')}
+            </button>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Las entradas anuladas de todos los rankings, para devolverlas (plan 017 T191). */
+function Voided({
+  sb,
+  revision,
+  onChanged,
+}: {
+  sb: BoiaSupabase | null;
+  revision: number;
+  onChanged: () => void;
+}) {
+  const [rows, setRows] = useState<VoidedEntry[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { status, busy, run } = useRun();
+  useEffect(() => {
+    if (!sb) return;
+    let alive = true;
+    void must(sb.rpc('admin_list_voided', { p_limit: 100 })).then(
+      (d) => {
+        if (!alive) return;
+        setRows(d as unknown as VoidedEntry[]);
+        setError(null);
+      },
+      (e: unknown) => alive && setError(e instanceof Error ? e.message : String(e)),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [sb, revision]);
+  return (
+    <div data-testid="rankings-anuladas">
+      <h3>{t('admin.real.rankings.voidedTitle')}</h3>
+      {error ? (
+        <p className="admin-status admin-status--error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {!rows ? (
+        <p>{t('empty.loading')}</p>
+      ) : rows.length === 0 ? (
+        <p className="admin-meta">{t('admin.real.rankings.voidedEmpty')}</p>
+      ) : (
+        <ul className="admin-list">
+          {rows.map((e) => (
+            <li
+              key={`${e.board}|${e.user_id}|${e.key}|${e.version}`}
+              className="admin-row admin-row--between"
+              data-testid={`rankings-anulada-${e.board}-${e.user_id}`}
+            >
+              <span>
+                <strong>{e.nickname ?? t('admin.moderation.sinApodo')}</strong> ·{' '}
+                {voidedBoardLabel(e)} ·{' '}
+                {e.board === 'race'
+                  ? formatRaceTime(e.value)
+                  : t('admin.real.rankings.score', { value: e.value })}
+                <span className="admin-meta">
+                  {' '}
+                  · {when(e.voided_at)}
+                  {e.void_reason ? ` · ${e.void_reason}` : ''}
+                </span>
+              </span>
+              <button
+                type="button"
+                className="admin-button admin-button--ghost"
+                disabled={busy || !sb}
+                data-testid={`rankings-devolver-${e.board}-${e.user_id}`}
+                onClick={() =>
+                  void run(async () => {
+                    if (!sb) return;
+                    await must(
+                      sb.rpc('admin_restore_score', {
+                        p_board: e.board,
+                        p_user: e.user_id,
+                        p_key: e.key,
+                        p_version: e.version,
+                      }),
+                    );
+                    onChanged();
+                  }, t('admin.real.rankings.restored'))
+                }
+              >
+                {t('admin.real.rankings.restore')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <StatusLine status={status} />
+    </div>
+  );
+}
+
 /** Rankings (T94, decisiones 7, 8 y 11, REQ-ADM-028): anular un tiempo o unos puntos con motivo. */
 export function RankingsSection() {
   const sb = useAdminSupabase();
+  // Anular o devolver vuelve a leer las anuladas y las tablas.
+  const [revision, setRevision] = useState(0);
+  const changed = () => setRevision((r) => r + 1);
   return (
     <section data-testid="rankings">
       <SectionHead title={t('admin.real.rankings.title')} lead={t('admin.real.rankings.lead')} />
       <NeedsAdmin>
-        <RaceTimes sb={sb} />
+        <RaceTimes sb={sb} revision={revision} onChanged={changed} />
+        <GameScores sb={sb} revision={revision} onChanged={changed} />
+        <Voided sb={sb} revision={revision} onChanged={changed} />
         <Points sb={sb} />
       </NeedsAdmin>
     </section>

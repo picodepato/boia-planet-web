@@ -48,13 +48,11 @@ export const esAdminReal = {
   // El Admin con cuentas
   'admin.real.bannerTitle': 'Admin con cuentas',
   'admin.real.banner':
-    'Fiestas y QR, Socios y emails, Moderación (botellas) y Rankings trabajan sobre los datos reales. El resto de secciones sigue siendo la demo de este navegador.',
+    'Fiestas y QR, Socios y emails, Moderación (Carnets y botellas) y Rankings trabajan sobre los datos reales. El resto de secciones sigue siendo la demo de este navegador.',
   'admin.real.nav.fiestas': 'Fiestas y QR',
   'admin.real.nav.socios': 'Socios y emails',
   'admin.real.nav.moderacion': 'Moderación',
   'admin.real.nav.rankings': 'Rankings',
-  'admin.real.demoBelow':
-    'Debajo, la moderación de Carnets sigue siendo la demo de este navegador.',
   'admin.real.editorOnly':
     'Esta sección trabaja con datos reales y pide el rol admin o propietario.',
   'admin.real.search': 'Buscar',
@@ -73,6 +71,9 @@ export const esAdminReal = {
   'admin.real.error.coinsSpent':
     'Las monedas de esa entrada ya se gastaron: no se puede deshacer entera.',
   'admin.real.error.network': 'Sin conexión. Vuelve a probar.',
+  'admin.real.error.bottleConflict': 'Su autor ya tiene otra botella en el mar: no puede volver.',
+  'admin.real.error.nicknameTaken': 'Su apodo ya es de otra persona: no se puede devolver.',
+  'admin.real.error.invalidStatus': 'Eso ya cambió: vuelve a cargar.',
 
   // Fiestas y QR
   'admin.real.fiestas.title': 'Fiestas y QR',
@@ -173,11 +174,13 @@ export const esAdminReal = {
   'admin.real.botellas.empty': 'No hay botellas reportadas sin revisar.',
   'admin.real.botellas.reports': '{n} reporte(s) sin revisar',
   'admin.real.botellas.updated': 'Hecho. Queda en la auditoría.',
+  'admin.real.botellas.removedTitle': 'Retiradas por moderación',
+  'admin.real.botellas.removedEmpty': 'Ninguna botella retirada.',
 
   // Rankings
   'admin.real.rankings.title': 'Rankings',
   'admin.real.rankings.lead':
-    'Anular un tiempo lo saca del ranking del circuito hasta su próximo tiempo. Anular unos puntos los compensa en el libro. Todo con motivo y en la auditoría.',
+    'Anular una entrada (un tiempo, una partida del Cañón o del Castillo) la saca de su ranking hasta que su dueño la mejore; se puede devolver. Anular unos puntos los compensa en el libro. Todo con motivo y en la auditoría.',
   'admin.real.rankings.times': 'Tiempos por circuito',
   'admin.real.rankings.circuit': 'Circuito',
   'admin.real.rankings.points': 'Puntos de siempre',
@@ -190,4 +193,14 @@ export const esAdminReal = {
   'admin.real.rankings.showEntries': 'Ver entradas',
   'admin.real.rankings.hideEntries': 'Ocultar entradas',
   'admin.real.rankings.delta': '{points} puntos, {coins} monedas',
+  'admin.real.rankings.games': 'Cañón y Castillo',
+  'admin.real.rankings.board': 'Tabla',
+  'admin.real.rankings.canon': 'Cañón · {board}',
+  'admin.real.rankings.castle': 'Castillo · {board}',
+  'admin.real.rankings.race': 'Carrera · {circuit} v{version}',
+  'admin.real.rankings.score': '{value} puntos',
+  'admin.real.rankings.voidedTitle': 'Anuladas',
+  'admin.real.rankings.voidedEmpty': 'No hay entradas anuladas.',
+  'admin.real.rankings.restore': 'Devolver',
+  'admin.real.rankings.restored': 'Devuelta a su ranking. Queda en la auditoría.',
 } as const;

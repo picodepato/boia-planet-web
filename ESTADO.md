@@ -4,6 +4,64 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 017 T191: Admin moderation of Carnets and sections
+
+Qué existe (decisión 5, REQ-ADM-031 sube a PARCIAL; REQ-ADM-040 suma la parte con cuentas):
+
+- **Migración `supabase/migrations/20261007100200_moderation.sql`** (sin aplicar a ningún proyecto):
+  - `carnets`: columnas `hidden_at`, `nickname_moderated`, `avatar_moderated`; tabla
+    `private.carnet_moderation` con lo retirado (para devolverlo); disparador
+    `carnets_moderation_guard` (si su dueño vuelve a guardar el apodo o la foto retirados, no
+    vuelven; si guarda algo nuevo, se ve y se quita la marca).
+  - RLS: `carnets_read` y `carnet_answers_read` ya no enseñan un Carnet oculto salvo a su dueño
+    y al equipo (admin con aal2).
+  - RPC `admin_moderate_carnet(p_user, p_action, p_reason)` con `hide | show | hide_nickname |
+    restore_nickname | hide_avatar | restore_avatar`: retirar el apodo lo cambia por «Miembro de
+    BOIA <nº>» y retirar la foto la quita en la fila, así ranking, botellas y Carnet salen ya
+    moderados; ocultar retira también apodo y foto; «show» devuelve todo. `admin_list_carnets`
+    (busca también por el apodo retirado).
+  - `admin_restore_bottle` (devuelve al mar una retirada; `bottle_conflict` si su autor ya tiene
+    otra activa).
+  - Rankings: `castle_scores` gana `voided_at/voided_by/void_reason`, su RLS y
+    `private.ranking_castle` (create or replace, sólo añade `s.voided_at is null`) excluyen las
+    anuladas; un disparador la reabre si llega una partida mejor. `admin_void_score` /
+    `admin_restore_score` (race | canon | castle) y `admin_list_voided`.
+  - Todo pide `require_staff('admin')` y escribe `audit_log` con el motivo.
+- **Admin con cuentas** (`/admin` → Moderación): `real/carnets.tsx` (buscar, sólo moderados,
+  Ocultar/Mostrar Carnet, Retirar/Devolver apodo y foto) sustituye a la demo de Carnets que
+  había debajo; `real/botellas.tsx` lista las retiradas con «Devolver al mar»; Rankings suma
+  las tablas del Cañón (2) y del Castillo (9) con «Anular» y la lista «Anuladas» con
+  «Devolver».
+- **Demo local** (repositorio local): `admin.carnets()`, acciones `hide_carnet`, `show_carnet`,
+  `restore_answer`, `restore_photo`, `restore_nickname`; `admin.restoreBottle()`; un Carnet
+  oculto no sale en `/carnet/<id>` ni en «descubrir» y su apodo sale moderado en ranking y
+  botellas (también el apodo restablecido, que antes no se aplicaba a las botellas). Moderación
+  de la demo: «Todos los Carnets» con los mismos botones, «devolver» en respuestas ocultas y
+  «Devolver al mar» en botellas retiradas.
+- Lector público con cuentas (`public-carnet.ts`): lee `nickname_moderated/avatar_moderated`
+  para avisar «Foto retirada por moderación»; sin la migración aplicada cae a las columnas de
+  antes (el modo Supabase no se rompe).
+- i18n en `es-admin.ts` / `es-admin-real.ts`; tipos en `database.types.ts` y `rpc.ts`.
+
+Comandos y resultado (esta máquina, sin Postgres):
+
+- `pnpm exec vitest run packages/store/src/moderation.test.ts apps/web/lib/admin/moderation.test.ts apps/web/lib/admin/moderation-sql.test.ts` → exit 0 (9 + 9 + 6 pruebas)
+- `E2E_PORT=3917 pnpm e2e admin-real.spec.ts admin-moderacion.spec.ts admin.spec.ts comunidad.spec.ts --workers=1` → exit 0, 12 passed, 2 skipped (admin-real sólo con E2E_SUPABASE=1)
+- Test command: vitest (sin packages/db) → exit 0, 224 archivos, 2113 pruebas; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `member-numbers-sql.test.ts` (T186) prohibía cualquier mención de `member_number` en migraciones posteriores; ahora prohíbe sólo cambiar el número, el contador o redefinir `save_profile` (la moderación y el ranking del Castillo leen el número).
+
+Lo que Hernán tiene que hacer en `boia-planet-dev` (la tarea no lo aplicó):
+
+1. Aplicar la migración: `supabase db push` (o pegar `supabase/migrations/20261007100200_moderation.sql` en el SQL editor del proyecto `boia-planet-dev`).
+2. `pnpm --filter @boia/db test:supabase` → incluye `packages/db/src/supabase/moderation.supabase.ts` (Carnets, botellas, rankings) y las suites de antes (`admin`, `castle-ranking`, `canon-ranking`, `nickname`).
+3. `E2E_SUPABASE=1 E2E_PORT=<libre> pnpm e2e admin-real.spec.ts --workers=1` → el recorrido con cuentas ahora oculta y vuelve a mostrar un Carnet.
+
+Pendiente:
+
+- REQ-ADM-031 sigue PARCIAL: falta la descarga de la cuenta (T193) y el procedimiento documentado a mano.
+- Sin moderación por respuesta en Supabase (ocultar el Carnet entero cubre las respuestas); en la demo sí existe.
+- En el Castillo, una partida anulada vuelve al ranking sólo con una mejor que la anulada (el Cañón la reabre con cualquiera; `submit_castle_score` no se tocó).
+
 ## 2026-10-07 — plan 017 T187: Landing «Consigue descuentos» under «Zarpar»
 
 Hecho por Codex + wrapper. Existe: línea `hero.explore.discountHint` («Consigue descuentos», `muestra`) bajo el botón Zarpar del hero (`blocks.tsx`, `landing.css`), con un destello CSS breve cada 8 s; estática con `prefers-reduced-motion`. Texto en i18n (es-web, es-zonas-web, textos-zonas.md).

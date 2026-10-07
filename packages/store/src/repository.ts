@@ -625,7 +625,15 @@ export interface AdminCarnetView {
 
 /** Qué se retira de un Carnet. */
 export type CarnetModerationAction =
-  { kind: 'hide_answer'; questionId: string } | { kind: 'hide_photo' } | { kind: 'reset_nickname' };
+  | { kind: 'hide_answer'; questionId: string }
+  | { kind: 'hide_photo' }
+  | { kind: 'reset_nickname' }
+  // Plan 017 T191 (REQ-ADM-031): ocultar el Carnet entero y devolver lo retirado.
+  | { kind: 'hide_carnet' }
+  | { kind: 'show_carnet' }
+  | { kind: 'restore_answer'; questionId: string }
+  | { kind: 'restore_photo' }
+  | { kind: 'restore_nickname' };
 
 /** Partidas de una misión a las que afectaría cambiar su destino en un mundo. */
 export interface MissionImpact {
@@ -731,6 +739,11 @@ export interface AdminApi {
   bottles(): Promise<AdminBottleView[]>;
   /** Retira una botella por moderación (REQ-ADM-027). */
   removeBottle(id: string, opts?: AdminOptions): Promise<void>;
+  /**
+   * Devuelve al mar una botella retirada por moderación (plan 017 T191). Si
+   * su autor ya tiene otra en el mar, `conflict`.
+   */
+  restoreBottle(id: string, opts?: AdminOptions): Promise<void>;
   resolveReport(reportId: string, resolution: string): Promise<void>;
   /** Retira una recompensa con una compensación auditada (REQ-ADM-028). */
   compensate(txId: string, reason: string): Promise<LedgerEntry>;
@@ -740,8 +753,14 @@ export interface AdminApi {
   /** Carnets con algún reporte, los que tienen reportes sin revisar primero. */
   carnetReports(): Promise<AdminCarnetView[]>;
   /**
-   * Retira una respuesta, la foto o el apodo de un Carnet sin borrarlo, con
-   * auditoría; da por revisados sus reportes abiertos.
+   * Todos los Carnets de personas que se pueden moderar (plan 017 T191): los
+   * ocultos o con algo retirado primero, luego los reportados, luego por apodo.
+   */
+  carnets(): Promise<AdminCarnetView[]>;
+  /**
+   * Retira (o devuelve) una respuesta, la foto o el apodo de un Carnet, u
+   * oculta (o vuelve a mostrar) el Carnet entero, sin borrarlo, con
+   * auditoría. Retirar algo da por revisados sus reportes abiertos.
    */
   moderateCarnet(
     userId: string,

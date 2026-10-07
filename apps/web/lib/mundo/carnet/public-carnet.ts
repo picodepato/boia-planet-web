@@ -12,6 +12,24 @@ import { type BoiaRepository, type CarnetView, rankFor } from '@boia/store';
 import { accountClient } from '../../account/session';
 import type { StampEventFacts } from './use-carnet';
 
+/**
+ * Lo que la moderación retiró de un Carnet con cuentas (plan 017 T191), para
+ * avisarlo en la tarjeta. El apodo y la foto ya llegan cambiados de la base;
+ * un Carnet oculto no llega (RLS). Sin las columnas (base sin migrar), nada.
+ */
+interface ModerationFlags {
+  nickname_moderated?: boolean | null;
+  avatar_moderated?: boolean | null;
+}
+
+export function publicModeration(row: ModerationFlags): CarnetView['moderated'] {
+  return {
+    photo: row.avatar_moderated === true,
+    nickname: row.nickname_moderated === true,
+    answers: 0,
+  };
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface PublicCarnet {
@@ -35,14 +53,20 @@ export async function fetchPublicCarnet(
   const sb = await accountClient();
   if (!sb) return null;
   try {
-    const [carnetRes, answersRes, pointsRes, stampsRes] = await Promise.all([
-      sb
+    const base =
+      'user_id, nickname, avatar_key, avatar_image, member_since, member_number, is_artist';
+    const readCarnet = async () => {
+      const res = await sb
         .from('carnets')
-        .select(
-          'user_id, nickname, avatar_key, avatar_image, member_since, member_number, is_artist',
-        )
+        .select(`${base}, nickname_moderated, avatar_moderated`)
         .eq('user_id', userId)
-        .maybeSingle(),
+        .maybeSingle();
+      // Una base sin la migración de moderación (T191): sin las marcas.
+      if (!res.error) return res.data;
+      return (await sb.from('carnets').select(base).eq('user_id', userId).maybeSingle()).data;
+    };
+    const [row, answersRes, pointsRes, stampsRes] = await Promise.all([
+      readCarnet(),
       sb
         .from('carnet_answers')
         .select('question_id, question_version, answer')
@@ -55,7 +79,6 @@ export async function fetchPublicCarnet(
         .is('revoked_at', null)
         .order('granted_at', { ascending: false }),
     ]);
-    const row = carnetRes.data;
     if (!row) return null;
     const points = Number(pointsRes.data?.points ?? 0);
     const ranks = await repo.content.list('ranks');
@@ -106,7 +129,7 @@ export async function fetchPublicCarnet(
       equipped: {},
       isMine: false,
       isSample: false,
-      moderated: { photo: false, nickname: false, answers: 0 },
+      moderated: publicModeration(row as ModerationFlags),
     };
     return {
       carnet,

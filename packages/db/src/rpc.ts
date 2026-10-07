@@ -91,6 +91,11 @@ export const RPC_REJECTIONS = [
   'number_taken',
   'member_number_busy',
   'member_counter_missing',
+  // Moderación con datos reales (plan 017 T191)
+  'invalid_action',
+  'invalid_status',
+  'bottle_conflict',
+  'invalid_board',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -317,3 +322,50 @@ export interface VoidTimeResult {
 export type VoidPointsResult =
   | { tx_id: string; voided: true; points_delta: number; coins_delta: number }
   | { tx_id: null; voided: false; reason: 'already_voided' };
+
+/** Una fila de admin_list_carnets (plan 017 T191). */
+export interface AdminCarnetRow {
+  user_id: string;
+  /** El apodo que se ve ahora (el de la moderación si se retiró). */
+  nickname: string;
+  member_number: number | null;
+  member_since: string;
+  is_artist: boolean;
+  hidden_at: string | null;
+  nickname_moderated: boolean;
+  avatar_moderated: boolean;
+  has_avatar: boolean;
+  /** El apodo retirado, para devolverlo; null si no hay. */
+  original_nickname: string | null;
+  has_original_avatar: boolean;
+}
+
+/** admin_list_carnets */
+export interface AdminCarnetPage {
+  total: number;
+  rows: AdminCarnetRow[];
+}
+
+/** admin_moderate_carnet */
+export interface ModerateCarnetResult {
+  user_id: string;
+  hidden: boolean;
+  nickname: string;
+  nickname_moderated: boolean;
+  avatar_moderated: boolean;
+}
+
+/** Los rankings que el Admin puede anular y devolver (admin_void_score, admin_restore_score). */
+export type ScoreBoard = 'race' | 'canon' | 'castle';
+
+/** Una fila de admin_list_voided. `key`: el circuito, el boss o «<minutos>:<dificultad>». */
+export interface VoidedEntry {
+  board: ScoreBoard;
+  user_id: string;
+  nickname: string | null;
+  key: string;
+  version: number;
+  value: number;
+  voided_at: string;
+  void_reason: string | null;
+}

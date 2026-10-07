@@ -957,8 +957,16 @@ export function createAdminActions(deps: AdminDeps) {
      * (REQ-ADM-040), sin borrarlo. El motivo queda en la auditoría.
      */
     async moderateCarnet(userId: string, action: CarnetModerationAction, reason: string) {
-      if (!reason.trim()) throw new AdminError(msg('admin.actions.haceFaltaUnMotivo2'));
-      await repo.admin.moderateCarnet(userId, action, opts(reason.trim()));
+      // Devolver algo (plan 017 T191) no pide motivo; retirarlo, sí.
+      const restoring = action.kind.startsWith('restore_') || action.kind === 'show_carnet';
+      if (!restoring && !reason.trim())
+        throw new AdminError(msg('admin.actions.haceFaltaUnMotivo2'));
+      await repo.admin.moderateCarnet(userId, action, opts(reason.trim() || null));
+    },
+
+    /** Devuelve al mar una botella retirada por moderación (plan 017 T191). */
+    async restoreBottle(id: string, reason?: string | null) {
+      await repo.admin.restoreBottle(id, opts(reason?.trim() || null));
     },
 
     /** Da por revisado un reporte de Carnet sin retirar nada. */

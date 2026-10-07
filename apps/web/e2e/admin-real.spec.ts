@@ -32,7 +32,8 @@ import { supabaseTestEnv } from './supabase-env';
  * - Socios y emails: el CSV sólo trae a quien aceptó noticias; marca a un
  *   miembro como artista (su Carnet público lo dice) y borra un duplicado
  *   (sale del ranking y ya no entra con lo suyo);
- * - Moderación: retira una botella reportada;
+ * - Moderación: retira una botella reportada y oculta y vuelve a mostrar un
+ *   Carnet (T191);
  * - Rankings: anula un tiempo y sale del ranking del circuito.
  * Cuentas y fiestas de usar y tirar. Sólo con E2E_SUPABASE=1, en escritorio.
  */
@@ -419,6 +420,29 @@ test('/admin con cuentas: código + TOTP y las cuatro secciones sobre datos real
     expect((sea.data as { id: string }[]).some((b) => b.id === bottleId)).toBe(false);
     const row = await serviceClient().from('bottles').select('status').eq('id', bottleId).single();
     expect(row.data!.status).toBe('removed');
+  });
+
+  await test.step('Moderación: ocultar un Carnet y volver a mostrarlo (T191)', async () => {
+    const card = page.getByTestId(`carnet-real-${fan.id}`);
+    await page.getByTestId('carnets-reales-buscar').fill(fan.nickname);
+    await page.getByTestId('carnets-reales-buscar-ok').click();
+    await expect(card).toHaveAttribute('data-oculto', 'no', { timeout: 30_000 });
+    await card.getByTestId(`carnet-real-motivo-${fan.id}`).fill('spam de prueba');
+    await card.getByTestId(`carnet-real-hide-${fan.id}`).click();
+    await expect(page.getByTestId(`carnet-real-${fan.id}`)).toHaveAttribute('data-oculto', 'si', {
+      timeout: 30_000,
+    });
+    const hidden = await anonClient().from('carnets').select('user_id').eq('user_id', fan.id);
+    expect(hidden.data).toEqual([]);
+    await page
+      .getByTestId(`carnet-real-${fan.id}`)
+      .getByTestId(`carnet-real-show-${fan.id}`)
+      .click();
+    await expect(page.getByTestId(`carnet-real-${fan.id}`)).toHaveAttribute('data-oculto', 'no', {
+      timeout: 30_000,
+    });
+    const back = await anonClient().from('carnets').select('nickname').eq('user_id', fan.id);
+    expect(back.data).toEqual([{ nickname: fan.nickname }]);
   });
 
   await test.step('Rankings: anular un tiempo lo saca del ranking', async () => {

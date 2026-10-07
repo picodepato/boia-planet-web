@@ -609,12 +609,6 @@
   font-size: clamp(14px, 2.2vmin, 24px);
 }
 
-.admin-demo-part {
-  margin-top: 32px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--admin-line);
-}
-
 .admin-void {
   display: inline-flex;
   flex-wrap: wrap;

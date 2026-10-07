@@ -309,6 +309,11 @@ export const carnetModerationSchema = z.object({
   photo: z.string().nullable().default(null),
   /** Apodo restablecido: el apodo que se retiró. */
   nickname: z.string().nullable().default(null),
+  /**
+   * Carnet entero oculto (plan 017 T191, REQ-ADM-031): su página no se ve y
+   * su apodo sale como «Miembro de BOIA <n>» en lo público. Su dueño lo sigue viendo.
+   */
+  hidden: z.boolean().default(false),
   updatedAt: iso,
 });
 export type CarnetModeration = z.infer<typeof carnetModerationSchema>;

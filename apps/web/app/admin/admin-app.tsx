@@ -16,11 +16,12 @@ import {
   UsersSection,
 } from './sections/misc';
 import { MissionSection } from './sections/mission';
-import { CarnetReports, ModerationSection } from './sections/moderation';
+import { ModerationSection } from './sections/moderation';
 import { PhotosSection } from './sections/photos';
 import { TextsSection } from './sections/texts';
 import { WorldSection } from './sections/world';
 import { RealBottles } from './real/botellas';
+import { RealCarnets } from './real/carnets';
 import { type RealAdmin, RealAdminProvider } from './real/common';
 import { FiestasSection } from './real/fiestas';
 import { RankingsSection } from './real/rankings';
@@ -50,15 +51,12 @@ const SECTIONS: Section[] = [
   { id: 'auditoria', label: t('admin.adminApp.auditoriaYMuestra'), Component: AuditSection },
 ];
 
-/** Moderación con cuentas: las botellas reales y, debajo, los Carnets de la demo local. */
-function RealModeration({ ctx }: { ctx: AdminContext }) {
+/** Moderación con cuentas (plan 017 T191): los Carnets y las botellas reales. */
+function RealModeration() {
   return (
     <>
+      <RealCarnets />
       <RealBottles />
-      <section className="admin-demo-part">
-        <p className="admin-meta">{t('admin.real.demoBelow')}</p>
-        <CarnetReports ctx={ctx} />
-      </section>
     </>
   );
 }

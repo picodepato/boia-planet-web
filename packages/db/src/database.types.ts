@@ -455,11 +455,14 @@ export type Database = {
         Row: {
           avatar_image: string | null;
           avatar_key: string | null;
+          avatar_moderated: boolean;
           created_at: string;
+          hidden_at: string | null;
           is_artist: boolean;
           member_number: number;
           member_since: string;
           nickname: string;
+          nickname_moderated: boolean;
           updated_at: string;
           user_id: string;
           version: number;
@@ -467,11 +470,14 @@ export type Database = {
         Insert: {
           avatar_image?: string | null;
           avatar_key?: string | null;
+          avatar_moderated?: boolean;
           created_at?: string;
+          hidden_at?: string | null;
           is_artist?: boolean;
           member_number?: number;
           member_since?: string;
           nickname: string;
+          nickname_moderated?: boolean;
           updated_at?: string;
           user_id: string;
           version?: number;
@@ -479,11 +485,14 @@ export type Database = {
         Update: {
           avatar_image?: string | null;
           avatar_key?: string | null;
+          avatar_moderated?: boolean;
           created_at?: string;
+          hidden_at?: string | null;
           is_artist?: boolean;
           member_number?: number;
           member_since?: string;
           nickname?: string;
+          nickname_moderated?: boolean;
           updated_at?: string;
           user_id?: string;
           version?: number;
@@ -546,6 +555,9 @@ export type Database = {
           run_min: number;
           updated_at: string;
           user_id: string;
+          void_reason: string | null;
+          voided_at: string | null;
+          voided_by: string | null;
         };
         Insert: {
           attempts?: number;
@@ -560,6 +572,9 @@ export type Database = {
           run_min: number;
           updated_at?: string;
           user_id: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
         };
         Update: {
           attempts?: number;
@@ -574,6 +589,9 @@ export type Database = {
           run_min?: number;
           updated_at?: string;
           user_id?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
         };
         Relationships: [
           {
@@ -1886,6 +1904,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_list_carnets: {
+        Args: {
+          p_search?: string;
+          p_moderated_only?: boolean;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Json;
+      };
       admin_list_members: {
         Args: {
           p_search?: string;
@@ -1909,10 +1936,41 @@ export type Database = {
           total: number;
         }[];
       };
+      admin_list_voided: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: Json;
+      };
+      admin_moderate_carnet: {
+        Args: {
+          p_user: string;
+          p_action: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_remove_bottle: {
         Args: {
           p_bottle: string;
           p_reason: string;
+        };
+        Returns: Json;
+      };
+      admin_restore_bottle: {
+        Args: {
+          p_bottle: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_restore_score: {
+        Args: {
+          p_board: string;
+          p_user: string;
+          p_key: string;
+          p_version: number;
+          p_reason?: string;
         };
         Returns: Json;
       };
@@ -1958,6 +2016,16 @@ export type Database = {
       admin_void_points: {
         Args: {
           p_tx: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      admin_void_score: {
+        Args: {
+          p_board: string;
+          p_user: string;
+          p_key: string;
+          p_version: number;
           p_reason: string;
         };
         Returns: Json;

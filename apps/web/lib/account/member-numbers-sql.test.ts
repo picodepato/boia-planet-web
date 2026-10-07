@@ -28,8 +28,12 @@ describe('números de socio por orden de llegada (T186)', () => {
     const later = readdirSync(new URL('../../../../supabase/migrations/', import.meta.url)).filter(
       (f) => f > FILE,
     );
+    // Leer el número (rankings, moderación T191) no lo toca: cambiarlo, el
+    // contador o redefinir save_profile, sí.
     for (const f of later) {
-      expect(read(`supabase/migrations/${f}`)).not.toMatch(/member_number|save_profile/);
+      expect(read(`supabase/migrations/${f}`)).not.toMatch(
+        /function (public|private)\.save_profile|next_member_number|member_counter|alter column member_number|set member_number/,
+      );
     }
   });
 

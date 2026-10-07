@@ -6,6 +6,12 @@ import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import { SectionHead, StatusLine } from '../ui';
 import { t } from '../../../lib/i18n';
+import {
+  CARNET_ACTION_LABEL,
+  carnetBadges,
+  demoCarnetActions,
+  needsReason,
+} from '../../../lib/admin/moderation';
 
 const STATUS_LABELS: Record<string, string> = {
   active: t('admin.moderation.enElMar'),
@@ -53,6 +59,24 @@ function BottleRow({ ctx, b }: { ctx: AdminContext; b: AdminBottleView }) {
             </li>
           ))}
         </ul>
+      ) : null}
+      {b.status === 'removed' ? (
+        <div className="admin-row admin-row--end">
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            disabled={busy}
+            data-testid={`botella-devolver-${b.id}`}
+            onClick={() =>
+              void run(
+                () => ctx.actions.restoreBottle(b.id, reason),
+                t('admin.moderation.bottleRestored'),
+              )
+            }
+          >
+            {t('admin.moderation.restoreBottle')}
+          </button>
+        </div>
       ) : null}
       {b.status === 'active' ? (
         <div className="admin-row admin-row--end">
@@ -164,7 +188,22 @@ function CarnetRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
                   {a.answer}
                   {hidden ? t('admin.moderation.oculta') : ''}
                 </span>
-                {hidden ? null : (
+                {hidden ? (
+                  <button
+                    type="button"
+                    className="admin-link"
+                    disabled={busy}
+                    data-testid={`carnet-devolver-${row.userId}-${a.questionId}`}
+                    onClick={() =>
+                      act(
+                        { kind: 'restore_answer', questionId: a.questionId },
+                        t('admin.moderation.carnets.done'),
+                      )
+                    }
+                  >
+                    {t('admin.moderation.carnets.restoreAnswer')}
+                  </button>
+                ) : (
                   <button
                     type="button"
                     className="admin-button admin-button--ghost"
@@ -232,6 +271,121 @@ export function CarnetReports({ ctx }: { ctx: AdminContext }) {
   );
 }
 
+/** Un Carnet de la lista completa: ocultarlo o mostrarlo, y su apodo y su foto (T191). */
+function CarnetModRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
+  const [reason, setReason] = useState('');
+  const { status, busy, run } = useRun();
+  const mod = row.moderation;
+  const badges = carnetBadges({
+    hidden: !!mod?.hidden,
+    nickname: !!mod?.nickname,
+    avatar: !!mod?.photo,
+  });
+  return (
+    <li
+      className="admin-card"
+      data-testid={`carnet-mod-${row.userId}`}
+      data-oculto={mod?.hidden ? 'si' : 'no'}
+      data-apodo={mod?.nickname ? 'retirado' : 'visible'}
+      data-foto={mod?.photo ? 'retirada' : 'visible'}
+    >
+      <div className="admin-row admin-row--between">
+        <p>
+          <strong>{row.carnet.nickname}</strong>
+          {row.carnet.isSample ? t('admin.moderation.muestra') : ''}
+          {badges.map((k) => (
+            <span key={k} className="admin-badge">
+              {t(k)}
+            </span>
+          ))}
+        </p>
+        <a className="admin-link" href={`/carnet/${encodeURIComponent(row.userId)}`}>
+          {t('admin.moderation.carnets.view')}
+        </a>
+      </div>
+      <div className="admin-row admin-row--end">
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.moderation.reason')}</span>
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            data-testid={`carnet-mod-motivo-${row.userId}`}
+          />
+        </label>
+        {demoCarnetActions(row).map(({ action, demo }) => (
+          <button
+            key={action}
+            type="button"
+            className={needsReason(action) ? 'admin-button admin-button--danger' : 'admin-button'}
+            disabled={busy}
+            data-testid={`carnet-mod-${action}-${row.userId}`}
+            onClick={() =>
+              void run(
+                () => ctx.actions.moderateCarnet(row.userId, demo, reason),
+                t('admin.moderation.carnets.done'),
+              )
+            }
+          >
+            {t(CARNET_ACTION_LABEL[action])}
+          </button>
+        ))}
+      </div>
+      <StatusLine status={status} />
+    </li>
+  );
+}
+
+/** Todos los Carnets de este navegador (los de muestra y el propio), para moderarlos (T191). */
+export function AllCarnets({ ctx }: { ctx: AdminContext }) {
+  const rows = useRead(ctx, (r) => r.admin.carnets());
+  const [search, setSearch] = useState('');
+  const [onlyModerated, setOnlyModerated] = useState(false);
+  if (!rows) return <p>{t('empty.loading')}</p>;
+  const q = search.trim().toLocaleLowerCase('es');
+  const list = rows.filter(
+    (r) =>
+      (!onlyModerated || r.moderation) &&
+      (!q || r.carnet.nickname.toLocaleLowerCase('es').includes(q)),
+  );
+  return (
+    <div data-testid="carnets-moderacion">
+      <h3>{t('admin.moderation.carnets.allHeading')}</h3>
+      <p className="admin-lead">{t('admin.moderation.carnets.allLead')}</p>
+      <div className="admin-row admin-row--end">
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.moderation.carnets.search')}</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            data-testid="carnets-moderacion-buscar"
+          />
+        </label>
+        <label className="admin-check">
+          <input
+            type="checkbox"
+            checked={onlyModerated}
+            onChange={(e) => setOnlyModerated(e.target.checked)}
+          />
+          {t('admin.moderation.carnets.moderatedOnly')}
+        </label>
+      </div>
+      <ul className="admin-list">
+        {list.map((row) => (
+          <CarnetModRow
+            key={`${row.userId}|${JSON.stringify(row.moderation)}`}
+            ctx={ctx}
+            row={row}
+          />
+        ))}
+        {list.length === 0 ? (
+          <li className="admin-meta">{t('admin.moderation.carnets.none')}</li>
+        ) : null}
+      </ul>
+    </div>
+  );
+}
+
 /** Moderación (REQ-ADM-027, REQ-ADM-028, REQ-ADM-040): Carnets y botellas reportados; recompensas implausibles. */
 export function ModerationSection({ ctx }: { ctx: AdminContext }) {
   const bottles = useRead(ctx, (r) => r.admin.bottles());
@@ -257,6 +411,7 @@ export function ModerationSection({ ctx }: { ctx: AdminContext }) {
         lead={t('admin.moderation.carnetsYBotellasReportados')}
       />
       <CarnetReports ctx={ctx} />
+      <AllCarnets ctx={ctx} />
       <h3>{t('admin.moderation.botellas')}</h3>
       <label className="admin-check">
         <input

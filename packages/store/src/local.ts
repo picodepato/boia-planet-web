@@ -196,7 +196,25 @@ const MODERATION_LABEL: Record<CarnetModerationAction['kind'], string> = {
   hide_answer: 'respuesta retirada',
   hide_photo: 'foto retirada',
   reset_nickname: 'apodo restablecido',
+  hide_carnet: 'Carnet oculto',
+  show_carnet: 'Carnet visible otra vez',
+  restore_answer: 'respuesta devuelta',
+  restore_photo: 'foto devuelta',
+  restore_nickname: 'apodo devuelto',
 };
+
+/** Las acciones que retiran algo (y dan por revisados los reportes abiertos). */
+const HIDING_ACTIONS: ReadonlySet<CarnetModerationAction['kind']> = new Set([
+  'hide_answer',
+  'hide_photo',
+  'reset_nickname',
+  'hide_carnet',
+]);
+
+/** ¿Queda algo retirado? Si no, la moderación del Carnet sobra. */
+function moderationIsEmpty(m: CarnetModeration): boolean {
+  return !m.hidden && m.photo === null && m.nickname === null && !Object.keys(m.answers).length;
+}
 
 export function createLocalRepository(options: LocalRepositoryOptions = {}): BoiaRepository {
   return new LocalRepository(options);
@@ -524,12 +542,20 @@ class LocalRepository implements BoiaRepository {
     b.updatedAt = at;
   }
 
+  /**
+   * El apodo público (botellas, ranking) con la moderación aplicada (T191):
+   * un apodo restablecido o un Carnet oculto salen como «Miembro de BOIA <n>».
+   */
   private nicknameOf(userId: string, doc: StoreDoc = this.doc): string | null {
-    return (
+    const raw =
       doc.carnets[userId]?.nickname ??
       this.sample.crew.find((c) => c.userId === userId)?.nickname ??
-      null
-    );
+      null;
+    if (raw === null) return null;
+    const mod = doc.carnetModeration[userId];
+    if (!mod) return raw;
+    const hiddenFromOthers = mod.hidden && userId !== doc.identity?.id;
+    return hiddenFromOthers || mod.nickname === raw ? moderatedNickname(userId) : raw;
   }
 
   private bottleView(b: Bottle, doc: StoreDoc = this.doc): BottleView {
@@ -743,6 +769,8 @@ class LocalRepository implements BoiaRepository {
     if (!view || opts.raw) return view;
     const mod = doc.carnetModeration[userId];
     if (!mod) return view;
+    // Un Carnet oculto (T191) no se ve; su dueño sí lo ve.
+    if (mod.hidden && !view.isMine) return null;
     let answers = 0;
     view.answers = view.answers.map((a) => {
       if (mod.answers[a.questionId] !== a.answer) return a;
@@ -759,6 +787,22 @@ class LocalRepository implements BoiaRepository {
     if (nickname) view.nickname = moderatedNickname(userId);
     view.moderated = { photo, nickname, answers };
     return view;
+  }
+
+  /** Un Carnet tal como lo ve la moderación (sin lo retirado aplicado). */
+  private adminCarnetView(
+    userId: string,
+    reports: StoreDoc['carnetReports'],
+  ): AdminCarnetView | null {
+    const carnet = this.carnetView(userId, this.doc, { raw: true });
+    if (!carnet) return null;
+    return {
+      userId,
+      carnet,
+      moderation: clone(this.doc.carnetModeration[userId] ?? null),
+      reports: clone(reports),
+      open: reports.filter((r) => r.resolvedAt === null).length,
+    };
   }
 
   private storedCarnetView(userId: string, doc: StoreDoc): CarnetView | null {
@@ -1108,7 +1152,7 @@ class LocalRepository implements BoiaRepository {
     };
     const crew = this.sample.crew.map((c): Omit<RankingRow, 'position'> => ({
       userId: c.userId,
-      nickname: this.carnetView(c.userId, doc)?.nickname ?? c.nickname,
+      nickname: this.nicknameOf(c.userId, doc) ?? c.nickname,
       points: season ? (c.showcase.seasonPoints?.[season] ?? 0) : c.showcase.points,
       isMine: false,
       isSample: true,
@@ -2314,6 +2358,33 @@ class LocalRepository implements BoiaRepository {
             opts,
           );
         }),
+      restoreBottle: async (id, opts) =>
+        this.mutate(['bottles', 'audit'], (d) => {
+          const all = this.allBottles(d);
+          const b = all.find((x) => x.id === id);
+          if (!b) throw new StoreError('not_found', `botella ${id}`);
+          if (b.status !== 'removed')
+            invalid('sólo vuelve al mar una botella retirada por moderación');
+          if (all.some((x) => x.userId === b.userId && x.id !== id && x.status === 'active'))
+            throw new StoreError('conflict', 'su autor ya tiene otra botella en el mar');
+          const before = clone(b);
+          const at = this.iso();
+          const next: Bottle = {
+            ...b,
+            status: 'active',
+            moderatedBy: null,
+            moderatedAt: null,
+            moderationReason: null,
+            version: b.version + 1,
+            updatedAt: at,
+          };
+          this.upsertLocalBottle(d, next);
+          this.audit(
+            d,
+            { area: 'bottles', action: 'restore', targetId: id, before, after: next },
+            opts,
+          );
+        }),
       resolveReport: async (reportId, resolution) =>
         this.mutate(['bottles', 'audit'], (d) => {
           const r = d.bottleReports.find((x) => x.id === reportId);
@@ -2337,18 +2408,28 @@ class LocalRepository implements BoiaRepository {
         }
         const out: AdminCarnetView[] = [];
         for (const [userId, reports] of byUser) {
-          const carnet = this.carnetView(userId, this.doc, { raw: true });
-          if (!carnet) continue;
-          out.push({
-            userId,
-            carnet,
-            moderation: clone(this.doc.carnetModeration[userId] ?? null),
-            reports: clone(reports),
-            open: reports.filter((r) => r.resolvedAt === null).length,
-          });
+          const row = this.adminCarnetView(userId, reports);
+          if (row) out.push(row);
         }
         const latest = (v: AdminCarnetView) => v.reports.at(-1)?.createdAt ?? '';
         return out.sort((a, b) => b.open - a.open || latest(b).localeCompare(latest(a)));
+      },
+      carnets: async () => {
+        const ids = [
+          ...new Set([...Object.keys(this.doc.carnets), ...this.sample.crew.map((c) => c.userId)]),
+        ];
+        const out = ids.flatMap((userId) => {
+          const row = this.adminCarnetView(
+            userId,
+            this.doc.carnetReports.filter((r) => r.userId === userId),
+          );
+          return row && !row.carnet.artist ? [row] : [];
+        });
+        const weight = (v: AdminCarnetView) => (v.moderation ? 2 : 0) + (v.open ? 1 : 0);
+        return out.sort(
+          (a, b) =>
+            weight(b) - weight(a) || a.carnet.nickname.localeCompare(b.carnet.nickname, 'es'),
+        );
       },
       moderateCarnet: async (userId, action, opts) =>
         this.mutate(['carnet', 'audit'], (d) => {
@@ -2357,35 +2438,69 @@ class LocalRepository implements BoiaRepository {
           const before: CarnetModeration | null = clone(d.carnetModeration[userId] ?? null);
           const mod: CarnetModeration = before
             ? clone(before)
-            : { answers: {}, photo: null, nickname: null, updatedAt: this.iso() };
+            : { answers: {}, photo: null, nickname: null, hidden: false, updatedAt: this.iso() };
           let target = userId;
-          if (action.kind === 'hide_answer') {
-            const a = raw.answers.find((x) => x.questionId === action.questionId);
-            if (!a) throw new StoreError('not_found', `respuesta ${action.questionId}`);
-            mod.answers[a.questionId] = a.answer;
-            target = `${userId}/${a.questionId}`;
-          } else if (action.kind === 'hide_photo') {
-            const key = carnetPhotoKey(raw.avatarImage, raw.avatarKey);
-            if (!key) invalid('este Carnet no tiene foto');
-            mod.photo = key;
-          } else if (action.kind === 'reset_nickname') {
-            mod.nickname = raw.nickname;
-          } else {
-            invalid('moderación: acción');
+          switch (action.kind) {
+            case 'hide_answer': {
+              const a = raw.answers.find((x) => x.questionId === action.questionId);
+              if (!a) throw new StoreError('not_found', `respuesta ${action.questionId}`);
+              mod.answers[a.questionId] = a.answer;
+              target = `${userId}/${a.questionId}`;
+              break;
+            }
+            case 'hide_photo': {
+              const key = carnetPhotoKey(raw.avatarImage, raw.avatarKey);
+              if (!key) invalid('este Carnet no tiene foto');
+              mod.photo = key;
+              break;
+            }
+            case 'reset_nickname':
+              mod.nickname = raw.nickname;
+              break;
+            case 'hide_carnet':
+              mod.hidden = true;
+              break;
+            case 'show_carnet':
+              // Como con cuentas: volver a mostrarlo devuelve también el apodo y la foto.
+              mod.hidden = false;
+              mod.nickname = null;
+              mod.photo = null;
+              break;
+            case 'restore_answer':
+              delete mod.answers[action.questionId];
+              target = `${userId}/${action.questionId}`;
+              break;
+            case 'restore_photo':
+              mod.photo = null;
+              break;
+            case 'restore_nickname':
+              mod.nickname = null;
+              break;
+            default:
+              invalid('moderación: acción');
           }
           const at = this.iso();
           mod.updatedAt = at;
-          d.carnetModeration[userId] = mod;
-          for (const r of d.carnetReports) {
-            if (r.userId === userId && r.resolvedAt === null) {
-              r.resolvedAt = at;
-              r.resolvedBy = this.actor;
-              r.resolution = MODERATION_LABEL[action.kind];
+          if (moderationIsEmpty(mod)) delete d.carnetModeration[userId];
+          else d.carnetModeration[userId] = mod;
+          if (HIDING_ACTIONS.has(action.kind)) {
+            for (const r of d.carnetReports) {
+              if (r.userId === userId && r.resolvedAt === null) {
+                r.resolvedAt = at;
+                r.resolvedBy = this.actor;
+                r.resolution = MODERATION_LABEL[action.kind];
+              }
             }
           }
           this.audit(
             d,
-            { area: 'carnets', action: 'moderate', targetId: target, before, after: mod },
+            {
+              area: 'carnets',
+              action: 'moderate',
+              targetId: target,
+              before,
+              after: d.carnetModeration[userId] ?? null,
+            },
             opts,
           );
         }),

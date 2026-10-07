@@ -56,6 +56,10 @@ const REJECTION_TEXT: Partial<Record<string, MessageKey>> = {
   insufficient_coins: 'admin.real.error.coinsSpent',
   number_taken: 'admin.real.error.numberTaken',
   invalid_number: 'admin.real.error.invalidNumber',
+  // Moderación (plan 017 T191)
+  bottle_conflict: 'admin.real.error.bottleConflict',
+  nickname_taken: 'admin.real.error.nicknameTaken',
+  invalid_status: 'admin.real.error.invalidStatus',
 };
 
 /** Lo que se le dice al equipo de un error de Supabase (una RPC, la RLS, la red). */
