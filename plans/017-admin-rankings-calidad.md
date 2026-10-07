@@ -115,9 +115,9 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: Admin hides/restores Carnets (whole, nickname, avatar) and voids/restores ranking scores (race, Cañón, Castillo) with a reason; originals kept in `private.carnet_moderation`; migration 20261007100200_moderation; REQ-ADM-031 FALTA → PARCIAL · 2ead693
 
 ## T192 — Admin: editable store, contact and footer links
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T201
-- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Model: opus (Codex out of credits)
 - Goal: Admin edits the store, contact and footer links (labels and URLs) without code; the web reads them (plan 007 proposal, decision 5).
 - Context: plan 007's proposal in `plans/007-*.md` Proposals and `docs/TRASPASO.md`; the footer and contact components (grep footer / `tienda` / `contacto` in `apps/web`), Admin sections, the local admin repository.
 - Scope: may touch Admin (a new «Enlaces» section or inside an existing settings section), the footer/contact/store readers, contracts, a migration `20261007100300_*` only if Supabase mode needs a table, i18n, tests / must not touch the landing hero (T187), other Admin sections.
@@ -181,7 +181,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: new `requisitos-motor.spec.ts` (REQ-PRO-006, REQ-MUN-009 → HECHO); matrix rows citing deleted tests replaced; record specs on the hero «Zarpar»; «guía: mover» retries another spot if the island did not install (10/10 with repeat-each=5) · 1f579c2
 
 ## T199 — Halloween/Sonido box-office tickets and landing logout
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T187
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Halloween and Sonido «Comprar entradas» show the box-office message with the 2 € Carnet discount and the «Hazte el tuyo» link below (decision 8); a «Cerrar sesión» button next to «Carnet» at the top of the landing when signed in (decision 10).
@@ -192,10 +192,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - screenshots: Halloween buy message (mobile and desktop), landing header signed in → /tmp/orchestrator-attach/boia-planet-hernan-T199/
   - `E2E_PORT=<free> pnpm e2e <buy/event specs touched> <new logout spec> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: per-event box-office flag on Halloween and Sonido (landing and /mar): taquilla text + 2 € Carnet + «Hazte el tuyo»; «Cerrar sesión» next to the Carnet on the landing only; NAUFRAGO10 moved to Nochevieja; buying specs use the remaining online event; fixed mar-3d bubble test broken since T195; Codex WIP + Opus continuation · 95748c1
 
 ## T201 — Store: rotating product images and buy-at-the-party message
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T187
 - Model: opus (Codex out of credits; images moved to T202)
 - Goal: Each landing store product rotates several images (alone, other angles, worn by a model); pressing buy shows the Instagram message (decision 11). This task builds the carousel and the message with simple `muestra` placeholder images; the invented product images come in T202.
@@ -207,7 +207,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - screenshots of the store (rotation, buy message) → /tmp/orchestrator-attach/boia-planet-hernan-T201/
   - `E2E_PORT=<free> pnpm e2e <store/landing specs> --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: carousel of 3 images per product from `apps/web/lib/merchandise/products.json` (alone/angle/model, Pillow placeholders labelled MUESTRA, ~98 kB lazy), rotates every 3.5 s only on screen, paused on hover/focus/hidden/reduced motion; «Comprar» `<details>` with the Instagram text; landing 189.8 kB · 0528b12
 
 ## T202 — Sample event posters and store product images
 - Status: pending
@@ -224,9 +224,22 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - Test command → exit 0
 - Outcome:
 
+## T203 — Landing header fits on desktop with «Cerrar sesión»
+- Status: running (attempt 1)
+- Depends on: T199
+- Model: sonnet
+- Goal: Fix what T199 broke: on desktop the landing header items crowd and wrap («MI CARNET», «CERRAR SESIÓN» on two lines) when signed in. Every item stays on one line at common widths, mobile unchanged.
+- Context: `apps/web/lib/landing/site-header.tsx` (grep), `landing.css`, `landing-sign-out.tsx` (T199), the `/ranking` header link (T188), `landing-logout.spec.ts`.
+- Scope: may touch the header layout/CSS (spacing, a compact logout control such as an icon button with an accessible label, or moving logout into the Carnet menu if one exists), i18n, tests / must not change what the header links do, the hero, the landing weight beyond the cap.
+- Done when:
+  - screenshots signed in at 1024, 1280 and 1440 px and mobile 390 px: no item wraps → /tmp/orchestrator-attach/boia-planet-hernan-T203/
+  - `E2E_PORT=<free> pnpm e2e landing-logout.spec.ts landing.spec.ts --workers=1` → exit 0 (add an assertion that header items do not wrap)
+  - Test command → exit 0
+- Outcome:
+
 ## T198 — Close plan 017
 - Status: pending
-- Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T202
+- Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T202, T203
 - Model: opus
 - Goal: Run the full e2e, fix what this plan broke (small fixes only; report anything bigger), update docs and write the try-it guide for Hernán.
 - Context: every task's ESTADO section and Outcome in this plan; `docs/TRASPASO.md`, `docs/spec/estado.md`; previous guide `docs/propuestas/2026-10-06-castillo-v3-guia-prueba.md` as format.
@@ -239,6 +252,9 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 T199: NAUFRAGO10 now applies to Nochevieja (Sonido no longer sold online); specs buy through `e2e/online-event.ts`; box-office notice is a `<details>` (works without JS); logout checked against a fake local Supabase only (agent)
+- 2026-10-07 T201: product images as data in `products.json` (schema `merchandiseCatalogSchema`, validated by a test, zod kept out of the landing); Instagram contact in the same JSON; new keys `store.buy*`, `store.gallery.*`, `store.image.*` in `es-web.ts` base (editable in Admin) (agent)
+- 2026-10-07 run: T192 to Opus (Codex out); new small T203 fixes the desktop header wrapping T199 introduced (orchestrator)
 - 2026-10-07 run: Codex out until ~20:19 and Hernán wants the images invented by Codex → T201 builds the carousel and buy message on Opus with placeholders now; product images move to T202 (Codex, after T201) with the posters (orchestrator)
 - 2026-10-07 T196: `requisitos-motor.spec.ts` checks REQ-PRO-006 on the event schema and samples and REQ-MUN-009 by sailing with CPU throttled 3× (desktop only, CDP); record storyboard advances the paused clock by hand; «guía: mover» flake only under load («Instalar isla» disabled while the plane flies) → test retries another spot (agent)
 - 2026-10-07 T195: keys resolved in `packages/world` (`resolveSkinTexts`) since it cannot import the web catalog; non-key values stay as written (Acuarela, Admin-edited texts); console calls are developer warnings, left alone; `arcilla.test.ts` name checks now assert keys (agent)
@@ -254,6 +270,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
 
 ## Proposals (new scope)
+- 2026-10-07 T199: run `landing-logout.spec` with `E2E_SUPABASE=1` on boia-planet-dev; Admin has no control for the box-office rule
+- 2026-10-07 T201: `MERCHANDISE_NOTICE`, `MERCHANDISE_SAMPLE_NOTICE`, the «Muestra» badge and product names/descriptions are plain strings, not i18n keys; no store REQ updated in `docs/spec/estado.md`
 - 2026-10-07 T197: once real videos exist, use `LazyVideo` there and raise REQ-COM-032 to HECHO
 - 2026-10-07 orchestrator: the repo `picodepato/boia-planet-web` is public and holds the demo Admin password's PBKDF2 hash; «boiaplanetadmin» is guessable offline → consider a longer password (new hash, never the plain text) or moving the hash to a Vercel env var
 - 2026-10-07 T195: `packages/world/src/worlds/arcilla/map.ts` still has Spanish prose (object names, default dialogues)
@@ -297,3 +315,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 Hernán (session): origin set back to picodepato/boia-planet-web for good (new repo kept as remote `final`); Vercel deploy of 172aa9a → success, /ranking 200
 - 2026-10-07 17:44 T196 done · worktree-agent-a466b0a4c1f831e79 → 1f579c2
 - 2026-10-07 17:46 T201 launched · attempt 1 · agent ab2f131caa3fa83be · opus (carousel + buy message; images in T202)
+- 2026-10-07 18:08 T199 done · worktree-agent-ae12ecfd880b02a68 (+ Codex WIP branch ac79cb33) → 95748c1
+- 2026-10-07 18:10 T201 done · worktree-agent-ab2f131caa3fa83be → 0528b12
