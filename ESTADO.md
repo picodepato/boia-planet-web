@@ -4,6 +4,23 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-07 — plan 018 T210: Part 7: Admin
+
+Qué existe:
+- `docs/presentacion/partes/07-admin.ts`: la parte 7 con 10 diapositivas (47–56 de 58): portada de parte; Entrada (Carnet 000 + contraseña, aviso de la demo); Contenido (Página principal, Enlaces, Textos y música, Artistas, Fotos y vídeos, borrador / vista previa / Publicar) y una de vista previa + Fotos de una isla; Eventos y mundo (Eventos, Descuentos, Mundo, Objetos en 10 pasos, Destino de la Fiestera, Logros y cosméticos, Temporadas) y una de eventos + mapa; Control (Moderación, Usuarios, Integraciones, Papelera, Auditoría / «Volver a la muestra»); la diapositiva de texto de los paneles con cuentas (Fiestas y QR, Socios y emails, Moderación y Rankings reales, Seguridad; decisión 8); «Qué falta» (4 «Necesario para salir», 2 «Puede esperar») y «Preguntas y propuestas». Notas del orador en todas.
+- `apps/web/e2e/deck/07-admin.escritorio.deck.ts`: 8 capturas de escritorio (1440×900; la puerta, sin sesión, a 1100×640) en `docs/presentacion/capturas/07-admin/`: entrada, inicio (con un cambio en el borrador), vista-previa, fotos-isla, eventos, mundo (Isla del Sonido elegida), objetos (paso 4 de 10 con un cofre colocado), moderacion.
+- `boia-planet.pptx` y `boia-planet.pdf` regenerados (58 diapositivas).
+
+Comandos:
+- `DECK_PORT=3275 pnpm deck:capturas 07` → exit 0, 8 passed
+- `pnpm deck` → exit 0 (58 diapositivas; 07-admin 47–56)
+- `pnpm deck:render` → exit 0, 58 páginas; revisadas a ojo las 10 de la parte 7: nada cortado ni fuera de su caja
+- Comprobadores de `tools/spec/checks.sh`, uno a uno con `PYTHONUTF8=1` → exit 0; `pnpm lint` → 0; `pnpm typecheck` → 0
+
+Pendiente:
+- El aviso de la demo del Admin aún dice «Esto es una demo sin login» aunque desde T193 se entra con el Carnet 000 (va como propuesta en la diapositiva; es un cambio de la app, fuera de este plan).
+- En la barra del Admin a 1440 px, «Usuarios de administración» toca el borde de su columna.
+
 ## 2026-10-07 — plan 018 T209: Part 6: Minigames
 
 Qué existe:
