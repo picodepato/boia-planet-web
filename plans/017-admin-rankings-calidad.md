@@ -21,6 +21,12 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 6. **Account scope.** Export/download of the account's data (REQ-IDE-050); TOTP backup codes for Admin; the plan 008 gaps: 0-point ties, the stamp's score and rank line, and the player's own bottle when it is not among the 10 most recent.
 7. **Quality scope.** World texts out of `skin.ts` into i18n (dialogs, palette names, console messages); e2e for REQ-PRO-006 and REQ-MUN-009, the device matrix without the deleted 2D tests, `record.spec.ts`/`record-titulo.spec.ts` on the current «Zarpar», the flaky «guía: mover» e2e; lazy videos (REQ-COM-032); the castle «Construir» Ibiza card shows the next Ibiza's real payout (70/50 %).
 
+8. **Halloween and Sonido tickets** (Hernán, 2026-10-07). Pressing «Comprar entradas» on these two events shows, instead of the checkout: «Entradas sólo en taquilla, el mismo día. Enseña tu Carnet BOIA en la puerta y te descontamos 2 €.» and right below «¿Aún no tienes Carnet? Hazte el tuyo» with a button to the Carnet (texts `muestra`, by i18n key; the rule is per event, so other events keep their checkout).
+9. **Admin sign-in with Carnet 000.** Carnet number **000** is the admin. Demo/local mode: sign in with Carnet 000 + a password (given to the task agent in its prompt; only a salted hash is committed, never the plain text). Supabase mode: Carnet 000 is the admin account and signs in with the password **plus the TOTP code**.
+10. **Logout.** When signed in, a «Cerrar sesión» button at the top next to «Carnet», only on the landing page (never during a game or in /mar).
+11. **Store.** Each landing store product rotates its images: the product alone, other angles, and worn by a model in a clean fashion-catalogue style; images invented by Codex, `muestra`, replaceable later from Admin. Pressing buy shows: «Sólo a la venta en la fiesta. Si quieres una, escríbenos por Instagram a @boia.planet» with a link to https://instagram.com/boia.planet.
+12. **Sample content.** Event posters invented by Codex for every event without one (`muestra`), so the page looks complete; sample archive photos of **techno** parties from free photo banks (Unsplash/Pexels, licence allows reuse; credit kept in a credits file), loaded as past-event photos on the islands through T189's model.
+
 ## Tasks
 
 ## T188 — Rankings menu: race, Cañón, Castillo and global, with the right dropdowns; no visible «Arcilla»
@@ -65,22 +71,23 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - Test command → exit 0
 - Outcome: «Consigue descuentos» (`hero.explore.discountHint`) under Zarpar with a CSS-only glint every 8 s, off under reduced motion; landing 187.3 kB gzip; done by Codex + wrapper · 7635e98
 
-## T193 — Account: data export and Admin TOTP backup codes
+## T193 — Account and Admin access: Carnet 000 sign-in, TOTP backup codes, data export
 - Status: pending
 - Depends on: none
 - Model: opus
-- Goal: A signed-in user can download all their account data (REQ-IDE-050); Admin staff get one-time TOTP backup codes so losing the authenticator does not lock them out (decision 6).
-- Context: plan 008 accounts and Admin TOTP (`docs/TRASPASO.md`, `ESTADO.md` T8x sections; grep `totp` and `carnet` in `apps/web` and `supabase/migrations`), the account/Carnet screens, REQ-IDE-050 in `docs/spec/05-identidad-y-comunidad.md`, Admin login flow (`/admin`, code + TOTP).
-- Scope: may touch the account screen (export button, JSON download of the user's own data: Carnet, stamps, progress, bottles, rankings entries), Admin auth (generate, show once, store hashed, consume backup codes), a migration `20261007100400_*` with its `test:supabase` tests, i18n, tests / must not touch other users' data, RLS of unrelated tables, the local-mode guest flow beyond showing that export works there too (local data).
+- Goal: Admin sign-in through Carnet 000 (decision 9); one-time TOTP backup codes for the Supabase admin; a signed-in user can download all their account data (REQ-IDE-050) (decision 6).
+- Context: plan 008 accounts and Admin TOTP (`docs/TRASPASO.md`, `ESTADO.md` T8x sections; grep `totp` and `carnet` in `apps/web` and `supabase/migrations`), the demo admin (`apps/web/app/admin/admin-app.tsx`), carnet member numbers from plan 016 (gap-free counter; Carnet 000 must stay reserved and never be handed to a member), the account/Carnet screens, REQ-IDE-050 in `docs/spec/05-identidad-y-comunidad.md`.
+- Scope: may touch Admin sign-in (demo: Carnet 000 + password checked against a committed salted hash; Supabase: Carnet 000 is the admin account, password + TOTP), backup codes (generate, show once, store hashed, single use), the account export (JSON download of the user's own data), a migration `20261007100400_*` with its `test:supabase` tests, i18n, tests / must not touch other users' data, unrelated RLS, the logout button (T199).
 - Done when:
-  - unit tests: export contents (own data only, no secrets), backup code generation/hash/single use → pass
-  - `E2E_PORT=<free> pnpm e2e <account export spec> --workers=1` in local mode → exit 0
-  - the ESTADO section lists the migration and the `test:supabase` / `E2E_SUPABASE=1` commands Hernán must run on `boia-planet-dev`
+  - unit tests: demo password check against the hash (right/wrong), Carnet 000 reserved from the member counter, backup codes single use, export contains only the user's own data and no secrets → pass
+  - grep for the plain password in the worktree → no match
+  - `E2E_PORT=<free> pnpm e2e <admin sign-in spec> <account export spec> --workers=1` in local mode → exit 0
+  - the ESTADO section lists the migration and the commands Hernán runs on `boia-planet-dev`
   - Test command → exit 0
 - Outcome:
 
 ## T190 — Admin: new object in 10 steps, templates and asset validation
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Goal: Build REQ-ADM-010 (create a new world object in a guided 10-step flow), REQ-ADM-011 (templates) and REQ-ADM-012 (asset validation) in Admin (decision 5).
@@ -94,7 +101,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T191 — Admin: moderation of Carnets and the other sections with real data
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Goal: Admin can moderate Carnets (hide/restore a public Carnet, its name and avatar) and the other user-generated sections (bottles, ranking entries) with real Supabase data, per REQ-ADM-031 (decision 5).
@@ -109,7 +116,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 
 ## T192 — Admin: editable store, contact and footer links
 - Status: pending
-- Depends on: none
+- Depends on: T201
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Admin edits the store, contact and footer links (labels and URLs) without code; the web reads them (plan 007 proposal, decision 5).
 - Context: plan 007's proposal in `plans/007-*.md` Proposals and `docs/TRASPASO.md`; the footer and contact components (grep footer / `tienda` / `contacto` in `apps/web`), Admin sections, the local admin repository.
@@ -173,9 +180,53 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - Test command → exit 0
 - Outcome:
 
+## T199 — Halloween/Sonido box-office tickets and landing logout
+- Status: pending
+- Depends on: T187
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Goal: Halloween and Sonido «Comprar entradas» show the box-office message with the 2 € Carnet discount and the «Hazte el tuyo» link below (decision 8); a «Cerrar sesión» button next to «Carnet» at the top of the landing when signed in (decision 10).
+- Context: the event buy flow (grep `Comprar entradas` / `buy` in `apps/web/lib/i18n/` and the event sheet/island purchase components, `packages/contracts/src/events.ts`), sample events Halloween and Sonido (grep `halloween`, `sonido` in the sample content), the landing header (grep the «Carnet» header link), sign-out in the account store (local and Supabase modes).
+- Scope: may touch event contracts (a per-event «box office only» flag with the Carnet discount), the buy button/sheet in the landing and /mar, the landing header, i18n, tests / must not touch other events' checkout, the store (T201), Admin sign-in (T193).
+- Done when:
+  - unit tests: the flag only on Halloween and Sonido; logout visible only when signed in and only on the landing → pass
+  - screenshots: Halloween buy message (mobile and desktop), landing header signed in → /tmp/orchestrator-attach/boia-planet-hernan-T199/
+  - `E2E_PORT=<free> pnpm e2e <buy/event specs touched> <new logout spec> --workers=1` → exit 0
+  - Test command → exit 0
+- Outcome:
+
+## T201 — Store: rotating product images and buy-at-the-party message
+- Status: pending
+- Depends on: T187
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Goal: Each landing store product rotates its images (alone, other angles, worn by a model, fashion-catalogue style), invented by Codex as `muestra`; pressing buy shows the Instagram message (decision 11).
+- Context: the landing store block and product data (grep `tienda`, `store`, `product` in `apps/web/lib/landing`, `apps/web/lib/i18n/`, `packages/contracts/src/content.ts`), the 200 kB landing cap (images must load lazily, outside the critical path), `prefers-reduced-motion`.
+- Scope: may touch product contracts (several images per product), the store block and its CSS, new image files under `apps/web/public/` (WebP, small), i18n, tests / must not touch the hero, other landing blocks, events' checkout.
+- Done when:
+  - each sample product has at least 3 images (alone, another angle, on a model) as WebP files; list them with sizes
+  - landing weight check → still under 200 kB gzip
+  - screenshots of the store (rotation, buy message) → /tmp/orchestrator-attach/boia-planet-hernan-T201/
+  - `E2E_PORT=<free> pnpm e2e <store/landing specs> --workers=1` → exit 0
+  - Test command → exit 0
+- Outcome:
+
+## T202 — Sample posters and techno party photos
+- Status: pending
+- Depends on: T189
+- Model: codex (via wrapper agent; Opus if Codex is out of credits)
+- Goal: Every event without a poster gets one invented by Codex (`muestra`); sample techno party photos from Unsplash/Pexels are loaded as past-event photos on the islands (decision 12).
+- Context: events' `posterUrl` and sample content (grep `posterUrl`, sample events), T189's photo/album model (`packages/contracts/src/content.ts`, `apps/web/lib/admin/island-photos*`), `docs/contenido-real.md` (real content goes under `apps/web/public/contenido/`; samples must stay marked `muestra`).
+- Scope: may touch sample content data, new image files under `apps/web/public/` (posters and photos as WebP, sized for the web), a credits file listing every downloaded photo (source URL, author, licence), tests / must not touch real content, Admin code, the landing hero.
+- Done when:
+  - every sample event has a poster and at least two islands show past events with at least 4 techno photos each; list the files and their total size
+  - credits file present and covering every downloaded photo
+  - screenshots: event poster on the landing, island memory gallery → /tmp/orchestrator-attach/boia-planet-hernan-T202/
+  - `E2E_PORT=<free> pnpm e2e landing.spec.ts admin-fotos.spec.ts ciclo-evento.spec.ts --workers=1` → exit 0
+  - Test command → exit 0
+- Outcome:
+
 ## T198 — Close plan 017
 - Status: pending
-- Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197
+- Depends on: T187, T188, T189, T190, T191, T192, T193, T194, T195, T196, T197, T199, T201, T202
 - Model: opus
 - Goal: Run the full e2e, fix what this plan broke (small fixes only; report anything bigger), update docs and write the try-it guide for Hernán.
 - Context: every task's ESTADO section and Outcome in this plan; `docs/TRASPASO.md`, `docs/spec/estado.md`; previous guide `docs/propuestas/2026-10-06-castillo-v3-guia-prueba.md` as format.
@@ -188,6 +239,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## Decisions
+- 2026-10-07 plan: Hernán added decisions 8–12 mid-plan; T193 now also does Carnet 000 Admin sign-in; new T199, T201, T202 (Codex); T192 after T201 (same store area); T198 depends on all (orchestrator)
 - 2026-10-07 T188: the landing header had no ranking and lib/mundo/menu is never mounted → added «Ranking» to the header, opening a new `/ranking` page with the same panel; tabs «Carrera / Cañón / Castillo / Puntos» («De siempre» renamed to fit 390 px); race shows the circuit name, no dropdown; world display name «Mundo principal», /mar menu title omits the world when only one is playable; B05 «Botijo» (i18n, barcos.json, sample cosmetics, Supabase seed); Admin text «El puerto de salida (El Varadero).»; guest box on Cañón/Castillo boards shows the browser's own score and invites to sign in (agent)
 - 2026-10-07 T187: line is a `<p>` after the Zarpar link (out of its accessible name); also listed in `docs/propuestas/textos-zonas.md`; wrapper restored the hero unit test title Codex had renamed (REQ-ENT-028 link check) (agent)
 - 2026-10-07 T189: local files in IndexedDB as `local-photo:<id>` (new allowed `photoSchema.src` form); WebP q0.82, long side ≤1600 px, JPEG fallback; uploads ≤15 MB, short side ≥200 px; one album per event (`album-<eventId>`); upload links the event to the chosen island; «mark as past» on by default (finished, manual source); Supabase mode writes only to Supabase, the web overlays those rows on local content; DB types added by hand; REQ-AVE-014 and REQ-ADM-019 stay PARCIAL with new tests linked (agent)
@@ -206,3 +258,6 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 Hernán (session): push → `git push origin main` 2e6576d..bdcaa11 (T189 deployed)
 - 2026-10-07 15:46 T188 done · worktree-agent-abffc664e10cc9ab0 → cbdf6aa
 - 2026-10-07 15:48 T187 done · worktree-agent-a451969b9e40306b2 → 7635e98
+- 2026-10-07 15:52 T190 launched · attempt 1 · agent ac5abf7c0d1d9c934 · opus
+- 2026-10-07 15:52 T191 launched · attempt 1 · agent a63e2c276f934cb44 · opus
+- 2026-10-07 15:52 T193 and T192 held: Hernán asked for new Admin sign-in (Carnet 000 + password) and store changes; waiting for his answers
