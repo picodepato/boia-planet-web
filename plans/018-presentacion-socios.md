@@ -143,7 +143,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: 10 slides, desktop captures, panels grouped Entrada/Contenido/Eventos y mundo/Control/Con cuentas, account-only panels text slide · 022bbf3
 
 ## T211 — Parts 1 and 8: summary, launch roadmap and pending decisions
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T205, T206, T207, T208, T209, T210
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -156,10 +156,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of parts 1 and 8: nothing overflows or is cut
   - 3 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T211/
   - Test command → exit 0
-- Outcome:
+- Outcome: part 1 = 5 slides (cover, what it is, map, status with QR), part 8 = 6 (roadmap: 35/35 items in 30 lines by who acts, global items, pending decisions, closing); qrcode helper in tools/deck; deck = 74 slides · 62eb182
 
 ## T212 — Whole-deck review and polish
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T211
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -200,6 +200,8 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 
 - 2026-10-07 T210: Admin captures all desktop; draft «Zarpar al mar» set before the inicio/vista-previa shots; «Admin content for everyone» tagged «Puede esperar»; section label «Todo el Admin» (agent)
 
+- 2026-10-07 T211: QR as an option of the text slide (qrcode 1.5.4); repeated items joined into one roadmap line naming their parts; «Parte» column with «global»; decisions slide asks «¿salir antes de Halloween (31-10)?» for Hernán to check (agent)
+
 ## Proposals (new scope)
 - 2026-10-07 T210: Admin demo banner still says «Esto es una demo sin login» although sign-in with Carnet 000 exists since T193
 - 2026-10-07 T210: at 1440 px the Admin nav item «Usuarios de administración» touches its column edge
@@ -229,3 +231,5 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 22:42 T210 launched · attempt 1 · agent a61d9b9db7acdb0ce · opus · DECK_PORT 3275
 - 2026-10-07 23:00 T209 done · branch worktree-agent-ac5c3a5bb0c50520c → 65be42d
 - 2026-10-07 23:10 T210 done · branch worktree-agent-a61d9b9db7acdb0ce → 022bbf3
+- 2026-10-07 23:12 T211 launched · attempt 1 · agent a8785dc2a7910c33b · opus · may add a QR helper to tools/deck
+- 2026-10-07 23:25 T211 done · branch worktree-agent-a8785dc2a7910c33b → 62eb182
