@@ -78,7 +78,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: 9 slides (events, artists + invite, photos/store, legal; 2 «qué falta», 1 «preguntas y propuestas»), 10 captures · 8d1f8c7
 
 ## T207 — Part 4: Carnet BOIA and Ranking
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -91,7 +91,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of part 4: nothing overflows or is cut
   - 3 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T207/
   - Test command → exit 0
-- Outcome:
+- Outcome: 8 slides (Carnet front/back seeded for the photo, public Carnet, sello, what accounts add, 4 ranking tabs); emoji cause found (Windows 10 lacks Unicode 14 emoji such as 🪪) · 6100627
 
 ## T208 — Part 5: The ocean `/mar`
 - Status: running (attempt 1)
@@ -110,13 +110,14 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T209 — Part 6: Minigames
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
 - Goal: The minigames part (~9 slides, about 3 per game): race «Los Rápidos» (9 buoys, ramps, ghost, ranking), Cañón «Que no pare la música» (survivors-style, 2 acts, bosses, cards, weapons, loot, Fantasma/Kraken boards), «Defensa del Castillo» tower defense (3 difficulties × 5/7/10 min, mascots, Ibiza cards, 9 boards); how each is reached in the world, what it rewards. Ending with «Preguntas y propuestas».
 - Context: `docs/presentacion/GUIA.md`; decisions 2–6; `apps/web/app/mar/deep-link.ts` (`?minijuego=canon&seed=&t=&dificultad=&carta=…&armas=1&botin=1&acto=&vencer=1&oferta=1`, `?minijuego=castillo&duracion=&dificultad=&islas=…&monedas=&t=&oferta=1`), `apps/web/app/mar/survivors.ts`, the race code under `apps/web/app/mar/`, e2e `mar-circuito`, `mar-canon`, `mar-castillo` specs; `plans/013`–`016` for what each game became; TRASPASO items (Castillo v3 open test questions, REQ-AVE-037, dev shortcuts that must go at launch).
-- Scope: may touch `docs/presentacion/partes/06-*`, `docs/presentacion/capturas/06-*/`, `apps/web/e2e/deck/06-*.deck.ts`, rebuilt pptx/pdf, `ESTADO.md` fragment / must not touch other parts' files, `tools/deck/` (as T205), app code.
+- Extra (Hernán, 2026-10-07): first, in its own small commit, make deck captures draw newer emoji (Windows 10 lacks Unicode 14 ones such as 🪪): the capture harness downloads Noto Color Emoji (Google, OFL; from github.com/googlefonts/noto-emoji or Google Fonts) once into a git-ignored folder and injects it as a fallback font into every captured page (e.g. an `@font-face` + `font-family` fallback via `page.addStyleTag` or `addInitScript`), with no app change; verify on the «🪪 Mi Carnet» screen.
+- Scope: may touch the deck capture harness (`apps/web/playwright.deck.config.ts`, `apps/web/e2e/deck/` helpers, `.gitignore`) for the emoji font only, `docs/presentacion/partes/06-*`, `docs/presentacion/capturas/06-*/`, `apps/web/e2e/deck/06-*.deck.ts`, rebuilt pptx/pdf, `ESTADO.md` fragment / must not touch other parts' files, `tools/deck/` (as T205), app code.
 - Done when:
   - `pnpm deck:capturas 06` → exit 0 (gameplay captures show action, not menus only); `pnpm deck` → exit 0; `pnpm deck:render` → exit 0
   - part 6 has 7–11 slides; tags, «Preguntas y propuestas» and speaker notes as in T205
@@ -163,6 +164,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Model: opus
 - Skills: anthropic-skills:pptx
 - Goal: Read the whole deck as a partner would and make it one consistent piece: same tone (Spain Spanish, «tú/vosotros», no jargon), same tag wording, no contradictions between parts and the roadmap, nothing invented, slide total 52–66, consistent visuals, file sizes reasonable; fix what is wrong in any part.
+- Extra: recapture every part captured before T209's emoji font landed (parts 2, 3, 4 and 5 at least) so no emoji shows as an empty box; fix the T205 note: `portadaParte` can leave a «·» at the start of a wrapped second line.
 - Context: `docs/presentacion/GUIA.md`; decisions 1–9; the rendered PDF and PNGs; the final messages' inconsistency lists from T211.
 - Scope: may touch everything under `docs/presentacion/`, `apps/web/e2e/deck/`, `tools/deck/` (small fixes), `ESTADO.md` fragment, `docs/TRASPASO.md` (one line pointing to the deck) / must not touch app code, `docs/DECISIONES.md`.
 - Done when:
@@ -186,6 +188,10 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T205: two sections in part 2; contact shown on the Filosofía capture; «Cerrar sesión» only in notes (never shows in local mode); «probar admin» at launch asked as a question; port 3241 (EA Desktop holds 3215) (agent)
 - 2026-10-07 run: binary-only conflicts go back to the agent to merge main and rebuild (orchestrator)
 
+- 2026-10-07 T207: 8 slides; Carnet captures seeded with test stamps, 180 points and scores (notes say so); ranking dropdowns opened for the shot (agent)
+- 2026-10-07 run: Noto Color Emoji downloaded for deck captures only, done first in T209; T212 recaptures earlier parts (Hernán)
+- 2026-10-07 run: `.gitattributes` `merge=ours` + local `merge.ours.driver true` for the deck .pptx/.pdf so binary conflicts stop; stale binaries are refreshed by the next build and T212 (orchestrator, commit 23aa0fc)
+
 ## Proposals (new scope)
 - 2026-10-07 T205: the Admin cannot edit the Filosofía text
 - 2026-10-07 T205: `portadaParte` can leave a «·» at the start of a wrapped second line (tools/deck) → T212
@@ -201,3 +207,6 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 21:18 T207 launched · attempt 1 · agent a4413a0b26814587c · opus · DECK_PORT 3235 · also fixes emoji in captures
 - 2026-10-07 21:30 T205 conflict on pptx/pdf only → sent back to agent to merge main and rebuild
 - 2026-10-07 21:35 T205 done · branch worktree-agent-a24b381821604ec59 → 32dc555
+- 2026-10-07 21:37 T208 launched · attempt 1 · agent a15d4a39f1e9e9d1d · opus · DECK_PORT 3255
+- 2026-10-07 21:55 T207 conflict on pptx/pdf only → sent back to agent to merge main and rebuild
+- 2026-10-07 22:05 T207 done · branch worktree-agent-a4413a0b26814587c → 6100627
