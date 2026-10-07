@@ -4,7 +4,7 @@ Status: active
 Created: 2026-10-07
 Base branch: main
 Goal: Hernán presents BOIA.PLANET to all BOIA partners. Build a PowerPoint (.pptx, ~60 slides, 8 parts) that walks every section of the site with mobile screenshots taken automatically: what each section is and has, what is missing before it can go live (each item tagged «Necesario para salir» or «Puede esperar»), and a closing «Preguntas y propuestas» slide per section. It mixes Álvaro's sign-off (what he must approve or provide) with an internal inventory, so the partners know what stands between today and publishing the site as soon as possible. No app code changes.
-Test command: export PYTHONUTF8=1 && sh tools/spec/checks.sh && pnpm lint && pnpm typecheck && pnpm deck
+Test command: export PYTHONUTF8=1 && sh tools/spec/checks.sh && pnpm lint && pnpm typecheck && pnpm deck && git checkout -- docs/presentacion/boia-planet.pptx
 Worktree setup: pnpm install --frozen-lockfile
 Status file: ESTADO.md
 
@@ -46,7 +46,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome: tools/deck generator (TS run by Node 24, parts found by file name, layout text limits fail the build), deck:capturas with blank-shot guard, deck:render via LibreOffice + pdf.js; 19 placeholder slides, hero example done · e7551f1
 
 ## T205 — Part 2: Landing
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -62,7 +62,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - Outcome:
 
 ## T206 — Part 3: Pages (events, artists, photos, store, legal)
-- Status: pending
+- Status: done
 - Depends on: T204
 - Model: opus
 - Skills: anthropic-skills:pptx
@@ -75,7 +75,7 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
   - you looked at every rendered slide of part 3: nothing overflows or is cut
   - 3 rendered slide PNGs copied to /tmp/orchestrator-attach/boia-planet-hernan-T206/
   - Test command → exit 0
-- Outcome:
+- Outcome: 9 slides (events, artists + invite, photos/store, legal; 2 «qué falta», 1 «preguntas y propuestas»), 10 captures · 8d1f8c7
 
 ## T207 — Part 4: Carnet BOIA and Ranking
 - Status: pending
@@ -180,9 +180,16 @@ Decisions of 2026-10-07 that every task follows (Hernán's answers):
 - 2026-10-07 T204: tools/deck added to pnpm-workspace.yaml; parts export `titulo` + default (d: Deck) => void; captures named without extension, `NN-slug/name` for another part's; desktop captures in `NN-*.escritorio.deck.ts`; logos converted from SVG at build; PDF→PNG with pdf.js (no pdftoppm); fixed hex colors; .pptx/.pdf conflicts: keep either side and rebuild (agent)
 - 2026-10-07 run: part tasks rebuild the binary .pptx/.pdf; on integration conflicts in those two files only, the orchestrator keeps main's side and the next task (or T212) rebuilds (orchestrator)
 
+- 2026-10-07 T206: one «qué falta» + one «preguntas y propuestas» for the whole part to fit the budget; store captures with reduced motion; port 3226 because EA Desktop holds 3216 (agent)
+- 2026-10-07 run: Test command now ends with `git checkout -- docs/presentacion/boia-planet.pptx`: `pnpm deck` rebuilds the binary on main and left it dirty, blocking the next merge (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-07 T206: deck capture browser has no emoji font, so emoji in the site draw as empty boxes in captures (e.g. before «Mi Carnet»)
 - 2026-10-07 T204: deck:capturas passes extra Playwright args through the shell on Windows; args with spaces may split
 
 ## Log
 - 2026-10-07 20:55 T204 launched · attempt 1 · agent afe0ac150546d92a4 · opus
 - 2026-10-07 21:05 T204 done · branch worktree-agent-afe0ac150546d92a4 → e7551f1
+- 2026-10-07 21:10 T205 launched · attempt 1 · agent a24b381821604ec59 · opus · DECK_PORT 3215
+- 2026-10-07 21:10 T206 launched · attempt 1 · agent a7fe0565a25277bf6 · opus · DECK_PORT 3216
+- 2026-10-07 21:15 T206 done · branch worktree-agent-a7fe0565a25277bf6 → 8d1f8c7
