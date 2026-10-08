@@ -88,7 +88,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome: Admin removes a single Carnet answer and edits/removes an artist music link, with undo from a 30-day moderation trash (local + Supabase RPCs, migration 20261008200100) · 390ebbc
 
 ## T230 — 30-day trash for real data and backups with Storage
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T229
 - Model: opus
 - Skills: none
@@ -100,7 +100,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - local mode keeps working (its trash unchanged) → unit tests pass; Admin specs listed for Hernán
   - the backup workflow also archives Storage objects (encrypted like the dump) and the guide says what Hernán must set → `actionlint` unavailable: YAML parses (`python3 -c "import yaml,sys;yaml.safe_load(open(sys.argv[1]))" <file>`) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: Supabase soft delete of members (to `member_trash`, account banned) and parties (`deleted_at`), restore + 30-day purge run by the daily backup workflow; backup also saves Storage files encrypted; local «Borrar fiesta» (migration 20261008200200) · 3794e0f
 
 ## T231 — Pending art: Puig Campana 2D and the boia outline everywhere
 - Status: done
@@ -174,6 +174,8 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T232: art direction muestra in the clay style; 2D via new `islas_sueltas` in mapa.json + optional `mundos` in lugares.json; Acuarela keeps placeholder; not added to `mapa.py all_islands` (2 design routes cross it) (agent)
 - 2026-10-08 T233: scope extended: Las Calitas' sea label is cream, make it orange like the other island labels (decision 2) (orchestrator)
 
+- 2026-10-08 T230: deleted member's Carnet moved to `public.member_trash`, account banned + sessions removed; restore fails on `nickname_taken`/`number_taken`; party purge only without purchases/stamps/points; purge run by the backup workflow, by each delete/restore and by an Admin button (no pg_cron); Storage downloaded via public URLs, no new secret; local Admin gets «Borrar fiesta» (agent)
+
 ## Proposals (new scope)
 - 2026-10-08 T232: design routes `exploracion` and `d_solar` in mapa.json cross Las Calitas; counting it as land would need rerouting
 - 2026-10-08 T229: the local change trash shows the Carnet by user id, not nickname
@@ -195,3 +197,5 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T229 done · merged 390ebbc
 - 2026-10-08 T230 launched · attempt 1 · agent aa9c232ce594feb84
 - 2026-10-08 T232 done · merged 7920bc6
+- 2026-10-08 T234 launched · attempt 1 · agent a7de04004b0c91114
+- 2026-10-08 T230 done · merged 3794e0f
