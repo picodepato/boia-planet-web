@@ -194,7 +194,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## T225 — Fix the Cañón HUD and final screen after the new fonts
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T221
 - Model: opus
 - Skills: none
@@ -204,7 +204,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Done when:
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: cause was T213's body line-height 1.5; Cañón HUD 1.15 (72.8 px), final card 1.25, compact block for short screens; mar-canon.spec 93 pass · 4bec541
 
 ## T224 — Close plan 019
 - Status: pending
@@ -276,3 +276,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T222 launched · attempt 1 · agent aee4608957ec33ffa
 - 2026-10-08 T225 launched · attempt 1 · agent afa1157fe1c499eb3
 - 2026-10-08 T222 done · merged b393a4a
+- 2026-10-08 T223 launched · attempt 1 · agent a4ac6d2946c4ef95c
+- 2026-10-08 pushed main 997f45f (Hernán yes on T222 offer)
+- 2026-10-08 T225 done · merged 4bec541
