@@ -178,7 +178,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: island `calitas` (three.js clay, NW sea) with comments, one-level replies, votes, insult filter (browser + DB copies), Admin hide/show; local sample comments; migration 20261008100500 to apply · b393a4a
 
 ## T223 — Admin: 3 full-access admins, 30-day trash, analytics switch, daily backups
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T222, T218, T217
 - Model: opus
 - Goal: Limit full access to 3 people; a 30-day trash that covers every change or deletion made from Admin and can restore it; an Admin switch for visit analytics; a GitHub Actions workflow for daily `pg_dump` backups kept 30 days, with a guide for Hernán (decision 17).
@@ -191,7 +191,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - analytics off in Admin → no analytics request sent → unit/e2e
   - the backup workflow passes `actionlint` if available, or a YAML parse check
   - Test command → exit 0
-- Outcome:
+- Outcome: max 3 admin/owner enforced by DB, trash restores deletions and Admin content changes (local), analytics switch (off by default), encrypted daily pg_dump workflow + guide; Supabase common code; popups say location not announced; migration 20261008100600 to apply · db23541
 
 ## T225 — Fix the Cañón HUD and final screen after the new fonts
 - Status: done
@@ -207,12 +207,13 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: cause was T213's body line-height 1.5; Cañón HUD 1.15 (72.8 px), final card 1.25, compact block for short screens; mar-canon.spec 93 pass · 4bec541
 
 ## T224 — Close plan 019
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T213, T214, T215, T216, T217, T218, T219, T220, T221, T222, T223, T225
 - Model: opus
 - Goal: Full e2e run green, spec status, handover and a test guide for Hernán.
 - Context: all tasks' ESTADO sections, `docs/spec/estado.md`, `docs/TRASPASO.md`, `docs/propuestas/2026-10-07-plan-017-guia-prueba.md` (format to follow).
 - Scope: may touch e2e fixes for flaky or outdated specs, `docs/spec/estado.md`, `docs/TRASPASO.md`, a new `docs/propuestas/2026-10-08-plan-019-guia-prueba.md` (what changed, what to try by hand, migrations Hernán must apply in order, material pending from Álvaro and Roke, open questions) / must not change features.
+- Also (small fix added by the orchestrator, T223 leftover): the landing event card and the checkout must not show the place when the event's location is not announced (same text as the world popups: «La ubicación todavía no está anunciada»).
 - Done when:
   - `E2E_PORT=<free> pnpm e2e --workers=2` → 0 failures
   - `python3 tools/spec/estado.py` → pass
@@ -237,6 +238,8 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T221: mar-canon.spec failed on 3 layout checks caused by T213 fonts (HUD height 79.7 > 76; final screen overlaps «Entradas» at 360×640) → integrated T221 and added fix task T225 (orchestrator, option A)
 - 2026-10-08 T218 push offer: Hernán replied «Codex ya está activo para las imágenes del cómic, pasa varias pruebas antes del diseño final para decidir qué estética elijo»: not a push; unclear target (no comic in plan 019) → asked him (orchestrator)
 - 2026-10-08 T222: visit achievement only (no points/tickets); local mode comments without carnet, Supabase needs account with carnet; rate limit 5/10 min, 30/day; one vote per person, no self-vote (agent)
+- 2026-10-08 T223: limit counts admin + owner only; analytics off by default (`site_settings.analytics_enabled`, local = per browser); trash of changes built from the local audit log; backups GPG-encrypted, secrets SUPABASE_DB_URL + BACKUP_PASSPHRASE (agent)
+- 2026-10-08 T224: scope extended with T223 leftover (place shown when not announced on landing card/checkout) (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
@@ -248,6 +251,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T220: mascot boias inside island GLBs (allday, faro, ultima) and 2D sprites have no outline; art/boia-tutorial unchanged (render.py needs Blender ≥ 4.2)
 - 2026-10-08 T221: 2D world art of place `canon` (art/mundos/{arcilla,acuarela}/canon/) still shows the Banyets fortín
 - 2026-10-08 T222: no REQ for Las Calitas in docs/spec; no Blender model or 2D art for the island
+- 2026-10-08 T223: moderation gaps with accounts (a single Carnet answer or an artist's music link can only be removed by hiding the whole Carnet); real Supabase data changes (members, parties) not in the trash, deleting a member is permanent; Storage files (photos, clips) not in backups
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -279,3 +283,4 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T223 launched · attempt 1 · agent a4ac6d2946c4ef95c
 - 2026-10-08 pushed main 997f45f (Hernán yes on T222 offer)
 - 2026-10-08 T225 done · merged 4bec541
+- 2026-10-08 T223 done · merged db23541
