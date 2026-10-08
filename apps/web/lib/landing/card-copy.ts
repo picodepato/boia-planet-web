@@ -22,6 +22,8 @@ export const EVENT_CARD_COPY = {
   /** `tickets.satellite.*` (D-23, O7). */
   warmup: t('tickets.satellite.warmup'),
   warmupNone: t('tickets.satellite.noAllDay'),
+  /** La ubicación sin anunciar, como en la ficha y las islas (plan 019 T224). */
+  placeSoon: t('event.page.placeMissing'),
 } as const;
 
 /** `photos.home.all` (zona 30). */

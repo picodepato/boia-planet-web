@@ -3,6 +3,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { EventBlock } from '../../mar/sheet';
+import { EVENT_CARD_COPY } from '../../../lib/landing/card-copy';
+import { EVENTOS_COPY } from '../../../lib/landing/eventos-copy';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
 import { EventCard } from './event-card';
@@ -51,5 +53,19 @@ describe('CTA de compra (REQ-COM-035, REQ-COM-005)', () => {
       expect(card(e).includes('data-testid="comprar-'), state).toBe(buys);
       expect(panel(e).includes('mar-comprar'), state).toBe(buys);
     }
+  });
+});
+
+describe('ubicación sin anunciar en la tarjeta (plan 019 T224)', () => {
+  it('sin anunciar dice que falta y no enseña el lugar; anunciada, enseña el lugar', () => {
+    const hidden = card({ ...base, placeAnnounced: false });
+    expect(hidden).toContain('data-testid="evento-tarjeta-lugar-falta"');
+    expect(hidden).toContain(EVENT_CARD_COPY.placeSoon);
+    expect(hidden).not.toContain(`<span>${base.placeLabel}</span>`);
+    expect(EVENT_CARD_COPY.placeSoon).toBe(EVENTOS_COPY.placeSoon);
+
+    const shown = card({ ...base, placeAnnounced: true });
+    expect(shown).toContain(`<span>${base.placeLabel}</span>`);
+    expect(shown).not.toContain('evento-tarjeta-lugar-falta');
   });
 });

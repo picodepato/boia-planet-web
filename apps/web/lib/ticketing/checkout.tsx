@@ -215,7 +215,11 @@ export function SandboxCheckout({
             </p>
             <p className="checkout__event-meta">
               {event.format} · {formatEventDate(event.startsAt, event.timeZone)} ·{' '}
-              {event.placeLabel}
+              {event.placeAnnounced === false ? (
+                <span data-testid="checkout-lugar-falta">{C.placeSoon}</span>
+              ) : (
+                event.placeLabel
+              )}
             </p>
           </div>
         ) : null}

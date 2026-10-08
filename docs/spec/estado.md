@@ -57,6 +57,26 @@ y el ranking en cuatro pestañas con la página `/ranking`
 llevan su nota en la tabla; guía de prueba:
 [plan 017](../propuestas/2026-10-07-plan-017-guia-prueba.md).
 
+(Desde el plan 019 el Carnet ya no descuenta y Halloween se vende sólo en
+puerta a 5 € con Carnet, `muestra`.)
+
+**Plan 019 sin REQ propio.** El [plan 019](../../plans/019-reunion-cambios.md)
+(T213–T225, reunión con Álvaro del 2026-10-08) suma alcance que la spec no
+nombra: tres fuentes de videojuego y esquinas rectas en toda la web
+([tipografia.spec.ts](../../apps/web/e2e/tipografia.spec.ts)); la tienda con
+sus 3 productos, precio y «sólo en la fiesta» / «reserva por Instagram»
+([merchandise.spec.ts](../../apps/web/e2e/merchandise.spec.ts)); comprar pide
+el Carnet BOIA ([carnet-requerido.spec.ts](../../apps/web/e2e/carnet-requerido.spec.ts));
+la isla de comentarios Las Calitas con respuestas, votos, filtro de insultos y
+moderación ([mar-calitas.spec.ts](../../apps/web/e2e/mar-calitas.spec.ts),
+[calitas.test.ts](../../apps/web/lib/calitas/calitas.test.ts)); Puig Campana
+de Blender en lugar de Els Banyets
+([island-models.test.ts](../../apps/web/app/mar/engine/island-models.test.ts));
+la boia con la cara del logo
+([mascot-look.test.ts](../../apps/web/app/mar/engine/mascot-look.test.ts)).
+Los REQ que tocó llevan su nota en la tabla; guía de prueba:
+[plan 019](../propuestas/2026-10-08-plan-019-guia-prueba.md).
+
 <!-- estado:tabla -->
 | ID | Requisito | Alcance | Estado | Evidencia | Nota |
 |---|---|---|---|---|---|
@@ -272,7 +292,7 @@ llevan su nota en la tabla; guía de prueba:
 | REQ-COM-017 | Compra confirmada por webhook | L1 | PARCIAL | [index.ts](../../apps/web/lib/analytics/index.ts) | Construido; sin prueba que lo nombre |
 | REQ-COM-018 | Sin webhook, QR o código | L1 | final | — | Ticketera real (D-20). Plan 008: el sello ya no depende de la compra: llega por el QR fijo de la fiesta (REQ-IDE-023); registrar la compra con el código del email de compra sigue pendiente de la ticketera (P2) |
 | REQ-COM-019 | Devoluciones auditadas | L1 | final | — | Ticketera real con webhook (D-20) |
-| REQ-COM-020 | Descuentos por evento | L1 | HECHO | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts); el mejor entre el -10 % del Carnet (T66) y los códigos, sin sumarse, [carnet-required.test.ts](../../apps/web/lib/ticketing/carnet-required.test.ts) | — |
+| REQ-COM-020 | Descuentos por evento | L1 | HECHO | [discounts.test.ts](../../apps/web/lib/admin/discounts.test.ts); el código encontrado en el mundo es el único descuento, [carnet-required.test.ts](../../apps/web/lib/ticketing/carnet-required.test.ts) «sin código, el precio es el del evento; con código, sólo el código» | Plan 019 T215 (decisión 1 de la reunión del 2026-10-08): el Carnet ya no descuenta (fuera el -10 % de T66 y los -2 € en taquilla); se queda como requisito para comprar. Decisión 7: un código común de la ticketera, fijado en el Admin, sustituye el de todos los descuentos de entradas |
 | REQ-COM-021 | Descubrimiento premiado una vez | L1 | HECHO | [world-progress.test.ts](../../apps/web/lib/mundo/world-progress.test.ts) | — |
 | REQ-COM-022 | Copiar y enlazar el descuento | L1 | HECHO | [mundo-arcilla.spec.ts](../../apps/web/e2e/mundo-arcilla.spec.ts) «descuento escondido: se copia con un toque y sólo se concede una vez» | — |
 | REQ-COM-023 | Primera compra y WhatsApp | L2 | L2 | — | — |

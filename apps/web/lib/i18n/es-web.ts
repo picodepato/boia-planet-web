@@ -52,6 +52,10 @@ const base = {
   'event.buy': 'Comprar entradas',
   'event.buy.aria': 'Comprar entradas para {name} (se abre la ticketera en otra pestaña)',
   'event.soon': 'Entradas próximamente',
+  // Plan 019 (T215, T224): la ubicación sin anunciar; aquí y no en
+  // es-lib-eventos porque también la pintan la tarjeta de la landing y el
+  // checkout. Muestra.
+  'event.page.placeMissing': 'La ubicación todavía no está anunciada',
   'event.lineup': 'Cartel',
 
   'priority.heading': 'Próximo evento',

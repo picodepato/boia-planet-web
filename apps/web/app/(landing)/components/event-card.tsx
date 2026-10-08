@@ -135,7 +135,11 @@ export function EventCard({
       <p className="event-card__when">
         <time dateTime={event.startsAt}>{formatEventDate(event.startsAt, event.timeZone)}</time>
         <span aria-hidden="true"> · </span>
-        <span>{event.placeLabel}</span>
+        {event.placeAnnounced ? (
+          <span>{event.placeLabel}</span>
+        ) : (
+          <span data-testid="evento-tarjeta-lugar-falta">{EVENT_CARD_COPY.placeSoon}</span>
+        )}
       </p>
       {featured && event.description && <p className="event-card__desc">{event.description}</p>}
       {note && <p className="event-card__note">{note}</p>}

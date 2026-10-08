@@ -57,6 +57,8 @@ export interface CheckoutEvent {
   startsAt: string;
   timeZone: string;
   placeLabel: string;
+  /** Sin anunciar, el checkout no enseña `placeLabel` (plan 019 T224). */
+  placeAnnounced?: boolean;
 }
 
 export interface CheckoutSession {

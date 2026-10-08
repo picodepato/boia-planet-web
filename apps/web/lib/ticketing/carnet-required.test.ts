@@ -1,4 +1,4 @@
-import { type Discount, discountSchema, eventState } from '@boia/contracts';
+import { type Discount, discountSchema, eventSchema, eventState } from '@boia/contracts';
 import { SAMPLE_DISCOUNTS, SAMPLE_EVENTS, createLocalRepository } from '@boia/store';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CapturedEvent } from '../analytics';
@@ -113,6 +113,19 @@ describe('comprar pide el Carnet BOIA', () => {
     expect(purchase?.discountId).toBe(code.id);
     const confirmed = win.__boiaAnalytics?.find((e) => e.event === 'purchase_confirmed');
     expect(confirmed?.properties).toMatchObject({ discountId: code.id, discountKind: 'code' });
+  });
+
+  it('el checkout recibe si la ubicación está anunciada (plan 019 T224)', async () => {
+    vi.stubGlobal('window', { location: { pathname: '/' } } satisfies FakeWindow);
+    const event = online[0]!;
+    for (const placeAnnounced of [false, true]) {
+      const { repo, tickets } = setup();
+      vi.spyOn(repo.content, 'events').mockResolvedValue([
+        eventSchema.parse({ ...event, placeAnnounced }),
+      ]);
+      const r = await tickets.start(event.id);
+      expect(r.ok ? r.session.event : r.event).toMatchObject({ id: event.id, placeAnnounced });
+    }
   });
 
   it('un evento «Solo en puerta» no se vende aquí, ni con Carnet', async () => {

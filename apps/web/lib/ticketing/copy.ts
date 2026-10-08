@@ -11,6 +11,8 @@ export const CHECKOUT_COPY = {
   buyAria: (name: string) => t('ticketing.copy.comprarEntradasParaCompra', { name }),
   islandBuy: t('island.buy'),
   kicker: t('checkout.title'),
+  /** La ubicación sin anunciar, como en la ficha y las islas (plan 019 T224). */
+  placeSoon: t('event.page.placeMissing'),
   title: t('island.buy'),
   testNotice: t('ticketing.copy.versionDePruebaNo'),
   ticketLine: t('checkout.price'),

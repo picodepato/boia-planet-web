@@ -4,6 +4,71 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T224: Close plan 019
+
+Qué existe:
+
+- **Lugar sin anunciar en la tarjeta y el checkout** (resto de T223): la
+  tarjeta de evento de la landing (`event-card.tsx`) y el checkout
+  (`lib/ticketing/checkout.tsx`) dicen «La ubicación todavía no está
+  anunciada» en vez de `placeLabel` cuando `placeAnnounced` es `false`, como
+  la ficha y las islas. La clave `event.page.placeMissing` pasa de
+  `es-lib-eventos.ts` a `es-web.ts` (la landing sólo carga ese catálogo; la
+  ficha la sigue leyendo igual). `CheckoutEvent.placeAnnounced` lo rellena el
+  sandbox. Pruebas: `event-card.test.ts` «sin anunciar dice que falta…» y
+  `carnet-required.test.ts` «el checkout recibe si la ubicación está
+  anunciada».
+- **Guía de prueba** `docs/propuestas/2026-10-08-plan-019-guia-prueba.md`: qué
+  cambió por tarea, qué probar a mano, las 8 migraciones en orden (las 2 del
+  plan 017 y las 6 del 019, con la condición de ≤ 2 admin/owner antes de la
+  `…100600`), secretos de las copias, material de Roke y Álvaro y 10
+  preguntas.
+- **`docs/TRASPASO.md`**: último plan cerrado 019, sección «Los cambios de la
+  reunión (plan 019)», «Qué hace Hernán (plan 019)», cuentas de REQ al día,
+  fuentes nuevas (Upheaval / Press Start 2P / 8-bit Operator+; P20 sin
+  objeto), peso de la landing 195,9 kB.
+- **`docs/spec/estado.md`**: párrafo «Plan 019 sin REQ propio» (fuentes y
+  esquinas, tienda, Carnet obligatorio, Las Calitas, Puig Campana, la boia);
+  REQ-COM-020 deja de citar el -10 % del Carnet (T215 lo quitó).
+- **E2E**: `mar-circuito.spec.ts` «Los Rápidos: pregunta en la salida…»
+  reintenta la salida hasta tres veces si el piloto de teclado anula la
+  carrera («sin carrera»), como ya hacía la prueba del logro de la misma spec.
+
+Comandos y resultado:
+
+- `E2E_PORT=3471 pnpm e2e --workers=2` (suite completa, 1,5 h) → exit 1:
+  609 pasan, 104 saltadas, 9 fallan.
+- Las 9 solas, `--workers=1` (8 `file:line`, ambos proyectos) → 17 pasan, 1
+  falla: `mar-decor` «Tabarca…» (móvil), `mar-botellas` «botellas…»,
+  `mar-canon` «lecturas de vida y daño…» ×2, «al acabar vuelve el mundo…»,
+  «a las 4:30 entra el Tiburón Martillo…», `mar-carnet-barco` «crear el
+  Carnet en /mar…», `ranking` «desde el menú de /mar» pasan solas (carga).
+- `mar-circuito.spec.ts:233` «Los Rápidos…» (escritorio) sigue inestable:
+  solo, antes del reintento, 1 de 2; con el reintento, 3 de 4 (`--repeat-each=2`,
+  ambos proyectos); la que cae es «sin medalla» (piloto lento), el mismo fallo
+  que ya apuntó el plan 013 T156. Flaky, no del plan 019.
+- `PYTHONUTF8=1 python3 tools/spec/estado.py` → exit 0 (294 REQ · HECHO 165 ·
+  PARCIAL 68 · FALTA 26 · L2 25 · final 8 · retirado 2).
+- Comando de pruebas, paso a paso: `vitest run --exclude '**/packages/db/**'`
+  → exit 0 (258 archivos, 2345 pasan, 1 omitida); `sh tools/spec/checks.sh`
+  → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 195,9 kB de
+  200); `pnpm typecheck` → exit 0.
+
+Pendiente:
+
+- **Hernán**: las 8 migraciones en `boia-planet-dev` en orden
+  (`20261007100200`, `20261007100400`, `20261008100100` … `20261008100600`,
+  la última con ≤ 2 admin/owner reales), `pnpm db:types:dev`,
+  `pnpm test:supabase` y las e2e con cuentas; secretos `SUPABASE_DB_URL` y
+  `BACKUP_PASSPHRASE`; la decisión 4 en `DECISIONES.md` para retirar
+  REQ-ENT-002/027.
+- **Roke**: vídeo/GIF del inicio (`HERO_MEDIA_SRC`). **Álvaro**: fotos de los
+  productos, correo del dominio, ticketera de los próximos eventos, Halloween
+  online (hoy no).
+- `mar-circuito` «Los Rápidos…» en escritorio: el piloto de la prueba es
+  lento en este navegador sin GPU y a veces no saca medalla; hace falta un
+  piloto más fino o un tope de medalla para la prueba.
+
 ## 2026-10-08 — plan 019 T223: Admin: 3 full-access admins, 30-day trash, analytics switch, daily backups
 
 Qué existe (decisión 17 de la reunión del 2026-10-08):

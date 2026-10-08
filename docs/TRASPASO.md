@@ -2,9 +2,9 @@
 
 Dónde está BOIA.PLANET y qué queda, para quien llegue sin contexto. La
 pantalla de abajo se escribió el 2026-10-03 (planes 001–008); lo de los
-planes 010–017 está en sus secciones («El Cañón en beta», «Qué hace Hernán»)
-y en sus guías de prueba. Último plan cerrado: **017** (2026-10-07,
-[guía de prueba](propuestas/2026-10-07-plan-017-guia-prueba.md)). El
+planes 010–019 está en sus secciones («El Cañón en beta», «Los cambios de la
+reunión», «Qué hace Hernán») y en sus guías de prueba. Último plan cerrado:
+**019** (2026-10-08, [guía de prueba](propuestas/2026-10-08-plan-019-guia-prueba.md)). El
 detalle de cada tarea está en `ESTADO.md`; las reglas, en
 [`CLAUDE.md`](../CLAUDE.md).
 
@@ -36,9 +36,9 @@ detalle de cada tarea está en `ESTADO.md`; las reglas, en
   del plan 008 pasó sus e2e; la corrida completa de `pnpm e2e` del plan la
   hace el orquestador al cerrarlo (la última completa, T49: 204 pasan, 36
   saltadas, 0 fallan).
-- **Requisitos:** de los 294 REQ de la spec v15, **165 HECHO**, 67 PARCIAL,
-  26 FALTA, 25 L2, 9 para la versión final y 2 retirados
-  ([spec/estado.md](spec/estado.md), al cerrar el plan 017). El plan 008 pasó de `final` a HECHO el
+- **Requisitos:** de los 294 REQ de la spec v15, **165 HECHO**, 68 PARCIAL,
+  26 FALTA, 25 L2, 8 para la versión final y 2 retirados
+  ([spec/estado.md](spec/estado.md), al cerrar el plan 019). El plan 008 pasó de `final` a HECHO el
   acceso por código, la vuelta al contexto, el progreso del invitado, nada
   competitivo desde el cliente, el alta del propietario, los permisos en la
   base, Supabase con RLS y la identidad pública sin email; y de L2 a HECHO
@@ -86,7 +86,7 @@ con Blender sin interfaz desde `tools/blender/` (D-05).
 | [003](../plans/003-mar-planeta.md) | `/mar` como planeta de agua, «Entradas» siempre visible, diálogos legibles, logros que se reclaman |
 | [004](../plans/004-cierre-v14.md) | Los huecos del inventario v14 → código: economía de barcos, agujero negro, eventos y descuentos que llevan a su isla, ranking, sonido, endurecimiento del Admin, marca, entrega |
 | [005](../plans/005-solo-planeta-3d.md) | Sólo el planeta 3D (D-25): `/juego` borrado y lo suyo pasado a `/mar`; HUD de móvil, Boia Fiestera con premio, minijuegos rehechos, Tickets dentro del mundo, la entrada de la landing en 3D con el planeta de `/mar` y «Zarpar» que entra en el juego (D-24) |
-| [006](../plans/006-islas-y-ajustes.md) | Islas de eventos de Blender (Halloween, Sonido, Nochevieja), nombres reales, bienvenida corta, economía, botellas, circuito Los Rápidos, tipografía de títulos (Archivo Expanded, en lugar de Druk) e Inter |
+| [006](../plans/006-islas-y-ajustes.md) | Islas de eventos de Blender (Halloween, Sonido, Nochevieja), nombres reales, bienvenida corta, economía, botellas, circuito Los Rápidos, tipografía de títulos (Archivo Expanded, en lugar de Druk) e Inter (sustituidas en el plan 019 por Upheaval, Press Start 2P y 8-bit Operator+) |
 | [007](../plans/007-landing-scroll.md) | La landing como un solo scroll: diseño editorial oscuro (T77), atrezzo y stills de Blender (T78), hero por scroll en three.js (T79), rendimiento (T80), accesibilidad (T81), contenido real sin código (T82), e2e al día (T84), documentos (T83) |
 | [008](../plans/008-cuentas-carnet-rankings.md) | Cuentas con Supabase: base, RPC validadas y pruebas contra el proyecto real (T86), diseño del Carnet como carné (T87), líneas guía fuera en la carrera y botellas legibles (T88), acceso con código y consentimiento (T89), el progreso del socio en su cuenta (T90), Carnet carné y sellos por QR (T91), rankings globales (T92), botellas globales (T93), Admin con código + TOTP sobre datos reales (T94), arreglos de `/mar` (T96), documentos y borrador de D-27 (T95) |
 
@@ -141,8 +141,11 @@ En un iPhone (Safari) y un Android medio, con la versión desplegada (https):
   de `/mar` con el grado del hero, más oscuro y a contraluz), el atrezzo de
   Blender (`art/landing/3d`: costa, puerto con balizas y farolas, barco,
   boya) y los stills de la versión estática (`art/landing/hero-still*.webp`).
-- **La licencia de Druk Wide Medium** (P20): hasta que la compre, los
-  títulos van con Archivo Expanded (README, «Tipografías», cómo cambiarla).
+- **Las fuentes** (P20 queda sin objeto): desde el plan 019 los títulos van
+  con **Upheaval**, los botones con **Press Start 2P** y el texto con
+  **8-bit Operator+** (elegidas por Hernán el 2026-10-08; licencias junto a
+  los archivos en `apps/web/public/fonts/`; README, «Tipografías»). Ni
+  Druk ni Archivo/Inter se usan ya.
 - **El contenido** (P15, P17, P19): enlaces reales (entradas, tienda,
   WhatsApp, Instagram, correo, la lista de Spotify de BOIA y la de cada
   artista), fotos de los artistas y el cartel de BOIA Club · Halloween. Qué
@@ -265,6 +268,36 @@ orquestador lleva `/mar`. Lo que cambió, sólo en el mundo **Arcilla**
   diciendo «Isla descubierta» (`island.firstVisit`), y las claves
   `world.*.island.cala.body` no usadas conservan el texto viejo.
 
+## Los cambios de la reunión (plan 019)
+
+La reunión con Álvaro del 2026-10-08
+([notas](propuestas/2026-10-08-reunion-cambios.md)) cambió bastante la web;
+el plan 019 (T213–T225) lo aplicó entero. Detalle y qué probar: [guía de
+prueba del plan 019](propuestas/2026-10-08-plan-019-guia-prueba.md).
+
+- **Comprar pide el Carnet BOIA** y el Carnet ya no descuenta; los
+  descuentos del mundo siguen. HALLOWEEN IN THE CLUB sólo en puerta (5 € con
+  carnet, `muestra`); el Admin edita precio, lugar anunciado, ticketera,
+  «Solo en puerta» y un código común de la ticketera.
+- **Aspecto de videojuego**: Upheaval / Press Start 2P / 8-bit Operator+ y
+  ninguna esquina redondeada; botones de recreativa.
+- **Landing** al estilo de noartmusic.com bajo el globo: sólo «Zarpar» en el
+  hero, «Consigue descuentos» en amarillo, fechas en cuadrado, tienda con 3
+  productos (fiesta o reserva por Instagram). Hueco para el vídeo/GIF de
+  Roke: `HERO_MEDIA_SRC` en `apps/web/lib/landing/hero-media.ts`.
+- **Galería** (`/galeria`, antes Fotos): collage con clips; el Admin sube
+  clips MP4. **Artistas** con imagen, «Ver carnet» y su música.
+- **Carnet**: con cuentas, email primero; QR de alta; lector de la puerta
+  `/admin/puerta` que sella el Carnet; sello a mano en el Admin.
+- **Mundo**: carga naranja claro, popups sin franja, nombres nuevos (ALL DAY
+  BOIA, HALLOWEEN IN THE CLUB, Botiga Ibiza, Puig Campana), la boia con la
+  cara del logo, Puig Campana en Blender y la isla de comentarios Las
+  Calitas.
+- **Admin**: como mucho 3 con acceso completo, papelera de 30 días de lo
+  cambiado y lo borrado, analítica con interruptor (apagada) y copias
+  diarias cifradas con GitHub Actions
+  ([guía](propuestas/2026-10-08-backups.md)).
+
 ## Qué queda
 
 ### Se puede hacer ya (sin Álvaro)
@@ -304,6 +337,25 @@ Las propuestas de cada tarea están en la sección «Proposals» de cada plan.
 Varias ya se hicieron en tareas posteriores: comprueba en el código antes de
 tomarlas.
 
+### Qué hace Hernán (plan 019, 2026-10-08)
+
+Todo con detalle en la
+[guía de prueba del plan 019](propuestas/2026-10-08-plan-019-guia-prueba.md):
+
+- **Ocho migraciones sin aplicar** en `boia-planet-dev`, en este orden: las
+  dos del plan 017 (`20261007100200_moderation`,
+  `20261007100400_admin_access_export`) y las seis del 019
+  (`20261008100100` T215, `…100200` T217, `…100300` T218, `…100400` T216,
+  `…100500` T222, `…100600` T223; la última, con como mucho 2 admin/owner
+  reales). `pnpm db:migrate:dev`, `pnpm db:types:dev`, `pnpm test:supabase`.
+- **Copias**: los secretos `SUPABASE_DB_URL` y `BACKUP_PASSPHRASE` y una
+  primera ejecución a mano del flujo.
+- **La decisión 4** («Entradas» fuera del hero) en `DECISIONES.md`, para
+  retirar REQ-ENT-002 y REQ-ENT-027.
+- **Pedir el material**: a Roke el vídeo/GIF del inicio; a Álvaro las fotos
+  de los productos, el correo del dominio, la ticketera de los próximos
+  eventos y confirmar que Halloween no se vende online.
+
 ### Qué hace Hernán (plan 017, 2026-10-07)
 
 Todo con detalle en la
@@ -312,9 +364,8 @@ Todo con detalle en la
 - **Migraciones del plan 017:** `20261007100100_event_photos.sql` ya está
   aplicada en `boia-planet-dev` (2026-10-07, `test:supabase` 98/98);
   **faltan** `20261007100200_moderation.sql` y
-  `20261007100400_admin_access_export.sql` (`pnpm db:migrate:dev`, después
-  `pnpm db:types:dev` y `pnpm test:supabase`). Las tres, en producción
-  cuando se publique con cuentas.
+  `20261007100400_admin_access_export.sql` (van con las del plan 019,
+  arriba). Las tres, en producción cuando se publique con cuentas.
 - **La cuenta del Admin con cuentas:** rol owner, contraseña y el Carnet 000
   con `private.assign_admin_carnet(...)` en el editor SQL (mejor una cuenta
   dedicada: su email se puede averiguar escribiendo «000»); después generar
@@ -359,12 +410,13 @@ Tabla completa en [DECISIONES.md](DECISIONES.md), «Preguntas abiertas».
 | P17 | Fotos de los 26 artistas y sus Carnets |
 | P18 | Música con licencia, una por mundo |
 | P19 | Cartel de BOIA Club · Halloween |
-| P20 | Licencia web de Druk Wide Medium (hasta entonces, Archivo Expanded) |
+| P20 | Licencia web de Druk Wide Medium: sin objeto desde el plan 019 (fuentes Upheaval, Press Start 2P y 8-bit Operator+) |
 | P21 | Datos legales reales y revisión profesional de los textos legales; ahora también la política de privacidad con cuentas y el consentimiento de noticias |
 | P22 | Lectura de los textos del equipo ([propuestas/textos-zonas.md](propuestas/textos-zonas.md)) y de O1–O15 de D-23 |
 | P23* | Uso de la lista de emails de quien aceptó noticias (qué, cada cuánto, con qué herramienta) |
 | P24* | Importes de puntos y topes del antitrampas (50 puntos por sello, topes por acción y día, tiempos mínimos) |
 | P26* | Arte final del Carnet como carné de identidad y de los sellos de cada fiesta |
+| — | Plan 019: fotos reales de los 3 productos (y sus precios), el correo del dominio, la ticketera de los próximos eventos, si Halloween se vende online (hoy no) y el visto bueno a los textos, clips y arte nuevos (`muestra`) |
 | — | Los textos nuevos del plan 017 (`muestra`: «Consigue descuentos», el aviso de taquilla con los 2 € del Carnet, el mensaje de la tienda), las imágenes de los productos y los carteles que faltan |
 | — | El sello «ARTISTA» del anverso del Carnet de artista (plan 016 T186, `muestra`) y «Defensa del Castillo» con el [borrador del plan 015](propuestas/2026-10-06-premios-mascotas-decision-alvaro.md) |
 
@@ -399,7 +451,7 @@ respaldo del TOTP llegaron con el plan 017, T193). La lista para publicar es REQ
   '**/packages/db/**'` (las pruebas de `packages/db` piden un Postgres local)
   y `PYTHONUTF8=1`.
 - El build falla si la landing pasa de su presupuesto (200 kB gzip; está en
-  195,3 tras el plan 017).
+  195,9 tras el plan 019).
 - Vercel: Root Directory `apps/web` con los archivos de fuera incluidos
   (`packages/` y `art/`). Cada push a `main` despliega a producción. Detalle
   en el [README](../README.md).

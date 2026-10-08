@@ -252,7 +252,15 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   expect(box!.height, 'pequeño').toBeLessThan(80);
   await snap(page, 'p005-t61-carrera.png');
 
-  expect(await pilot(page, 'race')).toBe('ok');
+  // El piloto de teclado a veces se sale de la carretera en el navegador lento
+  // de las pruebas (la carrera se anula, «sin carrera»): otra salida, hasta
+  // tres, como en la prueba del logro (plan 019 T224).
+  let outcome = await pilot(page, 'race');
+  for (let i = 1; i < 3 && outcome !== 'ok'; i++) {
+    await startRace(page);
+    outcome = await pilot(page, 'race');
+  }
+  expect(outcome).toBe('ok');
   // Corriendo, el velocímetro llega a los 22 nudos de carrera (T109).
   expect(await topKnots(page)).toBeGreaterThanOrEqual(RACE_KNOTS);
   const card = page.getByTestId('mar-carrera-final');

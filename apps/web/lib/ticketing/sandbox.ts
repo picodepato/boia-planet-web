@@ -66,6 +66,7 @@ export function createSandboxTicketing(
         startsAt: event.startsAt,
         timeZone: event.timeZone,
         placeLabel: event.placeLabel,
+        placeAnnounced: event.placeAnnounced,
       };
       // Con el estado de ahora (REQ-COM-004): un evento pasado ya no se compra.
       if (!EVENT_STATE_BEHAVIOR[eventState(event, now())].purchasable) {
