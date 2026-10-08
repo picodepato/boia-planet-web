@@ -123,7 +123,7 @@ export const SAMPLE_HOME_BLOCKS: AreaInput<'homeBlocks'>[] = sampleHomeBlocks();
 /**
  * Los tres eventos con entradas (Álvaro, 2026-10-02), cada uno en su isla
  * del mapa compartido (`@boia/world`, `TICKET_ISLAND_EVENTS`): BOIA
- * Halloween en el Kiki García (Isla de Halloween), SONIDO (Isla del Sonido,
+ * Halloween en el Kiki García (isla `halloween`), SONIDO (isla `allday`,
  * `allday`) y BOIA Nochevieja (Isla de Nochevieja, `ultima`, donde se
  * entrega la Boia Fiestera). Nombre, fecha y sitio son reales; horas,
  * precios, descripciones y enlaces, `muestra`. Los eventos de muestra de
@@ -145,7 +145,7 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
   {
     id: HALLOWEEN_EVENT_ID,
     slug: HALLOWEEN_EVENT_ID,
-    name: 'BOIA Halloween',
+    name: 'HALLOWEEN IN THE CLUB',
     format: 'satelite',
     series: 'boia-club',
     // La fecha es real; la hora, de muestra hasta que Álvaro la confirme.
@@ -166,7 +166,7 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
   {
     id: SONIDO_EVENT_ID,
     slug: SONIDO_EVENT_ID,
-    name: 'SONIDO',
+    name: 'ALL DAY BOIA',
     format: 'all_day',
     // La fecha es real; las horas, de muestra.
     startsAt: '2026-12-05T12:00:00+01:00',
@@ -396,13 +396,15 @@ export const SAMPLE_DISCOUNTS: AreaInput<'discounts'>[] = [
     // si hay otro código para la misma compra, se aplica éste (prioridad).
     id: 'dto-fiestera',
     code: 'FIESTERA20',
-    label: '-20 % en tu próxima entrada',
+    // Decisión 14 del plan 019 (reunión del 2026-10-08): vale para las dos
+    // fiestas, ALL DAY BOIA y BOIA Nochevieja; lo dicen la etiqueta y las condiciones.
+    label: '-20 % en ALL DAY BOIA o BOIA Nochevieja',
     kind: 'percent',
     value: 20,
     priority: 10,
     endsAt: '2027-12-31T23:59:00+01:00',
     conditions:
-      'Sólo para quien rescata a la Boia Fiestera y la lleva a la Isla de Nochevieja. Muestra: no es un código real.',
+      'Vale para una entrada de ALL DAY BOIA o de BOIA Nochevieja. Sólo para quien rescata a la Boia Fiestera y la lleva a la Isla de Nochevieja. Muestra: no es un código real.',
     sample: true,
   },
 ];

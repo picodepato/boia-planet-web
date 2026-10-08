@@ -18,7 +18,7 @@ export const esLibWeb = {
   'landing.access.entrarEnElWhatsapp2': 'Entrar en el WhatsApp de BOIA (se abre en otra pestaña)',
   'landing.access.verSuIslaEn': 'Ver su isla en el mar',
   'landing.access.irEnBarcoAl': 'Ir en barco a la Isla de Benidorm, la de las fotos',
-  'landing.access.irEnBarcoA': 'Ir en barco a Ibiza, la isla tienda',
+  'landing.access.irEnBarcoA': 'Ir en barco a Botiga Ibiza, la isla tienda',
   'landing.cardCopy.borrador': 'Borrador',
   'landing.cardCopy.finalizado': 'Finalizado',
   'landing.cardCopy.verTodasLasFotos': 'Ver todas las fotos en la Galería',

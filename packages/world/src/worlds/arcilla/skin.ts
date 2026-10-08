@@ -80,7 +80,7 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
  * Nombres propios de Arcilla (diseno.md → `propuesta_nombre`), como claves
  * i18n; las islas de evento no. Desde el 2026-10-02 (Hernán y Álvaro) las
  * islas de Arcilla llevan nombres reales del Mediterráneo y de Alicante
- * (Isla de Benidorm, Ibiza, Tabarca, L'Illeta dels Banyets; la Cala Cantalar
+ * (Isla de Benidorm, Botiga Ibiza, Tabarca, Puig Campana; la Cala Cantalar
  * es desde el 2026-10-04 el Puerto de Alicante, T108): son los nombres
  * comunes del mapa (`./map`), así que aquí sólo quedan el puerto, el remanso,
  * el circuito y las boias.

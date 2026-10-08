@@ -6,7 +6,6 @@ import { gameRepository } from '../../lib/mundo/repo';
 import {
   type BoiaEvent,
   EVENT_STATE_BEHAVIOR,
-  eventKicker,
   foundDiscountState,
 } from '@boia/contracts';
 import type { FoundDiscount } from '@boia/store';
@@ -222,16 +221,11 @@ export function Sheet({
     const e = findEvent(state.eventId);
     estado = e?.state;
     const buy = !!e && EVENT_STATE_BEHAVIOR[e.state].purchasable;
+    // Las islas de las fiestas (T219, decisión 13): sólo nombre, fecha y lugar.
     compact = {
-      kicker: e ? (
-        <>
-          🎤 {eventKicker(e)}
-          {e.sample ? t('mar.sheet.muestra') : ''}
-          <StateTag event={e} />
-        </>
-      ) : null,
+      kicker: null,
       title: e?.name ?? name,
-      meta: e ? `${formatEventDate(e.startsAt, e.timeZone)} · ${e.placeLabel}` : undefined,
+      meta: e ? <EventWhen event={e} /> : undefined,
       action:
         e && buy ? (
           <button
@@ -251,11 +245,11 @@ export function Sheet({
     const e = findEvent(eventId);
     estado = e?.state;
     const island = object?.identity.category === 'isla';
-    const kicker = (
+    // Una isla de fiesta (T219, decisión 13) no lleva rótulo: nombre, fecha y lugar.
+    const kicker = e ? null : (
       <>
         {textOf(object, 'kicker') ?? kickerOf(object)}
         {distance !== null ? t('mar.sheet.m', { distance }) : ''}
-        {e ? <StateTag event={e} /> : null}
       </>
     );
     const course = (
@@ -281,9 +275,7 @@ export function Sheet({
     compact = {
       kicker,
       title: e?.name ?? name,
-      meta: e
-        ? `${formatEventDate(e.startsAt, e.timeZone)} · ${e.placeLabel}`
-        : textOf(object, 'body'),
+      meta: e ? <EventWhen event={e} /> : textOf(object, 'body'),
       // Las dos maneras de ir, a la vista sin desplegar la ficha (T96: en el
       // móvil, «Ir en nave» quedaba escondida dentro).
       action: (
@@ -295,14 +287,15 @@ export function Sheet({
     };
     body = (
       <>
-        <p className="mar-sheet__kicker">{kicker}</p>
+        {kicker ? <p className="mar-sheet__kicker">{kicker}</p> : null}
         <h2 className="mar-sheet__title">{e?.name ?? name}</h2>
         {e ? (
           <p className="mar-sheet__meta">
-            {formatEventDate(e.startsAt, e.timeZone)} · {e.placeLabel}
+            <EventWhen event={e} />
           </p>
+        ) : textOf(object, 'body') ? (
+          <p>{textOf(object, 'body')}</p>
         ) : null}
-        {textOf(object, 'body') ? <p>{textOf(object, 'body')}</p> : null}
         {island ? (
           <p className="juego-panel-links">
             {e ? (
@@ -365,7 +358,9 @@ export function Sheet({
   } else if (state.target === 'store') {
     const sb = block('store');
     const products = sb?.type === 'store' ? sb.products : [];
-    const text = MERCHANDISE_NOTICE;
+    // Botiga Ibiza (T219, decisión 13): «Sección de merchandising oficial»;
+    // desplegada, además, dónde se vende.
+    const text = t('mar.sheet.tienda.seccion');
     const shop = (
       <Link
         className="mar-btn mar-btn--primary"
@@ -383,6 +378,7 @@ export function Sheet({
         <h2 className="mar-sheet__title">{name}</h2>
         <p>{text}</p>
         {products.length ? <p className="mar-sheet__meta">{products.join(' · ')}</p> : null}
+        <p className="mar-sheet__note">{MERCHANDISE_NOTICE}</p>
         {shop ? <div className="mar-sheet__actions">{shop}</div> : null}
       </>
     );
@@ -575,6 +571,19 @@ export function StateTag({ event }: { event: BoiaEvent }) {
   );
 }
 
+/**
+ * Fecha y lugar de una fiesta (T219, decisión 13: su isla sólo enseña nombre,
+ * fecha y lugar), con su estado si no está a la venta.
+ */
+function EventWhen({ event: e }: { event: BoiaEvent }) {
+  return (
+    <>
+      {formatEventDate(e.startsAt, e.timeZone)} · {e.placeLabel}
+      <StateTag event={e} />
+    </>
+  );
+}
+
 /** Aviso del estado en la isla (textos-zonas, zonas 4 y 11), como en el 2D. */
 function stateNotice(event: BoiaEvent): string | null {
   switch (event.state) {
@@ -608,14 +617,9 @@ export function EventBlock({
   const notice = stateNotice(e);
   return (
     <>
-      <p className="mar-sheet__kicker">
-        🎤 {eventKicker(e)}
-        {e.sample ? t('mar.sheet.muestra') : ''}
-        <StateTag event={e} />
-      </p>
       <h2 className="mar-sheet__title">{e.name}</h2>
       <p className="mar-sheet__meta">
-        {formatEventDate(e.startsAt, e.timeZone)} · {e.placeLabel}
+        <EventWhen event={e} />
       </p>
       {notice ? (
         <p className="juego-panel-aviso" role="status" data-testid="mar-evento-aviso">
@@ -638,9 +642,7 @@ export function EventBlock({
             </span>
           )}
         </p>
-      ) : (
-        <p>{e.description}</p>
-      )}
+      ) : null}
       <p className="juego-panel-links">
         <Link href={eventHref(e.slug)} prefetch={false} data-testid="mar-evento-ficha">
           {EVENTOS_COPY.details}

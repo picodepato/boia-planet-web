@@ -52,12 +52,12 @@ const map = parseSharedMap(ARCILLA_MAP);
 const NAMES_2026_10_02: Record<string, string> = {
   cala: 'Puerto de Alicante',
   fotos: 'Isla de Benidorm',
-  tienda: 'Ibiza',
+  tienda: 'Botiga Ibiza',
   faro: 'Tabarca',
-  canon: "L'Illeta dels Banyets",
-  allday: 'Isla del Sonido',
+  canon: 'Puig Campana',
+  allday: 'ALL DAY BOIA',
   ultima: 'Isla de Nochevieja',
-  halloween: 'Isla de Halloween',
+  halloween: 'HALLOWEEN IN THE CLUB',
   // Se quedan como estaban.
   puerto: 'El Varadero',
   naufrago: 'El náufrago',
@@ -289,7 +289,7 @@ describe('mapa compartido de Arcilla (T20)', () => {
 
   it('la Isla de Halloween: isla con entradas en mar libre, lejos de las demás', () => {
     const h = map.places.find((p) => p.id === HALLOWEEN_PLACE_ID)!;
-    expect(h).toMatchObject({ category: 'isla', name: 'Isla de Halloween', active: true });
+    expect(h).toMatchObject({ category: 'isla', name: 'HALLOWEEN IN THE CLUB', active: true });
     const ticket = h.behaviors.find((b) => b.type === 'ticket');
     const content = h.behaviors.find((b) => b.type === 'content');
     expect(ticket?.params).toMatchObject({ eventId: TICKET_ISLAND_EVENTS.halloween });
