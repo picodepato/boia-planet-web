@@ -150,7 +150,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: Blender boias with the logo's black outline, hand-made mascot (captain, Fiestera, placeholder) redrawn after the logo, Fiestera now orange, boias face the port, logo SVG on loading screens · e888dc1
 
 ## T221 — Puig Campana modelled in Blender, replacing Els Banyets
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T219
 - Model: fable
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
@@ -162,10 +162,10 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - multiview renders of the model and a /mar screenshot of the island in place → attach folder
   - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `tools/blender/islas/puigcampana.py` (ID canon) → canon.glb: pyramid with the Portà notch, Finestrat village, pines, cannon and pier; islands.ts fallback redrawn, Cañón collision/minigame untouched · a09df2f
 
 ## T222 — Las Calitas: comments island with replies, votes, insult filter and moderation
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T221
 - Model: opus
 - Goal: New island Las Calitas where people write comments, reply and vote, with an insult filter; Admin moderates them; local mode shows sample comments plus your own (decision 16).
@@ -193,9 +193,22 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - Test command → exit 0
 - Outcome:
 
+## T225 — Fix the Cañón HUD and final screen after the new fonts
+- Status: running (attempt 1)
+- Depends on: T221
+- Model: opus
+- Skills: none
+- Goal: T213's fonts made the Cañón HUD and its final screen break their layout checks: fix the CSS so `mar-canon.spec.ts` passes again, without changing the game.
+- Context: failing in `apps/web/e2e/mar-canon.spec.ts`: «HUD: con un boss y las siete armas…» (T148, mobile + desktop) measures the mid HUD at 79.7 px vs ≤ 76; «pantalla final…» (mobile 360×640) finds the final screen overlapping «Entradas». CSS in `apps/web/app/mar/canon-hud.css` and the Cañón final-screen styles; fonts from T213 (Press Start 2P buttons, Upheaval titles, 8-bit Operator+ body).
+- Scope: may touch Cañón HUD and final-screen CSS (sizes, spacing, font sizes), and those e2e only if an assertion encodes the old font's metrics / must not touch game logic or balance, other screens.
+- Done when:
+  - `E2E_PORT=<free> pnpm e2e mar-canon.spec.ts --workers=1` → exit 0
+  - Test command → exit 0
+- Outcome:
+
 ## T224 — Close plan 019
 - Status: pending
-- Depends on: T213, T214, T215, T216, T217, T218, T219, T220, T221, T222, T223
+- Depends on: T213, T214, T215, T216, T217, T218, T219, T220, T221, T222, T223, T225
 - Model: opus
 - Goal: Full e2e run green, spec status, handover and a test guide for Hernán.
 - Context: all tasks' ESTADO sections, `docs/spec/estado.md`, `docs/TRASPASO.md`, `docs/propuestas/2026-10-07-plan-017-guia-prueba.md` (format to follow).
@@ -220,6 +233,9 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T223: scope extended with T215 leftovers (Supabase common code, dead invite, placeLabel when not announced) (orchestrator)
 - 2026-10-08 T220: outline as inverted hull only on 3D glTF boias; `FaceTextures.pink` → `party`; `BOIA_FACING = -π/2` (orientation only) (agent)
 - 2026-10-08 T218: carnet QR keeps the public URL; scanning needs editor+, manual stamp needs admin + reason; one stamp per party per carnet; door scan points = party QR stamp (0 in local); door stamp replaces a test-purchase stamp (agent)
+- 2026-10-08 T221: module `puigcampana.py` with `ID = "canon"`; exporter/check match modules by ID (agent)
+- 2026-10-08 T221: mar-canon.spec failed on 3 layout checks caused by T213 fonts (HUD height 79.7 > 76; final screen overlaps «Entradas» at 360×640) → integrated T221 and added fix task T225 (orchestrator, option A)
+- 2026-10-08 T218 push offer: Hernán replied «Codex ya está activo para las imágenes del cómic, pasa varias pruebas antes del diseño final para decidir qué estética elijo»: not a push; unclear target (no comic in plan 019) → asked him (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
@@ -229,6 +245,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T219: supabase/seeds/20261003100100_economy.sql keeps old event names; sea island labels `.mar-pin--accent` still orange
 - 2026-10-08 T217: with Supabase, Admin cannot edit an artist carnet's music link (only content artists')
 - 2026-10-08 T220: mascot boias inside island GLBs (allday, faro, ultima) and 2D sprites have no outline; art/boia-tutorial unchanged (render.py needs Blender ≥ 4.2)
+- 2026-10-08 T221: 2D world art of place `canon` (art/mundos/{arcilla,acuarela}/canon/) still shows the Banyets fortín
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -253,3 +270,4 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T220 done · merged e888dc1
 - 2026-10-08 T221 launched · attempt 1 · agent ac7fce138eec8f194 (fable)
 - 2026-10-08 T218 done · merged b605f04
+- 2026-10-08 T221 blocked on 3 unrelated e2e → orchestrator chose A · merged a09df2f
