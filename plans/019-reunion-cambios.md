@@ -108,7 +108,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: /artistas with image, name→carnet, «Ver carnet», music button (Spotify/SoundCloud/Bandcamp/Instagram from the domain); artists set the link when creating their carnet; migration 20261008100200 to apply · df0c55b
 
 ## T218 — Carnet: email first with Supabase, sign-up QR, door scanner and manual stamps
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T215
 - Model: opus
 - Goal: With Supabase the carnet creation starts with email → code; a sign-up QR that opens «Crear carnet»; each carnet's QR is scanned by a staff door scanner that records attendance and stamps the party; Admin stamps any carnet by hand (decision 11).
@@ -119,7 +119,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - Admin manual stamp works in local mode → e2e
   - Supabase: `test:supabase` tests for the new RPCs written (they run on boia-planet-dev after Hernán applies the migration)
   - Test command → exit 0
-- Outcome:
+- Outcome: Supabase carnet creation starts with email sheet; Admin «Puerta y sellos» with sign-up QR (/carnet?crear=1), door scanner /admin/puerta (camera, photo, pasted link) that stamps the party, manual stamp with reason; migration 20261008100300 to apply · b605f04
 
 ## T219 — World: light-orange loading, popups without band, island names and popup contents
 - Status: done
@@ -219,6 +219,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T217: one music link `{platform,url}` with platform from the domain, `spotifyUrl` kept as fallback; /artistas joins content artists with artist carnets; Supabase link saved by RPC `set_artist_music`; REQ-COM-027 HECHO (agent)
 - 2026-10-08 T223: scope extended with T215 leftovers (Supabase common code, dead invite, placeLabel when not announced) (orchestrator)
 - 2026-10-08 T220: outline as inverted hull only on 3D glTF boias; `FaceTextures.pink` → `party`; `BOIA_FACING = -π/2` (orientation only) (agent)
+- 2026-10-08 T218: carnet QR keeps the public URL; scanning needs editor+, manual stamp needs admin + reason; one stamp per party per carnet; door scan points = party QR stamp (0 in local); door stamp replaces a test-purchase stamp (agent)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
@@ -250,3 +251,5 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T218 launched · attempt 1 · agent abaa28dc8065cb263
 - 2026-10-08 T220 launched · attempt 1 · agent a4281a0437dfca569
 - 2026-10-08 T220 done · merged e888dc1
+- 2026-10-08 T221 launched · attempt 1 · agent ac7fce138eec8f194 (fable)
+- 2026-10-08 T218 done · merged b605f04
