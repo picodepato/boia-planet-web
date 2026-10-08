@@ -19,3 +19,14 @@ export const translateSkinText = (value: string): string =>
 export const worlds: WorldRegistry = WORLD_REGISTRY.mapSkins((skin) =>
   resolveSkinTexts(skin, translateSkinText),
 );
+
+/**
+ * Estilos de barco que sólo pertenecen a un mundo oculto (Acuarela): la tienda
+ * del barco no los ofrece mientras nadie pueda llegar a ese mundo.
+ */
+export const hiddenShipStyles = (reg: WorldRegistry = worlds): ReadonlySet<string> => {
+  const playable = new Set(reg.playableIds().map((id) => reg.skin(id).ship.style));
+  return new Set(
+    [...reg.hiddenIds].map((id) => reg.skin(id).ship.style).filter((s) => !playable.has(s)),
+  );
+};

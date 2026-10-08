@@ -83,6 +83,9 @@ export const esLib = {
   'admin.actions.elDescuentoCaducaAntes': 'el descuento caduca antes de empezar',
   'admin.actions.noExisteElDescuento': 'no existe el descuento «{id}»',
   'admin.actions.laHomeNoTiene': 'la home no tiene portada',
+  'admin.actions.laHomeNoTieneFilosofia': 'la home no tiene bloque de Filosofía',
+  'admin.actions.cadaVerboNecesitaTexto': 'cada verbo necesita su palabra y su frase',
+  'admin.actions.laFilosofiaNecesitaTexto': 'la Filosofía necesita al menos un párrafo o un verbo',
   'admin.actions.laPortadaNecesitaTitular': 'la portada necesita titular y subtítulo',
   'admin.actions.elBotonAdmiteHasta': 'el botón «{v1}» admite hasta {HOME_CTA_MAX} caracteres',
   'admin.actions.laHomeNoTiene2': 'la home no tiene bloque de próximos eventos',
@@ -134,7 +137,7 @@ export const esLib = {
   'admin.actions.destinoDelMapa': 'destino del mapa',
   'admin.copy.adminDePrueba': 'Admin de prueba',
   'admin.copy.estoEsUnaDemo':
-    'Esto es una demo sin login. Cada cambio se guarda sólo en este navegador (nadie más lo ve) y se puede volver a los datos de muestra.',
+    'Modo local, sin cuentas: cada cambio se guarda sólo en este navegador (nadie más lo ve) y se puede volver a los datos de muestra. Con cuentas, el Admin pide entrar con un usuario de administración y los cambios son de todos.',
   'admin.copy.guardadoEnEsteNavegador': 'Guardado en este navegador.',
   'admin.copy.volverALaMuestra': 'Volver a la muestra',
   'admin.copy.volverTodoALa': 'Volver todo a la muestra',

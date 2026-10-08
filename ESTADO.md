@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T228: Admin and content leftovers
+
+Qué existe:
+- Aviso del Admin (`admin.copy.estoEsUnaDemo`, `es-lib.ts`): ya no dice «demo sin login»; explica modo local (sin cuentas, cambios sólo en este navegador) frente a cuentas.
+- Menú de administración a 1440 px: columna de 250 px (antes 220), sin scroll horizontal y con los nombres largos en dos líneas («Usuarios de administración» queda a 17 px del borde de la columna, medido en el navegador; no hay captura porque el panel del navegador no llegó a pintar).
+- Filosofía editable desde el Admin: `setPhilosophy` en `lib/admin/actions.ts` y formulario «Textos de la Filosofía» en el bloque de Filosofía de la página principal (`sections/home.tsx`). Va al borrador y se ve en la landing (dentro de Contacto) al publicar. Prueba: `hardening.test.ts` «la Filosofía se edita en el borrador…».
+- Tienda de barcos: `shopRows(…, hiddenStyles)` y `hiddenShipStyles()` (`lib/mundo/demo-world.ts`) quitan el barco de Acuarela mientras ese mundo esté oculto. Prueba en `shop-model.test.ts`.
+- `island.secretHint` (clave sin uso en ningún componente) eliminada del documento `textos-zonas.md` y del catálogo generado.
+- Semilla `supabase/seeds/20261003100100_economy.sql`: «BOIA Halloween» → «HALLOWEEN IN THE CLUB», «SONIDO» → «ALL DAY BOIA».
+- Generador i18n-zonas: los archivos generados estaban desfasados del documento (`nav.ranking`, `naufrago.revisit` y `achievements.castaway.description` estaban en el catálogo y no en el documento). Documento actualizado; ahora `pnpm --filter @boia/web i18n:zonas` no cambia nada.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 260 archivos, 2359 pasan, 1 omitida.
+- `tools/spec/*.py` y `tools/blender/check.py` (los pasos de `checks.sh` uno a uno) → exit 0.
+- `pnpm lint` → 0; `pnpm typecheck` → 0; `pnpm build` → 0 (landing 197,3 kB, presupuesto 200).
+- Generador + `git diff --exit-code` → 0.
+
+Pendiente: captura del menú a 1440 px y del aviso (revisar a ojo). La semilla se vuelve a sembrar donde esté la muestra (`boia-planet-dev`) si se quieren ver los nombres nuevos.
+e2e que Hernán debería correr: `admin.spec.ts` (aviso), los de la página principal del Admin (Filosofía) y `cuenta-progreso.spec.ts` (tienda de barcos).
+
 ## 2026-10-08 — plan 020 T227: Landing intro, artists rotation and store
 
 **What exists**

@@ -153,6 +153,28 @@ describe('borrador y «Publicar» (REQ-ADM-015, REQ-ADM-017)', () => {
     expect((await repo.content.texts())[HOME_CTA_KEYS.explore]).toBe('Zarpa ya');
   });
 
+  it('la Filosofía se edita en el borrador y se ve en la landing al publicar', async () => {
+    const { repo, actions } = setup();
+    const philosophyOf = (home: Awaited<ReturnType<typeof repo.content.home>>) => {
+      const contact = resolveHome(home, now()).main.find((b) => b.type === 'contact');
+      return contact && 'philosophy' in contact ? contact.philosophy : undefined;
+    };
+    await actions.setPhilosophy(
+      ['Un párrafo nuevo.', ' '],
+      [{ verb: 'Bailar', text: 'Sin parar.' }],
+    );
+    expect(philosophyOf(await repo.content.home())?.paragraphs).not.toContain('Un párrafo nuevo.');
+    await actions.publish();
+    expect(philosophyOf(await repo.content.home())).toMatchObject({
+      paragraphs: ['Un párrafo nuevo.'],
+      verbs: [{ verb: 'Bailar', text: 'Sin parar.' }],
+    });
+    await expect(actions.setPhilosophy([], [])).rejects.toBeInstanceOf(AdminError);
+    await expect(actions.setPhilosophy(['x'], [{ verb: 'Solo', text: '' }])).rejects.toBeInstanceOf(
+      AdminError,
+    );
+  });
+
   it('excluir un evento de «Próximos eventos» no lo borra', async () => {
     const { repo, actions } = setup();
     const before = upcomingIds(resolveHome(await repo.content.home(), now()));

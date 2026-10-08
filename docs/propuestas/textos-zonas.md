@@ -129,6 +129,7 @@ toca y nunca corporativa. Español de España y de tú. Los tres verbos mandan:
 | `hero.explore3d` | Navegar en 3D | = es.ts |
 | `hero.explore3d.sub` | El mismo mar, en 3D y con zoom libre | = es.ts |
 | `nav.carnet` | Mi Carnet | Cabecera (REQ-ENT-029) |
+| `nav.ranking` | Ranking | |
 | `nav.sound.on` | Sonido activado | |
 | `nav.sound.off` | Sonido apagado | |
 | `nav.photos` | Galería | Plan 019 T216, decisión 8 (antes «Fotos y eventos») |
@@ -329,6 +330,8 @@ Cumple REQ-AVE-003 (misión, descuentos, monedas y secretos) y REQ-AVE-004
 | `naufrago.reward.title` | Regalo del náufrago | |
 | `naufrago.reward.body` | Un {percent} de descuento en tu próxima entrada: {code}. | |
 | `naufrago.reward.again` | Ya te di mi regalo. Lo tienes en «Mis códigos». | Segunda visita |
+| `naufrago.revisit` | ¿Otra vez he acabado aquí? Cómo se puede ser tan manija... | Visita repetida |
+| `achievements.castaway.description` | Rescata al náufrago y recibe su descuento para una fiesta de BOIA. | |
 
 ## 11 · Islas y eventos
 
@@ -346,7 +349,6 @@ Cumple REQ-AVE-003 (misión, descuentos, monedas y secretos) y REQ-AVE-004
 | `island.buy` | Comprar entrada | |
 | `island.event.memory` | Este evento ya pasó. Aquí se queda su recuerdo: fotos, cartel y artistas. | Isla en recuerdo |
 | `island.event.soldOut` | Agotado. Pero esta isla tiene más fiestas: mira abajo. | |
-| `island.secretHint` | Por aquí cerca huele a secreto. | |
 | `island.allday.name` | ALL DAY BOIA | Nombre común, igual en todos los mundos (D-20; reunión del 2026-10-08) |
 | `island.ultima.name` | Isla de Nochevieja | Nombre común, igual en todos los mundos; destino de la Boia Fiestera (2026-10-02) |
 | `island.halloween.name` | HALLOWEEN IN THE CLUB | Nombre común, igual en todos los mundos (T67; reunión del 2026-10-08) |

@@ -161,6 +161,65 @@ function HeroTexts({
   );
 }
 
+/** Párrafos y verbos de la Filosofía, que se ven en la landing dentro de Contacto. */
+function PhilosophyTexts({
+  ctx,
+  block,
+}: {
+  ctx: AdminContext;
+  block: Extract<HomeBlock, { type: 'philosophy' }>;
+}) {
+  const [paragraphs, setParagraphs] = useState(block.paragraphs.join('\n\n'));
+  const [verbs, setVerbs] = useState(block.verbs);
+  const { status, busy, run } = useRun();
+  const setVerb = (i: number, patch: Partial<(typeof verbs)[number]>) =>
+    setVerbs(verbs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  return (
+    <details className="admin-details" data-testid="filosofia">
+      <summary>{t('admin.home.filosofiaTextos')}</summary>
+      <Field label={t('admin.home.filosofiaParrafos')}>
+        <textarea
+          rows={6}
+          value={paragraphs}
+          onChange={(e) => setParagraphs(e.target.value)}
+          data-testid="filosofia-parrafos"
+        />
+      </Field>
+      <p className="admin-meta">{t('admin.home.filosofiaVerbos')}</p>
+      {verbs.map((v, i) => (
+        <div className="admin-grid" key={i}>
+          <Field label={t('admin.home.filosofiaVerbo', { n: i + 1 })}>
+            <input
+              value={v.verb}
+              onChange={(e) => setVerb(i, { verb: e.target.value })}
+              data-testid={`filosofia-verbo-${i}`}
+            />
+          </Field>
+          <Field label={t('admin.home.filosofiaFrase', { n: i + 1 })}>
+            <input
+              value={v.text}
+              onChange={(e) => setVerb(i, { text: e.target.value })}
+              data-testid={`filosofia-frase-${i}`}
+            />
+          </Field>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="admin-button"
+        disabled={busy}
+        data-testid="filosofia-guardar"
+        onClick={() =>
+          void run(() => ctx.actions.setPhilosophy(paragraphs.split(/\n\s*\n/), verbs), SAVED_DRAFT)
+        }
+      >
+        {t('admin.home.filosofiaGuardar')}
+      </button>
+      <StatusLine status={status} />
+    </details>
+  );
+}
+
 /** Eventos que no salen en «Próximos eventos» (REQ-ADM-017): excluir no borra. */
 function Exclusions({
   ctx,
@@ -367,6 +426,7 @@ export function HomeSection({ ctx }: { ctx: AdminContext }) {
                 texts={texts}
               />
             ) : null}
+            {b.type === 'philosophy' ? <PhilosophyTexts key={b.id} ctx={ctx} block={b} /> : null}
             {b.type === 'upcoming_events' ? (
               <Exclusions ctx={ctx} block={b} events={listed} />
             ) : null}

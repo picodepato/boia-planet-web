@@ -51,12 +51,17 @@ export interface ShopRows {
 /**
  * Filas de la tienda: los barcos que tienen arte (en el orden del catálogo,
  * el del registro B01…B08), cada uno con su base y las skins que se venden y
- * tienen arte; y las estelas y mascotas. Un estilo del arte sin cosmético (el
+ * tienen arte (menos los de un mundo oculto, `hiddenStyles`); y las estelas y mascotas. Un estilo del arte sin cosmético (el
  * «muestra» de antes de T17) no se ofrece.
  */
-export function shopRows(catalog: ShipCatalog | null, items: readonly ShopItem[]): ShopRows {
+export function shopRows(
+  catalog: ShipCatalog | null,
+  items: readonly ShopItem[],
+  hiddenStyles: ReadonlySet<string> = new Set(),
+): ShopRows {
   const ships: ShopShipRow[] = [];
   for (const style of catalog?.styles ?? []) {
+    if (hiddenStyles.has(style.id)) continue;
     const item = items.find((i) => i.cosmetic.slot === 'ship' && styleOf(i) === style.id);
     if (!item) continue;
     const skins: ShopSkinRow[] = style.skins.flatMap((k): ShopSkinRow[] => {

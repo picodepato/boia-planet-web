@@ -3,6 +3,7 @@
 import { type Balances, type BoiaRepository, type ShopItem, isStoreError } from '@boia/store';
 import { type ReactNode, useState } from 'react';
 import { requireAccount } from '../account/gate';
+import { hiddenShipStyles } from '../mundo/demo-world';
 import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
 import { wakeSwatch } from './dressing';
@@ -431,7 +432,7 @@ export function BarcoShop({
       </p>
     );
   }
-  const rows = shopRows(catalog, data.items);
+  const rows = shopRows(catalog, data.items, hiddenShipStyles());
   const fail = (err: unknown) => console.warn('[boia] tienda del barco', err);
 
   const on: ShopHandlers = {

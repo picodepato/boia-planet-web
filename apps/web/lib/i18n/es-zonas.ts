@@ -1,7 +1,7 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
  * (T38, `muestra`): las del resto (el 2D, /mar, el Admin…). No se edita a mano: se cambia el documento y se
- * vuelve a generar. 519 claves.
+ * vuelve a generar. 521 claves.
  */
 export const esZonas = {
   'intro.enter': 'Zarpar',
@@ -35,6 +35,7 @@ export const esZonas = {
   'event.nochevieja-2026.when': 'Jueves, 31 de diciembre de 2026',
   'event.nochevieja-2026.summary':
     'Despedimos el año con BOIA: uvas, confeti y música hasta que salga el sol del primer día.',
+  'event.halloween-2026.poster': 'Cartel próximamente',
   'philosophy.short.title': 'BOIA en pocas palabras',
   'philosophy.short.body':
     'BOIA nace en Alicante para dar espacio a lo que merece ser descubierto. Música sin un único género, cultura sin un único formato y una comunidad en la que no vienes a mirar: formas parte. Ven por la música. Quédate por todo lo que ocurre alrededor.',
@@ -178,7 +179,6 @@ export const esZonas = {
   'island.firstVisit': 'Isla descubierta: {place}',
   'island.explore': 'Explorar la isla',
   'island.sailHere': 'Navegar aquí',
-  'island.secretHint': 'Por aquí cerca huele a secreto.',
   'island.allday.name': 'ALL DAY BOIA',
   'island.ultima.name': 'Isla de Nochevieja',
   'island.halloween.name': 'HALLOWEEN IN THE CLUB',
@@ -192,8 +192,7 @@ export const esZonas = {
     'All Day BOIA: de la paella al amanecer. ¿Llegas en barco? Pasa por el arco, que la fiesta está dentro.',
   'world.arcilla.island.fotos.body':
     'Todas las fotos de BOIA se revelan aquí. Pasa por el marco y sonríe.',
-  'world.arcilla.island.tienda.body':
-    'Sección de merchandising oficial.',
+  'world.arcilla.island.tienda.body': 'Sección de merchandising oficial.',
   'world.arcilla.island.ultima.body':
     'Aquí el año se despide bailando y la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla.',
   'world.acuarela.island.puerto.body':

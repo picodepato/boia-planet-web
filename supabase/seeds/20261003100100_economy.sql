@@ -9,10 +9,10 @@
 insert into public.events (
   id, slug, title, state, published_at, starts_at, ends_at, description, venue_public, is_sample
 ) values
-  ('a2000000-0000-4000-8000-000000000011', 'halloween-2026', 'BOIA Halloween', 'on_sale',
+  ('a2000000-0000-4000-8000-000000000011', 'halloween-2026', 'HALLOWEEN IN THE CLUB', 'on_sale',
    '2026-09-01T10:00:00Z', '2026-10-31T23:00:00+01:00', null,
    'Fiesta de muestra.', 'Alicante', true),
-  ('a2000000-0000-4000-8000-000000000012', 'sonido-2026', 'SONIDO', 'on_sale',
+  ('a2000000-0000-4000-8000-000000000012', 'sonido-2026', 'ALL DAY BOIA', 'on_sale',
    '2026-09-01T10:00:00Z', '2026-12-05T12:00:00+01:00', '2026-12-06T02:00:00+01:00',
    'Fiesta de muestra.', 'Alicante', true),
   ('a2000000-0000-4000-8000-000000000013', 'nochevieja-2026', 'BOIA Nochevieja', 'on_sale',

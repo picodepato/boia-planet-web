@@ -618,6 +618,35 @@ export function createAdminActions(deps: AdminDeps) {
     },
 
     /**
+     * Filosofía (párrafos y verbos): lo que se ve en la landing, en su sitio
+     * dentro de Contacto. Los párrafos y verbos vacíos se descartan.
+     */
+    async setPhilosophy(
+      paragraphs: readonly string[],
+      verbs: readonly { verb: string; text: string }[],
+    ) {
+      const block = (await repo.admin.draftList('homeBlocks')).find((b) => b.type === 'philosophy');
+      if (!block || block.type !== 'philosophy') {
+        throw new AdminError(msg('admin.actions.laHomeNoTieneFilosofia'));
+      }
+      const ps = paragraphs.map((p) => p.trim()).filter(Boolean);
+      const vs = verbs
+        .map((v) => ({ verb: v.verb.trim(), text: v.text.trim() }))
+        .filter((v) => v.verb || v.text);
+      if (vs.some((v) => !v.verb || !v.text)) {
+        throw new AdminError(msg('admin.actions.cadaVerboNecesitaTexto'));
+      }
+      if (ps.length === 0 && vs.length === 0) {
+        throw new AdminError(msg('admin.actions.laFilosofiaNecesitaTexto'));
+      }
+      await repo.admin.draftUpsert(
+        'homeBlocks',
+        { ...block, paragraphs: ps, verbs: vs },
+        opts('filosofía'),
+      );
+    },
+
+    /**
      * Textos de los botones de la portada (REQ-ADM-017): «Explorar» y
      * «Tickets». Vacío o igual al de la app: vuelve al de la app.
      */
@@ -848,7 +877,9 @@ export function createAdminActions(deps: AdminDeps) {
     async setCommonDiscountCode(code: string) {
       const value = code.trim().toUpperCase();
       if (value.length > COMMON_DISCOUNT_CODE_MAX) {
-        throw new AdminError(msg('admin.discounts.common.tooLong', { max: COMMON_DISCOUNT_CODE_MAX }));
+        throw new AdminError(
+          msg('admin.discounts.common.tooLong', { max: COMMON_DISCOUNT_CODE_MAX }),
+        );
       }
       return repo.admin.setSettings(
         { commonDiscountCode: value || undefined },

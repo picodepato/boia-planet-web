@@ -1,7 +1,7 @@
 /**
  * GENERADO por scripts/i18n-zonas.mjs desde docs/propuestas/textos-zonas.md
  * (T38, `muestra`): las claves que usa la web pública. No se edita a mano: se cambia el documento y se
- * vuelve a generar. 85 claves.
+ * vuelve a generar. 86 claves.
  */
 export const esZonasWeb = {
   'intro.label': 'Introducción animada',

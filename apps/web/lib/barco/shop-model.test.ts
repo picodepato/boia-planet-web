@@ -1,5 +1,6 @@
 import { SAMPLE_COSMETICS, createLocalRepository } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
+import { hiddenShipStyles } from '../mundo/demo-world';
 import { describe, expect, it } from 'vitest';
 import { loadShipCatalog, repoRoot } from './load';
 import { VORTEX_COLORS, dressingFor, dressingKey, hexOf, wakeSwatch } from './dressing';
@@ -33,6 +34,19 @@ describe('filas de la tienda', () => {
     expect(rows.ships.some((r) => r.style === catalog.defaultId)).toBe(false);
     expect(rows).not.toHaveProperty('flags');
     expect(rows.wakes.every((i) => i.cosmetic.slot === 'wake')).toBe(true);
+  });
+
+  it('no ofrece el barco de un mundo oculto (Acuarela)', async () => {
+    const hidden = hiddenShipStyles(WORLD_REGISTRY);
+    expect(hidden.size).toBeGreaterThan(0);
+    for (const id of WORLD_REGISTRY.hiddenIds)
+      expect(hidden).toContain(WORLD_REGISTRY.skin(id).ship.style);
+    const items = await fresh().progress.shop();
+    const all = shopRows(catalog, items);
+    const rows = shopRows(catalog, items, hidden);
+    expect(all.ships.some((r) => hidden.has(r.style))).toBe(true);
+    expect(rows.ships.some((r) => hidden.has(r.style))).toBe(false);
+    expect(rows.ships.length).toBe(all.ships.length - hidden.size);
   });
 
   it('dice el precio con «te faltan N monedas», el umbral con «te faltan N puntos» y el logro', async () => {
