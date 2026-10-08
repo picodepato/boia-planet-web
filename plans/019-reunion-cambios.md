@@ -80,7 +80,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: /galeria collage of photos + muted clips (reusable `MediaCollage`), open/close animations, /fotos → 307, Admin clip upload (mp4 ≤20 MB/30 s, bucket event-clips), 3 sample clips; migration 20261008100400 to apply · 1eba877
 
 ## T215 — Event page, purchase with required carnet, discounts and Admin event fields
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T214, T216
 - Model: opus
 - Goal: Event page with clear missing-state texts, blurred poster background, photo collage, «Solo en puerta»/carnet notices, Halloween door-only info, «Consigue un descuento» button, ticketing provider; buying requires a carnet and the carnet discount goes; Admin edits every field and the common discount code (decisions 1, 5, 6, 7).
@@ -92,10 +92,10 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - Halloween shows «Solo en puerta · 5 € con carnet» and no checkout → e2e
   - Admin common code set → every discount shows that code; empty → own codes → unit test
   - Test command → exit 0
-- Outcome:
+- Outcome: event page with missing-state texts, blurred poster bg, MediaCollage photos, «Consigue un descuento», ticketing provider; buying requires a carnet, carnet discount removed; Halloween door-only 5 €; Admin common ticket code; migration 20261008100100 to apply · 5f134d3
 
 ## T217 — Artists with image, carnet and music links set by the artists
-- Status: pending
+- Status: done
 - Depends on: T214
 - Model: opus
 - Goal: Artists list with image beside each artist, name opens the carnet, «Ver carnet» and a music link button (Spotify, SoundCloud, Bandcamp or Instagram); artists enter their links when creating their carnet (decision 10).
@@ -105,10 +105,10 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - list shows image, name→carnet, «Ver carnet» and a music button with the right platform icon/label → e2e + screenshots
   - an artist enters a SoundCloud link while creating the carnet and the list shows it → e2e (local mode)
   - Test command → exit 0
-- Outcome:
+- Outcome: /artistas with image, name→carnet, «Ver carnet», music button (Spotify/SoundCloud/Bandcamp/Instagram from the domain); artists set the link when creating their carnet; migration 20261008100200 to apply · df0c55b
 
 ## T218 — Carnet: email first with Supabase, sign-up QR, door scanner and manual stamps
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T215
 - Model: opus
 - Goal: With Supabase the carnet creation starts with email → code; a sign-up QR that opens «Crear carnet»; each carnet's QR is scanned by a staff door scanner that records attendance and stamps the party; Admin stamps any carnet by hand (decision 11).
@@ -136,7 +136,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: light-orange /mar loading and Zarpar cover, popups without band, islands ALL DAY BOIA / HALLOWEEN IN THE CLUB / Botiga Ibiza / Puig Campana (name), party popups name + date · place, Botiga «Sección de merchandising oficial», FIESTERA20 text for ALL DAY + Nochevieja (done by Opus, Codex unavailable) · 8f162fc
 
 ## T220 — The boia redesigned after the BOIA mascot
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T219
 - Model: opus
 - Skills: blender-modeling-workflow, blender-asset-validation
@@ -184,6 +184,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Goal: Limit full access to 3 people; a 30-day trash that covers every change or deletion made from Admin and can restore it; an Admin switch for visit analytics; a GitHub Actions workflow for daily `pg_dump` backups kept 30 days, with a guide for Hernán (decision 17).
 - Context: `staff_roles` (`20260928100000_base.sql:57`), `20261007100400_admin_access_export.sql`, `TrashSection` `app/admin/sections/misc.tsx:160`, `lib/analytics/index.ts` (PostHog, `NEXT_PUBLIC_POSTHOG_KEY`), `.github/workflows/supabase-keepalive.yml` exists on disk but is untracked: do not commit it; meeting notes §9, §11.3.
 - Scope: may touch Admin roles/trash/settings, analytics init (consent rules unchanged), migration `20261008100600`, a new `.github/workflows/supabase-backup.yml` and a guide `docs/propuestas/2026-10-08-backups.md` (secret name, how to download and restore) / must not commit the keepalive workflow, create secrets or touch the real project.
+- Also (T215 leftovers, added by the orchestrator): Supabase mode must read the common discount code from `ticketing_settings` (today only local mode uses it); remove the dead `/mar` after-purchase carnet invite (`inviteTrigger('purchase')`); world island popups must not show `placeLabel` when the event's location is not announced.
 - Done when:
   - a 4th full-access admin is refused by the database → `test:supabase` test written; Admin explains the limit
   - local mode: edit and delete an event, restore both from the trash → e2e
@@ -214,6 +215,9 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T219: Codex cannot run ("gpt-6.1-sol not supported with a ChatGPT account"); Opus did the task; later Codex tasks go to Opus (orchestrator)
 - 2026-10-08 T219: party-island popups have no kicker (name, date · place, state tag); Castillo tower labels renamed too; FIESTERA20 only text changes (agent)
 - 2026-10-08 T219: integration failed lint (merchandise.spec unused MERCHANDISE_NOTICE after T214) → reverted; agent fixing; scope extended to make landing `.intro-cover` light orange (orchestrator)
+- 2026-10-08 T215: common code replaces only ticket discounts (store keeps its own); door-only = `boxOfficeOnly {doorPriceCents?}`; ALL DAY BOIA sold online again; Supabase: `ticketing_settings` table + `admin_set_common_discount_code`, `discount_code_for` returns it only to finders; purchase-invite.tsx removed; 11 e2e specs seed a carnet (agent)
+- 2026-10-08 T217: one music link `{platform,url}` with platform from the domain, `spotifyUrl` kept as fallback; /artistas joins content artists with artist carnets; Supabase link saved by RPC `set_artist_music`; REQ-COM-027 HECHO (agent)
+- 2026-10-08 T223: scope extended with T215 leftovers (Supabase common code, dead invite, placeLabel when not announced) (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
@@ -221,6 +225,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T216: home «Ver todas» (PHOTOS_PAGE in blocks.tsx) still points to /fotos (redirect works; T214 may fix)
 - 2026-10-08 T214: decision 4 should go into DECISIONES.md so REQ-ENT-002/027 can be retired (Hernán); Roke's file goes in HERO_MEDIA_SRC (apps/web/lib/landing/hero-media.ts)
 - 2026-10-08 T219: supabase/seeds/20261003100100_economy.sql keeps old event names; sea island labels `.mar-pin--accent` still orange
+- 2026-10-08 T217: with Supabase, Admin cannot edit an artist carnet's music link (only content artists')
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -237,3 +242,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T215 launched · attempt 1 · agent a0d0efb4f016f8bd3
 - 2026-10-08 T219 done · merged 8f162fc
 - 2026-10-08 T215 agent stopped: session rate limit (429) · resumed by SendMessage
+- 2026-10-08 T217 launched · attempt 1 · agent a58ed747487773150
+- 2026-10-08 T215 done · merged 5f134d3
+- 2026-10-08 T217 done · merged df0c55b
