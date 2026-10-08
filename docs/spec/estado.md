@@ -279,7 +279,7 @@ llevan su nota en la tabla; guía de prueba:
 | REQ-COM-024 | Exclusivos y códigos especiales | L2 | L2 | — | — |
 | REQ-COM-025 | Check-in y asistencia | L2 | L2 | — | — |
 | REQ-COM-026 | Rotación equilibrada de 3 artistas cada 5 s | L1 | HECHO | [rotation.test.ts](../../apps/web/lib/landing/rotation.test.ts) «con %i artistas la rotación es equilibrada» | — |
-| REQ-COM-027 | Tarjeta de artista y A–Z | L1 | PARCIAL | [page.tsx](../../apps/web/app/%28landing%29/artistas/page.tsx) | Construido; sin prueba que lo nombre |
+| REQ-COM-027 | Tarjeta de artista y A–Z | L1 | HECHO | [artists-list.test.ts](../../apps/web/app/%28landing%29/components/artists-list.test.ts) «va de la A a la Z» y «cada uno tiene su imagen al lado, el nombre y «Ver carnet» que abren su Carnet»; [artistas.spec.ts](../../apps/web/e2e/artistas.spec.ts) (plan 019 T217) | — |
 | REQ-COM-028 | 26 artistas textuales | L1 | HECHO | [artists-list.test.ts](../../apps/web/app/%28landing%29/components/artists-list.test.ts) «los datos son los de v14 §18.1, textuales» | — |
 | REQ-COM-029 | Validación de artistas | L1 | FALTA | — | pide revisión, medición o documento |
 | REQ-COM-030 | Página Filosofía | L1 | PARCIAL | [blocks.test.ts](../../apps/web/app/%28landing%29/components/blocks.test.ts) «Contacto lleva la Filosofía dentro y sus datos (T65)» | Desde T65 la Filosofía se ve dentro del bloque Contacto (decisión del 2026-10-02); textos `muestra` [pendiente Álvaro] |

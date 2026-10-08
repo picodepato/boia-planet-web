@@ -1111,7 +1111,7 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
 .artist-card {
   display: grid;
   grid-template-columns: 64px 1fr;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   column-gap: 14px;
   align-items: center;
   height: 100%;
@@ -1123,7 +1123,8 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
 
 .artist-card__avatar,
 .artist-card__photo {
-  grid-row: span 2;
+  grid-row: 1 / span 3;
+  align-self: start;
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -1152,18 +1153,51 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   align-self: start;
 }
 
-.artist-card__spotify {
+/* The name opens the artist's Carnet (plan 019 T217, decision 10). */
+.artist-card__name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.artist-card__name a:hover,
+.artist-card__name a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* «Ver carnet» and the music link: two small arcade buttons (T213). */
+.artist-card__actions {
   grid-column: 2;
-  justify-self: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+
+.artist-card__button {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  color: var(--on-dark-70);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 2px solid currentColor;
+  border-radius: var(--radius);
+  box-shadow: 3px 3px 0 var(--orange);
+  color: var(--ink);
+  font-family: var(--font-button);
+  font-size: 9px;
+  line-height: 1.4;
+  text-decoration: none;
   text-transform: uppercase;
-  text-underline-offset: 3px;
+}
+
+.artist-card__button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--orange);
+}
+
+.artist-card__music .music-icon {
+  flex: none;
 }
 
 .artist-rotator__toggle {
@@ -1187,6 +1221,11 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   color: var(--ink);
   font-weight: 600;
   text-underline-offset: 4px;
+}
+
+.artists-page .artist-card__avatar,
+.artists-page .artist-card__photo {
+  border-radius: var(--radius);
 }
 
 .artists-page__list {
@@ -2104,19 +2143,38 @@ main[data-contenido] .artist-card__genres {
   text-transform: uppercase;
 }
 
-main[data-contenido] .artist-card__spotify {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
+/* Phones: «Ver carnet» and the music under the name; wide: on the right. */
+main[data-contenido] .artist-card__actions {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  align-content: flex-start;
+  /* Two rows of buttons always: the rotation does not move what follows. */
+  min-height: 82px;
+  margin: 8px 0 0;
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .artist-card__actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-content: flex-end;
+    min-height: 0;
+    margin: 0;
+  }
+
+  main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__actions {
+    grid-column: 3;
+  }
+}
+
+main[data-contenido] .artist-card__button {
   color: var(--paper-ink);
+  box-shadow: 3px 3px 0 var(--paper-ink);
 }
 
 main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__genres {
   grid-column: 2;
-}
-
-main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__spotify {
-  grid-column: 3;
 }
 
 main[data-contenido] .listen-link {

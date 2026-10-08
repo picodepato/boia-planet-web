@@ -361,6 +361,9 @@ export function applyServerState(
       answers,
       version: Math.max(1, c.version ?? prev?.version ?? 1),
       updatedAt: c.updated_at ?? c.member_since,
+      // El enlace a su música (plan 019 T217) no se lee del servidor: la
+      // copia guarda el último que se puso aquí.
+      ...(prev?.musicLink ? { musicLink: prev.musicLink } : {}),
     };
   } else {
     delete doc.carnets[userId];

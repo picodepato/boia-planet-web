@@ -1,5 +1,6 @@
-import type { Artist } from '@boia/contracts/content';
+import type { ArtistEntry } from '../../../lib/artists/entries';
 import { t } from '../../../lib/landing/texts';
+import { MusicIcon } from './music-icon';
 
 /** Iniciales para el avatar neutro mientras no haya foto aprobada (REQ-COM-027). */
 export function initials(name: string): string {
@@ -12,11 +13,18 @@ export function initials(name: string): string {
   return letters.join('').toUpperCase();
 }
 
-export function ArtistCard({ artist, genresLabel }: { artist: Artist; genresLabel: string }) {
+/**
+ * Un artista (plan 019 T217, decisión 10): su imagen al lado, el nombre que
+ * abre su Carnet y dos botones, «Ver carnet» y su música (Spotify,
+ * SoundCloud, Bandcamp o Instagram). La música es un enlace sin más (plan
+ * 007 T79): nada se carga de la plataforma.
+ */
+export function ArtistCard({ artist, genresLabel }: { artist: ArtistEntry; genresLabel: string }) {
+  const music = artist.music;
   return (
     <article className="artist-card">
       {artist.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- fotos del Admin, dominio aún sin fijar
+        // eslint-disable-next-line @next/next/no-img-element -- fotos del Admin o del Carnet
         <img
           className="artist-card__photo"
           src={artist.photoUrl}
@@ -26,27 +34,52 @@ export function ArtistCard({ artist, genresLabel }: { artist: Artist; genresLabe
           loading="lazy"
         />
       ) : (
-        <span className="artist-card__avatar" aria-hidden="true">
-          {initials(artist.name)}
+        <span
+          className="artist-card__avatar"
+          aria-hidden="true"
+          style={artist.avatar ? { background: artist.avatar.bg } : undefined}
+        >
+          {artist.avatar?.glyph ?? initials(artist.name)}
         </span>
       )}
-      <h3 className="artist-card__name">{artist.name}</h3>
-      <p className="artist-card__genres">
-        <span className="visually-hidden">{genresLabel}: </span>
-        {artist.genres.join(', ')}
-      </p>
-      {/* A plain link (plan 007 T79): no player, nothing loaded from Spotify. */}
-      {artist.spotifyUrl ? (
-        <a
-          className="artist-card__spotify"
-          href={artist.spotifyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t('artist.spotify.aria', { name: artist.name })}
-        >
-          {t('artist.spotify')}
+      <h3 className="artist-card__name">
+        <a href={artist.carnetHref} data-testid="artista-nombre">
+          {artist.name}
         </a>
+      </h3>
+      {artist.genres.length > 0 ? (
+        <p className="artist-card__genres">
+          <span className="visually-hidden">{genresLabel}: </span>
+          {artist.genres.join(', ')}
+        </p>
       ) : null}
+      <p className="artist-card__actions">
+        <a
+          className="artist-card__button artist-card__carnet"
+          href={artist.carnetHref}
+          aria-label={t('artist.carnet.aria', { name: artist.name })}
+          data-testid="artista-carnet"
+        >
+          {t('artist.carnet')}
+        </a>
+        {music ? (
+          <a
+            className={`artist-card__button artist-card__music artist-card__music--${music.platform}`}
+            href={music.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-platform={music.platform}
+            data-testid="artista-musica"
+            aria-label={t('artist.music.aria', {
+              name: artist.name,
+              platform: t(`artist.music.${music.platform}`),
+            })}
+          >
+            <MusicIcon platform={music.platform} />
+            {t(`artist.music.${music.platform}`)}
+          </a>
+        ) : null}
+      </p>
     </article>
   );
 }

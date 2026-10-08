@@ -2,6 +2,7 @@ export * from './events';
 export * from './event-labels';
 export * from './home-blocks';
 export * from './content';
+export * from './music';
 export * from './analytics';
 export * from './carnet';
 export * from './progress';

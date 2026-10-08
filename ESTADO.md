@@ -4,6 +4,31 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T217: Artists with image, carnet and music links set by the artists
+
+Qué existe (decisión 10):
+
+- **/artistas**: cada artista con su imagen al lado (foto o avatar, cuadrado), el nombre abre su Carnet (`/carnet/artista-<id>`), y dos botones: «Ver carnet» y su música con el icono y el nombre de la plataforma (Spotify, SoundCloud, Bandcamp, Instagram; iconos SVG propios, nada se carga de fuera). La banda de la landing usa la misma tarjeta (nombre → Carnet, los dos botones; en el móvil, debajo del nombre con alto reservado para no mover la página al rotar).
+- **Enlace de música**: `packages/contracts/src/music.ts` (`MUSIC_PLATFORMS`, `musicPlatformOf`, `musicLinkFrom`, `musicLinkSchema`). La ficha del artista gana `music: {platform, url}`; `spotifyUrl` queda como respaldo (`artistMusic`). La muestra (`muestra`) reparte enlaces de caja de arena de las cuatro plataformas.
+- **Alta del Carnet de artista**: tras abrir `/artista/<código>`, el formulario pide «Tu música» (un enlace; la plataforma sale del dominio y se dice; uno que no es de las cuatro no deja crear). Se guarda en el Carnet (`musicLink`); un Carnet de artista lo puede cambiar al editarlo. No toca el alta de socio.
+- La lista junta los artistas del contenido y los Carnets de artista (modo local: el propio; con cuentas: los `is_artist` que la RLS deja leer, sin música si la base no tiene la migración).
+- **Admin · Artistas**: «Su música (URL)» + «Plataforma» (la detecta del dominio; elegible para enlaces de example.com) en lugar del campo Spotify.
+- **Supabase**: migración `20261008100200_artist_music.sql` (columnas `carnets.music_platform`/`music_url`, `private.music_url_ok`, RPC `set_artist_music`, sólo Carnet de artista; nadie escribe las columnas a mano). El repositorio del miembro manda la op `music` a la RPC. Tipos y `RPC_REJECTIONS` (`artist_required`, `invalid_music`) al día. Pruebas `packages/db/src/supabase/artist-music.supabase.ts`.
+- REQ-COM-027 sube a HECHO.
+
+Comandos:
+
+- `vitest run --exclude '**/packages/db/**'` → 244 archivos, 2268 pasan, 1 saltada.
+- checks de Python (check, estado, test_check, test_estado, blender) → exit 0 cada uno.
+- `pnpm lint` → 0; `pnpm typecheck` → 0; `pnpm build` → 0, ruta crítica de la landing 195.6 kB ≤ 200.
+- `E2E_PORT=3947 pnpm e2e artistas.spec.ts carnet-artista.spec.ts landing-scroll.spec.ts demo.spec.ts admin.spec.ts --workers=1` → todo pasa (artistas+landing-scroll 28/28 tras el último cambio de CSS; carnet-artista 10/10, demo+admin+landing-scroll 32/32 antes).
+- Capturas: `/tmp/orchestrator-attach/boia-planet-hernan-T217/t217-{mobile,desktop}-{lista,alta,mio,landing}.png`.
+
+Pendiente:
+
+- Hernán aplica `20261008100200_artist_music.sql` en boia-planet-dev y corre `pnpm test:supabase` (artist-music). Hasta entonces, con cuentas, un artista que pone su música al crear el Carnet ve un error al guardarla (la RPC no existe); el Carnet se crea igual.
+- Con cuentas, el Admin no edita el enlace de música de un Carnet de artista (sólo la ficha del contenido); la moderación oculta el Carnet entero si hace falta.
+
 ## 2026-10-08 — plan 019 T215: Event page, purchase with required carnet, discounts and Admin event fields
 
 Qué existe (decisiones 1, 5, 6 y 7 de la reunión del 2026-10-08):

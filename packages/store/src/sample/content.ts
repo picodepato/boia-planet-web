@@ -251,26 +251,35 @@ export function sampleEvents(real: RealContent = REAL_CONTENT): AreaInput<'event
 
 export const SAMPLE_EVENTS: AreaInput<'events'>[] = sampleEvents();
 
+/** The other platforms of the sample's music links (plan 019 T217), in turn. */
+const SAMPLE_MUSIC_PLATFORMS = ['soundcloud', 'bandcamp', 'instagram'] as const;
+
 /**
  * The artists with their photo (P17) and Spotify (P15) where there are. Until
  * Álvaro sends them, every other artist has a sandbox Spotify link (plan 007
- * T79), marked «muestra» on the page.
+ * T79), and the rest a sandbox SoundCloud, Bandcamp or Instagram link (plan
+ * 019 T217, decisión 10), all marked «muestra» on the page. An artist whose
+ * real Spotify is known to be missing (null) gets no link.
  */
 export function sampleArtists(real: RealContent = REAL_CONTENT): AreaInput<'artists'>[] {
   return ARTISTS_V14.map(([name, genres], i) => {
     const id = slugify(name);
-    const spotify =
-      id in real.links.artistSpotify
-        ? real.links.artistSpotify[id]
-        : i % 2 === 0
-          ? `${SANDBOX}/spotify/artist/${id}`
-          : null;
+    const known = id in real.links.artistSpotify;
+    const spotify = known
+      ? real.links.artistSpotify[id]
+      : i % 2 === 0
+        ? `${SANDBOX}/spotify/artist/${id}`
+        : null;
+    const platform = SAMPLE_MUSIC_PLATFORMS[((i - 1) / 2) % SAMPLE_MUSIC_PLATFORMS.length];
+    const music =
+      !known && !spotify && platform ? { platform, url: `${SANDBOX}/${platform}/${id}` } : null;
     return {
       id,
       name,
       genres,
       ...(real.artistPhotos.includes(id) ? { photoUrl: artistPhotoPath(id) } : {}),
       ...(spotify ? { spotifyUrl: spotify } : {}),
+      ...(music ? { music } : {}),
     };
   });
 }

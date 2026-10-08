@@ -179,6 +179,7 @@ export type MemberRpc =
   | 'find_discount'
   | 'use_discount'
   | 'save_profile'
+  | 'set_artist_music'
   | 'save_snapshot';
 
 export interface MemberServer {

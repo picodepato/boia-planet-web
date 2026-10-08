@@ -12,6 +12,7 @@ import {
   discountSchema,
   eventSchema,
   homeBlockSchema,
+  musicLinkSchema,
   photoSchema,
   objectTemplateSchema,
   promotionSchema,
@@ -94,6 +95,12 @@ export const carnetSchema = z.object({
    * (D-20, demo): con cuentas lo decide el servidor (`carnets.is_artist`).
    */
   isArtist: z.boolean().optional(),
+  /**
+   * El enlace a su música que pone un artista al crear su Carnet (plan 019
+   * T217, decisión 10). Con cuentas, el servidor lo guarda sólo si el Carnet
+   * es de artista (`set_artist_music`).
+   */
+  musicLink: musicLinkSchema.optional(),
 });
 export type CarnetRecord = z.infer<typeof carnetSchema>;
 

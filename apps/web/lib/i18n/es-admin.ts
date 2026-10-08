@@ -88,9 +88,11 @@ export const esAdmin = {
   'admin.artists.fotoUrlOpcional': 'Foto (ruta o URL, opcional)',
   'admin.artists.sinFotoAprobadaAvatar':
     'La de Álvaro: /contenido/artistas/{id}.webp (docs/contenido-real.md). Vacío: avatar neutro.',
-  'admin.artists.spotify': 'Spotify (URL, opcional)',
-  'admin.artists.spotifyHint':
-    'Enlace normal que se abre en otra pestaña. Uno de example.com sale marcado «muestra». Vacío: sin enlace.',
+  'admin.artists.music': 'Su música (URL, opcional)',
+  'admin.artists.musicHint':
+    'Un enlace: Spotify, SoundCloud, Bandcamp o, si no, Instagram. Se abre en otra pestaña. Uno de example.com sale marcado «muestra». Vacío: sin botón.',
+  'admin.artists.musicPlatform': 'Plataforma',
+  'admin.artists.musicInvalid': 'La música tiene que ser un enlace https.',
   'admin.artists.guardar': 'Guardar',
   'admin.artists.artistas': 'Artistas',
   'admin.artists.artistasLaHomeLos': '{length} artistas. La home los rota de tres en tres.',

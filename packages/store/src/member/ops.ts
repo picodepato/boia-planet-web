@@ -25,7 +25,9 @@ export type MemberOpInput =
   | { kind: 'find_discount'; discount: string }
   | { kind: 'use_discount'; discount: string; event: string | null }
   | { kind: 'profile'; nickname: string; avatarKey: string | null; avatarImage: string | null }
-  | { kind: 'answer'; questionId: string; questionVersion: number; answer: string | null };
+  | { kind: 'answer'; questionId: string; questionVersion: number; answer: string | null }
+  /** El enlace a la música de un Carnet de artista (plan 019 T217); null lo quita. */
+  | { kind: 'music'; platform: string | null; url: string | null };
 
 export type MemberOp = MemberOpInput & {
   id: string;
@@ -101,6 +103,9 @@ export async function sendOp(server: MemberServer, op: MemberOp): Promise<void> 
         p_avatar_key: op.avatarKey,
         p_avatar_image: op.avatarImage,
       });
+      return;
+    case 'music':
+      await server.rpc('set_artist_music', { p_platform: op.platform, p_url: op.url });
       return;
     case 'answer':
       await server.saveAnswer(op.questionId, op.questionVersion, op.answer);

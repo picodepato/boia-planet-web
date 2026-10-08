@@ -6,6 +6,7 @@ import {
   NICKNAME_MAX,
   NICKNAME_MIN,
   charLength,
+  musicLinkFrom,
 } from '@boia/contracts';
 import { type BoiaRepository, type CarnetView, isStoreError } from '@boia/store';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
@@ -13,6 +14,7 @@ import { requireAccount } from '../../account/gate';
 import { clearArtistCode, pendingArtistCode } from '../../account/artist-link';
 import { accountSnapshot } from '../../account/session';
 import { emitCarnetReward, emitSignal } from '../achievements';
+import { ArtistMusicField } from './artist-music-field';
 import { Avatar, DEFAULT_AVATAR, NEUTRAL_AVATARS, shrinkPhoto } from './avatar';
 import { t } from '../../i18n';
 
@@ -40,9 +42,12 @@ export function CarnetForm({
   onSubmit,
   onCancel,
   onPhoto,
+  artist = false,
 }: {
   questions: readonly CarnetQuestion[];
   initial: CarnetDraft;
+  /** Un Carnet que ya es de artista: lleva el enlace a su música (plan 019 T217). */
+  artist?: boolean;
   busy?: boolean;
   error?: string | null;
   onSubmit: (draft: CarnetDraft) => void;
@@ -58,9 +63,18 @@ export function CarnetForm({
   const [artistLink, setArtistLink] = useState(false);
   useEffect(() => setArtistLink(pendingArtistCode() !== null), []);
 
+  // El enlace a su música (plan 019 T217, decisión 10): al crear el Carnet
+  // de artista o al editar uno que ya lo es.
+  const withMusic = (creating && artistLink) || artist;
+  const [musicError, setMusicError] = useState(false);
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    onSubmit(draft);
+    if (withMusic && musicLinkFrom(draft.musicUrl ?? '') === 'invalid') {
+      setMusicError(true);
+      return;
+    }
+    onSubmit(withMusic ? draft : { ...draft, musicUrl: undefined });
   };
 
   return (
@@ -157,6 +171,17 @@ export function CarnetForm({
         ) : null}
       </fieldset>
 
+      {withMusic ? (
+        <ArtistMusicField
+          value={draft.musicUrl ?? ''}
+          invalid={musicError}
+          onChange={(musicUrl) => {
+            setMusicError(false);
+            set({ musicUrl });
+          }}
+        />
+      ) : null}
+
       <fieldset className="juego-field">
         <legend>{t('carnet.questions.heading')}</legend>
         <p className="juego-muted">{t('juego.carnetEditor.contestaLasQueQuieras')}</p>
@@ -199,6 +224,11 @@ export interface CarnetDraft {
   avatarKey: string | null;
   avatarImage: string | null;
   answers: Record<string, string>;
+  /**
+   * El enlace a su música, tal como se escribe (plan 019 T217). undefined: el
+   * formulario no lo enseña y no se toca.
+   */
+  musicUrl?: string | undefined;
 }
 
 export function draftFrom(carnet: CarnetView | null): CarnetDraft {
@@ -217,6 +247,7 @@ export function draftFrom(carnet: CarnetView | null): CarnetDraft {
     avatarKey: carnet.avatarKey,
     avatarImage: carnet.avatarImage,
     answers: Object.fromEntries(carnet.answers.map((a) => [a.questionId, a.answer])),
+    ...(carnet.musicLink ? { musicUrl: carnet.musicLink.url } : {}),
   };
 }
 
@@ -228,6 +259,7 @@ export function continueCarnetDraft(current: CarnetView, draft: CarnetDraft): Ca
   return {
     ...base,
     answers: { ...base.answers, ...draft.answers },
+    ...(draft.musicUrl !== undefined ? { musicUrl: draft.musicUrl } : {}),
     ...(draft.avatarImage || draft.avatarKey !== DEFAULT_AVATAR.key
       ? { avatarKey: draft.avatarKey, avatarImage: draft.avatarImage }
       : {}),
@@ -264,6 +296,13 @@ export async function saveCarnet(
       code: 'invalid',
     });
   }
+  // El enlace a su música (plan 019 T217): sólo si el formulario lo enseñó.
+  const music = draft.musicUrl === undefined ? undefined : musicLinkFrom(draft.musicUrl);
+  if (music === 'invalid') {
+    throw Object.assign(new Error(t('carnet.music.invalid')), { code: 'invalid' });
+  }
+  const musicChanged =
+    music !== undefined && (music?.url ?? null) !== (before?.musicLink?.url ?? null);
   let view: CarnetView;
   if (!before) {
     check();
@@ -273,18 +312,21 @@ export async function saveCarnet(
       avatarImage: draft.avatarImage,
       // El enlace de artistas (T186): en modo local marca este Carnet (demo).
       artistCode: pendingArtistCode(),
+      ...(music ? { musicLink: music } : {}),
     });
     clearArtistCode();
   } else if (
     nickname !== before.nickname ||
     draft.avatarKey !== before.avatarKey ||
-    draft.avatarImage !== before.avatarImage
+    draft.avatarImage !== before.avatarImage ||
+    musicChanged
   ) {
     check();
     view = await repo.carnet.update({
       nickname,
       avatarKey: draft.avatarKey,
       avatarImage: draft.avatarImage,
+      ...(musicChanged ? { musicLink: music ?? null } : {}),
     });
   } else {
     view = before;
@@ -363,6 +405,7 @@ export function CarnetEditor({
     <CarnetForm
       questions={questions}
       initial={draftFrom(before)}
+      artist={!!before?.isArtist || !!(before && accountSnapshot().profile?.isArtist)}
       busy={busy}
       error={error}
       onCancel={

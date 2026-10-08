@@ -82,8 +82,14 @@ const base = {
   // Plan 007 T79: plain links to Spotify, nothing loaded from it. muestra.
   'artists.spotify': 'Escúchalo en Spotify',
   'artists.spotify.aria': 'Escucha la lista de BOIA en Spotify (se abre en otra pestaña)',
-  'artist.spotify': 'Spotify',
-  'artist.spotify.aria': '{name} en Spotify (se abre en otra pestaña)',
+  // Cada artista (plan 019 T217, decisión 10): su Carnet y su música.
+  'artist.carnet': 'Ver carnet',
+  'artist.carnet.aria': 'Ver el carnet de {name}',
+  'artist.music.aria': '{name} en {platform} (se abre en otra pestaña)',
+  'artist.music.spotify': 'Spotify',
+  'artist.music.soundcloud': 'SoundCloud',
+  'artist.music.bandcamp': 'Bandcamp',
+  'artist.music.instagram': 'Instagram',
 
   'philosophy.heading': 'Filosofía',
 

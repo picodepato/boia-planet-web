@@ -28,6 +28,13 @@ export const esCarnet = {
   'carnet.artistLink.bad': 'Este enlace de artista no es válido.',
   'carnet.artistLink.notice':
     'Has entrado con el enlace de artistas: si está vigente, tu Carnet será de artista.',
+  // El enlace a su música al crear el Carnet de artista (plan 019 T217, decisión 10)
+  'carnet.music.label': 'Tu música',
+  'carnet.music.placeholder': 'https://soundcloud.com/…',
+  'carnet.music.hint':
+    'Un enlace: Spotify, SoundCloud, Bandcamp o, si no, Instagram. Sale como botón en la lista de artistas.',
+  'carnet.music.detected': 'Enlace de {platform}.',
+  'carnet.music.invalid': 'Pega un enlace de Spotify, SoundCloud, Bandcamp o Instagram.',
   'carnet.card.economyNotice':
     'Los rangos y los puntos son de muestra: BOIA los ajustará antes de abrir.', // T91
 

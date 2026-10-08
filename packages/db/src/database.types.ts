@@ -461,6 +461,8 @@ export type Database = {
           is_artist: boolean;
           member_number: number;
           member_since: string;
+          music_platform: string | null;
+          music_url: string | null;
           nickname: string;
           nickname_moderated: boolean;
           updated_at: string;
@@ -476,6 +478,8 @@ export type Database = {
           is_artist?: boolean;
           member_number?: number;
           member_since?: string;
+          music_platform?: string | null;
+          music_url?: string | null;
           nickname: string;
           nickname_moderated?: boolean;
           updated_at?: string;
@@ -491,6 +495,8 @@ export type Database = {
           is_artist?: boolean;
           member_number?: number;
           member_since?: string;
+          music_platform?: string | null;
+          music_url?: string | null;
           nickname?: string;
           nickname_moderated?: boolean;
           updated_at?: string;
@@ -2260,6 +2266,13 @@ export type Database = {
         Args: {
           p_data: Json;
           p_base_version?: number;
+        };
+        Returns: Json;
+      };
+      set_artist_music: {
+        Args: {
+          p_platform?: string;
+          p_url?: string;
         };
         Returns: Json;
       };

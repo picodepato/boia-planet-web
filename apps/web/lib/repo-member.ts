@@ -98,7 +98,7 @@ export function rejectionNotice(reason: string): MessageKey {
 export function syncNotice(e: SyncEvent): MessageKey | null {
   if (e.type === 'offline') return 'sync.offline';
   if (e.type === 'online') return 'sync.online';
-  if (e.type === 'rejected' && !['buy', 'profile', 'answer'].includes(e.op)) {
+  if (e.type === 'rejected' && !['buy', 'profile', 'answer', 'music'].includes(e.op)) {
     return rejectionNotice(e.reason);
   }
   return null;

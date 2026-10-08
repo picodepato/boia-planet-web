@@ -7,6 +7,7 @@ import type {
   Discount,
   DiscountStatus,
   HomeContent,
+  MusicLink,
 } from '@boia/contracts';
 import type { RewardPolicy } from './ids';
 import type { Balances } from './ledger';
@@ -167,6 +168,8 @@ export interface CarnetView {
    * local, demo). Con cuentas, el «es artista» lo da el servidor.
    */
   isArtist?: boolean;
+  /** El enlace a su música (plan 019 T217): sólo el propio, puesto al crear su Carnet de artista. */
+  musicLink?: MusicLink;
 }
 
 /** Un Carnet que «Descubrir a un BOIERO» puede enseñar (T66). */
@@ -187,6 +190,11 @@ export interface CarnetInput {
    * código no vacío marca el Carnet como artista: es sólo una demo.
    */
   artistCode?: string | null | undefined;
+  /**
+   * El enlace a su música (plan 019 T217, decisión 10); null lo quita. La
+   * interfaz sólo lo ofrece a artistas; con cuentas lo comprueba el servidor.
+   */
+  musicLink?: MusicLink | null | undefined;
 }
 
 export interface CarnetApi {

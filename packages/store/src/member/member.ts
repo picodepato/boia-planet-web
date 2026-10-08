@@ -29,7 +29,7 @@ import type {
   ProgressApi,
   PurchaseApi,
 } from '../repository';
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { CARNET_QUESTIONS, type MusicLink } from '@boia/contracts';
 import type { JsonValue } from '../schema';
 import type { StorageLike } from '../storage';
 import { applyServerState, applySnapshot, CIRCUIT_RECORD, snapshotOf } from './hydrate';
@@ -300,6 +300,18 @@ class MemberRepo implements MemberRepository {
     );
   }
 
+  /**
+   * El enlace a su música (plan 019 T217): el servidor sólo lo guarda en un
+   * Carnet de artista (`set_artist_music`). Sin cambio (undefined), nada.
+   */
+  private async saveMusic(link: MusicLink | null | undefined): Promise<void> {
+    if (link === undefined) return;
+    await this.enqueue(
+      { kind: 'music', platform: link?.platform ?? null, url: link?.url ?? null },
+      true,
+    );
+  }
+
   private carnetApi(): CarnetApi {
     const c = this.cache.carnet;
     const mine = async (fallback: CarnetView) => (await c.mine()) ?? fallback;
@@ -311,11 +323,13 @@ class MemberRepo implements MemberRepository {
       create: async ({ artistCode: _code, ...input }) => {
         const view = (await c.mine()) ? await c.update(input) : await c.create(input);
         await this.saveProfile();
+        await this.saveMusic(input.musicLink);
         return mine(view);
       },
       update: async (patch) => {
         const view = await c.update(patch);
         await this.saveProfile();
+        await this.saveMusic(patch.musicLink);
         return mine(view);
       },
       answer: async (questionId, answer) => {

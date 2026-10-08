@@ -1,9 +1,21 @@
 'use client';
 
-import type { Artist } from '@boia/contracts';
+import {
+  type Artist,
+  MUSIC_PLATFORMS,
+  type MusicPlatform,
+  artistMusic,
+  musicPlatformOf,
+} from '@boia/contracts';
 import { useState } from 'react';
 import { slugify } from '../../../lib/admin/actions';
-import { artistFormOf, artistFromForm, genresOf } from '../../../lib/admin/artist-form';
+import {
+  ArtistMusicError,
+  artistFormOf,
+  artistFromForm,
+  formPlatform,
+  genresOf,
+} from '../../../lib/admin/artist-form';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import {
@@ -49,13 +61,27 @@ function ArtistRow({
             data-testid={`artista-foto-${artist.id}`}
           />
         </Field>
-        <Field label={t('admin.artists.spotify')} hint={t('admin.artists.spotifyHint')}>
+        <Field label={t('admin.artists.music')} hint={t('admin.artists.musicHint')}>
           <input
             type="url"
-            value={form.spotify}
-            onChange={set('spotify')}
-            data-testid={`artista-spotify-${artist.id}`}
+            value={form.music}
+            onChange={set('music')}
+            data-testid={`artista-musica-${artist.id}`}
           />
+        </Field>
+        <Field label={t('admin.artists.musicPlatform')}>
+          <select
+            value={formPlatform(form)}
+            disabled={musicPlatformOf(form.music) !== null}
+            onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value as MusicPlatform }))}
+            data-testid={`artista-plataforma-${artist.id}`}
+          >
+            {MUSIC_PLATFORMS.map((p) => (
+              <option key={p} value={p}>
+                {t(`artist.music.${p}`)}
+              </option>
+            ))}
+          </select>
         </Field>
       </div>
       <div className="admin-row">
@@ -65,11 +91,16 @@ function ArtistRow({
           className="admin-button"
           disabled={busy}
           onClick={() =>
-            void run(() =>
-              ctx.repo.admin.upsert('artists', artistFromForm(artist, form), {
-                reason: 'artista',
-              }),
-            )
+            void run(() => {
+              let next: Artist;
+              try {
+                next = artistFromForm(artist, form);
+              } catch (e) {
+                if (e instanceof ArtistMusicError) throw new Error(t('admin.artists.musicInvalid'));
+                throw e;
+              }
+              return ctx.repo.admin.upsert('artists', next, { reason: 'artista' });
+            })
           }
         >
           {t('admin.artists.guardar')}
@@ -143,7 +174,7 @@ export function ArtistsSection({ ctx }: { ctx: AdminContext }) {
       <ul className="admin-list">
         {artists.map((a) => (
           <ArtistRow
-            key={`${a.id}|${a.name}|${a.genres.join()}|${a.photoUrl}|${a.spotifyUrl}`}
+            key={`${a.id}|${a.name}|${a.genres.join()}|${a.photoUrl}|${artistMusic(a)?.url}`}
             ctx={ctx}
             artist={a}
             changed={changedSet.has(a.id)}

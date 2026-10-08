@@ -1,4 +1,10 @@
-import { canBuy, homeContentSchema, isSampleLink, type HomeContent } from '@boia/contracts';
+import {
+  artistMusic,
+  canBuy,
+  homeContentSchema,
+  isSampleLink,
+  type HomeContent,
+} from '@boia/contracts';
 import {
   artistPhotoPath,
   eventPosterPath,
@@ -169,6 +175,7 @@ describe('the landing ready for real content (plan 007 T82)', () => {
     // An artist without Spotify (null) gets no link.
     const third = content.artists.find((a) => a.id === sampleTrio[2]);
     expect(third?.spotifyUrl).toBeUndefined();
+    expect(third && artistMusic(third)).toBeNull();
   });
 
   it('the sample content renders the muestra placeholders and marks', () => {
@@ -201,7 +208,7 @@ describe('the landing ready for real content (plan 007 T82)', () => {
       ),
       ...SAMPLE_CONTENT.artists
         .filter((a) => sampleTrio.includes(a.id))
-        .flatMap((a) => (a.spotifyUrl ? [a.spotifyUrl] : [])),
+        .flatMap((a) => (artistMusic(a) ? [artistMusic(a)!.url] : [])),
     ].filter(isSampleLink);
     expect(expected.length).toBeGreaterThan(0);
     for (const url of expected) {

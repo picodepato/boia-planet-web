@@ -2,6 +2,7 @@
 
 import type { Artist } from '@boia/contracts/content';
 import { useEffect, useState } from 'react';
+import { contentArtistEntry } from '../../../lib/artists/entries';
 import { trioAt } from '../../../lib/landing/rotation';
 import { ArtistCard } from './artist-card';
 
@@ -65,7 +66,7 @@ export function ArtistRotator({
               step > 0 ? 'artist-trio__item artist-trio__item--enter' : 'artist-trio__item'
             }
           >
-            <ArtistCard artist={artist} genresLabel={labels.genres} />
+            <ArtistCard artist={contentArtistEntry(artist)} genresLabel={labels.genres} />
           </li>
         ))}
       </ul>

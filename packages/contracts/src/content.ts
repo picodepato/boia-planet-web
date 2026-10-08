@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { eventSchema, imageRefSchema } from './events';
 import { homeBlocksSchema } from './home-blocks';
+import { type MusicLink, musicLinkSchema } from './music';
 
 /** Personas detrás del sonido (v14 §18, REQ-COM-027, REQ-COM-028). */
 export const artistSchema = z.object({
@@ -13,10 +14,21 @@ export const artistSchema = z.object({
    * (docs/contenido-real.md, plan 007 T82); también vale una URL https.
    */
   photoUrl: imageRefSchema.optional(),
-  /** The artist on Spotify: a plain link, nothing loaded from Spotify (plan 007 T79). */
+  /**
+   * The artist on Spotify: a plain link, nothing loaded from Spotify (plan 007
+   * T79). Since plan 019 T217 it is the fallback of `music`.
+   */
   spotifyUrl: z.url().optional(),
+  /** Su música (plan 019 T217, decisión 10): un enlace a Spotify, SoundCloud, Bandcamp o Instagram. */
+  music: musicLinkSchema.optional(),
 });
 export type Artist = z.infer<typeof artistSchema>;
+
+/** El enlace a la música de un artista: el suyo o, si no, su Spotify; null sin ninguno. */
+export function artistMusic(artist: Pick<Artist, 'music' | 'spotifyUrl'>): MusicLink | null {
+  if (artist.music) return artist.music;
+  return artist.spotifyUrl ? { platform: 'spotify', url: artist.spotifyUrl } : null;
+}
 
 /**
  * Una foto subida en el Admin de la demo (plan 017 T189, decisión 4): el

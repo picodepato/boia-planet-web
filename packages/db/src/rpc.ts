@@ -100,6 +100,9 @@ export const RPC_REJECTIONS = [
   'carnet_zero_reserved',
   'not_admin',
   'backup_code_invalid',
+  // El enlace a la música de un Carnet de artista (plan 019 T217)
+  'artist_required',
+  'invalid_music',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 

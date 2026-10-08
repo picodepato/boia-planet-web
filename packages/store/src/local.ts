@@ -14,6 +14,9 @@ import {
   discountStatus,
   withCommonCode,
   type HomeContent,
+  type MusicLink,
+  musicLinkSchema,
+  musicPlatformOf,
 } from '@boia/contracts';
 import {
   applyDraftTexts,
@@ -154,6 +157,18 @@ function clone<T>(v: T): T {
 
 function invalid(message: string): never {
   throw new StoreError('invalid', message);
+}
+
+/**
+ * El enlace a la música de un Carnet de artista (plan 019 T217): https, de
+ * la plataforma que dice. Los de la caja de arena de la muestra no pasan
+ * por aquí (los pone el contenido, no un Carnet).
+ */
+function checkMusicLink(link: MusicLink): MusicLink {
+  const parsed = musicLinkSchema.safeParse(link);
+  if (!parsed.success || musicPlatformOf(parsed.data.url) !== parsed.data.platform)
+    invalid('música: un enlace de Spotify, SoundCloud, Bandcamp o Instagram');
+  return { platform: parsed.data.platform, url: parsed.data.url };
 }
 
 function requireKey(k: unknown, what: string): string {
@@ -855,6 +870,7 @@ class LocalRepository implements BoiaRepository {
         isSample: false,
         moderated: { photo: false, nickname: false, answers: 0 },
         ...(own.isArtist ? { isArtist: true } : {}),
+        ...(own.musicLink ? { musicLink: { ...own.musicLink } } : {}),
       };
     }
     const crew = this.sample.crew.find((c) => c.userId === userId);
@@ -1073,6 +1089,7 @@ class LocalRepository implements BoiaRepository {
             version: 1,
             updatedAt: at,
             ...(input.artistCode?.trim() ? { isArtist: true } : {}),
+            ...(input.musicLink ? { musicLink: checkMusicLink(input.musicLink) } : {}),
           };
           return this.carnetView(me.id, d) as CarnetView;
         }),
@@ -1085,6 +1102,8 @@ class LocalRepository implements BoiaRepository {
             c.nickname = this.checkNickname(d, patch.nickname, me.id);
           if (patch.avatarKey !== undefined) c.avatarKey = patch.avatarKey;
           if (patch.avatarImage !== undefined) c.avatarImage = this.checkAvatar(patch.avatarImage);
+          if (patch.musicLink === null) delete c.musicLink;
+          else if (patch.musicLink !== undefined) c.musicLink = checkMusicLink(patch.musicLink);
           c.version++;
           c.updatedAt = this.iso();
           return this.carnetView(me.id, d) as CarnetView;

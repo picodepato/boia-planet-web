@@ -266,7 +266,7 @@ test('el pie lleva el logo de BOIA; Spotify son enlaces sin nada cargado de Spot
     await expect(a).toHaveAttribute('target', '_blank');
     expect(await a.getAttribute('rel')).toContain('noopener');
   }
-  expect(await page.locator('#artistas .artist-card__spotify').count()).toBeGreaterThan(0);
+  expect(await page.locator('#artistas .artist-card__music').count()).toBeGreaterThan(0);
   await page.waitForTimeout(500);
   expect(hosts.filter((h) => /spotify|scdn\.co/i.test(h))).toEqual([]);
 });
