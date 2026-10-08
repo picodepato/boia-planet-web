@@ -25,7 +25,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 ## Tasks
 
 ## T226 — World UI: fonts, labels, buttons and HUD details
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -37,10 +37,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - achievements counter smaller; «Turbo» text centered; «!» in BOIA orange; Los Rápidos timer/boias sign back to a moderate size; menu toggles are pill + round knob; «Controles» centered inside its box; «Menú» and «!» no longer cover the race cards on mobile → screenshots mobile + desktop
   - ESTADO lists the world e2e specs Hernán should run
   - Test command → exit 0
-- Outcome:
+- Outcome: world labels/buttons 10–11 px wrapping to 2 lines, pins kept on screen, smaller counter, centred Turbo, orange «!», smaller race timer, pill toggles, Controles centred, race cards beside Menú/! · 67295fe
 
 ## T227 — Landing intro, artists rotation and store
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -54,7 +54,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - home «Ver todas» goes to /galeria; the manifest 500 is explained and fixed (or shown not to happen on main, with the cause written in ESTADO)
   - landing critical path ≤ 200 kB gzip → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: intro gated globe→3D letters→fade of buttons (also mobile/fallback), artists rotation with carnet images + «Ver todos los artistas», store swipe + Instagram for party-only, «Ver todas»→/galeria, manifest 500 = build over running dev · bd24b19
 
 ## T228 — Admin and content leftovers
 - Status: pending
@@ -162,6 +162,15 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 
 ## Decisions
 
+- 2026-10-08 T226: labels/buttons in button font 10 px mobile, 11 px desktop/map; `layoutPins` takes screen width and keeps labels on screen; top cards right of Menú/! on mobile; open «!» panel turns the button cream with orange «!» (agent)
+- 2026-10-08 T227: Zarpar hidden while the scene loads; 3D letters wait up to 1.2 s then flat title; reduced motion shows everything at once; avatars in colour on the landing; artists with a Carnet join the rotation (lazy); store auto-rotation stops after a swipe (agent)
+
 ## Proposals (new scope)
+- 2026-10-08 T226: «Entradas» sub-line during a trip («Rumbo a Ca…») cut by the bottom bar's fixed height; music/effects in Ajustes still checkboxes, not toggles; 🪙 shows as a box in headless Chromium
+- 2026-10-08 T227: give `next dev` its own distDir (`.next-dev`) so a build doesn't cause dev 500s; unused i18n keys artists.pause/resume; `prettier --check` reports 98 files (likely CRLF)
 
 ## Log
+- 2026-10-08 T226 launched · attempt 1 · agent a1af4cc0049b2e952
+- 2026-10-08 T227 launched · attempt 1 · agent aacd0a6b3f2b14530
+- 2026-10-08 T226 done · merged 67295fe
+- 2026-10-08 T227 done · merged bd24b19
