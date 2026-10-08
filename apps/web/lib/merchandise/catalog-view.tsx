@@ -18,16 +18,16 @@ function BuyMessage({
   sale: MerchandiseProduct['sale'];
   contact: MerchandiseContact;
 }) {
-  if (sale === 'party') {
-    return (
-      <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
-        {t('store.buy.party')}
-      </p>
-    );
-  }
+  // Plan 020 T227 (decision 5): what is sold in hand can also be reserved on Instagram.
   return (
     <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
-      {t('store.buy.reserve')}{' '}
+      {sale === 'party' ? (
+        <>
+          {t('store.buy.party')} {t('store.buy.party.reserve')}
+        </>
+      ) : (
+        t('store.buy.reserve')
+      )}{' '}
       <a
         className="merchandise__dm"
         href={contact.url}
@@ -47,7 +47,8 @@ function BuyMessage({
  * products only, each with its photo, name and price. «Comprar» is a
  * disclosure, not a checkout (decision 9): it explains whether the product
  * is sold only at the party or, out of stock, is reserved by an Instagram DM
- * (the contact the Admin set, plan 017 T192) and brought to the next event.
+ * (the contact the Admin set, plan 017 T192) and brought to the next event;
+ * the party-only ones also point to that DM to reserve (plan 020 T227).
  * It works without JavaScript.
  */
 export function MerchandiseCatalog({

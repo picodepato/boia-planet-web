@@ -21,8 +21,8 @@ import { MERCHANDISE_PATH, merchandiseContact } from '../../../lib/merchandise/c
 
 /** Lista completa de artistas (v14 §18.1). */
 export const ARTISTS_PAGE = '/artistas';
-/** «Fotos y eventos» (T42): todas las fotos por isla y por evento. */
-export const PHOTOS_PAGE = '/fotos';
+/** La Galería (T42, plan 019): todas las fotos por isla y por evento. */
+export const PHOTOS_PAGE = '/galeria';
 
 /**
  * Lista de bloques ya resueltos (`resolveHome`), en el orden configurado. Un
@@ -280,11 +280,8 @@ export function BlockView({
             <ArtistRotator
               artists={block.rotation}
               rotationMs={block.rotationMs}
-              labels={{
-                pause: t('artists.pause'),
-                resume: t('artists.resume'),
-                genres: t('artists.genres'),
-              }}
+              labels={{ all: t('artists.all'), genres: t('artists.genres') }}
+              allHref={ARTISTS_PAGE}
             />
             {/* BOIA's playlist (plan 007 T79): a plain link, no player, nothing from Spotify. */}
             {social?.spotify ? (

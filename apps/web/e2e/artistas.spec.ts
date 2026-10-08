@@ -140,6 +140,11 @@ test('la banda de la landing: el nombre abre el Carnet, «Ver carnet» y la mús
     await expect(item.getByTestId('artista-carnet')).toHaveAttribute('href', href!);
   }
   await expect(trio.getByTestId('artista-musica').first()).toBeVisible();
+  // Cada uno con la imagen de su Carnet; debajo, «Ver todos los artistas» (plan 020 T227).
+  await expect(trio.locator('.artist-card__avatar, .artist-card__photo')).toHaveCount(3);
+  for (const img of await trio.locator('.artist-card__avatar, .artist-card__photo').all())
+    await expect(img).toBeVisible();
+  await expect(page.getByTestId('artistas-ver-todos')).toHaveAttribute('href', '/artistas');
   await trio.scrollIntoViewIfNeeded();
   await page.locator('#artistas').screenshot({ path: shotPath(`${info.project.name}-landing`) });
 });

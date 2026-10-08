@@ -55,6 +55,13 @@ export interface IntroDiagnostics {
    * golden hour → 1 night).
    */
   scroll: { s: number; phase: ScrollPhase; light: number };
+  /**
+   * The order of the hero (plan 020 T227): `globe` (only the globe or the
+   * still), `title` («BOIA» comes in), `ready` (the buttons and the hint).
+   */
+  stage: 'globe' | 'title' | 'ready';
+  /** The stages seen, in order. */
+  stages: string[];
   /** Sea props (T78 GLBs) placed in the scene. */
   props: number;
   /** Frame cost and render quality (plan 007 T80). */

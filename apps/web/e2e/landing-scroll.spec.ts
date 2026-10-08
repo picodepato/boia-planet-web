@@ -605,13 +605,15 @@ test.describe('movimiento reducido (T81)', () => {
     expect(Math.abs((await pageY(page)) - H), 'sin animar el scroll').toBeLessThanOrEqual(2);
     await accessibleHere(page, 'bandas, estático');
 
-    // The artists do not rotate by themselves: paused, and the button resumes.
+    // The artists do not rotate by themselves; under them, «Ver todos los
+    // artistas» (plan 020 T227, decision 4).
     const artists = SAMPLE_CONTENT.blocks.find((b) => b.type === 'artists');
     const rotationMs = artists?.type === 'artists' ? artists.rotationMs : 0;
     expect(rotationMs, 'la muestra rota a los artistas').toBeGreaterThan(0);
-    const toggle = page.locator('#artistas').getByRole('button', { name: t('artists.resume') });
-    await toggle.scrollIntoViewIfNeeded();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    const all = page.getByTestId('artistas-ver-todos');
+    await all.scrollIntoViewIfNeeded();
+    await expect(all).toHaveText(t('artists.all'));
+    await expect(page.locator('.artist-rotator')).toHaveAttribute('data-rotating', 'false');
     const trio = page.getByTestId('artist-trio');
     const first = await trio.innerText();
     await page.waitForTimeout(rotationMs + 1000);

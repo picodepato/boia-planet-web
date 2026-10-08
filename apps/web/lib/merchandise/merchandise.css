@@ -33,9 +33,18 @@
   color: var(--paper-ink, #000);
 }
 
-/* T201: the product's images stacked; only the active one shows. */
+/*
+ * T201; plan 020 T227 (decision 5): the product's images side by side on a
+ * strip that slides sideways; the frame shows one. The browser keeps the
+ * vertical scroll (`pan-y`); the sideways swipe is ours.
+ */
 .merchandise__gallery {
   position: relative;
+}
+
+.merchandise__gallery:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
 }
 
 .merchandise__frame {
@@ -43,21 +52,70 @@
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: #efefef;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
 }
 
-.merchandise__frame img {
-  position: absolute;
-  inset: 0;
+.merchandise__gallery[data-dragging] .merchandise__frame {
+  cursor: grabbing;
+}
+
+.merchandise__track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Under the finger the strip follows it, without easing. */
+.merchandise__gallery[data-dragging] .merchandise__track {
+  transition: none;
+}
+
+.merchandise__track img {
   display: block;
+  flex: 0 0 100%;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.6s ease;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
-.merchandise__frame img.is-active {
-  opacity: 1;
+/* The arrows: small black squares on the sides of the photo. */
+.merchandise__arrow {
+  position: absolute;
+  top: calc(50% - 22px);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-button);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.merchandise__arrow--prev {
+  left: 6px;
+}
+
+.merchandise__arrow--next {
+  right: 6px;
+}
+
+.merchandise__arrow:hover {
+  background: var(--orange, #ec4f24);
+}
+
+.merchandise__arrow:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
 }
 
 /* The picker: small squares at the bottom left (the square is the motif). */
@@ -184,7 +242,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .merchandise__frame img {
+  .merchandise__track {
     transition: none;
   }
 }

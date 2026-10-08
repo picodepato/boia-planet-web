@@ -57,9 +57,7 @@ test('la ficha de Halloween: el cartel que falta, su isla, su estado y «Solo en
   // «Solo en puerta» (plan 019 T215): nunca hay compra online; mientras está
   // a la venta, el aviso de la puerta con el Carnet.
   await expect(ficha.getByTestId(`comprar-${halloween.id}`)).toHaveCount(0);
-  await expect(ficha.getByTestId('evento-solo-puerta')).toHaveCount(
-    canBuy(halloween, now) ? 1 : 0,
-  );
+  await expect(ficha.getByTestId('evento-solo-puerta')).toHaveCount(canBuy(halloween, now) ? 1 : 0);
 });
 
 test('la home enseña sólo la selección de fotos y «Ver todas» lleva a la Galería', async ({
@@ -69,8 +67,9 @@ test('la home enseña sólo la selección de fotos y «Ver todas» lleva a la Ga
   await expect(page.locator('main')).toHaveAttribute('data-contenido', 'repositorio');
   const grid = page.locator('#fotos .photo-grid > li');
   await expect(grid).toHaveCount(Math.min(selection.length, 6));
+  // El enlace de la home va directo a /galeria (T227; /fotos sigue redirigiendo).
+  await expect(page.getByTestId('ver-fotos')).toHaveAttribute('href', '/galeria');
   await page.getByTestId('ver-fotos').click();
-  // El enlace de la home es /fotos, que lleva a /galeria (T216).
   await expect(page).toHaveURL(/\/galeria$/);
   await noIntro(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(FOTOS_COPY.pageTitle);

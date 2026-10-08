@@ -15,6 +15,7 @@ import { QUALITY } from '../planeta/quality';
 import type { IntroDiagnostics } from './bridge';
 import type { IntroData } from './load';
 import { lowPower } from './low-power';
+import { STILL_GLOBE_MS, TITLE_WAIT_MS, playsOrder, titleStageMs, type HeroStage } from './stages';
 import { clearTitle, drawTitle, fitTitle, sizeTitleCanvas } from './title-canvas';
 
 /** Radios de «Zarpar» guardados en el diagnóstico (tope). */
@@ -130,6 +131,12 @@ class IntroRun {
   private motionLevel = 0;
   private motionDts: number[] = [];
   private propsAsked = false;
+  // The order of the hero (plan 020 T227): globe, letters, then the buttons.
+  private readonly ordered: boolean;
+  private stage: HeroStage = 'ready';
+  private stageTimer = 0;
+  /** The flat «BOIA» came in instead of the 3D letters: a late sheet does not swap it. */
+  private flatTitle = false;
 
   constructor(private readonly data: IntroData) {
     const entry = window.__boiaEntry;
@@ -138,6 +145,9 @@ class IntroRun {
     // it and nobody resolved yet; going back to `/` inside the app does not
     // replay it (D-21). Reduced motion and low power: the static version.
     let mode = mountMode(entry);
+    // The order plays whenever the boot script asked for the appearance, also
+    // when the static version takes over (low power, no WebGL, slow scene).
+    this.ordered = playsOrder(mode, prefersReducedMotion());
     if (entry) {
       entry.claimed = true;
       clearTimeout(entry.timer);
@@ -178,6 +188,8 @@ class IntroRun {
       cover: 0,
       pose: null,
       scroll: { s: 0, phase: 'rest', light: 0 },
+      stage: 'ready',
+      stages: [],
       props: 0,
       quality: { probeMs: null, motion: null, lowFps: false, stepDowns: 0 },
     };
@@ -214,6 +226,8 @@ class IntroRun {
           })
         : null;
 
+    // Before the controller can reach the rest: what has not come yet stays hidden.
+    this.setStage(this.ordered ? 'globe' : 'ready');
     // Abierta en segundo plano: el plazo de carga no corre hasta que se mire.
     if (document.hidden) this.controller.suspend();
     this.readScroll();
@@ -359,13 +373,7 @@ class IntroRun {
       if (c.phase === 'paused') this.askProps(false);
     } else if (host) delete host.dataset.ready;
     // The rest after the appearance: «Zarpar» gets the focus (Enter sails).
-    if (c.phase === 'paused' && c.mode === 'intro' && c.outcome === 'played' && !this.focused) {
-      const enter = this.view?.enter.current;
-      if (enter && this.s < UI_TAPS_UNTIL) {
-        this.focused = true;
-        enter.focus({ preventScroll: true });
-      }
-    }
+    this.focusEnter();
     // «Zarpar» empieza a explorar el mundo (T64).
     if (c.phase === 'landing' && !this.sailed) {
       this.sailed = true;
@@ -377,6 +385,9 @@ class IntroRun {
   /** The rest, once: the page shows (D-21) and /mar can be prefetched. */
   private rested(outcome: IntroOutcome): void {
     this.diag.restAtMs = performance.now() - this.t0;
+    // Before the page shows: what has not come yet stays hidden (no jump).
+    if (this.ordered && outcome !== 'skipped') this.awaitTitle();
+    else this.setStage('ready');
     if (this.entry) this.entry.reveal(outcome);
     else this.html.removeAttribute('data-intro');
     this.view?.onPaused?.();
@@ -390,6 +401,71 @@ class IntroRun {
     const cover = this.view?.cover.current;
     if (cover) cover.style.opacity = '1';
     this.view?.onEnterGame();
+  }
+
+  /**
+   * The order at the rest (plan 020 T227): the globe alone until «BOIA» can
+   * come in. With the scene, as soon as the 3D letters' sheet is decoded (at
+   * most `TITLE_WAIT_MS`, then the flat title); with the static version, the
+   * still alone for `STILL_GLOBE_MS`.
+   */
+  private awaitTitle(): void {
+    if (this.stage !== 'globe') return;
+    const c = this.controller;
+    if (this.titleImg) return this.showTitle();
+    const waitsFor3d = c.live && this.data.title !== null;
+    window.clearTimeout(this.stageTimer);
+    this.stageTimer = window.setTimeout(
+      () => {
+        this.stageTimer = 0;
+        this.showTitle();
+      },
+      waitsFor3d ? TITLE_WAIT_MS : STILL_GLOBE_MS,
+    );
+  }
+
+  /** «BOIA» comes in (the 3D letters rise from now, or the flat title fades in); then the buttons. */
+  private showTitle(): void {
+    if (this.stage !== 'globe' || this.disposed) return;
+    window.clearTimeout(this.stageTimer);
+    const letters = this.titleImg && this.data.title ? this.data.title.letters.length : null;
+    if (letters === null) this.flatTitle = true;
+    else this.titleFrom = this.pauseMs;
+    this.setStage('title');
+    this.stageTimer = window.setTimeout(
+      () => {
+        this.stageTimer = 0;
+        this.setStage('ready');
+      },
+      titleStageMs(this.data.config.title, letters),
+    );
+    this.kick();
+  }
+
+  /** Marks the stage on `<html data-hero-stage>` (landing.css hides what has not come). */
+  private setStage(stage: HeroStage): void {
+    if (stage === 'ready' && this.stageTimer) {
+      window.clearTimeout(this.stageTimer);
+      this.stageTimer = 0;
+    }
+    if (this.stage === stage && this.html.dataset.heroStage === stage) return;
+    this.stage = stage;
+    this.diag.stage = stage;
+    this.diag.stages.push(stage);
+    this.html.dataset.heroStage = stage;
+    if (stage === 'ready') this.focusEnter();
+  }
+
+  /** The rest after the appearance, with the buttons in: «Zarpar» gets the focus (Enter sails). */
+  private focusEnter(): void {
+    const c = this.controller;
+    if (this.focused || this.stage !== 'ready') return;
+    if (c.phase !== 'paused' || c.mode !== 'intro' || c.outcome !== 'played') return;
+    const enter = this.view?.enter.current;
+    if (enter && this.s < UI_TAPS_UNTIL) {
+      this.focused = true;
+      enter.focus({ preventScroll: true });
+    }
   }
 
   private requestTitle(): void {
@@ -406,6 +482,8 @@ class IntroRun {
         const c = this.controller;
         // Si ya se está zarpando (o se fue), se queda el título plano.
         if (c.phase !== 'waiting' && c.phase !== 'appearing' && c.phase !== 'paused') return;
+        // The flat «BOIA» already came in its turn: it stays (no swap, no jump).
+        if (this.flatTitle) return;
         this.titleImg = img;
         // Born at rest (direct URL, fast-forward): the letters are already in place.
         const settled = c.mode !== 'intro' || c.outcome === 'skipped';
@@ -414,6 +492,8 @@ class IntroRun {
         d.loadedMs = performance.now() - this.t0;
         const title = this.view?.title.current;
         if (title) title.dataset.title = '3d';
+        // At the rest, waiting for the letters: they come in now.
+        if (this.stage === 'globe' && c.phase === 'paused') this.showTitle();
         this.kick();
       })
       .catch(() => {
@@ -424,9 +504,10 @@ class IntroRun {
   private paintTitle(f: IntroFrame): void {
     const sheet = this.data.title;
     const canvas = this.view?.title3d.current;
+    // The rest's clock, also before the sheet arrives: late letters rise from their arrival.
+    if (f.act === 'pause') this.pauseMs = f.t;
     const ctx = canvas?.getContext('2d');
     if (!sheet || !this.titleImg || !canvas || !ctx) return;
-    if (f.act === 'pause') this.pauseMs = f.t;
     // Off screen (scrolled away) or before the rest: nothing to draw.
     if ((f.act !== 'pause' && f.act !== 'landing') || f.title <= 0) {
       if (this.diag.title.pose !== null) clearTitle(ctx);
@@ -631,8 +712,11 @@ class IntroRun {
   private onScroll = () => {
     this.readScroll();
     if (this.sTarget > 0) this.askProps(true);
-    // Scrolling during the appearance fast-forwards it (plan 007).
-    if (this.sTarget > 0) this.controller.skip();
+    // Scrolling during the appearance fast-forwards it (plan 007), and the order too.
+    if (this.sTarget > 0) {
+      this.controller.skip();
+      this.setStage('ready');
+    }
     this.kick();
   };
 
@@ -675,12 +759,16 @@ class IntroRun {
   // Atrás o un cambio de ancla durante la aparición: al reposo.
   private onNavigate = () => {
     this.controller.skip();
+    this.setStage('ready');
     this.readScroll();
     this.kick();
   };
 
   private onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') this.controller.skip();
+    if (e.key === 'Escape') {
+      this.controller.skip();
+      this.setStage('ready');
+    }
   };
 
   private dispose(): void {
@@ -707,6 +795,9 @@ class IntroRun {
     this.scene = null;
     delete this.html.dataset.introAct;
     delete this.html.dataset.hero;
+    window.clearTimeout(this.stageTimer);
+    this.stageTimer = 0;
+    delete this.html.dataset.heroStage;
     this.html.removeAttribute('data-hero-top');
     // Ya en /mar tras «Zarpar»: la marca de la entrada no se queda en <html>.
     if (this.leaving) this.html.removeAttribute('data-intro');

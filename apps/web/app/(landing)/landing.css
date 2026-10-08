@@ -571,21 +571,40 @@ html[data-hero='still'] .hero__scene::after,
   display: block;
 }
 
-/* «BOIA» and the hint come in at the rest (400 ms), as the pause of today. */
-.hero__wordmark,
-.hero__hint {
+/*
+ * The order of the hero (plan 020 T227, Hernán's review §Portada 1): the
+ * globe first, then «BOIA», and at the end, with a fade, «Zarpar», «Consigue
+ * descuentos» and «Desliza». The boot script's `data-intro="play"` hides them
+ * from the first paint; `run.ts` then marks `data-hero-stage` (globe → title →
+ * ready). The same with the static version and on mobile; a direct URL and
+ * reduced motion are born `ready`.
+ */
+.hero__wordmark {
   transition:
     opacity 0.4s ease,
     visibility 0.4s;
 }
 
+.hero__actions,
+.hero__hint {
+  transition:
+    opacity 0.6s ease,
+    visibility 0.6s;
+}
+
 html[data-intro='play'] .hero__wordmark,
-html[data-intro='play'] .hero__hint {
+html[data-intro='play'] .hero__actions,
+html[data-intro='play'] .hero__hint,
+html[data-hero-stage='globe'] .hero__wordmark,
+html[data-hero-stage='globe'] .hero__actions,
+html[data-hero-stage='globe'] .hero__hint,
+html[data-hero-stage='title'] .hero__actions,
+html[data-hero-stage='title'] .hero__hint {
   opacity: 0;
   visibility: hidden;
 }
 
-/* «Zarpar» alone (2026-10-08, decision 4), visible from the first paint. */
+/* «Zarpar» alone (2026-10-08, decision 4); it comes in after «BOIA» (above). */
 .hero__actions {
   position: absolute;
   left: var(--gutter);
@@ -1176,7 +1195,7 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   flex: none;
 }
 
-.artist-rotator__toggle {
+.artist-rotator__all {
   margin-top: 8px;
 }
 
@@ -2079,8 +2098,12 @@ main[data-contenido] .artist-trio > li {
   border-bottom: 1px solid var(--paper-line);
 }
 
+/*
+ * Each artist with the image of their Carnet BOIA (plan 020 T227, decision 4):
+ * the photo they chose, or their Carnet's avatar, in colour, on the left.
+ */
 main[data-contenido] .artist-card {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 56px minmax(0, 1fr);
   grid-template-rows: auto;
   column-gap: 16px;
   row-gap: 4px;
@@ -2089,30 +2112,30 @@ main[data-contenido] .artist-card {
   background: none;
 }
 
-main[data-contenido] .artist-card__avatar {
-  display: none;
-}
-
+main[data-contenido] .artist-card__avatar,
 main[data-contenido] .artist-card__photo {
+  grid-column: 1;
   grid-row: 1 / span 2;
   width: 56px;
   height: 56px;
+  border: 2px solid var(--paper-ink);
   border-radius: var(--radius);
-  filter: grayscale(1);
 }
 
-main[data-contenido] .artist-card:has(.artist-card__photo) {
-  grid-template-columns: 56px minmax(0, 1fr) auto;
+main[data-contenido] .artist-card__avatar {
+  font-size: 28px;
+  line-height: 1;
 }
 
 main[data-contenido] .artist-card__name {
+  grid-column: 2;
   font-size: 28px;
   line-height: 1;
   text-transform: uppercase;
 }
 
 main[data-contenido] .artist-card__genres {
-  grid-column: 1;
+  grid-column: 2;
   color: var(--paper-soft);
   font-size: 13px;
   letter-spacing: 0.08em;
@@ -2130,17 +2153,17 @@ main[data-contenido] .artist-card__actions {
 }
 
 @media (min-width: 900px) {
+  main[data-contenido] .artist-card {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+  }
+
   main[data-contenido] .artist-card__actions {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1 / span 2;
     align-self: center;
     justify-content: flex-end;
     min-height: 0;
     margin: 0;
-  }
-
-  main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__actions {
-    grid-column: 3;
   }
 }
 

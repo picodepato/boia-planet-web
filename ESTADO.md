@@ -4,6 +4,62 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T227: Landing intro, artists rotation and store
+
+**What exists**
+- **Intro order** (Hernán's review §Portada 1): every plain load of `/` (also the
+  static version: low power, no WebGL, slow scene) goes globe → 3D «BOIA» →
+  fade of «Zarpar» + «Consigue descuentos» + «Desliza». `lib/intro/stages.ts`
+  (pure timings: `playsOrder`, `titleStageMs`) and `run.ts` mark
+  `<html data-hero-stage="globe|title|ready">`; `landing.css` hides what has not
+  come (the boot script's `data-intro="play"` already hides all three before
+  `run.ts` arrives, so nothing shows early). At the rest the globe waits for the
+  3D sheet (≤ 1.2 s, then the flat title, which then stays: no late swap); the
+  buttons come once the last letter lands (~1.4 s). Static version: the still for
+  0.7 s, flat «BOIA», then the buttons. Scroll, Escape or Back jump to `ready`.
+  «Zarpar» gets the focus when it appears. Fixed a jump: the rest's clock was
+  not updated before the sheet arrived, so late letters appeared already risen.
+  A direct URL (`?intro=0`, `/#…`) and reduced motion still show everything at
+  once. Diagnostics: `__boiaIntro.stage` / `.stages`.
+- **Artists** (decision 4): the landing rotation shows each artist's Carnet
+  image (photo, or the avatar their Carnet shows; in colour — the landing used
+  to hide avatars and grey photos) and also includes the artists registered with
+  a Carnet (read lazily, out of the critical path). «Pausar rotación» →
+  «Ver todos los artistas» (link to /artistas). The rotation still pauses on
+  hover/focus/hidden tab; none under reduced motion.
+- **Store** (decision 5): product photos on a sliding strip — touch swipe, mouse
+  drag, ‹ › arrows, arrow keys, squares; auto-rotation stops once someone takes
+  over. Party-only products also point to Instagram (the store contact,
+  https://www.instagram.com/boia.planet/ by default) to reserve.
+- **Home «Ver todas»** → `/galeria` directly (`PHOTOS_PAGE`).
+- **Manifest 500** (plan 019 note from T213): not a bug of `/api/art` and it does
+  not happen on main: cold and warm `next dev` serve
+  `/api/art/landing/3d/manifest.json` with 200. Cause reproduced: running
+  `next build` (the Test command's `pnpm build`) while `next dev` runs in the same
+  checkout overwrites `apps/web/.next`; the dev server then answers 500
+  (`MODULE_NOT_FOUND`) for routes and chunks — the hero scene's too, hence «the
+  globe falls back to the wordmark». Restart `next dev` after a build. Even a real
+  failure of that manifest only drops the sea props (`sea-rig.ts` catches it),
+  never the globe.
+
+**Commands**
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 260 files, 2353 passed, 1 skipped
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm typecheck` → exit 0
+- `pnpm build` → exit 0, landing critical path 197.3 kB gzip / 200 kB (OK)
+- Screenshots (prod build, local mode): intro sequence on mobile 390×844, desktop
+  1280×800 and static version on mobile; store swipe and party Instagram; artists band.
+
+**Pending**
+- Hernán: check the sequence timings (1.2 s wait for the letters, 0.7 s still,
+  0.6 s fade). While the scene loads there is no «Zarpar» on screen any more
+  (only «Cargando»), as the order requires.
+- The unused keys `artists.pause` / `artists.resume` stay in the generated i18n
+  files (the generator is out of sync, plan 019 note).
+
+**E2E specs Hernán should run**
+`intro.spec.ts`, `landing.spec.ts`, `landing-scroll.spec.ts`, `artistas.spec.ts`,
+`merchandise.spec.ts`, `eventos.spec.ts`, `accesos.spec.ts`
+
 ## 2026-10-08 — plan 020 T226: World UI: fonts, labels, buttons and HUD details
 
 Qué existe (revisión de Hernán, puntos 2–9, y lo pendiente del plan 018):

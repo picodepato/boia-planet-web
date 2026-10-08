@@ -171,7 +171,7 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
 
-  // Acto 1: el planeta aparece. Sólo hay una acción, y no es obligatoria.
+  // Acto 1: el planeta aparece, solo (plan 020 T227: «BOIA» y los botones llegan después).
   await phaseIs(page, 'appearing');
   // Lo que se puede pulsar en pantalla durante la aparición, leído de una vez con la fase.
   const during = await page.evaluate(() => ({
@@ -192,12 +192,16 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
       .map((el) => el.innerText.trim()),
   }));
   expect(during.phase).toBe('appearing');
-  expect(during.actions).toEqual(['Zarpar']);
+  expect(during.actions).toEqual([]);
+  expect((await diag(page))!.stage).toBe('globe');
   await expect(canvases(page)).toHaveCount(1);
   await expect(canvases(page)).toHaveAttribute('data-scene', 'boia-intro-scene');
 
-  // Acto 2, el reposo: «BOIA» y el botón, con el foco; no avanza solo.
+  // Acto 2, el reposo: primero «BOIA» y luego, con un fundido, el botón, con
+  // el foco, «Consigue descuentos» y «Desliza» (plan 020 T227); no avanza solo.
   await phaseIs(page, 'paused');
+  await page.waitForFunction(() => window.__boiaIntro?.stage === 'ready');
+  expect((await diag(page))!.stages).toEqual(['globe', 'title', 'ready']);
   await expect(title(page)).toHaveText('BOIA');
   await expect(enterButton(page)).toBeVisible();
   await expect(enterButton(page)).toBeFocused();
@@ -286,10 +290,10 @@ test('una escena lenta (más que el antiguo plazo de 2 s) no se salta la entrada
   });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
-  // Mientras tanto: «Cargando», con «Zarpar» a mano.
+  // Mientras tanto: «Cargando»; «Zarpar» llega después del planeta y de «BOIA» (plan 020 T227).
   await expect(page.locator('.intro-loading')).toBeVisible();
   await expect(page.locator('.intro-loading')).toContainText('Cargando');
-  await expect(enterButton(page)).toBeVisible();
+  await expect(enterButton(page)).toBeHidden();
   await page.waitForTimeout(2600);
   expect((await diag(page))!.phase, 'sigue esperando a la escena').toBe('waiting');
   await expect(page.locator('html')).toHaveAttribute('data-intro', 'play');
@@ -550,6 +554,9 @@ test('sin WebGL: la versión estática enseguida, sin canvas', async ({ page }) 
   expect(d.outcome).toBe('none');
   expect(d.sceneStatus).toBe('failed');
   await expect(canvases(page)).toHaveCount(0);
+  // The same order with the static version (plan 020 T227): the still, «BOIA», the buttons.
+  await page.waitForFunction(() => window.__boiaIntro?.stage === 'ready');
+  expect((await diag(page))!.stages).toEqual(['globe', 'title', 'ready']);
   await oneHeroButton(page);
 });
 

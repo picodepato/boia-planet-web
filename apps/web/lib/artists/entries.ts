@@ -44,14 +44,29 @@ export function contentArtistMusic(artist: Pick<Artist, 'music' | 'spotifyUrl'>)
   return artist.spotifyUrl ? { platform: 'spotify', url: artist.spotifyUrl } : null;
 }
 
-/** Un artista del contenido. */
+/**
+ * El avatar que enseña el Carnet de un artista del contenido sin foto: el
+ * neutro por defecto del Carnet (`DEFAULT_AVATAR` de lib/mundo/carnet/avatar,
+ * que este archivo no importa para no traer @boia/store a la landing; un test
+ * comprueba que es el mismo).
+ */
+export const CARNET_DEFAULT_AVATAR: { glyph: string; bg: string } = {
+  glyph: '🌊',
+  bg: '#1f6f8b',
+};
+
+/**
+ * Un artista del contenido, con la imagen de su Carnet (plan 020 T227,
+ * decisión 4): su foto o, sin ella, el avatar que su Carnet enseña.
+ */
 export function contentArtistEntry(artist: Artist): ArtistEntry {
+  const photoUrl = artist.photoUrl ?? null;
   return {
     key: artist.id,
     name: artist.name,
     genres: artist.genres,
-    photoUrl: artist.photoUrl ?? null,
-    avatar: null,
+    photoUrl,
+    avatar: photoUrl ? null : CARNET_DEFAULT_AVATAR,
     carnetHref: carnetHref(`${CONTENT_ARTIST_CARNET_PREFIX}${artist.id}`),
     music: contentArtistMusic(artist),
   };

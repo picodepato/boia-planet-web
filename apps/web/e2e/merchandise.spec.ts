@@ -1,11 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import {
-  MERCHANDISE_CONTACT,
-  MERCHANDISE_PRODUCTS,
-  formatPrice,
-} from '../lib/merchandise/catalog';
+import { MERCHANDISE_CONTACT, MERCHANDISE_PRODUCTS, formatPrice } from '../lib/merchandise/catalog';
 import { PRODUCT_ROTATION_MS } from '../lib/merchandise/rotation';
 import { esWeb } from '../lib/i18n/es-web';
 import { t } from '../lib/i18n';
@@ -77,7 +73,9 @@ test('landing and internal shop show the same 3 products with name and price (de
   await expect(page).toHaveURL(/intro=0#tienda$/);
 });
 
-test('Botiga Ibiza opens the same internal shop and offers a return to sailing', async ({ page }) => {
+test('Botiga Ibiza opens the same internal shop and offers a return to sailing', async ({
+  page,
+}) => {
   await page.goto('/mar?ir=tienda');
   await expect(page.getByTestId('mar-canvas')).toBeVisible();
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30000 });
@@ -103,11 +101,18 @@ test('shop is available without JavaScript or a Carnet', async ({ browser }) => 
     page.getByRole('heading', { name: esWeb['store.page.title'], exact: true }),
   ).toBeVisible();
   await expect(page.locator('.merchandise__grid img')).toHaveCount(IMAGE_COUNT);
-  // Only each product's first image shows; «Comprar» still opens its message.
-  const shown = await page
-    .locator('.merchandise__grid img')
-    .evaluateAll((imgs) => imgs.map((img) => getComputedStyle(img).opacity === '1'));
-  expect(shown.filter(Boolean)).toHaveLength(MERCHANDISE_PRODUCTS.length);
+  // Only each product's first image shows (inside its frame; the rest of the
+  // strip is out of it, plan 020 T227); «Comprar» still opens its message.
+  const shown = await page.locator('.merchandise__frame').evaluateAll((frames) =>
+    frames.map((frame) => {
+      const box = frame.getBoundingClientRect();
+      return [...frame.querySelectorAll('img')].filter((img) => {
+        const r = img.getBoundingClientRect();
+        return r.left < box.right - 1 && r.right > box.left + 1;
+      }).length;
+    }),
+  );
+  expect(shown).toEqual(MERCHANDISE_PRODUCTS.map(() => 1));
   await expect(page.locator('.merchandise__grid img.is-active')).toHaveCount(
     MERCHANDISE_PRODUCTS.length,
   );
@@ -165,7 +170,7 @@ test('under reduced motion the images stay still, and the dots still show them (
   );
 });
 
-test('pressing buy explains each case: party only, or reserve by Instagram DM (decision 9)', async ({
+test('pressing buy explains each case and always points to the Instagram DM (decisions 9, 5)', async ({
   page,
 }, info) => {
   await page.goto('/?intro=0#tienda');
@@ -177,15 +182,16 @@ test('pressing buy explains each case: party only, or reserve by Instagram DM (d
     await buy.locator('summary').click();
     await expect(message).toBeVisible();
     if (product.sale === 'party') {
-      await expect(message).toHaveText(esWeb['store.buy.party']);
-      await expect(message.getByRole('link')).toHaveCount(0);
+      await expect(message).toContainText(esWeb['store.buy.party']);
+      // Plan 020 T227 (decision 5): sold in hand, but reserved on Instagram too.
+      await expect(message).toContainText(esWeb['store.buy.party.reserve']);
     } else {
       await expect(message).toContainText(esWeb['store.buy.reserve']);
-      const link = message.getByRole('link');
-      await expect(link).toHaveAttribute('href', MERCHANDISE_CONTACT.url);
-      await expect(link).toHaveAttribute('target', '_blank');
-      await expect(link).toHaveAttribute('rel', /noopener/);
     }
+    const link = message.getByRole('link');
+    await expect(link).toHaveAttribute('href', MERCHANDISE_CONTACT.url);
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', /noopener/);
   }
   // Nothing navigates away.
   await expect(store.getByTestId('merchandise-buy-message').filter({ visible: true })).toHaveCount(
@@ -193,4 +199,69 @@ test('pressing buy explains each case: party only, or reserve by Instagram DM (d
   );
   await expect(page).toHaveURL(/#tienda$/);
   await shot(page, 'comprar', info.project.name);
+});
+
+test('the photos pass by swiping sideways: touch, mouse drag and arrows (plan 020 T227, decision 5)', async ({
+  page,
+}, info) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/tienda');
+  const gallery = page.getByTestId(`merchandise-gallery-${first.id}`);
+  await gallery.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId(`merchandise-next-${first.id}`)).toBeVisible();
+  const frame = gallery.locator('.merchandise__frame');
+  const box = (await frame.boundingBox())!;
+  const y = box.y + box.height / 2;
+  // Mouse drag to the left: the next photo.
+  await page.mouse.move(box.x + box.width * 0.8, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.5, y, { steps: 8 });
+  await page.mouse.move(box.x + box.width * 0.2, y, { steps: 8 });
+  await page.mouse.up();
+  await expect(gallery).toHaveAttribute('data-index', '1');
+  // Touch swipe to the right: back to the first.
+  await frame.dispatchEvent('pointerdown', {
+    pointerId: 7,
+    pointerType: 'touch',
+    clientX: box.x + 40,
+    clientY: y,
+    isPrimary: true,
+  });
+  await frame.dispatchEvent('pointermove', {
+    pointerId: 7,
+    pointerType: 'touch',
+    clientX: box.x + 120,
+    clientY: y + 4,
+    isPrimary: true,
+  });
+  await frame.dispatchEvent('pointermove', {
+    pointerId: 7,
+    pointerType: 'touch',
+    clientX: box.x + box.width - 20,
+    clientY: y + 6,
+    isPrimary: true,
+  });
+  await frame.dispatchEvent('pointerup', {
+    pointerId: 7,
+    pointerType: 'touch',
+    clientX: box.x + box.width - 20,
+    clientY: y + 6,
+    isPrimary: true,
+  });
+  await expect(gallery).toHaveAttribute('data-index', '0');
+  // The arrows and the arrow keys, round the ends.
+  await page.getByTestId(`merchandise-prev-${first.id}`).click();
+  await expect(gallery).toHaveAttribute('data-index', String(first.images.length - 1));
+  await page.getByTestId(`merchandise-next-${first.id}`).click();
+  await expect(gallery).toHaveAttribute('data-index', '0');
+  await gallery.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(gallery).toHaveAttribute('data-index', '1');
+  await expect(gallery.getByRole('img')).toHaveAccessibleName(first.images[1]!.alt);
+  // The active photo is the one in the frame.
+  const active = gallery.locator('img.is-active');
+  await expect
+    .poll(async () => Math.round((await active.boundingBox())!.x - (await frame.boundingBox())!.x))
+    .toBe(0);
+  await shot(page, 'deslizar', info.project.name);
 });
