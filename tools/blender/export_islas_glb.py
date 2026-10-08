@@ -47,8 +47,9 @@ import rig  # noqa: E402
 from islas import comun as K  # noqa: E402
 
 # Tope de triángulos por isla: una isla entera con sus boias, en el móvil, cerca del barco (los barcos: 12000,
-# export_barcos_glb.MAX_TRIS). Sólo se carga la de las islas cercanas. muestra
-MAX_TRIS = 30000
+# export_barcos_glb.MAX_TRIS). Sólo se carga la de las islas cercanas. T231: de 30000 a 36000 para el contorno de
+# tinta del logo en las boias de las islas (mascota.outline_parts: ~2600–5600 triángulos por isla). muestra
+MAX_TRIS = 36000
 
 ISLAS_DIR = os.path.join(HERE, "islas")
 OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "art", "islas", "3d")

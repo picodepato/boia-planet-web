@@ -593,10 +593,11 @@ def _boia_bailona(B, K, base, k, g, bengala, boca, aro, bandas):
     Rt = K.UP.cross(D).normalized()
     a = c = 0.40 * k
     body = MASC.Body(base + K.UP * (0.36 * k), a, c, D, Rt)
-    B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)
+    shell = [B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)]
     MASC.face(B, body, k, boca)
-    MASC.cap(B, body, k, pompom=True)
-    MASC.ring_float(B, body, base, k, aro, bandas)
+    MASC.cap(B, body, k, pompom=True, parts=shell)
+    MASC.ring_float(B, body, base, k, aro, bandas, parts=shell)
+    MASC.outline_parts(B, shell, k)        # el trazo negro del logo (T231)
     # Brazos en V, con guantes blancos.
     hands = []
     for side in (-1, 1):

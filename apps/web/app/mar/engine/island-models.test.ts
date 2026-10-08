@@ -47,6 +47,29 @@ describe('el manifiesto de las islas', () => {
     }
   });
 
+  it('las boias de las islas llevan el trazo negro del logo (T231: mascota.outline_parts)', () => {
+    // Los materiales del GLB (el JSON de su primer trozo): la tinta del contorno es la de «ink» con «_contorno»,
+    // de una cara (casco invertido: sólo asoma el borde).
+    const materials = (file: string) => {
+      const buf = readFileSync(path.join(ROOT, 'art/islas/3d', file));
+      const len = buf.readUInt32LE(12);
+      const gltf = JSON.parse(buf.subarray(20, 20 + len).toString('utf8')) as {
+        materials: { name: string; doubleSided?: boolean }[];
+      };
+      return gltf.materials;
+    };
+    let withMascot = 0;
+    for (const e of entries.values()) {
+      const mats = materials(e.file);
+      if (!mats.some((m) => m.name.startsWith('mascota_gltf') || m.name.startsWith('hw_ghost_gltf'))) continue;
+      withMascot++;
+      const rim = mats.find((m) => m.name === 'ink_gltf_contorno');
+      expect(rim, e.id).toBeDefined();
+      expect(rim!.doubleSided ?? false, e.id).toBe(false);
+    }
+    expect(withMascot).toBe(entries.size);
+  });
+
   it('la Isla de Halloween tiene el suyo', () => {
     expect(entries.get('halloween')?.file).toBe('halloween.glb');
   });

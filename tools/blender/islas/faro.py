@@ -339,10 +339,11 @@ def boia_farera(B, K, base, k):
     Rt = K.UP.cross(D).normalized()
     a = c = 0.40 * k
     body = MASC.Body(base + K.UP * (0.36 * k), a, c, D, Rt)
-    B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=36, rings=18)
+    shell = [B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=36, rings=18)]
     MASC.face(B, body, k, "sonrisa")
-    MASC.cap(B, body, k, pompom=True)
-    MASC.ring_float(B, body, base, k, "white", "red")
+    MASC.cap(B, body, k, pompom=True, parts=shell)
+    MASC.ring_float(B, body, base, k, "white", "red", parts=shell)
+    MASC.outline_parts(B, shell, k)        # el trazo negro del logo (T231)
     # Un catalejo en la mano, mirando al mar.
     p, n = body.point(1.3, 0.1, -0.02 * k)
     out = (n * 0.8 + K.FRONT * 0.6).normalized()

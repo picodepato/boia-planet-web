@@ -445,6 +445,11 @@ CROC_ANIMS = {"idle": {"frames": IDLE_FRAMES, "fps": 6, "loop": True},
 
 
 # --- La mascota de BOIA: todas las boias (T39) ------------------------------------------------
+# Mundos cuyas boias llevan el contorno de tinta del logo como casco invertido (T231, mascota.outline_parts); la
+# acuarela ya dibuja la línea de su estilo.
+OUTLINE_THEMES = ("arcilla",)
+
+
 def mascot_frame(ctx, key, pos, k, variant, mouth, f, n, info=0, balloons=True, water=True, motion=None):
     """Construye la boia-mascota (mascota.py) para un fotograma: en `pos` del mapa (o en el origen si None),
     con el balanceo del fotograma f de n (o `motion(base)`, una matriz) y, si `water`, su onda de flotación
@@ -454,7 +459,8 @@ def mascot_frame(ctx, key, pos, k, variant, mouth, f, n, info=0, balloons=True, 
     root = MA.fresh(ctx, key)
     B.root = root
     with B.zona("mascota"), B.pieza(key):
-        tip = MASC.mascota(B, base, k=k, g=90.0, variant=variant, mouth=mouth, info=info, with_balloons=balloons)
+        tip = MASC.mascota(B, base, k=k, g=90.0, variant=variant, mouth=mouth, info=info, with_balloons=balloons,
+                           outline=B.tema.id in OUTLINE_THEMES)
     B.root = ctx.root
     objs = MA.fresh_collect(ctx, key, root)
     m = motion(base) if motion else MASC.bob_matrix(base, f, n, k)
@@ -901,32 +907,102 @@ def g_faro(ctx):
             P.pine(B, cx - 0.75, cy - 0.45, height=0.9, k=0.6)
 
 
+# El Puig Campana en el arte 2D del lugar `canon` (T231): la misma montaña que la isla 3D (islas/puigcampana.py,
+# T221), con su cresta, la muesca de la Portà y sus laderas, a escala de la isla del mapa. Del modelo 3D (frente a
+# -Y de Blender) al mapa (frente hacia el espectador, +y): x por CANON_SX, y por CANON_SY y el alto por CANON_SZ.
+CANON_SX, CANON_SY, CANON_SZ = 0.2, 0.16, 0.2
+CANON_MOUNT = (0.0, -0.22)          # dónde cae el centro de la planta de la montaña, respecto al centro de la isla
+CANON_NOTCH_T = 0.32              # hasta dónde baja la muesca de la Portà por la ladera (0 cresta … 1 pie)
+CANON_ROCK = "smoke"                # la caliza clara de la montaña (un papel del tema que ya existe: vale en la acuarela)
+CANON_HOUSES = ((-0.8, 0.16, 0.11, 0.09, 0.14, 100.0), (-0.62, 0.36, 0.1, 0.08, 0.12, 80.0),
+                (-0.96, 0.38, 0.09, 0.08, 0.11, 95.0), (-0.7, -0.02, 0.08, 0.07, 0.2, 90.0))
+# Finestrat: (dx, dy, semiancho, semifondo, alto, g) casitas encaladas; la última, alta, es el campanario.
+
+
+def canon_house(B, x, y, w, d, h, g):
+    """Casita encalada de Finestrat con tejado de teja y puerta azul, a la escala del arte del mapa."""
+    base = B.on(x, y, -0.02)
+    m = B.rz(g)
+    B.blob("whitewash", (w, d, h * 0.5), base + Vector((0, 0, h * 0.5)), 6.0, 7.0, extra=m, segs=16, rings=8)
+    B.blob("roof_tile", (w + 0.015, d + 0.015, 0.03), base + Vector((0, 0, h + 0.01)), 5.0, 2.0, extra=m, segs=16,
+           rings=6)
+    D = P.mdir(g)
+    Rt = D.cross(UP).normalized()
+    B.blob("blue_door", (0.025, 0.008, 0.04), base + D * (d * 0.98) + Vector((0, 0, 0.04)), 4.0, 3.0,
+           extra=P.basis(Rt, D, UP), segs=10, rings=6)
+
+
+def canon_mountain(B, cx, cy, z0):
+    """La montaña del Puig Campana (islas/puigcampana.py) como malla del mapa, con la base en z0 (bajo la tapa)."""
+    import bmesh
+    from islas import puigcampana as PC
+    mx, my = cx + CANON_MOUNT[0], cy + CANON_MOUNT[1]
+
+    def to_map(q):
+        return B.at(mx + (q.x - PC.MOUNT_C.x) * CANON_SX, my - (q.y - PC.MOUNT_C.y) * CANON_SY,
+                    z0 + (q.z - PC.BASE_Z) * CANON_SZ)
+
+    # La Portà, sólo arriba: la cresta sin la muesca (recta de una pared a la otra) da la ladera, y la muesca se
+    # hunde únicamente en el último CANON_NOTCH_T de la ladera; con la cresta del 3D tal cual, la muesca bajaría
+    # por toda la cara como una canal y, a este tamaño, no se leería como la Portà.
+    (u0, h0), (u1, h1) = PC.RIDGE[6], PC.RIDGE[11]
+
+    def point(u, t):
+        q = PC.mount_point(u, t)
+        if u0 < u < u1:
+            fill = h0 + (h1 - h0) * (u - u0) / (u1 - u0)
+            dip = max(0.0, fill - PC.ridge_h(u))
+            z = PC.BASE_Z + (fill - PC.BASE_Z) * PC.slope(t) + PC.bump(u, t) - dip * max(0.0, 1.0 - abs(t) / CANON_NOTCH_T)
+            q = Vector((q.x, q.y, z))
+        return q
+
+    us = sorted({x for x, _ in PC.RIDGE} | {-PC.MOUNT_A + 2 * PC.MOUNT_A * i / 26 for i in range(27)})
+    walls = [(PC.RIDGE[7][0], PC.RIDGE[8][0]), (PC.RIDGE[9][0], PC.RIDGE[10][0])]
+    us = [u for u in us if not any(lo < u < hi for lo, hi in walls)]
+    ts = sorted({-1.0 + 2.0 * j / 20 for j in range(21)} | {-0.05, -0.15, -0.25, 0.05, 0.15})
+    bm = bmesh.new()
+    grid = [[bm.verts.new(to_map(point(u, t))) for t in ts] for u in us]
+    for i in range(len(us) - 1):
+        for j in range(len(ts) - 1):
+            bm.faces.new((grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]))
+    bottom = bm.verts.new(to_map(Vector((PC.MOUNT_C.x, PC.MOUNT_C.y, PC.BASE_Z - 0.3))))
+    for e in [e for e in bm.edges if len(e.link_faces) == 1]:
+        bm.faces.new((e.verts[0], e.verts[1], bottom))
+    B.mk(bm, CANON_ROCK, sharp=30)
+    # Peñascos y matas por la falda; la roca pelada queda arriba.
+    for u, t, sz in ((-3.6, -0.6, 0.11), (-1.8, -0.72, 0.09), (0.7, -0.74, 0.1), (2.9, -0.62, 0.11), (4.3, -0.5, 0.08),
+                     (1.4, -0.45, 0.07)):
+        q = to_map(PC.mount_point(u, t))
+        B.blob("rock", (sz, sz * 0.85, sz * 0.7), q, 2.0, 2.0, extra=P.rot("Z", 37 * u), segs=12, rings=6)
+    for u, t in ((-4.4, -0.82), (-2.7, -0.86), (-0.5, -0.86), (2.1, -0.84), (3.8, -0.8), (-1.3, -0.62), (3.3, -0.66)):
+        q = to_map(PC.mount_point(u, t))
+        B.blob("pine", (0.07, 0.06, 0.045), q + Vector((0, 0, 0.01)), 2.0, 2.0, segs=10, rings=5)
+    return to_map(PC.mount_point(-0.5, 0.0))
+
+
 def g_canon(ctx):
+    """El Puig Campana (decisión 15, T231): la montaña de caliza con la muesca de la Portà, Finestrat blanco a
+    sus pies, pinos y, al frente, el cañón del minijuego apuntando al mar con su bandera."""
     B = ctx.B
     s = MJ["canon"]["isla"]
     cx, cy = s["centro"]
     with B.zona("canon"):
         with B.pieza("isla"):
             B.isla(s)
-            z0 = cap(B, s, "sand", k=0.7)
+            z0 = cap(B, s, "grass", k=0.72)
         with B.pieza("rocas"):
             gg = math.radians(s["giro"])
             for ang, rr, sz in ((180, 1.05, 0.28), (230, 1.02, 0.22), (320, 1.08, 0.24), (60, 1.1, 0.2)):
                 u, v = s["a"] * rr * math.cos(math.radians(ang)), s["b"] * rr * math.sin(math.radians(ang))
                 P.rock(B, cx + u * math.cos(gg) - v * math.sin(gg), cy + u * math.sin(gg) + v * math.cos(gg), sz, z=0.0)
-        C0 = B.at(cx, cy, z0 - 0.04)
-        with B.pieza("fortin"):
-            # muro bajo de piedra en herradura, abierto hacia la cámara, con almenas
-            Rw = 0.62
-            for i in range(15):
-                a = math.radians(-60 - i * 17)
-                q = C0 + Vector((Rw * math.cos(a), Rw * math.sin(a), 0.12))
-                B.blob("stone", (0.11, 0.08, 0.14), q, 4.0, 3.0, extra=P.rot("Z", math.degrees(a) + 90), segs=12, rings=8)
-                if i % 2 == 0:
-                    B.blob("stone", (0.06, 0.06, 0.05), q + Vector((0, 0, 0.18)), 4.0, 4.0,
-                           extra=P.rot("Z", math.degrees(a) + 90), segs=10, rings=6)
-            B.blob("stage_wood", (0.5, 0.42, 0.03), C0 + Vector((0, 0, 0.02)), 6.0, 2.0, extra=B.rz(20), segs=24, rings=6)
+        with B.pieza("montana"):
+            ctx.data["cima"] = canon_mountain(B, cx, cy, z0 - 0.05)
+        with B.pieza("finestrat"):
+            for dx, dy, w, d, h, g in CANON_HOUSES:
+                canon_house(B, cx + dx, cy + dy, w, d, h, g)
+        C0 = B.at(cx + 0.38, cy + 0.6, z0 - 0.04)
         with B.pieza("canon"):
+            B.blob("stone", (0.3, 0.24, 0.04), C0 + Vector((0, 0, 0.02)), 6.0, 2.0, extra=B.rz(20), segs=24, rings=6)
             gdir = 25.0                         # apunta al mar, a la derecha y hacia cámara
             D = P.mdir(gdir)
             Rt = D.cross(UP).normalized()
@@ -942,13 +1018,16 @@ def g_canon(ctx):
                 B.torus("wood_dark", 0.085, 0.022, P.T(*w) @ P.basis(D, UP, Rt), nu=20, nv=6)
                 B.blob("stage_wood", (0.16, 0.025, 0.07), w + Vector((0, 0, 0.04)), 4.0, 3.0,
                        extra=P.basis(D, -Rt, UP), segs=12, rings=6)
-            for i, (dx, dy, dz) in enumerate(((0, 0, 0), (0.1, 0, 0), (0.05, 0.085, 0), (0.05, 0.03, 0.08))):
-                q = C0 + Rt * (-0.35 + dx) - D * (0.1 - dy) + Vector((0, 0, 0.06 + dz))
+            for dx, dy, dz in ((0, 0, 0), (0.1, 0, 0), (0.05, 0.085, 0), (0.05, 0.03, 0.08)):
+                q = C0 + Rt * (-0.3 + dx) - D * (0.05 - dy) + Vector((0, 0, 0.06 + dz))
                 B.blob("iron", (0.05, 0.05, 0.05), q, segs=12, rings=8)
         with B.pieza("bandera"):
-            P.flag(B, C0 - P.mdir(gdir) * 0.45 + Vector((0, 0, 0.0)), 1.0, 0.8, role="lane_a", g=0)
+            P.flag(B, C0 - P.mdir(gdir) * 0.4 + P.mdir(gdir + 90) * 0.1, 0.9, 0.7, role="lane_a", g=0)
         with B.pieza("vegetacion"):
-            P.palm(B, cx + 0.95, cy - 0.35, lean=(0.15, -0.1), height=1.2, leaves=6)
+            for x, y, h in ((0.95, 0.35, 1.1), (1.15, 0.0, 0.9), (-1.2, 0.05, 1.0), (-0.35, 0.62, 0.85)):
+                P.pine(B, cx + x, cy + y, height=h, k=0.4)
+            P.bush(B, cx + 0.05, cy + 0.72, 0.1, role="pine")
+            P.bush(B, cx + 0.8, cy + 0.62, 0.09, role="pine")
 
 
 def p_minijuego(mid, builder):
@@ -1272,12 +1351,13 @@ ZONE_FILES = {"puerto": ["puerto"], "cala": ["cala"], "fiestera": ["fiestera"], 
               "faro": ["puerto"], "canon": [], "costa_oeste": ["costas"], "costa_este": ["costas"],
               "costa_sur": ["costas", "puerto"], "boias": [], "secreto": []}
 MASCOT_PLACES = ("boias", "secreto", "fiestera")      # la mascota de BOIA (T39): tools/blender/mascota.py
+PLACE_SCRIPTS = {"canon": ["tools/blender/islas/puigcampana.py"]}   # el Puig Campana (T231): la montaña del 3D
 
 
 def scripts(place):
     zs = ZONE_FILES.get(place["id"], ["marvivo"])
     extra = ["tools/blender/mascota.py"] if place["id"] in MASCOT_PLACES else []
-    return BASE_SCRIPTS + ["mundos/arcilla/zonas/%s.py" % z for z in zs] + extra
+    return BASE_SCRIPTS + ["mundos/arcilla/zonas/%s.py" % z for z in zs] + extra + PLACE_SCRIPTS.get(place["id"], [])
 
 
 ANCHOR_DOC = {

@@ -6,8 +6,9 @@ modelada como boya: el cuerpo es la boia, flota con la línea de agua a un
 dedo de la barriga y lleva un aro flotador en la flotación. Se construye con
 el Builder de los mundos (mundos/arcilla/escena.py): cada pieza nombra un
 PAPEL y el tema del mundo pone el material (arcilla, acuarela o el plano del
-glTF). El contorno negro del logo lo pone el estilo: la acuarela lleva su
-línea; la arcilla no tiene contorno y dibuja en tinta ojos, cejas y boca.
+glTF). El contorno negro del logo: en la acuarela lo pone su estilo (su
+línea); en la arcilla y en los glTF, `outline=True` (T220, T231) le pone un
+casco invertido de tinta a cuerpo, gorro y aro (hull, outline_parts).
 
 Variantes (la misma mascota con sus detalles):
     primera     la del logo, aro blanco con bandas azul marino
@@ -331,6 +332,26 @@ def balloons(B, c, R, body, k):
 OUTLINE_K = 0.022          # grosor del contorno de tinta (T220), en unidades de k: el trazo negro del logo
 
 
+OUTLINE_ROLE = "ink_contorno"
+
+
+def outline_material(B):
+    """La tinta del contorno: una copia de la del papel «ink» que oculta sus caras traseras (T231). El render 2D
+    (EEVEE) sólo las oculta con use_backface_culling; en el glTF sale doubleSided = false, como lo pinta /mar."""
+    cache = B.tema.cache
+    if OUTLINE_ROLE not in cache:
+        m = B.tema.material("ink").copy()
+        m.name = B.tema.material("ink").name + "_contorno"
+        m.use_backface_culling = True
+        cache[OUTLINE_ROLE] = m
+    return cache[OUTLINE_ROLE]
+
+
+def outline_parts(B, parts, k):
+    """El contorno del logo alrededor de las piezas `parts` (cuerpo, gorro, aro) de una boia de escala k."""
+    return [hull(B, obj, OUTLINE_K * k) for obj in parts]
+
+
 def hull(B, obj, t):
     """Contorno de casco invertido de `obj`: una copia hinchada `t` por sus normales, con las caras al revés y en
     tinta. Con las caras traseras ocultas (el mar 3D las oculta: Lambert de una cara) sólo asoma el borde: el trazo
@@ -347,7 +368,7 @@ def hull(B, obj, t):
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
-    me.materials.append(B.tema.material("ink"))
+    me.materials.append(outline_material(B))
     out = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(out)
     out.parent = obj.parent
@@ -359,8 +380,9 @@ def hull(B, obj, t):
 def mascota(B, base, k=1.0, g=90.0, variant="primera", mouth="sonrisa", info=0, with_balloons=True, outline=False):
     """Construye la boia-mascota con la base en `base` (Vector de Blender, en el agua). Devuelve el tope.
 
-    outline: contorno de tinta de casco invertido en cuerpo, gorro y aro (T220: el trazo negro del logo). Sólo
-    para los glTF del mar 3D, que ocultan las caras traseras; el arte 2D lleva el contorno de su estilo."""
+    outline: contorno de tinta de casco invertido en cuerpo, gorro y aro (T220: el trazo negro del logo). Lo llevan
+    los glTF del mar 3D (que ocultan las caras traseras) y el arte 2D de la arcilla (T231, outline_material); la
+    acuarela no, que ya lleva la línea de su estilo."""
     if variant not in VARIANTS or mouth not in MOUTHS:
         raise ValueError((variant, mouth))
     base = Vector(base)
@@ -383,8 +405,7 @@ def mascota(B, base, k=1.0, g=90.0, variant="primera", mouth="sonrisa", info=0, 
         elif variant == "whatsapp":
             chat_bubble(B, body, rc, R, k)
     if outline:
-        for obj in shell:
-            hull(B, obj, OUTLINE_K * k)
+        outline_parts(B, shell, k)
     return tip
 
 

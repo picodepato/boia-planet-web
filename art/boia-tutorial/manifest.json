@@ -14,7 +14,7 @@
       "tools/blender/world.py",
       "tools/blender/render.py"
     ],
-    "sources_sha256": "521b67520c1d3c0a976161e191717ae6db577bd4b489c06ed43b2ee0dc6b9a9d",
+    "sources_sha256": "1c05376b45c9084b2d09be8023786c791a88d64a3a2ff83d24b4bd85cf3bfa39",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,
@@ -48,130 +48,125 @@
       128.0,
       192.0
     ],
-    "luz": [
-      123.38,
-      135.45
-    ],
     "tope": [
-      121.58,
-      113.42
+      83.98,
+      126.31
     ],
     "bocadillo": [
-      120.2,
-      96.53
+      83.2,
+      111.25
     ]
   },
   "anchors_doc": {
-    "pivot": "centro del flotador a ras de agua; fijo en todos los fotogramas",
-    "luz": "farol (parpadea: encendido en los fotogramas con lamp_on)",
-    "tope": "remate de la jaula",
+    "pivot": "centro del aro flotador a ras de agua; fijo en todos los fotogramas",
+    "tope": "punta del gorro de la mascota",
     "bocadillo": "donde nace el bocadillo del diálogo del tutorial"
   },
   "anchors_on_art": [
     "pivot",
-    "luz"
+    "tope"
   ],
   "footprint": {
     "shape": "polygon",
     "points_px": [
       [
-        158.9,
+        167.72,
         192.0
       ],
       [
-        157.84,
-        196.0
+        166.37,
+        197.14
       ],
       [
-        154.76,
-        199.72
+        162.4,
+        201.93
       ],
       [
-        149.85,
-        202.92
+        156.09,
+        206.04
       ],
       [
-        143.45,
-        205.38
+        147.86,
+        209.2
       ],
       [
-        136.0,
-        206.92
+        138.28,
+        211.19
       ],
       [
         128.0,
-        207.45
+        211.86
       ],
       [
-        120.0,
-        206.92
+        117.72,
+        211.19
       ],
       [
-        112.55,
-        205.38
+        108.14,
+        209.2
       ],
       [
-        106.15,
-        202.92
+        99.91,
+        206.04
       ],
       [
-        101.24,
-        199.72
+        93.6,
+        201.93
       ],
       [
-        98.16,
-        196.0
+        89.63,
+        197.14
       ],
       [
-        97.1,
+        88.28,
         192.0
       ],
       [
-        98.16,
-        188.0
+        89.63,
+        186.86
       ],
       [
-        101.24,
-        184.28
+        93.6,
+        182.07
       ],
       [
-        106.15,
-        181.08
+        99.91,
+        177.96
       ],
       [
-        112.55,
-        178.62
+        108.14,
+        174.8
       ],
       [
-        120.0,
-        177.08
+        117.72,
+        172.81
       ],
       [
         128.0,
-        176.55
+        172.14
       ],
       [
-        136.0,
-        177.08
+        138.28,
+        172.81
       ],
       [
-        143.45,
-        178.62
+        147.86,
+        174.8
       ],
       [
-        149.85,
-        181.08
+        156.09,
+        177.96
       ],
       [
-        154.76,
-        184.28
+        162.4,
+        182.07
       ],
       [
-        157.84,
-        188.0
+        166.37,
+        186.86
       ]
     ],
-    "doc": "flotador a ras de agua, en px de la imagen"
+    "doc": "aro flotador a ras de agua, en px de la imagen"
   },
   "hitbox_hint": {
     "shape": "circle",
@@ -179,8 +174,8 @@
       128.0,
       192.0
     ],
-    "radius_px": 30.9,
-    "radius_units": 0.35
+    "radius_px": 39.72,
+    "radius_units": 0.45
   },
   "proximity_hint": {
     "shape": "circle",
@@ -203,23 +198,18 @@
       "file": "idle_0.png",
       "frame": 0,
       "animation": "idle",
-      "lamp_on": true,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          123.38,
-          135.45
-        ],
         "tope": [
-          121.58,
-          113.42
+          83.98,
+          126.31
         ],
         "bocadillo": [
-          120.2,
-          96.53
+          83.2,
+          111.25
         ]
       }
     },
@@ -227,23 +217,18 @@
       "file": "idle_1.png",
       "frame": 1,
       "animation": "idle",
-      "lamp_on": true,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          122.67,
-          134.04
-        ],
         "tope": [
-          120.59,
-          111.91
+          83.31,
+          124.67
         ],
         "bocadillo": [
-          119.0,
-          94.94
+          82.39,
+          109.47
         ]
       }
     },
@@ -251,23 +236,18 @@
       "file": "idle_2.png",
       "frame": 2,
       "animation": "idle",
-      "lamp_on": true,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          123.38,
-          132.35
-        ],
         "tope": [
-          121.58,
-          109.88
+          83.77,
+          122.73
         ],
         "bocadillo": [
-          120.2,
-          92.65
+          82.95,
+          107.36
         ]
       }
     },
@@ -275,23 +255,18 @@
       "file": "idle_3.png",
       "frame": 3,
       "animation": "idle",
-      "lamp_on": true,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          125.33,
-          130.89
-        ],
         "tope": [
-          124.29,
-          107.97
+          85.25,
+          121.01
         ],
         "bocadillo": [
-          123.49,
-          90.4
+          84.75,
+          105.49
         ]
       }
     },
@@ -299,23 +274,18 @@
       "file": "idle_4.png",
       "frame": 4,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          128.0,
-          130.14
-        ],
         "tope": [
-          128.0,
-          106.81
+          87.37,
+          120.0
         ],
         "bocadillo": [
-          128.0,
-          88.92
+          87.32,
+          104.4
         ]
       }
     },
@@ -323,23 +293,18 @@
       "file": "idle_5.png",
       "frame": 5,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          130.67,
-          130.32
-        ],
         "tope": [
-          131.71,
-          106.73
+          89.57,
+          119.97
         ],
         "bocadillo": [
-          132.51,
-          88.65
+          89.99,
+          104.38
         ]
       }
     },
@@ -347,23 +312,18 @@
       "file": "idle_6.png",
       "frame": 6,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          132.62,
-          131.31
-        ],
         "tope": [
-          134.42,
-          107.66
+          91.25,
+          120.91
         ],
         "bocadillo": [
-          135.8,
-          89.54
+          92.03,
+          105.42
         ]
       }
     },
@@ -371,23 +331,18 @@
       "file": "idle_7.png",
       "frame": 7,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          133.33,
-          132.75
-        ],
         "tope": [
-          135.41,
-          109.22
+          91.95,
+          122.57
         ],
         "bocadillo": [
-          137.0,
-          91.18
+          92.87,
+          107.23
         ]
       }
     },
@@ -395,23 +350,18 @@
       "file": "idle_8.png",
       "frame": 8,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          132.62,
-          134.25
-        ],
         "tope": [
-          134.42,
-          110.97
+          91.45,
+          124.47
         ],
         "bocadillo": [
-          135.8,
-          93.13
+          92.27,
+          109.3
         ]
       }
     },
@@ -419,23 +369,18 @@
       "file": "idle_9.png",
       "frame": 9,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          130.67,
-          135.47
-        ],
         "tope": [
-          131.71,
-          112.56
+          89.92,
+          126.14
         ],
         "bocadillo": [
-          132.51,
-          94.99
+          90.42,
+          111.1
         ]
       }
     },
@@ -443,23 +388,18 @@
       "file": "idle_10.png",
       "frame": 10,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          128.0,
-          136.19
-        ],
         "tope": [
-          128.0,
-          113.67
+          87.77,
+          127.13
         ],
         "bocadillo": [
-          128.0,
-          96.4
+          87.82,
+          112.17
         ]
       }
     },
@@ -467,23 +407,18 @@
       "file": "idle_11.png",
       "frame": 11,
       "animation": "idle",
-      "lamp_on": false,
       "anchors": {
         "pivot": [
           128.0,
           192.0
         ],
-        "luz": [
-          125.33,
-          136.2
-        ],
         "tope": [
-          124.29,
-          114.02
+          85.6,
+          127.2
         ],
         "bocadillo": [
-          123.49,
-          97.01
+          85.18,
+          112.23
         ]
       }
     }

@@ -171,7 +171,9 @@ mano lejos, mientras llega o si falla. Blender 5.2.2 LTS.
   `art/islas/3d/manifest.json`.
   Opciones: `--preview <carpeta fuera del repo>` (PNG de día y de noche) y
   `--detalle` (triángulos por material). Sale con 1 si la isla pasa de
-  `MAX_TRIS` (30 000).
+  `MAX_TRIS` (36 000 desde T231). Las boias de las islas llevan el trazo
+  negro del logo: `MASC.outline_parts(B, piezas, k)` (casco invertido en
+  tinta `ink_contorno`, de una cara) sobre cuerpo, gorro y aro.
 - `python3 tools/blender/check.py` valida el manifiesto
   (`isla3d.schema.json`), un GLB por módulo, una sola malla y el presupuesto.
 

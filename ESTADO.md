@@ -4,6 +4,48 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T231: Pending art: Puig Campana 2D and the boia outline everywhere
+
+Qué existe:
+- El trazo negro del logo (casco invertido, T220) llega a todas las boias de Arcilla. `tools/blender/mascota.py`:
+  `outline_material(B)` (copia de «ink» llamada `<ink>_contorno`, con `use_backface_culling`: EEVEE la oculta por
+  detrás y el glTF sale `doubleSided: false`) y `outline_parts(B, piezas, k)`; `hull()` usa esa tinta.
+- Islas 3D: las boias de `allday` (bailando), `faro` (farera), `halloween` (disfrazadas, `comun.boia_disfrazada`),
+  `ultima` (bailonas) y `canon` (Puig Campana) llevan contorno en cuerpo, gorro y aro. `MAX_TRIS` de
+  `export_islas_glb.py` sube de 30 000 a 36 000 (allday 34 752, halloween 35 018, ultima 32 474, canon 14 124,
+  faro 12 970). GLB y `art/islas/3d/manifest.json` regenerados con Blender 5.2.2.
+- Sprites 2D de Arcilla: `mundo_arcilla.mascot_frame` pasa `outline=True` en los temas de `OUTLINE_THEMES`
+  (`arcilla`; la acuarela ya tiene su línea y no se ha vuelto a renderizar). Re-renderizados `art/mundos/arcilla/boias`
+  (primera, whatsapp, info 1–5) y `art/mundos/arcilla/fiestera` (Fiestera pidiendo ayuda y tripulante a bordo).
+- `art/boia-tutorial/` ya no es el faro con cara: es la mascota del logo con contorno (`world.build_mascot_buoy`,
+  arcilla de `mundo_arcilla.TemaJuego`), 12 fotogramas de balanceo; anclajes `pivot`, `tope` (punta del gorro) y
+  `bocadillo`; se quitan `luz` y `lamp_on` (no tiene farol; nadie los lee).
+- Arte 2D del lugar `canon` en Arcilla: el Puig Campana (`mundo_arcilla.g_canon` + `canon_mountain`), la misma
+  montaña de `islas/puigcampana.py` a escala del mapa (cresta, cima a la izquierda, la Portà sólo arriba:
+  `CANON_NOTCH_T`), caliza clara (`smoke`), Finestrat (casitas encaladas con campanario), pinos y el cañón con su
+  bandera al frente; ancla `boca` como antes. El manifiesto lista `tools/blender/islas/puigcampana.py`.
+  La acuarela conserva su canon.
+- Prueba: `apps/web/app/mar/engine/island-models.test.ts` («las boias de las islas llevan el trazo negro del logo»:
+  cada GLB con mascota tiene `ink_gltf_contorno` de una cara). README (islas de Blender) al día.
+- Hoja de contacto (fuera del repo): `/tmp/orchestrator-attach/boia-planet-hernan-T231/contact-sheet.png`.
+
+Comandos:
+- `blender -b -P tools/blender/export_islas_glb.py` (5.2.2) → 5 islas exportadas, ninguna pasa de 36 000.
+- `blender -b -P tools/blender/render.py -- --mundo arcilla --lugar canon --lugar boias --lugar fiestera` → 113 imágenes;
+  `... -- --only boia-tutorial` → 12 imágenes.
+- `python3 tools/blender/check.py` → exit 0 (64 manifiestos válidos, 861 imágenes).
+- vitest (sin packages/db) → 260 ficheros, 2358 pasan, 1 omitida; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0;
+  `pnpm build` → exit 0 (landing 197,3 kB de 200); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Las boias GLB del barco (`art/barco/3d/boia-*.glb`, T220) no se han regenerado: ya llevan el contorno, en el
+  material «ink»; si se regeneran saldrá en `ink_gltf_contorno` (mascot-look.test.ts toma el primer `ink_gltf*`:
+  revisarlo entonces).
+- `generator.sources_sha256` de los demás lugares de Arcilla queda viejo (todos incluyen `mundo_arcilla.py`); nadie
+  lo comprueba. `mundos/arcilla/mapa.json` sigue llamando «Isla del Cañón» al lugar.
+- e2e no corrido. Hernán: `mar-isla-modelo.spec.ts`, `mar-canon.spec.ts`, `mar-faro-tabarca.spec.ts`,
+  `mar-isla-nochevieja.spec.ts`, `mar-isla-sonido.spec.ts`, `mar-lugares-blender.spec.ts`, `despliegue.spec.ts`.
+
 ## 2026-10-08 — plan 020 T228: Admin and content leftovers
 
 Qué existe:

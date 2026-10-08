@@ -535,121 +535,53 @@ def island_manifest(r, ppu=PPU):
 # --- Boia tutorial ------------------------------------------------------------------
 BUOY_FRAMES = 12
 BUOY_FPS = 8
-BUOY_LAMP_ON = 4          # fotogramas con el farol encendido al principio del ciclo (0,5 s de 1,5 s)
+BUOY_K = 1.0              # escala de la mascota (la de la primera boia del mundo de arcilla)
 
 
-def build_buoy(kit):
-    root = bpy.data.objects.new("buoy_root", None)
-    bpy.context.scene.collection.objects.link(root)
-    root.rotation_euler = (0.0, 0.0, math.radians(FACE_TOWARD_DEG))
-    bob = bpy.data.objects.new("buoy_bob", None)
-    bpy.context.scene.collection.objects.link(bob)
-    bob.parent = root
+def build_mascot_buoy():
+    """La boia del tutorial es la mascota de BOIA (T231, mascota.py): la del logo, con su gorro, su aro y el trazo
+    negro del logo alrededor (outline), en la arcilla del mundo principal. Devuelve la raíz que se balancea."""
+    import mascota as MASC
+    import mundo_arcilla as ARC
     holdout_plane()
-    # Flotador (azul marino), cuerpo en bandas naranja/crema, plataforma, jaula y farol.
-    bm = bmesh.new()
-    ring_r, ring_t = 0.27, 0.075
-    nu, nv = 16, 8
-    grid = [[bm.verts.new(((ring_r + ring_t * math.cos(2 * math.pi * j / nv)) * math.cos(2 * math.pi * i / nu),
-                           (ring_r + ring_t * math.cos(2 * math.pi * j / nv)) * math.sin(2 * math.pi * i / nu),
-                           0.02 + ring_t * 0.8 * math.sin(2 * math.pi * j / nv))) for j in range(nv)] for i in range(nu)]
-    for i in range(nu):
-        for j in range(nv):
-            bm.faces.new((grid[i][j], grid[(i + 1) % nu][j], grid[(i + 1) % nu][(j + 1) % nv], grid[i][(j + 1) % nv]))
-    kit.obj("buoy_float", bm, ["navy"], parent=bob)
-
-    zs = [-0.15, 0.12, 0.26, 0.46, 0.62]
-    rad = lambda z: 0.235 - 0.075 * (z + 0.15) / 0.77   # noqa: E731
-    roles = ["orange", "cream", "orange", "cream"]
-    segs = 20
-    bm = bmesh.new()
-    rings = [[bm.verts.new((rad(z) * math.cos(2 * math.pi * k / segs), rad(z) * math.sin(2 * math.pi * k / segs), z))
-              for k in range(segs)] for z in zs]
-    for i in range(len(zs) - 1):
-        for k in range(segs):
-            f = bm.faces.new((rings[i][k], rings[i][(k + 1) % segs], rings[i + 1][(k + 1) % segs], rings[i + 1][k]))
-            f.material_index = i % 2
-    f = bm.faces.new(list(reversed(rings[0])))
-    f.material_index = 0
-    top = bm.faces.new(rings[-1])
-    top.material_index = 2
-    kit.obj("buoy_body", bm, ["orange", "cream", "navy"], parent=bob)
-
-    bm = bmesh.new()
-    for k in range(4):
-        a = math.pi / 4 + k * math.pi / 2
-        cylinder_between(bm, (0.1 * math.cos(a), 0.1 * math.sin(a), 0.6), (0.075 * math.cos(a), 0.075 * math.sin(a), 0.93), 0.016, 6)
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.12, radius2=0.02, depth=0.1,
-                          matrix=Matrix.Translation((0, 0, 0.97)))
-    bmesh.ops.create_icosphere(bm, subdivisions=1, radius=0.03, matrix=Matrix.Translation((0, 0, 1.03)))
-    kit.obj("buoy_cage", bm, ["navy"], parent=bob)
-
-    lamp = kit.S.toon_material("buoy_lamp")
-    bm = bmesh.new()
-    bmesh.ops.create_icosphere(bm, subdivisions=2, radius=0.075, matrix=Matrix.Translation((0, 0, 0.77)))
-    kit.obj("buoy_lamp", bm, [lamp], parent=bob)
-
-    # Cara mirando a la cámara (+X local): ojos con pupila y sonrisa de puntos. Sin contorno.
-    bm = bmesh.new()
-    bm_p = bmesh.new()
-    for side in (-1, 1):
-        a = side * 0.36
-        z = 0.37
-        r = rad(z)
-        m = (Matrix.Translation((r * math.cos(a), r * math.sin(a), z)) @ Matrix.Rotation(a, 4, "Z")
-             @ Matrix.Diagonal((0.4, 1.0, 1.3, 1.0)))
-        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=0.05, matrix=m)
-        pr = r + 0.018
-        bmesh.ops.create_icosphere(bm_p, subdivisions=1, radius=0.024,
-                                   matrix=Matrix.Translation((pr * math.cos(a * 0.92), pr * math.sin(a * 0.92), z - 0.008)))
-    for k in range(7):
-        phi = math.radians(-150 + 20 * k)
-        y, z = 0.07 * math.cos(phi), 0.24 + 0.05 * math.sin(phi)
-        r = rad(z)
-        bmesh.ops.create_icosphere(bm_p, subdivisions=1, radius=0.014,
-                                   matrix=Matrix.Translation((math.sqrt(r * r - y * y) + 0.004, y, z)))
-    kit.obj("buoy_eyes", bm, [kit.flat("eye")], parent=bob, outline=False)
-    kit.obj("buoy_pupils", bm_p, [kit.flat("pupil")], parent=bob, outline=False)
-
-    ring(kit, (0.0, 0.0), lambda t: 0.3, [(0.0, 0.08, "foam", 1.0, 0.006), (0.08, 0.3, "shallow", kit.S.SHALLOW_ALPHA, 0.004)],
-         n=48, name="buoy_ring")
+    root = bpy.data.objects.new("buoy_bob", None)
+    bpy.context.scene.collection.objects.link(root)
+    B = ARC.escena.Builder(ARC.TemaJuego(), ARC.temas.A, ARC.M, root)
+    with B.zona("mascota"), B.pieza("boia_tutorial"):
+        tip = MASC.mascota(B, (0.0, 0.0, 0.0), k=BUOY_K, g=90.0, variant="primera", mouth="sonrisa", outline=True)
+    bpy.context.view_layer.update()
 
     def empty(name, loc):
         e = bpy.data.objects.new(name, None)
         bpy.context.scene.collection.objects.link(e)
-        e.parent = bob
+        e.parent = root
         e.location = loc
         return e
 
-    anchors = {"luz": empty("a_luz", (0, 0, 0.77)), "tope": empty("a_tope", (0, 0, 1.07)),
-               "bocadillo": empty("a_bocadillo", (0, 0.0, 1.3))}
-    return {"root": root, "bob": bob, "lamp": lamp, "anchors": anchors}
-
-
-def set_buoy_frame(kit, b, k):
-    ph = 2 * math.pi * k / BUOY_FRAMES
-    b["bob"].location = (0.0, 0.0, 0.03 * math.sin(ph))
-    b["bob"].rotation_euler = (math.radians(4.5) * math.sin(ph + math.pi / 3), math.radians(3.5) * math.sin(ph + math.pi / 2), 0.0)
-    on = k < BUOY_LAMP_ON
-    kit.S.set_material_color(b["lamp"], {"hex": kit.S.PALETTE["lamp" if on else "lamp_off"], "flat": on})
+    anchors = {"tope": empty("a_tope", tip), "bocadillo": empty("a_bocadillo", tip + Vector((0.0, 0.0, 0.2)))}
+    return root, anchors
 
 
 def render_buoy(S, out_dir, stats):
     rig.reset_scene()
     kit = Kit(S)
-    b = build_buoy(kit)
+    root, anchors_obj = build_mascot_buoy()
+    ring(kit, (0.0, 0.0), lambda t: 0.48, [(0.0, 0.08, "foam", 1.0, 0.006), (0.08, 0.3, "shallow", kit.S.SHALLOW_ALPHA, 0.004)],
+         n=48, name="buoy_ring")
     scene, cam = setup(rig.RESOLUTION, rig.RESOLUTION, rig.PIVOT_PX)
+    import mascota as MASC
     images = []
     for k in range(BUOY_FRAMES):
-        set_buoy_frame(kit, b, k)
+        root.matrix_world = MASC.bob_matrix(Vector((0.0, 0.0, 0.0)), k, BUOY_FRAMES, BUOY_K)
         bpy.context.view_layer.update()
         name = "idle_%d.png" % k
         render_to(scene, os.path.join(out_dir, name), stats)
         anc = {"pivot": list(rig.PIVOT_PX)}
-        for n, e in b["anchors"].items():
+        for n, e in anchors_obj.items():
             anc[n] = px(scene, cam, e.matrix_world.translation)
-        images.append({"file": name, "frame": k, "animation": "idle", "lamp_on": k < BUOY_LAMP_ON, "anchors": anc})
+        images.append({"file": name, "frame": k, "animation": "idle", "anchors": anc})
     ts = [2 * math.pi * j / 24 for j in range(24)]
+    R = 0.45 * BUOY_K                          # el aro flotador a ras de agua
     return {
         "kind": "sprite",
         "category": "boia",
@@ -657,15 +589,14 @@ def render_buoy(S, out_dir, stats):
         "pivot_px": list(rig.PIVOT_PX),
         "anchors": images[0]["anchors"],
         "anchors_doc": {
-            "pivot": "centro del flotador a ras de agua; fijo en todos los fotogramas",
-            "luz": "farol (parpadea: encendido en los fotogramas con lamp_on)",
-            "tope": "remate de la jaula",
+            "pivot": "centro del aro flotador a ras de agua; fijo en todos los fotogramas",
+            "tope": "punta del gorro de la mascota",
             "bocadillo": "donde nace el bocadillo del diálogo del tutorial",
         },
-        "anchors_on_art": ["pivot", "luz"],
-        "footprint": {"shape": "polygon", "points_px": [px(scene, cam, G(math.cos(t) * 0.35, math.sin(t) * 0.35)) for t in ts],
-                      "doc": "flotador a ras de agua, en px de la imagen"},
-        "hitbox_hint": circle_hint(rig.PIVOT_PX, 0.35, PPU),
+        "anchors_on_art": ["pivot", "tope"],
+        "footprint": {"shape": "polygon", "points_px": [px(scene, cam, G(math.cos(t) * R, math.sin(t) * R)) for t in ts],
+                      "doc": "aro flotador a ras de agua, en px de la imagen"},
+        "hitbox_hint": circle_hint(rig.PIVOT_PX, R, PPU),
         "proximity_hint": circle_hint(rig.PIVOT_PX, 2.6, PPU),
         "animations": {"idle": {"frames": BUOY_FRAMES, "fps": BUOY_FPS, "loop": True}},
         "images": images,

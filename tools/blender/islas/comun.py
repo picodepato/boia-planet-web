@@ -229,21 +229,22 @@ def boia_disfrazada(B, base, k, g, disfraz):
     a = c = 0.40 * k
     body = MASC.Body(base + UP * (0.36 * k), a, c, D, Rt)
     skin = {"bruja": "mascota", "fantasma": "hw_ghost", "frankenstein": "hw_frank"}[disfraz]
-    B.blob(skin, (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)
+    shell = [B.blob(skin, (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)]
     MASC.face(B, body, k, "habla" if disfraz == "fantasma" else "sonrisa")
     if disfraz == "bruja":
         sombrero_bruja(B, body, k)
         escoba(B, body, base, k)
-        MASC.ring_float(B, body, base, k, "hw_purple", "ink")
+        MASC.ring_float(B, body, base, k, "hw_purple", "ink", parts=shell)
     elif disfraz == "fantasma":
-        MASC.cap(B, body, k)
+        MASC.cap(B, body, k, parts=shell)
         sabana(B, body, base, k)
         brazos_fantasma(B, body, k)
-        MASC.ring_float(B, body, base, k, "white", "mascota_gorro")
+        MASC.ring_float(B, body, base, k, "white", "mascota_gorro", parts=shell)
     else:
         pelo_frank(B, body, k)
         tornillos(B, body, k)
-        MASC.ring_float(B, body, base, k, "white", "hw_frank_dark")
+        MASC.ring_float(B, body, base, k, "white", "hw_frank_dark", parts=shell)
+    MASC.outline_parts(B, shell, k)        # el trazo negro del logo (T231)
 
 
 def sombrero_bruja(B, body, k):

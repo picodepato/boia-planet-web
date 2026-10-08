@@ -355,7 +355,7 @@ def boia_bailando(B, base, k, g, pose, gafas, tilt=0.0, cascos=False, boca="sonr
     Rt = UP.cross(D).normalized()
     a = c = 0.40 * k
     body = MASC.Body(base + UP * (0.36 * k), a, c, D, Rt)
-    B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)
+    shell = [B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)]
     if gafas:
         # Con gafas de sol los ojos no se ven: la cara sin ellos (las cejas y la boca, las de mascota.face).
         eye, MASC.eye = MASC.eye, lambda *a, **kw: None
@@ -369,8 +369,9 @@ def boia_bailando(B, base, k, g, pose, gafas, tilt=0.0, cascos=False, boca="sonr
     if cascos:
         auriculares(B, body, k)
     else:
-        MASC.cap(B, body, k)
-    MASC.ring_float(B, body, base, k, "white", "mascota_gorro")
+        MASC.cap(B, body, k, parts=shell)
+    MASC.ring_float(B, body, base, k, "white", "mascota_gorro", parts=shell)
+    MASC.outline_parts(B, shell, k)        # el trazo negro del logo (T231)
     # Brazos: del costado hacia arriba (o al lado), con un guante blanco en la punta.
     ups = {"arriba": (1.0, 1.0), "uno": (1.0, 0.1), "abiertos": (0.45, 0.45)}[pose]
     for side, up in zip((-1, 1), ups):

@@ -300,7 +300,8 @@ def boia(B, K, base, k, g):
     Rt = K.UP.cross(D).normalized()
     a = c = 0.40 * k
     body = MASC.Body(base + K.UP * (0.36 * k), a, c, D, Rt)
-    B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=36, rings=18)
+    shell = [B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=36, rings=18)]
     MASC.face(B, body, k, "sonrisa")
-    MASC.cap(B, body, k)
-    MASC.ring_float(B, body, base, k, "white", "mascota_gorro")
+    MASC.cap(B, body, k, parts=shell)
+    MASC.ring_float(B, body, base, k, "white", "mascota_gorro", parts=shell)
+    MASC.outline_parts(B, shell, k)        # el trazo negro del logo (T231)

@@ -2,7 +2,7 @@
  "status": "muestra",
  "nota": "Generado por tools/blender/export_islas_glb.py desde tools/blender/islas/<id>.py. No editar.",
  "unidades": "Blender: frente (hacia el puerto) a -Y, que en glTF (y arriba) es +z; agua en y = 0; centro en el origen; /mar escala la isla por su radio de lugar / radius",
- "max_tris": 30000,
+ "max_tris": 36000,
  "islas": [
   {
    "id": "allday",
@@ -11,8 +11,8 @@
    "radius": 7.0,
    "top": 1.55,
    "height": 9.204,
-   "tris": 29156,
-   "kb": 868,
+   "tris": 34752,
+   "kb": 990,
    "doc": "sound system de rave con dos muros de altavoces, cabina de DJ, pórtico de focos y láser que brillan de noche, y boias de BOIA bailando en la pista"
   },
   {
@@ -22,8 +22,8 @@
    "radius": 7.0,
    "top": 1.0,
    "height": 7.4,
-   "tris": 13372,
-   "kb": 259,
+   "tris": 14124,
+   "kb": 386,
    "doc": "la montaña de caliza del Puig Campana en pirámide empinada con la muesca de la Portà en la cresta, el pueblo blanco de Finestrat a sus pies con las ventanas encendidas de noche, pinos, el cañón del minijuego apuntando al mar con su bandera y antorcha, muelle y una boia de BOIA"
   },
   {
@@ -33,8 +33,8 @@
    "radius": 7.0,
    "top": 1.15,
    "height": 13.53,
-   "tris": 12218,
-   "kb": 250,
+   "tris": 12970,
+   "kb": 434,
    "doc": "isla baja y llana de roca rojiza con matorral seco y un tramo de muralla; en medio el faro de Tabarca, la casa de los fareros de piedra clara con la torre cuadrada en el centro y la linterna que brilla de noche; muelle con la boia farera y gaviotas"
   },
   {
@@ -44,8 +44,8 @@
    "radius": 7.0,
    "top": 1.63,
    "height": 6.35,
-   "tris": 29842,
-   "kb": 791,
+   "tris": 35018,
+   "kb": 904,
    "doc": "club calabaza con cara de enfado que brilla de noche y seis boias disfrazadas (brujas, fantasmas y Frankenstein) alrededor"
   },
   {
@@ -55,8 +55,8 @@
    "radius": 7.0,
    "top": 1.45,
    "height": 10.75,
-   "tris": 29856,
-   "kb": 946,
+   "tris": 32474,
+   "kb": 1010,
    "doc": "montaña nevada con la torre del reloj de las campanadas y rayos de luces de fiesta hacia todas partes, tiendas de campaña con boias bailando, uvas, cava, confeti y fuegos artificiales"
   }
  ]
