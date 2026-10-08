@@ -57,7 +57,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome: intro gated globe→3D letters→fade of buttons (also mobile/fallback), artists rotation with carnet images + «Ver todos los artistas», store swipe + Instagram for party-only, «Ver todas»→/galeria, manifest 500 = build over running dev · bd24b19
 
 ## T228 — Admin and content leftovers
-- Status: pending
+- Status: done
 - Depends on: T227
 - Model: sonnet
 - Skills: none
@@ -70,10 +70,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - the boat shop shows no Acuarela boat; `secretHint` used or removed; seed names updated
   - running the i18n-zonas generator leaves the generated files unchanged (`git diff --exit-code` after running it) → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: Admin banner explains local vs accounts, nav 250 px, Filosofía editable in Admin, hidden-world boats out of the shop, secretHint removed, seed names, i18n-zonas generator in sync · 2693302
 
 ## T229 — Admin moderation with accounts
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T228
 - Model: opus
 - Skills: none
@@ -103,7 +103,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome:
 
 ## T231 — Pending art: Puig Campana 2D and the boia outline everywhere
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: blender-modeling-workflow, blender-rendering-workflow, blender-asset-validation
@@ -165,6 +165,8 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T226: labels/buttons in button font 10 px mobile, 11 px desktop/map; `layoutPins` takes screen width and keeps labels on screen; top cards right of Menú/! on mobile; open «!» panel turns the button cream with orange «!» (agent)
 - 2026-10-08 T227: Zarpar hidden while the scene loads; 3D letters wait up to 1.2 s then flat title; reduced motion shows everything at once; avatars in colour on the landing; artists with a Carnet join the rotation (lazy); store auto-rotation stops after a swipe (agent)
 
+- 2026-10-08 T228: Filosofía edited in Admin's home Filosofía block; nav column 220→250 px; hidden-boat filter derived from hidden worlds in the registry; unused `island.secretHint` removed (agent)
+
 ## Proposals (new scope)
 - 2026-10-08 T226: «Entradas» sub-line during a trip («Rumbo a Ca…») cut by the bottom bar's fixed height; music/effects in Ajustes still checkboxes, not toggles; 🪙 shows as a box in headless Chromium
 - 2026-10-08 T227: give `next dev` its own distDir (`.next-dev`) so a build doesn't cause dev 500s; unused i18n keys artists.pause/resume; `prettier --check` reports 98 files (likely CRLF)
@@ -174,3 +176,6 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T227 launched · attempt 1 · agent aacd0a6b3f2b14530
 - 2026-10-08 T226 done · merged 67295fe
 - 2026-10-08 T227 done · merged bd24b19
+- 2026-10-08 T228 launched · attempt 1 · agent afa5367486c5dba8d (sonnet)
+- 2026-10-08 T231 launched · attempt 1 · agent aaa4a8350036c88cf
+- 2026-10-08 T228 done · merged 2693302
