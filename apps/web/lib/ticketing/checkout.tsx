@@ -7,6 +7,8 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { formatEventDate } from '../i18n/web';
 import { draftFrom, saveCarnet } from '../mundo/carnet/carnet-editor';
 import { gameRepository } from '../repo';
+import { signupUrl } from '../scanner/carnet-url';
+import { isSupabaseConfigured } from '../supabase/config';
 import type {
   CheckoutEvent,
   CheckoutSession,
@@ -175,6 +177,9 @@ export function SandboxCheckout({
   };
   const createCarnet = () => {
     if (onCreateCarnet) onCreateCarnet();
+    // Con cuentas, el Carnet empieza por el email y su código (plan 019 T218,
+    // decisión 11): el alta de /carnet, que lleva la hoja de acceso.
+    else if (isSupabaseConfigured()) window.location.assign(signupUrl(window.location.origin));
     else setCarnetStep('form');
   };
 

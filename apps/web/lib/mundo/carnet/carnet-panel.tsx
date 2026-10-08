@@ -2,11 +2,12 @@
 
 import { CARNET_QUESTIONS } from '@boia/contracts';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccountSection } from '../../account/account-section';
 import { requireAccount } from '../../account/gate';
 import { useAccount } from '../../account/use-account';
 import { INVITE_COPY } from '../../landing/invitations';
+import { isSupabaseConfigured } from '../../supabase/config';
 import { t } from '../../i18n';
 import { useRepoData } from '../repo';
 import { CarnetEditor, LOCAL_ONLY_NOTICE } from './carnet-editor';
@@ -22,8 +23,14 @@ import { useCarnet } from './use-carnet';
  *
  * - `onTop`: al pasar de ver a editar (o al guardar), se vuelve arriba.
  * - `onBottles`: abre la hoja de la botella propia; sin él, sólo se enseña.
- * - `startEditing`: entra ya en el alta (p. ej. desde «Crear mi Carnet»).
+ * - `startEditing`: entra ya en el alta (p. ej. desde «Crear mi Carnet» o el
+ *   QR de alta). Con cuentas, el alta empieza por el email y su código.
  * - `onCreated`: se acaba de crear el Carnet (p. ej. para volver a la compra, T66).
+ *
+ * Con cuentas (plan 019 T218, decisión 11) crear el Carnet empieza siempre
+ * por el email → el código de 6 cifras → el Carnet (apodo y política, en la
+ * hoja de acceso); después, las preguntas opcionales. Sin Supabase no se pide
+ * email: el alta va directa al formulario.
  */
 export function CarnetPanel({
   onTop,
@@ -38,13 +45,38 @@ export function CarnetPanel({
 }) {
   const { data, repo } = useCarnet(null);
   const { data: bottle } = useRepoData((r) => r.bottles.mine());
-  const [editing, setEditing] = useState(startEditing);
+  // Con cuentas, el alta no abre el formulario: abre antes la hoja del email.
+  const [editing, setEditing] = useState(startEditing && !isSupabaseConfigured());
   const account = useAccount();
   const [creating, setCreating] = useState(false);
+  const autoStarted = useRef(false);
   useEffect(() => {
     onTop?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, data?.carnet?.userId]);
+
+  const create = async () => {
+    if (!repo) return;
+    setCreating(true);
+    try {
+      if (!(await requireAccount('carnet', { onRegistered: () => setEditing(true) }))) return;
+      if (!(await repo.carnet.mine())) setEditing(true);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // «Crear carnet» ya pedido (el QR de alta, la compra): con cuentas, la hoja
+  // del email se abre sola una vez, en cuanto se sabe que no hay Carnet.
+  const guestWithoutCarnet =
+    !!data && !data.carnet && (account.status === 'guest' || account.status === 'incomplete');
+  useEffect(() => {
+    if (!startEditing || !isSupabaseConfigured() || !guestWithoutCarnet || autoStarted.current)
+      return;
+    autoStarted.current = true;
+    void create();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startEditing, guestWithoutCarnet]);
 
   if (!data || !repo) return <p className="juego-muted">{t('juego.carnet.cargandoTuCarnet')}</p>;
   const { carnet, extras } = data;
@@ -65,21 +97,10 @@ export function CarnetPanel({
   }
 
   if (!carnet && account.status !== 'local') {
-    // First creation shows the optional questions before saving asks for an account.
-    // Signed-out members can still sign in directly to see their existing card.
-    const create = async () => {
-      if (!account.signedOut) {
-        setEditing(true);
-        return;
-      }
-      setCreating(true);
-      try {
-        if (!(await requireAccount('carnet', { onRegistered: () => setEditing(true) }))) return;
-        if (!(await repo.carnet.mine())) setEditing(true);
-      } finally {
-        setCreating(false);
-      }
-    };
+    // Email first (decision 11): the account sheet asks for the email, the
+    // 6-digit code and, for a new account, the Carnet itself; a new
+    // registration then continues into the optional questions. Signing into
+    // an existing card just shows it.
     return (
       <div data-testid="carnet-invitacion">
         <div className="carnet-hueco">

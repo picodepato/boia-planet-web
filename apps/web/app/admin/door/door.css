@@ -1,0 +1,211 @@
+/*
+ * La puerta de la fiesta (plan 019 T218, decisión 11): el lector de la
+ * puerta (/admin/puerta, en el móvil) y el QR de alta. Esquinas rectas
+ * (decisión 3). Va sobre los tokens del Admin (`.admin`).
+ */
+
+.puerta {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.puerta-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: var(--admin-navy);
+  color: #fff;
+}
+.puerta-top h1 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 22px;
+}
+.puerta-top__links {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.puerta-top__links a,
+.puerta-top__links .admin-link {
+  color: #fff;
+}
+
+.puerta-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.puerta-nota {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--admin-accent);
+  background: var(--admin-card);
+  font-size: 14px;
+}
+
+.puerta-cuenta {
+  margin: 0;
+  min-height: 1.4em;
+  font-weight: 600;
+}
+
+.puerta-ancho {
+  width: 100%;
+  justify-content: center;
+}
+
+/* La cámara: cuadrada, con la ventana de lectura y sus esquinas naranjas. */
+.puerta-camara {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #000;
+}
+.puerta-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.puerta-ventana {
+  position: absolute;
+  inset: 14%;
+  box-shadow: 0 0 0 200vmax rgb(0 0 0 / 0.45);
+}
+.puerta-ventana i {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 5px solid var(--boia-orange, #ec4f24);
+}
+.puerta-ventana i:nth-child(1) {
+  left: 0;
+  top: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+.puerta-ventana i:nth-child(2) {
+  right: 0;
+  top: 0;
+  border-left: 0;
+  border-bottom: 0;
+}
+.puerta-ventana i:nth-child(3) {
+  left: 0;
+  bottom: 0;
+  border-right: 0;
+  border-top: 0;
+}
+.puerta-ventana i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-left: 0;
+  border-top: 0;
+}
+.puerta-camara__aviso {
+  position: absolute;
+  inset: auto 12px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font-size: 14px;
+}
+
+/* El resultado de cada lectura: grande, para leerlo de un vistazo en la puerta. */
+.puerta-resultado {
+  margin: 0;
+  min-height: 1.4em;
+  padding: 12px 14px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 2px solid transparent;
+}
+.puerta-resultado.is-vacio {
+  padding: 0;
+}
+.puerta-resultado.is-granted {
+  border-color: var(--admin-ok);
+  background: #e5f4ea;
+  color: var(--admin-ok);
+}
+.puerta-resultado.is-already {
+  border-color: var(--admin-navy);
+  background: #e8eef7;
+  color: var(--admin-navy);
+}
+.puerta-resultado.is-notCarnet,
+.puerta-resultado.is-unknown,
+.puerta-resultado.is-error {
+  border-color: var(--admin-danger);
+  background: #fbeaea;
+  color: var(--admin-danger);
+}
+
+.puerta-manual {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+.puerta-manual .admin-field {
+  flex: 1 1 220px;
+}
+
+.puerta-alta-bloque h2 {
+  margin: 8px 0 4px;
+  font-size: 18px;
+}
+
+/* El QR de alta en el Admin. */
+.puerta-alta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+.puerta-alta__qr {
+  width: 168px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--admin-line, #d8dee4);
+}
+.puerta-alta__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.puerta-alta__info {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* El QR de alta a pantalla completa va fuera del Admin (portal en <body>). */
+.puerta-proyector {
+  --admin-navy: var(--boia-blue);
+  --admin-line: #d8dee4;
+  --admin-ink: #16202c;
+  background: #fff;
+  color: #000;
+}
+@media print {
+  body:has(> .puerta-proyector) > :not(.puerta-proyector) {
+    display: none !important;
+  }
+  .puerta-proyector button {
+    display: none !important;
+  }
+  .puerta-proyector {
+    position: static;
+    min-height: 90vh;
+  }
+}

@@ -20,6 +20,7 @@ import { authProblem, looksLikeEmail } from '../../../lib/account/errors';
 import { looksLikeBackupCode } from '../../../lib/admin/backup-codes';
 import { t } from '../../../lib/i18n';
 import { AdminApp } from '../admin-app';
+import { DoorPage } from '../door/door-page';
 
 type GateState = AdminStep | { step: 'loading' } | { step: 'error' };
 
@@ -32,7 +33,7 @@ type GateState = AdminStep | { step: 'loading' } | { step: 'error' };
  * de su cuenta; el código del email queda para el resto del equipo. En el
  * paso del TOTP, un código de respaldo de un solo uso da de alta otro.
  */
-export function RealAdminGate() {
+export function RealAdminGate({ door = false }: { door?: boolean } = {}) {
   const [state, setState] = useState<GateState>({ step: 'loading' });
   const refresh = useCallback(async () => {
     try {
@@ -51,9 +52,10 @@ export function RealAdminGate() {
   }, []);
 
   if (state.step === 'ready') {
-    return (
-      <AdminApp real={{ email: state.email, role: state.role, userId: state.userId, signOut }} />
-    );
+    const real = { email: state.email, role: state.role, userId: state.userId, signOut };
+    // El lector de la puerta (/admin/puerta, plan 019 T218): misma entrada.
+    if (door) return <DoorPage real={real} onSignOut={() => void signOut()} />;
+    return <AdminApp real={real} />;
   }
   return (
     <Shell>

@@ -107,6 +107,14 @@ export type CarnetRecord = z.infer<typeof carnetSchema>;
 // ---------------------------------------------------------------------------
 // Libro de transacciones (ledger_transactions)
 
+/**
+ * Origen de un sello que pone el equipo (plan 019 T218, decisión 11): el
+ * lector de la puerta (`puerta:<evento>`) o el Admin a mano
+ * (`admin:<evento>`). Los mismos prefijos que usa `staff_stamp` en
+ * supabase/migrations/20261008100300_door_stamps.sql.
+ */
+export const STAFF_STAMP_REF = /^(puerta|admin):[a-z0-9]+([-_:./][a-z0-9]+)*$/;
+
 export const ledgerEntrySchema = z
   .object({
     id: z.string().min(1),
@@ -140,7 +148,14 @@ export const ledgerEntrySchema = z
         if (!e.achievementId || !nonNegative) fail('achievement: achievementId y premio >= 0');
         break;
       case 'stamp':
-        if (!e.eventId || !e.purchaseId || !nonNegative) fail('stamp: evento y compra');
+        // Con compra (de prueba) o puesto por el equipo: en la puerta o a mano
+        // desde el Admin (plan 019 T218, decisión 11).
+        if (
+          !e.eventId ||
+          !(e.purchaseId || STAFF_STAMP_REF.test(e.sourceRef ?? '')) ||
+          !nonNegative
+        )
+          fail('stamp: evento y compra (o sello del equipo)');
         break;
       case 'cosmetic':
         // Gastar monedas nunca reduce puntos (REQ-IDE-027).

@@ -141,6 +141,20 @@ export type StampResult =
   | { granted: true; tx_id: string; event: string; points: number }
   | { granted: false; reason: 'already_stamped'; event: string };
 
+/** staff_stamp: el lector de la puerta o el Admin a mano (plan 019 T218). */
+export interface StaffStampResult {
+  granted: boolean;
+  reason?: 'already_stamped';
+  tx_id?: string;
+  /** Slug de la fiesta. */
+  event: string;
+  title: string;
+  member: string;
+  nickname: string;
+  at: string;
+  points: number;
+}
+
 /** submit_race_time */
 export interface RaceTimeResult {
   best: boolean;

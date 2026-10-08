@@ -17,6 +17,7 @@ import { esLib } from './es-lib';
 import { esLibEventos } from './es-lib-eventos';
 import { esMar } from './es-mar';
 import { esMundo } from './es-mundo';
+import { esPuerta } from './es-puerta';
 import { esWeb } from './es-web';
 import { esZonas } from './es-zonas';
 import { esZonasEventos } from './es-zonas-eventos';
@@ -49,6 +50,8 @@ export const es = {
   ...esCuenta,
   ...esCarnet,
   ...esAcceso,
+  // La puerta de la fiesta (plan 019 T218).
+  ...esPuerta,
 } as const;
 
 export type MessageKey = keyof typeof es;

@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
 vi.mock('react', async (original) => ({
   ...(await original<typeof React>()),
   useEffect: () => {},
+  useRef: (current: unknown) => ({ current }),
   useState: (initial: unknown) => [initial, state.calls++ === 0 ? state.edit : state.creating],
 }));
 vi.mock('../../account/use-account', () => ({
@@ -56,10 +57,25 @@ function createButton(element: ReactElement): (() => Promise<void>) | undefined 
   return undefined;
 }
 
-it('a fresh online guest opens the questionnaire before asking for an account', async () => {
+it('a fresh online guest gives the email first, then the questionnaire (plan 019 T218)', async () => {
+  state.newlyRegistered = true;
   await createButton(CarnetPanel({}))!();
+  expect(state.gate).toHaveBeenCalledWith(
+    'carnet',
+    expect.objectContaining({ onRegistered: expect.any(Function) }),
+  );
   expect(state.edit).toHaveBeenCalledWith(true);
-  expect(state.gate).not.toHaveBeenCalled();
+  // The account sheet opened before any questionnaire.
+  expect(state.gate.mock.invocationCallOrder[0]!).toBeLessThan(
+    state.edit.mock.invocationCallOrder[0]!,
+  );
+});
+
+it('a fresh online guest who cancels the email sheet does not get the questionnaire', async () => {
+  state.gate.mockResolvedValue(false);
+  await createButton(CarnetPanel({}))!();
+  expect(state.gate).toHaveBeenCalled();
+  expect(state.edit).not.toHaveBeenCalled();
 });
 
 it('after sign-out, a new registration opens questions instead of silently creating an empty card', async () => {

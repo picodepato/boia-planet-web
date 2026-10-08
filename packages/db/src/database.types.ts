@@ -811,6 +811,38 @@ export type Database = {
           },
         ];
       };
+      event_attendance: {
+        Row: {
+          event_id: string;
+          scanned_at: string;
+          scanned_by: string | null;
+          source: string;
+          user_id: string;
+        };
+        Insert: {
+          event_id: string;
+          scanned_at?: string;
+          scanned_by?: string | null;
+          source: string;
+          user_id: string;
+        };
+        Update: {
+          event_id?: string;
+          scanned_at?: string;
+          scanned_by?: string | null;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'event_attendance_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       event_albums: {
         Row: {
           created_at: string;
@@ -2304,6 +2336,15 @@ export type Database = {
           p_end: string;
           p_life: number;
           p_ranked: boolean;
+        };
+        Returns: Json;
+      };
+      staff_stamp: {
+        Args: {
+          p_member: string;
+          p_event: string;
+          p_source?: string;
+          p_reason?: string;
         };
         Returns: Json;
       };

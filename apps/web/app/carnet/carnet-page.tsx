@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { MAR_CARNET_HREF, MAR_PATH } from '../../lib/world-handoff';
 import '../../lib/mundo/hud.css';
 import '../../lib/mundo/carnet/carnet.css';
@@ -8,11 +9,13 @@ import { AccountSection } from '../../lib/account/account-section';
 import { useAccount } from '../../lib/account/use-account';
 import { t } from '../../lib/i18n';
 import { CarnetCard } from '../../lib/mundo/carnet/carnet-card';
+import { CarnetPanel } from '../../lib/mundo/carnet/carnet-panel';
 import { CarnetReport } from '../../lib/mundo/carnet/carnet-report';
 import { LOCAL_ONLY_NOTICE } from '../../lib/mundo/carnet/carnet-editor';
 import { OwnCarnet } from '../../lib/mundo/carnet/own-carnet';
 import { INVITE_COPY } from '../../lib/landing/invitations';
 import { useCarnet } from '../../lib/mundo/carnet/use-carnet';
+import { wantsCreate } from '../../lib/scanner/carnet-url';
 
 /**
  * El Carnet a pantalla completa (REQ-IDE-010, REQ-IDE-017): el propio en
@@ -23,11 +26,22 @@ import { useCarnet } from '../../lib/mundo/carnet/use-carnet';
  *   todo se guarda en este navegador.
  * - Con cuentas: el Carnet público de cualquier miembro se lee del servidor
  *   (apodo, rango, sellos; nunca el email), y el propio trae «Escanear sello».
+ * - `/carnet?crear=1` (el QR de alta de la puerta, plan 019 T218): sin Carnet,
+ *   empieza el alta aquí mismo (con cuentas, por el email y su código).
  */
 export function CarnetPage({ userId }: { userId: string | null }) {
   const { data } = useCarnet(userId);
   const account = useAccount();
   const local = account.status === 'local';
+  // El alta del QR de alta: se decide una vez, al saber si ya hay Carnet, y
+  // se queda hasta que el alta termine (el panel enseña luego el Carnet).
+  const loaded = data !== undefined;
+  const [signup, setSignup] = useState(false);
+  useEffect(() => {
+    if (!loaded || userId !== null || data?.carnet) return;
+    if (wantsCreate(window.location.search)) setSignup(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, userId]);
   return (
     <main className="carnet-page" data-testid="carnet-pagina">
       <header className="carnet-page-head">
@@ -39,6 +53,10 @@ export function CarnetPage({ userId }: { userId: string | null }) {
       <div className="carnet-page-inner">
         {data === undefined ? (
           <p>{t('carnet.page.loading')}</p>
+        ) : signup ? (
+          <div className="carnet-page-cuenta carnet-page-alta" data-testid="carnet-alta">
+            <CarnetPanel startEditing />
+          </div>
         ) : data.carnet ? (
           <>
             {data.carnet.isMine ? (

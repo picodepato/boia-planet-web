@@ -4,6 +4,34 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T218: Carnet: email first with Supabase, sign-up QR, door scanner and manual stamps
+
+Qué existe (decisión 11):
+
+- **Email primero con Supabase.** «Crear carnet» (`CarnetPanel`) abre siempre la hoja de acceso antes: email → código de 6 cifras → Carnet (apodo y política); una cuenta nueva sigue luego a las preguntas opcionales. Con `startEditing` (compra desde /mar, QR de alta) la hoja se abre sola. La compra de la landing con cuentas manda al alta de `/carnet?crear=1`. En modo local no se pide email (como antes).
+- **QR de alta**: `/carnet?crear=1` abre el alta directamente en /carnet (`lib/scanner/carnet-url.ts`: `signupUrl`, `wantsCreate`). El Admin lo enseña, proyecta e imprime; el lector de la puerta también lo enseña.
+- **QR del Carnet**: sin cambios, lleva la URL pública `/carnet/<id>`; `parseCarnetQr` saca el id (cualquier dominio, o el UUID pegado a mano).
+- **Lector de la puerta** `/admin/puerta` (misma entrada que el Admin: Carnet 000 en local; email + TOTP con cuentas, editor o más): elige la fiesta que toca, cámara trasera con lectura continua (`BarcodeDetector` o `jsqr`), sin cerrar entre Carnets, el mismo QR no se relee en 6 s; además pegar el enlace o leer una foto del QR. Cada lectura: «Sellado», «ya tenía el sello», «no es un Carnet», «no existe»; cuenta de asistentes.
+- **Admin «Puerta y sellos»** (`#puerta`, demo y con cuentas): QR de alta, botón al lector y «Sellar a mano» (fiesta, Carnet por apodo, motivo obligatorio; con cuentas, rol admin).
+- **Modo local**: `admin.stampCarnet(userId, eventId, { source: 'door'|'manual', reason })` y `admin.attendance(eventId)` en `@boia/store`: libro `stamp` sin compra con `sourceRef` `puerta:`/`admin:` (`STAFF_STAMP_REF`), un sello por fiesta, auditoría. El sello de la compra de prueba no cuenta como asistencia (el de la puerta lo sustituye). 0 puntos en local, como el de la compra.
+- **Supabase**: migración `supabase/migrations/20261008100300_door_stamps.sql`: tabla `event_attendance` (RLS: el equipo y cada cual la suya; nadie la escribe), RPC `staff_stamp(p_member, p_event, p_source, p_reason)`: door → editor, manual → admin con motivo; los puntos del sello por QR; un sello por fiesta; auditoría. `claim_stamp` (el socio escanea el QR de la fiesta) sigue igual. Tipos en `database.types.ts`, `StaffStampResult` en `rpc.ts`.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 250 archivos, 2294 pasan, 1 omitida
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0 · `pnpm typecheck` → exit 0 · `pnpm build` → exit 0 (landing 195.9 kB de 200 kB)
+- `E2E_PORT=3218 pnpm e2e e2e/puerta.spec.ts --workers=1` → exit 0, 8 pasan (móvil y escritorio: cámara falsa con el QR del Carnet → sello en el Carnet; foto y enlace pegado, «ya lo tenía», otro QR no; Admin: QR de alta, sellar a mano y auditoría; `/carnet?crear=1` sin email en local)
+- `E2E_PORT=3219 pnpm e2e carnet carnet-questions carnet-requerido sello admin admin-acceso admin-moderacion carnet-artista --workers=2` → exit 0, 36 pasan, 8 omitidas (Supabase)
+- Pruebas nuevas: `packages/store/src/door-stamps.test.ts`, `apps/web/lib/scanner/carnet-url.test.ts`, `apps/web/app/admin/door/backend.test.ts`, `apps/web/app/admin/door/door-stamps-sql.test.ts`, `apps/web/lib/mundo/carnet/carnet-entry.test.ts` (email primero), `packages/db/src/supabase/door-stamps.supabase.ts`.
+- `docs/spec/estado.md`: REQ-IDE-023 enlaza el lector y sus pruebas.
+
+Pendiente (Hernán):
+
+- Aplicar `20261008100300_door_stamps.sql` en `boia-planet-dev` y correr `pnpm test:supabase` (incluye `door-stamps.supabase.ts`, no corrido aquí).
+- El lector con cuentas y la hoja «email primero» sólo se han probado en local / con unidades; falta una pasada con `E2E_SUPABASE=1` (`cuenta.spec.ts` ya espera la hoja al pulsar «Crear carnet»).
+- Textos `muestra`.
+
 ## 2026-10-08 — plan 019 T220: The boia redesigned after the BOIA mascot
 
 Qué existe:

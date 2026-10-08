@@ -638,6 +638,36 @@ export type CarnetModerationAction =
   | { kind: 'restore_photo' }
   | { kind: 'restore_nickname' };
 
+/**
+ * De dónde viene un sello que pone el equipo (plan 019 T218, decisión 11):
+ * el lector de la puerta de la fiesta o el Admin a mano.
+ */
+export type StaffStampSource = 'door' | 'manual';
+
+export interface StaffStampOptions extends AdminOptions {
+  source: StaffStampSource;
+}
+
+/** Lo que pasó al sellar un Carnet desde la puerta o el Admin. */
+export interface StaffStampResult {
+  /** false: ya tenía el sello de esa fiesta (la asistencia queda igual). */
+  granted: boolean;
+  userId: string;
+  nickname: string;
+  eventId: string;
+  eventName: string;
+  /** Cuándo se puso (o cuándo se puso el que ya tenía). */
+  at: string;
+}
+
+/** Quien entró a una fiesta, según los sellos del equipo. */
+export interface AttendanceRow {
+  userId: string;
+  nickname: string;
+  source: StaffStampSource;
+  at: string;
+}
+
 /** Partidas de una misión a las que afectaría cambiar su destino en un mundo. */
 export interface MissionImpact {
   worldId: string;
@@ -775,6 +805,18 @@ export interface AdminApi {
   ): Promise<void>;
   /** Da por revisado un reporte de Carnet sin retirar nada. */
   resolveCarnetReport(reportId: string, resolution: string, opts?: AdminOptions): Promise<void>;
+
+  // La puerta de la fiesta (plan 019 T218, decisión 11).
+
+  /**
+   * Pone el sello de `eventId` en el Carnet de `userId` y apunta que vino: el
+   * lector de la puerta (`door`) o el Admin a mano (`manual`, pide motivo).
+   * Uno por fiesta: si ya lo tenía, `granted: false`. Un sello de la compra
+   * de prueba no cuenta como asistencia: el de la puerta manda.
+   */
+  stampCarnet(userId: string, eventId: string, opts: StaffStampOptions): Promise<StaffStampResult>;
+  /** Quien entró a una fiesta (los sellos del equipo), lo último primero. */
+  attendance(eventId: string): Promise<AttendanceRow[]>;
 
   // Destino de las misiones (REQ-AVE-010, REQ-AVE-011).
 

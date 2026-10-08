@@ -10,13 +10,15 @@ import {
 } from '../../lib/admin/demo-auth';
 import { t } from '../../lib/i18n';
 import { AdminApp } from './admin-app';
+import { DoorPage } from './door/door-page';
 
 /**
  * /admin en modo local (D-20) con la puerta del Carnet 000 (plan 017 T193,
  * decisión 9): el número 000 y la contraseña, comprobada en el navegador
- * contra un hash con sal. Dentro, el «Probar admin» de siempre.
+ * contra un hash con sal. Dentro, el «Probar admin» de siempre, o con `door`
+ * el lector de la puerta (/admin/puerta, plan 019 T218).
  */
-export function DemoAdminGate() {
+export function DemoAdminGate({ door = false }: { door?: boolean } = {}) {
   const [inside, setInside] = useState<boolean | null>(null);
   useEffect(() => setInside(hasDemoSession()), []);
   const signOut = useCallback(() => {
@@ -35,7 +37,7 @@ export function DemoAdminGate() {
       </div>
     );
   }
-  if (inside) return <AdminApp demo={{ signOut }} />;
+  if (inside) return door ? <DoorPage onSignOut={signOut} /> : <AdminApp demo={{ signOut }} />;
   return <DemoLogin onDone={() => setInside(true)} />;
 }
 

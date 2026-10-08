@@ -292,6 +292,10 @@ a.juego-button {
 .carnet-page-cuenta:empty {
   display: none;
 }
+/* El alta del QR de alta (/carnet?crear=1, plan 019 T218): sobre la hoja crema. */
+.carnet-page .carnet-page-alta .juego-muted {
+  color: #5b5470;
+}
 @media (min-width: 768px) {
   .carnet-page-inner {
     max-width: 592px;

@@ -109,6 +109,7 @@ import {
   type PlayerState,
   type SkinPatch,
   type StoreDoc,
+  STAFF_STAMP_REF,
 } from './schema';
 import {
   DocChannel,
@@ -2539,6 +2540,78 @@ class LocalRepository implements BoiaRepository {
             opts,
           );
         }),
+      stampCarnet: async (userId, eventId, opts) => {
+        const source = opts?.source;
+        if (source !== 'door' && source !== 'manual') invalid('sello: origen');
+        const reason = opts.reason?.trim() || null;
+        if (source === 'manual' && (!reason || reason.length < 3)) invalid('sello: motivo');
+        return this.mutate(['progress', 'carnet', 'audit'], (d) => {
+          const carnet = this.carnetView(userId, d, { raw: true });
+          if (!carnet || carnet.isSample) throw new StoreError('not_found', `Carnet ${userId}`);
+          const event = this.resolved('events', d).find((e) => e.id === eventId);
+          if (!event) throw new StoreError('not_found', `evento ${eventId}`);
+          const result = (granted: boolean, at: string) => ({
+            granted,
+            userId,
+            nickname: carnet.nickname,
+            eventId,
+            eventName: event.name,
+            at,
+          });
+          // Uno por fiesta: el de la puerta, el del Admin o el de un QR. El de
+          // la compra de prueba no es asistencia (no impide el de la puerta).
+          const stamps = activeEntries(d.ledger, userId, 'stamp').filter(
+            (e) => e.eventId === eventId,
+          );
+          const verified = stamps.find((e) => !e.sourceRef?.startsWith('purchase:'));
+          if (verified) return result(false, verified.createdAt);
+          const prefix = source === 'door' ? 'puerta' : 'admin';
+          const n = d.ledger.filter((e) => e.userId === userId && e.kind === 'stamp').length;
+          const grant = this.append(
+            d,
+            this.baseEntry(userId, {
+              id: ledgerId('stamp', `${prefix}:${userId}:${eventId}:${n}`),
+              kind: 'stamp',
+              eventId,
+              sourceRef: `${prefix}:${eventId}`,
+              createdBy: this.actor,
+              metadata: { source },
+              ...(reason ? { reason } : {}),
+            }),
+          );
+          if (!grant.granted) return result(false, grant.entry?.createdAt ?? this.iso());
+          this.audit(
+            d,
+            {
+              area: 'ledger',
+              action: 'stamp',
+              targetId: grant.entry.id,
+              before: null,
+              after: grant.entry,
+            },
+            { reason: reason ?? `puerta de ${event.name}` },
+          );
+          return result(true, grant.entry.createdAt);
+        });
+      },
+      attendance: async (eventId) => {
+        const revoked = compensatedIds(this.doc.ledger);
+        return this.doc.ledger
+          .filter(
+            (e) =>
+              e.kind === 'stamp' &&
+              e.eventId === eventId &&
+              !revoked.has(e.id) &&
+              STAFF_STAMP_REF.test(e.sourceRef ?? ''),
+          )
+          .map((e) => ({
+            userId: e.userId,
+            nickname: this.carnetView(e.userId)?.nickname ?? e.userId,
+            source: (e.sourceRef!.startsWith('puerta:') ? 'door' : 'manual') as 'door' | 'manual',
+            at: e.createdAt,
+          }))
+          .sort((a, b) => b.at.localeCompare(a.at));
+      },
       missionImpact: async (worldId, missionId, placeId) =>
         missionImpactOf(this.doc, worldId, missionId, placeId),
       setMissionDestination: async (worldId, missionId, placeId, opts = {}) => {

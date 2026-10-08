@@ -6,6 +6,7 @@ import { ADMIN_COPY } from '../../lib/admin/copy';
 import { AchievementsSection } from './sections/achievements';
 import { ArtistsSection } from './sections/artists';
 import { DiscountsSection } from './sections/discounts';
+import { DoorSection } from './door/door-section';
 import { EventsSection } from './sections/events';
 import { HomeSection } from './sections/home';
 import { LinksSection } from './sections/links';
@@ -40,6 +41,8 @@ const SECTIONS: Section[] = [
   { id: 'inicio', label: t('admin.adminApp.paginaPrincipal'), Component: HomeSection },
   { id: 'enlaces', label: t('admin.links.nav'), Component: LinksSection },
   { id: 'eventos', label: t('admin.adminApp.eventos'), Component: EventsSection },
+  // La puerta: QR de alta, lector y sellar a mano (plan 019 T218, decisión 11).
+  { id: 'puerta', label: t('puerta.section.nav'), Component: DoorSection },
   { id: 'descuentos', label: t('admin.adminApp.descuentos'), Component: DiscountsSection },
   { id: 'mundo', label: t('admin.adminApp.mundo'), Component: WorldSection },
   { id: 'objetos', label: t('admin.objects.nav'), Component: ObjectsSection },
