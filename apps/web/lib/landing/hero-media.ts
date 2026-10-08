@@ -14,3 +14,16 @@ export type HeroMediaKind = 'video' | 'image';
 export function heroMediaKind(src: string): HeroMediaKind {
   return /\.(mp4|webm)(\?.*)?$/i.test(src) ? 'video' : 'image';
 }
+
+/**
+ * The video of the presentation after the hero (plan 021 T235): the small
+ * window that opens to the full screen. Today the 8 s sample built from the
+ * project's art (`tools/landing/presentacion.mjs`, `muestra`). To swap it, put
+ * the new file under `public/` (for example `public/contenido/portada/
+ * presentacion.mp4`: muted H.264 MP4, ~8 s, 720p, ≤ 2 MB) with a poster frame
+ * next to it, and set both paths here.
+ */
+export const PRESENTATION_VIDEO = {
+  src: '/api/art/landing/presentacion-muestra.mp4',
+  poster: '/api/art/landing/presentacion-muestra.webp',
+} as const;

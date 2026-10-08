@@ -4,6 +4,30 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 021 T235: Pinned black intro with BOIA beats and the expanding video window
+
+Qué existe:
+- Tras el hero, la presentación (`app/(landing)/components/presentation.tsx`), después de noartmusic.com: el primer scroll funde el hero a negro, la pantalla se queda fija y «BOIA» entra en tres golpes (aparece, crece, se asienta); se abre una ventana pequeña de vídeo alrededor del logo (primero una rendija, luego la caja), que crece hasta la pantalla entera (arranque decidido, llegada suave); un rato a pantalla completa y la pantalla se suelta: sube «Próximo evento». Todo va con el scroll y se rebobina al subir. El logo, naranja sobre el negro, pasa a blanco al abrirse el vídeo (si no, naranja sobre naranja no se lee).
+- La línea de tiempo es una función pura, `lib/landing/presentation.ts` (`presentationFrame(p, vw, vh)`: velo, opacidad y escala del logo, ventana del vídeo en px, escala del vídeo, si se reproduce). `p` en alturas de pantalla desde arriba; la fijación dura `PRESENTATION.end` = 3,1 pantallas (landing.css `--reel-end`, un test comprueba que coinciden).
+- Maquetación decidida antes del primer pintado: con el script de arranque (`html[data-entry]`) y sin movimiento reducido, la pista mide `3,1 × 100svh + 100lvh`, se monta sobre el hero (`margin-top: -100svh`) y su escenario es `position: sticky`. Sin JavaScript o con movimiento reducido: un bloque quieto con el póster y el logo, sin fijación ni animación. El hero pasa a una pantalla (antes 200svh con la zambullida); se quitan la hoja blanca que subía del mar y su ola de píxel.
+- El movimiento (`presentation-motion.tsx`) llega con `React.lazy`, fuera de la ruta crítica (como el collage, T234): escribe el fotograma como variables CSS (clip-path y `scale`, sin layout), suaviza la rueda (70 ms), reproduce el vídeo (mudo, `playsinline`, en bucle) sólo con su ventana en pantalla y la pestaña visible. El vídeo (póster + `preload="auto"`) se pide cuando el hero llega al reposo y la página está ociosa, o en el primer scroll.
+- `run.ts`: con el negro encima (`html[data-reel-covered]`) la escena 3D deja de pintar; la fase de scroll (`rest/dive/sea`) sigue igual.
+- Vídeo de muestra: `art/landing/presentacion-muestra.mp4` (1280 × 720, 8 s, H.264 sin audio, 0,8 MB; ocho planos de 1 s cortados a 120 bpm con arte del proyecto: la isla del escenario, el barco de fiesta, el puerto, la boia…) y su póster `.webp`, hechos con `node tools/landing/presentacion.mjs` (Chromium de Playwright + MediaRecorder; sin descargas). `muestra`.
+
+Cambiar el vídeo: poner el archivo en `apps/web/public/` (p. ej. `public/contenido/portada/presentacion.mp4`: MP4 H.264 mudo, ~8 s, 720p, ≤ 2 MB) con un póster al lado, y cambiar las dos rutas de `PRESENTATION_VIDEO` en `apps/web/lib/landing/hero-media.ts` (junto a `HERO_MEDIA_SRC`, la ranura de Roke). Los tiempos de la secuencia, en `PRESENTATION` de `lib/landing/presentation.ts` (si cambia `end`, cambiar `--reel-end` en landing.css).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (264 archivos, 2407 pasan, 1 omitido); `lib/landing/presentation.test.ts`: 8 tests.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; ruta crítica de la landing 199,5 kB gzip (antes 199,0; presupuesto 200).
+- Capturas 390×844 y 1440×900 de los pasos 1→7, tiras y dos grabaciones (webm) fuera del repo; CLS 0 con el scroll, 0,002 con movimiento reducido.
+
+Pendiente:
+- Que Hernán juzgue la transición con el vídeo de muestra; el vídeo real (Roke/Álvaro).
+- La cabecera entra a 0,95 pantallas, durante los golpes del logo (como antes al dejar el hero); si molesta, esconderla mientras dura la presentación.
+
+e2e que Hernán debería correr: `landing-scroll.spec.ts` (actualizado: a una pantalla está la presentación, la primera banda llega pasada `PRESENTATION.end`), `landing.spec.ts`, `intro.spec.ts`, `landing-perf.spec.ts` y `deck/02-landing.deck.ts`.
+
 ## 2026-10-08 — plan 020 T233: Close plan 020: test guide and status
 
 Qué existe:

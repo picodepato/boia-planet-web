@@ -16,6 +16,7 @@ import { ArtistRotator } from './artist-rotator';
 import { BrandLogo } from './brand-logo';
 import { EventCard } from './event-card';
 import { HeroStills } from './hero-stills';
+import { Presentation } from './presentation';
 import { MerchandiseCatalog } from '../../../lib/merchandise/catalog-view';
 import { MERCHANDISE_PATH, merchandiseContact } from '../../../lib/merchandise/catalog';
 // Con el resto de la landing: el collage llega pintado del servidor (T234).
@@ -171,56 +172,61 @@ export function BlockView({
       // readers); «BOIA» on screen is the wordmark, with the 3D letters. The
       // h1 stays visible to assistive tech when the UI fades out (landing.css,
       // T81).
+      // Plan 021 T235: the hero, then the presentation (black, «BOIA», the
+      // video that opens to the full screen) before «Próximo evento».
       return (
-        <section
-          id="inicio"
-          className="hero"
-          aria-labelledby="hero-title"
-          data-block={block.id}
-          data-scroll-phase="rest"
-        >
-          {/* Con clave: `heroScene` lo crea el servidor (LandingPage) y aquí va entre hermanos. */}
-          <Fragment key="hero-scene">
-            {heroScene ?? (
-              <div className="hero__scene hero__scene--still" aria-hidden="true">
-                <HeroStills />
+        <>
+          <section
+            id="inicio"
+            className="hero"
+            aria-labelledby="hero-title"
+            data-block={block.id}
+            data-scroll-phase="rest"
+          >
+            {/* Con clave: `heroScene` lo crea el servidor (LandingPage) y aquí va entre hermanos. */}
+            <Fragment key="hero-scene">
+              {heroScene ?? (
+                <div className="hero__scene hero__scene--still" aria-hidden="true">
+                  <HeroStills />
+                </div>
+              )}
+            </Fragment>
+            <div className="hero__ui">
+              <h1 id="hero-title" className="visually-hidden">
+                {block.title}
+              </h1>
+              <p className="hero__wordmark" aria-hidden="true">
+                {t('intro.logoAlt')}
+                <canvas className="intro-title3d" aria-hidden="true" />
+              </p>
+              <div className="hero__actions">
+                {/* «Zarpar» enters the game (D-24): a plain link, the dive with JavaScript. */}
+                <div className="hero__explore">
+                  <a
+                    className="cta-explore"
+                    href={ZARPAR_HREF}
+                    data-zarpar="hero"
+                    data-testid="cta-3d"
+                  >
+                    <span className="cta-explore__label">{t('hero.explore')}</span>
+                  </a>
+                  <p className="hero__discount-hint">{t('hero.explore.discountHint')}</p>
+                </div>
+                {/* 2026-10-08 (decision 4): only «Zarpar»; the tickets are one scroll down. */}
               </div>
-            )}
-          </Fragment>
-          <div className="hero__ui">
-            <h1 id="hero-title" className="visually-hidden">
-              {block.title}
-            </h1>
-            <p className="hero__wordmark" aria-hidden="true">
-              {t('intro.logoAlt')}
-              <canvas className="intro-title3d" aria-hidden="true" />
-            </p>
-            <div className="hero__actions">
-              {/* «Zarpar» enters the game (D-24): a plain link, the dive with JavaScript. */}
-              <div className="hero__explore">
-                <a
-                  className="cta-explore"
-                  href={ZARPAR_HREF}
-                  data-zarpar="hero"
-                  data-testid="cta-3d"
-                >
-                  <span className="cta-explore__label">{t('hero.explore')}</span>
-                </a>
-                <p className="hero__discount-hint">{t('hero.explore.discountHint')}</p>
+              <button type="button" className="hero__hint" data-hero-hint="">
+                {t('hero.scrollHint')}
+                <span className="hero__hint-line" aria-hidden="true" />
+              </button>
+              <p className="hero__corner hero__corner--place">{t('hero.place')}</p>
+              <div className="hero__corner hero__corner--bottom">
+                <p>{t('hero.coords')}</p>
+                <p className="hero__corner-line">{block.positioning}</p>
               </div>
-              {/* 2026-10-08 (decision 4): only «Zarpar»; the tickets are one scroll down. */}
             </div>
-            <button type="button" className="hero__hint" data-hero-hint="">
-              {t('hero.scrollHint')}
-              <span className="hero__hint-line" aria-hidden="true" />
-            </button>
-            <p className="hero__corner hero__corner--place">{t('hero.place')}</p>
-            <div className="hero__corner hero__corner--bottom">
-              <p>{t('hero.coords')}</p>
-              <p className="hero__corner-line">{block.positioning}</p>
-            </div>
-          </div>
-        </section>
+          </section>
+          <Presentation />
+        </>
       );
 
     case 'priority_event':

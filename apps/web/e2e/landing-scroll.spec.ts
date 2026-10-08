@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { t } from '../lib/i18n';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
+import { PRESENTATION } from '../lib/landing/presentation';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { lowContrast, measureContrast } from './contrast';
 
@@ -72,6 +73,12 @@ async function snap(page: Page, name: string, task: 'T79' | 'T81' = 'T79') {
 }
 
 const hero = (page: Page) => page.locator('.hero');
+/**
+ * Plan 021 T235: after the hero the presentation stays pinned (black, «BOIA»,
+ * the video) until `PRESENTATION.end` screens; the first band comes up after
+ * it. Here (viewport heights of scroll), its heading is on screen.
+ */
+const PAST_REEL = PRESENTATION.end + 0.6;
 const zarpar = (page: Page) => hero(page).getByRole('link', { name: 'Zarpar', exact: true });
 /** The hero's old «Entradas»: gone since decision 4 (2026-10-08). */
 const entradas = (page: Page) =>
@@ -167,9 +174,14 @@ test('«Zarpar», sin «Entradas», en el primer pintado; reposo; un viewport de
   await page.waitForTimeout(600);
   await snap(page, 'zambullida');
 
-  // One viewport down: the sea by the port, the first band on screen.
+  // One viewport down: the scene has dived, under the presentation's black
+  // (plan 021 T235): no band yet, the header in.
   await scrollTo(page, H, 'sea');
+  await expect(page.locator('html')).toHaveAttribute('data-reel-covered', '');
   const band = page.locator('main > .section').first();
+  expect((await band.boundingBox())!.y, 'la primera banda espera').toBeGreaterThanOrEqual(H);
+  // Past the presentation: the first band on screen.
+  await scrollTo(page, H * PAST_REEL);
   const box = (await band.boundingBox())!;
   expect(box.y, 'la primera banda sube del mar').toBeLessThan(H);
   expect(box.y + box.height).toBeGreaterThan(0);
@@ -413,7 +425,7 @@ test('accesibilidad: axe sin violaciones y contraste AA en reposo, tras la zambu
     'el h1 sigue tras la zambullida',
   ).toHaveCount(1);
   await accessibleHere(page, 'tras la zambullida');
-  await scrollTo(page, H * 1.6);
+  await scrollTo(page, H * PAST_REEL);
   await page.waitForTimeout(800);
   await snap(page, 'bloques', 'T81');
   await accessibleHere(page, 'bandas');
@@ -523,6 +535,7 @@ test('Atrás desde /mar: la landing en reposo, sin la aparición, y el scroll si
   await expect(zarpar(page)).toBeVisible();
   await expect(entradas(page)).toHaveCount(0);
   await scrollTo(page, page.viewportSize()!.height, 'sea');
+  await scrollTo(page, page.viewportSize()!.height * PAST_REEL);
   await expect(firstBandHeading(page)).toBeInViewport();
 });
 
@@ -541,7 +554,7 @@ test('sin WebGL: la versión estática, el scroll baja por las bandas y axe no e
   await expect(zarpar(page)).toBeVisible();
   await expect(entradas(page)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
-  await scrollTo(page, page.viewportSize()!.height);
+  await scrollTo(page, page.viewportSize()!.height * PAST_REEL);
   await expect(firstBandHeading(page)).toBeInViewport();
   await expect(page.locator('canvas[data-scene]')).toHaveCount(0);
   expect(await cls(page)).toBeLessThan(0.05);

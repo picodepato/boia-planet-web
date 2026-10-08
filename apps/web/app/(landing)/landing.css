@@ -400,21 +400,92 @@ html[data-hero-top] .site-header__inner {
 /* ---------- Hero: the track, the fixed scene and the UI (plan 007) ---------- */
 
 /*
- * The hero track: one screen at rest plus one screen of dive (T77 §5.3). It
- * starts under the header. Its height is reserved from the first paint: no
+ * The hero: one screen under the header (plan 021 T235: the presentation that
+ * follows takes the scroll). Its height is reserved from the first paint: no
  * layout shift (REQ-ENT-038).
  */
 .hero {
   position: relative;
-  height: 200vh;
-  height: 200svh;
+  height: 100vh;
+  height: 100svh;
   margin-top: calc(-1 * var(--header-h));
 }
 
-/* Static version decided before the first paint: one screen (T77 §9). */
-html[data-hero-static] .hero {
-  height: 100vh;
-  height: 100svh;
+/*
+ * The presentation (plan 021 T235, lib/landing/presentation.ts): without
+ * JavaScript or with reduced motion, a still block (poster and logo). With
+ * the boot script, a track of `--reel-end` + 1 screens laid over the hero
+ * whose stage stays pinned while presentation-motion.tsx writes the frame.
+ */
+.reel {
+  --reel-end: 3.1;
+  --lw: 1;
+  position: relative;
+  z-index: 3;
+  background: #000;
+}
+.reel__stage {
+  position: relative;
+  height: 70svh;
+  overflow: hidden;
+}
+.reel__window,
+.reel__poster,
+.reel__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reel__video {
+  display: none;
+}
+.reel__logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(60vw, 540px);
+  aspect-ratio: 620 / 173.5;
+  translate: -50% -50%;
+  filter: drop-shadow(0 6px 28px rgb(0 0 0 / 0.5));
+}
+/* The wordmark's shape, orange on the black and white over the open video. */
+.reel__logo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, #fff calc(var(--lw, 0) * 100%), var(--orange));
+  -webkit-mask: url('./_marca/boia-wordmark.svg') center / contain no-repeat;
+  mask: url('./_marca/boia-wordmark.svg') center / contain no-repeat;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-entry] .reel {
+    height: calc(var(--reel-end) * 100svh + 100lvh);
+    margin-top: -100svh;
+    background: none;
+    pointer-events: none;
+  }
+  html[data-entry] .reel__stage {
+    position: sticky;
+    top: 0;
+    height: 100lvh;
+    background: rgb(0 0 0 / var(--veil, 0));
+  }
+  html[data-entry] .reel__window {
+    clip-path: inset(var(--wt, 50%) var(--wr, 50%) var(--wb, 50%) var(--wl, 50%));
+  }
+  html[data-entry] .reel__video {
+    display: block;
+    scale: var(--vs, 0.6);
+  }
+  html[data-entry] .reel__poster {
+    display: none;
+  }
+  html[data-entry] .reel__logo {
+    opacity: var(--lo, 0);
+    scale: var(--ls, 1);
+  }
 }
 
 /*
@@ -1698,30 +1769,6 @@ main[data-contenido] > .section {
 
 main[data-contenido] > .section:last-child {
   padding-bottom: var(--sheet-pad);
-}
-
-/* The sheet comes up out of the sea at the end of the dive (T77 §5.2). */
-main[data-contenido] > .hero + .section {
-  margin-top: -44vh;
-  padding-top: 56px;
-}
-
-/* One screen of hero: the wave sits below it, never over its corner labels. */
-html[data-hero-static] main[data-contenido] > .hero + .section {
-  margin-top: 24px;
-}
-
-/* Its top edge: an 8-bit wave, the paper's own colour. */
-main[data-contenido] > .hero + .section::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: 24px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' shape-rendering='crispEdges'%3E%3Cpath d='M0 16h8V8h8V0h16v8h8v8h8v8H0z' fill='%23fff'/%3E%3C/svg%3E")
-    0 100% / 48px 24px repeat-x;
-  pointer-events: none;
 }
 
 main[data-contenido] > .section > .section__inner,

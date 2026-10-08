@@ -605,6 +605,18 @@ class IntroRun {
     const gap = this.sTarget - this.s;
     this.s = Math.abs(gap) < 5e-4 ? this.sTarget : this.s + gap * (1 - Math.exp(-dt / SMOOTH_MS));
     this.applyScroll();
+    // Plan 021 T235: the presentation's black covers the scene; nothing to
+    // paint until the scroll comes back up (the next frame is a full one).
+    if (
+      this.html.hasAttribute('data-reel-covered') &&
+      c.phase !== 'appearing' &&
+      c.phase !== 'landing'
+    ) {
+      this.lastFrame = null;
+      if (this.s !== this.sTarget) this.raf = requestAnimationFrame(this.loop);
+      else this.tick = 0;
+      return;
+    }
 
     const size = `${vp.width}x${vp.height}`;
     if (size !== this.lastSize) {
