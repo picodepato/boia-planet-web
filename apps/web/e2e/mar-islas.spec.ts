@@ -1,14 +1,15 @@
 import { TICKET_EVENT_ISLANDS } from '@boia/store';
 import { HALLOWEEN_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { expect, test } from '@playwright/test';
+import { t } from '../lib/i18n';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { mar, marSheet, openMar } from './mar-helpers';
 
 /**
  * Las islas y los eventos con entradas del 2026-10-02 en /mar (T67): «Entradas»
- * enseña exactamente los tres eventos (BOIA Halloween, SONIDO y BOIA
- * Nochevieja), cada uno con su isla, y `/mar?ir=halloween` sale navegando a
- * la Isla de Halloween y abre su evento. Que la entrega de la Fiestera nombra
+ * enseña exactamente los tres eventos (HALLOWEEN IN THE CLUB, ALL DAY BOIA y
+ * BOIA Nochevieja; nombres de la reunión del 2026-10-08, T219), cada uno con
+ * su isla, y `/mar?ir=halloween` sale navegando a su isla y abre su evento. Que la entrega de la Fiestera nombra
  * la Isla de Nochevieja lo prueba mar-fiestera.spec.ts. Corre en móvil y en
  * escritorio.
  */
@@ -43,10 +44,11 @@ test('«Entradas» en el mar enseña exactamente los tres eventos, cada uno con 
   expect(errors).toEqual([]);
 });
 
-test('`/mar?ir=halloween` sale navegando a la Isla de Halloween y abre su evento', async ({
+test('`/mar?ir=halloween` sale navegando a la isla de Halloween y abre su evento', async ({
   page,
 }) => {
-  expect(halloween.identity.name).toBe('Isla de Halloween');
+  // El nombre del mapa es el del catálogo (T219: HALLOWEEN IN THE CLUB).
+  expect(halloween.identity.name).toBe(t('island.halloween.name'));
   const errors = await openMar(page, `?ir=${HALLOWEEN_PLACE_ID}`);
   await expect.poll(() => new URL(page.url()).searchParams.has('ir')).toBe(false);
   // Navegando (el viaje en turbo de la barra) y, al llegar, la ficha del evento.
@@ -63,7 +65,7 @@ test('`/mar?ir=halloween` sale navegando a la Isla de Halloween y abre su evento
   await expect(sheet).toContainText(halloweenEvent.name);
   // Su rótulo en el mar dice su nombre.
   await expect(page.locator(`[data-pin="${HALLOWEEN_PLACE_ID}"]`)).toContainText(
-    'Isla de Halloween',
+    halloween.identity.name,
   );
   expect(errors).toEqual([]);
 });

@@ -855,8 +855,9 @@ html[data-intro-act='landing'] {
   gap: 14px;
   padding: 24px;
   text-align: center;
-  background: radial-gradient(circle at 50% 40%, #3b2a8f, #1b1440 70%);
-  color: #fff;
+  /* T219 (decisión 12): el mismo naranja claro y el mismo azul que la carga de /mar. */
+  background: radial-gradient(circle at 50% 40%, #ffe6cf, #ffc896 75%);
+  color: #36278a;
   font-family: var(--font-body);
   opacity: 0;
   pointer-events: none;

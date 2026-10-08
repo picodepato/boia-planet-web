@@ -75,6 +75,10 @@ las que pide D-23 o que la v14 no inventariaba.
   la Isla de Halloween (`halloween`), la Isla del Sonido (`allday`) y la Isla
   de Nochevieja (`ultima`, adonde se lleva a la Boia Fiestera), con el mismo
   nombre en todos los mundos; el circuito El Freu pasa a llamarse Los Rápidos.
+- **Nombres del 2026-10-08 (reunión con Álvaro, plan 019 T219).** La Isla del
+  Sonido pasa a ser ALL DAY BOIA; la Isla de Halloween, HALLOWEEN IN THE
+  CLUB; Ibiza, Botiga Ibiza; L'Illeta dels Banyets, Puig Campana. La Isla de
+  Nochevieja y BOIA Nochevieja no cambian.
 - **No se reescriben:** las cinco preguntas del Carnet (v14 §44.1, textuales,
   D-08 y D-23 punto 10) y los nombres y descripciones de los logros, que
   viven en `docs/propuestas/logros-catalogo.md`.
@@ -167,11 +171,11 @@ toca y nunca corporativa. Español de España y de tú. Los tres verbos mandan:
 | `checkout.noDiscount` | Sin descuento. Algunos se esconden en el mar. | |
 | `checkout.stampAdded` | ¡Sello añadido a tu Carnet! | |
 | `checkout.viewCarnet` | Ver Mi Carnet | |
-| `event.halloween-2026.name` | BOIA Halloween | Dato del evento real (Álvaro, 2026-10-02); en la Isla de Halloween |
+| `event.halloween-2026.name` | HALLOWEEN IN THE CLUB | Dato del evento real (Álvaro, 2026-10-02; nombre de la reunión del 2026-10-08); en su isla |
 | `event.halloween-2026.when` | Sábado, 31 de octubre de 2026 | Dato |
 | `event.halloween-2026.place` | Kiki García | Dato |
 | `event.halloween-2026.summary` | La noche de Halloween de BOIA. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto. | Dato, `muestra` |
-| `event.sonido-2026.name` | SONIDO | Dato del evento real (Álvaro, 2026-10-02); en la Isla del Sonido |
+| `event.sonido-2026.name` | ALL DAY BOIA | Dato del evento real (Álvaro, 2026-10-02; nombre de la reunión del 2026-10-08); en su isla |
 | `event.sonido-2026.when` | Sábado, 5 de diciembre de 2026 | Dato |
 | `event.sonido-2026.summary` | Un día entero alrededor del sonido: muros de altavoces, música sin un único género y gente con ganas de bailar. | Dato, `muestra` |
 | `event.nochevieja-2026.name` | BOIA Nochevieja | Dato del evento real (Álvaro, 2026-10-02); en la Isla de Nochevieja |
@@ -343,15 +347,15 @@ Cumple REQ-AVE-003 (misión, descuentos, monedas y secretos) y REQ-AVE-004
 | `island.event.memory` | Este evento ya pasó. Aquí se queda su recuerdo: fotos, cartel y artistas. | Isla en recuerdo |
 | `island.event.soldOut` | Agotado. Pero esta isla tiene más fiestas: mira abajo. | |
 | `island.secretHint` | Por aquí cerca huele a secreto. | |
-| `island.allday.name` | Isla del Sonido | Nombre común, igual en todos los mundos (D-20; 2026-10-02) |
+| `island.allday.name` | ALL DAY BOIA | Nombre común, igual en todos los mundos (D-20; reunión del 2026-10-08) |
 | `island.ultima.name` | Isla de Nochevieja | Nombre común, igual en todos los mundos; destino de la Boia Fiestera (2026-10-02) |
-| `island.halloween.name` | Isla de Halloween | Nombre común, igual en todos los mundos (2026-10-02, T67) |
+| `island.halloween.name` | HALLOWEEN IN THE CLUB | Nombre común, igual en todos los mundos (T67; reunión del 2026-10-08) |
 | `world.arcilla.island.halloween.body` | Aquí la noche de Halloween dura todo el año. Calabazas encendidas, boias disfrazadas y un club con cara de pocos amigos. | |
 | `world.arcilla.island.puerto.body` | El Varadero: de aquí salen los barcos cada temporada. Las gaviotas no pagan amarre. | |
 | `world.arcilla.island.cala.body` | Aquí se coció tu barco. Todavía está caliente. De día la cala cocina; de noche, baila. | |
 | `world.arcilla.island.allday.body` | All Day BOIA: de la paella al amanecer. ¿Llegas en barco? Pasa por el arco, que la fiesta está dentro. | |
 | `world.arcilla.island.fotos.body` | Todas las fotos de BOIA se revelan aquí. Pasa por el marco y sonríe. | |
-| `world.arcilla.island.tienda.body` | Camisetas, tote bags y pegatinas. La tienda de verdad está en tierra; esto es su escaparate. | |
+| `world.arcilla.island.tienda.body` | Sección de merchandising oficial. | Botiga Ibiza (reunión del 2026-10-08) |
 | `world.arcilla.island.ultima.body` | Aquí el año se despide bailando y la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla. | |
 | `world.acuarela.island.puerto.body` | La Explanada: aquí se abre el cuaderno. Cuidado con el mosaico, que marea. | |
 | `world.acuarela.island.cala.body` | Aquí vive la pintora del cuaderno: lo que pinta cobra vida mientras está húmedo. Cuidado, que aún estás fresco: si te mojas mucho, se te corre el azul. | |
@@ -595,7 +599,7 @@ Desde el plan 014 (T157) el faro no tiene minijuego: es el «Tablón del faro»,
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `island.canon.name` | L'Illeta dels Banyets | Nombre común (2026-10-02); en Acuarela, «Torre de l'Illeta» |
+| `island.canon.name` | Puig Campana | Nombre común (reunión del 2026-10-08; antes L'Illeta dels Banyets); en Acuarela, «Torre de l'Illeta» |
 | `world.arcilla.canon.body` | Los tiburones rondan la cala y asustan a los bañistas. Este cañón dispara bolas de agua: nadie sale herido, sólo mojado. | |
 | `world.acuarela.canon.body` | La Torre de l'Illeta ahuyenta tiburones a cañonazos de agua. Ni un rasguño: sólo sustos. | |
 | `minigame.canon.title` | Que no pare la música | Desde el plan 010 (T121): el modo de sobrevivir hasta el amanecer, como `mar.canon.title` |
@@ -638,8 +642,8 @@ boia tiene un nombre y dos bocadillos por mundo. Con la primera boia son seis.
 |---|---|---|
 | `boia-espacio` | Entre la bocana y la primera isla | Dar espacio: por qué existe BOIA |
 | `boia-descubrir` | Entre la primera isla y el encuentro de la Fiestera | Descubrir: música sin un único género |
-| `boia-pertenecer` | Entre Ibiza y la Isla de Benidorm | Pertenecer: el Carnet |
-| `boia-allday` | Antes de la Isla del Sonido | Qué es un All Day |
+| `boia-pertenecer` | Entre Botiga Ibiza y la Isla de Benidorm | Pertenecer: el Carnet |
+| `boia-allday` | Antes de ALL DAY BOIA | Qué es un All Day |
 | `boia-secretos` | Cerca de la salida del circuito, antes de la Isla de Nochevieja | La curiosidad tiene premio |
 
 | Clave | Texto | Nota |

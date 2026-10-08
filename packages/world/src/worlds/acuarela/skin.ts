@@ -110,7 +110,7 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
  * Nombres propios de Acuarela (lugares.json → `nombre`) de los lugares que
  * son un sitio. Los que son una cosa o un bicho (restos, cofres, botellas,
  * delfín) y las piezas sueltas conservan el nombre común; las tres islas con
- * entradas (Isla de Halloween, Isla del Sonido e Isla de Nochevieja, que
+ * entradas (HALLOWEEN IN THE CLUB, ALL DAY BOIA e Isla de Nochevieja, que
  * antes era Tabarca), el compartido (2026-10-02).
  */
 export const ACUARELA_NAMES: Record<string, string> = {

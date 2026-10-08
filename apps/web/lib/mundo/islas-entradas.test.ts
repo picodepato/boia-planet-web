@@ -29,12 +29,12 @@ const ARCILLA_NAMES: Record<string, string> = {
   // Desde el 2026-10-04 (T108), el puerto donde se cambia de barco.
   cala: 'Puerto de Alicante',
   fotos: 'Isla de Benidorm',
-  tienda: 'Ibiza',
+  tienda: 'Botiga Ibiza',
   faro: 'Tabarca',
-  canon: "L'Illeta dels Banyets",
-  allday: 'Isla del Sonido',
+  canon: 'Puig Campana',
+  allday: 'ALL DAY BOIA',
   ultima: 'Isla de Nochevieja',
-  halloween: 'Isla de Halloween',
+  halloween: 'HALLOWEEN IN THE CLUB',
   // Igual que antes.
   puerto: 'El Varadero',
   naufrago: 'El náufrago',
@@ -45,8 +45,8 @@ const ARCILLA_NAMES: Record<string, string> = {
 
 /** Los tres eventos: nombre, día (en Madrid) e isla. */
 const TICKET_EVENTS: [name: string, day: string, island: string][] = [
-  ['BOIA Halloween', '2026-10-31', 'halloween'],
-  ['SONIDO', '2026-12-05', 'allday'],
+  ['HALLOWEEN IN THE CLUB', '2026-10-31', 'halloween'],
+  ['ALL DAY BOIA', '2026-12-05', 'allday'],
   ['BOIA Nochevieja', '2026-12-31', 'ultima'],
 ];
 
@@ -72,7 +72,7 @@ describe('islas y entradas del 2026-10-02 (T67)', () => {
       expect(o!.identity).toMatchObject({
         category: 'isla',
         active: true,
-        name: 'Isla de Halloween',
+        name: 'HALLOWEEN IN THE CLUB',
       });
       expect(eventOfPlace(o)).toBe(TICKET_ISLAND_EVENTS.halloween);
       expect(o!.behaviors.some((b) => b.type === 'ticket')).toBe(true);
