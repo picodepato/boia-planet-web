@@ -12,6 +12,8 @@ import {
   ARCILLA_MAP,
   ARCILLA_SKIN,
   BOTTLE_SPOTS,
+  CALITAS_PLACE_ID,
+  CALITAS_REF,
   COAST_HALF_WIDTH,
   FACTOR,
   HALLOWEEN_PLACE_ID,
@@ -303,6 +305,26 @@ describe('mapa compartido de Arcilla (T20)', () => {
     for (const o of map.places.filter((p) => p.category === 'isla' && p.id !== h.id)) {
       const d = Math.hypot(o.position.x - h.position.x, o.position.y - h.position.y);
       expect(d / POS, o.id).toBeGreaterThan(6);
+    }
+  });
+
+  it('Las Calitas (plan 019 T222): la isla de los comentarios, en mar libre y sin entradas', () => {
+    const c = map.places.find((p) => p.id === CALITAS_PLACE_ID)!;
+    expect(c).toMatchObject({ category: 'isla', name: 'Las Calitas', active: true });
+    expect(c.behaviors.filter((b) => b.type === 'content').map((b) => b.params)).toEqual([
+      expect.objectContaining({ target: 'info', ref: CALITAS_REF }),
+    ]);
+    expect(c.behaviors.some((b) => b.type === 'ticket' || b.type === 'reward')).toBe(false);
+    expect(PLACE_MARKERS[CALITAS_PLACE_ID]).toBe('placeholder:isla');
+    const b = map.bounds;
+    expect(c.position.x).toBeGreaterThan(b.left);
+    expect(c.position.x).toBeLessThan(b.right);
+    expect(c.position.y).toBeGreaterThan(b.top);
+    expect(c.position.y).toBeLessThan(b.bottom);
+    // A más de 6 u_maq (× POS) de cualquier otra isla y a más de 5 de cualquier otro lugar.
+    for (const o of map.places.filter((p) => p.id !== c.id)) {
+      const d = Math.hypot(o.position.x - c.position.x, o.position.y - c.position.y) / POS;
+      expect(d, o.id).toBeGreaterThan(o.category === 'isla' ? 6 : 5);
     }
   });
 });

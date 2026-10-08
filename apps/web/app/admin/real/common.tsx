@@ -60,6 +60,8 @@ const REJECTION_TEXT: Partial<Record<string, MessageKey>> = {
   bottle_conflict: 'admin.real.error.bottleConflict',
   nickname_taken: 'admin.real.error.nicknameTaken',
   invalid_status: 'admin.real.error.invalidStatus',
+  // Las Calitas (plan 019 T222)
+  unknown_comment: 'admin.real.error.notFound',
 };
 
 /** Lo que se le dice al equipo de un error de Supabase (una RPC, la RLS, la red). */

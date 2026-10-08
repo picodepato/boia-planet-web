@@ -103,6 +103,9 @@ export const RPC_REJECTIONS = [
   // El enlace a la música de un Carnet de artista (plan 019 T217)
   'artist_required',
   'invalid_music',
+  // Los comentarios de Las Calitas (plan 019 T222)
+  'unknown_comment',
+  'own_comment',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 

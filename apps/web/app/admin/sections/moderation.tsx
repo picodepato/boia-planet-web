@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import { SectionHead, StatusLine } from '../ui';
+import { LocalCalitasModeration } from './calitas';
 import { t } from '../../../lib/i18n';
 import {
   CARNET_ACTION_LABEL,
@@ -412,6 +413,7 @@ export function ModerationSection({ ctx }: { ctx: AdminContext }) {
       />
       <CarnetReports ctx={ctx} />
       <AllCarnets ctx={ctx} />
+      <LocalCalitasModeration />
       <h3>{t('admin.moderation.botellas')}</h3>
       <label className="admin-check">
         <input

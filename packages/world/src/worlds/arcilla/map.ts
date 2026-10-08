@@ -87,6 +87,17 @@ export const HARBOR_PLACE_ID = 'cala';
 export const HARBOR_REF = 'barcos';
 
 /**
+ * Las Calitas (plan 019 T222, decisión 16): la isla de los comentarios, una
+ * cala pequeña donde la gente escribe, responde y vota. Sin maqueta en
+ * mapa.json: su fuente es el plan. Su ficha (`content` con `CALITAS_REF`)
+ * abre los comentarios.
+ */
+export const CALITAS_PLACE_ID = 'calitas';
+export const CALITAS_REF = 'comentarios';
+/** Dónde está: mar libre del noroeste, entre el Puig Campana y el círculo de las boies dormidas. muestra */
+export const CALITAS_CENTER: Maq = [-11.5, -27.5];
+
+/**
  * Id del circuito para checkpoints y récords (REQ-AVE-033 añade la versión).
  * Desde T67 el circuito se llama Los Rápidos; el id sigue siendo el de El
  * Freu para no perder récords ni logros.
@@ -544,6 +555,19 @@ const ISLANDS: PlaceInput[] = [
     0,
     4.0,
     [{ type: 'start_minigame', params: { gameId: CASTLE_GAME_ID } }, visit()],
+  ),
+  // Las Calitas (plan 019 T222): la isla de los comentarios, al final para no
+  // cambiar el orden de las demás.
+  island(
+    CALITAS_PLACE_ID,
+    'Las Calitas',
+    'plan:T222',
+    CALITAS_CENTER,
+    2.0,
+    1.6,
+    25,
+    3.4,
+    [content('info', CALITAS_REF), visit()],
   ),
 ];
 

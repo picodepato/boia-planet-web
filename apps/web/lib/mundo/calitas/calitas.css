@@ -1,0 +1,217 @@
+/* Las Calitas (plan 019 T222): los comentarios en la ficha de la isla.
+   Esquinas rectas (decisión 3), el azul de la marca para el texto y el
+   naranja para lo activo. */
+
+.calitas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 6px;
+  min-width: 0;
+}
+
+.calitas *,
+.calitas *::before,
+.calitas *::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.calitas-list,
+.calitas-replies,
+.calitas-form,
+.calitas-comment {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.calitas p {
+  margin: 0;
+}
+
+.calitas-note {
+  font-size: 0.85rem !important;
+  opacity: 0.85;
+}
+
+.calitas-error {
+  font-size: 0.88rem !important;
+  font-weight: 700;
+  color: #b3261e;
+}
+
+.calitas-account {
+  display: grid;
+  gap: 8px;
+}
+
+.calitas-form {
+  display: grid;
+  gap: 6px;
+}
+
+.calitas-form__label {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.calitas-form textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 10px;
+  border: 2px solid var(--purple);
+  border-radius: var(--radius, 0);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.calitas-form textarea[aria-invalid='true'] {
+  border-color: #b3261e;
+}
+
+.calitas-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.calitas-form__row .mar-btn {
+  flex: 0 0 auto;
+}
+
+.calitas-form__count {
+  margin-right: auto;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.calitas-form__count.is-over {
+  color: #b3261e;
+  opacity: 1;
+  font-weight: 700;
+}
+
+.calitas-order {
+  display: flex;
+  gap: 6px;
+}
+
+.calitas-tab {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 2px solid var(--purple);
+  border-radius: var(--radius, 0);
+  background: transparent;
+  color: var(--purple);
+  font-family: var(--font-button);
+  font-size: 0.85rem;
+}
+
+.calitas-tab.is-active {
+  background: var(--purple);
+  color: var(--cream);
+}
+
+.calitas-list,
+.calitas-replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.calitas-replies {
+  margin: 8px 0 0 10px;
+  padding-left: 8px;
+  border-left: 3px solid rgb(54 39 138 / 0.25);
+}
+
+.calitas-comment {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 2px solid var(--purple);
+  border-radius: var(--radius, 0);
+  background: #fff;
+}
+
+.calitas-comment.is-reply {
+  background: rgb(255 255 255 / 0.7);
+}
+
+.calitas-comment[data-mio='si'] {
+  border-color: var(--orange);
+}
+
+.calitas-comment__meta {
+  font-size: 0.78rem !important;
+  opacity: 0.8;
+}
+
+.calitas-comment__body {
+  font-size: 0.95rem !important;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.calitas-comment__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calitas-votes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calitas-vote {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid var(--purple);
+  border-radius: var(--radius, 0);
+  background: #fff;
+  color: var(--purple);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.calitas-vote[aria-pressed='true'] {
+  background: var(--orange);
+  border-color: var(--ink);
+  color: #000;
+}
+
+.calitas-vote:disabled {
+  opacity: 0.4;
+}
+
+.calitas-score {
+  min-width: 2ch;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.calitas-reply {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--purple);
+  font-family: var(--font-button);
+  font-size: 0.85rem;
+  text-decoration: underline;
+}

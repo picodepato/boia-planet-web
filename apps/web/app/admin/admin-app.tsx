@@ -18,6 +18,7 @@ import {
   UsersSection,
 } from './sections/misc';
 import { MissionSection } from './sections/mission';
+import { RealCalitasModeration } from './sections/calitas';
 import { ModerationSection } from './sections/moderation';
 import { ObjectsSection } from './sections/objects';
 import { PhotosSection } from './sections/photos';
@@ -59,12 +60,13 @@ const SECTIONS: Section[] = [
   { id: 'auditoria', label: t('admin.adminApp.auditoriaYMuestra'), Component: AuditSection },
 ];
 
-/** Moderación con cuentas (plan 017 T191): los Carnets y las botellas reales. */
+/** Moderación con cuentas (plan 017 T191): los Carnets, las botellas y Las Calitas (T222) reales. */
 function RealModeration() {
   return (
     <>
       <RealCarnets />
       <RealBottles />
+      <RealCalitasModeration />
     </>
   );
 }

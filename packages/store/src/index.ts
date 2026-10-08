@@ -14,3 +14,4 @@ export * from './schema';
 export * from './sample';
 export * from './member';
 export * from './bottle-text';
+export * from './comment-text';

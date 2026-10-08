@@ -281,6 +281,76 @@ export type Database = {
           },
         ];
       };
+      calitas_comments: {
+        Row: {
+          body: string;
+          created_at: string;
+          hidden_at: string | null;
+          hidden_by: string | null;
+          hidden_reason: string | null;
+          id: string;
+          parent_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          hidden_reason?: string | null;
+          id?: string;
+          parent_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          hidden_reason?: string | null;
+          id?: string;
+          parent_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'calitas_comments_parent_id_fkey';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'calitas_comments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      calitas_votes: {
+        Row: {
+          comment_id: string;
+          created_at: string;
+          user_id: string;
+          value: number;
+        };
+        Insert: {
+          comment_id: string;
+          created_at?: string;
+          user_id: string;
+          value: number;
+        };
+        Update: {
+          comment_id?: string;
+          created_at?: string;
+          user_id?: string;
+          value?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'calitas_votes_comment_id_fkey';
+            columns: ['comment_id'];
+            isOneToOne: false;
+            referencedRelation: 'calitas_comments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       canon_boards: {
         Row: {
           boss: string;
@@ -1971,6 +2041,12 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      admin_calitas_list: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: Json;
+      };
       admin_delete_member: {
         Args: {
           p_user: string;
@@ -2030,6 +2106,14 @@ export type Database = {
       admin_moderate_carnet: {
         Args: {
           p_user: string;
+          p_action: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_moderate_comment: {
+        Args: {
+          p_comment: string;
           p_action: string;
           p_reason?: string;
         };
@@ -2163,6 +2247,26 @@ export type Database = {
       buy_cosmetic: {
         Args: {
           p_cosmetic: string;
+        };
+        Returns: Json;
+      };
+      calitas_list: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: Json;
+      };
+      calitas_post: {
+        Args: {
+          p_body: string;
+          p_parent?: string;
+        };
+        Returns: Json;
+      };
+      calitas_vote: {
+        Args: {
+          p_comment: string;
+          p_value: number;
         };
         Returns: Json;
       };

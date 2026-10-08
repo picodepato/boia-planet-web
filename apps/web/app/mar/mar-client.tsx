@@ -289,6 +289,8 @@ const PIN_ICON: Record<string, string> = {
   faro: '🗼',
   canon: '💣',
   castillo: '🏰',
+  // Las Calitas (plan 019 T222): la isla de los comentarios.
+  calitas: '💬',
 };
 
 /** El icono de cada aviso en su chip (T53). */

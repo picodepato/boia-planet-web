@@ -3,14 +3,16 @@
 import { emitSignal } from '../../lib/mundo/achievements';
 import { gameRepository } from '../../lib/mundo/repo';
 
-import {
-  type BoiaEvent,
-  EVENT_STATE_BEHAVIOR,
-  foundDiscountState,
-} from '@boia/contracts';
+import { type BoiaEvent, EVENT_STATE_BEHAVIOR, foundDiscountState } from '@boia/contracts';
 import type { FoundDiscount } from '@boia/store';
 import { MERCHANDISE_NOTICE, MERCHANDISE_PATH } from '../../lib/merchandise/catalog';
-import { BOARD_REF, HARBOR_REF, type WorldConfig, type WorldObject } from '@boia/world';
+import {
+  BOARD_REF,
+  CALITAS_REF,
+  HARBOR_REF,
+  type WorldConfig,
+  type WorldObject,
+} from '@boia/world';
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import { t, formatEventDate } from '../../lib/i18n';
@@ -26,6 +28,7 @@ import {
   IslandUpcoming,
 } from '../../lib/mundo/place-panels';
 import { useRepoData } from '../../lib/mundo/repo';
+import { CalitasPanel } from '../../lib/mundo/calitas/calitas-panel';
 import { MarTablon } from './tablon';
 
 /**
@@ -168,6 +171,8 @@ export function Sheet({
   onPreview,
 }: SheetProps) {
   const board = state.kind === 'content' && state.ref === BOARD_REF;
+  // Las Calitas (plan 019 T222): la isla de los comentarios.
+  const calitas = state.kind === 'content' && state.ref === CALITAS_REF;
   // Las fichas se abren pequeñas; «Mis códigos» se pide desplegada desde el menú.
   const [expanded, setExpanded] = useState(state.kind === 'codes');
   const name = object?.identity.name ?? '';
@@ -411,6 +416,27 @@ export function Sheet({
         <h2 className="mar-sheet__title">{title}</h2>
         <p>{text}</p>
         {join ? <div className="mar-sheet__actions">{join}</div> : null}
+      </>
+    );
+  } else if (calitas) {
+    // Recogida: qué es y «Leer y comentar», que la despliega con los comentarios.
+    const open = (
+      <button
+        type="button"
+        className="mar-btn mar-btn--primary"
+        data-testid="calitas-abrir"
+        onClick={expand}
+      >
+        {t('calitas.open')}
+      </button>
+    );
+    compact = { kicker: t('calitas.kicker'), title: name, meta: t('calitas.intro'), action: open };
+    body = (
+      <>
+        <p className="mar-sheet__kicker">{t('calitas.kicker')}</p>
+        <h2 className="mar-sheet__title">{name}</h2>
+        <p className="mar-sheet__meta">{t('calitas.intro')}</p>
+        <CalitasPanel />
       </>
     );
   } else if (board) {

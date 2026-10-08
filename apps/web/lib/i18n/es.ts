@@ -10,6 +10,7 @@ import { esAdmin } from './es-admin';
 import { esAdminEnlaces } from './es-admin-enlaces';
 import { esAdminObjetos } from './es-admin-objetos';
 import { esAdminReal } from './es-admin-real';
+import { esCalitas } from './es-calitas';
 import { esCarnet } from './es-carnet';
 import { esCuenta } from './es-cuenta';
 import { esJuego } from './es-juego';
@@ -52,6 +53,8 @@ export const es = {
   ...esAcceso,
   // La puerta de la fiesta (plan 019 T218).
   ...esPuerta,
+  // Las Calitas, la isla de los comentarios (plan 019 T222).
+  ...esCalitas,
 } as const;
 
 export type MessageKey = keyof typeof es;

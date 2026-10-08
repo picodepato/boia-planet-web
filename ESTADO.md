@@ -4,6 +4,57 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T222: Las Calitas: comments island with replies, votes, insult filter and moderation
+
+**Qué existe.** Isla nueva **Las Calitas** (decisión 16), `calitas` en
+`packages/world/src/worlds/arcilla/map.ts` (`CALITAS_PLACE_ID`, `CALITAS_REF =
+'comentarios'`, `CALITAS_CENTER` [-11.5, -27.5]: mar libre del noroeste, a > 6 u_maq
+de toda isla), al final de la lista de islas (no cambia el orden de las demás); su
+ficha es `content('info', 'comentarios')` + logro de visita, sin puntos ni entradas.
+Marcador `placeholder:isla` (sin arte 2D). En /mar, composición a mano en
+`islands.ts` (`calitas()`: cala de arena con peñón en media luna, tablón de notas de
+colores, bocadillo de cómic que brilla de noche, sombrillas, pinos y muelle; estilo
+arcilla) y rótulo 💬. Sin modelo de Blender (como Puerto de Alicante, Benidorm o
+Botiga Ibiza).
+- La ficha (`sheet.tsx`): recogida, «Leer y comentar»; desplegada,
+  `lib/mundo/calitas/calitas-panel.tsx`: escribir (contador 280), lista
+  Recientes / Más votados, votos ▲/▼ (uno por persona, el mismo otra vez lo quita,
+  el propio no se vota), «Responder» (un nivel), errores explicados. Esquinas rectas.
+- Almacén (`lib/calitas/`): `local.ts` (modo local: muestra de `sample.ts` + los tuyos,
+  que sólo ves tú, en `localStorage['boia.calitas']`, votos y ocultos del Admin de la
+  demo) y `shared.ts` (Supabase: RPC; leer sin cuenta, escribir/votar con
+  `requireAccount('carnet')`). `store.ts` elige por `isSupabaseConfigured()`.
+- Filtro de insultos: `packages/store/src/comment-text.ts` (`commentProblem`: el de
+  las botellas + lista propia + letras repetidas «putaaa» + deletreadas «p.u.t.a»),
+  copia exacta de `private.comment_text_problem` de la migración.
+- Admin: «Comentarios de Las Calitas» en Moderación (`app/admin/sections/calitas.tsx`):
+  todos (también ocultos), ocultar con motivo / mostrar; en la demo sobre este
+  navegador, con cuentas sobre `admin_calitas_list` / `admin_moderate_comment`.
+- Migración **`supabase/migrations/20261008100500_calitas.sql`** (NO aplicada):
+  `private.comment_blocked_words`, `squeeze_letters`, `join_spelled`,
+  `comment_text_problem`; tablas `calitas_comments` y `calitas_votes` con RLS (lectura
+  de visibles; nadie escribe a mano), trigger del filtro, RPC `calitas_list` (anon),
+  `calitas_post` / `calitas_vote` (cuenta con Carnet; 5 cada 10 min y 30 al día),
+  `admin_calitas_list` / `admin_moderate_comment` (admin aal2, audit_log). Tipos en
+  `database.types.ts`; rechazos nuevos `unknown_comment`, `own_comment` en `rpc.ts`.
+- i18n: `lib/i18n/es-calitas.ts` (claves `calitas.*`, `admin.calitas.*`), sin tocar
+  los archivos generados.
+
+**Comandos.**
+- `vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 254 archivos, 2323 pasan, 1 omitida, exit 0 (nuevas: `comment-text.test.ts`, `lib/calitas/calitas.test.ts`, `lib/calitas/calitas-sql.test.ts`, Las Calitas en `arcilla.test.ts`).
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 195,8/200 kB); `pnpm typecheck` → exit 0.
+- `E2E_PORT=3191 pnpm e2e mar-calitas.spec.ts --workers=1` → 4/4 pasan (móvil y escritorio: comentar, responder, votar, insulto rechazado, nada se sale de la ficha; el Admin oculta y desaparece con su respuesta, mostrar lo devuelve).
+- `E2E_PORT=3191 pnpm e2e admin-moderacion mar-islas mar-paridad mar-rotulos comunidad --workers=2` → 36/36 pasan.
+- Capturas: `C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T222\calitas-{ficha,insulto,comentarios,admin}-{movil,escritorio}.png`.
+
+**Pendiente.**
+- Hernán: aplicar `20261008100500_calitas.sql` en `boia-planet-dev` y correr
+  `pnpm --filter @boia/db test:supabase` (`calitas.supabase.ts`).
+- Textos, comentarios de muestra, la lista propia de insultos y el sitio de la isla
+  son `muestra`, a falta del visto bueno de Álvaro. No hay REQ para Las Calitas en
+  `docs/spec/` (no se añadió).
+- Modelo de Blender de la isla (opcional) y arte 2D: no hechos.
+
 ## 2026-10-08 — plan 019 T221: Puig Campana modelado en Blender, en lugar de Els Banyets
 
 **Qué existe.** La isla del Cañón (`canon`, hasta ahora Els Banyets; T219 ya la

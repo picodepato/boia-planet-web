@@ -1063,6 +1063,84 @@ function halloween(R: number, rnd: () => number): IslandBuild {
   return { parts, animated: [], heightAt: h, labelY: top + pr * 1.6 + 2.6 };
 }
 
+// --- Las Calitas (plan 019 T222): la isla de los comentarios ---------------------
+
+/** Colores de las notas del tablón de Las Calitas. muestra */
+const CALITAS_NOTES = [C.yellow, C.pink, C.white, C.orange, '#8fd3f4', C.yellow] as const;
+
+/**
+ * Una cala pequeña en arcilla: un peñón en media luna al norte y una playa
+ * de arena abierta al sur (hacia el puerto), con el tablón de los
+ * comentarios lleno de notas de colores, un bocadillo de cómic que brilla de
+ * noche, dos sombrillas, pinos en lo alto y el muelle. muestra
+ */
+function calitas(R: number, rnd: () => number): IslandBuild {
+  const parts = newParts();
+  const k = parts.lit;
+  const h = terrain(k, R, sandy(0.9, C.sand), rnd, 22);
+  // El peñón en media luna por el norte (−z), que abraza la cala.
+  for (let i = 0; i < 7; i++) {
+    const a = Math.PI * 1.08 + (i / 6) * Math.PI * 0.84;
+    const x = Math.cos(a) * R * 0.72;
+    const z = Math.sin(a) * R * 0.72;
+    const s = R * (0.2 + rnd() * 0.08) * (i === 3 ? 1.35 : 1);
+    rock(k, x, h(x, z) + s * 0.3, z, s, rnd, i % 2 ? C.cliff : C.cliffDark);
+  }
+  for (let i = 0; i < 3; i++) {
+    const a = Math.PI * 1.25 + i * 0.45;
+    const x = Math.cos(a) * R * 0.62;
+    const z = Math.sin(a) * R * 0.62;
+    pine(k, x, h(x, z) + R * 0.28, z, 1.5 + rnd() * 0.5);
+  }
+  shoreRocks(k, R, 8, rnd, Math.PI / 2);
+  // El tablón de los comentarios: dos postes, la tabla y sus notas de colores.
+  const bz = -0.15 * R;
+  const by = h(0, bz);
+  for (const s of [-1, 1]) {
+    k.add(new BoxGeometry(0.16, 2.2, 0.16), C.woodDark, { p: [s * 1.05, by + 1.1, bz] });
+  }
+  k.add(new BoxGeometry(2.4, 1.3, 0.12), C.wood, { p: [0, by + 1.55, bz] });
+  k.add(new BoxGeometry(2.6, 0.14, 0.3), C.woodDark, { p: [0, by + 2.27, bz] });
+  CALITAS_NOTES.forEach((color, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    k.add(new BoxGeometry(0.5, 0.42, 0.03), color, {
+      p: [-0.72 + col * 0.72 + (rnd() - 0.5) * 0.1, by + 1.85 - row * 0.58, bz + 0.08],
+      r: [0, 0, (rnd() - 0.5) * 0.25],
+    });
+  });
+  // El bocadillo de cómic encima del tablón: brilla de noche.
+  const bubbleY = by + 3.3;
+  parts.glow.add(new SphereGeometry(0.62, 12, 8), C.cream, {
+    p: [0.5, bubbleY, bz],
+    s: [1.35, 0.9, 0.5],
+  });
+  parts.glow.add(new ConeGeometry(0.2, 0.5, 4), C.cream, {
+    p: [0.15, bubbleY - 0.62, bz],
+    r: [0, 0, 0.5],
+  });
+  for (let i = 0; i < 3; i++) {
+    k.add(new SphereGeometry(0.09, 6, 5), C.purple, { p: [0.18 + i * 0.32, bubbleY, bz + 0.33] });
+  }
+  parts.glows.add([0.5, bubbleY, bz + 0.6], C.bulb, 4);
+  // La playa: dos sombrillas y sus toallas.
+  for (const [x, color] of [
+    [-0.32 * R, C.orange],
+    [0.34 * R, C.purpleSoft],
+  ] as const) {
+    const z = 0.42 * R;
+    const y = h(x, z);
+    k.add(new CylinderGeometry(0.05, 0.05, 1.6, 5), C.white, { p: [x, y + 0.8, z] });
+    k.add(new ConeGeometry(0.85, 0.42, 8), color, { p: [x, y + 1.7, z] });
+    k.add(new BoxGeometry(0.6, 0.04, 1.1), color === C.orange ? C.yellow : C.pink, {
+      p: [x + 0.55, y + 0.04, z + 0.2],
+      r: [0, 0.3, 0],
+    });
+  }
+  pier(k, 0.1 * R, R * 0.92, Math.PI / 2, R * 0.45);
+  return { parts, animated: [], heightAt: h, labelY: bubbleY + 2.2 };
+}
+
 /** Una isla genérica (lugares de categoría isla que aún no tienen composición). */
 function generic(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -1081,6 +1159,7 @@ const BUILDERS: Record<string, (R: number, rnd: () => number) => IslandBuild> = 
   faro,
   canon,
   halloween,
+  calitas,
 };
 
 /** La composición de una isla del mapa (por id; si no hay, una isla genérica). */

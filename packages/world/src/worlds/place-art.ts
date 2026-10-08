@@ -75,6 +75,8 @@ const RESTOS_VARIANTS = ['a', 'b', 'c'];
 export const PLACE_MARKERS: Readonly<Record<string, string>> = {
   halloween: 'placeholder:isla',
   castillo: 'placeholder:isla',
+  // Las Calitas (plan 019 T222): en /mar la dibuja su composición 3D.
+  calitas: 'placeholder:isla',
 };
 
 /**
