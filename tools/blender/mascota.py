@@ -24,6 +24,7 @@ hacia +X de Blender, la orientación de los glTF).
 import math
 
 import bmesh
+import bpy
 from mathutils import Matrix, Vector
 
 import rig
@@ -191,7 +192,7 @@ def face(B, body, k, mouth, cheeks=False):
 
 
 # --- Gorro -----------------------------------------------------------------------------------
-def cap(B, body, k, pompom=False):
+def cap(B, body, k, pompom=False, parts=None):
     """Gorro azul marino en punta, ladeado a la izquierda (en pantalla), con el agujero negro cerca de la punta."""
     C, a, c = body.C, body.a, body.c
     L = -body.right                                   # izquierda en pantalla
@@ -209,7 +210,9 @@ def cap(B, body, k, pompom=False):
         p = (1 - t) ** 2 * base + 2 * (1 - t) * t * mid + t * t * tip          # Bézier: sube y se dobla
         pts.append(p)
         radii.append(max(0.012 * k, 0.215 * k * (1 - t) ** 0.8))
-    B.tube("mascota_gorro", pts, radii, segs=24)
+    g = B.tube("mascota_gorro", pts, radii, segs=24)
+    if parts is not None:
+        parts.append(g)
     # Agujero: disco de tinta en la cara del gorro que mira a cámara, hacia la punta.
     t = 0.62
     i = int(t * n)
@@ -223,12 +226,14 @@ def cap(B, body, k, pompom=False):
 
 
 # --- Aro flotador y detalles -------------------------------------------------------------------
-def ring_float(B, body, base, k, role, band, n_bands=4):
+def ring_float(B, body, base, k, role, band, n_bands=4, parts=None):
     zb = 0.10 * k
     R = body.radius_at(base.z + zb) + 0.02 * k
     r = 0.062 * k
     c = base + UP * zb
-    B.torus(role, R, r, Matrix.Translation(c), nu=48, nv=12)
+    t = B.torus(role, R, r, Matrix.Translation(c), nu=48, nv=12)
+    if parts is not None:
+        parts.append(t)
     for i in range(n_bands):
         th0 = 2 * math.pi * (i + 0.25) / n_bands
         pts = [c + Vector((R * math.cos(th0 + d), R * math.sin(th0 + d), 0.0)) for d in (-0.2, -0.1, 0.0, 0.1, 0.2)]
@@ -322,9 +327,40 @@ def balloons(B, c, R, body, k):
         B.tube("wire", [a, a.lerp(b, 0.33) + w, a.lerp(b, 0.66) - w, b], 0.006 * k, segs=5)
 
 
+# --- Contorno del logo -----------------------------------------------------------------------------
+OUTLINE_K = 0.022          # grosor del contorno de tinta (T220), en unidades de k: el trazo negro del logo
+
+
+def hull(B, obj, t):
+    """Contorno de casco invertido de `obj`: una copia hinchada `t` por sus normales, con las caras al revés y en
+    tinta. Con las caras traseras ocultas (el mar 3D las oculta: Lambert de una cara) sólo asoma el borde: el trazo
+    negro que rodea la mascota del logo (art/marca/boia-mascota.jpg). No pasa por B.mk, que reorientaría las caras."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * t
+    bmesh.ops.reverse_faces(bm, faces=bm.faces[:])
+    for f in bm.faces:
+        f.smooth = True
+    name = B.next_name()
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(B.tema.material("ink"))
+    out = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(out)
+    out.parent = obj.parent
+    out.matrix_parent_inverse = obj.matrix_parent_inverse.copy()
+    return out
+
+
 # --- La boia completa ----------------------------------------------------------------------------
-def mascota(B, base, k=1.0, g=90.0, variant="primera", mouth="sonrisa", info=0, with_balloons=True):
-    """Construye la boia-mascota con la base en `base` (Vector de Blender, en el agua). Devuelve el tope."""
+def mascota(B, base, k=1.0, g=90.0, variant="primera", mouth="sonrisa", info=0, with_balloons=True, outline=False):
+    """Construye la boia-mascota con la base en `base` (Vector de Blender, en el agua). Devuelve el tope.
+
+    outline: contorno de tinta de casco invertido en cuerpo, gorro y aro (T220: el trazo negro del logo). Sólo
+    para los glTF del mar 3D, que ocultan las caras traseras; el arte 2D lleva el contorno de su estilo."""
     if variant not in VARIANTS or mouth not in MOUTHS:
         raise ValueError((variant, mouth))
     base = Vector(base)
@@ -332,20 +368,23 @@ def mascota(B, base, k=1.0, g=90.0, variant="primera", mouth="sonrisa", info=0, 
     Rt = UP.cross(D).normalized()          # derecha en pantalla (la cámara mira hacia -D)
     a, c = 0.40 * k, 0.40 * k
     body = Body(base + UP * (0.36 * k), a, c, D, Rt)
-    B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)
+    shell = [B.blob("mascota", (a, a, c), body.C, 2.0, 2.0, segs=48, rings=24)]
     face(B, body, k, mouth, cheeks=(variant == "fiestera"))
-    tip = cap(B, body, k, pompom=(variant == "fiestera"))
+    tip = cap(B, body, k, pompom=(variant == "fiestera"), parts=shell)
     if variant == "fiestera":
-        rc, R, _ = ring_float(B, body, base, k, "fiestera_band", "fiestera", n_bands=6)
+        rc, R, _ = ring_float(B, body, base, k, "fiestera_band", "fiestera", n_bands=6, parts=shell)
         garland(B, rc, R, k)
         if with_balloons:
             balloons(B, rc, R, body, k)
     else:
-        rc, R, _ = ring_float(B, body, base, k, "white", "mascota_gorro")
+        rc, R, _ = ring_float(B, body, base, k, "white", "mascota_gorro", parts=shell)
         if variant == "info":
             info_sign(B, body, rc, R, k, INFO_COLORS[info % len(INFO_COLORS)])
         elif variant == "whatsapp":
             chat_bubble(B, body, rc, R, k)
+    if outline:
+        for obj in shell:
+            hull(B, obj, OUTLINE_K * k)
     return tip
 
 

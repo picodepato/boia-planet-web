@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T220: The boia redesigned after the BOIA mascot
+
+Qué existe:
+- Las boias de Blender del mar 3D (`art/barco/3d/boia-{mascota,info,whatsapp,fiestera}.glb`) llevan el trazo negro del logo: `tools/blender/mascota.py` tiene `hull()` (casco invertido en tinta de cuerpo, gorro y aro) y `mascota(..., outline=True)`; sólo lo usan los glTF (`export_barcos_glb.py`, nuevo `--solo-boias` para regenerarlas sin tocar los barcos). Islas y arte 2D siguen con `outline=False` (sin cambios).
+- La mascota a mano (`apps/web/app/mar/engine/characters.ts`: capitana, Boia Fiestera a bordo y boia mientras llega su GLB) rehecha sobre el logo: cara del logo (ojos altos, cejas, sonrisa con dientes, pliegues), gorro azul marino ancho ladeado con su agujero, contorno negro (BackSide), sin bracitos; la Fiestera es la misma mascota naranja con coloretes, gorro azul y pompón blanco (`FaceTextures.pink` → `party`).
+- Boias y Fiestera miran hacia quien llega del puerto (`BOIA_FACING = -π/2` en `mar3d.ts`; antes se veían de espaldas).
+- La boia de la carga de `/mar` (`.mar-splash__boia`) y la de la portada (`.intro-cover__boia`) son el SVG del logo (`_marca/boia-mascota.svg`), no una bola CSS.
+- Prueba: `apps/web/app/mar/engine/mascot-look.test.ts` (contorno de la mascota a mano, tinta por fuera del cuerpo en cada GLB, CSS con el logo).
+
+Comandos:
+- `blender -b -P tools/blender/export_barcos_glb.py -- --solo-boias` (Blender 4.0) → 4 boias exportadas (11 716–16 160 triángulos, 225–319 kB); `secreto.glb` se dejó como estaba.
+- `python3 tools/blender/check.py` → exit 0.
+- vitest (sin packages/db) → 247 ficheros, 2281 pasan, 1 omitida; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 195,8 kB de 200); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- `art/boia-tutorial/` (faro con cara del mundo 2D de muestra) no se rehízo: ninguna página lo pinta y su pipeline (`render.py`) necesita Blender ≥ 4.2 (`surface_render_method`); aquí sólo hay 4.0.
+- Las boias dentro de las islas GLB (allday, faro, ultima) y el arte 2D de los mundos no llevan el contorno (fuera de alcance: islas).
+- e2e no corrido (la tanda completa es de T224).
+
 ## 2026-10-08 — plan 019 T217: Artists with image, carnet and music links set by the artists
 
 Qué existe (decisión 10):

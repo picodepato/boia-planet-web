@@ -870,35 +870,11 @@ html[data-intro-act='landing'] {
 }
 
 .intro-cover__boia {
-  position: relative;
-  width: 72px;
-  height: 68px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 38% 35%, #ffa46b, #ec4f24 60%, #c9480f);
+  /* T220: la mascota del logo (art/marca/logo/boia-mascota.svg), no una bola dibujada en CSS. */
+  width: 84px;
+  height: 84px;
+  background: url('./_marca/boia-mascota.svg') center / contain no-repeat;
   animation: intro-cover-bob 1.2s ease-in-out infinite;
-}
-
-.intro-cover__boia::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: -18px;
-  width: 44px;
-  height: 34px;
-  background: #3b2a8f;
-  border-radius: 60% 60% 10% 10%;
-  transform: rotate(-18deg);
-}
-
-.intro-cover__boia::after {
-  content: '';
-  position: absolute;
-  left: 18px;
-  top: 34px;
-  width: 36px;
-  height: 14px;
-  border-radius: var(--radius);
-  background: #fff;
 }
 
 /* El mismo vaivén que la boia de carga de /mar (mar-bob). */

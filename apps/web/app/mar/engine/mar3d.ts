@@ -381,6 +381,12 @@ const MASCOT_BACK = 0.43;
 const MASCOT_SIDE = 0;
 /** Hacia dónde mira la mascota: a popa, un poco a estribor (rad). */
 const MASCOT_YAW = Math.PI * 0.8;
+/**
+ * Hacia dónde miran las boias y la Fiestera (T220): la cara (+x del modelo)
+ * a +z de la escena, hacia quien llega desde el puerto, para que se vea la
+ * mascota del logo y no su espalda (antes, π/2: de espaldas a la cámara).
+ */
+export const BOIA_FACING = -Math.PI / 2;
 const STEP = 1 / 60;
 /** Tope de un viaje en turbo: si no llega (encajonado), se da por llegado. muestra */
 const VOYAGE_MAX_S = 20;
@@ -1345,7 +1351,7 @@ export class Mar3D {
 
   setPassenger(on: boolean): void {
     if (on && !this.crew) {
-      this.crew = createMascot(this.faces.pink, { cap: 'party', band: C.yellow, scale: 0.32 });
+      this.crew = createMascot(this.faces.party, { cap: 'party', band: C.yellow, scale: 0.32 });
       curveTree(this.crew);
       this.boat.crewSlot.add(this.crew);
     } else if (!on && this.crew) {
@@ -2304,7 +2310,7 @@ export class Mar3D {
               scale: 0.75,
             });
             mascot.position.y = 0.35;
-            mascot.rotation.y = Math.PI / 2;
+            mascot.rotation.y = BOIA_FACING;
             fallback.add(mascot);
             // La mascota de Blender (T39: primera o informativa) llega por distancia.
             const m = this.modelSlotFor(o, fallback);
@@ -2327,12 +2333,12 @@ export class Mar3D {
         }
         case 'encuentro': {
           const g = new Group();
-          const mascot = createMascot(this.faces.pink, {
+          const mascot = createMascot(this.faces.party, {
             cap: 'party',
             band: C.yellow,
             scale: 0.55,
           });
-          mascot.rotation.y = Math.PI / 2;
+          mascot.rotation.y = BOIA_FACING;
           // La Boia Fiestera de Blender (T39) llega por distancia.
           const m = this.modelSlotFor(o, mascot);
           g.add(m);
@@ -3780,8 +3786,8 @@ export class Mar3D {
     mv.acquired = true;
     void this.modelStore.acquire(mv.key).then((model) => {
       if (!model || !mv.acquired || this.destroyed) return;
-      // Blender pone la cara a +X, como la mascota hecha a mano ya girada.
-      model.rotation.y = Math.PI / 2;
+      // Blender pone la cara a +X, como la mascota hecha a mano: las dos se giran igual.
+      model.rotation.y = BOIA_FACING;
       model.scale.setScalar(fitHeight(model, mv.fallback));
       curveTree(model);
       mv.slot.remove(mv.fallback);

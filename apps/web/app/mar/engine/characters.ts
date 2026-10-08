@@ -1,4 +1,5 @@
 import {
+  BackSide,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
@@ -6,15 +7,19 @@ import {
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
+  Euler,
   Group,
   IcosahedronGeometry,
   LatheGeometry,
   Mesh,
+  MeshBasicMaterial,
   MeshLambertMaterial,
+  Quaternion,
   SRGBColorSpace,
   SphereGeometry,
   TorusGeometry,
   Vector2,
+  Vector3,
 } from 'three';
 import { Kit, paint } from './kit';
 import { C } from './palette';
@@ -191,13 +196,31 @@ export function createBoat(faceTextures: FaceTextures): Boat {
 
 // --- Mascota --------------------------------------------------------------
 
+/**
+ * La mascota de BOIA a mano (T220: rehecha sobre el logo, `art/marca/boia-mascota.jpg`):
+ * bola naranja con el trazo negro del logo, gorro azul marino en punta ladeado
+ * a la izquierda con su agujero cerca de la punta, ojos grandes y altos y la
+ * sonrisa ancha con dientes. Es la capitana del barco, la boia mientras llega
+ * su modelo de Blender y la Boia Fiestera (con pompón y coloretes).
+ */
+
+/** Colores del logo (los mismos papeles que `tools/blender/mascota.py`). */
+export const MASCOT_COLORS = {
+  body: C.orange,
+  cap: C.purple,
+  ink: '#16101f',
+  pompom: C.white,
+} as const;
+
 export interface FaceTextures {
+  /** La cara del logo. */
   orange: CanvasTexture;
-  pink: CanvasTexture;
+  /** La de la Boia Fiestera: la misma con coloretes. */
+  party: CanvasTexture;
 }
 
-/** La cara de la mascota de BOIA (ojos grandes y sonrisa), pintada en canvas. */
-function faceTexture(body: string, blush: string): CanvasTexture {
+/** La cara de la mascota de BOIA, pintada en canvas como en el logo. */
+function faceTexture(body: string, blush: string | null): CanvasTexture {
   const W = 512;
   const H = 256;
   const cv = document.createElement('canvas');
@@ -207,43 +230,70 @@ function faceTexture(body: string, blush: string): CanvasTexture {
   g.fillStyle = body;
   g.fillRect(0, 0, W, H);
   // La cara va centrada en u = 0,25 (mira a +z en la esfera; el modelo gira).
+  // En la textura, +x es la derecha de la cara vista de frente y +y, abajo.
   const cx = W * 0.25;
-  const cy = H * 0.46;
-  g.lineWidth = 7;
-  g.strokeStyle = '#1a1020';
-  const eye = (x: number, y: number, rx: number, ry: number, px: number) => {
+  const cy = H * 0.44;
+  const ink = MASCOT_COLORS.ink;
+  g.lineJoin = 'round';
+  g.lineCap = 'round';
+  g.strokeStyle = ink;
+  // Ojos del logo: óvalos altos, el derecho más grande y más alto, los dos
+  // algo a la derecha; pupila abajo a la izquierda con su brillo.
+  const eye = (x: number, y: number, rx: number, ry: number, tilt: number) => {
+    g.lineWidth = 6;
     g.fillStyle = '#ffffff';
     g.beginPath();
-    g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    g.ellipse(x, y, rx, ry, tilt, 0, Math.PI * 2);
     g.fill();
     g.stroke();
-    g.fillStyle = '#1a1020';
+    g.fillStyle = ink;
     g.beginPath();
-    g.ellipse(x + px, y + 4, rx * 0.42, ry * 0.5, 0, 0, Math.PI * 2);
+    g.ellipse(x - rx * 0.32, y + ry * 0.18, rx * 0.5, ry * 0.42, tilt, 0, Math.PI * 2);
     g.fill();
     g.fillStyle = '#ffffff';
     g.beginPath();
-    g.arc(x + px - 3, y - 4, 4, 0, Math.PI * 2);
+    g.ellipse(x - rx * 0.42, y + ry * 0.1, rx * 0.16, ry * 0.15, 0, 0, Math.PI * 2);
     g.fill();
   };
-  eye(cx - 26, cy - 22, 20, 30, 5);
-  eye(cx + 24, cy - 26, 22, 33, 6);
-  // Sonrisa.
+  eye(cx - 20, cy - 20, 17, 27, -0.12);
+  eye(cx + 22, cy - 32, 19, 30, -0.18);
+  // Cejas: dos arcos sobre los ojos.
+  g.lineWidth = 5;
+  const brow = (x: number, y: number, w: number) => {
+    g.beginPath();
+    g.moveTo(x - w, y + 4);
+    g.quadraticCurveTo(x, y - 6, x + w, y);
+    g.stroke();
+  };
+  brow(cx - 26, cy - 58, 13);
+  brow(cx + 24, cy - 74, 15);
+  // Sonrisa ancha con dientes: el labio de arriba sube hacia la mejilla derecha.
+  g.lineWidth = 6;
   g.fillStyle = '#ffffff';
   g.beginPath();
-  g.moveTo(cx - 52, cy + 22);
-  g.quadraticCurveTo(cx + 2, cy + 44, cx + 56, cy + 14);
-  g.quadraticCurveTo(cx + 36, cy + 84, cx - 8, cy + 76);
-  g.quadraticCurveTo(cx - 44, cy + 64, cx - 52, cy + 22);
+  g.moveTo(cx - 34, cy + 16);
+  g.quadraticCurveTo(cx + 8, cy + 26, cx + 52, cy - 4);
+  g.quadraticCurveTo(cx + 40, cy + 48, cx + 4, cy + 54);
+  g.quadraticCurveTo(cx - 28, cy + 50, cx - 34, cy + 16);
   g.fill();
   g.stroke();
-  g.fillStyle = blush;
-  g.globalAlpha = 0.35;
+  // Pliegues de las comisuras.
+  g.lineWidth = 4;
   g.beginPath();
-  g.arc(cx - 64, cy + 8, 12, 0, Math.PI * 2);
-  g.arc(cx + 70, cy + 2, 12, 0, Math.PI * 2);
-  g.fill();
-  g.globalAlpha = 1;
+  g.moveTo(cx + 50, cy - 16);
+  g.quadraticCurveTo(cx + 62, cy - 12, cx + 62, cy + 2);
+  g.moveTo(cx - 40, cy + 4);
+  g.quadraticCurveTo(cx - 48, cy + 14, cx - 42, cy + 28);
+  g.stroke();
+  if (blush) {
+    g.fillStyle = blush;
+    g.globalAlpha = 0.45;
+    g.beginPath();
+    g.ellipse(cx - 56, cy + 2, 11, 7, 0, 0, Math.PI * 2);
+    g.ellipse(cx + 72, cy - 10, 11, 7, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+  }
   const t = new CanvasTexture(cv);
   t.colorSpace = SRGBColorSpace;
   t.anisotropy = 2;
@@ -251,12 +301,32 @@ function faceTexture(body: string, blush: string): CanvasTexture {
 }
 
 export function createFaceTextures(): FaceTextures {
-  return { orange: faceTexture(C.orange, '#ff3b1f'), pink: faceTexture(C.pink, '#ff1f6a') };
+  return {
+    orange: faceTexture(MASCOT_COLORS.body, null),
+    party: faceTexture(MASCOT_COLORS.body, C.pink),
+  };
+}
+
+/** Grosor del trazo negro del logo, en fracción del radio de la bola. */
+export const MASCOT_OUTLINE = 0.07;
+
+/** Material del trazo: casco invertido (sólo las caras de dentro), negro plano. */
+const inkMaterial = () =>
+  new MeshBasicMaterial({ color: MASCOT_COLORS.ink, side: BackSide });
+
+const UP = new Vector3(0, 1, 0);
+
+/** Orientación (Euler) que lleva el +y de una pieza a la dirección `d`. */
+function towards(d: Vector3): [number, number, number] {
+  const e = new Euler().setFromQuaternion(new Quaternion().setFromUnitVectors(UP, d.clone().normalize()));
+  return [e.x, e.y, e.z];
 }
 
 /**
- * La mascota: bola con cara, gorro morado (o de fiesta) y franja de boia.
- * Mira a +x; el origen está en su base.
+ * La mascota: bola con cara, gorro azul marino en punta (o el de fiesta, con
+ * pompón) y franja de boia, con el contorno negro del logo.
+ * Mira a +x; el origen está en su base. +z es su izquierda vista de frente:
+ * hacia ahí se ladea el gorro, como en el logo.
  */
 export function createMascot(
   face: CanvasTexture,
@@ -264,43 +334,56 @@ export function createMascot(
 ): Group {
   const g = new Group();
   const r = 1;
-  const sphere = new Mesh(new SphereGeometry(r, 20, 14), new MeshLambertMaterial({ map: face }));
+  const sphereGeo = new SphereGeometry(r, 20, 14);
+  const sphere = new Mesh(sphereGeo, new MeshLambertMaterial({ map: face }));
   // La cara (u = 0,25) mira a +z; se gira para que mire a +x.
   sphere.rotation.y = Math.PI / 2;
   sphere.position.y = r;
   sphere.scale.set(1, 0.94, 1);
   g.add(sphere);
+  const ink = inkMaterial();
+  const rim = new Mesh(sphereGeo, ink);
+  rim.position.y = r;
+  rim.scale.set(1 + MASCOT_OUTLINE, 0.94 + MASCOT_OUTLINE, 1 + MASCOT_OUTLINE);
+  g.add(rim);
+
   const kit = new Kit();
+  const rimKit = new Kit();
   if (opts.band) {
-    kit.add(new CylinderGeometry(r * 0.99, r * 0.9, r * 0.34, 16, 1, true), opts.band, {
-      p: [0, r * 0.52, 0],
+    // La franja va baja, a ras de agua: no tapa la sonrisa.
+    kit.add(new CylinderGeometry(r * 0.86, r * 0.6, r * 0.26, 16, 1, true), opts.band, {
+      p: [0, r * 0.32, 0],
     });
   }
-  if (opts.cap === 'beanie') {
-    kit.add(new ConeGeometry(r * 0.78, r * 1.05, 10), C.purple, {
-      p: [-r * 0.2, r * 2.15, 0],
-      r: [0.35, 0, 0.28],
-    });
-    kit.add(new CylinderGeometry(r * 0.8, r * 0.82, r * 0.18, 12), '#2d1f73', {
-      p: [-r * 0.08, r * 1.72, 0],
-      r: [0, 0, 0.18],
-    });
-    kit.add(new SphereGeometry(r * 0.1, 6, 5), '#140c33', { p: [-r * 0.52, r * 2.6, r * 0.12] });
+  // El gorro: un cono ancho asentado arriba a la izquierda de la cabeza, con
+  // la punta hacia arriba y afuera (el de fiesta, más estrecho y derecho).
+  const party = opts.cap === 'party';
+  const dir = party ? new Vector3(-0.08, 0.92, 0.38).normalize() : new Vector3(-0.1, 0.72, 0.68).normalize();
+  const capR = r * (party ? 0.42 : 0.62);
+  const capH = r * (party ? 1.05 : 1.1);
+  const base = new Vector3(0, r, 0).addScaledVector(dir, r * (party ? 0.86 : 0.74));
+  const mid = base.clone().addScaledVector(dir, capH / 2);
+  const rot = towards(dir);
+  kit.add(new ConeGeometry(capR, capH, 16), MASCOT_COLORS.cap, { p: [mid.x, mid.y, mid.z], r: rot });
+  rimKit.add(new ConeGeometry(capR + r * MASCOT_OUTLINE, capH + r * MASCOT_OUTLINE * 2.4, 16), MASCOT_COLORS.ink, {
+    p: [mid.x, mid.y, mid.z],
+    r: rot,
+  });
+  const tip = base.clone().addScaledVector(dir, capH);
+  if (party) {
+    kit.add(new SphereGeometry(r * 0.17, 8, 6), MASCOT_COLORS.pompom, { p: [tip.x, tip.y, tip.z] });
   } else {
-    kit.add(new ConeGeometry(r * 0.46, r * 1.2, 8), C.yellow, {
-      p: [0, r * 2.35, 0],
-      r: [0, 0, -0.2],
-    });
-    kit.add(new SphereGeometry(r * 0.16, 6, 5), C.purpleSoft, { p: [r * 0.12, r * 2.98, 0] });
-    kit.add(new CylinderGeometry(r * 0.47, r * 0.5, r * 0.1, 10), C.purpleSoft, {
-      p: [0, r * 1.78, 0],
-      r: [0, 0, -0.2],
+    // El agujero del gorro, cerca de la punta, en la cara que mira al frente.
+    const t = 0.62;
+    const out = new Vector3(1, 0, 0).addScaledVector(dir, -dir.x).normalize();
+    const hole = base.clone().addScaledVector(dir, capH * t).addScaledVector(out, capR * (1 - t) * 0.98);
+    kit.add(new SphereGeometry(r * 0.075, 8, 6), MASCOT_COLORS.ink, {
+      p: [hole.x, hole.y, hole.z],
+      s: [0.5, 1.2, 1],
     });
   }
-  // Bracitos.
-  kit.add(new SphereGeometry(r * 0.2, 6, 5), C.white, { p: [r * 0.3, r * 1.0, r * 1.0] });
-  kit.add(new SphereGeometry(r * 0.2, 6, 5), C.white, { p: [r * 0.3, r * 1.0, -r * 1.0] });
   if (!kit.empty) g.add(new Mesh(kit.build(), litMaterial()));
+  if (!rimKit.empty) g.add(new Mesh(rimKit.build(), ink));
   g.scale.setScalar(opts.scale ?? 1);
   return g;
 }

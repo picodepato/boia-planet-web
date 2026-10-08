@@ -16,6 +16,7 @@ color plano por papel (la paleta del tema de arcilla).
     /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/export_barcos_glb.py
     ... -- --only arcilla acuarela
     ... -- --no-boias
+    ... -- --solo-boias                 # sólo las boias (T220: la mascota con el contorno del logo)
 
 Salida: art/barco/3d/*.glb y art/barco/3d/manifest.json (muestra).
 """
@@ -279,7 +280,8 @@ def ship_entry(sid, files):
 
 # --- Las boias con la mascota de BOIA y el marcador de secreto (T39) ---------------------------------
 # Mismas piezas que el arte 2D (mascota.py, con el Builder de los mundos); cada papel, un color plano (la paleta del
-# tema de arcilla, la de los mundos por defecto). Cara a +X y flotación en y = 0.
+# tema de arcilla, la de los mundos por defecto). Cara a +X y flotación en y = 0. Desde T220 llevan el contorno de
+# tinta del logo (casco invertido: el mar 3D oculta las caras traseras y sólo asoma el borde).
 BOIAS = [("boia-mascota", "primera", "la primera boia: la mascota de BOIA tal cual"),
          ("boia-info", "info", "boia informativa (cartel «i» y gallardete; el color del gallardete lo puede cambiar /mar)"),
          ("boia-whatsapp", "whatsapp", "boia de WhatsApp: la mascota con el bocadillo verde de chat"),
@@ -308,7 +310,7 @@ def export_boia(name, variant=None):
     B = ARC.escena.Builder(tema, ARC.temas.A, ARC.M, root)
     with B.zona("mascota"), B.pieza(name):
         if variant:
-            MASC.mascota(B, (0.0, 0.0, 0.0), k=1.0, g=45.0, variant=variant, mouth="sonrisa")
+            MASC.mascota(B, (0.0, 0.0, 0.0), k=1.0, g=45.0, variant=variant, mouth="sonrisa", outline=True)
         else:
             MASC.secreto(B, (0.0, 0.0, 0.0), k=1.0, f=0)
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
@@ -326,9 +328,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", help="sólo estos barcos (ids de estilo)")
     ap.add_argument("--no-boias", action="store_true", help="sin las boias ni el secreto")
+    ap.add_argument("--solo-boias", action="store_true", help="sólo las boias y el secreto; los barcos quedan como están")
     a = ap.parse_args(argv)
     done = []
-    for sid in (a.only or ship_styles.IDS):
+    for sid in ([] if a.solo_boias else (a.only or ship_styles.IDS)):
         files = {skin: export(sid, skin) for skin in ship_skins.skins_for(sid)}
         done.append(ship_entry(sid, files))
     man = os.path.join(OUT, "manifest.json")
