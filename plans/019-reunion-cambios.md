@@ -50,7 +50,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## T214 — Landing redesigned after noartmusic.com, hero changes and the store
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T213
 - Model: opus
 - Skills: frontend-design
@@ -63,7 +63,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - `E2E_PORT=<free> pnpm e2e` on the landing, store and record specs it affects `--workers=1` → exit 0
   - landing critical path ≤ 200 kB gzip → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: landing below the hero is one white sheet rising from the sea (noartmusic style), only «Zarpar» + yellow «Consigue descuentos», events with date square, store 3 products with price and party-only / reserve-by-DM; 193.9 kB · b435384
 
 ## T216 — Galería: collage of photos and clips with open/close animations
 - Status: done
@@ -80,7 +80,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: /galeria collage of photos + muted clips (reusable `MediaCollage`), open/close animations, /fotos → 307, Admin clip upload (mp4 ≤20 MB/30 s, bucket event-clips), 3 sample clips; migration 20261008100400 to apply · 1eba877
 
 ## T215 — Event page, purchase with required carnet, discounts and Admin event fields
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T214, T216
 - Model: opus
 - Goal: Event page with clear missing-state texts, blurred poster background, photo collage, «Solo en puerta»/carnet notices, Halloween door-only info, «Consigue un descuento» button, ticketing provider; buying requires a carnet and the carnet discount goes; Admin edits every field and the common discount code (decisions 1, 5, 6, 7).
@@ -122,7 +122,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## T219 — World: light-orange loading, popups without band, island names and popup contents
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T213
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Light-orange loading screen; popups with square edges and no orange top band (title and description in blue, buttons, expand option); island renames; party islands' popups show only name, date and place; Botiga Ibiza's text; rescue mission text for ALL DAY BOIA and Nochevieja (decisions 12 popups part, 13, 14).
@@ -210,11 +210,17 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 
 - 2026-10-08 T213: fonts = combination 4: Upheaval (titles) / Press Start 2P (buttons) / 8-bit Operator+ (body) (Hernán)
 - 2026-10-08 T216: optional `kind` + `poster` on photo schema; clips play only on screen, never with reduced motion; /api/art serves mp4 with Range; database.types.ts edited by hand (agent)
+- 2026-10-08 T214: store sample prices camisetas 20 € (reserve by DM), tote 12 €, pegatinas 5 € (party only), `priceCents` + `sale` on product contract; Instagram default https://www.instagram.com/boia.planet/; tests open Tickets from the header «Entradas» past the hero; REQ-ENT-002/027 → PARCIAL (agent)
+- 2026-10-08 T219: Codex cannot run ("gpt-6.1-sol not supported with a ChatGPT account"); Opus did the task; later Codex tasks go to Opus (orchestrator)
+- 2026-10-08 T219: party-island popups have no kicker (name, date · place, state tag); Castillo tower labels renamed too; FIESTERA20 only text changes (agent)
+- 2026-10-08 T219: integration failed lint (merchandise.spec unused MERCHANDISE_NOTICE after T214) → reverted; agent fixing; scope extended to make landing `.intro-cover` light orange (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
 - 2026-10-08 T216: the i18n-zonas generator is out of sync with textos-zonas.md (running it would drop keys like nav.ranking); generated files were edited by hand
 - 2026-10-08 T216: home «Ver todas» (PHOTOS_PAGE in blocks.tsx) still points to /fotos (redirect works; T214 may fix)
+- 2026-10-08 T214: decision 4 should go into DECISIONES.md so REQ-ENT-002/027 can be retired (Hernán); Roke's file goes in HERO_MEDIA_SRC (apps/web/lib/landing/hero-media.ts)
+- 2026-10-08 T219: supabase/seeds/20261003100100_economy.sql keeps old event names; sea island labels `.mar-pin--accent` still orange
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -225,3 +231,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T214 launched · attempt 1 · agent a6c26a044e7b10876
 - 2026-10-08 T216 launched · attempt 1 · agent abb6b9b5dbd06ffba
 - 2026-10-08 T216 done · merged 1eba877
+- 2026-10-08 T219 launched · attempt 1 · agent a63809805b469a6f9 (Codex wrapper)
+- 2026-10-08 T214 done · merged b435384
+- 2026-10-08 T219 tests_failed at integration (lint) · reverted a55683c · sent fix request to agent
