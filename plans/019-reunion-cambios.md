@@ -122,7 +122,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## T219 — World: light-orange loading, popups without band, island names and popup contents
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T213
 - Model: codex (via wrapper agent; Opus if Codex is out of credits)
 - Goal: Light-orange loading screen; popups with square edges and no orange top band (title and description in blue, buttons, expand option); island renames; party islands' popups show only name, date and place; Botiga Ibiza's text; rescue mission text for ALL DAY BOIA and Nochevieja (decisions 12 popups part, 13, 14).
@@ -133,7 +133,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - screenshots: loading screen, a party island popup, Botiga Ibiza popup → attach folder
   - `E2E_PORT=<free> pnpm e2e mar-hud.spec.ts` and the island/popup specs it affects `--workers=1` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: light-orange /mar loading and Zarpar cover, popups without band, islands ALL DAY BOIA / HALLOWEEN IN THE CLUB / Botiga Ibiza / Puig Campana (name), party popups name + date · place, Botiga «Sección de merchandising oficial», FIESTERA20 text for ALL DAY + Nochevieja (done by Opus, Codex unavailable) · 8f162fc
 
 ## T220 — The boia redesigned after the BOIA mascot
 - Status: pending
@@ -234,3 +234,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T219 launched · attempt 1 · agent a63809805b469a6f9 (Codex wrapper)
 - 2026-10-08 T214 done · merged b435384
 - 2026-10-08 T219 tests_failed at integration (lint) · reverted a55683c · sent fix request to agent
+- 2026-10-08 T215 launched · attempt 1 · agent a0d0efb4f016f8bd3
+- 2026-10-08 T219 done · merged 8f162fc
+- 2026-10-08 T215 agent stopped: session rate limit (429) · resumed by SendMessage
