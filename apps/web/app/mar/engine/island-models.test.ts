@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
+import { CALITAS_PLACE_ID, LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { Group, Mesh, MeshLambertMaterial, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
 import { repoRoot } from '../../../lib/barco/load';
@@ -85,6 +85,26 @@ describe('el manifiesto de las islas', () => {
     expect(entry?.label).toBe(label);
     // La montaña es la protagonista: el modelo es tan alto como ancho (su radio).
     expect(entry!.height).toBeGreaterThan(entry!.radius);
+  });
+
+  it('Las Calitas, la isla de los comentarios (REQ-IDE-054, plan 020 T232), tiene el suyo con el nombre de su lugar', () => {
+    const source = readFileSync(path.join(ROOT, 'tools/blender/islas/calitas.py'), 'utf8');
+    const id = /^ID = "([a-z0-9-]+)"/m.exec(source)?.[1];
+    const label = /^LABEL = "([^"]+)"/m.exec(source)?.[1];
+    expect(id).toBe(CALITAS_PLACE_ID);
+    const entry = entries.get(id!);
+    expect(entry?.file).toBe(`${id}.glb`);
+    expect(entry?.label).toBe(label);
+    // El nombre del modelo es el del lugar en el mapa.
+    const place = WORLD_REGISTRY.get('arcilla').places.find((p) => p.id === CALITAS_PLACE_ID);
+    expect(place?.name).toBe(label);
+    // El bocadillo del tablón brilla de noche: el GLB tiene su material emisivo.
+    const buf = readFileSync(path.join(ROOT, 'art/islas/3d', entry!.file));
+    const gltf = JSON.parse(buf.subarray(20, 20 + buf.readUInt32LE(12)).toString('utf8')) as {
+      materials: { name: string; emissiveFactor?: number[] }[];
+    };
+    const bubble = gltf.materials.find((m) => m.name.startsWith('lc_bubble'));
+    expect(bubble?.emissiveFactor?.some((c) => c > 0)).toBe(true);
   });
 
   describe('el Faro de Tabarca (plan 014, T166)', () => {

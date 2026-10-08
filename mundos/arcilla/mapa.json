@@ -3286,6 +3286,32 @@
       "nota": "Cañón contra tiburones (D-20). Entre el Puerto de Fotos y el faro, fuera de las rutas."
     }
   ],
+  "islas_sueltas": [
+    {
+      "id": "calitas",
+      "nombre": "Las Calitas",
+      "pos": [
+        -11.5,
+        -27.5
+      ],
+      "isla": {
+        "centro": [
+          -11.5,
+          -27.5
+        ],
+        "a": 2.0,
+        "b": 1.6,
+        "giro": 25,
+        "alto": 0.4,
+        "p": 2.2,
+        "rol": "sand",
+        "bajio": true
+      },
+      "comportamientos": "PROXIMIDAD + CONTENIDO (comentarios)",
+      "proximidad": 3.4,
+      "nota": "La isla de los comentarios (plan 019 T222, decisión 16): su fuente es el plan y la pone packages/world/src/worlds/arcilla/map.ts (CALITAS_CENTER). Aquí sólo para su arte 2D (plan 020 T232, tools/blender/lugares.json). muestra"
+    }
+  ],
   "ritmo": {
     "velocidad_u_motor_s": 220,
     "aceleracion_u_motor_s2": 240,

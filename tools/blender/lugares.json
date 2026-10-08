@@ -2,7 +2,7 @@
   "version": 1,
   "estado": "muestra",
   "mapa": "mundos/arcilla/mapa.json",
-  "nota": "Los lugares del mapa compartido que tienen arte. Cada mundo pone uno en art/mundos/<mundo>/<id>/manifest.json (lo escribe tools/blender/render.py y lo valida tools/blender/check.py). El id es estable: sale de mapa.json (id de zona, de lugar, de pieza, de costa o de minijuego) y no cambia aunque cambie el nombre. `ref` apunta a la entrada de mapa.json; `pos` al punto que hace de posición del lugar; `instancias`, cuando el mismo arte va en varios puntos. Las islas de evento (con taquilla) llevan el mismo nombre en todos los mundos (`isla_evento`: el nombre lo pone el evento); el resto puede tener un nombre propio en cada mundo. `boias` (la mascota de BOIA: la primera, la de WhatsApp y las cinco informativas; la Boia Fiestera va en `fiestera`) y `secreto` (el marcador de los secretos) vinieron de `extras` con T39 y el motor los dibuja desde T45.",
+  "nota": "Los lugares del mapa compartido que tienen arte. Cada mundo pone uno en art/mundos/<mundo>/<id>/manifest.json (lo escribe tools/blender/render.py y lo valida tools/blender/check.py). El id es estable: sale de mapa.json (id de zona, de lugar, de pieza, de costa o de minijuego) y no cambia aunque cambie el nombre. `ref` apunta a la entrada de mapa.json; `pos` al punto que hace de posición del lugar; `instancias`, cuando el mismo arte va en varios puntos. Las islas de evento (con taquilla) llevan el mismo nombre en todos los mundos (`isla_evento`: el nombre lo pone el evento); el resto puede tener un nombre propio en cada mundo. `boias` (la mascota de BOIA: la primera, la de WhatsApp y las cinco informativas; la Boia Fiestera va en `fiestera`) y `secreto` (el marcador de los secretos) vinieron de `extras` con T39 y el motor los dibuja desde T45. `mundos`, si está, limita el lugar a esos mundos (Las Calitas, T232: sólo Arcilla; la Acuarela no se mantiene a la par y la deja con marcador).",
   "lugares": [
     {"id": "puerto", "categoria": "puerto", "ref": "zonas/puerto", "pos": "zonas/puerto/lugares/salida", "isla_evento": false},
     {"id": "cala", "categoria": "isla", "ref": "zonas/cala", "pos": "zonas/cala/islas/isla", "isla_evento": false},
@@ -20,6 +20,7 @@
     {"id": "circuito", "categoria": "circuito", "ref": "zonas/circuito", "pos": "circuito/salida", "isla_evento": false},
     {"id": "faro", "categoria": "minijuego", "ref": "minijuegos/faro", "pos": "minijuegos/faro/isla", "isla_evento": false},
     {"id": "canon", "categoria": "minijuego", "ref": "minijuegos/canon", "pos": "minijuegos/canon/isla", "isla_evento": false},
+    {"id": "calitas", "categoria": "isla", "ref": "islas_sueltas/calitas", "pos": "islas_sueltas/calitas/isla", "isla_evento": false, "mundos": ["arcilla"]},
     {"id": "costa_oeste", "categoria": "costa", "ref": "costas/costa_oeste", "pos": "costas/costa_oeste/linea/0", "isla_evento": false},
     {"id": "costa_este", "categoria": "costa", "ref": "costas/costa_este", "pos": "costas/costa_este/linea/0", "isla_evento": false},
     {"id": "costa_sur", "categoria": "costa", "ref": "costas/costa_sur", "pos": "costas/costa_sur/linea/0", "isla_evento": false},

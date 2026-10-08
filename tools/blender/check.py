@@ -1081,13 +1081,15 @@ def check_worlds(art, diff_root, worlds):
     for wid in worlds:
         wdir = os.path.join(art, MUNDOS_SUBDIR, wid)
         found = sorted(d for d in os.listdir(wdir) if os.path.isdir(os.path.join(wdir, d))) if os.path.isdir(wdir) else []
-        missing = [pid for pid in catalog if pid not in found]
-        extra = [d for d in found if d not in catalog]
+        # `mundos` en lugares.json limita un lugar a esos mundos (T232: Las Calitas, sólo Arcilla).
+        mine = {pid: e for pid, e in catalog.items() if wid in e.get("mundos", [wid])}
+        missing = [pid for pid in mine if pid not in found]
+        extra = [d for d in found if d not in mine]
         if missing or extra:
             results.append(("%s/%s" % (MUNDOS_SUBDIR, wid), "place",
                             ["lugares sin arte: %s; carpetas que no son lugares: %s" % (missing, extra)], [], 0))
         ship_path = None
-        for pid in [p for p in catalog if p in found]:
+        for pid in [p for p in mine if p in found]:
             res_dir = os.path.join(wdir, pid)
             label = "%s/%s/%s" % (MUNDOS_SUBDIR, wid, pid)
             if not os.path.exists(os.path.join(res_dir, "manifest.json")):

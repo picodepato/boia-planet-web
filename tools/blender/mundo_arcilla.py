@@ -1047,6 +1047,100 @@ def p_minijuego(mid, builder):
 GROUPS["minijuego"] = lambda ctx, arg: {"faro": g_faro, "canon": g_canon}[arg](ctx)
 
 
+# --- Las Calitas (T232): la isla de los comentarios ----------------------------------------------
+# La misma cala que la isla 3D (islas/calitas.py): un peñón de roca ocre en media luna por detrás (−y del mapa)
+# que abraza una playa abierta hacia el espectador, pinos arriba, el tablón de los comentarios con notas de colores
+# y su bocadillo de cómic, y dos sombrillas. Sólo en Arcilla (lugares.json: `mundos`). muestra
+SUELTAS = {s["id"]: s for s in M.get("islas_sueltas", [])}
+# El peñón: (ángulo en el mapa, distancia en fracción del semieje, semiejes a/b, alto); 270° es el fondo.
+CALITAS_CLIFFS = ((195, 0.82, 0.42, 0.32, 0.5), (222, 0.78, 0.5, 0.36, 0.72), (250, 0.74, 0.52, 0.38, 0.86),
+                  (278, 0.74, 0.52, 0.38, 0.9), (306, 0.76, 0.5, 0.36, 0.76), (334, 0.8, 0.44, 0.32, 0.55),
+                  (358, 0.86, 0.34, 0.26, 0.36))
+CALITAS_NOTES = ("sticker_a", "jelly", "paper", "lane_a", "sticker_b", "sticker_a", "paper", "jelly")
+
+
+def calitas_xy(s, ang, rr):
+    cx, cy = s["centro"]
+    return cx + s["a"] * rr * math.cos(math.radians(ang)), cy + s["b"] * rr * math.sin(math.radians(ang))
+
+
+def g_calitas(ctx):
+    """Las Calitas (decisión 7 de la revisión del 2026-10-08): la cala de los comentarios."""
+    B = ctx.B
+    s = SUELTAS["calitas"]["isla"]
+    cx, cy = s["centro"]
+    with B.zona("calitas"):
+        with B.pieza("isla"):
+            B.isla(s)
+        with B.pieza("penon"):
+            for i, (ang, rr, a, b, h) in enumerate(CALITAS_CLIFFS):
+                x, y = calitas_xy(s, ang, rr)
+                z0 = B.gz(x, y)
+                B.land(x, y, a, b, h, z0 - 0.05, g=ang + 90, p=2.4, q=2.2, role="cliff" if i % 2 else "cliff_dark",
+                       segs=32, rings=10)
+                if h > 0.6:
+                    B.land(x, y + 0.04, a * 0.7, b * 0.62, 0.08, z0 - 0.05 + h * 0.97, g=ang + 90, p=2.4, q=2.6,
+                           role="grass", segs=24, rings=6)
+        with B.pieza("vegetacion"):
+            for ang, rr, hh in ((228, 0.8, 0.75), (262, 0.76, 0.85), (292, 0.76, 0.8), (318, 0.8, 0.65)):
+                P.pine(B, *calitas_xy(s, ang, rr), height=hh, k=0.42)
+            for ang, rr in ((205, 0.85), (345, 0.86)):
+                P.bush(B, *calitas_xy(s, ang, rr), 0.1, role="pine")
+        D = P.mdir(90.0)                    # hacia el espectador
+        Rt = D.cross(UP).normalized()
+        base = B.on(cx, cy - 0.15, -0.02)
+        W, Hb, Hp = 0.92, 0.5, 0.86          # ancho y alto de la tabla, alto de los postes
+        with B.pieza("tablon"):
+            for side in (-1, 1):
+                q = base + Rt * side * (W * 0.5 + 0.02)
+                B.tube("wood_dark", [q - Vector((0, 0, 0.05)), q + Vector((0, 0, Hp))], 0.025, segs=8)
+            mid = base + Vector((0, 0, Hp - 0.06 - Hb * 0.5))
+            board = P.T(*mid) @ P.basis(Rt, D, UP)
+            B.blob("stage_wood", (W * 0.5, 0.02, Hb * 0.5), (0, 0, 0), 8.0, 8.0, extra=board, segs=12, rings=6)
+            B.blob("roof_tile", (W * 0.5 + 0.08, 0.08, 0.015), (0, 0, 0), 8.0, 8.0,
+                   extra=P.T(*(base + Vector((0, 0, Hp + 0.02)))) @ P.basis(Rt, D, UP), segs=12, rings=4)
+            for i, role in enumerate(CALITAS_NOTES):
+                col, row = i % 4, i // 4
+                m = board @ P.T(-W * 0.36 + col * W * 0.24, 0.025, 0.11 - row * 0.23) @ P.rot("Y", (i * 37 % 11 - 5) * 2.0)
+                B.blob(role, (0.085, 0.006, 0.08), (0, 0, 0), 8.0, 8.0, extra=m, segs=8, rings=4)
+                for li in range(2):
+                    B.blob("ink", (0.05, 0.003, 0.005), (0, 0, 0), 6.0, 6.0, extra=m @ P.T(0, 0.007, 0.02 - li * 0.035),
+                           segs=8, rings=4)
+        with B.pieza("bocadillo"):
+            bc = base + Rt * 0.14 + Vector((0, 0, Hp + 0.42))
+            m = P.T(*bc) @ P.basis(Rt, D, UP)
+            B.blob("paper", (0.34, 0.06, 0.22), (0, 0, 0), 2.3, 2.0, extra=m, segs=24, rings=10)
+            B.blob("ink", (0.36, 0.045, 0.24), (0, 0, 0), 2.3, 2.0, extra=m @ P.T(0, -0.03, 0), segs=24, rings=8)
+            B.tube("paper", [m @ Vector((-0.12, 0.0, -0.16)), m @ Vector((-0.2, 0.0, -0.3)),
+                             m @ Vector((-0.24, 0.0, -0.36))], [0.07, 0.035, 0.01], segs=8)
+            for i in (-1, 0, 1):
+                B.blob("person_e", (0.04, 0.02, 0.04), (0, 0, 0), extra=m @ P.T(i * 0.11, 0.06, 0.0), segs=10, rings=6)
+            ctx.data["bocadillo"] = bc + Vector((0, 0, 0.24))
+        with B.pieza("playa"):
+            for dx, dy, canopy, towel in ((-0.95, 0.55, "lane_a", "sticker_a"), (0.9, 0.62, "person_e", "jelly")):
+                q = B.on(cx + dx, cy + dy, -0.02)
+                top = q + Vector((0, 0, 0.55))
+                B.tube("white", [q, top], 0.014, segs=6)
+                B.lathe(canopy, [(0.0, 0.0), (0.32, -0.12), (0.31, -0.14), (0.0, -0.02)], tuple(top + Vector((0, 0, 0.03))),
+                        segs=24)
+                B.blob(towel, (0.11, 0.2, 0.006), q + Vector((0.0, 0.0, 0.02)) + P.mdir(60) * 0.22, 8.0, 8.0,
+                       extra=B.rz(150), segs=8, rings=4)
+
+
+def p_isla_suelta(pid, builder):
+    """Una isla de `islas_sueltas` de mapa.json (T232: Las Calitas, la de los comentarios)."""
+    sp = SUELTAS[pid]
+    s = sp["isla"]
+    pa = part(pid, "isla", "bloquear", "isla_suelta:" + pid, tuple(s["centro"]),
+              static(lambda ctx: pick(ctx, pid)), anchors=lambda ctx: {"bocadillo": ctx.data["bocadillo"]},
+              rotulo=True, footprint=lambda ctx: outline(s), prox_units=sp["proximidad"],
+              doc="isla de los comentarios (plan 019 T222; arte, T232)")
+    return place(pid, [pa], name=sp["nombre"])
+
+
+GROUPS["isla_suelta"] = lambda ctx, arg: {"calitas": g_calitas}[arg](ctx)
+
+
 # --- Costas ---------------------------------------------------------------------------------------
 # Dos tramos de acantilado (o de playa) por periodo, con los parámetros de dos tramos de mapa.json.
 TRAMOS_O = ({"dx": 0.1, "a": 2.8, "b": 4.5, "alto": 1.3}, {"dx": -0.1, "a": 3.0, "b": 4.6, "alto": 1.5})
@@ -1335,7 +1429,7 @@ class _LazyFills(dict):
 def places():
     out = [p_puerto(), p_isla("cala"), p_fiestera(), p_allday(), p_isla("fotos"), p_isla("tienda"), p_isla("ultima"),
            p_naufrago(), p_restos(), p_cofres(), p_botellas(), p_delfin(), p_remolino(), p_circuito(),
-           p_minijuego("faro", g_faro), p_minijuego("canon", g_canon),
+           p_minijuego("faro", g_faro), p_minijuego("canon", g_canon), p_isla_suelta("calitas", g_calitas),
            p_costa_lateral("costa_oeste"), p_costa_lateral("costa_este"), p_costa_sur()]
     _fills_for_corners(out)
     shared = lambda pid, parts, name: place(pid, parts, name=name, shared=True)
@@ -1349,9 +1443,10 @@ BASE_SCRIPTS = ["tools/blender/rig.py", "tools/blender/world.py", "tools/blender
 ZONE_FILES = {"puerto": ["puerto"], "cala": ["cala"], "fiestera": ["fiestera"], "allday": ["allday"],
               "fotos": ["fotos"], "tienda": ["tienda"], "ultima": ["ultima"], "circuito": ["circuito"],
               "faro": ["puerto"], "canon": [], "costa_oeste": ["costas"], "costa_este": ["costas"],
-              "costa_sur": ["costas", "puerto"], "boias": [], "secreto": []}
+              "costa_sur": ["costas", "puerto"], "boias": [], "secreto": [], "calitas": []}
 MASCOT_PLACES = ("boias", "secreto", "fiestera")      # la mascota de BOIA (T39): tools/blender/mascota.py
-PLACE_SCRIPTS = {"canon": ["tools/blender/islas/puigcampana.py"]}   # el Puig Campana (T231): la montaña del 3D
+PLACE_SCRIPTS = {"canon": ["tools/blender/islas/puigcampana.py"],   # el Puig Campana (T231): la montaña del 3D
+                 "calitas": ["tools/blender/islas/calitas.py"]}      # Las Calitas (T232): la cala del 3D
 
 
 def scripts(place):
@@ -1372,6 +1467,7 @@ ANCHOR_DOC = {
     "luces": "cabeza del semáforo: luces de la cuenta atrás",
     "linterna": "linterna del faro: origen del haz del minijuego",
     "boca": "boca del cañón: origen de los disparos del minijuego",
+    "bocadillo": "encima del bocadillo de cómic del tablón de los comentarios",
     "tapa": "tapa del cofre: de aquí salen las monedas",
     "naufrago": "el náufrago, de pie en el banco: origen de su bocadillo",
 }

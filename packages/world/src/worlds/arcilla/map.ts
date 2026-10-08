@@ -88,9 +88,10 @@ export const HARBOR_REF = 'barcos';
 
 /**
  * Las Calitas (plan 019 T222, decisión 16): la isla de los comentarios, una
- * cala pequeña donde la gente escribe, responde y vota. Sin maqueta en
- * mapa.json: su fuente es el plan. Su ficha (`content` con `CALITAS_REF`)
- * abre los comentarios.
+ * cala pequeña donde la gente escribe, responde y vota. Se añadió después de
+ * la maqueta; desde T232 (plan 020) su sitio está también en mapa.json
+ * (`islas_sueltas/calitas`), la fuente de su arte 2D. Su ficha (`content` con
+ * `CALITAS_REF`) abre los comentarios.
  */
 export const CALITAS_PLACE_ID = 'calitas';
 export const CALITAS_REF = 'comentarios';
@@ -561,13 +562,14 @@ const ISLANDS: PlaceInput[] = [
   island(
     CALITAS_PLACE_ID,
     'Las Calitas',
-    'plan:T222',
+    'islas_sueltas/calitas/isla',
     CALITAS_CENTER,
     2.0,
     1.6,
     25,
     3.4,
     [content('info', CALITAS_REF), visit()],
+    ['islas_sueltas/calitas'],
   ),
 ];
 

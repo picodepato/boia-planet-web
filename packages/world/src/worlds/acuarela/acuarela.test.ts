@@ -8,7 +8,7 @@ import { ARCILLA_WORLD_ID } from '../arcilla';
 import { WORLD_REGISTRY } from '../catalog';
 import { manifestAssetExists } from '../check';
 import { isEventPlace } from '../map';
-import { PLACE_MARKERS } from '../place-art';
+import { PLACE_MARKERS, WORLD_ONLY_PARTS } from '../place-art';
 import { ACUARELA_NAMES, ACUARELA_WORLD_ID } from '.';
 
 /**
@@ -35,7 +35,7 @@ const lugares = JSON.parse(
   lugares: { id: string; nombre: string }[];
 };
 const catalog = JSON.parse(readFileSync(path.join(ROOT, 'tools/blender/lugares.json'), 'utf8')) as {
-  lugares: { id: string }[];
+  lugares: { id: string; mundos?: string[] }[];
 };
 
 const arcilla = WORLD_REGISTRY.get(ARCILLA_WORLD_ID);
@@ -70,7 +70,11 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
       if (p.asset!.startsWith('placeholder:')) {
         // Sólo los secretos y los lugares aún sin pieza (la Isla de Halloween,
         // T67), sin arte en ningún mundo todavía (como en Arcilla).
-        expect(p.id.startsWith('secreto-') || p.id in PLACE_MARKERS, p.id).toBe(true);
+        // Y los que sólo tienen arte en Arcilla (Las Calitas, T232).
+        expect(
+          p.id.startsWith('secreto-') || p.id in PLACE_MARKERS || p.id in WORLD_ONLY_PARTS,
+          p.id,
+        ).toBe(true);
         continue;
       }
       expect(parseAssetRef(p.asset!).base, p.id).toMatch(/^mundos\/acuarela\//);
@@ -85,6 +89,12 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
   it('la misma pieza que en Arcilla, en la carpeta de Acuarela', () => {
     for (const p of acuarela.places) {
       const a = arcilla.places.find((x) => x.id === p.id)!;
+      // Los lugares con arte sólo en otros mundos llevan aquí su marcador (Las Calitas, T232).
+      const only = WORLD_ONLY_PARTS[p.id];
+      if (only && !only.worlds.includes(ACUARELA_WORLD_ID)) {
+        expect(p.asset, p.id).toBe(only.marker);
+        continue;
+      }
       expect(p.asset!.replace('mundos/acuarela/', 'mundos/arcilla/'), p.id).toBe(a.asset);
     }
   });
@@ -98,7 +108,11 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
     for (const c of coastAssets(acuarela.config.coast))
       used.add(parseAssetRef(c).base.split('/')[2]);
     // Las botellas las pinta la web (T22) con su propia pieza, no un lugar del mapa.
-    const expected = catalog.lugares.map((l) => l.id).filter((id) => id !== 'botellas');
+    // `mundos` limita un lugar a esos mundos (Las Calitas, T232: sólo Arcilla).
+    const expected = catalog.lugares
+      .filter((l) => !l.mundos || l.mundos.includes(ACUARELA_WORLD_ID))
+      .map((l) => l.id)
+      .filter((id) => id !== 'botellas');
     expect([...used].sort()).toEqual(expected.sort());
   });
 

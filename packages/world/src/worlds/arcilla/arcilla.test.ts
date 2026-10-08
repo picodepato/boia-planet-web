@@ -7,11 +7,12 @@ import { coastAssets } from '../../schema';
 import { manifestAssetExists } from '../check';
 import { WORLD_REGISTRY } from '../catalog';
 import { isEventPlace, parseSharedMap } from '../map';
-import { PLACE_MARKERS } from '../place-art';
+import { PLACE_MARKERS, WORLD_ONLY_PARTS } from '../place-art';
 import {
   ARCILLA_MAP,
   ARCILLA_SKIN,
   BOTTLE_SPOTS,
+  CALITAS_CENTER,
   CALITAS_PLACE_ID,
   CALITAS_REF,
   COAST_HALF_WIDTH,
@@ -83,6 +84,7 @@ function mapaEntries(): string[] {
     arr(z.restos).forEach((_, i) => out.push(`zonas/${id}/restos/${i}`));
   }
   for (const m of arr(mapa.minijuegos)) out.push(`minijuegos/${m.id as string}`);
+  for (const m of arr(mapa.islas_sueltas)) out.push(`islas_sueltas/${m.id as string}`);
   arr(mapa.secretos).forEach((_, i) => out.push(`secretos/${i}`));
   const c = mapa.circuito as Json;
   out.push('circuito/salida', 'circuito/meta', 'circuito/cartel_atajo');
@@ -315,7 +317,14 @@ describe('mapa compartido de Arcilla (T20)', () => {
       expect.objectContaining({ target: 'info', ref: CALITAS_REF }),
     ]);
     expect(c.behaviors.some((b) => b.type === 'ticket' || b.type === 'reward')).toBe(false);
-    expect(PLACE_MARKERS[CALITAS_PLACE_ID]).toBe('placeholder:isla');
+    // Plan 020 T232: su arte 2D de Arcilla (mundo_arcilla.g_calitas, la cala de islas/calitas.py); en la
+    // Acuarela, que no se mantiene a la par, sigue el marcador.
+    const asset = WORLD_REGISTRY.get('arcilla').places.find((p) => p.id === CALITAS_PLACE_ID)?.asset;
+    expect(asset).toBe(`mundos/arcilla/${CALITAS_PLACE_ID}#${CALITAS_PLACE_ID}`);
+    expect(manifestAssetExists(readArt)(asset!)).toBe(true);
+    expect(WORLD_ONLY_PARTS[CALITAS_PLACE_ID]?.marker).toBe('placeholder:isla');
+    // Su sitio en mapa.json (la fuente del arte 2D) es el del mundo.
+    expect(sourcePoint(c.source[0]!)).toEqual(CALITAS_CENTER);
     const b = map.bounds;
     expect(c.position.x).toBeGreaterThan(b.left);
     expect(c.position.x).toBeLessThan(b.right);

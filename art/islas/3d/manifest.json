@@ -16,6 +16,17 @@
    "doc": "sound system de rave con dos muros de altavoces, cabina de DJ, pórtico de focos y láser que brillan de noche, y boias de BOIA bailando en la pista"
   },
   {
+   "id": "calitas",
+   "file": "calitas.glb",
+   "label": "Las Calitas",
+   "radius": 7.0,
+   "top": 0.6,
+   "height": 5.95,
+   "tris": 22476,
+   "kb": 589,
+   "doc": "cala pequeña con un peñón de roca ocre en media luna que abraza una playa de arena, matorral y pinos en lo alto; en la playa el tablón de los comentarios con notas de colores y un bocadillo de cómic que brilla de noche, dos sombrillas con toallas, muelle, una boia de BOIA hablando junto al tablón y otra en el agua"
+  },
+  {
    "id": "canon",
    "file": "canon.glb",
    "label": "Puig Campana",

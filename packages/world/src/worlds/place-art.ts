@@ -75,8 +75,17 @@ const RESTOS_VARIANTS = ['a', 'b', 'c'];
 export const PLACE_MARKERS: Readonly<Record<string, string>> = {
   halloween: 'placeholder:isla',
   castillo: 'placeholder:isla',
-  // Las Calitas (plan 019 T222): en /mar la dibuja su composición 3D.
-  calitas: 'placeholder:isla',
+};
+
+/**
+ * Lugares con pieza sólo en algunos mundos (`mundos` de `tools/blender/lugares.json`);
+ * en los demás, su marcador. Las Calitas (plan 020 T232): su arte 2D sólo está en
+ * Arcilla (la Acuarela no se mantiene a la par); en /mar la dibuja su modelo 3D.
+ */
+export const WORLD_ONLY_PARTS: Readonly<
+  Record<string, { worlds: readonly string[]; part: [string, string?, string?]; marker: string }>
+> = {
+  calitas: { worlds: ['arcilla'], part: ['calitas'], marker: 'placeholder:isla' },
 };
 
 /**
@@ -90,6 +99,8 @@ export function sharedPlaceAsset(worldId: string, id: string, i: number): string
     placePart(worldId, place, part, variant);
   const marker = PLACE_MARKERS[id];
   if (marker) return marker;
+  const only = WORLD_ONLY_PARTS[id];
+  if (only) return only.worlds.includes(worldId) ? art(...only.part) : only.marker;
   const fixed = PARTS[id];
   if (fixed) return art(...fixed);
   let m = /^fiestera-(cocodrilo|roca)_(\d)$/.exec(id);

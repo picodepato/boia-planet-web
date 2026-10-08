@@ -86,6 +86,12 @@ Las botellas son la única mecánica social abierta: mensajes breves para quien 
 - **REQ-IDE-043** `L1` — Permitir reportar una botella y propagar su retirada a todo el mundo publicado. *Fuente: §17, P3*
 - **REQ-IDE-044** `L1` — No ofrecer mensajería privada entre miembros: la comunicación abierta del mundo son las botellas. *Fuente: §44.2, §44.3, §46, D-02*
 
+## Las Calitas
+
+La isla de los comentarios (plan 019, decisión 16 de la reunión del 2026-10-08; plan 020, decisión 7): comentarios públicos en una isla del mapa, no mensajes directos (REQ-IDE-044).
+
+- **REQ-IDE-054** `L1` — Ofrecer en el mapa la isla Las Calitas, una cala con su modelo de Blender en `/mar` y su arte 2D en Arcilla como las demás islas, cuya ficha abre los comentarios: escribir, responder (un nivel) y votar, ordenados por más votados o más nuevos, con un filtro de insultos antes de guardar y moderación desde el Admin que oculta y devuelve; sin Supabase, comentarios `muestra` más los propios, que sólo ve quien los escribe; con Supabase, reales y compartidos. *Fuente: plan 019 (decisión 16), plan 020 (decisión 7)*
+
 ## Encuestas y Mensajes de BOIA (L2)
 
 - **REQ-IDE-045** `L2` — Ofrecer encuestas voluntarias vinculadas a boia, objeto, evento o panel, anunciadas con un icono persistente de botella de misiones distinto de las botellas sociales, que dicen para qué se pregunta, siempre ofrecen «Ahora no» y nunca bloquean navegar, comprar ni conservar el progreso. *Fuente: §49.8*

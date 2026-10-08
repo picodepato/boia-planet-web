@@ -4,6 +4,49 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T232: Las Calitas: island model, 2D art and REQ
+
+Qué existe:
+- Modelo de Blender de Las Calitas (decisión 7): `tools/blender/islas/calitas.py` (`ID = "calitas"`, `LABEL` «Las
+  Calitas») → `art/islas/3d/calitas.glb` (22 476/36 000 triángulos, 29 materiales, 1 emisivo, 589 kB) y su entrada en
+  `art/islas/3d/manifest.json`. La misma cala que la composición a mano de `islands.ts`: peñón de roca ocre en media
+  luna por detrás con matorral y pinos, playa abierta al frente, el tablón de los comentarios con 8 notas de colores
+  y tejadillo, el bocadillo de cómic encima (`lc_bubble`, brilla de noche) con puntos suspensivos, dos sombrillas con
+  toallas, muelle, una boia de BOIA hablando en la arena y otra en el agua (las dos con el trazo del logo). /mar lo
+  carga solo por el manifiesto (`calitas:glb`); la composición a mano sigue de lejos y si el GLB falla.
+- Arte 2D de Arcilla: `mundo_arcilla.g_calitas` + `p_isla_suelta` → `art/mundos/arcilla/calitas/` (pieza `calitas`,
+  ancla `bocadillo`). Su sitio en `mundos/arcilla/mapa.json`: nueva lista `islas_sueltas` (sólo `calitas`, mismos
+  centro, semiejes, giro y proximidad que `map.ts`; `herramientas/validar.py` → 0 errores, porque `mapa.py` no la
+  cuenta como tierra). `tools/blender/lugares.json` la cataloga con `"mundos": ["arcilla"]`; `check.py` respeta ese
+  campo (la Acuarela no se mantiene a la par y no tiene carpeta).
+- Mundo: `place-art.ts` `WORLD_ONLY_PARTS` (Arcilla → `mundos/arcilla/calitas#calitas`; Acuarela → marcador
+  `placeholder:isla`); sale de `PLACE_MARKERS`. `map.ts`: la fuente de Las Calitas pasa de `plan:T222` a
+  `islas_sueltas/calitas/isla`, así que la prueba «cada lugar está donde dice su fuente» comprueba su sitio.
+- Spec: REQ-IDE-054 «Las Calitas, la isla de los comentarios» (05, 09, estado HECHO con island-models.test.ts,
+  arcilla.test.ts, calitas.test.ts y mar-calitas.spec.ts).
+- Pruebas: `island-models.test.ts` (REQ-IDE-054: módulo, GLB, nombre del lugar y bocadillo emisivo),
+  `arcilla.test.ts` (su arte 2D existe y su sitio de mapa.json es `CALITAS_CENTER`), `acuarela.test.ts` (marcador y
+  catálogo con `mundos`).
+- Capturas fuera del repo: `/tmp/orchestrator-attach/boia-planet-hernan-T232/` (`contact-sheet.png`,
+  `mar-calitas-{movil,escritorio,noche-escritorio}.png`, `prev/calitas-{dia,noche}.png`).
+
+Comandos:
+- `blender -b --factory-startup -P tools/blender/export_islas_glb.py -- --only calitas --preview <fuera>` (5.2.2) →
+  calitas.glb 22 476 triángulos, exit 0.
+- `blender -b -P tools/blender/render.py -- --mundo arcilla --lugar calitas` → 1 imagen.
+- `python3 tools/blender/check.py` → exit 0 (65 manifiestos válidos, 863 imágenes; arcilla 22 lugares, acuarela 21).
+- `python3 tools/spec/estado.py` → exit 0 (295 REQ, HECHO 166).
+- vitest (sin packages/db) → 260 ficheros, 2361 pasan, 1 omitida; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` →
+  exit 0; `pnpm build` → exit 0 (landing 197,3 kB de 200); `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Las rutas de diseño `exploracion` y `d_solar` de mapa.json pasan por donde está Las Calitas (validar.py las marca si
+  la isla cuenta como tierra); por eso `mapa.py` no la cuenta. Las rutas son de la maqueta, no del juego.
+- Acuarela sin arte 2D de Las Calitas (marcador), como se decidió para Acuarela.
+- Colores, composición y textos `muestra`, a falta del visto bueno de Álvaro.
+- e2e no corrido. Hernán: `mar-calitas.spec.ts`, `mar-isla-modelo.spec.ts`, `mar-lugares-blender.spec.ts`,
+  `despliegue.spec.ts`.
+
 ## 2026-10-08 — plan 020 T229: Admin moderation with accounts
 
 Qué existe:

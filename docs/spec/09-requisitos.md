@@ -174,7 +174,7 @@ Definidos en [04-aventura](04-aventura.md). 40 requisitos: 37 L1, 2 L2, 1 diferi
 
 ## IDE · Identidad y comunidad
 
-Definidos en [05-identidad-y-comunidad](05-identidad-y-comunidad.md). 53 requisitos: 44 L1, 8 L2, 1 diferidos.
+Definidos en [05-identidad-y-comunidad](05-identidad-y-comunidad.md). 54 requisitos: 45 L1, 8 L2, 1 diferidos.
 
 | ID | Requisito | Fuente | Alcance | Criterio verificable | Notas |
 |---|---|---|---|---|---|
@@ -231,6 +231,7 @@ Definidos en [05-identidad-y-comunidad](05-identidad-y-comunidad.md). 53 requisi
 | REQ-IDE-051 | Versión de prueba: invitado con apodo y botella propia | D-20 | L1 | e2e sin correo: crear apodo, Carnet y botella; un segundo navegador no ve esa botella; la pantalla dice que todo se guarda en este navegador | Sólo versión de prueba; se retira con REQ-IDE-002 |
 | REQ-IDE-052 | Premio según el logro | §14, §15, §28, D-22 | L1 | Test: cada tipo de premio (monedas y puntos, insignia, barco, cosmético) llega a su sitio al reclamar y sólo una vez | [pendiente Álvaro] Economía y catálogo (P14) |
 | REQ-IDE-053 | Versión de prueba: ranking local | D-20, D-23 | L1 | e2e: el ranking ordena por puntos al visitante y a los miembros `muestra`, destaca su posición, abre el Carnet de una fila y lleva el rótulo de ranking local | Sólo versión de prueba; se retira con REQ-IDE-038 validado en servidor |
+| REQ-IDE-054 | Las Calitas, la isla de los comentarios | plan 019 (decisión 16), plan 020 (decisión 7) | L1 | e2e: comentar, responder y votar en Las Calitas, un insulto no pasa y lo que el Admin oculta desaparece; test: su modelo de Blender en el manifiesto de islas y su arte 2D de Arcilla | Textos, comentarios de muestra y lista de insultos `muestra` |
 
 ## COM · Comercial
 
