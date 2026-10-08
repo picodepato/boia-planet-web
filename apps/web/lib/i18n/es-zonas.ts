@@ -22,12 +22,12 @@ export const esZonas = {
   'explore.back': 'Volver a la web',
   'checkout.testNotice':
     'Versión de prueba: no se cobra nada ni se emite una entrada real. Al confirmar, el sello del evento aparece en tu Carnet.',
-  'event.halloween-2026.name': 'HALLOWEEN IN THE CLUB',
+  'event.halloween-2026.name': 'BOIA Halloween',
   'event.halloween-2026.when': 'Sábado, 31 de octubre de 2026',
   'event.halloween-2026.place': 'Kiki García',
   'event.halloween-2026.summary':
     'La noche de Halloween de BOIA. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto.',
-  'event.sonido-2026.name': 'ALL DAY BOIA',
+  'event.sonido-2026.name': 'SONIDO',
   'event.sonido-2026.when': 'Sábado, 5 de diciembre de 2026',
   'event.sonido-2026.summary':
     'Un día entero alrededor del sonido: muros de altavoces, música sin un único género y gente con ganas de bailar.',
@@ -179,9 +179,9 @@ export const esZonas = {
   'island.explore': 'Explorar la isla',
   'island.sailHere': 'Navegar aquí',
   'island.secretHint': 'Por aquí cerca huele a secreto.',
-  'island.allday.name': 'ALL DAY BOIA',
+  'island.allday.name': 'Isla del Sonido',
   'island.ultima.name': 'Isla de Nochevieja',
-  'island.halloween.name': 'HALLOWEEN IN THE CLUB',
+  'island.halloween.name': 'Isla de Halloween',
   'world.arcilla.island.halloween.body':
     'Aquí la noche de Halloween dura todo el año. Calabazas encendidas, boias disfrazadas y un club con cara de pocos amigos.',
   'world.arcilla.island.puerto.body':
@@ -193,7 +193,7 @@ export const esZonas = {
   'world.arcilla.island.fotos.body':
     'Todas las fotos de BOIA se revelan aquí. Pasa por el marco y sonríe.',
   'world.arcilla.island.tienda.body':
-    'Sección de merchandising oficial.',
+    'Camisetas, tote bags y pegatinas. La tienda de verdad está en tierra; esto es su escaparate.',
   'world.arcilla.island.ultima.body':
     'Aquí el año se despide bailando y la fiesta acaba cuando sale el sol. Quédate un rato: esto no se ve desde la orilla.',
   'world.acuarela.island.puerto.body':
@@ -401,7 +401,7 @@ export const esZonas = {
   'minigame.hiddenTab':
     'La pestaña se ocultó: esta partida ya no da premio, pero puedes seguir jugando.',
   'minigame.status.time': 'Tiempo',
-  'island.canon.name': 'Puig Campana',
+  'island.canon.name': "L'Illeta dels Banyets",
   'world.arcilla.canon.body':
     'Los tiburones rondan la cala y asustan a los bañistas. Este cañón dispara bolas de agua: nadie sale herido, sólo mojado.',
   'world.acuarela.canon.body':
@@ -432,8 +432,8 @@ export const esZonas = {
   'footer.whatsapp': 'WhatsApp',
   'boia-espacio': 'Entre la bocana y la primera isla',
   'boia-descubrir': 'Entre la primera isla y el encuentro de la Fiestera',
-  'boia-pertenecer': 'Entre Botiga Ibiza y la Isla de Benidorm',
-  'boia-allday': 'Antes de ALL DAY BOIA',
+  'boia-pertenecer': 'Entre Ibiza y la Isla de Benidorm',
+  'boia-allday': 'Antes de la Isla del Sonido',
   'boia-secretos': 'Cerca de la salida del circuito, antes de la Isla de Nochevieja',
   'world.arcilla.boia.espacio.name': 'La boia del horno',
   'world.arcilla.boia.espacio.1': '¡Plop! ¿Sabes por qué existe BOIA?',

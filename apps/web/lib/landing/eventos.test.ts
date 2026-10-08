@@ -124,10 +124,10 @@ describe('ficha de evento (REQ-COM-012)', () => {
 });
 
 describe('los tres eventos con entradas, cada uno en su isla (2026-10-02)', () => {
-  it('HALLOWEEN IN THE CLUB en el Kiki García, ALL DAY BOIA y BOIA Nochevieja: reales, con precio de muestra', () => {
+  it('BOIA Halloween en el Kiki García, SONIDO y BOIA Nochevieja: reales, con precio de muestra', () => {
     const want = [
-      [HALLOWEEN_EVENT_ID, 'HALLOWEEN IN THE CLUB', '2026-10-31', 'halloween'],
-      [SONIDO_EVENT_ID, 'ALL DAY BOIA', '2026-12-05', 'allday'],
+      [HALLOWEEN_EVENT_ID, 'BOIA Halloween', '2026-10-31', 'halloween'],
+      [SONIDO_EVENT_ID, 'SONIDO', '2026-12-05', 'allday'],
       [NOCHEVIEJA_EVENT_ID, 'BOIA Nochevieja', '2026-12-31', 'ultima'],
     ];
     expect(
@@ -207,9 +207,9 @@ describe('un satélite sin isla (D-23, O7)', () => {
 describe('«Fotos y eventos» (REQ-COM-031)', () => {
   const islands = [
     { id: 'cala', name: 'Cala Cantalar' },
-    { id: 'allday', name: 'ALL DAY BOIA' },
+    { id: 'allday', name: 'Isla del Sonido' },
     { id: 'ultima', name: 'Isla de Nochevieja' },
-    { id: 'halloween', name: 'HALLOWEEN IN THE CLUB' },
+    { id: 'halloween', name: 'Isla de Halloween' },
   ];
   const galleries = photoGalleries(
     { events: SAMPLE_CONTENT.events, albums: SAMPLE_ALBUM_CONTENT, photos: SAMPLE_CONTENT.photos },

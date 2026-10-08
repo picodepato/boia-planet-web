@@ -20,8 +20,8 @@ export const SHARED_MAP_ID = 'boia-mapa';
 
 /**
  * Las tres islas con entradas (decisión de Hernán y Álvaro del 2026-10-02) y
- * el id de su evento en el contenido (`@boia/store`): HALLOWEEN IN THE CLUB
- * en su isla (`halloween`), ALL DAY BOIA en la suya (`allday`) y BOIA
+ * el id de su evento en el contenido (`@boia/store`): BOIA Halloween en la
+ * Isla de Halloween, SONIDO en la Isla del Sonido (`allday`) y BOIA
  * Nochevieja en la Isla de Nochevieja (`ultima`, donde se entrega la Boia
  * Fiestera). Se llaman igual en todos los mundos (D-20).
  */
@@ -31,7 +31,7 @@ export const TICKET_ISLAND_EVENTS = {
   ultima: 'nochevieja-2026',
 } as const;
 
-/** Id del evento ligado a la isla `allday`, la de ALL DAY BOIA (el de la landing y de `@boia/store`). */
+/** Id del evento ligado a la isla `allday`, la Isla del Sonido (el de la landing y de `@boia/store`). */
 export const ALLDAY_EVENT_ID = TICKET_ISLAND_EVENTS.allday;
 
 /**
@@ -74,7 +74,7 @@ const CASTLE_RADIUS = 3.485;
 
 /** La Isla de Halloween (T67): sin maqueta en mapa.json, su fuente es el plan. */
 export const HALLOWEEN_PLACE_ID = 'halloween';
-/** Dónde está: mar libre en el centro, entre el remanso de la Fiestera, Botiga Ibiza y ALL DAY BOIA. muestra */
+/** Dónde está: mar libre en el centro, entre el remanso de la Fiestera, Ibiza y la Isla del Sonido. muestra */
 export const HALLOWEEN_CENTER: Maq = [-1.0, 1.5];
 
 /**
@@ -413,7 +413,7 @@ const ISLANDS: PlaceInput[] = [
   // Islas con entradas: sólo el nombre común, igual en todos los mundos (D-20).
   island(
     'allday',
-    'ALL DAY BOIA',
+    'Isla del Sonido',
     'zonas/allday/islas/isla',
     [1.2, -15.6],
     4.6,
@@ -448,7 +448,7 @@ const ISLANDS: PlaceInput[] = [
   ),
   island(
     'tienda',
-    'Botiga Ibiza',
+    'Ibiza',
     'zonas/tienda/islas/isla',
     [6.6, -1.2],
     1.9,
@@ -495,7 +495,7 @@ const ISLANDS: PlaceInput[] = [
   // La Isla de Halloween (T67): mar libre del centro, sin maqueta (la modela T69).
   island(
     HALLOWEEN_PLACE_ID,
-    'HALLOWEEN IN THE CLUB',
+    'Isla de Halloween',
     'plan:T67',
     HALLOWEEN_CENTER,
     2.4,
@@ -526,7 +526,7 @@ const ISLANDS: PlaceInput[] = [
     ['minijuegos/faro/isla', 'minijuegos/faro'],
   ),
   // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `canon` y, desde el plan 014, `castillo`.
-  island('canon', 'Puig Campana', 'minijuegos/canon/isla', [-9.0, -18.6], 1.5, 1.1, -15, 3.0, [
+  island('canon', "L'Illeta dels Banyets", 'minijuegos/canon/isla', [-9.0, -18.6], 1.5, 1.1, -15, 3.0, [
     { type: 'start_minigame', params: { gameId: 'canon' } },
     visit(),
   ], ['minijuegos/canon']),
@@ -816,7 +816,7 @@ export const BOTTLE_SPOTS: { id: string; x: number; y: number; source: string[] 
  * marcadas por boias que hay que pasar en orden, con la salida como meta.
  * T73 (decisiones del 2026-10-02) lo alarga y lo reparte por el mapa: sube
  * por el este, pasa entre Els Dents y las Rocas del Freu (el atajo de la
- * maqueta), gira al norte, cruza el centro por debajo de ALL DAY BOIA,
+ * maqueta), gira al norte, cruza el centro por debajo de la Isla del Sonido,
  * baja por el oeste junto al acantilado, vuelve por el sur hacia El Varadero
  * y cierra entre el Puerto de Alicante y la Isla de Halloween. Las boias quedan
  * lejos de las islas (en /mar, fuera de su radio de proximidad: abrir su
@@ -1343,9 +1343,9 @@ const ZONES: [string, string, number, number, number, number][] = [
   ['puerto', 'Puerto de salida', -7, 7, 19.2, 31],
   ['cala', 'Puerto de Alicante', 3, 15, 8, 15],
   ['fiestera', 'Encuentro de la Boia Fiestera', 1.5, 13.3, 15, 19.2],
-  ['allday', 'ALL DAY BOIA', -6, 7, -21.5, -4.5],
+  ['allday', 'Isla del Sonido', -6, 7, -21.5, -4.5],
   ['fotos', 'Isla de Benidorm', -15, -3, -15.5, -4.5],
-  ['tienda', 'Botiga Ibiza', 1.5, 9.8, -4.5, 8],
+  ['tienda', 'Ibiza', 1.5, 9.8, -4.5, 8],
   ['marvivo', 'Mar vivo', -15, -2, -4.5, 19.2],
   ['circuito', 'Los Rápidos', 7, 15, -25.8, 8],
   ['ultima', 'Isla de Nochevieja', -2, 15, -31.5, -21.5],

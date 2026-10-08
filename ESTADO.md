@@ -4,44 +4,6 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
-## 2026-10-08 — plan 019 T219: World: light-orange loading, popups without band, island names and popup contents
-
-Qué existe:
-- Pantalla de carga de /mar (`.mar-splash` y el velo `.mar-velo`) en naranja
-  claro (`--splash-bg` en `app/mar/mar.css`), con el texto en el azul de la
-  marca (decisión 12).
-- Popups: la franja naranja ya la había quitado T213; las islas de las fiestas
-  ya no llevan rótulo («🎤 Fiesta · muestra»): su ficha enseña sólo nombre,
-  fecha y lugar (más su estado si no está a la venta), sus botones y «ampliar»;
-  desplegada, sin la descripción del evento (`EventWhen` en `app/mar/sheet.tsx`).
-- Nombres (decisión 13), en el mapa (`packages/world/.../arcilla/map.ts`),
-  el catálogo i18n y `docs/propuestas/textos-zonas.md`: Isla del Sonido →
-  ALL DAY BOIA, Isla de Halloween → HALLOWEEN IN THE CLUB, Ibiza → Botiga
-  Ibiza, L'Illeta dels Banyets → Puig Campana (sólo el nombre; el modelo es
-  de T221). Eventos de muestra: «BOIA Halloween» → HALLOWEEN IN THE CLUB,
-  «SONIDO» → ALL DAY BOIA. Las islas del Castillo también.
-- Botiga Ibiza: su ficha dice «Sección de merchandising oficial»
-  (`mar.sheet.tienda.seccion`); desplegada, además, «Solo se vende en mano en la fiesta».
-- Misión de la Fiestera (decisión 14): FIESTERA20 dice que vale para ALL DAY
-  BOIA o BOIA Nochevieja (etiqueta y condiciones; la lógica no cambia).
-
-Comandos:
-- `grep -rn "Isla del Sonido\|BOIA Halloween\|dels Banyets" apps/web/lib/i18n packages` →
-  4 líneas, todas comentarios o el título de una prueba del motor del Castillo
-  (`packages/engine/src/defense/{config,towers,towers.test}.ts`), sin texto visible.
-- `pnpm exec vitest run --exclude '**/packages/db/**'` → 241 archivos, 2247 pasan, 1 saltada.
-- `sh tools/spec/checks.sh` → exit 0; `pnpm lint`, `pnpm build`, `pnpm typecheck` → exit 0.
-- `E2E_PORT=3219 pnpm e2e mar-hud mar-islas merchandise mar-entradas tickets
-  mar-lugares-blender mar-fiestera --workers=1` (con un spec temporal de capturas) →
-  exit 0, 56 pasan, 10 saltadas.
-
-Pendiente:
-- `app/(landing)/landing.css` `.intro-cover` (el velo de «Zarpar») sigue morado:
-  hay que pasarlo al mismo naranja claro para que la entrada no tenga costura
-  (fichero de la landing, de T214).
-- `supabase/seeds/20261003100100_economy.sql` sigue con «BOIA Halloween» y «SONIDO».
-- Los rótulos de las islas en el mar (`.mar-pin--accent`) siguen con fondo naranja: no son popups.
-
 ## 2026-10-08 — plan 019 T214: Landing redesigned after noartmusic.com, hero changes and the store
 
 Qué existe:

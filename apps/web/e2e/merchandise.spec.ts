@@ -9,7 +9,6 @@ import {
 } from '../lib/merchandise/catalog';
 import { PRODUCT_ROTATION_MS } from '../lib/merchandise/rotation';
 import { esWeb } from '../lib/i18n/es-web';
-import { t } from '../lib/i18n';
 
 const IMAGE_COUNT = MERCHANDISE_PRODUCTS.reduce((n, p) => n + p.images.length, 0);
 const first = MERCHANDISE_PRODUCTS[0]!;
@@ -78,7 +77,7 @@ test('landing and internal shop show the same 3 products with name and price (de
   await expect(page).toHaveURL(/intro=0#tienda$/);
 });
 
-test('Botiga Ibiza opens the same internal shop and offers a return to sailing', async ({ page }) => {
+test('Ibiza opens the same internal shop and offers a return to sailing', async ({ page }) => {
   await page.goto('/mar?ir=tienda');
   await expect(page.getByTestId('mar-canvas')).toBeVisible();
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30000 });
@@ -87,8 +86,7 @@ test('Botiga Ibiza opens the same internal shop and offers a return to sailing',
   await expect(open).toBeVisible({ timeout: 30000 });
   await expect(open).toHaveAttribute('href', '/tienda?from=mar');
   await expect(open).not.toHaveAttribute('target');
-  // T219: Botiga Ibiza's card says «Sección de merchandising oficial».
-  await expect(page.getByTestId('mar-ficha')).toContainText(t('mar.sheet.tienda.seccion'));
+  await expect(page.getByTestId('mar-ficha')).toContainText(MERCHANDISE_NOTICE);
   await open.click();
   await expect(page).toHaveURL(/\/tienda\?from=mar$/);
   await expect(page.getByTestId('merchandise-back')).toHaveText(esWeb['store.page.backSea']);

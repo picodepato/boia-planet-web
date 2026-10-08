@@ -156,7 +156,7 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
     expect(events.sort()).toEqual(['allday', 'halloween', 'ultima']);
     expect(
       ['halloween', 'allday', 'ultima'].map((id) => objectIn(acuarela, id)!.identity.name),
-    ).toEqual(['HALLOWEEN IN THE CLUB', 'ALL DAY BOIA', 'Isla de Nochevieja']);
+    ).toEqual(['Isla de Halloween', 'Isla del Sonido', 'Isla de Nochevieja']);
     // Los sitios con nombre propio se llaman distinto que en Arcilla (el
     // Puerto de Alicante, antes la Cala Cantalar, se llama igual en los dos).
     for (const id of ['puerto', 'fiestera', 'fotos', 'tienda', 'faro', 'canon']) {
