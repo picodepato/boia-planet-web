@@ -103,7 +103,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome:
 
 ## T231 — Pending art: Puig Campana 2D and the boia outline everywhere
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: blender-modeling-workflow, blender-rendering-workflow, blender-asset-validation
@@ -114,10 +114,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - `python3 tools/blender/check.py` → exit 0 with the updated GLBs
   - Arcilla `canon` 2D art shows Puig Campana; island boias and 2D sprites have the outline → contact sheet image under the attach folder
   - Test command → exit 0
-- Outcome:
+- Outcome: Puig Campana 2D (Arcilla canon), ink outline on every island boia, 2D sprites and boia-tutorial; island tri cap 30k→36k · 110c7ce
 
 ## T232 — Las Calitas: island model, 2D art and REQ
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T231
 - Model: opus
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
@@ -167,7 +167,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 
 - 2026-10-08 T228: Filosofía edited in Admin's home Filosofía block; nav column 220→250 px; hidden-boat filter derived from hidden worlds in the registry; unused `island.secretHint` removed (agent)
 
+- 2026-10-08 T231: outline as own `<ink>_contorno` material with backface culling; island MAX_TRIS 30 000 → 36 000; 2D outline only for Arcilla; boia-tutorial = outlined mascot, 12 frames, `luz` anchor/`lamp_on` dropped (agent)
+
 ## Proposals (new scope)
+- 2026-10-08 T231: `mundos/arcilla/mapa.json` still names the place «Isla del Cañón»; stale `sources_sha256` in other Arcilla place manifests; if ship boia GLBs are regenerated, check mascot-look.test.ts (`ink_gltf` prefix)
 - 2026-10-08 T226: «Entradas» sub-line during a trip («Rumbo a Ca…») cut by the bottom bar's fixed height; music/effects in Ajustes still checkboxes, not toggles; 🪙 shows as a box in headless Chromium
 - 2026-10-08 T227: give `next dev` its own distDir (`.next-dev`) so a build doesn't cause dev 500s; unused i18n keys artists.pause/resume; `prettier --check` reports 98 files (likely CRLF)
 
@@ -179,3 +182,5 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T228 launched · attempt 1 · agent afa5367486c5dba8d (sonnet)
 - 2026-10-08 T231 launched · attempt 1 · agent aaa4a8350036c88cf
 - 2026-10-08 T228 done · merged 2693302
+- 2026-10-08 T229 launched · attempt 1 · agent a3711cff21d500e5e
+- 2026-10-08 T231 done · merged 110c7ce
