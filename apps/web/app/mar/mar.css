@@ -44,6 +44,67 @@
   cursor: pointer;
 }
 
+/* T213: Press Start 2P es ancha. Los botones de texto que heredan el tamaño
+   (`.mar button` les quita el suyo) van al 80 %; los de icono y los de los
+   juegos, no. Sin especificidad extra: los tamaños de abajo siguen mandando. */
+.mar
+  button:not(
+    :where(
+      .mar-round,
+      .mar-sheet__close,
+      .mar-sheet__more,
+      .mar-sheet__x,
+      .mar-logros__x,
+      .mar-x,
+      .mar-chip__x,
+      .mar-notice__x,
+      .juego-panel-close,
+      .mar-turbo,
+      .mar-menu-btn,
+      .mar-ayuda-btn,
+      [class*='mar-castle'],
+      [class*='mar-canon']
+    )
+  ) {
+  font-size: 0.8em;
+}
+
+/* T213: los botones del mundo con la de botones (Press Start 2P). Con `.mar`
+   delante para ganar a `.mar button`, que les daría la letra del texto. */
+.mar
+  :is(
+    .mar-btn,
+    .juego-panel-cta,
+    .juego-button,
+    .mar-tickets__btn,
+    .idc-btn,
+    .acceso-primary,
+    .acceso-ghost,
+    .acceso-danger,
+    .ranking-more,
+    .ranking-cta,
+    .carnet-invite__create,
+    .carnet-invite__later
+  ) {
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
+}
+
+.mar .mar-btn--big {
+  font-size: var(--btn-font-size-big);
+}
+
+.mar :is(.checkout__confirm, .checkout__secondary) {
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+}
+
+.mar :is(.tienda-comprar, .tienda-cancelar, .juego-rumbo-saltar) {
+  font-family: var(--font-button);
+  font-size: 0.625rem;
+}
+
 .mar-canvas {
   position: absolute;
   inset: 0;
@@ -84,7 +145,7 @@
   width: 44px;
   height: 44px;
   flex: none;
-  border-radius: 50%;
+  border-radius: var(--radius);
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1;
@@ -123,12 +184,12 @@
   height: 30px;
   display: grid;
   place-items: center;
-  padding: 0 11px;
-  border-radius: 15px;
+  padding: 0 8px;
+  border-radius: var(--radius);
   color: #fff !important;
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  /* T213: el menú de arriba con la de botones (ancha: 9 px caben los cinco). */
+  font-family: var(--font-button);
+  font-size: 0.5625rem;
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
@@ -138,8 +199,8 @@
 /* `.mar button` hereda la letra: el botón Carnet, como los enlaces. */
 .mar button.mar-links__item {
   border-color: rgb(255 82 25 / 0.75);
-  font-size: 0.74rem;
-  font-weight: 800;
+  font-family: var(--font-button);
+  font-size: 0.5625rem;
 }
 
 .mar-links__item:active {
@@ -171,7 +232,7 @@
   height: 36px;
   align-items: center;
   padding: 0 12px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   font-weight: 800;
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
@@ -219,7 +280,7 @@
   min-height: 58px;
   padding: 6px 4px;
   border: 1px solid rgb(27 20 64 / 0.1);
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.05);
   color: var(--ink) !important;
   font-size: 0.78rem;
@@ -295,7 +356,7 @@
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid rgb(27 20 64 / 0.1);
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.05);
   font-size: 0.86rem;
   font-weight: 800;
@@ -333,7 +394,7 @@
   min-height: 36px;
   padding: 0 14px 0 10px;
   border: 1px solid rgb(27 20 64 / 0.15);
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.05);
   color: var(--ink) !important;
   font-size: 0.84rem;
@@ -365,15 +426,15 @@
   min-height: 36px;
   padding: 0 12px 0 8px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.08);
   color: var(--ink) !important;
-  font-size: 0.84rem;
-  font-weight: 800;
+  /* T213: Press Start 2P es ancha; pequeña, para que el título quepa al lado. */
+  font-size: 0.625rem;
 }
 
 .mar-logros__back span {
-  font-size: 1.1rem;
+  font-size: 0.875rem;
 }
 
 /* El botón del menú del juego (T65): a la izquierda, bajo el minimapa, con
@@ -390,7 +451,7 @@
   width: 54px;
   height: 54px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   color: #fff !important;
   animation: mar-in 0.3s ease-out;
 }
@@ -438,7 +499,7 @@
   width: 54px;
   height: 54px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   color: #fff !important;
   font-size: 1.65rem;
   font-weight: 900;
@@ -485,7 +546,7 @@
     calc(100vw - var(--safe-l) - var(--safe-r) - 10px - (var(--mini) + 34px) / 2 - 20px)
   );
   padding: 10px 12px 12px;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--cream);
   color: var(--ink);
   box-shadow: 0 8px 22px rgb(10 6 40 / 0.32);
@@ -517,7 +578,7 @@
   margin-top: 6px;
   padding: 0 12px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: var(--orange);
   color: #000 !important;
   font-weight: 800;
@@ -547,7 +608,7 @@
   max-width: min(100%, 340px);
   min-height: 40px;
   padding: 0 5px 0 0;
-  border-radius: 20px;
+  border-radius: var(--radius);
   background: var(--cream);
   color: var(--ink) !important;
   box-shadow: 0 8px 22px rgb(10 6 40 / 0.32);
@@ -616,7 +677,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: rgb(35 26 92 / 0.1);
   color: var(--ink) !important;
   font-size: 1.05rem;
@@ -645,7 +706,7 @@
   gap: 8px;
   min-height: 36px;
   padding: 6px 14px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   font-size: 0.86rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -662,7 +723,7 @@
   background: rgb(255 255 255 / 0.14);
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: var(--radius);
   display: grid;
   place-items: center;
   line-height: 1;
@@ -707,7 +768,7 @@
   pointer-events: auto;
   width: min(300px, calc(100vw - 24px));
   padding: 10px 12px 12px;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--glass-strong);
   border: 1px solid var(--line);
   box-shadow: 0 8px 24px rgb(10 6 40 / 0.28);
@@ -755,7 +816,7 @@
   width: 100%;
   min-height: 36px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: var(--orange);
   color: var(--cream);
   font: inherit;
@@ -787,7 +848,7 @@
   margin-top: 8px;
   min-height: 36px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: transparent;
   color: var(--cream);
   font: inherit;
@@ -809,7 +870,7 @@
   grid-template-columns: 1.4em 1fr auto;
   gap: 6px;
   padding: 1px 4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   opacity: 0.8;
 }
 
@@ -883,7 +944,7 @@
   bottom: -19px;
   translate: -50% 0;
   padding: 2px 8px;
-  border-radius: 9px;
+  border-radius: var(--radius);
   background: var(--glass-strong);
   border: 1px solid var(--line);
   font-size: 0.62rem;
@@ -956,7 +1017,7 @@
 .mar-zoom {
   width: 6px;
   height: 52px;
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: rgb(255 255 255 / 0.18);
   display: flex;
   align-items: flex-end;
@@ -967,7 +1028,7 @@
   display: block;
   width: 100%;
   background: var(--cream);
-  border-radius: 3px;
+  border-radius: var(--radius);
   transition: height 0.2s;
 }
 
@@ -1080,7 +1141,7 @@
   align-items: center;
   gap: 10px;
   padding: 6px 6px 6px 14px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   font-size: 0.8rem;
   font-weight: 600;
   width: max-content;
@@ -1100,7 +1161,7 @@
   height: 38px;
   padding: 0 14px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--orange);
   font-weight: 800;
   white-space: nowrap;
@@ -1149,7 +1210,7 @@
   gap: 5px;
   padding: 5px 11px 5px 7px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--cream);
   color: var(--ink) !important;
   font-size: 0.78rem;
@@ -1175,7 +1236,7 @@
   margin-left: -6px;
   background: inherit;
   transform: rotate(45deg);
-  border-radius: 2px;
+  border-radius: var(--radius);
   z-index: -1;
 }
 
@@ -1227,7 +1288,7 @@
   gap: 4px;
   padding: 12px 14px;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: #fff;
   color: var(--ink) !important;
   font-size: 0.92rem;
@@ -1248,7 +1309,7 @@
   margin-left: -7px;
   background: #fff;
   transform: rotate(45deg);
-  border-radius: 3px;
+  border-radius: var(--radius);
 }
 
 .mar-bubble small {
@@ -1277,7 +1338,7 @@
   height: 34px;
   padding: 0;
   border: 2px solid #fff;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: var(--indigo);
   color: #fff !important;
   font-size: 1.25rem;
@@ -1318,16 +1379,32 @@
   justify-content: center;
   min-width: 112px;
   min-height: 52px;
-  padding: 4px 16px;
-  border: 2px solid rgb(255 255 255 / 0.9);
-  border-radius: 26px;
-  background: linear-gradient(180deg, var(--orange-2), var(--orange));
-  color: #fff !important;
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 0.01em;
-  box-shadow: 0 8px 20px rgb(242 106 27 / 0.35);
-  animation: mar-glow 2.4s ease-in-out infinite;
+  padding: 4px 14px;
+  /* T213: el botón de recreativa, naranja con texto negro (T50: AA). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  background: var(--orange);
+  color: #000 !important;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  box-shadow: 4px 4px 0 #fff;
+  animation: mar-btn-blink 2.4s steps(1) infinite;
+}
+
+/* La llamada de «Entradas» (antes un brillo): la sombra parpadea en amarillo. */
+@keyframes mar-btn-blink {
+  0%,
+  100% {
+    box-shadow: 4px 4px 0 #fff;
+  }
+  50% {
+    box-shadow: 4px 4px 0 #ffd84a;
+  }
+}
+
+.mar-tickets__btn:active {
+  transform: var(--btn-pressed);
+  box-shadow: 1px 1px 0 #fff;
 }
 
 .mar-tickets__btn span {
@@ -1359,7 +1436,7 @@
   min-height: 36px;
   padding: 0 16px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: var(--glass-strong);
   font-size: 0.88rem;
   font-weight: 800;
@@ -1380,10 +1457,13 @@
   overscroll-behavior: contain;
   touch-action: pan-y;
   padding: 14px 16px 14px;
-  border-radius: 24px;
+  /* T213 (decisiones 3 y 12): recta, con borde y sombra dura; título y texto
+     en el azul de la marca, sin franja naranja arriba. */
+  border: var(--btn-border);
+  border-radius: var(--radius);
   background: var(--cream);
-  color: var(--ink);
-  box-shadow: 0 -10px 40px rgb(10 6 40 / 0.35);
+  color: var(--purple);
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 0.45);
   z-index: 6;
   animation: mar-up 0.28s cubic-bezier(0.2, 1.2, 0.4, 1);
   user-select: text;
@@ -1422,7 +1502,7 @@
   height: 36px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.08);
   font-size: 1.3rem;
   line-height: 1;
@@ -1449,7 +1529,9 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #c9480f;
+  /* T213: sin naranja arriba de la ficha; el azul de la marca, más suave. */
+  color: var(--purple);
+  opacity: 0.75;
   padding-right: 40px;
 }
 
@@ -1464,7 +1546,7 @@
   font-size: 1.45rem;
   font-weight: 900;
   line-height: 1.1;
-  letter-spacing: -0.01em;
+  color: var(--purple);
   padding-right: 36px;
 }
 
@@ -1572,7 +1654,7 @@
 
 .mar-sheet__photos li {
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: linear-gradient(
     160deg,
     hsl(calc(20 + var(--i) * 50) 85% 68%),
@@ -1587,15 +1669,24 @@
   justify-content: center;
   gap: 6px;
   min-height: 46px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 14px;
-  background: rgb(27 20 64 / 0.08);
+  padding: 0 14px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: var(--btn-shadow);
+  background: #fff;
   color: var(--ink) !important;
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
   text-decoration: none;
   flex: 1 1 auto;
+}
+
+.mar-btn:active:not(:disabled),
+.mar .juego-panel-cta:active {
+  transform: var(--btn-pressed);
+  box-shadow: var(--btn-shadow-pressed);
 }
 
 .mar-btn--primary,
@@ -1603,12 +1694,11 @@
   background: var(--orange);
   /* Negro sobre el naranja de la marca, como en la landing (T50: el blanco no llega a AA). */
   color: #000 !important;
-  box-shadow: 0 8px 20px rgb(236 79 36 / 0.35);
 }
 
 .mar-btn--big {
   min-height: 54px;
-  font-size: 1.05rem;
+  font-size: var(--btn-font-size-big);
 }
 
 .mar-btn:disabled {
@@ -1626,7 +1716,7 @@
 
 .mar-discount {
   padding: 14px;
-  border-radius: 16px;
+  border-radius: var(--radius);
   border: 2px dashed #c9480f;
   background: #fff;
   margin: 6px 0 10px;
@@ -1654,7 +1744,7 @@
   font-size: 0.72rem;
   font-weight: 800;
   padding: 3px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #d9f5e3;
   color: #16643a;
 }
@@ -1753,7 +1843,7 @@
   top: 34px;
   width: 36px;
   height: 14px;
-  border-radius: 0 0 20px 20px;
+  border-radius: var(--radius);
   background: #fff;
 }
 
@@ -1787,11 +1877,12 @@
     translate: -50% 0;
   }
 
-  .mar .mar-links__item {
+  .mar .mar-links__item,
+  .mar button.mar-links__item {
     height: 34px;
     padding: 0 16px;
-    border-radius: 17px;
-    font-size: 0.82rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
   }
 
   .mar-sheet,
@@ -1958,7 +2049,7 @@
   flex-direction: column;
   width: 100%;
   max-height: calc(100% - var(--safe-t) - 64px);
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--radius);
   background: #fffaf0;
   color: var(--ink);
   box-shadow: 0 -12px 36px rgb(10 6 40 / 0.4);
@@ -1984,7 +2075,7 @@
 .mar-logros__carnet {
   margin-left: auto;
   padding: 8px 12px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: rgb(18 35 63 / 0.08);
   color: inherit;
   font-size: 0.85rem;
@@ -2084,13 +2175,16 @@ button.mar-logros__carnet {
 
 .mar-logros__body .juego-button {
   min-height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 12px;
+  padding: 0 14px;
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: var(--btn-shadow);
   background: var(--orange);
-  color: #fff;
+  color: #000;
   font: inherit;
-  font-weight: 800;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
 }
 
 .mar-logros__body .juego-button:disabled {
@@ -2104,7 +2198,7 @@ button.mar-logros__carnet {
   margin: 12px 0;
   padding: 10px 12px;
   border: 1px solid rgb(18 35 63 / 0.18);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .mar-logros__body .juego-field legend,
@@ -2162,7 +2256,7 @@ button.mar-logros__carnet {
   .mar-logros__sheet {
     width: 480px;
     max-height: min(680px, calc(100% - 80px));
-    border-radius: 20px;
+    border-radius: var(--radius);
   }
 }
 
@@ -2209,7 +2303,7 @@ button.mar-logros__carnet {
   min-height: 48px;
   padding: 6px 10px;
   border: 1px solid rgb(27 20 64 / 0.12);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.04);
   text-align: left;
 }
@@ -2262,7 +2356,7 @@ button.mar-logros__carnet {
   transform: translateX(-50%);
   margin: 0;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: rgb(0 0 0 / 0.55);
   color: #fff;
   font-weight: 800;
@@ -2347,11 +2441,17 @@ button.mar-logros__carnet {
   margin-top: 6px !important;
 }
 
-/* Archivo para la identidad del juego; Inter sigue en párrafos y formularios.
-   Las variables son las mismas que usa la landing, sin fuentes adicionales. */
+/* T213: los botones del mundo y su menú de arriba con la de botones (Press
+   Start 2P); los de los juegos del Cañón y el Castillo siguen con la de
+   títulos (su HUD está medido con ella). El texto, con la de texto. */
 .mar button:not(.mar-logros__x, .mar-sheet__x, .mar-sheet__more),
 .mar-btn,
-.mar-links__item,
+.mar-links__item {
+  font-family: var(--font-button);
+  font-weight: 400;
+}
+
+.mar button:is([class*='mar-castle'], [class*='mar-canon']),
 .mar-menu__logo,
 .mar-bienvenida__boia strong {
   font-family: var(--font-title);
@@ -2395,7 +2495,7 @@ button.mar-logros__carnet {
   z-index: 5;
   padding: 6px 10px;
   border: 2px dashed #12233f;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: rgba(255, 244, 226, 0.92);
   color: #12233f;
   font-size: 12px;
@@ -2426,7 +2526,7 @@ button.mar-logros__carnet {
     'text';
   gap: 8px 12px;
   padding: 12px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.05);
 }
 
@@ -2474,7 +2574,7 @@ button.mar-logros__carnet {
   padding: 0 5px;
   gap: 4px;
   min-height: 44px;
-  font-size: 0.8rem;
+  font-size: 0.625rem;
 }
 
 .mar-tablon__go .boia-icon {

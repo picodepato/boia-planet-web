@@ -3,9 +3,18 @@
  * mediana de los píxeles de cada color; los mismos que tools/blender/intro/
  * trazar_marca.py).
  *
- * Tipografías (plan 006 T74): las define lib/fonts.ts (next/font, en <html>) y
- * aquí sólo se nombran por variable. Títulos: --font-title (hoy Archivo
- * Expanded, mañana Druk Wide Medium); texto: --font-body (Inter).
+ * Tipografías (plan 019 T213, decisión 2): las define lib/fonts.ts (next/font,
+ * en <html>) y aquí sólo se nombran por variable. Títulos: --font-title
+ * (Upheaval); botones y menú de arriba: --font-button (Press Start 2P); texto:
+ * --font-body (8-bit Operator+).
+ *
+ * Esquinas (decisión 3): ninguna redondeada. Todo el CSS usa var(--radius),
+ * que vale 0; sólo las formas redondas de por sí (la boia, avatares, puntos,
+ * el minimapa, los mandos circulares del juego) llevan 50 %.
+ *
+ * Botones (T213): rectos, borde negro y sombra dura desplazada, como un botón
+ * de recreativa; al pulsarlos se hunden hacia la sombra. Cada hoja los aplica
+ * con estas variables (--btn-*).
  */
 :root {
   --boia-orange: #ec4f24; /* naranja del wordmark: logo, botones, rellenos */
@@ -15,11 +24,22 @@
   --boia-white: #ffffff;
   /* El mar y el espacio de la escena, no son de marca (la paleta de /mar la fija el plan 003). */
   --boia-navy: #12233f;
-  /* Respaldo mientras cargan, o donde no se cargan; --font-display y --font-text vienen de lib/fonts.ts. */
+  /* Respaldo mientras cargan, o donde no se cargan; --font-display, --font-btn y --font-text vienen de lib/fonts.ts. */
   --font-title-fallback: 'Arial Black', 'Arial Bold', system-ui, sans-serif;
+  --font-button-fallback: 'Courier New', monospace;
   --font-body-fallback: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-title: var(--font-display, 'Arial Black'), var(--font-title-fallback);
+  --font-button: var(--font-btn, 'Courier New'), var(--font-button-fallback);
   --font-body: var(--font-text, system-ui), var(--font-body-fallback);
+  --radius: 0;
+  --btn-edge: #000;
+  --btn-border: 2px solid var(--btn-edge);
+  --btn-shadow: 4px 4px 0 var(--btn-edge);
+  --btn-shadow-pressed: 1px 1px 0 var(--btn-edge);
+  --btn-pressed: translate(3px, 3px);
+  /* Press Start 2P es ancha: los botones van en 12 px (14 px los grandes). */
+  --btn-font-size: 0.75rem;
+  --btn-font-size-big: 0.875rem;
   color-scheme: light;
 }
 
@@ -32,6 +52,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-body);
+  /* 8-bit Operator+ es de píxel: más aire entre líneas para leer textos largos. */
+  line-height: 1.5;
   background: var(--boia-navy);
   color: #fff;
 }

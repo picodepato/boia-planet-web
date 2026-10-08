@@ -2,7 +2,7 @@
  * El ranking (T45, REQ-IDE-053; global con cuentas, T92) en el diseño
  * aprobado de T87 (docs/propuestas/2026-10-03-carnet.md, «Rankings panel»,
  * marco 15): control segmentado de pestañas (cuatro desde T188), desplegables, filas
- * de 44 px (puesto y valor en Archivo Expanded con cifras tabulares), la
+ * de 44 px (puesto y valor con --font-title y cifras tabulares), la
  * fila «tú» con tinte naranja y barra a la izquierda, «Mostrar más» fantasma
  * y la caja del invitado con el botón naranja de texto negro (5,7 : 1).
  */
@@ -17,7 +17,7 @@
   display: inline-block;
   margin: 4px 0 2px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: #12233f;
   color: #fffaf0;
   font-size: 13px;
@@ -34,7 +34,7 @@
   min-height: 44px;
   margin: 8px 0 12px;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.08);
 }
 .ranking .ranking-tab {
@@ -42,7 +42,7 @@
   min-height: 36px;
   padding: 0 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: transparent;
   color: rgb(27 20 64 / 0.78);
   font: inherit;
@@ -93,7 +93,7 @@
   min-height: 44px;
   padding: 0 40px 0 14px;
   border: 1.5px solid rgb(27 20 64 / 0.35);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #fff
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231b1440' stroke-width='2'/%3E%3C/svg%3E")
     no-repeat right 16px center;
@@ -180,7 +180,7 @@
 .ranking-chip {
   flex: none;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: #000;
   color: var(--ranking-naranja);
   font-size: 12px;
@@ -202,16 +202,24 @@
   width: 100%;
   min-height: 48px;
   margin: 12px 0 0;
-  padding: 0 22px;
-  border-radius: 999px;
+  padding: 0 16px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: var(--btn-shadow);
   font: inherit;
-  font-size: 15px;
-  font-weight: 700;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
   cursor: pointer;
 }
+.ranking .ranking-more:active:not(:disabled),
+.ranking .ranking-cta:active {
+  transform: var(--btn-pressed);
+  box-shadow: var(--btn-shadow-pressed);
+}
 .ranking .ranking-more {
-  border: 1.5px solid rgb(27 20 64 / 0.35);
-  background: transparent;
+  background: #fff;
   color: var(--ranking-tinta);
 }
 .ranking .ranking-more:disabled {
@@ -219,7 +227,6 @@
 }
 .ranking .ranking-cta {
   margin: 0 0 12px;
-  border: 0;
   background: var(--ranking-naranja);
   color: #000;
 }
@@ -230,7 +237,7 @@
   gap: 10px;
   margin: 0 0 10px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.06);
   font-size: 14.5px;
   line-height: 1.45;

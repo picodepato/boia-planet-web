@@ -76,7 +76,7 @@
 .event-poster__soon {
   align-self: flex-start;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--orange);
   color: var(--on-orange);
   font-weight: 700;

@@ -105,7 +105,7 @@
 .admin-nav a {
   display: block;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   white-space: nowrap;
   text-decoration: none;
 }
@@ -181,7 +181,7 @@
 .admin-card {
   background: var(--admin-card);
   border: 1px solid var(--admin-line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 12px;
   min-width: 0;
 }
@@ -248,7 +248,7 @@
   min-height: 40px;
   padding: 6px 8px;
   border: 1px solid #b7c0c9;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #fff;
   color: var(--admin-ink);
   font: inherit;
@@ -279,7 +279,7 @@
   height: auto;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #e3e8f2;
   margin-bottom: 8px;
 }
@@ -288,12 +288,20 @@
 .admin-icon {
   min-height: 40px;
   padding: 6px 14px;
-  border: 1px solid var(--admin-navy);
-  border-radius: 6px;
+  /* T213: recto, borde y sombra dura; el Admin es denso y deja la letra del texto. */
+  border: 2px solid var(--btn-edge);
+  border-radius: var(--radius);
+  box-shadow: 3px 3px 0 var(--btn-edge);
   background: var(--admin-navy);
   color: #fff;
   font: inherit;
   cursor: pointer;
+}
+
+.admin-button:active:not(:disabled),
+.admin-icon:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--btn-edge);
 }
 
 .admin-icon {
@@ -309,7 +317,6 @@
 
 .admin-button--danger {
   background: var(--admin-danger);
-  border-color: var(--admin-danger);
 }
 
 .admin-button:disabled,
@@ -331,7 +338,7 @@
 .admin-badge {
   display: inline-block;
   padding: 0 6px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: #ffe2d1;
   color: #8a3300;
   font-size: 12px;
@@ -373,7 +380,7 @@
 .admin-ask {
   padding: 10px;
   border: 2px solid var(--admin-accent);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #fff7f1;
 }
 
@@ -397,7 +404,7 @@
 .admin-map {
   width: 100%;
   max-height: 70vh;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #1f7a9c;
 }
 
@@ -415,7 +422,7 @@
 .admin-preview__frame {
   overflow: hidden;
   border: 1px solid var(--admin-line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #fff;
   max-width: 100%;
 }
@@ -669,7 +676,7 @@
 
 .admin-steps__step {
   border: 1px solid var(--admin-line);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -723,7 +730,7 @@
   display: block;
   width: 64px;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--admin-line);
 }
 

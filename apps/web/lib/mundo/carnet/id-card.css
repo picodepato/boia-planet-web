@@ -34,7 +34,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border-radius: 3.7cqw;
+  border-radius: var(--radius);
   color: #000;
   font-family: var(--font-body);
   backface-visibility: hidden;
@@ -160,7 +160,7 @@
   width: 21.5cqw;
   height: 27.4cqw;
   overflow: hidden;
-  border-radius: 1.6cqw;
+  border-radius: var(--radius);
   font-size: 13cqw;
   line-height: 1;
   box-shadow: 0 0 0 0.45cqw #000;
@@ -199,7 +199,7 @@
   width: 21cqw;
   height: 21cqw;
   padding: 1.3cqw;
-  border-radius: 1.2cqw;
+  border-radius: var(--radius);
   background: #fff;
   line-height: 0;
 }
@@ -318,7 +318,7 @@
   width: 20cqw;
   height: 20cqw;
   border: 0.5cqw solid var(--idc-ink, #1b1440);
-  border-radius: 50%;
+  border-radius: var(--radius);
   text-align: center;
 }
 .idc-more b {
@@ -392,7 +392,7 @@
   margin: 2px 0;
   padding: 0 14px 0 10px;
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.08);
   color: var(--idc-ink, #1b1440);
   font: 600 14px / 1 var(--font-body);
@@ -408,7 +408,7 @@
 }
 .idc-chip {
   padding: 7px 10px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: #000;
   color: #ff8a5c;
   font: 700 13px / 1 var(--font-body);
@@ -505,23 +505,28 @@
   gap: 8px;
   box-sizing: border-box;
   min-height: 48px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 999px;
+  padding: 0 14px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: var(--btn-shadow);
   background: var(--idc-orange, #ec4f24);
   color: #000;
-  font: 700 15px / 1.1 var(--font-body);
+  font: var(--btn-font-size) / 1.4 var(--font-button);
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+}
+.idc-btn:active:not(:disabled) {
+  transform: var(--btn-pressed);
+  box-shadow: var(--btn-shadow-pressed);
 }
 .idc-btn.is-wide {
   grid-column: 1 / -1;
 }
 .idc-btn.is-ghost {
-  background: transparent;
+  background: #fff;
   color: var(--idc-ink, #1b1440);
-  box-shadow: inset 0 0 0 1.5px rgb(27 20 64 / 0.35);
 }
 .idc-btn:focus-visible,
 .idc-x:focus-visible,
@@ -534,8 +539,10 @@
   cursor: wait;
 }
 .is-on-dark .idc-btn.is-ghost {
+  border-color: #fff;
+  background: transparent;
   color: #fff;
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.6);
+  box-shadow: 4px 4px 0 var(--idc-orange, #ec4f24);
 }
 .is-on-dark .idc-btn:focus-visible {
   outline-color: #fff;
@@ -544,7 +551,7 @@
 .idc-notice {
   margin: 10px 0 0;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: rgb(31 122 77 / 0.12);
   color: #1f7a4d;
   font: 600 14px / 1.4 var(--font-body);
@@ -558,7 +565,7 @@
 .idc-sheet {
   margin: 12px 0;
   padding: 14px 12px 6px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: var(--idc-paper, #edf0f6);
   color: var(--idc-ink, #1b1440);
 }
@@ -578,7 +585,7 @@
   width: 44px;
   height: 44px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: rgb(27 20 64 / 0.08);
   color: var(--idc-ink, #1b1440);
   font: 700 20px / 1 var(--font-body);

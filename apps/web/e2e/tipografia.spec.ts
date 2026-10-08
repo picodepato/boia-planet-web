@@ -7,12 +7,14 @@ import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { openMar } from './mar-helpers';
 
 /**
- * Tipografías de toda la web (plan 006 T74): los títulos con la display
- * (`--font-display`, la parecida a Druk Wide Medium) y el texto con Inter
- * (`--font-text`), ambas de lib/fonts.ts. Se comprueba la familia calculada
- * del h1 de la landing, del título de una hoja de /mar y del texto, que las
- * dos fuentes cargan (document.fonts) y que ningún título desborda el ancho
- * en las páginas de la web.
+ * Tipografías de toda la web (plan 006 T74; plan 019 T213): los títulos con la
+ * display (`--font-display`, Upheaval), los botones y el menú de arriba con la
+ * de botones (`--font-btn`, Press Start 2P) y el texto con la de texto
+ * (`--font-text`, 8-bit Operator+), las tres de lib/fonts.ts. Se comprueba la
+ * familia calculada del h1 de la landing, de «Zarpar», del título y los
+ * botones de una hoja de /mar y del texto, que las fuentes cargan
+ * (document.fonts) y que ningún título desborda el ancho en las páginas de la
+ * web.
  *
  * Con RECORD_T74=1 deja capturas en docs/informes/img/ p006-t74-*.png.
  */
@@ -33,7 +35,10 @@ async function snap(page: Page, name: string) {
 }
 
 /** La primera familia de una variable de fuente de <html> (la que define lib/fonts.ts). */
-async function familyOf(page: Page, variable: '--font-display' | '--font-text'): Promise<string> {
+async function familyOf(
+  page: Page,
+  variable: '--font-display' | '--font-btn' | '--font-text',
+): Promise<string> {
   const value = await page.evaluate(
     (v) => getComputedStyle(document.documentElement).getPropertyValue(v),
     variable,
@@ -89,7 +94,9 @@ async function expectTitlesFit(page: Page) {
   expect(over).toEqual([]);
 }
 
-test('landing: el h1 con la display, el texto con Inter, y las dos cargan', async ({ page }) => {
+test('landing: el h1 con la display, «Zarpar» con la de botones, el texto con la suya, y cargan', async ({
+  page,
+}) => {
   await page.goto('/?intro=0');
   const h1 = page.locator('h1').first();
   await expect(h1).toBeVisible();
@@ -102,17 +109,25 @@ test('landing: el h1 con la display, el texto con Inter, y las dos cargan', asyn
   expect(await firstFamily(page.locator('.hero__wordmark'))).toBe(
     await familyOf(page, '--font-display'),
   );
+  // T213: «Zarpar» con la de botones, distinta de las otras dos, y carga.
+  const button = await familyOf(page, '--font-btn');
+  expect(button).not.toBe(await familyOf(page, '--font-display'));
+  expect(button).not.toBe(await familyOf(page, '--font-text'));
+  expect(await firstFamily(page.locator('.cta-explore__label'))).toBe(button);
+  await expect.poll(() => loadedFaces(page, button), { timeout: 15_000 }).toBeGreaterThan(0);
   await expectTitlesFit(page);
   await snap(page, 'landing');
 });
 
-test('/mar: el título de la hoja con la display y su texto con Inter', async ({ page }) => {
+test('/mar: el título de la hoja con la display, sus botones y su texto con los suyos', async ({
+  page,
+}) => {
   const errors = await openMar(page, '?menu=bienvenida');
   expect(await firstFamily(page.getByTestId('mar-bienvenida-titulo'))).toBe(
     await familyOf(page, '--font-display'),
   );
   expect(await firstFamily(page.getByTestId('mar-bienvenida-navegar'))).toBe(
-    await familyOf(page, '--font-display'),
+    await familyOf(page, '--font-btn'),
   );
   expect(await firstFamily(page.getByTestId('bienvenida-texto'))).toBe(
     await familyOf(page, '--font-text'),
@@ -140,7 +155,9 @@ const PAGES = [
 ] as const;
 
 for (const { name, url } of PAGES) {
-  test(`${name}: títulos con la display, texto con Inter, sin desbordes`, async ({ page }) => {
+  test(`${name}: títulos con la display, texto con la de texto, sin desbordes`, async ({
+    page,
+  }) => {
     await page.goto(url);
     const title = page.locator('h1, h2').first();
     await expect(title).toBeVisible();

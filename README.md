@@ -64,35 +64,41 @@ E2E_PORT=3107 pnpm e2e --workers=2      # ~15 min; la primera vez: pnpm --filter
 
 ## Tipografías
 
-Referencia de Álvaro (2026-10-02): las de draaimolen.nu/story, Druk Wide
-Medium para títulos e Inter para el texto. Las define un solo archivo,
-[`apps/web/lib/fonts.ts`](apps/web/lib/fonts.ts) (`next/font/local`, en el
-`<html>` del layout raíz); el CSS sólo usa `var(--font-title)` (títulos; los
-`h1`–`h3` la llevan desde `globals.css`) y `var(--font-body)` (texto).
+Reunión con Álvaro del 2026-10-08 (decisión 2 del plan 019): tres fuentes de
+videojuego que combinan, de la lista de
+[1001freefonts](https://www.1001freefonts.com/es/video-game-fonts.php);
+Hernán eligió la combinación 4 de las muestras (T213). Las define un solo
+archivo, [`apps/web/lib/fonts.ts`](apps/web/lib/fonts.ts) (`next/font/local`,
+en el `<html>` del layout raíz); el CSS sólo usa `var(--font-title)`
+(títulos; los `h1`–`h3` la llevan desde `globals.css`), `var(--font-button)`
+(botones de la landing y del mundo y el menú de arriba) y `var(--font-body)`
+(texto).
 
-- Títulos: `apps/web/public/fonts/titulo-latin.woff2`. Hoy Archivo en su
-  anchura máxima (wdth 125, peso 700), SIL OFL (`OFL-archivo.txt`): Druk es
-  comercial (Commercial Type) y no se puede copiar. Se precarga y cuenta en
-  el presupuesto de la landing (200 kB, `pnpm --filter @boia/web budget`).
-- Texto: `apps/web/public/fonts/inter-latin.woff2`, Inter variable (peso
-  400–900), SIL OFL (`OFL-inter.txt`). No se precarga (no cabe en el
-  presupuesto): entra con `swap`.
+- Títulos: Upheaval (Brian Kent, Ænigma Fonts),
+  `apps/web/public/fonts/upheavtt.ttf`. Freeware para uso personal y
+  comercial; su licencia (`LICENCIA-upheaval.txt`) no deja alterar el
+  archivo, así que va el TTF original, sin subconjunto ni conversión. Se
+  precarga y cuenta en el presupuesto de la landing (200 kB,
+  `pnpm --filter @boia/web budget`).
+- Botones: Press Start 2P, `press-start-2p.woff2`, SIL OFL
+  (`OFL-press-start-2p.txt`). No se precarga: entra con `swap`.
+- Texto: 8-bit Operator+ (Grand Chaos Productions),
+  `8bit-operator-plus-{regular,bold}.woff2`, SIL OFL
+  (`OFL-8bit-operator-plus.txt`). No se precarga.
 
-Los dos archivos son subconjuntos latinos woff2 hechos con
+Las dos OFL tienen nombre reservado: van enteras (sin subconjunto), sólo
+reempaquetadas en woff2. Las instala
 [`tools/fonts/subset.py`](tools/fonts/subset.py) (necesita
-`pip install fonttools brotli`) a partir de las fuentes de Google Fonts.
+`pip install fonttools brotli`) desde una carpeta con los archivos de
+partida; su cabecera dice de dónde bajar cada uno.
 
-**Cambiar a Druk Wide Medium** cuando Álvaro compre la licencia web:
-
-1. `python tools/fonts/subset.py titulo DrukWide-Medium-Web.otf` (o el
-   `.woff2` web que da Commercial Type) reescribe `titulo-latin.woff2`.
-   Si la licencia no permite subconjuntos, se copia su `.woff2` tal cual.
-2. Se borra `OFL-archivo.txt` y se deja al lado la licencia de Druk.
-3. En `lib/fonts.ts`, sólo el comentario: el `weight: '700'` se queda
-   aunque sea Medium (los títulos piden negrita; con `500` el navegador la
-   engordaría a mano). Nada más nombra la fuente.
-4. `pnpm build` (presupuesto) y
-   `E2E_PORT=3341 pnpm e2e tipografia.spec.ts` (familias y carga).
+Esquinas y botones (decisión 3): ninguna esquina redondeada. Todo el CSS usa
+`var(--radius)` (0, en `globals.css`); sólo las formas redondas de por sí
+(la boia, avatares, puntos, el minimapa, los mandos circulares del juego)
+llevan `50%`. Los botones son de recreativa: rectos, borde negro de 2 px y
+sombra dura desplazada (`--btn-*` en `globals.css`), que se hunden al
+pulsarlos. Comprobación: `pnpm build` (presupuesto) y
+`E2E_PORT=3341 pnpm e2e tipografia.spec.ts` (familias y carga).
 
 ## La landing: el hero por scroll
 

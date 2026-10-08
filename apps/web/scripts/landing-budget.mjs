@@ -35,7 +35,8 @@ const refs = new Set(
   ].map((m) => `/_next/${m[1]}`),
 );
 
-// Fuentes precargadas (T74): next/font marca con `.p.` las que precarga, y en
+// Fuentes precargadas (T74; desde T213 la de títulos es un TTF): next/font
+// marca con `.p.` las que precarga, y en
 // Linux (Vercel) añade su <link rel="preload">. En Windows no lo añade (su
 // plugin busca la ruta del cargador con «/»), así que se toman de las hojas de
 // estilo de la ruta para que el total sea el mismo en las dos máquinas.
@@ -43,7 +44,7 @@ for (const ref of [...refs].filter((r) => r.endsWith('.css'))) {
   const file = join(root, '.next', ref.replace(/^\/_next\//, ''));
   if (!existsSync(file)) continue;
   const css = readFileSync(file, 'utf8');
-  for (const m of css.matchAll(/\/_next\/(static\/media\/[^)"'\s]+\.p\.woff2)/g)) {
+  for (const m of css.matchAll(/\/_next\/(static\/media\/[^)"'\s]+\.p\.(?:woff2|ttf))/g)) {
     refs.add(`/_next/${m[1]}`);
   }
 }

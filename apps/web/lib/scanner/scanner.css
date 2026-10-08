@@ -28,7 +28,7 @@
   top: 46%;
   width: var(--side);
   height: var(--side);
-  border-radius: 18px;
+  border-radius: var(--radius);
   transform: translate(-50%, -50%);
   box-shadow: 0 0 0 200vmax rgb(0 0 0 / 0.58);
   transition: box-shadow 200ms ease;
@@ -48,28 +48,28 @@
   top: 0;
   border-right: 0;
   border-bottom: 0;
-  border-top-left-radius: 18px;
+  border-top-left-radius: var(--radius);
 }
 .escaner-window i:nth-child(2) {
   right: 0;
   top: 0;
   border-left: 0;
   border-bottom: 0;
-  border-top-right-radius: 18px;
+  border-top-right-radius: var(--radius);
 }
 .escaner-window i:nth-child(3) {
   left: 0;
   bottom: 0;
   border-right: 0;
   border-top: 0;
-  border-bottom-left-radius: 18px;
+  border-bottom-left-radius: var(--radius);
 }
 .escaner-window i:nth-child(4) {
   right: 0;
   bottom: 0;
   border-left: 0;
   border-top: 0;
-  border-bottom-right-radius: 18px;
+  border-bottom-right-radius: var(--radius);
 }
 /* Leído: las esquinas se cierran en un marco blanco. */
 .escaner.is-found .escaner-window i {
@@ -93,7 +93,7 @@
   width: 44px;
   height: 44px;
   border: 1px solid rgb(255 255 255 / 0.25);
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: rgb(0 0 0 / 0.45);
   color: #fff;
   font: 600 22px / 1 var(--font-body);
@@ -136,11 +136,18 @@
   justify-content: center;
   min-width: 160px;
   height: 48px;
-  padding: 0 20px;
-  border: 0;
-  border-radius: 24px;
-  font: 700 15px / 1 var(--font-body);
+  padding: 0 16px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 #fff;
+  font: var(--btn-font-size) / 1.4 var(--font-button);
   cursor: pointer;
+}
+.escaner-primary:active,
+.escaner-ghost:active {
+  transform: var(--btn-pressed);
+  box-shadow: 1px 1px 0 #fff;
 }
 .escaner-primary {
   width: 100%;
@@ -148,15 +155,18 @@
   color: #000;
 }
 .escaner-ghost {
+  border-color: #fff;
   background: transparent;
   color: #fff;
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.6);
+  box-shadow: 4px 4px 0 #ec4f24;
 }
 .escaner-ghost.is-ink {
   width: 100%;
   margin-top: 10px;
+  border-color: var(--btn-edge);
+  background: #fff;
   color: #1b1440;
-  box-shadow: inset 0 0 0 1.5px rgb(27 20 64 / 0.35);
+  box-shadow: var(--btn-shadow);
 }
 .escaner button:focus-visible {
   outline: 2px solid #fff;
@@ -176,7 +186,7 @@
   max-width: 440px;
   margin: 0 auto;
   padding: 20px 18px;
-  border-radius: 24px;
+  border-radius: var(--radius);
 }
 .escaner-panel {
   top: 50%;

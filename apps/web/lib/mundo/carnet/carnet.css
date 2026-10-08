@@ -24,7 +24,7 @@
   padding: 0 12px;
   overflow: hidden;
   border: 2px solid #fff;
-  border-radius: 22px;
+  border-radius: var(--radius);
   background: #f26a1b;
   color: #fff;
   font: inherit;
@@ -43,9 +43,8 @@
   padding: 8px 16px 18px;
 }
 .juego-button.is-quiet {
-  background: transparent;
+  background: #fff;
   color: #12233f;
-  box-shadow: inset 0 0 0 2px rgba(18, 35, 63, 0.3);
 }
 a.juego-button {
   display: inline-flex;
@@ -70,7 +69,7 @@ a.juego-button {
   min-height: 44px;
   padding: 8px 10px;
   border: 1px solid rgba(18, 35, 63, 0.3);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: #fff;
   color: #12233f;
   font: inherit;
@@ -80,7 +79,7 @@ a.juego-button {
 .botella-mensaje {
   margin: 8px 0 14px;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #f3e6c8;
   font-size: 18px;
   line-height: 1.4;
@@ -146,7 +145,7 @@ a.juego-button {
 }
 .carnet-chips li {
   padding: 4px 10px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: rgba(18, 35, 63, 0.08);
   font-size: 13px;
 }
@@ -159,7 +158,7 @@ a.juego-button {
 }
 .carnet-notice {
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: #f3e6c8;
   font-size: 13px;
 }
@@ -286,7 +285,7 @@ a.juego-button {
 .carnet-page-cuenta {
   margin: 20px 0 0;
   padding: 16px 18px;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: #fff4e2;
   color: #1b1440;
 }
@@ -339,7 +338,7 @@ a.juego-button {
   width: 100%;
   box-sizing: border-box;
   font: inherit;
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 8px;
 }
 .carnet-report-done {

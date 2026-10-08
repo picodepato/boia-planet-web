@@ -1,40 +1,54 @@
 import localFont from 'next/font/local';
 
 /**
- * Tipografías de toda la web (plan 006 T74), el único sitio que las define.
- * Referencia de Álvaro: draaimolen.nu/story, Druk Wide Medium para títulos e
- * Inter para el texto.
+ * Tipografías de toda la web y del mundo (plan 019 T213, decisión 2 de la
+ * reunión del 2026-10-08), el único sitio que las define. Tres fuentes de
+ * videojuego de la lista de 1001freefonts que eligió Hernán (combinación 4):
  *
- * Títulos: Druk es comercial (Commercial Type), así que hasta que haya
- * licencia va Archivo en su anchura máxima (wdth 125, peso 700, la «Archivo
- * Expanded Bold»), SIL OFL (public/fonts/OFL-archivo.txt). Para pasar a Druk
- * Wide Medium se regenera `titulo-latin.woff2` con tools/fonts/subset.py y se
- * cambia la licencia (README, «Tipografías»); nada más en la web nombra la
- * fuente: el CSS usa `--font-title`.
+ * - Títulos (`--font-display` → `--font-title`): Upheaval, de Brian Kent
+ *   (Ænigma Fonts). Freeware para uso personal y comercial; su licencia
+ *   (public/fonts/LICENCIA-upheaval.txt) no deja alterar el archivo, así que
+ *   va el TTF original sin subconjunto ni conversión. Es la única que se
+ *   precarga (el primer título de la landing; cuenta en su presupuesto,
+ *   scripts/landing-budget.mjs).
+ * - Botones (`--font-btn` → `--font-button`): Press Start 2P, SIL OFL
+ *   (public/fonts/OFL-press-start-2p.txt). Botones de la landing, del mundo y
+ *   el menú de arriba.
+ * - Texto (`--font-text` → `--font-body`): 8-bit Operator+, SIL OFL
+ *   (public/fonts/OFL-8bit-operator-plus.txt), regular y negrita.
  *
- * Texto: Inter variable (peso 400–900), SIL OFL (public/fonts/OFL-inter.txt).
- *
- * Ambas en subconjunto latino woff2 servidas desde la web. Sólo se precarga
- * la de títulos (el h1 de la primera vista; cuenta en el presupuesto de la
- * landing, scripts/landing-budget.mjs). Inter (33 kB) no cabe en él: entra con
- * `swap` sobre un respaldo del sistema con sus métricas ajustadas.
+ * Las dos OFL van en woff2 enteras (con nombre reservado, sin subconjunto);
+ * las instala tools/fonts/subset.py. Las de un solo peso declaran todo el
+ * rango para que el navegador no les fabrique una negrita borrosa: son de
+ * píxel y ya son gruesas.
  */
 export const fuenteTitulo = localFont({
-  src: '../public/fonts/titulo-latin.woff2',
-  weight: '700',
+  src: '../public/fonts/upheavtt.ttf',
+  weight: '100 900',
   display: 'swap',
   variable: '--font-display',
   fallback: ['Arial Black', 'Arial', 'system-ui', 'sans-serif'],
 });
 
+export const fuenteBoton = localFont({
+  src: '../public/fonts/press-start-2p.woff2',
+  weight: '100 900',
+  display: 'swap',
+  preload: false,
+  variable: '--font-btn',
+  fallback: ['Courier New', 'monospace'],
+});
+
 export const fuenteTexto = localFont({
-  src: '../public/fonts/inter-latin.woff2',
-  weight: '400 900',
+  src: [
+    { path: '../public/fonts/8bit-operator-plus-regular.woff2', weight: '400' },
+    { path: '../public/fonts/8bit-operator-plus-bold.woff2', weight: '700' },
+  ],
   display: 'swap',
   preload: false,
   variable: '--font-text',
   fallback: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
 });
 
-/** Las clases que declaran `--font-display` y `--font-text`; van en <html>. */
-export const fuentesClassName = `${fuenteTitulo.variable} ${fuenteTexto.variable}`;
+/** Las clases que declaran `--font-display`, `--font-btn` y `--font-text`; van en <html>. */
+export const fuentesClassName = `${fuenteTitulo.variable} ${fuenteBoton.variable} ${fuenteTexto.variable}`;

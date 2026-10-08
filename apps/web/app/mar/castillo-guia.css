@@ -19,7 +19,7 @@
   grid-template-columns: 1fr auto;
   align-items: start;
   padding: 10px 4px 0 14px;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: var(--cream);
   color: var(--ink);
   box-shadow:
@@ -81,7 +81,7 @@
   height: 44px;
   margin: -8px 0 -6px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: none;
   color: var(--ink);
   font-size: 1rem;
@@ -120,7 +120,7 @@
 .mar .mar-castle-bocadillo__saltar:focus-visible {
   outline: 3px solid var(--orange);
   outline-offset: -2px;
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 @keyframes mar-castle-bocadillo {

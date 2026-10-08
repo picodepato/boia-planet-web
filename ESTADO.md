@@ -4,6 +4,78 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T213: Three video-game fonts, square corners and new buttons across the site
+
+Decisions 2 and 3 of the meeting. Hernán chose combination 4 of the samples
+(six were rendered: 1–3 Google Fonts, 4–6 from the 1001freefonts video-game
+list; the sample tooling was removed once the choice was made).
+
+What exists:
+
+- **Fonts** (`apps/web/lib/fonts.ts`, `next/font/local`, classes on `<html>`):
+  - Titles `--font-display` → `--font-title`: **Upheaval** (Brian Kent, Ænigma
+    Fonts, https://www.1001freefonts.com/es/upheaval.font). Freeware for
+    personal and commercial use; its licence (`public/fonts/LICENCIA-upheaval.txt`)
+    forbids altering the file, so the original `upheavtt.ttf` ships byte for
+    byte (no subset, no conversion). Preloaded (7.7 kB gzip).
+  - Buttons `--font-btn` → new `--font-button`: **Press Start 2P** (SIL OFL,
+    `OFL-press-start-2p.txt`), whole font repackaged as woff2 (Reserved Font
+    Name: no subset). Landing buttons and top menu, world buttons and top links.
+  - Body `--font-text` → `--font-body`: **8-bit Operator+** (Grand Chaos
+    Productions, SIL OFL, `OFL-8bit-operator-plus.txt`, from
+    https://www.1001freefonts.com/es/8-bit-operator.font), regular and bold
+    woff2; body line-height 1.5 (globals.css) for long texts on mobile.
+  - `tools/fonts/subset.py` now installs the three (copy + lossless woff2).
+    Old Archivo/Inter files and licences removed. README «Tipografías» updated.
+  - Game HUDs of the Cañón and the Castillo keep the title font on their
+    buttons (their HUD is measured with it); everything else in `/mar` uses
+    the button font.
+- **Corners**: `--radius: 0` in `globals.css`; every `border-radius` (and
+  `border-*-radius`) in `apps/web/**/*.css` is `var(--radius)`, except
+  intrinsically round shapes (50 %: planet, boia, avatars, dots/pips, switch
+  knobs, minimap, turbo and its ring, speed dial, joystick, stamp slots,
+  spinner; and the boia cap `60% 60% 10% 10%` in `landing.css` and
+  `mar.css`, the water drop in `canon-hud.css`). Round icon buttons (close ×,
+  menu, help, notices, carnet ×/more, HUD buttons, scanner) are now square.
+- **Buttons**: arcade style tokens `--btn-*` in `globals.css` (2 px black
+  border, 4 px hard offset shadow, pressed state moves onto the shadow);
+  applied to landing `.button`/`.cta-explore`, `.mar-btn`/`.juego-panel-cta`,
+  «Entradas» of the world (its glow is now a stepped yellow shadow blink),
+  `.juego-button`, carnet `.idc-btn`, account `.acceso-*`, ranking, checkout,
+  shop, merchandise, carnet invite, scanner, castle and cannon end buttons,
+  Admin buttons (border + shadow only).
+- **Popups** (shared `.mar-sheet`/`.juego-panel` style): square, black border,
+  hard shadow, title, text and kicker in brand blue (`--purple`), no orange at
+  the top. T219 handles their contents.
+- `scripts/landing-budget.mjs` also counts a preloaded `.ttf`.
+- `e2e/tipografia.spec.ts`: checks the button font on «Zarpar» and on the
+  world's «A navegar», and that it loads.
+
+Commands:
+
+- `grep -rn "border-radius" apps/web --include=*.css | grep -v "50%\|var(--radius"`
+  → 2 lines, both the boia cap (`60% 60% 10% 10%`, `landing.css`
+  `.intro-cover__boia::before`, `mar.css` `.mar-splash__boia::before`).
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 237 files, 2224
+  passed, 1 skipped; `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0;
+  `pnpm typecheck` → 0; `pnpm build` → 0, landing 191.9 kB gzip (budget 200,
+  the preloaded Upheaval TTF counts 7.7 kB).
+- `E2E_PORT=3461 pnpm e2e tipografia landing landing-scroll mar-hud mar-tablon
+  logros merchandise eventos mar-ayuda mar-decor mar-3d --workers=1` → 151
+  passed, 3 failed (focus halo on «Zarpar», a bottle chip covering the map's
+  «Cerrar»); both fixed, then `landing-scroll mar-3d mar-hud mar-ayuda
+  mar-tablon logros tipografia` → 110 passed, 18 skipped, 0 failed.
+- Screenshots (production build, 390×844 and 1280×800): landing hero, events
+  and text, /mar welcome, «Elige tu evento» popup, HUD and Mi Carnet, /carnet,
+  /admin, under `/tmp/orchestrator-attach/boia-planet-hernan-T213/final/`.
+
+Pending:
+
+- Full e2e run (T224).
+- SVG icon art (`canon-icons.tsx`, `castillo-icons.tsx`, stamps) keeps its
+  `rx` details: illustration, not UI corners.
+- `docs/TRASPASO.md`/older docs still name Archivo + Inter (historical).
+
 ## 2026-10-07 — plan 018 T211: Partes 1 y 8: resumen, hoja de ruta para salir y decisiones pendientes
 
 **Qué existe**

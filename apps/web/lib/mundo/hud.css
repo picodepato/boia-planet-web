@@ -18,7 +18,7 @@
   display: grid;
   place-items: center;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   border: 2px solid rgba(255, 255, 255, 0.7);
   background: #12233f;
   color: #fff;
@@ -26,7 +26,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .juego-home {
-  border-radius: 12px;
+  border-radius: var(--radius);
   font-size: 11px;
   font-weight: 700;
   text-decoration: none;
@@ -42,7 +42,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 3px 7px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   border-left: 3px solid #f26a1b;
   background: rgba(18, 35, 63, 0.72);
   overflow: hidden;
@@ -67,7 +67,7 @@
   top: -16px;
   width: 8px;
   height: 14px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   opacity: 0;
   animation-name: juego-fiesta-cae;
   animation-timing-function: cubic-bezier(0.3, 0.6, 0.5, 1);
@@ -97,7 +97,7 @@
 .juego-hud .juego-stats {
   pointer-events: none;
   padding: 5px 7px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: rgba(18, 35, 63, 0.55);
   overflow: hidden;
   white-space: nowrap;
@@ -115,7 +115,7 @@
 
 .juego-minimap {
   padding: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   border: 2px solid rgba(255, 255, 255, 0.6);
   background: #2a3b2a;
   overflow: hidden;
@@ -149,7 +149,7 @@
   padding: 8px 14px;
   border: 0;
   border-left: 6px solid #f26a1b;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #12233f;
   color: #fff;
   text-align: left;
@@ -171,7 +171,7 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
   font: inherit;
@@ -228,7 +228,7 @@
   width: min(560px, 100%);
   max-height: 100%;
   overflow: auto;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: #fffaf0;
   color: #12233f;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
@@ -247,7 +247,7 @@
   gap: 2px;
   padding: 6px;
   background: #12233f;
-  border-radius: 16px 16px 0 0;
+  border-radius: var(--radius);
   overflow-x: auto;
 }
 .juego-menu-icon {
@@ -258,7 +258,7 @@
   height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: transparent;
   font-size: 24px;
   line-height: 1;
@@ -280,7 +280,7 @@
   width: 2px;
   height: 28px;
   margin: 0 4px;
-  border-radius: 1px;
+  border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.3);
 }
 .juego-close {
@@ -354,15 +354,23 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+/* T213: el botón de recreativa (globals.css, --btn-*); negro sobre naranja (T50). */
 .juego-button {
   min-height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 12px;
+  padding: 0 14px;
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: var(--btn-shadow);
   background: #f26a1b;
-  color: #fff;
+  color: #000;
   font: inherit;
-  font-weight: 800;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
+}
+.juego-button:active:not(:disabled) {
+  transform: var(--btn-pressed);
+  box-shadow: var(--btn-shadow-pressed);
 }
 .juego-button:disabled {
   opacity: 0.5;
@@ -374,7 +382,7 @@
   margin: 12px 0;
   padding: 10px 12px;
   border: 1px solid rgba(18, 35, 63, 0.18);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 .juego-field legend,
 .juego-field > span {
@@ -421,7 +429,7 @@
 .juego-map-canvas {
   margin: 0 auto;
   max-width: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .juego-map-canvas svg {
@@ -442,7 +450,7 @@
   min-height: 44px;
   padding: 6px 10px;
   border: 1px solid rgba(18, 35, 63, 0.18);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -490,7 +498,7 @@
   min-height: 44px;
   padding: 6px 4px 8px;
   border: 2px solid rgba(18, 35, 63, 0.15);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #fff;
   color: inherit;
   font: inherit;
@@ -537,7 +545,7 @@
 .barco-color {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--radius);
   box-shadow: inset 0 0 0 1px rgba(18, 35, 63, 0.25);
 }
 .barco-descripcion {
@@ -560,7 +568,7 @@
   min-height: 44px;
   padding: 8px 10px;
   border: 2px solid rgba(18, 35, 63, 0.15);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #fff;
   color: inherit;
   font: inherit;
@@ -634,7 +642,7 @@
   margin: 0;
   padding: 6px 12px;
   clip: auto;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: #12233f;
   color: #fff;
   outline: 2px solid #f26a1b;
@@ -651,7 +659,7 @@
   gap: 10px;
   max-width: calc(100% - 32px);
   padding: 6px 6px 6px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: rgba(18, 35, 63, 0.88);
   color: #fffaf0;
   transform: translateX(-50%);
@@ -665,13 +673,16 @@
 .juego-rumbo-saltar {
   flex: none;
   min-height: 40px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
+  padding: 0 12px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: 3px 3px 0 #fff;
   background: var(--boia-orange, #ec4f24);
   color: #000;
   font: inherit;
-  font-weight: 800;
+  font-family: var(--font-button);
+  font-size: 0.625rem;
   cursor: pointer;
 }
 

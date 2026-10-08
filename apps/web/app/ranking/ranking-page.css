@@ -1,7 +1,7 @@
 /* El panel del ranking (claro, como en el menú de /mar) sobre la noche de la página. */
 .ranking-page-card {
   padding: 12px 16px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: #fff4e2;
   color: #1b1440;
 }

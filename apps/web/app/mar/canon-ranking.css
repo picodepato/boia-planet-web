@@ -15,7 +15,7 @@
   align-items: baseline;
   gap: 6px;
   padding: 3px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 0.8rem;
   line-height: 1.25;
 }

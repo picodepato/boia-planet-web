@@ -5,7 +5,7 @@
   box-sizing: border-box;
   max-width: 420px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   border-left: 4px solid var(--boia-orange, #ec4f24);
   background: rgba(18, 35, 63, 0.96);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
@@ -51,22 +51,27 @@
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 16px;
-  border-radius: 999px;
+  padding: 0 14px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 #fff;
   font: inherit;
-  font-weight: 700;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
   text-decoration: none;
   cursor: pointer;
 }
 
 .carnet-invite__create {
-  border: 0;
   background: var(--boia-orange, #ec4f24);
   color: #000;
 }
 
 .carnet-invite__later {
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-color: #fff;
+  box-shadow: 4px 4px 0 var(--boia-orange, #ec4f24);
   background: transparent;
   color: #fff;
 }

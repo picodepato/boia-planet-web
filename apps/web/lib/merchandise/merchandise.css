@@ -16,7 +16,7 @@
 .merchandise__card {
   overflow: hidden;
   border: 1px solid rgba(33, 30, 38, 0.14);
-  border-radius: 1.2rem;
+  border-radius: var(--radius);
   background: #fffaf3;
   color: #211e26;
 }
@@ -87,13 +87,16 @@
 }
 .merchandise__buy .merchandise__buy-button {
   min-height: 44px;
-  padding: 0 22px;
-  border-radius: 999px;
-  border: 0;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  box-shadow: 4px 4px 0 var(--boia-orange);
   align-items: center;
   background: #211e26;
   color: #fffaf3;
-  font-weight: 700;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
 }
 .merchandise__buy .merchandise__buy-button:focus-visible {
   outline: 2px solid #211e26;
@@ -130,7 +133,7 @@
 .merchandise__badge {
   display: inline-block;
   padding: 0.25rem 0.6rem;
-  border-radius: 1rem;
+  border-radius: var(--radius);
   background: #f2dfca;
   font-size: 0.75rem;
   font-weight: 700;

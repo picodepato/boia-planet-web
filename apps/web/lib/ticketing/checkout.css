@@ -10,7 +10,7 @@
   margin: auto auto max(12px, env(safe-area-inset-bottom));
   padding: 0;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: #fffaf0;
   color: #12233f;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
@@ -43,7 +43,7 @@
   display: inline-block;
   padding: 3px 10px;
   border: 2px dashed #12233f;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -75,7 +75,7 @@
 .checkout__quote {
   margin: 0 0 10px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #f3ead8;
 }
 
@@ -116,7 +116,7 @@
 .checkout__result {
   margin-bottom: 10px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #12233f;
   color: #fffaf0;
 }
@@ -142,19 +142,28 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 48px;
-  border-radius: 12px;
+  /* T213: el botón de recreativa (globals.css, --btn-*). */
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: var(--btn-shadow);
   font: inherit;
-  font-weight: 800;
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
   text-align: center;
   text-decoration: none;
-  line-height: 48px;
+  line-height: 44px;
   cursor: pointer;
 }
 
+.checkout__confirm:active:not(:disabled),
+.checkout__secondary:active {
+  transform: var(--btn-pressed);
+  box-shadow: var(--btn-shadow-pressed);
+}
+
 .checkout__confirm {
-  border: 0;
   background: #f26a1b;
-  color: #12233f;
+  color: #000;
 }
 
 .checkout__confirm:disabled {
@@ -163,10 +172,8 @@
 }
 
 .checkout__secondary {
-  border: 2px solid #12233f;
-  background: transparent;
+  background: #fff;
   color: #12233f;
-  line-height: 44px;
 }
 
 .checkout :focus-visible {
@@ -183,7 +190,7 @@
   margin: 8px 0 12px;
   padding: 10px 12px;
   border: 2px solid #000;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--boia-orange, #ec4f24);
   color: #000;
   text-align: left;
@@ -203,7 +210,7 @@
 
 .discount-banner__code code {
   padding: 1px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #fffaf0;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -228,7 +235,7 @@
   margin: 8px 0 12px;
   padding: 12px;
   border: 2px solid #12233f;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: #fff3df;
   color: #12233f;
 }
@@ -262,7 +269,7 @@
   min-height: 44px;
   padding: 8px 10px;
   border: 2px solid #12233f;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: #fffaf0;
   color: #12233f;
   font: inherit;

@@ -1,8 +1,8 @@
 /*
  * Landing de BOIA.PLANET. Marca de Álvaro desde T50: naranja, azul y negro
  * muestreados de art/marca/ (tokens --boia-* de globals.css), el logo
- * (mascota y wordmark). Tipografías de lib/fonts.ts (T74): títulos con
- * --font-title, texto con Inter (--font-body).
+ * (mascota y wordmark). Tipografías de lib/fonts.ts (T213): títulos con
+ * --font-title, botones y menú con --font-button, texto con --font-body.
  *
  * Plan 007 T79 (docs/propuestas/2026-10-03-landing-scroll.md, v2): one
  * continuous scroll. A night-black editorial page over a fixed scene: the
@@ -26,7 +26,6 @@
   --violet: #b9a6ff;
   --water: #0f5f7d;
   --space: #0b1830;
-  --radius: 14px;
   --header-h: 60px;
   --gutter: 16px;
   /* T77 §3.2 */
@@ -140,7 +139,7 @@ body {
   padding: 10px 16px;
   background: var(--ink);
   color: var(--black);
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-weight: 700;
   visibility: visible;
   pointer-events: auto;
@@ -168,44 +167,56 @@ p.event-card__poster {
 
 /* ---------- Botones ---------- */
 
+/*
+ * T213 (decisiones 2 y 3): el botón de recreativa. Recto, borde de 2 px, sombra
+ * dura desplazada y Press Start 2P; al pulsarlo se hunde hacia la sombra. Sobre
+ * la noche de la landing el oscuro lleva borde blanco y sombra naranja; el
+ * naranja, borde negro y sombra blanca.
+ */
 .button {
+  --shadow-c: var(--orange);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 22px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  padding: 0 18px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--shadow-c);
+  background: var(--black);
+  color: var(--ink);
+  font-family: var(--font-button);
+  font-size: var(--btn-font-size);
+  line-height: 1.4;
   text-decoration: none;
   cursor: pointer;
-  border: 1.5px solid transparent;
-  background: none;
-  color: var(--ink);
-  font-family: var(--font-body);
+}
+
+.button:active {
+  transform: var(--btn-pressed);
+  box-shadow: 1px 1px 0 var(--shadow-c);
 }
 
 .button--tickets {
-  border-color: rgb(255 255 255 / 0.75);
-  background: rgb(0 0 0 / 0.35);
   min-height: 56px;
 }
 
 .button--tickets-small,
 .button--zarpar-small {
   min-height: 40px;
-  padding: 0 18px;
-  border-color: rgb(255 255 255 / 0.75);
+  padding: 0 14px;
+}
+
+.button--zarpar-small,
+.button--buy {
+  --shadow-c: var(--ink);
+  border-color: var(--btn-edge);
+  background: var(--orange);
+  color: var(--on-orange);
 }
 
 .button--zarpar-small {
   display: none;
-  border-color: var(--orange);
-  background: var(--orange);
-  color: var(--on-orange);
-  font-family: var(--font-title);
-  font-weight: 700;
-  letter-spacing: 0.04em;
 }
 
 @media (min-width: 600px) {
@@ -215,19 +226,19 @@ p.event-card__poster {
 }
 
 .button--buy {
-  background: var(--orange);
-  color: var(--on-orange);
   margin-top: 16px;
   min-height: 48px;
 }
 
-.button--secondary,
-.button--ghost {
-  border-color: rgb(255 255 255 / 0.55);
-}
-
 .button--secondary {
   margin-top: 20px;
+}
+
+/* El anillo de foco (T77 §10) con su halo oscuro, sin perder la sombra dura. */
+.button:focus-visible {
+  box-shadow:
+    4px 4px 0 var(--shadow-c),
+    0 0 0 2px var(--black);
 }
 
 .button:hover {
@@ -295,17 +306,17 @@ html[data-hero-top] .site-header__inner {
   list-style: none;
   margin: 0 12px 0 0;
   padding: 0;
-  gap: 24px;
+  gap: 16px;
 }
 
 .site-header__links a,
 .site-header__links .site-header__sign-out {
   text-decoration: none;
   color: var(--on-dark-70);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  /* T213: el menú de arriba con la de botones; es ancha (monoespaciada): 9 px
+     y sin versalitas para que la fila quepa desde 1200 px. */
+  font-family: var(--font-button);
+  font-size: 9px;
   white-space: nowrap;
 }
 
@@ -338,7 +349,7 @@ html[data-hero-top] .site-header__inner {
   list-style: none;
   background: var(--band);
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
@@ -347,7 +358,7 @@ html[data-hero-top] .site-header__inner {
   display: block;
   padding: 12px;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .site-header__menu-list a:hover,
@@ -646,18 +657,30 @@ html[data-intro='play'] .hero__hint {
   justify-content: center;
   min-height: 56px;
   padding: 0 24px;
-  border-radius: 999px;
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink);
   background: var(--orange);
   color: var(--on-orange);
   text-decoration: none;
   animation: cta-pulse 3s ease-in-out infinite;
 }
 
+.cta-explore:active {
+  transform: var(--btn-pressed);
+  box-shadow: 1px 1px 0 var(--ink);
+  animation: none;
+}
+
+.cta-explore:focus-visible {
+  box-shadow:
+    4px 4px 0 var(--ink),
+    0 0 0 2px var(--black);
+}
+
 .cta-explore__label {
-  font-family: var(--font-title);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: var(--font-button);
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -885,7 +908,7 @@ html[data-intro-act='landing'] {
   top: 34px;
   width: 36px;
   height: 14px;
-  border-radius: 0 0 20px 20px;
+  border-radius: var(--radius);
   background: #fff;
 }
 
@@ -1098,7 +1121,7 @@ main[data-contenido] .philosophy__text {
 .badge {
   display: inline-block;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--ink);
   color: var(--sea);
   font-size: 0.75rem;
@@ -1110,7 +1133,7 @@ main[data-contenido] .event-card {
   height: auto;
   padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius);
   background: none;
 }
 
@@ -1214,7 +1237,7 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   margin-left: 0.6em;
   padding: 0 0.6em;
   border: 1px solid;
-  border-radius: 9em;
+  border-radius: var(--radius);
   font: 600 10px var(--font-body);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1364,7 +1387,7 @@ main[data-contenido] .artist-card {
   row-gap: 2px;
   padding: 18px 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius);
   background: none;
 }
 
@@ -1552,7 +1575,7 @@ main[data-contenido] #fotos .photo-grid {
 
 main[data-contenido] #fotos .photo-grid img,
 main[data-contenido] #fotos .photo-placeholder {
-  border-radius: 0;
+  border-radius: var(--radius);
 }
 
 main[data-contenido] #fotos .photo-placeholder {
@@ -1599,7 +1622,7 @@ main[data-contenido] #fotos .photo-placeholder--2 {
 
 .chip {
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--card);
   border: 1px solid var(--line);
 }
@@ -1612,7 +1635,7 @@ main[data-contenido] .chip-list {
 main[data-contenido] .chip {
   padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius);
   background: none;
   font-family: var(--font-title);
   font-size: 22px;
@@ -1722,7 +1745,7 @@ main[data-contenido] ~ .site-footer .site-footer__small {
 .legal__sample {
   padding: 12px 16px;
   border: 2px dashed currentColor;
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 /* ---------- Panel de Tickets ----------
@@ -1764,7 +1787,7 @@ html.panel-open {
   overscroll-behavior: contain;
   padding: 20px var(--gutter) 28px;
   background: var(--sea);
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   animation: sheet-in 220ms ease-out both;
 }
@@ -1774,7 +1797,7 @@ html.panel-open {
     align-items: center;
   }
   .tickets-panel__sheet {
-    border-radius: 20px;
+    border-radius: var(--radius);
     padding: 28px;
   }
 }
@@ -1943,7 +1966,7 @@ main[data-contenido] .js .sail-link,
   min-height: 44px;
   padding: 0 10px;
   border: 1.5px solid var(--hairline);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -1973,7 +1996,7 @@ main[data-contenido] .js .sail-link,
   width: 100%;
   justify-content: flex-start;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0 12px;
 }
 
@@ -2039,7 +2062,7 @@ main[data-contenido] ~ .site-footer .footer-invite {
   max-width: 58ch;
   padding: 4px 0 4px 16px;
   border-left-width: 2px;
-  border-radius: 0;
+  border-radius: var(--radius);
   background: none;
   color: var(--on-dark-70);
 }
