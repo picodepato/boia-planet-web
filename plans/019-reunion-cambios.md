@@ -50,7 +50,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## T214 — Landing redesigned after noartmusic.com, hero changes and the store
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T213
 - Model: opus
 - Skills: frontend-design
@@ -66,7 +66,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## T216 — Galería: collage of photos and clips with open/close animations
-- Status: pending
+- Status: done
 - Depends on: T213
 - Model: opus
 - Skills: frontend-design
@@ -77,7 +77,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - `/galeria` shows the collage with photos and clips; opening animates over a dark background; closing returns the piece and nudges the others → e2e spec + screenshots/short frames under the attach folder
   - Admin uploads a clip in local mode and it appears in the collage → e2e
   - Test command → exit 0
-- Outcome:
+- Outcome: /galeria collage of photos + muted clips (reusable `MediaCollage`), open/close animations, /fotos → 307, Admin clip upload (mp4 ≤20 MB/30 s, bucket event-clips), 3 sample clips; migration 20261008100400 to apply · 1eba877
 
 ## T215 — Event page, purchase with required carnet, discounts and Admin event fields
 - Status: pending
@@ -209,9 +209,12 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T213: fonts from Google Fonts (all SIL OFL 1.1) instead of 1001freefonts, whose licences are unclear; proposed button style: square, 2px black border, hard offset shadow; popup title/text blue on cream (agent)
 
 - 2026-10-08 T213: fonts = combination 4: Upheaval (titles) / Press Start 2P (buttons) / 8-bit Operator+ (body) (Hernán)
+- 2026-10-08 T216: optional `kind` + `poster` on photo schema; clips play only on screen, never with reduced motion; /api/art serves mp4 with Range; database.types.ts edited by hand (agent)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
+- 2026-10-08 T216: the i18n-zonas generator is out of sync with textos-zonas.md (running it would drop keys like nav.ranking); generated files were edited by hand
+- 2026-10-08 T216: home «Ver todas» (PHOTOS_PAGE in blocks.tsx) still points to /fotos (redirect works; T214 may fix)
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -219,3 +222,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T213 Hernán (session): new samples with 1001freefonts fonts (commercial/web licence only) → agent resumed
 - 2026-10-08 T213 blocked again · combos 4/5/6 from 1001freefonts · commit a10c62a
 - 2026-10-08 T213 Hernán chose combination 4 → agent resumed
+- 2026-10-08 T214 launched · attempt 1 · agent a6c26a044e7b10876
+- 2026-10-08 T216 launched · attempt 1 · agent abb6b9b5dbd06ffba
+- 2026-10-08 T216 done · merged 1eba877
