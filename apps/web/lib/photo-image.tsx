@@ -1,14 +1,16 @@
 'use client';
 
-import { type Photo, isLocalPhotoRef } from '@boia/contracts';
+import type { Photo } from '@boia/contracts';
+import { isLocalPhotoRef } from '@boia/contracts/photo-ref';
 import { useEffect, useState } from 'react';
-import { displayablePhotoUrl } from './admin/photo-store';
 
 /**
  * La URL que se puede poner en `src` de una referencia de la galería: la
  * misma si no es local (también en el servidor); un archivo que el Admin
  * dejó en este navegador (`local-photo:`, T189), en cuanto se lee de
- * IndexedDB; null mientras, o si ya no está.
+ * IndexedDB; null mientras, o si ya no está. El almacén del navegador se
+ * carga sólo entonces: el collage de la landing no lo lleva en su ruta
+ * crítica (plan 020 T234).
  */
 export function useMediaUrl(ref: string | undefined): string | null {
   const direct = ref && !isLocalPhotoRef(ref) ? ref : null;
@@ -17,7 +19,9 @@ export function useMediaUrl(ref: string | undefined): string | null {
     let alive = true;
     setLocal(null);
     if (ref && isLocalPhotoRef(ref))
-      void displayablePhotoUrl(ref).then((u) => alive && setLocal(u));
+      void import('./admin/photo-store')
+        .then((m) => m.displayablePhotoUrl(ref))
+        .then((u) => alive && setLocal(u));
     return () => {
       alive = false;
     };

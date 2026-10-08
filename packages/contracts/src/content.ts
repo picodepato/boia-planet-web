@@ -30,22 +30,12 @@ export function artistMusic(artist: Pick<Artist, 'music' | 'spotifyUrl'>): Music
   return artist.spotifyUrl ? { platform: 'spotify', url: artist.spotifyUrl } : null;
 }
 
-/**
- * Una foto subida en el Admin de la demo (plan 017 T189, decisión 4): el
- * archivo se queda en este navegador (IndexedDB) y la foto lo nombra con
- * `local-photo:<clave>`. Con cuentas, la foto es una URL https del bucket.
- */
-export const LOCAL_PHOTO_PREFIX = 'local-photo:';
+// Las referencias `local-photo:` (plan 017 T189) viven sin zod en photo-ref.ts
+// (la landing las usa en su ruta crítica, plan 020 T234); aquí, su esquema.
+import { LOCAL_PHOTO_PREFIX } from './photo-ref';
+
+export { LOCAL_PHOTO_PREFIX, isLocalPhotoRef, localPhotoKey } from './photo-ref';
 export const localPhotoRefSchema = z.string().regex(/^local-photo:[A-Za-z0-9_-]{1,120}$/);
-
-export function isLocalPhotoRef(src: string | undefined | null): src is string {
-  return typeof src === 'string' && src.startsWith(LOCAL_PHOTO_PREFIX);
-}
-
-/** La clave del archivo en el navegador de una referencia `local-photo:`. */
-export function localPhotoKey(src: string): string {
-  return src.slice(LOCAL_PHOTO_PREFIX.length);
-}
 
 /**
  * Dónde está un archivo de la galería: URL (https o del bucket), un archivo

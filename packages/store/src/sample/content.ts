@@ -330,27 +330,45 @@ const SAMPLE_CLIPS = [
 ] as const;
 
 /**
- * Fotos de muestra (sin imagen: marcador) y los clips de la Galería. Las marcadas `selection` son las
+ * Las fotos de muestra de la Galería (plan 020 T234): composiciones con arte
+ * del proyecto (tools/galeria/fotos.mjs, art/galeria/<id>.webp), cada una con
+ * su forma, para que el collage mezcle tamaños. `muestra`.
+ */
+const SAMPLE_STILLS = [
+  { id: 'foto-1', albumId: 'album-muestra', width: 1200, height: 800 },
+  { id: 'foto-2', albumId: 'album-muestra', width: 640, height: 800 },
+  { id: 'foto-3', albumId: 'album-muestra', width: 800, height: 800 },
+  { id: 'foto-4', albumId: 'album-muestra', width: 1280, height: 720 },
+  { id: 'foto-5', albumId: 'album-muestra', width: 600, height: 900 },
+  { id: 'foto-6', albumId: 'album-muestra', width: 960, height: 720 },
+  { id: 'foto-7', albumId: 'album-muestra', width: 720, height: 960 },
+  { id: 'foto-8', albumId: 'album-muestra', width: 1000, height: 800 },
+  { id: 'foto-cala-1', albumId: 'album-cala', width: 720, height: 960 },
+  { id: 'foto-cala-2', albumId: 'album-cala', width: 800, height: 800 },
+  { id: 'foto-cala-3', albumId: 'album-cala', width: 1280, height: 800 },
+] as const;
+
+/**
+ * Fotos de muestra y los clips de la Galería. Las marcadas `selection` son las
  * que salen en la home (D-23, respuesta 6); todas, en `/galeria`, en la
  * galería de su isla (la del evento del álbum, o la del álbum).
  */
 export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
-  ...Array.from({ length: 8 }, (_, i) => ({
-    id: `foto-${i + 1}`,
-    albumId: 'album-muestra',
-    alt: `Foto de muestra ${i + 1} de un All Day BOIA`,
-    width: 4,
-    height: 3,
-    selection: i < 4,
-  })),
-  ...Array.from({ length: 3 }, (_, i) => ({
-    id: `foto-cala-${i + 1}`,
-    albumId: 'album-cala',
-    alt: `Foto de muestra ${i + 1} de una tarde en la cala`,
-    width: 3,
-    height: 4,
-    selection: i === 0,
-  })),
+  ...SAMPLE_STILLS.map((p, i) => {
+    const cala = p.albumId === 'album-cala';
+    const n = cala ? Number(p.id.slice('foto-cala-'.length)) : i + 1;
+    return {
+      id: p.id,
+      albumId: p.albumId,
+      alt: cala
+        ? `Foto de muestra ${n} de una tarde en la cala`
+        : `Foto de muestra ${n} de un All Day BOIA`,
+      src: `/api/art/galeria/${p.id}.webp`,
+      width: p.width,
+      height: p.height,
+      selection: cala ? n === 1 : n <= 4,
+    };
+  }),
   // Clips de muestra de la Galería (plan 019 T216, decisión 8): hechos con
   // arte del proyecto (tools/galeria/clips.mjs), servidos desde art/. Nunca
   // en la home (`selection: false`): la home no descarga vídeos (REQ-COM-032).

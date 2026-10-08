@@ -1,0 +1,93 @@
+/*
+ * El visor del collage (collage-viewer.tsx): la pieza abierta sobre el fondo
+ * oscuro y su botón de cerrar. Aparte de collage.css desde plan 020 T234:
+ * se carga con el visor, fuera de la ruta crítica de la landing.
+ */
+
+.collage-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.collage-viewer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(5 7 20 / 0.94);
+  cursor: zoom-out;
+}
+
+.collage-viewer__figure {
+  position: fixed;
+  border: 6px solid var(--boia-white);
+  border-radius: var(--radius);
+  background: var(--boia-black);
+  box-shadow: 8px 8px 0 var(--boia-black);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.collage-viewer__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.collage-viewer__close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  background: var(--boia-orange);
+  box-shadow: var(--btn-shadow);
+  cursor: pointer;
+  animation: collage-fade 260ms steps(3) both;
+}
+
+.collage-viewer__close:active {
+  box-shadow: var(--btn-shadow-pressed);
+  transform: var(--btn-pressed);
+}
+
+.collage-viewer__close:focus-visible {
+  outline: 3px solid var(--boia-white);
+  outline-offset: 3px;
+}
+
+/* Una X de píxel: dos barras. */
+.collage-viewer__close span,
+.collage-viewer__close span::after {
+  display: block;
+  width: 22px;
+  height: 4px;
+  background: var(--boia-black);
+  transform: rotate(45deg);
+}
+
+.collage-viewer__close span::after {
+  content: '';
+  transform: rotate(90deg);
+}
+
+.collage-viewer[data-fase='closing'] .collage-viewer__close {
+  visibility: hidden;
+}
+
+@keyframes collage-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collage-viewer__close {
+    animation: none;
+  }
+}

@@ -14,7 +14,7 @@ import {
   type WorldObject,
 } from '@boia/world';
 import Link from 'next/link';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { t, formatEventDate } from '../../lib/i18n';
 import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
 import { eventHref, photosHref } from '../../lib/landing/eventos';
@@ -30,6 +30,7 @@ import {
 import { useRepoData } from '../../lib/mundo/repo';
 import { CalitasPanel } from '../../lib/mundo/calitas/calitas-panel';
 import { MarTablon } from './tablon';
+import { MediaCollage } from '../(landing)/components/media-collage';
 
 /**
  * La ficha de abajo del mar 3D: lo que abre un lugar al acercarse (evento,
@@ -323,7 +324,10 @@ export function Sheet({
       </>
     );
   } else if (state.target === 'photos') {
-    const photos = liveContent().photos.slice(0, 6);
+    // Sólo fotos (los clips, en la Galería): el mismo collage (plan 020 T234).
+    const photos = liveContent()
+      .photos.filter((p) => p.kind !== 'video')
+      .slice(0, 6);
     const text = textOf(object, 'body') ?? t('mar.sheet.todasLasFotosDe');
     const gallery = (
       <Link
@@ -346,17 +350,9 @@ export function Sheet({
         <p className="mar-sheet__kicker">{t('mar.sheet.puertoDeFotosMuestra')}</p>
         <h2 className="mar-sheet__title">{name}</h2>
         <p>{text}</p>
-        <ul className="mar-sheet__photos" aria-label={t('mar.sheet.galeria')}>
-          {photos.map((p, i) => (
-            <li
-              key={p.id}
-              role="img"
-              aria-label={p.alt}
-              title={p.alt}
-              style={{ '--i': i } as CSSProperties}
-            />
-          ))}
-        </ul>
+        <div className="mar-sheet__photos">
+          <MediaCollage items={photos} label={t('mar.sheet.galeria')} testId="mar-collage" />
+        </div>
         <div className="mar-sheet__actions">{gallery}</div>
       </>
     );

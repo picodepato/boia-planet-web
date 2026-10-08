@@ -1733,23 +1733,13 @@
   margin-top: 12px;
 }
 
+/* El collage de la Galería (plan 020 T234), un poco más prieto en la ficha. */
 .mar-sheet__photos {
-  list-style: none;
-  padding: 0;
-  margin: 4px 0 8px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  margin: 4px -10px 8px;
 }
 
-.mar-sheet__photos li {
-  aspect-ratio: 1;
-  border-radius: var(--radius);
-  background: linear-gradient(
-    160deg,
-    hsl(calc(20 + var(--i) * 50) 85% 68%),
-    hsl(calc(290 + var(--i) * 20) 55% 38%)
-  );
+.mar-sheet__photos .collage {
+  padding: 16px 18px 22px 14px;
 }
 
 .mar-btn,

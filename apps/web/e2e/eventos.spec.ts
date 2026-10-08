@@ -65,7 +65,7 @@ test('la home enseña sólo la selección de fotos y «Ver todas» lleva a la Ga
 }) => {
   await page.goto('/?intro=0');
   await expect(page.locator('main')).toHaveAttribute('data-contenido', 'repositorio');
-  const grid = page.locator('#fotos .photo-grid > li');
+  const grid = page.locator('#fotos [data-pieza]');
   await expect(grid).toHaveCount(Math.min(selection.length, 6));
   // El enlace de la home va directo a /galeria (T227; /fotos sigue redirigiendo).
   await expect(page.getByTestId('ver-fotos')).toHaveAttribute('href', '/galeria');

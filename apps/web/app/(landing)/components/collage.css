@@ -1,9 +1,11 @@
 /*
  * El collage de la Galería (plan 019 T216, decisión 8), media-collage.tsx.
  * Fotos como copias impresas: borde blanco, esquina recta y la sombra dura
- * de los botones de recreativa (T213). Cada pieza sale un poco de su celda
- * (--dx, --dy, --rot, fijos por id) y se monta sobre las vecinas; tras
- * cerrar una, las vecinas se apartan (--nx, --ny) con un pequeño rebote.
+ * de los botones de recreativa (T213). Cada pieza sale de su celda (--dx,
+ * --dy, --rot, --scale, fijos por id y talla: las pequeñas, más) y se monta
+ * sobre las vecinas; tras cerrar una, las vecinas se apartan (--nx, --ny) con
+ * un pequeño rebote. Arrastrar una (plan 020 T234) también mueve --nx/--ny,
+ * sin transición mientras dura ([data-arrastrando]).
  *
  * La rejilla son columnas cuadradas del ancho del propio collage (container
  * query): 6 en el móvil, 12 a partir de 720 px de collage. Las mismas cuentas
@@ -12,8 +14,8 @@
 
 .collage {
   container-type: inline-size;
-  /* Aire para lo que sale de la rejilla (hasta un 9 % de la pieza) y la sombra. */
-  padding: 14px 18px 22px 12px;
+  /* Aire para lo que sale de la rejilla (hasta un 22 % de una pequeña) y la sombra. */
+  padding: 24px 26px 32px 22px;
 }
 
 .collage__grid {
@@ -30,10 +32,20 @@
   position: relative;
   grid-area: var(--area-n);
   min-width: 0;
-  /* Un poco más grande que su celda: así se montan aunque no se desplacen. */
-  transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1.08);
+  /* Más grande que su celda (--scale): así se montan aunque no se desplacen. */
+  transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(var(--scale, 1.08));
   translate: var(--nx, 0px) var(--ny, 0px);
   transition: translate 640ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+/* La que se arrastra sigue al puntero sin retraso y se levanta un poco. */
+.collage__piece[data-arrastrando] {
+  transition: none;
+}
+
+.collage__piece[data-arrastrando] .collage__hit {
+  box-shadow: 10px 10px 0 var(--boia-black);
+  cursor: grabbing;
 }
 
 @container (min-width: 720px) {
@@ -56,7 +68,11 @@
   border-radius: var(--radius);
   background: var(--boia-white);
   box-shadow: 4px 4px 0 var(--boia-black);
-  cursor: zoom-in;
+  cursor: grab;
+  /* El dedo de lado arrastra la pieza; en vertical, la página se desplaza. */
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  user-select: none;
   transition: box-shadow 120ms steps(2);
 }
 
@@ -116,97 +132,9 @@
   background-color: var(--boia-orange-bright);
 }
 
-/* ---- La pieza abierta ---- */
-
-.collage-viewer {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-}
-
-.collage-viewer__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgb(5 7 20 / 0.94);
-  cursor: zoom-out;
-}
-
-.collage-viewer__figure {
-  position: fixed;
-  border: 6px solid var(--boia-white);
-  border-radius: var(--radius);
-  background: var(--boia-black);
-  box-shadow: 8px 8px 0 var(--boia-black);
-  transform-origin: center;
-  will-change: transform;
-}
-
-.collage-viewer__media {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.collage-viewer__close {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: var(--btn-border);
-  border-radius: var(--radius);
-  background: var(--boia-orange);
-  box-shadow: var(--btn-shadow);
-  cursor: pointer;
-  animation: collage-fade 260ms steps(3) both;
-}
-
-.collage-viewer__close:active {
-  box-shadow: var(--btn-shadow-pressed);
-  transform: var(--btn-pressed);
-}
-
-.collage-viewer__close:focus-visible {
-  outline: 3px solid var(--boia-white);
-  outline-offset: 3px;
-}
-
-/* Una X de píxel: dos barras. */
-.collage-viewer__close span,
-.collage-viewer__close span::after {
-  display: block;
-  width: 22px;
-  height: 4px;
-  background: var(--boia-black);
-  transform: rotate(45deg);
-}
-
-.collage-viewer__close span::after {
-  content: '';
-  transform: rotate(90deg);
-}
-
-.collage-viewer[data-fase='closing'] .collage-viewer__close {
-  visibility: hidden;
-}
-
-@keyframes collage-fade {
-  from {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .collage__piece,
   .collage__hit {
     transition: none;
-  }
-
-  .collage-viewer__close {
-    animation: none;
   }
 }

@@ -164,6 +164,116 @@ test('el collage: fotos y clips superpuestos; abrir anima sobre fondo oscuro; ce
   await expect(viewer).toHaveCount(0);
 });
 
+/**
+ * Una pieza que tapa a otra, y un punto de la parte tapada (en pantalla,
+ * `elementFromPoint` da la de encima). Para probar que arrastrarla la destapa.
+ */
+async function coveringPiece(page: Page) {
+  return page.evaluate(() => {
+    const pieces = [...document.querySelectorAll<HTMLElement>('.galeria [data-pieza]')];
+    const owner = (x: number, y: number) =>
+      document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-pieza]')?.dataset.pieza;
+    for (const top of pieces) {
+      const a = top.getBoundingClientRect();
+      // Su centro (por donde se agarra) en pantalla.
+      if (a.top + a.height / 2 < 80 || a.top + a.height / 2 > window.innerHeight - 10) continue;
+      for (const under of pieces) {
+        if (under === top) continue;
+        const b = under.getBoundingClientRect();
+        const l = Math.max(a.left, b.left);
+        const r = Math.min(a.right, b.right);
+        const t = Math.max(a.top, b.top);
+        const btm = Math.min(a.bottom, b.bottom);
+        if (r - l < 24 || btm - t < 24) continue;
+        const x = (l + r) / 2;
+        const y = (t + btm) / 2;
+        if (owner(x, y) !== top.dataset.pieza) continue;
+        // Hacia el lado con sitio dentro del collage, y que baste para destaparla.
+        const grid = top.closest('.collage__grid')!.getBoundingClientRect();
+        const roomRight = grid.right - a.right;
+        const roomLeft = a.left - grid.left;
+        const dir = roomRight >= roomLeft ? 1 : -1;
+        // Lo que tiene que moverse para que el punto quede fuera de ella.
+        const dist = (dir === 1 ? x - a.left : a.right - x) + 16;
+        if (Math.max(roomLeft, roomRight) < dist) continue;
+        return {
+          top: top.dataset.pieza!,
+          under: under.dataset.pieza!,
+          x,
+          y,
+          dir,
+          dist,
+          from: { x: a.left + a.width / 2, y: a.top + a.height / 2 },
+        };
+      }
+    }
+    return null;
+  });
+}
+
+const ownerAt = (page: Page, x: number, y: number) =>
+  page.evaluate(
+    ([px, py]) =>
+      document.elementFromPoint(px!, py!)?.closest<HTMLElement>('[data-pieza]')?.dataset.pieza,
+    [x, y],
+  );
+
+test('arrastrar una pieza la aparta y deja ver la de debajo; sin arrastre, se abre (T234)', async ({
+  page,
+}, info) => {
+  const project = info.project.name;
+  await phone(page, project);
+  await page.goto('/galeria');
+  await expect(page.locator('.galeria [data-pieza]')).toHaveCount(SAMPLE_PHOTOS.length);
+  const found = await coveringPiece(page);
+  expect(found).not.toBeNull();
+  const { top, x, y, dir, dist, from } = found!;
+  const step = dist / 10;
+  const piece = page.locator(`.galeria [data-pieza="${top}"]`);
+  const grid = (await piece.evaluate((el) =>
+    el.closest('.collage__grid')!.getBoundingClientRect().toJSON(),
+  )) as DOMRect;
+  await shot(page, 'arrastre-1-antes', project);
+
+  if (project === 'mobile') {
+    // Con el dedo, de lado (en vertical la página se desplaza).
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', px: number) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' ? [] : [{ x: px, y: from.y }],
+      });
+    await touch('touchStart', from.x);
+    for (let i = 1; i <= 10; i++) await touch('touchMove', from.x + dir * i * step);
+    await touch('touchEnd', from.x + dir * dist);
+  } else {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(from.x + dir * i * step, from.y);
+    await page.mouse.up();
+  }
+  await expect(piece).toHaveAttribute('data-movida', '');
+  // Soltar tras arrastrar no la abre.
+  await expect(page.getByTestId('collage-visor')).toHaveCount(0);
+  // Se apartó, sigue dentro del collage y ya no tapa a la de debajo.
+  const after = (await piece.boundingBox())!;
+  expect(Math.abs(after.x + after.width / 2 - from.x)).toBeGreaterThan(30);
+  expect(after.x).toBeGreaterThanOrEqual(Math.min(grid.left, from.x - after.width / 2) - 2);
+  expect(after.x + after.width).toBeLessThanOrEqual(
+    Math.max(grid.right, from.x + after.width / 2) + 2,
+  );
+  // Donde la tapaba ya no está: se ve lo de debajo (otra pieza, o el fondo
+  // si el punto era la esquina girada de la tapada).
+  expect(await ownerAt(page, x, y)).not.toBe(top);
+  await shot(page, 'arrastre-2-apartada', project);
+
+  // Un toque sin arrastre la abre en grande.
+  await piece.locator('button').click();
+  await expect(page.getByTestId('collage-visor')).toHaveAttribute('data-pieza', top);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('collage-visor')).toHaveCount(0);
+});
+
 /** La isla de evento que abre hoy un evento de la muestra, y ese evento (como admin-fotos.spec). */
 const now = new Date();
 const events = SAMPLE_EVENTS.map((e) => eventSchema.parse(e));

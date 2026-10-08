@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T234: Galería: a real collage, also on the landing and in the world sheet
+
+Qué existe (decisión 8):
+- `lib/landing/collage-layout.ts`: tallas fijas por posición (grande, mediana, pequeña; `sizeAt`), columnas por talla y forma, horizonte con solape de verdad (medianas y pequeñas suben `SIZE_LIFT` fila sobre la de encima), sin tiras de una columna, elige entre las `PACK_LOOKAHEAD` siguientes la que mejor encaja; desplazamiento/giro/escala por talla (`SIZE_LOOSE`; las pequeñas, más y encima), nunca hacia fuera en los bordes. Arrastre: `isDrag` (umbral 6 px) y `dragOffset` (no sale del collage); los empujones al cerrar no tocan una pieza movida a mano.
+- `media-collage.tsx`: arrastrar (ratón; dedo de lado, `touch-action: pan-y`, en vertical la página se desplaza) aparta la pieza, queda encima (`data-movida`) y deja ver la de debajo; un toque sin arrastre la abre; sólo se ignora el click que llega justo tras soltar. El visor va aparte (`collage-viewer.tsx` + `collage-viewer.css`, lazy, precargado en idle). «Reducir movimiento»: sin animaciones ni rebote.
+- El mismo collage en `/galeria`, en el bloque de fotos de la landing (`blocks.tsx`, `React.lazy`: el servidor lo pinta, su JS no está en la ruta crítica; su CSS sí) y en la ficha del Puerto de Fotos del mundo (`app/mar/sheet.tsx`, 6 fotos). Fuera: `photo-tile.tsx` (sin uso) y el CSS de `.photo-grid`/`.photo-placeholder`.
+- Fotos de muestra con imagen y formas variadas: `tools/galeria/fotos.mjs` → `art/galeria/foto-*.webp` (11, arte del proyecto, `muestra`); `SAMPLE_PHOTOS` las nombra.
+- `@boia/contracts/photo-ref` (sin zod): `LOCAL_PHOTO_PREFIX`, `isLocalPhotoRef`, `localPhotoKey`; `photo-image.tsx` carga el almacén IndexedDB sólo si hace falta.
+
+Comandos:
+- `vitest run --exclude '**/packages/db/**'` → exit 0, 262 archivos, 2385 pasan, 1 saltada.
+- `sh tools/spec/checks.sh` → OK. `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; ruta crítica de la landing 199.0 kB gzip (presupuesto 200 kB; main da 197.3 kB en esta máquina).
+
+Pendiente:
+- Margen del presupuesto de la landing: 1 kB.
+
+E2E que Hernán debería correr: `galeria.spec.ts` (caso nuevo de arrastre, ratón y dedo), `eventos.spec.ts` (la home cuenta `#fotos [data-pieza]`), `mar-a-bordo.spec.ts` (ficha de fotos), `admin-fotos.spec.ts`.
+
 ## 2026-10-08 — plan 020 T230: 30-day trash for real data and backups with Storage
 
 Qué existe (decisión 6 del plan 020):

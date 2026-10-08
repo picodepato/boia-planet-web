@@ -3,14 +3,15 @@
 import type { Photo } from '@boia/contracts';
 import {
   type CSSProperties,
+  Suspense,
+  lazy,
+  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { t } from '../../../lib/i18n/web';
 import {
   type Box,
@@ -18,10 +19,20 @@ import {
   type Nudge,
   collageLayout,
   collageRows,
+  dragOffset,
+  isDrag,
   nudgeAfterClose,
 } from '../../../lib/landing/collage-layout';
 import { useMediaUrl } from '../../../lib/photo-image';
 import './collage.css';
+
+/**
+ * El visor (la pieza abierta y sus animaciones) va aparte: no está en la ruta
+ * crítica de la landing (D-26, plan 020 T234). Se pide en cuanto el
+ * navegador está libre, o al tocar una pieza, así que al abrir ya está.
+ */
+const loadViewer = () => import('./collage-viewer');
+const Viewer = lazy(loadViewer);
 
 /**
  * El collage de la Galería (plan 019 T216, decisión 8): fotos y clips cortos
@@ -34,24 +45,42 @@ import './collage.css';
  *   oscuro (FLIP con la Web Animations API).
  * - Cerrar (botón, fondo o Esc): vuelve a su sitio, baja al fondo del montón
  *   y las que la tocaban se apartan un poco, así se ven otras fotos.
+ * - Arrastrar una pieza (ratón, o dedo de lado: en vertical la página sigue
+ *   desplazándose) la aparta y deja ver la de debajo; no sale del collage y
+ *   queda encima. Un toque sin arrastre la abre (plan 020 T234).
  * - Un clip enseña su póster y sólo se reproduce (mudo, en bucle) mientras
  *   está en pantalla; con «reducir movimiento», nunca solo (REQ-COM-032).
  */
 
-/** Duraciones (ms) de abrir y cerrar; 0 con «reducir movimiento». */
-const OPEN_MS = 460;
-const CLOSE_MS = 420;
-const EASE_OUT = 'cubic-bezier(0.2, 0.9, 0.25, 1)';
-const EASE_IN_OUT = 'cubic-bezier(0.6, 0, 0.3, 1)';
+/** El «click» que sigue a soltar un arrastre con el ratón llega en el mismo instante. */
+const CLICK_AFTER_DRAG_MS = 120;
 
-type Phase = 'opening' | 'open' | 'closing';
+export type Phase = 'opening' | 'open' | 'closing';
 
 interface Opened {
   id: string;
   phase: Phase;
 }
 
-function prefersReducedMotion(): boolean {
+/** Un arrastre en curso: desde dónde, con qué empujón empezó y entre qué límites. */
+interface Drag {
+  id: string;
+  pointer: number;
+  x: number;
+  y: number;
+  start: { x: number; y: number };
+  piece: Box;
+  bounds: Box;
+  moved: boolean;
+  last?: { x: number; y: number };
+}
+
+const boxOf = (el: Element): Box => {
+  const r = el.getBoundingClientRect();
+  return { left: r.left, top: r.top, width: r.width, height: r.height };
+};
+
+export function prefersReducedMotion(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -60,32 +89,6 @@ function prefersReducedMotion(): boolean {
 }
 
 const area = (c: CollageCell) => `${c.row} / ${c.col} / span ${c.rowSpan} / span ${c.colSpan}`;
-
-/** El tamaño de la pieza abierta: cabe en la pantalla con margen, sin deformarse. */
-function fitted(photo: Pick<Photo, 'width' | 'height'>): Box {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const maxW = Math.max(120, vw - 32);
-  const maxH = Math.max(120, vh - 112);
-  const scale = Math.min(maxW / photo.width, maxH / photo.height);
-  const width = Math.round(photo.width * scale);
-  const height = Math.round(photo.height * scale);
-  return { left: Math.round((vw - width) / 2), top: Math.round((vh - height) / 2), width, height };
-}
-
-/**
- * La transformación que lleva la pieza abierta (en `to`) a donde está en el
- * collage: centro con centro, escala por el tamaño sin girar (`offsetWidth`)
- * y el giro de la pieza.
- */
-function fromPiece(el: HTMLElement, to: Box, rotate: number): string {
-  const r = el.getBoundingClientRect();
-  const cx = r.left + r.width / 2 - (to.left + to.width / 2);
-  const cy = r.top + r.height / 2 - (to.top + to.height / 2);
-  const sx = (el.offsetWidth || r.width) / to.width;
-  const sy = (el.offsetHeight || r.height) / to.height;
-  return `translate(${cx}px, ${cy}px) rotate(${rotate}deg) scale(${sx}, ${sy})`;
-}
 
 export function MediaCollage({
   items,
@@ -107,6 +110,83 @@ export function MediaCollage({
   const [opened, setOpened] = useState<Opened | null>(null);
   const [nudgeCount, setNudgeCount] = useState(0);
   const refocus = useRef<string | null>(null);
+  const grid = useRef<HTMLUListElement>(null);
+  const drag = useRef<Drag | null>(null);
+  /**
+   * La pieza que se acaba de soltar tras arrastrarla, y cuándo: el «click»
+   * que el ratón manda justo después no la abre (el dedo no lo manda).
+   */
+  const swallow = useRef<{ id: string; at: number } | null>(null);
+  const topZ = useRef(0);
+  const nudgesRef = useRef(nudges);
+  nudgesRef.current = nudges;
+
+  useEffect(() => {
+    const idle = (window as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    if (idle) idle(() => void loadViewer());
+    else window.setTimeout(() => void loadViewer(), 1500);
+  }, []);
+
+  /** La siguiente capa por encima de todas (la pieza arrastrada queda arriba). */
+  const nextZ = () => {
+    let max = topZ.current;
+    for (const z of baseZ.values()) max = Math.max(max, z);
+    for (const n of nudgesRef.current.values()) if (n.z !== undefined) max = Math.max(max, n.z);
+    topZ.current = max + 1;
+    return topZ.current;
+  };
+
+  const onPointerDown = (id: string, e: ReactPointerEvent<HTMLElement>) => {
+    void loadViewer();
+    if (opened || drag.current || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const el = pieces.current.get(id);
+    if (!el || !grid.current) return;
+    const was = nudgesRef.current.get(id);
+    drag.current = {
+      id,
+      pointer: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      start: { x: was?.x ?? 0, y: was?.y ?? 0 },
+      piece: boxOf(el),
+      bounds: boxOf(grid.current),
+      moved: false,
+    };
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLElement>) => {
+    const d = drag.current;
+    if (!d || d.pointer !== e.pointerId) return;
+    const delta = { x: e.clientX - d.x, y: e.clientY - d.y };
+    const el = pieces.current.get(d.id);
+    if (!el) return;
+    if (!d.moved) {
+      if (!isDrag(delta.x, delta.y)) return;
+      d.moved = true;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      el.dataset.arrastrando = '';
+      el.style.zIndex = String(nextZ());
+    }
+    e.preventDefault();
+    // Directo al estilo mientras se mueve (sin renderizar); al soltar, al estado.
+    d.last = dragOffset(d.start, delta, d.piece, d.bounds);
+    el.style.setProperty('--nx', `${d.last.x}px`);
+    el.style.setProperty('--ny', `${d.last.y}px`);
+  };
+
+  const onPointerEnd = (e: ReactPointerEvent<HTMLElement>) => {
+    const d = drag.current;
+    if (!d || d.pointer !== e.pointerId) return;
+    drag.current = null;
+    if (!d.moved) return;
+    const el = pieces.current.get(d.id);
+    if (el) delete el.dataset.arrastrando;
+    const at = d.last ?? d.start;
+    const z = topZ.current;
+    setNudges((n) => new Map(n).set(d.id, { x: at.x, y: at.y, z, dragged: true }));
+    swallow.current = { id: d.id, at: e.timeStamp };
+  };
 
   const close = useCallback(() => {
     setOpened((o) => (o && o.phase !== 'closing' ? { ...o, phase: 'closing' } : o));
@@ -152,7 +232,7 @@ export function MediaCollage({
       data-empujes={nudgeCount}
       style={{ '--rows-n': rows.narrow, '--rows-w': rows.wide } as CSSProperties}
     >
-      <ul className="collage__grid" aria-label={label ?? t('gallery.label')}>
+      <ul ref={grid} className="collage__grid" aria-label={label ?? t('gallery.label')}>
         {layout.map((piece, i) => {
           const photo = items[i]!;
           const nudge = nudges.get(piece.id);
@@ -167,6 +247,8 @@ export function MediaCollage({
               className="collage__piece"
               data-pieza={piece.id}
               data-kind={photo.kind ?? 'image'}
+              data-talla={piece.size}
+              data-movida={nudge?.dragged ? '' : undefined}
               data-album={photo.albumId}
               data-abierta={isOpen ? '' : undefined}
               style={
@@ -176,6 +258,7 @@ export function MediaCollage({
                   '--dx': `${piece.dx}%`,
                   '--dy': `${piece.dy}%`,
                   '--rot': `${piece.rotate}deg`,
+                  '--scale': piece.scale,
                   '--nx': `${nudge?.x ?? 0}px`,
                   '--ny': `${nudge?.y ?? 0}px`,
                   zIndex: nudge?.z ?? piece.z,
@@ -187,7 +270,14 @@ export function MediaCollage({
                 className="collage__hit"
                 aria-label={t('gallery.open', { alt: photo.alt })}
                 aria-haspopup="dialog"
-                onClick={() => {
+                onPointerDown={(e) => onPointerDown(piece.id, e)}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerEnd}
+                onPointerCancel={onPointerEnd}
+                onClick={(e) => {
+                  const after = swallow.current;
+                  swallow.current = null;
+                  if (after?.id === piece.id && e.timeStamp - after.at < CLICK_AFTER_DRAG_MS) return;
                   if (!opened) setOpened({ id: piece.id, phase: 'opening' });
                 }}
               >
@@ -198,15 +288,18 @@ export function MediaCollage({
         })}
       </ul>
       {opened && openedPhoto && openedPiece ? (
-        <Viewer
-          photo={openedPhoto}
-          phase={opened.phase}
-          rotate={openedPiece.rotate}
-          piece={() => pieces.current.get(opened.id)?.querySelector<HTMLElement>('button') ?? null}
-          onOpened={() => setOpened((o) => (o?.phase === 'opening' ? { ...o, phase: 'open' } : o))}
-          onClose={close}
-          onClosed={() => closed(opened.id)}
-        />
+        <Suspense fallback={null}>
+            <Viewer
+            photo={openedPhoto}
+            phase={opened.phase}
+            rotate={openedPiece.rotate}
+            scale={openedPiece.scale}
+            piece={() => pieces.current.get(opened.id)?.querySelector<HTMLElement>('button') ?? null}
+            onOpened={() => setOpened((o) => (o?.phase === 'opening' ? { ...o, phase: 'open' } : o))}
+            onClose={close}
+            onClosed={() => closed(opened.id)}
+          />
+        </Suspense>
       ) : null}
     </div>
   );
@@ -221,7 +314,7 @@ function PieceMedia({ photo, index, active }: { photo: Photo; index: number; act
 }
 
 /** Una imagen fija (foto o póster), o el marcador de muestra (sin texto) si no hay. */
-function Still({
+export function Still({
   photo,
   index,
   className,
@@ -294,161 +387,5 @@ function ClipPiece({ photo, active }: { photo: Photo; active: boolean }) {
         />
       ) : null}
     </span>
-  );
-}
-
-/** La pieza abierta, sobre el fondo oscuro, con sus animaciones de abrir y cerrar. */
-function Viewer({
-  photo,
-  phase,
-  rotate,
-  piece,
-  onOpened,
-  onClose,
-  onClosed,
-}: {
-  photo: Photo;
-  phase: Phase;
-  rotate: number;
-  piece: () => HTMLElement | null;
-  onOpened: () => void;
-  onClose: () => void;
-  onClosed: () => void;
-}) {
-  const figure = useRef<HTMLDivElement>(null);
-  const backdrop = useRef<HTMLDivElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const [box, setBox] = useState<Box | null>(null);
-  const src = useMediaUrl(photo.src);
-  const poster = useMediaUrl(photo.kind === 'video' ? photo.poster : undefined);
-
-  // Dónde acaba la pieza abierta (y si cambia la pantalla, se recoloca).
-  useLayoutEffect(() => {
-    const place = () => setBox(fitted(photo));
-    place();
-    window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
-  }, [photo]);
-
-  // La página no se desplaza debajo; Esc cierra.
-  useEffect(() => {
-    const root = document.documentElement;
-    const before = root.style.overflow;
-    root.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      root.style.overflow = before;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
-
-  // Abrir: de la pieza del collage al centro, y el fondo se oscurece.
-  useLayoutEffect(() => {
-    if (phase !== 'opening' || !box) return;
-    const el = figure.current;
-    const from = piece();
-    const ms = prefersReducedMotion() ? 0 : OPEN_MS;
-    closeButton.current?.focus({ preventScroll: true });
-    if (!el || !from || ms === 0 || typeof el.animate !== 'function') {
-      onOpened();
-      return;
-    }
-    backdrop.current?.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration: ms * 0.7,
-      easing: 'linear',
-      fill: 'both',
-    });
-    const a = el.animate([{ transform: fromPiece(from, box, rotate) }, { transform: 'none' }], {
-      duration: ms,
-      easing: EASE_OUT,
-      fill: 'both',
-    });
-    a.onfinish = onOpened;
-    return () => {
-      a.onfinish = null;
-    };
-    // Sólo al empezar a abrir (box cambia al girar la pantalla, y no hay que repetirlo).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, box === null]);
-
-  // Cerrar: vuelve a su sitio y el fondo se aclara.
-  useLayoutEffect(() => {
-    if (phase !== 'closing' || !box) return;
-    const el = figure.current;
-    const to = piece();
-    const ms = prefersReducedMotion() ? 0 : CLOSE_MS;
-    if (!el || !to || ms === 0 || typeof el.animate !== 'function') {
-      onClosed();
-      return;
-    }
-    el.getAnimations().forEach((x) => x.cancel());
-    backdrop.current?.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: ms,
-      easing: 'linear',
-      fill: 'both',
-    });
-    const a = el.animate([{ transform: 'none' }, { transform: fromPiece(to, box, rotate) }], {
-      duration: ms,
-      easing: EASE_IN_OUT,
-      fill: 'both',
-    });
-    a.onfinish = onClosed;
-    return () => {
-      a.onfinish = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  if (typeof document === 'undefined') return null;
-  return createPortal(
-    <div
-      className="collage-viewer"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('gallery.viewer', { alt: photo.alt })}
-      data-testid="collage-visor"
-      data-fase={phase}
-      data-pieza={photo.id}
-    >
-      <div ref={backdrop} className="collage-viewer__backdrop" onClick={onClose} />
-      {box ? (
-        <div
-          ref={figure}
-          className="collage-viewer__figure"
-          style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
-        >
-          {photo.kind === 'video' && src ? (
-            <video
-              className="collage-viewer__media"
-              src={src}
-              poster={poster ?? undefined}
-              muted
-              loop
-              autoPlay={!prefersReducedMotion()}
-              controls={prefersReducedMotion()}
-              playsInline
-              aria-label={photo.alt}
-              data-testid="collage-visor-video"
-            />
-          ) : (
-            <Still photo={photo} index={0} className="collage-viewer__media" eager />
-          )}
-        </div>
-      ) : null}
-      <button
-        ref={closeButton}
-        type="button"
-        className="collage-viewer__close"
-        aria-label={t('gallery.close')}
-        data-testid="collage-cerrar"
-        onClick={onClose}
-      >
-        <span aria-hidden="true" />
-      </button>
-    </div>,
-    document.body,
   );
 }

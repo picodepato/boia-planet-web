@@ -1,6 +1,6 @@
 import type { Artist } from '@boia/contracts';
 import Link from 'next/link';
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, type ReactNode, Suspense, lazy } from 'react';
 import { ADMIN_PATH } from '../../../lib/admin/paths';
 import {
   ACCESS_COPY,
@@ -18,6 +18,17 @@ import { EventCard } from './event-card';
 import { HeroStills } from './hero-stills';
 import { MerchandiseCatalog } from '../../../lib/merchandise/catalog-view';
 import { MERCHANDISE_PATH, merchandiseContact } from '../../../lib/merchandise/catalog';
+// Con el resto de la landing: el collage llega pintado del servidor (T234).
+import './collage.css';
+
+/**
+ * El collage de la Galería en el bloque de fotos (plan 020 T234): el
+ * servidor lo pinta entero (y su CSS va con la landing), pero su código no
+ * va en la ruta crítica (D-26): el navegador lo pide al hidratar ese bloque.
+ */
+const MediaCollage = lazy(() =>
+  import('./media-collage').then((m) => ({ default: m.MediaCollage })),
+);
 
 /** Lista completa de artistas (v14 §18.1). */
 export const ARTISTS_PAGE = '/artistas';
@@ -340,25 +351,14 @@ export function BlockView({
               </Link>
             </SectionHead>
             <p className="section__display">{t('photos.display')}</p>
-            <ul className="photo-grid">
-              {block.photos.map((p, i) => (
-                <li key={p.id}>
-                  {p.src ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- fotos del Admin, dominio aún sin fijar
-                    <img src={p.src} alt={p.alt} width={p.width} height={p.height} loading="lazy" />
-                  ) : (
-                    <div
-                      className={`photo-placeholder photo-placeholder--${i % 3}`}
-                      role="img"
-                      aria-label={p.alt}
-                      style={{ aspectRatio: `${p.width} / ${p.height}` }}
-                    >
-                      <span aria-hidden="true">{t('photos.placeholder')}</span>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+            {/* El mismo collage que la Galería (plan 020 T234, decisión 8). */}
+            <Suspense fallback={null}>
+              <MediaCollage
+                items={block.photos}
+                label={t('photos.heading')}
+                testId="collage-home"
+              />
+            </Suspense>
             <p className="photos-all">
               <SailLink
                 href={PHOTOS_SAIL_HREF}
