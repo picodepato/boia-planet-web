@@ -208,3 +208,4 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T233 launched · attempt 1 · agent a7808b357956efbaa
 - 2026-10-08 T233 done · merged 5f77a14
 - 2026-10-08 plan 020 done (final test = T233 integration on main, exit 0)
+- 2026-10-08 pushed main 1cc0b95 (Hernán in session)
