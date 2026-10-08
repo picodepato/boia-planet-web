@@ -132,7 +132,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome: Las Calitas GLB (22 476 tris: rock crescent, cove, comments board, glowing speech bubble), Arcilla 2D sprite via `islas_sueltas`, REQ-IDE-054 HECHO · 7920bc6
 
 ## T234 — Galería: a real collage, also on the landing and in the world sheet
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T227
 - Model: opus
 - Skills: frontend-design
@@ -144,10 +144,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - drag a piece aside (mouse and touch) reveals the one underneath; it stays inside the collage; click (without drag) opens it big; reduced motion respected → unit tests for the layout/drag logic + a short screenshot sequence
   - landing critical path ≤ 200 kB gzip → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: collage with mixed sizes and overlap on /galeria, landing and world sheet; drag aside (mouse/touch) reveals the piece below, click opens big; 11 muestra photos from project art; landing 199.0 kB · 955f0ca
 
 ## T233 — Close plan 020: test guide and status
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T226, T227, T228, T229, T230, T231, T232, T234
 - Model: opus
 - Skills: none
@@ -176,7 +176,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 
 - 2026-10-08 T230: deleted member's Carnet moved to `public.member_trash`, account banned + sessions removed; restore fails on `nickname_taken`/`number_taken`; party purge only without purchases/stamps/points; purge run by the backup workflow, by each delete/restore and by an Admin button (no pg_cron); Storage downloaded via public URLs, no new secret; local Admin gets «Borrar fiesta» (agent)
 
+- 2026-10-08 T234: sizes by position pattern, packer may reorder within next 3; horizontal swipe drags, vertical scrolls; hand-moved piece stays on top; landing loads the collage with React.lazy (SSR kept) and the viewer as a separate chunk; `@boia/contracts/photo-ref` zod-free; removed `photo-tile.tsx` (agent)
+
 ## Proposals (new scope)
+- 2026-10-08 T234: landing critical path at 199.0 / 200 kB: only ~1 kB left for future landing work
 - 2026-10-08 T232: design routes `exploracion` and `d_solar` in mapa.json cross Las Calitas; counting it as land would need rerouting
 - 2026-10-08 T229: the local change trash shows the Carnet by user id, not nickname
 - 2026-10-08 T231: `mundos/arcilla/mapa.json` still names the place «Isla del Cañón»; stale `sources_sha256` in other Arcilla place manifests; if ship boia GLBs are regenerated, check mascot-look.test.ts (`ink_gltf` prefix)
@@ -199,3 +202,4 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T232 done · merged 7920bc6
 - 2026-10-08 T234 launched · attempt 1 · agent a7de04004b0c91114
 - 2026-10-08 T230 done · merged 3794e0f
+- 2026-10-08 T234 done · merged 955f0ca
