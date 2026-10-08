@@ -34,7 +34,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 ## Tasks
 
 ## T213 — Three video-game fonts, square corners and new buttons across the site
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -206,7 +206,16 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome:
 
 ## Decisions
+- 2026-10-08 T213: fonts from Google Fonts (all SIL OFL 1.1) instead of 1001freefonts, whose licences are unclear; proposed button style: square, 2px black border, hard offset shadow; popup title/text blue on cream (agent)
+
+- 2026-10-08 T213: fonts = combination 4: Upheaval (titles) / Press Start 2P (buttons) / 8-bit Operator+ (body) (Hernán)
 
 ## Proposals (new scope)
+- 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
 
 ## Log
+- 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
+- 2026-10-08 T213 blocked · asks which font combination (1 pixel / 2 arcade / 3 space) · branch worktree-agent-a2810769cbecd91ff · commit 999eb62
+- 2026-10-08 T213 Hernán (session): new samples with 1001freefonts fonts (commercial/web licence only) → agent resumed
+- 2026-10-08 T213 blocked again · combos 4/5/6 from 1001freefonts · commit a10c62a
+- 2026-10-08 T213 Hernán chose combination 4 → agent resumed
