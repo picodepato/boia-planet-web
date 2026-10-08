@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { PHOTOS_PLACE_ID, PHOTOS_SAIL_HREF } from '../lib/landing/access';
 import { INVITE_COPY } from '../lib/landing/invitations';
 import { SETTINGS_KEY } from '@boia/engine/ui';
-import { heroTickets, pastHero, tap } from './hero-helpers';
+import { headerTickets, openTickets, pastHero, tap } from './hero-helpers';
 
 /**
  * La landing que te lleva en barco (T44, T55): Fotos, Tienda y Tickets abren
@@ -63,7 +63,7 @@ test('Tickets: el panel HTML sigue y «Ver su isla en el mar» abre la isla del 
   page,
 }) => {
   await page.goto(LANDING);
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   const sail = panel.getByTestId('tickets-en-barco');
@@ -77,23 +77,24 @@ test('Tickets: el panel HTML sigue y «Ver su isla en el mar» abre la isla del 
   await expect(marSheet(page)).toHaveAttribute('data-lugar', island);
 });
 
-test('Tickets se ve sin scroll a 360×640 con el CTA 3D y la cabecera nueva', async ({
+test('«Zarpar» se ve sin scroll a 360×640 y la cabecera nueva lleva «Entradas»', async ({
   page,
 }, info) => {
   test.skip(info.project.name !== 'mobile', 'sólo el móvil de 360×640');
   await page.goto(LANDING);
   const vp = page.viewportSize()!;
   expect(vp).toEqual({ width: 360, height: 640 });
-  await expect(page.getByTestId('cta-3d')).toBeVisible();
-  const tickets = heroTickets(page);
-  await expect(tickets).toBeVisible();
-  const box = (await tickets.boundingBox())!;
+  // Decision 4 of 2026-10-08: only «Zarpar» in the hero.
+  const zarpar = page.getByTestId('cta-3d');
+  await expect(zarpar).toBeVisible();
+  const box = (await zarpar.boundingBox())!;
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(vp.height);
   expect(box.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   // La cabecera no se desborda (sale al dejar el hero, T79).
   await pastHero(page);
+  await expect(headerTickets(page)).toBeVisible();
   const header = (await page.locator('.site-header__inner').boundingBox())!;
   expect(header.x + header.width).toBeLessThanOrEqual(vp.width);
 });

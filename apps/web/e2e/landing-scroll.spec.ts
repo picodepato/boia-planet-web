@@ -11,7 +11,8 @@ import { lowContrast, measureContrast } from './contrast';
 /**
  * The landing as one continuous scroll (plan 007 T79; T77's approved design,
  * docs/propuestas/2026-10-03-landing-scroll.md). `/` plays the appearance and
- * rests with «Zarpar», «Entradas» and the scroll hint; the scroll position
+ * rests with «Zarpar» and the scroll hint (since 2026-10-08, decision 4, the
+ * hero has no «Entradas»: it is in the header, past the hero); the scroll position
  * drives the three.js scene (the dive to the sea by the port, then the sea
  * into the night) under the content bands; reduced motion gets the static
  * version (T78's still, no WebGL). Read from `window.__boiaIntro.scroll` and
@@ -22,7 +23,7 @@ import { lowContrast, measureContrast } from './contrast';
  * violation at all (any impact) at rest, after the dive and at the footer,
  * with and without the Tickets panel; the text over the scene keeps WCAG AA
  * contrast measured on the pixels (`contrast.ts`), on the live scene, the
- * still and the night; the skip link, «Zarpar», «Entradas» and the hint are
+ * still and the night; the skip link, «Zarpar» and the hint are
  * reached by keyboard in that order with the white ring; Escape and Back
  * close the panel; reduced motion moves nothing by itself; Back from /mar,
  * no WebGL and a slow scene keep the flow.
@@ -72,6 +73,7 @@ async function snap(page: Page, name: string, task: 'T79' | 'T81' = 'T79') {
 
 const hero = (page: Page) => page.locator('.hero');
 const zarpar = (page: Page) => hero(page).getByRole('link', { name: 'Zarpar', exact: true });
+/** The hero's old «Entradas»: gone since decision 4 (2026-10-08). */
 const entradas = (page: Page) =>
   hero(page).getByRole('link', { name: t('hero.tickets'), exact: true });
 const headerEntradas = (page: Page) =>
@@ -125,16 +127,15 @@ async function onScreen(
   expect(box!.y + box!.height, `${name} acaba sobre el pliegue`).toBeLessThanOrEqual(vp.height);
 }
 
-test('«Entradas» y «Zarpar» en el primer pintado; reposo; un viewport de scroll es el mar y volver lo deshace; sin saltos de maquetación', async ({
+test('«Zarpar», sin «Entradas», en el primer pintado; reposo; un viewport de scroll es el mar y volver lo deshace; sin saltos de maquetación', async ({
   page,
 }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
-  // First paint: both pills on screen, while the appearance has not finished.
+  // First paint: «Zarpar» on screen, while the appearance has not finished.
   await expect(zarpar(page)).toBeVisible();
-  await expect(entradas(page)).toBeVisible();
+  await expect(entradas(page)).toHaveCount(0);
   await onScreen(page, 'Zarpar', await zarpar(page).boundingBox());
-  await onScreen(page, 'Entradas', await entradas(page).boundingBox());
   expect(await zarpar(page).getAttribute('href')).toBe(ZARPAR_HREF);
 
   // After the appearance: the rest.
@@ -204,7 +205,7 @@ test('«Entradas» y «Zarpar» en el primer pintado; reposo; un viewport de scr
   // Back to the top: the rest again, the header waits, one scene all along.
   await scrollTo(page, 0, 'rest');
   await expect(zarpar(page)).toBeVisible();
-  await expect(entradas(page)).toBeVisible();
+  await expect(entradas(page)).toHaveCount(0);
   await expect(page.locator('.hero__hint')).toBeVisible();
   await expect(page.locator('.site-header__inner')).toBeHidden();
   const d = (await page.evaluate(() => window.__boiaIntro))!;
@@ -288,8 +289,7 @@ test.describe('movimiento reducido', () => {
     expect(d.fallback).toBe(true);
     expect(d.scenesCreated).toBe(0);
     await expect(zarpar(page)).toBeVisible();
-    await expect(entradas(page)).toBeVisible();
-    await onScreen(page, 'Entradas', await entradas(page).boundingBox());
+    await expect(entradas(page)).toHaveCount(0);
     await snap(page, 'estatica');
     expect(await cls(page)).toBeLessThan(0.05);
   });
@@ -331,15 +331,17 @@ async function ringed(el: Locator, name: string) {
       width: c.outlineWidth,
       color: c.outlineColor,
       halo: c.boxShadow,
+      // T214: the white sheet below the hero inverts the ring (black, white halo).
+      paper: !!e.closest('#contenido > .section, .site-footer'),
     };
   });
   expect(ring, `${name}: anillo de foco`).toMatchObject({
     visible: true,
     style: 'solid',
     width: '3px',
-    color: 'rgb(255, 255, 255)',
+    color: ring.paper ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)',
   });
-  expect(ring.halo, `${name}: halo oscuro`).toContain('rgb(5, 8, 15)');
+  expect(ring.halo, `${name}: halo`).toContain(ring.paper ? 'rgb(255, 255, 255)' : 'rgb(5, 8, 15)');
 }
 
 const restAfterAppearance = (page: Page) =>
@@ -401,15 +403,6 @@ test('accesibilidad: axe sin violaciones y contraste AA en reposo, tras la zambu
   // At rest (the live scene, «Zarpar» focused as the appearance ends).
   await accessibleHere(page, 'reposo');
   await snap(page, 'reposo', 'T81');
-  // The panel from «Entradas»; Escape closes it and gives the focus back.
-  await tap(page, entradas(page));
-  await expect(ticketsPanel(page)).toBeVisible();
-  await page.waitForTimeout(300);
-  await accessibleHere(page, 'reposo con el panel');
-  await page.keyboard.press('Escape');
-  await expect(ticketsPanel(page)).toBeHidden();
-  expect(new URL(page.url()).hash).toBe('');
-  await expect(entradas(page)).toBeFocused();
 
   // After the dive: the sea by the port and the first band.
   const H = page.viewportSize()!.height;
@@ -465,7 +458,7 @@ test('accesibilidad: axe sin violaciones y contraste AA en reposo, tras la zambu
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
 });
 
-test('teclado: salto al contenido → «Zarpar» → «Entradas» → la pista, con el anillo de foco; la pista baja al mar y el Tab sigue por las bandas', async ({
+test('teclado: salto al contenido → «Zarpar» → la pista, con el anillo de foco; la pista baja al mar y el Tab sigue por las bandas', async ({
   page,
 }) => {
   await page.goto('/');
@@ -476,8 +469,6 @@ test('teclado: salto al contenido → «Zarpar» → «Entradas» → la pista, 
   await ringed(skipLink(page), 'Saltar al contenido');
   await page.keyboard.press('Tab');
   await ringed(zarpar(page), 'Zarpar');
-  await page.keyboard.press('Tab');
-  await ringed(entradas(page), 'Entradas');
   await page.keyboard.press('Tab');
   await ringed(hint(page), 'la pista');
   expect(await pageY(page), 'nada se ha movido aún').toBe(0);
@@ -530,7 +521,7 @@ test('Atrás desde /mar: la landing en reposo, sin la aparición, y el scroll si
   expect(await pageY(page), 'arriba del todo').toBe(0);
   expect(await scrollPhase(page)).toBe('rest');
   await expect(zarpar(page)).toBeVisible();
-  await expect(entradas(page)).toBeVisible();
+  await expect(entradas(page)).toHaveCount(0);
   await scrollTo(page, page.viewportSize()!.height, 'sea');
   await expect(firstBandHeading(page)).toBeInViewport();
 });
@@ -548,7 +539,7 @@ test('sin WebGL: la versión estática, el scroll baja por las bandas y axe no e
   await expect(page.locator('canvas[data-scene]')).toHaveCount(0);
   await expect(page.locator('.hero__still-img').first()).toBeVisible();
   await expect(zarpar(page)).toBeVisible();
-  await expect(entradas(page)).toBeVisible();
+  await expect(entradas(page)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
   await scrollTo(page, page.viewportSize()!.height);
   await expect(firstBandHeading(page)).toBeInViewport();
@@ -556,7 +547,7 @@ test('sin WebGL: la versión estática, el scroll baja por las bandas y axe no e
   expect(await cls(page)).toBeLessThan(0.05);
 });
 
-test('escena lenta: «Zarpar» y «Entradas» a mano mientras carga; después, el reposo y el scroll', async ({
+test('escena lenta: «Zarpar» a mano mientras carga; después, el reposo y el scroll', async ({
   page,
 }) => {
   const DELAY = 4000;
@@ -569,8 +560,7 @@ test('escena lenta: «Zarpar» y «Entradas» a mano mientras carga; después, e
   await page.goto('/');
   await expect(page.locator('.intro-loading')).toBeVisible();
   await expect(zarpar(page)).toBeVisible();
-  await expect(entradas(page)).toBeVisible();
-  await onScreen(page, 'Entradas', await entradas(page).boundingBox());
+  await expect(entradas(page)).toHaveCount(0);
   expect((await page.evaluate(() => window.__boiaIntro))!.phase).toBe('waiting');
   await restAfterAppearance(page);
   expect(hits.length, 'se retrasó el bundle de la escena').toBeGreaterThan(0);

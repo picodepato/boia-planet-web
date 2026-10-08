@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
-import { heroTickets, heroZarpar, tap } from './hero-helpers';
+import { heroZarpar, openTickets, tap } from './hero-helpers';
 import { mar, marSheet, openMar } from './mar-helpers';
 
 /**
@@ -86,7 +86,7 @@ test('`/` → planeta → «Zarpar» → /mar con la bienvenida; la landing → 
   await expect(page.getByTestId('cta-3d')).toHaveAttribute('href', ZARPAR_HREF);
 
   // Tickets abre el panel de muestra.
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   const tickets = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(tickets).toBeVisible();
   await shot(page, info, '2-tickets');

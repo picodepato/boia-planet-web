@@ -5,6 +5,7 @@ import {
   MERCHANDISE_CONTACT,
   MERCHANDISE_NOTICE,
   MERCHANDISE_PRODUCTS,
+  formatPrice,
 } from '../lib/merchandise/catalog';
 import { PRODUCT_ROTATION_MS } from '../lib/merchandise/rotation';
 import { esWeb } from '../lib/i18n/es-web';
@@ -27,12 +28,18 @@ async function shot(page: Page, name: string, project: string) {
   await page.getByTestId(`merchandise-gallery-${first.id}`).scrollIntoViewIfNeeded();
 }
 
-test('landing and internal shop show the same sample merchandise and in-person notice', async ({
+test('landing and internal shop show the same 3 products with name and price (decision 9)', async ({
   page,
 }, info) => {
   await page.goto('/?intro=0#tienda');
   const store = page.locator('#tienda');
-  await expect(store).toContainText(MERCHANDISE_NOTICE);
+  await expect(store.locator('.merchandise__card')).toHaveCount(MERCHANDISE_PRODUCTS.length);
+  for (const product of MERCHANDISE_PRODUCTS) {
+    await expect(store.getByRole('heading', { name: product.name, exact: true })).toBeVisible();
+    await expect(store.getByTestId(`merchandise-price-${product.id}`)).toHaveText(
+      formatPrice(product.priceCents),
+    );
+  }
   await expect(store.locator('img')).toHaveCount(IMAGE_COUNT);
   for (const product of MERCHANDISE_PRODUCTS) {
     for (const image of product.images) {
@@ -46,9 +53,9 @@ test('landing and internal shop show the same sample merchandise and in-person n
   await expect(open).not.toHaveAttribute('target');
   await open.click();
   await expect(page).toHaveURL(/\/tienda$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tienda BOIA');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(esWeb['store.page.title']);
   await expect(page.getByTestId('merchandise-catalog')).toContainText('Fotos y diseños de muestra');
-  await expect(page.locator('.merchandise__badge')).toHaveCount(MERCHANDISE_PRODUCTS.length);
+  await expect(page.locator('.merchandise__card')).toHaveCount(MERCHANDISE_PRODUCTS.length);
   for (const product of MERCHANDISE_PRODUCTS) {
     await page.getByTestId(`merchandise-gallery-${product.id}`).scrollIntoViewIfNeeded();
     for (const image of product.images) {
@@ -82,7 +89,7 @@ test('Ibiza opens the same internal shop and offers a return to sailing', async 
   await expect(page.getByTestId('mar-ficha')).toContainText(MERCHANDISE_NOTICE);
   await open.click();
   await expect(page).toHaveURL(/\/tienda\?from=mar$/);
-  await expect(page.getByTestId('merchandise-back')).toHaveText('Volver al mar');
+  await expect(page.getByTestId('merchandise-back')).toHaveText(esWeb['store.page.backSea']);
   await page.getByTestId('merchandise-back').click();
   await expect(page.getByTestId('mar-canvas')).toBeVisible();
 });
@@ -91,8 +98,9 @@ test('shop is available without JavaScript or a Carnet', async ({ browser }) => 
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('/tienda');
-  await expect(page.getByRole('heading', { name: 'Tienda BOIA', exact: true })).toBeVisible();
-  await expect(page.locator('.merchandise-notice')).toHaveText(MERCHANDISE_NOTICE);
+  await expect(
+    page.getByRole('heading', { name: esWeb['store.page.title'], exact: true }),
+  ).toBeVisible();
   await expect(page.locator('.merchandise__grid img')).toHaveCount(IMAGE_COUNT);
   // Only each product's first image shows; «Comprar» still opens its message.
   const shown = await page
@@ -156,24 +164,31 @@ test('under reduced motion the images stay still, and the dots still show them (
   );
 });
 
-test('pressing buy says it is only sold at the party and links to Instagram (decision 11)', async ({
+test('pressing buy explains each case: party only, or reserve by Instagram DM (decision 9)', async ({
   page,
 }, info) => {
   await page.goto('/?intro=0#tienda');
   const store = page.locator('#tienda');
-  const buy = store.getByTestId('merchandise-buy').first();
-  const message = buy.getByTestId('merchandise-buy-message');
-  await expect(message).toBeHidden();
-  await buy.locator('summary').click();
-  await expect(message).toBeVisible();
-  await expect(message).toHaveText(`${esWeb['store.buy.message']} ${MERCHANDISE_CONTACT.handle}`);
-  const link = message.getByRole('link');
-  await expect(link).toHaveAttribute('href', MERCHANDISE_CONTACT.url);
-  await expect(link).toHaveAttribute('target', '_blank');
-  await expect(link).toHaveAttribute('rel', /noopener/);
-  // The other products' messages stay closed; nothing navigates away.
+  for (const [i, product] of MERCHANDISE_PRODUCTS.entries()) {
+    const buy = store.getByTestId('merchandise-buy').nth(i);
+    const message = buy.getByTestId('merchandise-buy-message');
+    await expect(message).toBeHidden();
+    await buy.locator('summary').click();
+    await expect(message).toBeVisible();
+    if (product.sale === 'party') {
+      await expect(message).toHaveText(esWeb['store.buy.party']);
+      await expect(message.getByRole('link')).toHaveCount(0);
+    } else {
+      await expect(message).toContainText(esWeb['store.buy.reserve']);
+      const link = message.getByRole('link');
+      await expect(link).toHaveAttribute('href', MERCHANDISE_CONTACT.url);
+      await expect(link).toHaveAttribute('target', '_blank');
+      await expect(link).toHaveAttribute('rel', /noopener/);
+    }
+  }
+  // Nothing navigates away.
   await expect(store.getByTestId('merchandise-buy-message').filter({ visible: true })).toHaveCount(
-    1,
+    MERCHANDISE_PRODUCTS.length,
   );
   await expect(page).toHaveURL(/#tienda$/);
   await shot(page, 'comprar', info.project.name);

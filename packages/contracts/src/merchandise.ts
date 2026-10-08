@@ -22,6 +22,14 @@ export const merchandiseProductSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
   description: z.string().min(1),
+  /** Price in whole euro cents (2026-10-08, decision 9). */
+  priceCents: z.number().int().nonnegative(),
+  /**
+   * What «Comprar» explains (decision 9): `party`, sold only by hand at the
+   * party; `reserve`, out of stock, reserved by an Instagram DM and brought
+   * to the next event.
+   */
+  sale: z.enum(['party', 'reserve']),
   /** Rotation order; the first one is what shows without JavaScript. */
   images: z.array(productImageSchema).min(1),
 });

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openHeroTickets, pastHero, tap } from '../hero-helpers';
+import { openTickets, pastHero, tap } from '../hero-helpers';
 import { shot } from './deck-helpers';
 
 /**
@@ -49,13 +49,13 @@ test('hero', async ({ page }) => {
 
 test('hero-entradas', async ({ page }) => {
   await heroEnReposo(page);
-  await openHeroTickets(page);
+  await openTickets(page);
   await shot(page, '02', 'hero-entradas', { respiro: 800 });
 });
 
 test('taquilla', async ({ page }) => {
   await heroEnReposo(page);
-  const panel = await openHeroTickets(page);
+  const panel = await openTickets(page);
   await panel.getByTestId('comprar-halloween-2026').click();
   await expect(page.getByTestId('box-office')).toBeVisible();
   await shot(page, '02', 'taquilla', { respiro: 800 });

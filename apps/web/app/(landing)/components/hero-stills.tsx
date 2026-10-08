@@ -1,3 +1,5 @@
+import { HERO_MEDIA_SRC, heroMediaKind } from '../../../lib/landing/hero-media';
+
 /** T78's stills of the hero scene (`art/landing/`), served by `/api/art`. */
 const STILLS = '/api/art/landing';
 
@@ -18,13 +20,52 @@ const HEIGHT = 1000;
 const STILL_SIZES = `(max-aspect-ratio: ${WIDTH}/${HEIGHT}) ${(100 * WIDTH) / HEIGHT}vh, 100vw`;
 
 /**
+ * The slot for the video or GIF that will replace the stills (decision 4):
+ * the same box as the still, decorative, outside the critical path.
+ */
+function HeroMedia({ src }: { src: string }) {
+  if (heroMediaKind(src) === 'video') {
+    return (
+      <video
+        className="hero__still-img hero__still-media"
+        src={src}
+        width={WIDTH}
+        height={HEIGHT}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="none"
+        aria-hidden="true"
+        data-testid="hero-media"
+      />
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- a GIF or image file from public/
+    <img
+      className="hero__still-img hero__still-media"
+      src={src}
+      width={WIDTH}
+      height={HEIGHT}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      data-testid="hero-media"
+    />
+  );
+}
+
+/**
  * The static version of the hero (plan 007 T79, T77 §9): the Blender render
  * of the sea by the port at golden hour and its night variant, fixed behind
- * the page. Lazy: they only load when the static version shows (CSS
- * `html[data-hero="still"]`, or the Admin's draft preview), so they are not
- * in the landing's critical path. Decorative (`alt=""`). `muestra`.
+ * the page, or the video/GIF of `HERO_MEDIA_SRC` once it is set. Lazy: they
+ * only load when the static version shows (CSS `html[data-hero="still"]`, or
+ * the Admin's draft preview), so they are not in the landing's critical path.
+ * Decorative (`alt=""`). `muestra`.
  */
-export function HeroStills() {
+export function HeroStills({ media = HERO_MEDIA_SRC }: { media?: string | null } = {}) {
+  if (media) return <HeroMedia src={media} />;
   return (
     <>
       {(['hero-still', 'hero-still-noche'] as const).map((name) => (

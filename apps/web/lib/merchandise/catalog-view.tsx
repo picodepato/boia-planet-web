@@ -1,18 +1,54 @@
+import type { MerchandiseProduct } from '@boia/contracts';
 import { t } from '../landing/texts';
 import {
   MERCHANDISE_CONTACT,
   MERCHANDISE_PRODUCTS,
   MERCHANDISE_SAMPLE_NOTICE,
+  formatPrice,
   type MerchandiseContact,
 } from './catalog';
 import { ProductGallery } from './product-gallery';
 import './merchandise.css';
 
+/** What «Comprar» says for each case (2026-10-08, decision 9). */
+function BuyMessage({
+  sale,
+  contact,
+}: {
+  sale: MerchandiseProduct['sale'];
+  contact: MerchandiseContact;
+}) {
+  if (sale === 'party') {
+    return (
+      <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
+        {t('store.buy.party')}
+      </p>
+    );
+  }
+  return (
+    <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
+      {t('store.buy.reserve')}{' '}
+      <a
+        className="merchandise__dm"
+        href={contact.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t('store.buy.instagram.aria', { handle: contact.handle })}
+        data-testid="merchandise-dm"
+      >
+        {t('store.buy.reserve.cta', { handle: contact.handle })}
+      </a>
+    </p>
+  );
+}
+
 /**
- * Shared sample showcase for the home and Ibiza's internal shop. «Comprar» is
- * a disclosure, not a checkout (decision 11): it says the products are only
- * sold at the party and points to Instagram (the contact the Admin set, plan
- * 017 T192). It works without JavaScript.
+ * The store for the home and /tienda (T214, after noartmusic.com): the
+ * products only, each with its photo, name and price. «Comprar» is a
+ * disclosure, not a checkout (decision 9): it explains whether the product
+ * is sold only at the party or, out of stock, is reserved by an Instagram DM
+ * (the contact the Admin set, plan 017 T192) and brought to the next event.
+ * It works without JavaScript.
  */
 export function MerchandiseCatalog({
   products,
@@ -28,13 +64,18 @@ export function MerchandiseCatalog({
       <ul className="merchandise__grid">
         {names.map((name) => {
           const product = MERCHANDISE_PRODUCTS.find((p) => p.name === name);
+          const sale = product?.sale ?? 'party';
           return (
-            <li key={name} className="merchandise__card">
+            <li key={name} className="merchandise__card" data-sale={sale}>
               {product ? <ProductGallery product={product} /> : null}
               <div className="merchandise__copy">
-                <span className="merchandise__badge">Muestra</span>
-                <h3>{name}</h3>
-                {product ? <p>{product.description}</p> : null}
+                <h3 className="merchandise__name">{name}</h3>
+                {product ? (
+                  <p className="merchandise__price" data-testid={`merchandise-price-${product.id}`}>
+                    {formatPrice(product.priceCents)}
+                  </p>
+                ) : null}
+                <p className="merchandise__sale">{t(`store.sale.${sale}`)}</p>
                 <details className="merchandise__buy" data-testid="merchandise-buy">
                   <summary
                     className="button merchandise__buy-button"
@@ -42,19 +83,7 @@ export function MerchandiseCatalog({
                   >
                     {t('store.buy')}
                   </summary>
-                  <p className="merchandise__buy-message" data-testid="merchandise-buy-message">
-                    {t('store.buy.message')}{' '}
-                    <a
-                      href={contact.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={t('store.buy.instagram.aria', {
-                        handle: contact.handle,
-                      })}
-                    >
-                      {contact.handle}
-                    </a>
-                  </p>
+                  <BuyMessage sale={sale} contact={contact} />
                 </details>
               </div>
             </li>

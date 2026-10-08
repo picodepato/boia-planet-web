@@ -10,12 +10,37 @@ type Source = FunnelEventProps['ticket_click_out']['source'];
 /** Ficha de un evento (sin cargar `lib/landing/eventos`, que arrastra los esquemas). */
 const eventPage = (slug: string) => `/eventos/${encodeURIComponent(slug)}`;
 
-/** «31 OCT»: day and short month in the event's time zone. */
-export function displayDate(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone })
-    .format(new Date(iso))
-    .replace('.', '')
-    .toUpperCase();
+/**
+ * The parts of the date square (2026-10-08, decision 5): «05», «DIC», «SÁB»,
+ * in the event's time zone.
+ */
+export function dateParts(
+  iso: string,
+  timeZone: string,
+): { day: string; month: string; weekday: string } {
+  const date = new Date(iso);
+  const part = (opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('es-ES', { ...opts, timeZone })
+      .format(date)
+      .replace('.', '')
+      .toUpperCase();
+  return {
+    day: part({ day: '2-digit' }),
+    month: part({ month: 'short' }),
+    weekday: part({ weekday: 'short' }),
+  };
+}
+
+/** The date in a square, the name beside or below it; the full date is read in `event-card__when`. */
+function DateSquare({ event }: { event: BoiaEvent }) {
+  const { day, month, weekday } = dateParts(event.startsAt, event.timeZone);
+  return (
+    <p className="event-card__square" aria-hidden="true" data-testid={`fecha-${event.id}`}>
+      <span className="event-card__weekday">{weekday}</span>
+      <span className="event-card__day">{day}</span>
+      <span className="event-card__month">{month}</span>
+    </p>
+  );
 }
 
 /** Aviso de un estado sin compra: la nota del Admin o la de siempre (REQ-COM-008). */
@@ -46,7 +71,7 @@ export function EventCard({
   source: Source;
   headingLevel?: 2 | 3;
   featured?: boolean;
-  /** The date as the band's display line («31 OCT»; plan 007 T79, the priority event). */
+  /** The large date square of the priority event (plan 007 T79; decision 5). */
   display?: boolean;
   /**
    * The poster slot (plan 007 T82, P19; T77 §8): the event's poster, or
@@ -68,7 +93,13 @@ export function EventCard({
 
   return (
     <article
-      className={featured ? 'event-card event-card--featured' : 'event-card'}
+      className={[
+        'event-card',
+        featured && 'event-card--featured',
+        display && 'event-card--display',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-evento={event.id}
       data-estado={event.state}
     >
@@ -87,12 +118,7 @@ export function EventCard({
         ) : (
           <p className="event-card__poster">{t('priority.posterSoon')}</p>
         ))}
-      {display && (
-        // The full date is read below (`event-card__when`); this is its display.
-        <p className="event-card__date" aria-hidden="true">
-          {displayDate(event.startsAt, event.timeZone)}
-        </p>
-      )}
+      <DateSquare event={event} />
       <p className="event-card__meta">
         <span className="event-card__format">{eventKicker(event)}</span>
         {event.state !== 'on_sale' && (

@@ -20,6 +20,15 @@ export const MERCHANDISE_CONTACT = catalog.contact;
 
 export type MerchandiseContact = MerchandiseCatalogData['contact'];
 
+/** «20 €», «4,50 €»: the price of a product, from its cents (decision 9). */
+export function formatPrice(cents: number): string {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  }).format(cents / 100);
+}
+
 /**
  * The contact «Comprar» shows (plan 017 T192): the one the Admin set on the
  * home's store block, or `products.json`'s when it set none.

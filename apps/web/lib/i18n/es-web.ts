@@ -99,8 +99,21 @@ const base = {
   // Plan 017 T201 (decisión 11), muestra: comprar no es un checkout.
   'store.buy': 'Comprar',
   'store.buy.aria': 'Comprar {name}',
-  'store.buy.message': 'Sólo a la venta en la fiesta. Si quieres una, escríbenos por Instagram a',
+  // Plan 019 T214 (decisión 9), muestra: los dos casos de «Comprar».
+  'store.sale.party': 'Solo en la fiesta',
+  'store.sale.reserve': 'Sin existencias: se reserva',
+  'store.buy.party':
+    'Este solo se vende en mano en la fiesta: búscalo en el puesto de BOIA en el próximo evento.',
+  'store.buy.reserve':
+    'Ahora no nos quedan. Resérvalo con un mensaje directo en Instagram y te lo llevamos al próximo evento:',
+  'store.buy.reserve.cta': 'Escribir a {handle}',
   'store.buy.instagram.aria': '{handle} en Instagram (se abre en otra pestaña)',
+  'store.page.title': 'Tienda BOIA',
+  'store.page.lead': 'Un poco de la fiesta para llevar.',
+  'store.page.nav': 'Navegación de la tienda',
+  'store.page.home': 'BOIA, inicio',
+  'store.page.backHome': 'Volver a la página principal',
+  'store.page.backSea': 'Volver al mar',
   'store.gallery.label': 'Fotos de {name}',
   'store.gallery.show': '{name}: {kind}',
   'store.image.alone': 'el producto',
@@ -117,6 +130,12 @@ const base = {
   'footer.cookies': 'Preferencias de cookies',
   'footer.copyright': '© BOIA, Alicante',
   'footer.replayIntro': 'Ver la introducción',
+  // T214: the footer's column labels (noartmusic.com's [bracketed] headers).
+  'footer.col.listen': 'escucha',
+  'footer.col.join': 'únete',
+  'footer.col.follow': 'síguenos',
+  'footer.col.legal': 'legal',
+  'footer.col.site': 'la web',
 
   'intro.skip': 'Saltar animación',
   'intro.label': 'Introducción animada',

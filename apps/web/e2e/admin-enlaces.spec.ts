@@ -56,7 +56,11 @@ test('editar un enlace del pie, de contacto y de la tienda en el Admin y verlos 
     page.getByTestId('contacto-datos').getByRole('link', { name: CONTACT.label }),
   ).toHaveAttribute('href', CONTACT.url);
 
-  const buy = page.locator('#tienda').getByTestId('merchandise-buy').first();
+  // A product to reserve links to the Admin's contact (decision 9 of 2026-10-08).
+  const buy = page
+    .locator('#tienda .merchandise__card[data-sale="reserve"]')
+    .getByTestId('merchandise-buy')
+    .first();
   await buy.locator('summary').click();
   const message = buy.getByTestId('merchandise-buy-message');
   await expect(message).toContainText(STORE.handle);

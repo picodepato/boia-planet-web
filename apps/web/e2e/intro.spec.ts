@@ -10,7 +10,8 @@ import { ONLINE_EVENT } from './online-event';
  * D-24; REQ-ENT-001…020, ENT 01–03). La entrada depende sólo de la URL (D-21):
  * `/` a secas reproduce la aparición en cada carga completa, también con
  * etiquetas de campaña o de compartir; una URL que apunta a algo concreto
- * nace en reposo, sin aparición. En reposo están «Zarpar», «Entradas» y la
+ * nace en reposo, sin aparición. En reposo están «Zarpar» (sólo él desde la
+ * decisión 4 de 2026-10-08: «Entradas» va en la cabecera, al dejar el hero) y la
  * pista del scroll (plan 007: sin «Saltar animación» ni avance automático);
  * «Zarpar» se zambulle en el puerto del planeta y acaba en /mar con la
  * bienvenida de la boia abierta (T64). Sin escena (movimiento reducido, sin
@@ -50,7 +51,8 @@ async function waitStatic(page: Page, timeout = 20_000): Promise<Diag> {
 
 const hero = (page: Page) => page.locator('.hero');
 const worldCta = (page: Page) => page.getByTestId('cta-3d');
-const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Entradas', exact: true });
+const headerTickets = (page: Page) =>
+  page.locator('.site-header').getByRole('link', { name: 'Entradas', exact: true });
 const ticketsPanel = (page: Page) => page.getByRole('dialog', { name: 'Elige tu evento' });
 const canvases = (page: Page) => page.locator('.hero__scene canvas');
 const title = (page: Page) => page.locator('.hero__wordmark');
@@ -114,8 +116,8 @@ async function inTheGame(page: Page): Promise<Diag> {
 }
 
 /** El elemento que recibe un toque en el centro de `el` es `el` o algo suyo (ENT 02). */
-async function receivesTaps(page: Page, testId: 'cta-3d' | 'tickets') {
-  const el = testId === 'cta-3d' ? worldCta(page) : heroTickets(page);
+async function receivesTaps(page: Page, testId: 'cta-3d') {
+  const el = worldCta(page);
   const box = (await el.boundingBox())!;
   const href = await el.getAttribute('href');
   const hit = await page.evaluate(
@@ -125,16 +127,15 @@ async function receivesTaps(page: Page, testId: 'cta-3d' | 'tickets') {
   expect(hit, `${testId} recibe el toque`).toBe(href);
 }
 
-/** El hero tiene exactamente dos botones: «Zarpar» (el mar 3D) y «Entradas» (plan 007). */
-async function twoHeroButtons(page: Page) {
+/** El hero tiene un solo botón: «Zarpar» (el mar 3D; decisión 4 de 2026-10-08). */
+async function oneHeroButton(page: Page) {
   const actions = hero(page).locator('.hero__actions a');
-  await expect(actions).toHaveCount(2);
+  await expect(actions).toHaveCount(1);
   expect(await actions.evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual([
     ZARPAR_HREF,
-    '#tickets',
   ]);
   await expect(worldCta(page)).toBeVisible();
-  await expect(heroTickets(page)).toBeVisible();
+  await expect(hero(page).getByRole('link', { name: 'Entradas', exact: true })).toHaveCount(0);
   await expect(hero(page).locator('a[href="/juego"]')).toHaveCount(0);
 }
 
@@ -169,7 +170,7 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
 
-  // Acto 1: el planeta aparece. Sólo hay dos acciones, y ninguna obligatoria.
+  // Acto 1: el planeta aparece. Sólo hay una acción, y no es obligatoria.
   await phaseIs(page, 'appearing');
   // Lo que se puede pulsar en pantalla durante la aparición, leído de una vez con la fase.
   const during = await page.evaluate(() => ({
@@ -190,7 +191,7 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
       .map((el) => el.innerText.trim()),
   }));
   expect(during.phase).toBe('appearing');
-  expect(during.actions).toEqual(['Zarpar', 'Entradas']);
+  expect(during.actions).toEqual(['Zarpar']);
   await expect(canvases(page)).toHaveCount(1);
   await expect(canvases(page)).toHaveAttribute('data-scene', 'boia-intro-scene');
 
@@ -212,7 +213,6 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
   const pose = await titlePose(page);
   await page.waitForTimeout(400);
   expect(await titlePose(page), 'las letras se mueven en reposo').not.toBe(pose);
-  await expect(heroTickets(page)).toBeVisible();
   // El planeta es el de /mar: el mundo activo, con exactamente sus islas (T64).
   const ready = (await diag(page))!;
   expect(ready.world).toBe(WORLD_REGISTRY.defaultId);
@@ -254,7 +254,7 @@ test('`/`: el planeta de /mar, luego «BOIA» y «Zarpar»; al pulsar, se zambul
     () => window.__boiaIntro?.mode === 'direct' && window.__boiaIntro.phase === 'paused',
   );
   expect((await diag(page))!.history).toEqual(['paused']);
-  await twoHeroButtons(page);
+  await oneHeroButton(page);
 });
 
 test('enlaces compartidos (`?si=`, `?utm_source=`, `?ref=`) también reproducen la entrada (T57)', async ({
@@ -285,10 +285,9 @@ test('una escena lenta (más que el antiguo plazo de 2 s) no se salta la entrada
   });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'intro');
-  // Mientras tanto: «Cargando», con «Entradas» y «Zarpar» a mano.
+  // Mientras tanto: «Cargando», con «Zarpar» a mano.
   await expect(page.locator('.intro-loading')).toBeVisible();
   await expect(page.locator('.intro-loading')).toContainText('Cargando');
-  await expect(heroTickets(page)).toBeVisible();
   await expect(enterButton(page)).toBeVisible();
   await page.waitForTimeout(2600);
   expect((await diag(page))!.phase, 'sigue esperando a la escena').toBe('waiting');
@@ -315,7 +314,7 @@ test('una escena que no llega en el plazo: «Cargando» y luego la versión est�
   const d = await waitStatic(page, DEFAULT_PLANET_INTRO.loadBudgetMs + 15_000);
   expect(d.outcome).toBe('none');
   expect(d.history).not.toContain('appearing');
-  await twoHeroButtons(page);
+  await oneHeroButton(page);
 });
 
 test('abierta en segundo plano: la entrada espera y se ve al mirar la pestaña (T57)', async ({
@@ -356,40 +355,6 @@ test('abierta en segundo plano: la entrada espera y se ve al mirar la pestaña (
   expect(d.appearedMs!).toBeGreaterThanOrEqual(DEFAULT_PLANET_INTRO.appear.durationMs);
 });
 
-test('«Entradas» durante la aparición abre Tickets y deja el hero en reposo (REQ-ENT-002)', async ({
-  page,
-}) => {
-  await page.goto('/');
-  // «Entradas» pressed in the page as soon as the appearance starts: the
-  // appearance lasts 1.4 s and, on a loaded machine, a click sent from the
-  // test (or `locator.click()` waiting for the fading-in button to be
-  // "stable") could land after it ended (T81).
-  const pressedIn = await page.evaluate(
-    () =>
-      new Promise<string>((resolve) => {
-        const tick = () => {
-          const phase = window.__boiaIntro?.phase;
-          if (phase !== 'appearing' && phase !== 'waiting' && phase !== undefined)
-            return resolve(phase);
-          if (phase !== 'appearing') return void requestAnimationFrame(tick);
-          document.querySelector<HTMLElement>('.hero [data-tickets-open="hero"]')!.click();
-          resolve(phase);
-        };
-        tick();
-      }),
-  );
-  expect(pressedIn, 'pulsado durante la aparición').toBe('appearing');
-  await expect(ticketsPanel(page)).toBeVisible();
-  const d = await waitRest(page, 3000);
-  expect(d.outcome).toBe('skipped');
-  expect(d.history).not.toContain('landing');
-  expect(new URL(page.url()).pathname).toBe('/');
-  expect(d.exit).toBeNull();
-  // La vista de la landing cuenta al pasar el hero con el scroll (plan 007), no aquí.
-  expect(await landingViews(page)).toEqual([]);
-  expect(await exploreSources(page)).toEqual([]);
-});
-
 test('un scroll durante la aparición la adelanta al reposo y la escena sigue el scroll (plan 007)', async ({
   page,
 }) => {
@@ -424,7 +389,7 @@ test('botón pulsado dos veces: un solo «Zarpar», una sola escena, un solo via
   await expect(page.locator('canvas[data-scene="boia-intro-scene"]')).toHaveCount(0);
 });
 
-test('Escape cinco veces en reposo: nada cambia, una escena, los dos botones (REQ-ENT-008, ENT 03)', async ({
+test('Escape cinco veces en reposo: nada cambia, una escena, el botón (REQ-ENT-008, ENT 03)', async ({
   page,
 }) => {
   await page.goto('/');
@@ -435,8 +400,7 @@ test('Escape cinco veces en reposo: nada cambia, una escena, los dos botones (RE
   expect(d.history).toEqual(['waiting', 'appearing', 'paused']);
   await oneScene(page);
   expect(new URL(page.url()).pathname).toBe('/');
-  await twoHeroButtons(page);
-  await receivesTaps(page, 'tickets');
+  await oneHeroButton(page);
   await receivesTaps(page, 'cta-3d');
   // El planeta en reposo, entero en la vista.
   const pose = (await diag(page))!.pose!;
@@ -533,7 +497,6 @@ test.describe('movimiento reducido', () => {
     await expect(page.locator('html')).toHaveAttribute('data-entry', 'direct');
     const d = await waitStatic(page);
     expect(d.scenesCreated).toBe(0);
-    await receivesTaps(page, 'tickets');
   });
 });
 
@@ -553,9 +516,12 @@ test('motor bloqueado: la versión estática y Tickets funcionando (REQ-ENT-017,
   expect(d.sceneStatus).toBe('failed');
   expect(d.worldsAlive).toBe(0);
   await expect(canvases(page)).toHaveCount(0);
-  await twoHeroButtons(page);
+  await oneHeroButton(page);
 
-  await heroTickets(page).click();
+  // «Entradas», en la cabecera al dejar el hero.
+  await page.evaluate(() => window.scrollTo({ top: innerHeight * 1.6, behavior: 'instant' }));
+  await expect(page.locator('.site-header__inner')).toBeVisible();
+  await headerTickets(page).click();
   await expect(ticketsPanel(page)).toBeVisible();
   // El evento con checkout online (Halloween y SONIDO van a taquilla, T199).
   const buy = ticketsPanel(page).getByTestId(`comprar-${ONLINE_EVENT.id}`);
@@ -584,7 +550,7 @@ test('sin WebGL: la versión estática enseguida, sin canvas', async ({ page }) 
   expect(d.outcome).toBe('none');
   expect(d.sceneStatus).toBe('failed');
   await expect(canvases(page)).toHaveCount(0);
-  await twoHeroButtons(page);
+  await oneHeroButton(page);
 });
 
 test('cada carga completa de `/` reproduce la entrada, aunque ya se viera (D-21, REQ-ENT-009)', async ({
@@ -622,7 +588,7 @@ test('una URL que apunta a algo nace en reposo; «Ver la introducción» la repi
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'direct');
   const d = await waitRest(page);
   expect(d.history).toEqual(['paused']);
-  await twoHeroButtons(page);
+  await oneHeroButton(page);
 
   // Un parámetro de la web: directa.
   await page.goto('/?menu=carnet');
@@ -657,7 +623,7 @@ test('volver a `/` navegando dentro de la web no repite la entrada (D-21)', asyn
     ).toBe(true);
     await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.*/);
     expect((await diag(page))!.history).toEqual(['paused']);
-    await twoHeroButtons(page);
+    await oneHeroButton(page);
   };
 
   // `/` con su entrada → una página de la web → vuelta a `/`.

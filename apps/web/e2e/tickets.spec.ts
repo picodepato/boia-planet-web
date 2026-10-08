@@ -7,7 +7,7 @@ import { t } from '../lib/i18n/web';
 import { CARNET_CREATE_HREF } from '../lib/landing/access';
 import { CHECKOUT_COPY } from '../lib/ticketing/copy';
 import { TICKET_TRIGGER } from '../lib/ticketing/sandbox';
-import { heroTickets, tap } from './hero-helpers';
+import { openTickets } from './hero-helpers';
 import { marSheet, openMar } from './mar-helpers';
 import { BOX_OFFICE_EVENTS, ONLINE_EVENT } from './online-event';
 
@@ -47,7 +47,7 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
 
   // Landing → Tickets → «Comprar entradas». Con un parámetro, sin cinemática (D-21).
   await page.goto('/?intro=0');
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   await panel.getByRole('button', { name: CHECKOUT_COPY.buyAria(landingEvent.name) }).click();
@@ -130,7 +130,7 @@ test('Halloween y SONIDO: taquilla con el descuento del Carnet, en la landing y 
   const message = t('ticketing.boxOffice.message', { euros: '2' });
 
   await page.goto('/?intro=0');
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   for (const e of BOX_OFFICE_EVENTS) {

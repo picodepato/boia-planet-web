@@ -17,11 +17,7 @@ import { BrandLogo } from './brand-logo';
 import { EventCard } from './event-card';
 import { HeroStills } from './hero-stills';
 import { MerchandiseCatalog } from '../../../lib/merchandise/catalog-view';
-import {
-  MERCHANDISE_NOTICE,
-  MERCHANDISE_PATH,
-  merchandiseContact,
-} from '../../../lib/merchandise/catalog';
+import { MERCHANDISE_PATH, merchandiseContact } from '../../../lib/merchandise/catalog';
 
 /** Lista completa de artistas (v14 §18.1). */
 export const ARTISTS_PAGE = '/artistas';
@@ -103,13 +99,16 @@ function PhilosophyBody({
 }: {
   block: { paragraphs: string[]; verbs: { verb: string; text: string }[] };
 }) {
+  // T214: the verbs as the large statement on the left, the paragraphs on the right.
   return (
-    <>
-      {block.paragraphs.map((p) => (
-        <p key={p} className="philosophy__text">
-          {p}
-        </p>
-      ))}
+    <div className="philosophy">
+      <div className="philosophy__body">
+        {block.paragraphs.map((p) => (
+          <p key={p} className="philosophy__text">
+            {p}
+          </p>
+        ))}
+      </div>
       {block.verbs.length > 0 && (
         <ul className="philosophy__verbs">
           {block.verbs.map((v) => (
@@ -119,7 +118,23 @@ function PhilosophyBody({
           ))}
         </ul>
       )}
-    </>
+    </div>
+  );
+}
+
+/**
+ * The head of a section (T214, after noartmusic.com): the label on the left
+ * (the h2 keeps its id and text) and, when the section has a page, its link
+ * on the right.
+ */
+function SectionHead({ id, title, children }: { id: string; title: string; children?: ReactNode }) {
+  return (
+    <div className="sheet-head">
+      <h2 id={id} className="section__title sheet-head__title">
+        {title}
+      </h2>
+      {children}
+    </div>
   );
 }
 
@@ -182,14 +197,7 @@ export function BlockView({
                 </a>
                 <p className="hero__discount-hint">{t('hero.explore.discountHint')}</p>
               </div>
-              <a
-                className="button button--tickets"
-                href="#tickets"
-                data-tickets-open="hero"
-                data-intro-skip=""
-              >
-                {t('hero.tickets')}
-              </a>
+              {/* 2026-10-08 (decision 4): only «Zarpar»; the tickets are one scroll down. */}
             </div>
             <button type="button" className="hero__hint" data-hero-hint="">
               {t('hero.scrollHint')}
@@ -208,9 +216,7 @@ export function BlockView({
       return (
         <section className="section" aria-labelledby="priority-title" data-block={block.id}>
           <div className="section__inner">
-            <h2 id="priority-title" className="section__title">
-              {t('priority.heading')}
-            </h2>
+            <SectionHead id="priority-title" title={t('priority.heading')} />
             <EventCard
               event={block.event}
               artists={artists}
@@ -233,10 +239,8 @@ export function BlockView({
           data-block={block.id}
         >
           <div className="section__inner">
-            <h2 id="upcoming-title" className="section__title">
-              {t('upcoming.heading')}
-            </h2>
-            <ul className="card-grid">
+            <SectionHead id="upcoming-title" title={t('upcoming.heading')} />
+            <ul className="card-grid event-list">
               {block.events.map((e) => (
                 <li key={e.id}>
                   <EventCard
@@ -261,9 +265,17 @@ export function BlockView({
           data-block={block.id}
         >
           <div className="section__inner">
-            <h2 id="artists-title" className="section__title">
-              {t('artists.heading')}
-            </h2>
+            <SectionHead id="artists-title" title={t('artists.heading')}>
+              {/* La lista completa es una página: enlazable y sin JS ni WebGL (T12). */}
+              <Link
+                className="sheet-more"
+                href={ARTISTS_PAGE}
+                prefetch={false}
+                data-testid="ver-artistas"
+              >
+                {t('artists.all')}
+              </Link>
+            </SectionHead>
             <p className="section__lead">{block.intro ?? t('artists.intro')}</p>
             <ArtistRotator
               artists={block.rotation}
@@ -274,18 +286,9 @@ export function BlockView({
                 genres: t('artists.genres'),
               }}
             />
-            {/* La lista completa es una página: enlazable y sin JS ni WebGL (T12). */}
-            <p className="artists-all">
-              <Link
-                className="button button--ghost"
-                href={ARTISTS_PAGE}
-                prefetch={false}
-                data-testid="ver-artistas"
-              >
-                {t('artists.all')}
-              </Link>
-              {/* BOIA's playlist (plan 007 T79): a plain link, no player, nothing from Spotify. */}
-              {social?.spotify ? (
+            {/* BOIA's playlist (plan 007 T79): a plain link, no player, nothing from Spotify. */}
+            {social?.spotify ? (
+              <p className="artists-all">
                 <a
                   className="listen-link"
                   href={social.spotify}
@@ -296,8 +299,8 @@ export function BlockView({
                 >
                   {t('artists.spotify')} <span aria-hidden="true">↗</span>
                 </a>
-              ) : null}
-            </p>
+              </p>
+            ) : null}
           </div>
         </section>
       );
@@ -312,9 +315,7 @@ export function BlockView({
           data-block={block.id}
         >
           <div className="section__inner">
-            <h2 id="philosophy-title" className="section__title">
-              {t('philosophy.heading')}
-            </h2>
+            <SectionHead id="philosophy-title" title={t('philosophy.heading')} />
             <PhilosophyBody block={block} />
           </div>
         </section>
@@ -329,9 +330,18 @@ export function BlockView({
           data-block={block.id}
         >
           <div className="section__inner">
-            <h2 id="photos-title" className="section__title">
-              {t('photos.heading')}
-            </h2>
+            <SectionHead id="photos-title" title={t('photos.heading')}>
+              {/* Sólo la selección; todas, por isla y por evento, en su página (REQ-COM-031). */}
+              <Link
+                className="sheet-more"
+                href={PHOTOS_PAGE}
+                prefetch={false}
+                aria-label={PHOTOS_HOME_COPY.allAria}
+                data-testid="ver-fotos"
+              >
+                {PHOTOS_HOME_COPY.all}
+              </Link>
+            </SectionHead>
             <p className="section__display">{t('photos.display')}</p>
             <ul className="photo-grid">
               {block.photos.map((p, i) => (
@@ -352,17 +362,7 @@ export function BlockView({
                 </li>
               ))}
             </ul>
-            {/* Sólo la selección; todas, por isla y por evento, en su página (REQ-COM-031). */}
             <p className="photos-all">
-              <Link
-                className="button button--ghost"
-                href={PHOTOS_PAGE}
-                prefetch={false}
-                aria-label={PHOTOS_HOME_COPY.allAria}
-                data-testid="ver-fotos"
-              >
-                {PHOTOS_HOME_COPY.all}
-              </Link>
               <SailLink
                 href={PHOTOS_SAIL_HREF}
                 label={ACCESS_COPY.sailPhotos}
@@ -383,21 +383,19 @@ export function BlockView({
           data-block={block.id}
         >
           <div className="section__inner">
-            <h2 id="store-title" className="section__title">
-              {t('store.heading')}
-            </h2>
+            <SectionHead id="store-title" title={t('store.heading')}>
+              <Link
+                className="sheet-more"
+                href={MERCHANDISE_PATH}
+                prefetch={false}
+                data-testid="merchandise-open"
+                aria-label={t('store.internal.aria')}
+              >
+                {t('store.cta')}
+              </Link>
+            </SectionHead>
             <p className="section__lead">{t('store.intro')}</p>
-            <p className="merchandise-notice">{MERCHANDISE_NOTICE}</p>
             <MerchandiseCatalog products={block.products} contact={merchandiseContact(block)} />
-            <Link
-              className="button button--secondary"
-              href={MERCHANDISE_PATH}
-              prefetch={false}
-              data-testid="merchandise-open"
-              aria-label={t('store.internal.aria')}
-            >
-              {t('store.cta')}
-            </Link>
             <p className="sail-row">
               <SailLink
                 href={STORE_SAIL_HREF}
@@ -419,9 +417,7 @@ export function BlockView({
           data-block={block.id}
         >
           <div className="section__inner">
-            <h2 id="contact-title" className="section__title">
-              {t('contact.heading')}
-            </h2>
+            <SectionHead id="contact-title" title={t('contact.heading')} />
             {/* La Filosofía, dentro de Contacto (T65): «Contacto» del juego lleva a las dos. */}
             {block.philosophy ? (
               <div
@@ -436,131 +432,159 @@ export function BlockView({
                 <PhilosophyBody block={block.philosophy} />
               </div>
             ) : null}
-            {block.email || block.links.length > 0 ? (
-              <h3 className="contact__subtitle">{t('contact.data')}</h3>
-            ) : null}
-            <ul className="link-list" data-testid="contacto-datos">
-              {block.email && (
-                <li>
-                  <a href={`mailto:${block.email}`}>
-                    {t('contact.email')}: {block.email}
-                  </a>
-                </li>
-              )}
-              {block.links.map((l) => (
-                <li key={l.url}>
-                  <a href={l.url} target="_blank" rel="noopener noreferrer">
-                    {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div className="contact__data">
+              {block.email || block.links.length > 0 ? (
+                <h3 className="contact__subtitle">{t('contact.data')}</h3>
+              ) : null}
+              <ul className="link-list" data-testid="contacto-datos">
+                {block.email && (
+                  <li>
+                    <a href={`mailto:${block.email}`}>
+                      {t('contact.email')}: {block.email}
+                    </a>
+                  </li>
+                )}
+                {block.links.map((l) => (
+                  <li key={l.url}>
+                    <a href={l.url} target="_blank" rel="noopener noreferrer">
+                      {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
       );
 
     case 'footer':
+      // T214, after noartmusic.com: one framed box; the large wordmark across
+      // its top, then the small print on the left and the links in labelled
+      // columns on the right.
       return (
         <footer className="site-footer" data-block={block.id}>
           <div className="section__inner site-footer__inner">
-            {/* The BOIA wordmark, large on the night sea (plan 007 T79, Hernán). */}
+            {/* The BOIA wordmark, large (plan 007 T79, Hernán). */}
             <p className="site-footer__brand">
               <BrandLogo size="footer" variant="wordmark" label={t('intro.logoAlt')} />
             </p>
-            {social?.spotify ? (
-              <p className="site-footer__listen">
-                <a
-                  className="listen-link"
-                  href={social.spotify}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={t('artists.spotify.aria')}
-                  data-testid="pie-spotify"
-                >
-                  {t('artists.spotify')} <span aria-hidden="true">↗</span>
-                </a>
-              </p>
-            ) : null}
-            {/* Invitación voluntaria, sin formulario (REQ-ENT-032, T44). */}
-            <section
-              className="footer-invite"
-              aria-label={ACCESS_COPY.footerInviteLabel}
-              data-testid="pie-invitacion"
-            >
-              <p className="footer-invite__item">
-                {ACCESS_COPY.footerCarnet}{' '}
-                <a href={CARNET_CREATE_HREF} data-testid="pie-crear-carnet">
-                  {ACCESS_COPY.footerCarnetCta}
-                </a>
-              </p>
-              {social?.whatsapp ? (
+            <div className="site-footer__side">
+              <p className="site-footer__small">{t('footer.copyright')}</p>
+              <p className="site-footer__small">{t('site.sampleNotice')}</p>
+            </div>
+            <div className="site-footer__cols">
+              {social?.spotify ? (
+                <div className="site-footer__col">
+                  <p className="site-footer__col-title" aria-hidden="true">
+                    {t('footer.col.listen')}
+                  </p>
+                  <p className="site-footer__listen">
+                    <a
+                      className="listen-link"
+                      href={social.spotify}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={t('artists.spotify.aria')}
+                      data-testid="pie-spotify"
+                    >
+                      {t('artists.spotify')} <span aria-hidden="true">↗</span>
+                    </a>
+                  </p>
+                </div>
+              ) : null}
+              {/* Invitación voluntaria, sin formulario (REQ-ENT-032, T44). */}
+              <section
+                className="site-footer__col footer-invite"
+                aria-label={ACCESS_COPY.footerInviteLabel}
+                data-testid="pie-invitacion"
+              >
+                <p className="site-footer__col-title" aria-hidden="true">
+                  {t('footer.col.join')}
+                </p>
                 <p className="footer-invite__item">
-                  {ACCESS_COPY.footerWhatsapp}{' '}
-                  <a
-                    href={social.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={ACCESS_COPY.whatsappAria}
-                    data-testid="pie-whatsapp"
-                  >
-                    {ACCESS_COPY.whatsappCta} ↗
+                  {ACCESS_COPY.footerCarnet}{' '}
+                  <a href={CARNET_CREATE_HREF} data-testid="pie-crear-carnet">
+                    {ACCESS_COPY.footerCarnetCta}
                   </a>
                 </p>
-              ) : null}
-            </section>
-            {block.officialLinks.length > 0 && (
-              <nav aria-label={t('footer.official')}>
-                <ul className="link-list link-list--inline">
-                  {/* The playlist has its own line above, when it is there. */}
-                  {block.officialLinks
-                    .filter((l) => !(social?.spotify && l.url === social.spotify))
-                    .map((l) => (
-                      <li key={l.url}>
-                        <a href={l.url} target="_blank" rel="noopener noreferrer">
-                          {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
-                        </a>
-                      </li>
-                    ))}
+                {social?.whatsapp ? (
+                  <p className="footer-invite__item">
+                    {ACCESS_COPY.footerWhatsapp}{' '}
+                    <a
+                      href={social.whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={ACCESS_COPY.whatsappAria}
+                      data-testid="pie-whatsapp"
+                    >
+                      {ACCESS_COPY.whatsappCta} ↗
+                    </a>
+                  </p>
+                ) : null}
+              </section>
+              {block.officialLinks.length > 0 && (
+                <nav className="site-footer__col" aria-label={t('footer.official')}>
+                  <p className="site-footer__col-title" aria-hidden="true">
+                    {t('footer.col.follow')}
+                  </p>
+                  <ul className="link-list">
+                    {/* The playlist has its own column, when it is there. */}
+                    {block.officialLinks
+                      .filter((l) => !(social?.spotify && l.url === social.spotify))
+                      .map((l) => (
+                        <li key={l.url}>
+                          <a href={l.url} target="_blank" rel="noopener noreferrer">
+                            {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
+                          </a>
+                        </li>
+                      ))}
+                  </ul>
+                </nav>
+              )}
+              <nav className="site-footer__col" aria-label={t('footer.legal')}>
+                <p className="site-footer__col-title" aria-hidden="true">
+                  {t('footer.col.legal')}
+                </p>
+                <ul className="link-list">
+                  <li>
+                    <Link href="/legal/privacidad" prefetch={false}>
+                      {t('footer.privacy')}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/legal/aviso-legal" prefetch={false}>
+                      {t('footer.legalNotice')}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/legal/cookies" prefetch={false}>
+                      {t('footer.cookies')}
+                    </Link>
+                  </li>
                 </ul>
               </nav>
-            )}
-            <nav aria-label={t('footer.legal')}>
-              <ul className="link-list link-list--inline">
-                <li>
-                  <Link href="/legal/privacidad" prefetch={false}>
-                    {t('footer.privacy')}
+              <div className="site-footer__col">
+                <p className="site-footer__col-title" aria-hidden="true">
+                  {t('footer.col.site')}
+                </p>
+                <p className="site-footer__small">
+                  {/* Carga completa a propósito: la entrada la decide el script de arranque. */}
+                  {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                  <a href="/?intro=1">{t('footer.replayIntro')}</a>
+                </p>
+                <p className="site-footer__small">
+                  {/* Versión de prueba (D-20, REQ-ADM-039): el Admin sin login. */}
+                  <Link
+                    href={ADMIN_PATH}
+                    prefetch={false}
+                    data-testid="probar-admin"
+                    title={t('footer.tryAdmin.hint')}
+                  >
+                    {t('footer.tryAdmin')}
                   </Link>
-                </li>
-                <li>
-                  <Link href="/legal/aviso-legal" prefetch={false}>
-                    {t('footer.legalNotice')}
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/legal/cookies" prefetch={false}>
-                    {t('footer.cookies')}
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-            <p className="site-footer__small">
-              {/* Carga completa a propósito: la entrada la decide el script de arranque. */}
-              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a href="/?intro=1">{t('footer.replayIntro')}</a>
-            </p>
-            <p className="site-footer__small">
-              {/* Versión de prueba (D-20, REQ-ADM-039): el Admin sin login. */}
-              <Link
-                href={ADMIN_PATH}
-                prefetch={false}
-                data-testid="probar-admin"
-                title={t('footer.tryAdmin.hint')}
-              >
-                {t('footer.tryAdmin')}
-              </Link>
-            </p>
-            <p className="site-footer__small">{t('footer.copyright')}</p>
-            <p className="site-footer__small">{t('site.sampleNotice')}</p>
+                </p>
+              </div>
+            </div>
           </div>
         </footer>
       );

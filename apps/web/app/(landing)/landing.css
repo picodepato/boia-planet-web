@@ -24,6 +24,8 @@
   --on-orange: var(--boia-black);
   --orange-text: var(--boia-orange-bright);
   --violet: #b9a6ff;
+  /* Decision 4: the hero's «Consigue descuentos». */
+  --yellow: #ffd23f;
   --water: #0f5f7d;
   --space: #0b1830;
   --header-h: 60px;
@@ -154,7 +156,6 @@ body {
 .hero__corner,
 .hero__hint,
 .intro-loading,
-main[data-contenido] > .section > .section__inner > .section__title,
 .event-card__meta,
 p.event-card__poster {
   font-family: var(--font-body);
@@ -195,10 +196,6 @@ p.event-card__poster {
 .button:active {
   transform: var(--btn-pressed);
   box-shadow: 1px 1px 0 var(--shadow-c);
-}
-
-.button--tickets {
-  min-height: 56px;
 }
 
 .button--tickets-small,
@@ -588,7 +585,7 @@ html[data-intro='play'] .hero__hint {
   visibility: hidden;
 }
 
-/* «Zarpar» + «Entradas», visible from the first paint. */
+/* «Zarpar» alone (2026-10-08, decision 4), visible from the first paint. */
 .hero__actions {
   position: absolute;
   left: var(--gutter);
@@ -604,7 +601,7 @@ html[data-intro='play'] .hero__hint {
 
 .hero__explore {
   position: relative;
-  flex: 195 1 0;
+  flex: 0 1 280px;
   min-width: 0;
   display: flex;
 }
@@ -615,22 +612,20 @@ html[data-intro='play'] .hero__hint {
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  color: var(--on-dark-70);
-  font-size: 13px;
+  /* Decision 4: «Consigue descuentos» in yellow. */
+  color: var(--yellow);
+  font-size: 14px;
+  font-weight: 700;
   line-height: 18px;
   text-align: center;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
 }
 
 /* One brief glint after a long pause; plain text with reduced motion. */
 @media (prefers-reduced-motion: no-preference) {
   @supports (background-clip: text) {
     .hero__discount-hint {
-      background: linear-gradient(
-        110deg,
-        var(--on-dark-70) 45%,
-        rgb(255 255 255 / 0.95) 50%,
-        var(--on-dark-70) 55%
-      );
+      background: linear-gradient(110deg, var(--yellow) 45%, #ffffff 50%, var(--yellow) 55%);
       background-size: 250% 100%;
       background-clip: text;
       color: transparent;
@@ -688,10 +683,6 @@ html[data-intro='play'] .hero__hint {
   filter: brightness(1.08);
 }
 
-.hero__actions .button--tickets {
-  flex: 136 1 0;
-}
-
 @keyframes cta-pulse {
   0%,
   70%,
@@ -705,13 +696,10 @@ html[data-intro='play'] .hero__hint {
 
 @media (min-width: 600px) {
   .hero__explore {
-    flex: 0 0 220px;
+    flex: 0 0 260px;
   }
   .cta-explore__label {
     font-size: 18px;
-  }
-  .hero__actions .button--tickets {
-    flex: 0 0 160px;
   }
 }
 
@@ -950,55 +938,6 @@ html[data-intro-act='landing'] {
   max-width: 60ch;
 }
 
-/*
- * The bands of the home (T77 §8): full width, night blue, fading in from the
- * water and out into the next sea window; nothing animates them, the scene
- * moves under them. Inside, the editorial grid: the tracked label on the
- * left (the h2 keeps its text and id), the content on the right.
- */
-main[data-contenido] > .section {
-  position: relative;
-  z-index: 1;
-  padding: calc(var(--fade) + 24px) var(--gutter) calc(var(--fade) + 40px);
-  background: linear-gradient(
-    to bottom,
-    transparent 0,
-    var(--band) var(--fade),
-    var(--band) calc(100% - var(--fade)),
-    transparent 100%
-  );
-}
-
-main[data-contenido] > .section + .section {
-  margin-top: var(--sea-window);
-}
-
-/* The first band comes up out of the sea at the end of the dive (T77 §5.2). */
-main[data-contenido] > .hero + .section {
-  margin-top: -44vh;
-}
-
-html[data-hero-static] main[data-contenido] > .hero + .section {
-  margin-top: calc(-1 * var(--fade));
-}
-
-main[data-contenido] > .section > .section__inner {
-  max-width: 1200px;
-}
-
-main[data-contenido] > .section > .section__inner > .section__title {
-  margin: 0 0 20px;
-  color: var(--on-dark-50);
-}
-
-main[data-contenido] .section__lead,
-main[data-contenido] .philosophy__text {
-  color: var(--on-dark-70);
-  font-size: 17px;
-  line-height: 1.5;
-  max-width: 58ch;
-}
-
 /* A display line where a band needs one (Fotos). */
 .section__display {
   margin: 0 0 28px;
@@ -1009,36 +948,12 @@ main[data-contenido] .philosophy__text {
 }
 
 @media (min-width: 600px) {
-  main[data-contenido] > .section {
-    padding: calc(var(--fade) + 32px) var(--gutter) calc(var(--fade) + 56px);
-  }
   .section__display {
     font-size: 36px;
   }
 }
 
 @media (min-width: 900px) {
-  main[data-contenido] > .hero + .section {
-    margin-top: -38vh;
-  }
-  main[data-contenido] > .section > .section__inner {
-    display: grid;
-    grid-template-columns: 28% minmax(0, 1fr);
-    align-items: start;
-  }
-  main[data-contenido] > .section > .section__inner > * {
-    grid-column: 2;
-  }
-  main[data-contenido] > .section > .section__inner > .section__title {
-    grid-column: 1;
-    grid-row: 1 / span 20;
-    margin-top: 10px;
-    font-size: 12px;
-  }
-  main[data-contenido] .section__lead,
-  main[data-contenido] .philosophy__text {
-    font-size: 19px;
-  }
   .section__display {
     font-size: 44px;
     line-height: 1.08;
@@ -1128,74 +1043,8 @@ main[data-contenido] .philosophy__text {
   letter-spacing: 0.04em;
 }
 
-/* In the bands: no cards, type and hairlines (T77 §8). */
-main[data-contenido] .event-card {
-  height: auto;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius);
-  background: none;
-}
-
-main[data-contenido] .event-card__meta {
-  color: var(--on-dark-50);
-}
-
-main[data-contenido] .event-card__when,
-main[data-contenido] .event-card__lineup,
-main[data-contenido] .event-card__desc,
-main[data-contenido] .event-card__note {
-  color: var(--on-dark-70);
-}
-
-/* Próximo evento: the date as the display, then the name. */
-.event-card__date {
-  margin: 0 0 14px;
-  font-family: var(--font-title);
-  font-size: 56px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.01em;
-}
-
-main[data-contenido] .event-card--featured .event-card__name {
-  margin: 0 0 10px;
-  font-size: 24px;
-  line-height: 1.15;
-}
-
-main[data-contenido] .event-card--featured .event-card__when {
-  padding-bottom: 16px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--hairline);
-}
-
-main[data-contenido] .event-card--featured .event-card__desc {
-  max-width: 58ch;
-}
-
-@media (min-width: 600px) {
-  .event-card__date {
-    font-size: 80px;
-  }
-  main[data-contenido] .event-card--featured .event-card__name {
-    font-size: 26px;
-  }
-}
-
-@media (min-width: 900px) {
-  .event-card__date {
-    font-size: 96px;
-  }
-  main[data-contenido] .event-card--featured .event-card__name {
-    font-size: 40px;
-    line-height: 1.08;
-  }
-}
-
-/* The poster slot (T82, T77 §8): 3:4, above the text on phones, at the right
-   edge of the content column from 900 px (220 px wide at 1280); until there
-   is a poster, a dark gradient with «Cartel próximamente». */
+/* The poster slot (T82, T77 §8): 3:4; until there is a poster, «Cartel
+   próximamente». On the home it sits beside the date square (T214). */
 .event-card__poster {
   display: block;
   width: min(100%, 260px);
@@ -1213,19 +1062,6 @@ p.event-card__poster {
   color: var(--on-dark-70);
 }
 
-@media (min-width: 900px) {
-  .event-card__poster {
-    float: right;
-    width: 220px;
-    margin-left: 40px;
-  }
-  /* The card holds the float; the hairline under the venue stops beside it. */
-  .event-card--featured,
-  .event-card--featured > .event-card__when {
-    display: flow-root;
-  }
-}
-
 /* «muestra» after a sandbox link (T82, P15) until the real one is in the
    content: example.com/.net/.org can never be BOIA's. The label is i18n
    (`link.sample`, set on .landing-root). Not on «Comprar», whose sandbox
@@ -1241,47 +1077,6 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   font: 600 10px var(--font-body);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-/* Próximos eventos: rows divided by hairlines. */
-main[data-contenido] .card-grid {
-  display: block;
-  border-top: 1px solid var(--hairline);
-}
-
-main[data-contenido] .card-grid > li {
-  padding: 22px 0;
-  border-bottom: 1px solid var(--hairline);
-}
-
-main[data-contenido] .card-grid .event-card__name {
-  font-size: 22px;
-  line-height: 1.15;
-}
-
-main[data-contenido] .card-grid .button--buy {
-  margin-top: 14px;
-}
-
-@media (min-width: 900px) {
-  main[data-contenido] .card-grid .event-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 32px;
-  }
-  main[data-contenido] .card-grid .event-card > * {
-    grid-column: 1;
-  }
-  main[data-contenido] .card-grid .event-card > .button--buy,
-  main[data-contenido] .card-grid .event-card > .event-card__soon {
-    grid-column: 2;
-    grid-row: 1 / span 6;
-    align-self: center;
-    margin: 0;
-  }
-  main[data-contenido] .card-grid .event-card__name {
-    font-size: 30px;
-  }
 }
 
 /* ---------- Artistas ---------- */
@@ -1370,73 +1165,6 @@ main[data-contenido] .card-grid .button--buy {
   text-underline-offset: 3px;
 }
 
-/* In the band: hairline rows, the name in Archivo, genres to the right. */
-main[data-contenido] .artist-trio {
-  display: block;
-  border-top: 1px solid var(--hairline);
-}
-
-main[data-contenido] .artist-trio > li {
-  border-bottom: 1px solid var(--hairline);
-}
-
-main[data-contenido] .artist-card {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto;
-  column-gap: 16px;
-  row-gap: 2px;
-  padding: 18px 0;
-  border: 0;
-  border-radius: var(--radius);
-  background: none;
-}
-
-main[data-contenido] .artist-card__avatar {
-  display: none;
-}
-
-main[data-contenido] .artist-card__photo {
-  grid-row: 1 / span 2;
-  width: 48px;
-  height: 48px;
-  filter: grayscale(1);
-}
-
-main[data-contenido] .artist-card:has(.artist-card__photo) {
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-}
-
-main[data-contenido] .artist-card__name {
-  font-size: 22px;
-  line-height: 1.15;
-}
-
-main[data-contenido] .artist-card__genres {
-  grid-column: 1;
-  color: var(--on-dark-50);
-  font-size: 14px;
-}
-
-main[data-contenido] .artist-card__spotify {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-}
-
-main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__genres {
-  grid-column: 2;
-}
-
-main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__spotify {
-  grid-column: 3;
-}
-
-@media (min-width: 900px) {
-  main[data-contenido] .artist-card__name {
-    font-size: 30px;
-  }
-}
-
 .artist-rotator__toggle {
   margin-top: 8px;
 }
@@ -1502,28 +1230,6 @@ main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__spotify
   letter-spacing: 0.06em;
 }
 
-main[data-contenido] .philosophy__verbs {
-  gap: 0;
-  border-top: 1px solid var(--hairline);
-  max-width: 58ch;
-}
-
-main[data-contenido] .philosophy__verbs li {
-  padding: 14px 0;
-  border-bottom: 1px solid var(--hairline);
-  color: var(--on-dark-70);
-}
-
-main[data-contenido] .philosophy__verb {
-  display: block;
-  color: var(--ink);
-  font-family: var(--font-title);
-  font-size: 18px;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
 /* Contacto con la Filosofía dentro (T65). */
 .contact__philosophy {
   margin-bottom: 32px;
@@ -1532,11 +1238,6 @@ main[data-contenido] .philosophy__verb {
 .contact__subtitle {
   margin: 0 0 12px;
   font-size: 1.25rem;
-}
-
-main[data-contenido] .contact__subtitle {
-  margin: 0 0 16px;
-  font-size: 22px;
 }
 
 .photo-placeholder {
@@ -1566,51 +1267,6 @@ main[data-contenido] .contact__subtitle {
   border-radius: var(--radius);
 }
 
-/* Fotos: edge to edge, no radius; placeholders as stage-lit darkness (frame 04). */
-main[data-contenido] #fotos .photo-grid {
-  grid-column: 1 / -1;
-  gap: 6px;
-  margin: 0 calc(-1 * var(--gutter)) 28px;
-}
-
-main[data-contenido] #fotos .photo-grid img,
-main[data-contenido] #fotos .photo-placeholder {
-  border-radius: var(--radius);
-}
-
-main[data-contenido] #fotos .photo-placeholder {
-  place-items: end start;
-  padding: 14px;
-  color: var(--on-dark-50);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-main[data-contenido] #fotos .photo-placeholder--0 {
-  background:
-    radial-gradient(circle at 30% 35%, rgb(255 140 70 / 0.5), transparent 32%),
-    linear-gradient(160deg, #2a2340, #10121f);
-}
-
-main[data-contenido] #fotos .photo-placeholder--1 {
-  background:
-    radial-gradient(circle at 50% 30%, rgb(255 90 208 / 0.45), transparent 32%),
-    linear-gradient(160deg, #3a1a2a, #120e1c);
-}
-
-main[data-contenido] #fotos .photo-placeholder--2 {
-  background:
-    radial-gradient(circle at 62% 40%, rgb(255 233 176 / 0.4), transparent 32%),
-    linear-gradient(160deg, #142a3a, #0b111c);
-}
-
-@media (min-width: 900px) {
-  main[data-contenido] #fotos .photo-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 .chip-list {
   display: flex;
   flex-wrap: wrap;
@@ -1625,28 +1281,6 @@ main[data-contenido] #fotos .photo-placeholder--2 {
   border-radius: var(--radius);
   background: var(--card);
   border: 1px solid var(--line);
-}
-
-/* Tienda: the products as one running line, separated by dots. */
-main[data-contenido] .chip-list {
-  gap: 4px 0;
-}
-
-main[data-contenido] .chip {
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius);
-  background: none;
-  font-family: var(--font-title);
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-main[data-contenido] .chip + .chip::before {
-  content: '·';
-  margin: 0 0.45em;
-  color: var(--on-dark-50);
 }
 
 .link-list {
@@ -1694,42 +1328,8 @@ main[data-contenido] .chip + .chip::before {
   font-size: 0.875rem;
 }
 
-/*
- * The footer of the home: the large wordmark on the night sea, then solid
- * black (T77 §8, plan 007 addendum).
- */
-main[data-contenido] ~ .site-footer {
-  position: relative;
-  z-index: 1;
-  margin-top: var(--sea-window);
-  padding: 18vh var(--gutter) 56px;
-  border: 0;
-  background: linear-gradient(to bottom, transparent 0, rgb(5 8 15 / 0.7) 22vh, var(--black) 40vh);
-}
-
-main[data-contenido] ~ .site-footer .site-footer__inner {
-  max-width: 1200px;
-  gap: 16px;
-}
-
-main[data-contenido] ~ .site-footer .site-footer__brand {
-  margin: 0 0 4px;
-  line-height: 0;
-}
-
 .site-footer__listen {
   margin: 0 0 12px;
-}
-
-main[data-contenido] ~ .site-footer .link-list a {
-  color: var(--on-dark-70);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-main[data-contenido] ~ .site-footer .site-footer__small {
-  color: var(--on-dark-50);
 }
 
 .legal {
@@ -1943,16 +1543,6 @@ html.panel-open {
   text-underline-offset: 3px;
 }
 
-main[data-contenido] .js .sail-link,
-.js main[data-contenido] .sail-link {
-  color: var(--on-dark-70);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-decoration: underline;
-}
-
 .sail-row {
   margin: 8px 0 0;
 }
@@ -2058,15 +1648,6 @@ main[data-contenido] .js .sail-link,
   background: var(--card);
 }
 
-main[data-contenido] ~ .site-footer .footer-invite {
-  max-width: 58ch;
-  padding: 4px 0 4px 16px;
-  border-left-width: 2px;
-  border-radius: var(--radius);
-  background: none;
-  color: var(--on-dark-70);
-}
-
 .footer-invite__item {
   margin: 0;
 }
@@ -2075,4 +1656,736 @@ main[data-contenido] ~ .site-footer .footer-invite {
   color: var(--ink);
   font-weight: 700;
   text-underline-offset: 3px;
+}
+
+/* ---------- La hoja (plan 019 T214) ----------
+ * 2026-10-08, decision 4: below the globe the home follows noartmusic.com
+ * from top to bottom, with our sections. The dive ends in the sea by the
+ * port and one white sheet comes up out of it with a pixel edge; from there
+ * the page is paper: black type, a square bullet and the label of each
+ * section on the left, its page on the right («Ver todos ↘»), wide tiles,
+ * and a framed footer with [bracketed] columns. The square is the motif:
+ * the bullet, the date of each event, the arcade buttons of T213.
+ * Everything here is scoped to the home's <main data-contenido> (also the
+ * Admin's draft preview), its footer and /tienda.
+ */
+:root {
+  --paper: #ffffff;
+  --paper-ink: #000000;
+  --paper-soft: #4a4a4a;
+  --paper-line: rgb(0 0 0 / 0.14);
+  --sheet-pad: 72px;
+}
+
+@media (min-width: 900px) {
+  :root {
+    --sheet-pad: 112px;
+  }
+}
+
+main[data-contenido] > .section,
+main[data-contenido] ~ .site-footer,
+.merchandise-page {
+  position: relative;
+  z-index: 1;
+  background: var(--paper);
+  color: var(--paper-ink);
+}
+
+main[data-contenido] > .section {
+  padding: var(--sheet-pad) var(--gutter) 0;
+}
+
+main[data-contenido] > .section:last-child {
+  padding-bottom: var(--sheet-pad);
+}
+
+/* The sheet comes up out of the sea at the end of the dive (T77 §5.2). */
+main[data-contenido] > .hero + .section {
+  margin-top: -44vh;
+  padding-top: 56px;
+}
+
+/* One screen of hero: the wave sits below it, never over its corner labels. */
+html[data-hero-static] main[data-contenido] > .hero + .section {
+  margin-top: 24px;
+}
+
+/* Its top edge: an 8-bit wave, the paper's own colour. */
+main[data-contenido] > .hero + .section::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' shape-rendering='crispEdges'%3E%3Cpath d='M0 16h8V8h8V0h16v8h8v8h8v8H0z' fill='%23fff'/%3E%3C/svg%3E")
+    0 100% / 48px 24px repeat-x;
+  pointer-events: none;
+}
+
+main[data-contenido] > .section > .section__inner,
+main[data-contenido] ~ .site-footer > .section__inner,
+.merchandise-page > .section__inner {
+  max-width: 1360px;
+}
+
+/* Only the sheet: the hero (also in <main>) keeps its own colours. */
+main[data-contenido] > .section a,
+main[data-contenido] ~ .site-footer a,
+.merchandise-page a {
+  color: inherit;
+}
+
+/* The focus ring on paper: black with a white halo. */
+main[data-contenido] > .section :focus-visible,
+main[data-contenido] ~ .site-footer :focus-visible,
+.merchandise-page :focus-visible {
+  outline-color: var(--paper-ink);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+/* The head of each section: ■ label on the left, its page on the right. */
+.sheet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin: 0 0 32px;
+}
+
+.sheet-head__title.section__title,
+.sheet-more {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sheet-head__title::before {
+  content: '';
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.7em;
+  background: var(--orange);
+  outline: 1px solid var(--paper-ink);
+  vertical-align: 0;
+}
+
+.sheet-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sheet-more::after {
+  content: '↘';
+  margin-left: 0.5em;
+}
+
+.sheet-more:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+main[data-contenido] .section__lead,
+.merchandise-page .section__lead {
+  max-width: 52ch;
+  margin: 0 0 32px;
+  color: var(--paper-soft);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+/* A display line where a section needs one (Fotos): justified, like the reference. */
+main[data-contenido] .section__display {
+  max-width: 14ch;
+  margin: 0 0 32px;
+  font-family: var(--font-title);
+  font-size: clamp(40px, 9vw, 104px);
+  font-weight: 400;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+/* Buttons on paper: white face, black edge and shadow (T213's arcade button). */
+main[data-contenido] > .section .button,
+.merchandise-page .button {
+  --shadow-c: var(--paper-ink);
+  border-color: var(--paper-ink);
+  background: var(--paper);
+  color: var(--paper-ink);
+}
+
+main[data-contenido] > .section .button--buy,
+.merchandise-page .button--buy {
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+main[data-contenido] .js .sail-link,
+.js main[data-contenido] .sail-link {
+  color: var(--boia-blue);
+}
+
+main[data-contenido] .badge {
+  border: 1px solid var(--paper-ink);
+  background: var(--paper);
+  color: var(--paper-ink);
+}
+
+/* ---------- Eventos: the date in a square (decision 5) ---------- */
+
+.event-card {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  column-gap: 16px;
+  align-content: start;
+}
+
+.event-card > * {
+  grid-column: 2;
+}
+
+.event-card > .event-card__square {
+  grid-column: 1;
+  grid-row: 1 / span 8;
+}
+
+.event-card__square {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  aspect-ratio: 1;
+  margin: 0;
+  border: 2px solid var(--boia-black);
+  box-shadow: 4px 4px 0 var(--boia-black);
+  background: var(--boia-blue);
+  color: var(--boia-white);
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.event-card--featured .event-card__square {
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+.event-card__day {
+  font-family: var(--font-title);
+  font-size: 40px;
+}
+
+.event-card__month {
+  font-family: var(--font-button);
+  font-size: 10px;
+}
+
+.event-card__weekday {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+main[data-contenido] .event-card {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+main[data-contenido] .event-card__meta {
+  margin: 0 0 6px;
+  color: var(--paper-soft);
+}
+
+main[data-contenido] .event-card__name {
+  margin: 0 0 8px;
+  font-size: 26px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+main[data-contenido] .event-card__when,
+main[data-contenido] .event-card__lineup,
+main[data-contenido] .event-card__desc,
+main[data-contenido] .event-card__note,
+main[data-contenido] .event-card__soon,
+main[data-contenido] .event-card__warmup {
+  color: var(--paper-soft);
+}
+
+main[data-contenido] .event-card__warmup a {
+  color: var(--paper-ink);
+}
+
+/* Próximos eventos: rows on phones, tiles from 900 px. */
+main[data-contenido] .event-list {
+  display: grid;
+  gap: 40px;
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .event-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 32px;
+  }
+  main[data-contenido] .event-list .event-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  main[data-contenido] .event-list .event-card > * {
+    grid-column: 1;
+  }
+  main[data-contenido] .event-list .event-card > .event-card__square {
+    grid-row: auto;
+    margin-bottom: 20px;
+  }
+  main[data-contenido] .event-list .event-card__day {
+    font-size: clamp(88px, 9vw, 140px);
+  }
+  main[data-contenido] .event-list .event-card__month {
+    font-size: 16px;
+  }
+  main[data-contenido] .event-list .event-card__weekday {
+    font-size: 14px;
+  }
+  main[data-contenido] .event-list .event-card__name {
+    font-size: 30px;
+  }
+}
+
+/* Próximo evento: the large square, the name, the facts; the poster beside. */
+main[data-contenido] .event-card--display {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+main[data-contenido] .event-card--display > * {
+  grid-column: 1 / -1;
+}
+
+main[data-contenido] .event-card--display > .event-card__square {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin-bottom: 24px;
+}
+
+main[data-contenido] .event-card--display > .event-card__meta {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+}
+
+main[data-contenido] .event-card--display > .event-card__name {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 32px;
+}
+
+main[data-contenido] .event-card--display .event-card__day {
+  font-size: 56px;
+}
+
+main[data-contenido] .event-card--display > .event-card__poster {
+  order: 1;
+  float: none;
+  width: min(100%, 280px);
+  margin: 32px 0 0;
+}
+
+main[data-contenido] .event-card--display .event-card__desc {
+  max-width: 52ch;
+}
+
+main[data-contenido] p.event-card__poster {
+  border: 2px solid var(--paper-ink);
+  background: repeating-linear-gradient(-45deg, var(--paper) 0 10px, rgb(0 0 0 / 0.06) 10px 20px);
+  color: var(--paper-ink);
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .event-card--display {
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) 240px;
+    column-gap: 48px;
+  }
+  main[data-contenido] .event-card--display > * {
+    grid-column: 2;
+  }
+  main[data-contenido] .event-card--display > .event-card__square {
+    grid-column: 1;
+    grid-row: 1 / span 9;
+    margin: 0;
+  }
+  main[data-contenido] .event-card--display > .event-card__meta {
+    grid-column: 2;
+    grid-row: auto;
+  }
+  main[data-contenido] .event-card--display > .event-card__name {
+    grid-column: 2;
+    grid-row: auto;
+    font-size: clamp(44px, 5vw, 80px);
+  }
+  main[data-contenido] .event-card--display > .event-card__poster {
+    grid-column: 3;
+    grid-row: 1 / span 9;
+    width: 100%;
+    margin: 0;
+  }
+  main[data-contenido] .event-card--display .event-card__day {
+    font-size: clamp(96px, 11vw, 168px);
+  }
+  main[data-contenido] .event-card--display .event-card__month {
+    font-size: 18px;
+  }
+  main[data-contenido] .event-card--display .event-card__weekday {
+    font-size: 15px;
+  }
+}
+
+/* ---------- Artistas ---------- */
+
+main[data-contenido] .artist-trio {
+  display: block;
+  border-top: 1px solid var(--paper-ink);
+}
+
+main[data-contenido] .artist-trio > li {
+  border-bottom: 1px solid var(--paper-line);
+}
+
+main[data-contenido] .artist-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  column-gap: 16px;
+  row-gap: 4px;
+  padding: 20px 0;
+  border: 0;
+  background: none;
+}
+
+main[data-contenido] .artist-card__avatar {
+  display: none;
+}
+
+main[data-contenido] .artist-card__photo {
+  grid-row: 1 / span 2;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  filter: grayscale(1);
+}
+
+main[data-contenido] .artist-card:has(.artist-card__photo) {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+}
+
+main[data-contenido] .artist-card__name {
+  font-size: 28px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+main[data-contenido] .artist-card__genres {
+  grid-column: 1;
+  color: var(--paper-soft);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+main[data-contenido] .artist-card__spotify {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--paper-ink);
+}
+
+main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__genres {
+  grid-column: 2;
+}
+
+main[data-contenido] .artist-card:has(.artist-card__photo) .artist-card__spotify {
+  grid-column: 3;
+}
+
+main[data-contenido] .listen-link {
+  color: var(--paper-ink);
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .artist-card__name {
+    font-size: 48px;
+  }
+}
+
+/* ---------- Fotos (only the look: T216 owns the Galería) ---------- */
+
+main[data-contenido] #fotos .photo-grid {
+  gap: 8px;
+  margin: 0 0 24px;
+}
+
+/* An odd last photo takes the whole row on phones. */
+main[data-contenido] #fotos .photo-grid > li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+main[data-contenido] #fotos .photo-grid > li:last-child:nth-child(odd) > * {
+  max-height: 56vw;
+  object-fit: cover;
+}
+
+main[data-contenido] #fotos .photo-placeholder {
+  place-items: end start;
+  padding: 12px;
+  color: var(--boia-white);
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+main[data-contenido] #fotos .photo-placeholder--0 {
+  background: var(--boia-blue);
+}
+
+main[data-contenido] #fotos .photo-placeholder--1 {
+  background: var(--boia-black);
+}
+
+main[data-contenido] #fotos .photo-placeholder--2 {
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] #fotos .photo-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  main[data-contenido] #fotos .photo-grid > li:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
+/* ---------- Contacto y Filosofía: the reference's «about» ---------- */
+
+.philosophy {
+  display: grid;
+  gap: 32px;
+}
+
+main[data-contenido] .philosophy__text {
+  max-width: 52ch;
+  margin: 0 0 16px;
+  color: var(--paper-ink);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+main[data-contenido] .philosophy__verbs {
+  display: grid;
+  gap: 20px;
+  margin: 0;
+  color: var(--paper-soft);
+}
+
+main[data-contenido] .philosophy__verb {
+  display: block;
+  color: var(--paper-ink);
+  font-family: var(--font-title);
+  font-size: clamp(40px, 11vw, 96px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+main[data-contenido] .contact__subtitle {
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+main[data-contenido] .contact__philosophy {
+  margin: 0 0 56px;
+}
+
+main[data-contenido] .contact__data .link-list a {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (min-width: 900px) {
+  .philosophy {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 64px;
+    align-items: start;
+  }
+  .philosophy__verbs {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .philosophy__body {
+    grid-column: 2;
+    padding-top: 12px;
+  }
+  main[data-contenido] .contact__data {
+    margin-left: calc(50% + 32px);
+  }
+}
+
+/* ---------- Pie: one framed box with [bracketed] columns ---------- */
+
+main[data-contenido] ~ .site-footer {
+  padding: 0 var(--gutter) var(--gutter);
+  border: 0;
+}
+
+main[data-contenido] ~ .site-footer .site-footer__inner {
+  position: relative;
+  display: grid;
+  gap: 32px;
+  padding: 32px 20px;
+  border: 1px solid var(--paper-ink);
+}
+
+/* The registration marks at the box's corners. */
+main[data-contenido] ~ .site-footer .site-footer__inner::before,
+main[data-contenido] ~ .site-footer .site-footer__inner::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 0 solid var(--paper-ink);
+}
+
+main[data-contenido] ~ .site-footer .site-footer__inner::before {
+  top: -7px;
+  left: -7px;
+  border-width: 0 1px 1px 0;
+}
+
+main[data-contenido] ~ .site-footer .site-footer__inner::after {
+  right: -7px;
+  bottom: -7px;
+  border-width: 1px 0 0 1px;
+}
+
+/* The wordmark large across the box (plan 007 T79, Hernán). */
+main[data-contenido] ~ .site-footer .site-footer__brand {
+  margin: 0;
+  line-height: 0;
+}
+
+main[data-contenido] ~ .site-footer .site-footer__small {
+  margin: 0 0 4px;
+  color: var(--paper-soft);
+  font-size: 13px;
+}
+
+.site-footer__cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 20px;
+}
+
+.site-footer__col-title {
+  margin: 0 0 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.site-footer__col-title::before {
+  content: '[';
+}
+
+.site-footer__col-title::after {
+  content: ']';
+}
+
+main[data-contenido] ~ .site-footer .link-list {
+  gap: 0;
+}
+
+main[data-contenido] ~ .site-footer .link-list a,
+main[data-contenido] ~ .site-footer .site-footer__small a,
+main[data-contenido] ~ .site-footer .listen-link {
+  display: inline-block;
+  min-height: 0;
+  padding: 6px 0;
+  color: var(--paper-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+main[data-contenido] ~ .site-footer a:hover {
+  text-decoration: underline;
+}
+
+main[data-contenido] ~ .site-footer .footer-invite {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  gap: 10px;
+  font-size: 14px;
+}
+
+main[data-contenido] ~ .site-footer .footer-invite__item a {
+  color: var(--paper-ink);
+  text-decoration: underline;
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] ~ .site-footer .site-footer__inner {
+    grid-template-columns: minmax(220px, 26%) minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+  }
+  main[data-contenido] ~ .site-footer .site-footer__brand {
+    grid-column: 1 / -1;
+    padding: 32px;
+    border-bottom: 1px solid var(--paper-ink);
+  }
+  .site-footer__side {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 32px;
+    border-right: 1px solid var(--paper-ink);
+  }
+  .site-footer__cols {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    padding: 32px;
+  }
+}
+
+/* ---------- Tienda (decision 9): the products, name and price ---------- */
+
+.merchandise-page {
+  min-height: 100svh;
+  padding: 32px var(--gutter) var(--sheet-pad);
+}
+
+.merchandise-page .merchandise-page__nav {
+  margin-bottom: 56px;
 }

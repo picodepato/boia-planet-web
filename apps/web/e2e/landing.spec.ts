@@ -30,36 +30,37 @@ async function captured(
 const LANDING = '/?intro=0';
 
 const hero = (page: Page) => page.locator('.hero');
-// El botón principal del hero: «Zarpar» (/mar), con «Entradas» al lado (plan 007).
+// El botón del hero: sólo «Zarpar» (/mar); «Entradas» está en la cabecera
+// (decisión 4 de 2026-10-08), que sale al dejar el hero.
 const exploreCta = (page: Page) => hero(page).getByTestId('cta-3d');
-const heroTickets = (page: Page) => hero(page).getByRole('link', { name: 'Entradas', exact: true });
+const headerTickets = (page: Page) =>
+  page.locator('.site-header').getByRole('link', { name: 'Entradas', exact: true });
+async function openFromHeader(page: Page) {
+  // Past the dive (the sea): the hero no longer covers the header.
+  await page.evaluate(() => window.scrollTo({ top: innerHeight * 1.6, behavior: 'instant' }));
+  await expect(page.locator('.site-header__inner')).toBeVisible();
+  // The header is fixed: clicking it scrolls nothing; Playwright waits for its slide-in.
+  await headerTickets(page).click();
+}
 const ticketsPanel = (page: Page) => page.getByRole('dialog', { name: 'Elige tu evento' });
 
-test('CTA Zarpar y Entradas se ven sin scroll', async ({ page }, info) => {
+test('el hero lleva sólo «Zarpar», sin scroll; sin «Entradas» (decisión 4)', async ({
+  page,
+}, info) => {
   await page.goto(LANDING);
   const vp = page.viewportSize()!;
   if (info.project.name === 'mobile') expect(vp).toEqual({ width: 360, height: 640 });
 
-  for (const [name, el, minHeight] of [
-    ['Zarpar', exploreCta(page), 56],
-    ['Entradas', heroTickets(page), 44],
-  ] as const) {
-    await expect(el, name).toBeVisible();
-    const box = (await el.boundingBox())!;
-    expect(box.y, `${name} empieza dentro de la pantalla`).toBeGreaterThanOrEqual(0);
-    expect(box.y + box.height, `${name} acaba sobre el pliegue`).toBeLessThanOrEqual(vp.height);
-    expect(box.height, `${name} alto mínimo`).toBeGreaterThanOrEqual(minHeight);
-  }
-
-  // D-07 con el diseño de plan 007 (T77 §5.1): hasta 480 px, la fila de
-  // «Zarpar» + «Entradas» ocupa el ancho completo (menos márgenes), «Zarpar» la mayor.
-  if (vp.width <= 480) {
-    const zarpar = (await exploreCta(page).boundingBox())!;
-    const tickets = (await heroTickets(page).boundingBox())!;
-    expect(zarpar.x).toBeLessThanOrEqual(16 + 1);
-    expect(tickets.x + tickets.width).toBeGreaterThanOrEqual(vp.width - 16 - 1);
-    expect(zarpar.width).toBeGreaterThan(tickets.width);
-  }
+  const el = exploreCta(page);
+  await expect(el).toBeVisible();
+  const box = (await el.boundingBox())!;
+  expect(box.y, 'Zarpar empieza dentro de la pantalla').toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height, 'Zarpar acaba sobre el pliegue').toBeLessThanOrEqual(vp.height);
+  expect(box.height, 'Zarpar alto mínimo').toBeGreaterThanOrEqual(56);
+  // D-07: centred in the hero.
+  expect(Math.abs(box.x + box.width / 2 - vp.width / 2)).toBeLessThanOrEqual(2);
+  await expect(hero(page).getByRole('link', { name: 'Entradas', exact: true })).toHaveCount(0);
+  await expect(hero(page).locator('[data-tickets-open]')).toHaveCount(0);
 
   // La vista de la landing cuenta al pasar el hero con el scroll (plan 007).
   expect((await captured(page)).map((e) => e.event)).not.toContain('landing_view');
@@ -78,6 +79,12 @@ test('Consigue descuentos aparece justo debajo de Zarpar y queda estático con m
   const discount = hero(page).locator('.hero__discount-hint');
   await expect(zarpar).toBeVisible();
   await expect(discount).toHaveText('Consigue descuentos');
+  // Decision 4: in yellow (the --yellow token of landing.css).
+  const yellow = /--yellow:\s*(#[0-9a-f]{6})/i.exec(
+    readFileSync(new URL('../app/(landing)/landing.css', import.meta.url), 'utf8'),
+  )![1]!;
+  const rgb = [1, 3, 5].map((i) => parseInt(yellow.slice(i, i + 2), 16)).join(', ');
+  await expect(discount).toHaveCSS('color', `rgb(${rgb})`);
   await expect(discount).toBeVisible();
   await expect(discount).toBeInViewport();
   await expect(zarpar.locator('xpath=following-sibling::p[1]')).toHaveText('Consigue descuentos');
@@ -105,7 +112,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   const loadedByBuy = new Set<string>();
   probe.on('request', (r) => loadedByBuy.add(new URL(r.url()).pathname));
   await probe.goto(LANDING);
-  await heroTickets(probe).click();
+  await openFromHeader(probe);
   await ticketsPanel(probe).getByTestId(`comprar-${ONLINE_EVENT.id}`).click();
   // Sin Carnet, la compra pregunta antes (T66).
   await expect(probe.getByTestId('checkout-sin-carnet')).toBeVisible({ timeout: 20_000 });
@@ -148,7 +155,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
     );
 
   await page.goto(LANDING);
-  await heroTickets(page).click();
+  await openFromHeader(page);
 
   const panel = ticketsPanel(page);
   await expect(panel).toBeVisible();
@@ -171,7 +178,6 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   await expect(panel).toBeVisible();
 
   const names = (await captured(page)).map((e) => e.event);
-  // Sin scroll no hay `landing_view` (plan 007: cuenta al pasar el hero).
   expect(names).toEqual(expect.arrayContaining(['tickets_panel_open', 'ticket_click_out']));
   expect(names).not.toContain('purchase_confirmed');
 
@@ -179,7 +185,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
   expect(new URL(page.url()).hash).toBe('');
-  await expect(heroTickets(page)).toBeFocused();
+  await expect(headerTickets(page)).toBeFocused();
 
   // La landing ni siquiera pidió la ruta del juego.
   expect(blocked.filter((u) => new URL(u).pathname.startsWith('/mar'))).toEqual([]);
@@ -199,7 +205,7 @@ test.describe('sin JavaScript', () => {
 
   test('Tickets sigue abriendo el panel con enlaces de compra', async ({ page }) => {
     await page.goto(LANDING);
-    await heroTickets(page).click();
+    await headerTickets(page).click();
     await expect(ticketsPanel(page)).toBeVisible();
     await expect(
       ticketsPanel(page)
@@ -231,7 +237,7 @@ test('axe: sin violaciones en / (y con el panel abierto)', async ({ page }) => {
 
   expect(await violations()).toEqual([]);
 
-  await heroTickets(page).click();
+  await openFromHeader(page);
   await expect(ticketsPanel(page)).toBeVisible();
   await page.waitForTimeout(300);
   expect(await violations()).toEqual([]);

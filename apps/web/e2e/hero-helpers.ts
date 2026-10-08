@@ -2,16 +2,18 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { t } from '../lib/i18n';
 
 /**
- * The landing hero's two pills (plan 007 T79): «Zarpar» (a link to
- * `ZARPAR_HREF`, the dive into /mar) and «Entradas» (`#tickets`, opens the
- * Tickets panel), for the specs outside the landing ones (plan 007 T84).
+ * The landing hero's pill (plan 007 T79): «Zarpar» (a link to `ZARPAR_HREF`,
+ * the dive into /mar), for the specs outside the landing ones (plan 007 T84).
+ * Since 2026-10-08 (decision 4) the hero has no «Entradas»: the Tickets panel
+ * opens from the header's «Entradas», once past the hero (`openTickets`).
  */
 
 export const hero = (page: Page) => page.locator('.hero');
 export const heroZarpar = (page: Page) =>
   hero(page).getByRole('link', { name: t('hero.explore'), exact: true });
-export const heroTickets = (page: Page) =>
-  hero(page).getByRole('link', { name: t('hero.tickets'), exact: true });
+/** The header's «Entradas» (`#tickets`); it shows once past the hero. */
+export const headerTickets = (page: Page) =>
+  page.locator('.site-header').getByRole('link', { name: t('nav.tickets'), exact: true });
 export const ticketsPanel = (page: Page) =>
   page.getByRole('dialog', { name: t('tickets.heading') });
 
@@ -39,9 +41,15 @@ export async function pastHero(page: Page): Promise<void> {
   await expect(page.locator('.site-header__inner')).toBeVisible();
 }
 
-/** «Entradas» in the hero opens the Tickets panel; returns the panel. */
-export async function openHeroTickets(page: Page): Promise<Locator> {
-  await tap(page, heroTickets(page));
+/** Past the hero, the header's «Entradas» opens the Tickets panel; returns the panel. */
+export async function openTickets(page: Page): Promise<Locator> {
+  await pastHero(page);
+  // Past the dive (the sea): the hero no longer covers the header.
+  await page.evaluate(() =>
+    window.scrollTo({ top: window.innerHeight * 1.6, behavior: 'instant' }),
+  );
+  // The header is fixed: clicking it scrolls nothing; Playwright waits for its slide-in.
+  await headerTickets(page).click();
   const panel = ticketsPanel(page);
   await expect(panel).toBeVisible();
   return panel;

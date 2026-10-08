@@ -1,10 +1,15 @@
 {
-  "contact": { "handle": "@boia.planet", "url": "https://instagram.com/boia.planet" },
+  "contact": {
+    "handle": "@boia.planet",
+    "url": "https://www.instagram.com/boia.planet/"
+  },
   "products": [
     {
       "id": "camiseta",
       "name": "Camisetas",
       "description": "Para llevar un poco de BOIA contigo.",
+      "priceCents": 2000,
+      "sale": "reserve",
       "images": [
         {
           "src": "/contenido/tienda/camiseta-muestra.webp",
@@ -27,6 +32,8 @@
       "id": "tote",
       "name": "Tote bags",
       "description": "Para lo que te llevas de la fiesta.",
+      "priceCents": 1200,
+      "sale": "party",
       "images": [
         {
           "src": "/contenido/tienda/tote-muestra.webp",
@@ -49,6 +56,8 @@
       "id": "pegatinas",
       "name": "Packs de pegatinas",
       "description": "La boia también viaja fuera del mar.",
+      "priceCents": 500,
+      "sale": "party",
       "images": [
         {
           "src": "/contenido/tienda/pegatinas-muestra.webp",

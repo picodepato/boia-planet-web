@@ -4,6 +4,67 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T214: Landing redesigned after noartmusic.com, hero changes and the store
+
+Qué existe:
+
+- **Hero (decisión 4).** Sólo «Zarpar», centrado; el botón «Entradas» del hero
+  se ha ido (las entradas están un scroll más abajo y en el «Entradas» de la
+  cabecera). «Consigue descuentos» en amarillo (`--yellow: #ffd23f` en
+  `landing.css`, con el mismo destello entre amarillo y blanco).
+- **Hueco para el vídeo/GIF de Roke.** `apps/web/lib/landing/hero-media.ts`:
+  `HERO_MEDIA_SRC` (hoy `null`, se ven las fotos fijas de T78). Con una ruta de
+  `public/` (`.mp4`/`.webm` → vídeo en bucle, mudo; `.gif`/`.webp`/… → imagen),
+  `HeroStills` pinta ese archivo en el mismo sitio, perezoso y fuera de la ruta
+  crítica.
+- **La hoja (estilo noartmusic.com).** Bajo el globo, al final de la zambullida,
+  sube del mar una sola hoja blanca con borde de píxeles (ola 8-bit). Cada
+  sección: «■ etiqueta» a la izquierda y su página a la derecha («Ver todos ↘»,
+  «Ver todas ↘», «Ir a la tienda ↘»); tipo negro, botones de recreativa de T213
+  en blanco con borde y sombra negros, «Comprar» en naranja. Filosofía como el
+  «about» de la referencia: los verbos enormes a la izquierda, los párrafos a la
+  derecha. Fotos: sólo el aspecto (cuadrícula 2/5 columnas); la página es de
+  T216. Pie: una caja enmarcada con marcas de registro, el wordmark grande
+  arriba, la letra pequeña a la izquierda y columnas «[escucha] [únete]
+  [síguenos] [legal] [la web]».
+- **Eventos (decisión 5, lista).** `EventCard` lleva la fecha en un cuadrado
+  (día de la semana, día, mes; `dateParts`) con el nombre al lado (móvil) o
+  debajo (escritorio, en losas de 3). El próximo evento, con el cuadrado grande,
+  el nombre en grande y el cartel al lado. También en el panel de Tickets.
+- **Tienda (decisión 9).** Sólo los 3 productos, foto (rotación de T201),
+  nombre y precio. `products.json` y el contrato llevan `priceCents` y `sale`
+  (`party` | `reserve`), `muestra`: camisetas 20 € (sin existencias, se
+  reserva), tote 12 € y pegatinas 5 € (sólo en la fiesta). «Comprar» explica su
+  caso: «sólo en mano en la fiesta» o «resérvalo por DM en Instagram y te lo
+  llevamos al próximo evento» con el enlace al contacto del Admin
+  (por defecto https://www.instagram.com/boia.planet/). `/tienda` en el mismo
+  formato, textos por clave (`store.page.*`).
+- Specs actualizados por el cambio del hero: `hero-helpers.ts` (`openTickets`:
+  cabecera tras el hero), landing, landing-scroll, intro, accesos, tickets,
+  demo, despliegue, ciclo-evento, carnet-descuento, mar-a-bordo, deck 02;
+  merchandise y admin-enlaces por la tienda. `docs/spec/estado.md`: títulos de
+  prueba nuevos; REQ-ENT-002 y REQ-ENT-027 bajan a PARCIAL (pedían «Entradas»
+  en el primer encuadre; la reunión lo quitó).
+
+Comandos:
+
+- `pnpm build` → exit 0; ruta crítica de la landing 193,9 kB gzip (≤ 200 kB).
+- `E2E_PORT=3399 pnpm e2e intro.spec.ts landing-scroll.spec.ts landing.spec.ts tickets.spec.ts --workers=1` → exit 0, 74 passed.
+- `E2E_PORT=3399 pnpm e2e accesos.spec.ts merchandise.spec.ts admin-enlaces.spec.ts demo.spec.ts carnet-descuento.spec.ts despliegue.spec.ts record.spec.ts record-marca.spec.ts record-eventos.spec.ts record-titulo.spec.ts --workers=1` → exit 0, 41 passed, 21 skipped (los record sólo corren con su variable).
+- `vitest run --exclude '**/packages/db/**'` → exit 0, 237 archivos, 2227 passed, 1 skipped.
+- `tools/spec/checks.sh`, paso a paso (el `sh` del entorno no lo deja encadenado) → check, estado, test_check, test_estado y blender/check exit 0.
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0.
+- Capturas 390×844 y 1280×800 (hero, cada sección, «Comprar» abierto, /tienda) en `/tmp/orchestrator-attach/boia-planet-hernan-T214/`.
+
+Pendiente:
+
+- Hernán: pasar la decisión 4 («Entradas» fuera del hero) a `DECISIONES.md`
+  para retirar REQ-ENT-002/027 (hoy PARCIAL) y el texto de 09-requisitos.
+- Roke: el vídeo/GIF del hero → `HERO_MEDIA_SRC`.
+- Álvaro: precios y qué producto se reserva (`products.json`, `muestra`).
+- La cabecera sigue oscura sobre la hoja blanca (comparte estilo con las demás
+  páginas).
+
 ## 2026-10-08 — plan 019 T216: Galería: collage of photos and clips with open/close animations
 
 Qué existe:

@@ -18,7 +18,7 @@ import {
   formatEuros,
   samplePriceCents,
 } from '../lib/ticketing/pricing';
-import { heroTickets, tap } from './hero-helpers';
+import { openTickets } from './hero-helpers';
 
 /**
  * Un Carnet que vale la pena (T66, decisión del 2026-10-02):
@@ -40,7 +40,8 @@ const codes = SAMPLE_DISCOUNTS.map((d) => discountSchema.parse(d)).filter(
 );
 const now = new Date();
 const onSale = SAMPLE_EVENTS.filter(
-  (e) => EVENT_STATE_BEHAVIOR[eventState(e, now)].purchasable && e.state !== 'draft' && !e.boxOfficeOnly,
+  (e) =>
+    EVENT_STATE_BEHAVIOR[eventState(e, now)].purchasable && e.state !== 'draft' && !e.boxOfficeOnly,
 );
 const carnetCents = (e: (typeof SAMPLE_EVENTS)[number]) =>
   discountCents(carnetDiscount, samplePriceCents(e));
@@ -84,7 +85,7 @@ async function seed(
 
 async function openLandingTickets(page: Page) {
   await page.goto('/?intro=0');
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(panel).toBeVisible();
   return panel;

@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { eventIslands } from '../lib/admin/world';
 import { EVENTOS_COPY } from '../lib/landing/eventos-copy';
 import { eventHref } from '../lib/landing/eventos';
-import { heroTickets, tap } from './hero-helpers';
+import { openTickets } from './hero-helpers';
 import { marSheet, openMar } from './mar-helpers';
 
 /**
@@ -110,7 +110,7 @@ test('ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer
   await expect(page.getByTestId(`isla-${island.id}`)).toContainText(`Abre ahora: ${A.name}`);
   await home(page);
   await expect(card(page, A).getByTestId(`comprar-${A.id}`)).toBeVisible();
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   const tickets = page.getByRole('dialog', { name: 'Elige tu evento' });
   await expect(tickets.getByTestId(`comprar-${A.id}`)).toBeVisible();
   let f = await ficha(page, A);

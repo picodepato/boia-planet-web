@@ -5,7 +5,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { t } from '../landing/texts';
-import { MERCHANDISE_CONTACT, MERCHANDISE_PRODUCTS } from './catalog';
+import { MERCHANDISE_CONTACT, MERCHANDISE_PRODUCTS, formatPrice } from './catalog';
 import { MerchandiseCatalog } from './catalog-view';
 import data from './products.json' with { type: 'json' };
 import { nextImageIndex } from './rotation';
@@ -32,11 +32,24 @@ describe('store products (plan 017 T201, decision 11)', () => {
     }
   });
 
-  it('buyers are sent to BOIA on Instagram', () => {
+  it('buyers are sent to BOIA on Instagram (decision 9 of 2026-10-08)', () => {
     expect(MERCHANDISE_CONTACT).toEqual({
       handle: '@boia.planet',
-      url: 'https://instagram.com/boia.planet',
+      url: 'https://www.instagram.com/boia.planet/',
     });
+  });
+
+  it('the store has the 3 products, each with its price and its «Comprar» case (decision 9)', () => {
+    expect(MERCHANDISE_PRODUCTS).toHaveLength(3);
+    for (const p of MERCHANDISE_PRODUCTS) {
+      expect(Number.isInteger(p.priceCents)).toBe(true);
+      expect(['party', 'reserve']).toContain(p.sale);
+    }
+    // Both cases are on show in the sample.
+    expect(new Set(MERCHANDISE_PRODUCTS.map((p) => p.sale))).toEqual(new Set(['party', 'reserve']));
+    // Intl puts a no-break space before the euro sign.
+    expect(formatPrice(2000).replace(/\s/g, ' ')).toBe('20 €');
+    expect(formatPrice(450).replace(/\s/g, ' ')).toBe('4,50 €');
   });
 
   it('rotation goes through every image and back to the first', () => {
@@ -45,7 +58,7 @@ describe('store products (plan 017 T201, decision 11)', () => {
     expect(nextImageIndex(0, 0)).toBe(0);
   });
 
-  it('renders every image lazily, the first one visible, and the buy message with its link', () => {
+  it('renders every image lazily, the first one visible, name, price and the message of each case', () => {
     const html = renderToStaticMarkup(createElement(MerchandiseCatalog, {}));
     const imgs = html.match(/<img [^>]*>/g) ?? [];
     const total = MERCHANDISE_PRODUCTS.reduce((n, p) => n + p.images.length, 0);
@@ -57,12 +70,17 @@ describe('store products (plan 017 T201, decision 11)', () => {
     // Without JavaScript there is no button: «Comprar» is a disclosure.
     expect(html).not.toContain('<button');
     expect(html).toContain('<details');
-    const message = `${t('store.buy.message')} ${MERCHANDISE_CONTACT.handle}`;
-    expect(message).toBe(
-      'Sólo a la venta en la fiesta. Si quieres una, escríbenos por Instagram a @boia.planet',
-    );
-    expect(html).toContain(`href="${MERCHANDISE_CONTACT.url}"`);
-    expect(html.split(t('store.buy.message')).length - 1).toBe(MERCHANDISE_PRODUCTS.length);
+    const count = (s: string) => html.split(s).length - 1;
+    const party = MERCHANDISE_PRODUCTS.filter((p) => p.sale === 'party').length;
+    const reserve = MERCHANDISE_PRODUCTS.length - party;
+    expect(count(t('store.buy.party'))).toBe(party);
+    expect(count(t('store.buy.reserve'))).toBe(reserve);
+    // Only the reservations link to the Instagram DM.
+    expect(count(`href="${MERCHANDISE_CONTACT.url}"`)).toBe(reserve);
+    for (const p of MERCHANDISE_PRODUCTS) {
+      expect(html).toContain(`>${p.name}</h3>`);
+      expect(html).toContain(`>${formatPrice(p.priceCents)}</p>`);
+    }
   });
 
   it('the placeholder sample files stay marked as muestra', () => {

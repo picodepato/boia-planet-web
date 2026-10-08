@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { heroTickets, pastHero, tap } from './hero-helpers';
+import { openTickets, pastHero } from './hero-helpers';
 
 /**
  * Lo que necesita el despliegue en Vercel (T30, D-04, D-16), contra el build
@@ -83,7 +83,7 @@ test('sin clave de PostHog no sale ninguna petición de analítica', async ({ pa
     )
     .toBe(1);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-  await tap(page, heroTickets(page));
+  await openTickets(page);
   await expect(page.getByRole('dialog', { name: 'Elige tu evento' })).toBeVisible();
   // Los eventos se registran en la página (para depurar), pero no salen.
   await expect

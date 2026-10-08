@@ -1,11 +1,15 @@
 import type { HomeBlock, HomeContent } from '@boia/contracts';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { landingSections, resolveBlock, resolveHome } from '../../../lib/landing/resolve';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
+import { t } from '../../../lib/landing/texts';
 import { BlockView, HomeBlocks } from './blocks';
+import { dateParts } from './event-card';
 
 // «Ahora» un día antes del primer evento de muestra: todos los listados están por venir.
 const firstListed = SAMPLE_CONTENT.events
@@ -148,12 +152,38 @@ describe('renderizador de bloques de la home', () => {
     );
   });
 
-  it('el hero lleva dos botones: «Zarpar» (/mar con la bienvenida) y «Entradas» al lado (plan 007)', () => {
+  it('el hero lleva sólo «Zarpar» (/mar con la bienvenida), sin «Entradas» (decisión 4 de 2026-10-08)', () => {
     const hero = SAMPLE_CONTENT.blocks.find((b) => b.type === 'hero')!;
     const html = render(hero);
     const hrefs = [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual([ZARPAR_HREF.replace('&', '&amp;'), '#tickets']);
+    expect(hrefs).toEqual([ZARPAR_HREF.replace('&', '&amp;')]);
+    expect(html).not.toContain('data-tickets-open');
+    expect(html).not.toContain(`>${t('hero.tickets')}<`);
     expect(html).not.toContain('href="/juego"');
+  });
+
+  it('«Consigue descuentos» va en amarillo (decisión 4)', () => {
+    const css = readFileSync(fileURLToPath(new URL('../landing.css', import.meta.url)), 'utf8');
+    const yellow = /--yellow:\s*(#[0-9a-f]{6})/i.exec(css)?.[1];
+    expect(yellow).toBeDefined();
+    const rule = /\.hero__discount-hint \{[^}]*\}/.exec(css)?.[0] ?? '';
+    expect(rule).toContain('color: var(--yellow)');
+  });
+
+  it('cada evento de la lista lleva su fecha en un cuadrado junto al nombre (decisión 5)', () => {
+    const block = SAMPLE_CONTENT.blocks.find((b) => b.type === 'upcoming_events')!;
+    const html = render(block);
+    const resolved = resolveBlock(block, SAMPLE_CONTENT, NOW);
+    if (resolved?.type !== 'upcoming_events') throw new Error('sin próximos eventos');
+    expect(resolved.events.length).toBeGreaterThan(0);
+    for (const e of resolved.events) {
+      const { day, month } = dateParts(e.startsAt, e.timeZone);
+      const card = new RegExp(
+        `data-evento="${e.id}".*?class="event-card__square"[^>]*>.*?>${day}<.*?>${month}<.*?class="event-card__name"`,
+        's',
+      );
+      expect(html).toMatch(card);
+    }
   });
 
   it('Spotify (plan 007): «Escúchalo en Spotify» en Artistas y el pie, y uno por artista que lo tenga', () => {
