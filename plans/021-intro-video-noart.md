@@ -1,6 +1,6 @@
 # Plan 021 — Landing: pinned black intro with BOIA and an expanding video (No Art style)
 
-Status: active
+Status: done
 Created: 2026-10-08
 Base branch: main
 Goal: Replace what comes after the landing hero (today the boat over the sea and the white sheet rising) with a scroll-driven, pinned presentation after https://www.noartmusic.com/: fade to black, BOIA logo beats, a small central video window that expands to full screen, then «Próximo evento» and the rest of the page. A sample 8 s video first, so Hernán can judge the transition.
@@ -22,7 +22,7 @@ The «stop» is a pause in the page's progress while the animation keeps answeri
 ## Tasks
 
 ## T235 — Pinned black intro with BOIA beats and the expanding video window
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -36,10 +36,17 @@ The «stop» is a pause in the page's progress while the animation keeps answeri
   - landing critical path ≤ 200 kB gzip → pass
   - ESTADO section says how to swap the video and which e2e specs Hernán should run
   - Test command → exit 0
-- Outcome:
+- Outcome: hero → black → BOIA beats → small video window → full screen → «Próximo evento», pinned 3.1 screens, lazy motion code, sample 8 s video `art/landing/presentacion-muestra.mp4` (swap via `PRESENTATION_VIDEO`); landing 199.5 kB · 9544a34
 
 ## Decisions
+- 2026-10-08: plan of one task from Hernán's spec in the session; he asked to start right away (orchestrator)
+- 2026-10-08 T235: hero now 1 screen (was 200svh), presentation overlaps it, sticky stage pinned 3.1 screens; pin set by CSS before first paint; logo orange on black → white as the video opens; video scales 0.6→1 while opening; 3D scene stops painting under the black; white sheet + pixel wave removed (agent)
 
 ## Proposals (new scope)
+- 2026-10-08 T235: the header slides in at 0.95 screens, during the logo beats: hide it while the presentation runs?
+- 2026-10-08 T235: every page load logs a 400 from Supabase `carnets?is_artist=eq.true` (likely a pending dev migration)
 
 ## Log
+- 2026-10-08 T235 launched · attempt 1 · agent a32855c291fdbfdf9
+- 2026-10-08 T235 done · merged 9544a34
+- 2026-10-08 plan 021 done
