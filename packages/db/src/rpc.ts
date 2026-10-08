@@ -108,6 +108,11 @@ export const RPC_REJECTIONS = [
   'own_comment',
   // Como mucho 3 con acceso completo al Admin (plan 019 T223)
   'full_access_limit',
+  // Moderación fina de un Carnet y su papelera (plan 020 T229)
+  'unknown_answer',
+  'unknown_trash',
+  'answer_exists',
+  'music_changed',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -392,6 +397,42 @@ export interface ModerateCarnetResult {
   nickname: string;
   nickname_moderated: boolean;
   avatar_moderated: boolean;
+}
+
+/** Una respuesta de un Carnet, tal como la ve la moderación (admin_carnet_content, plan 020 T229). */
+export interface AdminCarnetAnswer {
+  question_id: string;
+  prompt: string;
+  answer: string;
+  updated_at: string;
+}
+
+/** admin_carnet_content: lo que se modera fino de un Carnet (plan 020 T229). */
+export interface AdminCarnetContent {
+  user_id: string;
+  is_artist: boolean;
+  music: { platform: string; url: string } | null;
+  answers: AdminCarnetAnswer[];
+}
+
+/**
+ * Una fila de admin_list_moderation_trash (plan 020 T229): una respuesta
+ * retirada (`answer`) o un enlace a la música cambiado o quitado (`music`),
+ * que se deshace con admin_undo_carnet_moderation hasta `expires_at`.
+ */
+export interface CarnetModerationTrashItem {
+  id: string;
+  user_id: string;
+  nickname: string;
+  kind: 'answer' | 'music';
+  question_id: string | null;
+  prompt: string | null;
+  /** answer: `{answer, question_version, created_at}`; music: `{platform, url}` o null. */
+  before: { answer?: string; platform?: string; url?: string } | null;
+  after: { platform: string; url: string } | null;
+  reason: string | null;
+  created_at: string;
+  expires_at: string;
 }
 
 /** Los rankings que el Admin puede anular y devolver (admin_void_score, admin_restore_score). */

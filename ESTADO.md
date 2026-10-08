@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T229: Admin moderation with accounts
+
+Qué existe:
+
+- **Demo local:** en Moderación → «Todos los Carnets», cada Carnet tiene «Respuestas y música»: retirar (o devolver) una sola respuesta y, si es de artista, cambiar o quitar su enlace a la música (`repo.admin.setCarnetMusic`, `actions.setCarnetMusic`; pide motivo; la plataforma sale del dominio). El Carnet no se oculta. Cada retirada de respuesta (y cualquier moderación de Carnet) y cada cambio del enlace va a la papelera de cambios (30 días) y «Deshacer» lo devuelve: sólo lo que tocó ese cambio; el enlace no se pisa si el artista lo cambió después (`conflict`). Nueva acción de auditoría `music` (área `carnets`).
+- **Con cuentas:** migración `20261008200100_carnet_answer_music_moderation.sql`: `admin_carnet_content`, `admin_remove_carnet_answer`, `admin_set_carnet_music`, `admin_list_moderation_trash`, `admin_undo_carnet_moderation` (rol admin con aal2, security definer, nunca anon) y la papelera `private.carnet_moderation_trash` (fuera del alcance de los clientes; 30 días, cada escritura purga lo viejo). Retirar una respuesta la borra de `carnet_answers` y la guarda en la papelera; deshacer la devuelve si su dueño no respondió otra vez (`answer_exists`); el enlace vuelve si nadie lo cambió (`music_changed`). Rechazos nuevos en `RPC_REJECTIONS` y en los textos del Admin. En el Admin con cuentas, cada Carnet de «Carnets» tiene «Respuestas y música» y debajo de la lista va la «Papelera de moderación» con «Deshacer».
+- REQ-ADM-040 en `docs/spec/estado.md` enlaza las pruebas nuevas.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (262 archivos, 2371 pasan, 1 saltada)
+- `tools/spec/checks.sh`, paso a paso (el guardia no deja correr `sh`): check.py, estado.py, test_check.py, test_estado.py, blender/check.py → exit 0 los cinco
+- `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- Capturas (390×844, demo local): `/tmp/orchestrator-attach/boia-planet-hernan-T229/` (1–2 enlace de artista antes y después, 3 respuesta retirada, 4–5 papelera antes y después de deshacer)
+
+Pendiente:
+
+- Hernán aplica en `boia-planet-dev`, detrás de las 8 de los planes 017–019, `supabase/migrations/20261008200100_carnet_answer_music_moderation.sql`, y corre `pnpm --filter @boia/db test:supabase` (nuevo: `packages/db/src/supabase/carnet-moderation.supabase.ts`).
+- La papelera de cambios local enseña al Carnet por su id (no por su apodo).
+
+e2e que Hernán debería correr: `admin-moderacion.spec.ts`, `comunidad.spec.ts`, `admin-endurecido.spec.ts`, `admin-papelera.spec.ts`; con `E2E_SUPABASE=1`, `admin-real.spec.ts` tras aplicar la migración.
+
 ## 2026-10-08 — plan 020 T231: Pending art: Puig Campana 2D and the boia outline everywhere
 
 Qué existe:

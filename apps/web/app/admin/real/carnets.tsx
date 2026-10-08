@@ -1,6 +1,12 @@
 'use client';
 
-import type { AdminCarnetPage, AdminCarnetRow } from '@boia/db/rpc';
+import { musicLinkFrom } from '@boia/contracts';
+import type {
+  AdminCarnetContent,
+  AdminCarnetPage,
+  AdminCarnetRow,
+  CarnetModerationTrashItem,
+} from '@boia/db/rpc';
 import { useCallback, useEffect, useState } from 'react';
 import {
   CARNET_ACTION_LABEL,
@@ -10,11 +16,195 @@ import {
 } from '../../../lib/admin/moderation';
 import { t } from '../../../lib/i18n';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
+import { MusicEditor } from '../sections/moderation';
 import { SectionHead, StatusLine } from '../ui';
 import { useRun } from '../use-admin';
 import { NeedsAdmin, must, useAdminSupabase } from './common';
 
 const PAGE = 50;
+
+/**
+ * Las respuestas y el enlace a la música de un Carnet con cuentas (plan 020
+ * T229): retirar una sola respuesta, cambiar o quitar el enlace de un
+ * artista. Se carga al abrirlo; todo va a la papelera de moderación.
+ */
+function CarnetContent({
+  sb,
+  userId,
+  reason,
+  onChanged,
+}: {
+  sb: BoiaSupabase;
+  userId: string;
+  reason: string;
+  onChanged: () => void;
+}) {
+  const [content, setContent] = useState<AdminCarnetContent | null>(null);
+  const [revision, setRevision] = useState(0);
+  const { status, busy, run } = useRun();
+  useEffect(() => {
+    let alive = true;
+    void must(sb.rpc('admin_carnet_content', { p_user: userId })).then(
+      (c) => alive && setContent(c as unknown as AdminCarnetContent),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [sb, userId, revision]);
+  const changed = () => {
+    setRevision((r) => r + 1);
+    onChanged();
+  };
+  const short = reason.trim().length < 3;
+  if (!content) return <p>{t('empty.loading')}</p>;
+  return (
+    <>
+      {content.answers.length === 0 ? (
+        <p className="admin-meta">{t('admin.moderation.answers.none')}</p>
+      ) : (
+        <ul className="admin-list">
+          {content.answers.map((a) => (
+            <li key={a.question_id} className="admin-row admin-row--between">
+              <span>
+                <span className="admin-meta">{a.prompt}</span>
+                <br />
+                {a.answer}
+              </span>
+              <button
+                type="button"
+                className="admin-button admin-button--ghost"
+                disabled={busy || short}
+                data-testid={`carnet-real-retirar-respuesta-${userId}-${a.question_id}`}
+                onClick={() =>
+                  void run(async () => {
+                    await must(
+                      sb.rpc('admin_remove_carnet_answer', {
+                        p_user: userId,
+                        p_question: a.question_id,
+                        p_reason: reason.trim(),
+                      }),
+                    );
+                    changed();
+                  }, t('admin.moderation.answers.removed'))
+                }
+              >
+                {t('admin.moderation.answers.remove')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {content.is_artist ? (
+        <MusicEditor
+          key={content.music?.url ?? ''}
+          testId={`carnet-real-${userId}`}
+          current={content.music?.url ?? null}
+          busy={busy || short}
+          onSave={(url) =>
+            void run(async () => {
+              const link = musicLinkFrom(url);
+              if (link === 'invalid') throw new Error(t('admin.moderation.music.invalid'));
+              await must(
+                sb.rpc('admin_set_carnet_music', {
+                  p_user: userId,
+                  ...(link ? { p_platform: link.platform, p_url: link.url } : {}),
+                  p_reason: reason.trim(),
+                }),
+              );
+              changed();
+            }, t('admin.moderation.music.saved'))
+          }
+        />
+      ) : null}
+      <StatusLine status={status} />
+    </>
+  );
+}
+
+/** El enlace de un cambio de la papelera, en palabras. */
+function linkText(v: { url?: string } | null): string {
+  return v?.url ?? t('admin.moderation.trash.noLink');
+}
+
+/**
+ * La papelera de moderación con cuentas (plan 020 T229): respuestas
+ * retiradas y enlaces a la música cambiados, 30 días; «Deshacer» los devuelve.
+ */
+function ModerationTrash({
+  sb,
+  revision,
+  onChanged,
+}: {
+  sb: BoiaSupabase;
+  revision: number;
+  onChanged: () => void;
+}) {
+  const [items, setItems] = useState<CarnetModerationTrashItem[] | null>(null);
+  const { status, busy, run } = useRun();
+  const day = (iso: string) => new Date(iso).toLocaleString('es-ES');
+  useEffect(() => {
+    let alive = true;
+    void must(sb.rpc('admin_list_moderation_trash', {})).then(
+      (list) => alive && setItems(list as unknown as CarnetModerationTrashItem[]),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [sb, revision]);
+  return (
+    <div data-testid="papelera-moderacion">
+      <h3>{t('admin.moderation.trash.heading')}</h3>
+      <p className="admin-meta">{t('admin.moderation.trash.lead')}</p>
+      <StatusLine status={status} />
+      <ul className="admin-list">
+        {(items ?? []).map((it) => (
+          <li
+            key={it.id}
+            className="admin-card admin-row admin-row--between"
+            data-testid={`papelera-moderacion-${it.kind}-${it.user_id}`}
+          >
+            <span>
+              {it.kind === 'answer'
+                ? t('admin.moderation.trash.answer', {
+                    nickname: it.nickname,
+                    prompt: it.prompt ?? it.question_id ?? '',
+                    answer: it.before?.answer ?? '',
+                  })
+                : t('admin.moderation.trash.music', {
+                    nickname: it.nickname,
+                    before: linkText(it.before),
+                    after: linkText(it.after),
+                  })}{' '}
+              {t('admin.gestion.trash.when', {
+                day: day(it.created_at),
+                until: day(it.expires_at),
+              })}
+              {it.reason ? ` · ${it.reason}` : ''}
+            </span>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await must(sb.rpc('admin_undo_carnet_moderation', { p_id: it.id }));
+                  onChanged();
+                }, t('admin.gestion.trash.undone'))
+              }
+            >
+              {t('admin.gestion.trash.undo')}
+            </button>
+          </li>
+        ))}
+        {items && items.length === 0 ? (
+          <li className="admin-meta">{t('admin.moderation.trash.none')}</li>
+        ) : null}
+      </ul>
+    </div>
+  );
+}
 
 function CarnetCard({
   sb,
@@ -96,6 +286,10 @@ function CarnetCard({
           </button>
         ))}
       </div>
+      <details className="admin-details" data-testid={`carnet-real-contenido-${row.user_id}`}>
+        <summary>{t('admin.moderation.content.show')}</summary>
+        <CarnetContent sb={sb} userId={row.user_id} reason={reason} onChanged={onChanged} />
+      </details>
       <StatusLine status={status} />
     </li>
   );
@@ -233,6 +427,11 @@ export function RealCarnets() {
                 {t('ranking.more')}
               </button>
             ) : null}
+            <ModerationTrash
+              sb={sb}
+              revision={revision}
+              onChanged={() => setRevision((r) => r + 1)}
+            />
           </>
         )}
       </NeedsAdmin>

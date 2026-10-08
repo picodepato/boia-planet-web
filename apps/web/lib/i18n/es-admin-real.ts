@@ -74,6 +74,14 @@ export const esAdminReal = {
   'admin.real.error.bottleConflict': 'Su autor ya tiene otra botella en el mar: no puede volver.',
   'admin.real.error.nicknameTaken': 'Su apodo ya es de otra persona: no se puede devolver.',
   'admin.real.error.invalidStatus': 'Eso ya cambió: vuelve a cargar.',
+  // Moderación fina de un Carnet (plan 020 T229)
+  'admin.real.error.unknownAnswer': 'Ese Carnet ya no tiene esa respuesta: vuelve a cargar.',
+  'admin.real.error.unknownTrash': 'Ese cambio ya no está en la papelera (deshecho o pasado el plazo).',
+  'admin.real.error.answerExists':
+    'Su dueño ya ha vuelto a responder esa pregunta: no se pisa su respuesta nueva.',
+  'admin.real.error.musicChanged': 'El enlace ha cambiado después: no se pisa.',
+  'admin.real.error.artistRequired': 'Sólo un Carnet de artista lleva enlace a su música.',
+  'admin.real.error.invalidMusic': 'Un enlace https de Spotify, SoundCloud, Bandcamp o Instagram.',
 
   // Fiestas y QR
   'admin.real.fiestas.title': 'Fiestas y QR',

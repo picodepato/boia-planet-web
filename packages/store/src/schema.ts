@@ -646,6 +646,8 @@ export const auditEntrySchema = z.object({
     'stamp',
     // Desde la v6 (T45): migración de partidas empezadas (destino de una misión).
     'migrate',
+    // Plan 020 T229: el Admin cambia o quita el enlace a la música de un Carnet de artista.
+    'music',
   ]),
   targetId: z.string().nullable(),
   before: z.unknown(),

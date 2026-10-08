@@ -29,7 +29,7 @@ export const esAdminGestion = {
   'admin.gestion.trash.undone': 'Deshecho: está como antes de ese cambio.',
   'admin.gestion.trash.noChanges': 'Ningún cambio dentro del plazo.',
   'admin.gestion.trash.realNote':
-    'Con cuentas, esta papelera guarda lo que se cambia en el contenido de este Admin. Lo de las secciones con datos reales (Carnets, botellas, Las Calitas, rankings) se devuelve desde su propia sección y queda en la auditoría de la base de datos.',
+    'Con cuentas, esta papelera guarda lo que se cambia en el contenido de este Admin. Lo de las secciones con datos reales (Carnets, botellas, Las Calitas, rankings) se devuelve desde su propia sección (una respuesta retirada o el enlace a la música de un artista, desde la papelera de moderación de Carnets) y queda en la auditoría de la base de datos.',
 
   // Analítica de visitas
   'admin.gestion.analytics.title': 'Analítica de visitas',

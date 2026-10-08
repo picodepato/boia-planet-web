@@ -121,6 +121,116 @@ const CARNET_MOD = {
   reason: t('admin.moderation.reason'),
 } as const;
 
+type CarnetAct = (action: CarnetModerationAction, ok: string) => void;
+
+/**
+ * Las respuestas de un Carnet, cada una con su botón: retirarla sola (el
+ * Carnet y las demás siguen) o devolverla (REQ-ADM-040, plan 020 T229).
+ */
+function AnswerList({ row, busy, act }: { row: AdminCarnetView; busy: boolean; act: CarnetAct }) {
+  const { carnet, moderation } = row;
+  if (!carnet.answers.length)
+    return <p className="admin-meta">{t('admin.moderation.answers.none')}</p>;
+  return (
+    <ul className="admin-list">
+      {carnet.answers.map((a) => {
+        const hidden = moderation?.answers[a.questionId] === a.answer;
+        return (
+          <li key={a.questionId} className="admin-row admin-row--between">
+            <span>
+              <span className="admin-meta">{a.question}</span>
+              <br />
+              {a.answer}
+              {hidden ? t('admin.moderation.oculta') : ''}
+            </span>
+            {hidden ? (
+              <button
+                type="button"
+                className="admin-link"
+                disabled={busy}
+                data-testid={`carnet-devolver-${row.userId}-${a.questionId}`}
+                onClick={() =>
+                  act(
+                    { kind: 'restore_answer', questionId: a.questionId },
+                    t('admin.moderation.carnets.done'),
+                  )
+                }
+              >
+                {t('admin.moderation.carnets.restoreAnswer')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="admin-button admin-button--ghost"
+                disabled={busy}
+                data-testid={`carnet-ocultar-${row.userId}-${a.questionId}`}
+                onClick={() =>
+                  act(
+                    { kind: 'hide_answer', questionId: a.questionId },
+                    t('admin.moderation.answers.removed'),
+                  )
+                }
+              >
+                {CARNET_MOD.hideAnswer}
+              </button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * El enlace a la música de un Carnet de artista: el Admin lo cambia o lo
+ * quita sin ocultar el Carnet (plan 020 T229). Pide el motivo de la tarjeta.
+ */
+export function MusicEditor({
+  testId,
+  current,
+  busy,
+  onSave,
+}: {
+  testId: string;
+  current: string | null;
+  busy: boolean;
+  onSave: (url: string) => void;
+}) {
+  const [url, setUrl] = useState(current ?? '');
+  return (
+    <div className="admin-row admin-row--end" data-testid={`${testId}-musica`}>
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.moderation.music.label')}</span>
+        <input
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          data-testid={`${testId}-musica-url`}
+        />
+        <span className="admin-meta">{t('admin.moderation.music.hint')}</span>
+      </label>
+      <button
+        type="button"
+        className="admin-button"
+        disabled={busy || url.trim() === (current ?? '')}
+        data-testid={`${testId}-musica-guardar`}
+        onClick={() => onSave(url)}
+      >
+        {t('admin.moderation.music.save')}
+      </button>
+      <button
+        type="button"
+        className="admin-button admin-button--danger"
+        disabled={busy || !current}
+        data-testid={`${testId}-musica-quitar`}
+        onClick={() => onSave('')}
+      >
+        {t('admin.moderation.music.remove')}
+      </button>
+    </div>
+  );
+}
+
 /** Un Carnet reportado: sus reportes y lo que se le puede retirar (REQ-ADM-040). */
 function CarnetRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
   const [reason, setReason] = useState(row.reports.find((r) => r.reason)?.reason ?? '');
@@ -177,54 +287,7 @@ function CarnetRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
           data-testid={`carnet-motivo-${row.userId}`}
         />
       </label>
-      {carnet.answers.length ? (
-        <ul className="admin-list">
-          {carnet.answers.map((a) => {
-            const hidden = moderation?.answers[a.questionId] === a.answer;
-            return (
-              <li key={a.questionId} className="admin-row admin-row--between">
-                <span>
-                  <span className="admin-meta">{a.question}</span>
-                  <br />
-                  {a.answer}
-                  {hidden ? t('admin.moderation.oculta') : ''}
-                </span>
-                {hidden ? (
-                  <button
-                    type="button"
-                    className="admin-link"
-                    disabled={busy}
-                    data-testid={`carnet-devolver-${row.userId}-${a.questionId}`}
-                    onClick={() =>
-                      act(
-                        { kind: 'restore_answer', questionId: a.questionId },
-                        t('admin.moderation.carnets.done'),
-                      )
-                    }
-                  >
-                    {t('admin.moderation.carnets.restoreAnswer')}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="admin-button admin-button--ghost"
-                    disabled={busy}
-                    data-testid={`carnet-ocultar-${row.userId}-${a.questionId}`}
-                    onClick={() =>
-                      act(
-                        { kind: 'hide_answer', questionId: a.questionId },
-                        t('admin.moderation.respuestaOculta'),
-                      )
-                    }
-                  >
-                    {CARNET_MOD.hideAnswer}
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+      <AnswerList row={row} busy={busy} act={act} />
       <div className="admin-row admin-row--end">
         <button
           type="button"
@@ -331,6 +394,30 @@ function CarnetModRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView })
           </button>
         ))}
       </div>
+      <details className="admin-details" data-testid={`carnet-mod-contenido-${row.userId}`}>
+        <summary>{t('admin.moderation.content.show')}</summary>
+        <AnswerList
+          row={row}
+          busy={busy}
+          act={(action, ok) =>
+            void run(() => ctx.actions.moderateCarnet(row.userId, action, reason), ok)
+          }
+        />
+        {row.carnet.isArtist ? (
+          <MusicEditor
+            key={row.carnet.musicLink?.url ?? ''}
+            testId={`carnet-mod-${row.userId}`}
+            current={row.carnet.musicLink?.url ?? null}
+            busy={busy}
+            onSave={(url) =>
+              void run(
+                () => ctx.actions.setCarnetMusic(row.userId, url, reason),
+                t('admin.moderation.music.saved'),
+              )
+            }
+          />
+        ) : null}
+      </details>
       <StatusLine status={status} />
     </li>
   );

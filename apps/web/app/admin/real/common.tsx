@@ -65,6 +65,13 @@ const REJECTION_TEXT: Partial<Record<string, MessageKey>> = {
   invalid_status: 'admin.real.error.invalidStatus',
   // Las Calitas (plan 019 T222)
   unknown_comment: 'admin.real.error.notFound',
+  // Moderación fina de un Carnet (plan 020 T229)
+  unknown_answer: 'admin.real.error.unknownAnswer',
+  unknown_trash: 'admin.real.error.unknownTrash',
+  answer_exists: 'admin.real.error.answerExists',
+  music_changed: 'admin.real.error.musicChanged',
+  artist_required: 'admin.real.error.artistRequired',
+  invalid_music: 'admin.real.error.invalidMusic',
 };
 
 /** Lo que se le dice al equipo de un error de Supabase (una RPC, la RLS, la red). */

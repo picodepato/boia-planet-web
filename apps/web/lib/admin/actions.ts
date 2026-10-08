@@ -14,6 +14,7 @@ import {
   discountSchema,
   eventAlbumId,
   eventSchema,
+  musicLinkFrom,
   worldObjectSchema,
 } from '@boia/contracts';
 import {
@@ -1219,6 +1220,17 @@ export function createAdminActions(deps: AdminDeps) {
       if (!restoring && !reason.trim())
         throw new AdminError(msg('admin.actions.haceFaltaUnMotivo2'));
       await repo.admin.moderateCarnet(userId, action, opts(reason.trim() || null));
+    },
+
+    /**
+     * Cambia o, con el enlace vacío, quita el enlace a la música de un Carnet
+     * de artista (plan 020 T229). Pide motivo; va a la papelera de cambios.
+     */
+    async setCarnetMusic(userId: string, url: string, reason: string) {
+      if (!reason.trim()) throw new AdminError(msg('admin.actions.haceFaltaUnMotivo2'));
+      const link = musicLinkFrom(url);
+      if (link === 'invalid') throw new AdminError(msg('admin.moderation.music.invalid'));
+      await repo.admin.setCarnetMusic(userId, link, opts(reason.trim()));
     },
 
     /** Devuelve al mar una botella retirada por moderación (plan 017 T191). */

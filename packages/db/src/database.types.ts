@@ -2050,6 +2050,12 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_carnet_content: {
+        Args: {
+          p_user: string;
+        };
+        Returns: Json;
+      };
       admin_delete_member: {
         Args: {
           p_user: string;
@@ -2078,6 +2084,12 @@ export type Database = {
           p_moderated_only?: boolean;
           p_limit?: number;
           p_offset?: number;
+        };
+        Returns: Json;
+      };
+      admin_list_moderation_trash: {
+        Args: {
+          p_limit?: number;
         };
         Returns: Json;
       };
@@ -2133,6 +2145,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_remove_carnet_answer: {
+        Args: {
+          p_user: string;
+          p_question: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_restore_bottle: {
         Args: {
           p_bottle: string;
@@ -2160,6 +2180,15 @@ export type Database = {
         Args: {
           p_user: string;
           p_is_artist: boolean;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_set_carnet_music: {
+        Args: {
+          p_user: string;
+          p_platform?: string;
+          p_url?: string;
           p_reason?: string;
         };
         Returns: Json;
@@ -2208,6 +2237,13 @@ export type Database = {
           p_number: number;
         };
         Returns: string | null;
+      };
+      admin_undo_carnet_moderation: {
+        Args: {
+          p_id: string;
+          p_reason?: string;
+        };
+        Returns: Json;
       };
       admin_use_backup_code: {
         Args: {

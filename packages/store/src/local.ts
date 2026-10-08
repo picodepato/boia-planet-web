@@ -2141,6 +2141,76 @@ class LocalRepository implements BoiaRepository {
       );
     };
 
+    /**
+     * Deshace una moderación de Carnet (plan 020 T229): sólo lo que tocó esa
+     * entrada (una respuesta, la foto, el apodo, oculto), sin deshacer las
+     * de después.
+     */
+    const revertModeration = (
+      d: StoreDoc,
+      target: string,
+      before: unknown,
+      after: unknown,
+      reason: string,
+    ) => {
+      const slash = target.indexOf('/');
+      const userId = slash < 0 ? target : target.slice(0, slash);
+      const empty = { answers: {} as Record<string, string>, photo: null, nickname: null, hidden: false };
+      const b = (before as CarnetModeration | null) ?? empty;
+      const a = (after as CarnetModeration | null) ?? empty;
+      const prev = clone(d.carnetModeration[userId] ?? null);
+      const cur: CarnetModeration = prev
+        ? clone(prev)
+        : { answers: {}, photo: null, nickname: null, hidden: false, updatedAt: this.iso() };
+      for (const k of new Set([...Object.keys(b.answers), ...Object.keys(a.answers)])) {
+        if (b.answers[k] === a.answers[k]) continue;
+        if (b.answers[k] === undefined) delete cur.answers[k];
+        else cur.answers[k] = b.answers[k];
+      }
+      if (b.photo !== a.photo) cur.photo = b.photo;
+      if (b.nickname !== a.nickname) cur.nickname = b.nickname;
+      if (b.hidden !== a.hidden) cur.hidden = b.hidden;
+      cur.updatedAt = this.iso();
+      if (moderationIsEmpty(cur)) delete d.carnetModeration[userId];
+      else d.carnetModeration[userId] = cur;
+      this.audit(
+        d,
+        {
+          area: 'carnets',
+          action: 'moderate',
+          targetId: target,
+          before: prev,
+          after: d.carnetModeration[userId] ?? null,
+        },
+        { reason },
+      );
+    };
+    /** Devuelve el enlace a la música de un artista si sigue como lo dejó el cambio (T229). */
+    const revertMusic = (
+      d: StoreDoc,
+      target: string,
+      before: unknown,
+      after: unknown,
+      reason: string,
+    ) => {
+      const userId = target.slice(0, target.lastIndexOf('/'));
+      const c = d.carnets[userId];
+      if (!c) throw new StoreError('not_found', `Carnet ${userId}`);
+      const current = c.musicLink ?? null;
+      if (JSON.stringify(current) !== JSON.stringify(after ?? null))
+        throw new StoreError('conflict', 'el enlace ha cambiado después; no se pisa');
+      const back = (before as MusicLink | null) ?? null;
+      if (back) c.musicLink = { ...back };
+      else delete c.musicLink;
+      c.version++;
+      c.updatedAt = this.iso();
+      this.audit(
+        d,
+        { area: 'carnets', action: 'music', targetId: target, before: current, after: back },
+        { reason },
+      );
+    };
+
     interface Undoable {
       item: ChangeItem;
       revert: (d: StoreDoc, reason: string) => void;
@@ -2169,6 +2239,16 @@ class LocalRepository implements BoiaRepository {
           out.push({
             item: { ...base, kind: e.before === null ? 'create' : 'edit' },
             revert: (x, why) => revertEntity(x, area, id, e.before, why),
+          });
+        } else if (e.action === 'moderate' && area === 'carnets' && id) {
+          out.push({
+            item: { ...base, kind: 'edit' },
+            revert: (x, why) => revertModeration(x, id, e.before, e.after, why),
+          });
+        } else if (e.action === 'music' && area === 'carnets' && id) {
+          out.push({
+            item: { ...base, kind: 'edit' },
+            revert: (x, why) => revertMusic(x, id, e.before, e.after, why),
           });
         } else if (e.action === 'set' && SET_AREAS.has(area)) {
           out.push({
@@ -2346,7 +2426,7 @@ class LocalRepository implements BoiaRepository {
           .map((u) => clone(u.item))
           .reverse(),
       revertChange: async (id, opts) => {
-        await this.mutate(['content', 'audit'], (d) => {
+        await this.mutate(['content', 'carnet', 'audit'], (d) => {
           const u = undoableOf(d).find((x) => x.item.id === id);
           if (!u)
             throw new StoreError('not_found', `cambio ${id}: no está o ya pasó el plazo de la papelera`);
@@ -2828,6 +2908,27 @@ class LocalRepository implements BoiaRepository {
               before,
               after: d.carnetModeration[userId] ?? null,
             },
+            opts,
+          );
+        }),
+      setCarnetMusic: async (userId, link, opts) =>
+        this.mutate(['carnet', 'audit'], (d, skip) => {
+          const c = d.carnets[userId];
+          if (!c) throw new StoreError('not_found', `Carnet ${userId}`);
+          if (!c.isArtist) invalid('sólo un Carnet de artista lleva enlace a su música');
+          const before = c.musicLink ? { ...c.musicLink } : null;
+          const after = link === null ? null : checkMusicLink(link);
+          if (JSON.stringify(before) === JSON.stringify(after)) {
+            skip();
+            return;
+          }
+          if (after) c.musicLink = after;
+          else delete c.musicLink;
+          c.version++;
+          c.updatedAt = this.iso();
+          this.audit(
+            d,
+            { area: 'carnets', action: 'music', targetId: `${userId}/music`, before, after },
             opts,
           );
         }),

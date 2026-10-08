@@ -838,6 +838,12 @@ export interface AdminApi {
     action: CarnetModerationAction,
     opts?: AdminOptions,
   ): Promise<void>;
+  /**
+   * Cambia o (con null) quita el enlace a la música de un Carnet de artista
+   * (plan 020 T229), sin ocultar el Carnet. Va a la papelera de cambios:
+   * «Deshacer» lo devuelve si nadie lo ha cambiado después.
+   */
+  setCarnetMusic(userId: string, link: MusicLink | null, opts?: AdminOptions): Promise<void>;
   /** Da por revisado un reporte de Carnet sin retirar nada. */
   resolveCarnetReport(reportId: string, resolution: string, opts?: AdminOptions): Promise<void>;
 
