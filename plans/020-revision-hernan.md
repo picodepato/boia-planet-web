@@ -117,7 +117,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome: Puig Campana 2D (Arcilla canon), ink outline on every island boia, 2D sprites and boia-tutorial; island tri cap 30k→36k · 110c7ce
 
 ## T232 — Las Calitas: island model, 2D art and REQ
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T231
 - Model: opus
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
@@ -129,10 +129,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - `/mar` shows the new island model and its 2D art → screenshots + contact sheet under the attach folder
   - `python3 tools/spec/estado.py` → exit 0 with the new REQ HECHO and its test
   - Test command → exit 0
-- Outcome:
+- Outcome: Las Calitas GLB (22 476 tris: rock crescent, cove, comments board, glowing speech bubble), Arcilla 2D sprite via `islas_sueltas`, REQ-IDE-054 HECHO · 7920bc6
 
 ## T234 — Galería: a real collage, also on the landing and in the world sheet
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T227
 - Model: opus
 - Skills: frontend-design
@@ -153,7 +153,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Skills: none
 - Goal: Check the batch builds together, fix what the integration broke, and leave the test guide for Hernán, who runs the e2e himself.
 - Context: this plan, ESTADO.md sections of T226–T232, `docs/propuestas/2026-10-08-plan-019-guia-prueba.md` as the model for the guide.
-- Scope: may touch fixes for breakages between tasks, e2e specs, `docs/propuestas/2026-10-08-plan-020-guia-prueba.md`, `docs/spec/estado.md` / must not add features.
+- Scope: may touch fixes for breakages between tasks, the Las Calitas sea label colour (orange like the other island labels, decision 2), e2e specs, `docs/propuestas/2026-10-08-plan-020-guia-prueba.md`, `docs/spec/estado.md` / must not add features.
 - Done when:
   - no full e2e run; the guide lists the e2e command and the specs touched by T226–T232 and T234 for Hernán to run
   - the guide lists what to try by hand per review point and the migrations (8 pending + T229/T230) in order for `boia-planet-dev`
@@ -171,7 +171,11 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 
 - 2026-10-08 T229: Supabase removal deletes the answer and keeps it in `private.carnet_moderation_trash` (30 days, purged on each write, no cron); undo refused if changed since (`answer_exists`/`music_changed`); music edit/removal needs a reason; every local Carnet moderation undoable (agent)
 
+- 2026-10-08 T232: art direction muestra in the clay style; 2D via new `islas_sueltas` in mapa.json + optional `mundos` in lugares.json; Acuarela keeps placeholder; not added to `mapa.py all_islands` (2 design routes cross it) (agent)
+- 2026-10-08 T233: scope extended: Las Calitas' sea label is cream, make it orange like the other island labels (decision 2) (orchestrator)
+
 ## Proposals (new scope)
+- 2026-10-08 T232: design routes `exploracion` and `d_solar` in mapa.json cross Las Calitas; counting it as land would need rerouting
 - 2026-10-08 T229: the local change trash shows the Carnet by user id, not nickname
 - 2026-10-08 T231: `mundos/arcilla/mapa.json` still names the place «Isla del Cañón»; stale `sources_sha256` in other Arcilla place manifests; if ship boia GLBs are regenerated, check mascot-look.test.ts (`ink_gltf` prefix)
 - 2026-10-08 T226: «Entradas» sub-line during a trip («Rumbo a Ca…») cut by the bottom bar's fixed height; music/effects in Ajustes still checkboxes, not toggles; 🪙 shows as a box in headless Chromium
@@ -189,3 +193,5 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T231 done · merged 110c7ce
 - 2026-10-08 T232 launched · attempt 1 · agent a76531210277fe164
 - 2026-10-08 T229 done · merged 390ebbc
+- 2026-10-08 T230 launched · attempt 1 · agent aa9c232ce594feb84
+- 2026-10-08 T232 done · merged 7920bc6
