@@ -165,7 +165,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: `tools/blender/islas/puigcampana.py` (ID canon) → canon.glb: pyramid with the Portà notch, Finestrat village, pines, cannon and pier; islands.ts fallback redrawn, Cañón collision/minigame untouched · a09df2f
 
 ## T222 — Las Calitas: comments island with replies, votes, insult filter and moderation
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T221
 - Model: opus
 - Goal: New island Las Calitas where people write comments, reply and vote, with an insult filter; Admin moderates them; local mode shows sample comments plus your own (decision 16).
@@ -175,10 +175,10 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - local mode: open Las Calitas, post a comment, reply, vote; an insult is rejected → e2e
   - Admin hides a comment and it disappears → e2e (local)
   - Test command → exit 0
-- Outcome:
+- Outcome: island `calitas` (three.js clay, NW sea) with comments, one-level replies, votes, insult filter (browser + DB copies), Admin hide/show; local sample comments; migration 20261008100500 to apply · b393a4a
 
 ## T223 — Admin: 3 full-access admins, 30-day trash, analytics switch, daily backups
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T222, T218, T217
 - Model: opus
 - Goal: Limit full access to 3 people; a 30-day trash that covers every change or deletion made from Admin and can restore it; an Admin switch for visit analytics; a GitHub Actions workflow for daily `pg_dump` backups kept 30 days, with a guide for Hernán (decision 17).
@@ -236,6 +236,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T221: module `puigcampana.py` with `ID = "canon"`; exporter/check match modules by ID (agent)
 - 2026-10-08 T221: mar-canon.spec failed on 3 layout checks caused by T213 fonts (HUD height 79.7 > 76; final screen overlaps «Entradas» at 360×640) → integrated T221 and added fix task T225 (orchestrator, option A)
 - 2026-10-08 T218 push offer: Hernán replied «Codex ya está activo para las imágenes del cómic, pasa varias pruebas antes del diseño final para decidir qué estética elijo»: not a push; unclear target (no comic in plan 019) → asked him (orchestrator)
+- 2026-10-08 T222: visit achievement only (no points/tickets); local mode comments without carnet, Supabase needs account with carnet; rate limit 5/10 min, 30/day; one vote per person, no self-vote (agent)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
@@ -246,6 +247,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T217: with Supabase, Admin cannot edit an artist carnet's music link (only content artists')
 - 2026-10-08 T220: mascot boias inside island GLBs (allday, faro, ultima) and 2D sprites have no outline; art/boia-tutorial unchanged (render.py needs Blender ≥ 4.2)
 - 2026-10-08 T221: 2D world art of place `canon` (art/mundos/{arcilla,acuarela}/canon/) still shows the Banyets fortín
+- 2026-10-08 T222: no REQ for Las Calitas in docs/spec; no Blender model or 2D art for the island
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -271,3 +273,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T221 launched · attempt 1 · agent ac7fce138eec8f194 (fable)
 - 2026-10-08 T218 done · merged b605f04
 - 2026-10-08 T221 blocked on 3 unrelated e2e → orchestrator chose A · merged a09df2f
+- 2026-10-08 T222 launched · attempt 1 · agent aee4608957ec33ffa
+- 2026-10-08 T225 launched · attempt 1 · agent afa1157fe1c499eb3
+- 2026-10-08 T222 done · merged b393a4a
