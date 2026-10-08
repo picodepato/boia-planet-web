@@ -1,7 +1,7 @@
 import { circuitFromWorld } from '@boia/engine/circuit';
 import { RACE_FAST_ACHIEVEMENT, SAMPLE_ACHIEVEMENTS, SAMPLE_CREW } from '@boia/store';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -175,6 +175,24 @@ async function pilot(page: Page, goal: Goal, ms = 200_000): Promise<string> {
 }
 
 /**
+ * Las tarjetas de la carrera no tapan «Menú» ni el «!» de la izquierda y caben
+ * en la pantalla (plan 018: en el móvil los tapaban; T226).
+ */
+async function expectClearOfLeftColumn(page: Page, card: Locator) {
+  const c = (await card.boundingBox())!;
+  const view = page.viewportSize()!;
+  expect(c.x, 'dentro de la pantalla').toBeGreaterThanOrEqual(0);
+  expect(c.x + c.width, 'dentro de la pantalla').toBeLessThanOrEqual(view.width);
+  for (const id of ['mar-logros', 'mar-ayuda-abrir']) {
+    const b = await page.getByTestId(id).boundingBox();
+    if (!b) continue;
+    const apart =
+      c.x >= b.x + b.width || b.x >= c.x + c.width || c.y >= b.y + b.height || b.y >= c.y + c.height;
+    expect(apart, `la tarjeta no tapa ${id}`).toBe(true);
+  }
+}
+
+/**
  * Llega a la salida: sale la tarjeta que explica la carrera y no empieza
  * sola; «Empezar» lanza la cuenta atrás. El barco se queda quieto en la
  * salida durante ella aunque se pulse adelante, y sale al «¡Ya!».
@@ -186,6 +204,7 @@ async function startRace(page: Page) {
   await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');
   const offer = page.getByTestId('mar-carrera-oferta');
   await expect(offer).toBeVisible();
+  await expectClearOfLeftColumn(page, offer);
   await expect(offer).toContainText(placeName);
   await expect(offer).toContainText(String(spec.laps));
   await expect(offer).toContainText(/fantasma/i);
@@ -265,6 +284,7 @@ test('Los Rápidos: pregunta en la salida, tres vueltas por las boias, medalla, 
   expect(await topKnots(page)).toBeGreaterThanOrEqual(RACE_KNOTS);
   const card = page.getByTestId('mar-carrera-final');
   await expect(card).toBeVisible();
+  await expectClearOfLeftColumn(page, card);
   // En meta vuelven las marcas amarillas y el crucero de 15 nudos (T109).
   await expect(ruta(page)).toHaveAttribute('data-ruta', 'on');
   await expect(manejo(page)).toHaveAttribute('data-manejo', 'crucero');

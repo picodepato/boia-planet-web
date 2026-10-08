@@ -453,6 +453,8 @@ interface PinView {
   w: number;
   h: number;
   look: string;
+  /** Lo que se desplaza la punta para seguir señalando su lugar (px, T226). */
+  tip?: number;
 }
 
 interface Anchor {
@@ -4141,8 +4143,8 @@ export class Mar3D {
       });
       shown.push(p);
     }
-    // Tampoco por encima del borde de arriba de la pantalla.
-    const looks = layoutPins(sights, [...this.hudRects, ABOVE_SCREEN]);
+    // Tampoco por encima del borde de arriba de la pantalla, ni por los lados (T226).
+    const looks = layoutPins(sights, [...this.hudRects, ABOVE_SCREEN], W);
     const seen = new Set<PinView>();
     shown.forEach((p, i) => {
       const look = looks[i]!;
@@ -4154,6 +4156,13 @@ export class Mar3D {
         p.el.classList.add('is-on');
       }
       p.el.style.transform = `translate3d(${look.x.toFixed(1)}px, ${look.y.toFixed(1)}px, 0) scale(${look.scale.toFixed(3)})`;
+      // Apartado de un mando o del borde: la punta sigue señalando su lugar (T226).
+      const room = Math.max(0, p.w / 2 - 10);
+      const tip = Math.round(Math.max(-room, Math.min(room, (s.x - look.x) / look.scale)));
+      if (tip !== (p.tip ?? 0)) {
+        p.tip = tip;
+        p.el.style.setProperty('--pin-tip', `${tip}px`);
+      }
       const key = `${far ? 'm' : ''}${s.horizon ? 'h' : ''}${look.behind ? 'b' : ''}${look.alpha.toFixed(2)}`;
       if (key !== p.look) {
         p.look = key;

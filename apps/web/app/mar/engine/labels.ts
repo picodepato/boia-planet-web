@@ -151,13 +151,44 @@ export function placeClearOfHud(
   return null;
 }
 
+/** px que se dejan entre un rótulo y el borde de la pantalla, a cada lado (T226). */
+export const SCREEN_EDGE = 6;
+
+/**
+ * Dentro de la pantalla por los lados (T226): la `x` de la punta para que la
+ * caja (a escala `scale`) no se salga por la izquierda ni por la derecha de
+ * una pantalla de `width` px. Si apartarlo hacia dentro le hace pisar un
+ * mando, se queda donde estaba; si no cabe de ancho, centrado.
+ */
+export function insideScreen(
+  p: Pick<PinSight, 'w' | 'h'>,
+  at: { x: number; y: number },
+  scale: number,
+  width: number,
+  hud: readonly Rect[],
+): number {
+  const half = (p.w * scale) / 2;
+  const x =
+    2 * (half + SCREEN_EDGE) > width
+      ? width / 2
+      : Math.min(width - SCREEN_EDGE - half, Math.max(SCREEN_EDGE + half, at.x));
+  if (x === at.x) return x;
+  const box = pinBox({ ...p, x, y: at.y }, scale);
+  return hud.some((r) => intersects(box, r, HUD_MARGIN)) ? at.x : x;
+}
+
 /**
  * Cómo se pone cada rótulo (en el orden de `pins`). Ninguno pisa los mandos
  * (`hud`): baja por debajo, sobre su isla, o se apaga. Los más cercanos
  * mandan: uno que pisa la isla o el rótulo de otro más cercano se apaga
- * (o, si es de lo que vende, se queda pequeño y tenue).
+ * (o, si es de lo que vende, se queda pequeño y tenue). Con `width` (el
+ * ancho de la pantalla, T226), ninguno se sale por los lados.
  */
-export function layoutPins(pins: readonly PinSight[], hud: readonly Rect[]): PinLook[] {
+export function layoutPins(
+  pins: readonly PinSight[],
+  hud: readonly Rect[],
+  width?: number,
+): PinLook[] {
   const out: PinLook[] = pins.map((p) => ({
     on: false,
     x: p.x,
@@ -175,12 +206,16 @@ export function layoutPins(pins: readonly PinSight[], hud: readonly Rect[]): Pin
     const far = farness(p);
     let scale = 1 - (1 - FAR_SCALE) * far;
     let alpha = 1 - (1 - FAR_ALPHA) * far;
-    let at = placeClearOfHud(p, scale, hud);
+    const place = (s: number) => {
+      const a = placeClearOfHud(p, s, hud);
+      return a && width ? { x: insideScreen(p, a, s, width, hud), y: a.y } : a;
+    };
+    let at = place(scale);
     const behind = at !== null && taken.some((r) => intersects(pinBox({ ...p, ...at! }, scale), r));
     if (behind) {
       scale = Math.min(scale, BEHIND_SCALE);
       alpha = Math.min(alpha, BEHIND_ALPHA);
-      at = placeClearOfHud(p, scale, hud);
+      at = place(scale);
     }
     const on = p.label !== false && at !== null && (!behind || p.always);
     out[i] = {

@@ -984,12 +984,14 @@
   text-align: left;
 }
 
+/* Los interruptores (T226, decisión 3): lo único redondeado del mundo, una
+   pastilla con la bola redonda. */
 .mar-castle-switch__track {
   flex: none;
   position: relative;
   width: 44px;
   height: 26px;
-  border-radius: var(--radius);
+  border-radius: 999px;
   background: rgb(127 127 127 / 0.45);
   transition: background 0.15s;
 }

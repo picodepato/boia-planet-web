@@ -10,7 +10,9 @@
  *
  * Esquinas (decisión 3): ninguna redondeada. Todo el CSS usa var(--radius),
  * que vale 0; sólo las formas redondas de por sí (la boia, avatares, puntos,
- * el minimapa, los mandos circulares del juego) llevan 50 %.
+ * el minimapa, los mandos circulares del juego) llevan 50 %. La excepción
+ * (plan 020, decisión 3): los interruptores del menú del mundo, una pastilla
+ * con la bola redonda.
  *
  * Botones (T213): rectos, borde negro y sombra dura desplazada, como un botón
  * de recreativa; al pulsarlos se hunden hacia la sombra. Cada hoja los aplica

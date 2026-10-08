@@ -4,6 +4,57 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T226: World UI: fonts, labels, buttons and HUD details
+
+Qué existe (revisión de Hernán, puntos 2–9, y lo pendiente del plan 018):
+
+- **Rótulos de los lugares** (`.mar-pin`): la de botones a 10 px (11 px en el
+  mapa y en escritorio) y, si el nombre no cabe, a dos líneas, entero
+  (decisión 1; antes `.mar button` les ganaba y salían a 12,8 px en una
+  línea). `labels.ts` gana `insideScreen` y `layoutPins(…, width)`: ningún
+  rótulo se sale por los lados (se aparta hacia dentro si no pisa un mando) y
+  su punta sigue señalando su lugar (`--pin-tip`). Los naranjas siguen naranjas.
+- **Fichas**: el título de la ficha pequeña ya no se recorta («…»): a dos
+  líneas. «Navegar» e «Ir en nave» a 11 px, en una línea en 390 px. Los
+  botones del mundo (`.mar-btn`) con aire arriba y abajo cuando pasan a dos líneas.
+- **Chips y tarjetas de arriba** (rumbo, carrera): a la derecha de la columna
+  del Menú y el «!», nunca encima (plan 018); en pantallas ≥ 640 px,
+  centrados con el mismo hueco a cada lado. El rumbo largo pasa a dos líneas;
+  la cabecera de las tarjetas de Los Rápidos ya no empuja la × fuera.
+- **Cronómetro de Los Rápidos**: de 1rem a 0,8rem (vuelta/boia a 0,68rem).
+- **Numerito de logros por reclamar**: 15 px, 7 px de letra.
+- **«TURBO»** centrado (sin negrita sintética ni espaciado, 8 px).
+- **«!»** de objetivos en naranja BOIA (decisión 2); abierto, crema con «!» naranja.
+- **Interruptores** del Cañón (lecturas, sonido del juego) y del Castillo
+  (capas, guía): pastilla con bola redonda (decisión 3; anotado en `globals.css`).
+- **Menú**: casillas a 10 px, «Controles» cabe centrado en su casilla; el
+  nombre del barco ya no se recorta.
+
+Comandos:
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 258 archivos, 2349 pasan, 1 omitida
+- `sh tools/spec/checks.sh` → OK
+- `pnpm lint` → exit 0
+- `pnpm build` → exit 0 (landing 195,9 kB de 200 kB)
+- `pnpm typecheck` → exit 0
+- `labels.test.ts` → 16 pasan (4 nuevas: bordes de la pantalla)
+
+Capturas (390×844 y 1366×800): `/tmp/orchestrator-attach/boia-planet-hernan-T226/`
+(`b-*` antes, `after-*` después).
+
+e2e que Hernán debería correr (no corridos aquí, política del plan):
+`mar-circuito.spec.ts` (nuevo: las tarjetas de salida y meta no tapan Menú ni «!»),
+`mar-rotulos.spec.ts`, `mar-puerto.spec.ts`, `mar-hud.spec.ts`, `mar-ayuda.spec.ts`,
+`logros.spec.ts`, `mar-canon.spec.ts` (interruptores de la pausa),
+`mar-castillo.spec.ts`, `mar-3d.spec.ts`.
+
+Pendiente:
+
+- La línea pequeña de «Entradas» durante un viaje («Rumbo a Ca…») sigue
+  recortada: la barra de abajo tiene alto fijo; cambiarla es otro diseño.
+- Los «Activada/Activados» de Ajustes (música, efectos) siguen como casillas,
+  no interruptores.
+
 ## 2026-10-08 — plan 019 T224: Close plan 019
 
 Qué existe:

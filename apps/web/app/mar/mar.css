@@ -285,9 +285,11 @@
   border-radius: var(--radius);
   background: rgb(27 20 64 / 0.05);
   color: var(--ink) !important;
-  font-size: 0.78rem;
+  /* T226: a 12,5 px «Controles» (Press Start 2P, ancha) se salía de su
+     casilla de tres por fila en el móvil; a 10 px cabe entera y centrada. */
+  font-size: 0.625rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.35;
   text-align: center;
 }
 
@@ -326,13 +328,14 @@
 .mar-menu__name {
   max-width: 100%;
   text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
+/* T226 (decisión 1): el nombre del barco o del mundo, entero, a dos líneas. */
 .mar-menu__sub {
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .mar-menu__sub {
@@ -489,6 +492,19 @@
   right: -3px;
 }
 
+/* T226: con la de botones el numerito de logros por reclamar pesaba más que
+   el botón; más pequeño, sin dejar de leerse. */
+.mar .logros-contador {
+  min-width: 15px;
+  height: 15px;
+  padding: 0 2px;
+  border-width: 1.5px;
+  font-family: var(--font-button);
+  font-size: 7px;
+  font-weight: 400;
+  line-height: 12px;
+}
+
 /* El «!» de objetivos: del tamaño del menú, justo debajo; abre
    una tarjetita a su lado con el objetivo y una pista. */
 .mar-ayuda-btn {
@@ -507,6 +523,12 @@
   font-weight: 900;
   line-height: 1;
   animation: mar-in 0.3s ease-out;
+}
+
+/* T226 (decisión 2): el «!» en naranja BOIA, para que llame la atención. */
+.mar .mar-ayuda-btn {
+  background: var(--orange);
+  border-color: rgb(255 255 255 / 0.35);
 }
 
 .mar-ayuda-btn[aria-expanded='false'] {
@@ -529,9 +551,11 @@
   }
 }
 
-.mar-ayuda-btn[aria-expanded='true'] {
-  background: var(--orange);
+/* Abierto: crema con el «!» naranja, unido a su tarjeta crema. */
+.mar .mar-ayuda-btn[aria-expanded='true'] {
+  background: var(--cream);
   border-color: transparent;
+  color: var(--orange) !important;
 }
 
 .mar-ayuda-btn:active {
@@ -578,7 +602,8 @@
   width: 100%;
   min-height: 36px;
   margin-top: 6px;
-  padding: 0 12px;
+  padding: 7px 12px;
+  line-height: 1.4;
   border: 0;
   border-radius: var(--radius);
   background: var(--orange);
@@ -687,19 +712,32 @@
   line-height: 1;
 }
 
+/* T226: a la derecha de la columna del Menú y el «!» (su borde derecho más
+   8 px), nunca encima: en el móvil las tarjetas de la carrera los tapaban
+   (plan 018). En pantallas anchas, con el mismo hueco a cada lado, centrados. */
 .mar-chips {
+  --chips-gutter: calc(10px + (var(--mini) + 54px) / 2 + 8px);
   position: absolute;
   top: var(--top-space);
-  left: 50%;
-  transform: translateX(-50%);
+  left: calc(var(--safe-l) + var(--chips-gutter));
+  right: calc(var(--safe-r) + 10px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   z-index: 3;
-  width: max-content;
-  /* Sin pisar el botón del menú de la izquierda (T65). */
-  max-width: calc(100% - 2 * (var(--safe-l) + 10px + var(--mini) + 4px));
+  pointer-events: none;
+}
+
+.mar-chips > * {
+  pointer-events: auto;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .mar-chips {
+    right: calc(var(--safe-r) + var(--chips-gutter));
+  }
 }
 
 .mar-chip {
@@ -712,7 +750,10 @@
   font-size: 0.86rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  /* T226 (decisión 1): un nombre largo pasa a dos líneas, entero. */
+  white-space: normal;
+  text-wrap: balance;
+  line-height: 1.25;
 }
 
 .mar-chip.is-on {
@@ -737,8 +778,17 @@
 }
 
 .mar-chip--race {
+  min-height: 30px;
+  padding: 4px 10px;
+  gap: 6px;
   background: var(--glass-strong);
-  font-size: 1rem;
+  /* T226: con la letra de texto de T213, 1rem se hacía grande. */
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.mar-chip--race .mar-chip__sub {
+  font-size: 0.68rem;
 }
 
 /* Fuera de la carretera de la carrera (T76): cuenta atrás de 5 s para volver. */
@@ -768,7 +818,7 @@
 
 .mar-carrera {
   pointer-events: auto;
-  width: min(300px, calc(100vw - 24px));
+  width: min(300px, 100%);
   padding: 10px 12px 12px;
   border-radius: var(--radius);
   background: var(--glass-strong);
@@ -787,16 +837,22 @@
 }
 
 .mar-carrera__medal {
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 1.05rem;
-  white-space: nowrap;
+  line-height: 1.2;
 }
 
+.mar-carrera__head > .mar-chip__x {
+  flex: none;
+}
+
+/* T226 (decisión 1): el nombre entero, a dos líneas si no cabe. */
 .mar-carrera__place {
   flex: 1;
+  min-width: 0;
   opacity: 0.75;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .mar-carrera p {
@@ -817,6 +873,8 @@
   margin-top: 8px;
   width: 100%;
   min-height: 36px;
+  padding: 6px 8px;
+  line-height: 1.3;
   border: 0;
   border-radius: var(--radius);
   background: var(--orange);
@@ -833,7 +891,7 @@
 
 /* Los Rápidos (T73): la tarjeta de la salida («¿Empezar?») y la tabla de meta. */
 .mar-carrera--oferta {
-  width: min(320px, calc(100vw - 24px));
+  width: min(320px, 100%);
 }
 
 .mar-carrera__actions {
@@ -849,6 +907,8 @@
   flex: 1;
   margin-top: 8px;
   min-height: 36px;
+  padding: 6px 8px;
+  line-height: 1.3;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: transparent;
@@ -1098,10 +1158,15 @@
   line-height: 1;
 }
 
+/* T226: centrado. La negrita sintética de Press Start 2P (sólo tiene 400)
+   la ensanchaba hacia la derecha y no cabía en el círculo. */
 .mar-turbo small {
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  max-width: 100%;
+  font-size: 0.5rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -1210,14 +1275,19 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 11px 5px 7px;
+  padding: 5px 9px 5px 7px;
   border: 0;
   border-radius: var(--radius);
   background: var(--cream);
   color: var(--ink) !important;
-  font-size: 0.78rem;
-  font-weight: 800;
-  white-space: nowrap;
+  /* T226 (decisión 1): la de botones a 10 px y, si el nombre no cabe, a dos
+     líneas (nunca recortado): «Castillo de Santa Bárbara» se salía del móvil. */
+  font-weight: 400;
+  line-height: 1.35;
+  width: max-content;
+  max-width: min(170px, 46vw);
+  white-space: normal;
+  text-align: center;
   box-shadow: 0 6px 16px rgb(10 6 40 / 0.35);
   opacity: 0;
   pointer-events: none;
@@ -1231,7 +1301,8 @@
 .mar-pin::after {
   content: '';
   position: absolute;
-  left: 50%;
+  /* La punta sigue a su isla aunque el rótulo se aparte del borde (T226). */
+  left: calc(50% + var(--pin-tip, 0px));
   bottom: -6px;
   width: 12px;
   height: 12px;
@@ -1257,13 +1328,24 @@
   box-shadow: none;
 }
 
-.mar-pin.is-map {
-  font-size: 0.86rem;
-  padding: 7px 13px 7px 9px;
+/* Con `.mar` delante: `.mar button` (80 %) le ganaría. */
+.mar .mar-pin {
+  font-size: 0.625rem;
+}
+
+.mar .mar-pin.is-map {
+  font-size: 0.6875rem;
+  padding: 6px 10px 6px 8px;
 }
 
 .mar-pin__icon {
-  font-size: 1.05em;
+  flex: none;
+  font-size: 1.2em;
+}
+
+.mar-pin__text {
+  min-width: 0;
+  text-wrap: balance;
 }
 
 .mar-pin--accent {
@@ -1566,12 +1648,12 @@
 }
 
 .mar-sheet.is-compact .mar-sheet__title {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
+  line-height: 1.15;
   margin-bottom: 4px;
   padding-right: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .mar-sheet.is-compact .mar-sheet__meta {
@@ -1597,9 +1679,15 @@
 }
 
 .mar-sheet.is-compact .mar-sheet__actions > .mar-btn:not(:only-child) {
+  flex: 1 1 0;
   min-width: 0;
-  padding: 0 12px;
-  white-space: nowrap;
+  padding: 6px;
+}
+
+/* T226: a 11 px «Navegar» e «Ir en nave» caben en una línea en un móvil de
+   390 px; si no (más estrecho, otro idioma), pasan a dos. */
+.mar .mar-sheet.is-compact .mar-sheet__actions > .mar-btn:not(:only-child) {
+  font-size: 0.6875rem;
 }
 
 .mar-sheet.is-compact .mar-btn {
@@ -1681,8 +1769,14 @@
   font-family: var(--font-button);
   font-size: var(--btn-font-size);
   line-height: 1.4;
+  text-align: center;
   text-decoration: none;
   flex: 1 1 auto;
+}
+
+/* T226 (decisión 1): un botón largo pasa a dos líneas con aire arriba y abajo. */
+.mar-btn {
+  padding-block: 6px;
 }
 
 .mar-btn:active:not(:disabled),
@@ -1883,6 +1977,12 @@
   .mar-globe.is-map .mar-minimap {
     width: 72px;
     height: 72px;
+  }
+
+  /* T226: con sitio, los rótulos un poco más grandes y en una línea si caben. */
+  .mar .mar-pin {
+    font-size: 0.6875rem;
+    max-width: 340px;
   }
 }
 

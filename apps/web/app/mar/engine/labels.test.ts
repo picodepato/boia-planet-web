@@ -15,7 +15,9 @@ import {
   PIN_TIP,
   type PinSight,
   type Rect,
+  SCREEN_EDGE,
   clearOfHud,
+  insideScreen,
   intersects,
   layoutPins,
   modelLabelY,
@@ -106,6 +108,39 @@ describe('los mandos', () => {
     });
     expect(looks.filter((l) => l.on).length).toBeGreaterThan(0);
     expect(looks[0]!.lowered).toBe(true);
+  });
+});
+
+describe('los bordes de la pantalla (T226)', () => {
+  const W = 390;
+
+  it('un rótulo que se saldría por un lado se aparta hacia dentro, a SCREEN_EDGE del borde', () => {
+    const right = pin({ x: 370, w: 150, body: { left: 300, top: 300, right: 390, bottom: 420 } });
+    const [r] = layoutPins([right], [], W);
+    expect(r!.on).toBe(true);
+    expect(pinBox({ ...right, x: r!.x }).right).toBe(W - SCREEN_EDGE);
+    const left = pin({ x: 10, w: 150, body: { left: 0, top: 300, right: 90, bottom: 420 } });
+    const [l] = layoutPins([left], [], W);
+    expect(pinBox({ ...left, x: l!.x }).left).toBe(SCREEN_EDGE);
+    // Escalado (lejos), con la mitad de su ancho escalado.
+    expect(insideScreen(right, right, 0.5, W, [])).toBe(W - SCREEN_EDGE - (right.w * 0.5) / 2);
+  });
+
+  it('dentro de la pantalla no se mueve; sin ancho, como antes', () => {
+    const p = pin();
+    expect(layoutPins([p], [], W)[0]!.x).toBe(p.x);
+    const edge = pin({ x: 380 });
+    expect(layoutPins([edge], [])[0]!.x).toBe(edge.x);
+  });
+
+  it('si apartarlo le haría pisar un mando, se queda donde estaba', () => {
+    const p = pin({ x: 370, y: 300, w: 150 });
+    const rail: Rect = { left: 200, top: 250, right: 280, bottom: 290 };
+    expect(insideScreen(p, p, 1, W, [rail])).toBe(p.x);
+  });
+
+  it('más ancho que la pantalla: centrado', () => {
+    expect(insideScreen(pin({ w: 500 }), { x: 50, y: 300 }, 1, W, [])).toBe(W / 2);
   });
 });
 
