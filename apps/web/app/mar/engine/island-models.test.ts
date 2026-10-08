@@ -51,6 +51,19 @@ describe('el manifiesto de las islas', () => {
     expect(entries.get('halloween')?.file).toBe('halloween.glb');
   });
 
+  it('el Puig Campana, la isla del Cañón (plan 019, T221), tiene el suyo con el id de su lugar', () => {
+    // El módulo se llama como la montaña; su `ID` es el del lugar del mapa y nombra el GLB.
+    const source = readFileSync(path.join(ROOT, 'tools/blender/islas/puigcampana.py'), 'utf8');
+    const id = /^ID = "([a-z0-9-]+)"/m.exec(source)?.[1];
+    const label = /^LABEL = "([^"]+)"/m.exec(source)?.[1];
+    expect(id).toBe('canon');
+    const entry = entries.get(id!);
+    expect(entry?.file).toBe(`${id}.glb`);
+    expect(entry?.label).toBe(label);
+    // La montaña es la protagonista: el modelo es tan alto como ancho (su radio).
+    expect(entry!.height).toBeGreaterThan(entry!.radius);
+  });
+
   describe('el Faro de Tabarca (plan 014, T166)', () => {
     const faro = entries.get(LIGHTHOUSE_PLACE_ID);
     // Las medidas del módulo de Blender, tal cual están escritas en su fuente.

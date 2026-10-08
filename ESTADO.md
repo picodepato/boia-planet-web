@@ -4,6 +4,42 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T221: Puig Campana modelado en Blender, en lugar de Els Banyets
+
+**Qué existe.** La isla del Cañón (`canon`, hasta ahora Els Banyets; T219 ya la
+llamaba «Puig Campana») tiene modelo de Blender: `tools/blender/islas/puigcampana.py`
+→ `art/islas/3d/canon.glb` (13 372/30 000 triángulos, 21 materiales, 2 emisivos,
+259 kB) y su entrada en `art/islas/3d/manifest.json`. El módulo se llama como la
+montaña y declara `ID = "canon"`, el id del lugar del mapa, que es el que /mar pide
+(`canon.glb`): `export_islas_glb.py` nombra el GLB y la entrada del manifiesto por
+el `ID` del módulo (`--only` admite módulo o `ID`) y `check.py` casa módulos y
+entradas por ese `ID` (README actualizado). El modelo: la montaña de caliza clara
+en pirámide empinada (una rejilla de alturas sobre su planta, cresta por tramos,
+laderas algo cóncavas con contrafuertes, cerrada por abajo) con la muesca cuadrada
+de la Portà a la derecha de la cima y el diente al otro lado; el pueblo blanco de
+Finestrat sobre su peñón, con iglesia y ventanas que brillan de noche; pinos, matas
+y peñascos por la falda; al frente el cañón del minijuego en su plataforma de piedra
+apuntando al mar, bandera, antorcha (emisiva), el muelle y una boia de BOIA en el
+agua. La composición a mano de `islands.ts` (`canon()`) sigue ahora la misma
+silueta a escala (pirámide, diente y muesca, cañón al frente), para que de lejos y
+de cerca cuadre; su terreno (`heightAt`), el casco de colisión, la proximidad y el
+minijuego no cambian (`SURVIVORS_CONFIG_VERSION` igual).
+
+**Comandos.**
+- `blender -b -P tools/blender/export_islas_glb.py -- --only puigcampana --preview <fuera>` (Blender 4.0.1) → `canon.glb`, 13 372 triángulos, exit 0.
+- `PYTHONUTF8=1 python3 tools/blender/check.py` → 64 manifiestos válidos; `islas/3d: canon: 13372/30000 triángulos, 21 materiales (2 emisivos), 259 kB`; exit 0.
+- Vistas (importación limpia del GLB en Blender 4.0, guion fuera del repo): 1 malla, 13 372 triángulos, 21 materiales, límites z ∈ [−0,9, 7,4]. Capturas en `C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T221\` (`canon-{dia,noche,front,back,left,right,top,persp}.png`, `mar-puigcampana-{movil,escritorio}.png`, `mar-puigcampana-a-mano-escritorio.png`).
+- `pnpm exec vitest run apps/web/app/mar/engine/island-models.test.ts apps/web/app/mar/engine/compact.test.ts` → 32/32, exit 0 (nueva prueba: el `ID` del módulo es `canon`, su GLB y su `label` son los del manifiesto, y el modelo es más alto que su radio).
+- `pnpm typecheck` → exit 0.
+- `E2E_PORT=3123 pnpm e2e _t221-captura.spec.ts mar-canon.spec.ts --workers=1` (el spec de capturas es temporal, no va al repo) → 92 pasan, 4 omitidas, 4 fallan (25 min), exit 1. Repetidas solas (`-g`): 3 pasan, 3 fallan igual, exit 1. Las tres que fallan son de maquetación HTML del Cañón a 360×640, no del mar ni de la isla: «HUD: con un boss y las siete armas…» (T148; móvil y escritorio) espera el HUD de en medio ≤ 76 px y mide 79,7 px; «pantalla final con tiempo…» (móvil) encuentra la pantalla final pisando «Entradas». Esta tarea no toca CSS ni TSX (sólo `islands.ts`, geometría three.js): vienen de las fuentes nuevas de T213 en el HUD del Cañón. Las dos capturas de /mar (`?cerca=canon`, modelo cargado `canon:glb`; y sin GLB, `canon:error`, la composición a mano) pasan sin errores de página.
+- Comando de pruebas del plan, paso a paso: `vitest run --exclude '**/packages/db/**'` → 247 archivos, 2282 pasan, 1 omitida, exit 0; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+
+**Pendiente.** El arte 2D del lugar `canon` (`art/mundos/{arcilla,acuarela}/canon/`,
+de `mundo_arcilla.g_canon`: el fortín de Els Banyets) no se ha vuelto a renderizar:
+es otro cauce (los render de mundos piden Blender ≥ 4.2) y queda fuera del alcance
+de esta tarea. El colorido y la silueta son `muestra`, a falta del visto bueno de
+Álvaro.
+
 ## 2026-10-08 — plan 019 T218: Carnet: email first with Supabase, sign-up QR, door scanner and manual stamps
 
 Qué existe (decisión 11):

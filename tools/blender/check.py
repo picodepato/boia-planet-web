@@ -1149,7 +1149,14 @@ def check_islas_3d(art):
     fails, info = [], []
     res = os.path.join(art, ISLAS_SUBDIR)
     mpath = os.path.join(res, "manifest.json")
-    modules = sorted(f[:-3] for f in os.listdir(ISLAS_DIR) if f.endswith(".py") and f[:-3] not in ISLAS_NOT_ISLANDS)
+    # Cada módulo declara el `ID` del lugar (T221: puigcampana.py es la isla `canon`, la del Cañón).
+    modules = {f[:-3]: module_constants(os.path.join(ISLAS_DIR, f), ["ID"])["ID"]
+               for f in sorted(os.listdir(ISLAS_DIR)) if f.endswith(".py") and f[:-3] not in ISLAS_NOT_ISLANDS}
+    by_place = {}
+    for m, pid in modules.items():
+        if pid in by_place:
+            fails.append("tools/blender/islas/%s.py y %s.py declaran el mismo ID %r" % (by_place[pid], m, pid))
+        by_place[pid] = m
     if not os.path.exists(mpath):
         return label, "island-glb", ["falta %s (Blender -b -P tools/blender/export_islas_glb.py)"
                                      % os.path.relpath(mpath, REPO)], info, 0
@@ -1166,17 +1173,17 @@ def check_islas_3d(art):
     ids = [e["id"] for e in man["islas"]]
     if len(set(ids)) != len(ids):
         fails.append("ids repetidos: %s" % ids)
-    for m in modules:
-        if m not in ids:
-            fails.append("tools/blender/islas/%s.py sin GLB en el manifiesto (exporta con --only %s)" % (m, m))
+    for m, pid in modules.items():
+        if pid not in ids:
+            fails.append("tools/blender/islas/%s.py (ID %r) sin GLB en el manifiesto (exporta con --only %s)" % (m, pid, m))
     on_disk = sorted(f for f in os.listdir(res) if f.endswith(".glb"))
     listed = sorted(e["file"] for e in man["islas"])
     if on_disk != listed:
         fails.append("GLB en la carpeta %s; en el manifiesto %s" % (on_disk, listed))
     for e in man["islas"]:
         iid = e["id"]
-        if iid not in modules:
-            fails.append("%s: sin módulo tools/blender/islas/%s.py" % (iid, iid))
+        if iid not in by_place:
+            fails.append("%s: ningún módulo de tools/blender/islas/ declara ID = %r" % (iid, iid))
         if e["file"] != iid + ".glb":
             fails.append("%s: el archivo se llama %r (se espera %s.glb)" % (iid, e["file"], iid))
         path = os.path.join(res, e["file"])

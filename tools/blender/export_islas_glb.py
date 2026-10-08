@@ -1,7 +1,9 @@
 """Las islas de Blender del mar 3D (/mar) como glTF (T69). MUESTRA.
 
-Cada isla es un módulo de tools/blender/islas/<id>.py (el id es el del lugar
-en el mundo, p. ej. `halloween`) que construye la isla entera con el Builder
+Cada isla es un módulo de tools/blender/islas/<isla>.py cuyo `ID` es el id del
+lugar en el mundo (casi siempre el mismo nombre, p. ej. `halloween`; el Puig
+Campana es `puigcampana.py` con `ID = "canon"`, la isla del Cañón, T221) y que
+construye la isla entera con el Builder
 de los mundos (mundos/arcilla/escena.py) y la mascota de BOIA (mascota.py):
 mismo estilo que las boias y los barcos de export_barcos_glb.py, un color
 plano por papel (la paleta del tema de arcilla más los papeles de la isla) y
@@ -24,8 +26,9 @@ isla entera tiene que caber en MAX_TRIS triángulos.
     blender -b -P tools/blender/export_islas_glb.py -- --only halloween
     ... -- --only halloween --preview /tmp/islas   # además, PNG de día y de noche
 
-Salida: art/islas/3d/<id>.glb y art/islas/3d/manifest.json (lo lee /mar y lo
-valida tools/blender/check.py). Sale con 1 si una isla se pasa del presupuesto.
+`--only` admite el nombre del módulo o su `ID`. Salida: art/islas/3d/<ID>.glb
+y art/islas/3d/manifest.json (lo lee /mar y lo valida tools/blender/check.py).
+Sale con 1 si una isla se pasa del presupuesto.
 """
 import argparse
 import importlib
@@ -57,8 +60,13 @@ def island_ids():
     return sorted(f[:-3] for f in os.listdir(ISLAS_DIR) if f.endswith(".py") and f[:-3] not in NOT_ISLANDS)
 
 
-def load_island(iid):
-    return importlib.import_module("islas.%s" % iid)
+def load_island(name):
+    return importlib.import_module("islas.%s" % name)
+
+
+def place_id(mod, name):
+    """El id del lugar del mundo de un módulo de isla: su `ID` (si no lo declara, el nombre del módulo)."""
+    return getattr(mod, "ID", name)
 
 
 def flat_theme(mod):
@@ -79,9 +87,10 @@ def flat_theme(mod):
     return ARC, Plano()
 
 
-def build(iid):
-    """Construye la isla en una escena vacía; devuelve (raíz, malla única, info del módulo)."""
-    mod = load_island(iid)
+def build(name):
+    """Construye la isla del módulo `name` en una escena vacía; devuelve (raíz, malla única, módulo, info)."""
+    mod = load_island(name)
+    iid = place_id(mod, name)
     rig.reset_scene()
     ARC, tema = flat_theme(mod)
     root = bpy.data.objects.new(iid, None)
@@ -190,12 +199,14 @@ def manifest_entry(iid, mod, info, tris, path):
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", nargs="*", help="sólo estas islas (ids de lugar: módulos de tools/blender/islas/)")
+    ap.add_argument("--only", nargs="*", help="sólo estas islas (módulos de tools/blender/islas/ o sus ID de lugar)")
     ap.add_argument("--preview", help="carpeta (fuera del repo) para los PNG de día y de noche")
     ap.add_argument("--detalle", action="store_true", help="triángulos por material de cada isla")
     a = ap.parse_args(argv)
-    ids = a.only or island_ids()
-    unknown = sorted(set(ids) - set(island_ids()))
+    names = island_ids()
+    by_place = {place_id(load_island(n), n): n for n in names}
+    ids = [by_place.get(x, x) for x in a.only] if a.only else names
+    unknown = sorted(set(ids) - set(names))
     if unknown:
         print("[islas] sin módulo en tools/blender/islas/: %s" % ", ".join(unknown))
         sys.exit(1)
@@ -205,8 +216,9 @@ def main():
         with open(man, encoding="utf-8") as f:
             prev = {e["id"]: e for e in json.load(f).get("islas", [])}
     over = []
-    for iid in ids:
-        root, mesh, mod, info = build(iid)
+    for name in ids:
+        root, mesh, mod, info = build(name)
+        iid = place_id(mod, name)
         tris = triangles(mesh)
         if a.detalle:
             print("[tris] %s: %s" % (iid, ", ".join("%s %d" % kv for kv in triangles_by_material(mesh).items())))

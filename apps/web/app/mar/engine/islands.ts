@@ -922,40 +922,85 @@ function faro(R: number, rnd: () => number): IslandBuild {
   };
 }
 
-// --- Cañón --------------------------------------------------------------------
+// --- Cañón: el Puig Campana (plan 019, T221) -----------------------------------
+
+/**
+ * La isla del Cañón es desde T221 el Puig Campana (decisión 15 del
+ * 2026-10-08): la montaña de Finestrat en pirámide con la muesca de la
+ * Portà en la cresta. De cerca la sustituye su modelo de Blender
+ * (`tools/blender/islas/puigcampana.py`, `ID = "canon"`:
+ * art/islas/3d/canon.glb); ésta, a su escala, se ve lejos, mientras llega
+ * o si falla. El terreno (`heightAt`) es el de siempre: el juego no cambia.
+ */
+const PUIG = {
+  rock: '#b9ae98',
+  rockDark: '#8a8273',
+  /** Cima sobre la cúpula, en radios de la isla (la del modelo: 7,4 / 7). */
+  summit: 1.06,
+  /** El diente al este de la Portà y el fondo de la muesca, en radios. */
+  tooth: 0.84,
+  notch: 0.72,
+} as const;
 
 function canon(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
   const k = parts.lit;
   const h = terrain(k, R, rocky(1.7), rnd, 20);
-  shoreRocks(k, R, 9, rnd);
+  shoreRocks(k, R, 9, rnd, Math.PI / 2);
   const top = h(0, 0);
-  // Fortín: muro bajo en anillo con almenas.
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    k.add(new BoxGeometry(0.9, i % 2 ? 0.7 : 0.9, 0.35), '#c9b79a', {
-      p: [Math.cos(a) * 1.7, top + 0.4, Math.sin(a) * 1.7],
-      r: [0, -a + Math.PI / 2, 0],
-    });
+  const cz = -0.1 * R;
+  // La cima: pirámide alargada de este a oeste, con la cara sur (hacia el puerto) más empinada.
+  k.add(new ConeGeometry(0.62 * R, PUIG.summit * R, 4), PUIG.rock, {
+    p: [-0.05 * R, top + (PUIG.summit * R) / 2 - 0.4, cz],
+    r: [0, Math.PI / 4, 0],
+    s: [1.25, 1, 0.95],
+  });
+  // El diente al otro lado de la Portà, y entre los dos el fondo plano de la muesca.
+  k.add(new ConeGeometry(0.4 * R, PUIG.tooth * R, 4), PUIG.rock, {
+    p: [0.36 * R, top + (PUIG.tooth * R) / 2 - 0.4, cz],
+    r: [0, Math.PI / 4, 0],
+    s: [1, 1, 0.9],
+  });
+  k.add(new BoxGeometry(0.3 * R, PUIG.notch * R, 0.22 * R), PUIG.rockDark, {
+    p: [0.17 * R, top + (PUIG.notch * R) / 2 - 0.4, cz],
+  });
+  // Peñascos por la falda y pinos al pie.
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI * 0.15 + i * 1.05 + (rnd() - 0.5) * 0.3;
+    const x = Math.cos(a) * R * 0.66;
+    const z = Math.sin(a) * R * 0.66;
+    rock(k, x, h(x, z), z, R * (0.05 + rnd() * 0.04), rnd, PUIG.rockDark);
   }
+  for (let i = 0; i < 5; i++) {
+    const a = Math.PI * 1.1 + i * 0.45 + (rnd() - 0.5) * 0.2;
+    const x = Math.cos(a) * R * 0.8;
+    const z = Math.sin(a) * R * 0.8;
+    pine(k, x, h(x, z) - 0.05, z, 1.6 + rnd() * 0.6);
+  }
+  // Al frente, lo que da nombre al lugar: el cañón en su plataforma, la bandera y la antorcha.
+  const cx = 0.13 * R;
+  const fz = R * 0.66;
+  const fy = h(cx, fz);
+  k.add(new BoxGeometry(2.1, 0.24, 1.7), C.rockLight, { p: [cx, fy + 0.1, fz] });
   k.add(new CylinderGeometry(0.22, 0.28, 1.6, 8), C.iron, {
-    p: [0.3, top + 0.55, 0.3],
-    r: [0, 0.6, Math.PI / 2 - 0.25],
+    p: [cx, fy + 0.7, fz - 0.1],
+    r: [Math.PI / 2 - 0.28, 0, 0],
   });
   for (const s of [-1, 1]) {
-    k.add(new CylinderGeometry(0.28, 0.28, 0.1, 8), C.woodDark, {
-      p: [0.1, top + 0.28, 0.3 + s * 0.3],
-      r: [Math.PI / 2, 0, 0],
+    k.add(new CylinderGeometry(0.3, 0.3, 0.1, 8), C.woodDark, {
+      p: [cx + s * 0.42, fy + 0.5, fz],
+      r: [0, 0, Math.PI / 2],
     });
   }
   for (let i = 0; i < 4; i++) {
     k.add(new SphereGeometry(0.14, 6, 5), C.iron, {
-      p: [-0.8 + (i % 2) * 0.28, top + 0.14 + (i > 1 ? 0.22 : 0), -0.5],
+      p: [cx + 1.05 + (i % 2) * 0.28, fy + 0.36 + (i > 1 ? 0.22 : 0), fz + 0.4],
     });
   }
-  flag(k, -0.6, top, 0.8, 2.4, C.purple);
-  torch(parts, 1.3, top, -1.0);
-  return { parts, animated: [], heightAt: h, labelY: top + 3.6 };
+  flag(k, cx - 1.3, fy, fz - 0.6, 2.4, C.purple);
+  torch(parts, cx + 1.5, fy, fz - 0.2);
+  pier(k, -0.2 * R, R * 0.9, Math.PI / 2, R * 0.4);
+  return { parts, animated: [], heightAt: h, labelY: top + PUIG.summit * R + 2.4 };
 }
 
 // --- Isla de Halloween (T67): la de a mano bajo el modelo de Blender de T69 ----

@@ -16,6 +16,17 @@
    "doc": "sound system de rave con dos muros de altavoces, cabina de DJ, pórtico de focos y láser que brillan de noche, y boias de BOIA bailando en la pista"
   },
   {
+   "id": "canon",
+   "file": "canon.glb",
+   "label": "Puig Campana",
+   "radius": 7.0,
+   "top": 1.0,
+   "height": 7.4,
+   "tris": 13372,
+   "kb": 259,
+   "doc": "la montaña de caliza del Puig Campana en pirámide empinada con la muesca de la Portà en la cresta, el pueblo blanco de Finestrat a sus pies con las ventanas encendidas de noche, pinos, el cañón del minijuego apuntando al mar con su bandera y antorcha, muelle y una boia de BOIA"
+  },
+  {
    "id": "faro",
    "file": "faro.glb",
    "label": "Faro de Tabarca",

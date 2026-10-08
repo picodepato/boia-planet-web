@@ -159,13 +159,16 @@ Las islas de `/mar` se hacen a mano en three.js
 (T69: la Isla de Halloween) lo cargan cerca del barco y vuelven a la de a
 mano lejos, mientras llega o si falla. Blender 5.2.2 LTS.
 
-- Cada isla es un módulo `tools/blender/islas/<id>.py` (`<id>` = id del
-  lugar del mundo) con `ID`, `LABEL`, `DOC`, `RADIUS`, `DETAIL`, `ROLES`,
-  `GLOW` y `build(B, K)`; piezas comunes (boias disfrazadas con la mascota,
-  terreno, calabaza, láminas) en `islas/comun.py`. El contrato está arriba
-  de `tools/blender/export_islas_glb.py`.
-- `blender -b -P tools/blender/export_islas_glb.py -- --only <id>` escribe
-  `art/islas/3d/<id>.glb` y su entrada en `art/islas/3d/manifest.json`.
+- Cada isla es un módulo `tools/blender/islas/<isla>.py` con `ID` (el id del
+  lugar del mundo; casi siempre el mismo nombre, pero el Puig Campana es
+  `puigcampana.py` con `ID = "canon"`: la isla del Cañón, T221), `LABEL`,
+  `DOC`, `RADIUS`, `DETAIL`, `ROLES`, `GLOW` y `build(B, K)`; piezas comunes
+  (boias disfrazadas con la mascota, terreno, calabaza, láminas) en
+  `islas/comun.py`. El contrato está arriba de
+  `tools/blender/export_islas_glb.py`.
+- `blender -b -P tools/blender/export_islas_glb.py -- --only <isla>` (módulo
+  o `ID`) escribe `art/islas/3d/<ID>.glb` y su entrada en
+  `art/islas/3d/manifest.json`.
   Opciones: `--preview <carpeta fuera del repo>` (PNG de día y de noche) y
   `--detalle` (triángulos por material). Sale con 1 si la isla pasa de
   `MAX_TRIS` (30 000).
