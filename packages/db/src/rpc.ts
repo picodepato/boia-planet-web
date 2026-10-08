@@ -106,8 +106,23 @@ export const RPC_REJECTIONS = [
   // Los comentarios de Las Calitas (plan 019 T222)
   'unknown_comment',
   'own_comment',
+  // Como mucho 3 con acceso completo al Admin (plan 019 T223)
+  'full_access_limit',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
+
+/**
+ * Personas con acceso completo al Admin (rol admin u owner) como mucho
+ * (plan 019 T223, decisión 17). Lo impone la base de datos
+ * (`private.full_access_limit()` en 20261008100600_admin_limits_analytics.sql).
+ */
+export const FULL_ACCESS_LIMIT = 3;
+
+/** admin_full_access */
+export interface FullAccessResult {
+  count: number;
+  limit: number;
+}
 
 export function isRpcRejection(message: unknown): message is RpcRejection {
   return typeof message === 'string' && (RPC_REJECTIONS as readonly string[]).includes(message);

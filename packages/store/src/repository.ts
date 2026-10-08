@@ -593,6 +593,29 @@ export interface TrashItem {
   expired: boolean;
 }
 
+/**
+ * Un cambio del Admin en la papelera (plan 019 T223, decisión 17: la
+ * papelera guarda lo cambiado, además de lo borrado). Sale de la auditoría:
+ * dura lo que el plazo de la papelera.
+ */
+export interface ChangeItem {
+  /** Para `revertChange`: el id de la entrada de auditoría (`#área/id` detrás en una publicación). */
+  id: string;
+  /** Área de contenido (`events`, `texts`, `places`, `settings`…). */
+  area: string;
+  /** Elemento, texto o lugar que cambió; null si es el orden o los ajustes del área. */
+  targetId: string | null;
+  kind: 'edit' | 'create' | 'order' | 'reset' | 'discard';
+  /** Cómo estaba antes (a lo que vuelve); null si no existía. */
+  before: unknown;
+  /** Cómo quedó con el cambio. */
+  after: unknown;
+  changedAt: string;
+  reason: string | null;
+  /** Cuándo deja de poder deshacerse, con el plazo de ahora. */
+  expiresAt: string;
+}
+
 /** Un cambio del borrador sin publicar (REQ-ADM-015). */
 export interface DraftChange {
   area: DraftArea | 'texts';
@@ -722,6 +745,18 @@ export interface AdminApi {
   purge(area: EntityArea, id: string, opts?: AdminOptions): Promise<void>;
   /** Purga todo lo que pasó su plazo; devuelve cuántos. */
   purgeExpired(opts?: AdminOptions): Promise<number>;
+  /**
+   * Los cambios del Admin que todavía se pueden deshacer (plan 019 T223,
+   * decisión 17): los del plazo de la papelera, lo más reciente primero.
+   */
+  changes(): Promise<ChangeItem[]>;
+  /**
+   * Deja lo que tocó un cambio (`ChangeItem.id`) como estaba antes. Un
+   * elemento creado por ese cambio va a la papelera. Pasado el plazo, ya no
+   * (`not_found`). Queda en la auditoría como un cambio más (se puede
+   * deshacer a su vez).
+   */
+  revertChange(id: string, opts?: AdminOptions): Promise<void>;
   settings(): Promise<AdminSettings>;
   /**
    * Cambia los ajustes del Admin (plazo de la papelera, código común de la

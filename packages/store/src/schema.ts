@@ -558,6 +558,11 @@ export const adminSettingsSchema = z.object({
    * (`withCommonCode`); sin él, cada descuento usa el suyo.
    */
   commonDiscountCode: z.string().trim().min(1).max(COMMON_DISCOUNT_CODE_MAX).optional(),
+  /**
+   * Analítica de visitas encendida desde el Admin (plan 019 T223, decisión
+   * 17). Sin la clave (o false), apagada: no sale ningún evento.
+   */
+  analyticsEnabled: z.boolean().optional(),
 });
 export type AdminSettings = z.infer<typeof adminSettingsSchema>;
 

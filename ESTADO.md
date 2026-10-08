@@ -4,6 +4,89 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T223: Admin: 3 full-access admins, 30-day trash, analytics switch, daily backups
+
+Qué existe (decisión 17 de la reunión del 2026-10-08):
+
+- **Como mucho 3 con acceso completo.** Migración
+  `supabase/migrations/20261008100600_admin_limits_analytics.sql`: un
+  disparador de `staff_roles` (`private.guard_full_access_limit`, con cerrojo
+  `pg_advisory_xact_lock`) rechaza a la cuarta persona admin u owner con
+  `full_access_limit` (también con service_role o el editor SQL); los
+  editores no cuentan y pasar de admin a owner no suma. `admin_full_access()`
+  da la cuenta y el límite al equipo. `FULL_ACCESS_LIMIT` en
+  `packages/db/src/rpc.ts`. Admin → «Usuarios de administración» lo explica
+  (y, con cuentas, enseña «N de 3»).
+- **Papelera de 30 días de lo cambiado y lo borrado.** `repo.admin.changes()`
+  y `repo.admin.revertChange(id)` (`packages/store/src/local.ts`), a partir
+  de la auditoría local, dentro del plazo de la papelera (30 días por
+  defecto): editar/crear (upsert), publicar (elemento a elemento, también
+  textos y orden), ordenar, textos, lugares, pieles, mundo activo, destinos de
+  misión, ajustes, «volver a la muestra» y borradores descartados. Deshacer
+  es otro cambio (se puede rehacer); lo creado va a la papelera de borrados;
+  lo purgado no vuelve. Admin → Papelera: «Cambiado» (Deshacer) y «Borrado»
+  (Recuperar / Purgar).
+- **Analítica de visitas con interruptor.** Admin → Integraciones:
+  «Analítica de visitas encendida» (apagada por defecto). Modo local: ajuste
+  `analyticsEnabled` de este navegador; con cuentas:
+  `site_settings.analytics_enabled` (lo lee cualquiera, lo cambia un admin con
+  `admin_set_analytics`). `lib/analytics` no manda nada a PostHog si está
+  apagada (lo lee `lib/analytics/switch.ts` a demanda, fuera de la ruta
+  crítica); reglas de consentimiento sin cambios.
+- **Copias diarias.** `.github/workflows/supabase-backup.yml`: `pg_dump` 17
+  cada día (02:41 UTC y a mano) de esquema y datos de `public`/`private` y de
+  las cuentas (`auth.users`, `identities`, `mfa_factors`), cifrado con GPG
+  AES-256 y guardado como artefacto 30 días. Guía para Hernán:
+  `docs/propuestas/2026-10-08-backups.md` (secretos, descargar, abrir y
+  restaurar).
+- **Restos de T215.** Con cuentas, el código común de la ticketera viene del
+  servidor (`discount_code_for` desde el repositorio del miembro) y el Admin
+  con cuentas lo fija con `admin_set_common_discount_code`; fuera la
+  invitación muerta a crear el Carnet tras comprar en /mar; las islas de
+  fiesta y «Elige tu evento» de /mar no enseñan `placeLabel` si el lugar no
+  está anunciado («La ubicación todavía no está anunciada»).
+
+Comandos y resultado:
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 258 archivos, 2343 pasan, 1 omitida.
+- `tools/spec/checks.sh`, paso a paso (el guard no deja `sh`): check.py,
+  estado.py, test_check.py, test_estado.py y blender/check.py → exit 0 todos
+  (estado: 294 REQ · HECHO 165 · PARCIAL 68).
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0,
+  ruta crítica de la landing 195,8 kB de 200 kB.
+- `E2E_PORT=3191 pnpm e2e admin-papelera.spec.ts admin-endurecido.spec.ts
+  admin.spec.ts mar-entradas.spec.ts --workers=1` → 14 pasan y 2 fallan (un
+  selector de la prueba nueva); arreglado, `admin-papelera.spec.ts` otra vez
+  → exit 0, 4 pasan (móvil y escritorio).
+- El YAML del flujo se lee con js-yaml (5 claves arriba, 4 pasos, cron diario);
+  `actionlint` no está instalado en esta máquina.
+- `pnpm test:supabase` no se corrió: la migración no está aplicada en ningún
+  proyecto.
+
+Pendiente:
+
+- **Hernán**: aplicar la migración `20261008100600_admin_limits_analytics.sql`
+  en `boia-planet-dev` (antes, que no haya más de 3 admin/owner: el
+  disparador no toca las filas que ya haya) y correr
+  `pnpm test:supabase` (`admin-limits.supabase.ts`; necesita que el proyecto
+  tenga como mucho 2 admin/owner de verdad, porque cada archivo de pruebas da
+  de alta 1 admin propio).
+- **Hernán**: cargar los secretos `SUPABASE_DB_URL` (Session pooler, puerto
+  5432) y `BACKUP_PASSPHRASE` y lanzar el flujo una vez a mano (guía).
+  El flujo de keepalive sigue sin commitear (no lo toca esta tarea).
+- Huecos de «el Admin modera todo» con cuentas: las respuestas sueltas del
+  Carnet y el enlace de música de un artista sólo se retiran ocultando el
+  Carnet entero (o quitando la marca de artista); el resto (apodo, foto,
+  Carnet, botellas, Las Calitas, rankings) tiene su moderación.
+- La papelera de cambios cubre el contenido del Admin (local, también en el
+  Admin con cuentas); los cambios sobre datos reales de Supabase (socios,
+  fiestas, moderación) se devuelven desde su sección y quedan en `audit_log`;
+  borrar un socio sigue siendo definitivo.
+- La tarjeta de evento de la landing y el checkout siguen enseñando
+  `placeLabel` aunque el lugar no esté anunciado (fuera del alcance: sólo el
+  mundo).
+
 ## 2026-10-08 — plan 019 T225: Fix the Cañón HUD and final screen after the new fonts
 
 **Qué existe.** Sólo CSS, en `apps/web/app/mar/canon-hud.css`; el juego, su

@@ -2672,12 +2672,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           className="checkout--mar"
           onClose={() => {
             setCheckoutFor(null);
-            // Después de comprar, la invitación a crear el Carnet (REQ-IDE-008),
-            // con «Elige tu evento» ya cerrado (con un panel abierto, espera).
-            if (purchasedRef.current) {
-              setEntradas(false);
-              inviteTrigger('purchase');
-            }
+            // Después de comprar se cierra «Elige tu evento». Ya no hay
+            // invitación a crear el Carnet: sin Carnet no se compra (plan 019).
+            if (purchasedRef.current) setEntradas(false);
             purchasedRef.current = false;
           }}
           onConfirmed={(o, s) => {

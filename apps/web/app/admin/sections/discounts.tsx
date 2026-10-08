@@ -7,7 +7,7 @@ import {
   discountStatus,
   withCommonCode,
 } from '@boia/contracts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DiscountFormInput } from '../../../lib/admin/actions';
 import { isoToLocal, localToIso } from '../../../lib/admin/dates';
 import { discountHidingPlaces } from '../../../lib/admin/world';
@@ -22,6 +22,7 @@ import {
   StatusLine,
   TrashInline,
 } from '../ui';
+import { must, useAdminSupabase, useMaybeRealAdmin } from '../real/common';
 import { t } from '../../../lib/i18n';
 
 /** Valor del selector de destino: la tienda o un evento. */
@@ -377,12 +378,45 @@ export function DiscountsSection({ ctx }: { ctx: AdminContext }) {
  * los descuentos de entradas enseñan ese código a la vez (por si la ticketera
  * cambia el oficial); vacío, cada uno el suyo. Los de la tienda no cambian.
  */
-function CommonCodeCard({ ctx, current }: { ctx: AdminContext; current: string | undefined }) {
+function CommonCodeCard({ ctx, current: local }: { ctx: AdminContext; current: string | undefined }) {
+  // Con cuentas, el código común es el de la base de datos (`ticketing_settings`,
+  // plan 019 T223): el que reciben quienes encontraron un descuento.
+  const real = useMaybeRealAdmin();
+  const sb = useAdminSupabase();
+  const [remote, setRemote] = useState<string | null | undefined>(undefined);
+  const current = real ? (remote ?? undefined) : local;
   const [code, setCode] = useState(current ?? '');
   const { status, busy, run } = useRun();
+  useEffect(() => {
+    if (!real || !sb) return;
+    let alive = true;
+    must(sb.from('ticketing_settings').select('common_discount_code').maybeSingle()).then(
+      (r) => {
+        if (!alive) return;
+        setRemote(r?.common_discount_code ?? null);
+        setCode(r?.common_discount_code ?? '');
+      },
+      (err: unknown) => console.warn('[boia] admin: código común', err),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [real, sb]);
   const save = (value: string) =>
     run(
-      () => ctx.actions.setCommonDiscountCode(value),
+      async () => {
+        if (real) {
+          if (!sb) throw new Error(t('admin.real.error.network'));
+          await must(
+            sb.rpc('admin_set_common_discount_code', {
+              p_code: value,
+              p_reason: t('admin.discounts.common.reason'),
+            }),
+          );
+          setRemote(value.trim().toUpperCase() || null);
+        }
+        await ctx.actions.setCommonDiscountCode(value);
+      },
       value.trim() ? t('admin.discounts.common.saved') : t('admin.discounts.common.cleared'),
     );
   return (

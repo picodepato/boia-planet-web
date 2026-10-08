@@ -184,6 +184,8 @@ class MemberRepo implements MemberRepository {
   private chain: Promise<unknown> = Promise.resolve();
   private gate: Promise<void>;
   private readonly results = new Map<string, string | null>();
+  /** Código común de la ticketera por descuento (null: el suyo); se vuelve a pedir tras leer la cuenta. */
+  private readonly commonCodes = new Map<string, string | null>();
   private readonly unsubscribe: () => void;
 
   readonly identity: IdentityApi;
@@ -416,7 +418,36 @@ class MemberRepo implements MemberRepository {
         if (r.first) void this.enqueue({ kind: 'find_discount', discount: discountId });
         return r;
       },
+      // Con cuenta, el código común de la ticketera lo da el servidor
+      // (`ticketing_settings`, plan 019 T215/T223), no los ajustes de este
+      // navegador.
+      discounts: async () => {
+        const found = await p.discounts();
+        return Promise.all(
+          found.map(async (f) => {
+            if (f.discount.scope !== 'event') return f;
+            const code = await this.commonCodeFor(f.discount.id);
+            return code ? { ...f, discount: { ...f.discount, code } } : f;
+          }),
+        );
+      },
     };
+  }
+
+  /** El código común de un descuento de entradas; undefined si ahora no se sabe (sin red). */
+  private async commonCodeFor(discountId: string): Promise<string | null | undefined> {
+    if (this.commonCodes.has(discountId)) return this.commonCodes.get(discountId);
+    if (!this.server.discountCode || this.isOffline) return undefined;
+    try {
+      const code = await this.server.discountCode(discountId);
+      // Con acciones en la cola (p. ej. el `find_discount` de este mismo
+      // descuento), un null puede ser sólo que aún no llegó: no se guarda.
+      if (code !== null || this.ops.length === 0) this.commonCodes.set(discountId, code);
+      return code;
+    } catch (e) {
+      if (!classifyServerError(e).transient) this.commonCodes.set(discountId, null);
+      return undefined;
+    }
   }
 
   private purchaseApi(): PurchaseApi {
@@ -609,6 +640,7 @@ class MemberRepo implements MemberRepository {
     }
     this.lastSnapshotJson = JSON.stringify(remote);
     this.needsPull = false;
+    this.commonCodes.clear();
     this.saveMeta();
     this.onEvent({ type: 'pulled' });
     this.scheduleSnapshot();

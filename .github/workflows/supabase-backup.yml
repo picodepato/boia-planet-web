@@ -1,0 +1,89 @@
+# Copia de seguridad diaria de la base de datos de Supabase (plan 019 T223,
+# reunión del 2026-10-08, decisión 17). El plan gratuito no hace copias: este
+# flujo vuelca la base con pg_dump cada noche, la cifra y la deja como
+# artefacto del flujo durante 30 días.
+#
+# Secretos del repo (Settings → Secrets and variables → Actions), los carga
+# Hernán; la guía está en docs/propuestas/2026-10-08-backups.md:
+#   SUPABASE_DB_URL    cadena de conexión del «Session pooler» (puerto 5432),
+#                      con la contraseña de la base de datos.
+#   BACKUP_PASSPHRASE  frase con la que se cifra la copia (GPG, AES-256).
+#                      Sin ella no se sube nada: la copia lleva emails y datos
+#                      de las cuentas.
+name: supabase-backup
+
+on:
+  schedule:
+    # Cada día a las 02:41 UTC (de madrugada en Alicante).
+    - cron: '41 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PG_MAJOR: '17'
+    steps:
+      - name: Comprobar los secretos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        shell: bash
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "::error::Falta el secreto SUPABASE_DB_URL"; exit 1; }
+          test -n "$BACKUP_PASSPHRASE" || { echo "::error::Falta el secreto BACKUP_PASSPHRASE"; exit 1; }
+
+      - name: Instalar pg_dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq "postgresql-client-${PG_MAJOR}"
+          echo "/usr/lib/postgresql/${PG_MAJOR}/bin" >> "$GITHUB_PATH"
+
+      - name: Volcar y cifrar
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_dump --version
+          name="boia-backup-$(date -u +%Y-%m-%dT%H%MZ)"
+          mkdir -p "$name"
+          # Esquema y datos de la web (public y private).
+          pg_dump "$SUPABASE_DB_URL" --schema-only --no-owner \
+            --schema=public --schema=private --file "$name/schema.sql"
+          pg_dump "$SUPABASE_DB_URL" --data-only --no-owner \
+            --schema=public --schema=private --file "$name/data.sql"
+          # Las cuentas (email, entrada y segundo factor del equipo).
+          pg_dump "$SUPABASE_DB_URL" --data-only --no-owner \
+            --table=auth.users --table=auth.identities --table=auth.mfa_factors \
+            --file "$name/auth.sql"
+          (cd "$name" && sha256sum ./*.sql > SHA256SUMS)
+          tar -czf "$name.tar.gz" "$name"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
+            --symmetric --cipher-algo AES256 \
+            --output "$name.tar.gz.gpg" "$name.tar.gz" 3<<<"$BACKUP_PASSPHRASE"
+          rm -rf "$name" "$name.tar.gz"
+          ls -l "$name.tar.gz.gpg"
+          echo "BACKUP_NAME=$name" >> "$GITHUB_ENV"
+
+      - name: Guardar 30 días
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_NAME }}.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0

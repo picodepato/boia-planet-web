@@ -1658,18 +1658,21 @@ export type Database = {
       site_settings: {
         Row: {
           active_home_revision_id: string | null;
+          analytics_enabled: boolean;
           id: boolean;
           updated_at: string;
           version: number;
         };
         Insert: {
           active_home_revision_id?: string | null;
+          analytics_enabled?: boolean;
           id?: boolean;
           updated_at?: string;
           version?: number;
         };
         Update: {
           active_home_revision_id?: string | null;
+          analytics_enabled?: boolean;
           id?: boolean;
           updated_at?: string;
           version?: number;
@@ -2061,6 +2064,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_full_access: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_generate_backup_codes: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -2171,6 +2178,13 @@ export type Database = {
           p_valid_from: string;
           p_valid_until: string;
           p_regenerate?: boolean;
+        };
+        Returns: Json;
+      };
+      admin_set_analytics: {
+        Args: {
+          p_enabled: boolean;
+          p_reason?: string;
         };
         Returns: Json;
       };

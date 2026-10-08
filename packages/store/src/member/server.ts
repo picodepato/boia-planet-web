@@ -189,6 +189,12 @@ export interface MemberServer {
   rpc(fn: MemberRpc, args: Record<string, unknown>): Promise<unknown>;
   /** Contesta (o, con null, borra) una pregunta del Carnet. */
   saveAnswer(questionId: string, questionVersion: number, answer: string | null): Promise<void>;
+  /**
+   * El código común de la ticketera para un descuento de entradas que la
+   * cuenta ya encontró (`discount_code_for`, plan 019 T215/T223); null si no
+   * hay código común (vale el del descuento).
+   */
+  discountCode?(discountId: string): Promise<string | null>;
 }
 
 /** Filas del libro por página (PostgREST corta en 1000). */
@@ -271,6 +277,11 @@ export function supabaseMemberServer(
 
     async rpc(fn, args) {
       return run((await sb()).rpc(fn, args));
+    },
+
+    async discountCode(discountId) {
+      const code = await run((await sb()).rpc('discount_code_for', { p_discount: discountId }));
+      return typeof code === 'string' && code.trim() !== '' ? code : null;
     },
 
     async saveAnswer(questionId, questionVersion, answer) {

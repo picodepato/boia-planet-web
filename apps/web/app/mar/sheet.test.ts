@@ -10,7 +10,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { t } from '../../lib/i18n';
 import { upcomingEvents } from '../../lib/mundo/place-panels';
-import { IslandBlock, Sheet, type SheetState } from './sheet';
+import { eventSchema } from '@boia/contracts';
+import { SAMPLE_EVENTS } from '@boia/store';
+import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
+import { EventBlock, IslandBlock, Sheet, type SheetState } from './sheet';
 import { BOARD_CARDS, boardDestinations } from '../../lib/mundo/board';
 import { MarTablon } from './tablon';
 
@@ -176,5 +179,23 @@ describe('la ficha del Puerto de Alicante', () => {
     expect(island.includes('data-testid="panel-proximos"')).toBe(
       upcomingEvents(HARBOR_PLACE_ID).length > 0,
     );
+  });
+});
+
+describe('la isla de una fiesta sin lugar anunciado (plan 019 T223)', () => {
+  it('no enseña el lugar: dice que no está anunciado', () => {
+    const base = eventSchema.parse(SAMPLE_EVENTS.find((e) => e.placeLabel));
+    const render = (placeAnnounced: boolean) =>
+      renderToStaticMarkup(
+        createElement(EventBlock, {
+          event: { ...base, placeAnnounced },
+          onBuy: noop,
+          onSteer: () => false,
+        }),
+      );
+    expect(render(true)).toContain(base.placeLabel);
+    const hidden = render(false);
+    expect(hidden).not.toContain(base.placeLabel);
+    expect(hidden).toContain(EVENTOS_COPY.placeSoon);
   });
 });

@@ -74,6 +74,8 @@ export class FakeSupabase implements SupabaseLike {
   carnet: Row | null = null;
   answers: Row[] = [];
   snapshot: { data: Record<string, unknown>; version: number } | null = null;
+  /** `ticketing_settings.common_discount_code` (plan 019 T215). */
+  commonDiscountCode: string | null = null;
   readonly takenNicknames = new Set<string>();
   private failures = new Map<string, string>();
   private clock = 0;
@@ -246,6 +248,11 @@ export class FakeSupabase implements SupabaseLike {
           });
         }
         return { data: { first: true }, error: null };
+      }
+      case 'discount_code_for': {
+        // Sólo a quien encontró ese descuento (el ámbito lo mira la base de datos).
+        const found = this.discounts.some((d) => d.discount_id === a.p_discount);
+        return { data: found ? this.commonDiscountCode : null, error: null };
       }
       case 'use_discount': {
         const d = this.discounts.find((x) => x.discount_id === a.p_discount);

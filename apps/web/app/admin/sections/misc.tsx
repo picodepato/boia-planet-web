@@ -1,19 +1,23 @@
 'use client';
 
+import { FULL_ACCESS_LIMIT, type FullAccessResult } from '@boia/db/rpc';
 import {
   CONTENT_AREAS,
+  type ChangeItem,
   type ContentArea,
   TRASH_RETENTION_MAX_DAYS,
   TRASH_RETENTION_MIN_DAYS,
   type TrashItem,
 } from '@boia/store';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ADMIN_COPY } from '../../../lib/admin/copy';
 import { itemName } from '../../../lib/admin/references';
+import { setAnalyticsSwitch } from '../../../lib/analytics';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import { Field, SectionHead, StatusLine } from '../ui';
-import { t as msg } from '../../../lib/i18n';
+import { must, useAdminSupabase, useMaybeRealAdmin } from '../real/common';
+import { type MessageKey, t as msg } from '../../../lib/i18n';
 
 /** Temporadas (REQ-ADM-032, D-20): cada mundo es una temporada; una activa. */
 export function SeasonsSection({ ctx }: { ctx: AdminContext }) {
@@ -53,14 +57,52 @@ export function SeasonsSection({ ctx }: { ctx: AdminContext }) {
   );
 }
 
-/** Usuarios de administración (REQ-ADM-002 a REQ-ADM-004): sólo lectura en la demo. */
+/**
+ * Cuántas personas tienen acceso completo con cuentas (plan 019 T223); null
+ * en la demo o mientras carga.
+ */
+function useFullAccess(): FullAccessResult | null {
+  const real = useMaybeRealAdmin();
+  const sb = useAdminSupabase();
+  const [seen, setSeen] = useState<FullAccessResult | null>(null);
+  useEffect(() => {
+    if (!real || !sb) return;
+    let alive = true;
+    must(sb.rpc('admin_full_access')).then(
+      (r) => alive && setSeen(r as unknown as FullAccessResult),
+      (err: unknown) => console.warn('[boia] admin: acceso completo', err),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [real, sb]);
+  return seen;
+}
+
+/**
+ * Usuarios de administración (REQ-ADM-002 a REQ-ADM-004): sólo lectura. Como
+ * mucho FULL_ACCESS_LIMIT personas con acceso completo (plan 019 T223,
+ * decisión 17); lo impide la base de datos.
+ */
 export function UsersSection() {
+  const full = useFullAccess();
   return (
     <section>
       <SectionHead
         title={msg('admin.misc.usuariosDeAdministracion')}
         lead={msg('admin.misc.soloLecturaEnLa')}
       />
+      <div className="admin-card" data-testid="usuarios-limite">
+        <p>{msg('admin.gestion.users.limit', { limit: FULL_ACCESS_LIMIT })}</p>
+        {full ? (
+          <p className="admin-meta" data-testid="usuarios-limite-cuenta">
+            {msg('admin.gestion.users.count', { count: full.count, limit: full.limit })}
+            {full.count >= full.limit
+              ? ` ${msg('admin.gestion.users.full', { limit: full.limit })}`
+              : ''}
+          </p>
+        ) : null}
+      </div>
       <table className="admin-table" data-testid="usuarios">
         <thead>
           <tr>
@@ -96,13 +138,80 @@ export function UsersSection() {
   );
 }
 
-/** Integraciones: sólo lectura en la demo. */
-export function IntegrationsSection() {
+const POSTHOG_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY);
+
+/**
+ * La analítica de visitas, encendida o apagada desde el Admin (plan 019 T223,
+ * decisión 17). Con cuentas, `site_settings.analytics_enabled` para toda la
+ * web; en la demo, los ajustes de este navegador.
+ */
+function AnalyticsCard({ ctx }: { ctx: AdminContext }) {
+  const real = useMaybeRealAdmin();
+  const sb = useAdminSupabase();
+  const settings = useRead(ctx, (r) => r.admin.settings());
+  const [remote, setRemote] = useState<boolean | null>(null);
+  const { status, busy, run } = useRun();
+  useEffect(() => {
+    if (!real || !sb) return;
+    let alive = true;
+    must(sb.from('site_settings').select('analytics_enabled').single()).then(
+      (r) => alive && setRemote(r?.analytics_enabled === true),
+      (err: unknown) => console.warn('[boia] admin: analítica', err),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [real, sb]);
+  const on = real ? remote : settings ? settings.analyticsEnabled === true : null;
+  const toggle = (next: boolean) =>
+    run(
+      async () => {
+        if (real) {
+          if (!sb) throw new Error(msg('admin.real.error.network'));
+          await must(
+            sb.rpc('admin_set_analytics', {
+              p_enabled: next,
+              p_reason: msg('admin.gestion.analytics.reason'),
+            }),
+          );
+          setRemote(next);
+        } else {
+          await ctx.actions.setAnalyticsEnabled(next);
+        }
+        setAnalyticsSwitch(next);
+      },
+      next ? msg('admin.gestion.analytics.on') : msg('admin.gestion.analytics.off'),
+    );
+  return (
+    <div className="admin-card admin-form" data-testid="analitica">
+      <h3>{msg('admin.gestion.analytics.title')}</h3>
+      <p className="admin-meta">{msg('admin.gestion.analytics.lead')}</p>
+      <label className="admin-check">
+        <input
+          type="checkbox"
+          checked={on === true}
+          disabled={busy || on === null}
+          onChange={(e) => void toggle(e.target.checked)}
+          data-testid="analitica-interruptor"
+        />
+        <span>{msg('admin.gestion.analytics.toggle')}</span>
+      </label>
+      <p className="admin-meta" data-testid="analitica-estado" data-on={on === true ? '1' : '0'}>
+        {on ? msg('admin.gestion.analytics.on') : msg('admin.gestion.analytics.off')}{' '}
+        {real ? msg('admin.gestion.analytics.real') : msg('admin.gestion.analytics.local')}
+        {POSTHOG_CONFIGURED ? '' : ` ${msg('admin.gestion.analytics.noKey')}`}
+      </p>
+      <StatusLine status={status} />
+    </div>
+  );
+}
+
+/** Integraciones: sólo lectura, salvo el interruptor de la analítica (plan 019 T223). */
+export function IntegrationsSection({ ctx }: { ctx: AdminContext }) {
   const rows: [string, string][] = [
     [msg('admin.misc.ticketera'), msg('admin.misc.sandboxDePruebaComprar')],
     [msg('admin.misc.datos'), msg('admin.misc.enEsteNavegadorRepositorio')],
     [msg('admin.misc.correo'), msg('admin.misc.sinCorreoEnLa')],
-    [msg('admin.misc.analitica'), msg('admin.misc.eventosDelEmbudoEn')],
   ];
   return (
     <section>
@@ -110,6 +219,7 @@ export function IntegrationsSection() {
         title={msg('admin.misc.integraciones')}
         lead={msg('admin.misc.soloLecturaEnLa2')}
       />
+      <AnalyticsCard ctx={ctx} />
       <table className="admin-table" data-testid="integraciones">
         <tbody>
           {rows.map(([k, v]) => (
@@ -152,6 +262,84 @@ const AREA_LABELS: Partial<Record<string, string>> = {
   carnets: msg('admin.misc.moderacionDeCarnets'),
 };
 
+const CHANGE_KIND: Record<ChangeItem['kind'], MessageKey> = {
+  edit: 'admin.gestion.trash.kind.edit',
+  create: 'admin.gestion.trash.kind.create',
+  order: 'admin.gestion.trash.kind.order',
+  reset: 'admin.gestion.trash.kind.reset',
+  discard: 'admin.gestion.trash.kind.discard',
+};
+
+/** Qué tocó un cambio, para la lista: el nombre del elemento, la clave o el área entera. */
+function changeTarget(c: ChangeItem): string {
+  if (c.kind === 'order') return msg('admin.gestion.trash.order');
+  if (c.kind === 'reset' || c.kind === 'discard' || c.targetId === null)
+    return c.area === 'settings' ? '' : msg('admin.gestion.trash.wholeArea');
+  const named = itemName(c.area, c.before ?? c.after);
+  return named && named !== c.targetId ? named : c.targetId;
+}
+
+/**
+ * Lo cambiado desde el Admin, que se puede deshacer durante el plazo de la
+ * papelera (plan 019 T223, decisión 17). Sale de la auditoría local.
+ */
+function ChangesList({ ctx }: { ctx: AdminContext }) {
+  const changes = useRead(ctx, (r) => r.admin.changes());
+  const real = useMaybeRealAdmin();
+  const { status, busy, run } = useRun();
+  const day = (iso: string) => new Date(iso).toLocaleString('es-ES');
+  return (
+    <>
+      <h3>{msg('admin.gestion.trash.changesTitle')}</h3>
+      <p className="admin-meta">{msg('admin.gestion.trash.changesLead')}</p>
+      {real ? <p className="admin-meta">{msg('admin.gestion.trash.realNote')}</p> : null}
+      <StatusLine status={status} />
+      <ul className="admin-list" data-testid="papelera-cambios">
+        {(changes ?? []).map((c) => {
+          const target = changeTarget(c);
+          return (
+            <li
+              key={c.id}
+              className="admin-card admin-row admin-row--between"
+              data-testid={`papelera-cambio-${c.area}-${c.targetId ?? 'area'}`}
+              data-kind={c.kind}
+            >
+              <span>
+                <strong>{msg(CHANGE_KIND[c.kind])}</strong> · {AREA_LABELS[c.area] ?? c.area}
+                {target ? (
+                  <>
+                    {' '}
+                    · <strong>{target}</strong>
+                  </>
+                ) : null}{' '}
+                {msg('admin.gestion.trash.when', { day: day(c.changedAt), until: day(c.expiresAt) })}
+                {c.reason ? ` · ${c.reason}` : ''}
+              </span>
+              <button
+                type="button"
+                className="admin-button admin-button--ghost"
+                disabled={busy}
+                data-testid="papelera-deshacer"
+                onClick={() =>
+                  void run(
+                    () => ctx.actions.revertChange(c.id),
+                    msg('admin.gestion.trash.undone'),
+                  )
+                }
+              >
+                {msg('admin.gestion.trash.undo')}
+              </button>
+            </li>
+          );
+        })}
+        {changes && changes.length === 0 ? (
+          <li className="admin-meta">{msg('admin.gestion.trash.noChanges')}</li>
+        ) : null}
+      </ul>
+    </>
+  );
+}
+
 /**
  * Papelera (REQ-ADM-030): lo borrado de todas las áreas, recuperable hasta
  * que pasa el plazo; purgar es irreversible y pide escribir otra vez el
@@ -169,7 +357,10 @@ export function TrashSection({ ctx }: { ctx: AdminContext }) {
   const day = (iso: string) => new Date(iso).toLocaleDateString('es-ES');
   return (
     <section>
-      <SectionHead title={msg('admin.misc.papelera')} lead={msg('admin.misc.loBorradoSePuede')} />
+      <SectionHead
+        title={msg('admin.misc.papelera')}
+        lead={msg('admin.gestion.trash.lead', { days: settings.trashRetentionDays })}
+      />
       <form
         className="admin-card admin-row admin-row--end"
         onSubmit={(e) => {
@@ -263,6 +454,8 @@ export function TrashSection({ ctx }: { ctx: AdminContext }) {
           </div>
         </div>
       ) : null}
+      <ChangesList ctx={ctx} />
+      <h3>{msg('admin.gestion.trash.deletedTitle')}</h3>
       <ul className="admin-list" data-testid="papelera">
         {trash.map((t) => (
           <li

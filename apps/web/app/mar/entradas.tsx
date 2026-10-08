@@ -2,6 +2,7 @@
 
 import { eventKicker } from '@boia/contracts';
 import { formatEventDate, t } from '../../lib/i18n';
+import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
 import { CHECKOUT_COPY } from '../../lib/ticketing/copy';
 import { EventDiscountBanner } from '../../lib/ticketing/discount-banner';
 import type { WorldTicket, WorldTickets } from './entradas-model';
@@ -80,7 +81,8 @@ function Ticket({
       </p>
       <h3 className="mar-entrada__name">{e.name}</h3>
       <p className="mar-sheet__meta">
-        {formatEventDate(e.startsAt, e.timeZone)} · {e.placeLabel}
+        {formatEventDate(e.startsAt, e.timeZone)} ·{' '}
+        {e.placeAnnounced ? e.placeLabel : EVENTOS_COPY.placeSoon}
       </p>
       {buyable ? <EventDiscountBanner event={e} /> : null}
       {buyable ? (

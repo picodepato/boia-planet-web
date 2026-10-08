@@ -49,6 +49,7 @@ import type {
   CarnetModerationAction,
   CarnetView,
   ChangeArea,
+  ChangeItem,
   DraftChange,
   ClaimResult,
   ContentApi,
@@ -100,8 +101,10 @@ import {
   type ContentArea,
   type Cosmetic,
   type DraftArea,
+  type Drafts,
   type EntityArea,
   type Identity,
+  type ItemOverride,
   type JsonValue,
   type LedgerEntry,
   type MissionState,
@@ -1985,6 +1988,295 @@ class LocalRepository implements BoiaRepository {
       return out;
     };
 
+    // --- Papelera de cambios (plan 019 T223, decisión 17) ---------------------
+    // Cada cambio del Admin queda en la auditoría con su «antes»: durante el
+    // plazo de la papelera se puede volver a él. Deshacer es otro cambio
+    // (con su entrada de auditoría), que se puede deshacer a su vez.
+
+    const isEntityArea = (area: string): area is EntityArea =>
+      (ENTITY_AREAS as readonly string[]).includes(area);
+    /** Valores sueltos que se fijan con `set`: lugar, piel, texto, mundo activo y destinos. */
+    const SET_AREAS = new Set(['places', 'skins', 'texts', 'activeWorld', 'missionDestinations']);
+    /** Cómo estaba un elemento según una foto de sus cambios (el `before` de una publicación). */
+    const valueIn = (
+      area: EntityArea,
+      id: string,
+      overrides: Record<string, ItemOverride> | undefined,
+    ): unknown => {
+      const o = overrides?.[id];
+      if (o) return o.deleted ? null : clone(o.value);
+      const s = sampleOf(area, id);
+      return s ? clone(s) : null;
+    };
+    /** Un valor de un área `set`, leído o escrito por su id (`mundo/lugar` en pieles y destinos). */
+    const setValue = (d: StoreDoc, area: string, id: string | null): unknown => {
+      const [a, b] = (id ?? '').split('/');
+      if (area === 'places') return d.content.places[id ?? ''] ?? null;
+      if (area === 'texts') return d.content.texts[id ?? ''] ?? null;
+      if (area === 'skins') return d.content.skins[a ?? '']?.[b ?? ''] ?? null;
+      if (area === 'missionDestinations')
+        return d.content.missionDestinations[a ?? '']?.[b ?? ''] ?? null;
+      return this.activeWorld(d);
+    };
+    const writeSet = (d: StoreDoc, area: string, id: string | null, value: unknown) => {
+      const [a = '', b = ''] = (id ?? '').split('/');
+      if (area === 'places') {
+        if (value === null) delete d.content.places[id ?? ''];
+        else d.content.places[id ?? ''] = placePatchSchema.parse(value);
+      } else if (area === 'texts') {
+        if (value === null) delete d.content.texts[id ?? ''];
+        else if (typeof value === 'string') d.content.texts[id ?? ''] = value;
+        else invalid(`texto ${id}: no es un texto`);
+      } else if (area === 'skins') {
+        const byPlace = (d.content.skins[a] ??= {});
+        if (value === null) delete byPlace[b];
+        else byPlace[b] = skinPatchSchema.parse(value);
+        if (Object.keys(byPlace).length === 0) delete d.content.skins[a];
+      } else if (area === 'missionDestinations') {
+        const byMission = (d.content.missionDestinations[a] ??= {});
+        if (value === null) delete byMission[b];
+        else if (typeof value === 'string') byMission[b] = value;
+        else invalid(`destino ${id}: no es un lugar`);
+        if (Object.keys(byMission).length === 0) delete d.content.missionDestinations[a];
+      } else if (area === 'activeWorld') {
+        if (value !== null && typeof value !== 'string') invalid('mundo activo: no es un mundo');
+        d.content.activeWorldId = value as string | null;
+      }
+    };
+    /** Vuelve un elemento a `before`; null: no existía, así que va a la papelera. */
+    const revertEntity = (
+      d: StoreDoc,
+      area: EntityArea,
+      id: string,
+      before: unknown,
+      reason: string,
+    ) => {
+      if (d.content.items[area]?.[id]?.purged)
+        throw new StoreError('forbidden', `${area}/${id}: purgado, no se recupera`);
+      const current = this.resolved(area, d).find((x) => x.id === id) ?? null;
+      if (isDraftArea(area)) delete d.content.drafts.items[area]?.[id];
+      if (before === null) {
+        if (!current) return;
+        areaItems(d, area)[id] = { value: clone(current), deleted: true, at: this.iso() };
+        this.audit(
+          d,
+          { area, action: 'delete', targetId: id, before: current, after: null },
+          { reason },
+        );
+        return;
+      }
+      const value = parseItem(area, before);
+      if (area === 'achievements') versionAchievement(d, current, value);
+      areaItems(d, area)[id] = { value: clone(value), deleted: false, at: this.iso() };
+      this.audit(
+        d,
+        { area, action: 'upsert', targetId: id, before: current, after: value },
+        { reason },
+      );
+    };
+    const revertOrder = (d: StoreDoc, area: EntityArea, before: unknown, reason: string) => {
+      const current = this.resolved(area, d).map((x) => x.id);
+      if (Array.isArray(before)) {
+        const ids = before.filter((x): x is string => typeof x === 'string');
+        d.content.order[area] = ids.filter((x) => current.includes(x));
+      } else delete d.content.order[area];
+      const after = this.resolved(area, d).map((x) => x.id);
+      this.audit(
+        d,
+        { area, action: 'reorder', targetId: null, before: current, after },
+        { reason },
+      );
+    };
+    /** Lo que había antes de `reset` en un área, de vuelta. */
+    const revertReset = (d: StoreDoc, area: string, before: unknown, reason: string) => {
+      const c = d.content;
+      let current: unknown;
+      if (area === 'places') {
+        current = c.places;
+        c.places = clone((before ?? {}) as StoreDoc['content']['places']);
+      } else if (area === 'skins') {
+        current = c.skins;
+        c.skins = clone((before ?? {}) as StoreDoc['content']['skins']);
+      } else if (area === 'texts') {
+        current = c.texts;
+        c.texts = clone((before ?? {}) as StoreDoc['content']['texts']);
+      } else if (area === 'missionDestinations') {
+        current = c.missionDestinations;
+        c.missionDestinations = clone(
+          (before ?? {}) as StoreDoc['content']['missionDestinations'],
+        );
+      } else if (area === 'activeWorld') {
+        current = c.activeWorldId ?? null;
+        if (typeof before === 'string') c.activeWorldId = before;
+        else delete c.activeWorldId;
+      } else if (isEntityArea(area)) {
+        const b = (before ?? {}) as { items?: Record<string, ItemOverride>; order?: string[] | null };
+        current = { items: c.items[area] ?? {}, order: c.order[area] ?? null };
+        c.items[area] = clone(b.items ?? {});
+        if (b.order) c.order[area] = [...b.order];
+        else delete c.order[area];
+      } else invalid(`área ${area}: no se puede deshacer`);
+      this.audit(
+        d,
+        { area, action: 'reset', targetId: null, before: current, after: before },
+        { reason },
+      );
+    };
+    /** Devuelve al borrador lo que se descartó (sin pisar lo que haya ahora). */
+    const revertDiscard = (d: StoreDoc, area: string, before: unknown, reason: string) => {
+      const b = (before ?? emptyDrafts()) as Drafts;
+      const current = clone(d.content.drafts);
+      const drafts = d.content.drafts;
+      for (const [a, items] of Object.entries(b.items ?? {}))
+        for (const [id, o] of Object.entries(items))
+          if (!drafts.items[a]?.[id]) (drafts.items[a] ??= {})[id] = clone(o);
+      for (const [a, order] of Object.entries(b.order ?? {}))
+        if (!drafts.order[a]) drafts.order[a] = [...order];
+      for (const [k, v] of Object.entries(b.texts ?? {}))
+        if (!(k in drafts.texts)) drafts.texts[k] = v;
+      this.audit(
+        d,
+        { area, action: 'draft', targetId: null, before: current, after: drafts },
+        { reason },
+      );
+    };
+
+    interface Undoable {
+      item: ChangeItem;
+      revert: (d: StoreDoc, reason: string) => void;
+    }
+    /** Los cambios de la auditoría que todavía se pueden deshacer, del más viejo al más nuevo. */
+    const undoableOf = (d: StoreDoc): Undoable[] => {
+      const out: Undoable[] = [];
+      const now = this.now().getTime();
+      const keep = retentionMs(d);
+      for (const e of d.audit) {
+        const expires = new Date(e.at).getTime() + keep;
+        if (!(expires > now)) continue;
+        const base = {
+          id: e.id,
+          area: e.area,
+          targetId: e.targetId,
+          before: e.before,
+          after: e.after,
+          changedAt: e.at,
+          reason: e.reason,
+          expiresAt: new Date(expires).toISOString(),
+        };
+        const area = e.area;
+        const id = e.targetId;
+        if (e.action === 'upsert' && isEntityArea(area) && id) {
+          out.push({
+            item: { ...base, kind: e.before === null ? 'create' : 'edit' },
+            revert: (x, why) => revertEntity(x, area, id, e.before, why),
+          });
+        } else if (e.action === 'set' && SET_AREAS.has(area)) {
+          out.push({
+            item: { ...base, kind: 'edit' },
+            revert: (x, why) => {
+              const current = setValue(x, area, id);
+              writeSet(x, area, id, e.before);
+              this.audit(
+                x,
+                { area, action: 'set', targetId: id, before: current, after: e.before },
+                { reason: why },
+              );
+            },
+          });
+        } else if (e.action === 'settings') {
+          out.push({
+            item: { ...base, kind: 'edit' },
+            revert: (x, why) => {
+              const r = adminSettingsSchema.strict().safeParse(e.before);
+              if (!r.success) invalid('ajustes: el valor anterior ya no es válido');
+              const current = clone(x.content.settings);
+              x.content.settings = r.data;
+              this.audit(
+                x,
+                { area: 'settings', action: 'settings', targetId: null, before: current, after: r.data },
+                { reason: why },
+              );
+            },
+          });
+        } else if (e.action === 'reorder' && isEntityArea(area)) {
+          out.push({
+            item: { ...base, kind: 'order' },
+            revert: (x, why) => revertOrder(x, area, e.before, why),
+          });
+        } else if (e.action === 'reset') {
+          out.push({
+            item: { ...base, kind: 'reset' },
+            revert: (x, why) => revertReset(x, area, e.before, why),
+          });
+        } else if (e.action === 'discard') {
+          out.push({
+            item: { ...base, kind: 'discard' },
+            revert: (x, why) => revertDiscard(x, area, e.before, why),
+          });
+        } else if (e.action === 'publish') {
+          // Una publicación son varios cambios: cada uno se deshace por separado.
+          const b = (e.before ?? {}) as {
+            items?: Record<string, Record<string, ItemOverride>>;
+            order?: Record<string, string[] | null>;
+            texts?: Record<string, string>;
+          };
+          const changes = ((e.after ?? {}) as { changes?: DraftChange[] }).changes ?? [];
+          for (const c of changes) {
+            const sub = `${e.id}#${c.area}/${c.id ?? ''}`;
+            if (c.kind === 'item' && c.id && isEntityArea(c.area)) {
+              const a = c.area;
+              const itemId = c.id;
+              const before = valueIn(a, itemId, b.items?.[a]);
+              const after = this.resolved(a, d).find((x) => x.id === itemId) ?? null;
+              out.push({
+                item: {
+                  ...base,
+                  id: sub,
+                  area: a,
+                  targetId: itemId,
+                  kind: before === null ? 'create' : 'edit',
+                  before,
+                  after,
+                },
+                revert: (x, why) => revertEntity(x, a, itemId, before, why),
+              });
+            } else if (c.kind === 'order' && isEntityArea(c.area)) {
+              const a = c.area;
+              const before = b.order?.[a] ?? null;
+              out.push({
+                item: { ...base, id: sub, area: a, targetId: null, kind: 'order', before, after: null },
+                revert: (x, why) => revertOrder(x, a, before, why),
+              });
+            } else if (c.kind === 'text' && c.id) {
+              const key = c.id;
+              const before = b.texts?.[key] ?? null;
+              out.push({
+                item: {
+                  ...base,
+                  id: sub,
+                  area: 'texts',
+                  targetId: key,
+                  kind: 'edit',
+                  before,
+                  after: d.content.texts[key] ?? null,
+                },
+                revert: (x, why) => {
+                  const current = setValue(x, 'texts', key);
+                  writeSet(x, 'texts', key, before);
+                  this.audit(
+                    x,
+                    { area: 'texts', action: 'set', targetId: key, before: current, after: before },
+                    { reason: why },
+                  );
+                },
+              });
+            }
+          }
+        }
+      }
+      return out;
+    };
+
     return {
       upsert: async (area, item, opts) => {
         checkArea(area);
@@ -2049,6 +2341,19 @@ class LocalRepository implements BoiaRepository {
           if (n === 0) skip();
           return n;
         }),
+      changes: async () =>
+        undoableOf(this.doc)
+          .map((u) => clone(u.item))
+          .reverse(),
+      revertChange: async (id, opts) => {
+        await this.mutate(['content', 'audit'], (d) => {
+          const u = undoableOf(d).find((x) => x.item.id === id);
+          if (!u)
+            throw new StoreError('not_found', `cambio ${id}: no está o ya pasó el plazo de la papelera`);
+          u.revert(d, opts?.reason?.trim() || `deshecho desde la papelera (cambio del ${u.item.changedAt})`);
+          purgeExpiredIn(d);
+        });
+      },
       settings: async () => clone(this.doc.content.settings),
       setSettings: async (patch, opts) => {
         const r = adminSettingsSchema

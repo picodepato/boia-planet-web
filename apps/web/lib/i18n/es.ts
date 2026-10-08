@@ -8,6 +8,7 @@
 import { esAcceso } from './es-acceso';
 import { esAdmin } from './es-admin';
 import { esAdminEnlaces } from './es-admin-enlaces';
+import { esAdminGestion } from './es-admin-gestion';
 import { esAdminObjetos } from './es-admin-objetos';
 import { esAdminReal } from './es-admin-real';
 import { esCalitas } from './es-calitas';
@@ -55,6 +56,8 @@ export const es = {
   ...esPuerta,
   // Las Calitas, la isla de los comentarios (plan 019 T222).
   ...esCalitas,
+  // Acceso completo, papelera de cambios y analítica del Admin (plan 019 T223).
+  ...esAdminGestion,
 } as const;
 
 export type MessageKey = keyof typeof es;

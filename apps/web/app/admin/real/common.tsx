@@ -28,12 +28,15 @@ export function useMaybeRealAdmin(): RealAdmin | null {
   return useContext(RealAdminContext);
 }
 
-/** El cliente con la sesión del Admin (aal2); null hasta que carga. */
+/** El cliente con la sesión del Admin (aal2); null hasta que carga (y siempre en la demo). */
 export function useAdminSupabase(): BoiaSupabase | null {
   const [sb, setSb] = useState<BoiaSupabase | null>(null);
   useEffect(() => {
     let alive = true;
-    void adminClient().then((c) => alive && setSb(c));
+    void adminClient().then(
+      (c) => alive && setSb(c),
+      () => undefined,
+    );
     return () => {
       alive = false;
     };

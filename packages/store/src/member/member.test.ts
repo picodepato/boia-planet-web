@@ -1033,3 +1033,31 @@ it('T106: el sello del QR manda sobre el de la compra de prueba de la misma fies
     a.repo.sync.dispose();
   }
 });
+
+it('T223: con cuenta, el código común de la ticketera viene del servidor', async () => {
+  const fake = withCarnet(new FakeSupabase(UID));
+  const a = device(fake);
+  const naufrago = async () =>
+    (await a.repo.progress.discounts()).find((d) => d.discount.id === 'dto-naufrago')!.discount;
+  try {
+    await a.repo.sync.ready();
+    await a.repo.progress.findDiscount('dto-naufrago');
+    await a.repo.sync.flush();
+    const own = await naufrago();
+    expect(own.scope).toBe('event');
+    expect(own.code).not.toBe('COMUN223');
+
+    // El Admin fija el código común: al leer otra vez la cuenta, se ve.
+    fake.commonDiscountCode = 'COMUN223';
+    await a.repo.sync.refresh();
+    expect((await naufrago()).code).toBe('COMUN223');
+    expect(rpcs(fake)).toContain('discount_code_for');
+
+    // Lo quita: vuelve el del descuento.
+    fake.commonDiscountCode = null;
+    await a.repo.sync.refresh();
+    expect((await naufrago()).code).toBe(own.code);
+  } finally {
+    a.repo.sync.dispose();
+  }
+});

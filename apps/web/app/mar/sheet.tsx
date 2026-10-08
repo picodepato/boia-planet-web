@@ -599,12 +599,18 @@ export function StateTag({ event }: { event: BoiaEvent }) {
 
 /**
  * Fecha y lugar de una fiesta (T219, decisión 13: su isla sólo enseña nombre,
- * fecha y lugar), con su estado si no está a la venta.
+ * fecha y lugar), con su estado si no está a la venta. Si el lugar no está
+ * anunciado, lo dice en vez de enseñar `placeLabel` (plan 019 T223).
  */
 function EventWhen({ event: e }: { event: BoiaEvent }) {
   return (
     <>
-      {formatEventDate(e.startsAt, e.timeZone)} · {e.placeLabel}
+      {formatEventDate(e.startsAt, e.timeZone)} ·{' '}
+      {e.placeAnnounced ? (
+        e.placeLabel
+      ) : (
+        <span data-testid="mar-evento-lugar-falta">{EVENTOS_COPY.placeSoon}</span>
+      )}
       <StateTag event={e} />
     </>
   );

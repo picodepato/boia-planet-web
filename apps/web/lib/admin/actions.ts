@@ -856,6 +856,22 @@ export function createAdminActions(deps: AdminDeps) {
       );
     },
 
+    /**
+     * La analítica de visitas (plan 019 T223, decisión 17): encendida o
+     * apagada, con auditoría. En modo local vale para este navegador.
+     */
+    async setAnalyticsEnabled(on: boolean) {
+      return repo.admin.setSettings(
+        { analyticsEnabled: on ? true : undefined },
+        opts(msg('admin.gestion.analytics.reason')),
+      );
+    },
+
+    /** Deshace un cambio de la papelera (plan 019 T223). */
+    async revertChange(id: string) {
+      return repo.admin.revertChange(id);
+    },
+
     async purgeExpired() {
       return repo.admin.purgeExpired(opts(msg('admin.actions.plazoDeLaPapelera2')));
     },
