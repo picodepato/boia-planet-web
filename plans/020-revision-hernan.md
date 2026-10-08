@@ -73,7 +73,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome: Admin banner explains local vs accounts, nav 250 px, Filosofía editable in Admin, hidden-world boats out of the shop, secretHint removed, seed names, i18n-zonas generator in sync · 2693302
 
 ## T229 — Admin moderation with accounts
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T228
 - Model: opus
 - Skills: none
@@ -85,10 +85,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - Supabase mode: the same through admin-only RPCs; non-admins are refused → `test:supabase` tests written (they run when Hernán applies the migration)
   - REQ in `docs/spec/estado.md` updated with its test; `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: Admin removes a single Carnet answer and edits/removes an artist music link, with undo from a 30-day moderation trash (local + Supabase RPCs, migration 20261008200100) · 390ebbc
 
 ## T230 — 30-day trash for real data and backups with Storage
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T229
 - Model: opus
 - Skills: none
@@ -169,7 +169,10 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 
 - 2026-10-08 T231: outline as own `<ink>_contorno` material with backface culling; island MAX_TRIS 30 000 → 36 000; 2D outline only for Arcilla; boia-tutorial = outlined mascot, 12 frames, `luz` anchor/`lamp_on` dropped (agent)
 
+- 2026-10-08 T229: Supabase removal deletes the answer and keeps it in `private.carnet_moderation_trash` (30 days, purged on each write, no cron); undo refused if changed since (`answer_exists`/`music_changed`); music edit/removal needs a reason; every local Carnet moderation undoable (agent)
+
 ## Proposals (new scope)
+- 2026-10-08 T229: the local change trash shows the Carnet by user id, not nickname
 - 2026-10-08 T231: `mundos/arcilla/mapa.json` still names the place «Isla del Cañón»; stale `sources_sha256` in other Arcilla place manifests; if ship boia GLBs are regenerated, check mascot-look.test.ts (`ink_gltf` prefix)
 - 2026-10-08 T226: «Entradas» sub-line during a trip («Rumbo a Ca…») cut by the bottom bar's fixed height; music/effects in Ajustes still checkboxes, not toggles; 🪙 shows as a box in headless Chromium
 - 2026-10-08 T227: give `next dev` its own distDir (`.next-dev`) so a build doesn't cause dev 500s; unused i18n keys artists.pause/resume; `prettier --check` reports 98 files (likely CRLF)
@@ -184,3 +187,5 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T228 done · merged 2693302
 - 2026-10-08 T229 launched · attempt 1 · agent a3711cff21d500e5e
 - 2026-10-08 T231 done · merged 110c7ce
+- 2026-10-08 T232 launched · attempt 1 · agent a76531210277fe164
+- 2026-10-08 T229 done · merged 390ebbc
