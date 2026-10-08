@@ -1,6 +1,6 @@
 # Plan 020 — Hernán's review after plan 019 and the meeting leftovers
 
-Status: active
+Status: done
 Created: 2026-10-08
 Base branch: main
 Goal: Apply Hernán's 13-point review after plan 019 (`docs/propuestas/2026-10-08-revision-hernan.md`: landing intro order, world fonts and buttons, HUD details, artists and store) and finish what plan 019 left open from the 2026-10-08 meeting (`docs/propuestas/2026-10-08-reunion-cambios.md`, plan 019 Proposals, plan 018 review leftovers): small UI and Admin fixes, Admin moderation and 30-day trash with real Supabase data, backups with Storage, the pending art (Puig Campana 2D, boia outline everywhere) and Las Calitas modelled in Blender.
@@ -147,7 +147,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - Outcome: collage with mixed sizes and overlap on /galeria, landing and world sheet; drag aside (mouse/touch) reveals the piece below, click opens big; 11 muestra photos from project art; landing 199.0 kB · 955f0ca
 
 ## T233 — Close plan 020: test guide and status
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T226, T227, T228, T229, T230, T231, T232, T234
 - Model: opus
 - Skills: none
@@ -158,7 +158,7 @@ Decisions of 2026-10-08 that every task follows (Hernán):
   - no full e2e run; the guide lists the e2e command and the specs touched by T226–T232 and T234 for Hernán to run
   - the guide lists what to try by hand per review point and the migrations (8 pending + T229/T230) in order for `boia-planet-dev`
   - Test command → exit 0
-- Outcome:
+- Outcome: batch builds and tests together with no fixes; guide docs/propuestas/2026-10-08-plan-020-guia-prueba.md (by-hand table, e2e specs, 10 migrations in order) · 5f77a14
 
 ## Decisions
 
@@ -177,6 +177,8 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T230: deleted member's Carnet moved to `public.member_trash`, account banned + sessions removed; restore fails on `nickname_taken`/`number_taken`; party purge only without purchases/stamps/points; purge run by the backup workflow, by each delete/restore and by an Admin button (no pg_cron); Storage downloaded via public URLs, no new secret; local Admin gets «Borrar fiesta» (agent)
 
 - 2026-10-08 T234: sizes by position pattern, packer may reorder within next 3; horizontal swipe drags, vertical scrolls; hand-moved piece stays on top; landing loads the collage with React.lazy (SSR kept) and the viewer as a separate chunk; `@boia/contracts/photo-ref` zod-free; removed `photo-tile.tsx` (agent)
+
+- 2026-10-08 T233: Las Calitas' sea label left cream: only party islands have orange labels (Castillo, Puerto, Benidorm, Los Rápidos are cream); question 1 in the guide, one-line change in `pinsOf` (agent)
 
 ## Proposals (new scope)
 - 2026-10-08 T234: landing critical path at 199.0 / 200 kB: only ~1 kB left for future landing work
@@ -203,3 +205,6 @@ Decisions of 2026-10-08 that every task follows (Hernán):
 - 2026-10-08 T234 launched · attempt 1 · agent a7de04004b0c91114
 - 2026-10-08 T230 done · merged 3794e0f
 - 2026-10-08 T234 done · merged 955f0ca
+- 2026-10-08 T233 launched · attempt 1 · agent a7808b357956efbaa
+- 2026-10-08 T233 done · merged 5f77a14
+- 2026-10-08 plan 020 done (final test = T233 integration on main, exit 0)
