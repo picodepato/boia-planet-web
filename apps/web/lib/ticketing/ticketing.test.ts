@@ -13,7 +13,10 @@ import { applicableDiscount, discountCents, quoteFor, samplePriceCents } from '.
 import { TICKET_TRIGGER, createSandboxTicketing } from './sandbox';
 
 const DAY = 24 * 3600 * 1000;
-const onSale = SAMPLE_EVENTS.filter((e) => EVENT_STATE_BEHAVIOR[e.state].purchasable);
+// Los que se venden aquí: «Solo en puerta» no tiene compra online (plan 019, decisión 6).
+const onSale = SAMPLE_EVENTS.filter(
+  (e) => EVENT_STATE_BEHAVIOR[e.state].purchasable && !e.boxOfficeOnly,
+);
 const notOnSale = SAMPLE_EVENTS.filter((e) => !EVENT_STATE_BEHAVIOR[e.state].purchasable);
 const finished = SAMPLE_EVENTS.filter((e) => e.state === 'finished');
 const discounts = SAMPLE_DISCOUNTS.map((d) => discountSchema.parse(d));
@@ -40,10 +43,19 @@ const otherEvent = onSale.find(
 function setup(now = VALID) {
   const repo = createLocalRepository({ storage: null, now: () => now });
   let n = 0;
-  const tickets = createSandboxTicketing(repo, {
+  // Comprar pide el Carnet BOIA (plan 019, decisión 1): estas pruebas compran con él.
+  const ready = repo.carnet.create({ nickname: 'Grumete' });
+  const sandbox = createSandboxTicketing(repo, {
     now: () => now,
     newPurchaseId: (eventId) => `prueba-${eventId}-${++n}`,
   });
+  const tickets: typeof sandbox = {
+    ...sandbox,
+    start: async (...args) => {
+      await ready;
+      return sandbox.start(...args);
+    },
+  };
   return { repo, tickets };
 }
 

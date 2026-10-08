@@ -57,6 +57,8 @@ interface Draft {
   endsAt: string;
   saleOpensAt: string;
   placeLabel: string;
+  /** El lugar está anunciado (plan 019 T215); sin marcar, la ficha dice que falta. */
+  placeAnnounced: boolean;
   state: EventState;
   stateSource: EventStateSource;
   stateNote: string;
@@ -70,6 +72,12 @@ interface Draft {
   price: string;
   priceSample: boolean;
   ticketUrl: string;
+  /** Nombre de la ticketera que se enseña en la ficha (plan 019 T215). */
+  ticketProvider: string;
+  /** «Solo en puerta» (plan 019 T215): sin venta online. */
+  doorOnly: boolean;
+  /** Precio en la puerta con Carnet, en euros; vacío: el precio. */
+  doorPrice: string;
   islandId: string;
   artistIds: string[];
   sample?: boolean;
@@ -83,6 +91,7 @@ const EMPTY: Draft = {
   endsAt: '',
   saleOpensAt: '',
   placeLabel: t('admin.events.alicante'),
+  placeAnnounced: true,
   state: 'draft',
   stateSource: 'dates',
   stateNote: '',
@@ -93,6 +102,9 @@ const EMPTY: Draft = {
   price: '',
   priceSample: true,
   ticketUrl: '',
+  ticketProvider: '',
+  doorOnly: false,
+  doorPrice: '',
   islandId: '',
   artistIds: [],
 };
@@ -120,6 +132,7 @@ function draftOf(e: BoiaEvent): Draft {
     endsAt: isoToLocal(e.endsAt, e.timeZone),
     saleOpensAt: isoToLocal(e.saleOpensAt, e.timeZone),
     placeLabel: e.placeLabel,
+    placeAnnounced: e.placeAnnounced,
     state: e.state,
     stateSource: e.stateSource,
     stateNote: e.stateNote ?? '',
@@ -130,6 +143,9 @@ function draftOf(e: BoiaEvent): Draft {
     price: euros(e.priceCents),
     priceSample: e.priceSample,
     ticketUrl: e.ticketUrl ?? '',
+    ticketProvider: e.ticketProvider ?? '',
+    doorOnly: e.boxOfficeOnly !== undefined,
+    doorPrice: euros(e.boxOfficeOnly?.doorPriceCents),
     islandId: e.islandId ?? '',
     artistIds: e.artistIds,
     sample: e.sample,
@@ -172,6 +188,9 @@ function EventForm({
         const priceCents = d.price.trim() ? centsOf(d.price) : undefined;
         if (priceCents === null)
           throw new Error('precio: escribe un importe en euros, p. ej. 12,50');
+        const doorPriceCents = d.doorPrice.trim() ? centsOf(d.doorPrice) : undefined;
+        if (doorPriceCents === null) throw new Error(t('admin.events.doorPriceInvalid'));
+        const ticketProvider = d.ticketProvider.trim();
         // Con apertura de venta y estado por fechas, se guarda «a la venta»: las
         // fechas enseñan «próximamente» hasta que abre (REQ-COM-004).
         const state =
@@ -187,6 +206,7 @@ function EventForm({
           startsAt,
           timeZone: DEFAULT_TIME_ZONE,
           placeLabel: d.placeLabel,
+          placeAnnounced: d.placeAnnounced,
           state,
           stateSource: d.stateSource,
           description: d.description,
@@ -204,6 +224,10 @@ function EventForm({
           ...(d.stampImageUrl.trim() ? { stampImageUrl: d.stampImageUrl.trim() } : {}),
           ...(d.stateNote ? { stateNote: d.stateNote } : {}),
           ...(d.ticketUrl ? { ticketUrl: d.ticketUrl } : {}),
+          ...(ticketProvider ? { ticketProvider } : {}),
+          ...(d.doorOnly
+            ? { boxOfficeOnly: doorPriceCents !== undefined ? { doorPriceCents } : {} }
+            : {}),
           ...(d.islandId ? { islandId: d.islandId } : {}),
           ...(d.sample !== undefined ? { sample: d.sample } : {}),
         };
@@ -292,6 +316,15 @@ function EventForm({
             required
             value={d.placeLabel}
             onChange={(e) => set('placeLabel', e.target.value)}
+            data-testid="evento-lugar"
+          />
+        </Field>
+        <Field label={t('admin.events.placeAnnounced')} hint={t('admin.events.placeAnnouncedHint')}>
+          <input
+            type="checkbox"
+            checked={d.placeAnnounced}
+            onChange={(e) => set('placeAnnounced', e.target.checked)}
+            data-testid="evento-lugar-anunciado"
           />
         </Field>
         <Field label={t('admin.events.estado')}>
@@ -385,6 +418,32 @@ function EventForm({
             placeholder={`${SANDBOX_TICKETS}/…`}
             onChange={(e) => set('ticketUrl', e.target.value)}
             data-testid="evento-tickets"
+          />
+        </Field>
+        <Field label={t('admin.events.ticketProvider')} hint={t('admin.events.ticketProviderHint')}>
+          <input
+            value={d.ticketProvider}
+            maxLength={60}
+            onChange={(e) => set('ticketProvider', e.target.value)}
+            data-testid="evento-ticketera"
+          />
+        </Field>
+        <Field label={t('admin.events.doorOnly')} hint={t('admin.events.doorOnlyHint')}>
+          <input
+            type="checkbox"
+            checked={d.doorOnly}
+            onChange={(e) => set('doorOnly', e.target.checked)}
+            data-testid="evento-solo-puerta"
+          />
+        </Field>
+        <Field label={t('admin.events.doorPrice')} hint={t('admin.events.doorPriceHint')}>
+          <input
+            inputMode="decimal"
+            value={d.doorPrice}
+            placeholder="5,00"
+            disabled={!d.doorOnly}
+            onChange={(e) => set('doorPrice', e.target.value)}
+            data-testid="evento-precio-puerta"
           />
         </Field>
       </div>

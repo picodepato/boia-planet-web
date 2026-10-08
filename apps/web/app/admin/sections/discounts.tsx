@@ -1,6 +1,12 @@
 'use client';
 
-import { type BoiaEvent, type Discount, discountStatus } from '@boia/contracts';
+import {
+  COMMON_DISCOUNT_CODE_MAX,
+  type BoiaEvent,
+  type Discount,
+  discountStatus,
+  withCommonCode,
+} from '@boia/contracts';
 import { useState } from 'react';
 import type { DiscountFormInput } from '../../../lib/admin/actions';
 import { isoToLocal, localToIso } from '../../../lib/admin/dates';
@@ -209,13 +215,17 @@ function DiscountRow({
   discount,
   events,
   changed,
+  common,
 }: {
   ctx: AdminContext;
   discount: Discount;
   events: readonly BoiaEvent[];
   changed: boolean;
+  /** El código común de la ticketera, si lo hay (plan 019 T215). */
+  common?: string | undefined;
 }) {
   const [draft, setDraft] = useState(() => draftOf(discount, events));
+  const shown = withCommonCode(discount, common).code;
   const { status, busy, run } = useRun();
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const state = discountStatus(discount, new Date());
@@ -227,7 +237,14 @@ function DiscountRow({
   return (
     <li className="admin-card" data-testid={`descuento-${discount.id}`} data-estado={state}>
       <p className="admin-meta">
-        <strong>{discount.code}</strong> · {target} · {STATUS_LABEL[state]}{' '}
+        <strong data-testid={`descuento-codigo-${discount.id}`}>{shown}</strong>
+        {shown !== discount.code ? (
+          <span data-testid={`descuento-propio-${discount.id}`}>
+            {' '}
+            {t('admin.discounts.common.own', { code: discount.code })}
+          </span>
+        ) : null}{' '}
+        · {target} · {STATUS_LABEL[state]}{' '}
         {t('admin.discounts.prioridad2')} {discount.priority}
         {discount.hiddenAt
           ? t('admin.discounts.escondidoEn2', { hiddenAt: discount.hiddenAt })
@@ -288,10 +305,12 @@ function DiscountRow({
 export function DiscountsSection({ ctx }: { ctx: AdminContext }) {
   const discounts = useRead(ctx, (r) => r.content.list('discounts'));
   const events = useRead(ctx, (r) => r.content.events());
+  const settings = useRead(ctx, (r) => r.admin.settings());
   const changed = useRead(ctx, (r) => r.admin.overridden('discounts'));
   const [draft, setDraft] = useState<Draft | null>(null);
   const { status, busy, run } = useRun();
-  if (!discounts || !events) return <p>{t('empty.loading')}</p>;
+  if (!discounts || !events || !settings) return <p>{t('empty.loading')}</p>;
+  const common = settings.commonDiscountCode;
   const listed = events.filter((e) => e.state !== 'draft');
   const form = draft ?? draftOf(null, listed);
   const changedSet = new Set(changed ?? []);
@@ -303,6 +322,7 @@ export function DiscountsSection({ ctx }: { ctx: AdminContext }) {
       >
         <ResetButton ctx={ctx} areas={['discounts']} />
       </SectionHead>
+      <CommonCodeCard key={common ?? ''} ctx={ctx} current={common} />
       <form
         className="admin-card admin-form"
         data-testid="descuento-nuevo"
@@ -344,9 +364,75 @@ export function DiscountsSection({ ctx }: { ctx: AdminContext }) {
             discount={d}
             events={listed}
             changed={changedSet.has(d.id)}
+            common={common}
           />
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * El código común de la ticketera (plan 019 T215, decisión 7): fijado, todos
+ * los descuentos de entradas enseñan ese código a la vez (por si la ticketera
+ * cambia el oficial); vacío, cada uno el suyo. Los de la tienda no cambian.
+ */
+function CommonCodeCard({ ctx, current }: { ctx: AdminContext; current: string | undefined }) {
+  const [code, setCode] = useState(current ?? '');
+  const { status, busy, run } = useRun();
+  const save = (value: string) =>
+    run(
+      () => ctx.actions.setCommonDiscountCode(value),
+      value.trim() ? t('admin.discounts.common.saved') : t('admin.discounts.common.cleared'),
+    );
+  return (
+    <form
+      className="admin-card admin-form"
+      data-testid="descuento-comun"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save(code);
+      }}
+    >
+      <h3>{t('admin.discounts.common.title')}</h3>
+      <Field label={t('admin.discounts.common.label')} hint={t('admin.discounts.common.hint')}>
+        <input
+          value={code}
+          maxLength={COMMON_DISCOUNT_CODE_MAX}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          data-testid="descuento-comun-codigo"
+        />
+      </Field>
+      <p className="admin-meta" data-testid="descuento-comun-estado">
+        {current
+          ? t('admin.discounts.common.active', { code: current })
+          : t('admin.discounts.common.inactive')}
+      </p>
+      <div className="admin-row">
+        <button
+          type="submit"
+          className="admin-button"
+          disabled={busy}
+          data-testid="descuento-comun-guardar"
+        >
+          {t('admin.discounts.common.save')}
+        </button>
+        {current ? (
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            disabled={busy}
+            data-testid="descuento-comun-quitar"
+            onClick={() => {
+              setCode('');
+              void save('');
+            }}
+          >
+            {t('admin.discounts.common.clear')}
+          </button>
+        ) : null}
+      </div>
+      <StatusLine status={status} />
+    </form>
   );
 }

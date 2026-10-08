@@ -1,8 +1,8 @@
 import { EVENT_STATE_BEHAVIOR, discountSchema, eventState } from '@boia/contracts';
 import {
   type CarnetMember,
+  HALLOWEEN_EVENT_ID,
   MemoryStorage,
-  SAMPLE_CARNET_DISCOUNT,
   SAMPLE_DISCOUNTS,
   SAMPLE_EVENTS,
   STORE_KEY,
@@ -11,7 +11,9 @@ import {
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { pickMember, seededRandom } from '../lib/mundo/discover';
 import { t } from '../lib/i18n';
+import { CARNET_CREATE_HREF } from '../lib/landing/access';
 import { CHECKOUT_COPY } from '../lib/ticketing/copy';
+import { boxOfficeLabel } from '../lib/ticketing/box-office-label';
 import {
   applicableDiscount,
   discountCents,
@@ -21,20 +23,18 @@ import {
 import { openTickets } from './hero-helpers';
 
 /**
- * Un Carnet que vale la pena (T66, decisión del 2026-10-02):
- * - Sin Carnet, comprar enseña antes «¿Tienes Carnet BOIA? Créalo en 30 s y
- *   ahorra un 10 %»; «Crear Carnet» lo crea y vuelve a la compra con el 10 %
- *   aplicado (en la landing, aquí mismo; en /mar, con Mi Carnet del mundo).
- * - No se suma a los códigos: con un código mejor, se aplica el código y la
- *   compra lo dice.
+ * El Carnet BOIA es el requisito para comprar (plan 019 T215, decisión 1):
+ * - Sin Carnet, «Comprar» dice que hace falta y lleva a crearlo (en la
+ *   landing, aquí mismo; en /mar, con Mi Carnet del mundo) y la compra sigue.
+ * - Con Carnet, se compra; el único descuento es el código del mundo.
+ * - Halloween es «Solo en puerta · 5 € con carnet»: sin checkout (decisión 6).
  * - El ranking enseña el apodo propio y «Descubrir a un BOIERO» abre un
  *   Carnet al azar (miembros y artistas), con una semilla fija.
- * Todo sale de la muestra: precios, porcentaje y códigos.
+ * Todo sale de la muestra: precios y códigos.
  */
 
 test.describe.configure({ timeout: 120_000 });
 
-const carnetDiscount = discountSchema.parse(SAMPLE_CARNET_DISCOUNT);
 const codes = SAMPLE_DISCOUNTS.map((d) => discountSchema.parse(d)).filter(
   (d) => d.scope === 'event',
 );
@@ -43,18 +43,15 @@ const onSale = SAMPLE_EVENTS.filter(
   (e) =>
     EVENT_STATE_BEHAVIOR[eventState(e, now)].purchasable && e.state !== 'draft' && !e.boxOfficeOnly,
 );
-const carnetCents = (e: (typeof SAMPLE_EVENTS)[number]) =>
-  discountCents(carnetDiscount, samplePriceCents(e));
-/** Un evento a la venta y un código suyo que ahorra más que el Carnet. */
-const better = onSale.flatMap((event) =>
+/** Un evento a la venta online. */
+const plain = onSale[0]!;
+/** Un evento a la venta y un código suyo que vale ahora. */
+const withCode = onSale.flatMap((event) =>
   codes
-    .filter((c) => c.eventId === event.id)
     .filter((c) => applicableDiscount(event.id, [{ discount: c }], samplePriceCents(event), now))
-    .filter((c) => discountCents(c, samplePriceCents(event)) > carnetCents(event))
     .map((code) => ({ event, code })),
 )[0];
-/** Un evento a la venta en el que el Carnet ahorra (sin código). */
-const plain = onSale.find((e) => carnetCents(e) > 0)!;
+const halloween = SAMPLE_EVENTS.find((e) => e.id === HALLOWEEN_EVENT_ID)!;
 
 type Captured = { event: string } & Record<string, unknown>;
 const analytics = (page: Page): Promise<Captured[]> =>
@@ -100,101 +97,80 @@ async function openMar(page: Page) {
   return errors;
 }
 
-async function expectCarnetApplied(checkout: Locator, event: (typeof SAMPLE_EVENTS)[number]) {
-  const line = checkout.getByTestId('checkout-descuento');
-  await expect(line).toHaveAttribute('data-kind', 'carnet', { timeout: 20_000 });
-  await expect(line).toHaveAttribute('data-discount-id', carnetDiscount.id);
-  await expect(line).toContainText(CHECKOUT_COPY.carnet.line);
-  const price = samplePriceCents(event);
-  await expect(checkout.getByTestId('checkout-total')).toHaveText(
-    formatEuros(price - carnetCents(event)),
-  );
-  await expect(checkout.getByTestId('checkout-oferta-carnet')).toHaveCount(0);
-}
-
-async function expectOffer(checkout: Locator, event: (typeof SAMPLE_EVENTS)[number]) {
-  const offer = checkout.getByTestId('checkout-oferta-carnet');
-  await expect(offer).toBeVisible({ timeout: 20_000 });
-  await expect(offer).toContainText(CHECKOUT_COPY.carnet.offerTitle);
-  await expect(offer).toContainText(CHECKOUT_COPY.carnet.offerPercent(carnetDiscount.value));
-  await expect(offer).toHaveAttribute('data-ahorro', String(carnetCents(event)));
-  // Antes de elegir, no se compra todavía.
+async function expectRequired(checkout: Locator) {
+  const notice = checkout.getByTestId('checkout-carnet-requerido');
+  await expect(notice).toBeVisible({ timeout: 20_000 });
+  await expect(notice).toContainText(CHECKOUT_COPY.carnet.requiredTitle);
+  // Sin Carnet no se compra: ni botón de confirmar ni «seguir sin Carnet».
   await expect(checkout.getByTestId('checkout-confirmar')).toHaveCount(0);
+  await expect(checkout.getByTestId('checkout-sin-carnet')).toHaveCount(0);
   await expect(checkout.getByTestId('checkout-crear-carnet')).toHaveText(
     CHECKOUT_COPY.carnet.create,
   );
-  await expect(checkout.getByTestId('checkout-sin-carnet')).toHaveText(CHECKOUT_COPY.carnet.skip);
 }
 
-test('landing: sin Carnet la compra lo ofrece; «Crear Carnet» vuelve con el 10 % aplicado', async ({
+async function expectFullPrice(checkout: Locator, event: (typeof SAMPLE_EVENTS)[number]) {
+  await expect(checkout.getByTestId('checkout-total')).toHaveText(
+    formatEuros(samplePriceCents(event)),
+    { timeout: 20_000 },
+  );
+  await expect(checkout.getByTestId('checkout-descuento')).toHaveCount(0);
+}
+
+test('landing: sin Carnet «Comprar» lleva a crearlo y la compra sigue, sin descuento por el Carnet', async ({
   page,
 }, info) => {
-  expect(plain, 'hay un evento a la venta en el que el Carnet ahorra').toBeDefined();
+  expect(plain, 'hay un evento a la venta online').toBeDefined();
   const panel = await openLandingTickets(page);
   await panel.getByRole('button', { name: CHECKOUT_COPY.buyAria(plain.name) }).click();
   const checkout = page.getByTestId('checkout');
-  await expectOffer(checkout, plain);
+  await expectRequired(checkout);
 
-  // «Seguir sin Carnet»: la compra de siempre, sin descuento.
-  await checkout.getByTestId('checkout-sin-carnet').click();
-  await expect(checkout.getByTestId('checkout-confirmar')).toBeVisible();
-  await expect(checkout.getByTestId('checkout-sin-descuento')).toBeVisible();
-  await checkout.getByTestId('checkout-cerrar').click();
-  await expect(checkout).toBeHidden();
-
-  // Otra vez: «Crear Carnet» lo crea aquí mismo y la compra sigue con el descuento.
-  await panel.getByRole('button', { name: CHECKOUT_COPY.buyAria(plain.name) }).click();
-  await expectOffer(checkout, plain);
+  // «Crear Carnet» lo crea aquí mismo y la compra sigue, al precio entero.
   await checkout.getByTestId('checkout-crear-carnet').click();
-  await checkout.getByTestId('checkout-carnet-apodo').fill(`Ahorradora ${info.project.name}`);
+  await checkout.getByTestId('checkout-carnet-apodo').fill(`Compradora ${info.project.name}`);
   await checkout.getByTestId('checkout-carnet-guardar').click();
-  await expectCarnetApplied(checkout, plain);
-  await expect(checkout.getByTestId('banner-descuento')).toHaveAttribute('data-kind', 'carnet');
+  await expectFullPrice(checkout, plain);
+  await expect(checkout.getByTestId('checkout-carnet-requerido')).toHaveCount(0);
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
-  expect(await analytics(page)).toContainEqual(
-    expect.objectContaining({
-      event: 'purchase_confirmed',
-      eventId: plain.id,
-      discountId: carnetDiscount.id,
-      discountKind: 'carnet',
-    }),
-  );
+  const confirmed = (await analytics(page)).find((e) => e.event === 'purchase_confirmed');
+  expect(confirmed).toMatchObject({ eventId: plain.id });
+  expect(confirmed).not.toHaveProperty('discountId');
   expect(new URL(page.url()).pathname).toBe('/');
 });
 
-test('landing: con Carnet y un código mejor, se aplica el código y lo dice', async ({ page }) => {
-  expect(better, 'la muestra tiene un código que ahorra más que el Carnet').toBeDefined();
+test('landing: con Carnet se compra directamente; con un código, se aplica el código', async ({
+  page,
+}) => {
+  expect(withCode, 'la muestra tiene un código que vale ahora').toBeDefined();
   await seed(page, async (repo) => {
     await repo.carnet.create({ nickname: 'Grumete Códigos' });
-    await repo.progress.findDiscount(better!.code.id);
+    await repo.progress.findDiscount(withCode!.code.id);
   });
   const panel = await openLandingTickets(page);
-  await panel.getByRole('button', { name: CHECKOUT_COPY.buyAria(better!.event.name) }).click();
+  await panel.getByRole('button', { name: CHECKOUT_COPY.buyAria(withCode!.event.name) }).click();
   const checkout = page.getByTestId('checkout');
   const line = checkout.getByTestId('checkout-descuento');
   await expect(line).toHaveAttribute('data-kind', 'code', { timeout: 20_000 });
-  await expect(line).toHaveAttribute('data-discount-id', better!.code.id);
-  await expect(checkout.getByTestId('checkout-no-se-suman')).toHaveText(
-    CHECKOUT_COPY.carnet.skippedCarnet(better!.code.code),
-  );
-  const price = samplePriceCents(better!.event);
+  await expect(line).toHaveAttribute('data-discount-id', withCode!.code.id);
+  await expect(checkout.getByTestId('checkout-carnet-requerido')).toHaveCount(0);
+  const price = samplePriceCents(withCode!.event);
   await expect(checkout.getByTestId('checkout-total')).toHaveText(
-    formatEuros(price - discountCents(better!.code, price)),
+    formatEuros(price - discountCents(withCode!.code, price)),
   );
-  await expect(checkout.getByTestId('checkout-oferta-carnet')).toHaveCount(0);
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
   expect(await analytics(page)).toContainEqual(
     expect.objectContaining({
       event: 'purchase_confirmed',
-      discountId: better!.code.id,
+      discountId: withCode!.code.id,
       discountKind: 'code',
     }),
   );
 });
 
-test('/mar: sin Carnet la compra lo ofrece; «Crear Carnet» usa Mi Carnet del mundo y vuelve con el 10 %', async ({
+test('/mar: sin Carnet la compra lo pide; «Crear Carnet» usa Mi Carnet del mundo y vuelve a la compra', async ({
   page,
 }, info) => {
   const errors = await openMar(page);
@@ -202,7 +178,7 @@ test('/mar: sin Carnet la compra lo ofrece; «Crear Carnet» usa Mi Carnet del m
   const panel = page.getByTestId('mar-entradas-panel');
   await panel.getByTestId(`mar-entradas-comprar-${plain.id}`).click();
   const checkout = page.getByTestId('checkout');
-  await expectOffer(checkout, plain);
+  await expectRequired(checkout);
 
   // «Crear Carnet»: Mi Carnet dentro del mar, ya en el alta.
   await checkout.getByTestId('checkout-crear-carnet').click();
@@ -212,24 +188,46 @@ test('/mar: sin Carnet la compra lo ofrece; «Crear Carnet» usa Mi Carnet del m
   await carnet.getByTestId('carnet-apodo-input').fill(`Marinera ${info.project.name}`);
   await carnet.getByTestId('carnet-guardar').click();
 
-  // Vuelve a la compra del mismo evento, con el descuento del Carnet.
+  // Vuelve a la compra del mismo evento, ya con Carnet.
   await expect(carnet).toHaveCount(0);
   await expect(checkout.getByTestId('checkout-evento')).toHaveText(plain.name, {
     timeout: 20_000,
   });
-  await expectCarnetApplied(checkout, plain);
+  await expectFullPrice(checkout, plain);
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
   expect(new URL(page.url()).pathname).toBe('/mar');
   expect(await analytics(page)).toContainEqual(
-    expect.objectContaining({
-      event: 'purchase_confirmed',
-      eventId: plain.id,
-      discountKind: 'carnet',
-      source: 'world',
-    }),
+    expect.objectContaining({ event: 'purchase_confirmed', eventId: plain.id, source: 'world' }),
   );
   expect(errors).toEqual([]);
+});
+
+test('Halloween: «Solo en puerta · 5 € con carnet», sin checkout, y lleva a crear el Carnet', async ({
+  page,
+}) => {
+  test.skip(
+    !EVENT_STATE_BEHAVIOR[eventState(halloween, now)].purchasable,
+    'Halloween ya pasó: no hay nada que comprar',
+  );
+  await page.goto(`/eventos/${halloween.slug}`);
+  const ficha = page.getByTestId('evento-ficha');
+  const door = ficha.getByTestId('evento-solo-puerta');
+  await expect(door).toBeVisible();
+  await expect(door.getByTestId('box-office-label')).toHaveText(boxOfficeLabel(halloween));
+  await expect(door.getByTestId('box-office-label')).toHaveText('Solo en puerta · 5 € con carnet');
+  await expect(ficha.getByTestId(`comprar-${halloween.id}`)).toHaveCount(0);
+  await expect(ficha.getByTestId('evento-descuento')).toHaveCount(0);
+  await expect(page.getByTestId('checkout')).toHaveCount(0);
+  await expect(door.getByTestId('box-office-carnet')).toHaveAttribute('href', CARNET_CREATE_HREF);
+
+  // En el panel de Tickets de la landing, «Comprar» abre el aviso, no el checkout.
+  const panel = await openLandingTickets(page);
+  await panel.getByTestId(`comprar-${halloween.id}`).click();
+  const dialog = page.getByTestId('box-office');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId('box-office-label')).toHaveText(boxOfficeLabel(halloween));
+  await expect(page.getByTestId('checkout')).toHaveCount(0);
 });
 
 test('/mar: el ranking enseña el apodo propio y «Descubrir a un BOIERO» abre Carnets al azar', async ({

@@ -1,72 +1,111 @@
-import { canBuy, eventSchema, EVENT_STATES } from '@boia/contracts';
-import { HALLOWEEN_EVENT_ID, SAMPLE_DISCOUNTS, SONIDO_EVENT_ID } from '@boia/store';
+import { canBuy, doorPriceCents, eventSchema, EVENT_STATES } from '@boia/contracts';
+import { HALLOWEEN_EVENT_ID, SAMPLE_DISCOUNTS } from '@boia/store';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_CONTENT } from '../landing/sample-content';
 import { CARNET_CREATE_HREF } from '../landing/access';
+import { t } from '../i18n/web';
 import { BuyButton } from '../../app/(landing)/components/buy-button';
-import { BoxOfficeDialog } from './box-office';
+import { BoxOfficeDialog, boxOfficeLabel } from './box-office';
+
+/**
+ * «Solo en puerta» (plan 019 T215, decisiones 1 y 6): sin venta online; la
+ * entrada se paga en la puerta y hace falta el Carnet BOIA. La regla vieja
+ * (T199, «-2 € con Carnet») se fue.
+ */
 
 const events = SAMPLE_CONTENT.events;
-const taquilla = events.filter((e) => e.boxOfficeOnly);
-const message = 'Entradas sólo en taquilla, el mismo día. Enseña tu Carnet BOIA en la puerta y te descontamos 2 €.';
+const puerta = events.filter((e) => e.boxOfficeOnly);
+const message = t('ticketing.boxOffice.message');
+const euros = (cents: number) =>
+  new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(cents / 100);
 
-describe('taquilla por evento (T199, decisión 8)', () => {
-  it('sólo Halloween y Sonido llevan la regla, con 2 EUR de descuento', () => {
-    expect(taquilla.map((e) => e.id)).toEqual([HALLOWEEN_EVENT_ID, SONIDO_EVENT_ID]);
-    for (const e of taquilla) {
-      expect(e.boxOfficeOnly).toEqual({ carnetDiscountCents: 200 });
-      expect(e.priceSample).toBe(true);
-      expect(eventSchema.parse(e).boxOfficeOnly).toEqual(e.boxOfficeOnly);
-    }
+describe('Solo en puerta (decisión 6)', () => {
+  it('sólo Halloween es de puerta, y dice «Solo en puerta · 5 € con carnet»', () => {
+    expect(puerta.map((e) => e.id)).toEqual([HALLOWEEN_EVENT_ID]);
+    const halloween = puerta[0]!;
+    expect(eventSchema.parse(halloween).boxOfficeOnly).toEqual(halloween.boxOfficeOnly);
+    const cents = doorPriceCents(halloween)!;
+    expect(boxOfficeLabel(halloween)).toBe(t('ticketing.boxOffice.label', { euros: euros(cents) }));
+    expect(boxOfficeLabel(halloween)).toBe('Solo en puerta · 5 € con carnet');
   });
 
-  it('taquilla no necesita ticketera y sigue respetando los estados', () => {
+  it('el precio en puerta es el suyo o, sin él, el del evento; sin ninguno, no se dice', () => {
+    const base = { priceCents: 1200 };
+    expect(doorPriceCents({ ...base, boxOfficeOnly: { doorPriceCents: 700 } })).toBe(700);
+    expect(doorPriceCents({ ...base, boxOfficeOnly: {} })).toBe(1200);
+    expect(doorPriceCents({ ...base, boxOfficeOnly: undefined })).toBeUndefined();
+    expect(boxOfficeLabel({ boxOfficeOnly: {}, priceCents: undefined })).toBe(
+      t('ticketing.boxOffice.labelNoPrice'),
+    );
+    // Un evento guardado con la regla vieja de T199 sigue siendo de puerta.
+    const old = eventSchema.parse({ ...puerta[0], boxOfficeOnly: { carnetDiscountCents: 200 } });
+    expect(old.boxOfficeOnly).toEqual({});
+  });
+
+  it('de puerta no necesita ticketera y sigue respetando los estados', () => {
     for (const state of EVENT_STATES) {
-      expect(canBuy({ ...taquilla[0]!, state, ticketUrl: undefined })).toBe(state === 'on_sale');
+      expect(canBuy({ ...puerta[0]!, state, ticketUrl: undefined })).toBe(state === 'on_sale');
     }
-    expect(canBuy({ ...taquilla[0]!, boxOfficeOnly: undefined, ticketUrl: undefined })).toBe(false);
-    expect(eventSchema.safeParse({ ...taquilla[0], boxOfficeOnly: { carnetDiscountCents: -200 } }).success).toBe(false);
+    expect(canBuy({ ...puerta[0]!, boxOfficeOnly: undefined, ticketUrl: undefined })).toBe(false);
+    expect(
+      eventSchema.safeParse({ ...puerta[0], boxOfficeOnly: { doorPriceCents: -200 } }).success,
+    ).toBe(false);
   });
 
   it('antes de hidratar muestra el aviso desplegable y el Carnet, sin enlace a la ticketera', () => {
-    for (const e of taquilla) {
-      const html = renderToStaticMarkup(createElement(BuyButton, {
-        eventId: e.id, eventName: e.name, ticketUrl: e.ticketUrl,
-        boxOfficeOnly: e.boxOfficeOnly, source: 'tickets_panel',
-      }));
+    for (const e of puerta) {
+      const html = renderToStaticMarkup(
+        createElement(BuyButton, {
+          eventId: e.id,
+          eventName: e.name,
+          ticketUrl: e.ticketUrl,
+          boxOfficeOnly: e.boxOfficeOnly,
+          priceCents: e.priceCents,
+          source: 'tickets_panel',
+        }),
+      );
       expect(html).toContain('<details');
+      expect(html).toContain(boxOfficeLabel(e));
       expect(html).toContain(message);
-      expect(html).toContain('¿Aún no tienes Carnet?');
-      expect(html).toContain('Hazte el tuyo');
-      expect(html.indexOf('¿Aún no tienes Carnet?')).toBeGreaterThan(html.indexOf(message));
+      expect(html).toContain(t('ticketing.boxOffice.carnet'));
       expect(html).toContain(`href="${CARNET_CREATE_HREF}"`);
-      expect(html).not.toContain(`href="${e.ticketUrl}"`);
+      if (e.ticketUrl) expect(html).not.toContain(`href="${e.ticketUrl}"`);
     }
   });
 
   it('el diálogo del mar tiene el mismo mensaje y botón al Carnet, sin checkout', () => {
-    const html = renderToStaticMarkup(createElement(BoxOfficeDialog, {
-      eventName: taquilla[0]!.name, rule: taquilla[0]!.boxOfficeOnly!,
-      carnet: { onOpen: () => {} }, onClose: () => {}, className: 'checkout--mar',
-    }));
+    const html = renderToStaticMarkup(
+      createElement(BoxOfficeDialog, {
+        eventName: puerta[0]!.name,
+        event: puerta[0]!,
+        carnet: { onOpen: () => {} },
+        onClose: () => {},
+        className: 'checkout--mar',
+      }),
+    );
+    expect(html).toContain(boxOfficeLabel(puerta[0]!));
     expect(html).toContain(message);
     expect(html).toContain('data-testid="box-office-carnet"');
-    expect(html).toContain('Hazte el tuyo</button>');
     expect(html).not.toContain('checkout-confirmar');
   });
 
-  it('ningún código de descuento apunta a un evento de taquilla (no se podría canjear online)', () => {
-    const ids = new Set(taquilla.map((e) => e.id));
+  it('ningún código de descuento apunta a un evento de puerta (no se podría canjear online)', () => {
+    const ids = new Set(puerta.map((e) => e.id));
     expect(SAMPLE_DISCOUNTS.filter((d) => d.eventId && ids.has(d.eventId))).toEqual([]);
   });
 
   it('los demás eventos conservan su enlace de checkout', () => {
     for (const e of events.filter((e) => !e.boxOfficeOnly && canBuy(e))) {
-      const html = renderToStaticMarkup(createElement(BuyButton, {
-        eventId: e.id, eventName: e.name, ticketUrl: e.ticketUrl, source: 'tickets_panel',
-      }));
+      const html = renderToStaticMarkup(
+        createElement(BuyButton, {
+          eventId: e.id,
+          eventName: e.name,
+          ticketUrl: e.ticketUrl,
+          source: 'tickets_panel',
+        }),
+      );
       expect(html).toContain(`href="${e.ticketUrl}"`);
       expect(html).not.toContain('box-office-message');
     }

@@ -114,8 +114,8 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   await probe.goto(LANDING);
   await openFromHeader(probe);
   await ticketsPanel(probe).getByTestId(`comprar-${ONLINE_EVENT.id}`).click();
-  // Sin Carnet, la compra pregunta antes (T66).
-  await expect(probe.getByTestId('checkout-sin-carnet')).toBeVisible({ timeout: 20_000 });
+  // Sin Carnet, la compra lo pide (plan 019).
+  await expect(probe.getByTestId('checkout-carnet-requerido')).toBeVisible({ timeout: 20_000 });
   await probe.close();
 
   const gameChunks = gameOnlyChunks().filter((c) => !loadedByBuy.has(`/_next/${c}`));
@@ -168,9 +168,8 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   // Comprar abre aquí la compra de prueba (D-20), sin el juego, y queda medido.
   await buy.click();
   const checkout = page.getByTestId('checkout');
-  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
-  await checkout.getByTestId('checkout-sin-carnet').click({ timeout: 20_000 });
-  await expect(checkout.getByTestId('checkout-confirmar')).toBeVisible();
+  // Sin Carnet, la compra lo pide (plan 019), también sin el juego.
+  await expect(checkout.getByTestId('checkout-carnet-requerido')).toBeVisible({ timeout: 20_000 });
   await expect(checkout.getByTestId('checkout-prueba')).toBeVisible();
   // Escape cierra sólo el checkout: el panel sigue abierto.
   await page.keyboard.press('Escape');

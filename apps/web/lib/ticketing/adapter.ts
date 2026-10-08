@@ -40,7 +40,15 @@ export interface TicketingAdapter {
 
 export type CheckoutStart =
   | { ok: true; session: CheckoutSession }
-  | { ok: false; reason: 'not_found' | 'not_on_sale'; event: CheckoutEvent | null };
+  | {
+      ok: false;
+      /**
+       * `carnet_required`: hace falta el Carnet BOIA para comprar (plan 019,
+       * decisión 1); el checkout lleva a crearlo y vuelve a la compra.
+       */
+      reason: 'not_found' | 'not_on_sale' | 'carnet_required';
+      event: CheckoutEvent | null;
+    };
 
 export interface CheckoutEvent {
   id: string;
@@ -68,10 +76,8 @@ export interface AppliedDiscount {
   label: string;
   /** Céntimos que descuenta sobre el precio. */
   cents: number;
-  /** `code`: un código encontrado en el mundo; `carnet`: el de tener Carnet BOIA (T66). */
+  /** `code`: un código encontrado en el mundo (el único que hay desde el plan 019). */
   kind: DiscountKind;
-  /** Porcentaje, si es de porcentaje («ahorra un 10 %»). */
-  percent?: number;
 }
 
 export interface Quote {
@@ -83,16 +89,6 @@ export interface Quote {
   totalCents: number;
   /** Precio de muestra, no real. */
   sample: boolean;
-  /**
-   * El otro descuento que valía y no se aplica (T66): no se suman, va el
-   * mejor. Sólo cuando había los dos.
-   */
-  skipped?: AppliedDiscount;
-  /**
-   * Sin Carnet: lo que ahorraría con él, si fuera el mejor descuento (T66).
-   * Con esto el checkout ofrece crearlo antes de comprar.
-   */
-  carnetOffer?: AppliedDiscount;
 }
 
 export interface PurchaseOutcome {

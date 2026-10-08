@@ -37,7 +37,7 @@ export function MarABordo({
   onBottles?: () => void;
   /** Mi Carnet entra ya en el alta («Crear Carnet» de la compra, T66). */
   carnetCreate?: boolean;
-  /** El Carnet se acaba de crear aquí (T66): la compra vuelve con su descuento. */
+  /** El Carnet se acaba de crear aquí: la compra, que lo pide, vuelve (plan 019). */
   onCarnetCreated?: () => void;
   onClose: () => void;
   /** Vuelve al menú del juego (T65): cada panel es una sección suya. */

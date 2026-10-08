@@ -209,8 +209,8 @@ test('«Ir a su isla» con movimiento reducido abre el checkout directo', async 
   await openMar(page);
   await sailToTickets(page);
   await expect(checkoutEvent(page)).toHaveText(islandEvent.name, { timeout: 20_000 });
-  // Sin Carnet, la compra abre con su aviso (T66), sin viaje de por medio.
-  await expect(page.getByTestId('checkout-oferta-carnet')).toBeVisible();
+  // Sin Carnet, la compra abre pidiéndolo (plan 019), sin viaje de por medio.
+  await expect(page.getByTestId('checkout-carnet-requerido')).toBeVisible();
   await expect(page.getByTestId('mar-entradas-saltar')).toHaveCount(0);
   await expect(page.getByTestId('mar-rumbo-activo')).toHaveCount(0);
 });

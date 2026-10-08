@@ -12,6 +12,7 @@ import {
   NICKNAME_MIN,
   charLength,
   discountStatus,
+  withCommonCode,
   type HomeContent,
 } from '@boia/contracts';
 import {
@@ -1197,7 +1198,9 @@ class LocalRepository implements BoiaRepository {
       id: string,
       rec: { at: string; worldId: string | null },
     ) => {
-      const discount = this.resolved('discounts', d).find((x) => x.id === id);
+      const own = this.resolved('discounts', d).find((x) => x.id === id);
+      // El código común de la ticketera, si el Admin lo fijó (plan 019 T215).
+      const discount = own && withCommonCode(own, d.content.settings.commonDiscountCode);
       const me = d.identity?.id;
       const used = me
         ? d.purchases.find(
@@ -1863,7 +1866,6 @@ class LocalRepository implements BoiaRepository {
       skins: async () => clone(this.doc.content.skins),
       activeWorldId: async () => this.activeWorld(),
       missionDestinations: async () => clone(this.doc.content.missionDestinations),
-      carnetDiscount: async () => clone(this.sample.carnetDiscount),
     };
   }
 

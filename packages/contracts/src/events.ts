@@ -63,6 +63,11 @@ export const eventSchema = z.object({
   /** Texto público del lugar. Nunca la dirección de una secret location (REQ-COM-013). */
   placeLabel: z.string().min(1),
   /**
+   * ¿Está anunciado el lugar? (plan 019 T215, decisión 5). Sin anunciar, la
+   * ficha dice «La ubicación todavía no está anunciada» en vez de `placeLabel`.
+   */
+  placeAnnounced: z.boolean().default(true),
+  /**
    * Estado guardado. Con `stateSource: 'dates'` las fechas deciden entre
    * próximamente, a la venta y finalizado (`eventState`); borrador, agotado,
    * pospuesto y cancelado los pone el Admin.
@@ -89,10 +94,22 @@ export const eventSchema = z.object({
   priceCents: z.number().int().nonnegative().optional(),
   /** El precio es de muestra hasta que Álvaro lo fije (D-06). */
   priceSample: z.boolean().default(true),
-  /** Venta sólo en taquilla y descuento del Carnet, en céntimos. Muestra (T199). */
-  boxOfficeOnly: z.object({ carnetDiscountCents: z.number().int().nonnegative() }).optional(),
+  /**
+   * «Solo en puerta» (plan 019 T215, decisiones 1 y 6): no hay venta online;
+   * la entrada se paga en la puerta enseñando el Carnet BOIA. `doorPriceCents`
+   * es el precio en la puerta con Carnet; sin él, `priceCents`. El Carnet ya
+   * no descuenta: es el requisito (la regla «-2 € con Carnet» de T199 se fue).
+   */
+  boxOfficeOnly: z
+    .object({ doorPriceCents: z.number().int().nonnegative().optional() })
+    .optional(),
   /** Enlace a la ticketera (adaptador o sandbox hasta que Álvaro contrate, D-06). */
   ticketUrl: z.url().optional(),
+  /**
+   * Nombre de la ticketera que vende este evento («Fourvenues»…), por elegir
+   * (plan 019 T215, decisión 5): la ficha enseña la que haya.
+   */
+  ticketProvider: z.string().trim().min(1).max(60).optional(),
   islandId: z.string().optional(),
   /** Mensaje de pospuesto o cancelado (REQ-COM-008). */
   stateNote: z.string().optional(),
@@ -173,6 +190,17 @@ export function canBuy(event: BoiaEvent, now?: Date): boolean {
     EVENT_STATE_BEHAVIOR[state].purchasable &&
     (event.boxOfficeOnly !== undefined || event.ticketUrl !== undefined)
   );
+}
+
+/**
+ * Precio en la puerta (con Carnet) de un evento «Solo en puerta», en
+ * céntimos; undefined si no es de puerta o no tiene precio.
+ */
+export function doorPriceCents(
+  event: Pick<BoiaEvent, 'boxOfficeOnly' | 'priceCents'>,
+): number | undefined {
+  if (!event.boxOfficeOnly) return undefined;
+  return event.boxOfficeOnly.doorPriceCents ?? event.priceCents;
 }
 
 /** Estados que puede tener el evento prioritario: vigente, nunca cancelado ni pasado (REQ-COM-009). */

@@ -566,11 +566,6 @@ export interface ContentApi {
   activeWorldId(): Promise<string | null>;
   /** Destinos de las partidas nuevas fijados por el Admin: mundo → misión → lugar. */
   missionDestinations(): Promise<Record<string, Record<string, string>>>;
-  /**
-   * El descuento de tener Carnet BOIA (T66): con la forma de un descuento de
-   * entradas. No se suma a los códigos del mundo; la compra aplica el mejor.
-   */
-  carnetDiscount(): Promise<Discount>;
 }
 
 export interface AdminOptions {
@@ -690,7 +685,10 @@ export interface AdminApi {
   /** Purga todo lo que pasó su plazo; devuelve cuántos. */
   purgeExpired(opts?: AdminOptions): Promise<number>;
   settings(): Promise<AdminSettings>;
-  /** Cambia los ajustes del Admin (plazo de la papelera), con auditoría. */
+  /**
+   * Cambia los ajustes del Admin (plazo de la papelera, código común de la
+   * ticketera), con auditoría. `commonDiscountCode: undefined` lo quita.
+   */
   setSettings(patch: Partial<AdminSettings>, opts?: AdminOptions): Promise<AdminSettings>;
 
   // Borrador y publicación de la home y los eventos (REQ-ADM-015).

@@ -17,6 +17,9 @@ import { EventCard } from '../../app/(landing)/components/event-card';
 import { IslandUpcoming } from '../mundo/place-panels';
 import { EventBlock } from '../../app/mar/sheet';
 import { eventSailHref } from '../world-handoff';
+import { ZARPAR_HREF } from '../intro/zarpar';
+import { boxOfficeLabel } from '../ticketing/box-office-label';
+import { CARNET_CREATE_HREF } from './access';
 import { EVENTOS_COPY } from './eventos-copy';
 import {
   GENERAL_GALLERY,
@@ -38,7 +41,10 @@ const firstListed = Math.min(
     .map((e) => Date.parse(e.startsAt)),
 );
 const NOW = new Date(firstListed - 24 * 3600_000);
-const onSale = SAMPLE_CONTENT.events.find((e) => canBuy(e, NOW) && e.islandId)!;
+// Uno con compra online («Solo en puerta» no la tiene, plan 019 decisión 6).
+const onSale = SAMPLE_CONTENT.events.find(
+  (e) => canBuy(e, NOW) && e.islandId && !e.boxOfficeOnly,
+)!;
 /** Pasado su fin: las fechas lo finalizan aunque nadie lo toque. */
 const after = (e: BoiaEvent) => new Date(eventEndMs(e) + 60_000);
 
@@ -116,10 +122,78 @@ describe('ficha de evento (REQ-COM-012)', () => {
     }
   });
 
-  it('sin cartel: «Cartel próximamente»', () => {
+  it('sin cartel: «El cartel todavía no está anunciado»', () => {
     const html = page({ ...halloween }, NOW);
     expect(halloween.posterUrl).toBeUndefined();
     expect(html).toContain(EVENTOS_COPY.posterSoon);
+  });
+});
+
+describe('ficha de evento: lo que falta, cartel de fondo, puerta y descuento (plan 019 T215)', () => {
+  it('sin artistas, cartel ni ubicación, dice claro las tres cosas que faltan', () => {
+    const bare: BoiaEvent = { ...onSale, artistIds: [], placeAnnounced: false };
+    delete bare.posterUrl;
+    const html = page(bare, NOW);
+    expect(html).toContain('data-testid="evento-cartel-falta"');
+    expect(html).toContain(EVENTOS_COPY.posterSoon);
+    expect(html).toContain('data-testid="evento-artistas-falta"');
+    expect(html).toContain(EVENTOS_COPY.lineupSoon);
+    expect(html).toContain('data-testid="evento-lugar-falta"');
+    expect(html).toContain(EVENTOS_COPY.placeSoon);
+    expect(html).not.toContain(`>${bare.placeLabel}<`);
+    expect(html).not.toContain('evento-fondo-cartel');
+  });
+
+  it('con todo anunciado no dice que falte nada', () => {
+    const full: BoiaEvent = { ...onSale, posterUrl: '/contenido/carteles/x.webp' };
+    const html = page(full, NOW);
+    expect(full.artistIds.length).toBeGreaterThan(0);
+    expect(html).not.toContain('evento-cartel-falta');
+    expect(html).not.toContain('evento-artistas-falta');
+    expect(html).not.toContain('evento-lugar-falta');
+    expect(html).toContain(full.placeLabel);
+  });
+
+  it('con cartel, el fondo de la página es el cartel (ampliado y difuminado por CSS)', () => {
+    const url = '/contenido/carteles/x.webp';
+    const html = page({ ...onSale, posterUrl: url }, NOW);
+    expect(html).toContain('event-page--poster');
+    expect(html).toContain('data-testid="evento-fondo-cartel"');
+    expect(html).toContain(`background-image:url(&quot;${url}&quot;)`);
+  });
+
+  it('con compra online: Comprar, el aviso del Carnet y «Consigue un descuento» al mundo', () => {
+    const html = page({ ...onSale, ticketProvider: 'Ticketera X' }, NOW);
+    expect(html).toContain(`${BUY}${onSale.id}"`);
+    expect(html).toContain('data-testid="evento-aviso-carnet"');
+    expect(html).toContain(EVENTOS_COPY.carnetNeeded);
+    expect(html).toContain(`href="${CARNET_CREATE_HREF}"`);
+    expect(html).toContain('data-testid="evento-descuento"');
+    expect(html).toContain(`href="${ZARPAR_HREF.replace('&', '&amp;')}"`);
+    expect(html).toContain(EVENTOS_COPY.getDiscount);
+    expect(html).toContain('data-testid="evento-ticketera"');
+    expect(html).toContain('Ticketera X');
+    expect(page(onSale, NOW)).not.toContain('evento-ticketera');
+  });
+
+  it('Halloween: «Solo en puerta · 5 € con carnet», sin compra y con el Carnet', () => {
+    expect(canBuy(halloween, NOW)).toBe(true);
+    const html = page(halloween, NOW);
+    expect(html).toContain('data-testid="evento-solo-puerta"');
+    expect(html).toContain(boxOfficeLabel(halloween));
+    expect(boxOfficeLabel(halloween)).toBe('Solo en puerta · 5 € con carnet');
+    expect(html).toContain(`href="${CARNET_CREATE_HREF}"`);
+    expect(html).not.toContain(BUY);
+    expect(html).not.toContain('evento-descuento');
+  });
+
+  it('las fotos del evento van en collage, como la Galería', () => {
+    const past = SAMPLE_CONTENT.events.find((e) => {
+      const v = eventPageView(content, e.slug, after(e));
+      return v && v.photos.length > 0;
+    })!;
+    const html = page(past, after(past));
+    expect(html).toContain('data-testid="evento-collage"');
   });
 });
 

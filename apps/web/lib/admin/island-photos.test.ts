@@ -333,6 +333,7 @@ describe('con cuentas: el bucket y las tablas, y la web que las suma', () => {
     startsAt: '2026-10-31T23:00:00+01:00',
     timeZone: 'Europe/Madrid',
     placeLabel: 'Kiki García',
+    placeAnnounced: true,
     state: 'on_sale',
     stateSource: 'dates',
     description: '',

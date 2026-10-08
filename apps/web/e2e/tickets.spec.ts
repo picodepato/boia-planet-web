@@ -10,14 +10,17 @@ import { TICKET_TRIGGER } from '../lib/ticketing/sandbox';
 import { openTickets } from './hero-helpers';
 import { marSheet, openMar } from './mar-helpers';
 import { BOX_OFFICE_EVENTS, ONLINE_EVENT } from './online-event';
+import { boxOfficeLabel } from '../lib/ticketing/box-office-label';
+import { createCarnetInCheckout } from './carnet-seed';
 
 /**
  * Compra de prueba (T25, D-20, REQ-COM-035), sin ticketera ni servidor:
  * se compra el evento con checkout online desde el panel de Tickets de la
  * landing y otra vez desde su isla en el mar 3D; el sello sale una sola vez
- * en Mi Carnet. Halloween y SONIDO se venden sólo en taquilla (plan 017
- * T199, decisión 8): su «Comprar entradas» da el aviso y el Carnet, sin
- * checkout. Corre en móvil 360×640 y en escritorio.
+ * en Mi Carnet. Comprar pide el Carnet BOIA (plan 019 T215, decisión 1): la
+ * landing lo crea en el mismo checkout. Halloween es «Solo en puerta» (decisión
+ * 6): su «Comprar entradas» da el aviso y el Carnet, sin checkout. Corre en
+ * móvil 360×640 y en escritorio.
  */
 
 // Desde T199 sólo un evento de la muestra tiene checkout online.
@@ -54,9 +57,9 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
 
   // El checkout se rotula como prueba y enseña evento, precio y total.
   const checkout = page.getByTestId('checkout');
-  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
-  await checkout.getByTestId('checkout-sin-carnet').click({ timeout: CHECKOUT_LOAD });
-  await expect(checkout.getByTestId('checkout-confirmar')).toBeVisible();
+  // Sin Carnet, la compra lo pide: se crea aquí mismo y la compra sigue.
+  const nickname = `Compradora ${info.project.name}`;
+  await createCarnetInCheckout(checkout, nickname, CHECKOUT_LOAD);
   await expect(checkout.getByTestId('checkout-prueba')).toHaveText(CHECKOUT_COPY.kicker);
   await expect(checkout.getByTestId('checkout-evento')).toHaveText(landingEvent.name);
   await expect(checkout.getByTestId('checkout-aviso')).toContainText('este navegador');
@@ -67,7 +70,7 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
   await expect(result).toContainText(CHECKOUT_COPY.stamp.granted);
   await expect(checkout.getByTestId('checkout-logro')).toContainText(ticketAchievement.title);
 
-  // «Ver Mi Carnet»: el mar abre en Mi Carnet (T55); al crearlo, el sello ya está.
+  // «Ver Mi Carnet»: el mar abre en Mi Carnet (T55), con el sello ya puesto.
   await expect(checkout.getByTestId('checkout-carnet')).toHaveAttribute(
     'href',
     /^\/mar\?menu=carnet/,
@@ -76,9 +79,7 @@ test('landing → compra de prueba → Mi Carnet; isla → compra de prueba → 
   await expect(page).toHaveURL(/\/mar/);
   const carnet = page.getByTestId('mar-carnet');
   await expect(carnet).toBeVisible({ timeout: 30_000 });
-  await carnet.getByTestId('carnet-crear').click();
-  await carnet.getByTestId('carnet-apodo-input').fill(`Compradora ${info.project.name}`);
-  await carnet.getByTestId('carnet-guardar').click();
+  await expect(carnet).toContainText(nickname);
   const stamps = carnet.getByTestId('carnet-sellos');
   await expect(stamps).toContainText(storeName(landingEvent.id));
   await expect(stamps.locator('li')).toHaveCount(1);
@@ -122,12 +123,12 @@ async function shot(page: Page, name: string, project: string) {
   await page.screenshot({ path: path.join(dir, `${name}-${project}.png`) });
 }
 
-test('Halloween y SONIDO: taquilla con el descuento del Carnet, en la landing y en su isla', async ({
+test('Halloween: «Solo en puerta · 5 € con carnet», en la landing y en su isla', async ({
   page,
 }, info) => {
   test.setTimeout(120_000);
-  expect(BOX_OFFICE_EVENTS.length, 'hay eventos de taquilla').toBeGreaterThan(0);
-  const message = t('ticketing.boxOffice.message', { euros: '2' });
+  expect(BOX_OFFICE_EVENTS.length, 'hay eventos de puerta').toBeGreaterThan(0);
+  const message = t('ticketing.boxOffice.message');
 
   await page.goto('/?intro=0');
   await openTickets(page);
@@ -138,6 +139,7 @@ test('Halloween y SONIDO: taquilla con el descuento del Carnet, en la landing y 
     const box = page.getByTestId('box-office');
     await expect(box).toBeVisible();
     await expect(box.getByRole('heading')).toHaveText(e.name);
+    await expect(box.getByTestId('box-office-label')).toHaveText(boxOfficeLabel(e));
     await expect(box.getByTestId('box-office-message')).toContainText(message);
     await expect(box.getByTestId('box-office-message')).toContainText(
       `${t('ticketing.boxOffice.invite')} ${t('ticketing.boxOffice.carnet')}`,

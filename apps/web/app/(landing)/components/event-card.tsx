@@ -163,6 +163,7 @@ export function EventCard({
           eventName={event.name}
           ticketUrl={event.ticketUrl}
           boxOfficeOnly={event.boxOfficeOnly}
+          priceCents={event.priceCents}
           source={source}
         />
       ) : (

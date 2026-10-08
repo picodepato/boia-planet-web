@@ -2609,7 +2609,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           {...(hoja === 'bienvenida' ? { onTickets: openEntradas } : {})}
           carnetCreate={hoja === 'carnet' && carnetForCheckout !== null}
           onCarnetCreated={() => {
-            // Vuelta a la compra (T66): se vuelve a preparar, ya con el descuento del Carnet.
+            // Vuelta a la compra: con el Carnet ya creado, se puede comprar (plan 019, decisión 1).
             const eventId = carnetForCheckout;
             if (!eventId) return;
             setCarnetForCheckout(null);
@@ -2653,7 +2653,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       {checkoutFor && findEvent(checkoutFor)?.boxOfficeOnly ? (
         <BoxOfficeDialog
           eventName={findEvent(checkoutFor)!.name}
-          rule={findEvent(checkoutFor)!.boxOfficeOnly!}
+          event={findEvent(checkoutFor)!}
           className="checkout--mar"
           onClose={() => setCheckoutFor(null)}
           carnet={{
@@ -2690,7 +2690,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             },
           }}
           onCreateCarnet={() => {
-            // «Crear Carnet» antes de comprar (T66): el alta de Mi Carnet dentro del mar.
+            // «Crear Carnet», requisito para comprar (plan 019): el alta de Mi Carnet dentro del mar.
             const eventId = checkoutFor;
             setCheckoutFor(null);
             openPanel('carnet');

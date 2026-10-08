@@ -25,8 +25,8 @@ test('evento-taquilla', async ({ page }) => {
   await page.goto('/eventos/halloween-2026');
   const ficha = page.getByTestId('evento-ficha');
   await expect(ficha).toBeVisible();
-  await ficha.getByTestId('comprar-halloween-2026').click();
-  await expect(page.getByTestId('box-office')).toBeVisible();
+  // «Solo en puerta» (plan 019 T215): el aviso ya está en la ficha, sin compra.
+  await expect(ficha.getByTestId('evento-solo-puerta')).toBeVisible();
   await shot(page, '03', 'evento-taquilla', { respiro: 800 });
 });
 

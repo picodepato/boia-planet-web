@@ -24,8 +24,19 @@ export const EVENTOS_COPY = {
   warmup: EVENT_CARD_COPY.warmup,
   warmupLink: t('tickets.satellite.linkAllDay'),
   warmupNone: EVENT_CARD_COPY.warmupNone,
-  /** `event.halloween-2026.poster` y cartel que falta en general (P19). */
-  posterSoon: t('event.halloween-2026.poster'),
+  /** El cartel que falta (P19; plan 019 T215, decisión 5). */
+  posterSoon: t('event.page.posterMissing'),
+  /** La ubicación sin anunciar (plan 019 T215). */
+  placeSoon: t('event.page.placeMissing'),
+  /** «En puerta, con carnet»: el precio de un evento «Solo en puerta». */
+  doorPrice: t('event.page.doorPrice'),
+  /** La ticketera que vende el evento (plan 019 T215). */
+  provider: t('event.page.provider'),
+  /** «Consigue un descuento»: entra en el mundo como «Zarpar» (decisión 5). */
+  getDiscount: t('event.page.getDiscount'),
+  /** Comprar pide el Carnet BOIA (decisión 1). */
+  carnetNeeded: t('event.page.carnetNeeded'),
+  carnetCta: t('event.page.carnetCta'),
   posterAlt: (name: string) => t('landing.eventosCopy.cartelDe', { name }),
   details: t('landing.eventosCopy.verElEvento'),
   detailsAria: (name: string) => t('landing.eventosCopy.verLaFichaDe', { name }),
@@ -35,7 +46,7 @@ export const EVENTOS_COPY = {
   price: t('landing.eventosCopy.precio'),
   priceSample: t('landing.eventosCopy.precioDeMuestra'),
   lineup: t('event.lineup'),
-  lineupSoon: t('landing.eventosCopy.artistasPorAnunciar'),
+  lineupSoon: t('event.page.artistsMissing'),
   activities: t('landing.eventosCopy.actividades'),
   memories: t('landing.eventosCopy.recuerdos'),
   memoriesPhotos: t('landing.eventosCopy.verSusFotos'),

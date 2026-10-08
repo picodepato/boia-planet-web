@@ -35,7 +35,9 @@ async function noIntro(page: Page) {
   await expect(page.locator('html')).not.toHaveAttribute('data-intro', /.+/);
 }
 
-test('la ficha de BOIA Halloween: cartel próximamente, su isla y su estado', async ({ page }) => {
+test('la ficha de Halloween: el cartel que falta, su isla, su estado y «Solo en puerta»', async ({
+  page,
+}) => {
   await page.goto(eventHref(halloween.slug));
   await noIntro(page);
   const ficha = page.getByTestId('evento-ficha');
@@ -52,8 +54,10 @@ test('la ficha de BOIA Halloween: cartel próximamente, su isla y su estado', as
     eventSailHref(halloween.id),
   );
   await expect(ficha.getByTestId(`calienta-${halloween.id}`)).toHaveCount(0);
-  // Compra sólo si está a la venta ahora.
-  await expect(ficha.getByTestId(`comprar-${halloween.id}`)).toHaveCount(
+  // «Solo en puerta» (plan 019 T215): nunca hay compra online; mientras está
+  // a la venta, el aviso de la puerta con el Carnet.
+  await expect(ficha.getByTestId(`comprar-${halloween.id}`)).toHaveCount(0);
+  await expect(ficha.getByTestId('evento-solo-puerta')).toHaveCount(
     canBuy(halloween, now) ? 1 : 0,
   );
 });
@@ -115,13 +119,12 @@ test.describe('sin JavaScript', () => {
     await expect(ficha.getByTestId('evento-ir-isla')).toHaveAttribute('href', /^\/mar\?/);
   });
 
-  test('Halloween: «Comprar entradas» despliega el aviso de taquilla y el Carnet (T199)', async ({
+  test('Halloween: la ficha dice «Solo en puerta» y lleva al Carnet, sin JavaScript', async ({
     page,
   }) => {
-    test.skip(!halloween.boxOfficeOnly || !canBuy(halloween, now), 'Halloween no está en taquilla');
+    test.skip(!halloween.boxOfficeOnly || !canBuy(halloween, now), 'Halloween no está a la venta');
     await page.goto(eventHref(halloween.slug));
     const ficha = page.getByTestId('evento-ficha');
-    await ficha.getByTestId(`comprar-${halloween.id}`).click();
     const message = ficha.getByTestId('box-office-message');
     await expect(message).toBeVisible();
     await expect(message.getByTestId('box-office-carnet')).toHaveAttribute(

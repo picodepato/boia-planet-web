@@ -3,6 +3,7 @@ import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { mar, marSheet, openMar, sheetIs, steerTo } from './mar-helpers';
+import { seedCarnet } from './carnet-seed';
 
 /**
  * Descuentos que llevan a su isla (T43, D-23 puntos 5 y 6, REQ-COM-036) en el
@@ -47,6 +48,8 @@ test('el náufrago da su código, «Ir a la isla» lleva el barco y la compra lo
 }) => {
   expect(discount, 'el náufrago esconde un código de la muestra').toBeDefined();
   expect(event?.islandId, 'el código es de un evento con isla').toBeTruthy();
+  // Comprar pide el Carnet BOIA (plan 019): se viene con uno.
+  await seedCarnet(page);
   const sheet = await findCode(page);
 
   await sheet.getByTestId('descuento-ir-isla').click();

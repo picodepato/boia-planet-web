@@ -8,7 +8,6 @@ import { formatEventDate } from '../i18n/web';
 import { draftFrom, saveCarnet } from '../mundo/carnet/carnet-editor';
 import { gameRepository } from '../repo';
 import type {
-  AppliedDiscount,
   CheckoutEvent,
   CheckoutSession,
   PurchaseOutcome,
@@ -19,21 +18,21 @@ import { CHECKOUT_COPY as C } from './copy';
 import { DiscountBanner } from './discount-banner';
 import { ticketing } from './index';
 import { bannerInfo, formatEuros } from './pricing';
+import { CarnetRequiredError } from './sandbox';
 
 type State =
   | { kind: 'loading' }
   | { kind: 'unavailable'; message: string; event: CheckoutEvent | null }
+  /**
+   * Sin Carnet no se compra (plan 019, decisión 1): `notice` dice que hace
+   * falta y ofrece crearlo; `form`, el alta rápida aquí mismo (la landing).
+   */
+  | { kind: 'carnet'; step: 'notice' | 'form'; event: CheckoutEvent | null }
   | {
       kind: 'ready';
       session: CheckoutSession;
       busy: boolean;
       error: string | null;
-      /**
-       * Sin Carnet (T66): `offer` enseña «¿Tienes Carnet BOIA?» antes de
-       * comprar; `form`, el alta rápida aquí mismo; `skipped`, ya eligió
-       * seguir sin Carnet. Con Carnet o si no ahorraría, `none`.
-       */
-      carnet: 'none' | 'offer' | 'form' | 'skipped';
     }
   | { kind: 'done'; session: CheckoutSession; outcome: PurchaseOutcome };
 
@@ -69,16 +68,16 @@ export function SandboxCheckout({
   /** Otra clase junto a `checkout` (en el mar, la hoja de abajo del HUD, T58). */
   className?: string;
   /**
-   * «Crear Carnet» del aviso de antes de comprar (T66). En el mar abre Mi
-   * Carnet dentro del mundo y, al crearlo, vuelve a esta compra; sin él (la
-   * landing), el alta rápida se hace aquí mismo y la compra sigue con el
-   * descuento aplicado.
+   * «Crear Carnet» del aviso «Necesitas el Carnet BOIA» (plan 019, decisión
+   * 1). En el mar abre Mi Carnet dentro del mundo y, al crearlo, vuelve a esta
+   * compra; sin él (la landing), el alta rápida se hace aquí mismo y la compra
+   * sigue.
    */
   onCreateCarnet?: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [state, setState] = useState<State>({ kind: 'loading' });
-  // Se vuelve a preparar la compra al crear el Carnet aquí (T66): con su descuento.
+  // Se vuelve a preparar la compra al crear el Carnet aquí.
   const [attempt, setAttempt] = useState(0);
   const confirming = useRef(false);
   const onCloseRef = useRef(onClose);
@@ -114,14 +113,9 @@ export function SandboxCheckout({
       .start(eventId, source ? { source } : undefined)
       .then((r) => {
         if (!alive) return;
-        if (r.ok)
-          setState({
-            kind: 'ready',
-            session: r.session,
-            busy: false,
-            error: null,
-            carnet: r.session.quote.carnetOffer ? 'offer' : 'none',
-          });
+        if (r.ok) setState({ kind: 'ready', session: r.session, busy: false, error: null });
+        else if (r.reason === 'carnet_required')
+          setState({ kind: 'carnet', step: 'notice', event: r.event });
         else
           setState({
             kind: 'unavailable',
@@ -150,6 +144,10 @@ export function SandboxCheckout({
       setState({ kind: 'done', session, outcome });
       onConfirmed?.(outcome, session);
     } catch (err: unknown) {
+      if (err instanceof CarnetRequiredError) {
+        setState({ kind: 'carnet', step: 'notice', event: session.event });
+        return;
+      }
       console.warn('[boia] compra de prueba', err);
       setState({ ...state, busy: false, error: C.failed });
     } finally {
@@ -162,7 +160,7 @@ export function SandboxCheckout({
   // diálogo (Escape cierra sólo esto, no el panel de debajo).
   const refocus = useRef(false);
   useEffect(() => {
-    if (!refocus.current || state.kind !== 'ready') return;
+    if (!refocus.current || (state.kind !== 'ready' && state.kind !== 'carnet')) return;
     const target =
       ref.current?.querySelector<HTMLElement>('.checkout__carnet-form input') ??
       ref.current?.querySelector<HTMLElement>('.checkout__confirm');
@@ -171,21 +169,19 @@ export function SandboxCheckout({
     target.focus();
   }, [state]);
 
-  const setCarnet = (carnet: 'offer' | 'form' | 'skipped') => {
+  const setCarnetStep = (step: 'notice' | 'form') => {
     refocus.current = true;
-    if (state.kind === 'ready') setState({ ...state, carnet });
+    if (state.kind === 'carnet') setState({ ...state, step });
   };
   const createCarnet = () => {
     if (onCreateCarnet) onCreateCarnet();
-    else setCarnet('form');
+    else setCarnetStep('form');
   };
-  // Mientras el aviso o el alta del Carnet están, no se compra todavía.
-  const gated = state.kind === 'ready' && (state.carnet === 'offer' || state.carnet === 'form');
 
   const event =
     state.kind === 'ready' || state.kind === 'done'
       ? state.session.event
-      : state.kind === 'unavailable'
+      : state.kind === 'unavailable' || state.kind === 'carnet'
         ? state.event
         : null;
 
@@ -227,26 +223,24 @@ export function SandboxCheckout({
           </p>
         ) : null}
 
-        {state.kind === 'ready' && state.carnet === 'offer' && state.session.quote.carnetOffer ? (
-          <CarnetOffer offer={state.session.quote.carnetOffer} />
-        ) : null}
+        {state.kind === 'carnet' && state.step === 'notice' ? <CarnetRequired /> : null}
 
-        {state.kind === 'ready' && state.carnet === 'form' ? (
+        {state.kind === 'carnet' && state.step === 'form' ? (
           <QuickCarnet
             onCreated={() => {
               refocus.current = true;
               setState({ kind: 'loading' });
               setAttempt((n) => n + 1);
             }}
-            onBack={() => setCarnet('offer')}
+            onBack={() => setCarnetStep('notice')}
           />
         ) : null}
 
-        {state.kind === 'ready' && !gated && state.session.quote.discount ? (
+        {state.kind === 'ready' && state.session.quote.discount ? (
           <DiscountBanner info={bannerInfo(state.session.quote.discount)} />
         ) : null}
 
-        {state.kind === 'ready' && !gated ? <QuoteTable session={state.session} /> : null}
+        {state.kind === 'ready' ? <QuoteTable session={state.session} /> : null}
 
         {state.kind === 'done' ? (
           <div className="checkout__result" data-testid="checkout-resultado" role="status">
@@ -271,27 +265,17 @@ export function SandboxCheckout({
         ) : null}
 
         <div className="checkout__actions">
-          {state.kind === 'ready' && state.carnet === 'offer' ? (
-            <>
-              <button
-                type="button"
-                className="checkout__confirm"
-                data-testid="checkout-crear-carnet"
-                onClick={createCarnet}
-              >
-                {C.carnet.create}
-              </button>
-              <button
-                type="button"
-                className="checkout__secondary"
-                data-testid="checkout-sin-carnet"
-                onClick={() => setCarnet('skipped')}
-              >
-                {C.carnet.skip}
-              </button>
-            </>
+          {state.kind === 'carnet' && state.step === 'notice' ? (
+            <button
+              type="button"
+              className="checkout__confirm"
+              data-testid="checkout-crear-carnet"
+              onClick={createCarnet}
+            >
+              {C.carnet.create}
+            </button>
           ) : null}
-          {state.kind === 'ready' && !gated ? (
+          {state.kind === 'ready' ? (
             <button
               type="button"
               className="checkout__confirm"
@@ -332,25 +316,15 @@ export function SandboxCheckout({
   );
 }
 
-/** «¿Tienes Carnet BOIA? Créalo en 30 s y ahorra un 10 %» (T66), antes de comprar sin Carnet. */
-function CarnetOffer({ offer }: { offer: AppliedDiscount }) {
+/** «Para comprar entradas necesitas el Carnet BOIA» (plan 019, decisión 1). */
+function CarnetRequired() {
   return (
-    <div
-      className="checkout__offer"
-      role="status"
-      data-testid="checkout-oferta-carnet"
-      data-ahorro={offer.cents}
-    >
+    <div className="checkout__offer" role="status" data-testid="checkout-carnet-requerido">
       <p className="checkout__offer-title">
         <span aria-hidden="true">🪪 </span>
-        {C.carnet.offerTitle}
+        {C.carnet.requiredTitle}
       </p>
-      <p>
-        {offer.percent !== undefined
-          ? C.carnet.offerPercent(offer.percent)
-          : C.carnet.offerAmount(formatEuros(offer.cents))}
-      </p>
-      <p className="checkout__muted">{C.carnet.offerSaving(formatEuros(offer.cents))}</p>
+      <p>{C.carnet.requiredBody}</p>
     </div>
   );
 }
@@ -359,7 +333,7 @@ function CarnetOffer({ offer }: { offer: AppliedDiscount }) {
  * Alta rápida del Carnet dentro de la compra (T66, la landing): sólo el
  * apodo, con el avatar por defecto; el resto se completa luego en Mi Carnet.
  * Crea el mismo Carnet que el editor (con su logro) y la compra se vuelve a
- * preparar, ya con el descuento.
+ * preparar.
  */
 function QuickCarnet({ onCreated, onBack }: { onCreated: () => void; onBack: () => void }) {
   const [nickname, setNickname] = useState('');
@@ -430,9 +404,7 @@ function QuoteTable({ session }: { session: CheckoutSession }) {
             data-kind={quote.discount.kind}
           >
             <dt>
-              {quote.discount.kind === 'carnet'
-                ? C.carnet.line
-                : C.discountLine(quote.discount.code)}
+              {C.discountLine(quote.discount.code)}
               <span className="checkout__muted"> · {quote.discount.label}</span>
             </dt>
             <dd>−{formatEuros(quote.discount.cents)}</dd>
@@ -443,14 +415,6 @@ function QuoteTable({ session }: { session: CheckoutSession }) {
           <dd data-testid="checkout-total">{formatEuros(quote.totalCents)}</dd>
         </div>
       </dl>
-      {quote.discount && quote.skipped ? (
-        // No se suman (T66): se dice cuál se aplica y cuál no.
-        <p className="checkout__skipped" data-testid="checkout-no-se-suman">
-          {quote.discount.kind === 'carnet'
-            ? C.carnet.skippedCode(quote.skipped.code)
-            : C.carnet.skippedCarnet(quote.discount.code)}
-        </p>
-      ) : null}
       {quote.discount ? null : (
         <p className="checkout__muted" data-testid="checkout-sin-descuento">
           {C.noDiscount}

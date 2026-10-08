@@ -4,6 +4,15 @@
  * viaje en la home (presupuesto de la landing). Todo `muestra`.
  */
 export const esLibEventos = {
+  // Plan 019 T215 (decisiones 1, 5 y 6): lo que falta, se dice claro. Muestra.
+  'event.page.posterMissing': 'El cartel todavía no está anunciado',
+  'event.page.artistsMissing': 'Aún no están anunciados',
+  'event.page.placeMissing': 'La ubicación todavía no está anunciada',
+  'event.page.doorPrice': 'en puerta, con carnet',
+  'event.page.provider': 'Ticketera',
+  'event.page.getDiscount': 'Consigue un descuento',
+  'event.page.carnetNeeded': 'Para comprar entradas hace falta el Carnet BOIA.',
+  'event.page.carnetCta': 'Hazte el Carnet',
   'landing.eventosCopy.cartelDe': 'Cartel de {name}',
   'landing.eventosCopy.verElEvento': 'Ver el evento',
   'landing.eventosCopy.verLaFichaDe': 'Ver la ficha de {name}',

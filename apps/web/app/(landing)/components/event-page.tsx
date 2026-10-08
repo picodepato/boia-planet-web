@@ -1,10 +1,14 @@
+import { doorPriceCents } from '@boia/contracts';
 import { EVENT_FORMAT_LABELS, seriesLabel } from '@boia/contracts/event-labels';
 import Link from 'next/link';
+import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
+import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import { EVENTOS_COPY } from '../../../lib/landing/eventos-copy';
 import { eventHref, type EventPageView } from '../../../lib/landing/eventos';
 import { formatEventDate } from '../../../lib/landing/texts';
+import { BoxOfficeMessage } from '../../../lib/ticketing/box-office';
 import { BuyButton } from './buy-button';
-import { PhotoGrid } from './photo-tile';
+import { MediaCollage } from './media-collage';
 
 const EUR = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
 
@@ -19,6 +23,13 @@ function formatTime(iso: string, timeZone: string): string {
  * motor ni WebGL. Cartel, fecha, lugar, formato, actividades, precio, estado,
  * compra sólo si está a la venta (un finalizado nunca la enseña, REQ-COM-005),
  * recuerdos si ya pasó e «Ir a su isla».
+ *
+ * Plan 019 T215 (decisiones 1, 5 y 6): enseña lo que hay y dice claro lo que
+ * falta (artistas, cartel, ubicación); con cartel, el fondo es el cartel
+ * ampliado y difuminado; las fotos van en collage, como la Galería. Comprar
+ * pide el Carnet BOIA (lo dice al lado) y junto a la compra va «Consigue un
+ * descuento», que entra en el mundo como «Zarpar». Un evento «Solo en puerta»
+ * no tiene compra: dice el precio en la puerta con carnet y lleva a crearlo.
  */
 export function EventPageBody({ view }: { view: EventPageView }) {
   const { event } = view;
@@ -33,14 +44,25 @@ export function EventPageBody({ view }: { view: EventPageView }) {
   const format = event.series
     ? `${EVENT_FORMAT_LABELS[event.format]} · ${seriesLabel(event.series)}`
     : EVENT_FORMAT_LABELS[event.format];
+  const doorOnly = event.boxOfficeOnly !== undefined;
+  const price = doorOnly ? doorPriceCents(event) : event.priceCents;
 
   return (
     <article
-      className="event-page"
+      className={event.posterUrl ? 'event-page event-page--poster' : 'event-page'}
       data-testid="evento-ficha"
       data-evento={event.id}
       data-estado={event.state}
     >
+      {event.posterUrl ? (
+        // El cartel, ampliado y difuminado, de fondo de toda la página.
+        <div
+          className="event-page__backdrop"
+          aria-hidden="true"
+          data-testid="evento-fondo-cartel"
+          style={{ backgroundImage: `url(${JSON.stringify(event.posterUrl)})` }}
+        />
+      ) : null}
       <div className="event-page__poster">
         {event.posterUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- cartel del Admin, dominio aún sin fijar
@@ -55,7 +77,9 @@ export function EventPageBody({ view }: { view: EventPageView }) {
             <span className="event-poster__kicker">{view.kicker}</span>
             <span className="event-poster__name">{event.name}</span>
             {finished ? null : (
-              <span className="event-poster__soon">{EVENTOS_COPY.posterSoon}</span>
+              <span className="event-poster__soon" data-testid="evento-cartel-falta">
+                {EVENTOS_COPY.posterSoon}
+              </span>
             )}
           </div>
         )}
@@ -93,19 +117,34 @@ export function EventPageBody({ view }: { view: EventPageView }) {
           </div>
           <div>
             <dt>{EVENTOS_COPY.where}</dt>
-            <dd>{event.placeLabel}</dd>
+            <dd>
+              {event.placeAnnounced ? (
+                event.placeLabel
+              ) : (
+                <span className="event-page__tbd" data-testid="evento-lugar-falta">
+                  {EVENTOS_COPY.placeSoon}
+                </span>
+              )}
+            </dd>
           </div>
           <div>
             <dt>{EVENTOS_COPY.format}</dt>
             <dd>{format}</dd>
           </div>
-          {event.priceCents !== undefined && !finished ? (
+          {price !== undefined && !finished ? (
             <div>
               <dt>{EVENTOS_COPY.price}</dt>
               <dd data-testid="evento-precio">
-                {EUR.format(event.priceCents / 100)}
+                {EUR.format(price / 100)}
+                {doorOnly ? ` · ${EVENTOS_COPY.doorPrice}` : ''}
                 {event.priceSample ? ` · ${EVENTOS_COPY.priceSample}` : ''}
               </dd>
+            </div>
+          ) : null}
+          {event.ticketProvider && !doorOnly && !finished ? (
+            <div>
+              <dt>{EVENTOS_COPY.provider}</dt>
+              <dd data-testid="evento-ticketera">{event.ticketProvider}</dd>
             </div>
           ) : null}
         </dl>
@@ -127,15 +166,33 @@ export function EventPageBody({ view }: { view: EventPageView }) {
           </p>
         ) : null}
 
+        {view.buyable && doorOnly ? (
+          // Solo en puerta (decisión 6): sin checkout; lleva a hacerse el Carnet.
+          <div className="event-page__door" role="note" data-testid="evento-solo-puerta">
+            <BoxOfficeMessage event={event} carnet={{ href: CARNET_CREATE_HREF }} />
+          </div>
+        ) : null}
+
         <div className="event-page__actions">
-          {view.buyable ? (
-            <BuyButton
-              eventId={event.id}
-              eventName={event.name}
-              ticketUrl={event.ticketUrl}
-              boxOfficeOnly={event.boxOfficeOnly}
-              source="event_page"
-            />
+          {view.buyable && !doorOnly ? (
+            <>
+              <BuyButton
+                eventId={event.id}
+                eventName={event.name}
+                ticketUrl={event.ticketUrl}
+                priceCents={event.priceCents}
+                source="event_page"
+              />
+              <a
+                className="button button--discount"
+                href={ZARPAR_HREF}
+                data-testid="evento-descuento"
+                data-track="explore_start"
+                data-source="event"
+              >
+                {EVENTOS_COPY.getDiscount}
+              </a>
+            </>
           ) : event.state === 'coming_soon' ? (
             <p className="event-card__soon">{EVENTOS_COPY.soon}</p>
           ) : null}
@@ -151,12 +208,26 @@ export function EventPageBody({ view }: { view: EventPageView }) {
             </a>
           ) : null}
         </div>
+        {view.buyable && !doorOnly ? (
+          <p className="event-page__carnet-note" data-testid="evento-aviso-carnet">
+            {EVENTOS_COPY.carnetNeeded}{' '}
+            <a href={CARNET_CREATE_HREF} data-testid="evento-crear-carnet">
+              {EVENTOS_COPY.carnetCta}
+            </a>
+          </p>
+        ) : null}
 
         <section className="event-page__block" aria-labelledby="evento-cartel">
           <h2 id="evento-cartel" className="event-page__subtitle">
             {EVENTOS_COPY.lineup}
           </h2>
-          <p>{view.lineup.length > 0 ? view.lineup.join(' · ') : EVENTOS_COPY.lineupSoon}</p>
+          {view.lineup.length > 0 ? (
+            <p>{view.lineup.join(' · ')}</p>
+          ) : (
+            <p className="event-page__tbd" data-testid="evento-artistas-falta">
+              {EVENTOS_COPY.lineupSoon}
+            </p>
+          )}
         </section>
 
         {event.activities.length > 0 ? (
@@ -174,7 +245,7 @@ export function EventPageBody({ view }: { view: EventPageView }) {
           </section>
         ) : null}
 
-        {finished ? (
+        {finished || view.photos.length > 0 ? (
           <section
             className="event-page__block"
             aria-labelledby="evento-recuerdos"
@@ -184,7 +255,12 @@ export function EventPageBody({ view }: { view: EventPageView }) {
               {EVENTOS_COPY.memories}
             </h2>
             {view.photos.length > 0 ? (
-              <PhotoGrid photos={view.photos.slice(0, 6)} label={EVENTOS_COPY.memories} />
+              // Collage como el de la Galería (T216), con las fotos y clips del evento.
+              <MediaCollage
+                items={view.photos}
+                label={EVENTOS_COPY.memories}
+                testId="evento-collage"
+              />
             ) : (
               <p>{EVENTOS_COPY.island.memoriesEmpty}</p>
             )}

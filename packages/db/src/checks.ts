@@ -14,6 +14,8 @@ export const CLIENT_READ_ONLY_TABLES = [
   'season_points',
   'seasons',
   'site_settings',
+  // Plan 019 T215: sólo con admin_set_common_discount_code.
+  'ticketing_settings',
   'staff_roles',
   'stamps',
   'user_achievements',

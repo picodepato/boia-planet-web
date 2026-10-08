@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { discountRefOf, guideSpots, missionDiscountOf } from '../lib/mundo/guide';
+import { seedCarnet } from './carnet-seed';
 
 /**
  * La Boia Fiestera como misión central y tres descuentos claros en /mar
@@ -144,6 +145,8 @@ test('el minimapa enseña un «?» por cada uno de los tres códigos del mundo',
 test('rescatar a la Fiestera y dejarla en la Isla de Nochevieja: su código vale en la compra y el barco exclusivo es tuyo', async ({
   page,
 }) => {
+  // Comprar pide el Carnet BOIA (plan 019): se viene con uno.
+  await seedCarnet(page);
   // 1. El remanso: los cocodrilos se sumergen y ella sube a bordo.
   const errors = await openMar(page, `?cerca=${spec.characterId}`);
   await expect(mar(page)).toHaveAttribute('data-mision', 'waiting');

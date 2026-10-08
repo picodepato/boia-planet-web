@@ -1,7 +1,7 @@
 'use client';
 
 import type { FunnelEventProps } from '@boia/contracts/analytics';
-import { type ComponentType, useEffect, useRef, useState } from 'react';
+import { type ComponentType, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../../../lib/i18n/web';
 import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
@@ -18,7 +18,9 @@ export const CARNET_FROM_LANDING = CARNET_CREATE_HREF;
 
 /**
  * «Comprar entradas» de la landing y del panel de Tickets (T25): abre el
- * checkout de prueba (D-20, REQ-COM-035). El checkout y el repositorio se
+ * checkout de prueba (D-20, REQ-COM-035), que sin Carnet BOIA lleva a
+ * crearlo antes de comprar (plan 019, decisión 1). Un evento «Solo en
+ * puerta» abre su aviso en vez del checkout (decisión 6). El checkout y el repositorio se
  * cargan al pulsar, fuera de la ruta crítica de la landing. La analítica del
  * clic la recoge `LandingClient` por `data-track`. Sólo se pinta para
  * eventos comprables (`canBuy`): un finalizado nunca llega aquí.
@@ -29,6 +31,7 @@ export function BuyButton({
   ticketUrl,
   source,
   boxOfficeOnly,
+  priceCents,
 }: {
   eventId: string;
   eventName: string;
@@ -36,12 +39,11 @@ export function BuyButton({
   ticketUrl: string | undefined;
   source: Source;
   boxOfficeOnly?: BoiaEvent['boxOfficeOnly'];
+  /** Precio del evento: el de la puerta si `boxOfficeOnly` no trae otro. */
+  priceCents?: BoiaEvent['priceCents'];
 }) {
   const [Checkout, setCheckout] = useState<ComponentType<Parameters<Checkout>[0]> | null>(null);
   const [open, setOpen] = useState(false);
-  // Tras comprar, la invitación al Carnet (T44, REQ-IDE-008), cargada al cerrar.
-  const purchased = useRef(false);
-  const [Invite, setInvite] = useState<ComponentType<{ onDone: () => void }> | null>(null);
   const [failed, setFailed] = useState(false);
   // Sin JavaScript (o antes de hidratar) queda el enlace a la ticketera de
   // muestra, como antes (REQ-ENT-017); con JavaScript, la compra de prueba.
@@ -57,6 +59,7 @@ export function BuyButton({
 
   if (boxOfficeOnly) {
     const carnet = { href: CARNET_FROM_LANDING };
+    const door = { boxOfficeOnly, priceCents };
     // Sin JavaScript también se puede leer el aviso, sin abrir la ticketera.
     if (!hydrated) {
       return (
@@ -64,7 +67,7 @@ export function BuyButton({
           <summary className="button button--buy" {...track}>
             {t('event.buy')}
           </summary>
-          <BoxOfficeMessage rule={boxOfficeOnly} carnet={carnet} />
+          <BoxOfficeMessage event={door} carnet={carnet} />
         </details>
       );
     }
@@ -84,7 +87,7 @@ export function BuyButton({
           ? createPortal(
               <BoxOfficeDialog
                 eventName={eventName}
-                rule={boxOfficeOnly}
+                event={door}
                 carnet={carnet}
                 onClose={() => setOpen(false)}
               />,
@@ -146,24 +149,11 @@ export function BuyButton({
             <Checkout
               eventId={eventId}
               carnet={{ href: CARNET_FROM_LANDING }}
-              onConfirmed={() => {
-                purchased.current = true;
-              }}
-              onClose={() => {
-                setOpen(false);
-                if (!purchased.current) return;
-                purchased.current = false;
-                import('./purchase-invite')
-                  .then((m) => setInvite(() => m.PurchaseInvite))
-                  .catch((err: unknown) =>
-                    console.warn('[boia] no se pudo cargar la invitación al Carnet', err),
-                  );
-              }}
+              onClose={() => setOpen(false)}
             />,
             document.body,
           )
         : null}
-      {Invite ? createPortal(<Invite onDone={() => setInvite(null)} />, document.body) : null}
     </>
   );
 }

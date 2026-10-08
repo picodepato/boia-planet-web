@@ -4,6 +4,66 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T215: Event page, purchase with required carnet, discounts and Admin event fields
+
+Qué existe (decisiones 1, 5, 6 y 7 de la reunión del 2026-10-08):
+
+- **Carnet obligatorio para comprar.** `createSandboxTicketing().start` devuelve
+  `carnet_required` sin Carnet y `confirm` lo rechaza (`CarnetRequiredError`).
+  El checkout enseña «Para comprar entradas necesitas el Carnet BOIA» con
+  «Crear Carnet»: en la landing, el alta rápida en el mismo checkout; en /mar,
+  Mi Carnet del mundo y vuelta a la compra. Sin «Seguir sin Carnet».
+- **Fuera el descuento del Carnet:** `SAMPLE_CARNET_DISCOUNT`,
+  `repo.content.carnetDiscount()`, `carnetDiscountFor`, `bestDiscount`,
+  `carnetOffer`/`skipped`, la oferta «ahorra un 10 %», el aviso del Carnet y la
+  regla «-2 € con Carnet» de T199. `DiscountKind` es sólo `code`. La
+  invitación a crear el Carnet después de comprar (`purchase-invite.tsx`) se
+  fue: ya no se compra sin Carnet.
+- **«Solo en puerta»:** `boxOfficeOnly: { doorPriceCents? }` (el precio en la
+  puerta con Carnet; sin él, `priceCents`). Halloween (muestra): «Solo en
+  puerta · 5 € con carnet», sin checkout, con «Hazte el tuyo» al Carnet, en la
+  ficha, en el panel de Tickets y en su isla. ALL DAY BOIA vuelve a venta
+  online (ticketera por elegir; vale el premio de la Fiestera, decisión 14).
+- **Ficha del evento:** dice claro lo que falta («Aún no están anunciados»,
+  «El cartel todavía no está anunciado», «La ubicación todavía no está
+  anunciada» con `placeAnnounced: false`); con cartel, el fondo es el cartel
+  ampliado y difuminado (`.event-page__backdrop`) y el texto va sobre una
+  hoja; fotos del evento en el collage de la Galería (`MediaCollage` de T216);
+  «Consigue un descuento» (amarillo) junto a la compra, al mundo como
+  «Zarpar» (`ZARPAR_HREF`); aviso «Para comprar entradas hace falta el Carnet
+  BOIA. Hazte el Carnet»; fila «Ticketera» con `ticketProvider`.
+- **Admin › Eventos:** lugar anunciado, ticketera, «Solo en puerta» y precio en
+  puerta (antes guardar un evento perdía `boxOfficeOnly`).
+- **Admin › Descuentos:** «Código común de la ticketera»: fijado, todos los
+  descuentos de entradas que ve el visitante enseñan ese código
+  (`withCommonCode`, aplicado en el repositorio a lo encontrado); vacío, cada
+  uno el suyo. Los de la tienda conservan el suyo. Vive en los ajustes del
+  Admin (`AdminSettings.commonDiscountCode`), con auditoría.
+- **Migración `20261008100100_event_fields_common_code.sql`** (sin aplicar):
+  `events.place_announced`, `price_cents`, `door_only`, `door_price_cents`
+  (la ticketera es la columna `ticket_provider` que ya existía, ahora con
+  límite de 60); tabla `ticketing_settings` (sólo la lee el equipo),
+  `admin_set_common_discount_code` (admin con aal2, auditoría) y
+  `discount_code_for` (el código común sólo para quien encontró ese
+  descuento). Pruebas: `event-fields.supabase.ts` (contra la base) y
+  `event-fields-sql.test.ts` (texto). `database.types.ts` editado a mano.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 243 archivos, 2259 pasan, 1 omitida
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm typecheck` → exit 0
+- `pnpm build` → exit 0; ruta crítica de la landing 193,6 kB gzip (≤ 200)
+- `E2E_PORT=3291 pnpm e2e carnet-requerido tickets eventos descuentos landing --workers=1` → 49 pasan, 6 omitidas (record-eventos), 1 falla (foco al cerrar en landing.spec desktop, tras crear el Carnet dentro del checkout): esa prueba ya no crea el Carnet; volvió a pasar en la tanda siguiente
+- `E2E_PORT=3291 pnpm e2e landing intro mar-entradas mar-fiestera mar-hud mar-paridad mar-3d --workers=1` → 114 pasan, 8 omitidas, 2 fallan (mar-paridad esperaba la invitación al Carnet tras comprar); arreglada, `pnpm e2e mar-paridad.spec.ts` → 16 pasan (con las capturas)
+- `grep -rn "SAMPLE_CARNET_DISCOUNT\|carnetDiscountFor" apps packages` → 0
+- Capturas (390×844 y 1280×900) en `/tmp/orchestrator-attach/boia-planet-hernan-T215/`: `evento-falta-*`, `evento-cartel-fondo-*`, `evento-halloween-*`, `compra-sin-carnet-*`
+
+Pendiente:
+
+- Hernán aplica en `boia-planet-dev` la migración `20261008100100_event_fields_common_code.sql` y corre `pnpm test:supabase` (incluye `event-fields.supabase.ts`).
+- El contenido sigue siendo de este navegador (D-20): el Admin guarda el código común y los campos nuevos en local; la web aún no lee `ticketing_settings` ni `discount_code_for` en modo Supabase.
+- Precio en puerta, textos y ticketera: `muestra` hasta que Álvaro los apruebe.
+
 ## 2026-10-08 — plan 019 T219: World: light-orange loading, popups without band, island names and popup contents
 
 Qué existe:

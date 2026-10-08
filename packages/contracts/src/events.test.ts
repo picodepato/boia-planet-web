@@ -29,6 +29,7 @@ function ev(id: string, state: EventState, daysFromNow: number): BoiaEvent {
     startsAt: new Date(NOW.getTime() + daysFromNow * 86_400_000).toISOString(),
     timeZone: 'Europe/Madrid',
     placeLabel: 'Alicante',
+    placeAnnounced: true,
     state,
     description: '',
     artistIds: [],

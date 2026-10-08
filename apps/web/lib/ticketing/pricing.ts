@@ -64,75 +64,8 @@ export function applicableDiscount(
   return best;
 }
 
-/**
- * El Carnet de quien compra, para el precio (T66): si lo tiene y el
- * descuento de tenerlo (`repo.content.carnetDiscount()`, -10 % `muestra`).
- */
-export interface CarnetPricing {
-  has: boolean;
-  discount: Discount | null;
-}
-
-/** Lo que descuenta tener Carnet en una entrada de `priceCents`, o null si no descuenta. */
-export function carnetDiscountFor(
-  discount: Discount | null,
-  priceCents: number,
-  now: Date,
-): AppliedDiscount | null {
-  if (!discount || discount.scope === 'store') return null;
-  if (discountStatus(discount, now) !== 'active') return null;
-  const cents = discountCents(discount, priceCents);
-  if (cents <= 0) return null;
-  return {
-    id: discount.id,
-    code: discount.code,
-    label: discount.label,
-    cents,
-    kind: 'carnet',
-    ...(discount.kind === 'percent' ? { percent: Math.min(discount.value, 100) } : {}),
-  };
-}
-
-/**
- * El mejor descuento de una compra (T66, decisión del 2026-10-02): el código
- * del mundo que vale (`applicableDiscount`) o el de tener Carnet. No se
- * suman: va el que más ahorra; si ahorran lo mismo, el del Carnet (así el
- * código, que vale una vez, queda para otra compra). `skipped` es el otro,
- * el que valía y no se aplica, para decirlo en el checkout. Sin Carnet,
- * `carnetOffer` es lo que ahorraría con él si fuera el mejor: el aviso
- * «Créalo en 30 s y ahorra un 10 %» sólo sale entonces.
- */
-export function bestDiscount(
-  eventId: string,
-  found: readonly OwnedDiscount[],
-  priceCents: number,
-  now: Date,
-  carnet: CarnetPricing | null = null,
-): {
-  discount: AppliedDiscount | null;
-  skipped: AppliedDiscount | null;
-  carnetOffer: AppliedDiscount | null;
-} {
-  const code = applicableDiscount(eventId, found, priceCents, now);
-  const perk = carnet ? carnetDiscountFor(carnet.discount, priceCents, now) : null;
-  if (!perk) return { discount: code, skipped: null, carnetOffer: null };
-  const perkWins = !code || perk.cents >= code.cents;
-  if (!carnet?.has) {
-    // Sin Carnet: el código (si hay); el Carnet, sólo como oferta si ahorraría más.
-    return {
-      discount: code,
-      skipped: null,
-      carnetOffer: !code || perk.cents > code.cents ? perk : null,
-    };
-  }
-  return perkWins
-    ? { discount: perk, skipped: code, carnetOffer: null }
-    : { discount: code, skipped: perk, carnetOffer: null };
-}
-
 /** Lo que enseña el aviso «Tienes un código de descuento para este evento» (REQ-COM-036). */
 export interface DiscountBannerInfo {
-  /** `carnet`: el descuento de tener Carnet BOIA (T66), no un código encontrado. */
   kind: AppliedDiscount['kind'];
   discountId: string;
   code: string;
@@ -143,18 +76,17 @@ export interface DiscountBannerInfo {
 
 /**
  * El aviso de descuento al comprar en la isla o la ficha de un evento
- * (D-23, puntos 5 y 6): sólo si la compra aplicaría un descuento (el mismo
- * criterio que `bestDiscount`): un código encontrado o, con Carnet, el de
- * tenerlo (T66); si no, null.
+ * (D-23, puntos 5 y 6): sólo si la compra aplicaría un código encontrado (el
+ * mismo criterio que `applicableDiscount`); si no, null. El Carnet ya no
+ * descuenta (plan 019, decisión 1): es el requisito para comprar.
  */
 export function discountBannerFor(
   event: Priced | string,
   found: readonly OwnedDiscount[],
   now: Date,
-  carnet: CarnetPricing | null = null,
 ): DiscountBannerInfo | null {
   const eventId = typeof event === 'string' ? event : event.id;
-  const d = bestDiscount(eventId, found, samplePriceCents(event), now, carnet).discount;
+  const d = applicableDiscount(eventId, found, samplePriceCents(event), now);
   return d ? bannerInfo(d) : null;
 }
 
@@ -168,22 +100,12 @@ export function quoteFor(
   found: readonly OwnedDiscount[],
   now: Date,
   quantity = 1,
-  carnet: CarnetPricing | null = null,
 ): Quote {
   const eventId = typeof event === 'string' ? event : event.id;
   const unitCents = samplePriceCents(event);
-  const { discount, skipped, carnetOffer } = bestDiscount(eventId, found, unitCents, now, carnet);
+  const discount = applicableDiscount(eventId, found, unitCents, now);
   const totalCents = Math.max(0, unitCents * quantity - (discount?.cents ?? 0));
-  return {
-    currency: 'EUR',
-    unitCents,
-    quantity,
-    discount,
-    totalCents,
-    sample: true,
-    ...(skipped ? { skipped } : {}),
-    ...(carnetOffer ? { carnetOffer } : {}),
-  };
+  return { currency: 'EUR', unitCents, quantity, discount, totalCents, sample: true };
 }
 
 const EUR = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });

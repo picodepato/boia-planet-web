@@ -176,6 +176,24 @@ export function discountStatus(discount: Discount, now: Date): DiscountStatus {
   return 'active';
 }
 
+/** Largo máximo del código común de la ticketera (plan 019 T215). */
+export const COMMON_DISCOUNT_CODE_MAX = 40;
+
+/**
+ * El código común de la ticketera (plan 019 T215, decisión 7): si el Admin lo
+ * fija, sustituye a la vez el código de todos los descuentos de entradas (por
+ * si la ticketera cambia su código oficial); vacío, cada uno usa el suyo. Los
+ * de la tienda (`scope: 'store'`) los valida la tienda: conservan el suyo.
+ */
+export function withCommonCode<D extends Pick<Discount, 'code' | 'scope'>>(
+  discount: D,
+  commonCode: string | null | undefined,
+): D {
+  const common = commonCode?.trim();
+  if (!common || discount.scope === 'store' || discount.code === common) return discount;
+  return { ...discount, code: common };
+}
+
 export const promotionSchema = z.object({
   id: z.string().min(1),
   eventId: z.string().optional(),

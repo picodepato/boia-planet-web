@@ -14,6 +14,14 @@ import { quoteFor } from './pricing';
 /** Los logros de la entrada se buscan por su disparador, no por un id fijo. */
 export const TICKET_TRIGGER = 'buy_ticket';
 
+/** Se intentó confirmar una compra sin Carnet BOIA (plan 019, decisión 1). */
+export class CarnetRequiredError extends Error {
+  constructor() {
+    super('Hace falta el Carnet BOIA para comprar');
+    this.name = 'CarnetRequiredError';
+  }
+}
+
 export interface SandboxOptions {
   now?: () => Date;
   /** Id de compra nuevo; por defecto, aleatorio. */
@@ -30,8 +38,9 @@ function randomId(eventId: string): string {
 
 /**
  * Ticketera de la versión de prueba (D-20, REQ-COM-035): sin proveedor ni
- * pago. `start` calcula el precio `muestra` con el descuento encontrado que
- * valga; `confirm` registra la compra en el repositorio, que concede el sello
+ * pago. Comprar pide el Carnet BOIA (plan 019, decisión 1): sin él, `start`
+ * dice `carnet_required` y `confirm` no compra. `start` calcula el precio
+ * `muestra` con el descuento encontrado que valga; `confirm` registra la compra en el repositorio, que concede el sello
  * una vez por id de compra (y ninguno más si ese evento ya tenía sello), y
  * completa los logros de entradas que toquen (se reclaman aparte, D-22). Todo
  * queda en este navegador.
@@ -62,18 +71,17 @@ export function createSandboxTicketing(
       if (!EVENT_STATE_BEHAVIOR[eventState(event, now())].purchasable) {
         return { ok: false, reason: 'not_on_sale', event: view };
       }
-      // El mejor descuento entre el código encontrado y el de tener Carnet (T66).
-      const [found, mine, carnetDiscount] = await Promise.all([
-        repo.progress.discounts(),
-        repo.carnet.mine(),
-        repo.content.carnetDiscount(),
-      ]);
+      // Sólo en puerta (decisión 6): aquí no se vende.
+      if (event.boxOfficeOnly) return { ok: false, reason: 'not_on_sale', event: view };
+      const [found, mine] = await Promise.all([repo.progress.discounts(), repo.carnet.mine()]);
+      // Sin Carnet no se compra (decisión 1): el checkout lleva a crearlo.
+      if (!mine) return { ok: false, reason: 'carnet_required', event: view };
       return {
         ok: true,
         session: {
           purchaseId: newId(event.id),
           event: view,
-          quote: quoteFor(event, found, now(), 1, { has: mine !== null, discount: carnetDiscount }),
+          quote: quoteFor(event, found, now(), 1),
           flow: { kind: 'inline' },
           ...(startOpts.source ? { source: startOpts.source } : {}),
         },
@@ -81,14 +89,13 @@ export function createSandboxTicketing(
     },
 
     async confirm(session: CheckoutSession): Promise<PurchaseOutcome> {
+      if (!(await repo.carnet.mine())) throw new CarnetRequiredError();
       const applied = session.quote.discount;
       const { purchase, first, stamp } = await repo.purchases.confirmSandbox({
         purchaseId: session.purchaseId,
         eventId: session.event.id,
         quantity: session.quote.quantity,
-        // Sólo un código encontrado se gasta; el del Carnet vale en cada compra
-        // y queda en el importe (y en la analítica).
-        discountId: applied?.kind === 'code' ? applied.id : null,
+        discountId: applied?.id ?? null,
         amountCents: session.quote.totalCents,
       });
       // En la versión de prueba el sandbox hace de webhook (REQ-ARQ-019).

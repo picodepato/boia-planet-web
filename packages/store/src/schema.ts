@@ -4,6 +4,7 @@ import {
   ACHIEVEMENT_SCOPES,
   ACHIEVEMENT_TRIGGERS,
   BOTTLE_STATUSES,
+  COMMON_DISCOUNT_CODE_MAX,
   LEDGER_KINDS,
   PURCHASE_STATUSES,
   albumSchema,
@@ -529,6 +530,12 @@ export const adminSettingsSchema = z.object({
     .min(TRASH_RETENTION_MIN_DAYS)
     .max(TRASH_RETENTION_MAX_DAYS)
     .default(TRASH_RETENTION_DEFAULT_DAYS),
+  /**
+   * Código común de la ticketera (plan 019 T215, decisión 7): fijado,
+   * sustituye el código de todos los descuentos de entradas a la vez
+   * (`withCommonCode`); sin él, cada descuento usa el suyo.
+   */
+  commonDiscountCode: z.string().trim().min(1).max(COMMON_DISCOUNT_CODE_MAX).optional(),
 });
 export type AdminSettings = z.infer<typeof adminSettingsSchema>;
 

@@ -38,16 +38,12 @@ export const CHECKOUT_COPY = {
     title: t('checkout.discount.banner.title'),
     saving: (euros: string) => t('ticketing.copy.ahorras', { euros }),
     applied: t('ticketing.copy.seAplicaSoloAl'),
-    carnetTitle: t('ticketing.carnet.bannerTitle'),
   },
-  /** El Carnet BOIA en la compra (T66): -10 % `muestra`, no se suma a los códigos. */
+  /** El Carnet BOIA, requisito para comprar (plan 019, decisión 1). */
   carnet: {
-    offerTitle: t('ticketing.carnet.offerTitle'),
-    offerPercent: (percent: number) => t('ticketing.carnet.offerPercent', { percent }),
-    offerAmount: (euros: string) => t('ticketing.carnet.offerAmount', { euros }),
-    offerSaving: (euros: string) => t('ticketing.carnet.offerSaving', { euros }),
+    requiredTitle: t('ticketing.carnet.requiredTitle'),
+    requiredBody: t('ticketing.carnet.requiredBody'),
     create: t('ticketing.carnet.create'),
-    skip: t('ticketing.carnet.skip'),
     nickname: t('ticketing.carnet.nickname'),
     nicknameHint: (min: number, max: number) => t('ticketing.carnet.nicknameHint', { min, max }),
     createAndBack: t('ticketing.carnet.createAndBack'),
@@ -55,8 +51,5 @@ export const CHECKOUT_COPY = {
     back: t('ticketing.carnet.back'),
     nicknameTaken: t('ticketing.carnet.nicknameTaken'),
     failed: t('ticketing.carnet.failed'),
-    line: t('ticketing.carnet.line'),
-    skippedCode: (code: string) => t('ticketing.carnet.skippedCode', { code }),
-    skippedCarnet: (code: string) => t('ticketing.carnet.skippedCarnet', { code }),
   },
 } as const;

@@ -156,10 +156,11 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     description:
       'La noche de Halloween de BOIA. Disfraz opcional, música sin etiqueta y un bar lleno de fantasmas con buen gusto.',
     artistIds: [],
-    priceCents: 1000,
+    priceCents: 500,
     priceSample: true,
-    ticketUrl: `${SANDBOX}/tickets/${HALLOWEEN_EVENT_ID}`,
-    boxOfficeOnly: { carnetDiscountCents: 200 }, // T199, muestra.
+    // Plan 019 T215 (decisión 6): sin venta online, «Solo en puerta · 5 € con
+    // carnet». Muestra.
+    boxOfficeOnly: { doorPriceCents: 500 },
     islandId: TICKET_EVENT_ISLANDS[HALLOWEEN_EVENT_ID],
     sample: false,
   },
@@ -180,8 +181,9 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     activities: ['Comida', 'Mercadillo de artistas locales'],
     priceCents: 2500,
     priceSample: true,
+    // Plan 019 T215 (decisiones 5 y 14): vuelve la venta online (ticketera
+    // por elegir) y vale el premio de la Boia Fiestera.
     ticketUrl: `${SANDBOX}/tickets/${SONIDO_EVENT_ID}`,
-    boxOfficeOnly: { carnetDiscountCents: 200 }, // T199, muestra.
     islandId: TICKET_EVENT_ISLANDS[SONIDO_EVENT_ID],
     sample: false,
   },
@@ -408,23 +410,6 @@ export const SAMPLE_DISCOUNTS: AreaInput<'discounts'>[] = [
     sample: true,
   },
 ];
-
-/**
- * El descuento de tener Carnet BOIA (T66, decisión de Hernán y Álvaro del
- * 2026-10-02): -10 % en la entrada para quien tiene Carnet. No se suma a los
- * códigos del mundo: la compra aplica el mejor de los dos y dice cuál. No es
- * un código escondido (no está en `discounts` ni sale en el mapa). Valor
- * `muestra`; el Admin lo podrá editar (T63).
- */
-export const SAMPLE_CARNET_DISCOUNT: AreaInput<'discounts'> = {
-  id: 'carnet',
-  code: 'CARNET BOIA',
-  label: '-10 % por tener Carnet BOIA',
-  kind: 'percent',
-  value: 10,
-  conditions: 'En cada entrada, con tu Carnet BOIA. No se suma a otros códigos. Muestra.',
-  sample: true,
-};
 
 /** Prefijo del id del Carnet de un artista (T66): `artista-<id del artista>`. */
 export const ARTIST_CARNET_PREFIX = 'artista-';

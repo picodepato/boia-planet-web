@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ARTIST_CARNET_SINCE,
   SAMPLE_ARTISTS,
-  SAMPLE_CARNET_DISCOUNT,
   SAMPLE_CREW,
   SAMPLE_EVENTS,
   artistCarnetId,
@@ -11,8 +10,8 @@ import { makeRepo } from './test-helpers';
 
 /**
  * T66: los Carnets que «Descubrir a un BOIERO» puede enseñar (los miembros
- * de muestra y los artistas del contenido) y el descuento de tener Carnet,
- * sobre el repositorio local.
+ * de muestra y los artistas del contenido), sobre el repositorio local. El
+ * descuento de tener Carnet se fue con el plan 019 (decisión 1).
  */
 
 describe('Carnets de los artistas', () => {
@@ -87,17 +86,5 @@ describe('Carnets para descubrir', () => {
     ]);
     const me = await repo.carnet.mine();
     expect(members.some((m) => m.userId === me!.userId)).toBe(false);
-  });
-});
-
-describe('descuento de tener Carnet', () => {
-  it('el repositorio da el de la muestra, con la forma de un descuento de entradas', async () => {
-    const { repo } = makeRepo();
-    expect(await repo.content.carnetDiscount()).toMatchObject({
-      id: SAMPLE_CARNET_DISCOUNT.id,
-      kind: SAMPLE_CARNET_DISCOUNT.kind,
-      value: SAMPLE_CARNET_DISCOUNT.value,
-      scope: 'event',
-    });
   });
 });

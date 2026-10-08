@@ -4,6 +4,7 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
 import { ONLINE_EVENT } from './online-event';
+import { createCarnetInCheckout } from './carnet-seed';
 
 /**
  * Entrada 3D con el planeta de /mar (T57, T64; plan 007 T79; D-19, D-21,
@@ -528,9 +529,8 @@ test('motor bloqueado: la versión estática y Tickets funcionando (REQ-ENT-017,
   await expect(buy).toBeVisible();
   // Sin escena, la compra de prueba (D-20) se abre igual.
   await buy.click();
-  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
-  await page.getByTestId('checkout-sin-carnet').click({ timeout: 20_000 });
-  await expect(page.getByTestId('checkout-confirmar')).toBeVisible();
+  // Sin Carnet, la compra lo pide (plan 019): se crea aquí mismo y sigue.
+  await createCarnetInCheckout(page.getByTestId('checkout'));
 });
 
 test('sin WebGL: la versión estática enseguida, sin canvas', async ({ page }) => {

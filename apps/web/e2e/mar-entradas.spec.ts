@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { CHECKOUT_COPY } from '../lib/ticketing/copy';
+import { seedCarnet } from './carnet-seed';
 
 /**
  * Entradas dentro del mar 3D (T58, REQ-ENT-037): «Entradas» abre «Elige tu
@@ -117,6 +118,9 @@ test('«Entradas» abre «Elige tu evento» en el mar; el código encontrado se 
 }, info) => {
   expect(discount, 'el náufrago esconde un código de la muestra').toBeDefined();
   expect(event, 'el código es de un evento de la muestra').toBeDefined();
+  // Comprar pide el Carnet BOIA (plan 019): se viene con uno.
+  const nickname = `Marinera ${info.project.name}`;
+  await seedCarnet(page, nickname);
   const errors = await openMar(page, `?cerca=${castaway.identity.id}`);
 
   // El código del náufrago, encontrado navegando.
@@ -156,15 +160,13 @@ test('«Entradas» abre «Elige tu evento» en el mar; el código encontrado se 
   await snap(page, 'p005-t58-comprada.png');
   await expectStillAtSea(page);
 
-  // «Ver mi Carnet»: Mi Carnet dentro del mar; al crearlo, el sello ya está.
+  // «Ver mi Carnet»: Mi Carnet dentro del mar, con el sello ya puesto.
   await checkout.getByTestId('checkout-carnet').click();
   await expect(checkout).toHaveCount(0);
   await expect(panel).toHaveCount(0);
   const carnet = page.getByTestId('mar-carnet');
   await expect(carnet).toBeVisible();
-  await carnet.getByTestId('carnet-crear').click();
-  await carnet.getByTestId('carnet-apodo-input').fill(`Marinera ${info.project.name}`);
-  await carnet.getByTestId('carnet-guardar').click();
+  await expect(carnet).toContainText(nickname);
   await expect(carnet.getByTestId('carnet-sellos')).toContainText(storeName(event.id));
   await expectStillAtSea(page);
 
@@ -188,9 +190,11 @@ test('«Entradas» abre «Elige tu evento» en el mar; el código encontrado se 
   expect(errors).toEqual([]);
 });
 
-test('sin código: precio entero; al cerrar tras comprar, el panel se va y llega la invitación al Carnet', async ({
+test('sin código: precio entero; al cerrar tras comprar, el panel se va (con Carnet, sin invitación)', async ({
   page,
 }) => {
+  // Comprar pide el Carnet BOIA (plan 019): se viene con uno.
+  await seedCarnet(page);
   const errors = await openMar(page);
   await page.getByTestId('mar-entradas').click();
   const panel = page.getByTestId('mar-entradas-panel');
@@ -201,26 +205,22 @@ test('sin código: precio entero; al cerrar tras comprar, el panel se va y llega
   // Cerrar sin comprar vuelve al panel; otro toque de «Entradas» lo cierra.
   await panel.getByTestId(`mar-entradas-comprar-${event.id}`).click();
   const checkout = page.getByTestId('checkout');
-  // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
-  await checkout.getByTestId('checkout-sin-carnet').click({ timeout: 20_000 });
-  await expect(checkout.getByTestId('checkout-sin-descuento')).toBeVisible();
+  await expect(checkout.getByTestId('checkout-sin-descuento')).toBeVisible({ timeout: 20_000 });
   await checkout.getByTestId('checkout-cerrar').click();
   await expect(checkout).toHaveCount(0);
   await expect(panel).toBeVisible();
   await page.getByTestId('mar-entradas-cerrar').click();
   await expect(panel).toHaveCount(0);
 
-  // Comprar y cerrar: el panel se cierra y llega la invitación (como en la landing).
+  // Comprar y cerrar: el panel se cierra; ya hay Carnet, así que no hay invitación a crearlo.
   await page.getByTestId('mar-entradas').click();
   await panel.getByTestId(`mar-entradas-comprar-${event.id}`).click();
-  await checkout.getByTestId('checkout-sin-carnet').click();
   await checkout.getByTestId('checkout-confirmar').click();
   await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
   await checkout.getByTestId('checkout-cerrar').click();
   await expect(checkout).toHaveCount(0);
   await expect(panel).toHaveCount(0);
-  const invite = page.getByTestId('invitacion-carnet');
-  await expect(invite).toHaveAttribute('data-motivo', 'purchase');
+  await expect(page.getByTestId('invitacion-carnet')).toHaveCount(0);
   await expectStillAtSea(page);
   expect(errors).toEqual([]);
 });

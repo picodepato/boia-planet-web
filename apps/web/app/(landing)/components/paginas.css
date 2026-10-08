@@ -149,6 +149,64 @@
   font-size: 1.125rem;
 }
 
+/* Plan 019 T215: con cartel, el fondo de la página es el cartel ampliado y
+   difuminado; el texto va sobre una hoja para que se lea. */
+.event-page__backdrop {
+  position: fixed;
+  inset: -48px;
+  z-index: -1;
+  background-color: var(--sea-deep);
+  background-position: center;
+  background-size: cover;
+  filter: blur(28px) saturate(1.15) brightness(0.8);
+  transform: scale(1.15);
+  pointer-events: none;
+}
+
+.event-page--poster {
+  /* Su propio contexto de apilado: el fondo queda sobre el de la página y bajo la ficha. */
+  position: relative;
+  isolation: isolate;
+}
+
+.event-page--poster .event-page__main {
+  padding: 16px;
+  background: color-mix(in srgb, var(--sea-deep) 82%, transparent);
+  border: 2px solid var(--ink);
+}
+
+.event-page__tbd {
+  margin: 0;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.event-page__door {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-left: 6px solid var(--orange);
+}
+
+.event-page__door p {
+  margin: 0 0 6px;
+}
+
+.event-page__door .box-office__label {
+  font-size: 1.125rem;
+}
+
+.event-page__carnet-note {
+  margin: -12px 0 24px;
+  color: var(--ink-soft);
+}
+
+.button--discount {
+  background: var(--yellow);
+  color: #000;
+}
+
 .event-page__missing {
   padding: 40px 0;
 }

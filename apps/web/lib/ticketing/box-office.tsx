@@ -1,19 +1,25 @@
 'use client';
 
-import type { BoiaEvent } from '@boia/contracts';
 import { useEffect, useId, useRef } from 'react';
 import { t } from '../i18n/web';
+import { boxOfficeLabel, type DoorEvent } from './box-office-label';
 import type { CarnetLink } from './checkout';
 import './checkout.css';
 
-type Rule = NonNullable<BoiaEvent['boxOfficeOnly']>;
+export { boxOfficeLabel } from './box-office-label';
 
-/** Decisión 8 (T199), muestra. Compartido por la landing y el mar. */
-export function BoxOfficeMessage({ rule, carnet }: { rule: Rule; carnet: CarnetLink }) {
-  const euros = new Intl.NumberFormat('es-ES').format(rule.carnetDiscountCents / 100);
+/**
+ * «Solo en puerta» (plan 019 T215, decisiones 1 y 6), muestra: no hay venta
+ * online; se paga en la puerta y hace falta el Carnet BOIA, que se crea
+ * desde aquí. Compartido por la landing, la ficha y el mar.
+ */
+export function BoxOfficeMessage({ event, carnet }: { event: DoorEvent; carnet: CarnetLink }) {
   return (
     <div data-testid="box-office-message">
-      <p>{t('ticketing.boxOffice.message', { euros })}</p>
+      <p className="box-office__label" data-testid="box-office-label">
+        <strong>{boxOfficeLabel(event)}</strong>
+      </p>
+      <p>{t('ticketing.boxOffice.message')}</p>
       <p>
         {t('ticketing.boxOffice.invite')}{' '}
         {'href' in carnet ? (
@@ -37,13 +43,13 @@ export function BoxOfficeMessage({ rule, carnet }: { rule: Rule; carnet: CarnetL
 
 export function BoxOfficeDialog({
   eventName,
-  rule,
+  event,
   carnet,
   onClose,
   className,
 }: {
   eventName: string;
-  rule: Rule;
+  event: DoorEvent;
   carnet: CarnetLink;
   onClose: () => void;
   className?: string;
@@ -86,7 +92,7 @@ export function BoxOfficeDialog({
     >
       <div className="checkout__sheet">
         <h2 id={titleId} className="checkout__title">{eventName}</h2>
-        <BoxOfficeMessage rule={rule} carnet={carnet} />
+        <BoxOfficeMessage event={event} carnet={carnet} />
         <div className="checkout__actions">
           <button type="button" className="checkout__secondary" onClick={onClose} data-testid="box-office-close">
             {t('tickets.close')}

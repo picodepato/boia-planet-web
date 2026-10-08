@@ -968,6 +968,8 @@ export type Database = {
           cancelled_island_mode: Database['public']['Enums']['cancelled_island_mode'] | null;
           cancelled_message: string | null;
           created_at: string;
+          door_only: boolean;
+          door_price_cents: number | null;
           created_by: string | null;
           description: string | null;
           ends_at: string | null;
@@ -977,8 +979,10 @@ export type Database = {
           is_sample: boolean;
           island_id: string | null;
           lineup: Json;
+          place_announced: boolean;
           poster_key: string | null;
           postponed_message: string | null;
+          price_cents: number | null;
           published_at: string | null;
           sale_starts_at: string | null;
           slug: string;
@@ -1001,6 +1005,8 @@ export type Database = {
           cancelled_island_mode?: Database['public']['Enums']['cancelled_island_mode'] | null;
           cancelled_message?: string | null;
           created_at?: string;
+          door_only?: boolean;
+          door_price_cents?: number | null;
           created_by?: string | null;
           description?: string | null;
           ends_at?: string | null;
@@ -1010,8 +1016,10 @@ export type Database = {
           is_sample?: boolean;
           island_id?: string | null;
           lineup?: Json;
+          place_announced?: boolean;
           poster_key?: string | null;
           postponed_message?: string | null;
+          price_cents?: number | null;
           published_at?: string | null;
           sale_starts_at?: string | null;
           slug: string;
@@ -1034,6 +1042,8 @@ export type Database = {
           cancelled_island_mode?: Database['public']['Enums']['cancelled_island_mode'] | null;
           cancelled_message?: string | null;
           created_at?: string;
+          door_only?: boolean;
+          door_price_cents?: number | null;
           created_by?: string | null;
           description?: string | null;
           ends_at?: string | null;
@@ -1043,8 +1053,10 @@ export type Database = {
           is_sample?: boolean;
           island_id?: string | null;
           lineup?: Json;
+          place_announced?: boolean;
           poster_key?: string | null;
           postponed_message?: string | null;
+          price_cents?: number | null;
           published_at?: string | null;
           sale_starts_at?: string | null;
           slug?: string;
@@ -1650,6 +1662,27 @@ export type Database = {
           },
         ];
       };
+      ticketing_settings: {
+        Row: {
+          common_discount_code: string | null;
+          id: boolean;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          common_discount_code?: string | null;
+          id?: boolean;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          common_discount_code?: string | null;
+          id?: boolean;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
       user_achievements: {
         Row: {
           achievement_id: string;
@@ -2019,6 +2052,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_set_common_discount_code: {
+        Args: {
+          p_code?: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_set_stamp_image: {
         Args: {
           p_event: string;
@@ -2094,6 +2134,12 @@ export type Database = {
           p_code: string;
         };
         Returns: Json;
+      };
+      discount_code_for: {
+        Args: {
+          p_discount: string;
+        };
+        Returns: string;
       };
       delete_my_account: {
         Args: Record<PropertyKey, never>;

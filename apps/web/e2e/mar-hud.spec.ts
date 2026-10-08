@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { t } from '../lib/i18n';
 import { ONLINE_EVENT } from './online-event';
+import { seedCarnet } from './carnet-seed';
 
 /**
  * El HUD de /mar (T65, decisión de Hernán y Álvaro del 2026-10-02, que
@@ -453,13 +454,13 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
   test('los avisos son chips pequeños arriba que se van solos', async ({ page }) => {
     // «Entradas» abre «Elige tu evento» (T58) y su compra, dentro del mar: una compra da avisos.
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    // Comprar pide el Carnet BOIA (plan 019): se viene con uno.
+    await seedCarnet(page);
     const errors = await openMar(page);
     const vp = page.viewportSize()!;
     await page.getByTestId('mar-entradas').click();
     await page.getByTestId(`mar-entradas-comprar-${ONLINE_EVENT.id}`).click();
     const checkout = page.getByTestId('checkout');
-    // Sin Carnet, la compra pregunta antes (T66): se sigue sin él.
-    await checkout.getByTestId('checkout-sin-carnet').click();
     await checkout.getByTestId('checkout-confirmar').click();
     await expect(checkout.getByTestId('checkout-resultado')).toBeVisible();
     await checkout.getByTestId('checkout-cerrar').click();

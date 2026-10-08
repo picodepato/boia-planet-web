@@ -8,7 +8,6 @@ import {
 import {
   SAMPLE_ALBUMS,
   SAMPLE_ARTISTS,
-  SAMPLE_CARNET_DISCOUNT,
   SAMPLE_DISCOUNTS,
   SAMPLE_EVENTS,
   SAMPLE_HOME_BLOCKS,
@@ -31,15 +30,10 @@ export type SampleInput = { [A in EntityArea]: AreaInput<A>[] } & {
   activeWorldId: string | null;
   crew: SampleCrewMember[];
   bottles: SampleBottle[];
-  /** El descuento de tener Carnet BOIA (T66), con la forma de un descuento. */
-  carnetDiscount: AreaInput<'discounts'>;
 };
 
 /** Muestra validada. */
-export type SampleData = { [A in EntityArea]: AreaItem<A>[] } & Omit<
-  SampleInput,
-  EntityArea | 'carnetDiscount'
-> & { carnetDiscount: AreaItem<'discounts'> };
+export type SampleData = { [A in EntityArea]: AreaItem<A>[] } & Omit<SampleInput, EntityArea>;
 
 export const DEFAULT_SAMPLE_INPUT: SampleInput = {
   events: SAMPLE_EVENTS,
@@ -61,7 +55,6 @@ export const DEFAULT_SAMPLE_INPUT: SampleInput = {
   activeWorldId: null,
   crew: SAMPLE_CREW,
   bottles: SAMPLE_BOTTLES,
-  carnetDiscount: SAMPLE_CARNET_DISCOUNT,
 };
 
 /** Valida la muestra (lanza si algo no cumple el esquema: es un error de código). */
@@ -85,6 +78,5 @@ export function parseSample(input: Partial<SampleInput> = {}): SampleData {
     activeWorldId: merged.activeWorldId,
     crew: merged.crew,
     bottles: merged.bottles,
-    carnetDiscount: ENTITY_SCHEMAS.discounts.parse(merged.carnetDiscount) as AreaItem<'discounts'>,
   };
 }

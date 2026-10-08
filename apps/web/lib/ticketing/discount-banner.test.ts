@@ -48,10 +48,19 @@ const owned = (d: Discount, usedAt: string | null = null) => ({ discount: d, use
 function setup(now: Date) {
   const repo = createLocalRepository({ storage: null, now: () => now });
   let n = 0;
-  const tickets = createSandboxTicketing(repo, {
+  // Comprar pide el Carnet BOIA (plan 019, decisión 1): estas pruebas compran con él.
+  const ready = repo.carnet.create({ nickname: 'Grumete' });
+  const sandbox = createSandboxTicketing(repo, {
     now: () => now,
     newPurchaseId: (id) => `t43-${id}-${++n}`,
   });
+  const tickets: typeof sandbox = {
+    ...sandbox,
+    start: async (...args) => {
+      await ready;
+      return sandbox.start(...args);
+    },
+  };
   return { repo, tickets };
 }
 

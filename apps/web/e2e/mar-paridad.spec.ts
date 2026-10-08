@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { marWorld } from '../app/mar/engine/compact';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { translateSkinText } from '../lib/mundo/demo-world';
+import { seedCarnet } from './carnet-seed';
 
 /**
  * El mar 3D con lo que el plan 004 trajo a /juego (T51): el código del
@@ -161,6 +162,8 @@ test('el náufrago da su código, «Ir a la isla» navega solo y la isla lo apli
 }) => {
   expect(discount, 'el náufrago esconde un código de la muestra').toBeDefined();
   expect(event?.islandId, 'el código es de un evento con isla').toBeTruthy();
+  // Comprar pide el Carnet BOIA (plan 019): se viene con uno.
+  await seedCarnet(page);
   const errors = await openMar(page, `?cerca=${castaway.identity.id}`);
 
   const sheet = page.getByTestId('mar-ficha');
@@ -206,14 +209,9 @@ test('el náufrago da su código, «Ir a la isla» navega solo y la isla lo apli
   await checkout.getByTestId('checkout-cerrar').click();
   await expect(checkout).toBeHidden();
 
-  // Después de comprar, la invitación a crear el Carnet (T44), sin tapar la ficha abierta.
-  const invite = page.getByTestId('invitacion-carnet');
-  await expect(invite).toHaveCount(0);
+  // Ya hay Carnet (comprar lo pide, plan 019): no hay invitación a crearlo.
   await sheet.getByRole('button', { name: 'Cerrar', exact: true }).click();
-  await expect(invite).toHaveAttribute('data-motivo', 'purchase');
-  await snap(page, 'p004-t51-invitacion.png');
-  await invite.getByTestId('invitacion-ahora-no').click();
-  await expect(invite).toHaveCount(0);
+  await expect(page.getByTestId('invitacion-carnet')).toHaveCount(0);
 
   // «Mis códigos» del menú: ya usado, y sin «Ir a la isla».
   await page.getByTestId('mar-logros').click();

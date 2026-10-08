@@ -1,4 +1,5 @@
 import {
+  COMMON_DISCOUNT_CODE_MAX,
   EVENT_STATES,
   type Album,
   type BoiaEvent,
@@ -836,6 +837,22 @@ export function createAdminActions(deps: AdminDeps) {
       return repo.admin.setSettings(
         { trashRetentionDays: days },
         opts(msg('admin.actions.plazoDeLaPapelera')),
+      );
+    },
+
+    /**
+     * El código común de la ticketera (plan 019 T215, decisión 7): fijado,
+     * todos los descuentos de entradas enseñan ese código; vacío, cada uno el
+     * suyo. Queda en la auditoría.
+     */
+    async setCommonDiscountCode(code: string) {
+      const value = code.trim().toUpperCase();
+      if (value.length > COMMON_DISCOUNT_CODE_MAX) {
+        throw new AdminError(msg('admin.discounts.common.tooLong', { max: COMMON_DISCOUNT_CODE_MAX }));
+      }
+      return repo.admin.setSettings(
+        { commonDiscountCode: value || undefined },
+        opts(msg('admin.discounts.common.reason')),
       );
     },
 

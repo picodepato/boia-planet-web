@@ -4,9 +4,11 @@
  * que Álvaro lo apruebe.
  */
 export const esLibWeb = {
-  // T199, decisiones 8 y 10. Textos de muestra.
+  // Plan 019 T215 (decisiones 1 y 6): «Solo en puerta», con el Carnet como requisito. Muestra.
+  'ticketing.boxOffice.label': 'Solo en puerta · {euros} € con carnet',
+  'ticketing.boxOffice.labelNoPrice': 'Solo en puerta · con carnet',
   'ticketing.boxOffice.message':
-    'Entradas sólo en taquilla, el mismo día. Enseña tu Carnet BOIA en la puerta y te descontamos {euros} €.',
+    'No hay venta online: la entrada se paga en la puerta y para entrar hace falta el Carnet BOIA.',
   'ticketing.boxOffice.invite': '¿Aún no tienes Carnet?',
   'ticketing.boxOffice.carnet': 'Hazte el tuyo',
   'ticketing.boxOffice.buyAria': 'Comprar entradas para {name}',
@@ -38,13 +40,11 @@ export const esLibWeb = {
   'ticketing.copy.logroConseguido': 'Logro conseguido: {title}',
   'ticketing.copy.ahorras': 'Ahorras {euros}',
   'ticketing.copy.seAplicaSoloAl': 'Se aplica solo al comprar.',
-  'ticketing.carnet.offerTitle': '¿Tienes Carnet BOIA?',
-  'ticketing.carnet.offerPercent': 'Créalo en 30 s y ahorra un {percent} %',
-  'ticketing.carnet.offerAmount': 'Créalo en 30 s y ahorra {euros}',
-  'ticketing.carnet.offerSaving':
-    'En esta entrada, −{euros}. Sin email: tu Carnet se guarda en este navegador.',
+  // Plan 019 T215 (decisión 1): el Carnet es el requisito para comprar. Muestra.
+  'ticketing.carnet.requiredTitle': 'Para comprar entradas necesitas el Carnet BOIA',
+  'ticketing.carnet.requiredBody':
+    'Créalo en 30 s, sin email: tu Carnet se guarda en este navegador. Luego sigues con la compra.',
   'ticketing.carnet.create': 'Crear Carnet',
-  'ticketing.carnet.skip': 'Seguir sin Carnet',
   'ticketing.carnet.nickname': 'Tu apodo',
   'ticketing.carnet.nicknameHint':
     'De {min} a {max} caracteres. Es lo que verán los demás en tu Carnet y en el ranking.',
@@ -53,10 +53,4 @@ export const esLibWeb = {
   'ticketing.carnet.back': 'Volver',
   'ticketing.carnet.nicknameTaken': 'Ese apodo ya lo tiene otra persona: prueba con otro.',
   'ticketing.carnet.failed': 'No se pudo crear el Carnet. Inténtalo de nuevo.',
-  'ticketing.carnet.bannerTitle': 'Tu Carnet BOIA te hace descuento',
-  'ticketing.carnet.line': 'Descuento de tu Carnet BOIA',
-  'ticketing.carnet.skippedCode':
-    'Los descuentos no se suman: se aplica el de tu Carnet BOIA y el código {code} queda para otra compra.',
-  'ticketing.carnet.skippedCarnet':
-    'Los descuentos no se suman: se aplica el código {code}, que ahorra más que tu Carnet BOIA.',
 } as const;
