@@ -78,6 +78,21 @@ la boia con la cara del logo
 Los REQ que tocó llevan su nota en la tabla; guía de prueba:
 [plan 019](../propuestas/2026-10-08-plan-019-guia-prueba.md).
 
+**Plan 020 sin REQ propio.** El [plan 020](../../plans/020-revision-hernan.md)
+(T226–T234, revisión de Hernán tras el plan 019) suma alcance que la spec no
+nombra: el orden fijo de la entrada (globo, «BOIA», botones;
+[intro.spec.ts](../../apps/web/e2e/intro.spec.ts)); rótulos y botones del
+mundo a dos líneas, la «!» naranja y los interruptores en pastilla
+([labels.test.ts](../../apps/web/app/mar/engine/labels.test.ts),
+[mar-circuito.spec.ts](../../apps/web/e2e/mar-circuito.spec.ts)); la tienda que
+se desliza y reserva por Instagram
+([merchandise.spec.ts](../../apps/web/e2e/merchandise.spec.ts)); la Galería en
+collage que se arrastra ([galeria.spec.ts](../../apps/web/e2e/galeria.spec.ts)).
+Con REQ: Las Calitas en Blender (REQ-IDE-054), la Moderación de respuestas y
+música (REQ-ADM-040), la papelera de 30 días con datos reales (REQ-ADM-030) y
+las copias con Storage (REQ-ARQ-013). Guía de prueba:
+[plan 020](../propuestas/2026-10-08-plan-020-guia-prueba.md).
+
 <!-- estado:tabla -->
 | ID | Requisito | Alcance | Estado | Evidencia | Nota |
 |---|---|---|---|---|---|

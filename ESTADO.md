@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T233: Close plan 020: test guide and status
+
+Qué existe:
+- Guía de prueba del plan 020: `docs/propuestas/2026-10-08-plan-020-guia-prueba.md`. Qué cambió por cada punto de la revisión de Hernán (1–13) y por las decisiones 6–8 (papelera con datos reales, Las Calitas, Galería), qué probar a mano (tabla por punto), el comando e2e con las specs de T226–T232 y T234 (sin y con Supabase), las 10 migraciones en orden para `boia-planet-dev` (las 8 de los planes 017–019, luego `20261008200100` de T229 y `20261008200200` de T230) con sus pruebas `test:supabase`, y las preguntas abiertas.
+- `docs/spec/estado.md`: párrafo «Plan 020 sin REQ propio» con las pruebas del alcance nuevo y los REQ que tocó (IDE-054, ADM-040, ADM-030, ARQ-013).
+- Integración: el lote entero (T226–T232, T234) junto en `main` compila y pasa el comando de pruebas sin arreglos. Ninguna spec e2e se rompió entre tareas (se buscaron selectores retirados: `photo-grid`, `photo-tile`, «Pausar rotación»…).
+- Rótulo de Las Calitas: se deja crema. En el mar sólo son naranjas los rótulos de las islas con fiesta (`accent` en `pinsOf`, `mar-client.tsx`); Castillo, Puerto, Benidorm y Los Rápidos también son crema. Pregunta 1 de la guía.
+
+Comandos:
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 263 archivos, 2399 pasan, 1 omitida.
+- `sh tools/spec/checks.sh` → exit 0 (y después de editar estado.md, sus 5 pasos uno a uno → exit 0; 295 REQ).
+- `pnpm lint` → exit 0; `pnpm build` → exit 0 (ruta crítica de la landing 199,0 kB de 200); `pnpm typecheck` → exit 0.
+- e2e no corridas (política del plan).
+
+Pendiente (Hernán):
+- Las 10 migraciones, `pnpm db:types:dev` y `pnpm test:supabase` en `boia-planet-dev` (orden en la guía).
+- Contestar las preguntas de la guía (rótulo de Las Calitas, tiempos de la entrada, margen de 1 kB de la landing, interruptores de Ajustes, «Entradas» en viaje, papelera con cuentas).
+
+e2e que Hernán debería correr: las de la guía. Sin Supabase: `mar-circuito`, `mar-rotulos`, `mar-puerto`, `mar-hud`, `mar-ayuda`, `logros`, `mar-canon`, `mar-castillo`, `mar-3d`, `intro`, `landing`, `landing-scroll`, `artistas`, `merchandise`, `eventos`, `accesos`, `admin`, `admin-endurecido`, `admin-enlaces`, `cuenta-progreso`, `admin-moderacion`, `comunidad`, `admin-papelera`, `mar-isla-modelo`, `mar-faro-tabarca`, `mar-isla-nochevieja`, `mar-isla-sonido`, `mar-lugares-blender`, `despliegue`, `mar-calitas`, `galeria`, `mar-a-bordo`, `admin-fotos`. Con `E2E_SUPABASE=1`, tras las migraciones: `admin-real.spec.ts`.
+
 ## 2026-10-08 — plan 020 T234: Galería: a real collage, also on the landing and in the world sheet
 
 Qué existe (decisión 8):
