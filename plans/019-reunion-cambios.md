@@ -136,7 +136,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - Outcome: light-orange /mar loading and Zarpar cover, popups without band, islands ALL DAY BOIA / HALLOWEEN IN THE CLUB / Botiga Ibiza / Puig Campana (name), party popups name + date · place, Botiga «Sección de merchandising oficial», FIESTERA20 text for ALL DAY + Nochevieja (done by Opus, Codex unavailable) · 8f162fc
 
 ## T220 — The boia redesigned after the BOIA mascot
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T219
 - Model: opus
 - Skills: blender-modeling-workflow, blender-asset-validation
@@ -147,10 +147,10 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
   - side-by-side screenshot of the mascot and the new boia in the world (and the tutorial frames if they change) → attach folder
   - `python3 tools/blender/check.py` → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: Blender boias with the logo's black outline, hand-made mascot (captain, Fiestera, placeholder) redrawn after the logo, Fiestera now orange, boias face the port, logo SVG on loading screens · e888dc1
 
 ## T221 — Puig Campana modelled in Blender, replacing Els Banyets
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T219
 - Model: fable
 - Skills: blender-art-direction-intake, blender-modeling-workflow, blender-asset-validation, blender-iterative-refinement
@@ -218,6 +218,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T215: common code replaces only ticket discounts (store keeps its own); door-only = `boxOfficeOnly {doorPriceCents?}`; ALL DAY BOIA sold online again; Supabase: `ticketing_settings` table + `admin_set_common_discount_code`, `discount_code_for` returns it only to finders; purchase-invite.tsx removed; 11 e2e specs seed a carnet (agent)
 - 2026-10-08 T217: one music link `{platform,url}` with platform from the domain, `spotifyUrl` kept as fallback; /artistas joins content artists with artist carnets; Supabase link saved by RPC `set_artist_music`; REQ-COM-027 HECHO (agent)
 - 2026-10-08 T223: scope extended with T215 leftovers (Supabase common code, dead invite, placeLabel when not announced) (orchestrator)
+- 2026-10-08 T220: outline as inverted hull only on 3D glTF boias; `FaceTextures.pink` → `party`; `BOIA_FACING = -π/2` (orientation only) (agent)
 
 ## Proposals (new scope)
 - 2026-10-08 T213: dev server returned 500 on /api/art/landing/3d/manifest.json in the worktree (globe sometimes falls back to the wordmark); check if it also happens on main
@@ -226,6 +227,7 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T214: decision 4 should go into DECISIONES.md so REQ-ENT-002/027 can be retired (Hernán); Roke's file goes in HERO_MEDIA_SRC (apps/web/lib/landing/hero-media.ts)
 - 2026-10-08 T219: supabase/seeds/20261003100100_economy.sql keeps old event names; sea island labels `.mar-pin--accent` still orange
 - 2026-10-08 T217: with Supabase, Admin cannot edit an artist carnet's music link (only content artists')
+- 2026-10-08 T220: mascot boias inside island GLBs (allday, faro, ultima) and 2D sprites have no outline; art/boia-tutorial unchanged (render.py needs Blender ≥ 4.2)
 
 ## Log
 - 2026-10-08 T213 launched · attempt 1 · agent a2810769cbecd91ff
@@ -245,3 +247,6 @@ Decisions of 2026-10-08 that every task follows (meeting with Álvaro + Hernán'
 - 2026-10-08 T217 launched · attempt 1 · agent a58ed747487773150
 - 2026-10-08 T215 done · merged 5f134d3
 - 2026-10-08 T217 done · merged df0c55b
+- 2026-10-08 T218 launched · attempt 1 · agent abaa28dc8065cb263
+- 2026-10-08 T220 launched · attempt 1 · agent a4281a0437dfca569
+- 2026-10-08 T220 done · merged e888dc1
