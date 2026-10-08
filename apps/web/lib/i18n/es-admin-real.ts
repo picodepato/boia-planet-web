@@ -76,7 +76,8 @@ export const esAdminReal = {
   'admin.real.error.invalidStatus': 'Eso ya cambió: vuelve a cargar.',
   // Moderación fina de un Carnet (plan 020 T229)
   'admin.real.error.unknownAnswer': 'Ese Carnet ya no tiene esa respuesta: vuelve a cargar.',
-  'admin.real.error.unknownTrash': 'Ese cambio ya no está en la papelera (deshecho o pasado el plazo).',
+  'admin.real.error.unknownTrash':
+    'Ese cambio ya no está en la papelera (deshecho o pasado el plazo).',
   'admin.real.error.answerExists':
     'Su dueño ya ha vuelto a responder esa pregunta: no se pisa su respuesta nueva.',
   'admin.real.error.musicChanged': 'El enlace ha cambiado después: no se pisa.',
@@ -126,6 +127,32 @@ export const esAdminReal = {
   'admin.real.fiestas.image.url':
     'Esa URL no vale: tiene que ser https y de fuera de la red local.',
   'admin.real.fiestas.image.fetch': 'No se pudo traer la imagen de esa URL.',
+  // Borrar una fiesta (plan 020 T230): a la Papelera, 30 días
+  'admin.real.fiestas.delete': 'Borrar fiesta',
+  'admin.real.fiestas.deleteWarning':
+    'Vas a borrar «{title}»: deja de verse en la web, el mapa y la puerta, y su QR deja de dar sellos. Pasa 30 días en la Papelera, donde se puede devolver; después se borra para siempre (si alguien tiene su sello o una compra, se queda oculta en lugar de borrarse).',
+  'admin.real.fiestas.deleted': 'Fiesta en la Papelera: se puede devolver durante 30 días.',
+
+  // Papelera con cuentas (plan 020 T230, decisión 6)
+  'admin.real.trash.title': 'Socios y fiestas borrados',
+  'admin.real.trash.lead':
+    'Lo que se borra en «Socios y emails» y en «Fiestas y QR» no se ve en ninguna parte, pero se puede devolver durante {days} días. Después lo borra para siempre la purga diaria (o «Purgar lo caducado»).',
+  'admin.real.trash.members': 'Socios',
+  'admin.real.trash.events': 'Fiestas',
+  'admin.real.trash.noMembers': 'Ningún socio en la papelera.',
+  'admin.real.trash.noEvents': 'Ninguna fiesta en la papelera.',
+  'admin.real.trash.noCarnet': '(sin Carnet)',
+  'admin.real.trash.when': 'borrado el {day} · se purga el {until}',
+  'admin.real.trash.kept':
+    'Alguien tiene su sello o una compra: al purgarse se queda oculta en lugar de borrarse.',
+  'admin.real.trash.restore': 'Devolver',
+  'admin.real.trash.restoreReason': 'devuelto desde la papelera del Admin',
+  'admin.real.trash.memberRestored': 'Socio devuelto: su Carnet vuelve a verse y puede entrar.',
+  'admin.real.trash.eventRestored': 'Fiesta devuelta.',
+  'admin.real.trash.purge': 'Purgar lo caducado',
+  'admin.real.trash.purgeDone': 'Purga hecha.',
+  'admin.real.trash.purged':
+    'Purgado: {members} socio(s) y {events} fiesta(s) borrados para siempre; {kept} fiesta(s) caducada(s) se quedan ocultas.',
 
   // Socios y emails
   'admin.real.socios.title': 'Socios y emails',
@@ -151,8 +178,8 @@ export const esAdminReal = {
   'admin.real.socios.unmarked': 'Su Carnet vuelve a ser de miembro.',
   'admin.real.socios.delete': 'Borrar Carnet',
   'admin.real.socios.deleteWarning':
-    'Vas a borrar la cuenta de «{who}» y todo lo suyo (Carnet, puntos, sellos, tiempos, botellas). No se puede deshacer; queda una línea en la auditoría con el motivo.',
-  'admin.real.socios.deleted': 'Cuenta borrada.',
+    'Vas a borrar la cuenta de «{who}»: su Carnet deja de verse en todas partes (rankings, botellas, Las Calitas) y la cuenta ya no puede entrar. Pasa 30 días en la Papelera, donde se puede devolver; después se borra para siempre con todo lo suyo (puntos, sellos, tiempos, botellas). Queda una línea en la auditoría con el motivo.',
+  'admin.real.socios.deleted': 'Cuenta en la Papelera: se puede devolver durante 30 días.',
   // Número de socio (plan 016 T186)
   'admin.real.socios.number': 'Cambiar nº',
   'admin.real.socios.numberLabel': 'Nº de socio nuevo (libre)',

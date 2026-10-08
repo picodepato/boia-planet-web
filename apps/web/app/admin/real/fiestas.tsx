@@ -182,6 +182,9 @@ function PartyCard({
   const [confirming, setConfirming] = useState(false);
   const [projecting, setProjecting] = useState(false);
   const [remote, setRemote] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [reason, setReason] = useState('');
   const { status, busy, run } = useRun();
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const url = code ? selloUrl(origin, party.slug, code.code) : null;
@@ -441,6 +444,72 @@ function PartyCard({
           </button>
         ) : null}
       </div>
+      <div className="admin-row">
+        <button
+          type="button"
+          className="admin-button admin-button--ghost"
+          disabled={busy}
+          data-testid={`fiesta-borrar-${s}`}
+          onClick={() => {
+            setDeleting((v) => !v);
+            setTyped('');
+          }}
+        >
+          {t('admin.real.fiestas.delete')}
+        </button>
+      </div>
+      {deleting ? (
+        <div
+          className="admin-card admin-delete__panel"
+          role="group"
+          data-testid={`fiesta-borrar-panel-${s}`}
+        >
+          <p>{t('admin.real.fiestas.deleteWarning', { title: party.title })}</p>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.real.reason')}</span>
+            <input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              data-testid={`fiesta-borrar-motivo-${s}`}
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">
+              {t('admin.ui.paraConfirmarEscribe', { name: party.title })}
+            </span>
+            <input
+              value={typed}
+              autoComplete="off"
+              onChange={(e) => setTyped(e.target.value)}
+              data-testid={`fiesta-borrar-nombre-${s}`}
+            />
+          </label>
+          <div className="admin-row">
+            <button
+              type="button"
+              className="admin-button admin-button--danger"
+              disabled={busy || typed.trim() !== party.title || reason.trim().length < 3}
+              data-testid={`fiesta-borrar-confirmar-${s}`}
+              onClick={() =>
+                void run(async () => {
+                  await must(sb.rpc('admin_delete_event', { p_event: s, p_reason: reason.trim() }));
+                  setDeleting(false);
+                  onChanged();
+                }, t('admin.real.fiestas.deleted'))
+              }
+            >
+              {t('admin.ui.borrar')}
+            </button>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              onClick={() => setDeleting(false)}
+            >
+              {t('carnet.cancel')}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <StatusLine status={status} />
       {projecting && url ? (
         <Projector title={party.title} url={url} onClose={() => setProjecting(false)} />

@@ -28,6 +28,7 @@ import { RealBottles } from './real/botellas';
 import { RealCarnets } from './real/carnets';
 import { type RealAdmin, RealAdminProvider } from './real/common';
 import { FiestasSection } from './real/fiestas';
+import { RealDeletedTrash } from './real/papelera';
 import { RankingsSection } from './real/rankings';
 import { SecuritySection } from './real/seguridad';
 import { SociosSection } from './real/socios';
@@ -72,6 +73,19 @@ function RealModeration() {
 }
 
 /**
+ * Papelera con cuentas (plan 020 T230): los socios y las fiestas borrados de
+ * la base de datos y, debajo, la papelera del contenido de este Admin.
+ */
+function RealTrash({ ctx }: { ctx: AdminContext }) {
+  return (
+    <>
+      <RealDeletedTrash />
+      <TrashSection ctx={ctx} />
+    </>
+  );
+}
+
+/**
  * Con cuentas (T94, decisión 11) cuatro secciones van sobre los datos reales
  * de Supabase: Fiestas y QR, Socios y emails, Moderación (botellas) y
  * Rankings. El resto sigue siendo la demo de este navegador.
@@ -89,6 +103,7 @@ const REAL_SECTIONS: Section[] = SECTIONS.flatMap((s): Section[] => {
       { id: 'rankings', label: t('admin.real.nav.rankings'), Component: RankingsSection },
     ];
   }
+  if (s.id === 'papelera') return [{ ...s, Component: RealTrash }];
   return [s];
 }).concat({
   // Códigos de respaldo del TOTP (plan 017 T193).

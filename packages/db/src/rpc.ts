@@ -435,6 +435,49 @@ export interface CarnetModerationTrashItem {
   expires_at: string;
 }
 
+/** Un socio en la papelera (admin_list_trash, plan 020 T230). */
+export interface TrashedMember {
+  user_id: string;
+  email: string;
+  /** null: no tenía Carnet. */
+  nickname: string | null;
+  member_number: number | null;
+  reason: string;
+  deleted_at: string;
+  /** Desde entonces la purga diaria la borra de verdad. */
+  expires_at: string;
+}
+
+/** Una fiesta en la papelera (admin_list_trash, plan 020 T230). */
+export interface TrashedEvent {
+  id: string;
+  slug: string;
+  title: string;
+  starts_at: string | null;
+  reason: string | null;
+  deleted_at: string;
+  expires_at: string;
+  /** Alguien la tiene en su historial (compras, sellos, puntos): la purga no la borra, la deja oculta. */
+  kept: boolean;
+}
+
+/** admin_list_trash: los socios y las fiestas borrados, con el plazo en días. */
+export interface TrashList {
+  days: number;
+  members: TrashedMember[];
+  events: TrashedEvent[];
+}
+
+/** purge_expired_trash y admin_purge_expired_trash: cuánto se borró de verdad. */
+export interface TrashPurgeResult {
+  members: number;
+  events: number;
+  /** Fiestas caducadas que se quedan ocultas porque alguien las tiene en su historial. */
+  events_kept: number;
+  /** Lo caducado de la papelera de moderación (T229). */
+  moderation: number;
+}
+
 /** Los rankings que el Admin puede anular y devolver (admin_void_score, admin_restore_score). */
 export type ScoreBoard = 'race' | 'canon' | 'castle';
 

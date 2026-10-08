@@ -38,6 +38,8 @@ export const CLIENT_READ_ONLY_TABLES = [
   // Castillo (T163): escrituras sólo por submit_castle_score.
   'castle_boards',
   'castle_scores',
+  // Papelera de socios (plan 020 T230): sólo las RPC del Admin.
+  'member_trash',
 ] as const;
 
 /** Derivados del libro: sólo los escribe su disparador, ni service_role. */
@@ -76,6 +78,10 @@ export const CLIENT_READ_ONLY_COLUMNS: ReadonlyArray<readonly [string, string]> 
   ['bottles', 'x'],
   ['bottles', 'y'],
   ['events', 'stamp_image_url'],
+  // Plan 020 T230: borrar una fiesta va a la papelera, sólo con su RPC.
+  ['events', 'deleted_at'],
+  ['events', 'deleted_by'],
+  ['events', 'delete_reason'],
 ];
 
 const CLIENT_ROLES = ['anon', 'authenticated'] as const;

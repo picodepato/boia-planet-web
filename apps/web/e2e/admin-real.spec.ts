@@ -32,6 +32,8 @@ import { supabaseTestEnv } from './supabase-env';
  * - Socios y emails: el CSV sólo trae a quien aceptó noticias; marca a un
  *   miembro como artista (su Carnet público lo dice) y borra un duplicado
  *   (sale del ranking y ya no entra con lo suyo);
+ * - Papelera (plan 020 T230): el duplicado borrado está en la papelera y se
+ *   devuelve; una fiesta borrada en «Fiestas y QR» también;
  * - Moderación: retira una botella reportada y oculta y vuelve a mostrar un
  *   Carnet (T191);
  * - Rankings: anula un tiempo y sale del ranking del circuito.
@@ -401,12 +403,44 @@ test('/admin con cuentas: código + TOTP y las cuatro secciones sobre datos real
     // Fuera de los rankings y sin cuenta: su sesión ya no se renueva.
     expect(await inPointsRanking(dup.id)).toBe(false);
     expect(await inRaceRanking(dup.id)).toBe(false);
-    const gone = await serviceClient().auth.admin.getUserById(dup.id);
-    expect(gone.data.user).toBeNull();
+    // A la papelera (plan 020 T230): la cuenta sigue, bloqueada y sin sesiones.
+    const banned = await serviceClient().auth.admin.getUserById(dup.id);
+    expect(new Date(banned.data.user!.banned_until!).getTime()).toBeGreaterThan(Date.now());
     const refresh = await anonClient().auth.refreshSession({ refresh_token: dup.refreshToken });
     expect(refresh.error).not.toBeNull();
     const carnetRow = await serviceClient().from('carnets').select('user_id').eq('user_id', dup.id);
     expect(carnetRow.data).toEqual([]);
+  });
+
+  await test.step('Papelera: devolver el socio y una fiesta borrados', async () => {
+    await goSection(page, 'fiestas');
+    await page.getByTestId('fiestas-buscar').fill(`e2e-t94-${run}`);
+    const row = page.getByTestId(`fiesta-${partyB.slug}`);
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await row.getByTestId(`fiesta-borrar-${partyB.slug}`).click();
+    await row.getByTestId(`fiesta-borrar-motivo-${partyB.slug}`).fill('fiesta de prueba');
+    await expect(row.getByTestId(`fiesta-borrar-confirmar-${partyB.slug}`)).toBeDisabled();
+    await row.getByTestId(`fiesta-borrar-nombre-${partyB.slug}`).fill(partyB.title);
+    await row.getByTestId(`fiesta-borrar-confirmar-${partyB.slug}`).click();
+    await expect(page.getByTestId(`fiesta-${partyB.slug}`)).toHaveCount(0, { timeout: 30_000 });
+    const hidden = await anonClient().from('events').select('id').eq('id', partyB.id);
+    expect(hidden.data).toEqual([]);
+
+    await goSection(page, 'papelera');
+    const socio = page.getByTestId(`papelera-socio-${dup.id}`);
+    await expect(socio).toContainText(dup.nickname, { timeout: 30_000 });
+    await socio.getByTestId(`papelera-socio-devolver-${dup.id}`).click();
+    await expect(page.getByTestId(`papelera-socio-${dup.id}`)).toHaveCount(0, { timeout: 30_000 });
+    const back = await serviceClient().from('carnets').select('user_id').eq('user_id', dup.id);
+    expect(back.data).toEqual([{ user_id: dup.id }]);
+    const fiesta = page.getByTestId(`papelera-fiesta-${partyB.slug}`);
+    await expect(fiesta).toContainText(partyB.title);
+    await fiesta.getByTestId(`papelera-fiesta-devolver-${partyB.slug}`).click();
+    await expect(page.getByTestId(`papelera-fiesta-${partyB.slug}`)).toHaveCount(0, {
+      timeout: 30_000,
+    });
+    const shown = await anonClient().from('events').select('id').eq('id', partyB.id);
+    expect(shown.data).toEqual([{ id: partyB.id }]);
   });
 
   await test.step('Moderación: retirar una botella reportada', async () => {

@@ -1079,6 +1079,9 @@ export type Database = {
           door_only: boolean;
           door_price_cents: number | null;
           created_by: string | null;
+          delete_reason: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
           description: string | null;
           ends_at: string | null;
           excluded_from_home: boolean;
@@ -1116,6 +1119,9 @@ export type Database = {
           door_only?: boolean;
           door_price_cents?: number | null;
           created_by?: string | null;
+          delete_reason?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
           description?: string | null;
           ends_at?: string | null;
           excluded_from_home?: boolean;
@@ -1153,6 +1159,9 @@ export type Database = {
           door_only?: boolean;
           door_price_cents?: number | null;
           created_by?: string | null;
+          delete_reason?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
           description?: string | null;
           ends_at?: string | null;
           excluded_from_home?: boolean;
@@ -1409,6 +1418,42 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      member_trash: {
+        Row: {
+          answers: Json;
+          banned_until_before: string | null;
+          carnet: Json | null;
+          deleted_at: string;
+          deleted_by: string | null;
+          moderation: Json | null;
+          moderation_trash: Json;
+          reason: string;
+          user_id: string;
+        };
+        Insert: {
+          answers?: Json;
+          banned_until_before?: string | null;
+          carnet?: Json | null;
+          deleted_at?: string;
+          deleted_by?: string | null;
+          moderation?: Json | null;
+          moderation_trash?: Json;
+          reason: string;
+          user_id: string;
+        };
+        Update: {
+          answers?: Json;
+          banned_until_before?: string | null;
+          carnet?: Json | null;
+          deleted_at?: string;
+          deleted_by?: string | null;
+          moderation?: Json | null;
+          moderation_trash?: Json;
+          reason?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       point_actions: {
         Row: {
@@ -2056,6 +2101,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_delete_event: {
+        Args: {
+          p_event: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
       admin_delete_member: {
         Args: {
           p_user: string;
@@ -2116,6 +2168,12 @@ export type Database = {
           total: number;
         }[];
       };
+      admin_list_trash: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: Json;
+      };
       admin_list_voided: {
         Args: {
           p_limit?: number;
@@ -2153,9 +2211,27 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_purge_expired_trash: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_restore_bottle: {
         Args: {
           p_bottle: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_restore_event: {
+        Args: {
+          p_id: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_restore_member: {
+        Args: {
+          p_user: string;
           p_reason?: string;
         };
         Returns: Json;
@@ -2411,6 +2487,10 @@ export type Database = {
           p_limit?: number;
           p_offset?: number;
         };
+        Returns: Json;
+      };
+      purge_expired_trash: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       ranking_points: {

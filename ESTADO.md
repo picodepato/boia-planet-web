@@ -4,6 +4,96 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 020 T230: 30-day trash for real data and backups with Storage
+
+Qué existe (decisión 6 del plan 020):
+
+- **Migración `supabase/migrations/20261008200200_member_party_trash.sql`**
+  (escrita, NO aplicada):
+  - **Borrar un socio va a la papelera.** `admin_delete_member` (misma firma)
+    ya no borra la cuenta: guarda su Carnet, respuestas y lo de su moderación
+    en `public.member_trash` (RLS, ningún cliente; service_role lee y cambia
+    para las pruebas), quita la fila de `carnets` (así desaparece de perfil
+    público, rankings, botellas globales, artistas y la puerta sin tocar cada
+    lectura), bloquea la cuenta (`banned_until` a 100 años) y borra sus
+    sesiones. `is_member()` dice que no a una cuenta en la papelera (un token
+    vivo no sirve). Las políticas de `bottles`, `race_times`, `canon_scores`
+    y `castle_scores`, `calitas_list` y `admin_list_members` (y su CSV de
+    noticias) la esconden.
+  - `admin_restore_member` lo devuelve todo como estaba (rechaza con
+    `nickname_taken` / `number_taken` si otra persona se quedó su apodo o su
+    número).
+  - **Borrar una fiesta** (`admin_delete_event`, por slug, con motivo): marca
+    `deleted_at` y archiva (`archived_at`): ni la web, ni el equipo
+    (`events_read_staff`), ni el sello del QR, ni la puerta la ven.
+    `admin_restore_event` le quita las marcas (el archivo sólo si lo puso el
+    borrado).
+  - `admin_list_trash` (socios y fiestas, con su fecha de purga) y
+    `admin_purge_expired_trash`; todo rol admin con aal2, nunca anon.
+  - **Purga** `public.purge_expired_trash()` (sólo service_role): lo que lleva
+    más de 30 días (`private.trash_days()` = el plazo de la papelera de
+    moderación de T229) se borra de verdad: el socio con
+    `private.delete_account`; la fiesta, si nadie la tiene en compras, sellos
+    o el libro (si la tiene, se queda oculta para siempre). También purga la
+    papelera de moderación de T229. Sin pg_cron (plan gratuito): la lanza
+    cada día el flujo de copias, y además cada borrado/devolución y el botón
+    del Admin.
+- **Admin con cuentas:** «Fiestas y QR» tiene «Borrar fiesta» (motivo +
+  escribir el título); «Socios y emails» avisa de que va a la papelera;
+  **Papelera** enseña arriba «Socios y fiestas borrados»
+  (`app/admin/real/papelera.tsx`) con «Devolver» y «Purgar lo caducado», y
+  debajo la papelera local de siempre. Modo local (D-20) sin cambios.
+- **Copias con Storage:** `.github/workflows/supabase-backup.yml` hace
+  checkout, lista `storage.objects` con psql y baja cada archivo de su URL
+  pública con `.github/scripts/storage-backup.py` a `storage/<cubo>/<ruta>`
+  dentro de la misma copia (SHA256SUMS de todo, un solo `.tar.gz.gpg`). La URL
+  del proyecto sale de `SUPABASE_DB_URL` (`postgres.<ref>`); variable
+  opcional `SUPABASE_URL`. Un cubo privado para la copia con error (hoy los 3
+  son públicos). Después del artefacto, paso «Purgar la papelera de 30 días»
+  (avisa y no hace nada si falta la migración). Guía
+  `docs/propuestas/2026-10-08-backups.md` al día (Storage, tamaño de
+  artefactos, purga, restaurar archivos).
+- Pruebas: `packages/db/src/supabase/trash.supabase.ts` (permisos; socio
+  escondido en todas partes y sin entrar; devolver; apodo cogido; fiesta
+  escondida y devuelta; purga a los 31 días con fiesta con historial
+  conservada); `accounts.supabase.ts` ajustada (ahora `trash_member` y cuenta
+  bloqueada); `apps/web/lib/admin/member-party-trash-sql.test.ts` (la
+  migración como texto); `backup-workflow.test.ts` (Storage dentro del
+  cifrado, purga después del artefacto). REQ-ADM-030 y REQ-ARQ-013 en
+  `docs/spec/estado.md`.
+
+Comandos y resultado:
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 263 archivos, 2386 pasan, 1 omitida.
+- `tools/spec/checks.sh` paso a paso (el guard no deja `sh`): check.py,
+  estado.py, test_check.py, test_estado.py, blender/check.py → todos OK.
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0
+  (ruta crítica de la landing 197,3 kB de 200 kB).
+- `python3 -c "import yaml,sys;yaml.safe_load(open(sys.argv[1]))" .github/workflows/supabase-backup.yml`
+  → exit 0 (PyYAML instalado con `pip --user`; `actionlint` no está).
+- `storage-backup.py` probado en local contra un servidor http de prueba
+  (2 archivos, uno con espacio en la ruta) → exit 0.
+- `pnpm test:supabase` no se corrió: la migración no está aplicada.
+
+Pendiente (Hernán):
+
+- Aplicar `20261008200200_member_party_trash.sql` en `boia-planet-dev`
+  después de las 8 de los planes 017–019 y de `20261008200100` (T229), y
+  correr `pnpm test:supabase` (`trash.supabase.ts`, `accounts.supabase.ts`).
+- Nada nuevo que cargar para las copias: con `SUPABASE_DB_URL` y
+  `BACKUP_PASSPHRASE` ya basta (la variable `SUPABASE_URL` sólo si el paso
+  dice que no sale la URL). Lanzar el flujo una vez a mano y ver que el
+  artefacto lleva `storage/`.
+- Vigilar el tamaño de los artefactos (clips de hasta 20 MB) frente a la
+  cuota gratuita de GitHub.
+
+e2e que Hernán debería correr: con `E2E_SUPABASE=1` y la migración
+aplicada, `admin-real.spec.ts` (borrar el duplicado ahora lo deja bloqueado
+en la papelera; paso nuevo «Papelera: devolver el socio y una fiesta
+borrados»); sin Supabase, `admin-papelera.spec.ts` y `admin-endurecido.spec.ts`
+(la papelera local no cambia).
+
 ## 2026-10-08 — plan 020 T232: Las Calitas: island model, 2D art and REQ
 
 Qué existe:

@@ -1,7 +1,10 @@
 # Copia de seguridad diaria de la base de datos de Supabase (plan 019 T223,
 # reunión del 2026-10-08, decisión 17). El plan gratuito no hace copias: este
-# flujo vuelca la base con pg_dump cada noche, la cifra y la deja como
-# artefacto del flujo durante 30 días.
+# flujo vuelca la base con pg_dump cada noche, copia los archivos de Storage
+# (fotos, clips, imágenes de sellos; plan 020 T230), lo cifra todo junto y lo
+# deja como artefacto del flujo durante 30 días. Después purga la papelera de
+# 30 días (socios y fiestas borrados en el Admin, plan 020 T230): el plan
+# gratuito no garantiza pg_cron.
 #
 # Secretos del repo (Settings → Secrets and variables → Actions), los carga
 # Hernán; la guía está en docs/propuestas/2026-10-08-backups.md:
@@ -10,6 +13,10 @@
 #   BACKUP_PASSPHRASE  frase con la que se cifra la copia (GPG, AES-256).
 #                      Sin ella no se sube nada: la copia lleva emails y datos
 #                      de las cuentas.
+# Variable del repo (opcional, pestaña «Variables» del mismo sitio):
+#   SUPABASE_URL       https://<ref>.supabase.co. Sin ella sale del usuario de
+#                      SUPABASE_DB_URL (postgres.<ref>) o de su servidor
+#                      (db.<ref>.supabase.co).
 name: supabase-backup
 
 on:
@@ -32,6 +39,11 @@ jobs:
     env:
       PG_MAJOR: '17'
     steps:
+      # Sólo para .github/scripts/storage-backup.py.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Comprobar los secretos
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -41,7 +53,7 @@ jobs:
           test -n "$SUPABASE_DB_URL" || { echo "::error::Falta el secreto SUPABASE_DB_URL"; exit 1; }
           test -n "$BACKUP_PASSPHRASE" || { echo "::error::Falta el secreto BACKUP_PASSPHRASE"; exit 1; }
 
-      - name: Instalar pg_dump
+      - name: Instalar pg_dump y psql
         shell: bash
         run: |
           set -euo pipefail
@@ -51,10 +63,11 @@ jobs:
           sudo apt-get install -y -qq "postgresql-client-${PG_MAJOR}"
           echo "/usr/lib/postgresql/${PG_MAJOR}/bin" >> "$GITHUB_PATH"
 
-      - name: Volcar y cifrar
+      - name: Volcar, copiar Storage y cifrar
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
         shell: bash
         run: |
           set -euo pipefail
@@ -70,7 +83,15 @@ jobs:
           pg_dump "$SUPABASE_DB_URL" --data-only --no-owner \
             --table=auth.users --table=auth.identities --table=auth.mfa_factors \
             --file "$name/auth.sql"
-          (cd "$name" && sha256sum ./*.sql > SHA256SUMS)
+          # Los archivos de Storage (plan 020 T230): la lista sale de la base
+          # (storage.objects, en storage.json) y cada archivo se baja de su
+          # URL pública a storage/<cubo>/<ruta>.
+          psql "$SUPABASE_DB_URL" --no-psqlrc --tuples-only --no-align --quiet \
+            --variable ON_ERROR_STOP=1 --output "$name/storage.json" --command \
+            "select coalesce(json_agg(json_build_object('bucket', o.bucket_id, 'name', o.name, 'public', b.public, 'size', o.metadata->>'size', 'type', o.metadata->>'mimetype') order by o.bucket_id, o.name), '[]') from storage.objects o join storage.buckets b on b.id = o.bucket_id"
+          python3 .github/scripts/storage-backup.py "$name"
+          (cd "$name" && find . -type f ! -name SHA256SUMS -print0 | sort -z \
+            | xargs -0 --no-run-if-empty sha256sum > SHA256SUMS)
           tar -czf "$name.tar.gz" "$name"
           gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
             --symmetric --cipher-algo AES256 \
@@ -87,3 +108,21 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           compression-level: 0
+
+      # Después de guardar la copia (así la de hoy aún lleva lo que se purga):
+      # lo que lleva más de 30 días en la papelera se borra de verdad (plan 020
+      # T230, migración 20261008200200). Sin la migración, avisa y no hace nada.
+      - name: Purgar la papelera de 30 días
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          has=$(psql "$SUPABASE_DB_URL" --no-psqlrc --tuples-only --no-align --quiet \
+            --command "select to_regprocedure('public.purge_expired_trash()') is not null")
+          if [ "$has" != "t" ]; then
+            echo "::warning::Falta la migración 20261008200200: no se purga nada"
+            exit 0
+          fi
+          psql "$SUPABASE_DB_URL" --no-psqlrc --tuples-only --no-align --quiet \
+            --variable ON_ERROR_STOP=1 --command 'select public.purge_expired_trash()'

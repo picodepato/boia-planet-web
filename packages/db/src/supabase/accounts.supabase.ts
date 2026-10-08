@@ -269,6 +269,9 @@ describe('Admin: rol del equipo y segundo factor (aal2)', () => {
     );
   });
 
+  // Desde el plan 020 T230 (20261008200200) borrar va a la papelera de 30
+  // días: la cuenta sigue, bloqueada y sin Carnet. Lo prueba a fondo
+  // trash.supabase.ts.
   it('borra una cuenta duplicada con motivo; no las del equipo; un socio no borra a nadie', async () => {
     const dup = await ctx.user('duplicada');
     await ok(ctx.service.from('carnets').insert({ user_id: dup.id, nickname: nick('Duplicada') }));
@@ -287,17 +290,17 @@ describe('Admin: rol del equipo y segundo factor (aal2)', () => {
     await ok(
       admin.client.rpc('admin_delete_member', { p_user: dup.id, p_reason: 'Carnet duplicado' }),
     );
-    const gone = await ctx.service.auth.admin.getUserById(dup.id);
-    expect(gone.data.user).toBeNull();
+    const banned = await ctx.service.auth.admin.getUserById(dup.id);
+    expect(new Date(banned.data.user!.banned_until!).getTime()).toBeGreaterThan(Date.now());
     expect(await ok(ctx.anon.from('carnets').select('user_id').eq('user_id', dup.id))).toEqual([]);
     const audit = await ok(
       admin.client
         .from('audit_log')
         .select('action, reason')
         .eq('entity_id', dup.id)
-        .eq('action', 'delete_account'),
+        .eq('action', 'trash_member'),
     );
-    expect(audit).toEqual([{ action: 'delete_account', reason: 'Carnet duplicado' }]);
+    expect(audit).toEqual([{ action: 'trash_member', reason: 'Carnet duplicado' }]);
   });
 });
 

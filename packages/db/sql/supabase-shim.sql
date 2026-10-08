@@ -43,6 +43,8 @@ create table if not exists auth.users (
   raw_app_meta_data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+-- El bloqueo de una cuenta (Supabase Auth; la papelera de socios, plan 020 T230).
+alter table auth.users add column if not exists banned_until timestamptz;
 
 create or replace function auth.jwt() returns jsonb
 language sql stable
