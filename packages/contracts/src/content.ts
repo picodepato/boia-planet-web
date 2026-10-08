@@ -35,20 +35,41 @@ export function localPhotoKey(src: string): string {
   return src.slice(LOCAL_PHOTO_PREFIX.length);
 }
 
-/** Foto de un álbum. El texto alternativo es obligatorio (REQ-COM-031). */
+/**
+ * Dónde está un archivo de la galería: URL (https o del bucket), un archivo
+ * de este navegador (`local-photo:`) o una ruta propia (`/api/art/…`, los
+ * clips de muestra de plan 019 T216).
+ */
+export const mediaRefSchema = z.union([
+  localPhotoRefSchema,
+  z.url().refine((u) => !u.startsWith(LOCAL_PHOTO_PREFIX)),
+  z.string().regex(/^\/(?!\/)\S+$/),
+]);
+
+/** Qué es una pieza de la Galería (plan 019 T216, decisión 8): foto o clip de vídeo mudo. */
+export const MEDIA_KINDS = ['image', 'video'] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
+/**
+ * Pieza de un álbum: una foto o un clip corto (mp4, siempre sin sonido). El
+ * texto alternativo es obligatorio (REQ-COM-031). Un clip lleva su póster
+ * (un fotograma), que es lo que se ve mientras no se reproduce.
+ */
 export const photoSchema = z.object({
   id: z.string().min(1),
   albumId: z.string().min(1),
   alt: z.string().min(1),
-  /** La imagen: URL (https o del bucket) o un archivo de este navegador (`local-photo:`). */
-  src: z
-    .union([localPhotoRefSchema, z.url().refine((u) => !u.startsWith(LOCAL_PHOTO_PREFIX))])
-    .optional(),
+  /** Foto (sin decir, foto) o clip. */
+  kind: z.enum(MEDIA_KINDS).optional(),
+  /** La imagen o el clip. */
+  src: mediaRefSchema.optional(),
+  /** El póster de un clip (una imagen). */
+  poster: mediaRefSchema.optional(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   /**
    * Selección de Álvaro (D-23, respuesta 6): la home enseña sólo estas; el
-   * resto se ve en «Fotos y eventos» (`/fotos`, REQ-COM-031).
+   * resto se ve en la Galería (`/galeria`, REQ-COM-031).
    */
   selection: z.boolean().default(false),
 });

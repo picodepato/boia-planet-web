@@ -593,7 +593,7 @@ export const esZonas = {
   'hud.minimap.left': 'Quedan {n} sitios por descubrir.',
   'hud.minimap.pick': 'Toca un sitio para que la brújula lo señale.',
   'photos.home.selection': 'Nuestra selección',
-  'photos.page.title': 'Fotos y eventos',
+  'photos.page.title': 'Galería',
   'photos.filter.all': 'Todas',
   'photos.backToIsland': 'Volver a la isla',
   'legal.sampleBanner':

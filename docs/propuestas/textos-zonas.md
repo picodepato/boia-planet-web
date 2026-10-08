@@ -127,7 +127,7 @@ toca y nunca corporativa. Español de España y de tú. Los tres verbos mandan:
 | `nav.carnet` | Mi Carnet | Cabecera (REQ-ENT-029) |
 | `nav.sound.on` | Sonido activado | |
 | `nav.sound.off` | Sonido apagado | |
-| `nav.photos` | Fotos y eventos | = es.ts (antes «Fotos y vídeos») |
+| `nav.photos` | Galería | Plan 019 T216, decisión 8 (antes «Fotos y eventos») |
 
 ## 3 · Explorar
 
@@ -847,11 +847,11 @@ punto 7 y respuesta 6 de Álvaro; REQ-COM-031).
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `photos.heading` | Fotos | = es.ts (antes «Fotos y vídeos») |
+| `photos.heading` | Galería | Plan 019 T216, decisión 8 (antes «Fotos») |
 | `photos.home.selection` | Nuestra selección | Home: sólo fotos «selección» |
-| `photos.home.all` | Ver todas | Lleva a `/fotos` |
-| `photos.page.title` | Fotos y eventos | |
-| `photos.page.lead` | Todas las fotos de BOIA, por isla y por evento. Búscate. | |
+| `photos.home.all` | Ver todas | Lleva a `/galeria` |
+| `photos.page.title` | Galería | Antes «Fotos y eventos» |
+| `photos.page.lead` | Fotos y vídeos de BOIA, por isla y por evento. Búscate. | |
 | `photos.filter.all` | Todas | |
 | `photos.filter.island` | Por isla | |
 | `photos.filter.event` | Por evento | |

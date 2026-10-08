@@ -9,7 +9,9 @@
  *   caliente; three.js no lo necesita en producción.
  * - `img-src https:`: el Admin deja poner fotos por URL (sin almacenamiento
  *   hasta Supabase); `data:`/`blob:` para el Carnet y las texturas de los GLB.
- * - `media-src data: blob:`: la música que sube el Admin vive en el navegador.
+ * - `media-src data: blob:`: la música y los clips de la Galería que sube el
+ *   Admin en modo local viven en el navegador; con cuentas, los clips están
+ *   en Supabase Storage (su https, plan 019 T216).
  * - `connect-src`: el propio sitio y PostHog (apagado si no hay clave); con
  *   cuentas (plan 008), también la API de Supabase (https y wss, la sesión
  *   y las RPC). Sin Supabase no se añade nada.
@@ -31,7 +33,7 @@ export function securityHeaders({
     `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
-    "media-src 'self' data: blob:",
+    `media-src 'self' data: blob:${supabaseHttps(supabaseUrl)}`,
     "font-src 'self' data:",
     `connect-src 'self' data: blob: ${analyticsHost}${supabase}${dev ? ' ws: wss:' : ''}`,
     "worker-src 'self' blob:",
@@ -69,6 +71,11 @@ function supabaseOrigins(url: string | null | undefined): string {
   }
 }
 
+/** « https://x.supabase.co» (el origen, sin websocket) o '' si no hay Supabase. */
+function supabaseHttps(url: string | null | undefined): string {
+  return supabaseOrigins(url).split(' ').slice(0, 2).join(' ');
+}
+
 /** Rutas que cambiaron de nombre: la vieja lleva a la nueva. */
 export const RENAMED_ROUTES = [
   // «Condiciones» pasó a ser el aviso legal (D-23, O14; textos-zonas.md zona 32).
@@ -78,4 +85,7 @@ export const RENAMED_ROUTES = [
   // abriendo el mar en su sitio. Temporal (307): el navegador no la guarda.
   { source: '/juego', destination: '/mar', permanent: false },
   { source: '/juego/:path*', destination: '/mar', permanent: false },
+  // «Fotos y eventos» pasó a ser la Galería (plan 019 T216, decisión 8). El
+  // ancla (`#<isla>`) la conserva el navegador. Temporal (307), por si vuelve.
+  { source: '/fotos', destination: '/galeria', permanent: false },
 ];

@@ -263,10 +263,10 @@ test('la ficha de una isla: recuerdos y «Ver fotos de la isla»; el puerto, sin
   }
   const photos = sheet.getByTestId('ver-fotos-isla');
   await expect(photos).toHaveText('Ver fotos de la isla');
-  await expect(photos).toHaveAttribute('href', `/fotos#${infoIsland.identity.id}`);
+  await expect(photos).toHaveAttribute('href', `/galeria#${infoIsland.identity.id}`);
   await snap(page, 'p004-t51-isla.png');
   await photos.click();
-  await expect(page).toHaveURL(new RegExp(`/fotos#${infoIsland.identity.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/galeria#${infoIsland.identity.id}$`));
   expect(errors).toEqual([]);
 });
 

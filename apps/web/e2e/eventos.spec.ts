@@ -11,10 +11,10 @@ import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../lib/landing/sample-cont
 import { marSheet, openMar } from './mar-helpers';
 
 /**
- * Ficha de evento y «Fotos y eventos» (T42): `/eventos/<slug>` y `/fotos`
+ * Ficha de evento y la Galería (T42, T216): `/eventos/<slug>` y `/galeria`
  * se abren directas, sin la entrada (REQ-ENT-011), y funcionan sin
  * JavaScript; la home enseña sólo la selección con «Ver todas»; y «Ver fotos
- * de la isla», desde la ficha de la isla en el mar 3D, abre `/fotos#<isla>`.
+ * de la isla», desde la ficha de la isla en el mar 3D, abre `/galeria#<isla>`.
  * Corre en móvil 360×640 y en escritorio.
  */
 
@@ -58,19 +58,22 @@ test('la ficha de BOIA Halloween: cartel próximamente, su isla y su estado', as
   );
 });
 
-test('la home enseña sólo la selección de fotos y «Ver todas» lleva a /fotos', async ({ page }) => {
+test('la home enseña sólo la selección de fotos y «Ver todas» lleva a la Galería', async ({
+  page,
+}) => {
   await page.goto('/?intro=0');
   await expect(page.locator('main')).toHaveAttribute('data-contenido', 'repositorio');
   const grid = page.locator('#fotos .photo-grid > li');
   await expect(grid).toHaveCount(Math.min(selection.length, 6));
   await page.getByTestId('ver-fotos').click();
-  await expect(page).toHaveURL(/\/fotos$/);
+  // El enlace de la home es /fotos, que lleva a /galeria (T216).
+  await expect(page).toHaveURL(/\/galeria$/);
   await noIntro(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(FOTOS_COPY.pageTitle);
-  await expect(page.locator('.gallery .photo-grid > li')).toHaveCount(SAMPLE_CONTENT.photos.length);
+  await expect(page.locator('.galeria [data-pieza]')).toHaveCount(SAMPLE_CONTENT.photos.length);
 });
 
-test('«Ver fotos de la isla» abre /fotos en la galería de esa isla', async ({ page }) => {
+test('«Ver fotos de la isla» abre la Galería en el grupo de esa isla', async ({ page }) => {
   await openMar(page, `?ir=${island.id}`);
   await page
     .getByTestId('mar-entradas-saltar')
@@ -84,7 +87,7 @@ test('«Ver fotos de la isla» abre /fotos en la galería de esa isla', async ({
   const link = panel.getByTestId('ver-fotos-isla');
   await expect(link).toHaveAttribute('href', photosHref(island.id));
   await link.click();
-  await expect(page).toHaveURL(new RegExp(`/fotos#${island.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/galeria#${island.id}$`));
   await noIntro(page);
   const gallery = page.getByTestId(`galeria-${island.id}`);
   await expect(gallery).toBeInViewport();
@@ -93,7 +96,8 @@ test('«Ver fotos de la isla» abre /fotos en la galería de esa isla', async ({
     const e = SAMPLE_CONTENT.events.find((x) => x.id === a.eventId);
     return e ? galleryAnchor(e) === island.id : a.islandId === island.id;
   });
-  for (const a of albums) await expect(gallery.locator(`[data-album="${a.id}"]`)).toBeVisible();
+  for (const a of albums)
+    await expect(gallery.locator(`[data-album="${a.id}"]`).first()).toBeVisible();
 });
 
 test.describe('sin JavaScript', () => {
@@ -120,7 +124,10 @@ test.describe('sin JavaScript', () => {
     await ficha.getByTestId(`comprar-${halloween.id}`).click();
     const message = ficha.getByTestId('box-office-message');
     await expect(message).toBeVisible();
-    await expect(message.getByTestId('box-office-carnet')).toHaveAttribute('href', CARNET_CREATE_HREF);
+    await expect(message.getByTestId('box-office-carnet')).toHaveAttribute(
+      'href',
+      CARNET_CREATE_HREF,
+    );
     await expect(ficha.locator(`a[href="${halloween.ticketUrl}"]`)).toHaveCount(0);
   });
 
@@ -133,10 +140,10 @@ test.describe('sin JavaScript', () => {
     await expect(ficha.locator('[data-testid^="comprar-"]')).toHaveCount(0);
   });
 
-  test('«Fotos y eventos» enseña las galerías y su ancla', async ({ page }) => {
+  test('la Galería enseña el collage y su ancla', async ({ page }) => {
     await page.goto(photosHref(island.id));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(FOTOS_COPY.pageTitle);
     await expect(page.getByTestId(`galeria-${island.id}`)).toBeInViewport();
-    await expect(page.locator('.gallery [role="img"]').first()).toBeVisible();
+    await expect(page.locator('.galeria [role="img"]').first()).toBeVisible();
   });
 });

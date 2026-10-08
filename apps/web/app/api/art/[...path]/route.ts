@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { byteRange } from '../../../../lib/byte-range';
 
 /**
  * Sirve `art/` de la raíz del repo, para que el motor lea los manifiestos y
@@ -18,6 +19,8 @@ const TYPES: Record<string, string> = {
   '.webp': 'image/webp',
   // Barcos del mar 3D (tools/blender/export_barcos_glb.py).
   '.glb': 'model/gltf-binary',
+  // Clips de muestra de la Galería (plan 019 T216, tools/galeria/clips.mjs).
+  '.mp4': 'video/mp4',
 };
 
 export async function GET(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
@@ -35,7 +38,25 @@ export async function GET(req: Request, ctx: { params: Promise<{ path: string[] 
     // con la caché vacía) y la función no se invoca por cada sprite.
     const cache =
       process.env.NODE_ENV === 'production' ? 'public, max-age=3600, s-maxage=86400' : 'no-store';
-    return new Response(body, { headers: { 'content-type': type, 'cache-control': cache } });
+    const headers: Record<string, string> = { 'content-type': type, 'cache-control': cache };
+    if (type.startsWith('video/')) {
+      headers['accept-ranges'] = 'bytes';
+      const range = byteRange(req.headers.get('range'), body.length);
+      if (range === 'fuera') {
+        return new Response(null, {
+          status: 416,
+          headers: { ...headers, 'content-range': `bytes */${body.length}` },
+        });
+      }
+      if (range) {
+        const [start, end] = range;
+        return new Response(body.subarray(start, end + 1), {
+          status: 206,
+          headers: { ...headers, 'content-range': `bytes ${start}-${end}/${body.length}` },
+        });
+      }
+    }
+    return new Response(body, { headers });
   } catch {
     const optional = new URL(req.url).searchParams.has('optional');
     return new Response(null, { status: optional ? 204 : 404 });

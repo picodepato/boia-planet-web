@@ -126,7 +126,7 @@ export const esMar = {
   'mar.sheet.puertoDeFotosMuestra': '📷 Isla de Benidorm · fotos · muestra',
   'mar.sheet.todasLasFotosDe': 'Todas las fotos de BOIA se revelan aquí.',
   'mar.sheet.galeria': 'Galería',
-  'mar.sheet.verFotosYEventos': 'Ver «Fotos y eventos»',
+  'mar.sheet.verFotosYEventos': 'Ver la Galería',
   'mar.sheet.tiendaMuestra': '🛍️ Tienda · muestra',
   'mar.sheet.camisetasToteBagsY': 'Camisetas, tote bags y pegatinas.',
   'mar.sheet.provisionalMuestra': '💬 Provisional · muestra',
@@ -172,7 +172,7 @@ export const esMar = {
   'mar.controles.sensibilidad': 'La sensibilidad del giro se cambia en ⚙️ Ajustes.',
   // HUD v2 (T65): enlaces a la web arriba y el menú del juego a la izquierda. muestra
   'mar.hud.enlaces': 'BOIA en la web',
-  'mar.hud.fotos': 'Fotos',
+  'mar.hud.fotos': 'Galería',
   'mar.hud.contacto': 'Contacto',
   'mar.hud.artistas': 'Artistas',
   'mar.hud.carnet': 'Carnet',

@@ -1,5 +1,5 @@
 /*
- * Ficha de evento (/eventos/<slug>) y «Fotos y eventos» (/fotos), T42. Hoja
+ * Ficha de evento (/eventos/<slug>) y la Galería (/galeria), T42 y T216. Hoja
  * aparte de landing.css: sólo la cargan esas dos páginas, no la ruta crítica
  * de la landing.
  */
@@ -153,47 +153,27 @@
   padding: 40px 0;
 }
 
-.gallery-nav {
-  margin: 0 0 24px;
-}
-
-.gallery-nav .chip {
-  display: inline-block;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.gallery {
-  padding: 24px 0;
-  border-top: 1px solid var(--line);
-}
-
-.gallery:target .gallery__title {
-  color: var(--orange-text);
-}
-
-.gallery__title {
-  margin: 0 0 4px;
+/* La Galería (plan 019 T216): título grande y el collage de lado a lado. */
+.galeria__title {
+  margin: 0 0 8px;
   font-family: var(--font-title);
   font-weight: 400;
-  font-size: clamp(1.25rem, 4.5vw, 1.75rem);
+  font-size: clamp(2.75rem, 13vw, 6.5rem);
+  line-height: 0.9;
+  color: var(--boia-orange-bright);
+  text-shadow: 4px 4px 0 var(--boia-black);
 }
 
-.gallery__meta,
-.gallery__empty {
-  margin: 0 0 12px;
-  color: var(--ink-soft);
+.galeria {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.gallery__album {
-  margin: 16px 0 0;
+/* Los grupos se encadenan: el siguiente se monta un poco sobre el anterior. */
+.galeria__grupo + .galeria__grupo {
+  margin-top: -14px;
 }
 
-.gallery__album-title {
-  margin: 0 0 4px;
-  font-size: 1rem;
-}
-
-.gallery__album-title a {
-  color: var(--orange-text);
+.galeria__grupo:target {
+  scroll-margin-top: 16px;
 }

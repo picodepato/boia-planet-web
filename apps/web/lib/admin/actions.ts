@@ -105,7 +105,11 @@ const DISCOUNT_CODE = /^[A-Z0-9][A-Z0-9-]{2,23}$/;
 /** Una foto ya subida (su archivo guardado), para `addIslandPhotos`. */
 export interface UploadedPhoto {
   id: string;
+  /** Foto o clip (plan 019 T216); sin decir, foto. */
+  kind?: 'image' | 'video';
   src: string;
+  /** El póster de un clip. */
+  poster?: string;
   alt: string;
   width: number;
   height: number;

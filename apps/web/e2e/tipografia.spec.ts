@@ -147,7 +147,7 @@ test('/mar: el título de la hoja con la display, sus botones y su texto con los
 
 const PAGES = [
   { name: 'evento', url: eventHref(SAMPLE_CONTENT.events[0]!.slug) },
-  { name: 'fotos', url: '/fotos' },
+  { name: 'fotos', url: '/galeria' },
   { name: 'artistas', url: '/artistas' },
   { name: 'legal', url: '/legal/privacidad' },
   { name: 'carnet', url: '/carnet' },

@@ -1,21 +1,19 @@
 import { type Photo, isLocalPhotoRef } from '@boia/contracts';
 import { t } from '../../../lib/i18n/web';
-import { PhotoImage } from '../../../lib/photo-image';
+import { PhotoImage, stillOf } from '../../../lib/photo-image';
 
-/** Una foto con su texto alternativo, o su marcador de muestra si aún no hay imagen. */
+/**
+ * Una foto con su texto alternativo, o su marcador de muestra si aún no hay
+ * imagen. De un clip (T216), su póster: aquí no se reproduce (la Galería sí).
+ */
 export function PhotoTile({ photo, index }: { photo: Photo; index: number }) {
+  const still = stillOf(photo);
   // Subida en el Admin de la demo: el archivo está en este navegador (T189).
-  if (isLocalPhotoRef(photo.src)) return <PhotoImage photo={photo} />;
-  if (photo.src) {
+  if (isLocalPhotoRef(still)) return <PhotoImage photo={photo} />;
+  if (still) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- fotos del Admin, dominio aún sin fijar
-      <img
-        src={photo.src}
-        alt={photo.alt}
-        width={photo.width}
-        height={photo.height}
-        loading="lazy"
-      />
+      <img src={still} alt={photo.alt} width={photo.width} height={photo.height} loading="lazy" />
     );
   }
   return (

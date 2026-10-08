@@ -10,7 +10,7 @@ export const esAdmin = {
   'admin.adminApp.mundo': 'Mundo',
   'admin.adminApp.destinoDeLaFiestera': 'Destino de la Fiestera',
   'admin.adminApp.artistas': 'Artistas',
-  'admin.adminApp.fotosYVideos': 'Fotos y vídeos',
+  'admin.adminApp.fotosYVideos': 'Galería',
   'admin.adminApp.logrosYCosmeticos': 'Logros y cosméticos',
   'admin.adminApp.moderacion': 'Moderación',
   'admin.adminApp.textosYMusica': 'Textos y música',
@@ -405,7 +405,7 @@ export const esAdmin = {
   'admin.photos.vaciaMarcadorDeMuestra': 'Vacía: marcador de muestra.',
   'admin.photos.album': 'Álbum',
   'admin.photos.guardar': 'Guardar',
-  'admin.photos.fotosYVideos': 'Fotos y vídeos',
+  'admin.photos.fotosYVideos': 'Galería: fotos y vídeos',
   'admin.photos.nuevaFoto': 'nueva foto',
   'admin.photos.fotoAnadida': 'Foto añadida.',
   'admin.photos.nuevaFoto2': 'Nueva foto',
@@ -416,17 +416,17 @@ export const esAdmin = {
   'admin.photos.titulo': 'Título',
   'admin.photos.crear': 'Crear',
   'admin.photos.albumes': 'Álbumes: {v1}',
-  'admin.photos.upload.title': 'Fotos de una isla',
+  'admin.photos.upload.title': 'Fotos y clips de una isla',
   'admin.photos.upload.lead':
-    'Elige la isla y su evento, sube las fotos y márcalo como pasado: la isla lo enseña como recuerdo con su galería. Se publica al momento.',
+    'Elige la isla y su evento, sube las fotos y los clips y márcalo como pasado: la isla lo enseña como recuerdo y todo sale en la Galería. Se publica al momento.',
   'admin.photos.upload.leadLocal': 'Las fotos se quedan en este navegador (versión de prueba).',
   'admin.photos.upload.leadShared': 'Las fotos se suben a Supabase y las ve todo el mundo.',
   'admin.photos.upload.island': 'Isla',
   'admin.photos.upload.event': 'Evento',
   'admin.photos.upload.noEvents': 'Esta isla no tiene eventos publicados.',
-  'admin.photos.upload.files': 'Fotos',
+  'admin.photos.upload.files': 'Fotos y clips',
   'admin.photos.upload.filesHint':
-    'PNG, JPEG o WebP, hasta 15 MB. Se guardan en WebP, 1600 px de lado largo como mucho.',
+    'Fotos: PNG, JPEG o WebP, hasta 15 MB (se guardan en WebP, 1600 px de lado largo como mucho). Clips: MP4 de hasta 20 MB y 30 segundos; en la web se ven siempre sin sonido.',
   'admin.photos.upload.alt': 'Texto alternativo',
   'admin.photos.upload.altHint': 'Obligatorio (REQ-COM-031). Con varias fotos se numeran.',
   'admin.photos.upload.markPast': 'Marcar el evento como pasado',
@@ -444,6 +444,12 @@ export const esAdmin = {
   'admin.photos.upload.problem.type': '«{file}» no es una imagen PNG, JPEG o WebP.',
   'admin.photos.upload.problem.size': '«{file}» pesa más de 15 MB.',
   'admin.photos.upload.problem.small': '«{file}» es demasiado pequeña (menos de 200 px de lado).',
+  'admin.photos.upload.problem.clipSize':
+    '«{file}» pesa más de 20 MB: recórtalo o bájale la calidad.',
+  'admin.photos.upload.problem.long': '«{file}» dura más de 30 segundos: recórtalo.',
+  'admin.photos.upload.problem.clip':
+    '«{file}» no se puede abrir como vídeo en este navegador (o pasa de 4K). Prueba con otro MP4.',
+  'admin.photos.clip': 'Clip de vídeo (sin sonido)',
   'admin.photos.upload.preview': 'Vista previa',
   'admin.texts.portada': 'Portada',
   'admin.texts.cabecera': 'Cabecera',
@@ -569,6 +575,6 @@ export const esAdmin = {
   'admin.mission.aQueIslaLleva':
     'A qué isla lleva cada mundo a la Boia Fiestera en las partidas nuevas. Las partidas ya terminadas no cambian nunca; las empezadas sólo si las migras.',
   'admin.photos.losVideosYLa':
-    'Los vídeos y la subida de archivos llegan con el almacenamiento de Supabase; aquí, fotos por URL.',
+    'Todo lo de aquí sale en la Galería, en collage: las fotos y los clips cortos (siempre sin sonido) se suben arriba, por isla y evento; abajo, fotos por URL.',
   'admin.texts.mp3OggOWav': 'mp3, ogg o wav; hasta ~1 MB en la demo.',
 } as const;

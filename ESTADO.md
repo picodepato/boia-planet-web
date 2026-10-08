@@ -4,6 +4,36 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T216: Galería: collage of photos and clips with open/close animations
+
+Qué existe:
+
+- **«Fotos» pasa a ser «Galería»** en todo lo visible: menú (`nav.photos`), título del bloque de la home (`photos.heading`, sólo la clave), página, enlaces del mar 3D («Ver la Galería»), HUD, Admin. Ruta nueva `/galeria`; `/fotos` lleva a ella (307, `RENAMED_ROUTES`; el ancla `#<isla>` se conserva). `PHOTOS_PATH` = `/galeria`. El enlace «Ver todas» de la home (`PHOTOS_PAGE` en `blocks.tsx`, de T214) sigue en `/fotos` y redirige.
+- **Collage reutilizable** `app/(landing)/components/media-collage.tsx` + `collage.css`: `MediaCollage({ items: Photo[], label?, testId? })`, para T215 (fotos del evento). Colocación fija y pura en `lib/landing/collage-layout.ts` (horizonte en 6 columnas en móvil y 12 desde 720 px de collage; desplazamiento y giro fijos por id → piezas algo superpuestas; el servidor lo pinta igual que el navegador, también sin JavaScript). Sin textos: cada pieza es un botón con el texto alternativo para lectores de pantalla. Fotos como copias impresas (borde blanco, sombra dura de T213, esquinas rectas). Las fotos de muestra sin imagen son bloques de color de la marca con trama de píxel.
+- **Abrir**: la pieza crece desde su sitio al centro sobre fondo oscuro (FLIP con Web Animations, 460 ms); foco al botón de cerrar, Esc y clic en el fondo cierran, la página no se desplaza debajo. **Cerrar**: vuelve a su sitio (420 ms), baja al fondo del montón y las piezas que la tocan se apartan 10 px (tope 28 px) con un rebote, así se ven otras fotos (`nudgeAfterClose`). Con «reducir movimiento», sin animaciones.
+- **Clips**: `photoSchema` gana `kind: 'image' | 'video'` (opcional; sin él, foto) y `poster`; `src`/`poster` aceptan también rutas propias (`/api/art/…`). En el collage un clip enseña su póster y sólo monta el `<video>` (mudo, en bucle, sin controles) mientras media pieza está en pantalla; nunca con «reducir movimiento». Fuera de la Galería (home, ficha de evento, mar 3D, Admin) se ve su póster.
+- **3 clips de muestra** (`muestra`) hechos con arte del proyecto: `art/galeria/{boia-baila,puerto-dia-noche,barco-fiesta}.mp4` + póster `.webp` (226–284 kB cada uno), generados con `node tools/galeria/clips.mjs` (canvas + MediaRecorder H.264 en el Chromium de Playwright). En `SAMPLE_PHOTOS` (álbumes `album-muestra` y `album-cala`, `selection: false`). `/api/art` sirve `.mp4` con `Range`/206 (`lib/byte-range.ts`).
+- **Admin, subir clips**: «Fotos y clips de una isla» acepta PNG/JPEG/WebP y MP4 (por los bytes; un .mov de QuickTime no vale), clip ≤ 20 MB, ≤ 30 s, lado corto ≥ 200 px, lado largo ≤ 3840 px; el clip se guarda tal cual y su póster es un fotograma (0,5 s) copiado en WebP. Modo local: los dos archivos en IndexedDB. Con cuentas: el clip al bucket nuevo `event-clips`, el póster a `event-photos`, la fila con `kind='video'` y `poster_url`. La lista del Admin marca los clips.
+- **Migración** `supabase/migrations/20261008100400_gallery_clips.sql`: columnas `kind` y `poster_url` en `event_photos`, URL del bucket que toca según el tipo, póster obligatorio en clips, tope de tamaño 3840 px para clips, bucket público `event-clips` (mp4, 20 MB) con escritura sólo del equipo. `database.types.ts` editado a mano con las dos columnas (sin PostgreSQL local para `pnpm db:types`). La web lee `event_photos` con `select('*')`, así funciona antes y después de aplicarla.
+- CSP: `media-src` añade el origen https de Supabase (clips del bucket); sin Supabase, igual que antes.
+- `docs/spec/estado.md`: REQ-COM-031 y REQ-ADM-019 citan las pruebas nuevas; REQ-COM-032 pasa a HECHO (la home no descarga vídeos; la Galería sólo pósteres; e2e ejecutado).
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 241 archivos, 2247 pasan, 1 omitida.
+- `sh tools/spec/checks.sh` → exit 0 (294 REQ; HECHO 166).
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0, ruta crítica de la landing 192,0 kB ≤ 200 kB.
+- `E2E_PORT=4791 pnpm e2e galeria.spec.ts --workers=1` → 4 pasan (móvil y escritorio: collage, abrir/cerrar/empujar, clip mudo; subida de un clip en el Admin local que sale en el collage).
+- `E2E_PORT=4791 pnpm e2e eventos.spec.ts admin-fotos.spec.ts videos-perezosos.spec.ts tipografia.spec.ts ciclo-evento.spec.ts mar-paridad.spec.ts --workers=1` → 52 pasan, 6 omitidas (las de siempre).
+- Capturas y fotogramas (`T216_SHOTS=…`): `C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T216\` (móvil 390×844 y escritorio: collage, clip, abriendo, abierta, cerrando, empujadas, clip abierto, Admin, clip subido).
+
+Pendiente:
+
+- **Hernán**: aplicar `20261008100400_gallery_clips.sql` en `boia-planet-dev` y correr `pnpm test:supabase` (nuevo `packages/db/src/supabase/gallery-clips.supabase.ts`); luego `pnpm db:types:dev` para regenerar los tipos.
+- T214: si quiere, que el «Ver todas» de la home apunte a `PHOTOS_PATH` (`/galeria`) en vez de `/fotos` (hoy redirige).
+- T215: usar `MediaCollage` para las fotos del evento (`event-page.tsx` aún usa `PhotoGrid`).
+- Fotos y clips reales: con el visto bueno de Álvaro (hoy todo `muestra`; con pocas piezas por isla el collage deja huecos).
+
 ## 2026-10-08 — plan 019 T213: Three video-game fonts, square corners and new buttons across the site
 
 Decisions 2 and 3 of the meeting. Hernán chose combination 4 of the samples

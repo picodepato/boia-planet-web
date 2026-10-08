@@ -8,6 +8,7 @@
  * aquí: es dato. Todo el copy es `muestra` hasta que Álvaro lo apruebe
  * (docs/spec/10-filosofia.md, §31.2).
  */
+import { esGaleria } from './es-galeria';
 import { esLibWeb } from './es-lib-web';
 import { esZonasWeb } from './es-zonas-web';
 
@@ -26,7 +27,7 @@ const base = {
   'nav.artists': 'Artistas',
   'nav.philosophy': 'Filosofía',
   'nav.store': 'Tienda',
-  'nav.photos': 'Fotos y vídeos',
+  'nav.photos': 'Galería',
   'nav.skipToContent': 'Saltar al contenido',
 
   'hero.brand': 'BOIA.PLANET',
@@ -86,7 +87,7 @@ const base = {
 
   'philosophy.heading': 'Filosofía',
 
-  'photos.heading': 'Fotos y vídeos',
+  'photos.heading': 'Galería',
   'photos.placeholder': 'Foto de muestra',
   'photos.display': 'Lo que pasó la última vez',
 
@@ -128,7 +129,7 @@ const base = {
 } as const;
 
 /** La web pública: sus claves, las de textos-zonas.md que usa y las de lib/landing y lib/ticketing. */
-export const esWeb = { ...base, ...esZonasWeb, ...esLibWeb } as const;
+export const esWeb = { ...base, ...esZonasWeb, ...esLibWeb, ...esGaleria } as const;
 
 export type WebKey = keyof typeof esWeb;
 

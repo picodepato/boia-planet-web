@@ -152,7 +152,7 @@ test('ciclo de un evento: publicar, agotar, finalizar, otro en la isla, posponer
   panel = await sailToIsland(page);
   await expect(panel.getByRole('heading', { name: B.name })).toBeVisible();
   await expect(panel.getByTestId('panel-recuerdos')).toContainText(A.name);
-  await expect(panel.getByTestId('ver-fotos-isla')).toHaveAttribute('href', `/fotos#${island.id}`);
+  await expect(panel.getByTestId('ver-fotos-isla')).toHaveAttribute('href', `/galeria#${island.id}`);
 
   // 5. Posponerlo y cancelarlo: aviso, sin compra.
   for (const state of ['postponed', 'cancelled'] as const) {

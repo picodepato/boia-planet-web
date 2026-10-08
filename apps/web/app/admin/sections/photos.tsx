@@ -10,7 +10,7 @@ import {
   saveSharedIslandPhotos,
 } from '../../../lib/admin/island-photos';
 import { putLocalPhoto } from '../../../lib/admin/photo-store';
-import { PHOTO_UPLOAD_LIMITS } from '../../../lib/admin/photo-upload';
+import { MEDIA_UPLOAD_ACCEPT } from '../../../lib/admin/photo-upload';
 import { eventIslands } from '../../../lib/admin/world';
 import { PhotoImage } from '../../../lib/photo-image';
 import { useAdminSupabase, useMaybeRealAdmin } from '../real/common';
@@ -43,8 +43,9 @@ function PhotoRow({
   const [albumId, setAlbumId] = useState(photo.albumId);
   const { status, busy, run } = useRun();
   return (
-    <li className="admin-card" data-testid={`foto-${photo.id}`}>
+    <li className="admin-card" data-testid={`foto-${photo.id}`} data-kind={photo.kind ?? 'image'}>
       {photo.src ? <PhotoImage photo={photo} className="admin-photo-thumb" /> : null}
+      {photo.kind === 'video' ? <p className="admin-meta">{t('admin.photos.clip')}</p> : null}
       <div className="admin-grid">
         <Field
           label={t('admin.photos.textoAlternativo')}
@@ -230,7 +231,7 @@ function IslandPhotoForm({
             key={inputKey}
             type="file"
             multiple
-            accept={PHOTO_UPLOAD_LIMITS.types.join(',')}
+            accept={MEDIA_UPLOAD_ACCEPT}
             data-testid="fotos-isla-archivos"
             onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
           />
@@ -267,7 +268,7 @@ function IslandPhotoForm({
   );
 }
 
-/** Fotos y vídeos (REQ-ADM-019): álbumes y fotos de la home y del Puerto de Fotos. */
+/** Galería (REQ-ADM-019; plan 019 T216): álbumes, fotos y clips de la home, las islas y la Galería. */
 export function PhotosSection({ ctx }: { ctx: AdminContext }) {
   const photos = useRead(ctx, (r) => r.content.list('photos'));
   const albums = useRead(ctx, (r) => r.content.list('albums'));

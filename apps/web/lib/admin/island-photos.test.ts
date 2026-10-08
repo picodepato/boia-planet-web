@@ -13,7 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createAdminActions } from './actions';
 import {
   PhotoUploadError,
-  type PreparedPhoto,
+  type PreparedImage,
   photoId,
   preparePhotos,
   saveLocalIslandPhotos,
@@ -156,6 +156,7 @@ describe('la copia: WebP, lado largo como mucho 1600 px, sin recortar ni agranda
     expect(new Set(out.map((p) => p.id)).size).toBe(2);
     for (const p of out) {
       expect(p.id).toMatch(/^foto-halloween-2026-[A-Za-z0-9_-]+$/);
+      if (p.kind === 'video') throw new Error('un PNG no es un clip');
       expect(eventPhotoPath('halloween-2026', p.stamp, p.type)).toMatch(
         /^halloween-2026\/[a-z0-9]+\.webp$/,
       );
@@ -186,7 +187,7 @@ async function islandWithEvent(repo: ReturnType<typeof setup>['repo']) {
   return { event, islandId: event.islandId };
 }
 
-const prepared = (event: BoiaEvent, n: number): PreparedPhoto[] =>
+const prepared = (event: BoiaEvent, n: number): PreparedImage[] =>
   Array.from({ length: n }, (_, i) => ({
     id: photoId(event.id, `t${i}`),
     stamp: `t${i}`,

@@ -852,6 +852,8 @@ export type Database = {
           created_by: string | null;
           height: number;
           id: string;
+          kind: string;
+          poster_url: string | null;
           url: string;
           width: number;
         };
@@ -862,6 +864,8 @@ export type Database = {
           created_by?: string | null;
           height: number;
           id: string;
+          kind?: string;
+          poster_url?: string | null;
           url: string;
           width: number;
         };
@@ -872,6 +876,8 @@ export type Database = {
           created_by?: string | null;
           height?: number;
           id?: string;
+          kind?: string;
+          poster_url?: string | null;
           url?: string;
           width?: number;
         };

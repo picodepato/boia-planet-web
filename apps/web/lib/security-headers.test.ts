@@ -31,6 +31,11 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
     );
     expect(csp('')).toContain(`connect-src 'self' data: blob: ${HOST};`);
     expect(csp(undefined)).not.toContain('supabase');
+    // Los clips de la Galería del bucket (plan 019 T216); en modo local, del navegador.
+    expect(csp('https://abc.supabase.co')).toContain(
+      "media-src 'self' data: blob: https://abc.supabase.co;",
+    );
+    expect(csp('')).toContain("media-src 'self' data: blob:;");
   });
 
   it('el resto de cabeceras', () => {
@@ -49,6 +54,12 @@ describe('cabeceras de seguridad (REQ-ARQ-012)', () => {
         expect.objectContaining({ source, destination: '/mar' }),
       );
     }
+  });
+
+  it('«Fotos y eventos» (/fotos) lleva a la Galería (plan 019 T216)', () => {
+    expect(RENAMED_ROUTES).toContainEqual(
+      expect.objectContaining({ source: '/fotos', destination: '/galeria' }),
+    );
   });
 
   it('«Condiciones» lleva al aviso legal', () => {

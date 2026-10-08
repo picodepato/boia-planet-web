@@ -62,8 +62,8 @@ test('artista-enlace', async ({ page }) => {
 });
 
 test('fotos', async ({ page }) => {
-  await page.goto('/fotos');
-  await expect(page.locator('#fotos-title')).toBeVisible();
+  await page.goto('/galeria');
+  await expect(page.locator('#galeria-title')).toBeVisible();
   await shot(page, '03', 'fotos');
 });
 

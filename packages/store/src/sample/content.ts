@@ -293,9 +293,34 @@ export const SAMPLE_ALBUMS: AreaInput<'albums'>[] = [
   },
 ];
 
+/** Los clips de muestra (art/galeria/, tools/galeria/clips.mjs), con su tamaño. */
+const SAMPLE_CLIPS = [
+  {
+    id: 'boia-baila',
+    albumId: 'album-cala',
+    alt: 'Clip de muestra: la boia flota al atardecer',
+    width: 480,
+    height: 480,
+  },
+  {
+    id: 'puerto-dia-noche',
+    albumId: 'album-muestra',
+    alt: 'Clip de muestra: el puerto pasa del día a la noche',
+    width: 640,
+    height: 400,
+  },
+  {
+    id: 'barco-fiesta',
+    albumId: 'album-muestra',
+    alt: 'Clip de muestra: el barco de fiesta da la vuelta',
+    width: 360,
+    height: 640,
+  },
+] as const;
+
 /**
- * Fotos de muestra (sin imagen: marcador). Las marcadas `selection` son las
- * que salen en la home (D-23, respuesta 6); todas, en `/fotos`, en la
+ * Fotos de muestra (sin imagen: marcador) y los clips de la Galería. Las marcadas `selection` son las
+ * que salen en la home (D-23, respuesta 6); todas, en `/galeria`, en la
  * galería de su isla (la del evento del álbum, o la del álbum).
  */
 export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
@@ -314,6 +339,20 @@ export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
     width: 3,
     height: 4,
     selection: i === 0,
+  })),
+  // Clips de muestra de la Galería (plan 019 T216, decisión 8): hechos con
+  // arte del proyecto (tools/galeria/clips.mjs), servidos desde art/. Nunca
+  // en la home (`selection: false`): la home no descarga vídeos (REQ-COM-032).
+  ...SAMPLE_CLIPS.map((c) => ({
+    id: `clip-${c.id}`,
+    albumId: c.albumId,
+    alt: c.alt,
+    kind: 'video' as const,
+    src: `/api/art/galeria/${c.id}.mp4`,
+    poster: `/api/art/galeria/${c.id}.webp`,
+    width: c.width,
+    height: c.height,
+    selection: false,
   })),
 ];
 

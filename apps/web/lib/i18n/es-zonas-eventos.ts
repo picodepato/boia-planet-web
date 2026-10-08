@@ -15,7 +15,7 @@ export const esZonasEventos = {
   'island.event.memory':
     'Este evento ya pasó. Aquí se queda su recuerdo: fotos, cartel y artistas.',
   'island.event.soldOut': 'Agotado. Pero esta isla tiene más fiestas: mira abajo.',
-  'photos.page.lead': 'Todas las fotos de BOIA, por isla y por evento. Búscate.',
+  'photos.page.lead': 'Fotos y vídeos de BOIA, por isla y por evento. Búscate.',
   'photos.filter.island': 'Por isla',
   'photos.filter.event': 'Por evento',
   'photos.empty': 'Todavía no hay fotos de este evento. Se están revelando.',

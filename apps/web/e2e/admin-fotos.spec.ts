@@ -140,6 +140,6 @@ test('subir fotos a una isla y marcar el evento pasado: la isla lo enseña como 
   await shot(sheet, 'isla-recuerdo', info.project.name);
 
   // 4. «Fotos y eventos»: la galería de la isla la tiene.
-  await page.goto(`/fotos#${island.id}`);
+  await page.goto(`/galeria#${island.id}`);
   await expectPainted(page.getByTestId(`galeria-${island.id}`).getByRole('img', { name: ALT }));
 });

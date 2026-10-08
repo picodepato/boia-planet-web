@@ -175,7 +175,7 @@ export const esJuego = {
   'juego.placePanels.galeria': 'Galería',
   'juego.placePanels.fotosDelRecuerdo': 'Fotos de {name}',
   'juego.placePanels.masFotos': 'Ver las {n} fotos',
-  'juego.placePanels.verFotosYEventos': 'Ver «Fotos y eventos»',
+  'juego.placePanels.verFotosYEventos': 'Ver la Galería',
   'juego.placePanels.tiendaMuestra': 'Tienda · muestra',
   'juego.placePanels.camisetasToteBagsY': 'Camisetas, tote bags y pegatinas.',
   'juego.placePanels.provisionalMuestra': 'Provisional · muestra',

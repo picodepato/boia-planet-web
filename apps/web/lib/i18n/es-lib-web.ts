@@ -21,7 +21,7 @@ export const esLibWeb = {
   'landing.access.irEnBarcoA': 'Ir en barco a Ibiza, la isla tienda',
   'landing.cardCopy.borrador': 'Borrador',
   'landing.cardCopy.finalizado': 'Finalizado',
-  'landing.cardCopy.verTodasLasFotos': 'Ver todas las fotos en «Fotos y eventos»',
+  'landing.cardCopy.verTodasLasFotos': 'Ver todas las fotos en la Galería',
   'landing.invitations.invitacionACrearTu': 'Invitación a crear tu Carnet',
   'ticketing.copy.comprarEntradasParaCompra': 'Comprar entradas para {name} (compra de prueba)',
   'ticketing.copy.versionDePruebaNo':

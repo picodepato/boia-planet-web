@@ -15,13 +15,13 @@ import { MAR_PATH, eventSailHref } from '../world-handoff';
 
 /**
  * Ficha compartible de cada evento (`/eventos/<slug>`, REQ-COM-012,
- * REQ-ENT-036) y «Fotos y eventos» (`/fotos`, REQ-COM-031), sin E/S ni
+ * REQ-ENT-036) y la Galería (`/galeria`, antes «Fotos y eventos», REQ-COM-031), sin E/S ni
  * React: lo que el servidor pinta con la muestra y el navegador con el
  * repositorio. Los estados salen de las fechas en `now` (REQ-COM-004).
  */
 
 export const EVENTS_PATH = '/eventos';
-export const PHOTOS_PATH = '/fotos';
+export const PHOTOS_PATH = '/galeria';
 
 export const eventHref = (slug: string) => `${EVENTS_PATH}/${encodeURIComponent(slug)}`;
 export const photosHref = (anchor?: string) =>

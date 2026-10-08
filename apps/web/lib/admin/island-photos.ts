@@ -2,10 +2,18 @@ import { type BoiaEvent, eventAlbumId } from '@boia/contracts';
 import type { BoiaSupabase } from '../supabase/browser';
 import type { AdminActions, UploadedPhoto } from './actions';
 import {
+  type ClipProbe,
+  EVENT_CLIP_BUCKET,
   EVENT_PHOTO_BUCKET,
   type PhotoCodec,
   type PhotoOutputType,
   type PhotoUploadProblem,
+  type ResizedPhoto,
+  browserClipProbe,
+  clipInfoProblem,
+  clipUploadProblem,
+  eventClipPath,
+  isMp4,
   photoAlt,
   photoUploadProblem,
   resizePhoto,
@@ -31,46 +39,88 @@ export class PhotoUploadError extends Error {
   }
 }
 
-export interface PreparedPhoto {
+interface PreparedBase {
   /** Id de la foto y clave del archivo: `foto-<evento>-<marca>`. */
   id: string;
   stamp: string;
   blob: Blob;
-  type: PhotoOutputType;
   width: number;
   height: number;
   alt: string;
 }
+
+/** Una foto: su copia WebP o JPEG. */
+export interface PreparedImage extends PreparedBase {
+  kind?: 'image';
+  type: PhotoOutputType;
+}
+
+/** Un clip (T216): el mp4 tal cual y su póster, un fotograma copiado como las fotos. */
+export interface PreparedClip extends PreparedBase {
+  kind: 'video';
+  type: 'video/mp4';
+  poster: ResizedPhoto;
+}
+
+export type PreparedPhoto = PreparedImage | PreparedClip;
 
 /** Id de foto válido en el repositorio y en la tabla (letras, números, - y _). */
 export function photoId(eventId: string, stamp: string): string {
   return `foto-${eventId.replace(/[^A-Za-z0-9_-]/g, '-')}-${stamp}`.slice(0, 160);
 }
 
-/** Comprueba todos los archivos (el primero que no vale para todo) y hace sus copias. */
+/**
+ * Comprueba todos los archivos (el primero que no vale para todo) y hace sus
+ * copias. Un mp4 es un clip (T216): se abre para saber su tamaño y duración
+ * y sacar el póster; el archivo se guarda tal cual.
+ */
 export async function preparePhotos(
   files: readonly File[],
   eventId: string,
   altBase: string,
   codec?: PhotoCodec,
+  probe: ClipProbe = browserClipProbe(),
 ): Promise<PreparedPhoto[]> {
+  const clips = new Map<File, Awaited<ReturnType<ClipProbe>>>();
   for (const f of files) {
-    const problem = photoUploadProblem(new Uint8Array(await f.arrayBuffer()));
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    if (isMp4(bytes)) {
+      const early = clipUploadProblem(bytes);
+      if (early) throw new PhotoUploadError(early, f.name);
+      const info = await probe(f).catch(() => null);
+      const problem = clipInfoProblem(info);
+      if (problem) throw new PhotoUploadError(problem, f.name);
+      clips.set(f, info);
+      continue;
+    }
+    const problem = photoUploadProblem(bytes);
     if (problem) throw new PhotoUploadError(problem, f.name);
   }
   const out: PreparedPhoto[] = [];
   for (const [i, f] of files.entries()) {
-    const copy = await resizePhoto(f, codec);
     const stamp = `${uploadStamp()}${i}`;
-    out.push({
-      id: photoId(eventId, stamp),
-      stamp,
-      ...copy,
-      alt: photoAlt(altBase, i, files.length),
-    });
+    const base = { id: photoId(eventId, stamp), stamp, alt: photoAlt(altBase, i, files.length) };
+    const clip = clips.get(f);
+    if (clip) {
+      const poster = await resizePhoto(clip.frame, codec);
+      out.push({
+        ...base,
+        kind: 'video',
+        blob: f.type === 'video/mp4' ? f : new Blob([f], { type: 'video/mp4' }),
+        type: 'video/mp4',
+        width: clip.width,
+        height: clip.height,
+        poster,
+      });
+      continue;
+    }
+    out.push({ ...base, kind: 'image', ...(await resizePhoto(f, codec)) } satisfies PreparedImage);
   }
   return out;
 }
+
+/** La clave del póster de un clip en este navegador. */
+export const posterKey = (photoId: string) => `${photoId}-poster`;
 
 export interface SaveIslandPhotos {
   islandId: string;
@@ -89,6 +139,9 @@ export async function saveLocalIslandPhotos(
   for (const p of input.photos) {
     uploaded.push({
       id: p.id,
+      ...(p.kind === 'video'
+        ? { kind: 'video' as const, poster: await put(posterKey(p.id), p.poster.blob) }
+        : {}),
       src: await put(p.id, p.blob),
       alt: p.alt,
       width: p.width,
@@ -127,15 +180,40 @@ export async function saveSharedIslandPhotos(
   const had = (await must(sb.from('event_albums').select('id').eq('event_id', event.id))) ?? [];
   const albumId = had[0]?.id ?? eventAlbumId(event.id);
   const rows = [];
-  for (const p of input.photos) {
-    const path = eventPhotoPath(event.slug, p.stamp, p.type);
+  const upload = async (bucket: string, path: string, blob: Blob, contentType: string) => {
     await must(
       sb.storage
-        .from(EVENT_PHOTO_BUCKET)
-        .upload(path, p.blob, { contentType: p.type, upsert: false, cacheControl: '31536000' }),
+        .from(bucket)
+        .upload(path, blob, { contentType, upsert: false, cacheControl: '31536000' }),
     );
-    const url = sb.storage.from(EVENT_PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
-    rows.push({ id: p.id, album_id: albumId, url, alt: p.alt, width: p.width, height: p.height });
+    return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  };
+  for (const p of input.photos) {
+    const row = { id: p.id, album_id: albumId, alt: p.alt, width: p.width, height: p.height };
+    if (p.kind === 'video') {
+      // El clip a su bucket; su póster, con las fotos (T216).
+      const url = await upload(
+        EVENT_CLIP_BUCKET,
+        eventClipPath(event.slug, p.stamp),
+        p.blob,
+        'video/mp4',
+      );
+      const posterUrl = await upload(
+        EVENT_PHOTO_BUCKET,
+        eventPhotoPath(event.slug, `${p.stamp}-poster`, p.poster.type),
+        p.poster.blob,
+        p.poster.type,
+      );
+      rows.push({ ...row, url, kind: 'video' as const, poster_url: posterUrl });
+      continue;
+    }
+    const url = await upload(
+      EVENT_PHOTO_BUCKET,
+      eventPhotoPath(event.slug, p.stamp, p.type),
+      p.blob,
+      p.type,
+    );
+    rows.push({ ...row, url });
   }
   const album = {
     island_id: islandId,

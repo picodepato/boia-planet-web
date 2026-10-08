@@ -34,6 +34,9 @@ export interface SharedPhotoRow {
   width: number;
   height: number;
   created_at: string;
+  /** Foto o clip (plan 019 T216, migración 20261008100400); sin la columna, foto. */
+  kind?: string | null;
+  poster_url?: string | null;
 }
 
 export interface SharedPhotos {
@@ -73,7 +76,9 @@ export function sharedPhotosFromRows(
         id: r.id,
         albumId: r.album_id,
         alt: r.alt,
+        kind: r.kind === 'video' ? 'video' : 'image',
         src: r.url,
+        ...(r.poster_url ? { poster: r.poster_url } : {}),
         width: r.width,
         height: r.height,
       });
@@ -114,7 +119,8 @@ export async function readSharedPhotos(): Promise<SharedPhotos> {
     if (!sb) return NO_SHARED_PHOTOS;
     const [albums, photos] = await Promise.all([
       sb.from('event_albums').select('id, event_id, island_id, title, event_date, event_finished'),
-      sb.from('event_photos').select('id, album_id, url, alt, width, height, created_at'),
+      // Todas las columnas: así sirve antes y después de la migración de los clips (T216).
+      sb.from('event_photos').select('*'),
     ]);
     if (albums.error || photos.error) throw albums.error ?? photos.error;
     return sharedPhotosFromRows(albums.data ?? [], photos.data ?? []);
