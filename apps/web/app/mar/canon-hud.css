@@ -55,6 +55,9 @@
   /* Entre el minimapa y los huecos de armas y vinilos, sin tocar ninguno (T148). */
   max-width: calc(100% - 2 * (max(var(--safe-l), var(--safe-r)) + var(--canon-hud-side)));
   padding: 2px 3px 4px 7px;
+  /* El cuerpo de la web lleva 1.5 (T213, 8-bit Operator+); el HUD es de una
+     línea por fila y cabe en 76 px con su boss (T225). */
+  line-height: 1.15;
   border-radius: var(--radius);
   background: var(--glass-strong);
   border: 1px solid var(--line);
@@ -542,6 +545,8 @@
   position: relative;
   width: min(340px, 100%);
   padding: 74px 18px 16px;
+  /* Más prieta que el 1.5 del cuerpo (T213): la tarjeta no pisa «Entradas» en 360×640 (T225). */
+  line-height: 1.25;
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--glass-strong);
@@ -1403,6 +1408,87 @@
 
   .mar-canon-end__actions {
     margin-top: 6px;
+  }
+}
+
+/* T225: con las fuentes de T213 (más anchas y altas), la tarjeta más larga (la
+   victoria con su acto desbloqueado) no cabía en 360×640: en pantallas muy
+   bajas va más prieta, y el cielo baja el título por debajo del botón «Menú». */
+@media (max-height: 700px) {
+  .mar-canon-end {
+    padding: 58px 12px 10px;
+    line-height: 1.15;
+  }
+
+  .mar-canon-end__sky {
+    height: 52px;
+  }
+
+  .mar-canon-end__title {
+    font-size: 1.3rem;
+  }
+
+  .mar-canon-end__line {
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  .mar-canon-end__medal {
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+
+  .mar-canon-end__run,
+  .mar-canon-end__level,
+  .mar-canon-end__bosses {
+    font-size: 0.72rem;
+  }
+
+  .mar-canon-end__unlock {
+    margin-top: 4px;
+    padding: 1px 8px;
+    font-size: 0.8rem;
+  }
+
+  .mar-canon-end__stats {
+    margin-top: 4px;
+  }
+
+  .mar-canon-end__stats > div {
+    padding: 2px;
+  }
+
+  .mar-canon-end__stats dt {
+    font-size: 0.64rem;
+  }
+
+  .mar-canon-end__stats dd {
+    margin-top: 0;
+    font-size: 0.95rem;
+  }
+
+  .mar-canon-end__item {
+    padding: 0 5px 0 3px;
+    font-size: 0.62rem;
+    line-height: 1.1;
+  }
+
+  .mar-canon-end__item-icon {
+    font-size: 0.95rem;
+  }
+
+  .mar-canon-end__prize {
+    margin-top: 2px;
+    font-size: 0.82rem;
+  }
+
+  .mar-canon-end__actions {
+    margin-top: 4px;
+  }
+
+  /* 44 px: el mínimo para el dedo. */
+  .mar .mar-canon-end__actions button {
+    min-height: 44px;
   }
 }
 

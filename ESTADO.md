@@ -4,6 +4,41 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-08 — plan 019 T225: Fix the Cañón HUD and final screen after the new fonts
+
+**Qué existe.** Sólo CSS, en `apps/web/app/mar/canon-hud.css`; el juego, su
+balance y las e2e no cambian (`SURVIVORS_CONFIG_VERSION` igual).
+
+- Causa: T213 puso `line-height: 1.5` en todo el cuerpo (8-bit Operator+), y
+  el HUD y la tarjeta final lo heredaban.
+- HUD de en medio: `line-height: 1.15`. Con boss y las siete armas mide
+  72,8 px (antes 79,7 px; el tope de T148 es 76) en 360×640 y en 1440×900.
+- Tarjeta final: `line-height: 1.25`. La de «¡Amanece!» en 360×640 termina en
+  569,7 y «Entradas» empieza en 574 (antes la pisaba 3,7 px).
+- Pantallas muy bajas (`max-height: 700px`): un bloque nuevo hace la tarjeta
+  más prieta (letra algo menor, menos márgenes, botones de 44 px). Su cielo
+  es más alto para que el título empiece por debajo del botón «Menú» (z 5,
+  que va encima). Con este bloque, la tarjeta más larga (victoria contra el
+  Barco Fantasma con «¡Acto 2 desbloqueado!») mide 410 px, termina en 558 y
+  ya no queda bajo la barra de «Entradas». Antes medía 512 px, «Volver al
+  mar» quedaba tapado y la e2e de campaña (T144/T151) se agotaba en el móvil.
+- Capturas: `/tmp/orchestrator-attach/boia-planet-hernan-T225/`
+  (`hud-390x844.png`, `hud-360x640.png`, `final-390x844.png`,
+  `final-360x640.png`, `victory-try.png` = victoria en 360×640 con el bloque nuevo,
+  `victory-before.png` = antes).
+
+**Comandos.**
+- `E2E_PORT=3291 pnpm e2e mar-canon.spec.ts --workers=1` → exit 0, 93 passed,
+  3 skipped (los de rendimiento, que la propia spec salta en escritorio), 22,4 min.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 251 archivos, 2299 passed, 1 skipped.
+- `tools/spec/checks.sh`: un guard bloquea `sh`. Sus cinco Python, uno a uno
+  (`check.py`, `estado.py`, `test_check.py`, `test_estado.py`,
+  `tools/blender/check.py`) → exit 0 todos.
+- `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+
+**Pendiente.** Nada en este alcance.
+
 ## 2026-10-08 — plan 019 T222: Las Calitas: comments island with replies, votes, insult filter and moderation
 
 **Qué existe.** Isla nueva **Las Calitas** (decisión 16), `calitas` en
