@@ -139,7 +139,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: all 12 pending migrations applied to boia-planet-dev (artist_music duplicate constraint renamed to carnets_music_url_platform_check), types regenerated; test:supabase still red for non-migration reasons (Auth rate limit, stale schema assertions, leftover @example.test owner on dev) · ff4604c
 
 ## T254 — Test guide for Hernán
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T246, T247, T248, T249, T250, T251, T252, T253, T255, T256, T257
 - Model: haiku
 - Skills: none
@@ -182,7 +182,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: sample «Tote bags» removed (data, home block, images); SAMPLE_CONTENT_REVISION 1→2 renews homeBlocks once for stored browsers · a826585
 
 ## T257 — Radio admin: flag songs whose MP3 is missing
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T255
 - Model: haiku
 - Skills: none
@@ -193,7 +193,8 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - unit tests: a song with a missing file is flagged; removing it succeeds when the storage object is already gone
   - screenshot of the admin with a flagged song → attach folder
   - Test command → exit 0
-- Outcome:
+- Log: 2026-10-09 launched attempt 1, agent a02fa096f35cf26f0
+- Outcome: admin flags songs with missing MP3 («Archivo no encontrado», «N canciones sin archivo», «Sin archivo» filter, «Quitar de la radio»); lazy check only in admin · 9052d3c
 
 ## Decisions
 
@@ -225,8 +226,11 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - T253: migrations applied via harness `migrate(client, upto)` to check staff_roles (0 rows) before migration 8; no seeds run.
 - T252: island = `explanada` decor piece (compact.ts/decor.ts); GLB streamed via new DECOR_MODELS; mosaic as geometry (no UVs).
 
+- T257: HEAD 404/400 = missing; network errors count as present; sample/non-https songs skipped; checks memoised.
+
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
 - T251: in Supabase mode the discover pool is still the ranking's (sample members + content artists): real Supabase carnets cannot come up yet.
 - T253 → next plan: **security** — anon can execute `admin_sign_in_email` and `calitas_list`; 4 SECURITY DEFINER functions in `public` (`admin_sign_in_email`, `discount_code_for`, `radio_set_first`, `radio_reorder`). Also: update stale `schema.supabase.ts` assertions, fix the admin-limits owner-demotion test, remove the leftover `@example.test` owner on dev (Hernán, by hand past the last-owner trigger).
 - T252: no e2e for the Explanada yet (`?cerca=explanada` ready).
+- T257: confirm the 404/400 assumption with one real deleted object in boia-planet-dev.
