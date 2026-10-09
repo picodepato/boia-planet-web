@@ -29,7 +29,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome:
 
 ## T237 — Las Calitas behind the castaway, routes rerouted
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -41,7 +41,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - screenshots mobile and desktop of the sea from the castaway's area showing Las Calitas behind it, and of the plano/minimap with the rerouted routes → attach folder
   - `grep -rn "Isla del Cañón" mundos/ packages/world/` → no stale hits (or only intended ones, explained in ESTADO)
   - Test command → exit 0
-- Outcome:
+- Outcome: Las Calitas at [-7.0, 18.6], ~290 u behind-left of the castaway off the Los Rápidos road; no route crosses land (tests); «Isla del Cañón» → «Puig Campana» · dc92a44
 
 ## T238 — Landing: header hidden during the intro, critical-path kB freed
 - Status: pending
@@ -58,7 +58,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome:
 
 ## T239 — Dev hygiene: Supabase 400, `.next-dev`, unused keys, CRLF, stale hashes
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -192,9 +192,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09: Hernán: use Haiku 5.5 wherever possible → T239, T240, T242, T243, T244, T245 on haiku; T238 (bundle surgery), T241 (3D loading), T247 (complex player UI) stay on opus; a haiku task that fails retries on opus; running T236/T237/T246 keep opus (orchestrator)
 - 2026-10-09: Hernán: T247 runs on Fable (Hernán)
 - 2026-10-09 T246: 100 seed songs (98×4 s, 2×30 s: first techno + one house), made with Blender's bundled ffmpeg/numpy (`art/radio/generar.py`); Supabase mode falls back to the seeds while `radio_songs` is empty/missing; genres seeded by the migration; first song/order via RPCs + deferred check; genre rename updates songs, delete blocked while it has songs; radio types added to `database.types.ts` by hand (agent)
+- 2026-10-09 T237: Calitas behind-left, not straight behind (the Los Rápidos road and Tabarca leave no room); no route points changed, `calitas` added to `exploracion` visits; `mapa.py` counts loose islands as land, `validar.py` checks loose islands; «Isla del Cañón» renamed «Puig Campana»; plano.svg and Calitas/canon art regenerated (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T237: to put Las Calitas straight behind the castaway, move the castaway or the Los Rápidos stretch behind it; on mobile the island only shows at the left edge from the castaway
 - 2026-10-09 T246: `radio.supabase.ts` DB test once the migration is applied; fix odd gender agreement in generated sample titles («Velero lenta»)
 
 ## Log
@@ -203,3 +205,4 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T246 launched · attempt 1 · agent a365ac979e8a2f6af (3rd parallel agent, Hernán asked to start the radio now)
 - 2026-10-09 T238 launched · attempt 1 · agent ad2d74f6a2dc953c6
 - 2026-10-09 T246 done · merged aade97b
+- 2026-10-09 T237 done · merged dc92a44
