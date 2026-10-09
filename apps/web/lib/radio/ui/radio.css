@@ -227,6 +227,7 @@ html[data-intro-act='landing'] .radio-btn--hero {
   pointer-events: none;
 }
 
+/* Es un botón: el hueco deja pasar los toques (pointer-events: none) sólo a él. */
 .radio-toast {
   display: inline-flex;
   align-items: center;
@@ -242,10 +243,22 @@ html[data-intro-act='landing'] .radio-btn--hero {
   font-family: var(--font-button);
   font-size: 9px;
   line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: radio-toast-in 0.25s ease-out;
+}
+
+.radio-toast:focus-visible {
+  outline: 2px solid var(--radio-green);
+  outline-offset: 3px;
+}
+
+.radio-toast__text {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  animation: radio-toast-in 0.25s ease-out;
 }
 
 /* En /mar el aviso va encima de la barra de abajo. */

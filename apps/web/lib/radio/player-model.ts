@@ -88,7 +88,7 @@ function pickRandom(
 }
 
 /**
- * El aviso «Sonando: título - artista» sale sólo si el reproductor está
+ * El aviso con la canción («Título — Artista») sale sólo si el reproductor está
  * cerrado y cambia la canción (al encender también: pasa de nada a una).
  */
 export function shouldToast(

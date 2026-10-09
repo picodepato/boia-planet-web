@@ -1,6 +1,6 @@
 /**
  * Textos de la radio del sitio (plan 022 T247): el botón de la landing, el
- * reproductor y el aviso «Sonando». Van en su propio archivo porque sólo los
+ * reproductor y el aviso de la canción. Van en su propio archivo porque sólo los
  * carga el trozo perezoso de la radio (`lib/radio/ui/t.ts`), nunca la ruta
  * crítica de la landing. También entran en el catálogo entero (`es.ts`).
  * Todo `muestra` hasta que Álvaro lo apruebe.
@@ -55,8 +55,15 @@ export const esRadio = {
   'radio.error': 'La radio no suena ahora mismo. Prueba otra vez.',
   'radio.lcd.info': '{genero} · {duracion}',
 
-  // El aviso al cambiar de canción con el reproductor cerrado.
-  'radio.sonando': 'Sonando: {titulo} - {artista}',
+  // El aviso al cambiar de canción con el reproductor cerrado: la canción
+  // tal cual; al tocarlo, abre la radio.
+  'radio.toast.cancion': '{titulo} — {artista}',
+  'radio.toast.solo': '{titulo}',
+  'radio.toast.abrir': 'Abrir la radio: {cancion}',
+
+  // Estado de los botones de aleatorio y repetir.
+  'radio.onoff.on': 'activado',
+  'radio.onoff.off': 'desactivado',
 } as const;
 
 export type RadioKey = keyof typeof esRadio;

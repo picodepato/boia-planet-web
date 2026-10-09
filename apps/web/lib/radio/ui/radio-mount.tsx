@@ -25,7 +25,7 @@ const SOUND_TOGGLE = '[data-testid="cabecera-sonido"]';
 
 /**
  * La radio en una página (plan 022 T247): sus botones, el reproductor y el
- * aviso «Sonando». Todo el módulo llega perezoso (un `import()` desde la
+ * aviso de la canción. Todo el módulo llega perezoso (un `import()` desde la
  * landing, en reposo o al primer gesto, y desde `/mar`), así que el
  * reproductor no pesa en la ruta crítica. En la landing: el botón de arriba a la
  * derecha mientras se ve el hero y, al bajar, junto a «Entradas» en la
@@ -139,7 +139,11 @@ export function RadioMount({
         : null}
       {surface === 'mar' ? <RadioButton variant="mar" state={state} onClick={openOrClose} /> : null}
       {state.open ? <RadioWindow onClose={close} /> : null}
-      <RadioToastView toast={state.open ? null : state.toast} onDone={dismiss} />
+      <RadioToastView
+        toast={state.open ? null : state.toast}
+        onDone={dismiss}
+        onOpen={() => player.open()}
+      />
     </>
   );
 }

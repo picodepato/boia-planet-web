@@ -25,8 +25,41 @@ const ICON = {
   play: 'M4 2.5v11L13 8z',
   pause: 'M3.5 3h3.5v10H3.5zM9 3h3.5v10H9z',
   stop: 'M3 3h10v10H3z',
+  shuffle:
+    'M3 7h3.2c2.6 0 4 1.3 5.2 3.4l1.6 2.9c1.2 2.1 2.6 3.4 5.2 3.4H21M3 17h3.2c1.7 0 2.9-.7 3.9-2M14.2 9.1c.9-1.2 2-2.1 3.6-2.1H21M18 4l3 3-3 3M18 14l3 3-3 3',
+  repeat:
+    'M4 11V9.5A3.5 3.5 0 0 1 7.5 6H19M16 3l3 3-3 3M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H5M8 21l-3-3 3-3',
   next: 'M11 3h2v10h-2zM3 3v10l7-5z',
 } as const;
+
+/**
+ * Aleatorio y repetir: trazos de 24 px (el icono ocupa casi todo el botón).
+ * «one» pone un 1 dentro del bucle de repetir.
+ */
+function ToggleGlyph({ d, one = false }: { d: string; one?: boolean }) {
+  return (
+    <svg
+      className="radio-toggle__icon"
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={d} />
+      {one ? (
+        <text x="12" y="15" textAnchor="middle" fontSize="8" fontWeight="700" fill="currentColor" stroke="none">
+          1
+        </text>
+      ) : null}
+    </svg>
+  );
+}
 
 function Glyph({ d }: { d: string }) {
   return (
@@ -216,25 +249,27 @@ export function RadioWindow({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             className="radio-toggle"
-            role="switch"
-            aria-checked={state.shuffle}
+            aria-pressed={state.shuffle}
             aria-label={t('radio.aleatorio')}
-            title={t('radio.aleatorio')}
+            title={`${t('radio.aleatorio')}: ${state.shuffle ? t('radio.onoff.on') : t('radio.onoff.off')}`}
             data-testid="radio-aleatorio"
             onClick={() => player.setShuffle(!state.shuffle)}
           >
-            <span aria-hidden="true">⤨</span>
+            <ToggleGlyph d={ICON.shuffle} />
+            <span className="radio-toggle__dot" aria-hidden="true" />
           </button>
           <button
             type="button"
             className="radio-toggle"
             data-repeat={state.repeat}
+            aria-pressed={state.repeat !== 'off'}
             aria-label={`${t('radio.repetir')}: ${repeatLabel}`}
-            title={repeatLabel}
+            title={`${t('radio.repetir')}: ${repeatLabel}`}
             data-testid="radio-repetir"
             onClick={() => player.cycleRepeat()}
           >
-            <span aria-hidden="true">{state.repeat === 'one' ? '↻1' : '↻'}</span>
+            <ToggleGlyph d={ICON.repeat} one={state.repeat === 'one'} />
+            <span className="radio-toggle__dot" aria-hidden="true" />
           </button>
         </div>
 

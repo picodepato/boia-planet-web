@@ -4,6 +4,27 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 025 T259: Radio toast opens the radio, shows just the song; bigger, clearer repeat/shuffle buttons
+
+**Qué existe**
+- El aviso de la radio (`apps/web/lib/radio/ui/radio-toast.tsx`) es un botón: al tocarlo (ratón, dedo o teclado) abre la radio, igual que su botón, y el aviso se quita (`player.open()` ya limpia el aviso). Nombre accesible: «Abrir la radio: Título — Artista».
+- El texto del aviso es la canción: «Título — Artista», o sólo el título si no hay artista. Ya no lleva «Sonando:». La clave `radio.sonando` se quitó y se sustituyó por `radio.toast.cancion`, `radio.toast.solo` y `radio.toast.abrir` (`apps/web/lib/i18n/es-radio.ts`).
+- El temporizador del aviso se separó del texto (estado `hidden`), así que el aviso se renderiza sin efectos (y se puede probar).
+- En la ventana de la radio, aleatorio y repetir (`radio-window.tsx`): iconos de trazo de 22 px (cruzado para aleatorio, bucle para repetir, con un «1» en el modo «repetir esta»); botón de 36×30 px con área de toque de 40×40; estado visible con el color verde, el bisel hundido y un punto debajo. Usan `aria-pressed` (ya no `role="switch"`), `aria-label` «Aleatorio» / «Repetir: …» y `title` con el estado («activado» / «desactivado», claves `radio.onoff.*`).
+- Los cambios de estilo están en `radio.css` (aviso: botón con `pointer-events: auto` y foco visible) y `radio-window.css` (bloque «Aleatorio y repetir», con más especificidad que el de los mandos).
+- Prueba nueva: `apps/web/lib/radio/ui/radio-toast.test.ts` (texto con y sin artista, sin «Sonando», nombre accesible, y que pulsar el botón llama a abrir). No hay DOM en el repo, así que la pulsación se prueba llamando al `onClick` del botón; el clic real se comprobó con Playwright (ver abajo).
+- Comentarios que mencionaban «Sonando» en `radio-mount.tsx` y `player-model.ts` actualizados.
+
+**Comandos y resultado**
+- `pnpm exec vitest run apps/web/lib/radio` → 8 archivos, 71 pruebas, pasan.
+- Test command completo: vitest (exit 0; 292 archivos, 2571 pruebas pasan, 2 omitidas), `sh tools/spec/checks.sh` (exit 0), `pnpm lint` (exit 0), `pnpm build` (exit 0), `pnpm typecheck` (exit 0).
+- Capturas con Playwright (servidor de desarrollo local, puerto 3123, ya parado): en `C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T259\`: `mobile-1-toast.png`, `mobile-2-window-on.png`, `mobile-3-window-off.png`, `desktop-1-toast.png`, `desktop-2-window-on.png`, `desktop-3-window-off.png`.
+- Comprobado en el navegador (390×844 y 1280×800): el aviso muestra «Arena salvaje — Medusa Ritmo», tocarlo abre la ventana y quita el aviso; aleatorio y repetir pasan a «desactivado»/«off».
+
+**Pendiente**
+- E2E: no se ha corrido ninguna. Ninguna spec asserta el texto «Sonando:» ni usa `radio-aleatorio` / `radio-repetir` (grep de `apps/web/e2e`); el `data-testid` `radio-sonando` se conserva. Por eso no hay specs que actualizar; Hernán decide si corre las de radio.
+- Repetir «una» (`one`) sólo se vio en el código, no en capturas.
+
 ## 2026-10-09 — plan 024 T258: Radio: no song restored on page load
 
 - Qué existe: al cargar la página la radio arranca siempre en reposo (`song: null`, sin «Sonando», sin ventana con canción, sin aviso). `sessionStorage['boia.radio']` guarda sólo los Ajustes (volumen, aleatorio, repetir, género). Datos viejos con `songId`/`elapsed`/`playing` se ignoran. `save()` ya no escribe canción, segundo ni estado. `start()`/play arranca `firstSong` desde el principio. Dentro del sitio, con el reproductor montado, la música sigue (el singleton no cambia).

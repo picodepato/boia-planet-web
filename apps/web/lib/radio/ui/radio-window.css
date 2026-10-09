@@ -308,16 +308,55 @@
   flex: 1;
 }
 
-.radio-win .radio-toggle {
-  font-size: 10px;
-  line-height: 1;
+/* Aleatorio y repetir: más grandes que los mandos (icono de 22 px). El área
+   de toque llega a 40×40 con el pseudoelemento; la pastilla de abajo marca
+   el estado (encendido: verde, bisel hundido y punto encendido). */
+.radio-win .radio-transport .radio-toggle {
+  position: relative;
+  width: 36px;
+  height: 30px;
+  min-width: 36px;
+  padding: 0 0 3px;
 }
 
-.radio-win .radio-toggle[aria-checked='true'],
-.radio-win .radio-toggle[data-repeat='all'],
-.radio-win .radio-toggle[data-repeat='one'] {
+.radio-win .radio-transport .radio-toggle::before {
+  content: '';
+  position: absolute;
+  inset: -5px -2px;
+}
+
+.radio-toggle__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.radio-toggle__dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  translate: -50% 0;
+  background: transparent;
+}
+
+.radio-win .radio-transport .radio-toggle[aria-pressed='true'] {
   color: var(--rw-green);
   text-shadow: 0 0 5px rgb(92 255 106 / 0.6);
+  box-shadow:
+    inset 1px 1px 0 var(--rw-panel-deep),
+    inset -1px -1px 0 var(--rw-hi);
+}
+
+.radio-win .radio-transport .radio-toggle[aria-pressed='true'] .radio-toggle__dot {
+  background: var(--rw-green);
+  box-shadow: 0 0 4px var(--rw-green);
+}
+
+.radio-win .radio-transport .radio-toggle:focus-visible {
+  outline: 2px solid var(--rw-orange);
+  outline-offset: 2px;
 }
 
 /* Volumen: el icono a la izquierda, el deslizador corto. */
