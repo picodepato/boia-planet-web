@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T254: Test guide for Hernán
+
+**Qué existe**
+- `docs/propuestas/2026-10-09-plan-023-guia-prueba.md`: guía de prueba del plan 023 en el formato de la del plan 022. Cubre cada tarea (T246–T257) con qué cambió y cómo probarlo en móvil (390×844) y escritorio; la causa de «Próximo evento» (T248) en dos frases; la tabla de migraciones (T253, las 12 pendientes aplicadas) y lo que sigue en rojo en `test:supabase` y por qué; las specs e2e que corre Hernán (recogidas de las secciones de ESTADO); preguntas abiertas para Álvaro (derechos de las fotos, sobre todo `galeria-4`; copy de tote y camiseta; «Packs de pegatinas»; Explanada); y las propuestas del siguiente plan con la seguridad primero.
+- `docs/spec/estado.md`: REQ-COM-033 (tienda) sigue PARCIAL y ahora enlaza su prueba de T249/T256 (`catalog.test.ts`). Ningún otro REQ cambia: el REQ de la radio no existe en 09 y los botones «Descubre» ya estaban enlazados en REQ-IDE-017 (`discover.test.ts`).
+
+**Pruebas**
+- `python3 tools/spec/estado.py` → exit 0 (295 REQ).
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (291 archivos, 2565 pruebas pasan, 2 omitidas).
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` → exit 0 · `pnpm typecheck` → exit 0.
+
+**Pendiente / para Hernán**
+- La guía sólo describe; no se ha corrido ninguna e2e (las corre Hernán, comando en la guía).
+- Las rutas de capturas son las que anota cada sección de ESTADO. Desde esta sesión sólo se encontraron las de T249, T250 y T251 (`C:/tmp/orchestrator-attach/…`); T246, T247, T248, T252, T255 y T257 no estaban en esa carpeta al revisar.
+- El despliegue de lo no publicado depende del push que decide Hernán.
+
 ## 2026-10-09 — plan 023 T257: Radio admin: flag songs whose MP3 is missing
 
 **Qué existe**
