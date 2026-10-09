@@ -10,6 +10,7 @@ import {
 import { MemoryStorage, createLocalRepository } from '@boia/store';
 import { type ComposedWorld, WORLD_REGISTRY, type WorldConfig } from '@boia/world';
 import { describe, expect, it } from 'vitest';
+import { recordSignal } from './achievements';
 import { BOARDED_NOTICE, deliveryRewardRef, loadMission, persistMissionEvent } from './mission';
 
 /**
@@ -159,5 +160,80 @@ describe('la misión de la Fiestera, guardada', () => {
     expect(`${BOARDED_NOTICE.title} · ${BOARDED_NOTICE.body}`).toBe(
       'Nueva tripulante a bordo · Boia Fiestera rescatada · Destino: Isla de Nochevieja',
     );
+  });
+});
+
+describe('mundo abierto y entrega (REQ-AVE-009, REQ-AVE-008)', () => {
+  /** Rescata a la Fiestera en una visita nueva del navegador `open`. */
+  async function rescued(open: () => ReturnType<typeof createLocalRepository>) {
+    const v = await visit(open, home);
+    const near = { x: v.spec.home.x, y: v.spec.home.y + v.spec.rescueRadius / 2 };
+    expect((await v.sail(near, 4)).events.map((e) => e.type)).toEqual(['rescued', 'boarded']);
+    return v;
+  }
+
+  it('tras rescatar, visitar 3 encuentros y recargar conserva la misión', async () => {
+    const open = browser();
+    const v1 = await rescued(open);
+    const { spec } = v1;
+    const dest = missionDestination(home.config, spec.destination)!;
+    // Tres desvíos por el mundo abierto: otras islas, lejos del destino; la misión no cambia.
+    const far = (p: Point, q: Point, r: number) => Math.hypot(p.x - q.x, p.y - q.y) > r * 3;
+    const detours = home.config.objects
+      .filter(
+        (o) =>
+          o.identity.active &&
+          o.identity.category === 'isla' &&
+          o.identity.id !== spec.destination &&
+          far(o.position, dest.center, dest.radius) &&
+          far(o.position, spec.home, spec.rescueRadius),
+      )
+      .slice(0, 3);
+    expect(detours).toHaveLength(3);
+    for (const o of detours) {
+      expect((await v1.sail(o.position, 1)).events).toEqual([]);
+      await recordSignal(v1.repo, { trigger: 'visit_island', objectId: o.identity.id });
+    }
+    expect(v1.mission.phase).toBe('aboard');
+
+    // Recargar: sigue a bordo con el mismo destino, y se puede entregar.
+    const v2 = await visit(open, home);
+    expect(v2.mission.phase).toBe('aboard');
+    const saved = await v2.repo.progress.mission(spec.missionId);
+    expect(saved).toMatchObject({ step: 'rescued' });
+    expect(saved!.data).toMatchObject({ destination: spec.destination });
+    expect((await v2.sail(dest.center, 2)).events.map((e) => e.type)).toEqual([
+      'delivered',
+      'landed',
+    ]);
+  });
+
+  it('se entrega llegando por dos lados de la última isla; logro y premio, una vez', async () => {
+    const dest = missionDestination(home.config, rescueMissionOf(home.config)!.destination)!;
+    const sides = [
+      { x: dest.center.x - dest.radius * 0.9, y: dest.center.y },
+      { x: dest.center.x, y: dest.center.y + dest.radius * 0.9 },
+    ];
+    for (const side of sides) {
+      const open = browser();
+      const v = await rescued(open);
+      // Desde fuera del radio no se entrega.
+      const outside = {
+        x: dest.center.x + (side.x - dest.center.x) * 1.3,
+        y: dest.center.y + (side.y - dest.center.y) * 1.3,
+      };
+      expect((await v.sail(outside, 1)).events).toEqual([]);
+      const d = await v.sail(side, 2);
+      expect(d.events.map((e) => e.type)).toEqual(['delivered', 'landed']);
+      expect(d.notices.map((n) => n.kind).sort()).toEqual(['achievement', 'reward']);
+      // Volver a pasar (y otra visita) no repite logro ni premio.
+      expect((await v.sail(dest.center, 2)).events).toEqual([]);
+      const again = await visit(open, home);
+      expect((await again.sail(side, 2)).events).toEqual([]);
+      const rewards = (await again.repo.progress.ledger()).filter(
+        (e) => e.sourceRef === deliveryRewardRef(v.spec.missionId),
+      );
+      expect(rewards).toHaveLength(1);
+    }
   });
 });

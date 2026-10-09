@@ -89,10 +89,10 @@ export const esMar = {
   'mar.race.offer.how':
     '{laps} vueltas pasando por las {buoys} boias en orden. La salida es también la meta.',
   'mar.race.offer.vs':
-    'Compites contra los tiempos de la tripulación y contra ti: el fantasma repite tu mejor carrera.',
+    'Compites contra los tiempos de los demás barcos y contra ti: el fantasma repite tu mejor carrera.',
   'mar.race.offer.props': 'Las flechas del agua te impulsan y las rampas te hacen saltar.',
   'mar.race.offer.noBest': 'Aún no tienes récord',
-  'mar.race.offer.leader': 'récord de la tripulación: {name}, {time}',
+  'mar.race.offer.leader': 'récord del ranking: {name}, {time}',
   'mar.race.offer.later': 'Ahora no',
   'mar.race.offer.start': 'Empezar',
   'mar.race.close': 'Cerrar',
@@ -459,14 +459,14 @@ export const esMar = {
   'mar.canon.previa.boss.oculto': '¿?',
   'mar.canon.previa.ranking': 'Ranking contra {nombre}',
   'mar.canon.previa.ranking.vacio':
-    'Aún no hay partidas contra este boss. ¡Sé la primera tripulación del ranking!',
+    'Aún no hay partidas contra este boss. ¡Sé el primer barco del ranking!',
   // El ranking del Castillo, por duración y dificultad (T163). muestra
   'mar.castillo.ranking.tu': 'Tú',
   'mar.castillo.ranking.tu.sin': 'Tú (aún sin partida)',
   'mar.castillo.ranking.cargando': 'Cargando el ranking…',
   'mar.castillo.ranking.fila': '{puesto}. {nombre}: {puntos} puntos',
   'mar.castillo.ranking.local':
-    'Tu mejor partida en este navegador, entre la tripulación de muestra.',
+    'Tu mejor partida en este navegador, entre los barcos de muestra.',
   'mar.castillo.ranking.formula':
     'Puntos: enemigos derrotados y un bono por la vida del castillo al aguantar.',
   'mar.castillo.fin.ranking.nuevo': '¡Tu mejor!',
@@ -483,7 +483,7 @@ export const esMar = {
   'mar.canon.ranking.cargando': 'Cargando el ranking…',
   'mar.canon.ranking.fila': '{puesto}. {nombre}: {puntos} puntos',
   'mar.canon.ranking.local':
-    'Tu mejor partida en este navegador, entre la tripulación de muestra.',
+    'Tu mejor partida en este navegador, entre los barcos de muestra.',
   'mar.canon.ranking.formula':
     'Puntos: enemigos, notas, medalla y rapidez al vencer al boss, por la dificultad.',
   'mar.canon.fin.puntos': 'Puntos',

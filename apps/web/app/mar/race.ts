@@ -3,6 +3,7 @@ import {
   type CircuitSpec,
   type GhostPose,
   type GhostRun,
+  type InvalidReason,
   type RaceEvent,
   circuitRecordId,
   decodeGhost,
@@ -20,6 +21,27 @@ import type { WorldConfig } from '@boia/world';
 export function raceCheckpoint(race: CircuitRace, objectId: string, now: number): RaceEvent[] {
   const order = race.orderOf(objectId);
   return order === null ? [] : race.checkpoint(order, now, objectId);
+}
+
+/**
+ * Por qué se anula el intento en este paso (REQ-AVE-032), o null. El barco
+ * se teletransporta si el motor lo puso en otro sitio de un salto
+ * (`Mar3D.jumpCount` cambió: «Saltar» un viaje, `startNear`, despegar en
+ * nave) o si navega solo (un viaje o un vuelo en curso). Los paneles anulan
+ * al abrirse ('panel') y una recarga no deja nada que anular: el intento
+ * vive sólo en memoria.
+ */
+export function raceStepInvalid(s: {
+  jumpsBefore: number;
+  jumpsNow: number;
+  autopilot: boolean;
+}): InvalidReason | null {
+  return s.jumpsNow !== s.jumpsBefore || s.autopilot ? 'teleport' : null;
+}
+
+/** Ocultar la pestaña anula el intento (REQ-AVE-032); volver a ella, no. */
+export function raceVisibilityInvalid(state: DocumentVisibilityState): InvalidReason | null {
+  return state === 'hidden' ? 'hidden' : null;
 }
 
 type Point = { x: number; y: number };

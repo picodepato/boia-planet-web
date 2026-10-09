@@ -4,6 +4,112 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T244: Spec backlog B: world, identity, community, admin and remaining REQs
+
+Qué existe:
+
+He repasado una a una las filas FALTA y PARCIAL de MUN, AVE, IDE, COM y ADM contra su criterio de `09-requisitos.md`. PRO, ENT y ARQ son de T243 y no se han tocado. Cada REQ sube sólo si la prueba enlazada cumple el criterio. Hay 2 intentos: el primero dejó 4 REQ subidos y el cambio de «tripulación», y el segundo (este) cierra el repaso.
+
+**REQ que cambian de estado (antes → ahora, y prueba):**
+
+| REQ | Antes → ahora | Prueba |
+|---|---|---|
+| REQ-IDE-020 Miembro, bollero y tripulación | FALTA → HECHO | `apps/web/lib/i18n/copy-terms.test.ts`: busca «tripulaci» en el catálogo i18n, los datos de muestra y los JSON de `mundos/`. 0 resultados. En el intento 2 se amplió a `mundos/` |
+| REQ-MUN-024 Anatomía de 9 partes | PARCIAL → HECHO | `packages/world/src/objeto-partes.test.ts` |
+| REQ-IDE-019 Sin artistas vistos ni valoraciones | PARCIAL → HECHO | `packages/store/src/carnet-campos.test.ts` |
+| REQ-MUN-016 Plano con rutas diferenciadas | FALTA → PARCIAL | `mundos/arcilla/plano.svg` y la prueba de rutas de T237 |
+| REQ-MUN-015 Mapa progresivo | FALTA → PARCIAL | `plano.svg`, `diseno.md`. Falta la revisión |
+| REQ-MUN-018 Boceto del mapa de lanzamiento | FALTA → PARCIAL | `mundos/arcilla/diseno.md`. Falta la revisión del equipo, y revisarlo contra el /mar de ahora |
+| REQ-MUN-023 Objeto = asset + comportamientos | PARCIAL → HECHO | `packages/engine/src/world/swap.test.ts` «REQ-MUN-023 (P2, prueba 2): el cocodrilo se convierte en roca cambiando sólo el asset» |
+| REQ-MUN-034 Formatos de assets | PARCIAL → HECHO | `apps/web/lib/admin/asset-formats.test.ts`, nuevo. Objetos, fotos, sellos y radio rechazan GIF, SVG, BMP, TIFF, PDF, WAV, OGG, FLAC y ZIP |
+| REQ-AVE-008 Entrega en la última isla | PARCIAL → HECHO | `apps/web/lib/mundo/mission.test.ts` «se entrega llegando por dos lados de la última isla; logro y premio, una vez» |
+| REQ-AVE-009 Mundo abierto y desvíos | PARCIAL → HECHO | `mission.test.ts` «tras rescatar, visitar 3 encuentros y recargar conserva la misión» |
+| REQ-AVE-014 Recuerdos y próximos eventos | PARCIAL → HECHO | `apps/web/lib/mundo/island-memories.test.ts`, nuevo. Con y sin fotos, ningún enlace de compra y ningún «próximo» pasado |
+| REQ-AVE-016 Restos regenerables | PARCIAL → HECHO | `apps/web/app/mar/restos-cofres.test.ts`, nuevo. Recoger, recargar (otra semilla) y verlos en otras posiciones, en el mar de /mar |
+| REQ-AVE-017 Cofres fugaces | PARCIAL → HECHO | `restos-cofres.test.ts`: desaparece a los `lifetime` s (±0,1 s) y alcanzarlo antes premia una vez |
+| REQ-AVE-021 Descuentos de tienda en restos | PARCIAL → HECHO | `apps/web/lib/admin/discounts.test.ts` «REQ-AVE-021: un resto configurado entrega un código de tienda» |
+| REQ-AVE-032 Intento invalidado | HECHO → HECHO, arreglado | Ver «Código» abajo. `apps/web/app/mar/race-anula.test.ts`, nuevo, con los 4 casos |
+| REQ-IDE-028 Rangos lúdicos | PARCIAL → HECHO | `packages/store/src/economia-admin.test.ts`, nuevo: cambiar el umbral en el Admin cambia el rango del Carnet |
+| REQ-IDE-029 Economía ajustable desde el Admin | PARCIAL → HECHO | `economia-admin.test.ts`: precio, premio de logro y umbral de puntos |
+| REQ-ADM-016 Restaurar sin revertir transacciones | PARCIAL → HECHO | `apps/web/lib/admin/contenido-datos.test.ts`, nuevo: papelera y restaurar no tocan compras, sellos, saldos, libro ni logros |
+| REQ-ADM-019 Artistas, fotos y textos | PARCIAL → HECHO | `contenido-datos.test.ts`: un artista y los textos de la portada, editados y vistos en la landing. Las fotos ya tenían prueba (T189) |
+| REQ-COM-026 Rotación | HECHO, sin cambio | Más prueba: `apps/web/lib/landing/rotation-cien.test.ts`, 100 rotaciones |
+
+**Notas cambiadas sin cambiar de estado**, para decir exactamente qué falta: MUN-001, MUN-021, MUN-028, AVE-023, AVE-026, AVE-031, AVE-035, IDE-006, IDE-034, COM-016, COM-017, COM-033, ADM-001 (sube la prueba: 4 de 5), ADM-032.
+
+**Código:**
+- **REQ-AVE-032** (`apps/web/app/mar/mar-client.tsx`, `engine/mar3d.ts`, `race.ts`). En /mar sólo anulaban la vuelta los paneles y salirse de la carretera. Ahora también la anulan:
+  - ocultar la pestaña (`visibilitychange`);
+  - teletransportarse: `Mar3D.jumpCount` cuenta `startNear`, `startVoyage` y `startFlight`, y un viaje o vuelo en curso también cuenta.
+
+  La recarga no tenía nada que anular: el intento vive en memoria y sólo la meta guarda récord y fantasma. Las reglas son `raceStepInvalid` y `raceVisibilityInvalid`, en `race.ts`. Lo que nota quien juega: si cambia de pestaña en plena carrera, sale el aviso de vuelta anulada, igual que al abrir un panel.
+- **Textos visibles que cambió el intento 1 (REQ-IDE-020)**, para que Hernán revise la redacción:
+  - `mar.race.offer.vs`: «…contra los tiempos de la tripulación…» → «…contra los tiempos de los demás barcos…»
+  - `mar.race.offer.leader`: «récord de la tripulación: {name}, {time}» → «récord del ranking: {name}, {time}»
+  - `mar.canon.previa.ranking.vacio`: «¡Sé la primera tripulación del ranking!» → «¡Sé el primer barco del ranking!»
+  - `mar.castillo.ranking.local` y `mar.canon.ranking.local`: «…entre la tripulación de muestra.» → «…entre los barcos de muestra.»
+  - el logro `whatsapp` (`packages/store/src/sample/progress.ts`): «La tripulación BOIA» → «El grupo BOIA»
+
+  «Nueva tripulante a bordo» (el aviso del rescate) se queda: el criterio busca «tripulación».
+
+Comandos y resultados:
+- `python3 tools/spec/estado.py` → exit 0 (295 REQ: HECHO 181 · PARCIAL 57 · FALTA 22 · L2 25 · final 8 · retirado 2; T243 cambia aparte PRO, ENT y ARQ).
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (286 archivos, 2524 pasan, 1 omitida).
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm lint` → exit 0.
+- `pnpm build` → exit 0. `apps/web/tsconfig.json` no cambió.
+- `pnpm typecheck` → exit 0.
+- No he hecho capturas ni medidas en móvil, ni emuladas ni en dispositivo físico.
+
+Quedan (fuera de PRO, ENT y ARQ), con exactamente lo que falta:
+
+| REQ | Estado | Qué falta | De quién |
+|---|---|---|---|
+| MUN-003 Agua viva | FALTA | Revisión visual dentro del presupuesto de FPS, en móvil | dispositivo físico |
+| MUN-017 Rutas de 1 y 10 min | FALTA | Medir en móvil físico. La estimación de `diseno.md` (1,0 y 9,7 min) es de la maqueta | dispositivo físico |
+| MUN-029 Barco y 3 skins en 8 direcciones | FALTA | Revisión de ART 01. Son sprites 2D, y /mar usa modelo 3D (D-25) | Hernán/Álvaro (revisión o cambio de spec) |
+| MUN-033 Revisión de skins | FALTA | Revisión por skin, prueba de sustitución y guía | Hernán/Álvaro |
+| COM-029 Validación de artistas | FALTA | Aprobación registrada | Álvaro |
+| ADM-038 Usabilidad de 10 min | FALTA | Prueba con personas, con tiempo y dudas | personas |
+| MUN-001 3D sólo en /mar | PARCIAL | Choca con D-24: el planeta de la entrada carga three.js en diferido en la landing. Actualizar el criterio | decisión |
+| MUN-004 Estela reactiva | PARCIAL | Grabación de los 6 estados | revisión humana |
+| MUN-006 Joystick | PARCIAL | Prueba táctil en físicos | dispositivo físico |
+| MUN-015, MUN-018 | PARCIAL | Revisión del plano y del boceto por el equipo, con fecha | Hernán/Álvaro |
+| MUN-016 Plano con rutas | PARCIAL | «Rodear lo opcional» y «ampliar sin cambiar misiones», más revisión. La salida del circuito choca con T61 | prueba + decisión |
+| MUN-021 Minimapa reposicionable | PARCIAL | El motor lo hace y está probado, pero el minimapa de /mar no se mueve | Hernán (rehacerlo o cambiar el criterio) |
+| MUN-028 Barco por slots | PARCIAL | La bandera se quitó en T167; el criterio ya no tiene objeto | decisión |
+| MUN-030 Orientación sin espejar | PARCIAL | Revisión de las 8 direcciones (/mar es 3D) | revisión |
+| MUN-032 Sprites desde Blender | PARCIAL | Correr Blender sin interfaz y comparar | máquina con Blender |
+| MUN-037, MUN-039 Cambio de mundo | PARCIAL | Un solo mundo jugable (T122); vuelve con Acuarela | decisión / futuro |
+| AVE-003 Guion del tutorial | PARCIAL | Texto aprobado | Álvaro |
+| AVE-023 Boia de WhatsApp | PARCIAL | Enlace real y comprobar su `href` en la e2e | Álvaro |
+| AVE-026, AVE-031 Circuito y atajo | PARCIAL | El trazado cerrado de T61 contradice los criterios. Registrar la decisión y cambiar la spec | decisión |
+| AVE-035 Módulo de minijuegos | PARCIAL | Decidir si «misma posición» es donde acaba la partida (hoy, sí) | decisión |
+| AVE-037 Cañón | PARCIAL | Los criterios son del juego anterior; está en el borrador para Álvaro | Álvaro |
+| AVE-039 Accesibilidad de minijuegos | PARCIAL | Prueba con un lector de pantalla de verdad | revisión humana |
+| IDE-006 Fusión idempotente | PARCIAL | Probado contra `boia-planet-dev` (`economy.supabase.ts`), que `estado.py` no cuenta; en local no hay fusión | — (límite del script) |
+| IDE-012, IDE-022 | PARCIAL | Revisión de diseño en el hito | Hernán/Álvaro |
+| IDE-025 Logros de lanzamiento | PARCIAL | Lista aprobada | Álvaro |
+| IDE-034 Menú de a bordo | PARCIAL | El menú tiene 9 entradas y el criterio pide 7 (`[provisional]`) | decisión |
+| COM-015 Adaptador de ticketera | PARCIAL | ADR comparativo y elección | Álvaro |
+| COM-016 Sandbox | PARCIAL | Procedimiento de activación; depende de la ticketera | Álvaro |
+| COM-017 Webhook | PARCIAL | No hay webhook ni firma hasta la ticketera real (versión final) | versión final |
+| COM-030 Filosofía | PARCIAL | Textos aprobados | Álvaro |
+| COM-033 Tienda con enlace externo | PARCIAL | La landing no lleva a la isla de la tienda; alcance `[provisional]` | Álvaro/decisión |
+| ADM-001 Contenido como datos | PARCIAL | Editar el diálogo de los lugares del mapa (hoy está en el código) | código nuevo (fuera de alcance) |
+| ADM-008 Secciones del Admin en L1 | PARCIAL | Lista de secciones L1 (`[provisional]`) | decisión |
+| ADM-031 Peticiones de datos a mano | PARCIAL | Hacer una vez el procedimiento de `docs/manual-admin.md` §6 y registrarlo | Hernán |
+| ADM-032 Mundo activo como temporada | PARCIAL | Un solo mundo jugable (T122) | futuro |
+
+Pendiente:
+- Ninguna prueba e2e nueva.
+- El cableado de REQ-AVE-032 en el navegador (pestaña oculta y salto) no tiene e2e propia.
+
+E2E que Hernán debería correr:
+- `apps/web/e2e/world-community.spec.ts`: el logro «El grupo BOIA».
+- `apps/web/e2e/mar-circuito.spec.ts`: la anulación nueva de la carrera no debe cortar una vuelta normal.
+- `apps/web/e2e/mar-fiestera.spec.ts`: usa viajes y `startNear` antes de las carreras.
+
 ## 2026-10-09 — plan 022 T243: Spec backlog A: product, entry, architecture REQs
 
 **Qué existe.** Recorridas una a una todas las filas FALTA y PARCIAL de PRO, ENT y ARQ en `docs/spec/estado.md` (dos intentos; el primero dejó seis, este revisó las demás y las del primero contra su criterio de 09). Ninguna sube a HECHO sin una prueba automática que cumpla el criterio. Las mediciones en el navegador son del panel del navegador de la app (Chromium) en **emulación** (360×640 y 1440×900, build de producción), no en móviles físicos.

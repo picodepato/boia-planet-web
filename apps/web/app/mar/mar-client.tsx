@@ -167,6 +167,8 @@ import {
   lapTargets,
   loadGhost,
   raceCheckpoint,
+  raceStepInvalid,
+  raceVisibilityInvalid,
   roadPath,
   saveGhost,
   startPose,
@@ -386,6 +388,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     period: Period;
     marks: ReturnType<typeof roadMarks>;
     offRoad: OffRoad;
+    /** `Mar3D.jumpCount` en el paso anterior: si cambia, el barco se teletransportó (REQ-AVE-032). */
+    jumps: number;
   } | null>(null);
   // El delfín guía (O15, T45): el runtime en que se escondió y el reloj de sus pasos.
   const dolphinRef = useRef<DolphinGuide | null>(null);
@@ -622,6 +626,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       path,
       marks: roadMarks(path),
       offRoad: new OffRoad(),
+      jumps: engineRef.current?.jumpCount ?? 0,
     };
   };
 
@@ -1039,7 +1044,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     const r = raceRef.current;
     if (!r) return;
     r.clock += dt;
+    // Un salto del barco o un viaje solo anulan el intento (REQ-AVE-032).
+    const jumpsBefore = r.jumps;
+    r.jumps = g.jumpCount;
     if (!r.race.active) return;
+    const jumped = raceStepInvalid({ jumpsBefore, jumpsNow: r.jumps, autopilot: !!g.voyaging });
+    if (jumped) {
+      raceEvents([r.race.invalidate(jumped)!].filter(Boolean));
+      return;
+    }
     raceEvents(r.race.tick(r.clock));
     if (!r.race.racing) return;
     // Fuera de la carretera hay 5 s para volver; el reloj de la carrera no se para (T76).
@@ -1502,6 +1515,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', save);
     };
+  }, [status]);
+
+  // Ocultar la pestaña anula la vuelta en curso (REQ-AVE-032).
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const onVisibility = () => {
+      const r = raceRef.current;
+      const why = raceVisibilityInvalid(document.visibilityState);
+      if (why && r?.race.active) raceEvents([r.race.invalidate(why)!].filter(Boolean));
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   // Tiempo a bordo (logros de tiempo jugado), sólo con la pestaña a la vista.

@@ -103,6 +103,28 @@ describe('sustituir el asset de un objeto (§48.1, REQ-MUN-002)', () => {
     expect(tb.trace).toEqual(ta.trace);
   });
 
+  it('REQ-MUN-023 (P2, prueba 2): el cocodrilo se convierte en roca cambiando sólo el asset', () => {
+    const croc: WorldObjectInput = {
+      ...obstacle,
+      identity: { id: 'cocodrilo', name: 'Cocodrilo', category: 'obstaculo' },
+      appearance: { asset: 'placeholder:cocodrilo' },
+    };
+    const before = parseWorldConfig({ ...base, objects: [croc, rock] });
+    const after = parseWorldConfig({ ...base, objects: [withAsset(croc, 'roca-a'), rock] });
+    const [c0, c1] = [before.objects[0]!, after.objects[0]!];
+    // Sólo cambia la apariencia: identidad, posición, geometría y comportamientos, iguales.
+    expect({ ...c1, appearance: c0.appearance }).toEqual(c0);
+    expect(c1.appearance.asset).toBe('roca-a');
+    expect(resolveObjectVisual(c0, art, scale).kind).toBe('placeholder');
+    expect(resolveObjectVisual(c1, art, scale).kind).toBe('sprite');
+    // Y se comporta igual: el mismo frenazo, la misma traza.
+    const ta = simulate(before, { seconds: 10, input: route });
+    const tb = simulate(after, { seconds: 10, input: route });
+    expect(ta.events.some((e) => e.type === 'contact' && e.objectId === 'cocodrilo')).toBe(true);
+    expect(tb.events).toEqual(ta.events);
+    expect(tb.trace).toEqual(ta.trace);
+  });
+
   it('el mundo de muestra entero con arte o con marcadores se comporta igual', () => {
     const real = parseWorldConfig(SAMPLE_WORLD);
     const bare = parseWorldConfig(

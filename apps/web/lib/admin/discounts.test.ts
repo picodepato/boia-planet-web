@@ -1,4 +1,6 @@
 import { discountStatus } from '@boia/contracts';
+import { WorldRuntime, simulate } from '@boia/engine';
+import { IDLE_INPUT } from '@boia/engine/headless';
 import { MemoryStorage, SAMPLE_EVENTS, createLocalRepository } from '@boia/store';
 import { WORLD_REGISTRY, type WorldObject } from '@boia/world';
 import { describe, expect, it } from 'vitest';
@@ -92,6 +94,44 @@ describe('descuentos creados en el Admin (T43)', () => {
     expect(found).toMatchObject({ first: true, status: 'active', usedAt: null });
     const price = samplePriceCents(onSale);
     expect(applicableDiscount(onSale.id, [found], price, new Date(NOW))?.id).toBe(saved.id);
+  });
+
+  it('REQ-AVE-021: un resto configurado entrega un código de tienda', async () => {
+    const { repo, actions } = setup();
+    const restos = discountHidingPlaces(registry.map).find((p) => p.category === 'restos')!;
+    expect(restos).toBeDefined();
+    const saved = await actions.saveDiscount({
+      code: 'tienda5',
+      label: '-5 € en la tienda',
+      scope: 'store',
+      kind: 'amount',
+      value: 5,
+      hiddenAt: restos.id,
+    });
+    const live = await liveObject(repo, restos.id);
+    expect(discountRefs(live)).toEqual([saved.id]);
+    // Pasar por encima del resto suelta el código (el mismo runtime que /mar).
+    const world = composeLiveWorld(registry, registry.defaultId, {
+      ...EMPTY_WORLD_CONTENT,
+      places: await repo.content.places(),
+      events: await repo.content.events(),
+      discounts: await repo.content.list('discounts'),
+    });
+    const rt = new WorldRuntime(world.config, { seed: 3, sessionId: 's1' });
+    const at = rt.objectState(restos.id)!;
+    const run = simulate(world.config, {
+      runtime: rt,
+      seconds: 1,
+      start: { x: at.x, y: at.y },
+      input: () => IDLE_INPUT,
+    });
+    const drop = run.events.find(
+      (e) => e.type === 'reward' && e.objectId === restos.id && e.kind === 'discount',
+    );
+    expect(drop && drop.type === 'reward' ? drop.ref : null).toBe(saved.id);
+    const found = await repo.progress.findDiscount(saved.id);
+    expect(found).toMatchObject({ first: true, status: 'active' });
+    expect(found.discount).toMatchObject({ code: 'TIENDA5', scope: 'store' });
   });
 
   it('esconderlo donde el mapa ya tenía otro código lo sustituye', async () => {

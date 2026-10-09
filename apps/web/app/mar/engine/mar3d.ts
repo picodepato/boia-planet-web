@@ -603,6 +603,11 @@ export class Mar3D {
    * rumbo de salida y de llegada.
    */
   private flight: FlightState | null = null;
+  /**
+   * Veces que el motor ha movido el barco sin que navegue (`startNear`, un
+   * viaje o un vuelo): la carrera lo lee para anular el intento (REQ-AVE-032).
+   */
+  private jumps = 0;
   /** Altura del barco sobre el agua (escena) en este fotograma. */
   private air = 0;
   private readonly wings: Wings;
@@ -1022,6 +1027,7 @@ export class Mar3D {
       o.geometry.collision?.radius ?? 0,
     );
     const p = this.freePoint(o.position.x, o.position.y + reach + 90);
+    this.jumps++;
     Object.assign(this.ship, { x: p.x, y: p.y, vx: 0, vy: 0, heading: -Math.PI / 2 });
     Object.assign(this.prev, { x: p.x, y: p.y, heading: -Math.PI / 2 });
     this.updateCamera(0, true);
@@ -1076,6 +1082,7 @@ export class Mar3D {
     this.setCourse({ placeId });
     if (this.course?.placeId !== placeId) return false;
     this.voyage = { placeId, t: 0 };
+    this.jumps++;
     this.fovKick = 1;
     this.backToBoat();
     return true;
@@ -1091,6 +1098,11 @@ export class Mar3D {
     if (!this.voyage) return;
     this.voyage = null;
     this.clearCourse();
+  }
+
+  /** Cuántas veces el motor ha movido el barco sin navegar (REQ-AVE-032). */
+  get jumpCount(): number {
+    return this.jumps;
   }
 
   get voyaging(): string | null {
@@ -1122,6 +1134,7 @@ export class Mar3D {
     const dist = Math.hypot(dx, dy);
     const h1 = dist > 1 ? Math.atan2(dy, dx) : s.heading;
     const plan = flightPlan(dist);
+    this.jumps++;
     this.flight = {
       placeId,
       t: 0,

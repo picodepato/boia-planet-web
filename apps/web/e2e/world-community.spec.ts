@@ -114,7 +114,7 @@ test('opening the WhatsApp invitation completes the visible achievement once', a
   await page.getByTestId('mar-logros').click();
   await page.getByTestId('mar-menu-logros').click();
   const achievement = page.getByTestId('logro-whatsapp');
-  await expect(achievement.getByText('La tripulación BOIA', { exact: true })).toBeVisible();
+  await expect(achievement.getByText('El grupo BOIA', { exact: true })).toBeVisible();
   await expect(achievement).toHaveAttribute('data-estado', 'ready');
   await page.getByTestId('logro-reclamar-whatsapp').click();
   await expect(page.getByTestId('logro-premio-puntos')).toHaveText('+300 ★');

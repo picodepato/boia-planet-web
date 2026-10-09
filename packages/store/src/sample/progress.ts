@@ -70,7 +70,7 @@ export const CARTOON_SHIP_PRICE = 120;
 export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
   {
     id: 'whatsapp',
-    title: 'La tripulación BOIA',
+    title: 'El grupo BOIA',
     description: 'Abre la invitación al grupo de WhatsApp.',
     trigger: 'complete_encounter',
     triggerParams: { encounter: 'whatsapp' },
