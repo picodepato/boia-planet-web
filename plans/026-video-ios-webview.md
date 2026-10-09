@@ -1,6 +1,6 @@
 # Plan 026 — Stray video frame over the planet in iOS in-app browsers
 
-Status: active
+Status: done
 Created: 2026-10-09
 Base branch: main
 Goal: Bug reported by Hernán after the push of plans 024–025 (2026-10-09). On iPhone, opening the test site from the Claude app's in-app browser (an iOS WKWebView / SFSafariViewController-like in-app browser, not Safari), after opening the radio the intro video «loads and grows», and then a rectangle with a frame of a video (low-poly characters cheering at a bar/stage) stays visible over the planet, partly covering the «Zarpar» button. It does not happen in Brave. Screenshot: `C:/Users/alvar/AppData/Local/Temp/orchestrator-attach/boia-planet-hernan-T260/hernan-report.png`. Fix it so no video element ever shows outside its intended place/time in iOS in-app browsers, without changing behaviour in normal browsers.
@@ -13,7 +13,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 ## Tasks
 
 ## T260 — No stray video frame over the planet in iOS in-app browsers
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -25,10 +25,14 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - unit test(s) covering the fix (e.g. hidden state is display:none/unmounted; failed play() hides the video; required attributes present) → pass
   - screenshots: WebKit iPhone profile, landing after opening the radio and after the intro, no stray video → attach folder
   - Test command → exit 0
-- Outcome:
+- Outcome: reel video (`.reel__video`) is display:none unless its window is open; attributes before src; blocked play() falls back to poster · 6c8a301
 
 ## Decisions
+
+- 2026-10-09 T260: video shown only while its window is open (data-video, display:none otherwise); only NotAllowedError/NotSupportedError/error switch to poster; AbortError ignored; radio code unchanged — the radio diff does not touch the reel, so the regression link is unconfirmed (agent)
 
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-09 T260 launched · attempt 1 · agent acadc71bf46edf51a
+- 2026-10-09 T260 done · branch worktree-agent-acadc71bf46edf51a → 6c8a301
