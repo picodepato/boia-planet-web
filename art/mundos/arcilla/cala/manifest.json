@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/cala.py"
     ],
-    "sources_sha256": "3ea4b00ffdb228c650ec39e752b85fdb8e1b6e56a87872529b6ce16615f2fb4d",
+    "sources_sha256": "4d7f68394f66e324b833cad4178812cb435909e56b912fc4c31fcf02c1d71e49",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

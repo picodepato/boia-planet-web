@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/costas.py"
     ],
-    "sources_sha256": "ce3f169df5dfb0df733ea7e2ae4937fa832e6c692321de87d5bc4698eea58395",
+    "sources_sha256": "cea392f5191b03eaedb9cdbe314ca6b24a9a0bba8d47c89228f05ad970023bef",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

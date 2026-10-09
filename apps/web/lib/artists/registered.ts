@@ -48,16 +48,50 @@ interface ServerArtistRow {
   music_url?: string | null;
 }
 
+/**
+ * ¿Tiene la base las columnas de la música (T217, migración 20261008100200)?
+ * Se aprende una vez por sesión del navegador: la primera consulta las pide;
+ * si la base dice que no existen, se repite sin ellas y se recuerda el
+ * resultado en sessionStorage, así las siguientes cargas de la sesión no hacen
+ * la petición que falla. `null` = aún no se sabe.
+ */
+const MUSIC_FLAG_KEY = 'boia.artists.music-columns';
+
+export function readMusicFlag(): boolean | null {
+  try {
+    const v = globalThis.sessionStorage?.getItem(MUSIC_FLAG_KEY);
+    return v === '1' ? true : v === '0' ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeMusicFlag(has: boolean): void {
+  try {
+    globalThis.sessionStorage?.setItem(MUSIC_FLAG_KEY, has ? '1' : '0');
+  } catch {
+    // Sin almacenamiento (privado, bloqueado): sólo se repite la petición.
+  }
+}
+
 async function serverArtistCarnets(): Promise<ArtistCarnet[]> {
   const sb = await accountClient();
   if (!sb) return [];
   const base = 'user_id, nickname, avatar_key, avatar_image';
-  const read = async (cols: string) =>
+  const music = ', music_platform, music_url';
+  const query = (cols: string) =>
     sb.from('carnets').select(cols).eq('is_artist', true).limit(SERVER_LIMIT);
   try {
-    let res = await read(`${base}, music_platform, music_url`);
-    // Una base sin la migración de la música (T217): sin música.
-    if (res.error) res = await read(base);
+    const askMusic = readMusicFlag() !== false;
+    let res = await query(askMusic ? base + music : base);
+    if (askMusic && res.error) {
+      // Sin la migración de la música la base da error por esas columnas: se
+      // repite sin ellas y, si eso va, se recuerda para no volver a pedirlas.
+      res = await query(base);
+      if (!res.error) writeMusicFlag(false);
+    } else if (askMusic && !res.error) {
+      writeMusicFlag(true);
+    }
     if (res.error || !res.data) return [];
     return (res.data as unknown as ServerArtistRow[]).map((r) => ({
       userId: r.user_id,

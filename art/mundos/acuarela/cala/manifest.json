@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/cala.py"
     ],
-    "sources_sha256": "3a92eb0112b5260d5feec34a3dde200b1fd678492aaecc286978a2989fe30db7",
+    "sources_sha256": "6cee8ea764eac99f7bc2fb970f87377a61bae53f2a00caacbffc1a075fca13a7",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

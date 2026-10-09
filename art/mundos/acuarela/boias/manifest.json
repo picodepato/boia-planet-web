@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "tools/blender/mascota.py"
     ],
-    "sources_sha256": "f51302fcb5691ab185f9c11645b3f4c6b87db69eaca2c697b5fd6e511edb298d",
+    "sources_sha256": "eb74dda4d8714264bd07416e69ea1813e8dec3f7fdc515279aa9bbb30877c74b",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

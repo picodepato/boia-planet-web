@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/minijuegos.py"
     ],
-    "sources_sha256": "f25f7490de2ab252767927b20119de1b99873bf7c25a67c54c8bc03b8236a524",
+    "sources_sha256": "094d91ab56859a3a0b519a5ef72fe26d1f9a887f81cafef5dee607ac683ec112",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

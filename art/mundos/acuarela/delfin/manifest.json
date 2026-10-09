@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/marvivo.py"
     ],
-    "sources_sha256": "a9a68f78656f3904782001aaed6692df0bc4c882e0715d1822e6c89972eab0d4",
+    "sources_sha256": "88f825190974f66a4793714d303947c8da94341b71a1de726fd843fc821efda5",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

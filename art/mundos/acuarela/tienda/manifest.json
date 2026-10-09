@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/tienda.py"
     ],
-    "sources_sha256": "4833540740ce229372672a2d629333df351e54cd2d6d2c5857334e5308ddc2c3",
+    "sources_sha256": "fd2a6c8d49a6c3f7f715512e377768acaf631c9499047f519cc64cb855d85ea5",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

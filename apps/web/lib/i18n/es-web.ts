@@ -80,8 +80,6 @@ const base = {
   'artists.page.title': 'Todos los artistas',
   'artists.page.lead': '{count} artistas, de la A a la Z. Lista provisional.',
   'artists.page.back': 'Volver al inicio',
-  'artists.pause': 'Pausar rotación',
-  'artists.resume': 'Reanudar rotación',
   'artists.genres': 'Géneros',
   // Plan 007 T79: plain links to Spotify, nothing loaded from it. muestra.
   'artists.spotify': 'Escúchalo en Spotify',

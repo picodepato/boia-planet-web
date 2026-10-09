@@ -14,7 +14,7 @@
       "tools/blender/world.py",
       "tools/blender/render.py"
     ],
-    "sources_sha256": "521b67520c1d3c0a976161e191717ae6db577bd4b489c06ed43b2ee0dc6b9a9d",
+    "sources_sha256": "1c05376b45c9084b2d09be8023786c791a88d64a3a2ff83d24b4bd85cf3bfa39",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

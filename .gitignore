@@ -5,6 +5,8 @@ node_modules/
 .DS_Store
 dist/
 .next/
+# `next dev` (distDir de apps/web/next.config.ts, T239)
+.next-dev/
 .turbo/
 coverage/
 # salidas intermedias de Blender; lo que se entrega va en art/

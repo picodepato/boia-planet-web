@@ -13,6 +13,9 @@ function lanHosts(): string[] {
 
 const config: NextConfig = {
   reactStrictMode: true,
+  // `next dev` escribe en `.next-dev` y `next build` en `.next`: así una compilación
+  // no pisa la caché del servidor de desarrollo (ni al revés).
+  distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   transpilePackages: ['@boia/engine', '@boia/world', '@boia/store'],
   // /api/art lee `art/` de la raíz del repo: en Vercel la función sólo lleva los
   // archivos trazados, así que se incluyen a mano desde la raíz del monorepo.

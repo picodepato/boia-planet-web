@@ -26,7 +26,7 @@
       "mundos/arcilla/zonas/costas.py",
       "mundos/arcilla/zonas/puerto.py"
     ],
-    "sources_sha256": "17746fef46c40495c58b561cc6003540b26ee6eb449392989dffc08aad6a3a0b",
+    "sources_sha256": "1ef3f0e2160fa4c034a790d72ac2d3c63205565766de6a153484b0fca0e6bab3",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

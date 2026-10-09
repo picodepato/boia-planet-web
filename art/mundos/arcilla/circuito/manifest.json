@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/circuito.py"
     ],
-    "sources_sha256": "910b3a6766c9eaea6d2837379b4dd62fa8c63b556dbf92055ee3241ce717d626",
+    "sources_sha256": "7a1326e16ff75c5a5e20ea8d6621e92021275bfc6b4bf239fe3b2c3d01cae432",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

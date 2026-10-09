@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/fotos.py"
     ],
-    "sources_sha256": "04ff94e04be5bb8ba8239702c5216c20db864284c4f143dd666efd276b60875d",
+    "sources_sha256": "84ba88a3bfe0099f9309d715535f9c71637ff23dd4e2c312bd605015bb3abccc",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

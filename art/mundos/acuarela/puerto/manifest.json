@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/puerto.py"
     ],
-    "sources_sha256": "a30e6e282a878311921564ec379136fa71839bf62704148115adad1d9929c522",
+    "sources_sha256": "839cdf70b6aadc2cbd36d0c695392a1fe315034ee19a3706550e333f3c6ec0b6",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

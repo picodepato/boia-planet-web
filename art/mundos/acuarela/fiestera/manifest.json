@@ -30,7 +30,7 @@
       "mundos/acuarela/zonas/fiestera.py",
       "tools/blender/mascota.py"
     ],
-    "sources_sha256": "0dbfa0d9314416cd23b2e6ad8754af9c3048e8cefa6fcce806c21dff925180c6",
+    "sources_sha256": "854dbc2c6408a62b6a8e37a231ba877359ec1a21576f2dd0864817f442b43262",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

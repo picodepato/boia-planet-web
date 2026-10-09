@@ -30,7 +30,7 @@
       "mundos/acuarela/zonas/costas.py",
       "mundos/arcilla/zonas/costas.py"
     ],
-    "sources_sha256": "58682bad16fedff6339bde00524b772be3dffb19cc7e7085a633a5971fd78a88",
+    "sources_sha256": "3815b5c108d5b3206720c0213f6275baccde3febea66ff44380acb73da383c16",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

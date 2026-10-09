@@ -30,7 +30,7 @@
       "mundos/acuarela/zonas/circuito.py",
       "mundos/arcilla/zonas/circuito.py"
     ],
-    "sources_sha256": "3b0140b85b8c5aa0384f0fbd9d7198f9acbc80c07b880505ad3e84b2b6687f07",
+    "sources_sha256": "6b0322d4c348335432ef0e654a3df5a7dfd6ccbf6415abb9bf8d668ced663508",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

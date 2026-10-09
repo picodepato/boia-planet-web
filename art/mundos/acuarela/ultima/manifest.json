@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/ultima.py"
     ],
-    "sources_sha256": "ce90471977d051acd0877f0389821ca9f9a375187f274c13a16010ad58ebe632",
+    "sources_sha256": "208d3148222c8d26f3c52235e329521a74a45119782c8dda5b7e4eef9361d2c9",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

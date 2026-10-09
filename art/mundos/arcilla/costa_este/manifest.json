@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/costas.py"
     ],
-    "sources_sha256": "3879961fdee4d55d42afc2c10570d0eb3ccd0aeffcdd64786168cc1f9d4507dd",
+    "sources_sha256": "f1c14bd42b681867ebfd625a0af7a97254626e3fd68b199db6983545144e39e3",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/tienda.py"
     ],
-    "sources_sha256": "031547396f6ee82f1ae96bc1b5a339d83fb86137521e4e3ea7aac53fe477fb41",
+    "sources_sha256": "b50ba6ce4c3ba90c7248806377e32cfa9b0fc159e1a38b3a99476ff5cb5ff01b",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

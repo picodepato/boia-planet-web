@@ -4,6 +4,243 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T239: Dev hygiene: Supabase 400, `.next-dev`, unused keys, CRLF, stale hashes
+
+**Qué existe**
+
+- (a) El 400 de `carnets` en la landing: `apps/web/lib/artists/registered.ts` pedía `music_platform, music_url` en cada carga (lo llaman `live-artists` y `artist-rotator`). Esas columnas vienen de la migración `supabase/migrations/20261008100200_artist_music.sql`, que no está aplicada en `boia-planet-dev`. Ahora la primera consulta pide la música; si da error, se repite sin ella y se recuerda en `sessionStorage` (clave `boia.artists.music-columns`, 0/1), así las siguientes cargas de la sesión no hacen la petición que falla. Sin migración, la primera carga de cada sesión del navegador muestra un 400 en la consola; después, no. Cuando Hernán aplique la migración, la música aparece sola.
+- (b) `apps/web/next.config.ts`: `distDir` es `.next-dev` cuando `NODE_ENV=development` (`next dev`) y `.next` en el resto. `.gitignore` ignora `.next-dev/`. `eslint.config.mjs` ignora `**/.next-dev/**`, si no `pnpm lint` se comía la salida del dev.
+- (c) Quitadas `artists.pause` y `artists.resume` (sin uso) de `lib/i18n/es-web.ts`, `lib/i18n/es-zonas-web.ts` y de la tabla de `docs/propuestas/textos-zonas.md` (de donde sale el catálogo de zonas).
+- (d) Prettier: la causa no es CRLF. `git ls-files --eol` da `lf` en todo el repo; los 205 archivos marcados tienen diferencias reales de formato (líneas de más de 100 columnas, saltos). Se añadió `"endOfLine": "lf"` a `.prettierrc.json` para dejarlo explícito. `.gitattributes` ya tenía `text=auto eol=lf`.
+- (e) Hashes: 47 manifiestos bajo `art/` tenían `generator.sources_sha256` viejo. Se recalculó con el mismo algoritmo que `tools/blender/render.py` (`sources_sha256`) y `tools/blender/mundos_arte.py` (sha256 de los bytes de cada script de `generator.scripts`, en orden) y se cambió sólo esa línea. No hay una herramienta del proyecto que sólo reescriba el hash: la otra vía es `render.py --all`, que re-renderiza, y no se corrió. Ningún PNG cambió.
+- Nuevo test: `apps/web/lib/artists/registered.test.ts` (cliente de Supabase simulado: primera carga sin migración repite sin música y recuerda; la siguiente no pide la música (ruta cacheada); con migración pide música; almacenamiento que falla; modo local sin consulta).
+
+**Comandos y resultados**
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (269 archivos, 2451 pruebas pasan, 1 omitida).
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm lint` → exit 0 (tras añadir `.next-dev` a sus ignores; antes daba 530 errores de la salida del dev).
+- `pnpm build` → exit 0; landing 199.4 kB de 200.0 kB (presupuesto OK).
+- `pnpm typecheck` → exit 0.
+- `pnpm exec prettier --check .` → exit 1: 205 archivos con diferencias de formato (lista abajo). No se reformatean: fuera del alcance.
+- `pnpm dev` (`timeout 90 pnpm --filter @boia/web dev`): se crea `apps/web/.next-dev/` y no `apps/web/.next/`. `git check-ignore` confirma que `.next-dev/` está ignorado.
+
+**Pendiente / para Hernán**
+
+- Migración a aplicar en `boia-planet-dev`: `supabase/migrations/20261008100200_artist_music.sql` (música de artistas). Sin ella la landing sigue sin música, sin error. No verificado contra el proyecto remoto (no se tocó).
+- Revisar en ESTADO el 400 de la primera carga de cada sesión mientras no esté aplicada la migración de la música (aparece una vez por sesión en la consola).
+- Claves i18n sin uso que quedan: un barrido ingenuo marca unas 640, pero muchas se usan con claves dinámicas (`artist.music.${platform}`, `survivors.*`, `world.*.boia.*`). No se quitan más que las dos de arriba; una revisión a mano queda para otra tarea.
+- e2e: no corrí ninguna. Recomiendo `apps/web/e2e/artistas.spec.ts` (toca `registered.ts`) y la landing si Hernán quiere confirmar la lista de artistas.
+- Hashes: los 47 manifiestos actualizados llevan sólo la línea `sources_sha256` nueva; el próximo `render.py --all` que se corra sobre `art/` lo dejará igual, sin tocar PNG.
+
+**Lista de archivos que no pasan `prettier --check` (205, diferencias de formato, no de fin de línea)**
+
+- CLAUDE.md
+- ESTADO.md
+- README.md
+- apps/web/app/(landing)/components/collage-viewer.tsx
+- apps/web/app/(landing)/components/landing-sign-out.test.ts
+- apps/web/app/(landing)/components/landing-sign-out.tsx
+- apps/web/app/(landing)/components/media-collage.tsx
+- apps/web/app/admin/demo-gate.tsx
+- apps/web/app/admin/sections/discounts.tsx
+- apps/web/app/admin/sections/misc.tsx
+- apps/web/app/mar/canon-campaign.test.ts
+- apps/web/app/mar/canon-hud-model.test.ts
+- apps/web/app/mar/canon-hud-model.ts
+- apps/web/app/mar/canon-hud.tsx
+- apps/web/app/mar/canon-icons.test.ts
+- apps/web/app/mar/canon-icons.tsx
+- apps/web/app/mar/canon-mode.tsx
+- apps/web/app/mar/canon-previa.tsx
+- apps/web/app/mar/castillo-guia-model.ts
+- apps/web/app/mar/castillo-hud.tsx
+- apps/web/app/mar/castillo-logros.test.ts
+- apps/web/app/mar/castillo-mode.tsx
+- apps/web/app/mar/engine/canoncito.test.ts
+- apps/web/app/mar/engine/characters.ts
+- apps/web/app/mar/engine/defense-arena-v2.test.ts
+- apps/web/app/mar/engine/defense-arena.test.ts
+- apps/web/app/mar/engine/defense-clouds.ts
+- apps/web/app/mar/engine/defense-fx.ts
+- apps/web/app/mar/engine/defense-islands.ts
+- apps/web/app/mar/engine/defense-overlays.ts
+- apps/web/app/mar/engine/defense-view-vecino.test.ts
+- apps/web/app/mar/engine/defense-view.ts
+- apps/web/app/mar/engine/enemy-models.test.ts
+- apps/web/app/mar/engine/enemy-models.ts
+- apps/web/app/mar/engine/island-models.test.ts
+- apps/web/app/mar/engine/islands.ts
+- apps/web/app/mar/engine/labels.test.ts
+- apps/web/app/mar/engine/labels.ts
+- apps/web/app/mar/engine/mar3d.ts
+- apps/web/app/mar/engine/mascot-look.test.ts
+- apps/web/app/mar/engine/mascot-models.test.ts
+- apps/web/app/mar/engine/minikraken.test.ts
+- apps/web/app/mar/engine/screen-position.test.ts
+- apps/web/app/mar/engine/ship-model.ts
+- apps/web/app/mar/engine/survivors-fantasma.test.ts
+- apps/web/app/mar/engine/survivors-kraken.test.ts
+- apps/web/app/mar/engine/survivors-kraken.ts
+- apps/web/app/mar/engine/survivors-pickups.test.ts
+- apps/web/app/mar/engine/survivors-props.ts
+- apps/web/app/mar/engine/survivors-shark.test.ts
+- apps/web/app/mar/engine/survivors-shark.ts
+- apps/web/app/mar/engine/survivors-shield.test.ts
+- apps/web/app/mar/engine/survivors-vecino.test.ts
+- apps/web/app/mar/engine/survivors-weapons.test.ts
+- apps/web/app/mar/engine/tortuga.test.ts
+- apps/web/app/mar/engine/tortuga.ts
+- apps/web/app/mar/engine/whirlpool.test.ts
+- apps/web/app/mar/mascota-dev.test.ts
+- apps/web/app/mar/mascota-dev.ts
+- apps/web/app/mar/menu.tsx
+- apps/web/app/mar/race-rapido.test.ts
+- apps/web/app/mar/survivors.test.ts
+- apps/web/app/mar/survivors.ts
+- apps/web/e2e/carnet-artista.spec.ts
+- apps/web/e2e/ciclo-evento.spec.ts
+- apps/web/e2e/deck/03-paginas.deck.ts
+- apps/web/e2e/deck/06-minijuegos.deck.ts
+- apps/web/e2e/deck/07-admin.escritorio.deck.ts
+- apps/web/e2e/deck/fuente-emoji.ts
+- apps/web/e2e/galeria.spec.ts
+- apps/web/e2e/landing-logout.spec.ts
+- apps/web/e2e/mar-canon.spec.ts
+- apps/web/e2e/mar-castillo.spec.ts
+- apps/web/e2e/mar-circuito.spec.ts
+- apps/web/e2e/mar-faro-tabarca.spec.ts
+- apps/web/e2e/mar-isla-modelo.spec.ts
+- apps/web/e2e/mar-remolino.spec.ts
+- apps/web/e2e/mar-tablon.spec.ts
+- apps/web/e2e/mar-vecino.spec.ts
+- apps/web/e2e/puerta.spec.ts
+- apps/web/e2e/ranking.spec.ts
+- apps/web/e2e/record.spec.ts
+- apps/web/e2e/tienda.spec.ts
+- apps/web/lib/account/admin-access-sql.test.ts
+- apps/web/lib/account/export-button.tsx
+- apps/web/lib/account/export-data.ts
+- apps/web/lib/admin/carnet-moderation.test.ts
+- apps/web/lib/admin/demo-auth.test.ts
+- apps/web/lib/admin/demo-auth.ts
+- apps/web/lib/barco/catalog.ts
+- apps/web/lib/barco/mascot-icon.test.ts
+- apps/web/lib/barco/mascot-icon.tsx
+- apps/web/lib/i18n/es-admin.ts
+- apps/web/lib/i18n/es-mar.ts
+- apps/web/lib/landing/collage-layout.ts
+- apps/web/lib/landing/eventos.test.ts
+- apps/web/lib/mundo/islas-entradas.test.ts
+- apps/web/lib/mundo/ranking-boards.ts
+- apps/web/lib/mundo/ranking-castle-sql.test.ts
+- apps/web/lib/mundo/skin-textos.test.ts
+- apps/web/lib/ticketing/box-office.tsx
+- apps/web/lib/ticketing/checkout.tsx
+- apps/web/lib/ticketing/event-fields-sql.test.ts
+- apps/web/lib/ticketing/ticketing.test.ts
+- apps/web/next-env.d.ts
+- apps/web/tsconfig.json
+- mundos/README.md
+- mundos/acuarela/diseno.md
+- mundos/acuarela/lugares.json
+- mundos/arcilla/README.md
+- mundos/arcilla/diseno.md
+- mundos/arcilla/index.html
+- mundos/arcilla/mapa.json
+- mundos/arcilla/paleta.json
+- mundos/arcilla/render/allday.json
+- mundos/arcilla/render/cala.json
+- mundos/arcilla/render/cartoon-general.json
+- mundos/arcilla/render/cartoon-tiempos.json
+- mundos/arcilla/render/circuito.json
+- mundos/arcilla/render/fiestera.json
+- mundos/arcilla/render/fotos.json
+- mundos/arcilla/render/general.json
+- mundos/arcilla/render/marvivo.json
+- mundos/arcilla/render/papel-general.json
+- mundos/arcilla/render/papel-tiempos.json
+- mundos/arcilla/render/puerto.json
+- mundos/arcilla/render/tiempos-recuerdo.json
+- mundos/arcilla/render/tiempos.json
+- mundos/arcilla/render/tienda.json
+- mundos/arcilla/render/ultima.json
+- mundos/arcilla/render/webp.json
+- mundos/index.html
+- mundos/out/lugares.json
+- mundos/prompts/01-mundo-arcilla-completo.md
+- packages/contracts/src/analytics.ts
+- packages/contracts/src/events.ts
+- packages/db/src/supabase/admin-access.supabase.ts
+- packages/db/src/supabase/carnet-moderation.supabase.ts
+- packages/db/src/supabase/door-stamps.supabase.ts
+- packages/db/src/supabase/event-fields.supabase.ts
+- packages/db/src/supabase/moderation.supabase.ts
+- packages/engine/src/bottles/readable.test.ts
+- packages/engine/src/bottles/readable.ts
+- packages/engine/src/defense/config.ts
+- packages/engine/src/defense/defense-balance.test.ts
+- packages/engine/src/defense/defense-v3.test.ts
+- packages/engine/src/minigames/world-canon.test.ts
+- packages/engine/src/mission/rescue.test.ts
+- packages/engine/src/mission/rescue.ts
+- packages/engine/src/survivors/bosses.ts
+- packages/engine/src/survivors/bots.ts
+- packages/engine/src/survivors/drops.ts
+- packages/engine/src/survivors/fantasma.ts
+- packages/engine/src/survivors/kraken.ts
+- packages/engine/src/survivors/medals.ts
+- packages/engine/src/survivors/sim.ts
+- packages/engine/src/survivors/survivors-beta2.test.ts
+- packages/engine/src/survivors/survivors-bosses.test.ts
+- packages/engine/src/survivors/survivors-drops.test.ts
+- packages/engine/src/survivors/survivors-fantasma.test.ts
+- packages/engine/src/survivors/survivors-healing.test.ts
+- packages/engine/src/survivors/survivors-kraken.test.ts
+- packages/engine/src/survivors/survivors-martillo.test.ts
+- packages/engine/src/survivors/survivors-medals.test.ts
+- packages/engine/src/survivors/survivors-weapons.test.ts
+- packages/engine/src/survivors/survivors.test.ts
+- packages/engine/src/survivors/turbo-ramps.test.ts
+- packages/engine/src/transition/switcher.test.ts
+- packages/engine/src/ui/discovery.ts
+- packages/engine/src/ui/minimap.ts
+- packages/engine/src/world/arcilla.test.ts
+- packages/engine/src/world/encounters.test.ts
+- packages/engine/src/world/sectors.ts
+- packages/engine/src/world/visual.ts
+- packages/store/README.md
+- packages/store/src/achievements.test.ts
+- packages/store/src/castillo-premios.test.ts
+- packages/store/src/local.ts
+- packages/world/scripts/ts-resolve.mjs
+- packages/world/src/art.ts
+- packages/world/src/worlds/arcilla/map.ts
+- packages/world/src/worlds/registry.ts
+- packages/world/src/worlds/worlds.test.ts
+- plans/001-demo-l1.md
+- plans/002-demo-completa.md
+- plans/003-mar-planeta.md
+- plans/004-cierre-v14.md
+- plans/005-solo-planeta-3d.md
+- plans/006-islas-y-ajustes.md
+- plans/007-landing-scroll.md
+- plans/008-cuentas-carnet-rankings.md
+- plans/009-world-updates.md
+- plans/010-canon-beta1.md
+- plans/011-canon-beta2.md
+- plans/012-canon-beta3.md
+- plans/013-canon-definitiva.md
+- plans/014-castillo-tower-defense.md
+- plans/015-castillo-v2-mascotas.md
+- plans/016-castillo-v3-balance.md
+- plans/017-admin-rankings-calidad.md
+- plans/018-presentacion-socios.md
+- plans/019-reunion-cambios.md
+- plans/020-revision-hernan.md
+- plans/021-intro-video-noart.md
+- plans/022-pulido-deuda-spec.md
+
 ## 2026-10-09 — plan 022 T238: Landing: header hidden during the intro, critical-path kB freed
 
 **Qué existe**

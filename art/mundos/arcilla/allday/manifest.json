@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/allday.py"
     ],
-    "sources_sha256": "0cadbef4f0902dc0a517893c86e608d1d49d9097d4adc6305226b8cfbb0b0f64",
+    "sources_sha256": "6291571a3064e5833f7cd16bcc734f4917aa8e1b9f269cb6f16a83060452c383",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

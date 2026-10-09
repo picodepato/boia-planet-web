@@ -29,7 +29,7 @@
       "mundos/acuarela/lugares.json",
       "mundos/acuarela/zonas/allday.py"
     ],
-    "sources_sha256": "b9eb2ba366c8d8345ab464bc9e822bb83cbd6b69d68ef228832ba2c49e85fcfd",
+    "sources_sha256": "897d9fda58eb36e3f301247897edb29fe80c7f42a96fa72e82c87e3aa9412957",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 16,

@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/marvivo.py"
     ],
-    "sources_sha256": "c0e593c1d48f2bb1a0cbfd8c995ace38ddda3e6590fea484dbb7f3f71690d8e3",
+    "sources_sha256": "ccb75fd75caa62a7e20d97bfc34bdb620dc1876b557b953f81178859f66c3f40",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

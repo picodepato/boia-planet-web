@@ -52,8 +52,6 @@ export const esZonasWeb = {
   'artists.page.title': 'Todos los artistas',
   'artists.page.lead': '{count} artistas, de la A a la Z.',
   'artists.page.back': 'Volver al inicio',
-  'artists.pause': 'Pausar rotación',
-  'artists.resume': 'Reanudar rotación',
   'artists.genres': 'Géneros',
   'carnet.create': 'Crear mi Carnet',
   'carnet.cancel': 'Cancelar',

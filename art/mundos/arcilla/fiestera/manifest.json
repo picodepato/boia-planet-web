@@ -26,7 +26,7 @@
       "mundos/arcilla/zonas/fiestera.py",
       "tools/blender/mascota.py"
     ],
-    "sources_sha256": "a15a6d34bcd019cb26f7d1c18069aaf8b9359867629b61a31fcfe68e5c9e9455",
+    "sources_sha256": "d1c2661916a99e3105ac5513e1fd8d761e0e14f5b1cfbcbf441acfb72a53f5d6",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

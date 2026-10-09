@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "mundos/arcilla/zonas/ultima.py"
     ],
-    "sources_sha256": "0efc9c45cd4233cf3562ae51c10d71d22964e111fe2d57bd27e118a4ab323c44",
+    "sources_sha256": "d9009245c329d3445fb083032ca3703c4c63564bc0622a528a57f40e1f53f746",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

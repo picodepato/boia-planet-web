@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "tools/blender/mascota.py"
     ],
-    "sources_sha256": "26dd4ae9dcb4525e465721d0bb026e00465a69e8065eb45b6d2177d5bda516e3",
+    "sources_sha256": "484cda6becd720823a06d6bc008eaab19c77c2f96d0f2ebbf7ebdcad5e7a7467",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,

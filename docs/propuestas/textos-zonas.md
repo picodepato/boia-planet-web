@@ -218,8 +218,6 @@ Manifiesto completo (bloques 1 a 8) y versión breve, a partir de §37.
 | `artists.page.title` | Todos los artistas | = es.ts |
 | `artists.page.lead` | {count} artistas, de la A a la Z. | = es.ts; la lista ya no es provisional (D-23) |
 | `artists.page.back` | Volver al inicio | = es.ts |
-| `artists.pause` | Pausar rotación | = es.ts |
-| `artists.resume` | Reanudar rotación | = es.ts |
 | `artists.genres` | Géneros | = es.ts |
 | `artists.photoPending` | Foto próximamente | Avatar neutro (P17) |
 
