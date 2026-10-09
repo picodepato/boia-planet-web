@@ -279,31 +279,61 @@ describe('RadioPlayer (plan 022 T247)', () => {
     }
   });
 
-  it('guarda dónde va y en la página siguiente sigue; bloqueado, queda en pausa a un toque', async () => {
+  it('sólo guarda los Ajustes: nunca la canción, el segundo ni «sonando»', async () => {
     const storage = new MemoryStorage();
     p = setup({ storage });
     await p.player.start();
     p.player.setVolume(0.3);
     p.current().at(2.5, 30);
     p.player.saveNow();
-    const saved = JSON.parse(storage.getItem(RADIO_SESSION_KEY)!) as {
-      songId: string;
-      playing: boolean;
-    };
-    expect(saved.songId).toBe(first.id);
-    expect(saved.playing).toBe(true);
+    const saved = JSON.parse(storage.getItem(RADIO_SESSION_KEY)!) as Record<string, unknown>;
+    expect(saved).not.toHaveProperty('songId');
+    expect(saved).not.toHaveProperty('elapsed');
+    expect(saved).not.toHaveProperty('playing');
+    expect(saved.volume).toBe(0.3);
     p.player.dispose();
+  });
 
-    const q = setup({ storage, block: true });
+  it('una página nueva arranca apagada, con los Ajustes guardados; datos viejos con canción se ignoran', async () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      RADIO_SESSION_KEY,
+      JSON.stringify({
+        songId: first.id,
+        elapsed: 12,
+        playing: true,
+        volume: 0.3,
+        shuffle: false,
+        repeat: 'one',
+        genreId: null,
+      }),
+    );
+    p = setup({ storage });
     await flush();
     await flush();
-    expect(q.player.getState().song?.id).toBe(first.id);
-    expect(q.player.getState().status).toBe('paused');
-    expect(q.player.getState().volume).toBe(0.3);
-    expect(q.current().currentTime).toBe(2.5);
-    q.current().blocked = false;
-    await q.player.play();
-    expect(q.player.getState().status).toBe('playing');
-    q.player.dispose();
+    const st = p.player.getState();
+    expect(st.song).toBeNull();
+    expect(st.status).toBe('idle');
+    expect(st.toast).toBeNull();
+    expect(st.volume).toBe(0.3);
+    expect(st.shuffle).toBe(false);
+    expect(st.repeat).toBe('one');
+    expect(p.audios).toHaveLength(0);
+  });
+
+  it('tras cargar la página, play arranca la primera canción desde el principio', async () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      RADIO_SESSION_KEY,
+      JSON.stringify({ songId: 'otra', elapsed: 40, playing: true, volume: 0.5 }),
+    );
+    p = setup({ storage });
+    await p.player.play();
+    const st = p.player.getState();
+    expect(st.song?.id).toBe(first.id);
+    expect(st.elapsed).toBe(0);
+    expect(st.status).toBe('playing');
+    expect(p.current().currentTime).toBe(0);
+    expect(p.current().volume).toBe(0.5);
   });
 });

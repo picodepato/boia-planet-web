@@ -4,6 +4,14 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 024 T258: Radio: no song restored on page load
+
+- Qué existe: al cargar la página la radio arranca siempre en reposo (`song: null`, sin «Sonando», sin ventana con canción, sin aviso). `sessionStorage['boia.radio']` guarda sólo los Ajustes (volumen, aleatorio, repetir, género). Datos viejos con `songId`/`elapsed`/`playing` se ignoran. `save()` ya no escribe canción, segundo ni estado. `start()`/play arranca `firstSong` desde el principio. Dentro del sitio, con el reproductor montado, la música sigue (el singleton no cambia).
+- Archivos: `apps/web/lib/radio/player.ts`, `apps/web/lib/radio/player.test.ts` (la prueba de restauración vieja se sustituyó por tres: sólo Ajustes guardados, arranque apagado con datos viejos ignorados, play tras cargar arranca la primera desde 0).
+- Comandos: `pnpm exec vitest run apps/web/lib/radio` → 67 passed. Comprobación completa: vitest (sin packages/db) → 291 files passed, 2568 tests passed, 1 skipped; `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0.
+- E2E: ninguna especificación de radio asertaba la restauración entre recargas (los `reload` de intro, mar-botellas y mar-paridad no son de la radio). Hernán no necesita correr ninguna por este cambio.
+- Pendiente: verificación manual en el navegador (reproducir, salir, volver: la radio aparece apagada; play arranca la primera).
+
 ## 2026-10-09 — plan 023 T254: Test guide for Hernán
 
 **Qué existe**

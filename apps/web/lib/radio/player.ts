@@ -15,10 +15,10 @@ import { type RepeatMode, firstSong, nextSong, previousSong, shouldToast } from 
  * (`preload="none"`); la siguiente se decide y se precarga sólo cuando a la
  * que suena le quedan pocos segundos (`PREFETCH_SECONDS`).
  *
- * Nada suena solo: `start()` llega siempre de un toque. Si la pestaña venía
- * de otra página del sitio con la radio puesta (`sessionStorage`), al
- * cargar se intenta seguir donde iba; si el navegador lo bloquea, queda en
- * pausa con la canción puesta, a un toque.
+ * Nada suena solo: `start()` llega siempre de un toque. Cada carga de página
+ * arranca apagada (sin canción); en `sessionStorage` sólo se recuerdan los
+ * Ajustes (volumen, aleatorio, repetir y género). Dentro del sitio, con el
+ * reproductor montado, la música sigue porque el objeto no se toca.
  *
  * Con «Música» apagada en Ajustes (o el 🔊 de la cabecera) la radio se
  * calla; al encenderla sigue. Un toque de play en la radio con la música
@@ -80,10 +80,8 @@ export const PREFETCH_SECONDS = 8;
 export const RADIO_SESSION_KEY = 'boia.radio';
 const MAX_FAILURES = 3;
 
+/** Sólo los Ajustes: la canción, el segundo y «sonando» no se recuerdan entre cargas. */
 interface Saved {
-  songId: string;
-  elapsed: number;
-  playing: boolean;
   shuffle: boolean;
   repeat: RepeatMode;
   volume: number;
@@ -521,13 +519,11 @@ export class RadioPlayer {
 
   // --- Seguir en la página siguiente -----------------------------------------
 
+  /** Guarda los Ajustes para la siguiente página del sitio. */
   private save(): void {
     const st = this.deps.storage;
-    if (!st || !this.state.song) return;
+    if (!st) return;
     const saved: Saved = {
-      songId: this.state.song.id,
-      elapsed: this.state.elapsed,
-      playing: this.active,
       shuffle: this.state.shuffle,
       repeat: this.state.repeat,
       volume: this.state.volume,
@@ -536,16 +532,19 @@ export class RadioPlayer {
     try {
       st.setItem(RADIO_SESSION_KEY, JSON.stringify(saved));
     } catch {
-      // Sin sitio: se pierde el hilo entre páginas, nada más.
+      // Sin sitio: los Ajustes se pierden entre páginas, nada más.
     }
   }
 
-  /** Guarda dónde va (la interfaz lo llama en `pagehide`). */
+  /** La interfaz lo llama en `pagehide`; los Ajustes ya están guardados. */
   saveNow(): void {
-    if (this.audio) this.state = { ...this.state, elapsed: this.audio.currentTime };
     this.save();
   }
 
+  /**
+   * Sólo los Ajustes. Datos viejos de `sessionStorage` con canción, segundo o
+   * «sonando» se ignoran: la radio arranca siempre en reposo.
+   */
   private restore(): void {
     const st = this.deps.storage;
     if (!st) return;
@@ -556,7 +555,7 @@ export class RadioPlayer {
     } catch {
       saved = null;
     }
-    if (!saved || typeof saved.songId !== 'string') return;
+    if (!saved || typeof saved !== 'object') return;
     this.state = {
       ...this.state,
       shuffle: typeof saved.shuffle === 'boolean' ? saved.shuffle : this.state.shuffle,
@@ -564,19 +563,6 @@ export class RadioPlayer {
       volume: typeof saved.volume === 'number' ? Math.min(1, Math.max(0, saved.volume)) : 0.8,
       genreId: typeof saved.genreId === 'string' ? saved.genreId : null,
     };
-    const songId = saved.songId;
-    const elapsed = typeof saved.elapsed === 'number' ? saved.elapsed : 0;
-    const playing = saved.playing === true;
-    // La canción de la otra página: se pone, y si sonaba se intenta seguir.
-    void this.catalog()
-      .then(async (c) => {
-        if (this.started) return;
-        const song = c.songs.find((s) => s.id === songId);
-        if (!song) return;
-        await this.load(song, playing);
-        if (elapsed > 0 && elapsed < song.durationSeconds - 1) this.seek(elapsed);
-      })
-      .catch(() => undefined);
   }
 }
 
