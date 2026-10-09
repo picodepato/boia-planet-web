@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T256: Shop: drop the sample tote, reseed stored shop block
+
+**What exists**
+- The sample product «Tote bags» (12 €, `tote`) is removed from `apps/web/lib/merchandise/products.json`. «Tote bag BOIA» (`tote-boia`) and «Packs de pegatinas» stay.
+- Its three `muestra` images (`tote-muestra`, `tote-angulo-muestra`, `tote-modelo-muestra`) are deleted: nothing else used them. `apps/web/public/contenido/tienda/README.md` updated.
+- Home store block (`packages/store/src/sample/content.ts`) lists «Camisetas», «Tote bag BOIA», «Packs de pegatinas». The /mar shop sheet reads that same block, so it follows. No e2e spec names the old tote (`merchandise.spec.ts` derives counts from `MERCHANDISE_PRODUCTS`).
+- `SAMPLE_CONTENT_REVISION` 1 → 2 (`packages/store/src/schema.ts`). New step in `SAMPLE_RESEEDS` (`packages/store/src/sample-reseed.ts`): revision 2 renews the `homeBlocks` area, so a stored browser at revision 1 drops its saved store block and sees the current one once. Admin-created items, order and texts are kept, as in revision 1.
+- Test: `packages/store/src/sample-reseed.test.ts`, new describe «bloque de tienda renovado en un navegador con la revisión 1 (T256)»: old stored data at revision 1 with the old store block (`Camisetas`, `Tote bags`, `Packs de pegatinas`) ends with `Tote bag BOIA`, without `Tote bags`, keeping the pegatinas, and with the revision saved as current.
+
+**Commands and results**
+- `pnpm exec vitest run packages/store/src/sample-reseed.test.ts apps/web/lib/merchandise` → exit 0, 2 files, 18 tests passed.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 290 files passed, 2547 tests passed, 2 skipped.
+- `sh tools/spec/checks.sh` → exit 0 (295 REQ, OK).
+- `pnpm lint` → exit 0.
+- `pnpm build` → exit 0 (landing critical path 197.0 kB, budget 200 kB OK).
+- `pnpm typecheck` → exit 0.
+
+**Pending / for Hernán**
+- e2e not run (Hernán runs it). Specs that touch the shop: `apps/web/e2e/merchandise.spec.ts`, `apps/web/e2e/admin-enlaces.spec.ts`, `apps/web/e2e/mundo-arcilla.spec.ts`. None names the old tote; they were not run here.
+
 ## 2026-10-09 — plan 023 T250: Galería: 4 fotos de Hernán
 
 - Qué existe: `galeria-1..4` en `art/galeria/` (generadas por `tools/galeria/fotos.mjs`

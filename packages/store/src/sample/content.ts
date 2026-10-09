@@ -95,7 +95,7 @@ export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'h
       type: 'store',
       visible: true,
       url: '/tienda',
-      products: ['Camisetas', 'Tote bag BOIA', 'Tote bags', 'Packs de pegatinas'],
+      products: ['Camisetas', 'Tote bag BOIA', 'Packs de pegatinas'],
     },
     {
       id: 'contact',

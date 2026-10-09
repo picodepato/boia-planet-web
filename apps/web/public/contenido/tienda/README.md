@@ -9,7 +9,7 @@ Saved project assets (800 × 800 WebP, quality 82):
 
 - `camiseta-muestra.webp` — 29856 bytes. (Replaced by the real T-shirt photos
   `camiseta-1-plano`, `-2-arena`, `-3-negra` in T249; the sample was removed.)
-- `tote-muestra.webp` — 31144 bytes.
+- (T256: `tote-muestra.webp` was removed; the «Tote bag BOIA» replaces it.)
 - `pegatinas-muestra.webp` — 43646 bytes.
 
 ## T201 placeholders (plan 017)
@@ -26,7 +26,6 @@ only sold at the party and links to Instagram (no checkout).
 - (T249: the T-shirt's angle and model placeholders were removed; the T-shirt
   and the «Tote bag BOIA» (Manu Ropero) use real photos: `camiseta-*.webp`,
   `tote-1-bolsa.webp` … `tote-4-llena.webp`.)
-- `tote-angulo-muestra.webp`, `tote-modelo-muestra.webp`
 - `pegatinas-angulo-muestra.webp`, `pegatinas-modelo-muestra.webp`
 
 Final prompts, built-in mode (no CLI/API fallback):

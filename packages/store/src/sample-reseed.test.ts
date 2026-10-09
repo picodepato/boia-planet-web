@@ -141,3 +141,36 @@ describe('muestra renovada en un navegador con datos viejos (T248)', () => {
     expect(Math.max(...SAMPLE_RESEEDS.map((s) => s.revision))).toBe(SAMPLE_CONTENT_REVISION);
   });
 });
+
+/**
+ * Plan 023 T256: un navegador con la muestra de revisión 1 guardaba el bloque
+ * «store» con la tote de muestra. Tras la revisión 2 ve «Tote bag BOIA» y no
+ * la tote de muestra; lo demás de la tienda (las pegatinas) se queda.
+ */
+describe('bloque de tienda renovado en un navegador con la revisión 1 (T256)', () => {
+  it('ve Tote bag BOIA y no la tote de muestra', async () => {
+    const storeBlock = SAMPLE_HOME_BLOCKS.find((b) => b.type === 'store')!;
+    const doc = staleDoc() as unknown as { content: Record<string, unknown> };
+    doc.content.sampleRevision = 1;
+    const items = doc.content.items as Record<string, Record<string, unknown>>;
+    items.homeBlocks = {
+      ...items.homeBlocks,
+      [storeBlock.id]: {
+        value: { ...storeBlock, products: ['Camisetas', 'Tote bags', 'Packs de pegatinas'] },
+        deleted: false,
+        at: AT,
+      },
+    };
+    const { repo, storage } = open(doc);
+    const home = await repo.content.home();
+    const shop = home.blocks.find((b) => b.type === 'store');
+    const products = shop?.type === 'store' ? shop.products : [];
+    expect(products).toEqual((storeBlock as { products: string[] }).products);
+    expect(products).toContain('Tote bag BOIA');
+    expect(products).not.toContain('Tote bags');
+    expect(products).toContain('Packs de pegatinas');
+    expect(JSON.parse(storage.getItem(STORE_KEY)!).content.sampleRevision).toBe(
+      SAMPLE_CONTENT_REVISION,
+    );
+  });
+});

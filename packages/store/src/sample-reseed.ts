@@ -36,6 +36,12 @@ export const SAMPLE_RESEEDS: readonly SampleReseed[] = [
     // Los eventos de muestra de antes del T67 (2026-10-02).
     retiredIds: { events: ['ev-all-day-primavera', 'ev-noche-mayo', 'ev-all-day-verano'] },
   },
+  {
+    revision: 2,
+    reason:
+      'bloque «store» de la muestra: «Tote bag BOIA» en vez de la tote de muestra (plan 023 T256)',
+    areas: ['homeBlocks'],
+  },
 ];
 
 /** ids de la muestra actual por área, para saber qué es de la muestra. */

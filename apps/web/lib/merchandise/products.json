@@ -59,30 +59,6 @@
       ]
     },
     {
-      "id": "tote",
-      "name": "Tote bags",
-      "description": "Para lo que te llevas de la fiesta.",
-      "priceCents": 1200,
-      "sale": "party",
-      "images": [
-        {
-          "src": "/contenido/tienda/tote-muestra.webp",
-          "kind": "alone",
-          "alt": "Diseño de muestra: tote bag de algodón con el logo BOIA"
-        },
-        {
-          "src": "/contenido/tienda/tote-angulo-muestra.webp",
-          "kind": "angle",
-          "alt": "Diseño de muestra: la tote bag BOIA desde otro ángulo"
-        },
-        {
-          "src": "/contenido/tienda/tote-modelo-muestra.webp",
-          "kind": "model",
-          "alt": "Diseño de muestra: la tote bag BOIA al hombro"
-        }
-      ]
-    },
-    {
       "id": "pegatinas",
       "name": "Packs de pegatinas",
       "description": "La boia también viaja fuera del mar.",
