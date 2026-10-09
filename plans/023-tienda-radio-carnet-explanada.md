@@ -103,6 +103,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - unit tests for the random pick: excludes self / current artist, artist-only filter, empty pool
   - screenshots mobile + desktop: own carnet with the button, artist profile with the two buttons → attach folder
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent a96c677ce33777bd6
 - Outcome:
 
 ## T252 — /mar: the unnamed right-hand island becomes the Explanada de Alicante
@@ -135,7 +136,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 ## T254 — Test guide for Hernán
 - Status: pending
-- Depends on: T246, T247, T248, T249, T250, T251, T252, T253, T255
+- Depends on: T246, T247, T248, T249, T250, T251, T252, T253, T255, T256, T257
 - Model: haiku
 - Skills: none
 - Goal: Write `docs/propuestas/2026-10-<dd>-plan-023-guia-prueba.md` in Spanish: what changed per task, how to try each one on mobile and desktop (with the screenshots' paths), the next-event explanation from T248, the migration table from T253, the e2e specs Hernán should run, and open questions for Álvaro (gallery photo rights, tote/T-shirt copy). Update `docs/spec/estado.md` for any REQ these tasks raise.
@@ -173,7 +174,22 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - unit test for the reseed case → pass
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent aa780d8496ad99249
+- Log: 2026-10-09 pushed to Vercel on Hernán's yes (5d471a9)
 - Outcome: sample «Tote bags» removed (data, home block, images); SAMPLE_CONTENT_REVISION 1→2 renews homeBlocks once for stored browsers · a826585
+
+## T257 — Radio admin: flag songs whose MP3 is missing
+- Status: pending
+- Depends on: T255
+- Model: haiku
+- Skills: none
+- Goal: Hernán (2026-10-09): if a song's MP3 is deleted directly in Supabase storage (not via the admin), the admin must show it. In Admin › Radio, check each song's file (e.g. a HEAD request to its public URL in Supabase mode; the IndexedDB blob in local mode) and mark missing ones with «Archivo no encontrado» plus a button to remove the song (same confirm as «Borrar»; removing must not fail because the file is already gone). Add a small summary line («N canciones sin archivo») and an admin filter for them if cheap. Checks run lazily when the section opens, never on the landing or in the player.
+- Context: `apps/web/app/admin/sections/radio.tsx` (song rows, `removeSong` ~line 612), `apps/web/lib/radio/shared-store.ts` (storage remove ~162-185), `apps/web/lib/radio/idb.ts`, ESTADO sections T246/T255.
+- Scope: radio admin, radio store code, i18n, unit tests / must not touch the player, migrations.
+- Done when:
+  - unit tests: a song with a missing file is flagged; removing it succeeds when the storage object is already gone
+  - screenshot of the admin with a flagged song → attach folder
+  - Test command → exit 0
+- Outcome:
 
 ## Decisions
 
@@ -190,6 +206,8 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Hernán confirmed (2026-10-09, on screen): remove the old sample tote (T256).
 
 - T256: revision 2 renews all sample homeBlocks on stored browsers (drops admin edits to sample hero/philosophy/footer there), same design as revision 1.
+
+- Added T257 (Hernán, 2026-10-09, on screen): admin flags songs whose MP3 was deleted outside the admin.
 
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
