@@ -89,7 +89,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - the 4 photos appear in /galeria (screenshots mobile + desktop, plus the cropped galeria-3 alone) → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent a1791bdcbfddf0848
-- Outcome:
+- Outcome: galeria-1..4 in album-muestra (selection false, home unchanged), galeria-3 cropped 60 px left in fotos.mjs, no revision bump needed · ff4f087
 
 ## T251 — Carnet: «Descubre» buttons under the answers
 - Status: pending
@@ -147,7 +147,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome:
 
 ## T255 — Radio: change a song's genre, delete genres, songs without genre
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T246
 - Model: opus
 - Skills: none
@@ -158,10 +158,11 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - unit tests (local mode + fake Supabase client): reassign a song's genre, set it to none, delete a genre → its songs remain with no genre and appear under «Todos» only
   - screenshots: admin song row genre selector, delete-genre confirm, player «Todos» with a genre-less song → attach folder
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent ab228cfc9b5d7e911
 - Outcome:
 
 ## T256 — Shop follow-up: drop the sample tote, make stored browsers see the new shop
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T249, T250
 - Model: haiku
 - Skills: none
@@ -183,6 +184,9 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 - T249: tote added as `tote-boia` with sale `party`; T-shirt keeps name «Camisetas», reserve; placeholder-marking test skips real photos.
 - Added T256 (orchestrator): the sample 12 € «Tote bags» duplicates the real tote → removed; T249 changed the home store block after T248's reseed revision shipped, so stored browsers need a revision bump.
+
+- T250: sources kept in art/galeria-fuentes/, crop done in tools/galeria/fotos.mjs; new photos appended for stored browsers by resolveEntities (no revision bump).
+- Hernán confirmed (2026-10-09, on screen): remove the old sample tote (T256).
 
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
