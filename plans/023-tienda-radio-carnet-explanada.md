@@ -107,7 +107,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: «🔎 Descubre otro miembro BOIA» under own answers; artist carnet adds «🔎 Descubre un artista»; shared discoverPool/pickDiscover, opens /carnet/<id>; no migration · 42edb09
 
 ## T252 — /mar: the unnamed right-hand island becomes the Explanada de Alicante
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: fable
 - Skills: blender-modeling-workflow, blender-asset-validation
@@ -119,10 +119,10 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - in-game screenshots from the boat, near (GLB) and far (fallback), mobile + desktop → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent a5b183b958ff988ae
-- Outcome:
+- Outcome: `explanada` decor piece rebuilt in Blender (wave mosaic, palms, benches, lamps, balustrade, la Concha, facades; 25.6k tris, 529 kB GLB) + matching hand-built fallback, no label; `?cerca=explanada` for captures · 9429130
 
 ## T253 — Supabase: apply every pending migration to boia-planet-dev
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T246, T251, T255
 - Model: opus
 - Skills: none
@@ -133,7 +133,10 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - per-migration result table (applied / skipped already / failed + error) in the ESTADO section
   - `pnpm test:supabase` → exit 0 (or the failure reported verbatim if a migration stopped the run)
   - Test command → exit 0
-- Outcome:
+- Log: 2026-10-09 launched attempt 1, agent a884de224ab0e57bf
+- Log: attempt 1 failed: migrations 1–3 applied to dev; 4 (artist_music) fails on duplicate constraint name carnets_music_url_check; 4–12 not applied; WIP branch worktree-agent-a884de224ab0e57bf
+- Log: 2026-10-09 launched attempt 2 (continuation, authorized to fix artist_music in place since unapplied anywhere), agent a61cfdf8295a239f7
+- Outcome: all 12 pending migrations applied to boia-planet-dev (artist_music duplicate constraint renamed to carnets_music_url_platform_check), types regenerated; test:supabase still red for non-migration reasons (Auth rate limit, stale schema assertions, leftover @example.test owner on dev) · ff4604c
 
 ## T254 — Test guide for Hernán
 - Status: pending
@@ -179,7 +182,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: sample «Tote bags» removed (data, home block, images); SAMPLE_CONTENT_REVISION 1→2 renews homeBlocks once for stored browsers · a826585
 
 ## T257 — Radio admin: flag songs whose MP3 is missing
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T255
 - Model: haiku
 - Skills: none
@@ -215,6 +218,15 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 - T251: buttons only on /carnet pages (not the /mar «Mi Carnet» sheet); non-artist member carnets also get the member button; 🔎 kept.
 
+- T253 retry: orchestrator authorized editing unapplied migration 20261008100200_artist_music.sql (duplicate constraint name) — Hernán asked to apply all possible migrations.
+
+- Hernán (2026-10-09, on screen): when the plan ends, push to main automatically (no push offer).
+
+- T253: migrations applied via harness `migrate(client, upto)` to check staff_roles (0 rows) before migration 8; no seeds run.
+- T252: island = `explanada` decor piece (compact.ts/decor.ts); GLB streamed via new DECOR_MODELS; mosaic as geometry (no UVs).
+
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
 - T251: in Supabase mode the discover pool is still the ranking's (sample members + content artists): real Supabase carnets cannot come up yet.
+- T253 → next plan: **security** — anon can execute `admin_sign_in_email` and `calitas_list`; 4 SECURITY DEFINER functions in `public` (`admin_sign_in_email`, `discount_code_for`, `radio_set_first`, `radio_reorder`). Also: update stale `schema.supabase.ts` assertions, fix the admin-limits owner-demotion test, remove the leftover `@example.test` owner on dev (Hernán, by hand past the last-owner trigger).
+- T252: no e2e for the Explanada yet (`?cerca=explanada` ready).
