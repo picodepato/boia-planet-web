@@ -1,0 +1,192 @@
+/*
+ * The checkout's own parts (plan 022 T238: out of checkout.css, which the
+ * landing's box office notice needs at once): this sheet arrives with the
+ * checkout's chunk, after checkout.css. Its rules for a `<p>` beat
+ * `.checkout p` by specificity (`.checkout …`), whatever the order the two
+ * sheets land in.
+ */
+
+.checkout__badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 2px dashed #12233f;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.checkout__event {
+  margin-bottom: 10px;
+}
+
+.checkout__event-name {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 2px !important;
+}
+
+.checkout__event-meta,
+.checkout__muted {
+  color: #3b4d6b;
+  font-size: 14px;
+}
+
+.checkout__quote {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: #f3ead8;
+}
+
+.checkout__quote > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.checkout__quote dt,
+.checkout__quote dd {
+  margin: 0;
+}
+
+.checkout__quote dd {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkout__total {
+  margin-top: 4px;
+  border-top: 1px solid #d9ccb2;
+  padding-top: 6px !important;
+  font-weight: 800;
+}
+
+.checkout__notice {
+  font-size: 13px;
+  color: #3b4d6b;
+}
+
+.checkout__message {
+  font-weight: 700;
+  color: #9a2a00;
+}
+
+.checkout__result {
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: #12233f;
+  color: #fffaf0;
+}
+
+.checkout .checkout__result p {
+  margin: 0 0 4px;
+}
+
+.checkout__result-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+/*
+ * «Tienes un código de descuento para este evento» (T43, REQ-COM-036): el
+ * mismo aviso en la isla del evento y en el checkout. Naranja de la marca con
+ * texto negro (5,7:1, T50).
+ */
+.discount-banner {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 2px solid #000;
+  border-radius: var(--radius);
+  background: var(--boia-orange, #ec4f24);
+  color: #000;
+  text-align: left;
+}
+
+.discount-banner p,
+.checkout .discount-banner p {
+  margin: 0 0 4px;
+}
+
+.discount-banner p:last-child {
+  margin-bottom: 0;
+}
+
+.discount-banner__title {
+  font-weight: 800;
+}
+
+.discount-banner__code code {
+  padding: 1px 6px;
+  border-radius: var(--radius);
+  background: #fffaf0;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.discount-banner__note {
+  font-size: 13px;
+}
+
+/* El aviso de tener Carnet (T66): azul de la marca, como el Carnet. */
+.discount-banner--carnet {
+  background: #12233f;
+  border-color: #12233f;
+  color: #fffaf0;
+}
+
+/*
+ * «¿Tienes Carnet BOIA?» antes de comprar sin Carnet (T66): el atajo para
+ * crearlo y la compra sigue con el 10 % aplicado.
+ */
+.checkout__offer {
+  margin: 8px 0 12px;
+  padding: 12px;
+  border: 2px solid #12233f;
+  border-radius: var(--radius);
+  background: #fff3df;
+  color: #12233f;
+}
+
+.checkout .checkout__offer p {
+  margin: 0 0 4px;
+}
+
+.checkout__offer-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.checkout__carnet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.checkout__carnet-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.checkout__carnet-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 2px solid #12233f;
+  border-radius: var(--radius);
+  background: #fffaf0;
+  color: #12233f;
+  font: inherit;
+}
+
+.checkout__skipped {
+  font-size: 13px;
+  color: #3b4d6b;
+}

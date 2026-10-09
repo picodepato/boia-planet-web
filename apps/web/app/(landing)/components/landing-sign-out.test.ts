@@ -3,16 +3,22 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accountSnapshot, resetAccountForTests, type AccountStatus } from '../../../lib/account/session';
 import type * as UseAccount from '../../../lib/account/use-account';
+import type * as Lazy from './landing-sign-out-lazy';
 import { t } from '../../../lib/i18n/web';
 import { SiteHeader } from './site-header';
 
 type UseAccountModule = typeof UseAccount;
+type LazyModule = typeof Lazy;
 
 const route = vi.hoisted(() => ({ pathname: '/' }));
 vi.mock('next/navigation', () => ({ usePathname: () => route.pathname }));
 vi.mock('../../../lib/account/use-account', async (importOriginal) => ({
   ...(await importOriginal<UseAccountModule>()),
   useAccount: () => accountSnapshot(),
+}));
+// The header mounts it lazily in the browser (plan 022 T238); here, at once.
+vi.mock('./landing-sign-out-lazy', async () => ({
+  LandingSignOutLazy: (await import('./landing-sign-out')).LandingSignOut,
 }));
 
 afterEach(() => {
@@ -42,5 +48,11 @@ describe('logout de la landing (T199, decisión 10)', () => {
 
   it.each(['/mar', '/mar?juego=canon', '/juego', '/eventos/halloween-2026', '/carnet'])('fuera de la landing (%s) no se muestra aunque haya sesión', (pathname) => {
     expect(header('member', pathname)).not.toContain('landing-sign-out');
+  });
+
+  it('fuera de la ruta crítica: el servidor no pinta nada aunque haya sesión (plan 022 T238)', async () => {
+    const { LandingSignOutLazy } = await vi.importActual<LazyModule>('./landing-sign-out-lazy');
+    resetAccountForTests({ status: 'member' });
+    expect(renderToStaticMarkup(createElement(LandingSignOutLazy))).toBe('');
   });
 });

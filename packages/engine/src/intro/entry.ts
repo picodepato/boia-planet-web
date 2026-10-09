@@ -73,7 +73,16 @@ export interface BootEntry {
   reveal(outcome: 'played' | 'skipped' | 'none'): void;
   /** Tope de seguridad del script en curso (0 si no corre); se cancela al tomar el relevo. */
   timer: number;
+  /**
+   * From how many viewport heights of scroll the header shows (`<html
+   * data-hero-top>` comes off): `bootScript`'s `headerFrom`, or
+   * `HEADER_FROM` with reduced motion.
+   */
+  headerFrom: number;
 }
+
+/** The header shows from here (viewport heights of scroll) when nothing else is said (T77 §7.2). */
+export const HEADER_FROM = 0.95;
 
 export const LANDED_EVENT = 'boia:landed';
 
@@ -83,7 +92,10 @@ export const LANDED_EVENT = 'boia:landed';
  * marks `<html data-hero="still" data-hero-static>` (the static hero and
  * its one-screen track, before the first paint); if the appearance plays, `<html data-intro="play">` keeps the title
  * and the scroll hint hidden until the rest. `<html data-hero-top>` says the
- * page is still on the hero (the header stays hidden there). Guarantees even
+ * page is still on the hero, or on what follows it before the content
+ * (`headerFrom`: plan 022 T238, the landing's presentation): the header stays
+ * hidden there. With reduced motion that stretch is the hero alone
+ * (`HEADER_FROM`). Guarantees even
  * if the app's JavaScript never runs:
  * - «Entradas» (any `[data-intro-skip]`) and a scroll during the appearance
  *   fast-forward it before hydration (the app is then born at rest);
@@ -95,6 +107,11 @@ export const LANDED_EVENT = 'boia:landed';
  */
 export function bootScript(opts: {
   capMs: number;
+  /**
+   * Viewport heights of scroll the header waits, with motion (default
+   * `HEADER_FROM`); with reduced motion it is always `HEADER_FROM`.
+   */
+  headerFrom?: number;
   /** Recursos que la cinemática necesita primero; se piden ya, sólo si se va a reproducir. */
   preload?: readonly string[];
 }): string {
@@ -103,12 +120,13 @@ var decide=${decideEntry.toString()};
 var d=document.documentElement,w=window,doc=document,reduced=false;
 try{reduced=w.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
 var mode=decide({pathname:location.pathname,search:location.search,hash:location.hash,reducedMotion:reduced});
-var entry=w.__boiaEntry={mode:mode,t0:performance.now(),claimed:false,skipped:false,landed:null,timer:0,
+var hf=reduced?${HEADER_FROM}:${Number(opts.headerFrom ?? HEADER_FROM)};
+var entry=w.__boiaEntry={mode:mode,t0:performance.now(),claimed:false,skipped:false,landed:null,timer:0,headerFrom:hf,
 reveal:function(o){if(entry.landed)return;entry.landed=o;clearTimeout(entry.timer);entry.timer=0;d.removeAttribute("data-intro");
 try{w.dispatchEvent(new CustomEvent(${JSON.stringify(LANDED_EVENT)},{detail:{intro:o}}));}catch(e){}}};
 d.setAttribute("data-entry",mode);
 if(reduced){d.setAttribute("data-hero","still");d.setAttribute("data-hero-static","");}
-var top=function(){if(w.scrollY<w.innerHeight*0.95)d.setAttribute("data-hero-top","");else d.removeAttribute("data-hero-top");
+var top=function(){if(w.scrollY<w.innerHeight*hf)d.setAttribute("data-hero-top","");else d.removeAttribute("data-hero-top");
 if(mode==="intro"&&!entry.claimed&&w.scrollY>0)entry.reveal("skipped");};
 top();w.addEventListener("scroll",top,{passive:true});
 if(mode==="direct"){entry.landed="none";return;}

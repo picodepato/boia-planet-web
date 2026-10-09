@@ -5,6 +5,7 @@ import {
   titlePoses,
   viewMoved,
   type BootEntry,
+  HEADER_FROM,
   type EnterSource,
   type IntroFrame,
   type IntroOutcome,
@@ -44,8 +45,6 @@ const DIRECT_IDLE_MS = 1500;
 const SMOOTH_MS = 90;
 /** The hero UI stops taking taps from here (viewport heights of scroll). */
 const UI_TAPS_UNTIL = 0.08;
-/** The header comes in from here. */
-const HEADER_FROM = 0.95;
 
 /** Cuando el navegador esté libre (o pasados `maxMs`). */
 function whenIdle(maxMs: number): Promise<void> {
@@ -541,7 +540,9 @@ class IntroRun {
     const span = photos ? top - H / 2 - H : 3 * H;
     this.light = Math.min(1, Math.max(0, (y - H) / Math.max(span, H / 2)));
     // toggleAttribute with a force does nothing when it is already so (no style work).
-    this.html.toggleAttribute('data-hero-top', y < window.innerHeight * HEADER_FROM);
+    // The header waits as long as the boot script says (plan 022 T238: past the presentation).
+    const headerFrom = this.entry?.headerFrom ?? HEADER_FROM;
+    this.html.toggleAttribute('data-hero-top', y < window.innerHeight * headerFrom);
   }
 
   /** T78's props: when the page is calm after the rest, or right away on a scroll. */

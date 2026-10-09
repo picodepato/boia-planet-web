@@ -16,7 +16,8 @@
  *               unpins and «Próximo evento» comes up under it.
  *
  * The page's CSS reserves `END + 1` screens for the track (landing.css,
- * `--reel-end`): change both together.
+ * `--reel-end`): change both together. The header stays hidden until `end`
+ * (the boot script's `headerFrom` in the landing's page.tsx, plan 022 T238).
  */
 
 export type PresentationStage = 'hero' | 'black' | 'beats' | 'window' | 'open' | 'full';

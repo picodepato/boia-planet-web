@@ -16,6 +16,7 @@ import type {
   TicketingAdapter,
 } from './adapter';
 import './checkout.css';
+import './checkout-form.css';
 import { CHECKOUT_COPY as C } from './copy';
 import { DiscountBanner } from './discount-banner';
 import { ticketing } from './index';

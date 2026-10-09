@@ -271,7 +271,11 @@ p.event-card__poster {
     visibility 0.2s;
 }
 
-/* On the hero the header waits off screen (T77 §7.2: it slides in at s ≥ 0.95). */
+/*
+ * On the hero the header waits off screen (T77 §7.2); with the presentation
+ * it waits until its end, as «Próximo evento» comes up (plan 022 T238: the
+ * boot script's `headerFrom`).
+ */
 html[data-hero-top] .site-header {
   background: transparent;
   border-color: transparent;

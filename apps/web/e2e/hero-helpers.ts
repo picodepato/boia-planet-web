@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { t } from '../lib/i18n';
+import { PRESENTATION } from '../lib/landing/presentation';
 
 /**
  * The landing hero's pill (plan 007 T79): «Zarpar» (a link to `ZARPAR_HREF`,
@@ -32,11 +33,21 @@ export async function tap(page: Page, el: Locator): Promise<void> {
 }
 
 /**
- * Scroll past the hero: on the hero the site header waits off screen and
- * slides in from 0.95 viewport heights down (plan 007 T79, T77 §7.2).
+ * Viewport heights of scroll past the hero and the presentation that follows
+ * it (plan 021 T235): the first band is on screen and the header in.
+ */
+export const PAST_INTRO = PRESENTATION.end + 0.6;
+
+/**
+ * Scroll past the hero: on the hero and the presentation the site header
+ * waits off screen and slides in at `PRESENTATION.end` viewport heights
+ * (plan 007 T79, T77 §7.2, plan 022 T238).
  */
 export async function pastHero(page: Page): Promise<void> {
-  await page.evaluate(() => window.scrollTo({ top: window.innerHeight, behavior: 'instant' }));
+  await page.evaluate(
+    (screens) => window.scrollTo({ top: window.innerHeight * screens, behavior: 'instant' }),
+    PAST_INTRO,
+  );
   await expect(page.locator('html')).not.toHaveAttribute('data-hero-top', /.*/);
   await expect(page.locator('.site-header__inner')).toBeVisible();
 }
@@ -44,10 +55,6 @@ export async function pastHero(page: Page): Promise<void> {
 /** Past the hero, the header's «Entradas» opens the Tickets panel; returns the panel. */
 export async function openTickets(page: Page): Promise<Locator> {
   await pastHero(page);
-  // Past the dive (the sea): the hero no longer covers the header.
-  await page.evaluate(() =>
-    window.scrollTo({ top: window.innerHeight * 1.6, behavior: 'instant' }),
-  );
   // The header is fixed: clicking it scrolls nothing; Playwright waits for its slide-in.
   await headerTickets(page).click();
   const panel = ticketsPanel(page);

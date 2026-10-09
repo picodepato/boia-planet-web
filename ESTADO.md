@@ -4,6 +4,66 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T238: Landing: header hidden during the intro, critical-path kB freed
+
+**Qué existe**
+
+- Cabecera de la landing: sigue oculta en el hero y ahora también durante toda
+  la presentación negra (BOIA, ventana de vídeo, pantalla completa); entra al
+  terminar, a `PRESENTATION.end` (3,1 pantallas), cuando sube «Próximo
+  evento». Reversible: al volver a subir se oculta de nuevo. Con movimiento
+  reducido (sin presentación fijada) sale como antes, a 0,95 pantallas.
+  - `packages/engine/src/intro/entry.ts`: `bootScript({ headerFrom })`, nuevo
+    `HEADER_FROM` (0,95) y `BootEntry.headerFrom`; el script de arranque usa
+    `headerFrom` con movimiento y `HEADER_FROM` con movimiento reducido.
+  - `apps/web/app/(landing)/page.tsx` le pasa `PRESENTATION.end`;
+    `lib/intro/run.ts` usa `entry.headerFrom` (antes su propio 0,95).
+  - Sin el script de arranque (navegación interna a `/` desde otra página) no
+    hay presentación fijada y la cabecera sigue a 0,95.
+- Ruta crítica de la landing (gzip, `node scripts/landing-budget.mjs`):
+  **antes 199,5 kB (204 254 B) → después 196,6 kB (201 292 B), −2,9 kB**
+  (JS 165,7 → 163,3; CSS 11,3 → 10,8; HTML 14,8 y fuente 7,7 igual).
+  - «Cerrar sesión» de la cabecera (`landing-sign-out-lazy.tsx`) se carga en
+    su propio chunk al arrancar la página: el servidor no la pinta nunca (sin
+    sesión en el servidor), así que sale el código de sesión de la cuenta
+    (`lib/account/session.ts`, `use-account`, `artist-link`) del chunk de la
+    página (5,4 → 3,2 kB).
+  - `lib/ticketing/checkout.css` partido: queda el diálogo y sus botones (los
+    usa el aviso «Solo en puerta» de la landing); lo propio del checkout va a
+    `checkout-form.css`, que llega con el chunk del checkout (y con el aviso
+    de descuento de `/mar`). Sus reglas para `<p>` ganan por especificidad,
+    lleguen las hojas en el orden que lleguen.
+- El informe del presupuesto (no su tope de 200 kB) añade el total por tipo,
+  cuánto son polyfills `noModule` (38,6 kB que los navegadores modernos no
+  descargan, pero se siguen contando) y `--baseline <json>` para comparar
+  antes/después: `node scripts/landing-budget.mjs --json > antes.json`, el
+  cambio, `pnpm build`, `node scripts/landing-budget.mjs --baseline antes.json`.
+
+**Comandos**
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 265 archivos, 2413 pasan, 1 saltado.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm build` →
+  exit 0, presupuesto 196,6 kB OK. `pnpm typecheck` → exit 0.
+- Capturas (fuera del repo):
+  `/tmp/orchestrator-attach/boia-planet-hernan-T238/` — móvil 390×844 y
+  escritorio 1440×900: `1-hero` (cabecera oculta, como hoy), `2-intro-1.0` y
+  `3-intro-2.2` (sin cabecera), `4-proximo-evento` (cabecera visible),
+  `5-vuelta-intro-1.8` (al subir, oculta otra vez), `reducido-0.5` /
+  `reducido-1.2` (movimiento reducido: como antes).
+
+**Pendiente**
+
+- Más kB exigirían tocar la arquitectura (los bloques son componentes de
+  cliente porque `LiveLanding` repinta con el repositorio) o el catálogo i18n
+  de la web (separar las claves que no usa la landing; choca con T239).
+- e2e que Hernán debería correr (actualizados: la cabecera ya no sale a 1–1,6
+  pantallas sino tras la presentación): `landing-scroll.spec.ts`,
+  `landing.spec.ts`, `intro.spec.ts`, `accesos.spec.ts`,
+  `landing-logout.spec.ts`, `tickets.spec.ts`, `despliegue.spec.ts`,
+  `ranking.spec.ts` (usan `pastHero`/`openTickets` de `hero-helpers.ts`, que
+  ahora baja `PAST_INTRO` = `PRESENTATION.end + 0.6` pantallas).
+
 ## 2026-10-09 — plan 022 T237: Las Calitas behind the castaway, routes rerouted
 
 Qué existe:

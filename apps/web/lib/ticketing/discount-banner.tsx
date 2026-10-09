@@ -4,7 +4,7 @@ import type { BoiaEvent } from '@boia/contracts';
 import type { BoiaRepository } from '@boia/store';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { gameRepository } from '../repo';
-import './checkout.css';
+import './checkout-form.css';
 import { CHECKOUT_COPY } from './copy';
 import { type DiscountBannerInfo, discountBannerFor, formatEuros } from './pricing';
 

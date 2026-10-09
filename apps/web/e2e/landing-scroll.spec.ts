@@ -175,9 +175,11 @@ test('«Zarpar», sin «Entradas», en el primer pintado; reposo; un viewport de
   await snap(page, 'zambullida');
 
   // One viewport down: the scene has dived, under the presentation's black
-  // (plan 021 T235): no band yet, the header in.
+  // (plan 021 T235): no band yet, and the header waits for the end of the
+  // presentation (plan 022 T238).
   await scrollTo(page, H, 'sea');
   await expect(page.locator('html')).toHaveAttribute('data-reel-covered', '');
+  await expect(page.locator('.site-header__inner'), 'sin cabecera en la presentación').toBeHidden();
   const band = page.locator('main > .section').first();
   expect((await band.boundingBox())!.y, 'la primera banda espera').toBeGreaterThanOrEqual(H);
   // Past the presentation: the first band on screen.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bootScript, decideEntry, mountMode, type BootEntry } from './entry';
+import { bootScript, decideEntry, HEADER_FROM, mountMode, type BootEntry } from './entry';
 
 const base = { pathname: '/', search: '', hash: '', reducedMotion: false };
 
@@ -89,6 +89,7 @@ function runBoot(opts: {
   storageThrows?: boolean;
   /** La pestaña se abrió en segundo plano. */
   hidden?: boolean;
+  headerFrom?: number;
 }) {
   const attrs = new Map<string, string>();
   let nextId = 1;
@@ -150,7 +151,11 @@ function runBoot(opts: {
       }
     },
   };
-  const src = bootScript({ capMs: 9000, preload: ['/a.png', '/b.png'] });
+  const src = bootScript({
+    capMs: 9000,
+    preload: ['/a.png', '/b.png'],
+    ...(opts.headerFrom === undefined ? {} : { headerFrom: opts.headerFrom }),
+  });
   new Function(...Object.keys(env), src)(...Object.values(env));
   /** Dispara los temporizadores que siguen armados. */
   const fire = () => {
@@ -297,11 +302,29 @@ describe('script de arranque', () => {
     b.scroll(0);
     expect(b.attrs.has('data-hero-top')).toBe(true);
     expect(b.events).toEqual(['boia:landed:skipped']);
+    expect(b.entry.headerFrom).toBe(HEADER_FROM);
     // Taken over by the app: the scroll is the app's.
     const c = runBoot({});
     c.entry.claimed = true;
     c.scroll(300);
     expect(c.entry.landed).toBeNull();
+  });
+
+  it('con `headerFrom`, la cabecera espera a esa altura; con movimiento reducido, sólo al hero (plan 022 T238)', () => {
+    const b = runBoot({ headerFrom: 3.1 });
+    expect(b.entry.headerFrom).toBe(3.1);
+    b.scroll(800 * HEADER_FROM + 10);
+    expect(b.attrs.has('data-hero-top')).toBe(true);
+    b.scroll(800 * 3.1 - 1);
+    expect(b.attrs.has('data-hero-top')).toBe(true);
+    b.scroll(800 * 3.1 + 1);
+    expect(b.attrs.has('data-hero-top')).toBe(false);
+    b.scroll(800 * 2);
+    expect(b.attrs.has('data-hero-top')).toBe(true);
+    const r = runBoot({ headerFrom: 3.1, reduced: true });
+    expect(r.entry.headerFrom).toBe(HEADER_FROM);
+    r.scroll(800 * HEADER_FROM + 10);
+    expect(r.attrs.has('data-hero-top')).toBe(false);
   });
 
   it('tomado el relevo, el tope no muestra la landing: la escena manda', () => {

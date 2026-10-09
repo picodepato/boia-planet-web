@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { ONLINE_EVENT } from './online-event';
+import { PAST_INTRO } from './hero-helpers';
 
 /**
  * Chunks JS que sólo usa el juego (el mar 3D, /mar) y no la landing, sacados del
@@ -36,8 +37,11 @@ const exploreCta = (page: Page) => hero(page).getByTestId('cta-3d');
 const headerTickets = (page: Page) =>
   page.locator('.site-header').getByRole('link', { name: 'Entradas', exact: true });
 async function openFromHeader(page: Page) {
-  // Past the dive (the sea): the hero no longer covers the header.
-  await page.evaluate(() => window.scrollTo({ top: innerHeight * 1.6, behavior: 'instant' }));
+  // Past the hero and the presentation: the header is in (plan 022 T238).
+  await page.evaluate(
+    (screens) => window.scrollTo({ top: innerHeight * screens, behavior: 'instant' }),
+    PAST_INTRO,
+  );
   await expect(page.locator('.site-header__inner')).toBeVisible();
   // The header is fixed: clicking it scrolls nothing; Playwright waits for its slide-in.
   await headerTickets(page).click();

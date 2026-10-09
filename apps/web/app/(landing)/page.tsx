@@ -2,6 +2,7 @@ import { bootScript } from '@boia/engine/intro';
 import type { Metadata } from 'next';
 import { t } from '../../lib/i18n';
 import { introCss, loadIntroData, stillCss } from '../../lib/intro/load';
+import { PRESENTATION } from '../../lib/landing/presentation';
 import { resolveHome } from '../../lib/landing/resolve';
 import { SAMPLE_CONTENT } from '../../lib/landing/sample-content';
 import { IntroStage } from './components/intro-stage';
@@ -34,8 +35,12 @@ export default function LandingPage() {
           <script
             dangerouslySetInnerHTML={{
               // El tope sólo cuenta si la app nunca monta la escena; el plazo
-              // de la escena lo lleva el controlador desde el montaje.
-              __html: bootScript({ capMs: intro.config.bootCapMs }),
+              // de la escena lo lleva el controlador desde el montaje. The
+              // header waits for the end of the presentation (plan 022 T238).
+              __html: bootScript({
+                capMs: intro.config.bootCapMs,
+                headerFrom: PRESENTATION.end,
+              }),
             }}
           />
           <style dangerouslySetInnerHTML={{ __html: `${stillCss(intro)}\n${introCss(intro)}` }} />

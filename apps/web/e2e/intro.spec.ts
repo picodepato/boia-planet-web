@@ -5,6 +5,7 @@ import { marWorld } from '../app/mar/engine/compact';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
 import { ONLINE_EVENT } from './online-event';
 import { createCarnetInCheckout } from './carnet-seed';
+import { PAST_INTRO } from './hero-helpers';
 
 /**
  * Entrada 3D con el planeta de /mar (T57, T64; plan 007 T79; D-19, D-21,
@@ -523,8 +524,11 @@ test('motor bloqueado: la versión estática y Tickets funcionando (REQ-ENT-017,
   await expect(canvases(page)).toHaveCount(0);
   await oneHeroButton(page);
 
-  // «Entradas», en la cabecera al dejar el hero.
-  await page.evaluate(() => window.scrollTo({ top: innerHeight * 1.6, behavior: 'instant' }));
+  // «Entradas», en la cabecera tras el hero y la presentación (plan 022 T238).
+  await page.evaluate(
+    (screens) => window.scrollTo({ top: innerHeight * screens, behavior: 'instant' }),
+    PAST_INTRO,
+  );
   await expect(page.locator('.site-header__inner')).toBeVisible();
   await headerTickets(page).click();
   await expect(ticketsPanel(page)).toBeVisible();
