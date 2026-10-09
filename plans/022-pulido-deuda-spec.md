@@ -128,7 +128,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: PRO/ENT/ARQ: HECHO PRO-015, ARQ-005/008/012 (new tests); PARCIAL PRO-008/010, ENT-018, ARQ-004/006/018; 30-row table of what Álvaro/devices/migrations must provide; estado.py 170/71/19 · a105b73
 
 ## T244 — Spec backlog B: world, identity, community, admin and remaining REQs
-- Status: running (attempt 2)
+- Status: done
 - Depends on: T236, T237, T240, T241, T242
 - Model: opus
 - Skills: none
@@ -139,7 +139,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - `python3 tools/spec/estado.py` → exit 0
   - ESTADO lists, per REQ touched, old → new status and proof, plus the table of REQs left for Álvaro/devices
   - Test command → exit 0
-- Outcome:
+- Outcome: other areas: ~15 REQs closed with tests, the rest list what is missing; «tripulación» removed from user texts (IDE-020); race now voided on hidden tab/teleport in /mar (AVE-032); estado.py 181/57/22 · 8f60529
 
 ## T246 — Radio: song catalog, genres and admin upload
 - Status: done
@@ -173,7 +173,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: «Música» hero button (first song then shuffle), glowing header button next to «Entradas», Winamp-style player with genres, «Sonando» toast, `/mar` Radio button; radio chunk lazy; landing 196.6 → 196.7 kB (+75 B webpack runtime table, accepted) · 6a720b9
 
 ## T245 — Test guide for Hernán after plan 022
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T243, T244, T247
 - Model: haiku
 - Skills: none
@@ -200,9 +200,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T242: world package has no i18n → map texts are keys resolved by the web; proper names keyed too; world-package tests now expect keys; check = new catalog test + grep (agent)
 - 2026-10-09 T247: Ajustes «Música» off / landing 🔊 pauses the radio, on resumes; manual play with music off turns «Música» on; own volume slider; hero button idle→start, paused→resume, playing→open player; header/mar buttons open/close the player; hero button hides from 0.42 screens; shuffle + repeat-all by default; prefetch at ≤8 s left; 3 consecutive failures stop; state in sessionStorage; radio chunk on idle (≤1.5 s) or first gesture; `/mar` button under «!» (agent). +75 B on the landing accepted: no radio code in the critical path (orchestrator)
 - 2026-10-09 T243: attempt 1 on haiku incomplete → retried on opus (orchestrator); HECHO only where a test meets the 09 criterion; all browser checks are emulation; ARQ-006 stays PARCIAL (`pnpm db:test` needs local PostgreSQL) (agent)
+- 2026-10-09 T244: attempt 1 on haiku incomplete → retried on opus (orchestrator); kept «tripulación» → «barcos»/«ranking» and «El grupo BOIA» (changed strings listed in ESTADO for Hernán); IDE-020 test scans `mundos/**/*.json`; AVE-032 wired in /mar instead of downgraded; MUN-015/018 → PARCIAL (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T244: edit map-place dialogue (castaway, boias) from the Admin (ADM-001); `lib/mundo/menu` (7 sections) looks orphaned; COM-016 ticketing activation procedure (Álvaro's provider); one dry run of `docs/manual-admin.md` §6 (ADM-031); update criteria that conflict with later decisions (MUN-001, MUN-021, MUN-028, AVE-026, AVE-031, AVE-035, IDE-034)
 - 2026-10-09 T243: landing does not recover from a lost WebGL context (planet without islands, «BOIA» stays white); /mar welcome sheet titled «Welcome Aboard» in English; at 200 % zoom corner texts overlap «Consigue descuentos»; decide whether the /mar welcome sheet counts as a blocking modal (PRO-010); pass criteria of PRO-009, ENT-002, ENT-027 contradict later decisions
 - 2026-10-09 T247: the last +75 B on the landing come from the catalog/sample split shared with the admin (`muestra.json` commons chunk)
 - 2026-10-09 T242: remaining prose literals: `acuarela/skin.ts` (`cala: 'Puerto de Alicante'`, hidden world) and default `leaveReaction` in `packages/world/src/behaviors.ts`; no lint rule for loose strings exists
@@ -240,3 +242,4 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T244 attempt 1 incomplete (haiku reviewed only a subset of PARCIAL rows; changed «tripulación» copy for IDE-020) · branch worktree-agent-aee2480a6c92ff544 kept; attempt 2 on opus
 - 2026-10-09 T244 launched · attempt 2 (opus, continuation of worktree-agent-aee2480a6c92ff544) · agent aca57f1ea71e67d5e
 - 2026-10-09 T243 done · merged a105b73
+- 2026-10-09 T244 done · merged 8f60529
