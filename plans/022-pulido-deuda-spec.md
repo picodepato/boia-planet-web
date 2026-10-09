@@ -128,7 +128,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome:
 
 ## T244 — Spec backlog B: world, identity, community, admin and remaining REQs
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T236, T237, T240, T241, T242
 - Model: haiku
 - Skills: none
@@ -157,7 +157,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: admin Radio section, catalog (local IndexedDB `boia-radio` / Supabase `radio_songs`), migration 20261009100100_radio.sql (#11), 100 seed songs 2.78 MB · aade97b
 
 ## T247 — Radio: play button, Winamp-style player, «Sonando» toast, /mar button
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T246, T236, T238
 - Model: fable
 - Skills: frontend-design
@@ -170,7 +170,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - screenshots mobile 390×844 and desktop: landing button idle and active, button next to «Entradas» glowing after scroll, the open Winamp-style player with playlist and genres, the «Sonando» toast, the `/mar` Radio button and player → attach folder
   - landing critical path not larger than after T238 (size check numbers in ESTADO) → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: «Música» hero button (first song then shuffle), glowing header button next to «Entradas», Winamp-style player with genres, «Sonando» toast, `/mar` Radio button; radio chunk lazy; landing 196.6 → 196.7 kB (+75 B webpack runtime table, accepted) · 6a720b9
 
 ## T245 — Test guide for Hernán after plan 022
 - Status: pending
@@ -198,9 +198,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T240: moving to trash keeps the blob; purge (manual or retention) removes it; sweep keeps blobs referenced by content, drafts, trash and undo history; IndexedDB errors ignored in the sweep; Supabase trash already showed nicknames (agent)
 - 2026-10-09 T241: uploaded file replaces the category piece (island template too); image = billboard; size = footprint (min 2.5) × scale, height ≤ half, ≤ 6 u; models lambertized (`lambertize` exported); `data-objetos-arte` on the canvas (agent)
 - 2026-10-09 T242: world package has no i18n → map texts are keys resolved by the web; proper names keyed too; world-package tests now expect keys; check = new catalog test + grep (agent)
+- 2026-10-09 T247: Ajustes «Música» off / landing 🔊 pauses the radio, on resumes; manual play with music off turns «Música» on; own volume slider; hero button idle→start, paused→resume, playing→open player; header/mar buttons open/close the player; hero button hides from 0.42 screens; shuffle + repeat-all by default; prefetch at ≤8 s left; 3 consecutive failures stop; state in sessionStorage; radio chunk on idle (≤1.5 s) or first gesture; `/mar` button under «!» (agent). +75 B on the landing accepted: no radio code in the critical path (orchestrator)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T247: the last +75 B on the landing come from the catalog/sample split shared with the admin (`muestra.json` commons chunk)
 - 2026-10-09 T242: remaining prose literals: `acuarela/skin.ts` (`cala: 'Puerto de Alicante'`, hidden world) and default `leaveReaction` in `packages/world/src/behaviors.ts`; no lint rule for loose strings exists
 - 2026-10-09 T241: upload object files to Supabase Storage (needs a bucket + migration); Admin content still stays in the browser in both modes (D-20)
 - 2026-10-09 T240: artist Carnets are excluded from `admin.carnets()`, so their trash rows still show the id; the orphan sweep could prune a blob uploaded at the exact moment it runs (Admin open only)
@@ -227,3 +229,5 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T242 launched · attempt 1 · agent a046011c27eafd151
 - 2026-10-09 pushed main c550a62 (Hernán in session; T236–T241 + T246)
 - 2026-10-09 T242 done · merged aa0e6ff
+- 2026-10-09 T243 launched · attempt 1 · agent aeae088802d674361
+- 2026-10-09 T247 done · merged 6a720b9
