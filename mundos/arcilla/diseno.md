@@ -62,7 +62,7 @@ este, un circuito para quien tiene prisa: El Freu, un paso estrecho entre las ro
 - **Secretos** (estrellas): cueva del acantilado, ánfora de Agost, campana hundida y círculo de las
   boies dormidas. Cada uno se insinúa cerca de una isla sin bloquear nada (REQ-AVE-015).
 - **Faro y Cañón** están en L1 desde D-20 (corrige D-02 y D-08): la Isla del Faro (Vigilancia del faro)
-  y la Isla del Cañón (Cañón contra tiburones) están en el mapa compartido, en la banda oeste, al norte
+  y el Puig Campana (Cañón contra tiburones) están en el mapa compartido, en la banda oeste, al norte
   del Puerto de Fotos (`faro` y `canon` en `packages/world/src/worlds/arcilla/map.ts`), y arrancan sus
   minijuegos con INICIAR_MINIJUEGO. En `mapa.json` ocupan el antiguo solar L2 (`minijuegos`, con
   `solares_l2` vacío); sólo el desvío `d_solar` conserva el nombre antiguo.

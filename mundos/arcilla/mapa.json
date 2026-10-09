@@ -2623,6 +2623,7 @@
         "boia",
         "whatsapp",
         "naufrago",
+        "calitas",
         "restos",
         "cala",
         "anfora",
@@ -3262,7 +3263,7 @@
     },
     {
       "id": "canon",
-      "nombre": "Isla del Cañón",
+      "nombre": "Puig Campana",
       "minijuego": "canon",
       "pos": [
         -9.0,
@@ -3291,13 +3292,13 @@
       "id": "calitas",
       "nombre": "Las Calitas",
       "pos": [
-        -11.5,
-        -27.5
+        -7.0,
+        18.6
       ],
       "isla": {
         "centro": [
-          -11.5,
-          -27.5
+          -7.0,
+          18.6
         ],
         "a": 2.0,
         "b": 1.6,
@@ -3309,7 +3310,7 @@
       },
       "comportamientos": "PROXIMIDAD + CONTENIDO (comentarios)",
       "proximidad": 3.4,
-      "nota": "La isla de los comentarios (plan 019 T222, decisión 16): su fuente es el plan y la pone packages/world/src/worlds/arcilla/map.ts (CALITAS_CENTER). Aquí sólo para su arte 2D (plan 020 T232, tools/blender/lugares.json). muestra"
+      "nota": "La isla de los comentarios (plan 019 T222, decisión 16): su fuente es el plan y la pone packages/world/src/worlds/arcilla/map.ts (CALITAS_CENTER). Desde el plan 022 T237 está justo detrás del náufrago, como el sitio del que se perdió: en /mar queda por detrás y a su izquierda, fuera de la carretera de Los Rápidos. Aquí, para su arte 2D (plan 020 T232, tools/blender/lugares.json) y como tierra para las rutas (herramientas/validar.py). muestra"
     }
   ],
   "ritmo": {

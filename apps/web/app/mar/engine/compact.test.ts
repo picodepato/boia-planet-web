@@ -9,6 +9,7 @@ import { circuitFromWorld } from '@boia/engine/circuit';
 import { missionDestinationId, rescueMissionOf } from '@boia/engine/mission';
 import {
   BOARD_REF,
+  CALITAS_PLACE_ID,
   CASTLE_GAME_ID,
   CASTLE_PLACE_ID,
   CIRCUIT_ID,
@@ -471,6 +472,38 @@ describe('el faro y el castillo cambian de sitio (plan 014, T157)', () => {
       expect(piece.position, piece.identity.id).toEqual(original.position);
       expect(piece.behaviors, piece.identity.id).toEqual(original.behaviors);
       expect(piece.params, piece.identity.id).toEqual(original.params);
+    }
+  });
+
+  it('Las Calitas, justo detrás del náufrago, sin mover nada ni pisar la carrera (plan 022 T237)', () => {
+    const calitas = byId(world, CALITAS_PLACE_ID);
+    const castaway = byId(world, 'naufrago');
+    const s = world.spawn!;
+    // Detrás del náufrago visto desde la salida (la cámara mira hacia −y): más lejos de la
+    // salida y más arriba en pantalla, y cerca: a menos de dos islas de distancia.
+    expect(calitas.position.y).toBeLessThan(castaway.position.y);
+    expect(around(calitas.position, s)).toBeGreaterThan(around(castaway.position, s));
+    const gap = around(calitas.position, castaway.position);
+    expect(gap).toBeLessThan(footprintOf(calitas) * 2 + footprintOf(castaway) + 100);
+    // Pero con agua para el barco entre los dos.
+    expect(gap).toBeGreaterThan(
+      footprintOf(calitas) + footprintOf(castaway) + 2 * DEFAULT_SHIP_CONFIG.radius,
+    );
+    // Fuera de la carretera de Los Rápidos, y su ficha tampoco llega a la línea.
+    const path = roadPath(world, circuitFromWorld(world, CIRCUIT_ID)!);
+    expect(distToPath(path, calitas.position)).toBeGreaterThan(
+      footprintOf(calitas) + ROAD_HALF_WIDTH,
+    );
+    expect(distToPath(path, calitas.position)).toBeGreaterThan(
+      calitas.geometry.proximityRadius! + DEFAULT_SHIP_CONFIG.radius,
+    );
+    // Y no aparta a nadie: sin ella, todo lo demás (náufrago y carrera incluidos) queda igual.
+    const without = marWorld({
+      ...shared,
+      objects: shared.objects.filter((o) => o.identity.id !== CALITAS_PLACE_ID),
+    });
+    for (const o of without.objects) {
+      expect(byId(world, o.identity.id).position, o.identity.id).toEqual(o.position);
     }
   });
 

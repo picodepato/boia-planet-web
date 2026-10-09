@@ -95,8 +95,15 @@ export const HARBOR_REF = 'barcos';
  */
 export const CALITAS_PLACE_ID = 'calitas';
 export const CALITAS_REF = 'comentarios';
-/** Dónde está: mar libre del noroeste, entre el Puig Campana y el círculo de las boies dormidas. muestra */
-export const CALITAS_CENTER: Maq = [-11.5, -27.5];
+/**
+ * Dónde está (plan 022 T237, revisión 2 de Hernán): justo detrás del náufrago,
+ * como el sitio del que se perdió. En `/mar` el náufrago se arrima a la ruta y
+ * la carretera de Los Rápidos pasa por delante de él, así que la isla queda
+ * detrás y a su izquierda (vista desde la salida), fuera de la carretera y sin
+ * mover al náufrago ni a la carrera; en la maqueta, pegada a su banco sin
+ * pisarlo. muestra
+ */
+export const CALITAS_CENTER: Maq = [-7.0, 18.6];
 
 /**
  * Id del circuito para checkpoints y récords (REQ-AVE-033 añade la versión).

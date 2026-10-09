@@ -319,7 +319,9 @@ describe('mapa compartido de Arcilla (T20)', () => {
     expect(c.behaviors.some((b) => b.type === 'ticket' || b.type === 'reward')).toBe(false);
     // Plan 020 T232: su arte 2D de Arcilla (mundo_arcilla.g_calitas, la cala de islas/calitas.py); en la
     // Acuarela, que no se mantiene a la par, sigue el marcador.
-    const asset = WORLD_REGISTRY.get('arcilla').places.find((p) => p.id === CALITAS_PLACE_ID)?.asset;
+    const asset = WORLD_REGISTRY.get('arcilla').places.find(
+      (p) => p.id === CALITAS_PLACE_ID,
+    )?.asset;
     expect(asset).toBe(`mundos/arcilla/${CALITAS_PLACE_ID}#${CALITAS_PLACE_ID}`);
     expect(manifestAssetExists(readArt)(asset!)).toBe(true);
     expect(WORLD_ONLY_PARTS[CALITAS_PLACE_ID]?.marker).toBe('placeholder:isla');
@@ -330,10 +332,72 @@ describe('mapa compartido de Arcilla (T20)', () => {
     expect(c.position.x).toBeLessThan(b.right);
     expect(c.position.y).toBeGreaterThan(b.top);
     expect(c.position.y).toBeLessThan(b.bottom);
-    // A más de 6 u_maq (× POS) de cualquier otra isla y a más de 5 de cualquier otro lugar.
-    for (const o of map.places.filter((p) => p.id !== c.id)) {
-      const d = Math.hypot(o.position.x - c.position.x, o.position.y - c.position.y) / POS;
-      expect(d, o.id).toBeGreaterThan(o.category === 'isla' ? 6 : 5);
+    // Plan 022 T237: justo detrás del náufrago, el sitio del que se perdió (en /mar lo
+    // comprueba app/mar/engine/compact.test.ts), y a más de 6 u_maq (× POS) de cualquier otra isla.
+    const dist = (o: { position: { x: number; y: number } }) =>
+      Math.hypot(o.position.x - c.position.x, o.position.y - c.position.y) / POS;
+    expect(dist(map.places.find((p) => p.id === 'naufrago')!)).toBeLessThan(3);
+    for (const o of map.places.filter((p) => p.id !== c.id && p.category === 'isla')) {
+      expect(dist(o), o.id).toBeGreaterThan(6);
     }
+  });
+
+  it('ninguna ruta de diseño de mapa.json pisa tierra, Las Calitas incluida (plan 022 T237)', () => {
+    // Lo mismo que mundos/arcilla/herramientas/validar.py (mapa.py: all_islands, crossings):
+    // islas como superelipses y el agua que necesita el barco alrededor (13,5 u de motor).
+    type Isla = { centro: Maq; a: number; b: number; giro?: number; p?: number };
+    const margin = 13.5 / U;
+    const lands: { id: string; isla: Isla }[] = [];
+    for (const z of arr(mapa.zonas)) {
+      for (const i of arr(z.islas))
+        lands.push({ id: `zonas/${z.id as string}/${i.id as string}`, isla: i as unknown as Isla });
+    }
+    for (const co of arr(mapa.costas)) {
+      arr(co.tramos).forEach((t, k) =>
+        lands.push({
+          id: `${co.id as string}_${k}`,
+          isla: { ...(t as unknown as Isla), giro: 0, p: 4 },
+        }),
+      );
+    }
+    for (const key of ['solares_l2', 'minijuegos', 'islas_sueltas']) {
+      for (const s of arr(mapa[key]))
+        lands.push({ id: `${key}/${s.id as string}`, isla: s.isla as Isla });
+    }
+    expect(lands.map((l) => l.id)).toContain(`islas_sueltas/${CALITAS_PLACE_ID}`);
+    const onLand = ([x, y]: Maq) =>
+      lands.find(({ isla }) => {
+        const g = ((isla.giro ?? 0) * Math.PI) / 180;
+        const dx = x - isla.centro[0];
+        const dy = y - isla.centro[1];
+        const u = dx * Math.cos(g) + dy * Math.sin(g);
+        const v = -dx * Math.sin(g) + dy * Math.cos(g);
+        const p = isla.p ?? 2;
+        return Math.abs(u / (isla.a + margin)) ** p + Math.abs(v / (isla.b + margin)) ** p < 1;
+      })?.id;
+    const rutas = mapa.rutas as Json;
+    const routes: [string, Maq[]][] = [
+      ...['principal', 'directa', 'mision', 'exploracion'].map((k): [string, Maq[]] => [
+        k,
+        (rutas[k] as Json).puntos as Maq[],
+      ]),
+      ...arr(rutas.desvios).map((d): [string, Maq[]] => [d.id as string, d.puntos as Maq[]]),
+    ];
+    expect(routes.map(([k]) => k)).toEqual(expect.arrayContaining(['exploracion', 'd_solar']));
+    const hits: string[] = [];
+    for (const [name, pts] of routes) {
+      for (let i = 1; i < pts.length; i++) {
+        const [a, b] = [pts[i - 1]!, pts[i]!];
+        const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.05));
+        for (let k = 0; k <= n; k++) {
+          const land = onLand([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n]);
+          if (land) {
+            hits.push(`${name} tramo ${i}: ${land}`);
+            break;
+          }
+        }
+      }
+    }
+    expect(hits).toEqual([]);
   });
 });

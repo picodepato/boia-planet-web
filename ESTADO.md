@@ -4,6 +4,51 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T237: Las Calitas behind the castaway, routes rerouted
+
+Qué existe:
+- Las Calitas se muda de la esquina noroeste (`[-11.5, -27.5]` u_maq) a `[-7.0, 18.6]`, junto al
+  náufrago (`CALITAS_CENTER` en `packages/world/src/worlds/arcilla/map.ts` y `islas_sueltas/calitas`
+  en `mundos/arcilla/mapa.json`). En `/mar` queda a ~290 u del náufrago, detrás y a su izquierda vista
+  desde la salida (más lejos de la salida y más arriba en pantalla), a +93 u de margen de la carretera
+  de Los Rápidos y sin mover al náufrago, la carrera ni ninguna otra isla.
+- Por qué no justo detrás en línea recta: en `/mar` el náufrago se arrima a la ruta (`pullToRoute`) y la
+  carretera de Los Rápidos (tramo `(-821,701) → (-60,1231)`, media anchura 180 u) le pasa a ~290 u por
+  detrás; una isla de 119 u de radio no cabe entre los dos, y más allá de la carretera choca con Tabarca
+  (proximidades). El sitio elegido es el más «detrás» que respeta la carretera, las proximidades de las
+  islas y la maqueta (en `mapa.json` la isla queda pegada al banco del náufrago sin pisarlo).
+- Rutas de diseño: con la isla fuera del noroeste, `exploracion` y `d_solar` ya no la cruzan, y en su sitio
+  nuevo ninguna ruta la pisa, así que no hizo falta cambiar sus puntos; `exploracion.visita` añade
+  `calitas` tras `naufrago` (la ruta pasa por su radio de proximidad).
+- `mundos/arcilla/herramientas/mapa.py` `all_islands` cuenta ahora las `islas_sueltas` como tierra (plano,
+  validador, escena); `validar.py` comprueba además que una isla suelta no pisa otra tierra.
+- «Isla del Cañón» → «Puig Campana» en `mapa.json` (`minijuegos/canon`), `mundos/arcilla/diseno.md` y el
+  manifiesto regenerado `art/mundos/arcilla/canon/manifest.json`.
+- Derivados regenerados con sus herramientas: `mundos/arcilla/plano.svg` (`plano.py`) y el arte 2D de
+  `calitas` y `canon` (`blender -b -P tools/blender/render.py -- --mundo arcilla --lugar calitas --lugar canon`,
+  Blender 5.2.2; la imagen de Calitas es la misma salvo ruido de render).
+- Pruebas nuevas: `arcilla.test.ts` «ninguna ruta de diseño de mapa.json pisa tierra, Las Calitas incluida»
+  (falla con la posición vieja: `exploracion` tramos 83–84 y `d_solar` tramos 5–6) y la de Las Calitas
+  (a menos de 3 u_maq del náufrago); `apps/web/app/mar/engine/compact.test.ts` «Las Calitas, justo detrás del
+  náufrago, sin mover nada ni pisar la carrera».
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (264 archivos, 2409 pasan, 1 saltada)
+- `sh tools/spec/checks.sh` → exit 0 (check.py OK; blender/check.py: arcilla 22 lugares válidos)
+- `pnpm lint` → exit 0 · `pnpm build` → exit 0 (landing 199.5 kB, presupuesto OK) · `pnpm typecheck` → exit 0
+- `python3 mundos/arcilla/herramientas/validar.py` → 0 errores
+- `grep -rn "Isla del Cañón" mundos/ packages/world/` → sin resultados (exit 1)
+
+Pendiente:
+- Si Hernán la quiere detrás en línea recta (más arriba en pantalla que el náufrago, visible en el móvil
+  sin moverse), hay que mover algo más: el náufrago (hacia la salida) o el tramo de Los Rápidos que le pasa
+  por detrás. En el móvil, desde el náufrago, Las Calitas asoma por el borde izquierdo.
+- `mapa.json` cambió: los `sources_sha256` de los demás manifiestos de Arcilla que lo listan quedan viejos
+  (los refresca T239); `tools/blender/check.py` no falla por eso.
+
+E2E para Hernán: `mar-calitas.spec.ts` (llega a la isla con `?cerca=calitas`), `mar-3d.spec.ts`,
+`mar-circuito.spec.ts` (la isla está junto a la carretera).
+
 ## 2026-10-09 — plan 022 T246: Radio: catálogo de canciones, géneros y subida en el Admin
 
 Qué existe:

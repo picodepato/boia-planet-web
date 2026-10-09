@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "tools/blender/islas/calitas.py"
     ],
-    "sources_sha256": "460c6b49f47a4895e7d1aa2d374876f0a525723eb02d55e8a09fbc77979db6b3",
+    "sources_sha256": "53e42f9d5b82b4cb205cb1ba96af129887c4a7d0d18457bc66ed113f1c9de8c3",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,
@@ -46,8 +46,8 @@
   "place": {
     "ref": "islas_sueltas/calitas",
     "pos": [
-      -11.5,
-      -27.5
+      -7.0,
+      18.6
     ],
     "event_island": false,
     "name": "Las Calitas",
@@ -65,8 +65,8 @@
       "role": "isla",
       "collision": "bloquear",
       "map_pos": [
-        -11.5,
-        -27.5
+        -7.0,
+        18.6
       ],
       "offset_units": [
         0.0,
@@ -147,7 +147,7 @@
           ],
           [
             140.31,
-            245.0
+            245.01
           ],
           [
             111.35,
@@ -190,7 +190,7 @@
             143.69
           ],
           [
-            52.84,
+            52.83,
             132.26
           ],
           [
@@ -246,7 +246,7 @@
             151.23
           ],
           [
-            360.33,
+            360.32,
             161.52
           ],
           [
@@ -274,8 +274,8 @@
           200.0,
           181.0
         ],
-        "radius_px": 162.33,
-        "radius_units": 1.8389
+        "radius_px": 162.34,
+        "radius_units": 1.839
       },
       "proximity_hint": {
         "shape": "circle",

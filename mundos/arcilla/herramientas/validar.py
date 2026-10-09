@@ -56,6 +56,18 @@ def main():
         for p, land in mapa.crossings(M, pts, margin=SHIP_R):
             errors.append("ruta %s pisa tierra en (%.2f, %.2f): %s" % (name, p[0], p[1], land))
 
+    # Las islas sueltas (Las Calitas, plan 022 T237) no pisan otra tierra.
+    lands = mapa.all_islands(M)
+    for zid, isla in lands:
+        if zid != "islas_sueltas":
+            continue
+        mine = mapa.outline(isla)
+        for zo, other in lands:
+            if other is isla:
+                continue
+            if any(mapa.inside(p, other) for p in mine) or any(mapa.inside(p, isla) for p in mapa.outline(other)):
+                errors.append("la isla suelta %s pisa %s/%s" % (isla["id"], zo, other["id"]))
+
     # Secretos, restos, cofres, botellas y obstáculos en agua.
     wet = [("secreto " + s["id"], s["pos"]) for s in M["secretos"] if s["id"] != "cueva"]
     mv = next(z for z in zonas if z["id"] == "marvivo")

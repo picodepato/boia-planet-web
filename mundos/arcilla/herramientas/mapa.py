@@ -86,6 +86,9 @@ def all_islands(M):
         out.append(("l2", dict(s["isla"], id=s["id"])))
     for s in M.get("minijuegos", []):
         out.append(("minijuegos", dict(s["isla"], id=s["id"])))
+    # Las Calitas (plan 022 T237): desde que vive junto al náufrago, también es tierra para las rutas.
+    for s in M.get("islas_sueltas", []):
+        out.append(("islas_sueltas", dict(s["isla"], id=s["id"])))
     return out
 
 

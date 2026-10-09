@@ -25,7 +25,7 @@
       "mundos/arcilla/mapa.json",
       "tools/blender/islas/puigcampana.py"
     ],
-    "sources_sha256": "43541a9a5195e523e87fa1829940ce371d711b92aea33a0b19f8b2671767e273",
+    "sources_sha256": "5a473bdd82e4db7250e45ae8b78bf25bbde8090764ca3784fff2927fecfffdc0",
     "blender": "5.2.2 LTS",
     "engine": "BLENDER_EEVEE",
     "samples": 64,
@@ -50,7 +50,7 @@
       -18.6
     ],
     "event_island": false,
-    "name": "Isla del Cañón",
+    "name": "Puig Campana",
     "shared_name": false,
     "catalog": "tools/blender/lugares.json"
   },
