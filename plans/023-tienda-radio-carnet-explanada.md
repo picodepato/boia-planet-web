@@ -59,10 +59,10 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots desktop and mobile both showing Halloween as next event → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent addce0faf3cab6fc7
-- Outcome:
+- Outcome: cause = desktop browser kept pre-2-Oct admin edits of the sample (pin on All Day Primavera); new SAMPLE_CONTENT_REVISION reseeds sample events/homeBlocks once on load, keeping admin-created items · 78fac36
 
 ## T249 — Shop: Manu Ropero's tote bag and the real T-shirt
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -73,6 +73,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - contract test: `maker` optional, tote parses with 4 images and `priceCents: 3000`, camiseta `priceCents: 1800`
   - screenshots mobile + desktop of the shop showing both products → attach folder
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent a327df7913e6d2e98
 - Outcome:
 
 ## T250 — Gallery: Hernán's 4 photos
@@ -146,6 +147,8 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 ## Decisions
 
 - T246: player genre bar shows only genres with songs; bad genre names give `genre_name` error (small @boia/contracts change); arrows mouse-only.
+
+- T248: separate `SAMPLE_CONTENT_REVISION` (not SCHEMA_VERSION); revision 1 resets sample events + homeBlocks edits, keeps admin-created items; sample items in trash come back.
 
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
