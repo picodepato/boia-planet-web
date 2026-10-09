@@ -44,7 +44,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: Las Calitas at [-7.0, 18.6], ~290 u behind-left of the castaway off the Los Rápidos road; no route crosses land (tests); «Isla del Cañón» → «Puig Campana» · dc92a44
 
 ## T238 — Landing: header hidden during the intro, critical-path kB freed
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -55,7 +55,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - screenshots mobile and desktop: hero (header as today), mid-intro (no header), «Próximo evento» (header visible) → attach folder
   - the size check reports the landing critical path before and after; after < 199.5 kB gzip, numbers written in ESTADO → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: header appears at PRESENTATION.end (reversible; 0.95 with reduced motion); landing 199.5 → 196.6 kB gzip · ef9f18e
 
 ## T239 — Dev hygiene: Supabase 400, `.next-dev`, unused keys, CRLF, stale hashes
 - Status: running (attempt 1)
@@ -157,7 +157,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: admin Radio section, catalog (local IndexedDB `boia-radio` / Supabase `radio_songs`), migration 20261009100100_radio.sql (#11), 100 seed songs 2.78 MB · aade97b
 
 ## T247 — Radio: play button, Winamp-style player, «Sonando» toast, /mar button
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T246, T236, T238
 - Model: fable
 - Skills: frontend-design
@@ -193,9 +193,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09: Hernán: T247 runs on Fable (Hernán)
 - 2026-10-09 T246: 100 seed songs (98×4 s, 2×30 s: first techno + one house), made with Blender's bundled ffmpeg/numpy (`art/radio/generar.py`); Supabase mode falls back to the seeds while `radio_songs` is empty/missing; genres seeded by the migration; first song/order via RPCs + deferred check; genre rename updates songs, delete blocked while it has songs; radio types added to `database.types.ts` by hand (agent)
 - 2026-10-09 T237: Calitas behind-left, not straight behind (the Los Rápidos road and Tabarca leave no room); no route points changed, `calitas` added to `exploracion` visits; `mapa.py` counts loose islands as land, `validar.py` checks loose islands; «Isla del Cañón» renamed «Puig Campana»; plano.svg and Calitas/canon art regenerated (agent)
+- 2026-10-09 T238: `headerFrom` option of the boot script = `PRESENTATION.end`; «Cerrar sesión» loads lazily; `checkout.css` split into dialog part + `checkout-form.css`; size check gained by-type totals and `--baseline`; e2e helpers scroll past `PRESENTATION.end + 0.6` before using the header (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T238: more landing kB needs architecture changes (blocks are client components re-rendered by `LiveLanding`) or splitting the web i18n catalog
 - 2026-10-09 T237: to put Las Calitas straight behind the castaway, move the castaway or the Los Rápidos stretch behind it; on mobile the island only shows at the left edge from the castaway
 - 2026-10-09 T246: `radio.supabase.ts` DB test once the migration is applied; fix odd gender agreement in generated sample titles («Velero lenta»)
 
@@ -206,3 +208,5 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T238 launched · attempt 1 · agent ad2d74f6a2dc953c6
 - 2026-10-09 T246 done · merged aade97b
 - 2026-10-09 T237 done · merged dc92a44
+- 2026-10-09 T239 launched · attempt 1 · agent aba567b4d1ff3cabc
+- 2026-10-09 T238 done · merged ef9f18e
