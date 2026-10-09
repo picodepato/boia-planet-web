@@ -881,38 +881,6 @@ export type Database = {
           },
         ];
       };
-      event_attendance: {
-        Row: {
-          event_id: string;
-          scanned_at: string;
-          scanned_by: string | null;
-          source: string;
-          user_id: string;
-        };
-        Insert: {
-          event_id: string;
-          scanned_at?: string;
-          scanned_by?: string | null;
-          source: string;
-          user_id: string;
-        };
-        Update: {
-          event_id?: string;
-          scanned_at?: string;
-          scanned_by?: string | null;
-          source?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'event_attendance_event_id_fkey';
-            columns: ['event_id'];
-            isOneToOne: false;
-            referencedRelation: 'events';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       event_albums: {
         Row: {
           created_at: string;
@@ -951,6 +919,38 @@ export type Database = {
           version?: number;
         };
         Relationships: [];
+      };
+      event_attendance: {
+        Row: {
+          event_id: string;
+          scanned_at: string;
+          scanned_by: string | null;
+          source: string;
+          user_id: string;
+        };
+        Insert: {
+          event_id: string;
+          scanned_at?: string;
+          scanned_by?: string | null;
+          source: string;
+          user_id: string;
+        };
+        Update: {
+          event_id?: string;
+          scanned_at?: string;
+          scanned_by?: string | null;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'event_attendance_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       event_photos: {
         Row: {
@@ -1076,13 +1076,13 @@ export type Database = {
           cancelled_island_mode: Database['public']['Enums']['cancelled_island_mode'] | null;
           cancelled_message: string | null;
           created_at: string;
-          door_only: boolean;
-          door_price_cents: number | null;
           created_by: string | null;
           delete_reason: string | null;
           deleted_at: string | null;
           deleted_by: string | null;
           description: string | null;
+          door_only: boolean;
+          door_price_cents: number | null;
           ends_at: string | null;
           excluded_from_home: boolean;
           format: string;
@@ -1116,13 +1116,13 @@ export type Database = {
           cancelled_island_mode?: Database['public']['Enums']['cancelled_island_mode'] | null;
           cancelled_message?: string | null;
           created_at?: string;
-          door_only?: boolean;
-          door_price_cents?: number | null;
           created_by?: string | null;
           delete_reason?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string | null;
+          door_only?: boolean;
+          door_price_cents?: number | null;
           ends_at?: string | null;
           excluded_from_home?: boolean;
           format?: string;
@@ -1156,13 +1156,13 @@ export type Database = {
           cancelled_island_mode?: Database['public']['Enums']['cancelled_island_mode'] | null;
           cancelled_message?: string | null;
           created_at?: string;
-          door_only?: boolean;
-          door_price_cents?: number | null;
           created_by?: string | null;
           delete_reason?: string | null;
           deleted_at?: string | null;
           deleted_by?: string | null;
           description?: string | null;
+          door_only?: boolean;
+          door_price_cents?: number | null;
           ends_at?: string | null;
           excluded_from_home?: boolean;
           format?: string;
@@ -1654,7 +1654,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           duration_seconds: number;
-          genre_id: string | null;
+          genre_id?: string | null;
           id: string;
           is_first?: boolean;
           position: number;
@@ -2146,13 +2146,13 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
-      admin_backup_codes_left: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
       admin_artist_link_info: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
+      };
+      admin_backup_codes_left: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
       };
       admin_calitas_list: {
         Args: {
@@ -2204,12 +2204,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      admin_list_moderation_trash: {
-        Args: {
-          p_limit?: number;
-        };
-        Returns: Json;
-      };
       admin_list_members: {
         Args: {
           p_search?: string;
@@ -2232,6 +2226,12 @@ export type Database = {
           privacy_at: string;
           total: number;
         }[];
+      };
+      admin_list_moderation_trash: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: Json;
       };
       admin_list_trash: {
         Args: {
@@ -2261,6 +2261,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_purge_expired_trash: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_remove_bottle: {
         Args: {
           p_bottle: string;
@@ -2274,10 +2278,6 @@ export type Database = {
           p_question: string;
           p_reason?: string;
         };
-        Returns: Json;
-      };
-      admin_purge_expired_trash: {
-        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       admin_restore_bottle: {
@@ -2317,6 +2317,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_set_analytics: {
+        Args: {
+          p_enabled: boolean;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_set_artist: {
         Args: {
           p_user: string;
@@ -2330,6 +2337,13 @@ export type Database = {
           p_user: string;
           p_platform?: string;
           p_url?: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_set_common_discount_code: {
+        Args: {
+          p_code?: string;
           p_reason?: string;
         };
         Returns: Json;
@@ -2351,20 +2365,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      admin_set_analytics: {
-        Args: {
-          p_enabled: boolean;
-          p_reason?: string;
-        };
-        Returns: Json;
-      };
-      admin_set_common_discount_code: {
-        Args: {
-          p_code?: string;
-          p_reason?: string;
-        };
-        Returns: Json;
-      };
       admin_set_stamp_image: {
         Args: {
           p_event: string;
@@ -2377,7 +2377,7 @@ export type Database = {
         Args: {
           p_number: number;
         };
-        Returns: string | null;
+        Returns: string;
       };
       admin_undo_carnet_moderation: {
         Args: {
@@ -2399,20 +2399,20 @@ export type Database = {
         };
         Returns: Json;
       };
-      admin_void_score: {
+      admin_void_race_time: {
         Args: {
-          p_board: string;
           p_user: string;
-          p_key: string;
+          p_circuit: string;
           p_version: number;
           p_reason: string;
         };
         Returns: Json;
       };
-      admin_void_race_time: {
+      admin_void_score: {
         Args: {
+          p_board: string;
           p_user: string;
-          p_circuit: string;
+          p_key: string;
           p_version: number;
           p_reason: string;
         };
@@ -2468,25 +2468,25 @@ export type Database = {
         };
         Returns: Json;
       };
+      delete_my_account: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
       discount_code_for: {
         Args: {
           p_discount: string;
         };
         Returns: string;
       };
-      delete_my_account: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
-      export_my_data: {
-        Args: Record<PropertyKey, never>;
-        Returns: Json;
-      };
       equip_cosmetic: {
         Args: {
           p_slot: string;
           p_cosmetic?: string;
         };
+        Returns: Json;
+      };
+      export_my_data: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       find_discount: {
@@ -2535,6 +2535,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      purge_expired_trash: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       radio_reorder: {
         Args: {
           p_ids: string[];
@@ -2564,10 +2568,6 @@ export type Database = {
           p_limit?: number;
           p_offset?: number;
         };
-        Returns: Json;
-      };
-      purge_expired_trash: {
-        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       ranking_points: {
@@ -2625,6 +2625,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      staff_stamp: {
+        Args: {
+          p_member: string;
+          p_event: string;
+          p_source?: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       submit_canon_score: {
         Args: {
           p_boss: string;
@@ -2647,15 +2656,6 @@ export type Database = {
           p_end: string;
           p_life: number;
           p_ranked: boolean;
-        };
-        Returns: Json;
-      };
-      staff_stamp: {
-        Args: {
-          p_member: string;
-          p_event: string;
-          p_source?: string;
-          p_reason?: string;
         };
         Returns: Json;
       };

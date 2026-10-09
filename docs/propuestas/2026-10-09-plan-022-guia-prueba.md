@@ -211,6 +211,30 @@ la migración 11 (el Admin sube una canción y la radio pasa a Supabase).
 
 ## Migraciones
 
+**Estado real en `boia-planet-dev` (plan 023 T253, 2026-10-09, comprobado contra el proyecto):
+las 35 migraciones aplicadas.**
+
+| Orden | Migración | Estado |
+|---|---|---|
+| 1 | `20261007100200_moderation` | ✅ aplicada (T253, intento 1) |
+| 2 | `20261007100400_admin_access_export` | ✅ aplicada (T253, intento 1) |
+| 3 | `20261008100100_event_fields_common_code` | ✅ aplicada (T253, intento 1) |
+| 4 | `20261008100200_artist_music` | ✅ aplicada (T253, intento 2). En el 1 fallaba: el `check` en línea de `music_url` ya se llama `carnets_music_url_check`; el segundo `check` (plataforma ↔ enlace) se renombró a `carnets_music_url_platform_check` en el archivo, sin cambiar reglas |
+| 5 | `20261008100300_door_stamps` | ✅ aplicada (T253) |
+| 6 | `20261008100400_gallery_clips` | ✅ aplicada (T253) |
+| 7 | `20261008100500_calitas` | ✅ aplicada (T253) |
+| 8 | `20261008100600_admin_limits_analytics` | ✅ aplicada (T253; antes, `staff_roles` con 0 filas) |
+| 9 | `20261008200100_carnet_answer_music_moderation` | ✅ aplicada (T253) |
+| 10 | `20261008200200_member_party_trash` | ✅ aplicada (T253) |
+| 11 | `20261009100100_radio` | ✅ aplicada (T253) |
+| 12 | `20261009100200_radio_genre_optional` | ✅ aplicada (T253) |
+
+Las semillas de muestra **no** se corrieron (T253 aplicó sólo migraciones; `pnpm db:migrate:dev`
+las aplica si hacen falta). Tipos regenerados con `pnpm db:types:dev` (sólo cambian orden,
+`genre_id` opcional al insertar y `admin_sign_in_email` devuelve `string`).
+
+Lo de abajo es la lista original de la guía (antes de T253).
+
 Según la [guía del plan 020](2026-10-08-plan-020-guia-prueba.md) ninguna estaba aplicada en
 `boia-planet-dev`. **Esta guía añade la 11 (radio)**. Si ya aplicaste alguna desde entonces, mira
 cuál falta antes de correr el comando; esto **no** se ha comprobado contra el proyecto remoto.

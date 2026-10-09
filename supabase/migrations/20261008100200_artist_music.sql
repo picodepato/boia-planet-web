@@ -36,7 +36,7 @@ as $$
   end
 $$;
 
-alter table public.carnets add constraint carnets_music_url_check check (
+alter table public.carnets add constraint carnets_music_url_platform_check check (
   music_url is null or private.music_url_ok(music_platform, music_url)
 );
 

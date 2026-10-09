@@ -4,6 +4,68 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T253: Supabase: migraciones pendientes aplicadas en boia-planet-dev
+
+**Qué existe.** Las 35 migraciones están en `boia-planet-dev` (el único proyecto de
+`apps/web/.env.local`; `SUPABASE_DB_URL` y `NEXT_PUBLIC_SUPABASE_URL` apuntan al mismo).
+Se aplicaron en orden con `migrate()` del arnés (lo mismo que `pnpm db:migrate:dev`, pero
+con tope para mirar `staff_roles` antes de la 8, y sin semillas). Intento 1: 1–3 y la 4
+falla. Intento 2: arreglada la 4 en su archivo (aún no estaba aplicada en ningún sitio) y
+aplicadas de la 4 a la 12.
+
+Arreglo de `supabase/migrations/20261008100200_artist_music.sql`: el `check` en línea de
+`music_url` (≤ 300 caracteres) ya lo nombra Postgres `carnets_music_url_check`; el
+segundo (enlace https de su plataforma) se llama ahora `carnets_music_url_platform_check`.
+Mismas reglas; nada en el código ni en las pruebas usaba ese nombre.
+
+| Orden | Migración | Resultado |
+|---|---|---|
+| — | 23 anteriores (hasta `20261007100100_event_photos`) | ya aplicadas (se saltan) |
+| 1 | `20261007100200_moderation` | aplicada (intento 1) |
+| 2 | `20261007100400_admin_access_export` | aplicada (intento 1) |
+| 3 | `20261008100100_event_fields_common_code` | aplicada (intento 1) |
+| 4 | `20261008100200_artist_music` | intento 1: falla (`constraint "carnets_music_url_check" for relation "carnets" already exists`, 42710, deshecha). Intento 2: aplicada |
+| 5 | `20261008100300_door_stamps` | aplicada |
+| 6 | `20261008100400_gallery_clips` | aplicada |
+| 7 | `20261008100500_calitas` | aplicada |
+| — | comprobación `staff_roles` | 0 filas (≤ 2 admin/owner) → se sigue |
+| 8 | `20261008100600_admin_limits_analytics` | aplicada |
+| 9 | `20261008200100_carnet_answer_music_moderation` | aplicada |
+| 10 | `20261008200200_member_party_trash` | aplicada |
+| 11 | `20261009100100_radio` | aplicada |
+| 12 | `20261009100200_radio_genre_optional` | aplicada |
+
+Tipos: `pnpm db:types:dev` regenerado y commiteado. Frente al archivo a mano sólo cambia
+el orden de algunas tablas/funciones, `radio_songs.Insert.genre_id` pasa a opcional
+(`genre_id?: string | null`; la fila sigue `string | null`, como el arreglo de T255) y
+`admin_sign_in_email` devuelve `string` (antes `string | null`). Typecheck en verde.
+
+Guía `docs/propuestas/2026-10-09-plan-022-guia-prueba.md` §Migraciones: tabla con el
+estado real (las 12 aplicadas).
+
+**Comandos.**
+- aplicar hasta `20261008100500` → 4 aplicadas (4–7); `staff_roles` 0 filas
+- aplicar el resto → 5 aplicadas (8–12); historial al día hasta `20261009100200`
+- `pnpm db:types:dev` → 0
+- `vitest run apps/web/lib/account/artist-music-sql.test.ts` → 4 passed
+- `pnpm test:supabase` (1.ª) → exit 1: Test Files 12 failed | 10 passed (22); Tests 5 failed | 108 passed | 47 skipped (160). 10 archivos por `verifyOtp: Request rate limit reached`, 2 por `mfa.enroll: Auth session missing!` (tras el límite), y 2 de `schema.supabase.ts`:
+  - «anon sólo ejecuta las RPC de lectura»: recibe además `admin_sign_in_email` y `calitas_list`
+  - «las funciones con SECURITY DEFINER viven en private»: en `public` están `admin_sign_in_email`, `discount_code_for`, `radio_set_first`, `radio_reorder`
+- `pnpm test:supabase` (2.ª, ~10 min después; ya es en serie, `fileParallelism: false`) → exit 1: Test Files 15 failed | 7 passed (22); Tests 5 failed | 59 passed | 96 skipped (160). Además del límite de Auth y los 2 de `schema.supabase.ts`:
+  - `admin-limits.supabase.ts` «pasar de admin a owner no suma a nadie»: `23514 No se puede quitar el último propietario`; su limpieza falla con `deleteUser: Database error deleting user`
+  - por eso queda en dev **1 cuenta de prueba `@example.test` con rol `owner`** que no se puede borrar (el disparador del último propietario), y 5 archivos (`artist-music`, `door-stamps`, `gallery-clips`, `member-numbers`, `trash`) fallan al dar roles con `P0001 full_access_limit`
+- `vitest run --exclude '**/packages/db/**'` → exit 0
+- `sh tools/spec/checks.sh` → OK (295 REQ)
+- `pnpm lint` → 0 · `pnpm build` → 0 · `pnpm typecheck` → 0
+
+**Pendiente (siguiente plan).**
+- `test:supabase` no está en verde y no es por las migraciones (todas aplicadas):
+  1. límite de Auth de Supabase (`verifyOtp`): esperar o subir el límite en el panel del proyecto dev;
+  2. `schema.supabase.ts`: o la prueba está vieja o las migraciones de los planes 019–023 rompen la regla (RPC de anon y SECURITY DEFINER en `public`); decidir cuál;
+  3. `admin-limits.supabase.ts`: la prueba degrada al único owner y choca con el disparador; y la cuenta de prueba owner que quedó en dev hay que quitarla (requiere saltarse el disparador o dar antes otro owner: no lo hice, es un cambio a mano en remoto).
+- Semillas de muestra sin aplicar en esta tarea (`pnpm db:migrate:dev` las aplica).
+- E2E para Hernán: ninguna nueva por esta tarea.
+
 ## 2026-10-09 — plan 023 T251: Carnet: «Descubre» buttons under the answers
 
 Qué existe:
