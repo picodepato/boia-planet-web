@@ -55,6 +55,13 @@ export const esAdminRadio = {
   'admin.radio.genres.deleted': 'Género borrado.',
   'admin.radio.genres.none': 'Sin género',
 
+  'admin.radio.files.summary': '{n} canciones sin archivo',
+  'admin.radio.files.summaryOne': '1 canción sin archivo',
+  'admin.radio.files.missing': 'Archivo no encontrado',
+  'admin.radio.files.filter': 'Sin archivo',
+  'admin.radio.files.none': 'Todas las canciones tienen archivo.',
+  'admin.radio.files.remove': 'Quitar de la radio',
+
   'admin.radio.songs.title': 'Canciones',
   'admin.radio.songs.filter': 'Ver',
   'admin.radio.songs.all': 'Todos los géneros',

@@ -4,6 +4,38 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T257: Radio admin: flag songs whose MP3 is missing
+
+**Qué existe**
+- Admin › Radio marca las canciones cuyo MP3 falta, al abrir la sección y tras cada cambio del catálogo (nunca en la landing ni en el reproductor).
+  - Modo local: el archivo se busca en IndexedDB (`songFilePresent` del almacén local).
+  - Con cuentas: un HEAD a la URL pública de la canción. 404 o 400 cuentan como ausente; un fallo de red o cualquier otra respuesta cuentan como presente.
+  - Las canciones de muestra (`/radio/muestra/…`) cuentan como presentes.
+- Cada canción sin archivo lleva la etiqueta «Archivo no encontrado», no se puede escuchar, y su botón pasa a «Quitar de la radio» (mismo aviso de confirmación que «Borrar»).
+- Resumen en la cabecera: «N canciones sin archivo» (o «1 canción sin archivo»).
+- Filtro «Sin archivo» en la lista, sólo si hay alguna canción así.
+- Quitar una canción cuyo archivo ya no está no falla: en local, borrar una clave inexistente en IndexedDB no da error; con cuentas, el borrado del objeto que ya no existe sólo deja un aviso en consola (como antes).
+- Código: `apps/web/lib/radio/song-files.ts` (`missingSongFiles`, con memo por id y ruta, de 6 en 6), `store.ts` (`songFilePresent`), `shared-store.ts` (`publicFilePresent`, `songFilePresent`), `apps/web/app/admin/sections/radio.tsx`, `admin.css` (`.admin-badge--nofile`), textos en `apps/web/lib/i18n/es-admin-radio.ts` (`admin.radio.files.*`).
+- No se ha tocado el reproductor, ni migraciones, ni la landing.
+
+**Pruebas**
+- `apps/web/lib/radio/song-files.test.ts` (nuevo, 5 pruebas): local: canción con MP3 borrado se marca, la muestra no; local: quitarla con el archivo ya perdido no falla; con cuentas: HEAD 200/404/400/error de red; con cuentas: canción marcada y quitarla con `storage.remove` devolviendo error «Object not found» sigue adelante; la memo evita volver a preguntar.
+
+**Comandos y resultados**
+- `pnpm exec vitest run apps/web/lib/radio` → 7 archivos, 65 pruebas, pass.
+- Test command completo:
+  - `vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 291 archivos, 2565 pruebas pasadas, 2 omitidas.
+  - `sh tools/spec/checks.sh` → exit 0 (OK).
+  - `pnpm lint` → exit 0.
+  - `pnpm build` → exit 0 (landing critical path 197.0 kB, presupuesto 200 kB OK).
+  - `pnpm typecheck` → exit 0.
+- Captura (demo local, `/tmp/orchestrator-attach/boia-planet-hernan-T257/`, escritorio 1440×900): `admin-radio-cancion-sin-archivo.png` (vista de la canción marcada), `admin-radio-lista-sin-archivo.png` (lista completa con la marca). Se simuló el archivo perdido añadiendo en IndexedDB una canción sin su MP3.
+
+**Pendiente / para Hernán**
+- En Supabase no se ha probado contra un proyecto real (no se aplican migraciones ni se toca remoto). El chequeo HEAD depende de que la respuesta de Storage a un objeto inexistente sea 404 o 400; si da otro código, habría que ajustar `publicFilePresent`.
+- e2e: ninguna spec usa la sección Radio del Admin; `admin.spec.ts` como comprobación general si Hernán quiere.
+- Móvil no capturado (la tarea pedía escritorio).
+
 ## 2026-10-09 — plan 023 T252: /mar: la isla sin nombre de la derecha es la Explanada de Alicante
 
 **Qué isla es.** La de la captura de Hernán (casitas blancas, palmeras, farolas y la tira de olas sobre la arena,

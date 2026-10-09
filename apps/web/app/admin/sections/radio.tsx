@@ -15,6 +15,7 @@ import { indexedDbRadioKV } from '../../../lib/radio/idb';
 import { SAMPLE_RADIO_CATALOG } from '../../../lib/radio/muestra';
 import { createSharedRadioStore } from '../../../lib/radio/shared-store';
 import { type RadioAdminStore, createLocalRadioStore } from '../../../lib/radio/store';
+import { missingSongFiles } from '../../../lib/radio/song-files';
 import {
   SONG_UPLOAD_LIMITS,
   SongUploadError,
@@ -41,6 +42,8 @@ function radioError(err: unknown): Error {
 const NO_GENRE = '';
 /** El filtro «Sin género» de la lista (no puede ser un id: empieza por `_`). */
 const FILTER_NO_GENRE = '_sin-genero';
+/** El filtro «Sin archivo»: canciones cuyo MP3 ya no está (plan 023 T257). */
+const FILTER_NO_FILE = '_sin-archivo';
 
 /** Los géneros del catálogo y, al final, «Sin género» (plan 023 T255). */
 function GenreOptions({ catalog }: { catalog: RadioCatalog }) {
@@ -83,6 +86,9 @@ export function RadioSection(_props: { ctx: AdminContext }) {
   const { status, busy, run } = useRun();
   // El género del formulario de subida: al crear uno, queda elegido ahí (plan 023 T246).
   const [uploadGenre, setUploadGenre] = useState<string | null>(null);
+  // Canciones cuyo MP3 falta (plan 023 T257). Se comprueba al abrir la sección y tras cada cambio.
+  const [missing, setMissing] = useState<ReadonlySet<string>>(new Set());
+  const fileMemo = useRef(new Map<string, boolean>());
 
   useEffect(() => {
     if (!store) return;
@@ -95,6 +101,17 @@ export function RadioSection(_props: { ctx: AdminContext }) {
       alive = false;
     };
   }, [store]);
+
+  useEffect(() => {
+    if (!store || !catalog) return;
+    let alive = true;
+    void missingSongFiles(catalog.songs, (s) => store.songFilePresent(s), fileMemo.current).then(
+      (m) => alive && setMissing(m),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [store, catalog]);
 
   const apply = useCallback<Apply>(
     (work, ok) =>
@@ -139,6 +156,13 @@ export function RadioSection(_props: { ctx: AdminContext }) {
               minutes: Math.round(catalog.songs.reduce((n, s) => n + s.durationSeconds, 0) / 60),
             })}
           </p>
+          {missing.size > 0 ? (
+            <p className="admin-status admin-status--error" data-testid="radio-sin-archivo">
+              {missing.size === 1
+                ? t('admin.radio.files.summaryOne')
+                : t('admin.radio.files.summary', { n: missing.size })}
+            </p>
+          ) : null}
           <StatusLine status={status} />
           <div className="admin-radio__top">
             <UploadForm
@@ -150,7 +174,7 @@ export function RadioSection(_props: { ctx: AdminContext }) {
             />
             <GenresCard catalog={catalog} apply={apply} busy={busy} onCreated={setUploadGenre} />
           </div>
-          <SongList catalog={catalog} apply={apply} busy={busy} />
+          <SongList catalog={catalog} missing={missing} apply={apply} busy={busy} />
         </>
       )}
     </section>
@@ -444,10 +468,12 @@ function GenresCard({
 
 function SongList({
   catalog,
+  missing,
   apply,
   busy,
 }: {
   catalog: RadioCatalog;
+  missing: ReadonlySet<string>;
   apply: Apply;
   busy: boolean;
 }) {
@@ -459,7 +485,9 @@ function SongList({
     ? songs
     : filter === FILTER_NO_GENRE
       ? songs.filter((s) => s.genreId === null)
-      : songs.filter((s) => s.genreId === filter);
+      : filter === FILTER_NO_FILE
+        ? songs.filter((s) => missing.has(s.id))
+        : songs.filter((s) => s.genreId === filter);
 
   useEffect(() => () => audio.current?.pause(), []);
 
@@ -496,6 +524,11 @@ function SongList({
               </option>
             ))}
             <option value={FILTER_NO_GENRE}>{t('admin.radio.songs.none')}</option>
+            {missing.size > 0 ? (
+              <option value={FILTER_NO_FILE} data-testid="radio-filtro-sin-archivo">
+                {t('admin.radio.files.filter')}
+              </option>
+            ) : null}
           </select>
         </label>
       </div>
@@ -503,7 +536,9 @@ function SongList({
         <p className="admin-meta">
           {filter === FILTER_NO_GENRE
             ? t('admin.radio.songs.emptyNone')
-            : t('admin.radio.songs.empty')}
+            : filter === FILTER_NO_FILE
+              ? t('admin.radio.files.none')
+              : t('admin.radio.songs.empty')}
         </p>
       ) : null}
       <ol className="admin-list admin-radio__songs">
@@ -513,6 +548,7 @@ function SongList({
             song={s}
             total={songs.length}
             catalog={catalog}
+            noFile={missing.has(s.id)}
             playing={playing === s.id}
             onPlay={() => void toggle(s)}
             apply={apply}
@@ -528,6 +564,7 @@ function SongRow({
   song,
   total,
   catalog,
+  noFile,
   playing,
   onPlay,
   apply,
@@ -536,6 +573,8 @@ function SongRow({
   song: RadioSong;
   total: number;
   catalog: RadioCatalog;
+  /** El MP3 ya no está en su sitio (plan 023 T257). */
+  noFile: boolean;
   playing: boolean;
   onPlay: () => void;
   apply: Apply;
@@ -551,6 +590,7 @@ function SongRow({
       className={`admin-card admin-radio__song${song.first ? ' admin-radio__song--first' : ''}`}
       data-testid={`radio-cancion-${song.id}`}
       data-first={song.first ? 'true' : undefined}
+      data-missing={noFile ? 'true' : undefined}
     >
       <div className="admin-radio__song-head">
         <span className="admin-radio__pos">
@@ -581,6 +621,14 @@ function SongRow({
           {isSample ? ` · ${t('admin.radio.songs.muestra')}` : ''}
         </span>
         {song.first ? <span className="admin-badge">{t('admin.radio.songs.first')}</span> : null}
+        {noFile ? (
+          <span
+            className="admin-badge admin-badge--nofile"
+            data-testid={`radio-sin-archivo-${song.id}`}
+          >
+            {t('admin.radio.files.missing')}
+          </span>
+        ) : null}
       </div>
       {editing ? (
         <div className="admin-grid">
@@ -597,6 +645,7 @@ function SongRow({
           type="button"
           className="admin-button admin-button--ghost"
           aria-pressed={playing}
+          disabled={noFile}
           onClick={onPlay}
         >
           {playing ? t('admin.radio.songs.stop') : t('admin.radio.songs.play')}
@@ -704,7 +753,7 @@ function SongRow({
             void apply((s) => s.removeSong(song.id), t('admin.radio.songs.deleted'));
           }}
         >
-          {t('admin.radio.songs.delete')}
+          {noFile ? t('admin.radio.files.remove') : t('admin.radio.songs.delete')}
         </button>
       </div>
     </li>

@@ -1,6 +1,7 @@
 import {
   LOCAL_RADIO_PREFIX,
   type RadioCatalog,
+  type RadioSong,
   type RadioSongPatch,
   addRadioGenre,
   addRadioSong,
@@ -42,8 +43,13 @@ export interface RadioAdminStore {
   catalog(): Promise<RadioCatalog>;
   addSong(input: NewSongUpload): Promise<RadioCatalog>;
   updateSong(id: string, patch: RadioSongPatch): Promise<RadioCatalog>;
-  /** Quita la canción y su archivo. */
+  /** Quita la canción y su archivo (aunque el archivo ya no esté). */
   removeSong(id: string): Promise<RadioCatalog>;
+  /**
+   * Si el archivo de la canción sigue ahí (plan 023 T257). Las de muestra cuentan
+   * como presentes. Sólo la usa el Admin, al abrir la sección.
+   */
+  songFilePresent(song: RadioSong): Promise<boolean>;
   moveSong(id: string, to: number): Promise<RadioCatalog>;
   setFirst(id: string): Promise<RadioCatalog>;
   addGenre(name: string): Promise<RadioCatalog>;
@@ -132,6 +138,10 @@ export function createLocalRadioStore(kv: RadioKV, opts: LocalStoreOptions = {})
         if (song && isLocalRadioRef(song.src)) await kv.deleteFile(localRadioKey(song.src));
         return next;
       }),
+    songFilePresent: async (song) => {
+      if (!isLocalRadioRef(song.src)) return true;
+      return (await kv.getFile(localRadioKey(song.src))) !== null;
+    },
     moveSong: (id, to) => change((c) => moveRadioSong(c, id, to)),
     setFirst: (id) => change((c) => setFirstRadioSong(c, id)),
     addGenre: (name) => change((c) => addRadioGenre(c, name)),

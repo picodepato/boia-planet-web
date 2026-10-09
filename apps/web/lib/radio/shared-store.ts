@@ -102,6 +102,25 @@ export function bucketPathOf(url: string): string | null {
   return at < 0 ? null : url.slice(at + marker.length);
 }
 
+/**
+ * ¿Está el MP3 en su URL pública? Plan 023 T257. Sólo 404 (y el 400 que da
+ * Storage para un objeto que no existe) cuenta como ausente; un fallo de red
+ * o cualquier otra respuesta cuenta como presente, para no marcar de más. Las
+ * rutas relativas (muestra en `public/`) son presentes.
+ */
+export async function publicFilePresent(
+  url: string,
+  fetchFn: typeof fetch = (...args) => fetch(...args),
+): Promise<boolean> {
+  if (!url.startsWith('https://')) return true;
+  try {
+    const res = await fetchFn(url, { method: 'HEAD', cache: 'no-store' });
+    return res.status !== 404 && res.status !== 400;
+  } catch {
+    return true;
+  }
+}
+
 /** Lee el catálogo de Supabase (sin sesión también: es público). */
 export async function readSharedRadioCatalog(sb: Pick<RadioClient, 'from'>): Promise<RadioCatalog> {
   const [genres, songs] = await Promise.all([
@@ -120,6 +139,7 @@ export async function readSharedRadioCatalog(sb: Pick<RadioClient, 'from'>): Pro
 export function createSharedRadioStore(
   sb: RadioClient,
   stamp: () => string = () => radioStamp(),
+  fileCheck: (url: string) => Promise<boolean> = (url) => publicFilePresent(url),
 ): RadioAdminStore {
   const catalog = () => readSharedRadioCatalog(sb);
   return {
@@ -191,6 +211,9 @@ export function createSharedRadioStore(
         if (error) console.warn('[boia] radio: archivo sin borrar', path, error);
       }
       return catalog();
+    },
+    async songFilePresent(song) {
+      return fileCheck(song.src);
     },
     async moveSong(id, to) {
       const next = moveRadioSong(await catalog(), id, to);
