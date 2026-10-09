@@ -1642,7 +1642,7 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           duration_seconds: number;
-          genre_id: string;
+          genre_id: string | null;
           id: string;
           is_first: boolean;
           position: number;
@@ -1654,7 +1654,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           duration_seconds: number;
-          genre_id: string;
+          genre_id: string | null;
           id: string;
           is_first?: boolean;
           position: number;
@@ -1666,7 +1666,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           duration_seconds?: number;
-          genre_id?: string;
+          genre_id?: string | null;
           id?: string;
           is_first?: boolean;
           position?: number;

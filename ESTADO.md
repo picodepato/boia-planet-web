@@ -4,6 +4,48 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T255: Radio: change a song's genre, delete genres, songs without genre
+
+- **Contrato** (`packages/contracts/src/radio.ts`): `genreId` de una canción admite `null`
+  (sin género). `updateRadioSong(…, { genreId: null })` la deja sin género; `addRadioSong` también
+  la admite. `deleteRadioGenre` ya no se bloquea con canciones (`genre_in_use`): borra el género y
+  deja sus canciones con `genreId: null`, nunca las borra. Nuevo `radioSongsWithoutGenre`.
+  `radioGenreCounts` no cuenta las sin género.
+- **Admin › Radio** (`apps/web/app/admin/sections/radio.tsx`, `admin.css`, textos en
+  `lib/i18n/es-admin-radio.ts`): cada fila de canción lleva un desplegable de género (todos los
+  géneros + «Sin género») que guarda al cambiar; el formulario «Editar» queda para título y artista.
+  «Borrar» un género abre un aviso en la propia fila: «¿Borrar el género «X»? Tiene N canciones: no
+  se borran, se quedan sin género y suenan sólo en «Todos».» con «Borrar el género» / «Cancelar».
+  La tarjeta de géneros dice cuántas canciones hay sin género. El filtro «Ver» tiene «Sin género».
+  Subir una canción también puede ir «Sin género».
+- **Reproductor**: las canciones sin género salen sólo en «Todos» (el filtro por género ya sólo
+  tomaba las de ese género); la pantalla dice «Sin género · 0:30» (`radio.generos.ninguno`).
+- **Supabase**: migración nueva **`supabase/migrations/20261009100200_radio_genre_optional.sql`**
+  (para T253, detrás de `20261009100100_radio.sql`): `radio_songs.genre_id` sin `not null` y su
+  clave ajena con `on delete set null`. Sin permisos nuevos: borrar géneros (política
+  `radio_genres_staff_delete` + `grant delete`) y cambiar `genre_id` ya eran del equipo. No
+  aplicada a ningún proyecto. `database.types.ts`: `genre_id: string | null`. El almacén con cuentas
+  (`shared-store.ts`) lee filas sin género (o con un género que no está) como sin género; sin la
+  migración, borrar un género con canciones da `genre_in_use` («falta la migración 20261009100200»).
+- Pruebas: `packages/contracts/src/radio.test.ts` (borrar género → canciones sin género; cambiar /
+  quitar género), `apps/web/lib/radio/store.test.ts` (modo local: cambiar, quitar, borrar género con
+  canciones, que siguen y salen sólo en «Todos»; subir sin género),
+  `apps/web/lib/radio/radio-sql.test.ts` (la migración como texto; cliente Supabase falso con
+  `on delete set null`: cambiar, quitar y borrar → «Todos» sólo).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (290 archivos,
+  2554 pasan, 2 saltadas)
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0;
+  `pnpm typecheck` → exit 0
+
+Capturas (demo local, `/tmp/orchestrator-attach/boia-planet-hernan-T255/`, móvil 390×844 y
+escritorio 1440×900): `*-1-fila-selector-genero.png`, `*-2-confirmar-borrar-genero.png`,
+`*-3-tras-borrar-filtro-sin-genero.png`, `*-4-reproductor-todos.png`.
+
+Pendiente: T253 aplica `20261009100200_radio_genre_optional.sql` en boia-planet-dev. E2E: ninguna
+spec usa la sección Radio del Admin; si Hernán quiere, `admin.spec.ts` como comprobación general.
+
 ## 2026-10-09 — plan 023 T256: Shop: drop the sample tote, reseed stored shop block
 
 **What exists**

@@ -5,6 +5,7 @@ import {
   RadioCatalogError,
   type RadioSong,
   radioGenreCounts,
+  radioSongsWithoutGenre,
   sortedRadioSongs,
 } from '@boia/contracts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -36,6 +37,25 @@ function radioError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
 
+/** El valor de «sin género» en los desplegables (un id de género nunca está vacío). */
+const NO_GENRE = '';
+/** El filtro «Sin género» de la lista (no puede ser un id: empieza por `_`). */
+const FILTER_NO_GENRE = '_sin-genero';
+
+/** Los géneros del catálogo y, al final, «Sin género» (plan 023 T255). */
+function GenreOptions({ catalog }: { catalog: RadioCatalog }) {
+  return (
+    <>
+      {catalog.genres.map((g) => (
+        <option key={g.id} value={g.id}>
+          {g.name}
+        </option>
+      ))}
+      <option value={NO_GENRE}>{t('admin.radio.genres.none')}</option>
+    </>
+  );
+}
+
 const fmtTime = (s: number) => {
   const m = Math.floor(s / 60);
   return `${m}:${String(Math.round(s % 60)).padStart(2, '0')}`;
@@ -62,7 +82,7 @@ export function RadioSection(_props: { ctx: AdminContext }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const { status, busy, run } = useRun();
   // El género del formulario de subida: al crear uno, queda elegido ahí (plan 023 T246).
-  const [uploadGenre, setUploadGenre] = useState('');
+  const [uploadGenre, setUploadGenre] = useState<string | null>(null);
 
   useEffect(() => {
     if (!store) return;
@@ -147,7 +167,8 @@ function UploadForm({
   catalog: RadioCatalog;
   apply: Apply;
   busy: boolean;
-  genreId: string;
+  /** null: aún sin elegir (el primero); `NO_GENRE`: sin género. */
+  genreId: string | null;
   onGenre: (id: string) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
@@ -155,7 +176,11 @@ function UploadForm({
   const [artist, setArtist] = useState('');
   const [first, setFirst] = useState(false);
   const [inputKey, setInputKey] = useState(0);
-  const genre = catalog.genres.some((g) => g.id === genreId) ? genreId : catalog.genres[0]?.id;
+  // `NO_GENRE` es «sin género» (plan 023 T255); sin elegir o uno que ya no está, el primero.
+  const genre =
+    genreId === NO_GENRE || catalog.genres.some((g) => g.id === genreId)
+      ? (genreId as string)
+      : (catalog.genres[0]?.id ?? NO_GENRE);
   return (
     <form
       className="admin-card admin-form"
@@ -171,7 +196,7 @@ function UploadForm({
             const next = await store.addSong({
               title: name,
               artist: artist.trim(),
-              genreId: genre ?? '',
+              genreId: genre === NO_GENRE ? null : genre,
               durationSeconds,
               file,
               first,
@@ -219,15 +244,11 @@ function UploadForm({
         </Field>
         <Field label={t('admin.radio.upload.genre')}>
           <select
-            value={genre ?? ''}
+            value={genre}
             data-testid="radio-subir-genero"
             onChange={(e) => onGenre(e.target.value)}
           >
-            {catalog.genres.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
+            <GenreOptions catalog={catalog} />
           </select>
         </Field>
       </div>
@@ -244,7 +265,7 @@ function UploadForm({
         <button
           type="submit"
           className="admin-button"
-          disabled={busy || catalog.genres.length === 0}
+          disabled={busy}
           data-testid="radio-subir-enviar"
         >
           {busy ? t('admin.radio.upload.working') : t('admin.radio.upload.submit')}
@@ -268,6 +289,7 @@ function GenreRow({
   busy: boolean;
 }) {
   const [value, setValue] = useState(name);
+  const [confirming, setConfirming] = useState(false);
   return (
     <li className="admin-radio__genre" data-testid={`radio-genero-${id}`}>
       <input
@@ -294,13 +316,56 @@ function GenreRow({
       <button
         type="button"
         className="admin-button admin-button--ghost"
-        disabled={busy || count > 0}
-        title={count > 0 ? t('admin.radio.genres.deleteBlocked') : undefined}
+        disabled={busy}
+        aria-expanded={confirming}
         data-testid={`radio-genero-borrar-${id}`}
-        onClick={() => void apply((s) => s.deleteGenre(id), t('admin.radio.genres.deleted'))}
+        onClick={() => setConfirming((v) => !v)}
       >
         {t('admin.radio.genres.delete')}
       </button>
+      {confirming ? (
+        <div
+          className="admin-card admin-delete__panel admin-radio__confirm"
+          role="alertdialog"
+          aria-label={t('admin.radio.genres.confirmDelete', { name })}
+          data-testid={`radio-genero-confirmar-${id}`}
+        >
+          <p>
+            <strong>{t('admin.radio.genres.confirmDelete', { name })}</strong>
+          </p>
+          <p className="admin-meta">
+            {count === 0
+              ? t('admin.radio.genres.confirmDeleteEmpty')
+              : count === 1
+                ? t('admin.radio.genres.confirmDeleteOne')
+                : t('admin.radio.genres.confirmDeleteSongs', { n: count })}
+          </p>
+          <div className="admin-row">
+            <button
+              type="button"
+              className="admin-button admin-button--danger"
+              disabled={busy}
+              data-testid={`radio-genero-borrar-si-${id}`}
+              onClick={() =>
+                void apply(async (s) => {
+                  const next = await s.deleteGenre(id);
+                  setConfirming(false);
+                  return next;
+                }, t('admin.radio.genres.deleted'))
+              }
+            >
+              {t('admin.radio.genres.confirm')}
+            </button>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              onClick={() => setConfirming(false)}
+            >
+              {t('admin.radio.genres.cancel')}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -318,6 +383,7 @@ function GenresCard({
 }) {
   const [name, setName] = useState('');
   const counts = radioGenreCounts(catalog);
+  const noGenre = radioSongsWithoutGenre(catalog).length;
   return (
     <div className="admin-card admin-form" data-testid="radio-generos">
       <h3>{t('admin.radio.genres.title')}</h3>
@@ -334,6 +400,14 @@ function GenresCard({
           />
         ))}
       </ul>
+      {noGenre > 0 ? (
+        <p className="admin-meta" data-testid="radio-sin-genero">
+          {t('admin.radio.genres.none')}:{' '}
+          {noGenre === 1
+            ? t('admin.radio.genres.countOne')
+            : t('admin.radio.genres.count', { n: noGenre })}
+        </p>
+      ) : null}
       <form
         className="admin-row admin-row--end"
         onSubmit={(e) => {
@@ -381,8 +455,11 @@ function SongList({
   const [playing, setPlaying] = useState<string | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
   const songs = sortedRadioSongs(catalog);
-  const shown = filter ? songs.filter((s) => s.genreId === filter) : songs;
-  const genreName = (id: string) => catalog.genres.find((g) => g.id === id)?.name ?? id;
+  const shown = !filter
+    ? songs
+    : filter === FILTER_NO_GENRE
+      ? songs.filter((s) => s.genreId === null)
+      : songs.filter((s) => s.genreId === filter);
 
   useEffect(() => () => audio.current?.pause(), []);
 
@@ -418,10 +495,17 @@ function SongList({
                 {g.name}
               </option>
             ))}
+            <option value={FILTER_NO_GENRE}>{t('admin.radio.songs.none')}</option>
           </select>
         </label>
       </div>
-      {shown.length === 0 ? <p className="admin-meta">{t('admin.radio.songs.empty')}</p> : null}
+      {shown.length === 0 ? (
+        <p className="admin-meta">
+          {filter === FILTER_NO_GENRE
+            ? t('admin.radio.songs.emptyNone')
+            : t('admin.radio.songs.empty')}
+        </p>
+      ) : null}
       <ol className="admin-list admin-radio__songs">
         {shown.map((s) => (
           <SongRow
@@ -429,7 +513,6 @@ function SongList({
             song={s}
             total={songs.length}
             catalog={catalog}
-            genreName={genreName(s.genreId)}
             playing={playing === s.id}
             onPlay={() => void toggle(s)}
             apply={apply}
@@ -445,7 +528,6 @@ function SongRow({
   song,
   total,
   catalog,
-  genreName,
   playing,
   onPlay,
   apply,
@@ -454,7 +536,6 @@ function SongRow({
   song: RadioSong;
   total: number;
   catalog: RadioCatalog;
-  genreName: string;
   playing: boolean;
   onPlay: () => void;
   apply: Apply;
@@ -463,7 +544,6 @@ function SongRow({
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(song.title);
   const [artist, setArtist] = useState(song.artist);
-  const [genreId, setGenreId] = useState(song.genreId);
   const [to, setTo] = useState(String(song.order + 1));
   const isSample = song.src.startsWith('/radio/muestra/');
   return (
@@ -479,8 +559,25 @@ function SongRow({
         <span className="admin-radio__name">
           <strong>{song.title}</strong> — {song.artist}
         </span>
+        <select
+          className="admin-radio__song-genre"
+          value={song.genreId ?? NO_GENRE}
+          disabled={busy}
+          aria-label={t('admin.radio.songs.genre', { title: song.title })}
+          data-testid={`radio-cancion-genero-${song.id}`}
+          data-sin-genero={song.genreId === null ? 'true' : undefined}
+          onChange={(e) => {
+            const genreId = e.target.value === NO_GENRE ? null : e.target.value;
+            void apply(
+              (s) => s.updateSong(song.id, { genreId }),
+              t('admin.radio.songs.genreSaved'),
+            );
+          }}
+        >
+          <GenreOptions catalog={catalog} />
+        </select>
         <span className="admin-meta">
-          {genreName} · {fmtTime(song.durationSeconds)}
+          {fmtTime(song.durationSeconds)}
           {isSample ? ` · ${t('admin.radio.songs.muestra')}` : ''}
         </span>
         {song.first ? <span className="admin-badge">{t('admin.radio.songs.first')}</span> : null}
@@ -492,15 +589,6 @@ function SongRow({
           </Field>
           <Field label={t('admin.radio.upload.artist')}>
             <input value={artist} maxLength={120} onChange={(e) => setArtist(e.target.value)} />
-          </Field>
-          <Field label={t('admin.radio.upload.genre')}>
-            <select value={genreId} onChange={(e) => setGenreId(e.target.value)}>
-              {catalog.genres.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
           </Field>
         </div>
       ) : null}
@@ -579,7 +667,7 @@ function SongRow({
               disabled={busy}
               onClick={() =>
                 void apply(async (s) => {
-                  const next = await s.updateSong(song.id, { title, artist, genreId });
+                  const next = await s.updateSong(song.id, { title, artist });
                   setEditing(false);
                   return next;
                 }, t('admin.radio.songs.saved'))

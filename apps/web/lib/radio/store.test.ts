@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { RadioCatalogError, firstRadioSong, radioCatalogProblems } from '@boia/contracts';
 import { describe, expect, it } from 'vitest';
 import { readRadioCatalog, radioSongUrl } from './catalog';
+import { listedGenres, playable } from './player-model';
 import data from './muestra.json' with { type: 'json' };
 import { SAMPLE_RADIO_CATALOG, sampleRadioCatalog } from './muestra';
 import { createLocalRadioStore, memoryRadioKV } from './store';
@@ -16,7 +17,7 @@ function setup() {
   return { kv, store };
 }
 
-const upload = (title: string, genreId = 'house') => ({
+const upload = (title: string, genreId: string | null = 'house') => ({
   title,
   artist: 'Ana Marea',
   genreId,
@@ -89,7 +90,7 @@ describe('radio local (D-20): CRUD del catálogo', () => {
     expect(c.songs.filter((s) => s.first)).toHaveLength(1);
   });
 
-  it('géneros: crear, renombrar (sus canciones lo siguen) y borrar (bloqueado si tiene canciones)', async () => {
+  it('géneros: crear, renombrar (sus canciones lo siguen) y borrar uno vacío', async () => {
     const { store } = setup();
     let c = await store.addGenre('Cumbia');
     expect(c.genres.find((g) => g.id === 'cumbia')?.name).toBe('Cumbia');
@@ -98,10 +99,41 @@ describe('radio local (D-20): CRUD del catálogo', () => {
     const techno = c.songs.filter((s) => s.genreId === 'techno');
     expect(techno.length).toBeGreaterThan(0);
     expect(c.genres.find((g) => g.id === 'techno')?.name).toBe('Techno de barco');
-    expect(await rejects(store.deleteGenre('techno'))).toBe('genre_in_use');
     c = await store.deleteGenre('cumbia');
     expect(c.genres.some((g) => g.id === 'cumbia')).toBe(false);
     expect(await rejects(store.addSong(upload('x', 'cumbia')))).toBe('unknown_genre');
+  });
+
+  it('plan 023 T255: cambiar el género de una canción, dejarla sin género y borrar un género con canciones', async () => {
+    const { kv, store } = setup();
+    let c = await store.catalog();
+    const techno = c.songs.filter((s) => s.genreId === 'techno').map((s) => s.id);
+    expect(techno.length).toBeGreaterThan(0);
+    const other = c.genres.find((g) => g.id !== 'techno')!.id;
+    const moved = techno[0]!;
+    c = await store.updateSong(moved, { genreId: other });
+    expect(c.songs.find((s) => s.id === moved)?.genreId).toBe(other);
+    c = await store.updateSong(moved, { genreId: null });
+    expect(c.songs.find((s) => s.id === moved)?.genreId).toBeNull();
+    const total = c.songs.length;
+    c = await store.deleteGenre('techno');
+    expect(c.genres.some((g) => g.id === 'techno')).toBe(false);
+    expect(c.songs).toHaveLength(total);
+    const orphans = c.songs.filter((s) => s.genreId === null).map((s) => s.id);
+    expect(orphans.sort()).toEqual([...techno].sort());
+    expect(radioCatalogProblems(c)).toEqual([]);
+    // Lo guardado se vuelve a leer igual (null vale en el esquema).
+    expect(await createLocalRadioStore(kv).catalog()).toEqual(c);
+    // En el reproductor: sólo en «Todos», nunca en la barra de géneros.
+    const all = playable(c.songs, null).map((s) => s.id);
+    for (const id of orphans) expect(all).toContain(id);
+    for (const g of listedGenres(c.genres, c.songs)) {
+      const of = playable(c.songs, g.id).map((s) => s.id);
+      for (const id of orphans) expect(of).not.toContain(id);
+    }
+    // Subir sin género también vale.
+    c = await store.addSong(upload('Suelta', null));
+    expect(c.songs.find((s) => s.title === 'Suelta')?.genreId).toBeNull();
   });
 
   it('plan 023 T246: crear un género, subirle una canción y renombrarlo sin que la pierda', async () => {

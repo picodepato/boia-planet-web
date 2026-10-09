@@ -71,7 +71,10 @@ export function RadioWindow({ onClose }: { onClose: () => void }) {
     () => (state.catalog ? listedGenres(state.catalog.genres, state.catalog.songs) : []),
     [state.catalog],
   );
-  const genreName = (id: string) => state.catalog?.genres.find((g) => g.id === id)?.name ?? id;
+  const genreName = (id: string | null) =>
+    id === null
+      ? t('radio.generos.ninguno')
+      : (state.catalog?.genres.find((g) => g.id === id)?.name ?? id);
   // Un género guardado que ya no sale en la barra cuenta como «Todos».
   const activeGenre = genres.some((g) => g.id === state.genreId) ? state.genreId : null;
 

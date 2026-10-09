@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { RADIO_LIMITS, RadioCatalogError } from '@boia/contracts';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_RADIO_CATALOG } from './muestra';
+import { listedGenres, playable } from './player-model';
 import { bucketPathOf, createSharedRadioStore, radioCatalogFromRows } from './shared-store';
 import { RADIO_SONG_BUCKET, SONG_UPLOAD_LIMITS } from './upload';
 
@@ -15,6 +16,8 @@ const read = (path: string) =>
 const FILE = '20261009100100_radio.sql';
 const SQL = read(`supabase/migrations/${FILE}`);
 const TYPES = read('packages/db/src/database.types.ts');
+const OPTIONAL_FILE = '20261009100200_radio_genre_optional.sql';
+const OPTIONAL = read(`supabase/migrations/${OPTIONAL_FILE}`);
 
 describe('migración de la radio', () => {
   it('siembra los géneros de muestra del catálogo', () => {
@@ -32,7 +35,7 @@ describe('migración de la radio', () => {
     );
   });
 
-  it('borrar un género con canciones lo impide la clave ajena', () => {
+  it('la primera versión impedía borrar un género con canciones (luego, T255)', () => {
     expect(SQL).toContain('references public.radio_genres (id) on delete restrict');
   });
 
@@ -80,6 +83,41 @@ describe('migración de la radio', () => {
   });
 });
 
+describe('plan 023 T255: migración de canciones sin género', () => {
+  it('va detrás de la de la radio', () => {
+    expect(OPTIONAL_FILE > FILE).toBe(true);
+  });
+
+  it('genre_id admite null y borrar un género deja sus canciones sin género', () => {
+    expect(OPTIONAL).toContain(
+      'alter table public.radio_songs alter column genre_id drop not null;',
+    );
+    expect(OPTIONAL).toContain('drop constraint radio_songs_genre_id_fkey;');
+    expect(OPTIONAL).toMatch(
+      /add constraint radio_songs_genre_id_fkey\s+foreign key \(genre_id\) references public\.radio_genres \(id\) on delete set null;/,
+    );
+    expect(OPTIONAL).not.toMatch(/on delete (cascade|restrict)/);
+  });
+
+  it('el equipo ya podía borrar géneros y cambiar el género de una canción; anon nunca', () => {
+    expect(SQL).toContain(
+      'create policy radio_genres_staff_delete on public.radio_genres for delete to authenticated',
+    );
+    expect(SQL).toMatch(
+      /grant insert \(id, name\), update \(name\), delete on public\.radio_genres to authenticated;/,
+    );
+    expect(SQL).toContain('update (title, artist, genre_id), delete on public.radio_songs');
+    // Sin permisos nuevos: ninguna sentencia `grant` (sí se nombran en el comentario).
+    expect(OPTIONAL).not.toMatch(/^\s*grant /m);
+  });
+
+  it('los tipos dicen que genre_id puede ser null', () => {
+    const block = TYPES.slice(TYPES.indexOf('radio_songs: {'));
+    const row = block.slice(0, block.indexOf('Insert:'));
+    expect(row).toContain('genre_id: string | null;');
+  });
+});
+
 /** Un cliente de Supabase falso: guarda lo que se le pide y responde lo justo. */
 function fakeClient(opts: { deleteError?: unknown } = {}) {
   const genres = [{ id: 'techno', name: 'Techno' }];
@@ -109,7 +147,18 @@ function fakeClient(opts: { deleteError?: unknown } = {}) {
         },
       }),
       delete: () => ({
-        eq: () => (calls.push(`delete ${table}`), result(null, opts.deleteError ?? null)),
+        eq: (col: string, value: unknown) => {
+          calls.push(`delete ${table}`);
+          if (opts.deleteError) return result(null, opts.deleteError);
+          const list = rows as Record<string, unknown>[];
+          const at = list.findIndex((r) => r[col] === value);
+          if (at >= 0) list.splice(at, 1);
+          // Como la clave ajena de 20261009100200: `on delete set null`.
+          if (table === 'radio_genres') {
+            for (const song of songs) if (song.genre_id === value) song.genre_id = null;
+          }
+          return result(null);
+        },
       }),
     };
     return chain;
@@ -174,12 +223,65 @@ describe('radio con cuentas (cliente falso)', () => {
     expect((err as RadioCatalogError).code).toBe('genre_exists');
   });
 
-  it('un género con canciones: la base lo rechaza (23503) y se dice `genre_in_use`', async () => {
+  it('plan 023 T255: cambiar de género, dejar sin género y borrar un género con canciones', async () => {
+    const { client, calls, songs } = fakeClient();
+    let n = 0;
+    const store = createSharedRadioStore(client, () => `z${++n}`);
+    await store.addGenre('House');
+    for (const title of ['Uno', 'Dos']) {
+      await store.addSong({
+        title,
+        artist: 'Brisa FM',
+        genreId: 'techno',
+        durationSeconds: 20,
+        file: new Blob([]),
+      });
+    }
+    let c = await store.updateSong('cancion-z1', { genreId: 'house' });
+    expect(songs[0]).toMatchObject({ genre_id: 'house' });
+    c = await store.updateSong('cancion-z1', { genreId: null });
+    expect(songs[0]).toMatchObject({ genre_id: null });
+    expect(c.songs.find((s) => s.id === 'cancion-z1')?.genreId).toBeNull();
+    c = await store.deleteGenre('techno');
+    expect(calls).toContain('delete radio_genres');
+    expect(calls).not.toContain('delete radio_songs');
+    expect(c.genres.map((g) => g.id)).toEqual(['house']);
+    expect(c.songs.map((s) => [s.title, s.genreId])).toEqual([
+      ['Uno', null],
+      ['Dos', null],
+    ]);
+    // En el reproductor: sólo en «Todos».
+    expect(playable(c.songs, null).map((s) => s.title)).toEqual(['Uno', 'Dos']);
+    expect(listedGenres(c.genres, c.songs)).toEqual([]);
+  });
+
+  it('sin la migración 20261009100200 la base rechaza borrarlo (23503): `genre_in_use`', async () => {
     const { client } = fakeClient({ deleteError: { code: '23503', message: 'fk' } });
     const store = createSharedRadioStore(client);
     const err = await store.deleteGenre('techno').catch((e: unknown) => e);
     expect(err).toBeInstanceOf(RadioCatalogError);
     expect((err as RadioCatalogError).code).toBe('genre_in_use');
+  });
+
+  it('plan 023 T255: una fila sin género (o con uno que no se leyó) queda sin género', () => {
+    const row = (id: string, genre_id: string | null) => ({
+      id,
+      title: id,
+      artist: 'B',
+      genre_id,
+      duration_seconds: 10,
+      url: `https://x.supabase.co/storage/v1/object/public/radio-songs/${id}.mp3`,
+      position: id === 'a' ? 0 : 1,
+      is_first: id === 'a',
+    });
+    const c = radioCatalogFromRows(
+      [{ id: 'techno', name: 'Techno' }],
+      [row('a', null), row('b', 'borrado')],
+    );
+    expect(c.songs.map((s) => [s.id, s.genreId])).toEqual([
+      ['a', null],
+      ['b', null],
+    ]);
   });
 
   it('las filas que no valen se saltan; el camino del archivo sale de su URL', () => {

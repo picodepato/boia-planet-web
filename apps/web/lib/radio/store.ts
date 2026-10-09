@@ -29,7 +29,8 @@ import { sampleRadioCatalog } from './muestra';
 export interface NewSongUpload {
   title: string;
   artist: string;
-  genreId: string;
+  /** Null: sin género (sólo suena en «Todos»). */
+  genreId: string | null;
   durationSeconds: number;
   file: Blob;
   first?: boolean;
@@ -47,6 +48,7 @@ export interface RadioAdminStore {
   setFirst(id: string): Promise<RadioCatalog>;
   addGenre(name: string): Promise<RadioCatalog>;
   renameGenre(id: string, name: string): Promise<RadioCatalog>;
+  /** Borra el género; sus canciones se quedan, sin género (plan 023 T255). */
   deleteGenre(id: string): Promise<RadioCatalog>;
 }
 

@@ -35,7 +35,8 @@ export interface RadioSongRow {
   id: string;
   title: string;
   artist: string;
-  genre_id: string;
+  /** Null: sin género (migración 20261009100200, plan 023 T255). */
+  genre_id: string | null;
   duration_seconds: number | string;
   url: string;
   position: number;
@@ -63,7 +64,11 @@ export function radioCatalogFromRows(
       order: r.position,
       first: r.is_first,
     });
-    return s.success && known.has(s.data.genreId) ? [s.data] : [];
+    if (!s.success) return [];
+    // Un género que no se leyó cuenta como ninguno: la canción sigue sonando en «Todos».
+    return [
+      s.data.genreId === null || known.has(s.data.genreId) ? s.data : { ...s.data, genreId: null },
+    ];
   });
   return { genres, songs: sortedRadioSongs({ genres, songs }) };
 }
@@ -122,7 +127,7 @@ export function createSharedRadioStore(
     catalog,
     async addSong(input) {
       const current = await catalog();
-      if (!current.genres.some((g) => g.id === input.genreId)) {
+      if (input.genreId !== null && !current.genres.some((g) => g.id === input.genreId)) {
         throw new RadioCatalogError('unknown_genre');
       }
       const id = `cancion-${stamp()}`;
@@ -211,6 +216,7 @@ export function createSharedRadioStore(
     },
     async deleteGenre(id) {
       deleteRadioGenre(await catalog(), id);
+      // La clave ajena (`on delete set null`) deja sus canciones sin género.
       await must(sb.from('radio_genres').delete().eq('id', id));
       return catalog();
     },

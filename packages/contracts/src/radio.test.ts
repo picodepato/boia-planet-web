@@ -9,7 +9,9 @@ import {
   moveRadioSong,
   radioCatalogProblems,
   radioCatalogSchema,
+  radioGenreCounts,
   radioGenreId,
+  radioSongsWithoutGenre,
   removeRadioSong,
   renameRadioGenre,
   setFirstRadioSong,
@@ -124,11 +126,28 @@ describe('radio: géneros', () => {
     expect(addRadioGenre(base(), ` ${'x'.repeat(40)} `).genres.at(-1)?.name).toHaveLength(40);
   });
 
-  it('borrar un género con canciones no se deja; sin canciones, sí', () => {
+  it('plan 023 T255: borrar un género con canciones las deja sin género, nunca las borra', () => {
+    const c = updateRadioSong(withSongs('a', 'b'), 'b', { genreId: 'house' });
+    const next = deleteRadioGenre(c, 'techno');
+    expect(next.genres.map((g) => g.id)).toEqual(['house']);
+    expect(next.songs.map((s) => [s.id, s.genreId])).toEqual([
+      ['a', null],
+      ['b', 'house'],
+    ]);
+    expect(radioSongsWithoutGenre(next).map((s) => s.id)).toEqual(['a']);
+    expect(radioGenreCounts(next).get('house')).toBe(1);
+    expect(radioCatalogProblems(next)).toEqual([]);
+    expect(radioCatalogSchema.safeParse(next).success).toBe(true);
+    expect(codeOf(() => deleteRadioGenre(next, 'techno'))).toBe('unknown_genre');
+  });
+
+  it('plan 023 T255: una canción cambia de género o se queda sin él', () => {
     const c = withSongs('a');
-    expect(codeOf(() => deleteRadioGenre(c, 'techno'))).toBe('genre_in_use');
-    expect(deleteRadioGenre(c, 'house').genres.map((g) => g.id)).toEqual(['techno']);
-    const moved = updateRadioSong(c, 'a', { genreId: 'house' });
-    expect(deleteRadioGenre(moved, 'techno').genres.map((g) => g.id)).toEqual(['house']);
+    const none = updateRadioSong(c, 'a', { genreId: null });
+    expect(none.songs[0]?.genreId).toBeNull();
+    expect(updateRadioSong(none, 'a', { genreId: 'house' }).songs[0]?.genreId).toBe('house');
+    expect(codeOf(() => updateRadioSong(c, 'a', { genreId: 'nada' }))).toBe('unknown_genre');
+    const added = addRadioSong(c, { ...song('b'), genreId: null });
+    expect(added.songs.find((s) => s.id === 'b')?.genreId).toBeNull();
   });
 });

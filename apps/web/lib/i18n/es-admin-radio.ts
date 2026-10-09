@@ -34,7 +34,7 @@ export const esAdminRadio = {
 
   'admin.radio.genres.title': 'Géneros',
   'admin.radio.genres.hint':
-    'Renombrar un género lo cambia en todas sus canciones. Un género nuevo queda elegido para subirle canciones y sale en la radio en cuanto tiene alguna. Un género con canciones no se puede borrar: cámbialas de género antes.',
+    'Renombrar un género lo cambia en todas sus canciones. Un género nuevo queda elegido para subirle canciones y sale en la radio en cuanto tiene alguna. Borrar un género no borra sus canciones: se quedan sin género y suenan sólo en «Todos».',
   'admin.radio.genres.count': '{n} canciones',
   'admin.radio.genres.countOne': '1 canción',
   'admin.radio.genres.name': 'Nombre del género',
@@ -42,15 +42,27 @@ export const esAdminRadio = {
   'admin.radio.genres.add': 'Crear',
   'admin.radio.genres.rename': 'Renombrar',
   'admin.radio.genres.delete': 'Borrar',
-  'admin.radio.genres.deleteBlocked': 'Tiene canciones: no se puede borrar.',
+  'admin.radio.genres.confirmDelete': '¿Borrar el género «{name}»?',
+  'admin.radio.genres.confirmDeleteSongs':
+    'Tiene {n} canciones: no se borran, se quedan sin género y suenan sólo en «Todos».',
+  'admin.radio.genres.confirmDeleteOne':
+    'Tiene 1 canción: no se borra, se queda sin género y suena sólo en «Todos».',
+  'admin.radio.genres.confirmDeleteEmpty': 'No tiene canciones.',
+  'admin.radio.genres.confirm': 'Borrar el género',
+  'admin.radio.genres.cancel': 'Cancelar',
   'admin.radio.genres.added': 'Género creado.',
   'admin.radio.genres.renamed': 'Género renombrado.',
   'admin.radio.genres.deleted': 'Género borrado.',
+  'admin.radio.genres.none': 'Sin género',
 
   'admin.radio.songs.title': 'Canciones',
   'admin.radio.songs.filter': 'Ver',
   'admin.radio.songs.all': 'Todos los géneros',
+  'admin.radio.songs.none': 'Sin género',
+  'admin.radio.songs.genre': 'Género de «{title}»',
+  'admin.radio.songs.genreSaved': 'Género cambiado.',
   'admin.radio.songs.empty': 'No hay canciones de este género.',
+  'admin.radio.songs.emptyNone': 'Todas las canciones tienen género.',
   'admin.radio.songs.position': 'N.º {n}',
   'admin.radio.songs.first': 'Primera',
   'admin.radio.songs.makeFirst': 'Hacer primera',
@@ -72,7 +84,7 @@ export const esAdminRadio = {
   'admin.radio.songs.muestra': 'muestra',
 
   'admin.radio.error.genre_in_use':
-    'Ese género tiene canciones: cámbialas de género antes de borrarlo.',
+    'La base aún no deja borrar un género con canciones (falta la migración 20261009100200).',
   'admin.radio.error.genre_exists': 'Ya hay un género con ese nombre.',
   'admin.radio.error.genre_name': 'El nombre del género va de 1 a 40 letras.',
   'admin.radio.error.unknown_genre': 'Ese género ya no existe.',

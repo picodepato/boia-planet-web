@@ -7,8 +7,9 @@ import { z } from 'zod';
  * siempre la primera al encender la radio; luego, al azar.
  *
  * Los géneros se editan en el Admin. Una canción nombra su género por id,
- * así que renombrar un género lo cambia en todas sus canciones; borrar un
- * género que aún tiene canciones no se deja (`genre_in_use`).
+ * así que renombrar un género lo cambia en todas sus canciones. Una canción
+ * puede no tener género (`genreId: null`, plan 023 T255): sólo suena en
+ * «Todos». Borrar un género deja sus canciones sin género, nunca las borra.
  *
  * Aquí, los tipos y las reglas puras (sin navegador ni Supabase): cada
  * operación devuelve un catálogo nuevo o lanza `RadioCatalogError`.
@@ -53,7 +54,8 @@ export const radioSongSchema = z.object({
   id: z.string().regex(ID),
   title: z.string().trim().min(1).max(RADIO_LIMITS.title),
   artist: z.string().trim().min(1).max(RADIO_LIMITS.artist),
-  genreId: z.string().regex(ID),
+  /** Su género, o null: sin género (sólo sale en «Todos»). */
+  genreId: z.string().regex(ID).nullable(),
   durationSeconds: z.number().positive().max(RADIO_LIMITS.maxSeconds),
   src: songSrc,
   /** Posición en la lista (0, 1, 2…; sin huecos tras cada operación). */
@@ -99,7 +101,7 @@ export function radioCatalogProblems(c: RadioCatalog): RadioProblem[] {
   for (const s of c.songs) {
     if (songIds.has(s.id)) out.add('duplicate_song');
     songIds.add(s.id);
-    if (!genreIds.has(s.genreId)) out.add('unknown_genre');
+    if (s.genreId !== null && !genreIds.has(s.genreId)) out.add('unknown_genre');
   }
   const firsts = c.songs.filter((s) => s.first).length;
   if (c.songs.length > 0 ? firsts !== 1 : firsts !== 0) out.add('first_count');
@@ -141,7 +143,9 @@ function songIndex(c: RadioCatalog, id: string): number {
   return i;
 }
 
-function requireGenre(c: RadioCatalog, genreId: string): void {
+/** Que el género exista (null, sin género, siempre vale). */
+function requireGenre(c: RadioCatalog, genreId: string | null): void {
+  if (genreId === null) return;
   if (!c.genres.some((g) => g.id === genreId)) throw new RadioCatalogError('unknown_genre');
 }
 
@@ -160,7 +164,7 @@ export function addRadioSong(c: RadioCatalog, song: NewRadioSong): RadioCatalog 
 
 export type RadioSongPatch = Partial<Pick<RadioSong, 'title' | 'artist' | 'genreId'>>;
 
-/** Cambia el título, el artista o el género de una canción. */
+/** Cambia el título, el artista o el género de una canción (null: sin género). */
 export function updateRadioSong(c: RadioCatalog, id: string, patch: RadioSongPatch): RadioCatalog {
   const i = songIndex(c, id);
   if (patch.genreId !== undefined) requireGenre(c, patch.genreId);
@@ -240,16 +244,27 @@ export function renameRadioGenre(c: RadioCatalog, id: string, name: string): Rad
   };
 }
 
-/** Borra un género; no se deja mientras tenga canciones (`genre_in_use`). */
+/**
+ * Borra un género (plan 023 T255): sus canciones se quedan, sin género (como
+ * `on delete set null` en Supabase), y sólo suenan en «Todos».
+ */
 export function deleteRadioGenre(c: RadioCatalog, id: string): RadioCatalog {
-  requireGenre(c, id);
-  if (c.songs.some((s) => s.genreId === id)) throw new RadioCatalogError('genre_in_use');
-  return { genres: c.genres.filter((g) => g.id !== id), songs: c.songs };
+  if (!c.genres.some((g) => g.id === id)) throw new RadioCatalogError('unknown_genre');
+  return {
+    genres: c.genres.filter((g) => g.id !== id),
+    songs: c.songs.map((s) => (s.genreId === id ? { ...s, genreId: null } : s)),
+  };
+}
+
+/** Las canciones sin género. */
+export function radioSongsWithoutGenre(c: RadioCatalog): RadioSong[] {
+  return c.songs.filter((s) => s.genreId === null);
 }
 
 /** Cuántas canciones tiene cada género. */
 export function radioGenreCounts(c: RadioCatalog): Map<string, number> {
   const out = new Map(c.genres.map((g) => [g.id, 0]));
-  for (const s of c.songs) out.set(s.genreId, (out.get(s.genreId) ?? 0) + 1);
+  for (const s of c.songs)
+    if (s.genreId !== null) out.set(s.genreId, (out.get(s.genreId) ?? 0) + 1);
   return out;
 }
