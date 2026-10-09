@@ -1,6 +1,6 @@
 # Plan 025 — Radio: clickable now-playing toast, plain song name, clearer repeat/shuffle
 
-Status: active
+Status: done
 Created: 2026-10-09
 Base branch: main
 Goal: Hernán's radio polish of 2026-10-09, right after plan 024. (1) The now-playing toast that appears at the bottom opens the radio window when clicked/tapped. (2) The toast shows the song directly («Title — Artist») instead of «Sonando: …». (3) The player's repeat and shuffle buttons look too small and it is not clear which is which: bigger icons inside the buttons, recognisable glyphs, and a clear name and on/off state.
@@ -13,7 +13,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 ## Tasks
 
 ## T259 — Radio toast opens the radio, shows just the song; bigger, clearer repeat/shuffle buttons
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: haiku
 - Skills: frontend-design
@@ -25,11 +25,15 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - unit/component test: activating the toast opens the radio window → pass
   - screenshots: mobile toast; mobile and desktop radio window with repeat and shuffle off and on → attach folder
   - Test command → exit 0
-- Outcome:
+- Outcome: toast is a button that opens the radio, shows «Title — Artist»; repeat/shuffle 22 px icons, aria-pressed, i18n titles · e2e1438
 
 ## Decisions
 - 2026-10-09 plan: toast keeps the artist after the title («Title — Artist»); Hernán only asked to drop «Sonando» (orchestrator)
 
+- 2026-10-09 T259: shuffle/repeat 36×30 px with 40×40 hit area and 22 px icons; shuffle moved from role=switch to aria-pressed; i18n key radio.sonando replaced by radio.toast.*; toast keeps data-testid radio-sonando (agent)
+
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-09 T259 launched · attempt 1 · agent abf0ac2d5726a519e
+- 2026-10-09 T259 done · branch worktree-agent-abf0ac2d5726a519e → e2e1438
