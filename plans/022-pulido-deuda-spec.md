@@ -114,9 +114,9 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: Arcilla map prose → 77 `mapa.*` keys (`es-mundo.ts`, resolved via `WorldRegistry.mapTexts`), shop texts keyed; no visible change · aa0e6ff
 
 ## T243 — Spec backlog A: product, entry, architecture REQs
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T238, T239
-- Model: haiku
+- Model: opus
 - Skills: none
 - Goal: Close or raise every REQ in areas PRO, ENT, ARQ (FALTA and PARCIAL) in `docs/spec/estado.md` that can be settled without Álvaro: by code, a test, a measurement in the browser pane (mobile emulation counts as emulation, say so), or a review document under `docs/`. Each change links its proof. Anything that needs Álvaro, real content or physical devices stays as it is and is listed in a short table in ESTADO with what is missing.
 - Context: `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `docs/DECISIONES.md` (read only), `docs/TRASPASO.md`, `python3 tools/spec/estado.py`; FALTA rows in these areas include REQ-PRO-008/010/012/014/015/016/019/020, ENT-004/005/018/021, ARQ-004/006/017/018.
@@ -125,12 +125,12 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - `python3 tools/spec/estado.py` → exit 0
   - ESTADO lists, per REQ touched, old → new status and proof, plus the table of REQs left for Álvaro/devices
   - Test command → exit 0
-- Outcome:
+- Outcome: PRO/ENT/ARQ: HECHO PRO-015, ARQ-005/008/012 (new tests); PARCIAL PRO-008/010, ENT-018, ARQ-004/006/018; 30-row table of what Álvaro/devices/migrations must provide; estado.py 170/71/19 · a105b73
 
 ## T244 — Spec backlog B: world, identity, community, admin and remaining REQs
-- Status: running (attempt 1)
+- Status: running (attempt 2)
 - Depends on: T236, T237, T240, T241, T242
-- Model: haiku
+- Model: opus
 - Skills: none
 - Goal: Same as T243 for every area except PRO, ENT, ARQ (MUN, IDE, COM, ADM and the rest): close or raise every FALTA/PARCIAL REQ that can be settled without Álvaro, with linked proof; list what stays and why. FALTA rows include REQ-MUN-003/015/016/017/018/029/033, IDE-020, COM-029, ADM-038.
 - Context: as T243; the world work of T237 (routes) and T241 (objects) bears on MUN-015..018.
@@ -199,9 +199,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T241: uploaded file replaces the category piece (island template too); image = billboard; size = footprint (min 2.5) × scale, height ≤ half, ≤ 6 u; models lambertized (`lambertize` exported); `data-objetos-arte` on the canvas (agent)
 - 2026-10-09 T242: world package has no i18n → map texts are keys resolved by the web; proper names keyed too; world-package tests now expect keys; check = new catalog test + grep (agent)
 - 2026-10-09 T247: Ajustes «Música» off / landing 🔊 pauses the radio, on resumes; manual play with music off turns «Música» on; own volume slider; hero button idle→start, paused→resume, playing→open player; header/mar buttons open/close the player; hero button hides from 0.42 screens; shuffle + repeat-all by default; prefetch at ≤8 s left; 3 consecutive failures stop; state in sessionStorage; radio chunk on idle (≤1.5 s) or first gesture; `/mar` button under «!» (agent). +75 B on the landing accepted: no radio code in the critical path (orchestrator)
+- 2026-10-09 T243: attempt 1 on haiku incomplete → retried on opus (orchestrator); HECHO only where a test meets the 09 criterion; all browser checks are emulation; ARQ-006 stays PARCIAL (`pnpm db:test` needs local PostgreSQL) (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T243: landing does not recover from a lost WebGL context (planet without islands, «BOIA» stays white); /mar welcome sheet titled «Welcome Aboard» in English; at 200 % zoom corner texts overlap «Consigue descuentos»; decide whether the /mar welcome sheet counts as a blocking modal (PRO-010); pass criteria of PRO-009, ENT-002, ENT-027 contradict later decisions
 - 2026-10-09 T247: the last +75 B on the landing come from the catalog/sample split shared with the admin (`muestra.json` commons chunk)
 - 2026-10-09 T242: remaining prose literals: `acuarela/skin.ts` (`cala: 'Puerto de Alicante'`, hidden world) and default `leaveReaction` in `packages/world/src/behaviors.ts`; no lint rule for loose strings exists
 - 2026-10-09 T241: upload object files to Supabase Storage (needs a bucket + migration); Admin content still stays in the browser in both modes (D-20)
@@ -231,3 +233,10 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T242 done · merged aa0e6ff
 - 2026-10-09 T243 launched · attempt 1 · agent aeae088802d674361
 - 2026-10-09 T247 done · merged 6a720b9
+- 2026-10-09 T244 launched · attempt 1 · agent aee2480a6c92ff544
+- 2026-10-09 pushed main c82b1c8 (Hernán in session; + T242, T247 radio)
+- 2026-10-09 T243 attempt 1 incomplete (haiku touched ~6 REQs, left most PARCIAL rows and the Álvaro/devices table) · branch worktree-agent-aeae088802d674361 kept for the retry; attempt 2 on opus
+- 2026-10-09 T243 launched · attempt 2 (opus, continuation of worktree-agent-aeae088802d674361) · agent a8abbedcaa7d89063
+- 2026-10-09 T244 attempt 1 incomplete (haiku reviewed only a subset of PARCIAL rows; changed «tripulación» copy for IDE-020) · branch worktree-agent-aee2480a6c92ff544 kept; attempt 2 on opus
+- 2026-10-09 T244 launched · attempt 2 (opus, continuation of worktree-agent-aee2480a6c92ff544) · agent aca57f1ea71e67d5e
+- 2026-10-09 T243 done · merged a105b73
