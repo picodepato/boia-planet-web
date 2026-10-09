@@ -92,7 +92,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: galeria-1..4 in album-muestra (selection false, home unchanged), galeria-3 cropped 60 px left in fotos.mjs, no revision bump needed · ff4f087
 
 ## T251 — Carnet: «Descubre» buttons under the answers
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -162,7 +162,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome:
 
 ## T256 — Shop follow-up: drop the sample tote, make stored browsers see the new shop
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T249, T250
 - Model: haiku
 - Skills: none
@@ -172,7 +172,8 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Done when:
   - unit test for the reseed case → pass
   - Test command → exit 0
-- Outcome:
+- Log: 2026-10-09 launched attempt 1, agent aa780d8496ad99249
+- Outcome: sample «Tote bags» removed (data, home block, images); SAMPLE_CONTENT_REVISION 1→2 renews homeBlocks once for stored browsers · a826585
 
 ## Decisions
 
@@ -187,6 +188,8 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 - T250: sources kept in art/galeria-fuentes/, crop done in tools/galeria/fotos.mjs; new photos appended for stored browsers by resolveEntities (no revision bump).
 - Hernán confirmed (2026-10-09, on screen): remove the old sample tote (T256).
+
+- T256: revision 2 renews all sample homeBlocks on stored browsers (drops admin edits to sample hero/philosophy/footer there), same design as revision 1.
 
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
