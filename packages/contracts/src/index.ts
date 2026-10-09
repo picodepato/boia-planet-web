@@ -9,3 +9,4 @@ export * from './progress';
 export * from './links';
 export * from './world-objects';
 export * from './merchandise';
+export * from './radio';

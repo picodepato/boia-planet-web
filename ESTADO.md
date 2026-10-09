@@ -4,6 +4,69 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T246: Radio: catálogo de canciones, géneros y subida en el Admin
+
+Qué existe:
+
+- **Contrato** `packages/contracts/src/radio.ts`: `RadioGenre`, `RadioSong` (id, título,
+  artista, `genreId`, `durationSeconds`, `src`, `order`, `first`), `RadioCatalog` y las reglas
+  puras (añadir, editar, quitar, mover, marcar la primera, crear/renombrar/borrar género).
+  **Exactamente una primera** si hay canciones: la primera que entra lo es, marcar otra quita la
+  marca, al quitar la primera pasa a serlo la de arriba de la lista.
+  **Géneros: renombrar actualiza** (las canciones nombran su género por id, el nombre las sigue);
+  **borrar se bloquea** mientras el género tenga canciones (`genre_in_use`; en el Admin el botón
+  sale desactivado con su aviso).
+- **Modo local (D-20)** `apps/web/lib/radio/store.ts` + `idb.ts`: catálogo y MP3 subidos en
+  IndexedDB (`boia-radio`, tiendas `catalogo` y `canciones`), sembrado con la muestra la primera
+  vez. **Con cuentas** `apps/web/lib/radio/shared-store.ts`: tablas y bucket de la migración
+  nueva; la primera y el orden por RPC.
+- **Catálogo para el reproductor (T247)** `apps/web/lib/radio/catalog.ts`: `loadRadioCatalog()`
+  (perezoso, con `import()`; JSON pequeño), `radioSongUrl(song)` (ruta/https tal cual; un MP3
+  subido en la demo, URL de objeto). Con cuentas y tabla vacía o sin migración: la muestra. No
+  entra en la ruta crítica de la landing (build: 199.5 kB, igual que antes).
+- **Admin** `/admin#radio` (`apps/web/app/admin/sections/radio.tsx`, textos en
+  `lib/i18n/es-admin-radio.ts`): subir MP3 (se comprueba por sus bytes, ≤ 15 MB, duración leída
+  por el navegador) con título, artista, género y «que sea la primera»; lista con filtro por
+  género, Escuchar, ↑/↓ y «mover a la posición», «Hacer primera», Editar y Borrar (con su
+  archivo); géneros: crear, renombrar, borrar.
+- **Muestra**: `art/radio/generar.py` (Blender 4.0 de la máquina: numpy sintetiza y su ffmpeg
+  codifica; nada descargado, semilla fija) → **100 canciones**, 25 por género (techno, house,
+  reggaetón, indie), MP3 mono 48 kbps 22 050 Hz, 98 de 4 s y 2 de 30 s (la primera, «Arena
+  salvaje», techno; y una de house) para probar el avance y la precarga. **Total 2 779 502 bytes
+  (2,78 MB, tope 3 MB)** en `apps/web/public/radio/muestra/`; catálogo en
+  `apps/web/lib/radio/muestra.json`. Títulos y artistas inventados, todo `muestra`.
+- **Migración nueva** `supabase/migrations/20261009100100_radio.sql` (NO aplicada): tablas
+  `radio_genres` (con los 4 géneros de muestra) y `radio_songs`, índice único parcial (como mucho
+  una primera), disparadores (la primera por defecto, la de arriba al borrar) y comprobación
+  diferida (exactamente una), RPC `radio_set_first` y `radio_reorder` (sólo equipo), RLS lectura
+  pública / escritura `has_staff_role('admin')`, bucket público `radio-songs` (audio/mpeg,
+  15 MB). Tipos añadidos a mano en `packages/db/src/database.types.ts`.
+  **Orden de Hernán: la 11**, detrás de la 10 (`20261008200200_member_party_trash.sql`) en la
+  tabla de `docs/propuestas/2026-10-08-plan-020-guia-prueba.md`. Sin prueba `test:supabase`
+  propia todavía (sólo la prueba de texto `apps/web/lib/radio/radio-sql.test.ts`).
+
+Comandos:
+
+- `pnpm exec vitest run packages/contracts/src/radio.test.ts apps/web/lib/radio` → 3 archivos,
+  todo pasa (CRUD local, una sola primera, géneros, catálogo del reproductor, muestra, SQL,
+  almacén con cuentas contra cliente falso).
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 267 archivos,
+  2440 pasan, 1 omitida, exit 0.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm build` → exit 0 (landing
+  199.5 kB, presupuesto 200 kB). `pnpm typecheck` → exit 0.
+- Capturas del Admin Radio (móvil 390×844 y escritorio) en
+  `/tmp/orchestrator-attach/boia-planet-hernan-T246/`.
+
+Pendiente:
+
+- Aplicar la migración 11 en `boia-planet-dev` (Hernán) y, si se quiere, una prueba
+  `radio.supabase.ts` contra la base.
+- Con cuentas, la muestra no está en la tabla: suena mientras la tabla esté vacía; en cuanto el
+  Admin sube una canción, la radio pasa a las de Supabase.
+
+E2E para Hernán: ninguna spec cambia; si quiere, `admin.spec.ts` (la barra de secciones tiene
+una entrada más, «Radio»).
+
 ## 2026-10-09 — plan 022 T236: /mar overlays: boia text vs carnet prompt, trip destination, Ajustes toggles
 
 Qué existe:

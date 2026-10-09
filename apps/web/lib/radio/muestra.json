@@ -1,0 +1,1025 @@
+{
+  "muestra": true,
+  "generatedBy": "art/radio/generar.py",
+  "totalBytes": 2779502,
+  "genres": [
+    {
+      "id": "techno",
+      "name": "Techno"
+    },
+    {
+      "id": "house",
+      "name": "House"
+    },
+    {
+      "id": "reggaeton",
+      "name": "Reggaetón"
+    },
+    {
+      "id": "indie",
+      "name": "Indie"
+    }
+  ],
+  "songs": [
+    {
+      "id": "muestra-001",
+      "title": "Arena salvaje",
+      "artist": "Medusa Ritmo",
+      "genreId": "techno",
+      "durationSeconds": 30.0,
+      "src": "/radio/muestra/muestra-001.mp3",
+      "first": true,
+      "order": 0
+    },
+    {
+      "id": "muestra-026",
+      "title": "Bahía azul",
+      "artist": "Faro Norte",
+      "genreId": "house",
+      "durationSeconds": 30.0,
+      "src": "/radio/muestra/muestra-026.mp3",
+      "first": false,
+      "order": 1
+    },
+    {
+      "id": "muestra-051",
+      "title": "Gaviota de agosto",
+      "artist": "Las Boias",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-051.mp3",
+      "first": false,
+      "order": 2
+    },
+    {
+      "id": "muestra-076",
+      "title": "Ancla secreta",
+      "artist": "Las Boias",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-076.mp3",
+      "first": false,
+      "order": 3
+    },
+    {
+      "id": "muestra-002",
+      "title": "Bahía dorada",
+      "artist": "Ana Marea",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-002.mp3",
+      "first": false,
+      "order": 4
+    },
+    {
+      "id": "muestra-027",
+      "title": "Boia al amanecer",
+      "artist": "Los del Muelle",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-027.mp3",
+      "first": false,
+      "order": 5
+    },
+    {
+      "id": "muestra-052",
+      "title": "Duna en bucle",
+      "artist": "Trío Calita",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-052.mp3",
+      "first": false,
+      "order": 6
+    },
+    {
+      "id": "muestra-077",
+      "title": "Boia infinita",
+      "artist": "Faro Norte",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-077.mp3",
+      "first": false,
+      "order": 7
+    },
+    {
+      "id": "muestra-003",
+      "title": "Espuma infinita",
+      "artist": "Luna Postiguet",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-003.mp3",
+      "first": false,
+      "order": 8
+    },
+    {
+      "id": "muestra-028",
+      "title": "Medusa de verano",
+      "artist": "Duna Beat",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-028.mp3",
+      "first": false,
+      "order": 9
+    },
+    {
+      "id": "muestra-053",
+      "title": "Neón azul",
+      "artist": "Neón Club",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-053.mp3",
+      "first": false,
+      "order": 10
+    },
+    {
+      "id": "muestra-078",
+      "title": "Salitre del sur",
+      "artist": "MC Gaviota",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-078.mp3",
+      "first": false,
+      "order": 11
+    },
+    {
+      "id": "muestra-004",
+      "title": "Salitre en bucle",
+      "artist": "Luna Postiguet",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-004.mp3",
+      "first": false,
+      "order": 12
+    },
+    {
+      "id": "muestra-029",
+      "title": "Brisa de cristal",
+      "artist": "Brisa FM",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-029.mp3",
+      "first": false,
+      "order": 13
+    },
+    {
+      "id": "muestra-054",
+      "title": "Tabarca de neón",
+      "artist": "Coral Sound",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-054.mp3",
+      "first": false,
+      "order": 14
+    },
+    {
+      "id": "muestra-079",
+      "title": "Luna en bucle",
+      "artist": "Coral Sound",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-079.mp3",
+      "first": false,
+      "order": 15
+    },
+    {
+      "id": "muestra-005",
+      "title": "Boia secreta",
+      "artist": "Luna Postiguet",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-005.mp3",
+      "first": false,
+      "order": 16
+    },
+    {
+      "id": "muestra-030",
+      "title": "Albufera de fiesta",
+      "artist": "Ana Marea",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-030.mp3",
+      "first": false,
+      "order": 17
+    },
+    {
+      "id": "muestra-055",
+      "title": "Postiguet secreta",
+      "artist": "Coral Sound",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-055.mp3",
+      "first": false,
+      "order": 18
+    },
+    {
+      "id": "muestra-080",
+      "title": "Boia azul",
+      "artist": "Kiko Salitre",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-080.mp3",
+      "first": false,
+      "order": 19
+    },
+    {
+      "id": "muestra-006",
+      "title": "Tabarca a la deriva",
+      "artist": "DJ Muestra",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-006.mp3",
+      "first": false,
+      "order": 20
+    },
+    {
+      "id": "muestra-031",
+      "title": "Duna en Alicante",
+      "artist": "MC Gaviota",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-031.mp3",
+      "first": false,
+      "order": 21
+    },
+    {
+      "id": "muestra-056",
+      "title": "Salitre al amanecer",
+      "artist": "Coral Sound",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-056.mp3",
+      "first": false,
+      "order": 22
+    },
+    {
+      "id": "muestra-081",
+      "title": "Arena de fiesta",
+      "artist": "Banda Velero",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-081.mp3",
+      "first": false,
+      "order": 23
+    },
+    {
+      "id": "muestra-007",
+      "title": "Ancla a la deriva",
+      "artist": "Brisa FM",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-007.mp3",
+      "first": false,
+      "order": 24
+    },
+    {
+      "id": "muestra-032",
+      "title": "Arena azul",
+      "artist": "Tabarca Crew",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-032.mp3",
+      "first": false,
+      "order": 25
+    },
+    {
+      "id": "muestra-057",
+      "title": "Calita de fiesta",
+      "artist": "DJ Muestra",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-057.mp3",
+      "first": false,
+      "order": 26
+    },
+    {
+      "id": "muestra-082",
+      "title": "Medusa secreta",
+      "artist": "Duna Beat",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-082.mp3",
+      "first": false,
+      "order": 27
+    },
+    {
+      "id": "muestra-008",
+      "title": "Velero de neón",
+      "artist": "Sirena 303",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-008.mp3",
+      "first": false,
+      "order": 28
+    },
+    {
+      "id": "muestra-033",
+      "title": "Muelle de neón",
+      "artist": "Duna Beat",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-033.mp3",
+      "first": false,
+      "order": 29
+    },
+    {
+      "id": "muestra-058",
+      "title": "Muelle del sur",
+      "artist": "Kiko Salitre",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-058.mp3",
+      "first": false,
+      "order": 30
+    },
+    {
+      "id": "muestra-083",
+      "title": "Brisa del puerto",
+      "artist": "Capitana Ola",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-083.mp3",
+      "first": false,
+      "order": 31
+    },
+    {
+      "id": "muestra-009",
+      "title": "Luna azul",
+      "artist": "Coral Sound",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-009.mp3",
+      "first": false,
+      "order": 32
+    },
+    {
+      "id": "muestra-034",
+      "title": "Velero azul",
+      "artist": "Coral Sound",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-034.mp3",
+      "first": false,
+      "order": 33
+    },
+    {
+      "id": "muestra-059",
+      "title": "Gaviota lenta",
+      "artist": "Las Boias",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-059.mp3",
+      "first": false,
+      "order": 34
+    },
+    {
+      "id": "muestra-084",
+      "title": "Postiguet de medianoche",
+      "artist": "DJ Muestra",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-084.mp3",
+      "first": false,
+      "order": 35
+    },
+    {
+      "id": "muestra-010",
+      "title": "Arena a la deriva",
+      "artist": "Faro Norte",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-010.mp3",
+      "first": false,
+      "order": 36
+    },
+    {
+      "id": "muestra-035",
+      "title": "Corriente de verano",
+      "artist": "Luna Postiguet",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-035.mp3",
+      "first": false,
+      "order": 37
+    },
+    {
+      "id": "muestra-060",
+      "title": "Sirena de medianoche",
+      "artist": "Banda Velero",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-060.mp3",
+      "first": false,
+      "order": 38
+    },
+    {
+      "id": "muestra-085",
+      "title": "Medusa a la deriva",
+      "artist": "Capitana Ola",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-085.mp3",
+      "first": false,
+      "order": 39
+    },
+    {
+      "id": "muestra-011",
+      "title": "Tabarca de medianoche",
+      "artist": "Kiko Salitre",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-011.mp3",
+      "first": false,
+      "order": 40
+    },
+    {
+      "id": "muestra-036",
+      "title": "Velero de verano",
+      "artist": "Los del Muelle",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-036.mp3",
+      "first": false,
+      "order": 41
+    },
+    {
+      "id": "muestra-061",
+      "title": "Corriente de medianoche",
+      "artist": "Neón Club",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-061.mp3",
+      "first": false,
+      "order": 42
+    },
+    {
+      "id": "muestra-086",
+      "title": "Albufera azul",
+      "artist": "DJ Muestra",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-086.mp3",
+      "first": false,
+      "order": 43
+    },
+    {
+      "id": "muestra-012",
+      "title": "Espuma secreta",
+      "artist": "Neón Club",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-012.mp3",
+      "first": false,
+      "order": 44
+    },
+    {
+      "id": "muestra-037",
+      "title": "Ola de verano",
+      "artist": "DJ Muestra",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-037.mp3",
+      "first": false,
+      "order": 45
+    },
+    {
+      "id": "muestra-062",
+      "title": "Calita lenta",
+      "artist": "Capitana Ola",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-062.mp3",
+      "first": false,
+      "order": 46
+    },
+    {
+      "id": "muestra-087",
+      "title": "Marea a la deriva",
+      "artist": "Banda Velero",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-087.mp3",
+      "first": false,
+      "order": 47
+    },
+    {
+      "id": "muestra-013",
+      "title": "Marea salvaje",
+      "artist": "Ana Marea",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-013.mp3",
+      "first": false,
+      "order": 48
+    },
+    {
+      "id": "muestra-038",
+      "title": "Neón de agosto",
+      "artist": "Coral Sound",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-038.mp3",
+      "first": false,
+      "order": 49
+    },
+    {
+      "id": "muestra-063",
+      "title": "Postiguet de verano",
+      "artist": "Kiko Salitre",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-063.mp3",
+      "first": false,
+      "order": 50
+    },
+    {
+      "id": "muestra-088",
+      "title": "Velero lenta",
+      "artist": "DJ Muestra",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-088.mp3",
+      "first": false,
+      "order": 51
+    },
+    {
+      "id": "muestra-014",
+      "title": "Bahía de fiesta",
+      "artist": "Los del Muelle",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-014.mp3",
+      "first": false,
+      "order": 52
+    },
+    {
+      "id": "muestra-039",
+      "title": "Duna al amanecer",
+      "artist": "Banda Velero",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-039.mp3",
+      "first": false,
+      "order": 53
+    },
+    {
+      "id": "muestra-064",
+      "title": "Muelle en Alicante",
+      "artist": "Los del Muelle",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-064.mp3",
+      "first": false,
+      "order": 54
+    },
+    {
+      "id": "muestra-089",
+      "title": "Ancla al amanecer",
+      "artist": "Banda Velero",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-089.mp3",
+      "first": false,
+      "order": 55
+    },
+    {
+      "id": "muestra-015",
+      "title": "Duna salvaje",
+      "artist": "Tabarca Crew",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-015.mp3",
+      "first": false,
+      "order": 56
+    },
+    {
+      "id": "muestra-040",
+      "title": "Marea eléctrica",
+      "artist": "Kiko Salitre",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-040.mp3",
+      "first": false,
+      "order": 57
+    },
+    {
+      "id": "muestra-065",
+      "title": "Sirena lenta",
+      "artist": "Ana Marea",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-065.mp3",
+      "first": false,
+      "order": 58
+    },
+    {
+      "id": "muestra-090",
+      "title": "Calita a la deriva",
+      "artist": "Kiko Salitre",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-090.mp3",
+      "first": false,
+      "order": 59
+    },
+    {
+      "id": "muestra-016",
+      "title": "Calita en Alicante",
+      "artist": "Sirena 303",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-016.mp3",
+      "first": false,
+      "order": 60
+    },
+    {
+      "id": "muestra-041",
+      "title": "Muelle dorada",
+      "artist": "Trío Calita",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-041.mp3",
+      "first": false,
+      "order": 61
+    },
+    {
+      "id": "muestra-066",
+      "title": "Salitre de cristal",
+      "artist": "Tabarca Crew",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-066.mp3",
+      "first": false,
+      "order": 62
+    },
+    {
+      "id": "muestra-091",
+      "title": "Gaviota de neón",
+      "artist": "Duna Beat",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-091.mp3",
+      "first": false,
+      "order": 63
+    },
+    {
+      "id": "muestra-017",
+      "title": "Medusa en Alicante",
+      "artist": "Faro Norte",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-017.mp3",
+      "first": false,
+      "order": 64
+    },
+    {
+      "id": "muestra-042",
+      "title": "Tabarca dorada",
+      "artist": "Los del Muelle",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-042.mp3",
+      "first": false,
+      "order": 65
+    },
+    {
+      "id": "muestra-067",
+      "title": "Espuma a la deriva",
+      "artist": "Ana Marea",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-067.mp3",
+      "first": false,
+      "order": 66
+    },
+    {
+      "id": "muestra-092",
+      "title": "Faro de medianoche",
+      "artist": "Neón Club",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-092.mp3",
+      "first": false,
+      "order": 67
+    },
+    {
+      "id": "muestra-018",
+      "title": "Corriente eléctrica",
+      "artist": "Medusa Ritmo",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-018.mp3",
+      "first": false,
+      "order": 68
+    },
+    {
+      "id": "muestra-043",
+      "title": "Salitre dorada",
+      "artist": "Tabarca Crew",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-043.mp3",
+      "first": false,
+      "order": 69
+    },
+    {
+      "id": "muestra-068",
+      "title": "Postiguet de neón",
+      "artist": "Brisa FM",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-068.mp3",
+      "first": false,
+      "order": 70
+    },
+    {
+      "id": "muestra-093",
+      "title": "Brisa de medianoche",
+      "artist": "Banda Velero",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-093.mp3",
+      "first": false,
+      "order": 71
+    },
+    {
+      "id": "muestra-019",
+      "title": "Velero eléctrica",
+      "artist": "Brisa FM",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-019.mp3",
+      "first": false,
+      "order": 72
+    },
+    {
+      "id": "muestra-044",
+      "title": "Palmera sin prisa",
+      "artist": "Ana Marea",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-044.mp3",
+      "first": false,
+      "order": 73
+    },
+    {
+      "id": "muestra-069",
+      "title": "Boia en bucle",
+      "artist": "Medusa Ritmo",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-069.mp3",
+      "first": false,
+      "order": 74
+    },
+    {
+      "id": "muestra-094",
+      "title": "Gaviota infinita",
+      "artist": "Tabarca Crew",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-094.mp3",
+      "first": false,
+      "order": 75
+    },
+    {
+      "id": "muestra-020",
+      "title": "Salitre secreta",
+      "artist": "Coral Sound",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-020.mp3",
+      "first": false,
+      "order": 76
+    },
+    {
+      "id": "muestra-045",
+      "title": "Salitre salvaje",
+      "artist": "Brisa FM",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-045.mp3",
+      "first": false,
+      "order": 77
+    },
+    {
+      "id": "muestra-070",
+      "title": "Sirena de cristal",
+      "artist": "Banda Velero",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-070.mp3",
+      "first": false,
+      "order": 78
+    },
+    {
+      "id": "muestra-095",
+      "title": "Ola del puerto",
+      "artist": "MC Gaviota",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-095.mp3",
+      "first": false,
+      "order": 79
+    },
+    {
+      "id": "muestra-021",
+      "title": "Gaviota de verano",
+      "artist": "Banda Velero",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-021.mp3",
+      "first": false,
+      "order": 80
+    },
+    {
+      "id": "muestra-046",
+      "title": "Corriente en Alicante",
+      "artist": "Sirena 303",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-046.mp3",
+      "first": false,
+      "order": 81
+    },
+    {
+      "id": "muestra-071",
+      "title": "Coral sin prisa",
+      "artist": "Los del Muelle",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-071.mp3",
+      "first": false,
+      "order": 82
+    },
+    {
+      "id": "muestra-096",
+      "title": "Espuma de agosto",
+      "artist": "DJ Muestra",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-096.mp3",
+      "first": false,
+      "order": 83
+    },
+    {
+      "id": "muestra-022",
+      "title": "Espuma salvaje",
+      "artist": "Faro Norte",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-022.mp3",
+      "first": false,
+      "order": 84
+    },
+    {
+      "id": "muestra-047",
+      "title": "Velero sin prisa",
+      "artist": "Trío Calita",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-047.mp3",
+      "first": false,
+      "order": 85
+    },
+    {
+      "id": "muestra-072",
+      "title": "Albufera del sur",
+      "artist": "Duna Beat",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-072.mp3",
+      "first": false,
+      "order": 86
+    },
+    {
+      "id": "muestra-097",
+      "title": "Arena del sur",
+      "artist": "Los del Muelle",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-097.mp3",
+      "first": false,
+      "order": 87
+    },
+    {
+      "id": "muestra-023",
+      "title": "Gaviota en bucle",
+      "artist": "Sirena 303",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-023.mp3",
+      "first": false,
+      "order": 88
+    },
+    {
+      "id": "muestra-048",
+      "title": "Ancla salvaje",
+      "artist": "Medusa Ritmo",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-048.mp3",
+      "first": false,
+      "order": 89
+    },
+    {
+      "id": "muestra-073",
+      "title": "Boia de neón",
+      "artist": "Brisa FM",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-073.mp3",
+      "first": false,
+      "order": 90
+    },
+    {
+      "id": "muestra-098",
+      "title": "Palmera del puerto",
+      "artist": "Faro Norte",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-098.mp3",
+      "first": false,
+      "order": 91
+    },
+    {
+      "id": "muestra-024",
+      "title": "Ancla del sur",
+      "artist": "Banda Velero",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-024.mp3",
+      "first": false,
+      "order": 92
+    },
+    {
+      "id": "muestra-049",
+      "title": "Espuma de cristal",
+      "artist": "Banda Velero",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-049.mp3",
+      "first": false,
+      "order": 93
+    },
+    {
+      "id": "muestra-074",
+      "title": "Sirena de agosto",
+      "artist": "Ana Marea",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-074.mp3",
+      "first": false,
+      "order": 94
+    },
+    {
+      "id": "muestra-099",
+      "title": "Neón secreta",
+      "artist": "DJ Muestra",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-099.mp3",
+      "first": false,
+      "order": 95
+    },
+    {
+      "id": "muestra-025",
+      "title": "Sirena infinita",
+      "artist": "Faro Norte",
+      "genreId": "techno",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-025.mp3",
+      "first": false,
+      "order": 96
+    },
+    {
+      "id": "muestra-050",
+      "title": "Arena dorada",
+      "artist": "Las Boias",
+      "genreId": "house",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-050.mp3",
+      "first": false,
+      "order": 97
+    },
+    {
+      "id": "muestra-075",
+      "title": "Bahía infinita",
+      "artist": "Brisa FM",
+      "genreId": "reggaeton",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-075.mp3",
+      "first": false,
+      "order": 98
+    },
+    {
+      "id": "muestra-100",
+      "title": "Marea de medianoche",
+      "artist": "DJ Muestra",
+      "genreId": "indie",
+      "durationSeconds": 4.0,
+      "src": "/radio/muestra/muestra-100.mp3",
+      "first": false,
+      "order": 99
+    }
+  ]
+}

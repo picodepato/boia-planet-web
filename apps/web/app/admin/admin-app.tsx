@@ -22,6 +22,7 @@ import { RealCalitasModeration } from './sections/calitas';
 import { ModerationSection } from './sections/moderation';
 import { ObjectsSection } from './sections/objects';
 import { PhotosSection } from './sections/photos';
+import { RadioSection } from './sections/radio';
 import { TextsSection } from './sections/texts';
 import { WorldSection } from './sections/world';
 import { RealBottles } from './real/botellas';
@@ -54,6 +55,8 @@ const SECTIONS: Section[] = [
   { id: 'logros', label: t('admin.adminApp.logrosYCosmeticos'), Component: AchievementsSection },
   { id: 'moderacion', label: t('admin.adminApp.moderacion'), Component: ModerationSection },
   { id: 'textos', label: t('admin.adminApp.textosYMusica'), Component: TextsSection },
+  // La radio de la web: canciones, géneros y la primera (plan 022 T246).
+  { id: 'radio', label: t('admin.radio.nav'), Component: RadioSection },
   { id: 'temporadas', label: t('admin.adminApp.temporadas'), Component: SeasonsSection },
   { id: 'usuarios', label: t('admin.adminApp.usuariosDeAdministracion'), Component: UsersSection },
   { id: 'integraciones', label: t('admin.adminApp.integraciones'), Component: IntegrationsSection },

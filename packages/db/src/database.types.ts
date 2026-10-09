@@ -1618,6 +1618,71 @@ export type Database = {
           },
         ];
       };
+      radio_genres: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          name: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+        };
+        Relationships: [];
+      };
+      radio_songs: {
+        Row: {
+          artist: string;
+          created_at: string;
+          created_by: string | null;
+          duration_seconds: number;
+          genre_id: string;
+          id: string;
+          is_first: boolean;
+          position: number;
+          title: string;
+          url: string;
+        };
+        Insert: {
+          artist: string;
+          created_at?: string;
+          created_by?: string | null;
+          duration_seconds: number;
+          genre_id: string;
+          id: string;
+          is_first?: boolean;
+          position: number;
+          title: string;
+          url: string;
+        };
+        Update: {
+          artist?: string;
+          created_at?: string;
+          created_by?: string | null;
+          duration_seconds?: number;
+          genre_id?: string;
+          id?: string;
+          is_first?: boolean;
+          position?: number;
+          title?: string;
+          url?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'radio_songs_genre_id_fkey';
+            columns: ['genre_id'];
+            isOneToOne: false;
+            referencedRelation: 'radio_genres';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       season_points: {
         Row: {
           points: number;
@@ -2469,6 +2534,18 @@ export type Database = {
           p_y: number;
         };
         Returns: Json;
+      };
+      radio_reorder: {
+        Args: {
+          p_ids: string[];
+        };
+        Returns: undefined;
+      };
+      radio_set_first: {
+        Args: {
+          p_song: string;
+        };
+        Returns: undefined;
       };
       ranking_canon: {
         Args: {

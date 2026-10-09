@@ -1,0 +1,82 @@
+/**
+ * Textos de la sección «Radio» del Admin (plan 022 T246): las canciones de
+ * la radio de la web, sus géneros y la primera canción. Todo `muestra`.
+ */
+export const esAdminRadio = {
+  'admin.radio.nav': 'Radio',
+  'admin.radio.title': 'Radio de la web',
+  'admin.radio.lead':
+    'Las canciones que suenan en la radio de la web, por género. La marcada como «primera» suena siempre la primera al encender la radio; luego, al azar.',
+  'admin.radio.leadLocal':
+    'Demo: las canciones se quedan en este navegador. Parte de {n} canciones de muestra sintetizadas.',
+  'admin.radio.leadShared':
+    'Con cuentas: las canciones se guardan en Supabase y las oye todo el mundo.',
+  'admin.radio.loading': 'Cargando la radio…',
+  'admin.radio.loadError': 'No se pudo leer la radio: {error}',
+  'admin.radio.summary': '{songs} canciones · {genres} géneros · {minutes} min',
+
+  'admin.radio.upload.title': 'Subir una canción',
+  'admin.radio.upload.file': 'Archivo MP3',
+  'admin.radio.upload.fileHint': 'MP3 de 15 MB como mucho. Se guarda tal cual.',
+  'admin.radio.upload.songTitle': 'Título',
+  'admin.radio.upload.artist': 'Artista',
+  'admin.radio.upload.genre': 'Género',
+  'admin.radio.upload.first': 'Que sea la primera canción',
+  'admin.radio.upload.submit': 'Subir',
+  'admin.radio.upload.working': 'Subiendo…',
+  'admin.radio.upload.done': '«{title}» está en la radio.',
+  'admin.radio.upload.needFile': 'Elige un MP3.',
+  'admin.radio.upload.needFields': 'Faltan el título o el artista.',
+  'admin.radio.upload.problem.type': 'No es un MP3.',
+  'admin.radio.upload.problem.size': 'Pesa más de 15 MB.',
+  'admin.radio.upload.problem.audio': 'El navegador no puede abrirlo para leer su duración.',
+  'admin.radio.upload.problem.long': 'Dura más de 20 minutos.',
+
+  'admin.radio.genres.title': 'Géneros',
+  'admin.radio.genres.hint':
+    'Renombrar un género lo cambia en todas sus canciones. Un género con canciones no se puede borrar: cámbialas de género antes.',
+  'admin.radio.genres.count': '{n} canciones',
+  'admin.radio.genres.name': 'Nombre del género',
+  'admin.radio.genres.newName': 'Género nuevo',
+  'admin.radio.genres.add': 'Crear',
+  'admin.radio.genres.rename': 'Renombrar',
+  'admin.radio.genres.delete': 'Borrar',
+  'admin.radio.genres.deleteBlocked': 'Tiene canciones: no se puede borrar.',
+  'admin.radio.genres.added': 'Género creado.',
+  'admin.radio.genres.renamed': 'Género renombrado.',
+  'admin.radio.genres.deleted': 'Género borrado.',
+
+  'admin.radio.songs.title': 'Canciones',
+  'admin.radio.songs.filter': 'Ver',
+  'admin.radio.songs.all': 'Todos los géneros',
+  'admin.radio.songs.empty': 'No hay canciones de este género.',
+  'admin.radio.songs.position': 'N.º {n}',
+  'admin.radio.songs.first': 'Primera',
+  'admin.radio.songs.makeFirst': 'Hacer primera',
+  'admin.radio.songs.up': 'Subir «{title}» un puesto',
+  'admin.radio.songs.down': 'Bajar «{title}» un puesto',
+  'admin.radio.songs.moveTo': 'Mover a la posición',
+  'admin.radio.songs.move': 'Mover',
+  'admin.radio.songs.play': 'Escuchar',
+  'admin.radio.songs.stop': 'Parar',
+  'admin.radio.songs.edit': 'Editar',
+  'admin.radio.songs.save': 'Guardar',
+  'admin.radio.songs.cancel': 'Cancelar',
+  'admin.radio.songs.delete': 'Borrar',
+  'admin.radio.songs.confirmDelete': '¿Borrar «{title}» y su archivo? No se puede deshacer.',
+  'admin.radio.songs.saved': 'Canción guardada.',
+  'admin.radio.songs.moved': 'Orden guardado.',
+  'admin.radio.songs.firstSet': '«{title}» es ahora la primera canción.',
+  'admin.radio.songs.deleted': 'Canción borrada.',
+  'admin.radio.songs.muestra': 'muestra',
+
+  'admin.radio.error.genre_in_use':
+    'Ese género tiene canciones: cámbialas de género antes de borrarlo.',
+  'admin.radio.error.genre_exists': 'Ya hay un género con ese nombre.',
+  'admin.radio.error.unknown_genre': 'Ese género ya no existe.',
+  'admin.radio.error.unknown_song': 'Esa canción ya no está en la radio.',
+  'admin.radio.error.first_count': 'La radio necesita exactamente una primera canción.',
+  'admin.radio.error.duplicate_song': 'Esa canción ya está.',
+  'admin.radio.error.duplicate_genre': 'Ese género ya está.',
+  'admin.radio.error.too_many': 'La radio ya está llena.',
+} as const;

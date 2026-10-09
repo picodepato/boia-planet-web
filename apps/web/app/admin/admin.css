@@ -754,3 +754,90 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: 0.04em;
 }
+
+/* La radio de la web (plan 022 T246): subir y gÃ©neros arriba, la lista debajo. */
+.admin-radio__top {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.admin-radio__genre {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.admin-radio__genre input,
+.admin-radio__genre .admin-meta {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 560px) {
+  .admin-radio__genre {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+
+  .admin-radio__genre input,
+  .admin-radio__genre .admin-meta {
+    grid-column: auto;
+  }
+}
+
+.admin-radio__songs {
+  gap: 6px;
+}
+
+.admin-radio__song {
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.admin-radio__song--first {
+  border-color: var(--admin-accent);
+  box-shadow: inset 4px 0 0 var(--admin-accent);
+}
+
+.admin-radio__song-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.admin-radio__pos {
+  min-width: 3.5em;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+
+.admin-radio__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-radio__song .admin-row {
+  gap: 6px;
+}
+
+.admin-radio__song .admin-button {
+  min-height: 34px;
+  padding: 2px 10px;
+  box-shadow: 2px 2px 0 var(--btn-edge);
+}
+
+.admin-radio__move {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.admin .admin-radio__move input {
+  width: 4.5em;
+  min-height: 34px;
+}

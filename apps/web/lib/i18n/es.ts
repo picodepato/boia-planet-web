@@ -10,6 +10,7 @@ import { esAdmin } from './es-admin';
 import { esAdminEnlaces } from './es-admin-enlaces';
 import { esAdminGestion } from './es-admin-gestion';
 import { esAdminObjetos } from './es-admin-objetos';
+import { esAdminRadio } from './es-admin-radio';
 import { esAdminReal } from './es-admin-real';
 import { esCalitas } from './es-calitas';
 import { esCarnet } from './es-carnet';
@@ -58,6 +59,8 @@ export const es = {
   ...esCalitas,
   // Acceso completo, papelera de cambios y analítica del Admin (plan 019 T223).
   ...esAdminGestion,
+  // La radio de la web: canciones, géneros y la primera (plan 022 T246).
+  ...esAdminRadio,
 } as const;
 
 export type MessageKey = keyof typeof es;
