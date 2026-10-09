@@ -101,7 +101,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: objects with an uploaded image (camera-facing sign) or .glb are drawn in the sea; orange buoy placeholder while loading/on failure · 2c104b5
 
 ## T242 — i18n of the Arcilla map prose and the shop texts
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T237
 - Model: haiku
 - Skills: none
@@ -111,10 +111,10 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Done when:
   - the project's i18n/loose-string check covers those files and passes; grep shows no remaining prose literals in them (ESTADO says which grep)
   - Test command → exit 0
-- Outcome:
+- Outcome: Arcilla map prose → 77 `mapa.*` keys (`es-mundo.ts`, resolved via `WorldRegistry.mapTexts`), shop texts keyed; no visible change · aa0e6ff
 
 ## T243 — Spec backlog A: product, entry, architecture REQs
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T238, T239
 - Model: haiku
 - Skills: none
@@ -197,9 +197,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T239: 400 came from `registered.ts` asking for music columns of unapplied migration 20261008100200; first spec probe replaced (orchestrator asked) by query-then-retry cached in sessionStorage `boia.artists.music-columns` (one 400 per browser session until the migration is applied); prettier cause was not CRLF, `endOfLine: lf` added; eslint ignores `.next-dev` (agent)
 - 2026-10-09 T240: moving to trash keeps the blob; purge (manual or retention) removes it; sweep keeps blobs referenced by content, drafts, trash and undo history; IndexedDB errors ignored in the sweep; Supabase trash already showed nicknames (agent)
 - 2026-10-09 T241: uploaded file replaces the category piece (island template too); image = billboard; size = footprint (min 2.5) × scale, height ≤ half, ≤ 6 u; models lambertized (`lambertize` exported); `data-objetos-arte` on the canvas (agent)
+- 2026-10-09 T242: world package has no i18n → map texts are keys resolved by the web; proper names keyed too; world-package tests now expect keys; check = new catalog test + grep (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T242: remaining prose literals: `acuarela/skin.ts` (`cala: 'Puerto de Alicante'`, hidden world) and default `leaveReaction` in `packages/world/src/behaviors.ts`; no lint rule for loose strings exists
 - 2026-10-09 T241: upload object files to Supabase Storage (needs a bucket + migration); Admin content still stays in the browser in both modes (D-20)
 - 2026-10-09 T240: artist Carnets are excluded from `admin.carnets()`, so their trash rows still show the id; the orphan sweep could prune a blob uploaded at the exact moment it runs (Admin open only)
 - 2026-10-09 T239: reformat the 205 prettier-flagged files in one dedicated commit when nothing else runs; review ~640 i18n keys a naive scan flags as unused (dynamic keys make it unreliable)
@@ -222,3 +224,6 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T240 done · merged b051900
 - 2026-10-09 T241 launched · attempt 1 · agent ac7d75086f4f4e92e
 - 2026-10-09 T241 done · merged 2c104b5
+- 2026-10-09 T242 launched · attempt 1 · agent a046011c27eafd151
+- 2026-10-09 pushed main c550a62 (Hernán in session; T236–T241 + T246)
+- 2026-10-09 T242 done · merged aa0e6ff
