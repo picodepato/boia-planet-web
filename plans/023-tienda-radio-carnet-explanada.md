@@ -15,7 +15,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 ## Tasks
 
 ## T246 — Radio: create and rename genres from the admin, sideways-scrolling genre bar
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -28,7 +28,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - new migration (if any) listed in the ESTADO section for T253
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent a1d255d246699de32
-- Outcome:
+- Outcome: create/rename already worked (plan 022); added preselect of new genre, clear name errors, sideways genre bar with edge fades/arrows; no new migration · d1554c2
 
 ## T247 — Mobile landing polish: icon-only music button, smaller header buttons, 2 s shop carousel
 - Status: running (attempt 1)
@@ -58,10 +58,11 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - a unit test reproduces the stale-local-data case and now resolves Halloween
   - screenshots desktop and mobile both showing Halloween as next event → attach folder
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent addce0faf3cab6fc7
 - Outcome:
 
 ## T249 — Shop: Manu Ropero's tote bag and the real T-shirt
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -144,4 +145,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 ## Decisions
 
+- T246: player genre bar shows only genres with songs; bad genre names give `genre_name` error (small @boia/contracts change); arrows mouse-only.
+
 ## Proposals
+- T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
