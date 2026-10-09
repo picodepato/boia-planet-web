@@ -11,6 +11,7 @@ export * from './migrations';
 export * from './retired-achievements';
 export * from './storage';
 export * from './schema';
+export * from './sample-reseed';
 export * from './sample';
 export * from './member';
 export * from './bottle-text';

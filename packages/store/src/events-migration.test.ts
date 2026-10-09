@@ -91,9 +91,11 @@ describe('migración v2 → v3: eventos (T42)', () => {
     const { repo } = makeRepo({ storage });
     expect(repo.status().droppedOnLoad).toBe(0);
     const events = await repo.content.events();
-    const p = events.find((e) => e.id === primavera.id)!;
-    // Estaba agotado a mano: sigue agotado aunque pasen las fechas.
-    expect(eventState(p, new Date('2030-01-01T00:00:00Z'))).toBe('sold_out');
-    expect(events.find((e) => e.id === 'ev-noche-del-admin')?.format).toBe('satelite');
+    const noche = events.find((e) => e.id === 'ev-noche-del-admin')!;
+    // Estaba a la venta a mano: sigue así aunque pasen las fechas.
+    expect(eventState(noche, new Date('2030-01-01T00:00:00Z'))).toBe('on_sale');
+    expect(noche.format).toBe('satelite');
+    // El de la muestra vieja deja paso a la muestra de hoy (plan 023 T248).
+    expect(events.find((e) => e.id === primavera.id)).toBeUndefined();
   });
 });

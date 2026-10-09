@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T248: «Próximo evento» igual en ordenador y móvil
+
+**La causa, en corto.** En la versión de prueba (D-20) todo vive en el navegador: lo que se ve es la muestra que trae el código más los cambios que se hicieron en el Admin *en ese navegador*. Cada cambio del Admin guarda el elemento entero, así que congela la muestra tal como era ese día. El ordenador de Hernán tiene cambios guardados de antes del 2 de octubre (T67), cuando el evento prioritario era «All Day BOIA · Primavera» (`ev-all-day-primavera`): esa copia vieja del bloque «Próximo evento» y de aquel evento seguía ganando a la muestra nueva (Halloween fijado). El móvil no tiene cambios guardados y por eso enseña la muestra de hoy: Halloween. No era cosa de ordenador o móvil, sino de un navegador con datos viejos frente a uno limpio. Reproducido en producción con un navegador sin código nuevo: con esos datos viejos dice «ALL DAY BOIA · PRIMAVERA» (en móvil y en ordenador); limpio, Halloween.
+
+**Qué existe.**
+- `packages/store/src/sample-reseed.ts`: la muestra tiene revisión (`SAMPLE_CONTENT_REVISION = 1`, en `schema.ts`) y el documento guardado la apunta (`content.sampleRevision`; sin ella, 0). Al cargar, si la revisión guardada es vieja, en las áreas del paso (revisión 1: `events` y `homeBlocks`) se quitan los cambios guardados de los elementos de la muestra (los de hoy y los retirados: `ev-all-day-primavera`, `ev-noche-mayo`, `ev-all-day-verano`), publicados y en borrador, y se ve la muestra actual. Pasa una sola vez: queda guardada la revisión nueva.
+- Se queda: lo creado en el Admin (ids que nunca fueron de la muestra), el orden, los textos, lugares, ajustes y lo purgado para siempre.
+- `local.ts` lo llama en `load()`; un documento nuevo nace ya con la revisión actual.
+- Para el futuro: si la muestra de eventos/home vuelve a cambiar (p. ej. contenido real de Álvaro), subir `SAMPLE_CONTENT_REVISION` y añadir su paso en `SAMPLE_RESEEDS`.
+- Pruebas: `packages/store/src/sample-reseed.test.ts` (6: la causa —sin renovar sale el All Day viejo—, con renovar sale Halloween, lo creado y los textos se quedan, una sola vez, lo purgado no vuelve, revisión coherente). `events-migration.test.ts` ajustado: el evento retirado de la muestra ya no sobrevive a la carga; el creado en el Admin sí, con su estado.
+
+**Comandos.**
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (290 archivos, 2537 pasan, 2 omitidas).
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → 0 · `pnpm typecheck` → 0 · `pnpm build` → OK (landing 196,7 kB de 200 kB).
+- Capturas (Playwright sin cabeza, `?intro=0`, movimiento reducido): `/tmp/orchestrator-attach/boia-planet-hernan-T248/` — `despues-{mobile,desktop}-{datos-viejos,navegador-limpio}.png` (build local: Halloween en los cuatro) y `antes-produccion-*` (producción: con datos viejos «ALL DAY BOIA · PRIMAVERA»).
+
+**Para comprobarlo (Hernán).** Tras desplegar, abre la web en el ordenador de siempre: al cargar renueva sola y «Próximo evento» dice HALLOWEEN IN THE CLUB, como el móvil. Ojo: los cambios que hubieras hecho en el Admin a eventos o bloques de la muestra en ese navegador vuelven a la muestra (una vez); lo que creaste nuevo se queda.
+
+**E2E que conviene correr (Hernán):** `admin.spec.ts`, `admin-papelera.spec.ts`, `eventos.spec.ts`, `landing.spec.ts`.
+
+**Pendiente.** Nada de esta tarea.
+
 ## 2026-10-09 — plan 023 T246: Radio genres from the admin, sideways genre bar
 
 Qué existe:

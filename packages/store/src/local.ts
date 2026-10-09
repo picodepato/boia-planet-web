@@ -1,5 +1,6 @@
 import { isRemovedFlag } from './removed-flags';
 import { isRetiredAchievement } from './retired-achievements';
+import { reseedSample } from './sample-reseed';
 import { sampleStampRevokedEvents } from './sample-stamps';
 import {
   BOTTLES_IN_SEA_MAX,
@@ -357,9 +358,11 @@ class LocalRepository implements BoiaRepository {
     const { doc, dropped } = sanitizeDoc(m.doc, this.version);
     const replay = replayLedger(doc.ledger);
     doc.ledger = replay.ledger;
+    // Cambios guardados con una muestra vieja: dejan paso a la de hoy (T248).
+    const reseeded = reseedSample(doc, this.sample);
     this.doc = doc;
     this.dropped = dropped + replay.dropped;
-    if (m.applied.length > 0) this.persist();
+    if (m.applied.length > 0 || reseeded) this.persist();
   }
 
   private startOver(raw: string, issue: StorageIssue): void {

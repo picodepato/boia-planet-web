@@ -36,6 +36,15 @@ import { STABLE_KEY, STABLE_KEY_MAX } from './ids';
  */
 export const SCHEMA_VERSION = 10;
 
+/**
+ * Revisión de la muestra de contenido (plan 023 T248). Sube cuando la muestra
+ * cambia de forma que los cambios guardados en un navegador con la muestra
+ * vieja la taparían; cada subida lleva su paso en `sample-reseed.ts`, que dice
+ * qué áreas se renuevan. Va aparte de `SCHEMA_VERSION`: la forma del
+ * documento no cambia.
+ */
+export const SAMPLE_CONTENT_REVISION = 1;
+
 const iso = z.string().min(1);
 const stableKey = z.string().max(STABLE_KEY_MAX).regex(STABLE_KEY);
 const finite = z.number().finite();
@@ -603,6 +612,13 @@ export const contentOverridesSchema = z.object({
    * lugar del mapa con `params.missionDestination`.
    */
   missionDestinations: z.record(z.string(), z.record(z.string(), z.string())),
+  /**
+   * Revisión de la muestra con la que se guardaron los cambios del Admin
+   * (plan 023 T248, `sample-reseed.ts`). Sin la clave: 0, de antes de que
+   * existiera. Al subir `SAMPLE_CONTENT_REVISION`, los cambios guardados de los
+   * elementos de la muestra que se renuevan dejan paso a la muestra nueva.
+   */
+  sampleRevision: z.number().int().nonnegative().optional(),
 });
 export type ContentOverrides = z.infer<typeof contentOverridesSchema>;
 
@@ -617,6 +633,8 @@ export function emptyOverrides(): ContentOverrides {
     revision: 0,
     settings: { trashRetentionDays: TRASH_RETENTION_DEFAULT_DAYS },
     missionDestinations: {},
+    // Un documento nuevo ya nace con la muestra de hoy: nada que renovar.
+    sampleRevision: SAMPLE_CONTENT_REVISION,
   };
 }
 
@@ -781,6 +799,8 @@ export function sanitizeDoc(
     if (Object.keys(ok).length > 0) overrides.missionDestinations[world] = ok;
   }
   if (active.success && active.data !== undefined) overrides.activeWorldId = active.data;
+  const sampleRevision = z.number().int().nonnegative().safeParse(content.sampleRevision);
+  overrides.sampleRevision = sampleRevision.success ? sampleRevision.data : 0;
   const doc: StoreDoc = {
     schemaVersion: version,
     identity: identity.success ? identity.data : null,
