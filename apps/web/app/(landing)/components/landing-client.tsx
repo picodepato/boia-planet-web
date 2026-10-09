@@ -1,7 +1,7 @@
 'use client';
 
 import type { FunnelEventProps } from '@boia/contracts/analytics';
-import { useEffect } from 'react';
+import { type ComponentType, useEffect, useState } from 'react';
 import { track } from '../../../lib/analytics';
 
 type PanelSource = FunnelEventProps['tickets_panel_open']['source'];
@@ -13,11 +13,57 @@ const PANEL_HASH = '#tickets';
 const PAST_HERO = 0.97;
 
 /**
- * Mejora progresiva de la landing, sin pintar nada: analítica del embudo y
- * panel de Tickets (abrir, cerrar, foco, Escape, Atrás). Todo lo que hace
- * aquí también funciona, más tosco, sin JavaScript.
+ * Mejora progresiva de la landing: analítica del embudo y panel de Tickets
+ * (abrir, cerrar, foco, Escape, Atrás), que también funcionan, más tosco,
+ * sin JavaScript; y la radio (plan 022 T247), que sólo existe con él: su
+ * botón arriba a la derecha y junto a «Entradas», el reproductor perezoso y
+ * el aviso «Sonando». Nada de esto entra en la ruta crítica de la landing.
  */
+type RadioMountProps = { surface: 'landing' | 'mar' };
+
+/**
+ * The radio (plan 022 T247) in its own chunk, shared with `/mar` (both ask
+ * for the same module): requested on idle, or at the first gesture, whichever
+ * comes first, never in the landing's critical path. Its button comes with
+ * it; the catalog only comes later, on idle or at the first tap.
+ */
+function useRadioMount(): ComponentType<RadioMountProps> | null {
+  const [Mount, setMount] = useState<ComponentType<RadioMountProps> | null>(null);
+  useEffect(() => {
+    let gone = false;
+    let asked = false;
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const gestures = ['pointerdown', 'keydown'] as const;
+    const ask = () => {
+      if (asked) return;
+      asked = true;
+      for (const g of gestures) window.removeEventListener(g, ask, true);
+      void import('../../../lib/radio/ui/radio-mount').then(
+        (m) => {
+          if (!gone) setMount(() => m.RadioMount);
+        },
+        (err: unknown) => console.warn('[boia] no cargó la radio', err),
+      );
+    };
+    for (const g of gestures) window.addEventListener(g, ask, true);
+    const id = w.requestIdleCallback
+      ? w.requestIdleCallback(ask, { timeout: 1500 })
+      : window.setTimeout(ask, 300);
+    return () => {
+      gone = true;
+      for (const g of gestures) window.removeEventListener(g, ask, true);
+      if (w.cancelIdleCallback) w.cancelIdleCallback(id);
+      else window.clearTimeout(id);
+    };
+  }, []);
+  return Mount;
+}
+
 export function LandingClient() {
+  const RadioMount = useRadioMount();
   useEffect(() => {
     const root = document.documentElement;
     const panel = document.getElementById('tickets');
@@ -154,5 +200,5 @@ export function LandingClient() {
     };
   }, []);
 
-  return null;
+  return RadioMount ? <RadioMount surface="landing" /> : null;
 }

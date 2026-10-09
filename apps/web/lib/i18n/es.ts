@@ -21,6 +21,7 @@ import { esLibEventos } from './es-lib-eventos';
 import { esMar } from './es-mar';
 import { esMundo } from './es-mundo';
 import { esPuerta } from './es-puerta';
+import { esRadio } from './es-radio';
 import { esWeb } from './es-web';
 import { esZonas } from './es-zonas';
 import { esZonasEventos } from './es-zonas-eventos';
@@ -61,6 +62,8 @@ export const es = {
   ...esAdminGestion,
   // La radio de la web: canciones, géneros y la primera (plan 022 T246).
   ...esAdminRadio,
+  // El reproductor de la radio y su botón (plan 022 T247).
+  ...esRadio,
 } as const;
 
 export type MessageKey = keyof typeof es;

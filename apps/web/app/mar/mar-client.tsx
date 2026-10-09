@@ -132,6 +132,7 @@ import {
   persistWorldEvent,
 } from '../../lib/mundo/world-progress';
 import { takeZarpar } from '../../lib/intro/zarpar';
+import type { RadioMount as RadioMountComponent } from '../../lib/radio/ui/radio-mount';
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { PIN_AVOID } from './engine/labels';
@@ -1443,6 +1444,26 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   useEffect(() => {
     if (worldId) setAmbientWorld(worldId);
   }, [worldId]);
+  // La radio (T247) llega en su propio trozo, el mismo que pide la landing.
+  const [RadioMount, setRadioMount] = useState<typeof RadioMountComponent | null>(null);
+  useEffect(() => {
+    if (status !== 'ready') return;
+    let gone = false;
+    void import('../../lib/radio/ui/radio-mount').then(
+      (m) => {
+        if (!gone) setRadioMount(() => m.RadioMount);
+      },
+      (err: unknown) => console.warn('[boia] no cargó la radio', err),
+    );
+    return () => {
+      gone = true;
+    };
+  }, [status]);
+  // La radio va a sonar (T247): «Música» de Ajustes se enciende si estaba apagada.
+  const enableMusicSetting = useCallback(
+    () => updateSettings((s) => (s.music.enabled ? s : { ...s, music: { ...s.music, enabled: true } })),
+    [updateSettings],
+  );
   // Los Ajustes (música y efectos, el silencio de la web) también valen para el Cañón (T152).
   const setCanonAudioSettings = canon.setAudioSettings;
   useEffect(() => setCanonAudioSettings(settings), [settings, setCanonAudioSettings]);
@@ -2194,6 +2215,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           !
         </button>
       ) : null}
+      {/* La radio (plan 022 T247): bajo el «!», abre el mismo reproductor que la landing. */}
+      {status === 'ready' && RadioMount ? (
+        <RadioMount surface="mar" onEnableMusic={enableMusicSetting} />
+      ) : null}
+
       {ayuda && status === 'ready' && !gameHidden.has('objective') ? (
         <MarAyuda
           help={ayuda}

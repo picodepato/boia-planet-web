@@ -3,6 +3,7 @@
 import { type Settings, channelGain } from '@boia/engine/ui';
 import type { FeedbackSound } from '@boia/world';
 import { AMBIENT_LEVEL, AMBIENT_RATE, renderAmbient } from './ambient';
+import { onRadioPlaying, radioPlaying, setMusicEnabledForRadio } from '../radio/bridge';
 
 /**
  * Sonido del juego con dos canales separados (§20, REQ-IDE-037): música y
@@ -31,6 +32,9 @@ let noise: AudioBuffer | null = null;
 let ambientWorld: string | null = null;
 let ambient: { world: string; source: AudioBufferSourceNode; gain: GainNode } | null = null;
 const ambientBuffers = new Map<string, AudioBuffer>();
+
+// Mientras suena la radio (plan 022 T247) el loop del mundo se calla.
+onRadioPlaying(() => syncAmbient());
 
 type AudioContextCtor = new () => AudioContext;
 
@@ -119,6 +123,8 @@ function live(): Graph | null {
 
 export function applyAudioSettings(s: Settings): void {
   gains = { sfx: channelGain(s.sfx), music: channelGain(s.music) };
+  // «Música» de Ajustes manda también en la radio (plan 022 T247).
+  setMusicEnabledForRadio(s.music.enabled);
   if (graph) {
     graph.sfx.gain.value = gains.sfx;
     graph.music.gain.value = gains.music;
@@ -148,7 +154,7 @@ function ambientBuffer(ctx: AudioContext, world: string): AudioBuffer {
 /** Arranca, cambia o apaga el loop según gesto, mundo y música activa. */
 function syncAmbient(): void {
   const g = unlocked ? graph : null;
-  const want = g && gains.music > 0 ? ambientWorld : null;
+  const want = g && gains.music > 0 && !radioPlaying() ? ambientWorld : null;
   if (ambient?.world === want) return;
   if (!g) return;
   const now = g.ctx.currentTime;

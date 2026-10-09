@@ -1,0 +1,269 @@
+/*
+ * La radio (plan 022 T247): sus botones y el aviso «Sonando». Llega con el
+ * trozo perezoso de la landing (`landing-client`) o con /mar, nunca en la
+ * ruta crítica. El botón es el de recreativa del sitio (T213, decisiones 2 y
+ * 3): recto, borde de 2 px, sombra dura; puesto, se vuelve naranja.
+ */
+:root {
+  --radio-orange: var(--boia-orange, #ec4f24);
+  --radio-on-orange: var(--boia-black, #05080f);
+  --radio-black: #05080f;
+  --radio-green: #5cff6a;
+}
+
+.radio-btn {
+  --radio-shadow: var(--radio-orange);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid #fff;
+  border-radius: var(--radius, 0);
+  box-shadow: 4px 4px 0 var(--radio-shadow);
+  background: var(--radio-black);
+  color: #fff;
+  font-family: var(--font-button);
+  font-size: 9px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.radio-btn:hover {
+  filter: brightness(1.1);
+}
+
+.radio-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--radio-shadow);
+}
+
+.radio-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    4px 4px 0 var(--radio-shadow),
+    0 0 0 2px var(--radio-black),
+    0 0 0 4px #fff;
+}
+
+/* Puesta: naranja, como «Zarpar». */
+.radio-btn[data-playing] {
+  --radio-shadow: #fff;
+  border-color: var(--radio-black);
+  background: var(--radio-orange);
+  color: var(--radio-on-orange);
+}
+
+.radio-icon {
+  flex: none;
+}
+
+/* Las ondas laten mientras suena. */
+.radio-btn[data-playing] .radio-icon__wave {
+  animation: radio-wave 1.1s ease-in-out infinite;
+}
+
+.radio-btn[data-playing] .radio-icon__wave--far {
+  animation-delay: 0.25s;
+}
+
+@keyframes radio-wave {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* --- Arriba a la derecha de la landing, mientras se ve el hero --- */
+
+.radio-btn--hero {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: var(--gutter, 16px);
+  z-index: 31;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.25s ease,
+    visibility 0.25s;
+}
+
+@media (min-width: 600px) {
+  .radio-btn--hero {
+    top: 24px;
+  }
+}
+
+/* Al bajar (o mientras corre la entrada): se va; vuelve en la cabecera. */
+.radio-btn--hero.is-away,
+html[data-intro='play'] .radio-btn--hero,
+html[data-intro-act='landing'] .radio-btn--hero {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* --- Junto a «Entradas» en la cabecera: brilla, que se puede tocar --- */
+
+.radio-slot {
+  display: contents;
+}
+
+.radio-btn--header {
+  box-shadow:
+    4px 4px 0 var(--radio-shadow),
+    0 0 10px 1px rgb(236 79 36 / 0.55);
+  animation: radio-glow 1.8s ease-in-out infinite;
+}
+
+.radio-btn--header[data-playing] {
+  animation: none;
+  box-shadow:
+    4px 4px 0 var(--radio-shadow),
+    0 0 10px 1px rgb(255 255 255 / 0.35);
+}
+
+.radio-btn--header:focus-visible {
+  animation: none;
+}
+
+.radio-btn--header .radio-btn__label {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .radio-btn--header .radio-btn__label {
+    display: inline;
+  }
+}
+
+@keyframes radio-glow {
+  0%,
+  100% {
+    box-shadow:
+      4px 4px 0 var(--radio-shadow),
+      0 0 6px 0 rgb(236 79 36 / 0.45);
+  }
+  50% {
+    box-shadow:
+      4px 4px 0 var(--radio-shadow),
+      0 0 16px 4px rgb(236 79 36 / 0.8);
+  }
+}
+
+/* --- El HUD de /mar: bajo el «!», del tamaño y el cristal del menú --- */
+
+.mar .radio-btn--mar {
+  position: absolute;
+  top: calc(var(--top-space) + 2 * (54px + 8px));
+  left: calc(var(--safe-l) + 10px + (var(--mini) - 54px) / 2);
+  z-index: 5;
+  flex-direction: column;
+  gap: 3px;
+  width: 54px;
+  min-height: 54px;
+  padding: 0;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgb(10 6 40 / 0.28);
+  background: var(--glass);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  color: #fff;
+  font-size: 0.58rem;
+  animation: mar-in 0.3s ease-out;
+}
+
+.mar .radio-btn--mar:active {
+  transform: scale(0.94);
+  box-shadow: 0 8px 24px rgb(10 6 40 / 0.28);
+}
+
+.mar .radio-btn--mar[data-playing],
+.mar .radio-btn--mar[aria-expanded='true'] {
+  background: var(--orange);
+  border-color: var(--line);
+  color: #fff;
+}
+
+.mar .radio-btn--mar .radio-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* --- «Sonando: …», abajo, se va solo --- */
+
+.radio-toast-slot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 70;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.radio-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0;
+  padding: 10px 14px;
+  border: 2px solid #fff;
+  border-radius: var(--radius, 0);
+  box-shadow: 4px 4px 0 var(--radio-orange);
+  background: var(--radio-black);
+  color: #fff;
+  font-family: var(--font-button);
+  font-size: 9px;
+  line-height: 1.5;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  animation: radio-toast-in 0.25s ease-out;
+}
+
+/* En /mar el aviso va encima de la barra de abajo. */
+.mar .radio-toast-slot {
+  bottom: calc(var(--safe-b, 0px) + 96px);
+}
+
+.radio-toast__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--radio-green);
+  box-shadow: 0 0 6px var(--radio-green);
+  animation: radio-wave 1.1s ease-in-out infinite;
+}
+
+/* Sólo el desplazamiento: si el navegador no llega a animar, el aviso se ve igual. */
+@keyframes radio-toast-in {
+  from {
+    transform: translateY(12px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio-btn--header,
+  .radio-btn[data-playing] .radio-icon__wave,
+  .radio-toast,
+  .radio-toast__dot,
+  .mar .radio-btn--mar {
+    animation: none;
+  }
+}

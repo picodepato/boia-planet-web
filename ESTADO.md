@@ -4,6 +4,95 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T247: Radio: botón de play, reproductor estilo Winamp, aviso «Sonando», botón en /mar
+
+Qué existe:
+
+- **El botón de la landing** (`lib/radio/ui/radio-button.tsx`, `radio.css`): arriba a la
+  derecha, el botón de recreativa del sitio («Música», altavoz con dos ondas dibujado a mano).
+  Primer toque: enciende la radio con **la primera del catálogo** (T246) y luego al azar sin
+  repetir la que acaba de sonar; el botón pasa a naranja y las ondas laten. En pausa o parada,
+  otro toque la vuelve a poner; sonando, abre (o cierra) el reproductor. Se va cuando el velo
+  negro de la presentación tapa el hero (0,42 pantallas, `= PRESENTATION.beats`, atado por
+  `radio-mount.test.ts`) y mientras corre la entrada cinemática; **vuelve junto a «Entradas»**
+  en la cabecera cuando ésta entra (T238): un hueco (`span.radio-slot`) delante del botón
+  «Entradas» con un portal. Ahí brilla (halo naranja que late; con `prefers-reduced-motion`,
+  halo fijo) y abre/cierra el reproductor.
+- **El reproductor** (`radio-window.tsx`, `radio-window.css`): un panel compacto con bisel y
+  los colores de BOIA (noche, bisel `--line`, rayas naranjas en la barra del título, Press
+  Start 2P), pantalla verde fosforito con el tiempo (toca el tiempo: pasado ↔ restante), el
+  título «canción - artista» que corre (fijo con movimiento reducido), género y duración;
+  avance y volumen; anterior / play / pausa / parar / siguiente; aleatorio (de serie, encendido)
+  y repetir (todas → esta → no). Debajo, la ventana «Lista» (plegable): géneros como
+  pestañas (Todos + los del catálogo) y las canciones con número, título - artista y duración,
+  lista con scroll nativo (dedo), la que suena marcada y a la vista. Dibujo propio: sin logos,
+  nombres ni mapas de bits de Winamp. `role="dialog"` no modal, Escape cierra, foco al cerrar,
+  botones con nombre accesible, `role="switch"` en aleatorio, lector de pantalla con el estado.
+- **«Sonando: título - artista»** (`radio-toast.tsx`): abajo, con el reproductor cerrado, a
+  cada cambio de canción (también al encender); se va a los 4 s; `role="status"`.
+- **En /mar**: botón «Radio» en el HUD bajo el «!», con el cristal de los demás botones
+  (naranja mientras suena o con el reproductor abierto); abre el mismo reproductor. Mientras
+  suena la radio, **el loop de ambiente del mundo se calla** (`lib/mundo/sound.ts` →
+  `lib/radio/bridge.ts`) y vuelve al parar. El aviso sale encima de la barra de abajo.
+- **Enlace con Ajustes y el 🔊** (decisión mía): «Música» apagada (Ajustes de /mar, T236, o
+  el 🔊 de la cabecera de la landing, que apaga música y efectos) → la radio se pausa;
+  encendida → sigue. Play a mano con la música apagada **enciende «Música»** (en /mar por
+  `updateSettings`, en la landing escribiendo `boia.ajustes` sólo el canal de música y
+  avisando al 🔊 con un `StorageEvent`). El volumen de la radio es suyo (deslizador del
+  reproductor), no el de «Música».
+- **Sonido**: nada suena solo; `<audio preload="none">`, una canción cada vez; la siguiente se
+  decide y precarga (`preload="auto"`) sólo cuando a la actual le quedan ≤ 8 s
+  (`PREFETCH_SECONDS`); tres fallos seguidos paran la radio con aviso en la pantalla.
+  **Entre páginas**: «Zarpar» es navegación de cliente (`router.push`), así que la música sigue
+  sin cortes de la landing a /mar; en una carga completa (los enlaces de /mar a la web) se
+  guarda dónde iba en `sessionStorage` (`boia.radio`) y se intenta seguir; si el navegador lo
+  bloquea queda en pausa con la canción puesta, a un toque.
+- **Carga**: nada de la radio entra en la ruta crítica de la landing. `landing-client`
+  (ya perezoso) pide `lib/radio/ui/radio-mount` con `import()` en reposo
+  (`requestIdleCallback`, tope 1,5 s) o al primer gesto; /mar lo pide al estar listo (el mismo
+  trozo). El catálogo (T246) se lee en reposo o al primer toque; el trozo de la radio no
+  comparte módulos con el de la landing (cada módulo compartido saldría como trozo aparte en la
+  tabla del runtime). `catalog.ts`: `idb` y `shared-store` pasan a importarse en estático
+  (el trozo ya es perezoso); el cliente de Supabase sigue perezoso.
+- **Textos**: `lib/i18n/es-radio.ts` (clave `radio.*`), con su propio `t`
+  (`lib/radio/ui/t.ts`) para no cargar el catálogo entero; también en `es.ts`.
+- Módulos nuevos: `lib/radio/player-model.ts` (orden puro), `player.ts` (el reproductor,
+  un `<audio>` inyectable), `bridge.ts`, `music-setting.ts`, `ui/*`.
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/lib/radio` → 6 archivos, 48 pruebas: orden (la primera, luego
+  al azar sin repetir, filtro por género, en orden, repetir una/todas/no), aleatorio y repetir
+  en el reproductor, precarga sólo al final, aviso sólo con el reproductor cerrado y al cambiar,
+  pausa/play/parar/elegir, enlace con «Música», seguir en la página siguiente.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 272 archivos, 2471 pasan, 1 omitida.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0. **Ruta crítica de la landing (gzip, `node scripts/landing-budget.mjs
+  --baseline antes.json`): antes (T238) 196,6 kB (201 298 B) → después 196,7 kB
+  (201 373 B, +75 B).** El HTML, el CSS, la fuente y los trozos de la página son
+  idénticos (ni un byte de la radio); los +75 B son la tabla de trozos del runtime de webpack
+  (`webpack-*.js`: el trozo de la radio, su CSS, el trozo común del catálogo que comparte con
+  el Admin y uno de la configuración de Supabase). Lo bajé de +310 B (primer intento) a +75 B
+  quitando del trozo de la radio todo módulo compartido con la landing; lo que queda es el
+  coste de que existan trozos nuevos y no se puede quitar sin fundir la radio en la ruta
+  crítica o sin tocar el reparto del catálogo de T246.
+- Capturas (390×844 y 1440×900, `/tmp/orchestrator-attach/boia-planet-hernan-T247/`):
+  `*-1-boton-reposo`, `*-2-boton-activo-y-sonando` (botón naranja y el aviso), `*-3-reproductor-lista-generos`
+  (el reproductor con la lista filtrada por House), `*-4-cabecera-junto-a-entradas` y
+  `*-4b-boton-cabecera` (junto a «Entradas», con el halo), `*-5-mar-boton-radio` y
+  `*-6-mar-reproductor`.
+
+Pendiente:
+
+- Con cuentas y la migración 11 sin aplicar, la consola avisa (T246) y suena la muestra.
+- El 🔊 de la cabecera sigue siendo el interruptor global (música y efectos); la radio no lo
+  sustituye ni lo esconde.
+
+E2E para Hernán (no corrí ninguna): `landing-logout.spec.ts` (mide la fila de la cabecera, que
+tiene un botón más junto a «Entradas»), `landing-scroll.spec.ts` y `mar-hud.spec.ts` (contraste
+y el HUD con un botón más, «Radio»), `accesos.spec.ts` (el 🔊 sigue igual), `mar-a-bordo.spec.ts`
+(Ajustes: «Música» apagada ahora también pausa la radio si estaba puesta).
+
 ## 2026-10-09 — plan 022 T242: i18n of the Arcilla map prose and the shop texts
 
 **What exists**

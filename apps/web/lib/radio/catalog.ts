@@ -1,13 +1,16 @@
 import { type RadioCatalog, type RadioSong, isLocalRadioRef, localRadioKey } from '@boia/contracts';
 import { isSupabaseConfigured } from '../supabase/config';
+import { indexedDbRadioKV } from './idb';
 import { sampleRadioCatalog } from './muestra';
+import { readSharedRadioCatalog } from './shared-store';
 import { createLocalRadioStore, type RadioKV } from './store';
 
 /**
  * El catálogo que lee el reproductor de la radio (plan 022 T246 → T247).
  *
- * Es un módulo perezoso: el reproductor lo carga con `import()` al primer
- * toque o en reposo, nunca desde la ruta crítica de la landing. Devuelve un
+ * Es un módulo perezoso: llega con el trozo del reproductor (T247, un
+ * `import()` en reposo o al primer gesto), nunca desde la ruta crítica de la
+ * landing; el catálogo se lee en reposo o al primer toque. Devuelve un
  * JSON pequeño (géneros y canciones con título, artista, género, duración,
  * archivo, orden y la primera); los MP3 se piden de uno en uno al sonar.
  *
@@ -33,15 +36,13 @@ async function browserDeps(): Promise<CatalogDeps> {
   return {
     supabase: isSupabaseConfigured(),
     readShared: async () => {
-      const [{ browserSupabase }, { readSharedRadioCatalog }] = await Promise.all([
-        import('../supabase/browser'),
-        import('./shared-store'),
-      ]);
+      // El cliente de Supabase sólo se carga con cuentas (nunca en la demo).
+      const { browserSupabase } = await import('../supabase/browser');
       const sb = browserSupabase();
       if (!sb) throw new Error('supabase');
       return readSharedRadioCatalog(sb);
     },
-    localKV: async () => (await import('./idb')).indexedDbRadioKV,
+    localKV: async () => indexedDbRadioKV,
   };
 }
 
@@ -89,7 +90,7 @@ export function radioSongUrl(
   if (!isLocalRadioRef(song.src)) return Promise.resolve(song.src);
   let p = objectUrls.get(song.src);
   if (!p) {
-    const getKV = kv ?? (async () => (await import('./idb')).indexedDbRadioKV);
+    const getKV = kv ?? (async () => indexedDbRadioKV);
     p = getKV()
       .then((k) => k.getFile(localRadioKey(song.src)))
       .catch(() => null)
