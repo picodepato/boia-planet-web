@@ -58,7 +58,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: header appears at PRESENTATION.end (reversible; 0.95 with reduced motion); landing 199.5 → 196.6 kB gzip · ef9f18e
 
 ## T239 — Dev hygiene: Supabase 400, `.next-dev`, unused keys, CRLF, stale hashes
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -70,10 +70,10 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - `pnpm exec prettier --check .` → exit 0, or ESTADO lists the remaining files and why
   - `pnpm dev` writes to `apps/web/.next-dev` (state the check used in ESTADO)
   - Test command → exit 0
-- Outcome:
+- Outcome: artists query retries without music columns (migration 20261008100200 pending), cached per session; `.next-dev`; unused keys removed; 47 sources_sha256 refreshed; prettier: 205 real diffs listed, not reformatted · 245e25b
 
 ## T240 — Local data: trash shows nicknames, local photos removed from IndexedDB
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -194,9 +194,11 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T246: 100 seed songs (98×4 s, 2×30 s: first techno + one house), made with Blender's bundled ffmpeg/numpy (`art/radio/generar.py`); Supabase mode falls back to the seeds while `radio_songs` is empty/missing; genres seeded by the migration; first song/order via RPCs + deferred check; genre rename updates songs, delete blocked while it has songs; radio types added to `database.types.ts` by hand (agent)
 - 2026-10-09 T237: Calitas behind-left, not straight behind (the Los Rápidos road and Tabarca leave no room); no route points changed, `calitas` added to `exploracion` visits; `mapa.py` counts loose islands as land, `validar.py` checks loose islands; «Isla del Cañón» renamed «Puig Campana»; plano.svg and Calitas/canon art regenerated (agent)
 - 2026-10-09 T238: `headerFrom` option of the boot script = `PRESENTATION.end`; «Cerrar sesión» loads lazily; `checkout.css` split into dialog part + `checkout-form.css`; size check gained by-type totals and `--baseline`; e2e helpers scroll past `PRESENTATION.end + 0.6` before using the header (agent)
+- 2026-10-09 T239: 400 came from `registered.ts` asking for music columns of unapplied migration 20261008100200; first spec probe replaced (orchestrator asked) by query-then-retry cached in sessionStorage `boia.artists.music-columns` (one 400 per browser session until the migration is applied); prettier cause was not CRLF, `endOfLine: lf` added; eslint ignores `.next-dev` (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T239: reformat the 205 prettier-flagged files in one dedicated commit when nothing else runs; review ~640 i18n keys a naive scan flags as unused (dynamic keys make it unreliable)
 - 2026-10-09 T238: more landing kB needs architecture changes (blocks are client components re-rendered by `LiveLanding`) or splitting the web i18n catalog
 - 2026-10-09 T237: to put Las Calitas straight behind the castaway, move the castaway or the Los Rápidos stretch behind it; on mobile the island only shows at the left edge from the castaway
 - 2026-10-09 T246: `radio.supabase.ts` DB test once the migration is applied; fix odd gender agreement in generated sample titles («Velero lenta»)
@@ -210,3 +212,5 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T237 done · merged dc92a44
 - 2026-10-09 T239 launched · attempt 1 · agent aba567b4d1ff3cabc
 - 2026-10-09 T238 done · merged ef9f18e
+- 2026-10-09 T247 launched · attempt 1 · agent a65c6ec9df5c322d0 (fable)
+- 2026-10-09 T239 done · merged 245e25b (landing 196.6 kB)
