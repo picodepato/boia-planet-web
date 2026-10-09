@@ -168,7 +168,12 @@ test('Ajustes: la sensibilidad del giro la lee el motor; música, efectos e idio
   expect(wanted).not.toBe(before);
 
   // Música y efectos por separado, con su volumen; el idioma.
-  await ajustes.getByTestId('ajuste-music').getByRole('checkbox').uncheck();
+  // Interruptores de pastilla (plan 022 T236): con el teclado, como un botón.
+  const music = ajustes.getByTestId('ajuste-music').getByRole('switch');
+  await expect(music).toHaveAttribute('aria-checked', 'true');
+  await music.focus();
+  await page.keyboard.press('Space');
+  await expect(music).toHaveAttribute('aria-checked', 'false');
   await ajustes.getByTestId('ajuste-sfx').getByRole('slider').fill('40');
   await expect(ajustes.getByTestId('ajuste-idioma').locator('select')).toHaveValue('es');
   const stored = await page.evaluate(

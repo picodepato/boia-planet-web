@@ -2443,15 +2443,26 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             data-testid="mar-viaje"
             data-lugar={trip?.placeId}
           >
+            {/* Durante el viaje (plan 022 T236, guía Q5): «Saltar» y, justo
+                encima de la barra, el destino en su propia pastilla; la
+                barra no crece y «Entradas» se queda en una línea. */}
             {trip ? (
-              <button
-                type="button"
-                className="mar-tickets__skip"
-                data-testid="mar-entradas-saltar"
-                onClick={() => finishTrip(trip, 'skip')}
-              >
-                {msg('mar.client.saltar')}
-              </button>
+              <div className="mar-tickets__trip">
+                <button
+                  type="button"
+                  className="mar-tickets__skip"
+                  data-testid="mar-entradas-saltar"
+                  onClick={() => finishTrip(trip, 'skip')}
+                >
+                  {msg('mar.client.saltar')}
+                </button>
+                <p className="mar-tickets__dest" data-testid="mar-viaje-destino" aria-hidden="true">
+                  {msg('mar.client.a', {
+                    v1: stats?.flight ? msg('mar.client.volando') : msg('mar.client.rumbo'),
+                    placeName: trip.placeName,
+                  })}
+                </p>
+              </div>
             ) : null}
             <button
               type="button"
@@ -2470,14 +2481,6 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
             >
               <span aria-hidden="true">🎟️</span>
               <strong>{msg('hud.tickets')}</strong>
-              {trip ? (
-                <small>
-                  {msg('mar.client.a', {
-                    v1: stats?.flight ? msg('mar.client.volando') : msg('mar.client.rumbo'),
-                    placeName: trip.placeName,
-                  })}
-                </small>
-              ) : null}
             </button>
           </div>
           {castle.active ? null : (

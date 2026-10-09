@@ -4,6 +4,45 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T236: /mar overlays: boia text vs carnet prompt, trip destination, Ajustes toggles
+
+Qué existe:
+
+- **Taquilla en el mar (revisión 2, punto 1)**: en el aviso «Solo en puerta» de `/mar`
+  (`BoxOfficeDialog` con `checkout--mar`), «¿Aún no tienes Carnet?» va en su propia línea,
+  separada del texto de arriba («…el Carnet BOIA.») y 12 px por encima de «Hazte el tuyo»;
+  nunca se tocan, en móvil y escritorio. `lib/ticketing/box-office.tsx` sólo gana la clase
+  `box-office__invite`; el estilo vive en `app/mar/entradas.css`, así que la landing no cambia.
+- **Destino del viaje (guía Q5)**: durante un viaje, el destino («Rumbo a HALLOWEEN IN THE
+  CLUB…», `mar-viaje-destino`) sale en una pastilla justo encima de la barra de abajo, bajo
+  «Saltar». La barra no cambia de alto y el botón «Entradas» vuelve a una línea. El nombre
+  accesible del botón sigue diciendo el destino. `mar-viaje`/`data-lugar` no cambian.
+- **Ajustes (guía Q4)**: música y efectos son interruptores de pastilla (decisión 3:
+  naranja encendido, gris apagado, bola redonda), `<button role="switch" aria-checked>`
+  (`ajuste-music-switch`, `ajuste-sfx-switch`); se acabaron las casillas «Activada». El
+  volumen sigue debajo y se desactiva con el canal apagado. Se quitó la clave sin uso
+  `juego.ajustes.activados`; `settings.on` se queda porque la lista `textos-zonas.md`
+  (zonas.test.ts) la exige.
+- Prueba unitaria nueva: `apps/web/lib/mundo/menu/sections/ajustes.test.ts` (role=switch,
+  aria-checked, botón nativo operable con teclado, sin casilla; el click cambia sólo el
+  encendido).
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 265
+  archivos, 2411 pasan, 1 omitida.
+- `sh tools/spec/checks.sh` → exit 0 (OK).
+- `pnpm lint` → exit 0. `pnpm build` → exit 0 (landing 199,5 kB, presupuesto 200 · OK).
+  `pnpm typecheck` → exit 0.
+
+Capturas (390×844 y 1440×900): `/tmp/orchestrator-attach/boia-planet-hernan-T236/`
+(`*-1-viaje-destino.png`, `*-2-carnet.png`, `*-3-ajustes.png`).
+
+Pendiente / e2e que debería correr Hernán:
+
+- `e2e/mar-a-bordo.spec.ts` (actualizada: la música se apaga con Espacio sobre el interruptor).
+- `e2e/tickets.spec.ts` (taquilla en el mar) y `e2e/mar-3d.spec.ts` (viaje y «Saltar»).
+
 ## 2026-10-08 — plan 021 T235: Pinned black intro with BOIA beats and the expanding video window
 
 Qué existe:

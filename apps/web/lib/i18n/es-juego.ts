@@ -89,7 +89,6 @@ export const esJuego = {
   'juego.ajustes.ajustes': 'Ajustes',
   'juego.ajustes.idioma': 'Idioma',
   'juego.ajustes.musica': 'Música',
-  'juego.ajustes.activados': 'Activados',
   'juego.ajustes.losEfectosSiguenSonando':
     'Los efectos siguen sonando aunque quites la música. La música es un ambiente de muestra, uno por mundo, y empieza al primer toque. Todo se guarda en este dispositivo.',
   'juego.barco.barco': 'Barco',

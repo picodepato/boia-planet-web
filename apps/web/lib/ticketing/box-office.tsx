@@ -20,7 +20,7 @@ export function BoxOfficeMessage({ event, carnet }: { event: DoorEvent; carnet: 
         <strong>{boxOfficeLabel(event)}</strong>
       </p>
       <p>{t('ticketing.boxOffice.message')}</p>
-      <p>
+      <p className="box-office__invite">
         {t('ticketing.boxOffice.invite')}{' '}
         {'href' in carnet ? (
           <a className="checkout__secondary" href={carnet.href} data-testid="box-office-carnet">

@@ -1496,26 +1496,49 @@
   line-height: 1;
 }
 
-.mar-tickets__btn small {
-  grid-column: 1 / -1;
-  max-width: 128px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  opacity: 0.92;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .mar-tickets__btn:active {
   transform: scale(0.95);
 }
 
-.mar-tickets__skip {
+/* Plan 022 T236 (guía Q5): durante el viaje, encima de la barra, «Saltar»
+   y debajo el destino en una pastilla propia; la barra no cambia de alto. */
+.mar-tickets__trip {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 16px);
+  bottom: calc(100% + 10px);
   translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - var(--safe-l) - var(--safe-r) - 32px));
+  pointer-events: none;
+}
+
+.mar-tickets__trip > * {
+  pointer-events: auto;
+}
+
+.mar-tickets__dest {
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--glass-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 16px rgb(10 6 40 / 0.3);
+  animation: mar-in 0.2s ease-out;
+}
+
+.mar-tickets__skip {
   white-space: nowrap;
   min-height: 36px;
   padding: 0 16px;
@@ -2308,6 +2331,85 @@ button.mar-logros__carnet {
 .mar-logros__body .juego-range input {
   flex: 1;
   accent-color: var(--orange);
+}
+
+/* Plan 022 T236 (guía Q4): música y efectos con el interruptor de pastilla
+   del resto del mundo (decisión 3), no con la casilla «Activada». */
+.mar-logros__body .juego-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mar-logros__body .juego-channel {
+  gap: 2px;
+}
+
+.mar .mar-logros__body .juego-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mar-logros__body .juego-switch__track {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: #7b8088;
+  transition: background 0.15s;
+}
+
+.mar-logros__body .juego-switch__track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: translate 0.15s;
+}
+
+.mar-logros__body .juego-switch[aria-checked='true'] .juego-switch__track {
+  background: var(--orange);
+}
+
+.mar-logros__body .juego-switch[aria-checked='true'] .juego-switch__track::after {
+  translate: 18px 0;
+}
+
+.mar-logros__body .juego-switch:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-logros__body .juego-switch__track,
+  .mar-logros__body .juego-switch__track::after {
+    transition: none;
+  }
 }
 
 @keyframes mar-logros-up {

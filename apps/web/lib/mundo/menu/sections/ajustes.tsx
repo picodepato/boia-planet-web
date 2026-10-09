@@ -2,30 +2,36 @@ import { type AudioChannel, LANGUAGES, type Language, type Settings } from '@boi
 import type { MenuSection } from '../types';
 import { t } from '../../../i18n';
 
-function ChannelControl({
+/**
+ * Música o efectos (plan 022 T236, guía Q4): un interruptor de pastilla como
+ * los del resto del sitio (decisión 3), no una casilla «Activada». Es un
+ * `<button role="switch">`: Enter y Espacio lo cambian, como cualquier botón.
+ */
+export function ChannelControl({
   id,
   label,
-  onLabel,
   value,
   onChange,
 }: {
   id: 'music' | 'sfx';
   label: string;
-  onLabel: string;
   value: AudioChannel;
   onChange: (c: AudioChannel) => void;
 }) {
   return (
-    <fieldset className="juego-field" data-testid={`ajuste-${id}`}>
-      <legend>{label}</legend>
-      <label className="juego-choice">
-        <input
-          type="checkbox"
-          checked={value.enabled}
-          onChange={(e) => onChange({ ...value, enabled: e.target.checked })}
-        />
-        <span>{onLabel}</span>
-      </label>
+    <fieldset className="juego-field juego-channel" data-testid={`ajuste-${id}`}>
+      <legend className="juego-sr-only">{label}</legend>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={value.enabled}
+        className="juego-switch"
+        data-testid={`ajuste-${id}-switch`}
+        onClick={() => onChange({ ...value, enabled: !value.enabled })}
+      >
+        <span>{label}</span>
+        <span className="juego-switch__track" aria-hidden="true" />
+      </button>
       <label className="juego-range">
         <span>{t('juego.ajustes.volumen')}</span>
         <input
@@ -73,14 +79,12 @@ export function SoundAndLanguage({
       <ChannelControl
         id="music"
         label={t('juego.ajustes.musica')}
-        onLabel={t('settings.on')}
         value={settings.music}
         onChange={(music) => onChange({ music })}
       />
       <ChannelControl
         id="sfx"
         label={t('settings.effects')}
-        onLabel={t('juego.ajustes.activados')}
         value={settings.sfx}
         onChange={(sfx) => onChange({ sfx })}
       />

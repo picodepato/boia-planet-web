@@ -77,3 +77,13 @@
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* «¿Aún no tienes Carnet?» y «Hazte el tuyo» en el mar (plan 022 T236,
+   revisión 2 punto 1): el texto y el botón nunca se tocan. */
+.checkout--mar .box-office__invite {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin: 18px 0 14px;
+}
