@@ -5,7 +5,10 @@ import {
   PRESENTATION,
   VIDEO_SCALE_SMALL,
   logoScale,
+  playBlocked,
+  prepareInlineVideo,
   presentationFrame,
+  reelVideoMode,
   presentationStage,
   smallWindow,
   windowBox,
@@ -125,5 +128,75 @@ describe('presentation (plan 021 T235): scroll → stage', () => {
     const m = /--reel-end:\s*([\d.]+)/.exec(css);
     expect(m).not.toBeNull();
     expect(Number(m![1])).toBe(P.end);
+  });
+});
+
+describe('presentation video (plan 026 T260): never a stray frame', () => {
+  const ROOT = path.resolve(__dirname, '../../app/(landing)');
+  const css = readFileSync(path.join(ROOT, 'landing.css'), 'utf8').replace(/\r\n/g, '\n');
+  const motion = readFileSync(path.join(ROOT, 'components/presentation-motion.tsx'), 'utf8');
+  const mode = (p: number, blocked = false) =>
+    reelVideoMode(presentationFrame(p, PHONE.w, PHONE.h), blocked);
+
+  it('the video is off while its window is closed and after the stage has gone by', () => {
+    for (const p of [0, mid(P.black, P.beats), mid(P.beats, P.window), P.window, P.end + 1, P.end + 2]) {
+      expect(mode(p), `p=${p}`).toBe('off');
+      expect(mode(p, true), `p=${p} blocked`).toBe('off');
+    }
+  });
+
+  it('the video is on once the window opens, and the poster takes its place if it cannot play', () => {
+    for (const p of [mid(P.window, P.open), mid(P.open, P.full), mid(P.full, P.end), P.end + 0.5]) {
+      expect(mode(p), `p=${p}`).toBe('on');
+      expect(mode(p, true), `p=${p} blocked`).toBe('poster');
+    }
+  });
+
+  it('only a refused play() blocks the video; an interrupted one (scrolling) does not', () => {
+    expect(playBlocked(new DOMException('no', 'NotAllowedError'))).toBe(true);
+    expect(playBlocked(new DOMException('no', 'NotSupportedError'))).toBe(true);
+    expect(playBlocked(new DOMException('paused', 'AbortError'))).toBe(false);
+    expect(playBlocked(null)).toBe(false);
+    expect(playBlocked(undefined)).toBe(false);
+  });
+
+  it('muted and playsinline are set as attributes as well as properties', () => {
+    const attrs = new Map<string, string>();
+    const v = {
+      muted: false,
+      defaultMuted: false,
+      playsInline: false,
+      setAttribute: (n: string, val: string) => void attrs.set(n, val),
+    };
+    prepareInlineVideo(v);
+    expect(v).toMatchObject({ muted: true, defaultMuted: true, playsInline: true });
+    expect([...attrs.keys()].sort()).toEqual(['muted', 'playsinline', 'webkit-playsinline']);
+  });
+
+  it('the motion prepares the video before giving it a source, and writes data-video', () => {
+    const prepare = motion.indexOf('prepareInlineVideo(video)');
+    const src = motion.indexOf('video.src =');
+    expect(prepare).toBeGreaterThan(-1);
+    expect(src).toBeGreaterThan(prepare);
+    expect(motion).toMatch(/reel\.dataset\.video = /);
+    expect(motion).toMatch(/playBlocked\(err\)/);
+  });
+
+  it('the CSS takes the video (and the poster) out of the render tree unless data-video says so', () => {
+    const rule = (sel: string) => {
+      const i = css.indexOf(sel);
+      expect(i, sel).toBeGreaterThan(-1);
+      return css.slice(i, css.indexOf('}', i));
+    };
+    expect(rule('html[data-entry] .reel__video,\n  html[data-entry] .reel__poster {')).toMatch(
+      /display:\s*none/,
+    );
+    expect(
+      rule(
+        "html[data-entry] .reel[data-video='on'] .reel__video,\n  html[data-entry] .reel[data-video='poster'] .reel__poster {",
+      ),
+    ).toMatch(/display:\s*block/);
+    // No other rule shows the video while data-entry pins the stage.
+    expect(css.match(/\.reel__video\s*{[^}]*display:\s*block/g) ?? []).toHaveLength(0);
   });
 });

@@ -2,7 +2,14 @@
 
 import { useEffect, useRef } from 'react';
 import { PRESENTATION_VIDEO } from '../../../lib/landing/hero-media';
-import { PRESENTATION, presentationFrame } from '../../../lib/landing/presentation';
+import {
+  PRESENTATION,
+  type ReelVideoMode,
+  playBlocked,
+  prepareInlineVideo,
+  presentationFrame,
+  reelVideoMode,
+} from '../../../lib/landing/presentation';
 
 /** Smoothing of the scroll position (time constant, ms): coarse wheels do not jump. */
 const SMOOTH_MS = 70;
@@ -31,8 +38,10 @@ export function PresentationMotion() {
     if (!reel || !stage || !video || !html.hasAttribute('data-entry')) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    video.muted = true;
-    video.defaultMuted = true;
+    // Muted and inline as attributes before any `src` (iOS WebViews read them).
+    prepareInlineVideo(video);
+    // The element shows only while its window is open (`reelVideoMode`).
+    reel.dataset.video = 'off';
 
     let loaded = false;
     const load = () => {
@@ -73,11 +82,33 @@ export function PresentationMotion() {
     let raf = 0;
     let onScreen = true;
     let wantPlay = false;
+    // The video cannot play here: the window keeps the poster (landing.css).
+    let blocked = false;
+    let mode: ReelVideoMode = 'off';
+    let last = { video: 0, playing: false };
+
+    const show = () => {
+      const next = reelVideoMode(last, blocked);
+      if (next === mode) return;
+      mode = next;
+      reel.dataset.video = next;
+    };
+    const block = () => {
+      if (blocked) return;
+      blocked = true;
+      wantPlay = false;
+      if (!video.paused) video.pause();
+      show();
+    };
+    video.addEventListener('error', block);
 
     const syncPlay = () => {
-      const play = wantPlay && onScreen && !document.hidden && loaded;
-      if (play && video.paused) void video.play().catch(() => {});
-      else if (!play && !video.paused) video.pause();
+      const play = wantPlay && !blocked && onScreen && !document.hidden && loaded;
+      if (play && video.paused) {
+        void video.play().catch((err: unknown) => {
+          if (playBlocked(err)) block();
+        });
+      } else if (!play && !video.paused) video.pause();
     };
 
     const apply = (at: number) => {
@@ -100,6 +131,8 @@ export function PresentationMotion() {
         if (!covered) window.dispatchEvent(new Event('scroll'));
       }
       if (at > 0) load();
+      last = { video: f.video, playing: f.playing };
+      show();
       wantPlay = f.playing;
       syncPlay();
     };
@@ -151,7 +184,9 @@ export function PresentationMotion() {
       if (raf) cancelAnimationFrame(raf);
       cancelIdle();
       html.removeAttribute(COVERED);
+      video.removeEventListener('error', block);
       video.pause();
+      delete reel.dataset.video;
     };
   }, []);
 

@@ -510,12 +510,17 @@ html[data-hero-top] .site-header__inner {
   html[data-entry] .reel__window {
     clip-path: inset(var(--wt, 50%) var(--wr, 50%) var(--wb, 50%) var(--wl, 50%));
   }
-  html[data-entry] .reel__video {
-    display: block;
-    scale: var(--vs, 0.6);
-  }
+  /* The video is in the render tree only while its window is open
+     (`data-video`, lib/landing/presentation.ts `reelVideoMode`): iOS WebKit
+     can keep a closed clip-path's last box on a video's layer (plan 026 T260). */
+  html[data-entry] .reel__video,
   html[data-entry] .reel__poster {
     display: none;
+    scale: var(--vs, 0.6);
+  }
+  html[data-entry] .reel[data-video='on'] .reel__video,
+  html[data-entry] .reel[data-video='poster'] .reel__poster {
+    display: block;
   }
   html[data-entry] .reel__logo {
     opacity: var(--lo, 0);

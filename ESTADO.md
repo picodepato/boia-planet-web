@@ -4,6 +4,73 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 026 T260: No stray video frame over the planet in iOS in-app browsers
+
+**The element.** The frame in Hernán's capture is the presentation's
+`<video class="reel__video">` (plan 021 T235, `presentacion-muestra.mp4`:
+the stage with the cheering low-poly characters, the file's first frame /
+poster at the video's 0.6 scale). Its size, half the screen across and less
+than the full small-window height, is the clip of the `window` stage half
+way through opening (p ≈ 1.35), frozen over the hero at p = 0.
+
+**The cause.** With the boot script the video was always `display: block`
+and was hidden only by the window's `clip-path: inset(...)`, which collapses
+to an empty box while the window is closed. iOS WebKit paints a video on its
+own native layer; when the clip-path collapses to empty, the WebView can keep
+that layer's last clip instead of clipping it away, so the frame stays on
+screen after scrolling back up (the veil is transparent there). Chromium and
+browsers where the video autoplays from the start did not show it. In the
+Claude app's in-app WebView autoplay needs a user gesture (WKWebView
+`mediaTypesRequiringUserActionForPlayback`), so the muted video's `play()`
+was refused and the element stayed on its paused first frame; a tap (opening
+the radio, which plays `<audio>`) changes the page's media state, and the
+paused first frame is exactly what the capture shows.
+
+**The regression question.** `git diff 7dc23b1..e2e1438 -- apps/web` (T258,
+T259) touches only the radio (player save/restore, toast as a button,
+repeat/shuffle CSS); nothing in it touches the reel, its video, scroll,
+focus outside the radio window or stacking of other elements. The radio is
+at most the gesture that changes WebKit's media state; the stray layer comes
+from the reel's video, which was only ever clipped, never removed. Not
+reproduced locally (Playwright WebKit is not an in-app WKWebView), so the
+fix removes the element from rendering instead of relying on the clip.
+
+**The fix.**
+- `lib/landing/presentation.ts`: `reelVideoMode(frame, blocked)` →
+  `off` (window closed, or the stage has gone by), `on` (window open),
+  `poster` (the video cannot play here); `playBlocked(err)` (only
+  `NotAllowedError`/`NotSupportedError`; an `AbortError` from scrolling is
+  ignored); `prepareInlineVideo(video)` (muted, defaultMuted, playsInline as
+  properties and `muted`/`playsinline`/`webkit-playsinline` as attributes).
+- `presentation-motion.tsx`: prepares the video before any `src`, writes
+  `data-video` on `.reel` every frame, and on a refused `play()` or a video
+  `error` pauses and switches to the poster for good.
+- `landing.css`: with `data-entry`, `.reel__video` and `.reel__poster` are
+  `display: none` unless `data-video='on'` (video) or `'poster'` (poster,
+  at the video's scale). Reduced motion and no-JS keep the still block.
+- Normal browsers: the video plays as before while its window is open; it
+  is only removed from rendering while it was invisible anyway.
+
+**Commands.**
+- `pnpm exec vitest run apps/web/lib/landing/presentation.test.ts` → exit 0,
+  14 passed (6 new: modes per stage, poster fallback, `playBlocked`,
+  attributes, motion prepares before `src`, CSS display rules).
+- Test command: vitest → exit 0, 292 files, 2577 passed / 2 skipped;
+  `tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` →
+  exit 0 (landing 197.0 kB of 200 kB); `pnpm typecheck` → exit 0.
+- Screenshots, Playwright WebKit 26.6 «iPhone 13», dev server: hero after the
+  intro, radio on, radio window open, window stage, back to the top, video
+  full, after the presentation, top again → `data-video` off/on as expected,
+  no video over the hero
+  (`/tmp/orchestrator-attach/boia-planet-hernan-T260/after/`, `states.json`);
+  same run with `play()` refused (`NotAllowedError`) → the poster in the
+  window, video element `display: none` throughout
+  (`/tmp/orchestrator-attach/boia-planet-hernan-T260/autoplay-blocked/`).
+
+**Pending.** Hernán checks on the iPhone in the Claude app's in-app browser
+after the push. Other `<video>` elements (hero stills slot, collage, lazy
+video) are not on the hero's path and were not changed.
+
 ## 2026-10-09 — plan 025 T259: Radio toast opens the radio, shows just the song; bigger, clearer repeat/shuffle buttons
 
 **Qué existe**

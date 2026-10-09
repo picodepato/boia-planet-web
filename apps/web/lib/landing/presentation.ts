@@ -160,3 +160,61 @@ export function presentationFrame(p: number, vw: number, vh: number): Presentati
     playing: video > 0 && p < P.end + 1,
   };
 }
+
+/**
+ * How the presentation's `<video>` is shown (plan 026 T260), written by
+ * presentation-motion.tsx as `data-video` on `.reel`; landing.css shows the
+ * element only with `on`:
+ *
+ * - `off`    — the window is closed (or the stage has gone by): the element
+ *              is `display: none`, not just clipped away. iOS WebKit paints a
+ *              video on its own layer and can keep that layer's last clip
+ *              when the clip-path collapses to an empty box, which left a
+ *              stray frame over the hero in iOS in-app browsers.
+ * - `on`     — the window is open: the video shows (and plays).
+ * - `poster` — the video cannot play here (autoplay blocked, a file it
+ *              cannot read): the element stays hidden and the window shows
+ *              the still poster instead.
+ */
+export type ReelVideoMode = 'off' | 'on' | 'poster';
+
+export function reelVideoMode(
+  frame: Pick<PresentationFrame, 'video' | 'playing'>,
+  blocked: boolean,
+): ReelVideoMode {
+  if (frame.video <= 0 || !frame.playing) return 'off';
+  return blocked ? 'poster' : 'on';
+}
+
+/**
+ * Whether a rejected `play()` means the video will not play here (autoplay
+ * not allowed, as in iOS in-app WebViews before a gesture or in Low Power
+ * Mode; a source it cannot play). An `AbortError` (a `pause()` that came
+ * first) is ordinary scrolling and changes nothing.
+ */
+export function playBlocked(err: unknown): boolean {
+  const name = (err as { name?: unknown } | null)?.name;
+  return name === 'NotAllowedError' || name === 'NotSupportedError';
+}
+
+/** The part of `HTMLVideoElement` that `prepareInlineVideo` touches. */
+export interface InlineVideo {
+  muted: boolean;
+  defaultMuted: boolean;
+  playsInline: boolean;
+  setAttribute(name: string, value: string): void;
+}
+
+/**
+ * Muted and inline, as attributes as well as properties, before any `src`:
+ * iOS WebViews read the attributes to allow inline autoplay; without them a
+ * video may be refused or try to go full screen.
+ */
+export function prepareInlineVideo(video: InlineVideo): void {
+  video.muted = true;
+  video.defaultMuted = true;
+  video.playsInline = true;
+  video.setAttribute('muted', '');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+}
