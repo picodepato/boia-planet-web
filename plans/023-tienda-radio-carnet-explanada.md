@@ -31,7 +31,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: create/rename already worked (plan 022); added preselect of new genre, clear name errors, sideways genre bar with edge fades/arrows; no new migration · d1554c2
 
 ## T247 — Mobile landing polish: icon-only music button, smaller header buttons, 2 s shop carousel
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -44,10 +44,10 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - the hero button keeps an accessible name (aria-label from i18n)
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent a68c40a408317c897
-- Outcome:
+- Outcome: hero radio icon-only 44 px near top-right corner (<900 px), header buttons 32 px with 40 px hit area (<600 px), carousel 2000 ms; screenshots not captured · f5fa5b1
 
 ## T248 — «Próximo evento»: desktop shows All Day, mobile shows Halloween
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -107,7 +107,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome:
 
 ## T252 — /mar: the unnamed right-hand island becomes the Explanada de Alicante
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: fable
 - Skills: blender-modeling-workflow, blender-asset-validation
@@ -160,7 +160,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots: admin song row genre selector, delete-genre confirm, player «Todos» with a genre-less song → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent ab228cfc9b5d7e911
-- Outcome:
+- Outcome: per-song genre dropdown (incl. «Sin género»), delete genre with in-row confirm (songs become genre-less, only under «Todos»), admin filter «Sin género»; migration 20261009100200_radio_genre_optional.sql for T253 · 13a13d7
 
 ## T256 — Shop follow-up: drop the sample tote, make stored browsers see the new shop
 - Status: done
@@ -208,6 +208,9 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - T256: revision 2 renews all sample homeBlocks on stored browsers (drops admin edits to sample hero/philosophy/footer there), same design as revision 1.
 
 - Added T257 (Hernán, 2026-10-09, on screen): admin flags songs whose MP3 was deleted outside the admin.
+
+- T255: genre dropdown saves on change; in-row delete confirm panel; unknown genre read as genre-less; database.types.ts edited by hand (`genre_id: string | null`).
+- Plan file statuses repaired after a botched edit (CRLF); T247/T248 were already integrated.
 
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
