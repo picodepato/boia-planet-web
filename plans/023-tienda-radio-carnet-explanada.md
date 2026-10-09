@@ -92,7 +92,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: galeria-1..4 in album-muestra (selection false, home unchanged), galeria-3 cropped 60 px left in fotos.mjs, no revision bump needed · ff4f087
 
 ## T251 — Carnet: «Descubre» buttons under the answers
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -104,7 +104,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots mobile + desktop: own carnet with the button, artist profile with the two buttons → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent a96c677ce33777bd6
-- Outcome:
+- Outcome: «🔎 Descubre otro miembro BOIA» under own answers; artist carnet adds «🔎 Descubre un artista»; shared discoverPool/pickDiscover, opens /carnet/<id>; no migration · 42edb09
 
 ## T252 — /mar: the unnamed right-hand island becomes the Explanada de Alicante
 - Status: running (attempt 1)
@@ -118,10 +118,11 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - blender export runs and the asset validation (multiview renders, tri count, materials) passes → renders in the attach folder
   - in-game screenshots from the boat, near (GLB) and far (fallback), mobile + desktop → attach folder
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent a5b183b958ff988ae
 - Outcome:
 
 ## T253 — Supabase: apply every pending migration to boia-planet-dev
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T246, T251, T255
 - Model: opus
 - Skills: none
@@ -212,5 +213,8 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - T255: genre dropdown saves on change; in-row delete confirm panel; unknown genre read as genre-less; database.types.ts edited by hand (`genre_id: string | null`).
 - Plan file statuses repaired after a botched edit (CRLF); T247/T248 were already integrated.
 
+- T251: buttons only on /carnet pages (not the /mar «Mi Carnet» sheet); non-artist member carnets also get the member button; 🔎 kept.
+
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
+- T251: in Supabase mode the discover pool is still the ranking's (sample members + content artists): real Supabase carnets cannot come up yet.
