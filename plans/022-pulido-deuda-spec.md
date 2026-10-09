@@ -15,7 +15,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## Tasks
 
 ## T236 — /mar overlays: boia text vs carnet prompt, trip destination, Ajustes toggles
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -29,7 +29,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome:
 
 ## T237 — Las Calitas behind the castaway, routes rerouted
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -60,7 +60,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T239 — Dev hygiene: Supabase 400, `.next-dev`, unused keys, CRLF, stale hashes
 - Status: pending
 - Depends on: none
-- Model: sonnet
+- Model: haiku
 - Skills: none
 - Goal: Clear the small debt collected in plans 020–021. (a) Every page load logs a 400 from Supabase `carnets?is_artist=eq.true`: find the cause; if the column comes from a migration not yet applied to `boia-planet-dev`, make the client degrade quietly (no console error, artists list empty or from local data) until it exists, and name the migration in ESTADO for Hernán; if it is a code bug, fix it. (b) `next dev` gets its own distDir (`.next-dev`) so dev and build do not clobber each other; gitignore it. (c) Drop unused i18n keys (`artists.pause`/`resume` and any other key the project's i18n check finds unused). (d) `prettier --check` flags ~98 files, probably CRLF: fix the cause in config (`.gitattributes` / prettier `endOfLine`) so the check passes on Windows and Linux without a mass reformat of unrelated code; if real formatting differences remain, list them instead of reformatting. (e) Refresh stale `sources_sha256` values with the project's own tool.
 - Context: plans 020 and 021 Proposals, `apps/web/lib/supabase*`/data layer where carnets are queried, `supabase/migrations/`, `docs/propuestas/2026-10-08-plan-020-guia-prueba.md` (migration order), `apps/web/next.config.*`, `.gitignore`, `.prettierrc*`, `apps/web/lib/i18n/`, wherever `sources_sha256` lives (grep).
@@ -75,7 +75,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T240 — Local data: trash shows nicknames, local photos removed from IndexedDB
 - Status: pending
 - Depends on: none
-- Model: opus
+- Model: haiku
 - Skills: none
 - Goal: (a) The admin trash shows a deleted Carnet by user id; show its nickname (fallback to the id only when there is none), in local mode and Supabase mode. The trash rules stay as they are (Hernán). (b) When a local photo/file is deleted (or its owner object is purged from the trash), its blob is removed from IndexedDB too, so local storage does not grow forever; include a one-off cleanup of orphan blobs on load.
 - Context: plan 020 Proposals and guide, the admin trash (`apps/web/app/admin/` or similar, grep «papelera»/trash), the local store (`packages/store`, IndexedDB helpers), photo upload/delete flows.
@@ -103,7 +103,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T242 — i18n of the Arcilla map prose and the shop texts
 - Status: pending
 - Depends on: T237
-- Model: sonnet
+- Model: haiku
 - Skills: none
 - Goal: Move the hard-coded prose in `packages/world/src/worlds/arcilla/map.ts` and the shop's texts into the i18n keys in `apps/web/lib/i18n/` (or the world package's own i18n path if the project already has one), so no UI prose stays as loose strings. Same texts, still `muestra`.
 - Context: `packages/world/src/worlds/arcilla/map.ts`, the shop components, `apps/web/lib/i18n/`, the project's i18n check (lint rule or script), TRASPASO «Se puede hacer ya».
@@ -116,7 +116,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T243 — Spec backlog A: product, entry, architecture REQs
 - Status: pending
 - Depends on: T238, T239
-- Model: opus
+- Model: haiku
 - Skills: none
 - Goal: Close or raise every REQ in areas PRO, ENT, ARQ (FALTA and PARCIAL) in `docs/spec/estado.md` that can be settled without Álvaro: by code, a test, a measurement in the browser pane (mobile emulation counts as emulation, say so), or a review document under `docs/`. Each change links its proof. Anything that needs Álvaro, real content or physical devices stays as it is and is listed in a short table in ESTADO with what is missing.
 - Context: `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `docs/DECISIONES.md` (read only), `docs/TRASPASO.md`, `python3 tools/spec/estado.py`; FALTA rows in these areas include REQ-PRO-008/010/012/014/015/016/019/020, ENT-004/005/018/021, ARQ-004/006/017/018.
@@ -130,7 +130,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T244 — Spec backlog B: world, identity, community, admin and remaining REQs
 - Status: pending
 - Depends on: T236, T237, T240, T241, T242
-- Model: opus
+- Model: haiku
 - Skills: none
 - Goal: Same as T243 for every area except PRO, ENT, ARQ (MUN, IDE, COM, ADM and the rest): close or raise every FALTA/PARCIAL REQ that can be settled without Álvaro, with linked proof; list what stays and why. FALTA rows include REQ-MUN-003/015/016/017/018/029/033, IDE-020, COM-029, ADM-038.
 - Context: as T243; the world work of T237 (routes) and T241 (objects) bears on MUN-015..018.
@@ -142,13 +142,13 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome:
 
 ## T246 — Radio: song catalog, genres and admin upload
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
-- Goal: The data side of the site's radio (Hernán, 2026-10-09). A catalog of songs (target ~100) with title, artist, genre, duration, file, order and a «first song» flag (exactly one; it always plays first when the radio starts). Genres are editable from the admin (create, rename, delete; 4 `muestra` genres to start: techno, house, reggaetón, indie). Admin page to upload MP3s with their fields, edit, reorder, delete, and mark the first song. Storage: Supabase Storage + a table in Supabase mode (write the migration file, never apply it), IndexedDB blobs in local mode (D-20). A lazily fetched catalog API/module the player reads (small JSON, never in the landing critical path). Seed a handful of short `muestra` tracks (a few seconds each, generated locally, e.g. ffmpeg tones/noise or a script — nothing downloaded) spread over the 4 genres so the player can be tried.
+- Goal: The data side of the site's radio (Hernán, 2026-10-09). A catalog of songs (target ~100) with title, artist, genre, duration, file, order and a «first song» flag (exactly one; it always plays first when the radio starts). Genres are editable from the admin (create, rename, delete; 4 `muestra` genres to start: techno, house, reggaetón, indie). Admin page to upload MP3s with their fields, edit, reorder, delete, and mark the first song. Storage: Supabase Storage + a table in Supabase mode (write the migration file, never apply it), IndexedDB blobs in local mode (D-20). A lazily fetched catalog API/module the player reads (small JSON, never in the landing critical path). Seed **~100 short test tracks** (Hernán, 2026-10-09; first 3 songs, then changed to ~100 for a real-scale test) as `muestra`: ~4–6 s each (optionally 1–3 of ~30 s to test seek), ~25 per genre, mono ~48 kbps, generated locally by a script that synthesizes a simple beat/loop so they sound like music (techno, house, reggaetón feel), MP3 ~96 kbps — nothing downloaded; each with a sample title and artist, one marked as the first song.
 - Context: the existing admin (`apps/web/app/admin/`), how other uploads use Storage/IndexedDB (photos, objects), `supabase/migrations/` naming, RLS patterns of other tables, `packages/contracts` for shared types, `packages/store`, `apps/web/lib/i18n/`, D-20 local mode, `docs/propuestas/2026-10-08-plan-020-guia-prueba.md` (migration order list).
-- Scope: may touch new radio types/contracts, a new migration file, the admin's new Radio section, local store, catalog loader, seed tracks under `art/` or `apps/web/public/` (small: total < 1 MB), tests / must not touch the player UI (T247), the landing, `/mar`, existing migrations.
+- Scope: may touch new radio types/contracts, a new migration file, the admin's new Radio section, local store, catalog loader, the seed tracks and their generator script under `art/` or `apps/web/public/` (total ≤ 3 MB), tests / must not touch the player UI (T247), the landing, `/mar`, existing migrations.
 - Done when:
   - unit tests: catalog CRUD in local mode; exactly one first song enforced; genre rename/delete updates or blocks dependent songs (say which in ESTADO) → pass
   - screenshot of the admin Radio section with songs and genres → attach folder
@@ -159,7 +159,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T247 — Radio: play button, Winamp-style player, «Sonando» toast, /mar button
 - Status: pending
 - Depends on: T246, T236, T238
-- Model: opus
+- Model: fable
 - Skills: frontend-design
 - Goal: The site's radio UI, following Hernán's description (2026-10-09). **Landing, on open:** a «Play music» radio button at the top right, styled to match the page. First tap starts the music: always the catalog's first song, then random songs from the list; the button changes colour to show it is active. A later tap opens the player to choose songs. **On scroll:** the top-right button disappears and reappears next to «Entradas» (in the header/bar that shows after the intro, T238); there the radio button glows to show it can be tapped, and it opens the player. **The player:** looks like classic Winamp (2.x skin era: compact dark panel, LCD-style green time and scrolling title, small transport buttons, seek and volume sliders, playlist window; see https://en.wikipedia.org/wiki/Winamp) with its options except the equalizer: play, pause, stop, previous, next, shuffle, repeat, seek, volume, elapsed/remaining time, playlist; songs grouped/filterable by genre; the list is scrolled with the finger (touch swipe) to choose a song. Original artwork inspired by that look — no Winamp logos, names or copied skin bitmaps. **When the player is closed,** each song change shows a small popup at the bottom: «Sonando: <título> - <artista>», auto-hiding. **Inside `/mar`:** a new Radio button in the HUD opens the same player. Music keeps playing across client navigations between the landing and `/mar` when possible.
 - Behaviour details: nothing autoplays (browsers block it; the first tap starts it); audio streams one song at a time (`preload="none"`, next song prefetched only near the end of the current one); the player code and catalog load lazily (on idle or first tap) — the landing critical path must not grow (only the button's minimal markup/CSS may be server-rendered); while the radio plays, the world's own background music in `/mar` is muted and Ajustes' music toggle (T236) controls the radio too (decide the exact link and log it); keyboard and screen-reader accessible; `prefers-reduced-motion` drops the glow pulse and scrolling title animation; all strings by i18n key.
@@ -175,7 +175,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## T245 — Test guide for Hernán after plan 022
 - Status: pending
 - Depends on: T243, T244, T247
-- Model: sonnet
+- Model: haiku
 - Skills: none
 - Goal: Write `docs/propuestas/2026-10-09-plan-022-guia-prueba.md` in Spanish, in the shape of the plan 020 guide: what changed and how to try it (mobile and desktop), the e2e specs Hernán should run (collected from every task's ESTADO section), what he has to do outside the repo (pending dev migrations in order, including any named by T239), the REQs left for Álvaro/devices (from T243–T244), and the open questions the agents raised. Update `docs/TRASPASO.md` so it points to it and reflects the new state.
 - Context: ESTADO.md sections of T236–T244, `docs/propuestas/2026-10-08-plan-020-guia-prueba.md`, `docs/TRASPASO.md`, `plans/022-pulido-deuda-spec.md`.
@@ -188,8 +188,14 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## Decisions
 - 2026-10-09: plan built with Hernán in the session: all four fronts; Calitas label stays cream; Ajustes toggles yes; trip destination in a chip above the bar; header hidden during the intro; landing kB: as much as safe; spec: everything not depending on Álvaro; entry timings and trash rules unchanged (Hernán)
 - 2026-10-09: radio added as T246 (catalog, genres, admin upload; songs in Supabase Storage / IndexedDB, never in the repo beyond tiny `muestra` seeds) and T247 (player UI after Hernán's description, Winamp look without EQ); T245 also covers it; T244 does not wait for the radio (Hernán + orchestrator)
+- 2026-10-09: Hernán asked to start the radio now with test songs (then ~100 short tracks, sent to the running agent): T246 launched as a third parallel agent; T238 goes next so T247 can follow (Hernán)
+- 2026-10-09: Hernán: use Haiku 5.5 wherever possible → T239, T240, T242, T243, T244, T245 on haiku; T238 (bundle surgery), T241 (3D loading), T247 (complex player UI) stay on opus; a haiku task that fails retries on opus; running T236/T237/T246 keep opus (orchestrator)
+- 2026-10-09: Hernán: T247 runs on Fable (Hernán)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-09 T236 launched · attempt 1 · agent a40d2e001978df284
+- 2026-10-09 T237 launched · attempt 1 · agent adb530163dcdf25cb
+- 2026-10-09 T246 launched · attempt 1 · agent a365ac979e8a2f6af (3rd parallel agent, Hernán asked to start the radio now)
