@@ -1,6 +1,6 @@
 # Plan 023 — Radio genres, mobile polish, shop products, gallery, carnet discovery, the Explanada island, Supabase migrations
 
-Status: active
+Status: done
 Created: 2026-10-09
 Base branch: main
 Goal: Hernán's list of 2026-10-09 (relaying Álvaro). (1) Radio: create and rename genres from the admin, add songs to them, and a genre bar that scrolls sideways when there are many. (2) Mobile landing polish: the hero «Música» button becomes icon-only and sits further into the right corner; the header's menu / entradas / sound buttons shrink next to the BOIA wordmark; the shop carousel rotates every 2 s. (3) Find why desktop shows «All Day BOIA» as the next event while mobile shows Halloween, and fix it. (4) Shop: the handmade tote bag by Manu Ropero (30 €, 4 photos) and the real T-shirt (18 €, cotton 220 g, 3 photos). (5) Four gallery photos to see how they look. (6) «Descubre» buttons under the carnet answers (own carnet and artist profile). (7) The unnamed island on the right is remodelled in Blender as Alicante's Explanada promenade (stays unnamed). (8) Apply every pending Supabase migration to `boia-planet-dev`. (9) Test guide.
@@ -139,7 +139,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Outcome: all 12 pending migrations applied to boia-planet-dev (artist_music duplicate constraint renamed to carnets_music_url_platform_check), types regenerated; test:supabase still red for non-migration reasons (Auth rate limit, stale schema assertions, leftover @example.test owner on dev) · ff4604c
 
 ## T254 — Test guide for Hernán
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T246, T247, T248, T249, T250, T251, T252, T253, T255, T256, T257
 - Model: haiku
 - Skills: none
@@ -149,7 +149,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Done when:
   - `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: guide docs/propuestas/2026-10-09-plan-023-guia-prueba.md; REQ-COM-033 proof link (still PARCIAL) · 6d93eb8
 
 ## T255 — Radio: change a song's genre, delete genres, songs without genre
 - Status: done
