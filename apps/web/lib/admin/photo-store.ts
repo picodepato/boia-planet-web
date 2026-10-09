@@ -78,3 +78,24 @@ export function displayablePhotoUrl(src: string): Promise<string | null> {
   }
   return p;
 }
+
+/** Las claves (sin prefijo) de todos los archivos guardados en este navegador. */
+export async function listLocalPhotoKeys(): Promise<string[]> {
+  const keys = await tx<IDBValidKey[]>('readonly', (s) => s.getAllKeys());
+  return keys.filter((k): k is string => typeof k === 'string');
+}
+
+/** Borra varios archivos en una sola transacción. */
+export async function deleteLocalPhotoKeys(keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const d = await db();
+  await new Promise<void>((ok, ko) => {
+    const t = d.transaction(STORE, 'readwrite');
+    const store = t.objectStore(STORE);
+    for (const key of keys) store.delete(key);
+    t.oncomplete = () => ok();
+    t.onerror = () => ko(t.error ?? new Error('indexeddb'));
+    t.onabort = () => ko(t.error ?? new Error('indexeddb'));
+  });
+  for (const key of keys) urls.delete(`${LOCAL_PHOTO_PREFIX}${key}`);
+}

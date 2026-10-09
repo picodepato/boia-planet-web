@@ -4,6 +4,39 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T240: Local data: trash shows nicknames, local photos removed from IndexedDB
+
+**Qué existe**
+
+- Papelera de cambios del Admin (modo local): un cambio de Carnet (moderación, enlace a la música) se nombra por el apodo del Carnet; el id sólo si no tiene apodo o ya no existe. La lógica está en `apps/web/lib/admin/trash-labels.ts` (`changeTargetLabel`); `apps/web/app/admin/sections/misc.tsx` la usa.
+- Papelera de socios en modo Supabase (`apps/web/app/admin/real/papelera.tsx`): ya mostraba el apodo (`m.nickname ?? noCarnet`); no se cambió.
+- Blobs de fotos locales (IndexedDB `boia-fotos`, `apps/web/lib/admin/photo-store.ts`): nuevas `listLocalPhotoKeys` y `deleteLocalPhotoKeys`.
+- `apps/web/lib/admin/local-photo-orphans.ts` (puro): `localPhotoKeysIn` (claves `local-photo:` a cualquier profundidad) y `orphanPhotoKeys`.
+- `apps/web/lib/admin/local-photo-cleanup.ts`: `referencedLocalPhotoKeys` (contenido publicado, borradores, papelera, y el «antes» de los cambios que se pueden deshacer) y `pruneLocalPhotos` (borra sólo lo no referenciado).
+- Se llama a la limpieza tras «Purgar» y «Purgar lo caducado» (`actions.ts`, `AdminDeps.localPhotos` inyectable) y una vez al abrir el Admin de la demo (`admin-app.tsx`).
+
+**Decisiones**
+
+- Mover a la papelera NO borra el blob (la foto sigue siendo recuperable); el blob se borra al purgar (manual o por plazo) y, en cualquier caso, en la limpieza al abrir el Admin.
+- La limpieza al abrir corre sólo en la demo (modo local); en modo Supabase las fotos son URL del bucket.
+- Errores de IndexedDB en la limpieza se ignoran (no deshacen la purga).
+- Riesgo conocido: una subida en curso (blob guardado, objeto aún no guardado) podría quedar huérfana si la limpieza corre justo entonces; la limpieza al abrir ocurre antes de cualquier subida.
+- Un Carnet de artista no aparece en `admin.carnets()`, así que su cambio en la papelera sigue mostrando el id.
+
+**Comandos y resultados**
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0; 271 files passed, 2459 tests passed, 1 skipped.
+- `sh tools/spec/checks.sh` → exit 0 (OK).
+- `pnpm lint` → exit 0.
+- `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; landing 196.6 kB de 200.0 kB presupuesto OK.
+- Pruebas nuevas: `apps/web/lib/admin/trash-labels.test.ts` (nombre del Carnet en la papelera), `apps/web/lib/admin/local-photo-cleanup.test.ts` (purga borra el blob; la papelera lo conserva; la limpieza quita sólo los huérfanos).
+
+**Pendiente**
+
+- Captura de la papelera con un Carnet con apodo: NO hecha. La puerta del Admin de la demo (Carnet 000 con contraseña) no se ha saltado; hace falta que Hernán o Álvaro la abran y capturen `#misc` / «Papelera» tras moderar un Carnet, o que se dé la contraseña de la demo para una captura.
+- E2E: ningún spec cambiado. Specs que podrían tocar la papelera y que Hernán puede correr si quiere: `apps/web/e2e/admin-papelera.spec.ts`.
+
 ## 2026-10-09 — plan 022 T239: Dev hygiene: Supabase 400, `.next-dev`, unused keys, CRLF, stale hashes
 
 **Qué existe**

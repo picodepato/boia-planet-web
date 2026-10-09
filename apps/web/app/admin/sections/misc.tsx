@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from 'react';
 import { ADMIN_COPY } from '../../../lib/admin/copy';
 import { itemName } from '../../../lib/admin/references';
+import { changeTargetLabel } from '../../../lib/admin/trash-labels';
 import { setAnalyticsSwitch } from '../../../lib/analytics';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
@@ -270,32 +271,14 @@ const CHANGE_KIND: Record<ChangeItem['kind'], MessageKey> = {
   discard: 'admin.gestion.trash.kind.discard',
 };
 
-/** Qué tocó un cambio, para la lista: el nombre del elemento, la clave o el área entera. */
-function changeTarget(c: ChangeItem): string {
-  if (c.kind === 'order') return msg('admin.gestion.trash.order');
-  if (c.kind === 'reset' || c.kind === 'discard' || c.targetId === null)
-    return c.area === 'settings' ? '' : msg('admin.gestion.trash.wholeArea');
-  if (c.area === 'carnets') {
-    // Moderación fina de un Carnet (plan 020 T229): «<persona> · respuesta <id>» o «· enlace a la música».
-    const slash = c.targetId.indexOf('/');
-    if (slash < 0) return c.targetId;
-    const what = c.targetId.slice(slash + 1);
-    return `${c.targetId.slice(0, slash)} · ${
-      what === 'music'
-        ? msg('admin.moderation.music.trashTarget')
-        : `${msg('admin.moderation.answers.trashTarget')} ${what}`
-    }`;
-  }
-  const named = itemName(c.area, c.before ?? c.after);
-  return named && named !== c.targetId ? named : c.targetId;
-}
-
 /**
  * Lo cambiado desde el Admin, que se puede deshacer durante el plazo de la
  * papelera (plan 019 T223, decisión 17). Sale de la auditoría local.
  */
 function ChangesList({ ctx }: { ctx: AdminContext }) {
   const changes = useRead(ctx, (r) => r.admin.changes());
+  const carnets = useRead(ctx, (r) => r.admin.carnets());
+  const carnetNames = new Map((carnets ?? []).map((v) => [v.userId, v.carnet.nickname]));
   const real = useMaybeRealAdmin();
   const { status, busy, run } = useRun();
   const day = (iso: string) => new Date(iso).toLocaleString('es-ES');
@@ -307,7 +290,7 @@ function ChangesList({ ctx }: { ctx: AdminContext }) {
       <StatusLine status={status} />
       <ul className="admin-list" data-testid="papelera-cambios">
         {(changes ?? []).map((c) => {
-          const target = changeTarget(c);
+          const target = changeTargetLabel(c, carnetNames);
           return (
             <li
               key={c.id}

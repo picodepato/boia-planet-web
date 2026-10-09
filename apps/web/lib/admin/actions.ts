@@ -59,6 +59,8 @@ import {
   liveMap,
 } from './world';
 import { t as msg } from '../i18n';
+import { type LocalPhotoStore } from './local-photo-orphans';
+import { BROWSER_LOCAL_PHOTOS, pruneLocalPhotos } from './local-photo-cleanup';
 
 /**
  * Lo que hace el Admin de la demo (T26, REQ-ADM-008, REQ-ADM-039) sobre el
@@ -81,6 +83,8 @@ export interface AdminDeps {
   /** Mundos sobre el mapa compartido (`WORLD_REGISTRY`). */
   registry: WorldRegistry;
   now?: () => Date;
+  /** Blobs de fotos locales; por defecto, los de este navegador (IndexedDB). */
+  localPhotos?: LocalPhotoStore;
 }
 
 const opts = (reason: string | null | undefined): AdminOptions => ({ reason: reason ?? null });
@@ -172,6 +176,9 @@ function confirmName(name: string, typed: string): void {
 export function createAdminActions(deps: AdminDeps) {
   const { repo, registry } = deps;
   const now = deps.now ?? (() => new Date());
+  const localPhotos = deps.localPhotos ?? BROWSER_LOCAL_PHOTOS;
+  /** Tras una purga: quita los blobs locales que ya nadie referencia. Un fallo no deshace la purga. */
+  const sweepPhotos = () => pruneLocalPhotos(repo, localPhotos).catch(() => [] as string[]);
 
   const content = async () => ({
     places: await repo.content.places(),
@@ -851,6 +858,7 @@ export function createAdminActions(deps: AdminDeps) {
       if (!item) throw new AdminError(msg('admin.actions.noEstaEnLa', { id }));
       confirmName(itemName(area, item.value), typedName);
       await repo.admin.purge(area, id, opts(msg('admin.actions.purgaConfirmadaEscribiendoEl')));
+      await sweepPhotos();
     },
 
     /** Plazo de la papelera en días (REQ-ADM-030) [pendiente Álvaro]. */
@@ -905,7 +913,9 @@ export function createAdminActions(deps: AdminDeps) {
     },
 
     async purgeExpired() {
-      return repo.admin.purgeExpired(opts(msg('admin.actions.plazoDeLaPapelera2')));
+      const n = await repo.admin.purgeExpired(opts(msg('admin.actions.plazoDeLaPapelera2')));
+      await sweepPhotos();
+      return n;
     },
 
     // --- Logros (REQ-ADM-021, REQ-ADM-022) ----------------------------------

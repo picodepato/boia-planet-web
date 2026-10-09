@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { type ComponentType, useEffect, useState } from 'react';
 import { ADMIN_COPY } from '../../lib/admin/copy';
+import { pruneLocalPhotos } from '../../lib/admin/local-photo-cleanup';
 import { AchievementsSection } from './sections/achievements';
 import { ArtistsSection } from './sections/artists';
 import { DiscountsSection } from './sections/discounts';
@@ -138,6 +139,13 @@ export function AdminApp({
   const ctx = useAdminContext();
   const sections = real ? REAL_SECTIONS : SECTIONS;
   const [active, setActive] = useState(sections[0]!.id);
+  const localRepo = real ? null : (ctx?.repo ?? null);
+  useEffect(() => {
+    // Una vez al abrir el Admin de la demo: los blobs de fotos locales que
+    // ya nada referencia (purgas automáticas, borradores descartados) se van.
+    if (!localRepo) return;
+    void pruneLocalPhotos(localRepo).catch(() => undefined);
+  }, [localRepo]);
   useEffect(() => {
     setActive(sectionFromHash(sections));
     const onHash = () => setActive(sectionFromHash(sections));
