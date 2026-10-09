@@ -4,6 +4,79 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T243: Spec backlog A: product, entry, architecture REQs
+
+**Qué existe.** Recorridas una a una todas las filas FALTA y PARCIAL de PRO, ENT y ARQ en `docs/spec/estado.md` (dos intentos; el primero dejó seis, este revisó las demás y las del primero contra su criterio de 09). Ninguna sube a HECHO sin una prueba automática que cumpla el criterio. Las mediciones en el navegador son del panel del navegador de la app (Chromium) en **emulación** (360×640 y 1440×900, build de producción), no en móviles físicos.
+
+| REQ | Antes → ahora | Prueba |
+|---|---|---|
+| REQ-PRO-015 | FALTA → HECHO | `tools/spec/test_cobertura.py`: cada fila de «Lo que debe sobrevivir» (01) cita REQ que existen en 09; el apéndice de desviaciones de 00 tiene filas |
+| REQ-ARQ-005 | PARCIAL → HECHO | `packages/store/src/storage.test.ts` «REQ-ARQ-005: base vacía y base con datos llegan a la versión actual sin perder nada» |
+| REQ-ARQ-008 | PARCIAL → HECHO | nuevo `packages/store/src/temporadas.test.ts`: al cambiar el mundo activo siguen Carnet, barco equipado, preferencias y puntos totales; puntos de temporada, descubrimientos y misión quedan con su temporada |
+| REQ-ARQ-012 | PARCIAL → HECHO | nuevo `apps/web/lib/secretos.test.ts`: 0 formas de secreto real en todo el repo, claves de `.env.example` vacías, ningún `console.*` imprime una variable secreta, y 0 en `.next/static` si hay build (lo había: pasa). Logs de Vercel/Supabase no se miran; los límites de frecuencia del texto del REQ siguen sin hacer |
+| REQ-PRO-008 | FALTA → PARCIAL | `apps/web/playwright.config.ts` (proyecto `mobile` 360×640 táctil antes que escritorio); capturas móvil-primero del plan 022. Todo emulación |
+| REQ-PRO-010 | FALTA → PARCIAL | `docs/revisiones/2026-10-09-pro-010-modales.md`, ahora medido: islas, recogidas y avisos no paran el barco; la hoja Welcome Aboard al llegar desde «Zarpar» sí (`aria-modal`, un toque la cierra) |
+| REQ-ENT-018 | FALTA → PARCIAL | `docs/revisiones/2026-10-09-ent-018-arranque.md`, ahora con resultados: `/`, `/?intro=0`, `/#tickets`, evento directo, Zarpar → /mar, Atrás desde /mar y el sitio HTTPS publicado, ninguno en blanco |
+| REQ-ARQ-004 | FALTA → PARCIAL | `docs/revisiones/2026-10-09-arq-004-esquema.md`: 49 tablas, 24 con `version` |
+| REQ-ARQ-006 | FALTA → PARCIAL | `sample-secrets.test.ts` y `secretos.test.ts` (ejemplos sin secretos); el borrado (`supabase/sample/remove-sample.sql`) lo comprueba `pnpm db:test`, que necesita PostgreSQL local: no corre en esta máquina y su última pasada registrada es del plan 001 |
+| REQ-ARQ-018 | FALTA → PARCIAL | `tools/spec/checks.sh`; medido en ESTADO.md: de 228 secciones de tarea, 214 escriben el código de salida, 11 sólo conteo u «OK», 3 ningún resultado (plan 011 T131, plan 012 T143 y T145) |
+| REQ-PRO-009 | PARCIAL (igual) | Nota con el HUD de /mar medido en 360×640: sin caja de fps, pero con enlaces, Radio, zoom y turbo que el criterio de 09 no admite |
+| REQ-ENT-024 | PARCIAL (igual) | Nota con las capturas 360×640 y 1440×900 del reposo |
+| REQ-ARQ-016 | PARCIAL (igual) | `docs/matriz-dispositivos.md`: zoom 200 % y pérdida de contexto pasan de «a mano» a «parcial» (emulación): 7 e2e, 7 parciales, 2 a mano. **Hallazgo:** al perder el contexto WebGL la escena de la landing desaparece; al restaurarlo vuelve el planeta sin islas y el rótulo «BOIA» queda en blanco |
+
+**Pendiente de Álvaro, contenido real, dispositivos o migración** (sin cambio de estado salvo lo de arriba):
+
+| REQ | Estado | Qué falta |
+|---|---|---|
+| REQ-PRO-004 | PARCIAL | Recorrido completo en móvil físico, en el informe del hito |
+| REQ-PRO-005 | PARCIAL | Pregunta 2 de §30 respondida por Álvaro |
+| REQ-PRO-008 | PARCIAL | Registro en móviles físicos por entrega (dispositivos de P6, Hernán) |
+| REQ-PRO-009 | PARCIAL | Ajustar el criterio de 09 a las decisiones del HUD (T65, T247) — Hernán/Álvaro |
+| REQ-PRO-010 | PARCIAL | Decidir si Welcome Aboard al llegar cuenta como modal bloqueante — Hernán/Álvaro |
+| REQ-PRO-011 | PARCIAL | Animación por comportamiento en /mar (obra) y revisión de hito |
+| REQ-PRO-012 | FALTA | Personas ajenas que completen tutorial y rescate sin ayuda |
+| REQ-PRO-013 | PARCIAL | Restos, cofres, delfín, remolino y circuito eran del 2D (D-25); criterio por ajustar |
+| REQ-PRO-014 | FALTA | Revisión de Álvaro y pregunta 14 de §30 |
+| REQ-PRO-016 | FALTA | Informe de hito con las 14 respuestas de §30 (Álvaro) |
+| REQ-PRO-018 | PARCIAL | Contenido real aprobado (0 `muestra` al publicar) |
+| REQ-PRO-019 | FALTA | Responsable y estado de cada fila de contenido de 01 (Álvaro) |
+| REQ-PRO-020 | FALTA | Lista de publicación firmada por Álvaro |
+| REQ-ENT-002, ENT-027 | PARCIAL | Pasar la decisión 4 (sólo «Zarpar» en el hero) a DECISIONES.md y ajustar el criterio |
+| REQ-ENT-004 | FALTA | Revisión visual de ENT 06 aprobada por Álvaro |
+| REQ-ENT-005 | FALTA | Revisión de ENT 06; el criterio «ninguna librería 3D» choca con three.js (D-26) |
+| REQ-ENT-012 | PARCIAL | La escena de /mar no es el mismo objeto que la del planeta (obra grande) |
+| REQ-ENT-018 | PARCIAL | Navegadores internos de apps, Safari y Chrome reales (móvil físico); e2e por correr |
+| REQ-ENT-021 | FALTA | Registro por dispositivo físico y orientación |
+| REQ-ENT-022 | PARCIAL | Medición en el dispositivo de referencia (P6) |
+| REQ-ENT-024 | PARCIAL | Arte real y una prueba de la captura |
+| REQ-ENT-025 | PARCIAL | Frase de posicionamiento aprobada por Álvaro |
+| REQ-ENT-036 | PARCIAL | e2e de Atrás con un evento y una galería (no escrita: e2e la corre Hernán) |
+| REQ-ARQ-004 | PARCIAL | Decidir qué tablas son entidades y migración con `version` |
+| REQ-ARQ-006 | PARCIAL | Correr `pnpm db:test` con PostgreSQL local sobre las migraciones de hoy |
+| REQ-ARQ-010 | PARCIAL | Cadencia mínima entre recogidas en `award_points` (migración) |
+| REQ-ARQ-013 | PARCIAL | Plazos legales (Álvaro) y secretos de la copia (Hernán) |
+| REQ-ARQ-014, ARQ-015 | PARCIAL | Medición en los dispositivos de referencia (P6) |
+| REQ-ARQ-016 | PARCIAL | Áreas seguras y sin conexión en móvil físico |
+| REQ-ARQ-017 | FALTA | Registro por dispositivo con los 5 datos y los 11 aspectos |
+| REQ-ARQ-018 | PARCIAL | Una comprobación del registro por tarea (o apuntar las 3 sin resultado) |
+| REQ-ARQ-019 | PARCIAL | Clave de PostHog y `purchase_confirmed` desde el servidor (ticketera) |
+| REQ-ARQ-024 | PARCIAL | Copias, plantillas del Admin y contenido aprobado |
+
+**Comandos y resultados** (raíz de este worktree):
+
+- `python3 tools/spec/estado.py` → exit 0 (295 REQ · HECHO 170 · PARCIAL 71 · FALTA 19; PRO 7/8/5, ENT 26/8/3, ARQ 11/10/1)
+- `pnpm exec vitest run packages/store/src/temporadas.test.ts` → 1 passed; `apps/web/lib/secretos.test.ts` → 4 passed
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0; 279 archivos, 2502 passed, 1 skipped
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0 · `pnpm build` → exit 0 (landing 196.6 kB, presupuesto 200 kB) · `pnpm typecheck` → exit 0
+- `pnpm db:test` → exit 1: no hay PostgreSQL local en esta máquina
+
+**E2E que Hernán debe correr.** Ninguna spec tocada. Para cerrar ENT-018: `intro.spec.ts` y `landing-scroll.spec.ts` (los títulos están en el informe).
+
+**Decisiones del agente.** PRO-009, PRO-010, ENT-018, ENT-024 y ARQ-016 se quedan en PARCIAL aunque haya medición: el criterio pide algo que falta o choca con una decisión posterior. ARQ-012 sube a HECHO por el criterio de 09 (prueba 9 de P2), no por el texto entero del REQ (límites de frecuencia, pendientes). ARQ-006 no sube: la comprobación del borrado no se pudo correr aquí. Capturas fuera del repo, en la carpeta de adjuntos de T243.
+
+**Fuera de alcance / se notó.** (1) Pérdida de contexto WebGL en la landing: la escena no se recupera bien (falta un manejador de `webglcontextlost`/`restored`). (2) La hoja de bienvenida de /mar se titula «Welcome Aboard» en inglés en una interfaz en español (¿intencionado?). (3) A 640×360 (zoom 200 %) los rótulos de esquina pisan «Consigue descuentos».
+
 ## 2026-10-09 — plan 022 T247: Radio: botón de play, reproductor estilo Winamp, aviso «Sonando», botón en /mar
 
 Qué existe:

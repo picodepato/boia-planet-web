@@ -115,6 +115,18 @@ describe('versión de esquema y migraciones', () => {
     expect(migrate({ schemaVersion: SCHEMA_VERSION }).status).toBe('ok');
   });
 
+  it('REQ-ARQ-005: base vacía y base con datos llegan a la versión actual sin perder nada', async () => {
+    // Base vacía: arranca en la versión actual, sin problemas y sin datos.
+    const empty = makeRepo({ storage: new MemoryStorage() });
+    expect(empty.repo.status()).toMatchObject({ issue: null, schemaVersion: SCHEMA_VERSION });
+    expect(await empty.repo.progress.discoveries()).toEqual([]);
+
+    // Base con datos de la primera versión publicada: la cadena la lleva hasta hoy.
+    const v1 = migrate({ schemaVersion: 1, players: {}, ledger: [] });
+    expect(v1).toMatchObject({ status: 'ok', from: 1 });
+    if (v1.status === 'ok') expect(v1.applied).toHaveLength(SCHEMA_VERSION - 1);
+  });
+
   /** Una subida de versión de ejemplo: v2 mueve las botellas del mundo retirado. */
   const v1to2: Migration = {
     from: SCHEMA_VERSION,

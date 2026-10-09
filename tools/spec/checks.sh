@@ -23,4 +23,5 @@ run 1 python3 tools/spec/check.py
 run 9 python3 tools/spec/estado.py
 run 1 python3 tools/spec/test_check.py
 run 1 python3 tools/spec/test_estado.py
+run 1 python3 tools/spec/test_cobertura.py
 run 2 python3 tools/blender/check.py
