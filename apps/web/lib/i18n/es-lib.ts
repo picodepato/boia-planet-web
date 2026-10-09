@@ -16,6 +16,8 @@ export const esLib = {
   'lib.ranking.verSuCarnet': 'Ver su Carnet entero',
   'lib.carnet.artista': ' · artista',
   'lib.carnet.generos': '🎧 {genres}',
+  'lib.carnet.descubreMiembro': '🔎 Descubre otro miembro BOIA',
+  'lib.carnet.descubreArtista': '🔎 Descubre un artista',
   'admin.achievements.visitarIslas': 'Visitar islas',
   'admin.achievements.encontrarBoies': 'Encontrar boies',
   'admin.achievements.recogerObjetos': 'Recoger objetos',

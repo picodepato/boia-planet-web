@@ -11,9 +11,45 @@ export function pickMember(
   current: string | null = null,
 ): CarnetMember | null {
   const pool = members.length > 1 ? members.filter((m) => m.userId !== current) : members;
+  return pickFrom(pool, random);
+}
+
+/** Uno al azar de `pool`; null si está vacío. */
+function pickFrom<T>(pool: readonly T[], random: () => number): T | null {
   if (pool.length === 0) return null;
   const i = Math.min(pool.length - 1, Math.floor(random() * pool.length));
   return pool[i]!;
+}
+
+export interface DiscoverFilter {
+  /** Carnets que nunca salen (el propio, el artista que se está viendo). */
+  exclude?: readonly (string | null | undefined)[] | undefined;
+  /** Sólo los de esta clase (p. ej. `artist`: «Descubre un artista»). */
+  kind?: CarnetMember['kind'] | undefined;
+}
+
+/** Los Carnets que pueden salir con `filter` (plan 023 T251). */
+export function discoverPool(
+  members: readonly CarnetMember[],
+  filter: DiscoverFilter = {},
+): CarnetMember[] {
+  const exclude = new Set(filter.exclude?.filter((id): id is string => !!id));
+  return members.filter(
+    (m) => !exclude.has(m.userId) && (filter.kind === undefined || m.kind === filter.kind),
+  );
+}
+
+/**
+ * Los botones «Descubre» bajo las respuestas de un Carnet (plan 023 T251): el
+ * mismo azar que «Descubrir a un BOIERO», pero lo excluido no sale nunca,
+ * aunque no quede nadie más (entonces null: «Aún no hay Carnets que descubrir»).
+ */
+export function pickDiscover(
+  members: readonly CarnetMember[],
+  random: () => number,
+  filter: DiscoverFilter = {},
+): CarnetMember | null {
+  return pickFrom(discoverPool(members, filter), random);
 }
 
 /** Generador con semilla (mulberry32): la misma semilla da la misma serie. */

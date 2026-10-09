@@ -4,6 +4,49 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T251: Carnet: «Descubre» buttons under the answers
+
+Qué existe:
+
+- `/carnet` (Mi Carnet): justo bajo «Tus respuestas», el botón «🔎 Descubre otro
+  miembro BOIA» abre `/carnet/<id>` de un Carnet al azar (miembro o artista),
+  nunca el propio.
+- `/carnet/<id>` de un artista (ficha del contenido o marcado artista): bajo
+  sus respuestas, «🔎 Descubre un artista» (otro artista, nunca este) y
+  «🔎 Descubre otro miembro BOIA». El Carnet de otro miembro (no artista)
+  lleva sólo «Descubre otro miembro BOIA», para seguir descubriendo.
+- Mismo botón (`juego-button`) y mismo azar que «Descubrir a un BOIERO» del
+  ranking (`discoverRandom`, con `window.__boiaDiscoverSeed` para e2e); la
+  misma lista (`repo.carnet.members()`), en modo local y con Supabase.
+- Sin nadie que pueda salir: «Aún no hay Carnets que descubrir.»
+  (`lib.ranking.descubrirVacio`).
+- Código: `apps/web/lib/mundo/discover.ts` (`discoverPool`, `pickDiscover`;
+  `pickMember` del ranking sin cambios de comportamiento),
+  `apps/web/lib/mundo/carnet/carnet-discover.tsx`, prop `afterAnswers` en
+  `CarnetCard` y `OwnCarnet`, `apps/web/app/carnet/carnet-page.tsx`, claves
+  `lib.carnet.descubreMiembro` / `lib.carnet.descubreArtista`, estilos en
+  `carnet.css`.
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/lib/mundo/discover.test.ts` → 6 passed
+  (nuevos: excluye el propio / el artista actual, sólo artistas, sin pool).
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 290 files, 2550 passed, 2 skipped.
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` →
+  exit 0 (landing 197.0 kB, presupuesto 200 kB) · `pnpm typecheck` → exit 0.
+- Capturas (modo local, móvil 390×844 y escritorio 1440×900):
+  `C:\tmp\orchestrator-attach\boia-planet-hernan-T251\`.
+
+Pendiente:
+
+- Ninguna migración nueva (nada para T253).
+- e2e que Hernán puede correr: `e2e/carnet.spec.ts`,
+  `e2e/carnet-requerido.spec.ts` (no se tocaron; los botones nuevos no
+  cambian lo que comprueban).
+- Con cuentas, la lista sigue siendo la del ranking (miembros de muestra y
+  artistas del contenido): los Carnets reales de Supabase no entran todavía.
+
 ## 2026-10-09 — plan 023 T255: Radio: change a song's genre, delete genres, songs without genre
 
 - **Contrato** (`packages/contracts/src/radio.ts`): `genreId` de una canción admite `null`

@@ -94,6 +94,7 @@ export function CarnetCard({
   fresh,
   pointsChange,
   controls,
+  afterAnswers,
   dark = false,
   onFaceChange,
 }: {
@@ -105,6 +106,8 @@ export function CarnetCard({
   pointsChange?: { from: number; to: number } | null | undefined;
   /** Lo que va bajo la tarjeta (botones del Carnet propio). */
   controls?: ReactNode | undefined;
+  /** Lo que va justo bajo las respuestas (los «Descubre» de /carnet, T251). */
+  afterAnswers?: ReactNode | undefined;
   /** En una página oscura (/carnet, /sello). */
   dark?: boolean | undefined;
   onFaceChange?: ((face: CardFace) => void) | undefined;
@@ -162,6 +165,7 @@ export function CarnetCard({
           </ul>
         )}
       </section>
+      {afterAnswers}
 
       {/* Insignias de los logros reclamados (REQ-IDE-052, T37) y los logros. */}
       <section aria-label={t('carnet.section.badges')}>

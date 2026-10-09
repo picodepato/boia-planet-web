@@ -2,7 +2,7 @@
 
 import type { CarnetView } from '@boia/store';
 import Link from 'next/link';
-import { type ComponentType, useState } from 'react';
+import { type ComponentType, type ReactNode, useState } from 'react';
 import { useAccount } from '../../account/use-account';
 import { t } from '../../i18n';
 import type { ScanLayerProps } from '../../scanner/scan-layer';
@@ -29,6 +29,7 @@ export function OwnCarnet({
   extras,
   onEdit,
   editHref,
+  afterAnswers,
   dark = false,
 }: {
   carnet: CarnetView;
@@ -37,6 +38,8 @@ export function OwnCarnet({
   onEdit?: (() => void) | undefined;
   /** O ir a editar (/carnet → /mar). */
   editHref?: string | undefined;
+  /** Bajo las respuestas (T251). */
+  afterAnswers?: ReactNode | undefined;
   dark?: boolean | undefined;
 }) {
   const account = useAccount();
@@ -128,6 +131,7 @@ export function OwnCarnet({
         carnet={carnet}
         extras={extras}
         fresh={fresh}
+        afterAnswers={afterAnswers}
         dark={dark}
         controls={
           <>

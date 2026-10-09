@@ -359,3 +359,16 @@ a.juego-button {
   margin: 2px 0 0;
   font-weight: 700;
 }
+
+/* Los «Descubre» bajo las respuestas (plan 023 T251): los botones del ranking. */
+.carnet-descubre {
+  margin: 4px 0 18px;
+}
+.carnet-descubre-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.carnet-descubre > .juego-muted {
+  margin: 8px 0 0;
+}

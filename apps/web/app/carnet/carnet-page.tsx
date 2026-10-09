@@ -9,6 +9,7 @@ import { AccountSection } from '../../lib/account/account-section';
 import { useAccount } from '../../lib/account/use-account';
 import { t } from '../../lib/i18n';
 import { CarnetCard } from '../../lib/mundo/carnet/carnet-card';
+import { CarnetDiscover } from '../../lib/mundo/carnet/carnet-discover';
 import { CarnetPanel } from '../../lib/mundo/carnet/carnet-panel';
 import { CarnetReport } from '../../lib/mundo/carnet/carnet-report';
 import { LOCAL_ONLY_NOTICE } from '../../lib/mundo/carnet/carnet-editor';
@@ -28,6 +29,8 @@ import { wantsCreate } from '../../lib/scanner/carnet-url';
  *   (apodo, rango, sellos; nunca el email), y el propio trae «Escanear sello».
  * - `/carnet?crear=1` (el QR de alta de la puerta, plan 019 T218): sin Carnet,
  *   empieza el alta aquí mismo (con cuentas, por el email y su código).
+ * - Bajo las respuestas (plan 023 T251): «Descubre otro miembro BOIA» y, en
+ *   el de un artista, «Descubre un artista».
  */
 export function CarnetPage({ userId }: { userId: string | null }) {
   const { data } = useCarnet(userId);
@@ -65,11 +68,23 @@ export function CarnetPage({ userId }: { userId: string | null }) {
                   carnet={data.carnet}
                   extras={data.extras}
                   editHref={MAR_CARNET_HREF}
+                  afterAnswers={<CarnetDiscover selfId={data.carnet.userId} artist={false} />}
                   dark
                 />
               </div>
             ) : (
-              <CarnetCard carnet={data.carnet} extras={data.extras} dark />
+              <CarnetCard
+                carnet={data.carnet}
+                extras={data.extras}
+                afterAnswers={
+                  // Plan 023 T251: en el de un artista, también «Descubre un artista».
+                  <CarnetDiscover
+                    selfId={data.carnet.userId}
+                    artist={!!data.carnet.artist || !!data.carnet.isArtist || !!data.extras.isArtist}
+                  />
+                }
+                dark
+              />
             )}
             {local ? (
               <p className="carnet-page-note" data-testid="carnet-aviso-local">
