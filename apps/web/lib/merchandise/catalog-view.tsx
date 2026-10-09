@@ -71,6 +71,11 @@ export function MerchandiseCatalog({
               {product ? <ProductGallery product={product} /> : null}
               <div className="merchandise__copy">
                 <h3 className="merchandise__name">{name}</h3>
+                {product?.maker ? (
+                  <p className="merchandise__maker" data-testid={`merchandise-maker-${product.id}`}>
+                    {t('store.maker.prefix')} {product.maker}
+                  </p>
+                ) : null}
                 {product ? (
                   <p className="merchandise__price" data-testid={`merchandise-price-${product.id}`}>
                     {formatPrice(product.priceCents)}

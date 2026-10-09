@@ -129,6 +129,7 @@ const base = {
   'store.gallery.next': 'Foto siguiente de {name}',
   // Plan 020 T227 (decisión 5): lo que se vende en mano también se reserva por Instagram.
   'store.buy.party.reserve': 'Si no quieres quedarte sin él, resérvalo por Instagram:',
+  'store.maker.prefix': 'Hecha a mano por',
   'store.image.alone': 'el producto',
   'store.image.angle': 'otro ángulo',
   'store.image.model': 'con modelo',

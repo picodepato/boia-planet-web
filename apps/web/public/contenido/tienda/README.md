@@ -7,7 +7,8 @@ No price, availability or online checkout is offered.
 
 Saved project assets (800 × 800 WebP, quality 82):
 
-- `camiseta-muestra.webp` — 29856 bytes.
+- `camiseta-muestra.webp` — 29856 bytes. (Replaced by the real T-shirt photos
+  `camiseta-1-plano`, `-2-arena`, `-3-negra` in T249; the sample was removed.)
 - `tote-muestra.webp` — 31144 bytes.
 - `pegatinas-muestra.webp` — 43646 bytes.
 
@@ -22,7 +23,9 @@ labelled «MUESTRA» in the image. Replace a file or repoint its `src` in
 `products.json`; no code changes. Pressing «Comprar» says the products are
 only sold at the party and links to Instagram (no checkout).
 
-- `camiseta-angulo-muestra.webp`, `camiseta-modelo-muestra.webp`
+- (T249: the T-shirt's angle and model placeholders were removed; the T-shirt
+  and the «Tote bag BOIA» (Manu Ropero) use real photos: `camiseta-*.webp`,
+  `tote-1-bolsa.webp` … `tote-4-llena.webp`.)
 - `tote-angulo-muestra.webp`, `tote-modelo-muestra.webp`
 - `pegatinas-angulo-muestra.webp`, `pegatinas-modelo-muestra.webp`
 

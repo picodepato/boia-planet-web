@@ -7,24 +7,54 @@
     {
       "id": "camiseta",
       "name": "Camisetas",
-      "description": "Para llevar un poco de BOIA contigo.",
-      "priceCents": 2000,
+      "description": "Algodón 220 g, en blanco, arena o negro.",
+      "priceCents": 1800,
       "sale": "reserve",
       "images": [
         {
-          "src": "/contenido/tienda/camiseta-muestra.webp",
+          "src": "/contenido/tienda/camiseta-1-plano.webp",
           "kind": "alone",
-          "alt": "Diseño de muestra: camiseta blanca con BOIA y su mascota"
+          "alt": "Camiseta BOIA en blanco, extendida sobre una superficie clara"
         },
         {
-          "src": "/contenido/tienda/camiseta-angulo-muestra.webp",
+          "src": "/contenido/tienda/camiseta-2-arena.webp",
           "kind": "angle",
-          "alt": "Diseño de muestra: la camiseta BOIA desde otro ángulo"
+          "alt": "Camiseta BOIA en color arena"
         },
         {
-          "src": "/contenido/tienda/camiseta-modelo-muestra.webp",
+          "src": "/contenido/tienda/camiseta-3-negra.webp",
           "kind": "model",
-          "alt": "Diseño de muestra: la camiseta BOIA puesta"
+          "alt": "Camiseta BOIA en color negro"
+        }
+      ]
+    },
+    {
+      "id": "tote-boia",
+      "name": "Tote bag BOIA",
+      "maker": "Manu Ropero",
+      "description": "Hecha a mano, para lo que te llevas de la fiesta.",
+      "priceCents": 3000,
+      "sale": "party",
+      "images": [
+        {
+          "src": "/contenido/tienda/tote-1-bolsa.webp",
+          "kind": "alone",
+          "alt": "Tote bag BOIA hecha a mano, sola sobre fondo claro"
+        },
+        {
+          "src": "/contenido/tienda/tote-2-modelo-ella.webp",
+          "kind": "model",
+          "alt": "Una mujer lleva la tote bag BOIA al hombro"
+        },
+        {
+          "src": "/contenido/tienda/tote-3-modelo-el.webp",
+          "kind": "model",
+          "alt": "Un hombre lleva la tote bag BOIA"
+        },
+        {
+          "src": "/contenido/tienda/tote-4-llena.webp",
+          "kind": "angle",
+          "alt": "Tote bag BOIA llena, vista de frente"
         }
       ]
     },

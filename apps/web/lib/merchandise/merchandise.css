@@ -170,6 +170,14 @@
   text-transform: uppercase;
 }
 
+.merchandise__maker {
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.3;
+  opacity: 0.8;
+}
+
 .merchandise__price {
   margin: 2px 0 0;
   font-family: var(--font-body);

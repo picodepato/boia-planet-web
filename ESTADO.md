@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T249: Shop: Manu Ropero's tote bag and the real T-shirt
+
+**What exists**
+- New product «Tote bag BOIA» (`tote-boia`): 30 €, sale `party`, maker «Manu Ropero», 4 photos in the order tote-1-bolsa (alone), tote-2-modelo-ella and tote-3-modelo-el (model), tote-4-llena (angle).
+- `camiseta` («Camisetas») is the real T-shirt: 18 €, description «Algodón 220 g, en blanco, arena o negro.», sale `reserve` (unchanged), photos camiseta-1-plano (alone), camiseta-2-arena (angle), camiseta-3-negra (model).
+- `maker` is an optional field in `merchandiseProductSchema` (packages/contracts). It is rendered under the name as «Hecha a mano por <maker>» (i18n key `store.maker.prefix` in `apps/web/lib/i18n/es-web.ts`, `merchandise__maker` in merchandise.css).
+- Home store block (packages/store/src/sample/content.ts) lists «Tote bag BOIA» too.
+- Images: WebP, max 1200 px, quality 82, in `apps/web/public/contenido/tienda/`. The three old camiseta sample images were removed (no other product used them).
+- Tests: `apps/web/lib/merchandise/catalog.test.ts` checks maker optional, tote parses with 4 images, `priceCents` 3000, camiseta `priceCents` 1800, and the maker is rendered. The placeholder-marking test now only checks images whose file name contains «muestra».
+
+**Commands and results**
+- `pnpm exec vitest run --testTimeout=30000 --exclude "**/packages/db/**"` → exit 0, 289 files passed, 2540 tests passed, 2 skipped.
+- `sh tools/spec/checks.sh` → exit 0 (OK).
+- `pnpm lint` → exit 0.
+- `pnpm build` → exit 0.
+- `pnpm typecheck` → exit 0.
+- Screenshots (outside the repo): `C:/tmp/orchestrator-attach/boia-planet-hernan-T249/tienda-mobile.png` and `tienda-desktop.png`. Both show the T-shirt at 18 € and the tote at 30 € with the maker line.
+
+**Pending / for Hernán**
+- The old sample product «Tote bags» (12 €, muestra images) and «Packs de pegatinas» are still in the catalog. Remove them if the real products replace them.
+- Hernán runs the e2e himself. The specs most likely affected are `apps/web/e2e/merchandise.spec.ts` (it counts products via `MERCHANDISE_PRODUCTS.length` and rotates images) and `apps/web/e2e/admin-enlaces.spec.ts` (it uses `#tienda .merchandise__card[data-sale="reserve"]`). They were not run here.
+
 ## 2026-10-09 — plan 023 T248: «Próximo evento» igual en ordenador y móvil
 
 **La causa, en corto.** En la versión de prueba (D-20) todo vive en el navegador: lo que se ve es la muestra que trae el código más los cambios que se hicieron en el Admin *en ese navegador*. Cada cambio del Admin guarda el elemento entero, así que congela la muestra tal como era ese día. El ordenador de Hernán tiene cambios guardados de antes del 2 de octubre (T67), cuando el evento prioritario era «All Day BOIA · Primavera» (`ev-all-day-primavera`): esa copia vieja del bloque «Próximo evento» y de aquel evento seguía ganando a la muestra nueva (Halloween fijado). El móvil no tiene cambios guardados y por eso enseña la muestra de hoy: Halloween. No era cosa de ordenador o móvil, sino de un navegador con datos viejos frente a uno limpio. Reproducido en producción con un navegador sin código nuevo: con esos datos viejos dice «ALL DAY BOIA · PRIMAVERA» (en móvil y en ordenador); limpio, Halloween.

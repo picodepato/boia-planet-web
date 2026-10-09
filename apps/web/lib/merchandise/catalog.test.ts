@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { merchandiseCatalogSchema } from '@boia/contracts';
+import { merchandiseCatalogSchema, merchandiseProductSchema } from '@boia/contracts';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -46,8 +46,31 @@ describe('store products (plan 017 T201, decision 11)', () => {
     });
   });
 
-  it('the store has the 3 products, each with its price and its «Comprar» case (decision 9)', () => {
-    expect(MERCHANDISE_PRODUCTS).toHaveLength(3);
+  it('the store has the real T-shirt and the handmade tote by Manu Ropero (plan 023 T249)', () => {
+    const shirt = MERCHANDISE_PRODUCTS.find((p) => p.id === 'camiseta');
+    expect(shirt?.priceCents).toBe(1800);
+    expect(shirt?.images).toHaveLength(3);
+    const tote = MERCHANDISE_PRODUCTS.find((p) => p.name === 'Tote bag BOIA');
+    expect(tote?.priceCents).toBe(3000);
+    expect(tote?.maker).toBe('Manu Ropero');
+    expect(tote?.images.map((i) => i.src)).toEqual([
+      '/contenido/tienda/tote-1-bolsa.webp',
+      '/contenido/tienda/tote-2-modelo-ella.webp',
+      '/contenido/tienda/tote-3-modelo-el.webp',
+      '/contenido/tienda/tote-4-llena.webp',
+    ]);
+    expect(tote?.images[0]?.kind).toBe('alone');
+    expect(merchandiseProductSchema.safeParse(tote).success).toBe(true);
+    expect(merchandiseProductSchema.safeParse({ ...tote, maker: undefined }).success).toBe(true);
+    // The maker is shown under the name.
+    const html = renderToStaticMarkup(
+      createElement(MerchandiseCatalog, { products: ['Tote bag BOIA'] }),
+    );
+    expect(html).toContain(`${t('store.maker.prefix')} Manu Ropero`);
+  });
+
+  it('every product of the store is in the contract and has a price and its «Comprar» case (decision 9)', () => {
+    expect(MERCHANDISE_PRODUCTS.length).toBeGreaterThan(0);
     for (const p of MERCHANDISE_PRODUCTS) {
       expect(Number.isInteger(p.priceCents)).toBe(true);
       expect(['party', 'reserve']).toContain(p.sale);
@@ -121,7 +144,8 @@ describe('store products (plan 017 T201, decision 11)', () => {
     const readme = readFileSync(join(PUBLIC, 'contenido/tienda/README.md'), 'utf8');
     for (const product of MERCHANDISE_PRODUCTS) {
       for (const image of product.images) {
-        expect(image.src).toContain('muestra');
+        // Real photos (plan 023 T249) are not placeholders.
+        if (!image.src.includes('muestra')) continue;
         expect(readme).toContain(image.src.split('/').pop()!);
       }
     }

@@ -21,6 +21,8 @@ export type ProductImage = z.infer<typeof productImageSchema>;
 export const merchandiseProductSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
+  /** Who makes it, shown under the name («Hecha a mano por …»). Optional. */
+  maker: z.string().min(1).optional(),
   description: z.string().min(1),
   /** Price in whole euro cents (2026-10-08, decision 9). */
   priceCents: z.number().int().nonnegative(),
