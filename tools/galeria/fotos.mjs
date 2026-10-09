@@ -170,6 +170,39 @@ export const FOTOS = [
     images: ['landing/hero-still-noche-1600.webp'],
     draw: `(g, img, W, H) => cover(g, img[0], W, H, 0.85, 0.3, 1.4)`,
   },
+  // Fotos de Hernán (plan 023 T250), `muestra` hasta que Álvaro dé el visto
+  // bueno de derechos (galeria-4 es una portada de álbum ajena). Las fuentes
+  // están en art/galeria-fuentes/, tal cual llegaron.
+  {
+    id: 'galeria-1',
+    width: 1200,
+    height: 675,
+    images: ['galeria-fuentes/galeria-1.webp'],
+    draw: `(g, img, W, H) => cover(g, img[0], W, H)`,
+  },
+  {
+    id: 'galeria-2',
+    width: 1200,
+    height: 675,
+    images: ['galeria-fuentes/galeria-2.webp'],
+    draw: `(g, img, W, H) => cover(g, img[0], W, H)`,
+  },
+  {
+    // Recorte de 60 px por la izquierda: quita el icono redondo de Google
+    // Lens de la esquina inferior izquierda (ocupa unos 40 px).
+    id: 'galeria-3',
+    width: 800,
+    height: 1321,
+    images: ['galeria-fuentes/galeria-3.webp'],
+    draw: `(g, img, W, H) => g.drawImage(img[0], 60, 0, img[0].width - 60, img[0].height, 0, 0, W, H)`,
+  },
+  {
+    id: 'galeria-4',
+    width: 1000,
+    height: 965,
+    images: ['galeria-fuentes/galeria-4.webp'],
+    draw: `(g, img, W, H) => cover(g, img[0], W, H)`,
+  },
 ];
 
 async function paint(page, foto) {

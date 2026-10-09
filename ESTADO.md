@@ -4,6 +4,26 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T250: Galería: 4 fotos de Hernán
+
+- Qué existe: `galeria-1..4` en `art/galeria/` (generadas por `tools/galeria/fotos.mjs`
+  desde las fuentes tal cual en `art/galeria-fuentes/`). `galeria-3` sale recortada 60 px
+  por la izquierda: se quita el icono de Google Lens de la esquina inferior izquierda.
+  Se añaden a `SAMPLE_PHOTOS` (`packages/store/src/sample/content.ts`, constante
+  `SAMPLE_GALERIA`) en `album-muestra`, con alt en español, `selection: false` (fuera de la home).
+  Todo `muestra` hasta el visto bueno de derechos de Álvaro (galeria-4 es una portada ajena).
+- `SAMPLE_CONTENT_REVISION` no se sube: las fotos nuevas no están en ningún `order`
+  guardado, así que `resolveEntities` las añade solas en navegadores con datos guardados.
+- Capturas: `C:/tmp/orchestrator-attach/boia-planet-hernan-T250/` (`galeria-mobile-full.png`,
+  `galeria-desktop-full.png`, `galeria-3-recortada.webp`).
+- Comandos:
+  - `node tools/galeria/fotos.mjs` → OK (solo cambian los 4 nuevos; los `foto-*` salen idénticos).
+  - `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 290 files, 2545 passed, 2 skipped.
+  - `sh tools/spec/checks.sh` → OK.
+  - `pnpm lint` → exit 0. `pnpm typecheck` → exit 0. `pnpm build` → exit 0.
+- Pendiente: el e2e (`galeria.spec.ts`) lo corre Hernán; no se ejecutó. En la captura móvil
+  algunos marcos inferiores salen en blanco (imágenes perezosas no cargadas en la captura de página completa).
+
 ## 2026-10-09 — plan 023 T249: Shop: Manu Ropero's tote bag and the real T-shirt
 
 **What exists**

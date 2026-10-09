@@ -349,11 +349,56 @@ const SAMPLE_STILLS = [
 ] as const;
 
 /**
+ * Fotos de Hernán (plan 023 T250; tools/galeria/fotos.mjs, art/galeria/
+ * galeria-N.webp). `muestra` hasta el visto bueno de derechos de Álvaro. Fuera
+ * de la home (`selection: false`).
+ */
+const SAMPLE_GALERIA = [
+  {
+    id: 'galeria-1',
+    albumId: 'album-muestra',
+    alt: 'DJ con un vinilo en la mano, en la cabina de los platos',
+    width: 1200,
+    height: 675,
+  },
+  {
+    id: 'galeria-2',
+    albumId: 'album-muestra',
+    alt: 'Gente bailando en una fiesta de BOIA',
+    width: 1200,
+    height: 675,
+  },
+  {
+    id: 'galeria-3',
+    albumId: 'album-muestra',
+    alt: 'Hombre con camiseta azul retro de Francia, sujetando un balón',
+    width: 800,
+    height: 1321,
+  },
+  {
+    id: 'galeria-4',
+    albumId: 'album-muestra',
+    alt: 'Portada de muestra del álbum «Limosna de amor», de Los Chunguitos',
+    width: 1000,
+    height: 965,
+  },
+] as const;
+
+/**
  * Fotos de muestra y los clips de la Galería. Las marcadas `selection` son las
  * que salen en la home (D-23, respuesta 6); todas, en `/galeria`, en la
  * galería de su isla (la del evento del álbum, o la del álbum).
  */
 export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
+  ...SAMPLE_GALERIA.map((p) => ({
+    id: p.id,
+    albumId: p.albumId,
+    alt: p.alt,
+    src: `/api/art/galeria/${p.id}.webp`,
+    width: p.width,
+    height: p.height,
+    selection: false,
+  })),
   ...SAMPLE_STILLS.map((p, i) => {
     const cala = p.albumId === 'album-cala';
     const n = cala ? Number(p.id.slice('foto-cala-'.length)) : i + 1;
