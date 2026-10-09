@@ -1,6 +1,6 @@
 # Plan 022 — Polish /mar and the landing, pay tech debt, close the spec backlog
 
-Status: active
+Status: done
 Created: 2026-10-09
 Base branch: main
 Goal: Four fronts chosen by Hernán (2026-10-09). (1) Polish `/mar` with what is left of his second review (`docs/propuestas/2026-10-08-revision-hernan-2.md`) and his answers to the plan 020 guide questions. (2) Follow up the landing's pinned intro (plan 021): hide the header while it runs and free critical-path kB. (3) Pay the tech debt and i18n gaps collected in plans 020–021. (4) Close or raise every spec REQ in `docs/spec/estado.md` that does not depend on Álvaro, then hand Hernán a test guide. (5) Add the site radio Hernán described (2026-10-09): a catalog of ~100 songs by genre managed from the admin, and a Winamp-style player reachable from the landing and `/mar`.
@@ -15,7 +15,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 ## Tasks
 
 ## T236 — /mar overlays: boia text vs carnet prompt, trip destination, Ajustes toggles
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -26,7 +26,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - screenshots mobile 390×844 and desktop: boia text with the carnet prompt (no overlap, clear gap), a trip in progress showing the destination chip with the bar's «Entradas» on one line, Ajustes with the two toggles → saved in the attach folder
   - the toggles are keyboard-operable and keep `role="switch"`/`aria-checked` (or the existing component's equivalent) → checked by a unit test
   - Test command → exit 0
-- Outcome:
+- Outcome: carnet prompt on its own line under the door-ticket message, destination chip above the bar, Ajustes pill switches · cf5068c
 
 ## T237 — Las Calitas behind the castaway, routes rerouted
 - Status: done
@@ -173,7 +173,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome: «Música» hero button (first song then shuffle), glowing header button next to «Entradas», Winamp-style player with genres, «Sonando» toast, `/mar` Radio button; radio chunk lazy; landing 196.6 → 196.7 kB (+75 B webpack runtime table, accepted) · 6a720b9
 
 ## T245 — Test guide for Hernán after plan 022
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T243, T244, T247
 - Model: haiku
 - Skills: none
@@ -183,7 +183,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Done when:
   - the guide exists and every task T236–T244 appears in it; TRASPASO links it
   - Test command → exit 0
-- Outcome:
+- Outcome: `docs/propuestas/2026-10-09-plan-022-guia-prueba.md` (radio, e2e, 11 migrations, REQs left, questions); TRASPASO updated · c741612
 
 ## Decisions
 - 2026-10-09: plan built with Hernán in the session: all four fronts; Calitas label stays cream; Ajustes toggles yes; trip destination in a chip above the bar; header hidden during the intro; landing kB: as much as safe; spec: everything not depending on Álvaro; entry timings and trash rules unchanged (Hernán)
@@ -243,3 +243,6 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09 T244 launched · attempt 2 (opus, continuation of worktree-agent-aee2480a6c92ff544) · agent aca57f1ea71e67d5e
 - 2026-10-09 T243 done · merged a105b73
 - 2026-10-09 T244 done · merged 8f60529
+- 2026-10-09 T245 launched · attempt 1 · agent a02daa8169b279b32
+- 2026-10-09 T245 done · merged c741612
+- 2026-10-09 plan 022 done · final test on main = T245 integration run (pass)
