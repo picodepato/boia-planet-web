@@ -206,8 +206,10 @@ export const SOUTH_COAST_Y = near(PORT_ANCHOR, [0, 27.8]).y;
 
 const px = (v: number) => (v / ART_PPU) * U;
 export const ARCILLA_BOUNDS = {
-  left: Math.round((-COAST_HALF_WIDTH + px(COAST.west.collisionPx - COAST.west.mapLinePx)) * 100) / 100,
-  right: Math.round((COAST_HALF_WIDTH - px(COAST.east.mapLinePx - COAST.east.collisionPx)) * 100) / 100,
+  left:
+    Math.round((-COAST_HALF_WIDTH + px(COAST.west.collisionPx - COAST.west.mapLinePx)) * 100) / 100,
+  right:
+    Math.round((COAST_HALF_WIDTH - px(COAST.east.mapLinePx - COAST.east.collisionPx)) * 100) / 100,
   top: at([0, -31.5]).y,
   bottom:
     Math.round((SOUTH_COAST_Y - 2 * px(COAST.south.mapLinePx - COAST.south.collisionPx)) * 100) /
@@ -298,15 +300,15 @@ const TUTORIAL: BehaviorInput = {
   params: {
     once: true,
     lines: [
-      '¡Plop! Bienvenido a BOIA.PLANET.',
-      'Toca en cualquier sitio y arrastra: el barco va hacia donde apuntes.',
-      'Tu misión: encontrar a la Boia Fiestera y llevarla hasta la Isla de Nochevieja.',
-      'Por el mar hay descuentos, monedas y secretos. Mira bien al navegar.',
+      'mapa.tutorial.1',
+      'mapa.tutorial.2',
+      'mapa.tutorial.3',
+      'mapa.tutorial.4',
       {
-        text: 'Arriba tienes el minimapa: tócalo para ampliar, mantenlo pulsado para moverlo.',
+        text: 'mapa.tutorial.5',
         cue: 'pulse_minimap',
       },
-      { text: 'Y en el ancla está el Menú de a bordo. ¡Buen viaje!', cue: 'pulse_menu' },
+      { text: 'mapa.tutorial.6', cue: 'pulse_menu' },
     ],
   },
 };
@@ -314,7 +316,7 @@ const TUTORIAL: BehaviorInput = {
 const PORT: PlaceInput[] = [
   {
     id: 'puerto',
-    name: 'Puerto de salida',
+    name: 'mapa.puerto-salida',
     category: 'puerto',
     tags: TAGS,
     // El paseo central: su orilla es la costa sur.
@@ -330,7 +332,7 @@ const PORT: PlaceInput[] = [
   },
   {
     id: 'puerto-anillo',
-    name: 'Anillo de salida',
+    name: 'mapa.anillo-salida',
     category: 'decorado',
     tags: TAGS,
     appearance: { layer: 'water' },
@@ -344,38 +346,34 @@ const PORT: PlaceInput[] = [
       ['oeste', -3.9, -64.3],
       ['este', 3.9, 64.3],
     ] as const
-  ).map(
-    ([side, x, giro]): PlaceInput => ({
-      id: `puerto-escollera_${side}`,
-      name: 'Escollera',
-      category: 'obstaculo',
-      tags: TAGS,
-      position: { ...port([x, 25.1]), zone: 'puerto' },
-      geometry: ellipseCollision(3.0, 0.55, giro),
-      behaviors: [bounce(0.15)],
-      source: [`zonas/puerto/islas/escollera_${side}`],
-    }),
-  ),
+  ).map(([side, x, giro]): PlaceInput => ({
+    id: `puerto-escollera_${side}`,
+    name: 'mapa.escollera',
+    category: 'obstaculo',
+    tags: TAGS,
+    position: { ...port([x, 25.1]), zone: 'puerto' },
+    geometry: ellipseCollision(3.0, 0.55, giro),
+    behaviors: [bounce(0.15)],
+    source: [`zonas/puerto/islas/escollera_${side}`],
+  })),
   ...(
     [
       ['verde', -2.6],
       ['roja', 2.6],
     ] as const
-  ).map(
-    ([color, x]): PlaceInput => ({
-      id: `puerto-baliza_${color}`,
-      name: `Baliza ${color}`,
-      category: 'obstaculo',
-      tags: TAGS,
-      position: { ...port([x, 22.4]), zone: 'puerto' },
-      geometry: { collision: { shape: 'circle', radius: size(0.22) } },
-      behaviors: [bounce(0.3)],
-      source: [`art:puerto#baliza_${color}`, 'zonas/puerto/lugares/bocana'],
-    }),
-  ),
+  ).map(([color, x]): PlaceInput => ({
+    id: `puerto-baliza_${color}`,
+    name: `mapa.baliza.${color}`,
+    category: 'obstaculo',
+    tags: TAGS,
+    position: { ...port([x, 22.4]), zone: 'puerto' },
+    geometry: { collision: { shape: 'circle', radius: size(0.22) } },
+    behaviors: [bounce(0.3)],
+    source: [`art:puerto#baliza_${color}`, 'zonas/puerto/lugares/bocana'],
+  })),
   {
     id: 'puerto-boia',
-    name: 'La boia de la entrada',
+    name: 'mapa.boia-entrada',
     category: 'boia',
     tags: TAGS,
     position: { ...port([0, 20.4]), zone: 'puerto' },
@@ -393,7 +391,7 @@ const PORT: PlaceInput[] = [
   },
   {
     id: 'puerto-whatsapp',
-    name: 'Boia de WhatsApp',
+    name: 'mapa.boia-whatsapp',
     category: 'boia',
     tags: TAGS,
     position: { ...port([-3.4, 18.8]), zone: 'puerto' },
@@ -413,7 +411,7 @@ const ISLANDS: PlaceInput[] = [
   // El Puerto de Alicante (T108): donde se cambia de barco; el id sigue siendo `cala`.
   island(
     HARBOR_PLACE_ID,
-    'Puerto de Alicante',
+    'mapa.puerto-alicante',
     'zonas/cala/islas/isla',
     [8.5, 13.0],
     3.1,
@@ -432,7 +430,7 @@ const ISLANDS: PlaceInput[] = [
   // Islas con entradas: sólo el nombre común, igual en todos los mundos (D-20).
   island(
     'allday',
-    'ALL DAY BOIA',
+    'mapa.all-day-boia',
     'zonas/allday/islas/isla',
     [1.2, -15.6],
     4.6,
@@ -450,7 +448,7 @@ const ISLANDS: PlaceInput[] = [
   ),
   island(
     'fotos',
-    'Isla de Benidorm',
+    'mapa.isla-benidorm',
     'zonas/fotos/islas/isla',
     [-9.4, -9.9],
     2.6,
@@ -467,7 +465,7 @@ const ISLANDS: PlaceInput[] = [
   ),
   island(
     'tienda',
-    'Botiga Ibiza',
+    'mapa.botiga-ibiza',
     'zonas/tienda/islas/isla',
     [6.6, -1.2],
     1.9,
@@ -487,7 +485,7 @@ const ISLANDS: PlaceInput[] = [
     // desde T67, isla con entradas (BOIA Nochevieja).
     ...island(
       'ultima',
-      'Isla de Nochevieja',
+      'mapa.isla-nochevieja',
       'zonas/ultima/islas/isla',
       ULTIMA_CENTER,
       2.7,
@@ -512,17 +510,11 @@ const ISLANDS: PlaceInput[] = [
     },
   },
   // La Isla de Halloween (T67): mar libre del centro, sin maqueta (la modela T69).
-  island(
-    HALLOWEEN_PLACE_ID,
-    'HALLOWEEN IN THE CLUB',
-    'plan:T67',
-    HALLOWEEN_CENTER,
-    2.4,
-    1.9,
-    20,
-    4.0,
-    [...tickets(TICKET_ISLAND_EVENTS.halloween), points(20), visit()],
-  ),
+  island(HALLOWEEN_PLACE_ID, 'mapa.halloween', 'plan:T67', HALLOWEEN_CENTER, 2.4, 1.9, 20, 4.0, [
+    ...tickets(TICKET_ISLAND_EVENTS.halloween),
+    points(20),
+    visit(),
+  ]),
   // El faro (Tabarca), sin minijuego, junto a la entrada desde T168;
   // al acercarse abre el «Tablón del faro».
   // Isla redonda (T166): su modelo de Blender (tools/blender/islas/faro.py) se
@@ -532,7 +524,7 @@ const ISLANDS: PlaceInput[] = [
   // radio de los restos y el náufrago vecinos. muestra
   island(
     LIGHTHOUSE_PLACE_ID,
-    'Tabarca',
+    'mapa.tabarca',
     'plan:T168',
     LIGHTHOUSE_CENTER,
     LIGHTHOUSE_RADIUS,
@@ -545,17 +537,25 @@ const ISLANDS: PlaceInput[] = [
     ['minijuegos/faro/isla', 'minijuegos/faro'],
   ),
   // Islas de los minijuegos (T23): INICIAR_MINIJUEGO con `canon` y, desde el plan 014, `castillo`.
-  island('canon', 'Puig Campana', 'minijuegos/canon/isla', [-9.0, -18.6], 1.5, 1.1, -15, 3.0, [
-    { type: 'start_minigame', params: { gameId: 'canon' } },
-    visit(),
-  ], ['minijuegos/canon']),
+  island(
+    'canon',
+    'mapa.puig-campana',
+    'minijuegos/canon/isla',
+    [-9.0, -18.6],
+    1.5,
+    1.1,
+    -15,
+    3.0,
+    [{ type: 'start_minigame', params: { gameId: 'canon' } }, visit()],
+    ['minijuegos/canon'],
+  ),
   // «Defensa del Castillo» (plan 014): el castillo de Santa Bárbara, ahora isla
   // de minijuego junto a la Boia 7, fuera de la carrera. Isla redonda del radio
   // de su decorado (13 de escena = 208 u en /mar, el `castle.radius` de
   // `@boia/engine/defense`).
   island(
     CASTLE_PLACE_ID,
-    'Castillo de Santa Bárbara',
+    'mapa.castillo',
     T157,
     CASTLE_CENTER,
     CASTLE_RADIUS,
@@ -568,7 +568,7 @@ const ISLANDS: PlaceInput[] = [
   // cambiar el orden de las demás.
   island(
     CALITAS_PLACE_ID,
-    'Las Calitas',
+    'mapa.calitas',
     'islas_sueltas/calitas/isla',
     CALITAS_CENTER,
     2.0,
@@ -606,7 +606,7 @@ const ROCKS: [number, number, number][] = [
 const FIESTERA: PlaceInput[] = [
   {
     id: 'fiestera',
-    name: 'La Boia Fiestera',
+    name: 'mapa.boia-fiestera',
     category: 'encuentro',
     tags: TAGS,
     position: { ...at(FIESTERA_ANCHOR), zone: 'fiestera' },
@@ -619,10 +619,7 @@ const FIESTERA: PlaceInput[] = [
       // Pide ayuda en bocadillos desde que los cocodrilos empiezan a sumergirse (REQ-AVE-005);
       // sube a bordo en el radio de rescate, el de `geometry.proximityRadius`.
       { type: 'proximity', params: { radius: CROC_RADIUS } },
-      talk([
-        '¡Eh, barquito! Estos señores no me dejan ir a la fiesta.',
-        '¿Me llevas a la Isla de Nochevieja? Te lo pagaré bailando.',
-      ]),
+      talk(['mapa.fiestera.1', 'mapa.fiestera.2']),
     ],
     // La misión (T21): rescate en el radio de proximidad, cocodrilos en `crocRadius`.
     params: { mission: 'fiestera', character: 'boia-fiestera', crocRadius: CROC_RADIUS },
@@ -635,7 +632,7 @@ const FIESTERA: PlaceInput[] = [
   },
   {
     id: 'fiestera-posidonia',
-    name: 'Posidonia',
+    name: 'mapa.posidonia',
     category: 'decorado',
     tags: TAGS,
     appearance: { layer: 'water' },
@@ -644,31 +641,30 @@ const FIESTERA: PlaceInput[] = [
     behaviors: [deco()],
     source: ['art:fiestera#posidonia'],
   },
-  ...CROCS.map(
-    ([x, y, r], i): PlaceInput => ({
-      id: `fiestera-cocodrilo_${i + 1}`,
-      name: 'Cocodrilo',
-      category: 'cocodrilo',
-      tags: TAGS,
-      position: { ...remanso([x, y]), zone: 'fiestera' },
-      // Pesados, no malos: ralentizan un 60 % durante 2 s (REQ-AVE-005, REQ-AVE-030).
-      geometry: { collision: { shape: 'circle', radius: size(r) } },
-      behaviors: [slow(0.6, 2), deco()],
-      source: [`art:fiestera#cocodrilo_${i + 1}`, ...(i === 0 ? ['zonas/fiestera/lugares/cocodrilos'] : [])],
-    }),
-  ),
-  ...ROCKS.map(
-    ([x, y, r], i): PlaceInput => ({
-      id: `fiestera-roca_${i + 1}`,
-      name: 'Roca',
-      category: 'obstaculo',
-      tags: TAGS,
-      position: { ...remanso([x, y]), zone: 'fiestera' },
-      geometry: { collision: { shape: 'circle', radius: size(r) } },
-      behaviors: [bounce(0.3)],
-      source: [`art:fiestera#roca_${i + 1}`],
-    }),
-  ),
+  ...CROCS.map(([x, y, r], i): PlaceInput => ({
+    id: `fiestera-cocodrilo_${i + 1}`,
+    name: 'mapa.cocodrilo',
+    category: 'cocodrilo',
+    tags: TAGS,
+    position: { ...remanso([x, y]), zone: 'fiestera' },
+    // Pesados, no malos: ralentizan un 60 % durante 2 s (REQ-AVE-005, REQ-AVE-030).
+    geometry: { collision: { shape: 'circle', radius: size(r) } },
+    behaviors: [slow(0.6, 2), deco()],
+    source: [
+      `art:fiestera#cocodrilo_${i + 1}`,
+      ...(i === 0 ? ['zonas/fiestera/lugares/cocodrilos'] : []),
+    ],
+  })),
+  ...ROCKS.map(([x, y, r], i): PlaceInput => ({
+    id: `fiestera-roca_${i + 1}`,
+    name: 'mapa.roca',
+    category: 'obstaculo',
+    tags: TAGS,
+    position: { ...remanso([x, y]), zone: 'fiestera' },
+    geometry: { collision: { shape: 'circle', radius: size(r) } },
+    behaviors: [bounce(0.3)],
+    source: [`art:fiestera#roca_${i + 1}`],
+  })),
 ];
 
 // --- Mar vivo -------------------------------------------------------------------
@@ -704,7 +700,7 @@ const MAR_VIVO: PlaceInput[] = [
   {
     // REQ-AVE-020: pide que lo acerquen a una fiesta y deja un código de entradas.
     id: 'naufrago',
-    name: 'El náufrago',
+    name: 'mapa.naufrago',
     category: 'naufrago',
     tags: TAGS,
     position: { ...at([-5.6, 16.4]), zone: 'marvivo' },
@@ -715,10 +711,7 @@ const MAR_VIVO: PlaceInput[] = [
     behaviors: [
       block(),
       prox(),
-      talk([
-        '¡Llevo tres fiestas esperando aquí! Acércame a una de BOIA y te dejo un regalo.',
-        'Arrima el barco al banco y subo de un salto.',
-      ]),
+      talk(['mapa.naufrago.1', 'mapa.naufrago.2']),
       // Al arrimarse: sube a bordo y deja su código (una vez).
       discount('dto-naufrago', 'contact'),
       points(20, 'contact'),
@@ -735,7 +728,7 @@ const MAR_VIVO: PlaceInput[] = [
     const pos = at(p);
     return {
       id,
-      name: 'Restos flotantes',
+      name: 'mapa.restos',
       category: 'restos',
       tags: [...TAGS, 'sin-brujula'],
       position: { ...pos, zone: 'marvivo' },
@@ -759,7 +752,7 @@ const MAR_VIVO: PlaceInput[] = [
     const pos = at(p);
     return {
       id: `cofre-${i + 1}`,
-      name: 'Cofre fugaz',
+      name: 'mapa.cofre',
       category: 'cofre',
       tags: [...TAGS, 'sin-brujula'],
       position: { ...pos, zone: 'marvivo' },
@@ -773,7 +766,11 @@ const MAR_VIVO: PlaceInput[] = [
             probability: 0.8,
             lifetime: 20,
             every: 25,
-            positions: [pos, { x: pos.x + 180, y: pos.y - 120 }, { x: pos.x - 160, y: pos.y + 140 }],
+            positions: [
+              pos,
+              { x: pos.x + 180, y: pos.y - 120 },
+              { x: pos.x - 160, y: pos.y + 140 },
+            ],
           },
         },
         coins(COFRE_COINS, 'session'),
@@ -791,7 +788,7 @@ const MAR_VIVO: PlaceInput[] = [
     // y guía hacia algo sin descubrir (la lógica, en la web). Este es su sitio de
     // descanso: ni en el minimapa ni en la brújula.
     id: 'delfin',
-    name: 'Delfín',
+    name: 'mapa.delfin',
     category: 'delfin',
     tags: [...TAGS, 'oculto'],
     position: { ...at([-10.8, 8.6]), zone: 'marvivo' },
@@ -806,7 +803,7 @@ const MAR_VIVO: PlaceInput[] = [
   {
     // REQ-AVE-019: reto de control; la fuerza de giro la pone el motor (`swirl`).
     id: 'remolino',
-    name: 'Remolino',
+    name: 'mapa.remolino',
     category: 'remolino',
     tags: TAGS,
     appearance: { layer: 'water' },
@@ -835,10 +832,7 @@ export const BOTTLE_SPOTS: { id: string; x: number; y: number; source: string[] 
   ).map((p, i) => ({
     id: `botella_${i + 1}`,
     ...at(p),
-    source: [
-      `zonas/marvivo/lugares/botella_${i + 1}`,
-      `zonas/marvivo/proximidad/botella_${i + 1}`,
-    ],
+    source: [`zonas/marvivo/lugares/botella_${i + 1}`, `zonas/marvivo/proximidad/botella_${i + 1}`],
   })),
 ];
 
@@ -871,15 +865,30 @@ const T73 = 'plan:T73';
  * `plan:T73` y después su entrada de `mapa.json`.
  */
 const RACE_BUOYS: { id: string; name: string; p: Maq; source: string[] }[] = [
-  { id: 'circuito-cp1', name: 'Boia 1', p: [12.5, -4.0], source: [T73, 'circuito/checkpoints/0'] },
-  { id: 'circuito-cp-a', name: 'Boia 2', p: [12.9, -12.0], source: ['circuito/checkpoints/2'] },
-  { id: 'circuito-giro', name: 'Boia 3', p: [11.4, -17.4], source: [T73, T61] },
-  { id: 'circuito-cp-s', name: 'Boia 4', p: [5.6, -7.5], source: [T73, 'circuito/checkpoints/1'] },
-  { id: 'circuito-poniente', name: 'Boia 5', p: [-4.0, -7.2], source: [T73] },
-  { id: 'circuito-acantilado', name: 'Boia 6', p: [-11.8, -0.8], source: [T73] },
-  { id: 'circuito-delfin', name: 'Boia 7', p: [-11.0, 9.4], source: [T73] },
-  { id: 'circuito-regreso', name: 'Boia 8', p: [-0.8, 16.5], source: [T73, T61] },
-  { id: 'circuito-recta', name: 'Boia 9', p: [4.8, 6.4], source: [T73, T61] },
+  {
+    id: 'circuito-cp1',
+    name: 'mapa.boia-1',
+    p: [12.5, -4.0],
+    source: [T73, 'circuito/checkpoints/0'],
+  },
+  {
+    id: 'circuito-cp-a',
+    name: 'mapa.boia-2',
+    p: [12.9, -12.0],
+    source: ['circuito/checkpoints/2'],
+  },
+  { id: 'circuito-giro', name: 'mapa.boia-3', p: [11.4, -17.4], source: [T73, T61] },
+  {
+    id: 'circuito-cp-s',
+    name: 'mapa.boia-4',
+    p: [5.6, -7.5],
+    source: [T73, 'circuito/checkpoints/1'],
+  },
+  { id: 'circuito-poniente', name: 'mapa.boia-5', p: [-4.0, -7.2], source: [T73] },
+  { id: 'circuito-acantilado', name: 'mapa.boia-6', p: [-11.8, -0.8], source: [T73] },
+  { id: 'circuito-delfin', name: 'mapa.boia-7', p: [-11.0, 9.4], source: [T73] },
+  { id: 'circuito-regreso', name: 'mapa.boia-8', p: [-0.8, 16.5], source: [T73, T61] },
+  { id: 'circuito-recta', name: 'mapa.boia-9', p: [4.8, 6.4], source: [T73, T61] },
 ];
 
 /** Vueltas de una carrera. muestra */
@@ -1041,7 +1050,7 @@ function laneBuoys(): PlaceInput[] {
         n++;
         out.push({
           id: `circuito-carril-${lane.rama}-${n}${n % 2 ? 'd' : 'i'}`,
-          name: 'Boia de carril',
+          name: 'mapa.boia-carril',
           category: 'carril',
           tags: [...TAGS, 'sin-brujula'],
           position: { ...at([x, y]), zone: 'circuito' },
@@ -1059,7 +1068,7 @@ function laneBuoys(): PlaceInput[] {
 function boostPads(): PlaceInput[] {
   return BOOST_PADS.map(({ p, heading }, i) => ({
     id: `circuito-impulso-${i + 1}`,
-    name: 'Impulso',
+    name: 'mapa.impulso',
     category: 'impulso',
     tags: [...TAGS, 'sin-brujula'],
     position: { ...at(p), zone: 'circuito' },
@@ -1080,7 +1089,7 @@ function boostPads(): PlaceInput[] {
 function ramps(): PlaceInput[] {
   return RAMPS.map(({ p, heading }, i) => ({
     id: `circuito-rampa-${i + 1}`,
-    name: 'Rampa',
+    name: 'mapa.rampa',
     category: 'rampa',
     tags: [...TAGS, 'sin-brujula'],
     position: { ...at(p), zone: 'circuito' },
@@ -1100,7 +1109,7 @@ function raceObstacles(): PlaceInput[] {
     const i = ++n[kind];
     return {
       id: `circuito-${kind}-${i}`,
-      name: kind === 'roca' ? 'Roca' : 'Medusa',
+      name: kind === 'roca' ? 'mapa.roca' : 'mapa.medusa',
       category: 'obstaculo',
       tags: TAGS,
       position: { ...at(onLeg(leg, t, side)), zone: 'circuito' },
@@ -1114,7 +1123,7 @@ function raceObstacles(): PlaceInput[] {
 
 const CIRCUIT: PlaceInput[] = [
   {
-    ...gate('circuito', 'Salida de Los Rápidos', CIRCUIT_START, 0, 0, [
+    ...gate('circuito', 'mapa.salida-rapidos', CIRCUIT_START, 0, 0, [
       'circuito/salida',
       'zonas/circuito',
       'zonas/circuito/lugares/salida',
@@ -1138,9 +1147,11 @@ const CIRCUIT: PlaceInput[] = [
     tags: TAGS,
   },
   ...RACE_BUOYS.map((b, i) => gate(b.id, b.name, b.p, i + 1, 0.6, b.source)),
-  retired(gate('circuito-cp2', 'Checkpoint 2', [11.4, -22.0], 0, 0, ['circuito/checkpoints/3'])),
   retired(
-    gate('circuito-meta', 'Meta de Los Rápidos', [8.8, -25.0], 0, 0, [
+    gate('circuito-cp2', 'mapa.checkpoint-2', [11.4, -22.0], 0, 0, ['circuito/checkpoints/3']),
+  ),
+  retired(
+    gate('circuito-meta', 'mapa.meta-rapidos', [8.8, -25.0], 0, 0, [
       'circuito/meta',
       'zonas/circuito/lugares/meta',
     ]),
@@ -1149,7 +1160,7 @@ const CIRCUIT: PlaceInput[] = [
   ...ramps(),
   {
     id: 'circuito-semaforo',
-    name: 'Semáforo de salida',
+    name: 'mapa.semaforo',
     category: 'decorado',
     tags: TAGS,
     position: { ...near(CIRCUIT_START, [14.95, 5.25]), zone: 'circuito' },
@@ -1160,7 +1171,7 @@ const CIRCUIT: PlaceInput[] = [
   // Sin ramas desde T61, el cartel del atajo ya no señala nada: queda inactivo.
   retired({
     id: 'circuito-cartel',
-    name: 'Cartel ATAJO →',
+    name: 'mapa.cartel-atajo',
     category: 'obstaculo',
     tags: TAGS,
     position: { ...at([12.3, -4.68]), zone: 'circuito' },
@@ -1170,7 +1181,7 @@ const CIRCUIT: PlaceInput[] = [
   }),
   {
     id: 'circuito-dents',
-    name: 'Els Dents',
+    name: 'mapa.els-dents',
     category: 'obstaculo',
     tags: TAGS,
     position: { ...at([10.7, -11.6]), zone: 'circuito' },
@@ -1180,7 +1191,7 @@ const CIRCUIT: PlaceInput[] = [
   },
   {
     id: 'circuito-freu',
-    name: 'Rocas del Freu',
+    name: 'mapa.rocas-freu',
     category: 'obstaculo',
     tags: TAGS,
     position: { ...at([14.6, -12.0]), zone: 'circuito' },
@@ -1191,7 +1202,7 @@ const CIRCUIT: PlaceInput[] = [
   // Los tres obstáculos de la maqueta (REQ-AVE-030).
   {
     id: 'circuito-roca',
-    name: 'Roca',
+    name: 'mapa.roca',
     category: 'obstaculo',
     tags: TAGS,
     position: { ...at([13.4, -8.0]), zone: 'circuito' },
@@ -1201,7 +1212,7 @@ const CIRCUIT: PlaceInput[] = [
   },
   {
     id: 'circuito-medusa',
-    name: 'Medusa',
+    name: 'mapa.medusa',
     category: 'obstaculo',
     tags: TAGS,
     position: { ...at([12.95, -15.3]), zone: 'circuito' },
@@ -1212,7 +1223,7 @@ const CIRCUIT: PlaceInput[] = [
   },
   {
     id: 'circuito-cocodrilo',
-    name: 'Cocodrilo',
+    name: 'mapa.cocodrilo',
     category: 'cocodrilo',
     tags: TAGS,
     position: { ...at([7.9, -12.9]), zone: 'circuito' },
@@ -1243,15 +1254,19 @@ const secret = (
   tags: [...TAGS, 'oculto'],
   position: { ...at(p), zone },
   geometry: { proximityRadius: size(3), activation: { shape: 'circle', radius: 40 } },
-  behaviors: [prox(), ...behaviors, { type: 'achievement', params: { trigger: 'collect_objects' } }],
+  behaviors: [
+    prox(),
+    ...behaviors,
+    { type: 'achievement', params: { trigger: 'collect_objects' } },
+  ],
   source: [`secretos/${i}`],
 });
 
 const SECRETS: PlaceInput[] = [
-  secret('cueva', 'La cueva del acantilado', [-14.8, 4.2], 0, [coins(25), points(30)], 'marvivo'),
+  secret('cueva', 'mapa.cueva', [-14.8, 4.2], 0, [coins(25), points(30)], 'marvivo'),
   {
     // El tesoro: un descuento (REQ-AVE-021) y monedas, al recogerla.
-    ...secret('anfora', 'El ánfora de Agost', [8.1, 9.5], 1, [], 'cala'),
+    ...secret('anfora', 'mapa.anfora', [8.1, 9.5], 1, [], 'cala'),
     behaviors: [
       { type: 'collectible', params: {} },
       discount('dto-cofre'),
@@ -1260,8 +1275,8 @@ const SECRETS: PlaceInput[] = [
     ],
     geometry: { activation: { shape: 'circle', radius: 40 } },
   },
-  secret('campana', 'La campana hundida', [-13.2, -16.0], 2, [points(40)], 'fotos'),
-  secret('circulo', 'El círculo de las boies dormidas', [-5.0, -27.0], 3, [coins(30), points(40)], 'ultima'),
+  secret('campana', 'mapa.campana', [-13.2, -16.0], 2, [points(40)], 'fotos'),
+  secret('circulo', 'mapa.circulo', [-5.0, -27.0], 3, [coins(30), points(40)], 'ultima'),
 ];
 
 // --- Las cinco boies informativas (O12, D-23; T45) ----------------------------------
@@ -1291,60 +1306,48 @@ export const INFO_BOIES: {
   {
     // Entre la bocana y la primera isla (ruta principal [1,5; 19,8]).
     id: 'boia-espacio',
-    name: 'La boia del espacio',
+    name: 'mapa.boia-espacio',
     at: [1.7, 19.6],
     zone: 'puerto',
     guide: 'naufrago',
-    lines: [
-      '¡Plop! ¿Sabes por qué existe BOIA?',
-      'Para dar espacio a artistas nuevos y a gente con algo que contar.',
-    ],
+    lines: ['mapa.info.espacio.1', 'mapa.info.espacio.2'],
   },
   {
     // Antes del encuentro de la Fiestera, a babor de la ruta hacia Alicante.
     id: 'boia-descubrir',
-    name: 'La boia de descubrir',
+    name: 'mapa.boia-descubrir',
     at: [2.0, 17.0],
     zone: 'fiestera',
     guide: 'fiestera',
-    lines: [
-      'Aquí nadie te pregunta qué música te gusta.',
-      'En BOIA suenan muchos géneros el mismo día.',
-    ],
+    lines: ['mapa.info.descubrir.1', 'mapa.info.descubrir.2'],
   },
   {
     // Entre la tienda y el Puerto de Fotos ([2,4; -2,6] → [-2,2; -5,4]).
     id: 'boia-pertenecer',
-    name: 'La boia de pertenecer',
+    name: 'mapa.boia-pertenecer',
     at: [-2.0, -5.1],
     zone: 'allday',
     guide: 'secreto-anfora',
-    lines: [
-      'No vienes simplemente a BOIA: formas parte.',
-      'Tu Carnet guarda tus sellos, tus respuestas y tu barco.',
-    ],
+    lines: ['mapa.info.pertenecer.1', 'mapa.info.pertenecer.2'],
   },
   {
     // Antes de la isla del escenario ([-3,2; -9,2] → [-0,2; -10,4]).
     id: 'boia-allday',
-    name: 'La boia del All Day',
+    name: 'mapa.boia-allday',
     at: [-0.4, -11.2],
     zone: 'allday',
     guide: 'canon',
-    lines: [
-      'Ahí delante está el escenario del All Day.',
-      'Un All Day es un día entero de música, comida y gente.',
-    ],
+    lines: ['mapa.info.allday.1', 'mapa.info.allday.2'],
   },
   {
     // Cerca de la salida del circuito, antes de la última isla.
     id: 'boia-secretos',
-    name: 'La boia de los secretos',
+    name: 'mapa.boia-secretos',
     at: [6.6, -24.4],
     zone: 'ultima',
     // Desde el plan 014 (T157), el faro es el «Tablón del faro»: manda al tablón.
     guide: LIGHTHOUSE_PLACE_ID,
-    lines: ['Psst. No todo sale en el minimapa.', 'BOIA premia la curiosidad. Desvíate un poco.'],
+    lines: ['mapa.info.secretos.1', 'mapa.info.secretos.2'],
   },
 ];
 
@@ -1373,15 +1376,15 @@ const INFO: PlaceInput[] = INFO_BOIES.map((b, i) => ({
 
 /** Rectángulo que envuelve el contorno de cada zona (`zonas[].contorno`). */
 const ZONES: [string, string, number, number, number, number][] = [
-  ['puerto', 'Puerto de salida', -7, 7, 19.2, 31],
-  ['cala', 'Puerto de Alicante', 3, 15, 8, 15],
-  ['fiestera', 'Encuentro de la Boia Fiestera', 1.5, 13.3, 15, 19.2],
-  ['allday', 'ALL DAY BOIA', -6, 7, -21.5, -4.5],
-  ['fotos', 'Isla de Benidorm', -15, -3, -15.5, -4.5],
-  ['tienda', 'Botiga Ibiza', 1.5, 9.8, -4.5, 8],
-  ['marvivo', 'Mar vivo', -15, -2, -4.5, 19.2],
-  ['circuito', 'Los Rápidos', 7, 15, -25.8, 8],
-  ['ultima', 'Isla de Nochevieja', -2, 15, -31.5, -21.5],
+  ['puerto', 'mapa.puerto-salida', -7, 7, 19.2, 31],
+  ['cala', 'mapa.puerto-alicante', 3, 15, 8, 15],
+  ['fiestera', 'mapa.encuentro-fiestera', 1.5, 13.3, 15, 19.2],
+  ['allday', 'mapa.all-day-boia', -6, 7, -21.5, -4.5],
+  ['fotos', 'mapa.isla-benidorm', -15, -3, -15.5, -4.5],
+  ['tienda', 'mapa.botiga-ibiza', 1.5, 9.8, -4.5, 8],
+  ['marvivo', 'mapa.mar-vivo', -15, -2, -4.5, 19.2],
+  ['circuito', 'mapa.rapidos', 7, 15, -25.8, 8],
+  ['ultima', 'mapa.isla-nochevieja', -2, 15, -31.5, -21.5],
 ];
 
 const clampY = (y: number) => Math.min(Math.max(y, ARCILLA_BOUNDS.top), ARCILLA_BOUNDS.bottom);

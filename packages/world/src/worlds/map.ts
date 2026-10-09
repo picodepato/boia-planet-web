@@ -120,3 +120,31 @@ export type SharedMapInput = z.input<typeof SharedMap>;
 export function parseSharedMap(input: unknown): SharedMap {
   return SharedMap.parse(input);
 }
+
+/**
+ * El mapa con cada texto visible pasado por `translate` (nombres de lugares y
+ * sectores, bocadillos de sus diálogos). Los textos del mapa de Arcilla son
+ * claves del catálogo i18n de la web (plan 022 T242); `translate` devuelve el
+ * texto de la clave, o el mismo valor si no es una clave.
+ */
+export function translateMapTexts(map: SharedMap, translate: (value: string) => string): SharedMap {
+  return {
+    ...map,
+    sectors: map.sectors.map((s) => ({ ...s, name: translate(s.name) })),
+    places: map.places.map((p) => ({
+      ...p,
+      name: translate(p.name),
+      behaviors: p.behaviors.map((b) =>
+        b.type === 'dialogue'
+          ? {
+              ...b,
+              params: {
+                ...b.params,
+                lines: b.params.lines.map((l) => ({ ...l, text: translate(l.text) })),
+              },
+            }
+          : b,
+      ),
+    })),
+  };
+}

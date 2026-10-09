@@ -108,6 +108,13 @@ export class WorldRegistry {
     return new WorldRegistry(next.map, next.skins, this.defaultId, [...this.hiddenIds]);
   }
 
+  /** Un registro nuevo con el mapa pasado por `fn` (p. ej. `translateMapTexts`). */
+  mapTexts(fn: (map: SharedMap) => SharedMap): WorldRegistry {
+    return new WorldRegistry(fn(this.map), [...this.skins.values()], this.defaultId, [
+      ...this.hiddenIds,
+    ]);
+  }
+
   /** Un registro nuevo con cada skin pasada por `fn` (p. ej. `resolveSkinTexts`). */
   mapSkins(fn: (skin: WorldSkin) => WorldSkin): WorldRegistry {
     return new WorldRegistry(

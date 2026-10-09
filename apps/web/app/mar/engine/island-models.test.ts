@@ -4,6 +4,7 @@ import { CALITAS_PLACE_ID, LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/wor
 import { Group, Mesh, MeshLambertMaterial, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
 import { repoRoot } from '../../../lib/barco/load';
+import { worlds } from '../../../lib/mundo/demo-world';
 import { DECOR_SIZE, marWorld } from './compact';
 import { toScene } from './compress';
 import { FARO_LANTERN, buildIsland } from './islands';
@@ -61,7 +62,10 @@ describe('el manifiesto de las islas', () => {
     let withMascot = 0;
     for (const e of entries.values()) {
       const mats = materials(e.file);
-      if (!mats.some((m) => m.name.startsWith('mascota_gltf') || m.name.startsWith('hw_ghost_gltf'))) continue;
+      if (
+        !mats.some((m) => m.name.startsWith('mascota_gltf') || m.name.startsWith('hw_ghost_gltf'))
+      )
+        continue;
       withMascot++;
       const rim = mats.find((m) => m.name === 'ink_gltf_contorno');
       expect(rim, e.id).toBeDefined();
@@ -96,7 +100,7 @@ describe('el manifiesto de las islas', () => {
     expect(entry?.file).toBe(`${id}.glb`);
     expect(entry?.label).toBe(label);
     // El nombre del modelo es el del lugar en el mapa.
-    const place = WORLD_REGISTRY.get('arcilla').places.find((p) => p.id === CALITAS_PLACE_ID);
+    const place = worlds.get('arcilla').places.find((p) => p.id === CALITAS_PLACE_ID);
     expect(place?.name).toBe(label);
     // El bocadillo del tablón brilla de noche: el GLB tiene su material emisivo.
     const buf = readFileSync(path.join(ROOT, 'art/islas/3d', entry!.file));

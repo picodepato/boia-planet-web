@@ -155,7 +155,9 @@ export function BarcoShopView({
                 role="radio"
                 aria-checked={isOn}
                 aria-disabled={i.owned ? undefined : 'true'}
-                aria-label={i.owned ? undefined : `${row.name}: bloqueado. ${why}`}
+                aria-label={
+                  i.owned ? undefined : msg('barco.shop.ariaBloqueado', { name: row.name, why })
+                }
                 className="tienda-opcion"
                 data-testid={`barco-estilo-${row.style}`}
                 data-bloqueado={i.owned ? undefined : 'si'}

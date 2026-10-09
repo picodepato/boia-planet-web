@@ -4,6 +4,29 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T242: i18n of the Arcilla map prose and the shop texts
+
+**What exists**
+- `packages/world/src/worlds/arcilla/map.ts`: every display string is now a catalog key (`mapa.*`): place and sector names, the tutorial and information-buoy dialogue lines, the race buoys, obstacles, secrets, zones. The `Baliza ${color}` names are `mapa.baliza.<color>`. Texts, positions, routes and ids unchanged.
+- Keys in `apps/web/lib/i18n/es-mundo.ts` (block at the end, `muestra`): 77 `mapa.*` keys plus `mapa.tabarca`.
+- Plumbing: `translateMapTexts(map, translate)` in `packages/world/src/worlds/map.ts` and `WorldRegistry.mapTexts(fn)` in `registry.ts`. `apps/web/lib/mundo/demo-world.ts` resolves the map texts with the same `translateSkinText` used for the skin, so the web's `worlds` shows the same text as before.
+- Shop: `apps/web/lib/barco/shop-model.ts` plural helper now takes keys (`barco.shopModel.nMoneda/nMonedas/nPunto/nPuntos`, in `es-lib.ts`); `shop.tsx` aria-label of a locked ship uses `barco.shop.ariaBloqueado`. Shown text unchanged.
+- Tests: `apps/web/lib/mundo/skin-textos.test.ts` gained two checks (every map text is a catalog key; the web registry resolves them to the catalog text). `arcilla.test.ts`, `acuarela.test.ts` and `island-models.test.ts` now expect the keys (the world package has no catalog) or the web's `worlds`.
+
+**Commands** (Windows, PYTHONUTF8=1)
+- `pnpm exec vitest run --exclude packages/db --testTimeout=30000` → 272 files passed, 2472 tests passed, 1 skipped, 0 failed.
+- `sh tools/spec/checks.sh` → exit 0 (`OK`).
+- `pnpm lint` → exit 0.
+- `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; landing critical path 196.5 kB, budget 200.0 kB, OK (unchanged). `apps/web/tsconfig.json` not modified.
+- Prose grep (`'…' with spaces` style) on `shop-model.ts`, `shop.tsx` and `map.ts`: the only hits left are class names, data attributes and code.
+
+**Pending / not done**
+- No lint rule exists for loose strings; the check is the catalog test above plus the grep.
+- `packages/world/src/worlds/acuarela/skin.ts` (`cala: 'Puerto de Alicante'`) and the default `leaveReaction` in `packages/world/src/behaviors.ts` are prose literals outside `map.ts`; left as they are (Acuarela is hidden; not in scope).
+
+**e2e specs Hernán should run:** none required by this change (texts are identical). If wanted: `mar-islas.spec.ts`, `mar-ayuda.spec.ts` (names and boia lines).
+
 ## 2026-10-09 — plan 022 T241: el archivo subido de un objeto nuevo se pinta en el mar
 
 **Qué existe**

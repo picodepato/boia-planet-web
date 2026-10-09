@@ -1,6 +1,6 @@
 import type { ShopItem } from '@boia/store';
 import { SKIN_LABELS, type ShipCatalog, variantFilter } from './catalog';
-import { t } from '../i18n';
+import { type MessageKey, t } from '../i18n';
 
 /**
  * La tienda «Barco» sin React (T40, D-23 punto 1, O5): de lo que devuelve
@@ -96,7 +96,8 @@ export function shopRows(
 /** Títulos de los logros por id; null si es oculto y no se ha completado. */
 export type AchievementTitles = Readonly<Record<string, string | null>>;
 
-const n = (v: number, one: string, many: string) => `${v} ${v === 1 ? one : many}`;
+/** «1 moneda» / «3 monedas» (plural por la cantidad, textos del catálogo). */
+const n = (v: number, one: MessageKey, many: MessageKey) => t(v === 1 ? one : many, { n: v });
 
 /**
  * Lo que se dice de un cosmético: «Equipado», «Tuyo», su precio con «te
@@ -111,12 +112,15 @@ export function unlockText(item: ShopItem, titles: AchievementTitles = {}): stri
   switch (u.kind) {
     case 'coins':
       return item.missing > 0
-        ? t('barco.shopModel.teFaltan', { price: u.price, n: n(item.missing, 'moneda', 'monedas') })
+        ? t('barco.shopModel.teFaltan', {
+            price: u.price,
+            n: n(item.missing, 'barco.shopModel.nMoneda', 'barco.shopModel.nMonedas'),
+          })
         : `${u.price} 🪙`;
     case 'points':
       return t('barco.shopModel.conPuntosTeFaltan', {
         points: u.points,
-        n: n(item.missing, 'punto', 'puntos'),
+        n: n(item.missing, 'barco.shopModel.nPunto', 'barco.shopModel.nPuntos'),
       });
     case 'mission':
       return t('shop.lockedMission');

@@ -51,22 +51,23 @@ const map = parseSharedMap(ARCILLA_MAP);
 /**
  * Los nombres que decidieron Hernán y Álvaro el 2026-10-02 para el mundo
  * principal; la Cala Cantalar es desde el 2026-10-04 el Puerto de Alicante (T108).
+ * Los nombres del mapa son claves i18n (plan 022 T242): el texto lo pone la web.
  */
 const NAMES_2026_10_02: Record<string, string> = {
-  cala: 'Puerto de Alicante',
-  fotos: 'Isla de Benidorm',
-  tienda: 'Botiga Ibiza',
-  faro: 'Tabarca',
-  canon: 'Puig Campana',
-  allday: 'ALL DAY BOIA',
-  ultima: 'Isla de Nochevieja',
-  halloween: 'HALLOWEEN IN THE CLUB',
+  cala: 'mapa.puerto-alicante',
+  fotos: 'mapa.isla-benidorm',
+  tienda: 'mapa.botiga-ibiza',
+  faro: 'mapa.tabarca',
+  canon: 'mapa.puig-campana',
+  allday: 'mapa.all-day-boia',
+  ultima: 'mapa.isla-nochevieja',
+  halloween: 'mapa.halloween',
   // Se quedan como estaban.
   puerto: 'El Varadero',
-  naufrago: 'El náufrago',
+  naufrago: 'mapa.naufrago',
   fiestera: 'El Remanso de los Cocodrilos',
   // El circuito: de El Freu a Los Rápidos (el id no cambia).
-  circuito: 'Los Rápidos',
+  circuito: 'mapa.rapidos',
 };
 const arr = (v: unknown) => (Array.isArray(v) ? (v as Json[]) : []);
 const isPoint = (v: unknown): v is Maq =>
@@ -270,13 +271,16 @@ describe('mapa compartido de Arcilla (T20)', () => {
   it('el Puerto de Alicante (T108): conserva el id `cala` y se llama igual en los dos mundos', () => {
     expect(HARBOR_PLACE_ID).toBe('cala');
     const shared = map.places.find((p) => p.id === HARBOR_PLACE_ID)!;
-    expect(shared.name).toBe('Puerto de Alicante');
+    expect(shared.name).toBe('mapa.puerto-alicante');
     expect(map.sectors.find((s) => s.id === HARBOR_PLACE_ID)?.name).toBe(shared.name);
     for (const id of WORLD_REGISTRY.ids()) {
       const o = WORLD_REGISTRY.get(id).config.objects.find(
         (x) => x.identity.id === HARBOR_PLACE_ID,
       )!;
-      expect(o.identity.name, id).toBe(shared.name);
+      // Acuarela pone su propio nombre (`names`); Arcilla, el del mapa.
+      expect(o.identity.name, id).toBe(
+        WORLD_REGISTRY.skin(id).names[HARBOR_PLACE_ID] ?? shared.name,
+      );
       expect(o.identity.category, id).toBe('isla');
       // Su ficha es la de un lugar (`info`) que ofrece cambiar de barco, sin evento.
       const content = o.behaviors.filter((b) => b.type === 'content');
@@ -293,7 +297,7 @@ describe('mapa compartido de Arcilla (T20)', () => {
 
   it('la Isla de Halloween: isla con entradas en mar libre, lejos de las demás', () => {
     const h = map.places.find((p) => p.id === HALLOWEEN_PLACE_ID)!;
-    expect(h).toMatchObject({ category: 'isla', name: 'HALLOWEEN IN THE CLUB', active: true });
+    expect(h).toMatchObject({ category: 'isla', name: 'mapa.halloween', active: true });
     const ticket = h.behaviors.find((b) => b.type === 'ticket');
     const content = h.behaviors.find((b) => b.type === 'content');
     expect(ticket?.params).toMatchObject({ eventId: TICKET_ISLAND_EVENTS.halloween });
@@ -312,7 +316,7 @@ describe('mapa compartido de Arcilla (T20)', () => {
 
   it('Las Calitas (plan 019 T222): la isla de los comentarios, en mar libre y sin entradas', () => {
     const c = map.places.find((p) => p.id === CALITAS_PLACE_ID)!;
-    expect(c).toMatchObject({ category: 'isla', name: 'Las Calitas', active: true });
+    expect(c).toMatchObject({ category: 'isla', name: 'mapa.calitas', active: true });
     expect(c.behaviors.filter((b) => b.type === 'content').map((b) => b.params)).toEqual([
       expect.objectContaining({ target: 'info', ref: CALITAS_REF }),
     ]);
