@@ -1,6 +1,6 @@
 # Plan 024 — The radio starts off on every visit
 
-Status: active
+Status: done
 Created: 2026-10-09
 Base branch: main
 Goal: Bug reported by Hernán (2026-10-09): after playing the radio, leaving and coming back, the radio is silent but the UI looks as if something is playing (hero label «Sonando», song title and elapsed time in the window, a «Sonando: …» toast), and pressing play resumes that song at the saved second. Expected: on every new page load the radio is fully off (idle, no song, no toast), and play starts the first song. Only the settings (volume, shuffle, repeat, genre) are remembered. In-site client navigation that keeps the player mounted keeps the music playing as today.
@@ -13,7 +13,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 ## Tasks
 
 ## T258 — Radio: no song restored on page load; play starts the first song
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -25,11 +25,15 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - unit test: after that restore, `start()`/play loads the first song at elapsed 0 → pass
   - unit test: `save()` no longer writes `songId`/`elapsed`/`playing` → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: session save keeps only volume/shuffle/repeat/genre; load is idle, play starts the first song · 7b3ec9c
 
 ## Decisions
 - 2026-10-09 plan: remember only settings (volume, shuffle, repeat, genre); song and position are never restored; music keeps playing across client navigation (Hernán)
 
+- 2026-10-09 T258: `saveNow()` kept as a wrapper of `save()`; old saved song data ignored silently; `firstSong` takes no genre, so play starts the catalog's first song (agent)
+
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-09 T258 launched · attempt 1 · agent adac34dc986c4b237
+- 2026-10-09 T258 done · branch worktree-agent-adac34dc986c4b237 → 7b3ec9c
