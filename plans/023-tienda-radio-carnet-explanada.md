@@ -59,6 +59,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots desktop and mobile both showing Halloween as next event → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent addce0faf3cab6fc7
+- Log: 2026-10-09 pushed to Vercel on Hernán's yes (98465cf)
 - Outcome: cause = desktop browser kept pre-2-Oct admin edits of the sample (pin on All Day Primavera); new SAMPLE_CONTENT_REVISION reseeds sample events/homeBlocks once on load, keeping admin-created items · 78fac36
 
 ## T249 — Shop: Manu Ropero's tote bag and the real T-shirt
@@ -74,10 +75,10 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots mobile + desktop of the shop showing both products → attach folder
   - Test command → exit 0
 - Log: 2026-10-09 launched attempt 1, agent a327df7913e6d2e98
-- Outcome:
+- Outcome: new product `tote-boia` (30 €, maker Manu Ropero, 4 photos, sale `party`), camiseta real 18 € with 3 photos, optional `maker` field + `store.maker.prefix`; old sample T-shirt images removed · 7ccc130
 
 ## T250 — Gallery: Hernán's 4 photos
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -87,6 +88,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 - Done when:
   - the 4 photos appear in /galeria (screenshots mobile + desktop, plus the cropped galeria-3 alone) → attach folder
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent a1791bdcbfddf0848
 - Outcome:
 
 ## T251 — Carnet: «Descubre» buttons under the answers
@@ -119,7 +121,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 ## T253 — Supabase: apply every pending migration to boia-planet-dev
 - Status: pending
-- Depends on: T246, T251
+- Depends on: T246, T251, T255
 - Model: opus
 - Skills: none
 - Goal: Apply, in order, the 11 pending migrations listed in `docs/propuestas/2026-10-09-plan-022-guia-prueba.md` §Migraciones plus any new ones from T246/T251, to the **dev** project `boia-planet-dev` only, using `pnpm db:migrate:dev`, then `pnpm db:types:dev` and `pnpm test:supabase`. Before migration 8 (`20261008100600_admin_limits_analytics`) check `staff_roles` has at most 2 admin/owner rows; if not, stop and report (do not delete rows). First check which ones are already applied (migration history table) and skip those. If one fails: stop there, do not hand-edit remote state, report the error and the exact list applied / not applied — the rest is left for the next plan. Commit regenerated types if they changed. Update the guide's migration list with the new state. Never print secrets; read `SUPABASE_DB_URL` etc. from `apps/web/.env.local` (copied by `.worktreeinclude`).
@@ -133,7 +135,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 
 ## T254 — Test guide for Hernán
 - Status: pending
-- Depends on: T246, T247, T248, T249, T250, T251, T252, T253
+- Depends on: T246, T247, T248, T249, T250, T251, T252, T253, T255
 - Model: haiku
 - Skills: none
 - Goal: Write `docs/propuestas/2026-10-<dd>-plan-023-guia-prueba.md` in Spanish: what changed per task, how to try each one on mobile and desktop (with the screenshots' paths), the next-event explanation from T248, the migration table from T253, the e2e specs Hernán should run, and open questions for Álvaro (gallery photo rights, tote/T-shirt copy). Update `docs/spec/estado.md` for any REQ these tasks raise.
@@ -144,11 +146,43 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - Test command → exit 0
 - Outcome:
 
+## T255 — Radio: change a song's genre, delete genres, songs without genre
+- Status: running (attempt 1)
+- Depends on: T246
+- Model: opus
+- Skills: none
+- Goal: Hernán (2026-10-09, after T246): in Admin › Radio, (a) every song can be (re)assigned to any genre from its row, or left **without genre**; (b) a genre can be **deleted** (confirm dialog saying how many songs it has; its songs become genre-less, never deleted); (c) songs without genre show only under «Todos» in the player (and in an admin filter «Sin género»). Works in local mode and Supabase mode.
+- Context: T246 (d1554c2) — `apps/web/app/admin/sections/radio.tsx`, `apps/web/lib/radio/catalog.ts`, radio store code, `radio-window.tsx`, `@boia/contracts` radio schema; `supabase/migrations/20261009100100_radio.sql` has `radio_songs.genre_id text not null references radio_genres on delete restrict` and grants `update (title, artist, genre_id)` and no genre delete: add a **new** migration making `genre_id` nullable with `on delete set null`, granting/policying genre delete to staff, plus its test like its siblings; list it in the ESTADO section for T253.
+- Scope: may touch radio admin, radio catalog/store/contracts, radio window, i18n, new migration + test, unit tests / must not touch other admin sections, the landing outside the radio.
+- Done when:
+  - unit tests (local mode + fake Supabase client): reassign a song's genre, set it to none, delete a genre → its songs remain with no genre and appear under «Todos» only
+  - screenshots: admin song row genre selector, delete-genre confirm, player «Todos» with a genre-less song → attach folder
+  - Test command → exit 0
+- Outcome:
+
+## T256 — Shop follow-up: drop the sample tote, make stored browsers see the new shop
+- Status: pending
+- Depends on: T249, T250
+- Model: haiku
+- Skills: none
+- Goal: (a) Remove the sample «Tote bags» product (12 €, `muestra` images) now that the real «Tote bag BOIA» (`tote-boia`, T249) replaces it: from `products.json`, the home store block, the /mar shop island lists and any test/e2e spec that names it; delete its images if nothing else uses them. «Packs de pegatinas» stays. (b) Browsers with stored local data (D-20) must see the new store block: T248 added `SAMPLE_CONTENT_REVISION` (reseeds sample events + homeBlocks once); T249 changed the sample home store block after that revision shipped. If the latest revision (after T250) does not already cover this, bump it so the reseed runs once more, and add a unit test that old stored data with the previous revision ends with `tote-boia` in the store block and no sample tote.
+- Context: `apps/web/lib/merchandise/products.json`, `packages/store/src/sample/content.ts`, `packages/store/src/sample-reseed.ts`, `local.ts`, ESTADO sections of T248, T249, T250.
+- Scope: merchandise data, sample content/reseed, related tests and e2e specs / must not touch rotation, product contract, gallery.
+- Done when:
+  - unit test for the reseed case → pass
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
 
 - T246: player genre bar shows only genres with songs; bad genre names give `genre_name` error (small @boia/contracts change); arrows mouse-only.
 
 - T248: separate `SAMPLE_CONTENT_REVISION` (not SCHEMA_VERSION); revision 1 resets sample events + homeBlocks edits, keeps admin-created items; sample items in trash come back.
+
+- Added T255 (Hernán, 2026-10-09, on screen): reassign song genre, delete genre, genre-less songs under «Todos»; T253 and T254 now also depend on it.
+
+- T249: tote added as `tote-boia` with sale `party`; T-shirt keeps name «Camisetas», reserve; placeholder-marking test skips real photos.
+- Added T256 (orchestrator): the sample 12 € «Tote bags» duplicates the real tote → removed; T249 changed the home store block after T248's reseed revision shipped, so stored browsers need a revision bump.
 
 ## Proposals
 - T246: worktree `.env.local` makes `pnpm demo` start in Supabase mode, not local mode.
