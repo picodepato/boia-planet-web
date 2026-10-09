@@ -15,7 +15,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
 ## Tasks
 
 ## T246 — Radio: create and rename genres from the admin, sideways-scrolling genre bar
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: frontend-design
@@ -27,10 +27,11 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots: admin with a new genre created and one renamed; mobile player with 8+ genres scrolled sideways → saved in the attach folder
   - new migration (if any) listed in the ESTADO section for T253
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent a1d255d246699de32
 - Outcome:
 
 ## T247 — Mobile landing polish: icon-only music button, smaller header buttons, 2 s shop carousel
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: haiku
 - Skills: none
@@ -42,6 +43,7 @@ Content given by Hernán/Álvaro in this plan (prices, maker, photos) is real an
   - screenshots mobile 390×844: landing top with the icon-only music button in the corner, header with the smaller buttons; desktop header unchanged → attach folder
   - the hero button keeps an accessible name (aria-label from i18n)
   - Test command → exit 0
+- Log: 2026-10-09 launched attempt 1, agent a68c40a408317c897
 - Outcome:
 
 ## T248 — «Próximo evento»: desktop shows All Day, mobile shows Halloween
