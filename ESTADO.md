@@ -4,6 +4,58 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T241: el archivo subido de un objeto nuevo se pinta en el mar
+
+**Qué existe**
+
+- `apps/web/app/mar/engine/object-art.ts`: de dónde sale el arte de un objeto
+  (`appearance.asset`): `local-photo:<clave>` → blob de IndexedDB → URL de
+  objeto (se suelta tras cargar); `https://…` (Storage) → la URL tal cual;
+  cualquier otra cosa → biblioteca (el mar pinta la categoría como siempre).
+  Formato por tipo MIME, nombre (`.glb`, `-original-glb`) o primeros bytes;
+  sin archivo, ilegible o formato desconocido → respaldo con su motivo.
+  `artBox`: ancho = diámetro de la huella (mín. 2,5) × escala; alto acotado
+  (mitad del ancho, máx. 6 u de escena) para que una isla no sea una torre.
+- `apps/web/app/mar/engine/object-art-view.ts`: el hueco con el respaldo
+  (boya naranja con banda blanca, se balancea) que el archivo sustituye al
+  llegar: `.glb` con `loadGltf` + `lambertize` (ahora exportado de
+  `models.ts`), escalado a la caja y apoyado en el agua; imagen (la variante
+  WebP principal) como cartel plano que gira para mirar a la cámara. Si no
+  carga, se queda la boya (aviso en consola).
+- `mar3d.ts` `buildPlaces`: un objeto con archivo subido se pinta con su
+  archivo en lugar de la pieza de su categoría (vista `objeto`); el lienzo
+  lleva `data-objetos-arte="<id>:loading|model|image|fallback …"`.
+- `admin-objeto.spec.ts`: tras abrir la ficha en el mar, comprueba
+  `data-objetos-arte` = `isla-del-admin:image`.
+- `docs/spec/estado.md`: notas de REQ-ADM-010 y REQ-ADM-012 al día (siguen HECHO).
+
+**Comandos**
+
+- `pnpm exec vitest run apps/web/app/mar/engine/object-art.test.ts` → 11 pass
+  (local → URL de objeto soltada una vez; remoto → URL sin IndexedDB; sin
+  archivo / error / bytes basura / biblioteca → respaldo; caja, encaje, cartel,
+  respaldo si el archivo no carga).
+- Test command completo: vitest 272 archivos, 2470 pass + 1 skip, exit 0;
+  `tools/spec/checks.sh` OK; `pnpm lint` exit 0; `pnpm build` exit 0
+  (landing 196,5 kB gzip, OK); `pnpm typecheck` exit 0.
+- Capturas (build local sin Supabase, Admin de la demo con la sesión puesta
+  en localStorage como las e2e; un PNG de cartel y `boia-mascota.glb` subidos
+  por el asistente): `/tmp/orchestrator-attach/boia-planet-hernan-T241/`
+  `mobile-imagen.png`, `mobile-modelo-glb.png`, `desktop-imagen.png`,
+  `desktop-modelo-glb.png`.
+
+**Pendiente**
+
+- Con cuentas, el asistente sigue guardando el archivo en este navegador
+  (`putLocalPhoto`): el contenido del Admin es local en los dos modos (D-20).
+  El mar ya pinta una URL https si algún día el asset se sube al Storage,
+  pero subirlo pide bucket y migración (fuera de esta tarea).
+- `docs/TRASPASO.md` aún dice que el archivo subido no se dibuja en el mar.
+
+**E2E para Hernán**: `apps/web/e2e/admin-objeto.spec.ts` (cambiado);
+`apps/web/e2e/mar-decor.spec.ts` y `apps/web/e2e/mar-tablon.spec.ts` como
+humo del mar 3D.
+
 ## 2026-10-09 — plan 022 T240: Local data: trash shows nicknames, local photos removed from IndexedDB
 
 **Qué existe**

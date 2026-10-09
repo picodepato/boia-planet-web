@@ -63,7 +63,7 @@ interface Loaded {
 }
 
 /** Pasa el material físico a Lambert (en el móvil cuesta menos), como el barco. */
-function lambertize(root: Object3D): void {
+export function lambertize(root: Object3D): void {
   const cache = new Map<string, MeshLambertMaterial>();
   root.traverse((o) => {
     const m = o as Mesh;

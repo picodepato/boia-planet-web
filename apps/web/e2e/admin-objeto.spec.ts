@@ -139,4 +139,10 @@ test('objeto nuevo: plantilla, 10 pasos, asset validado, publicado y en el mar',
   const sheet = marSheet(page);
   await expect(sheet).toHaveAttribute('data-lugar', ID, { timeout: 60_000 });
   await expect(sheet.getByRole('heading', { name: NAME })).toBeVisible();
+  // T241: el PNG subido se pinta en el mar (un cartel con la imagen, no la isla de serie).
+  await expect(page.getByTestId('mar-canvas')).toHaveAttribute(
+    'data-objetos-arte',
+    new RegExp(`(^| )${ID}:image( |$)`),
+    { timeout: 30_000 },
+  );
 });

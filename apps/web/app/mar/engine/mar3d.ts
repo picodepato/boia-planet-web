@@ -32,7 +32,7 @@ import {
 import { type QualityTier, detectQuality } from '@boia/engine/streaming';
 import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
 import { CASTLE_PLACE_ID, type WorldConfig, type WorldObject } from '@boia/world';
-import type { Color, ShaderMaterial } from 'three';
+import type { Color, Material, ShaderMaterial } from 'three';
 import {
   Box3,
   BoxGeometry,
@@ -117,6 +117,8 @@ import { type SeaRoute, decorSpots, seaRoute } from './compact';
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { Glows, buoy, crag, rock } from './props';
+import { BROWSER_OBJECT_ART, artBox, hasUploadedArt } from './object-art';
+import { type ObjectArtState, mountObjectArt, objectArtFallback } from './object-art-view';
 import { type ShipModel, modelLength, surfaceY } from './ship-model';
 import {
   type ModelKey,
@@ -2210,6 +2212,11 @@ export class Mar3D {
       const rnd = rng(seedOf(id));
       const phase = rnd() * Math.PI * 2;
 
+      // Un objeto nuevo del Admin con su archivo subido (T241): el archivo, no la categoría.
+      if (hasUploadedArt(o.appearance.asset)) {
+        this.buildUploadedArt(o, x, z, r, phase, lit);
+        continue;
+      }
       if (cat === 'isla' || cat === 'naufrago') {
         const R = cat === 'isla' ? r : Math.max(1.5, r * 1.2);
         // El castillo (T157): la isla del minijuego es el castillo de Santa Bárbara de
@@ -3770,6 +3777,82 @@ export class Mar3D {
       if (want.has(id) && !mv.acquired) this.acquireModel(mv);
       else if (!keep.has(id) && mv.acquired) this.releaseModel(mv);
     }
+  }
+
+  /**
+   * Un objeto nuevo del Admin con su archivo subido (T241): la boya de
+   * respaldo hasta que llega el modelo o la imagen (y si no llega, se queda).
+   * `data-objetos-arte` dice, por id, cómo quedó cada uno.
+   */
+  private buildUploadedArt(
+    o: WorldObject,
+    x: number,
+    z: number,
+    r: number,
+    phase: number,
+    lit: Material,
+  ): void {
+    const id = o.identity.id;
+    const box = artBox(r, o.appearance.scale);
+    const fallback = objectArtFallback(lit);
+    const slot = new Group();
+    slot.name = 'arte-subido';
+    slot.add(fallback);
+    const g = new Group();
+    g.add(slot);
+    g.position.set(x, 0, z);
+    let board: Object3D | null = null;
+    let loaded = false;
+    this.addView({
+      id,
+      obj: g,
+      kind: 'objeto',
+      y: 0,
+      phase,
+      labelY: 2.6,
+      update: (v, t, _dt, _present, px, pz) => {
+        if (board) {
+          // El cartel de una imagen mira siempre a la cámara (sólo gira en vertical).
+          board.rotation.y = Math.atan2(this.camera.position.x - px, this.camera.position.z - pz);
+        } else if (!loaded) {
+          // La boya de respaldo se balancea; un modelo subido se queda quieto.
+          slot.position.y = Math.sin(t * 1.8 + v.phase) * 0.1;
+        }
+      },
+    });
+    this.setObjectArt(id, 'loading');
+    void mountObjectArt(
+      slot,
+      fallback,
+      o.appearance.asset,
+      box,
+      BROWSER_OBJECT_ART,
+      () => !this.destroyed,
+    ).then(({ state, art, height }) => {
+      if (this.destroyed) return;
+      if (art) {
+        curveTree(art);
+        loaded = true;
+        slot.position.y = 0;
+        if (state === 'image') board = art;
+        const v = this.views.get(id);
+        if (v) {
+          v.radius = Math.max(v.radius, box.span / 2 + 3);
+          v.top = Math.max(v.top, height);
+          v.labelY = Math.max(v.labelY, height + 0.6);
+        }
+      }
+      this.setObjectArt(id, state);
+    });
+  }
+
+  private readonly objectArt = new Map<string, ObjectArtState>();
+
+  private setObjectArt(id: string, state: ObjectArtState): void {
+    this.objectArt.set(id, state);
+    this.opts.canvas.dataset.objetosArte = [...this.objectArt]
+      .map(([k, s]) => `${k}:${s}`)
+      .join(' ');
   }
 
   /**

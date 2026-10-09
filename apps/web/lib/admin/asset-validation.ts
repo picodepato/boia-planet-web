@@ -18,9 +18,9 @@ import { t } from '../i18n';
  *   agranda); un modelo se guarda sólo como original (optimizarlo pide
  *   Blender, fuera del navegador).
  *
- * El mar 3D sigue pintando el modelo de la categoría del objeto: el asset
- * queda guardado y validado con el objeto para cuando el editor visual
- * (REQ-ADM-009, versión final) lo use.
+ * El mar 3D pinta el archivo guardado (plan 022 T241,
+ * `apps/web/app/mar/engine/object-art.ts`): el modelo `.glb` tal cual o la
+ * variante principal de la imagen como cartel; si no llega, una boya.
  */
 
 export const ASSET_RULES = {
