@@ -34,8 +34,9 @@ export const esAdminRadio = {
 
   'admin.radio.genres.title': 'Géneros',
   'admin.radio.genres.hint':
-    'Renombrar un género lo cambia en todas sus canciones. Un género con canciones no se puede borrar: cámbialas de género antes.',
+    'Renombrar un género lo cambia en todas sus canciones. Un género nuevo queda elegido para subirle canciones y sale en la radio en cuanto tiene alguna. Un género con canciones no se puede borrar: cámbialas de género antes.',
   'admin.radio.genres.count': '{n} canciones',
+  'admin.radio.genres.countOne': '1 canción',
   'admin.radio.genres.name': 'Nombre del género',
   'admin.radio.genres.newName': 'Género nuevo',
   'admin.radio.genres.add': 'Crear',
@@ -73,6 +74,7 @@ export const esAdminRadio = {
   'admin.radio.error.genre_in_use':
     'Ese género tiene canciones: cámbialas de género antes de borrarlo.',
   'admin.radio.error.genre_exists': 'Ya hay un género con ese nombre.',
+  'admin.radio.error.genre_name': 'El nombre del género va de 1 a 40 letras.',
   'admin.radio.error.unknown_genre': 'Ese género ya no existe.',
   'admin.radio.error.unknown_song': 'Esa canción ya no está en la radio.',
   'admin.radio.error.first_count': 'La radio necesita exactamente una primera canción.',

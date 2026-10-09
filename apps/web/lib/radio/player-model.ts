@@ -1,4 +1,4 @@
-import type { RadioSong } from '@boia/contracts';
+import type { RadioGenre, RadioSong } from '@boia/contracts';
 
 /**
  * El orden en que suena la radio (plan 022 T247, Hernán 2026-10-09): al
@@ -104,4 +104,50 @@ export function lcdTime(seconds: number, remaining = false): string {
   const s = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
   const text = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   return remaining ? `-${text}` : text;
+}
+
+/**
+ * Los géneros que enseña la barra del reproductor (plan 023 T246): los que
+ * tienen alguna canción, en el orden del catálogo. Uno recién creado en el
+ * Admin sale en cuanto se le sube la primera.
+ */
+export function listedGenres(
+  genres: readonly RadioGenre[],
+  songs: readonly RadioSong[],
+): RadioGenre[] {
+  const used = new Set(songs.map((s) => s.genreId));
+  return genres.filter((g) => used.has(g.id));
+}
+
+/** Lo que se ve de una barra que corre de lado y dónde está una pieza suya. */
+export interface StripBox {
+  scrollLeft: number;
+  clientWidth: number;
+  scrollWidth: number;
+}
+
+/** Si quedan géneros escondidos a cada lado (para las flechas y el difuminado). */
+export function stripEdges(box: StripBox): { before: boolean; after: boolean } {
+  const max = box.scrollWidth - box.clientWidth;
+  return { before: box.scrollLeft > 1, after: box.scrollLeft < max - 1 };
+}
+
+/**
+ * El `scrollLeft` que deja a la vista la pieza que va de `left` a
+ * `left + width` (con `pad` de margen para que no la tape la flecha); el
+ * mismo si ya se ve entera.
+ */
+export function revealLeft(box: StripBox, left: number, width: number, pad = 0): number {
+  const max = Math.max(0, box.scrollWidth - box.clientWidth);
+  let next = box.scrollLeft;
+  if (left - pad < next) next = left - pad;
+  else if (left + width + pad > next + box.clientWidth) next = left + width + pad - box.clientWidth;
+  return Math.max(0, Math.min(max, next));
+}
+
+/** Un paso de flecha: casi una barra entera, para no saltarse ninguno. */
+export function pageLeft(box: StripBox, dir: -1 | 1): number {
+  const max = Math.max(0, box.scrollWidth - box.clientWidth);
+  const step = Math.max(40, box.clientWidth * 0.75);
+  return Math.max(0, Math.min(max, box.scrollLeft + dir * step));
 }

@@ -104,6 +104,40 @@ describe('radio local (D-20): CRUD del catálogo', () => {
     expect(await rejects(store.addSong(upload('x', 'cumbia')))).toBe('unknown_genre');
   });
 
+  it('plan 023 T246: crear un género, subirle una canción y renombrarlo sin que la pierda', async () => {
+    const { kv, store } = setup();
+    const before = await store.catalog();
+    let c = await store.addGenre('  Cumbia rebajada ');
+    const added = c.genres.find((g) => !before.genres.some((b) => b.id === g.id));
+    expect(added).toEqual({ id: 'cumbia-rebajada', name: 'Cumbia rebajada' });
+    c = await store.addSong(upload('Ola lenta', added!.id));
+    const song = c.songs.find((s) => s.title === 'Ola lenta')!;
+    expect(song.genreId).toBe(added!.id);
+    expect(kv.files.has(song.id)).toBe(true);
+    const technoIds = c.songs.filter((s) => s.genreId === 'techno').map((s) => s.id);
+    c = await store.renameGenre(added!.id, 'Cumbia del puerto');
+    c = await store.renameGenre('techno', 'Techno de barco');
+    expect(c.genres.find((g) => g.id === added!.id)?.name).toBe('Cumbia del puerto');
+    expect(c.songs.find((s) => s.id === song.id)?.genreId).toBe(added!.id);
+    expect(c.songs.filter((s) => s.genreId === 'techno').map((s) => s.id)).toEqual(technoIds);
+    expect(c.genres.map((g) => g.id)).toEqual(before.genres.map((g) => g.id).concat(added!.id));
+    // Lo que queda guardado en el navegador es lo mismo (otra carga lo ve).
+    const again = await createLocalRadioStore(kv).catalog();
+    expect(again).toEqual(c);
+  });
+
+  it('plan 023 T246: nombres de género vacíos, largos o repetidos no valen', async () => {
+    const { store } = setup();
+    expect(await rejects(store.addGenre('   '))).toBe('genre_name');
+    expect(await rejects(store.addGenre('x'.repeat(41)))).toBe('genre_name');
+    expect(await rejects(store.addGenre('TECHNO'))).toBe('genre_exists');
+    expect(await rejects(store.renameGenre('house', ''))).toBe('genre_name');
+    expect(await rejects(store.renameGenre('house', 'reggaeton'))).toBe('genre_exists');
+    expect(await rejects(store.renameGenre('nada', 'Nada'))).toBe('unknown_genre');
+    const c = await store.renameGenre('house', 'HOUSE');
+    expect(c.genres.find((g) => g.id === 'house')?.name).toBe('HOUSE');
+  });
+
   it('cambios a la vez se aplican uno detrás de otro', async () => {
     const { store } = setup();
     await Promise.all([store.addGenre('Uno'), store.addGenre('Dos'), store.addGenre('Tres')]);

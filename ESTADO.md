@@ -4,6 +4,48 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T246: Radio genres from the admin, sideways genre bar
+
+Qué existe:
+
+- Admin › Radio (`apps/web/app/admin/sections/radio.tsx`): crear y renombrar
+  géneros ya existía (plan 022); ahora un género recién creado queda elegido
+  en «Subir una canción» para subirle la primera, «Renombrar» no se deja con
+  el nombre vacío, cada fila lleva `data-testid` de nombre y de renombrar, y
+  «1 canción» en singular. Renombrar conserva el id del género: sus canciones
+  siguen en él (local y Supabase).
+- Nombres de género validados en `@boia/contracts` (`cleanRadioGenreName`):
+  vacío o de más de 40 letras → `genre_name` (mensaje en i18n), repetido sin
+  mirar mayúsculas ni tildes → `genre_exists`.
+- Reproductor: barra de géneros nueva (`apps/web/lib/radio/ui/genre-bar.tsx`
+  + `radio-window.css`): una tira que corre de lado cuando no caben (dedo,
+  trackpad, rueda vertical u horizontal), sin barra de desplazamiento, con
+  el borde difuminado y una flechita a cada lado sólo si queda algo
+  escondido; el género elegido se trae a la vista. Sólo salen los géneros con
+  alguna canción (`listedGenres`): un género vacío no deja una pestaña que
+  enseñe todas las canciones.
+- Supabase: la migración `20261009100100_radio.sql` ya da insertar
+  (id, name) y actualizar (name) de `radio_genres` al equipo con su RLS.
+  **No hay migración nueva para T253.**
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/lib/radio packages/contracts/src/radio.test.ts`
+  → 7 archivos, pruebas nuevas: crear género + subirle canción + renombrar
+  (local y con el cliente falso de Supabase), nombres no válidos, barra de
+  géneros (bordes, traer a la vista, paso de flecha, géneros vacíos).
+- Test command completo: vitest 289 archivos, 2538 pasan, 2 saltadas (exit 0);
+  `tools/spec/checks.sh` exit 0; `pnpm lint` exit 0; `pnpm build` exit 0
+  (landing 196.6 kB de 200 kB); `pnpm typecheck` exit 0.
+- Capturas (demo local, 9 géneros, 5 creados con una canción cada uno, House
+  y Cumbia renombrados): `/tmp/orchestrator-attach/boia-planet-hernan-T246/`
+  (`admin-generos-*.png`, `reproductor-movil-*.png`).
+
+Pendiente:
+
+- e2e para Hernán: ninguna spec usa la barra de géneros ni la sección Radio;
+  `admin.spec.ts` como comprobación general del Admin.
+
 ## 2026-10-09 — plan 023 T247: Mobile landing polish
 
 **Qué existe**

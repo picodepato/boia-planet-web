@@ -117,6 +117,13 @@ describe('radio: géneros', () => {
     expect(codeOf(() => renameRadioGenre(c, 'house', 'techno duro'))).toBe('genre_exists');
   });
 
+  it('nombre vacío o de más de 40 letras: genre_name', () => {
+    expect(codeOf(() => addRadioGenre(base(), ' '))).toBe('genre_name');
+    expect(codeOf(() => addRadioGenre(base(), 'x'.repeat(41)))).toBe('genre_name');
+    expect(codeOf(() => renameRadioGenre(base(), 'techno', ''))).toBe('genre_name');
+    expect(addRadioGenre(base(), ` ${'x'.repeat(40)} `).genres.at(-1)?.name).toHaveLength(40);
+  });
+
   it('borrar un género con canciones no se deja; sin canciones, sí', () => {
     const c = withSongs('a');
     expect(codeOf(() => deleteRadioGenre(c, 'techno'))).toBe('genre_in_use');

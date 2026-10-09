@@ -76,6 +76,7 @@ export type RadioProblem =
   | 'first_count'
   | 'genre_in_use'
   | 'genre_exists'
+  | 'genre_name'
   | 'unknown_song'
   | 'too_many';
 
@@ -205,12 +206,19 @@ export function radioGenreId(name: string): string {
   return base || 'genero';
 }
 
+/** El nombre de un género, limpio; vacío o de más de 40 letras, `genre_name`. */
+export function cleanRadioGenreName(name: string): string {
+  const parsed = radioGenreSchema.shape.name.safeParse(name);
+  if (!parsed.success) throw new RadioCatalogError('genre_name');
+  return parsed.data;
+}
+
 const sameName = (a: string, b: string) =>
   a.trim().localeCompare(b.trim(), 'es', { sensitivity: 'base' }) === 0;
 
 /** Crea un género. Dos géneros no pueden llamarse igual. */
 export function addRadioGenre(c: RadioCatalog, name: string): RadioCatalog {
-  const clean = radioGenreSchema.shape.name.parse(name);
+  const clean = cleanRadioGenreName(name);
   if (c.genres.some((g) => sameName(g.name, clean))) throw new RadioCatalogError('genre_exists');
   if (c.genres.length >= RADIO_LIMITS.maxGenres) throw new RadioCatalogError('too_many');
   const base = radioGenreId(clean);
@@ -221,7 +229,7 @@ export function addRadioGenre(c: RadioCatalog, name: string): RadioCatalog {
 
 /** Renombra un género: sus canciones lo siguen (lo nombran por id). */
 export function renameRadioGenre(c: RadioCatalog, id: string, name: string): RadioCatalog {
-  const clean = radioGenreSchema.shape.name.parse(name);
+  const clean = cleanRadioGenreName(name);
   requireGenre(c, id);
   if (c.genres.some((g) => g.id !== id && sameName(g.name, clean))) {
     throw new RadioCatalogError('genre_exists');

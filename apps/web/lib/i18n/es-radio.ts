@@ -24,6 +24,8 @@ export const esRadio = {
   'radio.lista.desplegar': 'Desplegar la lista',
   'radio.generos': 'Géneros',
   'radio.generos.todos': 'Todos',
+  'radio.generos.antes': 'Ver los géneros de antes',
+  'radio.generos.despues': 'Ver más géneros',
   'radio.cancion.aria': '{titulo}, {artista}, {duracion}',
   'radio.cancion.sonando': 'Sonando ahora',
 

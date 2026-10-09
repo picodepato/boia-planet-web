@@ -342,15 +342,56 @@
   padding: 6px 8px 8px;
 }
 
+/*
+ * Los géneros (plan 023 T246): una tira que corre de lado cuando no caben,
+ * sin barra de desplazamiento; a cada lado con algo escondido, el borde se
+ * difumina y sale una flechita.
+ */
 .radio-genres {
+  position: relative;
   flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
   margin-bottom: 6px;
 }
 
+.radio-genres__strip {
+  --rg-fade: 22px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--rg-fade);
+  scrollbar-width: none;
+}
+
+.radio-genres__strip::-webkit-scrollbar {
+  display: none;
+}
+
+.radio-genres[data-after] .radio-genres__strip {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--rg-fade)), transparent);
+}
+
+.radio-genres[data-before] .radio-genres__strip {
+  mask-image: linear-gradient(to right, transparent, #000 var(--rg-fade));
+}
+
+.radio-genres[data-before][data-after] .radio-genres__strip {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--rg-fade),
+    #000 calc(100% - var(--rg-fade)),
+    transparent
+  );
+}
+
 .radio-win .radio-genre {
+  flex: none;
+  scroll-snap-align: start;
+  white-space: nowrap;
   height: 18px;
   padding: 0 6px;
   border: 1px solid var(--rw-lo);
@@ -359,6 +400,41 @@
   font: inherit;
   font-size: 7px;
   cursor: pointer;
+}
+
+.radio-win .radio-genres__arrow {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--rw-lo);
+  box-shadow: inset 1px 1px 0 var(--rw-hi);
+  background: var(--rw-panel);
+  color: var(--rw-orange);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.radio-win .radio-genres__arrow[hidden] {
+  display: none;
+}
+
+.radio-win .radio-genres__arrow:active {
+  box-shadow: inset 1px 1px 0 var(--rw-lo);
+  translate: 1px 1px;
+}
+
+.radio-genres__arrow--before {
+  left: 0;
+}
+
+.radio-genres__arrow--after {
+  right: 0;
 }
 
 .radio-win .radio-genre[aria-pressed='true'] {

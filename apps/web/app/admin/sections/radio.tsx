@@ -61,6 +61,8 @@ export function RadioSection(_props: { ctx: AdminContext }) {
   const [catalog, setCatalog] = useState<RadioCatalog | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { status, busy, run } = useRun();
+  // El género del formulario de subida: al crear uno, queda elegido ahí (plan 023 T246).
+  const [uploadGenre, setUploadGenre] = useState('');
 
   useEffect(() => {
     if (!store) return;
@@ -119,8 +121,14 @@ export function RadioSection(_props: { ctx: AdminContext }) {
           </p>
           <StatusLine status={status} />
           <div className="admin-radio__top">
-            <UploadForm catalog={catalog} apply={apply} busy={busy} />
-            <GenresCard catalog={catalog} apply={apply} busy={busy} />
+            <UploadForm
+              catalog={catalog}
+              apply={apply}
+              busy={busy}
+              genreId={uploadGenre}
+              onGenre={setUploadGenre}
+            />
+            <GenresCard catalog={catalog} apply={apply} busy={busy} onCreated={setUploadGenre} />
           </div>
           <SongList catalog={catalog} apply={apply} busy={busy} />
         </>
@@ -133,15 +141,18 @@ function UploadForm({
   catalog,
   apply,
   busy,
+  genreId,
+  onGenre,
 }: {
   catalog: RadioCatalog;
   apply: Apply;
   busy: boolean;
+  genreId: string;
+  onGenre: (id: string) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
-  const [genreId, setGenreId] = useState(catalog.genres[0]?.id ?? '');
   const [first, setFirst] = useState(false);
   const [inputKey, setInputKey] = useState(0);
   const genre = catalog.genres.some((g) => g.id === genreId) ? genreId : catalog.genres[0]?.id;
@@ -210,7 +221,7 @@ function UploadForm({
           <select
             value={genre ?? ''}
             data-testid="radio-subir-genero"
-            onChange={(e) => setGenreId(e.target.value)}
+            onChange={(e) => onGenre(e.target.value)}
           >
             {catalog.genres.map((g) => (
               <option key={g.id} value={g.id}>
@@ -263,13 +274,19 @@ function GenreRow({
         value={value}
         maxLength={40}
         aria-label={t('admin.radio.genres.name')}
+        data-testid={`radio-genero-nombre-${id}`}
         onChange={(e) => setValue(e.target.value)}
       />
-      <span className="admin-meta">{t('admin.radio.genres.count', { n: count })}</span>
+      <span className="admin-meta">
+        {count === 1
+          ? t('admin.radio.genres.countOne')
+          : t('admin.radio.genres.count', { n: count })}
+      </span>
       <button
         type="button"
         className="admin-button admin-button--ghost"
-        disabled={busy || value.trim() === name}
+        disabled={busy || !value.trim() || value.trim() === name}
+        data-testid={`radio-genero-renombrar-${id}`}
         onClick={() => void apply((s) => s.renameGenre(id, value), t('admin.radio.genres.renamed'))}
       >
         {t('admin.radio.genres.rename')}
@@ -292,10 +309,12 @@ function GenresCard({
   catalog,
   apply,
   busy,
+  onCreated,
 }: {
   catalog: RadioCatalog;
   apply: Apply;
   busy: boolean;
+  onCreated: (id: string) => void;
 }) {
   const [name, setName] = useState('');
   const counts = radioGenreCounts(catalog);
@@ -321,6 +340,8 @@ function GenresCard({
           e.preventDefault();
           void apply(async (s) => {
             const next = await s.addGenre(name);
+            const added = next.genres.find((g) => !catalog.genres.some((c) => c.id === g.id));
+            if (added) onCreated(added.id);
             setName('');
             return next;
           }, t('admin.radio.genres.added'));

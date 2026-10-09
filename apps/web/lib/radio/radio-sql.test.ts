@@ -99,7 +99,15 @@ function fakeClient(opts: { deleteError?: unknown } = {}) {
         else genres.push(row as (typeof genres)[number]);
         return result(null);
       },
-      update: () => ({ eq: () => (calls.push(`update ${table}`), result(null)) }),
+      update: (patch: Record<string, unknown>) => ({
+        eq: (col: string, value: unknown) => {
+          calls.push(`update ${table}`);
+          for (const r of rows as Record<string, unknown>[]) {
+            if (r[col] === value) Object.assign(r, patch);
+          }
+          return result(null);
+        },
+      }),
       delete: () => ({
         eq: () => (calls.push(`delete ${table}`), result(null, opts.deleteError ?? null)),
       }),
@@ -141,6 +149,29 @@ describe('radio con cuentas (cliente falso)', () => {
     ]);
     expect(songs[0]).toMatchObject({ position: 0, genre_id: 'techno' });
     expect(c.songs[0]).toMatchObject({ id: 'cancion-x1', first: true, durationSeconds: 12.5 });
+  });
+
+  it('plan 023 T246: crear un género, subirle una canción y renombrarlo (mismo id)', async () => {
+    const { client, calls, songs } = fakeClient();
+    let n = 0;
+    const store = createSharedRadioStore(client, () => `y${++n}`);
+    let c = await store.addGenre('Cumbia');
+    expect(c.genres.map((g) => g.id)).toEqual(['techno', 'cumbia']);
+    c = await store.addSong({
+      title: 'Ola',
+      artist: 'Brisa FM',
+      genreId: 'cumbia',
+      durationSeconds: 20,
+      file: new Blob([]),
+    });
+    expect(songs[0]).toMatchObject({ genre_id: 'cumbia' });
+    c = await store.renameGenre('cumbia', 'Cumbia del puerto');
+    expect(c.genres.find((g) => g.id === 'cumbia')?.name).toBe('Cumbia del puerto');
+    expect(c.songs.map((s) => s.genreId)).toEqual(['cumbia']);
+    expect(calls).toContain('insert radio_genres');
+    expect(calls).toContain('update radio_genres');
+    const err = await store.addGenre('techno').catch((e: unknown) => e);
+    expect((err as RadioCatalogError).code).toBe('genre_exists');
   });
 
   it('un género con canciones: la base lo rechaza (23503) y se dice `genre_in_use`', async () => {

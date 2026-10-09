@@ -2,8 +2,9 @@
 
 import type { RadioSong } from '@boia/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { lcdTime, playable } from '../player-model';
+import { lcdTime, listedGenres, playable } from '../player-model';
 import type { RadioState } from '../player';
+import { GenreBar } from './genre-bar';
 import { RadioIcon } from './radio-button';
 import { t } from './t';
 import { useRadio } from './use-radio';
@@ -66,8 +67,13 @@ export function RadioWindow({ onClose }: { onClose: () => void }) {
     () => (state.catalog ? playable(state.catalog.songs, state.genreId) : []),
     [state.catalog, state.genreId],
   );
-  const genres = state.catalog?.genres ?? [];
-  const genreName = (id: string) => genres.find((g) => g.id === id)?.name ?? id;
+  const genres = useMemo(
+    () => (state.catalog ? listedGenres(state.catalog.genres, state.catalog.songs) : []),
+    [state.catalog],
+  );
+  const genreName = (id: string) => state.catalog?.genres.find((g) => g.id === id)?.name ?? id;
+  // Un género guardado que ya no sale en la barra cuenta como «Todos».
+  const activeGenre = genres.some((g) => g.id === state.genreId) ? state.genreId : null;
 
   // La que suena, a la vista en la lista cuando cambia.
   useEffect(() => {
@@ -262,28 +268,7 @@ export function RadioWindow({ onClose }: { onClose: () => void }) {
       </header>
 
       <div id="radio-lista" className="radio-list" hidden={!listOpen}>
-        <div className="radio-genres" role="group" aria-label={t('radio.generos')}>
-          <button
-            type="button"
-            className="radio-genre"
-            aria-pressed={state.genreId === null}
-            onClick={() => player.setGenre(null)}
-          >
-            {t('radio.generos.todos')}
-          </button>
-          {genres.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              className="radio-genre"
-              aria-pressed={state.genreId === g.id}
-              data-testid={`radio-genero-${g.id}`}
-              onClick={() => player.setGenre(g.id)}
-            >
-              {g.name}
-            </button>
-          ))}
-        </div>
+        <GenreBar genres={genres} active={activeGenre} onPick={(id) => player.setGenre(id)} />
         <ol ref={listRef} className="radio-list__songs" aria-label={t('radio.lista.aria')}>
           {songs.length === 0 ? (
             <li className="radio-list__empty">{t('radio.lista.vacia')}</li>

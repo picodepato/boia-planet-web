@@ -1,7 +1,18 @@
 import type { RadioSong } from '@boia/contracts';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_RADIO_CATALOG } from './muestra';
-import { firstSong, lcdTime, nextSong, playable, previousSong, shouldToast } from './player-model';
+import {
+  firstSong,
+  lcdTime,
+  listedGenres,
+  nextSong,
+  pageLeft,
+  playable,
+  previousSong,
+  revealLeft,
+  shouldToast,
+  stripEdges,
+} from './player-model';
 
 /** Un generador fijo: la misma secuencia en cada prueba. */
 function seeded(seed: number): () => number {
@@ -100,5 +111,51 @@ describe('radio: el orden en que suena (plan 022 T247)', () => {
     expect(lcdTime(65.8)).toBe('1:05');
     expect(lcdTime(4, true)).toBe('-0:04');
     expect(lcdTime(Number.NaN)).toBe('0:00');
+  });
+});
+
+describe('radio: la barra de géneros (plan 023 T246)', () => {
+  it('enseña los géneros con canciones, en su orden; uno vacío no', () => {
+    const genres = [...SAMPLE_RADIO_CATALOG.genres, { id: 'cumbia', name: 'Cumbia' }];
+    expect(listedGenres(genres, SAMPLE_RADIO_CATALOG.songs)).toEqual(SAMPLE_RADIO_CATALOG.genres);
+    const withSong = [
+      ...SAMPLE_RADIO_CATALOG.songs,
+      { ...SAMPLE_RADIO_CATALOG.songs[0]!, id: 'z', genreId: 'cumbia' },
+    ];
+    expect(listedGenres(genres, withSong).at(-1)?.id).toBe('cumbia');
+  });
+
+  it('flechas: a cada lado sólo si queda algo escondido', () => {
+    expect(stripEdges({ scrollLeft: 0, clientWidth: 300, scrollWidth: 300 })).toEqual({
+      before: false,
+      after: false,
+    });
+    expect(stripEdges({ scrollLeft: 0, clientWidth: 300, scrollWidth: 700 })).toEqual({
+      before: false,
+      after: true,
+    });
+    expect(stripEdges({ scrollLeft: 200, clientWidth: 300, scrollWidth: 700 })).toEqual({
+      before: true,
+      after: true,
+    });
+    expect(stripEdges({ scrollLeft: 400, clientWidth: 300, scrollWidth: 700 })).toEqual({
+      before: true,
+      after: false,
+    });
+  });
+
+  it('el género elegido se trae a la vista; si ya se ve, no se mueve', () => {
+    const box = { scrollLeft: 100, clientWidth: 300, scrollWidth: 900 };
+    expect(revealLeft(box, 150, 50, 20)).toBe(100);
+    expect(revealLeft(box, 600, 60, 20)).toBe(380);
+    expect(revealLeft(box, 40, 60, 20)).toBe(20);
+    expect(revealLeft(box, 860, 40, 20)).toBe(600);
+  });
+
+  it('un paso de flecha, sin salirse', () => {
+    const box = { scrollLeft: 0, clientWidth: 300, scrollWidth: 900 };
+    expect(pageLeft(box, 1)).toBe(225);
+    expect(pageLeft(box, -1)).toBe(0);
+    expect(pageLeft({ ...box, scrollLeft: 550 }, 1)).toBe(600);
   });
 });
