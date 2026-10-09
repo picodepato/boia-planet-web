@@ -1,20 +1,56 @@
 import {
+  type BufferAttribute,
+  type BufferGeometry,
   BoxGeometry,
-  CanvasTexture,
   ConeGeometry,
   CylinderGeometry,
-  Mesh,
-  MeshLambertMaterial,
   PlaneGeometry,
-  RepeatWrapping,
-  SRGBColorSpace,
   SphereGeometry,
 } from 'three';
 import { type IslandBuild, newParts, rocky, sandy, shoreRocks, terrain } from './islands';
 import { rng, seedOf, wobble } from './kit';
 import { DECOR_SIZE, DECOR_SOLIDS, type DecorKind } from './compact';
 import { C } from './palette';
-import { crag, flag, house, palm, pine } from './props';
+import { crag, flag, house, palm, pier, pine } from './props';
+
+/**
+ * Medidas de la Explanada (unidades de escena = del modelo, escala 1): las
+ * mismas constantes que `tools/blender/islas/explanada.py` (allí, en Blender,
+ * el frente es −Y; aquí, +z). Los x son a lo largo del paseo.
+ */
+export const EXPLANADA = {
+  /** Cima de la tierra, donde se apoya el paseo. */
+  top: 0.9,
+  /** El pavimento, a lo largo, y hasta dónde llega el mosaico (la tarima de la Concha). */
+  x0: -15.2,
+  x1: 15.2,
+  walkX1: 11.3,
+  /** Semiancho del pavimento entero. */
+  sideHalf: 3.7,
+  /** Las dos hileras de palmeras, a cada lado del paseo (±z). */
+  rowZ: 2.3,
+  /** El muro de mar, al frente (+z). */
+  wallZ: 3.95,
+  /** Las fachadas, por detrás (−z), y su fondo. */
+  facadeZ0: 4.4,
+  facadeD: 1.9,
+  lampH: 2.4,
+  /** La Concha: centro (x, z), radio y alto de la media cúpula. */
+  concha: { x: 13.6, z: -0.35, r: 2.3, h: 2.5 },
+  /** Las olas del mosaico: periodo y amplitud. */
+  wave: { len: 4.4, amp: 0.3 },
+  /** Las fachadas: x, semiancho, alto, color, plantas. */
+  facades: [
+    [-13.3, 1.9, 3.6, '#f6eedf', 3],
+    [-9.3, 1.9, 4.6, '#e9c9a4', 4],
+    [-5.3, 1.85, 3.1, '#e6b9a8', 3],
+    [-1.5, 1.8, 4.2, '#f6eedf', 4],
+    [2.3, 1.85, 3.4, '#e9c9a4', 3],
+    [6.2, 1.95, 4.8, '#f6eedf', 4],
+    [10.2, 1.9, 3.3, '#e6b9a8', 3],
+    [14.0, 1.75, 4.0, '#e9c9a4', 4],
+  ] as const,
+} as const;
 
 /**
  * El decorado propio del planeta de agua de `/mar` (D-22, REQ-MUN-038): lo
@@ -24,7 +60,9 @@ import { crag, flag, house, palm, pine } from './props';
  * del mapa compartido (sin id, sin comportamientos, fuera del runtime): sólo
  * se ven y no se atraviesan. Dónde va cada pieza y sus círculos sólidos están
  * en `compact.ts` (T50: se mueven con el mundo compacto). Unidades de escena.
- * Todo `muestra`.
+ * La Explanada tiene además su modelo de Blender (plan 023, T252:
+ * `art/islas/3d/explanada.glb`, `DECOR_MODELS` de `compact.ts`), que
+ * sustituye de cerca a la composición de aquí. Todo `muestra`.
  *
  * El castillo en su monte se construye aquí igual, pero desde el plan 014
  * (T157) no es decorado: es la isla del minijuego `castillo` del mapa, junto a
@@ -34,34 +72,6 @@ import { crag, flag, house, palm, pine } from './props';
 export interface DecorBuild extends IslandBuild {
   /** Círculos sólidos, respecto al centro. */
   solids: { dx: number; dz: number; r: number }[];
-}
-
-/** El mosaico de olas de la Explanada (rojo, crema y negro), en canvas. */
-function mosaicTexture(): CanvasTexture {
-  const cv = document.createElement('canvas');
-  cv.width = 256;
-  cv.height = 64;
-  const g = cv.getContext('2d')!;
-  g.fillStyle = '#f1e2c8';
-  g.fillRect(0, 0, 256, 64);
-  const band = (y: number, color: string, amp: number) => {
-    g.fillStyle = color;
-    g.beginPath();
-    g.moveTo(0, y);
-    for (let x = 0; x <= 256; x += 4) g.lineTo(x, y + Math.sin((x / 256) * Math.PI * 4) * amp);
-    g.lineTo(256, y + 8);
-    for (let x = 256; x >= 0; x -= 4) g.lineTo(x, y + 8 + Math.sin((x / 256) * Math.PI * 4) * amp);
-    g.closePath();
-    g.fill();
-  };
-  band(8, '#b8332b', 6);
-  band(26, '#2b2327', 6);
-  band(44, '#b8332b', 6);
-  const t = new CanvasTexture(cv);
-  t.wrapS = RepeatWrapping;
-  t.wrapT = RepeatWrapping;
-  t.colorSpace = SRGBColorSpace;
-  return t;
 }
 
 /** El castillo de Santa Bárbara en el monte Benacantil, ahora isla. */
@@ -117,7 +127,15 @@ function castillo(rnd: () => number): DecorBuild {
   };
 }
 
-/** La Explanada: el paseo de las palmeras y el mosaico de olas, como isla alargada. */
+/**
+ * La Explanada de España de Alicante (plan 023, T252): la composición a mano
+ * del decorado `explanada`, con la silueta de su modelo de Blender
+ * (`tools/blender/islas/explanada.py`, que la sustituye de cerca): la isla
+ * alargada, el paseo con el mosaico de olas rojo, crema y negro, dos hileras
+ * de palmeras con bancos y farolas, la balaustrada y el muelle al frente, la
+ * Concha en el extremo este y las fachadas de la ciudad por detrás. Sin
+ * rótulo. Mismas medidas que el modelo (escala 1).
+ */
 function explanada(rnd: () => number): DecorBuild {
   const L = DECOR_SIZE.explanadaL;
   const W = DECOR_SIZE.explanadaW;
@@ -125,34 +143,113 @@ function explanada(rnd: () => number): DecorBuild {
   const k = parts.lit;
   // Isla alargada: el terreno de siempre, estirado en x.
   const ground = newParts();
-  terrain(ground.lit, W, sandy(0.9, C.grassDark), rnd, 28);
+  terrain(ground.lit, W, sandy(0.9, C.sand), rnd, 28);
   k.addPainted(ground.lit.build(), { s: [L / W, 1, 1] });
-  const top = 0.9;
+  const top = EXPLANADA.top;
+  const pave = top + 0.12;
   const heightAt = (x: number, z: number) => (Math.hypot(x / (L / W), z) < W * 0.8 ? top : 0);
-  // El paseo: una franja de mosaico al sur, mirando al puerto.
-  const tex = mosaicTexture();
-  tex.repeat.set(9, 1);
-  const walk = new Mesh(new PlaneGeometry(L * 1.45, 2.4), new MeshLambertMaterial({ map: tex }));
-  walk.rotation.x = -Math.PI / 2;
-  walk.position.set(0, top + 0.04, 2.2);
-  // Palmeras a los dos lados del paseo y farolas.
-  for (let i = 0; i < 9; i++) {
-    const x = -L * 0.66 + (i / 8) * L * 1.32;
-    palm(k, x + (rnd() - 0.5) * 0.4, top, 3.8, 3 + rnd(), rnd);
-    palm(k, x + (rnd() - 0.5) * 0.4, top, 0.6, 3 + rnd(), rnd);
-    if (i % 2 === 0) {
-      k.add(new CylinderGeometry(0.05, 0.07, 1.8, 5), C.iron, { p: [x + 0.9, top + 0.9, 2.2] });
-      k.add(new SphereGeometry(0.16, 6, 5), C.bulb, { p: [x + 0.9, top + 1.85, 2.2] });
-      parts.glows.add([x + 0.9, top + 1.85, 2.2], C.bulb, 2);
+  const { x0, x1, walkX1, sideHalf, rowZ, wallZ } = EXPLANADA;
+  const cx = (x0 + x1) / 2;
+  const len = x1 - x0;
+  // La losa crema del paseo con su bordillo, y el mosaico de olas (dos franjas rojas y dos negras).
+  k.add(new BoxGeometry(len + 0.3, 0.06, sideHalf * 2 + 0.3), C.wall, { p: [cx, top + 0.03, 0] });
+  k.add(new BoxGeometry(len, 0.08, sideHalf * 2), '#efe3c9', { p: [cx, pave - 0.04, 0] });
+  for (const [z0, color] of [
+    [-1.05, '#b8332b'],
+    [-0.35, '#2b2327'],
+    [0.35, '#b8332b'],
+    [1.05, '#2b2327'],
+  ] as const) {
+    k.add(waveBand(x0 + 0.1, walkX1 - 0.1, 0.3), color, { p: [0, pave + 0.012, z0] });
+  }
+  // El muro de mar con la balaustrada, la escalera y el muelle.
+  k.add(new BoxGeometry(len + 0.3, pave - 0.15, 0.52), '#d9cdb4', {
+    p: [cx, (pave + 0.15) / 2, wallZ],
+  });
+  k.add(new BoxGeometry(len + 0.3, 0.1, 0.34), '#d9cdb4', { p: [cx, pave + 0.78, wallZ] });
+  for (let x = x0; x <= x1; x += 1.24) {
+    if (Math.abs(x + 2) < 1) continue;
+    k.add(new CylinderGeometry(0.06, 0.07, 0.62, 5), '#d9cdb4', { p: [x, pave + 0.47, wallZ] });
+  }
+  for (let i = 0; i < 4; i++) {
+    k.add(new BoxGeometry(1.8, 0.12, 0.28), '#d9cdb4', {
+      p: [-2, pave - 0.12 - i * 0.14, wallZ + 0.35 + i * 0.26],
+    });
+  }
+  pier(k, -2, wallZ + 0.1, Math.PI / 2, 2.4, 0.42);
+  // Dos hileras de palmeras en sus alcorques; entre ellas, farolas de globos y bancos.
+  const xs = Array.from({ length: 9 }, (_, i) => -13.6 + i * 3);
+  for (const sz of [-1, 1]) {
+    const z = sz * rowZ;
+    for (const x of xs) {
+      k.add(new CylinderGeometry(0.46, 0.46, 0.16, 10), '#b9a58a', { p: [x, pave + 0.06, z] });
+      palm(k, x + (rnd() - 0.5) * 0.2, pave + 0.08, z, 3.3 + rnd() * 0.8, rnd);
+    }
+    xs.slice(0, -1).forEach((x, i) => {
+      const mid = x + 1.5;
+      if ((i + (sz > 0 ? 0 : 1)) % 2 === 0) {
+        k.add(new CylinderGeometry(0.04, 0.065, EXPLANADA.lampH, 5), '#2e2a2c', {
+          p: [mid, pave + EXPLANADA.lampH / 2, z],
+        });
+        k.add(new SphereGeometry(0.2, 7, 5), C.bulb, { p: [mid, pave + EXPLANADA.lampH + 0.3, z] });
+        parts.glows.add([mid, pave + EXPLANADA.lampH + 0.3, z], C.bulb, 2);
+      } else {
+        k.add(new BoxGeometry(1.5, 0.05, 0.4), C.wood, { p: [mid, pave + 0.42, z] });
+        k.add(new BoxGeometry(1.5, 0.36, 0.05), C.wood, { p: [mid, pave + 0.7, z - sz * 0.22] });
+      }
+    });
+  }
+  // La Concha: tarima redonda y media cúpula abierta hacia el paseo (−x).
+  const cc = EXPLANADA.concha;
+  k.add(new CylinderGeometry(cc.r + 0.5, cc.r + 0.5, 0.32, 16), C.rockLight, {
+    p: [cc.x, pave + 0.06, cc.z],
+  });
+  k.add(new SphereGeometry(cc.r, 12, 6, Math.PI / 2, Math.PI, 0, Math.PI / 2), '#f2e6d0', {
+    p: [cc.x, pave + 0.3, cc.z],
+    s: [1, cc.h / cc.r, 1],
+  });
+  // Las fachadas de la ciudad por detrás, con cornisa y ventanas (algunas encendidas de noche).
+  const fz = -(EXPLANADA.facadeZ0 + EXPLANADA.facadeD / 2);
+  for (const [x, hw, h, color, floors] of EXPLANADA.facades) {
+    const base = 0.35;
+    k.add(new BoxGeometry(hw * 2, h, EXPLANADA.facadeD), color, { p: [x, base + h / 2, fz] });
+    k.add(new BoxGeometry(hw * 2 + 0.16, 0.1, EXPLANADA.facadeD + 0.16), '#d9cdb4', {
+      p: [x, base + h + 0.05, fz],
+    });
+    const fh = h / floors;
+    const n = hw > 1.8 ? 3 : 2;
+    for (let fl = 0; fl < floors; fl++) {
+      for (let j = 0; j < n; j++) {
+        const wx = x + (j - (n - 1) / 2) * ((hw * 1.5) / n);
+        const y = base + fh * (fl + 0.55);
+        const lit = fl > 0 && rnd() < 0.45;
+        k.add(new BoxGeometry(0.34, 0.52, 0.05), lit ? C.bulb : '#3b4b63', {
+          p: [wx, y, -EXPLANADA.facadeZ0 + 0.02],
+        });
+        if (lit) parts.glows.add([wx, y, -EXPLANADA.facadeZ0 + 0.3], C.bulb, 1.2);
+      }
     }
   }
-  // Fachadas blancas detrás.
-  for (let x = -L * 0.62; x <= L * 0.62; x += 2.1 + rnd() * 0.6) {
-    const hh = 1.6 + rnd() * 2.2;
-    house(k, x, top, -1.8 - rnd() * 0.6, 1.9 + rnd() * 0.4, 2, hh, (rnd() - 0.5) * 0.08, rnd);
-    if (rnd() > 0.6) parts.glows.add([x, top + hh * 0.6, -0.7], C.bulb, 1.2);
+  return { parts, animated: [], heightAt, labelY: 6, solids: [...DECOR_SOLIDS.explanada] };
+}
+
+/**
+ * Una franja del mosaico de olas: un plano a ras del paseo cuyo borde sigue
+ * una senoide a lo largo de x (`EXPLANADA.wave`), de x0 a x1 y semiancho hw.
+ */
+function waveBand(x0: number, x1: number, hw: number): BufferGeometry {
+  const n = Math.round((x1 - x0) / 0.35);
+  const g = new PlaneGeometry(x1 - x0, hw * 2, n, 1);
+  g.rotateX(-Math.PI / 2);
+  g.translate((x0 + x1) / 2, 0, 0);
+  const pos = g.attributes.position as BufferAttribute;
+  const { len, amp } = EXPLANADA.wave;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    pos.setZ(i, pos.getZ(i) + amp * Math.sin((2 * Math.PI * x) / len));
   }
-  return { parts, animated: [walk], heightAt, labelY: 6, solids: [...DECOR_SOLIDS.explanada] };
+  pos.needsUpdate = true;
+  return g;
 }
 
 /** El islote de la cueva del secreto (en el 2D, un hueco en el acantilado oeste). */

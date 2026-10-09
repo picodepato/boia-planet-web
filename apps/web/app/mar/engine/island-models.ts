@@ -11,6 +11,8 @@ import type { Mesh, MeshLambertMaterial, Object3D } from 'three';
  *
  * Los lugares con contrato propio (T107, `tools/blender/places/`) entran por
  * el mismo camino con `loadPlaceManifests`: `art/places/3d/<id>/manifest.json`.
+ * El decorado con modelo (plan 023, T252: la Explanada, `DECOR_MODELS` de
+ * `compact.ts`) también: su id en el manifiesto es su `DecorKind`.
  */
 
 export const ISLAND_MODELS_URL = '/api/art/islas/3d';

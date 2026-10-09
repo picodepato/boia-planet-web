@@ -38,6 +38,17 @@
    "doc": "la montaña de caliza del Puig Campana en pirámide empinada con la muesca de la Portà en la cresta, el pueblo blanco de Finestrat a sus pies con las ventanas encendidas de noche, pinos, el cañón del minijuego apuntando al mar con su bandera y antorcha, muelle y una boia de BOIA"
   },
   {
+   "id": "explanada",
+   "file": "explanada.glb",
+   "label": "Explanada de Alicante",
+   "radius": 17.0,
+   "top": 0.9,
+   "height": 5.45,
+   "tris": 25654,
+   "kb": 529,
+   "doc": "paseo marítimo alargado de la Explanada de Alicante con el mosaico de olas rojo, crema y negro, dos hileras de palmeras con bancos y farolas de globos que brillan de noche, la balaustrada y el muelle hacia el puerto, la Concha en el extremo este, las fachadas de la ciudad por detrás con ventanas encendidas y una boia paseando; sin rótulo"
+  },
+  {
    "id": "faro",
    "file": "faro.glb",
    "label": "Faro de Tabarca",

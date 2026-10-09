@@ -5,7 +5,8 @@ import { Group, Mesh, MeshLambertMaterial, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
 import { repoRoot } from '../../../lib/barco/load';
 import { worlds } from '../../../lib/mundo/demo-world';
-import { DECOR_SIZE, marWorld } from './compact';
+import { DECOR_MODELS, DECOR_SIZE, marWorld } from './compact';
+import { buildDecor } from './decor';
 import { toScene } from './compress';
 import { FARO_LANTERN, buildIsland } from './islands';
 import {
@@ -33,13 +34,14 @@ const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8')) as unknown;
 const entries = parseIslandManifest(manifest);
 
 describe('el manifiesto de las islas', () => {
-  it('cada isla con modelo es una isla del mapa en todos los mundos y su GLB existe', () => {
+  it('cada isla con modelo es una isla del mapa en todos los mundos (o decorado con modelo) y su GLB existe', () => {
     expect(entries.size).toBeGreaterThan(0);
+    const decor = Object.keys(DECOR_MODELS);
     for (const wid of WORLD_REGISTRY.ids()) {
       const islands = WORLD_REGISTRY.get(wid)
         .config.objects.filter((o) => o.identity.category === 'isla')
         .map((o) => o.identity.id);
-      for (const id of entries.keys()) expect(islands).toContain(id);
+      for (const id of entries.keys()) expect([...islands, ...decor]).toContain(id);
     }
     for (const e of entries.values()) {
       expect(existsSync(path.join(ROOT, 'art/islas/3d', e.file))).toBe(true);
@@ -109,6 +111,44 @@ describe('el manifiesto de las islas', () => {
     };
     const bubble = gltf.materials.find((m) => m.name.startsWith('lc_bubble'));
     expect(bubble?.emissiveFactor?.some((c) => c > 0)).toBe(true);
+  });
+
+  describe('la Explanada de Alicante, el decorado sin nombre de la derecha (plan 023, T252)', () => {
+    const entry = entries.get('explanada')!;
+    const R = DECOR_MODELS.explanada!.R;
+
+    it('tiene su modelo por el camino de las islas, a escala 1 (su radio es el semilargo del decorado)', () => {
+      expect(entry).toBeDefined();
+      expect(entry.radius).toBe(DECOR_SIZE.explanadaL);
+      expect(islandScale(entry, R)).toBeCloseTo(1, 9);
+    });
+
+    it('su composición a mano tiene su misma silueta: cabe en su huella y llega a su alto', () => {
+      const build = buildDecor('explanada');
+      expect(build.animated).toEqual([]);
+      const geo = build.parts.lit.build();
+      geo.computeBoundingBox();
+      const box = geo.boundingBox!;
+      const top = entry.height * islandScale(entry, R);
+      expect(box.max.y).toBeLessThanOrEqual(top + 1e-6);
+      expect(box.max.y).toBeGreaterThan(top * 0.85);
+      // Lo que asoma del agua, a lo largo y a lo ancho, dentro de sus círculos sólidos (la colisión no cambia).
+      const solids = DECOR_SIZE.explanadaL / 3;
+      const pos = geo.getAttribute('position');
+      let farX = 0;
+      let farZ = 0;
+      for (let i = 0; i < pos.count; i++) {
+        if (pos.getY(i) < 0.05) continue;
+        farX = Math.max(farX, Math.abs(pos.getX(i)));
+        farZ = Math.max(farZ, Math.abs(pos.getZ(i)));
+      }
+      // (la orilla de arena, irregular, asoma algo más que el círculo del extremo)
+      expect(farX).toBeLessThanOrEqual(2 * solids + DECOR_SIZE.explanadaW * 0.95 + 1.5);
+      expect(farZ).toBeLessThanOrEqual(DECOR_SIZE.explanadaW * 1.25);
+      expect(build.solids).toEqual(
+        [-2, -1, 0, 1, 2].map((i) => ({ dx: i * solids, dz: 0, r: DECOR_SIZE.explanadaW * 0.95 })),
+      );
+    });
   });
 
   describe('el Faro de Tabarca (plan 014, T166)', () => {

@@ -45,6 +45,16 @@ export const DECOR_SIZE = {
   cueva: 3.6,
 } as const;
 
+/**
+ * El decorado con modelo de Blender (plan 023, T252): la Explanada,
+ * `art/islas/3d/explanada.glb` por el camino de las islas (`island-models.ts`,
+ * id = su `DecorKind`), escalado a `R` como una isla de ese radio (el modelo
+ * se hizo a su semilargo: escala 1). Lo demás sigue sólo a mano.
+ */
+export const DECOR_MODELS: Partial<Record<DecorKind, { R: number }>> = {
+  explanada: { R: DECOR_SIZE.explanadaL },
+};
+
 /** Círculos sólidos de cada pieza, respecto a su centro (escena). */
 export const DECOR_SOLIDS: Record<DecorKind, readonly { dx: number; dz: number; r: number }[]> = {
   castillo: [{ dx: 0, dz: 0, r: DECOR_SIZE.castillo }],

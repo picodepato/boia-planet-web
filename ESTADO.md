@@ -4,6 +4,52 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T252: /mar: la isla sin nombre de la derecha es la Explanada de Alicante
+
+**Qué isla es.** La de la captura de Hernán (casitas blancas, palmeras, farolas y la tira de olas sobre la arena,
+delante del barco y bajo el rótulo del Puerto de Alicante) no es un lugar de `mundos/arcilla/mapa.json`: es la pieza
+`explanada` del decorado propio de `/mar` (`DecorKind` de `apps/web/app/mar/engine/compact.ts`, dibujada en
+`decor.ts`), la isla alargada al este de la salida (`DECOR_OFFSET.explanada`). No tiene id de lugar ni rótulo
+(las vistas `decorado` no llevan etiqueta) y sigue sin tenerlo.
+
+**Qué existe.**
+- `tools/blender/islas/explanada.py` (`ID = "explanada"`): la Explanada de España en arcilla: isla alargada 34 × 13
+  (RADIUS = 17 = `DECOR_SIZE.explanadaL`, escala 1 en /mar), paseo con el mosaico de olas rojo/crema/negro
+  (franjas senoidales en geometría, sin texturas), dos hileras de palmeras en alcorques con bancos y farolas de
+  globos (emisivas), muro de mar con balaustrada, escalera y muelle al frente, la Concha en el extremo este, las
+  fachadas de la ciudad por detrás (ventanas encendidas de noche) y una boia de BOIA con un helado (con el trazo
+  del logo). 25 654 triángulos (presupuesto 36 000), 31 materiales, 529 kB.
+- `art/islas/3d/explanada.glb` + su entrada en `art/islas/3d/manifest.json` (exportado con
+  `export_islas_glb.py`; el manifiesto de las demás islas no cambia).
+- `/mar`: `DECOR_MODELS` (`compact.ts`) dice qué decorado tiene modelo; `mar3d.ts` mete la composición a mano
+  de ese decorado en un hueco (`modelSlot`) y la registra en `islandModels` con el id `explanada`, su centro
+  (`at`) y su vista (`viewId`), así se pide y se suelta por distancia como las islas y aparece en
+  `data-islas-modelo` («explanada:glb»). `?cerca=explanada` pone el barco delante (para capturas y e2e).
+- `decor.ts`: la composición a mano de la Explanada rehecha con la silueta del modelo (constantes compartidas en
+  `EXPLANADA`): ya sin textura de canvas (el mosaico es geometría y se curva con el planeta). Colisión
+  (`DECOR_SOLIDS.explanada`), posición y orillas, sin cambios.
+- `island-models.test.ts`: el manifiesto admite el decorado con modelo; la Explanada está a escala 1, su
+  composición a mano cabe en su huella y llega a su alto.
+
+**Comandos.**
+- `blender -b --factory-startup -P tools/blender/export_islas_glb.py -- --only explanada --preview <fuera>`
+  (Blender 4.0.1) → `explanada.glb`, 25 654 triángulos, exit 0.
+- Validación (skill blender-asset-validation, `inspect_asset.py` + `render_evidence.py` sobre el GLB
+  reimportado): `hard_gate_pass: true`, 0 caras degeneradas, 1 malla, 31 materiales; seis vistas + hoja de
+  contactos.
+- `python3 tools/blender/check.py` → `islas/3d (island-glb): 7 imágenes, manifest válido`.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 290 archivos, 2557 pasan, 2 saltadas,
+  exit 0.
+- `sh tools/spec/checks.sh` → exit 0 · `pnpm lint` → exit 0 · `pnpm build` → exit 0 · `pnpm typecheck` → exit 0.
+- Capturas (en `C:\Users\alvar\AppData\Local\Temp\orchestrator-attach\boia-planet-hernan-T252\`): previas de
+  Blender de día y de noche, `validacion/` (seis vistas, hoja de contactos, `metrics.json`) y en el juego, móvil
+  390×844 y escritorio 1366×800: cerca con el GLB (tarde y noche) y con el GLB bloqueado (la composición a mano),
+  sin errores de página.
+
+**Pendiente.** Nada del encargo. Si Álvaro quiere otra lectura del paseo (cuatro hileras de palmeras como en el
+real, más boias, quiosco), es sólo tocar `explanada.py` y reexportar. Las e2e no se han corrido (las corre Hernán);
+`?cerca=explanada` queda disponible para un spec.
+
 ## 2026-10-09 — plan 023 T253: Supabase: migraciones pendientes aplicadas en boia-planet-dev
 
 **Qué existe.** Las 35 migraciones están en `boia-planet-dev` (el único proyecto de

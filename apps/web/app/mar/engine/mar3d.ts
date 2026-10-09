@@ -113,7 +113,7 @@ import {
   textTexture,
 } from './islands';
 import { Kit, clamp01, lerp, rng, seedOf, smooth } from './kit';
-import { type SeaRoute, decorSpots, seaRoute } from './compact';
+import { DECOR_MODELS, DECOR_SOLIDS, type SeaRoute, decorSpots, seaRoute } from './compact';
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { Glows, buoy, crag, rock } from './props';
@@ -349,6 +349,12 @@ interface IslandModelView {
   glows: { g: Glows; start: number } | null;
   /** Lo que se mueve del modelo puesto (T112: la boia del club de Benidorm, sus pantallas). */
   motion: PlaceMotion | null;
+  /**
+   * El decorado con modelo (T252: la Explanada) no es un lugar del mapa: su
+   * centro (u de motor) va aquí, y su vista se llama `decorado:<kind>`.
+   */
+  at?: { x: number; y: number };
+  viewId?: string;
 }
 
 /** s entre dos escrituras de `data-lugares-pose` (para las pruebas). */
@@ -1017,16 +1023,23 @@ export class Mar3D {
     return p;
   }
 
-  /** Pone el barco al sur de un lugar, fuera de su radio (`?cerca=` y enlaces). */
+  /**
+   * Pone el barco al sur de un lugar, fuera de su radio (`?cerca=` y enlaces).
+   * También del decorado propio por su `DecorKind` (T252: `?cerca=explanada`).
+   */
   startNear(placeId: string): boolean {
     const o = this.world.objects.find((x) => x.identity.id === placeId);
-    if (!o) return false;
-    const reach = Math.max(
-      o.geometry.proximityRadius ?? 0,
-      o.geometry.activation?.radius ?? 0,
-      o.geometry.collision?.radius ?? 0,
-    );
-    const p = this.freePoint(o.position.x, o.position.y + reach + 90);
+    const spot = o ? null : decorSpots(this.world).find((s) => s.kind === placeId);
+    if (!o && !spot) return false;
+    const reach = o
+      ? Math.max(
+          o.geometry.proximityRadius ?? 0,
+          o.geometry.activation?.radius ?? 0,
+          o.geometry.collision?.radius ?? 0,
+        )
+      : fromScene(Math.max(...DECOR_SOLIDS[spot!.kind].map((c) => Math.abs(c.dz) + c.r)));
+    const at = o ? o.position : { x: fromScene(spot!.x), y: fromScene(spot!.z) };
+    const p = this.freePoint(at.x, at.y + reach + 90);
     this.jumps++;
     Object.assign(this.ship, { x: p.x, y: p.y, vx: 0, vy: 0, heading: -Math.PI / 2 });
     Object.assign(this.prev, { x: p.x, y: p.y, heading: -Math.PI / 2 });
@@ -2159,7 +2172,9 @@ export class Mar3D {
   /**
    * El decorado propio del planeta (Explanada, islote de la cueva): vistas
    * sin lugar del mapa, sólidas para el barco. Devuelve sus orillas. El
-   * castillo es desde T157 una isla del mapa (`buildPlaces`).
+   * castillo es desde T157 una isla del mapa (`buildPlaces`). La Explanada
+   * (T252) tiene modelo de Blender (`DECOR_MODELS`): su composición a mano va
+   * en un hueco y el modelo la sustituye de cerca, como a las islas.
    */
   private buildDecor(glows: Glows[]): { x: number; z: number; r: number; w: number }[] {
     const shores: { x: number; z: number; r: number; w: number }[] = [];
@@ -2168,9 +2183,30 @@ export class Mar3D {
       const build = buildDecor(spot.kind);
       const g = new Group();
       g.position.set(spot.x, 0, spot.z);
-      const fallback = new Mesh(build.parts.lit.build(), lit);
-      g.add(fallback);
-      for (const a of build.animated) g.add(a);
+      const fallback = new Group();
+      fallback.add(new Mesh(build.parts.lit.build(), lit));
+      for (const a of build.animated) fallback.add(a);
+      const model = DECOR_MODELS[spot.kind];
+      if (model) {
+        const slot = modelSlot(fallback);
+        g.add(slot);
+        this.islandModels.set(spot.kind, {
+          slot,
+          fallback,
+          R: model.R,
+          entry: null,
+          model: null,
+          acquired: false,
+          state: 'procedural',
+          glow: null,
+          glows: { g: build.parts.glows, start: 0 },
+          motion: null,
+          at: { x: fromScene(spot.x), y: fromScene(spot.z) },
+          viewId: `decorado:${spot.kind}`,
+        });
+      } else {
+        g.add(fallback);
+      }
       const gl = build.parts.glows;
       for (let i = 0; i < gl.pos.length; i += 3) {
         gl.pos[i] = gl.pos[i]! + spot.x;
@@ -3938,8 +3974,8 @@ export class Mar3D {
     const withModel = [...this.islandModels].filter(([, v]) => v.entry);
     if (withModel.length === 0) return;
     const ship = this.ship;
-    const near = withModel.map(([id]) => {
-      const at = this.world.objects.find((x) => x.identity.id === id)?.position;
+    const near = withModel.map(([id, v]) => {
+      const at = v.at ?? this.world.objects.find((x) => x.identity.id === id)?.position;
       const { dx, dy } = this.runtime.delta(ship.x, ship.y, at?.x ?? 0, at?.y ?? 0);
       return { id, x: ship.x + dx, y: ship.y + dy };
     });
@@ -3975,7 +4011,7 @@ export class Mar3D {
       // Sus luces de a mano no caen en el modelo: se apagan mientras se ve (T75).
       if (v.glows) showGlows(this.glow, v.glows.start, v.glows.g, false);
       // Lo que se ve llega hasta la cima del modelo (para no quitarlo de la vista antes de tiempo).
-      const view = this.views.get(id);
+      const view = this.views.get(v.viewId ?? id);
       const top = modelLabelY(v.entry, v.R);
       if (view && top !== null) view.top = Math.max(view.top, top);
       this.showIslandStates();
