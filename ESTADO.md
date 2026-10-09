@@ -4,6 +4,27 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 022 T245: Test guide for Hernán after plan 022
+
+Qué existe:
+
+- `docs/propuestas/2026-10-09-plan-022-guia-prueba.md`: la guía de prueba para Hernán, con la forma de la del plan 020. Cubre T236–T244 y la radio (T246, T247): qué cambió y cómo probarlo en móvil (390×844) y escritorio; las e2e de cada tarea (agrupadas por zona, con el comando); las migraciones en orden (las diez del plan 020 y la 11, `20261009100100_radio.sql`), con la nota de que `20261008100200_artist_music.sql` quita el 400 de artistas; la lista de «tripulación» que cambió IDE-020 para revisar; las decisiones de los agentes; las tablas de REQ que quedan para Álvaro o dispositivos (T243 y T244); las preguntas y propuestas abiertas; qué hace Hernán y qué contestar. Menciona que la versión de prueba se subió dos veces hoy (`c550a62`, `c82b1c8`).
+- `docs/TRASPASO.md`: el último plan pasa a ser el 022 y enlaza su guía (la 020 queda como anterior). La sección «Qué hay» suma la radio; las cifras de REQ son las de este plan (295: HECHO 185, PARCIAL 60, FALTA 15, L2 25, final 8, retirado 2). «Se puede hacer ya» se pone al día (T240, T241, T242 hechos; quedan Acuarela y `behaviors.ts`). Nueva sección «Qué hace Hernán (plan 022)».
+
+Comandos y resultados:
+
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (289 archivos, 2531 pasan, 1 omitida).
+- `sh tools/spec/checks.sh` → exit 0.
+- `pnpm lint` → exit 0. `pnpm build` → exit 0. `pnpm typecheck` → exit 0.
+- `python3 tools/spec/estado.py` → exit 0 (295 REQ: HECHO 185 · PARCIAL 60 · FALTA 15 · L2 25 · final 8 · retirado 2).
+- `apps/web/tsconfig.json` no cambió tras el build.
+
+Pendiente:
+
+- Ninguna e2e corrida: las corre Hernán (lista en la guía).
+- Nada de código tocado en esta tarea; sólo la guía, `docs/TRASPASO.md` y este estado.
+- Las dudas de la guía que son de Hernán (Welcome Aboard, modal bloqueante, Calitas en línea recta, la decisión 4 en `DECISIONES.md`) siguen abiertas.
+
 ## 2026-10-09 — plan 022 T244: Spec backlog B: world, identity, community, admin and remaining REQs
 
 Qué existe:

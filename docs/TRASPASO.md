@@ -3,8 +3,11 @@
 Dónde está BOIA.PLANET y qué queda, para quien llegue sin contexto. La
 pantalla de abajo se escribió el 2026-10-03 (planes 001–008); lo de los
 planes 010–019 está en sus secciones («El Cañón en beta», «Los cambios de la
-reunión», «Qué hace Hernán») y en sus guías de prueba. Último plan cerrado:
-**019** (2026-10-08, [guía de prueba](propuestas/2026-10-08-plan-019-guia-prueba.md)). El
+reunión», «Qué hace Hernán») y en sus guías de prueba. Último plan:
+**022** (2026-10-09, [guía de prueba](propuestas/2026-10-09-plan-022-guia-prueba.md)):
+pulido de /mar y la portada, deuda técnica, la spec cerrada en lo que no depende
+de Álvaro y la radio del sitio. Antes, **019** (2026-10-08, [guía de prueba](propuestas/2026-10-08-plan-019-guia-prueba.md))
+y **020** ([guía](propuestas/2026-10-08-plan-020-guia-prueba.md)). El
 detalle de cada tarea está en `ESTADO.md`; las reglas, en
 [`CLAUDE.md`](../CLAUDE.md).
 
@@ -36,9 +39,14 @@ detalle de cada tarea está en `ESTADO.md`; las reglas, en
   del plan 008 pasó sus e2e; la corrida completa de `pnpm e2e` del plan la
   hace el orquestador al cerrarlo (la última completa, T49: 204 pasan, 36
   saltadas, 0 fallan).
-- **Requisitos:** de los 294 REQ de la spec v15, **165 HECHO**, 68 PARCIAL,
-  26 FALTA, 25 L2, 8 para la versión final y 2 retirados
-  ([spec/estado.md](spec/estado.md), al cerrar el plan 019). El plan 008 pasó de `final` a HECHO el
+- **Radio del sitio (plan 022):** botón «Música» en la landing y en `/mar`,
+  reproductor estilo Winamp y catálogo de 100 canciones de muestra. Nada suena
+  hasta el primer toque. Admin → Radio para subir canciones y géneros. Migración
+  nueva (la 11). Guía en [la guía del plan 022](propuestas/2026-10-09-plan-022-guia-prueba.md).
+- **Requisitos:** de los 295 REQ de la spec v15, **185 HECHO**, 60 PARCIAL,
+  15 FALTA, 25 L2, 8 para la versión final y 2 retirados (cifras del plan 022,
+  [spec/estado.md](spec/estado.md); `tools/spec/estado.py`). Antes, al cerrar
+  el plan 019: 165 HECHO, 68 PARCIAL, 26 FALTA, 25 L2, 8 final y 2 retirados. El plan 008 pasó de `final` a HECHO el
   acceso por código, la vuelta al contexto, el progreso del invitado, nada
   competitivo desde el cliente, el alta del propietario, los permisos en la
   base, Supabase con RLS y la identidad pública sin email; y de L2 a HECHO
@@ -302,11 +310,13 @@ prueba del plan 019](propuestas/2026-10-08-plan-019-guia-prueba.md).
 
 ### Se puede hacer ya (sin Álvaro)
 
-- **Repasar los 67 PARCIAL y 26 FALTA** de [spec/estado.md](spec/estado.md).
-  Muchos FALTA piden una revisión, una medición en móvil o un documento, no
-  código (p. ej. REQ-PRO-008, REQ-ENT-021, REQ-ARQ-017). REQ-ENT-028
-  (subtítulo según promociones) está retirado por D-26; sus textos
-  `hero.explore.with*` siguen en el catálogo sin usarse.
+- **Lo que queda de la spec:** tras el plan 022 hay 60 PARCIAL y 15 FALTA en
+  [spec/estado.md](spec/estado.md). Las tablas de «lo que falta y de quién»
+  (Álvaro, dispositivos, decisiones) están en `ESTADO.md` (plan 022, T243 y T244)
+  y en la guía del plan 022. Muchos quedan por una medición en móvil físico o
+  por una decisión, no por código. REQ-ENT-028 (subtítulo según promociones)
+  está retirado por D-26; sus textos `hero.explore.with*` siguen en el catálogo
+  sin usarse.
 - **Matriz de dispositivos:** los casos a mano (áreas seguras, zoom, sin
   conexión, pérdida del contexto gráfico) en
   [matriz-dispositivos.md](matriz-dispositivos.md) (sin filas que citen
@@ -321,21 +331,40 @@ prueba del plan 019](propuestas/2026-10-08-plan-019-guia-prueba.md).
   píldoras en 1280×800; `/mar` podría tomar el grado cinematográfico del
   hero. (Los enlaces editables y las grabaciones con el «Zarpar» nuevo, plan
   017.)
-- **i18n:** los textos de `skin.ts` ya pasan por claves (plan 017 T195);
-  `packages/world/src/worlds/arcilla/map.ts` aún tiene prosa (nombres de
-  objetos, diálogos por defecto) y los textos de la tienda
-  (`MERCHANDISE_NOTICE`, la marca «Muestra», nombres de productos) no son
-  claves.
+- **i18n:** los textos de `skin.ts` ya pasan por claves (plan 017 T195) y el
+  mapa de Arcilla y la tienda de barcos también (plan 022 T242). Quedan
+  `packages/world/src/worlds/acuarela/skin.ts` (Acuarela, oculta) y el
+  `leaveReaction` por defecto de `packages/world/src/behaviors.ts`; no hay
+  regla de lint para textos sueltos. Los textos de `MERCHANDISE_NOTICE`, la
+  marca «Muestra» y los nombres de productos de la tienda siguen sin ser claves.
 - **Propuestas del plan 017** (sección «Proposals» del plan y la
   [guía](propuestas/2026-10-07-plan-017-guia-prueba.md)): carteles e
   imágenes de producto inventados (T202, saltada); la regla de taquilla no
-  se edita desde el Admin; el archivo subido de un objeto nuevo aún no se
-  dibuja en el mar; los archivos de fotos locales no se borran de IndexedDB;
-  REQ-ADM-031 pide el procedimiento a mano documentado y probado una vez.
+  se edita desde el Admin; REQ-ADM-031 pide el procedimiento a mano documentado
+  y probado una vez. (Hechos en el plan 022: el archivo subido de un objeto
+  nuevo ya se dibuja en el mar, T241; las fotos locales se borran de IndexedDB,
+  T240.)
 
 Las propuestas de cada tarea están en la sección «Proposals» de cada plan.
 Varias ya se hicieron en tareas posteriores: comprueba en el código antes de
 tomarlas.
+
+### Qué hace Hernán (plan 022, 2026-10-09)
+
+Todo con detalle en la
+[guía de prueba del plan 022](propuestas/2026-10-09-plan-022-guia-prueba.md):
+
+- **Once migraciones sin aplicar** en `boia-planet-dev`, en orden: las diez de
+  los planes 017–020 (la guía del 020 da la lista) y la 11,
+  `20261009100100_radio.sql` (radio). `pnpm db:migrate:dev`,
+  `pnpm db:types:dev`, `pnpm test:supabase`. La `20261008100200_artist_music.sql`
+  quita el 400 de los artistas que sale una vez por sesión.
+- **Probar a mano** `/mar` y la landing en móvil (390×844) y escritorio, y la
+  radio (el primer toque la pone; nada suena solo).
+- **Las e2e** que cada tarea dejó indicadas (en la guía): no se han corrido.
+- **Revisar** la lista de textos «tripulación» que cambió IDE-020 y las
+  decisiones de los agentes (en la guía).
+- **Decidir si se publica** (push y despliegue son tuyos).
 
 ### Qué hace Hernán (plan 019, 2026-10-08)
 
