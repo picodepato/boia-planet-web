@@ -401,6 +401,37 @@ html[data-hero-top] .site-header__inner {
   }
 }
 
+/*
+ * Móvil (plan 023 T247): los botones de la cabecera, a la altura del «BOIA»
+ * (30 px). Se ven más bajos, pero el área de toque sigue en 40 px (::before).
+ */
+@media (max-width: 599px) {
+  .site-header__inner .button--tickets-small,
+  .site-header__menu summary.button {
+    position: relative;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+  .site-header__inner .button--tickets-small::before,
+  .site-header__menu summary.button::before,
+  .site-header .radio-btn--header::before {
+    content: '';
+    position: absolute;
+    inset: -4px -4px;
+  }
+  .site-header .radio-btn--header {
+    position: relative;
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 8px;
+  }
+  .site-header .radio-btn--header .radio-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 /* ---------- Hero: the track, the fixed scene and the UI (plan 007) ---------- */
 
 /*

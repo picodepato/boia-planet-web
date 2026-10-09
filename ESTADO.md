@@ -4,6 +4,24 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-09 — plan 023 T247: Mobile landing polish
+
+**Qué existe**
+- Botón de la radio en la landing (`variant="hero"`): en móvil (< 900 px, mismo corte que la etiqueta de la cabecera) sólo el icono, 44×44, más pegado a la esquina superior derecha (`top`/`right` con `max(10px, safe-area)`). Nombre accesible: `aria-label` de i18n (sin cambios).
+- Cabecera en móvil (< 600 px): «Entradas», menú y botón de radio a 32 px de alto, fuente más pequeña; área de toque de 40 px vía `::before` (inset -4px). Escritorio sin cambios.
+- `PRODUCT_ROTATION_MS` = 2000 (era 3500). Test nuevo en `apps/web/lib/merchandise/catalog.test.ts`.
+
+**Comandos y resultado**
+- `pnpm exec vitest run` (completo, `--exclude '**/packages/db/**'`): exit 0, 289 files passed, 2531 tests passed, 2 skipped.
+- `sh tools/spec/checks.sh`: exit 0.
+- `pnpm lint`: exit 0. `pnpm build`: exit 0. `pnpm typecheck`: exit 0.
+- Medidas en navegador (390×844, dev): hero 44×44 en (336,10), etiqueta oculta; botones de cabecera 32 px de alto.
+
+**Pendiente**
+- Capturas en `/tmp/orchestrator-attach/boia-planet-hernan-T247/` NO hechas: en el panel del navegador la intro animada no llegó a asentarse y las capturas no mostraban la cabecera ni el botón. Hay que sacarlas a mano (390×844 landing top y cabecera; escritorio cabecera).
+- Decisión: «esquina inferior derecha» del objetivo se interpretó como esquina superior derecha, donde ya está el botón; abajo chocan la pista de «Desliza» y el texto de esquina.
+- Hernán: e2e a revisar por él: `apps/web/e2e/merchandise.spec.ts` (usa `PRODUCT_ROTATION_MS`, no cambia), specs de radio/landing que miren el texto «Música» en móvil.
+
 ## 2026-10-09 — plan 022 T245: Test guide for Hernán after plan 022
 
 Qué existe:

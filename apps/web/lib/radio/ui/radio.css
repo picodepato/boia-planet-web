@@ -103,6 +103,20 @@
   }
 }
 
+/* En móvil, sólo el icono y más pegado a la esquina (plan 023 T247). */
+@media (max-width: 899px) {
+  .radio-btn--hero {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+  .radio-btn--hero .radio-btn__label {
+    display: none;
+  }
+}
+
 /* Al bajar (o mientras corre la entrada): se va; vuelve en la cabecera. */
 .radio-btn--hero.is-away,
 html[data-intro='play'] .radio-btn--hero,

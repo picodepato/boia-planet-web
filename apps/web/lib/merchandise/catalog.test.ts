@@ -10,6 +10,7 @@ import { MerchandiseCatalog } from './catalog-view';
 import data from './products.json' with { type: 'json' };
 import {
   FLICK_MIN_PX,
+  PRODUCT_ROTATION_MS,
   SWIPE_FRACTION,
   nextImageIndex,
   prevImageIndex,
@@ -56,6 +57,10 @@ describe('store products (plan 017 T201, decision 11)', () => {
     // Intl puts a no-break space before the euro sign.
     expect(formatPrice(2000).replace(/\s/g, ' ')).toBe('20 €');
     expect(formatPrice(450).replace(/\s/g, ' ')).toBe('4,50 €');
+  });
+
+  it('the store gallery rotates every 2 s (plan 023 T247)', () => {
+    expect(PRODUCT_ROTATION_MS).toBe(2000);
   });
 
   it('rotation goes through every image and back to the first', () => {

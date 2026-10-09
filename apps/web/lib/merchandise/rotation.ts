@@ -1,5 +1,5 @@
 /** Time each store image stays before the next one (T201). */
-export const PRODUCT_ROTATION_MS = 3500;
+export const PRODUCT_ROTATION_MS = 2000;
 
 /** The image after `index`, back to the first after the last. */
 export const nextImageIndex = (index: number, count: number): number =>
