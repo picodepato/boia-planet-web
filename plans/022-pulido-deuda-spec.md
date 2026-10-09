@@ -142,7 +142,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - Outcome:
 
 ## T246 — Radio: song catalog, genres and admin upload
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -154,7 +154,7 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
   - screenshot of the admin Radio section with songs and genres → attach folder
   - ESTADO names the new migration and where it goes in Hernán's migration order
   - Test command → exit 0
-- Outcome:
+- Outcome: admin Radio section, catalog (local IndexedDB `boia-radio` / Supabase `radio_songs`), migration 20261009100100_radio.sql (#11), 100 seed songs 2.78 MB · aade97b
 
 ## T247 — Radio: play button, Winamp-style player, «Sonando» toast, /mar button
 - Status: pending
@@ -191,11 +191,15 @@ Hernán's answers (2026-10-09) that bind every task: Las Calitas' sea label stay
 - 2026-10-09: Hernán asked to start the radio now with test songs (then ~100 short tracks, sent to the running agent): T246 launched as a third parallel agent; T238 goes next so T247 can follow (Hernán)
 - 2026-10-09: Hernán: use Haiku 5.5 wherever possible → T239, T240, T242, T243, T244, T245 on haiku; T238 (bundle surgery), T241 (3D loading), T247 (complex player UI) stay on opus; a haiku task that fails retries on opus; running T236/T237/T246 keep opus (orchestrator)
 - 2026-10-09: Hernán: T247 runs on Fable (Hernán)
+- 2026-10-09 T246: 100 seed songs (98×4 s, 2×30 s: first techno + one house), made with Blender's bundled ffmpeg/numpy (`art/radio/generar.py`); Supabase mode falls back to the seeds while `radio_songs` is empty/missing; genres seeded by the migration; first song/order via RPCs + deferred check; genre rename updates songs, delete blocked while it has songs; radio types added to `database.types.ts` by hand (agent)
 - 2026-10-09: Codex still considered broken; all tasks on Opus/Sonnet (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-09 T246: `radio.supabase.ts` DB test once the migration is applied; fix odd gender agreement in generated sample titles («Velero lenta»)
 
 ## Log
 - 2026-10-09 T236 launched · attempt 1 · agent a40d2e001978df284
 - 2026-10-09 T237 launched · attempt 1 · agent adb530163dcdf25cb
 - 2026-10-09 T246 launched · attempt 1 · agent a365ac979e8a2f6af (3rd parallel agent, Hernán asked to start the radio now)
+- 2026-10-09 T238 launched · attempt 1 · agent ad2d74f6a2dc953c6
+- 2026-10-09 T246 done · merged aade97b
