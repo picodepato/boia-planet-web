@@ -11,6 +11,7 @@ import { CLIP_UPLOAD_LIMITS, EVENT_CLIP_BUCKET, EVENT_PHOTO_BUCKET } from './pho
 const read = (path: string) =>
   readFileSync(new URL(`../../../../${path}`, import.meta.url), 'utf8');
 const SQL = read('supabase/migrations/20261008100400_gallery_clips.sql');
+const LONGER = read('supabase/migrations/20261013100100_gallery_clips_longer.sql');
 const TYPES = read('packages/db/src/database.types.ts');
 
 describe('clips de la Galería: columnas, comprobaciones y bucket (T216)', () => {
@@ -43,9 +44,13 @@ describe('clips de la Galería: columnas, comprobaciones y bucket (T216)', () =>
   });
 
   it('el bucket de clips es público, mp4 del tope de la subida, y sólo lo escribe el equipo', () => {
+    // El bucket nace con 20 MB (T216) y la migración de T277 sube el tope al de la subida.
     expect(SQL).toContain(
-      `values ('${EVENT_CLIP_BUCKET}', '${EVENT_CLIP_BUCKET}', true, ${CLIP_UPLOAD_LIMITS.maxBytes}, array['${CLIP_UPLOAD_LIMITS.types.join("', '")}'])`,
+      `values ('${EVENT_CLIP_BUCKET}', '${EVENT_CLIP_BUCKET}', true, 20971520, array['${CLIP_UPLOAD_LIMITS.types.join("', '")}'])`,
     );
+    expect(LONGER).toContain(`set file_size_limit = ${CLIP_UPLOAD_LIMITS.maxBytes}`);
+    expect(LONGER).toContain(`where id = '${EVENT_CLIP_BUCKET}'`);
+    expect(LONGER).toContain("if to_regclass('storage.buckets') is null then");
     for (const op of ['insert', 'update', 'delete']) {
       expect(SQL).toMatch(
         new RegExp(

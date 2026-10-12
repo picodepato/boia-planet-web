@@ -325,7 +325,8 @@ describe('«Fotos y eventos» (REQ-COM-031)', () => {
   it('la home enseña sólo la selección', () => {
     const block = SAMPLE_CONTENT.blocks.find((b) => b.type === 'photos')!;
     const resolved = resolveBlock(block, SAMPLE_CONTENT, NOW);
-    const want = SAMPLE_CONTENT.photos.filter((p) => p.selection).slice(0, 6);
+    const limit = block.type === 'photos' ? block.limit : 0;
+    const want = SAMPLE_CONTENT.photos.filter((p) => p.selection).slice(0, limit);
     expect(want.length).toBeGreaterThan(0);
     expect(resolved?.type === 'photos' && resolved.photos).toEqual(want);
     // Sin ninguna selección, el bloque no sale.

@@ -14,6 +14,8 @@ import {
   nudgeAfterClose,
   packCollage,
   sizeAt,
+  CLICK_AFTER_DRAG_MS,
+  swallowsClick,
 } from './collage-layout';
 
 const items = Array.from({ length: 14 }, (_, i) => ({
@@ -148,6 +150,20 @@ describe('collage: arrastrar una pieza (T234)', () => {
     expect(isDrag(DRAG_THRESHOLD - 1, 0)).toBe(false);
     expect(isDrag(DRAG_THRESHOLD, 0)).toBe(true);
     expect(isDrag(-4, -5)).toBe(true);
+  });
+
+  it('plan 029 T277: arrastrar mueve la pieza y el «click» que sigue no la abre; un toque sí', () => {
+    // Arrastre: el movimiento pasa el umbral, la pieza se mueve...
+    expect(isDrag(30, 0)).toBe(true);
+    expect(dragOffset({ x: 0, y: 0 }, { x: 30, y: 0 }, piece, bounds)).toEqual({ x: 30, y: 0 });
+    // ...y el «click» del ratón, en el mismo instante, se traga (no abre).
+    const dropped = { id: 'a', at: 1000 };
+    expect(swallowsClick(dropped, 'a', 1000 + CLICK_AFTER_DRAG_MS - 1)).toBe(true);
+    // Toque: sin arrastre previo, o de otra pieza, o pasado el instante, abre.
+    expect(swallowsClick(null, 'a', 1000)).toBe(false);
+    expect(swallowsClick(dropped, 'b', 1001)).toBe(false);
+    expect(swallowsClick(dropped, 'a', 1000 + CLICK_AFTER_DRAG_MS)).toBe(false);
+    expect(isDrag(2, 2)).toBe(false);
   });
 
   it('sigue al puntero desde donde estaba', () => {

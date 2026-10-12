@@ -8,6 +8,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
+  outline: none;
 }
 
 .collage-viewer__backdrop {
@@ -86,8 +87,219 @@
   }
 }
 
+/*
+ * Visor a pantalla completa (plan 029 T277): anterior/siguiente, posición y
+ * controles de clip. Todo se mueve con gestos en la pantalla (touch-action:
+ * none): el visor decide los deslizamientos, la página de debajo no se mueve.
+ */
+.collage-viewer {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.collage-viewer__nav,
+.collage-viewer__btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: var(--btn-border);
+  border-radius: var(--radius);
+  background: var(--boia-orange);
+  box-shadow: var(--btn-shadow);
+  cursor: pointer;
+}
+
+.collage-viewer__nav:active,
+.collage-viewer__btn:active {
+  box-shadow: var(--btn-shadow-pressed);
+  transform: var(--btn-pressed);
+}
+
+.collage-viewer__nav:focus-visible,
+.collage-viewer__btn:focus-visible,
+.collage-viewer__progress:focus-visible {
+  outline: 3px solid var(--boia-white);
+  outline-offset: 3px;
+}
+
+.collage-viewer__nav {
+  position: fixed;
+  top: 50%;
+  margin-top: -22px;
+  animation: collage-fade 260ms steps(3) both;
+}
+
+.collage-viewer__nav--prev {
+  left: 8px;
+}
+
+.collage-viewer__nav--next {
+  right: 8px;
+}
+
+/* Una flecha de píxel: un cuadrado girado medio visto. */
+.collage-viewer__nav span {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: solid var(--boia-black);
+  border-width: 0 4px 4px 0;
+}
+
+.collage-viewer__nav--prev span {
+  transform: translateX(3px) rotate(135deg);
+}
+
+.collage-viewer__nav--next span {
+  transform: translateX(-3px) rotate(-45deg);
+}
+
+.collage-viewer__count {
+  position: fixed;
+  top: 28px;
+  left: 16px;
+  margin: 0;
+  padding: 2px 8px;
+  border: 2px solid var(--boia-white);
+  border-radius: var(--radius);
+  background: var(--boia-black);
+  color: var(--boia-white);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.collage-viewer__bar {
+  position: fixed;
+  left: 50%;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(560px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  animation: collage-fade 260ms steps(3) both;
+}
+
+.collage-viewer__bar .collage-viewer__btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.collage-viewer__progress {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--boia-orange);
+  cursor: pointer;
+}
+
+.collage-viewer__progress[data-cargando] {
+  opacity: 0.6;
+}
+
+.collage-viewer__time {
+  flex: none;
+  min-width: 2.6em;
+  padding: 2px 6px;
+  border: 2px solid var(--boia-white);
+  border-radius: var(--radius);
+  background: var(--boia-black);
+  color: var(--boia-white);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.collage-viewer__loading {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  background: var(--boia-black);
+  color: var(--boia-white);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+/* Iconos de los controles, con formas simples (sin imágenes). */
+.collage-viewer__icon-play {
+  display: block;
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent var(--boia-black);
+}
+
+.collage-viewer__icon-pause {
+  display: block;
+  width: 16px;
+  height: 18px;
+  border: solid var(--boia-black);
+  border-width: 0 5px;
+}
+
+.collage-viewer__icon-sound,
+.collage-viewer__icon-mute {
+  position: relative;
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  background: var(--boia-black);
+}
+
+.collage-viewer__icon-sound::before,
+.collage-viewer__icon-mute::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: -5px;
+  border-style: solid;
+  border-width: 10px 9px 10px 0;
+  border-color: transparent var(--boia-black) transparent transparent;
+}
+
+.collage-viewer__icon-sound::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: -4px;
+  width: 6px;
+  height: 16px;
+  border: solid var(--boia-black);
+  border-width: 0 3px 0 0;
+  border-radius: 0 50% 50% 0;
+}
+
+.collage-viewer__icon-mute::after {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 4px;
+  width: 26px;
+  height: 3px;
+  background: var(--boia-black);
+  box-shadow: 0 0 0 1px var(--boia-orange);
+  transform: rotate(-45deg);
+}
+
+.collage-viewer[data-fase='closing'] .collage-viewer__nav,
+.collage-viewer[data-fase='closing'] .collage-viewer__bar,
+.collage-viewer[data-fase='closing'] .collage-viewer__count {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .collage-viewer__close {
+  .collage-viewer__close,
+  .collage-viewer__nav,
+  .collage-viewer__bar {
     animation: none;
   }
 }

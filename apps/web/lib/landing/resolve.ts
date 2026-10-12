@@ -100,10 +100,16 @@ export function resolveBlock(
 
     case 'photos': {
       // Sólo la selección de Álvaro (D-23, respuesta 6); el resto, en /fotos.
-      const photos = content.photos
-        .filter((p) => p.selection)
-        .filter((p) => block.albumId === undefined || p.albumId === block.albumId)
-        .slice(0, block.limit);
+      // Las fotos reales (de un álbum sin la marca `muestra`) van primero (plan 029 T277);
+      // dentro de cada grupo se respeta el orden del contenido.
+      const sampleAlbums = new Set((content.albums ?? []).filter((a) => a.sample).map((a) => a.id));
+      const chosen = content.photos
+        .filter((p) => p.selection && p.kind !== 'video') // la home no baja clips (REQ-COM-032)
+        .filter((p) => block.albumId === undefined || p.albumId === block.albumId);
+      const photos = [
+        ...chosen.filter((p) => !sampleAlbums.has(p.albumId)),
+        ...chosen.filter((p) => sampleAlbums.has(p.albumId)),
+      ].slice(0, block.limit);
       return photos.length > 0 ? { ...block, photos } : null;
     }
 

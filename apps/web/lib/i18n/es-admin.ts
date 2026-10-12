@@ -480,7 +480,7 @@ export const esAdmin = {
   'admin.photos.upload.noEvents': 'Esta isla no tiene eventos publicados.',
   'admin.photos.upload.files': 'Fotos y clips',
   'admin.photos.upload.filesHint':
-    'Fotos: PNG, JPEG o WebP, hasta 15 MB (se guardan en WebP, 1600 px de lado largo como mucho). Clips: MP4 de hasta 20 MB y 30 segundos; en la web se ven siempre sin sonido.',
+    'Fotos: PNG, JPEG o WebP, hasta 15 MB (se guardan en WebP, 1600 px de lado largo como mucho). Clips: MP4 de hasta 50 MB y 60 segundos; en el collage se ven sin sonido y al abrirlos quien mira puede activarlo.',
   'admin.photos.upload.alt': 'Texto alternativo',
   'admin.photos.upload.altHint': 'Obligatorio (REQ-COM-031). Con varias fotos se numeran.',
   'admin.photos.upload.markPast': 'Marcar el evento como pasado',
@@ -499,11 +499,11 @@ export const esAdmin = {
   'admin.photos.upload.problem.size': '«{file}» pesa más de 15 MB.',
   'admin.photos.upload.problem.small': '«{file}» es demasiado pequeña (menos de 200 px de lado).',
   'admin.photos.upload.problem.clipSize':
-    '«{file}» pesa más de 20 MB: recórtalo o bájale la calidad.',
-  'admin.photos.upload.problem.long': '«{file}» dura más de 30 segundos: recórtalo.',
+    '«{file}» pesa más de 50 MB: recórtalo o bájale la calidad.',
+  'admin.photos.upload.problem.long': '«{file}» dura más de 60 segundos: recórtalo.',
   'admin.photos.upload.problem.clip':
     '«{file}» no se puede abrir como vídeo en este navegador (o pasa de 4K). Prueba con otro MP4.',
-  'admin.photos.clip': 'Clip de vídeo (sin sonido)',
+  'admin.photos.clip': 'Clip de vídeo',
   'admin.photos.upload.preview': 'Vista previa',
   'admin.texts.portada': 'Portada',
   'admin.texts.cabecera': 'Cabecera',

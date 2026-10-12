@@ -59,6 +59,12 @@ export function slugify(s: string): string {
 
 const SANDBOX = SAMPLE_LINK_BASE;
 
+/** El álbum de las fotos reales de BOIA, sin la marca `muestra` (plan 029 T277). */
+export const REAL_ALBUM_ID = 'album-boia';
+
+/** Fotos del bloque de la home: caben las 4 reales y las de muestra de la selección (9 hoy; ≥ 7). */
+export const HOME_PHOTOS_LIMIT = 9;
+
 /** The home blocks with the real links where there are (P15) and sandbox ones elsewhere. */
 export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'homeBlocks'>[] {
   const l = real.links;
@@ -73,7 +79,8 @@ export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'h
     },
     { id: 'priority', type: 'priority_event', visible: true, eventId: 'halloween-2026' },
     { id: 'upcoming', type: 'upcoming_events', visible: true, limit: 6 },
-    { id: 'photos', type: 'photos', visible: true, limit: 6 },
+    // Al menos 7 fotos en la home: las 4 reales y las de muestra de la selección (plan 029 T277).
+    { id: 'photos', type: 'photos', visible: true, limit: HOME_PHOTOS_LIMIT },
     { id: 'artists', type: 'artists', visible: true, rotationMs: 5000 },
     {
       id: 'philosophy',
@@ -287,6 +294,13 @@ export function sampleArtists(real: RealContent = REAL_CONTENT): AreaInput<'arti
 export const SAMPLE_ARTISTS: AreaInput<'artists'>[] = sampleArtists();
 
 export const SAMPLE_ALBUMS: AreaInput<'albums'>[] = [
+  // Fotos reales de BOIA (plan 029 T277): sin evento ni isla, van a la galería general; sin `sample`.
+  {
+    id: REAL_ALBUM_ID,
+    title: 'Fotos de BOIA',
+    date: '2026-10-13T12:00:00+02:00',
+    coverPhotoId: 'galeria-1',
+  },
   {
     id: 'album-muestra',
     title: 'All Day BOIA 2026',
@@ -349,35 +363,37 @@ const SAMPLE_STILLS = [
 ] as const;
 
 /**
- * Fotos de Hernán (plan 023 T250; tools/galeria/fotos.mjs, art/galeria/
- * galeria-N.webp). `muestra` hasta el visto bueno de derechos de Álvaro. Fuera
- * de la home (`selection: false`).
+ * Las 4 fotos reales (plan 023 T250; tools/galeria/fotos.mjs, art/galeria/
+ * galeria-N.webp). Álvaro aprobó sus derechos el 2026-10-13 (plan 029 T277):
+ * ya no son `muestra` (viven en `REAL_ALBUM_ID`, un álbum sin la marca) y
+ * salen en la home, las primeras.
  */
+
 const SAMPLE_GALERIA = [
   {
     id: 'galeria-1',
-    albumId: 'album-muestra',
+    albumId: REAL_ALBUM_ID,
     alt: 'DJ con un vinilo en la mano, en la cabina de los platos',
     width: 1200,
     height: 675,
   },
   {
     id: 'galeria-2',
-    albumId: 'album-muestra',
+    albumId: REAL_ALBUM_ID,
     alt: 'Gente bailando en una fiesta de BOIA',
     width: 1200,
     height: 675,
   },
   {
     id: 'galeria-3',
-    albumId: 'album-muestra',
+    albumId: REAL_ALBUM_ID,
     alt: 'Hombre con camiseta azul retro de Francia, sujetando un balón',
     width: 800,
     height: 1321,
   },
   {
     id: 'galeria-4',
-    albumId: 'album-muestra',
+    albumId: REAL_ALBUM_ID,
     alt: 'Portada de muestra del álbum «Limosna de amor», de Los Chunguitos',
     width: 1000,
     height: 965,
@@ -397,7 +413,7 @@ export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
     src: `/art/galeria/${p.id}.webp`,
     width: p.width,
     height: p.height,
-    selection: false,
+    selection: true,
   })),
   ...SAMPLE_STILLS.map((p, i) => {
     const cala = p.albumId === 'album-cala';

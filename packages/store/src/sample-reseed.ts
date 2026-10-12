@@ -42,6 +42,12 @@ export const SAMPLE_RESEEDS: readonly SampleReseed[] = [
       'bloque «store» de la muestra: «Tote bag BOIA» en vez de la tote de muestra (plan 023 T256)',
     areas: ['homeBlocks'],
   },
+  {
+    revision: 3,
+    reason:
+      'las 4 fotos reales (galeria-1..4) en la selección de la home, en su álbum sin muestra, y el bloque de fotos con tope 9 (plan 029 T277)',
+    areas: ['homeBlocks', 'photos', 'albums'],
+  },
 ];
 
 /** ids de la muestra actual por área, para saber qué es de la muestra. */

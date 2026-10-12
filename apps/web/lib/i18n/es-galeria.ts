@@ -11,4 +11,15 @@ export const esGaleria = {
   'gallery.open': 'Abrir: {alt}',
   'gallery.close': 'Cerrar',
   'gallery.viewer': 'Pieza abierta: {alt}',
+  // Visor a pantalla completa (plan 029 T277).
+  'gallery.prev': 'Anterior',
+  'gallery.next': 'Siguiente',
+  'gallery.position': '{n} de {total}',
+  'gallery.play': 'Reproducir',
+  'gallery.pause': 'Pausar',
+  'gallery.soundOn': 'Activar el sonido',
+  'gallery.soundOff': 'Silenciar',
+  'gallery.progress': 'Posición del vídeo',
+  'gallery.loading': 'Cargando el vídeo',
+  'gallery.clipControls': 'Controles del vídeo',
 } as const;

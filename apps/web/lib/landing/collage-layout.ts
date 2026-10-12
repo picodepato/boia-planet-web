@@ -332,6 +332,22 @@ export function isDrag(dx: number, dy: number, threshold = DRAG_THRESHOLD): bool
   return Math.hypot(dx, dy) >= threshold;
 }
 
+/** El «click» que sigue a soltar un arrastre con el ratón llega en el mismo instante. */
+export const CLICK_AFTER_DRAG_MS = 120;
+
+/**
+ * ¿Es el «click» de después de soltar un arrastre (y por tanto no abre)? Lo
+ * es si es de la misma pieza y llega enseguida; un toque sin arrastre, o de
+ * otra pieza, o tarde, abre (plan 020 T234; plan 029 T277 lo deja probado).
+ */
+export function swallowsClick(
+  dropped: { id: string; at: number } | null,
+  id: string,
+  clickAt: number,
+): boolean {
+  return dropped !== null && dropped.id === id && clickAt - dropped.at < CLICK_AFTER_DRAG_MS;
+}
+
 /**
  * Dónde queda una pieza arrastrada: su empujón al empezar (`start`) más lo
  * que se movió el puntero (`delta`), sin que la pieza (`piece`, su caja en

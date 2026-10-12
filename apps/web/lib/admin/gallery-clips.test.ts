@@ -88,6 +88,15 @@ describe('qué clips valen (T216)', () => {
     expect(clipInfoProblem(info({ width: CLIP_UPLOAD_LIMITS.maxSide + 2 }))).toBe('clip');
   });
 
+  it('plan 029 T277: 60 s y 50 MB valen; un segundo o un byte más, no', () => {
+    expect(CLIP_UPLOAD_LIMITS.maxSeconds).toBe(60);
+    expect(CLIP_UPLOAD_LIMITS.maxBytes).toBe(50 * 1024 * 1024);
+    expect(clipInfoProblem(info({ duration: 60 }))).toBeNull();
+    expect(clipInfoProblem(info({ duration: 60.5 }))).toBe('long');
+    expect(clipUploadProblem(mp4('isom', 50 * 1024 * 1024))).toBeNull();
+    expect(clipUploadProblem(mp4('isom', 50 * 1024 * 1024 + 1))).toBe('clipSize');
+  });
+
   it('preparePhotos: el clip va tal cual, con su tamaño y un póster WebP', async () => {
     const file = clipFile(mp4());
     const [clip] = await preparePhotos([file], 'halloween-2026', 'Baile', codec, probeOf(info()));

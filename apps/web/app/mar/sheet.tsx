@@ -63,6 +63,10 @@ export type SheetState =
 
 const block = (type: string) => liveContent().blocks.find((b) => b.type === type);
 
+/** Cuántas fotos y cuántos clips enseña la hoja del puerto de fotos (plan 029 T277). */
+const SHEET_PHOTOS = 6;
+const SHEET_CLIPS = 2;
+
 /** Un evento con su estado de ahora (REQ-COM-004). */
 export const findEvent = (id: string | undefined) => liveContent().events.find((e) => e.id === id);
 
@@ -324,10 +328,13 @@ export function Sheet({
       </>
     );
   } else if (state.target === 'photos') {
-    // Sólo fotos (los clips, en la Galería): el mismo collage (plan 020 T234).
-    const photos = liveContent()
-      .photos.filter((p) => p.kind !== 'video')
-      .slice(0, 6);
+    // El mismo collage que la Galería (plan 020 T234), ahora también con clips
+    // (plan 029 T277): seis fotos y hasta dos clips, con el mismo visor.
+    const all = liveContent().photos;
+    const photos = [
+      ...all.filter((p) => p.kind !== 'video').slice(0, SHEET_PHOTOS),
+      ...all.filter((p) => p.kind === 'video').slice(0, SHEET_CLIPS),
+    ];
     const text = textOf(object, 'body') ?? t('mar.sheet.todasLasFotosDe');
     const gallery = (
       <Link

@@ -4,6 +4,46 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T277: Galería: vídeos a pantalla completa, clips en /mar, clips más largos, más fotos en la home
+
+**Qué existe**
+- Visor a pantalla completa: el visor que ya abría la pieza (`collage-viewer.tsx`) ahora es el único visor (no hay otro). Anterior/siguiente (flechas en pantalla, teclado ← →, deslizar de lado, da la vuelta por los extremos), cerrar con ✕, Esc o deslizando hacia abajo, foco atrapado con Tab y devuelto a la pieza al cerrar, posición «3 de 9». Arrastrar una pieza del collage sigue moviéndola sin abrirla y un toque la abre (la regla del «click» tras arrastre pasó a `swallowsClick` en `collage-layout.ts`, con prueba).
+- Clips en el visor: reproducir/pausar (también con espacio o tocando el vídeo), sonido (botón o M), barra de progreso con tiempo, póster mientras carga. Arranca mudo y en bucle; el sonido sólo lo activa el usuario con un toque; un `play()` rechazado (webviews de iOS) deja el póster y el botón de reproducir; atributos `muted`/`playsInline` antes de `src`, `preload="none"` (ver Auditoría). Con «reducir movimiento» no arranca solo. Las decisiones puras están en `lib/landing/viewer-nav.ts`.
+- /mar: la hoja del puerto de fotos enseña seis fotos y hasta dos clips (`SHEET_PHOTOS`, `SHEET_CLIPS` en `app/mar/sheet.tsx`), con el mismo collage y visor.
+- Clips más largos: tope de subida 60 s / 50 MB (`CLIP_UPLOAD_LIMITS`), textos del Admin al día, migración `supabase/migrations/20261013100100_gallery_clips_longer.sql` (sube `file_size_limit` del bucket `event-clips` a 52428800). Aplicada a `boia-planet-dev` (1 aplicada de 36, sin semillas). NO aplicada en producción.
+- Home: `galeria-1..4` salen de `album-muestra` a un álbum nuevo `album-boia` (sin `sample`), con `selection: true`; el bloque `#fotos` sube su tope a 9 (`HOME_PHOTOS_LIMIT`) y la home pone primero las fotos de álbumes sin `muestra`. Hoy: 4 reales + 5 de muestra = 9. Nunca clips en la home (REQ-COM-032, ahora también forzado en `resolve.ts`). `SAMPLE_CONTENT_REVISION` 2 → 3 con un paso de reseed (`homeBlocks`, `photos`, `albums`) para navegadores con datos guardados.
+- Textos nuevos en `lib/i18n/es-galeria.ts` (`gallery.prev`, `.next`, `.position`, `.play`, `.pause`, `.soundOn`, `.soundOff`, `.progress`, `.loading`, `.clipControls`), todo `muestra`.
+
+**Comandos y resultado**
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 304 archivos, 2695 pasan, 1 omitido.
+- `sh tools/spec/checks.sh` → exit 0 (295 REQ, OK).
+- `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; ruta crítica de la landing 198.8 kB gzip (presupuesto 200.0 kB, OK).
+- `pnpm cf:measure` → exit 0; Worker 2,190 KiB gzip (límite 2,800).
+- Migración al proyecto de desarrollo: `1 aplicadas de 36: 20261013100100`.
+- Comprobado a mano en un `next start` local (build de producción): /galeria abre un clip a pantalla completa, play/pausa, sonido, progreso, ← → y cerrar devuelve el foco. De ahí salieron y se arreglaron dos fallos: `currentTarget` nulo en `onLoadedMetadata` y el clip que no arrancaba solo.
+
+**Pendiente**
+- Producción: aplicar `20261013100100_gallery_clips_longer.sql` (la línea para `plans/seguridad-pendiente.md` o la lista de T276; ese archivo es del orquestador).
+- Sin variantes `srcset` de las 4 fotos reales: ya son WebP de 53–78 KB (800–1200 px); sólo se pintan a tamaño de collage.
+- No se probó en iPhone Safari ni en los navegadores internos de Instagram/TikTok: sólo razonado desde el código y el plan 026.
+
+**Probar a mano**
+- `/galeria`: tocar un clip → pantalla completa con play, sonido, barra; ← → y deslizar cambian de pieza; deslizar hacia abajo o Esc cierra y devuelve el foco. Arrastrar una pieza sigue moviéndola sin abrirla.
+- `/` (home, `#fotos`): 9 fotos, las 4 reales primero; tocar una abre el visor con flechas.
+- `/mar`: isla de fotos → la hoja enseña también dos clips; tocarlos abre el mismo visor.
+- Admin → Fotos: el texto de ayuda dice 50 MB y 60 s; subir un clip de 45 s funciona; uno de más de 60 s se rechaza.
+- iPhone (Safari y navegador de Instagram): abrir un clip, tocar el sonido.
+
+**Auditoría (Opus)**
+- Clip del visor según plan 026: la `src` ya no va en el JSX (React la ponía antes que `muted`); ahora `prepareInlineVideo` (`lib/landing/presentation.ts`) pone `muted`/`playsinline`/`webkit-playsinline` como atributos y después la `src`. `preload="none"` (antes `metadata`). Un `play()` rechazado se lee con `playBlocked` (como el reel). Al cambiar de clip o cerrar, el vídeo anterior se para, suelta la `src` y hace `load()`: no queda ningún vídeo descargando (comprobado: tras → el anterior queda desconectado, pausado y sin `src`; 0 vídeos en el documento tras cerrar). El aviso «Cargando el vídeo» sólo sale si se pidió reproducir (con «reducir movimiento» no se queda para siempre).
+- Teclado: el visor escucha en captura y para las teclas que usa (Esc, ← →, espacio, M); en `/mar`, con la hoja de fotos abierta (el barco sigue aceptando teclas), las flechas movían el barco y la M abría el mapa por debajo del visor.
+- Foco: el visor tiene `tabIndex=-1`; tocar la foto o el fondo ya no saca el foco a la página (el Tab sigue atrapado).
+- Collage: tras arrastrar con el dedo ya no se «traga» el siguiente toque (sólo el ratón manda un click al soltar); un toque rápido después de arrastrar no abría (era lo que hacía fallar `galeria.spec.ts` en móvil). El visor ya descargado se pinta directo, sin pasar por `Suspense` (React retrasaba ~300 ms la apertura; fallaba el paso «abrir anima» del spec, también en main).
+- `galeria.spec.ts`: el nombre de la isla es una clave de i18n (`mapa.all-day-boia`); el spec la traduce como hace el Admin (fallaba también en main; `admin-fotos.spec.ts` tiene la misma línea, sin tocar).
+- `sheet.tsx`: el comentario de `findEvent` vuelve a su sitio. `sample-reseed.test.ts`: una foto subida en el Admin sigue tras la revisión 3 (el reseed sólo quita cambios de ids de la muestra; botellas, logros, Carnet y archivos en IndexedDB no se tocan).
+- Comandos: `E2E_PORT=3177 pnpm e2e galeria.spec.ts --workers=1` → exit 0, 6 pasan (antes de la auditoría: 5 fallaban). Test command completo → exit 0 (vitest 304 archivos, 2695 pasan, 1 omitido; checks OK; lint 0; build 0; typecheck 0). Landing 198.8 kB de 200 kB (antes de T277 197.9 kB: el HTML de la home lleva 3 fotos más). `pnpm cf:measure` → 2,191 KiB gzip de 2,800.
+
 ## 2026-10-13 — plan 029 T276: Carnet con email + código, listo para encender
 
 Qué existe:

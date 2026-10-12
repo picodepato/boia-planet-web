@@ -28,17 +28,20 @@ export const PHOTO_UPLOAD_LIMITS = {
 export type PhotoOutputType = 'image/webp' | 'image/jpeg';
 
 /**
- * Los clips de la Galería (plan 019 T216, decisión 8): mp4 cortos, que se
- * ven siempre sin sonido. No se recodifican (el navegador no sabe hacerlo
+ * Los clips de la Galería (plan 019 T216, decisión 8): mp4 de hasta 60 s
+ * (plan 029 T277; antes 30 s), mudos en el collage y con botón de sonido al
+ * abrirlos. No se recodifican (el navegador no sabe hacerlo
  * bien): se guarda el archivo tal cual, con un tope de peso y de duración,
  * y un póster (un fotograma, en WebP como las fotos) para el collage.
- * Con cuentas van a su propio bucket (lo repite la migración 20261008100400).
+ * Con cuentas van a su propio bucket (lo repiten las migraciones 20261008100400 y 20261013100100).
  */
 export const EVENT_CLIP_BUCKET = 'event-clips';
 
 export const CLIP_UPLOAD_LIMITS = {
-  maxBytes: 20 * 1024 * 1024,
-  maxSeconds: 30,
+  /** 50 MB: el tope por archivo del plan gratuito de Supabase (plan 029 T277; antes 20 MB). */
+  maxBytes: 50 * 1024 * 1024,
+  /** 60 s (antes 30 s). */
+  maxSeconds: 60,
   minSide: 200,
   /** Lado largo más grande que se admite (4K). */
   maxSide: 3840,

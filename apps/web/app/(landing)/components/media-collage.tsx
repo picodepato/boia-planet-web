@@ -22,8 +22,10 @@ import {
   dragOffset,
   isDrag,
   nudgeAfterClose,
+  swallowsClick,
 } from '../../../lib/landing/collage-layout';
 import { useMediaUrl } from '../../../lib/photo-image';
+import type CollageViewer from './collage-viewer';
 import './collage.css';
 
 /**
@@ -31,8 +33,15 @@ import './collage.css';
  * crítica de la landing (D-26, plan 020 T234). Se pide en cuanto el
  * navegador está libre, o al tocar una pieza, así que al abrir ya está.
  */
-const loadViewer = () => import('./collage-viewer');
-const Viewer = lazy(loadViewer);
+type ViewerComponent = typeof CollageViewer;
+/** El visor ya descargado: se pinta directo, sin pasar por Suspense (que retrasa ~300 ms al abrir). */
+let loadedViewer: ViewerComponent | null = null;
+const loadViewer = () =>
+  import('./collage-viewer').then((m) => {
+    loadedViewer = m.default;
+    return m;
+  });
+const LazyViewer = lazy(loadViewer);
 
 /**
  * El collage de la Galería (plan 019 T216, decisión 8): fotos y clips cortos
@@ -50,10 +59,9 @@ const Viewer = lazy(loadViewer);
  *   queda encima. Un toque sin arrastre la abre (plan 020 T234).
  * - Un clip enseña su póster y sólo se reproduce (mudo, en bucle) mientras
  *   está en pantalla; con «reducir movimiento», nunca solo (REQ-COM-032).
+ * - La pieza abierta es a pantalla completa (plan 029 T277): anterior y
+ *   siguiente, deslizar, controles del clip; ver `collage-viewer.tsx`.
  */
-
-/** El «click» que sigue a soltar un arrastre con el ratón llega en el mismo instante. */
-const CLICK_AFTER_DRAG_MS = 120;
 
 export type Phase = 'opening' | 'open' | 'closing';
 
@@ -121,12 +129,23 @@ export function MediaCollage({
   const nudgesRef = useRef(nudges);
   nudgesRef.current = nudges;
 
+  const [Viewer, setViewer] = useState<ViewerComponent | null>(() => loadedViewer);
   useEffect(() => {
+    if (loadedViewer) return;
+    let alive = true;
+    const load = () =>
+      void loadViewer().then((m) => {
+        if (alive) setViewer(() => m.default);
+      });
     const idle = (window as { requestIdleCallback?: (cb: () => void) => number })
       .requestIdleCallback;
-    if (idle) idle(() => void loadViewer());
-    else window.setTimeout(() => void loadViewer(), 1500);
+    if (idle) idle(load);
+    else window.setTimeout(load, 1500);
+    return () => {
+      alive = false;
+    };
   }, []);
+  const OpenViewer = Viewer ?? LazyViewer;
 
   /** La siguiente capa por encima de todas (la pieza arrastrada queda arriba). */
   const nextZ = () => {
@@ -185,7 +204,9 @@ export function MediaCollage({
     const at = d.last ?? d.start;
     const z = topZ.current;
     setNudges((n) => new Map(n).set(d.id, { x: at.x, y: at.y, z, dragged: true }));
-    swallow.current = { id: d.id, at: e.timeStamp };
+    // Sólo el ratón (o el lápiz) manda un «click» al soltar; tras arrastrar con
+    // el dedo no hay nada que tragar, y un toque rápido después sí debe abrir.
+    swallow.current = e.pointerType === 'touch' ? null : { id: d.id, at: e.timeStamp };
   };
 
   const close = useCallback(() => {
@@ -277,7 +298,7 @@ export function MediaCollage({
                 onClick={(e) => {
                   const after = swallow.current;
                   swallow.current = null;
-                  if (after?.id === piece.id && e.timeStamp - after.at < CLICK_AFTER_DRAG_MS) return;
+                  if (swallowsClick(after, piece.id, e.timeStamp)) return;
                   if (!opened) setOpened({ id: piece.id, phase: 'opening' });
                 }}
               >
@@ -289,13 +310,15 @@ export function MediaCollage({
       </ul>
       {opened && openedPhoto && openedPiece ? (
         <Suspense fallback={null}>
-            <Viewer
+          <OpenViewer
+            photos={items}
             photo={openedPhoto}
             phase={opened.phase}
             rotate={openedPiece.rotate}
             scale={openedPiece.scale}
             piece={() => pieces.current.get(opened.id)?.querySelector<HTMLElement>('button') ?? null}
             onOpened={() => setOpened((o) => (o?.phase === 'opening' ? { ...o, phase: 'open' } : o))}
+            onNavigate={(id) => setOpened((o) => (o?.phase === 'open' ? { ...o, id } : o))}
             onClose={close}
             onClosed={() => closed(opened.id)}
           />

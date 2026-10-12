@@ -5,7 +5,8 @@ import { SAMPLE_EVENTS, SAMPLE_PHOTOS } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { eventIslands, islandEvent } from '../lib/admin/world';
-import { t } from '../lib/i18n';
+import { t, type MessageKey } from '../lib/i18n';
+import { es } from '../lib/i18n/es';
 
 /**
  * La Galería (plan 019 T216, decisión 8): un collage de fotos y clips, algo
@@ -279,9 +280,11 @@ const now = new Date();
 const events = SAMPLE_EVENTS.map((e) => eventSchema.parse(e));
 const island = eventIslands(WORLD_REGISTRY.map).find((p) => islandEvent(p.id, events, now))!;
 const event = islandEvent(island.id, events, now)!;
-const islandName =
+const placeName =
   WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).places.find((p) => p.id === island.id)?.name ??
   island.id;
+// El nombre del mapa es una clave de i18n (`mapa.…`); el Admin enseña su texto.
+const islandName = placeName in es ? t(placeName as MessageKey) : placeName;
 const ALT = 'Clip de prueba en la isla';
 
 test('el Admin sube un clip (modo local) y sale en el collage, mudo', async ({ page }, info) => {

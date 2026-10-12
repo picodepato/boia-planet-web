@@ -174,3 +174,46 @@ describe('bloque de tienda renovado en un navegador con la revisión 1 (T256)', 
     );
   });
 });
+
+/**
+ * Plan 029 T277: las 4 fotos reales pasan a su álbum sin `muestra` y a la
+ * selección de la home. Un navegador con la revisión 2 que guardó una de
+ * ellas con la forma de antes (en `album-muestra`, fuera de la selección) la
+ * ve ya con la forma de hoy.
+ */
+describe('fotos reales renovadas en un navegador con la revisión 2 (T277)', () => {
+  it('galeria-1 vuelve a su álbum real y a la selección; lo subido en el Admin se queda', async () => {
+    const doc = staleDoc() as unknown as { content: Record<string, unknown> };
+    doc.content.sampleRevision = 2;
+    const items = doc.content.items as Record<string, Record<string, unknown>>;
+    items.photos = {
+      'galeria-1': edit({
+        id: 'galeria-1',
+        albumId: 'album-muestra',
+        alt: 'DJ con un vinilo en la mano, en la cabina de los platos',
+        src: '/art/galeria/galeria-1.webp',
+        width: 1200,
+        height: 675,
+        selection: false,
+      }),
+      // Una foto subida en el Admin (no es de la muestra): se queda tal cual.
+      'mi-foto': edit({
+        id: 'mi-foto',
+        albumId: 'album-muestra',
+        alt: 'Foto subida en el Admin',
+        src: 'local:mi-foto',
+        width: 800,
+        height: 600,
+        selection: true,
+      }),
+    };
+    const { repo } = open(doc);
+    const mine = (await repo.content.home()).photos.find((p) => p.id === 'mi-foto');
+    expect(mine).toMatchObject({ alt: 'Foto subida en el Admin', selection: true });
+    const home = await repo.content.home();
+    const photo = home.photos.find((p) => p.id === 'galeria-1');
+    expect(photo).toMatchObject({ albumId: 'album-boia', selection: true });
+    const album = (home.albums ?? []).find((a) => a.id === 'album-boia');
+    expect(album?.sample).toBe(false);
+  });
+});

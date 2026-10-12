@@ -43,7 +43,7 @@ export const SCHEMA_VERSION = 10;
  * qué áreas se renuevan. Va aparte de `SCHEMA_VERSION`: la forma del
  * documento no cambia.
  */
-export const SAMPLE_CONTENT_REVISION = 2;
+export const SAMPLE_CONTENT_REVISION = 3;
 
 const iso = z.string().min(1);
 const stableKey = z.string().max(STABLE_KEY_MAX).regex(STABLE_KEY);
