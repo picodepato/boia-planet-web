@@ -4,6 +4,87 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 028 T266: Expiry reminders and keeping scheduled workflows alive
+
+Qué existe:
+
+- `apps/web/scripts/caducidades.json`: la lista de cosas que caducan. Con
+  fecha: dominio `boiaplanet.net` (Porkbun, 2027-10-12, renovación automática,
+  12,52 USD/año) y clave SMTP de Brevo de Gmail «Enviar como» para `hola@`
+  (2027-10-12). Mensual: «enviar al menos un correo desde `hola@` este mes»
+  (la clave muere tras 90 días sin SMTP). Cada una lleva qué se rompe y los
+  pasos de renovar copiados de `docs/DESPLIEGUE.md` §8.
+- `apps/web/scripts/recordatorios.mjs` (`pnpm recordatorios`): por cada
+  caducidad a 60, 30 o 7 días (o ya pasada) abre un issue en español (qué,
+  fecha, qué se rompe, cómo se renueva); si ya hay uno abierto con su marca
+  (`<!-- recordatorio:id -->`) y toca un aviso nuevo, comenta; si el aviso ya
+  se dio, nada. El mensual: un issue por mes; si el anterior sigue abierto,
+  comenta en él (una vez por mes, marca `<!-- mes:AAAA-MM -->`). No cierra ni
+  edita nada. `--dry-run [--fecha AAAA-MM-DD]` sólo escribe el plan.
+- `.github/workflows/recordatorios.yml`: cada lunes 07:23 UTC y
+  `workflow_dispatch` (entradas `dry_run` y `fecha`); `issues: write` sólo en
+  su trabajo, `GITHUB_TOKEN`, sin secretos.
+- Trabajo `keepalive-workflows` (idéntico, `permissions: actions: write`,
+  separado del trabajo principal) en `hosts-parity.yml`, `recordatorios.yml`,
+  `supabase-backup.yml` y `supabase-keepalive.yml`: lista los flujos con
+  `gh api` y llama a `PUT /repos/{repo}/actions/workflows/{id}/enable` para
+  los `active` o `disabled_inactivity` (respeta los desactivados a mano).
+  Los trabajos existentes no cambian.
+- `docs/DESPLIEGUE.md` §8: explica las dos automatizaciones, qué está probado
+  y qué no, y la tabla apunta a ellas (y ya no dice que el keepalive de
+  Supabase esté sin subir).
+- `apps/web/scripts/recordatorios.test.ts`: 26 pruebas (fuera de plazo →
+  nada; 60/30/7; issue abierto → comentario, no duplicado; aviso ya dado →
+  nada; pasada la fecha; mensual nuevo, comentario y repetición; validez de
+  `caducidades.json`; la tabla de §8 tiene cada fecha; llamadas a la API con
+  `fetch` falso, sólo POST de issue/comentario; `--dry-run` sólo hace GET;
+  cada flujo con `schedule:` lleva `keepalive-workflows` con `actions: write`).
+
+Qué está probado y qué sólo documentado (keep-alive):
+
+- Probado: la lógica y la forma de los flujos (pruebas de arriba; YAML
+  cargado con PyYAML: cada flujo tiene su trabajo y permisos esperados). Con la
+  API pública: `picodepato/boia-planet-web` es público (le aplica la regla de
+  60 días) y sus tres flujos estaban `active` el 2026-10-12.
+- Sólo documentado: la desactivación a los 60 días (docs de GitHub, sin decir
+  qué cuenta como actividad) y que «Enable a workflow» pide `actions: write`.
+  Que llamarla sobre un flujo activo reinicie la cuenta de 60 días **no lo
+  documenta GitHub**: es la técnica de acciones «keepalive» de la comunidad.
+  No se puede comprobar sin 60 días sin commits; ningún flujo ha corrido aún
+  en GitHub (sin push).
+
+Comandos:
+
+```
+$ node apps/web/scripts/recordatorios.mjs --dry-run --fecha 2027-08-20
+recordatorios para 2027-08-20:
+  abrir issue  [dominio-boiaplanet] Caduca el 2027-10-12: Dominio boiaplanet.net (Porkbun)
+  abrir issue  [brevo-smtp-hola] Caduca el 2027-10-12: Clave SMTP de Brevo que usa Gmail «Enviar como» para hola@boiaplanet.net
+  abrir issue  [enviar-desde-hola] Enviar al menos un correo desde hola@boiaplanet.net este mes (agosto de 2027)
+(--dry-run sin GITHUB_TOKEN: como si no hubiera issues abiertos)
+(--dry-run: no se ha cambiado nada)
+
+$ node apps/web/scripts/recordatorios.mjs --dry-run --fecha 2026-10-12
+recordatorios para 2026-10-12:
+  abrir issue  [enviar-desde-hola] Enviar al menos un correo desde hola@boiaplanet.net este mes (octubre de 2026)
+(--dry-run sin GITHUB_TOKEN: como si no hubiera issues abiertos)
+(--dry-run: no se ha cambiado nada)
+```
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 299
+  archivos, 2652 pasan, 3 omitidas (tras fusionar main con T267).
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → 0; `pnpm build` → 0;
+  `pnpm typecheck` → 0.
+
+Pendiente:
+
+- Push (Álvaro). Tras el push, mirar en Actions la primera ejecución de
+  `keepalive-workflows` (escribe `activo: …` por flujo) y lanzar a mano
+  `recordatorios` con `dry_run` para ver que lee los issues.
+- El primer lunes tras el push se abre el issue mensual de `hola@`.
+- Al renovar dominio o clave: fecha nueva en `caducidades.json` y cerrar el
+  issue.
+
 ## 2026-10-12 — plan 028 T267: CI checks: Worker size budget and commit author
 
 Qué existe:
