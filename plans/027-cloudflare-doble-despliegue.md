@@ -43,7 +43,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - Outcome: OpenNext Cloudflare build, `cf:build`/`cf:preview`/`cf:measure`; Worker 2,164 KiB gzip (budget 2,800); local wrangler preview serves all pages with CSP, art and redirects; ff03467
 
 ## T263 — Build version marker and two-host parity check
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T262
 - Model: opus
 - Skills: none
@@ -54,7 +54,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - unit tests for the parity logic (match, mismatch, failure) → pass
   - `pnpm check:hosts https://boia-planet-roan.vercel.app` → runs and reports (may report missing `/version.json` until the next deploy; say so in ESTADO)
   - Test command → exit 0
-- Outcome:
+- Outcome: `/version.json` written on both build paths, `pnpm check:hosts`, `hosts-parity.yml` (6 h + manual); live Vercel reports 404 for /version.json and /art until next deploy; e6612b5
 
 ## T264 — Installable PWA
 - Status: done
@@ -73,7 +73,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - Outcome: installable PWA (manifest, icons, no-store SW with offline page, lazy install prompt on the landing only), landing 197.9 kB; cf:measure to be checked once T262 lands; 4cd3ff3
 
 ## T265 — Deploy runbook, failover and setup docs
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T262, T263, T264
 - Model: opus
 - Skills: none
@@ -103,6 +103,9 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 T262: `next/image` is not actually used, so no image config change
 - 2026-10-12 T262: `scripts/cf-assets.mjs` writes `_headers` (security headers, immutable `_next/static`, art cache) and `_redirects` (`/api/art/* → /art/:splat 200`, the Next rewrite 404s on Cloudflare); `ART_CACHE_CONTROL` in `lib/art-url.ts`
 - 2026-10-12 T262: `cf:build` runs `populateCache local` so a plain `wrangler deploy` ships prerendered pages; the hoisted temp copy appends `nodeLinker: hoisted` to its own `pnpm-workspace.yaml`
+- 2026-10-12 T263: `scripts/version.mjs` runs in `build` and `dev` after the art copy (cf:build calls `pnpm build`), output git-ignored; no SHA → "unknown", which the check treats as failure
+- 2026-10-12 T263: check uses `/art/barco/manifest.json` and an optional `/.well-known/assetlinks.json` (absent everywhere is fine, present on one host only fails); `/version.json` fetched with a timestamp query; SW never handles it (test added)
+- 2026-10-12 T263: workflow with only one of PUBLIC_URL/BACKUP_URL checks that host alone with a notice; cron `17 */6 * * *`, Node 24, no install
 
 ## Proposals (new scope)
 - 2026-10-12: Android app in Play Store as a TWA (Bubblewrap config, `/.well-known/assetlinks.json` with a test on both hosts) once the domain is live — 25 USD one-off, Álvaro's account
@@ -126,3 +129,6 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 21:15 T264 launched (attempt 1, opus), agent a67678189fe2a1973
 - 2026-10-12 21:32 T264 done, merged 4cd3ff3
 - 2026-10-12 21:45 T262 done, merged ff03467; worktree dir left (locked), branch kept until removable
+- 2026-10-12 21:48 T263 launched (attempt 1, opus), agent a8cccfbc817752c79
+- 2026-10-12 21:55 cf:measure on main after T262+T264: Worker 2,186 KiB gzip (budget 2,800), 1,273 static files 52.1 MiB → T264's cf:measure Done-when satisfied
+- 2026-10-12 21:56 T263 done, merged e6612b5
