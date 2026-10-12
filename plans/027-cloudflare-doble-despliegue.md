@@ -28,7 +28,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - Outcome: art/ is now served as static files from public/art (994 files, 43.6 MB), callers use /art, no request-time fs; 55cbc47
 
 ## T262 — Cloudflare build (OpenNext) and size budget
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T261
 - Model: fable
 - Skills: none
@@ -40,10 +40,10 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - `pnpm build` (Vercel path) → exit 0, unchanged behaviour
   - local Cloudflare preview: the pages listed in Goal answer 200 with the CSP header; screenshots of landing and `/mar` in the attach folder
   - Test command → exit 0
-- Outcome:
+- Outcome: OpenNext Cloudflare build, `cf:build`/`cf:preview`/`cf:measure`; Worker 2,164 KiB gzip (budget 2,800); local wrangler preview serves all pages with CSP, art and redirects; ff03467
 
 ## T263 — Build version marker and two-host parity check
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T262
 - Model: opus
 - Skills: none
@@ -98,12 +98,20 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 T264: the service worker stores nothing; it only intercepts same-origin GET navigations (not /api), network-first, with a generated offline page when there is no network
 - 2026-10-12 T264: install prompt and SW registration live only in the (landing) layout (not /mar, not admin); prompt lazy (after load + 2 s, shown after 15 s), hidden under `navigator.webdriver` and when already installed; iOS hint counts as dismissed once seen; Chrome mini-infobar suppressed in favour of the card
 - 2026-10-12 T264: icons rendered with Playwright Chromium on white and committed; theme colour --boia-navy #12233f; `pwa.*` strings in es-pwa.ts are sample copy; CSP already had `worker-src 'self'`
+- 2026-10-12 T262: OpenNext `incrementalCache` = static-assets read-only cache (no R2/KV, no accounts); `/eventos/[slug]` ISR (300 s) is frozen on Cloudflare until the next deploy (client `LiveEvent` recomputes; Vercel unchanged); unknown slugs log a harmless "read-only cache" error
+- 2026-10-12 T262: `compatibility_date` 2026-10-06, the newest the bundled workerd accepts
+- 2026-10-12 T262: `next/image` is not actually used, so no image config change
+- 2026-10-12 T262: `scripts/cf-assets.mjs` writes `_headers` (security headers, immutable `_next/static`, art cache) and `_redirects` (`/api/art/* → /art/:splat 200`, the Next rewrite 404s on Cloudflare); `ART_CACHE_CONTROL` in `lib/art-url.ts`
+- 2026-10-12 T262: `cf:build` runs `populateCache local` so a plain `wrangler deploy` ships prerendered pages; the hoisted temp copy appends `nodeLinker: hoisted` to its own `pnpm-workspace.yaml`
 
 ## Proposals (new scope)
 - 2026-10-12: Android app in Play Store as a TWA (Bubblewrap config, `/.well-known/assetlinks.json` with a test on both hosts) once the domain is live — 25 USD one-off, Álvaro's account
 - 2026-10-12: Commit `.github/workflows/supabase-keepalive.yml` (still untracked) so the free Supabase project never pauses — Álvaro's call
 
 - 2026-10-12: Next 15 emits `mobile-web-app-capable` instead of `apple-mobile-web-app-capable` (iOS 16.4+ unaffected); real-device install test on Android and iPhone after deploy (T264)
+
+- 2026-10-12: R2 incremental cache if real ISR on Cloudflare is ever wanted (T262)
+- 2026-10-12: `cf:build` verified only on Windows from the hoisted copy; first Workers Builds run on Linux is the real check (T262)
 
 ## Steps only Álvaro can do (outside the repo, after T262)
 1. Create the Cloudflare account (personal Gmail), connect the GitHub repo in Workers Builds with the settings from `docs/DESPLIEGUE.md`, set the env vars.
@@ -117,3 +125,4 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 21:15 T262 launched (attempt 1, fable), agent aabe6eccf48621f68
 - 2026-10-12 21:15 T264 launched (attempt 1, opus), agent a67678189fe2a1973
 - 2026-10-12 21:32 T264 done, merged 4cd3ff3
+- 2026-10-12 21:45 T262 done, merged ff03467; worktree dir left (locked), branch kept until removable
