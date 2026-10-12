@@ -14,10 +14,10 @@
  * que no se puede quitar.
  */
 import { randomBytes } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BackupCodeUse, BackupCodesResult, ProfileResult } from '../rpc.ts';
 import { context, expectDenied, expectRejected, ok, type Member } from './context.ts';
-import { anonClient, elevateToAal2, testRunId } from './testkit.ts';
+import { anonClient, elevateToAal2, signIn, testRunId } from './testkit.ts';
 
 const ctx = context();
 const POLICY = 'muestra-2026-10-07';
@@ -125,6 +125,13 @@ describe('el Carnet 000', () => {
 });
 
 describe('códigos de respaldo', () => {
+  // Poner la contraseña con la clave de servicio cierra las sesiones abiertas
+  // de la cuenta (la prueba del 000 y la de abajo lo hacen): cada prueba
+  // entra de nuevo con su código (T276).
+  beforeEach(async () => {
+    admin = { ...admin, client: await signIn(ctx.env, ctx.service, admin.email) };
+  });
+
   it('se generan 10 con aal2, sólo para el equipo, y nunca en claro en la auditoría', async () => {
     await elevateToAal2(admin.client);
     const res = (await ok(

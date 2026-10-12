@@ -13,8 +13,10 @@ export default defineConfig({
     include: ['src/supabase/**/*.supabase.ts'],
     environment: 'node',
     fileParallelism: false,
-    testTimeout: 60_000,
-    hookTimeout: 180_000,
+    // Una entrada puede esperar al límite de Supabase Auth (testkit.ts,
+    // RATE_LIMIT_WAIT_MS) y un beforeAll hace varias.
+    testTimeout: 420_000,
+    hookTimeout: 900_000,
     globalSetup: ['src/supabase/global-setup.ts'],
   },
 });

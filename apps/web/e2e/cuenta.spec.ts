@@ -144,6 +144,13 @@ test('cuenta nueva: código, apodo libre, ocupado no; sin la política no se cre
   await sheet.getByTestId('acceso-seguir').click();
   await expect(sheet).toBeHidden();
 
+  // Un alta nueva sigue en las preguntas opcionales del Carnet (plan 019
+  // T218, decisión 11), con el apodo de la cuenta; se guardan sin contestar.
+  const form = carnet.getByTestId('carnet-form');
+  await expect(form).toBeVisible();
+  await expect(form.getByTestId('carnet-apodo-input')).toHaveValue(mine);
+  await form.getByTestId('carnet-guardar').click();
+
   // El Carnet nace con el apodo de la cuenta y «Tu cuenta» enseña el email.
   await expect(carnet.getByTestId('carnet-apodo')).toHaveText(mine);
   await expect(carnet.getByTestId('cuenta-email')).toHaveText(email);

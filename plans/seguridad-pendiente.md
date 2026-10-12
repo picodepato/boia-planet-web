@@ -28,6 +28,13 @@ esté hecha (o pedíselo al orquestador).
       sólo miembro) en Organization settings → Team.
 - [ ] **Porkbun:** la tarjeta del auto-renew no caduca antes de 2027-10-12.
 
+## Encender las cuentas (Carnet con email y código)
+
+- [ ] Cuando se decida encenderlas, la lista paso a paso (proyecto de
+      producción, SMTP de Brevo, plantillas, límites, URLs, migraciones,
+      política y las dos variables en Cloudflare y Vercel):
+      [`docs/propuestas/2026-10-03-produccion-supabase.md`](../docs/propuestas/2026-10-03-produccion-supabase.md).
+
 ## Avisos
 
 - [ ] **Cloudflare → Notifications → Add:** avisos de builds fallidos de

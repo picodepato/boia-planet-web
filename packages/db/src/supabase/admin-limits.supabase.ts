@@ -14,6 +14,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FULL_ACCESS_LIMIT, type FullAccessResult } from '../rpc.ts';
 import { context, expectDenied, expectRejected, ok, type Member } from './context.ts';
+import { connectDev } from './dev.ts';
+import { supabaseEnv } from './env.ts';
 import { elevateToAal2 } from './testkit.ts';
 
 const ctx = context();
@@ -81,8 +83,27 @@ describe('acceso completo: como mucho FULL_ACCESS_LIMIT', () => {
   });
 
   it('pasar de admin a owner no suma a nadie', async () => {
-    await ok(ctx.service.from('staff_roles').update({ role: 'owner' }).eq('user_id', admin.id));
-    await ok(ctx.service.from('staff_roles').update({ role: 'admin' }).eq('user_id', admin.id));
+    // En una transacción que se deshace: si el proyecto no tiene otro
+    // propietario, volver de owner a admin chocaría con «el último
+    // propietario» y la cuenta de prueba ya no se podría borrar (T276).
+    const r = supabaseEnv();
+    if (!r.ok) throw new Error(r.problem ?? `faltan ${r.missing.join(', ')}`);
+    const db = await connectDev(r.env);
+    try {
+      await db.query('begin');
+      const res = await db.query(
+        `update public.staff_roles set role = 'owner' where user_id = $1`,
+        [admin.id],
+      );
+      expect(res.rowCount).toBe(1);
+      const n = await db.query(
+        `select count(*)::int as n from public.staff_roles where role in ('admin', 'owner')`,
+      );
+      expect(n.rows[0].n).toBe(FULL_ACCESS_LIMIT);
+    } finally {
+      await db.query('rollback');
+      await db.end();
+    }
   });
 });
 

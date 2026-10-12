@@ -1,238 +1,341 @@
-# Lista de producción con Supabase
+# Encender las cuentas: Carnet con email y código
 
-Para Hernán (plan 008, T95, 2026-10-03). Qué hacer, en orden, para que la
-web publicada tenga cuentas por email, Carnets, sellos por QR, rankings y
-botellas globales y el Admin con TOTP (borrador
-[D-27](2026-10-03-d27-borrador.md)). Mientras no se haga, la producción sigue
-en modo local (D-20): sin las variables de Supabase todo funciona en el
-navegador, como hoy.
+Para Álvaro. Escrito en el plan 008 (T95, 2026-10-03) y puesto al día en el
+plan 029 (T276, 2026-10-13) para los dos hosts de hoy: **Cloudflare**
+(`boiaplanet.net`, la pública) y **Vercel** (`boia-planet-roan.vercel.app`,
+la copia).
 
-Ninguna clave va en el repositorio, en este documento ni en un chat: sólo en
-el panel de Vercel, en `apps/web/.env.local` (desarrollo, fuera de git) o en
-la terminal de quien corre un script.
+Qué cambia al encenderlo: «Crear mi Carnet» pide el email, llega un correo
+de `hola@boiaplanet.net` con un código de 6 cifras, se escribe el código, se
+elige el apodo y se acepta la política; lo que esa persona tenía en el
+navegador (puntos, skin, récords, Carnet de prueba) pasa a su cuenta. Con la
+cuenta, el Carnet, los sellos por QR, la tienda, los rankings y las botellas
+viven en Supabase.
 
-Los pasos del panel siguen los nombres del panel de Supabase de octubre de
-2026; si un menú ha cambiado de sitio, el ajuste se llama igual.
+Mientras no se haga, la web sigue en **modo local** (D-20): sin las dos
+variables `NEXT_PUBLIC_SUPABASE_*` no se pide nada y todo queda en el
+navegador, como hoy. Se ha comprobado en el plan 029 (T276):
+
+- sin las variables, `pnpm build` no mete en la web ninguna dirección de
+  Supabase y la CSP no la abre; el Carnet se crea sin pedir email;
+- con ellas, la web lleva la URL de Supabase, la CSP la abre (https y wss)
+  en los dos hosts (`next.config.ts` en Vercel y en el Worker,
+  `scripts/cf-assets.mjs` en los estáticos de Cloudflare) y el Carnet no se
+  crea hasta que el código se verifica;
+- contra `boia-planet-dev`: `pnpm test:supabase` y la e2e de la cuenta
+  (`E2E_SUPABASE=1`, `e2e/cuenta.spec.ts`: email, código, apodo, lo del
+  invitado pasa a la cuenta, cerrar sesión y volver, borrar la cuenta).
+
+**Ninguna clave va en el repositorio, en este documento ni en un chat**: sólo
+en los paneles (Cloudflare, Vercel, GitHub, Brevo, Supabase), en
+`apps/web/.env.local` (desarrollo, fuera de git) o en la terminal de quien
+corre un script.
+
+Los menús son los de octubre de 2026; si alguno ha cambiado de sitio, el
+ajuste se llama igual. Se hace **en este orden**: primero todo Supabase
+(pasos 1–8), después la política (paso 9) y por último las variables de los
+dos hosts (paso 10). Hasta el paso 10 la web pública no cambia.
 
 ## 0. Antes de empezar
 
-- [ ] **El dominio definitivo** (P27 del borrador). Se puede empezar con el
-      de prueba, https://boia-planet-roan.vercel.app, que es **temporal**:
-      cuando llegue el dominio, repetir los pasos 4 (remitente), 6 (URL)
-      y 7 (Vercel).
-- [ ] **Textos legales** (P21): la política de privacidad con cuentas es
-      `muestra` (`PRIVACY_WITH_ACCOUNTS` en `apps/web/lib/legal/docs.ts`). Si
-      se publica antes de P21, que sea sabiendo que el aviso «muestra» sale
-      arriba. Al cambiar la política, subir `PRIVACY_POLICY_VERSION`
-      (`apps/web/lib/account/config.ts`; hoy `muestra-2026-10-03`): cada
-      consentimiento guarda la versión aceptada.
-- [ ] **El uso de la lista de emails** (P23): qué se manda a quien marcó
+- [ ] **La política de privacidad aprobada** (paso 9). Sin ella no se
+      recogen emails reales.
+- [ ] **El uso de la lista de emails** (P23): qué se manda a quien marque
       «noticias» y con qué herramienta. Hasta saberlo, el CSV de Admin →
       Socios y emails no se usa.
+- [ ] Una hora tranquila, sin fiesta esa noche: el paso 10 cambia la web
+      pública.
 
-## 1. Un proyecto de producción aparte
+## 1. Un proyecto de Supabase para producción
 
-- [ ] https://supabase.com/dashboard → **New project**: nombre
-      `boia-planet` (no reutilizar `boia-planet-dev`), región de la UE (p.
-      ej. Frankfurt), contraseña de la base larga y aleatoria, guardada en
-      el gestor de contraseñas.
-- [ ] **Plan**: el gratuito pausa el proyecto tras una semana sin uso y no da
-      copias diarias. Para producción, **Pro** (copias diarias; REQ-ARQ-023).
-- [ ] Desarrollo y producción no se mezclan nunca: `pnpm test:supabase`, las
-      e2e con `E2E_SUPABASE=1` y `pnpm db:clean-test-users` crean o borran
-      cuentas y **sólo se corren contra `boia-planet-dev`**.
-- [ ] Apuntar dónde está cada valor (los nombres son los de `.env.example`):
-  - `NEXT_PUBLIC_SUPABASE_URL`: Project Settings → Data API → Project URL.
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Project Settings → API Keys →
-    publishable key (va al navegador).
-  - `SUPABASE_SERVICE_ROLE_KEY`: Project Settings → API Keys → secret key
-    (sólo scripts; la web publicada no la usa).
-  - `SUPABASE_DB_URL`: botón **Connect** → Session pooler (sólo scripts).
+Hoy sólo existe `boia-planet-dev`, el de las pruebas: `pnpm test:supabase` y
+las e2e crean y borran cuentas allí. **La web pública no puede usarlo.**
 
-## 2. Las migraciones
+- [ ] https://supabase.com/dashboard → la organización de BOIA → **New
+      project**: nombre `boia-planet`, región de la UE (Frankfurt o
+      Irlanda), contraseña de la base larga y aleatoria (generada por el
+      gestor de contraseñas, guardada allí). El plan gratuito deja tener dos
+      proyectos activos.
+- [ ] **Plan.** El gratuito se pausa tras ~7 días sin visitas (el flujo
+      `supabase-keepalive` lo evita, paso 11) y no guarda copias diarias (las
+      hace el flujo `supabase-backup`, paso 11). Pro (de pago) da copias
+      diarias en el panel; decide Álvaro.
+- [ ] Apuntar en el gestor de contraseñas dónde está cada valor del proyecto
+      **nuevo** (los nombres son los de `.env.example`):
+  - `NEXT_PUBLIC_SUPABASE_URL`: Project Settings → **Data API** → Project
+    URL. Sólo `https://<ref>.supabase.co`, sin `/rest/v1/` al final.
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Project Settings → **API Keys** → la
+    *publishable key* (`sb_publishable_…`; va al navegador). No la `eyJ…`
+    de «Legacy»: `lib/secretos.test.ts` la rechaza.
+  - `SUPABASE_SERVICE_ROLE_KEY`: Project Settings → API Keys → la *secret
+    key* (`sb_secret_…`). Sólo para los scripts de la terminal; **nunca** en
+    Cloudflare ni en Vercel.
+  - `SUPABASE_DB_URL`: botón **Connect** (arriba) → **Session pooler** → la
+    línea `postgresql://…`, con la contraseña de la base en lugar de
+    `[YOUR-PASSWORD]`. Sólo scripts.
 
-Los scripts leen las variables de la terminal antes que las de
-`apps/web/.env.local` (una variable definida gana al archivo). Para apuntar
-al proyecto de producción, en una terminal nueva (Git Bash), desde la raíz
-del repo:
+## 2. Las migraciones (las 35 de `supabase/migrations/`)
+
+Se aplican todas, en orden, con el script del repo. Lee las variables de la
+terminal antes que las de `apps/web/.env.local` (una variable definida gana
+al archivo), así que para apuntar a **producción** se abre una terminal
+nueva (Git Bash), en la raíz del repo:
 
 ```sh
 export NEXT_PUBLIC_SUPABASE_URL='https://<ref-de-prod>.supabase.co'
 export NEXT_PUBLIC_SUPABASE_ANON_KEY='<publishable de prod>'
 export SUPABASE_SERVICE_ROLE_KEY='<secret de prod>'
 export SUPABASE_DB_URL='postgresql://postgres.<ref-de-prod>:<contraseña>@<host>:5432/postgres'
-pnpm db:migrate:dev            # las 14 migraciones y la muestra
-pnpm db:migrate:dev            # otra vez: «0 aplicadas … (al día)»
+pnpm db:migrate:dev     # «[migraciones] 35 aplicadas de 35» y las semillas de muestra
+pnpm db:migrate:dev     # otra vez: «0 aplicadas de 35 (al día)»
 ```
 
-- [ ] El script se llama `:dev` por historia: aplica a cualquier proyecto
-      cuyas variables estén puestas, y **se niega** si `SUPABASE_DB_URL` no
-      es del mismo proyecto que `NEXT_PUBLIC_SUPABASE_URL`.
-- [ ] La primera vez, con la muestra: la tienda necesita su catálogo de
-      cosméticos, y los eventos y descuentos de muestra sirven para probar.
-      Sin muestra: `pnpm db:migrate:dev -- --no-seed` (sólo migraciones).
-      Cómo se quita la muestra después: paso 10.
-- [ ] Cerrar esa terminal al terminar (las claves se quedan en ella).
+- [ ] El script se llama `:dev` por historia: aplica al proyecto de las
+      variables y **se niega** si `SUPABASE_DB_URL` no es del mismo proyecto
+      que `NEXT_PUBLIC_SUPABASE_URL`. Lo que aplica queda apuntado en
+      `supabase_migrations.schema_migrations`; repetirlo no hace nada.
+- [ ] La primera vez, **con** la muestra: la tienda necesita su catálogo de
+      cosméticos. Sin muestra: `pnpm db:migrate:dev -- --no-seed`. Cómo se
+      quita la muestra después: paso 13.
+- [ ] Una migración nueva de un plan futuro se aplica igual: primero en
+      `boia-planet-dev` (los planes lo hacen), después aquí, con el mismo
+      comando y las variables de producción.
+- [ ] **Nunca** se corren contra producción `pnpm test:supabase`, las e2e con
+      `E2E_SUPABASE=1` ni `pnpm db:clean-test-users`: crean y borran cuentas.
+- [ ] Sin cerrar aún la terminal: el paso 8 la usa.
 
 ## 3. Auth: email con código de 6 cifras
 
-En el proyecto de producción (en `boia-planet-dev` ya está hecho):
+En el proyecto **de producción** (en `boia-planet-dev` ya está):
 
 - [ ] **Authentication → Sign In / Providers → Email**: «Enable Email
-      provider» activado; «Confirm email» activado; **«Email OTP Length»:
-      6**; **«Email OTP Expiration»: 600** (segundos; coincide con
-      `OTP_EXPIRY_MS`); **Save**.
-- [ ] Que se puedan crear cuentas nuevas («Allow new users to sign up»,
-      activado): el código crea la cuenta la primera vez.
+      provider» activado; «Confirm email» activado; **Email OTP Length: 6**;
+      **Email OTP Expiration: 600** (segundos; es `OTP_EXPIRY_MS` de
+      `apps/web/lib/account/config.ts`) → **Save**.
+- [ ] En **Authentication → Sign In / Providers**, arriba: «Allow new users
+      to sign up» activado (el primer código crea la cuenta).
 - [ ] **Authentication → Multi-Factor**: TOTP activado (lo está por
-      defecto). El Admin lo necesita (`aal2`).
+      defecto; el Admin lo necesita).
 
-## 4. SMTP propio
+## 4. El correo: SMTP de Brevo con `hola@boiaplanet.net`
 
-El correo de Supabase sin SMTP propio **sólo llega a los miembros del equipo
-del proyecto** y a unos 2 por hora: el público no recibiría su código. Y sin
-SMTP propio el panel no deja editar las plantillas (paso 6).
+Sin SMTP propio, Supabase **sólo manda correos a los miembros del equipo del
+proyecto** (y unos pocos por hora): el público no recibiría su código. Se usa
+la cuenta de Brevo que ya existe, con el dominio ya autenticado (DKIM y DMARC,
+`docs/DESPLIEGUE.md` §6).
 
-**Authentication → Emails → SMTP Settings** → «Enable custom SMTP»:
+- [ ] Brevo → **SMTP & API → SMTP** → **Generate a new SMTP key**, nombre
+      `supabase-auth`. Una clave **aparte** de la de Gmail «Enviar como»: si
+      un día se cambia una, la otra sigue. Se ve una sola vez: al gestor de
+      contraseñas. En esa misma página está el **login SMTP**
+      (`…@smtp-brevo.com`).
+- [ ] Supabase (producción) → **Authentication → Emails → SMTP Settings** →
+      «Enable custom SMTP»:
+  - Sender email: `hola@boiaplanet.net`
+  - Sender name: `BOIA`
+  - Host: `smtp-relay.brevo.com`
+  - Port: `587`
+  - Username: el login SMTP de Brevo
+  - Password: la clave `supabase-auth`
+  - Minimum interval between emails: `60` (segundos; la web enseña esa
+    espera, `RESEND_COOLDOWN_S`) → **Save changes**.
+- [ ] El plan gratuito de Brevo manda **300 correos al día** en total (contando
+      los de Gmail «Enviar como»). Cada acceso es un correo. Si una fiesta
+      grande pide más, Brevo tiene planes de pago; decide Álvaro.
+- [ ] Recomendado (`docs/DESPLIEGUE.md` §6, «Un solo SPF»): añadir
+      `include:spf.brevo.com` al SPF del dominio para que los códigos no
+      caigan en spam.
 
-- [ ] **Para probar (lo que tiene hoy `boia-planet-dev`): Gmail con
-      contraseña de aplicación.** La cuenta de Google necesita la
-      verificación en dos pasos; la contraseña de aplicación se crea en
-      https://myaccount.google.com/apppasswords. Host `smtp.gmail.com`,
-      puerto `465` (o `587`), usuario el Gmail entero, contraseña la de
-      aplicación (16 letras), remitente ese mismo Gmail, nombre «BOIA».
-      Gmail limita a unos cientos de destinatarios al día: vale para probar,
-      no para el público.
-- [ ] **Para producción: Resend con el dominio definitivo.** En
-      https://resend.com: añadir el dominio, poner en su DNS los registros
-      que pide (SPF y DKIM; DMARC recomendado) y esperar a «Verified»; crear
-      una API key con permiso de envío. En Supabase: host `smtp.resend.com`,
-      puerto `465`, usuario `resend`, contraseña la API key, remitente
-      `no-responder@<dominio>` (o el que elija BOIA), nombre «BOIA».
-- [ ] **Authentication → Rate Limits**: subir los correos por hora a lo que
-      se espere en una fiesta (cada acceso es un correo).
+## 5. Plantillas del correo, en español
 
-## 5. Plantillas en español (después del SMTP)
+**Authentication → Emails → Templates** (sólo se pueden editar con el SMTP
+propio ya guardado). Ninguna lleva `{{ .ConfirmationURL }}`: no hay enlace
+mágico, sólo el código.
 
-**Authentication → Emails → Templates**. Ninguna plantilla lleva
-`{{ .ConfirmationURL }}`: no hay enlace mágico (D-27, punto 2).
-
-- [ ] **Magic Link** (lo recibe quien ya tiene cuenta):
+- [ ] **Magic Link** (lo recibe quien ya tiene cuenta) y **Confirm signup**
+      (lo recibe un email nuevo), las dos igual:
   - Subject: `Tu código de BOIA: {{ .Token }}`
-  - Message body (en «Source», entero):
+  - Message body (pestaña «Source», entero):
 
     ```html
     <h2>Tu código de BOIA</h2>
     <p>Escribe este código en BOIA.PLANET para entrar:</p>
     <p style="font-size:32px;font-weight:700;letter-spacing:6px">{{ .Token }}</p>
     <p>Caduca en 10 minutos. Si no lo has pedido tú, ignora este correo.</p>
-    <p>BOIA · Alicante</p>
+    <p>BOIA · Alicante · boiaplanet.net</p>
     ```
 
-  - **Save changes**.
-- [ ] **Confirm signup** (lo recibe un email nuevo): el mismo Subject y el
-      mismo cuerpo → **Save changes**.
-- [ ] Lo mismo en `boia-planet-dev`, que ya tiene SMTP (Gmail) y aún podría
-      tener las plantillas por defecto (pasos 3 y 4 de T89 en `ESTADO.md`).
+  - **Save changes** en cada una.
+- [ ] El texto es `muestra`: Álvaro puede cambiarlo, siempre con
+      `{{ .Token }}` y sin enlace.
 
-## 6. URL de Auth
+## 6. Límites de Auth
 
-**Authentication → URL Configuration**:
+**Authentication → Rate Limits**. Los límites son **por IP**, y en una fiesta
+mucha gente comparte la misma (el Wi-Fi o la antena del sitio):
 
-- [ ] Site URL: el dominio definitivo, o
-      `https://boia-planet-roan.vercel.app` mientras no lo haya → **Save
-      changes**.
-- [ ] Redirect URLs → **Add URL**: `https://<dominio>/**` → **Save URLs**.
-      En producción, sin `localhost` (eso es de `boia-planet-dev`).
+- [ ] **Rate limit for sending emails**: `60` por hora para el día a día. La
+      noche de una fiesta con sellos por QR, subirlo (hasta `250`, por el tope
+      diario de Brevo) y bajarlo al día siguiente.
+- [ ] **Rate limit for token verifications** (códigos comprobados):
+      `150` cada 5 minutos (el de serie, 30, se queda corto en la puerta).
+- [ ] **Rate limit for sign ups and sign ins**: `150` cada 5 minutos.
+- [ ] **Save changes**.
 
-## 7. Variables en Vercel
+## 7. URL de Auth: los dos hosts
 
-En el proyecto de Vercel que sirve la web: _Settings → Environment
-Variables_.
+**Authentication → URL Configuration** (aunque no haya enlaces, Supabase sólo
+acepta los orígenes apuntados; `docs/DESPLIEGUE.md` §3):
 
-- [ ] **Production**: `NEXT_PUBLIC_SUPABASE_URL` y
-      `NEXT_PUBLIC_SUPABASE_ANON_KEY` del proyecto de **producción**. Son las
-      únicas que la web usa. `SUPABASE_SERVICE_ROLE_KEY` y `SUPABASE_DB_URL`
-      **no** van a Vercel: sólo las usan los scripts, en la terminal.
-- [ ] **Preview** (opcional): las dos de `boia-planet-dev` para probar ramas
-      con cuentas, o nada para que las previews sigan en modo local.
-- [ ] **Volver a desplegar** (_Deployments → Redeploy_ o un push): las
-      `NEXT_PUBLIC_*` se meten en el build; cambiarlas sin desplegar no hace
-      nada.
-- [ ] Comprobar: `curl -I https://<dominio>/` enseña en
-      `content-security-policy` la URL de Supabase en `connect-src` (la CSP
-      la abre sólo cuando la variable existe).
+- [ ] **Site URL**: `https://boiaplanet.net` → **Save changes**.
+- [ ] **Redirect URLs** → **Add URL**, una a una, y **Save URLs**:
+  - `https://boiaplanet.net/**`
+  - `https://www.boiaplanet.net/**`
+  - `https://boia-planet-roan.vercel.app/**` (la copia)
+  - `https://boia-planet.boiaplanet-bp.workers.dev/**` (el Worker sin dominio)
+- [ ] En producción **sin** `localhost` (eso es de `boia-planet-dev`).
 
 ## 8. El propietario del Admin
 
-Con las variables de producción en la terminal (como en el paso 2):
+En la terminal del paso 2 (con las variables de producción):
 
 ```sh
-pnpm admin:grant -- <email> owner      # owner | admin | editor | none
+pnpm admin:grant -- admin@boiaplanet.net owner    # owner | admin | editor | none
 ```
 
 - [ ] Da el rol a ese email (si no tiene cuenta, la crea confirmada) y queda
-      en la auditoría; `none` lo quita (el último propietario no se puede
-      quitar). Nunca imprime una clave.
-- [ ] Esa persona entra en `https://<dominio>/admin`: email → código de 6
-      cifras → **alta del TOTP** con el QR (Google Authenticator, 1Password…)
-      → dentro. Sin rol, «Sin acceso».
-- [ ] **Un segundo propietario** (Hernán y Álvaro): no hay códigos de
-      respaldo; si alguien pierde el móvil, otro propietario o el script
-      quitan y vuelven a dar el rol, y el factor TOTP viejo se borra en el
-      panel de Supabase (Authentication → Users, en esa cuenta).
-- [ ] Los demás del equipo, con `admin` o `editor` (un editor entra, pero no
-      usa las cuatro secciones reales).
+      en la auditoría. Nunca imprime una clave.
+- [ ] Esa persona entra en `https://boiaplanet.net/admin` (después del paso
+      10): email → código → **alta del TOTP** con el QR (Google
+      Authenticator, 1Password…) → dentro; genera ahí sus códigos de
+      respaldo y los guarda en el gestor de contraseñas.
+- [ ] Un segundo propietario, si lo hay, con el mismo comando: con dos,
+      si uno pierde el móvil el otro le arregla el acceso.
+- [ ] **Cerrar la terminal** (las claves de producción se quedan en ella).
 
-## 9. Las fiestas reales y sus QR
+## 9. La política de privacidad (antes de recoger emails reales)
 
-En `/admin` → **Fiestas y QR**, por cada fiesta real:
+El texto lo escribe y lo aprueba Álvaro (P21); este repo no lo inventa. Hoy es
+`muestra`:
 
-- [ ] La ventana del sello (desde / hasta, la duración de la fiesta) →
-      «Guardar ventana» → «Crear el QR».
-- [ ] La imagen del sello: archivo PNG, WebP o JPEG de al menos 512 px y
-      hasta 2 MB, o una URL https. Sin imagen sale el sello generado.
-- [ ] «Descargar PNG» o «Imprimir o PDF» para el cartel de la puerta;
-      «Proyectar QR» para la pantalla. «Regenerar código» invalida el QR
-      anterior (si se filtra).
+- [ ] El texto con cuentas son las claves `legal.privacy.account.*` y las
+      comunes `legal.privacy.*` de `apps/web/lib/i18n/` (las junta
+      `PRIVACY_WITH_ACCOUNTS`, `apps/web/lib/legal/docs.ts`); se ve en
+      `/legal/privacidad` cuando hay Supabase. Tiene que nombrar a quien
+      trata los datos y, como encargados, a **Supabase** (región de la UE del
+      paso 1) y a **Brevo** (manda el código).
+- [ ] Al aprobarlo, se sube `PRIVACY_POLICY_VERSION`
+      (`apps/web/lib/account/config.ts`, hoy `muestra-2026-10-03`): cada
+      consentimiento guarda la versión aceptada y su fecha.
+- [ ] Ese cambio va en un commit a `main` **antes** del paso 10 (o en el
+      mismo push).
 
-## 10. Quitar la muestra
+## 10. Encender: las dos variables en los DOS hosts
 
-Cuando Álvaro haya dado lo real (eventos, cosméticos, descuentos, importes):
+Las dos variables, **con los mismos valores en los dos hosts** (los del
+proyecto de producción, paso 1). Sólo esas dos: `SUPABASE_SERVICE_ROLE_KEY`
+y `SUPABASE_DB_URL` **nunca** van a un host.
 
-- [ ] Cargar lo real primero (eventos y descuentos reales; el catálogo de
-      cosméticos real).
-- [ ] Ajustar los importes `muestra` (P24) con una migración nueva: los
-      topes de `point_actions`, los 50 puntos del sello y los tiempos
-      mínimo y máximo de `circuits` (El Freu: 45–300 s).
+| Variable | Valor |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref-de-prod>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_…` de producción |
+
+- [ ] **Cloudflare** (la pública): dash.cloudflare.com → **Workers & Pages**
+      → Worker `boia-planet` → **Settings** → **Build** → **Variables and
+      secrets** (las del *build*, no las de *runtime*) → **Add** → las dos,
+      tipo *Text* → **Save**. Junto a `PNPM_VERSION` y `NODE_VERSION`, que
+      ya están.
+- [ ] **Vercel** (la copia): vercel.com → el proyecto → **Settings** →
+      **Environment Variables** → **Add New** → las dos, entorno
+      **Production** (Preview sin marcar, para que las previews sigan en modo
+      local) → **Save**.
+- [ ] **Un push a `main`** (el de la política del paso 9, o cualquier otro):
+      las `NEXT_PUBLIC_*` van **dentro** del build, así que sin construir de
+      nuevo no cambian nada. El push reconstruye los dos a la vez.
+- [ ] Esperar a que los dos builds salgan verdes: Cloudflare → Worker →
+      **Deployments**; Vercel → **Deployments**.
+- [ ] GitHub → **Actions** → `hosts-parity` → **Run workflow**: verde (los
+      dos sirven el mismo commit). Ojo: esa prueba **no** mira si las cuentas
+      están encendidas; lo dice el paso 12.
+
+**Para apagarlo** (vuelta al modo local): quitar las dos variables en los
+dos hosts y otro push. Las cuentas siguen guardadas en Supabase y vuelven al
+encender.
+
+## 11. GitHub: copias y despertador del proyecto nuevo
+
+Hoy los flujos programados apuntan a `boia-planet-dev`. GitHub → el repo →
+**Settings → Secrets and variables → Actions**:
+
+- [ ] Secrets `SUPABASE_URL` y `SUPABASE_ANON_KEY` (flujo
+      `supabase-keepalive`): los de **producción** (la URL del paso 1 y su
+      clave *anon* de «Legacy API keys», la `eyJ…`: el `curl` del flujo la
+      usa así).
+- [ ] Secret `SUPABASE_DB_URL` (flujo `supabase-backup`): la de
+      **producción**. Más `BACKUP_PASSPHRASE` si aún no está
+      (`plans/seguridad-pendiente.md`, «Urgente»).
+- [ ] Actions → `supabase-keepalive` → **Run workflow** → verde; lo mismo con
+      `supabase-backup`.
+
+## 12. Comprobar que funciona (después del push)
+
+- [ ] En una terminal: `curl -sI https://boiaplanet.net/mar | grep -i
+      content-security-policy` y lo mismo con
+      `https://boia-planet-roan.vercel.app/mar`. Las dos llevan
+      `https://<ref-de-prod>.supabase.co` y `wss://<ref-de-prod>.supabase.co`
+      en `connect-src`. Si sólo una la lleva, falta la variable (o el build)
+      en el otro host.
+- [ ] Con un email real **que no sea del equipo de Supabase**, en el móvil, en
+      `https://boiaplanet.net/mar`:
+  1. Navegar un poco y ganar algunos puntos sin cuenta.
+  2. **Mi Carnet → Crear mi Carnet**: pide el email.
+  3. Llega en menos de un minuto un correo de «BOIA <hola@boiaplanet.net>»
+     con el código, en español (mirar también en spam).
+  4. Un código mal escrito dice que no vale; el bueno sigue al apodo.
+  5. Apodo, aceptar la política → el Carnet sale con su número de socio y los
+     puntos de antes siguen ahí.
+  6. Supabase (producción) → **Authentication → Users**: está el email.
+     **Table Editor → carnets**: está el apodo.
+  7. **Cerrar sesión** en Mi Carnet y volver a entrar con otro código: el
+     mismo Carnet.
+  8. **Borrar la cuenta** (escribiendo el apodo): desaparece de
+     Authentication → Users.
+- [ ] Lo mismo, una vez, en `https://boia-planet-roan.vercel.app/mar` (la
+      copia usa la misma base: la cuenta creada en un host entra en el otro).
+- [ ] `/admin` con la cuenta del paso 8 (email, código, TOTP).
+- [ ] Si algo falla: Supabase → **Logs → Auth** (¿llegó la petición?) y
+      Brevo → **Transactional → Logs** (¿salió el correo?).
+
+## 13. Más adelante
+
+### Las fiestas reales y sus QR
+
+En `/admin` → **Fiestas y QR**, por cada fiesta real: la ventana del sello
+(desde / hasta) → «Guardar ventana» → «Crear el QR»; la imagen del sello (PNG,
+WebP o JPEG, ≥ 512 px, ≤ 2 MB); «Descargar PNG», «Imprimir o PDF» o
+«Proyectar QR». «Regenerar código» invalida el QR anterior.
+
+### Quitar la muestra
+
+Cuando Álvaro dé lo real (eventos, cosméticos, descuentos, importes):
+
+- [ ] Cargar lo real primero (eventos, descuentos y catálogo de cosméticos).
+- [ ] Ajustar los importes `muestra` (P24) con una migración nueva (primero
+      en dev, después aquí con el paso 2).
 - [ ] En el **SQL Editor** de producción, pegar y ejecutar
-      `supabase/sample/remove-sample.sql`. Quita eventos, islas, temporadas,
-      logros, mundo, home, **cosméticos y descuentos** de muestra (y los
-      códigos de sello de esos eventos). Falla entero, sin borrar nada, si
-      algo real depende de la muestra (una cuenta que compró un cosmético
-      de muestra, por ejemplo).
-
-## 11. Copias y comprobación final
-
-- [ ] Con Pro, comprobar en **Database → Backups** que hay copia diaria, y
-      apuntar una restauración de prueba (REQ-ARQ-023, en `docs/entrega.md`).
-- [ ] Con un email real (que no sea del equipo): entrar en `/mar`, crear el
-      Carnet (llega el correo en español con el código), comprar una skin,
-      correr y salir en el ranking, echar una botella, abrir el QR de una
-      fiesta dentro de su ventana y ver el sello en el reverso, borrar la
-      cuenta.
-- [ ] En `/admin`: el CSV de Socios y emails trae sólo a quien marcó
-      noticias.
-- [ ] `docs/entrega.md`: actualizar la URL pública y las filas 9, 11 y 16.
+      `supabase/sample/remove-sample.sql`. Falla entero, sin borrar nada, si
+      algo real depende de la muestra.
 
 ## Para saber
 
 - **`pnpm db:clean-test-users`** (sólo `boia-planet-dev`): borra las cuentas
   de prueba `@example.test` que dejan las ejecuciones cortadas de
-  `pnpm test:supabase` o de las e2e. Por defecto, las de hace más de 30 min;
-  `pnpm db:clean-test-users -- --all`, todas; `-- --minutes N`, otro margen.
-  Nunca toca una cuenta de otro dominio. `pnpm test:supabase` ya limpia lo
-  suyo al empezar y al acabar.
+  `pnpm test:supabase` o de las e2e. Nunca toca otro dominio.
 - **`pnpm db:types:dev`** regenera `packages/db/src/database.types.ts` desde
-  el proyecto de las variables: tras una migración nueva, en desarrollo.
-- El detalle de cada pieza: `README.md`, «Cuentas con Supabase».
+  el proyecto de las variables (en desarrollo, tras una migración nueva).
+- En `boia-planet-dev` no hay propietario de verdad: si se da a una cuenta de
+  prueba el rol `owner`, el disparador «último propietario» impide borrarla
+  (pasó en el plan 023; la prueba de T223 ya no lo hace).
+- El detalle de cada pieza: `README.md`, «Cuentas con Supabase»; los hosts:
+  `docs/DESPLIEGUE.md`.

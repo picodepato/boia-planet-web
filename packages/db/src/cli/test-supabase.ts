@@ -10,11 +10,11 @@
  * máquina. Los argumentos se pasan a vitest.
  */
 import { spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENV_FILE, REPO_ROOT, supabaseEnv } from '../supabase/env.ts';
+import { newRunId } from '../supabase/testkit.ts';
 
 const r = supabaseEnv();
 if (!r.ok) {
@@ -40,7 +40,7 @@ const res = spawnSync(
   {
     stdio: 'inherit',
     // Marca de las cuentas de esta ejecución (testkit.ts, testRunId).
-    env: { ...process.env, BOIA_TEST_RUN: randomBytes(3).toString('hex') },
+    env: { ...process.env, BOIA_TEST_RUN: newRunId() },
   },
 );
 process.exit(res.status ?? 1);

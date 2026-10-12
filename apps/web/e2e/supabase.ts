@@ -74,16 +74,28 @@ export async function otpFor(email: string): Promise<string> {
   return otp;
 }
 
-/** Entra con el código fuera del navegador y devuelve la sesión. */
+/**
+ * Entra con el código fuera del navegador y devuelve la sesión. Si Supabase
+ * Auth dice que se ha pasado su límite de verificaciones por IP (30 cada 5
+ * minutos; `pnpm test:supabase` lo gasta), espera y lo vuelve a intentar
+ * (T276).
+ */
 export async function signInSession(member: TestMember): Promise<Session> {
-  const token = await otpFor(member.email);
-  const { data, error } = await anonClient().auth.verifyOtp({
-    email: member.email,
-    token,
-    type: 'email',
-  });
-  if (error || !data.session) throw new Error(`verifyOtp: ${error?.message ?? 'sin sesión'}`);
-  return data.session;
+  const deadline = Date.now() + 3 * 60_000;
+  for (;;) {
+    const token = await otpFor(member.email);
+    const { data, error } = await anonClient().auth.verifyOtp({
+      email: member.email,
+      token,
+      type: 'email',
+    });
+    if (!error && data.session) return data.session;
+    const limited = error && (error.status === 429 || /rate limit/i.test(error.message));
+    if (!limited || Date.now() > deadline) {
+      throw new Error(`verifyOtp: ${error?.message ?? 'sin sesión'}`);
+    }
+    await new Promise((r) => setTimeout(r, 12_000));
+  }
 }
 
 /**

@@ -4,6 +4,74 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T276: Carnet con email + código, listo para encender
+
+Qué existe:
+
+- Probado de punta a punta contra `boia-planet-dev` (sólo dev): crear el
+  Carnet pide email, se manda el código, se verifica, el socio queda en
+  Supabase con su Carnet y consentimientos; lo del invitado pasa a la cuenta;
+  cerrar sesión, volver a entrar y borrar la cuenta funcionan
+  (`e2e/cuenta.spec.ts` con `E2E_SUPABASE=1`, móvil y escritorio). El correo
+  del navegador se responde sin mandarlo y el código sale de
+  `auth.admin.generateLink` (como en el plan 008): no se mandó ningún correo.
+- Arreglado en el alta: tras crear la cuenta, las preguntas opcionales del
+  Carnet se abrían con el apodo vacío (y obligatorio). Ahora empiezan con el
+  apodo de la cuenta (`initialDraft`, `lib/mundo/carnet/carnet-editor.tsx`).
+- Arreglado en `pnpm test:supabase` (no pasaba entero desde el plan 019–023):
+  - una cuenta de prueba se quedó de única `owner` en dev (la prueba de T223
+    pasaba de admin a owner y no podía volver) y no se podía borrar: se quitó
+    su rol en dev y la prueba ahora lo hace en una transacción que se deshace;
+  - el límite de verificaciones de Supabase Auth por IP (30 / 5 min): las
+    entradas de las pruebas reintentan (`testkit.ts`, `e2e/supabase.ts`);
+  - la marca de cada ejecución era hex y a veces parecía un teléfono para el
+    filtro de texto (`text_phone`): ahora sólo letras;
+  - poner una contraseña con la clave de servicio cierra las sesiones: la
+    prueba de los códigos de respaldo vuelve a entrar y reusa su TOTP;
+  - `schema.supabase.ts` lista ahora, con su migración, las excepciones que
+    los planes 019–023 dejaron (anon: `admin_sign_in_email`, `calitas_list`;
+    SECURITY DEFINER en public: `admin_sign_in_email`, `discount_code_for`,
+    `radio_reorder`, `radio_set_first`). Una nueva hace fallar la prueba.
+- Los dos modos del build: sin variables, `pnpm build` no lleva ninguna URL de
+  Supabase y la CSP no la abre; con ellas, 10 trozos la llevan y la CSP abre
+  https y wss. `scripts/cf-assets.mjs --print` (cabeceras de Cloudflare) igual
+  en los dos modos. `pnpm cf:build` no corre en este Windows (EPERM al crear
+  enlaces, conocido; lo construye Workers Builds), así que `cf:measure` no se
+  midió aquí; el código del Worker no cambia.
+- La lista para encender, paso a paso en español y para los dos hosts:
+  `docs/propuestas/2026-10-03-produccion-supabase.md` (proyecto de
+  producción, 35 migraciones, Auth, SMTP de Brevo con `hola@`, plantillas,
+  límites por IP, URLs, propietario, política, las dos variables en
+  Cloudflare y Vercel, GitHub, comprobación). Enlazada desde
+  `plans/seguridad-pendiente.md`.
+
+Comandos:
+
+- `pnpm test:supabase` (dev) → exit 0: 22 archivos, 160 pruebas pasan, 0
+  cuentas `@example.test` quedan (627 s).
+- `E2E_SUPABASE=1 E2E_PORT=3276 pnpm exec playwright test e2e/cuenta.spec.ts
+  --workers=1` → exit 0: 10 pasan (móvil y escritorio).
+- `pnpm exec vitest run apps/web/lib/mundo/carnet/carnet-signup-gate.test.ts`
+  → 4 pasan (sin variables se crea sin pedir nada; con ellas espera al código
+  y al Carnet; las preguntas con el apodo).
+- Test command del plan, paso a paso: vitest 300 archivos, 2658 pasan, 1
+  saltada; `tools/spec/checks.sh` OK; lint, build y typecheck exit 0.
+
+Pendiente (Álvaro):
+
+- Encender: seguir la lista. Antes, aprobar la política (P21).
+- Revisar las excepciones de seguridad de dev (arriba): `admin_sign_in_email`
+  da a anon el email de la cuenta del Carnet 000.
+
+Probar a mano:
+
+- Con `apps/web/.env.local` de dev: `pnpm dev` → `/mar` → Mi Carnet → Crear
+  mi Carnet: pide email; el código llega sólo a miembros del equipo de
+  Supabase (dev sin SMTP propio para el público) o se saca con
+  `generateLink`; tras el apodo, las preguntas salen con el apodo puesto.
+- Sin las variables (`NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY=
+  pnpm dev`): Crear mi Carnet va directo al formulario, sin email.
+
 ## 2026-10-13 — plan 029 T275: Map fixes: Puig Campana label and the hint that never leaves
 
 Qué existe:

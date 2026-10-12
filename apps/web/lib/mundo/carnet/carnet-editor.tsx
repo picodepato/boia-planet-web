@@ -251,6 +251,20 @@ export function draftFrom(carnet: CarnetView | null): CarnetDraft {
   };
 }
 
+/**
+ * The form's first draft. Right after registering (the account sheet already
+ * created the card with its nickname, but this browser's copy may not have it
+ * yet), the questionnaire starts with the account's nickname instead of an
+ * empty required field (T276).
+ */
+export function initialDraft(
+  before: CarnetView | null,
+  profile: { nickname: string } | null = accountSnapshot().profile,
+): CarnetDraft {
+  const draft = draftFrom(before);
+  return !before && profile ? { ...draft, nickname: profile.nickname } : draft;
+}
+
 /** Registration may create the account's identity card while its questionnaire waits.
  * Keep existing answers and photo unless this fresh draft actually supplies a change.
  */
@@ -401,10 +415,11 @@ export function CarnetEditor({
   }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initial] = useState(() => initialDraft(before));
   return (
     <CarnetForm
       questions={questions}
-      initial={draftFrom(before)}
+      initial={initial}
       artist={!!before?.isArtist || !!(before && accountSnapshot().profile?.isArtist)}
       busy={busy}
       error={error}

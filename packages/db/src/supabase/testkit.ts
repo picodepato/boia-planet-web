@@ -24,13 +24,21 @@ export function serviceClient(env: SupabaseEnv): Client {
 }
 
 /**
+ * Una marca nueva, sólo letras: va dentro de apodos y mensajes de prueba, y
+ * con cifras (`T230 123456`) el filtro de texto la tomaba por un teléfono
+ * (`text_phone`) y la prueba fallaba según la suerte (T276).
+ */
+export function newRunId(): string {
+  return Array.from(randomBytes(6), (b) => String.fromCharCode(97 + (b % 26))).join('');
+}
+
+/**
  * Marca de esta ejecución: va en el email de cada cuenta, así varias
  * ejecuciones a la vez (otra tarea, otro árbol) no se borran las cuentas.
  * La fija `pnpm test:supabase` en BOIA_TEST_RUN.
  */
 export function testRunId(): string {
-  const id =
-    process.env.BOIA_TEST_RUN ?? (process.env.BOIA_TEST_RUN = randomBytes(3).toString('hex'));
+  const id = process.env.BOIA_TEST_RUN ?? (process.env.BOIA_TEST_RUN = newRunId());
   return (
     id
       .toLowerCase()
@@ -74,13 +82,29 @@ export async function otpFor(service: Client, email: string): Promise<string> {
   return otp;
 }
 
+/**
+ * Cuánto se espera, como mucho, a que Supabase Auth deje volver a entrar.
+ * Su límite de verificaciones por IP (30 cada 5 minutos por defecto) se va
+ * rellenando, así que la suite entera choca con él a mitad (T276): se
+ * reintenta cada RATE_LIMIT_STEP_MS hasta este tope.
+ */
+export const RATE_LIMIT_WAIT_MS = 6 * 60_000;
+const RATE_LIMIT_STEP_MS = 12_000;
+
 /** Un cliente con la sesión de esa cuenta, entrando con su código. */
 export async function signIn(env: SupabaseEnv, service: Client, email: string): Promise<Client> {
   const client = anonClient(env);
-  const token = await otpFor(service, email);
-  const { data, error } = await client.auth.verifyOtp({ email, token, type: 'email' });
-  if (error || !data.session) throw new Error(`verifyOtp: ${error?.message ?? 'sin sesión'}`);
-  return client;
+  const deadline = Date.now() + RATE_LIMIT_WAIT_MS;
+  for (;;) {
+    const token = await otpFor(service, email);
+    const { data, error } = await client.auth.verifyOtp({ email, token, type: 'email' });
+    if (!error && data.session) return client;
+    const limited = error && (error.status === 429 || /rate limit/i.test(error.message));
+    if (!limited || Date.now() > deadline) {
+      throw new Error(`verifyOtp: ${error?.message ?? 'sin sesión'}`);
+    }
+    await new Promise((r) => setTimeout(r, RATE_LIMIT_STEP_MS));
+  }
 }
 
 function base32Decode(s: string): Buffer {
@@ -111,14 +135,36 @@ export function totp(secret: string, now: number = Date.now()): string {
   return String(n).padStart(6, '0');
 }
 
-/** Da de alta un TOTP y sube la sesión a aal2 (segundo factor, D-10). */
+/** Los secretos de los TOTP dados de alta aquí, por factor. */
+const totpSecrets = new Map<string, string>();
+
+/**
+ * Sube la sesión a aal2 (segundo factor, D-10). Si la cuenta ya tiene un TOTP
+ * dado de alta en esta ejecución (una sesión nueva de la misma cuenta, T276),
+ * se usa ése: Supabase no deja dar de alta otro desde aal1. Si no, da de alta
+ * uno nuevo.
+ */
 export async function elevateToAal2(client: Client): Promise<void> {
+  const listed = await client.auth.mfa.listFactors();
+  const known = listed.data?.totp.find((f) => f.status === 'verified' && totpSecrets.has(f.id));
+  if (known) {
+    const secret = totpSecrets.get(known.id)!;
+    let v = await client.auth.mfa.challengeAndVerify({ factorId: known.id, code: totp(secret) });
+    if (v.error) {
+      // El mismo código no vale dos veces: el de la siguiente ventana de 30 s.
+      await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 500));
+      v = await client.auth.mfa.challengeAndVerify({ factorId: known.id, code: totp(secret) });
+    }
+    if (v.error) throw new Error(`mfa.verify: ${v.error.message}`);
+    return;
+  }
   const { data, error } = await client.auth.mfa.enroll({
     factorType: 'totp',
     friendlyName: `boia-test-${randomBytes(3).toString('hex')}`,
   });
   if (error || !data) throw new Error(`mfa.enroll: ${error?.message ?? 'sin factor'}`);
   const secret = data.totp.secret;
+  totpSecrets.set(data.id, secret);
   const v = await client.auth.mfa.challengeAndVerify({ factorId: data.id, code: totp(secret) });
   if (v.error) throw new Error(`mfa.verify: ${v.error.message}`);
 }
