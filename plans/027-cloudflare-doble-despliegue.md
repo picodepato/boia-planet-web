@@ -139,3 +139,4 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 21:56 T263 done, merged e6612b5
 - 2026-10-12 21:58 T265 launched (attempt 1, opus), agent a3f97e00bad8c994a
 - 2026-10-12 22:06 T265 done, merged 16dc34e; final test command on main passed in that integration; plan done
+- 2026-10-12 22:30 pushed main 39081ab to origin (Álvaro, in session) for the first Cloudflare Workers Builds deploy
