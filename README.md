@@ -9,7 +9,8 @@ requisitos: `docs/DECISIONES.md` y `docs/spec/`; estado: `ESTADO.md`.
 
 Monorepo `pnpm` (Node 24, pnpm 11.27.1 por `packageManager`):
 `apps/web` (Next.js), `packages/*` (motor, mundo, contratos, repositorio),
-`art/` (el arte que sale de Blender, servido por `/api/art`, D-16).
+`art/` (el arte que sale de Blender, copiado al build y servido como archivos
+estáticos en `/art`, D-16, plan 027 T261).
 
 ## En local
 
@@ -286,14 +287,21 @@ Para otro proyecto, o para rehacerlo:
 
 ## Desplegar la versión de prueba
 
-Hoy en https://boia-planet-roan.vercel.app (**temporal** hasta el dominio
-definitivo). La versión de prueba (plan 002, D-20) corre en modo local: sin
+**Desde el plan 027 cada push a `main` despliega en dos hosts:** Cloudflare
+Workers (la web pública, `boiaplanet.net`) y Vercel (la copia siempre igual).
+Cómo se configura Cloudflare, las variables de los dos, Supabase Auth, el
+dominio, qué hacer si uno se cae, el correo del dominio y lo que caduca:
+[`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md). Lo de abajo es la parte de Vercel.
+
+Hoy en https://boia-planet-roan.vercel.app (la copia; la web pública irá en
+`boiaplanet.net` cuando Cloudflare esté conectado). La versión de prueba (plan 002, D-20) corre en modo local: sin
 Supabase, sin correo y sin ticketera. Todo lo que hace el visitante (Carnet,
 botellas, sellos, descuentos, cambios del Admin) se guarda en su navegador.
 Por eso **no necesita ninguna variable de entorno**: `pnpm build` funciona con el
 entorno vacío, la analítica queda apagada sin `NEXT_PUBLIC_POSTHOG_KEY` (los
 eventos sólo se apuntan en `window.__boiaAnalytics`) y el arte sale del
-propio repo por `/api/art` (`next.config.ts` mete todo `art/` en la función).
+propio repo: `pnpm build` copia `art/` a `apps/web/public/art` y se sirve
+estático en `/art` (las URL viejas `/api/art/...` siguen funcionando).
 
 ### Ajustes del proyecto en Vercel (una vez)
 
@@ -344,7 +352,8 @@ pnpm dlx vercel --prod      # producción
 
 ### Comprobar el despliegue
 
-1. `https://<dominio>/api/art/barco/manifest.json` responde JSON (el arte llega).
+1. `pnpm check:hosts https://<dominio>` sale con 0 (commit del build, `/`,
+   `/mar` con CSP y `/art/barco/manifest.json`; con dos URL compara los dos hosts).
 2. `https://<dominio>/` enseña la entrada (letras 3D «BOIA», «Zarpar» y
    «Entradas») y, al bajar, la escena del mar con la landing encima; el
    atrezzo llega de `/api/art/landing/3d/manifest.json`.

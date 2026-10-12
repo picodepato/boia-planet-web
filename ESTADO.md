@@ -4,6 +4,54 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 027 T265: Deploy runbook, failover and setup docs
+
+Qué existe:
+
+- `docs/DESPLIEGUE.md` (para Álvaro, sin ninguna clave), ocho secciones:
+  (1) arquitectura: un push a `main` → Cloudflare Workers Builds (Worker
+  `boia-planet`, raíz `apps/web`, build `pnpm cf:build`, deploy
+  `npx wrangler deploy`, preview por defecto, build watch paths por defecto
+  para no romper la paridad, build variables `PNPM_VERSION=11.27.1` y
+  `NODE_VERSION=24`) y Vercel sin cambios; `pnpm check:hosts` y
+  `hosts-parity.yml`; (2) tabla de variables por host con la regla «se cambia
+  en los dos» (las `NEXT_PUBLIC_*` como build variables en Cloudflare;
+  `SUPABASE_SERVICE_ROLE_KEY` y `ADMIN_DEMO_PASSWORD` nunca en los hosts:
+  ninguna ruta las usa) más los secretos/variables de GitHub; (3) Site URL y
+  Redirect URLs de Supabase con los dos orígenes y el `workers.dev`;
+  (4) dominio: Porkbun → nameservers de Cloudflare → custom domain en el
+  Worker; redirigir la URL de Vercel, opcional y desaconsejado; (5) caídas:
+  Vercel caído, Cloudflare caído (compartir la URL de Vercel), sólo el Worker
+  caído (DNS a Vercel dentro de Cloudflare), caída larga (DNSSEC,
+  nameservers a Porkbun, DNS a Vercel, reenvío de correo de Porkbun);
+  (6) correo opción B: Email Routing, Brevo (DKIM, DMARC, código), Gmail
+  «Enviar como», un solo SPF combinado; (7) regla de cuentas e invitación como
+  Owner; (8) «Cosas que caducan» (clave SMTP de Brevo, pausa de Supabase y el
+  keepalive sin subir, flujos de GitHub a los 60 días, dominio, recordatorio
+  anual el 12 de septiembre).
+- Enlaces: `README.md` (sección «Desplegar la versión de prueba»; además
+  corregidas las menciones viejas a `/api/art` y la comprobación ahora con
+  `pnpm check:hosts`), `docs/TRASPASO.md` («En una pantalla» y «Cosas que
+  conviene saber»), una línea en `CLAUDE.md` con los dos hosts.
+- Ajustes de Workers Builds comprobados contra developers.cloudflare.com
+  (configuration, build-image, build-watch-paths, limits-and-pricing).
+
+Comandos:
+
+- `python3 tools/spec/estado.py` → exit 0.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 2612 pasan, 3 omitidas. `sh tools/spec/checks.sh` → exit 0.
+  `pnpm lint` → 0. `pnpm build` → 0. `pnpm typecheck` → 0.
+
+Pendiente (Álvaro):
+
+- Conectar el repo en Workers Builds con los ajustes de §1 y cargar las
+  variables; el primer build en Linux es la prueba real de `cf:build`.
+- Añadir `include:spf.brevo.com` al SPF (hoy sólo el de Cloudflare).
+- Hacer commit de `.github/workflows/supabase-keepalive.yml` si se quiere que
+  corra.
+- Crear el recordatorio anual del calendario (§8).
+
 ## 2026-10-12 — plan 027 T263: Marca de versión del build y comprobación de paridad de hosts
 
 Qué existe:

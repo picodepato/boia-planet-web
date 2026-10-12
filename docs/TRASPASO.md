@@ -13,6 +13,13 @@ detalle de cada tarea está en `ESTADO.md`; las reglas, en
 
 ## En una pantalla
 
+- **Despliegue (plan 027):** cada push a `main` despliega en Cloudflare
+  Workers (web pública, `boiaplanet.net`) y en Vercel (copia idéntica),
+  con el mismo Supabase. Configuración de los dos hosts, variables, dominio,
+  qué hacer si uno se cae, correo del dominio y lo que caduca (clave de Brevo,
+  dominio, pausa de Supabase, flujos de GitHub):
+  [DESPLIEGUE.md](DESPLIEGUE.md).
+
 - **Qué hay:** la **versión de prueba** (D-20) completa y desplegada en
   https://boia-planet-roan.vercel.app (**temporal** hasta el dominio
   definitivo). La producción corre en **modo local**: todo vive en el
@@ -484,6 +491,9 @@ respaldo del TOTP llegaron con el plan 017, T193). La lista para publicar es REQ
 - Vercel: Root Directory `apps/web` con los archivos de fuera incluidos
   (`packages/` y `art/`). Cada push a `main` despliega a producción. Detalle
   en el [README](../README.md).
+- Cloudflare (desde el plan 027): Worker `boia-planet`, Workers Builds con
+  raíz `apps/web`, build `pnpm cf:build`, deploy `npx wrangler deploy`.
+  Detalle en [DESPLIEGUE.md](DESPLIEGUE.md).
 - Arte de Blender (5.2.2 LTS, sin interfaz): las islas de `/mar` salen de
   `tools/blender/islas/<id>.py` con `export_islas_glb.py`
   ([README](../README.md#islas-de-blender-en-el-mar-3d)); el atrezzo y los

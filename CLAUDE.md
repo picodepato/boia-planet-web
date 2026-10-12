@@ -14,6 +14,8 @@ Versión de prueba en producción: https://boia-planet-roan.vercel.app
 Cada push a `main` despliega a producción en Vercel. Dominio definitivo:
 `boiaplanet.net` (Porkbun, DNS en Cloudflare, correo `hola@`/`admin@`); el
 plan 027 lleva la web pública a Cloudflare y deja Vercel como copia idéntica.
+Dos hosts desde un mismo push a `main`: Cloudflare Workers (pública, Worker
+`boia-planet`) y Vercel (copia); cómo, en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
 
 ## Empieza aquí
 
