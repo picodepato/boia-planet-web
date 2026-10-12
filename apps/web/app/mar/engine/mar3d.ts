@@ -30,6 +30,7 @@ import {
   setControlSensitivity,
 } from '@boia/engine/ui';
 import { type QualityTier, detectQuality } from '@boia/engine/streaming';
+import { type WeatherEvent, type WeatherKind, WeatherClock } from '@boia/engine/weather';
 import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
 import { CASTLE_PLACE_ID, type WorldConfig, type WorldObject } from '@boia/world';
 import type { Color, Material, ShaderMaterial } from 'three';
@@ -116,6 +117,7 @@ import { Kit, clamp01, lerp, rng, seedOf, smooth } from './kit';
 import { DECOR_MODELS, DECOR_SOLIDS, type SeaRoute, decorSpots, seaRoute } from './compact';
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
+import { Rain, WEATHER_LOOK, WIND_DIR, rainCount, weatherFog, weatherMood } from './weather';
 import { Glows, buoy, crag, rock } from './props';
 import { BROWSER_OBJECT_ART, artBox, hasUploadedArt } from './object-art';
 import { type ObjectArtState, mountObjectArt, objectArtFallback } from './object-art-view';
@@ -310,6 +312,13 @@ export interface Mar3DOptions {
   avoid?(): Iterable<Element>;
   /** Una rampa del circuito lanzó el barco o el barco cayó al agua (T73). Para el sonido. */
   onJump?(e: JumpEvent): void;
+  /**
+   * ¿Hay una partida que la web lleva (una carrera, un minijuego abierto)?
+   * Sin episodios del tiempo mientras (T268); el Cañón y el Castillo los ve el motor.
+   */
+  busy?(): boolean;
+  /** Entra, se va o truena un episodio del tiempo (T268). Para el sonido. */
+  onWeather?(e: WeatherEvent): void;
 }
 
 /** Dónde está y hacia dónde mira un barco (u de motor, rad): el fantasma, la salida. */
@@ -561,6 +570,19 @@ export class Mar3D {
   private moodFrom: Mood;
   private moodTo: Mood;
   private moodT = 1;
+  /**
+   * El tiempo (plan 029 T268): episodios cortos encima del momento del día.
+   * `mood` es el del menú; `shown`, el que se pinta (con el tiempo encima).
+   */
+  private readonly weather = new WeatherClock();
+  private readonly rain = new Rain();
+  private shown: Mood;
+  /** Se pintó el tiempo el fotograma pasado (al irse, se vuelve a pintar el momento limpio). */
+  private weatherShown = false;
+  /** Multiplica la distancia de la niebla (1 sin tiempo; <1, más cerca). */
+  private weatherFogK = 1;
+  /** Reloj del oleaje: corre más deprisa con viento. */
+  private waterTime = 0;
   private crew: Group | null = null;
   private prev = { x: 0, y: 0, heading: 0 };
   private acc = 0;
@@ -774,6 +796,7 @@ export class Mar3D {
     this.mood = cloneMood(this.moods[opts.mood]);
     this.moodFrom = cloneMood(this.mood);
     this.moodTo = this.moods[opts.mood];
+    this.shown = cloneMood(this.mood);
 
     this.scene.fog = new Fog(this.mood.fog, 60, 400);
     this.scene.add(this.hemi, this.sun, this.sun.target);
@@ -847,6 +870,9 @@ export class Mar3D {
     curveTree(this.scene);
     // The flock crosses the camera's cloud plane; it does not bend with the sea surface.
     this.scene.add(this.wildlife.gulls);
+    // La lluvia de la tormenta (T268): cae cerca de la cámara, sin curvar.
+    this.scene.add(this.rain.mesh);
+    opts.canvas.dataset.clima = 'no';
     this.watchIslandModels();
 
     this.missionHost = {
@@ -888,6 +914,37 @@ export class Mar3D {
     this.moodFrom = cloneMood(this.mood);
     this.moodTo = this.moods[id];
     this.moodT = 0;
+  }
+
+  /** Trae ya un episodio del tiempo (el parámetro de desarrollo, T268); el que hubiera se corta. */
+  startWeather(kind: WeatherKind): void {
+    this.weatherEvents(this.weather.start(kind));
+  }
+
+  /** El episodio del tiempo de ahora (también mientras se va), o null. */
+  get weatherKind(): WeatherKind | null {
+    return this.weather.state.kind;
+  }
+
+  private weatherEvents(events: readonly WeatherEvent[]): void {
+    for (const e of events) {
+      if (e.type === 'start') this.opts.canvas.dataset.clima = e.kind;
+      else if (e.type === 'end') this.opts.canvas.dataset.clima = 'no';
+      else if (e.type === 'flash') {
+        // Para las pruebas: cuántos destellos van en esta página.
+        const ds = this.opts.canvas.dataset;
+        ds.relampagos = String(Number(ds.relampagos ?? 0) + 1);
+      }
+      this.opts.onWeather?.(e);
+    }
+  }
+
+  /** Avanza el tiempo: nada nuevo durante una partida (el Cañón, el Castillo, una carrera…). */
+  private stepWeather(dt: number): void {
+    this.weather.noFlash = this.reducedMotion || this.quality === 'baja';
+    const busy = !!this.survivors || !!this.defense || (this.opts.busy?.() ?? false);
+    const events = this.weather.step(dt, busy);
+    if (events.length > 0) this.weatherEvents(events);
   }
 
   /** Lo que tapa la ficha de abajo (px): el barco se ve por encima de ella. */
@@ -3148,6 +3205,7 @@ export class Mar3D {
       }
       this.opts.onSwitch?.(mode);
     }
+    this.stepWeather(dt);
     if (free && this.survivors) {
       this.stepSurvivors(now);
     } else if (free && this.defense) {
@@ -3301,6 +3359,7 @@ export class Mar3D {
     if (this.turboCool > 0) this.turboCool -= dt;
     const before = shipSpeed(s);
     stepShip(s, input, cfg, dt);
+    this.windDrift(dt);
     this.runtime.step(s, this.cfg, dt);
     if (pushOut(s, this.decorSolids, this.cfg.radius, this.periodU)) {
       const b = this.runtime.bounds;
@@ -3333,8 +3392,20 @@ export class Mar3D {
     this.opts.onStep?.(s, dt);
   }
 
-  private applyMood(): void {
-    const m = this.mood;
+  /**
+   * El levante empuja el barco de lado, suave (T268): nunca en un viaje en
+   * turbo ni en el aire; las colisiones de después lo sacan de las costas.
+   */
+  private windDrift(dt: number): void {
+    const w = this.weather.state;
+    if (!w.kind || w.strength <= 0 || this.voyage || this.jump.airborne) return;
+    const v = WEATHER_LOOK[w.kind].drift * w.strength;
+    if (v <= 0) return;
+    this.ship.x += WIND_DIR.x * v * dt;
+    this.ship.y += WIND_DIR.y * v * dt;
+  }
+
+  private applyMood(m: Mood = this.mood): void {
     this.hemi.color.copy(m.hemiSky);
     this.hemi.groundColor.copy(m.hemiGround);
     this.hemi.intensity = m.hemi;
@@ -3524,8 +3595,11 @@ export class Mar3D {
     // Horizonte: dónde deja de verse el agua; la niebla lo funde con el cielo.
     const horizon = Math.sqrt(camY / this.bend);
     const fog = this.scene.fog as Fog;
-    fog.near = Math.min(dist * 1.1, horizon * 0.45);
-    fog.far = Math.min(dist * 3.4 + 80, horizon * 1.25 + dist);
+    // El tiempo (T268) acerca la niebla de cerca; en el mapa, el planeta se ve entero.
+    const fogK = lerp(this.weatherFogK, 1, smooth(0.25, 0.6, z));
+    fog.near = Math.min(dist * 1.1, horizon * 0.45) * fogK;
+    fog.far = Math.min(dist * 3.4 + 80, horizon * 1.25 + dist) * fogK;
+    this.updateRain(camX, camY, camZ, dist, z);
     this.camera.far = dist * 4 + 400;
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
@@ -3551,15 +3625,50 @@ export class Mar3D {
     });
   }
 
+  /** La lluvia de la tormenta (T268) en una caja entre la cámara y lo que mira; en el mapa, nada. */
+  private updateRain(camX: number, camY: number, camZ: number, dist: number, zoom: number): void {
+    const w = this.weather.state;
+    const amount = w.kind ? WEATHER_LOOK[w.kind].rain * w.strength : 0;
+    const near = 1 - smooth(0.25, 0.55, zoom);
+    if (amount * near <= 0.01) {
+      this.rain.update(this.time, 0, 0, { x: 0, y: 0, z: 0 }, 1, 1, false);
+      return;
+    }
+    const reduced = this.reducedMotion;
+    const size = Math.max(36, Math.min(160, dist * 1.6));
+    this.rain.update(
+      this.time,
+      amount * near,
+      rainCount(this.quality, reduced),
+      { x: (camX + this.look.x) / 2, y: camY * 0.5, z: (camZ + this.look.z) / 2 },
+      size,
+      camY + 12,
+      reduced,
+    );
+  }
+
   private render(dt: number, alpha: number): void {
     const t = this.time;
+    let moodChanged = false;
     if (this.moodT < 1) {
       this.moodT = Math.min(1, this.moodT + dt / 1.6);
       mixMood(this.mood, this.moodFrom, this.moodTo, smooth(0, 1, this.moodT));
-      this.applyMood();
+      moodChanged = true;
     }
+    // El tiempo (T268) encima del momento del día; al irse, el momento limpio.
+    const w = this.weather.state;
+    const weatherOn = (w.kind !== null && w.strength > 0) || w.flash > 0;
+    if (weatherOn) {
+      this.applyMood(weatherMood(this.shown, this.mood, w.kind, w.strength, w.flash));
+    } else if (moodChanged || this.weatherShown) this.applyMood();
+    this.weatherShown = weatherOn;
+    this.weatherFogK = weatherFog(w.kind, w.strength);
+    const look = w.kind ? WEATHER_LOOK[w.kind] : null;
+    const wu = this.water.material.uniforms;
+    this.waterTime += dt * (1 + (look ? look.flow * w.strength : 0));
+    wu.uWind!.value = look ? look.streaks * w.strength : 0;
     const glow = this.mood.glow;
-    this.water.material.uniforms.uTime!.value = t;
+    wu.uTime!.value = this.waterTime;
     (this.glow.material as ShaderMaterial).uniforms.uTime!.value = t;
 
     // Barco (interpolado entre pasos, en la copia más cercana al foco).

@@ -191,4 +191,37 @@ describe('sonido del juego', () => {
       expect(ctx.started.length, id).toBeGreaterThan(before);
     }
   });
+  it('el tiempo (T268): trueno sintetizado y un fondo por episodio que entra y se va', async () => {
+    const s = await freshSound();
+    // Antes del gesto, nada.
+    s.thunder(1);
+    s.setWeatherBed('lluvia');
+    expect(FakeContext.created).toHaveLength(0);
+    expect(s.weatherBed()).toBeNull();
+    s.unlockAudio();
+    const ctx = FakeContext.created[0]!;
+    const before = ctx.started.length;
+    s.thunder(1);
+    expect(ctx.started.length).toBeGreaterThan(before);
+    expect(ctx.started.some((n) => n.kind === 'source' && n.loop)).toBe(true);
+    s.setWeatherBed('viento', 4);
+    expect(s.weatherBed()).toBe('viento');
+    // Cambiar de fondo para el anterior; null lo quita.
+    const stopped = ctx.stopped.length;
+    s.setWeatherBed('lluvia', 4);
+    expect(s.weatherBed()).toBe('lluvia');
+    expect(ctx.stopped.length).toBeGreaterThan(stopped);
+    s.setWeatherBed(null, 4);
+    expect(s.weatherBed()).toBeNull();
+    // Los avisos del motor: cada episodio con su fondo; al irse, se calla.
+    for (const kind of ['levante', 'tormenta', 'calima'] as const) {
+      s.weatherSound({ type: 'start', kind });
+      expect(s.weatherBed()).toBe(s.WEATHER_BEDS[kind]);
+      s.weatherSound({ type: 'ending', kind, fadeS: 4 });
+      expect(s.weatherBed()).toBeNull();
+    }
+    const n = ctx.started.length;
+    s.weatherSound({ type: 'thunder', strength: 0.7 });
+    expect(ctx.started.length).toBeGreaterThan(n);
+  });
 });

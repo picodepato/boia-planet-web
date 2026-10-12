@@ -14,7 +14,8 @@
     "./mission": "./src/mission/index.ts",
     "./headless": "./src/headless.ts",
     "./streaming": "./src/streaming.ts",
-    "./minigames": "./src/minigames/index.ts"
+    "./minigames": "./src/minigames/index.ts",
+    "./weather": "./src/weather/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

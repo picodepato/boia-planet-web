@@ -1,6 +1,7 @@
 'use client';
 
 import { type Settings, channelGain } from '@boia/engine/ui';
+import type { WeatherEvent, WeatherKind } from '@boia/engine/weather';
 import type { FeedbackSound } from '@boia/world';
 import { AMBIENT_LEVEL, AMBIENT_RATE, renderAmbient } from './ambient';
 import { onRadioPlaying, radioPlaying, setMusicEnabledForRadio } from '../radio/bridge';
@@ -295,6 +296,150 @@ export function bump(strength = 1): void {
   const k = Math.min(1, Math.max(0.15, strength));
   tone(120, 48, 0, 0.2, 0.35 * k, 'triangle');
   noiseSweep(900, 300, 0.16, 0.18 * k, 0.7);
+}
+
+// --- Tiempo (plan 029 T268) ------------------------------------------------
+
+let bedNoise: AudioBuffer | null = null;
+
+/** 2 s de ruido para los fondos en bucle (más largo que el del golpe: no se oye el empalme). */
+function bedBuffer(ctx: AudioContext): AudioBuffer {
+  if (!bedNoise) {
+    const n = Math.round(ctx.sampleRate * 2);
+    bedNoise = ctx.createBuffer(1, n, ctx.sampleRate);
+    const d = bedNoise.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return bedNoise;
+}
+
+/**
+ * Trueno sintetizado: retumbo grave de ruido filtrado que crece y se va
+ * despacio; los fuertes, con un chasquido delante. `strength` 0..1.
+ */
+export function thunder(strength = 1): void {
+  if (gains.sfx === 0) return;
+  const a = live();
+  if (!a) return;
+  const k = Math.min(1, Math.max(0.2, strength));
+  const t = a.ctx.currentTime;
+  const length = 2.2 + k * 1.3;
+  try {
+    const src = a.ctx.createBufferSource();
+    src.buffer = bedBuffer(a.ctx);
+    src.loop = true;
+    const low = a.ctx.createBiquadFilter();
+    low.type = 'lowpass';
+    low.Q.value = 0.7;
+    low.frequency.setValueAtTime(420 * k + 120, t);
+    low.frequency.exponentialRampToValueAtTime(70, t + length);
+    const g = a.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5 * k, t + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.22 * k, t + length * 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + length);
+    src.connect(low).connect(g).connect(a.sfx);
+    src.start(t);
+    src.stop(t + length + 0.05);
+  } catch {
+    // Sin búfer: la tormenta sigue muda.
+  }
+  if (k > 0.8) noiseSweep(2400, 300, 0.3, 0.16 * k, 0.6);
+}
+
+/** El fondo de cada tiempo: lluvia, viento de levante o la brisa caliente de la calima. */
+export type WeatherBed = 'lluvia' | 'viento' | 'brisa';
+
+const BEDS: Record<WeatherBed, { type: BiquadFilterType; hz: number; q: number; level: number }> = {
+  lluvia: { type: 'highpass', hz: 1400, q: 0.4, level: 0.12 },
+  viento: { type: 'bandpass', hz: 520, q: 0.9, level: 0.16 },
+  brisa: { type: 'bandpass', hz: 340, q: 0.8, level: 0.07 },
+};
+
+let bed: {
+  kind: WeatherBed;
+  ctx: AudioContext;
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  lfo: OscillatorNode | undefined;
+} | null = null;
+
+/**
+ * Pone (o, con null, quita) el fondo del tiempo con un fundido de `fadeS`
+ * s. Va al canal de efectos. Si el audio aún no está desbloqueado, no suena.
+ */
+export function setWeatherBed(kind: WeatherBed | null, fadeS = 3): void {
+  const fade = Math.max(0.05, fadeS);
+  if (bed && bed.kind !== kind) {
+    const old = bed;
+    bed = null;
+    try {
+      const now = old.ctx.currentTime;
+      old.gain.gain.cancelScheduledValues(now);
+      old.gain.gain.setValueAtTime(old.gain.gain.value, now);
+      old.gain.gain.linearRampToValueAtTime(0, now + fade);
+      old.source.stop(now + fade + 0.05);
+      old.lfo?.stop(now + fade + 0.05);
+    } catch {
+      // Ya parado.
+    }
+  }
+  if (!kind || bed) return;
+  if (gains.sfx === 0) return;
+  const a = live();
+  if (!a) return;
+  const spec = BEDS[kind];
+  try {
+    const now = a.ctx.currentTime;
+    const source = a.ctx.createBufferSource();
+    source.buffer = bedBuffer(a.ctx);
+    source.loop = true;
+    const filter = a.ctx.createBiquadFilter();
+    filter.type = spec.type;
+    filter.frequency.value = spec.hz;
+    filter.Q.value = spec.q;
+    const gain = a.ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(spec.level, now + fade);
+    source.connect(filter).connect(gain).connect(a.sfx);
+    let lfo: OscillatorNode | undefined;
+    if (kind !== 'lluvia') {
+      // El viento va y viene: el filtro sube y baja despacio.
+      lfo = a.ctx.createOscillator();
+      lfo.frequency.value = kind === 'viento' ? 0.18 : 0.09;
+      const depth = a.ctx.createGain();
+      depth.gain.value = spec.hz * 0.45;
+      lfo.connect(depth).connect(filter.frequency);
+      lfo.start(now);
+    }
+    source.start(now);
+    bed = { kind, ctx: a.ctx, source, gain, lfo };
+  } catch {
+    // Sin búfer: el tiempo sigue mudo.
+  }
+}
+
+/** El fondo de cada episodio del tiempo. */
+export const WEATHER_BEDS: Record<WeatherKind, WeatherBed> = {
+  levante: 'viento',
+  tormenta: 'lluvia',
+  calima: 'brisa',
+};
+
+/** s del fundido de entrada del fondo (el del episodio, `WEATHER_TUNING.fade`). */
+const BED_FADE_IN = 4;
+
+/** Lo que suena con cada aviso del tiempo del mar 3D (T268). */
+export function weatherSound(e: WeatherEvent): void {
+  if (e.type === 'start') setWeatherBed(WEATHER_BEDS[e.kind], BED_FADE_IN);
+  else if (e.type === 'ending') setWeatherBed(null, e.fadeS);
+  else if (e.type === 'end') setWeatherBed(null, 0.5);
+  else if (e.type === 'thunder') thunder(e.strength);
+}
+
+/** El fondo que suena ahora (para las pruebas). */
+export function weatherBed(): WeatherBed | null {
+  return bed?.kind ?? null;
 }
 
 /** Cada sonido de serie que un comportamiento puede declarar (REQ-PRO-011). */

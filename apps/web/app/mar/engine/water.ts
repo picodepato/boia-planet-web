@@ -6,6 +6,7 @@ import {
   ShaderMaterial,
   UniformsLib,
   UniformsUtils,
+  Vector2,
   Vector4,
 } from 'three';
 import { PLANET_PARS, planetUniforms } from './planet';
@@ -51,6 +52,9 @@ const fragment = /* glsl */ `
   uniform vec4 uShores[${MAX_SHORES}];
   uniform int uShoreCount;
   uniform float uSparkle;
+  // Viento del tiempo (T268): rayas de espuma a favor del viento (0: nada).
+  uniform float uWind;
+  uniform vec2 uWindDir;
   varying vec3 vWorld;
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -96,6 +100,14 @@ const fragment = /* glsl */ `
     float dash2 = smoothstep(0.62, 0.76, noise(p * vec2(1.0, 1.5) + vec2(3.0, uTime * 0.05)));
     float crest = max(smoothstep(0.93, 0.99, w1) * dash1, smoothstep(0.94, 0.995, w2) * dash2 * 0.7);
     col = mix(col, uFoam, crest * detail * 0.45 * uSparkle);
+
+    // Levante (T268): rayas largas de espuma que corren con el viento.
+    if (uWind > 0.001) {
+      vec2 wa = vec2(dot(p, uWindDir), dot(p, vec2(-uWindDir.y, uWindDir.x)));
+      float streak = noise(vec2(wa.x * 0.07 - uTime * 0.9, wa.y * 0.9));
+      streak = smoothstep(0.72, 0.9, streak) * smoothstep(0.35, 0.7, noise(p * 0.05 + 11.0));
+      col = mix(col, uFoam, streak * uWind * (0.25 + detail * 0.35));
+    }
 
     // Espuma de la orilla: una línea que respira y salpicones.
     float breathe = sin(uTime * 1.3 + n * 6.0) * 0.4;
@@ -183,6 +195,8 @@ export function createWater(): Water {
         uShores: { value: shores },
         uShoreCount: { value: 0 },
         uSparkle: { value: 0.9 },
+        uWind: { value: 0 },
+        uWindDir: { value: new Vector2(-1, 0) },
       },
     ]),
   });

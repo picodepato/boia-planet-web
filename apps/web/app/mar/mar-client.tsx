@@ -13,6 +13,7 @@ import {
   readRecord,
 } from '@boia/engine/circuit';
 import { MINIGAME_REGISTRY } from '@boia/engine/minigames';
+import { weatherParam } from '@boia/engine/weather';
 import {
   type MissionEvent,
   RescueMission,
@@ -122,6 +123,8 @@ import {
   installAudioLifecycle,
   plop,
   setAmbientWorld,
+  setWeatherBed,
+  weatherSound,
   whoosh,
 } from '../../lib/mundo/sound';
 import { equipLook, rememberLook, storedLook, syncStyleParam } from '../../lib/mundo/ship-look';
@@ -468,6 +471,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const [entradas, setEntradas] = useState(false);
   const [minigameOffer, setMinigameOffer] = useState<MinigameOffer | null>(null);
   const [minigameOpen, setMinigameOpen] = useState(false);
+  // Con un minijuego abierto no entra ningún episodio del tiempo (T268).
+  const minigameOpenRef = useRef(false);
+  minigameOpenRef.current = minigameOpen;
   const [mood, setMood] = useState<MoodId>('tarde');
   const [dialogue, setDialogue] = useState<{
     objectId: string;
@@ -1379,6 +1385,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // 22 nudos sólo con el cronómetro de Los Rápidos corriendo (T109).
         racing: () => raceRef.current?.race.racing ?? false,
         onSwitch: (mode) => setSwitching(mode),
+        // El tiempo (T268): sin episodios en una carrera ni con un minijuego abierto.
+        busy: () => (raceRef.current?.race.active ?? false) || minigameOpenRef.current,
+        onWeather: weatherSound,
       });
       engineRef.current = engine;
       engine.setShipDressing(dressingFor(want.equipped));
@@ -1415,6 +1424,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       bootedInDocument = true;
       if (near) engine.startNear(near);
       else if (restore) engine.moveShip(restore.x, restore.y, restore.heading);
+      // `?clima=levante|tormenta|calima` (T268): ese episodio, ya.
+      const clima = weatherParam(window.location.search);
+      if (clima) engine.startWeather(clima);
       setPhase(mission?.phase ?? null);
       setStatus('ready');
       // Lo descubierto en otras visitas: sus islas ofrecen «Explorar la isla»
@@ -1440,6 +1452,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       cancelled = true;
       engine?.destroy();
       engineRef.current = null;
+      setWeatherBed(null, 0.3);
     };
   }, [sessionId]);
 

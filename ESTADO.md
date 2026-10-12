@@ -4,6 +4,51 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T268: Weather episodes: levante, summer storm, calima
+
+Qué existe:
+- `packages/engine/src/weather/index.ts` (`@boia/engine/weather`): el reloj puro del tiempo
+  (`WeatherClock`, azar inyectable, `weatherRng(seed)`), `WEATHER_TUNING` (`muestra`: un
+  episodio de 30 s con 4 s de fundido cada 240 ± 30 s de juego; 20 s de calma tras una
+  partida; rayos cada 3–7 s, trueno 0,5–2,2 s después), `weatherParam()` para `?clima=`.
+  Sin episodios durante una partida; el que haya se va suave. Nunca el mismo dos veces
+  seguidas. `noFlash` (movimiento reducido o calidad baja): truenos sin destellos.
+- `apps/web/app/mar/engine/weather.ts`: el aspecto en un solo sitio (`WEATHER_LOOK`, `muestra`):
+  `weatherMood()` pone el tiempo encima del momento del menú (día/tarde/noche no cambian),
+  `weatherFog()` acerca la niebla, `Rain` (lluvia en rayas animadas en el shader, 700 gotas
+  en alta, 220 en baja, 40 % con movimiento reducido). Destello: hasta 35 % hacia un
+  lavanda claro y más luz de cielo, nunca blanco a pantalla completa.
+- `water.ts`: rayas de espuma del viento (`uWind`); el oleaje corre más deprisa con
+  levante y tormenta.
+- `mar3d.ts`: el reloj avanza cada fotograma; partida = Cañón, Castillo o lo que diga la
+  web (`busy`: carrera activa o minijuego abierto). El levante empuja el barco hacia el
+  oeste a 8 u/s (≈0,8 nudos; nada en viaje en turbo ni en el aire; las colisiones lo
+  sacan de las costas). En la vista de mapa ni lluvia ni niebla cercana.
+  `startWeather(kind)`, `data-clima` (`no|levante|tormenta|calima`) y `data-relampagos`
+  en el lienzo para las pruebas.
+- `lib/mundo/sound.ts`: `thunder()`, fondos en bucle `setWeatherBed()` (lluvia, viento
+  de levante, brisa de calima) por el canal de efectos y `weatherSound()` que los conecta.
+- `mar-client.tsx`: `busy`, `onWeather` y el parámetro `?clima=`.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (304 ficheros, 2693 pasan, 3 saltadas)
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0
+- `pnpm build` → exit 0 (`/mar` 217 kB, primera carga 600 kB)
+- `pnpm typecheck` → exit 0
+- `pnpm cf:measure` → exit 0, 2,201 KiB gzip (presupuesto 2,800)
+
+Pendiente:
+- Todos los números del tiempo son `muestra` (frecuencia, duración, colores, empuje del levante).
+
+Probar a mano:
+- `/mar?clima=levante`: rayas de espuma, el agua corre más y el barco se va despacio hacia el oeste; viento.
+- `/mar?clima=tormenta`: cielo oscuro, niebla cerca, lluvia, relámpagos y trueno un momento después.
+- `/mar?clima=calima`: neblina naranja, niebla cerca, el sol apagado; brisa.
+- Con «reducir movimiento» del sistema, `/mar?clima=tormenta`: truenos sin destellos y menos lluvia.
+- Empezar Los Rápidos, el Cañón o el Castillo con un `?clima=` en curso: el episodio se va suave.
+- Navegar ~4 min sin parar: entra un episodio solo, dura 30 s.
+
 ## 2026-10-13 — plan 029 T277: Galería: vídeos a pantalla completa, clips en /mar, clips más largos, más fotos en la home
 
 **Qué existe**
