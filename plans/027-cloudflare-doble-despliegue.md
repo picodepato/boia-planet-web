@@ -141,3 +141,4 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 22:06 T265 done, merged 16dc34e; final test command on main passed in that integration; plan done
 - 2026-10-12 22:30 pushed main 39081ab to origin (Álvaro, in session) for the first Cloudflare Workers Builds deploy
 - 2026-10-12 22:45 first Cloudflare deploy live at https://boia-planet.boiaplanet-bp.workers.dev (root dir apps/web); check:hosts vs Vercel → all ok, both on 39081ab
+- 2026-10-12 23:10 boiaplanet.net attached to the Worker; www → apex 301 redirect rule (AAAA www 100:: proxied); check:hosts boiaplanet.net vs Vercel → all ok on 39081ab
