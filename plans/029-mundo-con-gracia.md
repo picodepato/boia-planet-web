@@ -45,7 +45,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: Carnet sign-up proven on dev (test:supabase 160 pass, cuenta e2e 10 pass); nickname bug fixed; test harness repaired; switch-on checklist for both hosts in docs/propuestas/2026-10-03-produccion-supabase.md — 0afe526
 
 ## T277 — Gallery: videos in full screen, videos in /mar, longer clips; more photos on the home
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -57,10 +57,25 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit/component tests: dragging a piece still moves it and does not open it, a tap opens it; lightbox open/close/next/prev/keyboard, clip controls, swipe handlers; upload validation accepts 60 s / 50 MB and rejects above; home selection has ≥ 7 photos with the 4 real ones first and none of them `muestra` → pass
   - `pnpm build` landing budget check → under 200 kB (number in ESTADO)
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
+- Outcome: viewer with prev/next/swipe/keys and playable clips (plan 026 iOS rules), clips in /mar, 60 s / 50 MB, home 7+ photos with the 4 real first (198.8 kB); sonnet + Opus audit (galeria e2e 6/6) — 0944e1e
+
+## T278 — Database security: lock down SECURITY DEFINER functions before accounts go live
+- Status: running (attempt 1)
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: T276 found that `admin_sign_in_email` is callable by `anon` and returns the email of the Carnet 000 (Admin owner) account, and that four SECURITY DEFINER functions live in `public` (`admin_sign_in_email`, `discount_code_for`, `radio_reorder`, `radio_set_first`). Fix them with a new migration: nobody but the right role can call each one (revoke EXECUTE from `public`/`anon`/`authenticated` as needed and grant only what the app needs), each checks the caller inside the function (admin/owner role via the existing helpers), `set search_path = ''` (or pinned) with schema-qualified names, and no function leaks an email or a discount code to someone who should not get it. If the Admin sign-in flow needs to know the owner's email before login, redesign it so it does not (e.g. the Admin types the email, or the server route uses the service role) and adapt the client code. Then sweep ALL functions in `supabase/migrations/` for the same problems (SECURITY DEFINER without search_path, EXECUTE granted to anon, RLS gaps on tables they touch) and fix any found. Apply to `boia-planet-dev` only; production gets it with the switch-on migrations (add it to the checklist in `docs/propuestas/2026-10-03-produccion-supabase.md`).
+- Context: `supabase/migrations/`, `lib/account/admin-auth.ts`, the radio and discount code callers in `apps/web`, the `*.supabase.ts` tests and `schema.supabase.ts` (its list of known exceptions), `pnpm test:supabase`, Supabase advisor rules (security definer, search_path).
+- Scope: may touch `supabase/migrations/` (new migration only, never edit applied ones), the callers in `apps/web` and `packages`, the `*.supabase.ts` tests, the switch-on doc / must not touch production, panels, secrets, `docs/DECISIONES.md`.
+- Done when:
+  - new `*.supabase.ts` tests: as anon, each fixed function is denied (or returns nothing sensitive); as a normal member, admin-only functions are denied; as admin/owner, they work → pass
+  - `schema.supabase.ts` known-exceptions list shrinks accordingly; a test fails if any public SECURITY DEFINER function lacks a pinned search_path or is executable by anon without being on an explicit allowlist → pass
+  - `pnpm test:supabase` against dev → pass; `E2E_SUPABASE=1` the admin access e2e spec only → pass
+  - Test command → exit 0
 - Outcome:
 
 ## T268 — Weather episodes: levante, summer storm, calima
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -71,10 +86,10 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests for the scheduler (first episode not before ~4 min, 30 s duration, no episode while a minigame is active, deterministic with a seeded RNG, reduced-motion flag removes flashes) → pass
   - dev override `?clima=levante|tormenta|calima` starts that episode at once
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
-- Outcome:
+- Outcome: weather scheduler (30 s every ~4 min, no minigames), levante drift, storm with rain/flashes/thunder, calima haze, ?clima= override; cf 2,201 KiB — 9028c69
 
 ## T269 — Big waves as ramps and the "salto mortal"
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -178,10 +193,14 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Launch order: Álvaro's fixes first (T275, T276, T277), then the world tasks (orchestrator)
 - 2026-10-13: T275: Puig Campana kept in place (routes and art); label priority `mapKeep` in map view only; audit touched labels.ts and mar3d.ts beyond the listed Scope (T275 audit)
 - 2026-10-13: T276: removed a stuck test owner role once on dev; schema test lists known exceptions from plans 019–023; added a section to plans/seguridad-pendiente.md as the task asked (T276)
+- 2026-10-13: New task T278 (DB security of SECURITY DEFINER functions), launched next (Álvaro: "arregla la función de la base y las otras")
+- 2026-10-13: T277 audit: viewer video follows plan 026 (attributes before src, preload none, unload on nav), viewer captures its keys so /mar does not steer underneath, sound choice carries to the next clip (T277 audit)
+- 2026-10-13: T268: busy = race or any minigame + 20 s calm after; no repeat of the same episode; levante 8 u/s west; flash max 35 % to lavender; edited mar-client.tsx beyond Scope to wire it (T268)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-13: admin-fotos.spec.ts has the same untranslated island-name line galeria.spec.ts had; the 4 real photos have no srcset (~260 KB lazy on phones) (T277 audit)
 - 2026-10-13: SECURITY before switching accounts on: `admin_sign_in_email` is callable by anon and returns the Carnet 000 account email; SECURITY DEFINER functions in public (`admin_sign_in_email`, `discount_code_for`, `radio_reorder`, `radio_set_first`) need a review (T276)
 - 2026-10-13: hosts-parity could also check that accounts are on/off identically on both hosts (CSP header) (T276)
 - 2026-10-13: prettier issues in several `*.supabase.ts` tests (T276)
@@ -200,3 +219,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13 T277 launched (attempt 1, sonnet), agent ab5e49bb5c8072903
 - 2026-10-13 T277 sonnet done (8c5d2b9). Opus audit launched, agent a1331ec5b6ea3d060
 - 2026-10-13 T276 done, integrated 0afe526
+- 2026-10-13 T268 launched (attempt 1, opus), agent a95f87962ffc91f9d
+- 2026-10-13: T278 added by Álvaro, next to launch
+- 2026-10-13 T277 audit done (3178a94), integrated 0944e1e
+- 2026-10-13 T268 done, integrated 9028c69
