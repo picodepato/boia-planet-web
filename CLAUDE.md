@@ -4,13 +4,16 @@ BOIA.PLANET: la web-universo de BOIA, colectivo de eventos musicales de
 Alicante. Vende entradas de los "All Day BOIA" y, como segunda vía de
 conversión, ofrece un planeta 3D navegable en barco (`/mar`, three.js: islas
 de eventos, Boia Fiestera, descuentos escondidos, Carnet BOIA; D-25). El
-cliente y quien aprueba identidad, negocio y publicación es Álvaro (BOIA);
-Hernán dirige la construcción.
+cliente y quien aprueba identidad, negocio y publicación es Álvaro (BOIA,
+GitHub `picodepato`). Desde el 2026-10-12 Álvaro también dirige la
+construcción; Hernán la dirigió hasta el plan 026 (planes, ESTADO y el
+historial de git hablan de él: ahí, léase Álvaro).
 
 Versión de prueba en producción: https://boia-planet-roan.vercel.app
-(temporal hasta el dominio definitivo; D-20: todo en el navegador, sin
-servidor ni cuentas; contenido `muestra`). Cada push a
-`main` despliega a producción en Vercel.
+(D-20: todo en el navegador, sin servidor ni cuentas; contenido `muestra`).
+Cada push a `main` despliega a producción en Vercel. Dominio definitivo:
+`boiaplanet.net` (Porkbun, DNS en Cloudflare, correo `hola@`/`admin@`); el
+plan 027 lleva la web pública a Cloudflare y deja Vercel como copia idéntica.
 
 ## Empieza aquí
 
@@ -41,9 +44,9 @@ Fuente de requisitos, en este orden de precedencia:
 Desde la ronda 2 el trabajo va por **planes**: `plans/NNN-<slug>.md`, lotes
 de ~10 tareas grandes (T00, T01…, la numeración sigue entre planes) que la
 skill `/orchestrator` (`.claude/skills/orchestrator/`; qué necesita, en
-`.claude/skills/README.md`) planifica con Hernán y
+`.claude/skills/README.md`) planifica con Álvaro y
 corre con agentes en worktrees, integrando cada tarea en `main` con sus
-pruebas. Los planes 001–004 están terminados; el siguiente es el 005.
+pruebas. Los planes 001–026 están terminados; el 027 está escrito y sin aprobar.
 
 - Cada tarea deja su sección arriba de `ESTADO.md` (`## <fecha> — plan NNN
   Txx: <título>`: qué existe, comandos con su resultado, pendiente).
@@ -51,13 +54,14 @@ pruebas. Los planes 001–004 están terminados; el siguiente es el 005.
   (`python3 tools/spec/estado.py` falla si un HECHO no tiene prueba).
 - Comprobación completa: `pnpm test && pnpm typecheck && pnpm lint && pnpm
   build`, más `E2E_PORT=<libre> pnpm e2e --workers=2` (~15 min). Se lee por
-  el código de salida y los conteos.
+  el código de salida y los conteos. Las e2e completas las corre Álvaro; los
+  agentes sólo corren un spec cuando hace falta.
 - Textos de interfaz por clave en `apps/web/lib/i18n/`; nada de cadenas
   sueltas en componentes.
 - Contenido real (fechas, entradas, fotos, textos, legales): sólo con el
   visto bueno de Álvaro; hasta entonces es `muestra`.
 - Push, despliegue, cuentas, claves y todo lo que sale fuera del repo los
-  decide Hernán.
+  decide Álvaro. Los commits salen como `picodepato <admin@boiaplanet.net>`.
 
 La ronda 1 usó otro método, que queda como registro: sesión orquestadora
 (`/orquestador`, backlog en `docs/PLAN.md`) y encargos numerados
