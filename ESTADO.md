@@ -4,6 +4,57 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 027 T264: Installable PWA
+
+Qué existe:
+- `apps/web/app/manifest.ts` → `/manifest.webmanifest`, estático: nombre
+  BOIA.PLANET, nombre corto `pwa.shortName` (BOIA), `display: standalone`,
+  `start_url`/`scope`/`id` `/`, fondo y barra `--boia-navy` (#12233f, en
+  `lib/pwa/theme.ts`, también el `themeColor` del layout). Iconos
+  `public/icons/icon-192.png`, `icon-512.png` y `maskable-512.png` (logo
+  dentro del círculo seguro), sacados de `app/icon.svg` por
+  `scripts/pwa-icons.mjs` (`pnpm --filter @boia/web pwa:icons`, Chromium de
+  Playwright; los PNG van al repo, el build no lo necesita). El icono de Apple
+  sigue siendo `app/apple-icon.png`.
+- Layout raíz: `applicationName` y `appleWebApp` (título, `capable`, barra
+  `black`).
+- `public/sw.js`: no usa Cache Storage ni precarga nada. Sólo intercepta
+  navegaciones GET del propio origen (salvo `/api`) con red primero; sin red,
+  una página «sin conexión» generada (503, `no-store`, texto `pwa.offline`
+  que llega en la URL de registro). API, Supabase, `_next/static`, 3D: no los
+  toca. `skipWaiting` + `clients.claim`. Para retirarlo, sustituir por uno que
+  haga `self.registration.unregister()`. La CSP ya tenía `worker-src 'self'`.
+- Aviso «Instalar app»: `app/(landing)/components/pwa-lazy.tsx` (en el layout
+  de la web pública, no en /mar ni en el Admin) sólo recoge
+  `beforeinstallprompt` (`lib/pwa/capture.ts`); tras `load` + 2 s pide el
+  trozo `pwa-prompt.tsx`, que registra el SW (sólo en producción) y a los 15 s
+  enseña la tarjeta: botón «Instalar app» en Chrome/Android, o la pista
+  «Compartir → Añadir a pantalla de inicio» en Safari de iPhone (una vez).
+  Cerrada, no vuelve (`localStorage` `boia.pwa.aviso`). No sale con
+  `navigator.webdriver` (e2e) ni con la app ya instalada. Textos
+  `lib/i18n/es-pwa.ts` (`pwa.*`, muestra), traducidos por `lib/pwa/t.ts`.
+- Pruebas: `lib/pwa/sw.test.ts` (carga `public/sw.js` real en un vm: nunca
+  cachea HTML/API/Supabase, red primero, página sin red),
+  `lib/pwa/install.test.ts` (cerrar se recuerda, qué aviso toca, Safari iOS),
+  `lib/pwa/manifest.test.ts` (campos de instalación, iconos con su tamaño,
+  color = `--boia-navy`, CSP con `worker-src 'self'`).
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → exit 0, 295 archivos,
+  2594 pasan, 1 omitida.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → 0. `pnpm typecheck` → 0.
+- `pnpm build` → exit 0; landing 197.9 kB gzip de 200 kB (antes 197.0 kB).
+- Instalabilidad (Chromium, `next start`, CDP `Page.getAppManifest` y
+  `Page.getInstallabilityErrors`): 0 errores de manifiesto, 0 de instalación,
+  SW `activated` y controlando tras recargar, iconos 200 `image/png`.
+- `pnpm cf:measure` → n/a (T262 aún no está en main).
+
+Pendiente:
+- Los textos `pwa.*` son muestra hasta que Álvaro los apruebe.
+- Next 15 emite `mobile-web-app-capable` y no `apple-mobile-web-app-capable`;
+  iOS 16.4+ instala igual desde «Añadir a pantalla de inicio».
+- Probar en un Android y un iPhone reales tras el despliegue.
+
 ## 2026-10-12 — plan 027 T261: Serve `art/` as static files and remove request-time disk reads
 
 **Qué existe.** `art/` ya no lo sirve una función: `apps/web/scripts/copy-art.mjs`

@@ -21,6 +21,7 @@ import { esLibEventos } from './es-lib-eventos';
 import { esMar } from './es-mar';
 import { esMundo } from './es-mundo';
 import { esPuerta } from './es-puerta';
+import { esPwa } from './es-pwa';
 import { esRadio } from './es-radio';
 import { esWeb } from './es-web';
 import { esZonas } from './es-zonas';
@@ -64,6 +65,8 @@ export const es = {
   ...esAdminRadio,
   // El reproductor de la radio y su botón (plan 022 T247).
   ...esRadio,
+  // La app instalable: manifiesto, «sin conexión» y el aviso (plan 027 T264).
+  ...esPwa,
 } as const;
 
 export type MessageKey = keyof typeof es;
