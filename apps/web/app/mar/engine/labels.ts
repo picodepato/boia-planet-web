@@ -60,6 +60,12 @@ export interface PinSight {
   body: Rect | null;
   /** false: no se enseña el rótulo (lejos, de cerca); su lugar sí tapa a los de detrás. */
   label?: boolean;
+  /**
+   * Nunca tenue ni apagado por otro lugar (T275: el Puig Campana en la vista
+   * de mapa): si cae encima de uno más cercano, se aparta lo justo (`nudgeClear`);
+   * si no hay hueco, se queda entero donde está. Los mandos sí lo apartan.
+   */
+  keep?: boolean;
 }
 
 /** Cómo se pone: si se ve, dónde va su punta (px), su opacidad y su escala (desde la punta). */
@@ -178,11 +184,65 @@ export function insideScreen(
 }
 
 /**
+ * Los lugares cuyo rótulo se ve entero en la vista de mapa (`keep`, T275):
+ * el Puig Campana, que con la isla del ALL DAY delante sólo salía al acercarse.
+ */
+export const MAP_KEEP: readonly string[] = ['canon'];
+
+/**
+ * Lo más que sube un rótulo `keep` para encontrar hueco (px): en un móvil de
+ * 360 px, entre el minimapa, la barra de arriba y el rótulo del ALL DAY, el
+ * del Puig Campana sólo cabe unos 50 px más arriba. muestra
+ */
+export const NUDGE_UP = 64;
+/** Paso (px) con el que se buscan los huecos de un rótulo `keep`. */
+const NUDGE_STEP = 4;
+
+/**
+ * Un hueco para el rótulo `keep` que pisa un mando o lo de un lugar más
+ * cercano (T275): de lado, con la punta aún dentro de su caja (como la dibuja
+ * `.mar-pin`, hasta medio ancho menos 10 px), y si no basta, más arriba
+ * (hasta `NUDGE_UP`); lo más cerca posible de su sitio, sin pisar mandos ni
+ * salirse de la pantalla, y si puede ser sin tapar tampoco las islas de
+ * detrás (`spare`). null si no hay.
+ */
+export function nudgeClear(
+  p: PinSight,
+  at: { x: number; y: number },
+  scale: number,
+  taken: readonly Rect[],
+  hud: readonly Rect[],
+  width?: number,
+  spare: readonly Rect[] = [],
+): { x: number; y: number } | null {
+  const room = Math.max(0, (p.w * scale) / 2 - 10);
+  const tries: { x: number; y: number; cost: number }[] = [];
+  for (let dy = 0; dy <= NUDGE_UP; dy += NUDGE_STEP)
+    for (let dx = 0; dx <= room; dx += NUDGE_STEP)
+      for (const sx of dx ? [-dx, dx] : [0])
+        tries.push({ x: p.x + sx, y: at.y - dy, cost: dx + 2 * dy });
+  tries.sort((a, b) => a.cost - b.cost);
+  // Primero, un hueco que tampoco tape las islas de detrás (`spare`); si no hay, uno que sí.
+  for (const avoid of spare.length ? [[...taken, ...spare], taken] : [taken]) {
+    for (const c of tries) {
+      const box = pinBox({ ...p, ...c }, scale);
+      if (width !== undefined && (box.left < SCREEN_EDGE || box.right > width - SCREEN_EDGE))
+        continue;
+      if (avoid.some((r) => intersects(box, r))) continue;
+      if (hud.some((r) => intersects(box, r, HUD_MARGIN))) continue;
+      return { x: c.x, y: c.y };
+    }
+  }
+  return null;
+}
+
+/**
  * Cómo se pone cada rótulo (en el orden de `pins`). Ninguno pisa los mandos
  * (`hud`): baja por debajo, sobre su isla, o se apaga. Los más cercanos
  * mandan: uno que pisa la isla o el rótulo de otro más cercano se apaga
- * (o, si es de lo que vende, se queda pequeño y tenue). Con `width` (el
- * ancho de la pantalla, T226), ninguno se sale por los lados.
+ * (o, si es de lo que vende, se queda pequeño y tenue); uno `keep` (T275)
+ * se aparta a un hueco y se queda entero. Con `width` (el ancho de la
+ * pantalla, T226), ninguno se sale por los lados.
  */
 export function layoutPins(
   pins: readonly PinSight[],
@@ -211,7 +271,23 @@ export function layoutPins(
       return a && width ? { x: insideScreen(p, a, s, width, hud), y: a.y } : a;
     };
     let at = place(scale);
-    const behind = at !== null && taken.some((r) => intersects(pinBox({ ...p, ...at! }, scale), r));
+    let behind = at !== null && taken.some((r) => intersects(pinBox({ ...p, ...at! }, scale), r));
+    if (p.keep && (behind || at === null)) {
+      // T275: ni tenue ni apagado: se aparta a un hueco si lo hay; si no, se
+      // queda entero donde está (o apagado, si lo único que tiene son mandos).
+      const farther = pins.filter((q) => q !== p && q.body && q.depth >= p.depth);
+      const free = nudgeClear(
+        p,
+        at ?? p,
+        scale,
+        taken,
+        hud,
+        width,
+        farther.map((q) => q.body!),
+      );
+      if (free) at = free;
+      behind = false;
+    }
     if (behind) {
       scale = Math.min(scale, BEHIND_SCALE);
       alpha = Math.min(alpha, BEHIND_ALPHA);
@@ -225,7 +301,7 @@ export function layoutPins(
       alpha,
       scale,
       behind,
-      lowered: at !== null && at.y !== p.y,
+      lowered: at !== null && at.y > p.y,
     };
     if (p.body) taken.push(p.body);
     if (on && !behind) taken.push(pinBox({ ...p, ...at! }, scale));

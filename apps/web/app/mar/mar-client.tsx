@@ -36,7 +36,15 @@ import {
   chooseWorld as chooseWorldIn,
 } from '@boia/world';
 import Link from 'next/link';
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { liveWorld } from '../../lib/admin/live-world';
 import { track } from '../../lib/analytics';
 import { SandboxCheckout } from '../../lib/ticketing/checkout';
@@ -135,9 +143,11 @@ import { takeZarpar } from '../../lib/intro/zarpar';
 import type { RadioMount as RadioMountComponent } from '../../lib/radio/ui/radio-mount';
 import { marWorld } from './engine/compact';
 import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
-import { PIN_AVOID } from './engine/labels';
+import { MAP_KEEP, PIN_AVOID } from './engine/labels';
 import { MOOD_IDS, type MoodId } from './engine/palette';
 import type { Period } from './engine/wrap';
+import { mapHintReducer, scheduleMapHint } from './map-hint';
+import { MapHintView } from './map-hint-view';
 import {
   type ShipModelEntry,
   loadShipManifest,
@@ -321,6 +331,8 @@ function pinsOf(world: WorldConfig, phase: RescuePhase | null): PinSpec[] {
         text: o.identity.name,
         icon: PIN_ICON[id] ?? '🏝️',
         ...(ev ? { accent: true, always: true } : {}),
+        // T275: en la vista de mapa, el Puig Campana se ve entero (labels.ts `MAP_KEEP`).
+        ...(MAP_KEEP.includes(id) ? { mapKeep: true } : {}),
       });
     } else if (cat === 'naufrago') {
       out.push({ id, text: o.identity.name, icon: '🆘' });
@@ -429,6 +441,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   }, [status, velo]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [sheet, setSheet] = useState<SheetState | null>(null);
+  // La pista del mapa (T275): sale al abrirlo y se va sola, o al tocarla.
+  const mapMode = !!stats?.mapMode;
+  const [mapHint, sendMapHint] = useReducer(mapHintReducer, false);
+  useEffect(() => scheduleMapHint(mapMode, sendMapHint), [mapMode]);
+  useEffect(() => {
+    if (sheet) sendMapHint('sheet-opened');
+  }, [sheet]);
   const sheetRef = useRef<SheetState | null>(null);
   sheetRef.current = sheet;
   const [checkoutFor, setCheckoutFor] = useState<string | null>(null);
@@ -2444,18 +2463,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       )}
 
-      {stats?.mapMode && !sheet ? (
-        <div className="mar-maphint">
-          <p>{msg('mar.client.tocaUnaIslaPara')}</p>
-          <button
-            type="button"
-            className="mar-maphint__close"
-            data-testid="mar-mapa-cerrar"
-            onClick={() => engineRef.current?.backToBoat()}
-          >
-            {msg('mar.client.cerrar')}
-          </button>
-        </div>
+      {mapMode && !sheet ? (
+        <MapHintView
+          hint={mapHint}
+          onHint={() => sendMapHint('tap')}
+          onClose={() => engineRef.current?.backToBoat()}
+        />
       ) : null}
 
       {dialogue ? (

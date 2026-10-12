@@ -157,7 +157,7 @@
 
 .mar-round:active,
 .mar-minimap:active,
-.mar-maphint__close:active {
+.mar-mapclose:active {
   transform: scale(0.94);
 }
 
@@ -1197,23 +1197,27 @@
   opacity: 0.75;
 }
 
+/* La pista (T275): un globo que sale al abrir el mapa y se va solo a los 2,5 s
+   o al tocarlo. Va por encima de «Cerrar», que es otro control. */
 .mar-maphint {
   position: absolute;
   /* Centrada en el hueco que deja la barra del zoom a la derecha. */
   left: calc(var(--safe-l) + 12px);
   right: calc(var(--safe-r) + 66px);
-  bottom: calc(var(--above-bar) + 52px);
+  bottom: calc(var(--above-bar) + 100px);
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 14px;
+  padding: 8px 14px;
   border-radius: var(--radius);
+  color: inherit;
+  font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   width: max-content;
   max-width: calc(100% - 78px);
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: auto;
   z-index: 2;
   animation: mar-in 0.3s ease-out;
 }
@@ -1223,15 +1227,35 @@
   text-align: center;
 }
 
-.mar-maphint__close {
-  flex: none;
+/* Con `.mar` delante: `.mar button` (letra heredada, al 80 %) le ganaría. */
+.mar .mar-maphint {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mar .mar-mapclose {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+/* El control de cerrar el mapa: aparte de la pista, siempre a la vista. */
+.mar-mapclose {
+  position: absolute;
+  left: calc(var(--safe-l) + 12px);
+  right: calc(var(--safe-r) + 66px);
+  bottom: calc(var(--above-bar) + 52px);
+  margin: 0 auto;
+  width: max-content;
   height: 38px;
   padding: 0 14px;
   border: 0;
   border-radius: var(--radius);
   background: var(--orange);
+  color: #fff;
+  font-size: 0.8rem;
   font-weight: 800;
   white-space: nowrap;
+  z-index: 2;
   pointer-events: auto;
 }
 

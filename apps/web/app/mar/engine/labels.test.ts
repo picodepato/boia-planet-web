@@ -177,6 +177,28 @@ describe('lejos y detrás', () => {
     expect(c!.on).toBe(false);
   });
 
+  it('uno `keep` (T275) se aparta lo justo de otro rótulo y se queda entero', () => {
+    const near = pin({ x: 260, y: 300, depth: 1, body: null });
+    const kept = pin({ x: 150, y: 310, depth: 1.2, body: null, keep: true });
+    const [a, b] = layoutPins([near, kept], [], 400);
+    expect(a).toMatchObject({ on: true, behind: false });
+    expect(b).toMatchObject({ on: true, behind: false, alpha: 1, scale: 1 });
+    const boxA = pinBox({ ...near, x: a!.x, y: a!.y });
+    const boxB = pinBox({ ...kept, x: b!.x, y: b!.y });
+    expect(intersects(boxA, boxB)).toBe(false);
+    // La punta sigue dentro de su caja.
+    expect(Math.abs(b!.x - kept.x)).toBeLessThanOrEqual(kept.w / 2 - 10);
+    // Sin `keep`, el mismo se apagaba.
+    expect(layoutPins([near, { ...kept, keep: false }], [], 400)[1]!.on).toBe(false);
+  });
+
+  it('uno `keep` sin hueco se queda entero donde está', () => {
+    const near = pin({ depth: 1, body: { left: 0, top: 0, right: 400, bottom: 600 } });
+    const kept = pin({ depth: 1.2, body: null, keep: true });
+    const [, b] = layoutPins([near, kept], []);
+    expect(b).toMatchObject({ on: true, behind: false, alpha: 1, scale: 1, x: 200, y: 300 });
+  });
+
   it('un lugar sin rótulo (lejos) también tapa a los de detrás', () => {
     const hiddenNear = pin({ depth: 1, label: false });
     const behind = pin({ depth: 2, y: 330, body: null });

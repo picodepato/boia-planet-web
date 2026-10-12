@@ -4,6 +4,36 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T275: Map fixes: Puig Campana label and the hint that never leaves
+
+Qué existe:
+- Pista del mapa (`apps/web/app/mar/map-hint.ts`, `map-hint-view.tsx`, `mar-client.tsx`, `mar.css`): al abrir el mapa sale un globo con «Toca una isla para ver qué hay», una vez por apertura. Se va sola a los 2,5 s (`MAP_HINT_MS`), al tocarla, o al abrir una ficha; el mapa sigue abierto. Ya no lleva «Cerrar».
+- Control de cerrar el mapa, aparte de la pista: botón `.mar-mapclose` (`data-testid="mar-mapa-cerrar"`), visible mientras el mapa esté abierto sin ficha.
+- Puig Campana (`canon`): en la vista de mapa su rótulo sale entero (sin atenuar ni apagar). `labels.ts` `MAP_KEEP` lo marca; `pinsOf` le pone `mapKeep`, `placePins` lo pasa como `keep` en la vista de mapa y `layoutPins` lo aparta a un hueco (`nudgeClear`: de lado con la punta sobre su caja o hasta 64 px más arriba, sin pisar mandos, rótulos ni islas más cercanas, y si puede ser tampoco las de detrás). La isla no se ha movido.
+
+Comandos y resultado:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (301 files, 2671 passed, 1 skipped)
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0
+- `pnpm build` → exit 0
+- `pnpm typecheck` → exit 0
+- `E2E_PORT=3187 pnpm exec playwright test e2e/mar-3d.spec.ts -g "el minimapa abre el mapa grande"` → exit 0 (2 passed, móvil y escritorio)
+
+Auditoría (Opus):
+- La versión de Haiku dejaba el Puig Campana en su sitio con `always: true`. En la /mar real (móvil 360×640) seguía sin verse en el mapa: su rótulo chocaba con el minimapa (un mando: se apagaba) y con el del ALL DAY (con `always` habría quedado tenue al 0,32). Además `always` lo hacía asomar por el horizonte también en la vista de barco. Se cambió por `mapKeep`/`keep` (sólo en la vista de mapa, ver arriba). Medido en la /mar construida: móvil 360×640, rótulo encendido a opacidad 1 en 74,54–239,99, encima del ALL DAY; escritorio 1280×720, encendido a opacidad 1, a la izquierda del ALL DAY, señalando su isla.
+- Prueba nueva `engine/map-labels.test.ts`: posiciones reales del mar de Arcilla, la cámara de la vista de mapa (zoom 1, números leídos de `mar3d.ts`), rótulos del tamaño medido y mandos medidos en /mar (360×640 y 1280×720, letra ×1 y ×1,15): el del Puig Campana sale entero, sin pisar otro rótulo, isla más cercana ni mando, con la punta sobre su caja; sin `keep` no salía.
+- La pista: el reloj sale a `scheduleMapHint` (relojes inyectables) y la vista a `MapHintView`; pruebas de 2,5 s con el mapa abierto, toque, cerrar antes de tiempo y reabrir, y que pista y «Cerrar» son botones distintos con su texto de i18n. CSS: `.mar .mar-maphint` y `.mar .mar-mapclose` con su tamaño de letra (`.mar button` se lo quitaba).
+- La e2e del minimapa ahora comprueba que la pista se va sola, el mapa sigue abierto y «Cerrar» está aparte.
+
+Pendiente:
+- En el móvil el rótulo del Puig Campana queda ~45 px por encima de su isla (el único hueco entre el minimapa, la barra y el ALL DAY) y tapa en parte la Isla de Nochevieja, cuyo rótulo ahí no sale. Si Álvaro lo quiere pegado a su isla, haría falta mover la isla (y su arte), fuera del alcance de esta tarea.
+
+Probar a mano:
+- Abrir el mapa (minimapa o tecla M): sale la pista; se va sola a los 2,5 s con el mapa abierto; tocarla también la quita; «✕ Cerrar» sigue cerrando el mapa.
+- Abrir el mapa otra vez: la pista sale otra vez, una vez.
+- En la vista de mapa, en el móvil y en el escritorio: «Puig Campana» se lee entero, sin atenuar, y su punta señala su isla.
+- En la vista de barco, lejos del Puig Campana: su rótulo no asoma (como antes de T275).
+
 ## 2026-10-12 — plan 028 T266: Expiry reminders and keeping scheduled workflows alive
 
 Qué existe:

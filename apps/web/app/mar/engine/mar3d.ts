@@ -237,6 +237,11 @@ export interface PinSpec {
   accent?: boolean;
   /** Siempre visible, también de cerca (lo que vende). */
   always?: boolean;
+  /**
+   * En la vista de mapa su rótulo se ve entero, nunca tenue ni apagado por
+   * otro lugar: se aparta lo justo (T275, el Puig Campana, que se buscaba).
+   */
+  mapKeep?: boolean;
 }
 
 export interface Stats {
@@ -4269,6 +4274,8 @@ export class Mar3D {
         depth,
         horizon: atHorizon,
         always: !!p.spec.always,
+        // En la vista de mapa, entero aunque caiga sobre otro lugar (T275).
+        keep: far && !!p.spec.mapKeep,
         body,
         // Por encima de la pantalla con su isla a la vista (una isla alta, de cerca): baja sobre ella.
         label: want && (this.scr.on || !!body),

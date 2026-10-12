@@ -374,8 +374,12 @@ test('el minimapa abre el mapa grande; «Cerrar», tocarlo otra vez y la M lo ci
   if (hasTouch) await map.tap();
   else await map.click();
   await expect(map).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('.mar-maphint')).toBeVisible();
+  await expect(page.getByTestId('mar-mapa-pista')).toBeVisible();
   await expectOnTop(page.getByTestId('mar-entradas'));
+  // T275: la pista se va sola (2,5 s) y el mapa sigue abierto, con su «Cerrar» aparte.
+  await expect(page.getByTestId('mar-mapa-pista')).toHaveCount(0, { timeout: 8_000 });
+  await expect(map).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('mar-mapa-cerrar')).toBeVisible();
   await page.getByTestId('mar-mapa-cerrar').click();
   await expect(map).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('mar-mapa-cerrar')).toHaveCount(0);
