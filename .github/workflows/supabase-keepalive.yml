@@ -1,0 +1,26 @@
+# Mantiene despierto el proyecto Supabase del plan gratuito, que se pausa
+# tras 7 días sin uso. Dos lecturas por semana (lunes y jueves) dejan margen
+# si una falla. Secretos del repo (Settings → Secrets and variables →
+# Actions): SUPABASE_URL y SUPABASE_ANON_KEY, los mismos que
+# NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.
+name: supabase-keepalive
+
+on:
+  schedule:
+    - cron: '17 6 * * 1,4'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Leer una fila pública
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$SUPABASE_URL" && test -n "$SUPABASE_ANON_KEY" || { echo "Faltan los secretos"; exit 1; }
+          curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' \
+            "$SUPABASE_URL/rest/v1/carnet_questions?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
