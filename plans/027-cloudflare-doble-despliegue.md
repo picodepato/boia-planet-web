@@ -13,7 +13,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 ## Tasks
 
 ## T261 — Serve `art/` as static files and remove request-time disk reads
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: fable
 - Skills: none
@@ -25,15 +25,15 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - unit tests: optional missing art is handled as missing without console errors; the no-`node:fs`-at-request-time test → pass
   - ESTADO section lists every changed caller and confirms `/mar` and the landing still load the ship, islands, title sheet and gallery clip (dev server check, screenshot in the attach folder)
   - Test command → exit 0
-- Outcome:
+- Outcome: art/ is now served as static files from public/art (994 files, 43.6 MB), callers use /art, no request-time fs; 55cbc47
 
 ## T262 — Cloudflare build (OpenNext) and size budget
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T261
 - Model: fable
 - Skills: none
 - Goal: Add the Cloudflare build next to the Vercel one. Add `@opennextjs/cloudflare` and `wrangler` as devDependencies of `apps/web`; `allowBuilds: { esbuild: true, workerd: true }` in `pnpm-workspace.yaml`; `apps/web/open-next.config.ts`; `apps/web/wrangler.jsonc` (worker name `boia-planet`, `nodejs_compat`, assets binding, compatibility date of the day); scripts `cf:build` and `cf:preview`. `next/image` is used in `lib/mundo/carnet/avatar.tsx` and `id-card.tsx`: on Cloudflare the default optimizer is not available for free, so make images work on both hosts (e.g. `images.unoptimized` or a pass-through loader — pick the one that keeps Vercel behaviour acceptable, log it). The security headers from `next.config.ts` `headers()` and the `redirects()` must apply on Cloudflare too — verify. Add `pnpm cf:measure`: a Node script that copies the repo to a temp folder, installs with `nodeLinker: hoisted`, runs the OpenNext build and `wrangler deploy --dry-run --outdir`, prints raw and gzip size, and exits non-zero above a **2,800 KiB gzip budget** (free limit 3 MB). It must work on Windows and Linux. Run `wrangler dev`/`cf:preview` locally (from the hoisted temp copy if needed) and check the landing, `/mar`, `/carnet`, `/admin` (demo gate), `/sello`, an `art/` asset and a redirect.
-- Context: plan header (measurement 2026-10-09), `apps/web/next.config.ts`, `apps/web/lib/security-headers.ts`, OpenNext Cloudflare docs (opennext.js.org/cloudflare), `.github/workflows/` for style.
+- Context: plan header (measurement 2026-10-09), `apps/web/next.config.ts`, `apps/web/lib/security-headers.ts`, OpenNext Cloudflare docs (opennext.js.org/cloudflare), `.github/workflows/` for style. T261 note: on Cloudflare, Next `headers()` do not reach static assets served without the Worker, so `/art/*` caching (and the security headers on static files, if needed) may need a `public/_headers` file.
 - Scope: may touch `apps/web/package.json`, lockfile, `pnpm-workspace.yaml` (only `allowBuilds`), new Cloudflare config files, `apps/web/scripts/`, image components' config, `.gitignore` (`.open-next/`, `.wrangler/`) / must not touch the repo-wide `nodeLinker`, Vercel project settings, anything outside the repo.
 - Done when:
   - `pnpm cf:measure` → exit 0, prints gzip size ≤ 2,800 KiB (number in ESTADO)
@@ -57,7 +57,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - Outcome:
 
 ## T264 — Installable PWA
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T261
 - Model: opus
 - Skills: frontend-design
@@ -91,6 +91,10 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12: Cloudflare is the public host, Vercel Hobby the always-identical backup; both deploy from `main` (Álvaro)
 - 2026-10-12: Cloudflare builds via Workers Builds (free 3,000 build min/month), not GitHub Actions, so no Cloudflare token lives in GitHub (orchestrator; Álvaro may switch)
 - 2026-10-12: Android Play Store app (TWA, `assetlinks.json`) and App Store are out of this plan (Álvaro: "después, opcional")
+- 2026-10-12 T261: every art caller now uses `/art` via `lib/art-url.ts` (`ART_BASE_URL`), so Cloudflare serves assets without invoking the Worker; a `/api/art/:path*` → `/art/:path*` rewrite stays for legacy stored URLs
+- 2026-10-12 T261: copy script copies only served extensions (.json/.png/.webp/.glb/.mp4), incremental, mirrors deletions; wired into `pnpm dev`, `pnpm build`, `e2e-server.mjs`, `demo.mjs`
+- 2026-10-12 T261: `cache-control` rule for `/art/:path*` in `next.config.ts`; `byte-range.ts` and its test deleted (native ranges); `e2e/despliegue.spec.ts` rewritten and six `mar-*` specs moved to `/art` (Álvaro runs e2e)
+- 2026-10-12: T262 Context gets T261's note about `_headers` for static assets on Cloudflare (orchestrator)
 
 ## Proposals (new scope)
 - 2026-10-12: Android app in Play Store as a TWA (Bubblewrap config, `/.well-known/assetlinks.json` with a test on both hosts) once the domain is live — 25 USD one-off, Álvaro's account
@@ -103,3 +107,5 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 4. Done 2026-10-12: email option B (`hola@`, `admin@`), accounts moving to `admin@boiaplanet.net`.
 
 ## Log
+- 2026-10-12 20:55 T261 launched (attempt 1, fable), agent a51d5f12c87f2006d
+- 2026-10-12 21:12 T261 done, merged 55cbc47
