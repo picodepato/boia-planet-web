@@ -1,0 +1,42 @@
+{
+  "$comment": "Cosas que caducan (plan 028 T266). Las lee apps/web/scripts/recordatorios.mjs, que corre .github/workflows/recordatorios.yml y abre un issue cuando falta poco. Al renovar algo: cambia aquí su fecha y cierra su issue. Tabla para leer: docs/DESPLIEGUE.md §8.",
+  "avisos": [60, 30, 7],
+  "caducidades": [
+    {
+      "id": "dominio-boiaplanet",
+      "que": "Dominio `boiaplanet.net` (Porkbun)",
+      "fecha": "2027-10-12",
+      "detalle": "Renovación automática activada, 12,52 USD/año.",
+      "rompe": "Si no se renueva, la web pública (https://boiaplanet.net) y el correo `@boiaplanet.net` dejan de funcionar.",
+      "renovar": [
+        "Que la tarjeta de Porkbun esté vigente antes de la fecha.",
+        "Porkbun → Domain Management: comprobar que «Auto Renew» sigue activado en `boiaplanet.net`.",
+        "Cuando Porkbun lo haya renovado: poner la fecha nueva en `apps/web/scripts/caducidades.json` y cerrar este issue."
+      ]
+    },
+    {
+      "id": "brevo-smtp-hola",
+      "que": "Clave SMTP de Brevo que usa Gmail «Enviar como» para `hola@boiaplanet.net`",
+      "fecha": "2027-10-12",
+      "detalle": "Creada el 2026-10-12. También caduca tras 90 días sin enviar por SMTP.",
+      "rompe": "Gmail deja de poder enviar como `hola@boiaplanet.net` (recibir sigue funcionando).",
+      "renovar": [
+        "Brevo → SMTP & API → SMTP → **Generate a new SMTP key** (se ve una vez; no la guardes en el repo).",
+        "Gmail → ⚙ → Ver todos los ajustes → **Cuentas e importación → Enviar como → `hola@` → editar** → pegar la clave nueva. Lo mismo para `admin@` si envía.",
+        "Poner la fecha nueva (un año después) en `apps/web/scripts/caducidades.json` y cerrar este issue."
+      ]
+    }
+  ],
+  "mensuales": [
+    {
+      "id": "enviar-desde-hola",
+      "que": "Enviar al menos un correo desde `hola@boiaplanet.net` este mes",
+      "rompe": "La clave SMTP de Brevo caduca tras 90 días sin enviar: Gmail dejaría de poder enviar como `hola@boiaplanet.net`.",
+      "hacer": [
+        "Desde el Gmail de BOIA, mandar un correo cualquiera eligiendo `hola@boiaplanet.net` en «De».",
+        "Si Gmail da error al enviar, la clave ya caducó: renovarla como dice docs/DESPLIEGUE.md §8.",
+        "Cerrar este issue cuando esté enviado."
+      ]
+    }
+  ]
+}
