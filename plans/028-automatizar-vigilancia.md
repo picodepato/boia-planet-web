@@ -1,6 +1,6 @@
 # Plan 028 — Automate the watch over hosts, expiries and GitHub workflows
 
-Status: active
+Status: done
 Created: 2026-10-12
 Base branch: main
 Goal: After plan 027 the site runs on Cloudflare (public, `https://boiaplanet.net`) and Vercel (backup), with scheduled GitHub workflows (`hosts-parity.yml`, `supabase-keepalive.yml`, `supabase-backup.yml`). Automate, inside the repo and with no new accounts, secrets or money, the failure modes Álvaro listed on 2026-10-12: expiry dates nobody remembers, GitHub silently disabling scheduled workflows after 60 days without repo activity, a Worker that grows past the Cloudflare free limit, and commits authored by someone other than `picodepato` (Vercel Hobby then stops deploying). Everything that needs Álvaro in a panel or a new secret lives in `plans/seguridad-pendiente.md`, not here.
@@ -13,7 +13,7 @@ Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-dobl
 ## Tasks
 
 ## T266 — Expiry reminders and keeping scheduled workflows alive
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -24,7 +24,7 @@ Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-dobl
   - unit tests for the reminder logic (outside window → nothing; 60/30/7 thresholds; existing open issue → comment, not duplicate; monthly item) → pass
   - the script has a dry-run mode that prints what it would do for a given date; ESTADO shows its output for 2027-08-20 and for today
   - Test command → exit 0
-- Outcome:
+- Outcome: `recordatorios.yml` (weekly, issues at 60/30/7 days + monthly `hola@` nudge, data in `apps/web/scripts/caducidades.json`) and a `keepalive-workflows` job in the 4 scheduled workflows; 479a38f
 
 ## T267 — CI checks: Worker size budget and commit author
 - Status: done
@@ -55,3 +55,4 @@ Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-dobl
 - 2026-10-12 23:45 T267 launched (attempt 1, opus), agent a79477a651e288365
 - 2026-10-12 23:53 T267 done, merged 1e9efa2
 - 2026-10-12 23:58 T266 conflict in package.json with T267; sent back to its agent
+- 2026-10-13 00:01 T266 first integration failed: secretos.test found a JWT in main's stale .next, built after the orchestrator had Álvaro put the legacy anon JWT in apps/web/.env.local; restored the project's sb_publishable/sb_secret keys (still valid), rebuilt, T266 merged 479a38f. Plan done
