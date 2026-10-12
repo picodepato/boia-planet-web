@@ -15,7 +15,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 ## Tasks
 
 ## T275 — Map fixes: Puig Campana label and the hint that never leaves
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: haiku
 - Audit: opus
@@ -27,10 +27,10 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit test: `layoutPins` with the map view's zoom and the new position shows Puig Campana's label (not hidden, not collided) → pass
   - unit/component test: the hint disappears after 2.5 s and the map is still open → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: hint is a 2.5 s popup with its own close; Puig Campana not moved, its label is kept and nudged to a free spot in map view (mapKeep), full opacity; haiku + Opus audit — 582c0fd
 
 ## T276 — Carnet sign-up with email + code, ready to switch on
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -176,10 +176,18 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Álvaro approves the rights of the 4 real photos `galeria-1..4`; they go to the home, which shows at least 7 photos (Álvaro)
 - 2026-10-13: Models: sonnet/haiku where possible with an Opus audit before integration; T268 opus, T270 and T273 (Blender) fable, T276 (Supabase auth) opus; Codex only for images (Álvaro)
 - 2026-10-13: Launch order: Álvaro's fixes first (T275, T276, T277), then the world tasks (orchestrator)
+- 2026-10-13: T275: Puig Campana kept in place (routes and art); label priority `mapKeep` in map view only; audit touched labels.ts and mar3d.ts beyond the listed Scope (T275 audit)
+- 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-13: On a 360 px phone the Puig Campana label sits ~45 px above its island and partly covers Isla de Nochevieja; a proper fix means moving the island and re-rendering its art (T275 audit)
+- 2026-10-13: Fix stale data: mapa.json still has a stale `faro` minigame at (-10.5,-25.2) while map.ts puts the lighthouse at (-2.32,10.26) (T275 agent)
 
 ## Log
 - 2026-10-13: plan drafted with Álvaro
 - 2026-10-13: approved by Álvaro ("aprueba el plan y empieza"); plan 028 done; main clean, worktree baseRef head, Telegram OK, bypassPermissions; main test green from plan 028 last integration (479a38f)
+- 2026-10-13 T275 launched (attempt 1, haiku), agent a1ef183e563a6caed
+- 2026-10-13 T276 launched (attempt 1, opus), agent a4eba793614248545
+- 2026-10-13 T275 haiku done (9c7eca2): island not moved (route test), canon label always:true, hint popup; layoutPins test missing. Opus audit launched, agent a03d940d071dc102c, branch base worktree-agent-a1ef183e563a6caed
+- 2026-10-13 T275 audit done (4bcbbbd), integrated 582c0fd
