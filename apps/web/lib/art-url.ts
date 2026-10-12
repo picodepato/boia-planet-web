@@ -13,3 +13,10 @@ export const ART_BASE_URL = '/art';
 
 /** Prefijo de las URL antiguas, que un rewrite sigue sirviendo. */
 export const LEGACY_ART_BASE_URL = '/api/art';
+
+/**
+ * Caché del arte en producción: una hora en el navegador, un día en la CDN.
+ * La ponen `next.config.ts` (Vercel) y `scripts/cf-assets.mjs` (Cloudflare,
+ * donde los archivos estáticos no pasan por las cabeceras de Next).
+ */
+export const ART_CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400';

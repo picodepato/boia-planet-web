@@ -1,0 +1,23 @@
+// Worker de Cloudflare de la web pública (plan 027 T262). Lo construye
+// `pnpm cf:build` (@opennextjs/cloudflare) desde la misma salida de
+// `next build` que despliega Vercel; `pnpm cf:preview` lo sirve en local con
+// `wrangler dev` y `pnpm cf:measure` mide su tamaño. Desplegar, dominio y
+// cuenta son cosa de Álvaro (docs/DESPLIEGUE.md, T265).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boia-planet",
+  "main": ".open-next/worker.js",
+  // La más nueva que entiende el workerd de wrangler 4.149 (1.20261006): una
+  // fecha posterior hace fallar `wrangler dev` en local. Súbase con wrangler.
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Archivos estáticos (`public/`, `/_next/static`): Cloudflare los sirve sin
+  // pasar por el Worker, sin cuota de peticiones. Sus cabeceras van en el
+  // `_headers` y `_redirects` que escribe scripts/cf-assets.mjs tras construir.
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  // Registros del Worker en el panel (gratis con límite diario).
+  "observability": { "enabled": true },
+}

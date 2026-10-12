@@ -10,7 +10,7 @@ export default defineConfig({
   oxc: { jsx: { runtime: 'automatic' } },
   test: {
     include: ['packages/*/src/**/*.test.ts', 'apps/*/**/*.test.ts'],
-    exclude: ['**/node_modules/**', '**/.next/**', ...slowTests],
+    exclude: ['**/node_modules/**', '**/.next/**', '**/.open-next/**', ...slowTests],
     environment: 'node',
   },
 });

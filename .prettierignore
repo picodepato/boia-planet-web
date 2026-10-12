@@ -4,3 +4,5 @@ tools/
 art/
 .claude/
 apps/web/public/art/
+.open-next/
+.wrangler/

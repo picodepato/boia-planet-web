@@ -4,6 +4,93 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 027 T262: Cloudflare build (OpenNext) and size budget
+
+**Qué existe.** La misma salida de `next build` que despliega Vercel se
+empaqueta también como Worker de Cloudflare con `@opennextjs/cloudflare`
+1.20.10 y `wrangler` 4.149.0 (devDependencies de `apps/web`;
+`pnpm-workspace.yaml` permite los scripts de instalación de `esbuild` y
+`workerd`). Archivos nuevos: `apps/web/open-next.config.ts` (caché incremental
+de sólo lectura sobre los archivos estáticos, ver abajo),
+`apps/web/wrangler.jsonc` (Worker `boia-planet`, `nodejs_compat` +
+`global_fetch_strictly_public`, assets `.open-next/assets` con binding
+`ASSETS`, `observability`), `apps/web/scripts/cf-assets.mjs` (escribe
+`.open-next/assets/_headers` y `_redirects`) y
+`apps/web/scripts/cf-measure.mjs` (medida del tamaño). Scripts: `pnpm cf:build`
+(= `opennextjs-cloudflare build` → corre `pnpm build`, es decir copy-art +
+`next build` + presupuesto de la landing → `populateCache local` →
+`cf-assets`), `pnpm cf:preview` (`cf:build` + `wrangler dev`) y
+`pnpm cf:measure`. `.open-next/`, `.wrangler/` y `.dev.vars*` están en
+`.gitignore` (y fuera de ESLint, Prettier, tsc y vitest).
+
+**Medida (`pnpm cf:measure`, exit 0).** Worker **10.250 KiB crudo / 2.164 KiB
+gzip** (wrangler informa 2.178,86 KiB con su gzip), presupuesto 2.800 KiB,
+límite del plan gratuito 3 MB. Archivos estáticos: 1.266 archivos, 51,9 MiB
+(wrangler cuenta 1.420 con los suyos), el mayor `art/intro/titulo/letras.png`
+(1,1 MiB); límites de Workers Static Assets 20.000 archivos y 25 MiB por
+archivo, que el script también vigila. El script copia el repo (sin `.git`,
+`node_modules`, `docs/`, salidas, `public/art`, `.env*`) a una carpeta
+temporal (`--dir <carpeta>` para reutilizarla, `--keep` para conservarla,
+`--json`), añade `nodeLinker: hoisted` al `pnpm-workspace.yaml` de la copia
+(pnpm 11 ignora `.npmrc` para esto; el del repo no cambia), instala con
+`--frozen-lockfile`, corre `cf:build` y `wrangler deploy --dry-run --outdir`
+y suma el Worker (sin `.map`). En Windows el `next build` del repo normal
+falla con EPERM al enlazar `standalone/` (confirmado), de ahí la copia; en
+Linux (Cloudflare Workers Builds) `pnpm cf:build` vale tal cual.
+
+**Vista previa local (`wrangler dev` sobre la copia).** `/`, `/mar`,
+`/carnet`, `/admin` (puerta demo), `/sello` → 200 con la CSP y el resto de
+cabeceras de `lib/security-headers.ts`; `/art/intro/titulo/letras.png` → 200
+con `cache-control: public, max-age=3600, s-maxage=86400`;
+`/api/art/intro/titulo/letras.png` → 200 (misma caché); `/legal/condiciones`
+→ 308 `/legal/aviso-legal`; `/juego?ir=x` → 307 `/mar?ir=x`; `/fotos` → 307
+`/galeria`; 404 limpios para lo que falta. La landing muestra el título 3D y
+el planeta, y `/mar` el barco, islas y mascotas, sin errores de consola.
+Capturas: `/tmp/orchestrator-attach/boia-planet-hernan-T262/{landing,mar,carnet,admin,sello}.png`.
+
+**Cómo llegan a Cloudflare las cabeceras y redirecciones de Next.** Las
+páginas HTML y los `redirects()` los sirve el Worker con las cabeceras de
+`next.config.ts` (verificado arriba). Los archivos estáticos (`public/`, el
+arte, `/_next/static`) no pasan por el Worker: `cf-assets.mjs` genera
+`_headers` con las mismas reglas (seguridad para `/*`, `immutable` para
+`/_next/static/*`, la caché del arte, ahora en `lib/art-url.ts` como
+`ART_CACHE_CONTROL` y usada por `next.config.ts`) y `_redirects` con la
+reescritura 200 `/api/art/* → /art/:splat` que en Vercel hace el `rewrites()`
+(sin ella, Cloudflare respondía 404 a las URL viejas: comprobado).
+
+**Decisiones.** (1) Caché incremental = `static-assets-incremental-cache`
+de OpenNext (sólo lectura, sin R2/KV, sin cuentas): sin ninguna caché OpenNext
+volvía a pintar `/` y `/mar` en cada petición, y en el Worker no hay disco
+para `lib/intro/load.ts` (se vio el aviso «sin título 3D» y la landing perdía
+el título). Coste: `/eventos/[slug]` (`revalidate = 300`) no se regenera en
+Cloudflare hasta el siguiente despliegue; su estado lo recalcula el cliente
+(`LiveEvent`), y en Vercel sigue el ISR. Un slug desconocido se pinta en cada
+petición y deja un `ERROR StaticAssetsIncrementalCache: Failed to set to
+read-only cache` en el registro (funciona; es ruido). Alternativa documentada
+en `open-next.config.ts`: R2 (gratis hasta 10 GB; requiere crear el bucket,
+cosa de Álvaro). (2) `compatibility_date` = 2026-10-06, la última que entiende
+el workerd de wrangler 4.149 (una fecha posterior rompe `wrangler dev`); se
+sube con wrangler. (3) `next/image` no se usa (sólo comentarios en
+`avatar.tsx` e `id-card.tsx` diciendo que no aporta nada): no hace falta
+`images.unoptimized` ni cargador; si algún día se usa, OpenNext devuelve la
+imagen original cuando no hay binding `IMAGES`. (4) Las páginas estáticas
+llevan `cache-control: s-maxage=31536000` (lo pone Next; Cloudflare no cachea
+en la CDN las respuestas del Worker, y cada despliegue es un Worker nuevo).
+
+**Comandos.** `pnpm cf:measure --dir <copia>` → exit 0 (números arriba).
+`pnpm build` → exit 0 (landing 197,3 kB gzip de 200). `pnpm exec vitest run
+--exclude '**/packages/db/**'` → 293 archivos, 2587 pruebas pasadas, 1
+omitida (nuevo: `apps/web/scripts/cf.test.ts`, 9 pruebas: `_headers` =
+cabeceras de Next, `_redirects`, filtro de la copia, `wrangler.jsonc`,
+`.gitignore`). `sh tools/spec/checks.sh` → OK. `pnpm lint` → 0. `pnpm
+typecheck` → 0.
+
+**Pendiente.** Desplegar de verdad (cuenta de Cloudflare, Workers Builds con
+raíz `apps/web`, build `pnpm cf:build`, deploy `wrangler deploy`, variables)
+es de Álvaro y lo documenta T265. Probar `cf:build` en Linux (sólo se ha
+corrido en Windows desde la copia hoisted). T264 (PWA) debe seguir dentro del
+presupuesto: `pnpm cf:measure`.
+
 ## 2026-10-12 — plan 027 T264: Installable PWA
 
 Qué existe:

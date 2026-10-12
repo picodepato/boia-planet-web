@@ -1,7 +1,7 @@
 import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import type { NextConfig } from 'next';
-import { ART_BASE_URL, LEGACY_ART_BASE_URL } from './lib/art-url';
+import { ART_BASE_URL, ART_CACHE_CONTROL, LEGACY_ART_BASE_URL } from './lib/art-url';
 import { RENAMED_ROUTES, securityHeaders } from './lib/security-headers';
 
 /** IPs de la red local del Mac, para abrir el servidor de desarrollo desde el móvil. */
@@ -32,9 +32,9 @@ const config: NextConfig = {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
     });
     // El arte estático (`public/art/`, plan 027 T261): en desarrollo cambia al
-    // re-renderizar; en producción la CDN lo guarda un día.
-    const art =
-      process.env.NODE_ENV === 'production' ? 'public, max-age=3600, s-maxage=86400' : 'no-store';
+    // re-renderizar; en producción la CDN lo guarda un día. En Cloudflare lo
+    // sirve el `_headers` de scripts/cf-assets.mjs (T262).
+    const art = process.env.NODE_ENV === 'production' ? ART_CACHE_CONTROL : 'no-store';
     return [
       { source: '/:path*', headers },
       { source: `${ART_BASE_URL}/:path*`, headers: [{ key: 'cache-control', value: art }] },
@@ -45,7 +45,8 @@ const config: NextConfig = {
   },
   async rewrites() {
     // Las URL `/api/art/...` de antes del plan 027 (contenido guardado en el
-    // navegador o en Supabase) siguen sirviendo el mismo arte estático.
+    // navegador o en Supabase) siguen sirviendo el mismo arte estático. En
+    // Cloudflare lo hace el `_redirects` de scripts/cf-assets.mjs (T262).
     return [{ source: `${LEGACY_ART_BASE_URL}/:path*`, destination: `${ART_BASE_URL}/:path*` }];
   },
 };

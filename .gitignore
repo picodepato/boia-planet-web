@@ -22,6 +22,12 @@ apps/web/e2e/deck/.fuentes/
 # copia de art/ para servirla estática (apps/web/scripts/copy-art.mjs, plan 027 T261)
 apps/web/public/art/
 
+# construcción para Cloudflare (plan 027 T262): salida de OpenNext, estado de
+# wrangler dev y variables locales de wrangler
+.open-next/
+.wrangler/
+.dev.vars*
+
 # worktrees de los agentes del /orchestrator
 .claude/worktrees/
 

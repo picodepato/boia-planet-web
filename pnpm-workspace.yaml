@@ -2,3 +2,9 @@ packages:
   - apps/*
   - packages/*
   - tools/deck
+
+# Scripts de instalación permitidos (pnpm 11 los bloquea por defecto): los dos
+# binarios nativos de la construcción para Cloudflare (plan 027 T262).
+allowBuilds:
+  esbuild: true
+  workerd: true
