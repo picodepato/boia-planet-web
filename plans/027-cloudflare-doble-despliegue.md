@@ -1,6 +1,6 @@
 # Plan 027 — Cloudflare port with dual deploy (Cloudflare + Vercel backup) and PWA
 
-Status: active
+Status: done
 Created: 2026-10-12
 Base branch: main
 Goal: The public site moves to Cloudflare Workers (free plan, commercial use allowed, no traffic cap on static files) while Vercel keeps receiving the exact same build as an always-on backup (Álvaro, 2026-10-12: "todo en 2 webs a la vez"). Every push to `main` deploys to both; one codebase, no host-specific branches. Data stays in Supabase, shared by both. Also make the site an installable PWA. Budget rule: nothing paid beyond the domain. Measured 2026-10-09 with `@opennextjs/cloudflare` 1.20.9 + wrangler 4.148 on main 42edb09: Worker 10,264 KiB raw / **2,187 KiB gzip** (free limit 3 MB), admin included; on Windows the build only works with `nodeLinker: hoisted` (pnpm symlinks fail with EPERM), and pnpm 11 needs `allowBuilds` for `esbuild` and `workerd`.
@@ -73,7 +73,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - Outcome: installable PWA (manifest, icons, no-store SW with offline page, lazy install prompt on the landing only), landing 197.9 kB; cf:measure to be checked once T262 lands; 4cd3ff3
 
 ## T265 — Deploy runbook, failover and setup docs
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T262, T263, T264
 - Model: opus
 - Skills: none
@@ -84,7 +84,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - `docs/DESPLIEGUE.md` exists with the eight sections; every command and setting in it matches the repo (script names, paths, worker name)
   - `python3 tools/spec/estado.py` → exit 0
   - Test command → exit 0
-- Outcome:
+- Outcome: `docs/DESPLIEGUE.md` (8 sections) linked from README and TRASPASO, CLAUDE.md names both hosts; 16dc34e
 
 ## Decisions
 - 2026-10-12: T261 and T262 run on Fable, the rest on Opus, to avoid failures in the port (Álvaro)
@@ -106,6 +106,9 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 T263: `scripts/version.mjs` runs in `build` and `dev` after the art copy (cf:build calls `pnpm build`), output git-ignored; no SHA → "unknown", which the check treats as failure
 - 2026-10-12 T263: check uses `/art/barco/manifest.json` and an optional `/.well-known/assetlinks.json` (absent everywhere is fine, present on one host only fails); `/version.json` fetched with a timestamp query; SW never handles it (test added)
 - 2026-10-12 T263: workflow with only one of PUBLIC_URL/BACKUP_URL checks that host alone with a notice; cron `17 */6 * * *`, Node 24, no install
+- 2026-10-12 T265: Cloudflare build vars `PNPM_VERSION=11.27.1` and `NODE_VERSION=24` (build image ships pnpm 10); default watch paths so docs-only pushes also build and both hosts stay on the same commit
+- 2026-10-12 T265: `SUPABASE_SERVICE_ROLE_KEY` and `ADMIN_DEMO_PASSWORD` documented as never set on the hosts (unused at runtime); no runtime vars in the Cloudflare panel (`wrangler deploy` replaces vars not in `wrangler.jsonc`, from wrangler knowledge, unverified in docs)
+- 2026-10-12 T265: redirecting the Vercel URL marked not recommended (breaks the backup); failover adds a middle case (Worker down → switch DNS to Vercel inside Cloudflare) and DNSSEC/email notes; yearly reminder on 12 September; README `/api/art` mentions fixed and deploy check uses `pnpm check:hosts`
 
 ## Proposals (new scope)
 - 2026-10-12: Android app in Play Store as a TWA (Bubblewrap config, `/.well-known/assetlinks.json` with a test on both hosts) once the domain is live — 25 USD one-off, Álvaro's account
@@ -115,6 +118,8 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 
 - 2026-10-12: R2 incremental cache if real ISR on Cloudflare is ever wanted (T262)
 - 2026-10-12: `cf:build` verified only on Windows from the hoisted copy; first Workers Builds run on Linux is the real check (T262)
+
+- 2026-10-12: `README.md` and `CLAUDE.md` fail `prettier --check` (pre-existing, not covered by lint) (T265)
 
 ## Steps only Álvaro can do (outside the repo, after T262)
 1. Create the Cloudflare account (personal Gmail), connect the GitHub repo in Workers Builds with the settings from `docs/DESPLIEGUE.md`, set the env vars.
@@ -132,3 +137,5 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 21:48 T263 launched (attempt 1, opus), agent a8cccfbc817752c79
 - 2026-10-12 21:55 cf:measure on main after T262+T264: Worker 2,186 KiB gzip (budget 2,800), 1,273 static files 52.1 MiB → T264's cf:measure Done-when satisfied
 - 2026-10-12 21:56 T263 done, merged e6612b5
+- 2026-10-12 21:58 T265 launched (attempt 1, opus), agent a3f97e00bad8c994a
+- 2026-10-12 22:06 T265 done, merged 16dc34e; final test command on main passed in that integration; plan done
