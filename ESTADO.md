@@ -4,6 +4,42 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 028 T267: CI checks: Worker size budget and commit author
+
+Qué existe:
+
+- `.github/workflows/cf-size.yml`: en cada push a `main`, pull request y a
+  mano. Ubuntu, Node 24, pnpm de `packageManager` (11.27.1, como
+  `PNPM_VERSION` de Workers Builds), caché del almacén de pnpm, tope 15 min.
+  Sólo corre `pnpm cf:measure` (la copia con `nodeLinker: hoisted` se
+  reutiliza también en Linux: sobra pero no estorba y evita un segundo
+  `pnpm install`). Falla con el motivo en español (anotación `::error::`).
+- `apps/web/scripts/cf-measure.mjs`: la comprobación de límites sale a
+  `limitProblems(worker, assets)` (exportada, con pruebas); en GitHub Actions
+  imprime cada problema como `::error::`.
+- `.github/workflows/commit-author.yml` + `apps/web/scripts/check-authors.mjs`
+  (`pnpm check:authors`): push → `before..after` (before todo ceros o
+  desaparecido → sólo `after`); PR → `base..head`. Lista única
+  `ALLOWED_AUTHORS` (por email: `admin@boiaplanet.net` y el noreply de GitHub
+  de picodepato). El mensaje explica Vercel Hobby y `--reset-author`.
+- `apps/web/scripts/ci-checks.test.ts`: 14 pruebas (autores: todos
+  permitidos, uno de fuera, rango vacío, primer push con ceros, push forzado,
+  PR, lista; límites: dentro, Worker excedido, demasiados archivos, archivo
+  demasiado grande; forma de los dos flujos).
+- `docs/DESPLIEGUE.md` §1: subsección «Comprobaciones en cada push».
+
+Comandos:
+
+- `pnpm cf:measure` → exit 0 (Worker 2.185 KiB gzip; 1.274 estáticos,
+  52,1 MiB, el mayor 1,1 MiB).
+- `pnpm check:authors --before main~3 --after main` → exit 0; sobre
+  `main~200..main` → exit 1 (183 commits de Hernán, historial viejo).
+- vitest (sin `packages/db`) → 298 archivos, 2.626 pasan, 3 omitidas; checks,
+  lint, build, typecheck → exit 0.
+
+Pendiente: los flujos no se han corrido en GitHub (no se sube nada); el
+primer push los estrena.
+
 ## 2026-10-12 — plan 027 T265: Deploy runbook, failover and setup docs
 
 Qué existe:

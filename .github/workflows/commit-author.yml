@@ -1,0 +1,49 @@
+# Autor de los commits (plan 028 T267): Vercel Hobby sólo despliega commits
+# cuyo autor es el dueño de la cuenta (picodepato). Un commit de otro autor en
+# main deja la copia de Vercel sin desplegar, sin avisar. Este flujo corre
+# apps/web/scripts/check-authors.mjs sobre lo que se sube:
+#   push a main    el rango before..after (primer push: sólo el último commit)
+#   pull request   los commits del PR (base..head)
+# Falla, explicando cómo rehacer el autor, si alguno no está en la lista
+# ALLOWED_AUTHORS del script. El historial de antes no se mira.
+name: commit-author
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  author:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Historial entero (sin el contenido de los archivos viejos) para que
+      # `before` y la base del PR estén.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Comprobar los autores
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            node apps/web/scripts/check-authors.mjs --base "$BASE" --head "$HEAD"
+          else
+            node apps/web/scripts/check-authors.mjs --before "$BEFORE" --after "$AFTER"
+          fi

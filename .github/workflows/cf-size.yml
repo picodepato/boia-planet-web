@@ -1,0 +1,49 @@
+# Tamaño del Worker de Cloudflare (plan 028 T267): en cada push a main y en
+# cada pull request construye la web como Cloudflare Workers Builds (Linux,
+# Node 24, el pnpm de `packageManager`) y corre `pnpm cf:measure`
+# (apps/web/scripts/cf-measure.mjs). Falla, con el motivo en español, si el
+# Worker pasa del presupuesto de 2.800 KiB gzip (el plan gratuito corta en
+# 3 MB) o si los archivos estáticos rompen los límites de Cloudflare (20.000
+# archivos, 25 MiB por archivo). Así se ve en GitHub antes de que Cloudflare
+# rechace un despliegue.
+#
+# cf:measure trabaja sobre una copia del repo con `nodeLinker: hoisted` (hace
+# falta en Windows; en Linux sobra pero no estorba) y la instala ella misma:
+# aquí no hay `pnpm install` aparte. La caché del almacén de pnpm acelera esa
+# instalación. Sin secretos: construye con las variables vacías, en modo local.
+name: cf-size
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cf-size-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Sin `version`: lee `packageManager` de package.json (pnpm 11.27.1, el
+      # mismo PNPM_VERSION que usa Workers Builds).
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Medir el Worker y los estáticos
+        shell: bash
+        run: pnpm cf:measure

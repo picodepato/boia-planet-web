@@ -136,6 +136,32 @@ export function measureAssets(assetsDir) {
 const kib = (n) => `${Math.round(n / 1024).toLocaleString('en-US')} KiB`;
 const mib = (n) => `${(n / 1024 / 1024).toFixed(1)} MiB`;
 
+/**
+ * Lo que se pasa de los límites, en frases para Álvaro (vacío = todo bien).
+ * `worker` y `assets` como los devuelven `measureWorker` y `measureAssets`.
+ * La usan el script y el flujo `.github/workflows/cf-size.yml`.
+ */
+export function limitProblems(worker, assets) {
+  const problems = [];
+  if (worker.gzip > BUDGET_GZIP) {
+    problems.push(
+      `El Worker pesa ${kib(worker.gzip)} gzip, más que el presupuesto de ${kib(BUDGET_GZIP)} ` +
+        '(el plan gratuito de Cloudflare corta en 3 MB)',
+    );
+  }
+  if (assets.count > ASSETS_MAX_FILES) {
+    problems.push(
+      `Hay ${assets.count} archivos estáticos, más que el límite de ${ASSETS_MAX_FILES} de Cloudflare`,
+    );
+  }
+  if (assets.largest.bytes > ASSETS_MAX_FILE_BYTES) {
+    problems.push(
+      `El archivo estático ${assets.largest.file} pesa ${mib(assets.largest.bytes)}, más que el límite de 25 MiB por archivo de Cloudflare`,
+    );
+  }
+  return problems;
+}
+
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const argv = process.argv.slice(2);
@@ -173,16 +199,7 @@ if (isMain) {
 
   const worker = measureWorker(join(web, DRY_RUN_OUT));
   const assets = measureAssets(join(web, '.open-next', 'assets'));
-  const problems = [];
-  if (worker.gzip > BUDGET_GZIP) {
-    problems.push(`Worker ${kib(worker.gzip)} gzip > presupuesto ${kib(BUDGET_GZIP)}`);
-  }
-  if (assets.count > ASSETS_MAX_FILES) {
-    problems.push(`${assets.count} archivos estáticos > límite ${ASSETS_MAX_FILES}`);
-  }
-  if (assets.largest.bytes > ASSETS_MAX_FILE_BYTES) {
-    problems.push(`${assets.largest.file} pesa ${mib(assets.largest.bytes)} > límite 25 MiB`);
-  }
+  const problems = limitProblems(worker, assets);
 
   if (json) {
     console.log(
@@ -214,6 +231,14 @@ if (isMain) {
       )}; el mayor ${assets.largest.file} (${mib(assets.largest.bytes)}) · límites ${ASSETS_MAX_FILES} archivos y 25 MiB por archivo`,
     );
     for (const p of problems) console.log(`  PROBLEMA: ${p}`);
+  }
+  // En GitHub Actions, cada problema sale como error en el resumen del flujo.
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    for (const p of problems) {
+      console.log(
+        `::error title=Cloudflare: límite superado::${p}. Si se despliega así, Cloudflare puede rechazar el Worker y la web pública se queda en la versión anterior. Mide en local con «pnpm cf:measure» y recorta antes de subir.`,
+      );
+    }
   }
 
   if (keep) {

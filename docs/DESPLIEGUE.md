@@ -120,6 +120,19 @@ Directory» activado, comandos por defecto (`pnpm run build` de `apps/web`),
 Node 24.x. El commit del build sale de `VERCEL_GIT_COMMIT_SHA`. Cada push a
 `main` despliega a producción; las otras ramas, previews.
 
+### Comprobaciones en cada push (GitHub Actions)
+
+Dos flujos corren en cada push a `main` y en cada pull request, sin secretos
+(plan 028 T267). **`cf-size`** construye la web en Linux como Workers Builds y
+corre `pnpm cf:measure`: falla si el Worker pasa de 2.800 KiB gzip o si los
+estáticos rompen los límites de Cloudflare (20.000 archivos, 25 MiB por
+archivo). **`commit-author`** falla si algún commit subido no es de
+`picodepato <admin@boiaplanet.net>`, porque Vercel Hobby no despliega commits
+de otros autores; el mensaje dice cómo rehacer el autor y la lista está en
+`ALLOWED_AUTHORS` de `apps/web/scripts/check-authors.mjs`. Un fallo no frena
+el despliegue (los hosts construyen por su cuenta): es un aviso para arreglar
+antes del siguiente push.
+
 ---
 
 ## 2. Variables de entorno: las mismas en los dos
