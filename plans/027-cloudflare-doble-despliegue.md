@@ -57,7 +57,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - Outcome:
 
 ## T264 — Installable PWA
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T261
 - Model: opus
 - Skills: frontend-design
@@ -70,7 +70,7 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
   - landing critical-path budget check → still ≤ 200 kB gzip
   - `pnpm cf:measure` → still within budget
   - Test command → exit 0
-- Outcome:
+- Outcome: installable PWA (manifest, icons, no-store SW with offline page, lazy install prompt on the landing only), landing 197.9 kB; cf:measure to be checked once T262 lands; 4cd3ff3
 
 ## T265 — Deploy runbook, failover and setup docs
 - Status: pending
@@ -95,10 +95,15 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 - 2026-10-12 T261: copy script copies only served extensions (.json/.png/.webp/.glb/.mp4), incremental, mirrors deletions; wired into `pnpm dev`, `pnpm build`, `e2e-server.mjs`, `demo.mjs`
 - 2026-10-12 T261: `cache-control` rule for `/art/:path*` in `next.config.ts`; `byte-range.ts` and its test deleted (native ranges); `e2e/despliegue.spec.ts` rewritten and six `mar-*` specs moved to `/art` (Álvaro runs e2e)
 - 2026-10-12: T262 Context gets T261's note about `_headers` for static assets on Cloudflare (orchestrator)
+- 2026-10-12 T264: the service worker stores nothing; it only intercepts same-origin GET navigations (not /api), network-first, with a generated offline page when there is no network
+- 2026-10-12 T264: install prompt and SW registration live only in the (landing) layout (not /mar, not admin); prompt lazy (after load + 2 s, shown after 15 s), hidden under `navigator.webdriver` and when already installed; iOS hint counts as dismissed once seen; Chrome mini-infobar suppressed in favour of the card
+- 2026-10-12 T264: icons rendered with Playwright Chromium on white and committed; theme colour --boia-navy #12233f; `pwa.*` strings in es-pwa.ts are sample copy; CSP already had `worker-src 'self'`
 
 ## Proposals (new scope)
 - 2026-10-12: Android app in Play Store as a TWA (Bubblewrap config, `/.well-known/assetlinks.json` with a test on both hosts) once the domain is live — 25 USD one-off, Álvaro's account
 - 2026-10-12: Commit `.github/workflows/supabase-keepalive.yml` (still untracked) so the free Supabase project never pauses — Álvaro's call
+
+- 2026-10-12: Next 15 emits `mobile-web-app-capable` instead of `apple-mobile-web-app-capable` (iOS 16.4+ unaffected); real-device install test on Android and iPhone after deploy (T264)
 
 ## Steps only Álvaro can do (outside the repo, after T262)
 1. Create the Cloudflare account (personal Gmail), connect the GitHub repo in Workers Builds with the settings from `docs/DESPLIEGUE.md`, set the env vars.
@@ -109,3 +114,6 @@ Notes for every task: same machine notes as plan 022 (`plans/022-pulido-deuda-sp
 ## Log
 - 2026-10-12 20:55 T261 launched (attempt 1, fable), agent a51d5f12c87f2006d
 - 2026-10-12 21:12 T261 done, merged 55cbc47
+- 2026-10-12 21:15 T262 launched (attempt 1, fable), agent aabe6eccf48621f68
+- 2026-10-12 21:15 T264 launched (attempt 1, opus), agent a67678189fe2a1973
+- 2026-10-12 21:32 T264 done, merged 4cd3ff3
