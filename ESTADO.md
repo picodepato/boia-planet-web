@@ -4,6 +4,53 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 027 T263: Marca de versión del build y comprobación de paridad de hosts
+
+Qué existe:
+
+- `apps/web/scripts/version.mjs`: escribe `apps/web/public/version.json`
+  (git-ignored) con `{ sha, shortSha, builtAt, source }`. El commit sale de
+  `VERCEL_GIT_COMMIT_SHA`, `WORKERS_CI_COMMIT_SHA` o `CF_PAGES_COMMIT_SHA`
+  (en ese orden) y, si no hay, de `git rev-parse HEAD`; sin nada, `"unknown"`.
+  Corre en `build` y `dev` de `apps/web`, justo después de `copy-art.mjs`;
+  `pnpm cf:build` (OpenNext) llama a `pnpm build`, así que sale en los dos
+  hosts. El service worker no lo toca (no es navegación; prueba en
+  `lib/pwa/sw.test.ts`).
+- `pnpm check:hosts <url> [<url>…] [--json]` (`apps/web/scripts/check-hosts.mjs`,
+  sólo GET, sin dependencias): por URL pide `/version.json?t=<marca>`, `/`,
+  `/mar` (200 + Content-Security-Policy), `/art/barco/manifest.json` (200 +
+  JSON) y `/.well-known/assetlinks.json` (opcional: 404 en todos vale; en unos
+  sí y en otros no, falla). Compara los commits. Sale 0 si todo bien, 1 si
+  algo falla o no coincide, 2 sin URL. Un host caído o una URL mal escrita se
+  informan, no rompen el script.
+- `.github/workflows/hosts-parity.yml`: `workflow_dispatch` y cada 6 h
+  (`17 */6 * * *`), con las variables del repo `PUBLIC_URL` y `BACKUP_URL`.
+  Sin ninguna: aviso (`::notice::`) y no hace nada; con una sola, comprueba ese
+  host sin comparar. No instala dependencias (Node 24 y el script).
+- Pruebas: `apps/web/scripts/hosts.test.ts` (commit del host / git / unknown,
+  enganche en `build`/`dev`, `.gitignore`; paridad: coinciden, commits
+  distintos, `.well-known` desigual, fallos de 404/CSP/JSON/red; códigos de
+  salida de `main`; forma del flujo).
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/scripts/hosts.test.ts apps/web/lib/pwa/sw.test.ts` → 2 archivos, 17 pruebas, exit 0.
+- `pnpm check:hosts https://boia-planet-roan.vercel.app` → exit 1, como se
+  esperaba: `/` y `/mar` 200 con CSP; `/version.json` 404 («sin desplegar
+  desde plan 027 T263») y `/art/barco/manifest.json` 404 («sin desplegar desde
+  plan 027 T261»); `.well-known` no existe. Vercel no se ha desplegado desde
+  T261: tras el próximo push a `main` los dos deberían dar 200.
+- Comando de pruebas del plan: vitest 297 archivos, 2612 pasan + 3 omitidas,
+  exit 0; `tools/spec/checks.sh` exit 0; `pnpm lint` exit 0; `pnpm build` exit 0
+  (`version: a6222bb (git) en public/version.json`); `pnpm typecheck` exit 0.
+
+Pendiente:
+
+- Álvaro: cargar las variables `PUBLIC_URL` y `BACKUP_URL` del repo (pestaña
+  «Variables» de Actions) cuando la web pública esté en Cloudflare.
+- `pnpm cf:measure` construye en una copia sin `.git`: ahí `version.json`
+  sale `unknown` (sólo mide; en Workers Builds está `WORKERS_CI_COMMIT_SHA`).
+
 ## 2026-10-12 — plan 027 T262: Cloudflare build (OpenNext) and size budget
 
 **Qué existe.** La misma salida de `next build` que despliega Vercel se

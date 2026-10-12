@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/copy-art.mjs && next dev --hostname 0.0.0.0 --port 3000",
-    "build": "node scripts/copy-art.mjs && next build && node scripts/landing-budget.mjs",
+    "dev": "node scripts/copy-art.mjs && node scripts/version.mjs && next dev --hostname 0.0.0.0 --port 3000",
+    "build": "node scripts/copy-art.mjs && node scripts/version.mjs && next build && node scripts/landing-budget.mjs",
     "art:copy": "node scripts/copy-art.mjs",
     "i18n:zonas": "node scripts/i18n-zonas.mjs",
     "budget": "node scripts/landing-budget.mjs",

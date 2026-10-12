@@ -15,6 +15,7 @@
     "cf:build": "pnpm --filter @boia/web cf:build",
     "cf:preview": "pnpm --filter @boia/web cf:preview",
     "cf:measure": "node apps/web/scripts/cf-measure.mjs",
+    "check:hosts": "node apps/web/scripts/check-hosts.mjs",
     "test": "sh -c 'if [ \"$1\" = --filter ]; then f=$2; shift 2; set -- \"/$f/\" \"$@\"; fi; vitest run \"$@\" || exit $?; for a; do case $a in -*) ;; *) exit 0 ;; esac; done; exec sh tools/spec/checks.sh' vitest",
     "test:slow": "vitest run --config vitest.slow.config.ts",
     "lint": "eslint . --max-warnings 0",

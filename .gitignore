@@ -21,6 +21,8 @@ apps/web/e2e/deck/.fuentes/
 
 # copia de art/ para servirla estática (apps/web/scripts/copy-art.mjs, plan 027 T261)
 apps/web/public/art/
+# marca de versión del build (apps/web/scripts/version.mjs, plan 027 T263)
+apps/web/public/version.json
 
 # construcción para Cloudflare (plan 027 T262): salida de OpenNext, estado de
 # wrangler dev y variables locales de wrangler

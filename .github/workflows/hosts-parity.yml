@@ -1,0 +1,73 @@
+# Paridad de hosts (plan 027 T263): comprueba que la web pública (Cloudflare)
+# y la copia (Vercel) responden y sirven el mismo build. Corre
+# apps/web/scripts/check-hosts.mjs (`pnpm check:hosts`), que sólo hace GET:
+# `/version.json` (el commit del build), `/`, `/mar`, un manifiesto del arte y
+# `/.well-known/assetlinks.json` si existe. Falla si algo no responde, falta la
+# CSP o los commits no coinciden.
+#
+# Variables del repo (Settings → Secrets and variables → Actions, pestaña
+# «Variables»), las carga Álvaro:
+#   PUBLIC_URL   la web pública, p. ej. https://boiaplanet.net
+#   BACKUP_URL   la copia, p. ej. https://boia-planet-roan.vercel.app
+# Sin ninguna, el flujo avisa y no hace nada; con una sola, comprueba ésa.
+#
+# Justo después de un push los dos hosts pueden ir desfasados unos minutos
+# (cada uno construye por su cuenta): si falla por commits distintos, se
+# vuelve a lanzar a mano pasado un rato.
+name: hosts-parity
+
+on:
+  schedule:
+    # Cada 6 horas, a los 17 minutos.
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hosts-parity
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Comprobar las variables
+        id: urls
+        env:
+          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          BACKUP_URL: ${{ vars.BACKUP_URL }}
+        shell: bash
+        run: |
+          urls=""
+          for u in "$PUBLIC_URL" "$BACKUP_URL"; do
+            [ -n "$u" ] && urls="$urls $u"
+          done
+          if [ -z "$urls" ]; then
+            echo "::notice::Sin las variables PUBLIC_URL y BACKUP_URL: no se comprueba nada"
+          elif [ -z "$PUBLIC_URL" ] || [ -z "$BACKUP_URL" ]; then
+            echo "::notice::Sólo hay una de PUBLIC_URL y BACKUP_URL: se comprueba ese host, sin comparar"
+          fi
+          echo "list=${urls# }" >> "$GITHUB_OUTPUT"
+
+      # Sólo para el script; no instala dependencias (usa el fetch de Node).
+      - uses: actions/checkout@v4
+        if: steps.urls.outputs.list != ''
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        if: steps.urls.outputs.list != ''
+        with:
+          node-version: '24'
+
+      - name: Comprobar los hosts
+        if: steps.urls.outputs.list != ''
+        env:
+          URLS: ${{ steps.urls.outputs.list }}
+        shell: bash
+        run: |
+          # shellcheck disable=SC2086
+          node apps/web/scripts/check-hosts.mjs $URLS

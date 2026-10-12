@@ -58,6 +58,8 @@ describe('service worker (public/sw.js)', () => {
     expect(r('https://abc.supabase.co/auth/v1/callback', 'navigate')).toBe('pass');
     // Scripts, modelos 3D, imágenes: los resuelve el navegador.
     expect(r(`${ORIGIN}/_next/static/chunks/app.js`)).toBe('pass');
+    // La marca de versión (plan 027 T263) nunca pasa por el service worker.
+    expect(r(`${ORIGIN}/version.json?t=1`)).toBe('pass');
     expect(r(`${ORIGIN}/art/mar/isla.glb`)).toBe('pass');
     // Lo que no es GET.
     expect(r(`${ORIGIN}/`, 'navigate', 'POST')).toBe('pass');
