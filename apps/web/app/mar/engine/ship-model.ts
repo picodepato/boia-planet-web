@@ -10,6 +10,7 @@ import {
   Vector3,
 } from 'three';
 import type { ShipCatalog } from '../../../lib/barco/catalog';
+import { ART_BASE_URL } from '../../../lib/art-url';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /**
@@ -19,7 +20,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
  * Lambert, que en el móvil cuesta menos que el material físico.
  */
 
-export const SHIP_MODELS_URL = '/api/art/barco/3d';
+export const SHIP_MODELS_URL = `${ART_BASE_URL}/barco/3d`;
 
 export interface ShipModelEntry {
   id: string;

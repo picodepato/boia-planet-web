@@ -1,7 +1,8 @@
+import { ART_BASE_URL } from '../../../lib/art-url';
 import { HERO_MEDIA_SRC, heroMediaKind } from '../../../lib/landing/hero-media';
 
-/** T78's stills of the hero scene (`art/landing/`), served by `/api/art`. */
-const STILLS = '/api/art/landing';
+/** T78's stills of the hero scene (`art/landing/`), static files under `/art`. */
+const STILLS = `${ART_BASE_URL}/landing`;
 
 const url = (name: string, width: number) => `${STILLS}/${name}-${width}.webp`;
 
@@ -69,7 +70,7 @@ export function HeroStills({ media = HERO_MEDIA_SRC }: { media?: string | null }
   return (
     <>
       {(['hero-still', 'hero-still-noche'] as const).map((name) => (
-        // eslint-disable-next-line @next/next/no-img-element -- arte de art/ servido por /api/art
+        // eslint-disable-next-line @next/next/no-img-element -- arte de art/ servido estático desde /art
         <img
           key={name}
           className={

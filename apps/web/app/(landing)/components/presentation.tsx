@@ -21,7 +21,7 @@ export function Presentation() {
     <div className="reel" aria-hidden="true" data-testid="presentacion">
       <div className="reel__stage">
         <div className="reel__window">
-          {/* eslint-disable-next-line @next/next/no-img-element -- art from art/, served by /api/art */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- art from art/, served as static files under /art */}
           <img
             className="reel__poster"
             src={PRESENTATION_VIDEO.poster}

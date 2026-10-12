@@ -1,6 +1,7 @@
 import { readShipStyleIndex, shipSkins } from '@boia/engine/ui';
 import { findShipImage, parseShipManifest } from '@boia/world';
 import { resolveRef, scriptConstants, toHex } from './python-constants';
+import { ART_BASE_URL } from '../art-url';
 import { t } from '../i18n';
 
 /**
@@ -23,7 +24,7 @@ import { t } from '../i18n';
  * archivos del repo al construir la página.
  */
 
-export const SHIP_ART_URL = '/api/art/barco';
+export const SHIP_ART_URL = `${ART_BASE_URL}/barco`;
 /** Vista de la miniatura: tres cuartos, la que mejor enseña casco y cubierta. */
 export const PREVIEW_DIRECTION = 'SE';
 

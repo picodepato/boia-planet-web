@@ -1,5 +1,6 @@
 import type { BufferGeometry, Object3D, Vector3 } from 'three';
 import { Group, Mesh } from 'three';
+import { ART_BASE_URL } from '../../../lib/art-url';
 import { flattenEnemyModel } from './enemy-models';
 import { loadGltf } from './models';
 
@@ -16,7 +17,7 @@ import { loadGltf } from './models';
  * no llega, y si falla, la mascota no se ve (no hay versión a mano).
  */
 
-export const MASCOT_MODELS_URL = '/api/art/mascotas/3d';
+export const MASCOT_MODELS_URL = `${ART_BASE_URL}/mascotas/3d`;
 
 /** Los GLB de las mascotas de Blender y sus piezas (`PARTS` de `tools/blender/mascotas/*.py`). */
 export const MASCOT_MODELS = {

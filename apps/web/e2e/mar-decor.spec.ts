@@ -62,7 +62,7 @@ test('Santa Bárbara loads as local Blender scenery from the normal sailing came
 });
 
 test('missing castle GLB preserves procedural scenery and sailing', async ({ page }) => {
-  await page.route('**/api/art/decor/3d/santa-barbara.glb', (route) => route.abort());
+  await page.route('**/art/decor/3d/santa-barbara.glb', (route) => route.abort());
   await page.goto('/mar');
   const canvas = page.getByTestId('mar-canvas');
   await expect(canvas).toHaveAttribute('data-castillo-modelo', 'procedural', { timeout: 30000 });

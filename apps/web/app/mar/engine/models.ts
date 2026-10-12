@@ -101,7 +101,7 @@ function disposeTree(root: Object3D): void {
 }
 
 /**
- * Un glTF del arte (`/api/art/...`) como escena de three, con sus clips en
+ * Un glTF del arte (`/art/...`) como escena de three, con sus clips en
  * `scene.animations` (T112: la boia del club de Benidorm): `clone` los
  * copia, así que cada copia del almacén los lleva.
  */

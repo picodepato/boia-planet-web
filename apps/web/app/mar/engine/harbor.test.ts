@@ -175,8 +175,8 @@ describe('el modelo del Puerto de Alicante: manifiesto y GLB (fuente y /mar)', (
     const all = await loadIslandModels(get);
     const only = await loadIslandManifest(async () => okJson(islands));
     expect([...all.keys()].sort()).toEqual([...only.keys(), HARBOR_PLACE_ID].sort());
-    expect(asked).toContain(`${ISLAND_MODELS_URL}/manifest.json?optional=1`);
-    expect(asked).toContain(`${PLACE_MODELS_URL}/${HARBOR_PLACE_ID}/manifest.json?optional=1`);
+    expect(asked).toContain(`${ISLAND_MODELS_URL}/manifest.json`);
+    expect(asked).toContain(`${PLACE_MODELS_URL}/${HARBOR_PLACE_ID}/manifest.json`);
     // El almacén de modelos pide el GLB del lugar en su carpeta.
     const urls: string[] = [];
     const store = new ModelStore<string>(

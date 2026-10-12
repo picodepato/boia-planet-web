@@ -8,6 +8,7 @@ import {
 } from '@boia/engine/intro';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { ART_BASE_URL } from '../art-url';
 
 /**
  * Sólo servidor (se ejecuta al construir la landing estática): valida la
@@ -17,7 +18,7 @@ import path from 'node:path';
  * cinemática, con su versión ligera (REQ-ENT-017).
  */
 
-export const ART_BASE_URL = '/api/art';
+export { ART_BASE_URL };
 const ART_ROOT = path.resolve(process.cwd(), '../../art');
 
 export interface IntroData {

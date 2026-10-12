@@ -394,7 +394,7 @@ export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
     id: p.id,
     albumId: p.albumId,
     alt: p.alt,
-    src: `/api/art/galeria/${p.id}.webp`,
+    src: `/art/galeria/${p.id}.webp`,
     width: p.width,
     height: p.height,
     selection: false,
@@ -408,7 +408,7 @@ export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
       alt: cala
         ? `Foto de muestra ${n} de una tarde en la cala`
         : `Foto de muestra ${n} de un All Day BOIA`,
-      src: `/api/art/galeria/${p.id}.webp`,
+      src: `/art/galeria/${p.id}.webp`,
       width: p.width,
       height: p.height,
       selection: cala ? n === 1 : n <= 4,
@@ -422,8 +422,8 @@ export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
     albumId: c.albumId,
     alt: c.alt,
     kind: 'video' as const,
-    src: `/api/art/galeria/${c.id}.mp4`,
-    poster: `/api/art/galeria/${c.id}.webp`,
+    src: `/art/galeria/${c.id}.mp4`,
+    poster: `/art/galeria/${c.id}.webp`,
     width: c.width,
     height: c.height,
     selection: false,

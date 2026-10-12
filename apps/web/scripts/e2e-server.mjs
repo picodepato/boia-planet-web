@@ -22,6 +22,12 @@ const port = process.argv[2] ?? '3107';
 const cwd = join(dirname(fileURLToPath(import.meta.url)), '..');
 const next = createRequire(join(cwd, 'package.json')).resolve('next/dist/bin/next');
 
+// `art/` a `public/art/` antes de construir (plan 027 T261), como hace `pnpm build`.
+const art = spawnSync(process.execPath, [join(cwd, 'scripts/copy-art.mjs')], {
+  cwd,
+  stdio: 'inherit',
+});
+if (art.status !== 0) process.exit(art.status ?? 1);
 const build = spawnSync(process.execPath, [next, 'build'], { cwd, stdio: 'inherit' });
 if (build.status !== 0) process.exit(build.status ?? 1);
 

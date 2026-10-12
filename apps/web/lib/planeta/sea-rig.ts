@@ -21,6 +21,7 @@ import {
   Vector3,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ART_BASE_URL } from '../art-url';
 
 /**
  * The sea of the landing hero (plan 007 T79; T77 §3, §6, §7): the port of
@@ -33,7 +34,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
  * and the clock (water and bobbing). Art is `muestra` until Álvaro approves.
  */
 
-const ART = '/api/art/landing/3d';
+const ART = `${ART_BASE_URL}/landing/3d`;
 const DEG = Math.PI / 180;
 
 /** A task boundary: the page gets a turn between the steps of loading the props. */

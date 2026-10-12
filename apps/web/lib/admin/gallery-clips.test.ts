@@ -251,13 +251,13 @@ describe('clips de muestra (T216)', () => {
     expect(clips.length).toBeGreaterThanOrEqual(2);
     expect(clips.length).toBeLessThanOrEqual(3);
     for (const c of clips) {
-      expect(c.src).toMatch(/^\/api\/art\/galeria\/[a-z-]+\.mp4$/);
-      expect(c.poster).toMatch(/^\/api\/art\/galeria\/[a-z-]+\.webp$/);
+      expect(c.src).toMatch(/^\/art\/galeria\/[a-z-]+\.mp4$/);
+      expect(c.poster).toMatch(/^\/art\/galeria\/[a-z-]+\.webp$/);
       expect(c.selection).toBe(false);
       expect(photoSchema.safeParse(c).success).toBe(true);
-      // Los archivos están en art/ (los sirve /api/art) y el clip es un mp4 de verdad.
+      // Los archivos están en art/ (servidos estáticos desde /art) y el clip es un mp4 de verdad.
       const file = (ref: string) =>
-        new URL(`../../../../art/${ref.replace('/api/art/', '')}`, import.meta.url);
+        new URL(`../../../../art/${ref.replace('/art/', '')}`, import.meta.url);
       expect(existsSync(file(c.poster!))).toBe(true);
       const bytes = new Uint8Array(readFileSync(file(c.src!)));
       expect(isMp4(bytes)).toBe(true);

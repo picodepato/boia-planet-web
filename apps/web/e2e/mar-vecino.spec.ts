@@ -18,7 +18,7 @@ import { openMar } from './mar-helpers';
 test.describe.configure({ timeout: 180_000 });
 
 const canvas = (page: Page) => page.getByTestId('mar-canvas');
-const GLB = '/api/art/enemigos/3d/vecino.glb';
+const GLB = '/art/enemigos/3d/vecino.glb';
 
 async function snap(page: Page, name: string) {
   const dir = process.env.RECORD_T174;

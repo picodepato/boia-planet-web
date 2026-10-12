@@ -4,6 +4,80 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-12 — plan 027 T261: Serve `art/` as static files and remove request-time disk reads
+
+**Qué existe.** `art/` ya no lo sirve una función: `apps/web/scripts/copy-art.mjs`
+espeja lo servible de `art/` (`.json`, `.png`, `.webp`, `.glb`, `.mp4`; las
+fuentes de Blender `.blend`/`.py`/`.md` se quedan fuera) en
+`apps/web/public/art/` (en `.gitignore` y `.prettierignore`), de forma
+incremental y borrando lo que sobra. Lo corren `pnpm dev`, `pnpm build`
+(`apps/web/package.json`), `scripts/e2e-server.mjs` y `scripts/demo.mjs`; a
+mano, `pnpm --filter @boia/web art:copy`. Tamaño añadido a la salida
+estática: **994 archivos, 43.6 MB** (46 MB en disco; 848 PNG, 69 JSON, 45
+GLB, 28 WebP, 4 MP4). La ruta `app/api/art/[...path]/route.ts`,
+`lib/byte-range.ts` y su prueba se han borrado (el host estático sirve los
+rangos: comprobado `206 Content-Range: bytes 0-15/253841` con `next start`),
+y `next.config.ts` pierde `outputFileTracingIncludes` (queda
+`outputFileTracingRoot`, que el monorepo sigue necesitando). Un rewrite
+`/api/art/:path*` → `/art/:path*` mantiene las URL viejas (contenido guardado
+en el navegador o en Supabase), y una cabecera `cache-control` para
+`/art/:path*` conserva la caché de CDN que daba la función (`public,
+max-age=3600, s-maxage=86400` en producción; `no-store` en desarrollo).
+
+**Callers cambiados** (todos pasan por `lib/art-url.ts`, `ART_BASE_URL =
+'/art'`): `app/(landing)/components/hero-stills.tsx`,
+`app/(landing)/components/presentation.tsx` (comentario),
+`app/mar/engine/decor-model.ts`, `enemy-models.ts`, `island-models.ts`
+(`ISLAND_MODELS_URL`, `PLACE_MODELS_URL`, y sin `?optional=1`),
+`mascot-models.ts`, `models.ts` (comentario), `ship-model.ts`,
+`lib/barco/catalog.ts` (`SHIP_ART_URL`), `lib/landing/hero-media.ts`,
+`lib/planeta/sea-rig.ts`, `lib/intro/load.ts` (re-exporta la constante),
+`packages/store/src/sample/content.ts` (fotos y clips de la galería de
+muestra), `packages/contracts/src/content.ts` (comentario). Pruebas:
+`enemy-models.test.ts`, `harbor.test.ts`, `island-models.test.ts`,
+`lib/admin/gallery-clips.test.ts`; e2e: `despliegue.spec.ts` (reescrito:
+espejo exacto, cabeceras, 404 de lo que falta, rewrite viejo, rango 206),
+`landing.spec.ts` (comentario), `mar-decor`, `mar-faro-tabarca`,
+`mar-isla-modelo`, `mar-isla-nochevieja`, `mar-isla-sonido`, `mar-vecino`.
+
+**Arte opcional.** Un host estático no devuelve 204: `loadIslandManifest` y
+`loadPlaceManifests` piden el manifiesto sin `?optional=1` y tratan el 404
+como «no hay» sin escribir en la consola (prueba en `island-models.test.ts`,
+con `console.error`/`warn` espiados). El motor ya trataba 404 igual que 204
+(`packages/engine/src/manifest-loader.ts`, `ship-style.ts`); no se ha tocado.
+Nota: el propio navegador sigue listando un 404 de red en DevTools; hoy no
+ocurre porque todos los manifiestos opcionales existen en `art/`.
+
+**Sin disco en tiempo de petición.** `lib/intro/load.ts` y
+`lib/barco/load.ts` (`readFileSync`) sólo los importan `app/(landing)/page.tsx`
+y `app/mar/page.tsx`, ahora con `export const dynamic = 'force-static'`;
+`intro-stage.tsx` sólo importa el tipo. `lib/no-fs-at-request-time.test.ts`
+recorre el grafo de importaciones de cada entrada de `app/` (hasta los
+paquetes `@boia/*` por su `exports`) y falla si una llega a `node:fs` sin ser
+una página `force-static`; con `.next/prerender-manifest.json` presente,
+comprueba además que Next las prerrenderizó (`/` y `/mar`, ○ en el build).
+Comprobado que falla al quitar `force-static` de `app/mar/page.tsx`.
+
+**Comandos.** `pnpm build` → exit 0 (`/` y `/mar` estáticas, sin `/api/art`;
+landing 197.0 kB de 200 kB). `pnpm exec vitest run --exclude '**/packages/db/**'`
+→ exit 0, 292 archivos, 2578 pasan, 1 omitida. `sh tools/spec/checks.sh` →
+exit 0. `pnpm lint` → exit 0. `pnpm typecheck` → exit 0. Con `next start`
+(build de producción): `/art/islas/3d/manifest.json` 200 con `cache-control`
+y `Accept-Ranges`; `/art/galeria/*.mp4` con `Range: bytes=0-15` → 206;
+`/api/art/...` → 200 (rewrite); `/art/islas/3d/no-existe.glb` → 404;
+`/art/..%2Fpackage.json` → 404. Playwright contra ese servidor: la landing
+pide `intro/titulo/letras.webp`, `landing/3d/*.glb` y el clip de la
+presentación (206); `/galeria` reproduce `art/galeria/boia-baila.mp4`
+(`readyState` 4); `/mar` pide 21 archivos (barco `arcilla.glb`, islas,
+lugares, castillo), todos 200 y consola sin errores. Capturas:
+`C:/Users/alvar/AppData/Local/Temp/orchestrator-attach/boia-planet-hernan-T261/{landing,landing-presentacion,galeria,mar}.png`.
+
+**Pendiente.** Las e2e completas las corre Álvaro (`despliegue.spec.ts` y
+los `mar-*` cambiados). En Cloudflare, la cabecera `cache-control` de
+`next.config.ts` no llega a los assets que el Worker no atiende: la tarea de
+la configuración de Cloudflare decide si hace falta un `_headers`. Las URL
+`/api/art/...` viejas pasan por el Worker (rewrite); las nuevas, no.
+
 ## 2026-10-09 — plan 026 T260: No stray video frame over the planet in iOS in-app browsers
 
 **The element.** The frame in Hernán's capture is the presentation's

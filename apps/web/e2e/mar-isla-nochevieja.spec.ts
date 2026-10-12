@@ -55,7 +55,7 @@ test('la Isla de Nochevieja (destino de la Fiestera) tiene su modelo en el manif
 test('cerca de la Isla de Nochevieja se ve su modelo de Blender', async ({ page }) => {
   const glb: string[] = [];
   page.on('response', (r) => {
-    if (r.url().endsWith(`/api/art/islas/3d/${entry!.file}`)) glb.push(String(r.status()));
+    if (r.url().endsWith(`/art/islas/3d/${entry!.file}`)) glb.push(String(r.status()));
   });
   const errors = await openMar(page, `?cerca=${ISLAND}`);
   await expect.poll(() => islandState(page), { timeout: 30_000 }).toContain(`${ISLAND}:glb`);

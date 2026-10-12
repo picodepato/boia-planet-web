@@ -41,7 +41,7 @@ async function snap(page: Page, name: string) {
 test('cerca de la Isla del Sonido se ve su modelo de Blender', async ({ page }) => {
   const glb: string[] = [];
   page.on('response', (r) => {
-    if (r.url().endsWith(`/api/art/islas/3d/${SONIDO}.glb`)) glb.push(String(r.status()));
+    if (r.url().endsWith(`/art/islas/3d/${SONIDO}.glb`)) glb.push(String(r.status()));
   });
   const errors = await openMar(page, `?cerca=${SONIDO}`);
   await expect.poll(() => islandState(page), { timeout: 30_000 }).toContain(`${SONIDO}:glb`);

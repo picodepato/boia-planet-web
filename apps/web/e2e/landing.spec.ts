@@ -139,7 +139,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
     } as typeof HTMLCanvasElement.prototype.getContext;
   });
 
-  // Bundle del juego y su ruta, bloqueados. El arte (/api/art) no: la landing
+  // Bundle del juego y su ruta, bloqueados. El arte (/art, estático) no: la landing
   // lo usa para la ilustración ligera del hero (T03).
   const blocked: string[] = [];
   await page.route(

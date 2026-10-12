@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   description: t('site.description'),
 };
 
+// Se prerrenderiza al construir: `loadIntroData` lee `art/` del disco y en
+// Cloudflare Workers no hay disco en tiempo de petición (plan 027 T261).
+export const dynamic = 'force-static';
+
 export default function LandingPage() {
   // El servidor pinta la muestra; en el navegador, `LiveLanding` pasa a leer el
   // repositorio local con los cambios del Admin de la demo (T26, D-20). Con

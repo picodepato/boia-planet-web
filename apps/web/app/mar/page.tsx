@@ -6,6 +6,10 @@ import { t } from '../../lib/i18n';
 
 export const metadata: Metadata = { title: t('mar.mar.boiaPlanetMar3d') };
 
+// Se prerrenderiza al construir: `loadShipCatalog` lee `art/` del disco y en
+// Cloudflare Workers no hay disco en tiempo de petición (plan 027 T261).
+export const dynamic = 'force-static';
+
 // Como en el 2D: en el mar un pellizco es el zoom de la cámara, no el de la página.
 export const viewport: Viewport = {
   width: 'device-width',

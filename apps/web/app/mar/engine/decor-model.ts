@@ -1,8 +1,9 @@
 import type { Group, Mesh, Object3D } from 'three';
+import { ART_BASE_URL } from '../../../lib/art-url';
 import { ModelStore } from './models';
 
 /** Same scene units, origin and radius as the procedural castle; no automatic fitting. */
-export const CASTLE_MODEL_URL = '/api/art/decor/3d/santa-barbara.glb';
+export const CASTLE_MODEL_URL = `${ART_BASE_URL}/decor/3d/santa-barbara.glb`;
 
 /** Single local landmark. Keep its procedural fallback on errors; guard late loads at teardown. */
 export class DecorModel {

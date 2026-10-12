@@ -39,7 +39,7 @@ export const localPhotoRefSchema = z.string().regex(/^local-photo:[A-Za-z0-9_-]{
 
 /**
  * Dónde está un archivo de la galería: URL (https o del bucket), un archivo
- * de este navegador (`local-photo:`) o una ruta propia (`/api/art/…`, los
+ * de este navegador (`local-photo:`) o una ruta propia (`/art/…`, los
  * clips de muestra de plan 019 T216).
  */
 export const mediaRefSchema = z.union([

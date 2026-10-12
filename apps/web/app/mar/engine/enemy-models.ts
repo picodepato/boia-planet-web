@@ -1,6 +1,7 @@
 import type { BufferGeometry, Mesh, MeshStandardMaterial, Object3D } from 'three';
 import { BufferAttribute, Color } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { ART_BASE_URL } from '../../../lib/art-url';
 import { loadGltf } from './models';
 
 /**
@@ -18,7 +19,7 @@ import { loadGltf } from './models';
  * vista la escala por su radio de escena como a la de a mano.
  */
 
-export const ENEMY_MODELS_URL = '/api/art/enemigos/3d';
+export const ENEMY_MODELS_URL = `${ART_BASE_URL}/enemigos/3d`;
 
 /** El GLB del Vecino Quejica y su radio en el modelo (`RADIUS` de `tools/blender/enemigos/vecino.py`). */
 export const VECINO_MODEL = { id: 'vecino', file: 'vecino.glb', radius: 1 } as const;

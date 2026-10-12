@@ -1,3 +1,5 @@
+import { ART_BASE_URL } from '../art-url';
+
 /**
  * The hero's static version (2026-10-08, decision 4): today the T78 stills of
  * the sea by the port; Roke will provide a video or a GIF to replace them.
@@ -24,6 +26,6 @@ export function heroMediaKind(src: string): HeroMediaKind {
  * next to it, and set both paths here.
  */
 export const PRESENTATION_VIDEO = {
-  src: '/api/art/landing/presentacion-muestra.mp4',
-  poster: '/api/art/landing/presentacion-muestra.webp',
+  src: `${ART_BASE_URL}/landing/presentacion-muestra.mp4`,
+  poster: `${ART_BASE_URL}/landing/presentacion-muestra.webp`,
 } as const;

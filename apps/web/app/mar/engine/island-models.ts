@@ -1,5 +1,6 @@
 import type { StreamTuning } from '@boia/engine/streaming';
 import type { Mesh, MeshLambertMaterial, Object3D } from 'three';
+import { ART_BASE_URL } from '../../../lib/art-url';
 
 /**
  * Las islas modeladas en Blender (T69): `tools/blender/export_islas_glb.py`
@@ -15,7 +16,7 @@ import type { Mesh, MeshLambertMaterial, Object3D } from 'three';
  * `compact.ts`) también: su id en el manifiesto es su `DecorKind`.
  */
 
-export const ISLAND_MODELS_URL = '/api/art/islas/3d';
+export const ISLAND_MODELS_URL = `${ART_BASE_URL}/islas/3d`;
 
 /** Una isla del manifiesto (lo que escribe export_islas_glb.py). */
 export interface IslandModelEntry {
@@ -86,12 +87,15 @@ export function parseIslandManifest(json: unknown): Map<string, IslandModelEntry
   return out;
 }
 
-/** El manifiesto de las islas; sin él (o si falla), ninguna: todas a mano. */
+/**
+ * El manifiesto de las islas; sin él (404 del arte estático, o si falla),
+ * ninguna: todas a mano, sin escribir en la consola (plan 027 T261).
+ */
 export async function loadIslandManifest(
   get: (url: string) => Promise<Response> = (url) => fetch(url),
 ): Promise<Map<string, IslandModelEntry>> {
   try {
-    const r = await get(`${ISLAND_MODELS_URL}/manifest.json?optional=1`);
+    const r = await get(`${ISLAND_MODELS_URL}/manifest.json`);
     if (r.status !== 200) return new Map();
     return parseIslandManifest(await r.json());
   } catch {
@@ -104,7 +108,7 @@ export const islandModelUrl = (e: Pick<IslandModelEntry, 'file' | 'url'>) =>
 
 // --- Lugares de Blender con contrato propio (T107, T108) -----------------------------
 
-export const PLACE_MODELS_URL = '/api/art/places/3d';
+export const PLACE_MODELS_URL = `${ART_BASE_URL}/places/3d`;
 
 /**
  * Los lugares cuyo modelo de `art/places/3d/<id>/` sustituye en /mar a la
@@ -181,7 +185,7 @@ export async function loadPlaceManifests(
   await Promise.all(
     ids.map(async (id) => {
       try {
-        const r = await get(`${PLACE_MODELS_URL}/${id}/manifest.json?optional=1`);
+        const r = await get(`${PLACE_MODELS_URL}/${id}/manifest.json`);
         if (r.status !== 200) return;
         const e = parsePlaceManifest(await r.json(), id);
         if (e) out.set(id, e);

@@ -133,7 +133,7 @@ describe('el Vecino Quejica de Blender (art/enemigos/3d, T174)', () => {
     expect(entry).toBeTruthy();
     expect(entry.file).toBe(VECINO_MODEL.file);
     expect(entry.radius).toBe(VECINO_MODEL.radius);
-    expect(enemyModelUrl(entry.file)).toBe(`/api/art/enemigos/3d/${VECINO_MODEL.file}`);
+    expect(enemyModelUrl(entry.file)).toBe(`/art/enemigos/3d/${VECINO_MODEL.file}`);
     const glb = readFileSync(path.join(REPO, 'art/enemigos/3d', entry.file));
     expect(glb.subarray(0, 4).toString()).toBe('glTF');
     expect(entry.tris).toBeLessThanOrEqual(manifest.max_tris);

@@ -19,6 +19,9 @@ docs/presentacion/render/
 # Noto Color Emoji que descargan las capturas de la presentación (T209)
 apps/web/e2e/deck/.fuentes/
 
+# copia de art/ para servirla estática (apps/web/scripts/copy-art.mjs, plan 027 T261)
+apps/web/public/art/
+
 # worktrees de los agentes del /orchestrator
 .claude/worktrees/
 

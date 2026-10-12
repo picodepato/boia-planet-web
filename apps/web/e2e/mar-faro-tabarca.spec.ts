@@ -31,7 +31,7 @@ async function snap(page: Page, name: string) {
 test('cerca del faro se ve el Faro de Tabarca de Blender', async ({ page }) => {
   const glb: string[] = [];
   page.on('response', (r) => {
-    if (r.url().endsWith(`/api/art/islas/3d/${LIGHTHOUSE_PLACE_ID}.glb`))
+    if (r.url().endsWith(`/art/islas/3d/${LIGHTHOUSE_PLACE_ID}.glb`))
       glb.push(String(r.status()));
   });
   const errors = await openMar(page, `?cerca=${LIGHTHOUSE_PLACE_ID}`);

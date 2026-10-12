@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { CALITAS_PLACE_ID, LIGHTHOUSE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { Group, Mesh, MeshLambertMaterial, SphereGeometry } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { repoRoot } from '../../../lib/barco/load';
 import { worlds } from '../../../lib/mundo/demo-world';
 import { DECOR_MODELS, DECOR_SIZE, marWorld } from './compact';
@@ -18,6 +18,8 @@ import {
   islandScale,
   islandStates,
   loadIslandManifest,
+  loadIslandModels,
+  loadPlaceManifests,
   parseIslandManifest,
 } from './island-models';
 import { MODEL_TUNING, ModelStore } from './models';
@@ -204,19 +206,31 @@ describe('el manifiesto de las islas', () => {
     expect(parseIslandManifest(null).size).toBe(0);
   });
 
-  it('sin manifiesto (204 o error de red), ninguna isla con modelo', async () => {
-    expect((await loadIslandManifest(async () => new Response(null, { status: 204 }))).size).toBe(
-      0,
-    );
-    expect(
-      (
-        await loadIslandManifest(async () => {
-          throw new Error('sin red');
-        })
-      ).size,
-    ).toBe(0);
+  it('sin manifiesto (404 del arte estático o error de red), ninguna isla con modelo y la consola limpia', async () => {
+    // El arte es estático (plan 027 T261): lo que falta responde 404, no 204.
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const missing = async () => new Response('Not Found', { status: 404 });
+      expect((await loadIslandManifest(missing)).size).toBe(0);
+      expect((await loadPlaceManifests(undefined, missing)).size).toBe(0);
+      expect((await loadIslandModels(missing)).size).toBe(0);
+      expect(
+        (
+          await loadIslandManifest(async () => {
+            throw new Error('sin red');
+          })
+        ).size,
+      ).toBe(0);
+      expect(error).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore();
+      warn.mockRestore();
+    }
     const ok = await loadIslandManifest(async (url) => {
-      expect(url).toBe(`${ISLAND_MODELS_URL}/manifest.json?optional=1`);
+      // Sin `?optional=1`: un host estático no distingue lo opcional.
+      expect(url).toBe(`${ISLAND_MODELS_URL}/manifest.json`);
       return new Response(JSON.stringify(manifest), { status: 200 });
     });
     expect([...ok.keys()]).toEqual([...entries.keys()]);

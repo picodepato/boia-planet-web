@@ -36,7 +36,7 @@ async function snap(page: Page, name: string) {
 test('cerca de la Isla de Halloween se ve su modelo de Blender', async ({ page }) => {
   const glb: string[] = [];
   page.on('response', (r) => {
-    if (r.url().endsWith(`/api/art/islas/3d/${HALLOWEEN_PLACE_ID}.glb`)) glb.push(String(r.status()));
+    if (r.url().endsWith(`/art/islas/3d/${HALLOWEEN_PLACE_ID}.glb`)) glb.push(String(r.status()));
   });
   const errors = await openMar(page, `?cerca=${HALLOWEEN_PLACE_ID}`);
   await expect
@@ -58,7 +58,7 @@ test('de noche la calabaza brilla (captura)', async ({ page }) => {
 });
 
 test('sin el GLB, la Isla de Halloween se queda con la composición a mano', async ({ page }) => {
-  await page.route(`**/api/art/islas/3d/${HALLOWEEN_PLACE_ID}.glb`, (r) =>
+  await page.route(`**/art/islas/3d/${HALLOWEEN_PLACE_ID}.glb`, (r) =>
     r.fulfill({ status: 404, body: '' }),
   );
   const errors = await openMar(page, `?cerca=${HALLOWEEN_PLACE_ID}`);

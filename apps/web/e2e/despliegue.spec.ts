@@ -5,67 +5,81 @@ import { fileURLToPath } from 'node:url';
 import { openTickets, pastHero } from './hero-helpers';
 
 /**
- * Lo que necesita el despliegue en Vercel (T30, D-04, D-16), contra el build
- * de producción de la suite (`next build` + `next start`, sin variables de
- * entorno): `/api/art` sirve el arte de `art/` y la función lleva en su traza
- * todo `art/` (en Vercel sólo existe lo trazado); sin clave de PostHog no sale
- * ninguna petición de analítica.
+ * Lo que necesita el despliegue (T30, D-04, D-16; plan 027 T261), contra el
+ * build de producción de la suite (`next build` + `next start`, sin variables
+ * de entorno): el arte de `art/` se sirve como archivos estáticos desde `/art`
+ * (copiados a `public/art/` por `scripts/copy-art.mjs`, los mismos en Vercel y
+ * en Cloudflare), las URL `/api/art/...` viejas siguen respondiendo, los
+ * vídeos van por trozos y sin clave de PostHog no sale ninguna petición de
+ * analítica.
  */
 
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ART = path.resolve(WEB, '../../art');
-const NFT = path.join(WEB, '.next/server/app/api/art/[...path]/route.js.nft.json');
+const COPY = path.join(WEB, 'public', 'art');
+/** Lo que se sirve (scripts/copy-art.mjs); el resto de art/ son fuentes de Blender. */
+const SERVED = new Set(['.json', '.png', '.webp', '.glb', '.mp4']);
 
-/** Ruta relativa a `art/` con `/`, también en Windows (donde `path.relative` usa `\`). */
-const fromArt = (p: string) => path.relative(ART, p).split(path.sep).join('/');
+/** Ruta relativa a `base` con `/`, también en Windows (donde `path.relative` usa `\`). */
+const from = (base: string, p: string) => path.relative(base, p).split(path.sep).join('/');
 
-/** Todos los archivos de `art/`, relativos a `art/`. */
-function artFiles(dir = ART): string[] {
+/** Todos los archivos bajo `base`, relativos a `base`. */
+function filesUnder(base: string, dir = base): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
-    return e.isDirectory() ? artFiles(p) : [fromArt(p)];
+    return e.isDirectory() ? filesUnder(base, p) : [from(base, p)];
   });
 }
 
-const files = artFiles();
+const files = filesUnder(ART).filter((f) => SERVED.has(path.extname(f).toLowerCase()));
 const manifests = files.filter((f) => path.basename(f) === 'manifest.json');
 /** Lo que el despliegue no puede perder: los dos mundos, la entrada y el barco. */
 const REQUIRED = ['mundos/arcilla/', 'mundos/acuarela/', 'intro/', 'barco/'];
+const url = (f: string) => `/art/${f.split('/').map(encodeURIComponent).join('/')}`;
 
-test('la función /api/art lleva todo art/ en su traza', () => {
+test('public/art/ es un espejo exacto de lo servible de art/', () => {
   test.skip(test.info().project.name !== 'desktop', 'una vez basta');
-  const nft = JSON.parse(readFileSync(NFT, 'utf8')) as { files: string[] };
-  const traced = new Set(
-    nft.files
-      .map((f) => path.resolve(path.dirname(NFT), f))
-      .filter((f) => f.startsWith(ART + path.sep))
-      .map(fromArt),
-  );
   for (const prefix of REQUIRED) {
     expect(
       files.some((f) => f.startsWith(prefix)),
       `hay arte en art/${prefix}`,
     ).toBe(true);
   }
-  expect(files.filter((f) => !traced.has(f))).toEqual([]);
+  const copied = new Set(filesUnder(COPY));
+  expect(files.filter((f) => !copied.has(f))).toEqual([]);
+  expect([...copied].filter((f) => !files.includes(f))).toEqual([]);
+  for (const f of manifests) {
+    expect(readFileSync(path.join(COPY, f)).equals(readFileSync(path.join(ART, f))), f).toBe(true);
+  }
 });
 
-test('/api/art sirve cada manifiesto y una imagen de cada parte esencial', async ({ request }) => {
+test('/art sirve cada manifiesto y una imagen de cada parte esencial', async ({ request }) => {
   test.skip(test.info().project.name !== 'desktop', 'una vez basta');
   for (const m of manifests) {
-    const res = await request.get(`/api/art/${m}`);
+    const res = await request.get(url(m));
     expect(res.status(), m).toBe(200);
-    expect(res.headers()['content-type'], m).toBe('application/json');
+    expect(res.headers()['content-type'], m).toContain('application/json');
     expect(res.headers()['cache-control'], m).toContain('s-maxage');
   }
   for (const prefix of REQUIRED) {
     const png = files.find((f) => f.startsWith(prefix) && f.endsWith('.png'))!;
-    const res = await request.get(`/api/art/${png.split('/').map(encodeURIComponent).join('/')}`);
+    const res = await request.get(url(png));
     expect(res.status(), png).toBe(200);
     expect(res.headers()['content-type'], png).toBe('image/png');
   }
-  // Fuera de art/ o con otra extensión, no.
-  expect((await request.get('/api/art/..%2Fpackage.json')).status()).toBe(400);
+  // Lo que falta es un 404 (un host estático no da 204; el motor lo trata como «no hay»).
+  expect((await request.get('/art/islas/3d/no-existe.glb')).status()).toBe(404);
+  // Las URL de antes del plan 027 siguen sirviendo lo mismo.
+  expect((await request.get(`/api/art/${manifests[0]}`)).status()).toBe(200);
+});
+
+test('los vídeos del arte se sirven por trozos (Safari pide 206)', async ({ request }) => {
+  test.skip(test.info().project.name !== 'desktop', 'una vez basta');
+  const mp4 = files.find((f) => f.endsWith('.mp4'))!;
+  const res = await request.get(url(mp4), { headers: { range: 'bytes=0-15' } });
+  expect(res.status(), mp4).toBe(206);
+  expect(res.headers()['content-range'], mp4).toMatch(/^bytes 0-15\//);
+  expect((await res.body()).length).toBe(16);
 });
 
 test('sin clave de PostHog no sale ninguna petición de analítica', async ({ page }) => {
