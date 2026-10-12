@@ -13,7 +13,7 @@ Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-dobl
 ## Tasks
 
 ## T266 — Expiry reminders and keeping scheduled workflows alive
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -27,7 +27,7 @@ Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-dobl
 - Outcome:
 
 ## T267 — CI checks: Worker size budget and commit author
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -38,12 +38,20 @@ Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-dobl
   - unit tests for the author check (all allowed; one foreign author; empty range; first push with `before` all zeros) → pass
   - `pnpm cf:measure` locally → exit 0 and the size limit check is exercised by a unit test (over budget, too many files, file too large)
   - Test command → exit 0
-- Outcome:
+- Outcome: `cf-size.yml` (cf:measure on Linux, limits incl. 20k files / 25 MiB) and `commit-author.yml` (`pnpm check:authors`, allowlist in `apps/web/scripts/check-authors.mjs`); 1e9efa2
 
 ## Decisions
 - 2026-10-12: Only what needs no account, secret or money is in this plan; panel settings, new secrets (backup, Brevo key), 2FA and similar go to `plans/seguridad-pendiente.md`, offered to Álvaro when the next plan starts (Álvaro)
+- 2026-10-12 T267: two workflows, `cf-size.yml` (push/PR/manual, ubuntu-24.04, 15 min) and `commit-author.yml`, both `contents: read`; cf-size reuses the hoisted copy on Linux, pnpm from `packageManager`, a test keeps it equal to `PNPM_VERSION` in DESPLIEGUE
+- 2026-10-12 T267: `limitProblems()` exported from `cf-measure.mjs` with Spanish messages and `::error::` lines; allowlist by email: `admin@boiaplanet.net` + picodepato's GitHub noreply (web merges); zero/forced `before` → check only `after`
+- 2026-10-12 T266: `recordatorios.yml` runs weekly (Monday), hidden markers dedupe so the monthly item still fires once a month; data/script/tests in `apps/web/scripts/` (`caducidades.json`, `recordatorios.mjs`) because vitest only collects `apps/*`; past an expiry it keeps warning until the date is updated
+- 2026-10-12 T266: `keepalive-workflows` job (`actions: write`) in all 4 scheduled workflows re-enables active or inactivity-disabled workflows, leaves manually disabled ones; that "enable" resets the 60-day count is community practice, not documented by GitHub
 
 ## Proposals (new scope)
 
 ## Log
 - 2026-10-12: plan written and approved in session (Álvaro: "lanza ahora todas las que puedas hacer tú solo")
+- 2026-10-12 23:45 T266 launched (attempt 1, opus), agent a75bb588ae65c9c79
+- 2026-10-12 23:45 T267 launched (attempt 1, opus), agent a79477a651e288365
+- 2026-10-12 23:53 T267 done, merged 1e9efa2
+- 2026-10-12 23:58 T266 conflict in package.json with T267; sent back to its agent
