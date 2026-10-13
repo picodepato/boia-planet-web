@@ -89,7 +89,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: weather scheduler (30 s every ~4 min, no minigames), levante drift, storm with rain/flashes/thunder, calima haze, ?clima= override; cf 2,201 KiB — 9028c69
 
 ## T269 — Big waves as ramps and the "salto mortal"
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -101,7 +101,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests: spawner timing and placement ahead of the boat, crossing detection, flip only with turbo, nothing during minigames → pass
   - dev override `?ola=1` spawns a swell right ahead
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
-- Outcome:
+- Outcome: swells every 60–120 s as ramps, flip with turbo, secret achievement salto-mortal, ?ola=1; audit made the wave read clearly, no swells in map/Entradas voyage, no per-frame allocations; sonnet + Opus audit — 13fc7ca
 
 ## T270 — Characters in the water: thieving seagull, dancing crab, the lost tourist
 - Status: running (attempt 1)
@@ -119,7 +119,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome:
 
 ## T271 — Boat toys: the horn and the napping boat
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -197,10 +197,12 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: T277 audit: viewer video follows plan 026 (attributes before src, preload none, unload on nav), viewer captures its keys so /mar does not steer underneath, sound choice carries to the next clip (T277 audit)
 - 2026-10-13: T268: busy = race or any minigame + 20 s calm after; no repeat of the same episode; levante 8 u/s west; flash max 35 % to lavender; edited mar-client.tsx beyond Scope to wire it (T268)
 - 2026-10-13: T278: the real Admin now signs in typing the Carnet 000 account email + password + TOTP ("000" shortcut only in local demo), because no server route may hold the service key (T278)
+- 2026-10-13: T269: swell every 60–120 s, 24 s life; flip only with turbo (not the Entradas voyage); no swells in map view or during the Entradas voyage; reduced motion: small jump, no spin (T269 + audit)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-13: Try on a phone: flip and camera feel at real frame rate (headless could not trigger it) (T269 audit)
 - 2026-10-13: Defence in depth: ~20 private SECURITY DEFINER functions trust p_user from their public wrapper; add p_user = auth.uid() checks. TRASPASO ~405 still mentions typing 000 for the admin email; mark the SECURITY DEFINER item done in seguridad-pendiente (T278)
 - 2026-10-13: admin-fotos.spec.ts has the same untranslated island-name line galeria.spec.ts had; the 4 real photos have no srcset (~260 KB lazy on phones) (T277 audit)
 - 2026-10-13: SECURITY before switching accounts on: `admin_sign_in_email` is callable by anon and returns the Carnet 000 account email; SECURITY DEFINER functions in public (`admin_sign_in_email`, `discount_code_for`, `radio_reorder`, `radio_set_first`) need a review (T276)
@@ -229,3 +231,5 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13 T269 launched (attempt 1, sonnet), agent a893c7855c7d8fe56
 - 2026-10-13 T269 sonnet done (0f97849). Opus audit launched, agent afd51daa15d6ea5c3
 - 2026-10-13 T278 done, integrated 4518539
+- 2026-10-13 T270 launched (attempt 1, fable), agent a017190b1102de517
+- 2026-10-13 T269 audit done (dd4b97c), integrated 13fc7ca
