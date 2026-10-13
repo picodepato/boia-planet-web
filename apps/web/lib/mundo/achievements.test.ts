@@ -2,6 +2,7 @@ import type { WorldEvent } from '@boia/engine';
 import {
   type AchievementDefinition,
   type BoiaRepository,
+  SAMPLE_ACHIEVEMENTS,
   MemoryStorage,
   createLocalRepository,
   createMemberRepository,
@@ -16,6 +17,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ACHIEVEMENT_READY_BODY,
   type AchievementSignal,
+  SALTO_MORTAL_ENCOUNTER,
   TIME_PLAYED_TICK_S,
   WORLD_TRIGGER_ALIASES,
   achievementFacts,
@@ -380,11 +382,30 @@ it('T100: WhatsApp invitation completes once, reward is claimed once after reloa
   expect(await again.progress.balances()).toMatchObject({ points: 300, coins: 50 });
 });
 
+it('T269: crossing a big wave with turbo completes «Salto mortal» once, and it is hidden', async () => {
+  const repo = browser()();
+  const def = (await repo.content.list('achievements')).find((d) => d.id === 'salto-mortal');
+  expect(def?.secret).toBe(true);
+  const signal: AchievementSignal = {
+    trigger: 'complete_encounter',
+    encounter: SALTO_MORTAL_ENCOUNTER,
+  };
+  expect((await recordSignal(repo, signal)).map((n) => n.id)).toContain('logro:salto-mortal');
+  expect(await recordSignal(repo, signal)).toEqual([]);
+  expect((await repo.progress.claimAchievement('salto-mortal')).claimed).toBe(true);
+});
+
 it('T100/T153: only the sketch-boat and the Cañón storm achievements are hidden; old entitlements survive', async () => {
   const repo = browser()();
   const hidden = (await repo.content.list('achievements')).filter((d) => d.secret);
   // T153 (§9 of the Cañón design): «Ojo del huracán» is the second hidden one.
-  expect(hidden.map((d) => d.id)).toEqual(['canon-tormenta', 'secretos']);
+  // Plan 029 adds more hidden ones (T269 «Salto mortal»…): they are read from the catalogue.
+  expect(hidden.map((d) => d.id).sort()).toEqual(
+    SAMPLE_ACHIEVEMENTS.filter((d) => d.secret)
+      .map((d) => d.id)
+      .sort(),
+  );
+  expect(hidden.map((d) => d.id)).toEqual(expect.arrayContaining(['canon-tormenta', 'secretos']));
   expect(hidden.find((d) => d.id === 'secretos')).toMatchObject({
     cosmeticKey: 'barco-boceto-lapiz',
   });

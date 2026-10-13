@@ -4,6 +4,43 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T269: Olas grandes como rampas y el «salto mortal»
+
+**Qué existe**
+- `packages/engine/src/swell/index.ts` (`@boia/engine/swell`): reloj puro `SwellClock` con el azar inyectado. Cada 60-120 s de mar libre (con el barco en marcha) sale una ola a `max(700 u, 5 s de marcha)` por delante, con la cresta de cara al barco; avanza hacia él a 40 u/s y vive 24 s. `crossesSwell` detecta el cruce (también con barco parado: la cresta avanza hacia él y el mar da la vuelta). Eventos `spawn`, `cross {flip}` y `gone`. Nada durante partidas: usa el mismo `busy` del tiempo de T268 (`gameBusy` en `mar3d.ts`: Cañón, Castillo, carrera o minijuego abierto, más 15 s de calma después; además no en vuelo ni en cambio de mundo).
+- `BoatJump` (`circuit/jump.ts`): `JumpSpec.flip` y `flipAngle(now)`: vuelta entera de campana (proa arriba) durante el vuelo. Las rampas de carrera no cambian.
+- `engine/swell.ts`: `SwellView`, la ola dibujada (malla baja unitaria, azul abajo, espuma blanca arriba, cara suave hacia el barco). Se pinta en su copia más cercana y se esconde en el mapa.
+- `mar3d.ts`: `stepSwell` / `launchFromSwell` / `placeSwellView` / `startSwell`; cruzar lanza el barco con el `BoatJump` existente y salpica; con turbo (`turboLeft > 0`) la vuelta; cae con el chapuzón de siempre. Con `prefers-reduced-motion`: salto bajo (14 u) y sin giro, el logro cuenta igual. Atributo `data-ola` del lienzo: `no`, `sube`, `salto`, `mortal`.
+- Logro `salto-mortal` («Salto mortal», oculto, 60 puntos + 30 monedas, `muestra`, P24) en `packages/store/src/sample/progress.ts`, por `complete_encounter` `salto-mortal` (`SALTO_MORTAL_ENCOUNTER` en `lib/mundo/achievements.ts`); `mar-client.tsx` lo manda al cruzar con turbo. Sin sello del Carnet. Las pistas de la boia `boia-secretos` son de T274.
+- Override: `/mar?ola=1` trae una ola justo delante, ya levantada.
+
+**Comandos**
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 309 archivos, 2746 pasan, 1 saltado
+- `sh tools/spec/checks.sh` → exit 0
+- `pnpm lint` → exit 0; `pnpm typecheck` → exit 0; `pnpm build` → exit 0
+- `pnpm cf:measure` → 2,198 KiB gzip (límite 2,800)
+- A mano en Chromium headless (swiftshader): `?ola=1`, la ola sube, el barco la cruza con turbo, `data-ola=mortal` y sale el aviso «Salto mortal».
+
+**Pendiente**
+- Las cifras (tiempos, alturas, premio del logro) son `muestra`.
+- La sensación del giro y de la cámara a 60 fps en un móvil de verdad la tiene que mirar Álvaro (las capturas headless van a pocos fotogramas).
+
+**Probar a mano**
+- `/mar?ola=1`: la ola se levanta justo delante; navegar contra ella: el barco salta y salpica.
+- Lo mismo con turbo (botón o `T`): vuelta entera en el aire y aviso del logro «Salto mortal» (en el menú, Logros).
+- Esperar 1-2 min de mar libre sin `?ola`: sale sola, y no sale en carreras ni minijuegos.
+- Con «reducir movimiento» del sistema: salto pequeño y sin giro.
+
+**Auditoría (Opus)**
+- Rampas y carrera sin cambios: `JumpSpec.flip` es opcional y `jumpOf`/`rampsOf` nunca lo ponen (`flipAngle` = 0 en las rampas). Pruebas de carrera, rampas, HUD del circuito y turbo-rampas: 9 archivos, 70 pasan.
+- La ola se leía como una banda pálida (capturas 1280×720 y 360×640 con `?ola=1`). Ahora: más alta (`SWELL_HEIGHT` 3,4, medio ancho 6), seno oscuro al pie, cara verde azulada que aclara hacia arriba con vetas, labio de espuma blanca dentada que se inclina hacia el barco, línea de espuma al pie, opaca por dentro; sin luces (con la luz del atardecer se volvía rosa). Al cruzarla o irse se hunde en 0,6 s (`settle`) en vez de desaparecer de golpe. Mirado en capturas en los dos tamaños: se ve unos segundos antes como ola grande.
+- Vuelta mirada en capturas (forzando la vuelta sólo en local, sin commit): gira entera sobre el eje lateral, cae nivelado; la cámara sólo sube y baja con la altura del salto, no gira.
+- Sin olas (y la que haya se va) también en la vista de mapa y durante el viaje de «Entradas» (antes sí: un salto en mitad de la compra, y en el mapa la ola no se ve). El cambio de mundo, el vuelo y las partidas ya contaban.
+- Si el barco ya está en el aire (una rampa) al cruzar la ola, no hay salto ni vuelta: antes se mandaba igual el logro sin haber dado la vuelta; ahora se avisa como `gone`.
+- Sin basura por fotograma: `SwellClock.step` devuelve la misma lista vacía si no pasa nada, la cresta de antes y el cruce no crean objetos, y `mar3d` reutiliza el objeto del barco (prueba nueva).
+- Premio: el logro se completa una vez (`complete_encounter`), las monedas sólo van con él. El tiempo de T268 sigue usando `gameBusy` igual que antes (pruebas del tiempo pasan).
+- Tras la auditoría: vitest → exit 0, 309 archivos, 2746 pasan, 3 saltados; `checks.sh`, `lint`, `build`, `typecheck` → exit 0; `pnpm cf:measure` → 2,201 KiB gzip (límite 2,800).
+
 ## 2026-10-13 — plan 029 T278: Seguridad de la base: funciones SECURITY DEFINER cerradas antes de encender las cuentas
 
 **Qué existe**

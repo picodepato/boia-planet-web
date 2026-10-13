@@ -84,3 +84,19 @@ describe('rampas de salto', () => {
     expect(jump.tick(25)).toEqual([]);
   });
 });
+
+describe('giro de campana (T269)', () => {
+  it('con `flip` da la vuelta entera en el vuelo; sin él, nunca gira', () => {
+    const flip = new BoatJump();
+    flip.launch('ola', { height: 80, duration: 1.5, flip: true }, 10);
+    expect(flip.flipAngle(10)).toBe(0);
+    expect(flip.flipAngle(10.75)).toBeGreaterThan(Math.PI * 0.9);
+    expect(flip.flipAngle(10.75)).toBeLessThan(Math.PI * 1.1);
+    expect(flip.flipAngle(11.5)).toBeCloseTo(Math.PI * 2);
+    const plain = new BoatJump();
+    plain.launch('ola', { height: 38, duration: 1 }, 10);
+    expect(plain.flipAngle(10.5)).toBe(0);
+    flip.tick(11.6);
+    expect(flip.flipAngle(11.6)).toBe(0);
+  });
+});

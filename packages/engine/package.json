@@ -15,7 +15,8 @@
     "./headless": "./src/headless.ts",
     "./streaming": "./src/streaming.ts",
     "./minigames": "./src/minigames/index.ts",
-    "./weather": "./src/weather/index.ts"
+    "./weather": "./src/weather/index.ts",
+    "./swell": "./src/swell/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

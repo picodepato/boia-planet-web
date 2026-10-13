@@ -341,6 +341,18 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
+    // Plan 029 T269: una ola grande cruzada con turbo da la vuelta entera. Premio muestra (P24).
+    id: 'salto-mortal',
+    title: 'Salto mortal',
+    description: 'Cruza una ola grande con turbo y da la vuelta en el aire.',
+    trigger: 'complete_encounter',
+    triggerParams: { encounter: 'salto-mortal' },
+    points: 60,
+    coins: 30,
+    secret: true,
+    sample: true,
+  },
+  {
     // Las botellas sólo están en /juego (D-22; catálogo, punto 5).
     id: 'botellas-3',
     title: 'Correo del mar',

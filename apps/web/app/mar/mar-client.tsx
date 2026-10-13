@@ -13,6 +13,7 @@ import {
   readRecord,
 } from '@boia/engine/circuit';
 import { MINIGAME_REGISTRY } from '@boia/engine/minigames';
+import { swellParam } from '@boia/engine/swell';
 import { weatherParam } from '@boia/engine/weather';
 import {
   type MissionEvent,
@@ -57,7 +58,9 @@ import type { ShipCatalog } from '../../lib/barco/catalog';
 import { dressingFor } from '../../lib/barco/dressing';
 import type { ShipLook } from '../../lib/barco/shop-model';
 import {
+  SALTO_MORTAL_ENCOUNTER,
   TIME_PLAYED_TICK_S,
+  emitSignal,
   onAchievementNotices,
   recordBuoy,
   recordSignal,
@@ -1388,6 +1391,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // El tiempo (T268): sin episodios en una carrera ni con un minijuego abierto.
         busy: () => (raceRef.current?.race.active ?? false) || minigameOpenRef.current,
         onWeather: weatherSound,
+        // Las olas grandes (T269): cruzarlas con turbo da la vuelta entera y el logro.
+        onSwell: (e) => {
+          if (e.type === 'cross' && e.flip) {
+            void emitSignal(gameRepository(), {
+              trigger: 'complete_encounter',
+              encounter: SALTO_MORTAL_ENCOUNTER,
+            });
+          }
+        },
       });
       engineRef.current = engine;
       engine.setShipDressing(dressingFor(want.equipped));
@@ -1427,6 +1439,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       // `?clima=levante|tormenta|calima` (T268): ese episodio, ya.
       const clima = weatherParam(window.location.search);
       if (clima) engine.startWeather(clima);
+      // `?ola=1` (T269): una ola grande justo delante.
+      if (swellParam(window.location.search)) engine.startSwell();
       setPhase(mission?.phase ?? null);
       setStatus('ready');
       // Lo descubierto en otras visitas: sus islas ofrecen «Explorar la isla»

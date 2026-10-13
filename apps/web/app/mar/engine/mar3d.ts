@@ -31,6 +31,7 @@ import {
 } from '@boia/engine/ui';
 import { type QualityTier, detectQuality } from '@boia/engine/streaming';
 import { type WeatherEvent, type WeatherKind, WeatherClock } from '@boia/engine/weather';
+import { type SwellEvent, SwellClock } from '@boia/engine/swell';
 import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
 import { CASTLE_PLACE_ID, type WorldConfig, type WorldObject } from '@boia/world';
 import type { Color, Material, ShaderMaterial } from 'three';
@@ -117,6 +118,7 @@ import { Kit, clamp01, lerp, rng, seedOf, smooth } from './kit';
 import { DECOR_MODELS, DECOR_SOLIDS, type SeaRoute, decorSpots, seaRoute } from './compact';
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
+import { SwellView } from './swell';
 import { Rain, WEATHER_LOOK, WIND_DIR, rainCount, weatherFog, weatherMood } from './weather';
 import { Glows, buoy, crag, rock } from './props';
 import { BROWSER_OBJECT_ART, artBox, hasUploadedArt } from './object-art';
@@ -187,10 +189,7 @@ import {
   arenaFrame,
   vortexSpot,
 } from './defense-arena';
-import {
-  DEFAULT_DEFENSE_OVERLAYS,
-  type DefenseOverlayPrefs,
-} from './defense-overlays';
+import { DEFAULT_DEFENSE_OVERLAYS, type DefenseOverlayPrefs } from './defense-overlays';
 import { DefenseView } from './defense-view';
 import {
   type Circle,
@@ -319,6 +318,11 @@ export interface Mar3DOptions {
   busy?(): boolean;
   /** Entra, se va o truena un episodio del tiempo (T268). Para el sonido. */
   onWeather?(e: WeatherEvent): void;
+  /**
+   * Una ola grande (T269): se levanta, se va o el barco la cruza (`flip`: con
+   * turbo, da la vuelta entera: el «salto mortal»). Para el logro.
+   */
+  onSwell?(e: SwellEvent): void;
 }
 
 /** Dónde está y hacia dónde mira un barco (u de motor, rad): el fantasma, la salida. */
@@ -576,6 +580,13 @@ export class Mar3D {
    */
   private readonly weather = new WeatherClock();
   private readonly rain = new Rain();
+  /** Las olas grandes que lanzan el barco (plan 029 T269). */
+  private readonly swell = new SwellClock();
+  private readonly swellView = new SwellView();
+  /** Dónde estaba el barco el fotograma pasado (u), para ver si cruzó la ola. */
+  private readonly swellPrev = { x: 0, y: 0, ok: false };
+  /** El barco de este fotograma para el reloj de las olas (reutilizado: sin basura por fotograma). */
+  private readonly swellBoat = { x: 0, y: 0, heading: 0, speed: 0, maxSpeed: 1, turbo: false };
   private shown: Mood;
   /** Se pintó el tiempo el fotograma pasado (al irse, se vuelve a pintar el momento limpio). */
   private weatherShown = false;
@@ -818,6 +829,8 @@ export class Mar3D {
     this.wings = new Wings(SHIP_LENGTH / 3);
     this.boat.group.add(this.wings.group);
     this.scene.add(this.sparks.mesh, this.splash.group, this.flightClouds.group);
+    this.scene.add(this.swellView.group);
+    this.opts.canvas.dataset.ola = 'no';
 
     const glows: Glows[] = [];
     const shores = this.buildPlaces(glows);
@@ -926,6 +939,21 @@ export class Mar3D {
     return this.weather.state.kind;
   }
 
+  /** Trae ya una ola grande delante del barco (el parámetro de desarrollo `?ola=1`, T269). */
+  startSwell(): void {
+    const s = this.ship;
+    const speed = Math.max(shipSpeed(s), this.cfg.maxSpeed * 0.6);
+    this.swellEvents(this.swell.spawn({ x: s.x, y: s.y, heading: s.heading, speed }));
+    this.swellPrev.x = s.x;
+    this.swellPrev.y = s.y;
+    this.swellPrev.ok = true;
+  }
+
+  /** ¿Hay una partida (carrera, minijuego, el Cañón, el Castillo…)? Nada nuevo mientras. */
+  private get gameBusy(): boolean {
+    return !!this.survivors || !!this.defense || (this.opts.busy?.() ?? false);
+  }
+
   private weatherEvents(events: readonly WeatherEvent[]): void {
     for (const e of events) {
       if (e.type === 'start') this.opts.canvas.dataset.clima = e.kind;
@@ -942,8 +970,7 @@ export class Mar3D {
   /** Avanza el tiempo: nada nuevo durante una partida (el Cañón, el Castillo, una carrera…). */
   private stepWeather(dt: number): void {
     this.weather.noFlash = this.reducedMotion || this.quality === 'baja';
-    const busy = !!this.survivors || !!this.defense || (this.opts.busy?.() ?? false);
-    const events = this.weather.step(dt, busy);
+    const events = this.weather.step(dt, this.gameBusy);
     if (events.length > 0) this.weatherEvents(events);
   }
 
@@ -1437,7 +1464,11 @@ export class Mar3D {
     // que haya ahí (la cubierta o, si hay toldo, el techo).
     const mx = -SHIP_LENGTH * MASCOT_BACK;
     const mz = SHIP_LENGTH * MASCOT_SIDE;
-    this.mascotSlot.position.set(mx, surfaceY(m.object, mx, mz) ?? this.boat.crewSlot.position.y, mz);
+    this.mascotSlot.position.set(
+      mx,
+      surfaceY(m.object, mx, mz) ?? this.boat.crewSlot.position.y,
+      mz,
+    );
     this.sternX = -SHIP_LENGTH / 2;
   }
 
@@ -1469,7 +1500,8 @@ export class Mar3D {
 
   /** Posición visible en px de la ventana, desde u del mundo o el barco interpolado. */
   screenPosition(
-    target: 'boat' | { x: number; y: number; height?: number } | { defense: { x: number; y: number } },
+    target:
+      'boat' | { x: number; y: number; height?: number } | { defense: { x: number; y: number } },
   ): { x: number; y: number } | null {
     let x: number, y: number, z: number;
     if (target === 'boat') {
@@ -1605,6 +1637,101 @@ export class Mar3D {
       this.opts.canvas.dataset.salto = 'aire';
       this.opts.onJump?.(j);
     }
+  }
+
+  /**
+   * Las olas grandes (T269): el reloj decide cuándo sale una delante del barco
+   * y si el barco la cruzó; cruzada, lanza el barco con el mismo salto visual
+   * de las rampas (con turbo, dando la vuelta entera). Nada en una partida.
+   */
+  private stepSwell(dt: number): void {
+    const s = this.ship;
+    const prev = this.swellPrev;
+    // Un salto grande de un fotograma al otro (cambio de mundo, viaje) no cruza nada.
+    const moved = Math.hypot(
+      wrapD(s.x - prev.x, this.periodU.w),
+      wrapD(s.y - prev.y, this.periodU.h),
+    );
+    if (!prev.ok || moved > 100 + this.cfg.maxSpeed * 3 * dt) {
+      prev.x = s.x;
+      prev.y = s.y;
+      prev.ok = true;
+    }
+    // Tampoco en vuelo, cambiando de mundo, en la vista de mapa (no se vería)
+    // ni en el viaje de «Entradas» (la compra va primero).
+    const busy =
+      this.gameBusy ||
+      this.flight !== null ||
+      this.voyage !== null ||
+      this.mapMode ||
+      this.switchingMode !== null;
+    const b = this.swellBoat;
+    b.x = s.x;
+    b.y = s.y;
+    b.heading = s.heading;
+    b.speed = shipSpeed(s);
+    b.maxSpeed = this.cfg.maxSpeed;
+    b.turbo = this.turboLeft > 0;
+    const events = this.swell.step(dt, busy, b, prev, this.periodU);
+    prev.x = s.x;
+    prev.y = s.y;
+    if (events.length > 0) this.swellEvents(events);
+  }
+
+  private swellEvents(events: readonly SwellEvent[]): void {
+    for (const e of events) {
+      const ds = this.opts.canvas.dataset;
+      if (e.type === 'spawn') ds.ola = 'sube';
+      else if (e.type === 'gone') ds.ola = 'no';
+      else if (this.launchFromSwell(e.flip)) ds.ola = e.flip ? 'mortal' : 'salto';
+      else {
+        // Ya en el aire (una rampa): ni salto ni vuelta, así que tampoco logro.
+        ds.ola = 'no';
+        this.opts.onSwell?.({ type: 'gone', swell: e.swell });
+        continue;
+      }
+      this.opts.onSwell?.(e);
+    }
+  }
+
+  /** El barco cruzó una ola: salta (si no vuela ya) y salpica en la cresta. */
+  private launchFromSwell(flip: boolean): boolean {
+    if (this.survivors || this.defense || this.flight) return false;
+    const shape = this.swell.jumpFor(flip, this.reducedMotion);
+    const events = this.jump.launch('ola', shape, this.time);
+    const bp = this.boat.group.position;
+    this.splash.burst(bp.x, bp.z, 0.8);
+    for (const j of events) {
+      this.opts.canvas.dataset.salto = 'aire';
+      this.opts.onJump?.(j);
+    }
+    return events.length > 0;
+  }
+
+  /** Pinta la ola grande de ahora (T269), en su copia más cercana al foco. */
+  private placeSwellView(t: number): void {
+    const w = this.swell.swell;
+    if (this.mapMode) {
+      this.swellView.hide();
+      return;
+    }
+    if (!w) {
+      this.swellView.settle(t);
+      return;
+    }
+    const cx = toScene(w.x);
+    const cz = toScene(w.y);
+    const x = this.wrapC.x + wrapD(cx - this.wrapC.x, this.periodS.w);
+    const z = this.wrapC.y + wrapD(cz - this.wrapC.y, this.periodS.h);
+    this.swellView.place(
+      x,
+      z,
+      Math.atan2(w.nx, w.ny),
+      toScene(w.halfLength),
+      this.swell.strength,
+      t,
+      this.reducedMotion,
+    );
   }
 
   /** Cae al agua: chapuzón alrededor del casco y un golpe de cámara. */
@@ -1839,8 +1966,14 @@ export class Mar3D {
     const counts = sv.view.weapons.counts();
     const visible = sv.view.weapons.counts(onScreen);
     for (const id of Object.keys(visible)) sv.weaponsSeen.add(id);
-    const armas = Object.entries(counts).map(([id, n]) => `${id}:${n}`).sort().join(' ');
-    const armasVista = Object.entries(visible).map(([id, n]) => `${id}:${n}`).sort().join(' ');
+    const armas = Object.entries(counts)
+      .map(([id, n]) => `${id}:${n}`)
+      .sort()
+      .join(' ');
+    const armasVista = Object.entries(visible)
+      .map(([id, n]) => `${id}:${n}`)
+      .sort()
+      .join(' ');
     const armasVistas = [...sv.weaponsSeen].sort().join(' ');
     if (ds.canonArmas !== armas) ds.canonArmas = armas;
     if (ds.canonArmasVista !== armasVista) ds.canonArmasVista = armasVista;
@@ -3232,6 +3365,7 @@ export class Mar3D {
       this.opts.onWorldEvent(e);
     }
     if (!this.survivors && !this.defense) this.landJump();
+    this.stepSwell(dt);
     this.modelClock += dt;
     if (this.modelClock >= MODEL_PLAN_S) {
       this.modelClock = 0;
@@ -3549,8 +3683,7 @@ export class Mar3D {
       follow = pose.follow * ab;
     }
     if (snap) this.focus.set(fx, 0, fz);
-    else
-      this.focus.lerp(tmpV.set(fx, 0, fz), lerp(1 - Math.exp(-dt * FOCUS_RATE), 1, follow));
+    else this.focus.lerp(tmpV.set(fx, 0, fz), lerp(1 - Math.exp(-dt * FOCUS_RATE), 1, follow));
     this.wrapC.set(this.focus.x - this.pan.x, this.focus.z - this.pan.y);
     // En la arena, la vuelta del planeta se hace alrededor del castillo: la
     // arena (más ancha que medio planeta) nunca se parte por el borde.
@@ -3683,6 +3816,7 @@ export class Mar3D {
         ? PLANE_ALT
         : toScene(movement ? movement.jumpHeight : this.jump.height(t));
     const { x, z, h } = this.placeShip(alpha);
+    this.placeSwellView(t);
     const speed = fl ? 0 : shipSpeed(s);
     const v01 = Math.min(1.4, speed / this.cfg.maxSpeed);
     const body = this.boat.body;
@@ -3705,7 +3839,7 @@ export class Mar3D {
       body.rotation.z =
         v01 * 0.07 +
         Math.sin(t * 2.1) * 0.025 +
-        (movement ? movement.jumpPitch : this.jump.pitch(t));
+        (movement ? movement.jumpPitch : this.jump.pitch(t) + this.jump.flipAngle(t));
     }
     this.wings.group.position.y = body.position.y;
     this.wings.group.rotation.copy(body.rotation);
@@ -3743,7 +3877,8 @@ export class Mar3D {
         reduced: this.reducedMotion,
         hidden: fl !== null || plane,
       });
-      if (this.opts.canvas.dataset.mascotaModelo !== this.tortuga.modelState) this.noteMascotModel();
+      if (this.opts.canvas.dataset.mascotaModelo !== this.tortuga.modelState)
+        this.noteMascotModel();
     } else if (this.mascot && 'modelState' in this.mascot) {
       if (this.opts.canvas.dataset.mascotaModelo !== this.mascot.modelState) this.noteMascotModel();
     }
@@ -3845,20 +3980,29 @@ export class Mar3D {
       const pl = df.run.placement(snap);
       const selId = df.run.selected;
       const sel = selId === null ? undefined : snap.towers.find((tw) => tw.id === selId);
-      df.view.update(snap, t, { x, z }, {
-        preview: pl
-          ? {
-              x: pl.x,
-              y: pl.y,
-              ok: pl.check.ok,
-              kind: pl.kind,
-              reason: pl.check.ok ? null : pl.check.reason,
-            }
-          : null,
-        selected: sel ? { x: sel.x, y: sel.y, kind: sel.kind, level: sel.level } : null,
-        target: snap.plane.target,
-      });
-      df.view.sky(dt, { x: this.arenaCastleSeen.x, z: this.arenaCastleSeen.y }, this.arenaZoom.value);
+      df.view.update(
+        snap,
+        t,
+        { x, z },
+        {
+          preview: pl
+            ? {
+                x: pl.x,
+                y: pl.y,
+                ok: pl.check.ok,
+                kind: pl.kind,
+                reason: pl.check.ok ? null : pl.check.reason,
+              }
+            : null,
+          selected: sel ? { x: sel.x, y: sel.y, kind: sel.kind, level: sel.level } : null,
+          target: snap.plane.target,
+        },
+      );
+      df.view.sky(
+        dt,
+        { x: this.arenaCastleSeen.x, z: this.arenaCastleSeen.y },
+        this.arenaZoom.value,
+      );
       if (t - df.seenAt >= 0.25 || t < df.seenAt) this.markArena(t);
     }
     if (this.survivors) {

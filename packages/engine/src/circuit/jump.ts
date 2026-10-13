@@ -15,6 +15,8 @@ export interface JumpSpec {
   height: number;
   /** s en el aire. */
   duration: number;
+  /** Da una vuelta entera de campana en el aire (el salto mortal de las olas grandes, T269). */
+  flip?: boolean;
 }
 
 export type JumpEvent =
@@ -95,6 +97,18 @@ export class BoatJump {
   pitch(now: number): number {
     const p = this.progress(now);
     return p === null ? 0 : 0.35 * (1 - 2 * p);
+  }
+
+  /**
+   * Giro de campana (rad, proa arriba positivo): de 0 a 2π durante el vuelo si
+   * el salto lleva `flip`, y 0 en los demás. Se suma al cabeceo; al caer ya
+   * dio la vuelta entera.
+   */
+  flipAngle(now: number): number {
+    const p = this.progress(now);
+    if (p === null || !this.spec?.flip) return 0;
+    const k = Math.min(1, Math.max(0, (p - 0.1) / 0.8));
+    return Math.PI * 2 * k * k * (3 - 2 * k);
   }
 
   /** Vuelve al agua sin chapuzón (cambio de mundo, teletransporte). */

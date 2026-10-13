@@ -73,6 +73,9 @@ export const TIME_PLAYED_COUNTER = 'tiempo-jugado-s';
 /** Cada cuánto se apunta el tiempo jugado. muestra */
 export const TIME_PLAYED_TICK_S = 15;
 
+/** Encuentro del logro «Salto mortal» (plan 029 T269): cruzar una ola grande con turbo. */
+export const SALTO_MORTAL_ENCOUNTER = 'salto-mortal';
+
 /** Texto del aviso al completar un logro (D-22, catálogo punto 9). muestra */
 export const ACHIEVEMENT_READY_BODY = t('achievements.notice.ready');
 
