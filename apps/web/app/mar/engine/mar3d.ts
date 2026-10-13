@@ -33,6 +33,14 @@ import { type QualityTier, detectQuality } from '@boia/engine/streaming';
 import { type WeatherEvent, type WeatherKind, WeatherClock } from '@boia/engine/weather';
 import type { SeagullEvent } from '@boia/engine/characters';
 import { type SwellEvent, SwellClock } from '@boia/engine/swell';
+import {
+  type HornVoice,
+  type NapEvent,
+  HornClock,
+  NapClock,
+  TOYS_TUNING,
+  hornVoice,
+} from '@boia/engine/toys';
 import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
 import { CASTLE_PLACE_ID, type WorldConfig, type WorldObject } from '@boia/world';
 import type { Color, Material, ShaderMaterial } from 'three';
@@ -120,6 +128,7 @@ import { DECOR_MODELS, DECOR_SOLIDS, type SeaRoute, decorSpots, seaRoute } from 
 import { C, type Mood, type MoodId, cloneMood, mixMood, moods } from './palette';
 import { Sky, curveMaterial, curveTree, planetUniforms } from './planet';
 import { SwellView } from './swell';
+import { ToysView, findPerch } from './toys';
 import { Rain, WEATHER_LOOK, WIND_DIR, rainCount, weatherFog, weatherMood } from './weather';
 import { Glows, buoy, crag, rock } from './props';
 import { BROWSER_OBJECT_ART, artBox, hasUploadedArt } from './object-art';
@@ -333,6 +342,12 @@ export interface Mar3DOptions {
    * turbo, da la vuelta entera: el «salto mortal»). Para el logro.
    */
   onSwell?(e: SwellEvent): void;
+  /** La bocina suena (T271), con la voz de este barco; `dance`: hace bailar a la Fiestera. */
+  onHorn?(voice: HornVoice, dance: boolean): void;
+  /** El capitán se duerme, ronca o despierta (T271). Para el sonido. */
+  onNap?(e: NapEvent): void;
+  /** ¿Hay una ficha u otra cosa abierta sobre el mar? Sin siesta mientras (T271). */
+  uiOpen?(): boolean;
 }
 
 /** Lo que pasa con los personajes del agua (plan 029 T270). */
@@ -609,6 +624,13 @@ export class Mar3D {
   /** Las olas grandes que lanzan el barco (plan 029 T269). */
   private readonly swell = new SwellClock();
   private readonly swellView = new SwellView();
+  /** Los juguetes del barco (plan 029 T271): la bocina y la siesta. */
+  private readonly nap = new NapClock();
+  private readonly horn = new HornClock();
+  private readonly toys = new ToysView();
+  /** Id del barco puesto (para su bocina), y la Boia Fiestera tal como se vio el último fotograma. */
+  private shipStyle: string | null = null;
+  private readonly fiestera = { x: 0, z: 0, present: false, dance: 0 };
   /** Dónde estaba el barco el fotograma pasado (u), para ver si cruzó la ola. */
   private readonly swellPrev = { x: 0, y: 0, ok: false };
   /** El barco de este fotograma para el reloj de las olas (reutilizado: sin basura por fotograma). */
@@ -856,6 +878,17 @@ export class Mar3D {
     this.boat.group.add(this.wings.group);
     this.scene.add(this.sparks.mesh, this.splash.group, this.flightClouds.group);
     this.scene.add(this.swellView.group);
+    // Los juguetes (T271) cuelgan del casco: cabecean con él; la proa se mide en el barco.
+    this.boat.body.add(this.toys.group);
+    this.toys.setPerch(
+      findPerch(
+        this.boat.body,
+        this.boat.body.children,
+        [this.toys.group, this.mascotSlot, this.boat.crewSlot, this.boat.sail, this.boat.captain],
+        this.boat.captain,
+        this.boat.crewSlot.position.y,
+      ),
+    );
     this.opts.canvas.dataset.ola = 'no';
 
     const glows: Glows[] = [];
@@ -1100,7 +1133,8 @@ export class Mar3D {
       heading: h,
       focus: { x: this.wrapC.x, z: this.wrapC.y },
       period: this.periodS,
-      busy,
+      // Con el capitán dormido (T271) no baja a robar: ya hay una gaviota en la proa.
+      busy: busy || this.toys.asleep,
       coins: this.opts.coins?.() ?? 0,
       reduced,
       hidden: flying || this.defense !== null || this.survivors !== null,
@@ -1130,6 +1164,103 @@ export class Mar3D {
     this.swellPrev.x = s.x;
     this.swellPrev.y = s.y;
     this.swellPrev.ok = true;
+  }
+
+  /**
+   * Pita (T271): la bocina de este barco; con tres seguidos cerca de la
+   * Fiestera (en el agua o ya a bordo, rescatada), ella baila.
+   */
+  honk(): boolean {
+    if (!this.inputEnabled || this.switcher.locked || this.survivors || this.defense) return false;
+    this.wakeToys();
+    const f = this.fiestera;
+    const b = this.boat.group.position;
+    const near =
+      this.crew !== null ||
+      (f.present && Math.hypot(f.x - b.x, f.z - b.z) <= TOYS_TUNING.nearFiesteraD);
+    const r = this.horn.honk(this.time, near);
+    if (!r.ok) return false;
+    if (r.dance) f.dance = TOYS_TUNING.danceS;
+    const ds = this.opts.canvas.dataset;
+    ds.bocina = String(Number(ds.bocina ?? 0) + 1);
+    this.opts.onHorn?.(hornVoice(this.shipStyle), r.dance);
+    return true;
+  }
+
+  /** `?siesta=N` (T271): s quieto hasta que el capitán se duerme. */
+  setNapAfter(s: number): void {
+    this.nap.napAfterS = s;
+  }
+
+  /** El jugador tocó algo: la cuenta de la siesta vuelve a cero y, si dormía, despierta. */
+  private wakeToys(): void {
+    this.napEvents(this.nap.input());
+  }
+
+  private napEvents(events: readonly NapEvent[]): void {
+    for (const e of events) {
+      const ds = this.opts.canvas.dataset;
+      if (e.type === 'sleep') {
+        this.toys.setSleeping(true, false);
+        ds.siesta = 'duerme';
+      } else if (e.type === 'gull') {
+        this.toys.landGull();
+      } else if (e.type === 'wake') {
+        this.toys.setSleeping(false, true);
+        ds.siesta = 'no';
+      }
+      this.opts.onNap?.(e);
+    }
+  }
+
+  /** Avanza la siesta (sólo con el barco quieto y nada abierto encima) y el baile de la Fiestera. */
+  private stepToys(dt: number): void {
+    const f = this.fiestera;
+    if (f.dance > 0) {
+      // Se acaba el baile, o se corta si ella ya no está (ni en el agua ni a bordo).
+      f.dance = f.present || this.crew ? Math.max(0, f.dance - dt) : 0;
+      this.opts.canvas.dataset.fiestera = f.dance > 0 ? 'baila' : 'no';
+    }
+    const blocked =
+      !this.inputEnabled ||
+      this.gameBusy ||
+      this.flight !== null ||
+      this.voyage !== null ||
+      this.mapMode ||
+      this.switcher.locked ||
+      this.runtime.dialogue() !== null ||
+      // La gaviota ladrona (T270) bajando, huyendo o riéndose: nadie se duerme.
+      this.seagull.visual !== 'no' ||
+      (this.opts.uiOpen?.() ?? false);
+    const still =
+      shipSpeed(this.ship) < TOYS_TUNING.stillBelow &&
+      this.keys.size === 0 &&
+      this.pointers.size === 0 &&
+      this.course === null;
+    this.napEvents(this.nap.step(dt, { still, blocked }));
+  }
+
+  /** La Fiestera en el agua: anota dónde está y devuelve los s de baile que le quedan. */
+  private fiesteraDance(x: number, z: number, present: boolean): number {
+    const f = this.fiestera;
+    f.x = x;
+    f.z = z;
+    f.present = present;
+    return f.dance;
+  }
+
+  /** El capitán dormido: cabeza caída, respirando, sin mirar a todos lados; al despertar da un brinco. */
+  private napCaptain(c: Object3D, t: number): void {
+    if (this.toys.asleep) {
+      c.rotation.y = 0;
+      c.rotation.z = 0.5 + (this.reducedMotion ? 0 : Math.sin(t * 1.6) * 0.05);
+    } else {
+      c.rotation.y = Math.sin(t * 1.3) * 0.25;
+      c.rotation.z = 0;
+    }
+    // Su altura de siempre en la cubierta, más el brinco del susto.
+    c.userData.baseY ??= c.position.y;
+    c.position.y = (c.userData.baseY as number) + this.toys.startleHop;
   }
 
   /** ¿Hay una partida (carrera, minijuego, el Cañón, el Castillo…)? Nada nuevo mientras. */
@@ -1624,9 +1755,10 @@ export class Mar3D {
 
   /** Pone el barco del 2D (su modelo de Blender) en lugar del provisional. */
   setShipModel(m: ShipModel): void {
+    this.shipStyle = m.id;
     const body = this.boat.body;
     for (const c of [...body.children]) {
-      if (c === this.boat.crewSlot || c === this.mascotSlot) continue;
+      if (c === this.boat.crewSlot || c === this.mascotSlot || c === this.toys.group) continue;
       body.remove(c);
       c.traverse((o) => (o as Mesh).geometry?.dispose());
     }
@@ -1653,6 +1785,8 @@ export class Mar3D {
       mz,
     );
     this.sternX = -SHIP_LENGTH / 2;
+    // La gaviota en la proa y las Zzz sobre la cubierta de este barco (T271).
+    this.toys.setPerch(findPerch(body, [m.object], [], null, this.boat.crewSlot.position.y));
   }
 
   setPassenger(on: boolean): void {
@@ -2507,6 +2641,7 @@ export class Mar3D {
     this.stickEl.remove();
     this.wildlifeMotion.removeEventListener('change', this.onWildlifeMotion);
     this.wildlife.dispose();
+    this.toys.dispose();
     this.seagull.dispose();
     this.crab?.dispose();
     this.guiri?.dispose();
@@ -2792,8 +2927,12 @@ export class Mar3D {
             labelY: 3,
             update: (v, t, _dt, present, px, pz, h) => {
               v.obj.visible = present;
-              v.obj.position.set(px, h + Math.abs(Math.sin(t * 3 + v.phase)) * 0.25, pz);
-              m.rotation.z = Math.sin(t * 3) * 0.15;
+              const dance = id === 'fiestera' ? this.fiesteraDance(px, pz, present) : 0;
+              // Bailando (T271): botes altos y giros; con movimiento reducido, sólo se menea.
+              const hop = dance > 0 && !this.reducedMotion ? Math.abs(Math.sin(t * 7)) * 0.9 : 0;
+              v.obj.position.set(px, h + Math.abs(Math.sin(t * 3 + v.phase)) * 0.25 + hop, pz);
+              m.rotation.z = Math.sin(t * (dance > 0 ? 9 : 3)) * (dance > 0 ? 0.3 : 0.15);
+              m.rotation.y = dance > 0 && !this.reducedMotion ? t * 6 : 0;
             },
           });
           break;
@@ -3259,6 +3398,7 @@ export class Mar3D {
 
   private readonly onDown = (e: PointerEvent) => {
     if (!this.inputEnabled || this.switcher.locked) return;
+    this.wakeToys();
     this.opts.canvas.setPointerCapture?.(e.pointerId);
     this.pointers.set(e.pointerId, {
       x: e.clientX,
@@ -3347,6 +3487,7 @@ export class Mar3D {
 
   private readonly onWheel = (e: WheelEvent) => {
     e.preventDefault();
+    this.wakeToys();
     const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     this.zoomBy(d * 0.0011);
   };
@@ -3355,6 +3496,7 @@ export class Mar3D {
     const t = e.target as HTMLElement | null;
     if (!this.inputEnabled || this.switcher.locked) return;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    this.wakeToys();
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
       e.preventDefault();
@@ -3364,6 +3506,7 @@ export class Mar3D {
     else if (k === '-' || k === '_') this.zoomBy(0.12);
     else if (k === 'm') this.toggleMap();
     else if (k === 't' || k === 'shift') this.turbo();
+    else if (k === 'h') this.honk();
     else if (k === ' ' || k === 'enter') {
       // A focused button or link keeps its own Enter/Space (the faro board sits near a dialogue, T168).
       if (t && (t.tagName === 'BUTTON' || t.tagName === 'A')) return;
@@ -3555,6 +3698,7 @@ export class Mar3D {
     }
     if (!this.survivors && !this.defense) this.landJump();
     this.stepSwell(dt);
+    this.stepToys(dt);
     this.modelClock += dt;
     if (this.modelClock >= MODEL_PLAN_S) {
       this.modelClock = 0;
@@ -4043,8 +4187,16 @@ export class Mar3D {
       this.boat.sail.rotation.y =
         Math.max(-0.5, Math.min(0.5, this.turnRate * 0.25)) + Math.sin(t * 0.9) * 0.05;
     }
-    if (this.boat.captain) this.boat.captain.rotation.y = Math.sin(t * 1.3) * 0.25;
-    if (this.crew) this.crew.position.y = Math.abs(Math.sin(t * 5)) * 0.08;
+    this.toys.update(t, dt, this.reducedMotion);
+    if (this.boat.captain) this.napCaptain(this.boat.captain, t);
+    if (this.crew) {
+      // La Fiestera a bordo; si baila (T271), salta y da vueltas en la cubierta.
+      const dancing = this.fiestera.dance > 0;
+      const still = this.reducedMotion;
+      this.crew.position.y = Math.abs(Math.sin(t * (dancing ? 8 : 5))) * (dancing && !still ? 0.45 : 0.08);
+      this.crew.rotation.y = dancing && !still ? t * 7 : 0;
+      this.crew.rotation.z = dancing ? Math.sin(t * 9) * 0.3 : 0;
+    }
     if (this.mascot) {
       this.mascot.update(t, dt, {
         waving: this.nearPlace(dt),

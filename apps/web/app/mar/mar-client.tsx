@@ -14,6 +14,7 @@ import {
 } from '@boia/engine/circuit';
 import { MINIGAME_REGISTRY } from '@boia/engine/minigames';
 import { swellParam } from '@boia/engine/swell';
+import { FIESTERA_BAILANDO_ENCOUNTER, napParam } from '@boia/engine/toys';
 import { weatherParam } from '@boia/engine/weather';
 import {
   SEAGULL_TUNING,
@@ -130,10 +131,14 @@ import {
   bump,
   chime,
   fanfare,
+  horn,
   installAudioLifecycle,
   plop,
   setAmbientWorld,
   setWeatherBed,
+  snore,
+  startle,
+  stopSnore,
   squawk,
   weatherSound,
   whoosh,
@@ -1477,6 +1482,25 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // El tiempo (T268): sin episodios en una carrera ni con un minijuego abierto.
         busy: () => (raceRef.current?.race.active ?? false) || minigameOpenRef.current,
         onWeather: weatherSound,
+        // La bocina y la siesta (T271): su sonido; tres pitidos junto a la Fiestera, el logro.
+        onHorn: (voice, dance) => {
+          horn(voice);
+          navigator.vibrate?.(15);
+          if (dance) {
+            void emitSignal(gameRepository(), {
+              trigger: 'complete_encounter',
+              encounter: FIESTERA_BAILANDO_ENCOUNTER,
+            });
+          }
+        },
+        onNap: (e) => {
+          if (e.type === 'snore') snore();
+          else if (e.type === 'wake') {
+            stopSnore();
+            startle();
+          }
+        },
+        uiOpen: () => !!sheetRef.current,
         // Los personajes del agua (T270): la gaviota mira el bolsillo, el cangrejo la radio.
         onCharacter: (e) => handlers.current.onCharacter(e),
         coins: () => balancesRef.current?.coins ?? 0,
@@ -1533,6 +1557,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       if (seagullParam(window.location.search)) engine.attackSeagull();
       // `?ola=1` (T269): una ola grande justo delante.
       if (swellParam(window.location.search)) engine.startSwell();
+      // `?siesta=1` (T271): el capitán se duerme a los 5 s quieto.
+      const siesta = napParam(window.location.search);
+      if (siesta !== null) engine.setNapAfter(siesta);
       setPhase(mission?.phase ?? null);
       setStatus('ready');
       // Lo descubierto en otras visitas: sus islas ofrecen «Explorar la isla»
@@ -1559,6 +1586,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       engine?.destroy();
       engineRef.current = null;
       setWeatherBed(null, 0.3);
+      stopSnore();
     };
   }, [sessionId]);
 
@@ -2704,6 +2732,19 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               <strong>{msg('hud.tickets')}</strong>
             </button>
           </div>
+          {castle.active ? null : (
+            <button
+              type="button"
+              className="mar-horn"
+              aria-label={msg('mar.client.bocina')}
+              data-testid="mar-bocina"
+              onClick={() => {
+                engineRef.current?.honk();
+              }}
+            >
+              <span aria-hidden="true">📯</span>
+            </button>
+          )}
           {castle.active ? null : (
             <button
               type="button"

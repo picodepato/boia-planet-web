@@ -115,6 +115,8 @@ export const esMar = {
   'mar.client.acercar': 'Acercar',
   'mar.client.alejar': 'Alejar',
   'mar.client.turbo': 'Turbo',
+  // Plan 029 T271: la bocina del barco. muestra
+  'mar.client.bocina': 'Bocina',
   'mar.client.nudos': 'nudos',
   'mar.client.tocaUnaIslaPara': 'Toca una isla para ver qué hay · arrastra para mover el mapa',
   'mar.client.cerrar': '✕ Cerrar',
@@ -180,7 +182,7 @@ export const esMar = {
   'mar.controles.vueltaCorta': 'Tira hacia atrás mientras avanzas para dar la vuelta corta.',
   'mar.controles.rumbo': 'Toca el mar o una isla para fijar rumbo: el barco va solo hasta allí.',
   'mar.controles.teclado':
-    'En el ordenador: flechas o WASD para navegar, T turbo, M mapa y +/− para el zoom.',
+    'En el ordenador: flechas o WASD para navegar, T turbo, H bocina, M mapa y +/− para el zoom.',
   'mar.controles.mapaYZoom': 'Mapa y zoom',
   'mar.controles.mapa':
     'Toca el minimapa para ver el planeta entero; toca una isla para ver qué hay.',

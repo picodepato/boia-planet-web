@@ -13,7 +13,7 @@
  * de abajo. Un rótulo que caería debajo baja sobre su isla o se apaga.
  */
 export const PIN_AVOID =
-  '.mar-links, .mar-globe, .mar-balances, .mar-menu-btn, .mar-ayuda-btn, .mar-chips > *, .mar-rail, .mar-speed, .mar-turbo, .mar-tickets__btn';
+  '.mar-links, .mar-globe, .mar-balances, .mar-menu-btn, .mar-ayuda-btn, .mar-chips > *, .mar-rail, .mar-speed, .mar-turbo, .mar-horn, .mar-tickets__btn';
 
 /** Un rectángulo en px del lienzo. */
 export interface Rect {

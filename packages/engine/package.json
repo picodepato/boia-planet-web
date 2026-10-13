@@ -17,6 +17,7 @@
     "./minigames": "./src/minigames/index.ts",
     "./weather": "./src/weather/index.ts",
     "./swell": "./src/swell/index.ts",
+    "./toys": "./src/toys/index.ts",
     "./characters": "./src/characters/index.ts"
   },
   "scripts": {

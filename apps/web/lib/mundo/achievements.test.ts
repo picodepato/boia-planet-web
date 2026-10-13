@@ -13,6 +13,7 @@ import { FakeSupabase } from '../../../../packages/store/src/member/fake-supabas
 import { readLogros } from '../logros/use-logros';
 import type { Notice } from '@boia/engine/ui';
 import { WORLD_REGISTRY } from '@boia/world';
+import { FIESTERA_BAILANDO_ENCOUNTER } from '@boia/engine/toys';
 import { describe, expect, it } from 'vitest';
 import {
   ACHIEVEMENT_READY_BODY,
@@ -393,6 +394,18 @@ it('T269: crossing a big wave with turbo completes «Salto mortal» once, and it
   expect((await recordSignal(repo, signal)).map((n) => n.id)).toContain('logro:salto-mortal');
   expect(await recordSignal(repo, signal)).toEqual([]);
   expect((await repo.progress.claimAchievement('salto-mortal')).claimed).toBe(true);
+});
+
+it('T271: «Fiestera bailando» is hidden and completes once', async () => {
+  const repo = browser()();
+  const def = (await repo.content.list('achievements')).find((d) => d.id === 'fiestera-bailando');
+  expect(def?.secret).toBe(true);
+  const signal: AchievementSignal = {
+    trigger: 'complete_encounter',
+    encounter: FIESTERA_BAILANDO_ENCOUNTER,
+  };
+  expect((await recordSignal(repo, signal)).map((n) => n.id)).toContain('logro:fiestera-bailando');
+  expect(await recordSignal(repo, signal)).toEqual([]);
 });
 
 it('T100/T153: only the sketch-boat and the Cañón storm achievements are hidden; old entitlements survive', async () => {

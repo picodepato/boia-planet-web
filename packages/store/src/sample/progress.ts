@@ -341,6 +341,18 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
+    // Plan 029 T271: tres bocinazos junto a la Fiestera. Secreto, sin sello. Premio muestra (P24).
+    id: 'fiestera-bailando',
+    title: 'Fiestera bailando',
+    description: 'Toca la bocina tres veces junto a la Boia Fiestera y ponla a bailar.',
+    trigger: 'complete_encounter',
+    triggerParams: { encounter: 'fiestera-bailando' },
+    points: 40,
+    coins: 20,
+    secret: true,
+    sample: true,
+  },
+  {
     // Plan 029 T269: una ola grande cruzada con turbo da la vuelta entera. Premio muestra (P24).
     id: 'salto-mortal',
     title: 'Salto mortal',

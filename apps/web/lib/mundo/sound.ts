@@ -1,6 +1,7 @@
 'use client';
 
 import { type Settings, channelGain } from '@boia/engine/ui';
+import type { HornVoice } from '@boia/engine/toys';
 import type { WeatherEvent, WeatherKind } from '@boia/engine/weather';
 import type { FeedbackSound } from '@boia/world';
 import { AMBIENT_LEVEL, AMBIENT_RATE, renderAmbient } from './ambient';
@@ -296,6 +297,120 @@ export function bump(strength = 1): void {
   const k = Math.min(1, Math.max(0.15, strength));
   tone(120, 48, 0, 0.2, 0.35 * k, 'triangle');
   noiseSweep(900, 300, 0.16, 0.18 * k, 0.7);
+}
+
+// --- Juguetes del barco (plan 029 T271) -------------------------------------
+
+/**
+ * La bocina de un barco: dos notas a la vez (`voice.low` y `voice.high`) con
+ * la onda, la duración, la caída y el vibrato de su voz (`hornVoice`).
+ */
+export function horn(voice: HornVoice): void {
+  if (gains.sfx === 0) return;
+  const a = live();
+  if (!a) return;
+  const t = a.ctx.currentTime;
+  const len = voice.length;
+  try {
+    const mix = a.ctx.createGain();
+    mix.gain.setValueAtTime(0.0001, t);
+    mix.gain.exponentialRampToValueAtTime(0.2, t + 0.04);
+    mix.gain.setValueAtTime(0.2, t + len * 0.7);
+    mix.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    // Un paso bajo quita lo áspero de las ondas de sierra y cuadrada.
+    const soft = a.ctx.createBiquadFilter();
+    soft.type = 'lowpass';
+    soft.frequency.value = 1500;
+    mix.connect(soft).connect(a.sfx);
+    for (const f of [voice.low, voice.high]) {
+      const o = a.ctx.createOscillator();
+      o.type = voice.wave;
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * (1 - voice.droop), t + len);
+      o.connect(mix);
+      if (voice.wobble > 0) {
+        const lfo = a.ctx.createOscillator();
+        const depth = a.ctx.createGain();
+        lfo.frequency.value = voice.wobble;
+        depth.gain.value = f * 0.02;
+        lfo.connect(depth).connect(o.frequency);
+        lfo.start(t);
+        lfo.stop(t + len + 0.02);
+      }
+      o.start(t);
+      o.stop(t + len + 0.02);
+    }
+  } catch {
+    // Sin audio: la bocina queda muda.
+  }
+}
+
+/** El ronquido que suena ahora (su salida), para cortarlo al despertar o al salir del mar. */
+let snoreOut: GainNode | null = null;
+
+/** Un ronquido suave: ruido grave que sube al respirar y baja al soltar. */
+export function snore(): void {
+  if (gains.sfx === 0) return;
+  const a = live();
+  if (!a) return;
+  const t = a.ctx.currentTime;
+  try {
+    stopSnore();
+    const out = a.ctx.createGain();
+    out.connect(a.sfx);
+    snoreOut = out;
+    const src = a.ctx.createBufferSource();
+    src.buffer = bedBuffer(a.ctx);
+    src.loop = true;
+    const low = a.ctx.createBiquadFilter();
+    low.type = 'lowpass';
+    low.frequency.setValueAtTime(180, t);
+    low.frequency.linearRampToValueAtTime(420, t + 0.9);
+    low.frequency.linearRampToValueAtTime(140, t + 1.6);
+    const g = a.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.9);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    src.connect(low).connect(g).connect(out);
+    src.start(t);
+    src.stop(t + 1.75);
+    // El silbido al soltar el aire.
+    const o = a.ctx.createOscillator();
+    const og = a.ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(150, t + 0.95);
+    o.frequency.exponentialRampToValueAtTime(95, t + 0.95 + 0.375);
+    og.gain.setValueAtTime(0.0001, t + 0.95);
+    og.gain.exponentialRampToValueAtTime(0.05, t + 0.96);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 1.45);
+    o.connect(og).connect(out);
+    o.start(t + 0.95);
+    o.stop(t + 1.46);
+  } catch {
+    // Sin búfer: duerme en silencio.
+  }
+}
+
+/** Corta el ronquido que esté sonando (al despertar, al salir del mar). */
+export function stopSnore(): void {
+  const out = snoreOut;
+  snoreOut = null;
+  if (!out) return;
+  try {
+    const now = out.context.currentTime;
+    out.gain.cancelScheduledValues(now);
+    out.gain.setValueAtTime(out.gain.value, now);
+    out.gain.linearRampToValueAtTime(0, now + 0.08);
+    setTimeout(() => out.disconnect(), 150);
+  } catch {
+    // Ya no hay audio: nada que cortar.
+  }
+}
+
+/** El susto de despertarse: un sobresalto agudo y corto. */
+export function startle(): void {
+  tone(520, 1040, 0, 0.12, 0.14, 'square');
+  tone(780, 1240, 0.08, 0.14, 0.1, 'square');
 }
 
 // --- Los personajes del agua (plan 029 T270) --------------------------------

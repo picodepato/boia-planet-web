@@ -62,6 +62,7 @@
       .mar-notice__x,
       .juego-panel-close,
       .mar-turbo,
+      .mar-horn,
       .mar-menu-btn,
       .mar-ayuda-btn,
       [class*='mar-castle'],
@@ -1058,6 +1059,54 @@
   justify-self: end;
 }
 
+/* T271: la bocina. Fuera de la rejilla (la columna del turbo no tiene sitio
+   para dos en un móvil, y «Entradas» sigue centrada): en el móvil, justo
+   encima de la barra, a la izquierda del zoom y por encima del turbo; en el
+   escritorio, en la misma fila, a la izquierda del turbo. */
+.mar-bar > .mar-horn {
+  position: absolute;
+  right: 60px;
+  bottom: calc(100% + 12px);
+}
+
+@media (max-width: 759px) {
+  /* La invitación al Carnet ocupa ese hueco: la bocina se aparta mientras. */
+  .mar:has(.mar-invite) .mar-bar > .mar-horn {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media (min-width: 760px) {
+  .mar-bar > .mar-horn {
+    right: calc(var(--turbo) + 12px);
+    bottom: calc((var(--bar-h) - var(--turbo) * 0.72) / 2);
+  }
+}
+
+.mar-horn {
+  width: calc(var(--turbo) * 0.72);
+  height: calc(var(--turbo) * 0.72);
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  line-height: 1;
+  background: rgb(24 18 66 / 0.72);
+  color: var(--cream);
+  box-shadow:
+    0 0 0 3px rgb(255 255 255 / 0.22),
+    0 8px 20px rgb(0 0 0 / 0.35);
+  transition:
+    transform 0.12s,
+    opacity 0.2s;
+}
+
+.mar-horn:active {
+  transform: scale(0.9);
+}
+
 .mar-logros-btn:not([data-por-reclamar='0']) > span {
   filter: drop-shadow(0 0 6px rgb(255 82 25 / 0.9));
 }
@@ -1895,6 +1944,7 @@
 /* Con ficha abierta en el móvil, los mandos de abajo se apartan. */
 .mar:has(.mar-sheet, .juego-panel) .mar-rail,
 .mar:has(.mar-sheet, .juego-panel) .mar-turbo,
+.mar:has(.mar-sheet, .juego-panel) .mar-horn,
 .mar:has(.mar-sheet, .juego-panel) .mar-speed {
   opacity: 0;
   pointer-events: none;
@@ -2006,6 +2056,7 @@
   }
 
   .mar:has(.mar-sheet, .juego-panel) .mar-rail,
+  .mar:has(.mar-sheet, .juego-panel) .mar-horn,
   .mar:has(.mar-sheet, .juego-panel) .mar-turbo {
     opacity: 1;
     pointer-events: auto;

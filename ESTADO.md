@@ -4,6 +4,47 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T271: Juguetes del barco: la bocina y el barco aburrido
+
+**Qué existe**
+- `packages/engine/src/toys/index.ts` (`@boia/engine/toys`, con pruebas): `HornClock` (pausa de 0,9 s entre pitidos; 3 pitidos en 6 s con la Fiestera a menos de 18 u de escena la hacen bailar 5 s), `hornVoice(id)` (bocina propia de cada barco, estable por su id), `NapClock` (60 s quieto y sin tocar nada: duerme; ronquido cada 3,2 s; la gaviota se posa a los 4 s; cualquier entrada despierta; con algo abierto, el reloj va a cero y despierta) y `napParam` (`?siesta`).
+- `apps/web/app/mar/engine/toys.ts`: las «Zzz» sobre el capitán y la gaviota de proa (procedural, baja poligonación); se va volando al despertar.
+- `mar3d.ts` (cambios pequeños): `honk()`, tecla `H`, `setNapAfter`, la Fiestera bota y gira al bailar, el capitán se dobla al dormir y da un brinco al despertar. Reutiliza `gameBusy`, `inputEnabled`, mapa, diálogo, vuelo, viaje y cambio de mundo como «hay algo abierto»; una opción nueva `uiOpen` (la ficha de `mar-client`) cubre lo que no es modal.
+- `mar-client.tsx`: botón 📯 `mar-horn` junto al turbo (`data-testid="mar-bocina"`), sonidos y señal del logro.
+- `lib/mundo/sound.ts`: `horn(voice)`, `snore()`, `startle()` sintetizados.
+- Logro secreto «Fiestera bailando» (`fiestera-bailando`, 40 puntos / 20 monedas, muestra P24), sin sello del Carnet, como `salto-mortal`.
+- Textos: `mar.client.bocina` y la ayuda de teclado (H bocina), en `es-mar.ts`.
+
+**Comandos**
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 310 archivos, 2762 pasan, 3 omitidas.
+- `sh tools/spec/checks.sh`, `pnpm lint`, `pnpm typecheck`, `pnpm build` → salida 0 (landing 198,8 kB de 200).
+- `pnpm cf:measure` → 2.206 KiB gzip (límite 2.800).
+
+**Pendiente**
+- Mirar el aspecto en un navegador con WebGL: el panel de pruebas no pinta la escena. Posiciones de la gaviota y de las Zzz (`BOW_X`, `DECK_Y`, `ZZZ_*` en `toys.ts`) son estimadas para cualquier barco.
+- Premio del logro y todos los números de `TOYS_TUNING` son muestra (P24).
+
+**Probar a mano**
+- `/mar?siesta=1`: quedarse quieto 5 s: el capitán se duerme (Zzz, ronquido, gaviota en la proa); tocar cualquier cosa lo despierta con un susto.
+- Botón 📯 o tecla `H`: bocina de tu barco; cambia de barco y suena distinta. Pitar sin parar queda limitado.
+- Junto a la Boia Fiestera (Remanso de los Cocodrilos), pitar tres veces seguidas: baila y llega el logro secreto «Fiestera bailando».
+- Con el menú, una ficha o un minijuego abierto no hay siesta.
+- `/mar?cerca=fiestera`: la Fiestera sube a bordo; tres bocinazos y baila en la cubierta.
+- Móvil: la bocina queda encima de la barra, a la izquierda del zoom; turbo y «Entradas» en su sitio.
+
+**Auditoría (Opus)**
+- Mirado en Chromium sin cabeza con WebGL (swiftshader), móvil 360×640 y escritorio 1280×720, con `?siesta=1` en cinco barcos (arcilla, low-poly, semi-realista, cartoon-30 y el provisional con capitán): la gaviota en la proa y las Zzz sobre el barco en todos.
+- Arreglado:
+  - La bocina rompía la barra: compartía columna con el turbo y lo mandaba a una segunda fila, fuera de la pantalla (móvil y escritorio). Ahora va fuera de la rejilla: en el móvil, encima de la barra a la izquierda del zoom (46 px); en el escritorio, en la fila, a la izquierda del turbo (52 px). En el móvil se aparta mientras está la invitación al Carnet. «Entradas» vuelve a estar centrada.
+  - Gaviota y Zzz: ya no son constantes. `findPerch` (`engine/toys.ts`) mide cada modelo al ponerlo (rayos sobre el casco, a la altura de la cubierta: nunca en lo alto de un mástil o una guirnalda). Cuelgan del casco (cabecean con él). La gaviota es más grande y mira a popa; las Zzz suben hacia un costado para no taparla.
+  - Las Zzz (sprites) no se doblaban con el planeta y salían varios cuerpos por delante del barco. Ahora siguen la curva del planeta.
+  - El capitán dormido se hundía en el casco (se le ponía y = 0); ahora conserva su altura.
+  - La Fiestera no bailaba nunca después de rescatarla (a bordo no cuenta como «presente» en el agua). Ahora tres pitidos con ella a bordo también valen: salta y gira en la cubierta. Comprobado: `data-fiestera="baila"` y el logro listo en el menú.
+  - Ronquido: se corta al despertar y al salir de `/mar` (`stopSnore`).
+  - `NapClock` ya no crea listas en cada fotograma (lista reutilizada, con su prueba).
+- Fusión con T270 (gaviota ladrona, cangrejo, guiri): un solo `gameBusy`; no hay siesta mientras la gaviota ladrona baja, huye o se ríe, y con el capitán dormido la ladrona no baja (nunca dos gaviotas a la vez).
+- Bocina: 📯, como los demás iconos de la barra (⚡, 🎟️); `aria-label` por i18n; suena por el canal de efectos (muda con los efectos a 0).
+
 ## 2026-10-13 — plan 029 T270: Characters in the water: thieving seagull, dancing crab, the lost tourist
 
 **Qué existe**
