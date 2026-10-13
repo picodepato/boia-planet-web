@@ -119,7 +119,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: thieving seagull (HUD escrow, caught = coins back + 3 + secret achievement gaviota-pillada), crab dancing at 124 BPM on the radio clock near the port, guiri on the flamingo from Blender (76 KB, lazy within 90 u) with its lines and the 03–07 hint, ?gaviota=1 ?hora=4 — 0bab932
 
 ## T271 — Boat toys: the horn and the napping boat
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -131,10 +131,10 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests: idle timer (resets on input, blocked by open UI), horn cooldown and the 3-honks-near-Fiestera rule → pass
   - dev overrides `?siesta=1` (nap after 5 s)
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
-- Outcome:
+- Outcome: horn button + H key with per-boat voice, 3 honks make the Fiestera dance (also aboard), nap after 60 s with Zzz, snore and a bow gull measured per boat; audit fixed the bar layout, perches, captain, snore; sonnet + Opus audit — 55c2ec6
 
 ## T272 — Character banter, the daily horóscopo boiero and the port welcome
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -199,6 +199,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: T278: the real Admin now signs in typing the Carnet 000 account email + password + TOTP ("000" shortcut only in local demo), because no server route may hold the service key (T278)
 - 2026-10-13: T269: swell every 60–120 s, 24 s life; flip only with turbo (not the Entradas voyage); no swells in map view or during the Entradas voyage; reduced motion: small jump, no spin (T269 + audit)
 - 2026-10-13: T270: stolen coins are not debited (no client API subtracts coins; Scope forbids new wallet APIs): shown missing while the gull flees, returned "with the tide" if it escapes; crab beat fixed 124 BPM (no analyser: CORS); launch T273 before T272 since it is longer (orchestrator)
+- 2026-10-13: T271: horn button outside the bar grid (phone: above the bar left of zoom; desktop: left of turbo); no nap while the thief seagull acts and no thief while napping (T271 audit)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
@@ -239,3 +240,6 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13 T271 sonnet done (c77bba0). Opus audit launched, agent a51a301b8c2e08dae
 - 2026-10-13 T270 fable done (d57b4a4, 08e7784); integrate → conflict (mar3d, mar-client, achievements.test, engine package.json, sample progress); sent back to agent to merge main
 - 2026-10-13 T270 conflict resolved by agent (88cc9bf), integrated 0bab932
+- 2026-10-13 T273 launched (attempt 1, fable), agent a149a775331d33506
+- 2026-10-13 T271 audit done (1df1709); integrate → conflict (mar3d, mar-client, sound.ts, engine package.json) with T270; sent back to audit agent to merge main
+- 2026-10-13 T271 conflict resolved by audit agent (0ad4a92), integrated 55c2ec6
