@@ -16,7 +16,8 @@
     "./streaming": "./src/streaming.ts",
     "./minigames": "./src/minigames/index.ts",
     "./weather": "./src/weather/index.ts",
-    "./swell": "./src/swell/index.ts"
+    "./swell": "./src/swell/index.ts",
+    "./characters": "./src/characters/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

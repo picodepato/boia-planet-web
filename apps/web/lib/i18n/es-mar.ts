@@ -4,6 +4,20 @@
  * usa la clave de allí (es-zonas.ts). Todo `muestra` hasta que Álvaro lo apruebe.
  */
 export const esMar = {
+  // Plan 029 T270, los personajes del agua: muestra, pendiente del visto bueno de Álvaro.
+  'mar.gaviota.robo': 'Una gaviota te ha robado {n} monedas. Píllala antes de {s} s: ve a por ella.',
+  'mar.gaviota.robo.una': 'Una gaviota te ha robado una moneda. Píllala antes de {s} s: ve a por ella.',
+  'mar.gaviota.pillada': 'Gaviota pillada: {n} monedas de vuelta y {bonus} de propina.',
+  'mar.gaviota.huyo':
+    'La gaviota se ríe y se va. Las monedas se le caen al mar y la marea te las devuelve.',
+  'mar.gaviota.nada':
+    'Una gaviota ha bajado a por tus monedas y no ha encontrado ninguna. Se va ofendida.',
+  'mar.gaviota.soltadas': 'La gaviota suelta las monedas y se va: hay partida.',
+  // Las frases del guiri van en inglés tal cual (así lo pide el plan).
+  'mar.guiri.where': "Excuse me, where's the after?",
+  'mar.guiri.always': "There's always an after.",
+  'mar.guiri.after': "The after? It's open right now, mate. Follow the music past the lighthouse.",
+  'mar.guiri.cerrar': 'Cerrar lo que dice el guiri',
   // T136: muestra, pending copy approval.
   'mar.canon.lecturas': 'Lecturas de combate',
   'mar.canon.mostrarVida': 'Mostrar vida',

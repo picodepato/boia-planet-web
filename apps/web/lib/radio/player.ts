@@ -4,6 +4,7 @@ import {
   musicEnabledForRadio,
   onMusicEnabledForRadio,
   setMusicEnabledForRadio,
+  setRadioElapsed,
   setRadioPlaying,
 } from './bridge';
 import { type RepeatMode, firstSong, nextSong, previousSong, shouldToast } from './player-model';
@@ -444,6 +445,8 @@ export class RadioPlayer {
         ? a.duration
         : (this.state.song?.durationSeconds ?? 0);
     this.set({ elapsed: a.currentTime, duration });
+    // El compás del cangrejo bailarín (plan 029 T270) lee por dónde va la canción.
+    setRadioElapsed(a.currentTime);
     if (this.active && duration - a.currentTime <= PREFETCH_SECONDS) this.prefetch();
   }
 

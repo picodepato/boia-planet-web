@@ -30,10 +30,17 @@ siempre con el barco, también en `baja`.
     blender -b -P tools/blender/export_mascotas_glb.py                    # todas
     blender -b -P tools/blender/export_mascotas_glb.py -- --only canoncito
     ... -- --only canoncito --detalle               # triángulos por material y pieza
+    ... -- --kind personajes [--only guiri]         # los personajes del agua (plan 029 T270)
 
 Salida: art/mascotas/3d/<id>.glb y art/mascotas/3d/manifest.json (lo lee /mar
 y lo valida tools/blender/check.py). Sale con 1 si una mascota se pasa del
 presupuesto.
+
+Los **personajes del agua** (plan 029 T270: el guiri del flamenco) siguen el
+mismo contrato desde tools/blender/personajes/<modulo>.py, con `--kind
+personajes`: salen a art/personajes/3d/ con su manifiesto (clave
+`personajes`); /mar los carga perezosos (`CHARACTER_MODELS` en
+mascot-models.ts) y check.py los valida igual (check_personajes_3d).
 """
 import argparse
 import importlib
@@ -54,18 +61,26 @@ from islas import comun as K  # noqa: E402
 # (el minikraken de a mano ronda los 1 500; los enemigos, 9 000). muestra
 MAX_TRIS = 4500
 
-MASCOTAS_DIR = os.path.join(HERE, "mascotas")
-OUT = os.path.join(os.path.dirname(os.path.dirname(HERE)), "art", "mascotas", "3d")
+ART = os.path.join(os.path.dirname(os.path.dirname(HERE)), "art")
+# Cada clase de modelo por piezas: la carpeta de módulos (tools/blender/<kind>/), la salida (art/<kind>/3d/)
+# y la clave de su lista en el manifiesto. Mismo contrato y mismo presupuesto.
+KINDS = {
+    "mascotas": {"dir": os.path.join(HERE, "mascotas"), "out": os.path.join(ART, "mascotas", "3d"), "key": "mascotas"},
+    "personajes": {"dir": os.path.join(HERE, "personajes"), "out": os.path.join(ART, "personajes", "3d"),
+                   "key": "personajes"},
+}
+MASCOTAS_DIR = KINDS["mascotas"]["dir"]
+OUT = KINDS["mascotas"]["out"]
 NOT_MASCOTS = {"__init__"}
 
 
-def modules():
-    """{id: módulo} de las mascotas de tools/blender/mascotas/ (el id es el `ID` del módulo)."""
+def modules(kind="mascotas"):
+    """{id: módulo} de los módulos de tools/blender/<kind>/ (el id es el `ID` del módulo)."""
     out = {}
-    for f in sorted(os.listdir(MASCOTAS_DIR)):
+    for f in sorted(os.listdir(KINDS[kind]["dir"])):
         if not f.endswith(".py") or f[:-3] in NOT_MASCOTS:
             continue
-        mod = importlib.import_module("mascotas.%s" % f[:-3])
+        mod = importlib.import_module("%s.%s" % (kind, f[:-3]))
         out[mod.ID] = mod
     return out
 
@@ -108,9 +123,9 @@ def build(mod):
     return root, parts, info
 
 
-def write_glb(root, parts, mid):
-    os.makedirs(OUT, exist_ok=True)
-    path = os.path.join(OUT, mid + ".glb")
+def write_glb(root, parts, mid, out=OUT):
+    os.makedirs(out, exist_ok=True)
+    path = os.path.join(out, mid + ".glb")
     bpy.ops.object.select_all(action="DESELECT")
     root.select_set(True)
     for m in parts:
@@ -154,18 +169,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", help="sólo estas mascotas (ids: `ID` de los módulos de tools/blender/mascotas/)")
     ap.add_argument("--detalle", action="store_true", help="triángulos por material de cada pieza")
+    ap.add_argument("--kind", choices=sorted(KINDS), default="mascotas",
+                    help="mascotas (del barco) o personajes (del agua, plan 029 T270)")
     a = ap.parse_args(argv)
-    mods = modules()
+    kind, out, key = a.kind, KINDS[a.kind]["out"], KINDS[a.kind]["key"]
+    mods = modules(kind)
     ids = a.only or sorted(mods)
     unknown = sorted(set(ids) - set(mods))
     if unknown:
-        print("[mascotas] sin módulo en tools/blender/mascotas/: %s" % ", ".join(unknown))
+        print("[%s] sin módulo en tools/blender/%s/: %s" % (kind, kind, ", ".join(unknown)))
         sys.exit(1)
-    man = os.path.join(OUT, "manifest.json")
+    man = os.path.join(out, "manifest.json")
     prev = {}
     if os.path.exists(man):
         with open(man, encoding="utf-8") as f:
-            prev = {e["id"]: e for e in json.load(f).get("mascotas", [])}
+            prev = {e["id"]: e for e in json.load(f).get(key, [])}
     over = []
     for mid in ids:
         mod = mods[mid]
@@ -177,7 +195,7 @@ def main():
         if tris > MAX_TRIS:
             over.append("%s: %d triángulos > %d" % (mid, tris, MAX_TRIS))
             continue
-        path = write_glb(root, parts, mid)
+        path = write_glb(root, parts, mid, out)
         prev[mid] = manifest_entry(mod, parts, info, tris, path)
         mats = set()
         for m in parts:
@@ -187,16 +205,16 @@ def main():
     with open(man, "w", encoding="utf-8", newline="\n") as f:
         json.dump({
             "status": "muestra",
-            "nota": "Generado por tools/blender/export_mascotas_glb.py desde tools/blender/mascotas/<modulo>.py. No editar.",
+            "nota": "Generado por tools/blender/export_mascotas_glb.py desde tools/blender/%s/<modulo>.py. No editar." % kind,
             "unidades": "Blender: frente (+x del motor) a +X, que en glTF (y arriba) sigue siendo +x; suelo en y = 0; "
                         "centro en el origen; unidades de la escena de /mar; cada pieza es un nodo con su pivote "
                         "(traslación) y el motor la mueve",
             "max_tris": MAX_TRIS,
-            "mascotas": [prev[k] for k in sorted(prev)],
+            key: [prev[k] for k in sorted(prev)],
         }, f, ensure_ascii=False, indent=1)
         f.write("\n")
     if over:
-        print("[mascotas] se pasan del presupuesto: %s" % "; ".join(over))
+        print("[%s] se pasan del presupuesto: %s" % (kind, "; ".join(over)))
         sys.exit(1)
 
 

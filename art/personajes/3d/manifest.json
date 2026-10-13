@@ -1,0 +1,47 @@
+{
+ "status": "muestra",
+ "nota": "Generado por tools/blender/export_mascotas_glb.py desde tools/blender/personajes/<modulo>.py. No editar.",
+ "unidades": "Blender: frente (+x del motor) a +X, que en glTF (y arriba) sigue siendo +x; suelo en y = 0; centro en el origen; unidades de la escena de /mar; cada pieza es un nodo con su pivote (traslación) y el motor la mueve",
+ "max_tris": 4500,
+ "personajes": [
+  {
+   "id": "guiri",
+   "file": "guiri.glb",
+   "label": "El guiri del flamenco",
+   "length": 1.67,
+   "height": 1.14,
+   "parts": [
+    {
+     "name": "flotador",
+     "pivot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "tris": 1276
+    },
+    {
+     "name": "guiri",
+     "pivot": [
+      0.0,
+      0.12,
+      0.0
+     ],
+     "tris": 1878
+    },
+    {
+     "name": "brazo",
+     "pivot": [
+      -0.02,
+      0.64,
+      0.21
+     ],
+     "tris": 262
+    }
+   ],
+   "tris": 3416,
+   "kb": 75,
+   "doc": "turista quemado por el sol sentado en un flamenco hinchable rosa: aro con cola de plumas y cuello largo con pico negro; barriga roja, bañador azul de flores, sombrero de paja con cinta, gafas de sol, cubata con pajita naranja en la mano izquierda y el brazo derecho que saluda"
+  }
+ ]
+}

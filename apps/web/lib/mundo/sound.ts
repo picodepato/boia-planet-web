@@ -298,6 +298,23 @@ export function bump(strength = 1): void {
   noiseSweep(900, 300, 0.16, 0.18 * k, 0.7);
 }
 
+// --- Los personajes del agua (plan 029 T270) --------------------------------
+
+/**
+ * El graznido de la gaviota ladrona: un chillido agudo que cae, con aire
+ * ronco detrás. `laugh`: tres seguidos, cada vez más cortos (se ríe al escapar).
+ */
+export function squawk(laugh = false): void {
+  const n = laugh ? 3 : 1;
+  for (let i = 0; i < n; i++) {
+    const at = i * 0.22;
+    const len = laugh ? 0.16 - i * 0.03 : 0.3;
+    tone(1750, 820, at, len, 0.13, 'sawtooth');
+    tone(2600, 1300, at + 0.02, len * 0.7, 0.05, 'square');
+    noiseSweep(3200, 900, len, 0.06, 0.8);
+  }
+}
+
 // --- Tiempo (plan 029 T268) ------------------------------------------------
 
 let bedNoise: AudioBuffer | null = null;

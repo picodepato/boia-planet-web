@@ -353,6 +353,18 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
+    // Plan 029 T270: la gaviota ladrona pillada a tiempo (secreto; sin sello del Carnet). muestra
+    id: 'gaviota-pillada',
+    title: 'Gaviota pillada',
+    description: 'Alcanza a la gaviota ladrona antes de que se vaya con tus monedas.',
+    trigger: 'complete_encounter',
+    triggerParams: { encounter: 'gaviota' },
+    points: 40,
+    coins: 0,
+    secret: true,
+    sample: true,
+  },
+  {
     // Las botellas sólo están en /juego (D-22; catálogo, punto 5).
     id: 'botellas-3',
     title: 'Correo del mar',

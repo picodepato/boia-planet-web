@@ -3,6 +3,8 @@ import path from 'node:path';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  CHARACTER_MODELS,
+  CHARACTER_MODELS_URL,
   MASCOT_MODELS,
   MASCOT_MODELS_URL,
   MascotModel,
@@ -97,7 +99,9 @@ describe('MascotModel: una carga compartida con recuento de usos', () => {
   });
 
   it('destruido antes de llegar: null y nada queda', async () => {
-    const m = new MascotModel(MASCOT_MODELS.canoncito, async () => scene(['base', 'barrel', 'puff']));
+    const m = new MascotModel(MASCOT_MODELS.canoncito, async () =>
+      scene(['base', 'barrel', 'puff']),
+    );
     const p = m.acquire();
     m.destroy();
     expect(await p).toBeNull();
@@ -106,7 +110,11 @@ describe('MascotModel: una carga compartida con recuento de usos', () => {
 
   it('el almacén da un modelo por mascota y los destruye todos', async () => {
     const store = new MascotModelStore(async (url) =>
-      scene(url.endsWith('canoncito.glb') ? MASCOT_MODELS.canoncito.parts : MASCOT_MODELS['tortuga-turbo'].parts),
+      scene(
+        url.endsWith('canoncito.glb')
+          ? MASCOT_MODELS.canoncito.parts
+          : MASCOT_MODELS['tortuga-turbo'].parts,
+      ),
     );
     expect(store.get('canoncito')).toBe(store.get('canoncito'));
     expect(store.get('canoncito')).not.toBe(store.get('tortuga-turbo'));
@@ -117,21 +125,56 @@ describe('MascotModel: una carga compartida con recuento de usos', () => {
 });
 
 describe('los GLB de las mascotas (art/mascotas/3d, T175)', () => {
-  const manifest = JSON.parse(readFileSync(path.join(REPO, 'art/mascotas/3d/manifest.json'), 'utf8')) as {
+  const manifest = JSON.parse(
+    readFileSync(path.join(REPO, 'art/mascotas/3d/manifest.json'), 'utf8'),
+  ) as {
     max_tris: number;
-    mascotas: { id: string; file: string; tris: number; parts: { name: string; pivot: number[] }[] }[];
+    mascotas: {
+      id: string;
+      file: string;
+      tris: number;
+      parts: { name: string; pivot: number[] }[];
+    }[];
   };
 
-  it.each(Object.values(MASCOT_MODELS))('$id: el manifiesto y el GLB existen, con las piezas que usa /mar', (spec) => {
-    const entry = manifest.mascotas.find((e) => e.id === spec.id)!;
-    expect(entry).toBeDefined();
-    expect(entry.file).toBe(spec.file);
-    expect(entry.parts.map((p) => p.name)).toEqual([...spec.parts]);
-    expect(mascotModelUrl(entry.file)).toBe(`${MASCOT_MODELS_URL}/${spec.file}`);
-    const glb = readFileSync(path.join(REPO, 'art/mascotas/3d', entry.file));
-    expect(glb.subarray(0, 4).toString()).toBe('glTF');
-    expect(entry.tris).toBeLessThanOrEqual(manifest.max_tris);
-    // Baratas en `baja`: menos que un barco (12 000) y que un enemigo (9 000).
-    expect(entry.tris).toBeLessThan(4500);
-  });
+  it.each(Object.values(MASCOT_MODELS))(
+    '$id: el manifiesto y el GLB existen, con las piezas que usa /mar',
+    (spec) => {
+      const entry = manifest.mascotas.find((e) => e.id === spec.id)!;
+      expect(entry).toBeDefined();
+      expect(entry.file).toBe(spec.file);
+      expect(entry.parts.map((p) => p.name)).toEqual([...spec.parts]);
+      expect(mascotModelUrl(entry.file)).toBe(`${MASCOT_MODELS_URL}/${spec.file}`);
+      const glb = readFileSync(path.join(REPO, 'art/mascotas/3d', entry.file));
+      expect(glb.subarray(0, 4).toString()).toBe('glTF');
+      expect(entry.tris).toBeLessThanOrEqual(manifest.max_tris);
+      // Baratas en `baja`: menos que un barco (12 000) y que un enemigo (9 000).
+      expect(entry.tris).toBeLessThan(4500);
+    },
+  );
+});
+
+describe('los GLB de los personajes del agua (art/personajes/3d, plan 029 T270)', () => {
+  const manifest = JSON.parse(
+    readFileSync(path.join(REPO, 'art/personajes/3d/manifest.json'), 'utf8'),
+  ) as {
+    max_tris: number;
+    personajes: { id: string; file: string; tris: number; kb: number; parts: { name: string }[] }[];
+  };
+
+  it.each(Object.values(CHARACTER_MODELS))(
+    '$id: el manifiesto y el GLB existen, con las piezas que usa /mar, y pesa 300 KB o menos',
+    (spec) => {
+      const entry = manifest.personajes.find((e) => e.id === spec.id)!;
+      expect(entry).toBeDefined();
+      expect(entry.file).toBe(spec.file);
+      expect(entry.parts.map((p) => p.name)).toEqual([...spec.parts]);
+      expect(mascotModelUrl(entry.file, spec.url)).toBe(`${CHARACTER_MODELS_URL}/${spec.file}`);
+      const glb = readFileSync(path.join(REPO, 'art/personajes/3d', entry.file));
+      expect(glb.subarray(0, 4).toString()).toBe('glTF');
+      // El plan 029 pide 300 KB como mucho por modelo servido.
+      expect(glb.byteLength).toBeLessThanOrEqual(300 * 1024);
+      expect(entry.tris).toBeLessThanOrEqual(manifest.max_tris);
+    },
+  );
 });

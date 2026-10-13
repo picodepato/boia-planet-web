@@ -16,6 +16,13 @@ import { MINIGAME_REGISTRY } from '@boia/engine/minigames';
 import { swellParam } from '@boia/engine/swell';
 import { weatherParam } from '@boia/engine/weather';
 import {
+  SEAGULL_TUNING,
+  alicanteHour,
+  guiriLine,
+  hourParam,
+  seagullParam,
+} from '@boia/engine/characters';
+import {
   type MissionEvent,
   RescueMission,
   type RescuePhase,
@@ -127,9 +134,11 @@ import {
   plop,
   setAmbientWorld,
   setWeatherBed,
+  squawk,
   weatherSound,
   whoosh,
 } from '../../lib/mundo/sound';
+import { radioBeat } from '../../lib/radio/bridge';
 import { equipLook, rememberLook, storedLook, syncStyleParam } from '../../lib/mundo/ship-look';
 import { useCarnetInvitations } from '../../lib/mundo/use-invitations';
 import {
@@ -148,7 +157,7 @@ import {
 import { takeZarpar } from '../../lib/intro/zarpar';
 import type { RadioMount as RadioMountComponent } from '../../lib/radio/ui/radio-mount';
 import { marWorld } from './engine/compact';
-import type { CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
+import type { CharacterEvent, CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
 import { MAP_KEEP, PIN_AVOID } from './engine/labels';
 import { MOOD_IDS, type MoodId } from './engine/palette';
 import type { Period } from './engine/wrap';
@@ -572,6 +581,16 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     setControlSensitivity(next.sensitivity);
   }, []);
   const { data: balances } = useRepoData((r) => r.progress.balances());
+  const balancesRef = useRef(balances);
+  balancesRef.current = balances;
+  // Los personajes del agua (plan 029 T270): lo que la gaviota lleva en el pico (se
+  // descuenta del contador mientras huye; vuelve al pillarla o cuando se va) y lo que
+  // dice el guiri al tocarlo (sus frases van en círculo, con la hora de Alicante).
+  const [stolen, setStolen] = useState(0);
+  const [guiriSay, setGuiriSay] = useState<{ n: number; text: string } | null>(null);
+  const guiriTaps = useRef(0);
+  const guiriTimer = useRef<number | null>(null);
+  const guiriBubbleRef = useRef<HTMLDivElement>(null);
   // Logros (T37): el icono del HUD con su número y el panel para reclamar.
   const [logros, setLogros] = useState(false);
   const readyToClaim = useReadyCount();
@@ -1107,6 +1126,65 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     }
   };
 
+  /** Los personajes del agua (plan 029 T270): sonidos, avisos, monedas y el bocadillo del guiri. */
+  const onCharacter = (e: CharacterEvent) => {
+    if (e.type === 'cangrejo') {
+      plop();
+      return;
+    }
+    if (e.type === 'guiri') {
+      plop();
+      const hour = alicanteHour(new Date(), hourParam(window.location.search));
+      const line = guiriLine(guiriTaps.current++, hour);
+      setGuiriSay({ n: guiriTaps.current, text: msg(`mar.guiri.${line}`) });
+      if (guiriTimer.current !== null) window.clearTimeout(guiriTimer.current);
+      guiriTimer.current = window.setTimeout(() => setGuiriSay(null), 5000);
+      return;
+    }
+    const ev = e.event;
+    switch (ev.type) {
+      case 'dive':
+        squawk();
+        break;
+      case 'steal':
+        setStolen(ev.coins);
+        push({
+          id: 'gaviota:robo',
+          kind: 'info',
+          title: msg(ev.coins === 1 ? 'mar.gaviota.robo.una' : 'mar.gaviota.robo', {
+            n: ev.coins,
+            s: SEAGULL_TUNING.catchS,
+          }),
+        });
+        break;
+      case 'caught':
+        setStolen(0);
+        chime();
+        push({
+          id: 'gaviota:pillada',
+          kind: 'reward',
+          title: msg('mar.gaviota.pillada', { n: ev.coins, bonus: ev.bonus }),
+        });
+        // La propina (una vez al día) y la señal del logro «Gaviota pillada».
+        persist(grantEncounter(progressApi(), 'lugar:gaviota:seguir', ev.bonus, 'daily'));
+        break;
+      case 'escaped':
+        squawk(true);
+        push({ id: 'gaviota:huyo', kind: 'info', title: msg('mar.gaviota.huyo') });
+        break;
+      case 'nothing':
+        push({ id: 'gaviota:nada', kind: 'info', title: msg('mar.gaviota.nada') });
+        break;
+      case 'dropped':
+        setStolen(0);
+        push({ id: 'gaviota:soltadas', kind: 'info', title: msg('mar.gaviota.soltadas') });
+        break;
+      case 'gone':
+        setStolen(0);
+        break;
+    }
+  };
+
   /** Las botellas cerca del barco (T56), por el camino corto del planeta. */
   const stepBottles = (s: Stats) => {
     const w = worldRef.current;
@@ -1289,8 +1367,16 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     navigator.vibrate?.(12);
   };
 
-  const handlers = useRef({ onWorldEvent, onStep, onStats, onPin, onVoyageEnd, onImpact });
-  handlers.current = { onWorldEvent, onStep, onStats, onPin, onVoyageEnd, onImpact };
+  const handlers = useRef({
+    onWorldEvent,
+    onStep,
+    onStats,
+    onPin,
+    onVoyageEnd,
+    onImpact,
+    onCharacter,
+  });
+  handlers.current = { onWorldEvent, onStep, onStats, onPin, onVoyageEnd, onImpact, onCharacter };
 
   // --- Arranque ---------------------------------------------------------------
 
@@ -1391,6 +1477,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // El tiempo (T268): sin episodios en una carrera ni con un minijuego abierto.
         busy: () => (raceRef.current?.race.active ?? false) || minigameOpenRef.current,
         onWeather: weatherSound,
+        // Los personajes del agua (T270): la gaviota mira el bolsillo, el cangrejo la radio.
+        onCharacter: (e) => handlers.current.onCharacter(e),
+        coins: () => balancesRef.current?.coins ?? 0,
+        beat: () => radioBeat(),
         // Las olas grandes (T269): cruzarlas con turbo da la vuelta entera y el logro.
         onSwell: (e) => {
           if (e.type === 'cross' && e.flip) {
@@ -1439,6 +1529,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       // `?clima=levante|tormenta|calima` (T268): ese episodio, ya.
       const clima = weatherParam(window.location.search);
       if (clima) engine.startWeather(clima);
+      // `?gaviota=1` (T270): la gaviota ladrona ataca ya.
+      if (seagullParam(window.location.search)) engine.attackSeagull();
       // `?ola=1` (T269): una ola grande justo delante.
       if (swellParam(window.location.search)) engine.startSwell();
       setPhase(mission?.phase ?? null);
@@ -1478,6 +1570,21 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     if (dialogue) g.anchor(el, dialogue.objectId, 1.4);
     return () => g.release(el);
   }, [dialogue]);
+
+  // El bocadillo del guiri (T270) sigue al flamenco; se va solo a los 5 s.
+  useEffect(() => {
+    const g = engineRef.current;
+    const el = guiriBubbleRef.current;
+    if (!g || !el || !guiriSay) return;
+    g.anchor(el, '__guiri', 1.2);
+    return () => g.release(el);
+  }, [guiriSay]);
+  useEffect(
+    () => () => {
+      if (guiriTimer.current !== null) window.clearTimeout(guiriTimer.current);
+    },
+    [],
+  );
 
   // Navegar en este mundo cuenta (logro «Entre dos mundos»), con su aviso,
   // como al arrancar el 2D (T37: antes sólo se apuntaba, sin aviso).
@@ -1520,7 +1627,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   }, [status]);
   // La radio va a sonar (T247): «Música» de Ajustes se enciende si estaba apagada.
   const enableMusicSetting = useCallback(
-    () => updateSettings((s) => (s.music.enabled ? s : { ...s, music: { ...s.music, enabled: true } })),
+    () =>
+      updateSettings((s) => (s.music.enabled ? s : { ...s, music: { ...s.music, enabled: true } })),
     [updateSettings],
   );
   // Los Ajustes (música y efectos, el silencio de la web) también valen para el Cañón (T152).
@@ -2246,7 +2354,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           hidden={gameHidden.has('balances')}
         >
           <span title={msg('mar.client.puntos')}>★ {balances?.points ?? '–'}</span>
-          <span title={msg('mar.client.monedas')}>🪙 {balances?.coins ?? '–'}</span>
+          <span title={msg('mar.client.monedas')} data-robadas={stolen}>
+            🪙 {balances ? Math.max(0, balances.coins - stolen) : '–'}
+          </span>
         </div>
       </header>
 
@@ -2520,6 +2630,25 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               engineRef.current?.runtime.skipDialogue();
               window.setTimeout(syncDialogue, 0);
             }}
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+
+      {guiriSay ? (
+        <div
+          ref={guiriBubbleRef}
+          className="mar-bubble"
+          data-testid="mar-guiri-bocadillo"
+          data-guiri-frase={guiriSay.n}
+        >
+          <span className="mar-bubble__text">{guiriSay.text}</span>
+          <button
+            type="button"
+            className="mar-x mar-bubble__x"
+            aria-label={msg('mar.guiri.cerrar')}
+            onClick={() => setGuiriSay(null)}
           >
             ×
           </button>

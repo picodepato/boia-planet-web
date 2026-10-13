@@ -399,13 +399,16 @@ it('T100/T153: only the sketch-boat and the Cañón storm achievements are hidde
   const repo = browser()();
   const hidden = (await repo.content.list('achievements')).filter((d) => d.secret);
   // T153 (§9 of the Cañón design): «Ojo del huracán» is the second hidden one.
-  // Plan 029 adds more hidden ones (T269 «Salto mortal»…): they are read from the catalogue.
+  // Plan 029 adds more hidden ones (T269 «Salto mortal», T270 «Gaviota pillada»…): they are read
+  // from the catalogue.
   expect(hidden.map((d) => d.id).sort()).toEqual(
     SAMPLE_ACHIEVEMENTS.filter((d) => d.secret)
       .map((d) => d.id)
       .sort(),
   );
-  expect(hidden.map((d) => d.id)).toEqual(expect.arrayContaining(['canon-tormenta', 'secretos']));
+  expect(hidden.map((d) => d.id)).toEqual(
+    expect.arrayContaining(['canon-tormenta', 'secretos', 'gaviota-pillada']),
+  );
   expect(hidden.find((d) => d.id === 'secretos')).toMatchObject({
     cosmeticKey: 'barco-boceto-lapiz',
   });

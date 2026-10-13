@@ -1292,9 +1292,15 @@ def check_enemigos_3d(art):
 
 
 # --- Mascotas de Blender del barco del mar 3D (plan 015, T175): art/mascotas/3d/ -------------------
+# Y los personajes del agua (plan 029 T270): art/personajes/3d/, mismo contrato (export_mascotas_glb.py --kind).
 MASCOTAS_SUBDIR = os.path.join("mascotas", "3d")
 MASCOTAS_DIR = os.path.join(HERE, "mascotas")
 MASCOTAS_NOT_MASCOTS = {"__init__"}
+# Cada clase: clave de su lista en el manifiesto, esquema y nombre del tipo en el informe.
+PART_MODEL_KINDS = {
+    "mascotas": ("mascotas", "mascota3d.schema.json", "mascot-glb"),
+    "personajes": ("personajes", "personaje3d.schema.json", "character-glb"),
+}
 
 
 def export_mascotas_max_tris():
@@ -1302,55 +1308,68 @@ def export_mascotas_max_tris():
     return module_constants(os.path.join(HERE, "export_mascotas_glb.py"), ["MAX_TRIS"])["MAX_TRIS"]
 
 
-def mascot_modules():
-    """{id: (ruta, PARTS)} de los módulos de tools/blender/mascotas/ (el id es su `ID`)."""
+def mascot_modules(kind="mascotas"):
+    """{id: (ruta, PARTS)} de los módulos de tools/blender/<kind>/ (el id es su `ID`)."""
     out = {}
-    for f in sorted(os.listdir(MASCOTAS_DIR)):
+    mdir = os.path.join(HERE, kind)
+    for f in sorted(os.listdir(mdir)):
         if not f.endswith(".py") or f[:-3] in MASCOTAS_NOT_MASCOTS:
             continue
-        path = os.path.join(MASCOTAS_DIR, f)
+        path = os.path.join(mdir, f)
         consts = module_constants(path, ["ID", "PARTS"])
         out[consts["ID"]] = (path, consts["PARTS"])
     return out
 
 
 def check_mascotas_3d(art):
-    """-> (label, kind, fails, info, n_glb). Cada mascota de tools/blender/mascotas/ con su GLB, en presupuesto,
+    """Las mascotas del barco (art/mascotas/3d/)."""
+    return check_part_models(art, "mascotas")
+
+
+def check_personajes_3d(art):
+    """Los personajes del agua (art/personajes/3d/, plan 029 T270)."""
+    return check_part_models(art, "personajes")
+
+
+def check_part_models(art, kind):
+    """-> (label, kind, fails, info, n_glb). Cada módulo de tools/blender/<kind>/ con su GLB, en presupuesto,
     una malla por pieza en un nodo con sólo traslación (su pivote, el de PARTS en coordenadas glTF), sin texturas
     (/mar aplana cada pieza a una geometría con el color en los vértices y la anima con transformaciones)."""
-    label = MASCOTAS_SUBDIR.replace(os.sep, "/")
+    key, schema_file, ckind = PART_MODEL_KINDS[kind]
+    subdir = os.path.join(kind, "3d")
+    label = subdir.replace(os.sep, "/")
     fails, info = [], []
-    res = os.path.join(art, MASCOTAS_SUBDIR)
+    res = os.path.join(art, subdir)
     mpath = os.path.join(res, "manifest.json")
-    modules = mascot_modules()
+    modules = mascot_modules(kind)
+    export_hint = "Blender -b -P tools/blender/export_mascotas_glb.py" + ("" if kind == "mascotas" else " -- --kind " + kind)
     if not os.path.exists(mpath):
-        return label, "mascot-glb", ["falta %s (Blender -b -P tools/blender/export_mascotas_glb.py)"
-                                     % os.path.relpath(mpath, REPO)], info, 0
+        return label, ckind, ["falta %s (%s)" % (os.path.relpath(mpath, REPO), export_hint)], info, 0
     with open(mpath, encoding="utf-8") as f:
         man = json.load(f)
-    with open(os.path.join(HERE, "mascota3d.schema.json"), encoding="utf-8") as f:
+    with open(os.path.join(HERE, schema_file), encoding="utf-8") as f:
         schema = json.load(f)
     errs = validate(man, schema, schema)
     if errs:
-        return label, "mascot-glb", errs, info, 0
+        return label, ckind, errs, info, 0
     budget = export_mascotas_max_tris()
     if man["max_tris"] != budget:
         fails.append("max_tris %d; export_mascotas_glb.MAX_TRIS es %d (vuelve a exportar)" % (man["max_tris"], budget))
-    ids = [e["id"] for e in man["mascotas"]]
+    ids = [e["id"] for e in man[key]]
     if len(set(ids)) != len(ids):
         fails.append("ids repetidos: %s" % ids)
     for m in modules:
         if m not in ids:
-            fails.append("%s (tools/blender/mascotas/) sin GLB en el manifiesto (exporta con --only %s)" % (m, m))
+            fails.append("%s (tools/blender/%s/) sin GLB en el manifiesto (exporta con --only %s)" % (m, kind, m))
     on_disk = sorted(f for f in os.listdir(res) if f.endswith(".glb"))
-    listed = sorted(e["file"] for e in man["mascotas"])
+    listed = sorted(e["file"] for e in man[key])
     if on_disk != listed:
         fails.append("GLB en la carpeta %s; en el manifiesto %s" % (on_disk, listed))
-    for e in man["mascotas"]:
+    for e in man[key]:
         mid = e["id"]
         names = [p["name"] for p in e["parts"]]
         if mid not in modules:
-            fails.append("%s: sin módulo en tools/blender/mascotas/ con ID %r" % (mid, mid))
+            fails.append("%s: sin módulo en tools/blender/%s/ con ID %r" % (mid, kind, mid))
         else:
             parts = modules[mid][1]
             if list(parts) != names:
@@ -1400,7 +1419,7 @@ def check_mascotas_3d(art):
             fails.append("%s: largo %r y alto %r tienen que ser positivos" % (mid, e["length"], e["height"]))
         info.append("%s: %d piezas, %d/%d triángulos, %d materiales (%d emisivos), %d kB"
                     % (mid, len(names), tris, budget, n_mats, n_glow, os.path.getsize(path) // 1024))
-    return label, "mascot-glb", fails, info, len(man["mascotas"])
+    return label, ckind, fails, info, len(man[key])
 
 
 # --- Props del hero de la landing (T78): art/landing/3d/ y los stills ----------------------------
@@ -1643,6 +1662,7 @@ def main():
     batches.append([check_decor_3d(a.art)])   # art/decor/3d/ (T101)
     batches.append([check_enemigos_3d(a.art)])   # art/enemigos/3d/ (plan 015, T174)
     batches.append([check_mascotas_3d(a.art)])   # art/mascotas/3d/ (plan 015, T175)
+    batches.append([check_personajes_3d(a.art)])   # art/personajes/3d/ (plan 029, T270)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:

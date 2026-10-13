@@ -4,6 +4,87 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T270: Characters in the water: thieving seagull, dancing crab, the lost tourist
+
+**Qué existe**
+- `packages/engine/src/characters/index.ts` (`@boia/engine/characters`), puro y con pruebas: `SeagullClock`
+  (`SEAGULL_TUNING`, `muestra`: primer ataque a los 75 s de navegación libre, luego cada 150 ± 45 s, 20 s de
+  calma tras una partida; roba `stealAmount(coins, cap)` = mín(5, lo que hay), nunca de un bolsillo vacío ni por
+  debajo de cero; 15 s para pillarla; propina 3), `seagullParam()` (`?gaviota=1`), `alicanteHour()` /
+  `hourParam()` (`?hora=4`, compartido con T273, zona `Europe/Madrid`), `guiriLines()` / `guiriLine()` (dos
+  frases siempre, la tercera sólo de 03:00 a 07:00), `crabBeatPhase()` (`CRAB_BPM` 124, `muestra`).
+- `apps/web/app/mar/engine/seagull.ts` (`Seagull`): la gaviota de a mano (estilo `wildlife.ts`); llega alta y
+  por detrás, baja en picado a la popa, huye bajo (1,9 u) y despacio (0,58 u/s; el barco hace 0,94) con una
+  moneda en el pico y zigzag; el barco la pilla al acercarse a 1,3 u pasados 4 s del robo, o un toque en
+  pantalla (48 px); se ríe (graznido triple) y se va si pasan los 15 s. Escondida si el barco vuela, en el
+  Cañón o en el Castillo; nada durante partidas (`busy` de T268).
+- `apps/web/app/mar/engine/crab.ts` (`Crab`): el cangrejo y su roca junto a la escollera oeste del puerto
+  (sólida para el barco). Sin radio, paseíto; con la radio, salta y alterna pinzas al compás (fase sobre el
+  tiempo de la canción, que el reproductor apunta en `lib/radio/bridge.ts` `setRadioElapsed`/`radioBeat`);
+  un toque: giro con salto (1,3 s). Con movimiento reducido se queda quieto.
+- `apps/web/app/mar/engine/guiri.ts` (`Guiri`): el turista del flamenco, modelo de Blender en tres piezas
+  (`flotador`, `guiri`, `brazo`), carga perezosa al acercarse el barco a 90 u (`CHARACTER_MODELS` en
+  `mascot-models.ts`, servido en `/art/personajes/3d/guiri.glb`, 76 KB, 3 416 triángulos); deriva a 0,32 u/s
+  por el agua (vira ante tierra, se queda en la copia del barco); un toque: saluda con el brazo y la web pone
+  el bocadillo (`data-testid="mar-guiri-bocadillo"`) con «Excuse me, where's the after?» / «There's always an
+  after.» en círculo, y de 03:00 a 07:00 de Alicante una tercera que señala el after (`mar.guiri.after`).
+- Blender: `tools/blender/personajes/guiri.py` (mismo contrato que las mascotas); `export_mascotas_glb.py`
+  admite `--kind personajes` y escribe `art/personajes/3d/{guiri.glb, manifest.json}`;
+  `tools/blender/personaje3d.schema.json`; `check.py` valida `art/personajes/3d/` igual que las mascotas
+  (`check_personajes_3d`). Las dos mascotas re-exportadas con el script tocado salen byte a byte iguales.
+- `mar3d.ts`: `buildCharacters()`, `stepCharacters()`, `tapCharacter()`, `attackSeagull()`; `onCharacter`,
+  `coins()` y `beat()` en las opciones; `data-gaviota` (`no|baja|huye|rie|pillada|se-va`), `data-cangrejo`
+  (`quieto|pasea|baila|giro`) y `data-guiri` (`lejos|cargando|glb|error`) en el lienzo.
+- `mar-client.tsx`: avisos (`mar.gaviota.*`), graznidos (`squawk()` en `sound.ts`), el contador de monedas
+  descuenta lo que lleva la gaviota (`data-robadas`) mientras huye; al pillarla vuelve y `grantEncounter(…,
+  'lugar:gaviota:seguir', 3, 'daily')` da la propina y la señal del logro; `?gaviota=1`, `?hora=4`.
+- Logro secreto nuevo en el catálogo de muestra (`packages/store/src/sample/progress.ts`): `gaviota-pillada`
+  («Gaviota pillada», `complete_encounter` / `gaviota`, 40 puntos, sin sello del Carnet). T274 pone icono y pista.
+- Textos nuevos en `lib/i18n/es-mar.ts` (`mar.gaviota.*`, `mar.guiri.*`), todos `muestra`.
+- Pruebas: `packages/engine/src/characters/characters.test.ts` (nunca por debajo de cero ni sobre el tope,
+  devuelve con propina a tiempo, se ríe pasado el plazo, nada en partida, determinista con semilla, hora de
+  Alicante y frases por hora, compás), `engine/seagull.test.ts`, `engine/crab.test.ts`, `engine/guiri.test.ts`,
+  `engine/mascot-models.test.ts` (el GLB del guiri existe, con sus piezas, ≤ 300 KB), e2e
+  `e2e/mar-personajes.spec.ts` (la gaviota ataca con `?gaviota=1` y con el bolsillo vacío se va sin nada).
+- Validación del modelo (fuera del repo, `C:/Users/alvar/AppData/Local/Temp/orchestrator-attach/boia-planet-T270/`):
+  `metrics.json` (`hard_gate_pass: true`, 3 mallas, 15 materiales planos, 0 caras degeneradas, 0 aristas sueltas,
+  sin texturas) y `vistas/` (perspectiva, frente, espalda, izquierda, derecha, cenital y `contact_sheet.png`,
+  renderizadas del GLB reimportado en un Blender limpio con `blender-asset-validation`).
+
+**Comandos y resultado**
+- `blender -b --factory-startup -P tools/blender/export_mascotas_glb.py -- --kind personajes --only guiri` (Blender
+  4.0.1) → `guiri.glb`: 3 piezas, 3 416 triángulos, 15 materiales, 75 kB, exit 0.
+- `python tools/blender/check.py` → exit 0 (`personajes/3d: guiri: 3 piezas, 3416/4500 triángulos … 75 kB`).
+- `E2E_PORT=3272 pnpm e2e mar-personajes --project=desktop` → exit 0, 1 passed.
+- Tras integrar `main` (T269 + T278):
+  `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0 (313 ficheros, 2774 pasan, 1 saltada).
+- `sh tools/spec/checks.sh` → exit 0 (295 REQ, OK; `tools/blender/check.py` OK con `personajes/3d`).
+- `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0 (`/mar` 219 kB, primera carga 603 kB).
+- `pnpm cf:measure` → exit 0, 2,207 KiB gzip (presupuesto 2,800).
+
+- Integrado con `main` (T269 olas + T278): `stepCharacters` usa el mismo `gameBusy` que el tiempo y las olas;
+  los dos logros secretos (`salto-mortal`, `gaviota-pillada`) y las dos exportaciones (`./swell`, `./characters`)
+  conviven; la prueba de los logros ocultos los lee del catálogo.
+
+**Pendiente**
+- Las monedas robadas no se descuentan del libro: el cliente no tiene ninguna API que reste monedas
+  (`world_reward` exige premio positivo; sólo `buyCosmetic` gasta). Mientras la gaviota huye el contador las
+  descuenta; si se escapa, el aviso dice que «se le caen al mar y la marea te las devuelve» y vuelven. Para
+  que la pérdida sea real haría falta un movimiento negativo del libro (local y Supabase): decisión de Álvaro.
+- Todos los números son `muestra` (tope 5, propina 3, 15 s, frecuencia, 124 BPM, velocidades).
+- El punto de salida del guiri lo fija la semilla 2707 (agua libre más cercana al azar); hoy cae cerca del
+  puerto, así que su modelo se carga nada más entrar.
+
+**Probar a mano**
+- `/mar?gaviota=1`: con monedas, la gaviota baja por detrás, roba hasta 5 (el contador las descuenta) y huye
+  bajo; perseguirla hasta alcanzarla (o tocarla) → «Gaviota pillada», +3 de propina y el logro secreto; dejarla
+  15 s → se ríe y se va. Con 0 monedas → «Se va ofendida».
+- Junto a la escollera oeste del puerto: el cangrejo en su roca pasea; con la radio puesta salta al compás;
+  tocarlo → giro con salto.
+- El guiri del flamenco a la deriva cerca del puerto: tocarlo → saluda y dice sus frases en inglés;
+  `/mar?hora=4` → la tercera frase señala el after.
+
 ## 2026-10-13 — plan 029 T269: Olas grandes como rampas y el «salto mortal»
 
 **Qué existe**

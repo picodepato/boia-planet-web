@@ -31,6 +31,7 @@ import {
 } from '@boia/engine/ui';
 import { type QualityTier, detectQuality } from '@boia/engine/streaming';
 import { type WeatherEvent, type WeatherKind, WeatherClock } from '@boia/engine/weather';
+import type { SeagullEvent } from '@boia/engine/characters';
 import { type SwellEvent, SwellClock } from '@boia/engine/swell';
 import type { DefeatStyle, SurvivorsConfig } from '@boia/engine/survivors';
 import { CASTLE_PLACE_ID, type WorldConfig, type WorldObject } from '@boia/world';
@@ -171,9 +172,12 @@ import {
 } from './race-props';
 import { createWater } from './water';
 import { type Canoncito, createCanoncito } from './canoncito';
-import { MascotModelStore } from './mascot-models';
+import { CHARACTER_MODELS, MascotModel, MascotModelStore } from './mascot-models';
 import { MINIKRAKEN_WAVE_DISTANCE, type Minikraken, createMinikraken } from './minikraken';
 import { type Tortuga, createTortuga } from './tortuga';
+import { SEAGULL_LOOK, Seagull } from './seagull';
+import { CRAB_LOOK, Crab } from './crab';
+import { GUIRI_LOOK, Guiri } from './guiri';
 import { boatVisible, hitShake } from './survivors-props';
 import { SurvivorsView } from './survivors-view';
 import type { SurvivorsRun } from '../survivors';
@@ -318,12 +322,27 @@ export interface Mar3DOptions {
   busy?(): boolean;
   /** Entra, se va o truena un episodio del tiempo (T268). Para el sonido. */
   onWeather?(e: WeatherEvent): void;
+  /** Pasó algo con un personaje del agua (T270): la gaviota, el cangrejo o el guiri tocados. */
+  onCharacter?(e: CharacterEvent): void;
+  /** Monedas del bolsillo ahora (la gaviota nunca roba más de las que hay; T270). */
+  coins?(): number;
+  /** La radio (T270): si suena y por dónde va la canción, para el compás del cangrejo. */
+  beat?(): { playing: boolean; elapsed: number } | null;
   /**
    * Una ola grande (T269): se levanta, se va o el barco la cruza (`flip`: con
    * turbo, da la vuelta entera: el «salto mortal»). Para el logro.
    */
   onSwell?(e: SwellEvent): void;
 }
+
+/** Lo que pasa con los personajes del agua (plan 029 T270). */
+export type CharacterEvent =
+  /** El reloj de la gaviota ladrona: baja, roba, la pillan, se ríe, se va. */
+  | { type: 'gaviota'; event: SeagullEvent }
+  /** Tocaron al cangrejo (hace su paso especial). */
+  | { type: 'cangrejo' }
+  /** Tocaron al guiri del flamenco (saluda; la web pone su bocadillo). */
+  | { type: 'guiri' };
 
 /** Dónde está y hacia dónde mira un barco (u de motor, rad): el fantasma, la salida. */
 /** Un punto del mar en u de motor. */
@@ -523,6 +542,13 @@ export class Mar3D {
   /** La Tortuga turbo (T175): nada detrás del barco, en la escena, no en cubierta. */
   private tortuga: Tortuga | null = null;
   private readonly mascotModels = new MascotModelStore();
+  /** Los personajes del agua (T270): la gaviota ladrona, el cangrejo bailarín y el guiri del flamenco. */
+  private readonly seagull = new Seagull();
+  private crab: Crab | null = null;
+  private guiri: Guiri | null = null;
+  private readonly guiriModel = new MascotModel(CHARACTER_MODELS.guiri);
+  /** ¿Es agua (escena), lejos de islas, decorado y costas? Para la fauna y el guiri. */
+  private readonly isWater: (x: number, z: number) => boolean;
   private mascotWave = false;
   private mascotCheck = 0;
   private readonly faces: FaceTextures;
@@ -865,7 +891,7 @@ export class Mar3D {
 
     this.clouds = new Clouds(this.b);
     this.scene.add(this.clouds.group);
-    this.wildlife = new Wildlife((x, z) => {
+    this.isWater = (x, z) => {
       const obstacles = [...this.runtime.solidObstacles(), ...this.decorSolids].map((o) => ({
         x: toScene(o.x),
         z: toScene(o.y),
@@ -875,14 +901,20 @@ export class Mar3D {
       for (const island of this.islands)
         obstacles.push({ x: island.x, z: island.z, radius: island.R * 1.15 });
       return waterClear(x, z, obstacles, this.periodS, 1.2);
-    });
+    };
+    this.wildlife = new Wildlife(this.isWater);
     this.onWildlifeMotion();
     this.wildlifeMotion.addEventListener('change', this.onWildlifeMotion);
     this.scene.add(this.wildlife.fish);
+    this.buildCharacters();
     // Todo lo demás se curva con el planeta (lo que ya está curvado se queda como está).
     curveTree(this.scene);
     // The flock crosses the camera's cloud plane; it does not bend with the sea surface.
     this.scene.add(this.wildlife.gulls);
+    // La gaviota ladrona (T270) vuela cerca del barco: se curva con el planeta.
+    curveTree(this.seagull.group);
+    this.scene.add(this.seagull.group);
+    opts.canvas.dataset.gaviota = this.seagull.visual;
     // La lluvia de la tormenta (T268): cae cerca de la cámara, sin curvar.
     this.scene.add(this.rain.mesh);
     opts.canvas.dataset.clima = 'no';
@@ -937,6 +969,157 @@ export class Mar3D {
   /** El episodio del tiempo de ahora (también mientras se va), o null. */
   get weatherKind(): WeatherKind | null {
     return this.weather.state.kind;
+  }
+
+  // --- Los personajes del agua (plan 029 T270) ---------------------------------
+
+  /** La gaviota ladrona ataca ya (`?gaviota=1`). */
+  attackSeagull(): void {
+    this.characterEvents(this.seagull.attack());
+  }
+
+  /** Cómo se ve la gaviota ahora (`data-gaviota`). */
+  get seagullVisual(): string {
+    return this.seagull.visual;
+  }
+
+  /** El cangrejo, el guiri y dónde está este último (escena); para las pruebas. */
+  get characters(): { crab: Crab | null; guiri: Guiri | null } {
+    return { crab: this.crab, guiri: this.guiri };
+  }
+
+  private characterEvents(events: readonly SeagullEvent[]): void {
+    for (const e of events) this.opts.onCharacter?.({ type: 'gaviota', event: e });
+  }
+
+  /**
+   * El cangrejo en su roca junto a la escollera oeste del puerto (sólida para
+   * el barco) y el guiri a la deriva desde un punto de agua al azar; los dos
+   * se curvan con el planeta. El guiri es una vista (`__guiri`) para que el
+   * bocadillo lo siga (`anchor`).
+   */
+  private buildCharacters(): void {
+    const esc = this.world.objects.find((o) => o.identity.id === 'puerto-escollera_oeste');
+    if (esc) {
+      const cx = toScene(esc.position.x) - 1.7;
+      const cz = toScene(esc.position.y) + 1.0;
+      this.crab = new Crab();
+      this.crab.group.position.set(cx, 0, cz);
+      this.decorSolids.push({ x: fromScene(cx), y: fromScene(cz), radius: fromScene(1.3) });
+      curveTree(this.crab.group);
+      this.addView({
+        id: '__cangrejo',
+        obj: this.crab.group,
+        kind: 'cangrejo',
+        y: 0,
+        phase: 0,
+        labelY: 2.2,
+      });
+      this.opts.canvas.dataset.cangrejo = this.crab.visual;
+    }
+    // Un punto de agua al azar (lejos de la costa en todas direcciones) donde empieza a derivar.
+    const g = rng(2707);
+    let start = { x: (this.b.left + this.b.right) / 2, z: (this.b.top + this.b.bottom) / 2 };
+    for (let i = 0; i < 80; i++) {
+      const x = this.b.left + g() * (this.b.right - this.b.left);
+      const z = this.b.top + g() * (this.b.bottom - this.b.top);
+      const clear = [0, 1, 2, 3, 4, 5, 6, 7].every((k) =>
+        this.isWater(x + Math.cos(k * 0.785) * 6, z + Math.sin(k * 0.785) * 6),
+      );
+      if (this.isWater(x, z) && clear) {
+        start = { x, z };
+        break;
+      }
+    }
+    const guiri = new Guiri(this.guiriModel, { ...start, heading: g() * Math.PI * 2 }, g);
+    this.guiri = guiri;
+    guiri.group.position.set(start.x, 0, start.z);
+    curveTree(guiri.group);
+    this.addView({
+      id: '__guiri',
+      obj: guiri.group,
+      kind: 'guiri',
+      y: 0,
+      phase: 0,
+      labelY: 1.5,
+      update: (v) => {
+        v.bx = guiri.pos.x;
+        v.bz = guiri.pos.z;
+        v.obj.visible = guiri.visible;
+      },
+    });
+    this.opts.canvas.dataset.guiri = guiri.modelState;
+  }
+
+  /** Un toque sobre un personaje (px del lienzo): la gaviota se pilla, el cangrejo baila, el guiri saluda. */
+  private tapCharacter(px: number, py: number): boolean {
+    const near = (x: number, y: number, z: number, radius: number) => {
+      this.project(x, y, z, this.scr);
+      return this.scr.on && Math.hypot(this.scr.x - px, this.scr.y - py) <= radius;
+    };
+    const sg = this.seagull.drawn;
+    if (sg && this.seagull.catchable && near(sg.x, sg.y, sg.z, SEAGULL_LOOK.tapPx)) {
+      this.characterEvents(this.seagull.catch());
+      return true;
+    }
+    const crab = this.crab;
+    if (crab && crab.group.visible) {
+      const p = crab.group.position;
+      if (near(p.x, crab.top + 0.3, p.z, CRAB_LOOK.tapPx)) {
+        crab.tap();
+        this.opts.onCharacter?.({ type: 'cangrejo' });
+        return true;
+      }
+    }
+    const guiri = this.guiri;
+    if (guiri && guiri.visible && guiri.group.visible) {
+      const p = guiri.group.position;
+      if (near(p.x, 0.7, p.z, GUIRI_LOOK.tapPx)) {
+        guiri.tap();
+        this.opts.onCharacter?.({ type: 'guiri' });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Avanza los personajes del agua tras la fauna, con el barco en (x, z) rumbo h (escena). */
+  private stepCharacters(
+    dt: number,
+    t: number,
+    x: number,
+    z: number,
+    h: number,
+    flying: boolean,
+  ): void {
+    const ds = this.opts.canvas.dataset;
+    const busy = this.gameBusy;
+    const reduced = this.reducedMotion;
+    const events = this.seagull.update(dt, {
+      ship: { x, z },
+      heading: h,
+      focus: { x: this.wrapC.x, z: this.wrapC.y },
+      period: this.periodS,
+      busy,
+      coins: this.opts.coins?.() ?? 0,
+      reduced,
+      hidden: flying || this.defense !== null || this.survivors !== null,
+    });
+    if (events.length > 0) this.characterEvents(events);
+    if (ds.gaviota !== this.seagull.visual) ds.gaviota = this.seagull.visual;
+    if (this.crab) {
+      this.crab.update(dt, this.opts.beat?.() ?? null, reduced);
+      if (ds.cangrejo !== this.crab.visual) ds.cangrejo = this.crab.visual;
+    }
+    if (this.guiri) {
+      this.guiri.update(dt, t, {
+        ship: { x, z },
+        period: this.periodS,
+        isWater: this.isWater,
+        reduced,
+      });
+      if (ds.guiri !== this.guiri.modelState) ds.guiri = this.guiri.modelState;
+    }
   }
 
   /** Trae ya una ola grande delante del barco (el parámetro de desarrollo `?ola=1`, T269). */
@@ -2324,6 +2507,10 @@ export class Mar3D {
     this.stickEl.remove();
     this.wildlifeMotion.removeEventListener('change', this.onWildlifeMotion);
     this.wildlife.dispose();
+    this.seagull.dispose();
+    this.crab?.dispose();
+    this.guiri?.dispose();
+    this.guiriModel.destroy();
     this.scene.traverse((o) => {
       const m = o as Mesh;
       m.geometry?.dispose();
@@ -3228,6 +3415,8 @@ export class Mar3D {
       this.opts.canvas.dataset.arenaToqueTipo = what.type;
       return;
     }
+    // Un personaje del agua (T270): se pilla, baila o saluda.
+    if (this.tapCharacter(cx - r.left, cy - r.top)) return;
     // ¿Cerca de un lugar con rótulo? Rumbo a él.
     let best: { id: string; d: number } | null = null;
     for (const p of this.pins) {
@@ -4044,6 +4233,7 @@ export class Mar3D {
     const clouds = this.clouds.group.visible ? 'on' : 'off';
     if (this.opts.canvas.dataset.faunaClouds !== clouds)
       this.opts.canvas.dataset.faunaClouds = clouds;
+    this.stepCharacters(dt, t, x, z, h, !!fl);
 
     if (this.course) {
       // El destino, en la copia del lado por el que va el barco.

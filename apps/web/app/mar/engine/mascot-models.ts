@@ -31,7 +31,26 @@ export const MASCOT_MODELS = {
 
 export type MascotModelKey = keyof typeof MASCOT_MODELS;
 
-export const mascotModelUrl = (file: string) => `${MASCOT_MODELS_URL}/${file}`;
+/**
+ * Los personajes del agua (plan 029 T270): el mismo contrato por piezas desde
+ * `tools/blender/personajes/*.py` (`export_mascotas_glb.py --kind personajes`),
+ * servidos en `art/personajes/3d/`. Se cargan perezosos, sólo cuando hacen
+ * falta (el guiri, al acercarse el barco).
+ */
+export const CHARACTER_MODELS_URL = `${ART_BASE_URL}/personajes/3d`;
+
+export const CHARACTER_MODELS = {
+  guiri: {
+    id: 'guiri',
+    file: 'guiri.glb',
+    url: CHARACTER_MODELS_URL,
+    parts: ['flotador', 'guiri', 'brazo'],
+  },
+} as const;
+
+export type CharacterModelKey = keyof typeof CHARACTER_MODELS;
+
+export const mascotModelUrl = (file: string, base = MASCOT_MODELS_URL) => `${base}/${file}`;
 
 /** Cómo se ve ahora una mascota con modelo (para `data-mascota-modelo` y las pruebas). */
 export type MascotModelState = 'cargando' | 'glb' | 'error';
@@ -94,7 +113,8 @@ export class MascotModel {
   state: MascotModelState = 'cargando';
 
   constructor(
-    private readonly spec: { file: string; parts: readonly string[] },
+    /** El archivo, sus piezas y, si no es una mascota, de dónde se sirve (`url`; T270). */
+    private readonly spec: { file: string; parts: readonly string[]; url?: string },
     private readonly load: (url: string) => Promise<Object3D> = loadGltf,
   ) {}
 
@@ -102,7 +122,7 @@ export class MascotModel {
     this.refs++;
     if (!this.ready) {
       this.state = 'cargando';
-      this.ready = this.load(mascotModelUrl(this.spec.file)).then(
+      this.ready = this.load(mascotModelUrl(this.spec.file, this.spec.url)).then(
         (scene) => {
           const parts = splitMascotModel(scene, this.spec.parts);
           disposeScene(scene);
