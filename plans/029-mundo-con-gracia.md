@@ -60,7 +60,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: viewer with prev/next/swipe/keys and playable clips (plan 026 iOS rules), clips in /mar, 60 s / 50 MB, home 7+ photos with the 4 real first (198.8 kB); sonnet + Opus audit (galeria e2e 6/6) — 0944e1e
 
 ## T278 — Database security: lock down SECURITY DEFINER functions before accounts go live
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -72,7 +72,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - `schema.supabase.ts` known-exceptions list shrinks accordingly; a test fails if any public SECURITY DEFINER function lacks a pinned search_path or is executable by anon without being on an explicit allowlist → pass
   - `pnpm test:supabase` against dev → pass; `E2E_SUPABASE=1` the admin access e2e spec only → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: admin_sign_in_email dropped; discount_code_for/radio_* moved to private SECURITY DEFINER with INVOKER wrappers; every function has empty search_path; schema test enforces it; test:supabase 170 pass on dev; migration 20261013100200 dev only — 4518539
 
 ## T268 — Weather episodes: levante, summer storm, calima
 - Status: done
@@ -104,7 +104,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome:
 
 ## T270 — Characters in the water: thieving seagull, dancing crab, the lost tourist
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: fable
 - Skills: blender-modeling-workflow, blender-asset-validation
@@ -196,10 +196,12 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: New task T278 (DB security of SECURITY DEFINER functions), launched next (Álvaro: "arregla la función de la base y las otras")
 - 2026-10-13: T277 audit: viewer video follows plan 026 (attributes before src, preload none, unload on nav), viewer captures its keys so /mar does not steer underneath, sound choice carries to the next clip (T277 audit)
 - 2026-10-13: T268: busy = race or any minigame + 20 s calm after; no repeat of the same episode; levante 8 u/s west; flash max 35 % to lavender; edited mar-client.tsx beyond Scope to wire it (T268)
+- 2026-10-13: T278: the real Admin now signs in typing the Carnet 000 account email + password + TOTP ("000" shortcut only in local demo), because no server route may hold the service key (T278)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-13: Defence in depth: ~20 private SECURITY DEFINER functions trust p_user from their public wrapper; add p_user = auth.uid() checks. TRASPASO ~405 still mentions typing 000 for the admin email; mark the SECURITY DEFINER item done in seguridad-pendiente (T278)
 - 2026-10-13: admin-fotos.spec.ts has the same untranslated island-name line galeria.spec.ts had; the 4 real photos have no srcset (~260 KB lazy on phones) (T277 audit)
 - 2026-10-13: SECURITY before switching accounts on: `admin_sign_in_email` is callable by anon and returns the Carnet 000 account email; SECURITY DEFINER functions in public (`admin_sign_in_email`, `discount_code_for`, `radio_reorder`, `radio_set_first`) need a review (T276)
 - 2026-10-13: hosts-parity could also check that accounts are on/off identically on both hosts (CSP header) (T276)
@@ -223,3 +225,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: T278 added by Álvaro, next to launch
 - 2026-10-13 T277 audit done (3178a94), integrated 0944e1e
 - 2026-10-13 T268 done, integrated 9028c69
+- 2026-10-13 T278 launched (attempt 1, opus), agent a13f2d74366ae24f2
+- 2026-10-13 T269 launched (attempt 1, sonnet), agent a893c7855c7d8fe56
+- 2026-10-13 T269 sonnet done (0f97849). Opus audit launched, agent afd51daa15d6ea5c3
+- 2026-10-13 T278 done, integrated 4518539
