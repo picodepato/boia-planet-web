@@ -113,6 +113,9 @@ export const RPC_REJECTIONS = [
   'unknown_trash',
   'answer_exists',
   'music_changed',
+  // La radio del equipo (plan 022 T246; en private desde plan 029 T278)
+  'unknown_song',
+  'invalid_order',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 

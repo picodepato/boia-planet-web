@@ -265,7 +265,7 @@ test('/admin con cuentas: código + TOTP y las cuatro secciones sobre datos real
     );
     await page.goto('/admin');
     // Lo primero es el Carnet 000 (plan 017 T193); el equipo entra con el email.
-    await expect(page.getByTestId('admin-login-carnet')).toBeVisible();
+    await expect(page.getByTestId('admin-login-carnet-email')).toBeVisible();
     await page.getByTestId('admin-login-usar-email').click();
     await page.getByTestId('admin-login-email').fill(admin.email);
     await page.getByTestId('admin-login-enviar').click();

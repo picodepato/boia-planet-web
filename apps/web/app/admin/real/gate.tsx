@@ -7,11 +7,11 @@ import {
   type TotpEnrollment,
   adminSignOut,
   adminStep,
-  WrongCarnetLogin,
+  WrongPasswordLogin,
   enrollTotp,
   redeemBackupCode,
   sendAdminCode,
-  signInWithCarnet,
+  signInWithAdminPassword,
   verifiedTotp,
   verifyAdminCode,
   verifyTotp,
@@ -29,8 +29,9 @@ type GateState = AdminStep | { step: 'loading' } | { step: 'error' };
  * TOTP (alta con QR la primera vez) y dentro. Sin rol del equipo, «sin
  * acceso». Sin Supabase no se usa: /admin es la demo local de siempre.
  *
- * Plan 017 T193 (decisión 9): lo primero es el Carnet 000 con la contraseña
- * de su cuenta; el código del email queda para el resto del equipo. En el
+ * Plan 017 T193 (decisión 9): lo primero es la cuenta del Carnet 000 con su
+ * contraseña (desde T278 se escribe su email: la base ya no lo da); el código
+ * del email queda para el resto del equipo. En el
  * paso del TOTP, un código de respaldo de un solo uso da de alta otro.
  */
 export function RealAdminGate({ door = false }: { door?: boolean } = {}) {
@@ -137,7 +138,7 @@ function SignIn({ onDone }: { onDone: () => Promise<void> }) {
 }
 
 function CarnetPassword({ onDone }: { onDone: () => Promise<void> }) {
-  const [carnet, setCarnet] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,11 +148,11 @@ function CarnetPassword({ onDone }: { onDone: () => Promise<void> }) {
     setBusy(true);
     setError(null);
     try {
-      await signInWithCarnet(carnet, password);
+      await signInWithAdminPassword(email, password);
       await onDone();
     } catch (err) {
       setError(
-        err instanceof WrongCarnetLogin ? t('admin.real.carnet.wrong') : problemText(err, null),
+        err instanceof WrongPasswordLogin ? t('admin.real.carnet.wrong') : problemText(err, null),
       );
       setBusy(false);
     }
@@ -163,14 +164,13 @@ function CarnetPassword({ onDone }: { onDone: () => Promise<void> }) {
       <p className="admin-lead">{t('admin.real.carnet.lead')}</p>
       <form className="admin-form" onSubmit={(e) => void submit(e)}>
         <label className="admin-field">
-          <span className="admin-field__label">{t('admin.real.carnet.number')}</span>
+          <span className="admin-field__label">{t('admin.real.carnet.email')}</span>
           <input
-            inputMode="numeric"
+            type="email"
             autoComplete="username"
-            placeholder="000"
-            value={carnet}
-            onChange={(e) => setCarnet(e.target.value)}
-            data-testid="admin-login-carnet"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            data-testid="admin-login-carnet-email"
           />
         </label>
         <label className="admin-field">
@@ -186,7 +186,7 @@ function CarnetPassword({ onDone }: { onDone: () => Promise<void> }) {
         <button
           type="submit"
           className="admin-button"
-          disabled={busy || !carnet.trim() || !password}
+          disabled={busy || !email.trim() || !password}
           data-testid="admin-login-carnet-entrar"
         >
           {t('admin.real.carnet.enter')}

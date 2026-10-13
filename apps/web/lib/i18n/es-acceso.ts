@@ -15,16 +15,17 @@ export const esAcceso = {
   'admin.demoLogin.wrong': 'El número de Carnet o la contraseña no son correctos.',
   'admin.demoLogin.signOut': 'Salir del Admin',
 
-  // Admin con cuentas: Carnet 000 + contraseña + TOTP
+  // Admin con cuentas: email de la cuenta del Carnet 000 + contraseña + TOTP
+  // (desde T278 se escribe el email: la base ya no lo da por «000»)
   'admin.real.carnet.title': 'Entrar al Admin',
   'admin.real.carnet.lead':
-    'Entra con el Carnet del Admin (el número 000) y la contraseña de su cuenta. Después te pediremos el código de tu app de autenticación.',
-  'admin.real.carnet.number': 'Número de Carnet',
+    'Entra con el email y la contraseña de la cuenta del Admin (la del Carnet 000). Después te pediremos el código de tu app de autenticación.',
+  'admin.real.carnet.email': 'Email de la cuenta del Admin',
   'admin.real.carnet.password': 'Contraseña',
   'admin.real.carnet.enter': 'Entrar',
-  'admin.real.carnet.wrong': 'El número de Carnet o la contraseña no son correctos.',
+  'admin.real.carnet.wrong': 'El email o la contraseña no son correctos.',
   'admin.real.carnet.useEmail': 'Soy del equipo: entrar con el código del email',
-  'admin.real.carnet.useCarnet': 'Entrar con el Carnet 000',
+  'admin.real.carnet.useCarnet': 'Entrar con email y contraseña',
 
   // Códigos de respaldo
   'admin.real.backup.useLink': '¿Sin el móvil? Usa un código de respaldo',

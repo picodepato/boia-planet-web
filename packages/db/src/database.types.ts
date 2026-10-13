@@ -2373,12 +2373,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      admin_sign_in_email: {
-        Args: {
-          p_number: number;
-        };
-        Returns: string;
-      };
       admin_undo_carnet_moderation: {
         Args: {
           p_id: string;

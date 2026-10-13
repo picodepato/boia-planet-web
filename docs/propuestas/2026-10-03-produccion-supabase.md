@@ -74,7 +74,7 @@ las e2e crean y borran cuentas allí. **La web pública no puede usarlo.**
     línea `postgresql://…`, con la contraseña de la base en lugar de
     `[YOUR-PASSWORD]`. Sólo scripts.
 
-## 2. Las migraciones (las 35 de `supabase/migrations/`)
+## 2. Las migraciones (las 37 de `supabase/migrations/`)
 
 Se aplican todas, en orden, con el script del repo. Lee las variables de la
 terminal antes que las de `apps/web/.env.local` (una variable definida gana
@@ -86,10 +86,23 @@ export NEXT_PUBLIC_SUPABASE_URL='https://<ref-de-prod>.supabase.co'
 export NEXT_PUBLIC_SUPABASE_ANON_KEY='<publishable de prod>'
 export SUPABASE_SERVICE_ROLE_KEY='<secret de prod>'
 export SUPABASE_DB_URL='postgresql://postgres.<ref-de-prod>:<contraseña>@<host>:5432/postgres'
-pnpm db:migrate:dev     # «[migraciones] 35 aplicadas de 35» y las semillas de muestra
-pnpm db:migrate:dev     # otra vez: «0 aplicadas de 35 (al día)»
+pnpm db:migrate:dev     # «[migraciones] 37 aplicadas de 37» y las semillas de muestra
+pnpm db:migrate:dev     # otra vez: «0 aplicadas de 37 (al día)»
 ```
 
+- [ ] Las dos últimas, del plan 029, van con las demás (ya están en
+      `boia-planet-dev`):
+  - `20261013100100_gallery_clips_longer.sql` (T277): el bucket
+    `event-clips` admite clips de hasta 50 MB.
+  - `20261013100200_security_definer_lockdown.sql` (T278): **seguridad,
+    imprescindible antes de encender**. Borra `admin_sign_in_email` (daba a
+    cualquiera sin cuenta el email de la cuenta del Carnet 000) y saca de
+    `public` las funciones con SECURITY DEFINER (`discount_code_for`,
+    `radio_set_first`, `radio_reorder`). Desde ella, quien entra al Admin con
+    contraseña escribe el **email** de su cuenta, no «000».
+- [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
+      función con SECURITY DEFINER en `public` (tiene que salir vacío):
+      `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`
 - [ ] El script se llama `:dev` por historia: aplica al proyecto de las
       variables y **se niega** si `SUPABASE_DB_URL` no es del mismo proyecto
       que `NEXT_PUBLIC_SUPABASE_URL`. Lo que aplica queda apuntado en

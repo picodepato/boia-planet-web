@@ -13,6 +13,8 @@ const read = (path: string) =>
 const SQL = read('supabase/migrations/20261007100400_admin_access_export.sql');
 const NUMBERS = read('supabase/migrations/20261006100600_member_numbers_artist_link.sql');
 const TYPES = read('packages/db/src/database.types.ts');
+const LOCKDOWN_FILE = '20261013100200_security_definer_lockdown.sql';
+const LOCKDOWN = read(`supabase/migrations/${LOCKDOWN_FILE}`);
 
 /** El cuerpo de una función. */
 function body(sql: string, name: string): string {
@@ -57,17 +59,17 @@ describe('el Carnet 000 es del Admin y el contador nunca lo da', () => {
     expect(SQL).toContain(
       'revoke all on function public.assign_admin_carnet(uuid) from public, anon, authenticated;',
     );
-    expect(SQL).toContain('grant execute on function public.assign_admin_carnet(uuid) to service_role;');
+    expect(SQL).toContain(
+      'grant execute on function public.assign_admin_carnet(uuid) to service_role;',
+    );
   });
 
-  it('entrar con el número sólo vale para el 000 de una cuenta admin u owner', () => {
-    const lookup = body(SQL, 'public.admin_sign_in_email');
-    expect(lookup).toContain('where p_number = 0 and c.member_number = 0');
-    expect(lookup).toContain("s.role in ('admin', 'owner')");
-    // Lo único que puede llamar quien aún no ha entrado.
-    expect([...SQL.matchAll(/grant execute on function (\S+) to anon/g)].map((m) => m[1])).toEqual([
-      'public.admin_sign_in_email(bigint)',
-    ]);
+  it('el email del 000 ya no lo da la base (T278): la función que lo daba a anon se borra', () => {
+    // La primera versión se lo daba a cualquiera que escribiera «000».
+    expect(SQL).toContain('grant execute on function public.admin_sign_in_email(bigint) to anon');
+    expect(LOCKDOWN).toContain('drop function public.admin_sign_in_email(bigint);');
+    expect(LOCKDOWN).not.toMatch(/grant [^;]* to [^;]*anon/);
+    expect(TYPES).not.toContain('admin_sign_in_email');
   });
 });
 
@@ -110,7 +112,9 @@ describe('códigos de respaldo: de un solo uso y sólo su hash', () => {
     expect(SQL).not.toMatch(/used_at = null|set used_at = null/);
     // Sólo quien es del equipo; quita el TOTP perdido para dar de alta otro.
     expect(use).toContain('from public.staff_roles s where s.user_id = p_user');
-    expect(use).toContain("delete from auth.mfa_factors where user_id = p_user and factor_type = 'totp';");
+    expect(use).toContain(
+      "delete from auth.mfa_factors where user_id = p_user and factor_type = 'totp';",
+    );
     expect(body(SQL, 'public.admin_use_backup_code')).toContain('private.require_member()');
   });
 });
@@ -119,12 +123,20 @@ describe('descargar mis datos: sólo lo de quien llama y sin secretos', () => {
   const exp = body(SQL, 'private.export_my_data');
 
   it('cada tabla se lee filtrada por la cuenta que llama', () => {
-    const reads = [...exp.matchAll(/from (public|auth)\.(\w+) (\w+)\s+where (\w+)\.(\w+) = p_user/g)];
+    const reads = [
+      ...exp.matchAll(/from (public|auth)\.(\w+) (\w+)\s+where (\w+)\.(\w+) = p_user/g),
+    ];
     const all = [...exp.matchAll(/from (public|auth)\.(\w+)/g)];
     expect(reads.length).toBe(all.length);
     for (const r of reads) expect(r[3], r[2]).toBe(r[4]);
     expect(reads.map((r) => r[2])).toEqual(
-      expect.arrayContaining(['carnets', 'consents', 'ledger_transactions', 'bottles', 'purchases']),
+      expect.arrayContaining([
+        'carnets',
+        'consents',
+        'ledger_transactions',
+        'bottles',
+        'purchases',
+      ]),
     );
     expect(body(SQL, 'public.export_my_data')).toContain(
       'private.export_my_data(private.require_member())',
@@ -161,12 +173,76 @@ describe('permisos, rechazos y tipos', () => {
     for (const name of [
       'admin_backup_codes_left',
       'admin_generate_backup_codes',
-      'admin_sign_in_email',
       'admin_use_backup_code',
       'assign_admin_carnet',
       'export_my_data',
     ]) {
       expect(TYPES).toContain(`      ${name}: {`);
+    }
+  });
+});
+
+describe('T278: nada con SECURITY DEFINER en public', () => {
+  /** Las funciones que crea la migración, con su esquema. */
+  const created = [...LOCKDOWN.matchAll(/create (?:or replace )?function (\w+)\.(\w+)\(/g)].map(
+    (m) => `${m[1]}.${m[2]}`,
+  );
+
+  it('va detrás de la última migración que había', () => {
+    expect(LOCKDOWN_FILE > '20261013100100_gallery_clips_longer.sql').toBe(true);
+  });
+
+  it('la lógica en private con SECURITY DEFINER; en public, envolturas INVOKER con la misma firma', () => {
+    expect(created.sort()).toEqual([
+      'private.discount_code_for',
+      'private.radio_reorder',
+      'private.radio_set_first',
+      'public.discount_code_for',
+      'public.radio_reorder',
+      'public.radio_set_first',
+    ]);
+    for (const name of created) {
+      const start = LOCKDOWN.indexOf(`function ${name}(`);
+      expect(start, name).toBeGreaterThanOrEqual(0);
+      const header = LOCKDOWN.slice(start, LOCKDOWN.indexOf('$$', start));
+      expect(header, name).toContain("set search_path = ''");
+      if (name.startsWith('private.')) expect(header, name).toContain('security definer');
+      else {
+        expect(header, name).toContain('security invoker');
+        expect(header, name).not.toContain('security definer');
+      }
+    }
+    expect(LOCKDOWN).toContain('select private.discount_code_for(p_discount)');
+    expect(LOCKDOWN).toContain('select private.radio_set_first(p_song)');
+    expect(LOCKDOWN).toContain('select private.radio_reorder(p_ids)');
+  });
+
+  it('cada una mira la sesión por dentro: la radio pide admin con aal2; el código, la cuenta', () => {
+    for (const fn of ['radio_set_first', 'radio_reorder']) {
+      const body = LOCKDOWN.slice(LOCKDOWN.indexOf(`create function private.${fn}(`));
+      expect(body.slice(0, 300), fn).toContain("perform private.require_staff('admin');");
+    }
+    const code = LOCKDOWN.slice(LOCKDOWN.indexOf('create function private.discount_code_for('));
+    expect(code.slice(0, 600)).toContain('u.user_id = (select auth.uid())');
+    expect(code.slice(0, 600)).toContain("d.scope = 'event'");
+    // Ninguna recibe la cuenta como parámetro.
+    expect(LOCKDOWN).not.toMatch(/function private\.\w+\(p_user/);
+  });
+
+  it('sin EXECUTE para PUBLIC ni anon; sólo authenticated', () => {
+    for (const fn of [
+      'private.discount_code_for(text)',
+      'private.radio_set_first(text)',
+      'private.radio_reorder(text[])',
+      'public.discount_code_for(text)',
+      'public.radio_set_first(text)',
+      'public.radio_reorder(text[])',
+    ]) {
+      expect(LOCKDOWN).toContain(`revoke all on function ${fn} from public, anon;`);
+      expect(LOCKDOWN).toContain(`grant execute on function ${fn} to authenticated;`);
+    }
+    for (const m of LOCKDOWN.matchAll(/raise exception '([a-z_]+)'/g)) {
+      expect(RPC_REJECTIONS).toContain(m[1]);
     }
   });
 });

@@ -5,7 +5,8 @@
  *
  * - el contador de socios nunca da el 0 y nadie pone el 0 a un socio;
  * - sólo service_role da el Carnet 000, y sólo a una cuenta admin u owner;
- * - con el 000 se pide el email de esa cuenta y se entra con su contraseña;
+ * - nadie averigua el email de esa cuenta (T278); se entra con email y
+ *   contraseña;
  * - los códigos de respaldo valen una vez y quitan el TOTP perdido;
  * - la descarga lleva lo de quien llama y nada de nadie más.
  *
@@ -74,7 +75,10 @@ describe('el Carnet 000', () => {
     await expectDenied(m.client.rpc('assign_admin_carnet', { p_user: m.id }));
     await expectDenied(ctx.anon.rpc('assign_admin_carnet', { p_user: m.id }));
     // Ni service_role escribiendo la fila a mano se lo da a un socio.
-    const direct = await ctx.service.from('carnets').update({ member_number: 0 }).eq('user_id', m.id);
+    const direct = await ctx.service
+      .from('carnets')
+      .update({ member_number: 0 })
+      .eq('user_id', m.id);
     expect(direct.error?.message).toBe('carnet_zero_reserved');
   });
 
@@ -105,16 +109,17 @@ describe('el Carnet 000', () => {
     ]);
   });
 
-  it('con el 000 se pide el email y se entra con la contraseña; otro número no da nada', async () => {
-    expect(await ok(ctx.anon.rpc('admin_sign_in_email', { p_number: adminProfile.member_number })))
-      .toBeNull();
-    if (zeroTaken) return;
-    const email = await ok(ctx.anon.rpc('admin_sign_in_email', { p_number: 0 }));
-    expect(email).toBe(admin.email);
+  it('el email de la cuenta del 000 no se da a nadie; se entra con email y contraseña', async () => {
+    // T278: `admin_sign_in_email` daba el email a quien escribía «000».
+    const gone = await ctx.anon.rpc('admin_sign_in_email' as never, { p_number: 0 } as never);
+    expect(gone.error?.code).toBe('PGRST202');
     const password = randomBytes(18).toString('base64url');
     await authOk(ctx.service.auth.admin.updateUserById(admin.id, { password }));
     const fresh = anonClient(ctx.env);
-    const wrong = await fresh.auth.signInWithPassword({ email: admin.email, password: 'otra-cosa' });
+    const wrong = await fresh.auth.signInWithPassword({
+      email: admin.email,
+      password: 'otra-cosa',
+    });
     expect(wrong.error).toBeTruthy();
     const good = await fresh.auth.signInWithPassword({ email: admin.email, password });
     expect(good.error).toBeNull();
@@ -147,7 +152,10 @@ describe('códigos de respaldo', () => {
     for (const c of res.codes) expect(JSON.stringify(audit)).not.toContain(c);
     const m = await ctx.member('respaldo-socio');
     await expectRejected(m.client.rpc('admin_generate_backup_codes'), 'forbidden');
-    await expectRejected(m.client.rpc('admin_use_backup_code', { p_code: res.codes[0]! }), 'forbidden');
+    await expectRejected(
+      m.client.rpc('admin_use_backup_code', { p_code: res.codes[0]! }),
+      'forbidden',
+    );
   });
 
   it('cada código vale una vez, quita el TOTP y deja dar de alta otro', async () => {
@@ -164,12 +172,18 @@ describe('códigos de respaldo', () => {
     const password = randomBytes(18).toString('base64url');
     await authOk(ctx.service.auth.admin.updateUserById(admin.id, { password }));
     await authOk(fresh.auth.signInWithPassword({ email: admin.email, password }));
-    await expectRejected(fresh.rpc('admin_use_backup_code', { p_code: 'AAAAA-AAAAA' }), 'backup_code_invalid');
+    await expectRejected(
+      fresh.rpc('admin_use_backup_code', { p_code: 'AAAAA-AAAAA' }),
+      'backup_code_invalid',
+    );
     const used = (await ok(
       fresh.rpc('admin_use_backup_code', { p_code: code.toLowerCase().replace('-', ' ') }),
     )) as unknown as BackupCodeUse;
     expect(used.left).toBe(9);
-    await expectRejected(fresh.rpc('admin_use_backup_code', { p_code: code }), 'backup_code_invalid');
+    await expectRejected(
+      fresh.rpc('admin_use_backup_code', { p_code: code }),
+      'backup_code_invalid',
+    );
     const factors = await fresh.auth.mfa.listFactors();
     expect(factors.data?.totp.filter((f) => f.status === 'verified')).toEqual([]);
     // Alta nueva con aal1: vuelve a tener segundo factor.

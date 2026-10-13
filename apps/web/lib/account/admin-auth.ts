@@ -4,17 +4,16 @@
  * primera vez se da de alta el TOTP con el QR de la app de autenticación.
  * Sin rol del equipo no se pide TOTP: «sin acceso».
  *
- * Plan 017 T193 (decisión 9): el Admin entra con el Carnet 000 y la
- * contraseña de su cuenta, y después el TOTP; si pierde el móvil, un código
- * de respaldo de un solo uso quita el TOTP y da de alta otro. El código del
- * email sigue para el resto del equipo.
+ * Plan 017 T193 (decisión 9): el Admin entra con la contraseña de su cuenta
+ * (la del Carnet 000; desde T278 escribiendo su email) y después el TOTP;
+ * si pierde el móvil, un código de respaldo de un solo uso quita el TOTP y
+ * da de alta otro. El código del email sigue para el resto del equipo.
  *
  * Usa el mismo cliente del navegador que la cuenta (`accountClient`): la
  * sesión del Admin es la de la cuenta con email.
  */
 import type { BackupCodeUse, BackupCodesResult } from '@boia/db/rpc';
 import { normalizeBackupCode } from '../admin/backup-codes';
-import { ADMIN_CARNET_NUMBER, parseCarnetNumber } from '../admin/demo-auth';
 import type { BoiaSupabase } from '../supabase/browser';
 import { accountClient } from './session';
 
@@ -86,30 +85,28 @@ export async function sendAdminCode(email: string): Promise<void> {
   throw error;
 }
 
-/** El Carnet o la contraseña no valen (no se dice cuál). */
-export class WrongCarnetLogin extends Error {
+/** El email o la contraseña no valen (no se dice cuál). */
+export class WrongPasswordLogin extends Error {
   constructor() {
-    super('wrong_carnet_login');
+    super('wrong_password_login');
   }
 }
 
 /**
- * Entrar con el Carnet 000 y la contraseña de su cuenta (plan 017 T193,
- * decisión 9). El servidor da el email de la cuenta del Carnet 000 (sólo de
- * ese número) y Supabase Auth comprueba la contraseña; después va el TOTP.
+ * Entrar con el email y la contraseña de la cuenta del Admin (la del Carnet
+ * 000; plan 017 T193, decisión 9) y después el TOTP. Plan 029 T278: el
+ * Admin escribe el email; antes «000» lo pedía a la base
+ * (`admin_sign_in_email`), y así cualquiera podía averiguarlo.
  */
-export async function signInWithCarnet(carnet: string, password: string): Promise<void> {
-  const number = parseCarnetNumber(carnet);
-  if (number !== ADMIN_CARNET_NUMBER || !password) throw new WrongCarnetLogin();
+export async function signInWithAdminPassword(email: string, password: string): Promise<void> {
+  const address = email.trim();
+  if (!address || !password) throw new WrongPasswordLogin();
   const sb = await client();
-  const { data: email, error } = await sb.rpc('admin_sign_in_email', { p_number: number });
-  if (error) throw error;
-  if (!email) throw new WrongCarnetLogin();
-  const res = await sb.auth.signInWithPassword({ email, password });
+  const res = await sb.auth.signInWithPassword({ email: address, password });
   if (res.error) {
     const code = (res.error as { code?: string }).code ?? '';
     if (code === 'invalid_credentials' || /invalid login credentials/i.test(res.error.message)) {
-      throw new WrongCarnetLogin();
+      throw new WrongPasswordLogin();
     }
     throw res.error;
   }

@@ -4,6 +4,41 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T278: Seguridad de la base: funciones SECURITY DEFINER cerradas antes de encender las cuentas
+
+**Qué existe**
+- Migración `supabase/migrations/20261013100200_security_definer_lockdown.sql`, aplicada **sólo** a `boia-planet-dev` (`[migraciones] 1 aplicadas de 37: 20261013100200`, sin semillas). NO aplicada en producción: está en el paso 2 de `docs/propuestas/2026-10-03-produccion-supabase.md`, con una consulta para comprobarlo en el SQL Editor.
+  - `public.admin_sign_in_email(bigint)` se borra: anon la ejecutaba y devolvía el email de la cuenta del Carnet 000.
+  - `discount_code_for`, `radio_set_first` y `radio_reorder`: la lógica pasa a `private` (SECURITY DEFINER, `search_path = ''`, nombres con esquema) y en `public` queda una envoltura SECURITY INVOKER con el mismo nombre y la misma firma (el cliente no cambia). Ninguna recibe la cuenta como parámetro: la sacan de la sesión. La radio pide `private.require_staff('admin')` (admin u owner con aal2; mismo rechazo `forbidden` 42501); el código común sólo llega a quien encontró ese descuento de entradas. EXECUTE: nada para PUBLIC ni anon; sólo authenticated.
+- Entrada al Admin con cuentas (`app/admin/real/gate.tsx`, `lib/account/admin-auth.ts` `signInWithAdminPassword`): el Admin escribe el **email** de la cuenta del Carnet 000 y su contraseña (después, el TOTP). Antes escribía «000» y la base le daba el email. La demo local (`demo-gate.tsx`) sigue con «000». Textos en `lib/i18n/es-acceso.ts` (`admin.real.carnet.email`, `.lead`, `.wrong`, `.useCarnet`), `muestra`.
+- Repaso de todas las funciones (catálogo de dev): todas las de `public` y `private` fijan `search_path = ''`; ninguna da EXECUTE a PUBLIC; anon sólo ejecuta las lecturas (rankings, botellas, calitas) y las ayudas de la RLS; ninguna SECURITY DEFINER queda en `public`. Tablas: RLS en todas las de `public`; las de `private` sin permisos para clientes.
+- Pruebas:
+  - `packages/db/src/supabase/security-definer.supabase.ts` (nueva): `admin_sign_in_email` no existe (PGRST202) para anon ni socio; `discount_code_for` denegada a anon, null para quien no encontró el descuento, el código para quien sí; `radio_set_first`/`radio_reorder` denegadas a anon, a un socio y a un admin aal1, y funcionan con aal2 (sin cambiar la radio); `private` no se alcanza por la Data API (PGRST106).
+  - `schema.supabase.ts`: la lista de anon pierde `admin_sign_in_email`; la de SECURITY DEFINER en `public` queda vacía; nuevas: lista explícita de funciones de `private` que anon ejecuta, ninguna con EXECUTE para PUBLIC, todas con `search_path` vacío.
+  - `admin-access.supabase.ts`: la prueba del 000 ahora comprueba que el email no sale y que se entra con email y contraseña (aal1 sin permisos).
+  - `lib/account/admin-access-sql.test.ts`: la migración nueva leída como texto.
+  - `e2e/admin-acceso.spec.ts`: con `E2E_SUPABASE=1`, contraseña mala → error; buena → paso del TOTP. Los casos de la demo se saltan con cuentas. `admin-real.spec.ts`: el testid del campo nuevo.
+- `packages/db/src/rpc.ts`: `unknown_song` e `invalid_order` en `RPC_REJECTIONS`. `database.types.ts` regenerado (`pnpm db:types:dev`): sin `admin_sign_in_email`.
+
+**Comandos y resultado**
+- `pnpm db:migrate:dev -- --no-seed` (dev) → `1 aplicadas de 37: 20261013100200`; `pnpm db:types:dev` → sólo quita `admin_sign_in_email`.
+- `pnpm test:supabase` (dev) → exit 0, 23 archivos, 170 pasan; quedan 0 cuentas `@example.test`.
+- `E2E_SUPABASE=1 E2E_PORT=3178 pnpm e2e admin-acceso --project=desktop` → exit 0, 1 pasa, 2 omitidos (los de la demo).
+- `E2E_SUPABASE=1 E2E_PORT=3178 pnpm e2e admin-real --project=desktop` → exit 0, 1 pasa.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 307 archivos, 2723 pasan, 1 omitido.
+- `sh tools/spec/checks.sh` → exit 0 (295 REQ, OK). `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; landing 198.8 kB de 200.0 kB.
+
+**Pendiente**
+- Producción: aplicar `20261013100100_gallery_clips_longer.sql` y `20261013100200_security_definer_lockdown.sql` con las demás (paso 2 del documento de encender las cuentas).
+- `docs/TRASPASO.md` (~405) aún dice que el email del Admin «se puede averiguar escribiendo 000»; `plans/seguridad-pendiente.md` puede tachar la revisión de SECURITY DEFINER. No tocados (fuera del Scope).
+- Defensa en profundidad: unas veinte funciones de `private` con SECURITY DEFINER reciben la cuenta (`p_user`) de su envoltura; son seguras porque `private` no está en la Data API (ahora lo prueba `security-definer.supabase.ts`). Si algún día se expone `private`, habría que hacer que comprueben `p_user = auth.uid()`.
+
+**Probar a mano**
+- Con cuentas (dev, `E2E_SUPABASE=1` o `.env.local`): `/admin` → «Entrar al Admin» pide **email** y contraseña; email y contraseña buenos → código de la app (TOTP); malos → «El email o la contraseña no son correctos.»
+- En el SQL Editor de dev: `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;` → vacío.
+- Admin → Radio: marcar la primera y reordenar siguen funcionando con aal2.
+
 ## 2026-10-13 — plan 029 T268: Weather episodes: levante, summer storm, calima
 
 Qué existe:
