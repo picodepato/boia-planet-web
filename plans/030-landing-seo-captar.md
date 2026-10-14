@@ -89,7 +89,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: «Sácate el Carnet» block after upcoming events (Carnet button + WhatsApp, email-news line only with accounts), WhatsApp in header/menu, pre-buy «El Carnet es obligatorio para entrar»; migration 20261014100300 (home_block_type carnet) applied to dev and prod; landing 199.8/200 kB — 5a6def7
 
 ## T289 — The landing planet survives losing its 3D
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -103,7 +103,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## T290 — «La Sosia» is the radio's first song, everywhere
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -144,7 +144,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: questions carry an audience (all/artist/public); artists keep the 5, public gets «dia-siguiente» first; RLS by audience; no answer deleted; migration 20261015100100 (dev; prod at end of plan) — b2cf36a
 
 ## T292 — «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T288
 - Model: opus
 - Skills: none
@@ -156,7 +156,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - component test: tapping «Comprar entradas» on ALL DAY BOIA shows the message and does not open the checkout; the Admin switch flips it → pass
   - `pnpm test:supabase` against dev for the new column/RLS → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: per-event `ticketsNotYet` (events.tickets_not_yet), message instead of checkout everywhere (also no-JS), Admin switch in both modes, JSON-LD PreOrder, e2e open sales via openSales(); migration 20261014100400 (dev; prod at end of plan) — 3712d3e
 
 ## Decisions
 - 2026-10-15 T287: prices flagged as sample are not published in JSON-LD; event pages get their own Event (orchestrator)
@@ -207,3 +207,8 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-15 02:00 T287 done · merged 970edc4
 - 2026-10-15 02:02 T292 launched · attempt 1 · agent af5af5190f556ada7 (opus)
 - 2026-10-15 02:40 T294 done · merged b2cf36a
+- 2026-10-15 02:45 T292 integration conflict (es-admin.ts, switch-on doc) with T294 → sent back to agent af5af5190f556ada7
+- 2026-10-15 02:45 T289 launched · attempt 1 · agent ae960f277bf3887e0 (opus); T290 waits for a slot
+- 2026-10-15 03:00 T292 conflict resolved by agent (383592a); integrating
+- 2026-10-15 03:00 T290 launched · attempt 1 · agent ac42bea2dbd102b3b (opus)
+- 2026-10-15 03:10 T292 done · merged 3712d3e
