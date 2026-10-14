@@ -28,7 +28,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: carnets.artist_profile_id (slug, unique); Admin join/undo in Socios with audit; one merged entry on /artistas and ArtistRotator (Carnet nickname, photo, music; profile genres); private.join_artist_profile for T296/T297; migration 20261015100200 (dev); landing 199.2 kB — 65f1ee7
 
 ## T296 — Personal claim link per artist
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T295
 - Model: opus
 - Skills: none
@@ -39,10 +39,10 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - `pnpm test:supabase` (dev): a valid code joins on sign-up and on sign-in with an existing Carnet; spent/expired/rotated codes do not join; only admin can create codes; codes are stored hashed → pass
   - unit/component tests: claim page states (valid, invalid), Admin status per profile → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: per-profile claim links (hashed, 30-day expiry, one per profile), /artista/reclamar/<code> (noindex), claim_artist_profile on sign-up/sign-in, Admin «Perfiles de artista» panel; /carnet/artista-<id> redirects to the real Carnet; migration 20261015100300 (dev) — 0769875
 
 ## T297 — «¿Eres uno de estos?» with the general link, approved by the Admin
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T296
 - Model: opus
 - Skills: none
@@ -56,12 +56,17 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome:
 
 ## Decisions
+- 2026-10-15: Álvaro: when this plan is done and pushed, message the session «Orchestrator: plan y detalles originales» [b8b0e7] so it launches its next plan, which it already has ready (orchestrator)
 - 2026-10-15: Álvaro: push when every task is done (git push origin main deploys both hosts), after applying the plan's migrations to production (orchestrator)
 - 2026-10-15: All three ways (personal link, request + approval, manual join by the Admin); on /artistas a claimed profile shows the Carnet's nickname (Álvaro)
 - 2026-10-15: Request + approval because the general artist link is shared and could be used to impersonate (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-15 T296: event line-ups still show a claimed profile's name instead of the Carnet nickname; event-card.tsx is on the landing critical path (0.8 kB left) — needs a budget decision or a lighter approach (Álvaro)
 
 ## Log
 - 2026-10-15 T295 launched · attempt 1 · agent a76cbaf455e18ad7d (opus)
 - 2026-10-15 T295 done · merged 65f1ee7
+- 2026-10-15 T296 launched · attempt 1 · agent af145814d94c78100 (opus); also covers line-ups / /carnet/artista-<id> for claimed profiles (left out of T295)
+- 2026-10-15 T296 done (opus) · 821d8f4; integrating. Line-ups still show the profile name (event-card is on the landing critical path, 0.8 kB left) → Proposals
+- 2026-10-15 T296 done · merged 0769875
