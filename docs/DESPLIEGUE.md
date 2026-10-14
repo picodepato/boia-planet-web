@@ -220,6 +220,14 @@ personal** (sección 7), DNS en **Cloudflare**.
    Redirect to `boiaplanet.net`), pero entonces la copia deja de servir sola:
    si Cloudflare se cae, la URL de Vercel mandaría a la web caída. Si se hace,
    hay que quitar la redirección lo primero en una caída (sección 5).
+6. **Buscadores (plan 030 T285).** Los dos hosts sirven `/robots.txt` y
+   `/sitemap.xml` (estáticos, de `apps/web/app/robots.ts` y `sitemap.ts`; en
+   Cloudflare los responde el Worker desde la caché de OpenNext, comprobado
+   con `wrangler dev`). Toda página pública lleva la canónica en
+   `https://boiaplanet.net` (`lib/seo.ts`), también la copia de Vercel: así
+   Google no la cuenta como contenido duplicado y la puede seguir sirviendo
+   sin redirigir. El sitemap para Search Console es
+   `https://boiaplanet.net/sitemap.xml`.
 
 ---
 

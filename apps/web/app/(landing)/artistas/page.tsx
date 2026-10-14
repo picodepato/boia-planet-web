@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { publicPage } from '../../../lib/seo';
 import { t } from '../../../lib/i18n';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { LiveArtists } from '../components/live-artists';
@@ -13,8 +14,8 @@ import { LiveArtists } from '../components/live-artists';
  */
 
 export const metadata: Metadata = {
-  title: `${t('artists.page.title')} · ${t('site.title')}`,
-  description: t('artists.intro'),
+  title: t('artists.page.title'),
+  ...publicPage('/artistas', t('artists.intro')),
 };
 
 export default function ArtistsPage() {

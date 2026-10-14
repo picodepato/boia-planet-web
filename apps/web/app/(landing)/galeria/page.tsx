@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import '../components/paginas.css';
 import Link from 'next/link';
 import { eventIslands } from '../../../lib/admin/world';
+import { publicPage } from '../../../lib/seo';
 import { t } from '../../../lib/i18n';
 import { FOTOS_COPY } from '../../../lib/landing/eventos-copy';
 import { type GalleryIsland, photoGalleries } from '../../../lib/landing/eventos';
@@ -20,8 +21,8 @@ import { LivePhotoGalleries } from '../components/photo-galleries';
  */
 
 export const metadata: Metadata = {
-  title: `${FOTOS_COPY.pageTitle} · ${t('site.title')}`,
-  description: FOTOS_COPY.pageLead,
+  title: FOTOS_COPY.pageTitle,
+  ...publicPage('/galeria', FOTOS_COPY.pageLead),
 };
 
 /** Las islas de evento del mapa compartido, con su nombre en el mundo por defecto. */

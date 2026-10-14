@@ -132,7 +132,7 @@ export const esCarnet = {
   'stamp.thisParty': 'esta fiesta', // T91
 
   // /sello
-  'sello.metaTitle': 'Sello de la fiesta · BOIA.PLANET', // T91
+  'sello.metaTitle': 'Sello de la fiesta', // T91 (la plantilla del layout añade «· BOIA.PLANET»)
   'sello.label': 'Sello de la fiesta',
   'sello.meta': '{date} · {from}–{to} · {place}',
   'sello.checking': 'Comprobando el sello…',

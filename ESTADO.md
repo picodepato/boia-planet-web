@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 030 T285: Open to Google: index, titles, canonical, sitemap and robots
+
+Qué existe:
+- `apps/web/lib/seo.ts` (SITE_URL, `publicPage`, `NOINDEX`), `app/robots.ts`, `app/sitemap.ts` (ambos `force-static`; salen como `/robots.txt` y `/sitemap.xml` en el build).
+- Layout raíz: sin `noindex`, `metadataBase` boiaplanet.net, plantilla de título `%s · BOIA.PLANET`; la home usa `seo.homeTitle` («BOIA.PLANET — …»). Canónica y descripción (i18n, `muestra`) en home, /mar, /galeria, /artistas, /tienda, /ranking, /legal/*, /eventos/*.
+- `noindex` sólo en /admin/* (nuevo `app/admin/layout.tsx`), /sello, /carnet (mi Carnet), /carnet/[id] (Carnets de miembros: apodos y fotos de personas reales; fuera del sitemap y sin bloquear en robots.txt, para que se lea el `noindex`) y /artista/[code]. robots.txt: disallow /admin, /api, /sello, /artista/.
+- /ranking sigue indexable: enseña apodos y avatares de la colección (`image={null}`), no fotos.
+- Los textos `seo.*` van en `lib/i18n/es-seo.ts` (sólo catálogo entero, servidor), no en `es-web.ts`, que viaja al navegador en la landing.
+- Quitados «demo» y «· boia-planet» de los títulos (también «Sello de la fiesta», que con la plantilla salía con «BOIA.PLANET» dos veces; y la clave sin uso `mar.mar.boiaPlanetMar3d`). El manifiesto ya usaba `site.title`.
+- `docs/spec/estado.md`: párrafo «Buscadores sin REQ propio» (no hay REQ de SEO en la spec). `docs/DESPLIEGUE.md` §4.6: los dos hosts sirven sitemap/robots y la canónica apunta a boiaplanet.net.
+- Prueba: `apps/web/app/seo.test.ts` (6 casos).
+
+Comandos:
+- vitest (sin packages/db) → 327 archivos, 2917 pasan, 1 skipped, exit 0; `tools/spec/checks.sh` exit 0; `pnpm lint` 0; `pnpm typecheck` 0; `pnpm build` 0 con `○ /robots.txt` y `○ /sitemap.xml`; landing 199.1 kB / 200 (199.3 antes de la auditoría; los `seo.*` en `es-web.ts` la subían).
+- `pnpm cf:measure` → Worker 2,272 KiB gzip / 2,800, OK. Sobre esa copia, `wrangler dev`: `/robots.txt` y `/sitemap.xml` → 200 (x-nextjs-cache HIT), `/` con canónica `https://boiaplanet.net`, `/carnet/abc` con `noindex, nofollow`.
+- `grep -ri "· demo" apps/web/app` → nada.
+
+Pendiente: la canónica de la home sale sin barra final (Next la normaliza; es la misma URL). Imágenes para compartir y JSON-LD son de T286/T287. Dar de alta el sitemap en Search Console (Álvaro).
+
 ## 2026-10-14 — plan 030 T291: Real legal identity in the legal pages and the privacy policy
 
 Qué existe

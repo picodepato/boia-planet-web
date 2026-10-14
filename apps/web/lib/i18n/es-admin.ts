@@ -25,7 +25,7 @@ export const esAdmin = {
   'admin.adminApp.verElMundo': 'Ver el mundo',
   'admin.adminApp.seccionesDelAdmin': 'Secciones del Admin',
   'admin.adminApp.cargandoElAdmin': 'Cargando el Admin…',
-  'admin.admin.boiaPlanet': '{bannerTitle} · boia-planet',
+  'admin.admin.boiaPlanet': '{bannerTitle}',
   'admin.achievements.globalTodosLosMundos': 'Global (todos los mundos)',
   'admin.achievements.deUnaTemporadaUn': 'De una temporada (un mundo)',
   'admin.achievements.editarLogro': 'editar logro',
@@ -613,7 +613,7 @@ export const esAdmin = {
     'sin publicar): así quedará la home al pulsar «Publicar».',
   'admin.draftPreview.volverAlAdmin': 'Volver al Admin',
   'admin.draftPreview.cargandoElBorrador': 'Cargando el borrador…',
-  'admin.vistaPrevia.vistaPreviaDelBorrador': 'Vista previa del borrador · boia-planet',
+  'admin.vistaPrevia.vistaPreviaDelBorrador': 'Vista previa del borrador',
   'admin.achievements.puntosMonedas':
     '{points} puntos · {coins} monedas{v3}{v4} ·{v5}{v6}{v7}{v8}{v9}{v10}',
   'admin.events.isla': '{v1} · {placeLabel} · isla:{v3}{islandName} · {v5}{v6}',

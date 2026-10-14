@@ -2,9 +2,13 @@ import type { Metadata, Viewport } from 'next';
 import { AccountGate } from '../../lib/account/sign-in-sheet';
 import { loadShipCatalog } from '../../lib/barco/load';
 import { MarClient } from './mar-client';
+import { publicPage } from '../../lib/seo';
 import { t } from '../../lib/i18n';
 
-export const metadata: Metadata = { title: t('mar.mar.boiaPlanetMar3d') };
+export const metadata: Metadata = {
+  title: t('seo.marTitle'),
+  ...publicPage('/mar', t('seo.mar')),
+};
 
 // Se prerrenderiza al construir: `loadShipCatalog` lee `art/` del disco y en
 // Cloudflare Workers no hay disco en tiempo de petición (plan 027 T261).

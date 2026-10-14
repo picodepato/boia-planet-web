@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { t } from '../../../../lib/i18n';
 import { LEGAL_DOCS, PRIVACY_WITH_ACCOUNTS } from '../../../../lib/legal/docs';
+import { publicPage } from '../../../../lib/seo';
 import { isSupabaseConfigured } from '../../../../lib/supabase/config';
 
 /**
@@ -23,8 +24,10 @@ export function generateStaticParams() {
 type Props = { params: Promise<{ doc: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const doc = docOf((await params).doc);
-  return { title: doc ? `${t(doc.title)} · ${t('site.title')}` : t('site.title') };
+  const id = (await params).doc;
+  const doc = docOf(id);
+  if (!doc) return {};
+  return { title: t(doc.title), ...publicPage(`/legal/${id}`, t('seo.legal')) };
 }
 
 export default async function LegalPage({ params }: Props) {

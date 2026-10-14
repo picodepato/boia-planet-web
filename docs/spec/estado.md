@@ -93,6 +93,17 @@ música (REQ-ADM-040), la papelera de 30 días con datos reales (REQ-ADM-030) y
 las copias con Storage (REQ-ARQ-013). Guía de prueba:
 [plan 020](../propuestas/2026-10-08-plan-020-guia-prueba.md).
 
+**Buscadores sin REQ propio.** El [plan 030](../../plans/030-landing-seo-captar.md)
+T285 abre la web a Google (Álvaro, 2026-10-14), alcance que la spec no nombra:
+sin el `noindex` general; títulos «BOIA.PLANET — …» (home) y «<página> ·
+BOIA.PLANET»; `metadataBase` y canónica en `https://boiaplanet.net` en cada
+página pública; `noindex` sólo en /admin, /carnet, /carnet/[id] (apodos y
+fotos de personas reales), /sello y /artista/[code]; `/sitemap.xml` (públicas,
+eventos y legales; sin /admin ni Carnets) y `/robots.txt` (bloquea /admin,
+/api, /sello, /artista/), servidos por Vercel y por Cloudflare. Prueba:
+[seo.test.ts](../../apps/web/app/seo.test.ts) (home indexable y canónica,
+/admin y Carnets con `noindex`, sitemap y robots).
+
 <!-- estado:tabla -->
 | ID | Requisito | Alcance | Estado | Evidencia | Nota |
 |---|---|---|---|---|---|

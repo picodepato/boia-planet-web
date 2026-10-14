@@ -24,6 +24,7 @@ import { esMundo } from './es-mundo';
 import { esPuerta } from './es-puerta';
 import { esPwa } from './es-pwa';
 import { esRadio } from './es-radio';
+import { esSeo } from './es-seo';
 import { esWeb } from './es-web';
 import { esZonas } from './es-zonas';
 import { esZonasEventos } from './es-zonas-eventos';
@@ -69,6 +70,7 @@ export const es = {
   ...esRadio,
   // La app instalable: manifiesto, «sin conexión» y el aviso (plan 027 T264).
   ...esPwa,
+  ...esSeo,
 } as const;
 
 export type MessageKey = keyof typeof es;

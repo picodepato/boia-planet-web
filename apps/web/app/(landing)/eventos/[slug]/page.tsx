@@ -3,7 +3,8 @@ import '../../components/paginas.css';
 import Link from 'next/link';
 import { t } from '../../../../lib/i18n';
 import { EVENTOS_COPY } from '../../../../lib/landing/eventos-copy';
-import { eventPageView, publicEventSlugs } from '../../../../lib/landing/eventos';
+import { publicPage } from '../../../../lib/seo';
+import { eventHref, eventPageView, publicEventSlugs } from '../../../../lib/landing/eventos';
 import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../../../../lib/landing/sample-content';
 import { BrandLogo } from '../../components/brand-logo';
 import { LiveEvent } from '../../components/live-event';
@@ -30,11 +31,15 @@ const sampleView = (slug: string) =>
   eventPageView({ ...SAMPLE_CONTENT, albums: SAMPLE_ALBUM_CONTENT }, slug, new Date());
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const view = sampleView(decodeURIComponent((await params).slug));
-  if (!view) return { title: t('site.title') };
+  const slug = decodeURIComponent((await params).slug);
+  const view = sampleView(slug);
+  if (!view) return {};
   return {
-    title: `${view.event.name} · ${t('site.title')}`,
-    description: view.event.description || `${view.kicker} · ${view.event.placeLabel}`,
+    title: view.event.name,
+    ...publicPage(
+      eventHref(slug),
+      view.event.description || `${view.kicker} · ${view.event.placeLabel}`,
+    ),
   };
 }
 

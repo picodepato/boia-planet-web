@@ -135,7 +135,6 @@ export const esMar = {
   'mar.minimap.abrirElMapaDel': 'Abrir el mapa del planeta',
   'mar.minimap.barco': 'Barco',
   'mar.minimap.mapa': 'Mapa',
-  'mar.mar.boiaPlanetMar3d': 'boia-planet · mar 3D',
   'mar.sheet.descuentoEncontradoMuestra': '🎁 Descuento encontrado · muestra',
   'mar.sheet.loTienesGuardadoEn': 'Lo tienes guardado en el menú, en «Mis códigos».',
   'mar.sheet.m': ' · {distance} m',

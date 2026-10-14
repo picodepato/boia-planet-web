@@ -1,5 +1,6 @@
 import { bootScript } from '@boia/engine/intro';
 import type { Metadata } from 'next';
+import { publicPage } from '../../lib/seo';
 import { t } from '../../lib/i18n';
 import { introCss, loadIntroData, stillCss } from '../../lib/intro/load';
 import { PRESENTATION } from '../../lib/landing/presentation';
@@ -10,8 +11,8 @@ import { LandingClientLazy } from './components/landing-client-lazy';
 import { LiveLanding } from './components/live-landing';
 
 export const metadata: Metadata = {
-  title: t('site.title'),
-  description: t('site.description'),
+  title: { absolute: t('seo.homeTitle') },
+  ...publicPage('/', t('site.description')),
 };
 
 // Se prerrenderiza al construir: `loadIntroData` lee `art/` del disco y en
