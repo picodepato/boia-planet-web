@@ -229,7 +229,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: 5 new questions (ids momento-quiero-estar, cancion-en-repeat, creando-tramando, disco-entero, buena-fiesta kept); old ones retired, answers kept and labelled in moderation; RLS blocks answers to retired questions; migrations 20261014100100 + 20261014100110 dev only; sonnet + Opus audit — 836760c
 
 ## T282 — Sequential Carnet numbers from 10, editable from the Admin
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T281
 - Model: opus
 - Skills: none
@@ -240,7 +240,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests (local): first new Carnet gets 10, then 11…; taken numbers skipped; Admin change validates range and uniqueness → pass
   - `pnpm test:supabase` against dev, with new tests for the sequence (incl. two concurrent creations) and the admin RPC permissions → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: accounts: next_member_number never below 10, counter reset once (migration 20261014100200, dev only); local: numbers from 10 per browser + Admin editor in Moderación; pnpm admin:carnet0 — 3a33729
 
 ## T283 — Change the Admin password
 - Status: done
@@ -300,11 +300,13 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14: T274: the two new achievements are visible (not secret); boia-secretos keeps its once-per-visit dialogue and gives a hint after it on each pass (T274 audit)
 - 2026-10-14: Carnet questions replaced (D-08 / §44.1): «yo quiero estar en esto», canción en repeat, qué estás creando o tramando, disco de principio a fin, una buena fiesta necesita siempre… (Álvaro)
 - 2026-10-14: Sign out resets the device to a first visit, keeping only device preferences; account entry (or sign out) also in the menu that appears when sliding down; no «start from zero» button in local mode (Álvaro)
+- 2026-10-14: T282: counter reset to after the highest number ≥ 10 if below 1000, otherwise to 9; local numbers count per browser; sample members get no number (T282)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Telegram question on the Supabase project (A reuse dev as production + new test project / B new production project) and the push offer timed out after 4 h: per the no-answer rule nothing outward is done (no push, no panel change); recommendation A stays for Álvaro (orchestrator)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: admin-password.supabase.ts «el enlace abre una sesión aal1» is flaky in the full run (passes alone); test:supabase uses up member numbers on dev; a trashed member whose number was reused cannot be restored (T282)
 - 2026-10-14: An Admin who loses both password and phone has no way back in (backup codes only after the password); dev min password length is 6, set 8 in production (T283 audit)
 - 2026-10-14: D-08 in docs/DECISIONES.md still quotes the old Carnet questions: Álvaro to note the change (T281)
 - 2026-10-14: 🪪 (Unicode 14) shows as an empty box on Windows 10 too (reward.tsx, sign-in-sheet, carnet panel/menu, checkout, es-mar); after island label may not fit at 360×640 at night; Puerto body rect vs dock model (T280)
@@ -380,3 +382,6 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T282 launched (attempt 1, opus), agent a908433e031e20047 (+ CLI admin:carnet0)
 - 2026-10-14 T284 added (sign out resets device, account in menus)
 - 2026-10-14 T283 audit done (48a1ec7), integrated 136d03e
+- 2026-10-14 T284 launched (attempt 1, opus), agent a6966deea167aeb60
+- 2026-10-14 T282 done (94f17ea); integrate → conflict in package.json with T283; sent back to agent
+- 2026-10-14 T282 merge conflict resolved (60e7a72), integrated 3a33729
