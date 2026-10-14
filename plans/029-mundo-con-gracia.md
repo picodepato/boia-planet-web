@@ -228,6 +228,34 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - Test command → exit 0
 - Outcome:
 
+## T282 — Sequential Carnet numbers from 10, editable from the Admin
+- Status: pending
+- Depends on: T281
+- Model: opus
+- Skills: none
+- Goal: Carnet numbers look random today. New Carnets must get sequential numbers starting at 10 (10, 11, 12…; 000 stays the Admin's, 1–9 reserved), in both modes: local/demo (packages/store local repository) and accounts (Supabase: a sequence or an atomic next-number in the member creation path, safe under concurrent sign-ups, skipping numbers already taken). Existing members keep the number they have (never renumber silently); the sequence continues after the highest number already given in the 10+ range only if that is below a sane cap, otherwise from the first free number ≥ 10 — decide, test and log it. The Admin can change any member's Carnet number from the Admin (members/Carnets section): integer ≥ 1, unique (clear Spanish error if taken), never 0 for a non-owner, logged in the existing admin audit trail if there is one; in accounts mode through an admin-only RPC (same security rules as T278: private SECURITY DEFINER + INVOKER wrapper, empty search_path, role check inside, tests as anon/member/admin). Wherever the number is shown (Carnet, public Carnet, QR/stamps, rankings) keeps working after a change.
+- Context: find where numbers are assigned (`packages/store/src/local.ts`, `supabase/migrations/20260928100100_identity.sql`, `20261003100000_accounts.sql`), `lib/admin/demo-auth.ts` (ADMIN_CARNET_NUMBER), Admin sections in `apps/web/app/admin/`, T278's `security-definer.supabase.ts` and `schema.supabase.ts`.
+- Scope: may touch the store, a new migration (dev only; add it to the switch-on doc), Admin UI and i18n, tests / must not renumber existing members, must not touch production.
+- Done when:
+  - unit tests (local): first new Carnet gets 10, then 11…; taken numbers skipped; Admin change validates range and uniqueness → pass
+  - `pnpm test:supabase` against dev, with new tests for the sequence (incl. two concurrent creations) and the admin RPC permissions → pass
+  - Test command → exit 0
+- Outcome:
+
+## T283 — Change the Admin password
+- Status: pending
+- Depends on: none
+- Model: sonnet
+- Audit: opus
+- Skills: none
+- Goal: Álvaro does not remember the Admin password and wants a way to change it. (1) Accounts mode: in the Admin's «Seguridad» section, a «Cambiar contraseña» form (current session must be fully signed in with TOTP / aal2; new password twice; minimum length per Supabase settings; `supabase.auth.updateUser`), plus on the Admin sign-in screen a «He olvidado la contraseña» link that sends Supabase's password recovery email to the typed address and a page to set the new password from that email link (redirect URL on both hosts; list it in the switch-on doc). (2) Local/demo mode (`lib/admin/demo-auth.ts`, PBKDF2 hash in the repo): a script `pnpm admin:password` that asks for the new password twice in the terminal with hidden input, generates a new random salt and hash with the same parameters, and rewrites `DEMO_ADMIN_PASSWORD` in `demo-auth.ts` (prints only «hash actualizado», never the password); document in the Admin docs that a commit + push is then needed for both hosts. The demo-auth tests that read `ADMIN_DEMO_PASSWORD` from the environment keep working.
+- Context: `apps/web/lib/admin/demo-auth.ts`, `apps/web/app/admin/demo-gate.tsx`, `apps/web/app/admin/real/gate.tsx`, `lib/account/admin-auth.ts`, the Admin «Seguridad» section, `docs/propuestas/2026-10-03-produccion-supabase.md`.
+- Scope: may touch those files, a new script under `apps/web/scripts/`, package.json scripts, i18n, tests / must not print or commit any password, must not change the current demo hash itself.
+- Done when:
+  - unit/component tests: change-password form validation and the aal2 requirement; recovery link flow; the script's hash function verifies with the existing `verifyDemoPassword` (or equivalent) for a test password → pass
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
 - 2026-10-13: Jumps come from big waves acting as ramps, no jump button; backflip with turbo (Álvaro)
@@ -324,3 +352,5 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T280 added from Álvaro's local test (map close button, Santa Bárbara and Las Calitas labels, coin glyph)
 - 2026-10-14 T280 launched (attempt 1, opus), agent a4ec31786fa0bec3c
 - 2026-10-14 T281 added (new Carnet questions, Álvaro)
+- 2026-10-14 T281 launched (attempt 1, sonnet), agent ac8ac3c102ef9ffb3
+- 2026-10-14 T282 (sequential Carnet numbers from 10, editable in Admin) and T283 (change Admin password) added by Álvaro
