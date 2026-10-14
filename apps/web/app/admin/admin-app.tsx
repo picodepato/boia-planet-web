@@ -26,6 +26,11 @@ import { PhotosSection } from './sections/photos';
 import { RadioSection } from './sections/radio';
 import { TextsSection } from './sections/texts';
 import { WorldSection } from './sections/world';
+import {
+  ArtistRequestsSection,
+  RequestCountBadge,
+  useArtistRequestCount,
+} from './real/artist-requests';
 import { RealBottles } from './real/botellas';
 import { RealCarnets } from './real/carnets';
 import { type RealAdmin, RealAdminProvider } from './real/common';
@@ -37,6 +42,7 @@ import { SociosSection } from './real/socios';
 import { type AdminContext, useAdminContext } from './use-admin';
 import { t } from '../../lib/i18n';
 import { MAR_PATH } from '../../lib/world-handoff';
+import { canManage } from '../../lib/account/admin-auth';
 
 type Section = { id: string; label: string; Component: ComponentType<{ ctx: AdminContext }> };
 
@@ -99,7 +105,16 @@ const REAL_SECTIONS: Section[] = SECTIONS.flatMap((s): Section[] => {
     return [s, { id: 'fiestas', label: t('admin.real.nav.fiestas'), Component: FiestasSection }];
   }
   if (s.id === 'artistas') {
-    return [s, { id: 'socios', label: t('admin.real.nav.socios'), Component: SociosSection }];
+    return [
+      s,
+      { id: 'socios', label: t('admin.real.nav.socios'), Component: SociosSection },
+      // «¿Eres uno de estos artistas?» pendientes de revisar (plan 031 T297).
+      {
+        id: 'solicitudes',
+        label: t('admin.real.nav.solicitudes'),
+        Component: ArtistRequestsSection,
+      },
+    ];
   }
   if (s.id === 'moderacion') {
     return [
@@ -154,6 +169,7 @@ export function AdminApp({
   }, [sections]);
   const section = sections.find((s) => s.id === active) ?? sections[0]!;
   const storage = ctx?.repo.status();
+  const pendingRequests = useArtistRequestCount(!!real && canManage(real.role));
 
   return (
     <RealAdminProvider value={real ?? null}>
@@ -217,6 +233,12 @@ export function AdminApp({
                     onClick={() => setActive(s.id)}
                   >
                     {s.label}
+                    {s.id === 'solicitudes' ? (
+                      <>
+                        {' '}
+                        <RequestCountBadge n={pendingRequests} />
+                      </>
+                    ) : null}
                   </a>
                 </li>
               ))}

@@ -2159,6 +2159,10 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      admin_artist_claim_requests: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_artist_link_info: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -2183,6 +2187,14 @@ export type Database = {
         Args: {
           p_profile: string;
           p_name: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_decide_artist_claim_request: {
+        Args: {
+          p_request: string;
+          p_approve: boolean;
           p_reason?: string;
         };
         Returns: Json;
@@ -2497,6 +2509,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      cancel_artist_claim_request: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       claim_artist_profile: {
         Args: {
           p_code: string;
@@ -2557,6 +2573,10 @@ export type Database = {
         Args: {
           p_payload: Json;
         };
+        Returns: Json;
+      };
+      my_artist_claim_request: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       my_staff_role: {
@@ -2633,6 +2653,13 @@ export type Database = {
           p_season?: string;
           p_limit?: number;
           p_offset?: number;
+        };
+        Returns: Json;
+      };
+      request_artist_profile: {
+        Args: {
+          p_profile: string;
+          p_name: string;
         };
         Returns: Json;
       };

@@ -1,7 +1,11 @@
 'use client';
 
 import type { Artist } from '@boia/contracts';
-import type { ArtistClaimLinkCreated, ArtistClaimLinkRow } from '@boia/db/rpc';
+import type {
+  AdminArtistClaimRequest,
+  ArtistClaimLinkCreated,
+  ArtistClaimLinkRow,
+} from '@boia/db/rpc';
 import { useEffect, useState } from 'react';
 import { claimLinkHref, whatsappHref } from '../../../lib/account/artist-claim';
 import { t } from '../../../lib/i18n';
@@ -20,18 +24,23 @@ import { must, when } from './common';
 
 export type ClaimStatus =
   | { kind: 'claimed'; nickname: string }
+  /** Plan 031 T297: alguien la pidió con «¿Eres uno de estos artistas?». */
+  | { kind: 'requested'; nickname: string; at: string }
   | { kind: 'sent'; at: string; expiresAt: string }
   | { kind: 'unclaimed'; expiredAt: string | null };
 
-/** El estado de una ficha: reclamada > enlace vigente > sin reclamar. */
+/** El estado de una ficha: reclamada > solicitud pendiente > enlace vigente > sin reclamar. */
 export function claimStatus(
   profileId: string,
   claimedBy: ReadonlyMap<string, string>,
   links: readonly ArtistClaimLinkRow[],
   now: number = Date.now(),
+  requests: readonly Pick<AdminArtistClaimRequest, 'profile_id' | 'nickname' | 'created_at'>[] = [],
 ): ClaimStatus {
   const nickname = claimedBy.get(profileId);
   if (nickname !== undefined) return { kind: 'claimed', nickname };
+  const req = requests.find((r) => r.profile_id === profileId);
+  if (req) return { kind: 'requested', nickname: req.nickname, at: req.created_at };
   const link = links.find((l) => l.profile_id === profileId);
   if (link && !link.spent_at && Date.parse(link.expires_at) > now) {
     return { kind: 'sent', at: link.created_at, expiresAt: link.expires_at };
@@ -46,6 +55,8 @@ export function claimStatusText(s: ClaimStatus): string {
   switch (s.kind) {
     case 'claimed':
       return t('admin.real.claims.claimedBy', { nickname: s.nickname });
+    case 'requested':
+      return t('admin.real.claims.requested', { nickname: s.nickname, date: when(s.at) });
     case 'sent':
       return t('admin.real.claims.sent', { date: when(s.at), expires: when(s.expiresAt) });
     case 'unclaimed':
@@ -171,6 +182,7 @@ export function ArtistClaimsPanel({
 }) {
   const [claimedBy, setClaimedBy] = useState<ReadonlyMap<string, string>>(new Map());
   const [links, setLinks] = useState<readonly ArtistClaimLinkRow[]>([]);
+  const [requests, setRequests] = useState<readonly AdminArtistClaimRequest[]>([]);
   const [fresh, setFresh] = useState<{ id: string; url: string } | null>(null);
   const [mine, setMine] = useState(0);
   const { status, busy, run } = useRun();
@@ -182,6 +194,11 @@ export function ArtistClaimsPanel({
       (d) => alive && setLinks((d as unknown as ArtistClaimLinkRow[]) ?? []),
       // Una base sin la migración 20261015100300: ningún enlace.
       () => alive && setLinks([]),
+    );
+    void must(sb.rpc('admin_artist_claim_requests')).then(
+      (d) => alive && setRequests((d as unknown as AdminArtistClaimRequest[]) ?? []),
+      // Una base sin la migración 20261015100400: ninguna solicitud.
+      () => alive && setRequests([]),
     );
     return () => {
       alive = false;
@@ -214,7 +231,7 @@ export function ArtistClaimsPanel({
             <ArtistClaimRow
               key={a.id}
               artist={a}
-              status={claimStatus(a.id, claimedBy, links)}
+              status={claimStatus(a.id, claimedBy, links, Date.now(), requests)}
               fresh={fresh?.id === a.id ? fresh.url : null}
               busy={busy}
               onCreate={() => create(a)}

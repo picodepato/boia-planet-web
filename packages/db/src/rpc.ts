@@ -122,6 +122,11 @@ export const RPC_REJECTIONS = [
   'already_joined',
   // El enlace personal para reclamar una ficha (plan 031 T296)
   'claim_invalid',
+  // La solicitud para reclamar una ficha que revisa el Admin (plan 031 T297)
+  'request_pending',
+  'profile_requested',
+  'unknown_request',
+  'request_closed',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -368,6 +373,29 @@ export interface ArtistClaimResult {
   profile_name: string;
   is_artist: boolean;
   joined: boolean;
+}
+
+/**
+ * request_artist_profile / my_artist_claim_request (plan 031 T297): la
+ * solicitud pendiente del Carnet de la sesión.
+ */
+export interface ArtistClaimRequest {
+  id: string;
+  profile_id: string;
+  profile_name: string;
+  status: 'pending';
+  created_at: string;
+}
+
+/** admin_artist_claim_requests (plan 031 T297): una solicitud pendiente. */
+export interface AdminArtistClaimRequest {
+  id: string;
+  user_id: string;
+  nickname: string;
+  email: string | null;
+  profile_id: string;
+  profile_name: string;
+  created_at: string;
 }
 
 /** admin_set_stamp_code */

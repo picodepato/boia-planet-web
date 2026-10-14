@@ -4,6 +4,68 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 031 T297: «¿Eres uno de estos?» con el enlace general, aprobado por el Admin
+
+Qué existe:
+- Migración `supabase/migrations/20261015100400_artist_claim_requests.sql`
+  (aplicada sólo a boia-planet-dev; anotada en
+  `docs/propuestas/2026-10-03-produccion-supabase.md`). Tabla
+  `private.artist_claim_requests` (una pendiente por Carnet y por ficha,
+  índices únicos parciales) y RPC sólo para authenticated (anon, ninguna):
+  `request_artist_profile` (Carnet de artista de la sesión, sin ficha; nunca
+  une), `my_artist_claim_request`, `cancel_artist_claim_request`,
+  `admin_artist_claim_requests` y `admin_decide_artist_claim_request`
+  (aprobar une con `private.join_artist_profile`, auditoría
+  `claim_request_approved`; rechazar, `claim_request_rejected`). Modelo de
+  T278 (privada DEFINER + pública INVOKER, search_path vacío). Redefine
+  `private.join_artist_profile`: una ficha unida por cualquier vía cierra sus
+  solicitudes pendientes (y las del Carnet unido).
+- Alta con el enlace general (`apps/web/lib/account/sign-in-sheet.tsx`): si el
+  Carnet se creó con código de artista válido (y no con el enlace personal de
+  T296), la bienvenida trae «¿Eres uno de estos artistas?»
+  (`lib/account/artist-picker.tsx`, cargado a demanda): fichas publicadas sin
+  reclamar, búsqueda por nombre sin tildes, «No, soy nuevo». Elegir una deja
+  la solicitud y enseña «Solicitud enviada: BOIA la revisará».
+- Carnet propio (`/carnet`): `lib/account/artist-request-status.tsx` enseña la
+  solicitud pendiente con «Retirar solicitud».
+- Admin con cuentas: sección «Solicitudes de artistas»
+  (`app/admin/real/artist-requests.tsx`, tras «Socios y emails») con apodo,
+  email, ficha elegida, fecha, «Aprobar» y «Rechazar»; número de pendientes en
+  el menú. «Perfiles de artista» (Socios) enseña «Solicitud pendiente de …».
+- Textos en `lib/i18n/es-carnet.ts` y `es-admin-real.ts` (muestra).
+- Modo local (D-20): no hay solicitudes; el selector no sale (el Carnet local
+  no pasa por la hoja de acceso) y el estado del Carnet no pinta nada.
+
+Comandos:
+- `pnpm db:migrate:dev` → 1 aplicada de 46 (20261015100400).
+- `pnpm test:supabase` → 29/30 archivos; el que falló era «los tipos
+  versionados coinciden» (los había escrito a mano); tras `pnpm --filter
+  @boia/db db:types:dev`, `pnpm test:supabase schema artist` → 5 archivos,
+  30 pass. `artist-claim-requests.supabase.ts`: 6 pass.
+- vitest (sin packages/db) → 337 archivos, 3018 pass, 3 skipped, exit 0.
+- `sh tools/spec/checks.sh` → 0; `pnpm lint` → 0; `pnpm build` → 0 (landing
+  199.3 kB / 200: +0.1 por la tabla de trozos del runtime de webpack, que
+  nombra los nuevos trozos a demanda; nada de este cambio en los trozos de la
+  landing); `pnpm typecheck` → 0.
+
+Pendiente:
+- Producción: aplicar 20261015100400 con las demás del plan.
+- El artista que contestó «No, soy nuevo» o retiró su solicitud no tiene otra
+  entrada al selector (sólo tras el alta); el Admin puede unirlo a mano (vía 3)
+  o mandarle su enlace personal (vía 1).
+
+Probar a mano (con cuentas, dev):
+1. Admin → Socios: crear el enlace de artistas. En otra ventana privada, abrir
+   `/artista/<código>` y crear un Carnet con un email nuevo.
+2. En la bienvenida sale «¿Eres uno de estos artistas?»: buscar un nombre,
+   elegir uno → «Solicitud enviada: BOIA la revisará». En `/carnet`, la misma
+   frase y «Retirar solicitud».
+3. Admin → «Solicitudes de artistas» (con el número en el menú): «Aprobar» →
+   en /artistas la ficha sale con el apodo del Carnet. Otra prueba:
+   «Rechazar» → el Carnet sigue de artista, sin ficha.
+4. Con una solicitud pendiente, unir esa ficha a otro Carnet desde Socios: la
+   solicitud desaparece de la lista.
+
 ## 2026-10-15 — plan 031 T296: Enlace personal para reclamar una ficha de artista
 
 Qué existe:

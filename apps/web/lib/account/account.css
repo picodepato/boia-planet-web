@@ -459,3 +459,16 @@
   margin: 0;
   font-size: 14px;
 }
+
+/* «¿Eres uno de estos artistas?» (plan 031 T297): la lista de fichas. */
+.acceso-picker {
+  max-height: 40vh;
+  margin: 8px 0 0;
+  padding: 0 4px 4px;
+  overflow-y: auto;
+  list-style: none;
+}
+.acceso-picker .acceso-ghost {
+  margin-top: 8px;
+  text-align: left;
+}

@@ -76,6 +76,9 @@ const REJECTION_TEXT: Partial<Record<string, MessageKey>> = {
   invalid_profile: 'admin.real.error.invalidProfile',
   profile_claimed: 'admin.real.error.profileClaimed',
   already_joined: 'admin.real.error.alreadyJoined',
+  // Solicitudes de artistas (plan 031 T297)
+  request_closed: 'admin.real.error.requestClosed',
+  unknown_request: 'admin.real.error.unknownRequest',
 };
 
 /** Lo que se le dice al equipo de un error de Supabase (una RPC, la RLS, la red). */

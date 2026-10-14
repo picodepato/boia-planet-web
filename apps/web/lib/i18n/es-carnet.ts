@@ -50,6 +50,27 @@ export const esCarnet = {
   'carnet.claim.normal': 'Crear mi Carnet',
   'carnet.claim.notice':
     'Has entrado con tu enlace de artista: al crear tu Carnet, se unirá a tu perfil de {name}.',
+  // «¿Eres uno de estos artistas?»: la solicitud que revisa BOIA (plan 031 T297, muestra)
+  'carnet.request.title': '¿Eres uno de estos artistas?',
+  'carnet.request.lead':
+    'Si ya tienes perfil en /artistas, elígelo: BOIA revisará tu solicitud y, si es tuyo, lo unirá a tu Carnet.',
+  'carnet.request.loading': 'Buscando los perfiles de artista…',
+  'carnet.request.search': 'Busca tu nombre',
+  'carnet.request.noMatch': 'Ningún perfil sin reclamar con ese nombre.',
+  'carnet.request.none': 'Ahora no hay perfiles de artista sin reclamar.',
+  'carnet.request.review': 'Elegir uno no lo une todavía: BOIA comprueba antes que eres tú.',
+  'carnet.request.new': 'No, soy nuevo',
+  'carnet.request.sent': 'Solicitud enviada: BOIA la revisará. (Perfil: {name})',
+  'carnet.request.cancel': 'Retirar solicitud',
+  'carnet.request.cancelled': 'Solicitud retirada.',
+  'carnet.request.cancelError': 'No se pudo retirar. Prueba otra vez en un momento.',
+  'carnet.request.offline': 'No hay conexión. Prueba otra vez en un momento.',
+  'carnet.request.errorClaimed': 'Ese perfil ya es de otro Carnet. Elige otro o sigue como nuevo.',
+  'carnet.request.errorRequested':
+    'Otra persona ya ha pedido ese perfil y BOIA la está revisando. Si es tuyo, escribe a BOIA.',
+  'carnet.request.errorPending': 'Ya tienes una solicitud pendiente.',
+  'carnet.request.errorJoined': 'Tu Carnet ya está unido a un perfil.',
+  'carnet.request.errorGeneric': 'No se pudo enviar la solicitud. Pide ayuda a BOIA.',
   // El enlace a su música al crear el Carnet de artista (plan 019 T217, decisión 10)
   'carnet.music.label': 'Tu música',
   'carnet.music.placeholder': 'https://soundcloud.com/…',

@@ -51,6 +51,7 @@ export const esAdminReal = {
     'Fiestas y QR, Socios y emails, Moderación (Carnets y botellas) y Rankings trabajan sobre los datos reales. El resto de secciones sigue siendo la demo de este navegador.',
   'admin.real.nav.fiestas': 'Fiestas y QR',
   'admin.real.nav.socios': 'Socios y emails',
+  'admin.real.nav.solicitudes': 'Solicitudes de artistas',
   'admin.real.nav.moderacion': 'Moderación',
   'admin.real.nav.rankings': 'Rankings',
   'admin.real.editorOnly':
@@ -87,6 +88,10 @@ export const esAdminReal = {
   'admin.real.error.profileClaimed': 'Esa ficha ya está unida a otro Carnet.',
   'admin.real.error.alreadyJoined':
     'Este Carnet ya está unido a otra ficha: primero, deshacer la unión.',
+  // Solicitudes de artistas (plan 031 T297)
+  'admin.real.error.requestClosed':
+    'Esa solicitud ya está cerrada (retirada, decidida o el perfil ya es de alguien).',
+  'admin.real.error.unknownRequest': 'Esa solicitud no existe.',
 
   // Fiestas y QR
   'admin.real.fiestas.title': 'Fiestas y QR',
@@ -232,6 +237,8 @@ export const esAdminReal = {
   'admin.real.claims.expired': 'Sin reclamar (el enlace del {date} caducó)',
   'admin.real.claims.sent': 'Enlace enviado el {date} (caduca el {expires})',
   'admin.real.claims.claimedBy': 'Reclamado por {nickname}',
+  'admin.real.claims.requested':
+    'Solicitud pendiente de {nickname} ({date}): en «Solicitudes de artistas»',
   'admin.real.claims.create': 'Crear enlace para reclamar',
   'admin.real.claims.recreate': 'Crear otro enlace (anula el anterior)',
   'admin.real.claims.reason': 'enlace para reclamar el perfil creado en el Admin',
@@ -241,6 +248,20 @@ export const esAdminReal = {
     '¡Hola! Este es tu enlace para reclamar tu perfil de {name} en BOIA.PLANET: {url} Crea tu Carnet con tu email (o entra con el tuyo) y quedará unido a tu perfil. Es personal y de un solo uso.',
   'admin.real.claims.copyText': 'Copiar texto',
   'admin.real.claims.openWhatsapp': 'Abrir WhatsApp',
+  // Solicitudes de artistas: «¿Eres uno de estos artistas?» (plan 031 T297, muestra)
+  'admin.real.requests.title': 'Solicitudes de artistas',
+  'admin.real.requests.lead':
+    'Quien crea su Carnet con el enlace de artistas puede decir qué perfil de /artistas es el suyo. Nada se une sin tu visto bueno: «Aprobar» une el Carnet al perfil; «Rechazar» cierra la solicitud y el Carnet sigue siendo de artista, sin perfil.',
+  'admin.real.requests.empty': 'No hay solicitudes pendientes.',
+  'admin.real.requests.badge': '{n} solicitudes pendientes',
+  'admin.real.requests.profile': 'Dice ser: {name}',
+  'admin.real.requests.approve': 'Aprobar',
+  'admin.real.requests.reject': 'Rechazar',
+  'admin.real.requests.approveReason': 'solicitud de artista aprobada en el Admin',
+  'admin.real.requests.rejectReason': 'solicitud de artista rechazada en el Admin',
+  'admin.real.requests.approved': 'Aprobada: {nickname} ya es {name} en /artistas.',
+  'admin.real.requests.rejected':
+    'Rechazada: el Carnet de {nickname} sigue de artista, sin perfil.',
 
   // Moderación de botellas
   'admin.real.botellas.title': 'Botellas reportadas',

@@ -7,6 +7,7 @@ import { MAR_CARNET_HREF, MAR_PATH } from '../../lib/world-handoff';
 import '../../lib/mundo/hud.css';
 import '../../lib/mundo/carnet/carnet.css';
 import { AccountSection } from '../../lib/account/account-section';
+import { ArtistRequestStatus } from '../../lib/account/artist-request-status';
 import { accountClient } from '../../lib/account/session';
 import { claimedCarnetUserId, contentProfileIdOf } from '../../lib/artists/claimed-carnet';
 import { carnetHref } from '../../lib/artists/entries';
@@ -116,6 +117,8 @@ export function CarnetPage({ userId }: { userId: string | null }) {
             {data.carnet.isMine ? (
               // Con cuentas (plan 008, T89): cerrar sesión y borrar la cuenta.
               <div className="carnet-page-cuenta">
+                {/* Plan 031 T297: la solicitud para reclamar una ficha, mientras se revisa. */}
+                <ArtistRequestStatus />
                 <AccountSection />
               </div>
             ) : (

@@ -162,6 +162,21 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     auditoría `claim_link`, y gasta el código). No toca ningún dato.
     Comprobar después, en el **SQL Editor**:
     `select count(*) from private.artist_claim_links;` da 0.
+  - `20261015100400_artist_claim_requests.sql` (T297): «¿Eres uno de estos
+    artistas?» tras crear el Carnet con el enlace general. Tabla
+    `private.artist_claim_requests` (la cuenta, la ficha elegida y su
+    nombre, el estado y las fechas; una pendiente por Carnet y por ficha;
+    nadie de fuera la lee) y las RPC, todas sólo para **authenticated**
+    (anon, ninguna): `request_artist_profile` (el Carnet de artista de la
+    sesión pide una ficha libre; **nunca une**), `my_artist_claim_request`,
+    `cancel_artist_claim_request` y, rol admin con segundo factor,
+    `admin_artist_claim_requests` / `admin_decide_artist_claim_request`
+    (aprobar une con la unión de T295, auditoría `claim_request_approved`;
+    rechazar, `claim_request_rejected`). Redefine
+    `private.join_artist_profile`: al unir una ficha por cualquier vía,
+    cierra sus solicitudes pendientes. No toca ningún dato. Comprobar
+    después, en el **SQL Editor**:
+    `select count(*) from private.artist_claim_requests;` da 0.
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`

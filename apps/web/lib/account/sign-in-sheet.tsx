@@ -5,6 +5,8 @@ import {
   Fragment,
   type FormEvent,
   type ReactNode,
+  Suspense,
+  lazy,
   useEffect,
   useId,
   useRef,
@@ -30,6 +32,8 @@ import {
   rpcReason,
 } from './errors';
 import { pendingClaim } from './artist-claim';
+import { pendingArtistCode } from './artist-link';
+import { showsArtistPicker } from './artist-request';
 import { trapTab } from './focus';
 import { accountLayer } from './layer';
 import {
@@ -193,6 +197,11 @@ export function memberNumberText(n: number): string {
   return String(n).padStart(4, '0');
 }
 
+/** «¿Eres uno de estos artistas?» (plan 031 T297), a demanda. */
+const ArtistPicker = lazy(() =>
+  import('./artist-picker').then((m) => ({ default: m.ArtistPicker })),
+);
+
 function SignInSheet({ request }: { request: GateRequest }) {
   const id = useId();
   const sheet = useRef<HTMLElement>(null);
@@ -214,6 +223,7 @@ function SignInSheet({ request }: { request: GateRequest }) {
   const [news, setNews] = useState(false);
   const [summary, setSummary] = useState<MergeSummary | null>(null);
   const [memberNumber, setMemberNumber] = useState<number | null>(null);
+  const [artistPick, setArtistPick] = useState(false);
 
   // El foco vuelve a donde estaba al cerrar.
   useEffect(() => {
@@ -404,8 +414,19 @@ function SignInSheet({ request }: { request: GateRequest }) {
       const avatarImage = prefill.avatarImage?.startsWith('data:image/')
         ? prefill.avatarImage
         : null;
+      // Plan 031 T297: con el enlace general de artistas (y no el personal),
+      // tras crear el Carnet sale «¿Eres uno de estos artistas?».
+      const artistCode = pendingArtistCode() !== null;
+      const personalClaim = pendingClaim() !== null;
       const profile = await createProfile({ nickname: trimmed, avatarKey, avatarImage, news });
       request.onRegistered?.();
+      setArtistPick(
+        showsArtistPicker({
+          artistCode,
+          personalClaim,
+          isArtist: accountSnapshot().profile?.isArtist === true,
+        }),
+      );
       setMemberNumber(profile.member_number);
       setStep('welcome');
     } catch (err) {
@@ -685,17 +706,23 @@ function SignInSheet({ request }: { request: GateRequest }) {
             ) : null}
           </p>
         </div>
-        <button
-          ref={(el) => {
-            firstField.current = el;
-          }}
-          type="button"
-          className="acceso-primary"
-          data-testid="acceso-seguir"
-          onClick={() => settleGate(true)}
-        >
-          {t('auth.continue')}
-        </button>
+        {artistPick ? (
+          <Suspense fallback={<p className="acceso-help">{t('carnet.request.loading')}</p>}>
+            <ArtistPicker onDone={() => settleGate(true)} />
+          </Suspense>
+        ) : (
+          <button
+            ref={(el) => {
+              firstField.current = el;
+            }}
+            type="button"
+            className="acceso-primary"
+            data-testid="acceso-seguir"
+            onClick={() => settleGate(true)}
+          >
+            {t('auth.continue')}
+          </button>
+        )}
       </div>
     );
   }
