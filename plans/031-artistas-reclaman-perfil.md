@@ -14,7 +14,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 ## Tasks
 
 ## T295 — Join an artist Carnet to its profile, and show it once
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -25,10 +25,10 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - unit tests: merge function (profiles + artist Carnets → one list): a joined pair shows once with the Carnet nickname, Carnet photo/link (fallback to profile), profile genres and the Carnet link; unjoined items unchanged; undo restores both → pass
   - `pnpm test:supabase` (dev): admin can join/unjoin (audit row written); member and anon cannot; a profile cannot be joined to two Carnets → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: carnets.artist_profile_id (slug, unique); Admin join/undo in Socios with audit; one merged entry on /artistas and ArtistRotator (Carnet nickname, photo, music; profile genres); private.join_artist_profile for T296/T297; migration 20261015100200 (dev); landing 199.2 kB — 65f1ee7
 
 ## T296 — Personal claim link per artist
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T295
 - Model: opus
 - Skills: none
@@ -56,9 +56,12 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome:
 
 ## Decisions
+- 2026-10-15: Álvaro: push when every task is done (git push origin main deploys both hosts), after applying the plan's migrations to production (orchestrator)
 - 2026-10-15: All three ways (personal link, request + approval, manual join by the Admin); on /artistas a claimed profile shows the Carnet's nickname (Álvaro)
 - 2026-10-15: Request + approval because the general artist link is shared and could be used to impersonate (orchestrator)
 
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-15 T295 launched · attempt 1 · agent a76cbaf455e18ad7d (opus)
+- 2026-10-15 T295 done · merged 65f1ee7
