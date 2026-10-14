@@ -30,7 +30,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: legal pages carry the approved identity (BOIA PLANET, CIF en trámite, hola@boiaplanet.net), Brevo named, policy 2026-10-14, «muestra» banner removed from legal pages; sonnet + Opus audit — d1e82b2
 
 ## T285 — Open to Google: index, titles, canonical, sitemap and robots
-- Status: pending
+- Status: done
 - Depends on: T291
 - Model: sonnet
 - Audit: opus
@@ -43,10 +43,10 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - unit test: `sitemap()` lists the public routes with boiaplanet.net URLs and no /admin; `robots()` disallows /admin → pass
   - `pnpm build` output contains `sitemap.xml` and `robots.txt`; `grep -ri "· demo" apps/web/app` finds nothing → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: indexable site, BOIA.PLANET titles, canonical boiaplanet.net, sitemap/robots on both hosts; noindex on /admin, /carnet, /carnet/[id], /sello, /artista; sonnet + Opus audit — 5f53fff
 
 ## T286 — Share images: planet + BOIA for the site, one per event
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T285
 - Model: opus
 - Skills: none
@@ -74,7 +74,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## T288 — «Sácate el Carnet» block and a WhatsApp that is easy to find
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -116,11 +116,29 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - Test command → exit 0
 - Outcome:
 
+## T292 — «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
+- Status: pending
+- Depends on: T288
+- Model: opus
+- Skills: none
+- Goal: Álvaro, 2026-10-14: when someone presses «Comprar entradas» on ALL DAY BOIA (`SONIDO_EVENT_ID`, 5 Dec) or BOIA Nochevieja (`NOCHEVIEJA_EVENT_ID`, 31 Dec), they must see «Tickets todavía no disponibles» instead of the (sandbox) checkout. Halloween (box office only) stays as it is. Model it as data, not as a hard-coded id check: a per-event sales state such as `ticketsAvailableFrom` (optional date) or a `ticketsStatus: 'not_yet'` flag in the event contract (`packages/contracts/src/events.ts`), honoured by `canBuy`/`BuyButton`/the tickets panel (`#tickets`) everywhere an event can be bought (landing cards, priority event, tickets panel, /mar island panels, event pages). The button keeps its place and look; tapping it shows a small accessible message (dialog or inline status, `role="status"`) with the text «Tickets todavía no disponibles» (i18n, approved by Álvaro, not muestra), and never opens the checkout or the external ticket URL (also without JS: the no-JS `<a>` fallback must not lead to the sandbox). The Admin's event editor gets a simple switch to open sales later (sets the field back), in local mode and in accounts mode (Supabase `events` table: a new column via a NEW migration applied to the dev project only and added to the switch-on doc's migration list; production migration is applied by the orchestrator later with Álvaro's OK). Set the flag on those two events in the sample/real content (`packages/store/src/sample/content.ts`) and in the seeds. JSON-LD (T287) should map this to `offers.availability` = `https://schema.org/PreOrder` or omit offers — note it in OUT OF SCOPE for T287 if T287 is not merged yet.
+- Context: `packages/contracts/src/events.ts` (`canBuy`, `EVENT_STATE_BEHAVIOR`), `apps/web/components/buy-button.tsx`, `app/(landing)/tickets-panel.tsx`, `lib/ticketing/`, the /mar event island panel, Admin events section (`apps/web/app/admin/`), `supabase/migrations/` (events table), `packages/store/src/local.ts`, seeds.
+- Scope: may touch those files, a new migration (dev only), i18n, tests, the switch-on doc / must not change the checkout itself, Halloween's box-office flow, or production.
+- Done when:
+  - unit test: `canBuy` is false and the buy button shows «Tickets todavía no disponibles» for an event with the not-yet state; Halloween unchanged → pass
+  - component test: tapping «Comprar entradas» on ALL DAY BOIA shows the message and does not open the checkout; the Admin switch flips it → pass
+  - `pnpm test:supabase` against dev for the new column/RLS → pass
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
+- 2026-10-14 T292: «Tickets todavía no disponibles» text approved by Álvaro; tapping the buy button shows it instead of the checkout; modelled as per-event data with an Admin switch (orchestrator)
 - 2026-10-14: Legal identity text approved (BOIA PLANET, CIF en trámite, Calle Hondón de las Nieves 7, 03005 Alicante, hola@boiaplanet.net); T291 runs before T285 so Google never indexes the placeholders (Álvaro)
 - 2026-10-14: The 3 current events are official, not sample (Álvaro)
 - 2026-10-14: Plan approved by Álvaro; T291 launched first; T286 waits for Álvaro to see a Codex example image before it runs
 - 2026-10-14 T291: audit also removes the «Datos de muestra» banner from legal pages, since the legal texts are approved (orchestrator)
+- 2026-10-14 T286: Álvaro said «lanza el nuevo plan» after seeing the Codex example images (output/og-ejemplo/); taken as approval of that style (orchestrator)
+- 2026-10-14 T285: public member Carnets /carnet/[id] get noindex and stay out of the sitemap (real people now that accounts are on) (orchestrator, privacy)
 - 2026-10-14: Google sign-in stays out for now (Álvaro)
 - 2026-10-14: «La Sosia» (Koko Moreno, Tonito Montana) is real radio content, genre Reggaetón, first song on landing and /mar, then shuffle (Álvaro)
 - 2026-10-14: WebGL recovery added to this plan (Álvaro)
@@ -137,3 +155,9 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-14 21:55 Codex example share images requested for T286 (output/og-ejemplo/) · agent a87db94c446b6bdef
 - 2026-10-14 22:05 T291 sonnet done · branch worktree-agent-ad65597d1d623fa72 · 13c25c3; Opus audit launched · agent a7baeb48d69c0726a (also removes the now-false «Datos de muestra» banner on legal pages)
 - 2026-10-14 22:20 T291 done · merged d1e82b2
+- 2026-10-14 22:30 pushed ae86acd (accounts switch-on build, T279–T284 + T291) on Álvaro's word
+- 2026-10-14 22:30 T285 launched · attempt 1 · agent af20cbf8ca09e7f4e (sonnet)
+- 2026-10-14 22:30 T288 launched · attempt 1 · agent af05c91beda95c745 (opus)
+- 2026-10-14 22:45 accounts live on Vercel; Cloudflare build missed the two build variables (CSP without Supabase) — Álvaro to move them to Build vars and retry
+- 2026-10-14 22:50 T285 sonnet done · branch worktree-agent-af20cbf8ca09e7f4e · 50c6db9; Opus audit launched · agent aa460eafa118f071a
+- 2026-10-14 23:00 T285 done · merged 5f53fff
