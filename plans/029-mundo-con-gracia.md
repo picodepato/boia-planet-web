@@ -149,9 +149,9 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome:
 
 ## T273 — The after island (03:00–07:00 Alicante time) and the after boat
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T270
-- Model: fable
+- Model: opus (fable until the models were done)
 - Skills: blender-modeling-workflow, blender-asset-validation
 - Goal: An island, modelled in Blender like the other event islands, that exists only between 03:00 and 07:00 Europe/Madrid time (whatever the chosen mood): sound system, neon, lights pulsing with the music, fish dancing around it; it fades in at 03:00 and out at 07:00 even if the player is there. Reaching it the first time gives the achievement "There's always an after", a big coin prize (`muestra` amount in config) and unlocks the **barco del after** (modelled in Blender) for free in the shop/garage: a battered boat with neon, disco ball, a blown speaker, cans, sunglasses and a punctured float (brand-safe, no drug references), with its own horn sound for T271 if that is already in. Reuse the `?hora=` override from T270.
 - Context: `engine/island-models.ts`, `engine/islands.ts`, `packages/world/src/worlds/arcilla/map.ts`, boats in `tienda.tsx` and `public/art/barco` (follow how existing boats are defined/rendered), `lib/mundo/achievements.ts`, wallet APIs, the T270 hour helper.
@@ -161,7 +161,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - dev override `?hora=4` shows it
   - island and boat `.glb` each ≤ 300 KB, validated (multiview renders in ESTADO), not downloaded outside 03:00–07:00 unless the boat is owned/selected
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
-- Outcome:
+- Outcome: after island (Blender, 284 KiB) only 03:00–07:00 Europe/Madrid with fade and DST tests, prize once, secret achievement, after boat (Blender, 63 KiB) unlocked once with its own horn; nothing downloaded outside the window — 66f95fd
 
 ## T274 — Achievements and hints for every new secret
 - Status: pending
@@ -200,10 +200,15 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: T269: swell every 60–120 s, 24 s life; flip only with turbo (not the Entradas voyage); no swells in map view or during the Entradas voyage; reduced motion: small jump, no spin (T269 + audit)
 - 2026-10-13: T270: stolen coins are not debited (no client API subtracts coins; Scope forbids new wallet APIs): shown missing while the gull flees, returned "with the tide" if it escapes; crab beat fixed 124 BPM (no analyser: CORS); launch T273 before T272 since it is longer (orchestrator)
 - 2026-10-13: T271: horn button outside the bar grid (phone: above the bar left of zoom; desktop: left of turbo); no nap while the thief seagull acts and no thief while napping (T271 audit)
+- 2026-10-14: T273 switched from Fable to Opus for the rest of the task (Álvaro)
+- 2026-10-14: T273: shop item renamed "After"; map pin 🎧 (🪩 is an empty box on Windows 10); Admin "visit island" achievements got an optional island name/count (lib/admin/achievements.ts, beyond Scope) (T273)
+- 2026-10-14: main had Next's automatic tsconfig.json rewrite from a dev server; reverted before integrating T273 (orchestrator)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
+- 2026-10-13: Telegram question on the Supabase project (A reuse dev as production + new test project / B new production project) and the push offer timed out after 4 h: per the no-answer rule nothing outward is done (no push, no panel change); recommendation A stays for Álvaro (orchestrator)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: With accounts on, the server progress data must learn the new secret achievements and the after boat (today browser-only); the after island pier sits slightly off the shore up close (T273)
 - 2026-10-13: Real coin loss for the seagull needs a negative ledger entry (local + Supabase RPC) — Álvaro decides (T270)
 - 2026-10-13: Try on a phone: flip and camera feel at real frame rate (headless could not trigger it) (T269 audit)
 - 2026-10-13: Defence in depth: ~20 private SECURITY DEFINER functions trust p_user from their public wrapper; add p_user = auth.uid() checks. TRASPASO ~405 still mentions typing 000 for the admin email; mark the SECURITY DEFINER item done in seguridad-pendiente (T278)
@@ -243,3 +248,9 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13 T273 launched (attempt 1, fable), agent a149a775331d33506
 - 2026-10-13 T271 audit done (1df1709); integrate → conflict (mar3d, mar-client, sound.ts, engine package.json) with T270; sent back to audit agent to merge main
 - 2026-10-13 T271 conflict resolved by audit agent (0ad4a92), integrated 55c2ec6
+- 2026-10-13 T272 launched (attempt 1, sonnet), agent aa130675a45762f44
+- 2026-10-13 05:30 T272 and T273 agents stopped by the API session limit; leftovers committed as WIP (66afc1b, e56bb90); continuation agents launched: T272 a2d1a03a76a741362 (sonnet), T273 ac589fdb479b60999 (fable)
+- 2026-10-14 15:07 continuations hit the weekly limit (reset 14 Oct 14:00); leftovers committed (T272 4e047ac); relaunched on Álvaro's "Intentar nuevamente": T272 ad8ac08b891dfc6f4 (sonnet), T273 a6dbdc258a5d60564 (fable)
+- 2026-10-14 T272 sonnet done (6d6b60d). Opus audit launched, agent aa150b8ee86c8577b
+- 2026-10-14 T273 fable agent stopped at Álvaro's request; WIP 184903e; Opus continuation launched, agent a417b81b9c5f6cac3
+- 2026-10-14 T273 done (ddc29bc), integrated 66f95fd
