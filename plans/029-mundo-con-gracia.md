@@ -1,6 +1,6 @@
 # Plan 029 — A world with jokes: weather, big waves, characters with lines and the after island
 
-Status: done
+Status: active
 Created: 2026-10-13
 Base branch: main
 Goal: Make `/mar` funnier and more surprising without touching the sales flow: short weather episodes, big waves that work as ramps (backflip achievement), a thieving seagull, a dancing crab, a lost tourist on an inflatable flamingo, a horn and a napping boat, characters with lines that depend on the mood, a daily "horóscopo boiero", a proper welcome at the port, and a night-only "after" island (03:00–07:00 Alicante time) that pays a lot of coins and unlocks a battered after-party boat. Every new secret gives an achievement (never a Carnet stamp: stamps are only for tickets), and the `boia-secretos` buoy hints at the missing ones. Plus fixes from Álvaro: a gallery that opens photos and videos full screen (also in /mar) with longer clips, at least 7 photos on the home with the 4 real ones, the Puig Campana label on the map, the map hint that never goes away, and getting the Carnet's email + code sign-up ready to switch on in production. Day/night stays as it is today (three moods chosen in the menu); no shooting stars; no new sea traffic; no Alicante landmarks in this plan.
@@ -177,6 +177,21 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - Test command → exit 0
 - Outcome: icons for the 6 new achievements, «Capeaste el temporal» (whole storm sailed, StormWatch) and «Horoscopado» (7 distinct days, bubble or Puerto card), boia-secretos hints for missing secrets + congratulation; haiku + Opus audit — 3679fc4
 
+## T279 — Regressions found by Álvaro after the push: tap-to-move, Nochevieja label, character bubbles in the map
+- Status: running (attempt 1)
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: Álvaro tried the published build (c041d61) on 2026-10-14 and found: (1) **Tap-to-move is broken**: tapping/clicking the water no longer sails the boat there, neither in the normal view nor from the big map (it worked before plan 029: 4150c56). Find the cause (git bisect between 4150c56 and c041d61 with a headless check; suspects: T271 nap wake on pointer-down / horn button, T275 map hint popup overlay, T274 250 ms polling, T269/T270 pointer handling, T277 viewer key capture) and fix it without losing the feature that broke it. (2) **Nochevieja's name is missing on the big map**: the event island "Isla de Nochevieja" must always show its label in the map view (events are important); T275 gave Puig Campana a kept, nudged label (`mapKeep` in labels.ts) that now sits on top of Nochevieja. Event/always pins must win over `keep` pins; Puig Campana's label must find another free spot or yield. Both labels visible at 360×640 and 1280×720. (3) **Character messages show in the map**: the banter bubbles (T272), the guiri bubble (T270), the seagull/crab/fiestera messages and the like appear when looking from far away in the map view. They must not show in the map view at all, and in normal view only when the boat is near that character (a sensible radius), never from far away.
+- Context: `apps/web/app/mar/engine/mar3d.ts` (pointer ~2877-2956 `onDown`/`endStick`/autopilot), `mar-client.tsx`, `app/mar/engine/labels.ts` (`layoutPins`, `MAP_KEEP`, `nudgeClear`), `map-labels.test.ts`, `lib/mundo/banter.ts`, T270/T271/T272/T274 code.
+- Scope: may touch the files above and their tests / must not remove any plan 029 feature.
+- Done when:
+  - an e2e or headless test proves tap on water sails the boat (normal view and from the map) → pass, and it fails on c041d61
+  - `map-labels.test.ts`: Nochevieja and Puig Campana labels both visible at full opacity in map view at both sizes → pass
+  - unit/component test: character bubbles hidden in map view and when the boat is beyond the radius → pass
+  - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
+- Outcome:
+
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
 - 2026-10-13: Jumps come from big waves acting as ramps, no jump button; backflip with turbo (Álvaro)
@@ -263,3 +278,5 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T274 haiku done (d313278). Opus audit launched, agent a8131bad40a2752ba
 - 2026-10-14 T274 audit done (a5a54ab), integrated 3679fc4 (tests green on that integration)
 - 2026-10-14 plan done: 11/11
+- 2026-10-14 pushed to origin/main (c041d61) on Álvaro's request
+- 2026-10-14 plan reopened: T279 regressions reported by Álvaro after the push (tap-to-move, Nochevieja label, bubbles in map)
