@@ -15,7 +15,7 @@ import {
 } from '@boia/world';
 import Link from 'next/link';
 import { type ReactNode, useState } from 'react';
-import { t, formatEventDate } from '../../lib/i18n';
+import { type MessageKey, t, formatEventDate } from '../../lib/i18n';
 import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
 import { eventHref, photosHref } from '../../lib/landing/eventos';
 import { liveContent } from '../../lib/landing/live-content';
@@ -28,6 +28,7 @@ import {
   IslandUpcoming,
 } from '../../lib/mundo/place-panels';
 import { useRepoData } from '../../lib/mundo/repo';
+import { horoscopoDay, horoscopoOf } from '../../lib/mundo/banter';
 import { CalitasPanel } from '../../lib/mundo/calitas/calitas-panel';
 import { MarTablon } from './tablon';
 import { MediaCollage } from '../(landing)/components/media-collage';
@@ -731,6 +732,7 @@ export function IslandBlock({
       <p className="mar-sheet__kicker">{harbor ? harborKicker(object) : islandKicker(object)}</p>
       <h2 className="mar-sheet__title">{name}</h2>
       {textOf(object, 'body') ? <p>{textOf(object, 'body')}</p> : null}
+      {harbor ? <HarborHoroscopo /> : null}
       {actions ? <div className="mar-sheet__actions">{actions}</div> : null}
       <IslandMemories placeId={placeId} />
       <p className="juego-panel-links">
@@ -738,6 +740,19 @@ export function IslandBlock({
       </p>
       {harbor ? null : <IslandUpcoming islandId={placeId} onSteer={onSteer} />}
     </div>
+  );
+}
+
+/**
+ * El horóscopo boiero del día (T272) en la ficha del Puerto: al llegar sale una vez
+ * al día como aviso y aquí se puede volver a leer. `?fecha=` finge otro día.
+ */
+function HarborHoroscopo() {
+  const day = horoscopoDay(typeof window === 'undefined' ? '' : window.location.search);
+  return (
+    <p className="mar-sheet__meta" data-testid="puerto-horoscopo" data-fecha={day}>
+      <strong>{t('mar.puerto.horoscopo')}</strong> {t(horoscopoOf(day) as MessageKey)}
+    </p>
   );
 }
 

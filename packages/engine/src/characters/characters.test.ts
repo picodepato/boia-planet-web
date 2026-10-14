@@ -5,6 +5,7 @@ import {
   SEAGULL_TUNING,
   type SeagullEvent,
   SeagullClock,
+  alicanteDate,
   alicanteHour,
   characterRng,
   crabBeatPhase,
@@ -176,6 +177,24 @@ describe('la hora de Alicante y las frases del guiri (T270)', () => {
     expect(alicanteHour(new Date('2026-01-15T02:30:00Z'), null)).toBe(3); // CET, UTC+1
     expect(alicanteHour(new Date('2026-01-15T23:30:00Z'), null)).toBe(0);
     expect(alicanteHour(new Date('2026-07-15T12:00:00Z'), 4)).toBe(4);
+  });
+
+  it('el día de Alicante cambia a su medianoche, también con el cambio de hora (T272)', () => {
+    expect(alicanteDate(new Date('2026-12-30T22:59:59Z'))).toBe('2026-12-30'); // CET
+    expect(alicanteDate(new Date('2026-12-30T23:00:00Z'))).toBe('2026-12-31');
+    expect(alicanteDate(new Date('2026-07-10T21:59:59Z'))).toBe('2026-07-10'); // CEST
+    expect(alicanteDate(new Date('2026-07-10T22:00:00Z'))).toBe('2026-07-11');
+    // 29-03-2026: a las 01:00 UTC pasa de 02:00 CET a 03:00 CEST, el mismo día.
+    expect(alicanteDate(new Date('2026-03-28T22:59:59Z'))).toBe('2026-03-28');
+    expect(alicanteDate(new Date('2026-03-29T01:30:00Z'))).toBe('2026-03-29');
+    expect(alicanteDate(new Date('2026-03-29T21:59:59Z'))).toBe('2026-03-29');
+    expect(alicanteDate(new Date('2026-03-29T22:00:00Z'))).toBe('2026-03-30');
+    // 25-10-2026: las 03:00 CEST vuelven a ser las 02:00 CET; la medianoche siguiente, a las 23:00 UTC.
+    expect(alicanteDate(new Date('2026-10-24T21:59:59Z'))).toBe('2026-10-24');
+    expect(alicanteDate(new Date('2026-10-24T22:00:00Z'))).toBe('2026-10-25');
+    expect(alicanteDate(new Date('2026-10-25T22:59:59Z'))).toBe('2026-10-25');
+    expect(alicanteDate(new Date('2026-10-25T23:00:00Z'))).toBe('2026-10-26');
+    expect(alicanteDate(new Date('2026-07-10T12:00:00Z'), '2026-12-31')).toBe('2026-12-31');
   });
 
   it('entre las 03:00 y las 07:00 hay una tercera frase, la del after', () => {

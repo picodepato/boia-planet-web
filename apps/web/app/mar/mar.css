@@ -1456,6 +1456,31 @@
   animation: mar-pop-small 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
+/* La charla de los personajes y el Puerto (T272): un bocadillo fijo a la derecha,
+   bajo los avisos y los chips de rumbo, entre la columna del minimapa y el zoom
+   (un bocadillo sobre el personaje se metía bajo el marcador o los botones). */
+.mar-charla {
+  position: absolute;
+  top: calc(var(--top-space) + 52px);
+  left: calc(var(--safe-l) + 10px + var(--mini) + 10px);
+  right: calc(var(--safe-r) + 10px);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.mar-charla .mar-bubble {
+  position: relative;
+  translate: none;
+  max-width: min(100%, 300px);
+  pointer-events: auto;
+}
+
+.mar-charla .mar-bubble::after {
+  display: none;
+}
+
 .mar-bubble::after {
   content: '';
   position: absolute;

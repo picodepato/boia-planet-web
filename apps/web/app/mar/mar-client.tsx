@@ -35,12 +35,14 @@ import {
   browserStore,
   loadSettings,
   parseSettings,
+  readableDurationMs,
   saveSettings,
   setControlSensitivity,
 } from '@boia/engine/ui';
 import {
   CASTLE_GAME_ID,
   CIRCUIT_ID,
+  HARBOR_PLACE_ID,
   type ComposedWorld,
   type WorldConfig,
   chooseWorld as chooseWorldIn,
@@ -74,6 +76,16 @@ import {
   recordSignal,
   signalFromWorldEvent,
 } from '../../lib/mundo/achievements';
+import {
+  BANTER_NAME_KEY,
+  BanterPicker,
+  fiesteraMayChat,
+  horoscopoDay,
+  horoscopoOf,
+  horoscopoPending,
+  portWelcomeKey,
+  type BanterSpeaker,
+} from '../../lib/mundo/banter';
 import { CarnetInvite } from '../../lib/mundo/carnet/carnet-invite';
 import { finishLap } from '../../lib/mundo/circuit-hud';
 import {
@@ -233,7 +245,7 @@ import {
 } from './voyage';
 import { liveContent } from '../../lib/landing/live-content';
 import './mar.css';
-import { t as msg } from '../../lib/i18n';
+import { type MessageKey, t as msg } from '../../lib/i18n';
 
 /**
  * /mar: el mar de BOIA en 3D, el mundo navegable (plan 005: el único). Mismo
@@ -294,6 +306,16 @@ function ticketsFly(): boolean {
   } catch {
     return true;
   }
+}
+
+/** El último día cuyo horóscopo boiero se enseñó en el Puerto (T272). */
+const HOROSCOPO_KEY = 'boia.horoscopo.dia';
+
+/** Una frase del bocadillo de charla (T272): sobre qué objeto, quién (opcional) y qué dice. */
+interface ChatLine {
+  objectId: string;
+  kicker?: string;
+  text: string;
 }
 
 function readPref(key: string): string | null {
@@ -430,6 +452,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const dolphinRuntime = useRef<unknown>(null);
   const dolphinClock = useRef(0);
   const [dolphinOut, setDolphinOut] = useState(false);
+  const dolphinChatRef = useRef(false);
   // Adónde guía el delfín al salir (T59): la Fiestera, un código o un minijuego.
   const [dolphinTo, setDolphinTo] = useState<string | null>(null);
   // El «?» de ayuda (T68): el objetivo y una pista, sólo si se pregunta.
@@ -494,6 +517,50 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const minigameOpenRef = useRef(false);
   minigameOpenRef.current = minigameOpen;
   const [mood, setMood] = useState<MoodId>('tarde');
+  // La charla de los personajes (T272): un montón de frases por personaje y ambiente.
+  const moodRef = useRef<MoodId>(mood);
+  moodRef.current = mood;
+  const banterRef = useRef<BanterPicker | null>(null);
+  const banterSay = (speaker: BanterSpeaker, objectId: string) => {
+    // Nunca encima de un diálogo de misión, ni con la Fiestera en pleno rescate.
+    if (engineRef.current?.dialogue()) return;
+    if (speaker === 'fiestera' && !fiesteraMayChat(phaseRef.current)) return;
+    // Otra charla en pantalla (la bienvenida del Puerto, otro personaje): ésta no gasta frase.
+    if (chatTimer.current !== null || chatQueue.current.length > 0) return;
+    banterRef.current ??= new BanterPicker();
+    const now = Date.now();
+    const key = banterRef.current.say(speaker, moodRef.current, now);
+    if (!key) return;
+    sayChat([
+      { objectId, kicker: msg(BANTER_NAME_KEY[speaker] as MessageKey), text: msg(key as MessageKey) },
+    ]);
+  };
+  // El bocadillo de la charla (T272), fijo a la derecha bajo los avisos (`.mar-charla`):
+  // se va solo tras su tiempo de lectura y, si hay cola (bienvenida → horóscopo), sale el siguiente.
+  const [chat, setChat] = useState<(ChatLine & { n: number }) | null>(null);
+  const chatQueue = useRef<ChatLine[]>([]);
+  const chatTimer = useRef<number | null>(null);
+  const chatN = useRef(0);
+  const nextChat = () => {
+    if (chatTimer.current !== null) window.clearTimeout(chatTimer.current);
+    chatTimer.current = null;
+    const line = chatQueue.current.shift();
+    if (!line) {
+      setChat(null);
+      return;
+    }
+    setChat({ ...line, n: ++chatN.current });
+    chatTimer.current = window.setTimeout(
+      nextChat,
+      readableDurationMs(`${line.kicker ?? ''} ${line.text}`) + 1500,
+    );
+  };
+  /** Enseña estas frases en orden, en lugar de lo que hubiera. */
+  const sayChat = (lines: ChatLine[]) => {
+    chatQueue.current = [...lines];
+    nextChat();
+  };
+  const portSeenRef = useRef(false);
   const [dialogue, setDialogue] = useState<{
     objectId: string;
     text: string;
@@ -922,9 +989,38 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           setObjectiveMark(null);
         }
         const o = world.objects.find((x) => x.identity.id === e.objectId);
+        if (e.objectId === 'fiestera' || e.objectId === 'naufrago') banterSay(e.objectId, e.objectId);
         if (o?.identity.category === 'isla') {
+          const harbor = e.objectId === HARBOR_PLACE_ID;
           void discoverPlace(progressApi(), e.objectId, ctx)
             .then((first) => {
+              if (harbor) {
+                // El Puerto da la bienvenida (T272) en vez de «Isla descubierta».
+                // La de vuelta sale una vez por visita a /mar, no cada vez que se pasa cerca.
+                if (!first && portSeenRef.current) return;
+                portSeenRef.current = true;
+                // En el bocadillo de la charla: los avisos de arriba son de una línea.
+                const welcome = portWelcomeKey(first);
+                const lines: ChatLine[] = [
+                  {
+                    objectId: e.objectId,
+                    kicker: msg(welcome.title as MessageKey),
+                    text: msg(welcome.body as MessageKey),
+                  },
+                ];
+                // El horóscopo sale solo una vez al día; después se relee en la ficha del Puerto.
+                const today = horoscopoDay(window.location.search);
+                if (horoscopoPending(readPref(HOROSCOPO_KEY), today)) {
+                  writePref(HOROSCOPO_KEY, today);
+                  lines.push({
+                    objectId: e.objectId,
+                    kicker: msg('mar.puerto.horoscopo'),
+                    text: msg(horoscopoOf(today) as MessageKey),
+                  });
+                }
+                sayChat(lines);
+                return;
+              }
               if (first)
                 push({
                   id: `descubierta:${e.objectId}`,
@@ -956,8 +1052,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         syncDialogue();
         break;
       case 'dialogue_reaction':
+        syncDialogue();
+        break;
       case 'dialogue_end':
         syncDialogue();
+        // Al acabar sus frases de misión, una de su charla (T272), si no se ha ido.
+        if (e.reason !== 'interrupted' && (e.objectId === 'fiestera' || e.objectId === 'naufrago'))
+          banterSay(e.objectId, e.objectId);
         break;
       case 'content_open':
         // En carrera, pasar junto a una isla no abre su ficha ni anula la carrera:
@@ -1047,9 +1148,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         rt.setObjectPresent(d.objectId, true);
         setDolphinOut(true);
         plop();
+        // Una frase al salir (T272), no en cada saltito mientras guía.
+        if (!dolphinChatRef.current) banterSay('delfin', d.objectId);
+        dolphinChatRef.current = true;
       } else if (a.type === 'dive') rt.setObjectPresent(d.objectId, false);
       else if (a.type === 'gone') {
         setDolphinOut(false);
+        dolphinChatRef.current = false;
         // Seguirlo hasta el final da su premio (una vez al día).
         if (a.followed) {
           persist(grantEncounter(progressApi(), `lugar:${d.objectId}:seguir`, d.coins, 'daily'));
@@ -1073,6 +1178,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       d.reset();
       g.runtime.setObjectPresent(d.objectId, false);
       setDolphinOut(false);
+      dolphinChatRef.current = false;
     }
     dolphinClock.current += dt;
     if (dolphinClock.current < 0.2) return;
@@ -1608,6 +1714,13 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     if (dialogue) g.anchor(el, dialogue.objectId, 1.4);
     return () => g.release(el);
   }, [dialogue]);
+
+  useEffect(
+    () => () => {
+      if (chatTimer.current !== null) window.clearTimeout(chatTimer.current);
+    },
+    [],
+  );
 
   // El bocadillo del guiri (T270) sigue al flamenco; se va solo a los 5 s.
   useEffect(() => {
@@ -2690,6 +2803,31 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           >
             ×
           </button>
+        </div>
+      ) : null}
+
+      {chat && !dialogue ? (
+        <div className="mar-charla" role="status" aria-live="polite">
+          <div
+            className="mar-bubble"
+            data-testid="mar-charla"
+            data-quien={chat.objectId}
+            data-charla={chat.n}
+          >
+            <span className="mar-bubble__text">
+              {chat.kicker ? <small>{chat.kicker}</small> : null}
+              <span>{chat.text}</span>
+            </span>
+            <button
+              type="button"
+              className="mar-x mar-bubble__x"
+              data-testid="mar-charla-cerrar"
+              aria-label={msg('mar.client.cerrarDialogo')}
+              onClick={nextChat}
+            >
+              ×
+            </button>
+          </div>
         </div>
       ) : null}
 

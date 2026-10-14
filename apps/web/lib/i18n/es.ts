@@ -19,6 +19,7 @@ import { esJuego } from './es-juego';
 import { esLib } from './es-lib';
 import { esLibEventos } from './es-lib-eventos';
 import { esMar } from './es-mar';
+import { esMarBanter } from './es-mar-banter';
 import { esMundo } from './es-mundo';
 import { esPuerta } from './es-puerta';
 import { esPwa } from './es-pwa';
@@ -46,6 +47,7 @@ export const es = {
   ...esZonas,
   ...esJuego,
   ...esMar,
+  ...esMarBanter,
   ...esMundo,
   ...esAdmin,
   ...esAdminReal,

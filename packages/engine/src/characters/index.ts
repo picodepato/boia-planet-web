@@ -225,6 +225,29 @@ export function alicanteHour(now: Date = new Date(), override: number | null = n
   return now.getHours();
 }
 
+/**
+ * El día (`AAAA-MM-DD`) en Alicante en el instante `now` (el horóscopo boiero, T272);
+ * `override` (el parámetro de desarrollo `?fecha=`) manda. Con cambio de hora incluido.
+ */
+export function alicanteDate(now: Date = new Date(), override: string | null = null): string {
+  if (override !== null) return override;
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: ALICANTE_TZ,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value;
+    const [y, m, d] = [get('year'), get('month'), get('day')];
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    // Sin Intl con zonas horarias: la fecha local.
+  }
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+}
+
 /** Las horas del after (T273): de 03:00 a 07:00 de Alicante. */
 export const AFTER_HOURS = { from: 3, to: 7 } as const;
 
