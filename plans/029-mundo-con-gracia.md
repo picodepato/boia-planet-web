@@ -1,6 +1,6 @@
 # Plan 029 — A world with jokes: weather, big waves, characters with lines and the after island
 
-Status: active
+Status: done
 Created: 2026-10-13
 Base branch: main
 Goal: Make `/mar` funnier and more surprising without touching the sales flow: short weather episodes, big waves that work as ramps (backflip achievement), a thieving seagull, a dancing crab, a lost tourist on an inflatable flamingo, a horn and a napping boat, characters with lines that depend on the mood, a daily "horóscopo boiero", a proper welcome at the port, and a night-only "after" island (03:00–07:00 Alicante time) that pays a lot of coins and unlocks a battered after-party boat. Every new secret gives an achievement (never a Carnet stamp: stamps are only for tickets), and the `boia-secretos` buoy hints at the missing ones. Plus fixes from Álvaro: a gallery that opens photos and videos full screen (also in /mar) with longer clips, at least 7 photos on the home with the 4 real ones, the Puig Campana label on the map, the map hint that never goes away, and getting the Carnet's email + code sign-up ready to switch on in production. Day/night stays as it is today (three moods chosen in the menu); no shooting stars; no new sea traffic; no Alicante landmarks in this plan.
@@ -257,7 +257,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: «Cambiar contraseña» in Seguridad (aal2), «He olvidado la contraseña» + /admin/recuperar (no account enumeration, tokens cleared), pnpm admin:password for the demo hash; tested on dev (supabase 4/4, e2e 3/3); sonnet + Opus audit — 136d03e
 
 ## T284 — Sign out that resets the device, and the account in the menu
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -268,7 +268,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests: after sign-out every game/account key is gone and every preference key is kept (the keep-list is explicit and tested against the real storage keys); no merge of a previous user's data into a new account → pass
   - `E2E_SUPABASE=1` `cuenta.spec.ts` (only that spec) extended: user A signs in, plays/earns, signs out → world is fresh; user B signs in → sees none of A's; A signs in again → has everything → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: sign out flushes, confirms, wipes every boia* game/account key except an explicit keep-list of device preferences; account entry/sign out in the landing and /mar menus; A/B e2e passes (Supabase 429s needed reruns) — 0b2dbee
 
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
@@ -306,6 +306,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: If a session ends without «Cerrar sesión» (expired), old guest data can merge into the next account; landing at 199.1 of 200 kB; landing-logout.spec.ts updated but not run (T284)
 - 2026-10-14: admin-password.supabase.ts «el enlace abre una sesión aal1» is flaky in the full run (passes alone); test:supabase uses up member numbers on dev; a trashed member whose number was reused cannot be restored (T282)
 - 2026-10-14: An Admin who loses both password and phone has no way back in (backup codes only after the password); dev min password length is 6, set 8 in production (T283 audit)
 - 2026-10-14: D-08 in docs/DECISIONES.md still quotes the old Carnet questions: Álvaro to note the change (T281)
@@ -385,3 +386,4 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T284 launched (attempt 1, opus), agent a6966deea167aeb60
 - 2026-10-14 T282 done (94f17ea); integrate → conflict in package.json with T283; sent back to agent
 - 2026-10-14 T282 merge conflict resolved (60e7a72), integrated 3a33729
+- 2026-10-14 T284 done (6fbceb8), integrated 0b2dbee; plan done (T268–T284)
