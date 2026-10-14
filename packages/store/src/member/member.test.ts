@@ -250,6 +250,37 @@ describe('repositorio de un miembro: rechazos y conflictos (gana el servidor)', 
     expect((await a.repo.carnet.mine())?.nickname).toBe('Marea');
   });
 
+  // T293: el apodo de la cuenta lo dio el servidor, aunque en esta web
+  // coincida con un artista de la lista o un miembro de la muestra.
+  for (const [who, nickname, isArtist] of [
+    ['un artista con el nombre de un artista de la lista', 'Alba Fitz', true],
+    ['un socio con el apodo de un miembro de la muestra', 'Pulpo Sónico', false],
+  ] as const) {
+    it(`${who} guarda su Carnet con su apodo y un enlace nuevo (T293)`, async () => {
+      const fake = withCarnet(new FakeSupabase(UID), nickname);
+      fake.carnet!.is_artist = isArtist;
+      const a = device(fake);
+      await a.repo.sync.ready();
+      const sc = { platform: 'soundcloud', url: 'https://soundcloud.com/t293' } as const;
+      const view = await a.repo.carnet.update({
+        nickname,
+        avatarKey: 'avatar-2',
+        avatarImage: null,
+        ...(isArtist ? { musicLink: sc } : {}),
+      });
+      expect(view.nickname).toBe(nickname);
+      await a.repo.carnet.answer('disco-entero', 'https://boia.example/disco');
+      await a.repo.sync.flush();
+      expect(fake.carnet).toMatchObject({ nickname, avatar_key: 'avatar-2', member_number: 7 });
+      if (isArtist) expect(fake.carnet).toMatchObject({ music_url: sc.url });
+      // Cambiar el apodo a otro de la lista sigue sin poder ser.
+      const err = await a.repo.carnet
+        .update({ nickname: 'Amenaza Verde' })
+        .catch((e: unknown) => e);
+      expect(isStoreError(err, 'conflict')).toBe(true);
+    });
+  }
+
   it('lo que cambió en el servidor gana a la copia al volver a leer', async () => {
     const fake = withCarnet(new FakeSupabase(UID));
     fake.addRow({

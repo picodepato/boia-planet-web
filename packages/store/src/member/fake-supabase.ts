@@ -275,6 +275,14 @@ export class FakeSupabase implements SupabaseLike {
         this.carnet.version = Number(this.carnet.version ?? 0) + 1;
         return { data: this.carnet, error: null };
       }
+      case 'set_artist_music': {
+        // Como la RPC (20261008100200): sólo el Carnet de un artista.
+        if (!this.carnet) return this.reject('carnet_required');
+        if (!this.carnet.is_artist) return this.reject('artist_required');
+        this.carnet.music_platform = a.p_platform ?? null;
+        this.carnet.music_url = a.p_url ?? null;
+        return { data: { platform: a.p_platform ?? null, url: a.p_url ?? null }, error: null };
+      }
       case 'save_snapshot': {
         const base = a.p_base_version as number | null | undefined;
         const cur = this.snapshot?.version ?? 0;

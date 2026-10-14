@@ -28,3 +28,19 @@ export class StoreError extends Error {
 export function isStoreError(e: unknown, code?: StoreErrorCode): e is StoreError {
   return e instanceof StoreError && (code === undefined || e.code === code);
 }
+
+/** Mensaje de un `conflict` por un apodo que ya lleva otro miembro. */
+export const NICKNAME_TAKEN_MESSAGE = 'apodo en uso';
+/** Mensaje de un `conflict` al crear un Carnet que ya existe. */
+export const CARNET_EXISTS_MESSAGE = 'ya hay Carnet';
+
+/**
+ * ¿El apodo ya es de otro miembro? Sólo eso (T293): en local, el `conflict`
+ * de `checkNickname`; con cuenta, el rechazo `nickname_taken` del servidor.
+ * Ningún otro choque se cuenta como apodo ocupado.
+ */
+export function isNicknameTaken(e: unknown): boolean {
+  if (!isStoreError(e, 'conflict')) return false;
+  const reason = (e as { reason?: unknown }).reason;
+  return reason === undefined ? e.message === NICKNAME_TAKEN_MESSAGE : reason === 'nickname_taken';
+}

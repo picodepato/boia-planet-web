@@ -4,7 +4,7 @@
  * quedarse sin red. Cada una es una llamada a una RPC de T86 (o, las
  * respuestas del Carnet, a su tabla).
  */
-import { StoreError, type StoreErrorCode } from '../errors';
+import { NICKNAME_TAKEN_MESSAGE, StoreError, type StoreErrorCode } from '../errors';
 import type { JsonValue } from '../schema';
 import type { MemberServer } from './server';
 
@@ -123,7 +123,7 @@ export class SyncRejectedError extends StoreError {
   constructor(reason: string) {
     super(
       storeCodeFor(reason),
-      `${reason === 'nickname_taken' ? 'apodo en uso' : 'rechazado'} (servidor: ${reason})`,
+      `${reason === 'nickname_taken' ? NICKNAME_TAKEN_MESSAGE : 'rechazado'} (servidor: ${reason})`,
     );
     this.name = 'SyncRejectedError';
     this.reason = reason;

@@ -23,6 +23,35 @@ describe('Carnet de artista: el enlace a su música', () => {
     expect((await repo.carnet.update({ musicLink: null })).musicLink).toBeUndefined();
   });
 
+  it('el artista y el socio guardan su apodo de siempre con un cambio, aunque ya choque (T293)', async () => {
+    // Su apodo pasa a coincidir después con un artista de la lista y un miembro
+    // de la muestra (contenido nuevo): guardar el suyo no es «apodo en uso».
+    const { repo, reload } = makeRepo({ sample: { artists: [], crew: [] } });
+    await repo.carnet.create({ nickname: 'Zeta', artistCode: 'abc', musicLink: SC });
+    const later = reload({
+      sample: {
+        artists: [{ id: 'zeta', name: 'Zeta', genres: ['Techno'] }],
+        crew: [],
+      },
+    });
+    const bc = { platform: 'bandcamp', url: 'https://zeta.bandcamp.com/' } as const;
+    for (const nickname of ['Zeta', 'zeta', ' ZETA ']) {
+      const c = await later.carnet.update({ nickname, avatarKey: 'avatar-2', musicLink: bc });
+      expect(c.musicLink).toEqual(bc);
+      expect(c.memberNumber).toBe(10);
+    }
+    // Otro apodo que ya lleva alguien (aquí, el artista) sigue sin poder ser.
+    const fan = makeRepo({
+      sample: { artists: [{ id: 'zeta', name: 'Zeta', genres: ['Techno'] }], crew: [] },
+    }).repo;
+    await fan.carnet.create({ nickname: 'Socia' });
+    expect((await fan.carnet.update({ nickname: 'Socia', avatarKey: 'avatar-3' })).nickname).toBe(
+      'Socia',
+    );
+    const err = await fan.carnet.update({ nickname: 'ZETA' }).catch((e: unknown) => e);
+    expect(isStoreError(err, 'conflict')).toBe(true);
+  });
+
   it('un enlace de otra plataforma o que no casa con la que dice se rechaza', async () => {
     const { repo } = makeRepo();
     for (const musicLink of [

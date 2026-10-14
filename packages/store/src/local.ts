@@ -28,7 +28,7 @@ import {
   resolveEntities,
   resolveWithDrafts,
 } from './content';
-import { StoreError } from './errors';
+import { CARNET_EXISTS_MESSAGE, NICKNAME_TAKEN_MESSAGE, StoreError } from './errors';
 import { isStableKey, ledgerId, newId, rewardKey } from './ids';
 import { activeEntries, checkAppend, compensatedIds, deriveBalances, replayLedger } from './ledger';
 import { MIGRATIONS, migrate, type Migration } from './migrations';
@@ -1024,7 +1024,18 @@ class LocalRepository implements BoiaRepository {
     return [...crew, ...artists];
   }
 
-  private checkNickname(draft: StoreDoc, raw: unknown, userId: string): string {
+  /**
+   * El apodo limpio, o `conflict` si ya es de otro. `current` es el que ya
+   * lleva ese Carnet: quien guarda el suyo (en otras mayúsculas también) no
+   * choca con nadie (T293). En una cuenta, el apodo lo dio el servidor
+   * aunque en esta web coincida con un artista o un miembro de la muestra.
+   */
+  private checkNickname(
+    draft: StoreDoc,
+    raw: unknown,
+    userId: string,
+    current: string | null = null,
+  ): string {
     if (typeof raw !== 'string') invalid('apodo: texto');
     const nickname = raw.trim().replace(/\s+/g, ' ');
     const len = charLength(nickname);
@@ -1033,6 +1044,8 @@ class LocalRepository implements BoiaRepository {
     // eslint-disable-next-line no-control-regex
     if (/[\u0000-\u001f\u007f]/.test(nickname)) invalid('apodo: caracteres de control');
     const lower = nickname.toLocaleLowerCase('es');
+    const own = current?.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es');
+    if (own === lower) return nickname;
     const taken =
       this.sample.crew.some((c) => c.nickname.toLocaleLowerCase('es') === lower) ||
       // Nadie se hace pasar por un artista (sus Carnets salen de su ficha, T66).
@@ -1040,7 +1053,7 @@ class LocalRepository implements BoiaRepository {
       Object.values(draft.carnets).some(
         (c) => c.userId !== userId && c.nickname.toLocaleLowerCase('es') === lower,
       );
-    if (taken) throw new StoreError('conflict', 'apodo en uso');
+    if (taken) throw new StoreError('conflict', NICKNAME_TAKEN_MESSAGE);
     return nickname;
   }
 
@@ -1117,7 +1130,7 @@ class LocalRepository implements BoiaRepository {
       create: async (input: CarnetInput) =>
         this.mutate(['identity', 'carnet'], (d) => {
           const me = this.ensureIdentity(d);
-          if (d.carnets[me.id]) throw new StoreError('conflict', 'ya hay Carnet');
+          if (d.carnets[me.id]) throw new StoreError('conflict', CARNET_EXISTS_MESSAGE);
           const at = this.iso();
           // Nº seguido desde el 10 (plan 029 T282), saltando los ocupados.
           const memberNumber = nextMemberNumber(d.memberCounter, takenNumbers(d));
@@ -1143,7 +1156,7 @@ class LocalRepository implements BoiaRepository {
           const c = me && d.carnets[me.id];
           if (!me || !c) throw new StoreError('no_carnet', 'no hay Carnet');
           if (patch.nickname !== undefined)
-            c.nickname = this.checkNickname(d, patch.nickname, me.id);
+            c.nickname = this.checkNickname(d, patch.nickname, me.id, c.nickname);
           if (patch.avatarKey !== undefined) c.avatarKey = patch.avatarKey;
           if (patch.avatarImage !== undefined) c.avatarImage = this.checkAvatar(patch.avatarImage);
           if (patch.musicLink === null) delete c.musicLink;

@@ -8,7 +8,13 @@ import {
   charLength,
   musicLinkFrom,
 } from '@boia/contracts';
-import { type BoiaRepository, type CarnetView, isStoreError } from '@boia/store';
+import {
+  type BoiaRepository,
+  CARNET_EXISTS_MESSAGE,
+  type CarnetView,
+  isNicknameTaken,
+  isStoreError,
+} from '@boia/store';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { requireAccount } from '../../account/gate';
 import { clearArtistCode, pendingArtistCode } from '../../account/artist-link';
@@ -282,11 +288,11 @@ export function continueCarnetDraft(current: CarnetView, draft: CarnetDraft): Ca
 
 /** Texto para la interfaz de un error del repositorio al guardar el Carnet. muestra */
 export function carnetErrorText(e: unknown): string {
-  if (isStoreError(e, 'conflict')) {
-    return /apodo/.test((e as Error).message)
-      ? t('carnet.error.nicknameTaken')
-      : t('juego.carnetEditor.yaTienesUnCarnet');
-  }
+  // Sólo un apodo que ya lleva otro miembro es «apodo ocupado» (T293); otro
+  // choque es el Carnet que ya existe o un fallo al guardar.
+  if (isNicknameTaken(e)) return t('carnet.error.nicknameTaken');
+  if (isStoreError(e, 'conflict') && (e as Error).message === CARNET_EXISTS_MESSAGE)
+    return t('juego.carnetEditor.yaTienesUnCarnet');
   if (isStoreError(e, 'invalid'))
     return t('juego.carnetEditor.revisaEsto', { message: (e as Error).message });
   return t('carnet.error.save');

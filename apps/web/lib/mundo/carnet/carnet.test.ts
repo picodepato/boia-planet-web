@@ -1,6 +1,14 @@
 import { CARNET_QUESTIONS } from '@boia/contracts';
 import { findDropSpot, isSeaSpot } from '@boia/engine/bottles';
-import { type BoiaRepository, SAMPLE_BOTTLES, SAMPLE_CREW, isStoreError } from '@boia/store';
+import {
+  type BoiaRepository,
+  CARNET_EXISTS_MESSAGE,
+  NICKNAME_TAKEN_MESSAGE,
+  SAMPLE_BOTTLES,
+  SAMPLE_CREW,
+  StoreError,
+  isStoreError,
+} from '@boia/store';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +19,8 @@ import { t } from '../../i18n';
 import { worlds } from '../demo-world';
 import { gameRepository, seaWorld } from '../repo';
 import { CarnetCard } from './carnet-card';
-import { CarnetForm, draftFrom } from './carnet-editor';
+import { NEUTRAL_AVATARS } from './avatar';
+import { CarnetForm, carnetErrorText, draftFrom, saveCarnet } from './carnet-editor';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
 const sea = seaWorld();
@@ -154,5 +163,42 @@ describe('Carnet (REQ-IDE-010…015)', () => {
     for (const other of CARNET_QUESTIONS.filter((x) => x.id !== q.id)) {
       expect(html).not.toContain(other.prompt);
     }
+  });
+});
+
+describe('carnetErrorText: sólo un apodo de otro es «apodo ocupado» (T293)', () => {
+  const taken = t('carnet.error.nicknameTaken');
+  const rejected = (reason: string) =>
+    Object.assign(new StoreError('conflict', `rechazado (servidor: ${reason})`), { reason });
+
+  it('el apodo de otro miembro, en local y con cuenta', () => {
+    expect(carnetErrorText(new StoreError('conflict', NICKNAME_TAKEN_MESSAGE))).toBe(taken);
+    expect(carnetErrorText(rejected('nickname_taken'))).toBe(taken);
+  });
+
+  it('otro choque no habla del apodo aunque su mensaje lo nombre', () => {
+    expect(carnetErrorText(new StoreError('conflict', CARNET_EXISTS_MESSAGE))).toBe(
+      t('juego.carnetEditor.yaTienesUnCarnet'),
+    );
+    for (const e of [
+      new StoreError('conflict', 'el apodo choca con otra cosa'),
+      rejected('member_number_busy'),
+      new StoreError('forbidden', 'rechazado (servidor: artist_required)'),
+    ]) {
+      expect(carnetErrorText(e)).toBe(t('carnet.error.save'));
+    }
+  });
+
+  it('el propio Carnet se guarda con su apodo y otro cambio', async () => {
+    const repo = await withCarnet('Pulpo Propio');
+    const before = await repo.carnet.mine();
+    const avatarKey = NEUTRAL_AVATARS[1]!.key;
+    const view = await saveCarnet(
+      repo,
+      before,
+      { ...draftFrom(before), avatarKey },
+      CARNET_QUESTIONS,
+    );
+    expect(view).toMatchObject({ nickname: 'Pulpo Propio', avatarKey });
   });
 });

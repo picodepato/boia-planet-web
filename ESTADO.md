@@ -4,6 +4,47 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 030 T293: Bug: editing your own artist Carnet with a web link says the nickname is taken
+
+Qué pasaba: con cuenta, guardar el Carnet pasa primero por la copia local
+(`LocalRepository.carnet.update`), y su `checkNickname` daba «apodo en uso»
+si el apodo coincidía con un artista de la lista o un miembro de la muestra,
+aunque fuera el apodo PROPIO (sólo excluía al propio entre los Carnets
+guardados). El servidor había aceptado ese apodo al crear la cuenta, y el
+editor sólo llama a `update` si cambia algo del perfil (p. ej. el enlace a su
+música): de ahí que fallara justo al poner el enlace. El servidor no tiene el
+fallo (probado contra boia-planet-dev).
+
+Qué existe:
+- `packages/store/src/local.ts`: `checkNickname(…, current)`; en `update`,
+  el apodo que ya lleva ese Carnet (mismas letras, sin mirar mayúsculas ni
+  espacios) se guarda sin buscar choques. Quién puede tomar qué apodo no
+  cambia: un apodo nuevo se sigue comprobando igual.
+- `packages/store/src/errors.ts`: `NICKNAME_TAKEN_MESSAGE`,
+  `CARNET_EXISTS_MESSAGE` e `isNicknameTaken(e)` (conflict local
+  «apodo en uso» o rechazo `nickname_taken` del servidor; nada más).
+- `apps/web/lib/mundo/carnet/carnet-editor.tsx`: `carnetErrorText` ya no
+  mira si el mensaje contiene «apodo»: apodo ocupado sólo con
+  `isNicknameTaken`; «ya tienes un Carnet» sólo con `CARNET_EXISTS_MESSAGE`;
+  cualquier otro choque, «No se ha podido guardar».
+- `fake-supabase.ts`: `set_artist_music` (como la RPC).
+- Pruebas: `artist-music.test.ts` (local), `member.test.ts` (cuenta, artista
+  y socio), `carnet.test.ts` (texto del error y guardar con el mismo apodo),
+  `packages/db/src/supabase/carnet-edit.supabase.ts` (dev).
+- Migración: ninguna.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 327 archivos, 2921 pasan, 3 omitidas
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0; `pnpm typecheck` → exit 0
+- `pnpm test:supabase carnet-edit` (dev) → exit 0, 3/3; quedan 0 cuentas de prueba
+- `pnpm test:supabase` (dev, entero) → exit 1: 184 pasan, 1 falla, ajena a T293:
+  `schema.supabase.ts` (tipos versionados vs. esquema) porque dev ya tiene
+  `home_block_type` 'carnet', que no está en ninguna migración del repo
+  (otra tarea la aplicó a dev y aún no está en main). Quedan 0 cuentas.
+
+Pendiente: nada de código. Un Carnet con apodo moderado («Miembro de BOIA n»)
+sigue enseñando ese apodo en el editor (fuera de esta tarea).
+
 ## 2026-10-14 — plan 030 T286: Imágenes para compartir: planeta + BOIA para la web, una por evento
 
 Qué existe:
