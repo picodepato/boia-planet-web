@@ -1,6 +1,6 @@
 'use client';
 
-import { emitSignal } from '../../lib/mundo/achievements';
+import { emitSignal, horoscopoAchievement } from '../../lib/mundo/achievements';
 import { gameRepository } from '../../lib/mundo/repo';
 
 import { type BoiaEvent, EVENT_STATE_BEHAVIOR, foundDiscountState } from '@boia/contracts';
@@ -14,7 +14,7 @@ import {
   type WorldObject,
 } from '@boia/world';
 import Link from 'next/link';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { type MessageKey, t, formatEventDate } from '../../lib/i18n';
 import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
 import { eventHref, photosHref } from '../../lib/landing/eventos';
@@ -749,6 +749,11 @@ export function IslandBlock({
  */
 function HarborHoroscopo() {
   const day = horoscopoDay(typeof window === 'undefined' ? '' : window.location.search);
+  // Leerlo aquí también cuenta para «Horoscopado» (T274): el horóscopo de ese día,
+  // una sola vez por mucho que se abra la ficha (la huella es la misma).
+  useEffect(() => {
+    void emitSignal(gameRepository(), horoscopoAchievement(day));
+  }, [day]);
   return (
     <p className="mar-sheet__meta" data-testid="puerto-horoscopo" data-fecha={day}>
       <strong>{t('mar.puerto.horoscopo')}</strong> {t(horoscopoOf(day) as MessageKey)}

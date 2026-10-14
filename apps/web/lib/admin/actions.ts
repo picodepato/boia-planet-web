@@ -148,6 +148,13 @@ export const ACHIEVEMENT_ICONS = [
   'carnet',
   'delfin',
   'cofre',
+  // Plan 029 T274: los secretos del mar y los dos logros nuevos (dibujos en lib/logros/achievement-art.tsx).
+  'ola',
+  'gaviota',
+  'fiesta',
+  'after',
+  'temporal',
+  'horoscopo',
 ] as const;
 
 /** Un logro nuevo o editado (sin id: se saca del título; la versión la pone el repositorio). */

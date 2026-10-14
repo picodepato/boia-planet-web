@@ -67,6 +67,18 @@
   color: rgb(18 35 63 / 0.4);
 }
 
+/* El dibujo del logro (plan 029 T274): a color cuando es tuyo, apagado mientras no. */
+.logro__icon > .logro-art {
+  width: 26px;
+  height: 26px;
+  vertical-align: -4px;
+}
+
+.logro.is-in_progress .logro__icon > .logro-art {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
 .logro__main {
   flex: 1 1 auto;
   min-width: 0;

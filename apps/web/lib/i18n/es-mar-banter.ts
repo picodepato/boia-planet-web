@@ -1,18 +1,31 @@
 /**
  * Frases de los personajes del mar (plan 029 T272): charla de la Boia Fiestera, el
  * náufrago y el delfín según el ambiente (día = resaca, tarde = calentando, noche =
- * fiesta), el horóscopo boiero del día y la bienvenida del Puerto. Todas `muestra`,
+ * fiesta), el horóscopo boiero del día, la bienvenida del Puerto y las pistas de la
+ * boia de los secretos (T274). Todas `muestra`,
  * pendientes del visto bueno de Álvaro. Tono de marca: sin bebida ni drogas
  * (lo vigila `lib/mundo/banter.test.ts`).
  */
 export const esMarBanter = {
+  // Pistas de la boia de los secretos (plan 029 T274): una críptica por secreto que falta.
+  'mar.pista.salto':
+    'Algunas olas grandes son trampolines. Súbelas con prisa y verás el mar del revés.',
+  'mar.pista.gaviota':
+    'Por aquí vuela una ladrona con plumas. Si te roba, no lo dejes pasar: a por ella.',
+  'mar.pista.fiesta':
+    'A la Fiestera no la mueve la música: la mueve la bocina. Tres veces y de cerca.',
+  'mar.pista.after':
+    'Hay una isla que sólo abre cuando casi todo el mundo duerme. Pregúntale a tu reloj.',
+  'mar.pista.todas': 'Ya no me quedan secretos que contarte: los has encontrado todos. Chapó.',
   'mar.banter.fiestera.dia.1': 'Shhh. Ni el mar hace tanto ruido como tu motor, marinero.',
   'mar.banter.fiestera.dia.2': 'Anoche bailé tanto que hoy me duelen hasta las pestañas.',
   'mar.banter.fiestera.dia.3': 'No me hables alto. Ni bajo. Mejor por señas hasta mediodía.',
   'mar.banter.fiestera.dia.4': 'Plan de hoy: flotar boca arriba con las gafas de sol puestas.',
   'mar.banter.fiestera.dia.5': '¿Sabes qué suena mejor que el bombo? El silencio. Y mi toalla.',
-  'mar.banter.fiestera.dia.6': 'He visto amanecer dos veces: una bailando y otra intentando dormir.',
-  'mar.banter.fiestera.dia.7': 'Quien inventó el sol de las diez no ha salido de fiesta en su vida.',
+  'mar.banter.fiestera.dia.6':
+    'He visto amanecer dos veces: una bailando y otra intentando dormir.',
+  'mar.banter.fiestera.dia.7':
+    'Quien inventó el sol de las diez no ha salido de fiesta en su vida.',
   'mar.banter.fiestera.dia.8': 'Soy una boia: flotar es mi trabajo. Hoy hago horas extra.',
   'mar.banter.fiestera.tarde.1': 'Horchata en mano y los hombros ya se mueven solos.',
   'mar.banter.fiestera.tarde.2': 'Calentando motores: tres canciones más y esto arranca.',
@@ -21,7 +34,8 @@ export const esMarBanter = {
   'mar.banter.fiestera.tarde.5':
     'Ensayo mi paso estrella delante de las gaviotas. Exigentes, pero justas.',
   'mar.banter.fiestera.tarde.6': '¿Traes buen humor? Pues súbele el volumen, que esto se calienta.',
-  'mar.banter.fiestera.tarde.7': 'Me he cambiado de modelito tres veces. Para flotar, pero con estilo.',
+  'mar.banter.fiestera.tarde.7':
+    'Me he cambiado de modelito tres veces. Para flotar, pero con estilo.',
   'mar.banter.fiestera.tarde.8': 'El sol baja y el ritmo sube. Es física, no lo digo yo.',
   'mar.banter.fiestera.noche.1': '¡Esto es lo que yo llamo noche! ¡Que suba ese bombo!',
   'mar.banter.fiestera.noche.2': 'Hoy no duerme ni el cangrejo. ¡A bailar!',
@@ -37,8 +51,7 @@ export const esMarBanter = {
   'mar.banter.naufrago.dia.3': 'Me he despertado en una isla sin saber cómo. Otra vez. Clásico.',
   'mar.banter.naufrago.dia.4': 'Me he hecho amigo de un cangrejo. Muy callado, buen tío.',
   'mar.banter.naufrago.dia.5': 'Mi desayuno de hoy: arena. Gran textura, poco sabor.',
-  'mar.banter.naufrago.dia.6':
-    'Escribí «SOS» en la arena. La marea me ha corregido la ortografía.',
+  'mar.banter.naufrago.dia.6': 'Escribí «SOS» en la arena. La marea me ha corregido la ortografía.',
   'mar.banter.naufrago.dia.7': 'Si ves un barco, dile que me recoja. Y que traiga bocadillos.',
   'mar.banter.naufrago.dia.8': 'Ayer era viernes, creo. Aquí todos los días son domingo.',
   'mar.banter.naufrago.tarde.1': 'Menos mal que llegas. Empezaba a hablar con mi sombra.',
@@ -48,11 +61,13 @@ export const esMarBanter = {
   'mar.banter.naufrago.tarde.5':
     'Hoy me siento aventurero: voy a dar la vuelta a la isla. Son cinco pasos.',
   'mar.banter.naufrago.tarde.6': 'Una palmera, un sombrero de paja y cero prisas. Soy influencer.',
-  'mar.banter.naufrago.tarde.7': 'Me he montado un chiringuito. De momento, el único cliente soy yo.',
+  'mar.banter.naufrago.tarde.7':
+    'Me he montado un chiringuito. De momento, el único cliente soy yo.',
   'mar.banter.naufrago.tarde.8': 'Le he puesto nombre a cada ola. A esa de ahí no la soporto.',
   'mar.banter.naufrago.noche.1': 'De noche el mar suena a fiesta. Y yo sin entrada.',
   'mar.banter.naufrago.noche.2': 'Me han dicho que hay after. Yo con mi hoguera ya voy servido.',
-  'mar.banter.naufrago.noche.3': 'Cuento estrellas cada noche. Voy por 4.000 y me he perdido dos veces.',
+  'mar.banter.naufrago.noche.3':
+    'Cuento estrellas cada noche. Voy por 4.000 y me he perdido dos veces.',
   'mar.banter.naufrago.noche.4': '¿Te quedas a bailar? Prometo no pisarte. Mucho.',
   'mar.banter.naufrago.noche.5': 'Una gaviota me ha robado el sombrero. Ahora es personal.',
   'mar.banter.naufrago.noche.6': 'Con esta luna hasta mi isla parece una discoteca.',
@@ -82,7 +97,8 @@ export const esMarBanter = {
   'mar.banter.delfin.noche.5': 'Me sé un truco nuevo: dar vueltas sin marearme. A medias.',
   'mar.banter.delfin.noche.6': '¿Bailamos? Yo pongo las olas y tú el barco.',
   'mar.banter.delfin.noche.7': 'Bajo el agua no se me ve, pero estoy bailando muchísimo.',
-  'mar.banter.delfin.noche.8': 'Soy el único de la fiesta que no suda. Ventajas de vivir en el mar.',
+  'mar.banter.delfin.noche.8':
+    'Soy el único de la fiesta que no suda. Ventajas de vivir en el mar.',
   'mar.horoscopo.1': 'Alguien te dirá «ahora vamos». Ve buscando las chanclas.',
   'mar.horoscopo.2': 'Tu plan de volver pronto a casa caduca hoy mismo.',
   'mar.horoscopo.3': 'Dos amigos quedarán contigo a la misma hora. Gana el que traiga pipas.',
@@ -90,10 +106,10 @@ export const esMarBanter = {
   'mar.horoscopo.5': 'Hoy te organizarás de maravilla. Hasta que suene el segundo tema.',
   'mar.horoscopo.6': 'Dudarás entre dos planes. Acabarás en un tercero, y será el mejor.',
   'mar.horoscopo.7': 'Tu cartera pide calma. Tus pies, todo lo contrario.',
-  'mar.horoscopo.8':
-    'Ideas geniales a las seis de la mañana. Apúntalas: mañana no las entenderás.',
+  'mar.horoscopo.8': 'Ideas geniales a las seis de la mañana. Apúntalas: mañana no las entenderás.',
   'mar.horoscopo.9': 'El mar te llama. Bueno, es la ducha, pero algo es algo.',
-  'mar.horoscopo.10': 'Los astros recomiendan agua, crema solar y no fiarte de «la última canción».',
+  'mar.horoscopo.10':
+    'Los astros recomiendan agua, crema solar y no fiarte de «la última canción».',
   'mar.horoscopo.11': 'El cuarto tema de la noche te va a poner a bailar sí o sí.',
   'mar.horoscopo.12': 'Una gaviota te mirará fijamente. No es personal: quiere tu bocadillo.',
   'mar.horoscopo.13': 'Alguien te pedirá una canción. Tienes derecho a decir «luego».',
@@ -101,7 +117,8 @@ export const esMarBanter = {
   'mar.horoscopo.15': 'Tu energía de hoy: 70 % solete, 30 % ganas de pizza.',
   'mar.horoscopo.16':
     'Las estrellas dicen que llegues puntual. Las estrellas no conocen a tus amigos.',
-  'mar.horoscopo.17': 'Conocerás a alguien con quien compartir un bocadillo y tres teorías absurdas.',
+  'mar.horoscopo.17':
+    'Conocerás a alguien con quien compartir un bocadillo y tres teorías absurdas.',
   'mar.horoscopo.18': 'Bailarás como si nadie te viera. Te verá todo el mundo. Da igual.',
   'mar.horoscopo.19': 'Esta noche habrá fotos borrosas. Serán las mejores.',
   'mar.horoscopo.20': 'Tu móvil se quedará sin batería justo cuando llegue lo bueno. Mejor.',

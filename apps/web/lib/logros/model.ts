@@ -1,6 +1,7 @@
 import type { AchievementState } from '@boia/contracts';
 import { formatRaceTime } from '@boia/engine/circuit';
 import {
+  HOROSCOPO_CATEGORY,
   RACE_FAST_ACHIEVEMENT,
   type AchievementDefinition,
   type AchievementProgress,
@@ -47,6 +48,8 @@ export interface LogroRow {
   hint: string;
   /** El premio en corto: «+30 ★ · +10 🪙 · Barco Pixel art». */
   reward: string;
+  /** La clave de su dibujo (`iconKey`; plan 029 T274), o null. Los ocultos no la dan. */
+  iconKey: string | null;
 }
 
 /** Sustantivo de lo que se cuenta, por disparador: [singular, plural]. */
@@ -71,7 +74,11 @@ function noun(def: AchievementDefinition, n: number): string {
   if (def.trigger === 'collect_objects') {
     const cat = (def.triggerParams as Record<string, unknown>).category;
     const pair: [string, string] =
-      cat === 'secreto' ? ['secreto', 'secretos'] : ['objeto', 'objetos'];
+      cat === 'secreto'
+        ? ['secreto', 'secretos']
+        : cat === HOROSCOPO_CATEGORY
+          ? ['horóscopo', 'horóscopos']
+          : ['objeto', 'objetos'];
     return n === 1 ? pair[0] : pair[1];
   }
   const pair = NOUNS[def.trigger];
@@ -177,6 +184,7 @@ export function logroRows(
           count: null,
           hint: HIDDEN_HINT,
           reward,
+          iconKey: null,
         };
       }
       const base = {
@@ -186,6 +194,7 @@ export function logroRows(
         state: a.state,
         hidden: false,
         reward,
+        iconKey: d.iconKey ?? null,
       };
       if (a.state !== 'in_progress') {
         return {

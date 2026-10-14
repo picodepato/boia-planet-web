@@ -71,11 +71,14 @@ import {
   SALTO_MORTAL_ENCOUNTER,
   TIME_PLAYED_TICK_S,
   emitSignal,
+  horoscopoAchievement,
   onAchievementNotices,
   recordBuoy,
   recordSignal,
   signalFromWorldEvent,
+  StormWatch,
 } from '../../lib/mundo/achievements';
+import { SECRET_HINT_BUOY, secretHintKey } from '../../lib/mundo/secret-hints';
 import {
   BANTER_NAME_KEY,
   BanterPicker,
@@ -422,6 +425,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const overlayRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Mar3D | null>(null);
+  // «Capeaste el temporal» (T274): el temporal en curso y si se ha navegado entero.
+  const stormRef = useRef(new StormWatch());
   const worldRef = useRef<WorldConfig | null>(null);
   const liveRef = useRef<ComposedWorld | null>(null);
   const worldIdRef = useRef('arcilla');
@@ -532,7 +537,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     const key = banterRef.current.say(speaker, moodRef.current, now);
     if (!key) return;
     sayChat([
-      { objectId, kicker: msg(BANTER_NAME_KEY[speaker] as MessageKey), text: msg(key as MessageKey) },
+      {
+        objectId,
+        kicker: msg(BANTER_NAME_KEY[speaker] as MessageKey),
+        text: msg(key as MessageKey),
+      },
     ]);
   };
   // El bocadillo de la charla (T272), fijo a la derecha bajo los avisos (`.mar-charla`):
@@ -559,6 +568,20 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const sayChat = (lines: ChatLine[]) => {
     chatQueue.current = [...lines];
     nextChat();
+  };
+  // La boia de los secretos (T274): una pista de un secreto que falta, o la felicitación.
+  // Sus dos frases siguen siendo de una vez por visita; la pista sale al acabarlas y,
+  // después, cada vez que se vuelve a pasar junto a ella.
+  const secretsTalkedRef = useRef(false);
+  const secretHintSay = async () => {
+    const key = await secretHintKey(progressApi());
+    sayChat([
+      {
+        objectId: SECRET_HINT_BUOY,
+        kicker: msg('mapa.boia-secretos' as MessageKey),
+        text: msg(key as MessageKey),
+      },
+    ]);
   };
   const portSeenRef = useRef(false);
   const [dialogue, setDialogue] = useState<{
@@ -989,7 +1012,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           setObjectiveMark(null);
         }
         const o = world.objects.find((x) => x.identity.id === e.objectId);
-        if (e.objectId === 'fiestera' || e.objectId === 'naufrago') banterSay(e.objectId, e.objectId);
+        if (e.objectId === 'fiestera' || e.objectId === 'naufrago')
+          banterSay(e.objectId, e.objectId);
+        // La boia de los secretos ya dijo sus frases en esta visita: sólo la pista (T274).
+        if (e.objectId === SECRET_HINT_BUOY && secretsTalkedRef.current) void secretHintSay();
         if (o?.identity.category === 'isla') {
           const harbor = e.objectId === HARBOR_PLACE_ID;
           void discoverPlace(progressApi(), e.objectId, ctx)
@@ -1012,6 +1038,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
                 const today = horoscopoDay(window.location.search);
                 if (horoscopoPending(readPref(HOROSCOPO_KEY), today)) {
                   writePref(HOROSCOPO_KEY, today);
+                  // Leer el horóscopo del día cuenta para «Horoscopado» (T274).
+                  void emitSignal(gameRepository(), horoscopoAchievement(today));
                   lines.push({
                     objectId: e.objectId,
                     kicker: msg('mar.puerto.horoscopo'),
@@ -1059,6 +1087,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // Al acabar sus frases de misión, una de su charla (T272), si no se ha ido.
         if (e.reason !== 'interrupted' && (e.objectId === 'fiestera' || e.objectId === 'naufrago'))
           banterSay(e.objectId, e.objectId);
+        // La boia de los secretos da su pista al acabar de hablar (T274).
+        if (e.reason !== 'interrupted' && e.objectId === SECRET_HINT_BUOY) {
+          secretsTalkedRef.current = true;
+          void secretHintSay();
+        }
         break;
       case 'content_open':
         // En carrera, pasar junto a una isla no abre su ficha ni anula la carrera:
@@ -1589,7 +1622,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         onSwitch: (mode) => setSwitching(mode),
         // El tiempo (T268): sin episodios en una carrera ni con un minijuego abierto.
         busy: () => (raceRef.current?.race.active ?? false) || minigameOpenRef.current,
-        onWeather: weatherSound,
+        // Un temporal entero navegado (T274): el episodio de tormenta se va del todo.
+        onWeather: (e) => {
+          weatherSound(e);
+          const signal = stormRef.current.event(e);
+          if (signal) void emitSignal(gameRepository(), signal);
+        },
         // La bocina y la siesta (T271): su sonido; tres pitidos junto a la Fiestera, el logro.
         onHorn: (voice, dance) => {
           horn(voice);
@@ -1846,6 +1884,31 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     }, TIME_PLAYED_TICK_S * 1000);
     return () => window.clearInterval(t);
   }, [status, pushAll]);
+
+  // «Capeaste el temporal» (T274): mientras dura una tormenta, cada cuarto de segundo,
+  // ¿se sigue al timón? Un menú o panel encima, la vista de mapa, un minijuego, una
+  // carrera o la pestaña oculta la estropean.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const STORM_TICK_MS = 250;
+    const t = window.setInterval(() => {
+      const storm = stormRef.current;
+      if (!storm.watching) return;
+      const g = engineRef.current;
+      const sailing =
+        !!g &&
+        document.visibilityState === 'visible' &&
+        g.inputEnabled &&
+        !g.paused &&
+        !g.mapMode &&
+        !g.survivorsActive &&
+        !g.defenseActive &&
+        !(raceRef.current?.race.active ?? false) &&
+        !minigameOpenRef.current;
+      storm.tick(STORM_TICK_MS / 1000, sailing);
+    }, STORM_TICK_MS);
+    return () => window.clearInterval(t);
+  }, [status]);
 
   // La tarjeta de abajo (T53: encima de la barra) tapa parte del mar en el
   // móvil: la cámara sube el barco por encima de ella, también al abrirla.

@@ -70,6 +70,10 @@ export const AFTER_SHIP = 'barco-after';
 export const AFTER_SHIP_STYLE = 'after';
 export const AFTER_COINS = 500;
 export const AFTER_POINTS = 150;
+/** Encuentro de «Capeaste el temporal» (plan 029 T274): un episodio de tormenta entero. */
+export const TEMPORAL_ENCOUNTER = 'temporal';
+/** Categoría de «Horoscopado» (plan 029 T274): una señal por horóscopo leído. */
+export const HOROSCOPO_CATEGORY = 'horoscopo';
 
 /**
  * Catálogo de logros de MUESTRA, el aprobado por Hernán el 2026-09-29
@@ -362,6 +366,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     triggerParams: { encounter: 'fiestera-bailando' },
     points: 40,
     coins: 20,
+    iconKey: 'fiesta',
     secret: true,
     sample: true,
   },
@@ -374,6 +379,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     triggerParams: { encounter: 'salto-mortal' },
     points: 60,
     coins: 30,
+    iconKey: 'ola',
     secret: true,
     sample: true,
   },
@@ -389,6 +395,7 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     points: AFTER_POINTS,
     coins: AFTER_COINS,
     cosmeticKey: AFTER_SHIP,
+    iconKey: 'after',
     secret: true,
     sample: true,
   },
@@ -401,7 +408,34 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     triggerParams: { encounter: 'gaviota' },
     points: 40,
     coins: 0,
+    iconKey: 'gaviota',
     secret: true,
+    sample: true,
+  },
+  {
+    // Plan 029 T268: navegar un temporal entero (un episodio de tormenta hasta que se va). Visible.
+    // Premio muestra (P24).
+    id: 'capeaste-temporal',
+    title: 'Capeaste el temporal',
+    description: 'Navega un temporal entero, de principio a fin, sin parar ni abrir el mapa.',
+    trigger: 'complete_encounter',
+    triggerParams: { encounter: TEMPORAL_ENCOUNTER },
+    points: 40,
+    coins: 20,
+    iconKey: 'temporal',
+    sample: true,
+  },
+  {
+    // Plan 029 T272: leer 7 horóscopos boieros distintos (una señal por horóscopo, en la
+    // categoría `horoscopo`). Visible. Premio muestra (P24).
+    id: 'horoscopado',
+    title: 'Horoscopado',
+    description: 'Lee 7 horóscopos boieros en el Puerto: sale uno nuevo cada día.',
+    trigger: 'collect_objects',
+    triggerParams: { category: HOROSCOPO_CATEGORY, count: 7 },
+    points: 40,
+    coins: 20,
+    iconKey: 'horoscopo',
     sample: true,
   },
   {

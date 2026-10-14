@@ -1,16 +1,20 @@
 import type { WorldEvent } from '@boia/engine';
 import type { AchievementTrigger } from '@boia/contracts';
 import type { Notice } from '@boia/engine/ui';
+import { type WeatherEvent, WEATHER_TUNING } from '@boia/engine/weather';
 import {
   type AchievementDefinition,
   type AchievementProgress,
   type ProgressApi,
+  HOROSCOPO_CATEGORY,
+  TEMPORAL_ENCOUNTER,
   compensatedIds,
   isStableKey,
   isStoreError,
 } from '@boia/store';
 import type { WorldConfig } from '@boia/world';
 import { t } from '../i18n';
+import { horoscopoIndex } from './banter';
 
 /**
  * Logros del juego (T21, T36; REQ-IDE-024…027, D-22 punto 5): un solo sistema
@@ -152,6 +156,59 @@ export function signalFromWorldEvent(e: WorldEvent, world: WorldConfig): Achieve
     default:
       return null;
   }
+}
+
+/**
+ * «Capeaste el temporal» (plan 029 T274): navegar un episodio de tormenta entero,
+ * de que entra a que escampa solo, sin dejar de navegar. No cuenta si en algún
+ * momento del episodio el jugador no estaba al timón: un menú o un panel encima,
+ * la vista de mapa, un minijuego, una carrera o la pestaña oculta (lo dice
+ * `tick(dt, false)`). Tampoco cuenta un temporal cortado antes de tiempo (una
+ * partida lo apaga suave): hay que haber navegado al menos `need` s de él.
+ * Calidad baja y movimiento reducido sí cuentan: la tormenta sale igual (lluvia
+ * y cielo), sólo sin destellos. Puro: quien lo usa le pasa los eventos del
+ * tiempo (`event`) y, cada rato, si se está navegando (`tick`).
+ */
+export class StormWatch {
+  private run: { spoiled: boolean; sailed: number } | null = null;
+
+  /** `need`: s navegados que pide (por defecto, el episodio menos su fundido de salida). */
+  constructor(private readonly need: number = WEATHER_TUNING.duration - WEATHER_TUNING.fade) {}
+
+  /** ¿Hay un temporal en curso que todavía puede contar? */
+  get watching(): boolean {
+    return this.run !== null && !this.run.spoiled;
+  }
+
+  /** `dt` s más del temporal en curso; `sailing` false lo estropea. */
+  tick(dt: number, sailing: boolean): void {
+    const r = this.run;
+    if (!r || r.spoiled) return;
+    if (!sailing) r.spoiled = true;
+    else r.sailed += Math.max(0, dt);
+  }
+
+  /** Un evento del tiempo; devuelve la señal del logro si un temporal entero se acaba de ir. */
+  event(e: WeatherEvent): AchievementSignal | null {
+    if (e.type === 'start') {
+      this.run = e.kind === 'tormenta' ? { spoiled: false, sailed: 0 } : null;
+      return null;
+    }
+    if (e.type !== 'end') return null;
+    const r = this.run;
+    this.run = null;
+    if (e.kind !== 'tormenta' || !r || r.spoiled || r.sailed < this.need) return null;
+    return { trigger: 'complete_encounter', encounter: TEMPORAL_ENCOUNTER };
+  }
+}
+
+/**
+ * La señal de «Horoscopado» (plan 029 T274): leer el horóscopo de ese día cuenta
+ * su número (`horoscopo-<n>`); siete distintos completan el logro.
+ */
+export function horoscopoAchievement(date: string): AchievementSignal {
+  const n = horoscopoIndex(date) + 1;
+  return { trigger: 'collect_objects', objectId: `horoscopo-${n}`, category: HOROSCOPO_CATEGORY };
 }
 
 const after = (keys: readonly string[], prefix: string) =>

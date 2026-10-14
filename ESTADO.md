@@ -4,6 +4,50 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T274: Logros y pistas de los secretos nuevos
+
+Qué existe:
+- Logros nuevos en el catálogo (`packages/store/src/sample/progress.ts`, `muestra`, P24):
+  - «Capeaste el temporal» (`capeaste-temporal`, visible): navegar un temporal (episodio de tormenta de T268) entero. 40 puntos, 20 monedas.
+  - «Horoscopado» (`horoscopado`, visible): leer 7 horóscopos boieros distintos (T272), uno por día. 40 puntos, 20 monedas.
+  - Icono (`iconKey`) en los cuatro secretos del plan: «Salto mortal» (`ola`), «Gaviota pillada» (`gaviota`), «Fiestera bailando» (`fiesta`), «There's always an after» (`after`), y en los dos nuevos (`temporal`, `horoscopo`).
+  - Ningún logro de este plan lleva sello del Carnet (los sellos son sólo de entradas).
+- Dibujos de logro: `apps/web/lib/logros/achievement-art.tsx`, SVG de 32×32 hechos en código como los iconos del menú del juego (`lib/mundo/menu/icons.tsx`): contorno grueso en `currentColor`, rellenos de `ICON_PALETTE` (naranja, morado, crema, blanco, sol), sin texto ni imágenes. Las claves se añaden a `ACHIEVEMENT_ICONS` (`lib/admin/actions.ts`), así el Admin también las ofrece. En el panel de logros (`lib/logros/panel.tsx` + `logros.css`) el dibujo sustituye al ○ (apagado, en gris, mientras está en curso) y al 🏅 (a color, reclamado); los ocultos siguen con ❔ y los listos para reclamar con 🎁, como todos.
+- Señales (`apps/web/lib/mundo/achievements.ts`): `StormWatch` (temporal entero) y `horoscopoAchievement(date)` (cuenta `horoscopo-<n>` en la categoría `horoscopo`). Las de los cuatro secretos ya existían (T269–T273).
+- Pistas de la boia de los secretos: `apps/web/lib/mundo/secret-hints.ts` (`missingSecrets`, `pickSecretHint` con RNG inyectable, `secretHintKey`). Sólo dan pista los cuatro secretos del plan con su logro activo y aún en curso; si no falta ninguno, la felicitación. Textos `mar.pista.*` en `apps/web/lib/i18n/es-mar-banter.ts` (`muestra`).
+- `mar-client.tsx`: la boia de los secretos dice sus dos frases de siempre (una vez por visita, como las demás boies) y al acabarlas sale la pista en el bocadillo de la charla; cada vez que se vuelve a pasar junto a ella, otra pista (o la felicitación).
+
+Logros nuevos y cómo se consiguen (todos `muestra`):
+- «Salto mortal» (secreto): cruzar una ola grande (sale cada 60–120 s) con turbo; el barco da la vuelta en el aire.
+- «Gaviota pillada» (secreto): cuando la gaviota ladrona te roba monedas, alcanzarla antes de que se escape.
+- «Fiestera bailando» (secreto): tocar la bocina tres veces junto a la Boia Fiestera.
+- «There's always an after» (secreto): llegar a la isla del after, que sólo existe de 03:00 a 07:00 hora de Alicante. Da muchas monedas y el barco del after.
+- «Capeaste el temporal» (visible): navegar un temporal entero, de que entra a que escampa solo, sin dejar el timón: no cuenta si durante el temporal se abre un menú o panel, la vista de mapa, un minijuego o una carrera, ni con la pestaña oculta, ni si una partida lo corta antes de tiempo. Con calidad baja o movimiento reducido sí cuenta (la tormenta sale igual, sin destellos).
+- «Horoscopado» (visible): leer 7 horóscopos boieros distintos. Cuenta el del día al verlo en el bocadillo de llegada al Puerto o en la ficha del Puerto; el mismo día no cuenta dos veces.
+
+Comandos (tras la auditoría):
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 317 ficheros, 2831 pasan + 1 omitida (exit 0).
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm build` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm cf:measure` → 2,226 KiB gzip (presupuesto 2,800), exit 0.
+- No se ha corrido e2e.
+
+Pendiente: los textos de logros y pistas, los premios y los dibujos esperan el visto bueno de Álvaro (P24). La versión 2D (`/juego`) no da pistas: su boia dice sus dos frases de siempre. Los logros anteriores al plan 029 no tienen dibujo (siguen con ○/🏅); las claves `boia`…`cofre` de `ACHIEVEMENT_ICONS` tampoco.
+
+Probar a mano:
+- `/mar?clima=tormenta`: navega los ~30 s del temporal sin abrir el menú ni el mapa; al escampar, «Capeaste el temporal». Repite abriendo el menú a mitad: no sale.
+- `/mar?fecha=2026-12-31`, llega al Puerto (bocadillo o ficha); luego `?fecha=2027-01-01`… (cada día distinto): al 7.º, «Horoscopado». El panel dice «Te quedan N horóscopos».
+- `/mar?ola=1` con turbo → «Salto mortal»; `/mar?gaviota=1` y alcánzala → «Gaviota pillada»; tres bocinazos junto a la Fiestera → «Fiestera bailando»; `/mar?hora=4&cerca=after` → «There's always an after».
+- Pasa por la boia de los secretos (cerca de la salida del circuito): tras sus dos frases, una pista de un secreto que falte; vuelve a pasar: otra pista (sin repetir sus frases). Con los cuatro encontrados, la felicitación.
+- Panel de logros (menú → Logros) a 360 px: los dibujos en gris mientras están en curso, a color reclamados.
+
+Auditoría (Opus, 2026-10-14):
+- «Capeaste el temporal»: antes contaba cualquier fin de tormenta (también la cortada por una partida, la terminada con el menú abierto o en el mapa). Ahora `StormWatch` pide navegarla entera: un sondeo cada 250 ms en `mar-client.tsx` mira si se está al timón (sin menú/panel, mapa, minijuego, Cañón, Castillo, carrera ni pestaña oculta) y hacen falta ≥ 26 s navegados (duración menos el fundido). Prueba con el reloj del tiempo de verdad en `achievements.test.ts`.
+- «Horoscopado»: ahora también cuenta el horóscopo leído en la ficha del Puerto (`app/mar/sheet.tsx`), con la misma huella del día; el panel dice «horóscopos» y no «objetos» (`lib/logros/model.ts`).
+- Boia de los secretos: quitado `again: true` de `map.ts` (repetía sus dos frases en cada pasada, también en `/juego`); su diálogo vuelve a ser de una vez por visita y la pista sale al acabarlo y en cada pasada siguiente. Prueba de que su diálogo sigue con `once`.
+- Dibujos redibujados (la ola, la gaviota y la Fiestera no se reconocían; había un azul fuera de la paleta): salto con el barco del menú dando la vuelta sobre la ola, gaviota con la moneda en el pico, la boia con gorra bailando con notas, cascos con luna (after), nube con rayo y lluvia, bola de cristal. En curso se ven apagados (gris) como el ○. Revisado en Chromium a 360×640.
+- Pistas reescritas: crípticas pero resolubles y sin género («Chapó» en lugar de «Bien hecho, marinero»). Descripciones de los dos logros visibles aclaradas.
+- Sin sellos del Carnet en nada de esto.
+
 ## 2026-10-13 — plan 029 T272: Charla de personajes, horóscopo boiero y bienvenida del Puerto
 
 Qué existe:

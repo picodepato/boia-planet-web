@@ -598,7 +598,9 @@ const ISLANDS: PlaceInput[] = [
   // (el premio va en el logro, `siempre-hay-after`, no en el mapa). Al final
   // para no cambiar el orden de las demás.
   {
-    ...island(AFTER_PLACE_ID, 'mapa.after', 'plan:T273', AFTER_CENTER, 2.0, 1.6, 15, 3.4, [visit()]),
+    ...island(AFTER_PLACE_ID, 'mapa.after', 'plan:T273', AFTER_CENTER, 2.0, 1.6, 15, 3.4, [
+      visit(),
+    ]),
     state: { visible: false },
   },
 ];

@@ -2,6 +2,7 @@
 
 import { isStoreError } from '@boia/store';
 import { type CSSProperties, useCallback, useRef, useState } from 'react';
+import { AchievementArt, achievementArtName } from './achievement-art';
 import { CLAIM_LABEL, logroRows, obtainedCount } from './model';
 import { type ClaimedReward, ClaimReward } from './reward';
 import { useCountUp, useLogros } from './use-logros';
@@ -59,67 +60,75 @@ export function AchievementsPanel() {
         {t('achievements.counter', { got: obtainedCount(data.list), total: data.list.length })}
       </h3>
       <ul className="logros-lista" data-testid="logros">
-        {rows.map((row) => (
-          <li
-            key={row.id}
-            data-testid={`logro-${row.id}`}
-            data-estado={row.state}
-            data-obtenido={row.state === 'in_progress' ? 'no' : 'si'}
-            data-oculto={row.hidden ? 'si' : undefined}
-            className={`logro is-${row.state}${row.hidden ? ' is-hidden' : ''}`}
-          >
-            <span className="logro__icon" aria-hidden="true">
-              {row.state === 'claimed'
-                ? '🏅'
-                : row.state === 'ready'
-                  ? '🎁'
-                  : row.hidden
-                    ? '❔'
-                    : '○'}
-            </span>
-            <span className="logro__main">
-              <span className="logro__title">
-                <strong>{row.title}</strong>
-                {row.count ? <span className="logro__count">{row.count}</span> : null}
+        {rows.map((row) => {
+          // El dibujo del logro (T274); los ocultos no lo enseñan.
+          const art = achievementArtName(row.iconKey);
+          return (
+            <li
+              key={row.id}
+              data-testid={`logro-${row.id}`}
+              data-estado={row.state}
+              data-obtenido={row.state === 'in_progress' ? 'no' : 'si'}
+              data-oculto={row.hidden ? 'si' : undefined}
+              className={`logro is-${row.state}${row.hidden ? ' is-hidden' : ''}`}
+            >
+              <span className="logro__icon" aria-hidden="true">
+                {art && row.state !== 'ready' ? (
+                  <AchievementArt name={art} />
+                ) : row.state === 'claimed' ? (
+                  '🏅'
+                ) : row.state === 'ready' ? (
+                  '🎁'
+                ) : row.hidden ? (
+                  '❔'
+                ) : (
+                  '○'
+                )}
               </span>
-              {row.description ? <span className="logro__desc">{row.description}</span> : null}
-              {row.progress !== null && row.state === 'in_progress' ? (
-                <span
-                  className="logro__bar"
-                  role="progressbar"
-                  aria-label={t('logros.panel.progresoDe', { title: row.title })}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(row.progress * 100)}
-                  style={{ '--p': row.progress } as CSSProperties}
+              <span className="logro__main">
+                <span className="logro__title">
+                  <strong>{row.title}</strong>
+                  {row.count ? <span className="logro__count">{row.count}</span> : null}
+                </span>
+                {row.description ? <span className="logro__desc">{row.description}</span> : null}
+                {row.progress !== null && row.state === 'in_progress' ? (
+                  <span
+                    className="logro__bar"
+                    role="progressbar"
+                    aria-label={t('logros.panel.progresoDe', { title: row.title })}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(row.progress * 100)}
+                    style={{ '--p': row.progress } as CSSProperties}
+                  >
+                    <span />
+                  </span>
+                ) : null}
+                <span className="logro__hint" data-testid={`logro-pista-${row.id}`}>
+                  {row.hint}
+                </span>
+                {row.reward ? (
+                  <span className="logro__reward">
+                    {row.state === 'claimed' ? t('logros.panel.ganaste') : t('logros.panel.premio')}
+                    {row.reward}
+                  </span>
+                ) : null}
+              </span>
+              {row.state === 'ready' ? (
+                <button
+                  type="button"
+                  className="logro__claim"
+                  data-testid={`logro-reclamar-${row.id}`}
+                  disabled={claiming !== null}
+                  aria-label={t('logros.panel.elPremioDe', { CLAIM_LABEL, title: row.title })}
+                  onClick={() => void claim(row.id, row.title)}
                 >
-                  <span />
-                </span>
+                  {CLAIM_LABEL}
+                </button>
               ) : null}
-              <span className="logro__hint" data-testid={`logro-pista-${row.id}`}>
-                {row.hint}
-              </span>
-              {row.reward ? (
-                <span className="logro__reward">
-                  {row.state === 'claimed' ? t('logros.panel.ganaste') : t('logros.panel.premio')}
-                  {row.reward}
-                </span>
-              ) : null}
-            </span>
-            {row.state === 'ready' ? (
-              <button
-                type="button"
-                className="logro__claim"
-                data-testid={`logro-reclamar-${row.id}`}
-                disabled={claiming !== null}
-                aria-label={t('logros.panel.elPremioDe', { CLAIM_LABEL, title: row.title })}
-                onClick={() => void claim(row.id, row.title)}
-              >
-                {CLAIM_LABEL}
-              </button>
-            ) : null}
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       {shown ? (
         <ClaimReward key={shown.key} shown={shown} names={data.names} onDone={hide} />

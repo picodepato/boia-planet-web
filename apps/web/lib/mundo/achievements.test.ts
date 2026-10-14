@@ -29,11 +29,28 @@ import {
   achievementFacts,
   achievementGoal,
   emitSignal,
+  horoscopoAchievement,
   onAchievementNotices,
   recordSignal,
   reconcileAchievementEvidence,
   signalFromWorldEvent,
+  StormWatch,
 } from './achievements';
+import {
+  WEATHER_TUNING,
+  type WeatherEvent,
+  WeatherClock,
+  weatherRng,
+} from '@boia/engine/weather';
+import {
+  missingSecrets,
+  pickSecretHint,
+  secretHintKey,
+  SECRETS_ALL_FOUND_KEY,
+  SECRET_HINT_BUOY,
+  SECRET_HINT_KEYS,
+} from './secret-hints';
+import { horoscopoKey } from './banter';
 
 /**
  * Logros con el repositorio local de verdad (T21, T36; REQ-IDE-024…027,
@@ -82,7 +99,8 @@ function stepsFor(d: AchievementDefinition): Step[] {
     case 'visit_island': {
       // Una isla concreta (plan 029 T273) o tantas distintas.
       const island = param(d, 'island');
-      if (typeof island === 'string') return [signal({ trigger: 'visit_island', objectId: island })];
+      if (typeof island === 'string')
+        return [signal({ trigger: 'visit_island', objectId: island })];
       return times(n, (i) => signal({ trigger: 'visit_island', objectId: `isla-${i}` }));
     }
     case 'collect_objects': {
@@ -405,7 +423,7 @@ it('T269: crossing a big wave with turbo completes «Salto mortal» once, and it
   expect((await repo.progress.claimAchievement('salto-mortal')).claimed).toBe(true);
 });
 
-it('T273: reaching the after island completes «There\'s always an after» once; claiming it pays the coins and unlocks the after boat once', async () => {
+it("T273: reaching the after island completes «There's always an after» once; claiming it pays the coins and unlocks the after boat once", async () => {
   const repo = browser()();
   const def = (await repo.content.list('achievements')).find((d) => d.id === AFTER_ACHIEVEMENT)!;
   expect(def).toMatchObject({
@@ -636,4 +654,103 @@ it('T115: fake-member historical rescue survives fresh caches, claims once and s
   } finally {
     other.sync.dispose();
   }
+});
+
+/** Un temporal con el reloj del tiempo de verdad: `sailing(t)` dice si se navega a los `t` s. */
+function sailStorm(
+  watch: StormWatch,
+  kind: 'tormenta' | 'levante',
+  sailing: (t: number) => boolean,
+  busy: (t: number) => boolean = () => false,
+): AchievementSignal[] {
+  const clock = new WeatherClock({ rng: weatherRng(7) });
+  const out: AchievementSignal[] = [];
+  const take = (events: readonly WeatherEvent[]) => {
+    for (const e of events) {
+      const s = watch.event(e);
+      if (s) out.push(s);
+    }
+  };
+  take(clock.start(kind));
+  const dt = 0.25;
+  for (let t = 0; t < WEATHER_TUNING.duration + 2 && clock.state.kind !== null; t += dt) {
+    watch.tick(dt, sailing(t) && !busy(t));
+    take(clock.step(dt, busy(t)));
+  }
+  return out;
+}
+
+it('T274: «Capeaste el temporal» needs a whole storm sailed, not a cut one, another weather or a menu/map moment', async () => {
+  const repo = browser()();
+  const def = (await repo.content.list('achievements')).find((d) => d.id === 'capeaste-temporal');
+  expect(def?.secret).toBeFalsy();
+  // Otro tiempo no cuenta.
+  expect(sailStorm(new StormWatch(), 'levante', () => true)).toEqual([]);
+  // Un momento sin timón (menú, mapa, minijuego, pestaña oculta) lo estropea.
+  expect(sailStorm(new StormWatch(), 'tormenta', (t) => t < 10 || t > 10.5)).toEqual([]);
+  // Una partida que empieza a mitad lo corta (se va suave): no es un temporal entero.
+  expect(sailStorm(new StormWatch(), 'tormenta', () => true, (t) => t > 12)).toEqual([]);
+  // Cortado sin que lo vea el sondeo: tampoco, le faltan segundos navegados.
+  const cut = new StormWatch();
+  cut.event({ type: 'start', kind: 'tormenta' });
+  cut.tick(5, true);
+  expect(cut.event({ type: 'end', kind: 'tormenta' })).toBeNull();
+  // Entero y al timón: el logro, una sola vez.
+  const [signal, ...more] = sailStorm(new StormWatch(), 'tormenta', () => true);
+  expect(more).toEqual([]);
+  expect(signal).toBeDefined();
+  expect((await recordSignal(repo, signal!)).map((n) => n.id)).toContain('logro:capeaste-temporal');
+  expect(await recordSignal(repo, signal!)).toEqual([]);
+});
+
+it('T274: «Horoscopado» completes with 7 different daily horóscopos, not with 6 or with the same one twice', async () => {
+  const repo = browser()();
+  const def = (await repo.content.list('achievements')).find((d) => d.id === 'horoscopado');
+  expect(def?.triggerParams).toMatchObject({ count: 7 });
+  // Siete días seguidos dan siete horóscopos distintos (el paso es 7 de 32).
+  const days = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06'];
+  for (const d of days) await recordSignal(repo, horoscopoAchievement(d));
+  // El mismo día dos veces no cuenta dos.
+  await recordSignal(repo, horoscopoAchievement(days[0]!));
+  const six = (await repo.progress.achievements()).find((a) => a.definition.id === 'horoscopado');
+  expect(six?.state).toBe('in_progress');
+  expect(six && achievementGoal(six.definition, await achievementFacts(repo.progress)).have).toBe(
+    6,
+  );
+  const done = await recordSignal(repo, horoscopoAchievement('2026-10-07'));
+  expect(done.map((n) => n.id)).toContain('logro:horoscopado');
+  expect(horoscopoKey(1)).toBe('mar.horoscopo.1');
+});
+
+it('T274: the secret buoy hints only for secrets still missing, and congratulates when none is', async () => {
+  const repo = browser()();
+  // La boia de los secretos sigue diciendo sus frases una vez por visita (la pista va
+  // aparte, en el bocadillo de la charla): ni ella ni las otras boies cambian.
+  const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
+  const buoy = world.objects.find((o) => o.identity.id === SECRET_HINT_BUOY)!;
+  expect(buoy.behaviors.find((b) => b.type === 'dialogue')?.params).toMatchObject({ once: true });
+  const all = await repo.progress.achievements();
+  // Al principio faltan los cuatro secretos con pista (los de este plan).
+  expect(missingSecrets(all).sort()).toEqual(Object.keys(SECRET_HINT_KEYS).sort());
+  // Una pista al azar sale de las que faltan.
+  expect(Object.values(SECRET_HINT_KEYS)).toContain(await secretHintKey(repo.progress, () => 0.99));
+  expect(pickSecretHint(['salto-mortal'], () => 0)).toBe(SECRET_HINT_KEYS['salto-mortal']);
+  // Encontrar el salto mortal quita su pista de las que faltan.
+  await recordSignal(repo, { trigger: 'complete_encounter', encounter: SALTO_MORTAL_ENCOUNTER });
+  const left = missingSecrets(await repo.progress.achievements());
+  expect(left).not.toContain('salto-mortal');
+  expect(left).toHaveLength(3);
+  // Con el salto mortal encontrado, ya no se da su pista, ni con el azar del peor caso.
+  expect(pickSecretHint(left, () => 0)).not.toBe(SECRET_HINT_KEYS['salto-mortal']);
+  // Sin nada que falte, la felicitación.
+  expect(pickSecretHint([], () => 0)).toBe(SECRETS_ALL_FOUND_KEY);
+  // Los encontrados todos: la felicitación.
+  await recordSignal(repo, { trigger: 'complete_encounter', encounter: 'gaviota' });
+  await recordSignal(repo, {
+    trigger: 'complete_encounter',
+    encounter: FIESTERA_BAILANDO_ENCOUNTER,
+  });
+  await recordSignal(repo, { trigger: 'visit_island', objectId: AFTER_PLACE });
+  expect(missingSecrets(await repo.progress.achievements())).toEqual([]);
+  expect(await secretHintKey(repo.progress)).toBe(SECRETS_ALL_FOUND_KEY);
 });
