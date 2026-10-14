@@ -5,6 +5,7 @@ import { t } from '../../lib/i18n';
 import { introCss, loadIntroData, stillCss } from '../../lib/intro/load';
 import { PRESENTATION } from '../../lib/landing/presentation';
 import { resolveHome } from '../../lib/landing/resolve';
+import { homeStructuredData, jsonLdString } from '../../lib/landing/structured-data';
 import { SAMPLE_CONTENT } from '../../lib/landing/sample-content';
 import { isSupabaseConfigured } from '../../lib/supabase/config';
 import { IntroStage } from './components/intro-stage';
@@ -35,6 +36,11 @@ export default function LandingPage() {
 
   return (
     <>
+      {/* Datos estructurados para Google (plan 030 T287), en el HTML estático. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdString(homeStructuredData(content, now)) }}
+      />
       {intro && hasHero && (
         <>
           {/* Antes que nada: decide la entrada antes del primer pintado. */}

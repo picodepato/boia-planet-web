@@ -4,6 +4,21 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 030 T287: Structured data for Google: organisation, site and events
+
+Exists: `apps/web/lib/landing/structured-data.ts` (pure builder `homeStructuredData`, `eventStructuredData`, `jsonLdString`, `offerAvailability` hook for T292 PreOrder), test `structured-data.test.ts`, one `<script type="application/ld+json">` in `app/(landing)/page.tsx` (static HTML). @graph: Organization (sameAs from non-sandbox links), WebSite, one MusicEvent per upcoming event (offers, performers, T286 image, secret location hidden).
+Event pages `/eventos/[slug]` carry their own `MusicEvent` (same node, organizer inlined), server-rendered; none for finished/draft events.
+
+Audit (Opus):
+- Sample prices (`priceSample`, D-06) are not published: offer keeps url + availability, no `price`/`priceCurrency`. Real prices are (tested).
+- Dates normalised to the event's zone (Europe/Madrid offset) even if content stores UTC (tested: `…22:00Z` → `…23:00:00+01:00`).
+- Added `eventStructuredData` + event page script + tests.
+
+- vitest (all, excl. db): 331 files, 2944 passed, 3 skipped — exit 0
+- spec checks: OK; lint 0; typecheck OK; build OK, landing budget 198.7 kB / 200 kB
+- built `index.html`: 1 `<script type="application/ld+json">` with Organization, WebSite, 3 MusicEvent; `eventos/{halloween,sonido,nochevieja}-2026.html`: 1 each; `all-day-boia-2026.html` (finished): 0
+Pending: T292 availability hook; real ticket URLs/social links replace sandbox (currently omitted, so Organization has no sameAs yet); real prices once Álvaro clears `priceSample`.
+
 ## 2026-10-14 — plan 030 T293: Bug: editing your own artist Carnet with a web link says the nickname is taken
 
 Qué pasaba: con cuenta, guardar el Carnet pasa primero por la copia local

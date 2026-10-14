@@ -6,6 +6,7 @@ import { EVENTOS_COPY } from '../../../../lib/landing/eventos-copy';
 import { ogEventImage, publicPage } from '../../../../lib/seo';
 import { eventHref, eventPageView, publicEventSlugs } from '../../../../lib/landing/eventos';
 import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../../../../lib/landing/sample-content';
+import { eventStructuredData, jsonLdString } from '../../../../lib/landing/structured-data';
 import { BrandLogo } from '../../components/brand-logo';
 import { LiveEvent } from '../../components/live-event';
 
@@ -51,6 +52,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventPage({ params }: Props) {
   const slug = decodeURIComponent((await params).slug);
+  const initial = sampleView(slug);
+  // Su `MusicEvent` para Google (plan 030 T287), el mismo nodo que en la home.
+  const ld = initial && eventStructuredData(initial.event, SAMPLE_CONTENT);
   return (
     <main id="contenido" className="section event-page-wrap" aria-labelledby="evento-title">
       <div className="section__inner">
@@ -65,7 +69,13 @@ export default async function EventPage({ params }: Props) {
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/#tickets">{EVENTOS_COPY.allTickets}</a>
         </nav>
-        <LiveEvent slug={slug} initial={sampleView(slug)} />
+        {ld && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdString(ld) }}
+          />
+        )}
+        <LiveEvent slug={slug} initial={initial} />
       </div>
     </main>
   );
