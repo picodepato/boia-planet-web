@@ -208,7 +208,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: small ✕ close bottom-left (knots and horn hidden in map view), every island label kept in map view (mapKeeps, hang below / shrink to 0.7), layout cached while still; CoinIcon SVG everywhere coins show — 7cd3482
 
 ## T281 — New Carnet questions (Álvaro, 2026-10-14)
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -226,10 +226,10 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests: the Carnet editor and the public Carnet show exactly the 5 new questions in order; an answer to `buena-fiesta` survives; answers to retired questions are not shown and are not deleted → pass
   - `pnpm test:supabase` against dev → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: 5 new questions (ids momento-quiero-estar, cancion-en-repeat, creando-tramando, disco-entero, buena-fiesta kept); old ones retired, answers kept and labelled in moderation; RLS blocks answers to retired questions; migrations 20261014100100 + 20261014100110 dev only; sonnet + Opus audit — 836760c
 
 ## T282 — Sequential Carnet numbers from 10, editable from the Admin
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T281
 - Model: opus
 - Skills: none
@@ -290,6 +290,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: D-08 in docs/DECISIONES.md still quotes the old Carnet questions: Álvaro to note the change (T281)
 - 2026-10-14: 🪪 (Unicode 14) shows as an empty box on Windows 10 too (reward.tsx, sign-in-sheet, carnet panel/menu, checkout, es-mar); after island label may not fit at 360×640 at night; Puerto body rect vs dock model (T280)
 - 2026-10-14: In map view the «Cerrar» button sits over the «El Remanso de los Cocodrilos» label (T279)
 - 2026-10-14: Draw icons for the older achievements and the Admin keys boia…cofre so the panel is consistent; /juego (2D) gives no secret hints (T274 audit)
@@ -357,3 +358,6 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T282 (sequential Carnet numbers from 10, editable in Admin) and T283 (change Admin password) added by Álvaro
 - 2026-10-14 T281 sonnet done (cec555e). Opus audit launched, agent a641a149d60fc6547
 - 2026-10-14 T280 done (d1b97ab), integrated 7cd3482
+- 2026-10-14 T283 launched (attempt 1, sonnet), agent a9cd29eefb9d13f4d
+- 2026-10-14 T283 sonnet done (f6a13a7). Opus audit launched, agent a5beddb0416553e50
+- 2026-10-14 T281 audit done (98ce530), integrated 836760c
