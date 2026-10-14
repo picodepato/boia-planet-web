@@ -74,7 +74,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## T288 — «Sácate el Carnet» block and a WhatsApp that is easy to find
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -86,7 +86,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - component test: the pre-buy step without a Carnet shows the «required to enter» text → pass
   - axe on the landing (existing unit/e2e helper, one spec only if needed) → 0 violations
   - Test command → exit 0
-- Outcome:
+- Outcome: «Sácate el Carnet» block after upcoming events (Carnet button + WhatsApp, email-news line only with accounts), WhatsApp in header/menu, pre-buy «El Carnet es obligatorio para entrar»; migration 20261014100300 (home_block_type carnet) applied to dev and prod; landing 199.8/200 kB — 5a6def7
 
 ## T289 — The landing planet survives losing its 3D
 - Status: pending
@@ -107,12 +107,25 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Depends on: none
 - Model: opus
 - Skills: none
-- Goal: Álvaro gave a real track on 2026-10-14: `C:\Users\alvar\Downloads\koko moreno, tonito montana - la sosia v2 - 2026_09_05 (1).mp3` (3.8 MB, read it by that absolute path; approved by Álvaro, it is real content, not `muestra`). Add it to the radio as title «La Sosia», artist «Koko Moreno, Tonito Montana», genre Reggaetón (`reggaeton`), and make it THE first song: the first song a visitor hears is always «La Sosia», both on the landing's radio and on the boat's radio in /mar (Álvaro: «es la primera canción en los dos casos, luego es aleatorio»); after it, the radio continues as today (shuffle by default). Copy it under `apps/web/public/radio/` with a clean filename (e.g. `radio/real/la-sosia.mp3`; keep the original bytes unless re-encoding to ~128–160 kbps MP3 keeps it clearly good and much lighter — log the choice), read its real duration, add it to the bundled catalog (`lib/radio/muestra.json` / `muestra.ts`, or a small real catalog merged in front of the sample one if that is cleaner) with `first: true` and order 0, and move `first` off `muestra-001`. Make sure the player really starts with the `first` song when there is no current song (today `nextSong` with shuffle picks at random when `current` is null: fix it so the first play honours `first`, then shuffle), on both the landing and /mar, and in local and accounts modes. Accounts mode: the shared `radio_songs` table overrides the bundled catalog when it has rows; if that is the case on dev, add the song there too (upload path/RPC used by the Admin, `radio_set_first`) or document in the switch-on doc (`docs/propuestas/2026-10-03-produccion-supabase.md`) that Álvaro uploads it from the Admin and marks it first. The song must not load on the landing's critical path (only when the radio starts) and must play on both hosts (check Cloudflare static asset limits: 25 MiB per file).
+- Goal: NOTE (2026-10-14, after the switch-on): production now runs in accounts mode and its shared `radio_songs` table already has a song Álvaro uploaded from the Admin as a test, so the bundled catalog is NOT what plays in production; there, «La Sosia» is uploaded from the Admin and marked first with the existing `radio_set_first` (Álvaro or the orchestrator does it, outside this task). This task must still (a) make the player start with the `first` song in both modes and on both pages, and (b) put «La Sosia» first in the bundled catalog for local mode. Original goal: Álvaro gave a real track on 2026-10-14: `C:\Users\alvar\Downloads\koko moreno, tonito montana - la sosia v2 - 2026_09_05 (1).mp3` (3.8 MB, read it by that absolute path; approved by Álvaro, it is real content, not `muestra`). Add it to the radio as title «La Sosia», artist «Koko Moreno, Tonito Montana», genre Reggaetón (`reggaeton`), and make it THE first song: the first song a visitor hears is always «La Sosia», both on the landing's radio and on the boat's radio in /mar (Álvaro: «es la primera canción en los dos casos, luego es aleatorio»); after it, the radio continues as today (shuffle by default). Copy it under `apps/web/public/radio/` with a clean filename (e.g. `radio/real/la-sosia.mp3`; keep the original bytes unless re-encoding to ~128–160 kbps MP3 keeps it clearly good and much lighter — log the choice), read its real duration, add it to the bundled catalog (`lib/radio/muestra.json` / `muestra.ts`, or a small real catalog merged in front of the sample one if that is cleaner) with `first: true` and order 0, and move `first` off `muestra-001`. Make sure the player really starts with the `first` song when there is no current song (today `nextSong` with shuffle picks at random when `current` is null: fix it so the first play honours `first`, then shuffle), on both the landing and /mar, and in local and accounts modes. Accounts mode: the shared `radio_songs` table overrides the bundled catalog when it has rows; if that is the case on dev, add the song there too (upload path/RPC used by the Admin, `radio_set_first`) or document in the switch-on doc (`docs/propuestas/2026-10-03-produccion-supabase.md`) that Álvaro uploads it from the Admin and marks it first. The song must not load on the landing's critical path (only when the radio starts) and must play on both hosts (check Cloudflare static asset limits: 25 MiB per file).
 - Context: `apps/web/lib/radio/` (`catalog.ts`, `muestra.json`, `muestra.ts`, `player-model.ts`, `player.ts`, `shared-store.ts`, `song-files.ts` and tests), `app/(landing)/components/landing-client.tsx`, the /mar radio UI (`lib/radio/ui`), `packages/contracts` radio schema, `art/radio/generar.py` (generates the sample catalog: make sure regenerating it does not drop the real song).
 - Scope: may touch `lib/radio/`, the catalog JSON, `public/radio/`, the contracts schema if a `muestra` flag per song is needed, tests, the switch-on doc / must not delete the sample songs, must not touch production.
 - Done when:
   - unit test: with no current song, shuffle on or off, the first song played is the one with `first: true` («La Sosia»); the next ones follow the current shuffle rules → pass
   - unit test: the catalog parses, «La Sosia» is the only `first`, its `src` exists in `public/` → pass
+  - Test command → exit 0
+- Outcome:
+
+## T293 — Bug: editing your own artist Carnet with a web link says the nickname is taken
+- Status: running (attempt 1)
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: Álvaro, 2026-10-14, seen on the Vercel host (accounts mode, production Supabase, 2 users: admin + Álvaro's own account) — orchestrator check of production: the only unique indexes on member data are `carnets_nickname_key` (lower(nickname)) and `carnets_member_number_key` (member_number, touched by plan 029 T282 sequential numbers), so suspect a save path that re-sends or re-assigns member_number or nickname and hits one of them: editing your OWN artist Carnet and adding a link to a website fails with «Ese apodo ya lo lleva otro miembro de BOIA. Prueba con otro.» (`carnet.error.nicknameTaken`). `carnetErrorText` (`lib/mundo/carnet/carnet-editor.tsx` ~284) turns ANY store `conflict` whose message contains «apodo» into that text, so the real cause may be elsewhere: the update path not excluding the member's own row from the nickname uniqueness check, a unique violation (23505) on another column (link/music URL, artist code) mapped to a nickname conflict, or the artist Carnet's save path (`/artista/[code]`, artist fields) re-inserting instead of updating. Reproduce it in BOTH modes (local repository and accounts mode against the dev Supabase project `boia-planet-dev`, credentials in the main checkout's apps/web/.env.local read by absolute path), find the root cause, fix it, and make the error mapping precise (nickname conflict only for a real nickname clash with another member; other conflicts get their own correct message). If the fix needs a migration, write it, apply it to dev only, add it to the switch-on doc's migration list and say so in the final message (the orchestrator applies it to production). Keeping your own nickname and changing any other field must always save.
+- Context: `apps/web/lib/mundo/carnet/carnet-editor.tsx`, `lib/mundo/carnet/*` (artist Carnet), `lib/repo-member.ts`, `lib/account/errors.ts`, `packages/store/src/local.ts`, the Supabase member/carnet repository in `packages/store` or `apps/web/lib/`, `supabase/migrations/20260928100100_identity.sql` and later ones (nickname unique index, artist fields), `pnpm test:supabase`.
+- Scope: may touch those files, a new migration (dev only), tests, i18n for a precise error text / must not touch production, must not change who can have which nickname.
+- Done when:
+  - unit test (local) and `pnpm test:supabase` (dev): a member (artist and non-artist) edits their Carnet keeping their nickname and adding/changing a web link → saves; another member taking an existing nickname → nickname error → pass
   - Test command → exit 0
 - Outcome:
 
@@ -132,6 +145,8 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## Decisions
+- 2026-10-14: Álvaro: when every task is done, push (git push origin main deploys both hosts). Before that push, apply the plan's new migrations to production (additive only) so the new build finds them (orchestrator)
+- 2026-10-14 T293: live bug, launched before T287/T289/T290 at the next free slot (orchestrator)
 - 2026-10-14 T292: «Tickets todavía no disponibles» text approved by Álvaro; tapping the buy button shows it instead of the checkout; modelled as per-event data with an Admin switch (orchestrator)
 - 2026-10-14: Legal identity text approved (BOIA PLANET, CIF en trámite, Calle Hondón de las Nieves 7, 03005 Alicante, hola@boiaplanet.net); T291 runs before T285 so Google never indexes the placeholders (Álvaro)
 - 2026-10-14: The 3 current events are official, not sample (Álvaro)
@@ -161,3 +176,8 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-14 22:45 accounts live on Vercel; Cloudflare build missed the two build variables (CSP without Supabase) — Álvaro to move them to Build vars and retry
 - 2026-10-14 22:50 T285 sonnet done · branch worktree-agent-af20cbf8ca09e7f4e · 50c6db9; Opus audit launched · agent aa460eafa118f071a
 - 2026-10-14 23:00 T285 done · merged 5f53fff
+- 2026-10-14 23:02 T286 launched · attempt 1 · agent a61220d05bcec5c93 (opus)
+- 2026-10-14 23:40 T288 done (opus) · 29206eb; integration conflict in apps/web/lib/i18n/es.ts with T285 → sent back to agent af05c91beda95c745
+- 2026-10-14 23:40 T293 launched · attempt 1 · agent ad6aed5b944a67086 (opus); 3 agents briefly (T288 resolving a conflict)
+- 2026-10-14 23:50 Cloudflare rebuilt with the build variables: boiaplanet.net now on production Supabase (CSP checked); accounts live on both hosts
+- 2026-10-15 00:10 T288 done · merged 5a6def7; migration 20261014100300 applied to dev and production (additive enum value; the web does not read home_blocks from Supabase, so no row needed)
