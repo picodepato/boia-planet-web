@@ -243,7 +243,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome:
 
 ## T283 — Change the Admin password
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -254,10 +254,10 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Done when:
   - unit/component tests: change-password form validation and the aal2 requirement; recovery link flow; the script's hash function verifies with the existing `verifyDemoPassword` (or equivalent) for a test password → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: «Cambiar contraseña» in Seguridad (aal2), «He olvidado la contraseña» + /admin/recuperar (no account enumeration, tokens cleared), pnpm admin:password for the demo hash; tested on dev (supabase 4/4, e2e 3/3); sonnet + Opus audit — 136d03e
 
 ## T284 — Sign out that resets the device, and the account in the menu
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -305,6 +305,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: An Admin who loses both password and phone has no way back in (backup codes only after the password); dev min password length is 6, set 8 in production (T283 audit)
 - 2026-10-14: D-08 in docs/DECISIONES.md still quotes the old Carnet questions: Álvaro to note the change (T281)
 - 2026-10-14: 🪪 (Unicode 14) shows as an empty box on Windows 10 too (reward.tsx, sign-in-sheet, carnet panel/menu, checkout, es-mar); after island label may not fit at 360×640 at night; Puerto body rect vs dock model (T280)
 - 2026-10-14: In map view the «Cerrar» button sits over the «El Remanso de los Cocodrilos» label (T279)
@@ -378,3 +379,4 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T281 audit done (98ce530), integrated 836760c
 - 2026-10-14 T282 launched (attempt 1, opus), agent a908433e031e20047 (+ CLI admin:carnet0)
 - 2026-10-14 T284 added (sign out resets device, account in menus)
+- 2026-10-14 T283 audit done (48a1ec7), integrated 136d03e
