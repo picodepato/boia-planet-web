@@ -52,7 +52,8 @@ test('castaway rescue completes immediately, persists and grants its reward only
   await expect(row).toHaveAttribute('data-estado', 'ready');
   await page.getByTestId('logro-reclamar-naufrago-fiesta').click();
   await expect(page.getByTestId('logro-premio-puntos')).toHaveText('+80 ★');
-  await expect(page.getByTestId('logro-premio-monedas')).toHaveText('+40 🪙');
+  await expect(page.getByTestId('logro-premio-monedas')).toHaveText('+40');
+  await expect(page.getByTestId('logro-premio-monedas').locator('svg[data-boia-coin]')).toHaveCount(1);
   await expect(row).toHaveAttribute('data-estado', 'claimed');
   await openMar(page, '?cerca=naufrago');
   await steerTo(page, 'naufrago', async () => await page.getByTestId('mar-bocadillo').isVisible());

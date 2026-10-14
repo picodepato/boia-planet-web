@@ -122,7 +122,7 @@ const minimap = (page: Page) => page.getByTestId('mar-minimapa').locator('canvas
 const marks = async (page: Page) =>
   ((await minimap(page).getAttribute('data-marks')) ?? '').split(',').filter(Boolean).sort();
 const coins = async (page: Page) =>
-  Number(/🪙\s*(\d+)/.exec((await page.getByTestId('mar-saldos').textContent()) ?? '')?.[1]);
+  Number(/(\d+)/.exec((await page.getByTestId('mar-saldo-monedas').textContent()) ?? '')?.[1]);
 
 test('el minimapa enseña un «?» por cada uno de los tres códigos del mundo', async ({ page }) => {
   // La muestra tiene exactamente tres códigos, y son los que esconde el mundo.

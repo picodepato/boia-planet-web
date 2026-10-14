@@ -151,10 +151,12 @@ describe('la pista y el «Cerrar» del mapa en pantalla (T275)', () => {
     const hint = html.match(/<button[^>]*data-testid="mar-mapa-pista"[^>]*>(.*?)<\/button>/);
     expect(hint).not.toBeNull();
     expect(hint![1]).toContain(t('mar.client.tocaUnaIslaPara'));
-    expect(hint![1]).not.toContain(t('mar.client.cerrar'));
+    expect(hint![1]).not.toContain(t('mar.client.cerrarMapa'));
     expect(hint![1]).not.toContain('mar-mapa-cerrar');
-    const close = html.match(/<button[^>]*data-testid="mar-mapa-cerrar"[^>]*>(.*?)<\/button>/);
-    expect(close![1]).toBe(t('mar.client.cerrar'));
+    const close = html.match(/<button([^>]*data-testid="mar-mapa-cerrar"[^>]*)>(.*?)<\/button>/);
+    // T280: un botón pequeño con una ✕ dibujada; su nombre va en `aria-label`.
+    expect(close![1]).toContain(`aria-label="${t('mar.client.cerrarMapa')}"`);
+    expect(close![2]).toMatch(/^<svg[^>]*aria-hidden="true"/);
   });
 
   it('sin la pista, el «Cerrar» del mapa sigue', () => {

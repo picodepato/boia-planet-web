@@ -59,7 +59,7 @@ describe('filas de la tienda', () => {
     const titles = { [achievement!.definition.id]: achievement!.definition.title };
     const byId = (id: string) => items.find((i) => i.cosmetic.id === id)!;
     expect(unlockText(byId(coinShip.id))).toBe(
-      `${coinShip.priceCoins} 🪙 · te faltan ${coinShip.priceCoins! - 1} monedas`,
+      `${coinShip.priceCoins} monedas · te faltan ${coinShip.priceCoins! - 1} monedas`,
     );
     expect(unlockText(byId(pointsShip.id))).toBe(
       `Con ${pointsShip.unlockPoints} puntos · te faltan ${pointsShip.unlockPoints! - 1} puntos`,
@@ -70,7 +70,7 @@ describe('filas de la tienda', () => {
     expect(unlockText(byId(rewardShip.id), {})).toBe('Se gana con un logro oculto');
     expect(unlockText(byId(ships.find((c) => c.base)!.id))).toBe('De serie');
     expect(confirmText(byId(coinShip.id), 500)).toBe(
-      `¿Comprar ${coinShip.name} por ${coinShip.priceCoins} 🪙? Te quedarán ${500 - coinShip.priceCoins!}.`,
+      `¿Comprar ${coinShip.name} por ${coinShip.priceCoins} monedas? Te quedarán ${500 - coinShip.priceCoins!}.`,
     );
   });
 });

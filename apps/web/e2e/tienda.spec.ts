@@ -122,7 +122,9 @@ async function shopFlow(page: Page, shop: Locator, info: TestInfo | null, root: 
   const saldo = shop.getByTestId('barco-saldo');
   await expect(saldo).toHaveAttribute('data-coins', String(COST));
   await expect(shop.getByTestId(`barco-estilo-${STYLE}`)).toHaveAttribute('data-bloqueado', 'si');
-  await expect(shop.getByTestId(`barco-item-${STYLE}`)).toContainText(`${ship.priceCoins} 🪙`);
+  await expect(shop.getByTestId(`barco-item-${STYLE}`)).toContainText(`${ship.priceCoins} monedas`);
+  // La moneda va dibujada (T280), no con el emoji (U+1FA99).
+  await expect(shop.getByTestId(`barco-comprar-${STYLE}`).locator('svg[data-boia-coin]')).toHaveCount(1);
   // Cancelar no compra nada.
   await shop.getByTestId(`barco-comprar-${STYLE}`).click();
   await expect(shop.getByTestId('barco-confirmar')).toBeVisible();

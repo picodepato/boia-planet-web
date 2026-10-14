@@ -41,7 +41,7 @@ describe('filas del panel', () => {
     expect(castaway.hidden).toBe(false);
     expect(castaway.description).toBe(t('achievements.castaway.description'));
     expect(castaway.hint).toContain('rescata al náufrago y recibe su descuento');
-    expect(castaway.reward).toBe('+80 ★ · +40 🪙');
+    expect(castaway.reward).toBe(`+80 ★ · ${t('achievements.reward.coins', { n: 40 })}`);
   });
   it('sin jugar: todo en curso, los ocultos como «???» y nada que reclamar', async () => {
     const { list, rows } = await snapshot(repo());
@@ -140,7 +140,8 @@ describe('textos', () => {
     for (const a of list) {
       const text = rewardText(a.reward, names);
       if (a.reward.points > 0) expect(text).toContain(`+${a.reward.points} ★`);
-      if (a.reward.coins > 0) expect(text).toContain(`+${a.reward.coins} 🪙`);
+      if (a.reward.coins > 0)
+        expect(text).toContain(t('achievements.reward.coins', { n: a.reward.coins }));
       if (a.reward.kind === 'ship') expect(text).toContain(`Barco ${names[a.reward.cosmeticKey!]}`);
       if (a.reward.kind === 'badge') expect(text).toContain('Insignia');
     }

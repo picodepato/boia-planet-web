@@ -1282,30 +1282,30 @@
   font-weight: 600;
 }
 
-.mar .mar-mapclose {
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-/* El control de cerrar el mapa: aparte de la pista, siempre a la vista. */
+/* El control de cerrar el mapa (T280): un botón pequeño abajo a la izquierda,
+   en el sitio de los nudos (que en la vista de mapa no salen), para no tapar
+   ningún rótulo. El minimapa («BARCO») y la tecla M también cierran el mapa. */
 .mar-mapclose {
   position: absolute;
-  left: calc(var(--safe-l) + 12px);
-  right: calc(var(--safe-r) + 66px);
-  bottom: calc(var(--above-bar) + 52px);
-  margin: 0 auto;
-  width: max-content;
-  height: 38px;
-  padding: 0 14px;
+  left: calc(var(--safe-l) + 18px);
+  bottom: calc(var(--safe-b) + 8px + (var(--bar-h) - 44px) / 2);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 0;
   border-radius: var(--radius);
   background: var(--orange);
   color: #fff;
-  font-size: 0.8rem;
-  font-weight: 800;
-  white-space: nowrap;
+  box-shadow: 0 6px 18px rgb(10 6 40 / 0.3);
   z-index: 2;
   pointer-events: auto;
+}
+
+.mar-mapclose svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* ---------- Joystick y rótulos (los coloca el motor) ---------- */
@@ -1389,6 +1389,18 @@
 .mar-pin.is-on {
   opacity: var(--pin-alpha, 1);
   pointer-events: auto;
+}
+
+/* Colgado debajo de su isla (T280, vista de mapa sin hueco encima): la caja
+   va bajo la punta, que señala hacia arriba, y escala desde ella. */
+.mar-pin.is-below {
+  translate: -50% 8px;
+  transform-origin: 50% 0;
+}
+
+.mar-pin.is-below::after {
+  top: -6px;
+  bottom: auto;
 }
 
 /* Asomado al horizonte (su isla queda detrás del planeta): sin la punta, que no señala a nada. */

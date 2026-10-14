@@ -2,6 +2,7 @@
 
 import type { AchievementReward } from '@boia/store';
 import { useEffect } from 'react';
+import { CoinIcon } from '../coin-icon';
 import { type CosmeticNames, REWARD_MS } from './model';
 import { useCountUp } from './use-logros';
 import { t as msg } from '../i18n';
@@ -55,7 +56,11 @@ export function ClaimReward({
       {reward.points > 0 || reward.coins > 0 ? (
         <span className="logros-premio__nums" role="status">
           {reward.points > 0 ? <span data-testid="logro-premio-puntos">+{points} ★</span> : null}
-          {reward.coins > 0 ? <span data-testid="logro-premio-monedas">+{coins} 🪙</span> : null}
+          {reward.coins > 0 ? (
+            <span data-testid="logro-premio-monedas">
+              +{coins} <CoinIcon label={msg('logros.reward.monedas')} />
+            </span>
+          ) : null}
         </span>
       ) : null}
       {reward.kind === 'badge' ? (

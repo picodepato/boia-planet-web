@@ -116,7 +116,7 @@ export function unlockText(item: ShopItem, titles: AchievementTitles = {}): stri
             price: u.price,
             n: n(item.missing, 'barco.shopModel.nMoneda', 'barco.shopModel.nMonedas'),
           })
-        : `${u.price} 🪙`;
+        : n(u.price, 'barco.shopModel.nMoneda', 'barco.shopModel.nMonedas');
     case 'points':
       return t('barco.shopModel.conPuntosTeFaltan', {
         points: u.points,

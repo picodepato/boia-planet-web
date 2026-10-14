@@ -182,7 +182,8 @@ describe('lejos y detrás', () => {
   });
 
   it('uno `keep` (T275) se aparta lo justo de otro rótulo y se queda entero', () => {
-    const near = pin({ x: 260, y: 300, depth: 1, body: null });
+    // Los dos `keep` (en la vista de mapa, dos islas, T280): el más cercano se pone antes.
+    const near = pin({ x: 260, y: 300, depth: 1, body: null, keep: true });
     const kept = pin({ x: 150, y: 310, depth: 1.2, body: null, keep: true });
     const [a, b] = layoutPins([near, kept], [], 400);
     expect(a).toMatchObject({ on: true, behind: false });

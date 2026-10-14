@@ -122,7 +122,8 @@ export const esMar = {
   'mar.client.bocina': 'Bocina',
   'mar.client.nudos': 'nudos',
   'mar.client.tocaUnaIslaPara': 'Toca una isla para ver qué hay · arrastra para mover el mapa',
-  'mar.client.cerrar': '✕ Cerrar',
+  // T280: el botón pequeño (una ✕) que cierra la vista de mapa.
+  'mar.client.cerrarMapa': 'Cerrar el mapa',
   'mar.client.tocaParaSeguir': 'Toca para seguir ▸',
   'mar.client.cerrarDialogo': 'Cerrar diálogo',
   'mar.client.saltar': 'Saltar ›',

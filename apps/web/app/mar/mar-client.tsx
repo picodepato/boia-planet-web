@@ -179,10 +179,11 @@ import { takeZarpar } from '../../lib/intro/zarpar';
 import type { RadioMount as RadioMountComponent } from '../../lib/radio/ui/radio-mount';
 import { marWorld } from './engine/compact';
 import type { CharacterEvent, CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
-import { MAP_KEEP, PIN_AVOID } from './engine/labels';
+import { PIN_AVOID, mapKeeps } from './engine/labels';
 import { MOOD_IDS, type MoodId } from './engine/palette';
 import type { Period } from './engine/wrap';
 import { mapHintReducer, scheduleMapHint } from './map-hint';
+import { CoinIcon } from '../../lib/coin-icon';
 import { MapHintView } from './map-hint-view';
 import {
   type ShipModelEntry,
@@ -379,8 +380,8 @@ function pinsOf(world: WorldConfig, phase: RescuePhase | null): PinSpec[] {
         text: o.identity.name,
         icon: PIN_ICON[id] ?? '🏝️',
         ...(ev ? { accent: true, always: true } : {}),
-        // T275: en la vista de mapa, el Puig Campana se ve entero (labels.ts `MAP_KEEP`).
-        ...(MAP_KEEP.includes(id) ? { mapKeep: true } : {}),
+        // T275/T280: en la vista de mapa, el rótulo de cada isla se ve entero (labels.ts `mapKeeps`).
+        ...(mapKeeps(cat) ? { mapKeep: true } : {}),
       });
     } else if (cat === 'naufrago') {
       out.push({ id, text: o.identity.name, icon: '🆘' });
@@ -2579,8 +2580,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           hidden={gameHidden.has('balances')}
         >
           <span title={msg('mar.client.puntos')}>★ {balances?.points ?? '–'}</span>
-          <span title={msg('mar.client.monedas')} data-robadas={stolen}>
-            🪙 {balances ? Math.max(0, balances.coins - stolen) : '–'}
+          <span title={msg('mar.client.monedas')} data-robadas={stolen} data-testid="mar-saldo-monedas">
+            <CoinIcon label={msg('mar.client.monedas')} />{' '}
+            {balances ? Math.max(0, balances.coins - stolen) : '–'}
           </span>
         </div>
       </header>
@@ -2817,8 +2819,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </button>
       </div>
 
-      {/* En la arena del castillo no hay turbo ni nudos (plan 016, decisión 8). */}
-      {castle.active ? null : (
+      {/* En la arena del castillo no hay turbo ni nudos (plan 016, decisión 8).
+          En la vista de mapa, su sitio es del «Cerrar» del mapa (T280). */}
+      {castle.active || (mapMode && !sheet) ? null : (
         <div className="mar-speed" aria-hidden="true">
           <strong>{stats?.knots ?? 0}</strong>
           <small>{msg('mar.client.nudos')}</small>
@@ -2960,7 +2963,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               <strong>{msg('hud.tickets')}</strong>
             </button>
           </div>
-          {castle.active ? null : (
+          {/* En la vista de mapa, sin bocina (T280): su hueco es de los rótulos de las islas. */}
+          {castle.active || (mapMode && !sheet) ? null : (
             <button
               type="button"
               className="mar-horn"

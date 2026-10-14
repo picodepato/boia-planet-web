@@ -7,6 +7,7 @@ import { CLAIM_LABEL, logroRows, obtainedCount } from './model';
 import { type ClaimedReward, ClaimReward } from './reward';
 import { useCountUp, useLogros } from './use-logros';
 import './logros.css';
+import { CoinIcon } from '../coin-icon';
 import { t } from '../i18n';
 
 /**
@@ -50,7 +51,7 @@ export function AchievementsPanel() {
           {t('logros.panel.puntos', { points })}
         </span>
         <span data-testid="logros-monedas" data-value={data.balances.coins}>
-          {t('logros.panel.monedas', { coins })}
+          <CoinIcon /> {t('logros.panel.monedas', { coins })}
         </span>
         {data.rank ? (
           <span data-testid="logros-rango">{t('balances.rank', { rank: data.rank })}</span>

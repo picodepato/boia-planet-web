@@ -2,17 +2,20 @@ import { readFileSync } from 'node:fs';
 import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { worlds } from '../../../lib/mundo/demo-world';
+import { AFTER_PLACE_ID } from '@boia/engine/after';
 import { eventOfPlace } from '../sheet';
 import { marWorld } from './compact';
 import { toScene } from './compress';
 import {
   BEHIND_ALPHA,
-  MAP_KEEP,
+  KEEP_SHRINK,
+  PIN_AVOID,
   type PinSight,
   type Rect,
   intersects,
   layoutPins,
-  pinBox,
+  lookBox,
+  mapKeeps,
 } from './labels';
 import {
   MAP_SAFE,
@@ -94,8 +97,17 @@ function mapView(W: number, H: number) {
   return { view, camera, period, center, islands, dFar, dist: fit.dist, fit };
 }
 
-/** Los rótulos del mar (como `pinsOf` en `mar-client.tsx`) vistos por la cámara del mapa. */
-function mapSights(W: number, H: number, k: number): { ids: string[]; sights: PinSight[] } {
+/**
+ * Los rótulos del mar (como `pinsOf` en `mar-client.tsx`) vistos por la cámara
+ * del mapa. De día (`night` false) la isla del after está bajo el agua y no
+ * tiene rótulo (`placePins`, T273); de 03:00 a 07:00 sí.
+ */
+function mapSights(
+  W: number,
+  H: number,
+  k: number,
+  night = true,
+): { ids: string[]; sights: PinSight[] } {
   const { view, camera, period, center } = mapView(W, H);
   const cx = center.x;
   const cz = center.z;
@@ -106,6 +118,7 @@ function mapSights(W: number, H: number, k: number): { ids: string[]; sights: Pi
   const sights: PinSight[] = [];
   for (const o of world.objects) {
     if (!o.identity.active) continue;
+    if (!night && o.identity.id === AFTER_PLACE_ID) continue;
     const cat = o.identity.category;
     const start =
       cat === 'circuito' &&
@@ -140,8 +153,8 @@ function mapSights(W: number, H: number, k: number): { ids: string[]; sights: Pi
         boatD,
       horizon: false,
       always: sells,
-      // Como `placePins`: en la vista de mapa (`far`), `keep` para los de `MAP_KEEP` y lo que vende (T279).
-      keep: MAP_KEEP.includes(o.identity.id) || sells,
+      // Como `placePins`: en la vista de mapa (`far`), `keep` para las islas (`mapKeeps`, T280) y lo que vende (T279).
+      keep: mapKeeps(cat) || sells,
       body,
     });
     ids.push(o.identity.id);
@@ -150,10 +163,11 @@ function mapSights(W: number, H: number, k: number): { ids: string[]; sights: Pi
 }
 
 /**
- * Los mandos de `PIN_AVOID` en la vista de mapa, medidos en /mar el
- * 2026-10-13 con las pantallas de las e2e (móvil 360×640, escritorio
- * 1280×720): la barra de enlaces, el minimapa, los saldos, «Menú», «!», el
- * zoom, los nudos, «Entradas» y el turbo.
+ * Los mandos de `PIN_AVOID` en la vista de mapa, medidos en /mar (Chromium,
+ * las pantallas de las e2e) el 2026-10-14 (T280): la barra de enlaces, el
+ * minimapa, los saldos, «Menú», «!», la Radio, el zoom, el «Cerrar» del
+ * mapa (pequeño, abajo a la izquierda, donde fuera del mapa van los nudos),
+ * «Entradas» y el turbo (en el mapa no salen los nudos ni la bocina).
  */
 const MEASURED_HUD: Record<string, [number, number, number, number][]> = {
   '360x640': [
@@ -162,10 +176,23 @@ const MEASURED_HUD: Record<string, [number, number, number, number][]> = {
     [265, 48, 350, 84],
     [19, 146, 73, 200],
     [19, 208, 73, 262],
+    [19, 270, 73, 324],
     [302, 400, 346, 556],
-    [12, 572, 68, 628],
+    [18, 578, 62, 622],
     [100, 574, 260, 626],
     [288, 568, 352, 632],
+  ],
+  '390x844': [
+    [8, 6, 382, 36],
+    [10, 48, 66, 109],
+    [295, 48, 380, 84],
+    [19, 146, 73, 200],
+    [19, 208, 73, 262],
+    [19, 270, 73, 324],
+    [332, 604, 376, 760],
+    [18, 782, 62, 826],
+    [115, 778, 275, 830],
+    [318, 772, 382, 836],
   ],
   '1280x720': [
     [349, 14, 931, 48],
@@ -173,11 +200,18 @@ const MEASURED_HUD: Record<string, [number, number, number, number][]> = {
     [1185, 10, 1270, 46],
     [31, 132, 85, 186],
     [31, 194, 85, 248],
+    [31, 256, 85, 310],
     [1222, 472, 1266, 628],
-    [12, 648, 68, 704],
+    [18, 654, 62, 698],
     [560, 650, 720, 702],
     [1200, 640, 1272, 712],
   ],
+};
+/** Dónde queda el «Cerrar» del mapa en cada pantalla (de `MEASURED_HUD`). */
+const CLOSE_AT: Record<string, Rect> = {
+  '360x640': { left: 18, top: 578, right: 62, bottom: 622 },
+  '390x844': { left: 18, top: 782, right: 62, bottom: 826 },
+  '1280x720': { left: 18, top: 654, right: 62, bottom: 698 },
 };
 const hudOf = (W: number, H: number): Rect[] =>
   MEASURED_HUD[`${W}x${H}`]!.map(([left, top, right, bottom]) => ({ left, top, right, bottom }));
@@ -185,10 +219,9 @@ const ABOVE_SCREEN: Rect = { left: -1e6, top: -1e6, right: 1e6, bottom: -4 };
 
 describe('el Puig Campana en la vista de mapa (T275)', () => {
   it('el Puig Campana es de los rótulos que se ven enteros en el mapa', () => {
-    expect(MAP_KEEP).toContain('canon');
-    expect(world.objects.find((o) => o.identity.id === 'canon')?.identity.name).toBe(
-      'Puig Campana',
-    );
+    const canon = world.objects.find((o) => o.identity.id === 'canon');
+    expect(canon?.identity.name).toBe('Puig Campana');
+    expect(mapKeeps(canon!.identity.category)).toBe(true);
     expect(MAP_VIEW_ZOOM).toBe(1);
   });
 
@@ -209,13 +242,13 @@ describe('el Puig Campana en la vista de mapa (T275)', () => {
         expect(look.alpha).toBe(1);
         expect(look.scale).toBe(1);
         // No pisa ningún rótulo encendido ni lugar más cercano, ni los mandos.
-        const box = pinBox({ ...sights[i]!, x: look.x, y: look.y }, look.scale);
+        const box = lookBox(sights[i]!, look);
         ids.forEach((_, j) => {
           if (j === i) return;
           const s = sights[j]!;
           const l = looks[j]!;
           if (l.on && l.alpha > BEHIND_ALPHA)
-            expect(intersects(box, pinBox({ ...s, x: l.x, y: l.y }, l.scale)), ids[j]).toBe(false);
+            expect(intersects(box, lookBox(s, l)), ids[j]).toBe(false);
           if (s.body && s.depth < sights[i]!.depth)
             expect(intersects(box, s.body), ids[j]).toBe(false);
         });
@@ -264,8 +297,8 @@ describe('Nochevieja y Puig Campana en la vista de mapa (T279)', () => {
         }
         expect(
           intersects(
-            pinBox({ ...ultima.s, x: ultima.l.x, y: ultima.l.y }),
-            pinBox({ ...canon.s, x: canon.l.x, y: canon.l.y }),
+            lookBox(ultima.s, ultima.l),
+            lookBox(canon.s, canon.l),
           ),
         ).toBe(false);
       });
@@ -274,6 +307,7 @@ describe('Nochevieja y Puig Campana en la vista de mapa (T279)', () => {
 
   it('un `keep` sin hueco cede ante el rótulo de un evento (no se le pone encima)', () => {
     const body: Rect = { left: 90, right: 110, top: 100, bottom: 120 };
+    // En la vista de mapa lo que vende también es `keep` (T279) y va antes que nadie.
     const event: PinSight = {
       x: 100,
       y: 100,
@@ -282,10 +316,11 @@ describe('Nochevieja y Puig Campana en la vista de mapa (T279)', () => {
       depth: 1.2,
       horizon: false,
       always: true,
+      keep: true,
       body,
     };
     // Más cerca de la cámara y justo encima, con mandos alrededor: no hay hueco.
-    const kept: PinSight = { ...event, depth: 1, always: false, keep: true, body: null };
+    const kept: PinSight = { ...event, depth: 1, always: false, body: null };
     const wall: Rect[] = [
       { left: 0, right: 400, top: -100, bottom: 40 },
       { left: 0, right: 30, top: 0, bottom: 400 },
@@ -295,7 +330,10 @@ describe('Nochevieja y Puig Campana en la vista de mapa (T279)', () => {
     expect(e!.on).toBe(true);
     expect(e!.alpha).toBe(1);
     expect(e!.behind).toBe(false);
-    expect(k!.on && k!.alpha === 1).toBe(false);
+    expect(e!.scale).toBe(1);
+    // El otro, si sale (T280: más pequeño, en un hueco), nunca encima del evento.
+    if (k!.on && k!.alpha > BEHIND_ALPHA)
+      expect(intersects(lookBox(event, e!), lookBox(kept, k!))).toBe(false);
   });
 });
 
@@ -347,3 +385,78 @@ describe('la vista de mapa enseña todas las islas (T279)', () => {
     }
   });
 });
+
+describe('todas las islas con su rótulo en la vista de mapa (T280)', () => {
+  /** Las islas del mar (como `pinsOf`): las que en el mapa se ven enteras. */
+  const islandIds = world.objects
+    .filter((o) => o.identity.active && mapKeeps(o.identity.category))
+    .map((o) => o.identity.id);
+
+  it('el «Cerrar» del mapa y la Radio son de los mandos que los rótulos no pisan', () => {
+    expect(PIN_AVOID).toContain('.mar-mapclose');
+    expect(PIN_AVOID).toContain('.radio-btn--mar');
+    const css = readFileSync(new URL('../mar.css', import.meta.url), 'utf8');
+    const rule = css.match(/\n\.mar-mapclose \{([^}]*)\}/)?.[1] ?? '';
+    // Pequeño y abajo a la izquierda (no centrado sobre los rótulos).
+    expect(rule).toMatch(/width: 44px;/);
+    expect(rule).toMatch(/height: 44px;/);
+    expect(rule).toMatch(/left: calc\(var\(--safe-l\)/);
+    expect(rule).not.toMatch(/right:/);
+    expect(rule).not.toMatch(/margin: 0 auto/);
+  });
+
+  it('el Castillo de Santa Bárbara y Las Calitas son islas del mar', () => {
+    const name = (id: string) => world.objects.find((o) => o.identity.id === id)?.identity.name;
+    expect(islandIds).toContain('castillo');
+    expect(islandIds).toContain('calitas');
+    expect(name('castillo')).toBe('Castillo de Santa Bárbara');
+    expect(name('calitas')).toBe('Las Calitas');
+  });
+
+  for (const [W, H] of [
+    [360, 640],
+    [390, 844],
+    [1280, 720],
+  ] as const) {
+    // De día y de noche (con la isla del after); la letra un 15 % más grande, de día.
+    for (const [k, night] of [
+      [1, false],
+      [1.15, false],
+      [1, true],
+    ] as const) {
+      it(`a ${W}×${H} (letra ×${k}${night ? ', de noche' : ''}) cada isla tiene su rótulo entero, sin pisar otro ni un mando`, () => {
+        const { ids, sights } = mapSights(W, H, k, night);
+        const hud = [...hudOf(W, H), ABOVE_SCREEN];
+        const looks = layoutPins(sights, hud, W);
+        const close = CLOSE_AT[`${W}x${H}`]!;
+        expect(hudOf(W, H)).toContainEqual(close);
+        const boxes = ids.map((_, j) => lookBox(sights[j]!, looks[j]!));
+        for (const id of islandIds) {
+          // La isla del after: bajo el agua de día (T273). De noche, en el móvil
+          // más pequeño no le queda hueco entre el minimapa, «Menú», Nochevieja
+          // y el Puig Campana: es la única que puede no salir (se busca igual).
+          if (id === AFTER_PLACE_ID && (!night || W < 390)) continue;
+          const i = ids.indexOf(id);
+          expect(i, id).toBeGreaterThanOrEqual(0);
+          const look = looks[i]!;
+          expect(look.on, id).toBe(true);
+          expect(look.behind, id).toBe(false);
+          expect(look.alpha, id).toBe(1);
+          // A su tamaño o, si no cabe (un móvil de 360 px), un poco más pequeño (`KEEP_SHRINK`).
+          expect(look.scale, id).toBeGreaterThanOrEqual(KEEP_SHRINK);
+          const box = boxes[i]!;
+          expect(box.left, id).toBeGreaterThanOrEqual(0);
+          expect(box.right, id).toBeLessThanOrEqual(W);
+          expect(intersects(box, close), `${id} bajo el «Cerrar»`).toBe(false);
+          for (const r of hud) expect(intersects(box, r), id).toBe(false);
+          // Ningún otro rótulo encendido encima.
+          ids.forEach((other, j) => {
+            if (j === i || !looks[j]!.on || looks[j]!.alpha <= BEHIND_ALPHA) return;
+            expect(intersects(box, boxes[j]!), `${id} / ${other}`).toBe(false);
+          });
+        }
+      });
+    }
+  }
+});
+

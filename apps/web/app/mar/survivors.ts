@@ -288,7 +288,7 @@ export function startDefeatStyle(
  * - `objective`: el «!» de objetivos, su panel y el objetivo marcado (su rótulo
  *   en el mar y su marca en el minimapa), que se conserva para después (T120);
  * - `wildlife`: los peces que saltan y las gaviotas (T120): no se confunden con enemigos;
- * - `balances`: los puntos ★ y las monedas 🪙 del mundo (T148): en su sitio,
+ * - `balances`: los puntos ★ y las monedas del mundo (T148): en su sitio,
  *   arriba a la derecha, van las armas y los vinilos.
  */
 export type HideLayer =

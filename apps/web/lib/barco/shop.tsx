@@ -3,6 +3,7 @@
 import { type Balances, type BoiaRepository, type ShopItem, isStoreError } from '@boia/store';
 import { type ReactNode, useState } from 'react';
 import { requireAccount } from '../account/gate';
+import { CoinIcon } from '../coin-icon';
 import { hiddenShipStyles } from '../mundo/demo-world';
 import { useRepoData } from '../mundo/repo';
 import type { ShipCatalog } from './catalog';
@@ -120,7 +121,7 @@ export function BarcoShopView({
         disabled={!i.canBuy || busy}
         onClick={() => on.ask(i)}
       >
-        {label} · {i.unlock.price} 🪙
+        {label} · {i.unlock.price} <CoinIcon label={msg('barco.shop.monedasNombre')} />
       </button>
     ) : null;
 
@@ -128,7 +129,11 @@ export function BarcoShopView({
     <div className="tienda" data-testid="barco" aria-busy={pending || busy}>
       <p className="tienda-intro">{SHOP_COPY.intro}</p>
       <p className="tienda-saldo" data-testid="barco-saldo" data-coins={coins} data-points={points}>
-        {msg('barco.shop.tienes')} <strong>🪙 {coins}</strong> {msg('barco.shop.monedas')}{' '}
+        {msg('barco.shop.tienes')}{' '}
+        <strong>
+          <CoinIcon /> {coins}
+        </strong>{' '}
+        {msg('barco.shop.monedas')}{' '}
         <strong>★ {points}</strong> {msg('barco.shop.puntos')}
       </p>
       {message ? (

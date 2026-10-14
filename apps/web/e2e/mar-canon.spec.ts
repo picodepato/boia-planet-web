@@ -1134,12 +1134,13 @@ test('pantalla final con tiempo, enemigos y notas; «Otra vez» empieza otra don
 
 // --- Sesión, premio y finales (T119) --------------------------------------------------
 
-/** Los saldos del mar: ★ puntos y 🪙 monedas. */
+/** Los saldos del mar: ★ puntos y monedas (la moneda dibujada, T280). */
 async function balances(page: Page): Promise<{ points: number; coins: number }> {
   const text = (await page.getByTestId('mar-saldos').textContent()) ?? '';
+  const coins = (await page.getByTestId('mar-saldo-monedas').textContent()) ?? '';
   return {
     points: Number(/★\s*(\d+)/.exec(text)?.[1] ?? NaN),
-    coins: Number(/🪙\s*(\d+)/.exec(text)?.[1] ?? NaN),
+    coins: Number(/(\d+)/.exec(coins)?.[1] ?? NaN),
   };
 }
 

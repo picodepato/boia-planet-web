@@ -102,7 +102,15 @@ import {
   showGlows,
   whirlpool,
 } from './effects';
-import { HUD_MARGIN, LABEL_GAP, type PinSight, type Rect, layoutPins, modelLabelY } from './labels';
+import {
+  HUD_MARGIN,
+  LABEL_GAP,
+  type PinLook,
+  type PinSight,
+  type Rect,
+  layoutPins,
+  modelLabelY,
+} from './labels';
 import {
   FLIGHT,
   FlightClouds,
@@ -533,6 +541,8 @@ const tmpV2 = new Vector2();
 const tmpSphere = new Sphere();
 /** Lo que queda por encima de la pantalla, como un mando más (los rótulos no se van por arriba). */
 const ABOVE_SCREEN = { left: -1e6, top: -1e6, right: 1e6, bottom: -HUD_MARGIN };
+/** Cada cuánto (ms) se rehace el reparto de rótulos mientras la vista de mapa se mueve (T280). */
+const PIN_RELAYOUT_MS = 150;
 
 export class Mar3D {
   /** El mundo de ahora (cambia de piel con `setWorld`; los lugares son los mismos). */
@@ -592,6 +602,14 @@ export class Mar3D {
   private readonly pins: PinView[] = [];
   /** Los mandos que no pisan los rótulos (px del lienzo) y, para las pruebas, las islas de Blender en pantalla (T75). */
   private hudRects: Rect[] = [];
+  /** El último reparto de rótulos y de qué salió (T280, `layoutOf`). */
+  private pinLayout: {
+    shape: string;
+    spot: string;
+    sights: PinSight[];
+    looks: PinLook[];
+    at: number;
+  } | null = null;
   private readonly islandScreen = new Map<string, Rect>();
   private readonly anchors: Anchor[] = [];
   /** El planeta: su rectángulo (escena) y su periodo en u de motor y en escena. */
@@ -4942,6 +4960,41 @@ export class Mar3D {
    * su alto real), sin pisar los mandos, más pequeños y tenues los lejanos, y
    * casi apagados los que caen encima de un lugar más cercano (`labels.ts`).
    */
+  /**
+   * El reparto de los rótulos (`layoutPins`). T280: en la vista de mapa todas
+   * las islas buscan hueco, y eso cuesta: con la carta quieta se repite el
+   * último; mientras se mueve (arrastrar, acercar), cada rótulo sigue a su
+   * lugar tal cual y el reparto se rehace cada `PIN_RELAYOUT_MS`.
+   */
+  private layoutOf(far: boolean, shown: readonly PinView[], sights: PinSight[], W: number): PinLook[] {
+    const shape = `${far ? 'm' : ''}|${W}|${this.hudRects.map((r) => `${r.left},${r.top},${r.right},${r.bottom}`).join(';')}|${shown
+      .map((p, i) => {
+        const s = sights[i]!;
+        return `${p.spec.id},${s.w},${s.h},${+s.horizon}${+s.always}${+!!s.keep}${+(s.label !== false)}${+!!s.body}`;
+      })
+      .join(';')}`;
+    const spot = sights
+      .map((s) => {
+        const b = s.body;
+        return `${s.x.toFixed(1)},${s.y.toFixed(1)},${s.depth.toFixed(3)}${b ? `,${b.left.toFixed(1)},${b.top.toFixed(1)},${b.right.toFixed(1)},${b.bottom.toFixed(1)}` : ''}`;
+      })
+      .join(';');
+    const now = performance.now();
+    const last = this.pinLayout;
+    if (last && last.shape === shape) {
+      if (last.spot === spot) return last.looks;
+      if (far && now - last.at < PIN_RELAYOUT_MS)
+        return last.looks.map((l, i) => ({
+          ...l,
+          x: l.x + sights[i]!.x - last.sights[i]!.x,
+          y: l.y + sights[i]!.y - last.sights[i]!.y,
+        }));
+    }
+    const looks = layoutPins(sights, [...this.hudRects, ABOVE_SCREEN], W);
+    this.pinLayout = { shape, spot, sights, looks, at: now };
+    return looks;
+  }
+
   private placePins(bx: number, bz: number, far: boolean): void {
     const cam = this.camera.position;
     const boatD = Math.max(1, cam.distanceTo(this.boat.group.position));
@@ -5003,7 +5056,7 @@ export class Mar3D {
       shown.push(p);
     }
     // Tampoco por encima del borde de arriba de la pantalla, ni por los lados (T226).
-    const looks = layoutPins(sights, [...this.hudRects, ABOVE_SCREEN], W);
+    const looks = this.layoutOf(far, shown, sights, W);
     const seen = new Set<PinView>();
     shown.forEach((p, i) => {
       const look = looks[i]!;
@@ -5022,10 +5075,12 @@ export class Mar3D {
         p.tip = tip;
         p.el.style.setProperty('--pin-tip', `${tip}px`);
       }
-      const key = `${far ? 'm' : ''}${s.horizon ? 'h' : ''}${look.behind ? 'b' : ''}${look.alpha.toFixed(2)}`;
+      const key = `${far ? 'm' : ''}${s.horizon ? 'h' : ''}${look.behind ? 'b' : ''}${look.below ? 'u' : ''}${look.alpha.toFixed(2)}`;
       if (key !== p.look) {
         p.look = key;
         p.el.classList.toggle('is-map', far);
+        // Colgado debajo de su isla, con la punta hacia arriba (T280).
+        p.el.classList.toggle('is-below', !!look.below);
         p.el.classList.toggle('is-horizon', s.horizon);
         p.el.classList.toggle('is-behind', look.behind);
         p.el.style.setProperty('--pin-alpha', look.alpha.toFixed(2));

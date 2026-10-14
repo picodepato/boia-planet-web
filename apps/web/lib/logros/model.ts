@@ -46,7 +46,7 @@ export interface LogroRow {
   count: string | null;
   /** «Te quedan 4 islas», «¡Completado! Reclama tu premio»… */
   hint: string;
-  /** El premio en corto: «+30 ★ · +10 🪙 · Barco Pixel art». */
+  /** El premio en corto: «+30 ★ · +10 monedas · Barco Pixel art». */
   reward: string;
   /** La clave de su dibujo (`iconKey`; plan 029 T274), o null. Los ocultos no la dan. */
   iconKey: string | null;
@@ -145,7 +145,8 @@ export type CosmeticNames = Readonly<Record<string, string>>;
 export function rewardText(reward: AchievementReward, names: CosmeticNames = {}): string {
   const parts: string[] = [];
   if (reward.points > 0) parts.push(`+${reward.points} ★`);
-  if (reward.coins > 0) parts.push(`+${reward.coins} 🪙`);
+  // T280: «monedas» con la palabra (el emoji de la moneda sale como una caja en Windows 10).
+  if (reward.coins > 0) parts.push(t('achievements.reward.coins', { n: reward.coins }));
   const cosmetic = reward.cosmeticKey ? (names[reward.cosmeticKey] ?? reward.cosmeticKey) : null;
   if (reward.kind === 'ship' && cosmetic) parts.push(t('logros.model.barco', { cosmetic }));
   else if (reward.kind === 'badge') parts.push(t('logros.model.insigniaDelCarnet'));

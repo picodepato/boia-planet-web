@@ -4,6 +4,31 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T280: Map close button, Castillo de Santa Bárbara and Las Calitas labels, coin glyph
+
+Qué existe:
+- **«Cerrar» del mapa pequeño y abajo a la izquierda** (`map-hint-view.tsx`, `mar.css` `.mar-mapclose`): un botón naranja de 44×44 con una ✕ dibujada (SVG), `aria-label`/`title` «Cerrar el mapa» (`mar.client.cerrarMapa`, sustituye a `mar.client.cerrar`). Va en el sitio de los nudos, que en la vista de mapa no salen; tampoco la bocina (en el mapa su hueco es de los rótulos; fuera del mapa todo sigue igual). El minimapa («BARCO», «Cerrar el mapa y volver al barco») y la tecla M siguen cerrando el mapa.
+- **Todas las islas con su rótulo en la vista de mapa** (`engine/labels.ts`): en el mapa cada isla es `keep` (`mapKeeps(category)`, sustituye a `MAP_KEEP`); van después de los eventos y antes de lo que no es isla (náufrago, salida de la carrera: si caben). Un `keep` sin hueco encima de su isla prueba, por orden: apartarse (de lado/arriba), colgarse **debajo** de su isla con la punta hacia arriba (`PinLook.below`, CSS `.mar-pin.is-below`), apartar otro `keep`, y si nada, **menguar un poco** (`KEEP_SHRINK_STEPS` 0,9 / 0,8 / 0,7, `muestra`) antes que tapar la isla de otro `keep` aún sin poner. Si alguno se queda sin sitio, una segunda pasada con esos primero. El Radio y el «Cerrar» entran en `PIN_AVOID`. Siempre opacidad 1.
+- Rendimiento: `nudgeClear` sin copiar objetos por cada sitio probado; `shoveClear` prueba como mucho 240 sitios; `Mar3D.layoutOf` repite el último reparto con la carta quieta y, mientras se mueve, desplaza cada rótulo con su isla y rehace el reparto cada 150 ms (sólo en la vista de mapa). ~6 ms por reparto en el peor caso (360×640, Node).
+- **Moneda dibujada** (`lib/coin-icon.tsx`, `CoinIcon`): SVG de 1em (sol del juego con borde tostado) en lugar del emoji de la moneda (U+1FA99, Unicode 13: caja vacía en Windows 10). En los saldos del mar (`data-testid="mar-saldo-monedas"`), el premio al reclamar un logro, la tienda (saldo y botón de comprar) y el panel de logros. Donde el texto va suelto («Premio: … », la tienda, la confirmación, `aria-label`) se dice «monedas» con la palabra (`achievements.reward.coins`, `barco.shopModel.nMonedas`).
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/engine/map-labels.test.ts` → pass: cada isla con su rótulo entero (alfa 1, escala ≥ 0,7, sin pisar otro rótulo ni un mando ni el «Cerrar») a 360×640, 390×844 y 1280×720, de día (letra ×1 y ×1,15) y de noche; Nochevieja y Puig Campana (T275/T279) siguen.
+- `apps/web/lib/coin-icon.test.ts` → pass (la moneda es un SVG sin texto; ningún fichero de app/, lib/ ni e2e/ usa el emoji; saldos, premio y tienda llevan `CoinIcon`).
+- `E2E_PORT=3287 npx playwright test e2e/mar-toque.spec.ts` → 4 passed.
+- Test command: vitest 318 files / 2860 passed, 1 skipped; `tools/spec/checks.sh` OK; `pnpm lint` 0; `pnpm build` 0; `pnpm typecheck` 0.
+- Chromium sin GPU (SwiftShader), /mar + M: todas las islas con rótulo (`--pin-alpha` 1) a 360×640, 390×844 y 1280×720; «Cerrar» en [18,578,62,622] (360×640).
+- Captura de un aviso de monedas (premio de «Salto mortal») a 360×640: `C:\Users\alvar\AppData\Local\Temp\claude\C--Users-alvar-Documents-CODIGOS-boia-planet-hernan\05d7112e-7962-4412-9629-a6387f95e263\scratchpad\t280\coin-notice-360x640.png`; saldos del mar: `...\t280\coin-hud-360x640.png`; mapas: `...\t280\final-map-360x640.png`, `final-map-390x844.png`, `final-map-1280x720.png`.
+
+Pendiente:
+- De noche (03:00–07:00), en un móvil de 360×640, el rótulo de la isla del after puede no caber (minimapa, «Menú», Nochevieja y Puig Campana alrededor); a 390×844 y 1280×720 sí sale.
+- En `next dev` la insignia «N» de Next tapa el «Cerrar» (abajo a la izquierda); en producción no existe.
+- `KEEP_SHRINK` (0,7) y el reparto en pantallas de 360 px son `muestra`: algún rótulo sale un poco más pequeño o colgado debajo de su isla.
+
+Probar a mano:
+- /mar, abrir el mapa (minimapa o M): se leen todas las islas, también «Castillo de Santa Bárbara» y «Las Calitas»; el «Cerrar» es un cuadrado pequeño con una ✕ abajo a la izquierda y vuelve al barco; el minimapa («BARCO») y M también. En el mapa no salen los nudos ni la bocina; al volver, sí.
+- /mar en Windows 10: los saldos (arriba a la derecha) enseñan una moneda dorada, no una caja; reclamar un logro con monedas (Menú › Logros › Reclamar): «+N» con la moneda; la tienda del barco: «Tienes (moneda) N monedas» y «Comprar · N (moneda)».
+
 ## 2026-10-13 — plan 029 T279: Regressions found by Álvaro after the push: tap-to-move, Nochevieja label, character bubbles in the map
 
 Qué existe:
