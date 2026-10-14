@@ -193,7 +193,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: tap-to-move fixed (shared tmpV overwritten by T270 character check), e2e mar-toque guards it; event labels placed first in map view; bubbles hidden in map and beyond 600 u; map view fits every island (moves the view, zoom unchanged) — 3bd12e8
 
 ## T280 — Map close button, Castillo de Santa Bárbara and Las Calitas labels, coin glyph
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -205,7 +205,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - test for the coin glyph → pass; headless screenshot at 360×640 of a coin notice shows the coin (path in the status file)
   - e2e `mar-toque.spec.ts` still passes (only that spec)
   - Test command → exit 0
-- Outcome:
+- Outcome: small ✕ close bottom-left (knots and horn hidden in map view), every island label kept in map view (mapKeeps, hang below / shrink to 0.7), layout cached while still; CoinIcon SVG everywhere coins show — 7cd3482
 
 ## T281 — New Carnet questions (Álvaro, 2026-10-14)
 - Status: running (attempt 1)
@@ -243,7 +243,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome:
 
 ## T283 — Change the Admin password
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -290,6 +290,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: 🪪 (Unicode 14) shows as an empty box on Windows 10 too (reward.tsx, sign-in-sheet, carnet panel/menu, checkout, es-mar); after island label may not fit at 360×640 at night; Puerto body rect vs dock model (T280)
 - 2026-10-14: In map view the «Cerrar» button sits over the «El Remanso de los Cocodrilos» label (T279)
 - 2026-10-14: Draw icons for the older achievements and the Admin keys boia…cofre so the panel is consistent; /juego (2D) gives no secret hints (T274 audit)
 - 2026-10-14: The top notices are one line on phones and truncate existing texts ("Boia encontr…", seagull messages) (T272 audit)
@@ -354,3 +355,5 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T281 added (new Carnet questions, Álvaro)
 - 2026-10-14 T281 launched (attempt 1, sonnet), agent ac8ac3c102ef9ffb3
 - 2026-10-14 T282 (sequential Carnet numbers from 10, editable in Admin) and T283 (change Admin password) added by Álvaro
+- 2026-10-14 T281 sonnet done (cec555e). Opus audit launched, agent a641a149d60fc6547
+- 2026-10-14 T280 done (d1b97ab), integrated 7cd3482
