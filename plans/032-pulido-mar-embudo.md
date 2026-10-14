@@ -1,0 +1,128 @@
+# Plan 032 — Polish, a livelier sea and our own funnel
+
+Status: active
+Created: 2026-10-15
+Base branch: main
+Goal: After plan 031 (artists claim their profile), and leaving the security checklist (`plans/seguridad-pendiente.md`) for later (Álvaro, 2026-10-15): half polish, half new things. Polish: /mar and phones (lost 3D context, cut notices, map labels, 🪪 box on Windows), accounts and progress leftovers, code cleanup (loose strings to i18n with a lint rule, prettier, flaky test, stale «faro»), and the spec and docs brought up to date (REQs that are built but no test names, a rewritten `docs/TRASPASO.md`). New: a livelier sea (real waves that move the surface and rock the boat, a movable minimap, FPS measured), our own cookie-free funnel counters in Supabase with an «Embudo» panel in the Admin (replacing the PostHog sink), and a tested backup restore plus host parity that also checks the accounts mode. Ticketing (P2) stays out.
+Test command: export PYTHONUTF8=1 && pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000 && sh tools/spec/checks.sh && pnpm lint && pnpm build && pnpm typecheck
+Worktree setup: pnpm install --frozen-lockfile
+Status file: ESTADO.md
+
+Notes for every task: same machine notes as plan 027 (`plans/027-cloudflare-doble-despliegue.md`, "Notes for every task"): Windows 10 + Git Bash, `packages/db` excluded from vitest, `PYTHONUTF8=1`, run the checks one by one if a guard blocks the chain, never commit `apps/web/public/atlas/`, `.claude/launch.json`, `.claude/*.out`, `.claude/scratch_*`, `e*.log`, `reunion/`, `output/` or `.env*` (except `.env.example`), never push or deploy, never create accounts, tokens or secrets, never edit `docs/DECISIONES.md`. Álvaro runs the project. Never run the full e2e suite (one spec only if strictly needed). Security hardening (`plans/seguridad-pendiente.md`) is out of scope: note findings in OUT OF SCOPE, do not fix them.
+Accounts rules for every task: accounts mode is LIVE in production since 2026-10-14 (Supabase project ref kzxdywtysrcnqqjfhhnc): agents NEVER touch it. New migrations are applied to the dev project only (`boia-planet-dev`, credentials in the main checkout's `apps/web/.env.local`, read by absolute path) and listed in `docs/propuestas/2026-10-03-produccion-supabase.md`; the orchestrator applies them to production before the plan's push. Security model as plan 029 T278: admin-only actions through private SECURITY DEFINER functions with an INVOKER wrapper, empty search_path, role check inside, tests as anon/member/admin in `pnpm test:supabase`. Local/demo mode must keep working (no Supabase variables). Landing critical-path budget (`scripts/landing-budget.mjs`, 200 KB gzip, 199.3 used: keep new landing code lazy) and `pnpm cf:measure` must still pass: Admin and /mar code stays off the landing. All new UI text through `apps/web/lib/i18n/`, `muestra` until Álvaro approves it. Audit rule as plan 029 (sonnet/haiku tasks get an Opus audit before integration).
+
+## Tasks
+
+## T298 — A livelier sea
+- Status: pending
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: REQ-MUN-003 and REQ-MUN-021. The water shader already animates colour bands, wind foam, sparkles and shore foam, but the surface is flat. Add real gentle waves: vertex displacement of the water ring (low amplitude, a few summed directional waves, wind-aligned, calmer near islands and docks) and the boat bobbing/rolling on them (pitch/roll from the wave normal under the hull, visual only: navigation, collisions, the swell jump of T269 and the camera stay readable — no motion sickness, `prefers-reduced-motion` flattens it). Make the minimap movable again: today a long press opens the big map, so pick a gesture that does not clash (e.g. a drag handle or «Mover» in the settings menu, the position already persists through `packages/engine/src/ui/hud-layout.ts`) and update `apps/web/e2e/mar-hud.spec.ts` accordingly. Put the waves and the boat rocking behind one switch (a single constant/flag in the /mar engine config, on by default) so they can be turned off in one line without reverting the task if Álvaro's hand test finds a problem. Measure FPS before/after on the existing quality presets (low preset must not lose more than ~5% frame time; on low, waves may be off) and record it.
+- Context: `apps/web/app/mar/engine/water.ts`, `packages/engine/src/swell/`, the boat/camera code in `apps/web/app/mar/engine/`, `apps/web/app/mar/minimap.tsx`, `packages/engine/src/ui/minimap.ts`, `packages/engine/src/ui/hud-layout.ts`, quality presets, REQ-MUN-003 / REQ-MUN-021 in `docs/spec/09-requisitos.md` and `docs/spec/estado.md:191`, `docs/spec/03-mundo-y-motor.md:11`.
+- Scope: may touch the /mar engine, water, boat, minimap, HUD layout, settings menu, i18n, tests, `docs/spec/estado.md` / must not touch the landing bundle, accounts, the Admin.
+- Done when:
+  - unit tests: wave height/normal function (deterministic, zero amplitude with reduced motion and near docks), boat pitch/roll clamped, minimap move gesture does not open the big map → pass
+  - `pnpm e2e apps/web/e2e/mar-hud.spec.ts` (single spec, free port) → pass
+  - with the switch off, /mar behaves exactly as before (unit test on the flag);
+  - a short hand-test checklist for Álvaro in the ESTADO section (sail around, docks, islands, swell jump, minigames, map, minimap move, phone and low preset);
+  - FPS before/after per preset recorded in the ESTADO section; REQ-MUN-003 and REQ-MUN-021 updated in `docs/spec/estado.md` with their proof
+  - Test command → exit 0
+- Outcome:
+
+## T299 — /mar and phones: lost 3D, cut notices, map labels, the 🪪 box
+- Status: pending
+- Depends on: T298
+- Model: sonnet
+- Skills: none
+- Goal: Phone and small-screen robustness. (1) /mar survives losing its WebGL context the way the landing does since T289 (`webglcontextlost`/`restored`: pause, a calm notice, restore or offer reload; app-switch and screen lock covered) and update `docs/spec/matriz-dispositivos.md` row 16. (2) Top notices (toasts/banners) are not cut off on phones: safe areas, wrapping, max width at 360 px. (3) Big map: the «Cerrar» button no longer covers a label, and the Puig Campana label no longer overlaps another island at 360 px. (4) The 🪪 emoji shows as an empty box on Windows 10 (still in ~8 files, e.g. `reward.tsx`, `sign-in-sheet.tsx`): replace it with an inline SVG/icon component used everywhere, same meaning.
+- Context: T289 (commit 5001cb3) for the landing pattern, `apps/web/app/mar/`, the big map component, toast/notice components, `docs/spec/matriz-dispositivos.md`, plan 029 Proposals.
+- Scope: may touch /mar UI and engine bootstrap, map overlay, notices, the files using 🪪, i18n, tests, the device matrix / must not change T298's waves or minimap gesture.
+- Done when:
+  - unit/component tests: context lost → paused + notice, restored → resumes; no 🪪 left in `apps/web` and `packages` (grep in a test or check script); map label layout at 360 px has no overlap with «Cerrar» or between islands → pass
+  - Test command → exit 0
+- Outcome:
+
+## T300 — Accounts and progress leftovers
+- Status: pending
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: Three account bugs from plan 029's Proposals. (1) An expired session must not merge the old guest/local data into the next account that signs in on the device: decide the safe rule (e.g. local progress tied to the account it was synced with; guest data only merges into the first account that claims it, with the existing merge rules) and log it. (2) Server-side progress knows the new secret achievements and the «after» boat (plan 029), so they are not dropped or rejected on sync. (3) A trashed member whose member number was reused can be restored (gets a new number, the Admin sees it, audit row).
+- Context: `apps/web/lib/repo-member.ts`, `apps/web/lib/mundo/carnet/use-carnet.ts`, `apps/web/lib/mundo/achievements.ts`, the sync/merge code, T284 (sign out resets the device), Supabase migrations for progress/achievements and the member trash (plan 020 T230), Admin «Socios» trash.
+- Scope: may touch those files, a new migration (dev only) + switch-on doc, Admin trash UI, i18n, tests / must not touch /mar rendering, the funnel, the artist claim flows of plan 031.
+- Done when:
+  - unit tests: session expires → sign in as another account → no guest/local data from the first account merges; first claim still merges → pass
+  - `pnpm test:supabase` (dev): new secret achievements and the after boat are accepted on sync; restoring a trashed member with a reused number gives a new number and an audit row; member/anon cannot restore → pass
+  - Test command → exit 0
+- Outcome:
+
+## T301 — Our own funnel counters and the «Embudo» panel
+- Status: pending
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: REQ-ARQ-019 without third parties (Álvaro, 2026-10-15): daily counters in Supabase, no cookies, no personal data, no per-visitor ids stored. Steps: landing_view → explore_start (enters /mar) → discount_found → tickets_panel_open → ticket_click_out (purchase_confirmed stays for the ticketing webhook, not built). Each step counts at most once per visit (dedupe client-side per tab session). Storage: a table of (day, event, count) incremented only through one anon-callable function that accepts the allowed event names only (no free text) — inflation by abuse is accepted, note it. The Admin switch (`site_settings.analytics_enabled`, off by default) still gates sending. Admin «Embudo» panel: last 7 and 30 days, count per step and % from the previous step, admin-only read. Remove the PostHog sink from `apps/web/lib/analytics/` (keep `track()` as the single entry point; /mar must now send `discount_found`). Local mode: counters in the local store so the panel works in demo. Update the privacy text only if it mentions PostHog (key, `muestra`).
+- Context: `apps/web/lib/analytics/index.ts`, `apps/web/lib/analytics/switch.ts`, `packages/contracts/src/analytics.ts`, callers in `landing-client.tsx`, `live-event.tsx`, `mar3d.ts`, `vortex.ts`, `mar-client.tsx`, `intro/run.ts`, the /mar discount code, Admin sections, REQ-ARQ-019 in `docs/spec/08-arquitectura-y-datos.md:72`.
+- Scope: may touch those files, a new migration (dev only) + switch-on doc, Admin UI, i18n, tests, `docs/spec/estado.md` / must not add any third-party script, cookie or stored identifier; the landing budget must still pass (the call must stay tiny).
+- Done when:
+  - unit tests: each step sent once per visit, nothing sent with the switch off, unknown event names rejected client-side; panel math (% per step, 7/30 days) → pass
+  - `pnpm test:supabase` (dev): anon can increment allowed events only; anon/member cannot read counts; admin can → pass
+  - `node scripts/landing-budget.mjs` → pass
+  - Test command → exit 0
+- Outcome:
+
+## T302 — Tested backup restore, and host parity checks the accounts mode
+- Status: pending
+- Depends on: none
+- Model: sonnet
+- Skills: none
+- Goal: REQ-ARQ-013. The nightly encrypted backup already exists (`.github/workflows/supabase-backup.yml`, plan 019 T223 / 020 T230) but no restore was ever tested. Write a restore script and a step-by-step guide (decrypt with the passphrase, restore the database and the Storage files into a target project), and prove it on the DEV project only: dump dev, empty it, restore, check row counts and a few Storage files match, leave dev working (re-apply migrations if needed). Never touch production; restoring a real production backup is Álvaro's step with the guide. Also extend `apps/web/scripts/check-hosts.mjs` (and `hosts-parity.yml` if needed) to check both hosts run the same accounts mode (e.g. a field in `/version.json` or a marker on a page, no secrets exposed) and fail if they differ.
+- Context: `.github/workflows/supabase-backup.yml`, `.github/scripts/storage-backup.py`, `docs/propuestas/2026-10-08-backups.md`, `apps/web/scripts/check-hosts.mjs`, `.github/workflows/hosts-parity.yml`, `/version.json` generation, `docs/DESPLIEGUE.md`.
+- Scope: may touch those files, a new restore script under `tools/` or `.github/scripts/`, the guide, `/version.json` generation, tests, `docs/spec/estado.md` / must not touch production, must not change the backup schedule or secrets.
+- Done when:
+  - the dev restore ran: before/after row counts per table and Storage file counts recorded in the ESTADO section, equal
+  - unit tests for check-hosts: same mode passes, different mode fails, missing field warns → pass
+  - Test command → exit 0
+- Outcome:
+
+## T303 — Code cleanup: loose strings to i18n, a lint rule, prettier, the flaky test, the stale «faro»
+- Status: pending
+- Depends on: T299, T300, T301, T302
+- Model: sonnet
+- Skills: none
+- Goal: Move the remaining loose UI strings to `apps/web/lib/i18n/` (known: `acuarela/skin.ts`, `behaviors.ts` `leaveReaction`, `MERCHANDISE_NOTICE`, shop product names; find the rest) and add a lint rule (or a check in `tools/spec/checks.sh`) that fails on new loose user-visible strings in components, with a small allowlist. Make prettier pass where it fails (README, CLAUDE.md, `*.supabase.ts` tests). Fix the flaky `admin-password.supabase.ts` (find the cause, no retries-as-fix). Remove the stale `faro` minigame from `mundos/arcilla/mapa.json` (~3240) if nothing uses it.
+- Context: `apps/web/lib/i18n/`, eslint config, `tools/spec/checks.sh`, `.prettierrc`, `packages/db` or wherever `admin-password.supabase.ts` lives, `mundos/arcilla/mapa.json`, plan 027 and 029 Proposals.
+- Scope: may touch any file for string moves and formatting only, eslint config, checks, the flaky test, `mapa.json` / must not change behaviour or visible text (same strings, now by key).
+- Done when:
+  - `pnpm lint` with the new rule → exit 0, and the rule fails on a fixture with a loose string (test)
+  - `pnpm exec prettier --check .` (repo's configured scope) → exit 0
+  - `pnpm test:supabase` (dev) → `admin-password` passes 5 runs in a row
+  - Test command → exit 0
+- Outcome:
+
+## T304 — Spec and docs up to date
+- Status: pending
+- Depends on: T298, T299, T300, T301, T302, T303
+- Model: haiku
+- Skills: none
+- Goal: The ~15 REQs in `docs/spec/estado.md` marked PARCIAL only because no test names them: find each, check it is really built, add or rename a test that names the REQ (or link the existing proof), and move it to HECHO; leave honest notes on the ones that are not. Then rewrite `docs/TRASPASO.md` to today (one screen): accounts mode live on both hosts since 2026-10-14, Cloudflare public + Vercel copy, plans 027–032 summary, current counts, what remains, what depends on Álvaro (P-questions still open, security checklist pending), and fix stale lines (the box-office rule is already editable in the Admin since plan 019 T215; P20 moot; P7 done).
+- Context: `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`, `docs/DECISIONES.md` (read only), top of `ESTADO.md`, `plans/027`–`032`, `CLAUDE.md`.
+- Scope: may touch tests (names/REQ tags, small new tests), `docs/spec/estado.md`, `docs/TRASPASO.md`, `README.md` if stale / must not change app behaviour, must not edit `docs/DECISIONES.md`.
+- Done when:
+  - `python3 tools/spec/estado.py` → exit 0, with the HECHO count up and every new HECHO linked to a test
+  - Test command → exit 0
+- Outcome:
+
+## Decisions
+- 2026-10-15: Plan 032 started after plan 031 ended (main af9ac37, pushed; notice from the session that ran 031, at Álvaro's request) (orchestrator)
+- 2026-10-15: Half polish, half new; no security work, no ticketing until P2 is chosen; funnel with our own Supabase counters, not PostHog; restore tested on dev only (Álvaro)
+- 2026-10-15: Minimap and living water mostly existed, so they become one «livelier sea» task with real waves and a movable minimap; backups and host parity existed, so the gap (tested restore, accounts-mode parity) is one task (orchestrator, Álvaro agreed)
+- 2026-10-15: Models: opus for T298/T300/T301, sonnet for T299/T302/T303, haiku for T304, Opus audit for sonnet/haiku (Álvaro)
+- 2026-10-15: T299 after T298 (both touch /mar UI); T303 and T304 last because they sweep many files (orchestrator)
+- 2026-10-15: Push when every task is done, after applying T300/T301 migrations to production, only on Álvaro's yes (Álvaro)
+- 2026-10-15: No push until Álvaro has tried the new sea by hand (local dev server, T298's checklist) and confirmed it breaks nothing in the world; if something breaks, turn the waves switch off (or fix) before pushing (Álvaro)
+
+## Proposals (new scope)
+
+## Log
