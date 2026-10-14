@@ -12,6 +12,8 @@ import { readArtistCarnets } from './registered';
 const repoLocal = { carnet: { mine: async () => null } } as unknown as BoiaRepository;
 const BASE = 'user_id, nickname, avatar_key, avatar_image';
 const MUSIC = `${BASE}, music_platform, music_url`;
+const FULL = `${MUSIC}, artist_profile_id`;
+const KEY = 'boia.artists.columns';
 
 /** Una base sin la migración de la música: pedir esas columnas da error. */
 function mockClient(columns: string[]) {
@@ -39,6 +41,7 @@ function mockClient(columns: string[]) {
                         music_url: 'https://open.spotify.com/artist/x',
                       }
                     : {}),
+                  ...(cols.includes('artist_profile_id') ? { artist_profile_id: 'alba-fitz' } : {}),
                 },
               ],
               error: null,
@@ -90,11 +93,16 @@ describe('lista de artistas sin la columna de música', () => {
     sbState.client = client;
 
     const first = await readArtistCarnets(repoLocal);
-    expect(selects).toEqual([MUSIC, BASE]);
+    expect(selects).toEqual([FULL, MUSIC, BASE]);
     expect(first).toEqual([
-      expect.objectContaining({ userId: 'u1', nickname: 'Ana', music: null }),
+      expect.objectContaining({
+        userId: 'u1',
+        nickname: 'Ana',
+        music: null,
+        artistProfileId: null,
+      }),
     ]);
-    expect(sessionStorage.getItem('boia.artists.music-columns')).toBe('0');
+    expect(sessionStorage.getItem(KEY)).toBe('2');
 
     // Caché de la sesión: ya no se hace la petición que falla.
     selects.length = 0;
@@ -104,7 +112,7 @@ describe('lista de artistas sin la columna de música', () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  it('con la migración: pide la música y la recuerda', async () => {
+  it('con la música pero sin la unión (T295): pide la música y lo recuerda', async () => {
     const cols = [
       'user_id',
       'nickname',
@@ -118,13 +126,37 @@ describe('lista de artistas sin la columna de música', () => {
 
     const list = await readArtistCarnets(repoLocal);
 
-    expect(selects).toEqual([MUSIC]);
+    expect(selects).toEqual([FULL, MUSIC]);
     expect(list[0]?.music).toEqual({
       platform: 'spotify',
       url: 'https://open.spotify.com/artist/x',
     });
-    expect(sessionStorage.getItem('boia.artists.music-columns')).toBe('1');
+    expect(list[0]?.artistProfileId).toBeNull();
+    expect(sessionStorage.getItem(KEY)).toBe('1');
+    selects.length = 0;
+    await readArtistCarnets(repoLocal);
+    expect(selects).toEqual([MUSIC]);
     expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('con todas las migraciones: una sola petición, con la ficha unida', async () => {
+    const cols = [
+      'user_id',
+      'nickname',
+      'avatar_key',
+      'avatar_image',
+      'music_platform',
+      'music_url',
+      'artist_profile_id',
+    ];
+    const { client, selects } = mockClient(cols);
+    sbState.client = client;
+
+    const list = await readArtistCarnets(repoLocal);
+
+    expect(selects).toEqual([FULL]);
+    expect(list[0]?.artistProfileId).toBe('alba-fitz');
+    expect(sessionStorage.getItem(KEY)).toBe('0');
   });
 
   it('con un almacenamiento que falla, sigue funcionando', async () => {
@@ -135,14 +167,14 @@ describe('lista de artistas sin la columna de música', () => {
     const list = await readArtistCarnets(repoLocal);
 
     expect(list).toHaveLength(1);
-    expect(selects).toEqual([MUSIC, BASE]);
+    expect(selects).toEqual([FULL, MUSIC, BASE]);
   });
 
   it('en modo local no hay consulta ni error', async () => {
     sbState.client = null;
 
     expect(await readArtistCarnets(repoLocal)).toEqual([]);
-    expect(sessionStorage.getItem('boia.artists.music-columns')).toBeNull();
+    expect(sessionStorage.getItem(KEY)).toBeNull();
     expect(errorSpy).not.toHaveBeenCalled();
   });
 });

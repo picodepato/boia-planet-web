@@ -140,6 +140,16 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     audience;` tiene que dar `momento-quiero-estar` (artist, 1),
     `dia-siguiente` (public, 1) y `cancion-en-repeat`, `creando-tramando`,
     `disco-entero`, `buena-fiesta` (all, 2 a 5).
+- [ ] Del plan 031 (ya en `boia-planet-dev`):
+  - `20261015100200_artist_profile_join.sql` (T295): la columna
+    `carnets.artist_profile_id` (el id de la ficha de /artistas a la que el
+    Admin une un Carnet; única: una ficha, un Carnet; nula en todas las
+    filas que ya hay) y las RPC del Admin `admin_join_artist_profile` y
+    `admin_unjoin_artist_profile` (rol admin con segundo factor; auditoría
+    `join_artist_profile` / `unjoin_artist_profile`). Cambia
+    `admin_set_artist`: quitar «artista» también deshace la unión. No toca
+    ningún dato. Comprobar después, en el **SQL Editor**:
+    `select count(*) from carnets where artist_profile_id is not null;` da 0.
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`

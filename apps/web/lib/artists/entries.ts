@@ -79,6 +79,11 @@ export interface ArtistCarnet {
   avatarImage: string | null;
   avatar: { glyph: string; bg: string } | null;
   music: MusicLink | null;
+  /**
+   * La ficha del contenido a la que el Admin unió este Carnet (plan 031
+   * T295, `carnets.artist_profile_id`); null o ausente: sin unir.
+   */
+  artistProfileId?: string | null;
 }
 
 /** Un artista que se dio de alta con su Carnet. */
@@ -92,4 +97,50 @@ export function carnetArtistEntry(c: ArtistCarnet): ArtistEntry {
     carnetHref: carnetHref(c.userId),
     music: c.music,
   };
+}
+
+/**
+ * Una ficha reclamada (plan 031 T295): sale una vez, con el apodo del Carnet
+ * (decisión de Álvaro), su foto (o la de la ficha; sin ninguna, el avatar
+ * del Carnet), su música (o la de la ficha), los géneros de la ficha y
+ * «Ver carnet» al Carnet de verdad. La clave sigue siendo el id de la ficha.
+ */
+export function claimedArtistEntry(artist: Artist, c: ArtistCarnet): ArtistEntry {
+  const photoUrl = c.avatarImage ?? artist.photoUrl ?? null;
+  return {
+    key: artist.id,
+    name: c.nickname,
+    genres: artist.genres,
+    photoUrl,
+    avatar: photoUrl ? null : (c.avatar ?? CARNET_DEFAULT_AVATAR),
+    carnetHref: carnetHref(c.userId),
+    music: c.music ?? contentArtistMusic(artist),
+  };
+}
+
+/**
+ * Las fichas del contenido y los Carnets de artista en una lista (plan 031
+ * T295): la ficha unida a un Carnet sale una vez (`claimedArtistEntry`) y el
+ * Carnet ya no sale aparte. Las fichas sin unir y los Carnets sin ficha (o
+ * con una ficha que ya no existe) salen como siempre. Primero las fichas, en
+ * su orden; detrás, los Carnets.
+ */
+export function artistEntries(
+  artists: readonly Artist[],
+  carnets: readonly ArtistCarnet[],
+): ArtistEntry[] {
+  const ids = new Set(artists.map((a) => a.id));
+  const claims = new Map<string, ArtistCarnet>();
+  for (const c of carnets) {
+    const id = c.artistProfileId;
+    if (id && ids.has(id) && !claims.has(id)) claims.set(id, c);
+  }
+  const joined = new Set([...claims.values()].map((c) => c.userId));
+  return [
+    ...artists.map((a) => {
+      const c = claims.get(a.id);
+      return c ? claimedArtistEntry(a, c) : contentArtistEntry(a);
+    }),
+    ...carnets.filter((c) => !joined.has(c.userId)).map(carnetArtistEntry),
+  ];
 }

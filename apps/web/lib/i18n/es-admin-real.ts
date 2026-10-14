@@ -83,6 +83,10 @@ export const esAdminReal = {
   'admin.real.error.musicChanged': 'El enlace ha cambiado después: no se pisa.',
   'admin.real.error.artistRequired': 'Sólo un Carnet de artista lleva enlace a su música.',
   'admin.real.error.invalidMusic': 'Un enlace https de Spotify, SoundCloud, Bandcamp o Instagram.',
+  'admin.real.error.invalidProfile': 'Esa ficha de artista no existe.',
+  'admin.real.error.profileClaimed': 'Esa ficha ya está unida a otro Carnet.',
+  'admin.real.error.alreadyJoined':
+    'Este Carnet ya está unido a otra ficha: primero, deshacer la unión.',
 
   // Fiestas y QR
   'admin.real.fiestas.title': 'Fiestas y QR',
@@ -183,6 +187,21 @@ export const esAdminReal = {
   'admin.real.socios.deleteWarning':
     'Vas a borrar la cuenta de «{who}»: su Carnet deja de verse en todas partes (rankings, botellas, Las Calitas) y la cuenta ya no puede entrar. Pasa 30 días en la Papelera, donde se puede devolver; después se borra para siempre con todo lo suyo (puntos, sellos, tiempos, botellas). Queda una línea en la auditoría con el motivo.',
   'admin.real.socios.deleted': 'Cuenta en la Papelera: se puede devolver durante 30 días.',
+  // Unir un Carnet a su ficha de artista (plan 031 T295)
+  'admin.real.socios.join': 'Unir a un perfil de artista',
+  'admin.real.socios.joinLabel': 'Perfil de artista (sin reclamar)',
+  'admin.real.socios.joinPick': 'Elige un perfil…',
+  'admin.real.socios.joinNone': 'No queda ningún perfil sin reclamar.',
+  'admin.real.socios.joinSave': 'Unir',
+  'admin.real.socios.joinHint':
+    'En /artistas saldrá una vez, con el apodo, la foto y la música del Carnet y los géneros del perfil. También lo marca como artista.',
+  'admin.real.socios.joinReason': 'unido a su perfil de artista en el Admin',
+  'admin.real.socios.joined': 'Unido: en /artistas sale una vez, con su Carnet.',
+  'admin.real.socios.joinedTo': 'perfil: {name}',
+  'admin.real.socios.unjoin': 'Deshacer unión',
+  'admin.real.socios.unjoinReason': 'unión con el perfil de artista deshecha en el Admin',
+  'admin.real.socios.unjoined':
+    'Unión deshecha: el perfil y el Carnet vuelven a salir por separado.',
   // Número de socio (plan 016 T186)
   'admin.real.socios.number': 'Cambiar nº',
   'admin.real.socios.numberLabel': 'Nº de socio nuevo (libre)',

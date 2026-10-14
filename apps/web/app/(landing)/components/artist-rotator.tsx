@@ -3,12 +3,7 @@
 import type { Artist } from '@boia/contracts/content';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import {
-  type ArtistCarnet,
-  type ArtistEntry,
-  carnetArtistEntry,
-  contentArtistEntry,
-} from '../../../lib/artists/entries';
+import { type ArtistCarnet, type ArtistEntry, artistEntries } from '../../../lib/artists/entries';
 import { useLiveRepo } from '../../../lib/landing/use-live-home';
 import { trioAt } from '../../../lib/landing/rotation';
 import { ArtistCard } from './artist-card';
@@ -32,13 +27,14 @@ function useArtistCarnets(): readonly ArtistCarnet[] {
 /**
  * Los artistas de la banda, en el orden de la rotación: los del contenido (ya
  * barajados) y, detrás, los que se dieron de alta con su Carnet de artista.
- * Cada uno con la imagen de su Carnet (decisión 4).
+ * Cada uno con la imagen de su Carnet (decisión 4). Una ficha unida a su
+ * Carnet sale una vez (plan 031 T295).
  */
 export function rotationEntries(
   artists: readonly Artist[],
   carnets: readonly ArtistCarnet[],
 ): ArtistEntry[] {
-  return [...artists.map(contentArtistEntry), ...carnets.map(carnetArtistEntry)];
+  return artistEntries(artists, carnets);
 }
 
 /**

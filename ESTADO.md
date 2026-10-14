@@ -4,6 +4,55 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 031 T295: Unir un Carnet de artista a su ficha, y que salga una vez
+
+Qué existe:
+- Migración `supabase/migrations/20261015100200_artist_profile_join.sql` (aplicada a
+  boia-planet-dev; anotada en `docs/propuestas/2026-10-03-produccion-supabase.md` para
+  producción): columna `carnets.artist_profile_id` (texto, id/slug de la ficha del
+  contenido, única, formato de slug; sin clave foránea porque las fichas son contenido del
+  repositorio, no una tabla). RPC del Admin `admin_join_artist_profile(p_user, p_profile,
+  p_reason)` (une y marca artista) y `admin_unjoin_artist_profile(p_user, p_reason)`
+  (deshace; el Carnet sigue siendo de artista), lógica en `private` SECURITY DEFINER con
+  `require_staff('admin')`, envoltura INVOKER en `public`, auditoría `join_artist_profile` /
+  `unjoin_artist_profile`. `private.join_artist_profile(...)` es la unión sin rol (para T296 y
+  T297), sin EXECUTE para nadie de fuera. `admin_set_artist(.., false)` ahora también deshace
+  la unión. Rechazos nuevos: `invalid_profile`, `profile_claimed`, `already_joined`.
+- `apps/web/lib/artists/entries.ts`: `artistEntries(fichas, carnets)` y
+  `claimedArtistEntry`: una ficha unida sale una vez con el apodo del Carnet, su foto (o la de
+  la ficha; sin ninguna, el avatar del Carnet), su música (o la de la ficha), los géneros de
+  la ficha y «Ver carnet» al Carnet real; el Carnet no sale aparte. /artistas (`ArtistsList`)
+  y la banda de la landing (`rotationEntries`) la usan.
+- `apps/web/lib/artists/registered.ts`: lee `artist_profile_id`; si la base no tiene la
+  columna (o la música), repite con menos columnas y lo recuerda en sessionStorage
+  (`boia.artists.columns`, sustituye a `boia.artists.music-columns`).
+- Admin con cuentas, «Socios»: en cada Carnet, «Unir a un perfil de artista» (desplegable
+  con las fichas sin reclamar) o, si está unido, «perfil: <nombre>» y «Deshacer unión».
+  Textos en `es-admin-real.ts` (muestra).
+- Modo local: sin unión (no hay «Socios» sin cuentas); cada Carnet de artista sale aparte,
+  como antes (degradación).
+
+Comandos:
+- `pnpm db:migrate:dev` → 1 aplicada (20261015100200); `pnpm db:types:dev` → tipos al día.
+- `pnpm test:supabase` (dev) → 28 archivos, 199 pruebas, pasan (incluye
+  `artist-profile-join.supabase.ts`); 0 cuentas de prueba quedan.
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 335 archivos, 2986 pasan, 3 omitidas.
+- `tools/spec/checks.sh` (uno a uno) → OK; `pnpm lint` → 0; `pnpm typecheck` → 0;
+  `pnpm build` → 0, ruta crítica de la landing 199.2 kB / 200 kB; `pnpm cf:measure` → OK
+  (2,290 KiB gzip).
+
+Pendiente:
+- Producción: aplicar la migración (orquestador).
+- Las alineaciones de los eventos y el Carnet construido `/carnet/artista-<id>` de una ficha
+  reclamada siguen con el nombre de la ficha (fuera del alcance).
+- La ruta crítica queda a 0.8 kB del presupuesto.
+
+Probar a mano:
+- Con cuentas (dev), Admin → «Socios»: en un Carnet, «Unir a un perfil de artista», elegir
+  «Alba Fitz», «Unir». En /artistas, «Alba Fitz» ya no está: sale el apodo del Carnet con los
+  géneros de Alba y «Ver carnet» abre su Carnet; el Carnet no sale dos veces. «Deshacer
+  unión»: vuelven a salir los dos.
+
 ## 2026-10-15 — plan 030 T289: The landing planet survives losing its 3D
 
 **Qué existe**

@@ -116,6 +116,10 @@ export const RPC_REJECTIONS = [
   // La radio del equipo (plan 022 T246; en private desde plan 029 T278)
   'unknown_song',
   'invalid_order',
+  // Un Carnet de artista unido a su ficha (plan 031 T295)
+  'invalid_profile',
+  'profile_claimed',
+  'already_joined',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 

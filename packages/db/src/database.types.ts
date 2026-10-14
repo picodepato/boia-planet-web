@@ -526,6 +526,7 @@ export type Database = {
       };
       carnets: {
         Row: {
+          artist_profile_id: string | null;
           avatar_image: string | null;
           avatar_key: string | null;
           avatar_moderated: boolean;
@@ -543,6 +544,7 @@ export type Database = {
           version: number;
         };
         Insert: {
+          artist_profile_id?: string | null;
           avatar_image?: string | null;
           avatar_key?: string | null;
           avatar_moderated?: boolean;
@@ -560,6 +562,7 @@ export type Database = {
           version?: number;
         };
         Update: {
+          artist_profile_id?: string | null;
           avatar_image?: string | null;
           avatar_key?: string | null;
           avatar_moderated?: boolean;
@@ -2201,6 +2204,14 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      admin_join_artist_profile: {
+        Args: {
+          p_user: string;
+          p_profile: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_list_carnets: {
         Args: {
           p_search?: string;
@@ -2382,6 +2393,13 @@ export type Database = {
       admin_undo_carnet_moderation: {
         Args: {
           p_id: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_unjoin_artist_profile: {
+        Args: {
+          p_user: string;
           p_reason?: string;
         };
         Returns: Json;

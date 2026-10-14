@@ -72,6 +72,10 @@ const REJECTION_TEXT: Partial<Record<string, MessageKey>> = {
   music_changed: 'admin.real.error.musicChanged',
   artist_required: 'admin.real.error.artistRequired',
   invalid_music: 'admin.real.error.invalidMusic',
+  // Un Carnet unido a su ficha de artista (plan 031 T295)
+  invalid_profile: 'admin.real.error.invalidProfile',
+  profile_claimed: 'admin.real.error.profileClaimed',
+  already_joined: 'admin.real.error.alreadyJoined',
 };
 
 /** Lo que se le dice al equipo de un error de Supabase (una RPC, la RLS, la red). */

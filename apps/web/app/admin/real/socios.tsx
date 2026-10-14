@@ -1,24 +1,172 @@
 'use client';
 
+import type { Artist } from '@boia/contracts';
 import type { ArtistLinkInfo, ArtistLinkRotation } from '@boia/db/rpc';
 import { useCallback, useEffect, useState } from 'react';
 import { artistLinkHref } from '../../../lib/account/artist-link';
 import { t } from '../../../lib/i18n';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { SectionHead, StatusLine } from '../ui';
-import { useRun } from '../use-admin';
+import { type AdminContext, useRead, useRun } from '../use-admin';
 import { NeedsAdmin, download, must, useAdminSupabase, when } from './common';
 import { type MemberRow, newsCsv } from './csv';
 
 const PAGE = 50;
 
-function MemberCard({
+/** Las fichas de /artistas y qué Carnet tiene cada una (plan 031 T295). */
+export interface ArtistProfiles {
+  /** Las fichas del contenido, de la A a la Z. */
+  all: readonly Artist[];
+  /** Carnet → ficha unida. */
+  joins: ReadonlyMap<string, string>;
+}
+
+/** Carnet → ficha, de los Carnets unidos (columna pública, como el resto del Carnet). */
+async function readJoins(sb: BoiaSupabase): Promise<Map<string, string>> {
+  const { data, error } = await sb
+    .from('carnets')
+    .select('user_id, artist_profile_id')
+    .not('artist_profile_id', 'is', null)
+    .limit(1000);
+  // Una base sin la migración 20261015100200: nadie está unido.
+  if (error || !data) return new Map();
+  return new Map(
+    data.flatMap((r) => (r.artist_profile_id ? [[r.user_id, r.artist_profile_id] as const] : [])),
+  );
+}
+
+/**
+ * «Unir a un perfil de artista» / «Deshacer unión» (plan 031 T295, la vía 3):
+ * el Admin une un Carnet a una ficha sin reclamar; en /artistas sale una vez.
+ */
+export function ArtistJoin({
   sb,
   m,
+  profiles,
   onChanged,
 }: {
   sb: BoiaSupabase;
   m: MemberRow;
+  profiles: ArtistProfiles;
+  onChanged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pick, setPick] = useState('');
+  const { status, busy, run } = useRun();
+  if (!m.nickname) return null;
+  const joinedTo = profiles.joins.get(m.user_id) ?? null;
+  const taken = new Set(profiles.joins.values());
+  const free = profiles.all.filter((a) => !taken.has(a.id));
+  const nameOf = (id: string) => profiles.all.find((a) => a.id === id)?.name ?? id;
+  return (
+    <div className="admin-row admin-row--end" data-testid={`socio-union-${m.user_id}`}>
+      {joinedTo ? (
+        <>
+          <p className="admin-meta" data-testid={`socio-unido-${m.user_id}`}>
+            {t('admin.real.socios.joinedTo', { name: nameOf(joinedTo) })}
+          </p>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            disabled={busy}
+            data-testid={`socio-deshacer-union-${m.user_id}`}
+            onClick={() =>
+              void run(async () => {
+                await must(
+                  sb.rpc('admin_unjoin_artist_profile', {
+                    p_user: m.user_id,
+                    p_reason: t('admin.real.socios.unjoinReason'),
+                  }),
+                );
+                onChanged();
+              }, t('admin.real.socios.unjoined'))
+            }
+          >
+            {t('admin.real.socios.unjoin')}
+          </button>
+        </>
+      ) : open ? (
+        <form
+          className="admin-row admin-row--end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              await must(
+                sb.rpc('admin_join_artist_profile', {
+                  p_user: m.user_id,
+                  p_profile: pick,
+                  p_reason: t('admin.real.socios.joinReason'),
+                }),
+              );
+              setOpen(false);
+              onChanged();
+            }, t('admin.real.socios.joined'));
+          }}
+        >
+          {free.length === 0 ? (
+            <p className="admin-meta">{t('admin.real.socios.joinNone')}</p>
+          ) : (
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.real.socios.joinLabel')}</span>
+              <select
+                value={pick}
+                onChange={(e) => setPick(e.target.value)}
+                data-testid={`socio-union-perfil-${m.user_id}`}
+              >
+                <option value="">{t('admin.real.socios.joinPick')}</option>
+                {free.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <p className="admin-meta">{t('admin.real.socios.joinHint')}</p>
+          <button
+            type="submit"
+            className="admin-button"
+            disabled={busy || !pick}
+            data-testid={`socio-union-guardar-${m.user_id}`}
+          >
+            {t('admin.real.socios.joinSave')}
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button--ghost"
+            onClick={() => setOpen(false)}
+          >
+            {t('carnet.cancel')}
+          </button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          className="admin-button admin-button--ghost"
+          disabled={busy}
+          data-testid={`socio-unir-${m.user_id}`}
+          onClick={() => {
+            setOpen(true);
+            setPick('');
+          }}
+        >
+          {t('admin.real.socios.join')}
+        </button>
+      )}
+      <StatusLine status={status} />
+    </div>
+  );
+}
+
+function MemberCard({
+  sb,
+  m,
+  profiles,
+  onChanged,
+}: {
+  sb: BoiaSupabase;
+  m: MemberRow;
+  profiles: ArtistProfiles;
   onChanged: () => void;
 }) {
   const [deleting, setDeleting] = useState(false);
@@ -116,6 +264,7 @@ function MemberCard({
           </button>
         </div>
       </div>
+      <ArtistJoin sb={sb} m={m} profiles={profiles} onChanged={onChanged} />
       {renumber ? (
         <form
           className="admin-row admin-row--end"
@@ -325,9 +474,14 @@ function ArtistLinkPanel({ sb }: { sb: BoiaSupabase }) {
   );
 }
 
-/** Socios y emails (T94, decisiones 3 y 11): la lista, el CSV de noticias, artista y borrar. */
-export function SociosSection() {
+/**
+ * Socios y emails (T94, decisiones 3 y 11): la lista, el CSV de noticias,
+ * artista, unir a su ficha de artista (plan 031 T295) y borrar.
+ */
+export function SociosSection({ ctx }: { ctx: AdminContext }) {
   const sb = useAdminSupabase();
+  const contentArtists = useRead(ctx, (r) => r.content.list('artists'));
+  const [joins, setJoins] = useState<ReadonlyMap<string, string>>(new Map());
   const [search, setSearch] = useState('');
   const [applied, setApplied] = useState('');
   const [newsOnly, setNewsOnly] = useState(false);
@@ -369,6 +523,20 @@ export function SociosSection() {
       alive = false;
     };
   }, [page, revision]);
+
+  useEffect(() => {
+    if (!sb) return;
+    let alive = true;
+    void readJoins(sb).then((j) => alive && setJoins(j));
+    return () => {
+      alive = false;
+    };
+  }, [sb, revision]);
+
+  const profiles: ArtistProfiles = {
+    all: [...(contentArtists ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    joins,
+  };
 
   const exportCsv = () =>
     void exporter.run(async () => {
@@ -455,6 +623,7 @@ export function SociosSection() {
                   key={`${m.user_id}|${m.is_artist}|${m.member_number}`}
                   sb={sb}
                   m={m}
+                  profiles={profiles}
                   onChanged={() => setRevision((r) => r + 1)}
                 />
               ))}

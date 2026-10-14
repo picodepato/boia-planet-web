@@ -5,8 +5,12 @@
  *
  * - Modo local (D-20): el Carnet de este navegador, si es de artista.
  * - Con cuentas: los Carnets marcados como artista, que la RLS deja leer a
- *   cualquiera (los ocultos por la moderación no llegan). Una base sin la
- *   migración 20261008100200 (sin las columnas de música) los da sin música.
+ *   cualquiera (los ocultos por la moderación no llegan), con la ficha a la
+ *   que el Admin los unió (plan 031 T295). Una base sin la migración
+ *   20261008100200 (sin las columnas de música) los da sin música; sin la
+ *   20261015100200, sin unir.
+ * - En modo local no hay unión (no hay Admin de socios): cada Carnet sale
+ *   aparte, como antes.
  */
 import { type MusicLink, musicLinkSchema } from '@boia/contracts';
 import type { BoiaRepository, CarnetView } from '@boia/store';
@@ -46,59 +50,65 @@ interface ServerArtistRow {
   avatar_image: string | null;
   music_platform?: string | null;
   music_url?: string | null;
+  artist_profile_id?: string | null;
 }
 
 /**
- * ¿Tiene la base las columnas de la música (T217, migración 20261008100200)?
- * Se aprende una vez por sesión del navegador: la primera consulta las pide;
- * si la base dice que no existen, se repite sin ellas y se recuerda el
- * resultado en sessionStorage, así las siguientes cargas de la sesión no hacen
- * la petición que falla. `null` = aún no se sabe.
+ * Las columnas que se piden, de más a menos: con la ficha unida (plan 031
+ * T295, migración 20261015100200), sólo con la música (T217, migración
+ * 20261008100200) y lo básico. Una base sin una de esas migraciones da error
+ * por la columna que no tiene: se repite con el siguiente nivel y el que va
+ * se recuerda en sessionStorage, así las siguientes cargas de la sesión no
+ * hacen la petición que falla.
  */
-const MUSIC_FLAG_KEY = 'boia.artists.music-columns';
+const BASE_COLUMNS = 'user_id, nickname, avatar_key, avatar_image';
+const MUSIC_COLUMNS = `${BASE_COLUMNS}, music_platform, music_url`;
+export const COLUMN_LEVELS = [`${MUSIC_COLUMNS}, artist_profile_id`, MUSIC_COLUMNS, BASE_COLUMNS];
+const COLUMNS_KEY = 'boia.artists.columns';
 
-export function readMusicFlag(): boolean | null {
+/** El nivel de columnas que esta sesión ya sabe que va (0, el más completo, si no se sabe). */
+export function readColumnLevel(): number {
   try {
-    const v = globalThis.sessionStorage?.getItem(MUSIC_FLAG_KEY);
-    return v === '1' ? true : v === '0' ? false : null;
+    const v = Number(globalThis.sessionStorage?.getItem(COLUMNS_KEY) ?? '0');
+    return Number.isInteger(v) && v >= 0 && v < COLUMN_LEVELS.length ? v : 0;
   } catch {
-    return null;
+    return 0;
   }
 }
 
-export function writeMusicFlag(has: boolean): void {
+export function writeColumnLevel(level: number): void {
   try {
-    globalThis.sessionStorage?.setItem(MUSIC_FLAG_KEY, has ? '1' : '0');
+    globalThis.sessionStorage?.setItem(COLUMNS_KEY, String(level));
   } catch {
     // Sin almacenamiento (privado, bloqueado): sólo se repite la petición.
   }
 }
 
+function profileIdOf(v: unknown): string | null {
+  return typeof v === 'string' && v ? v : null;
+}
+
 async function serverArtistCarnets(): Promise<ArtistCarnet[]> {
   const sb = await accountClient();
   if (!sb) return [];
-  const base = 'user_id, nickname, avatar_key, avatar_image';
-  const music = ', music_platform, music_url';
   const query = (cols: string) =>
     sb.from('carnets').select(cols).eq('is_artist', true).limit(SERVER_LIMIT);
   try {
-    const askMusic = readMusicFlag() !== false;
-    let res = await query(askMusic ? base + music : base);
-    if (askMusic && res.error) {
-      // Sin la migración de la música la base da error por esas columnas: se
-      // repite sin ellas y, si eso va, se recuerda para no volver a pedirlas.
-      res = await query(base);
-      if (!res.error) writeMusicFlag(false);
-    } else if (askMusic && !res.error) {
-      writeMusicFlag(true);
+    let level = readColumnLevel();
+    let res = await query(COLUMN_LEVELS[level]!);
+    while (res.error && level < COLUMN_LEVELS.length - 1) {
+      level += 1;
+      res = await query(COLUMN_LEVELS[level]!);
     }
     if (res.error || !res.data) return [];
+    writeColumnLevel(level);
     return (res.data as unknown as ServerArtistRow[]).map((r) => ({
       userId: r.user_id,
       nickname: r.nickname,
       avatarImage: r.avatar_image,
       avatar: avatarOf(r.avatar_key),
       music: musicOf(r.music_platform, r.music_url),
+      artistProfileId: profileIdOf(r.artist_profile_id),
     }));
   } catch {
     return [];
@@ -116,7 +126,12 @@ export async function readArtistCarnets(repo: BoiaRepository): Promise<ArtistCar
   // El propio, con la música que se acaba de poner aquí si el servidor aún no la tiene.
   if (mine) {
     const known = out.get(mine.userId);
-    out.set(mine.userId, { ...mine, music: mine.music ?? known?.music ?? null });
+    out.set(mine.userId, {
+      ...mine,
+      music: mine.music ?? known?.music ?? null,
+      // La unión la decide el Admin en el servidor (plan 031 T295).
+      artistProfileId: known?.artistProfileId ?? null,
+    });
   }
   return [...out.values()];
 }

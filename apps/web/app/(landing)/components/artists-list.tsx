@@ -1,9 +1,5 @@
 import type { Artist } from '@boia/contracts';
-import {
-  type ArtistCarnet,
-  carnetArtistEntry,
-  contentArtistEntry,
-} from '../../../lib/artists/entries';
+import { type ArtistCarnet, artistEntries } from '../../../lib/artists/entries';
 import { t } from '../../../lib/landing/texts';
 import { alphabeticalArtists } from '../../../lib/landing/resolve';
 import { ArtistCard } from './artist-card';
@@ -12,7 +8,8 @@ import { ArtistCard } from './artist-card';
  * Lista completa de /artistas (T12; plan 019 T217, decisión 10): de la A a
  * la Z, cada artista con su imagen al lado, el nombre que abre su Carnet,
  * «Ver carnet» y su música. Los del contenido y los que se dieron de alta
- * con su Carnet de artista, juntos.
+ * con su Carnet de artista, juntos; una ficha unida a su Carnet, una vez
+ * (plan 031 T295).
  */
 export function ArtistsList({
   artists,
@@ -21,10 +18,7 @@ export function ArtistsList({
   artists: readonly Artist[];
   carnets?: readonly ArtistCarnet[];
 }) {
-  const sorted = alphabeticalArtists([
-    ...artists.map(contentArtistEntry),
-    ...carnets.map(carnetArtistEntry),
-  ]);
+  const sorted = alphabeticalArtists(artistEntries(artists, carnets));
   return (
     <>
       <h1 id="artistas-title" className="section__title">
