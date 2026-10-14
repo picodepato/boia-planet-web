@@ -8,6 +8,7 @@ import {
   BOTTLE_REPORT_REASON_MAX,
   CARNET_ANSWER_MAX,
   CARNET_QUESTIONS,
+  RETIRED_CARNET_QUESTIONS,
   EVENT_STATE_BEHAVIOR,
   NICKNAME_MAX,
   NICKNAME_MIN,
@@ -788,7 +789,7 @@ class LocalRepository implements BoiaRepository {
     doc: StoreDoc = this.doc,
     opts: { raw?: boolean } = {},
   ): CarnetView | null {
-    const view = this.storedCarnetView(userId, doc);
+    const view = this.storedCarnetView(userId, doc, { retired: opts.raw === true });
     if (!view || opts.raw) return view;
     const mod = doc.carnetModeration[userId];
     if (!mod) return view;
@@ -828,18 +829,41 @@ class LocalRepository implements BoiaRepository {
     };
   }
 
-  private storedCarnetView(userId: string, doc: StoreDoc): CarnetView | null {
+  /**
+   * `retired`: añade al final las respuestas a preguntas retiradas (sólo
+   * para la moderación del Admin; el Carnet no las enseña).
+   */
+  private storedCarnetView(
+    userId: string,
+    doc: StoreDoc,
+    opts: { retired?: boolean } = {},
+  ): CarnetView | null {
     const me = doc.identity?.id ?? null;
     const ranks = this.resolved('ranks', doc);
     const defs = this.resolved('achievements', doc);
     const own = doc.carnets[userId];
-    const answersFrom = (get: (qid: string) => { answer: string; version: number } | undefined) =>
-      CARNET_QUESTIONS.flatMap((q) => {
+    const answersFrom = (get: (qid: string) => { answer: string; version: number } | undefined) => [
+      ...CARNET_QUESTIONS.flatMap((q) => {
         const a = get(q.id);
         return a
           ? [{ questionId: q.id, question: q.prompt, questionVersion: a.version, answer: a.answer }]
           : [];
-      });
+      }),
+      ...(opts.retired ? RETIRED_CARNET_QUESTIONS : []).flatMap((q) => {
+        const a = get(q.id);
+        return a
+          ? [
+              {
+                questionId: q.id,
+                question: q.prompt,
+                questionVersion: a.version,
+                answer: a.answer,
+                retired: true,
+              },
+            ]
+          : [];
+      }),
+    ];
     if (own) {
       const points = deriveBalances(doc.ledger, userId).points;
       const achievements: AchievementView[] = activeEntries(doc.ledger, userId, 'achievement')
@@ -2105,15 +2129,16 @@ class LocalRepository implements BoiaRepository {
         c.texts = clone((before ?? {}) as StoreDoc['content']['texts']);
       } else if (area === 'missionDestinations') {
         current = c.missionDestinations;
-        c.missionDestinations = clone(
-          (before ?? {}) as StoreDoc['content']['missionDestinations'],
-        );
+        c.missionDestinations = clone((before ?? {}) as StoreDoc['content']['missionDestinations']);
       } else if (area === 'activeWorld') {
         current = c.activeWorldId ?? null;
         if (typeof before === 'string') c.activeWorldId = before;
         else delete c.activeWorldId;
       } else if (isEntityArea(area)) {
-        const b = (before ?? {}) as { items?: Record<string, ItemOverride>; order?: string[] | null };
+        const b = (before ?? {}) as {
+          items?: Record<string, ItemOverride>;
+          order?: string[] | null;
+        };
         current = { items: c.items[area] ?? {}, order: c.order[area] ?? null };
         c.items[area] = clone(b.items ?? {});
         if (b.order) c.order[area] = [...b.order];
@@ -2158,7 +2183,12 @@ class LocalRepository implements BoiaRepository {
     ) => {
       const slash = target.indexOf('/');
       const userId = slash < 0 ? target : target.slice(0, slash);
-      const empty = { answers: {} as Record<string, string>, photo: null, nickname: null, hidden: false };
+      const empty = {
+        answers: {} as Record<string, string>,
+        photo: null,
+        nickname: null,
+        hidden: false,
+      };
       const b = (before as CarnetModeration | null) ?? empty;
       const a = (after as CarnetModeration | null) ?? empty;
       const prev = clone(d.carnetModeration[userId] ?? null);
@@ -2276,7 +2306,13 @@ class LocalRepository implements BoiaRepository {
               x.content.settings = r.data;
               this.audit(
                 x,
-                { area: 'settings', action: 'settings', targetId: null, before: current, after: r.data },
+                {
+                  area: 'settings',
+                  action: 'settings',
+                  targetId: null,
+                  before: current,
+                  after: r.data,
+                },
                 { reason: why },
               );
             },
@@ -2327,7 +2363,15 @@ class LocalRepository implements BoiaRepository {
               const a = c.area;
               const before = b.order?.[a] ?? null;
               out.push({
-                item: { ...base, id: sub, area: a, targetId: null, kind: 'order', before, after: null },
+                item: {
+                  ...base,
+                  id: sub,
+                  area: a,
+                  targetId: null,
+                  kind: 'order',
+                  before,
+                  after: null,
+                },
                 revert: (x, why) => revertOrder(x, a, before, why),
               });
             } else if (c.kind === 'text' && c.id) {
@@ -2432,8 +2476,14 @@ class LocalRepository implements BoiaRepository {
         await this.mutate(['content', 'carnet', 'audit'], (d) => {
           const u = undoableOf(d).find((x) => x.item.id === id);
           if (!u)
-            throw new StoreError('not_found', `cambio ${id}: no está o ya pasó el plazo de la papelera`);
-          u.revert(d, opts?.reason?.trim() || `deshecho desde la papelera (cambio del ${u.item.changedAt})`);
+            throw new StoreError(
+              'not_found',
+              `cambio ${id}: no está o ya pasó el plazo de la papelera`,
+            );
+          u.revert(
+            d,
+            opts?.reason?.trim() || `deshecho desde la papelera (cambio del ${u.item.changedAt})`,
+          );
           purgeExpiredIn(d);
         });
       },

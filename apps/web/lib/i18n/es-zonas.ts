@@ -80,11 +80,10 @@ export const esZonas = {
   'carnet.questions.heading': 'Tus 5 preguntas',
   'carnet.questions.help':
     'Contesta las que quieras. Siempre se ven con su pregunta, nunca sueltas.',
-  'carnet.q1': '¿Cuál ha sido la cosa más rara que has visto pasar en una fiesta o festival?',
-  'carnet.q2': '¿Cuál es el mejor descubrimiento musical que hiciste por casualidad?',
-  'carnet.q3':
-    '¿Qué obra, fotografía, película, disco o pieza artística te cambió un poco la cabeza?',
-  'carnet.q4': '¿Cuál es tu mejor recuerdo relacionado con la música?',
+  'carnet.q1': '¿Qué momento te hizo pensar «yo quiero estar en esto»?',
+  'carnet.q2': '¿Cuál es la canción que tienes en repeat ahora mismo?',
+  'carnet.q3': '¿Qué estás creando o tramando estos días?',
+  'carnet.q4': '¿Qué disco escucharías de principio a fin sin saltarte ninguna?',
   'carnet.q5': 'Completa la frase: una buena fiesta necesita siempre…',
   'carnet.memberSince': 'Miembro de BOIA desde {date}',
   'carnet.stamps.heading': 'Sellos',

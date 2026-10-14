@@ -74,7 +74,7 @@ las e2e crean y borran cuentas allí. **La web pública no puede usarlo.**
     línea `postgresql://…`, con la contraseña de la base en lugar de
     `[YOUR-PASSWORD]`. Sólo scripts.
 
-## 2. Las migraciones (las 37 de `supabase/migrations/`)
+## 2. Las migraciones (las 39 de `supabase/migrations/`)
 
 Se aplican todas, en orden, con el script del repo. Lee las variables de la
 terminal antes que las de `apps/web/.env.local` (una variable definida gana
@@ -86,11 +86,11 @@ export NEXT_PUBLIC_SUPABASE_URL='https://<ref-de-prod>.supabase.co'
 export NEXT_PUBLIC_SUPABASE_ANON_KEY='<publishable de prod>'
 export SUPABASE_SERVICE_ROLE_KEY='<secret de prod>'
 export SUPABASE_DB_URL='postgresql://postgres.<ref-de-prod>:<contraseña>@<host>:5432/postgres'
-pnpm db:migrate:dev     # «[migraciones] 37 aplicadas de 37» y las semillas de muestra
-pnpm db:migrate:dev     # otra vez: «0 aplicadas de 37 (al día)»
+pnpm db:migrate:dev     # «[migraciones] 39 aplicadas de 39» y las semillas de muestra
+pnpm db:migrate:dev     # otra vez: «0 aplicadas de 39 (al día)»
 ```
 
-- [ ] Las dos últimas, del plan 029, van con las demás (ya están en
+- [ ] Las tres últimas, del plan 029, van con las demás (ya están en
       `boia-planet-dev`):
   - `20261013100100_gallery_clips_longer.sql` (T277): el bucket
     `event-clips` admite clips de hasta 50 MB.
@@ -100,6 +100,18 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 37 (al día)»
     `public` las funciones con SECURITY DEFINER (`discount_code_for`,
     `radio_set_first`, `radio_reorder`). Desde ella, quien entra al Admin con
     contraseña escribe el **email** de su cuenta, no «000».
+  - `20261014100100_carnet_questions_v2.sql` (T281): las 5 preguntas nuevas
+    del Carnet (decisión de Álvaro, 2026-10-14). Retira las cuatro antiguas
+    (`is_active = false`, posiciones 11 a 14) y añade las cuatro nuevas en
+    las posiciones 1 a 4; `buena-fiesta` no cambia. **No borra ninguna
+    respuesta**: las de las preguntas retiradas siguen guardadas y sólo el
+    Admin las ve. Comprobar después, en el **SQL Editor**: `select id,
+    position from carnet_questions where is_active order by position;` tiene
+    que dar `momento-quiero-estar`, `cancion-en-repeat`, `creando-tramando`,
+    `disco-entero`, `buena-fiesta`.
+  - `20261014100110_carnet_answers_active_only.sql` (T281): un miembro sólo
+    puede contestar o cambiar respuestas a preguntas **activas**; las
+    respuestas a las retiradas se quedan como están (y puede borrarlas).
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`

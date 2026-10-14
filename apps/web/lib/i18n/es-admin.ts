@@ -394,6 +394,7 @@ export const esAdmin = {
   'admin.moderation.fotoRetirada': ' · foto retirada',
   'admin.moderation.revisado': ' · revisado',
   'admin.moderation.oculta': ' · oculta',
+  'admin.moderation.preguntaRetirada': ' (pregunta antigua: ya no se enseña en el Carnet)',
   'admin.moderation.fotoOculta': 'Foto oculta.',
   'admin.moderation.apodoRestablecido2': 'Apodo restablecido.',
   'admin.moderation.moderacion': 'Moderación',

@@ -50,7 +50,7 @@ describe('descargar mis datos en modo local', () => {
   it('lleva lo propio: Carnet, puntos, libro, compra, sello y botella', async () => {
     const r = repo();
     await r.carnet.create({ nickname: 'Exporta Bien' });
-    await r.carnet.answer('descubrimiento', 'La de la playa');
+    await r.carnet.answer('cancion-en-repeat', 'La de la playa');
     await r.progress.grantWorldReward({ sourceRef: 'cofre-exporta', points: 30, coins: 12 });
     const onSale = SAMPLE_EVENTS.find((e) => e.state === 'on_sale');
     if (onSale) await r.purchases.confirmSandbox({ purchaseId: 'p-exporta', eventId: onSale.id });

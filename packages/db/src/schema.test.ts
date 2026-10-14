@@ -58,15 +58,15 @@ describe('esquema', () => {
     expect(rows.map((r) => r.label)).toEqual([...HOME_BLOCK_TYPES]);
   });
 
-  it('las 5 preguntas del Carnet son las de §44.1', async () => {
+  it('las 5 preguntas activas del Carnet son las de REQ-IDE-014', async () => {
     const spec = readFileSync(
       fileURLToPath(new URL('../../../docs/spec/05-identidad-y-comunidad.md', import.meta.url)),
       'utf8',
     );
     const line = spec.split('\n').find((l) => l.includes('REQ-IDE-014'))!;
-    const fromSpec = [...line.matchAll(/«([^»]+)»/g)].map((m) => m[1]);
+    const fromSpec = [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
     const { rows } = await db.client.query<{ prompt: string }>(
-      `select prompt from public.carnet_questions order by position`,
+      `select prompt from public.carnet_questions where is_active order by position`,
     );
     expect(rows.map((r) => r.prompt)).toEqual(fromSpec);
   });

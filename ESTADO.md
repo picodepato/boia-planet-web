@@ -4,6 +4,37 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 029 T281: Nuevas preguntas del Carnet
+
+**Qué existe**
+- `CARNET_QUESTIONS` (`packages/contracts/src/carnet.ts`) con las 5 preguntas de Álvaro (2026-10-14), en su orden. Ids nuevos: `momento-quiero-estar`, `cancion-en-repeat`, `creando-tramando`, `disco-entero`; `buena-fiesta` sin cambios. `RETIRED_CARNET_QUESTION_IDS` lista las cuatro retiradas.
+- Migración `supabase/migrations/20261014100100_carnet_questions_v2.sql`: retira las antiguas (`is_active=false`, posiciones 11-14), inserta las nuevas en 1-4; no borra respuestas. Aplicada solo a `boia-planet-dev` (comprobado: 5 activas en orden, 4 retiradas). Añadida al paso de migraciones de `docs/propuestas/2026-10-03-produccion-supabase.md` (ahora 38).
+- Carnet propio y público solo recorren `CARNET_QUESTIONS`, así que las respuestas a las retiradas no se enseñan y siguen en el almacén (local y Supabase). Moderación/papelera del Admin siguen viéndolas (join sin filtro).
+- i18n `carnet.q1..q4`, muestra (`sample/crew.ts`), REQ-IDE-014 en `docs/spec/05` (preguntas entre acentos graves por las comillas «» de la primera), `tools/spec/check.py` (solo la quinta se exige en la v14), `docs/propuestas/textos-zonas.md`.
+
+**Comandos**
+- vitest sin packages/db: 317 ficheros, 2843 pasan, 3 omitidos, exit 0.
+- `sh tools/spec/checks.sh`: OK. `pnpm lint`: exit 0. `pnpm typecheck`: exit 0. `pnpm build`: OK (landing 198.8 kB / 200).
+- `pnpm db:migrate:dev` (dev): 1 aplicada de 38. `pnpm test:supabase` (dev): 23 ficheros, 170 pasan.
+- `schema.test.ts` (necesita Postgres local en 5432, no disponible aquí): actualizado a `where is_active` y a las preguntas de REQ-IDE-014; no ejecutado.
+
+**Pendiente**
+- D-08 en `docs/DECISIONES.md` necesita la nota de Álvaro (no se edita).
+- Producción: aplicar la migración con las demás al encender las cuentas.
+
+**Probar a mano**
+- Crear un Carnet: salen las 5 preguntas nuevas en orden. Ver un Carnet de muestra (Pulpo Sónico): sus respuestas llevan la pregunta nueva.
+- Admin → Moderación → un Carnet con una respuesta a una pregunta antigua: sale al final, marcada «(pregunta antigua: ya no se enseña en el Carnet)».
+
+**Auditoría (Opus, 2026-10-14)**
+- Textos: las 5 preguntas de contrato, migración e i18n coinciden carácter a carácter con el plan («», …).
+- Hueco cerrado: la RLS dejaba a un socio crear o cambiar respuestas a preguntas retiradas. Nueva migración `20261014100110_carnet_answers_active_only.sql`: insertar y actualizar sólo en preguntas activas; borrar la propia sigue; las funciones del Admin (deshacer, papelera) no cambian. Aplicada sólo a dev; añadida al documento de encendido (ahora 39).
+- Prueba nueva `packages/db/src/supabase/carnet-questions.supabase.ts`: activas = `CARNET_QUESTIONS`; no se crea ni cambia una respuesta retirada; la antigua se conserva y su dueño la puede borrar.
+- Moderación: `RETIRED_CARNET_QUESTIONS` (con su texto) en contracts. En modo local la moderación del Admin perdía de vista las respuestas antiguas; ahora las lista al final con `retired: true`, y el Admin (local y con cuentas) las marca como pregunta antigua. Prueba en `packages/store/src/carnet.test.ts`.
+- Comentarios que aún decían «§44.1» puestos al día (editor, repositorio, textos-zonas).
+- `pnpm db:migrate:dev --no-seed` (dev): 1 aplicada de 39. `pnpm test:supabase` (dev): 24 ficheros, 174 pasan.
+- Fuera de alcance: «Descargar mis datos» en modo local sólo lleva las respuestas visibles (las antiguas siguen guardadas en el navegador; con cuenta, `export_my_data` las lleva todas).
+
 ## 2026-10-13 — plan 029 T280: Map close button, Castillo de Santa Bárbara and Las Calitas labels, coin glyph
 
 Qué existe:

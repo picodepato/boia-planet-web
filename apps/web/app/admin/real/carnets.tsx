@@ -1,6 +1,6 @@
 'use client';
 
-import { musicLinkFrom } from '@boia/contracts';
+import { RETIRED_CARNET_QUESTION_IDS, musicLinkFrom } from '@boia/contracts';
 import type {
   AdminCarnetContent,
   AdminCarnetPage,
@@ -67,7 +67,12 @@ function CarnetContent({
           {content.answers.map((a) => (
             <li key={a.question_id} className="admin-row admin-row--between">
               <span>
-                <span className="admin-meta">{a.prompt}</span>
+                <span className="admin-meta">
+                  {a.prompt}
+                  {RETIRED_CARNET_QUESTION_IDS.includes(a.question_id)
+                    ? t('admin.moderation.preguntaRetirada')
+                    : ''}
+                </span>
                 <br />
                 {a.answer}
               </span>

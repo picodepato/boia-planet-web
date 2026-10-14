@@ -79,7 +79,7 @@ las que pide D-23 o que la v14 no inventariaba.
   Sonido pasa a ser ALL DAY BOIA; la Isla de Halloween, HALLOWEEN IN THE
   CLUB; Ibiza, Botiga Ibiza; L'Illeta dels Banyets, Puig Campana. La Isla de
   Nochevieja y BOIA Nochevieja no cambian.
-- **No se reescriben:** las cinco preguntas del Carnet (v14 §44.1, textuales,
+- **No se reescriben:** las cinco preguntas del Carnet (las de Álvaro del 2026-10-14, textuales,
   D-08 y D-23 punto 10) y los nombres y descripciones de los logros, que
   viven en `docs/propuestas/logros-catalogo.md`.
 
@@ -241,11 +241,11 @@ Manifiesto completo (bloques 1 a 8) y versión breve, a partir de §37.
 | `carnet.field.photo.remove` | Quitar la foto | |
 | `carnet.questions.heading` | Tus 5 preguntas | |
 | `carnet.questions.help` | Contesta las que quieras. Siempre se ven con su pregunta, nunca sueltas. | |
-| `carnet.q1` | ¿Cuál ha sido la cosa más rara que has visto pasar en una fiesta o festival? | v14 §44.1, textual |
-| `carnet.q2` | ¿Cuál es el mejor descubrimiento musical que hiciste por casualidad? | v14 §44.1, textual |
-| `carnet.q3` | ¿Qué obra, fotografía, película, disco o pieza artística te cambió un poco la cabeza? | v14 §44.1, textual |
-| `carnet.q4` | ¿Cuál es tu mejor recuerdo relacionado con la música? | v14 §44.1, textual |
-| `carnet.q5` | Completa la frase: una buena fiesta necesita siempre… | v14 §44.1, textual |
+| `carnet.q1` | ¿Qué momento te hizo pensar «yo quiero estar en esto»? | decisión de Álvaro 2026-10-14, textual |
+| `carnet.q2` | ¿Cuál es la canción que tienes en repeat ahora mismo? | decisión de Álvaro 2026-10-14, textual |
+| `carnet.q3` | ¿Qué estás creando o tramando estos días? | decisión de Álvaro 2026-10-14, textual |
+| `carnet.q4` | ¿Qué disco escucharías de principio a fin sin saltarte ninguna? | decisión de Álvaro 2026-10-14, textual |
+| `carnet.q5` | Completa la frase: una buena fiesta necesita siempre… | v14 §44.1, textual (sin cambios) |
 | `carnet.memberSince` | Miembro de BOIA desde {date} | |
 | `carnet.stamps.heading` | Sellos | |
 | `carnet.badges.heading` | Insignias | |

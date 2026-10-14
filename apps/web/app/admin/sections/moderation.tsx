@@ -138,7 +138,10 @@ function AnswerList({ row, busy, act }: { row: AdminCarnetView; busy: boolean; a
         return (
           <li key={a.questionId} className="admin-row admin-row--between">
             <span>
-              <span className="admin-meta">{a.question}</span>
+              <span className="admin-meta">
+                {a.question}
+                {a.retired ? t('admin.moderation.preguntaRetirada') : ''}
+              </span>
               <br />
               {a.answer}
               {hidden ? t('admin.moderation.oculta') : ''}

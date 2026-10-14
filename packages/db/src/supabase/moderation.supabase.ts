@@ -146,7 +146,7 @@ describe('Carnets: ocultar el Carnet entero', () => {
         .from('carnet_answers')
         .insert({
           user_id: owner.id,
-          question_id: 'obra',
+          question_id: 'disco-entero',
           question_version: 1,
           answer: 'Un disco',
         }),

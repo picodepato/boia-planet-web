@@ -104,6 +104,11 @@ export interface CarnetAnswerView {
   answer: string;
   /** Retirada por moderación: `answer` ya no es la respuesta, es el aviso (REQ-ADM-040). */
   moderated?: boolean;
+  /**
+   * Respuesta a una pregunta retirada (2026-10-14). Sólo la ve la moderación
+   * del Admin; el Carnet y el Carnet público no la enseñan.
+   */
+  retired?: boolean;
 }
 
 export interface AchievementView {
@@ -198,7 +203,7 @@ export interface CarnetInput {
 }
 
 export interface CarnetApi {
-  /** Las 5 preguntas de §44.1, textuales (de @boia/contracts). */
+  /** Las 5 preguntas activas, textuales (`CARNET_QUESTIONS` de @boia/contracts). */
   questions(): Promise<readonly CarnetQuestion[]>;
   mine(): Promise<CarnetView | null>;
   /** El Carnet de cualquiera (propio o de muestra), p. ej. desde su botella. */

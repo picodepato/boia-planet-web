@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CARNET_QUESTIONS, NICKNAME_MAX, discountStatus } from '@boia/contracts';
+import {
+  CARNET_QUESTIONS,
+  NICKNAME_MAX,
+  RETIRED_CARNET_QUESTION_IDS,
+  discountStatus,
+} from '@boia/contracts';
 import { SAMPLE_CREW, SAMPLE_DISCOUNTS, SAMPLE_EVENTS } from './sample';
 import { discountSchema } from '@boia/contracts';
 import { makeRepo } from './test-helpers';
@@ -11,19 +16,80 @@ const MIGRATION = new URL(
   '../../../supabase/migrations/20260928100100_identity.sql',
   import.meta.url,
 );
+const MIGRATION_V2 = new URL(
+  '../../../supabase/migrations/20261014100100_carnet_questions_v2.sql',
+  import.meta.url,
+);
 
 describe('Carnet', () => {
-  it('las 5 preguntas son las del esquema de T06, textuales (REQ-IDE-014)', () => {
-    const sql = readFileSync(MIGRATION, 'utf8');
-    const rows = [...sql.matchAll(/\('([a-z-]+)', (\d+), '((?:[^']|'')*)'\)/g)].map((m) => ({
-      id: m[1],
-      position: Number(m[2]),
-      prompt: m[3]?.replace(/''/g, "'"),
-    }));
-    expect(rows.length).toBeGreaterThan(0);
+  it('las 5 preguntas activas son las de las migraciones, textuales; las retiradas no se borran', () => {
+    const parse = (sql: string) =>
+      [...sql.matchAll(/\('([a-z-]+)', (\d+), '((?:[^']|'')*)'\)/g)].map((m) => ({
+        id: m[1],
+        position: Number(m[2]),
+        prompt: m[3]?.replace(/''/g, "'"),
+      }));
+    const first = parse(readFileSync(MIGRATION, 'utf8'));
+    const v2sql = readFileSync(MIGRATION_V2, 'utf8');
+    const v2 = parse(v2sql);
+    // Estado final: lo sembrado, menos las retiradas, más lo nuevo.
+    const active = [
+      ...first.filter((r) => !RETIRED_CARNET_QUESTION_IDS.includes(r.id!)),
+      ...v2,
+    ].sort((a, b) => a.position - b.position);
     expect(CARNET_QUESTIONS.map(({ id, position, prompt }) => ({ id, position, prompt }))).toEqual(
-      rows,
+      active,
     );
+    for (const id of RETIRED_CARNET_QUESTION_IDS) expect(v2sql).toContain(`'${id}'`);
+    expect(v2sql).toMatch(/is_active = false/);
+    expect(v2sql).not.toMatch(/delete\s+from/i);
+  });
+
+  it('una respuesta a una pregunta retirada se conserva y no se enseña; buena-fiesta sobrevive', async () => {
+    const { repo } = makeRepo();
+    await repo.carnet.create({ nickname: 'Antigua' });
+    await repo.carnet.answer('buena-fiesta', 'Agua y sombra');
+    const access = localDocAccess(repo)!;
+    const userId = access.read().identity!.id;
+    access.write(['carnet'], (doc) => {
+      doc.carnets[userId]!.answers['cosa-mas-rara'] = {
+        answer: 'Una paella a las tres',
+        questionVersion: 1,
+        updatedAt: doc.identity!.createdAt,
+      };
+    });
+    const mine = (await repo.carnet.mine())!;
+    expect(mine.answers.map((a) => a.questionId)).toEqual(['buena-fiesta']);
+    expect((await repo.carnet.get(userId))!.answers.map((a) => a.questionId)).toEqual([
+      'buena-fiesta',
+    ]);
+    // Contestar otra pregunta no toca la guardada: sigue en el almacén.
+    await repo.carnet.answer('disco-entero', 'Un disco de ambient');
+    const stored = access.read().carnets[userId]!.answers;
+    expect(stored['cosa-mas-rara']!.answer).toBe('Una paella a las tres');
+    expect(stored['buena-fiesta']!.answer).toBe('Agua y sombra');
+    await expect(repo.carnet.answer('cosa-mas-rara', 'x')).rejects.toMatchObject({
+      code: 'not_found',
+    });
+    // La moderación del Admin la sigue viendo, marcada, y la puede ocultar.
+    const row = (await repo.admin.carnets()).find((r) => r.userId === userId)!;
+    expect(row.carnet.answers.map((a) => [a.questionId, a.retired ?? false])).toEqual([
+      ['disco-entero', false],
+      ['buena-fiesta', false],
+      ['cosa-mas-rara', true],
+    ]);
+    await repo.admin.moderateCarnet(
+      userId,
+      { kind: 'hide_answer', questionId: 'cosa-mas-rara' },
+      { reason: 'prueba' },
+    );
+    expect(access.read().carnets[userId]!.answers['cosa-mas-rara']!.answer).toBe(
+      'Una paella a las tres',
+    );
+    expect((await repo.carnet.mine())!.answers.map((a) => a.questionId)).toEqual([
+      'disco-entero',
+      'buena-fiesta',
+    ]);
   });
 
   it('se crea con apodo (sin email), «Miembro desde» y respuestas con su pregunta', async () => {

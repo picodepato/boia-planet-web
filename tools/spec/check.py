@@ -54,12 +54,13 @@ MARKERS = ("[pendiente Álvaro]", "[pendiente Hernán]", "[provisional]")
 MAX_ERRORS = 40
 ALIASES = ["ENT 01", "ENT 02", "ENT 03", "ENT 04", "ENT 05", "ENT 06", "MAP 01", "ART 01"]
 
-# Las cinco preguntas públicas del Carnet, textuales (v14 §44.1).
+# Las cinco preguntas públicas del Carnet, textuales (decisión de Álvaro, 2026-10-14;
+# antes, v14 §44.1).
 QUESTIONS = [
-    "¿Cuál ha sido la cosa más rara que has visto pasar en una fiesta o festival?",
-    "¿Cuál es el mejor descubrimiento musical que hiciste por casualidad?",
-    "¿Qué obra, fotografía, película, disco o pieza artística te cambió un poco la cabeza?",
-    "¿Cuál es tu mejor recuerdo relacionado con la música?",
+    "¿Qué momento te hizo pensar «yo quiero estar en esto»?",
+    "¿Cuál es la canción que tienes en repeat ahora mismo?",
+    "¿Qué estás creando o tramando estos días?",
+    "¿Qué disco escucharías de principio a fin sin saltarte ninguna?",
     "Completa la frase: una buena fiesta necesita siempre…",
 ]
 OTHER_SENTINELS = ["140", "1,5 s", "Alba Fitz", "Wet Kisses", "payment.success"]
@@ -208,9 +209,10 @@ def main():
         else:
             err(f"centinela ausente en {home}: «{s}»")
     if v14 is not None:
-        for q in QUESTIONS:
-            if q not in v14:
-                err(f"la pregunta «{q}» no está en la v14: revisar check.py")
+        # Sólo la quinta sigue en la v14; las otras cuatro son de Álvaro (2026-10-14).
+        q = QUESTIONS[-1]
+        if q not in v14:
+            err(f"la pregunta «{q}» no está en la v14: revisar check.py")
 
     # 7. Informe.
     print("Requisitos por área (L1 / L2 / diferido):")

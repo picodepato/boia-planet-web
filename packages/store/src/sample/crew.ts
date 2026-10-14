@@ -49,9 +49,9 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
     avatarKey: 'avatar-neutro-1',
     memberSince: '2025-06-21T12:00:00+02:00',
     answers: {
-      'cosa-mas-rara':
+      'momento-quiero-estar':
         'Un señor bailando con una sombrilla abierta toda la noche. Muestra, pero podría ser.',
-      descubrimiento: 'Un directo de cumbia a las cinco de la tarde que no pensaba ver.',
+      'cancion-en-repeat': 'Una cumbia que escuché a las cinco de la tarde sin esperarla.',
       'buena-fiesta': 'Una persona que te presente a otra.',
     },
     showcase: {
@@ -68,8 +68,8 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
     avatarKey: 'avatar-neutro-2',
     memberSince: '2026-06-20T18:30:00+02:00',
     answers: {
-      obra: 'Un disco de ambient que escuché en un tren de noche.',
-      'mejor-recuerdo': 'Amanecer en la playa después del primer All Day.',
+      'disco-entero': 'Un disco de ambient que escuché en un tren de noche.',
+      'momento-quiero-estar': 'Amanecer en la playa después del primer All Day.',
     },
     showcase: {
       points: 70,
@@ -85,10 +85,10 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
     avatarKey: null,
     memberSince: '2025-09-12T21:00:00+02:00',
     answers: {
-      'cosa-mas-rara': 'Una paella para doscientas personas a las tres de la mañana.',
-      descubrimiento: 'Hard groove, por equivocarme de escenario.',
-      obra: 'Las fotos de la Explanada de los años setenta.',
-      'mejor-recuerdo': 'Cantar con desconocidos en la Cala.',
+      'momento-quiero-estar': 'Cantar con desconocidos en la Cala a las tres de la mañana.',
+      'cancion-en-repeat': 'Un hard groove al que llegué por equivocarme de escenario.',
+      'creando-tramando': 'Un fanzine con las fotos de la Explanada de los años setenta.',
+      'disco-entero': 'Un disco de sintes que suena a verano de 1998.',
       'buena-fiesta': 'Agua, sombra y alguien que se atreva a bailar primero.',
     },
     showcase: {

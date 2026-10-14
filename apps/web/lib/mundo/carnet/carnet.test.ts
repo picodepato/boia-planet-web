@@ -95,21 +95,16 @@ describe('botellas en la demo (REQ-IDE-040…044)', () => {
   });
 });
 
-/** Las preguntas de v14 §44.1, tal cual las escribió Álvaro. */
-function v14Questions(): string[] {
-  const text = readFileSync(path.join(ROOT, 'docs/fuente/v14-maestro.md'), 'utf8');
-  const start = text.indexOf('## 44.1 ');
-  const end = text.indexOf('\n## ', start + 1);
-  return text
-    .slice(start, end)
-    .split('\n')
-    .filter((l) => l.startsWith('- '))
-    .map((l) => l.slice(2).trim());
+/** Las 5 preguntas de REQ-IDE-014 (decisión de Álvaro, 2026-10-14), entre acentos graves. */
+function specQuestions(): string[] {
+  const text = readFileSync(path.join(ROOT, 'docs/spec/05-identidad-y-comunidad.md'), 'utf8');
+  const line = text.split('\n').find((l) => l.includes('REQ-IDE-014'))!;
+  return [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]!).filter((q) => q.length > 8);
 }
 
 describe('Carnet (REQ-IDE-010…015)', () => {
-  it('las 5 preguntas son las de v14 §44.1, textuales y en su orden', () => {
-    const source = v14Questions();
+  it('las 5 preguntas son las de REQ-IDE-014, textuales y en su orden', () => {
+    const source = specQuestions();
     expect(source).toHaveLength(5);
     expect(CARNET_QUESTIONS.map((q) => q.prompt)).toEqual(source);
   });
@@ -122,7 +117,11 @@ describe('Carnet (REQ-IDE-010…015)', () => {
         onSubmit: () => {},
       }),
     );
-    for (const q of v14Questions()) expect(html).toContain(q);
+    const shown = specQuestions().map((q) => html.indexOf(q.replace(/"/g, '&quot;')));
+    expect(shown.every((i) => i >= 0)).toBe(true);
+    expect([...shown].sort((x, y) => x - y)).toEqual(shown);
+    for (const old of ['cosa más rara', 'mejor descubrimiento', 'mejor recuerdo'])
+      expect(html).not.toContain(old);
     // Antes de crear se dice qué será público (REQ-IDE-013).
     expect(html).toContain('público');
   });

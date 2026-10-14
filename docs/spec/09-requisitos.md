@@ -191,7 +191,7 @@ Definidos en [05-identidad-y-comunidad](05-identidad-y-comunidad.md). 54 requisi
 | REQ-IDE-011 | Mi Carnet en el menú | §16.1, §46, D-08 | L1 | Test: vista pública primero, Editar, y Crear sin cuenta | — |
 | REQ-IDE-012 | Identidad musical, no estatus | §16.1, §37.12, §40.3 | L1 | Revisión de diseño en el hito | — |
 | REQ-IDE-013 | Aviso de campos públicos | §49.13 | L1 | Test: el aviso aparece antes de crear; el email no está en los datos públicos | — |
-| REQ-IDE-014 | Las 5 preguntas textuales | §44.1, D-08 | L1 | check.py encuentra las 5 preguntas | — |
+| REQ-IDE-014 | Las 5 preguntas textuales | D-08, decisión de Álvaro 2026-10-14 | L1 | check.py encuentra las 5 preguntas | — |
 | REQ-IDE-015 | Pregunta pequeña, respuesta grande | §16.2, §44.4 | L1 | Captura de un Carnet con respuestas | — |
 | REQ-IDE-016 | Preguntas editables con versión | §16.2, §28 | L2 | Cambiar una pregunta crea versión nueva | [provisional] Alcance: D-02 no lo nombra |
 | REQ-IDE-017 | Carnets desde ranking y botellas | §16.3, §43 | L1 | Test: ambos accesos abren el Carnet | — |

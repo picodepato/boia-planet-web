@@ -20,8 +20,8 @@ import { t } from '../../i18n';
 
 /**
  * Alta rápida y edición del Carnet (REQ-IDE-010, REQ-IDE-013, REQ-IDE-014):
- * apodo, avatar neutro o foto del dispositivo y las 5 preguntas de §44.1,
- * textuales y opcionales. Antes de crear se dice qué será público. Sin
+ * apodo, avatar neutro o foto del dispositivo y las 5 preguntas de Álvaro
+ * (2026-10-14), textuales y opcionales. Antes de crear se dice qué será público. Sin
  * email: en la demo el Carnet es del invitado de este navegador (D-20).
  */
 
