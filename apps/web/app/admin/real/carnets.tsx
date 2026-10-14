@@ -1,6 +1,6 @@
 'use client';
 
-import { RETIRED_CARNET_QUESTION_IDS, musicLinkFrom } from '@boia/contracts';
+import { carnetAnswerVisibility, musicLinkFrom } from '@boia/contracts';
 import type {
   AdminCarnetContent,
   AdminCarnetPage,
@@ -22,6 +22,13 @@ import { useRun } from '../use-admin';
 import { NeedsAdmin, must, useAdminSupabase } from './common';
 
 const PAGE = 50;
+
+/** Aviso junto a una respuesta que el Carnet no enseña (T281, T294). */
+function hiddenNote(v: 'shown' | 'retired' | 'other_audience'): string {
+  if (v === 'retired') return t('admin.moderation.preguntaRetirada');
+  if (v === 'other_audience') return t('admin.moderation.preguntaOtroPublico');
+  return '';
+}
 
 /**
  * Las respuestas y el enlace a la música de un Carnet con cuentas (plan 020
@@ -69,9 +76,7 @@ function CarnetContent({
               <span>
                 <span className="admin-meta">
                   {a.prompt}
-                  {RETIRED_CARNET_QUESTION_IDS.includes(a.question_id)
-                    ? t('admin.moderation.preguntaRetirada')
-                    : ''}
+                  {hiddenNote(carnetAnswerVisibility(a.question_id, content.is_artist))}
                 </span>
                 <br />
                 {a.answer}

@@ -91,6 +91,8 @@ export interface ServerCarnet {
   avatar_image: string | null;
   member_since: string;
   member_number?: number | null;
+  /** Carnet de artista (enlace de artistas o Admin): sus preguntas son las de artista (T294). */
+  is_artist?: boolean | null;
   version?: number | null;
   updated_at?: string | null;
 }
@@ -255,7 +257,7 @@ export function supabaseMemberServer(
         rows('user_discounts', 'discount_id, found_at, used_at, used_event'),
         rows(
           'carnets',
-          'nickname, avatar_key, avatar_image, member_since, member_number, version, updated_at',
+          'nickname, avatar_key, avatar_image, member_since, member_number, is_artist, version, updated_at',
         ),
         rows('carnet_answers', 'question_id, question_version, answer, updated_at'),
         rows('account_snapshots', 'data, version'),

@@ -1,5 +1,6 @@
 'use client';
 
+import { RETIRED_CARNET_QUESTION_IDS } from '@boia/contracts';
 import type { AdminBottleView, AdminCarnetView, CarnetModerationAction } from '@boia/store';
 import { useState } from 'react';
 import type { AdminContext } from '../use-admin';
@@ -140,7 +141,11 @@ function AnswerList({ row, busy, act }: { row: AdminCarnetView; busy: boolean; a
             <span>
               <span className="admin-meta">
                 {a.question}
-                {a.retired ? t('admin.moderation.preguntaRetirada') : ''}
+                {a.retired
+                  ? RETIRED_CARNET_QUESTION_IDS.includes(a.questionId)
+                    ? t('admin.moderation.preguntaRetirada')
+                    : t('admin.moderation.preguntaOtroPublico')
+                  : ''}
               </span>
               <br />
               {a.answer}

@@ -8,7 +8,7 @@
  *   `nickname_taken` y sin tocar su número de socio;
  * - otro miembro que pide un apodo ya tomado: `nickname_taken`.
  */
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { carnetQuestionsFor } from '@boia/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ArtistLinkRotation } from '../rpc.ts';
 import { context, expectRejected, ok, type Member } from './context.ts';
@@ -90,7 +90,8 @@ describe('editar el propio Carnet con el mismo apodo (T293)', () => {
 
   it('el socio guarda su apodo de siempre y una respuesta con un enlace', async () => {
     const before = await carnetOf(fan.id);
-    const q = CARNET_QUESTIONS[0]!;
+    // La 1 de un socio que no es artista (T294).
+    const q = carnetQuestionsFor(false)[0]!;
     for (const answer of ['https://boia-t293.example/uno', 'https://boia-t293.example/dos']) {
       await ok(
         fan.client.rpc('save_profile', {

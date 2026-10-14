@@ -1,9 +1,12 @@
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { carnetQuestionsFor } from '@boia/contracts';
 import { expect, test } from '@playwright/test';
 import { openMar } from './mar-helpers';
 import { t } from '../lib/i18n';
 
 test.describe.configure({ timeout: 120_000 });
+
+// Sin enlace de artistas: las 5 del público (T294).
+const QUESTIONS = carnetQuestionsFor(false);
 
 for (const entry of ['mar', 'carnet'] as const) {
   test(`${entry}: questions precede creation and answers remain editable after reload`, async ({
@@ -22,7 +25,7 @@ for (const entry of ['mar', 'carnet'] as const) {
     }
     const form = page.getByTestId('carnet-form');
     await expect(form).toBeVisible();
-    for (const question of CARNET_QUESTIONS) {
+    for (const question of QUESTIONS) {
       const field = form.getByTestId(`carnet-pregunta-${question.id}`);
       await expect(field).toHaveCount(1);
       await expect(field).not.toHaveAttribute('required', /.*/);
@@ -33,8 +36,8 @@ for (const entry of ['mar', 'carnet'] as const) {
     await form.screenshot({
       path: `node_modules/.playwright-results/t104-${entry}-${info.project.name}-questions.png`,
     });
-    const first = CARNET_QUESTIONS[0]!;
-    const last = CARNET_QUESTIONS.at(-1)!;
+    const first = QUESTIONS[0]!;
+    const last = QUESTIONS.at(-1)!;
     await form.getByTestId('carnet-apodo-input').fill(`Preguntas ${entry} ${info.project.name}`);
     await form.getByTestId(`carnet-pregunta-${first.id}`).fill('Una primera respuesta');
     await form.getByTestId(`carnet-pregunta-${last.id}`).fill('La última respuesta');

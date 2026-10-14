@@ -9,6 +9,7 @@ import {
   CARNET_ANSWER_MAX,
   CARNET_QUESTIONS,
   RETIRED_CARNET_QUESTIONS,
+  carnetQuestionsFor,
   EVENT_STATE_BEHAVIOR,
   NICKNAME_MAX,
   NICKNAME_MIN,
@@ -838,8 +839,10 @@ class LocalRepository implements BoiaRepository {
   }
 
   /**
-   * `retired`: añade al final las respuestas a preguntas retiradas (sólo
-   * para la moderación del Admin; el Carnet no las enseña).
+   * Sólo las preguntas del público del Carnet (plan 030 T294): artista o no.
+   * `retired`: añade al final las respuestas a preguntas activas de otro
+   * público y a preguntas retiradas, marcadas `retired` (sólo para la
+   * moderación del Admin; el Carnet no las enseña).
    */
   private storedCarnetView(
     userId: string,
@@ -850,14 +853,23 @@ class LocalRepository implements BoiaRepository {
     const ranks = this.resolved('ranks', doc);
     const defs = this.resolved('achievements', doc);
     const own = doc.carnets[userId];
-    const answersFrom = (get: (qid: string) => { answer: string; version: number } | undefined) => [
-      ...CARNET_QUESTIONS.flatMap((q) => {
+    const answersFrom = (
+      isArtist: boolean,
+      get: (qid: string) => { answer: string; version: number } | undefined,
+    ) => [
+      ...carnetQuestionsFor(isArtist).flatMap((q) => {
         const a = get(q.id);
         return a
           ? [{ questionId: q.id, question: q.prompt, questionVersion: a.version, answer: a.answer }]
           : [];
       }),
-      ...(opts.retired ? RETIRED_CARNET_QUESTIONS : []).flatMap((q) => {
+      ...(opts.retired
+        ? [
+            ...CARNET_QUESTIONS.filter((q) => !carnetQuestionsFor(isArtist).includes(q)),
+            ...RETIRED_CARNET_QUESTIONS,
+          ]
+        : []
+      ).flatMap((q) => {
         const a = get(q.id);
         return a
           ? [
@@ -893,7 +905,7 @@ class LocalRepository implements BoiaRepository {
         avatarImage: own.avatarImage,
         memberSince: own.memberSince,
         ...(own.memberNumber !== undefined ? { memberNumber: own.memberNumber } : {}),
-        answers: answersFrom((qid) => {
+        answers: answersFrom(!!own.isArtist, (qid) => {
           const a = own.answers[qid];
           return a && { answer: a.answer, version: a.questionVersion };
         }),
@@ -922,7 +934,7 @@ class LocalRepository implements BoiaRepository {
       avatarKey: crew.avatarKey,
       avatarImage: null,
       memberSince: crew.memberSince,
-      answers: answersFrom((qid) => {
+      answers: answersFrom(false, (qid) => {
         const a = crew.answers[qid];
         const q = CARNET_QUESTIONS.find((x) => x.id === qid);
         return a && q ? { answer: a, version: q.version } : undefined;
@@ -1120,7 +1132,11 @@ class LocalRepository implements BoiaRepository {
 
   private carnetApi(): CarnetApi {
     return {
-      questions: async () => CARNET_QUESTIONS,
+      // Las del público del Carnet propio (T294); sin Carnet, las del público.
+      questions: async () => {
+        const id = this.doc.identity?.id;
+        return carnetQuestionsFor(!!(id && this.doc.carnets[id]?.isArtist));
+      },
       mine: async () => {
         const id = this.doc.identity?.id;
         return id && this.doc.carnets[id] ? this.carnetView(id) : null;
@@ -1170,7 +1186,8 @@ class LocalRepository implements BoiaRepository {
           const me = d.identity;
           const c = me && d.carnets[me.id];
           if (!me || !c) throw new StoreError('no_carnet', 'no hay Carnet');
-          const q = CARNET_QUESTIONS.find((x) => x.id === questionId);
+          // Sólo las activas de su público (T294): artista o no.
+          const q = carnetQuestionsFor(c.isArtist).find((x) => x.id === questionId);
           if (!q) throw new StoreError('not_found', `pregunta ${questionId}`);
           const text = (answer ?? '').trim();
           if (text === '') delete c.answers[q.id];

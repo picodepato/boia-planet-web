@@ -59,7 +59,7 @@ class CheckMutations(unittest.TestCase):
     def test_real_spec_passes(self):
         code, out = self.run_check()
         self.assertEqual(code, 0, out)
-        self.assertRegex(out, r"\d+ requisitos, 0 duplicados, centinelas 10/10")
+        self.assertRegex(out, r"\d+ requisitos, 0 duplicados, centinelas 11/11")
 
     # --- mutaciones -----------------------------------------------------
     def test_duplicate_definition(self):

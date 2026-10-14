@@ -241,7 +241,8 @@ Manifiesto completo (bloques 1 a 8) y versión breve, a partir de §37.
 | `carnet.field.photo.remove` | Quitar la foto | |
 | `carnet.questions.heading` | Tus 5 preguntas | |
 | `carnet.questions.help` | Contesta las que quieras. Siempre se ven con su pregunta, nunca sueltas. | |
-| `carnet.q1` | ¿Qué momento te hizo pensar «yo quiero estar en esto»? | decisión de Álvaro 2026-10-14, textual |
+| `carnet.q1` | ¿Qué momento te hizo pensar «yo quiero estar en esto»? | decisión de Álvaro 2026-10-14, textual; sólo artistas (T294) |
+| `carnet.q1Publico` | Completa la frase: al día siguiente de una fiesta yo… | decisión de Álvaro 2026-10-14, textual; la 1 del público (no artistas, T294) |
 | `carnet.q2` | ¿Cuál es la canción que tienes en repeat ahora mismo? | decisión de Álvaro 2026-10-14, textual |
 | `carnet.q3` | ¿Qué estás creando o tramando estos días? | decisión de Álvaro 2026-10-14, textual |
 | `carnet.q4` | ¿Qué disco escucharías de principio a fin sin saltarte ninguna? | decisión de Álvaro 2026-10-14, textual |

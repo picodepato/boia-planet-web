@@ -124,7 +124,7 @@ Cada punto donde esta spec se aparta de la v14, con la sección, la razón y el 
 
 | v14 | Esta spec | Razón | REQ |
 |---|---|---|---|
-| §16.2: preguntas de ejemplo distintas | Las 5 de Álvaro (2026-10-14), textuales; sustituyen a las de §44.1 | D-08 | REQ-IDE-014 |
+| §16.2: preguntas de ejemplo distintas | Las 5 de Álvaro (2026-10-14), textuales; sustituyen a las de §44.1; el público (no artistas) cambia la 1 (T294) | D-08 | REQ-IDE-014 |
 | §21, §27, §37.12: «Carta», «Carta de Navegación» | «Mi Carnet»; la Carta no es una pantalla | D-08 | REQ-IDE-011 |
 | §41: tabla con puntos «SIGUIENTE» | No vale; valen §42.5 y §44.5 | D-08 | — |
 | §4.1, §47-B: «Bienvenido a BOIA» | Sólo variante de copy, nunca pantalla previa | D-08 | REQ-ENT-003 |

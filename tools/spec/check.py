@@ -58,6 +58,8 @@ ALIASES = ["ENT 01", "ENT 02", "ENT 03", "ENT 04", "ENT 05", "ENT 06", "MAP 01",
 # antes, v14 §44.1).
 QUESTIONS = [
     "¿Qué momento te hizo pensar «yo quiero estar en esto»?",
+    # La 1 del público (no artistas), plan 030 T294.
+    "Completa la frase: al día siguiente de una fiesta yo…",
     "¿Cuál es la canción que tienes en repeat ahora mismo?",
     "¿Qué estás creando o tramando estos días?",
     "¿Qué disco escucharías de principio a fin sin saltarte ninguna?",

@@ -184,7 +184,8 @@ export const esAdmin = {
   'admin.events.placeAnnouncedHint':
     'Sin marcar, la ficha dice «La ubicación todavía no está anunciada».',
   'admin.events.ticketProvider': 'Ticketera',
-  'admin.events.ticketProviderHint': 'Nombre de la ticketera que vende este evento; la ficha la enseña.',
+  'admin.events.ticketProviderHint':
+    'Nombre de la ticketera que vende este evento; la ficha la enseña.',
   'admin.events.doorOnly': 'Solo en puerta',
   'admin.events.doorOnlyHint': 'Sin venta online: la ficha dice «Solo en puerta · … con carnet».',
   'admin.events.doorPrice': 'Precio en puerta con carnet (€)',
@@ -396,6 +397,8 @@ export const esAdmin = {
   'admin.moderation.revisado': ' · revisado',
   'admin.moderation.oculta': ' · oculta',
   'admin.moderation.preguntaRetirada': ' (pregunta antigua: ya no se enseña en el Carnet)',
+  'admin.moderation.preguntaOtroPublico':
+    ' (pregunta de otro público, artistas o no: no se enseña en este Carnet)',
   'admin.moderation.fotoOculta': 'Foto oculta.',
   'admin.moderation.apodoRestablecido2': 'Apodo restablecido.',
   'admin.moderation.moderacion': 'Moderación',

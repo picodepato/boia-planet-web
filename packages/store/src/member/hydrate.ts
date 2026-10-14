@@ -361,6 +361,9 @@ export function applyServerState(
       answers,
       version: Math.max(1, c.version ?? prev?.version ?? 1),
       updatedAt: c.updated_at ?? c.member_since,
+      // Artista o no lo dice el servidor (T294): de ello salen sus preguntas.
+      // Si el Admin lo hace artista después, la siguiente lectura lo trae.
+      ...(c.is_artist ? { isArtist: true } : {}),
       // El enlace a su música (plan 019 T217) no se lee del servidor: la
       // copia guarda el último que se puso aquí.
       ...(prev?.musicLink ? { musicLink: prev.musicLink } : {}),

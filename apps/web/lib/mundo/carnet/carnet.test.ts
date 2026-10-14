@@ -1,4 +1,4 @@
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { CARNET_QUESTIONS, carnetQuestionsFor } from '@boia/contracts';
 import { findDropSpot, isSeaSpot } from '@boia/engine/bottles';
 import {
   type BoiaRepository,
@@ -111,14 +111,37 @@ function specQuestions(): string[] {
   return [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]!).filter((q) => q.length > 8);
 }
 
+/** La 1 del público (no artistas), textual (Álvaro, 2026-10-14; plan 030 T294). */
+const DIA_SIGUIENTE = 'Completa la frase: al día siguiente de una fiesta yo…';
+
+/** Las preguntas que enseña el formulario, en su orden (índices crecientes). */
+function formShows(html: string, prompts: string[]): void {
+  const at = prompts.map((q) => html.indexOf(q.replace(/"/g, '&quot;')));
+  expect(at.every((i) => i >= 0)).toBe(true);
+  expect([...at].sort((x, y) => x - y)).toEqual(at);
+  for (const old of ['cosa más rara', 'mejor descubrimiento', 'mejor recuerdo'])
+    expect(html).not.toContain(old);
+}
+
 describe('Carnet (REQ-IDE-010…015)', () => {
-  it('las 5 preguntas son las de REQ-IDE-014, textuales y en su orden', () => {
+  it('las 5 de artista son las de REQ-IDE-014, textuales y en su orden', () => {
     const source = specQuestions();
     expect(source).toHaveLength(5);
-    expect(CARNET_QUESTIONS.map((q) => q.prompt)).toEqual(source);
+    expect(carnetQuestionsFor(true).map((q) => q.prompt)).toEqual(source);
   });
 
-  it('el formulario enseña las 5 preguntas textuales de su fuente', () => {
+  it('las 5 del público cambian sólo la primera por «al día siguiente…» (T294)', () => {
+    const source = specQuestions();
+    expect(carnetQuestionsFor(false).map((q) => q.prompt)).toEqual([
+      DIA_SIGUIENTE,
+      ...source.slice(1),
+    ]);
+    expect(t('carnet.q1Publico')).toBe(DIA_SIGUIENTE);
+    const spec = readFileSync(path.join(ROOT, 'docs/spec/05-identidad-y-comunidad.md'), 'utf8');
+    expect(spec).toContain(DIA_SIGUIENTE);
+  });
+
+  it('el formulario de un Carnet normal enseña «al día siguiente…» primero y luego la 2 a la 5', () => {
     const html = renderToStaticMarkup(
       createElement(CarnetForm, {
         questions: CARNET_QUESTIONS,
@@ -126,23 +149,48 @@ describe('Carnet (REQ-IDE-010…015)', () => {
         onSubmit: () => {},
       }),
     );
-    const shown = specQuestions().map((q) => html.indexOf(q.replace(/"/g, '&quot;')));
-    expect(shown.every((i) => i >= 0)).toBe(true);
-    expect([...shown].sort((x, y) => x - y)).toEqual(shown);
-    for (const old of ['cosa más rara', 'mejor descubrimiento', 'mejor recuerdo'])
-      expect(html).not.toContain(old);
+    formShows(html, [DIA_SIGUIENTE, ...specQuestions().slice(1)]);
+    expect(html).not.toContain('yo quiero estar en esto');
     // Antes de crear se dice qué será público (REQ-IDE-013).
     expect(html).toContain('público');
   });
 
+  it('el formulario de un Carnet de artista enseña las 5 de siempre, en su orden', () => {
+    const html = renderToStaticMarkup(
+      createElement(CarnetForm, {
+        questions: CARNET_QUESTIONS,
+        initial: draftFrom(null),
+        artist: true,
+        onSubmit: () => {},
+      }),
+    );
+    formShows(html, specQuestions());
+    expect(html).not.toContain(DIA_SIGUIENTE);
+  });
+
+  it('un Carnet de artista enseña sus 5 respuestas con su pregunta, en orden', async () => {
+    const repo = gameRepository();
+    await repo.carnet.create({ nickname: 'Artista Prueba', artistCode: 'enlace-demo' });
+    let carnet = (await repo.carnet.mine())!;
+    for (const q of carnetQuestionsFor(true)) carnet = await repo.carnet.answer(q.id, `R ${q.id}`);
+    expect(carnet.answers.map((a) => a.question)).toEqual(specQuestions());
+    const html = renderToStaticMarkup(createElement(CarnetCard, { carnet }));
+    let at = -1;
+    for (const q of specQuestions()) {
+      const i = html.indexOf(q.replace(/"/g, '&quot;'));
+      expect(i).toBeGreaterThan(at);
+      at = i;
+    }
+    expect(html).not.toContain(DIA_SIGUIENTE);
+  });
+
   it('el Carnet enseña cada respuesta con su pregunta textual, en el orden de las preguntas', async () => {
-    const full = SAMPLE_CREW.find(
-      (c) => Object.keys(c.answers).length === CARNET_QUESTIONS.length,
-    )!;
+    const publicSet = carnetQuestionsFor(false);
+    const full = SAMPLE_CREW.find((c) => publicSet.every((q) => c.answers[q.id]))!;
     const carnet = (await gameRepository().carnet.get(full.userId))!;
     const html = renderToStaticMarkup(createElement(CarnetCard, { carnet }));
     let at = -1;
-    for (const q of CARNET_QUESTIONS) {
+    for (const q of publicSet) {
       const i = html.indexOf(q.prompt);
       expect(i, q.id).toBeGreaterThan(at);
       at = i;

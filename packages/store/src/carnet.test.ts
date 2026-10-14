@@ -2,15 +2,18 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   CARNET_QUESTIONS,
+  CARNET_QUESTIONS_PER_MEMBER,
   NICKNAME_MAX,
   RETIRED_CARNET_QUESTION_IDS,
+  carnetAnswerVisibility,
+  carnetQuestionsFor,
   discountStatus,
 } from '@boia/contracts';
 import { SAMPLE_CREW, SAMPLE_DISCOUNTS, SAMPLE_EVENTS } from './sample';
 import { discountSchema } from '@boia/contracts';
 import { makeRepo } from './test-helpers';
 import { localDocAccess } from './local';
-import { applySnapshot, snapshotOf } from './member/hydrate';
+import { applyServerState, applySnapshot, snapshotOf } from './member/hydrate';
 
 const MIGRATION = new URL(
   '../../../supabase/migrations/20260928100100_identity.sql',
@@ -20,6 +23,146 @@ const MIGRATION_V2 = new URL(
   '../../../supabase/migrations/20261014100100_carnet_questions_v2.sql',
   import.meta.url,
 );
+
+const MIGRATION_AUDIENCE = new URL(
+  '../../../supabase/migrations/20261015100100_carnet_questions_audience.sql',
+  import.meta.url,
+);
+
+describe('Carnet: preguntas por público (plan 030 T294)', () => {
+  const ARTIST_IDS = [
+    'momento-quiero-estar',
+    'cancion-en-repeat',
+    'creando-tramando',
+    'disco-entero',
+    'buena-fiesta',
+  ];
+  const PUBLIC_IDS = ['dia-siguiente', ...ARTIST_IDS.slice(1)];
+
+  it('artistas: las 5 de siempre; el público: «al día siguiente…» y luego la 2 a la 5', () => {
+    expect(carnetQuestionsFor(true).map((q) => q.id)).toEqual(ARTIST_IDS);
+    expect(carnetQuestionsFor(false).map((q) => q.id)).toEqual(PUBLIC_IDS);
+    expect(carnetQuestionsFor(false)[0]!.prompt).toBe(
+      'Completa la frase: al día siguiente de una fiesta yo…',
+    );
+    for (const isArtist of [true, false]) {
+      expect(carnetQuestionsFor(isArtist)).toHaveLength(CARNET_QUESTIONS_PER_MEMBER);
+      expect(carnetQuestionsFor(isArtist).map((q) => q.position)).toEqual([1, 2, 3, 4, 5]);
+    }
+  });
+
+  it('un Carnet de artista (enlace de artistas) muestra y acepta las 5 de artista, en orden', async () => {
+    const { repo } = makeRepo();
+    await repo.carnet.create({ nickname: 'Artista', artistCode: 'codigo-demo' });
+    expect((await repo.carnet.questions()).map((q) => q.id)).toEqual(ARTIST_IDS);
+    for (const id of [...ARTIST_IDS].reverse()) await repo.carnet.answer(id, `R ${id}`);
+    const mine = (await repo.carnet.mine())!;
+    expect(mine.answers.map((a) => a.questionId)).toEqual(ARTIST_IDS);
+    await expect(repo.carnet.answer('dia-siguiente', 'x')).rejects.toMatchObject({
+      code: 'not_found',
+    });
+  });
+
+  it('un Carnet normal muestra «al día siguiente…» primero; la de artistas no la acepta', async () => {
+    const { repo } = makeRepo();
+    await repo.carnet.create({ nickname: 'Normal' });
+    expect((await repo.carnet.questions()).map((q) => q.id)).toEqual(PUBLIC_IDS);
+    for (const id of [...PUBLIC_IDS].reverse()) await repo.carnet.answer(id, `R ${id}`);
+    expect((await repo.carnet.mine())!.answers.map((a) => a.questionId)).toEqual(PUBLIC_IDS);
+    await expect(repo.carnet.answer('momento-quiero-estar', 'x')).rejects.toMatchObject({
+      code: 'not_found',
+    });
+  });
+
+  it('la respuesta antigua de un miembro normal a la 1 de artistas se guarda, no se enseña y la ve el Admin', async () => {
+    const { repo } = makeRepo();
+    await repo.carnet.create({ nickname: 'Antes del cambio' });
+    await repo.carnet.answer('dia-siguiente', 'Desayuno a las cinco');
+    const access = localDocAccess(repo)!;
+    const userId = access.read().identity!.id;
+    // Contestada antes de T294, cuando la 1 era de todos.
+    access.write(['carnet'], (doc) => {
+      doc.carnets[userId]!.answers['momento-quiero-estar'] = {
+        answer: 'Un amanecer en la Cala',
+        questionVersion: 1,
+        updatedAt: doc.identity!.createdAt,
+      };
+    });
+    const shown = ['dia-siguiente'];
+    expect((await repo.carnet.mine())!.answers.map((a) => a.questionId)).toEqual(shown);
+    expect((await repo.carnet.get(userId))!.answers.map((a) => a.questionId)).toEqual(shown);
+    await repo.carnet.answer('buena-fiesta', 'Agua');
+    expect(access.read().carnets[userId]!.answers['momento-quiero-estar']!.answer).toBe(
+      'Un amanecer en la Cala',
+    );
+    const row = (await repo.admin.carnets()).find((r) => r.userId === userId)!;
+    expect(row.carnet.answers.map((a) => [a.questionId, a.retired ?? false])).toEqual([
+      ['dia-siguiente', false],
+      ['buena-fiesta', false],
+      ['momento-quiero-estar', true],
+    ]);
+    expect(carnetAnswerVisibility('momento-quiero-estar', false)).toBe('other_audience');
+    expect(carnetAnswerVisibility('momento-quiero-estar', true)).toBe('shown');
+    expect(carnetAnswerVisibility('cosa-mas-rara', true)).toBe('retired');
+  });
+
+  it('si pasa a ser artista, ve las de artista desde entonces (y su respuesta antigua vuelve)', async () => {
+    const { repo } = makeRepo();
+    await repo.carnet.create({ nickname: 'Luego artista' });
+    await repo.carnet.answer('dia-siguiente', 'Churros');
+    const access = localDocAccess(repo)!;
+    const userId = access.read().identity!.id;
+    access.write(['carnet'], (doc) => {
+      doc.carnets[userId]!.answers['momento-quiero-estar'] = {
+        answer: 'Un amanecer',
+        questionVersion: 1,
+        updatedAt: doc.identity!.createdAt,
+      };
+      doc.carnets[userId]!.isArtist = true;
+    });
+    expect((await repo.carnet.questions()).map((q) => q.id)).toEqual(ARTIST_IDS);
+    expect((await repo.carnet.mine())!.answers.map((a) => a.questionId)).toEqual([
+      'momento-quiero-estar',
+    ]);
+    // La del público tampoco se borra: queda guardada.
+    expect(access.read().carnets[userId]!.answers['dia-siguiente']!.answer).toBe('Churros');
+  });
+
+  it('con cuentas, el «es artista» del servidor llega a la copia local (hidratación)', () => {
+    const { repo } = makeRepo();
+    const access = localDocAccess(repo)!;
+    access.write(['identity', 'carnet'], (doc) => {
+      applyServerState(
+        doc,
+        'u-artista',
+        {
+          ledger: [],
+          equipped: {},
+          times: [],
+          discounts: [],
+          carnet: {
+            nickname: 'Del servidor',
+            avatar_key: null,
+            avatar_image: null,
+            member_since: '2026-10-01T00:00:00Z',
+            is_artist: true,
+          },
+          answers: [
+            {
+              question_id: 'momento-quiero-estar',
+              question_version: 1,
+              answer: 'Cuando sonó la primera',
+              updated_at: null,
+            },
+          ],
+          snapshot: null,
+        },
+        { snapshotVersion: null, now: () => new Date('2026-10-15T00:00:00Z') },
+      );
+    });
+    expect(access.read().carnets['u-artista']!.isArtist).toBe(true);
+  });
+});
 
 describe('Carnet', () => {
   it('las 5 preguntas activas son las de las migraciones, textuales; las retiradas no se borran', () => {
@@ -32,14 +175,35 @@ describe('Carnet', () => {
     const first = parse(readFileSync(MIGRATION, 'utf8'));
     const v2sql = readFileSync(MIGRATION_V2, 'utf8');
     const v2 = parse(v2sql);
-    // Estado final: lo sembrado, menos las retiradas, más lo nuevo.
+    const v3sql = readFileSync(MIGRATION_AUDIENCE, 'utf8');
+    // T294: la nueva lleva su público; `momento-quiero-estar` pasa a artistas.
+    const v3 = [
+      ...v3sql.matchAll(/\('([a-z-]+)', (\d+), '((?:[^']|'')*)', '(all|artist|public)'\)/g),
+    ].map((m) => ({
+      id: m[1],
+      position: Number(m[2]),
+      prompt: m[3]?.replace(/''/g, "'"),
+      audience: m[4] ?? '',
+    }));
+    expect(v3.map((r) => r.id)).toEqual(['dia-siguiente']);
+    expect(v3sql).toMatch(/set audience = 'artist'\s+where id = 'momento-quiero-estar'/);
+    // Estado final: lo sembrado, menos las retiradas, más lo nuevo, con su público.
     const active = [
-      ...first.filter((r) => !RETIRED_CARNET_QUESTION_IDS.includes(r.id!)),
-      ...v2,
-    ].sort((a, b) => a.position - b.position);
-    expect(CARNET_QUESTIONS.map(({ id, position, prompt }) => ({ id, position, prompt }))).toEqual(
-      active,
-    );
+      ...[...first.filter((r) => !RETIRED_CARNET_QUESTION_IDS.includes(r.id!)), ...v2].map((r) => ({
+        ...r,
+        audience: r.id === 'momento-quiero-estar' ? 'artist' : 'all',
+      })),
+      ...v3,
+    ].sort((a, b) => a.position - b.position || a.audience.localeCompare(b.audience));
+    expect(
+      CARNET_QUESTIONS.map(({ id, position, prompt, audience }) => ({
+        id,
+        position,
+        prompt,
+        audience,
+      })),
+    ).toEqual(active);
+    expect(v3sql).not.toMatch(/delete\s+from/i);
     for (const id of RETIRED_CARNET_QUESTION_IDS) expect(v2sql).toContain(`'${id}'`);
     expect(v2sql).toMatch(/is_active = false/);
     expect(v2sql).not.toMatch(/delete\s+from/i);

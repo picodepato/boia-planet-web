@@ -121,6 +121,20 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     del 1 al 9 quedan reservados; el Admin puede darlos a mano desde
     «Socios y emails» → «Cambiar nº»). Nadie cambia de número. En un
     proyecto nuevo el primer socio lleva el 10.
+- [ ] Del plan 030 (ya en `boia-planet-dev`):
+  - `20261015100100_carnet_questions_audience.sql` (T294): preguntas del
+    Carnet por público (decisión de Álvaro, 2026-10-14). Los **artistas**
+    (`carnets.is_artist`) conservan las 5 de T281; el resto cambia la
+    primera por `dia-siguiente` («Completa la frase: al día siguiente de una
+    fiesta yo…»). Añade la columna `audience` (`all`, `artist`, `public`),
+    hace la posición única dentro de cada público y deja contestar sólo las
+    activas del propio público. **No borra ninguna respuesta**: quien no es
+    artista y ya contestó `momento-quiero-estar` la conserva (sólo la ve el
+    Admin). Comprobar después, en el **SQL Editor**: `select id, audience,
+    position from carnet_questions where is_active order by position,
+    audience;` tiene que dar `momento-quiero-estar` (artist, 1),
+    `dia-siguiente` (public, 1) y `cancion-en-repeat`, `creando-tramando`,
+    `disco-entero`, `buena-fiesta` (all, 2 a 5).
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`

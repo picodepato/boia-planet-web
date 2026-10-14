@@ -7,7 +7,7 @@
  *
  * Se carga con `import()` sólo con Supabase.
  */
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { carnetQuestionsFor } from '@boia/contracts';
 import { type BoiaRepository, type CarnetView, rankFor } from '@boia/store';
 import { accountClient } from '../../account/session';
 import type { StampEventFacts } from './use-carnet';
@@ -82,7 +82,8 @@ export async function fetchPublicCarnet(
     if (!row) return null;
     const points = Number(pointsRes.data?.points ?? 0);
     const ranks = await repo.content.list('ranks');
-    const answers = CARNET_QUESTIONS.flatMap((q) => {
+    // Sólo las preguntas de su público (T294): las de artista o las del resto.
+    const answers = carnetQuestionsFor(row.is_artist).flatMap((q) => {
       const a = (answersRes.data ?? []).find((x) => x.question_id === q.id);
       return a
         ? [

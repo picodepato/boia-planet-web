@@ -4,6 +4,70 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 030 T294: Carnet questions: artists keep the 5, the public gets a funny first question
+
+Qué existe:
+
+- Contrato (`packages/contracts/src/carnet.ts`): cada pregunta lleva
+  `audience` (`all` | `artist` | `public`). `CARNET_QUESTIONS` son todas las
+  activas (6: `momento-quiero-estar` artist·1, `dia-siguiente` public·1,
+  y `cancion-en-repeat`, `creando-tramando`, `disco-entero`, `buena-fiesta`
+  all·2–5). `carnetQuestionsFor(isArtist)` da las 5 de cada miembro en orden;
+  `carnetAnswerVisibility` dice si una respuesta se enseña (`shown`), es de
+  otro público (`other_audience`) o de una retirada (`retired`);
+  `CARNET_QUESTIONS_PER_MEMBER = 5`. Texto nuevo, exacto y aprobado:
+  «Completa la frase: al día siguiente de una fiesta yo…».
+- Migración `supabase/migrations/20261015100100_carnet_questions_audience.sql`
+  (reejecutable, aplicada SÓLO a dev): columna `audience` con check, posición
+  única por (audience, position) en vez de global, `momento-quiero-estar` →
+  artist, inserta `dia-siguiente` (public, 1), y las políticas
+  `carnet_answers_insert_own` / `_update_own` aceptan sólo activas de
+  `all` o del público del miembro (`carnets.is_artist`). No borra nada.
+  Añadida a la lista de `docs/propuestas/2026-10-03-produccion-supabase.md`
+  (sección plan 030) con la consulta de comprobación.
+- Modo local / demo (`packages/store/src/local.ts`): el Carnet enseña y
+  acepta sólo las de su público; `questions()` da las del Carnet propio; la
+  vista de moderación del Admin añade las de otro público marcadas `retired`.
+  Con cuentas, la hidratación lee `is_artist` del servidor (`server.ts`,
+  `hydrate.ts`), así que si el Admin lo hace artista después, la siguiente
+  lectura le enseña las de artista. Respuestas de muestra de la tripulación
+  pasadas a `dia-siguiente` (muestra).
+- Web: el formulario (`carnet-editor.tsx`) enseña las de artista con el
+  enlace de artistas o en un Carnet de artista y las del público en el resto;
+  `saveCarnet` sólo escribe las del público real del miembro. Carnet público
+  con cuentas (`public-carnet.ts`) filtra por `is_artist`. Admin (local y con
+  cuentas) marca «pregunta de otro público» (`admin.moderation.preguntaOtroPublico`).
+  Clave i18n `carnet.q1Publico` (textos-zonas.md → es-zonas.ts, generado).
+  Logro «preguntas» del Admin cuenta 5 (`CARNET_QUESTIONS_PER_MEMBER`).
+- Spec: REQ-IDE-014 (05, 09, estado, 00-indice) cita la pregunta del
+  público; `tools/spec/check.py` la tiene como centinela (11/11).
+
+Comandos:
+
+- `pnpm db:migrate:dev` → `[migraciones] 1 aplicadas de 42: 20261015100100`.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  exit 0, 330 archivos, 2945 pasan, 3 omitidas.
+- `sh tools/spec/checks.sh` → exit 0 (centinelas 11/11).
+- `pnpm lint` → exit 0. `pnpm build` → exit 0 (landing 197.7 kB de 200, OK).
+  `pnpm typecheck` → exit 0.
+- `pnpm test:supabase carnet-questions carnet-edit carnet-moderation trash moderation`
+  → 5 archivos, 33 pasan. `carnet-questions.supabase.ts` vuelve a pasar la
+  migración en una transacción y comprueba que no se pierde ninguna respuesta.
+- `pnpm test:supabase` (completo, dev) → exit 1: 25/26 archivos, 188/189
+  pruebas. La única que falla es `schema.supabase.ts` «los tipos versionados
+  coinciden»: dev ya tiene una columna `tickets_not_yet` de otra tarea en
+  paralelo (no está en ninguna migración de main). `database.types.ts` lleva
+  `audience` (regenerado con `pnpm db:types:dev`) y se quitó a mano
+  `tickets_not_yet`; pasará cuando entre la migración de esa tarea.
+
+Pendiente:
+
+- Producción: el orquestador aplica `20261015100100_carnet_questions_audience.sql`.
+- `packages/db/src/schema.test.ts` (arnés Postgres local) actualizado pero no
+  corrido: no hay Postgres en 127.0.0.1:5432 en esta máquina.
+- e2e `apps/web/e2e/carnet-questions.spec.ts` actualizado (usa las del
+  público), no corrido (las e2e las corre Álvaro).
+
 ## 2026-10-15 — plan 030 T287: Structured data for Google: organisation, site and events
 
 Exists: `apps/web/lib/landing/structured-data.ts` (pure builder `homeStructuredData`, `eventStructuredData`, `jsonLdString`, `offerAvailability` hook for T292 PreOrder), test `structured-data.test.ts`, one `<script type="application/ld+json">` in `app/(landing)/page.tsx` (static HTML). @graph: Organization (sameAs from non-sandbox links), WebSite, one MusicEvent per upcoming event (offers, performers, T286 image, secret location hidden).

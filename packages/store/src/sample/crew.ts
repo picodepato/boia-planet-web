@@ -15,7 +15,7 @@ export interface SampleCrewMember {
   nickname: string;
   avatarKey: string | null;
   memberSince: string;
-  /** Respuestas por id de pregunta (CARNET_QUESTIONS). */
+  /** Respuestas por id de pregunta: las del público (`carnetQuestionsFor(false)`, T294). */
   answers: Record<string, string>;
   /** Escaparate estático del Carnet: no pasa por el libro de nadie. */
   showcase: {
@@ -49,8 +49,8 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
     avatarKey: 'avatar-neutro-1',
     memberSince: '2025-06-21T12:00:00+02:00',
     answers: {
-      'momento-quiero-estar':
-        'Un señor bailando con una sombrilla abierta toda la noche. Muestra, pero podría ser.',
+      'dia-siguiente':
+        'Busco la sombrilla que me llevé sin ser mía y la devuelvo. Muestra, pero podría ser.',
       'cancion-en-repeat': 'Una cumbia que escuché a las cinco de la tarde sin esperarla.',
       'buena-fiesta': 'Una persona que te presente a otra.',
     },
@@ -69,7 +69,7 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
     memberSince: '2026-06-20T18:30:00+02:00',
     answers: {
       'disco-entero': 'Un disco de ambient que escuché en un tren de noche.',
-      'momento-quiero-estar': 'Amanecer en la playa después del primer All Day.',
+      'dia-siguiente': 'Desayuno churros a las cinco de la tarde y digo que no vuelvo. Vuelvo.',
     },
     showcase: {
       points: 70,
@@ -85,7 +85,7 @@ export const SAMPLE_CREW: SampleCrewMember[] = [
     avatarKey: null,
     memberSince: '2025-09-12T21:00:00+02:00',
     answers: {
-      'momento-quiero-estar': 'Cantar con desconocidos en la Cala a las tres de la mañana.',
+      'dia-siguiente': 'Tarareo en bucle la canción que cantamos con desconocidos en la Cala.',
       'cancion-en-repeat': 'Un hard groove al que llegué por equivocarme de escenario.',
       'creando-tramando': 'Un fanzine con las fotos de la Explanada de los años setenta.',
       'disco-entero': 'Un disco de sintes que suena a verano de 1998.',

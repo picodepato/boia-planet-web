@@ -81,6 +81,7 @@ export const esZonas = {
   'carnet.questions.help':
     'Contesta las que quieras. Siempre se ven con su pregunta, nunca sueltas.',
   'carnet.q1': '¿Qué momento te hizo pensar «yo quiero estar en esto»?',
+  'carnet.q1Publico': 'Completa la frase: al día siguiente de una fiesta yo…',
   'carnet.q2': '¿Cuál es la canción que tienes en repeat ahora mismo?',
   'carnet.q3': '¿Qué estás creando o tramando estos días?',
   'carnet.q4': '¿Qué disco escucharías de principio a fin sin saltarte ninguna?',

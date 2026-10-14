@@ -5,6 +5,7 @@ import {
   type CarnetQuestion,
   NICKNAME_MAX,
   NICKNAME_MIN,
+  carnetQuestionsFor,
   charLength,
   musicLinkFrom,
 } from '@boia/contracts';
@@ -27,7 +28,8 @@ import { t } from '../../i18n';
 /**
  * Alta rápida y edición del Carnet (REQ-IDE-010, REQ-IDE-013, REQ-IDE-014):
  * apodo, avatar neutro o foto del dispositivo y las 5 preguntas de Álvaro
- * (2026-10-14), textuales y opcionales. Antes de crear se dice qué será público. Sin
+ * (2026-10-14), textuales y opcionales: las de artista o las del público
+ * (plan 030 T294), según quién sea. Antes de crear se dice qué será público. Sin
  * email: en la demo el Carnet es del invitado de este navegador (D-20).
  */
 
@@ -50,6 +52,7 @@ export function CarnetForm({
   onPhoto,
   artist = false,
 }: {
+  /** Las activas (`CARNET_QUESTIONS`): el formulario enseña las del público de quien edita. */
   questions: readonly CarnetQuestion[];
   initial: CarnetDraft;
   /** Un Carnet que ya es de artista: lleva el enlace a su música (plan 019 T217). */
@@ -72,6 +75,8 @@ export function CarnetForm({
   // El enlace a su música (plan 019 T217, decisión 10): al crear el Carnet
   // de artista o al editar uno que ya lo es.
   const withMusic = (creating && artistLink) || artist;
+  // Sus preguntas (T294): un artista, las 5 de artista; el resto, las del público.
+  const shown = carnetQuestionsFor(withMusic, questions);
   const [musicError, setMusicError] = useState(false);
 
   const submit = (e: FormEvent) => {
@@ -191,7 +196,7 @@ export function CarnetForm({
       <fieldset className="juego-field">
         <legend>{t('carnet.questions.heading')}</legend>
         <p className="juego-muted">{t('juego.carnetEditor.contestaLasQueQuieras')}</p>
-        {questions.map((q) => (
+        {shown.map((q) => (
           <label key={q.id} className="carnet-q">
             <span>{q.prompt}</span>
             <textarea
@@ -352,7 +357,9 @@ export async function saveCarnet(
     view = before;
   }
   const old = Object.fromEntries((before?.answers ?? []).map((a) => [a.questionId, a.answer]));
-  for (const q of questions) {
+  // Sólo las de su público (T294); el servidor dice si es artista.
+  const isArtist = !!view.isArtist || !!accountSnapshot().profile?.isArtist;
+  for (const q of carnetQuestionsFor(isArtist, questions)) {
     const next = (draft.answers[q.id] ?? '').trim();
     if (next === (old[q.id] ?? '')) continue;
     check();

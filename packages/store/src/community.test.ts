@@ -1,4 +1,4 @@
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { carnetQuestionsFor } from '@boia/contracts';
 import { describe, expect, it } from 'vitest';
 import { CARNET_MODERATED_ANSWER, moderatedNickname } from './local';
 import { migrate } from './migrations';
@@ -155,7 +155,7 @@ describe('reporte y moderación de Carnets', () => {
 
   it('en el Carnet propio, lo nuevo que escribe su dueño se vuelve a ver', async () => {
     const { repo } = makeRepo();
-    const q = CARNET_QUESTIONS[0]!.id;
+    const q = carnetQuestionsFor(false)[0]!.id;
     const mine = await repo.carnet.create({ nickname: 'Pirata Feo' });
     await repo.carnet.answer(q, 'algo que no debía');
     await repo.admin.moderateCarnet(mine.userId, { kind: 'hide_answer', questionId: q });

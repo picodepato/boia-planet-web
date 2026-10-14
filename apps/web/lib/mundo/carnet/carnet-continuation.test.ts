@@ -1,4 +1,4 @@
-import { CARNET_QUESTIONS } from '@boia/contracts';
+import { CARNET_QUESTIONS, carnetQuestionsFor } from '@boia/contracts';
 import {
   createLocalRepository,
   createMemberRepository,
@@ -17,8 +17,9 @@ import {
 } from './carnet-editor';
 
 const UID = '11111111-2222-3333-4444-555555555555';
-const first = CARNET_QUESTIONS[0]!;
-const last = CARNET_QUESTIONS.at(-1)!;
+const PUBLIC_QUESTIONS = carnetQuestionsFor(false);
+const first = PUBLIC_QUESTIONS[0]!;
+const last = PUBLIC_QUESTIONS.at(-1)!;
 afterEach(() => {
   resetAccountForTests();
   vi.restoreAllMocks();
@@ -120,7 +121,7 @@ it('closing the editor or changing account cancels continuation before any write
 it('a partial save retry keeps the new-draft origin and untouched existing answers', async () => {
   const repo = createLocalRepository({ storage: new MemoryStorage(), watch: false });
   await repo.carnet.create({ nickname: 'Reintento' });
-  const untouched = CARNET_QUESTIONS[1]!;
+  const untouched = PUBLIC_QUESTIONS[1]!;
   await repo.carnet.answer(untouched.id, 'Conservar tras fallo');
   const before = (await repo.carnet.mine())!;
   const draft = {

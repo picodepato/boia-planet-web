@@ -493,6 +493,7 @@ export type Database = {
       };
       carnet_questions: {
         Row: {
+          audience: string;
           created_at: string;
           id: string;
           is_active: boolean;
@@ -502,6 +503,7 @@ export type Database = {
           version: number;
         };
         Insert: {
+          audience?: string;
           created_at?: string;
           id: string;
           is_active?: boolean;
@@ -511,6 +513,7 @@ export type Database = {
           version?: number;
         };
         Update: {
+          audience?: string;
           created_at?: string;
           id?: string;
           is_active?: boolean;

@@ -10,11 +10,7 @@
  * - un socio, un artista o anon no pueden nada de esto.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type {
-  AdminCarnetContent,
-  ArtistLinkRotation,
-  CarnetModerationTrashItem,
-} from '../rpc.ts';
+import type { AdminCarnetContent, ArtistLinkRotation, CarnetModerationTrashItem } from '../rpc.ts';
 import { context, expectDenied, expectRejected, ok, type Member } from './context.ts';
 import { elevateToAal2, testRunId } from './testkit.ts';
 
@@ -72,6 +68,8 @@ beforeAll(async () => {
       .from('carnet_questions')
       .select('id, version')
       .eq('is_active', true)
+      // Las de un socio que no es artista (T294).
+      .in('audience', ['all', 'public'])
       .order('position')
       .limit(2),
   )) as { id: string; version: number }[];
@@ -123,7 +121,9 @@ describe('permisos', () => {
     await expectDenied(ctx.anon.rpc('admin_list_moderation_trash', {}));
     await expectDenied(ctx.anon.rpc('admin_carnet_content', { p_user: fan.id }));
     await expectDenied(
-      ctx.anon.rpc('admin_undo_carnet_moderation', { p_id: '00000000-0000-0000-0000-000000000000' }),
+      ctx.anon.rpc('admin_undo_carnet_moderation', {
+        p_id: '00000000-0000-0000-0000-000000000000',
+      }),
     );
   });
 
@@ -190,9 +190,9 @@ describe('una respuesta', () => {
       before.map((a) => a.question_id).filter((id) => id !== questions[0]!.id),
     );
     // El Carnet sigue a la vista.
-    expect(
-      await ok(ctx.anon.from('carnets').select('user_id').eq('user_id', fan.id)),
-    ).toHaveLength(1);
+    expect(await ok(ctx.anon.from('carnets').select('user_id').eq('user_id', fan.id))).toHaveLength(
+      1,
+    );
 
     const item = (await trash()).find((t) => t.user_id === fan.id && t.kind === 'answer')!;
     expect(item).toMatchObject({ question_id: questions[0]!.id, reason: 'respuesta ofensiva' });
@@ -263,9 +263,7 @@ describe('el enlace a la música de un artista', () => {
   });
 
   it('si el artista lo cambió después, deshacer no lo pisa', async () => {
-    await ok(
-      admin.client.rpc('admin_set_carnet_music', { p_user: artist.id, p_reason: 'quitar' }),
-    );
+    await ok(admin.client.rpc('admin_set_carnet_music', { p_user: artist.id, p_reason: 'quitar' }));
     await ok(artist.client.rpc('set_artist_music', { p_platform: BC.platform, p_url: BC.url }));
     const item = (await trash()).find((t) => t.user_id === artist.id && t.kind === 'music')!;
     await expectRejected(

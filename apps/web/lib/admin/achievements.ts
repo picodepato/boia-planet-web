@@ -1,4 +1,8 @@
-import { ACHIEVEMENT_TRIGGERS, type AchievementTrigger, CARNET_QUESTIONS } from '@boia/contracts';
+import {
+  ACHIEVEMENT_TRIGGERS,
+  type AchievementTrigger,
+  CARNET_QUESTIONS_PER_MEMBER,
+} from '@boia/contracts';
 import type { JsonValue } from '@boia/store';
 import { t } from '../i18n';
 
@@ -178,7 +182,7 @@ export const TRIGGER_PARAMS: Record<AchievementTrigger, readonly TriggerParam[]>
   read_bottle: [count(100, t('admin.achievements.botellas'))],
   throw_bottle: [count(100, t('admin.achievements.botellas'))],
   create_carnet: [],
-  answer_question: [count(CARNET_QUESTIONS.length, t('admin.achievements.preguntas'))],
+  answer_question: [count(CARNET_QUESTIONS_PER_MEMBER, t('admin.achievements.preguntas'))],
   visit_world: [
     {
       key: 'world',

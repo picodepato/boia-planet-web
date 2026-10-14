@@ -67,6 +67,8 @@ beforeAll(async () => {
       .from('carnet_questions')
       .select('id, version')
       .eq('is_active', true)
+      // Las de un socio que no es artista (T294).
+      .in('audience', ['all', 'public'])
       .order('position')
       .limit(1)
       .single(),
