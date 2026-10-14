@@ -1,11 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { PerspectiveCamera, Vector3 } from 'three';
+import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { worlds } from '../../../lib/mundo/demo-world';
 import { eventOfPlace } from '../sheet';
 import { marWorld } from './compact';
 import { toScene } from './compress';
-import { lerp, smooth } from './kit';
 import {
   BEHIND_ALPHA,
   MAP_KEEP,
@@ -15,7 +14,16 @@ import {
   layoutPins,
   pinBox,
 } from './labels';
-import { bendDrop, periodOf, planetRect } from './wrap';
+import {
+  MAP_SAFE,
+  mapCamera,
+  mapFit,
+  mapFits,
+  mapIslandsOf,
+  mapProject,
+  wrapNear,
+} from './map-fit';
+import { periodOf, planetRect } from './wrap';
 
 /**
  * T275: el Puig Campana en la vista de mapa (la que abre el minimapa, zoom 1),
@@ -59,11 +67,9 @@ function pinSize(text: string, W: number, k: number): { w: number; h: number } {
   return { w: Math.min(max, widest + chrome), h: 32 + (lines - 1) * 15 };
 }
 
-/** Los rótulos del mar (como `pinsOf` en `mar-client.tsx`) vistos por la cámara del mapa. */
-function mapSights(W: number, H: number, k: number): { ids: string[]; sights: PinSight[] } {
-  const aspect = W / H;
+/** La cámara de la vista de mapa en una pantalla W×H, como la pone `mar3d.ts` (T279: con todas las islas dentro). */
+function mapView(W: number, H: number) {
   const fov = number(/new PerspectiveCamera\((\d+)/);
-  const camera = new PerspectiveCamera(fov, aspect, 0.5, 50000);
   const t = Math.tan((fov * Math.PI) / 360);
   const rect = planetRect(world.bounds);
   const b = {
@@ -75,32 +81,26 @@ function mapSights(W: number, H: number, k: number): { ids: string[]; sights: Pi
   const period = periodOf(b);
   const dFar = Math.max(
     ((b.bottom - b.top) * number(/H \* ([\d.]+)/)) / t,
-    ((b.right - b.left) * number(/W \* ([\d.]+)/)) / (t * aspect),
+    ((b.right - b.left) * number(/W \* ([\d.]+)/)) / (t * (W / H)),
   );
   const near = number(/const dNear = ([\d.]+)/);
-  const z = MAP_VIEW_ZOOM;
-  const dist = near * Math.pow(dFar / near, z);
-  const elev = lerp(
-    number(/const ELEV_NEAR = ([\d.]+)/),
-    number(/lerp\(ELEV_NEAR, ([\d.]+)/),
-    smooth(0, 1, z),
-  );
-  const bend = number(/const BEND_MAP = ([\d.]+)/);
-  const mapLift = (number(/const MAP_LIFT_PX = ([\d.]+)/) * 2 * dist * t) / H;
-  // La carta centrada (sin arrastrar), subida `MAP_LIFT_PX`.
-  const cx = (b.left + b.right) / 2;
-  const cz = (b.top + b.bottom) / 2;
-  const back = Math.cos(elev) * dist;
-  const look = new Vector3(cx, -bendDrop(bend, back), cz + mapLift);
-  camera.position.set(look.x, Math.sin(elev) * dist, look.z + back);
-  camera.lookAt(look);
-  camera.updateMatrixWorld();
-  const project = (x: number, y: number, zz: number) => {
-    const r = Math.hypot(x - camera.position.x, zz - camera.position.z);
-    const v = new Vector3(x, y - bendDrop(bend, r), zz).project(camera);
-    return { x: (v.x * 0.5 + 0.5) * W, y: (-v.y * 0.5 + 0.5) * H };
-  };
-  const wrap = (v: number, c: number, p: number) => c + ((((v - c) % p) + p * 1.5) % p) - p / 2;
+  // La carta centrada (sin arrastrar).
+  const center = { x: (b.left + b.right) / 2, z: (b.top + b.bottom) / 2 };
+  const view = { fovDeg: fov, width: W, height: H, center };
+  const islands = mapIslandsOf(world.objects, center, period);
+  // Zoom 1: `dNear · (dFar/dNear)^1`, alejada y subida o bajada para que quepan todas las islas.
+  const fit = mapFit(near * Math.pow(dFar / near, MAP_VIEW_ZOOM), view, islands);
+  const camera = mapCamera(fit.dist, view, fit.liftPx);
+  return { view, camera, period, center, islands, dFar, dist: fit.dist, fit };
+}
+
+/** Los rótulos del mar (como `pinsOf` en `mar-client.tsx`) vistos por la cámara del mapa. */
+function mapSights(W: number, H: number, k: number): { ids: string[]; sights: PinSight[] } {
+  const { view, camera, period, center } = mapView(W, H);
+  const cx = center.x;
+  const cz = center.z;
+  const project = (x: number, y: number, zz: number) => mapProject(camera, view, x, y, zz);
+  const wrap = wrapNear;
   const boatD = camera.position.distanceTo(new Vector3(cx, 0, cz));
   const ids: string[] = [];
   const sights: PinSight[] = [];
@@ -140,8 +140,8 @@ function mapSights(W: number, H: number, k: number): { ids: string[]; sights: Pi
         boatD,
       horizon: false,
       always: sells,
-      // Como `placePins`: en la vista de mapa (`far`), `keep` para los de `MAP_KEEP`.
-      keep: MAP_KEEP.includes(o.identity.id),
+      // Como `placePins`: en la vista de mapa (`far`), `keep` para los de `MAP_KEEP` y lo que vende (T279).
+      keep: MAP_KEEP.includes(o.identity.id) || sells,
       body,
     });
     ids.push(o.identity.id);
@@ -235,5 +235,115 @@ describe('el Puig Campana en la vista de mapa (T275)', () => {
     );
     const look = looks[ids.indexOf('canon')]!;
     expect(look.on && look.alpha === 1).toBe(false);
+  });
+});
+
+describe('Nochevieja y Puig Campana en la vista de mapa (T279)', () => {
+  for (const [W, H] of [
+    [360, 640],
+    [1280, 720],
+  ] as const) {
+    for (const k of [1, 1.15]) {
+      it(`a ${W}×${H} (letra ×${k}) los dos rótulos salen enteros, sin pisarse`, () => {
+        const { ids, sights } = mapSights(W, H, k);
+        const looks = layoutPins(sights, [...hudOf(W, H), ABOVE_SCREEN], W);
+        const at = (id: string) => {
+          const i = ids.indexOf(id);
+          expect(i, id).toBeGreaterThanOrEqual(0);
+          return { s: sights[i]!, l: looks[i]! };
+        };
+        const ultima = at('ultima');
+        const canon = at('canon');
+        // La Isla de Nochevieja es de un evento: siempre se ve.
+        expect(ultima.s.always).toBe(true);
+        for (const { l } of [ultima, canon]) {
+          expect(l.on).toBe(true);
+          expect(l.behind).toBe(false);
+          expect(l.alpha).toBe(1);
+          expect(l.scale).toBe(1);
+        }
+        expect(
+          intersects(
+            pinBox({ ...ultima.s, x: ultima.l.x, y: ultima.l.y }),
+            pinBox({ ...canon.s, x: canon.l.x, y: canon.l.y }),
+          ),
+        ).toBe(false);
+      });
+    }
+  }
+
+  it('un `keep` sin hueco cede ante el rótulo de un evento (no se le pone encima)', () => {
+    const body: Rect = { left: 90, right: 110, top: 100, bottom: 120 };
+    const event: PinSight = {
+      x: 100,
+      y: 100,
+      w: 120,
+      h: 40,
+      depth: 1.2,
+      horizon: false,
+      always: true,
+      body,
+    };
+    // Más cerca de la cámara y justo encima, con mandos alrededor: no hay hueco.
+    const kept: PinSight = { ...event, depth: 1, always: false, keep: true, body: null };
+    const wall: Rect[] = [
+      { left: 0, right: 400, top: -100, bottom: 40 },
+      { left: 0, right: 30, top: 0, bottom: 400 },
+      { left: 170, right: 400, top: 0, bottom: 400 },
+    ];
+    const [e, k] = layoutPins([event, kept], wall, 400);
+    expect(e!.on).toBe(true);
+    expect(e!.alpha).toBe(1);
+    expect(e!.behind).toBe(false);
+    expect(k!.on && k!.alpha === 1).toBe(false);
+  });
+});
+
+describe('la vista de mapa enseña todas las islas (T279)', () => {
+  it('mar3d.ts pone la cámara del mapa con `mapFit`', () => {
+    expect(source).toMatch(/mapFit\(/);
+    expect(source).toMatch(/const mapLift = this\.mapLiftPx \* perPx \* w;/);
+    expect(source).toMatch(/dist \*= lerp\(1, this\.mapStretch, smooth\(MAP_ZOOM, 1, z\)\)/);
+  });
+
+  for (const [W, H] of [
+    [360, 640],
+    [390, 844],
+    [1280, 720],
+  ] as const) {
+    it(`a ${W}×${H} cada isla (y la punta de su rótulo) cae dentro de la pantalla, libre de mandos`, () => {
+      const { view, camera, islands, dist } = mapView(W, H);
+      expect(islands.length).toBeGreaterThan(10);
+      expect(dist).toBeGreaterThan(0);
+      for (const i of islands) {
+        for (const [x, y, z] of [
+          [i.x, 6, i.z],
+          [i.x - i.r, 0, i.z],
+          [i.x + i.r, 0, i.z],
+          [i.x, 0, i.z - i.r],
+          [i.x, 0, i.z + i.r],
+        ] as const) {
+          const p = mapProject(camera, view, x, y, z);
+          expect(p.x).toBeGreaterThanOrEqual(MAP_SAFE.side - 0.5);
+          expect(p.x).toBeLessThanOrEqual(W - MAP_SAFE.side + 0.5);
+          expect(p.y).toBeGreaterThanOrEqual(MAP_SAFE.top - 0.5);
+          expect(p.y).toBeLessThanOrEqual(H - MAP_SAFE.bottom + 0.5);
+        }
+      }
+    });
+  }
+
+  it('no se aleja más de lo justo: un poco más cerca, alguna isla ya no cabe', () => {
+    for (const [W, H] of [
+      [360, 640],
+      [1280, 720],
+    ] as const) {
+      const { view, islands, dist, dFar, fit } = mapView(W, H);
+      expect(mapFits(fit, view, islands)).toBe(true);
+      // Más cerca, con la carta subida o bajada como sea, alguna isla se sale.
+      if (dist > dFar)
+        for (let lift = -200; lift <= 200; lift += 4)
+          expect(mapFits({ dist: dist * 0.97, liftPx: lift }, view, islands)).toBe(false);
+    }
   });
 });

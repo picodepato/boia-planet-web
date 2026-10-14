@@ -220,6 +220,7 @@ import {
   wrapD,
   wrapIn,
 } from './wrap';
+import { BEND_MAP, MAP_ELEV, MAP_LIFT_PX, type MapIsland, mapFit, mapIslandsOf } from './map-fit';
 
 /** Rectángulo en unidades de escena. */
 interface SceneRect {
@@ -425,11 +426,6 @@ const IMPACT_MIN = 40;
 
 /** A partir de este zoom el arrastre mueve el mapa en vez del barco. */
 export const MAP_ZOOM = 0.55;
-/**
- * px que sube el planeta en la vista de mapa (T50): así el puerto y el
- * final de la ruta de boyas quedan por encima de la barra de abajo.
- */
-const MAP_LIFT_PX = 48;
 const BOAT_ZOOM = 0.2;
 /**
  * Curva del planeta (1/unidad de escena) de cerca y en la vista de mapa: la
@@ -439,7 +435,6 @@ const BOAT_ZOOM = 0.2;
 const BEND_NEAR = 0.0045;
 /** Inclinación de la cámara de cerca (rad bajo la horizontal): deja ver el horizonte. muestra */
 const ELEV_NEAR = 0.64;
-const BEND_MAP = 0.00016;
 /** Eslora del barco en la escena (unidades): algo mayor que la del motor, para leerse en el móvil. */
 const SHIP_LENGTH = 3.9;
 /** Dónde va la mascota (T154), en esloras desde el centro: hacia popa y a estribor. */
@@ -673,6 +668,13 @@ export class Mar3D {
   private readonly wrapC = new Vector2();
   private readonly look = new Vector3();
   private dFar = 700;
+  /**
+   * Cuánto más lejos va la cámara en la vista de mapa que con `dFar` para que
+   * quepan todas las islas (T279, `mapFit`); 1 si ya caben.
+   */
+  private mapStretch = 1;
+  /** px que sube la carta en la vista de mapa (`MAP_LIFT_PX`, o lo que diga `mapFit`, T279). */
+  private mapLiftPx = MAP_LIFT_PX;
   /** px tapados abajo por la ficha: la cámara sube el barco por encima. */
   private insetGoal = 0;
   private inset = 0;
@@ -1169,7 +1171,8 @@ export class Mar3D {
       focus: { x: this.wrapC.x, z: this.wrapC.y },
       period: this.periodS,
       // Con el capitán dormido (T271) no baja a robar: ya hay una gaviota en la proa.
-      busy: busy || this.toys.asleep,
+      // Mirando el mapa tampoco (T279): sus avisos no se dan desde lejos.
+      busy: busy || this.toys.asleep || this.mapMode,
       coins: this.opts.coins?.() ?? 0,
       reduced,
       hidden: flying || this.defense !== null || this.survivors !== null,
@@ -1220,6 +1223,26 @@ export class Mar3D {
     ds.bocina = String(Number(ds.bocina ?? 0) + 1);
     this.opts.onHorn?.(hornVoice(this.shipStyle), r.dance);
     return true;
+  }
+
+  /**
+   * Lo lejos (u del mundo) que está del barco quien habla (T279): un lugar o
+   * personaje del mundo, o el guiri (`__guiri`); null si no se sabe. Con la
+   * vuelta del planeta, por el camino más corto.
+   */
+  speakerDistance(id: string): number | null {
+    const b = this.boat.group.position;
+    const v = this.views.get(id);
+    if (v) {
+      const p = v.obj.position;
+      return fromScene(
+        Math.hypot(wrapD(p.x - b.x, this.periodS.w), wrapD(p.z - b.z, this.periodS.h)),
+      );
+    }
+    const st = this.runtime.objectState(id);
+    if (!st) return null;
+    const { dx, dy } = this.runtime.delta(st.x, st.y, this.ship.x, this.ship.y);
+    return Math.hypot(dx, dy);
   }
 
   /** `?siesta=N` (T271): s quieto hasta que el capitán se duerme. */
@@ -3590,8 +3613,9 @@ export class Mar3D {
   }
 
   private tap(cx: number, cy: number): void {
-    // Un toque con diálogo abierto lo avanza.
-    if (this.runtime.dialogue()) {
+    // Un toque con diálogo abierto lo avanza; en la vista de mapa no (T279: el
+    // bocadillo no se ve desde lejos y el toque es para navegar).
+    if (this.runtime.dialogue() && !this.mapMode) {
       this.runtime.advanceDialogue();
       return;
     }
@@ -3602,7 +3626,9 @@ export class Mar3D {
     const ray = this.raycaster.ray;
     const cam = ray.origin;
     const on = rayOnPlanet(cam.y, ray.direction.x, ray.direction.y, ray.direction.z, this.bend);
-    const hit = tmpV.copy(ray.direction).multiplyScalar(on.t).add(cam);
+    // Un vector propio y no `tmpV`: `tapCharacter` proyecta con `tmpV` y lo
+    // pisaba, y el rumbo acababa en un punto fijo (el toque no navegaba, T279).
+    const hit = new Vector3().copy(ray.direction).multiplyScalar(on.t).add(cam);
     // En la arena del castillo (T161; plan 015 T170, decisión 6): colocando,
     // la isla va ahí; en una isla, se elige; en el mar, el avión vuela ahí.
     if (this.defense) {
@@ -3631,7 +3657,11 @@ export class Mar3D {
       return;
     }
     // De la copia que se ve al mapa (el runtime lo lleva dentro del periodo).
-    this.setCourse({ x: fromScene(hit.x), y: fromScene(hit.z) });
+    const tx = fromScene(hit.x);
+    const ty = fromScene(hit.z);
+    // Dónde cayó el último toque en el agua (u del mundo), para las pruebas (T279).
+    this.opts.canvas.dataset.toque = `${Math.round(tx)},${Math.round(ty)}`;
+    this.setCourse({ x: tx, y: ty });
   }
 
   private islandR(id: string): number {
@@ -3705,9 +3735,29 @@ export class Mar3D {
     const H = this.b.bottom - this.b.top;
     // La vista de mapa enseña el planeta entero una vez (el periodo), sin repetir.
     this.dFar = Math.max((H * 0.56) / t, (W * 0.54) / (t * this.camera.aspect));
+    // Y en la vista de mapa, todas las islas dentro de la pantalla (T279).
+    const fit = mapFit(
+      this.dFar,
+      {
+        fovDeg: this.camera.fov,
+        width: w,
+        height: h,
+        center: { x: (this.b.left + this.b.right) / 2, z: (this.b.top + this.b.bottom) / 2 },
+      },
+      this.mapIslands(),
+    );
+    this.mapStretch = fit.dist / this.dFar;
+    this.mapLiftPx = fit.liftPx;
     const gm = this.glow.material as ShaderMaterial;
     gm.uniforms.uScale!.value = ((h * this.dpr) / (2 * t)) * 0.5;
   };
+
+  /** Las islas del mar (escena), en la copia de alrededor del centro de la carta (T279). */
+  private mapIslands(): MapIsland[] {
+    const cx = (this.b.left + this.b.right) / 2;
+    const cz = (this.b.top + this.b.bottom) / 2;
+    return mapIslandsOf(this.world.objects, { x: cx, z: cz }, this.periodS);
+  }
 
   private readonly frame = (now: number) => {
     if (this.destroyed) return;
@@ -3995,7 +4045,9 @@ export class Mar3D {
     const cb = smooth(0, 1, this.camBlend);
     let dist = dNear * Math.pow(this.dFar / dNear, z) * lerp(1, this.camTuning.distanceScale, cb);
     let raise = lerp(1, this.camTuning.heightScale, cb);
-    let elev = lerp(ELEV_NEAR, 1.28, smooth(0, 1, z));
+    // En la vista de mapa, algo más lejos si hace falta para que quepan todas las islas (T279).
+    dist *= lerp(1, this.mapStretch, smooth(MAP_ZOOM, 1, z));
+    let elev = lerp(ELEV_NEAR, MAP_ELEV, smooth(0, 1, z));
     // La arena del castillo (T160): la cámara sube, casi cenital, sobre el castillo; al acabar baja.
     const arenaGoal = this.defense ? 1 : 0;
     const arenaStep = snap || this.reducedMotion ? 1 : dt / ARENA_CAMERA_S;
@@ -4040,7 +4092,7 @@ export class Mar3D {
     const perPx = (2 * dist * Math.tan((this.camera.fov * Math.PI) / 360)) / h;
     const lift = this.inset * 0.5 * perPx * (1 - w);
     // En el mapa la carta sube sin mover su centro (lo que da la vuelta no cambia de copia).
-    const mapLift = MAP_LIFT_PX * perPx * w;
+    const mapLift = this.mapLiftPx * perPx * w;
     let fx = lerp(bx, this.mapC.x, w) + this.pan.x;
     let fz = lerp(bz, this.mapC.y, w) + this.pan.y + lift;
     // El castillo de la arena, en la copia de alrededor de lo que se ve ahora.
@@ -4250,7 +4302,8 @@ export class Mar3D {
       // La Fiestera a bordo; si baila (T271), salta y da vueltas en la cubierta.
       const dancing = this.fiestera.dance > 0;
       const still = this.reducedMotion;
-      this.crew.position.y = Math.abs(Math.sin(t * (dancing ? 8 : 5))) * (dancing && !still ? 0.45 : 0.08);
+      this.crew.position.y =
+        Math.abs(Math.sin(t * (dancing ? 8 : 5))) * (dancing && !still ? 0.45 : 0.08);
       this.crew.rotation.y = dancing && !still ? t * 7 : 0;
       this.crew.rotation.z = dancing ? Math.sin(t * 9) * 0.3 : 0;
     }
@@ -4940,8 +4993,9 @@ export class Mar3D {
         depth,
         horizon: atHorizon,
         always: !!p.spec.always,
-        // En la vista de mapa, entero aunque caiga sobre otro lugar (T275).
-        keep: far && !!p.spec.mapKeep,
+        // En la vista de mapa, entero aunque caiga sobre otro lugar (T275); los
+        // eventos también y antes que nadie (T279: siempre se lee su nombre).
+        keep: far && (!!p.spec.mapKeep || (!!p.spec.always && !atHorizon)),
         body,
         // Por encima de la pantalla con su isla a la vista (una isla alta, de cerca): baja sobre ella.
         label: want && (this.scr.on || !!body),

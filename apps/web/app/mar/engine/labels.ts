@@ -62,8 +62,9 @@ export interface PinSight {
   label?: boolean;
   /**
    * Nunca tenue ni apagado por otro lugar (T275: el Puig Campana en la vista
-   * de mapa): si cae encima de uno más cercano, se aparta lo justo (`nudgeClear`);
-   * si no hay hueco, se queda entero donde está. Los mandos sí lo apartan.
+   * de mapa): si cae encima de otro, se aparta lo justo (`nudgeClear`). Se pone
+   * después de todos los demás (T279), así que nunca le quita el sitio al rótulo
+   * de un evento; si no hay hueco, cede como uno cualquiera. Los mandos sí lo apartan.
    */
   keep?: boolean;
 }
@@ -215,23 +216,71 @@ export function nudgeClear(
   width?: number,
   spare: readonly Rect[] = [],
 ): { x: number; y: number } | null {
+  const tries = nudgeTries(p, at, scale);
+  // Primero, un hueco que tampoco tape las islas de detrás (`spare`); si no hay, uno que sí.
+  for (const avoid of spare.length ? [[...taken, ...spare], taken] : [taken]) {
+    for (const c of tries) {
+      const box = pinBox({ ...p, ...c }, scale);
+      if (!onScreen(box, hud, width)) continue;
+      if (avoid.some((r) => intersects(box, r))) continue;
+      return { x: c.x, y: c.y };
+    }
+  }
+  return null;
+}
+
+/** Los sitios que prueba `nudgeClear`, del más cercano al más lejano. */
+function nudgeTries(
+  p: PinSight,
+  at: { x: number; y: number },
+  scale: number,
+): { x: number; y: number; cost: number }[] {
   const room = Math.max(0, (p.w * scale) / 2 - 10);
   const tries: { x: number; y: number; cost: number }[] = [];
   for (let dy = 0; dy <= NUDGE_UP; dy += NUDGE_STEP)
     for (let dx = 0; dx <= room; dx += NUDGE_STEP)
       for (const sx of dx ? [-dx, dx] : [0])
         tries.push({ x: p.x + sx, y: at.y - dy, cost: dx + 2 * dy });
-  tries.sort((a, b) => a.cost - b.cost);
-  // Primero, un hueco que tampoco tape las islas de detrás (`spare`); si no hay, uno que sí.
-  for (const avoid of spare.length ? [[...taken, ...spare], taken] : [taken]) {
-    for (const c of tries) {
-      const box = pinBox({ ...p, ...c }, scale);
-      if (width !== undefined && (box.left < SCREEN_EDGE || box.right > width - SCREEN_EDGE))
-        continue;
-      if (avoid.some((r) => intersects(box, r))) continue;
-      if (hud.some((r) => intersects(box, r, HUD_MARGIN))) continue;
-      return { x: c.x, y: c.y };
-    }
+  return tries.sort((a, b) => a.cost - b.cost);
+}
+
+/** Sin pisar mandos ni salirse por los lados. */
+const onScreen = (box: Rect, hud: readonly Rect[], width?: number) =>
+  (width === undefined || (box.left >= SCREEN_EDGE && box.right <= width - SCREEN_EDGE)) &&
+  !hud.some((r) => intersects(box, r, HUD_MARGIN));
+
+/**
+ * Último recurso de un `keep` sin hueco (T279: el Puig Campana en un móvil,
+ * entre la Isla de Nochevieja y el ALL DAY): un sitio donde sólo pisa
+ * rótulos `keep` ya puestos que, a su vez, caben en otro hueco sin él
+ * encima. Devuelve su sitio y los nuevos de los que se apartan, o null.
+ */
+function shoveClear(
+  p: PinSight,
+  at: { x: number; y: number },
+  scale: number,
+  bodiesFor: (q: PinSight) => Rect[],
+  labels: ReadonlyMap<number, { pin: PinSight; at: { x: number; y: number }; scale: number }>,
+  hud: readonly Rect[],
+  width?: number,
+): { at: { x: number; y: number }; moved: Map<number, { x: number; y: number }> } | null {
+  const boxOf = (q: PinSight, a: { x: number; y: number }, sc: number) =>
+    pinBox({ ...q, ...a }, sc);
+  for (const c of nudgeTries(p, at, scale)) {
+    const box = boxOf(p, c, scale);
+    if (!onScreen(box, hud, width) || bodiesFor(p).some((r) => intersects(box, r))) continue;
+    const hit = [...labels].filter(([, l]) => intersects(box, boxOf(l.pin, l.at, l.scale)));
+    if (hit.length === 0 || hit.some(([, l]) => !l.pin.keep)) continue;
+    const moved = new Map<number, { x: number; y: number }>();
+    const ok = hit.every(([j, l]) => {
+      const rest = [...labels]
+        .filter(([k]) => k !== j)
+        .map(([k, o]) => boxOf(o.pin, moved.get(k) ?? o.at, o.scale));
+      const to = nudgeClear(l.pin, l.at, l.scale, [...bodiesFor(l.pin), ...rest, box], hud, width);
+      if (to) moved.set(j, to);
+      return to !== null;
+    });
+    if (ok) return { at: { x: c.x, y: c.y }, moved };
   }
   return null;
 }
@@ -241,7 +290,7 @@ export function nudgeClear(
  * (`hud`): baja por debajo, sobre su isla, o se apaga. Los más cercanos
  * mandan: uno que pisa la isla o el rótulo de otro más cercano se apaga
  * (o, si es de lo que vende, se queda pequeño y tenue); uno `keep` (T275)
- * se aparta a un hueco y se queda entero. Con `width` (el ancho de la
+ * va el último y se aparta a un hueco libre (T279). Con `width` (el ancho de la
  * pantalla, T226), ninguno se sale por los lados.
  */
 export function layoutPins(
@@ -258,9 +307,21 @@ export function layoutPins(
     behind: false,
     lowered: false,
   }));
-  const order = pins.map((_, i) => i).sort((a, b) => pins[a]!.depth - pins[b]!.depth);
-  // Lo que ya ocupan los más cercanos: sus islas y sus rótulos.
-  const taken: Rect[] = [];
+  // Primero lo que vende con `keep` (en la vista de mapa, los eventos, T279),
+  // después los demás y al final los otros `keep` (el Puig Campana, T275),
+  // que buscan un hueco libre entre lo ya puesto; en cada grupo, de cerca a lejos.
+  const rank = (p: PinSight) => (p.keep ? (p.always ? 0 : 2) : 1);
+  const order = pins
+    .map((_, i) => i)
+    .sort((a, b) => rank(pins[a]!) - rank(pins[b]!) || pins[a]!.depth - pins[b]!.depth);
+  // Lo ya puesto: las islas (tapan a lo de detrás) y los rótulos (a todos).
+  const bodies: { rect: Rect; depth: number }[] = [];
+  const labels = new Map<number, { pin: PinSight; at: { x: number; y: number }; scale: number }>();
+  const nearer = (q: PinSight) => bodies.filter((b) => b.depth < q.depth).map((b) => b.rect);
+  const takenNow = (q: PinSight) => [
+    ...nearer(q),
+    ...[...labels.values()].map((l) => pinBox({ ...l.pin, ...l.at }, l.scale)),
+  ];
   for (const i of order) {
     const p = pins[i]!;
     const far = farness(p);
@@ -270,12 +331,15 @@ export function layoutPins(
       const a = placeClearOfHud(p, s, hud);
       return a && width ? { x: insideScreen(p, a, s, width, hud), y: a.y } : a;
     };
+    const taken = takenNow(p);
     let at = place(scale);
     let behind = at !== null && taken.some((r) => intersects(pinBox({ ...p, ...at! }, scale), r));
     if (p.keep && (behind || at === null)) {
-      // T275: ni tenue ni apagado: se aparta a un hueco si lo hay; si no, se
-      // queda entero donde está (o apagado, si lo único que tiene son mandos).
-      const farther = pins.filter((q) => q !== p && q.body && q.depth >= p.depth);
+      // T275: ni tenue ni apagado: se aparta a un hueco si lo hay. Si no hay
+      // (T279), aparta otro `keep` que quepa en otro sitio o cede como
+      // cualquier otro: nunca tapa el rótulo de un evento.
+      // Si puede ser, sin tapar tampoco ninguna otra isla.
+      const others = pins.filter((q) => q !== p && q.body);
       const free = nudgeClear(
         p,
         at ?? p,
@@ -283,10 +347,20 @@ export function layoutPins(
         taken,
         hud,
         width,
-        farther.map((q) => q.body!),
+        others.map((q) => q.body!),
       );
-      if (free) at = free;
-      behind = false;
+      const shove = free ? null : shoveClear(p, at ?? p, scale, nearer, labels, hud, width);
+      if (shove) {
+        for (const [j, to] of shove.moved) {
+          labels.get(j)!.at = to;
+          out[j] = { ...out[j]!, x: to.x, y: to.y, lowered: to.y > pins[j]!.y };
+        }
+      }
+      const spot = free ?? shove?.at ?? null;
+      if (spot) {
+        at = spot;
+        behind = false;
+      }
     }
     if (behind) {
       scale = Math.min(scale, BEHIND_SCALE);
@@ -303,17 +377,14 @@ export function layoutPins(
       behind,
       lowered: at !== null && at.y > p.y,
     };
-    if (p.body) taken.push(p.body);
-    if (on && !behind) taken.push(pinBox({ ...p, ...at! }, scale));
+    if (p.body) bodies.push({ rect: p.body, depth: p.depth });
+    if (on && !behind) labels.set(i, { pin: p, at: at!, scale });
   }
   return out;
 }
 
 /** La altura (escena) del rótulo sobre una isla de Blender: su alto real, escalado, y un respiro. */
-export function modelLabelY(
-  entry: { height?: number; radius: number },
-  R: number,
-): number | null {
+export function modelLabelY(entry: { height?: number; radius: number }, R: number): number | null {
   if (typeof entry.height !== 'number' || !(entry.height > 0)) return null;
   return entry.height * (R / entry.radius) + LABEL_GAP;
 }

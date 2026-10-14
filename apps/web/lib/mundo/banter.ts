@@ -116,6 +116,28 @@ export function fiesteraMayChat(phase: string | null): boolean {
   return phase === null || phase === 'delivered';
 }
 
+// --- Dónde se ven los bocadillos ------------------------------------------------------
+
+/**
+ * Lo lejos (u del mundo de /mar) a lo que se ve el bocadillo de un personaje:
+ * algo menos de lo que abarca la cámara de cubierta, para que quien habla
+ * esté a la vista, junto al barco. muestra
+ */
+export const CHAT_RADIUS = 600;
+
+/**
+ * ¿Se enseña el bocadillo de un personaje (la charla, el guiri, la gaviota, la
+ * Fiestera…)? Nunca en la vista de mapa (T279: desde lejos no se oye a nadie);
+ * en la de cubierta, sólo con el barco a menos de `radius` de quien habla
+ * (`distance`, u del mundo; null si no se sabe dónde está: no se enseña).
+ */
+export function chatShows(
+  view: { map: boolean; distance: number | null },
+  radius: number = CHAT_RADIUS,
+): boolean {
+  return !view.map && view.distance !== null && view.distance <= radius;
+}
+
 // --- El horóscopo boiero --------------------------------------------------------------
 
 /** Parámetro de desarrollo: `?fecha=2026-12-31` finge ese día para el horóscopo. */

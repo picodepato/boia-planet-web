@@ -4,6 +4,31 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T279: Regressions found by Álvaro after the push: tap-to-move, Nochevieja label, character bubbles in the map
+
+Qué existe:
+- **Tocar el agua navega otra vez** (vista normal y mapa grande). Causa: en `mar3d.ts` `tap()` el punto tocado se guardaba en el vector compartido `tmpV`; T270 añadió `tapCharacter()`, que proyecta los personajes con `project()` y pisa `tmpV`, así que el rumbo iba siempre a un punto fijo (cerca del origen) o abría el rótulo de al lado. Ahora `hit` es un `Vector3` propio. El lienzo dice dónde cayó el último toque en el agua (`data-toque`, u del mundo) para las pruebas. En la vista de mapa un toque ya no avanza un diálogo de personaje (no se ve desde lejos): navega.
+- **Nombres de eventos en el mapa**: en la vista de mapa los rótulos de lo que vende (`always`, p. ej. Isla de Nochevieja) son `keep` y se colocan los primeros; el Puig Campana (`MAP_KEEP`) se coloca el último y busca un hueco libre; si no lo hay, aparta otro `keep` que quepa en otro sitio (`shoveClear`) o cede como cualquier rótulo (antes se quedaba encima). Las islas sólo tapan a lo de detrás (por profundidad). `labels.ts`.
+- **Vista de mapa con todas las islas dentro** (punto 4 de Álvaro): `engine/map-fit.ts` (`mapFit`) calcula, con las posiciones y radios reales de las islas, la distancia de la cámara y cuánto sube/baja la carta para que cada isla y la punta de su rótulo caigan en la zona libre de mandos (`MAP_SAFE`: arriba 108 px, abajo 76, lados 14). Si a la distancia de siempre caben moviendo la carta, no se aleja (lo que pasa hoy en 360×640, 390×844 y 1280×720: bastaba bajar la carta); si no, se aleja lo justo (`mapStretch`, sólo para zoom ≥ `MAP_ZOOM`, la vista de barco no cambia). `MAP_ELEV`, `BEND_MAP`, `MAP_LIFT_PX` viven ahora en `map-fit.ts`.
+- **Bocadillos de personajes**: `chatShows` (`lib/mundo/banter.ts`, `CHAT_RADIUS` = 600 u, muestra): nunca en la vista de mapa; en cubierta sólo con el barco a menos de 600 u de quien habla (`Mar3D.speakerDistance`). Aplica a la charla (T272: Fiestera, náufrago, delfín, bienvenida del Puerto, pista de la boia de los secretos), al bocadillo del guiri (T270) y al diálogo de misión (oculto en el mapa). La charla no se gasta si no se vería. La gaviota no empieza robos mirando el mapa y sus avisos no salen en el mapa.
+
+Comandos:
+- `E2E_PORT=3283 npx playwright test e2e/mar-toque.spec.ts --repeat-each=2` → 8 passed (móvil y escritorio). Con sólo el arreglo de `tmpV` deshecho → 2 failed (`dist < 900` recibe 1598 en móvil; «ningún toque en el agua puso rumbo» en escritorio): la prueba falla con el fallo de c041d61.
+- `pnpm exec vitest run apps/web/app/mar/engine/map-labels.test.ts apps/web/app/mar/engine/labels.test.ts` → pass (Nochevieja y Puig Campana enteros, alfa 1, escala 1, sin pisarse, a 360×640 y 1280×720 con letra ×1 y ×1,15; cada isla dentro a 360×640, 390×844 y 1280×720).
+- `apps/web/lib/mundo/banter.test.ts` → 20 passed (bocadillos ocultos en el mapa y más allá del radio).
+- Test command: vitest 317 files / 2844 passed, 1 skipped; `tools/spec/checks.sh` OK; `pnpm lint` 0; `pnpm build` 0 (landing 198.8 kB / 200); `pnpm typecheck` 0.
+- `pnpm cf:measure` → 2,223 KiB gzip (≤ 2,800).
+- A mano en Chromium sin GPU (/mar, tecla M): rótulos en la vista de mapa con `--pin-alpha` 1.00: Isla de Nochevieja y Puig Campana a 360×640, 390×844 y 1280×720.
+
+Pendiente:
+- Probar en un móvil de verdad el toque en el agua (dedo) y el mapa con la barra del navegador visible (la zona libre es la de las e2e).
+- `CHAT_RADIUS` (600 u) y `MAP_SAFE` son `muestra`.
+
+Probar a mano:
+- /mar: tocar el agua a la izquierda y a la derecha → el barco va a cada sitio; abrir el mapa (minimapa o M) y tocar el agua → el barco navega ahí.
+- /mar, M: se leen «Isla de Nochevieja» y «Puig Campana» enteros; ninguna isla queda cortada por arriba ni por abajo (también en 360×640 y 390×844).
+- /mar: salir hacia el norte hasta que hable la boia del Puerto, abrir el mapa → su bocadillo y la charla desaparecen; volver → vuelve. Alejarse de la Fiestera o del náufrago mientras hablan → su charla se va.
+
 ## 2026-10-13 — plan 029 T274: Logros y pistas de los secretos nuevos
 
 Qué existe:

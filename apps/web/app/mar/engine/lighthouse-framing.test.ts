@@ -6,6 +6,7 @@ import { marWorld } from './compact';
 import { toScene } from './compress';
 import { lookAhead, startZoom } from './framing';
 import { lerp, smooth } from './kit';
+import { BEND_MAP, MAP_ELEV } from './map-fit';
 import { bendDrop, periodOf, planetRect } from './wrap';
 
 // Read the real camera's tuning: a change to its framing must also exercise
@@ -39,11 +40,7 @@ describe('Tabarca desde la cámara inicial (T168)', () => {
       );
       const near = number(/const dNear = ([\d.]+)/);
       const distance = near * Math.pow(far / near, zoom);
-      const elevation = lerp(
-        number(/const ELEV_NEAR = ([\d.]+)/),
-        number(/lerp\(ELEV_NEAR, ([\d.]+)/),
-        smooth(0, 1, zoom),
-      );
+      const elevation = lerp(number(/const ELEV_NEAR = ([\d.]+)/), MAP_ELEV, smooth(0, 1, zoom));
       const back = Math.cos(elevation) * distance;
       const focus = new Vector3(
         toScene(world.spawn!.x),
@@ -51,11 +48,7 @@ describe('Tabarca desde la cámara inicial (T168)', () => {
         toScene(world.spawn!.y) - distance * lookAhead(aspect).ahead,
       );
       camera.position.set(focus.x, Math.sin(elevation) * distance, focus.z + back);
-      const bend = lerp(
-        number(/const BEND_NEAR = ([\d.]+)/),
-        number(/const BEND_MAP = ([\d.]+)/),
-        smooth(0.25, 0.9, zoom),
-      );
+      const bend = lerp(number(/const BEND_NEAR = ([\d.]+)/), BEND_MAP, smooth(0.25, 0.9, zoom));
       focus.y = -bendDrop(bend, back);
       camera.lookAt(focus);
       camera.updateMatrixWorld();

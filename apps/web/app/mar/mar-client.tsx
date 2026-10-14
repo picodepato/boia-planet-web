@@ -82,6 +82,7 @@ import { SECRET_HINT_BUOY, secretHintKey } from '../../lib/mundo/secret-hints';
 import {
   BANTER_NAME_KEY,
   BanterPicker,
+  chatShows,
   fiesteraMayChat,
   horoscopoDay,
   horoscopoOf,
@@ -528,7 +529,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   const banterRef = useRef<BanterPicker | null>(null);
   const banterSay = (speaker: BanterSpeaker, objectId: string) => {
     // Nunca encima de un diálogo de misión, ni con la Fiestera en pleno rescate.
-    if (engineRef.current?.dialogue()) return;
+    const g = engineRef.current;
+    if (!g || g.dialogue()) return;
+    // Ni mirando el mapa ni desde lejos (T279): esa frase no se gasta.
+    if (!chatShows({ map: g.mapMode, distance: g.speakerDistance(objectId) })) return;
     if (speaker === 'fiestera' && !fiesteraMayChat(phaseRef.current)) return;
     // Otra charla en pantalla (la bienvenida del Puerto, otro personaje): ésta no gasta frase.
     if (chatTimer.current !== null || chatQueue.current.length > 0) return;
@@ -1288,13 +1292,15 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       return;
     }
     const ev = e.event;
+    // Mirando el mapa no se oye a la gaviota (T279): sin avisos, aunque el robo siga su curso.
+    const say: typeof push = engineRef.current?.mapMode ? () => undefined : push;
     switch (ev.type) {
       case 'dive':
         squawk();
         break;
       case 'steal':
         setStolen(ev.coins);
-        push({
+        say({
           id: 'gaviota:robo',
           kind: 'info',
           title: msg(ev.coins === 1 ? 'mar.gaviota.robo.una' : 'mar.gaviota.robo', {
@@ -1306,7 +1312,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       case 'caught':
         setStolen(0);
         chime();
-        push({
+        say({
           id: 'gaviota:pillada',
           kind: 'reward',
           title: msg('mar.gaviota.pillada', { n: ev.coins, bonus: ev.bonus }),
@@ -1316,14 +1322,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         break;
       case 'escaped':
         squawk(true);
-        push({ id: 'gaviota:huyo', kind: 'info', title: msg('mar.gaviota.huyo') });
+        say({ id: 'gaviota:huyo', kind: 'info', title: msg('mar.gaviota.huyo') });
         break;
       case 'nothing':
-        push({ id: 'gaviota:nada', kind: 'info', title: msg('mar.gaviota.nada') });
+        say({ id: 'gaviota:nada', kind: 'info', title: msg('mar.gaviota.nada') });
         break;
       case 'dropped':
         setStolen(0);
-        push({ id: 'gaviota:soltadas', kind: 'info', title: msg('mar.gaviota.soltadas') });
+        say({ id: 'gaviota:soltadas', kind: 'info', title: msg('mar.gaviota.soltadas') });
         break;
       case 'gone':
         setStolen(0);
@@ -2434,6 +2440,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
 
   const engine = engineRef.current;
   const ship = engine?.ship;
+  // Los bocadillos de los personajes (T279): nunca en la vista de mapa; en la de
+  // cubierta, sólo con el barco cerca de quien habla (`CHAT_RADIUS`).
+  const chatSeen = (id: string) =>
+    chatShows({ map: mapMode, distance: engine?.speakerDistance(id) ?? null });
+  const guiriSeen = !!guiriSay && chatSeen('__guiri');
   // Por el camino más corto: el planeta da la vuelta (D-22).
   const distance =
     sheet && sheet.kind === 'preview' && sheetObject && ship && engine
@@ -2823,7 +2834,12 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       ) : null}
 
       {dialogue ? (
-        <div ref={bubbleRef} className="mar-bubble" data-testid="mar-bocadillo">
+        <div
+          ref={bubbleRef}
+          className="mar-bubble"
+          data-testid="mar-bocadillo"
+          style={mapMode ? { display: 'none' } : undefined}
+        >
           <button
             type="button"
             className="mar-bubble__text"
@@ -2856,6 +2872,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           className="mar-bubble"
           data-testid="mar-guiri-bocadillo"
           data-guiri-frase={guiriSay.n}
+          style={guiriSeen ? undefined : { display: 'none' }}
         >
           <span className="mar-bubble__text">{guiriSay.text}</span>
           <button
@@ -2869,7 +2886,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         </div>
       ) : null}
 
-      {chat && !dialogue ? (
+      {chat && !dialogue && chatSeen(chat.objectId) ? (
         <div className="mar-charla" role="status" aria-live="polite">
           <div
             className="mar-bubble"

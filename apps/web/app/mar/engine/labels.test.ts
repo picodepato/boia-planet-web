@@ -163,7 +163,11 @@ describe('lejos y detrás', () => {
 
   it('el de una isla lejana que cae sobre la isla cercana no parece suyo', () => {
     // La cercana ocupa el centro de la pantalla; la lejana, detrás, cae encima.
-    const near = pin({ depth: 1.2, y: 200, body: { left: 100, top: 200, right: 300, bottom: 400 } });
+    const near = pin({
+      depth: 1.2,
+      y: 200,
+      body: { left: 100, top: 200, right: 300, bottom: 400 },
+    });
     const sells = pin({ depth: 3, y: 260, always: true, body: null });
     const plain = pin({ depth: 3, y: 260, body: null });
     const [a, b] = layoutPins([sells, near], []);
@@ -192,11 +196,23 @@ describe('lejos y detrás', () => {
     expect(layoutPins([near, { ...kept, keep: false }], [], 400)[1]!.on).toBe(false);
   });
 
-  it('uno `keep` sin hueco se queda entero donde está', () => {
+  it('uno `keep` sin hueco cede como cualquier otro (T279; antes se quedaba encima)', () => {
     const near = pin({ depth: 1, body: { left: 0, top: 0, right: 400, bottom: 600 } });
     const kept = pin({ depth: 1.2, body: null, keep: true });
     const [, b] = layoutPins([near, kept], []);
-    expect(b).toMatchObject({ on: true, behind: false, alpha: 1, scale: 1, x: 200, y: 300 });
+    expect(b).toMatchObject({ on: false, behind: true });
+  });
+
+  it('el evento se pone antes que un `keep` más cercano, que busca otro hueco (T279)', () => {
+    // Los dos en el mismo sitio: el evento se queda en el suyo y el otro se aparta.
+    const event = pin({ x: 200, y: 300, depth: 1.1, body: null, keep: true, always: true });
+    const kept = pin({ x: 200, y: 300, depth: 1, body: null, keep: true });
+    const [a, b] = layoutPins([event, kept], [], 400);
+    for (const l of [a!, b!]) expect(l).toMatchObject({ on: true, behind: false, alpha: 1 });
+    expect(a).toMatchObject({ x: 200, y: 300 });
+    expect(
+      intersects(pinBox({ ...event, x: a!.x, y: a!.y }), pinBox({ ...kept, x: b!.x, y: b!.y })),
+    ).toBe(false);
   });
 
   it('un lugar sin rótulo (lejos) también tapa a los de detrás', () => {

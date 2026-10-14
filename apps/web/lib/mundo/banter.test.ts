@@ -7,6 +7,8 @@ import {
   BANTER_NAME_KEY,
   BANTER_POOL_SIZE,
   BANTER_SPEAKERS,
+  CHAT_RADIUS,
+  chatShows,
   BagPicker,
   BanterPicker,
   HOROSCOPO_COUNT,
@@ -151,7 +153,10 @@ describe('horóscopo boiero', () => {
 describe('tono de marca', () => {
   it('ninguna frase habla de bebida ni de drogas', () => {
     const keys = Object.keys(es).filter(
-      (k) => k.startsWith('mar.banter.') || k.startsWith('mar.horoscopo.') || k.startsWith('mar.puerto.'),
+      (k) =>
+        k.startsWith('mar.banter.') ||
+        k.startsWith('mar.horoscopo.') ||
+        k.startsWith('mar.puerto.'),
     );
     expect(keys.length).toBeGreaterThan(HOROSCOPO_COUNT);
     const bad =
@@ -164,12 +169,30 @@ describe('bienvenida del Puerto', () => {
   it('la primera vez y la de vuelta son distintas, existen y no dicen «descubierta»', () => {
     const first = portWelcomeKey(true);
     const back = portWelcomeKey(false);
-    for (const k of [first.title, first.body, back.title, back.body]) expect(text(k), k).toBeTruthy();
+    for (const k of [first.title, first.body, back.title, back.body])
+      expect(text(k), k).toBeTruthy();
     expect(text(first.title)).not.toBe(text(back.title));
     expect(text(first.body)).not.toBe(text(back.body));
     expect(`${text(first.title)} ${text(first.body)}`).not.toMatch(/descubierta/i);
   });
   it('cada personaje que charla tiene nombre para el aviso', () => {
     for (const s of BANTER_SPEAKERS) expect(text(BANTER_NAME_KEY[s]), s).toBeTruthy();
+  });
+});
+
+describe('dónde se ven los bocadillos (T279)', () => {
+  it('nunca en la vista de mapa, por cerca que esté quien habla', () => {
+    expect(chatShows({ map: true, distance: 0 })).toBe(false);
+    expect(chatShows({ map: true, distance: CHAT_RADIUS / 2 })).toBe(false);
+  });
+
+  it('en cubierta, sólo con el barco cerca de quien habla', () => {
+    expect(chatShows({ map: false, distance: 0 })).toBe(true);
+    expect(chatShows({ map: false, distance: CHAT_RADIUS })).toBe(true);
+    expect(chatShows({ map: false, distance: CHAT_RADIUS + 1 })).toBe(false);
+    expect(chatShows({ map: false, distance: CHAT_RADIUS * 5 })).toBe(false);
+    // Sin saber dónde está, no se enseña.
+    expect(chatShows({ map: false, distance: null })).toBe(false);
+    expect(chatShows({ map: false, distance: 150 }, 100)).toBe(false);
   });
 });
