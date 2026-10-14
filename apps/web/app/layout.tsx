@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { SITE_URL, sharing } from '../lib/seo';
+import { SITE_URL } from '../lib/seo';
 import { t } from '../lib/i18n';
 import { fuentesClassName } from '../lib/fonts';
 import { PWA_THEME_COLOR } from '../lib/pwa/theme';
@@ -10,8 +10,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: t('seo.homeTitle'), template: `%s · ${t('site.title')}` },
   description: t('site.description'),
-  // Lo que se ve al compartir cualquier página que no diga otra cosa (T286).
-  ...sharing(undefined, t('site.description')),
   // App instalable (plan 027 T264): el manifiesto lo enlaza Next desde
   // app/manifest.ts; esto es lo que lee Safari en iPhone («Añadir a pantalla
   // de inicio»), con el icono de app/apple-icon.png.

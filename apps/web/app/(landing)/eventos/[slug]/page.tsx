@@ -3,7 +3,7 @@ import '../../components/paginas.css';
 import Link from 'next/link';
 import { t } from '../../../../lib/i18n';
 import { EVENTOS_COPY } from '../../../../lib/landing/eventos-copy';
-import { ogEventImage, publicPage } from '../../../../lib/seo';
+import { publicPage } from '../../../../lib/seo';
 import { eventHref, eventPageView, publicEventSlugs } from '../../../../lib/landing/eventos';
 import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../../../../lib/landing/sample-content';
 import { BrandLogo } from '../../components/brand-logo';
@@ -39,12 +39,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ...publicPage(
       eventHref(slug),
       view.event.description || `${view.kicker} · ${view.event.placeLabel}`,
-      {
-        title: `${view.event.name} · ${t('site.title')}`,
-        // Su imagen para compartir (T286): nombre y fecha sobre el planeta.
-        image: ogEventImage(slug),
-        imageAlt: t('seo.ogEventAlt', { name: view.event.name, date: view.kicker }),
-      },
     ),
   };
 }

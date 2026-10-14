@@ -16,8 +16,4 @@ export const esSeo = {
   'seo.carnetTitle': 'Carnet BOIA',
   'seo.legal': 'Información legal de BOIA.PLANET.',
   'seo.private': 'Página privada de BOIA.PLANET.',
-  // Texto alternativo de las imágenes para compartir (plan 030 T286).
-  'seo.ogAlt':
-    'BOIA en letras de píxel sobre el planeta de BOIA.PLANET, con sus islas y dos barcos',
-  'seo.ogEventAlt': '{name}, {date}: el cartel de BOIA.PLANET con el planeta',
 } as const;
