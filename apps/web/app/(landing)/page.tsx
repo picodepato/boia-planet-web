@@ -13,7 +13,7 @@ import { LiveLanding } from './components/live-landing';
 
 export const metadata: Metadata = {
   title: { absolute: t('seo.homeTitle') },
-  ...publicPage('/', t('site.description')),
+  ...publicPage('/', t('site.description'), { title: t('seo.homeTitle') }),
 };
 
 // Se prerrenderiza al construir: `loadIntroData` lee `art/` del disco y en

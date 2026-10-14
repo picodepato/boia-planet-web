@@ -4,6 +4,56 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 030 T286: Imágenes para compartir: planeta + BOIA para la web, una por evento
+
+Qué existe:
+
+- `apps/web/public/og/planeta.png` (1200 × 630, ~265 KiB): «BOIA» en píxel naranja
+  (Upheaval) arriba, el planeta 3D del hero con el remolcador rojo (`low-poly`) y el
+  barco del After, cielo de estrellas y «BOIA.PLANET · Alicante». Palabra y planeta
+  dentro del cuadrado central de 630 (recorte de WhatsApp). La usan la home, /mar y,
+  por defecto (app/layout.tsx), todas las demás páginas.
+- `apps/web/public/og/eventos/<slug>.png`, una por evento público (hoy halloween-2026,
+  sonido-2026, nochevieja-2026 y el finalizado all-day-boia-2026; ~185 KB): nombre en
+  grande con sombra, fecha en una entrada naranja («SÁB 31 OCT», con su tilde: la «Á»
+  de Upheaval sí la trae) en hora de Madrid, planeta y barcos a la derecha.
+- `apps/web/scripts/og-images.mjs` (Node puro, pngjs): compone las imágenes. Corre en
+  `pnpm build` antes de `next build` (los dos hosts), lee los eventos de
+  `packages/store/src/sample/content.ts`, es determinista y sólo escribe lo que
+  cambia; borra las de eventos que ya no existen. `pnpm --filter @boia/web og:images`.
+- `apps/web/scripts/og-capture.mjs` (a mano, Playwright con ventana y GPU, con
+  `pnpm dev` en marcha): saca las piezas a `apps/web/scripts/og/` — el planeta de la
+  escena real del hero en reposo, los dos barcos de `art/barco/3d/*.glb` pintados con
+  three.js y `glifos.json` (Upheaval y 8-bit Operator+ negrita en su rejilla de píxel).
+  `pnpm --filter @boia/web og:capture -- --url http://localhost:3000`.
+- `lib/seo.ts`: `sharing()` y `publicPage(path, desc, { title, image, imageAlt })`
+  ponen `og:*` (site_name BOIA.PLANET, locale es_ES, url, imagen 1200 × 630 con alt) y
+  `twitter:card summary_large_image`; `metadataBase` las hace absolutas en
+  https://boiaplanet.net. Textos alternativos en `lib/i18n/es-seo.ts`.
+- `apps/web/app/og.test.ts`: home, /mar, el layout y cada evento público resuelven
+  `og:image` absoluta en boiaplanet.net que existe en `public/`, mide 1200 × 630 y pesa
+  ≤ 300 KB; las imágenes subidas son las que dibuja hoy el script; el build las genera
+  antes de `next build`; fecha en español con tilde.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0,
+  328 archivos, 2923 pasan, 3 omitidas.
+- `sh tools/spec/checks.sh` → exit 0. `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; `og-images: 5 imágenes en public/og/ (sin cambios)`; ruta
+  crítica de la landing 199,5 kB de 200 (los `<meta>` de compartir suman ~0,4 kB al HTML).
+
+Pendiente:
+
+- Comprobar en WhatsApp/X con la web publicada (las URLs apuntan a boiaplanet.net).
+- `pnpm cf:measure` no se ha corrido (las imágenes son estáticos de `public/`, fuera del Worker).
+- La pose del planeta se captura con el giro de reposo: volver a correr `og:capture`
+  da un planeta casi igual, no idéntico.
+
+Probar a mano: abrir `apps/web/public/og/planeta.png` y
+`apps/web/public/og/eventos/{halloween-2026,sonido-2026,nochevieja-2026,all-day-boia-2026}.png`;
+con `pnpm dev`, http://localhost:3000/og/planeta.png y /og/eventos/halloween-2026.png.
+
 ## 2026-10-14 — plan 030 T288: «Sácate el Carnet» block and a WhatsApp that is easy to find
 
 Qué existe
