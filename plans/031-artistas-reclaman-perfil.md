@@ -1,6 +1,6 @@
 # Plan 031 — Artists claim their profile
 
-Status: active
+Status: done
 Created: 2026-10-15
 Base branch: main
 Goal: Today the 26 artist profiles on /artistas (content, managed in the Admin) and the artist Carnets (members with `carnets.is_artist`, created through the single global artist link) are two separate tracks: a listed artist who signs up shows twice on /artistas and «Ver carnet» does not open their real Carnet. Álvaro, 2026-10-15: let artists claim their profile in three ways — (1) a personal claim link per artist that the Admin creates and sends (automatic join), (2) «¿Eres uno de estos?» when signing up with the general artist link, which creates a request the Admin approves or rejects, (3) the Admin joins a Carnet to a profile by hand (for artists already registered). A claimed profile shows once on /artistas under the Carnet's nickname (Álvaro's choice), with the Carnet's photo/avatar and music link, keeps the profile's genres, and «Ver carnet» opens the real Carnet; unclaimed profiles stay as today; the Admin can always undo a join.
@@ -42,7 +42,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: per-profile claim links (hashed, 30-day expiry, one per profile), /artista/reclamar/<code> (noindex), claim_artist_profile on sign-up/sign-in, Admin «Perfiles de artista» panel; /carnet/artista-<id> redirects to the real Carnet; migration 20261015100300 (dev) — 0769875
 
 ## T297 — «¿Eres uno de estos?» with the general link, approved by the Admin
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T296
 - Model: opus
 - Skills: none
@@ -53,7 +53,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - `pnpm test:supabase` (dev): member creates/cancels a request only for themselves; admin approves (join + audit) or rejects; requests for an already-claimed profile are closed; anon cannot see requests → pass
   - unit/component tests: the picker after the general link, the «Solicitud enviada» state, the Admin list → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: «¿Eres uno de estos?» picker after the general artist link → pending request; Admin «Solicitudes de artistas» (badge) approve/reject; join closes pending requests; migration 20261015100400 (dev); landing 199.3 kB — 27ee9c1
 
 ## Decisions
 - 2026-10-15: Álvaro: when this plan is done and pushed, message the session «Orchestrator: plan y detalles originales» [b8b0e7] so it launches its next plan, which it already has ready (orchestrator)
@@ -70,3 +70,6 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T296 launched · attempt 1 · agent af145814d94c78100 (opus); also covers line-ups / /carnet/artista-<id> for claimed profiles (left out of T295)
 - 2026-10-15 T296 done (opus) · 821d8f4; integrating. Line-ups still show the profile name (event-card is on the landing critical path, 0.8 kB left) → Proposals
 - 2026-10-15 T296 done · merged 0769875
+- 2026-10-15 T297 launched · attempt 1 · agent a1a44f117d82c0d90 (opus)
+- 2026-10-15 T297 done · merged 27ee9c1
+- 2026-10-15 production migrations 20261015100200/100300/100400 applied and checked (no SECURITY DEFINER in public, no data lost); full test command on main → pass; plan done
