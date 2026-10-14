@@ -15,7 +15,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 ## Tasks
 
 ## T291 — Real legal identity in the legal pages and the privacy policy
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -27,7 +27,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - `grep -rn "Rosa Melano\|Benito Camelas\|Paco Merlo\|Débora Melo\|Bollería Fina\|B00000069\|privacidad@boia.example" apps packages` → no matches
   - unit test: /legal/aviso-legal and /legal/privacidad (both modes) render the approved controller text with hola@boiaplanet.net; `PRIVACY_POLICY_VERSION` is `2026-10-14` → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: legal pages carry the approved identity (BOIA PLANET, CIF en trámite, hola@boiaplanet.net), Brevo named, policy 2026-10-14, «muestra» banner removed from legal pages; sonnet + Opus audit — d1e82b2
 
 ## T285 — Open to Google: index, titles, canonical, sitemap and robots
 - Status: pending
@@ -120,6 +120,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-14: Legal identity text approved (BOIA PLANET, CIF en trámite, Calle Hondón de las Nieves 7, 03005 Alicante, hola@boiaplanet.net); T291 runs before T285 so Google never indexes the placeholders (Álvaro)
 - 2026-10-14: The 3 current events are official, not sample (Álvaro)
 - 2026-10-14: Plan approved by Álvaro; T291 launched first; T286 waits for Álvaro to see a Codex example image before it runs
+- 2026-10-14 T291: audit also removes the «Datos de muestra» banner from legal pages, since the legal texts are approved (orchestrator)
 - 2026-10-14: Google sign-in stays out for now (Álvaro)
 - 2026-10-14: «La Sosia» (Koko Moreno, Tonito Montana) is real radio content, genre Reggaetón, first song on landing and /mar, then shuffle (Álvaro)
 - 2026-10-14: WebGL recovery added to this plan (Álvaro)
@@ -132,3 +133,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-14 21:55 T291 launched · attempt 1 · agent ad65597d1d623fa72 (sonnet)
+- 2026-10-14 21:55 Codex example share images requested for T286 (output/og-ejemplo/) · agent a87db94c446b6bdef
+- 2026-10-14 22:05 T291 sonnet done · branch worktree-agent-ad65597d1d623fa72 · 13c25c3; Opus audit launched · agent a7baeb48d69c0726a (also removes the now-false «Datos de muestra» banner on legal pages)
+- 2026-10-14 22:20 T291 done · merged d1e82b2
