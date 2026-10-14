@@ -59,7 +59,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: build-time share images (public/og/planeta.png + one per event) from the real planet/boats/fonts, og/twitter on every public page; landing shop block lazy → critical path 197.7 kB; attempt 2 — 521ed4e
 
 ## T287 — Structured data for Google: organisation, site and events
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T285
 - Model: sonnet
 - Audit: opus
@@ -71,7 +71,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - unit test: the builder turns the sample content into valid JSON-LD (types, ISO dates with offset, absolute URLs) and skips past events → pass
   - the built `index.html` contains one `application/ld+json` script with the Organization, WebSite and the upcoming events → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: JSON-LD @graph (Organization, WebSite, MusicEvents) on the home + Event on each /eventos/[slug]; sample prices omitted; Madrid offsets; offerAvailability hook for T292; landing 198.7 kB; sonnet + Opus audit — 970edc4
 
 ## T288 — «Sácate el Carnet» block and a WhatsApp that is easy to find
 - Status: done
@@ -144,7 +144,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## T292 — «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T288
 - Model: opus
 - Skills: none
@@ -159,6 +159,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## Decisions
+- 2026-10-15 T287: prices flagged as sample are not published in JSON-LD; event pages get their own Event (orchestrator)
 - 2026-10-15 T294: public question 1 = «Completa la frase: al día siguiente de una fiesta yo…» (Álvaro); artists keep the 5 current ones; question 3 «¿Qué estás creando o tramando estos días?» stays shared — asked twice, no answer, kept as is (orchestrator, reversible)
 - 2026-10-14: Álvaro: when every task is done, push (git push origin main deploys both hosts). Before that push, apply the plan's new migrations to production (additive only) so the new build finds them (orchestrator)
 - 2026-10-14 T293: live bug, launched before T287/T289/T290 at the next free slot (orchestrator)
@@ -201,3 +202,6 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-15 01:00 T286 done · merged 521ed4e
 - 2026-10-15 01:02 T287 launched · attempt 1 · agent a8d8b2f6257464b03 (sonnet)
 - 2026-10-15 01:30 T293 done · merged 5d4d988
+- 2026-10-15 01:32 T294 launched · attempt 1 · agent a1f36399650e584b5 (opus); T293 worktree still locked by its agent, branch kept for now
+- 2026-10-15 01:45 T287 sonnet done · f52ae1f; Opus audit launched · agent a40702293c162deea (adds Event JSON-LD on /eventos/[slug]; omits sample prices)
+- 2026-10-15 02:00 T287 done · merged 970edc4
