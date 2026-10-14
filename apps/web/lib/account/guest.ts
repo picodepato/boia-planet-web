@@ -1,6 +1,7 @@
 /**
  * El invitado de este navegador visto desde la cuenta: lo que se fusiona al
- * entrar (decisión 4) y el «empezar de cero» al salir o borrar la cuenta.
+ * entrar (decisión 4). El «empezar de cero» al salir o borrar la cuenta está
+ * en `reset-device.ts` (plan 029 T284).
  */
 import type { MergePayload } from '@boia/db/rpc';
 import { STORE_KEY, localDocAccess, snapshotOf } from '@boia/store';
@@ -63,12 +64,4 @@ export async function guestPrefill(): Promise<AccountPrefill> {
   return carnet
     ? { nickname: carnet.nickname, avatarKey: carnet.avatarKey, avatarImage: carnet.avatarImage }
     : {};
-}
-
-/**
- * Este navegador vuelve a ser un invitado nuevo (al cerrar sesión o borrar
- * la cuenta): lo de antes ya está en la cuenta, o se ha borrado.
- */
-export async function resetLocalGuest(): Promise<void> {
-  await guestRepository().identity.reset();
 }

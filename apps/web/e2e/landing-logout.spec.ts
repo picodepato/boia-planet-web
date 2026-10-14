@@ -63,7 +63,11 @@ for (const withCarnet of [false, true]) {
       const list = logout.locator('..').locator('..');
       await expect(list.getByTestId('cabecera-carnet')).toBeVisible();
       await logout.click();
+      // Plan 029 T284: primero pregunta; al confirmar, este dispositivo empieza de cero.
+      await expect(page.getByTestId('cuenta-salir-texto')).toHaveText(t('cuenta.salir.texto'));
+      await page.getByTestId('cuenta-salir-si').click();
       await expect(buttons).toHaveCount(0);
+      await expect(page.getByTestId('landing-entrar')).toHaveCount(2);
       await page.reload();
       await expect(buttons).toHaveCount(0);
       await expect(page.getByTestId('cabecera-carnet').first()).toBeAttached();

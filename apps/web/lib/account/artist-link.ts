@@ -10,7 +10,8 @@
  */
 
 export const ARTIST_LINK_PATH = '/artista';
-const KEY = 'boia:enlace-artista';
+export const ARTIST_CODE_KEY = 'boia:enlace-artista';
+const KEY = ARTIST_CODE_KEY;
 /** Lo que se acepta como código: letras, cifras y guiones, hasta 64. */
 const CODE = /^[A-Za-z0-9-]{1,64}$/;
 

@@ -377,6 +377,33 @@ html[data-hero-top] .site-header__inner {
   text-align: left;
 }
 
+/* Plan 029 T284: «Tu cuenta» (apodo y número) en «Menú»; en la fila de escritorio
+   va en el título del icono de «Cerrar sesión», que si no no cabe. */
+.site-header__links .site-header__account {
+  display: none;
+}
+
+.site-header__menu-list .site-header__account {
+  display: grid;
+  gap: 2px;
+  padding: 12px 12px 0;
+  color: var(--on-dark-70);
+  overflow-wrap: anywhere;
+}
+
+.site-header__account small {
+  font-family: var(--font-button);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.site-header__account span {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .site-header__sign-out:disabled {
   cursor: wait;
   opacity: 0.6;

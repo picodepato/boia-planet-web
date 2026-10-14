@@ -7,8 +7,9 @@ import './account.css';
 import { AccountExportButton } from './export-button';
 import { trapTab } from './focus';
 import { accountLayer } from './layer';
-import { resetLocalGuest } from './guest';
-import { deleteAccount, setNewsOptIn, signOut } from './session';
+import { resetDevice } from './reset-device';
+import { deleteAccount, setNewsOptIn } from './session';
+import { useSignOutFlow } from './sign-out-flow';
 import { showAccountNotice, useAccount } from './use-account';
 
 /**
@@ -24,8 +25,8 @@ import { showAccountNotice, useAccount } from './use-account';
 export function AccountSection() {
   const account = useAccount();
   const [saved, setSaved] = useState<'saved' | 'error' | null>(null);
-  const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const out = useSignOutFlow();
   if (account.status === 'local') {
     return (
       <section className="cuenta" data-testid="cuenta-local" aria-labelledby="cuenta-local-titulo">
@@ -45,17 +46,6 @@ export function AccountSection() {
       () => setSaved('saved'),
       () => setSaved('error'),
     );
-  };
-
-  const leave = async () => {
-    setBusy(true);
-    try {
-      await signOut();
-      await resetLocalGuest();
-      showAccountNotice('account.signedOut');
-    } finally {
-      setBusy(false);
-    }
   };
 
   return (
@@ -92,9 +82,10 @@ export function AccountSection() {
         <button
           type="button"
           className="acceso-ghost"
-          disabled={busy}
+          disabled={out.busy}
           data-testid="cuenta-cerrar-sesion"
-          onClick={() => void leave()}
+          aria-haspopup="dialog"
+          onClick={out.ask}
         >
           {t('account.signOut')}
         </button>
@@ -109,6 +100,7 @@ export function AccountSection() {
           </button>
         ) : null}
       </div>
+      {out.dialog}
       {confirming && account.profile ? (
         <DeleteDialog nickname={account.profile.nickname} onCancel={() => setConfirming(false)} />
       ) : null}
@@ -142,7 +134,8 @@ function DeleteDialog({ nickname, onCancel }: { nickname: string; onCancel: () =
       setBusy(false);
       return;
     }
-    await resetLocalGuest().catch(() => undefined);
+    // Como al cerrar sesión (T284): este dispositivo empieza de cero.
+    await resetDevice().catch(() => undefined);
     showAccountNotice('account.deleted');
   };
 

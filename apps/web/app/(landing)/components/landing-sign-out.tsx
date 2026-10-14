@@ -1,53 +1,71 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { signOut } from '../../../lib/account/session';
-import { showAccountNotice, useAccount } from '../../../lib/account/use-account';
+import { accountMenuView } from '../../../lib/account/account-menu';
+import { useSignOutFlow } from '../../../lib/account/sign-out-flow';
+import { useAccount } from '../../../lib/account/use-account';
 import { t } from '../../../lib/i18n/web';
+import { CARNET_PATH, CREATE_PARAM } from '../../../lib/scanner/carnet-url';
 
-/** Decisión 10 (T199): junto al Carnet, sólo en la home y con sesión. */
+/** «Entrar» de la landing: el alta del Carnet, que con cuentas empieza por el email y su código. */
+const SIGN_IN_HREF = `${CARNET_PATH}?${CREATE_PARAM}=1`;
+
+/**
+ * La cuenta en la cabecera de la landing, la que aparece al bajar (decisión
+ * 10, T199; plan 029 T284), sólo en la home y sólo con cuentas: con sesión,
+ * «Tu cuenta» (apodo y número del Carnet; en la fila de escritorio, en el
+ * título del icono) y «Cerrar sesión», que pregunta y deja este dispositivo
+ * de cero (`useSignOutFlow`); sin sesión, «Entrar».
+ */
 export function LandingSignOut() {
   const account = useAccount();
   const pathname = usePathname();
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  if (pathname !== '/' || (account.status !== 'member' && account.status !== 'incomplete'))
-    return null;
+  const out = useSignOutFlow();
+  const view = accountMenuView(account);
+  if (pathname !== '/' || view.kind === 'none') return null;
 
-  const leave = async () => {
-    if (busy) return;
-    setBusy(true);
-    setFailed(false);
-    try {
-      await signOut();
-      const { resetLocalGuest } = await import('../../../lib/account/guest');
-      await resetLocalGuest();
-      showAccountNotice('account.signedOut');
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
-  };
+  if (view.kind === 'signIn') {
+    return (
+      <li>
+        <a
+          href={SIGN_IN_HREF}
+          data-testid="landing-entrar"
+          aria-label={t('cuenta.menu.entrarAria')}
+        >
+          {t('cuenta.menu.entrar')}
+        </a>
+      </li>
+    );
+  }
+
+  const label = view.nickname
+    ? `${t('cuenta.menu.titulo')}: ${view.line}. ${t('cuenta.menu.salirAria', { nickname: view.nickname })}`
+    : t('landing.signOut');
   return (
-    <li>
-      <button
-        type="button"
-        className="site-header__sign-out"
-        data-testid="landing-sign-out"
-        disabled={busy}
-        title={t('landing.signOut')}
-        onClick={() => void leave()}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <path d="M16 17l5-5-5-5" />
-          <path d="M21 12H9" />
-        </svg>
-        <span>{t('landing.signOut')}</span>
-      </button>
-      {failed ? <p role="alert">{t('landing.signOut.failed')}</p> : null}
-    </li>
+    <>
+      <li className="site-header__account" data-testid="landing-cuenta">
+        <small>{t('cuenta.menu.titulo')}</small>
+        <span>{view.line}</span>
+      </li>
+      <li>
+        <button
+          type="button"
+          className="site-header__sign-out"
+          data-testid="landing-sign-out"
+          disabled={out.busy}
+          title={label}
+          aria-haspopup="dialog"
+          onClick={out.ask}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+          <span>{t('landing.signOut')}</span>
+        </button>
+        {out.dialog}
+      </li>
+    </>
   );
 }

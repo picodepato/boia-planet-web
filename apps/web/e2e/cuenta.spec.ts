@@ -1,7 +1,11 @@
 import { MemoryStorage, STORE_KEY, createLocalRepository } from '@boia/store';
 import { expect, test, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import { SETTINGS_KEY, SHIP_SKIN_STORAGE_KEY } from '@boia/engine/ui';
 import { PRIVACY_POLICY_VERSION } from '../lib/account/config';
+import { MOOD_STORAGE_KEY } from '../lib/mundo/mar-keys';
+import { CANON_BEST_KEY } from '../lib/mundo/ranking-canon';
+import { SHIP_POSITION_KEY } from '../lib/mundo/ship-position';
 import { t } from '../lib/i18n';
 import { openMar } from './mar-helpers';
 import {
@@ -221,6 +225,9 @@ test('cerrar sesión y volver a entrar', async ({ page }, info) => {
   await expect(carnet.getByTestId('carnet-apodo')).toHaveText(m.nickname);
 
   await carnet.getByTestId('cuenta-cerrar-sesion').click();
+  // Plan 029 T284: primero pregunta.
+  await expect(page.getByTestId('cuenta-salir-texto')).toHaveText(t('cuenta.salir.texto'));
+  await page.getByTestId('cuenta-salir-si').click();
   await expect(page.getByTestId('cuenta-aviso')).toHaveText(t('account.signedOut'));
   // Este navegador vuelve a ser invitado: el hueco con «Entrar».
   await expect(carnet.getByTestId('carnet-invitacion')).toContainText(t('account.signInToSee'));
@@ -233,6 +240,118 @@ test('cerrar sesión y volver a entrar', async ({ page }, info) => {
   );
   await expect(carnet.getByTestId('carnet-apodo')).toHaveText(m.nickname);
   await expect(carnet.getByTestId('cuenta-email')).toHaveText(m.email);
+});
+
+/** Lo guardado en este navegador, para ver qué queda tras cerrar sesión. */
+async function deviceKeys(page: Page): Promise<Record<string, string>> {
+  return page.evaluate(() => {
+    const out: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)!;
+      out[k] = localStorage.getItem(k)!;
+    }
+    return out;
+  });
+}
+
+async function pointsOf(id: string): Promise<number> {
+  const { data } = await serviceClient()
+    .from('point_balances')
+    .select('points')
+    .eq('user_id', id)
+    .maybeSingle();
+  return Number(data?.points ?? 0);
+}
+
+test('cerrar sesión deja este móvil de cero; cada cuenta ve sólo lo suyo (plan 029 T284)', async ({
+  page,
+}, info) => {
+  const a = await memberWithCarnet(`DeCeroA ${info.project.name}`);
+  const b = await memberWithCarnet(`DeCeroB ${info.project.name}`);
+  // A ya había jugado en este móvil como invitado: 20 + 30 puntos.
+  const storage = new MemoryStorage();
+  const repo = createLocalRepository({ storage, watch: false });
+  await repo.progress.grantWorldReward({ sourceRef: 'lugar:cala:points', points: 20 });
+  await repo.progress.grantWorldReward({ sourceRef: 'lugar:roca:points', points: 30 });
+  const doc = storage.getItem(STORE_KEY)!;
+  await page.addInitScript(
+    ([key, value]) => {
+      if (!window.localStorage.getItem(key)) window.localStorage.setItem(key, value);
+    },
+    [STORE_KEY, doc] as const,
+  );
+  await stubCodeEmail(page);
+  await openMar(page);
+  // Preferencias del móvil y cosas del juego guardadas aquí.
+  await page.evaluate(
+    ([prefs, game]) => {
+      for (const [k, v] of prefs) localStorage.setItem(k, v);
+      for (const k of game) localStorage.setItem(k, '{"de":"A"}');
+    },
+    [
+      [
+        [MOOD_STORAGE_KEY, 'noche'],
+        [SETTINGS_KEY, JSON.stringify({ music: { enabled: false, volume: 0.2 } })],
+      ],
+      [CANON_BEST_KEY, SHIP_SKIN_STORAGE_KEY, SHIP_POSITION_KEY],
+    ] as const,
+  );
+
+  // A entra: lo del invitado pasa a su cuenta.
+  let carnet = await openCarnet(page);
+  await carnet.getByTestId('carnet-crear').click();
+  await signInWithCode(page, a.email);
+  await expect(page.getByTestId('acceso')).toBeHidden();
+  await expect(carnet.getByTestId('carnet-apodo')).toHaveText(a.nickname);
+  await expect.poll(() => pointsOf(a.id), { timeout: 20_000 }).toBeGreaterThanOrEqual(50);
+  const pointsA = await pointsOf(a.id);
+
+  // Sale desde el menú del mar: «Tu cuenta» con su apodo y número, y la pregunta.
+  await page.getByTestId('mar-carnet-cerrar').click();
+  await page.getByTestId('mar-logros').click();
+  const cuenta = page.getByTestId('mar-menu-cuenta');
+  await expect(cuenta).toHaveAttribute('data-estado', 'member');
+  await expect(cuenta.getByTestId('mar-menu-cuenta-quien')).toContainText(a.nickname);
+  await cuenta.getByTestId('mar-menu-cuenta-salir').click();
+  await expect(page.getByTestId('cuenta-salir-texto')).toHaveText(t('cuenta.salir.texto'));
+  await page.getByTestId('cuenta-salir-si').click();
+  await expect(page.getByTestId('cuenta-aviso')).toHaveText(t('account.signedOut'));
+  await expect(cuenta).toHaveAttribute('data-estado', 'signIn');
+  await expect(cuenta.getByTestId('mar-menu-cuenta-entrar')).toBeVisible();
+
+  // El móvil, de cero: ni la cuenta ni el juego de A; las preferencias, sí.
+  const after = await deviceKeys(page);
+  expect(after[MOOD_STORAGE_KEY]).toBe('noche');
+  expect(after[SETTINGS_KEY]).toBeTruthy();
+  for (const k of [CANON_BEST_KEY, SHIP_SKIN_STORAGE_KEY]) expect(after[k], k).toBeUndefined();
+  expect(Object.keys(after).filter((k) => k.startsWith('boia.cuenta.'))).toEqual([]);
+  const fresh = JSON.parse(after[STORE_KEY] ?? '{}') as { ledger?: unknown[]; carnets?: object };
+  expect(fresh.ledger ?? []).toEqual([]);
+  expect(Object.keys(fresh.carnets ?? {})).toEqual([]);
+  // Al volver a abrir el mar, sigue de cero.
+  await openMar(page);
+  carnet = await openCarnet(page);
+  await expect(carnet.getByTestId('carnet-invitacion')).toBeVisible();
+  await expect(carnet.getByTestId('carnet-apodo')).toHaveCount(0);
+
+  // B entra en este móvil: ve lo suyo y nada de A pasa a su cuenta.
+  await carnet.getByTestId('carnet-crear').click();
+  await signInWithCode(page, b.email);
+  await expect(page.getByTestId('acceso')).toBeHidden();
+  await expect(carnet.getByTestId('carnet-apodo')).toHaveText(b.nickname);
+  expect(await pointsOf(b.id)).toBeLessThan(50);
+  // B sale desde «Tu cuenta» de Mi Carnet (el mismo «Cerrar sesión»).
+  await carnet.getByTestId('cuenta-cerrar-sesion').click();
+  await page.getByTestId('cuenta-salir-si').click();
+  await expect(page.getByTestId('cuenta-aviso')).toHaveText(t('account.signedOut'));
+
+  // A vuelve: lo tiene todo, de su cuenta.
+  await carnet.getByTestId('carnet-crear').click();
+  await signInWithCode(page, a.email);
+  await expect(page.getByTestId('acceso')).toBeHidden();
+  await expect(carnet.getByTestId('carnet-apodo')).toHaveText(a.nickname);
+  expect(await pointsOf(a.id)).toBe(pointsA);
+  await expect(page.getByTestId('mar-saldos')).toContainText(`★ ${pointsA}`, { timeout: 20_000 });
 });
 
 test('borrar la cuenta escribiendo el apodo', async ({ page }, info) => {

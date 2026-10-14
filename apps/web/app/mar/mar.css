@@ -418,6 +418,21 @@
   color: #fff !important;
 }
 
+/* La cuenta en el menú (plan 029 T284): quién eres y «Cerrar sesión», o «Entrar». */
+.mar-menu__cuenta-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.mar-menu__cuenta-quien {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .mar-menu__home {
   display: inline-block;
   margin-top: 14px;

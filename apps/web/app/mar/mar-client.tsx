@@ -203,6 +203,7 @@ import { MarEntradas } from './entradas';
 import { worldTickets } from './entradas-model';
 import { MarLogros } from './logros';
 import { MarMenu, MarMenuButtonIcon, type MenuSection } from './menu';
+import { HOROSCOPO_STORAGE_KEY, MOOD_STORAGE_KEY } from '../../lib/mundo/mar-keys';
 import { MarTienda } from './tienda';
 import { MarBotella, MarBottlesNear, MarRanking } from './botellas';
 import { type MarBottle, bottlesNear, dropSpot, marPeriod, placeBottles } from './bottles';
@@ -280,7 +281,7 @@ const LANDING_LINKS = [
 
 const progressApi = () => gameRepository().progress;
 const newSessionId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-const MOOD_KEY = 'boia:mar3d:momento';
+const MOOD_KEY = MOOD_STORAGE_KEY;
 /** Lo que tarda en fundirse el velo de la entrada al llegar zarpando (T64). */
 const VELO_MS = 700;
 
@@ -314,7 +315,7 @@ function ticketsFly(): boolean {
 }
 
 /** El último día cuyo horóscopo boiero se enseñó en el Puerto (T272). */
-const HOROSCOPO_KEY = 'boia.horoscopo.dia';
+const HOROSCOPO_KEY = HOROSCOPO_STORAGE_KEY;
 
 /** Una frase del bocadillo de charla (T272): sobre qué objeto, quién (opcional) y qué dice. */
 interface ChatLine {

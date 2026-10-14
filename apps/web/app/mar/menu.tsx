@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ShipCatalog } from '../../lib/barco/catalog';
+import { MarAccountMenu } from '../../lib/account/account-menu';
 import { ClaimBadge } from '../../lib/logros/claim-badge';
 import type { WorldSummary } from '@boia/world';
 import { MenuIcon, type MenuIconName } from '../../lib/mundo/menu/icons';
@@ -17,7 +18,7 @@ import { MarHoja } from './hoja';
  * logros). Cada sección (Logros, Mi Carnet, Barco, Mis códigos, Mi botella,
  * Ranking, Ajustes y «Cómo jugar»: Controles y Welcome Aboard) se abre en su
  * hoja con «‹ Menú» para volver; el momento del día y los mundos (plegados)
- * se eligen aquí mismo. En el móvil es una tarjeta de abajo; en escritorio, centrada.
+ * se eligen aquí mismo; con cuentas, también la cuenta (T284). En el móvil es una tarjeta de abajo; en escritorio, centrada.
  * Los iconos son la familia propia de BOIA (T114, `lib/mundo/menu/icons.tsx`),
  * siempre junto a su nombre en texto. Textos `muestra` [pendiente Álvaro].
  */
@@ -207,6 +208,9 @@ export function MarMenu({
           ))}
         </div>
       </section>
+
+      {/* La cuenta (plan 029 T284): «Tu cuenta» y «Cerrar sesión», o «Entrar». */}
+      <MarAccountMenu onRegistered={() => onOpen('carnet')} />
 
       {/* Sin elección no hay entrada: con un solo mundo jugable (Arcilla) no se muestra «Mundos». */}
       {worlds.length > 1 ? (

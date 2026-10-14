@@ -4,6 +4,51 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T284: Cerrar sesión deja el dispositivo de cero, y la cuenta en los menús
+
+Sólo con cuentas (Supabase). En modo local (D-20) nada cambia: no hay sesión, ni botón de empezar de cero.
+
+Qué existe:
+- `apps/web/lib/account/reset-device.ts`: el único «Cerrar sesión» (`signOutAndReset`). Manda lo
+  pendiente (`onBeforeSignOut`), cierra la sesión y después `resetDevice()`: vacía el documento del
+  invitado por su repositorio (Carnet, libro de puntos/monedas, logros, sellos, compras, botellas,
+  misiones…; se queda el contenido del Admin de la demo) y borra de localStorage y sessionStorage
+  toda clave de BOIA que no sea preferencia: copias de cuenta `boia.cuenta.*`, `boia.store.backup`,
+  récords del Cañón/castillo/minijuegos/carreras, barco y skin, posición, mundo, horóscopo,
+  invitaciones, código de artista, Calitas. Lista explícita de lo que se queda
+  (`DEVICE_PREFERENCE_KEYS`): `boia.ajustes` (idioma, música, efectos, teclado, sensibilidad),
+  `boia.radio`, el momento del día, sonido y marcadores del Cañón/castillo, minimapa y aviso de
+  instalar; la sesión de Supabase la lleva su cliente. Nada se borra del servidor.
+- Una copia de cuenta con cambios aún sin mandar (sin red al salir) no se borra: es de esa cuenta,
+  nadie más la ve, y se manda cuando vuelve a entrar (`member-cache.ts` recuerda cuáles).
+- Antes de salir, la pregunta (`lib/account/sign-out-flow.tsx`): «¿Cerrar sesión? Tu progreso
+  queda guardado en tu cuenta. En este móvil empiezas de cero.» (muestra). La usan la landing,
+  «Tu cuenta» de Mi Carnet (también /carnet) y el menú de /mar. Borrar la cuenta también deja el
+  dispositivo de cero.
+- La cuenta en los menús (`lib/account/account-menu.tsx`): en el Menú de a bordo de /mar, «Tu
+  cuenta» con apodo y nº del Carnet y «Cerrar sesión», o «Entrar» (abre la hoja de acceso); en la
+  cabecera de la landing que aparece al bajar, lo mismo («Entrar» va a `/carnet?crear=1`; en la
+  fila de escritorio el apodo va en el título del icono porque no cabe).
+- Textos nuevos en `lib/i18n/es-lib-web.ts` (`cuenta.salir.*`, `cuenta.menu.*`), muestra.
+
+Comandos:
+- `pnpm exec vitest run apps/web/lib/account apps/web/app/mar apps/web/lib/i18n …landing-sign-out.test.ts` → 92 archivos, 823 pruebas, exit 0
+- `E2E_SUPABASE=1 E2E_PORT=3187 pnpm e2e cuenta.spec.ts --workers=2` (dev) → 8 pass / 4 fail: los 4
+  fallos, «Demasiados intentos» (429 de Supabase al verificar el código, límite por IP compartido con
+  otras pruebas); vueltas a correr sólo en móvil → `-g cerrar --project=mobile --workers=1` 2/2 pass,
+  y el resto 4/4 pass. Las 12 (6 × 2 proyectos), incluida la nueva de T284, pasan.
+- Test command del plan: vitest 322 archivos / 2888 pass, 1 skip; checks.sh (sus comprobadores uno a
+  uno) exit 0; lint exit 0; build exit 0 (landing 199.1 kB de 200 kB); typecheck exit 0.
+
+Pendiente:
+- `landing-logout.spec.ts` (E2E_SUPABASE) actualizado con la pregunta, no corrido.
+
+Probar a mano (con cuentas, p. ej. `pnpm dev` con `.env.local` de dev):
+- /mar → Menú → «Tu cuenta» (apodo · nº) → «Cerrar sesión» → la pregunta → el mar de cero (sin
+  Carnet, puntos ni barco); el momento del día y el volumen siguen.
+- Vuelve a entrar con el mismo email: lo tienes todo. Entra con otro: no ves nada del anterior.
+- Home, baja hasta que salga la cabecera → «Menú»: «Tu cuenta» y «Cerrar sesión» (o «Entrar»).
+
 ## 2026-10-13 — plan 029 T282: Números de Carnet seguidos desde el 10, editables desde el Admin
 
 Qué existe:
