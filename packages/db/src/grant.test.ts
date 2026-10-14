@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { cleanMinutes, parseGrantArgs } from './grant.ts';
+import { cleanMinutes, parseCarnet0Args, parseGrantArgs } from './grant.ts';
+
+describe('pnpm admin:carnet0 -- <email> (plan 029 T282)', () => {
+  it('acepta un email, con o sin el «--» de pnpm', () => {
+    expect(parseCarnet0Args(['--', ' Admin@BoiaPlanet.net '])).toEqual({
+      email: 'admin@boiaplanet.net',
+    });
+  });
+
+  it('rechaza un email raro, ninguno o de más', () => {
+    expect(() => parseCarnet0Args(['no-es-email'])).toThrow(/email no válido/);
+    expect(() => parseCarnet0Args([])).toThrow(/uso/);
+    expect(() => parseCarnet0Args(['a@b.es', 'b@c.es'])).toThrow(/uso/);
+  });
+});
 
 describe('pnpm admin:grant -- <email> <rol> (T94)', () => {
   it('acepta email y rol, con o sin el «--» de pnpm', () => {

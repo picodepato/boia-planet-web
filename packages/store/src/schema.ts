@@ -19,6 +19,7 @@ import {
   worldObjectSchema,
 } from '@boia/contracts';
 import { STABLE_KEY, STABLE_KEY_MAX } from './ids';
+import { numberUnnumbered } from './member-number';
 
 /**
  * Forma del documento que se guarda en el navegador. Espeja las tablas de T06
@@ -110,6 +111,12 @@ export const carnetSchema = z.object({
    * es de artista (`set_artist_music`).
    */
   musicLink: musicLinkSchema.optional(),
+  /**
+   * Nº de Carnet (plan 029 T282): seguido desde el 10 en este navegador
+   * (`member-number.ts`); el Admin lo cambia. Los Carnets de antes de T282
+   * lo reciben al leer el documento, por orden de alta.
+   */
+  memberNumber: z.number().int().positive().optional(),
 });
 export type CarnetRecord = z.infer<typeof carnetSchema>;
 
@@ -666,6 +673,8 @@ export const auditEntrySchema = z.object({
     'migrate',
     // Plan 020 T229: el Admin cambia o quita el enlace a la música de un Carnet de artista.
     'music',
+    // Plan 029 T282: el Admin cambia el nº de un Carnet.
+    'member_number',
   ]),
   targetId: z.string().nullable(),
   before: z.unknown(),
@@ -693,6 +702,11 @@ export interface StoreDoc {
   carnetModeration: Record<string, CarnetModeration>;
   content: ContentOverrides;
   audit: AuditEntry[];
+  /**
+   * Último nº de Carnet dado en este navegador (plan 029 T282). Sin él, el
+   * siguiente alta toma el primero libre desde el 10.
+   */
+  memberCounter?: number;
 }
 
 export function emptyDoc(version: number = SCHEMA_VERSION): StoreDoc {
@@ -816,5 +830,8 @@ export function sanitizeDoc(
     content: overrides,
     audit: arrayOf(auditEntrySchema, src.audit, dropped),
   };
+  const counter = z.number().int().nonnegative().safeParse(src.memberCounter);
+  const last = numberUnnumbered(doc.carnets, counter.success ? counter.data : undefined);
+  if (counter.success || last > 0) doc.memberCounter = last;
   return { doc, dropped: dropped.n };
 }

@@ -16,6 +16,7 @@
     "db:types:dev": "node src/cli/gen-types.ts --dev",
     "test:supabase": "node src/cli/test-supabase.ts",
     "admin:grant": "node src/cli/admin-grant.ts",
+    "admin:carnet0": "node src/cli/admin-carnet0.ts",
     "db:clean-test-users": "node src/cli/clean-test-users.ts"
   },
   "dependencies": {

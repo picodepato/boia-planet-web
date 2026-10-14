@@ -33,6 +33,8 @@ import {
   TRASH_RETENTION_MIN_DAYS,
   achievementDefinitionSchema,
   isStableKey,
+  isStoreError,
+  memberNumberProblem,
   mergePlacePatch,
   musicTrackSchema,
 } from '@boia/store';
@@ -1248,6 +1250,27 @@ export function createAdminActions(deps: AdminDeps) {
       const link = musicLinkFrom(url);
       if (link === 'invalid') throw new AdminError(msg('admin.moderation.music.invalid'));
       await repo.admin.setCarnetMusic(userId, link, opts(reason.trim()));
+    },
+
+    /**
+     * Cambia el nº de un Carnet de este navegador (plan 029 T282): entero de 1
+     * en adelante y libre. Queda en la auditoría con el anterior y el nuevo.
+     */
+    async setMemberNumber(userId: string, typed: string, reason?: string | null) {
+      const n = /^\d{1,8}$/.test(typed.trim()) ? Number(typed.trim()) : Number.NaN;
+      if (memberNumberProblem(n, []) === 'invalid')
+        throw new AdminError(msg('admin.real.error.invalidNumber'));
+      try {
+        await repo.admin.setMemberNumber(
+          userId,
+          n,
+          opts(reason?.trim() || msg('admin.real.socios.numberReason')),
+        );
+      } catch (err) {
+        if (isStoreError(err, 'conflict'))
+          throw new AdminError(msg('admin.real.error.numberTaken'));
+        throw err;
+      }
     },
 
     /** Devuelve al mar una botella retirada por moderación (plan 017 T191). */

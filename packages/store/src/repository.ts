@@ -146,6 +146,12 @@ export interface CarnetView {
   avatarKey: string | null;
   avatarImage: string | null;
   memberSince: string;
+  /**
+   * Nº de Carnet (plan 029 T282): en modo local, el de este navegador (desde
+   * el 10). Los miembros de muestra y los artistas del contenido no llevan.
+   * Con cuentas, el número lo da el servidor (`carnets.member_number`).
+   */
+  memberNumber?: number;
   /** Sólo las contestadas, en el orden de las preguntas. */
   answers: CarnetAnswerView[];
   points: number;
@@ -849,6 +855,13 @@ export interface AdminApi {
    * «Deshacer» lo devuelve si nadie lo ha cambiado después.
    */
   setCarnetMusic(userId: string, link: MusicLink | null, opts?: AdminOptions): Promise<void>;
+  /**
+   * Cambia el nº de un Carnet de este navegador (plan 029 T282): entero de 1
+   * en adelante (`invalid`), que no tenga otro (`conflict`). Queda en la
+   * auditoría con el anterior y el nuevo. Los de muestra no tienen número
+   * (`not_found`).
+   */
+  setMemberNumber(userId: string, memberNumber: number, opts?: AdminOptions): Promise<void>;
   /** Da por revisado un reporte de Carnet sin retirar nada. */
   resolveCarnetReport(reportId: string, resolution: string, opts?: AdminOptions): Promise<void>;
 

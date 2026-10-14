@@ -25,7 +25,7 @@ function body(sql: string, name: string): string {
 }
 
 describe('el Carnet 000 es del Admin y el contador nunca lo da', () => {
-  it('el contador empieza en el mayor (≥ 0) y sube antes de dar un número: el primero es el 1', () => {
+  it('el contador empieza en el mayor (≥ 0) y sube antes de dar un número: nunca da el 0 (desde T282, el primero es el 10)', () => {
     expect(NUMBERS).toContain('select true, coalesce(max(member_number), 0) from public.carnets;');
     expect(NUMBERS).toContain('last_number bigint not null check (last_number >= 0)');
     const next = body(NUMBERS, 'private.next_member_number');

@@ -12,17 +12,8 @@
  */
 import { parseGrantArgs } from '../grant.ts';
 import { supabaseEnv } from '../supabase/env.ts';
-import { serviceClient, type Client } from '../supabase/testkit.ts';
-
-async function findUser(service: Client, email: string): Promise<string | null> {
-  for (let page = 1; ; page++) {
-    const { data, error } = await service.auth.admin.listUsers({ page, perPage: 1000 });
-    if (error) throw new Error(`listUsers: ${error.message}`);
-    const found = data.users.find((u) => u.email?.toLowerCase() === email);
-    if (found) return found.id;
-    if (data.users.length < 1000) return null;
-  }
-}
+import { serviceClient } from '../supabase/testkit.ts';
+import { findUserByEmail as findUser } from '../supabase/users.ts';
 
 async function main(): Promise<void> {
   const { email, role } = parseGrantArgs(process.argv.slice(2));

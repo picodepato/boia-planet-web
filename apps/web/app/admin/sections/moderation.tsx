@@ -338,6 +338,55 @@ export function CarnetReports({ ctx }: { ctx: AdminContext }) {
   );
 }
 
+/**
+ * El nº de un Carnet de este navegador (plan 029 T282): el Admin pone otro,
+ * de 1 en adelante y libre (si está ocupado, lo dice el aviso de la tarjeta).
+ */
+function MemberNumberEditor({
+  userId,
+  current,
+  busy,
+  onSave,
+}: {
+  userId: string;
+  current: number;
+  busy: boolean;
+  onSave: (typed: string) => void;
+}) {
+  const [typed, setTyped] = useState(String(current));
+  return (
+    <form
+      className="admin-row admin-row--end"
+      data-testid={`carnet-mod-numero-panel-${userId}`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(typed);
+      }}
+    >
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.real.socios.numberLabel')}</span>
+        <input
+          type="number"
+          min={1}
+          step={1}
+          inputMode="numeric"
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          data-testid={`carnet-mod-numero-input-${userId}`}
+        />
+      </label>
+      <button
+        type="submit"
+        className="admin-button"
+        disabled={busy || typed.trim() === String(current)}
+        data-testid={`carnet-mod-numero-guardar-${userId}`}
+      >
+        {t('admin.real.socios.numberSave')}
+      </button>
+    </form>
+  );
+}
+
 /** Un Carnet de la lista completa: ocultarlo o mostrarlo, y su apodo y su foto (T191). */
 function CarnetModRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
   const [reason, setReason] = useState('');
@@ -359,6 +408,11 @@ function CarnetModRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView })
       <div className="admin-row admin-row--between">
         <p>
           <strong>{row.carnet.nickname}</strong>
+          {row.carnet.memberNumber !== undefined ? (
+            <span data-testid={`carnet-mod-numero-${row.userId}`}>
+              {` · ${t('admin.moderation.carnets.number', { n: row.carnet.memberNumber })}`}
+            </span>
+          ) : null}
           {row.carnet.isSample ? t('admin.moderation.muestra') : ''}
           {badges.map((k) => (
             <span key={k} className="admin-badge">
@@ -406,6 +460,20 @@ function CarnetModRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView })
             void run(() => ctx.actions.moderateCarnet(row.userId, action, reason), ok)
           }
         />
+        {row.carnet.memberNumber !== undefined ? (
+          <MemberNumberEditor
+            key={row.carnet.memberNumber}
+            userId={row.userId}
+            current={row.carnet.memberNumber}
+            busy={busy}
+            onSave={(typed) =>
+              void run(
+                () => ctx.actions.setMemberNumber(row.userId, typed, reason),
+                t('admin.real.socios.numberSaved'),
+              )
+            }
+          />
+        ) : null}
         {row.carnet.isArtist ? (
           <MusicEditor
             key={row.carnet.musicLink?.url ?? ''}
@@ -436,7 +504,9 @@ export function AllCarnets({ ctx }: { ctx: AdminContext }) {
   const list = rows.filter(
     (r) =>
       (!onlyModerated || r.moderation) &&
-      (!q || r.carnet.nickname.toLocaleLowerCase('es').includes(q)),
+      (!q ||
+        r.carnet.nickname.toLocaleLowerCase('es').includes(q) ||
+        String(r.carnet.memberNumber ?? '') === q.replace(/^0+(?=\d)/, '')),
   );
   return (
     <div data-testid="carnets-moderacion">

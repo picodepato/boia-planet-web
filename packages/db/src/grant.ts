@@ -22,6 +22,17 @@ export function parseGrantArgs(argv: readonly string[]): { email: string; role: 
   return { email: email.trim().toLowerCase(), role: role as GrantRole };
 }
 
+/** `pnpm admin:carnet0 -- <email>` (plan 029 T282): el email de la cuenta del Admin. */
+export function parseCarnet0Args(argv: readonly string[]): { email: string } {
+  const args = argv.filter((a) => a !== '--');
+  const [email] = args;
+  if (args.length !== 1 || !email) throw new Error('uso: pnpm admin:carnet0 -- <email>');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    throw new Error(`email no válido: ${email}`);
+  }
+  return { email: email.trim().toLowerCase() };
+}
+
 /** Minutos de margen: 30 por defecto (no pisa otra ejecución), 0 con `--all`. */
 export function cleanMinutes(argv: readonly string[]): number {
   if (argv.includes('--all')) return 0;

@@ -130,7 +130,8 @@ export async function stampArtFor(
 
 async function readCarnet(repo: BoiaRepository, userId: string | null): Promise<CarnetData> {
   let carnet = userId ? await repo.carnet.get(userId) : await repo.carnet.mine();
-  let memberNumber: number | null = null;
+  // Modo local (plan 029 T282): el nº de este navegador; con cuentas, el del servidor.
+  let memberNumber: number | null = carnet?.memberNumber ?? null;
   let isArtist = false;
   let known: Map<string, StampEventFacts> | undefined;
   // Con cuentas (T91): el Carnet público de otro miembro se lee del servidor.

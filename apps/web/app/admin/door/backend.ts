@@ -96,8 +96,17 @@ export function localDoor(repo: BoiaRepository): DoorBackend {
       const q = search.trim().toLowerCase();
       return (await repo.admin.carnets())
         .filter((c) => !c.carnet.isSample)
-        .filter((c) => !q || c.carnet.nickname.toLowerCase().includes(q))
-        .map((c) => ({ userId: c.userId, nickname: c.carnet.nickname, memberNumber: null }));
+        .filter(
+          (c) =>
+            !q ||
+            c.carnet.nickname.toLowerCase().includes(q) ||
+            String(c.carnet.memberNumber ?? '') === q.replace(/^0+(?=\d)/, ''),
+        )
+        .map((c) => ({
+          userId: c.userId,
+          nickname: c.carnet.nickname,
+          memberNumber: c.carnet.memberNumber ?? null,
+        }));
     },
     stamp: async (userId, party, source, reason) => {
       try {

@@ -74,7 +74,7 @@ las e2e crean y borran cuentas allí. **La web pública no puede usarlo.**
     línea `postgresql://…`, con la contraseña de la base en lugar de
     `[YOUR-PASSWORD]`. Sólo scripts.
 
-## 2. Las migraciones (las 39 de `supabase/migrations/`)
+## 2. Las migraciones (las 40 de `supabase/migrations/`)
 
 Se aplican todas, en orden, con el script del repo. Lee las variables de la
 terminal antes que las de `apps/web/.env.local` (una variable definida gana
@@ -86,11 +86,11 @@ export NEXT_PUBLIC_SUPABASE_URL='https://<ref-de-prod>.supabase.co'
 export NEXT_PUBLIC_SUPABASE_ANON_KEY='<publishable de prod>'
 export SUPABASE_SERVICE_ROLE_KEY='<secret de prod>'
 export SUPABASE_DB_URL='postgresql://postgres.<ref-de-prod>:<contraseña>@<host>:5432/postgres'
-pnpm db:migrate:dev     # «[migraciones] 39 aplicadas de 39» y las semillas de muestra
-pnpm db:migrate:dev     # otra vez: «0 aplicadas de 39 (al día)»
+pnpm db:migrate:dev     # «[migraciones] 40 aplicadas de 40» y las semillas de muestra
+pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
 ```
 
-- [ ] Las tres últimas, del plan 029, van con las demás (ya están en
+- [ ] Las últimas, del plan 029, van con las demás (ya están en
       `boia-planet-dev`):
   - `20261013100100_gallery_clips_longer.sql` (T277): el bucket
     `event-clips` admite clips de hasta 50 MB.
@@ -112,6 +112,11 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 39 (al día)»
   - `20261014100110_carnet_answers_active_only.sql` (T281): un miembro sólo
     puede contestar o cambiar respuestas a preguntas **activas**; las
     respuestas a las retiradas se quedan como están (y puede borrarlas).
+  - `20261014100200_member_numbers_from_10.sql` (T282): los números de
+    Carnet salen seguidos **desde el 10** (el 0 es del Carnet del Admin y
+    del 1 al 9 quedan reservados; el Admin puede darlos a mano desde
+    «Socios y emails» → «Cambiar nº»). Nadie cambia de número. En un
+    proyecto nuevo el primer socio lleva el 10.
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`
@@ -259,6 +264,18 @@ pnpm admin:grant -- admin@boiaplanet.net owner    # owner | admin | editor | non
       respaldo y los guarda en el gestor de contraseñas.
 - [ ] Un segundo propietario, si lo hay, con el mismo comando: con dos,
       si uno pierde el móvil el otro le arregla el acceso.
+- [ ] El **Carnet 000** para la cuenta del Admin, cuando ya tenga rol (arriba)
+      y haya creado su Carnet en la web (después del paso 10), en una
+      terminal con las variables de producción:
+
+      ```sh
+      pnpm admin:carnet0 -- admin@boiaplanet.net
+      ```
+
+      Llama a `assign_admin_carnet` con la clave de servicio (no hace falta el
+      editor SQL); su número anterior queda libre y el cambio queda en la
+      auditoría. Repetirlo no cambia nada. Nunca imprime una clave. Si la
+      cuenta no tiene rol admin u owner o aún no tiene Carnet, lo dice.
 - [ ] **Cerrar la terminal** (las claves de producción se quedan en ella).
 
 ## 9. La política de privacidad (antes de recoger emails reales)

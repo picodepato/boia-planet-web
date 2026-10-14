@@ -32,6 +32,7 @@ import { StoreError } from './errors';
 import { isStableKey, ledgerId, newId, rewardKey } from './ids';
 import { activeEntries, checkAppend, compensatedIds, deriveBalances, replayLedger } from './ledger';
 import { MIGRATIONS, migrate, type Migration } from './migrations';
+import { MEMBER_NUMBER_MAX, memberNumberProblem, nextMemberNumber } from './member-number';
 import type {
   AchievementProgress,
   AchievementReward,
@@ -186,6 +187,13 @@ function nonNegativeInt(n: unknown, what: string): number {
   if (n === undefined) return 0;
   if (typeof n !== 'number' || !Number.isInteger(n) || n < 0) invalid(`${what}: entero >= 0`);
   return n;
+}
+
+/** Los nº de Carnet que ya tiene alguien en este navegador (plan 029 T282). */
+function takenNumbers(doc: StoreDoc): number[] {
+  return Object.values(doc.carnets).flatMap((c) =>
+    c.memberNumber === undefined ? [] : [c.memberNumber],
+  );
 }
 
 function finiteNumber(n: unknown, what: string): number {
@@ -884,6 +892,7 @@ class LocalRepository implements BoiaRepository {
         avatarKey: own.avatarKey,
         avatarImage: own.avatarImage,
         memberSince: own.memberSince,
+        ...(own.memberNumber !== undefined ? { memberNumber: own.memberNumber } : {}),
         answers: answersFrom((qid) => {
           const a = own.answers[qid];
           return a && { answer: a.answer, version: a.questionVersion };
@@ -1110,8 +1119,12 @@ class LocalRepository implements BoiaRepository {
           const me = this.ensureIdentity(d);
           if (d.carnets[me.id]) throw new StoreError('conflict', 'ya hay Carnet');
           const at = this.iso();
+          // Nº seguido desde el 10 (plan 029 T282), saltando los ocupados.
+          const memberNumber = nextMemberNumber(d.memberCounter, takenNumbers(d));
+          d.memberCounter = memberNumber;
           d.carnets[me.id] = {
             userId: me.id,
+            memberNumber,
             nickname: this.checkNickname(d, input.nickname, me.id),
             avatarKey: input.avatarKey ?? null,
             avatarImage: this.checkAvatar(input.avatarImage),
@@ -2982,6 +2995,36 @@ class LocalRepository implements BoiaRepository {
           this.audit(
             d,
             { area: 'carnets', action: 'music', targetId: `${userId}/music`, before, after },
+            opts,
+          );
+        }),
+      setMemberNumber: async (userId, memberNumber, opts) =>
+        this.mutate(['carnet', 'audit'], (d, skip) => {
+          const c = d.carnets[userId];
+          if (!c) throw new StoreError('not_found', `Carnet ${userId}`);
+          const others = Object.values(d.carnets).flatMap((x) =>
+            x.userId !== userId && x.memberNumber !== undefined ? [x.memberNumber] : [],
+          );
+          const problem = memberNumberProblem(memberNumber, others, c.memberNumber);
+          if (problem === 'invalid') invalid(`nº de Carnet: entero de 1 a ${MEMBER_NUMBER_MAX}`);
+          if (problem === 'taken') throw new StoreError('conflict', 'ese nº ya es de otro Carnet');
+          const before = c.memberNumber ?? null;
+          if (before === memberNumber) {
+            skip();
+            return;
+          }
+          c.memberNumber = memberNumber;
+          c.version++;
+          c.updatedAt = this.iso();
+          this.audit(
+            d,
+            {
+              area: 'carnets',
+              action: 'member_number',
+              targetId: userId,
+              before: { memberNumber: before },
+              after: { memberNumber },
+            },
             opts,
           );
         }),

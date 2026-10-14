@@ -33,8 +33,18 @@ describe('números de socio por orden de llegada (T186)', () => {
     // 017 T193) sólo pone el 0 a la cuenta del Admin, con el cerrojo del
     // contador y sin tocarlo (lo comprueba admin-access-sql.test.ts).
     const CARNET_ZERO = '20261007100400_admin_access_export.sql';
+    // Desde el 10 (plan 029 T282): redefine next_member_number y pone el
+    // contador una vez, sin cambiar el número de nadie (lo comprueba
+    // member-numbers-from-10-sql.test.ts).
+    const FROM_TEN = '20261014100200_member_numbers_from_10.sql';
     for (const f of later) {
       const text = read(`supabase/migrations/${f}`);
+      if (f === FROM_TEN) {
+        expect(text).not.toMatch(
+          /function (public|private)\.save_profile|alter column member_number|set member_number/,
+        );
+        continue;
+      }
       if (f === CARNET_ZERO) {
         expect(text).not.toMatch(
           /function (public|private)\.save_profile|next_member_number|alter column member_number|update private\.member_counter/,

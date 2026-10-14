@@ -4,6 +4,81 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T282: Números de Carnet seguidos desde el 10, editables desde el Admin
+
+Qué existe:
+
+- **Por qué se veían «aleatorios»**: en `boia-planet-dev` el contador de
+  socios iba por 1335 (cada ejecución de `pnpm test:supabase` crea y borra
+  cuentas y gasta números) y los dos Carnets que quedan llevan el 856 y el
+  1236. En modo local (la web publicada) el Carnet no llevaba número («—»).
+- **Modo local** (`packages/store/src/member-number.ts`, funciones puras):
+  cada Carnet guardado en el navegador lleva `memberNumber`; el alta toma el
+  primero libre por encima del contador (`memberCounter` del documento) y
+  nunca por debajo del 10. Empezar de cero (identidad nueva) sigue con el
+  siguiente (10, 11…). Los Carnets guardados antes de T282 reciben número al
+  leerse, por orden de alta. Los miembros de muestra y los artistas del
+  contenido no llevan número (son ficticios), así que no hay choques. El
+  Carnet (anverso, línea mecánica) y la puerta (`/admin` → Puerta, también
+  se busca por nº) lo enseñan.
+- **Admin local**: Moderación → «Todos los Carnets» enseña «nº N» y un campo
+  «Nº de socio nuevo (libre)» en «Ver contenido» de cada Carnet guardado
+  (`admin.setMemberNumber` del repositorio y `actions.setMemberNumber`):
+  entero de 1 a 99 999 999 (del 1 al 9 sí a mano; el 0 nunca), único, con
+  los avisos «El número de socio es un entero de 1 en adelante.» y «Ese
+  número ya es de otro socio: elige uno libre.»; queda en la auditoría
+  (`member_number`, anterior y nuevo). La búsqueda acepta el nº.
+- **Con cuentas**: migración `20261014100200_member_numbers_from_10.sql`
+  (aplicada sólo a `boia-planet-dev`): `private.next_member_number()` ya no
+  baja del 10 (`greatest(last_number, 9) + 1`, mismo cerrojo de la fila del
+  contador y mismo salto de ocupados) y el contador se pone una vez: tras el
+  mayor número dado de 10 en adelante si es menor que 1000; si no (o no hay),
+  a 9 y el siguiente alta toma el primer libre desde el 10. Nadie cambia de
+  número. En dev quedó a 9 (el mayor era 1236): el siguiente alta lleva el
+  10; tras la ejecución de `test:supabase` de esta tarea, el contador de dev va por 67 (las pruebas gastan números). El cambio de número en
+  el Admin real ya existía (plan 016 T186: «Socios y emails» → «Cambiar nº»,
+  `admin_set_member_number`: private SECURITY DEFINER + envoltura INVOKER,
+  search_path vacío, `require_staff('admin')`, auditado); no cambia.
+- **`pnpm admin:carnet0 -- <email>`** (`packages/db/src/cli/admin-carnet0.ts`):
+  llama a `assign_admin_carnet` con la clave de servicio; nunca imprime una
+  clave; dice en castellano si falta rol o Carnet. Documentado en el paso 8
+  de `docs/propuestas/2026-10-03-produccion-supabase.md` (y la migración en
+  el paso 2) y en el README.
+
+Comandos:
+
+- `pnpm exec vitest run packages/store/src/member-number.test.ts` → 11 pasan
+- `pnpm exec vitest run apps/web/lib/admin/member-number.test.ts apps/web/lib/account` → pasan
+- `pnpm exec vitest run packages/db/src/grant.test.ts` → 5 pasan
+- `pnpm db:migrate:dev -- --no-seed` (variables de dev) → «1 aplicadas de 40: 20261014100200»
+- `pnpm test:supabase -- member-numbers admin-access schema security-definer` (corrió los 24 archivos) → exit 0, 24 archivos, 178 pruebas pasan
+- Test command → exit 0 (vitest 321 archivos, 2877 pasan, 3 omitidas; checks, lint, build y typecheck exit 0)
+
+Pendiente:
+
+- Producción recibe la migración con las demás al encender las cuentas.
+- En dev, cada `pnpm test:supabase` sigue gastando números (crea cuentas de
+  prueba): es lo esperado de un contador sin huecos.
+- El número de un socio borrado (en la Papelera) puede reutilizarse tras el
+  ajuste del contador; si se devuelve, la Papelera ya avisa «número ocupado».
+
+Probar a mano:
+
+- Local: `/mar` → crear el Carnet en un navegador limpio → el anverso dice
+  «Nº de miembro 0010»; «Empezar de cero» y otro Carnet → 0011.
+- Local: `/admin` (000 + contraseña) → Moderación → Todos los Carnets → tu
+  Carnet → «Ver contenido» → poner 0 (aviso), un número libre (se guarda y
+  sale en Auditoría), y buscar por el nº.
+- Con cuentas (dev): crear un Carnet nuevo → nº ≥ 10; `/admin` → Socios y
+  emails → «Cambiar nº» a uno ocupado (aviso) y a uno libre.
+- `pnpm admin:carnet0 -- <email del Admin>` con las variables de dev.
+
+Tras fusionar main (T281, T283; conflicto en package.json resuelto dejando
+`admin:carnet0` y `admin:password`):
+
+- Test command → exit 0 (vitest 323 archivos, 2895 pasan, 1 omitida; checks, lint, build y typecheck exit 0)
+- `pnpm test:supabase` (25 archivos) → 24 pasan, 1 falla: `admin-password.supabase.ts` (T283) «el enlace abre una sesión aal1…» esperaba `otp_expired` y recibió null. Repetido solo → 4 de 4 pasan (inestable; no toca código de T282).
+
 ## 2026-10-14 — plan 029 T283: Cambiar la contraseña del Admin
 
 **Qué existe**

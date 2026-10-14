@@ -5,7 +5,10 @@
  * - números seguidos y sin hueco aunque un alta falle;
  * - artistas y socios comparten la serie;
  * - el Admin cambia un número sólo a uno libre y queda en la auditoría;
- * - un código equivocado o ya rotado no hace artista; el vigente, sí.
+ * - un código equivocado o ya rotado no hace artista; el vigente, sí;
+ * - desde el plan 029 T282 (migración 20261014100200): ningún alta toma del
+ *   0 al 9, dos altas a la vez salen seguidas y el Admin puede dar a mano un
+ *   número reservado libre.
  *
  * Las altas de esta prueba van seguidas; otra ejecución a la vez contra el
  * mismo proyecto podría colarse en la serie (por eso se lanzan de una en una).
@@ -205,5 +208,60 @@ describe('el enlace de artistas', () => {
     await expectRejected(m.client.rpc('admin_rotate_artist_link', {}), 'forbidden');
     await expectRejected(m.client.rpc('admin_artist_link_info'), 'forbidden');
     await expectDenied(ctx.anon.rpc('admin_rotate_artist_link', {}));
+  });
+});
+
+describe('desde el 10, seguidos y sin choques (plan 029 T282)', () => {
+  it('un alta nunca toma del 0 al 9', async () => {
+    const m = await ctx.member('diez-primero');
+    const p = await join(m, 'Diez Primero');
+    expect(p.member_number).toBeGreaterThanOrEqual(10);
+  });
+
+  it('dos altas a la vez: números distintos y seguidos, desde el 10', async () => {
+    const a = await ctx.member('diez-a-la-vez-a');
+    const b = await ctx.member('diez-a-la-vez-b');
+    const [pa, pb] = await Promise.all([join(a, 'A La Vez A'), join(b, 'A La Vez B')]);
+    const nums = [pa.member_number, pb.member_number].sort((x, y) => x - y);
+    expect(nums[0]).toBeGreaterThanOrEqual(10);
+    expect(nums[1]).toBe(nums[0]! + 1);
+  });
+
+  it('salta un número que el Admin dio a mano por delante del contador', async () => {
+    const a = await ctx.member('salta-a');
+    const b = await ctx.member('salta-b');
+    const c = await ctx.member('salta-c');
+    const pa = await join(a, 'Salta A');
+    const pb = await join(b, 'Salta B');
+    expect(pb.member_number).toBe(pa.member_number + 1);
+    // El Admin pone a B el que le tocaba al siguiente alta; C se lo salta.
+    await ok(
+      admin.client.rpc('admin_set_member_number', {
+        p_user: b.id,
+        p_number: pa.member_number + 2,
+        p_reason: 'prueba T282',
+      }),
+    );
+    const pc = await join(c, 'Salta C');
+    expect(pc.member_number).toBe(pa.member_number + 3);
+  });
+
+  it('el Admin puede dar a mano un número reservado (1–9) libre, nunca el 0', async () => {
+    const m = await ctx.member('reservado');
+    await join(m, 'Reservado');
+    await expectRejected(
+      admin.client.rpc('admin_set_member_number', { p_user: m.id, p_number: 0 }),
+      'invalid_number',
+    );
+    const low = await ok(
+      ctx.service.from('carnets').select('member_number').lt('member_number', 10),
+    );
+    const taken = new Set(low.map((r) => Number(r.member_number)));
+    const free = [1, 2, 3, 4, 5, 6, 7, 8, 9].find((n) => !taken.has(n));
+    if (free === undefined) return; // del 1 al 9 ya los tiene alguien en este proyecto
+    const res = (await ok(
+      admin.client.rpc('admin_set_member_number', { p_user: m.id, p_number: free }),
+    )) as unknown as ProfileResult;
+    expect(res.member_number).toBe(free);
   });
 });
