@@ -10,6 +10,7 @@ import {
   WrongPasswordLogin,
   enrollTotp,
   redeemBackupCode,
+  requestPasswordRecovery,
   sendAdminCode,
   signInWithAdminPassword,
   verifiedTotp,
@@ -121,10 +122,21 @@ function problemText(e: unknown, sentAt: number | null): string {
 }
 
 function SignIn({ onDone }: { onDone: () => Promise<void> }) {
-  const [mode, setMode] = useState<'carnet' | 'email'>('carnet');
+  const [mode, setMode] = useState<'carnet' | 'email' | 'forgot'>('carnet');
+  if (mode === 'forgot') return <Forgot onBack={() => setMode('carnet')} />;
   return (
     <>
       {mode === 'carnet' ? <CarnetPassword onDone={onDone} /> : <EmailCode onDone={onDone} />}
+      {mode === 'carnet' ? (
+        <button
+          type="button"
+          className="admin-link"
+          data-testid="admin-login-olvide"
+          onClick={() => setMode('forgot')}
+        >
+          {t('admin.real.forgot.link')}
+        </button>
+      ) : null}
       <button
         type="button"
         className="admin-link"
@@ -193,6 +205,71 @@ function CarnetPassword({ onDone }: { onDone: () => Promise<void> }) {
         </button>
       </form>
       <ErrorLine text={error} />
+    </>
+  );
+}
+
+/** «He olvidado la contraseña»: el enlace de recuperación va a /admin/recuperar. */
+function Forgot({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!looksLikeEmail(email)) {
+      setError(t('admin.real.login.invalidEmail'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await requestPasswordRecovery(email, `${window.location.origin}/admin/recuperar`);
+      setSent(true);
+    } catch (err) {
+      setError(problemText(err, null));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <h2>{t('admin.real.forgot.title')}</h2>
+      {sent ? (
+        <p className="admin-meta" role="status" data-testid="admin-olvide-enviado">
+          {t('admin.real.forgot.sent', { email: email.trim() })}
+        </p>
+      ) : (
+        <>
+          <p className="admin-lead">{t('admin.real.forgot.lead')}</p>
+          <form className="admin-form" onSubmit={(e) => void send(e)}>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.real.login.email')}</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                data-testid="admin-olvide-email"
+              />
+            </label>
+            <button
+              type="submit"
+              className="admin-button"
+              disabled={busy}
+              data-testid="admin-olvide-enviar"
+            >
+              {t('admin.real.forgot.send')}
+            </button>
+          </form>
+          <ErrorLine text={error} />
+        </>
+      )}
+      <button type="button" className="admin-link" onClick={onBack}>
+        {t('admin.real.forgot.back')}
+      </button>
     </>
   );
 }

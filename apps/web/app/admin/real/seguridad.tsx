@@ -1,11 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { backupCodesLeft, generateBackupCodes } from '../../../lib/account/admin-auth';
+import {
+  backupCodesLeft,
+  changeAdminPassword,
+  generateBackupCodes,
+} from '../../../lib/account/admin-auth';
 import { backupCodesText } from '../../../lib/admin/backup-codes';
+import { MIN_PASSWORD_LENGTH } from '../../../lib/admin/password-change';
 import { t } from '../../../lib/i18n';
 import { SectionHead } from '../ui';
 import { download } from './common';
+import { PasswordForm } from './password-form';
 
 /**
  * Seguridad del Admin con cuentas (plan 017 T193, REQ-ADM-002): los códigos
@@ -99,6 +105,13 @@ export function SecuritySection() {
             {t('admin.real.backup.error')}
           </p>
         ) : null}
+      </div>
+      <SectionHead
+        title={t('admin.real.password.title')}
+        lead={t('admin.real.password.lead', { min: MIN_PASSWORD_LENGTH })}
+      />
+      <div className="admin-card" data-testid="admin-cambiar-password">
+        <PasswordForm change={changeAdminPassword} />
       </div>
     </section>
   );

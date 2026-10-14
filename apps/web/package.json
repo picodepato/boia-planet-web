@@ -15,7 +15,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "cf:build": "opennextjs-cloudflare build && opennextjs-cloudflare populateCache local && node scripts/cf-assets.mjs",
     "cf:preview": "pnpm cf:build && opennextjs-cloudflare preview",
-    "cf:measure": "node scripts/cf-measure.mjs"
+    "cf:measure": "node scripts/cf-measure.mjs",
+    "admin:password": "node scripts/admin-password.mjs"
   },
   "dependencies": {
     "@boia/contracts": "workspace:*",

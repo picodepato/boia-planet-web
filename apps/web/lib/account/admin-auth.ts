@@ -196,6 +196,93 @@ export async function verifyTotp(factorId: string, code: string): Promise<void> 
   if (error) throw error;
 }
 
+/** Para cambiar la contraseña hace falta haber entrado con el TOTP (aal2). */
+export class AdminPasswordNeedsAal2 extends Error {
+  constructor() {
+    super('admin_password_needs_aal2');
+  }
+}
+
+/** Supabase no acepta la contraseña nueva. */
+export class AdminPasswordRejected extends Error {
+  constructor(readonly reason: 'weak' | 'same' | 'other') {
+    super(`admin_password_rejected_${reason}`);
+  }
+}
+
+/** Qué le ha pasado a un cambio de contraseña, para la pantalla. */
+export function passwordChangeFailure(e: unknown): 'weak' | 'same' | 'needsAal2' | 'error' {
+  if (e instanceof AdminPasswordNeedsAal2) return 'needsAal2';
+  if (e instanceof AdminPasswordRejected) return e.reason === 'other' ? 'error' : e.reason;
+  return 'error';
+}
+
+/**
+ * Cambia la contraseña de la cuenta del Admin (plan 029 T283). Sólo con la
+ * sesión completa (aal2: contraseña y TOTP); si no, lanza
+ * `AdminPasswordNeedsAal2` sin llamar a Supabase.
+ */
+export async function changeAdminPassword(password: string): Promise<void> {
+  await updatePassword(password, false);
+}
+
+/**
+ * Pone la contraseña nueva tras el enlace del email (sesión aal1). Si la
+ * cuenta tiene TOTP, primero hay que verificarlo (Supabase lo exige para
+ * cambiar la contraseña); si no tiene, basta el enlace.
+ */
+export async function setPasswordAfterRecovery(password: string): Promise<void> {
+  await updatePassword(password, true);
+}
+
+async function updatePassword(password: string, recovery: boolean): Promise<void> {
+  const sb = await client();
+  const aal = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal.error) throw aal.error;
+  const { currentLevel, nextLevel } = aal.data;
+  const enough = recovery
+    ? currentLevel === 'aal2' || nextLevel !== 'aal2'
+    : currentLevel === 'aal2';
+  if (!enough) throw new AdminPasswordNeedsAal2();
+  const { error } = await sb.auth.updateUser({ password });
+  if (!error) return;
+  const code = (error as { code?: string }).code ?? '';
+  if (code === 'weak_password') throw new AdminPasswordRejected('weak');
+  if (code === 'same_password') throw new AdminPasswordRejected('same');
+  if (code === 'insufficient_aal') throw new AdminPasswordNeedsAal2();
+  throw error;
+}
+
+/**
+ * «He olvidado la contraseña»: Supabase manda el enlace de recuperación al
+ * email, que vuelve a `redirectTo` (/admin/recuperar). La pantalla dice lo
+ * mismo exista o no la cuenta (no se revela quién la tiene). El límite de
+ * Supabase (un correo por cuenta cada 60 s) sólo salta con una cuenta que
+ * existe: también se calla, o el aviso distinto la delataría (T283 audit).
+ */
+export async function requestPasswordRecovery(email: string, redirectTo: string): Promise<void> {
+  const sb = await client();
+  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+  if (!error) return;
+  const { code = '', status } = error as { code?: string; status?: number };
+  if (code === 'user_not_found' || code === 'otp_disabled') return;
+  if (status === 429 || /rate_limit|too_many/.test(code)) return;
+  throw error;
+}
+
+/** Abre la sesión de recuperación que trae el enlace del email (aal1). */
+export async function startRecoverySession(
+  accessToken: string,
+  refreshToken: string,
+): Promise<void> {
+  const sb = await client();
+  const { error } = await sb.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+  if (error) throw error;
+}
+
 export async function adminSignOut(): Promise<void> {
   const sb = await client();
   await sb.auth.signOut({ scope: 'local' });

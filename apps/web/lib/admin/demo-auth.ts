@@ -29,8 +29,8 @@ export interface PasswordHash {
 
 /**
  * El hash de la contraseña del Admin de la demo (elegida por Hernán,
- * 2026-10-07). Para cambiarla: un hash nuevo con otra sal (ver ESTADO.md,
- * plan 017 T193); nunca el texto.
+ * 2026-10-07). Para cambiarla: `pnpm admin:password` (plan 029 T283) escribe
+ * aquí un hash nuevo con otra sal; nunca el texto.
  */
 export const DEMO_ADMIN_PASSWORD: PasswordHash = {
   algorithm: 'PBKDF2-SHA-256',

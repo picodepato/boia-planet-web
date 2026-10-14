@@ -52,6 +52,43 @@ export const esAcceso = {
   'admin.real.backup.fileHeading': 'BOIA.PLANET · códigos de respaldo del Admin (un solo uso)',
   'admin.real.backup.error': 'No se pudo. Vuelve a probar.',
 
+  // Cambiar la contraseña del Admin y recuperarla (plan 029 T283)
+  'admin.real.password.title': 'Cambiar contraseña',
+  'admin.real.password.lead':
+    'La contraseña de la cuenta del Admin. Sólo se puede cambiar con la sesión completa (contraseña y código de la app). Mínimo {min} caracteres.',
+  'admin.real.password.new': 'Contraseña nueva',
+  'admin.real.password.again': 'Repite la contraseña nueva',
+  'admin.real.password.save': 'Cambiar contraseña',
+  'admin.real.password.saving': 'Cambiando…',
+  'admin.real.password.done':
+    'Contraseña cambiada. Úsala la próxima vez que entres; las otras sesiones abiertas se han cerrado.',
+  'admin.real.password.empty': 'Escribe la contraseña nueva.',
+  'admin.real.password.short': 'Tiene que tener al menos {min} caracteres.',
+  'admin.real.password.mismatch': 'Las dos contraseñas no coinciden.',
+  'admin.real.password.weak': 'Esa contraseña es demasiado fácil. Prueba con otra más larga.',
+  'admin.real.password.same': 'Es la misma que ya tienes. Elige otra.',
+  'admin.real.password.needsAal2': 'Entra otra vez con el código de la app para cambiarla.',
+  'admin.real.password.error': 'No se pudo cambiar. Vuelve a probar.',
+  'admin.real.forgot.link': 'He olvidado la contraseña',
+  'admin.real.forgot.title': 'Recuperar la contraseña',
+  'admin.real.forgot.lead':
+    'Escribe el email de la cuenta del Admin y te mandamos un enlace para elegir una contraseña nueva.',
+  'admin.real.forgot.send': 'Enviar el enlace',
+  'admin.real.forgot.sent':
+    'Si esa cuenta existe, te hemos mandado un enlace a {email}. Ábrelo en este mismo navegador. Si en unos minutos no ha llegado, mira en spam o vuelve a pedirlo más tarde.',
+  'admin.real.forgot.back': 'Volver a entrar',
+  'admin.real.recover.title': 'Elige tu contraseña nueva',
+  'admin.real.recover.checking': 'Comprobando el enlace…',
+  'admin.real.recover.invalid':
+    'El enlace no vale, caducó o ya se usó. Pide otro desde «He olvidado la contraseña».',
+  'admin.real.recover.totpLead':
+    'Para cambiar la contraseña, escribe primero el código de tu app de autenticación.',
+  'admin.real.recover.totpCode': 'Código de la app',
+  'admin.real.recover.totpNext': 'Continuar',
+  'admin.real.recover.done': 'Contraseña cambiada. Ya puedes entrar al Admin con ella.',
+  'admin.real.recover.enter': 'Ir al Admin',
+  'admin.real.recover.noAccounts': 'Esta página sólo existe cuando la web tiene cuentas.',
+
   // «Descargar mis datos» (REQ-IDE-050)
   'account.export.button': 'Descargar mis datos',
   'account.export.lead':

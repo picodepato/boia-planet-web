@@ -166,3 +166,36 @@ legales (hoy `privacidad@boia.example`, inventado; el real es P21).
 - No mandar datos por un canal distinto del correo verificado.
 - No pedir el DNI salvo que haya dudas serias y no quede otra forma; si se
   pide, se mira y no se guarda.
+
+## 7. Cambiar la contraseña del Admin (plan 029 T283)
+
+**Con cuentas** (la web con Supabase):
+
+- Dentro del Admin, **Seguridad → Cambiar contraseña**: la nueva, dos veces
+  (mínimo 8 caracteres). Hace falta haber entrado con el código de la app
+  (TOTP); si no, pide entrar otra vez.
+- Si no te acuerdas: en la pantalla de entrada, **He olvidado la contraseña**,
+  escribe el email de la cuenta del Admin y abre el enlace que llega (en el
+  mismo navegador). La página `/admin/recuperar` pide el código de la app y
+  después la contraseña nueva.
+
+**En la versión de prueba** (sin cuentas): la contraseña es un hash dentro del
+código. Para cambiarla, en una terminal con la raíz del proyecto:
+
+```sh
+pnpm admin:password
+```
+
+Pide la contraseña nueva dos veces (no se ve lo que escribes), genera una sal
+y un hash nuevos y reescribe `DEMO_ADMIN_PASSWORD` en
+`apps/web/lib/admin/demo-auth.ts`. Sólo imprime «hash actualizado»; la
+contraseña no se guarda en ningún sitio. Después hace falta **commit + push**
+para que los dos hosts (Cloudflare y Vercel) la tengan.
+
+Hace falta una terminal de verdad: PowerShell o cmd valen tal cual. En Git
+Bash, `pnpm admin:password` puede negarse (si no puede ocultar lo que escribes);
+usa `winpty node apps/web/scripts/admin-password.mjs` desde la raíz. Si las
+dos no coinciden o cancelas con Ctrl+C, no cambia nada.
+
+Al cambiar la contraseña con cuentas (desde Seguridad o con el enlace),
+Supabase cierra las demás sesiones abiertas de esa cuenta.

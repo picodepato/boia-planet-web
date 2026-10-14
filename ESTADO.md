@@ -4,6 +4,33 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 029 T283: Cambiar la contraseña del Admin
+
+**Qué existe**
+- Con cuentas: en Admin → Seguridad, «Cambiar contraseña» (nueva dos veces, mínimo 8; sólo con aal2, `changeAdminPassword` en `lib/account/admin-auth.ts`). En la entrada, «He olvidado la contraseña» manda el correo de recuperación de Supabase con redirección a `<host>/admin/recuperar`; esa página (`app/admin/recuperar/`) lee la sesión del enlace, pide el TOTP si la cuenta lo tiene, pone la contraseña nueva y cierra la sesión. Lógica pura y probada en `lib/admin/password-change.ts`.
+- Modo local: `pnpm admin:password` (`apps/web/scripts/admin-password.mjs` + `admin-password-lib.mjs`): pide la contraseña dos veces con entrada oculta, sal nueva, mismos parámetros (PBKDF2-SHA-256, vueltas leídas del código), reescribe `DEMO_ADMIN_PASSWORD`; imprime sólo «hash actualizado». Hash actual sin tocar.
+- Docs: `docs/manual-admin.md` §7; `docs/propuestas/2026-10-03-produccion-supabase.md` (mínimo de contraseña 8, plantilla Reset Password, redirección ya cubierta por `/**`, comprobación).
+
+**Comandos**
+- vitest completo (sin packages/db): 320 ficheros, 2871 pasan, 3 saltadas, exit 0
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0; `pnpm typecheck` → 0; `pnpm build` → 0 (landing 198,8 kB de 200)
+
+**Pendiente (Álvaro)**
+- En Supabase (prod): Minimum password length 8, plantilla «Reset Password» con el enlace (checklist del doc), y probar el enlace en los dos hosts.
+- Textos `muestra`.
+
+**Probar a mano**
+- Con cuentas: `/admin` → «He olvidado la contraseña» → correo → `/admin/recuperar` → TOTP → contraseña nueva → entrar.
+- Con cuentas: Admin → Seguridad → Cambiar contraseña.
+- Local: `pnpm admin:password` en una terminal real (no funciona por pipe); luego `/admin` con «000» y la nueva (commit + push para los hosts).
+
+**Auditoría (Opus, 2026-10-14)**
+- Probado contra `boia-planet-dev` con una cuenta admin de usar y tirar (contraseña aleatoria, TOTP calculado, enlace con `generateLink`, sin correos; borrada al acabar): `packages/db/src/supabase/admin-password.supabase.ts` (con aal1 Supabase rechaza el cambio, `insufficient_aal`; con aal2 cambia, la vieja deja de entrar y las otras sesiones caen; el enlace da sesión aal1 → TOTP → contraseña; usado una vez → `otp_expired`; email sin cuenta → sin error) y `apps/web/e2e/admin-password.spec.ts` (Chromium: Seguridad valida y cambia; «He olvidado» con email sin cuenta da el aviso de siempre; `/admin/recuperar` quita los tokens de la URL, pide TOTP, cambia, cierra la sesión, ningún token en la consola; el mismo enlace otra vez → inválido).
+- Cambios: el límite de 60 s de Supabase (sólo salta con cuentas que existen) ya no se nota en «He olvidado» (delataba la cuenta); el aviso añade «si no llega, mira en spam o pide otro más tarde». `/admin/recuperar` cierra la sesión antes de ofrecer «Ir al Admin»; «Comprobando…» con `role=status`. Textos: «Repite la contraseña nueva»; el aviso de hecho dice que las otras sesiones se cerraron.
+- Script: teclas especiales (flechas, ESC) ya no entran en la contraseña; borrar quita caracteres enteros; antes de escribir lee y verifica el hash nuevo; mensaje para Git Bash (`winpty node apps/web/scripts/admin-password.mjs`). Probado en una consola real de Windows (winpty) contra una copia de `demo-auth.ts`: nada se ve, «hash actualizado», el resto del archivo idéntico, `checkDemoAdmin` lo acepta; si no coinciden, archivo intacto; por pipe se niega. `admin-password-lib.d.mts` con los tipos (fuera el `@ts-expect-error`); la prueba ya no fija 310_000 a mano.
+- Comandos: `pnpm test:supabase admin-password` → 4 pasan, exit 0; `E2E_SUPABASE=1 E2E_PORT=3117 pnpm exec playwright test e2e/admin-password.spec.ts --project=desktop` → 3 pasan, exit 0.
+- Pendiente: con TOTP y móvil perdido a la vez que la contraseña no hay salida (los códigos de respaldo se usan tras la contraseña). Una cuenta sin TOTP cambia la contraseña sólo con el enlace del correo (el Admin siempre lo tiene).
+
 ## 2026-10-14 — plan 029 T281: Nuevas preguntas del Carnet
 
 **Qué existe**

@@ -141,6 +141,9 @@ En el proyecto **de producción** (en `boia-planet-dev` ya está):
       to sign up» activado (el primer código crea la cuenta).
 - [ ] **Authentication → Multi-Factor**: TOTP activado (lo está por
       defecto; el Admin lo necesita).
+- [ ] En la misma pantalla de Email: **Minimum password length: 8** (es
+      `MIN_PASSWORD_LENGTH` de `apps/web/lib/admin/password-change.ts`; el
+      Admin cambia y recupera su contraseña, plan 029 T283).
 
 ## 4. El correo: SMTP de Brevo con `hola@boiaplanet.net`
 
@@ -193,6 +196,22 @@ mágico, sólo el código.
   - **Save changes** en cada una.
 - [ ] El texto es `muestra`: Álvaro puede cambiarlo, siempre con
       `{{ .Token }}` y sin enlace.
+- [ ] **Reset Password** (el de «He olvidado la contraseña» del Admin, plan 029
+      T283). Este **sí** lleva el enlace, porque es lo que abre la página
+      para elegir contraseña:
+  - Subject: `Cambia tu contraseña del Admin de BOIA`
+  - Message body (pestaña «Source», entero):
+
+    ```html
+    <h2>Cambia tu contraseña</h2>
+    <p>Pulsa el botón para elegir una contraseña nueva del Admin de BOIA.PLANET:</p>
+    <p><a href="{{ .ConfirmationURL }}">Elegir contraseña nueva</a></p>
+    <p>Si no lo has pedido tú, ignora este correo: tu contraseña sigue igual.</p>
+    <p>BOIA · Alicante · boiaplanet.net</p>
+    ```
+
+  - **Save changes**. Si Supabase no usa la URL de redirección que manda la
+    web (`/admin/recuperar`), el enlace no abre la página: revisa el paso 7.
 
 ## 6. Límites de Auth
 
@@ -219,6 +238,10 @@ acepta los orígenes apuntados; `docs/DESPLIEGUE.md` §3):
   - `https://boia-planet-roan.vercel.app/**` (la copia)
   - `https://boia-planet.boiaplanet-bp.workers.dev/**` (el Worker sin dominio)
 - [ ] En producción **sin** `localhost` (eso es de `boia-planet-dev`).
+- [ ] La recuperación de la contraseña del Admin vuelve a
+      `<host>/admin/recuperar`; ya la cubren los `/**` de arriba (los cuatro
+      hosts). Si quitas alguno, esa URL tiene que seguir en la lista (plan 029
+      T283).
 
 ## 8. El propietario del Admin
 
@@ -329,6 +352,11 @@ Hoy los flujos programados apuntan a `boia-planet-dev`. GitHub → el repo →
 - [ ] Lo mismo, una vez, en `https://boia-planet-roan.vercel.app/mar` (la
       copia usa la misma base: la cuenta creada en un host entra en el otro).
 - [ ] `/admin` con la cuenta del paso 8 (email, código, TOTP).
+- [ ] Contraseña del Admin (plan 029 T283): en `/admin`, **Seguridad →
+      Cambiar contraseña** (dos veces) y volver a entrar con la nueva; y
+      «He olvidado la contraseña» → llega el correo → el enlace abre
+      `/admin/recuperar` → TOTP → contraseña nueva → entrar. Probar el enlace
+      en los dos hosts.
 - [ ] Si algo falla: Supabase → **Logs → Auth** (¿llegó la petición?) y
       Brevo → **Transactional → Logs** (¿salió el correo?).
 
