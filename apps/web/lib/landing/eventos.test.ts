@@ -42,9 +42,12 @@ const firstListed = Math.min(
 );
 const NOW = new Date(firstListed - 24 * 3600_000);
 // Uno con compra online («Solo en puerta» no la tiene, plan 019 decisión 6).
-const onSale = SAMPLE_CONTENT.events.find(
-  (e) => canBuy(e, NOW) && e.islandId && !e.boxOfficeOnly,
-)!;
+// ALL DAY BOIA y Nochevieja llevan «Tickets todavía no disponibles» (T292):
+// aquí, con la venta abierta.
+const onSale: BoiaEvent = {
+  ...SAMPLE_CONTENT.events.find((e) => e.state === 'on_sale' && e.islandId && !e.boxOfficeOnly)!,
+  ticketsNotYet: false,
+};
 /** Pasado su fin: las fechas lo finalizan aunque nadie lo toque. */
 const after = (e: BoiaEvent) => new Date(eventEndMs(e) + 60_000);
 

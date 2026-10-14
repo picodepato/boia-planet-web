@@ -8,6 +8,7 @@ import { EVENTOS_COPY, FOTOS_COPY } from '../lib/landing/eventos-copy';
 import { eventHref, galleryAnchor, photosHref } from '../lib/landing/eventos';
 import { CARNET_CREATE_HREF } from '../lib/landing/access';
 import { SAMPLE_ALBUM_CONTENT, SAMPLE_CONTENT } from '../lib/landing/sample-content';
+import { t } from '../lib/i18n/web';
 import { marSheet, openMar } from './mar-helpers';
 
 /**
@@ -106,15 +107,18 @@ test('«Ver fotos de la isla» abre la Galería en el grupo de esa isla', async 
 test.describe('sin JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('la ficha de un evento a la venta se lee y se compra', async ({ page }) => {
-    // Uno con checkout online (Halloween y SONIDO van a taquilla, T199).
-    const e = SAMPLE_CONTENT.events.find((x) => canBuy(x, now) && x.islandId && !x.boxOfficeOnly)!;
+  test('la ficha de un evento «todavía no» se lee y no lleva a la ticketera', async ({ page }) => {
+    // ALL DAY BOIA: «Tickets todavía no disponibles» (plan 030 T292). Sin
+    // JavaScript no se puede abrir la venta en el navegador: es la muestra tal cual.
+    const e = SAMPLE_CONTENT.events.find((x) => x.ticketsNotYet && x.islandId)!;
     await page.goto(eventHref(e.slug));
     const ficha = page.getByTestId('evento-ficha');
     await expect(ficha.getByRole('heading', { level: 1 })).toHaveText(e.name);
     await expect(ficha.getByTestId('evento-precio')).toContainText('€');
-    // Sin JavaScript, el enlace a la ticketera (de muestra).
-    await expect(ficha.getByTestId(`comprar-${e.id}`)).toHaveAttribute('href', e.ticketUrl!);
+    // Sin JavaScript, el botón despliega el aviso; ningún enlace a la ticketera.
+    await expect(ficha.locator(`a[href="${e.ticketUrl!}"]`)).toHaveCount(0);
+    await ficha.getByTestId(`no-todavia-${e.id}`).click();
+    await expect(ficha.getByTestId(`no-todavia-${e.id}-aviso`)).toHaveText(t('ticketing.notYet'));
     await expect(ficha.getByTestId('evento-ir-isla')).toHaveAttribute('href', /^\/mar\?/);
   });
 

@@ -1,4 +1,4 @@
-import { type BoiaEvent, type HomeContent, canBuy } from '@boia/contracts';
+import { type BoiaEvent, type HomeContent, buyButtonShown } from '@boia/contracts';
 import { resolveTicketsPanel } from '../../lib/landing/resolve';
 
 /**
@@ -13,7 +13,10 @@ export interface WorldTicket {
   event: BoiaEvent;
   /** El evento destacado (el prioritario). */
   featured: boolean;
-  /** Se puede comprar ya (`canBuy`). */
+  /**
+   * Lleva «Comprar entrada» (`buyButtonShown`): se vende ya o, con «Tickets
+   * todavía no disponibles» (T292), lo dice al tocarlo en vez del checkout.
+   */
   buyable: boolean;
   /** Su isla en este mapa, o null si no tiene (un satélite sin isla). */
   placeId: string | null;
@@ -34,7 +37,7 @@ export function worldTickets(
   const entry = (event: BoiaEvent, featured: boolean): WorldTicket => ({
     event,
     featured,
-    buyable: canBuy(event),
+    buyable: buyButtonShown(event),
     placeId: islandOf(event.id),
   });
   return {
@@ -44,4 +47,19 @@ export function worldTickets(
     ],
     onSale: view.onSale,
   };
+}
+
+/**
+ * Qué abre «Comprar entrada» en el mar: «Tickets todavía no disponibles»
+ * (plan 030 T292; nunca el checkout ni la ticketera), el aviso «Solo en
+ * puerta» o el checkout de prueba. Manda el primero.
+ */
+export type MarPurchase = 'not_yet' | 'box_office' | 'checkout';
+
+export function marPurchase(
+  event: Pick<BoiaEvent, 'ticketsNotYet' | 'boxOfficeOnly'> | undefined,
+): MarPurchase {
+  if (event?.ticketsNotYet) return 'not_yet';
+  if (event?.boxOfficeOnly) return 'box_office';
+  return 'checkout';
 }

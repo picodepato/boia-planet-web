@@ -1,5 +1,6 @@
 import { MemoryStorage, STORE_KEY, createLocalRepository } from '@boia/store';
 import { expect, type Locator, type Page } from '@playwright/test';
+import { openSales } from './online-event';
 
 /**
  * Comprar pide el Carnet BOIA (plan 019 T215, decisión 1). Las e2e que
@@ -27,6 +28,9 @@ export async function seedCarnet(
     },
     [STORE_KEY, doc] as const,
   );
+  // Quien compra con su Carnet compra ALL DAY BOIA o Nochevieja: la venta,
+  // abierta en este navegador (en la muestra, «todavía no», plan 030 T292).
+  await openSales(page);
 }
 
 /**

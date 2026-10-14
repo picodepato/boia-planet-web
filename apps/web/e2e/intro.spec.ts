@@ -3,9 +3,13 @@ import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { marWorld } from '../app/mar/engine/compact';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
-import { ONLINE_EVENT } from './online-event';
+import { ONLINE_EVENT, openSales } from './online-event';
 import { createCarnetInCheckout } from './carnet-seed';
 import { PAST_INTRO } from './hero-helpers';
+
+// ALL DAY BOIA y Nochevieja: «Tickets todavía no disponibles» en la muestra
+// (plan 030 T292). Aquí se compran: la venta, abierta en este navegador.
+test.beforeEach(({ page }) => openSales(page));
 
 /**
  * Entrada 3D con el planeta de /mar (T57, T64; plan 007 T79; D-19, D-21,

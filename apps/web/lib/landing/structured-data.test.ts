@@ -44,7 +44,12 @@ describe('homeStructuredData', () => {
       // Los precios de la muestra son de muestra (D-06): no se publican.
       expect(e.offers.price).toBeUndefined();
       expect(e.offers.priceCurrency).toBeUndefined();
-      expect(e.offers.availability).toBe('https://schema.org/InStock');
+      // ALL DAY BOIA y Nochevieja: «Tickets todavía no disponibles» (T292).
+      expect(e.offers.availability).toBe(
+        e.name === 'HALLOWEEN IN THE CLUB'
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/PreOrder',
+      );
     }
   });
 
@@ -95,6 +100,8 @@ describe('homeStructuredData', () => {
     const ev = SAMPLE_CONTENT.events[0]!;
     expect(offerAvailability(ev)).toBe('https://schema.org/InStock');
     expect(offerAvailability({ ...ev, state: 'sold_out' })).toBe('https://schema.org/SoldOut');
+    // «Tickets todavía no disponibles» (plan 030 T292).
+    expect(offerAvailability({ ...ev, ticketsNotYet: true })).toBe('https://schema.org/PreOrder');
   });
 
   it('el JSON no se puede cerrar con </script>', () => {

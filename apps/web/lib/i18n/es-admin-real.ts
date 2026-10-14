@@ -110,6 +110,9 @@ export const esAdminReal = {
   'admin.real.fiestas.pngReady': 'PNG descargado.',
   'admin.real.fiestas.print': 'Imprimir o PDF',
   'admin.real.fiestas.imageHeading': 'Imagen del sello',
+  // Plan 030 T292. Muestra.
+  'admin.real.fiestas.notYetOn': 'Entradas: «Tickets todavía no disponibles».',
+  'admin.real.fiestas.notYetOff': 'Venta abierta.',
   'admin.real.fiestas.imageHint':
     'PNG, WebP o JPEG de 512 × 512 px o más y 2 MB como mucho. Funciona mejor un logo o un dibujo con mucho contraste sobre fondo claro: una foto sale como una mancha.',
   'admin.real.fiestas.upload': 'Subir archivo',

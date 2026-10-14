@@ -60,7 +60,7 @@ import {
 import { liveWorld } from '../../lib/admin/live-world';
 import { track } from '../../lib/analytics';
 import { SandboxCheckout } from '../../lib/ticketing/checkout';
-import { BoxOfficeDialog } from '../../lib/ticketing/box-office';
+import { BoxOfficeDialog, TicketsNotYetDialog } from '../../lib/ticketing/box-office';
 import { purchaseNotices } from '../../lib/ticketing/notices';
 import { ClaimBadge, claimLabel } from '../../lib/logros/claim-badge';
 import { useReadyCount } from '../../lib/logros/use-logros';
@@ -200,7 +200,7 @@ import {
   withoutMarLinks,
 } from './deep-link';
 import { MarEntradas } from './entradas';
-import { worldTickets } from './entradas-model';
+import { marPurchase, worldTickets } from './entradas-model';
 import { MarLogros } from './logros';
 import { MarMenu, MarMenuButtonIcon, type MenuSection } from './menu';
 import { HOROSCOPO_STORAGE_KEY, MOOD_STORAGE_KEY } from '../../lib/mundo/mar-keys';
@@ -2581,7 +2581,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           hidden={gameHidden.has('balances')}
         >
           <span title={msg('mar.client.puntos')}>★ {balances?.points ?? '–'}</span>
-          <span title={msg('mar.client.monedas')} data-robadas={stolen} data-testid="mar-saldo-monedas">
+          <span
+            title={msg('mar.client.monedas')}
+            data-robadas={stolen}
+            data-testid="mar-saldo-monedas"
+          >
             <CoinIcon label={msg('mar.client.monedas')} />{' '}
             {balances ? Math.max(0, balances.coins - stolen) : '–'}
           </span>
@@ -3150,7 +3154,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         />
       ) : null}
 
-      {checkoutFor && findEvent(checkoutFor)?.boxOfficeOnly ? (
+      {checkoutFor && marPurchase(findEvent(checkoutFor)) === 'not_yet' ? (
+        // «Tickets todavía no disponibles» (plan 030 T292): ni checkout ni ticketera.
+        <TicketsNotYetDialog
+          eventName={findEvent(checkoutFor)!.name}
+          className="checkout--mar"
+          onClose={() => setCheckoutFor(null)}
+        />
+      ) : checkoutFor && marPurchase(findEvent(checkoutFor)) === 'box_office' ? (
         <BoxOfficeDialog
           eventName={findEvent(checkoutFor)!.name}
           event={findEvent(checkoutFor)!}

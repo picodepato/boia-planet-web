@@ -193,6 +193,8 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     // Plan 019 T215 (decisiones 5 y 14): vuelve la venta online (ticketera
     // por elegir) y vale el premio de la Boia Fiestera.
     ticketUrl: `${SANDBOX}/tickets/${SONIDO_EVENT_ID}`,
+    // Álvaro, 2026-10-14 (plan 030 T292): «Tickets todavía no disponibles».
+    ticketsNotYet: true,
     islandId: TICKET_EVENT_ISLANDS[SONIDO_EVENT_ID],
     sample: false,
   },
@@ -213,6 +215,8 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     priceCents: 3000,
     priceSample: true,
     ticketUrl: `${SANDBOX}/tickets/${NOCHEVIEJA_EVENT_ID}`,
+    // Álvaro, 2026-10-14 (plan 030 T292): «Tickets todavía no disponibles».
+    ticketsNotYet: true,
     islandId: TICKET_EVENT_ISLANDS[NOCHEVIEJA_EVENT_ID],
     sample: false,
   },

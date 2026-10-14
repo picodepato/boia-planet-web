@@ -1,10 +1,6 @@
-import { canBuy } from '@boia/contracts';
+import { buyButtonShown, canBuy } from '@boia/contracts';
 import { SAMPLE_EVENTS, TICKET_EVENT_ISLANDS } from '@boia/store';
-import {
-  HALLOWEEN_PLACE_ID,
-  TICKET_ISLAND_EVENTS,
-  type WorldObject,
-} from '@boia/world';
+import { HALLOWEEN_PLACE_ID, TICKET_ISLAND_EVENTS, type WorldObject } from '@boia/world';
 import { describe, expect, it } from 'vitest';
 import { marWorld } from '../../app/mar/engine/compact';
 import { worldTickets } from '../../app/mar/entradas-model';
@@ -99,7 +95,9 @@ describe('islas y entradas del 2026-10-02 (T67)', () => {
       Object.fromEntries(Object.entries(TICKET_ISLAND_EVENTS).map(([island, id]) => [id, island])),
     ).toEqual(TICKET_EVENT_ISLANDS);
     for (const e of SAMPLE_CONTENT.events.filter((x) => x.state === 'on_sale')) {
-      expect(canBuy(e, NOW), e.id).toBe(true);
+      // ALL DAY BOIA y Nochevieja: «Tickets todavía no disponibles» (T292); el botón sigue.
+      expect(canBuy(e, NOW), e.id).toBe(!e.ticketsNotYet);
+      expect(buyButtonShown(e, NOW), e.id).toBe(true);
       expect(e.priceSample, e.id).toBe(true);
       // Cada isla abre su evento (el vivo del Admin también lo liga).
       expect(eventOfPlace(objectIn('arcilla', e.islandId!))).toBe(e.id);

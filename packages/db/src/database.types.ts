@@ -1107,6 +1107,7 @@ export type Database = {
           ticket_provider: string | null;
           ticket_provider_event_id: string | null;
           ticket_url: string | null;
+          tickets_not_yet: boolean;
           timezone: string;
           title: string;
           updated_at: string;
@@ -1147,6 +1148,7 @@ export type Database = {
           ticket_provider?: string | null;
           ticket_provider_event_id?: string | null;
           ticket_url?: string | null;
+          tickets_not_yet?: boolean;
           timezone?: string;
           title: string;
           updated_at?: string;
@@ -1187,6 +1189,7 @@ export type Database = {
           ticket_provider?: string | null;
           ticket_provider_event_id?: string | null;
           ticket_url?: string | null;
+          tickets_not_yet?: boolean;
           timezone?: string;
           title?: string;
           updated_at?: string;

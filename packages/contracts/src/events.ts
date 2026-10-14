@@ -100,11 +100,17 @@ export const eventSchema = z.object({
    * es el precio en la puerta con Carnet; sin él, `priceCents`. El Carnet ya
    * no descuenta: es el requisito (la regla «-2 € con Carnet» de T199 se fue).
    */
-  boxOfficeOnly: z
-    .object({ doorPriceCents: z.number().int().nonnegative().optional() })
-    .optional(),
+  boxOfficeOnly: z.object({ doorPriceCents: z.number().int().nonnegative().optional() }).optional(),
   /** Enlace a la ticketera (adaptador o sandbox hasta que Álvaro contrate, D-06). */
   ticketUrl: z.url().optional(),
+  /**
+   * «Tickets todavía no disponibles» (plan 030 T292, Álvaro 2026-10-14): el
+   * evento está a la venta en la web, pero sus entradas aún no se venden.
+   * «Comprar entradas» sigue en su sitio y, al tocarlo, lo dice en vez de
+   * abrir el checkout o la ticketera. El Admin lo quita para abrir la venta
+   * (Supabase: `events.tickets_not_yet`).
+   */
+  ticketsNotYet: z.boolean().default(false),
   /**
    * Nombre de la ticketera que vende este evento («Fourvenues»…), por elegir
    * (plan 019 T215, decisión 5): la ficha enseña la que haya.
@@ -181,15 +187,32 @@ export function effectiveEvents<E extends StateInput>(events: readonly E[], now:
 }
 
 /**
- * Un evento puede venderse sólo si está a la venta y tiene enlace de ticket.
- * Con `now`, el estado sale de las fechas; sin él, se usa el que trae.
+ * Un evento puede venderse sólo si está a la venta, tiene enlace de ticket (o
+ * es «Solo en puerta») y sus entradas no están «todavía no disponibles». Con
+ * `now`, el estado sale de las fechas; sin él, se usa el que trae.
  */
 export function canBuy(event: BoiaEvent, now?: Date): boolean {
   const state = now ? eventState(event, now) : event.state;
   return (
     EVENT_STATE_BEHAVIOR[state].purchasable &&
+    !event.ticketsNotYet &&
     (event.boxOfficeOnly !== undefined || event.ticketUrl !== undefined)
   );
+}
+
+/**
+ * ¿Enseña «Comprar entradas» con el aviso «Tickets todavía no disponibles»
+ * (plan 030 T292)? Está a la venta, pero sus entradas aún no se venden: el
+ * botón se queda en su sitio y no abre nada.
+ */
+export function ticketsNotYetShown(event: BoiaEvent, now?: Date): boolean {
+  const state = now ? eventState(event, now) : event.state;
+  return EVENT_STATE_BEHAVIOR[state].purchasable && event.ticketsNotYet;
+}
+
+/** ¿Lleva «Comprar entradas»? Se puede comprar o lo dirá al tocarlo (T292). */
+export function buyButtonShown(event: BoiaEvent, now?: Date): boolean {
+  return canBuy(event, now) || ticketsNotYetShown(event, now);
 }
 
 /**

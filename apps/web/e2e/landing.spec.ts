@@ -1,8 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { ONLINE_EVENT } from './online-event';
+import { ONLINE_EVENT, openSales } from './online-event';
 import { PAST_INTRO } from './hero-helpers';
+
+// ALL DAY BOIA y Nochevieja: «Tickets todavía no disponibles» en la muestra
+// (plan 030 T292). Aquí se compran: la venta, abierta en este navegador.
+test.beforeEach(({ page }) => openSales(page));
 
 /**
  * Chunks JS que sólo usa el juego (el mar 3D, /mar) y no la landing, sacados del
@@ -113,6 +117,7 @@ test('el panel de Tickets abre sin WebGL y con el bundle del juego bloqueado', a
   // que el juego también usa: esos chunks son compartidos, no del juego. Se
   // averiguan comprando una vez en otra pestaña, sin bloquear nada.
   const probe = await page.context().newPage();
+  await openSales(probe);
   const loadedByBuy = new Set<string>();
   probe.on('request', (r) => loadedByBuy.add(new URL(r.url()).pathname));
   await probe.goto(LANDING);

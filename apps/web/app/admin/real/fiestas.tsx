@@ -27,6 +27,8 @@ interface PartyRow {
   state: string;
   stamp_image_url: string | null;
   is_sample: boolean;
+  /** «Tickets todavía no disponibles» (plan 030 T292). */
+  tickets_not_yet: boolean;
 }
 
 interface CodeRow {
@@ -239,6 +241,27 @@ function PartyCard({
           />
         </div>
       </div>
+
+      <label className="admin-check">
+        <input
+          type="checkbox"
+          checked={party.tickets_not_yet}
+          disabled={busy}
+          data-testid={`fiesta-no-todavia-${s}`}
+          onChange={(e) => {
+            const value = e.target.checked;
+            void run(
+              async () => {
+                await must(sb.from('events').update({ tickets_not_yet: value }).eq('id', party.id));
+                onChanged();
+              },
+              value ? t('admin.real.fiestas.notYetOn') : t('admin.real.fiestas.notYetOff'),
+            );
+          }}
+        />{' '}
+        {t('admin.events.ticketsNotYet')}
+      </label>
+      <p className="admin-meta">{t('admin.events.ticketsNotYetHint')}</p>
 
       <h4>{t('admin.real.fiestas.qrHeading')}</h4>
       <div className="admin-grid">
@@ -534,7 +557,9 @@ export function FiestasSection() {
         must(
           sb
             .from('events')
-            .select('id, slug, title, starts_at, ends_at, state, stamp_image_url, is_sample')
+            .select(
+              'id, slug, title, starts_at, ends_at, state, stamp_image_url, is_sample, tickets_not_yet',
+            )
             .is('archived_at', null)
             .order('starts_at', { ascending: false, nullsFirst: false })
             .limit(500),

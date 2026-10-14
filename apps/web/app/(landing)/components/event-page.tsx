@@ -44,8 +44,9 @@ export function EventPageBody({ view }: { view: EventPageView }) {
   const format = event.series
     ? `${EVENT_FORMAT_LABELS[event.format]} · ${seriesLabel(event.series)}`
     : EVENT_FORMAT_LABELS[event.format];
-  const doorOnly = event.boxOfficeOnly !== undefined;
-  const price = doorOnly ? doorPriceCents(event) : event.priceCents;
+  // Con «Tickets todavía no disponibles» (T292) manda ese aviso, también en un «Solo en puerta».
+  const doorOnly = event.boxOfficeOnly !== undefined && !event.ticketsNotYet;
+  const price = event.boxOfficeOnly !== undefined ? doorPriceCents(event) : event.priceCents;
 
   return (
     <article
@@ -181,6 +182,7 @@ export function EventPageBody({ view }: { view: EventPageView }) {
                 eventName={event.name}
                 ticketUrl={event.ticketUrl}
                 priceCents={event.priceCents}
+                notYet={event.ticketsNotYet}
                 source="event_page"
               />
               <a

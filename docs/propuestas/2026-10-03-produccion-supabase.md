@@ -122,6 +122,11 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     «Socios y emails» → «Cambiar nº»). Nadie cambia de número. En un
     proyecto nuevo el primer socio lleva el 10.
 - [ ] Del plan 030 (ya en `boia-planet-dev`):
+  - `20261014100400_events_tickets_not_yet.sql` (plan 030 T292): la
+    columna `events.tickets_not_yet` («Tickets todavía no disponibles»,
+    por defecto `false`), que el equipo marca y desmarca desde el Admin
+    («Fiestas y QR»). Su semilla de muestra la marca en `sonido-2026` y
+    `nochevieja-2026` (sólo filas `is_sample`). No toca ninguna otra fila.
   - `20261015100100_carnet_questions_audience.sql` (T294): preguntas del
     Carnet por público (decisión de Álvaro, 2026-10-14). Los **artistas**
     (`carnets.is_artist`) conservan las 5 de T281; el resto cambia la

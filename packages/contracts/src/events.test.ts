@@ -4,12 +4,15 @@ import {
   EVENT_DEFAULT_HOURS,
   EVENT_STATES,
   EVENT_STATE_BEHAVIOR,
+  buyButtonShown,
   canBuy,
   commonIslandId,
+  eventSchema,
   eventState,
   islandUpcomingEvents,
   nextAllDay,
   resolvePriorityEvent,
+  ticketsNotYetShown,
   upcomingEvents,
   type BoiaEvent,
   type EventState,
@@ -37,6 +40,7 @@ function ev(id: string, state: EventState, daysFromNow: number): BoiaEvent {
     stateSource: 'dates',
     activities: [],
     priceSample: true,
+    ticketsNotYet: false,
     sample: true,
   };
 }
@@ -48,6 +52,24 @@ const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
 describe('estados de evento', () => {
   it('sólo «a la venta» es comprable', () => {
     for (const s of EVENT_STATES) expect(canBuy(ev('x', s, 5))).toBe(s === 'on_sale');
+  });
+
+  it('«Tickets todavía no disponibles» (T292): no se compra, pero lleva el botón', () => {
+    for (const s of EVENT_STATES) {
+      const e = { ...ev('x', s, 5), ticketsNotYet: true };
+      expect(canBuy(e), s).toBe(false);
+      expect(ticketsNotYetShown(e), s).toBe(s === 'on_sale');
+      expect(buyButtonShown(e), s).toBe(s === 'on_sale');
+    }
+    // Sin él, como siempre; «Solo en puerta» (Halloween) sigue comprable.
+    const door = { ...ev('puerta', 'on_sale', 5), ticketUrl: undefined, boxOfficeOnly: {} };
+    expect(canBuy(door)).toBe(true);
+    expect(ticketsNotYetShown(door)).toBe(false);
+    expect(buyButtonShown(door)).toBe(true);
+    // Por defecto, false.
+    const input: Partial<BoiaEvent> = { ...ev('y', 'on_sale', 5) };
+    delete input.ticketsNotYet;
+    expect(eventSchema.parse(input).ticketsNotYet).toBe(false);
   });
 
   it('borrador y finalizado no salen en próximos; el resto sí, por fecha', () => {

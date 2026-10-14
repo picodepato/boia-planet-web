@@ -6,9 +6,13 @@ import { marWorld, seaRoute } from '../app/mar/engine/compact';
 import { startZoom } from '../app/mar/engine/framing';
 import { periodOf, planetRect, shortest } from '../app/mar/engine/wrap';
 import { t } from '../lib/i18n';
-import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { translateSkinText } from '../lib/mundo/demo-world';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
+import { OPENED_EVENTS, openSales } from './online-event';
+
+// ALL DAY BOIA y Nochevieja: «Tickets todavía no disponibles» en la muestra
+// (plan 030 T292). Aquí se compran: la venta, abierta en este navegador.
+test.beforeEach(({ page }) => openSales(page));
 
 /**
  * El mar 3D (/mar): arranca sin errores, pasa a la vista de mapa tocando el
@@ -22,7 +26,7 @@ import { ZARPAR_HREF } from '../lib/intro/zarpar';
 
 const world = WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).config;
 // El evento vigente del mar: el que se vende en una isla (el All Day de la demo).
-const islandEvent = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.islandId && !e.boxOfficeOnly)!;
+const islandEvent = OPENED_EVENTS.find((e) => canBuy(e) && e.islandId && !e.boxOfficeOnly)!;
 const islandName = world.objects.find((o) => o.identity.id === islandEvent.islandId)!.identity.name;
 // La primera boia con diálogo (la del tutorial) y su primera línea.
 const talkingBoia = world.objects.find(

@@ -66,7 +66,10 @@ export function EventCard({
   /** Con su estado de ahora (`resolveHome`). */
   event: BoiaEvent;
   artists: readonly Artist[];
-  /** Compra disponible (`canBuy`, resuelto fuera: aquí no se carga `@boia/contracts`). */
+  /**
+   * Lleva «Comprar entradas» (`buyButtonShown`, resuelto fuera: aquí no se
+   * carga `@boia/contracts`); con `ticketsNotYet` el botón lo dice (T292).
+   */
   buyable: boolean;
   source: Source;
   headingLevel?: 2 | 3;
@@ -168,6 +171,7 @@ export function EventCard({
           ticketUrl={event.ticketUrl}
           boxOfficeOnly={event.boxOfficeOnly}
           priceCents={event.priceCents}
+          notYet={event.ticketsNotYet}
           source={source}
         />
       ) : (

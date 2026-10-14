@@ -170,8 +170,17 @@ describe('the landing ready for real content (plan 007 T82)', () => {
     // the notice instead. An online event keeps the real no-JS link of «Comprar».
     expect(priority).not.toContain(`href="${l.tickets[HALLOWEEN_EVENT_ID]}"`);
     expect(priority).toContain('data-testid="box-office-message"');
-    const online = content.events.find((e) => canBuy(e) && !e.boxOfficeOnly)!;
-    expect(shown).toContain(l.tickets[online.id]);
+    // «Tickets todavía no disponibles» (plan 030 T292): sin enlace a la ticketera, tampoco sin JS.
+    const online = content.events.find((e) => e.ticketUrl && !e.boxOfficeOnly)!;
+    expect(online.ticketsNotYet).toBe(true);
+    expect(shown).not.toContain(l.tickets[online.id]);
+    // With sales open, the real no-JS link is back.
+    const open = {
+      ...content,
+      events: content.events.map((e) => ({ ...e, ticketsNotYet: false })),
+    };
+    expect(canBuy(open.events.find((e) => e.id === online.id)!)).toBe(true);
+    expect(hrefs(renderLanding(open))).toContain(l.tickets[online.id]);
     // An artist without Spotify (null) gets no link.
     const third = content.artists.find((a) => a.id === sampleTrio[2]);
     expect(third?.spotifyUrl).toBeUndefined();

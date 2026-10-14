@@ -186,6 +186,10 @@ export const esAdmin = {
   'admin.events.ticketProvider': 'Ticketera',
   'admin.events.ticketProviderHint':
     'Nombre de la ticketera que vende este evento; la ficha la enseña.',
+  // Plan 030 T292: el interruptor para abrir la venta más tarde. Muestra.
+  'admin.events.ticketsNotYet': 'Tickets todavía no disponibles',
+  'admin.events.ticketsNotYetHint':
+    'Marcado, «Comprar entradas» sólo dice eso, sin checkout ni ticketera. Desmárcalo para abrir la venta.',
   'admin.events.doorOnly': 'Solo en puerta',
   'admin.events.doorOnlyHint': 'Sin venta online: la ficha dice «Solo en puerta · … con carnet».',
   'admin.events.doorPrice': 'Precio en puerta con carnet (€)',

@@ -21,6 +21,7 @@ import {
   samplePriceCents,
 } from '../lib/ticketing/pricing';
 import { openTickets } from './hero-helpers';
+import { openSales } from './online-event';
 
 /**
  * El Carnet BOIA es el requisito para comprar (plan 019 T215, decisión 1):
@@ -80,7 +81,13 @@ async function seed(
   );
 }
 
+/**
+ * ALL DAY BOIA y Nochevieja llevan «Tickets todavía no disponibles» en la
+ * muestra (plan 030 T292): aquí se compran, con la venta abierta en este
+ * navegador (después de la semilla de la prueba, si la hay).
+ */
 async function openLandingTickets(page: Page) {
+  await openSales(page);
   await page.goto('/?intro=0');
   await openTickets(page);
   const panel = page.getByRole('dialog', { name: 'Elige tu evento' });
@@ -91,6 +98,7 @@ async function openLandingTickets(page: Page) {
 async function openMar(page: Page) {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  await openSales(page);
   await page.goto('/mar');
   await expect(page.getByTestId('mar-canvas')).toBeVisible();
   await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });

@@ -47,7 +47,7 @@ export const SOURCE_LABELS: Record<EventStateSource, string> = {
   manual: t('admin.events.aMano'),
 };
 
-interface Draft {
+export interface Draft {
   id?: string;
   slug?: string;
   name: string;
@@ -74,6 +74,8 @@ interface Draft {
   ticketUrl: string;
   /** Nombre de la ticketera que se enseña en la ficha (plan 019 T215). */
   ticketProvider: string;
+  /** «Tickets todavía no disponibles» (plan 030 T292); desmarcado, se abre la venta. */
+  ticketsNotYet: boolean;
   /** «Solo en puerta» (plan 019 T215): sin venta online. */
   doorOnly: boolean;
   /** Precio en la puerta con Carnet, en euros; vacío: el precio. */
@@ -103,6 +105,7 @@ const EMPTY: Draft = {
   priceSample: true,
   ticketUrl: '',
   ticketProvider: '',
+  ticketsNotYet: false,
   doorOnly: false,
   doorPrice: '',
   islandId: '',
@@ -121,7 +124,7 @@ export function centsOf(price: string): number | null {
   return m ? Math.round(Number(m[0]) * 100) : null;
 }
 
-function draftOf(e: BoiaEvent): Draft {
+export function draftOf(e: BoiaEvent): Draft {
   return {
     id: e.id,
     slug: e.slug,
@@ -144,6 +147,7 @@ function draftOf(e: BoiaEvent): Draft {
     priceSample: e.priceSample,
     ticketUrl: e.ticketUrl ?? '',
     ticketProvider: e.ticketProvider ?? '',
+    ticketsNotYet: e.ticketsNotYet,
     doorOnly: e.boxOfficeOnly !== undefined,
     doorPrice: euros(e.boxOfficeOnly?.doorPriceCents),
     islandId: e.islandId ?? '',
@@ -158,6 +162,63 @@ function optionalIso(local: string, what: string): string | undefined {
   const iso = localToIso(local, DEFAULT_TIME_ZONE);
   if (!iso) throw new Error(`${what}: fecha no válida`);
   return iso;
+}
+
+/**
+ * El evento que guarda el formulario (lo que va a `saveEvent`); lanza si una
+ * fecha o un importe están mal escritos. Exportado para las pruebas (T292:
+ * el interruptor «Tickets todavía no disponibles» pasa tal cual).
+ */
+export function eventInputOf(d: Draft): EventInput {
+  const startsAt = localToIso(d.startsAt, DEFAULT_TIME_ZONE);
+  if (!startsAt) throw new Error('falta la fecha y hora del evento');
+  const endsAt = optionalIso(d.endsAt, 'fin');
+  const saleOpensAt = optionalIso(d.saleOpensAt, t('admin.events.aperturaDeLaVenta'));
+  const priceCents = d.price.trim() ? centsOf(d.price) : undefined;
+  if (priceCents === null) throw new Error('precio: escribe un importe en euros, p. ej. 12,50');
+  const doorPriceCents = d.doorPrice.trim() ? centsOf(d.doorPrice) : undefined;
+  if (doorPriceCents === null) throw new Error(t('admin.events.doorPriceInvalid'));
+  const ticketProvider = d.ticketProvider.trim();
+  // Con apertura de venta y estado por fechas, se guarda «a la venta»: las
+  // fechas enseñan «próximamente» hasta que abre (REQ-COM-004).
+  const state =
+    d.stateSource === 'dates' && saleOpensAt && d.state === 'coming_soon' ? 'on_sale' : d.state;
+  const series = d.series.trim();
+  const input: EventInput = {
+    ...(d.id ? { id: d.id } : {}),
+    ...(d.slug ? { slug: d.slug } : {}),
+    name: d.name,
+    format: d.format,
+    startsAt,
+    timeZone: DEFAULT_TIME_ZONE,
+    placeLabel: d.placeLabel,
+    placeAnnounced: d.placeAnnounced,
+    state,
+    stateSource: d.stateSource,
+    description: d.description,
+    artistIds: d.artistIds,
+    activities: d.activities
+      .split('\n')
+      .map((a) => a.trim())
+      .filter(Boolean),
+    priceSample: d.priceSample,
+    ticketsNotYet: d.ticketsNotYet,
+    ...(series ? { series } : {}),
+    ...(endsAt ? { endsAt } : {}),
+    ...(saleOpensAt ? { saleOpensAt } : {}),
+    ...(priceCents !== undefined ? { priceCents } : {}),
+    ...(d.posterUrl.trim() ? { posterUrl: d.posterUrl.trim() } : {}),
+    ...(d.stampImageUrl.trim() ? { stampImageUrl: d.stampImageUrl.trim() } : {}),
+    ...(d.stateNote ? { stateNote: d.stateNote } : {}),
+    ...(d.ticketUrl ? { ticketUrl: d.ticketUrl } : {}),
+    ...(ticketProvider ? { ticketProvider } : {}),
+    ...(d.doorOnly
+      ? { boxOfficeOnly: doorPriceCents !== undefined ? { doorPriceCents } : {} }
+      : {}),
+    ...(d.islandId ? { islandId: d.islandId } : {}),
+    ...(d.sample !== undefined ? { sample: d.sample } : {}),
+  };
+  return input;
 }
 
 function EventForm({
@@ -181,56 +242,7 @@ function EventForm({
   const save = (mode: 'publish' | 'draft' = 'publish') =>
     run(
       async () => {
-        const startsAt = localToIso(d.startsAt, DEFAULT_TIME_ZONE);
-        if (!startsAt) throw new Error('falta la fecha y hora del evento');
-        const endsAt = optionalIso(d.endsAt, 'fin');
-        const saleOpensAt = optionalIso(d.saleOpensAt, t('admin.events.aperturaDeLaVenta'));
-        const priceCents = d.price.trim() ? centsOf(d.price) : undefined;
-        if (priceCents === null)
-          throw new Error('precio: escribe un importe en euros, p. ej. 12,50');
-        const doorPriceCents = d.doorPrice.trim() ? centsOf(d.doorPrice) : undefined;
-        if (doorPriceCents === null) throw new Error(t('admin.events.doorPriceInvalid'));
-        const ticketProvider = d.ticketProvider.trim();
-        // Con apertura de venta y estado por fechas, se guarda «a la venta»: las
-        // fechas enseñan «próximamente» hasta que abre (REQ-COM-004).
-        const state =
-          d.stateSource === 'dates' && saleOpensAt && d.state === 'coming_soon'
-            ? 'on_sale'
-            : d.state;
-        const series = d.series.trim();
-        const input: EventInput = {
-          ...(d.id ? { id: d.id } : {}),
-          ...(d.slug ? { slug: d.slug } : {}),
-          name: d.name,
-          format: d.format,
-          startsAt,
-          timeZone: DEFAULT_TIME_ZONE,
-          placeLabel: d.placeLabel,
-          placeAnnounced: d.placeAnnounced,
-          state,
-          stateSource: d.stateSource,
-          description: d.description,
-          artistIds: d.artistIds,
-          activities: d.activities
-            .split('\n')
-            .map((a) => a.trim())
-            .filter(Boolean),
-          priceSample: d.priceSample,
-          ...(series ? { series } : {}),
-          ...(endsAt ? { endsAt } : {}),
-          ...(saleOpensAt ? { saleOpensAt } : {}),
-          ...(priceCents !== undefined ? { priceCents } : {}),
-          ...(d.posterUrl.trim() ? { posterUrl: d.posterUrl.trim() } : {}),
-          ...(d.stampImageUrl.trim() ? { stampImageUrl: d.stampImageUrl.trim() } : {}),
-          ...(d.stateNote ? { stateNote: d.stateNote } : {}),
-          ...(d.ticketUrl ? { ticketUrl: d.ticketUrl } : {}),
-          ...(ticketProvider ? { ticketProvider } : {}),
-          ...(d.doorOnly
-            ? { boxOfficeOnly: doorPriceCents !== undefined ? { doorPriceCents } : {} }
-            : {}),
-          ...(d.islandId ? { islandId: d.islandId } : {}),
-          ...(d.sample !== undefined ? { sample: d.sample } : {}),
-        };
+        const input = eventInputOf(d);
         const why = d.id ? t('admin.events.editarEvento') : t('admin.events.nuevoEvento');
         if (mode === 'draft') await ctx.actions.saveEventDraft(input, why);
         else await ctx.actions.saveEvent(input, why);
@@ -426,6 +438,14 @@ function EventForm({
             maxLength={60}
             onChange={(e) => set('ticketProvider', e.target.value)}
             data-testid="evento-ticketera"
+          />
+        </Field>
+        <Field label={t('admin.events.ticketsNotYet')} hint={t('admin.events.ticketsNotYetHint')}>
+          <input
+            type="checkbox"
+            checked={d.ticketsNotYet}
+            onChange={(e) => set('ticketsNotYet', e.target.checked)}
+            data-testid="evento-no-todavia"
           />
         </Field>
         <Field label={t('admin.events.doorOnly')} hint={t('admin.events.doorOnlyHint')}>

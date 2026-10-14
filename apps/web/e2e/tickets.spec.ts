@@ -9,9 +9,13 @@ import { CHECKOUT_COPY } from '../lib/ticketing/copy';
 import { TICKET_TRIGGER } from '../lib/ticketing/sandbox';
 import { openTickets } from './hero-helpers';
 import { marSheet, openMar } from './mar-helpers';
-import { BOX_OFFICE_EVENTS, ONLINE_EVENT } from './online-event';
+import { BOX_OFFICE_EVENTS, ONLINE_EVENT, openSales } from './online-event';
 import { boxOfficeLabel } from '../lib/ticketing/box-office-label';
 import { createCarnetInCheckout } from './carnet-seed';
+
+// ALL DAY BOIA y Nochevieja: «Tickets todavía no disponibles» en la muestra
+// (plan 030 T292). Aquí se compran: la venta, abierta en este navegador.
+test.beforeEach(({ page }) => openSales(page));
 
 /**
  * Compra de prueba (T25, D-20, REQ-COM-035), sin ticketera ni servidor:

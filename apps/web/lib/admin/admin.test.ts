@@ -173,6 +173,7 @@ describe('eventos e islas', () => {
       slug: undefined,
       name: 'Noche de prueba',
       state: 'on_sale',
+      ticketsNotYet: false,
       artistIds: [],
     } as never);
     expect(created.id).toBe('ev-noche-de-prueba');

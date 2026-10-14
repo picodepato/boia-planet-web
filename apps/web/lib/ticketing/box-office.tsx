@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { t } from '../i18n/web';
 import { boxOfficeLabel, type DoorEvent } from './box-office-label';
 import type { CarnetLink } from './checkout';
@@ -41,18 +41,19 @@ export function BoxOfficeMessage({ event, carnet }: { event: DoorEvent; carnet: 
   );
 }
 
-export function BoxOfficeDialog({
-  eventName,
-  event,
-  carnet,
+/** El diálogo de un aviso de entradas (puerta o «todavía no disponibles»), sobre el checkout.css. */
+function TicketNoticeDialog({
+  title,
   onClose,
   className,
+  testId,
+  children,
 }: {
-  eventName: string;
-  event: DoorEvent;
-  carnet: CarnetLink;
+  title: string;
   onClose: () => void;
-  className?: string;
+  className?: string | undefined;
+  testId: string;
+  children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -85,20 +86,80 @@ export function BoxOfficeDialog({
       ref={ref}
       className={`checkout ${className ?? ''}`}
       aria-labelledby={titleId}
-      data-testid="box-office"
+      data-testid={testId}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div className="checkout__sheet">
-        <h2 id={titleId} className="checkout__title">{eventName}</h2>
-        <BoxOfficeMessage event={event} carnet={carnet} />
+        <h2 id={titleId} className="checkout__title">
+          {title}
+        </h2>
+        {children}
         <div className="checkout__actions">
-          <button type="button" className="checkout__secondary" onClick={onClose} data-testid="box-office-close">
+          <button
+            type="button"
+            className="checkout__secondary"
+            onClick={onClose}
+            data-testid={`${testId}-close`}
+          >
             {t('tickets.close')}
           </button>
         </div>
       </div>
     </dialog>
+  );
+}
+
+export function BoxOfficeDialog({
+  eventName,
+  event,
+  carnet,
+  onClose,
+  className,
+}: {
+  eventName: string;
+  event: DoorEvent;
+  carnet: CarnetLink;
+  onClose: () => void;
+  className?: string;
+}) {
+  return (
+    <TicketNoticeDialog
+      title={eventName}
+      onClose={onClose}
+      className={className}
+      testId="box-office"
+    >
+      <BoxOfficeMessage event={event} carnet={carnet} />
+    </TicketNoticeDialog>
+  );
+}
+
+/**
+ * «Tickets todavía no disponibles» (plan 030 T292): lo que abre «Comprar
+ * entrada» en el mar para un evento cuyas entradas aún no se venden, en vez
+ * del checkout.
+ */
+export function TicketsNotYetDialog({
+  eventName,
+  onClose,
+  className,
+}: {
+  eventName: string;
+  onClose: () => void;
+  className?: string;
+}) {
+  return (
+    <TicketNoticeDialog
+      title={eventName}
+      onClose={onClose}
+      className={className}
+      testId="tickets-not-yet"
+    >
+      <p role="status" data-testid="tickets-not-yet-message">
+        {t('ticketing.notYet')}
+      </p>
+    </TicketNoticeDialog>
   );
 }

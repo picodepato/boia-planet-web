@@ -4,6 +4,76 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 030 T292: «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
+
+Qué existe:
+- Contrato (`packages/contracts/src/events.ts`): campo `ticketsNotYet` (por
+  defecto `false`). `canBuy` es falso con él; `ticketsNotYetShown` (a la
+  venta + no todavía) y `buyButtonShown` (= `canBuy` o «no todavía») deciden
+  dónde sigue el botón «Comprar entradas».
+- Muestra (`packages/store/src/sample/content.ts`): ALL DAY BOIA
+  (`sonido-2026`) y BOIA Nochevieja (`nochevieja-2026`) con
+  `ticketsNotYet: true`. Halloween («Solo en puerta») sin cambios.
+- Landing (tarjetas, prioritario, panel de Tickets) y ficha `/eventos/[slug]`:
+  `BuyButton` con `notYet` pinta `NotYetBuy`: mismo botón y aspecto; al
+  tocarlo, «Tickets todavía no disponibles» en un `role="status"`; sin
+  JavaScript, un `<details>` que despliega el aviso (sin enlace a la
+  ticketera ni `data-track`). `resolveHome`/`resolveTicketsPanel`/
+  `eventPageView` usan `buyButtonShown`.
+- /mar: «Elige tu evento» mantiene el botón; cualquier camino a la compra
+  (ficha de isla, panel, viaje a la isla) pasa por `marPurchase` y abre
+  `TicketsNotYetDialog` en vez del checkout. `BoxOfficeDialog` y el nuevo
+  diálogo comparten `TicketNoticeDialog` (`lib/ticketing/box-office.tsx`).
+- Texto `ticketing.notYet` = «Tickets todavía no disponibles» (aprobado por
+  Álvaro, no muestra) en `es-lib-web.ts`.
+- JSON-LD: `offerAvailability` da `https://schema.org/PreOrder` con
+  `ticketsNotYet`; la oferta sale también para eventos «no todavía».
+- Admin: casilla «Tickets todavía no disponibles» en el editor de eventos
+  (`eventInputOf`/`draftOf` exportados; ambos modos, contenido) y, con
+  cuentas, en «Fiestas y QR» (`events.tickets_not_yet` en Supabase).
+- Migración `20261014100400_events_tickets_not_yet.sql` (columna + grants de
+  insert/update a `authenticated`; RLS de staff existente) y semilla
+  `20261014100400_events_tickets_not_yet.sql` (marca las dos filas de
+  muestra). Aplicadas a **dev** (`boia-planet-dev`); producción: pendiente
+  (orquestador, con el OK de Álvaro). Añadida a la lista del doc de
+  encendido (`docs/propuestas/2026-10-03-produccion-supabase.md`).
+  `database.types.ts` editado a mano (sólo la columna nueva).
+
+Comandos:
+- `pnpm db:migrate:dev` → 1 migración + 1 semilla aplicadas (20261014100400).
+- `pnpm test:supabase tickets-not-yet event-fields` → 2 archivos, 8 pruebas OK.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  332 archivos, 2952 pasan, 3 omitidas (exit 0).
+- `sh tools/spec/checks.sh` → OK. `pnpm lint` → 0. `pnpm typecheck` → OK.
+- `pnpm build` → OK; landing 199.0 kB de 200.0 kB.
+- `pnpm db:test` no se pudo correr (sin PostgreSQL local).
+
+e2e (segundo commit): la muestra no cambia; las e2e que compran abren la
+venta en el navegador como el Admin de la demo. `e2e/online-event.ts`:
+`openSales(page)` (init script que deja o completa `boia.store` con ALL DAY
+BOIA y Nochevieja sin «todavía no»), `OPENED_EVENTS`, `ONLINE_EVENT` (ALL DAY
+BOIA, abierto). `seedCarnet` la llama tras su semilla; `beforeEach` en
+tickets, landing, intro y mar-3d; carnet-requerido, en sus helpers de
+apertura. La spec sin JavaScript de eventos comprueba ahora el aviso sin
+enlace. El botón «todavía no» usa otro testid (`no-todavia-<id>`, aviso
+`no-todavia-<id>-aviso`), así `comprar-<id>` espera al contenido del
+repositorio.
+- `E2E_PORT=3197 pnpm e2e carnet-requerido.spec.ts --workers=2` → 10 pasan (exit 0).
+- `pnpm typecheck` (incluye e2e) → OK; `pnpm lint` → 0.
+
+Merge de main (T294): conflictos en `es-admin.ts` (se quedan las dos) y en
+el doc de encendido (plan 030: 20261014100400 y después 20261015100100);
+`database.types.ts` lleva `carnet_questions.audience` y
+`events.tickets_not_yet`. Tras el merge: vitest 332 archivos, 2963 pasan, 1
+omitida; checks OK; lint 0; build OK (199.0/200 kB); typecheck OK;
+`pnpm db:migrate:dev` al día (43); `pnpm test:supabase schema tickets-not-yet`
+→ 2 archivos, 13 pruebas OK.
+
+Pendiente:
+- Aplicar la migración y la semilla en producción (orquestador).
+- Las demás specs que compran (tickets, landing, intro, mar-3d, descuentos,
+  mar-entradas, mar-fiestera, mar-paridad, mar-hud, eventos) no se corrieron.
+
 ## 2026-10-15 — plan 030 T294: Carnet questions: artists keep the 5, the public gets a funny first question
 
 Qué existe:

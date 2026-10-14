@@ -12,6 +12,8 @@ export const esLibWeb = {
   'ticketing.boxOffice.invite': '¿Aún no tienes Carnet?',
   'ticketing.boxOffice.carnet': 'Hazte el tuyo',
   'ticketing.boxOffice.buyAria': 'Comprar entradas para {name}',
+  // Plan 030 T292: texto aprobado por Álvaro (2026-10-14), no es muestra.
+  'ticketing.notYet': 'Tickets todavía no disponibles',
   'landing.signOut': 'Cerrar sesión',
   // Plan 029 T284: cerrar sesión deja el dispositivo de cero, y la cuenta en los menús. Muestra.
   'cuenta.salir.pregunta': '¿Cerrar sesión?',

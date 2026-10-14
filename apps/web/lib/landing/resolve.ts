@@ -1,5 +1,5 @@
 import {
-  canBuy,
+  buyButtonShown,
   commonIslandId,
   effectiveEvents,
   hasActivePromotion,
@@ -153,10 +153,12 @@ export function resolveTicketsPanel(content: HomeContent, now: Date): TicketsVie
     (b): b is HomeBlockOf<'priority_event'> => b.type === 'priority_event',
   );
   const featured = resolvePriorityEvent(content.events, priorityBlock?.eventId, now);
+  // Con «Comprar entradas»: los que se venden y los de «todavía no
+  // disponibles» (T292), que lo dicen al tocarlo.
   const others = upcomingEvents(content.events, now)
-    .filter((e) => canBuy(e))
+    .filter((e) => buyButtonShown(e))
     .filter((e) => e.id !== featured?.id);
-  const onSale = others.length > 0 || (featured !== undefined && canBuy(featured));
+  const onSale = others.length > 0 || (featured !== undefined && buyButtonShown(featured));
   // Los satélites sin isla enlazan al próximo All Day (REQ-COM-010, O7).
   const hasSatellite = [featured, ...others].some((e) => e && isIslandlessSatellite(e));
   const next = hasSatellite ? nextAllDay(content.events, now) : undefined;
@@ -212,7 +214,10 @@ export interface HomeView {
   sections: string[];
   tickets: TicketsView;
   artists: Artist[];
-  /** ids de los eventos con compra disponible (`canBuy`). */
+  /**
+   * ids de los eventos con «Comprar entradas» (`buyButtonShown`): los que se
+   * venden y los de «Tickets todavía no disponibles» (T292, el botón lo dice).
+   */
   buyable: string[];
   /** Enlaces oficiales para cabecera y pie (REQ-ENT-032, O13); `null` si no hay. */
   social: SocialLinks;
@@ -253,7 +258,7 @@ export function resolveHome(stored: HomeContent, now: Date): HomeView {
     sections: landingSections(content, now),
     tickets,
     artists: content.artists,
-    buyable: content.events.filter((e) => canBuy(e)).map((e) => e.id),
+    buyable: content.events.filter((e) => buyButtonShown(e)).map((e) => e.id),
     social: socialLinks(content),
     ticketsIsland: tickets.featured?.islandId ?? commonIslandId(content.events, now),
   };

@@ -3,7 +3,7 @@ import {
   type Artist,
   type BoiaEvent,
   type Photo,
-  canBuy,
+  buyButtonShown,
   commonIslandId,
   effectiveEvents,
   eventKicker,
@@ -88,6 +88,7 @@ export interface EventPageView {
   /** El evento con su estado de `now`. */
   event: BoiaEvent;
   kicker: string;
+  /** Lleva «Comprar entradas»: se vende o dice «todavía no disponibles» (T292). */
   buyable: boolean;
   /** Nombres del cartel, en el orden del evento. */
   lineup: string[];
@@ -125,7 +126,7 @@ export function eventPageView(
   return {
     event,
     kicker: eventKicker(event),
-    buyable: canBuy(event),
+    buyable: buyButtonShown(event),
     lineup: event.artistIds
       .map((id) => content.artists.find((a) => a.id === id)?.name)
       .filter((n): n is string => n !== undefined),

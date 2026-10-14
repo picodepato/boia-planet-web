@@ -3,7 +3,7 @@ import {
   type BoiaEvent,
   type HomeContent,
   EVENT_STATE_BEHAVIOR,
-  canBuy,
+  buyButtonShown,
   upcomingEvents,
 } from '@boia/contracts';
 import { DEFAULT_TIME_ZONE, isoToLocal, localToIso } from '../admin/dates';
@@ -25,11 +25,12 @@ const ALICANTE = { '@type': 'PostalAddress', addressLocality: 'Alicante', addres
 const ORG_BASE = { '@type': 'Organization', '@id': ORG_ID, name: 'BOIA', url: SITE_URL };
 
 /**
- * Disponibilidad de la entrada de un evento. Un solo punto: el plan 030 T292
- * añadirá el estado «entradas aún no disponibles» (`PreOrder`) aquí.
+ * Disponibilidad de la entrada de un evento. «Tickets todavía no
+ * disponibles» (plan 030 T292) es `PreOrder`.
  */
 export function offerAvailability(event: BoiaEvent): string {
   if (event.state === 'sold_out') return `${SCHEMA}SoldOut`;
+  if (event.ticketsNotYet) return `${SCHEMA}PreOrder`;
   return `${SCHEMA}InStock`;
 }
 
@@ -48,7 +49,7 @@ const isSandbox = (url: string): boolean => url.startsWith(SAMPLE_LINK_BASE);
 function offerOf(event: BoiaEvent): Record<string, unknown> | undefined {
   const cents = event.boxOfficeOnly?.doorPriceCents ?? event.priceCents;
   const link = event.ticketUrl && !isSandbox(event.ticketUrl) ? event.ticketUrl : undefined;
-  if (cents === undefined && !link && !canBuy(event)) return undefined;
+  if (cents === undefined && !link && !buyButtonShown(event)) return undefined;
   const dead = event.state === 'cancelled' || event.state === 'postponed';
   return {
     '@type': 'Offer',
