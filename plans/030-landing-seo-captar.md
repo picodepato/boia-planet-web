@@ -1,6 +1,6 @@
 # Plan 030 — Landing: open to Google, good-looking shares and a Carnet invitation
 
-Status: active
+Status: done
 Created: 2026-10-14
 Base branch: main
 Goal: Make the landing findable and shareable, and push visitors toward the Carnet and the WhatsApp. Álvaro, 2026-10-14: remove the site-wide `noindex` now (sample content included: in a few days it will all be real); the site's name everywhere is «BOIA.PLANET» / boiaplanet, never «demo»; a link shared on WhatsApp/Instagram/X shows the planet with the BOIA wordmark, and each event its own image; Google gets structured event data (sample events included for now); a visible «Sácate el Carnet» block that says the Carnet is required to get into a party and that with it BOIA tells you about the next ones; the WhatsApp is no longer only in the footer. Not in this plan (Álvaro said no or later): moving tickets above the fold, changing the reel, mobile performance, accessibility pass, security checklist (own plan next).
@@ -89,7 +89,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: «Sácate el Carnet» block after upcoming events (Carnet button + WhatsApp, email-news line only with accounts), WhatsApp in header/menu, pre-buy «El Carnet es obligatorio para entrar»; migration 20261014100300 (home_block_type carnet) applied to dev and prod; landing 199.8/200 kB — 5a6def7
 
 ## T289 — The landing planet survives losing its 3D
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -100,7 +100,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - unit test: a pure state helper (running → lost → fallback → restored → running; repeated loss → permanent fallback; timeout → fallback) → pass
   - Playwright check (one spec only, new or existing landing spec): force loss with `WEBGL_lose_context.loseContext()` → fallback visible, no console errors; `restoreContext()` → canvas visible and animating again → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: webglcontextlost/restored handled in the lazy intro code; still pictures as fallback; 5 s visible-time restore window; 3rd loss keeps the still; landing 198.7 kB — 5001cb3
 
 ## T290 — «La Sosia» is the radio's first song, everywhere
 - Status: done
@@ -213,3 +213,5 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-15 03:00 T290 launched · attempt 1 · agent ac42bea2dbd102b3b (opus)
 - 2026-10-15 03:10 T292 done · merged 3712d3e
 - 2026-10-15 03:25 T290 done · merged 3d950b3
+- 2026-10-15 03:40 T289 done · merged 5001cb3
+- 2026-10-15 03:55 production migrations 20261014100400 (+seed) and 20261015100100 applied and checked; full test command on main → pass; plan done
