@@ -1,6 +1,6 @@
 # Plan 029 — A world with jokes: weather, big waves, characters with lines and the after island
 
-Status: done
+Status: active
 Created: 2026-10-13
 Base branch: main
 Goal: Make `/mar` funnier and more surprising without touching the sales flow: short weather episodes, big waves that work as ramps (backflip achievement), a thieving seagull, a dancing crab, a lost tourist on an inflatable flamingo, a horn and a napping boat, characters with lines that depend on the mood, a daily "horóscopo boiero", a proper welcome at the port, and a night-only "after" island (03:00–07:00 Alicante time) that pays a lot of coins and unlocks a battered after-party boat. Every new secret gives an achievement (never a Carnet stamp: stamps are only for tickets), and the `boia-secretos` buoy hints at the missing ones. Plus fixes from Álvaro: a gallery that opens photos and videos full screen (also in /mar) with longer clips, at least 7 photos on the home with the 4 real ones, the Puig Campana label on the map, the map hint that never goes away, and getting the Carnet's email + code sign-up ready to switch on in production. Day/night stays as it is today (three moods chosen in the menu); no shooting stars; no new sea traffic; no Alicante landmarks in this plan.
@@ -192,6 +192,21 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
 - Outcome: tap-to-move fixed (shared tmpV overwritten by T270 character check), e2e mar-toque guards it; event labels placed first in map view; bubbles hidden in map and beyond 600 u; map view fits every island (moves the view, zoom unchanged) — 3bd12e8
 
+## T280 — Map close button, Castillo de Santa Bárbara and Las Calitas labels, coin glyph
+- Status: running (attempt 1)
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: Álvaro tested T279 locally (2026-10-14): (1) The big map's «Cerrar» button (T275 `.mar-mapclose`) is too big and covers labels: make it small, bottom-left, out of the way (or drop it if the map already closes another clear way, e.g. tapping the minimap again / Escape / back; keep at least one obvious, accessible way to leave the map, aria-label via i18n). (2) In the map view (zoomed out) the «Castillo de Santa Bárbara» island label does not show: make it show, even if the label sits a bit to the left of its island (labels.ts layout, like the event/keep handling from T275/T279). (3) «Las Calitas» label also missing in the map view, probably hidden by the close button: must show. All island labels in the map view should show at 360×640, 390×844 and 1280×720; extend map-labels.test.ts to assert every island label is visible and not covered by HUD controls (including the new close button position). (4) When the game gives coins, the notice shows a missing-glyph box instead of the coin symbol (points show a star fine). Likely an emoji not supported on Windows 10 (like 🪙, Unicode 13; T273 hit the same with 🪩). Find every place that renders the coin glyph (notices, HUD, shop, achievements, rewards) and use a symbol that renders everywhere (an inline SVG coin in the style of the existing icons, or the same approach the HUD coin counter already uses if it renders fine); add a test that the coin glyph is not 🪙 or another unsupported emoji.
+- Context: `apps/web/app/mar/engine/labels.ts`, `mar3d.ts` (`placePins`), `mar-client.tsx` (map close, notices), `map-labels.test.ts`, T275/T279 status sections in ESTADO.md, i18n files for the coin symbol.
+- Scope: may touch the files above, the coin glyph wherever it is rendered, their tests / must not remove plan 029 features or change island positions.
+- Done when:
+  - map-labels.test.ts: every island label visible in map view at the three sizes, none under the close button → pass
+  - test for the coin glyph → pass; headless screenshot at 360×640 of a coin notice shows the coin (path in the status file)
+  - e2e `mar-toque.spec.ts` still passes (only that spec)
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
 - 2026-10-13: Jumps come from big waves acting as ramps, no jump button; backflip with turbo (Álvaro)
@@ -284,3 +299,4 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T279 launched (attempt 1, opus), agent aebd224dddaad0415
 - 2026-10-14 Álvaro added to T279: big map zoom further out so every island fits (sent to agent)
 - 2026-10-14 T279 done (beb1ef1), integrated 3bd12e8; plan done again
+- 2026-10-14 T280 added from Álvaro's local test (map close button, Santa Bárbara and Las Calitas labels, coin glyph)
