@@ -66,6 +66,12 @@ export interface IntroDiagnostics {
   props: number;
   /** Frame cost and render quality (plan 007 T80). */
   quality: QualityDiagnostics;
+  /**
+   * The scene's WebGL context (plan 030 T289): `running`, `lost` (the static
+   * version shows while it waits) or `fallback` (static for the rest of the
+   * visit), and how many times it went away and came back.
+   */
+  gl: { state: 'running' | 'lost' | 'fallback'; losses: number; restores: number };
 }
 
 export interface QualityDiagnostics {

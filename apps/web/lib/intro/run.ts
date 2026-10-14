@@ -14,6 +14,7 @@ import { track } from '../analytics';
 import type { IntroScene } from '../planeta/intro-scene';
 import { QUALITY } from '../planeta/quality';
 import type { IntroDiagnostics } from './bridge';
+import { GL_RESTORE_WAIT_MS, GL_START, glNext, glPaints, type GlEvent } from './gl-context';
 import type { IntroData } from './load';
 import { lowPower } from './low-power';
 import { STILL_GLOBE_MS, TITLE_WAIT_MS, playsOrder, titleStageMs, type HeroStage } from './stages';
@@ -136,6 +137,10 @@ class IntroRun {
   private stageTimer = 0;
   /** The flat «BOIA» came in instead of the 3D letters: a late sheet does not swap it. */
   private flatTitle = false;
+  // The scene's WebGL context (plan 030 T289): lost → the static version.
+  private gl = GL_START;
+  private glTimer = 0;
+  private glCanvas: HTMLCanvasElement | null = null;
 
   constructor(private readonly data: IntroData) {
     const entry = window.__boiaEntry;
@@ -191,6 +196,7 @@ class IntroRun {
       stages: [],
       props: 0,
       quality: { probeMs: null, motion: null, lowFps: false, stepDowns: 0 },
+      gl: { ...GL_START },
     };
     window.__boiaIntro = this.diag;
 
@@ -289,6 +295,8 @@ class IntroRun {
     canvas.setAttribute('aria-hidden', 'true');
     canvas.setAttribute('role', 'presentation');
     this.canvas = canvas;
+    // Before three.js asks for the context: a loss during the start counts too.
+    this.watchContext(canvas);
     this.hostEl?.appendChild(canvas);
     const vp = this.viewport();
     try {
@@ -322,6 +330,7 @@ class IntroRun {
         this.diag.quality.probeMs = roundCosts(probe.costs);
       }
       console.warn('[boia] la escena del hero no arrancó; se queda la versión estática', err);
+      this.unwatchContext();
       canvas.remove();
       this.canvas = null;
       throw err;
@@ -357,16 +366,20 @@ class IntroRun {
     // Acto en curso, para el CSS del hero (carga, título, pista).
     if (c.phase === 'destroyed' || c.phase === 'landed') delete this.html.dataset.introAct;
     else this.html.dataset.introAct = c.phase;
-    // The static version (T78's still) or the live scene.
+    // The static version (T78's still) or the live scene. Without its WebGL
+    // context (T289) the scene waits, canvas hidden, behind the static version.
+    const live = c.live && glPaints(this.gl);
     if (c.fallback) {
       this.html.dataset.hero = 'still';
       if (this.canvas) {
+        this.unwatchContext();
         this.canvas.remove();
         this.canvas = null;
       }
-    } else if (c.live) this.html.dataset.hero = 'scene';
+    } else if (!glPaints(this.gl)) this.html.dataset.hero = 'still';
+    else if (c.live) this.html.dataset.hero = 'scene';
     // El canvas sale en cuanto la escena tiene su primer fotograma.
-    if (c.live) {
+    if (live) {
       if (host) host.dataset.ready = '';
       this.requestTitle();
       if (c.phase === 'paused') this.askProps(false);
@@ -635,10 +648,15 @@ class IntroRun {
     // behind another one. A held frame is painted when its turn comes.
     const restGap = (this.scene?.probe.costs[0] ?? 0) * IDLE_COST_FACTOR;
     const sinceFull = now - this.lastFullAt;
-    const hold = !inMotion && c.live && this.lastFrame !== null && sinceFull < restGap;
+    // Without its WebGL context (T289) the scene is not painted: the acts go
+    // on (the appearance ends, «Zarpar» dives) over the static version.
+    const paints = glPaints(this.gl);
+    const live = c.live && paints;
+    const hold = !inMotion && live && this.lastFrame !== null && sinceFull < restGap;
     this.scene?.setQuality(inMotion ? this.motionLevel : 0);
-    const f = hold ? c.frame(vp, this.s, this.light) : c.render(vp, clock, this.s, this.light);
-    if (f && !hold && !inMotion && c.live) this.lastFullAt = now;
+    const f =
+      hold || !paints ? c.frame(vp, this.s, this.light) : c.render(vp, clock, this.s, this.light);
+    if (f && !hold && !inMotion && live) this.lastFullAt = now;
     this.renderCost = performance.now() - now;
     if (animating) {
       const step = this.lastFrameAt ? now - this.lastFrameAt : 0;
@@ -646,7 +664,7 @@ class IntroRun {
       if (step > 50) d.slowFrames++;
       this.lastFrameAt = now;
     } else this.lastFrameAt = 0;
-    if (f && !hold) {
+    if (f && !hold && paints) {
       d.framesRendered++;
       d.pose = { ...f.pose };
       if (f.act === 'landing' && d.landingRadius.length < MAX_SAMPLES)
@@ -669,7 +687,7 @@ class IntroRun {
     const scrolling = this.s !== this.sTarget;
     const moving = next === 'appearing' || next === 'landing' || scrolling;
     // Time-based motion at rest: the planet spins (s = 0), the sea moves (s ≥ dive end).
-    const idle = !this.still && c.live && this.visible && (this.s <= 0 || (f?.sea ?? 0) > 0);
+    const idle = !this.still && live && this.visible && (this.s <= 0 || (f?.sea ?? 0) > 0);
     if (moving) this.raf = requestAnimationFrame(this.loop);
     else {
       this.tick = 0;
@@ -742,7 +760,71 @@ class IntroRun {
       this.controller.resume();
       this.kick();
     }
+    // The wait for a lost context only runs while the page is looked at.
+    this.armGlTimer();
   };
+
+  /**
+   * The canvas's WebGL context (plan 030 T289): the browser can take it away
+   * (app switch, memory pressure, another WebGL tab, a locked screen). On a
+   * loss the scene stops painting and the static version shows; on a restore
+   * three.js rebuilds its GPU resources (programs, buffers, textures, render
+   * targets) on the next frame, which is a full one; no restore in
+   * `GL_RESTORE_WAIT_MS` with the page in view, or too many losses: the
+   * static version for the rest of the visit.
+   */
+  private watchContext(canvas: HTMLCanvasElement): void {
+    this.glCanvas = canvas;
+    canvas.addEventListener('webglcontextlost', this.onContextLost, false);
+    canvas.addEventListener('webglcontextrestored', this.onContextRestored, false);
+  }
+
+  private unwatchContext(): void {
+    const canvas = this.glCanvas;
+    this.glCanvas = null;
+    window.clearTimeout(this.glTimer);
+    this.glTimer = 0;
+    if (!canvas) return;
+    canvas.removeEventListener('webglcontextlost', this.onContextLost, false);
+    canvas.removeEventListener('webglcontextrestored', this.onContextRestored, false);
+  }
+
+  private onContextLost = (e: Event) => {
+    // Without this the browser never gives the context back.
+    e.preventDefault();
+    this.glEvent('lost');
+  };
+
+  private onContextRestored = () => this.glEvent('restored');
+
+  private glEvent(e: GlEvent): void {
+    const before = this.gl.state;
+    this.gl = glNext(this.gl, e);
+    this.diag.gl = { ...this.gl };
+    this.armGlTimer();
+    if (this.gl.state === before) return;
+    if (this.gl.state === 'running') {
+      // Back: the next frame is a full one, at the current size.
+      this.lastFrame = null;
+      this.lastFullAt = 0;
+      this.lastSize = '';
+    }
+    this.sync();
+  }
+
+  /** The wait for a lost context: running while lost and in view, stopped otherwise. */
+  private armGlTimer(): void {
+    const waits = this.gl.state === 'lost' && !document.hidden && !this.disposed;
+    if (!waits) {
+      window.clearTimeout(this.glTimer);
+      this.glTimer = 0;
+    } else if (!this.glTimer) {
+      this.glTimer = window.setTimeout(() => {
+        this.glTimer = 0;
+        this.glEvent('timeout');
+      }, GL_RESTORE_WAIT_MS);
+    }
+  }
 
   private animating = () =>
     this.controller.phase === 'appearing' || this.controller.phase === 'landing';
@@ -801,6 +883,7 @@ class IntroRun {
     this.raf = 0;
     window.clearTimeout(this.idleTimer);
     this.idleTimer = 0;
+    this.unwatchContext();
     const unfinished = this.controller.outcome === null;
     this.controller.destroy();
     this.canvas?.remove();

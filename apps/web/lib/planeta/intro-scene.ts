@@ -195,14 +195,22 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
   const world = marWorld(live.config);
 
   // Sin WebGL, esto lanza: el controlador se queda con la versión estática.
-  const renderer = new WebGLRenderer({
-    canvas,
+  // The context is asked for here, with three.js's attributes, so a browser
+  // without WebGL is a plain error (a warning in run.ts) and not three.js's
+  // console error (plan 030 T289).
+  const attributes: WebGLContextAttributes = {
     antialias: false,
     alpha: false,
     powerPreference: 'high-performance',
     stencil: false,
     depth: false,
-  });
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: false,
+    failIfMajorPerformanceCaveat: false,
+  };
+  const context = canvas.getContext('webgl2', attributes);
+  if (!context || context.isContextLost()) throw new Error('sin WebGL 2 en este navegador');
+  const renderer = new WebGLRenderer({ canvas, context, ...attributes });
   canvas.dataset.scene = INTRO_SCENE_MARK;
   renderer.setPixelRatio(opts.resolution);
 
@@ -434,7 +442,8 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
     post.dispose();
     quadGeo.dispose();
     renderer.dispose();
-    renderer.forceContextLoss();
+    // A context the browser already took (T289): nothing to give back.
+    if (!renderer.getContext().isContextLost()) renderer.forceContextLoss();
   };
   if (motion === null) {
     destroy();

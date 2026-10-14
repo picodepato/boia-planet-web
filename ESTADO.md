@@ -4,6 +4,55 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 030 T289: The landing planet survives losing its 3D
+
+**Qué existe**
+
+- `apps/web/lib/intro/gl-context.ts` (+ `.test.ts`): estado puro del contexto
+  WebGL del hero: `running` → `lost` (versión estática mientras espera) →
+  `restored` → `running`; sin restaurar en `GL_RESTORE_WAIT_MS` (5 s, contando
+  sólo con la página a la vista) o a la `GL_MAX_LOSSES`.ª pérdida (3):
+  `fallback`, estática el resto de la visita.
+- `apps/web/lib/intro/run.ts` (chunk diferido, fuera del camino crítico):
+  escucha `webglcontextlost` (con `preventDefault`) y `webglcontextrestored`
+  en el canvas antes de que three.js pida el contexto. Sin contexto: no se
+  pinta la escena (los actos siguen con `controller.frame`), `<html
+  data-hero="still">` (el still de siempre) y el canvas oculto (sin
+  `data-ready`). Al volver: three.js reconstruye programas, buffers, texturas
+  y render targets en el siguiente fotograma, que es completo (tamaño y
+  fotograma reiniciados); `data-hero="scene"` otra vez. Diagnóstico en
+  `window.__boiaIntro.gl` (`state`, `losses`, `restores`).
+- `apps/web/lib/planeta/intro-scene.ts`: pide el contexto `webgl2` con los
+  atributos de three.js y se lo pasa; sin WebGL lanza un error propio (aviso
+  en run.ts, versión estática) en vez del `console.error` de three.js. Al
+  destruir, no fuerza la pérdida de un contexto ya perdido (sin aviso de WebGL).
+- `apps/web/e2e/landing-gl-context.spec.ts`: pérdida forzada con
+  `WEBGL_lose_context` → still visible, canvas oculto, sin fotogramas;
+  `restoreContext()` → canvas visible, el planeta vuelve a moverse; y sin
+  restaurar → `fallback` que se queda tras un `restoreContext()` tardío. Sin
+  errores de consola en los dos.
+- `docs/spec/estado.md`: nota de REQ-ARQ-016 (sigue PARCIAL: /mar sin probar).
+  Visto en capturas: tras restaurar vuelven el planeta con islas y el rótulo.
+
+**Comandos**
+
+- `pnpm exec vitest run lib/intro` → 4 archivos, 15 pruebas, pasan.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 332 archivos, 2960 pasan, 1 saltada.
+- `sh tools/spec/checks.sh` → OK. `pnpm lint` → exit 0. `pnpm typecheck` → exit 0.
+- `pnpm build` → exit 0; camino crítico de la landing 198.7 kB de 200.0 kB, OK.
+- `E2E_PORT=3291 pnpm exec playwright test e2e/landing-gl-context.spec.ts --project=desktop` → 2 pasan; `--repeat-each=4` → 8/8. Una pasada con la máquina cargada (1,6 min) falló una vez la segunda prueba sin reproducirse después; se amplió su espera.
+
+**Pendiente**
+
+- `/mar` sin manejo ni prueba de pérdida de contexto (fuera de alcance).
+- `docs/matriz-dispositivos.md` fila 16 sigue diciendo «la escena desaparece»: actualizarla (fuera de alcance de T289).
+- Móvil físico: probar cambio de app / bloqueo de pantalla.
+
+**Probar a mano**: en `/` con el planeta en reposo, en la consola:
+`l = document.querySelector('.hero__canvas').getContext('webgl2').getExtension('WEBGL_lose_context'); l.loseContext()`
+→ aparece el still; `l.restoreContext()` antes de 5 s → vuelve el planeta girando;
+sin restaurar 5 s → se queda el still (`__boiaIntro.gl.state === 'fallback'`).
+
 ## 2026-10-15 — plan 030 T290: «La Sosia» es la primera canción de la radio, en todas partes
 
 Qué existe:
