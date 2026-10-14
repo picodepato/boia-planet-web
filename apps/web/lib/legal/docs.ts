@@ -2,10 +2,9 @@ import type { MessageKey } from '../i18n';
 
 /**
  * Las páginas legales (`/legal/<id>`) y sus párrafos, con los textos de
- * docs/propuestas/textos-zonas.md (zona 32). Los datos del titular son
- * **inventados** (D-23, O14): cada página lo dice arriba
- * (`legal.sampleBanner`) y antes de publicar de verdad se sustituyen por los
- * de BOIA con revisión profesional (P21, REQ-PRO-020). «Condiciones» pasó a
+ * docs/propuestas/textos-zonas.md (zona 32). Los datos del titular son los
+ * reales de BOIA, aprobados por Álvaro el 2026-10-14 (P21, T291); ya no llevan
+ * el aviso de datos de muestra. «Condiciones» pasó a
  * ser el aviso legal: `/legal/condiciones` redirige (lib/security-headers.ts).
  */
 export const LEGAL_DOCS = {
@@ -57,7 +56,7 @@ export const LEGAL_DOCS = {
  * La política de privacidad con cuentas por email (plan 008, T89, decisión
  * 3): qué se recoge y para qué. La página la usa cuando hay Supabase; sin
  * él (la versión de prueba, D-20) sigue la de arriba. Su versión es
- * `PRIVACY_POLICY_VERSION` (lib/account/config.ts). `muestra` hasta P21.
+ * `PRIVACY_POLICY_VERSION` (lib/account/config.ts). Aprobada el 2026-10-14 (P21).
  */
 export const PRIVACY_WITH_ACCOUNTS = {
   title: 'legal.privacy.title',

@@ -1479,13 +1479,6 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   max-width: 68ch;
 }
 
-/* Datos inventados (D-23, O14): el aviso va arriba de cada página legal. */
-.legal__sample {
-  padding: 12px 16px;
-  border: 2px dashed currentColor;
-  border-radius: var(--radius);
-}
-
 /* ---------- Panel de Tickets ----------
    Sin JavaScript: se abre con :target (#tickets). Con JavaScript manda la
    clase .is-open que pone LandingClient. Untouched by plan 007 (its sheet

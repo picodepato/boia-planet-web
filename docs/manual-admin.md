@@ -86,7 +86,7 @@ definitiva con licencia (P18).
 
 Hasta que haya autoservicio en la web (REQ-IDE-050, L2), las peticiones se
 atienden a mano con este procedimiento. Correo de privacidad: el de los textos
-legales (hoy `privacidad@boia.example`, inventado; el real es P21).
+legales (`hola@boiaplanet.net`, aprobado el 2026-10-14).
 
 ### 6.1 Qué peticiones hay
 

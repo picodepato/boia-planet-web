@@ -382,8 +382,8 @@ test('borrar la cuenta escribiendo el apodo', async ({ page }, info) => {
 
 test('la política de privacidad dice qué se recoge y para qué', async ({ page }) => {
   await page.goto('/legal/privacidad');
-  await expect(page.getByTestId('legal-muestra')).toBeVisible();
   await expect(page.getByText(t('legal.privacy.account.what'))).toBeVisible();
+  await expect(page.getByTestId('legal-muestra')).toHaveCount(0);
   await expect(page.getByText(t('legal.privacy.account.retention'))).toBeVisible();
   await expect(page.getByText(t('legal.privacy.notAsked'))).toHaveCount(0);
 });

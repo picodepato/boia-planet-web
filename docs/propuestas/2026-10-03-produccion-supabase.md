@@ -46,6 +46,10 @@ dos hosts (paso 10). Hasta el paso 10 la web pública no cambia.
 - [ ] Una hora tranquila, sin fiesta esa noche: el paso 10 cambia la web
       pública.
 
+> **Hecho el 2026-10-14:** el proyecto de producción `BOIAPLANETWEBOFICIAL`
+> está creado y migrado (40/40 migraciones y seeds), `admin@boiaplanet.net`
+> es propietario y el SMTP se ha verificado con un correo real con código.
+
 ## 1. Un proyecto de Supabase para producción
 
 Hoy sólo existe `boia-planet-dev`, el de las pruebas: `pnpm test:supabase` y
@@ -223,12 +227,12 @@ mágico, sólo el código.
 **Authentication → Rate Limits**. Los límites son **por IP**, y en una fiesta
 mucha gente comparte la misma (el Wi-Fi o la antena del sitio):
 
-- [ ] **Rate limit for sending emails**: `60` por hora para el día a día. La
-      noche de una fiesta con sellos por QR, subirlo (hasta `250`, por el tope
-      diario de Brevo) y bajarlo al día siguiente.
-- [ ] **Rate limit for token verifications** (códigos comprobados):
-      `150` cada 5 minutos (el de serie, 30, se queda corto en la puerta).
-- [ ] **Rate limit for sign ups and sign ins**: `150` cada 5 minutos.
+Valores elegidos por Álvaro el 2026-10-14 (el tope real es el de Brevo gratis:
+300 correos al día):
+
+- [x] **Rate limit for sending emails**: `250` por hora.
+- [x] **Rate limit for token verifications** (códigos comprobados): `500`.
+- [x] **Rate limit for sign ups and sign ins**: `500` (estos dos últimos, por IP).
 - [ ] **Save changes**.
 
 ## 7. URL de Auth: los dos hosts
@@ -280,18 +284,14 @@ pnpm admin:grant -- admin@boiaplanet.net owner    # owner | admin | editor | non
 
 ## 9. La política de privacidad (antes de recoger emails reales)
 
-El texto lo escribe y lo aprueba Álvaro (P21); este repo no lo inventa. Hoy es
-`muestra`:
+**Hecho el 2026-10-14 (plan 030, T291).** Álvaro aprobó el texto: responsable
+BOIA PLANET (CIF en trámite), Calle Hondón de las Nieves, 7, 03005 Alicante,
+contacto `hola@boiaplanet.net`; encargados Supabase (UE) y Brevo
+(`legal.privacy.account.*` y `legal.privacy.*` de `apps/web/lib/i18n/`, juntas
+por `PRIVACY_WITH_ACCOUNTS`, `apps/web/lib/legal/docs.ts`).
 
-- [ ] El texto con cuentas son las claves `legal.privacy.account.*` y las
-      comunes `legal.privacy.*` de `apps/web/lib/i18n/` (las junta
-      `PRIVACY_WITH_ACCOUNTS`, `apps/web/lib/legal/docs.ts`); se ve en
-      `/legal/privacidad` cuando hay Supabase. Tiene que nombrar a quien
-      trata los datos y, como encargados, a **Supabase** (región de la UE del
-      paso 1) y a **Brevo** (manda el código).
-- [ ] Al aprobarlo, se sube `PRIVACY_POLICY_VERSION`
-      (`apps/web/lib/account/config.ts`, hoy `muestra-2026-10-03`): cada
-      consentimiento guarda la versión aceptada y su fecha.
+- [x] `PRIVACY_POLICY_VERSION` (`apps/web/lib/account/config.ts`) es ahora
+      `2026-10-14`: cada consentimiento guarda la versión aceptada y su fecha.
 - [ ] Ese cambio va en un commit a `main` **antes** del paso 10 (o en el
       mismo push).
 

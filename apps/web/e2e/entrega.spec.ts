@@ -28,7 +28,7 @@ test('/juego (el mundo 2D, D-25) redirige al planeta 3D con su consulta', async 
   expect(res.headers()['location']).toBe('/mar?ir=puerto&menu=carnet');
 });
 
-test('páginas legales: aviso de muestra arriba y sus textos; «Condiciones» lleva al aviso legal', async ({
+test('páginas legales: sus textos, sin aviso de muestra; «Condiciones» lleva al aviso legal', async ({
   page,
 }) => {
   const csp: string[] = [];
@@ -38,8 +38,9 @@ test('páginas legales: aviso de muestra arriba y sus textos; «Condiciones» ll
   for (const [id, doc] of Object.entries(LEGAL_DOCS)) {
     await page.goto(`/legal/${id}`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(t(doc.title));
-    await expect(page.getByTestId('legal-muestra')).toHaveText(t('legal.sampleBanner'));
     await expect(page.getByText(t(doc.body[0]!))).toBeVisible();
+    // Los datos son reales desde T291: ya no hay aviso de muestra.
+    await expect(page.getByTestId('legal-muestra')).toHaveCount(0);
   }
   await page.goto('/legal/condiciones');
   await expect(page).toHaveURL(/\/legal\/aviso-legal$/);

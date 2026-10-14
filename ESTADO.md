@@ -4,6 +4,22 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 030 T291: Real legal identity in the legal pages and the privacy policy
+
+Qué existe
+- `legal.aviso.owner/contact`, `legal.privacy.controller`, `legal.privacy.account.where/updated` y los dos textos de derechos con el texto aprobado el 2026-10-14; `privacidad@boia.example` pasa a `hola@boiaplanet.net`.
+- `PRIVACY_POLICY_VERSION = '2026-10-14'`.
+- Auditoría: fuera el aviso «Datos de muestra…» de las páginas legales (`legal.sampleBanner`, `data-testid="legal-muestra"`, su CSS y su fila en textos-zonas.md); las e2e entrega, cuenta y deck 03-paginas ya no lo esperan (entrega y cuenta comprueban que no está). Prueba unitaria en `docs.test.ts`. Las e2e no se han corrido.
+- `apps/web/lib/legal/docs.test.ts` (aviso, privacidad en los dos modos, sin datos inventados, versión).
+- `docs/propuestas/textos-zonas.md` y `docs/manual-admin.md` al día; `docs/propuestas/2026-10-03-produccion-supabase.md`: §6 límites (250/500/500), §9 hecho, nota del proyecto `BOIAPLANETWEBOFICIAL`.
+
+Comandos
+- grep de nombres inventados en apps y packages: sin coincidencias.
+- vitest (sin packages/db): verde tras actualizar textos-zonas.md; checks.sh OK; lint 0; typecheck 0; build 0.
+
+Pendiente
+- Los `POLICY = 'muestra-…'` de packages/db/*.supabase.ts son fixtures; sin tocar.
+
 ## 2026-10-13 — plan 029 T284: Cerrar sesión deja el dispositivo de cero, y la cuenta en los menús
 
 Sólo con cuentas (Supabase). En modo local (D-20) nada cambia: no hay sesión, ni botón de empezar de cero.

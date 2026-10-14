@@ -115,7 +115,7 @@ export const esCuenta = {
   'legal.privacy.account.notAsked':
     'Qué no te pedimos: ni contraseña, ni teléfono, ni datos de pago.',
   'legal.privacy.account.where':
-    'Dónde: en la base de datos de BOIA.PLANET, en los servidores de nuestro proveedor (Supabase), que la guarda por encargo nuestro. En tu navegador quedan tu sesión y una copia de tu progreso.',
+    'Dónde: en la base de datos de BOIA.PLANET, en los servidores de nuestro proveedor Supabase, en la Unión Europea, que la guarda por encargo nuestro. El correo con tu código de acceso lo envía nuestro proveedor de email, Brevo, también por encargo nuestro. En tu navegador quedan tu sesión y una copia de tu progreso.',
   'legal.privacy.account.why':
     'Para qué: para que tu Carnet y tu progreso estén en cualquier dispositivo, para los rankings y los sellos de las fiestas y, sólo si marcas la casilla, para mandarte noticias de BOIA por email (fiestas y entradas).',
   'legal.privacy.account.basis':
@@ -125,8 +125,8 @@ export const esCuenta = {
   'legal.privacy.account.retention':
     'Cuánto tiempo: mientras tengas la cuenta. Puedes borrarla cuando quieras en Mi Carnet («Borrar mi cuenta») y se borra todo; las noticias se quitan con un toque en el mismo sitio.',
   'legal.privacy.account.rights':
-    'Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. En Mi Carnet puedes editar tu Carnet, dejar de recibir noticias y borrar tu cuenta; para lo demás, escribe a privacidad@boia.example. También puedes reclamar ante la Agencia Española de Protección de Datos.',
-  'legal.privacy.account.updated': 'Última actualización: 3 de octubre de 2026.',
+    'Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. En Mi Carnet puedes editar tu Carnet, dejar de recibir noticias y borrar tu cuenta; para lo demás, escribe a hola@boiaplanet.net. También puedes reclamar ante la Agencia Española de Protección de Datos.',
+  'legal.privacy.account.updated': 'Última actualización: 14 de octubre de 2026.',
 
   // El progreso en la cuenta (T90): avisos de la copia del navegador.
   'sync.offline':

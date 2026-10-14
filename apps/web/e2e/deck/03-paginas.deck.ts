@@ -86,6 +86,6 @@ test('tienda-comprar', async ({ page }) => {
 
 test('legal', async ({ page }) => {
   await page.goto('/legal/aviso-legal');
-  await expect(page.getByTestId('legal-muestra')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await shot(page, '03', 'legal');
 });

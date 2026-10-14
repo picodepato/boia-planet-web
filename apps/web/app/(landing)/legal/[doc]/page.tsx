@@ -7,9 +7,9 @@ import { isSupabaseConfigured } from '../../../../lib/supabase/config';
 
 /**
  * Páginas legales enlazadas desde el pie (REQ-ENT-032): aviso legal,
- * privacidad y cookies (lib/legal/docs.ts), con el aviso de datos
- * inventados arriba (`legal.sampleBanner`, D-23 O14). Con cuentas (plan
- * 008, T89) la de privacidad dice qué se recoge y para qué.
+ * privacidad y cookies (lib/legal/docs.ts), con los datos reales de BOIA
+ * aprobados por Álvaro el 2026-10-14 (T291). Con cuentas (plan 008, T89) la
+ * de privacidad dice qué se recoge y para qué.
  */
 type DocId = keyof typeof LEGAL_DOCS;
 const docOf = (id: string) => (id in LEGAL_DOCS ? LEGAL_DOCS[id as DocId] : undefined);
@@ -41,9 +41,6 @@ export default async function LegalPage({ params }: Props) {
           <Link href="/">{t('legal.back')}</Link>
         </p>
         <h1 className="section__title">{t(doc.title)}</h1>
-        <p className="legal__sample" data-testid="legal-muestra" role="note">
-          <strong>{t('legal.sampleBanner')}</strong>
-        </p>
         {doc.body.map((key) => (
           <p key={key}>{t(key)}</p>
         ))}

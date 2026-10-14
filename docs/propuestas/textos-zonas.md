@@ -879,20 +879,18 @@ punto 7 y respuesta 6 de Álvaro; REQ-COM-031).
 
 ## 32 · Legales: aviso legal, privacidad y cookies
 
-**Datos inventados** (D-23, O14): ningún titular, NIF, domicilio ni persona
-de esta sección es real. Cada página lleva arriba `legal.sampleBanner`. Antes
-de publicar de verdad se sustituyen por los de BOIA con revisión profesional
-(P21, REQ-PRO-020). Las páginas son `/legal/aviso-legal`, `/legal/privacidad`
+**Datos reales** (P21): el titular, el domicilio y el contacto los aprobó
+Álvaro el 2026-10-14 (plan 030, T291); el aviso de datos de muestra
+(`legal.sampleBanner`) se quitó entonces. Las páginas son `/legal/aviso-legal`, `/legal/privacidad`
 y `/legal/cookies`; la ruta vieja `/legal/condiciones` pasa a aviso legal.
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `legal.sampleBanner` | Datos de muestra: el titular y sus datos son inventados para esta versión de prueba. Antes de publicar BOIA.PLANET se sustituirán por los reales, con revisión profesional. | Obligatorio arriba de cada página |
 | `legal.updated` | Última actualización: 29 de septiembre de 2026. | |
 | `legal.back` | Volver al inicio | = es.ts |
 | `legal.aviso.title` | Aviso legal y condiciones de uso | |
-| `legal.aviso.owner` | Titular: Bollería Fina del Mediterráneo, S.L., con NIF B00000069 y domicilio en C/ Rosa Melano, 69, 03001 Alicante. Administrador: Benito Camelas. | Datos inventados |
-| `legal.aviso.contact` | Atención al público: Paco Merlo, en privacidad@boia.example. | Datos inventados |
+| `legal.aviso.owner` | Titular: BOIA PLANET (CIF en trámite), con domicilio en Calle Hondón de las Nieves, 7, 03005 Alicante. | Aprobado 2026-10-14 |
+| `legal.aviso.contact` | Contacto: hola@boiaplanet.net. | Aprobado 2026-10-14 |
 | `legal.aviso.purpose` | Esta web presenta los eventos de BOIA, enlaza a la venta de sus entradas y ofrece BOIA.PLANET, un mar para explorar en barco. Usarla es gratis. | |
 | `legal.aviso.use` | Al usarla te comprometes a hacerlo de buena fe: sin suplantar a nadie, sin publicar en Carnets o botellas nada ofensivo o que no sea tuyo, y sin intentar romper el juego para llevarte premios que no has ganado. | |
 | `legal.aviso.moderation` | Podemos retirar respuestas, fotos, apodos o botellas que incumplan las normas de a bordo, y dejar constancia de por qué. | |
@@ -903,7 +901,7 @@ y `/legal/cookies`; la ruta vieja `/legal/condiciones` pasa a aviso legal.
 | `legal.aviso.law` | Se aplica la ley española. Si alguna vez hay un conflicto, lo resolverán los juzgados que correspondan según la ley. | |
 | `legal.privacy.title` | Política de privacidad | |
 | `legal.privacy.intro` | En esta versión de prueba no guardamos tus datos en ningún servidor: todo lo que haces se queda en tu navegador. | |
-| `legal.privacy.controller` | Responsable: Bollería Fina del Mediterráneo, S.L. (NIF B00000069), C/ Rosa Melano, 69, 03001 Alicante. Delegada de protección de datos: Débora Melo, en privacidad@boia.example. | Datos inventados |
+| `legal.privacy.controller` | Responsable: BOIA PLANET (CIF en trámite), Calle Hondón de las Nieves, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net. | Aprobado 2026-10-14 |
 | `legal.privacy.what` | Qué se guarda: el apodo, la foto o el avatar y las respuestas de tu Carnet, tu botella, tu progreso en el juego y tus preferencias de sonido y controles. | |
 | `legal.privacy.notAsked` | Qué no te pedimos: ni email, ni teléfono, ni datos de pago. | |
 | `legal.privacy.where` | Dónde: en el almacenamiento de tu navegador, en este dispositivo. No sale de ahí y no lo vemos. | |
@@ -912,7 +910,7 @@ y `/legal/cookies`; la ruta vieja `/legal/condiciones` pasa a aviso legal.
 | `legal.privacy.sharing` | No se comparte con nadie. Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos servicios tienen su propia política. | |
 | `legal.privacy.analytics` | Medición de visitas: apagada en esta versión. | |
 | `legal.privacy.retention` | Cuánto tiempo: hasta que borres los datos de este sitio en tu navegador o retires tu Carnet o tu botella. | |
-| `legal.privacy.rights` | Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. Como todo está en tu navegador, puedes ejercerlos directamente, borrando o editando; si necesitas algo más, escribe a privacidad@boia.example. También puedes reclamar ante la Agencia Española de Protección de Datos. | |
+| `legal.privacy.rights` | Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. Como todo está en tu navegador, puedes ejercerlos directamente, borrando o editando; si necesitas algo más, escribe a hola@boiaplanet.net. También puedes reclamar ante la Agencia Española de Protección de Datos. | |
 | `legal.privacy.future` | Cuando BOIA.PLANET abra con cuentas, esta política cambiará y te lo contaremos antes de que pase. | |
 | `legal.cookies.title` | Cookies | |
 | `legal.cookies.body` | Esta web no usa cookies de analítica ni de publicidad. | = es.ts |

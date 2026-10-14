@@ -9,9 +9,9 @@
 /**
  * Versión de la política de privacidad que se acepta al crear la cuenta; se
  * guarda con la fecha en `consents` (decisión 3). Sube cuando cambie el texto
- * de /legal/privacidad. `muestra` hasta P21.
+ * de /legal/privacidad. Aprobada por Álvaro el 2026-10-14 (P21).
  */
-export const PRIVACY_POLICY_VERSION = 'muestra-2026-10-03';
+export const PRIVACY_POLICY_VERSION = '2026-10-14';
 
 /** Cifras del código que llega por email (decisión 2, REQ-IDE-002). */
 export const OTP_LENGTH = 6;
