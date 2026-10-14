@@ -405,6 +405,25 @@ En `/admin` → **Fiestas y QR**, por cada fiesta real: la ventana del sello
 WebP o JPEG, ≥ 512 px, ≤ 2 MB); «Descargar PNG», «Imprimir o PDF» o
 «Proyectar QR». «Regenerar código» invalida el QR anterior.
 
+### La radio: «La Sosia», la primera canción (plan 030 T290)
+
+Con cuentas, la radio (landing y barco de `/mar`) lee la tabla compartida
+`radio_songs`, no el catálogo que trae la web; mientras la tabla tenga alguna
+canción, «La Sosia» del repositorio (`apps/web/public/radio/real/la-sosia.mp3`,
+sólo para el modo local) no suena aquí. La primera vez que se enciende la
+radio suena la canción marcada **Primera**; después, al azar (o en orden, si
+se apaga el aleatorio). Lo hace Álvaro (o el orquestador), a mano:
+
+- [ ] `/admin` → **Radio** → subir el MP3 original de «La Sosia» (el mismo
+      archivo que está en `apps/web/public/radio/real/la-sosia.mp3`). Título
+      «La Sosia», artista «Koko Moreno, Tonito Montana», género
+      **Reggaetón**.
+- [ ] En su fila, **Hacer primera** (usa `radio_set_first`). Sólo una
+      canción puede serlo; la de prueba que hubiera deja de serlo.
+- [ ] Si se quiere, quitar la canción de prueba subida el 2026-10-14.
+- [ ] Comprobar en una ventana privada, en los dos hosts, en la landing y en
+      `/mar`: el primer toque a la radio pone «La Sosia».
+
 ### Quitar la muestra
 
 Cuando Álvaro dé lo real (eventos, cosméticos, descuentos, importes):

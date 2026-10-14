@@ -134,6 +134,24 @@ describe('RadioPlayer (plan 022 T247)', () => {
     expect(radioPlaying()).toBe(true);
   });
 
+  it('«La Sosia» primero (T290): por el botón o por «siguiente» sin canción, con aleatorio o sin él', async () => {
+    expect(first.title).toBe('La Sosia');
+    for (const shuffle of [true, false]) {
+      p = setup();
+      p.player.setShuffle(shuffle);
+      await p.player.catalog();
+      await p.player.next();
+      expect(p.player.getState().song?.title).toBe('La Sosia');
+      p.player.dispose();
+    }
+    // Con un género guardado de otra visita, el botón también empieza por ella.
+    const storage = new MemoryStorage();
+    storage.setItem(RADIO_SESSION_KEY, JSON.stringify({ shuffle: true, genreId: 'techno' }));
+    p = setup({ storage });
+    await p.player.tapButton();
+    expect(p.player.getState().song?.title).toBe('La Sosia');
+  });
+
   it('el segundo toque abre el reproductor (y el tercero lo cierra), sin tocar la música', async () => {
     p = setup();
     await p.player.tapButton();

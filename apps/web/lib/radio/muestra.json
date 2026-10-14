@@ -28,7 +28,7 @@
       "genreId": "techno",
       "durationSeconds": 30.0,
       "src": "/radio/muestra/muestra-001.mp3",
-      "first": true,
+      "first": false,
       "order": 0
     },
     {

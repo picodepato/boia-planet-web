@@ -1,0 +1,16 @@
+{
+  "muestra": false,
+  "note": "Canciones reales con el visto bueno de Álvaro (plan 030 T290). Van delante de la muestra; art/radio/generar.py no toca este archivo.",
+  "songs": [
+    {
+      "id": "real-la-sosia",
+      "title": "La Sosia",
+      "artist": "Koko Moreno, Tonito Montana",
+      "genreId": "reggaeton",
+      "durationSeconds": 160.94,
+      "src": "/radio/real/la-sosia.mp3",
+      "first": true,
+      "order": 0
+    }
+  ]
+}

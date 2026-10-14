@@ -4,6 +4,49 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 030 T290: «La Sosia» es la primera canción de la radio, en todas partes
+
+Qué existe:
+- `apps/web/public/radio/real/la-sosia.mp3`: «La Sosia» (Koko Moreno, Tonito
+  Montana), contenido real aprobado por Álvaro. Bytes originales (MP3 CBR
+  192 kbps, 48 kHz, estéreo, 3.862.712 B, 160,94 s leídos de sus tramas). No se
+  recodifica: no hay ffmpeg fuera de Blender y pasar de 192 a 128 kbps sólo
+  ahorraría ~1,3 MB a cambio de una segunda pérdida. Muy por debajo del límite
+  de Cloudflare (25 MiB por archivo).
+- `apps/web/lib/radio/reales.json`: catálogo pequeño de canciones reales (sólo
+  ella, `first: true`, género `reggaeton`). `lib/radio/muestra.ts`
+  (`bundledCatalog`) lo pone delante de la muestra: «La Sosia» order 0, las
+  100 de muestra detrás (orders 1…100, sin primera). `muestra-001` ya no es
+  primera; `art/radio/generar.py` ya no marca ninguna (`FIRST = None`) y no
+  toca `reales.json`, así que regenerar la muestra no la quita.
+- `player-model.ts` `nextSong`: sin canción actual, devuelve la marcada
+  primera con o sin aleatorio (antes, con aleatorio, una al azar); con un
+  filtro de género que la deja fuera, la de arriba del género. Después, las
+  reglas de siempre. `player.start()` (botón de la landing y del barco) ya
+  usaba `firstSong`. El mismo reproductor sirve la landing y `/mar`.
+- El MP3 sólo se pide al sonar (`<audio src>` con `preload = 'none'`); el
+  catálogo sigue en el trozo perezoso de la radio.
+- Con cuentas: `docs/propuestas/2026-10-03-produccion-supabase.md` §13 «La
+  radio»: Álvaro sube «La Sosia» desde `/admin` → Radio y la marca «Hacer
+  primera» (`radio_set_first`). No se ha subido a ningún Supabase.
+
+Comandos:
+- `PYTHONUTF8=1 pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 332 archivos, 2969 pasan, 3 omitidas.
+- `sh tools/spec/checks.sh` → OK.
+- `pnpm lint` → 0 avisos. `pnpm typecheck` → exit 0.
+- `pnpm build` → OK; ruta crítica de la landing 199,0 kB / 200 kB.
+
+Pendiente:
+- Producción (cuentas): subir «La Sosia» y «Hacer primera» desde el Admin.
+- Modo local: un navegador que ya tenía su radio guardada en IndexedDB sigue
+  con su catálogo; sólo los nuevos (o tras borrar datos) la ven delante.
+
+Probar a mano:
+- Ventana privada, `pnpm dev`, modo local: en la landing, tocar la radio →
+  suena «La Sosia»; al acabar (o «siguiente»), una al azar. Lo mismo en `/mar`
+  desde la radio del barco. En `/admin` → Radio, «La Sosia» arriba con
+  «Primera» y sin «muestra».
+
 ## 2026-10-15 — plan 030 T292: «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
 
 Qué existe:

@@ -44,8 +44,9 @@ export function firstSong(songs: readonly RadioSong[]): RadioSong | null {
 }
 
 /**
- * La que sigue a `current` cuando acaba (`null`: se para). Con `shuffle`
- * elige al azar entre las demás; sin él, la siguiente de la lista.
+ * La que sigue a `current` cuando acaba (`null`: se para). Sin `current`,
+ * la primera (la marcada). Con `shuffle` elige al azar entre las demás; sin
+ * él, la siguiente de la lista.
  */
 export function nextSong(
   songs: readonly RadioSong[],
@@ -55,7 +56,9 @@ export function nextSong(
   if (opts.repeat === 'one' && current) return current;
   const list = playable(songs, opts.genreId);
   if (list.length === 0) return null;
-  if (!current) return opts.shuffle ? pickRandom(list, null, opts.random) : list[0]!;
+  // Sin canción aún (plan 030 T290): la marcada primera, con o sin `shuffle`
+  // (si el filtro de género la deja fuera, la de arriba de las del género).
+  if (!current) return list.find((s) => s.first) ?? list[0]!;
   if (opts.shuffle) return pickRandom(list, current.id, opts.random);
   const i = list.findIndex((s) => s.id === current.id);
   if (i < 0) return list[0]!;

@@ -1,10 +1,16 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { RadioCatalogError, firstRadioSong, radioCatalogProblems } from '@boia/contracts';
+import {
+  RadioCatalogError,
+  firstRadioSong,
+  radioCatalogProblems,
+  radioCatalogSchema,
+} from '@boia/contracts';
 import { describe, expect, it } from 'vitest';
 import { readRadioCatalog, radioSongUrl } from './catalog';
 import { listedGenres, playable } from './player-model';
 import data from './muestra.json' with { type: 'json' };
-import { SAMPLE_RADIO_CATALOG, sampleRadioCatalog } from './muestra';
+import reales from './reales.json' with { type: 'json' };
+import { SAMPLE_RADIO_CATALOG, bundledCatalog, sampleRadioCatalog } from './muestra';
 import { createLocalRadioStore, memoryRadioKV } from './store';
 import { checkSongFile, isMp3, songFileProblem, titleFromFileName } from './upload';
 
@@ -242,8 +248,10 @@ describe('radio: la muestra (art/radio/generar.py)', () => {
 
   it('vale, con una sola primera, y cada canción tiene su MP3', () => {
     expect(radioCatalogProblems(SAMPLE_RADIO_CATALOG)).toEqual([]);
-    expect(SAMPLE_RADIO_CATALOG.songs).toHaveLength(data.songs.length);
+    expect(SAMPLE_RADIO_CATALOG.songs).toHaveLength(data.songs.length + reales.songs.length);
     expect(SAMPLE_RADIO_CATALOG.songs.filter((s) => s.first)).toHaveLength(1);
+    // Ninguna de muestra se marca primera: la primera es real (T290).
+    expect(data.songs.filter((s) => s.first)).toEqual([]);
     for (const s of SAMPLE_RADIO_CATALOG.songs) {
       expect(existsSync(pub(s.src)), s.src).toBe(true);
       expect(isMp3(new Uint8Array(readFileSync(pub(s.src)).subarray(0, 4))), s.src).toBe(true);
@@ -253,9 +261,57 @@ describe('radio: la muestra (art/radio/generar.py)', () => {
   it('todos los géneros de muestra tienen canciones y el total cabe en 3 MB', () => {
     const used = new Set(SAMPLE_RADIO_CATALOG.songs.map((s) => s.genreId));
     expect([...used].sort()).toEqual(SAMPLE_RADIO_CATALOG.genres.map((g) => g.id).sort());
-    const total = SAMPLE_RADIO_CATALOG.songs.reduce((n, s) => n + statSync(pub(s.src)).size, 0);
+    const total = SAMPLE_RADIO_CATALOG.songs
+      .filter((s) => s.src.startsWith('/radio/muestra/'))
+      .reduce((n, s) => n + statSync(pub(s.src)).size, 0);
     expect(total).toBe(data.totalBytes);
     expect(total).toBeLessThanOrEqual(3_000_000);
+  });
+});
+
+describe('radio: «La Sosia», la primera canción (plan 030 T290)', () => {
+  const pub = (src: string) => new URL(`../../public${src}`, import.meta.url);
+
+  it('el catálogo vale y «La Sosia» es la única primera, arriba, con su MP3 en public/', () => {
+    expect(radioCatalogProblems(SAMPLE_RADIO_CATALOG)).toEqual([]);
+    const firsts = SAMPLE_RADIO_CATALOG.songs.filter((s) => s.first);
+    expect(firsts).toHaveLength(1);
+    const sosia = firsts[0]!;
+    expect(sosia).toMatchObject({
+      title: 'La Sosia',
+      artist: 'Koko Moreno, Tonito Montana',
+      genreId: 'reggaeton',
+      order: 0,
+      src: '/radio/real/la-sosia.mp3',
+    });
+    expect(firstRadioSong(SAMPLE_RADIO_CATALOG)?.id).toBe(sosia.id);
+    expect(SAMPLE_RADIO_CATALOG.genres.map((g) => g.id)).toContain('reggaeton');
+    expect(existsSync(pub(sosia.src))).toBe(true);
+    const bytes = readFileSync(pub(sosia.src));
+    expect(isMp3(new Uint8Array(bytes.subarray(0, 4)))).toBe(true);
+    // Cabe de sobra en un estático de Cloudflare (25 MiB por archivo).
+    expect(bytes.length).toBeLessThan(25 * 1024 * 1024);
+    expect(sosia.durationSeconds).toBeGreaterThan(150);
+  });
+
+  it('las de muestra siguen todas, detrás, con órdenes 1…n y sin primera', () => {
+    const rest = SAMPLE_RADIO_CATALOG.songs.filter((s) => !s.first);
+    expect(rest.map((s) => s.id)).toEqual(data.songs.map((s) => s.id));
+    expect(rest.map((s) => s.order)).toEqual(data.songs.map((_, i) => i + 1));
+  });
+
+  it('regenerar la muestra con una primera no le quita el puesto a la real', () => {
+    const regenerated = {
+      ...data,
+      songs: data.songs.map((s, i) => ({ ...s, first: i === 0 })),
+    };
+    const c = radioCatalogSchema.parse(bundledCatalog(regenerated, reales));
+    expect(c.songs.filter((s) => s.first).map((s) => s.title)).toEqual(['La Sosia']);
+  });
+
+  it('el modo local siembra con ella delante', async () => {
+    const c = await createLocalRadioStore(memoryRadioKV()).catalog();
+    expect(firstRadioSong(c)?.title).toBe('La Sosia');
   });
 });
 

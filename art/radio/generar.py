@@ -2,7 +2,7 @@
 
 Cien bucles cortos sintetizados aquí mismo (nada se descarga), 25 por género
 (techno, house, reggaetón, indie), en MP3 mono de 48 kbps. Dos duran ~30 s
-(la primera canción y otra) para probar el avance y la precarga del final; el
+(la de arriba de la muestra y otra) para probar el avance y la precarga del final; el
 resto, 4 s. Títulos y artistas inventados, todos `muestra`.
 
 Se corre con el Blender del proyecto (su ffmpeg codifica el MP3; numpy viene
@@ -13,7 +13,9 @@ con él), desde la raíz del repo:
 
 Escribe:
   - apps/web/public/radio/muestra/<id>.mp3
-  - apps/web/lib/radio/muestra.json (el catálogo de muestra que siembra la radio)
+  - apps/web/lib/radio/muestra.json (el catálogo de muestra que siembra la radio;
+    las canciones reales, en reales.json, no las toca: van delante y la primera
+    es una de ellas)
 Es determinista (semilla fija). Falla si el total pasa de MAX_BYTES.
 """
 import json
@@ -44,9 +46,12 @@ GENRES = [
     ("reggaeton", "Reggaetón"),
     ("indie", "Indie"),
 ]
-# (género, índice dentro del género) de las largas; la primera es la primera canción.
+# (género, índice dentro del género) de las largas (la de arriba de la lista y otra).
 LONG = {("techno", 0), ("house", 0)}
-FIRST = ("techno", 0)
+# La primera canción ya no es de muestra (plan 030 T290): es «La Sosia», de
+# apps/web/lib/radio/reales.json, que va delante y este script no toca. Aquí
+# ninguna se marca primera; lib/radio/muestra.ts junta los dos catálogos.
+FIRST = None
 
 TEMPO = {"techno": (128, 136), "house": (120, 126), "reggaeton": (88, 98), "indie": (104, 140)}
 

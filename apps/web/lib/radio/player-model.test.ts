@@ -159,3 +159,38 @@ describe('radio: la barra de géneros (plan 023 T246)', () => {
     expect(pageLeft({ ...box, scrollLeft: 550 }, 1)).toBe(600);
   });
 });
+
+describe('radio: «La Sosia» suena primero (plan 030 T290)', () => {
+  for (const shuffle of [true, false]) {
+    it(`sin canción y con aleatorio ${shuffle ? 'encendido' : 'apagado'}: la marcada primera; luego, las reglas de siempre`, () => {
+      const opts = { shuffle, repeat: 'all' as const, genreId: null, random: seeded(11) };
+      const first = nextSong(songs, null, opts)!;
+      expect(first.title).toBe('La Sosia');
+      expect(first.first).toBe(true);
+      expect(first.id).toBe(firstSong(songs)!.id);
+      const second = nextSong(songs, first, opts)!;
+      expect(second.id).not.toBe(first.id);
+      if (!shuffle) {
+        // En orden: la de debajo en la lista.
+        expect(second.id).toBe(playable(songs, null)[1]!.id);
+        return;
+      }
+      // Al azar entre las demás: recorre la lista, nunca repite la que acaba de sonar.
+      const seen = new Set<string>();
+      let cur = second;
+      for (let i = 0; i < 50; i++) {
+        const next = nextSong(songs, cur, opts)!;
+        expect(next.id).not.toBe(cur.id);
+        seen.add(next.id);
+        cur = next;
+      }
+      expect(seen.size).toBeGreaterThan(10);
+    });
+  }
+
+  it('con un filtro de género que la deja fuera, empieza por la de arriba del género', () => {
+    const next = nextSong(songs, null, { shuffle: true, repeat: 'all', genreId: 'techno' })!;
+    expect(next.genreId).toBe('techno');
+    expect(next.id).toBe(playable(songs, 'techno')[0]!.id);
+  });
+});
