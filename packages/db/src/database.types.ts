@@ -2697,6 +2697,7 @@ export type Database = {
         | 'hero'
         | 'priority_event'
         | 'upcoming_events'
+        | 'carnet'
         | 'artists'
         | 'philosophy'
         | 'photos'
@@ -2760,6 +2761,7 @@ export const Constants = {
         'hero',
         'priority_event',
         'upcoming_events',
+        'carnet',
         'artists',
         'philosophy',
         'photos',

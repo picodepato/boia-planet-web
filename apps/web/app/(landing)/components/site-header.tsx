@@ -14,17 +14,20 @@ const SECONDARY: ReadonlyArray<[MessageKey, string]> = [
 
 /**
  * Cabecera fija: el logo (mascota y wordmark, T50), Tickets siempre a mano y el
- * resto de accesos, con Mi Carnet, el Ranking (T188), el sonido del juego e Instagram (T44,
+ * resto de accesos, con Mi Carnet, el Ranking (T188), el sonido del juego, Instagram y WhatsApp (T44, T288,
  * REQ-ENT-029, O13). En móvil lo secundario va en un menú plegable que
  * funciona sin JavaScript; el sonido sólo aparece con JavaScript.
  */
 export function SiteHeader({
   sections,
   instagram = null,
+  whatsapp = null,
 }: {
   sections: ReadonlySet<string>;
   /** Enlace oficial de Instagram (URL `muestra`, P15). */
   instagram?: string | null;
+  /** El WhatsApp de BOIA, el mismo del pie (plan 030 T288). */
+  whatsapp?: string | null;
 }) {
   const links = SECONDARY.filter(([, href]) => sections.has(href.slice(1)));
   const items = (
@@ -54,6 +57,20 @@ export function SiteHeader({
             aria-label={ACCESS_COPY.instagramAria}
           >
             {ACCESS_COPY.instagram} ↗
+          </a>
+        </li>
+      ) : null}
+      {/* Plan 030 T288: el WhatsApp, también a mano en la cabecera y en el menú. */}
+      {whatsapp ? (
+        <li className="site-header__whatsapp">
+          <a
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={ACCESS_COPY.whatsappAria}
+            data-testid="cabecera-whatsapp"
+          >
+            {ACCESS_COPY.whatsapp} ↗
           </a>
         </li>
       ) : null}

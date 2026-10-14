@@ -31,6 +31,14 @@ const MediaCollage = lazy(() =>
   import('./media-collage').then((m) => ({ default: m.MediaCollage })),
 );
 
+/**
+ * «Sácate el Carnet» (plan 030 T288): como el collage, el servidor lo pinta
+ * entero y su código y sus textos (`es-carnet-bloque.ts`) llegan aparte.
+ */
+const CarnetInvite = lazy(() =>
+  import('./carnet-invite').then((m) => ({ default: m.CarnetInvite })),
+);
+
 /** Lista completa de artistas (v14 §18.1). */
 export const ARTISTS_PAGE = '/artistas';
 /** La Galería (T42, plan 019): todas las fotos por isla y por evento. */
@@ -48,6 +56,7 @@ export function HomeBlocks({
   buyable,
   heroScene,
   social,
+  accounts,
 }: {
   blocks: readonly ResolvedBlock[];
   artists: readonly Artist[];
@@ -56,6 +65,8 @@ export function HomeBlocks({
   heroScene?: ReactNode;
   /** WhatsApp para la invitación del pie (REQ-ENT-032). */
   social?: SocialLinks | undefined;
+  /** Modo con cuentas (Supabase): cambia la línea de noticias de «Sácate el Carnet». */
+  accounts?: boolean;
 }) {
   return (
     <>
@@ -69,6 +80,7 @@ export function HomeBlocks({
           buyable={buyable}
           heroScene={heroScene}
           social={social}
+          {...(accounts === undefined ? {} : { accounts })}
         />
       ))}
     </>
@@ -157,12 +169,18 @@ export function BlockView({
   buyable,
   heroScene,
   social,
+  accounts = false,
 }: {
   block: ResolvedBlock;
   artists: readonly Artist[];
   buyable: ReadonlySet<string>;
   heroScene?: ReactNode;
   social?: SocialLinks | undefined;
+  /**
+   * Modo con cuentas (Supabase). Lo decide la página en el servidor
+   * (`isSupabaseConfigured`), así su módulo no viaja con la landing.
+   */
+  accounts?: boolean;
 }) {
   switch (block.type) {
     case 'hero':
@@ -270,6 +288,22 @@ export function BlockView({
               ))}
             </ul>
           </div>
+        </section>
+      );
+
+    case 'carnet':
+      return (
+        <section
+          id="carnet"
+          className="section"
+          aria-labelledby="carnet-title"
+          data-block={block.id}
+          data-testid="bloque-carnet"
+          data-modo={accounts ? 'cuentas' : 'local'}
+        >
+          <Suspense fallback={null}>
+            <CarnetInvite whatsapp={social?.whatsapp ?? null} accounts={accounts} />
+          </Suspense>
         </section>
       );
 

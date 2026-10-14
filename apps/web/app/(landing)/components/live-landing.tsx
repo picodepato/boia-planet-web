@@ -24,13 +24,26 @@ const deriveView = async (content: HomeContent, now: Date): Promise<HomeView> =>
  * de bloques, artistas, fotos y textos) se ven aquí. `data-contenido` dice de
  * dónde sale lo pintado (`muestra` o `repositorio`).
  */
-export function LiveLanding({ initial, heroScene }: { initial: HomeView; heroScene: ReactNode }) {
+export function LiveLanding({
+  initial,
+  heroScene,
+  accounts = false,
+}: {
+  initial: HomeView;
+  heroScene: ReactNode;
+  /** Modo con cuentas (Supabase), para «Sácate el Carnet» (plan 030 T288). */
+  accounts?: boolean;
+}) {
   const { view, live } = useLiveHome(initial, deriveView);
   const buyable = new Set(view.buyable);
 
   return (
     <>
-      <SiteHeader sections={new Set(view.sections)} instagram={view.social.instagram} />
+      <SiteHeader
+        sections={new Set(view.sections)}
+        instagram={view.social.instagram}
+        whatsapp={view.social.whatsapp}
+      />
       <main id="contenido" tabIndex={-1} data-contenido={live ? 'repositorio' : 'muestra'}>
         <HomeBlocks
           blocks={view.main}
@@ -38,6 +51,7 @@ export function LiveLanding({ initial, heroScene }: { initial: HomeView; heroSce
           buyable={buyable}
           heroScene={heroScene}
           social={view.social}
+          accounts={accounts}
         />
       </main>
       <HomeBlocks

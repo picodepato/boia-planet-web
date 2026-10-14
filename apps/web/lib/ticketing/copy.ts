@@ -45,6 +45,8 @@ export const CHECKOUT_COPY = {
   carnet: {
     requiredTitle: t('ticketing.carnet.requiredTitle'),
     requiredBody: t('ticketing.carnet.requiredBody'),
+    /** Plan 030 T288: sin Carnet no se entra en la fiesta; con cuentas, las noticias por email. */
+    requiredEnter: t('ticketing.carnet.requiredEnter'),
     create: t('ticketing.carnet.create'),
     nickname: t('ticketing.carnet.nickname'),
     nicknameHint: (min: number, max: number) => t('ticketing.carnet.nicknameHint', { min, max }),

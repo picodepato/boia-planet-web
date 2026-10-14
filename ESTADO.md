@@ -4,6 +4,30 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-14 — plan 030 T288: «Sácate el Carnet» block and a WhatsApp that is easy to find
+
+Qué existe
+- Bloque nuevo de la home `carnet` (`carnetBlockSchema` en `packages/contracts/src/home-blocks.ts`), en la muestra justo después de «Próximos eventos» (`packages/store/src/sample/content.ts`, id `carnet`). Migración `supabase/migrations/20261014100300_home_block_carnet.sql` (añade `'carnet'` al enum `home_block_type` tras `upcoming_events`; `database.types.ts` al día) para que `packages/db/src/schema.test.ts` siga cuadrando. **Sin aplicar.**
+- La sección (`#carnet`, `data-testid="bloque-carnet"`) la pone `blocks.tsx`; su contenido es `components/carnet-invite.tsx`, perezoso como el collage (el servidor lo pinta entero). Dice que sin Carnet no se entra en una fiesta BOIA y que hay que sacarlo antes de comprar; con cuentas, «te avisamos por email de las próximas fiestas si lo aceptas al crearlo»; en modo local, que las fiestas se anuncian en el WhatsApp. Ventajas: sellos y descuentos del mar. Botones: «Sacarme el Carnet» (`CARNET_CREATE_HREF`, el del checkout) y «Entrar en el WhatsApp» (el de Contacto/pie, `social.whatsapp`). El modo lo decide `page.tsx` en el servidor (`isSupabaseConfigured()` → `LiveLanding accounts`), misma build en los dos hosts.
+- Textos en `apps/web/lib/i18n/es-carnet-bloque.ts` (muestra), fuera de `es-web.ts` a propósito (como `es-pwa.ts`): en el catálogo de la landing rompían el presupuesto (reagrupaban los chunks). Entran en `es.ts` y en «Textos y música» del Admin (`CARNET_BLOCK_KEYS`, grupo «Sácate el Carnet»; `landingText` en `lib/landing/texts.ts` aplica el cambio). El bloque sale en «Página principal» del Admin como «Sácate el Carnet».
+- Cabecera y menú plegable: «WhatsApp ↗» (`data-testid="cabecera-whatsapp"`) junto a Instagram, sin tocar «Tu cuenta / Entrar / Cerrar sesión». En la fila de escritorio de 1200–1359 px se oculta porque no cabe (ahí ya no había hueco); desde 1360 px y en el menú (<1200 px) se ve.
+- Aviso de antes de comprar sin Carnet (`CarnetRequired`, `lib/ticketing/checkout.tsx`): nueva línea en negrita «El Carnet es obligatorio para entrar en la fiesta.» (`ticketing.carnet.requiredEnter`); con cuentas el cuerpo es la línea de noticias del bloque; en local, el de siempre. La lógica del checkout no cambia.
+- Pruebas: `app/(landing)/components/carnet-invite.test.ts` (orden tras próximos eventos, href del Carnet, WhatsApp del contenido, línea por modo, cabecera y menú con WhatsApp) y `lib/ticketing/carnet-notice.test.ts` (texto «obligatorio para entrar», cuerpo por modo).
+
+Comandos
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 328 archivos, 2918 pass, 1 skip, exit 0
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm typecheck` → exit 0
+- `pnpm build` → exit 0; landing 199.8 kB de 200 kB (antes 199.1)
+- `pnpm cf:measure` → 2,255 KiB gzip de 2,800, OK
+- `E2E_PORT=3291 pnpm e2e landing.spec.ts -g axe --workers=2` → 2 pass (móvil y escritorio), 0 violaciones
+- Tras `git merge main` (conflicto en `lib/i18n/es.ts`: `esCarnetBloque` y `esSeo` de T285, los dos dentro): vitest 329 archivos, 2924 pass, 1 skip; checks.sh, lint, typecheck y build exit 0 (landing 199.8 kB); axe 2 pass.
+
+Pendiente
+- Aplicar la migración del enum cuando Álvaro lo decida (el modo con cuentas no guarda la home en Supabase hoy).
+- Un navegador que reordenó los bloques en el Admin de la demo ve el bloque nuevo al final (antes del pie) hasta reordenar.
+- Margen del presupuesto de la landing: 0.2 kB.
+- Copy `muestra`, pendiente de Álvaro.
+
 ## 2026-10-14 — plan 030 T285: Open to Google: index, titles, canonical, sitemap and robots
 
 Qué existe:

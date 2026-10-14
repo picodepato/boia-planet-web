@@ -10,6 +10,7 @@ export const HOME_BLOCK_TYPES = [
   'hero',
   'priority_event',
   'upcoming_events',
+  'carnet',
   'artists',
   'philosophy',
   'photos',
@@ -54,6 +55,17 @@ export const upcomingEventsBlockSchema = z.object({
   limit: z.number().int().positive().default(6),
   /** Exclusión manual que no borra el evento (REQ-COM-011). */
   excludeEventIds: z.array(z.string()).default([]),
+});
+
+/**
+ * «Sácate el Carnet» (plan 030 T288): la invitación a crear el Carnet BOIA,
+ * necesario para entrar en una fiesta, con el WhatsApp de BOIA al lado. Sus
+ * textos son los de la landing (editables en «Textos y música»); el enlace
+ * de WhatsApp sale del de Contacto o del pie.
+ */
+export const carnetBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('carnet'),
 });
 
 export const artistsBlockSchema = z.object({
@@ -109,6 +121,7 @@ export const homeBlockSchema = z.discriminatedUnion('type', [
   heroBlockSchema,
   priorityEventBlockSchema,
   upcomingEventsBlockSchema,
+  carnetBlockSchema,
   artistsBlockSchema,
   philosophyBlockSchema,
   photosBlockSchema,

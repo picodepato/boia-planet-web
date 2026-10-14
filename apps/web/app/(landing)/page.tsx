@@ -6,6 +6,7 @@ import { introCss, loadIntroData, stillCss } from '../../lib/intro/load';
 import { PRESENTATION } from '../../lib/landing/presentation';
 import { resolveHome } from '../../lib/landing/resolve';
 import { SAMPLE_CONTENT } from '../../lib/landing/sample-content';
+import { isSupabaseConfigured } from '../../lib/supabase/config';
 import { IntroStage } from './components/intro-stage';
 import { LandingClientLazy } from './components/landing-client-lazy';
 import { LiveLanding } from './components/live-landing';
@@ -54,6 +55,7 @@ export default function LandingPage() {
       <LiveLanding
         initial={view}
         heroScene={<IntroStage data={intro} coverLabel={t('mar.client.preparandoElMar')} />}
+        accounts={isSupabaseConfigured()}
       />
       <LandingClientLazy />
     </>

@@ -17,9 +17,14 @@ export function setTextOverrides(next: Readonly<Record<string, string>>): void {
 }
 
 export function t(key: MessageKey, vars?: Record<string, string | number>): string {
-  if (!vars) {
-    const o = overrides[key];
-    if (o !== undefined && o.trim() !== '') return o;
-  }
-  return baseT(key, vars);
+  return (!vars && landingText(key)) || baseT(key, vars);
+}
+
+/**
+ * El cambio del Admin para una clave, o `''` si no hay. Para los textos de la
+ * landing que van fuera de este catálogo (`es-carnet-bloque.ts`, plan 030 T288).
+ */
+export function landingText(key: string): string {
+  const o = overrides[key];
+  return o !== undefined && o.trim() !== '' ? o : '';
 }

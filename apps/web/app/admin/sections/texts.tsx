@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { es, LANDING_TEXT_KEYS, type MessageKey } from '../../../lib/i18n/es';
+import { CARNET_BLOCK_KEYS } from '../../../lib/i18n/es-carnet-bloque';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
 import {
@@ -16,7 +17,7 @@ import {
 import { t as msg } from '../../../lib/i18n';
 
 /** Textos de la web que se pueden cambiar: los de la landing sin variables. */
-const KEYS = LANDING_TEXT_KEYS.filter((k) => !es[k].includes('{'));
+const KEYS = [...LANDING_TEXT_KEYS, ...CARNET_BLOCK_KEYS].filter((k) => !es[k].includes('{'));
 
 const GROUPS: [string, string][] = [
   ['hero.', msg('admin.texts.portada')],
@@ -24,6 +25,7 @@ const GROUPS: [string, string][] = [
   ['tickets.', msg('admin.texts.tickets')],
   ['event.', msg('admin.texts.eventos')],
   ['artists.', msg('admin.texts.artistas')],
+  ['carnetBlock.', msg('admin.texts.carnet')],
   ['footer.', msg('admin.texts.pie')],
 ];
 

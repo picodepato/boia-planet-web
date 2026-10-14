@@ -4,17 +4,13 @@ import { NICKNAME_MAX, NICKNAME_MIN } from '@boia/contracts';
 import type { PurchaseSource } from '@boia/contracts/analytics';
 import { isStoreError } from '@boia/store';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { esCarnetBloque } from '../i18n/es-carnet-bloque';
 import { formatEventDate } from '../i18n/web';
 import { draftFrom, saveCarnet } from '../mundo/carnet/carnet-editor';
 import { gameRepository } from '../repo';
 import { signupUrl } from '../scanner/carnet-url';
 import { isSupabaseConfigured } from '../supabase/config';
-import type {
-  CheckoutEvent,
-  CheckoutSession,
-  PurchaseOutcome,
-  TicketingAdapter,
-} from './adapter';
+import type { CheckoutEvent, CheckoutSession, PurchaseOutcome, TicketingAdapter } from './adapter';
 import './checkout.css';
 import './checkout-form.css';
 import { CHECKOUT_COPY as C } from './copy';
@@ -327,14 +323,26 @@ export function SandboxCheckout({
 }
 
 /** «Para comprar entradas necesitas el Carnet BOIA» (plan 019, decisión 1). */
-function CarnetRequired() {
+/** Con cuentas, la misma línea de noticias que «Sácate el Carnet» de la landing. */
+export const CARNET_NEWS_ACCOUNTS = esCarnetBloque['carnetBlock.news.accounts'];
+
+/**
+ * El aviso de antes de comprar sin Carnet (plan 019, decisión 1). Plan 030
+ * T288: dice claro que sin Carnet no se entra en la fiesta y, con cuentas, que
+ * al crearlo (email y código) puede aceptar las noticias de las próximas
+ * fiestas; en modo local (D-20) no hay email y sigue el alta rápida.
+ */
+export function CarnetRequired({ accounts = isSupabaseConfigured() }: { accounts?: boolean }) {
   return (
     <div className="checkout__offer" role="status" data-testid="checkout-carnet-requerido">
       <p className="checkout__offer-title">
         <span aria-hidden="true">🪪 </span>
         {C.carnet.requiredTitle}
       </p>
-      <p>{C.carnet.requiredBody}</p>
+      <p data-testid="checkout-carnet-entrar">
+        <strong>{C.carnet.requiredEnter}</strong>
+      </p>
+      <p>{accounts ? CARNET_NEWS_ACCOUNTS : C.carnet.requiredBody}</p>
     </div>
   );
 }

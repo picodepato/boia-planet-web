@@ -15,6 +15,8 @@ const BLOCK_LABELS: Record<HomeBlock['type'], string> = {
   hero: t('admin.home.portadaHero'),
   priority_event: t('admin.home.eventoPrioritario'),
   upcoming_events: t('island.upcoming.heading'),
+  // Plan 030 T288: sus textos, en «Textos y música» (carnetBlock.*).
+  carnet: t('admin.home.carnet'),
   artists: t('admin.home.artistas'),
   // T65: la Filosofía se ve dentro del bloque Contacto; cada uno se edita aparte.
   philosophy: t('admin.home.filosofiaEnContacto'),

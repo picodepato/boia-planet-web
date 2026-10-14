@@ -1739,6 +1739,10 @@ html.panel-open {
   .site-header__nav {
     gap: 6px;
   }
+  /* T288: no cabe; ahí el WhatsApp queda en «Sácate el Carnet» y en el pie. */
+  .site-header__links .site-header__whatsapp {
+    display: none;
+  }
 }
 
 /* «Cerrar sesión» de la fila de escritorio es un icono (T203); el texto sigue para lectores. */
@@ -1946,6 +1950,53 @@ main[data-contenido] .badge {
   border: 1px solid var(--paper-ink);
   background: var(--paper);
   color: var(--paper-ink);
+}
+
+/* ---------- «Sácate el Carnet» (plan 030 T288): nothing moves ---------- */
+main[data-contenido] .carnet-invite__grid {
+  display: grid;
+  gap: 40px;
+}
+
+main[data-contenido] .carnet-invite__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+}
+
+main[data-contenido] .carnet-invite__actions .button {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+main[data-contenido] .carnet-invite__perks {
+  align-self: start;
+  padding: 20px;
+  border: 2px solid;
+  box-shadow: 4px 4px 0;
+}
+
+main[data-contenido] .carnet-invite__perks h3 {
+  margin: 0 0 12px;
+  font: 11px/1.6 var(--font-button);
+  text-transform: uppercase;
+}
+
+main[data-contenido] .carnet-invite__perks ul {
+  margin: 0;
+  padding-left: 1.2em;
+  list-style: square;
+  line-height: 1.8;
+}
+
+@media (min-width: 900px) {
+  main[data-contenido] .carnet-invite__grid {
+    grid-template-columns: 3fr 2fr;
+    gap: 64px;
+  }
+  main[data-contenido] .carnet-invite__actions .button {
+    flex: 0 1 auto;
+  }
 }
 
 /* ---------- Eventos: the date in a square (decision 5) ---------- */

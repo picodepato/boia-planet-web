@@ -26,6 +26,7 @@ export type ResolvedBlock =
   | (HomeBlockOf<'hero'> & { hasPromotions: boolean })
   | (HomeBlockOf<'priority_event'> & { event: BoiaEvent })
   | (HomeBlockOf<'upcoming_events'> & { events: BoiaEvent[] })
+  | HomeBlockOf<'carnet'>
   | (HomeBlockOf<'artists'> & { rotation: Artist[]; alphabetical: Artist[] })
   | HomeBlockOf<'philosophy'>
   | (HomeBlockOf<'photos'> & { photos: Photo[] })
@@ -84,6 +85,10 @@ export function resolveBlock(
       const events = upcomingEvents(content.events, now, exclude).slice(0, block.limit);
       return events.length > 0 ? { ...block, events } : null;
     }
+
+    case 'carnet':
+      // Sin contenido propio: sus textos son de la landing (plan 030 T288).
+      return block;
 
     case 'artists': {
       if (content.artists.length === 0) return null;

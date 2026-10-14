@@ -79,6 +79,8 @@ export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'h
     },
     { id: 'priority', type: 'priority_event', visible: true, eventId: 'halloween-2026' },
     { id: 'upcoming', type: 'upcoming_events', visible: true, limit: 6 },
+    // «Sácate el Carnet» (plan 030 T288): el Carnet, necesario para entrar, y el WhatsApp.
+    { id: 'carnet', type: 'carnet', visible: true },
     // Al menos 7 fotos en la home: las 4 reales y las de muestra de la selección (plan 029 T277).
     { id: 'photos', type: 'photos', visible: true, limit: HOME_PHOTOS_LIMIT },
     { id: 'artists', type: 'artists', visible: true, rotationMs: 5000 },

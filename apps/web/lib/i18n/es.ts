@@ -14,6 +14,7 @@ import { esAdminRadio } from './es-admin-radio';
 import { esAdminReal } from './es-admin-real';
 import { esCalitas } from './es-calitas';
 import { esCarnet } from './es-carnet';
+import { esCarnetBloque } from './es-carnet-bloque';
 import { esCuenta } from './es-cuenta';
 import { esJuego } from './es-juego';
 import { esLib } from './es-lib';
@@ -70,6 +71,8 @@ export const es = {
   ...esRadio,
   // La app instalable: manifiesto, «sin conexión» y el aviso (plan 027 T264).
   ...esPwa,
+  // «Sácate el Carnet» de la landing (plan 030 T288).
+  ...esCarnetBloque,
   ...esSeo,
 } as const;
 

@@ -55,6 +55,8 @@ export const esLibWeb = {
   'ticketing.carnet.requiredTitle': 'Para comprar entradas necesitas el Carnet BOIA',
   'ticketing.carnet.requiredBody':
     'Créalo en 30 s, sin email: tu Carnet se guarda en este navegador. Luego sigues con la compra.',
+  // Plan 030 T288: sin Carnet no se entra; con cuentas, las noticias si las aceptas. Muestra.
+  'ticketing.carnet.requiredEnter': 'El Carnet es obligatorio para entrar en la fiesta.',
   'ticketing.carnet.create': 'Crear Carnet',
   'ticketing.carnet.nickname': 'Tu apodo',
   'ticketing.carnet.nicknameHint':
