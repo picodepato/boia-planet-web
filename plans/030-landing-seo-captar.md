@@ -103,7 +103,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## T290 — «La Sosia» is the radio's first song, everywhere
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -114,7 +114,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - unit test: with no current song, shuffle on or off, the first song played is the one with `first: true` («La Sosia»); the next ones follow the current shuffle rules → pass
   - unit test: the catalog parses, «La Sosia» is the only `first`, its `src` exists in `public/` → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: player starts with the `first` song in both modes/pages, then shuffle; «La Sosia» (original 192 kbps, 3.86 MB) first in a small real catalog in front of the sample; production upload + «Hacer primera» is Álvaro's Admin step (switch-on doc §13) — 3d950b3
 
 ## T293 — Bug: editing your own artist Carnet with a web link says the nickname is taken
 - Status: done
@@ -212,3 +212,4 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-15 03:00 T292 conflict resolved by agent (383592a); integrating
 - 2026-10-15 03:00 T290 launched · attempt 1 · agent ac42bea2dbd102b3b (opus)
 - 2026-10-15 03:10 T292 done · merged 3712d3e
+- 2026-10-15 03:25 T290 done · merged 3d950b3
