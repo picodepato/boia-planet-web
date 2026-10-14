@@ -130,7 +130,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: root cause = local copy's checkNickname flagged the member's own nickname (artist list / sample members) before the server save; fixed, precise error mapping; no migration — 5d4d988
 
 ## T294 — Carnet questions: artists keep the 5, the public gets a funny first question
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T293
 - Model: opus
 - Skills: none
@@ -141,7 +141,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - unit tests: an artist Carnet shows the 5 current questions in order; a normal Carnet shows «Completa la frase: al día siguiente de una fiesta yo…» first and then questions 2–5; a normal member's old `momento-quiero-estar` answer is kept but not shown publicly → pass
   - `pnpm test:supabase` against dev: answers accepted only for the member's audience; existing answers survive the migration → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: questions carry an audience (all/artist/public); artists keep the 5, public gets «dia-siguiente» first; RLS by audience; no answer deleted; migration 20261015100100 (dev; prod at end of plan) — b2cf36a
 
 ## T292 — «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
 - Status: running (attempt 1)
@@ -205,3 +205,5 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-15 01:32 T294 launched · attempt 1 · agent a1f36399650e584b5 (opus); T293 worktree still locked by its agent, branch kept for now
 - 2026-10-15 01:45 T287 sonnet done · f52ae1f; Opus audit launched · agent a40702293c162deea (adds Event JSON-LD on /eventos/[slug]; omits sample prices)
 - 2026-10-15 02:00 T287 done · merged 970edc4
+- 2026-10-15 02:02 T292 launched · attempt 1 · agent af5af5190f556ada7 (opus)
+- 2026-10-15 02:40 T294 done · merged b2cf36a
