@@ -120,6 +120,8 @@ export const RPC_REJECTIONS = [
   'invalid_profile',
   'profile_claimed',
   'already_joined',
+  // El enlace personal para reclamar una ficha (plan 031 T296)
+  'claim_invalid',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -337,6 +339,35 @@ export interface ArtistLinkRotation {
 export interface ArtistLinkInfo {
   active: boolean;
   rotated_at: string | null;
+}
+
+/** admin_create_artist_claim_link (plan 031 T296): el código se ve sólo aquí. */
+export interface ArtistClaimLinkCreated {
+  code: string;
+  profile_id: string;
+  created_at: string;
+  expires_at: string;
+}
+
+/** admin_artist_claim_links (plan 031 T296): el último enlace de cada ficha, sin el código. */
+export interface ArtistClaimLinkRow {
+  profile_id: string;
+  created_at: string;
+  expires_at: string;
+  spent_at: string | null;
+}
+
+/** artist_claim_info (plan 031 T296): si el código vale, de qué ficha es. */
+export type ArtistClaimInfo =
+  { valid: true; profile_id: string; profile_name: string } | { valid: false };
+
+/** claim_artist_profile (plan 031 T296) */
+export interface ArtistClaimResult {
+  user_id: string;
+  artist_profile_id: string;
+  profile_name: string;
+  is_artist: boolean;
+  joined: boolean;
 }
 
 /** admin_set_stamp_code */

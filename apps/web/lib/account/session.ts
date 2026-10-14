@@ -17,6 +17,7 @@ import type { BoiaSupabase } from '../supabase/browser';
 import { isSupabaseConfigured } from '../supabase/config';
 import { PRIVACY_POLICY_VERSION } from './config';
 import { clearArtistCode, pendingArtistCode } from './artist-link';
+import { pendingClaimCode } from './artist-claim';
 
 export type AccountStatus = 'local' | 'loading' | 'guest' | 'incomplete' | 'member';
 
@@ -198,6 +199,14 @@ export async function refreshAccount(): Promise<AccountState> {
     },
     signedOut: false,
   });
+  // El enlace para reclamar una ficha (plan 031 T296): con Carnet (recién
+  // creado o de antes), el servidor une la ficha y gasta el código.
+  if (row && pendingClaimCode()) {
+    void import('./artist-claim-redeem')
+      .then((m) => m.redeemPendingClaim(sb))
+      .then((o) => (o?.kind === 'joined' ? refreshAccount() : undefined))
+      .catch((e: unknown) => console.warn('[boia] reclamar ficha', e));
+  }
   return state;
 }
 

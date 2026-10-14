@@ -1,11 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { MAR_CARNET_HREF, MAR_PATH } from '../../lib/world-handoff';
 import '../../lib/mundo/hud.css';
 import '../../lib/mundo/carnet/carnet.css';
 import { AccountSection } from '../../lib/account/account-section';
+import { accountClient } from '../../lib/account/session';
+import { claimedCarnetUserId, contentProfileIdOf } from '../../lib/artists/claimed-carnet';
+import { carnetHref } from '../../lib/artists/entries';
 import { useAccount } from '../../lib/account/use-account';
 import { t } from '../../lib/i18n';
 import { CarnetCard } from '../../lib/mundo/carnet/carnet-card';
@@ -40,6 +44,22 @@ export function CarnetPage({ userId }: { userId: string | null }) {
   // se queda hasta que el alta termine (el panel enseña luego el Carnet).
   const loaded = data !== undefined;
   const [signup, setSignup] = useState(false);
+  const router = useRouter();
+  // Plan 031 T296: el Carnet construido de una ficha reclamada lleva al Carnet de verdad.
+  useEffect(() => {
+    const profileId = contentProfileIdOf(userId);
+    if (!profileId) return;
+    let alive = true;
+    void (async () => {
+      const sb = await accountClient();
+      if (!sb) return;
+      const real = await claimedCarnetUserId(sb, profileId);
+      if (alive && real) router.replace(carnetHref(real));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [userId, router]);
   useEffect(() => {
     if (!loaded || userId !== null || data?.carnet) return;
     if (wantsCreate(window.location.search)) setSignup(true);
@@ -80,7 +100,9 @@ export function CarnetPage({ userId }: { userId: string | null }) {
                   // Plan 023 T251: en el de un artista, también «Descubre un artista».
                   <CarnetDiscover
                     selfId={data.carnet.userId}
-                    artist={!!data.carnet.artist || !!data.carnet.isArtist || !!data.extras.isArtist}
+                    artist={
+                      !!data.carnet.artist || !!data.carnet.isArtist || !!data.extras.isArtist
+                    }
                   />
                 }
                 dark

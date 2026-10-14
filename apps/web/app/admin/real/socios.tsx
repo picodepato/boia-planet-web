@@ -8,6 +8,7 @@ import { t } from '../../../lib/i18n';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { SectionHead, StatusLine } from '../ui';
 import { type AdminContext, useRead, useRun } from '../use-admin';
+import { ArtistClaimsPanel } from './artist-claims';
 import { NeedsAdmin, download, must, useAdminSupabase, when } from './common';
 import { type MemberRow, newsCsv } from './csv';
 
@@ -571,6 +572,7 @@ export function SociosSection({ ctx }: { ctx: AdminContext }) {
       </SectionHead>
       <NeedsAdmin>
         {sb ? <ArtistLinkPanel sb={sb} /> : null}
+        {sb ? <ArtistClaimsPanel sb={sb} artists={profiles.all} revision={revision} /> : null}
         <StatusLine status={exporter.status} />
         <form
           className="admin-row admin-row--end"

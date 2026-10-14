@@ -29,6 +29,7 @@ import {
   nicknameVerdict,
   rpcReason,
 } from './errors';
+import { pendingClaim } from './artist-claim';
 import { trapTab } from './focus';
 import { accountLayer } from './layer';
 import {
@@ -566,6 +567,8 @@ function SignInSheet({ request }: { request: GateRequest }) {
       </div>
     );
   } else if (step === 'nickname') {
+    // El enlace para reclamar una ficha (plan 031 T296).
+    const claimName = pendingClaim()?.name || null;
     const verdictText =
       verdict === 'taken' || verdict === 'blocked' ? t(VERDICT_TEXT[verdict]) : null;
     const missing = !privacy
@@ -576,6 +579,11 @@ function SignInSheet({ request }: { request: GateRequest }) {
     body = (
       <form onSubmit={submitNickname} noValidate data-testid="acceso-cuenta-nueva">
         <p className="acceso-text">{t('auth.new.lead')}</p>
+        {claimName ? (
+          <p className="acceso-text" data-testid="acceso-aviso-reclamar">
+            {t('carnet.claim.notice', { name: claimName })}
+          </p>
+        ) : null}
         <label className="acceso-label" htmlFor={`${id}-nick`}>
           {t('auth.new.nickname')}
         </label>

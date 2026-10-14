@@ -223,6 +223,24 @@ export const esAdminReal = {
     'Cópialo ahora: sólo se guarda cifrado y no se vuelve a ver. Si se pierde, crea otro.',
   'admin.real.artistLink.copy': 'Copiar',
   'admin.real.artistLink.copied': 'Copiado.',
+  // Enlace personal para reclamar una ficha (plan 031 T296, muestra)
+  'admin.real.claims.title': 'Perfiles de artista',
+  'admin.real.claims.lead':
+    'Para cada perfil sin reclamar, un enlace personal de un solo uso: quien crea su Carnet (o entra con el suyo) con él queda unido a ese perfil. Caduca a los 30 días; crear otro anula el anterior.',
+  'admin.real.claims.empty': 'No hay perfiles de artista en el contenido.',
+  'admin.real.claims.unclaimed': 'Sin reclamar',
+  'admin.real.claims.expired': 'Sin reclamar (el enlace del {date} caducó)',
+  'admin.real.claims.sent': 'Enlace enviado el {date} (caduca el {expires})',
+  'admin.real.claims.claimedBy': 'Reclamado por {nickname}',
+  'admin.real.claims.create': 'Crear enlace para reclamar',
+  'admin.real.claims.recreate': 'Crear otro enlace (anula el anterior)',
+  'admin.real.claims.reason': 'enlace para reclamar el perfil creado en el Admin',
+  'admin.real.claims.created': 'Enlace listo.',
+  'admin.real.claims.whatsappLabel': 'Texto para WhatsApp',
+  'admin.real.claims.whatsapp':
+    '¡Hola! Este es tu enlace para reclamar tu perfil de {name} en BOIA.PLANET: {url} Crea tu Carnet con tu email (o entra con el tuyo) y quedará unido a tu perfil. Es personal y de un solo uso.',
+  'admin.real.claims.copyText': 'Copiar texto',
+  'admin.real.claims.openWhatsapp': 'Abrir WhatsApp',
 
   // Moderación de botellas
   'admin.real.botellas.title': 'Botellas reportadas',

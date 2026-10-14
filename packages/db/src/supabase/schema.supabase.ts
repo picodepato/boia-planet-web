@@ -55,6 +55,9 @@ describe('esquema del proyecto de desarrollo', () => {
       order by 1`);
     // T278: `admin_sign_in_email` (daba el email del Carnet 000) ya no existe.
     expect(rows.map((r) => r.name)).toEqual([
+      // La página del enlace para reclamar una ficha (plan 031 T296): sólo
+      // dice si el código vale y el nombre de la ficha.
+      'artist_claim_info',
       // El tablón de calitas se lee sin cuenta (20261008100500_calitas).
       'calitas_list',
       'latest_bottles',
@@ -75,6 +78,8 @@ describe('esquema del proyecto de desarrollo', () => {
     expect(rows.map((r) => r.name)).toEqual([
       // Políticas de lectura de botellas y rankings (papelera, plan 020).
       'account_in_trash',
+      // La página del enlace para reclamar una ficha (plan 031 T296).
+      'artist_claim_info',
       'calitas_list',
       // Políticas de RLS de todo el esquema.
       'has_staff_role',

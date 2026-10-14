@@ -28,6 +28,28 @@ export const esCarnet = {
   'carnet.artistLink.bad': 'Este enlace de artista no es válido.',
   'carnet.artistLink.notice':
     'Has entrado con el enlace de artistas: si está vigente, tu Carnet será de artista.',
+  // El enlace personal para reclamar una ficha de artista (plan 031 T296, muestra)
+  'carnet.claim.checking': 'Comprobando tu enlace…',
+  'carnet.claim.title': 'Reclama tu perfil de {name} en BOIA',
+  'carnet.claim.lead':
+    'Crea tu Carnet BOIA con tu email (o entra con el tuyo, si ya lo tienes): tu Carnet quedará unido a tu perfil de artista, con tu apodo, tu foto y tu música.',
+  'carnet.claim.go': 'Crear mi Carnet o entrar',
+  'carnet.claim.useMine': 'Unir a mi Carnet ({nickname})',
+  'carnet.claim.joining': 'Uniendo tu Carnet…',
+  'carnet.claim.joined':
+    'Hecho: tu Carnet está unido a tu perfil de {name}. En /artistas sales con tu apodo.',
+  'carnet.claim.seeCarnet': 'Ver mi Carnet',
+  'carnet.claim.invalidTitle': 'Este enlace no vale',
+  'carnet.claim.invalid':
+    'Puede que ya se usara, que caducara o que BOIA haya creado otro más nuevo. Pide uno nuevo a BOIA. Mientras, puedes crear tu Carnet como cualquier socio.',
+  'carnet.claim.rejected': 'No se pudo unir: {detail} Pide ayuda a BOIA.',
+  'carnet.claim.alreadyJoined': 'tu Carnet ya está unido a otro perfil.',
+  'carnet.claim.offline': 'No hay conexión. Prueba otra vez en un momento.',
+  'carnet.claim.local':
+    'En esta versión de prueba no hay cuentas: este enlace sólo funciona en la web con cuentas. Puedes crear tu Carnet en este navegador como cualquier socio.',
+  'carnet.claim.normal': 'Crear mi Carnet',
+  'carnet.claim.notice':
+    'Has entrado con tu enlace de artista: al crear tu Carnet, se unirá a tu perfil de {name}.',
   // El enlace a su música al crear el Carnet de artista (plan 019 T217, decisión 10)
   'carnet.music.label': 'Tu música',
   'carnet.music.placeholder': 'https://soundcloud.com/…',

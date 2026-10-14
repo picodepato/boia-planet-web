@@ -2155,6 +2155,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      admin_artist_claim_links: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_artist_link_info: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -2172,6 +2176,14 @@ export type Database = {
       admin_carnet_content: {
         Args: {
           p_user: string;
+        };
+        Returns: Json;
+      };
+      admin_create_artist_claim_link: {
+        Args: {
+          p_profile: string;
+          p_name: string;
+          p_reason?: string;
         };
         Returns: Json;
       };
@@ -2436,6 +2448,12 @@ export type Database = {
         };
         Returns: Json;
       };
+      artist_claim_info: {
+        Args: {
+          p_code: string;
+        };
+        Returns: Json;
+      };
       assign_admin_carnet: {
         Args: {
           p_user: string;
@@ -2476,6 +2494,12 @@ export type Database = {
         Args: {
           p_comment: string;
           p_value: number;
+        };
+        Returns: Json;
+      };
+      claim_artist_profile: {
+        Args: {
+          p_code: string;
         };
         Returns: Json;
       };

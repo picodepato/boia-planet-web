@@ -19,6 +19,7 @@ import {
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { requireAccount } from '../../account/gate';
 import { clearArtistCode, pendingArtistCode } from '../../account/artist-link';
+import { pendingClaim } from '../../account/artist-claim';
 import { accountSnapshot } from '../../account/session';
 import { emitCarnetReward, emitSignal } from '../achievements';
 import { ArtistMusicField } from './artist-music-field';
@@ -71,6 +72,9 @@ export function CarnetForm({
   // Tras abrir el enlace de artistas (T186); se lee en el cliente.
   const [artistLink, setArtistLink] = useState(false);
   useEffect(() => setArtistLink(pendingArtistCode() !== null), []);
+  // Tras abrir el enlace para reclamar una ficha (plan 031 T296): el nombre de la ficha.
+  const [claimName, setClaimName] = useState<string | null>(null);
+  useEffect(() => setClaimName(pendingClaim()?.name || null), []);
 
   // El enlace a su música (plan 019 T217, decisión 10): al crear el Carnet
   // de artista o al editar uno que ya lo es.
@@ -98,6 +102,11 @@ export function CarnetForm({
       {creating && artistLink ? (
         <p className="carnet-notice" data-testid="carnet-aviso-artista">
           {t('carnet.artistLink.notice')}
+        </p>
+      ) : null}
+      {creating && claimName ? (
+        <p className="carnet-notice" data-testid="carnet-aviso-reclamar">
+          {t('carnet.claim.notice', { name: claimName })}
         </p>
       ) : null}
       <label className="juego-field">

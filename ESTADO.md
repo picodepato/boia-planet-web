@@ -4,6 +4,75 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 031 T296: Enlace personal para reclamar una ficha de artista
+
+Qué existe:
+- Migración `supabase/migrations/20261015100300_artist_claim_links.sql` (aplicada a
+  boia-planet-dev; anotada en `docs/propuestas/2026-10-03-produccion-supabase.md`):
+  tabla `private.artist_claim_links` (una fila por ficha: hash SHA-256 del código, nombre
+  de la ficha, creación, caducidad a 30 días, gastado; nadie de fuera la lee). RPC, todas
+  con la lógica en `private` SECURITY DEFINER, `search_path = ''`, y envoltura INVOKER en
+  `public`:
+  - `admin_create_artist_claim_link(p_profile, p_name, p_reason)`: sólo admin con segundo
+    factor; código de 64 cifras hex que se devuelve una vez; uno nuevo sustituye al
+    anterior de esa ficha; una ficha ya reclamada → `profile_claimed`; auditoría
+    `create_artist_claim_link` sin el código.
+  - `admin_artist_claim_links()`: por ficha, creación, caducidad y gastado (sin código).
+  - `artist_claim_info(p_code)`: también anon; `{valid, profile_id, profile_name}` o
+    `{valid:false}` (equivocado, gastado, caducado o sustituido dan lo mismo).
+  - `claim_artist_profile(p_code)`: la cuenta de la sesión (`require_member`), une con
+    `private.join_artist_profile` (T295: marca artista, auditoría `claim_link`) y gasta
+    el código; si no vale → `claim_invalid` (nuevo en `RPC_REJECTIONS`).
+- Ruta `/artista/reclamar/<código>` (`apps/web/app/artista/reclamar/[code]/`), noindex
+  (`NOINDEX`; robots.txt ya aparta `/artista/`), dinámica en los dos hosts: «Reclama tu
+  perfil de <nombre> en BOIA». Sin sesión: «Crear mi Carnet o entrar» guarda código y
+  nombre en la pestaña (`lib/account/artist-claim.ts`, sessionStorage) y abre el alta del
+  Carnet en /mar; la hoja de acceso y el editor del Carnet avisan «se unirá a tu perfil
+  de <nombre>». Con sesión y Carnet: «Unir a mi Carnet (<apodo>)» une ahí mismo. Código
+  que no vale: mensaje claro y «Crear mi Carnet» normal.
+- `lib/account/session.ts` (`refreshAccount`): con Carnet (recién creado o al entrar con
+  uno de antes) y un código pendiente, carga a demanda `artist-claim-redeem.ts` y
+  reclama una vez; con respuesta del servidor el código se olvida, sin red se queda.
+- Admin con cuentas, «Socios» → «Perfiles de artista» (`app/admin/real/artist-claims.tsx`):
+  cada ficha con «Sin reclamar» / «Enlace enviado el <fecha> (caduca el <fecha>)» /
+  «Reclamado por <apodo>» (o «el enlace del <fecha> caducó»); en las no reclamadas,
+  «Crear enlace para reclamar» (o «Crear otro enlace»); el enlace recién creado se ve una
+  vez con «Copiar», el texto para WhatsApp, «Copiar texto» y «Abrir WhatsApp» (wa.me).
+- `/carnet/artista-<id>` de una ficha reclamada lleva al Carnet de verdad
+  (`lib/artists/claimed-carnet.ts`, en `app/carnet/carnet-page.tsx`; sólo con cuentas).
+- Textos (muestra): `carnet.claim.*` en `es-carnet.ts`, `admin.real.claims.*` en
+  `es-admin-real.ts`.
+- Modo local (sin Supabase): la página del enlace dice que en esta versión de prueba no
+  hay cuentas y ofrece el alta normal; no hay uniones (degradación).
+
+Comandos:
+- `pnpm db:migrate:dev` → 1 aplicada (20261015100300); `pnpm db:types:dev` → tipos al día.
+- `pnpm test:supabase` (dev) → 29 archivos, 204 pruebas, pasan (incluye
+  `artist-claim-links.supabase.ts` y `schema.supabase.ts` con `artist_claim_info` en la
+  lista de anon); 0 cuentas de prueba quedan.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 336 archivos,
+  3006 pasan, 1 omitida (nuevo: `apps/web/lib/account/artist-claim.test.ts`, 18).
+- `sh tools/spec/checks.sh` → 0; `pnpm lint` → 0; `pnpm build` → 0, ruta crítica de la
+  landing 199.2 kB / 200 kB (sin cambio); `pnpm typecheck` → 0; `pnpm cf:measure` → OK
+  (2,297 KiB gzip).
+
+Pendiente:
+- Producción: aplicar la migración (orquestador).
+- Las alineaciones de los eventos siguen con el nombre de la ficha (fuera del alcance:
+  `event-card.tsx` está en la ruta crítica de la landing, a 0.8 kB del presupuesto).
+- Textos `muestra` hasta que Álvaro los apruebe (incluido el de WhatsApp).
+
+Probar a mano:
+- Con cuentas (dev), Admin → «Socios» → «Perfiles de artista»: en «Alba Fitz», «Crear
+  enlace para reclamar»; copiar el enlace. Pasa a «Enlace enviado el …».
+- En otra ventana privada, abrir el enlace: «Reclama tu perfil de Alba Fitz en BOIA» →
+  «Crear mi Carnet o entrar» → email y código → apodo (avisa de la unión) → crear. En
+  /artistas, Alba sale con el apodo nuevo y «Ver carnet» abre ese Carnet; en el Admin,
+  «Reclamado por <apodo>». Volver a abrir el enlace: «Este enlace no vale».
+- `/carnet/artista-alba-fitz` lleva al Carnet de verdad.
+- Con un Carnet ya creado y sesión abierta, abrir un enlace nuevo de otra ficha:
+  «Unir a mi Carnet (<apodo>)» → hecho.
+
 ## 2026-10-15 — plan 031 T295: Unir un Carnet de artista a su ficha, y que salga una vez
 
 Qué existe:

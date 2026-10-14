@@ -150,6 +150,18 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     `admin_set_artist`: quitar «artista» también deshace la unión. No toca
     ningún dato. Comprobar después, en el **SQL Editor**:
     `select count(*) from carnets where artist_profile_id is not null;` da 0.
+  - `20261015100300_artist_claim_links.sql` (T296): el enlace personal para
+    reclamar una ficha. Tabla `private.artist_claim_links` (una fila por
+    ficha: el hash SHA-256 del código, el nombre de la ficha, creación,
+    caducidad a 30 días y si se gastó; nadie de fuera la lee) y las RPC
+    `admin_create_artist_claim_link` / `admin_artist_claim_links` (rol admin
+    con segundo factor; auditoría `create_artist_claim_link`, sin el código),
+    `artist_claim_info` (también **anon**: sólo dice si el código vale y el
+    nombre de la ficha; `schema.supabase.ts` la añade a la lista de anon) y
+    `claim_artist_profile` (la cuenta de la sesión; une con la unión de T295,
+    auditoría `claim_link`, y gasta el código). No toca ningún dato.
+    Comprobar después, en el **SQL Editor**:
+    `select count(*) from private.artist_claim_links;` da 0.
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`
