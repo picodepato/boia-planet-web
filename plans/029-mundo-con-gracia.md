@@ -134,7 +134,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: horn button + H key with per-boat voice, 3 honks make the Fiestera dance (also aboard), nap after 60 s with Zzz, snore and a bow gull measured per boat; audit fixed the bar layout, perches, captain, snore; sonnet + Opus audit — 55c2ec6
 
 ## T272 — Character banter, the daily horóscopo boiero and the port welcome
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Audit: opus
@@ -146,7 +146,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - unit tests: picker never repeats until the pool is exhausted, horóscopo is stable for a given date and changes the next day, welcome vs welcome-back → pass
   - dev override `?fecha=2026-12-31` for the horóscopo
   - Test command → exit 0
-- Outcome:
+- Outcome: 109 muestra lines (Fiestera, castaway, dolphin by mood; 32+ daily horóscopos; port welcome / welcome back) in their own bubble, 30 s per speaker, horóscopo re-readable in the Puerto card, no drinks/drugs test; sonnet + Opus audit — 2977857
 
 ## T273 — The after island (03:00–07:00 Alicante time) and the after boat
 - Status: done
@@ -164,7 +164,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: after island (Blender, 284 KiB) only 03:00–07:00 Europe/Madrid with fade and DST tests, prize once, secret achievement, after boat (Blender, 63 KiB) unlocked once with its own horn; nothing downloaded outside the window — 66f95fd
 
 ## T274 — Achievements and hints for every new secret
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T268, T269, T270, T271, T272, T273
 - Model: haiku
 - Audit: opus
@@ -203,11 +203,13 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14: T273 switched from Fable to Opus for the rest of the task (Álvaro)
 - 2026-10-14: T273: shop item renamed "After"; map pin 🎧 (🪩 is an empty box on Windows 10); Admin "visit island" achievements got an optional island name/count (lib/admin/achievements.ts, beyond Scope) (T273)
 - 2026-10-14: main had Next's automatic tsconfig.json rewrite from a dev server; reverted before integrating T273 (orchestrator)
+- 2026-10-14: T272: banter in its own bubble (right, under notices) because the top notice truncates on phones; no drink mentions or zodiac signs; welcome gender-neutral; alicanteDate next to alicanteHour (T272 audit)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Telegram question on the Supabase project (A reuse dev as production + new test project / B new production project) and the push offer timed out after 4 h: per the no-answer rule nothing outward is done (no push, no panel change); recommendation A stays for Álvaro (orchestrator)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: The top notices are one line on phones and truncate existing texts ("Boia encontr…", seagull messages) (T272 audit)
 - 2026-10-14: With accounts on, the server progress data must learn the new secret achievements and the after boat (today browser-only); the after island pier sits slightly off the shore up close (T273)
 - 2026-10-13: Real coin loss for the seagull needs a negative ledger entry (local + Supabase RPC) — Álvaro decides (T270)
 - 2026-10-13: Try on a phone: flip and camera feel at real frame rate (headless could not trigger it) (T269 audit)
@@ -254,3 +256,4 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T272 sonnet done (6d6b60d). Opus audit launched, agent aa150b8ee86c8577b
 - 2026-10-14 T273 fable agent stopped at Álvaro's request; WIP 184903e; Opus continuation launched, agent a417b81b9c5f6cac3
 - 2026-10-14 T273 done (ddc29bc), integrated 66f95fd
+- 2026-10-14 T272 audit done (b7fbd8e), integrated 2977857
