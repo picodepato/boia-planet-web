@@ -1,6 +1,6 @@
 # Plan 029 — A world with jokes: weather, big waves, characters with lines and the after island
 
-Status: active
+Status: done
 Created: 2026-10-13
 Base branch: main
 Goal: Make `/mar` funnier and more surprising without touching the sales flow: short weather episodes, big waves that work as ramps (backflip achievement), a thieving seagull, a dancing crab, a lost tourist on an inflatable flamingo, a horn and a napping boat, characters with lines that depend on the mood, a daily "horóscopo boiero", a proper welcome at the port, and a night-only "after" island (03:00–07:00 Alicante time) that pays a lot of coins and unlocks a battered after-party boat. Every new secret gives an achievement (never a Carnet stamp: stamps are only for tickets), and the `boia-secretos` buoy hints at the missing ones. Plus fixes from Álvaro: a gallery that opens photos and videos full screen (also in /mar) with longer clips, at least 7 photos on the home with the 4 real ones, the Puig Campana label on the map, the map hint that never goes away, and getting the Carnet's email + code sign-up ready to switch on in production. Day/night stays as it is today (three moods chosen in the menu); no shooting stars; no new sea traffic; no Alicante landmarks in this plan.
@@ -178,7 +178,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: icons for the 6 new achievements, «Capeaste el temporal» (whole storm sailed, StormWatch) and «Horoscopado» (7 distinct days, bubble or Puerto card), boia-secretos hints for missing secrets + congratulation; haiku + Opus audit — 3679fc4
 
 ## T279 — Regressions found by Álvaro after the push: tap-to-move, Nochevieja label, character bubbles in the map
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -190,7 +190,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - `map-labels.test.ts`: Nochevieja and Puig Campana labels both visible at full opacity in map view at both sizes → pass
   - unit/component test: character bubbles hidden in map view and when the boat is beyond the radius → pass
   - Test command → exit 0; `pnpm cf:measure` → ≤ 2,800 KiB
-- Outcome:
+- Outcome: tap-to-move fixed (shared tmpV overwritten by T270 character check), e2e mar-toque guards it; event labels placed first in map view; bubbles hidden in map and beyond 600 u; map view fits every island (moves the view, zoom unchanged) — 3bd12e8
 
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
@@ -225,6 +225,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: In map view the «Cerrar» button sits over the «El Remanso de los Cocodrilos» label (T279)
 - 2026-10-14: Draw icons for the older achievements and the Admin keys boia…cofre so the panel is consistent; /juego (2D) gives no secret hints (T274 audit)
 - 2026-10-14: The top notices are one line on phones and truncate existing texts ("Boia encontr…", seagull messages) (T272 audit)
 - 2026-10-14: With accounts on, the server progress data must learn the new secret achievements and the after boat (today browser-only); the after island pier sits slightly off the shore up close (T273)
@@ -280,3 +281,6 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 plan done: 11/11
 - 2026-10-14 pushed to origin/main (c041d61) on Álvaro's request
 - 2026-10-14 plan reopened: T279 regressions reported by Álvaro after the push (tap-to-move, Nochevieja label, bubbles in map)
+- 2026-10-14 T279 launched (attempt 1, opus), agent aebd224dddaad0415
+- 2026-10-14 Álvaro added to T279: big map zoom further out so every island fits (sent to agent)
+- 2026-10-14 T279 done (beb1ef1), integrated 3bd12e8; plan done again
