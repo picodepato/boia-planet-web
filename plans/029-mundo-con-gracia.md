@@ -1,6 +1,6 @@
 # Plan 029 — A world with jokes: weather, big waves, characters with lines and the after island
 
-Status: active
+Status: done
 Created: 2026-10-13
 Base branch: main
 Goal: Make `/mar` funnier and more surprising without touching the sales flow: short weather episodes, big waves that work as ramps (backflip achievement), a thieving seagull, a dancing crab, a lost tourist on an inflatable flamingo, a horn and a napping boat, characters with lines that depend on the mood, a daily "horóscopo boiero", a proper welcome at the port, and a night-only "after" island (03:00–07:00 Alicante time) that pays a lot of coins and unlocks a battered after-party boat. Every new secret gives an achievement (never a Carnet stamp: stamps are only for tickets), and the `boia-secretos` buoy hints at the missing ones. Plus fixes from Álvaro: a gallery that opens photos and videos full screen (also in /mar) with longer clips, at least 7 photos on the home with the 4 real ones, the Puig Campana label on the map, the map hint that never goes away, and getting the Carnet's email + code sign-up ready to switch on in production. Day/night stays as it is today (three moods chosen in the menu); no shooting stars; no new sea traffic; no Alicante landmarks in this plan.
@@ -164,7 +164,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Outcome: after island (Blender, 284 KiB) only 03:00–07:00 Europe/Madrid with fade and DST tests, prize once, secret achievement, after boat (Blender, 63 KiB) unlocked once with its own horn; nothing downloaded outside the window — 66f95fd
 
 ## T274 — Achievements and hints for every new secret
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T268, T269, T270, T271, T272, T273
 - Model: haiku
 - Audit: opus
@@ -175,7 +175,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - Done when:
   - unit tests: each new achievement unlocks from its trigger, hint picker only offers missing secrets and congratulates when none are missing → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: icons for the 6 new achievements, «Capeaste el temporal» (whole storm sailed, StormWatch) and «Horoscopado» (7 distinct days, bubble or Puerto card), boia-secretos hints for missing secrets + congratulation; haiku + Opus audit — 3679fc4
 
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
@@ -204,11 +204,13 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14: T273: shop item renamed "After"; map pin 🎧 (🪩 is an empty box on Windows 10); Admin "visit island" achievements got an optional island name/count (lib/admin/achievements.ts, beyond Scope) (T273)
 - 2026-10-14: main had Next's automatic tsconfig.json rewrite from a dev server; reverted before integrating T273 (orchestrator)
 - 2026-10-14: T272: banter in its own bubble (right, under notices) because the top notice truncates on phones; no drink mentions or zodiac signs; welcome gender-neutral; alicanteDate next to alicanteHour (T272 audit)
+- 2026-10-14: T274: the two new achievements are visible (not secret); boia-secretos keeps its once-per-visit dialogue and gives a hint after it on each pass (T274 audit)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Telegram question on the Supabase project (A reuse dev as production + new test project / B new production project) and the push offer timed out after 4 h: per the no-answer rule nothing outward is done (no push, no panel change); recommendation A stays for Álvaro (orchestrator)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
 
 ## Proposals (new scope)
+- 2026-10-14: Draw icons for the older achievements and the Admin keys boia…cofre so the panel is consistent; /juego (2D) gives no secret hints (T274 audit)
 - 2026-10-14: The top notices are one line on phones and truncate existing texts ("Boia encontr…", seagull messages) (T272 audit)
 - 2026-10-14: With accounts on, the server progress data must learn the new secret achievements and the after boat (today browser-only); the after island pier sits slightly off the shore up close (T273)
 - 2026-10-13: Real coin loss for the seagull needs a negative ledger entry (local + Supabase RPC) — Álvaro decides (T270)
@@ -257,3 +259,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T273 fable agent stopped at Álvaro's request; WIP 184903e; Opus continuation launched, agent a417b81b9c5f6cac3
 - 2026-10-14 T273 done (ddc29bc), integrated 66f95fd
 - 2026-10-14 T272 audit done (b7fbd8e), integrated 2977857
+- 2026-10-14 T274 launched (attempt 1, haiku), agent a535e585e2f23d8f7
+- 2026-10-14 T274 haiku done (d313278). Opus audit launched, agent a8131bad40a2752ba
+- 2026-10-14 T274 audit done (a5a54ab), integrated 3679fc4 (tests green on that integration)
+- 2026-10-14 plan done: 11/11
