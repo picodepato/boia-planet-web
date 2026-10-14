@@ -207,6 +207,27 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - Test command → exit 0
 - Outcome:
 
+## T281 — New Carnet questions (Álvaro, 2026-10-14)
+- Status: running (attempt 1)
+- Depends on: none
+- Model: sonnet
+- Audit: opus
+- Skills: none
+- Goal: Replace the 5 public Carnet questions (v14 §44.1, D-08) with the set Álvaro chose on 2026-10-14, exact text, in this order:
+  1. ¿Qué momento te hizo pensar «yo quiero estar en esto»?
+  2. ¿Cuál es la canción que tienes en repeat ahora mismo?
+  3. ¿Qué estás creando o tramando estos días?
+  4. ¿Qué disco escucharías de principio a fin sin saltarte ninguna?
+  5. Completa la frase: una buena fiesta necesita siempre…
+  Question 5 is unchanged and keeps its id `buena-fiesta` and its answers. The other four are new questions with new ids (the old `cosa-mas-rara`, `descubrimiento`, `obra`, `mejor-recuerdo` are retired): their old answers are kept in storage but no longer shown anywhere (Carnet, public Carnet, Admin moderation keeps access if it already lists them), never deleted. Update everywhere the questions live: `packages/contracts/src/carnet.ts` (CARNET_QUESTIONS, with the comment explaining the change replaced §44.1 by Álvaro's decision of 2026-10-14), the i18n keys `carnet.q1..q5` in `apps/web/lib/i18n/es-zonas.ts`, the local store (`packages/store/src/local.ts`, sample data / muestra answers so the sample Carnets answer the new questions), the help text if needed, and a NEW Supabase migration that adds the new question rows and retires the old ones without deleting answers (look at `20260928100100_identity.sql` and how questions/versions are modelled; the test that requires the contract and the seeded rows to match must keep passing). Apply the migration to the dev project only (credentials in the main checkout's apps/web/.env.local, read by absolute path, never committed) and add it to the migrations step of `docs/propuestas/2026-10-03-produccion-supabase.md`. Update `docs/spec/` / `docs/spec/estado.md` where REQ-IDE-014 quotes the questions; never edit `docs/DECISIONES.md` (list under OUT OF SCOPE that D-08 needs Álvaro's note).
+- Context: `packages/contracts/src/carnet.ts`, `apps/web/lib/mundo/carnet/*`, `apps/web/lib/mundo/carnet/public-carnet.ts`, `packages/store/src/local.ts`, `supabase/migrations/`, `*.supabase.ts` tests (`pnpm test:supabase`).
+- Scope: may touch the files above, their tests, the switch-on doc, docs/spec / must not delete any stored answer, must not touch production.
+- Done when:
+  - unit tests: the Carnet editor and the public Carnet show exactly the 5 new questions in order; an answer to `buena-fiesta` survives; answers to retired questions are not shown and are not deleted → pass
+  - `pnpm test:supabase` against dev → pass
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
 - 2026-10-13: Jumps come from big waves acting as ramps, no jump button; backflip with turbo (Álvaro)
@@ -235,6 +256,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14: main had Next's automatic tsconfig.json rewrite from a dev server; reverted before integrating T273 (orchestrator)
 - 2026-10-14: T272: banter in its own bubble (right, under notices) because the top notice truncates on phones; no drink mentions or zodiac signs; welcome gender-neutral; alicanteDate next to alicanteHour (T272 audit)
 - 2026-10-14: T274: the two new achievements are visible (not secret); boia-secretos keeps its once-per-visit dialogue and gives a hint after it on each pass (T274 audit)
+- 2026-10-14: Carnet questions replaced (D-08 / §44.1): «yo quiero estar en esto», canción en repeat, qué estás creando o tramando, disco de principio a fin, una buena fiesta necesita siempre… (Álvaro)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Telegram question on the Supabase project (A reuse dev as production + new test project / B new production project) and the push offer timed out after 4 h: per the no-answer rule nothing outward is done (no push, no panel change); recommendation A stays for Álvaro (orchestrator)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
@@ -300,3 +322,5 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 Álvaro added to T279: big map zoom further out so every island fits (sent to agent)
 - 2026-10-14 T279 done (beb1ef1), integrated 3bd12e8; plan done again
 - 2026-10-14 T280 added from Álvaro's local test (map close button, Santa Bárbara and Las Calitas labels, coin glyph)
+- 2026-10-14 T280 launched (attempt 1, opus), agent a4ec31786fa0bec3c
+- 2026-10-14 T281 added (new Carnet questions, Álvaro)
