@@ -46,7 +46,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome: indexable site, BOIA.PLANET titles, canonical boiaplanet.net, sitemap/robots on both hosts; noindex on /admin, /carnet, /carnet/[id], /sello, /artista; sonnet + Opus audit — 5f53fff
 
 ## T286 — Share images: planet + BOIA for the site, one per event
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T285
 - Model: opus
 - Skills: none
@@ -56,10 +56,10 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Done when:
   - unit test: home, /mar and every sample event resolve an `og:image` with an absolute boiaplanet.net URL that exists in `public/` and is 1200×630 and ≤ 300 KB → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: build-time share images (public/og/planeta.png + one per event) from the real planet/boats/fonts, og/twitter on every public page; landing shop block lazy → critical path 197.7 kB; attempt 2 — 521ed4e
 
 ## T287 — Structured data for Google: organisation, site and events
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T285
 - Model: sonnet
 - Audit: opus
@@ -129,6 +129,20 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
   - Test command → exit 0
 - Outcome:
 
+## T294 — Carnet questions: artists keep the 5, the public gets a funny first question
+- Status: pending
+- Depends on: T293
+- Model: opus
+- Skills: none
+- Goal: Álvaro, 2026-10-14: the 5 current Carnet questions (plan 029 T281: `momento-quiero-estar`, `cancion-en-repeat`, `creando-tramando`, `disco-entero`, `buena-fiesta`) stay exactly as they are for ARTISTS — people who create their Carnet through the artist link (`/artista/[code]`, artist Carnet). Everyone else (a normal account / Carnet) gets the same set except question 1, which is replaced by «Completa la frase: al día siguiente de una fiesta yo…» (exact text, approved by Álvaro, not muestra; new id e.g. `dia-siguiente`, position 1 for the public). Questions 2–5 are shared by both audiences. Model it as data: each question gets an audience (`all` | `artist` | `public`) in the contract (`packages/contracts/src/carnet.ts` CARNET_QUESTIONS) and in Supabase (`carnet_questions`: new column or equivalent, via a NEW migration that adds the new question and sets the audiences; applied to dev only, added to the switch-on doc's migration list; the orchestrator applies it to production). The Carnet editor, the public Carnet, the Carnet in /mar, the sign-up flow and Admin moderation show each member the questions for their audience in order; RLS/answer rules accept answers only to active questions of the member's audience (extend `20261014100110_carnet_answers_active_only.sql`'s rule). Existing answers are never deleted: a normal member who already answered `momento-quiero-estar` keeps the answer stored (shown only in Admin moderation, like retired questions); an artist keeps everything. If a member becomes an artist later (artist link), they see the artist set from then on. Local/demo mode too (`packages/store/src/local.ts`, sample answers), and i18n keys for the new question.
+- Context: plan 029 T281's diff (`git log --grep T281`), `packages/contracts/src/carnet.ts`, `apps/web/lib/i18n/es-zonas.ts` (`carnet.q*`), `apps/web/lib/mundo/carnet/*` (editor, public Carnet, artist Carnet), how an artist Carnet is identified (artist link / code / flag), `packages/store/src/local.ts`, `supabase/migrations/2026101410*` (T281), `*.supabase.ts` tests.
+- Scope: may touch those files, a new migration (dev only), the switch-on doc, docs/spec where REQ-IDE-014 quotes the questions, tests / must not delete any stored answer, must not touch production, never edit docs/DECISIONES.md.
+- Done when:
+  - unit tests: an artist Carnet shows the 5 current questions in order; a normal Carnet shows «Completa la frase: al día siguiente de una fiesta yo…» first and then questions 2–5; a normal member's old `momento-quiero-estar` answer is kept but not shown publicly → pass
+  - `pnpm test:supabase` against dev: answers accepted only for the member's audience; existing answers survive the migration → pass
+  - Test command → exit 0
+- Outcome:
+
 ## T292 — «Tickets todavía no disponibles» for All Day BOIA and Nochevieja
 - Status: pending
 - Depends on: T288
@@ -145,6 +159,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## Decisions
+- 2026-10-15 T294: public question 1 = «Completa la frase: al día siguiente de una fiesta yo…» (Álvaro); artists keep the 5 current ones; question 3 «¿Qué estás creando o tramando estos días?» stays shared — asked twice, no answer, kept as is (orchestrator, reversible)
 - 2026-10-14: Álvaro: when every task is done, push (git push origin main deploys both hosts). Before that push, apply the plan's new migrations to production (additive only) so the new build finds them (orchestrator)
 - 2026-10-14 T293: live bug, launched before T287/T289/T290 at the next free slot (orchestrator)
 - 2026-10-14 T292: «Tickets todavía no disponibles» text approved by Álvaro; tapping the buy button shows it instead of the checkout; modelled as per-event data with an Admin switch (orchestrator)
@@ -181,3 +196,6 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-14 23:40 T293 launched · attempt 1 · agent ad6aed5b944a67086 (opus); 3 agents briefly (T288 resolving a conflict)
 - 2026-10-14 23:50 Cloudflare rebuilt with the build variables: boiaplanet.net now on production Supabase (CSP checked); accounts live on both hosts
 - 2026-10-15 00:10 T288 done · merged 5a6def7; migration 20261014100300 applied to dev and production (additive enum value; the web does not read home_blocks from Supabase, so no row needed)
+- 2026-10-15 00:30 T286 done (opus) · 3ca4931; integrating
+- 2026-10-15 00:35 T286 integration tests_failed (landing budget just over 200 kB after T288 + og meta); reverted 73bc40f; attempt 2 launched · agent abe81a058f38e207b (target ≤ 198.5 kB, no budget raise)
+- 2026-10-15 01:00 T286 done · merged 521ed4e
