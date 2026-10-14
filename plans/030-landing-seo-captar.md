@@ -117,7 +117,7 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Outcome:
 
 ## T293 — Bug: editing your own artist Carnet with a web link says the nickname is taken
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -127,10 +127,10 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - Done when:
   - unit test (local) and `pnpm test:supabase` (dev): a member (artist and non-artist) edits their Carnet keeping their nickname and adding/changing a web link → saves; another member taking an existing nickname → nickname error → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: root cause = local copy's checkNickname flagged the member's own nickname (artist list / sample members) before the server save; fixed, precise error mapping; no migration — 5d4d988
 
 ## T294 — Carnet questions: artists keep the 5, the public gets a funny first question
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T293
 - Model: opus
 - Skills: none
@@ -199,3 +199,5 @@ Landing rules for every task: all new UI text through `apps/web/lib/i18n/` and `
 - 2026-10-15 00:30 T286 done (opus) · 3ca4931; integrating
 - 2026-10-15 00:35 T286 integration tests_failed (landing budget just over 200 kB after T288 + og meta); reverted 73bc40f; attempt 2 launched · agent abe81a058f38e207b (target ≤ 198.5 kB, no budget raise)
 - 2026-10-15 01:00 T286 done · merged 521ed4e
+- 2026-10-15 01:02 T287 launched · attempt 1 · agent a8d8b2f6257464b03 (sonnet)
+- 2026-10-15 01:30 T293 done · merged 5d4d988
