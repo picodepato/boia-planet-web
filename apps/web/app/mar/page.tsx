@@ -7,7 +7,7 @@ import { t } from '../../lib/i18n';
 
 export const metadata: Metadata = {
   title: t('seo.marTitle'),
-  ...publicPage('/mar', t('seo.mar')),
+  ...publicPage('/mar', t('seo.mar'), { title: `${t('seo.marTitle')} · ${t('site.title')}` }),
 };
 
 // Se prerrenderiza al construir: `loadShipCatalog` lee `art/` del disco y en

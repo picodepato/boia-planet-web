@@ -56,7 +56,7 @@ export function MerchandiseCatalog({
   contact = MERCHANDISE_CONTACT,
 }: {
   products?: readonly string[];
-  contact?: MerchandiseContact;
+  contact?: MerchandiseContact | undefined;
 }) {
   const names = products ?? MERCHANDISE_PRODUCTS.map((p) => p.name);
   return (

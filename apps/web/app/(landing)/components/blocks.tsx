@@ -17,10 +17,11 @@ import { BrandLogo } from './brand-logo';
 import { EventCard } from './event-card';
 import { HeroStills } from './hero-stills';
 import { Presentation } from './presentation';
-import { MerchandiseCatalog } from '../../../lib/merchandise/catalog-view';
-import { MERCHANDISE_PATH, merchandiseContact } from '../../../lib/merchandise/catalog';
+import { MERCHANDISE_PATH } from '../../../lib/merchandise/path';
 // Con el resto de la landing: el collage llega pintado del servidor (T234).
 import './collage.css';
+// La tienda también llega pintada del servidor; su código va aparte (T286).
+import '../../../lib/merchandise/merchandise.css';
 
 /**
  * El collage de la Galería en el bloque de fotos (plan 020 T234): el
@@ -37,6 +38,17 @@ const MediaCollage = lazy(() =>
  */
 const CarnetInvite = lazy(() =>
   import('./carnet-invite').then((m) => ({ default: m.CarnetInvite })),
+);
+
+/**
+ * La tienda (plan 030 T286): como el collage, el servidor la pinta entera y
+ * su código, su carrusel y `products.json` llegan aparte, fuera de la ruta
+ * crítica. Sin contacto propio en el bloque, va el de `products.json`.
+ */
+const MerchandiseCatalog = lazy(() =>
+  import('../../../lib/merchandise/catalog-view').then((m) => ({
+    default: m.MerchandiseCatalog,
+  })),
 );
 
 /** Lista completa de artistas (v14 §18.1). */
@@ -432,7 +444,9 @@ export function BlockView({
               </Link>
             </SectionHead>
             <p className="section__lead">{t('store.intro')}</p>
-            <MerchandiseCatalog products={block.products} contact={merchandiseContact(block)} />
+            <Suspense fallback={null}>
+              <MerchandiseCatalog products={block.products} contact={block.contact} />
+            </Suspense>
             <p className="sail-row">
               <SailLink
                 href={STORE_SAIL_HREF}
