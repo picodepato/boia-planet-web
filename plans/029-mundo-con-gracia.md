@@ -256,6 +256,20 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
   - Test command → exit 0
 - Outcome:
 
+## T284 — Sign out that resets the device, and the account in the menu
+- Status: pending
+- Depends on: none
+- Model: opus
+- Skills: none
+- Goal: Accounts mode only (no change in local mode; Álvaro said no to a «start from zero» button there). (1) **Sign out = this device starts from zero**: on «Cerrar sesión», flush anything pending to the account (existing `onBeforeSignOut` hooks), close the session, then wipe from this browser every copy of that account's data and every guest/game state (Carnet, points, coins, boats/skins, achievements, stamps, bottles drafts, race/cañón/castillo records, mascots, merged-guest leftovers, IndexedDB uploads tied to the account, caches in `lib/repo-member.ts` and the store) so the world starts as a first visit; KEEP only device preferences: sound/music/effects volumes, radio settings, the chosen mood (día/tarde/noche), language, cookie/consent choices, reduced-motion/quality. Before signing out, a confirmation: «Tu progreso queda guardado en tu cuenta. En este móvil empiezas de cero.» (i18n, muestra). Signing back in with the same email restores everything from the account; another person signing in sees only theirs (no merge of the previous person's data into the new account). (2) **Account in the menus**: where the menu appears when the user scrolls/slides down (find it: the landing's sticky/scroll menu and the /mar menu «Menú de a bordo»; Álvaro: «cuando se desliza hacia abajo y aparece el menú»), show the account: signed in → «Tu cuenta» with nickname/Carnet number and «Cerrar sesión» (same flow as above); signed out (accounts mode) → «Entrar». The existing `landing-sign-out.tsx`, `account-section.tsx` and the Carnet panel sign-out must all use the same flow.
+- Context: `apps/web/lib/account/session.ts` (`signOut`, `onBeforeSignOut`, `mergeGuest`), `lib/repo.ts`, `lib/repo-member.ts`, `packages/store` (guest storage keys), `apps/web/lib/account/account-section.tsx`, `app/(landing)/components/landing-sign-out.tsx`, `lib/mundo/carnet/carnet-panel.tsx`, the /mar menu, e2e `cuenta.spec.ts` (E2E_SUPABASE).
+- Scope: may touch those files, a single `resetDevice`/keep-list helper with tests, i18n / must not change local mode behaviour, must not delete anything server-side.
+- Done when:
+  - unit tests: after sign-out every game/account key is gone and every preference key is kept (the keep-list is explicit and tested against the real storage keys); no merge of a previous user's data into a new account → pass
+  - `E2E_SUPABASE=1` `cuenta.spec.ts` (only that spec) extended: user A signs in, plays/earns, signs out → world is fresh; user B signs in → sees none of A's; A signs in again → has everything → pass
+  - Test command → exit 0
+- Outcome:
+
 ## Decisions
 - 2026-10-13: Day/night stays as the three menu moods; no shooting star; weather episodes 30 s every ~4 min, random invented (no real weather API) (Álvaro)
 - 2026-10-13: Jumps come from big waves acting as ramps, no jump button; backflip with turbo (Álvaro)
@@ -285,6 +299,7 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14: T272: banter in its own bubble (right, under notices) because the top notice truncates on phones; no drink mentions or zodiac signs; welcome gender-neutral; alicanteDate next to alicanteHour (T272 audit)
 - 2026-10-14: T274: the two new achievements are visible (not secret); boia-secretos keeps its once-per-visit dialogue and gives a hint after it on each pass (T274 audit)
 - 2026-10-14: Carnet questions replaced (D-08 / §44.1): «yo quiero estar en esto», canción en repeat, qué estás creando o tramando, disco de principio a fin, una buena fiesta necesita siempre… (Álvaro)
+- 2026-10-14: Sign out resets the device to a first visit, keeping only device preferences; account entry (or sign out) also in the menu that appears when sliding down; no «start from zero» button in local mode (Álvaro)
 - 2026-10-13: If Álvaro does not answer a blocked question (Telegram wait timed out, no reply in session), the orchestrator (Opus) picks the best reversible option, logs it here and continues; irreversible or outward-facing actions (push, deploy, production, emails, accounts) still need his explicit yes; an unanswered push offer means no push (Álvaro)
 - 2026-10-13: Telegram question on the Supabase project (A reuse dev as production + new test project / B new production project) and the push offer timed out after 4 h: per the no-answer rule nothing outward is done (no push, no panel change); recommendation A stays for Álvaro (orchestrator)
 - 2026-10-13: Security checklist (`plans/seguridad-pendiente.md`) stays with Álvaro; offer it again at the next plan (Álvaro)
@@ -361,3 +376,5 @@ World rules for every task: all new UI text goes through `apps/web/lib/i18n/` (m
 - 2026-10-14 T283 launched (attempt 1, sonnet), agent a9cd29eefb9d13f4d
 - 2026-10-14 T283 sonnet done (f6a13a7). Opus audit launched, agent a5beddb0416553e50
 - 2026-10-14 T281 audit done (98ce530), integrated 836760c
+- 2026-10-14 T282 launched (attempt 1, opus), agent a908433e031e20047 (+ CLI admin:carnet0)
+- 2026-10-14 T284 added (sign out resets device, account in menus)
