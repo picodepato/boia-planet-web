@@ -18,7 +18,8 @@
     "./weather": "./src/weather/index.ts",
     "./swell": "./src/swell/index.ts",
     "./toys": "./src/toys/index.ts",
-    "./characters": "./src/characters/index.ts"
+    "./characters": "./src/characters/index.ts",
+    "./after": "./src/after/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

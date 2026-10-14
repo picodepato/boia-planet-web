@@ -1,5 +1,10 @@
 import type { WorldEvent } from '@boia/engine';
 import {
+  AFTER_ACHIEVEMENT,
+  AFTER_COINS,
+  AFTER_PLACE,
+  AFTER_SHIP,
+  AFTER_SHIP_STYLE,
   type AchievementDefinition,
   type BoiaRepository,
   SAMPLE_ACHIEVEMENTS,
@@ -74,8 +79,12 @@ function stepsFor(d: AchievementDefinition): Step[] {
   switch (d.trigger) {
     case 'find_buoy':
       return times(n, (i) => signal({ trigger: 'find_buoy', objectId: `boia-${i}` }));
-    case 'visit_island':
+    case 'visit_island': {
+      // Una isla concreta (plan 029 T273) o tantas distintas.
+      const island = param(d, 'island');
+      if (typeof island === 'string') return [signal({ trigger: 'visit_island', objectId: island })];
       return times(n, (i) => signal({ trigger: 'visit_island', objectId: `isla-${i}` }));
+    }
     case 'collect_objects': {
       const category = str(param(d, 'category'), 'objeto');
       return times(n, (i) =>
@@ -394,6 +403,51 @@ it('T269: crossing a big wave with turbo completes «Salto mortal» once, and it
   expect((await recordSignal(repo, signal)).map((n) => n.id)).toContain('logro:salto-mortal');
   expect(await recordSignal(repo, signal)).toEqual([]);
   expect((await repo.progress.claimAchievement('salto-mortal')).claimed).toBe(true);
+});
+
+it('T273: reaching the after island completes «There\'s always an after» once; claiming it pays the coins and unlocks the after boat once', async () => {
+  const repo = browser()();
+  const def = (await repo.content.list('achievements')).find((d) => d.id === AFTER_ACHIEVEMENT)!;
+  expect(def).toMatchObject({
+    secret: true,
+    trigger: 'visit_island',
+    triggerParams: { island: AFTER_PLACE },
+    coins: AFTER_COINS,
+    cosmeticKey: AFTER_SHIP,
+  });
+  expect(def.coins).toBeGreaterThan(0);
+  // Otra isla no vale.
+  const other: AchievementSignal = { trigger: 'visit_island', objectId: 'halloween' };
+  expect((await recordSignal(repo, other)).map((n) => n.id)).not.toContain(
+    `logro:${AFTER_ACHIEVEMENT}`,
+  );
+  const signal: AchievementSignal = { trigger: 'visit_island', objectId: AFTER_PLACE };
+  expect((await recordSignal(repo, signal)).map((n) => n.id)).toContain(
+    `logro:${AFTER_ACHIEVEMENT}`,
+  );
+  // Volver otra noche no lo repite.
+  expect(await recordSignal(repo, signal)).toEqual([]);
+  const before = (await repo.progress.balances()).coins;
+  const ships = () => repo.progress.ships();
+  expect((await ships()).find((s) => s.cosmeticId === AFTER_SHIP)).toMatchObject({
+    owned: false,
+    style: AFTER_SHIP_STYLE,
+    achievementId: AFTER_ACHIEVEMENT,
+  });
+  expect((await repo.progress.claimAchievement(AFTER_ACHIEVEMENT)).claimed).toBe(true);
+  expect((await repo.progress.balances()).coins).toBe(before + AFTER_COINS);
+  expect((await ships()).find((s) => s.cosmeticId === AFTER_SHIP)?.owned).toBe(true);
+  // Una segunda reclamación no paga ni duplica el barco.
+  expect((await repo.progress.claimAchievement(AFTER_ACHIEVEMENT)).claimed).toBe(false);
+  expect((await repo.progress.balances()).coins).toBe(before + AFTER_COINS);
+  expect(
+    (await repo.progress.ledger()).filter(
+      (e) => e.kind === 'cosmetic' && e.cosmeticKey === AFTER_SHIP,
+    ),
+  ).toHaveLength(1);
+  // El barco se puede equipar.
+  await repo.progress.equip('ship', AFTER_SHIP);
+  expect((await repo.progress.equipped()).ship).toBe(AFTER_SHIP);
 });
 
 it('T271: «Fiestera bailando» is hidden and completes once', async () => {

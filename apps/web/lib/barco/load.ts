@@ -55,5 +55,12 @@ export function loadShipCatalog(root = repoRoot()): ShipCatalog | null {
       // Sin script, el estilo sale sin muestras de color.
     }
   }
-  return buildShipCatalog({ root: rootManifest, styleManifests, registry, scripts });
+  // Los barcos especiales (plan 029 T273) viven en el manifiesto 3D; sin él, ninguno.
+  let models: unknown = null;
+  try {
+    models = readJson(path.join(shipDir, '3d', 'manifest.json'));
+  } catch {
+    // Sin manifiesto 3D no hay barcos especiales.
+  }
+  return buildShipCatalog({ root: rootManifest, styleManifests, registry, scripts, models });
 }

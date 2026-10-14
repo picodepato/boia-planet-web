@@ -1141,6 +1141,96 @@ function calitas(R: number, rnd: () => number): IslandBuild {
   return { parts, animated: [], heightAt: h, labelY: bubbleY + 2.2 };
 }
 
+// --- La isla del after (plan 029 T273): sólo de 03:00 a 07:00 --------------------
+
+/** Colores de la isla del after: arena de madrugada, la lona de la pista y el neón. muestra */
+const AFTER_C = {
+  sand: '#c9ae7e',
+  sandDark: '#9e8460',
+  floor: '#5b4a6e',
+  neon: '#ff7ad9',
+  neonCyan: '#7af7ff',
+} as const;
+
+/**
+ * La isla del after a mano: la que se ve lejos, mientras llega su modelo de
+ * Blender (`tools/blender/islas/after.py`, `art/islas/3d/after.glb`) o si
+ * falla. Arena oscura, la pista con su aro de neón, dos columnas de
+ * altavoces, el poste de la bola de discoteca, dos palmeras cansadas y el
+ * muelle. Los peces que bailan y el latido de las luces los pone el motor
+ * (`engine/after.ts`).
+ */
+function after(R: number, rnd: () => number): IslandBuild {
+  const parts = newParts();
+  const k = parts.lit;
+  const H = 1.3;
+  const h = terrain(
+    k,
+    R,
+    [
+      { f: 1.22, y: -1.4, c: AFTER_C.sandDark },
+      { f: 1.0, y: 0.12, c: AFTER_C.sandDark },
+      { f: 0.86, y: H * 0.4, c: AFTER_C.sand },
+      { f: 0.6, y: H * 0.9, c: AFTER_C.sand },
+      { f: 0, y: H, c: AFTER_C.sand },
+    ],
+    rnd,
+    22,
+  );
+  shoreRocks(k, R, 8, rnd, Math.PI / 2);
+  const top = h(0, 0);
+  // La pista: una lona redonda con el aro de neón alrededor.
+  const pr = Math.min(2.6, R * 0.36);
+  k.add(new CylinderGeometry(pr, pr, 0.1, 18), AFTER_C.floor, { p: [0, top + 0.05, 0.3] });
+  parts.glow.add(new TorusGeometry(pr, 0.06, 4, 24), AFTER_C.neonCyan, {
+    p: [0, top + 0.12, 0.3],
+    r: [Math.PI / 2, 0, 0],
+  });
+  parts.glows.add([0, top + 0.4, 0.3], AFTER_C.neonCyan, 6);
+  // El poste con la bola de discoteca.
+  k.add(new CylinderGeometry(0.05, 0.07, 3.2, 5), C.iron, { p: [0, top + 1.6, 0.3] });
+  k.add(new IcosahedronGeometry(0.42, 1), C.white, { p: [0, top + 3.3, 0.3] });
+  parts.glows.add([0, top + 3.3, 0.3], C.white, 3);
+  // Dos columnas de altavoces al fondo (hacia -z, de espaldas al puerto) y la pancarta.
+  for (const s of [-1, 1]) {
+    const x = s * pr * 1.15;
+    const z = -R * 0.42;
+    const y = h(x, z);
+    k.add(new BoxGeometry(0.9, 1.9, 0.8), C.speaker, { p: [x, y + 0.95, z], r: [0, -s * 0.12, 0] });
+    k.add(new CylinderGeometry(0.28, 0.3, 0.1, 10), C.iron, {
+      p: [x, y + 1.3, z + 0.41],
+      r: [Math.PI / 2, 0, 0],
+    });
+    k.add(new CylinderGeometry(0.2, 0.22, 0.1, 10), C.iron, {
+      p: [x, y + 0.55, z + 0.41],
+      r: [Math.PI / 2, 0, 0],
+    });
+    k.add(new CylinderGeometry(0.06, 0.08, 2.2, 5), C.iron, { p: [x, y + 2.9, z] });
+  }
+  parts.glow.add(new BoxGeometry(pr * 2.3, 0.5, 0.12), AFTER_C.neon, {
+    p: [0, top + 3.7, -R * 0.42],
+  });
+  parts.glows.add([0, top + 3.7, -R * 0.42], AFTER_C.neon, 8);
+  // Guirnaldas de bombillas del poste a los altavoces.
+  for (const s of [-1, 1]) {
+    festoon(
+      parts,
+      [0, top + 3.0, 0.3],
+      [s * pr * 1.15, h(s * pr * 1.15, -R * 0.42) + 3.9, -R * 0.42],
+      7,
+      [C.yellow, C.pink, AFTER_C.neonCyan],
+    );
+  }
+  // Dos palmeras cansadas y el muelle hacia el puerto.
+  for (const s of [-1, 1]) {
+    const x = s * R * 0.62;
+    const z = -R * 0.1;
+    palm(k, x, h(x, z), z, 2.6 + rnd() * 0.5, rnd);
+  }
+  pier(k, 0, R * 0.9, Math.PI / 2, R * 0.5);
+  return { parts, animated: [], heightAt: h, labelY: top + 4.2 + LABEL_GAP };
+}
+
 /** Una isla genérica (lugares de categoría isla que aún no tienen composición). */
 function generic(R: number, rnd: () => number): IslandBuild {
   const parts = newParts();
@@ -1160,6 +1250,7 @@ const BUILDERS: Record<string, (R: number, rnd: () => number) => IslandBuild> = 
   canon,
   halloween,
   calitas,
+  after,
 };
 
 /** La composición de una isla del mapa (por id; si no hay, una isla genérica). */

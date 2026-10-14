@@ -9,6 +9,8 @@ import { WORLD_REGISTRY } from '../catalog';
 import { isEventPlace, parseSharedMap } from '../map';
 import { PLACE_MARKERS, WORLD_ONLY_PARTS } from '../place-art';
 import {
+  AFTER_CENTER,
+  AFTER_PLACE_ID,
   ARCILLA_MAP,
   ARCILLA_SKIN,
   BOTTLE_SPOTS,
@@ -312,6 +314,36 @@ describe('mapa compartido de Arcilla (T20)', () => {
       const d = Math.hypot(o.position.x - h.position.x, o.position.y - h.position.y);
       expect(d / POS, o.id).toBeGreaterThan(6);
     }
+  });
+
+  it('la isla del after (plan 029 T273): nace invisible, en mar libre, lejos de las demás, sólo con la visita', () => {
+    const a = map.places.find((p) => p.id === AFTER_PLACE_ID)!;
+    expect(a).toMatchObject({ category: 'isla', name: 'mapa.after', active: true });
+    expect(a.state).toMatchObject({ visible: false });
+    expect(a.behaviors.map((b) => b.type).sort()).toEqual(['achievement', 'collision', 'proximity']);
+    expect(a.behaviors.find((b) => b.type === 'achievement')?.params).toMatchObject({
+      trigger: 'visit_island',
+    });
+    // El premio va en el logro, no en el mapa: ni monedas ni puntos aquí.
+    expect(a.behaviors.some((b) => b.type === 'reward')).toBe(false);
+    expect(a.position.x).toBeCloseTo(at(AFTER_CENTER).x, 5);
+    const b = map.bounds;
+    expect(a.position.x).toBeGreaterThan(b.left);
+    expect(a.position.x).toBeLessThan(b.right);
+    expect(a.position.y).toBeGreaterThan(b.top);
+    expect(a.position.y).toBeLessThan(b.bottom);
+    for (const o of map.places.filter((p) => p.category === 'isla' && p.id !== a.id)) {
+      const d = Math.hypot(o.position.x - a.position.x, o.position.y - a.position.y);
+      expect(d / POS, o.id).toBeGreaterThan(6);
+    }
+    // Las demás islas siguen naciendo visibles.
+    for (const o of map.places.filter((p) => p.category === 'isla' && p.id !== a.id))
+      expect(o.state?.visible ?? true, o.id).toBe(true);
+    // El mundo compuesto se la pasa al motor tal cual (nace ausente).
+    const composed = WORLD_REGISTRY.get('arcilla').config;
+    expect(composed.objects.find((o) => o.identity.id === AFTER_PLACE_ID)?.state?.visible).toBe(
+      false,
+    );
   });
 
   it('Las Calitas (plan 019 T222): la isla de los comentarios, en mar libre y sin entradas', () => {

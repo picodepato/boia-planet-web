@@ -1422,6 +1422,104 @@ def check_part_models(art, kind):
     return label, ckind, fails, info, len(man[key])
 
 
+# --- Los barcos especiales (plan 029, T273): art/barco/3d/<id>.glb y su miniatura <id>.png -------
+BARCOS_3D_SUBDIR = os.path.join("barco", "3d")
+BARCOS_ESPECIALES_DIR = os.path.join(HERE, "barcos")
+# El GLB servido de un barco especial pesa como mucho esto (plan 029: ≤ 300 KB por modelo).
+ESPECIAL_MAX_KB = 300
+
+
+def export_barcos_max_tris_especial():
+    """MAX_TRIS_ESPECIAL de export_barcos_glb.py: el presupuesto de triángulos de un barco especial."""
+    with open(os.path.join(HERE, "export_barcos_glb.py"), encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "MAX_TRIS_ESPECIAL" for t in node.targets):
+            return ast.literal_eval(node.value)
+    raise ValueError("export_barcos_glb.py no define MAX_TRIS_ESPECIAL")
+
+
+def especial_modules():
+    """Los módulos de tools/blender/barcos/ (su nombre es el id del barco especial)."""
+    if not os.path.isdir(BARCOS_ESPECIALES_DIR):
+        return []
+    return sorted(f[:-3] for f in os.listdir(BARCOS_ESPECIALES_DIR) if f.endswith(".py") and f[:-3] != "__init__")
+
+
+def check_barcos_especiales(art):
+    """Los barcos especiales del manifiesto 3D (`"barco": "especial"`, export_barcos_glb.py): un módulo
+    tools/blender/barcos/<id>.py por barco y viceversa, un GLB de una sola malla sin texturas dentro del
+    presupuesto de triángulos y de peso, y su miniatura <id>.png (la de la tienda) con alfa."""
+    label = BARCOS_3D_SUBDIR.replace(os.sep, "/") + " (especiales)"
+    ckind = "ship-glb"
+    fails, info = [], []
+    res = os.path.join(art, BARCOS_3D_SUBDIR)
+    mpath = os.path.join(res, "manifest.json")
+    modules = especial_modules()
+    if not os.path.exists(mpath):
+        return label, ckind, ["falta %s (Blender -b -P tools/blender/export_barcos_glb.py)" % os.path.relpath(mpath, REPO)], info, 0
+    with open(mpath, encoding="utf-8") as f:
+        man = json.load(f)
+    entries = [e for e in man.get("barcos", []) if e.get("barco") == "especial"]
+    budget = export_barcos_max_tris_especial()
+    ids = [e["id"] for e in entries]
+    for m in modules:
+        if m not in ids:
+            fails.append("%s (tools/blender/barcos/) sin GLB en el manifiesto (exporta con --only %s)" % (m, m))
+    for e in entries:
+        mid = e["id"]
+        if mid not in modules:
+            fails.append("%s: sin módulo en tools/blender/barcos/" % mid)
+        if e.get("file") != mid + ".glb":
+            fails.append("%s: el archivo se llama %r (se espera %s.glb)" % (mid, e.get("file"), mid))
+        if e.get("skins") != {"base": mid + ".glb"}:
+            fails.append("%s: un barco especial tiene una sola skin, base (%r)" % (mid, e.get("skins")))
+        slot = e.get("slot")
+        if not (isinstance(slot, list) and len(slot) == 2 and all(isinstance(v, (int, float)) for v in slot)):
+            fails.append("%s: slot %r (se esperan dos números)" % (mid, slot))
+        for k in ("length", "height"):
+            if not isinstance(e.get(k), (int, float)) or e.get(k) <= 0:
+                fails.append("%s: %s %r tiene que ser positivo" % (mid, k, e.get(k)))
+        if not isinstance(e.get("doc"), str) or not e.get("doc"):
+            fails.append("%s: sin doc" % mid)
+        path = os.path.join(res, mid + ".glb")
+        if not os.path.exists(path):
+            fails.append("%s: falta %s.glb" % (mid, mid))
+            continue
+        try:
+            tris, n_mats, n_meshes, n_glow = glb_summary(path)
+            doc = glb_doc(path)
+        except (ValueError, KeyError, IndexError, json.JSONDecodeError) as err:
+            fails.append("%s: %s.glb ilegible: %s" % (mid, mid, err))
+            continue
+        kb = os.path.getsize(path) // 1024
+        if tris > budget:
+            fails.append("%s: %d triángulos > presupuesto %d" % (mid, tris, budget))
+        if tris != e.get("tris"):
+            fails.append("%s: el GLB tiene %d triángulos; el manifiesto dice %r" % (mid, tris, e.get("tris")))
+        if kb > ESPECIAL_MAX_KB:
+            fails.append("%s: %d kB > %d kB" % (mid, kb, ESPECIAL_MAX_KB))
+        if kb != e.get("kb"):
+            fails.append("%s: el GLB pesa %d kB; el manifiesto dice %r" % (mid, kb, e.get("kb")))
+        if n_meshes != 1:
+            fails.append("%s: %d mallas (se espera una sola)" % (mid, n_meshes))
+        if doc.get("images") or doc.get("textures") or any("uri" in b for b in doc.get("buffers", [])):
+            fails.append("%s: con texturas o archivos aparte (tiene que ir solo, un color plano por material)" % mid)
+        png = os.path.join(res, mid + ".png")
+        if not os.path.exists(png):
+            fails.append("%s: falta la miniatura %s.png" % (mid, mid))
+        else:
+            p = Png(png)
+            if not p.has_alpha:
+                fails.append("%s.png: sin canal alfa (la miniatura va con fondo transparente)" % mid)
+            if p.w != p.h or p.w < 128:
+                fails.append("%s.png: mide %dx%d (se espera cuadrada, 128 px o más)" % (mid, p.w, p.h))
+        info.append("%s: %d/%d triángulos, %d materiales (%d emisivos), %d/%d kB, miniatura %s"
+                    % (mid, tris, budget, n_mats, n_glow, kb, ESPECIAL_MAX_KB,
+                       "sí" if os.path.exists(png) else "no"))
+    return label, ckind, fails, info, len(entries)
+
+
 # --- Props del hero de la landing (T78): art/landing/3d/ y los stills ----------------------------
 LANDING_SUBDIR = os.path.join("landing", "3d")
 LANDING_TOOLS = os.path.join(HERE, "landing")
@@ -1649,7 +1747,7 @@ def main():
         with open(os.path.join(res_dir, "manifest.json"), encoding="utf-8") as f:
             kind = json.load(f).get("kind", "ship")
         if kind == "ship":
-            results = [(rid, kind) + check_ship(res_dir, diff_dir, skip_dirs=(STYLES_SUBDIR,))]
+            results = [(rid, kind) + check_ship(res_dir, diff_dir, skip_dirs=(STYLES_SUBDIR, "3d"))]
             results += check_ship_styles(rid, res_dir, diff_dir)
         else:
             results = [(rid, kind) + check_world(res_dir, schema, diff_dir, found)]
@@ -1663,6 +1761,7 @@ def main():
     batches.append([check_enemigos_3d(a.art)])   # art/enemigos/3d/ (plan 015, T174)
     batches.append([check_mascotas_3d(a.art)])   # art/mascotas/3d/ (plan 015, T175)
     batches.append([check_personajes_3d(a.art)])   # art/personajes/3d/ (plan 029, T270)
+    batches.append([check_barcos_especiales(a.art)])   # art/barco/3d/, barcos especiales (plan 029, T273)
     mdir = os.path.join(a.art, MUNDOS_SUBDIR)
     extra_worlds = sorted(set(os.listdir(mdir)) - set(worlds)) if os.path.isdir(mdir) else []
     if extra_worlds:

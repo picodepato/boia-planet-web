@@ -139,7 +139,40 @@ export interface ShipCatalogSources {
   registry: ShipRegistry;
   /** Texto de cada script de Blender, por la ruta que da el registro. */
   scripts: Record<string, string>;
+  /**
+   * JSON de `art/barco/3d/manifest.json` (plan 029 T273): los barcos
+   * especiales (`"barco": "especial"`), que sólo tienen arte 3D y una
+   * miniatura `<id>.png`. Sin él, ninguno.
+   */
+  models?: unknown;
 }
+
+/** Un barco especial del manifiesto 3D (`export_barcos_glb.py`, ESPECIALES). */
+export interface SpecialShipEntry {
+  id: string;
+  label: string;
+  doc: string | null;
+}
+
+/** Los barcos especiales del manifiesto 3D: una sola skin, su miniatura en `art/barco/3d/<id>.png`. */
+export function specialShips(models: unknown): SpecialShipEntry[] {
+  const list = (models as { barcos?: unknown } | null)?.barcos;
+  if (!Array.isArray(list)) return [];
+  const out: SpecialShipEntry[] = [];
+  for (const e of list as { id?: unknown; barco?: unknown; label?: unknown; doc?: unknown }[]) {
+    if (e?.barco !== 'especial' || typeof e.id !== 'string' || !/^[a-z0-9-]+$/.test(e.id)) continue;
+    out.push({
+      id: e.id,
+      label: typeof e.label === 'string' && e.label ? e.label : e.id,
+      // El doc de Blender va en minúscula; en la tienda, como frase.
+      doc: typeof e.doc === 'string' && e.doc ? e.doc[0]!.toUpperCase() + e.doc.slice(1) : null,
+    });
+  }
+  return out;
+}
+
+/** La miniatura de un barco especial (la vista SE que exporta Blender). */
+export const specialPreview = (id: string): string => `${SHIP_ART_URL}/3d/${id}.png`;
 
 /** Skins que el estilo ofrece: las del manifiesto, menos lo que excluyen sus notas. */
 export function allowedSkins(skins: readonly string[], ship: RegistryShip | undefined): string[] {
@@ -237,6 +270,20 @@ export function buildShipCatalog(src: ShipCatalogSources): ShipCatalog {
       swatches: [],
       skins: [{ id: 'base', label: SKIN_LABELS.base!, preview: look.preview }],
       variant: { of: base.id, skin: look.id, hue: v.tono },
+    });
+  }
+  // Los barcos especiales (plan 029 T273: el barco del after), al final: sólo
+  // arte 3D, una skin, sin paleta del registro.
+  for (const s of specialShips(src.models)) {
+    if (styles.some((st) => st.id === s.id)) continue;
+    styles.push({
+      id: s.id,
+      name: s.label,
+      description: s.doc,
+      barco: null,
+      isDefault: false,
+      swatches: [],
+      skins: [{ id: 'base', label: SKIN_LABELS.base!, preview: specialPreview(s.id) }],
     });
   }
   return { defaultId: index.defaultId, styles };

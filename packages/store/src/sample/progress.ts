@@ -57,6 +57,19 @@ export const CARNET_SHIP = 'barco-low-poly';
 export const VETERAN_POINTS = 600;
 /** Precio del barco Cartoon años 30, el que queda a la venta. */
 export const CARTOON_SHIP_PRICE = 120;
+/**
+ * La isla del after (plan 029 T273): el logro secreto de llegar la primera
+ * vez (`siempre-hay-after`), su premio grande en monedas y el barco del after
+ * que desbloquea gratis (`barco-after`, estilo `after`). Un solo sitio para
+ * los números, muestra (P24): Álvaro decide la cifra.
+ */
+export const AFTER_ACHIEVEMENT = 'siempre-hay-after';
+export const AFTER_PLACE = 'after';
+export const AFTER_SHIP = 'barco-after';
+/** Estilo (assetKey) del barco del after: `art/barco/3d/after.glb`. */
+export const AFTER_SHIP_STYLE = 'after';
+export const AFTER_COINS = 500;
+export const AFTER_POINTS = 150;
 
 /**
  * Catálogo de logros de MUESTRA, el aprobado por Hernán el 2026-09-29
@@ -365,6 +378,21 @@ export const SAMPLE_ACHIEVEMENTS: AreaInput<'achievements'>[] = [
     sample: true,
   },
   {
+    // Plan 029 T273: llegar a la isla del after (sólo de 03:00 a 07:00 de Alicante) la primera
+    // vez. Secreto, sin sello del Carnet. Al reclamarlo: muchas monedas y el barco del after
+    // (AFTER_COINS, AFTER_POINTS: muestra, P24). El título va en inglés, como la frase del guiri.
+    id: AFTER_ACHIEVEMENT,
+    title: "There's always an after",
+    description: 'Llega a la isla del after. Sólo existe de 03:00 a 07:00, hora de Alicante.',
+    trigger: 'visit_island',
+    triggerParams: { island: AFTER_PLACE },
+    points: AFTER_POINTS,
+    coins: AFTER_COINS,
+    cosmeticKey: AFTER_SHIP,
+    secret: true,
+    sample: true,
+  },
+  {
     // Plan 029 T270: la gaviota ladrona pillada a tiempo (secreto; sin sello del Carnet). muestra
     id: 'gaviota-pillada',
     title: 'Gaviota pillada',
@@ -555,6 +583,17 @@ export const SAMPLE_COSMETICS: AreaInput<'cosmetics'>[] = [
     slot: 'ship',
     priceCoins: null,
     assetKey: 'pixel-art',
+    sample: true,
+  },
+  // El barco del after (plan 029 T273): lo da el logro `siempre-hay-after` (la isla del after,
+  // 03:00–07:00). Barco «especial»: su arte es sólo 3D (`art/barco/3d/after.glb`, miniatura
+  // `after.png`), sin skins ni sprites del 2D. muestra
+  {
+    id: AFTER_SHIP,
+    name: 'After',
+    slot: 'ship',
+    priceCoins: null,
+    assetKey: AFTER_SHIP_STYLE,
     sample: true,
   },
   // El premio de la misión central (T59): exclusivo de quien entrega a la

@@ -18,6 +18,9 @@ export const esMar = {
   'mar.guiri.always': "There's always an after.",
   'mar.guiri.after': "The after? It's open right now, mate. Follow the music past the lighthouse.",
   'mar.guiri.cerrar': 'Cerrar lo que dice el guiri',
+  // Plan 029 T273, la isla del after (03:00–07:00 de Alicante): muestra, pendiente de Álvaro.
+  'mar.after.abre': 'Se oye música a lo lejos: la isla del after ha abierto. Sólo hasta las 07:00.',
+  'mar.after.cierra': 'Son las 07:00: la isla del after se hunde hasta esta noche.',
   // T136: muestra, pending copy approval.
   'mar.canon.lecturas': 'Lecturas de combate',
   'mar.canon.mostrarVida': 'Mostrar vida',

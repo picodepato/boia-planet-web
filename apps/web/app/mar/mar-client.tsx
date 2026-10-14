@@ -320,6 +320,8 @@ const PIN_ICON: Record<string, string> = {
   ultima: '🎆',
   halloween: '🎃',
   faro: '🗼',
+  // La isla del after (plan 029 T273).
+  after: '🎧',
   canon: '💣',
   castillo: '🏰',
   // Las Calitas (plan 019 T222): la isla de los comentarios.
@@ -1501,6 +1503,14 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           }
         },
         uiOpen: () => !!sheetRef.current,
+        // La isla del after (T273): la hora de `?hora=` y el aviso al abrir y al cerrar.
+        hour: () => hourParam(window.location.search),
+        onAfter: (e) =>
+          pushRef.current({
+            id: `after:${e.type}`,
+            kind: 'info',
+            title: msg(e.type === 'open' ? 'mar.after.abre' : 'mar.after.cierra'),
+          }),
         // Los personajes del agua (T270): la gaviota mira el bolsillo, el cangrejo la radio.
         onCharacter: (e) => handlers.current.onCharacter(e),
         coins: () => balancesRef.current?.coins ?? 0,

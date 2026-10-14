@@ -75,6 +75,8 @@ const RESTOS_VARIANTS = ['a', 'b', 'c'];
 export const PLACE_MARKERS: Readonly<Record<string, string>> = {
   halloween: 'placeholder:isla',
   castillo: 'placeholder:isla',
+  // La isla del after (plan 029 T273): sólo en /mar, con su modelo de Blender.
+  after: 'placeholder:isla',
 };
 
 /**

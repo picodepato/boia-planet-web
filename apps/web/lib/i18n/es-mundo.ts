@@ -37,6 +37,8 @@ export const esMundo = {
   'mapa.puig-campana': 'Puig Campana',
   'mapa.castillo': 'Castillo de Santa Bárbara',
   'mapa.calitas': 'Las Calitas',
+  // Plan 029 T273: la isla del after (sólo de 03:00 a 07:00 de Alicante). muestra
+  'mapa.after': 'La isla del after',
   'mapa.boia-fiestera': 'La Boia Fiestera',
   'mapa.posidonia': 'Posidonia',
   'mapa.cocodrilo': 'Cocodrilo',

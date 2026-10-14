@@ -1,6 +1,6 @@
 {
  "status": "muestra",
- "nota": "Generado por tools/blender/export_barcos_glb.py desde los scripts de estilo (barcos, con sus skins: ship_skins.py) y desde tools/blender/mascota.py (boias y secreto). No editar.",
+ "nota": "Generado por tools/blender/export_barcos_glb.py desde los scripts de estilo (barcos, con sus skins: ship_skins.py), desde tools/blender/barcos/<id>.py (los barcos especiales, plan 029 T273: barco «especial», con su miniatura <id>.png) y desde tools/blender/mascota.py (boias y secreto). No editar.",
  "unidades": "Blender: proa (o cara) a +X, flotación en y = 0 (glTF, y arriba); 1 unidad = 1 u del mapa",
  "barcos": [
   {
@@ -120,6 +120,24 @@
     "noche": "pixel-art-noche.glb",
     "fiesta": "pixel-art-fiesta.glb"
    }
+  },
+  {
+   "id": "after",
+   "file": "after.glb",
+   "barco": "especial",
+   "label": "Barco del after",
+   "slot": [
+    0.55,
+    -0.32
+   ],
+   "skins": {
+    "base": "after.glb"
+   },
+   "length": 3.9,
+   "height": 2.75,
+   "tris": 2192,
+   "kb": 63,
+   "doc": "barquito de fiesta hecho polvo: casco morado con arañazos, cabina torcida con ventanas de neón, tiras de neón rosa, mástil con bola de discoteca y guirnalda de bombillas, altavoz reventado en la popa, latas por la cubierta, gafas de sol enormes en la proa, flamenco pinchado colgando y una bandera cansada"
   }
  ],
  "boias": [

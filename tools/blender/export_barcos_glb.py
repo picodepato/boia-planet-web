@@ -15,8 +15,17 @@ color plano por papel (la paleta del tema de arcilla).
 
     /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/blender/export_barcos_glb.py
     ... -- --only arcilla acuarela
+    ... -- --only after --preview /tmp/barcos   # un barco especial, y además un PNG grande para mirarlo
     ... -- --no-boias
     ... -- --solo-boias                 # sólo las boias (T220: la mascota con el contorno del logo)
+
+Los **barcos especiales** (plan 029 T273: el barco del after) no son estilos
+del 2D: son módulos de tools/blender/barcos/<id>.py con el contrato de las
+islas (ID, LABEL, DOC, SLOT, DETAIL, ROLES, GLOW, build(B, K)), construidos con
+el Builder de los mundos y un color plano por papel, como las islas de
+export_islas_glb.py. Salen a art/barco/3d/<id>.glb, en la lista `barcos` del
+manifiesto (con `"barco": "especial"`), más una miniatura art/barco/3d/<id>.png
+(la vista SE de 256 px de la tienda, con la cámara del juego de rig.py).
 
 Salida: art/barco/3d/*.glb y art/barco/3d/manifest.json (muestra).
 """
@@ -323,15 +332,108 @@ def export_boia(name, variant=None):
     return name + ".glb"
 
 
+# --- Los barcos especiales (plan 029 T273): tools/blender/barcos/<id>.py --------------------------------------
+# Como las islas de export_islas_glb.py: el Builder de los mundos con un color plano por papel (ROLES y GLOW del
+# módulo), todas las mallas en una (una llamada de dibujo por material) y proa a +X con la flotación en z = 0.
+ESPECIALES_DIR = os.path.join(HERE, "barcos")
+# Presupuesto de triángulos de un barco especial: el GLB servido pesa ≤ 300 KB (plan 029). muestra
+MAX_TRIS_ESPECIAL = 9000
+
+
+def especial_ids():
+    """Los módulos de tools/blender/barcos/ (su nombre es el ID del barco)."""
+    if not os.path.isdir(ESPECIALES_DIR):
+        return []
+    return sorted(f[:-3] for f in os.listdir(ESPECIALES_DIR) if f.endswith(".py") and f[:-3] != "__init__")
+
+
+def build_especial(mid):
+    """Construye el barco especial `mid` en una escena vacía; devuelve (raíz, malla única, módulo, medidas)."""
+    import importlib
+    import export_islas_glb as EI          # aquí dentro: EI importa este módulo (materiales planos)
+    from islas import comun as K
+    mod = importlib.import_module("barcos.%s" % mid)
+    if getattr(mod, "ID", mid) != mid:
+        raise ValueError("tools/blender/barcos/%s.py declara ID = %r (se espera %r)" % (mid, mod.ID, mid))
+    rig.reset_scene()
+    ARC, tema = EI.flat_theme(mod)
+    root = bpy.data.objects.new(mid, None)
+    bpy.context.scene.collection.objects.link(root)
+    Ligero = K.ligero(ARC.escena.Builder, getattr(mod, "DETAIL", 0.5))
+    B = Ligero(tema, ARC.temas.A, ARC.M, root)
+    with B.zona("barco_" + mid), B.pieza(mid):
+        info = mod.build(B, K) or {}
+    meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in meshes:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    bpy.ops.object.join()
+    mesh = bpy.context.view_layer.objects.active
+    mesh.name = mid + "_barco"
+    mesh.data.name = mid + "_barco"
+    return root, mesh, mod, info
+
+
+def miniatura_especial(mid, out_dir, size=rig.RESOLUTION, ppu=None):
+    """La vista SE (la de la tienda) del barco: la cámara del juego (rig.py), fondo transparente."""
+    scene = bpy.context.scene
+    rig.setup_render(scene, transparent=True, width=size, height=size)
+    # La proa a +X cae hacia abajo y a la derecha de la pantalla con la cámara de rig.py: la vista SE.
+    rig.add_camera(scene, width=size, height=size, pivot_px=(size / 2.0, size * 0.72), ppu=ppu)
+    rig.add_sun(scene)
+    os.makedirs(out_dir, exist_ok=True)
+    scene.render.filepath = os.path.join(out_dir, mid + ".png")
+    bpy.ops.render.render(write_still=True)
+    return scene.render.filepath
+
+
+def export_especial(mid, preview_dir=None):
+    """Un barco especial como glTF (y su miniatura); devuelve su entrada del manifiesto o None si se pasa."""
+    import export_islas_glb as EI
+    root, mesh, mod, info = build_especial(mid)
+    tris = EI.triangles(mesh)
+    if tris > MAX_TRIS_ESPECIAL:
+        print("[especiales] %s: %d triángulos > %d" % (mid, tris, MAX_TRIS_ESPECIAL))
+        return None
+    bpy.ops.object.select_all(action="DESELECT")
+    root.select_set(True)
+    mesh.select_set(True)
+    path = write_glb(mid + ".glb")
+    print("[glb] %s.glb (especial): %d triángulos, %d materiales, %d kB"
+          % (mid, tris, len(mesh.data.materials), os.path.getsize(path) // 1024))
+    miniatura_especial(mid, OUT)
+    if preview_dir:
+        miniatura_especial(mid, preview_dir, size=1024, ppu=1024 / 5.2)
+    return {"id": mid, "file": mid + ".glb", "barco": "especial", "label": mod.LABEL, "slot": list(mod.SLOT),
+            "skins": {"base": mid + ".glb"}, "length": round(float(info.get("length", 0.0)), 3),
+            "height": round(float(info.get("height", 0.0)), 3), "tris": tris, "kb": os.path.getsize(path) // 1024,
+            "doc": mod.DOC}
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", nargs="*", help="sólo estos barcos (ids de estilo)")
+    ap.add_argument("--only", nargs="*", help="sólo estos barcos (ids de estilo o de barco especial)")
     ap.add_argument("--no-boias", action="store_true", help="sin las boias ni el secreto")
     ap.add_argument("--solo-boias", action="store_true", help="sólo las boias y el secreto; los barcos quedan como están")
+    ap.add_argument("--preview", help="carpeta (fuera del repo) para un PNG grande de cada barco especial")
     a = ap.parse_args(argv)
-    done = []
-    for sid in ([] if a.solo_boias else (a.only or ship_styles.IDS)):
+    especiales = especial_ids()
+    wanted = [] if a.solo_boias else (a.only or (ship_styles.IDS + especiales))
+    unknown = sorted(set(wanted) - set(ship_styles.IDS) - set(especiales))
+    if unknown:
+        print("[barcos] ni estilo ni módulo en tools/blender/barcos/: %s" % ", ".join(unknown))
+        sys.exit(1)
+    done, done_especiales, over = [], [], []
+    for sid in wanted:
+        if sid in especiales:
+            entry = export_especial(sid, a.preview)
+            if entry:
+                done_especiales.append(entry)
+            else:
+                over.append(sid)
+            continue
         files = {skin: export(sid, skin) for skin in ship_skins.skins_for(sid)}
         done.append(ship_entry(sid, files))
     man = os.path.join(OUT, "manifest.json")
@@ -340,7 +442,7 @@ def main():
         with open(man, encoding="utf-8") as f:
             prev_doc = json.load(f)
             prev = {s["id"]: s for s in prev_doc.get("barcos", [])}
-    for d in done:
+    for d in done + done_especiales:
         prev[d["id"]] = d
     boias = prev_doc.get("boias", [])
     secretos = prev_doc.get("secretos", [])
@@ -353,12 +455,17 @@ def main():
         json.dump({
             "status": "muestra",
             "nota": "Generado por tools/blender/export_barcos_glb.py desde los scripts de estilo (barcos, con sus "
-                    "skins: ship_skins.py) y desde tools/blender/mascota.py (boias y secreto). No editar.",
+                    "skins: ship_skins.py), desde tools/blender/barcos/<id>.py (los barcos especiales, plan 029 "
+                    "T273: barco «especial», con su miniatura <id>.png) y desde tools/blender/mascota.py (boias y "
+                    "secreto). No editar.",
             "unidades": "Blender: proa (o cara) a +X, flotación en y = 0 (glTF, y arriba); 1 unidad = 1 u del mapa",
-            "barcos": [prev[k] for k in ship_styles.IDS if k in prev],
+            "barcos": [prev[k] for k in ship_styles.IDS + especiales if k in prev],
             "boias": boias,
             "secretos": secretos,
         }, f, ensure_ascii=False, indent=1)
+    if over:
+        print("[especiales] se pasan del presupuesto: %s" % ", ".join(over))
+        sys.exit(1)
 
 
 if __name__ == "__main__":

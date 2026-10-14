@@ -127,8 +127,19 @@ export function hashId(id: string): number {
   return h >>> 0;
 }
 
+/**
+ * Bocinas con voz propia, por id de barco, que no salen del hash: el barco
+ * del after (plan 029 T273) suena como su altavoz reventado, grave, largo,
+ * cayéndose y con un temblor. muestra
+ */
+export const HORN_VOICES: Readonly<Record<string, HornVoice>> = {
+  after: { low: 98, high: 98 * 1.2, wave: 'sawtooth', length: 0.66, droop: 0.28, wobble: 7 },
+};
+
 /** La bocina de un barco, sacada de su id: misma id, misma bocina. */
 export function hornVoice(boatId: string | null | undefined): HornVoice {
+  const own = boatId ? HORN_VOICES[boatId] : undefined;
+  if (own) return own;
   const h = hashId(boatId ?? 'boia');
   const low = NOTES[h % NOTES.length]!;
   const interval = [1.25, 1.333, 1.5, 1.2][(h >>> 3) % 4]!;

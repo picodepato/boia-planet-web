@@ -5,7 +5,14 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createLocalRepository } from '@boia/store';
-import { SKIN_RULES, allowedSkins, buildShipCatalog, type ShipRegistry } from './catalog';
+import {
+  SKIN_RULES,
+  type ShipRegistry,
+  allowedSkins,
+  buildShipCatalog,
+  specialPreview,
+  specialShips,
+} from './catalog';
 import { BarcoShopView, readShop } from './shop';
 import { shopRows } from './shop-model';
 import { loadShipCatalog, repoRoot } from './load';
@@ -20,6 +27,8 @@ const rootManifest = readJson<{
   style_variants: { id: string; barco: string; manifest: string }[];
 }>('art/barco/manifest.json');
 const registry = readJson<ShipRegistry>('docs/barcos/barcos.json');
+/** Los barcos especiales (plan 029 T273): sólo arte 3D, en `art/barco/3d/manifest.json`. */
+const specials = specialShips(readJson<unknown>('art/barco/3d/manifest.json'));
 const catalog = loadShipCatalog(ROOT)!;
 
 /** Skins que declara el manifiesto de cada estilo en art/barco. */
@@ -33,17 +42,49 @@ const registryEntry = (id: string) => {
   return registry.barcos.find((b) => b.id === barco);
 };
 
-/** Los estilos con arte propio (las variantes del registro, T59, van aparte). */
-const artStyles = catalog.styles.filter((s) => !s.variant);
+/** Los estilos con arte propio (las variantes del registro, T59, y los especiales, T273, van aparte). */
+const artStyles = catalog.styles.filter(
+  (s) => !s.variant && !specials.some((sp) => sp.id === s.id),
+);
 
 describe('catálogo de la sección «Barco»', () => {
-  it('lista exactamente los estilos de art/barco/manifest.json, el por defecto primero, y luego las variantes del registro', () => {
+  it('lista exactamente los estilos de art/barco/manifest.json, el por defecto primero, luego las variantes del registro y los barcos especiales', () => {
     expect(catalog.defaultId).toBe(rootManifest.style);
     expect(catalog.styles.map((s) => s.id)).toEqual([
       rootManifest.style,
       ...rootManifest.style_variants.map((v) => v.id),
       ...(registry.variantes ?? []).map((v) => v.id),
+      ...specials.map((s) => s.id),
     ]);
+  });
+
+  it('un barco especial (plan 029 T273) sale del manifiesto 3D con su miniatura y una sola skin', () => {
+    expect(specials.map((s) => s.id)).toContain('after');
+    for (const sp of specials) {
+      const style = catalog.styles.find((s) => s.id === sp.id)!;
+      expect(style).toMatchObject({ name: sp.label, description: sp.doc, barco: null, swatches: [] });
+      expect(style.variant).toBeUndefined();
+      expect(style.skins.map((k) => k.id)).toEqual(['base']);
+      expect(style.skins[0]!.preview).toBe(specialPreview(sp.id));
+      // La miniatura y el modelo existen en el repo.
+      expect(() => readFileSync(path.join(ROOT, 'art/barco/3d', `${sp.id}.png`))).not.toThrow();
+      expect(() => readFileSync(path.join(ROOT, 'art/barco/3d', `${sp.id}.glb`))).not.toThrow();
+    }
+    // Lo que no es «especial» del manifiesto 3D (los estilos del 2D, las boias) no entra.
+    expect(specialShips({ barcos: [{ id: 'arcilla', barco: 'B05', label: 'x' }] })).toEqual([]);
+    expect(specialShips(null)).toEqual([]);
+    // El doc de Blender sale en la tienda como frase (mayúscula al principio).
+    expect(specialShips({ barcos: [{ id: 'x', barco: 'especial', doc: 'barquito' }] })[0]?.doc).toBe(
+      'Barquito',
+    );
+    // Sin manifiesto 3D, el catálogo es el de antes.
+    const without = buildShipCatalog({
+      root: rootManifest,
+      styleManifests: {},
+      registry: { barcos: [] },
+      scripts: {},
+    });
+    expect(without.styles.map((s) => s.id)).not.toContain('after');
   });
 
   it('una variante (T59) usa el arte de su estilo en su skin, con el tono girado y una sola skin', () => {

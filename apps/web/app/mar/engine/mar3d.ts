@@ -181,6 +181,8 @@ import {
 } from './race-props';
 import { createWater } from './water';
 import { type Canoncito, createCanoncito } from './canoncito';
+import { AFTER_PLACE_ID, AfterClock, type AfterEvent } from '@boia/engine/after';
+import { AfterIsland } from './after';
 import { CHARACTER_MODELS, MascotModel, MascotModelStore } from './mascot-models';
 import { MINIKRAKEN_WAVE_DISTANCE, type Minikraken, createMinikraken } from './minikraken';
 import { type Tortuga, createTortuga } from './tortuga';
@@ -348,6 +350,10 @@ export interface Mar3DOptions {
   onNap?(e: NapEvent): void;
   /** ¿Hay una ficha u otra cosa abierta sobre el mar? Sin siesta mientras (T271). */
   uiOpen?(): boolean;
+  /** La hora de Alicante que pide la URL de desarrollo (`?hora=`, T270), o null (T273). */
+  hour?(): number | null;
+  /** La isla del after sube del agua o se hunde (T273). Para el aviso. */
+  onAfter?(e: AfterEvent): void;
 }
 
 /** Lo que pasa con los personajes del agua (plan 029 T270). */
@@ -562,6 +568,9 @@ export class Mar3D {
   private crab: Crab | null = null;
   private guiri: Guiri | null = null;
   private readonly guiriModel = new MascotModel(CHARACTER_MODELS.guiri);
+  /** La isla del after (T273): su reloj (03:00–07:00 de Alicante) y lo que se ve. */
+  private readonly afterClock = new AfterClock();
+  private afterIsland: AfterIsland | null = null;
   /** ¿Es agua (escena), lejos de islas, decorado y costas? Para la fauna y el guiri. */
   private readonly isWater: (x: number, z: number) => boolean;
   private mascotWave = false;
@@ -1114,6 +1123,32 @@ export class Mar3D {
       }
     }
     return false;
+  }
+
+  /**
+   * La isla del after (T273): su reloj mira la hora de Alicante (o `?hora=`)
+   * y la enciende o la apaga en el runtime (presencia: choques, proximidad y
+   * el logro de la visita sólo mientras está fuera); la vista la sube o la
+   * hunde con `fade`. `data-after` dice «abierta» o «cerrada» para las pruebas.
+   */
+  private stepAfter(dt: number): void {
+    if (!this.afterIsland) return;
+    const events = this.afterClock.step(
+      dt,
+      new Date(),
+      this.opts.hour?.() ?? null,
+      this.reducedMotion,
+    );
+    // Entrando con el after cerrado no hay suceso: se dice igual (T273).
+    if (!this.opts.canvas.dataset.after) this.opts.canvas.dataset.after = 'cerrada';
+    for (const e of events) {
+      this.runtime.setObjectPresent(AFTER_PLACE_ID, e.type === 'open');
+      const ds = this.opts.canvas.dataset;
+      ds.after = e.type === 'open' ? 'abierta' : 'cerrada';
+      // Cerrada, se suelta su modelo (no se pide fuera de hora).
+      this.streamIslandModels();
+      this.opts.onAfter?.(e);
+    }
   }
 
   /** Avanza los personajes del agua tras la fauna, con el barco en (x, z) rumbo h (escena). */
@@ -2658,6 +2693,7 @@ export class Mar3D {
     this.vecinoModel.destroy();
     this.mascot?.dispose();
     this.tortuga?.dispose();
+    this.afterIsland?.dispose();
     this.mascotModels.destroy();
     for (const v of this.islandModels.values()) {
       v.motion?.dispose();
@@ -2843,10 +2879,31 @@ export class Mar3D {
         this.islands.push({ x, z, R, build });
         this.islandRadius.set(id, R);
         // Su orilla (el puerto, T108: sólo bajo la tierra de atrás; la dársena, honda).
-        for (const sh of islandShores(build, R)) {
+        // La isla del after (T273) no deja orilla: cerrada, el agua no la delata.
+        for (const sh of id === AFTER_PLACE_ID ? [] : islandShores(build, R)) {
           shores.push({ x: x + sh.dx, z: z + sh.dz, r: sh.r, w: sh.w });
           // La del castillo se queda cuando lo demás se hunde (T160).
           if (castle) this.castleShores.push({ x: x + sh.dx, z: z + sh.dz, r: sh.r, w: sh.w });
+        }
+        if (id === AFTER_PLACE_ID) {
+          // La isla del after (T273): sube y se hunde con su reloj; sus peces bailan alrededor.
+          const after = new AfterIsland(R);
+          this.afterIsland = after;
+          g.add(after.fish);
+          this.addView({
+            id,
+            obj: g,
+            kind: cat,
+            y: 0,
+            phase,
+            labelY: build.labelY,
+            update: (v, t) => {
+              const fade = this.afterClock.fade;
+              v.shown = fade;
+              after.update(v.obj, t, fade, this.reducedMotion);
+            },
+          });
+          continue;
         }
         this.addView({ id, obj: g, kind: cat, y: 0, phase, labelY: build.labelY });
         continue;
@@ -4386,6 +4443,7 @@ export class Mar3D {
     if (this.opts.canvas.dataset.faunaClouds !== clouds)
       this.opts.canvas.dataset.faunaClouds = clouds;
     this.stepCharacters(dt, t, x, z, h, !!fl);
+    this.stepAfter(dt);
 
     if (this.course) {
       // El destino, en la copia del lado por el que va el barco.
@@ -4571,7 +4629,12 @@ export class Mar3D {
   }
 
   private streamIslandModels(): void {
-    const withModel = [...this.islandModels].filter(([, v]) => v.entry);
+    // La isla del after (T273) sólo pide su modelo mientras está fuera del agua.
+    const present = (id: string) =>
+      id !== AFTER_PLACE_ID || (this.runtime.objectState(id)?.present ?? false);
+    const withModel = [...this.islandModels].filter(([id, v]) => v.entry && present(id));
+    const absent = [...this.islandModels].filter(([id, v]) => v.acquired && !present(id));
+    for (const [id, v] of absent) this.releaseIsland(id, v);
     if (withModel.length === 0) return;
     const ship = this.ship;
     const near = withModel.map(([id, v]) => {
@@ -4601,6 +4664,12 @@ export class Mar3D {
       model.scale.setScalar(islandScale(v.entry, v.R));
       curveTree(model);
       v.glow = islandGlow(model);
+      // El neón del after (T273) late con la música, aunque el menú esté en día.
+      if (id === AFTER_PLACE_ID && this.afterIsland) {
+        const base = v.glow;
+        const after = this.afterIsland;
+        v.glow = (g) => base(after.glow(g, this.time));
+      }
       v.glow(this.mood.glow);
       // Su movimiento (T112), del reloj de cada fotograma; sin nada que mover, null.
       v.motion = placeMotion(model, v.entry, PLACE_SCREENS[id] ?? []);
@@ -4830,6 +4899,8 @@ export class Mar3D {
     this.islandScreen.clear();
     for (const p of this.pins) {
       const v = this.views.get(p.spec.id);
+      // La isla del after bajo el agua (T273) no tiene rótulo.
+      if (v && p.spec.id === AFTER_PLACE_ID && v.shown <= 0.01) continue;
       if (v) {
         p.rx = v.obj.position.x;
         p.rz = v.obj.position.z;

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { HornClock, NapClock, TOYS_TUNING, hashId, hornVoice, napParam } from './index';
+import {
+  HORN_VOICES,
+  HornClock,
+  NapClock,
+  TOYS_TUNING,
+  hashId,
+  hornVoice,
+  napParam,
+} from './index';
 
 const T = TOYS_TUNING;
 const still = { still: true, blocked: false };
@@ -115,5 +123,14 @@ describe('hornVoice', () => {
     const v = hornVoice(null);
     expect(v.high).toBeGreaterThan(v.low);
     expect(v.length).toBeGreaterThan(0);
+  });
+
+  it('T273: the after boat has its own voice (not the hashed one), with wobble and droop', () => {
+    const v = hornVoice('after');
+    expect(v).toEqual(HORN_VOICES.after);
+    expect(v.wobble).toBeGreaterThan(0);
+    expect(v.droop).toBeGreaterThan(0);
+    expect(v.high).toBeGreaterThan(v.low);
+    expect(JSON.stringify(v)).not.toBe(JSON.stringify(hornVoice('arcilla')));
   });
 });

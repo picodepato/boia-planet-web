@@ -104,6 +104,8 @@ const KEY = {
 export interface AchievementFacts {
   buoys: number;
   islands: number;
+  /** Ids de las islas descubiertas (plan 029 T273: el logro de una isla concreta). */
+  islandIds: string[];
   /** Objetos recogidos o encontrados, por categoría (`secreto`…). */
   objects: Record<string, number>;
   seconds: number;
@@ -176,6 +178,7 @@ export async function achievementFacts(progress: ProgressApi): Promise<Achieveme
   return {
     buoys: after(keys, KEY.buoy).length,
     islands: after(keys, KEY.island).length,
+    islandIds: after(keys, KEY.island),
     objects,
     seconds: await progress.counter(TIME_PLAYED_COUNTER),
     rescued: after(keys, KEY.rescued),
@@ -236,7 +239,8 @@ export function achievementGoal(
     case 'find_buoy':
       return tally(facts.buoys, count(def));
     case 'visit_island':
-      return tally(facts.islands, count(def));
+      // Una isla concreta (plan 029 T273: `island: 'after'`) o tantas islas distintas.
+      return oneOrMany(facts.islandIds, text(def, 'island'), count(def));
     case 'collect_objects': {
       const cat = text(def, 'category');
       const have = cat

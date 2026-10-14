@@ -48,7 +48,16 @@ const count = (max: number, label = t('admin.achievements.cuantasVeces')): Trigg
 
 /** Parámetros de cada disparador, con su rango (REQ-ADM-013). */
 export const TRIGGER_PARAMS: Record<AchievementTrigger, readonly TriggerParam[]> = {
-  visit_island: [count(50, t('admin.achievements.islasDistintas'))],
+  visit_island: [
+    // Una isla concreta (plan 029 T273: `after`); con ella, el número sobra.
+    {
+      key: 'island',
+      label: t('admin.achievements.islaVacioCualquiera'),
+      kind: 'text',
+      optional: true,
+    },
+    { ...count(50, t('admin.achievements.islasDistintas')), optional: true },
+  ],
   find_buoy: [count(50, t('admin.achievements.boiesDistintas'))],
   collect_objects: [
     {

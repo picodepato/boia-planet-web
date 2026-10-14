@@ -68,7 +68,12 @@ describe('filas del panel', () => {
     const r = repo();
     await completeBySignal(r, { trigger: 'visit_island', objectId: 'cala' });
     const { list, facts, rows } = await snapshot(r);
-    for (const a of list.filter((x) => x.definition.trigger === 'visit_island')) {
+    // Las de contar islas; la de una isla concreta (plan 029 T273, la del after) es secreta.
+    const counting = list.filter(
+      (x) => x.definition.trigger === 'visit_island' && !('island' in x.definition.triggerParams),
+    );
+    expect(counting.length).toBeGreaterThan(0);
+    for (const a of counting) {
       const goal = achievementGoal(a.definition, facts);
       const row = rows.find((x) => x.id === a.definition.id)!;
       expect(row.count).toBe(`1/${goal.need}`);

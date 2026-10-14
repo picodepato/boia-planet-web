@@ -4,6 +4,38 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-13 — plan 029 T273: La isla del after (03:00–07:00 de Alicante) y el barco del after
+
+Qué existe:
+- **Ventana y reloj** (`packages/engine/src/after/`, `@boia/engine/after`): `afterOpen(now, override)` con la hora de Alicante de T270 (`alicanteHour`, `isAfterHours`, `?hora=`); `AfterClock` mira la hora cada 1 s, avisa `open`/`close` una sola vez y lleva `fade` 0..1 (8 s para salir del agua o hundirse; con movimiento reducido, de golpe); `afterPulse`/`afterGlow` (neón latiendo a 124 BPM, la radio del cangrejo, aunque el menú esté en día) y `fishPose` (8 peces en corro, uno salta en cada pulso). Todo puro, reloj inyectable.
+- **La isla** `after` en `packages/world/src/worlds/arcilla/map.ts` (noroeste, `AFTER_CENTER`, a más de 6 u_maq de cualquier isla), nace invisible (`state.visible: false`). El mar 3D (`mar3d.ts` `stepAfter`) la enciende y apaga en el runtime (choques, proximidad, logro sólo mientras está fuera), la sube y la hunde con `fade` aunque el barco esté allí, oculta su rótulo y su pin del minimapa bajo el agua, no deja orilla, y avisa con un toast (`mar.after.abre` / `mar.after.cierra`). `canvas[data-after]` = `abierta` / `cerrada`. Composición a mano de lejos (`islands.ts` `after`) y peces que bailan (`engine/after.ts`).
+- **Modelo de Blender de la isla**: `tools/blender/islas/after.py` → `art/islas/3d/after.glb` (**284 KiB**, 13 208 tris, 34 materiales): islote de arena oscura, sound system, boia DJ con cascos, pancarta «AFTER» de neón, bola de discoteca, guirnaldas, una boia bailando y otra dormida con gafas, latas, flamenco pinchado, dos palmeras y muelle. Sólo se pide mientras el after está abierto (`streamIslandModels`), y se suelta al cerrar.
+- **Barco del after**: `tools/blender/barcos/after.py` (barcos «especiales» en `export_barcos_glb.py`) → `art/barco/3d/after.glb` (**63 KiB**, 2 192 tris) y su miniatura `after.png`: casco morado arañado, cabina torcida con ventanas de neón, tiras de neón, mástil con bola de discoteca y bombillas, altavoz reventado, latas, gafas de sol en la proa, flamenco pinchado, bandera cansada. Sin marcas ni drogas. En el catálogo (`lib/barco/catalog.ts` `specialShips`), en el garaje como cosmético `barco-after` (gratis, lo da el logro); su GLB sólo se descarga si el barco está elegido.
+- **Bocina propia** (`@boia/engine/toys` `HORN_VOICES.after`): grave, larga, cayéndose y con temblor, como el altavoz reventado.
+- **Logro secreto** `siempre-hay-after` («There's always an after», sin sello del Carnet): `visit_island` con `island: 'after'`; premio en un solo sitio, `packages/store/src/sample/progress.ts` (`AFTER_COINS = 500`, `AFTER_POINTS = 150`, muestra, P24) + el barco del after. El Admin acepta `island` (texto, opcional) en `visit_island` (`lib/admin/achievements.ts`).
+- Textos nuevos en `es-mar.ts`, `es-mundo.ts`, `es-lib.ts`: muestra.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 315 archivos, 2802 passed, 3 skipped. Incluye: ventana 02:59 no / 03:00 sí / 06:59 sí / 07:00 no en verano e invierno, los días de cambio de hora (2026-03-29 y 2026-10-25), `?hora=` manda; `AfterClock` (abre, se hunde con el barco allí, nunca repite avisos, reducido de golpe); el logro se cumple una vez y al reclamarlo paga y desbloquea el barco una sola vez; catálogo con el barco especial; voz de bocina propia; la isla en el mapa nace invisible.
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 198.8 kB / 200 kB); `pnpm typecheck` → exit 0.
+- `pnpm cf:measure` → 2,208 KiB gzip / 2,800 · OK.
+- Validación de los modelos (skill blender-asset-validation, Blender 5.2.2): `inspect_asset.py` → `hard_gate_pass: true`, 0 caras degeneradas, sin incidencias, en los dos GLB; `render_evidence.py --resolution 640` → seis vistas + hoja de contacto, fuera del repo:
+  - `C:/Users/alvar/AppData/Local/Temp/orchestrator-attach/boia-planet-T273/islas/contact_sheet.png`
+  - `C:/Users/alvar/AppData/Local/Temp/orchestrator-attach/boia-planet-T273/barco/contact_sheet.png`
+  (abiertas y revisadas: silueta, piezas y orientación correctas, nada flotando).
+- A mano en `next dev`: `?hora=4` → `data-after=abierta`, el GLB de la isla se pide; `?hora=12` → `cerrada`, ni `islas/3d/after.glb` ni `barco/3d/after.glb` se piden; cambiar a `?hora=7` con la isla fuera → toast «Son las 07:00…» y se hunde; con `?hora=4&cerca=after`, al llegar se cumple el logro, reclamarlo da +150 ★ +500 monedas y el barco, que se equipa y navega.
+
+Pendiente:
+- Álvaro: cifras del premio (`AFTER_COINS`, `AFTER_POINTS`) y textos (muestra).
+- Con cuentas encendidas (Supabase), el logro y el cosmético nuevos tendrán que estar en el seed/migración de progreso del servidor.
+- De cerca, el muelle del modelo queda un poco separado de la orilla (la playa baja bajo el agua).
+
+Probar a mano:
+- `/mar?hora=4` → la isla del after está fuera (noroeste del mapa), con neón latiendo y peces bailando; `/mar?hora=4&cerca=after` empieza al lado.
+- `/mar?hora=12` → no hay isla, ni rótulo, ni pin; no se descarga su modelo.
+- Con la isla fuera, cambiar la URL a `?hora=7` (o esperar a las 07:00) → se hunde en ~8 s aunque estés encima, con aviso.
+- Llegar la primera vez → logro secreto «There's always an after»; reclamarlo en Logros → monedas y el barco del after en Menú › Barco; elegirlo y tocar la bocina (voz grave y temblorosa).
+
 ## 2026-10-13 — plan 029 T271: Juguetes del barco: la bocina y el barco aburrido
 
 **Qué existe**

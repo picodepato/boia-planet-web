@@ -43,6 +43,8 @@ export const esLib = {
   'admin.achievements.minutos': 'Minutos',
   'admin.achievements.entradasDeEventosDistintos': 'Entradas de eventos distintos',
   'admin.achievements.personajeVacioCualquiera': 'Personaje (vacío: cualquiera)',
+  // Plan 029 T273: el logro de una isla concreta (la del after).
+  'admin.achievements.islaVacioCualquiera': 'Isla (id; vacío: cualquiera)',
   'admin.achievements.minijuegoVacioCualquiera': 'Minijuego (vacío: cualquiera)',
   'admin.achievements.minijuegosDistintos': 'Minijuegos distintos',
   'admin.achievements.encuentroVacioCualquiera': 'Encuentro (vacío: cualquiera)',

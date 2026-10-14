@@ -78,6 +78,20 @@ export const HALLOWEEN_PLACE_ID = 'halloween';
 export const HALLOWEEN_CENTER: Maq = [-1.0, 1.5];
 
 /**
+ * La isla del after (plan 029 T273): sólo existe de 03:00 a 07:00 de
+ * Alicante. Nace invisible (`state.visible: false`): el mar 3D la enciende y
+ * la apaga con el reloj (`@boia/engine/after`); sin maqueta en mapa.json, su
+ * fuente es el plan.
+ */
+export const AFTER_PLACE_ID = 'after';
+/**
+ * Dónde está: el rincón más oscuro, el noroeste del mapa, lejos del Puig
+ * Campana y de la Isla de Nochevieja (más de 6 u_maq de cualquier isla) y
+ * dentro de las costas. muestra
+ */
+export const AFTER_CENTER: Maq = [-11.6, -26.2];
+
+/**
  * El Puerto de Alicante (T108; antes la Cala Cantalar): el puerto donde se
  * cambia de barco. Conserva el id `cala` (descubrimientos, logros y premios
  * guardados) y su sitio de `mapa.json`. muestra
@@ -578,6 +592,15 @@ const ISLANDS: PlaceInput[] = [
     [content('info', CALITAS_REF), visit()],
     ['islas_sueltas/calitas'],
   ),
+  // La isla del after (plan 029 T273): de 03:00 a 07:00 de Alicante; nace
+  // invisible y el mar 3D la enciende con el reloj. Su primera visita da el
+  // logro secreto «There's always an after», las monedas y el barco del after
+  // (el premio va en el logro, `siempre-hay-after`, no en el mapa). Al final
+  // para no cambiar el orden de las demás.
+  {
+    ...island(AFTER_PLACE_ID, 'mapa.after', 'plan:T273', AFTER_CENTER, 2.0, 1.6, 15, 3.4, [visit()]),
+    state: { visible: false },
+  },
 ];
 
 // --- El Remanso de los Cocodrilos (composición local; la misión es de T21) ------
