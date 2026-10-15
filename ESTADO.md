@@ -4,6 +4,44 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 033 T306: Twice-monthly SMTP test email workflow
+
+Qué existe:
+- `.github/workflows/smtp-ping.yml`: cron `23 7 1,15 * *` (días 1 y 15, 07:23
+  UTC) y `workflow_dispatch`. Trabajo `ping`: checkout, comprobación de los
+  secretos `BREVO_SMTP_LOGIN`/`BREVO_SMTP_KEY` con `::error::Falta el secreto …`
+  y `python3 .github/scripts/smtp-ping.py`. Permisos `contents: read`; además
+  el trabajo `keepalive-workflows` (`actions: write`) igual que en los demás
+  flujos programados (lo exige `recordatorios.test.ts`).
+- `.github/scripts/smtp-ping.py`: sólo biblioteca estándar (`smtplib`, `ssl`,
+  `email.message`). `smtp-relay.brevo.com:587` con STARTTLS, de `hola@` a
+  `hola@`, texto plano en español con la fecha UTC. Secreto que falta o
+  cualquier error SMTP/red → `::error::` y código 1. Nunca escribe login ni
+  clave.
+- `apps/web/scripts/smtp-ping.test.ts` (12 pruebas): lee el flujo y el script
+  reales (cron 1 y 15, `workflow_dispatch`, secretos sólo por `secrets.*` y
+  comprobados antes de enviar, sin `set -x`/`printenv`, permisos, sólo
+  `actions/checkout`, host y puerto, imports estándar, salida 1 al fallar, el
+  texto) y que `enviar-desde-hola` sigue en `caducidades.json`.
+- `docs/DESPLIEGUE.md` §6: un párrafo sobre el flujo; §8: fila de la clave de
+  Brevo («Automático: `smtp-ping.yml` los días 1 y 15…», el issue mensual como
+  segunda red), `smtp-ping` en la lista de flujos con `keepalive-workflows`, en
+  la fila de flujos programados y «cinco flujos programados» en el
+  recordatorio anual.
+- `caducidades.json`: el `detalle` de `brevo-smtp-hola` nombra `smtp-ping.yml`.
+  El recordatorio `enviar-desde-hola` sin tocar.
+
+Comandos:
+- `pnpm exec vitest run apps/web/scripts/smtp-ping.test.ts apps/web/scripts/recordatorios.test.ts` → 2 archivos, 39 pruebas pasan.
+- `python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" .github/scripts/smtp-ping.py` → exit 0.
+- Prueba sin red del script: `build_message` da el correo esperado; `main({})` → dos `::error::Falta el secreto …`, devuelve 1.
+- vitest (sin packages/db) → 349 archivos, 3114 pasan, 3 omitidas, exit 0; `tools/spec/checks.sh` OK; `pnpm lint` exit 0; `pnpm build` exit 0; `pnpm typecheck` exit 0.
+
+Pendiente:
+- Tras el push, Álvaro: Actions → `smtp-ping` → «Run workflow» una vez para
+  ver que sale verde y que el correo llega a la bandeja de BOIA. No se ha
+  enviado ningún correo real.
+
 ## 2026-10-15 — plan 032 T305: Console errors in /mar
 
 Neither error comes from plan 032. No product code changed; one guard test added.

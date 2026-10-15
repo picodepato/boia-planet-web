@@ -322,6 +322,15 @@ Cloudflare añade solo sus registros:
    `hola@`, que llega por Email Routing al mismo Gmail. Igual para `admin@`
    si se quiere enviar desde ella.
 
+La clave de Brevo caduca tras 90 días sin enviar. Para que no pase,
+`.github/workflows/smtp-ping.yml` manda un correo corto de `hola@` a `hola@`
+con esa misma clave (secretos de GitHub `BREVO_SMTP_LOGIN` y
+`BREVO_SMTP_KEY`) los días 1 y 15 de cada mes, por `smtp-relay.brevo.com`,
+puerto 587 y STARTTLS. Llega a la bandeja de BOIA y se puede ignorar. Si
+falla (secreto que falta, clave caducada), el flujo sale en rojo y GitHub
+avisa por correo; para probarlo a mano, Actions → `smtp-ping` → «Run
+workflow». Al renovar la clave, actualizar también `BREVO_SMTP_KEY`.
+
 ### Un solo SPF
 
 Un dominio sólo puede tener **un** registro TXT que empiece por `v=spf1`; con
@@ -384,7 +393,8 @@ secretos nuevos (sólo el `GITHUB_TOKEN` de cada flujo):
     --dry-run --fecha 2027-08-20` escribe lo que haría ese día; en Actions,
     «Run workflow» con «dry_run».
 - **Trabajo `keepalive-workflows`** en cada flujo programado
-  (`hosts-parity`, `recordatorios`, `supabase-backup`, `supabase-keepalive`):
+  (`hosts-parity`, `recordatorios`, `smtp-ping`, `supabase-backup`,
+  `supabase-keepalive`):
   llama a la API «Enable a workflow» (`PUT
   /repos/{owner}/{repo}/actions/workflows/{id}/enable`, permiso
   `actions: write`) para todos los flujos activos o desactivados por
@@ -417,8 +427,8 @@ secretos nuevos (sólo el `GITHUB_TOKEN` de cada flujo):
 
 | Qué | Cuándo | Qué se rompe | Cómo se renueva |
 |---|---|---|---|
-| Clave SMTP de Brevo que usa Gmail «Enviar como» para `hola@boiaplanet.net` | Creada 2026-10-15 (`gmail-y-github`, también en los secretos de GitHub `BREVO_SMTP_LOGIN`/`BREVO_SMTP_KEY`), **caduca 2027-10-15**. También caduca tras **90 días sin enviar** | Gmail deja de poder enviar como `hola@` (recibir sigue funcionando) | **Automático:** issue a 60, 30 y 7 días (`recordatorios.yml`) y un issue cada mes para enviar desde `hola@`. Enviar desde `hola@` **al menos una vez al mes**. Renovar: Brevo → SMTP & API → SMTP → nueva clave → Gmail → Ajustes → **Cuentas e importación → Enviar como → `hola@` → editar** → pegar la clave nueva. Lo mismo para `admin@` si envía, y el secreto `BREVO_SMTP_KEY` de GitHub. Luego, fecha nueva en `caducidades.json` |
+| Clave SMTP de Brevo que usa Gmail «Enviar como» para `hola@boiaplanet.net` | Creada 2026-10-15 (`gmail-y-github`, también en los secretos de GitHub `BREVO_SMTP_LOGIN`/`BREVO_SMTP_KEY`), **caduca 2027-10-15**. También caduca tras **90 días sin enviar** | Gmail deja de poder enviar como `hola@` (recibir sigue funcionando) | **Automático:** `smtp-ping.yml` los días 1 y 15 envía un correo de prueba con la clave (si sale en rojo, la clave falla); issue a 60, 30 y 7 días (`recordatorios.yml`) y, como segunda red, un issue cada mes para enviar desde `hola@`. Renovar: Brevo → SMTP & API → SMTP → nueva clave → Gmail → Ajustes → **Cuentas e importación → Enviar como → `hola@` → editar** → pegar la clave nueva. Lo mismo para `admin@` si envía, y el secreto `BREVO_SMTP_KEY` de GitHub. Luego, fecha nueva en `caducidades.json` |
 | Proyecto gratuito de Supabase | Se pausa tras **~7 días sin actividad** | Con cuentas: el acceso, los sellos, los rankings y el Admin dejan de responder (en modo local no se nota) | **Automático:** `.github/workflows/supabase-keepalive.yml` lo lee lunes y jueves (secretos `SUPABASE_URL` y `SUPABASE_ANON_KEY`). Si ya se pausó: panel de Supabase → **Restore project** |
-| Flujos programados de GitHub | GitHub los **desactiva tras 60 días sin actividad en el repo** (sin commits) | Dejan de correr `supabase-keepalive` (y Supabase se pausa), `supabase-backup` (sin copias), `hosts-parity` (nadie avisa de una diferencia entre hosts) y `recordatorios` | **Automático (sin probar, ver arriba):** el trabajo `keepalive-workflows` de cada flujo programado los reactiva por la API. Si aun así se desactivan: repo → **Actions** → cada flujo → **Enable workflow**, o un push. GitHub avisa por correo antes |
+| Flujos programados de GitHub | GitHub los **desactiva tras 60 días sin actividad en el repo** (sin commits) | Dejan de correr `supabase-keepalive` (y Supabase se pausa), `supabase-backup` (sin copias), `hosts-parity` (nadie avisa de una diferencia entre hosts), `smtp-ping` (la clave de Brevo puede caducar sin uso) y `recordatorios` | **Automático (sin probar, ver arriba):** el trabajo `keepalive-workflows` de cada flujo programado los reactiva por la API. Si aun así se desactivan: repo → **Actions** → cada flujo → **Enable workflow**, o un push. GitHub avisa por correo antes |
 | Dominio `boiaplanet.net` | **Caduca 2027-10-12**; Porkbun, renovación automática activada, **12,52 USD/año** | Si no se renueva: la web pública y el correo `@boiaplanet.net` dejan de funcionar | **Automático:** issue a 60, 30 y 7 días (`recordatorios.yml`). Que la tarjeta de Porkbun esté vigente antes de la fecha; comprobar en Porkbun → Domain Management que «Auto Renew» sigue activado. Luego, fecha nueva en `caducidades.json` |
-| Recordatorio | **Cada año, el 12 de septiembre** (un mes antes) | — | Los issues de `recordatorios.yml` lo cubren; como red por si GitHub no corre nada, un evento anual en el calendario de BOIA: «Revisar docs/DESPLIEGUE.md §8: clave de Brevo, dominio, flujos de GitHub y Supabase». Ese día: renovar la clave de Brevo, comprobar la tarjeta de Porkbun, mirar que los cuatro flujos están activos en Actions y que el último `supabase-keepalive` salió bien |
+| Recordatorio | **Cada año, el 12 de septiembre** (un mes antes) | — | Los issues de `recordatorios.yml` lo cubren; como red por si GitHub no corre nada, un evento anual en el calendario de BOIA: «Revisar docs/DESPLIEGUE.md §8: clave de Brevo, dominio, flujos de GitHub y Supabase». Ese día: renovar la clave de Brevo, comprobar la tarjeta de Porkbun, mirar que los cinco flujos programados están activos en Actions y que el último `supabase-keepalive` salió bien |

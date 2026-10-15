@@ -1,0 +1,85 @@
+# Correo de prueba dos veces al mes por el SMTP de Brevo (plan 033 T306).
+# Gmail «Enviar como» usa una clave SMTP de Brevo para hola@boiaplanet.net, y
+# Brevo la caduca tras 90 días sin enviar. Este flujo manda un correo corto de
+# hola@ a hola@ con esa misma clave los días 1 y 15, así nunca pasan 90 días.
+# Si el envío falla, el flujo sale en rojo y GitHub avisa por correo. El issue
+# mensual «enviar-desde-hola» de recordatorios.yml sigue como segunda red.
+#
+# Secretos del repo (Settings → Secrets and variables → Actions), los carga
+# Álvaro; la guía está en docs/DESPLIEGUE.md §6:
+#   BREVO_SMTP_LOGIN  el login SMTP de Brevo (SMTP & API → SMTP).
+#   BREVO_SMTP_KEY    la clave SMTP, la misma que tiene Gmail «Enviar como».
+name: smtp-ping
+
+on:
+  schedule:
+    # Los días 1 y 15 de cada mes a las 07:23 UTC.
+    - cron: '23 7 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smtp-ping
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Sólo para .github/scripts/smtp-ping.py.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Comprobar los secretos
+        env:
+          BREVO_SMTP_LOGIN: ${{ secrets.BREVO_SMTP_LOGIN }}
+          BREVO_SMTP_KEY: ${{ secrets.BREVO_SMTP_KEY }}
+        shell: bash
+        run: |
+          test -n "$BREVO_SMTP_LOGIN" || { echo "::error::Falta el secreto BREVO_SMTP_LOGIN"; exit 1; }
+          test -n "$BREVO_SMTP_KEY" || { echo "::error::Falta el secreto BREVO_SMTP_KEY"; exit 1; }
+
+      # smtp-relay.brevo.com, puerto 587, STARTTLS (lo hace el script).
+      - name: Enviar el correo de prueba
+        env:
+          BREVO_SMTP_LOGIN: ${{ secrets.BREVO_SMTP_LOGIN }}
+          BREVO_SMTP_KEY: ${{ secrets.BREVO_SMTP_KEY }}
+        shell: bash
+        run: python3 .github/scripts/smtp-ping.py
+
+  # GitHub desactiva los flujos programados de un repo público tras 60 días
+  # sin actividad. Este trabajo vuelve a activar (API «Enable a workflow») los
+  # flujos activos o desactivados por inactividad, éste incluido; los que
+  # alguien desactivó a mano se quedan así. Va igual en todos los flujos
+  # programados (plan 028 T266, docs/DESPLIEGUE.md §8), y aparte, para que un
+  # fallo aquí no tumbe el trabajo de arriba ni al revés.
+  keepalive-workflows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Reactivar los flujos programados
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/actions/workflows" \
+            --jq '.workflows[] | select(.state == "active" or .state == "disabled_inactivity") | "\(.id) \(.state) \(.path)"' \
+            > "$RUNNER_TEMP/workflows.txt"
+          fail=0
+          while read -r id state wf; do
+            if gh api --method PUT "repos/$REPO/actions/workflows/$id/enable" --silent; then
+              echo "activo: $wf (antes: $state)"
+            else
+              echo "::error::No se pudo reactivar $wf"
+              fail=1
+            fi
+          done < "$RUNNER_TEMP/workflows.txt"
+          exit "$fail"

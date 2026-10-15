@@ -18,7 +18,7 @@
       "id": "brevo-smtp-hola",
       "que": "Clave SMTP de Brevo que usa Gmail «Enviar como» para `hola@boiaplanet.net`",
       "fecha": "2027-10-15",
-      "detalle": "Creada el 2026-10-15 (`gmail-y-github`; la misma clave está en los secretos de GitHub `BREVO_SMTP_LOGIN` y `BREVO_SMTP_KEY`). También caduca tras 90 días sin enviar por SMTP.",
+      "detalle": "Creada el 2026-10-15 (`gmail-y-github`; la misma clave está en los secretos de GitHub `BREVO_SMTP_LOGIN` y `BREVO_SMTP_KEY`). También caduca tras 90 días sin enviar por SMTP: `smtp-ping.yml` manda un correo de prueba con ella los días 1 y 15 de cada mes.",
       "rompe": "Gmail deja de poder enviar como `hola@boiaplanet.net` (recibir sigue funcionando).",
       "renovar": [
         "Brevo → SMTP & API → SMTP → **Generate a new SMTP key** (se ve una vez; no la guardes en el repo).",
