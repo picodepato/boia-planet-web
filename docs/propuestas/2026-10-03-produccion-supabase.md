@@ -177,6 +177,23 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     cierra sus solicitudes pendientes. No toca ningún dato. Comprobar
     después, en el **SQL Editor**:
     `select count(*) from private.artist_claim_requests;` da 0.
+- [ ] Del plan 032 (ya en `boia-planet-dev`):
+  - `20261015100700_secret_prizes_member_restore.sql` (T300): el progreso
+    del servidor conoce los logros secretos del plan 029 y el barco del
+    after. Añade el cosmético `barco-after` (muestra; lo regala el logro
+    `siempre-hay-after`) y la tabla `private.achievement_prizes` (los logros
+    con tope propio: `siempre-hay-after`, 150 puntos y 500 monedas, una sola
+    vez y fuera del tope diario); redefine `private.award_points` para
+    usarla (lo demás, igual). Devolver de la papelera a un socio cuyo número
+    ya tiene otra persona le da el siguiente número (auditoría
+    `restore_member` con el nuevo y `previous_member_number`); la papelera
+    del Admin lo avisa antes (`number_taken`). No toca ningún dato.
+    Comprobar después, en el **SQL Editor**:
+    `select id, unlock_achievement from cosmetics where id = 'barco-after';`
+    da `barco-after | siempre-hay-after`, y
+    `select * from private.achievement_prizes;` da una fila
+    (`siempre-hay-after`, 150, 500). Si se quita la muestra (paso 13), el
+    barco se va con ella; la fila del tope puede quedarse.
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`

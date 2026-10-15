@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrashList, TrashPurgeResult } from '@boia/db/rpc';
+import type { RestoredMember, TrashList, TrashPurgeResult } from '@boia/db/rpc';
 import { useCallback, useEffect, useState } from 'react';
 import { t } from '../../../lib/i18n';
 import { StatusLine } from '../ui';
@@ -19,6 +19,8 @@ export function RealDeletedTrash() {
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [purged, setPurged] = useState<TrashPurgeResult | null>(null);
+  // El último socio devuelto con un número nuevo (plan 032 T300).
+  const [renumbered, setRenumbered] = useState<RestoredMember | null>(null);
   const { status, busy, run } = useRun();
 
   const load = useCallback(async () => {
@@ -77,6 +79,15 @@ export function RealDeletedTrash() {
           </p>
         ) : null}
         <StatusLine status={status} />
+        {renumbered ? (
+          <p className="admin-meta" data-testid="papelera-real-renumerado">
+            {t('admin.real.trash.renumbered', {
+              nickname: renumbered.nickname ?? '',
+              number: renumbered.member_number ?? '',
+              previous: renumbered.previous_member_number ?? '',
+            })}
+          </p>
+        ) : null}
         {!list || !sb ? (
           <p>{t('empty.loading')}</p>
         ) : (
@@ -92,6 +103,17 @@ export function RealDeletedTrash() {
                   <span>
                     <strong>{m.nickname ?? t('admin.real.trash.noCarnet')}</strong>
                     {m.member_number ? ` · nº ${m.member_number}` : ''} · {m.email}
+                    {m.number_taken ? (
+                      <>
+                        <br />
+                        <span
+                          className="admin-meta"
+                          data-testid={`papelera-socio-numero-${m.user_id}`}
+                        >
+                          {t('admin.real.trash.numberTaken', { number: m.member_number ?? '' })}
+                        </span>
+                      </>
+                    ) : null}
                     <br />
                     <span className="admin-meta">
                       {span(m.deleted_at, m.expires_at)} · {m.reason}
@@ -104,12 +126,13 @@ export function RealDeletedTrash() {
                     data-testid={`papelera-socio-devolver-${m.user_id}`}
                     onClick={() =>
                       void run(async () => {
-                        await must(
+                        const back = (await must(
                           sb.rpc('admin_restore_member', {
                             p_user: m.user_id,
                             p_reason: t('admin.real.trash.restoreReason'),
                           }),
-                        );
+                        )) as unknown as RestoredMember;
+                        setRenumbered(back?.renumbered ? back : null);
                         reload();
                       }, t('admin.real.trash.memberRestored'))
                     }

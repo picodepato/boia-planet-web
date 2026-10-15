@@ -37,8 +37,19 @@ describe('números de socio por orden de llegada (T186)', () => {
     // contador una vez, sin cambiar el número de nadie (lo comprueba
     // member-numbers-from-10-sql.test.ts).
     const FROM_TEN = '20261014100200_member_numbers_from_10.sql';
+    // Devolver de la papelera (plan 032 T300): a quien ya no tiene su número
+    // le da el siguiente con `next_member_number`; no lo redefine, ni toca el
+    // contador, ni cambia el número de nadie (lo comprueba trash.supabase.ts).
+    const RESTORE = '20261015100700_secret_prizes_member_restore.sql';
     for (const f of later) {
       const text = read(`supabase/migrations/${f}`);
+      if (f === RESTORE) {
+        expect(text).not.toMatch(
+          /function (public|private)\.(save_profile|next_member_number)|member_counter|alter column member_number|set member_number/,
+        );
+        expect([...text.matchAll(/next_member_number\(\)/g)]).toHaveLength(1);
+        continue;
+      }
       if (f === FROM_TEN) {
         expect(text).not.toMatch(
           /function (public|private)\.save_profile|alter column member_number|set member_number/,

@@ -508,10 +508,25 @@ export interface TrashedMember {
   /** null: no tenía Carnet. */
   nickname: string | null;
   member_number: number | null;
+  /** Su número ya es de otra persona: vuelve con uno nuevo (plan 032 T300). */
+  number_taken?: boolean;
   reason: string;
   deleted_at: string;
   /** Desde entonces la purga diaria la borra de verdad. */
   expires_at: string;
+}
+
+/** admin_restore_member: el socio devuelto y su número (plan 032 T300). */
+export interface RestoredMember {
+  user_id: string;
+  restored: true;
+  nickname: string | null;
+  /** El que lleva ahora (null: no tenía Carnet). */
+  member_number: number | null;
+  /** El que llevaba al borrarlo. */
+  previous_member_number: number | null;
+  /** Su número ya era de otra persona y lleva uno nuevo. */
+  renumbered: boolean;
 }
 
 /** Una fiesta en la papelera (admin_list_trash, plan 020 T230). */

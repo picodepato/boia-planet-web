@@ -13,7 +13,7 @@
  * - un socio, anon o un admin sin service_role no tocan nada de esto.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TrashList, TrashPurgeResult } from '../rpc.ts';
+import type { RestoredMember, TrashList, TrashPurgeResult } from '../rpc.ts';
 import {
   context,
   dropEvents,
@@ -213,6 +213,95 @@ describe('papelera con cuentas: socios', () => {
       'nickname_taken',
     );
     expect((await trash()).members.some((m) => m.user_id === dup.id)).toBe(true);
+  });
+
+  it('si su número ya es de otra persona, vuelve con uno nuevo, el Admin lo ve y queda auditado (T300)', async () => {
+    const back = await ctx.member('papelera-numero');
+    const backNick = nick('Papelera Num');
+    const made = (await ok(
+      back.client.rpc('save_profile', { p_nickname: backNick, p_privacy_version: POLICY }),
+    )) as unknown as { member_number: number };
+    const oldNumber = Number(made.member_number);
+    await ok(admin.client.rpc('admin_delete_member', { p_user: back.id, p_reason: 'numero T300' }));
+    // Con su Carnet en la papelera, su número queda libre: otra persona se lo queda.
+    const taker = await ctx.member('papelera-numero-otro');
+    await ok(
+      taker.client.rpc('save_profile', {
+        p_nickname: nick('Papelera Toma'),
+        p_privacy_version: POLICY,
+      }),
+    );
+    await ok(
+      admin.client.rpc('admin_set_member_number', {
+        p_user: taker.id,
+        p_number: oldNumber,
+        p_reason: 'prueba T300',
+      }),
+    );
+    // La papelera lo avisa antes de devolver.
+    const listed = (await trash()).members.find((m) => m.user_id === back.id);
+    expect(listed).toMatchObject({ member_number: oldNumber, number_taken: true });
+
+    // Ni un socio ni anon lo devuelven.
+    await expectRejected(fan.client.rpc('admin_restore_member', { p_user: back.id }), 'forbidden');
+    await expectDenied(ctx.anon.rpc('admin_restore_member', { p_user: back.id }));
+
+    const r = (await ok(
+      admin.client.rpc('admin_restore_member', { p_user: back.id, p_reason: 'devuelto T300' }),
+    )) as unknown as RestoredMember;
+    expect(r).toMatchObject({
+      user_id: back.id,
+      restored: true,
+      nickname: backNick,
+      previous_member_number: oldNumber,
+      renumbered: true,
+    });
+    expect(r.member_number).not.toBe(oldNumber);
+    expect(await carnetOf(back.id)).toEqual([
+      { nickname: backNick, member_number: r.member_number },
+    ]);
+    expect(await carnetOf(taker.id)).toEqual([
+      { nickname: nick('Papelera Toma'), member_number: oldNumber },
+    ]);
+    expect((await trash()).members.some((m) => m.user_id === back.id)).toBe(false);
+    const audit = await ok(
+      ctx.service
+        .from('audit_log')
+        .select('actor_id, action, reason, old_value, new_value')
+        .eq('entity_id', back.id)
+        .eq('action', 'restore_member'),
+    );
+    expect(audit).toEqual([
+      {
+        actor_id: admin.id,
+        action: 'restore_member',
+        reason: 'devuelto T300',
+        old_value: { member_number: oldNumber },
+        new_value: {
+          nickname: backNick,
+          member_number: r.member_number,
+          previous_member_number: oldNumber,
+        },
+      },
+    ]);
+    // Devolver uno cuyo número sigue libre no lo cambia (como antes).
+    const keep = await ctx.member('papelera-numero-libre');
+    const kept = (await ok(
+      keep.client.rpc('save_profile', {
+        p_nickname: nick('Papelera Libre'),
+        p_privacy_version: POLICY,
+      }),
+    )) as unknown as { member_number: number };
+    await ok(admin.client.rpc('admin_delete_member', { p_user: keep.id, p_reason: 'libre T300' }));
+    expect((await trash()).members.find((m) => m.user_id === keep.id)?.number_taken).toBe(false);
+    const same = (await ok(
+      admin.client.rpc('admin_restore_member', { p_user: keep.id }),
+    )) as unknown as RestoredMember;
+    expect(same).toMatchObject({
+      member_number: Number(kept.member_number),
+      previous_member_number: Number(kept.member_number),
+      renumbered: false,
+    });
   });
 });
 

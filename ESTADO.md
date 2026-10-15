@@ -4,6 +4,53 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T300: Accounts and progress leftovers
+
+Sólo con cuentas (Supabase). En modo local (D-20) nada cambia.
+
+Qué existe:
+- **Sesión caducada → otra cuenta no se queda con lo del invitado** (`apps/web/lib/account/guest-claim.ts`).
+  Regla: lo del invitado de un dispositivo pasa sólo a la **primera cuenta que entra en él** desde la
+  última vez que se puso de cero. Se apunta en `boia.invitado.cuenta` al entrar (aunque el invitado no
+  tuviera nada: lo jugado después con la sesión caducada es casi seguro de esa persona). La misma cuenta
+  vuelve a entrar → se fusiona como siempre (`merge_guest`, ids estables). Otra cuenta → no se fusiona
+  nada y la hoja de acceso no le propone el apodo/avatar del Carnet del invitado. «Cerrar sesión» y
+  borrar la cuenta quitan la marca (`resetDevice`, no es una preferencia), así que la siguiente cuenta
+  vuelve a ser la primera. Sin almacenamiento (modo privado), como la primera vez. Usado en
+  `sign-in-sheet.tsx` (`afterVerify` y el apodo propuesto).
+- **Logros secretos y barco del after en el servidor** (migración
+  `supabase/migrations/20261015100700_secret_prizes_member_restore.sql`, aplicada a `boia-planet-dev`):
+  el cosmético `barco-after` (ship, sin precio, muestra) con `unlock_achievement = siempre-hay-after`;
+  la tabla `private.achievement_prizes` (logros con tope propio: `siempre-hay-after` 150 puntos / 500
+  monedas, que pasaba del tope por logro de 300/50 y se rechazaba con `limit_action`); un logro de la
+  tabla se cobra una sola vez (política `once`) y no cuenta ni gasta el tope diario de la acción.
+  `private.award_points` redefinida con eso, nada más cambia. Los otros secretos (fiestera-bailando,
+  salto-mortal, gaviota-pillada, capeaste-temporal, horoscopado) ya cabían.
+- **Devolver de la papelera a un socio cuyo número ya es de otra persona**: vuelve con el siguiente
+  número (`private.next_member_number`), la auditoría `restore_member` guarda el nuevo y
+  `previous_member_number` (y `old_value.member_number`), y la respuesta dice `renumbered`.
+  `admin_list_trash` marca `number_taken` en cada socio; la papelera del Admin (`app/admin/real/papelera.tsx`)
+  lo avisa antes de devolver y, al devolver, dice el número nuevo (textos `admin.real.trash.numberTaken`,
+  `admin.real.trash.renumbered`, muestra). Tipos en `packages/db/src/rpc.ts` (`RestoredMember`).
+- Lista de producción (`docs/propuestas/2026-10-03-produccion-supabase.md`): «Del plan 032» con la
+  migración y cómo comprobarla. `docs/spec/estado.md`: notas en REQ-IDE-006 y REQ-ADM-030.
+
+Comandos:
+- `pnpm --filter @boia/db db:migrate:dev -- --no-seed` (dev, nvmonevzfngtusecvwby) → 1 aplicada (20261015100700), exit 0
+- `pnpm test:supabase secret-prizes trash` (dev) → 2 archivos, 12 pass, exit 0
+- `pnpm exec vitest run apps/web/lib/account` → 12 archivos, 98 pass (incluye `guest-claim.test.ts`: caduca → otra cuenta no fusiona; la primera y la misma sí; cerrar sesión quita la marca)
+- `packages/store/src/secret-prizes-sql.test.ts`: todo logro del catálogo cabe en el tope del servidor, el del after tiene exactamente su premio, cada cosmético de logro está en el SQL con su logro
+- Test command: vitest 339 archivos / 3028 pass, 3 skip, exit 0; `checks.sh` exit 0; lint exit 0; build exit 0 (landing 199.3 / 200 kB); typecheck exit 0
+- `pnpm test:supabase` completo (dev) → 31 archivos, 216 pass, exit 0; 0 cuentas de prueba quedan
+
+Pendiente:
+- El orquestador aplica la migración a producción antes del push.
+- Cifras del after (`AFTER_COINS`, `AFTER_POINTS`) siguen en muestra: si cambian, cambiar también la fila de `private.achievement_prizes` (la prueba `secret-prizes-sql.test.ts` lo avisa).
+
+Probar a mano (con cuentas, `pnpm dev` con `.env.local` de dev):
+- Entra con A, deja caducar la sesión (o bórrala del almacenamiento sin «Cerrar sesión»), juega como invitado, entra con B: B no recibe nada del invitado ni ve el apodo de A propuesto. Entra con A otra vez: lo jugado se fusiona.
+- /admin → Papelera con un socio borrado cuyo nº se dio a otro («Cambiar nº»): aviso «Su nº N ya es de otra persona…»; «Devolver» → «… vuelve con el nº M».
+
 ## 2026-10-15 — plan 031 T297: «¿Eres uno de estos?» con el enlace general, aprobado por el Admin
 
 Qué existe:

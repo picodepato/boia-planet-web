@@ -45,6 +45,7 @@ import {
   subscribeGate,
 } from './gate';
 import { guestMergePayload, guestPrefill } from './guest';
+import { guestOwner, guestPayloadFor } from './guest-claim';
 import { type MergeSummary, isEmptyPayload, isEmptySummary, mergeSummary } from './merge';
 import {
   accountSnapshot,
@@ -231,9 +232,11 @@ function SignInSheet({ request }: { request: GateRequest }) {
     return () => before?.focus?.({ preventScroll: true });
   }, []);
 
-  // El apodo del Carnet de este navegador, si quien llama no dio otro.
+  // El apodo del Carnet de este navegador, si quien llama no dio otro. Si
+  // ya entró una cuenta en este dispositivo, ese Carnet es suyo (T300): no
+  // se propone a quien entre ahora.
   useEffect(() => {
-    if (request.prefill?.nickname) return;
+    if (request.prefill?.nickname || guestOwner() !== null) return;
     let alive = true;
     void guestPrefill().then(
       (p) => {
@@ -327,7 +330,9 @@ function SignInSheet({ request }: { request: GateRequest }) {
   async function afterVerify() {
     let merged: MergeSummary | null = null;
     try {
-      const payload = await guestMergePayload();
+      // Sólo a la primera cuenta que entra en este dispositivo (T300).
+      const uid = accountSnapshot().userId;
+      const payload = uid ? await guestPayloadFor(uid, guestMergePayload, {}) : {};
       if (!isEmptyPayload(payload)) merged = mergeSummary(payload, await mergeGuest(payload));
     } catch (e) {
       console.warn('[boia] no se pudo pasar lo del invitado a la cuenta', e);

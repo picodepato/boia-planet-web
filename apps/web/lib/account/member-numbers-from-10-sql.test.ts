@@ -51,10 +51,17 @@ describe('el contador de socios con cuentas empieza en el 10 (T282)', () => {
 
   it('es la última migración que toca el contador', () => {
     const later = readdirSync(MIGRATIONS).filter((f) => f > FILE);
+    // Devolver de la papelera (plan 032 T300) sólo llama a la función.
+    const RESTORE = '20261015100700_secret_prizes_member_restore.sql';
     for (const f of later) {
-      expect(readFileSync(new URL(f, MIGRATIONS), 'utf8'), f).not.toMatch(
-        /next_member_number|member_counter|set member_number/,
-      );
+      const text = readFileSync(new URL(f, MIGRATIONS), 'utf8');
+      if (f === RESTORE) {
+        expect(text, f).not.toMatch(
+          /function private\.next_member_number|member_counter|set member_number/,
+        );
+        continue;
+      }
+      expect(text, f).not.toMatch(/next_member_number|member_counter|set member_number/);
     }
   });
 });

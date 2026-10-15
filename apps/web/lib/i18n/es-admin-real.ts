@@ -161,6 +161,10 @@ export const esAdminReal = {
   'admin.real.trash.restoreReason': 'devuelto desde la papelera del Admin',
   'admin.real.trash.memberRestored': 'Socio devuelto: su Carnet vuelve a verse y puede entrar.',
   'admin.real.trash.eventRestored': 'Fiesta devuelta.',
+  'admin.real.trash.numberTaken':
+    'Su nº {number} ya es de otra persona: al devolverlo tendrá un número nuevo.',
+  'admin.real.trash.renumbered':
+    '{nickname} vuelve con el nº {number}: su nº {previous} ya era de otra persona. Queda en la auditoría.',
   'admin.real.trash.purge': 'Purgar lo caducado',
   'admin.real.trash.purgeDone': 'Purga hecha.',
   'admin.real.trash.purged':
