@@ -74,7 +74,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: daily funnel counters (migration 20261015101100, dev only) via anon `funnel_hit` gated by `analytics_enabled`, once per visit (sessionStorage), «Embudo» Admin panel 7/30 days, PostHog removed (code, CSP, docs) → aee8ce0
 
 ## T302 — Tested backup restore, and host parity checks the accounts mode
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: sonnet
 - Skills: none
@@ -85,7 +85,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - the dev restore ran: before/after row counts per table and Storage file counts recorded in the ESTADO section, equal
   - unit tests for check-hosts: same mode passes, different mode fails, missing field warns → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: Node restore tools in `tools/backup/` (refuse production, preflight before wipe, pg_dump 17.6 `\restrict` lines handled) + guide, dev restore along the guide equal (63 tables, 4276 rows, 3 files); `/version.json` carries `accounts`/`accountsRef`, check-hosts fails on mismatch; Opus audit found 2 blocking + 5 minor, all fixed → 7359a2d
 
 ## T303 — Code cleanup: loose strings to i18n, a lint rule, prettier, the flaky test, the stale «faro»
 - Status: pending
@@ -131,8 +131,11 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T301: once-per-visit record in sessionStorage (`boia.embudo.visita`, step names only); plain fetch with the public key, no supabase-js, no session; server also checks `analytics_enabled`; days in Europe/Madrid; admin reads 1–90 days; demo counters in localStorage `boia.embudo`; PostHog removed from CSP, `.env.example`, README, DESPLIEGUE (agent)
 - 2026-10-15 T304 extended: REQ-ARQ-019 spec text (PostHog → own counters) (orchestrator)
 - 2026-10-15 T299: WebGL loss handled by `GlWatch` reusing the landing rules; map labels needed no code change (T279/T280 layout already fine), only a guard e2e; «(ni la carta)» test was wrong, not the app (agent; Opus audit ok)
+- 2026-10-15 T302: no pg_dump/psql on the machine → Node tools (`restore.mjs`, `dump.mjs`, `counts.mjs`); tested route = new project with migrations, then `--skip-schema`; `--wipe --confirm-ref` only if the target has accounts/Storage (agent; Opus audit fixes)
 
 ## Proposals (new scope)
+- 2026-10-15 T302: try the restore once with a real nightly backup (pg_dump 17.6 `schema.sql` untried against Postgres); restoring production is Álvaro's step with the guide
+- 2026-10-15 T302: dev dump and counts kept in `C:\Users\alvar\boia-backups-dev` (outside the repo, contains dev data)
 - 2026-10-15 T299: lock-screen/app-switch on a real phone not tested (only emulated with WEBGL_lose_context): add to Álvaro's hand test
 - 2026-10-15 T301: privacy text «Medición de visitas: apagada en esta versión» becomes wrong when Álvaro turns the switch on: new wording is Álvaro's call
 - 2026-10-15 T301: unused `NEXT_PUBLIC_POSTHOG_*` variables on Vercel/Cloudflare can be removed (Álvaro); D-04 still says PostHog
@@ -153,3 +156,5 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T299 agent done (ccbd8d1); Opus audit launched · agent a7f3547240d016578
 - 2026-10-15 T302 launched · attempt 1 · agent a83a27b0615fc5c32 (sonnet)
 - 2026-10-15 T299 done · merged 64078b8
+- 2026-10-15 T302 Opus audit · agent acd8f8ae718f5b37b · fix-needed, fixed by the same agent (4065733)
+- 2026-10-15 T302 done · merged 7359a2d
