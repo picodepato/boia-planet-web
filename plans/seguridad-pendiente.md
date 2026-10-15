@@ -10,7 +10,7 @@ esté hecha (o pedíselo al orquestador).
 
 ## Urgente
 
-- [ ] **Copia de seguridad diaria de Supabase.** El workflow
+- [x] **Copia de seguridad diaria de Supabase.** (2026-10-15: secretos puestos, ejecución manual en verde) El workflow
       `supabase-backup` falla todas las noches desde al menos el 2026-10-11:
       no hay ninguna copia. GitHub → Settings → Secrets and variables →
       Actions → Secrets: `SUPABASE_DB_URL` (la misma línea del Session pooler
@@ -24,9 +24,12 @@ esté hecha (o pedíselo al orquestador).
 - [ ] **Verificación en dos pasos** en: el Gmail personal (dueño de
       Porkbun y Cloudflare), Porkbun, Cloudflare, GitHub (`picodepato`),
       Supabase, Vercel y Brevo. Es lo que más protege de perder el dominio.
-- [ ] **Supabase:** confirmar que `admin@boiaplanet.net` es **Owner** (no
-      sólo miembro) en Organization settings → Team.
-- [ ] **Porkbun:** la tarjeta del auto-renew no caduca antes de 2027-10-12.
+      2026-10-15: hecho en Gmail, Porkbun, Cloudflare y Supabase. GitHub,
+      Vercel y Brevo quedan sin 2FA a propósito (decisión de Álvaro).
+- [x] **Supabase:** confirmar que `admin@boiaplanet.net` es **Owner** (no
+      sólo miembro) en Organization settings → Team. (2026-10-15: es Owner;
+      MFA activado también en esa cuenta.)
+- [x] **Porkbun:** la tarjeta del auto-renew no caduca antes de 2027-10-12.
 
 ## Encender las cuentas (Carnet con email y código)
 
@@ -37,17 +40,24 @@ esté hecha (o pedíselo al orquestador).
 
 ## Avisos
 
-- [ ] **Cloudflare → Notifications → Add:** avisos de builds fallidos de
+- [x] **Cloudflare → Notifications → Add:** avisos de builds fallidos de
       Workers y, si aparece, de uso de Workers cerca del límite gratuito
       (100.000 peticiones al día).
+      2026-10-15: la cuenta gratis no ofrece avisos de Workers ni de builds.
+      Lo cubre el workflow `hosts-parity` (cada 6 h compara los dos hosts;
+      si el build de Cloudflare falla, sale rojo y GitHub avisa por correo).
 
 ## Con secreto nuevo (decide Álvaro)
 
-- [ ] **Uso mensual automático de la clave SMTP de Brevo** (si pasa 90 días
+- [x] **Uso mensual automático de la clave SMTP de Brevo** (si pasa 90 días
       sin usarse, Gmail deja de poder enviar desde `hola@`). Hace falta poner
       la clave SMTP como secreto en GitHub; con eso, una tarea de un plan
       añade un workflow que manda un correo de prueba al mes. Mientras no
       esté, el plan 028 abre un recordatorio mensual.
+      2026-10-15: clave nueva `gmail-y-github` en Gmail «Enviar como» y en
+      GitHub (`BREVO_SMTP_LOGIN`, `BREVO_SMTP_KEY`). Falta la tarea de código:
+      un workflow mensual que envíe un correo de prueba con esos secretos
+      (próximo plan).
 
 ## Correo
 
