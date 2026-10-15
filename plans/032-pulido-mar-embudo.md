@@ -31,7 +31,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: gentle waves + boat rocking behind `LIVELY_SEA` (waves.ts), off on low preset, minimap movable from Ajustes, no measurable FPS cost; REQ-MUN-021 HECHO, MUN-003 PARCIAL until Álvaro reviews → 005233d
 
 ## T299 — /mar and phones: lost 3D, cut notices, map labels, the 🪪 box
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T298
 - Model: sonnet
 - Skills: none
@@ -59,7 +59,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: guest data merges only into the first account since the last reset; server accepts the after boat/secret prizes (migration 20261015100700, dev only); trashed members with a reused number restore with a new number → 65546bb
 
 ## T301 — Our own funnel counters and the «Embudo» panel
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -71,7 +71,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - `pnpm test:supabase` (dev): anon can increment allowed events only; anon/member cannot read counts; admin can → pass
   - `node scripts/landing-budget.mjs` → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: daily funnel counters (migration 20261015101100, dev only) via anon `funnel_hit` gated by `analytics_enabled`, once per visit (sessionStorage), «Embudo» Admin panel 7/30 days, PostHog removed (code, CSP, docs) → aee8ce0
 
 ## T302 — Tested backup restore, and host parity checks the accounts mode
 - Status: pending
@@ -107,7 +107,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Depends on: T298, T299, T300, T301, T302, T303
 - Model: haiku
 - Skills: none
-- Goal: The ~15 REQs in `docs/spec/estado.md` marked PARCIAL only because no test names them: find each, check it is really built, add or rename a test that names the REQ (or link the existing proof), and move it to HECHO; leave honest notes on the ones that are not. Then rewrite `docs/TRASPASO.md` to today (one screen): accounts mode live on both hosts since 2026-10-14, Cloudflare public + Vercel copy, plans 027–032 summary, current counts, what remains, what depends on Álvaro (P-questions still open, security checklist pending), and fix stale lines (the box-office rule is already editable in the Admin since plan 019 T215; P20 moot; P7 done).
+- Goal: The ~15 REQs in `docs/spec/estado.md` marked PARCIAL only because no test names them: find each, check it is really built, add or rename a test that names the REQ (or link the existing proof), and move it to HECHO; leave honest notes on the ones that are not. Then rewrite `docs/TRASPASO.md` to today (one screen): accounts mode live on both hosts since 2026-10-14, Cloudflare public + Vercel copy, plans 027–032 summary, current counts, what remains, what depends on Álvaro (P-questions still open, security checklist pending), and fix stale lines (the box-office rule is already editable in the Admin since plan 019 T215; P20 moot; P7 done). Also update REQ-ARQ-019 in `docs/spec/08-arquitectura-y-datos.md` and `09-requisitos.md`: PostHog was replaced by our own Supabase counters (T301, Álvaro 2026-10-15; D-04 in DECISIONES still says PostHog: do not edit it, flag it for Álvaro).
 - Context: `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`, `docs/DECISIONES.md` (read only), top of `ESTADO.md`, `plans/027`–`032`, `CLAUDE.md`.
 - Scope: may touch tests (names/REQ tags, small new tests), `docs/spec/estado.md`, `docs/TRASPASO.md`, `README.md` if stale / must not change app behaviour, must not edit `docs/DECISIONES.md`.
 - Done when:
@@ -128,8 +128,12 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T300: restored member with a taken number gets the next number; audit row has old/new; Admin trash warns `number_taken` (agent)
 - 2026-10-15 T298: switch `LIVELY_SEA` in `apps/web/app/mar/engine/waves.ts`; waves not compiled on low preset, flat with reduced motion and in map view, up to +50% with wind; boat does not rock airborne; camera ignores waves; minimap moved via Ajustes → «Mover el minimapa» (drag/tap swaps sides, saved in `boia.mar.minimapa.zona`), back to the left in Cañón/Castillo (agent)
 - 2026-10-15 T299 extended with the pre-existing failing chart part of `mar-hud.spec.ts` and the REQ-MUN-021 criterion text (orchestrator)
+- 2026-10-15 T301: once-per-visit record in sessionStorage (`boia.embudo.visita`, step names only); plain fetch with the public key, no supabase-js, no session; server also checks `analytics_enabled`; days in Europe/Madrid; admin reads 1–90 days; demo counters in localStorage `boia.embudo`; PostHog removed from CSP, `.env.example`, README, DESPLIEGUE (agent)
+- 2026-10-15 T304 extended: REQ-ARQ-019 spec text (PostHog → own counters) (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-15 T301: privacy text «Medición de visitas: apagada en esta versión» becomes wrong when Álvaro turns the switch on: new wording is Álvaro's call
+- 2026-10-15 T301: unused `NEXT_PUBLIC_POSTHOG_*` variables on Vercel/Cloudflare can be removed (Álvaro); D-04 still says PostHog
 - 2026-10-15 T298: Boia tip «mantenlo pulsado para moverlo» (es-zonas, es-mundo, es-juego, skins) was already wrong (long press opens the map); approved text, new wording is Álvaro's call
 - 2026-10-15 T298: floating props on the open sea can dip ~0.4 units into a wave trough
 - 2026-10-15 T300: security checklist: `private.award_points`, `merge_guest` and similar are granted to `authenticated` with a `p_user` parameter, safe only while `private` is not exposed
@@ -142,3 +146,5 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T300 done · merged 65546bb
 - 2026-10-15 T301 launched · attempt 1 · agent afec63d06fce2b83d (opus)
 - 2026-10-15 T298 done · merged 005233d
+- 2026-10-15 T299 launched · attempt 1 · agent a7876f109fdc35a73 (sonnet)
+- 2026-10-15 T301 done · merged aee8ce0
