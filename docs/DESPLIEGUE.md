@@ -43,8 +43,11 @@ git push origin main
 - **Comprobar que sirven lo mismo:**
   `pnpm check:hosts https://boiaplanet.net https://boia-planet-roan.vercel.app`
   compara el commit de `/version.json` (lo escribe
-  `apps/web/scripts/version.mjs` en cada build) y pide `/`, `/mar` (con CSP) y
-  `/art/barco/manifest.json`. Sale con 0 si todo coincide. Lo mismo corre solo
+  `apps/web/scripts/version.mjs` en cada build), el modo de cuentas (el campo
+  `accounts` de `/version.json`: `on` si el build lleva Supabase, `off` si es
+  local, y `accountsRef`, el proyecto; sin claves) y pide `/`, `/mar` (con CSP) y
+  `/art/barco/manifest.json`. Sale con 0 si todo coincide; falla si un host sirve cuentas y el otro no (o
+  de otro proyecto de Supabase), y sólo avisa si un host aún no trae el campo. Lo mismo corre solo
   cada 6 h en GitHub (`.github/workflows/hosts-parity.yml`) con las variables
   del repo `PUBLIC_URL` y `BACKUP_URL` (Settings → Secrets and variables →
   Actions → pestaña «Variables»). Justo después de un push los dos pueden ir

@@ -45,8 +45,36 @@ function gitHead() {
 }
 
 /**
- * El contenido de `/version.json`: `{ sha, shortSha, builtAt, source }`.
- * `source` dice de dónde salió el commit (la variable, `git` o `unknown`).
+ * El modo de cuentas del build (plan 032 T302), con la misma regla que
+ * `lib/supabase/config.ts`: hay Supabase si están `NEXT_PUBLIC_SUPABASE_URL`
+ * (https, o localhost) y `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Devuelve
+ * `{ accounts: 'on' | 'off', accountsRef }`; la referencia es el subdominio
+ * de supabase.co (público: va en el JavaScript de la web), nunca una clave.
+ */
+export function accountsMode(env = process.env) {
+  const off = { accounts: 'off', accountsRef: null };
+  const url = String(env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
+  const key = String(env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+  if (!url || !key) return off;
+  let host;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') {
+      return off;
+    }
+    host = u.hostname;
+  } catch {
+    return off;
+  }
+  const m = /^([a-z0-9]{20})\.supabase\.(?:co|in)$/.exec(host);
+  return { accounts: 'on', accountsRef: m ? m[1] : null };
+}
+
+/**
+ * El contenido de `/version.json`: `{ sha, shortSha, builtAt, source,
+ * accounts, accountsRef }`. `source` dice de dónde salió el commit (la
+ * variable, `git` o `unknown`); `accounts`, si el build lleva el modo de
+ * cuentas (`on`) o el local (`off`).
  */
 export function buildVersion({ env = process.env, git = gitHead, now = new Date() } = {}) {
   let sha = '';
@@ -76,6 +104,7 @@ export function buildVersion({ env = process.env, git = gitHead, now = new Date(
     shortSha: sha === 'unknown' ? sha : sha.slice(0, 7),
     builtAt: now.toISOString(),
     source,
+    ...accountsMode(env),
   };
 }
 

@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 // @ts-expect-error: script de Node sin tipos
-import { CHECKS, checkHost, evaluate, main, normalizeBase } from './check-hosts.mjs';
+import { CHECKS, checkHost, evaluate, formatReport, main, normalizeBase } from './check-hosts.mjs';
 // @ts-expect-error: script de Node sin tipos
-import { SHA_ENV_VARS, buildVersion } from './version.mjs';
+import { SHA_ENV_VARS, accountsMode, buildVersion } from './version.mjs';
 
 /**
  * Marca de versión y paridad de hosts (plan 027 T263): `/version.json` sale del
@@ -31,8 +31,30 @@ describe('version.mjs: el commit del build', () => {
         shortSha: 'ccccccc',
         builtAt: NOW.toISOString(),
         source: name,
+        accounts: 'off',
+        accountsRef: null,
       });
     }
+  });
+
+  it('accountsMode: "on" sólo con URL (https) y clave; no expone la clave', () => {
+    const ref = 'abcdefghijklmnopqrst';
+    const on = accountsMode({
+      NEXT_PUBLIC_SUPABASE_URL: `https://${ref}.supabase.co`,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_secretish',
+    });
+    expect(on).toEqual({ accounts: 'on', accountsRef: ref });
+    expect(JSON.stringify(on)).not.toContain('secretish');
+    expect(accountsMode({})).toEqual({ accounts: 'off', accountsRef: null });
+    expect(accountsMode({ NEXT_PUBLIC_SUPABASE_URL: `https://${ref}.supabase.co` }).accounts).toBe(
+      'off',
+    );
+    expect(
+      accountsMode({
+        NEXT_PUBLIC_SUPABASE_URL: 'http://x.example',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'k',
+      }).accounts,
+    ).toBe('off');
   });
 
   it('sin variable (o con una que no es un commit), sale de git', () => {
@@ -75,9 +97,16 @@ function fakeFetch(hosts: Record<string, Record<string, Route | Error>>) {
 }
 
 const CSP = { 'content-security-policy': "default-src 'self'" };
-function healthy(sha: string, extra: Record<string, Route | Error> = {}) {
+function healthy(
+  sha: string,
+  extra: Record<string, Route | Error> = {},
+  mode: Record<string, unknown> = { accounts: 'off', accountsRef: null },
+) {
   return {
-    '/version.json': { status: 200, body: JSON.stringify({ sha, builtAt: NOW.toISOString() }) },
+    '/version.json': {
+      status: 200,
+      body: JSON.stringify({ sha, builtAt: NOW.toISOString(), ...mode }),
+    },
     '/': { status: 200, body: '<html>', headers: CSP },
     '/mar': { status: 200, body: '<html>', headers: CSP },
     [CHECKS.find((c: { name: string }) => c.name === 'art').path]: {
@@ -106,7 +135,13 @@ describe('check-hosts.mjs: paridad', () => {
 
   it('coinciden: mismo commit, todo 200 con CSP → bien', async () => {
     const { results, verdict, fetch } = await run({ [PUB]: healthy(SHA_A), [BAK]: healthy(SHA_A) });
-    expect(verdict).toEqual({ ok: true, sha: SHA_A, problems: [] });
+    expect(verdict).toEqual({
+      ok: true,
+      sha: SHA_A,
+      accounts: 'off',
+      problems: [],
+      warnings: [],
+    });
     expect(results[0].checks.find((c: { name: string }) => c.name === 'home').csp).toBe(true);
     // version.json lleva una marca contra cachés.
     expect(fetch.mock.calls.some(([u]) => String(u).endsWith('/version.json?t=1'))).toBe(true);
@@ -121,6 +156,44 @@ describe('check-hosts.mjs: paridad', () => {
     expect(verdict.ok).toBe(false);
     expect(verdict.sha).toBeUndefined();
     expect(verdict.problems.join('\n')).toMatch(/commits distintos/);
+  });
+
+  it('mismo modo de cuentas (on con el mismo proyecto) → bien', async () => {
+    const on = { accounts: 'on', accountsRef: 'abcdefghijklmnopqrst' };
+    const { verdict, results } = await run({
+      [PUB]: healthy(SHA_A, {}, on),
+      [BAK]: healthy(SHA_A, {}, on),
+    });
+    expect(verdict).toMatchObject({ ok: true, accounts: 'on', warnings: [] });
+    expect(formatReport(results, verdict)).toMatch(/mismo modo de cuentas.*on/);
+  });
+
+  it('modo de cuentas distinto (on en uno, off en el otro) → falla', async () => {
+    const on = { accounts: 'on', accountsRef: 'abcdefghijklmnopqrst' };
+    const { verdict } = await run({ [PUB]: healthy(SHA_A, {}, on), [BAK]: healthy(SHA_A) });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.accounts).toBeUndefined();
+    expect(verdict.problems.join('\n')).toMatch(/modo de cuentas distinto/);
+  });
+
+  it('cuentas on pero de proyectos distintos → falla', async () => {
+    const { verdict } = await run({
+      [PUB]: healthy(SHA_A, {}, { accounts: 'on', accountsRef: 'a'.repeat(20) }),
+      [BAK]: healthy(SHA_A, {}, { accounts: 'on', accountsRef: 'b'.repeat(20) }),
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.problems.join('\n')).toMatch(/proyecto de cuentas distinto/);
+  });
+
+  it('falta el campo accounts en un host (build anterior) → avisa, no falla', async () => {
+    const { verdict, results } = await run({
+      [PUB]: healthy(SHA_A, {}, {}),
+      [BAK]: healthy(SHA_A),
+    });
+    expect(verdict.ok).toBe(true);
+    expect(verdict.warnings.join('\n')).toContain(PUB);
+    expect(verdict.warnings.join('\n')).toMatch(/accounts/);
+    expect(formatReport(results, verdict)).toMatch(/aviso:/);
   });
 
   it('.well-known en un host y no en el otro → falla', async () => {

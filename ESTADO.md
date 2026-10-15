@@ -4,6 +4,107 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T302: Tested backup restore, and host parity checks the accounts mode
+
+REQ-ARQ-013. Dos partes: una restauración de la copia probada de verdad (sólo
+en el proyecto de desarrollo `boia-planet-dev`), y `check:hosts` que ahora
+exige el mismo modo de cuentas en los dos hosts.
+
+### Qué existe
+
+- `tools/backup/restore.mjs`: restaura una copia de `supabase-backup.yml`
+  (`.tar.gz.gpg` o carpeta) en un proyecto Supabase. Descifra con GPG
+  (`BACKUP_PASSPHRASE`), comprueba `SHA256SUMS`, carga `schema.sql` (si el
+  destino es nuevo y la copia lo trae), `auth.sql` y `data.sql` en UNA
+  transacción con `session_replication_role = replica`, sube `storage/` por la
+  API de Storage y compara filas por tabla, objetos de Storage y tres SHA-256.
+  Sin `psql`: lee los bloques `COPY … FROM stdin` y los carga con INSERT. Se
+  niega a tocar producción (`kzxdywtysrcnqqjfhhnc`), a cargar sobre un destino
+  con datos y a `--wipe` sin `--confirm-ref <ref>`.
+- `tools/backup/dump.mjs`: copia con el mismo formato desde Node (sin
+  `pg_dump`, que no hay en esta máquina); no lleva `schema.sql`.
+- `tools/backup/counts.mjs`: filas por tabla y archivos de Storage (tamaño y
+  SHA-256) en JSON, y `--diff antes despues`.
+- `tools/backup/lib.mjs`: formato COPY, `SHA256SUMS`, guarda de producción.
+- Guía: `docs/propuestas/2026-10-08-backups.md`, secciones «Restaurar»
+  (camino A con la herramienta, camino B con `psql`) y «Probar la
+  restauración».
+- `apps/web/scripts/version.mjs`: `/version.json` lleva `accounts` (`on` /
+  `off`) y `accountsRef` (el subdominio de supabase.co, público; ninguna
+  clave), con la misma regla que `lib/supabase/config.ts`.
+- `apps/web/scripts/check-hosts.mjs`: falla si los hosts difieren en `accounts`
+  o, con cuentas `on`, en `accountsRef`; si falta el campo en algún host
+  (build anterior) avisa y no falla. `hosts-parity.yml` no necesitó cambios
+  (sólo el comentario). `docs/DESPLIEGUE.md` y `docs/spec/estado.md` al día.
+
+### Prueba en dev (proyecto `nvmonevzfngtusecvwby`, nunca producción)
+
+1. Subí 3 archivos de prueba a los cubos (`t302-test/…` en `stamp-images`,
+   `event-photos`, `event-clips`), porque dev no tenía ninguno.
+2. `counts.mjs` antes: 63 tablas (public, private y las 3 de auth), 4130 filas
+   en 38 tablas con datos (auth.users 2, auth.identities 2, audit_log 3840…),
+   3 archivos de Storage.
+3. `dump.mjs --encrypt`: copia cifrada FUERA del repo
+   (`C:\Users\alvar\boia-backups-dev\boia-backup-20261015T013914Z.tar.gz.gpg`).
+4. Sin `--wipe`, `restore.mjs` se negó («el destino no está vacío»). Con
+   `--wipe --confirm-ref nvmonevzfngtusecvwby --skip-schema` vació dev y
+   restauró: SHA256SUMS 6 archivos OK, 4130 filas en 38 tablas, todas cuadran;
+   Storage 3 objetos (copia 3) y 3 SHA-256 iguales. Salida 0.
+5. `counts.mjs` después + `--diff`: «iguales: 63 tablas, 4130 filas, 3
+   archivos de Storage» (cada tabla y cada SHA-256, igual), salida 0.
+6. `pnpm db:migrate:dev`: 0 aplicadas de 48 (al día). `pnpm test:supabase schema`:
+   1 archivo, 9 pruebas pasan, salida 0 (la suite entera de test:supabase no se
+   esperó: tarda mucho por los límites de Auth; se cortó y solo se corrió
+   schema).
+7. Los 3 archivos de prueba se borraron de dev al acabar. Las 2 cuentas
+   auth que había en dev ya estaban antes y se restauraron.
+
+### Comandos (en este worktree)
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` →
+  343 archivos, 3071 pasan, 3 omitidas, salida 0.
+- `sh tools/spec/checks.sh` → todo OK.
+- `pnpm lint` → salida 0, 0 avisos. `pnpm typecheck` → salida 0.
+- `pnpm build` → salida 0; presupuesto de la landing 199.3 / 200.0 kB OK.
+
+### Pendiente
+
+- Restaurar una copia real de producción: paso de Álvaro con la guía (un
+  proyecto nuevo y vacío; el esquema sale de las migraciones o de `schema.sql`
+  con `psql`). `schema.sql` (de `pg_dump`) no se probó aquí: no hay `pg_dump`
+  ni `psql` en esta máquina; el camino con la herramienta lo carga igual que
+  el resto, pero lo ideal es ensayarlo con la primera copia del flujo.
+- Cuando el flujo `supabase-backup.yml` lleve secretos, ensayar la guía entera
+  con esa copia en un proyecto de pruebas.
+
+### Correcciones de la auditoría (misma tarea)
+
+- `parseDump` salta las líneas que empiezan por `\` (`\restrict`/`\unrestrict`
+  de pg_dump 17.6+); `cleanSchemaSql` las quita de `schema.sql` y quita
+  `CREATE SCHEMA public;` (falla en un proyecto Supabase nuevo). Con prueba.
+- `restore.mjs` reordenado: lee y valida la copia entera (SHA256SUMS, parseo,
+  archivos de Storage, cubos) y el destino ANTES de tocar nada; el vaciado va
+  dentro de la transacción de carga (el de Storage, después del commit). Con
+  prueba (arranca el programa con una copia mal formada y un destino
+  inalcanzable: falla al leer, no al conectar).
+- Camino documentado (migraciones y luego `--skip-schema`): ahora funciona. Con
+  el esquema ya puesto y SIN cuentas ni Storage, las filas que dejan las
+  migraciones se sustituyen por las de la copia; con cuentas o Storage hay que
+  usar `--wipe --confirm-ref`. Guía reescrita (pasos 3 y 4, camino B).
+- `assertTarget` rechaza cadenas con `?user=`, `?host=`, `hostaddr`, `service`,
+  `port`, `dbname` o `password`. Con prueba.
+- El archivo `--env` manda sobre las variables del shell, y el programa dice de
+  dónde sacó la conexión. Con prueba.
+- La prueba del workflow ahora lee `supabase-backup.yml` (`--symmetric`,
+  `AES256`, `schema.sql`, `data.sql`, `auth.sql`).
+- Repetida la restauración en dev por el camino documentado: copia de dev
+  (4276 filas en 38 tablas, 3 archivos de Storage), dev dejado «como recién
+  migrado» (sin cuentas ni Storage, con las tablas web llenas), `restore.mjs
+  --skip-schema` SIN `--wipe`: todas las tablas cuadran, 3 SHA-256 iguales,
+  `counts --diff` → «iguales: 63 tablas, 4276 filas, 3 archivos de Storage».
+  Los 3 archivos de prueba se borran de dev al final. La copia está fuera del
+  repo (`C:\Users\alvar\boia-backups-dev`).
+
 ## 2026-10-15 — plan 032 T299: /mar and phones
 
 Qué existe:

@@ -9,7 +9,11 @@
  * - un manifiesto del arte estático (`/art/…/manifest.json`): 200 y JSON;
  * - `/.well-known/assetlinks.json` si existe (404 en todos = no hay; si unos
  *   lo tienen y otros no, es una diferencia).
- * Al final compara los commits: tienen que ser el mismo en todas las URL.
+ * Al final compara los commits: tienen que ser el mismo en todas las URL, y
+ * también el modo de cuentas (`accounts`: `on` con Supabase, `off` en local,
+ * y `accountsRef`, el proyecto; plan 032 T302): si uno sirve cuentas y el
+ * otro no, es un fallo. Si algún `/version.json` aún no lleva el campo
+ * (build anterior), avisa pero no falla.
  * Sale con 1 si algo falla o no coincide; con 2 si no se le pasa ninguna URL.
  * No se cae si la URL no responde o le falta algo: lo informa.
  *
@@ -89,7 +93,9 @@ export function judge(check, res) {
   if (check.kind === 'version') {
     const sha = typeof data.sha === 'string' ? data.sha.toLowerCase() : '';
     if (!SHA_RE.test(sha)) return { ...out, ok: false, note: `commit no válido: ${data.sha}` };
-    return { ...out, sha, builtAt: data.builtAt };
+    const accounts = data.accounts === 'on' || data.accounts === 'off' ? data.accounts : undefined;
+    const accountsRef = typeof data.accountsRef === 'string' ? data.accountsRef : null;
+    return { ...out, sha, builtAt: data.builtAt, accounts, accountsRef };
   }
   return out;
 }
@@ -103,8 +109,14 @@ export async function checkHost(url, fetchImpl = globalThis.fetch, now = Date.no
     const query = check.kind === 'version' ? `?t=${now}` : '';
     checks.push(judge(check, await request(fetchImpl, `${base}${check.path}${query}`)));
   }
-  const sha = checks.find((c) => c.name === 'version')?.sha;
-  return { url: base, sha, checks };
+  const version = checks.find((c) => c.name === 'version');
+  return {
+    url: base,
+    sha: version?.sha,
+    accounts: version?.accounts,
+    accountsRef: version?.accountsRef ?? null,
+    checks,
+  };
 }
 
 /**
@@ -124,6 +136,29 @@ export function evaluate(results) {
       `commits distintos: ${results.map((r) => `${r.url}=${r.sha?.slice(0, 7) ?? '?'}`).join(', ')}`,
     );
   }
+  // Modo de cuentas (plan 032 T302): el mismo en todos los hosts.
+  const warnings = [];
+  const withMode = results.filter((r) => r.accounts);
+  for (const r of results) {
+    if (!r.accounts && r.sha) {
+      warnings.push(
+        `${r.url}: /version.json sin el campo "accounts" (build anterior): no se compara el modo de cuentas`,
+      );
+    }
+  }
+  const modes = [...new Set(withMode.map((r) => r.accounts))];
+  if (modes.length > 1) {
+    problems.push(
+      `modo de cuentas distinto: ${withMode.map((r) => `${r.url}=${r.accounts}`).join(', ')}`,
+    );
+  } else if (modes[0] === 'on') {
+    const refs = [...new Set(withMode.map((r) => r.accountsRef ?? '?'))];
+    if (refs.length > 1) {
+      problems.push(
+        `proyecto de cuentas distinto: ${withMode.map((r) => `${r.url}=${r.accountsRef ?? '?'}`).join(', ')}`,
+      );
+    }
+  }
   for (const check of CHECKS.filter((c) => c.kind === 'optional')) {
     const present = results.map((r) => r.checks.find((c) => c.name === check.name)?.present);
     if (present.includes(true) && present.includes(false)) {
@@ -134,7 +169,9 @@ export function evaluate(results) {
   return {
     ok: problems.length === 0,
     sha: shas.length === 1 && allHaveSha ? shas[0] : undefined,
+    accounts: modes.length === 1 && withMode.length === results.length ? modes[0] : undefined,
     problems,
+    warnings,
   };
 }
 
@@ -157,6 +194,10 @@ export function formatReport(results, verdict) {
         : 'los hosts NO sirven el mismo commit (o a alguno le falta /version.json)',
     );
   }
+  if (results.length > 1 && verdict.accounts) {
+    lines.push(`mismo modo de cuentas en los ${results.length} hosts: ${verdict.accounts}`);
+  }
+  for (const w of verdict.warnings ?? []) lines.push(`aviso: ${w}`);
   lines.push(
     verdict.ok ? 'check:hosts: todo bien' : `check:hosts: ${verdict.problems.length} problema(s)`,
   );

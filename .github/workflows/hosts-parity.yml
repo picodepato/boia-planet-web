@@ -3,7 +3,8 @@
 # apps/web/scripts/check-hosts.mjs (`pnpm check:hosts`), que sólo hace GET:
 # `/version.json` (el commit del build), `/`, `/mar`, un manifiesto del arte y
 # `/.well-known/assetlinks.json` si existe. Falla si algo no responde, falta la
-# CSP o los commits no coinciden.
+# CSP, los commits no coinciden o un host sirve el modo de cuentas (campo
+# `accounts` de /version.json) y el otro no (plan 032 T302).
 #
 # Variables del repo (Settings → Secrets and variables → Actions, pestaña
 # «Variables»), las carga Álvaro:
