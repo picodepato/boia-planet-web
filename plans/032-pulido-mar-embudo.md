@@ -88,7 +88,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: Node restore tools in `tools/backup/` (refuse production, preflight before wipe, pg_dump 17.6 `\restrict` lines handled) + guide, dev restore along the guide equal (63 tables, 4276 rows, 3 files); `/version.json` carries `accounts`/`accountsRef`, check-hosts fails on mismatch; Opus audit found 2 blocking + 5 minor, all fixed → 7359a2d
 
 ## T303 — Code cleanup: loose strings to i18n, a lint rule, prettier, the flaky test, the stale «faro»
-- Status: pending
+- Status: done
 - Depends on: T299, T300, T301, T302
 - Model: sonnet
 - Skills: none
@@ -100,14 +100,14 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - `pnpm exec prettier --check .` (repo's configured scope) → exit 0
   - `pnpm test:supabase` (dev) → `admin-password` passes 5 runs in a row
   - Test command → exit 0
-- Outcome:
+- Outcome: loose strings to keys (Acuarela, leaveReaction, store notices, ~20 admin), ESLint rule `no-loose-strings` (+ attribute expressions), prettier over the repo with ESTADO/CLAUDE.md/mundos ignored, admin-password test reports Auth status (cause unconfirmed, 6+ green runs); faro kept (still read); Opus audit ok after minor fixes → a9d0a6c
 
 ## T304 — Spec and docs up to date
 - Status: pending
 - Depends on: T298, T299, T300, T301, T302, T303
 - Model: haiku
 - Skills: none
-- Goal: The ~15 REQs in `docs/spec/estado.md` marked PARCIAL only because no test names them: find each, check it is really built, add or rename a test that names the REQ (or link the existing proof), and move it to HECHO; leave honest notes on the ones that are not. Then rewrite `docs/TRASPASO.md` to today (one screen): accounts mode live on both hosts since 2026-10-14, Cloudflare public + Vercel copy, plans 027–032 summary, current counts, what remains, what depends on Álvaro (P-questions still open, security checklist pending), and fix stale lines (the box-office rule is already editable in the Admin since plan 019 T215; P20 moot; P7 done). Also update REQ-ARQ-019 in `docs/spec/08-arquitectura-y-datos.md` and `09-requisitos.md`: PostHog was replaced by our own Supabase counters (T301, Álvaro 2026-10-15; D-04 in DECISIONES still says PostHog: do not edit it, flag it for Álvaro).
+- Goal: The ~15 REQs in `docs/spec/estado.md` marked PARCIAL only because no test names them: find each, check it is really built, add or rename a test that names the REQ (or link the existing proof), and move it to HECHO; leave honest notes on the ones that are not. Then rewrite `docs/TRASPASO.md` to today (one screen): accounts mode live on both hosts since 2026-10-14, Cloudflare public + Vercel copy, plans 027–032 summary, current counts, what remains, what depends on Álvaro (P-questions still open, security checklist pending), and fix stale lines (the box-office rule is already editable in the Admin since plan 019 T215; P20 moot; P7 done). Also update REQ-ARQ-019 in `docs/spec/08-arquitectura-y-datos.md` and `09-requisitos.md`: PostHog was replaced by our own Supabase counters (T301, Álvaro 2026-10-15; D-04 in DECISIONES still says PostHog: do not edit it, flag it for Álvaro). Also correct the T303 section of ESTADO.md: it says `mundos/arcilla/mapa.json` was prettier-formatted, which was reverted (mundos/ is in .prettierignore).
 - Context: `docs/spec/estado.md`, `docs/spec/09-requisitos.md`, `tools/spec/estado.py`, `docs/TRASPASO.md`, `docs/DECISIONES.md` (read only), top of `ESTADO.md`, `plans/027`–`032`, `CLAUDE.md`.
 - Scope: may touch tests (names/REQ tags, small new tests), `docs/spec/estado.md`, `docs/TRASPASO.md`, `README.md` if stale / must not change app behaviour, must not edit `docs/DECISIONES.md`.
 - Done when:
@@ -132,8 +132,11 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T304 extended: REQ-ARQ-019 spec text (PostHog → own counters) (orchestrator)
 - 2026-10-15 T299: WebGL loss handled by `GlWatch` reusing the landing rules; map labels needed no code change (T279/T280 layout already fine), only a guard e2e; «(ni la carta)» test was wrong, not the app (agent; Opus audit ok)
 - 2026-10-15 T302: no pg_dump/psql on the machine → Node tools (`restore.mjs`, `dump.mjs`, `counts.mjs`); tested route = new project with migrations, then `--skip-schema`; `--wipe --confirm-ref` only if the target has accounts/Storage (agent; Opus audit fixes)
+- 2026-10-15 T303: `ESTADO.md`, `CLAUDE.md`, `mundos/`, `plans/`, glifos.json, next-env.d.ts in .prettierignore; products.json stays content data; faro kept in mapa.json (still read by map.ts and mundo_arcilla.py) (agent; Opus audit ok)
 
 ## Proposals (new scope)
+- 2026-10-15 T303: retire `faro` from mapa.json after migrating `packages/world/src/worlds/arcilla/map.ts` and `tools/blender/mundo_arcilla.py` reads
+- 2026-10-15 T303: a vitest test spawns Python without PYTHONUTF8=1 (cp1252 traceback printed, tests pass); `tools/` is outside eslint
 - 2026-10-15 T302: try the restore once with a real nightly backup (pg_dump 17.6 `schema.sql` untried against Postgres); restoring production is Álvaro's step with the guide
 - 2026-10-15 T302: dev dump and counts kept in `C:\Users\alvar\boia-backups-dev` (outside the repo, contains dev data)
 - 2026-10-15 T299: lock-screen/app-switch on a real phone not tested (only emulated with WEBGL_lose_context): add to Álvaro's hand test
@@ -158,3 +161,6 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T299 done · merged 64078b8
 - 2026-10-15 T302 Opus audit · agent acd8f8ae718f5b37b · fix-needed, fixed by the same agent (4065733)
 - 2026-10-15 T302 done · merged 7359a2d
+- 2026-10-15 T303 launched · attempt 1 · agent af5b685d1a7cb9b56 (sonnet)
+- 2026-10-15 T303 Opus audit · agent af822fdad5908a010 · ok with minor fixes (0d4788f)
+- 2026-10-15 T303 done · merged a9d0a6c
