@@ -14,7 +14,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 ## Tasks
 
 ## T298 — A livelier sea
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -44,7 +44,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome:
 
 ## T300 — Accounts and progress leftovers
-- Status: pending
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -55,7 +55,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - unit tests: session expires → sign in as another account → no guest/local data from the first account merges; first claim still merges → pass
   - `pnpm test:supabase` (dev): new secret achievements and the after boat are accepted on sync; restoring a trashed member with a reused number gives a new number and an audit row; member/anon cannot restore → pass
   - Test command → exit 0
-- Outcome:
+- Outcome: guest data merges only into the first account since the last reset; server accepts the after boat/secret prizes (migration 20261015100700, dev only); trashed members with a reused number restore with a new number → 65546bb
 
 ## T301 — Our own funnel counters and the «Embudo» panel
 - Status: pending
@@ -122,7 +122,16 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15: T299 after T298 (both touch /mar UI); T303 and T304 last because they sweep many files (orchestrator)
 - 2026-10-15: Push when every task is done, after applying T300/T301 migrations to production, only on Álvaro's yes (Álvaro)
 - 2026-10-15: No push until Álvaro has tried the new sea by hand (local dev server, T298's checklist) and confirmed it breaks nothing in the world; if something breaks, turn the waves switch off (or fix) before pushing (Álvaro)
+- 2026-10-15 T300: guest data merges only into the first account that signs in since the last device reset (`boia.invitado.cuenta`); another account gets no merge and no nickname suggestion (agent)
+- 2026-10-15 T300: migration 20261015100700 (dev only, listed for production): cosmetic `barco-after`, `private.achievement_prizes` (after = 150 points / 500 coins, once, outside the daily cap), `award_points` uses it (agent)
+- 2026-10-15 T300: restored member with a taken number gets the next number; audit row has old/new; Admin trash warns `number_taken` (agent)
 
 ## Proposals (new scope)
+- 2026-10-15 T300: security checklist: `private.award_points`, `merge_guest` and similar are granted to `authenticated` with a `p_user` parameter, safe only while `private` is not exposed
+- 2026-10-15 T300: restoring a member reports any other unique clash (e.g. `artist_profile_id`) as `nickname_taken`
+- 2026-10-15 T300: after prize amounts are `muestra` (Álvaro to confirm)
 
 ## Log
+- 2026-10-15 T298 launched · attempt 1 · agent a77bbe2571cd5b3b3 (opus)
+- 2026-10-15 T300 launched · attempt 1 · agent a51d8e80172ae1e65 (opus)
+- 2026-10-15 T300 done · merged 65546bb
