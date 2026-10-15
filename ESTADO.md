@@ -4,6 +4,67 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T305: Console errors in /mar
+
+Neither error comes from plan 032. No product code changed; one guard test added.
+
+### `Failed to load resource: 400`: reproduced, pre-existing, local only, harmless
+- Source: `POST https://<dev-ref>.supabase.co/auth/v1/token?grant_type=refresh_token` → 400.
+  supabase-js (`apps/web/lib/supabase/browser.ts`, `autoRefreshToken`) tries to renew a
+  stale session saved in `localStorage['boia.supabase.auth']` on the localhost:3100 origin
+  (session expired or revoked, or from the old dev project: `.env.local.dev-viejo`).
+- Reproduced exactly on the 3100 demo by seeding a dead session in a clean headless
+  browser: the same console line, with that URL. supabase-js then deletes the dead session.
+  On reload `boia.supabase.auth` is `null` and there is no 400: it happens once per stale
+  session.
+- Production never shows it: it has no Supabase variables (D-20), so there is no auth client.
+  The 3100 demo reads `apps/web/.env.local` from the main checkout (dev project, not
+  production), so it does have one. A clean browser on 3100 makes no 400 (all Supabase
+  calls 200).
+- Not plan 032: `git diff af9ac37..main` is empty for `lib/supabase/`,
+  `lib/account/session.ts`, `lib/radio/catalog.ts` and `lib/admin/shared-photos.ts` (every
+  `browserSupabase()` caller). The new funnel sink (T301) uses plain `fetch` to
+  `site_settings`/`funnel_hit`, not the auth client, and made no 400 here.
+
+### `THREE.BufferGeometry.computeBoundingSphere(): Computed radius is NaN`: not reproducible
+- Tool: a headless Playwright probe (in the session scratchpad). It collects console
+  errors/warnings with a stack, responses ≥ 400 and failed requests. It also hooks
+  `window.__THREE_DEVTOOLS__` to get every three.js scene and scans every geometry's
+  `position` for NaN every 500 ms.
+- Runs, all with 0 NaN errors and 0 NaN geometries: my worktree's demo (3150, no Supabase)
+  and the main-checkout demo (3100, dev Supabase); SwiftShader and the real GPU (ANGLE
+  D3D11, RX 6800); desktop 1280×800 and Pixel 5 360×640; 7 times of day (`clock.setFixedTime`);
+  mascots `?mascota=1|canoncito|tortuga-turbo` + `?estela=vortice`; Cañón
+  (`?minijuego=canon…&armas=1`, act 2) and Castillo (`?minijuego=castillo&islas=1`);
+  landing → «Zarpar» → /mar; clicks, drag, wheel zoom, sailing with W; a reload; Fast Refresh
+  edits to `waves.ts`/`water.ts` while /mar was open.
+- From the code: three prints this only from `BufferGeometry.computeBoundingSphere`, i.e. a
+  CPU `position` attribute with NaN. Plan 032's functional changes to /mar add no CPU
+  geometry. T298's waves lift the water in the vertex shader. On the CPU they only move the
+  boat (`rockOnWaves` → `boatRock`, an Object3D transform), and that math cannot give NaN:
+  `shoreDistance` skips NaN shores and returns Infinity with none, and
+  `shoreCalm(Infinity)` = 1. T299 `gl-watch.ts` and T301 touch no geometry. Every other
+  `engine/*` diff in `af9ac37..main` is T303 prettier/i18n reformatting.
+- So it depends on something in Álvaro's browser that a clean profile lacks (saved
+  progress/cosmetics/account, or a moment in a tab left open across the merges), or it
+  happened once. It is not reproducible from plan 032.
+- Guard: `apps/web/app/mar/engine/waves.test.ts` gets «el oleaje nunca da NaN al barco
+  (plan 032 T305)». Shore calm stays in [0, 1] with no shores, NaN shores, a zero period and
+  far coordinates. The rock stays finite for any frame amplitude and up to 1e7 s of water time.
+
+### Commands
+- `pnpm exec vitest run apps/web/app/mar/engine/waves.test.ts` → exit 0, 13 passed.
+- Test command (vitest without db, `tools/spec/checks.sh`, lint, build, typecheck) → exit 0 each: vitest 348 files, 3101 passed, 3 skipped; checks OK (295 REQ);
+  lint 0 warnings; build OK; typecheck OK.
+
+### Pending
+- If Álvaro sees the NaN line again: expand it in DevTools (the stack names the mesh's
+  module), or run `localStorage.clear()` on localhost:3100 and reload to tell whether it
+  comes from saved state. A clean session also clears the one-off 400.
+- Side note: `pnpm demo` (`next dev`) rewrites `apps/web/tsconfig.json` (adds
+  `.next-dev/types/**/*.ts`, expands the formatting). It was reverted here and is not
+  committed.
+
 ## 2026-10-15 — plan 032 T304: Spec and docs up to date
 
 - **REQ-ARQ-018 pasa a HECHO** (suite automática): nueva prueba `test_suite_automatica` en `tools/spec/test_estado.py` (nombra el REQ en su docstring) que comprueba que `pnpm test` llega a `checks.sh` y que `checks.sh` corre `estado.py`, `test_estado.py` y `check.py`. Lo de «en cada encargo» es costumbre de trabajo, no lo que la prueba mide.

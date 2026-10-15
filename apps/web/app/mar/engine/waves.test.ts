@@ -168,3 +168,50 @@ describe('el interruptor del oleaje (T298)', () => {
     }
   });
 });
+
+describe('el oleaje nunca da NaN al barco (plan 032 T305)', () => {
+  // La única cuenta del oleaje que hace la CPU mueve el barco (no hay malla
+  // de olas: la altura del agua está en el shader). Si diera NaN, el casco y
+  // lo que le sigue se irían del mapa. Los casos raros de /mar: sin orillas,
+  // una orilla mal medida, el planeta sin medida, mucho tiempo de agua.
+  const finiteRock = (r: { heave: number; pitch: number; roll: number }) =>
+    [r.heave, r.pitch, r.roll].every(Number.isFinite);
+
+  it('la calma de la orilla es un número entre 0 y 1 en los casos raros', () => {
+    type Shore = { x: number; z: number; r: number };
+    const period = { w: 800, h: 600 };
+    const cases: [number, number, Shore[], { w: number; h: number }][] = [
+      [10, 20, [], period],
+      [10, 20, [{ x: 0, z: 0, r: Number.NaN }], period],
+      [
+        10,
+        20,
+        [
+          { x: Number.NaN, z: 0, r: 5 },
+          { x: 30, z: 20, r: 5 },
+        ],
+        period,
+      ],
+      [10, 20, [{ x: 0, z: 0, r: 5 }], { w: 0, h: 0 }],
+      [1e9, -1e9, [{ x: 0, z: 0, r: 5 }], period],
+    ];
+    for (const [x, z, shores, p] of cases) {
+      const calm = shoreCalm(shoreDistance(x, z, shores, p));
+      expect(Number.isNaN(calm)).toBe(false);
+      expect(calm).toBeGreaterThanOrEqual(0);
+      expect(calm).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('el vaivén es finito con cualquier amplitud del fotograma y mucho tiempo de agua', () => {
+    for (const wind of [0, 0.5, 1, 7, -3]) {
+      for (const mapK of [0, 0.4, 1, 2]) {
+        const amp = waveAmplitude({ on: true, reduced: false, mapK, wind });
+        expect(Number.isFinite(amp)).toBe(true);
+        for (const t of [0, 1e3, 1e7]) {
+          expect(finiteRock(boatRock(123.4, -56.7, 2.1, t, amp))).toBe(true);
+        }
+      }
+    }
+  });
+});
