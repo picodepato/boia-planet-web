@@ -1,6 +1,6 @@
 # Plan 033 — Twice-monthly SMTP test email so the Brevo key never goes stale
 
-Status: active
+Status: done
 Created: 2026-10-15
 Base branch: main
 Goal: The Brevo SMTP key that Gmail «Send as» uses for `hola@boiaplanet.net` expires after 90 days without sending. Álvaro created a new key (`gmail-y-github`, 2026-10-15) and stored it as GitHub secrets `BREVO_SMTP_LOGIN` and `BREVO_SMTP_KEY`. A scheduled GitHub workflow sends a short test email from `hola@` to `hola@` twice a month through Brevo's SMTP with that same key, so the key stays in use; if sending fails, the run goes red and GitHub emails Álvaro. The existing monthly reminder issue («enviar-desde-hola») stays as a second safety net (Álvaro).
@@ -11,7 +11,7 @@ Status file: ESTADO.md
 ## Tasks
 
 ## T306 — Twice-monthly SMTP test email workflow
-- Status: pending
+- Status: done
 - Depends on: none
 - Goal: New workflow `.github/workflows/smtp-ping.yml` that sends one plain-text test email through Brevo SMTP on the 1st and 15th of every month (cron, UTC, off the hour) and on `workflow_dispatch`. From and To: `hola@boiaplanet.net`. Server `smtp-relay.brevo.com`, port 587, STARTTLS, user = `secrets.BREVO_SMTP_LOGIN`, password = `secrets.BREVO_SMTP_KEY`. Missing secrets → fail with a clear `::error::` (like `supabase-backup.yml` does). Any SMTP error → non-zero exit, so the run is red and GitHub notifies. Send with Python's standard library (`smtplib`, `email.message`) in a small script under `.github/scripts/` — no third-party GitHub actions for sending. The secrets must never be printed (no `set -x`, no echoing env). Subject/body short, in Spanish, saying it is the automatic test that keeps the Gmail «Enviar como» key alive and that it can be ignored, with the run date.
 - Context: `.github/workflows/supabase-backup.yml` (secret checks, style, permissions), `.github/scripts/storage-backup.py` (script style), `apps/web/lib/admin/backup-workflow.test.ts` (how workflows are tested), `apps/web/scripts/caducidades.json` (entry `brevo-smtp-hola`, already updated 2026-10-15; reminder `enviar-desde-hola` must stay), `apps/web/scripts/recordatorios.test.ts`, `docs/DESPLIEGUE.md` §6 and the expiry table row for the Brevo key (~line 420), `plans/seguridad-pendiente.md` is the orchestrator's (do not edit).
@@ -20,13 +20,18 @@ Status file: ESTADO.md
   - `pnpm exec vitest run <the new test file(s)>` → pass; the tests read the real workflow file and check: cron with days 1 and 15, `workflow_dispatch`, both secrets referenced only through `secrets.*`, a missing-secret check, host `smtp-relay.brevo.com` and port 587, no third-party `uses:` besides `actions/checkout`/`actions/setup-python` (if used), `permissions` minimal
   - `python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" <script>` → exit 0
   - the project Test command → pass
-- Outcome:
+- Outcome: .github/workflows/smtp-ping.yml (cron 23 7 1,15 * *, workflow_dispatch, keepalive job) + .github/scripts/smtp-ping.py (stdlib smtplib, STARTTLS 587) + apps/web/scripts/smtp-ping.test.ts; DESPLIEGUE.md and caducidades detalle updated — cf6d9bd
 
 ## Decisions
 - 2026-10-15: Twice a month (days 1 and 15), from hola@ to hola@ (Álvaro)
 - 2026-10-15: Keep the monthly reminder issue as a second safety net (Álvaro)
 - 2026-10-15: One-task plan; the security checklist items that needed panels were done by Álvaro in this session (orchestrator)
 
+- 2026-10-15 T306: cron 07:23 UTC; no setup-python (runner python3); only uses actions/checkout@v4; includes the keepalive-workflows job required by recordatorios.test.ts; script re-checks secrets and maps SMTP errors to ::error:: + exit 1 (agent)
+
 ## Proposals (new scope)
+- 2026-10-15 T306: after the push, run smtp-ping once by hand to confirm it is green and the email arrives
 
 ## Log
+- 2026-10-15 T306 launched · attempt 1 · agent ab3090675a4341e93
+- 2026-10-15 T306 done · branch worktree-agent-ab3090675a4341e93 → cf6d9bd; full test command on main → pass; plan done
