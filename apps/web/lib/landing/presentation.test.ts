@@ -139,7 +139,14 @@ describe('presentation video (plan 026 T260): never a stray frame', () => {
     reelVideoMode(presentationFrame(p, PHONE.w, PHONE.h), blocked);
 
   it('the video is off while its window is closed and after the stage has gone by', () => {
-    for (const p of [0, mid(P.black, P.beats), mid(P.beats, P.window), P.window, P.end + 1, P.end + 2]) {
+    for (const p of [
+      0,
+      mid(P.black, P.beats),
+      mid(P.beats, P.window),
+      P.window,
+      P.end + 1,
+      P.end + 2,
+    ]) {
       expect(mode(p), `p=${p}`).toBe('off');
       expect(mode(p, true), `p=${p} blocked`).toBe('off');
     }

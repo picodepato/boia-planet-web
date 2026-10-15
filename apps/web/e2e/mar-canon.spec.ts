@@ -787,7 +787,8 @@ async function boxesOf(page: Page, ids: readonly string[]): Promise<Record<strin
       const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) out[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
+      if (r.width > 0 && r.height > 0)
+        out[id] = { x: r.x, y: r.y, width: r.width, height: r.height };
     }
     return out;
   }, ids);
@@ -952,7 +953,9 @@ test('HUD: con un boss y las siete armas, los huecos arriba a la derecha no pisa
       .poll(
         async () => {
           boxes = await boxesOf(page, ids);
-          return !!boxes['mar-canon-equipo'] && !!boxes['mar-canon-hud'] && !!boxes['mar-canon-jefe'];
+          return (
+            !!boxes['mar-canon-equipo'] && !!boxes['mar-canon-hud'] && !!boxes['mar-canon-jefe']
+          );
         },
         { timeout: 30_000, intervals: [200] },
       )
@@ -1587,8 +1590,7 @@ test('ranking por boss (T155): en el pop-up, la tripulación de muestra del boss
   const defeated = Number(await end.getByTestId('mar-canon-final-enemigos').textContent());
   const notes = Number(await end.getByTestId('mar-canon-final-notas').textContent());
   const medal = (await end.getByTestId('mar-canon-final-medalla').getAttribute('data-medalla')) as
-    | SurvivorsMedal
-    | 'ninguna';
+    SurvivorsMedal | 'ninguna';
   const score = canonGameScore({
     defeated,
     notes,
@@ -1877,7 +1879,9 @@ for (const act of [1, 2] as const) {
     await expect(canvas(page)).toHaveAttribute('data-mascota', 'minikraken');
     await expect(game(page)).toHaveAttribute('data-jefes', new RegExp(boss), { timeout: 20_000 });
     // El primer gesto (una tecla) enciende el sonido; con el boss, su bucle.
-    await expect(game(page)).toHaveAttribute('data-sonido', /bloqueado|activo/, { timeout: 15_000 });
+    await expect(game(page)).toHaveAttribute('data-sonido', /bloqueado|activo/, {
+      timeout: 15_000,
+    });
     await page.keyboard.press('ArrowLeft');
     await expect(game(page)).toHaveAttribute('data-sonido', 'activo');
     await expect(game(page)).toHaveAttribute('data-musica', 'jefe', { timeout: 10_000 });
@@ -2253,7 +2257,9 @@ test('teclado: sólo con el teclado se abre el pop-up, se elige, se juega, se pa
   const errors = await openMar(page, '?minijuego=canon&oferta=1');
   await expect(panel(page)).toBeVisible({ timeout: 15_000 });
   // «Jugar» del panel con el teclado.
-  await panel(page).getByRole('button', { name: msg('juego.minigameLayer.jugar') }).focus();
+  await panel(page)
+    .getByRole('button', { name: msg('juego.minigameLayer.jugar') })
+    .focus();
   await page.keyboard.press('Enter');
   const box = previa(page);
   await expect(box).toBeVisible();
@@ -2337,8 +2343,10 @@ test('accesibilidad: avisos aria-live de nivel, boss y resultado; sin temblor de
           if (document.querySelector('[data-testid="mar-canon-cartas"]')) return null;
           return points.map(
             ([x, y]) =>
-              document.elementFromPoint(x!, y!)?.closest('[data-testid]')?.getAttribute('data-testid') ??
-              '',
+              document
+                .elementFromPoint(x!, y!)
+                ?.closest('[data-testid]')
+                ?.getAttribute('data-testid') ?? '',
           );
         }, around);
       },

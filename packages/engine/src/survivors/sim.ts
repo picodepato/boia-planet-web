@@ -76,7 +76,13 @@ import {
   stepKraken,
   tentacleHittable,
 } from './kraken';
-import { buildCardPool, chestCandidates, eligibleEvolutions, type CardOption, type SalvavidasState } from './cards';
+import {
+  buildCardPool,
+  chestCandidates,
+  eligibleEvolutions,
+  type CardOption,
+  type SalvavidasState,
+} from './cards';
 export type { CardOption } from './cards';
 import { type DropId, flameDamage, inFlame } from './drops';
 import { SpatialGrid } from './grid';
@@ -149,7 +155,15 @@ export type SurvivorsEvent =
   | { type: 'blocked'; x: number; y: number; owner: 'player' | 'enemy' }
   | { type: 'enemyFire'; enemy: EnemyId; id: number; x: number; y: number }
   /** Empieza el aviso de una embestida: la línea en el agua desde (x, y), `length` u. */
-  | { type: 'telegraph'; enemy: EnemyId; id: number; x: number; y: number; heading: number; length: number }
+  | {
+      type: 'telegraph';
+      enemy: EnemyId;
+      id: number;
+      x: number;
+      y: number;
+      heading: number;
+      length: number;
+    }
   | { type: 'split'; enemy: EnemyId; id: number; x: number; y: number; count: number }
   | { type: 'note'; figure: NoteFigure; value: number; x: number; y: number }
   | { type: 'levelUp'; level: number }
@@ -161,17 +175,58 @@ export type SurvivorsEvent =
   | { type: 'pickup'; item: DropId; id: number; x: number; y: number }
   // --- Bosses (T137) ---
   /** Entra un boss por delante del barco (`id` es el de la entidad, único en la partida). */
-  | { type: 'bossSpawn'; boss: BossId; id: number; kind: BossDef['kind']; nameKey: string; x: number; y: number }
+  | {
+      type: 'bossSpawn';
+      boss: BossId;
+      id: number;
+      kind: BossDef['kind'];
+      nameKey: string;
+      x: number;
+      y: number;
+    }
   | { type: 'bossPhase'; boss: BossId; id: number; phase: number }
   /** Empieza el aviso de un ataque: la forma en el agua (ver `BossWarningView`). */
-  | { type: 'bossTelegraph'; boss: BossId; id: number; attack: string; kind: BossAttackKind; x: number; y: number; heading: number }
+  | {
+      type: 'bossTelegraph';
+      boss: BossId;
+      id: number;
+      attack: string;
+      kind: BossAttackKind;
+      x: number;
+      y: number;
+      heading: number;
+    }
   /** Acaba el aviso: el golpe empieza. */
-  | { type: 'bossAttack'; boss: BossId; id: number; attack: string; kind: BossAttackKind; x: number; y: number }
-  | { type: 'bossSummon'; boss: BossId; id: number; enemy: EnemyId; count: number; x: number; y: number }
+  | {
+      type: 'bossAttack';
+      boss: BossId;
+      id: number;
+      attack: string;
+      kind: BossAttackKind;
+      x: number;
+      y: number;
+    }
+  | {
+      type: 'bossSummon';
+      boss: BossId;
+      id: number;
+      enemy: EnemyId;
+      count: number;
+      x: number;
+      y: number;
+    }
   /** Un golpe de boss al barco (`attack` null: por contacto). */
   | { type: 'bossHit'; boss: BossId; attack: string | null; x: number; y: number; water: number }
   /** El boss recibe `damage` (lo que le queda en `hp`). */
-  | { type: 'bossDamaged'; boss: BossId; id: number; damage: number; hp: number; x: number; y: number }
+  | {
+      type: 'bossDamaged';
+      boss: BossId;
+      id: number;
+      damage: number;
+      hp: number;
+      x: number;
+      y: number;
+    }
   | { type: 'bossDefeated'; boss: BossId; id: number; kind: BossDef['kind']; x: number; y: number }
   /** Amanece con el boss vivo: se retira. */
   | { type: 'bossRetreated'; boss: BossId; id: number; kind: BossDef['kind']; x: number; y: number }
@@ -420,7 +475,11 @@ export interface BossWarningView {
   readonly gapPhase: number;
   readonly ringRadius: number;
   /** Islas relativas al origen de un anillo, para dibujar su sombra radial (T138). */
-  readonly ringObstacles?: readonly { readonly x: number; readonly y: number; readonly radius: number }[];
+  readonly ringObstacles?: readonly {
+    readonly x: number;
+    readonly y: number;
+    readonly radius: number;
+  }[];
   readonly progress: number;
   readonly hit: boolean;
 }
@@ -966,7 +1025,7 @@ export class SurvivorsGame {
     const act =
       actOf(config, actN) ??
       (opts.act === undefined
-        ? config.acts[0] ?? { act: 1, durationS: config.durationS, tracks: [], events: [] }
+        ? (config.acts[0] ?? { act: 1, durationS: config.durationS, tracks: [], events: [] })
         : null);
     if (!act) throw new Error(`survivors: no act ${actN}`);
     this.act = act;
@@ -976,7 +1035,8 @@ export class SurvivorsGame {
     const events = act.events.filter((ev) => ev.enabled !== false);
     // Huecos de boss: sólo los activos cuyo boss existe (los demás, nada, como en T125).
     this.bossSlots = events.flatMap((ev) => {
-      const def = ev.type === 'miniboss' || ev.type === 'boss' ? config.bosses[ev.ref as BossId] : undefined;
+      const def =
+        ev.type === 'miniboss' || ev.type === 'boss' ? config.bosses[ev.ref as BossId] : undefined;
       return def ? [{ ev, def, done: false }] : [];
     });
     let elitesFrom = Infinity;
@@ -1000,7 +1060,8 @@ export class SurvivorsGame {
     for (const def of Object.values(config.enemies)) {
       if (!def) continue;
       if (def.radius > maxR) maxR = def.radius;
-      if (def.shooter && def.shooter.projectile.radius > maxShot) maxShot = def.shooter.projectile.radius;
+      if (def.shooter && def.shooter.projectile.radius > maxShot)
+        maxShot = def.shooter.projectile.radius;
     }
     this.maxEnemyRadius = maxR * Math.max(1, elitesDef?.radiusScale ?? 1);
     this.maxShotRadius = maxShot;
@@ -1029,11 +1090,30 @@ export class SurvivorsGame {
       },
       telegraph: (attack, x, y) => {
         const b = this.krakenBoss;
-        if (b) this.events.push({ type: 'bossTelegraph', boss: b.def.id, id: b.id, attack, kind: 'circles', x, y, heading: 0 });
+        if (b)
+          this.events.push({
+            type: 'bossTelegraph',
+            boss: b.def.id,
+            id: b.id,
+            attack,
+            kind: 'circles',
+            x,
+            y,
+            heading: 0,
+          });
       },
       attack: (attack, x, y) => {
         const b = this.krakenBoss;
-        if (b) this.events.push({ type: 'bossAttack', boss: b.def.id, id: b.id, attack, kind: 'circles', x, y });
+        if (b)
+          this.events.push({
+            type: 'bossAttack',
+            boss: b.def.id,
+            id: b.id,
+            attack,
+            kind: 'circles',
+            x,
+            y,
+          });
       },
       emit: (ev) => this.events.push(ev),
     };
@@ -1262,7 +1342,13 @@ export class SurvivorsGame {
     }
     this.chestViews.length = 0;
     for (const c of this.chests) {
-      this.chestViews.push({ id: c.id, boss: c.boss, x: c.x, y: c.y, radius: this.config.bossFight.chestRadius });
+      this.chestViews.push({
+        id: c.id,
+        boss: c.boss,
+        x: c.x,
+        y: c.y,
+        radius: this.config.bossFight.chestRadius,
+      });
     }
     return v;
   }
@@ -1285,8 +1371,13 @@ export class SurvivorsGame {
    */
   addWeapon(id: WeaponId, level = 1): boolean {
     const def = this.config.weapons[id];
-    if (!def || !Number.isFinite(level) || this.weapons.length >= this.config.slots.weapons ||
-      this.weapons.some((w) => w.def.id === id)) return false;
+    if (
+      !def ||
+      !Number.isFinite(level) ||
+      this.weapons.length >= this.config.slots.weapons ||
+      this.weapons.some((w) => w.def.id === id)
+    )
+      return false;
     const slot: WeaponSlot = {
       def,
       evolutionId: null,
@@ -1332,8 +1423,13 @@ export class SurvivorsGame {
 
   addVinyl(id: PassiveId, level = 1): boolean {
     const def = this.config.passives[id];
-    if (!def || !Number.isFinite(level) || this.vinylLevel(id) > 0 ||
-      this.vinyls.length >= this.config.slots.vinyls) return false;
+    if (
+      !def ||
+      !Number.isFinite(level) ||
+      this.vinylLevel(id) > 0 ||
+      this.vinyls.length >= this.config.slots.vinyls
+    )
+      return false;
     const top = Math.min(def.maxLevel, Math.max(1, Math.floor(level)));
     this.vinyls.push({ id, level: top, maxLevel: def.maxLevel, nameKey: def.i18nKey });
     for (const gain of def.levels.slice(0, top)) this.stats[gain.stat ?? def.stat] += gain.amount;
@@ -1374,7 +1470,11 @@ export class SurvivorsGame {
 
   private inventory() {
     return {
-      weapons: this.weapons.map((w) => ({ id: w.def.id, level: w.level, evolutionId: w.evolutionId })),
+      weapons: this.weapons.map((w) => ({
+        id: w.def.id,
+        level: w.level,
+        evolutionId: w.evolutionId,
+      })),
       vinyls: this.vinyls,
       salvavidas: this.salvavidas,
     };
@@ -1443,7 +1543,9 @@ export class SurvivorsGame {
       up: this.stacks,
       vinyls: this.vinyls.map((v) => [v.id, v.level]),
       salvavidas: this.salvavidas,
-      card: this.card ? [this.card.source, ...this.card.options.map((o) => [o.id, o.targetLevel])] : null,
+      card: this.card
+        ? [this.card.source, ...this.card.options.map((o) => [o.id, o.targetLevel])]
+        : null,
       e: this.enemies.map((e) => [
         e.id,
         e.type,
@@ -1480,7 +1582,17 @@ export class SurvivorsGame {
         b.attackIndex,
         b.ringPhase,
         b.ringWaves,
-        b.attack ? [b.attack.name, b.attack.stage, b.attack.timer, b.attack.x, b.attack.y, b.attack.left, b.attack.landed ? 1 : 0] : null,
+        b.attack
+          ? [
+              b.attack.name,
+              b.attack.stage,
+              b.attack.timer,
+              b.attack.x,
+              b.attack.y,
+              b.attack.left,
+              b.attack.landed ? 1 : 0,
+            ]
+          : null,
         b.kraken ? krakenHash(b.kraken) : null,
         b.fantasma ? ghostHash(b.fantasma) : null,
       ]),
@@ -1659,7 +1771,13 @@ export class SurvivorsGame {
       this.salvavidas = 'consumed';
       this.water = this.waterCapacity * this.config.salvavidas.waterFractionAfterSave;
       this.invulnerable = this.config.salvavidas.invulnerableS;
-      this.events.push({ type: 'saved', item: 'salvavidas', x: this.player.x, y: this.player.y, water: this.water });
+      this.events.push({
+        type: 'saved',
+        item: 'salvavidas',
+        x: this.player.x,
+        y: this.player.y,
+        water: this.water,
+      });
     }
     if (this.water >= this.waterCapacity) this.finish('flooded');
     else if (this.activeSteps >= this.durationSteps) {
@@ -1721,7 +1839,12 @@ export class SurvivorsGame {
       const end = ev.atS + (ev.durationS ?? 0);
       if (t < ev.atS || t >= end) return;
       while (this.mareaNext[i]! <= t + 1e-9 && this.mareaNext[i]! < end) {
-        this.spawnRing(def.enemy, Math.round(def.count * this.diff.enemyCount), def.hpScale, def.speedScale);
+        this.spawnRing(
+          def.enemy,
+          Math.round(def.count * this.diff.enemyCount),
+          def.hpScale,
+          def.speedScale,
+        );
         this.mareaNext[i] = this.mareaNext[i]! + def.burstEveryS;
       }
     });
@@ -2034,7 +2157,14 @@ export class SurvivorsGame {
    * bosses. Devuelve el vector a sumar a la velocidad deseada.
    */
   private readonly avoidOut = { x: 0, y: 0 };
-  private avoidIslands(x: number, y: number, dx: number, dy: number, r: number, speed: number): { x: number; y: number } {
+  private avoidIslands(
+    x: number,
+    y: number,
+    dx: number,
+    dy: number,
+    r: number,
+    speed: number,
+  ): { x: number; y: number } {
     const ai = this.config.enemyAI;
     const isl = this.islands;
     const out = this.avoidOut;
@@ -2106,7 +2236,8 @@ export class SurvivorsGame {
       const dy = wd(b.y - p.y, this.h);
       const min = pr + b.radius;
       if (dx * dx + dy * dy >= min * min) continue;
-      const charging = b.attack && b.attack.stage === 'hit' && b.attack.def.kind === 'line' ? b.attack : null;
+      const charging =
+        b.attack && b.attack.stage === 'hit' && b.attack.def.kind === 'line' ? b.attack : null;
       if (charging) {
         if (charging.landed || !this.bossHitLands()) continue;
         charging.landed = true;
@@ -2150,7 +2281,13 @@ export class SurvivorsGame {
     this.events.push({ type: 'hit', enemy: by, x, y, water: this.water });
   }
 
-  private damagePlayerByBoss(amount: number, b: Boss, attack: string | null, x: number, y: number): void {
+  private damagePlayerByBoss(
+    amount: number,
+    b: Boss,
+    attack: string | null,
+    x: number,
+    y: number,
+  ): void {
     if (!this.takeWater(amount)) return;
     this.events.push({ type: 'bossHit', boss: b.def.id, attack, x, y, water: this.water });
   }
@@ -2211,7 +2348,14 @@ export class SurvivorsGame {
         if (b.enemy !== null) {
           if (this.invulnerable <= 0) this.damagePlayer(b.water, b.enemy, b.x, b.y);
         } else if (b.boss !== null && this.bossHitLands() && this.takeWater(b.water)) {
-          this.events.push({ type: 'bossHit', boss: b.boss, attack: b.attack, x: b.x, y: b.y, water: this.water });
+          this.events.push({
+            type: 'bossHit',
+            boss: b.boss,
+            attack: b.attack,
+            x: b.x,
+            y: b.y,
+            water: this.water,
+          });
         }
         continue;
       }
@@ -2245,14 +2389,26 @@ export class SurvivorsGame {
    * Primer instante (0…1) del tramo de este paso de un proyectil recto en
    * que toca una isla; Infinity si ninguna.
    */
-  private islandBlock(b: { x: number; y: number; radius: number }, sx: number, sy: number, ss: number): number {
+  private islandBlock(
+    b: { x: number; y: number; radius: number },
+    sx: number,
+    sy: number,
+    ss: number,
+  ): number {
     const isl = this.islands;
     const len = Math.sqrt(ss);
     let blockT = Infinity;
     const near = isl.near(b.x + sx / 2, b.y + sy / 2, len / 2 + b.radius, this.scratch);
     for (const k of near) {
       const o = isl.obstacles[k]!;
-      const t = segmentHit(wd(b.x - o.x, this.w), wd(b.y - o.y, this.h), sx, sy, ss, o.radius + b.radius);
+      const t = segmentHit(
+        wd(b.x - o.x, this.w),
+        wd(b.y - o.y, this.h),
+        sx,
+        sy,
+        ss,
+        o.radius + b.radius,
+      );
       if (t < blockT) blockT = t;
     }
     return blockT;
@@ -2411,7 +2567,13 @@ export class SurvivorsGame {
           break;
         case 'aura':
           if (this.ticks(w, dt)) {
-            this.hurtCircle(this.player.x, this.player.y, st.area, st.damage, w.def.effects?.pushDistance);
+            this.hurtCircle(
+              this.player.x,
+              this.player.y,
+              st.area,
+              st.damage,
+              w.def.effects?.pushDistance,
+            );
           }
           break;
         case 'beam':
@@ -2466,7 +2628,9 @@ export class SurvivorsGame {
       y: p.y,
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
-      radius: f ? f.radius * (1 + this.stats.areaBonus) : w.def.effects?.projectileRadius ?? st.area,
+      radius: f
+        ? f.radius * (1 + this.stats.areaBonus)
+        : (w.def.effects?.projectileRadius ?? st.area),
       life: (range / speed) * 1.2,
       damage: st.damage,
       pierce: st.pierce,
@@ -2549,7 +2713,11 @@ export class SurvivorsGame {
       const x = wrapInto(p.x - Math.cos(p.heading) * back, this.bounds.left, this.bounds.right);
       const y = wrapInto(p.y - Math.sin(p.heading) * back, this.bounds.top, this.bounds.bottom);
       // Sin estela no hay ristra: el petardo espera a que el barco se aparte del anterior.
-      if (w.dropped && Math.hypot(wd(x - w.lastX, this.w), wd(y - w.lastY, this.h)) < trail.minSpacing) break;
+      if (
+        w.dropped &&
+        Math.hypot(wd(x - w.lastX, this.w), wd(y - w.lastY, this.h)) < trail.minSpacing
+      )
+        break;
       this.dropCracker(w, x, y, trail.triggerRadius);
       w.pending--;
       w.dropT += Math.max(SURVIVORS_STEP_S, trail.dropEveryS);
@@ -2843,9 +3011,11 @@ export class SurvivorsGame {
     let count = 0;
     for (let k = 0; k < st.count; k++) {
       const a = beamAngle(w.angle, k, st.count);
-      const origin = { ...this.player,
+      const origin = {
+        ...this.player,
         x: this.player.x + Math.cos(a) * st.range,
-        y: this.player.y + Math.sin(a) * st.range };
+        y: this.player.y + Math.sin(a) * st.range,
+      };
       const flashes = f.count + Math.round(this.stats.extraProjectiles);
       for (let j = 0; j < flashes; j++) {
         if (!this.shoot(w, beamAngle(w.angle, j, flashes), origin, true)) break;
@@ -2941,7 +3111,14 @@ export class SurvivorsGame {
       let hitBoss: BossTarget | null = null;
       for (const o of this.bossTargets) {
         if (o.dead || o.id === b.lastHit) continue;
-        const t = segmentHit(wd(b.x - o.x, this.w), wd(b.y - o.y, this.h), sx, sy, ss, o.radius + b.radius);
+        const t = segmentHit(
+          wd(b.x - o.x, this.w),
+          wd(b.y - o.y, this.h),
+          sx,
+          sy,
+          ss,
+          o.radius + b.radius,
+        );
         if (t < hitT) {
           hitBoss = o;
           hit = null;
@@ -2995,12 +3172,19 @@ export class SurvivorsGame {
     let made = 0;
     for (let k = 0; k < split.count; k++) {
       if (this.enemies.length >= this.caps.enemies) {
-        this.overflow = Math.min(this.config.spawn.overflowMax, this.overflow + this.config.spawn.overflowStrength);
+        this.overflow = Math.min(
+          this.config.spawn.overflowMax,
+          this.overflow + this.config.spawn.overflowStrength,
+        );
         continue;
       }
       const a = e.heading + Math.PI / 2 + (k / split.count) * Math.PI * 2;
       const r = e.radius * (1 + split.scale);
-      const spot = this.islands.toWater(e.x + Math.cos(a) * r, e.y + Math.sin(a) * r, e.radius * split.scale);
+      const spot = this.islands.toWater(
+        e.x + Math.cos(a) * r,
+        e.y + Math.sin(a) * r,
+        e.radius * split.scale,
+      );
       if (!spot) continue;
       const child = this.makeEnemy(e.def, spot.x, spot.y, e.maxHp * split.hpScale, e.speed, false);
       child.radius = e.def.radius * split.scale;
@@ -3013,7 +3197,8 @@ export class SurvivorsGame {
       this.enemies.push(child);
       made++;
     }
-    if (made > 0) this.events.push({ type: 'split', enemy: e.type, id: e.id, x: e.x, y: e.y, count: made });
+    if (made > 0)
+      this.events.push({ type: 'split', enemy: e.type, id: e.id, x: e.x, y: e.y, count: made });
   }
 
   // --- Botín de las élites (T135) ---------------------------------------------
@@ -3023,7 +3208,8 @@ export class SurvivorsGame {
     const d = this.config.drops;
     if (d.types.length === 0 || !(d.chance > 0)) return;
     if (this.dropRng() >= d.chance) return;
-    const item = d.types[Math.min(d.types.length - 1, Math.floor(this.dropRng() * d.types.length))]!;
+    const item =
+      d.types[Math.min(d.types.length - 1, Math.floor(this.dropRng() * d.types.length))]!;
     this.dropPickup(item, x, y);
   }
 
@@ -3032,7 +3218,14 @@ export class SurvivorsGame {
     // Tope: el más viejo se hunde para el nuevo.
     while (this.pickups.length >= Math.max(1, d.max)) this.pickups.shift();
     const spot = this.islands.toWater(x, y, d.radius) ?? { x, y };
-    const o: Pickup = { id: this.nextPickupId++, item, x: 0, y: 0, lifeS: d.lifeS, durationS: d.lifeS };
+    const o: Pickup = {
+      id: this.nextPickupId++,
+      item,
+      x: 0,
+      y: 0,
+      lifeS: d.lifeS,
+      durationS: d.lifeS,
+    };
     this.setWrapped(o, spot.x, spot.y);
     this.pickups.push(o);
     this.events.push({ type: 'drop', item, id: o.id, x: o.x, y: o.y });
@@ -3267,7 +3460,8 @@ export class SurvivorsGame {
   }
 
   private available(): CardOption[] {
-    const rare = this.salvavidas === 'absent' && this.cardRng() < this.config.salvavidas.offerChance;
+    const rare =
+      this.salvavidas === 'absent' && this.cardRng() < this.config.salvavidas.offerChance;
     return buildCardPool(this.config, this.inventory(), rare);
   }
 
@@ -3301,7 +3495,12 @@ export class SurvivorsGame {
       picks.push(pool.splice(k, 1)[0]!);
       weights.splice(k, 1);
     }
-    this.card = { level: this.level - this.pendingLevels + 1, options: picks, source: 'level', boss: null };
+    this.card = {
+      level: this.level - this.pendingLevels + 1,
+      options: picks,
+      source: 'level',
+      boss: null,
+    };
   }
 
   /**
@@ -3363,12 +3562,18 @@ export class SurvivorsGame {
 
   private applyCardEffect(opt: CardOption): boolean {
     switch (opt.kind) {
-      case 'weapon-new': return this.addWeapon(opt.weaponId!);
-      case 'weapon-level': return this.levelUpWeapon(opt.weaponId!);
-      case 'vinyl-new': return this.addVinyl(opt.vinylId!);
-      case 'vinyl-level': return this.levelUpVinyl(opt.vinylId!);
-      case 'evolution': return this.evolveWeapon(opt.evolutionId!);
-      case 'salvavidas': return this.addSalvavidas();
+      case 'weapon-new':
+        return this.addWeapon(opt.weaponId!);
+      case 'weapon-level':
+        return this.levelUpWeapon(opt.weaponId!);
+      case 'vinyl-new':
+        return this.addVinyl(opt.vinylId!);
+      case 'vinyl-level':
+        return this.levelUpVinyl(opt.vinylId!);
+      case 'evolution':
+        return this.evolveWeapon(opt.evolutionId!);
+      case 'salvavidas':
+        return this.addSalvavidas();
       case 'fallback':
         this.water = Math.max(0, this.water - this.config.fallback.waterRemoved);
         return true;
@@ -3463,7 +3668,11 @@ export class SurvivorsGame {
    * Devuelve cuántos tocó.
    */
   flameBosses(x: number, y: number, r: number, dt: number): number {
-    const damage = flameDamage(this.config.drops.llama, { maxHp: 0, bossDps: this.config.bossFight.flameDps }, dt);
+    const damage = flameDamage(
+      this.config.drops.llama,
+      { maxHp: 0, bossDps: this.config.bossFight.flameDps },
+      dt,
+    );
     return this.hurtBossesCircle(x, y, r, damage);
   }
 
@@ -3511,15 +3720,33 @@ export class SurvivorsGame {
     };
     if (def.kraken) {
       // Los tentáculos aguantan como el boss: por el acto y la dificultad.
-      b.kraken = createKraken(def.kraken, def.kraken.tentacle.hp * (this.act.bossHpScale ?? 1) * this.diff.enemyHp);
+      b.kraken = createKraken(
+        def.kraken,
+        def.kraken.tentacle.hp * (this.act.bossHpScale ?? 1) * this.diff.enemyHp,
+      );
     }
     this.setWrapped(b, x, y);
     const p = this.player;
     b.heading = Math.atan2(wd(p.y - b.y, this.h), wd(p.x - b.x, this.w));
     this.bosses.push(b);
-    this.events.push({ type: 'bossSpawn', boss: def.id, id: b.id, kind: def.kind, nameKey: def.i18nKey, x: b.x, y: b.y });
+    this.events.push({
+      type: 'bossSpawn',
+      boss: def.id,
+      id: b.id,
+      kind: def.kind,
+      nameKey: def.i18nKey,
+      x: b.x,
+      y: b.y,
+    });
     if (b.kraken) {
-      this.events.push({ type: 'krakenState', id: b.id, state: b.kraken.mode, x: b.x, y: b.y, island: -1 });
+      this.events.push({
+        type: 'krakenState',
+        id: b.id,
+        state: b.kraken.mode,
+        x: b.x,
+        y: b.y,
+        island: -1,
+      });
     }
     this.rebuildBossTargets();
     return b;
@@ -3535,10 +3762,28 @@ export class SurvivorsGame {
     out.length = 0;
     for (const b of this.bosses) {
       if (b.dead) continue;
-      if (!this.bossInvulnerable(b)) out.push({ id: b.id, x: b.x, y: b.y, radius: b.radius, dead: false, boss: b, tentacle: null });
+      if (!this.bossInvulnerable(b))
+        out.push({
+          id: b.id,
+          x: b.x,
+          y: b.y,
+          radius: b.radius,
+          dead: false,
+          boss: b,
+          tentacle: null,
+        });
       if (b.kraken) {
         for (const t of b.kraken.tentacles) {
-          if (tentacleHittable(t)) out.push({ id: t.id, x: t.x, y: t.y, radius: t.radius, dead: false, boss: b, tentacle: t });
+          if (tentacleHittable(t))
+            out.push({
+              id: t.id,
+              x: t.x,
+              y: t.y,
+              radius: t.radius,
+              dead: false,
+              boss: b,
+              tentacle: t,
+            });
         }
       }
     }
@@ -3556,8 +3801,19 @@ export class SurvivorsGame {
       t.dead = true;
       // Tumbarlo expone la cabeza: entra en la lista ya, en este mismo paso.
       const b = t.boss;
-      if (!this.bossInvulnerable(b) && !this.bossTargets.some((o) => o.boss === b && !o.tentacle && !o.dead)) {
-        this.bossTargets.push({ id: b.id, x: b.x, y: b.y, radius: b.radius, dead: false, boss: b, tentacle: null });
+      if (
+        !this.bossInvulnerable(b) &&
+        !this.bossTargets.some((o) => o.boss === b && !o.tentacle && !o.dead)
+      ) {
+        this.bossTargets.push({
+          id: b.id,
+          x: b.x,
+          y: b.y,
+          radius: b.radius,
+          dead: false,
+          boss: b,
+          tentacle: null,
+        });
       }
       return;
     }
@@ -3801,7 +4057,15 @@ export class SurvivorsGame {
   private landBossAttack(b: Boss, a: BossAttack): void {
     a.stage = 'hit';
     a.timer = a.def.activeS;
-    this.events.push({ type: 'bossAttack', boss: b.def.id, id: b.id, attack: a.name, kind: a.def.kind, x: a.x, y: a.y });
+    this.events.push({
+      type: 'bossAttack',
+      boss: b.def.id,
+      id: b.id,
+      attack: a.name,
+      kind: a.def.kind,
+      x: a.x,
+      y: a.y,
+    });
     switch (a.def.kind) {
       case 'line':
         a.left = a.def.length;
@@ -3919,9 +4183,18 @@ export class SurvivorsGame {
       if (this.enemies.length >= this.caps.enemies) break;
       const ang = (k / s.count) * Math.PI * 2 + b.heading;
       const r = b.radius + def.radius + 30;
-      const spot = this.islands.toWater(b.x + Math.cos(ang) * r, b.y + Math.sin(ang) * r, def.radius);
+      const spot = this.islands.toWater(
+        b.x + Math.cos(ang) * r,
+        b.y + Math.sin(ang) * r,
+        def.radius,
+      );
       if (!spot) continue;
-      const hp = def.hp * s.hpScale * this.diff.enemyHp * (this.act.enemyHpScale ?? 1) * (1 + def.growthPerMinute.hp * minutes);
+      const hp =
+        def.hp *
+        s.hpScale *
+        this.diff.enemyHp *
+        (this.act.enemyHpScale ?? 1) *
+        (1 + def.growthPerMinute.hp * minutes);
       const speed = def.speed * (1 + def.growthPerMinute.speed * minutes);
       const e = this.makeEnemy(def, spot.x, spot.y, hp, speed, s.elite);
       e.ghost = s.ghost === true;
@@ -3930,7 +4203,15 @@ export class SurvivorsGame {
     }
     if (made > 0) {
       this.rebuildEnemyGrid();
-      this.events.push({ type: 'bossSummon', boss: b.def.id, id: b.id, enemy: s.enemy, count: made, x: b.x, y: b.y });
+      this.events.push({
+        type: 'bossSummon',
+        boss: b.def.id,
+        id: b.id,
+        enemy: s.enemy,
+        count: made,
+        x: b.x,
+        y: b.y,
+      });
     }
   }
 
@@ -3938,7 +4219,15 @@ export class SurvivorsGame {
   private hurtBoss(b: Boss, damage: number): void {
     if (b.dead || damage <= 0 || this.bossInvulnerable(b)) return;
     b.hp -= damage;
-    this.events.push({ type: 'bossDamaged', boss: b.def.id, id: b.id, damage, hp: Math.max(0, b.hp), x: b.x, y: b.y });
+    this.events.push({
+      type: 'bossDamaged',
+      boss: b.def.id,
+      id: b.id,
+      damage,
+      hp: Math.max(0, b.hp),
+      x: b.x,
+      y: b.y,
+    });
     if (b.hp <= 0) this.defeatBoss(b);
   }
 
@@ -3963,7 +4252,14 @@ export class SurvivorsGame {
     if (b.kraken) clearKraken(b.kraken);
     this.rebuildBossTargets();
     this.bossesDefeated.push(b.def.id);
-    this.events.push({ type: 'bossDefeated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
+    this.events.push({
+      type: 'bossDefeated',
+      boss: b.def.id,
+      id: b.id,
+      kind: b.def.kind,
+      x: b.x,
+      y: b.y,
+    });
     // La nota grande (la clave de sol: la figura mayor que no pasa de su valor).
     this.dropNote(b.x, b.y, b.def.noteValue);
     if (b.def.chest) this.spawnChest(b.def.id, b.x, b.y);
@@ -3981,7 +4277,14 @@ export class SurvivorsGame {
       b.dead = true;
       b.attack = null;
       if (b.kraken) clearKraken(b.kraken);
-      this.events.push({ type: 'bossRetreated', boss: b.def.id, id: b.id, kind: b.def.kind, x: b.x, y: b.y });
+      this.events.push({
+        type: 'bossRetreated',
+        boss: b.def.id,
+        id: b.id,
+        kind: b.def.kind,
+        x: b.x,
+        y: b.y,
+      });
     }
     this.compactBosses();
     this.rebuildBossTargets();
@@ -4056,11 +4359,18 @@ export class SurvivorsGame {
         this.bossWarnings.push({ ...base, x: a.x, y: a.y, length: def.length });
         break;
       case 'circles':
-        for (const c of a.circles) this.bossWarnings.push({ ...base, x: c.x, y: c.y, radius: def.radius });
+        for (const c of a.circles)
+          this.bossWarnings.push({ ...base, x: c.x, y: c.y, radius: def.radius });
         break;
       case 'broadside':
         for (const side of [-1, 1]) {
-          this.bossWarnings.push({ ...base, x: a.x, y: a.y, heading: a.heading + side * (Math.PI / 2), length: def.length });
+          this.bossWarnings.push({
+            ...base,
+            x: a.x,
+            y: a.y,
+            heading: a.heading + side * (Math.PI / 2),
+            length: def.length,
+          });
         }
         break;
       case 'summon':

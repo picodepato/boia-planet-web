@@ -26,8 +26,8 @@ describe('papelera: un Carnet se nombra por su apodo', () => {
 
   it('sólo cae al id si el Carnet no tiene apodo o no se conoce', () => {
     expect(changeTargetLabel(carnetChange('user-sin'), names)).toBe('user-sin');
-    expect(
-      changeTargetLabel(carnetChange('user-vacio'), new Map([['user-vacio', '']])),
-    ).toBe('user-vacio');
+    expect(changeTargetLabel(carnetChange('user-vacio'), new Map([['user-vacio', '']]))).toBe(
+      'user-vacio',
+    );
   });
 });

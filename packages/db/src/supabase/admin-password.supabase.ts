@@ -130,11 +130,17 @@ describe('«He olvidado la contraseña»', () => {
     password = next;
     await passwordSession(password);
 
-    // el mismo enlace otra vez: caducado
+    // el mismo enlace otra vez: caducado. El error puede venir en el fragmento o
+    // en la query según la versión de Auth; se lee de los dos y, si falta, el
+    // fallo dice qué contestó Auth (estado y Location) en lugar de un `null`.
     const again = await fetch(link, { redirect: 'manual' });
-    const frag = new URLSearchParams((again.headers.get('location') ?? '').split('#')[1] ?? '');
-    expect(frag.get('access_token')).toBeNull();
-    expect(frag.get('error_code')).toBe('otp_expired');
+    const where = again.headers.get('location') ?? '';
+    const seen = `Auth contestó ${again.status} con Location «${where.slice(0, 200)}»`;
+    const [beforeHash, afterHash = ''] = where.split('#');
+    const frag = new URLSearchParams(afterHash);
+    const query = new URLSearchParams((beforeHash ?? '').split('?')[1] ?? '');
+    expect(frag.get('access_token') ?? query.get('access_token'), seen).toBeNull();
+    expect(frag.get('error_code') ?? query.get('error_code'), seen).toBe('otp_expired');
   });
 
   it('para un email sin cuenta no hay error (la pantalla dice lo mismo)', async () => {

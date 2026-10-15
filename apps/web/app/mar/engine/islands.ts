@@ -531,8 +531,7 @@ function cala(R: number, rnd: () => number): IslandBuild {
     parts.glows.add([x * R, 0.37 * R, -0.2 * R], '#ffcf7a', 2.6);
   }
   // Sobre la tierra, su alto; en la dársena (z > 0), el agua.
-  const heightAt = (x: number, z: number) =>
-    z <= 0 && Math.hypot(x, z) <= L.land * R ? top : 0;
+  const heightAt = (x: number, z: number) => (z <= 0 && Math.hypot(x, z) <= L.land * R ? top : 0);
   return {
     parts,
     animated: [],

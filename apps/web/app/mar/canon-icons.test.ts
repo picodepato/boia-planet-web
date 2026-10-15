@@ -32,8 +32,14 @@ function everyId(): { label: string; icon: CanonIconName | undefined }[] {
       label: `vinilo ${id}`,
       icon: VINYL_ICON[id as keyof typeof VINYL_ICON],
     })),
-    ...SURVIVORS_CONFIG.evolutions.map((e) => ({ label: `evolución ${e.id}`, icon: EVOLUTION_ICON[e.id] })),
-    ...SURVIVORS_CONFIG.upgrades.map((u) => ({ label: `mejora ${u.id}`, icon: UPGRADE_ICON[u.id] })),
+    ...SURVIVORS_CONFIG.evolutions.map((e) => ({
+      label: `evolución ${e.id}`,
+      icon: EVOLUTION_ICON[e.id],
+    })),
+    ...SURVIVORS_CONFIG.upgrades.map((u) => ({
+      label: `mejora ${u.id}`,
+      icon: UPGRADE_ICON[u.id],
+    })),
     ...DROP_IDS.map((id) => ({ label: `botín ${id}`, icon: DROP_ICON[id] })),
     { label: 'Segunda vida', icon: SALVAVIDAS_ICON },
     { label: 'llama', icon: FLAME_ICON },
@@ -66,7 +72,15 @@ describe('los iconos del Cañón (T150)', () => {
   });
 
   it('la carta de cualquier tipo saca un icono dibujado, también sin id', () => {
-    const kinds = ['weapon-new', 'weapon-level', 'vinyl-new', 'vinyl-level', 'evolution', 'salvavidas', 'fallback'] as const;
+    const kinds = [
+      'weapon-new',
+      'weapon-level',
+      'vinyl-new',
+      'vinyl-level',
+      'evolution',
+      'salvavidas',
+      'fallback',
+    ] as const;
     for (const kind of kinds) expect(CANON_ICON_NAMES, kind).toContain(cardIcon({ kind }));
     expect(FALLBACK_ICON).toBe(UPGRADE_ICON.bailing);
   });

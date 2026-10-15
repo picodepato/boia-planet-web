@@ -40,7 +40,9 @@ const castle = SAMPLE_ACHIEVEMENTS.filter(
 describe('catálogo: castillo y carrera (T176)', () => {
   it('un logro por dificultad del castillo, más Tormenta de 10 min', () => {
     const byDifficulty = V10_CASTLE_DIFFICULTIES.map((d) =>
-      castle.filter((a) => a.triggerParams?.difficulty === d && a.triggerParams?.runMin === undefined),
+      castle.filter(
+        (a) => a.triggerParams?.difficulty === d && a.triggerParams?.runMin === undefined,
+      ),
     );
     for (const list of byDifficulty) expect(list).toHaveLength(1);
     const storm = def(CASTLE_STORM_ACHIEVEMENT);
@@ -79,7 +81,10 @@ describe('catálogo: castillo y carrera (T176)', () => {
 
   it('cada premio es de un solo logro, que da puntos, monedas y el cosmético al reclamarlo', async () => {
     for (const key of [CANONCITO, TORTUGA_TURBO, ESTELA_VORTICE]) {
-      expect(SAMPLE_ACHIEVEMENTS.filter((a) => a.cosmeticKey === key), key).toHaveLength(1);
+      expect(
+        SAMPLE_ACHIEVEMENTS.filter((a) => a.cosmeticKey === key),
+        key,
+      ).toHaveLength(1);
     }
     const { repo } = makeRepo();
     for (const id of [CASTLE_STORM_ACHIEVEMENT, CASTLE_VORTEX_ACHIEVEMENT, RACE_FAST_ACHIEVEMENT]) {
@@ -217,7 +222,9 @@ describe('migración v9 → v10: las victorias del castillo de antes (T176)', ()
   it('copia fija de las medallas: las mismas duraciones y dificultades del castillo', () => {
     expect([...V10_CASTLE_RUN_MINS]).toEqual([5, 7, CASTLE_LONG_RUN_MIN]);
     expect([...V10_CASTLE_DIFFICULTIES]).toEqual(
-      castle.flatMap((a) => (a.triggerParams?.runMin === undefined ? [a.triggerParams?.difficulty] : [])),
+      castle.flatMap((a) =>
+        a.triggerParams?.runMin === undefined ? [a.triggerParams?.difficulty] : [],
+      ),
     );
   });
 });

@@ -18,7 +18,10 @@ const GLYPHS = {
     <>
       <path fill={P} d="M3 29v-3.5c3.5 0 5-4.5 9-4.5s5.5 4.5 9 4.5c3.5 0 4.5-2 8-2V29z" />
       <path stroke={O} d="M6.8 16.5a10.2 10.2 0 1 1 19.4 0M26.2 16.5l-3-1M26.2 16.5l1.1-2.9" />
-      <g transform="translate(15.5 12) rotate(-35) scale(0.55) translate(-16 -15)" strokeWidth={3.6}>
+      <g
+        transform="translate(15.5 12) rotate(-35) scale(0.55) translate(-16 -15)"
+        strokeWidth={3.6}
+      >
         <path fill={O} d="M14.5 3.5c5.6 3.4 10.2 9.2 12 14.7h-12z" />
         <path fill={C} d="M14.5 8c-3.8 2.9-7 6.4-8.8 10.2h8.8z" />
         <path d="M14.5 3.5v17.7" />
@@ -76,10 +79,7 @@ const GLYPHS = {
     <>
       <circle fill={P} cx="16" cy="14" r="10" />
       <path stroke={W} strokeWidth={1.8} d="M10.2 12.2a6.2 6.2 0 0 1 3.4-4.4" />
-      <path
-        fill={S}
-        d="M16 8.6l1.8 3.7 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6z"
-      />
+      <path fill={S} d="M16 8.6l1.8 3.7 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6z" />
       <rect fill={O} x="9.5" y="24.2" width="13" height="4.4" rx="1.6" />
     </>
   ),

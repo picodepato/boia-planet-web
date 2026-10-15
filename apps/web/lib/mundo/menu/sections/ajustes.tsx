@@ -71,7 +71,7 @@ export function SoundAndLanguage({
           {LANGUAGES.map((l) => (
             <option key={l.id} value={l.id} disabled={!l.available}>
               {l.label}
-              {l.available ? '' : ' (próximamente)'}
+              {l.available ? '' : ` ${t('menu.ajustes.proximamente')}`}
             </option>
           ))}
         </select>

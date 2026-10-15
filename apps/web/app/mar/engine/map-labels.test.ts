@@ -295,12 +295,7 @@ describe('Nochevieja y Puig Campana en la vista de mapa (T279)', () => {
           expect(l.alpha).toBe(1);
           expect(l.scale).toBe(1);
         }
-        expect(
-          intersects(
-            lookBox(ultima.s, ultima.l),
-            lookBox(canon.s, canon.l),
-          ),
-        ).toBe(false);
+        expect(intersects(lookBox(ultima.s, ultima.l), lookBox(canon.s, canon.l))).toBe(false);
       });
     }
   }
@@ -459,4 +454,3 @@ describe('todas las islas con su rótulo en la vista de mapa (T280)', () => {
     }
   }
 });
-

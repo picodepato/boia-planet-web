@@ -71,7 +71,13 @@ function CanoncitoIcon({ id, size }: { id: string; size: number }) {
       data-mascota={id}
     >
       {/* La cureña y las ruedas. */}
-      <path d="M9 17h12l1.5 5H8.5z" fill={CN.wood} stroke={line} strokeWidth="1.6" strokeLinejoin="round" />
+      <path
+        d="M9 17h12l1.5 5H8.5z"
+        fill={CN.wood}
+        stroke={line}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
       <circle cx="11" cy="24" r="3.4" fill={CN.woodDark} stroke={line} strokeWidth="1.6" />
       <circle cx="20" cy="24" r="3.4" fill={CN.woodDark} stroke={line} strokeWidth="1.6" />
       <circle cx="11" cy="24" r="1" fill={CN.hub} />
@@ -92,7 +98,12 @@ function CanoncitoIcon({ id, size }: { id: string; size: number }) {
       <circle cx="23.5" cy="9" r=".8" fill={line} />
       <circle cx="27.1" cy="8.5" r=".8" fill={line} />
       {/* La mecha con su chispa. */}
-      <path d="M6.5 14.5c-1.5-1-2.5-2.5-1.5-4.5" fill="none" stroke={CN.woodDark} strokeWidth="1.4" />
+      <path
+        d="M6.5 14.5c-1.5-1-2.5-2.5-1.5-4.5"
+        fill="none"
+        stroke={CN.woodDark}
+        strokeWidth="1.4"
+      />
       <circle cx="5" cy="9" r="1.8" fill={CN.spark} stroke={line} strokeWidth="1" />
     </svg>
   );
@@ -121,12 +132,24 @@ function TortugaIcon({ id, size }: { id: string; size: number }) {
       {/* El caparazón con su borde, y el rayo de BOIA. */}
       <ellipse cx="16" cy="19" rx="8.5" ry="9.5" fill={TT.rim} stroke={line} strokeWidth="1.8" />
       <ellipse cx="16" cy="19" rx="6.6" ry="7.6" fill={TT.shell} />
-      <path d="M16.5 12.5l-3 6h2.5l-1.5 6 4-7h-2.5z" fill={TT.stripe} stroke={line} strokeWidth=".9" strokeLinejoin="round" />
+      <path
+        d="M16.5 12.5l-3 6h2.5l-1.5 6 4-7h-2.5z"
+        fill={TT.stripe}
+        stroke={line}
+        strokeWidth=".9"
+        strokeLinejoin="round"
+      />
       {/* La cabeza con las gafas. */}
       <circle cx="16" cy="7" r="4.2" fill={TT.skin} stroke={line} strokeWidth="1.6" />
       <circle cx="14.2" cy="6.4" r="1.7" fill={TT.lens} stroke={TT.goggle} strokeWidth="1.1" />
       <circle cx="17.8" cy="6.4" r="1.7" fill={TT.lens} stroke={TT.goggle} strokeWidth="1.1" />
-      <path d="M14.5 9.2c1 .8 2 .8 3 0" fill="none" stroke={line} strokeWidth="1" strokeLinecap="round" />
+      <path
+        d="M14.5 9.2c1 .8 2 .8 3 0"
+        fill="none"
+        stroke={line}
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

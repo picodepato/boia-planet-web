@@ -32,7 +32,8 @@ const VALID = new Date(
   Math.min(
     Date.parse(naufrago.endsAt!),
     ...onSale.filter((e) => e.id !== naufrago.eventId).map((e) => Date.parse(e.startsAt)),
-  ) - 7 * DAY,
+  ) -
+    7 * DAY,
 );
 const EXPIRED = new Date(Date.parse(naufrago.endsAt!) + DAY);
 // Otro evento que siga a la venta en `VALID` (el estado sale de las fechas, T42).

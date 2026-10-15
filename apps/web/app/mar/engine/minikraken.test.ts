@@ -7,7 +7,8 @@ import { createMinikraken } from './minikraken';
  * `baja`, animado sólo con transformaciones y quieto con movimiento reducido.
  */
 const tris = (m: Mesh) => (m.geometry as BufferGeometry).getAttribute('position').count / 3;
-const total = (k: ReturnType<typeof createMinikraken>) => tris(k.head) + tris(k.skirt) + tris(k.arm);
+const total = (k: ReturnType<typeof createMinikraken>) =>
+  tris(k.head) + tris(k.skirt) + tris(k.arm);
 
 describe('minikraken (T154)', () => {
   it('tres piezas con un solo material; en baja, menos triángulos', () => {

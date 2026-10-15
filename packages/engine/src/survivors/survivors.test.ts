@@ -16,7 +16,12 @@ import {
 } from './config';
 import { SpatialGrid } from './grid';
 import { SurvivorsClock } from './clock';
-import { type SurvivorsEvent, type SurvivorsGame, type SurvivorsInput, createSurvivors } from './sim';
+import {
+  type SurvivorsEvent,
+  type SurvivorsGame,
+  type SurvivorsInput,
+  createSurvivors,
+} from './sim';
 import { type SurvivorsWorld, survivorsWorldOf } from './world';
 
 // --- Mundos de prueba ---------------------------------------------------------
@@ -70,7 +75,9 @@ const unsinkableNoBosses = withConfig((c) => {
   c.player.waterCapacity = 1e12;
   c.acts = c.acts.map((a) => ({
     ...a,
-    events: a.events.map((ev) => (ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev)),
+    events: a.events.map((ev) =>
+      ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev,
+    ),
   }));
 });
 
@@ -78,7 +85,9 @@ const unsinkableNoBosses = withConfig((c) => {
 const wavesOnly = withConfig((c) => {
   c.acts = c.acts.map((a) => ({
     ...a,
-    events: a.events.map((ev) => (ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev)),
+    events: a.events.map((ev) =>
+      ev.type === 'boss' || ev.type === 'miniboss' ? { ...ev, enabled: false } : ev,
+    ),
   }));
 });
 
@@ -158,7 +167,8 @@ function dodgeInput(game: SurvivorsGame): SurvivorsInput {
       fy += (dy / Math.max(1, d)) * k * 2;
     }
   }
-  if (Math.hypot(fx, fy) < 1e-9) return { ship: { dirX: 0, dirY: 0, throttle: 0, drift: false }, choose: 0 };
+  if (Math.hypot(fx, fy) < 1e-9)
+    return { ship: { dirX: 0, dirY: 0, throttle: 0, drift: false }, choose: 0 };
   return { ship: { dirX: fx, dirY: fy, throttle: 1, drift: false }, choose: 0 };
 }
 
@@ -349,7 +359,8 @@ describe('survivors: partidas completas', () => {
           for (const e of s.enemies) {
             // Las gaviotas vuelan por encima de las islas: a ellas sí se les permite.
             if (unsinkable.enemies[e.type]!.ignoresIslands) continue;
-            if (g.onLand(e.x, e.y)) throw new Error(`enemigo ${e.id} (${e.type}) en tierra a ${g.activeS}s`);
+            if (g.onLand(e.x, e.y))
+              throw new Error(`enemigo ${e.id} (${e.type}) en tierra a ${g.activeS}s`);
             checked++;
           }
           for (const n of s.notes) {
@@ -358,7 +369,12 @@ describe('survivors: partidas completas', () => {
           }
           // Las armas que pasan sobre islas pueden derrotar gaviotas mientras vuelan sobre tierra.
           for (const e of ev) {
-            if (e.type === 'defeated' && !unsinkable.enemies[e.enemy]!.ignoresIslands && g.onLand(e.x, e.y)) defeatedOnLand++;
+            if (
+              e.type === 'defeated' &&
+              !unsinkable.enemies[e.enemy]!.ignoresIslands &&
+              g.onLand(e.x, e.y)
+            )
+              defeatedOnLand++;
           }
         },
       );
@@ -558,7 +574,8 @@ describe('survivors: pausa y tiempo activo', () => {
     expect(s.card?.options).toHaveLength(cfg.cardChoices);
     expect(new Set(s.card?.options.map((o) => o.id)).size).toBe(cfg.cardChoices);
     const frozen = game.activeS;
-    for (let i = 0; i < 120; i++) game.step({ ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } });
+    for (let i = 0; i < 120; i++)
+      game.step({ ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } });
     expect(game.activeS).toBe(frozen);
     expect(game.snapshot().pauseRunS).toBeCloseTo(2, 6);
     const pick = game.snapshot().card!.options[1]!;
@@ -597,7 +614,12 @@ describe('survivors: cañón, notas e islas', () => {
     // Isla entre el barco (0, 0) y la piraña (400, 0).
     const blocked = createSurvivors(still, 1, openSea([{ x: 200, y: 0, radius: 50 }]));
     const target = blocked.spawnEnemy('piranha', 400, 0)!;
-    const r = play(blocked, () => ({}), () => {}, 300);
+    const r = play(
+      blocked,
+      () => ({}),
+      () => {},
+      300,
+    );
     expect(r.events.filter((e) => e.type === 'blocked').length).toBeGreaterThan(0);
     expect(r.events.some((e) => e.type === 'defeated')).toBe(false);
     expect(target.hp).toBe(still.enemies.piranha!.hp);
@@ -607,7 +629,12 @@ describe('survivors: cañón, notas e islas', () => {
     // Sin la isla, la misma piraña cae.
     const open = createSurvivors(still, 1, openSea());
     open.spawnEnemy('piranha', 400, 0);
-    const r2 = play(open, () => ({}), () => {}, 300);
+    const r2 = play(
+      open,
+      () => ({}),
+      () => {},
+      300,
+    );
     expect(r2.events.some((e) => e.type === 'defeated')).toBe(true);
   });
 
@@ -615,7 +642,12 @@ describe('survivors: cañón, notas e islas', () => {
     const game = createSurvivors(still, 1, openSea());
     game.spawnEnemy('piranha', 0, 450);
     const near = game.spawnEnemy('piranha', 200, 0)!;
-    const r = play(game, () => ({}), () => {}, 120);
+    const r = play(
+      game,
+      () => ({}),
+      () => {},
+      120,
+    );
     const first = r.events.find((e) => e.type === 'defeated');
     expect(first).toMatchObject({ type: 'defeated', id: near.id, enemy: 'piranha' });
     const notes = game.snapshot().notes;
@@ -649,7 +681,12 @@ describe('survivors: cañón, notas e islas', () => {
     const pulled = game.snapshot().notes.find((n) => n.y === 0)!;
     expect(pulled.magnet).toBe(true);
     expect(pulled.x).toBeLessThan(mr - 5);
-    const r = play(game, () => ({}), () => {}, 60);
+    const r = play(
+      game,
+      () => ({}),
+      () => {},
+      60,
+    );
     expect(r.events.filter((e) => e.type === 'note')).toHaveLength(1);
     const left = game.snapshot().notes;
     expect(left).toHaveLength(1);
@@ -675,7 +712,9 @@ describe('survivors: cañón, notas e islas', () => {
     expect(plain.snapshot().notes[0]!.magnet).toBe(false);
     // Con ella, sí.
     const game = createSurvivors(cfg, 1, openSea());
-    while (game.levelUpWeapon(cfg.startingWeapon)) { /* max weapon, vinyl-only pool */ }
+    while (game.levelUpWeapon(cfg.startingWeapon)) {
+      /* max weapon, vinyl-only pool */
+    }
     game.spawnNote(20, 0, 1);
     for (let i = 0; i < 30 && game.snapshot().status !== 'card'; i++) game.step();
     game.step({ choose: 0 });
@@ -729,7 +768,12 @@ describe('survivors: enemigos', () => {
       c.weapons.canon!.base.damage = 0;
     });
     const game = createSurvivors(cfg, 1, archipelago(5), { quality: 'baja' });
-    play(game, (i) => scriptedInput(i), () => {}, 60 * 60);
+    play(
+      game,
+      (i) => scriptedInput(i),
+      () => {},
+      60 * 60,
+    );
     const s = game.snapshot();
     expect(s.enemies.length).toBe(10);
     expect(s.pressure).toBeGreaterThan(0);

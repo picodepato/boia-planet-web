@@ -8,13 +8,7 @@ import { type Vec2, type WorldConfig, type WorldObject, worldToScreen } from '@b
 
 /** Para qué sirve un punto, según sus comportamientos (lo que dice el mapa ampliado). */
 export type TargetFunction =
-  | 'event'
-  | 'tickets'
-  | 'guide'
-  | 'reward'
-  | 'teleport'
-  | 'minigame'
-  | 'circuit';
+  'event' | 'tickets' | 'guide' | 'reward' | 'teleport' | 'minigame' | 'circuit';
 
 /**
  * Etiquetas de objeto que el mapa respeta: `oculto` no sale en el minimapa ni

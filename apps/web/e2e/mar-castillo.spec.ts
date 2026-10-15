@@ -992,7 +992,10 @@ test('arena v3: sin turbo ni nudos; cada pago de Ibiza salta «+N» con todas la
   expect(Number(await canvas(page).getAttribute('data-arena-moneda-ultima'))).toBeGreaterThan(0);
 
   // Decisión 2: de cerca, el avión en el centro del lienzo (y sigue ahí al moverse).
-  await page.locator('.mar-rail').getByRole('button', { name: t('mar.client.acercar') }).click();
+  await page
+    .locator('.mar-rail')
+    .getByRole('button', { name: t('mar.client.acercar') })
+    .click();
   for (let i = 0; i < 8; i++) await page.keyboard.press('+');
   await expect.poll(() => arenaZoom(page)).toBe(0);
   await tapScreen(page, await freeSea(page));

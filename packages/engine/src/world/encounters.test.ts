@@ -50,14 +50,19 @@ describe('colisión de varios círculos', () => {
       ship.y += ship.vy / 60;
       rt.step(ship, DEFAULT_SHIP_CONFIG, 1 / 60);
     }
-    expect(Math.hypot(ship.x - 20, ship.y)).toBeGreaterThanOrEqual(10 + DEFAULT_SHIP_CONFIG.radius - 0.01);
+    expect(Math.hypot(ship.x - 20, ship.y)).toBeGreaterThanOrEqual(
+      10 + DEFAULT_SHIP_CONFIG.radius - 0.01,
+    );
   });
 
   it('círculos extra sin COLISIÓN principal no valen', () => {
     expect(() =>
       base([
         obj('mal', {
-          geometry: { activation: { shape: 'circle', radius: 5 }, collisionParts: [{ dx: 1, dy: 1, radius: 3 }] },
+          geometry: {
+            activation: { shape: 'circle', radius: 5 },
+            collisionParts: [{ dx: 1, dy: 1, radius: 3 }],
+          },
           behaviors: [{ type: 'collision', params: { mode: 'block' } }],
         }),
       ]),
@@ -67,7 +72,13 @@ describe('colisión de varios círculos', () => {
 
 describe('vaivén (params.patrol)', () => {
   it('va y vuelve entre sus puntos en su periodo', () => {
-    const p = { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }], period: 4 };
+    const p = {
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+      period: 4,
+    };
     expect(patrolPoint(p, 0)).toEqual({ x: 0, y: 0 });
     expect(patrolPoint(p, 1).x).toBeCloseTo(50);
     expect(patrolPoint(p, 2).x).toBeCloseTo(100);
@@ -80,7 +91,15 @@ describe('vaivén (params.patrol)', () => {
       obj('croc', {
         geometry: { collision: { shape: 'circle', radius: 10 } },
         behaviors: [{ type: 'collision', params: { mode: 'slow', intensity: 0.6, duration: 2 } }],
-        params: { patrol: { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }], period: 4 } },
+        params: {
+          patrol: {
+            points: [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 },
+            ],
+            period: 4,
+          },
+        },
       }),
     ]);
     const rt = new WorldRuntime(world);

@@ -14,7 +14,12 @@ import {
   bossHpFor,
   harderAct,
 } from './config';
-import { type SurvivorsEvent, type SurvivorsGame, type SurvivorsInput, createSurvivors } from './sim';
+import {
+  type SurvivorsEvent,
+  type SurvivorsGame,
+  type SurvivorsInput,
+  createSurvivors,
+} from './sim';
 import type { SurvivorsWorld } from './world';
 
 /**
@@ -36,11 +41,19 @@ function archipelago(seed: number): SurvivorsWorld {
     if (Math.hypot(x, y) < 260) continue;
     obstacles.push({ x, y, radius: 40 + r() * 150 });
   }
-  return { bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 }, obstacles, start: { x: 0, y: 0 } };
+  return {
+    bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 },
+    obstacles,
+    start: { x: 0, y: 0 },
+  };
 }
 
 function openSea(obstacles: SurvivorsWorld['obstacles'] = []): SurvivorsWorld {
-  return { bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 }, obstacles, start: { x: 0, y: 0, heading: 0 } };
+  return {
+    bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 },
+    obstacles,
+    start: { x: 0, y: 0, heading: 0 },
+  };
 }
 
 function withConfig(patch: (c: SurvivorsConfig) => void): SurvivorsConfig {
@@ -149,7 +162,8 @@ describe('bosses T137: datos', () => {
     expect(SURVIVORS_CONFIG_VERSION).toBeGreaterThanOrEqual(8);
     expect(PRUEBA.kind).toBe('miniboss');
     expect(validateBoss(PRUEBA)).toEqual([]);
-    for (const def of Object.values(SURVIVORS_CONFIG.bosses)) expect(validateBoss(def!)).toEqual([]);
+    for (const def of Object.values(SURVIVORS_CONFIG.bosses))
+      expect(validateBoss(def!)).toEqual([]);
     const kinds = new Set(Object.values(PRUEBA.attacks).map((a) => a.kind));
     expect([...kinds].sort()).toEqual(['broadside', 'circles', 'line', 'ring', 'summon']);
     // Los huecos de los bosses que aún no existen van apagados; cada uno se
@@ -170,7 +184,9 @@ describe('bosses T137: datos', () => {
     for (const act of [1, 2]) {
       const g = createSurvivors(SURVIVORS_CONFIG, 3, openSea(), { startAtS: 400, act });
       run(g, 2);
-      expect(g.snapshot().bosses.map((b) => b.boss)).toEqual(latest.has(act) ? [latest.get(act)] : []);
+      expect(g.snapshot().bosses.map((b) => b.boss)).toEqual(
+        latest.has(act) ? [latest.get(act)] : [],
+      );
     }
   });
 
@@ -184,18 +200,29 @@ describe('bosses T137: datos', () => {
     const from = (a: typeof a1) => Object.fromEntries(a.tracks.map((t) => [t.enemy, t.fromS]));
     const f1 = from(a1);
     const f2 = from(a2);
-    for (const id of ['crab', 'pirate', 'swordfish'] as const) expect(f2[id]!).toBeLessThan(f1[id]!);
+    for (const id of ['crab', 'pirate', 'swordfish'] as const)
+      expect(f2[id]!).toBeLessThan(f1[id]!);
     for (const id of ['piranha', 'jellyfish', 'gull'] as const) expect(f2[id]).toBe(f1[id]);
     // Las curvas se adelantan lo mismo que la pista, sin bajar de 0.
     const p1 = a1.tracks.find((t) => t.enemy === 'pirate')!;
     const p2 = a2.tracks.find((t) => t.enemy === 'pirate')!;
-    expect(p2.keys.map((k) => k.atS)).toEqual(p1.keys.map((k) => Math.max(0, k.atS - (p1.fromS - p2.fromS))));
+    expect(p2.keys.map((k) => k.atS)).toEqual(
+      p1.keys.map((k) => Math.max(0, k.atS - (p1.fromS - p2.fromS))),
+    );
     expect(a2.enemyHpScale!).toBeGreaterThan(1);
     expect(a2.bossHpScale!).toBeGreaterThan(1);
     expect(a2.events.find((e) => e.type === 'boss')!.ref).toBe('kraken');
-    expect(a2.events.filter((e) => e.type !== 'boss')).toEqual(a1.events.filter((e) => e.type !== 'boss'));
+    expect(a2.events.filter((e) => e.type !== 'boss')).toEqual(
+      a1.events.filter((e) => e.type !== 'boss'),
+    );
     // `harderAct` compone: un acto 3 sobre el 2 multiplica otra vez.
-    const a3 = harderAct(a2, { act: 3, enemyHpScale: 1.2, bossHpScale: 1.2, earlierS: { pirate: 1000 }, finalBoss: 'capitan' });
+    const a3 = harderAct(a2, {
+      act: 3,
+      enemyHpScale: 1.2,
+      bossHpScale: 1.2,
+      earlierS: { pirate: 1000 },
+      finalBoss: 'capitan',
+    });
     expect(a3.enemyHpScale!).toBeCloseTo(a2.enemyHpScale! * 1.2);
     expect(a3.tracks.find((t) => t.enemy === 'pirate')!.fromS).toBe(0);
   });
@@ -222,7 +249,10 @@ describe('bosses T137: datos', () => {
     const d = SURVIVORS_CONFIG.difficulties;
     expect(bossHpFor(PRUEBA, actOf(SURVIVORS_CONFIG, 1), d.normal)).toBe(PRUEBA.hp);
     expect(bossHpFor(PRUEBA, actOf(SURVIVORS_CONFIG, 2), d.tormenta)).toBeCloseTo(
-      PRUEBA.hp * actOf(SURVIVORS_CONFIG, 2)!.bossHpScale! * d.tormenta.enemyHp * (d.tormenta.bossHp ?? 1),
+      PRUEBA.hp *
+        actOf(SURVIVORS_CONFIG, 2)!.bossHpScale! *
+        d.tormenta.enemyHp *
+        (d.tormenta.bossHp ?? 1),
     );
     const g = createSurvivors(quiet(), 1, openSea(), { act: 1, difficulty: 'tranquila' });
     const b = g.spawnBoss('prueba', 400, 0)!;
@@ -255,9 +285,9 @@ describe('bosses T137: datos', () => {
     expect(nextPhase(cyc, 1, 1, 1)).toBe(0);
     expect(nextPhase(cyc, 1, 0.3, 0)).toBeNull(); // por vida iría a la 2, que no existe: se queda
     expect(phaseMarks(PRUEBA)).toEqual([0.5]);
-    expect(validateBoss({ ...PRUEBA, phases: [{ ...PRUEBA.phases[0]!, attacks: ['nada'] }] })).toContain(
-      'prueba: fase 0 ataque nada no existe',
-    );
+    expect(
+      validateBoss({ ...PRUEBA, phases: [{ ...PRUEBA.phases[0]!, attacks: ['nada'] }] }),
+    ).toContain('prueba: fase 0 ataque nada no existe');
   });
 });
 
@@ -267,7 +297,12 @@ describe('bosses T137: fases y daño', () => {
   it('las fases pasan por vida y por tiempo; la fase invulnerable no recibe daño; los sucesos lo cuentan', () => {
     const g = createSurvivors(quiet(), 1, openSea());
     g.spawnBoss('prueba', 500, 0);
-    expect(g.snapshot().bosses[0]).toMatchObject({ boss: 'prueba', phase: 0, phaseCount: 3, invulnerable: false });
+    expect(g.snapshot().bosses[0]).toMatchObject({
+      boss: 'prueba',
+      phase: 0,
+      phaseCount: 3,
+      invulnerable: false,
+    });
     burnTo(g, 0.5);
     const ev = run(g, 0.1);
     expect(of(ev, 'bossPhase').map((e) => e.phase)).toEqual([1]);
@@ -287,7 +322,11 @@ describe('bosses T137: fases y daño', () => {
   });
 
   it('las armas del barco hieren al boss (el cañón le dispara si es lo único a tiro) y lo vencen', () => {
-    const g = createSurvivors(quiet((c) => stillBoss(c, [])), 1, openSea());
+    const g = createSurvivors(
+      quiet((c) => stillBoss(c, [])),
+      1,
+      openSea(),
+    );
     g.spawnBoss('prueba', 200, 0);
     const ev = run(g, 4);
     const dmg = of(ev, 'bossDamaged');
@@ -297,7 +336,11 @@ describe('bosses T137: fases y daño', () => {
   });
 
   it('al caer un miniboss: suceso, nota grande, cofre que flota y se abre al tocarlo; lo vencido queda en el snapshot', () => {
-    const g = createSurvivors(quiet((c) => stillBoss(c, [])), 1, openSea());
+    const g = createSurvivors(
+      quiet((c) => stillBoss(c, [])),
+      1,
+      openSea(),
+    );
     // Pegado al barco: el cofre cae a su alcance.
     g.spawnBoss('prueba', 30, 0);
     burnTo(g, 0);
@@ -317,14 +360,21 @@ describe('bosses T137: fases y daño', () => {
     const big = Math.max(...s.notes.map((n) => n.value), ...of(ev, 'note').map((n) => n.value));
     expect(big).toBeGreaterThanOrEqual(PRUEBA.noteValue);
     // Lejos, el cofre se queda flotando hasta que el barco llega.
-    const far = createSurvivors(quiet((c) => stillBoss(c, [])), 1, openSea());
+    const far = createSurvivors(
+      quiet((c) => stillBoss(c, [])),
+      1,
+      openSea(),
+    );
     far.spawnBoss('prueba', 250, 0);
     burnTo(far, 0);
     const ev2 = run(far, 1.5);
     expect(of(ev2, 'chest')).toHaveLength(1);
     expect(of(ev2, 'chestOpened')).toHaveLength(0);
     expect(far.snapshot().chests).toHaveLength(1);
-    expect(far.snapshot().chests[0]).toMatchObject({ boss: 'prueba', radius: SURVIVORS_CONFIG.bossFight.chestRadius });
+    expect(far.snapshot().chests[0]).toMatchObject({
+      boss: 'prueba',
+      radius: SURVIVORS_CONFIG.bossFight.chestRadius,
+    });
     // La nota grande sube de nivel: la carta se contesta para que el barco navegue.
     const ev3 = run(far, 4, { ship: { dirX: 1, dirY: 0, throttle: 1, drift: false }, choose: 0 });
     expect(of(ev3, 'chestOpened')).toHaveLength(1);
@@ -366,7 +416,8 @@ describe('bosses T137: ataques', () => {
         g,
         () => ({ choose: 0 }),
         (game, ev) => {
-          for (const e of ev) if (e.type.startsWith('boss')) timed.push({ t: game.activeS, e: { ...e } });
+          for (const e of ev)
+            if (e.type.startsWith('boss')) timed.push({ t: game.activeS, e: { ...e } });
         },
         60 * 120,
       );
@@ -377,14 +428,20 @@ describe('bosses T137: ataques', () => {
         if (e.type === 'bossAttack') {
           const at = armed.get(`${e.id}:${e.attack}`);
           expect(at).toBeDefined();
-          expect(t - at!).toBeGreaterThanOrEqual(PRUEBA.attacks[e.attack]!.telegraphS - 2 * SURVIVORS_STEP_S);
+          expect(t - at!).toBeGreaterThanOrEqual(
+            PRUEBA.attacks[e.attack]!.telegraphS - 2 * SURVIVORS_STEP_S,
+          );
         }
         if (e.type === 'bossHit' && e.attack !== null) {
           hits++;
           kinds.add(PRUEBA.attacks[e.attack]!.kind);
-          const at = [...armed.entries()].filter(([k]) => k.endsWith(`:${e.attack}`)).map(([, v]) => v);
+          const at = [...armed.entries()]
+            .filter(([k]) => k.endsWith(`:${e.attack}`))
+            .map(([, v]) => v);
           expect(at.length).toBeGreaterThan(0);
-          expect(t - Math.max(...at)).toBeGreaterThanOrEqual(PRUEBA.attacks[e.attack]!.telegraphS - 2 * SURVIVORS_STEP_S);
+          expect(t - Math.max(...at)).toBeGreaterThanOrEqual(
+            PRUEBA.attacks[e.attack]!.telegraphS - 2 * SURVIVORS_STEP_S,
+          );
         }
       }
       expect(timed.filter(({ e }) => e.type === 'bossSpawn').length).toBeGreaterThanOrEqual(1);
@@ -430,7 +487,11 @@ describe('bosses T137: ataques', () => {
       expect(maxRing).toBeGreaterThan(PRUEBA.attacks.onda!.radius * 0.9);
       return of(ev, 'bossHit').length;
     };
-    const game_step = (g: SurvivorsGame) => g.step().filter((e) => e.type !== 'fire').map((e) => ({ ...e }));
+    const game_step = (g: SurvivorsGame) =>
+      g
+        .step()
+        .filter((e) => e.type !== 'fire')
+        .map((e) => ({ ...e }));
     // Sin huecos y sin islas: moja.
     expect(hits([], 0)).toBe(1);
     // Una isla entre el boss y el barco: la onda no llega.
@@ -463,14 +524,19 @@ describe('bosses T137: ataques', () => {
   });
 
   it('los círculos caen donde estaba el barco (el primero encima) y mojan; en el snapshot va uno por círculo', () => {
-    const g = createSurvivors(quiet((c) => stillBoss(c, ['rocas'], 10, 0.1)), 2, openSea());
+    const g = createSurvivors(
+      quiet((c) => stillBoss(c, ['rocas'], 10, 0.1)),
+      2,
+      openSea(),
+    );
     g.spawnBoss('prueba', 0, -400);
     run(g, 0.2);
     const w = g.snapshot().bossWarnings;
     expect(w).toHaveLength(PRUEBA.attacks.rocas!.count);
     expect(w.every((x) => x.kind === 'circles' && !x.hit)).toBe(true);
     expect(Math.hypot(w[0]!.x, w[0]!.y)).toBeLessThan(1);
-    for (const x of w) expect(Math.hypot(x.x, x.y)).toBeLessThanOrEqual(PRUEBA.attacks.rocas!.spread + 1);
+    for (const x of w)
+      expect(Math.hypot(x.x, x.y)).toBeLessThanOrEqual(PRUEBA.attacks.rocas!.spread + 1);
     const ev = run(g, 2);
     expect(of(ev, 'bossAttack')[0]).toMatchObject({ attack: 'rocas', kind: 'circles' });
     expect(of(ev, 'bossHit')).toHaveLength(1);
@@ -479,11 +545,19 @@ describe('bosses T137: ataques', () => {
 
   it('la embestida: avisa con la línea hacia el barco y luego el boss recorre `length` u (y se para en una isla)', () => {
     const charge = (obstacles: SurvivorsWorld['obstacles']) => {
-      const g = createSurvivors(quiet((c) => stillBoss(c, ['embestida'], 10, 0.1)), 1, openSea(obstacles));
+      const g = createSurvivors(
+        quiet((c) => stillBoss(c, ['embestida'], 10, 0.1)),
+        1,
+        openSea(obstacles),
+      );
       g.spawnBoss('prueba', 500, 0);
       run(g, 0.2);
       const w = g.snapshot().bossWarnings[0]!;
-      expect(w).toMatchObject({ kind: 'line', hit: false, length: PRUEBA.attacks.embestida!.length });
+      expect(w).toMatchObject({
+        kind: 'line',
+        hit: false,
+        length: PRUEBA.attacks.embestida!.length,
+      });
       expect(Math.abs(Math.cos(w.heading) + 1)).toBeLessThan(1e-6); // hacia el barco (−x)
       const x0 = g.snapshot().bosses[0]!.x;
       const ev = run(g, 2.5);
@@ -500,7 +574,11 @@ describe('bosses T137: ataques', () => {
   });
 
   it('la andanada: disparos rectos por los dos costados, que las islas paran', () => {
-    const g = createSurvivors(quiet((c) => stillBoss(c, ['andanada'], 10, 0.1)), 1, openSea([{ x: 300, y: 250, radius: 60 }]));
+    const g = createSurvivors(
+      quiet((c) => stillBoss(c, ['andanada'], 10, 0.1)),
+      1,
+      openSea([{ x: 300, y: 250, radius: 60 }]),
+    );
     // El boss mira al barco (−x) al entrar: los costados tiran hacia ±y.
     g.spawnBoss('prueba', 300, 0);
     run(g, 0.2);
@@ -530,13 +608,21 @@ describe('bosses T137: ataques', () => {
   });
 
   it('la llamada: aparecen enemigos alrededor del boss por el sistema de aparición, bajo el tope', () => {
-    const g = createSurvivors(quiet((c) => stillBoss(c, ['refuerzos'], 10, 0.1)), 1, openSea(), { quality: 'baja' });
+    const g = createSurvivors(
+      quiet((c) => stillBoss(c, ['refuerzos'], 10, 0.1)),
+      1,
+      openSea(),
+      { quality: 'baja' },
+    );
     g.spawnBoss('prueba', 500, 0);
     expect(g.snapshot().enemies).toEqual([]);
     const ev = run(g, 0.5);
     const s = of(ev, 'bossSummon');
     expect(s).toHaveLength(1);
-    expect(s[0]).toMatchObject({ enemy: 'piranha', count: PRUEBA.attacks.refuerzos!.summon!.count });
+    expect(s[0]).toMatchObject({
+      enemy: 'piranha',
+      count: PRUEBA.attacks.refuerzos!.summon!.count,
+    });
     // Sin aviso (telegraphS 0): el aviso y el golpe van juntos.
     expect(of(ev, 'bossTelegraph')).toHaveLength(1);
     expect(of(ev, 'bossAttack')).toHaveLength(1);
@@ -544,8 +630,14 @@ describe('bosses T137: ataques', () => {
     expect(alive.length).toBeGreaterThanOrEqual(1);
     for (const e of alive) expect(Math.hypot(e.x - 500, e.y)).toBeLessThan(200);
     // El tope manda: lleno, no llama a nadie más.
-    const full = createSurvivors(quiet((c) => stillBoss(c, ['refuerzos'], 10, 0.1)), 1, openSea(), { quality: 'baja' });
-    for (let i = 0; i < SURVIVORS_CONFIG.caps.baja.enemies; i++) full.spawnEnemy('crab', -1500 + i * 40, -1500);
+    const full = createSurvivors(
+      quiet((c) => stillBoss(c, ['refuerzos'], 10, 0.1)),
+      1,
+      openSea(),
+      { quality: 'baja' },
+    );
+    for (let i = 0; i < SURVIVORS_CONFIG.caps.baja.enemies; i++)
+      full.spawnEnemy('crab', -1500 + i * 40, -1500);
     full.spawnBoss('prueba', 500, 0);
     expect(of(run(full, 0.5), 'bossSummon')).toEqual([]);
   });
@@ -592,18 +684,26 @@ describe('bosses T137: guion', () => {
       let spawn: SurvivorsEvent | undefined;
       for (let i = 0; i < 60 * 31; i++) {
         for (const e of g.step()) if (e.type === 'bossSpawn') spawn = { ...e };
-        if (g.activeS > 151) for (const e of g.snapshot().enemies) if (!before.has(e.id)) ids.add(e.id);
+        if (g.activeS > 151)
+          for (const e of g.snapshot().enemies) if (!before.has(e.id)) ids.add(e.id);
       }
       return { ids: ids.size, spawn, g };
     };
     const withBoss = seen(slow);
-    expect(withBoss.spawn).toMatchObject({ type: 'bossSpawn', boss: 'prueba', kind: 'miniboss', nameKey: PRUEBA.i18nKey });
+    expect(withBoss.spawn).toMatchObject({
+      type: 'bossSpawn',
+      boss: 'prueba',
+      kind: 'miniboss',
+      nameKey: PRUEBA.i18nKey,
+    });
     const b = withBoss.g.snapshot().bosses[0]!;
     expect(Math.hypot(b.x, b.y)).toBeCloseTo(SURVIVORS_CONFIG.bossFight.entryDistance, 0);
-    const without = seen(withConfig((c) => {
-      Object.assign(c, structuredClone(slow));
-      c.acts = [{ ...c.acts[0]!, events: [] }];
-    }));
+    const without = seen(
+      withConfig((c) => {
+        Object.assign(c, structuredClone(slow));
+        c.acts = [{ ...c.acts[0]!, events: [] }];
+      }),
+    );
     expect(without.spawn).toBeUndefined();
     expect(without.g.snapshot().pressure).toBe(0);
     const ratio = withBoss.ids / without.ids;
@@ -613,7 +713,11 @@ describe('bosses T137: guion', () => {
 
   it('con un boss vivo los comunes nadan más despacio (`bossFight.commonSpeedScale`)', () => {
     const travel = (boss: boolean) => {
-      const g = createSurvivors(quiet((c) => stillBoss(c, [])), 1, openSea());
+      const g = createSurvivors(
+        quiet((c) => stillBoss(c, [])),
+        1,
+        openSea(),
+      );
       if (boss) g.spawnBoss('prueba', -1200, 0);
       g.spawnEnemy('piranha', 900, 0);
       const x0 = g.snapshot().enemies[0]!.x;
@@ -651,7 +755,8 @@ describe('bosses T137: guion', () => {
   });
 
   it('el atajo &t= entra en la pelea del último hueco pasado (y en ninguna en producción)', () => {
-    const at = (t: number) => createSurvivors(scripted(), 2, archipelago(3), { startAtS: t }).snapshot();
+    const at = (t: number) =>
+      createSurvivors(scripted(), 2, archipelago(3), { startAtS: t }).snapshot();
     expect(at(100).bosses).toEqual([]);
     expect(at(200).bosses).toHaveLength(1);
     expect(at(280).bosses).toHaveLength(1);
@@ -683,7 +788,16 @@ describe('bosses T137: guion', () => {
         for (const e of ev) if (e.type === 'bossAttack') kinds.add(e.kind);
       });
       hashes.push(g.stateHash());
-      return { hashes, events, kinds, warnings, maxBosses, slowedSteps, end: g.snapshot().end, s: g.snapshot() };
+      return {
+        hashes,
+        events,
+        kinds,
+        warnings,
+        maxBosses,
+        slowedSteps,
+        end: g.snapshot().end,
+        s: g.snapshot(),
+      };
     };
     const a = go(21);
     const b = go(21);
@@ -707,23 +821,49 @@ describe('bosses T137: guion', () => {
 
   it('el piloto cuenta los golpes de boss y los vencidos', () => {
     // Accounting must exercise both event paths regardless of how well greedy dodges.
-    const hit = runBot(scripted((c) => {
-      c.acts = [{ ...c.acts[0]!, tracks: [], events: [{ atS: 0.1, type: 'miniboss', ref: 'prueba', enabled: true }] }];
-      c.weapons.canon!.base.damage = 0;
-      stillBoss(c, ['onda']);
-      c.bosses.prueba!.attacks.onda!.gaps = 0;
-      c.bosses.prueba!.attacks.onda!.radius = c.bossFight.entryDistance + 100;
-    }), 'idle', 1, openSea(), {}, 10);
+    const hit = runBot(
+      scripted((c) => {
+        c.acts = [
+          {
+            ...c.acts[0]!,
+            tracks: [],
+            events: [{ atS: 0.1, type: 'miniboss', ref: 'prueba', enabled: true }],
+          },
+        ];
+        c.weapons.canon!.base.damage = 0;
+        stillBoss(c, ['onda']);
+        c.bosses.prueba!.attacks.onda!.gaps = 0;
+        c.bosses.prueba!.attacks.onda!.radius = c.bossFight.entryDistance + 100;
+      }),
+      'idle',
+      1,
+      openSea(),
+      {},
+      10,
+    );
     expect(hit.bossAttackHits).toBeGreaterThan(0);
     expect(hit.bossHits).toBeGreaterThanOrEqual(hit.bossAttackHits);
     expect(hit.hits).toBeGreaterThanOrEqual(hit.bossHits);
-    const defeated = runBot(scripted((c) => {
-      c.acts = [{ ...c.acts[0]!, tracks: [], events: [{ atS: 0.1, type: 'miniboss', ref: 'prueba', enabled: true }] }];
-      c.bosses.prueba!.hp = 1;
-      c.bossFight.entryDistance = 40;
-      c.weapons.canon!.base.range = c.bossFight.entryDistance + 100;
-      stillBoss(c, []);
-    }), 'idle', 1, openSea(), {}, 10);
+    const defeated = runBot(
+      scripted((c) => {
+        c.acts = [
+          {
+            ...c.acts[0]!,
+            tracks: [],
+            events: [{ atS: 0.1, type: 'miniboss', ref: 'prueba', enabled: true }],
+          },
+        ];
+        c.bosses.prueba!.hp = 1;
+        c.bossFight.entryDistance = 40;
+        c.weapons.canon!.base.range = c.bossFight.entryDistance + 100;
+        stillBoss(c, []);
+      }),
+      'idle',
+      1,
+      openSea(),
+      {},
+      10,
+    );
     expect(defeated.bossesDefeated).toEqual(['prueba'] satisfies BossId[]);
     expect(defeated.bossHits).toBeGreaterThan(0);
     expect(defeated.bossAttackHits).toBe(0);

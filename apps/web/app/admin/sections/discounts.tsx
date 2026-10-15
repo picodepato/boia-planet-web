@@ -245,8 +245,7 @@ function DiscountRow({
             {t('admin.discounts.common.own', { code: discount.code })}
           </span>
         ) : null}{' '}
-        · {target} · {STATUS_LABEL[state]}{' '}
-        {t('admin.discounts.prioridad2')} {discount.priority}
+        · {target} · {STATUS_LABEL[state]} {t('admin.discounts.prioridad2')} {discount.priority}
         {discount.hiddenAt
           ? t('admin.discounts.escondidoEn2', { hiddenAt: discount.hiddenAt })
           : ''}
@@ -378,7 +377,13 @@ export function DiscountsSection({ ctx }: { ctx: AdminContext }) {
  * los descuentos de entradas enseñan ese código a la vez (por si la ticketera
  * cambia el oficial); vacío, cada uno el suyo. Los de la tienda no cambian.
  */
-function CommonCodeCard({ ctx, current: local }: { ctx: AdminContext; current: string | undefined }) {
+function CommonCodeCard({
+  ctx,
+  current: local,
+}: {
+  ctx: AdminContext;
+  current: string | undefined;
+}) {
   // Con cuentas, el código común es el de la base de datos (`ticketing_settings`,
   // plan 019 T223): el que reciben quienes encontraron un descuento.
   const real = useMaybeRealAdmin();

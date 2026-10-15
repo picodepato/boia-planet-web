@@ -10,7 +10,12 @@ import {
   actOf,
   bossHpFor,
 } from './config';
-import { type SurvivorsEvent, type SurvivorsGame, type SurvivorsInput, createSurvivors } from './sim';
+import {
+  type SurvivorsEvent,
+  type SurvivorsGame,
+  type SurvivorsInput,
+  createSurvivors,
+} from './sim';
 import type { SurvivorsWorld } from './world';
 
 /**
@@ -25,7 +30,11 @@ import type { SurvivorsWorld } from './world';
 const MARTILLO = SURVIVORS_CONFIG.bosses.martillo!;
 
 function openSea(obstacles: SurvivorsWorld['obstacles'] = []): SurvivorsWorld {
-  return { bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 }, obstacles, start: { x: 0, y: 0, heading: 0 } };
+  return {
+    bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 },
+    obstacles,
+    start: { x: 0, y: 0, heading: 0 },
+  };
 }
 
 function archipelago(seed: number): SurvivorsWorld {
@@ -37,7 +46,11 @@ function archipelago(seed: number): SurvivorsWorld {
     if (Math.hypot(x, y) < 260) continue;
     obstacles.push({ x, y, radius: 40 + r() * 150 });
   }
-  return { bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 }, obstacles, start: { x: 0, y: 0 } };
+  return {
+    bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 },
+    obstacles,
+    start: { x: 0, y: 0 },
+  };
 }
 
 function withConfig(patch: (c: SurvivorsConfig) => void): SurvivorsConfig {
@@ -78,11 +91,16 @@ interface Timed {
 }
 
 /** Juega `seconds` s con `input`, guardando cada suceso (menos los disparos) con su segundo. */
-function playTimed(game: SurvivorsGame, seconds: number, input: (step: number) => SurvivorsInput): Timed[] {
+function playTimed(
+  game: SurvivorsGame,
+  seconds: number,
+  input: (step: number) => SurvivorsInput,
+): Timed[] {
   const out: Timed[] = [];
   const steps = Math.round(seconds / SURVIVORS_STEP_S);
   for (let i = 0; i < steps && !game.ended; i++) {
-    for (const e of game.step(input(i))) if (e.type !== 'fire') out.push({ t: game.activeS, e: { ...e } });
+    for (const e of game.step(input(i)))
+      if (e.type !== 'fire') out.push({ t: game.activeS, e: { ...e } });
   }
   return out;
 }
@@ -182,7 +200,9 @@ describe('martillo T139: embestidas y llamadas', () => {
       for (let i = 0; i < steps && !g.ended; i++) {
         const ev = g.step(scriptedInput(i));
         const s = g.snapshot();
-        for (const e of ev) if (e.type.startsWith('boss') || e.type === 'chest') timed.push({ t: g.activeS, e: { ...e } });
+        for (const e of ev)
+          if (e.type.startsWith('boss') || e.type === 'chest')
+            timed.push({ t: g.activeS, e: { ...e } });
         // Mientras avisa una embestida: la línea en el agua, el tiburón quieto.
         for (const w of s.bossWarnings) {
           if (w.boss !== 'martillo' || w.kind !== 'line' || w.hit) continue;
@@ -196,7 +216,8 @@ describe('martillo T139: embestidas y llamadas', () => {
       const armed = new Map<string, number>();
       const order: string[] = [];
       for (const { t, e } of timed) {
-        if (e.type === 'bossTelegraph' && e.boss === 'martillo') armed.set(`${e.id}:${e.attack}`, t);
+        if (e.type === 'bossTelegraph' && e.boss === 'martillo')
+          armed.set(`${e.id}:${e.attack}`, t);
         if (e.type === 'bossAttack' && e.boss === 'martillo') {
           const def = MARTILLO.attacks[e.attack]!;
           const at = armed.get(`${e.id}:${e.attack}`);
@@ -274,7 +295,11 @@ describe('cofre T139', () => {
 
   it('tocarlo abre una carta de cofre con una sola opción; con la condición, la evolución', () => {
     for (const source of ['level-up', 'chest'] as const) {
-      const g = createSurvivors(quiet((c) => (c.evolutionSource = source)), 1, openSea());
+      const g = createSurvivors(
+        quiet((c) => (c.evolutionSource = source)),
+        1,
+        openSea(),
+      );
       ready(g);
       g.spawnChest('martillo', 0, 0);
       const ev = run(g, SURVIVORS_STEP_S);
@@ -287,7 +312,9 @@ describe('cofre T139', () => {
       expect(card.options[0]).toMatchObject({ kind: 'evolution', evolutionId: evo.id });
       const level = g.snapshot().xp.level;
       const ev2 = run(g, SURVIVORS_STEP_S, { choose: 0 });
-      expect(of(ev2, 'evolved')).toEqual([{ type: 'evolved', weapon: evo.weapon, evolutionId: evo.id }]);
+      expect(of(ev2, 'evolved')).toEqual([
+        { type: 'evolved', weapon: evo.weapon, evolutionId: evo.id },
+      ]);
       expect(g.snapshot().weapons.find((w) => w.id === evo.weapon)!.evolutionId).toBe(evo.id);
       // Gratis: no gasta nivel ni abre otra carta.
       expect(g.snapshot().xp.level).toBe(level);
@@ -299,7 +326,9 @@ describe('cofre T139', () => {
   it('sin la condición, una mejora del mazo: subir de nivel algo que llevas', () => {
     for (const seed of [1, 2, 3, 4, 5]) {
       const g = createSurvivors(quiet(), seed, openSea());
-      expect(eligibleEvolutions(g.config, { weapons: [], vinyls: [], salvavidas: 'absent' })).toEqual([]);
+      expect(
+        eligibleEvolutions(g.config, { weapons: [], vinyls: [], salvavidas: 'absent' }),
+      ).toEqual([]);
       const before = g.snapshot().weapons.map((w) => [w.id, w.level]);
       g.spawnChest('vecino', 0, 0);
       run(g, SURVIVORS_STEP_S);
@@ -317,7 +346,11 @@ describe('cofre T139', () => {
 
   it('las candidatas: la evolución si se cumple, si no lo que se puede subir; nunca el Salvavidas', () => {
     const cfg = SURVIVORS_CONFIG;
-    const start = { weapons: [{ id: cfg.startingWeapon, level: 1 }], vinyls: [], salvavidas: 'absent' as const };
+    const start = {
+      weapons: [{ id: cfg.startingWeapon, level: 1 }],
+      vinyls: [],
+      salvavidas: 'absent' as const,
+    };
     const up = chestCandidates(cfg, start);
     expect(up.length).toBeGreaterThan(0);
     for (const o of up) expect(['weapon-level', 'vinyl-level']).toContain(o.kind);
@@ -363,11 +396,20 @@ describe('martillo T139: determinismo', () => {
         // Si cayó, el barco va a por su cofre; si no, a vueltas.
         const chest = s.chests.find((c) => c.boss === 'martillo');
         const input = chest
-          ? { ship: { dirX: chest.x - s.player.x, dirY: chest.y - s.player.y, throttle: 1, drift: false }, choose: 0 }
+          ? {
+              ship: {
+                dirX: chest.x - s.player.x,
+                dirY: chest.y - s.player.y,
+                throttle: 1,
+                drift: false,
+              },
+              choose: 0,
+            }
           : scriptedInput(k);
         // A los 20 s, la Llama lo tumba (fuera del paso: sin sucesos, pero suelta el cofre).
         const boss = s.bosses.find((b) => b.boss === 'martillo');
-        if (boss && k === 60 * 20) g.flameBosses(boss.x, boss.y, 1, (boss.hp + 1) / g.config.bossFight.flameDps);
+        if (boss && k === 60 * 20)
+          g.flameBosses(boss.x, boss.y, 1, (boss.hp + 1) / g.config.bossFight.flameDps);
         if (s.card?.source === 'chest' && s.card.boss === 'martillo') chestCards++;
         g.step(input);
         if (k % 600 === 0) hashes.push(g.stateHash());

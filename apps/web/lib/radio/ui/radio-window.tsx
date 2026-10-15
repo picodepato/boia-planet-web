@@ -53,7 +53,15 @@ function ToggleGlyph({ d, one = false }: { d: string; one?: boolean }) {
     >
       <path d={d} />
       {one ? (
-        <text x="12" y="15" textAnchor="middle" fontSize="8" fontWeight="700" fill="currentColor" stroke="none">
+        <text
+          x="12"
+          y="15"
+          textAnchor="middle"
+          fontSize="8"
+          fontWeight="700"
+          fill="currentColor"
+          stroke="none"
+        >
           1
         </text>
       ) : null}

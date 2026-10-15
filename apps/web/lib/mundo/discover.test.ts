@@ -77,7 +77,9 @@ describe('Descubre bajo las respuestas', () => {
     );
     expect(seen).toEqual(new Set(pool.map((m) => m.userId)));
     // Con un solo artista, que es el de la ficha: ninguno.
-    expect(pickDiscover([artists[0]!], Math.random, { exclude: [current], kind: 'artist' })).toBeNull();
+    expect(
+      pickDiscover([artists[0]!], Math.random, { exclude: [current], kind: 'artist' }),
+    ).toBeNull();
   });
 
   it('sin Carnets que descubrir, nada', async () => {

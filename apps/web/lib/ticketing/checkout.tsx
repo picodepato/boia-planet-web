@@ -337,8 +337,7 @@ export function CarnetRequired({ accounts = isSupabaseConfigured() }: { accounts
   return (
     <div className="checkout__offer" role="status" data-testid="checkout-carnet-requerido">
       <p className="checkout__offer-title">
-        <CarnetIcon />{' '}
-        {C.carnet.requiredTitle}
+        <CarnetIcon /> {C.carnet.requiredTitle}
       </p>
       <p data-testid="checkout-carnet-entrar">
         <strong>{C.carnet.requiredEnter}</strong>

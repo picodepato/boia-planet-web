@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { t } from '../../../lib/landing/texts';
 import { publicPage } from '../../../lib/seo';
 import { LiveMerchandiseCatalog } from '../../../lib/merchandise/live-catalog';
-import { MERCHANDISE_NOTICE, merchandiseContact } from '../../../lib/merchandise/catalog';
+import { merchandiseContact } from '../../../lib/merchandise/catalog';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { BrandLogo } from '../components/brand-logo';
 
 export const metadata: Metadata = {
   title: t('store.page.title'),
-  ...publicPage('/tienda', MERCHANDISE_NOTICE),
+  ...publicPage('/tienda', t('store.notice.party')),
 };
 
 /**

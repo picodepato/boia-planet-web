@@ -75,7 +75,13 @@ export function flameDamage(def: FlameDef, target: FlameTarget, dt: number): num
  * el círculo cuenta si su borde entra (su radio se suma al alcance y abre
  * el ángulo lo que ocupa a esa distancia).
  */
-export function inFlame(def: FlameDef, heading: number, dx: number, dy: number, r: number): boolean {
+export function inFlame(
+  def: FlameDef,
+  heading: number,
+  dx: number,
+  dy: number,
+  r: number,
+): boolean {
   const d = Math.hypot(dx, dy);
   if (d > def.range + r) return false;
   if (d <= r) return true;

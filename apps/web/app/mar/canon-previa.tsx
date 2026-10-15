@@ -166,7 +166,11 @@ export function CanonPrevia({
         </section>
 
         {prep.blocked ? (
-          <p className="mar-canon-previa__lock" data-testid="mar-canon-previa-bloqueo" role="status">
+          <p
+            className="mar-canon-previa__lock"
+            data-testid="mar-canon-previa-bloqueo"
+            role="status"
+          >
             {prep.blocked}
           </p>
         ) : null}

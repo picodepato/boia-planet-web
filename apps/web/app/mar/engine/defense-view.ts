@@ -48,7 +48,17 @@ import { C } from './palette';
 import { curveMaterial, curveTree } from './planet';
 import { buoy } from './props';
 import { ROAD_BUOY } from './race-props';
-import { GHOST_SHIP_SCALE, PufFx, defeatPlan, enemyMaterial, enemyModel, ghostShipGeometry, ghostShipMaterial, instanced, propsMaterial } from './survivors-props';
+import {
+  GHOST_SHIP_SCALE,
+  PufFx,
+  defeatPlan,
+  enemyMaterial,
+  enemyModel,
+  ghostShipGeometry,
+  ghostShipMaterial,
+  instanced,
+  propsMaterial,
+} from './survivors-props';
 import { KRAKEN_HEAD_SCALE, KRAKEN_HEAD_Y, krakenHeadGeometry } from './survivors-kraken';
 import { SHARK_SCALE, hammerheadGeometry } from './survivors-shark';
 import { VECINO_SCALE, vecinoGeometry } from './survivors-vecino';
@@ -148,7 +158,8 @@ function barrierGeometry(line: readonly { x: number; z: number }[], low: boolean
         });
       }
     }
-    if (i % every === 0) k.add(float, i % (every * 2) ? C.white : ROAD_BUOY.body, { p: [p.x, 0.12, p.z] });
+    if (i % every === 0)
+      k.add(float, i % (every * 2) ? C.white : ROAD_BUOY.body, { p: [p.x, 0.12, p.z] });
   }
   rail.dispose();
   float.dispose();
@@ -259,7 +270,13 @@ export class DefenseView {
     const lines = barrierLines(o.path, o.config.castle.radius);
     const lit = litMaterial();
     for (const side of [lines.left, lines.right]) {
-      const m = new Mesh(barrierGeometry(side.map((p) => this.at(p.x, p.y)), low), lit);
+      const m = new Mesh(
+        barrierGeometry(
+          side.map((p) => this.at(p.x, p.y)),
+          low,
+        ),
+        lit,
+      );
       m.name = 'defense-barrier';
       this.group.add(m);
     }
@@ -278,7 +295,10 @@ export class DefenseView {
     const v = this.at(o.path.start.x, o.path.start.y);
     const R = toScene(o.config.vortexRadius) * VORTEX_HALO;
     const seg = low ? 12 : 24;
-    this.vortex = new Mesh(new PlaneGeometry(R * 2, R * 2, seg, seg).rotateX(-Math.PI / 2), vortexMaterial());
+    this.vortex = new Mesh(
+      new PlaneGeometry(R * 2, R * 2, seg, seg).rotateX(-Math.PI / 2),
+      vortexMaterial(),
+    );
     this.vortex.name = 'defense-vortex';
     this.vortex.position.set(v.x, VORTEX_LIFT, v.z);
     this.vortex.renderOrder = 1;
@@ -288,7 +308,14 @@ export class DefenseView {
     const common = low ? 96 : 128;
     for (const id of Object.keys(o.config.enemies) as EnemyId[]) {
       const model = enemyModel(id);
-      this.addKind(id, instanced(model.build(), enemyMaterial(model), common, `defense-${id}`), model.scale, model.bob, model.fly ?? 0, 0);
+      this.addKind(
+        id,
+        instanced(model.build(), enemyMaterial(model), common, `defense-${id}`),
+        model.scale,
+        model.bob,
+        model.fly ?? 0,
+        0,
+      );
     }
     for (const id of Object.keys(o.config.bosses) as BossId[]) {
       const geo =
@@ -302,8 +329,20 @@ export class DefenseView {
                 ? krakenHeadGeometry(this.quality)
                 : null;
       if (!geo) continue;
-      const mat = id === 'fantasma' ? ghostShipMaterial(false) : id === 'martillo' ? propsMaterial() : litMaterial();
-      this.addKind(id, instanced(geo, mat, BOSS_CAP, `defense-boss-${id}`), BOSS_SCALE[id] ?? 1, 0.06, 0, id === 'kraken' ? KRAKEN_HEAD_Y.exposed : 0);
+      const mat =
+        id === 'fantasma'
+          ? ghostShipMaterial(false)
+          : id === 'martillo'
+            ? propsMaterial()
+            : litMaterial();
+      this.addKind(
+        id,
+        instanced(geo, mat, BOSS_CAP, `defense-boss-${id}`),
+        BOSS_SCALE[id] ?? 1,
+        0.06,
+        0,
+        id === 'kraken' ? KRAKEN_HEAD_Y.exposed : 0,
+      );
     }
     // El Vecino de Blender (T174): cuando llega, su geometría en la misma pieza instanciada.
     this.vecinoModel = o.vecinoModel ?? null;
@@ -336,33 +375,58 @@ export class DefenseView {
     // La isla que se coloca (T161): un disco de su huella y su borde, verde o rojo.
     this.preview = new Mesh(
       new CircleGeometry(1, low ? 24 : 48).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.32, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: PREVIEW_OK,
+        transparent: true,
+        opacity: 0.32,
+        depthWrite: false,
+      }),
     );
     this.preview.name = 'defense-build-preview';
     this.preview.visible = false;
     this.previewEdge = new Mesh(
       new RingGeometry(0.9, 1, low ? 24 : 48).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.9, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: PREVIEW_OK,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+      }),
     );
     this.previewEdge.name = 'defense-build-preview-edge';
     this.previewEdge.visible = false;
     // La isla elegida: un aro crema a su alrededor.
     this.selectRing = new Mesh(
       new RingGeometry(0.88, 1, low ? 24 : 48).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: '#fff4e2', transparent: true, opacity: 0.85, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: '#fff4e2',
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+      }),
     );
     this.selectRing.name = 'defense-selected';
     this.selectRing.visible = false;
     // El alcance de la isla que se coloca o de la elegida (plan 015 T170): un aro fino y un velo.
     this.rangeRing = new Mesh(
       new RingGeometry(0.985, 1, low ? 48 : 96).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.85, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: PREVIEW_OK,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+      }),
     );
     this.rangeRing.name = 'defense-range';
     this.rangeRing.visible = false;
     this.rangeFill = new Mesh(
       new CircleGeometry(1, low ? 48 : 96).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: PREVIEW_OK, transparent: true, opacity: 0.1, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: PREVIEW_OK,
+        transparent: true,
+        opacity: 0.1,
+        depthWrite: false,
+      }),
     );
     this.rangeFill.name = 'defense-range-fill';
     this.rangeFill.visible = false;
@@ -373,14 +437,22 @@ export class DefenseView {
     // Adonde vuela el avión tras un toque: un aro crema pequeño.
     this.targetRing = new Mesh(
       new RingGeometry(0.7, 1, low ? 16 : 32).rotateX(-Math.PI / 2),
-      new MeshBasicMaterial({ color: '#fff4e2', transparent: true, opacity: 0.8, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: '#fff4e2',
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false,
+      }),
     );
     this.targetRing.name = 'defense-plane-target';
     this.targetRing.visible = false;
     // Las barras de vida y los números de daño (decisión 11).
     this.bars = new HealthBars(low ? BARS_CAP.baja : BARS_CAP.other);
     this.numbers = new DamageNumbers(low ? NUMBERS_CAP.baja : NUMBERS_CAP.other);
-    this.coinPops = new DamageNumbers(low ? COIN_POPS_CAP.baja : COIN_POPS_CAP.other, COIN_POP_STYLE);
+    this.coinPops = new DamageNumbers(
+      low ? COIN_POPS_CAP.baja : COIN_POPS_CAP.other,
+      COIN_POP_STYLE,
+    );
     this.puf = new PufFx(this.quality);
     this.group.add(
       this.castleRing,
@@ -595,7 +667,13 @@ export class DefenseView {
     this.puf.update(t, defeatPlan('puf', { quality: this.quality, reduced }));
     this.puf.mesh.visible = this.puf.mesh.count > 0;
     this.islands.sync(s.towers, (x, y) => this.at(x, y));
-    this.fx.update(s.towers, s.shots, s.activeS, { at: (x, y) => this.at(x, y), heading: (h) => this.frame.headingToWorld(h) }, reduced);
+    this.fx.update(
+      s.towers,
+      s.shots,
+      s.activeS,
+      { at: (x, y) => this.at(x, y), heading: (h) => this.frame.headingToWorld(h) },
+      reduced,
+    );
   }
 
   /** Cada pago nuevo de una granja: su «+N» encima de la isla. */
@@ -625,7 +703,12 @@ export class DefenseView {
     this.group.remove(this.islands.group, ...this.fx.meshes);
     this.islands.dispose();
     this.fx.dispose();
-    this.group.remove(...this.bars.meshes, this.numbers.mesh, this.coinPops.mesh, this.clouds.group);
+    this.group.remove(
+      ...this.bars.meshes,
+      this.numbers.mesh,
+      this.coinPops.mesh,
+      this.clouds.group,
+    );
     this.bars.dispose();
     this.numbers.dispose();
     this.coinPops.dispose();

@@ -31,8 +31,7 @@ async function snap(page: Page, name: string) {
 test('cerca del faro se ve el Faro de Tabarca de Blender', async ({ page }) => {
   const glb: string[] = [];
   page.on('response', (r) => {
-    if (r.url().endsWith(`/art/islas/3d/${LIGHTHOUSE_PLACE_ID}.glb`))
-      glb.push(String(r.status()));
+    if (r.url().endsWith(`/art/islas/3d/${LIGHTHOUSE_PLACE_ID}.glb`)) glb.push(String(r.status()));
   });
   const errors = await openMar(page, `?cerca=${LIGHTHOUSE_PLACE_ID}`);
   await expect
@@ -53,7 +52,9 @@ test('rumbo al faro desde la salida (captura)', async ({ page }) => {
   await snap(page, 'faro-rumbo');
 });
 
-test('al llegar a la salida, el faro ya se pide (está a la entrada del mundo)', async ({ page }) => {
+test('al llegar a la salida, el faro ya se pide (está a la entrada del mundo)', async ({
+  page,
+}) => {
   const errors = await openMar(page);
   // Junto al anillo de salida el faro está dentro del alcance de los modelos: se ve el suyo.
   await expect

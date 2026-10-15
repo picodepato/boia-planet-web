@@ -23,7 +23,13 @@ export function CoinIcon({ label }: { label?: string }) {
     >
       <circle cx="8" cy="8" r="7" fill={ICON_PALETTE.sun} stroke={COIN_EDGE} strokeWidth="1.6" />
       <circle cx="8" cy="8" r="4.2" fill="none" stroke={COIN_EDGE} strokeWidth="1.2" />
-      <path d="M5.2 4.6a4.4 4.4 0 0 1 3-1.5" fill="none" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+      <path
+        d="M5.2 4.6a4.4 4.4 0 0 1 3-1.5"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

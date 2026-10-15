@@ -1437,7 +1437,11 @@ function CastleEnd({
           )}
         </dl>
         {unlocked.length > 0 ? (
-          <ul className="mar-castle-end__logros" data-testid="mar-castillo-final-logros" role="status">
+          <ul
+            className="mar-castle-end__logros"
+            data-testid="mar-castillo-final-logros"
+            role="status"
+          >
             {unlocked.map((u) => (
               <li key={u.id} className="mar-canon-end__unlock" data-logro={u.id}>
                 {msg(u.prize ? 'mar.castillo.fin.logro.premio' : 'mar.castillo.fin.logro', {

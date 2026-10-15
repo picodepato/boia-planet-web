@@ -3,12 +3,7 @@
 import { useState } from 'react';
 import { capturePlayerRepository, gameRepository } from '../repo';
 import { t } from '../i18n';
-import {
-  buildAccountExport,
-  buildLocalExport,
-  downloadJson,
-  exportFileName,
-} from './export-data';
+import { buildAccountExport, buildLocalExport, downloadJson, exportFileName } from './export-data';
 import { accountClient } from './session';
 
 /**

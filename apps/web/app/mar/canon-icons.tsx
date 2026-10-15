@@ -23,8 +23,16 @@ export const CANON_ICON_PALETTE = {
   ink: '#1b1440',
 } as const;
 
-const { orange: O, purple: P, cream: C, white: W, sun: S, water: A, acid: G, red: R } =
-  CANON_ICON_PALETTE;
+const {
+  orange: O,
+  purple: P,
+  cream: C,
+  white: W,
+  sun: S,
+  water: A,
+  acid: G,
+  red: R,
+} = CANON_ICON_PALETTE;
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -65,19 +73,32 @@ function twoTone(d: string, color: string, width = 2.6): ReactNode {
   );
 }
 
-const FLAME = 'M16 3.5c1.6 4 6.9 7.4 6.9 13.6a6.9 6.9 0 0 1-13.8 0c0-3.2 1.6-5.4 3.3-7 .2 2.4 1 3.7 2.2 4.4-.4-4.4.4-8 1.4-11z';
+const FLAME =
+  'M16 3.5c1.6 4 6.9 7.4 6.9 13.6a6.9 6.9 0 0 1-13.8 0c0-3.2 1.6-5.4 3.3-7 .2 2.4 1 3.7 2.2 4.4-.4-4.4.4-8 1.4-11z';
 const FLAME_CORE = 'M16 15.2c1.4 2 3.2 3.3 3.2 5.4a3.2 3.2 0 0 1-6.4 0c0-2 1.6-3.4 3.2-5.4z';
-const HEART = 'M16 27.5C9 23 4.5 18.6 4.5 13.4a5.9 5.9 0 0 1 11.5-1.8 5.9 5.9 0 0 1 11.5 1.8c0 5.2-4.5 9.6-11.5 14.1z';
+const HEART =
+  'M16 27.5C9 23 4.5 18.6 4.5 13.4a5.9 5.9 0 0 1 11.5-1.8 5.9 5.9 0 0 1 11.5 1.8c0 5.2-4.5 9.6-11.5 14.1z';
 
 const GLYPHS = {
   // --- Armas -------------------------------------------------------------------
   // Cañón de agua: cañón morado sobre su rueda, escupiendo una bola de agua.
   'arma-canon': (
     <>
-      <rect fill={P} x="4" y="13" width="17" height="8.4" rx="4.2" transform="rotate(-28 12.5 17.2)" />
+      <rect
+        fill={P}
+        x="4"
+        y="13"
+        width="17"
+        height="8.4"
+        rx="4.2"
+        transform="rotate(-28 12.5 17.2)"
+      />
       <circle fill={O} cx="10.5" cy="23.5" r="4.6" />
       <circle fill={C} stroke="none" cx="10.5" cy="23.5" r="1.4" />
-      <path fill={A} d="M25.5 3.8c1.9 2.6 3.2 4.3 3.2 5.9a3.2 3.2 0 0 1-6.4 0c0-1.6 1.3-3.3 3.2-5.9z" />
+      <path
+        fill={A}
+        d="M25.5 3.8c1.9 2.6 3.2 4.3 3.2 5.9a3.2 3.2 0 0 1-6.4 0c0-1.6 1.3-3.3 3.2-5.9z"
+      />
     </>
   ),
   // Subwoofer: caja morada, un altavoz grande naranja y uno pequeño.
@@ -92,7 +113,11 @@ const GLYPHS = {
   // Focos: un foco de escenario morado en su horquilla, con el haz amarillo hacia abajo.
   'arma-laser': (
     <>
-      <path fill={S} strokeWidth={2} d="M11 14.5h10l6.6 12.2a1.6 1.6 0 0 1-1.4 2.3H5.8a1.6 1.6 0 0 1-1.4-2.3z" />
+      <path
+        fill={S}
+        strokeWidth={2}
+        d="M11 14.5h10l6.6 12.2a1.6 1.6 0 0 1-1.4 2.3H5.8a1.6 1.6 0 0 1-1.4-2.3z"
+      />
       <path d="M6.5 10.5V4.5h19v6" />
       <rect fill={P} x="9" y="5" width="14" height="10.5" rx="3.6" />
       <path stroke={C} strokeWidth={2} d="M12.5 12.4h7" />
@@ -114,9 +139,27 @@ const GLYPHS = {
     <>
       <path fill={O} d="M4 28l5.6-14.6 9 9z" />
       <path stroke={C} strokeWidth={2} d="M7.4 19.4l5.2 5.2M5.8 23.6l2.6 2.6" />
-      <rect fill={S} strokeWidth={1.6} x="19" y="4" width="4" height="4" rx="1" transform="rotate(20 21 6)" />
+      <rect
+        fill={S}
+        strokeWidth={1.6}
+        x="19"
+        y="4"
+        width="4"
+        height="4"
+        rx="1"
+        transform="rotate(20 21 6)"
+      />
       <circle fill={A} strokeWidth={1.6} cx="26" cy="13" r="2.2" />
-      <rect fill={P} strokeWidth={1.6} x="13.5" y="7" width="3.6" height="3.6" rx="0.9" transform="rotate(-25 15.3 8.8)" />
+      <rect
+        fill={P}
+        strokeWidth={1.6}
+        x="13.5"
+        y="7"
+        width="3.6"
+        height="3.6"
+        rx="0.9"
+        transform="rotate(-25 15.3 8.8)"
+      />
       <path stroke={O} strokeWidth={2.2} d="M23.5 19.5l3 1.5" />
     </>
   ),
@@ -133,48 +176,78 @@ const GLYPHS = {
   // Lluvia ácida: nube crema con tres gotas verdes.
   'arma-acidRain': (
     <>
+      <path fill={C} d="M9 18.5a5 5 0 0 1-.6-10 7 7 0 0 1 13.3-1.4A5.2 5.2 0 0 1 23.8 18.5z" />
       <path
-        fill={C}
-        d="M9 18.5a5 5 0 0 1-.6-10 7 7 0 0 1 13.3-1.4A5.2 5.2 0 0 1 23.8 18.5z"
+        fill={G}
+        strokeWidth={1.8}
+        d="M9.5 21.5c1.3 1.8 2.2 3 2.2 4.1a2.2 2.2 0 0 1-4.4 0c0-1.1.9-2.3 2.2-4.1z"
       />
-      <path fill={G} strokeWidth={1.8} d="M9.5 21.5c1.3 1.8 2.2 3 2.2 4.1a2.2 2.2 0 0 1-4.4 0c0-1.1.9-2.3 2.2-4.1z" />
-      <path fill={G} strokeWidth={1.8} d="M16.4 22.2c1.3 1.8 2.2 3 2.2 4.1a2.2 2.2 0 0 1-4.4 0c0-1.1.9-2.3 2.2-4.1z" />
-      <path fill={G} strokeWidth={1.8} d="M23.3 21.5c1.3 1.8 2.2 3 2.2 4.1a2.2 2.2 0 0 1-4.4 0c0-1.1.9-2.3 2.2-4.1z" />
+      <path
+        fill={G}
+        strokeWidth={1.8}
+        d="M16.4 22.2c1.3 1.8 2.2 3 2.2 4.1a2.2 2.2 0 0 1-4.4 0c0-1.1.9-2.3 2.2-4.1z"
+      />
+      <path
+        fill={G}
+        strokeWidth={1.8}
+        d="M23.3 21.5c1.3 1.8 2.2 3 2.2 4.1a2.2 2.2 0 0 1-4.4 0c0-1.1.9-2.3 2.2-4.1z"
+      />
     </>
   ),
 
   // --- Vinilos (todos sobre el disco morado) -------------------------------------
   // Techno: avance rápido (más velocidad de ataque).
-  'vinilo-techno': vinyl(<path fill={S} strokeWidth={1.8} d="M6.2 9.4l8.6 6.6-8.6 6.6zM15.4 9.4l8.6 6.6-8.6 6.6z" />),
+  'vinilo-techno': vinyl(
+    <path fill={S} strokeWidth={1.8} d="M6.2 9.4l8.6 6.6-8.6 6.6zM15.4 9.4l8.6 6.6-8.6 6.6z" />,
+  ),
   // Reggaetón: un punto que se ensancha en ondas (más área).
   'vinilo-reggaeton': vinyl(
     <>
       <circle fill={O} strokeWidth={1.8} cx="16" cy="16" r="3.4" />
       <circle stroke={S} strokeWidth={2.2} cx="16" cy="16" r="7.4" />
-      <path stroke={S} strokeWidth={2.2} d="M22.8 9.2l2.2-2.2M9.2 9.2L7 7M22.8 22.8l2.2 2.2M9.2 22.8L7 25" />
+      <path
+        stroke={S}
+        strokeWidth={2.2}
+        d="M22.8 9.2l2.2-2.2M9.2 9.2L7 7M22.8 22.8l2.2 2.2M9.2 22.8L7 25"
+      />
     </>,
   ),
   // House: escudo crema y naranja (menos agua por golpe).
   'vinilo-house': vinyl(
     <>
-      <path fill={C} strokeWidth={1.8} d="M16 6.6l7.6 2.8v5.8c0 5-3.2 8.2-7.6 9.8-4.4-1.6-7.6-4.8-7.6-9.8V9.4z" />
+      <path
+        fill={C}
+        strokeWidth={1.8}
+        d="M16 6.6l7.6 2.8v5.8c0 5-3.2 8.2-7.6 9.8-4.4-1.6-7.6-4.8-7.6-9.8V9.4z"
+      />
       <path fill={O} stroke="none" d="M16 8.5v14.3c-3.1-1.4-5.6-3.8-5.6-7.6v-4.4z" />
     </>,
   ),
   // Drum & Bass: un rayo (más velocidad del barco).
-  'vinilo-dnb': vinyl(<path fill={S} strokeWidth={1.8} d="M18.4 5.4l-8.6 11.8h5.6l-2 9.4 9-12.4h-5.8z" />),
+  'vinilo-dnb': vinyl(
+    <path fill={S} strokeWidth={1.8} d="M18.4 5.4l-8.6 11.8h5.6l-2 9.4 9-12.4h-5.8z" />,
+  ),
   // Disco: un imán pequeño (más radio del imán de notas).
   'vinilo-disco': vinyl(
     <>
       <path strokeWidth={6.4} strokeLinecap="butt" d="M10.6 8.4v7a5.4 5.4 0 0 0 10.8 0v-7" />
-      <path stroke={O} strokeWidth={3.8} strokeLinecap="butt" d="M10.6 11.4v4a5.4 5.4 0 0 0 10.8 0v-4" />
+      <path
+        stroke={O}
+        strokeWidth={3.8}
+        strokeLinecap="butt"
+        d="M10.6 11.4v4a5.4 5.4 0 0 0 10.8 0v-4"
+      />
       <path stroke={W} strokeWidth={3.8} strokeLinecap="butt" d="M10.6 8.6v2.8M21.4 8.6v2.8" />
     </>,
   ),
   // Chill / Ambient: una gota de agua con una cruz (achique y escudo).
   'vinilo-chill': vinyl(
     <>
-      <path fill={A} strokeWidth={1.8} d="M16 5.6c3.6 4.6 6.4 8 6.4 11.2a6.4 6.4 0 0 1-12.8 0c0-3.2 2.8-6.6 6.4-11.2z" />
+      <path
+        fill={A}
+        strokeWidth={1.8}
+        d="M16 5.6c3.6 4.6 6.4 8 6.4 11.2a6.4 6.4 0 0 1-12.8 0c0-3.2 2.8-6.6 6.4-11.2z"
+      />
       <path stroke={W} strokeWidth={2.2} d="M16 14.2v6M13 17.2h6" />
     </>,
   ),
@@ -271,7 +344,11 @@ const GLYPHS = {
       <path strokeWidth={2} d="M3.5 9.5h6M5.5 13.5h4M3.5 18.5h6M5.5 22.5h4" />
       <circle fill={P} cx="19.5" cy="11" r="5.4" />
       <circle fill={P} cx="19.5" cy="21.5" r="5.4" />
-      <path stroke={C} strokeWidth={1.8} d="M17 9.2a2.6 2.6 0 0 1 1.8-1.3M17 19.7a2.6 2.6 0 0 1 1.8-1.3" />
+      <path
+        stroke={C}
+        strokeWidth={1.8}
+        d="M17 9.2a2.6 2.6 0 0 1 1.8-1.3M17 19.7a2.6 2.6 0 0 1 1.8-1.3"
+      />
     </>
   ),
   // Más vela: una vela naranja hinchada y el viento.
@@ -313,7 +390,12 @@ const GLYPHS = {
   'botin-iman': (
     <>
       <path strokeWidth={8} strokeLinecap="butt" d="M9.4 6.5v10a6.6 6.6 0 0 0 13.2 0v-10" />
-      <path stroke={R} strokeWidth={5.4} strokeLinecap="butt" d="M9.4 10.4v6.1a6.6 6.6 0 0 0 13.2 0v-6.1" />
+      <path
+        stroke={R}
+        strokeWidth={5.4}
+        strokeLinecap="butt"
+        d="M9.4 10.4v6.1a6.6 6.6 0 0 0 13.2 0v-6.1"
+      />
       <path stroke={W} strokeWidth={5.4} strokeLinecap="butt" d="M9.4 6.7v3.7M22.6 6.7v3.7" />
       <path strokeWidth={2} d="M3 3.8l2 2M29 3.8l-2 2M3 13.2h2.4M29 13.2h-2.4" />
     </>
@@ -321,8 +403,15 @@ const GLYPHS = {
   // Llama: el brasero morado con su fuego.
   'botin-llama': (
     <>
-      <path fill={O} d="M16 2.8c1.2 3 5.6 5.6 5.6 10.6a5.6 5.6 0 0 1-11.2 0c0-2.6 1.3-4.4 2.7-5.6.2 1.9.8 3 1.8 3.5-.3-3.5.3-6.2 1.1-8.5z" />
-      <path fill={S} stroke="none" d="M16 11.6c1.1 1.6 2.6 2.6 2.6 4.4a2.6 2.6 0 0 1-5.2 0c0-1.6 1.3-2.8 2.6-4.4z" />
+      <path
+        fill={O}
+        d="M16 2.8c1.2 3 5.6 5.6 5.6 10.6a5.6 5.6 0 0 1-11.2 0c0-2.6 1.3-4.4 2.7-5.6.2 1.9.8 3 1.8 3.5-.3-3.5.3-6.2 1.1-8.5z"
+      />
+      <path
+        fill={S}
+        stroke="none"
+        d="M16 11.6c1.1 1.6 2.6 2.6 2.6 4.4a2.6 2.6 0 0 1-5.2 0c0-1.6 1.3-2.8 2.6-4.4z"
+      />
       <path fill={P} d="M4.5 17.5h23a11.5 9.5 0 0 1-23 0z" />
       <path d="M12 27v2M20 27v2" />
     </>

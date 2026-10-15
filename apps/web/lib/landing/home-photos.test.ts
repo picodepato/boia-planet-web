@@ -44,7 +44,9 @@ describe('fotos de la home (T277)', () => {
     expect(homePhotosOf(SAMPLE_CONTENT).some((p) => p.kind === 'video')).toBe(false);
     const withClips = {
       ...SAMPLE_CONTENT,
-      photos: SAMPLE_CONTENT.photos.map((p) => (p.kind === 'video' ? { ...p, selection: true } : p)),
+      photos: SAMPLE_CONTENT.photos.map((p) =>
+        p.kind === 'video' ? { ...p, selection: true } : p,
+      ),
     };
     expect(homePhotosOf(withClips).some((p) => p.kind === 'video')).toBe(false);
   });

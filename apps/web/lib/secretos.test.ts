@@ -28,7 +28,15 @@ function secretsIn(text: string): string[] {
 
 function trackedFiles(): string[] {
   const out = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' });
-  return out.split('\0').filter((f) => f && !/\.(png|jpe?g|webp|gif|glb|gltf|bin|ttf|otf|woff2?|mp3|ogg|wav|mp4|webm|pdf|blend|ico|zip)$/i.test(f));
+  return out
+    .split('\0')
+    .filter(
+      (f) =>
+        f &&
+        !/\.(png|jpe?g|webp|gif|glb|gltf|bin|ttf|otf|woff2?|mp3|ogg|wav|mp4|webm|pdf|blend|ico|zip)$/i.test(
+          f,
+        ),
+    );
 }
 
 function walk(dir: string): string[] {
@@ -66,7 +74,9 @@ describe('secretos (REQ-ARQ-012)', () => {
     const leaks = sources.flatMap((f) =>
       readFileSync(join(ROOT, f), 'utf8')
         .split('\n')
-        .filter((l) => /console\.\w+\(.*(SERVICE_ROLE|DB_URL|serviceKey|secretKey|password)/i.test(l))
+        .filter((l) =>
+          /console\.\w+\(.*(SERVICE_ROLE|DB_URL|serviceKey|secretKey|password)/i.test(l),
+        )
         .map((l) => `${f}: ${l.trim()}`),
     );
     expect(leaks).toEqual([]);
@@ -77,7 +87,9 @@ describe('secretos (REQ-ARQ-012)', () => {
     'REQ-ARQ-012: el JavaScript del cliente (build) no lleva secretos',
     () => {
       const files = walk(join(WEB, '.next/static')).filter((f) => /\.(js|css|json|html)$/.test(f));
-      const hits = files.flatMap((f) => secretsIn(readFileSync(f, 'utf8')).map((k) => `${f}: ${k}`));
+      const hits = files.flatMap((f) =>
+        secretsIn(readFileSync(f, 'utf8')).map((k) => `${f}: ${k}`),
+      );
       expect(hits).toEqual([]);
     },
   );

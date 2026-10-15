@@ -44,7 +44,9 @@ test('en el Cañón, el Vecino llega con su modelo de Blender', async ({ page })
   await expect(canvas(page)).toHaveAttribute('data-canon-vecino', 'glb', { timeout: 30_000 });
   expect(glb).toEqual(['200']);
   // El boss en pantalla, ya con el modelo.
-  await expect(canvas(page)).toHaveAttribute('data-canon-boss-vista', /vecino/, { timeout: 30_000 });
+  await expect(canvas(page)).toHaveAttribute('data-canon-boss-vista', /vecino/, {
+    timeout: 30_000,
+  });
   await snap(page, 'vecino-canon');
   expect(errors).toEqual([]);
 });
@@ -55,7 +57,10 @@ test('en el castillo, el mismo modelo en la arena', async ({ page }) => {
   const run = DEFENSE_CONFIG.runs[5]!;
   const vecino = run.bosses.find((b) => b.kind === 'vecino')!;
   const t = Math.round(vecino.atFrac * run.durationS) - 3;
-  const errors = await openMar(page, `?minijuego=castillo&duracion=5&dificultad=tranquila&t=${t}&islas=1&seed=7`);
+  const errors = await openMar(
+    page,
+    `?minijuego=castillo&duracion=5&dificultad=tranquila&t=${t}&islas=1&seed=7`,
+  );
   await expect(page.getByTestId('mar-castillo')).toHaveAttribute('data-estado', 'running');
   await expect(canvas(page)).toHaveAttribute('data-arena-vecino', 'glb', { timeout: 30_000 });
   expect(glb).toEqual(['200']);

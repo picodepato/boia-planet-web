@@ -144,7 +144,9 @@ describe('el Cañón en el registro (plan 010, T119)', () => {
       elapsedMs: 352_400,
     });
     // La cota de duración: la marca del amanecer se puede tener desde que entra el boss, no antes.
-    expect(canon.minPlausibleMs(SURVIVORS_CONFIG.durationS, 1, CANON_DEFAULTS)).toBe(boss.atS * 1000);
+    expect(canon.minPlausibleMs(SURVIVORS_CONFIG.durationS, 1, CANON_DEFAULTS)).toBe(
+      boss.atS * 1000,
+    );
     expect(canon.minPlausibleMs(200, 1, CANON_DEFAULTS)).toBe(200_000);
   });
 });
@@ -167,7 +169,12 @@ describe('sesión y premio del Cañón en el mar (REQ-AVE-038, T119)', () => {
       sourceRef: 'minigame:canon:bronce',
       ...bronce,
       policy: 'daily',
-      metadata: { version: CANON_VERSION, configHash: configHash(config), score: 420, tier: 'bronce' },
+      metadata: {
+        version: CANON_VERSION,
+        configHash: configHash(config),
+        score: 420,
+        tier: 'bronce',
+      },
     });
 
     // Otra partida ganada el mismo periodo: vale, pero el premio ya se cobró.

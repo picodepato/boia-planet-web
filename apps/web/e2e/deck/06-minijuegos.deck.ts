@@ -132,7 +132,8 @@ const canon = (page: Page) => page.getByTestId('mar-canon');
 
 /** Contesta la carta de nivel si hay una abierta (la partida espera). */
 async function answerCard(page: Page): Promise<void> {
-  if ((await canon(page).getAttribute('data-estado')) === 'card') await page.keyboard.press('Enter');
+  if ((await canon(page).getAttribute('data-estado')) === 'card')
+    await page.keyboard.press('Enter');
 }
 
 /**

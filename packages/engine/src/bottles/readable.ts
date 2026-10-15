@@ -102,7 +102,10 @@ export function unreadableBecause(
 }
 
 /** ¿Se lee una botella en `p`? (lejos de toda ficha que se abre sola). */
-export function readableSpot(zones: readonly SheetZone[], period: WrapPeriod | null = null): SpotTest {
+export function readableSpot(
+  zones: readonly SheetZone[],
+  period: WrapPeriod | null = null,
+): SpotTest {
   return (p) => unreadableBecause(zones, p, period) === null;
 }
 

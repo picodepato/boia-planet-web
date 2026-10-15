@@ -45,7 +45,13 @@ describe('the castle Vecino with its Blender model (T174)', () => {
 
   it('swaps the instanced piece to the GLB geometry when it loads and releases it on dispose', async () => {
     const model = new EnemyModel({ file: 'vecino.glb', radius: 1 }, async () => fakeVecinoScene());
-    const view = new DefenseView({ config: DEFENSE_CONFIG, path, frame, quality: 'baja', vecinoModel: model });
+    const view = new DefenseView({
+      config: DEFENSE_CONFIG,
+      path,
+      frame,
+      quality: 'baja',
+      vecinoModel: model,
+    });
     const mesh = vecinoMesh(view);
     const handmade = mesh.geometry;
     const handmadeDisposed = vi.fn();
@@ -73,7 +79,13 @@ describe('the castle Vecino with its Blender model (T174)', () => {
     const model = new EnemyModel({ file: 'vecino.glb', radius: 1 }, async () => {
       throw new Error('no');
     });
-    const view = new DefenseView({ config: DEFENSE_CONFIG, path, frame, quality: 'baja', vecinoModel: model });
+    const view = new DefenseView({
+      config: DEFENSE_CONFIG,
+      path,
+      frame,
+      quality: 'baja',
+      vecinoModel: model,
+    });
     const handmade = vecinoMesh(view).geometry;
     await tick();
     expect(view.vecinoState).toBe('error');
@@ -85,8 +97,20 @@ describe('the castle Vecino with its Blender model (T174)', () => {
   it('shares one load between the Cañón and the castle', async () => {
     const load = vi.fn(async () => fakeVecinoScene());
     const model = new EnemyModel({ file: 'vecino.glb', radius: 1 }, load);
-    const a = new DefenseView({ config: DEFENSE_CONFIG, path, frame, quality: 'baja', vecinoModel: model });
-    const b = new DefenseView({ config: DEFENSE_CONFIG, path, frame, quality: 'baja', vecinoModel: model });
+    const a = new DefenseView({
+      config: DEFENSE_CONFIG,
+      path,
+      frame,
+      quality: 'baja',
+      vecinoModel: model,
+    });
+    const b = new DefenseView({
+      config: DEFENSE_CONFIG,
+      path,
+      frame,
+      quality: 'baja',
+      vecinoModel: model,
+    });
     await tick();
     expect(load).toHaveBeenCalledTimes(1);
     expect(vecinoMesh(a).geometry).toBe(vecinoMesh(b).geometry);

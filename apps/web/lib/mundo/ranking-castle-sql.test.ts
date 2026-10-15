@@ -21,7 +21,9 @@ const SQL = read(`supabase/migrations/${SEED}`);
 const boardConfigVersion = (seeded: number): number => {
   const dir = new URL('../../../../supabase/migrations/', import.meta.url);
   let v = seeded;
-  for (const f of readdirSync(dir).filter((x) => x > SEED).sort()) {
+  for (const f of readdirSync(dir)
+    .filter((x) => x > SEED)
+    .sort()) {
     const m = [
       ...read(`supabase/migrations/${f}`).matchAll(
         /update public\.castle_boards set config_version = (\d+) where version = 1;/g,

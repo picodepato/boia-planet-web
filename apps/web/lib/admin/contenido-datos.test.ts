@@ -29,7 +29,8 @@ function setup() {
 describe('contenido como datos (REQ-ADM-001): prioritario, cartel, URL y salida', () => {
   it('el evento prioritario, su cartel y su URL de entradas cambian en la home al publicar', async () => {
     const { repo, actions } = setup();
-    const target = shownPriorityEvent(await repo.content.home(), now)?.id === onSale.id ? other : onSale;
+    const target =
+      shownPriorityEvent(await repo.content.home(), now)?.id === onSale.id ? other : onSale;
     await actions.setPriorityEvent(target.id);
     await actions.publish('prioritario');
     expect(shownPriorityEvent(await repo.content.home(), now)?.id).toBe(target.id);

@@ -22,7 +22,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await ctx.service.from('ticketing_settings').update({ common_discount_code: null }).eq('id', true);
+  await ctx.service
+    .from('ticketing_settings')
+    .update({ common_discount_code: null })
+    .eq('id', true);
   await dropEvents(ctx, events);
   await ctx.cleanup();
 });
@@ -70,11 +73,12 @@ describe('campos de la ficha del evento', () => {
 
 describe('código común de la ticketera', () => {
   it('sólo un admin lo fija; la visita ni lo lee ni lo fija', async () => {
-    await expectDenied(
-      visitor.client.rpc('admin_set_common_discount_code', { p_code: 'NOPE' }),
-    );
+    await expectDenied(visitor.client.rpc('admin_set_common_discount_code', { p_code: 'NOPE' }));
     const set = await ok(
-      admin.client.rpc('admin_set_common_discount_code', { p_code: ' boiaticket ', p_reason: 'T215' }),
+      admin.client.rpc('admin_set_common_discount_code', {
+        p_code: ' boiaticket ',
+        p_reason: 'T215',
+      }),
     );
     expect(set).toMatchObject({ common_discount_code: 'BOIATICKET' });
     const row = await ok(
@@ -91,9 +95,9 @@ describe('código común de la ticketera', () => {
     expect(before.error).toBeNull();
     expect(before.data).toBeNull();
     await ok(visitor.client.rpc('find_discount', { p_discount: 'dto-naufrago' }));
-    expect(
-      await ok(visitor.client.rpc('discount_code_for', { p_discount: 'dto-naufrago' })),
-    ).toBe('BOIATICKET');
+    expect(await ok(visitor.client.rpc('discount_code_for', { p_discount: 'dto-naufrago' }))).toBe(
+      'BOIATICKET',
+    );
     await ok(admin.client.rpc('admin_set_common_discount_code', { p_code: '' }));
     const { data, error } = await visitor.client.rpc('discount_code_for', {
       p_discount: 'dto-naufrago',

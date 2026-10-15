@@ -48,7 +48,10 @@ export function actFinalBoss(act: number, cfg: SurvivorsConfig = SURVIVORS_CONFI
  * acabar). La plata pide todos los minibosses del acto (un acto sin
  * minibosses no la da: sólo bronce u oro).
  */
-export function survivorsMedal(r: MedalInput, cfg: SurvivorsConfig = SURVIVORS_CONFIG): SurvivorsMedal | null {
+export function survivorsMedal(
+  r: MedalInput,
+  cfg: SurvivorsConfig = SURVIVORS_CONFIG,
+): SurvivorsMedal | null {
   if (r.end === 'victory') return 'oro';
   if (r.end !== 'survived') return null;
   const minis = actMinibosses(r.act ?? 1, cfg);

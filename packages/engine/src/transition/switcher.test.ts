@@ -4,13 +4,7 @@ import { DEFAULT_SHIP_CONFIG } from '../ship/config';
 import { type ShipInput, createShipState, stepShip } from '../ship/controller';
 import { WorldRuntime } from '../world/runtime';
 import { WorldSwitcher } from './switcher';
-import {
-  FADE_MS,
-  SwitchTimeline,
-  VORTEX_DARK_MS,
-  VORTEX_IN_MS,
-  VORTEX_OUT_MS,
-} from './timeline';
+import { FADE_MS, SwitchTimeline, VORTEX_DARK_MS, VORTEX_IN_MS, VORTEX_OUT_MS } from './timeline';
 
 /**
  * Cambio de mundo por agujero negro (T41): el reloj del vórtice, un solo

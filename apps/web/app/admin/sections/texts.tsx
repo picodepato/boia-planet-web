@@ -236,7 +236,8 @@ function MusicPanel({ ctx }: { ctx: AdminContext }) {
           <li key={t.id} className="admin-card" data-testid={`musica-${t.id}`}>
             <div className="admin-row admin-row--between">
               <div>
-                <strong>{t.title}</strong> · {t.kind === 'ambient' ? 'ambiente' : 'efecto'} ·{' '}
+                <strong>{t.title}</strong> ·{' '}
+                {msg(t.kind === 'ambient' ? 'admin.texts.ambiente' : 'admin.texts.efecto')} ·{' '}
                 {t.worldId ?? msg('admin.texts.todosLosMundos')} {msg('admin.texts.muestra')}
                 <p className="admin-meta">
                   {msg('admin.texts.licencia2')} {t.licence}

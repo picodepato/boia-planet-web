@@ -59,7 +59,7 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
     expect(WORLD_REGISTRY.isPlayable(ACUARELA_WORLD_ID)).toBe(false);
     expect(WORLD_REGISTRY.list().some((w) => w.id === ACUARELA_WORLD_ID)).toBe(false);
     expect(acuarela.theme.name).toBeTruthy();
-    expect(WORLD_REGISTRY.skin(ACUARELA_WORLD_ID).tagline).toMatch(/Sant Joan/);
+    expect(WORLD_REGISTRY.skin(ACUARELA_WORLD_ID).tagline).toMatch(/^world.acuarela./);
     expect(WORLD_REGISTRY.skin(ACUARELA_WORLD_ID).ship.style).toBe('acuarela');
   });
 
@@ -155,9 +155,10 @@ describe('Acuarela sobre el mapa compartido (T24)', () => {
   });
 
   it('nombres de lugares.json; las islas de evento conservan el nombre compartido', () => {
+    // Los nombres son claves i18n; que su texto sea el de lugares.json lo
+    // comprueba la web (apps/web/lib/mundo/acuarela-textos.test.ts).
     for (const [id, name] of Object.entries(ACUARELA_NAMES)) {
-      const src = lugares.lugares.find((l) => l.id === id || id.startsWith(`${l.id}-`));
-      if (src) expect(name, id).toBe(src.nombre);
+      expect(name, id).toMatch(/^world\.acuarela\./);
     }
     for (const place of WORLD_REGISTRY.map.places.filter(isEventPlace)) {
       expect(objectIn(acuarela, place.id)!.identity.name).toBe(place.name);

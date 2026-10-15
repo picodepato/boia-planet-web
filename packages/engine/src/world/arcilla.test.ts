@@ -136,7 +136,7 @@ for (const id of WORLD_REGISTRY.ids()) {
       // Fuera del mapa y en las costas.
       probes.push({ x: b.left - 500, y: 0 }, { x: b.right + 500, y: b.bottom + 500 });
       let seed = 7;
-      const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       for (let k = 0; k < 400; k++) {
         probes.push({
           x: b.left + rand() * (b.right - b.left),

@@ -65,8 +65,12 @@ describe('el zoom de la arena (decisiones 3 y 4)', () => {
       const near = arenaCameraPose({ aspect, fovDeg: FOV, arenaRadius: R, plane, zoom: 0 });
       expect(wide).toEqual(start);
       expect(near.distance).toBeCloseTo(start.distance * ARENA_ZOOM_NEAR, 9);
-      expect(arenaCameraPose({ aspect, fovDeg: FOV, arenaRadius: R, plane, zoom: 3 })).toEqual(wide);
-      expect(arenaCameraPose({ aspect, fovDeg: FOV, arenaRadius: R, plane, zoom: -2 })).toEqual(near);
+      expect(arenaCameraPose({ aspect, fovDeg: FOV, arenaRadius: R, plane, zoom: 3 })).toEqual(
+        wide,
+      );
+      expect(arenaCameraPose({ aspect, fovDeg: FOV, arenaRadius: R, plane, zoom: -2 })).toEqual(
+        near,
+      );
       // Cuanto más zoom, más cerca.
       let last = Infinity;
       for (let z = 1; z >= 0; z -= 0.1) {
@@ -228,18 +232,28 @@ describe('el alcance al construir (decisión 5) y el camino v2 (decisión 7)', (
     const s = run.snapshot();
     for (const kind of DEFENSE_TOWER_KINDS) {
       const want = toScene(defenseTowerStats(DEFENSE_CONFIG, kind, 1).range);
-      view.update(s, 0, { x: 0, z: 0 }, {
-        preview: { x: 0, y: -900, ok: false, kind, reason: 'path' },
-        selected: null,
-      });
+      view.update(
+        s,
+        0,
+        { x: 0, z: 0 },
+        {
+          preview: { x: 0, y: -900, ok: false, kind, reason: 'path' },
+          selected: null,
+        },
+      );
       expect(view.range, kind).toBe(want);
       expect(view.marked).toMatchObject({ preview: 'no', reason: 'path' });
     }
     const tw = s.towers.find((t) => towerRangeScene(DEFENSE_CONFIG, t.kind, t.level) > 0)!;
-    view.update(s, 0, { x: 0, z: 0 }, {
-      preview: null,
-      selected: { x: tw.x, y: tw.y, kind: tw.kind, level: tw.level },
-    });
+    view.update(
+      s,
+      0,
+      { x: 0, z: 0 },
+      {
+        preview: null,
+        selected: { x: tw.x, y: tw.y, kind: tw.kind, level: tw.level },
+      },
+    );
     expect(tw.level).toBe(3);
     expect(view.range).toBe(toScene(defenseTowerStats(DEFENSE_CONFIG, tw.kind, tw.level).range));
     // Sin tipo (o Ibiza, que no ataca), sin círculo.
@@ -262,7 +276,11 @@ describe('el alcance al construir (decisión 5) y el camino v2 (decisión 7)', (
 });
 
 describe('las barras de vida y los números de daño (decisión 11)', () => {
-  const enemy = (id: number, hp: number, extra: Partial<DefenseEnemyView> = {}): DefenseEnemyView => ({
+  const enemy = (
+    id: number,
+    hp: number,
+    extra: Partial<DefenseEnemyView> = {},
+  ): DefenseEnemyView => ({
     id,
     kind: 'crab',
     tier: 'common',

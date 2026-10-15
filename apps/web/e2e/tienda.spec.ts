@@ -124,7 +124,9 @@ async function shopFlow(page: Page, shop: Locator, info: TestInfo | null, root: 
   await expect(shop.getByTestId(`barco-estilo-${STYLE}`)).toHaveAttribute('data-bloqueado', 'si');
   await expect(shop.getByTestId(`barco-item-${STYLE}`)).toContainText(`${ship.priceCoins} monedas`);
   // La moneda va dibujada (T280), no con el emoji (U+1FA99).
-  await expect(shop.getByTestId(`barco-comprar-${STYLE}`).locator('svg[data-boia-coin]')).toHaveCount(1);
+  await expect(
+    shop.getByTestId(`barco-comprar-${STYLE}`).locator('svg[data-boia-coin]'),
+  ).toHaveCount(1);
   // Cancelar no compra nada.
   await shop.getByTestId(`barco-comprar-${STYLE}`).click();
   await expect(shop.getByTestId('barco-confirmar')).toBeVisible();
@@ -278,10 +280,13 @@ test('/mar: el Cañoncito, la Tortuga turbo y la Estela del vórtice se ganan, s
     await page.keyboard.down(key);
     if (turbo) await page.getByTestId('mar-turbo').click();
     await expect
-      .poll(async () => {
-        const now = await shipAt(page);
-        return Math.hypot(now.x - from.x, now.y - from.y);
-      }, { timeout: 15_000 })
+      .poll(
+        async () => {
+          const now = await shipAt(page);
+          return Math.hypot(now.x - from.x, now.y - from.y);
+        },
+        { timeout: 15_000 },
+      )
       .toBeGreaterThan(60);
     await page.waitForTimeout(1500);
   };
@@ -301,7 +306,8 @@ test('/mar: el Cañoncito, la Tortuga turbo y la Estela del vórtice se ganan, s
   const canon = shop.getByTestId(`barco-mascota-${CANONCITO}`);
   const turtle = shop.getByTestId(`barco-mascota-${TORTUGA_TURBO}`);
   const vortex = shop.getByTestId(`barco-estela-${ESTELA_VORTICE}`);
-  for (const o of [canon, turtle, vortex]) await expect(o).not.toHaveAttribute('data-bloqueado', 'si');
+  for (const o of [canon, turtle, vortex])
+    await expect(o).not.toHaveAttribute('data-bloqueado', 'si');
   // Cada mascota con su dibujo.
   await expect(canon.locator('svg[data-mascota]')).toHaveCount(1);
   await expect(turtle.locator('svg[data-mascota]')).toHaveCount(1);

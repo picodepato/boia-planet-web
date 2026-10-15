@@ -123,7 +123,8 @@ export function tentacleBaseGeometry(quality: QualityTier = 'alta'): BufferGeome
   const c = KRAKEN_COLORS;
   const radial = quality === 'baja' ? 5 : 6;
   addTo(k, new CylinderGeometry(0.62, 1, 1, radial), c.tentacle, { p: [0, 0.5, 0] });
-  for (const y of [0.3, 0.7]) addTo(k, new SphereGeometry(0.2, 4, 3), c.sucker, { p: [0.8 - y * 0.2, y, 0] });
+  for (const y of [0.3, 0.7])
+    addTo(k, new SphereGeometry(0.2, 4, 3), c.sucker, { p: [0.8 - y * 0.2, y, 0] });
   return k.build();
 }
 
@@ -160,7 +161,9 @@ function basic(color: string, opacity: number): MeshBasicMaterial {
 }
 
 /** El Kraken del snapshot (el primero), o null. */
-export function krakenOf(s: Pick<SurvivorsSnapshot, 'bosses'>): (BossView & { kraken: KrakenView }) | null {
+export function krakenOf(
+  s: Pick<SurvivorsSnapshot, 'bosses'>,
+): (BossView & { kraken: KrakenView }) | null {
   for (const b of s.bosses) if (b.kraken) return b as BossView & { kraken: KrakenView };
   return null;
 }
@@ -199,13 +202,19 @@ export class SurvivorsKraken {
   private headLift: number = KRAKEN_HEAD_Y.out;
   private lastT = 0;
 
-  constructor(quality: QualityTier, sea: Pick<SurvivorsWorld, 'bounds' | 'obstacles'> | null = null) {
+  constructor(
+    quality: QualityTier,
+    sea: Pick<SurvivorsWorld, 'bounds' | 'obstacles'> | null = null,
+  ) {
     this.sea = sea;
     this.group.name = 'survivors-kraken';
     this.head = new Mesh(krakenHeadGeometry(quality), litMaterial());
     this.head.name = 'survivors-boss-kraken';
     this.head.rotation.order = 'YXZ';
-    this.shadow = new Mesh(flat(new CircleGeometry(1, quality === 'baja' ? 12 : 20)), basic(KRAKEN_COLORS.shadow, KRAKEN_SHADOW.opacity));
+    this.shadow = new Mesh(
+      flat(new CircleGeometry(1, quality === 'baja' ? 12 : 20)),
+      basic(KRAKEN_COLORS.shadow, KRAKEN_SHADOW.opacity),
+    );
     this.shadow.name = 'survivors-kraken-shadow';
     this.shadow.renderOrder = -1;
     this.exposedRing = new Mesh(
@@ -214,8 +223,18 @@ export class SurvivorsKraken {
     );
     this.exposedRing.name = 'survivors-kraken-exposed';
     const tentacleMat = litMaterial();
-    this.tentacleBase = instanced(tentacleBaseGeometry(quality), tentacleMat, KRAKEN_TENTACLE_CAP, 'survivors-kraken-tentacle');
-    this.tentacleTip = instanced(tentacleTipGeometry(quality), tentacleMat, KRAKEN_TENTACLE_CAP, 'survivors-kraken-tentacle-tip');
+    this.tentacleBase = instanced(
+      tentacleBaseGeometry(quality),
+      tentacleMat,
+      KRAKEN_TENTACLE_CAP,
+      'survivors-kraken-tentacle',
+    );
+    this.tentacleTip = instanced(
+      tentacleTipGeometry(quality),
+      tentacleMat,
+      KRAKEN_TENTACLE_CAP,
+      'survivors-kraken-tentacle-tip',
+    );
     this.rocks = instanced(rockGeometry(), litMaterial(), KRAKEN_ROCK_CAP, 'survivors-kraken-rock');
     const seg = quality === 'baja' ? 20 : 32;
     this.circleTrack = instanced(
@@ -286,7 +305,11 @@ export class SurvivorsKraken {
       const k2 = 1 - 0.45 * ease(out);
       this.shadow.position.set(x, FLAT_Y.shadow, z);
       this.shadow.rotation.set(0, -b.heading, 0);
-      this.shadow.scale.set(r * KRAKEN_SHADOW.length * k2 * (1 + wobble), 1, r * KRAKEN_SHADOW.width * k2 * (1 - wobble));
+      this.shadow.scale.set(
+        r * KRAKEN_SHADOW.length * k2 * (1 + wobble),
+        1,
+        r * KRAKEN_SHADOW.width * k2 * (1 - wobble),
+      );
     }
 
     // La cabeza: sube con el progreso; fuera, más alta con la cabeza expuesta.
@@ -294,7 +317,10 @@ export class SurvivorsKraken {
     if (reduced) this.headLift = goal;
     else {
       const step = HEAD_RISE_PER_S * dt;
-      this.headLift = goal > this.headLift ? Math.min(goal, this.headLift + step) : Math.max(goal, this.headLift - step);
+      this.headLift =
+        goal > this.headLift
+          ? Math.min(goal, this.headLift + step)
+          : Math.max(goal, this.headLift - step);
     }
     this.head.visible = out > 0;
     if (this.head.visible) {
@@ -353,7 +379,17 @@ export class SurvivorsKraken {
         const oz = Math.sin(dir + side * 0.55) * r * 0.7;
         const reach = reduced ? 0 : Math.sin(t * 1.1 + a) * 0.05;
         // Tendido hacia la isla: inclinado casi tumbado y la punta doblada hacia abajo.
-        this.placeTentacle(n++, toScene(b.x) + ox, toScene(b.y) + oz, dir, 1.15 + reach, 0, 0.5, r * 0.35, r * 1.6 * out);
+        this.placeTentacle(
+          n++,
+          toScene(b.x) + ox,
+          toScene(b.y) + oz,
+          dir,
+          1.15 + reach,
+          0,
+          0.5,
+          r * 0.35,
+          r * 1.6 * out,
+        );
       }
     }
     show(this.tentacleBase, n);
@@ -465,7 +501,8 @@ export class SurvivorsKraken {
         done.add(r);
         r.dispose();
       }
-      if ((mesh as unknown as InstancedMesh).isInstancedMesh) (mesh as unknown as InstancedMesh).dispose();
+      if ((mesh as unknown as InstancedMesh).isInstancedMesh)
+        (mesh as unknown as InstancedMesh).dispose();
     });
   }
 }

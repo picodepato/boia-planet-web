@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  AFTER_TUNING,
-  AfterClock,
-  afterGlow,
-  afterOpen,
-  afterPulse,
-  fishPose,
-} from './index';
+import { AFTER_TUNING, AfterClock, afterGlow, afterOpen, afterPulse, fishPose } from './index';
 import { alicanteHour } from '../characters';
 
 /** Un instante en hora de Alicante, pasado a UTC por la propia `alicanteHour` (que usa Intl). */

@@ -48,9 +48,7 @@ describe('controles de un clip abierto', () => {
 
 describe('anterior y siguiente del visor', () => {
   const nav = (index: number, total: number) =>
-    renderToStaticMarkup(
-      createElement(ViewerNav, { index, total, onPrev: noop, onNext: noop }),
-    );
+    renderToStaticMarkup(createElement(ViewerNav, { index, total, onPrev: noop, onNext: noop }));
 
   it('con varias piezas hay dos flechas y la posición', () => {
     const html = nav(2, 9);

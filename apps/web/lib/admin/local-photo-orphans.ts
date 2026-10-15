@@ -18,7 +18,10 @@ export function localPhotoKeysIn(value: unknown, out: Set<string> = new Set()): 
 }
 
 /** Las claves guardadas que nada referencia: se pueden borrar. */
-export function orphanPhotoKeys(stored: readonly string[], referenced: ReadonlySet<string>): string[] {
+export function orphanPhotoKeys(
+  stored: readonly string[],
+  referenced: ReadonlySet<string>,
+): string[] {
   return stored.filter((key) => !referenced.has(key));
 }
 

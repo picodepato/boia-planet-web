@@ -303,7 +303,10 @@ function ChangesList({ ctx }: { ctx: AdminContext }) {
                     · <strong>{target}</strong>
                   </>
                 ) : null}{' '}
-                {msg('admin.gestion.trash.when', { day: day(c.changedAt), until: day(c.expiresAt) })}
+                {msg('admin.gestion.trash.when', {
+                  day: day(c.changedAt),
+                  until: day(c.expiresAt),
+                })}
                 {c.reason ? ` · ${c.reason}` : ''}
               </span>
               <button
@@ -312,10 +315,7 @@ function ChangesList({ ctx }: { ctx: AdminContext }) {
                 disabled={busy}
                 data-testid="papelera-deshacer"
                 onClick={() =>
-                  void run(
-                    () => ctx.actions.revertChange(c.id),
-                    msg('admin.gestion.trash.undone'),
-                  )
+                  void run(() => ctx.actions.revertChange(c.id), msg('admin.gestion.trash.undone'))
                 }
               >
                 {msg('admin.gestion.trash.undo')}

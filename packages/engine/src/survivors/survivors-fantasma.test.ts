@@ -11,7 +11,12 @@ import {
   actOf,
 } from './config';
 import { ghostPhase, validateGhostShip } from './fantasma';
-import { type SurvivorsEvent, type SurvivorsGame, type SurvivorsInput, createSurvivors } from './sim';
+import {
+  type SurvivorsEvent,
+  type SurvivorsGame,
+  type SurvivorsInput,
+  createSurvivors,
+} from './sim';
 import type { SurvivorsWorld } from './world';
 
 /**
@@ -33,11 +38,19 @@ function archipelago(seed: number): SurvivorsWorld {
     if (Math.hypot(x, y) < 260) continue;
     obstacles.push({ x, y, radius: 40 + r() * 150 });
   }
-  return { bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 }, obstacles, start: { x: 0, y: 0 } };
+  return {
+    bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 },
+    obstacles,
+    start: { x: 0, y: 0 },
+  };
 }
 
 function openSea(obstacles: SurvivorsWorld['obstacles'] = []): SurvivorsWorld {
-  return { bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 }, obstacles, start: { x: 0, y: 0, heading: 0 } };
+  return {
+    bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 },
+    obstacles,
+    start: { x: 0, y: 0, heading: 0 },
+  };
 }
 
 /** Un anillo cerrado de islas alrededor del origen (ninguna bala pasa). */
@@ -79,7 +92,12 @@ const unsinkable = (patch: (c: SurvivorsConfig) => void = () => {}) =>
   });
 
 /** El Fantasma quieto, sin ataques de fase, con estas ventanas. */
-function stillGhost(c: SurvivorsConfig, solidS: number, ghostS: number, ghostAttacks: string[] = []): void {
+function stillGhost(
+  c: SurvivorsConfig,
+  solidS: number,
+  ghostS: number,
+  ghostAttacks: string[] = [],
+): void {
   const b = c.bosses.fantasma!;
   b.phases = [
     {
@@ -188,7 +206,9 @@ describe('fantasma T140: datos', () => {
   it('en el acto 1 de verdad entra a su segundo, sólido, delante del barco; empezando después del hueco también', () => {
     const g = createSurvivors(unsinkable(), 5, openSea(), { startAtS: SLOT.atS - 1 });
     const ev = run(g, 2);
-    expect(of(ev, 'bossSpawn').map((e) => [e.boss, e.kind, e.nameKey])).toEqual([['fantasma', 'boss', 'survivors.boss.fantasma']]);
+    expect(of(ev, 'bossSpawn').map((e) => [e.boss, e.kind, e.nameKey])).toEqual([
+      ['fantasma', 'boss', 'survivors.boss.fantasma'],
+    ]);
     const b = body(g)!;
     expect(b.fantasma).toMatchObject({ mode: 'solid' });
     expect(b.invulnerable).toBe(false);
@@ -203,7 +223,11 @@ describe('fantasma T140: datos', () => {
 
 describe('fantasma T140: ventanas', () => {
   it('alterna sólido y fantasma con los segundos de la fase; desvanecido nada lo daña ni le hieren las bolas', () => {
-    const g = createSurvivors(quiet((c) => stillGhost(c, 2, 1.5)), 1, openSea());
+    const g = createSurvivors(
+      quiet((c) => stillGhost(c, 2, 1.5)),
+      1,
+      openSea(),
+    );
     g.spawnBoss('fantasma', 200, 0);
     const first = body(g)!;
     expect(first.fantasma!.mode).toBe('solid');
@@ -225,7 +249,10 @@ describe('fantasma T140: ventanas', () => {
     expect(ghost.fantasma!.leftS).toBeLessThanOrEqual(1.5);
     // Recién desvanecido: la rampa de `fadeS` va subiendo hacia 1 (la pantalla no la anima; el HUD puede leerla).
     expect(ghost.fantasma!.ghostness).toBeGreaterThan(0);
-    expect(ghost.fantasma!.ghostness).toBeCloseTo(Math.min(1, ghost.fantasma!.progress * 1.5 / F.fadeS), 5);
+    expect(ghost.fantasma!.ghostness).toBeCloseTo(
+      Math.min(1, (ghost.fantasma!.progress * 1.5) / F.fadeS),
+      5,
+    );
     // Desvanecido: ni la Llama ni el cañón del barco (a tiro) le quitan nada.
     const hpBefore = ghost.hp;
     expect(g.flameBosses(ghost.x, ghost.y, 1, 1)).toBe(0);
@@ -240,7 +267,11 @@ describe('fantasma T140: ventanas', () => {
   });
 
   it('sólido toca el casco; desvanecido pasa por el barco sin mojar', () => {
-    const g = createSurvivors(quiet((c) => stillGhost(c, 1, 60)), 2, openSea());
+    const g = createSurvivors(
+      quiet((c) => stillGhost(c, 1, 60)),
+      2,
+      openSea(),
+    );
     g.spawnBoss('fantasma', 0, 0);
     const solid = run(g, 0.9);
     const hits = of(solid, 'bossHit');
@@ -295,7 +326,11 @@ describe('fantasma T140: andanadas', () => {
       quiet((c) => {
         // Sólido todo el rato, sin tripulación: sólo las andanadas.
         const b = c.bosses.fantasma!;
-        b.fantasma = { ...b.fantasma!, ghostAttacks: [], phases: b.phases.map(() => ({ solidS: 1e6, ghostS: 1 })) };
+        b.fantasma = {
+          ...b.fantasma!,
+          ghostAttacks: [],
+          phases: b.phases.map(() => ({ solidS: 1e6, ghostS: 1 })),
+        };
       }),
       4,
       world,
@@ -314,7 +349,8 @@ describe('fantasma T140: andanadas', () => {
       () => IDLE,
       (game, step) => {
         const s = game.snapshot();
-        if (step.some((e) => e.type === 'bossAttack') && firstAttackS === Infinity) firstAttackS = s.activeS;
+        if (step.some((e) => e.type === 'bossAttack') && firstAttackS === Infinity)
+          firstAttackS = s.activeS;
         if (s.activeS < firstAttackS) shotsBeforeFirstAttack += s.enemyProjectiles.length;
         const lines = s.bossWarnings.filter((w) => w.kind === 'broadside');
         if (lines.length > 0) {
@@ -324,7 +360,9 @@ describe('fantasma T140: andanadas', () => {
           // (El rumbo del boss sigue girando durante los disparos: con margen.)
           const b = s.bosses[0]!;
           const angles = lines
-            .map((l) => Math.atan2(Math.sin(l.heading - b.heading), Math.cos(l.heading - b.heading)))
+            .map((l) =>
+              Math.atan2(Math.sin(l.heading - b.heading), Math.cos(l.heading - b.heading)),
+            )
             .sort((p, q) => p - q);
           expect(angles[0]).toBeCloseTo(-Math.PI / 2, 1);
           expect(angles[1]).toBeCloseTo(Math.PI / 2, 1);
@@ -340,7 +378,9 @@ describe('fantasma T140: andanadas', () => {
     expect(shotsBeforeFirstAttack).toBe(0);
     for (const h of hits) {
       const t = [...tele].reverse().find((e) => e.atS <= h.atS)!;
-      expect(h.atS - t.atS).toBeGreaterThanOrEqual(FANTASMA.attacks.andanada!.telegraphS - SURVIVORS_STEP_S * 1.5);
+      expect(h.atS - t.atS).toBeGreaterThanOrEqual(
+        FANTASMA.attacks.andanada!.telegraphS - SURVIVORS_STEP_S * 1.5,
+      );
     }
   });
 
@@ -352,7 +392,9 @@ describe('fantasma T140: andanadas', () => {
     const walled = broadsideSetup(openSea(islandRing(150, 12, 50)));
     expect(body(walled)).not.toBeNull();
     const evWalled = run(walled, 40);
-    expect(of(evWalled, 'bossAttack').filter((e) => e.attack === 'andanada').length).toBeGreaterThan(0);
+    expect(
+      of(evWalled, 'bossAttack').filter((e) => e.attack === 'andanada').length,
+    ).toBeGreaterThan(0);
     expect(of(evWalled, 'blocked').filter((e) => e.owner === 'enemy').length).toBeGreaterThan(0);
     expect(of(evWalled, 'bossHit')).toEqual([]);
   });
@@ -362,14 +404,22 @@ describe('fantasma T140: andanadas', () => {
 
 describe('fantasma T140: tripulación', () => {
   it('desvanecido llama piratas fantasma (marcados `ghost`); sólido no llama a nadie', () => {
-    const g = createSurvivors(quiet((c) => stillGhost(c, 1, 8, ['tripulacion'])), 6, openSea());
+    const g = createSurvivors(
+      quiet((c) => stillGhost(c, 1, 8, ['tripulacion'])),
+      6,
+      openSea(),
+    );
     g.spawnBoss('fantasma', 300, 0);
     const ev = run(g, 9);
     const states = of(ev, 'fantasmaState');
     const summons = of(ev, 'bossSummon');
     expect(summons.length).toBeGreaterThanOrEqual(2);
     for (const s of summons) {
-      expect(s).toMatchObject({ boss: 'fantasma', enemy: 'pirate', count: FANTASMA.attacks.tripulacion!.summon!.count });
+      expect(s).toMatchObject({
+        boss: 'fantasma',
+        enemy: 'pirate',
+        count: FANTASMA.attacks.tripulacion!.summon!.count,
+      });
       const last = states.filter((st) => st.atS <= s.atS).at(-1);
       expect(last?.state).toBe('ghost');
     }
@@ -402,7 +452,11 @@ describe('fantasma T140: fases, derrota y determinismo', () => {
     burnTo(g, 0);
     expect(body(g)!.hp).toBeCloseTo(1, 6);
     let step: Timed[] = [];
-    for (let i = 0; i < Math.round(10 / SURVIVORS_STEP_S) && of(step, 'bossDefeated').length === 0; i++) {
+    for (
+      let i = 0;
+      i < Math.round(10 / SURVIVORS_STEP_S) && of(step, 'bossDefeated').length === 0;
+      i++
+    ) {
       step = run(g, SURVIVORS_STEP_S);
     }
     expect(of(step, 'bossDefeated')).toHaveLength(1);
@@ -469,11 +523,16 @@ describe('fantasma T140: fases, derrota y determinismo', () => {
     const tele = of(a.events, 'bossTelegraph');
     for (const h of of(a.events, 'bossAttack').filter((e) => e.attack === 'andanada')) {
       const t = [...tele].reverse().find((e) => e.attack === 'andanada' && e.atS <= h.atS)!;
-      expect(h.atS - t.atS).toBeGreaterThanOrEqual(FANTASMA.attacks.andanada!.telegraphS - SURVIVORS_STEP_S * 1.5);
+      expect(h.atS - t.atS).toBeGreaterThanOrEqual(
+        FANTASMA.attacks.andanada!.telegraphS - SURVIVORS_STEP_S * 1.5,
+      );
     }
     // Acaba vencido o retirado, nunca en el limbo.
     const fantasma = (e: { boss: string }) => e.boss === 'fantasma';
-    expect(of(a.events, 'bossDefeated').filter(fantasma).length + of(a.events, 'bossRetreated').filter(fantasma).length).toBe(1);
+    expect(
+      of(a.events, 'bossDefeated').filter(fantasma).length +
+        of(a.events, 'bossRetreated').filter(fantasma).length,
+    ).toBe(1);
     expect(a.s.bosses).toEqual([]);
     expect(a.s.end === 'victory').toBe(a.s.finalBossDefeated);
   }, 120_000);
@@ -482,7 +541,14 @@ describe('fantasma T140: fases, derrota y determinismo', () => {
     const idle = runBot(SURVIVORS_CONFIG, 'idle', 2, archipelago(5), { startAtS: 329 }, 420);
     expect(idle.bossHits).toBeGreaterThan(0);
     expect(idle.hits).toBeGreaterThanOrEqual(idle.bossHits);
-    const greedy = runBot(SURVIVORS_CONFIG, 'greedy', 2, archipelago(5), { difficulty: 'tranquila', startAtS: 329 }, 420);
+    const greedy = runBot(
+      SURVIVORS_CONFIG,
+      'greedy',
+      2,
+      archipelago(5),
+      { difficulty: 'tranquila', startAtS: 329 },
+      420,
+    );
     expect(greedy.hits).toBeGreaterThanOrEqual(greedy.bossHits);
     expect(['survived', 'victory']).toContain(greedy.end);
   }, 120_000);

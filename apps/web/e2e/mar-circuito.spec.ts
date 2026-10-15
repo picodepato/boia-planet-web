@@ -187,7 +187,10 @@ async function expectClearOfLeftColumn(page: Page, card: Locator) {
     const b = await page.getByTestId(id).boundingBox();
     if (!b) continue;
     const apart =
-      c.x >= b.x + b.width || b.x >= c.x + c.width || c.y >= b.y + b.height || b.y >= c.y + c.height;
+      c.x >= b.x + b.width ||
+      b.x >= c.x + c.width ||
+      c.y >= b.y + b.height ||
+      b.y >= c.y + c.height;
     expect(apart, `la tarjeta no tapa ${id}`).toBe(true);
   }
 }

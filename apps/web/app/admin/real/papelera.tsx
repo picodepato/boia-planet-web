@@ -102,7 +102,9 @@ export function RealDeletedTrash() {
                 >
                   <span>
                     <strong>{m.nickname ?? t('admin.real.trash.noCarnet')}</strong>
-                    {m.member_number ? ` · nº ${m.member_number}` : ''} · {m.email}
+                    {m.member_number
+                      ? t('admin.real.numeroSocio', { n: m.member_number })
+                      : ''} · {m.email}
                     {m.number_taken ? (
                       <>
                         <br />

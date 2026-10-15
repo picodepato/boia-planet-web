@@ -14,8 +14,7 @@ export const CARPETA_FUENTES = fileURLToPath(new URL('./.fuentes/', import.meta.
 export const FUENTE_EMOJI = join(CARPETA_FUENTES, 'NotoColorEmoji-Regular.ttf');
 const ORIGEN =
   'https://raw.githubusercontent.com/google/fonts/main/ofl/notocoloremoji/NotoColorEmoji-Regular.ttf';
-const LICENCIA =
-  'https://raw.githubusercontent.com/google/fonts/main/ofl/notocoloremoji/OFL.txt';
+const LICENCIA = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notocoloremoji/OFL.txt';
 
 /** `globalSetup` de playwright.deck.config.ts: descarga la fuente si no está. */
 export default async function descargarFuenteEmoji(): Promise<void> {

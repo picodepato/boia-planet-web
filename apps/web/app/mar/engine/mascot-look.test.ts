@@ -22,11 +22,17 @@ describe('la mascota a mano (capitana, Fiestera y boia mientras llega su modelo)
     for (const cap of ['beanie', 'party'] as const) {
       const g = createMascot(face, { cap });
       const rims = g.children.filter(
-        (o): o is Mesh => o instanceof Mesh && o.material instanceof MeshBasicMaterial && o.material.side === BackSide,
+        (o): o is Mesh =>
+          o instanceof Mesh &&
+          o.material instanceof MeshBasicMaterial &&
+          o.material.side === BackSide,
       );
       // La bola y el gorro.
       expect(rims.length).toBe(2);
-      for (const m of rims) expect((m.material as MeshBasicMaterial).color.getHexString()).toBe(MASCOT_COLORS.ink.slice(1));
+      for (const m of rims)
+        expect((m.material as MeshBasicMaterial).color.getHexString()).toBe(
+          MASCOT_COLORS.ink.slice(1),
+        );
       const ball = rims.find((m) => m.geometry.type === 'SphereGeometry')!;
       expect(ball.scale.x).toBeCloseTo(1 + MASCOT_OUTLINE);
     }
@@ -55,7 +61,10 @@ function boxesByMaterial(file: string): Map<string, { min: number[]; max: number
     for (const p of mesh.primitives) {
       const a = gltf.accessors[p.attributes.POSITION]!;
       const name = gltf.materials[p.material]!.name;
-      const b = out.get(name) ?? { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+      const b = out.get(name) ?? {
+        min: [Infinity, Infinity, Infinity],
+        max: [-Infinity, -Infinity, -Infinity],
+      };
       for (let i = 0; i < 3; i++) {
         b.min[i] = Math.min(b.min[i]!, a.min![i]!);
         b.max[i] = Math.max(b.max[i]!, a.max![i]!);

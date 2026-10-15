@@ -40,7 +40,13 @@ export interface GhostShipHost {
 }
 
 /** Los sucesos propios del Fantasma (además de los genéricos de boss). `id` es el del boss. */
-export type GhostShipEvent = { type: 'fantasmaState'; id: number; state: GhostMode; x: number; y: number };
+export type GhostShipEvent = {
+  type: 'fantasmaState';
+  id: number;
+  state: GhostMode;
+  x: number;
+  y: number;
+};
 
 /** El Fantasma para la pantalla: va en `BossView.fantasma`. */
 export interface GhostShipView {
@@ -90,7 +96,11 @@ export function ghostAttackPlan(
   phase: BossPhase,
 ): { attacks: readonly string[]; everyS: number; firstS: number } {
   if (g.mode === 'ghost') {
-    return { attacks: g.def.ghostAttacks, everyS: g.def.ghostAttackEveryS, firstS: g.def.ghostFirstAttackS };
+    return {
+      attacks: g.def.ghostAttacks,
+      everyS: g.def.ghostAttackEveryS,
+      firstS: g.def.ghostFirstAttackS,
+    };
   }
   return { attacks: phase.attacks, everyS: phase.attackEveryS, firstS: phase.firstAttackS };
 }
@@ -100,7 +110,13 @@ export function ghostAttackPlan(
  * ataque en curso, `busy`), fantasma → sólido al cumplir `ghostS`. Devuelve
  * true si cambió de modo (la simulación reinicia entonces su reloj de ataque).
  */
-export function stepGhostShip(g: GhostShipState, body: GhostShipBody, host: GhostShipHost, dt: number, busy: boolean): boolean {
+export function stepGhostShip(
+  g: GhostShipState,
+  body: GhostShipBody,
+  host: GhostShipHost,
+  dt: number,
+  busy: boolean,
+): boolean {
   g.modeS += dt;
   const ph = ghostPhase(g.def, body.phase);
   if (g.mode === 'solid') {
@@ -113,7 +129,12 @@ export function stepGhostShip(g: GhostShipState, body: GhostShipBody, host: Ghos
   return true;
 }
 
-function setMode(g: GhostShipState, body: GhostShipBody, host: GhostShipHost, mode: GhostMode): void {
+function setMode(
+  g: GhostShipState,
+  body: GhostShipBody,
+  host: GhostShipHost,
+  mode: GhostMode,
+): void {
   g.mode = mode;
   g.modeS = 0;
   g.changes++;
@@ -146,10 +167,13 @@ export function validateGhostShip(def: BossDef): string[] {
   const out: string[] = [];
   if (!(f.fadeS >= 0)) out.push(`${def.id}: fantasma fadeS`);
   if (!(f.ghostSpeedScale > 0)) out.push(`${def.id}: fantasma ghostSpeedScale`);
-  if (f.ghostAttacks.length > 0 && !(f.ghostAttackEveryS > 0)) out.push(`${def.id}: fantasma ghostAttackEveryS`);
+  if (f.ghostAttacks.length > 0 && !(f.ghostAttackEveryS > 0))
+    out.push(`${def.id}: fantasma ghostAttackEveryS`);
   if (!(f.ghostFirstAttackS >= 0)) out.push(`${def.id}: fantasma ghostFirstAttackS`);
-  for (const a of f.ghostAttacks) if (!def.attacks[a]) out.push(`${def.id}: fantasma ataque ${a} no existe`);
-  if (f.phases.length !== def.phases.length) out.push(`${def.id}: fantasma.phases (${f.phases.length}) ≠ phases (${def.phases.length})`);
+  for (const a of f.ghostAttacks)
+    if (!def.attacks[a]) out.push(`${def.id}: fantasma ataque ${a} no existe`);
+  if (f.phases.length !== def.phases.length)
+    out.push(`${def.id}: fantasma.phases (${f.phases.length}) ≠ phases (${def.phases.length})`);
   f.phases.forEach((p, i) => {
     if (!(p.solidS > 0)) out.push(`${def.id}: fantasma fase ${i} solidS`);
     if (!(p.ghostS > 0)) out.push(`${def.id}: fantasma fase ${i} ghostS`);

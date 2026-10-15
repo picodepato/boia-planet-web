@@ -142,7 +142,9 @@ describe('T135: el botín de las élites', () => {
 
   it('tope: con `max` flotando, uno nuevo hunde al más viejo', () => {
     const game = createSurvivors(quiet(), 1, world);
-    const ids = Array.from({ length: DROPS.max + 1 }, (_, k) => game.spawnPickup('iman', 300 + k * 40, 300));
+    const ids = Array.from({ length: DROPS.max + 1 }, (_, k) =>
+      game.spawnPickup('iman', 300 + k * 40, 300),
+    );
     expect(game.snapshot().pickups.map((o) => o.id)).toEqual(ids.slice(1));
   });
 
@@ -195,7 +197,10 @@ describe('T135: el botín de las élites', () => {
     game.spawnPickup('salvavidas', 0, 0);
     game.step();
     const cap = cfg.player.waterCapacity;
-    expect(game.snapshot().water.level).toBeCloseTo(Math.max(0, before - cap * DROPS.salvavidas.waterFraction), 9);
+    expect(game.snapshot().water.level).toBeCloseTo(
+      Math.max(0, before - cap * DROPS.salvavidas.waterFraction),
+      9,
+    );
     run(game, 0.6);
     game.spawnPickup('salvavidas', 0, 0);
     game.spawnPickup('salvavidas', 0, 0);
@@ -294,7 +299,8 @@ describe('T135: el botín de las élites', () => {
       const drops: string[] = [];
       for (let i = 0; i < Math.round(25 / SURVIVORS_STEP_S) && !game.ended; i++) {
         for (const e of game.step({ choose: 0 })) {
-          if (e.type === 'drop') drops.push(`${e.item}@${e.id}:${Math.round(e.x)},${Math.round(e.y)}`);
+          if (e.type === 'drop')
+            drops.push(`${e.item}@${e.id}:${Math.round(e.x)},${Math.round(e.y)}`);
         }
       }
       return { drops, hash: game.stateHash() };

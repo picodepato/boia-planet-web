@@ -35,7 +35,8 @@ describe('botellas donde se pueden leer (T88)', () => {
       const o = world.objects.find((x) => x.identity.id === z.id)!;
       const prox = o.behaviors.find((b) => b.type === 'proximity');
       const r =
-        (prox?.type === 'proximity' ? prox.params.radius : undefined) ?? o.geometry.proximityRadius!;
+        (prox?.type === 'proximity' ? prox.params.radius : undefined) ??
+        o.geometry.proximityRadius!;
       const h = prox?.type === 'proximity' ? prox.params.hysteresis : 0;
       expect(sheetRadius(o), z.id).toBe(r + h);
       expect(z.keepAway, z.id).toBe(z.radius + BOTTLE_FIND_RADIUS + BOTTLE_READ_MARGIN);
@@ -72,7 +73,10 @@ describe('botellas donde se pueden leer (T88)', () => {
         if (!ok(b)) continue;
         tried++;
         // Desde cualquier punto donde aparece cerca, ninguna isla tiene su ficha abierta.
-        for (const s of [...around(b, BOTTLE_FIND_RADIUS, 24), ...around(b, BOTTLE_FIND_RADIUS / 2)]) {
+        for (const s of [
+          ...around(b, BOTTLE_FIND_RADIUS, 24),
+          ...around(b, BOTTLE_FIND_RADIUS / 2),
+        ]) {
           for (const z of islands) {
             expect(dist(s, z), `${z.id} @ ${b.x},${b.y}`).toBeGreaterThan(z.radius);
           }
@@ -99,7 +103,8 @@ describe('botellas donde se pueden leer (T88)', () => {
       const a = relocateBottle(ok, stored);
       expect(a, z.id).not.toBeNull();
       expect(ok(a!), z.id).toBe(true);
-      for (const y of zones) expect(dist(a!, y), `${z.id} ← ${y.id}`).toBeGreaterThanOrEqual(y.keepAway);
+      for (const y of zones)
+        expect(dist(a!, y), `${z.id} ← ${y.id}`).toBeGreaterThanOrEqual(y.keepAway);
       // Determinista: la misma botella cae siempre en el mismo sitio.
       expect(relocateBottle(ok, stored)).toEqual(a);
     }

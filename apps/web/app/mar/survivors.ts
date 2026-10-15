@@ -218,7 +218,10 @@ export function canonShortcut(
 }
 
 /** El acto `v` si la config lo tiene (`acts[].act`); si no, null. */
-export function asAct(v: string | null | undefined, config: SurvivorsConfig = SURVIVORS_CONFIG): number | null {
+export function asAct(
+  v: string | null | undefined,
+  config: SurvivorsConfig = SURVIVORS_CONFIG,
+): number | null {
   if (v === null || v === undefined || !/^\d+$/.test(v)) return null;
   const n = Number(v);
   return config.acts.some((a) => a.act === n) ? n : null;
@@ -532,7 +535,7 @@ export interface CanonHook {
  * carta. Así la carta trae justo una de cada clase.
  */
 export function mixConfig(config: SurvivorsConfig): SurvivorsConfig {
-  const pick = <T,>(all: Partial<Record<string, T>>, ids: string[]) =>
+  const pick = <T>(all: Partial<Record<string, T>>, ids: string[]) =>
     Object.fromEntries(ids.filter((id) => all[id]).map((id) => [id, all[id]]));
   return {
     ...config,
@@ -550,7 +553,10 @@ export function nearestPickup(s: Pick<SurvivorsSnapshot, 'pickups' | 'player'>):
 }
 
 /** Lo más cercano de `list` a `from`, «x,y» (u, enteros), o '' si no hay nada. */
-function nearestOf(list: readonly { x: number; y: number }[], from: { x: number; y: number }): string {
+function nearestOf(
+  list: readonly { x: number; y: number }[],
+  from: { x: number; y: number },
+): string {
   let best: { x: number; y: number } | null = null;
   let bestD = Infinity;
   for (const o of list) {
@@ -730,7 +736,11 @@ export class SurvivorsRun {
     const p = this.game.snapshot().player;
     DROP_IDS.forEach((item, k) => {
       const a = p.heading + (k * Math.PI * 2) / DROP_IDS.length;
-      this.game.spawnPickup(item, p.x + Math.cos(a) * LOOT_DISTANCE, p.y + Math.sin(a) * LOOT_DISTANCE);
+      this.game.spawnPickup(
+        item,
+        p.x + Math.cos(a) * LOOT_DISTANCE,
+        p.y + Math.sin(a) * LOOT_DISTANCE,
+      );
     });
   }
 

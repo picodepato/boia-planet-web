@@ -6,3 +6,9 @@ art/
 apps/web/public/art/
 .open-next/
 .wrangler/
+plans/
+apps/web/scripts/og/glifos.json
+apps/web/next-env.d.ts
+ESTADO.md
+CLAUDE.md
+mundos/

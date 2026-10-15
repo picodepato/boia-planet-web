@@ -234,7 +234,8 @@ describe('castillo: equilibrio con el bot que construye (T165)', () => {
       const g = createDefense(CFG, STRATEGY_SEED, { difficulty: 'tormenta', runMin: m });
       const bot = callWhenClear(MIXED);
       let called = 0;
-      while (!g.ended) for (const e of g.step(bot(g.snapshot()))) if (e.type === 'waveCalled') called++;
+      while (!g.ended)
+        for (const e of g.step(bot(g.snapshot()))) if (e.type === 'waveCalled') called++;
       expect(called).toBeGreaterThan(0);
       expect(rank(g.result()!)).toBeLessThanOrEqual(
         rank(run('tormenta', m, STRATEGIES[0]!, STRATEGY_SEED).r),

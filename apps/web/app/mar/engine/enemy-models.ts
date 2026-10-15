@@ -117,7 +117,10 @@ export class EnemyModel {
           return this.geometry;
         },
         (err: unknown) => {
-          console.warn(`[boia] modelo «${this.spec.file}» no disponible; se queda el hecho a mano`, err);
+          console.warn(
+            `[boia] modelo «${this.spec.file}» no disponible; se queda el hecho a mano`,
+            err,
+          );
           this.state = 'error';
           return null;
         },

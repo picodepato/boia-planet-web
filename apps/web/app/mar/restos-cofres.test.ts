@@ -24,7 +24,9 @@ const spawnOf = (id: string) => {
 };
 const runtime = (seed: number, sessionId: string, rewards = new MemoryRewardStore()) =>
   new WorldRuntime(world, { seed, sessionId, rewards, wrap: true });
-const RESTOS = world.objects.filter((o) => o.identity.category === 'restos').map((o) => o.identity.id);
+const RESTOS = world.objects
+  .filter((o) => o.identity.category === 'restos')
+  .map((o) => o.identity.id);
 const key = (p: { x: number; y: number }) => `${Math.round(p.x)},${Math.round(p.y)}`;
 
 /** Lejos de todo: el barco quieto, a medio planeta del objeto. */
@@ -83,7 +85,9 @@ describe('cofres fugaces (REQ-AVE-017)', () => {
   const COFRE = 'cofre-1';
   const { lifetime } = spawnOf(COFRE);
   /** Una semilla con el cofre a la vista al empezar. */
-  const seed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].find((s) => runtime(s, 'x').objectState(COFRE)!.present)!;
+  const seed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].find(
+    (s) => runtime(s, 'x').objectState(COFRE)!.present,
+  )!;
 
   it('el cofre desaparece a su tiempo si nadie lo alcanza', () => {
     expect(lifetime).toBeGreaterThan(0);
@@ -116,6 +120,9 @@ describe('cofres fugaces (REQ-AVE-017)', () => {
     });
     expect(r.events.filter((e) => e.type === 'collected' && e.objectId === COFRE)).toHaveLength(1);
     const prizes = r.events.filter((e) => e.type === 'reward' && e.objectId === COFRE);
-    expect(prizes.map((e) => (e.type === 'reward' ? e.kind : '')).sort()).toEqual(['coins', 'points']);
+    expect(prizes.map((e) => (e.type === 'reward' ? e.kind : '')).sort()).toEqual([
+      'coins',
+      'points',
+    ]);
   });
 });

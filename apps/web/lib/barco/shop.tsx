@@ -133,8 +133,7 @@ export function BarcoShopView({
         <strong>
           <CoinIcon /> {coins}
         </strong>{' '}
-        {msg('barco.shop.monedas')}{' '}
-        <strong>★ {points}</strong> {msg('barco.shop.puntos')}
+        {msg('barco.shop.monedas')} <strong>★ {points}</strong> {msg('barco.shop.puntos')}
       </p>
       {message ? (
         <p className="tienda-mensaje" role="status" data-testid="barco-mensaje">

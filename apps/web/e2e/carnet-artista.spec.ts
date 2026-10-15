@@ -39,9 +39,7 @@ test('el enlace de artistas: el Carnet nuevo lleva el sello «ARTISTA» en el an
   if (!(await page.getByTestId('carnet-form').isVisible())) {
     await page.getByTestId('carnet-crear').click();
   }
-  await expect(page.getByTestId('carnet-aviso-artista')).toHaveText(
-    t('carnet.artistLink.notice'),
-  );
+  await expect(page.getByTestId('carnet-aviso-artista')).toHaveText(t('carnet.artistLink.notice'));
   await createCarnet(page, `Artista ${info.project.name}`);
 
   await frontShot(page, `t186-${info.project.name}-artista`);

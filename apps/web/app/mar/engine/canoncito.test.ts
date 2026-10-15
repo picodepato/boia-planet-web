@@ -1,6 +1,11 @@
 import { Group, Mesh, MeshStandardMaterial, type Object3D, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
-import { CANONCITO_PERIOD_S, CANONCITO_SHOT_S, canoncitoShotAt, createCanoncito } from './canoncito';
+import {
+  CANONCITO_PERIOD_S,
+  CANONCITO_SHOT_S,
+  canoncitoShotAt,
+  createCanoncito,
+} from './canoncito';
 import { MASCOT_MODELS, MascotModel } from './mascot-models';
 
 /**
@@ -12,7 +17,10 @@ import { MASCOT_MODELS, MascotModel } from './mascot-models';
 function scene(): Object3D {
   const root = new Group();
   MASCOT_MODELS.canoncito.parts.forEach((name, i) => {
-    const m = new Mesh(new SphereGeometry(0.1, 6, 4), new MeshStandardMaterial({ color: '#4a5468' }));
+    const m = new Mesh(
+      new SphereGeometry(0.1, 6, 4),
+      new MeshStandardMaterial({ color: '#4a5468' }),
+    );
     m.name = name;
     m.position.set(0, i * 0.25, 0);
     root.add(m);

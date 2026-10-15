@@ -101,7 +101,10 @@ describe('recordCastleWin: cada logro una vez, y la tarjeta dice qué se desbloq
     expect(won.find((u) => u.id === CASTLE_VORTEX_ACHIEVEMENT)?.prize).toBe(name(ESTELA_VORTICE));
     // Otra vez: nada nuevo.
     expect(
-      await recordCastleWin(repo, castleSignals(result({ difficulty: 'tormenta', runMin: 10 }), true)),
+      await recordCastleWin(
+        repo,
+        castleSignals(result({ difficulty: 'tormenta', runMin: 10 }), true),
+      ),
     ).toEqual([]);
     // Reclamar: puntos, monedas y el cosmético.
     for (const id of [CASTLE_STORM_ACHIEVEMENT, CASTLE_VORTEX_ACHIEVEMENT]) {
@@ -123,8 +126,14 @@ describe('recordCastleWin: cada logro una vez, y la tarjeta dice qué se desbloq
     const { repo } = fresh();
     for (const def of castleDefs.filter((a) => a.triggerParams?.runMin === undefined)) {
       const difficulty = def.triggerParams!.difficulty as DefenseResult['difficulty'];
-      const won = await recordCastleWin(repo, castleSignals(result({ difficulty, runMin: 5 }), true));
-      expect(won.map((u) => u.id), difficulty).toEqual([def.id]);
+      const won = await recordCastleWin(
+        repo,
+        castleSignals(result({ difficulty, runMin: 5 }), true),
+      );
+      expect(
+        won.map((u) => u.id),
+        difficulty,
+      ).toEqual([def.id]);
       expect(await stateOf(repo, def.id)).toBe('ready');
     }
     expect(await stateOf(repo, CASTLE_VORTEX_ACHIEVEMENT)).toBe('in_progress');

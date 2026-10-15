@@ -139,9 +139,7 @@ export function MarMenu({
    * «Terminar partida» con su confirmación (T148). `options`: lo propio del
    * juego (el castillo: barras de vida y números de daño, plan 015 T171).
    */
-  game?:
-    | { warning: string; resume: string; onQuit?: () => void; options?: ReactNode }
-    | undefined;
+  game?: { warning: string; resume: string; onQuit?: () => void; options?: ReactNode } | undefined;
 }) {
   return (
     <MarHoja

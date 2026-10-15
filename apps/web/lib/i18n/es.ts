@@ -6,6 +6,7 @@
  * §31.2; docs/propuestas/textos-zonas.md).
  */
 import { esAcceso } from './es-acceso';
+import { esAcuarela } from './es-acuarela';
 import { esAdmin } from './es-admin';
 import { esAdminEnlaces } from './es-admin-enlaces';
 import { esAdminGestion } from './es-admin-gestion';
@@ -74,6 +75,8 @@ export const es = {
   // «Sácate el Carnet» de la landing (plan 030 T288).
   ...esCarnetBloque,
   ...esSeo,
+  // La piel de Acuarela, por clave (plan 032 T303).
+  ...esAcuarela,
 } as const;
 
 export type MessageKey = keyof typeof es;

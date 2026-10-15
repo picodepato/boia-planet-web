@@ -27,10 +27,7 @@ export function minimapProjection(
   const wh = b.y - a.y;
   // Nunca negativa: un hueco más pequeño que el margen (el viewport cambiando)
   // deja el mapa en un punto, no con tamaño negativo (T29).
-  const scale = Math.max(
-    0,
-    Math.min((width - 2 * pad) / ww, (height - 2 * pad) / wh) || 0,
-  );
+  const scale = Math.max(0, Math.min((width - 2 * pad) / ww, (height - 2 * pad) / wh) || 0);
   const cw = ww * scale;
   const ch = wh * scale;
   const ox = (width - cw) / 2;

@@ -11,7 +11,15 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { StaffStampResult } from '../rpc.ts';
-import { context, dropEvents, expectDenied, expectRejected, ok, testEvent, type Member } from './context.ts';
+import {
+  context,
+  dropEvents,
+  expectDenied,
+  expectRejected,
+  ok,
+  testEvent,
+  type Member,
+} from './context.ts';
 import { elevateToAal2, testRunId } from './testkit.ts';
 
 const ctx = context();
@@ -107,7 +115,11 @@ describe('staff_stamp en la puerta', () => {
         .eq('id', r.tx_id!)
         .single(),
     );
-    expect(tx).toEqual({ source_ref: `puerta:${party.slug}`, points_delta: points, created_by: editor.id });
+    expect(tx).toEqual({
+      source_ref: `puerta:${party.slug}`,
+      points_delta: points,
+      created_by: editor.id,
+    });
   });
 
   it('una segunda lectura no da otro sello; el socio ve su asistencia y no la de otros', async () => {
@@ -171,7 +183,10 @@ describe('staff_stamp en la puerta', () => {
 describe('staff_stamp a mano desde el Admin', () => {
   it('un editor no sella a mano; el admin sí, con motivo', async () => {
     const args = { p_member: other.id, p_event: party.slug, p_source: 'manual' };
-    await expectRejected(editor.client.rpc('staff_stamp', { ...args, p_reason: 'vino' }), 'forbidden');
+    await expectRejected(
+      editor.client.rpc('staff_stamp', { ...args, p_reason: 'vino' }),
+      'forbidden',
+    );
     await expectRejected(admin.client.rpc('staff_stamp', args), 'reason_required');
     const r = (await ok(
       admin.client.rpc('staff_stamp', { ...args, p_reason: 'vino sin móvil' }),

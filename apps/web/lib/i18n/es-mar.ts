@@ -5,8 +5,10 @@
  */
 export const esMar = {
   // Plan 029 T270, los personajes del agua: muestra, pendiente del visto bueno de Álvaro.
-  'mar.gaviota.robo': 'Una gaviota te ha robado {n} monedas. Píllala antes de {s} s: ve a por ella.',
-  'mar.gaviota.robo.una': 'Una gaviota te ha robado una moneda. Píllala antes de {s} s: ve a por ella.',
+  'mar.gaviota.robo':
+    'Una gaviota te ha robado {n} monedas. Píllala antes de {s} s: ve a por ella.',
+  'mar.gaviota.robo.una':
+    'Una gaviota te ha robado una moneda. Píllala antes de {s} s: ve a por ella.',
   'mar.gaviota.pillada': 'Gaviota pillada: {n} monedas de vuelta y {bonus} de propina.',
   'mar.gaviota.huyo':
     'La gaviota se ríe y se va. Las monedas se le caen al mar y la marea te las devuelve.',
@@ -30,7 +32,8 @@ export const esMar = {
   'mar.canon.sonido.juego': 'Sonido del juego',
   'mar.canon.sonido.volumen': 'Volumen',
   'mar.canon.sonido.volumen.aria': 'Volumen del sonido del juego',
-  'mar.canon.sonido.ajustes': 'Si en Ajustes la música o los efectos están apagados, aquí tampoco suenan.',
+  'mar.canon.sonido.ajustes':
+    'Si en Ajustes la música o los efectos están apagados, aquí tampoco suenan.',
   'mar.canon.anuncio.nivel': 'Nivel {nivel}: elige una mejora.',
   'mar.canon.anuncio.cofre': 'Cofre abierto: elige una mejora.',
   'mar.logros.logros': 'Logros',
@@ -236,7 +239,8 @@ export const esMar = {
   'mar.tablon.titulo': 'Tablón del faro',
   'mar.tablon.intro': 'Desde el faro puedes ver dónde jugar',
   'mar.tablon.canon.titulo': 'Cañón',
-  'mar.tablon.canon.linea': 'Que no pare la música: aguanta la noche a cañonazos hasta el amanecer.',
+  'mar.tablon.canon.linea':
+    'Que no pare la música: aguanta la noche a cañonazos hasta el amanecer.',
   'mar.tablon.castillo.titulo': 'Castillo',
   'mar.tablon.castillo.linea':
     'Defensa del Castillo: levanta islas como torres y que nada llegue a la muralla.',
@@ -250,7 +254,8 @@ export const esMar = {
   'mar.castillo.titulo': 'Defensa del Castillo',
   'mar.castillo.resumen':
     'Los enemigos del Cañón llegan en oleadas por un camino en espiral. Vuela en avioneta, dispara y levanta las islas del mar como torres para que el castillo aguante.',
-  'mar.castillo.bloqueo.carrera': 'Estás en plena carrera: termínala y vuelve a defender el castillo.',
+  'mar.castillo.bloqueo.carrera':
+    'Estás en plena carrera: termínala y vuelve a defender el castillo.',
   // El pop-up antes de la partida (T162). muestra
   'mar.castillo.previa.texto':
     'Elige cuánto aguantar y la dificultad. Cuanto más larga, más enemigos.',
@@ -261,7 +266,8 @@ export const esMar = {
   'mar.castillo.previa.eleccion': '{min} min · {dificultad}',
   'mar.castillo.previa.dificultad.tranquila': 'Enemigos más flojos y menos numerosos.',
   'mar.castillo.previa.dificultad.normal': 'La dificultad de referencia.',
-  'mar.castillo.previa.dificultad.tormenta': 'Más enemigos, más duros y que golpean más fuerte la muralla.',
+  'mar.castillo.previa.dificultad.tormenta':
+    'Más enemigos, más duros y que golpean más fuerte la muralla.',
   'mar.castillo.previa.medalla': 'Tu mejor medalla aquí: {medalla}',
   'mar.castillo.previa.medalla.ninguna': 'Aún sin medalla en esta partida.',
   'mar.castillo.previa.ranking': 'Ranking · {eleccion}',
@@ -432,10 +438,12 @@ export const esMar = {
   'mar.castillo.guia.instalar':
     'Toca el mar para moverla, fuera del camino. En verde cabe: «Instalar isla».',
   'mar.castillo.guia.ficha': 'Toca tu isla en el mar para abrir su ficha.',
-  'mar.castillo.guia.prioridad': 'Elige a quién apunta: el primero, el último, el más fuerte o el más cerca.',
+  'mar.castillo.guia.prioridad':
+    'Elige a quién apunta: el primero, el último, el más fuerte o el más cerca.',
   'mar.castillo.guia.mejorar':
     'Con más monedas, «Mejorar» sube la isla de nivel. En «Mejoras», el avión y el castillo.',
-  'mar.castillo.guia.oleada': '¿Listo? «Llamar oleada» trae la siguiente ya, con monedas de premio.',
+  'mar.castillo.guia.oleada':
+    '¿Listo? «Llamar oleada» trae la siguiente ya, con monedas de premio.',
   // Welcome Aboard corta, al zarpar desde la landing (T64; textos del 2026-10-02).
   'mar.bienvenida.titulo': 'BIENVENIDO A BOIA.PLANET',
   'mar.bienvenida.texto':
@@ -470,7 +478,8 @@ export const esMar = {
   'mar.canon.dificultad.normal': 'Normal',
   'mar.canon.dificultad.normal.texto': 'La dificultad de referencia.',
   'mar.canon.dificultad.tormenta': 'Tormenta',
-  'mar.canon.dificultad.tormenta.texto': 'Más enemigos, más duros y que mojan más. El premio es el mismo.',
+  'mar.canon.dificultad.tormenta.texto':
+    'Más enemigos, más duros y que mojan más. El premio es el mismo.',
   // Los actos en el panel de la isla (T144): sólo los abiertos se eligen. muestra
   'mar.canon.acto.aria': 'Acto',
   'mar.canon.acto': 'Acto {n}',
@@ -496,8 +505,7 @@ export const esMar = {
   'mar.castillo.ranking.tu.sin': 'Tú (aún sin partida)',
   'mar.castillo.ranking.cargando': 'Cargando el ranking…',
   'mar.castillo.ranking.fila': '{puesto}. {nombre}: {puntos} puntos',
-  'mar.castillo.ranking.local':
-    'Tu mejor partida en este navegador, entre los barcos de muestra.',
+  'mar.castillo.ranking.local': 'Tu mejor partida en este navegador, entre los barcos de muestra.',
   'mar.castillo.ranking.formula':
     'Puntos: enemigos derrotados y un bono por la vida del castillo al aguantar.',
   'mar.castillo.fin.ranking.nuevo': '¡Tu mejor!',
@@ -513,8 +521,7 @@ export const esMar = {
   'mar.canon.ranking.tu.sin': 'Tú (aún sin partida)',
   'mar.canon.ranking.cargando': 'Cargando el ranking…',
   'mar.canon.ranking.fila': '{puesto}. {nombre}: {puntos} puntos',
-  'mar.canon.ranking.local':
-    'Tu mejor partida en este navegador, entre los barcos de muestra.',
+  'mar.canon.ranking.local': 'Tu mejor partida en este navegador, entre los barcos de muestra.',
   'mar.canon.ranking.formula':
     'Puntos: enemigos, notas, medalla y rapidez al vencer al boss, por la dificultad.',
   'mar.canon.fin.puntos': 'Puntos',
@@ -561,10 +568,13 @@ export const esMar = {
     'Achicas {amount} de agua por segundo (con {capacidad} el barco se inunda)',
   // Armas, vinilos, evoluciones y objetos de cartas (plan 011 T129). Todo muestra.
   'survivors.weapon.canon': 'Cañón de agua',
-  'survivors.weapon.canon.efecto': 'Dispara una bola al enemigo más cercano: 16 de daño cada 0,7 s; las islas la paran.',
-  'survivors.weapon.canon.l1': 'Nivel 1: Dispara una bola al enemigo más cercano: 16 de daño cada 0,7 s; las islas la paran.',
+  'survivors.weapon.canon.efecto':
+    'Dispara una bola al enemigo más cercano: 16 de daño cada 0,7 s; las islas la paran.',
+  'survivors.weapon.canon.l1':
+    'Nivel 1: Dispara una bola al enemigo más cercano: 16 de daño cada 0,7 s; las islas la paran.',
   'survivors.weapon.canon.l1.card': 'Cañón de agua',
-  'survivors.weapon.canon.l1.card.efecto': 'Nivel 1: Dispara una bola al enemigo más cercano: 16 de daño cada 0,7 s; las islas la paran.',
+  'survivors.weapon.canon.l1.card.efecto':
+    'Nivel 1: Dispara una bola al enemigo más cercano: 16 de daño cada 0,7 s; las islas la paran.',
   'survivors.weapon.canon.l2': 'Nivel 2: +8 de daño por bola',
   'survivors.weapon.canon.l2.card': 'Cañón de agua',
   'survivors.weapon.canon.l2.card.efecto': 'Nivel 2: +8 de daño por bola',
@@ -578,10 +588,13 @@ export const esMar = {
   'survivors.weapon.canon.l5.card': 'Cañón de agua',
   'survivors.weapon.canon.l5.card.efecto': 'Nivel 5: Atraviesa +1 enemigo',
   'survivors.weapon.subwoofer': 'Subwoofer',
-  'survivors.weapon.subwoofer.efecto': 'Aura de radio 110: 10 de daño cada 0,5 s; pasa sobre las islas.',
-  'survivors.weapon.subwoofer.l1': 'Nivel 1: Aura de radio 110: 10 de daño cada 0,5 s; pasa sobre las islas.',
+  'survivors.weapon.subwoofer.efecto':
+    'Aura de radio 110: 10 de daño cada 0,5 s; pasa sobre las islas.',
+  'survivors.weapon.subwoofer.l1':
+    'Nivel 1: Aura de radio 110: 10 de daño cada 0,5 s; pasa sobre las islas.',
   'survivors.weapon.subwoofer.l1.card': 'Subwoofer',
-  'survivors.weapon.subwoofer.l1.card.efecto': 'Nivel 1: Aura de radio 110: 10 de daño cada 0,5 s; pasa sobre las islas.',
+  'survivors.weapon.subwoofer.l1.card.efecto':
+    'Nivel 1: Aura de radio 110: 10 de daño cada 0,5 s; pasa sobre las islas.',
   'survivors.weapon.subwoofer.l2': 'Nivel 2: +20 de radio del aura',
   'survivors.weapon.subwoofer.l2.card': 'Subwoofer',
   'survivors.weapon.subwoofer.l2.card.efecto': 'Nivel 2: +20 de radio del aura',
@@ -595,10 +608,13 @@ export const esMar = {
   'survivors.weapon.subwoofer.l5.card': 'Subwoofer',
   'survivors.weapon.subwoofer.l5.card.efecto': 'Nivel 5: 0,15 s menos entre pulsos',
   'survivors.weapon.laser': 'Focos',
-  'survivors.weapon.laser.efecto': 'Un foco de escenario se fija en el enemigo más cercano (alcance 300) y lo quema: 5 de daño cada 0,25 s en una mancha de radio 24; pasa suave al siguiente y sobre las islas.',
-  'survivors.weapon.laser.l1': 'Nivel 1: Un foco de escenario se fija en el enemigo más cercano (alcance 300) y lo quema: 5 de daño cada 0,25 s en una mancha de radio 24; pasa suave al siguiente y sobre las islas.',
+  'survivors.weapon.laser.efecto':
+    'Un foco de escenario se fija en el enemigo más cercano (alcance 300) y lo quema: 5 de daño cada 0,25 s en una mancha de radio 24; pasa suave al siguiente y sobre las islas.',
+  'survivors.weapon.laser.l1':
+    'Nivel 1: Un foco de escenario se fija en el enemigo más cercano (alcance 300) y lo quema: 5 de daño cada 0,25 s en una mancha de radio 24; pasa suave al siguiente y sobre las islas.',
   'survivors.weapon.laser.l1.card': 'Focos',
-  'survivors.weapon.laser.l1.card.efecto': 'Nivel 1: Un foco de escenario se fija en el enemigo más cercano (alcance 300) y lo quema: 5 de daño cada 0,25 s en una mancha de radio 24; pasa suave al siguiente y sobre las islas.',
+  'survivors.weapon.laser.l1.card.efecto':
+    'Nivel 1: Un foco de escenario se fija en el enemigo más cercano (alcance 300) y lo quema: 5 de daño cada 0,25 s en una mancha de radio 24; pasa suave al siguiente y sobre las islas.',
   'survivors.weapon.laser.l2': 'Nivel 2: +1 foco (cada uno a un enemigo distinto)',
   'survivors.weapon.laser.l2.card': 'Focos',
   'survivors.weapon.laser.l2.card.efecto': 'Nivel 2: +1 foco (cada uno a un enemigo distinto)',
@@ -612,10 +628,13 @@ export const esMar = {
   'survivors.weapon.laser.l5.card': 'Focos',
   'survivors.weapon.laser.l5.card.efecto': 'Nivel 5: +1 foco',
   'survivors.weapon.buoys': 'Boyas orbitales',
-  'survivors.weapon.buoys.efecto': 'Dos boyas de radio 14 orbitan a 70 del barco: 18 de daño cada 0,4 s; pasan sobre las islas.',
-  'survivors.weapon.buoys.l1': 'Nivel 1: Dos boyas de radio 14 orbitan a 70 del barco: 18 de daño cada 0,4 s; pasan sobre las islas.',
+  'survivors.weapon.buoys.efecto':
+    'Dos boyas de radio 14 orbitan a 70 del barco: 18 de daño cada 0,4 s; pasan sobre las islas.',
+  'survivors.weapon.buoys.l1':
+    'Nivel 1: Dos boyas de radio 14 orbitan a 70 del barco: 18 de daño cada 0,4 s; pasan sobre las islas.',
   'survivors.weapon.buoys.l1.card': 'Boyas orbitales',
-  'survivors.weapon.buoys.l1.card.efecto': 'Nivel 1: Dos boyas de radio 14 orbitan a 70 del barco: 18 de daño cada 0,4 s; pasan sobre las islas.',
+  'survivors.weapon.buoys.l1.card.efecto':
+    'Nivel 1: Dos boyas de radio 14 orbitan a 70 del barco: 18 de daño cada 0,4 s; pasan sobre las islas.',
   'survivors.weapon.buoys.l2': 'Nivel 2: +8 de daño por boya',
   'survivors.weapon.buoys.l2.card': 'Boyas orbitales',
   'survivors.weapon.buoys.l2.card.efecto': 'Nivel 2: +8 de daño por boya',
@@ -629,10 +648,13 @@ export const esMar = {
   'survivors.weapon.buoys.l5.card': 'Boyas orbitales',
   'survivors.weapon.buoys.l5.card.efecto': 'Nivel 5: +12 de daño por boya',
   'survivors.weapon.confetti': 'Cañón de confeti',
-  'survivors.weapon.confetti.efecto': 'Abanico de 5 proyectiles hacia tu rumbo: 10 de daño cada 1,4 s, alcance 320; atraviesan un enemigo y las islas los paran.',
-  'survivors.weapon.confetti.l1': 'Nivel 1: Abanico de 5 proyectiles hacia tu rumbo: 10 de daño cada 1,4 s, alcance 320; atraviesan un enemigo y las islas los paran.',
+  'survivors.weapon.confetti.efecto':
+    'Abanico de 5 proyectiles hacia tu rumbo: 10 de daño cada 1,4 s, alcance 320; atraviesan un enemigo y las islas los paran.',
+  'survivors.weapon.confetti.l1':
+    'Nivel 1: Abanico de 5 proyectiles hacia tu rumbo: 10 de daño cada 1,4 s, alcance 320; atraviesan un enemigo y las islas los paran.',
   'survivors.weapon.confetti.l1.card': 'Cañón de confeti',
-  'survivors.weapon.confetti.l1.card.efecto': 'Nivel 1: Abanico de 5 proyectiles hacia tu rumbo: 10 de daño cada 1,4 s, alcance 320; atraviesan un enemigo y las islas los paran.',
+  'survivors.weapon.confetti.l1.card.efecto':
+    'Nivel 1: Abanico de 5 proyectiles hacia tu rumbo: 10 de daño cada 1,4 s, alcance 320; atraviesan un enemigo y las islas los paran.',
   'survivors.weapon.confetti.l2': 'Nivel 2: +2 proyectiles por ráfaga',
   'survivors.weapon.confetti.l2.card': 'Cañón de confeti',
   'survivors.weapon.confetti.l2.card.efecto': 'Nivel 2: +2 proyectiles por ráfaga',
@@ -646,10 +668,13 @@ export const esMar = {
   'survivors.weapon.confetti.l5.card': 'Cañón de confeti',
   'survivors.weapon.confetti.l5.card.efecto': 'Nivel 5: Atraviesa +1 enemigo',
   'survivors.weapon.fireworks': 'Traca',
-  'survivors.weapon.fireworks.efecto': 'Cada 2,4 s el barco suelta una ristra de 3 petardos en su estela; cada uno estalla al tocarlo un enemigo: 36 de daño en radio 34. Duran 7 s; arrastra a los enemigos por tu estela.',
-  'survivors.weapon.fireworks.l1': 'Nivel 1: Cada 2,4 s el barco suelta una ristra de 3 petardos en su estela; cada uno estalla al tocarlo un enemigo: 36 de daño en radio 34. Duran 7 s; arrastra a los enemigos por tu estela.',
+  'survivors.weapon.fireworks.efecto':
+    'Cada 2,4 s el barco suelta una ristra de 3 petardos en su estela; cada uno estalla al tocarlo un enemigo: 36 de daño en radio 34. Duran 7 s; arrastra a los enemigos por tu estela.',
+  'survivors.weapon.fireworks.l1':
+    'Nivel 1: Cada 2,4 s el barco suelta una ristra de 3 petardos en su estela; cada uno estalla al tocarlo un enemigo: 36 de daño en radio 34. Duran 7 s; arrastra a los enemigos por tu estela.',
   'survivors.weapon.fireworks.l1.card': 'Traca',
-  'survivors.weapon.fireworks.l1.card.efecto': 'Nivel 1: Cada 2,4 s el barco suelta una ristra de 3 petardos en su estela; cada uno estalla al tocarlo un enemigo: 36 de daño en radio 34. Duran 7 s; arrastra a los enemigos por tu estela.',
+  'survivors.weapon.fireworks.l1.card.efecto':
+    'Nivel 1: Cada 2,4 s el barco suelta una ristra de 3 petardos en su estela; cada uno estalla al tocarlo un enemigo: 36 de daño en radio 34. Duran 7 s; arrastra a los enemigos por tu estela.',
   'survivors.weapon.fireworks.l2': 'Nivel 2: +1 petardo por ristra',
   'survivors.weapon.fireworks.l2.card': 'Traca',
   'survivors.weapon.fireworks.l2.card.efecto': 'Nivel 2: +1 petardo por ristra',
@@ -663,10 +688,13 @@ export const esMar = {
   'survivors.weapon.fireworks.l5.card': 'Traca',
   'survivors.weapon.fireworks.l5.card.efecto': 'Nivel 5: +2 petardos por ristra',
   'survivors.weapon.acidRain': 'Lluvia ácida',
-  'survivors.weapon.acidRain.efecto': 'Una nube de radio 90 sobre un grupo cada 5 s: 12 de daño cada segundo durante 4 s, alcance 600; pasa sobre las islas.',
-  'survivors.weapon.acidRain.l1': 'Nivel 1: Una nube de radio 90 sobre un grupo cada 5 s: 12 de daño cada segundo durante 4 s, alcance 600; pasa sobre las islas.',
+  'survivors.weapon.acidRain.efecto':
+    'Una nube de radio 90 sobre un grupo cada 5 s: 12 de daño cada segundo durante 4 s, alcance 600; pasa sobre las islas.',
+  'survivors.weapon.acidRain.l1':
+    'Nivel 1: Una nube de radio 90 sobre un grupo cada 5 s: 12 de daño cada segundo durante 4 s, alcance 600; pasa sobre las islas.',
   'survivors.weapon.acidRain.l1.card': 'Lluvia ácida',
-  'survivors.weapon.acidRain.l1.card.efecto': 'Nivel 1: Una nube de radio 90 sobre un grupo cada 5 s: 12 de daño cada segundo durante 4 s, alcance 600; pasa sobre las islas.',
+  'survivors.weapon.acidRain.l1.card.efecto':
+    'Nivel 1: Una nube de radio 90 sobre un grupo cada 5 s: 12 de daño cada segundo durante 4 s, alcance 600; pasa sobre las islas.',
   'survivors.weapon.acidRain.l2': 'Nivel 2: +25 de radio de la nube',
   'survivors.weapon.acidRain.l2.card': 'Lluvia ácida',
   'survivors.weapon.acidRain.l2.card.efecto': 'Nivel 2: +25 de radio de la nube',
@@ -683,36 +711,46 @@ export const esMar = {
   'survivors.vinyl.techno.efecto': '+15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l1': 'Nivel 1: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l1.card': 'Techno',
-  'survivors.vinyl.techno.l1.card.efecto': 'Nivel 1: +15 % de velocidad de ataque de todas las armas',
+  'survivors.vinyl.techno.l1.card.efecto':
+    'Nivel 1: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l2': 'Nivel 2: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l2.card': 'Techno',
-  'survivors.vinyl.techno.l2.card.efecto': 'Nivel 2: +15 % de velocidad de ataque de todas las armas',
+  'survivors.vinyl.techno.l2.card.efecto':
+    'Nivel 2: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l3': 'Nivel 3: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l3.card': 'Techno',
-  'survivors.vinyl.techno.l3.card.efecto': 'Nivel 3: +15 % de velocidad de ataque de todas las armas',
+  'survivors.vinyl.techno.l3.card.efecto':
+    'Nivel 3: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l4': 'Nivel 4: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l4.card': 'Techno',
-  'survivors.vinyl.techno.l4.card.efecto': 'Nivel 4: +15 % de velocidad de ataque de todas las armas',
+  'survivors.vinyl.techno.l4.card.efecto':
+    'Nivel 4: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l5': 'Nivel 5: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.techno.l5.card': 'Techno',
-  'survivors.vinyl.techno.l5.card.efecto': 'Nivel 5: +15 % de velocidad de ataque de todas las armas',
+  'survivors.vinyl.techno.l5.card.efecto':
+    'Nivel 5: +15 % de velocidad de ataque de todas las armas',
   'survivors.vinyl.reggaeton': 'Reggaetón',
   'survivors.vinyl.reggaeton.efecto': '+15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l1': 'Nivel 1: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l1.card': 'Reggaetón',
-  'survivors.vinyl.reggaeton.l1.card.efecto': 'Nivel 1: +15 % de tamaño de las áreas de todas las armas',
+  'survivors.vinyl.reggaeton.l1.card.efecto':
+    'Nivel 1: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l2': 'Nivel 2: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l2.card': 'Reggaetón',
-  'survivors.vinyl.reggaeton.l2.card.efecto': 'Nivel 2: +15 % de tamaño de las áreas de todas las armas',
+  'survivors.vinyl.reggaeton.l2.card.efecto':
+    'Nivel 2: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l3': 'Nivel 3: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l3.card': 'Reggaetón',
-  'survivors.vinyl.reggaeton.l3.card.efecto': 'Nivel 3: +15 % de tamaño de las áreas de todas las armas',
+  'survivors.vinyl.reggaeton.l3.card.efecto':
+    'Nivel 3: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l4': 'Nivel 4: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l4.card': 'Reggaetón',
-  'survivors.vinyl.reggaeton.l4.card.efecto': 'Nivel 4: +15 % de tamaño de las áreas de todas las armas',
+  'survivors.vinyl.reggaeton.l4.card.efecto':
+    'Nivel 4: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l5': 'Nivel 5: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.reggaeton.l5.card': 'Reggaetón',
-  'survivors.vinyl.reggaeton.l5.card.efecto': 'Nivel 5: +15 % de tamaño de las áreas de todas las armas',
+  'survivors.vinyl.reggaeton.l5.card.efecto':
+    'Nivel 5: +15 % de tamaño de las áreas de todas las armas',
   'survivors.vinyl.house': 'House',
   'survivors.vinyl.house.efecto': '8 puntos porcentuales menos de agua por golpe',
   'survivors.vinyl.house.l1': 'Nivel 1: 8 puntos porcentuales menos de agua por golpe',
@@ -818,30 +856,45 @@ export const esMar = {
   'survivors.vinyl.pop.l5.card': 'Pop',
   'survivors.vinyl.pop.l5.card.efecto': 'Nivel 5: +15 % de experiencia por nota',
   'survivors.vinyl.rumba': 'Rumba',
-  'survivors.vinyl.rumba.efecto': '+1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
-  'survivors.vinyl.rumba.l1': 'Nivel 1: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.efecto':
+    '+1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l1':
+    'Nivel 1: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
   'survivors.vinyl.rumba.l1.card': 'Rumba',
-  'survivors.vinyl.rumba.l1.card.efecto': 'Nivel 1: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
-  'survivors.vinyl.rumba.l2': 'Nivel 2: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l1.card.efecto':
+    'Nivel 1: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l2':
+    'Nivel 2: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
   'survivors.vinyl.rumba.l2.card': 'Rumba',
-  'survivors.vinyl.rumba.l2.card.efecto': 'Nivel 2: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
-  'survivors.vinyl.rumba.l3': 'Nivel 3: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l2.card.efecto':
+    'Nivel 2: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l3':
+    'Nivel 3: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
   'survivors.vinyl.rumba.l3.card': 'Rumba',
-  'survivors.vinyl.rumba.l3.card.efecto': 'Nivel 3: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
-  'survivors.vinyl.rumba.l4': 'Nivel 4: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l3.card.efecto':
+    'Nivel 3: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l4':
+    'Nivel 4: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
   'survivors.vinyl.rumba.l4.card': 'Rumba',
-  'survivors.vinyl.rumba.l4.card.efecto': 'Nivel 4: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
-  'survivors.vinyl.rumba.l5': 'Nivel 5: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l4.card.efecto':
+    'Nivel 4: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l5':
+    'Nivel 5: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
   'survivors.vinyl.rumba.l5.card': 'Rumba',
-  'survivors.vinyl.rumba.l5.card.efecto': 'Nivel 5: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
+  'survivors.vinyl.rumba.l5.card.efecto':
+    'Nivel 5: +1 proyectil por disparo del Cañón de agua, El Drop, Confeti y la Traca; +1 destello de la Bola de Discoteca',
   'survivors.evolution.drop': 'El Drop',
-  'survivors.evolution.drop.efecto': 'Sustituye al Cañón: 2 bolas cada 0,6 s, 40 de daño en explosiones de radio 90, alcance 650; las islas paran las bolas. Valores base; tus vinilos también se aplican.',
+  'survivors.evolution.drop.efecto':
+    'Sustituye al Cañón: 2 bolas cada 0,6 s, 40 de daño en explosiones de radio 90, alcance 650; las islas paran las bolas. Valores base; tus vinilos también se aplican.',
   'survivors.evolution.soundWall': 'Muro de Sonido',
-  'survivors.evolution.soundWall.efecto': 'Sustituye al Subwoofer: aura de radio 260, 26 de daño cada 0,3 s y empuja 35 por pulso; pasa sobre las islas. Valores base; tus vinilos también se aplican.',
+  'survivors.evolution.soundWall.efecto':
+    'Sustituye al Subwoofer: aura de radio 260, 26 de daño cada 0,3 s y empuja 35 por pulso; pasa sobre las islas. Valores base; tus vinilos también se aplican.',
   'survivors.evolution.laserShow': 'Show de Láseres',
-  'survivors.evolution.laserShow.efecto': 'Sustituye a los Focos: 7 rayos en abanico delante del barco que barren de lado a lado, de alcance 440 y medio ancho 14, 30 de daño cada 0,16 s; pasan sobre las islas. Valores base; tus vinilos también se aplican.',
+  'survivors.evolution.laserShow.efecto':
+    'Sustituye a los Focos: 7 rayos en abanico delante del barco que barren de lado a lado, de alcance 440 y medio ancho 14, 30 de daño cada 0,16 s; pasan sobre las islas. Valores base; tus vinilos también se aplican.',
   'survivors.evolution.discoBall': 'Bola de Discoteca',
-  'survivors.evolution.discoBall.efecto': 'Sustituye a las Boyas: una bola de radio 42 orbita a 90, 50 de daño cada 0,3 s; lanza 6 destellos cada 0,8 s, de alcance 420 y 50 de daño. Pasa sobre las islas. Valores base; tus vinilos también se aplican.',
+  'survivors.evolution.discoBall.efecto':
+    'Sustituye a las Boyas: una bola de radio 42 orbita a 90, 50 de daño cada 0,3 s; lanza 6 destellos cada 0,8 s, de alcance 420 y 50 de daño. Pasa sobre las islas. Valores base; tus vinilos también se aplican.',
   // Los bosses (T137–T141): su nombre en la barra. muestra
   'survivors.boss.martillo': 'Tiburón Martillo',
   'survivors.boss.prueba': 'Barco de prueba',
@@ -859,7 +912,8 @@ export const esMar = {
   'mar.canon.boss.estado.expuesto': '¡Cabeza al aire!',
   // La carta rara (T129) se llama «Segunda vida» desde T135: «Salvavidas» es ya el objeto del botín.
   'survivors.salvavidas': 'Segunda vida',
-  'survivors.salvavidas.efecto': 'Objeto raro: evita una inundación, deja el agua al 25 % y da 2 s de invulnerabilidad. Se consume una vez; no ocupa hueco.',
+  'survivors.salvavidas.efecto':
+    'Objeto raro: evita una inundación, deja el agua al 25 % y da 2 s de invulnerabilidad. Se consume una vez; no ocupa hueco.',
   'survivors.fallback.bailing': 'Achique de emergencia',
   'survivors.fallback.bailing.efecto': 'Retira 25 de agua a bordo ahora; no ocupa hueco.',
   // La interfaz del Cañón (T118): HUD, barra de agua, cartas, pausa y final. muestra
@@ -906,7 +960,8 @@ export const esMar = {
   'mar.canon.menu.terminar.si': 'Sí, terminar',
   'mar.canon.menu.terminar.no': 'No, seguir',
   'mar.canon.fin.terminada': 'Partida terminada',
-  'mar.canon.fin.terminada.texto': 'La terminaste desde la pausa: sin medalla, sin premio y fuera del ranking.',
+  'mar.canon.fin.terminada.texto':
+    'La terminaste desde la pausa: sin medalla, sin premio y fuera del ranking.',
   'mar.canon.abandono': 'La partida terminó: estuvo más de 5 minutos en pausa.',
   'mar.canon.abandono.cerrar': 'Cerrar el aviso',
   'mar.canon.fin.amanece': '¡Amanece!',
@@ -918,9 +973,11 @@ export const esMar = {
   'mar.canon.fin.victoria.texto': 'El boss del acto se fue al fondo: la música sigue.',
   // La tarjeta final (T145). muestra
   'mar.canon.fin.victoria.fantasma': '¡Barco Fantasma hundido!',
-  'mar.canon.fin.victoria.fantasma.texto': 'El Fantasma se fue al fondo con sus cadenas: la música sigue hasta el amanecer.',
+  'mar.canon.fin.victoria.fantasma.texto':
+    'El Fantasma se fue al fondo con sus cadenas: la música sigue hasta el amanecer.',
   'mar.canon.fin.victoria.kraken': '¡El Kraken se sumerge para siempre!',
-  'mar.canon.fin.victoria.kraken.texto': 'Los tentáculos sueltan el barco y el mar se calma: ya nadie baja la música.',
+  'mar.canon.fin.victoria.kraken.texto':
+    'Los tentáculos sueltan el barco y el mar se calma: ya nadie baja la música.',
   'mar.canon.fin.medalla.bronce': '🥉 Medalla de bronce',
   'mar.canon.fin.medalla.plata': '🥈 Medalla de plata',
   'mar.canon.fin.medalla.oro': '🥇 Medalla de oro',

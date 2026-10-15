@@ -62,7 +62,12 @@ describe('catálogo de la sección «Barco»', () => {
     expect(specials.map((s) => s.id)).toContain('after');
     for (const sp of specials) {
       const style = catalog.styles.find((s) => s.id === sp.id)!;
-      expect(style).toMatchObject({ name: sp.label, description: sp.doc, barco: null, swatches: [] });
+      expect(style).toMatchObject({
+        name: sp.label,
+        description: sp.doc,
+        barco: null,
+        swatches: [],
+      });
       expect(style.variant).toBeUndefined();
       expect(style.skins.map((k) => k.id)).toEqual(['base']);
       expect(style.skins[0]!.preview).toBe(specialPreview(sp.id));
@@ -74,9 +79,9 @@ describe('catálogo de la sección «Barco»', () => {
     expect(specialShips({ barcos: [{ id: 'arcilla', barco: 'B05', label: 'x' }] })).toEqual([]);
     expect(specialShips(null)).toEqual([]);
     // El doc de Blender sale en la tienda como frase (mayúscula al principio).
-    expect(specialShips({ barcos: [{ id: 'x', barco: 'especial', doc: 'barquito' }] })[0]?.doc).toBe(
-      'Barquito',
-    );
+    expect(
+      specialShips({ barcos: [{ id: 'x', barco: 'especial', doc: 'barquito' }] })[0]?.doc,
+    ).toBe('Barquito');
     // Sin manifiesto 3D, el catálogo es el de antes.
     const without = buildShipCatalog({
       root: rootManifest,

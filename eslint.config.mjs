@@ -4,6 +4,7 @@ import prettier from 'eslint-config-prettier';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import boia from './eslint-rules/no-loose-strings.mjs';
 
 export default tseslint.config(
   {
@@ -43,6 +44,14 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
     },
+  },
+  {
+    // Plan 032 T303: nada de texto suelto en los componentes (van por clave en
+    // apps/web/lib/i18n/). `allow`: cadenas exactas que no se traducen (la marca).
+    files: ['apps/web/**/*.tsx'],
+    ignores: ['**/*.test.tsx', 'apps/web/e2e/**'],
+    plugins: { boia },
+    rules: { 'boia/no-loose-strings': ['error', { allow: ['BOIA', 'BOIA.PLANET'] }] },
   },
   prettier,
 );

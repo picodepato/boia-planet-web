@@ -243,7 +243,9 @@ export function useCastleMode({
   const [guideOn, setGuideOn] = useState(false);
   const guideTally = useRef<CastleGuideTally>(EMPTY_GUIDE_TALLY);
   // Las barras y los números (decisión 11): lo guardado, al montar (en el servidor, lo de siempre).
-  const [overlays, setOverlayState] = useState<DefenseOverlayPrefs>(() => readDefenseOverlays(null));
+  const [overlays, setOverlayState] = useState<DefenseOverlayPrefs>(() =>
+    readDefenseOverlays(null),
+  );
   useEffect(() => setOverlayState(readDefenseOverlays()), []);
   useEffect(() => {
     engineRef.current?.setDefenseOverlays(overlays);

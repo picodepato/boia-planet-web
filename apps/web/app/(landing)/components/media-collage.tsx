@@ -316,8 +316,12 @@ export function MediaCollage({
             phase={opened.phase}
             rotate={openedPiece.rotate}
             scale={openedPiece.scale}
-            piece={() => pieces.current.get(opened.id)?.querySelector<HTMLElement>('button') ?? null}
-            onOpened={() => setOpened((o) => (o?.phase === 'opening' ? { ...o, phase: 'open' } : o))}
+            piece={() =>
+              pieces.current.get(opened.id)?.querySelector<HTMLElement>('button') ?? null
+            }
+            onOpened={() =>
+              setOpened((o) => (o?.phase === 'opening' ? { ...o, phase: 'open' } : o))
+            }
             onNavigate={(id) => setOpened((o) => (o?.phase === 'open' ? { ...o, id } : o))}
             onClose={close}
             onClosed={() => closed(opened.id)}

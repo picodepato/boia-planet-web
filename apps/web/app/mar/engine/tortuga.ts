@@ -114,7 +114,9 @@ export class WakeFollower {
     const dx = tx - this.pos.x;
     const dz = tz - this.pos.z;
     const want = Math.hypot(dx, dz) > 0.05 && speed > 0.05 ? Math.atan2(dz, dx) : heading;
-    this.heading += Math.atan2(Math.sin(want - this.heading), Math.cos(want - this.heading)) * Math.min(1, dt * 5);
+    this.heading +=
+      Math.atan2(Math.sin(want - this.heading), Math.cos(want - this.heading)) *
+      Math.min(1, dt * 5);
   }
 
   /** Cuánto queda por detrás de la popa, en el rumbo del barco (> 0: detrás; pruebas). */

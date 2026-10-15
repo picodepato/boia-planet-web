@@ -479,7 +479,13 @@ export const DEFENSE_CONFIG: DefenseConfig = {
         levels: [
           { range: 520, damage: boosted('cala', 1), cooldownS: 2.4, blastRadius: 80, flightS: 0.9 },
           { range: 540, damage: boosted('cala', 2), cooldownS: 2.1, blastRadius: 95, flightS: 0.9 },
-          { range: 560, damage: boosted('cala', 3), cooldownS: 1.8, blastRadius: 110, flightS: 0.9 },
+          {
+            range: 560,
+            damage: boosted('cala', 3),
+            cooldownS: 1.8,
+            blastRadius: 110,
+            flightS: 0.9,
+          },
         ],
       },
       tienda: {

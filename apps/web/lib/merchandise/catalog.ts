@@ -3,11 +3,6 @@ import data from './products.json' with { type: 'json' };
 
 export { MERCHANDISE_PATH } from './path';
 
-/** Concept photos only. No stock, price or online purchase is implied. */
-export const MERCHANDISE_NOTICE = 'Solo se vende en mano en la fiesta';
-export const MERCHANDISE_SAMPLE_NOTICE =
-  'Fotos y diseños de muestra. Los productos finales pueden cambiar.';
-
 /**
  * Products and their rotating images (T201). The list lives in
  * `products.json` so images can be repointed without code; its shape is

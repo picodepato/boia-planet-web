@@ -248,9 +248,9 @@ describe('un solo mundo jugable (T122)', () => {
     const s = new MapStorage();
     const visitor = storedWorldChoice(s, WORLD_STORAGE_KEY);
     const admin = storedWorldChoice(s, ACTIVE_WORLD_STORAGE_KEY);
-    expect(
-      activeWorld(WORLD_REGISTRY, { search: `?mundo=${hidden}`, visitor, admin }).id,
-    ).toBe(WORLD_REGISTRY.defaultId);
+    expect(activeWorld(WORLD_REGISTRY, { search: `?mundo=${hidden}`, visitor, admin }).id).toBe(
+      WORLD_REGISTRY.defaultId,
+    );
     visitor.set(hidden);
     expect(activeWorld(WORLD_REGISTRY, { visitor, admin }).id).toBe(WORLD_REGISTRY.defaultId);
     visitor.set('nada');

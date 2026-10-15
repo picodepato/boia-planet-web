@@ -12,7 +12,12 @@ import {
   actOf,
 } from './config';
 import { ROCK_ATTACK, TENTACLE_ATTACK, type KrakenMode, validateKraken } from './kraken';
-import { type SurvivorsEvent, type SurvivorsGame, type SurvivorsInput, createSurvivors } from './sim';
+import {
+  type SurvivorsEvent,
+  type SurvivorsGame,
+  type SurvivorsInput,
+  createSurvivors,
+} from './sim';
 import type { SurvivorsWorld } from './world';
 
 /**
@@ -34,11 +39,19 @@ function archipelago(seed: number): SurvivorsWorld {
     if (Math.hypot(x, y) < 260) continue;
     obstacles.push({ x, y, radius: 40 + r() * 150 });
   }
-  return { bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 }, obstacles, start: { x: 0, y: 0 } };
+  return {
+    bounds: { left: -1800, right: 1800, top: -1800, bottom: 1800 },
+    obstacles,
+    start: { x: 0, y: 0 },
+  };
 }
 
 function openSea(obstacles: SurvivorsWorld['obstacles'] = []): SurvivorsWorld {
-  return { bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 }, obstacles, start: { x: 0, y: 0, heading: 0 } };
+  return {
+    bounds: { left: -2000, right: 2000, top: -2000, bottom: 2000 },
+    obstacles,
+    start: { x: 0, y: 0, heading: 0 },
+  };
 }
 
 function withConfig(patch: (c: SurvivorsConfig) => void): SurvivorsConfig {
@@ -102,11 +115,21 @@ function play(
 }
 
 function run(game: SurvivorsGame, seconds: number, input: SurvivorsInput = IDLE): Timed[] {
-  return play(game, () => input, () => {}, Math.round(seconds / SURVIVORS_STEP_S));
+  return play(
+    game,
+    () => input,
+    () => {},
+    Math.round(seconds / SURVIVORS_STEP_S),
+  );
 }
 
 /** Avanza hasta que el Kraken esté en `mode` (o se acaben `maxS` s); devuelve los sucesos. */
-function runUntil(game: SurvivorsGame, mode: KrakenMode, maxS: number, input: SurvivorsInput = IDLE): Timed[] {
+function runUntil(
+  game: SurvivorsGame,
+  mode: KrakenMode,
+  maxS: number,
+  input: SurvivorsInput = IDLE,
+): Timed[] {
   const out: Timed[] = [];
   const steps = Math.round(maxS / SURVIVORS_STEP_S);
   for (let i = 0; i < steps && !game.ended; i++) {
@@ -171,7 +194,9 @@ describe('kraken T141: datos', () => {
       expect(e.enabled !== false).toBe(SURVIVORS_CONFIG.bosses[e.ref as BossId] !== undefined);
     }
     // Los demás hitos del 2 son los del 1.
-    expect(a2.events.filter((e) => e.type !== 'boss')).toEqual(a1.events.filter((e) => e.type !== 'boss'));
+    expect(a2.events.filter((e) => e.type !== 'boss')).toEqual(
+      a1.events.filter((e) => e.type !== 'boss'),
+    );
     // En el acto 2 el Kraken entra a su segundo, sumergido, delante del barco.
     const g = createSurvivors(act2(), 5, openSea(), { act: 2, startAtS: final2.atS - 1 });
     const ev = run(g, 2);
@@ -240,7 +265,11 @@ describe('kraken T141: bajo el agua', () => {
 
   it('sin acercarse al barco, pasado `maxSubmergedS` emerge igual', () => {
     // Barco rápido y lejos: la sombra no llega, pero sale.
-    const g = createSurvivors(quiet((c) => (c.bosses.kraken!.speed = 1)), 3, openSea());
+    const g = createSurvivors(
+      quiet((c) => (c.bosses.kraken!.speed = 1)),
+      3,
+      openSea(),
+    );
     g.spawnBoss('kraken', 1500, 0);
     const ev = runUntil(g, 'emerging', K.maxSubmergedS + 1);
     const st = of(ev, 'krakenState').find((e) => e.state === 'emerging')!;
@@ -281,7 +310,9 @@ describe('kraken T141: tentáculos', () => {
     const atk = of(ev, 'bossAttack').filter((e) => e.attack === TENTACLE_ATTACK);
     expect(tele.length).toBeGreaterThan(0);
     expect(atk.length).toBeGreaterThan(0);
-    expect(atk[0]!.atS - tele[0]!.atS).toBeGreaterThanOrEqual(K.tentacle.telegraphS - SURVIVORS_STEP_S * 1.5);
+    expect(atk[0]!.atS - tele[0]!.atS).toBeGreaterThanOrEqual(
+      K.tentacle.telegraphS - SURVIVORS_STEP_S * 1.5,
+    );
     // El barco quieto, con el primer tentáculo encima: se moja una vez por salida, siempre tras un aviso.
     const hits = of(ev, 'bossHit').filter((e) => e.attack === TENTACLE_ATTACK);
     expect(hits.length).toBeGreaterThan(0);
@@ -336,7 +367,11 @@ describe('kraken T141: tentáculos', () => {
 
   it('los sucesos de tentáculo: tumbar uno da `destroyed` y `krakenExposed`; las armas del barco lo tumban solas', () => {
     // El cañón de serie dispara al tentáculo (lo más cercano a tiro) y acaba tumbándolo.
-    const g = createSurvivors(quiet((c) => (c.bosses.kraken!.kraken!.tentacle.hp = 10)), 8, openSea());
+    const g = createSurvivors(
+      quiet((c) => (c.bosses.kraken!.kraken!.tentacle.hp = 10)),
+      8,
+      openSea(),
+    );
     g.spawnBoss('kraken', 0, 0);
     const ev = run(g, 25);
     const destroyed = of(ev, 'krakenTentacle').filter((e) => e.stage === 'destroyed');
@@ -357,7 +392,8 @@ describe('kraken T141: tentáculos', () => {
       scriptedInput,
       (game) => {
         const b = body(game);
-        if (b && b.kraken!.mode !== 'submerged') expect(game.onLand(b.x, b.y, b.radius)).toBe(false);
+        if (b && b.kraken!.mode !== 'submerged')
+          expect(game.onLand(b.x, b.y, b.radius)).toBe(false);
       },
       Math.round(40 / SURVIVORS_STEP_S),
     );
@@ -387,7 +423,9 @@ describe('kraken T141: agarre y rocas', () => {
     };
     // Mar abierto: tres salidas y ninguna agarrada.
     const open = states(openSea(), 45);
-    expect(of(open.ev, 'krakenState').filter((e) => e.state === 'emerged').length).toBeGreaterThanOrEqual(2);
+    expect(
+      of(open.ev, 'krakenState').filter((e) => e.state === 'emerged').length,
+    ).toBeGreaterThanOrEqual(2);
     expect(of(open.ev, 'krakenState').filter((e) => e.state === 'grabbing')).toEqual([]);
     expect(of(open.ev, 'krakenRock')).toEqual([]);
     // Isla al alcance: la primera salida es un agarre a esa isla (índice 0) y llueven rocas.
@@ -396,7 +434,11 @@ describe('kraken T141: agarre y rocas', () => {
     expect(grab).toBeDefined();
     expect(grab!.island).toBe(0);
     // (El `submerged` inicial lo da `spawnBoss`, fuera de `run`.)
-    expect(of(near.ev, 'krakenState').map((e) => e.state).slice(0, 2)).toEqual(['emerging', 'grabbing']);
+    expect(
+      of(near.ev, 'krakenState')
+        .map((e) => e.state)
+        .slice(0, 2),
+    ).toEqual(['emerging', 'grabbing']);
     expect(of(near.ev, 'krakenRock').filter((e) => e.stage === 'thrown').length).toBeGreaterThan(0);
     // Isla fuera de alcance (su borde a más de `grab.range` del Kraken): no se agarra.
     const far = states(openSea([{ x: 1400, y: 0, radius: 80 }]), 45);
@@ -426,7 +468,9 @@ describe('kraken T141: agarre y rocas', () => {
         for (const r of k.rocks) {
           rocksInFlight++;
           // Su círculo de caída está entre los avisos, en el punto de caída.
-          const w = s.bossWarnings.find((w) => w.attack === ROCK_ATTACK && w.x === r.x && w.y === r.y);
+          const w = s.bossWarnings.find(
+            (w) => w.attack === ROCK_ATTACK && w.x === r.x && w.y === r.y,
+          );
           expect(w).toBeDefined();
           expect(w!.hit).toBe(false);
           expect(w!.radius).toBe(K.grab.rock.radius);
@@ -450,7 +494,10 @@ describe('kraken T141: agarre y rocas', () => {
     const hits = of(ev, 'bossHit').filter((e) => e.attack === ROCK_ATTACK);
     expect(hits.length).toBeGreaterThan(0);
     expect(hits.length).toBeLessThanOrEqual(tele.length);
-    for (const h of hits) expect(tele.some((t) => h.atS - t.atS >= K.grab.rock.flightS - SURVIVORS_STEP_S * 1.5)).toBe(true);
+    for (const h of hits)
+      expect(tele.some((t) => h.atS - t.atS >= K.grab.rock.flightS - SURVIVORS_STEP_S * 1.5)).toBe(
+        true,
+      );
   });
 
   it('agarrado, la cabeza recibe daño (`grab.exposesHead`); sin esa regla, no', () => {
@@ -460,7 +507,11 @@ describe('kraken T141: agarre y rocas', () => {
     const b = body(g)!;
     expect(b.kraken!.exposed).toBe(K.grab.exposesHead);
     expect(b.invulnerable).toBe(!K.grab.exposesHead);
-    const g2 = createSurvivors(grabby((c) => (c.bosses.kraken!.kraken!.grab.exposesHead = false)), 13, openSea([{ x: 420, y: 0, radius: 80 }]));
+    const g2 = createSurvivors(
+      grabby((c) => (c.bosses.kraken!.kraken!.grab.exposesHead = false)),
+      13,
+      openSea([{ x: 420, y: 0, radius: 80 }]),
+    );
     g2.spawnBoss('kraken', 120, 0);
     runUntil(g2, 'grabbing', 20);
     const b2 = body(g2)!;
@@ -477,7 +528,8 @@ describe('kraken T141: agarre y rocas', () => {
       .map((e) => e.state)
       .filter((s) => s === 'grabbing' || s === 'emerged');
     expect(outs.length).toBeGreaterThanOrEqual(3);
-    for (let i = 1; i < outs.length; i++) if (outs[i - 1] === 'grabbing') expect(outs[i]).toBe('emerged');
+    for (let i = 1; i < outs.length; i++)
+      if (outs[i - 1] === 'grabbing') expect(outs[i]).toBe('emerged');
   });
 });
 
@@ -575,7 +627,9 @@ describe('kraken T141: fases, derrota y determinismo', () => {
     // El Kraken entra una vez, en su hueco (los minibosses encendidos, T139, van aparte).
     const spawns = of(a.events, 'bossSpawn').filter((e) => e.boss === 'kraken');
     expect(spawns.length).toBe(1);
-    expect(spawns[0]!.atS).toBeGreaterThanOrEqual(actOf(SURVIVORS_CONFIG, 2)!.events.find((e) => e.type === 'boss')!.atS);
+    expect(spawns[0]!.atS).toBeGreaterThanOrEqual(
+      actOf(SURVIVORS_CONFIG, 2)!.events.find((e) => e.type === 'boss')!.atS,
+    );
     expect(a.shadowSteps).toBeGreaterThan(0);
     expect(a.modes.has('emerged')).toBe(true);
     expect(a.tentaclesSeen).toBeGreaterThan(0);
@@ -587,11 +641,21 @@ describe('kraken T141: fases, derrota y determinismo', () => {
     }
     const rocks = of(a.events, 'krakenRock');
     for (const l of rocks.filter((e) => e.stage === 'landed')) {
-      expect(rocks.some((e) => e.stage === 'thrown' && e.rock === l.rock && e.atS <= l.atS - K.grab.rock.flightS + SURVIVORS_STEP_S * 1.5)).toBe(true);
+      expect(
+        rocks.some(
+          (e) =>
+            e.stage === 'thrown' &&
+            e.rock === l.rock &&
+            e.atS <= l.atS - K.grab.rock.flightS + SURVIVORS_STEP_S * 1.5,
+        ),
+      ).toBe(true);
     }
     // Acaba vencido o retirado, nunca en el limbo.
     const kraken = (e: { boss: string }) => e.boss === 'kraken';
-    expect(of(a.events, 'bossDefeated').filter(kraken).length + of(a.events, 'bossRetreated').filter(kraken).length).toBe(1);
+    expect(
+      of(a.events, 'bossDefeated').filter(kraken).length +
+        of(a.events, 'bossRetreated').filter(kraken).length,
+    ).toBe(1);
     expect(a.s.bosses).toEqual([]);
   }, 120_000);
 

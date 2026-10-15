@@ -117,12 +117,9 @@ export class WorldRegistry {
 
   /** Un registro nuevo con cada skin pasada por `fn` (p. ej. `resolveSkinTexts`). */
   mapSkins(fn: (skin: WorldSkin) => WorldSkin): WorldRegistry {
-    return new WorldRegistry(
-      this.map,
-      [...this.skins.values()].map(fn),
-      this.defaultId,
-      [...this.hiddenIds],
-    );
+    return new WorldRegistry(this.map, [...this.skins.values()].map(fn), this.defaultId, [
+      ...this.hiddenIds,
+    ]);
   }
 
   /** Un registro nuevo con el lugar en otro sitio: en el mapa compartido, así en todos los mundos. */
@@ -137,12 +134,14 @@ export class WorldRegistry {
 
   /** Para el selector de mundos del menú y del Admin: sólo los jugables, en orden de registro. */
   list(): WorldSummary[] {
-    return [...this.skins.values()].filter((s) => !this.hiddenIds.has(s.id)).map((s) => ({
-      id: s.id,
-      name: s.name,
-      ...(s.tagline ? { tagline: s.tagline } : {}),
-      shipStyle: s.ship.style,
-      accent: s.ui.accent,
-    }));
+    return [...this.skins.values()]
+      .filter((s) => !this.hiddenIds.has(s.id))
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        ...(s.tagline ? { tagline: s.tagline } : {}),
+        shipStyle: s.ship.style,
+        accent: s.ui.accent,
+      }));
   }
 }

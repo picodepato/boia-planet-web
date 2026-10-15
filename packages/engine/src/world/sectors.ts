@@ -126,7 +126,9 @@ export const VOYAGE_PRELOAD_SECONDS = [0.75, 1.5] as const;
 export function voyagePreload(from: Vec2, to: Vec2, speed: number): Vec2[] {
   const d = Math.hypot(to.x - from.x, to.y - from.y);
   if (d < 1) return [to];
-  const along = VOYAGE_PRELOAD_SECONDS.map((s) => Math.min(1, (s * speed) / d)).filter((k) => k < 1);
+  const along = VOYAGE_PRELOAD_SECONDS.map((s) => Math.min(1, (s * speed) / d)).filter(
+    (k) => k < 1,
+  );
   return [
     ...along.map((k) => ({ x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k })),
     to,
@@ -134,7 +136,12 @@ export function voyagePreload(from: Vec2, to: Vec2, speed: number): Vec2[] {
 }
 
 /** ¿Está `p` a menos de (media pantalla + `pad`) de alguno de los puntos? */
-export function withinView(p: Vec2, points: readonly Vec2[], view: ViewExtent, pad: number): boolean {
+export function withinView(
+  p: Vec2,
+  points: readonly Vec2[],
+  view: ViewExtent,
+  pad: number,
+): boolean {
   return points.some(
     (q) => Math.abs(p.x - q.x) <= view.hx + pad && Math.abs(p.y - q.y) <= view.hy + pad,
   );
@@ -189,7 +196,9 @@ export function planSectors(
   );
   const release = byDistance.filter((s) => loaded.has(s.id) && !keep.has(s.id)).map((s) => s.id);
   // Límite de memoria: de lo que queda, fuera lo más lejano que no se pide.
-  const staying = byDistance.filter((s) => (loaded.has(s.id) || wanted.has(s.id)) && keep.has(s.id));
+  const staying = byDistance.filter(
+    (s) => (loaded.has(s.id) || wanted.has(s.id)) && keep.has(s.id),
+  );
   let extra = staying.length - Math.max(tuning.maxSectors, want.length);
   for (let i = staying.length - 1; i >= 0 && extra > 0; i--) {
     const s = staying[i]!;

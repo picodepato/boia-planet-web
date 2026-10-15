@@ -106,4 +106,6 @@ export const esMundo = {
   'mapa.info.secretos.2': 'BOIA premia la curiosidad. Desvíate un poco.',
   'mapa.baliza.verde': 'Baliza verde',
   'mapa.baliza.roja': 'Baliza roja',
+  // Plan 032 T303: la reacción de un diálogo si el barco se aleja (era el valor por defecto en @boia/world).
+  'world.dialogue.leaveReaction': '¡Eh, que no había terminado! Bueno… ya me buscarás.',
 } as const;

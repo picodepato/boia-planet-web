@@ -484,11 +484,18 @@ describe('la barra del boss y sus avisos (T143)', () => {
     const b = s.bosses[0]!;
     const arrival = bossNotices(new Map(), s, 1000);
     expect(arrival).toHaveLength(1);
-    expect(arrival[0]).toMatchObject({ kind: 'arrival', boss: 'vecino', nameKey: b.nameKey, atMs: 1000 });
+    expect(arrival[0]).toMatchObject({
+      kind: 'arrival',
+      boss: 'vecino',
+      nameKey: b.nameKey,
+      atMs: 1000,
+    });
     const prev = new Map([[b.id, { boss: b.boss, kind: b.kind, nameKey: b.nameKey }]]);
     expect(bossNotices(prev, s, 2000)).toEqual([]);
     expect(bossNotices(prev, { bosses: [], bossesDefeated: [] }, 2000)[0]!.kind).toBe('retreated');
-    expect(bossNotices(prev, { bosses: [], bossesDefeated: ['vecino'] }, 2000)[0]!.kind).toBe('defeated');
+    expect(bossNotices(prev, { bosses: [], bossesDefeated: ['vecino'] }, 2000)[0]!.kind).toBe(
+      'defeated',
+    );
     for (const k of Object.values(BOSS_NOTICE_KEYS)) {
       expect(msg(k, { nombre: 'X' }), k).not.toMatch(/[{}]/);
     }

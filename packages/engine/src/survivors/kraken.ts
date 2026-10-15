@@ -123,10 +123,34 @@ export interface KrakenBody {
 export type KrakenEvent =
   /** Cambia de estado; `island` es la agarrada (-1 si ninguna). */
   | { type: 'krakenState'; id: number; state: KrakenMode; x: number; y: number; island: number }
-  | { type: 'krakenTentacle'; id: number; tentacle: number; stage: 'warning' | 'rise' | 'down' | 'destroyed'; x: number; y: number }
-  | { type: 'krakenTentacleHit'; id: number; tentacle: number; damage: number; hp: number; x: number; y: number }
+  | {
+      type: 'krakenTentacle';
+      id: number;
+      tentacle: number;
+      stage: 'warning' | 'rise' | 'down' | 'destroyed';
+      x: number;
+      y: number;
+    }
+  | {
+      type: 'krakenTentacleHit';
+      id: number;
+      tentacle: number;
+      damage: number;
+      hp: number;
+      x: number;
+      y: number;
+    }
   /** Una roca sale (`thrown`, con su punto de caída) o cae (`landed`). */
-  | { type: 'krakenRock'; id: number; rock: number; stage: 'thrown' | 'landed'; x: number; y: number; fromX: number; fromY: number }
+  | {
+      type: 'krakenRock';
+      id: number;
+      rock: number;
+      stage: 'thrown' | 'landed';
+      x: number;
+      y: number;
+      fromX: number;
+      fromY: number;
+    }
   /** La cabeza queda expuesta `exposedS` s. */
   | { type: 'krakenExposed'; id: number; exposedS: number; x: number; y: number };
 
@@ -230,7 +254,14 @@ function place(body: KrakenBody, host: KrakenHost, x: number, y: number): void {
 function setMode(k: KrakenState, body: KrakenBody, host: KrakenHost, mode: KrakenMode): void {
   k.mode = mode;
   k.modeS = 0;
-  host.emit({ type: 'krakenState', id: body.id, state: mode, x: body.x, y: body.y, island: k.island });
+  host.emit({
+    type: 'krakenState',
+    id: body.id,
+    state: mode,
+    x: body.x,
+    y: body.y,
+    island: k.island,
+  });
 }
 
 /** Un paso del Kraken: mueve el cuerpo, saca tentáculos, lanza rocas, cambia de estado. */
@@ -245,7 +276,10 @@ export function stepKraken(k: KrakenState, body: KrakenBody, host: KrakenHost, d
   switch (k.mode) {
     case 'submerged': {
       const { dist } = chase(body, host, speed * def.submergedSpeedScale, dt);
-      if (k.modeS >= def.minSubmergedS && (dist <= def.emergeDistance || k.modeS >= def.maxSubmergedS)) {
+      if (
+        k.modeS >= def.minSubmergedS &&
+        (dist <= def.emergeDistance || k.modeS >= def.maxSubmergedS)
+      ) {
         tryEmerge(k, body, host, ph);
       }
       break;
@@ -283,7 +317,8 @@ export function stepKraken(k: KrakenState, body: KrakenBody, host: KrakenHost, d
         throwRocks(k, body, host, ph.rocks);
         k.rockTimer = def.grab.everyS;
       }
-      if (k.modeS >= def.grab.holdS && (def.grab.exposesHead || k.exposedS <= 0)) dive(k, body, host);
+      if (k.modeS >= def.grab.holdS && (def.grab.exposesHead || k.exposedS <= 0))
+        dive(k, body, host);
       break;
     case 'diving':
       if (k.modeS >= def.diveS) {
@@ -368,7 +403,12 @@ function grabSpot(body: KrakenBody, host: KrakenHost, i: number): { x: number; y
 }
 
 /** Emerge: agarrado a una isla si toca, si no donde está (en agua); si no hay agua, sigue sumergido. */
-function tryEmerge(k: KrakenState, body: KrakenBody, host: KrakenHost, ph: KrakenDef['phases'][number]): void {
+function tryEmerge(
+  k: KrakenState,
+  body: KrakenBody,
+  host: KrakenHost,
+  ph: KrakenDef['phases'][number],
+): void {
   if (ph.grabs && !k.lastGrab) {
     const island = reachableIsland(k, body, host);
     if (island >= 0) {
@@ -403,7 +443,11 @@ function tryEmerge(k: KrakenState, body: KrakenBody, host: KrakenHost, ph: Krake
     const base = Math.atan2(dy, dx);
     for (let j = 0; j < 8 && !spot; j++) {
       const a = base + (j * Math.PI) / 4;
-      spot = host.toWater(p.x + Math.cos(a) * k.def.emergeDistance, p.y + Math.sin(a) * k.def.emergeDistance, body.radius);
+      spot = host.toWater(
+        p.x + Math.cos(a) * k.def.emergeDistance,
+        p.y + Math.sin(a) * k.def.emergeDistance,
+        body.radius,
+      );
     }
     if (!spot) return;
   }
@@ -422,7 +466,14 @@ function dive(k: KrakenState, body: KrakenBody, host: KrakenHost): void {
     else if (t.stage !== 'down') {
       t.stage = 'down';
       t.timer = k.def.tentacle.riseS;
-      host.emit({ type: 'krakenTentacle', id: body.id, tentacle: t.id, stage: 'down', x: t.x, y: t.y });
+      host.emit({
+        type: 'krakenTentacle',
+        id: body.id,
+        tentacle: t.id,
+        stage: 'down',
+        x: t.x,
+        y: t.y,
+      });
     }
   }
   k.exposedS = 0;
@@ -451,7 +502,14 @@ function tentacleVolley(k: KrakenState, body: KrakenBody, host: KrakenHost, n: n
       dead: false,
     };
     k.tentacles.push(t);
-    host.emit({ type: 'krakenTentacle', id: body.id, tentacle: t.id, stage: 'warning', x: t.x, y: t.y });
+    host.emit({
+      type: 'krakenTentacle',
+      id: body.id,
+      tentacle: t.id,
+      stage: 'warning',
+      x: t.x,
+      y: t.y,
+    });
     made++;
   }
   if (made === 0) return;
@@ -471,7 +529,14 @@ function stepTentacles(k: KrakenState, body: KrakenBody, host: KrakenHost, dt: n
       case 'warning': {
         t.stage = 'rising';
         t.timer = def.riseS;
-        host.emit({ type: 'krakenTentacle', id: body.id, tentacle: t.id, stage: 'rise', x: t.x, y: t.y });
+        host.emit({
+          type: 'krakenTentacle',
+          id: body.id,
+          tentacle: t.id,
+          stage: 'rise',
+          x: t.x,
+          y: t.y,
+        });
         if (!k.volleyStruck) {
           k.volleyStruck = true;
           host.attack(TENTACLE_ATTACK, t.x, t.y);
@@ -497,7 +562,14 @@ function stepTentacles(k: KrakenState, body: KrakenBody, host: KrakenHost, dt: n
       case 'up':
         t.stage = 'down';
         t.timer = def.riseS;
-        host.emit({ type: 'krakenTentacle', id: body.id, tentacle: t.id, stage: 'down', x: t.x, y: t.y });
+        host.emit({
+          type: 'krakenTentacle',
+          id: body.id,
+          tentacle: t.id,
+          stage: 'down',
+          x: t.x,
+          y: t.y,
+        });
         break;
       case 'down':
         t.dead = true;
@@ -512,13 +584,34 @@ function stepTentacles(k: KrakenState, body: KrakenBody, host: KrakenHost, dt: n
 }
 
 /** Hiere un tentáculo (si se puede golpear); al tumbarlo, la cabeza queda expuesta. */
-export function hurtTentacle(k: KrakenState, body: KrakenBody, host: KrakenHost, t: Tentacle, damage: number): void {
+export function hurtTentacle(
+  k: KrakenState,
+  body: KrakenBody,
+  host: KrakenHost,
+  t: Tentacle,
+  damage: number,
+): void {
   if (!tentacleHittable(t) || damage <= 0) return;
   t.hp -= damage;
-  host.emit({ type: 'krakenTentacleHit', id: body.id, tentacle: t.id, damage, hp: Math.max(0, t.hp), x: t.x, y: t.y });
+  host.emit({
+    type: 'krakenTentacleHit',
+    id: body.id,
+    tentacle: t.id,
+    damage,
+    hp: Math.max(0, t.hp),
+    x: t.x,
+    y: t.y,
+  });
   if (t.hp > 0) return;
   t.dead = true;
-  host.emit({ type: 'krakenTentacle', id: body.id, tentacle: t.id, stage: 'destroyed', x: t.x, y: t.y });
+  host.emit({
+    type: 'krakenTentacle',
+    id: body.id,
+    tentacle: t.id,
+    stage: 'destroyed',
+    x: t.x,
+    y: t.y,
+  });
   if (k.mode === 'emerged' || k.mode === 'grabbing') {
     k.exposedS = Math.max(k.exposedS, k.def.exposeS);
     host.emit({ type: 'krakenExposed', id: body.id, exposedS: k.exposedS, x: body.x, y: body.y });
@@ -543,7 +636,16 @@ function throwRocks(k: KrakenState, body: KrakenBody, host: KrakenHost, n: numbe
       flightS: def.flightS,
     };
     k.rocks.push(rock);
-    host.emit({ type: 'krakenRock', id: body.id, rock: rock.id, stage: 'thrown', x: rock.x, y: rock.y, fromX: rock.fromX, fromY: rock.fromY });
+    host.emit({
+      type: 'krakenRock',
+      id: body.id,
+      rock: rock.id,
+      stage: 'thrown',
+      x: rock.x,
+      y: rock.y,
+      fromX: rock.fromX,
+      fromY: rock.fromY,
+    });
   }
   if (n <= 0) return;
   k.rockVolleyLanded = false;
@@ -563,7 +665,16 @@ function stepRocks(k: KrakenState, body: KrakenBody, host: KrakenHost, dt: numbe
       k.rocks[n++] = rock;
       continue;
     }
-    host.emit({ type: 'krakenRock', id: body.id, rock: rock.id, stage: 'landed', x: rock.x, y: rock.y, fromX: rock.fromX, fromY: rock.fromY });
+    host.emit({
+      type: 'krakenRock',
+      id: body.id,
+      rock: rock.id,
+      stage: 'landed',
+      x: rock.x,
+      y: rock.y,
+      fromX: rock.fromX,
+      fromY: rock.fromY,
+    });
     if (!k.rockVolleyStruck) {
       k.rockVolleyStruck = true;
       host.attack(ROCK_ATTACK, rock.x, rock.y);
@@ -719,10 +830,12 @@ export function validateKraken(def: BossDef): string[] {
   };
   pos(k.emergeDistance, 'emergeDistance');
   pos(k.emergeMinDistance, 'emergeMinDistance');
-  if (k.emergeMinDistance > k.emergeDistance) out.push(`${def.id}: kraken emergeMinDistance > emergeDistance`);
+  if (k.emergeMinDistance > k.emergeDistance)
+    out.push(`${def.id}: kraken emergeMinDistance > emergeDistance`);
   pos(k.tentacle.reach, 'tentacle.reach');
   pos(k.maxSubmergedS, 'maxSubmergedS');
-  if (k.minSubmergedS > k.maxSubmergedS) out.push(`${def.id}: kraken minSubmergedS > maxSubmergedS`);
+  if (k.minSubmergedS > k.maxSubmergedS)
+    out.push(`${def.id}: kraken minSubmergedS > maxSubmergedS`);
   pos(k.submergedSpeedScale, 'submergedSpeedScale');
   pos(k.emergeS, 'emergeS');
   pos(k.diveS, 'diveS');
@@ -739,11 +852,13 @@ export function validateKraken(def: BossDef): string[] {
   pos(k.grab.everyS, 'grab.everyS');
   pos(k.grab.rock.flightS, 'grab.rock.flightS');
   pos(k.grab.rock.radius, 'grab.rock.radius');
-  if (k.phases.length !== def.phases.length) out.push(`${def.id}: kraken.phases (${k.phases.length}) ≠ phases (${def.phases.length})`);
+  if (k.phases.length !== def.phases.length)
+    out.push(`${def.id}: kraken.phases (${k.phases.length}) ≠ phases (${def.phases.length})`);
   k.phases.forEach((p, i) => {
     if (!(p.tentacles > 0)) out.push(`${def.id}: kraken fase ${i} sin tentáculos`);
     if (p.grabs && !(p.rocks > 0)) out.push(`${def.id}: kraken fase ${i} agarra sin rocas`);
   });
-  for (const p of def.phases) if (p.attacks.length > 0) out.push(`${def.id}: el Kraken no usa ataques genéricos`);
+  for (const p of def.phases)
+    if (p.attacks.length > 0) out.push(`${def.id}: el Kraken no usa ataques genéricos`);
   return out;
 }

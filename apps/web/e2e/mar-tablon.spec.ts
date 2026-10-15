@@ -122,7 +122,10 @@ for (const [i, card] of BOARD_CARDS.entries()) {
       await expect(sheet).toHaveAttribute('data-lugar', place);
       await expect(sheet).toHaveAttribute('data-expandida', 'no');
       await expect(
-        sheet.getByRole('heading', { name: translateSkinText(destination.identity.name), exact: true }),
+        sheet.getByRole('heading', {
+          name: translateSkinText(destination.identity.name),
+          exact: true,
+        }),
       ).toBeVisible();
       await expect(sheet.getByTestId('mar-rumbo')).toHaveText(t('mar.sheet.navegar'));
       await expect(sheet.getByTestId('mar-volar')).toHaveText(t('mar.sheet.irEnNave'));
@@ -135,7 +138,9 @@ for (const [i, card] of BOARD_CARDS.entries()) {
         await expect(mar(page)).toHaveAttribute('data-flight', /lift|cruise|land/);
         await expect(mar(page)).not.toHaveAttribute('data-flight', /./, { timeout: 120_000 });
       } else {
-        await expect(page.getByTestId('mar-rumbo-activo')).toContainText(translateSkinText(destination.identity.name));
+        await expect(page.getByTestId('mar-rumbo-activo')).toContainText(
+          translateSkinText(destination.identity.name),
+        );
         await expect(page.getByTestId('mar-rumbo-activo')).toBeHidden({ timeout: 120_000 });
       }
       const period = periodOf(planetRect(world.bounds));

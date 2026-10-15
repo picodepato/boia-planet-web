@@ -22,19 +22,48 @@ describe('MascotIcon', () => {
       expect(svg, c.id).toContain(`data-mascota="${c.id}"`);
       expect(MASCOT_KINDS[c.id], c.id).toBeDefined();
     }
-    expect(renderToStaticMarkup(createElement(MascotIcon, { id: 'mascota-que-no-existe' }))).toBe('');
+    expect(renderToStaticMarkup(createElement(MascotIcon, { id: 'mascota-que-no-existe' }))).toBe(
+      '',
+    );
   });
 
   it.each([
-    ['canoncito.py', CANONCITO_COLORS, { wood: 'cn_wood', woodDark: 'cn_wood_dark', iron: 'cn_iron', ironDark: 'cn_iron_dark', band: 'cn_band', hub: 'cn_hub', spark: 'cn_spark' }],
-    ['tortuga_turbo.py', TORTUGA_COLORS, { shell: 'tt_shell', plate: 'tt_plate', rim: 'tt_rim', skin: 'tt_skin', stripe: 'tt_stripe', goggle: 'tt_goggle', lens: 'tt_lens' }],
-  ] as const)('los colores del dibujo son los ROLES de tools/blender/mascotas/%s', (file, colors, roles) => {
-    const src = readFileSync(path.join(REPO, 'tools/blender/mascotas', file), 'utf8');
-    const env = scriptConstants(src);
-    for (const [key, role] of Object.entries(roles)) {
-      expect(toHex(resolveRef(env, ['ROLES', role])).toLowerCase(), role).toBe(
-        (colors as Record<string, string>)[key]!.toLowerCase(),
-      );
-    }
-  });
+    [
+      'canoncito.py',
+      CANONCITO_COLORS,
+      {
+        wood: 'cn_wood',
+        woodDark: 'cn_wood_dark',
+        iron: 'cn_iron',
+        ironDark: 'cn_iron_dark',
+        band: 'cn_band',
+        hub: 'cn_hub',
+        spark: 'cn_spark',
+      },
+    ],
+    [
+      'tortuga_turbo.py',
+      TORTUGA_COLORS,
+      {
+        shell: 'tt_shell',
+        plate: 'tt_plate',
+        rim: 'tt_rim',
+        skin: 'tt_skin',
+        stripe: 'tt_stripe',
+        goggle: 'tt_goggle',
+        lens: 'tt_lens',
+      },
+    ],
+  ] as const)(
+    'los colores del dibujo son los ROLES de tools/blender/mascotas/%s',
+    (file, colors, roles) => {
+      const src = readFileSync(path.join(REPO, 'tools/blender/mascotas', file), 'utf8');
+      const env = scriptConstants(src);
+      for (const [key, role] of Object.entries(roles)) {
+        expect(toHex(resolveRef(env, ['ROLES', role])).toLowerCase(), role).toBe(
+          (colors as Record<string, string>)[key]!.toLowerCase(),
+        );
+      }
+    },
+  );
 });

@@ -188,7 +188,9 @@ test('una foto del QR o el enlace pegado sellan; la segunda vez, ya lo tenía; o
   await page.getByTestId('puerta-enlace').fill(url);
   await page.getByTestId('puerta-enlace-sellar').click();
   await expect(result).toHaveAttribute('data-resultado', 'already');
-  await expect(result).toHaveText(t('puerta.result.already', { nickname: NICK, party: party.name }));
+  await expect(result).toHaveText(
+    t('puerta.result.already', { nickname: NICK, party: party.name }),
+  );
 
   await page.getByTestId('puerta-foto').setInputFiles({
     name: 'otro.png',

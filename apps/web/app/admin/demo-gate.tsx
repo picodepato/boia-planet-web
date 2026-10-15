@@ -113,7 +113,11 @@ function DemoLogin({ onDone }: { onDone: () => void }) {
             </button>
           </form>
           {wrong ? (
-            <p className="admin-status admin-status--error" role="alert" data-testid="admin-login-error">
+            <p
+              className="admin-status admin-status--error"
+              role="alert"
+              data-testid="admin-login-error"
+            >
               {t('admin.demoLogin.wrong')}
             </p>
           ) : (

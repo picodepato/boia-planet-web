@@ -187,7 +187,12 @@ export function packCollage(items: readonly CollageItem[], cols: number): Collag
     if (pick > 0) skipped.add(pending[0]!);
     const [i] = pending.splice(pick, 1);
     for (let c = best.col; c < best.col + best.colSpan; c++) heights[c] = best.top + best.rowSpan;
-    cells[i!] = { col: best.col + 1, row: best.top + 1, colSpan: best.colSpan, rowSpan: best.rowSpan };
+    cells[i!] = {
+      col: best.col + 1,
+      row: best.top + 1,
+      colSpan: best.colSpan,
+      rowSpan: best.rowSpan,
+    };
   }
   return cells;
 }

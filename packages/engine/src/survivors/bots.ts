@@ -72,8 +72,10 @@ export function dodgeShip(game: SurvivorsGame, notes = false): ShipInput {
   const ringThreat = s.bossWarnings.some((warning) => {
     if (warning.kind !== 'ring') return false;
     const distance = Math.hypot(wrapDelta(p.x - warning.x, w), wrapDelta(p.y - warning.y, h));
-    return distance <= warning.radius + RING_MARGIN &&
-      (!warning.hit || distance >= warning.ringRadius - warning.thickness);
+    return (
+      distance <= warning.radius + RING_MARGIN &&
+      (!warning.hit || distance >= warning.ringRadius - warning.thickness)
+    );
   });
   // Stay aligned with the gap until the front passes, before resuming note collection.
   if (notes && nearest > SAFE_DISTANCE && !ringThreat) {

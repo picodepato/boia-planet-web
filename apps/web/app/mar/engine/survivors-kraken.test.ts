@@ -98,7 +98,13 @@ function fakeBoss(kraken: Partial<KrakenView>, over: Partial<BossView> = {}): Bo
   };
 }
 
-function circle(attack: string, x: number, y: number, progress: number, hit = false): BossWarningView {
+function circle(
+  attack: string,
+  x: number,
+  y: number,
+  progress: number,
+  hit = false,
+): BossWarningView {
   return {
     id: 1,
     boss: 'kraken',
@@ -133,7 +139,9 @@ const positionOf = (m: Matrix4) => new Vector3().setFromMatrixPosition(m);
 describe('Kraken low-poly models', () => {
   it('builds a head with eyes looking forward and tentacles that stand from the water', () => {
     const head = krakenHeadGeometry('baja');
-    const size = new Box3().setFromBufferAttribute(head.getAttribute('position') as never).getSize(new Vector3());
+    const size = new Box3()
+      .setFromBufferAttribute(head.getAttribute('position') as never)
+      .getSize(new Vector3());
     expect(size.y).toBeGreaterThan(1.8);
     expect(head.getAttribute('position').count).toBeLessThan(3000);
     const colors = head.getAttribute('color');
@@ -141,11 +149,17 @@ describe('Kraken low-poly models', () => {
       const c = new Color(hex);
       let found = false;
       for (let k = 0; k < colors.count && !found; k++) {
-        found = Math.abs(colors.getX(k) - c.r) + Math.abs(colors.getY(k) - c.g) + Math.abs(colors.getZ(k) - c.b) < 1e-6;
+        found =
+          Math.abs(colors.getX(k) - c.r) +
+            Math.abs(colors.getY(k) - c.g) +
+            Math.abs(colors.getZ(k) - c.b) <
+          1e-6;
       }
       expect(found).toBe(true);
     }
-    const base = new Box3().setFromBufferAttribute(tentacleBaseGeometry().getAttribute('position') as never);
+    const base = new Box3().setFromBufferAttribute(
+      tentacleBaseGeometry().getAttribute('position') as never,
+    );
     expect(base.min.y).toBeCloseTo(0, 5);
     expect(base.max.y).toBeCloseTo(1, 5);
     expect(t(KRAKEN.i18nKey as never)).toBe(t('survivors.boss.kraken'));
@@ -190,9 +204,12 @@ describe('Kraken view on a real game', () => {
     stepUntil(step, () => game.snapshot().bossWarnings.some((w) => w.attack === TENTACLE_ATTACK));
     expect(kraken.circleTrack.visible).toBe(true);
     expect(kraken.circleTrack.count).toBe(
-      game.snapshot().bossWarnings.filter((w) => w.boss === 'kraken' && w.kind === 'circles').length,
+      game.snapshot().bossWarnings.filter((w) => w.boss === 'kraken' && w.kind === 'circles')
+        .length,
     );
-    stepUntil(step, () => game.snapshot().bosses[0]!.kraken!.tentacles.some((x) => x.stage === 'up'));
+    stepUntil(step, () =>
+      game.snapshot().bosses[0]!.kraken!.tentacles.some((x) => x.stage === 'up'),
+    );
     const up = game.snapshot().bosses[0]!.kraken!.tentacles.filter((x) => x.stage !== 'warning');
     expect(kraken.tentacleBase.count).toBe(up.length);
     expect(kraken.tentacleTip.count).toBe(up.length);
@@ -223,7 +240,10 @@ describe('Kraken view states', () => {
     expect(ringMat.opacity).toBe(opacity);
 
     k.update(
-      snap(fakeBoss({}), [circle(TENTACLE_ATTACK, 100, 0, 0.5), circle(ROCK_ATTACK, -100, 0, 0.25)]),
+      snap(fakeBoss({}), [
+        circle(TENTACLE_ATTACK, 100, 0, 0.5),
+        circle(ROCK_ATTACK, -100, 0, 0.25),
+      ]),
       1,
       true,
     );
@@ -241,13 +261,24 @@ describe('Kraken view states', () => {
     expect(c1.getHexString()).toBe(new Color(KRAKEN_COLORS.rockWarning).getHexString());
     // Subiendo (golpe): relleno entero.
     k.update(snap(fakeBoss({}), [circle(TENTACLE_ATTACK, 100, 0, 0.1, true)]), 1.1, true);
-    expect(new Vector3().setFromMatrixScale(matrixOf(k.circleFill, 0)).x).toBeCloseTo(toScene(40), 5);
+    expect(new Vector3().setFromMatrixScale(matrixOf(k.circleFill, 0)).x).toBeCloseTo(
+      toScene(40),
+      5,
+    );
     k.dispose();
   });
 
   it('rocks fly in an arc from the Kraken to their landing circle', () => {
     const k = new SurvivorsKraken('baja');
-    const rock = (progress: number) => ({ id: 9, fromX: 0, fromY: 0, x: 400, y: 0, radius: 60, progress });
+    const rock = (progress: number) => ({
+      id: 9,
+      fromX: 0,
+      fromY: 0,
+      x: 400,
+      y: 0,
+      radius: 60,
+      progress,
+    });
     k.update(snap(fakeBoss({ mode: 'grabbing', rocks: [rock(0.5)] })), 0, true);
     expect(k.rocks.count).toBe(1);
     const mid = positionOf(matrixOf(k.rocks, 0));
@@ -282,18 +313,22 @@ describe('Kraken view states', () => {
       const k = new SurvivorsKraken('baja');
       const boss = fakeBoss({
         mode: 'emerged',
-        tentacles: [{ id: 3, x: 120, y: 40, radius: 30, stage: 'up', progress: 1, hp: 10, maxHp: 10 }],
+        tentacles: [
+          { id: 3, x: 120, y: 40, radius: 30, stage: 'up', progress: 1, hp: 10, maxHp: 10 },
+        ],
         rocks: [{ id: 4, fromX: 0, fromY: 0, x: 300, y: 0, radius: 60, progress: 0.4 }],
       });
       k.update(snap(boss), 1, reduced);
       const a = {
-        head: k.head.matrix.clone().compose(k.head.position, k.head.quaternion, k.head.scale).elements,
+        head: k.head.matrix.clone().compose(k.head.position, k.head.quaternion, k.head.scale)
+          .elements,
         tentacle: matrixOf(k.tentacleTip, 0).elements,
         rock: matrixOf(k.rocks, 0).elements,
       };
       k.update(snap(boss), 1.7, reduced);
       const b = {
-        head: k.head.matrix.clone().compose(k.head.position, k.head.quaternion, k.head.scale).elements,
+        head: k.head.matrix.clone().compose(k.head.position, k.head.quaternion, k.head.scale)
+          .elements,
         tentacle: matrixOf(k.tentacleTip, 0).elements,
         rock: matrixOf(k.rocks, 0).elements,
       };

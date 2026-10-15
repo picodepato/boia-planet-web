@@ -57,7 +57,17 @@ const ROCKET_ARC = 9;
 const PLANE_SHOT_Y = 5.2;
 
 /** Cuántas piezas de cada efecto caben (más islas: no se pintan las de más). */
-const CAP = { beams: 3 * 48, balls: 96, flames: 64, rockets: 64, bursts: 64, coins: 3 * 48, waves: 64, tracers: 64, shots: 96 } as const;
+const CAP = {
+  beams: 3 * 48,
+  balls: 96,
+  flames: 64,
+  rockets: 64,
+  bursts: 64,
+  coins: 3 * 48,
+  waves: 64,
+  tracers: 64,
+  shots: 96,
+} as const;
 
 /** Un sector plano de radio 1 y medio ángulo `half` (rad), hacia +x. */
 function sectorGeometry(half: number, segments = 10): BufferGeometry {
@@ -116,14 +126,54 @@ export class DefenseFx {
       CAP.beams,
       'defense-fx-beam',
     );
-    this.balls = instanced(new IcosahedronGeometry(1, low ? 0 : 1), new MeshBasicMaterial({ color: '#ffffff' }), CAP.balls, 'defense-fx-snowball');
-    this.flames = instanced(sectorGeometry(1, low ? 6 : 10), glowMat('#ff7a2e', 0.6), CAP.flames, 'defense-fx-flame');
-    this.rockets = instanced(new ConeGeometry(0.35, 1.4, 6).rotateZ(-Math.PI / 2), new MeshBasicMaterial({ color: C.pink }), CAP.rockets, 'defense-fx-rocket');
-    this.bursts = instanced(new RingGeometry(0.75, 1, seg).rotateX(-Math.PI / 2), glowMat('#ffd23f', 0.75), CAP.bursts, 'defense-fx-burst');
-    this.coins = instanced(new CylinderGeometry(0.5, 0.5, 0.14, low ? 8 : 12).rotateX(Math.PI / 2), new MeshBasicMaterial({ color: C.gold }), CAP.coins, 'defense-fx-coin');
-    this.waves = instanced(new RingGeometry(0.85, 1, seg).rotateX(-Math.PI / 2), glowMat('#b38bff', 0.55), CAP.waves, 'defense-fx-wave');
-    this.tracers = instanced(new BoxGeometry(1, 0.18, 0.18).translate(0.5, 0, 0), glowMat('#ffffff', 0.85), CAP.tracers, 'defense-fx-tracer');
-    this.shots = instanced(new SphereGeometry(1, 8, 6), new MeshBasicMaterial({ color: '#9fe8ff' }), CAP.shots, 'defense-fx-plane-shot');
+    this.balls = instanced(
+      new IcosahedronGeometry(1, low ? 0 : 1),
+      new MeshBasicMaterial({ color: '#ffffff' }),
+      CAP.balls,
+      'defense-fx-snowball',
+    );
+    this.flames = instanced(
+      sectorGeometry(1, low ? 6 : 10),
+      glowMat('#ff7a2e', 0.6),
+      CAP.flames,
+      'defense-fx-flame',
+    );
+    this.rockets = instanced(
+      new ConeGeometry(0.35, 1.4, 6).rotateZ(-Math.PI / 2),
+      new MeshBasicMaterial({ color: C.pink }),
+      CAP.rockets,
+      'defense-fx-rocket',
+    );
+    this.bursts = instanced(
+      new RingGeometry(0.75, 1, seg).rotateX(-Math.PI / 2),
+      glowMat('#ffd23f', 0.75),
+      CAP.bursts,
+      'defense-fx-burst',
+    );
+    this.coins = instanced(
+      new CylinderGeometry(0.5, 0.5, 0.14, low ? 8 : 12).rotateX(Math.PI / 2),
+      new MeshBasicMaterial({ color: C.gold }),
+      CAP.coins,
+      'defense-fx-coin',
+    );
+    this.waves = instanced(
+      new RingGeometry(0.85, 1, seg).rotateX(-Math.PI / 2),
+      glowMat('#b38bff', 0.55),
+      CAP.waves,
+      'defense-fx-wave',
+    );
+    this.tracers = instanced(
+      new BoxGeometry(1, 0.18, 0.18).translate(0.5, 0, 0),
+      glowMat('#ffffff', 0.85),
+      CAP.tracers,
+      'defense-fx-tracer',
+    );
+    this.shots = instanced(
+      new SphereGeometry(1, 8, 6),
+      new MeshBasicMaterial({ color: '#9fe8ff' }),
+      CAP.shots,
+      'defense-fx-plane-shot',
+    );
     this.d.rotation.order = 'YXZ';
     this.meshes = [
       this.beams,
@@ -152,7 +202,16 @@ export class DefenseFx {
     f: FxFrame,
     reduced: boolean,
   ): void {
-    const n = { beams: 0, balls: 0, flames: 0, rockets: 0, bursts: 0, coins: 0, waves: 0, tracers: 0 };
+    const n = {
+      beams: 0,
+      balls: 0,
+      flames: 0,
+      rockets: 0,
+      bursts: 0,
+      coins: 0,
+      waves: 0,
+      tracers: 0,
+    };
     const d = this.d;
     for (const tw of towers) {
       const s = tw.lastShot;
@@ -177,10 +236,15 @@ export class DefenseFx {
           break;
         }
         case 'ultima': {
-          if (age > FX_S.snowball || s.x === undefined || s.y === undefined || n.balls >= CAP.balls) break;
+          if (age > FX_S.snowball || s.x === undefined || s.y === undefined || n.balls >= CAP.balls)
+            break;
           const p = f.at(s.x, s.y);
           const k = age / FX_S.snowball;
-          d.position.set(o.x + (p.x - o.x) * k, SNOW_Y + Math.sin(k * Math.PI) * 2, o.z + (p.z - o.z) * k);
+          d.position.set(
+            o.x + (p.x - o.x) * k,
+            SNOW_Y + Math.sin(k * Math.PI) * 2,
+            o.z + (p.z - o.z) * k,
+          );
           d.rotation.set(0, 0, 0);
           d.scale.setScalar(0.7);
           d.updateMatrix();
@@ -206,7 +270,11 @@ export class DefenseFx {
           if (s.flightS) {
             if (age > s.flightS || n.rockets >= CAP.rockets) break;
             const k = age / s.flightS;
-            d.position.set(o.x + (p.x - o.x) * k, 2 + Math.sin(k * Math.PI) * ROCKET_ARC, o.z + (p.z - o.z) * k);
+            d.position.set(
+              o.x + (p.x - o.x) * k,
+              2 + Math.sin(k * Math.PI) * ROCKET_ARC,
+              o.z + (p.z - o.z) * k,
+            );
             d.rotation.set(0, -Math.atan2(p.z - o.z, p.x - o.x), Math.cos(k * Math.PI) * 0.9);
             d.scale.setScalar(1);
             d.updateMatrix();
@@ -227,7 +295,11 @@ export class DefenseFx {
           const k = age / FX_S.coins;
           for (let c = 0; c < 3 && n.coins < CAP.coins; c++) {
             const a = c * 2.1 + tw.id;
-            d.position.set(o.x + Math.cos(a) * 1.4 * k, 4 + k * 5 + c * 0.6, o.z + Math.sin(a) * 1.4 * k);
+            d.position.set(
+              o.x + Math.cos(a) * 1.4 * k,
+              4 + k * 5 + c * 0.6,
+              o.z + Math.sin(a) * 1.4 * k,
+            );
             d.rotation.set(0, reduced ? 0 : age * 9 + c, 0);
             d.scale.setScalar(1 - k * 0.5);
             d.updateMatrix();
@@ -247,7 +319,13 @@ export class DefenseFx {
           break;
         }
         case 'fotos': {
-          if (age > FX_S.tracer || s.x === undefined || s.y === undefined || n.tracers >= CAP.tracers) break;
+          if (
+            age > FX_S.tracer ||
+            s.x === undefined ||
+            s.y === undefined ||
+            n.tracers >= CAP.tracers
+          )
+            break;
           const p = f.at(s.x, s.y);
           const dx = p.x - o.x;
           const dz = p.z - o.z;

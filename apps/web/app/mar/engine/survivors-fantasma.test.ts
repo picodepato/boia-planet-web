@@ -1,6 +1,13 @@
 import { SURVIVORS_CONFIG, SURVIVORS_STEP_S, type SurvivorsConfig } from '@boia/engine/survivors';
 import { WORLD_REGISTRY } from '@boia/world';
-import { Box3, type BufferGeometry, Color, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import {
+  Box3,
+  type BufferGeometry,
+  Color,
+  type Mesh,
+  type MeshLambertMaterial,
+  Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 import { es } from '../../../lib/i18n/es';
 import { SurvivorsRun, survivorsSea } from '../survivors';
@@ -41,7 +48,8 @@ function colorsOf(g: BufferGeometry): Set<string> {
   const col = g.getAttribute('color');
   const out = new Set<string>();
   const c = new Color();
-  for (let i = 0; i < col.count; i++) out.add(c.setRGB(col.getX(i), col.getY(i), col.getZ(i)).getHexString());
+  for (let i = 0; i < col.count; i++)
+    out.add(c.setRGB(col.getX(i), col.getY(i), col.getZ(i)).getHexString());
   return out;
 }
 const hex = (s: string) => new Color(s).getHexString();
@@ -59,7 +67,12 @@ function quietConfig(patch: (c: SurvivorsConfig) => void = () => {}): SurvivorsC
 }
 
 /** El Fantasma quieto con estas ventanas (y, si se pide, llamando a su tripulación). */
-function stillGhost(c: SurvivorsConfig, solidS: number, ghostS: number, ghostAttacks: string[] = []): void {
+function stillGhost(
+  c: SurvivorsConfig,
+  solidS: number,
+  ghostS: number,
+  ghostAttacks: string[] = [],
+): void {
   const b = c.bosses.fantasma!;
   b.phases = [
     {
@@ -84,7 +97,10 @@ function game(config: SurvivorsConfig, opts: { reduced?: boolean } = {}) {
     ship: MAR_SHIP_CONFIG,
     config,
   });
-  const view = new SurvivorsView(run.config, run.game.caps, { quality: 'alta', reduced: opts.reduced ?? false });
+  const view = new SurvivorsView(run.config, run.game.caps, {
+    quality: 'alta',
+    reduced: opts.reduced ?? false,
+  });
   return { run, view };
 }
 
@@ -103,7 +119,13 @@ describe('el modelo del Barco Pirata Fantasma', () => {
   it('es un galeón largo hacia +x con casco azul noche, velas rasgadas, farol y bandera; su nombre tiene texto', () => {
     const g = ghostShipGeometry();
     const cs = colorsOf(g);
-    for (const c of [GHOST_COLORS.hull, GHOST_COLORS.sail, GHOST_COLORS.sailTorn, GHOST_COLORS.lantern, GHOST_COLORS.flag]) {
+    for (const c of [
+      GHOST_COLORS.hull,
+      GHOST_COLORS.sail,
+      GHOST_COLORS.sailTorn,
+      GHOST_COLORS.lantern,
+      GHOST_COLORS.flag,
+    ]) {
       expect(cs.has(hex(c)), c).toBe(true);
     }
     const s = size(g);
@@ -111,7 +133,9 @@ describe('el modelo del Barco Pirata Fantasma', () => {
     expect(s.x / s.z).toBeGreaterThan(2);
     expect(s.y).toBeGreaterThan(s.z);
     // Bajo poligonaje: menos vértices que diez piratas.
-    expect(g.getAttribute('position').count).toBeLessThan(pirateGeometry().getAttribute('position').count * 10);
+    expect(g.getAttribute('position').count).toBeLessThan(
+      pirateGeometry().getAttribute('position').count * 10,
+    );
     expect(es[FANTASMA.i18nKey as keyof typeof es]).toBeTruthy();
   });
 
@@ -210,7 +234,11 @@ describe('el Fantasma en la vista', () => {
     const { run, view } = game(
       quietConfig((c) => {
         const b = c.bosses.fantasma!;
-        b.fantasma = { ...b.fantasma!, ghostAttacks: [], phases: b.phases.map(() => ({ solidS: 1e6, ghostS: 1 })) };
+        b.fantasma = {
+          ...b.fantasma!,
+          ghostAttacks: [],
+          phases: b.phases.map(() => ({ solidS: 1e6, ghostS: 1 })),
+        };
       }),
     );
     const p = run.snapshot().player;
@@ -241,7 +269,10 @@ describe('el Fantasma en la vista', () => {
   });
 
   it('con movimiento reducido el barco no se mece ni se ladea; pintar no crea piezas nuevas', () => {
-    const { run, view } = game(quietConfig((c) => stillGhost(c, 60, 1)), { reduced: true });
+    const { run, view } = game(
+      quietConfig((c) => stillGhost(c, 60, 1)),
+      { reduced: true },
+    );
     const p = run.snapshot().player;
     run.game.spawnBoss('fantasma', p.x + 300, p.y);
     const { solid } = shipMeshes(view);

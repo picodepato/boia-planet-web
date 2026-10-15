@@ -121,13 +121,13 @@ test('el collage: fotos y clips superpuestos; abrir anima sobre fondo oscuro; ce
   await shot(page, '4-abierta', project);
 
   // Cerrar: vuelve a su sitio (animación), baja al fondo y las vecinas se apartan.
-  const collageId = await photo.evaluate(
-    (el) => el.closest('[data-empujes]')!.getAttribute('data-testid')!,
+  const collageId = await photo.evaluate((el) =>
+    el.closest('[data-empujes]')!.getAttribute('data-testid')!,
   );
   const collage = page.getByTestId(collageId);
-  const zBefore = await collage.locator('[data-pieza]').evaluateAll((els) =>
-    els.map((el) => Number(getComputedStyle(el).zIndex)),
-  );
+  const zBefore = await collage
+    .locator('[data-pieza]')
+    .evaluateAll((els) => els.map((el) => Number(getComputedStyle(el).zIndex)));
   const closing = await clickAndSample(page.getByTestId('collage-cerrar'));
   expect(closing).toEqual({ fase: 'closing', running: 1 });
   await shot(page, '5-cerrando', project);

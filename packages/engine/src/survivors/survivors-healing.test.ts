@@ -53,7 +53,11 @@ function steps(g: SurvivorsGame, count: number) {
 describe('T149 healing and Vecino', () => {
   it('keeps the greedy pilot aligned with the dodge pilot until a threatening ring passes', () => {
     const c = quiet();
-    c.bosses.vecino!.phases = c.bosses.vecino!.phases.map((p) => ({ ...p, movement: 'still', firstAttackS: 0 }));
+    c.bosses.vecino!.phases = c.bosses.vecino!.phases.map((p) => ({
+      ...p,
+      movement: 'still',
+      firstAttackS: 0,
+    }));
     const g = createSurvivors(c, 1, sea);
     g.spawnBoss('vecino', 300, 0);
     g.step();

@@ -127,7 +127,9 @@ export interface ShipRegistry {
 }
 
 /** El filtro CSS de una miniatura de variante (el mismo giro de tono que en 3D). */
-export function variantFilter(style: Pick<ShipStyleEntry, 'variant'> | undefined): string | undefined {
+export function variantFilter(
+  style: Pick<ShipStyleEntry, 'variant'> | undefined,
+): string | undefined {
   return style?.variant ? `hue-rotate(${style.variant.hue}deg)` : undefined;
 }
 

@@ -4,7 +4,12 @@ import { DEFAULT_SHIP_CONFIG } from '../ship/config';
 import type { ShipInput } from '../ship/controller';
 import { wrapDelta } from '../world/wrap';
 import { type EnemyId, SURVIVORS_CONFIG, SURVIVORS_STEP_S, type SurvivorsConfig } from './config';
-import { type SurvivorsEvent, type SurvivorsGame, type SurvivorsInput, createSurvivors } from './sim';
+import {
+  type SurvivorsEvent,
+  type SurvivorsGame,
+  type SurvivorsInput,
+  createSurvivors,
+} from './sim';
 import type { SurvivorsWorld } from './world';
 
 /**
@@ -118,7 +123,9 @@ describe('survivors beta 2: guion del acto 1 en datos', () => {
       ['boss', 330],
     ]);
     for (const e of slots) {
-      expect(e.enabled !== false).toBe(SURVIVORS_CONFIG.bosses[e.ref as keyof typeof SURVIVORS_CONFIG.bosses] !== undefined);
+      expect(e.enabled !== false).toBe(
+        SURVIVORS_CONFIG.bosses[e.ref as keyof typeof SURVIVORS_CONFIG.bosses] !== undefined,
+      );
     }
     expect(act.durationS).toBe(420);
   });
@@ -219,12 +226,18 @@ describe('survivors beta 2: pirata en botecito', () => {
     });
     const game = createSurvivors(cfg, 1, openSea([island]));
     const pirate = game.spawnEnemy('pirate', standoff - 20, 0)!;
-    const r = play(game, () => ({}), () => {}, steps(10));
+    const r = play(
+      game,
+      () => ({}),
+      () => {},
+      steps(10),
+    );
     const blocked = r.events.filter((e) => e.type === 'blocked');
     expect(blocked.some((e) => e.type === 'blocked' && e.owner === 'enemy')).toBe(true);
     expect(blocked.some((e) => e.type === 'blocked' && e.owner === 'player')).toBe(true);
     for (const e of blocked) {
-      if (e.type === 'blocked') expect(Math.hypot(e.x - island.x, e.y)).toBeLessThan(island.radius + 10);
+      if (e.type === 'blocked')
+        expect(Math.hypot(e.x - island.x, e.y)).toBeLessThan(island.radius + 10);
     }
     expect(r.events.some((e) => e.type === 'hit')).toBe(false);
     expect(r.events.some((e) => e.type === 'defeated')).toBe(false);
@@ -233,7 +246,12 @@ describe('survivors beta 2: pirata en botecito', () => {
     // Sin la isla, el mismo pirata acierta y cae.
     const open = createSurvivors(cfg, 1, openSea());
     open.spawnEnemy('pirate', standoff - 20, 0);
-    const r2 = play(open, () => ({}), () => {}, steps(10));
+    const r2 = play(
+      open,
+      () => ({}),
+      () => {},
+      steps(10),
+    );
     expect(r2.events.some((e) => e.type === 'hit' && e.enemy === 'pirate')).toBe(true);
     expect(r2.events.some((e) => e.type === 'defeated' && e.enemy === 'pirate')).toBe(true);
   });
@@ -319,7 +337,8 @@ describe('survivors beta 2: pez espada', () => {
     expect(chargeAt).toBeGreaterThan(telegraphAt);
     expect(chargeAt - telegraphAt).toBeCloseTo(ch.telegraphS, 1);
     expect(progress.length).toBeGreaterThan(10);
-    for (let i = 1; i < progress.length; i++) expect(progress[i]!).toBeGreaterThanOrEqual(progress[i - 1]!);
+    for (let i = 1; i < progress.length; i++)
+      expect(progress[i]!).toBeGreaterThanOrEqual(progress[i - 1]!);
     expect(progress[0]!).toBeLessThan(0.1);
     expect(progress.at(-1)!).toBeGreaterThan(0.9);
     expect(maxSpeed).toBeCloseTo(ch.chargeSpeed, 3);
@@ -364,7 +383,12 @@ describe('survivors beta 2: medusa', () => {
       const ev = game.step({}).find((e) => e.type === 'split');
       if (ev) splitEv = { ...ev };
     }
-    expect(splitEv).toMatchObject({ type: 'split', enemy: 'jellyfish', id: mother.id, count: split.count });
+    expect(splitEv).toMatchObject({
+      type: 'split',
+      enemy: 'jellyfish',
+      id: mother.id,
+      count: split.count,
+    });
     const kids = game.snapshot().enemies.filter((e) => e.type === 'jellyfish');
     expect(kids).toHaveLength(split.count);
     for (const k of kids) {
@@ -375,7 +399,12 @@ describe('survivors beta 2: medusa', () => {
       expect(k.hp).toBeGreaterThan(0);
     }
     // Las pequeñas caen sin partirse más: en total 3 medusas vencidas y un solo reparto.
-    const r = play(game, () => ({}), () => {}, steps(20));
+    const r = play(
+      game,
+      () => ({}),
+      () => {},
+      steps(20),
+    );
     const defeated = r.events.filter((e) => e.type === 'defeated' && e.enemy === 'jellyfish');
     expect(defeated).toHaveLength(split.count);
     expect(r.events.filter((e) => e.type === 'split')).toHaveLength(0);
@@ -400,7 +429,8 @@ describe('survivors beta 2: élites', () => {
         if (s.activeS < elitesEvent.atS) activeBefore ||= s.elitesActive;
         else activeAfter ||= s.elitesActive;
         for (const e of s.enemies) {
-          if (!firstSeen.has(e.id)) firstSeen.set(e.id, { t: s.activeS, elite: e.elite, type: e.type, hp: e.maxHp });
+          if (!firstSeen.has(e.id))
+            firstSeen.set(e.id, { t: s.activeS, elite: e.elite, type: e.type, hp: e.maxHp });
         }
       },
     );
@@ -436,8 +466,13 @@ describe('survivors beta 2: élites', () => {
     expect(e.elite).toBe(true);
     expect(e.maxHp).toBeCloseTo(cfg.enemies.piranha!.hp * elitesDef.hpScale, 9);
     const value = (g: SurvivorsGame) =>
-      play(g, () => ({}), () => {}, steps(8)).events
-        .filter((ev) => ev.type === 'note')
+      play(
+        g,
+        () => ({}),
+        () => {},
+        steps(8),
+      )
+        .events.filter((ev) => ev.type === 'note')
         .reduce((acc, ev) => acc + (ev.type === 'note' ? ev.value : 0), 0);
     const a = value(plain);
     const b = value(elite);
@@ -471,7 +506,9 @@ describe('survivors beta 2: «Marea»', () => {
       const d = Math.hypot(e.x, e.y);
       expect(d).toBeGreaterThanOrEqual(cfg.spawn.ringMin - 1);
       expect(d).toBeLessThanOrEqual(cfg.spawn.ringMax + 1);
-      octants.add(Math.floor(((Math.atan2(e.y, e.x) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)));
+      octants.add(
+        Math.floor(((Math.atan2(e.y, e.x) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)),
+      );
     }
     expect(octants.size).toBe(8);
     // Siguen cayendo anillos hasta que acaba; después, ninguno más.
@@ -531,7 +568,17 @@ describe('survivors beta 2: partidas completas de 7:00', () => {
         },
       );
       hashes.push(game.stateHash());
-      return { hashes, seen, elites, telegraphs, shots, splits, maxShots, mareaSteps, end: game.snapshot().end };
+      return {
+        hashes,
+        seen,
+        elites,
+        telegraphs,
+        shots,
+        splits,
+        maxShots,
+        mareaSteps,
+        end: game.snapshot().end,
+      };
     };
     const a = run(21);
     const b = run(21);
@@ -593,9 +640,9 @@ describe('survivors beta 2: partidas completas de 7:00', () => {
     // Las pruebas de `wrapDelta` del mar que da la vuelta siguen valiendo para lo nuevo.
     const bnd = a.world.bounds;
     for (const e of a.snapshot().enemies) {
-      expect(Math.abs(wrapDelta(e.x - a.snapshot().player.x, bnd.right - bnd.left))).toBeLessThanOrEqual(
-        SURVIVORS_CONFIG.spawn.recycleDistance + 1,
-      );
+      expect(
+        Math.abs(wrapDelta(e.x - a.snapshot().player.x, bnd.right - bnd.left)),
+      ).toBeLessThanOrEqual(SURVIVORS_CONFIG.spawn.recycleDistance + 1);
     }
   });
 });

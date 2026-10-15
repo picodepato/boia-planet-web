@@ -311,14 +311,15 @@ export function createFaceTextures(): FaceTextures {
 export const MASCOT_OUTLINE = 0.07;
 
 /** Material del trazo: casco invertido (sólo las caras de dentro), negro plano. */
-const inkMaterial = () =>
-  new MeshBasicMaterial({ color: MASCOT_COLORS.ink, side: BackSide });
+const inkMaterial = () => new MeshBasicMaterial({ color: MASCOT_COLORS.ink, side: BackSide });
 
 const UP = new Vector3(0, 1, 0);
 
 /** Orientación (Euler) que lleva el +y de una pieza a la dirección `d`. */
 function towards(d: Vector3): [number, number, number] {
-  const e = new Euler().setFromQuaternion(new Quaternion().setFromUnitVectors(UP, d.clone().normalize()));
+  const e = new Euler().setFromQuaternion(
+    new Quaternion().setFromUnitVectors(UP, d.clone().normalize()),
+  );
   return [e.x, e.y, e.z];
 }
 
@@ -358,17 +359,26 @@ export function createMascot(
   // El gorro: un cono ancho asentado arriba a la izquierda de la cabeza, con
   // la punta hacia arriba y afuera (el de fiesta, más estrecho y derecho).
   const party = opts.cap === 'party';
-  const dir = party ? new Vector3(-0.08, 0.92, 0.38).normalize() : new Vector3(-0.1, 0.72, 0.68).normalize();
+  const dir = party
+    ? new Vector3(-0.08, 0.92, 0.38).normalize()
+    : new Vector3(-0.1, 0.72, 0.68).normalize();
   const capR = r * (party ? 0.42 : 0.62);
   const capH = r * (party ? 1.05 : 1.1);
   const base = new Vector3(0, r, 0).addScaledVector(dir, r * (party ? 0.86 : 0.74));
   const mid = base.clone().addScaledVector(dir, capH / 2);
   const rot = towards(dir);
-  kit.add(new ConeGeometry(capR, capH, 16), MASCOT_COLORS.cap, { p: [mid.x, mid.y, mid.z], r: rot });
-  rimKit.add(new ConeGeometry(capR + r * MASCOT_OUTLINE, capH + r * MASCOT_OUTLINE * 2.4, 16), MASCOT_COLORS.ink, {
+  kit.add(new ConeGeometry(capR, capH, 16), MASCOT_COLORS.cap, {
     p: [mid.x, mid.y, mid.z],
     r: rot,
   });
+  rimKit.add(
+    new ConeGeometry(capR + r * MASCOT_OUTLINE, capH + r * MASCOT_OUTLINE * 2.4, 16),
+    MASCOT_COLORS.ink,
+    {
+      p: [mid.x, mid.y, mid.z],
+      r: rot,
+    },
+  );
   const tip = base.clone().addScaledVector(dir, capH);
   if (party) {
     kit.add(new SphereGeometry(r * 0.17, 8, 6), MASCOT_COLORS.pompom, { p: [tip.x, tip.y, tip.z] });
@@ -376,7 +386,10 @@ export function createMascot(
     // El agujero del gorro, cerca de la punta, en la cara que mira al frente.
     const t = 0.62;
     const out = new Vector3(1, 0, 0).addScaledVector(dir, -dir.x).normalize();
-    const hole = base.clone().addScaledVector(dir, capH * t).addScaledVector(out, capR * (1 - t) * 0.98);
+    const hole = base
+      .clone()
+      .addScaledVector(dir, capH * t)
+      .addScaledVector(out, capR * (1 - t) * 0.98);
     kit.add(new SphereGeometry(r * 0.075, 8, 6), MASCOT_COLORS.ink, {
       p: [hole.x, hole.y, hole.z],
       s: [0.5, 1.2, 1],

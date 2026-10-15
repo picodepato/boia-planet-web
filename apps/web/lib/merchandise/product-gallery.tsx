@@ -135,7 +135,7 @@ export function ProductGallery({ product }: { product: MerchandiseProduct }) {
       ref={root}
       className="merchandise__gallery"
       role="group"
-      aria-roledescription="carrusel"
+      aria-roledescription={t('store.gallery.roledescription')}
       aria-label={t('store.gallery.label', { name: product.name })}
       data-testid={`merchandise-gallery-${product.id}`}
       data-index={index}

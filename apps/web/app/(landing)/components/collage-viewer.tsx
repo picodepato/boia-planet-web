@@ -415,11 +415,14 @@ export default function CollageViewer({
       easing: 'linear',
       fill: 'both',
     });
-    const a = el.animate([{ transform: fromPiece(from, box, rotate, scale) }, { transform: 'none' }], {
-      duration: ms,
-      easing: EASE_OUT,
-      fill: 'both',
-    });
+    const a = el.animate(
+      [{ transform: fromPiece(from, box, rotate, scale) }, { transform: 'none' }],
+      {
+        duration: ms,
+        easing: EASE_OUT,
+        fill: 'both',
+      },
+    );
     a.onfinish = onOpened;
     return () => {
       a.onfinish = null;
@@ -445,11 +448,14 @@ export default function CollageViewer({
       easing: 'linear',
       fill: 'both',
     });
-    const a = el.animate([{ transform: 'none' }, { transform: fromPiece(to, box, rotate, scale) }], {
-      duration: ms,
-      easing: EASE_IN_OUT,
-      fill: 'both',
-    });
+    const a = el.animate(
+      [{ transform: 'none' }, { transform: fromPiece(to, box, rotate, scale) }],
+      {
+        duration: ms,
+        easing: EASE_IN_OUT,
+        fill: 'both',
+      },
+    );
     a.onfinish = onClosed;
     return () => {
       a.onfinish = null;

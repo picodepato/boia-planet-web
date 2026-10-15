@@ -24,7 +24,9 @@ const LAST = Math.max(...ACTS);
 describe('campaña T144: actos del panel', () => {
   it('de primeras sólo el acto 1; los demás de la config cerrados; los que faltan, próximamente', () => {
     const acts = campaignActs(EMPTY_CAMPAIGN);
-    expect(acts.map((a) => a.act)).toEqual(Array.from({ length: Math.max(CAMPAIGN_ACTS, LAST) }, (_, i) => i + 1));
+    expect(acts.map((a) => a.act)).toEqual(
+      Array.from({ length: Math.max(CAMPAIGN_ACTS, LAST) }, (_, i) => i + 1),
+    );
     expect(acts[0]).toEqual({ act: 1, state: 'open', beaten: false });
     for (const a of acts.slice(1)) {
       expect(a.state).toBe(ACTS.includes(a.act) ? 'locked' : 'soon');
@@ -52,8 +54,12 @@ describe('campaña T144: actos del panel', () => {
       ...SURVIVORS_CONFIG,
       acts: [...SURVIVORS_CONFIG.acts, { ...SURVIVORS_CONFIG.acts[1]!, act: LAST + 1 }],
     };
-    expect(campaignActs({ beaten: [1] }, three).find((a) => a.act === LAST + 1)?.state).toBe('locked');
-    expect(campaignActs({ beaten: ACTS }, three).find((a) => a.act === LAST + 1)?.state).toBe('open');
+    expect(campaignActs({ beaten: [1] }, three).find((a) => a.act === LAST + 1)?.state).toBe(
+      'locked',
+    );
+    expect(campaignActs({ beaten: ACTS }, three).find((a) => a.act === LAST + 1)?.state).toBe(
+      'open',
+    );
   });
 });
 
@@ -75,7 +81,9 @@ describe('campaña T144: se guarda en el progreso local', () => {
     // Vencer al Kraken lo apunta también.
     expect(actFinalBoss(2)).toBe('kraken');
     await recordFinalBoss(later.progress, 2);
-    expect((await readCampaign(createLocalRepository({ storage, watch: false }).progress)).beaten).toEqual([1, 2]);
+    expect(
+      (await readCampaign(createLocalRepository({ storage, watch: false }).progress)).beaten,
+    ).toEqual([1, 2]);
   });
 
   it('un acto sin boss final (o que no existe) no se apunta', async () => {

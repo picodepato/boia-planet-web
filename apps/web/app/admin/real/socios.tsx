@@ -187,7 +187,7 @@ function MemberCard({
         <div>
           <p>
             <strong>{m.nickname ?? t('admin.real.socios.noCarnet')}</strong>
-            {m.member_number ? ` · nº ${m.member_number}` : ''}
+            {m.member_number ? t('admin.real.numeroSocio', { n: m.member_number }) : ''}
             {m.is_artist ? (
               <span className="admin-badge" data-testid={`socio-es-artista-${m.user_id}`}>
                 {t('admin.real.socios.artistBadge')}

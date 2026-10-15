@@ -103,8 +103,7 @@ export function keysToWipe(
   const out: string[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
-    if (!key || !OURS.test(key) || isDevicePreferenceKey(key) || VIA_REPOSITORY.has(key))
-      continue;
+    if (!key || !OURS.test(key) || isDevicePreferenceKey(key) || VIA_REPOSITORY.has(key)) continue;
     const copy = MEMBER_COPY.exec(key);
     if (copy) {
       const copyKey = `boia.cuenta.${copy[1]}`;

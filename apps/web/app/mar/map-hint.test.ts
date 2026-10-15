@@ -142,9 +142,7 @@ describe('la pista del mapa con su reloj (T275)', () => {
 
 describe('la pista y el «Cerrar» del mapa en pantalla (T275)', () => {
   const render = (hint: boolean) =>
-    renderToStaticMarkup(
-      createElement(MapHintView, { hint, onHint: () => {}, onClose: () => {} }),
-    );
+    renderToStaticMarkup(createElement(MapHintView, { hint, onHint: () => {}, onClose: () => {} }));
 
   it('son dos botones separados: la pista no lleva el «Cerrar»', () => {
     const html = render(true);

@@ -10,9 +10,12 @@ import { shot } from './deck-helpers';
 
 /** Sube el elemento al principio de la pantalla, con un margen arriba. */
 async function alPrincipio(page: Page, selector: string, margen = 16) {
-  await page.locator(selector).first().evaluate((el, m) => {
-    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - m);
-  }, margen);
+  await page
+    .locator(selector)
+    .first()
+    .evaluate((el, m) => {
+      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - m);
+    }, margen);
 }
 
 test('evento', async ({ page }) => {

@@ -21,7 +21,9 @@ test('sin sesión, la landing no tiene logout (también en modo local)', async (
 });
 
 for (const withCarnet of [false, true]) {
-  test(`con sesión ${withCarnet ? 'y Carnet' : 'sin terminar el Carnet'}: logout sólo en landing y persiste al recargar`, async ({ page }, info) => {
+  test(`con sesión ${withCarnet ? 'y Carnet' : 'sin terminar el Carnet'}: logout sólo en landing y persiste al recargar`, async ({
+    page,
+  }, info) => {
     test.skip(!E2E_SUPABASE, 'sólo con E2E_SUPABASE=1');
     test.setTimeout(120_000);
     const member = await createMember('t199-logout');
@@ -41,10 +43,10 @@ for (const withCarnet of [false, true]) {
       }
       // Una sola inyección: recargar después de salir no restaura la sesión.
       await page.goto('/?intro=0');
-      await page.evaluate(
-        ([key, value]) => localStorage.setItem(key, value),
-        [SUPABASE_AUTH_STORAGE_KEY, JSON.stringify(session)] as const,
-      );
+      await page.evaluate(([key, value]) => localStorage.setItem(key, value), [
+        SUPABASE_AUTH_STORAGE_KEY,
+        JSON.stringify(session),
+      ] as const);
       await page.reload();
       const buttons = page.getByTestId('landing-sign-out');
       await expect(buttons).toHaveCount(2, { timeout: 30_000 });
@@ -57,7 +59,8 @@ for (const withCarnet of [false, true]) {
       // La cabecera sale al dejar el hero (T79); en móvil, dentro de «Menú».
       await pastHero(page);
       const header = page.locator('.site-header');
-      if (info.project.name === 'mobile') await tap(page, header.getByText('Menú', { exact: true }));
+      if (info.project.name === 'mobile')
+        await tap(page, header.getByText('Menú', { exact: true }));
       const logout = buttons.filter({ visible: true });
       await expect(logout).toHaveText(t('landing.signOut'));
       const list = logout.locator('..').locator('..');
@@ -92,7 +95,9 @@ for (const width of [390, 1024, 1200, 1280, 1440]) {
       const li = document.createElement('li');
       // Mismo marcado que `LandingSignOut`: icono + texto.
       li.innerHTML = `<button type="button" class="site-header__sign-out" data-testid="landing-sign-out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>${label}</span></button>`;
-      for (const list of document.querySelectorAll('.site-header__links, .site-header__menu-list')) {
+      for (const list of document.querySelectorAll(
+        '.site-header__links, .site-header__menu-list',
+      )) {
         const clone = li.cloneNode(true);
         list.querySelector('[data-testid="cabecera-carnet"]')!.closest('li')!.after(clone);
       }

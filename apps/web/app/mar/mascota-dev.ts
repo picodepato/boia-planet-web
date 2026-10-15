@@ -1,4 +1,10 @@
-import { CANONCITO, ESTELA_VORTICE, MINIKRAKEN, type ProgressApi, TORTUGA_TURBO } from '@boia/store';
+import {
+  CANONCITO,
+  ESTELA_VORTICE,
+  MINIKRAKEN,
+  type ProgressApi,
+  TORTUGA_TURBO,
+} from '@boia/store';
 import { type DevEnv, devEnv, devStartRewards } from './survivors';
 
 /**
@@ -34,7 +40,9 @@ export function devCosmeticsWanted(env: DevEnv = devEnv()): string[] {
       .split(',')
       .map((v) => table[v.trim()])
       .filter((id): id is string => !!id);
-  return [...new Set([...pick(MASCOT_DEV_PARAM, MASCOT_VALUES), ...pick(WAKE_DEV_PARAM, WAKE_VALUES)])];
+  return [
+    ...new Set([...pick(MASCOT_DEV_PARAM, MASCOT_VALUES), ...pick(WAKE_DEV_PARAM, WAKE_VALUES)]),
+  ];
 }
 
 /** ¿Pide la URL alguna mascota o estela y se puede dar aquí? */

@@ -320,7 +320,11 @@ describe('mapa compartido de Arcilla (T20)', () => {
     const a = map.places.find((p) => p.id === AFTER_PLACE_ID)!;
     expect(a).toMatchObject({ category: 'isla', name: 'mapa.after', active: true });
     expect(a.state).toMatchObject({ visible: false });
-    expect(a.behaviors.map((b) => b.type).sort()).toEqual(['achievement', 'collision', 'proximity']);
+    expect(a.behaviors.map((b) => b.type).sort()).toEqual([
+      'achievement',
+      'collision',
+      'proximity',
+    ]);
     expect(a.behaviors.find((b) => b.type === 'achievement')?.params).toMatchObject({
       trigger: 'visit_island',
     });

@@ -44,9 +44,7 @@ export function RadioToastView({
   const shown = toast && toast.key !== hidden ? toast : null;
   return (
     <div className="radio-toast-slot" role="status" aria-live="polite">
-      {shown ? (
-        <RadioToastButton key={shown.key} song={shown.song} onOpen={onOpen} />
-      ) : null}
+      {shown ? <RadioToastButton key={shown.key} song={shown.song} onOpen={onOpen} /> : null}
     </div>
   );
 }

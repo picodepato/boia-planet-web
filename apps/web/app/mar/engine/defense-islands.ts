@@ -50,7 +50,12 @@ const templates = new Map<DefenseTowerKind, IslandTemplate>();
 
 /** El radio en el agua de una geometría: lo más lejos que llega su caja del centro, en x o en z. */
 export function footprintOf(box: Box3): number {
-  return Math.max(Math.abs(box.min.x), Math.abs(box.max.x), Math.abs(box.min.z), Math.abs(box.max.z));
+  return Math.max(
+    Math.abs(box.min.x),
+    Math.abs(box.max.x),
+    Math.abs(box.min.z),
+    Math.abs(box.max.z),
+  );
 }
 
 /** La isla de ese tipo a su tamaño normal, medida una vez (y guardada para las siguientes). */
@@ -210,6 +215,8 @@ export class TowerIslands {
 }
 
 /** El radio (escena) de la huella de las islas a nivel 3 según la config de la partida. */
-export function islandRadiusScene(cfg: Pick<DefenseConfig, 'islandRadius'> = DEFENSE_CONFIG): number {
+export function islandRadiusScene(
+  cfg: Pick<DefenseConfig, 'islandRadius'> = DEFENSE_CONFIG,
+): number {
   return toScene(cfg.islandRadius);
 }

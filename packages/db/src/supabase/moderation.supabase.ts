@@ -142,14 +142,12 @@ describe('Carnets: retirar y devolver el apodo y la foto', () => {
 describe('Carnets: ocultar el Carnet entero', () => {
   it('nadie lo lee salvo su dueño y el equipo; en el ranking sale con el apodo de moderación', async () => {
     await ok(
-      owner.client
-        .from('carnet_answers')
-        .insert({
-          user_id: owner.id,
-          question_id: 'disco-entero',
-          question_version: 1,
-          answer: 'Un disco',
-        }),
+      owner.client.from('carnet_answers').insert({
+        user_id: owner.id,
+        question_id: 'disco-entero',
+        question_version: 1,
+        answer: 'Un disco',
+      }),
     );
     expect(
       await ok(ctx.anon.from('carnet_answers').select('user_id').eq('user_id', owner.id)),

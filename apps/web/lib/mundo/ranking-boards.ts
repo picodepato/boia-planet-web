@@ -58,7 +58,12 @@ export function castleBoardOptions(
 ): BoardOption[] {
   return difficulties.flatMap((difficulty) =>
     runMins.map((runMin) => {
-      const board = { kind: 'castle', runMin, difficulty, version: CASTLE_RANKING_VERSION } as const;
+      const board = {
+        kind: 'castle',
+        runMin,
+        difficulty,
+        version: CASTLE_RANKING_VERSION,
+      } as const;
       return {
         key: boardKey(board),
         label: t('ranking.castle.board', {

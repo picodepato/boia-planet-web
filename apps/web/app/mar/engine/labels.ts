@@ -475,9 +475,7 @@ function layoutOnce(
       // que aún no se ha puesto (le quitaría el sitio) si no es a la desesperada.
       const others = pins.filter((q) => q !== p && q.body);
       const spare = others.map((q) => q.body!);
-      const pending = others
-        .filter((q) => q.keep && !done.has(q))
-        .map((q) => q.body!);
+      const pending = others.filter((q) => q.keep && !done.has(q)).map((q) => q.body!);
       const seek = (k: number, avoid: readonly Rect[]) =>
         nudgeClear(p, place(scale * k) ?? at ?? p, scale * k, [...taken, ...avoid], hud, width);
       const shrink = [...KEEP_SHRINK_STEPS];

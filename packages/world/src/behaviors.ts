@@ -122,7 +122,7 @@ export const DialogueParams = z.object({
   /** s entre bocadillos. */
   interval: z.number().finite().min(0.5).max(8).default(DIALOGUE_INTERVAL),
   /** Reacción juguetona si el barco se aleja con el diálogo a medias (§7). */
-  leaveReaction: lineText.default('¡Eh, que no había terminado! Bueno… ya me buscarás.'),
+  leaveReaction: lineText.default('world.dialogue.leaveReaction'),
   /** Si, terminado o saltado, no vuelve a sonar al volver a acercarse. */
   once: z.boolean().default(false),
   on: BehaviorTrigger.optional(),

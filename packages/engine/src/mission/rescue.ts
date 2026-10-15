@@ -134,8 +134,7 @@ export function missionDestination(world: WorldConfig, placeId: string): Mission
   if (radius === null) return null;
   const d = o.params?.missionDrop as { x?: unknown; y?: unknown; z?: unknown } | undefined;
   const r = o.params?.missionReward as
-    | { points?: unknown; coins?: unknown; discount?: unknown }
-    | undefined;
+    { points?: unknown; coins?: unknown; discount?: unknown } | undefined;
   const discount = str(r?.discount);
   const center = { x: o.position.x, y: o.position.y };
   const dx = num(d?.x);

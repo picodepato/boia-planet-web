@@ -226,7 +226,13 @@ export function bossNotices(
   const alive = new Set(s.bosses.map((b) => b.id));
   for (const b of s.bosses) {
     if (!prev.has(b.id))
-      out.push({ kind: 'arrival', boss: b.boss, bossKind: b.kind, nameKey: b.nameKey as MessageKey, atMs: nowMs });
+      out.push({
+        kind: 'arrival',
+        boss: b.boss,
+        bossKind: b.kind,
+        nameKey: b.nameKey as MessageKey,
+        atMs: nowMs,
+      });
   }
   for (const [id, b] of prev) {
     if (alive.has(id)) continue;
@@ -375,7 +381,11 @@ export function cardView(o: CardOption): CardView {
     effect: keys.effect,
     level: o.targetLevel,
     maxLevel: o.kind === 'evolution' ? 1 : o.maxStacks,
-    fresh: o.kind === 'weapon-new' || o.kind === 'vinyl-new' || o.kind === 'salvavidas' || o.kind === 'fallback',
+    fresh:
+      o.kind === 'weapon-new' ||
+      o.kind === 'vinyl-new' ||
+      o.kind === 'salvavidas' ||
+      o.kind === 'fallback',
     evolution: o.kind === 'evolution',
     tag: CARD_TAGS[o.kind],
   };
@@ -411,7 +421,9 @@ const emptySlot = (): SlotView => ({
 });
 
 /** Cada fila con sus huecos libres hasta completar los que da la config. */
-export function slotsView(s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slots' | 'salvavidas'>): SlotsView {
+export function slotsView(
+  s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slots' | 'salvavidas'>,
+): SlotsView {
   const fill = (items: SlotView[], count: number): SlotView[] => {
     const out = items.slice(0, Math.max(count, items.length));
     while (out.length < count) out.push(emptySlot());
@@ -445,7 +457,9 @@ export function slotsView(s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slo
 }
 
 /** Lo que cambia en la fila, en una cadena (para no repintar sin motivo). */
-export function slotsKey(s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slots' | 'salvavidas'>): string {
+export function slotsKey(
+  s: Pick<SurvivorsSnapshot, 'weapons' | 'vinyls' | 'slots' | 'salvavidas'>,
+): string {
   return [
     s.slots.weapons,
     s.slots.vinyls,
@@ -610,8 +624,13 @@ export const MEDAL_KEYS: Readonly<Record<SurvivorsMedal, MessageKey>> = {
 };
 
 /** El final especial de cada boss final (T145); el resto, el genérico de `END_KEYS.victory`. */
-export const VICTORY_KEYS: Readonly<Partial<Record<BossId, { title: MessageKey; line: MessageKey }>>> = {
-  fantasma: { title: 'mar.canon.fin.victoria.fantasma', line: 'mar.canon.fin.victoria.fantasma.texto' },
+export const VICTORY_KEYS: Readonly<
+  Partial<Record<BossId, { title: MessageKey; line: MessageKey }>>
+> = {
+  fantasma: {
+    title: 'mar.canon.fin.victoria.fantasma',
+    line: 'mar.canon.fin.victoria.fantasma.texto',
+  },
   kraken: { title: 'mar.canon.fin.victoria.kraken', line: 'mar.canon.fin.victoria.kraken.texto' },
 };
 
@@ -649,7 +668,9 @@ export function endCardModel(
     },
     act: { key: 'mar.canon.acto', n: result.act },
     difficulty: `mar.canon.dificultad.${result.difficulty}` as MessageKey,
-    bosses: result.bosses.map((id) => (cfg.bosses[id]?.i18nKey ?? `survivors.boss.${id}`) as MessageKey),
+    bosses: result.bosses.map(
+      (id) => (cfg.bosses[id]?.i18nKey ?? `survivors.boss.${id}`) as MessageKey,
+    ),
     unlock: unlockedAct ? { key: 'mar.canon.fin.desbloqueo', n: unlockedAct } : null,
   };
 }

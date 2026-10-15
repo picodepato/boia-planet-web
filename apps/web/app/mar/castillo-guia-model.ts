@@ -67,11 +67,7 @@ export function tallyGuide(
   let { built, upgraded, priority, called } = tally;
   for (const e of events) {
     if (e.type === 'towerBuilt') built++;
-    else if (
-      e.type === 'towerUpgrade' ||
-      e.type === 'planeUpgrade' ||
-      e.type === 'castleUpgrade'
-    )
+    else if (e.type === 'towerUpgrade' || e.type === 'planeUpgrade' || e.type === 'castleUpgrade')
       upgraded++;
     else if (e.type === 'towerPriority') priority++;
     else if (e.type === 'waveCalled') called++;

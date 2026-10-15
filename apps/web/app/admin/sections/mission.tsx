@@ -144,9 +144,10 @@ export function MissionSection({ ctx }: { ctx: AdminContext }) {
               : t('admin.mission.partidasEmpezadas')}{' '}
             {t('admin.mission.enEsteMundo')}
             {impact.started > 0 && target
-              ? ` (${impact.affected} ${impact.affected === 1 ? 'va' : 'van'} a otra isla que ${nameOf(target)})`
+              ? ` ${t(impact.affected === 1 ? 'admin.mission.vaAOtra' : 'admin.mission.vanAOtra', { n: impact.affected, name: nameOf(target) })}`
               : ''}
-            ; {impact.completed} {impact.completed === 1 ? 'terminada' : 'terminadas'}
+            ; {impact.completed}{' '}
+            {t(impact.completed === 1 ? 'admin.mission.terminada' : 'admin.mission.terminadas')}
             {t('admin.mission.queNoCambian')}
           </p>
           <label className="admin-check">

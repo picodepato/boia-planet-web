@@ -1,4 +1,9 @@
-import { CircuitRace, type RaceEvent, circuitFromWorld, circuitRecordId } from '@boia/engine/circuit';
+import {
+  CircuitRace,
+  type RaceEvent,
+  circuitFromWorld,
+  circuitRecordId,
+} from '@boia/engine/circuit';
 import { createLocalRepository } from '@boia/store';
 import { CIRCUIT_ID, WORLD_REGISTRY } from '@boia/world';
 import { describe, expect, it } from 'vitest';
@@ -27,7 +32,11 @@ function midRace(): { race: CircuitRace; t: number; events: RaceEvent[] } {
 }
 
 /** Anula con `reason` y comprueba que la boia siguiente ya no cuenta. */
-function expectVoided(race: CircuitRace, reason: ReturnType<typeof raceVisibilityInvalid>, t: number) {
+function expectVoided(
+  race: CircuitRace,
+  reason: ReturnType<typeof raceVisibilityInvalid>,
+  t: number,
+) {
   expect(reason).not.toBeNull();
   expect(race.invalidate(reason!)).toEqual({ type: 'invalid', reason });
   expect(race.active).toBe(false);

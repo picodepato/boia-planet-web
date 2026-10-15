@@ -36,7 +36,12 @@ export function ringRadiusAt(attack: BossAttackDef, progress: number): number {
  * ¿La onda de radio `ringRadius` y grosor `thickness` pasa por encima de un
  * círculo de radio `r` a distancia `dist` del centro?
  */
-export function ringTouches(ringRadius: number, thickness: number, dist: number, r: number): boolean {
+export function ringTouches(
+  ringRadius: number,
+  thickness: number,
+  dist: number,
+  r: number,
+): boolean {
   return Math.abs(dist - ringRadius) <= thickness / 2 + r;
 }
 
@@ -46,7 +51,12 @@ export function ringTouches(ringRadius: number, thickness: number, dist: number,
  * 0 y la fase lleva al menos esos s). Si las dos tocan, manda la vida. El
  * destino que apunte fuera de la lista no vale (se queda).
  */
-export function nextPhase(def: BossDef, index: number, hpFraction: number, phaseS: number): number | null {
+export function nextPhase(
+  def: BossDef,
+  index: number,
+  hpFraction: number,
+  phaseS: number,
+): number | null {
   const phase = def.phases[index];
   if (!phase) return null;
   const n = def.phases.length;
@@ -60,12 +70,20 @@ export function nextPhase(def: BossDef, index: number, hpFraction: number, phase
 }
 
 /** El ataque `k` (cíclico) de una fase; null si la fase no ataca. */
-export function attackAt(def: BossDef, phase: BossPhase, k: number): { name: string; def: BossAttackDef } | null {
+export function attackAt(
+  def: BossDef,
+  phase: BossPhase,
+  k: number,
+): { name: string; def: BossAttackDef } | null {
   return attackFrom(def, phase.attacks, k);
 }
 
 /** El ataque `k` (cíclico) de una lista de nombres; null si está vacía (el Fantasma cambia de lista por modo, T140). */
-export function attackFrom(def: BossDef, names: readonly string[], k: number): { name: string; def: BossAttackDef } | null {
+export function attackFrom(
+  def: BossDef,
+  names: readonly string[],
+  k: number,
+): { name: string; def: BossAttackDef } | null {
   if (names.length === 0) return null;
   const name = names[((k % names.length) + names.length) % names.length]!;
   const attack = def.attacks[name];
@@ -88,23 +106,30 @@ export function validateBoss(def: BossDef): string[] {
   if (!(def.hp > 0)) out.push(`${def.id}: hp`);
   if (!(def.radius > 0)) out.push(`${def.id}: radius`);
   def.phases.forEach((p, i) => {
-    for (const a of p.attacks) if (!def.attacks[a]) out.push(`${def.id}: fase ${i} ataque ${a} no existe`);
-    if (p.attacks.length > 0 && !(p.attackEveryS > 0)) out.push(`${def.id}: fase ${i} attackEveryS`);
+    for (const a of p.attacks)
+      if (!def.attacks[a]) out.push(`${def.id}: fase ${i} ataque ${a} no existe`);
+    if (p.attacks.length > 0 && !(p.attackEveryS > 0))
+      out.push(`${def.id}: fase ${i} attackEveryS`);
     if (p.untilHpFraction === 0 && p.untilS === 0 && i < def.phases.length - 1) {
       out.push(`${def.id}: fase ${i} no sale nunca y no es la última`);
     }
     for (const n of [p.nextByHp, p.nextByTime]) {
-      if (n !== undefined && (n < 0 || n >= def.phases.length)) out.push(`${def.id}: fase ${i} destino ${n}`);
+      if (n !== undefined && (n < 0 || n >= def.phases.length))
+        out.push(`${def.id}: fase ${i} destino ${n}`);
     }
   });
   for (const [name, a] of Object.entries(def.attacks)) {
     if (a.kind !== 'summon' && !(a.telegraphS > 0)) out.push(`${def.id}: ${name} sin aviso`);
     if (!(a.activeS > 0)) out.push(`${def.id}: ${name} activeS`);
     if (a.kind === 'summon' && !a.summon) out.push(`${def.id}: ${name} sin summon`);
-    if (a.kind === 'ring' && !(a.radius > 0 && a.thickness > 0)) out.push(`${def.id}: ${name} anillo`);
-    if (a.kind === 'line' && !(a.length > 0 && a.speed > 0)) out.push(`${def.id}: ${name} embestida`);
-    if (a.kind === 'circles' && !(a.count > 0 && a.radius > 0)) out.push(`${def.id}: ${name} círculos`);
-    if (a.kind === 'broadside' && !(a.count > 0 && a.speed > 0 && a.length > 0)) out.push(`${def.id}: ${name} andanada`);
+    if (a.kind === 'ring' && !(a.radius > 0 && a.thickness > 0))
+      out.push(`${def.id}: ${name} anillo`);
+    if (a.kind === 'line' && !(a.length > 0 && a.speed > 0))
+      out.push(`${def.id}: ${name} embestida`);
+    if (a.kind === 'circles' && !(a.count > 0 && a.radius > 0))
+      out.push(`${def.id}: ${name} círculos`);
+    if (a.kind === 'broadside' && !(a.count > 0 && a.speed > 0 && a.length > 0))
+      out.push(`${def.id}: ${name} andanada`);
   }
   // El Kraken (T141) y el Fantasma (T140) traen sus propios números.
   out.push(...validateKraken(def));

@@ -234,7 +234,10 @@ describe('survivors armas: las 7 del diseño con tabla fija por nivel', () => {
     game.spawnNote(0, 0, 10_000);
     game.step(idle);
     expect(game.status).toBe('card');
-    game.step({ ...idle, choose: game.snapshot().card!.options.findIndex((o) => o.vinylId === 'rumba') });
+    game.step({
+      ...idle,
+      choose: game.snapshot().card!.options.findIndex((o) => o.vinylId === 'rumba'),
+    });
     const after = game.snapshot().weapons;
     const gain = cfg.passives.rumba!.levels[0]!.amount;
     expect(after[0]!.stats.count).toBe(before[0]! + gain);
@@ -394,7 +397,10 @@ describe('survivors armas: Focos (antes Láser de festival; T134)', () => {
     const a = game.spawnEnemy('crab', 120, 0)!;
     const b = game.spawnEnemy('crab', -150, 0)!;
     run(game, 1);
-    const targets = game.snapshot().beams.map((x) => x.target).sort();
+    const targets = game
+      .snapshot()
+      .beams.map((x) => x.target)
+      .sort();
     expect(targets).toEqual([a.id, b.id].sort());
     expect(a.hp).toBeLessThan(a.maxHp);
     expect(b.hp).toBeLessThan(b.maxHp);
@@ -543,7 +549,12 @@ describe('survivors armas: Traca (antes Fuegos artificiales; T134)', () => {
       const stats = level === 1 ? l1 : l2;
       const seen: number[] = [];
       const forward: SurvivorsInput = { ship: { dirX: 1, dirY: 0, throttle: 1, drift: false } };
-      const ev = run(game, 2, () => forward, (g) => seen.push(g.snapshot().crackers.length));
+      const ev = run(
+        game,
+        2,
+        () => forward,
+        (g) => seen.push(g.snapshot().crackers.length),
+      );
       const fires = ev.filter((e) => e.type === 'fire');
       expect(fires).toHaveLength(1);
       if (fires[0]!.type === 'fire') expect(fires[0]!.count).toBe(stats.count);
@@ -552,7 +563,11 @@ describe('survivors armas: Traca (antes Fuegos artificiales; T134)', () => {
       expect(Math.max(...seen)).toBe(stats.count);
       const s = game.snapshot();
       for (const c of s.crackers) {
-        expect(c).toMatchObject({ weapon: 'fireworks', burst: stats.area, durationS: stats.durationS });
+        expect(c).toMatchObject({
+          weapon: 'fireworks',
+          burst: stats.area,
+          durationS: stats.durationS,
+        });
         // Detrás del barco (rumbo 0: a la izquierda).
         expect(c.x).toBeLessThan(s.player.x);
       }
@@ -660,15 +675,16 @@ describe('survivors armas: Traca (antes Fuegos artificiales; T134)', () => {
       expect(max).toBe(SURVIVORS_CONFIG.caps[quality].crackers);
       expect(game.snapshot().crackers[0]!.id).toBeGreaterThan(firstId);
     }
-    expect(SURVIVORS_CONFIG.caps.alta.crackers).toBeGreaterThan(SURVIVORS_CONFIG.caps.baja.crackers);
+    expect(SURVIVORS_CONFIG.caps.alta.crackers).toBeGreaterThan(
+      SURVIVORS_CONFIG.caps.baja.crackers,
+    );
   });
 
   it('determinista: misma semilla y mismo rumbo, mismos petardos y estallidos', () => {
     const make = () => {
       const game = createSurvivors(only('fireworks'), 5, openSea());
       game.addWeapon('laser');
-      for (let i = 0; i < 12; i++)
-        game.spawnEnemy('piranha', Math.cos(i) * 300, Math.sin(i) * 300);
+      for (let i = 0; i < 12; i++) game.spawnEnemy('piranha', Math.cos(i) * 300, Math.sin(i) * 300);
       const ev = run(game, 10, scriptedInput);
       return [game.stateHash(), ev.filter((e) => e.type === 'explode').length] as const;
     };

@@ -64,9 +64,11 @@ describe('formatos de assets: el validador rechaza lo que está fuera del contra
     }
     expect(photoUploadProblem(png(800, 600))).toBeNull();
     expect(stampImageProblem(png(600, 600))).toBeNull();
-    expect([...PHOTO_UPLOAD_LIMITS.types, ...STAMP_IMAGE_LIMITS.types].every((t) =>
-      ['image/png', 'image/webp', 'image/jpeg'].includes(t),
-    )).toBe(true);
+    expect(
+      [...PHOTO_UPLOAD_LIMITS.types, ...STAMP_IMAGE_LIMITS.types].every((t) =>
+        ['image/png', 'image/webp', 'image/jpeg'].includes(t),
+      ),
+    ).toBe(true);
     expect(CLIP_UPLOAD_LIMITS.types).toEqual(['video/mp4']);
   });
 

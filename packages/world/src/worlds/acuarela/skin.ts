@@ -20,89 +20,71 @@ export const ACUARELA_WORLD_ID = 'acuarela';
 const SKIN_TEXT: Record<string, PlaceSkinInput> = {
   'puerto-boia': {
     lines: [
-      "¡Plop! Esta tarde es Sant Joan. La Fiestera se ha quedado en L'Albufereta con los farolillos.",
-      'Encuéntrala y llévala a la Isla de Nochevieja antes de medianoche.',
-      'Toca en cualquier sitio y arrastra: el remolcador va hacia donde apuntes.',
-      'Por el camino hay monedas, descuentos y algún secreto. Toca para seguir.',
+      'world.acuarela.skin.puerto-boia.1',
+      'world.acuarela.skin.puerto-boia.2',
+      'world.acuarela.boia.tutorial.2',
+      'world.acuarela.skin.puerto-boia.4',
       {
-        text: 'Arriba tienes el minimapa: tócalo para ampliar, mantenlo pulsado para moverlo.',
+        text: 'world.acuarela.boia.tutorial.5',
         cue: 'pulse_minimap',
       },
-      { text: 'Y en el ancla está el Menú de a bordo. ¡Buena verbena!', cue: 'pulse_menu' },
+      { text: 'world.acuarela.skin.puerto-boia.6', cue: 'pulse_menu' },
     ],
   },
   'puerto-whatsapp': {
     texts: {
-      title: 'Boia de WhatsApp',
-      body: 'Si quieres enterarte antes que nadie de la próxima fiesta, BOIA tiene un grupo de WhatsApp. Es voluntario y puedes salir cuando quieras.',
+      title: 'world.acuarela.skin.puerto-whatsapp.title',
+      body: 'world.acuarela.skin.puerto-whatsapp.body',
     },
   },
   // El Puerto de Alicante (T108, antes la Cala Cantalar): aquí se cambia de barco.
   cala: {
     texts: {
-      kicker: 'Puerto',
-      body: 'La pintora baja al puerto a pintar barcos. Elige uno de su cuaderno, cámbialo cuando quieras y sigue la verbena.',
+      kicker: 'world.acuarela.skin.cala.kicker',
+      body: 'world.acuarela.skin.cala.body',
     },
   },
   ultima: {
     texts: {
-      kicker: 'Isla de Nochevieja',
-      body: 'La verbena acaba en la Isla de Nochevieja: a medianoche se quema la hoguera y todos se mojan los pies para pedir un deseo.',
+      kicker: 'world.acuarela.skin.ultima.kicker',
+      body: 'world.acuarela.skin.ultima.body',
     },
   },
   fotos: {
     texts: {
-      body: 'En La Vila cada casa es de un color para que los marineros la vieran desde el mar. Aquí cada foto de BOIA tiene su casa.',
+      body: 'world.acuarela.island.fotos.body',
     },
   },
   tienda: {
     texts: {
-      body: 'Camisetas, bolsas y pegatinas. La tienda de verdad está en tierra; esta es su cúpula, que se ve desde lejos, como la de Altea.',
+      body: 'world.acuarela.skin.tienda.body',
     },
   },
   fiestera: {
-    lines: [
-      '¡Eh, barquito azul! Estos señores se han quedado con mis farolillos.',
-      '¿Me llevas a la Isla de Nochevieja? A medianoche se quema la hoguera.',
-    ],
+    lines: ['world.acuarela.fiestera.call.1', 'world.acuarela.fiestera.board'],
   },
   naufrago: {
     lines: [
-      'Llevo tres verbenas esperando que alguien me pinte de vuelta a tierra.',
-      'Acércame a una fiesta de BOIA y te dejo un regalo.',
-      'Arrima el barco al banco de arena y subo de un salto.',
+      'world.acuarela.naufrago.1',
+      'world.acuarela.skin.naufrago.2',
+      'world.acuarela.skin.naufrago.3',
     ],
   },
   // Las cinco boies informativas (O12, T45): textos-zonas.md, zona 23. muestra
   'boia-espacio': {
-    lines: [
-      '¡Plop! La pintora deja siempre un hueco en blanco en cada página.',
-      'BOIA hace lo mismo: deja espacio a artistas nuevos y a lo que todavía no tiene sitio.',
-    ],
+    lines: ['world.acuarela.boia.espacio.1', 'world.acuarela.boia.espacio.2'],
   },
   'boia-descubrir': {
-    lines: [
-      'En esta página caben todos los colores.',
-      'Con la música pasa igual: en BOIA se mezclan géneros como se mezclan aguadas. Lo bueno sale en los bordes.',
-    ],
+    lines: ['world.acuarela.boia.descubrir.1', 'world.acuarela.boia.descubrir.2'],
   },
   'boia-pertenecer': {
-    lines: [
-      'En La Vila cada casa tiene su color para que la reconozcan desde el mar.',
-      'Tu Carnet BOIA es tu color: apodo, respuestas, sellos y barco. Así te reconocen los demás.',
-    ],
+    lines: ['world.acuarela.boia.pertenecer.1', 'world.acuarela.boia.pertenecer.2'],
   },
   'boia-allday': {
-    lines: [
-      '¿Ves la barraca? Es la del All Day.',
-      'Un día entero de música, comida y gente, montado como las barracas de Hogueras.',
-    ],
+    lines: ['world.acuarela.boia.allday.1', 'world.acuarela.boia.allday.2'],
   },
   'boia-secretos': {
-    lines: [
-      'La pintora esconde cosas en los márgenes.',
-      'Si ves algo raro, acércate: en BOIA la curiosidad tiene premio.',
-    ],
+    lines: ['world.acuarela.boia.secretos.1', 'world.acuarela.boia.secretos.2'],
   },
 };
 
@@ -114,29 +96,28 @@ const SKIN_TEXT: Record<string, PlaceSkinInput> = {
  * antes era Tabarca), el compartido (2026-10-02).
  */
 export const ACUARELA_NAMES: Record<string, string> = {
-  puerto: 'La Explanada',
-  cala: 'Puerto de Alicante',
-  fiestera: "L'Albufereta",
-  fotos: 'La Vila Joiosa',
-  tienda: 'Altea',
-  naufrago: 'La Nao',
-  remolino: 'Cap de la Nau',
-  circuito: 'El Penyal',
-  'circuito-dents': 'El Penyal',
-  faro: "Cap de l'Horta",
-  canon: "Torre de l'Illeta",
-  'boia-espacio': 'La boia del margen',
-  'boia-descubrir': 'La boia de la paleta',
-  'boia-pertenecer': 'La boia de las casas',
-  'boia-allday': 'La boia de la barraca',
-  'boia-secretos': 'La boia del borrón',
+  puerto: 'world.acuarela.name.puerto',
+  cala: 'world.acuarela.name.cala',
+  fiestera: 'world.acuarela.name.fiestera',
+  fotos: 'world.acuarela.name.fotos',
+  tienda: 'world.acuarela.name.tienda',
+  naufrago: 'world.acuarela.name.naufrago',
+  remolino: 'world.acuarela.name.remolino',
+  circuito: 'world.acuarela.name.circuito',
+  'circuito-dents': 'world.acuarela.name.circuito',
+  faro: 'world.acuarela.name.faro',
+  canon: 'world.acuarela.name.canon',
+  'boia-espacio': 'world.acuarela.boia.espacio.name',
+  'boia-descubrir': 'world.acuarela.boia.descubrir.name',
+  'boia-pertenecer': 'world.acuarela.boia.pertenecer.name',
+  'boia-allday': 'world.acuarela.boia.allday.name',
+  'boia-secretos': 'world.acuarela.boia.secretos.name',
 };
 
 export const ACUARELA_SKIN: WorldSkinInput = {
   id: ACUARELA_WORLD_ID,
-  name: 'Acuarela',
-  tagline:
-    "El cuaderno de una pintora la noche de Sant Joan: lleva a la Boia Fiestera y sus farolillos de L'Albufereta a la hoguera de la Isla de Nochevieja.",
+  name: 'world.acuarela.name',
+  tagline: 'world.acuarela.tagline',
   ship: { style: 'acuarela' },
   // lugares.json → `mar`: aguada turquesa, lejos del azul del casco B02.
   sea: { base: '#5fb3ae', wave: '#8fd0c6', crest: '#fbf6ea' },

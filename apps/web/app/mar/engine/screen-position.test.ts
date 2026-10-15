@@ -52,7 +52,9 @@ describe('proyección pública del mar para la guía', () => {
         view: { at: (x: number, y: number) => ({ x: (x + 20) / 16, z: (y + 40) / 16 }) },
       },
     });
-    expect(r.screenPosition({ defense: { x: 12, y: 34 } })).toEqual(r.screenPosition({ x: 32, y: 74 }));
+    expect(r.screenPosition({ defense: { x: 12, y: 34 } })).toEqual(
+      r.screenPosition({ x: 32, y: 74 }),
+    );
     Object.assign(r, { defense: null });
     expect(r.screenPosition({ defense: { x: 12, y: 34 } })).toBeNull();
   });

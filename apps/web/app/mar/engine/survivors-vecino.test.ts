@@ -217,7 +217,9 @@ describe('the Vecino with its Blender model (T174)', () => {
     // Same material (vertex colours, flat shading) and the same attributes as the handmade piece.
     expect(v.barge.geometry.getAttribute('color')).toBeTruthy();
     expect(v.barge.geometry.index).toBeNull();
-    const size = new Box3().setFromBufferAttribute(v.barge.geometry.getAttribute('position') as never).getSize(new Vector3());
+    const size = new Box3()
+      .setFromBufferAttribute(v.barge.geometry.getAttribute('position') as never)
+      .getSize(new Vector3());
     expect(size.x).toBeCloseTo(4, 5);
     // The animation is on the mesh, not the geometry: it keeps running after the swap.
     const b = game.spawnBoss('vecino', 300, 0)!;

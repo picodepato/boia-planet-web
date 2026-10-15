@@ -79,9 +79,7 @@ describe('la misión sale de los datos del mapa', () => {
     const plain: WorldConfig = {
       ...world,
       objects: world.objects.map((x) =>
-        x === o
-          ? { ...x, params: { ...x.params, missionReward: { points: 1, coins: 1 } } }
-          : x,
+        x === o ? { ...x, params: { ...x.params, missionReward: { points: 1, coins: 1 } } } : x,
       ),
     };
     expect(missionDestination(plain, spec.destination)!.reward).toEqual({ points: 1, coins: 1 });

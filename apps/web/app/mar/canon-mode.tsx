@@ -325,7 +325,9 @@ export function useCanonMode({
     audioLoading.current = true;
     import('./canon-audio')
       .then((m) => {
-        const audio = m.createPageCanonAudio(soundPreferences(), (on) => latest.current.onSea?.(on));
+        const audio = m.createPageCanonAudio(soundPreferences(), (on) =>
+          latest.current.onSea?.(on),
+        );
         audioRef.current = audio;
         applyGlobal(audio);
         audio.setPaused(pausedRef.current);
@@ -401,7 +403,12 @@ export function useCanonMode({
           // El ranking (T155): la puntuación ya; con cuenta, el puesto después.
           if (r) {
             const { now, later } = rankCanonGame(
-              { result: r, testStart: session.testStart, testHelper: rankHelper, valid: s.validation.valid },
+              {
+                result: r,
+                testStart: session.testStart,
+                testHelper: rankHelper,
+                valid: s.validation.valid,
+              },
               canonRankDeps(),
               run.config,
             );
@@ -421,7 +428,8 @@ export function useCanonMode({
           if (reason !== 'victory' || !counts || !s.validation.valid) return;
           const next = run.act + 1;
           const opened =
-            campaignActs(campaignRef.current, run.config).find((a) => a.act === next)?.state === 'locked';
+            campaignActs(campaignRef.current, run.config).find((a) => a.act === next)?.state ===
+            'locked';
           void recordFinalBoss(gameRepository().progress, run.act, run.config).then(
             (ok) => {
               if (ok && opened && (runRef.current === run || !runRef.current)) setUnlocked(next);
@@ -835,7 +843,9 @@ export function CanonTestHook({
       data-jefes={hud.jefes || undefined}
       data-cofre-cerca={hud.cofreCerca || undefined}
       data-premio={prize ?? undefined}
-      data-sonido={sound ? (sound.unlocked ? (sound.hidden ? 'oculto' : 'activo') : 'bloqueado') : undefined}
+      data-sonido={
+        sound ? (sound.unlocked ? (sound.hidden ? 'oculto' : 'activo') : 'bloqueado') : undefined
+      }
       data-musica={sound ? MUSIC_ATTR[sound.music] : undefined}
     />
   );

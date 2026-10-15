@@ -147,7 +147,10 @@ export function surfaceY(o: Object3D, x: number, z: number): number | null {
   if (!parent) return null;
   parent.updateMatrixWorld(true);
   const from = parent.localToWorld(new Vector3(x, 1e3, z));
-  const dir = parent.localToWorld(new Vector3(x, -1e3, z)).sub(from).normalize();
+  const dir = parent
+    .localToWorld(new Vector3(x, -1e3, z))
+    .sub(from)
+    .normalize();
   const hit = new Raycaster(from, dir).intersectObject(o, true)[0];
   return hit ? parent.worldToLocal(hit.point.clone()).y : null;
 }

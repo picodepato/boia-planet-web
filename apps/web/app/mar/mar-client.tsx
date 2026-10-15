@@ -103,7 +103,7 @@ import {
   crewPlace,
 } from '../../lib/mundo/ranking-circuit';
 import { globalRaceLeader, memberFinishStanding } from '../../lib/mundo/ranking-global';
-import { worlds } from '../../lib/mundo/demo-world';
+import { translateSkinText, worlds } from '../../lib/mundo/demo-world';
 import {
   DOLPHIN_PARAM,
   type DolphinAction,
@@ -785,7 +785,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       d
         ? {
             objectId: d.objectId,
-            text: revisit ? msg('naufrago.revisit') : d.text,
+            text: revisit ? msg('naufrago.revisit') : translateSkinText(d.text),
             last: revisit || d.reaction || d.index >= d.count - 1,
           }
         : null,

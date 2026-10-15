@@ -27,7 +27,8 @@ test('los remolinos se ven en el mar y en el mapa, sin rótulo encima', async ({
   const shown = async () => Number((await canvas.getAttribute('data-remolinos-vista')) ?? 0);
   await expect.poll(shown, { timeout: 15_000 }).toBeGreaterThan(0);
   // Sin rótulo: ningún remolino tiene nombre encima.
-  for (const o of whirls) await expect(page.locator(`[data-pin="${o.identity.id}"]`)).toHaveCount(0);
+  for (const o of whirls)
+    await expect(page.locator(`[data-pin="${o.identity.id}"]`)).toHaveCount(0);
   // Cerca de él no se abre su ficha (el remolino queda fuera de las de las islas).
   // Con el mar compacto de ahora la salida de `?cerca=` cae justo en el borde de
   // la ficha de Benidorm (295 u de 298): ésa puede abrirse; la del remolino, nunca.
@@ -38,7 +39,8 @@ test('los remolinos se ven en el mar y en el mapa, sin rótulo encima', async ({
   await mini.click();
   await expect(mini).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(shown, { timeout: 20_000 }).toBeGreaterThan(0);
-  for (const o of whirls) await expect(page.locator(`[data-pin="${o.identity.id}"]`)).toHaveCount(0);
+  for (const o of whirls)
+    await expect(page.locator(`[data-pin="${o.identity.id}"]`)).toHaveCount(0);
   // Los demás rótulos del mapa siguen ahí.
   await expect(page.locator('.mar-pin.is-on[data-pin]').first()).toBeVisible();
   expect(errors).toEqual([]);

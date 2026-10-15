@@ -94,7 +94,9 @@ describe('T124: turbo, impulsos y rampas del Cañón', () => {
     config.evolutions = [];
     config.salvavidas.offerChance = 0;
     const game = createSurvivors(config, 4, sea([object('impulso', 100)]));
-    while (game.levelUpWeapon(config.startingWeapon)) { /* vinyl-only pool */ }
+    while (game.levelUpWeapon(config.startingWeapon)) {
+      /* vinyl-only pool */
+    }
     game.spawnNote(0, 0, game.snapshot().xp.toNext);
     game.step();
     expect(game.status).toBe('card');
@@ -102,7 +104,9 @@ describe('T124: turbo, impulsos y rampas del Cañón', () => {
     steps(game, 90);
     const bonus = config.passives.dnb!.levels[0]!.amount;
     expect(game.snapshot().stats.speedBonus).toBe(bonus);
-    expect(shipSpeed(game.snapshot().player)).toBeCloseTo(DEFAULT_SHIP_CONFIG.maxSpeed * (1 + bonus) * 1.5 * TURBO_SPEED);
+    expect(shipSpeed(game.snapshot().player)).toBeCloseTo(
+      DEFAULT_SHIP_CONFIG.maxSpeed * (1 + bonus) * 1.5 * TURBO_SPEED,
+    );
   });
 
   it('una carta congela turbo/cooldown y no consume pulsaciones hasta elegir', () => {

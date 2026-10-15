@@ -89,7 +89,9 @@ describe('repositorio de un miembro: sincronización', () => {
     expect(fake.calls[4]!.args).toMatchObject({ p_circuit: 'el-freu', p_version: 3, p_ms: 61_234 });
     expect(fake.balances()).toEqual({ points: 30, coins: 0 });
     expect(fake.equipped).toEqual({ skin: SKIN, ship: 'barco-arcilla' });
-    expect(fake.answers).toMatchObject([{ question_id: 'disco-entero', answer: 'Un disco de vinilo' }]);
+    expect(fake.answers).toMatchObject([
+      { question_id: 'disco-entero', answer: 'Un disco de vinilo' },
+    ]);
     expect(a.repo.sync.pending()).toBe(0);
 
     // Otro navegador, sin nada guardado: todo sale del servidor.

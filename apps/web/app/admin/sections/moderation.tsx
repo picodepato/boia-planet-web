@@ -31,8 +31,9 @@ function BottleRow({ ctx, b }: { ctx: AdminContext; b: AdminBottleView }) {
       <p className="admin-meta">
         {b.authorNickname ?? t('admin.moderation.sinApodo')}
         {b.isSample ? t('admin.moderation.muestra') : ''} · {STATUS_LABELS[b.status] ?? b.status} ·{' '}
-        {b.reports.length} {b.reports.length === 1 ? 'reporte' : 'reportes'}
-        {open.length ? ` (${open.length} sin revisar)` : ''}
+        {b.reports.length}{' '}
+        {t(b.reports.length === 1 ? 'admin.moderation.reporte' : 'admin.moderation.reportes')}
+        {open.length ? t('admin.moderation.sinRevisar', { n: open.length }) : ''}
         {b.moderationReason
           ? t('admin.moderation.motivo', { moderationReason: b.moderationReason })
           : ''}
@@ -42,7 +43,9 @@ function BottleRow({ ctx, b }: { ctx: AdminContext; b: AdminBottleView }) {
           {b.reports.map((r) => (
             <li key={r.id}>
               {r.reason ?? t('admin.moderation.sinMotivo')} ·{' '}
-              {r.resolution ? `resuelto: ${r.resolution}` : 'pendiente'}
+              {r.resolution
+                ? t('admin.moderation.resuelto', { resolution: r.resolution })
+                : t('admin.moderation.pendiente')}
               {!r.resolvedAt ? (
                 <button
                   type="button"
@@ -260,14 +263,19 @@ function CarnetRow({ ctx, row }: { ctx: AdminContext; row: AdminCarnetView }) {
         {moderation?.photo ? t('admin.moderation.fotoRetirada') : ''}
       </p>
       <p className="admin-meta">
-        {row.reports.length} {row.reports.length === 1 ? 'reporte' : 'reportes'}
-        {row.open ? ` (${row.open} sin revisar)` : t('admin.moderation.revisado')}
+        {row.reports.length}{' '}
+        {t(row.reports.length === 1 ? 'admin.moderation.reporte' : 'admin.moderation.reportes')}
+        {row.open
+          ? t('admin.moderation.sinRevisar', { n: row.open })
+          : t('admin.moderation.revisado')}
       </p>
       <ul className="admin-reports">
         {row.reports.map((r) => (
           <li key={r.id}>
             {r.reason ?? t('admin.moderation.sinMotivo')} ·{' '}
-            {r.resolution ? `resuelto: ${r.resolution}` : 'pendiente'}
+            {r.resolution
+              ? t('admin.moderation.resuelto', { resolution: r.resolution })
+              : t('admin.moderation.pendiente')}
             {!r.resolvedAt ? (
               <button
                 type="button"

@@ -66,7 +66,12 @@ test('vista-previa', async ({ page }) => {
   await cambiarBoton(page);
   await page.goto('/admin/vista-previa');
   const previa = page.getByTestId('vista-previa-borrador');
-  await expect(previa.getByRole('link', { name: 'Zarpar al mar' }).or(previa.getByRole('button', { name: 'Zarpar al mar' })).first()).toBeVisible({ timeout: 30_000 });
+  await expect(
+    previa
+      .getByRole('link', { name: 'Zarpar al mar' })
+      .or(previa.getByRole('button', { name: 'Zarpar al mar' }))
+      .first(),
+  ).toBeVisible({ timeout: 30_000 });
   await shot(page, '07', 'vista-previa', { respiro: 1500 });
 });
 

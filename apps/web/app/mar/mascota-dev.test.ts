@@ -41,11 +41,9 @@ describe('atajo de la mascota (T154)', () => {
 describe('atajo de los premios del castillo y la carrera (T175)', () => {
   it('lee las mascotas (varias con comas) y la estela; ignora lo que no conoce', () => {
     expect(devCosmeticsWanted(env('development', '?mascota=canoncito'))).toEqual([CANONCITO]);
-    expect(devCosmeticsWanted(env('development', '?mascota=canoncito,tortuga-turbo&estela=vortice'))).toEqual([
-      CANONCITO,
-      TORTUGA_TURBO,
-      ESTELA_VORTICE,
-    ]);
+    expect(
+      devCosmeticsWanted(env('development', '?mascota=canoncito,tortuga-turbo&estela=vortice')),
+    ).toEqual([CANONCITO, TORTUGA_TURBO, ESTELA_VORTICE]);
     expect(devCosmeticsWanted(env('development', '?mascota=otra&estela=rara'))).toEqual([]);
     expect(devCosmeticsWanted(env('production', '?mascota=canoncito&estela=vortice'))).toEqual([]);
   });

@@ -72,7 +72,8 @@ describe('T139: el Tiburón Martillo y el cofre en el mar 3D', () => {
     expect(m['survivors-chest']!.instanceMatrix.count).toBe(CHEST_CAP);
     for (const mesh of view.shark.meshes) expect(view.group.getObjectById(mesh.id)).toBeDefined();
     let disposed = 0;
-    for (const mesh of view.shark.meshes) mesh.geometry.addEventListener('dispose', () => disposed++);
+    for (const mesh of view.shark.meshes)
+      mesh.geometry.addEventListener('dispose', () => disposed++);
     view.dispose();
     expect(disposed).toBe(view.shark.meshes.length);
   });

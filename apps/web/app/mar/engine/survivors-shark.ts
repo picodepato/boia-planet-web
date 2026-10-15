@@ -117,7 +117,8 @@ export function chestGeometry(): BufferGeometry {
   for (const x of [-0.42, 0.42]) k.add(band, c.chestBand, { p: [x, 0.35, 0] });
   band.dispose();
   const strap = new TorusGeometry(0.46, 0.06, 4, 8, Math.PI);
-  for (const x of [-0.42, 0.42]) k.add(strap, c.chestBand, { p: [x, 0.7, 0], r: [0, Math.PI / 2, 0] });
+  for (const x of [-0.42, 0.42])
+    k.add(strap, c.chestBand, { p: [x, 0.7, 0], r: [0, Math.PI / 2, 0] });
   strap.dispose();
   const lock = new BoxGeometry(0.1, 0.24, 0.2);
   k.add(lock, c.chestBand, { p: [0.68, 0.62, 0] });
@@ -152,10 +153,20 @@ export class SurvivorsShark {
 
   constructor(config: SurvivorsConfig) {
     this.dummy.rotation.order = 'YXZ';
-    this.sharks = instanced(hammerheadGeometry(), propsMaterial(), SHARK_CAP, 'survivors-boss-martillo');
+    this.sharks = instanced(
+      hammerheadGeometry(),
+      propsMaterial(),
+      SHARK_CAP,
+      'survivors-boss-martillo',
+    );
     this.rings = instanced(
       summonRingGeometry(),
-      new MeshBasicMaterial({ color: SUMMON_COLOR, transparent: true, opacity: SUMMON_OPACITY, depthWrite: false }),
+      new MeshBasicMaterial({
+        color: SUMMON_COLOR,
+        transparent: true,
+        opacity: SUMMON_OPACITY,
+        depthWrite: false,
+      }),
       SHARK_CAP,
       'survivors-boss-summon-warning',
     );
@@ -218,7 +229,10 @@ export class SurvivorsShark {
    * tiburón (`martillo`) y el cofre (`cofre`). Lo de ahora y, acumulado, lo
    * visto en la partida (para `data-canon-jefes-*` de las pruebas).
    */
-  markSeen(test: (x: number, y: number, z: number, r: number) => boolean): { now: string[]; seen: string[] } {
+  markSeen(test: (x: number, y: number, z: number, r: number) => boolean): {
+    now: string[];
+    seen: string[];
+  } {
     const now: string[] = [];
     const any = (mesh: InstancedMesh) => {
       const a = mesh.instanceMatrix.array;

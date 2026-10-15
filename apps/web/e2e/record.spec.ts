@@ -127,9 +127,7 @@ test('storyboard con reloj simulado', async ({ baseURL }, info) => {
   await tap(page, heroZarpar(page));
   await runTimes(STORY_LANDING, 'aterrizaje');
   // «Zarpar» entra en /mar (T64): la entrada acaba `landed` y se desmonta.
-  expect(['landed', 'destroyed']).toContain(
-    (await page.evaluate(() => window.__boiaIntro))?.phase,
-  );
+  expect(['landed', 'destroyed']).toContain((await page.evaluate(() => window.__boiaIntro))?.phase);
   await page.clock.runFor(1000);
   await shoot('landing');
   await ctx.close();

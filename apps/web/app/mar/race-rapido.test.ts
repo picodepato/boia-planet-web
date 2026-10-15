@@ -89,7 +89,8 @@ describe('«Rápido»: el umbral de la regata (T176)', () => {
 
   it('el jugador normal lo consigue hacia el intento 3–5, y casi nadie a la primera', () => {
     const tries = firstSuccess(RACE_FAST_MS);
-    if (process.env.MEDIR) console.log('primer éxito por jugador', [...tries].sort((a, b) => a - b).join(','));
+    if (process.env.MEDIR)
+      console.log('primer éxito por jugador', [...tries].sort((a, b) => a - b).join(','));
     const m = median(tries);
     expect(m).toBeGreaterThanOrEqual(3);
     expect(m).toBeLessThanOrEqual(5);

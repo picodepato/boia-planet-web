@@ -118,8 +118,14 @@ describe('atajos de desarrollo: un solo interruptor', () => {
     // `ranking=1` (T155): el ayudante de las pruebas del ranking local.
     expect(canonShortcut('?minijuego=canon&t=419&ranking=1', dev)?.rank).toBe(true);
     expect(withoutCanonShortcut('http://x/mar?minijuego=canon&ranking=1')).toBe('http://x/mar');
-    expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({ card: true, mix: false });
-    expect(canonShortcut('?minijuego=canon&carta=surtido', dev)).toMatchObject({ card: true, mix: true });
+    expect(canonShortcut('?minijuego=canon&carta=1', dev)).toMatchObject({
+      card: true,
+      mix: false,
+    });
+    expect(canonShortcut('?minijuego=canon&carta=surtido', dev)).toMatchObject({
+      card: true,
+      mix: true,
+    });
     // `dificultad=` (T131): una de las tres; otra cosa, la del panel.
     for (const d of ['tranquila', 'normal', 'tormenta']) {
       expect(canonShortcut(`?minijuego=canon&dificultad=${d}`, dev)?.difficulty).toBe(d);
@@ -251,7 +257,9 @@ describe('T135 atajo botin=1', () => {
     expect(canonShortcut('?minijuego=canon&botin=1', dev)?.loot).toBe(true);
     expect(canonShortcut('?minijuego=canon&botin=0', dev)?.loot).toBe(false);
     expect(canonShortcut('?minijuego=canon&botin=1', env({}))).toBeNull();
-    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&botin=1&dev=1')).toBe('http://x/mar?dev=1');
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&botin=1&dev=1')).toBe(
+      'http://x/mar?dev=1',
+    );
     expect(isDevStart({ loot: true })).toBe(true);
     expect(isDevStart({ loot: false })).toBe(false);
   });
@@ -279,7 +287,12 @@ describe('T135 atajo botin=1', () => {
     }
     expect(run.hook()).toMatchObject({ botin: 0, botinAgua: 3, llama: 0 });
     for (let i = 0; i < 180 && run.hook().botin === 0; i++) {
-      run.step({ dirX: Math.cos(s.player.heading), dirY: Math.sin(s.player.heading), throttle: 1, drift: false });
+      run.step({
+        dirX: Math.cos(s.player.heading),
+        dirY: Math.sin(s.player.heading),
+        throttle: 1,
+        drift: false,
+      });
     }
     expect(run.hook().botin).toBeGreaterThanOrEqual(1);
     expect(run.hook().botinAgua).toBeLessThanOrEqual(2);
@@ -296,9 +309,13 @@ describe('T142 atajo acto=<n>', () => {
     for (const bad of [String(missing), '0', '-1', '1.5', 'dos', '']) {
       expect(canonShortcut(`?minijuego=canon&acto=${bad}`, dev)?.act).toBeNull();
     }
-    expect(asAct('2', SURVIVORS_CONFIG)).toBe(SURVIVORS_CONFIG.acts.some((a) => a.act === 2) ? 2 : null);
+    expect(asAct('2', SURVIVORS_CONFIG)).toBe(
+      SURVIVORS_CONFIG.acts.some((a) => a.act === 2) ? 2 : null,
+    );
     expect(canonShortcut('?minijuego=canon&acto=2', env({}))).toBeNull();
-    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&acto=2&dev=1')).toBe('http://x/mar?dev=1');
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&acto=2&dev=1')).toBe(
+      'http://x/mar?dev=1',
+    );
     expect(isDevStart({ act: 2 })).toBe(true);
     expect(isDevStart({ act: 1 })).toBe(true);
     expect(isDevStart({ act: null })).toBe(false);
@@ -330,7 +347,9 @@ describe('T144 atajo vencer=1 y la medalla en el estado', () => {
     expect(canonShortcut('?minijuego=canon&vencer=1', dev)?.win).toBe(true);
     expect(canonShortcut('?minijuego=canon&vencer=si', dev)?.win).toBe(false);
     expect(canonShortcut('?minijuego=canon&vencer=1', env({}))).toBeNull();
-    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&vencer=1&acto=2&dev=1')).toBe('http://x/mar?dev=1');
+    expect(withoutCanonShortcut('http://x/mar?minijuego=canon&vencer=1&acto=2&dev=1')).toBe(
+      'http://x/mar?dev=1',
+    );
     expect(isDevStart({ win: true })).toBe(true);
     expect(isDevStart({ win: false })).toBe(false);
   });
@@ -339,20 +358,24 @@ describe('T144 atajo vencer=1 y la medalla en el estado', () => {
     for (const a of SURVIVORS_CONFIG.acts) {
       const slot = a.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
       let ended: string | null = null;
-      const run = new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }), {
-        seed: 7,
-        quality: 'baja',
-        ship: MAR_SHIP_CONFIG,
-        startAtS: slot.atS + 1,
-        act: a.act,
-        devWin: true,
-        onEnd: (reason) => {
-          ended = reason;
+      const run = new SurvivorsRun(
+        survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }),
+        {
+          seed: 7,
+          quality: 'baja',
+          ship: MAR_SHIP_CONFIG,
+          startAtS: slot.atS + 1,
+          act: a.act,
+          devWin: true,
+          onEnd: (reason) => {
+            ended = reason;
+          },
         },
-      });
+      );
       expect(run.act).toBe(a.act);
       expect(run.hook().medalla).toBe('');
-      for (let i = 0; i < 120 && !run.ended; i++) run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
+      for (let i = 0; i < 120 && !run.ended; i++)
+        run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
       expect(ended).toBe('victory');
       expect(run.hook()).toMatchObject({ fin: 'victory', medalla: 'oro', acto: a.act });
       expect(run.hook().vencidos.split(' ')).toContain(slot.ref);
@@ -360,13 +383,18 @@ describe('T144 atajo vencer=1 y la medalla en el estado', () => {
   });
 
   it('sin `vencer=1` el boss sigue vivo', () => {
-    const slot = SURVIVORS_CONFIG.acts[0]!.events.find((e) => e.type === 'boss' && e.enabled !== false)!;
-    const run = new SurvivorsRun(survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }), {
-      seed: 7,
-      quality: 'baja',
-      ship: MAR_SHIP_CONFIG,
-      startAtS: slot.atS + 1,
-    });
+    const slot = SURVIVORS_CONFIG.acts[0]!.events.find(
+      (e) => e.type === 'boss' && e.enabled !== false,
+    )!;
+    const run = new SurvivorsRun(
+      survivorsSea(world, period, { x: spawn.x, y: spawn.y, heading: 0 }),
+      {
+        seed: 7,
+        quality: 'baja',
+        ship: MAR_SHIP_CONFIG,
+        startAtS: slot.atS + 1,
+      },
+    );
     for (let i = 0; i < 30; i++) run.step({ dirX: 1, dirY: 0, throttle: 0.5, drift: false });
     expect(run.ended).toBe(false);
     expect(run.hook().jefes).toContain(slot.ref);
@@ -640,7 +668,11 @@ describe('partidas de prueba: sin premio en producción (T121)', () => {
     const normal = await survive(h.authority, h.advance, h.sink, h.onWin, {
       devStartRewards: rewards,
     });
-    expect(normal.reward).toEqual({ granted: true, ...CANON_MEDAL_PRIZES.bronce, tiers: ['bronce'] });
+    expect(normal.reward).toEqual({
+      granted: true,
+      ...CANON_MEDAL_PRIZES.bronce,
+      tiers: ['bronce'],
+    });
     expect(h.onWin).toHaveBeenCalledWith(CANON_GAME_ID);
     const again = await survive(h.authority, h.advance, h.sink, h.onWin, {
       devStartRewards: rewards,

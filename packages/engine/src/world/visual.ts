@@ -92,7 +92,8 @@ export function resolveObjectVisual(
   const frames = m ? artFrames(m, animation) : null;
   // DECORATIVO manda sobre el bucle: una animación de un solo pase (el salto
   // del delfín) se repite si el objeto es decorado en bucle.
-  if (frames && deco?.type === 'decorative' && m?.animations[animation]) frames.loop = deco.params.loop;
+  if (frames && deco?.type === 'decorative' && m?.animations[animation])
+    frames.loop = deco.params.loop;
   const pivot = m?.pivot_px ?? m?.anchors.pivot;
   if (!m || !frames || frames.files.length === 0 || !pivot) {
     return {

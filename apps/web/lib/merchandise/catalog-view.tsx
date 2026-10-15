@@ -3,7 +3,6 @@ import { t } from '../landing/texts';
 import {
   MERCHANDISE_CONTACT,
   MERCHANDISE_PRODUCTS,
-  MERCHANDISE_SAMPLE_NOTICE,
   formatPrice,
   type MerchandiseContact,
 } from './catalog';
@@ -61,7 +60,7 @@ export function MerchandiseCatalog({
   const names = products ?? MERCHANDISE_PRODUCTS.map((p) => p.name);
   return (
     <div className="merchandise" data-testid="merchandise-catalog">
-      <p className="merchandise__sample">{MERCHANDISE_SAMPLE_NOTICE}</p>
+      <p className="merchandise__sample">{t('store.notice.sample')}</p>
       <ul className="merchandise__grid">
         {names.map((name) => {
           const product = MERCHANDISE_PRODUCTS.find((p) => p.name === name);

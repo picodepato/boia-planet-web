@@ -5,7 +5,7 @@ import { gameRepository } from '../../lib/mundo/repo';
 
 import { type BoiaEvent, EVENT_STATE_BEHAVIOR, foundDiscountState } from '@boia/contracts';
 import type { FoundDiscount } from '@boia/store';
-import { MERCHANDISE_NOTICE, MERCHANDISE_PATH } from '../../lib/merchandise/catalog';
+import { MERCHANDISE_PATH } from '../../lib/merchandise/catalog';
 import {
   BOARD_REF,
   CALITAS_REF,
@@ -387,7 +387,7 @@ export function Sheet({
         <h2 className="mar-sheet__title">{name}</h2>
         <p>{text}</p>
         {products.length ? <p className="mar-sheet__meta">{products.join(' · ')}</p> : null}
-        <p className="mar-sheet__note">{MERCHANDISE_NOTICE}</p>
+        <p className="mar-sheet__note">{t('store.notice.party')}</p>
         {shop ? <div className="mar-sheet__actions">{shop}</div> : null}
       </>
     );

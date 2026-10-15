@@ -216,11 +216,7 @@ const PlacePart = z.object({
  * pieza. Con `variant`, sólo las imágenes de esa variante, que pasan a ser
  * la imagen fija. `null` si la pieza no existe o no cumple el contrato.
  */
-export function placePartArt(
-  m: ArtManifest,
-  part: string,
-  variant?: string,
-): ArtManifest | null {
+export function placePartArt(m: ArtManifest, part: string, variant?: string): ArtManifest | null {
   const raw = m.parts?.find((p) => p.id === part);
   if (!raw) return null;
   const r = PlacePart.safeParse(raw);

@@ -144,9 +144,7 @@ describe('cada tipo de premio llega a su sitio', () => {
     expect(r.cosmetic?.cosmeticKey).toBe(ship.reward.cosmeticKey);
     expect((await repo.progress.ships()).find((s) => s.style === style)?.owned).toBe(true);
     // Los otros siguen bloqueados: sólo éste y los de base.
-    expect(
-      (await repo.progress.ships()).filter((s) => s.owned).map((s) => s.cosmeticId),
-    ).toEqual(
+    expect((await repo.progress.ships()).filter((s) => s.owned).map((s) => s.cosmeticId)).toEqual(
       shipCosmetics.filter((c) => c.base || c.id === ship.reward.cosmeticKey).map((c) => c.id),
     );
     await repo.progress.equip('ship', ship.reward.cosmeticKey);

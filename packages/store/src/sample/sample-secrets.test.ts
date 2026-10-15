@@ -8,7 +8,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 // Patrones de claves reales: Stripe, Supabase (service_role y JWT), claves PEM,
 // y asignaciones de contraseña o clave de API.
-const SECRET = /sk_(live|test)_|service_role|eyJ[A-Za-z0-9_-]{10,}|-----BEGIN|password\s*[:=]|api[_-]?key\s*[:=]/i;
+const SECRET =
+  /sk_(live|test)_|service_role|eyJ[A-Za-z0-9_-]{10,}|-----BEGIN|password\s*[:=]|api[_-]?key\s*[:=]/i;
 
 describe('datos de ejemplo (REQ-ARQ-006)', () => {
   it('REQ-ARQ-006: los datos de ejemplo no llevan secretos', () => {

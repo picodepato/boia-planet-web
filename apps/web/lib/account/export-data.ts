@@ -41,7 +41,8 @@ export interface AccountExport {
 }
 
 /** Nombres de clave que nunca salen en la descarga. */
-const SECRET_KEY = /pass(word)?|token|secret|totp|backup|code_hash|^salt$|^hash$|qr_?code|api_?key/i;
+const SECRET_KEY =
+  /pass(word)?|token|secret|totp|backup|code_hash|^salt$|^hash$|qr_?code|api_?key/i;
 
 /** Copia sin las claves secretas, a cualquier profundidad. */
 export function stripSecrets<T>(value: T): T {

@@ -9,7 +9,7 @@ export default defineConfig({
   // necesitan que Vite transforme el JSX con el runtime automático de React.
   oxc: { jsx: { runtime: 'automatic' } },
   test: {
-    include: ['packages/*/src/**/*.test.ts', 'apps/*/**/*.test.ts'],
+    include: ['packages/*/src/**/*.test.ts', 'apps/*/**/*.test.ts', 'eslint-rules/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/.next/**', '**/.open-next/**', ...slowTests],
     environment: 'node',
   },

@@ -9,7 +9,8 @@ registerHooks({
       return next(specifier, context);
     } catch (err) {
       const relative = specifier.startsWith('./') || specifier.startsWith('../');
-      const missing = err?.code === 'ERR_MODULE_NOT_FOUND' || err?.code === 'ERR_UNSUPPORTED_DIR_IMPORT';
+      const missing =
+        err?.code === 'ERR_MODULE_NOT_FOUND' || err?.code === 'ERR_UNSUPPORTED_DIR_IMPORT';
       if (!relative || !missing) throw err;
       for (const candidate of [`${specifier}.ts`, `${specifier}/index.ts`]) {
         try {

@@ -90,11 +90,14 @@ describe('la contraseña contra un hash con sal (PBKDF2-SHA-256)', () => {
     expect(await checkDemoAdmin('000', 'admin')).toBe(false);
   });
 
-  it.skipIf(!REAL)('el hash guardado acepta la contraseña de Hernán (ADMIN_DEMO_PASSWORD)', async () => {
-    expect(await checkDemoAdmin('000', REAL!)).toBe(true);
-    expect(await checkDemoAdmin('001', REAL!)).toBe(false);
-    expect(await checkDemoAdmin('000', `${REAL!}x`)).toBe(false);
-  });
+  it.skipIf(!REAL)(
+    'el hash guardado acepta la contraseña de Hernán (ADMIN_DEMO_PASSWORD)',
+    async () => {
+      expect(await checkDemoAdmin('000', REAL!)).toBe(true);
+      expect(await checkDemoAdmin('001', REAL!)).toBe(false);
+      expect(await checkDemoAdmin('000', `${REAL!}x`)).toBe(false);
+    },
+  );
 });
 
 describe('la sesión del Admin de la demo', () => {
@@ -147,6 +150,13 @@ describe('los códigos de respaldo (lo que escribe el Admin)', () => {
 
   it('el .txt lleva un código por línea', () => {
     const text = backupCodesText(['AAAAA-BBBBB', 'CCCCC-DDDDD'], 'Códigos', new Date('2026-10-07'));
-    expect(text.split('\n')).toEqual(['Códigos', '2026-10-07', '', 'AAAAA-BBBBB', 'CCCCC-DDDDD', '']);
+    expect(text.split('\n')).toEqual([
+      'Códigos',
+      '2026-10-07',
+      '',
+      'AAAAA-BBBBB',
+      'CCCCC-DDDDD',
+      '',
+    ]);
   });
 });

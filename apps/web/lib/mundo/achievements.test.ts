@@ -36,12 +36,7 @@ import {
   signalFromWorldEvent,
   StormWatch,
 } from './achievements';
-import {
-  WEATHER_TUNING,
-  type WeatherEvent,
-  WeatherClock,
-  weatherRng,
-} from '@boia/engine/weather';
+import { WEATHER_TUNING, type WeatherEvent, WeatherClock, weatherRng } from '@boia/engine/weather';
 import {
   missingSecrets,
   pickSecretHint,
@@ -689,7 +684,14 @@ it('T274: «Capeaste el temporal» needs a whole storm sailed, not a cut one, an
   // Un momento sin timón (menú, mapa, minijuego, pestaña oculta) lo estropea.
   expect(sailStorm(new StormWatch(), 'tormenta', (t) => t < 10 || t > 10.5)).toEqual([]);
   // Una partida que empieza a mitad lo corta (se va suave): no es un temporal entero.
-  expect(sailStorm(new StormWatch(), 'tormenta', () => true, (t) => t > 12)).toEqual([]);
+  expect(
+    sailStorm(
+      new StormWatch(),
+      'tormenta',
+      () => true,
+      (t) => t > 12,
+    ),
+  ).toEqual([]);
   // Cortado sin que lo vea el sondeo: tampoco, le faltan segundos navegados.
   const cut = new StormWatch();
   cut.event({ type: 'start', kind: 'tormenta' });

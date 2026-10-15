@@ -45,9 +45,10 @@ describe('remolinos del mar 3D', () => {
         const sheet = sheetRadius(o);
         if (sheet === null || o === w) continue;
         const s = shortest(o.position, w.position, period);
-        expect(Math.hypot(s.dx, s.dy), `${w.identity.id} y ${o.identity.id}`).toBeGreaterThanOrEqual(
-          sheet + r + WHIRLPOOL_SHEET_MARGIN - 1,
-        );
+        expect(
+          Math.hypot(s.dx, s.dy),
+          `${w.identity.id} y ${o.identity.id}`,
+        ).toBeGreaterThanOrEqual(sheet + r + WHIRLPOOL_SHEET_MARGIN - 1);
       }
       expect(distToPath(path, w.position, period)).toBeGreaterThan(ROAD_HALF_WIDTH + r);
     }

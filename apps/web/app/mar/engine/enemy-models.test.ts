@@ -49,8 +49,20 @@ describe('flattenEnemyModel: un GLB a una geometría con el color en los vértic
     let reds = 0;
     let greens = 0;
     for (let k = 0; k < col.count; k++) {
-      if (Math.abs(col.getX(k) - red.r) + Math.abs(col.getY(k) - red.g) + Math.abs(col.getZ(k) - red.b) < 1e-6) reds++;
-      if (Math.abs(col.getX(k) - green.r) + Math.abs(col.getY(k) - green.g) + Math.abs(col.getZ(k) - green.b) < 1e-6) greens++;
+      if (
+        Math.abs(col.getX(k) - red.r) +
+          Math.abs(col.getY(k) - red.g) +
+          Math.abs(col.getZ(k) - red.b) <
+        1e-6
+      )
+        reds++;
+      if (
+        Math.abs(col.getX(k) - green.r) +
+          Math.abs(col.getY(k) - green.g) +
+          Math.abs(col.getZ(k) - green.b) <
+        1e-6
+      )
+        greens++;
     }
     expect(reds).toBe(box.getAttribute('position').count);
     expect(greens).toBe(sphere.getAttribute('position').count);
@@ -125,7 +137,14 @@ describe('el Vecino Quejica de Blender (art/enemigos/3d, T174)', () => {
     readFileSync(path.join(REPO, 'art/enemigos/3d/manifest.json'), 'utf8'),
   ) as {
     max_tris: number;
-    enemigos: { id: string; file: string; radius: number; length: number; height: number; tris: number }[];
+    enemigos: {
+      id: string;
+      file: string;
+      radius: number;
+      length: number;
+      height: number;
+      tris: number;
+    }[];
   };
   const entry = manifest.enemigos.find((e) => e.id === VECINO_MODEL.id)!;
 

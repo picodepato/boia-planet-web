@@ -47,7 +47,11 @@ export class ArenaClouds {
       for (let j = 0; j < puffs; j++) {
         const s = 2.2 + rnd() * 2.8;
         const m = new Mesh(wobble(new IcosahedronGeometry(s, 1), s * 0.15, rnd), this.mat);
-        m.position.set(j * s * 0.9 - puffs * s * 0.4, (rnd() - 0.5) * s * 0.4, (rnd() - 0.5) * s * 0.6);
+        m.position.set(
+          j * s * 0.9 - puffs * s * 0.4,
+          (rnd() - 0.5) * s * 0.4,
+          (rnd() - 0.5) * s * 0.6,
+        );
         m.scale.set(1, 0.5, 0.8);
         c.add(m);
       }
@@ -66,7 +70,10 @@ export class ArenaClouds {
    * (1 la vista de salida; de cerca se apagan), `reduced` sin moverse.
    */
   update(dt: number, center: { x: number; z: number }, zoom: number, reduced: boolean): void {
-    const k = Math.min(1, Math.max(0, (zoom - ARENA_CLOUD_ZOOM.off) / (ARENA_CLOUD_ZOOM.on - ARENA_CLOUD_ZOOM.off)));
+    const k = Math.min(
+      1,
+      Math.max(0, (zoom - ARENA_CLOUD_ZOOM.off) / (ARENA_CLOUD_ZOOM.on - ARENA_CLOUD_ZOOM.off)),
+    );
     this.opacity = ARENA_CLOUD_OPACITY * k;
     this.mat.opacity = this.opacity;
     this.group.visible = this.opacity > 0.01;

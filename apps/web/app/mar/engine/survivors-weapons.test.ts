@@ -298,7 +298,11 @@ describe('T128 evolutions, pools and integration', () => {
     v.update(s, 5, true);
     expect(Array.from(m.instanceMatrix.array.slice(0, 16))).toEqual(steady);
     const fresh = m.instanceColor!.array[0]!;
-    v.update({ ...s, crackers: s.crackers.map((c) => ({ ...c, lifeS: c.durationS * 0.1 })) }, 5, true);
+    v.update(
+      { ...s, crackers: s.crackers.map((c) => ({ ...c, lifeS: c.durationS * 0.1 })) },
+      5,
+      true,
+    );
     expect(m.instanceColor!.array[0]).toBeLessThan(fresh);
     v.dispose();
   });

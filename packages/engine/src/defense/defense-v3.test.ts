@@ -144,8 +144,14 @@ describe('daño +15 % en Faro, Nochevieja, Puerto y Benidorm (Hernán, 2026-10-0
     expect(Object.keys(DEFENSE_DAMAGE_T178).sort()).toEqual(['cala', 'faro', 'fotos', 'ultima']);
     for (const level of [1, 2, 3] as const) {
       const before = (k: keyof typeof DEFENSE_DAMAGE_T178) => DEFENSE_DAMAGE_T178[k][level - 1]!;
-      expect(defenseTowerStats(CFG, 'faro', level).damagePerS / before('faro')).toBeCloseTo(1.15, 3);
-      expect(defenseTowerStats(CFG, 'ultima', level).damage / before('ultima')).toBeCloseTo(1.15, 3);
+      expect(defenseTowerStats(CFG, 'faro', level).damagePerS / before('faro')).toBeCloseTo(
+        1.15,
+        3,
+      );
+      expect(defenseTowerStats(CFG, 'ultima', level).damage / before('ultima')).toBeCloseTo(
+        1.15,
+        3,
+      );
       expect(defenseTowerStats(CFG, 'cala', level).damage / before('cala')).toBeCloseTo(1.15, 3);
       expect(defenseTowerStats(CFG, 'fotos', level).damage / before('fotos')).toBeCloseTo(1.15, 3);
     }

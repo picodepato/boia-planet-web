@@ -64,7 +64,9 @@ describe('T135: el botín en el mar 3D', () => {
       const p = new SurvivorsPickups(SURVIVORS_CONFIG, q);
       const byName = Object.fromEntries(p.meshes.map((m) => [m.name, m]));
       for (const id of DROP_IDS) {
-        expect(byName[`survivors-pickup-${id}`]!.instanceMatrix.count).toBe(SURVIVORS_CONFIG.drops.max);
+        expect(byName[`survivors-pickup-${id}`]!.instanceMatrix.count).toBe(
+          SURVIVORS_CONFIG.drops.max,
+        );
       }
       expect(byName['survivors-flame']!.instanceMatrix.count).toBe(flameTongues(q));
       expect((byName['survivors-flame']!.material as { opacity: number }).opacity).toBe(

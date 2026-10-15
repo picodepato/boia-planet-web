@@ -1,6 +1,5 @@
 import { CRAB_BPM, crabBeatPhase } from '@boia/engine/characters';
-import type {
-  BufferGeometry} from 'three';
+import type { BufferGeometry } from 'three';
 import {
   CylinderGeometry,
   DodecahedronGeometry,

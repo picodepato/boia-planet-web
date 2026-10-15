@@ -36,7 +36,10 @@ export interface DefenseOverlayPrefs {
   numbers: boolean;
 }
 
-export const DEFAULT_DEFENSE_OVERLAYS: Readonly<DefenseOverlayPrefs> = { bars: true, numbers: true };
+export const DEFAULT_DEFENSE_OVERLAYS: Readonly<DefenseOverlayPrefs> = {
+  bars: true,
+  numbers: true,
+};
 
 /** La clave en el almacenamiento del dispositivo. */
 export const DEFENSE_OVERLAYS_KEY = 'boia:castillo:marcas';
@@ -122,7 +125,16 @@ export class DamageTracker {
       if (e.dead) continue;
       let k = this.map.get(e.id);
       if (!k) {
-        k = { hp: e.hp, acc: 0, last: t, x: e.x, y: e.y, radius: e.radius, progress: e.progress, seen: f };
+        k = {
+          hp: e.hp,
+          acc: 0,
+          last: t,
+          x: e.x,
+          y: e.y,
+          radius: e.radius,
+          progress: e.progress,
+          seen: f,
+        };
         this.map.set(e.id, k);
         continue;
       }
@@ -172,7 +184,9 @@ const BAR_LOW = new Color('#ff4d3d');
 /** El color de la barra a esa parte de vida (verde, amarillo, rojo). */
 export function barColor(frac: number, out = new Color()): Color {
   const f = Math.min(1, Math.max(0, frac));
-  return f > 0.5 ? out.copy(BAR_MID).lerp(BAR_FULL, (f - 0.5) * 2) : out.copy(BAR_LOW).lerp(BAR_MID, f * 2);
+  return f > 0.5
+    ? out.copy(BAR_MID).lerp(BAR_FULL, (f - 0.5) * 2)
+    : out.copy(BAR_LOW).lerp(BAR_MID, f * 2);
 }
 
 /**
@@ -194,7 +208,13 @@ export class HealthBars {
     this.cap = Math.max(1, cap);
     const geo = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const mat = (color: string) =>
-      new MeshBasicMaterial({ color, transparent: true, opacity: 0.92, depthTest: false, depthWrite: false });
+      new MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.92,
+        depthTest: false,
+        depthWrite: false,
+      });
     this.back = new InstancedMesh(geo, mat(BAR_BACK), this.cap);
     this.fill = new InstancedMesh(geo, mat('#ffffff'), this.cap);
     this.fill.instanceColor = new InstancedBufferAttribute(new Float32Array(this.cap * 3), 3);
@@ -436,7 +456,14 @@ export class DamageNumbers {
   constructor(cap: number, style: Readonly<FloatNumberStyle> = DAMAGE_NUMBER_STYLE) {
     this.cap = Math.max(1, cap);
     this.style = style;
-    this.pool = Array.from({ length: this.cap }, () => ({ x: 0, z: 0, y: 0, value: 0, t0: 0, live: false }));
+    this.pool = Array.from({ length: this.cap }, () => ({
+      x: 0,
+      z: 0,
+      y: 0,
+      value: 0,
+      t0: 0,
+      live: false,
+    }));
     const n = this.cap * (NUMBER_DIGITS + (style.coin ? 2 : 0));
     const geo = new PlaneGeometry(0.75, 1);
     this.digit = new InstancedBufferAttribute(new Float32Array(n), 1);

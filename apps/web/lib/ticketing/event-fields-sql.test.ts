@@ -8,7 +8,8 @@ import { describe, expect, it } from 'vitest';
  * PostgreSQL. Las pruebas contra la base están en
  * packages/db/src/supabase/event-fields.supabase.ts (`pnpm test:supabase`).
  */
-const read = (path: string) => readFileSync(new URL(`../../../../${path}`, import.meta.url), 'utf8');
+const read = (path: string) =>
+  readFileSync(new URL(`../../../../${path}`, import.meta.url), 'utf8');
 const SQL = read('supabase/migrations/20261008100100_event_fields_common_code.sql');
 const TYPES = read('packages/db/src/database.types.ts');
 const CHECKS = read('packages/db/src/checks.ts');
@@ -45,7 +46,9 @@ describe('código común de la ticketera (T215, decisión 7)', () => {
     expect(SQL).toContain('alter table public.ticketing_settings enable row level security;');
     expect(SQL).toContain('grant select on public.ticketing_settings to authenticated;');
     expect(SQL).toContain("using ((select private.has_staff_role('editor')));");
-    expect(SQL).not.toMatch(/grant [^;]*(insert|update)[^;]* on public\.ticketing_settings to authenticated/);
+    expect(SQL).not.toMatch(
+      /grant [^;]*(insert|update)[^;]* on public\.ticketing_settings to authenticated/,
+    );
     expect(CHECKS).toContain("'ticketing_settings',");
     expect(TYPES).toContain('ticketing_settings: {');
   });

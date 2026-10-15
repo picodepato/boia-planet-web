@@ -64,7 +64,9 @@ export function DraftPreview() {
         }}
       >
         {t('admin.draftPreview.vistaPreviaDelBorrador')}
-        {pending === 1 ? t('admin.draftPreview.n1Cambio') : `${pending} cambios`}{' '}
+        {pending === 1
+          ? t('admin.draftPreview.n1Cambio')
+          : t('admin.draftPreview.nCambios', { n: pending })}{' '}
         {t('admin.draftPreview.sinPublicarAsiQuedara')}{' '}
         <Link href={ADMIN_PATH}>{t('admin.draftPreview.volverAlAdmin')}</Link>
       </p>

@@ -14,7 +14,9 @@ import { IslandMemories, IslandUpcoming } from './place-panels';
  * contenido de muestra en una fecha en la que todas sus fiestas han pasado.
  */
 
-const islands = [...new Set(SAMPLE_CONTENT.events.flatMap((e) => (e.islandId ? [e.islandId] : [])))];
+const islands = [
+  ...new Set(SAMPLE_CONTENT.events.flatMap((e) => (e.islandId ? [e.islandId] : []))),
+];
 const last = Math.max(...SAMPLE_CONTENT.events.map((e) => Date.parse(e.startsAt)));
 const AFTER_ALL = new Date(last + 30 * 24 * 3600 * 1000);
 const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]!);
@@ -29,7 +31,10 @@ describe('recuerdos y próximos eventos en la isla (REQ-AVE-014)', () => {
     vi.useFakeTimers();
     vi.setSystemTime(AFTER_ALL);
     const memories = islands.flatMap((id) =>
-      islandMemoryGalleries(id, liveContent(AFTER_ALL), AFTER_ALL).map((m) => ({ island: id, ...m })),
+      islandMemoryGalleries(id, liveContent(AFTER_ALL), AFTER_ALL).map((m) => ({
+        island: id,
+        ...m,
+      })),
     );
     const withPhotos = memories.find((m) => m.photos.length > 0);
     const without = memories.find((m) => m.photos.length === 0);
@@ -42,7 +47,9 @@ describe('recuerdos y próximos eventos en la isla (REQ-AVE-014)', () => {
       expect(html.includes(`recuerdo-fotos-${m.event.id}`)).toBe(m.photos.length > 0);
       // Sólo la página del evento (sin compra, ya terminado) o la galería de fotos.
       for (const href of hrefs(html)) {
-        expect(href.startsWith(`${EVENTS_PATH}/`) || href.startsWith(photosHref()), href).toBe(true);
+        expect(href.startsWith(`${EVENTS_PATH}/`) || href.startsWith(photosHref()), href).toBe(
+          true,
+        );
       }
       expect(html).not.toMatch(/comprar|checkout|ticket/i);
       // Y «Próximos eventos» no ofrece fiestas que ya pasaron.

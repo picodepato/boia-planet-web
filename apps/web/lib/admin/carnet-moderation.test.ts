@@ -108,9 +108,7 @@ describe('moderación fina con cuentas: RPC y permisos (migración 2026100820010
 
   it('la papelera queda fuera del alcance de los clientes y dura 30 días', () => {
     expect(SQL).toContain('create table private.carnet_moderation_trash (');
-    expect(SQL).toContain(
-      'alter table private.carnet_moderation_trash enable row level security;',
-    );
+    expect(SQL).toContain('alter table private.carnet_moderation_trash enable row level security;');
     expect(SQL).toContain(
       'revoke all on private.carnet_moderation_trash from public, anon, authenticated;',
     );

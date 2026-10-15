@@ -1,8 +1,4 @@
-import {
-  DEFENSE_CONFIG,
-  DEFENSE_TOWER_KINDS,
-  buildDefensePath,
-} from '@boia/engine/defense';
+import { DEFENSE_CONFIG, DEFENSE_TOWER_KINDS, buildDefensePath } from '@boia/engine/defense';
 import { CASTLE_PLACE_ID, WORLD_REGISTRY } from '@boia/world';
 import { Box3, Group, Scene } from 'three';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -62,17 +58,25 @@ const course = [
 const around = (p: { x: number; y: number }, q: { x: number; y: number }) => {
   let best = Infinity;
   for (const ox of [-period.w, 0, period.w])
-    for (const oy of [-period.h, 0, period.h]) best = Math.min(best, Math.hypot(p.x + ox - q.x, p.y + oy - q.y));
+    for (const oy of [-period.h, 0, period.h])
+      best = Math.min(best, Math.hypot(p.x + ox - q.x, p.y + oy - q.y));
   return best;
 };
-const toLeg = (p: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) => {
+const toLeg = (
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) => {
   let best = Infinity;
   for (const ox of [-period.w, 0, period.w]) {
     for (const oy of [-period.h, 0, period.h]) {
       const q = { x: p.x + ox, y: p.y + oy };
       const dx = b.x - a.x;
       const dy = b.y - a.y;
-      const t = Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / (dx * dx + dy * dy)));
+      const t = Math.max(
+        0,
+        Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / (dx * dx + dy * dy)),
+      );
       best = Math.min(best, Math.hypot(a.x + dx * t - q.x, a.y + dy * t - q.y));
     }
   }
@@ -98,7 +102,11 @@ describe('el vórtice (decisión 5)', () => {
 
   it('cae hacia el mar abierto (`CASTLE_OPEN_SEA_BEARING`)', () => {
     const a = Math.atan2(v.y - castle.position.y, v.x - castle.position.x);
-    expect(Math.abs(Math.atan2(Math.sin(a - CASTLE_OPEN_SEA_BEARING), Math.cos(a - CASTLE_OPEN_SEA_BEARING)))).toBeLessThan(1e-9);
+    expect(
+      Math.abs(
+        Math.atan2(Math.sin(a - CASTLE_OPEN_SEA_BEARING), Math.cos(a - CASTLE_OPEN_SEA_BEARING)),
+      ),
+    ).toBeLessThan(1e-9);
   });
 
   it('lejos de la Boia 7 (más que el castillo del borde de la arena) y fuera de los tramos 6 → 7 y 7 → 8', () => {

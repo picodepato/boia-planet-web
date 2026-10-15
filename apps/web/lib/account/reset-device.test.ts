@@ -171,9 +171,15 @@ describe('la lista de lo que se queda (T284)', () => {
 describe('cerrar sesión deja el dispositivo de cero (T284)', () => {
   it('se va todo lo del juego y de la cuenta; se quedan las preferencias', async () => {
     const guest = await playedGuest(local);
-    fill(local, GAME.filter((k) => k !== INVITE_SESSION_KEY && k !== ARTIST_CODE_KEY));
+    fill(
+      local,
+      GAME.filter((k) => k !== INVITE_SESSION_KEY && k !== ARTIST_CODE_KEY),
+    );
     fill(session, [INVITE_SESSION_KEY, ARTIST_CODE_KEY, RADIO_SESSION_KEY]);
-    fill(local, PREFERENCES.filter((k) => k !== RADIO_SESSION_KEY));
+    fill(
+      local,
+      PREFERENCES.filter((k) => k !== RADIO_SESSION_KEY),
+    );
     local.setItem(SUPABASE_AUTH_STORAGE_KEY, '{"la":"sesión"}');
     local.setItem('otra-web', 'no es nuestro');
 

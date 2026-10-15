@@ -13,9 +13,7 @@ import { useAccount } from './use-account';
  * la sesión no se pinta nada.
  */
 export type AccountMenuView =
-  | { kind: 'none' }
-  | { kind: 'signIn' }
-  | { kind: 'member'; line: string; nickname: string };
+  { kind: 'none' } | { kind: 'signIn' } | { kind: 'member'; line: string; nickname: string };
 
 export function accountMenuView(account: AccountState): AccountMenuView {
   if (account.status === 'guest') return { kind: 'signIn' };
@@ -56,9 +54,7 @@ export function MarAccountMenu({ onRegistered }: { onRegistered?: () => void }) 
           data-testid="mar-menu-cuenta-entrar"
           aria-label={t('cuenta.menu.entrarAria')}
           aria-haspopup="dialog"
-          onClick={() =>
-            void requireAccount('carnet', onRegistered ? { onRegistered } : {})
-          }
+          onClick={() => void requireAccount('carnet', onRegistered ? { onRegistered } : {})}
         >
           {t('cuenta.menu.entrar')}
         </button>

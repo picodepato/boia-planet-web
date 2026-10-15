@@ -999,7 +999,9 @@ export function ghostShipGeometry(): BufferGeometry {
     });
     k.add(new BoxGeometry(0.04, h * 0.42, 1.15), c.sail, { p: [x + 0.09, 0.5 + h * 0.57, 0] });
     k.add(new BoxGeometry(0.04, h * 0.2, 0.5), c.sailTorn, { p: [x + 0.11, 0.5 + h * 0.3, 0.3] });
-    k.add(new BoxGeometry(0.04, h * 0.14, 0.32), c.sailTorn, { p: [x + 0.11, 0.5 + h * 0.3, -0.38] });
+    k.add(new BoxGeometry(0.04, h * 0.14, 0.32), c.sailTorn, {
+      p: [x + 0.11, 0.5 + h * 0.3, -0.38],
+    });
   }
   // Bauprés con su vela pequeña, en proa.
   k.add(new CylinderGeometry(0.035, 0.035, 0.9, 4), c.mast, {

@@ -83,7 +83,9 @@ function useCanonView(canon: CanonMode): {
     slots: SlotsView | null;
     boss: BossHud;
   }>({ view: null, slots: null, boss: NO_BOSS });
-  const seen = useRef(new Map<number, { boss: BossId; kind: 'miniboss' | 'boss'; nameKey: string }>());
+  const seen = useRef(
+    new Map<number, { boss: BossId; kind: 'miniboss' | 'boss'; nameKey: string }>(),
+  );
   const read = canon.read;
   const on = canon.active && !canon.result;
   useEffect(() => {
@@ -99,13 +101,16 @@ function useCanonView(canon: CanonMode): {
       const bar = s ? bossBarView(s) : null;
       const fresh = s ? bossNotices(seen.current, s, now) : [];
       if (s) {
-        seen.current = new Map(s.bosses.map((b) => [b.id, { boss: b.boss, kind: b.kind, nameKey: b.nameKey }]));
+        seen.current = new Map(
+          s.bosses.map((b) => [b.id, { boss: b.boss, kind: b.kind, nameKey: b.nameKey }]),
+        );
       }
       const offscreen = bossOffscreen(bar);
       setState((prev) => {
         const live = [...prev.boss.notices, ...fresh].filter((n) => noticeActive(n, now));
         const sameNotices =
-          live.length === prev.boss.notices.length && live.every((n, i) => n === prev.boss.notices[i]);
+          live.length === prev.boss.notices.length &&
+          live.every((n, i) => n === prev.boss.notices[i]);
         const sameBoss =
           sameNotices && sameBossBar(prev.boss.bar, bar) && prev.boss.offscreen === offscreen;
         if (sameView(prev.view, next) && sameBoss) return prev;
@@ -165,7 +170,9 @@ export function CanonLayer({
       {view ? <CanonReadoutMenu covered={covered} /> : null}
       {view ? <CanonHud view={view} bar={boss.bar} onPause={onPause} /> : null}
       {view && boss.bar && boss.offscreen ? <BossArrow bar={boss.bar} /> : null}
-      {view && boss.notices.length ? <BossBanner notice={boss.notices[boss.notices.length - 1]!} /> : null}
+      {view && boss.notices.length ? (
+        <BossBanner notice={boss.notices[boss.notices.length - 1]!} />
+      ) : null}
       {view && slots ? <CanonSlots slots={slots} bossOn={!!boss.bar} /> : null}
 
       {view ? <CanonWater pct={view.waterPct} engineRef={engineRef} /> : null}
@@ -229,11 +236,7 @@ function CanonAnnouncer({
   useEffect(() => {
     if (!result) return;
     const end = endCardModel(result);
-    setText(
-      result.reason === 'quit'
-        ? msg(end.title)
-        : `${msg(end.title)}. ${msg(end.medal.key)}`,
-    );
+    setText(result.reason === 'quit' ? msg(end.title) : `${msg(end.title)}. ${msg(end.medal.key)}`);
   }, [result]);
   return (
     <div
@@ -371,7 +374,12 @@ export function BossBar({ bar }: { bar: BossBarView }) {
       >
         <span className="mar-canon-boss__fill" style={{ width: `${bar.hpPct}%` }} />
         {bar.marks.map((m) => (
-          <span key={m} className="mar-canon-boss__mark" style={{ left: `${m}%` }} aria-hidden="true" />
+          <span
+            key={m}
+            className="mar-canon-boss__mark"
+            style={{ left: `${m}%` }}
+            aria-hidden="true"
+          />
         ))}
       </span>
     </div>
@@ -412,7 +420,11 @@ function BossArrow({ bar }: { bar: BossBarView }) {
       role="img"
       aria-label={msg('mar.canon.boss.flecha', { nombre: msg(bar.nameKey) })}
     >
-      <span className="mar-canon-boss-arrow__tip" style={{ rotate: `${bar.angleDeg}deg` }} aria-hidden="true" />
+      <span
+        className="mar-canon-boss-arrow__tip"
+        style={{ rotate: `${bar.angleDeg}deg` }}
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -606,7 +618,9 @@ export function CanonCards({
             </span>
           ) : null}
           <h2 id={titleId}>
-            {chest ? msg('mar.canon.cofre.titulo') : msg('mar.canon.cartas.titulo', { nivel: card.level })}
+            {chest
+              ? msg('mar.canon.cofre.titulo')
+              : msg('mar.canon.cartas.titulo', { nivel: card.level })}
           </h2>
           <p>{chest ? msg('mar.canon.cofre.elige') : msg('mar.canon.cartas.elige')}</p>
         </header>
@@ -647,9 +661,7 @@ export function CanonCards({
                       {Array.from({ length: v.maxLevel }, (_, k) => (
                         <span
                           key={k}
-                          className={
-                            k < v.level - 1 ? 'is-had' : k === v.level - 1 ? 'is-new' : ''
-                          }
+                          className={k < v.level - 1 ? 'is-had' : k === v.level - 1 ? 'is-new' : ''}
                         />
                       ))}
                     </span>

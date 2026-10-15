@@ -32,7 +32,14 @@ function runToEnd(g: SurvivorsGame, maxS = 30): void {
 }
 
 const ACTS = SURVIVORS_CONFIG.acts.map((a) => a.act);
-const REASONS: readonly (EndReason | null)[] = ['survived', 'flooded', 'abandoned', 'victory', 'quit', null];
+const REASONS: readonly (EndReason | null)[] = [
+  'survived',
+  'flooded',
+  'abandoned',
+  'victory',
+  'quit',
+  null,
+];
 
 describe('medallas T144: una por resultado', () => {
   it('los actos tienen sus minibosses y su boss final en el guion', () => {
@@ -49,13 +56,19 @@ describe('medallas T144: una por resultado', () => {
     for (const act of ACTS) {
       const minis = actMinibosses(act);
       const all = [...minis];
-      expect(survivorsMedal({ end: 'victory', bossesDefeated: [actFinalBoss(act)!], act })).toBe('oro');
-      expect(survivorsMedal({ end: 'victory', bossesDefeated: [...all, actFinalBoss(act)!], act })).toBe('oro');
+      expect(survivorsMedal({ end: 'victory', bossesDefeated: [actFinalBoss(act)!], act })).toBe(
+        'oro',
+      );
+      expect(
+        survivorsMedal({ end: 'victory', bossesDefeated: [...all, actFinalBoss(act)!], act }),
+      ).toBe('oro');
       expect(survivorsMedal({ end: 'survived', bossesDefeated: all, act })).toBe('plata');
       expect(survivorsMedal({ end: 'survived', bossesDefeated: [], act })).toBe('bronce');
       // Falta uno de los minibosses: bronce.
       for (const id of minis) {
-        expect(survivorsMedal({ end: 'survived', bossesDefeated: minis.filter((m) => m !== id), act })).toBe('bronce');
+        expect(
+          survivorsMedal({ end: 'survived', bossesDefeated: minis.filter((m) => m !== id), act }),
+        ).toBe('bronce');
       }
       for (const end of ['flooded', 'abandoned', 'quit', null] as const) {
         expect(survivorsMedal({ end, bossesDefeated: all, act })).toBeNull();
@@ -81,11 +94,17 @@ describe('medallas T144: una por resultado', () => {
 });
 
 describe('medallas T144: partidas de verdad', () => {
-  const finalSlot = (act: number) => actOf(SURVIVORS_CONFIG, act)!.events.find((e) => e.type === 'boss')!;
+  const finalSlot = (act: number) =>
+    actOf(SURVIVORS_CONFIG, act)!.events.find((e) => e.type === 'boss')!;
 
   it('vencer al boss final de cada acto acaba con `victory` y oro', () => {
     for (const act of ACTS) {
-      const g = createSurvivors(withConfig(() => {}), 11, openSea(), { act, startAtS: finalSlot(act).atS + 2 });
+      const g = createSurvivors(
+        withConfig(() => {}),
+        11,
+        openSea(),
+        { act, startAtS: finalSlot(act).atS + 2 },
+      );
       for (let i = 0; i < 30 && g.snapshot().bosses.length === 0; i++) g.step(IDLE);
       expect(g.snapshot().bosses.map((b) => b.boss)).toContain(actFinalBoss(act));
       expect(g.defeatBossesNow()).toBeGreaterThan(0);
@@ -115,7 +134,12 @@ describe('medallas T144: partidas de verdad', () => {
     expect(silver.snapshot().end).toBe('survived');
     expect(survivorsMedal(silver.snapshot())).toBe('plata');
 
-    const bronze = createSurvivors(withConfig(() => {}), 5, openSea(), { startAtS: 412 });
+    const bronze = createSurvivors(
+      withConfig(() => {}),
+      5,
+      openSea(),
+      { startAtS: 412 },
+    );
     runToEnd(bronze);
     const s = bronze.snapshot();
     expect(s.end).toBe('survived');
