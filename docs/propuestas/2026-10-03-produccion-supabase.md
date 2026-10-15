@@ -177,7 +177,7 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     cierra sus solicitudes pendientes. No toca ningún dato. Comprobar
     después, en el **SQL Editor**:
     `select count(*) from private.artist_claim_requests;` da 0.
-- [ ] Del plan 032 (ya en `boia-planet-dev`):
+- [x] Del plan 032 (ya en `boia-planet-dev`; aplicadas en producción el 2026-10-15):
   - `20261015100700_secret_prizes_member_restore.sql` (T300): el progreso
     del servidor conoce los logros secretos del plan 029 y el barco del
     after. Añade el cosmético `barco-after` (muestra; lo regala el logro

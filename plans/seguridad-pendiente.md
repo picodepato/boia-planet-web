@@ -56,7 +56,7 @@ esté hecha (o pedíselo al orquestador).
 
 ## Limpieza local
 
-- [ ] Borrar `apps/web/.env.local.dev-viejo` (claves viejas de Supabase en el
+- [x] Borrar `apps/web/.env.local.dev-viejo` (claves viejas de Supabase en el
       disco) cuando se confirme que no hace falta.
 - [ ] Borrar a mano las dos carpetas que quedaron en `.claude/worktrees/`
       (`agent-a51d5f12c87f2006d`, `agent-aabe6eccf48621f68`, …): Windows no
