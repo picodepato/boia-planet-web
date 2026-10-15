@@ -139,8 +139,6 @@ export function UsersSection() {
   );
 }
 
-const POSTHOG_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY);
-
 /**
  * La analítica de visitas, encendida o apagada desde el Admin (plan 019 T223,
  * decisión 17). Con cuentas, `site_settings.analytics_enabled` para toda la
@@ -200,7 +198,6 @@ function AnalyticsCard({ ctx }: { ctx: AdminContext }) {
       <p className="admin-meta" data-testid="analitica-estado" data-on={on === true ? '1' : '0'}>
         {on ? msg('admin.gestion.analytics.on') : msg('admin.gestion.analytics.off')}{' '}
         {real ? msg('admin.gestion.analytics.real') : msg('admin.gestion.analytics.local')}
-        {POSTHOG_CONFIGURED ? '' : ` ${msg('admin.gestion.analytics.noKey')}`}
       </p>
       <StatusLine status={status} />
     </div>

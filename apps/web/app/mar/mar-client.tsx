@@ -749,7 +749,11 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       p.then((outs) => {
         for (const o of outs) {
           push(o.notice);
-          if (o.kind === 'discount') setSheet({ kind: 'discount', found: o.found });
+          if (o.kind === 'discount') {
+            setSheet({ kind: 'discount', found: o.found });
+            // El embudo (plan 032 T301): un descuento escondido encontrado.
+            track('discount_found', { discountId: o.found.discount.id });
+          }
         }
       }).catch((err: unknown) => console.warn('[boia] no se pudo guardar el progreso', err));
     },

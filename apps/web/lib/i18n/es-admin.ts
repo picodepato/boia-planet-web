@@ -633,7 +633,6 @@ export const esAdmin = {
   'admin.world.nuncaEnTierra': '{v1}{v2}Nunca en tierra.',
   'admin.discounts.codigosSeEscondenEn':
     '{length} códigos. Se esconden en el mar; el de un evento lleva «Ir a la isla» y se aplica en la compra de prueba; el de la tienda se copia y lo valida la tienda. Inventados hasta tener los reales.',
-  'admin.misc.eventosDelEmbudoEn': 'Eventos del embudo en la consola; PostHog sin conectar.',
   'admin.misc.loBorradoSePuede':
     'Lo borrado se puede recuperar hasta que pasa el plazo; después se purga solo. Purgar a mano no se puede deshacer.',
   'admin.mission.aQueIslaLleva':

@@ -47,7 +47,7 @@ describe('app instalable: manifiesto e iconos (plan 027 T264)', () => {
   });
 
   it('la CSP deja registrar el service worker del propio sitio', () => {
-    const csp = securityHeaders({ dev: false, analyticsHost: '' }).find(
+    const csp = securityHeaders({ dev: false }).find(
       (h) => h.key === 'Content-Security-Policy',
     )!.value;
     expect(csp).toMatch(/worker-src 'self'/);

@@ -8,6 +8,7 @@ import { AchievementsSection } from './sections/achievements';
 import { ArtistsSection } from './sections/artists';
 import { DiscountsSection } from './sections/discounts';
 import { DoorSection } from './door/door-section';
+import { FunnelSection } from './sections/embudo';
 import { EventsSection } from './sections/events';
 import { HomeSection } from './sections/home';
 import { LinksSection } from './sections/links';
@@ -67,6 +68,8 @@ const SECTIONS: Section[] = [
   { id: 'temporadas', label: t('admin.adminApp.temporadas'), Component: SeasonsSection },
   { id: 'usuarios', label: t('admin.adminApp.usuariosDeAdministracion'), Component: UsersSection },
   { id: 'integraciones', label: t('admin.adminApp.integraciones'), Component: IntegrationsSection },
+  // Los contadores propios del embudo (plan 032 T301).
+  { id: 'embudo', label: t('admin.gestion.funnel.nav'), Component: FunnelSection },
   { id: 'papelera', label: t('admin.adminApp.papelera'), Component: TrashSection },
   { id: 'auditoria', label: t('admin.adminApp.auditoriaYMuestra'), Component: AuditSection },
 ];

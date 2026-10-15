@@ -2224,6 +2224,12 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      admin_funnel_counts: {
+        Args: {
+          p_days?: number;
+        };
+        Returns: Json;
+      };
       admin_generate_backup_codes: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
@@ -2552,6 +2558,12 @@ export type Database = {
           p_discount: string;
         };
         Returns: Json;
+      };
+      funnel_hit: {
+        Args: {
+          p_event: string;
+        };
+        Returns: boolean;
       };
       latest_bottles: {
         Args: {

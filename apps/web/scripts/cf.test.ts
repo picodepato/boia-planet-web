@@ -21,12 +21,10 @@ const ROOT = path.resolve(WEB, '../..');
 describe('cf-headers: las cabeceras de los estáticos son las de Next', () => {
   const env = {
     NEXT_PUBLIC_SUPABASE_URL: 'https://abc.supabase.co',
-    NEXT_PUBLIC_POSTHOG_HOST: 'https://eu.i.posthog.com',
   };
   const text: string = headersFile(env);
   const expected = securityHeaders({
     dev: false,
-    analyticsHost: env.NEXT_PUBLIC_POSTHOG_HOST,
     supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
   });
 

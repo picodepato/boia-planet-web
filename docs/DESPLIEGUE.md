@@ -155,8 +155,6 @@ Dónde se ponen:
 |---|---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase (Project Settings → Data API) | Build variable | Environment Variable | Sólo para el modo cuentas. Sin ella (y sin la siguiente), modo local |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | la *publishable key* de Supabase (Project Settings → API Keys); va al navegador, es pública | Build variable | Environment Variable | Igual que la anterior: las dos o ninguna |
-| `NEXT_PUBLIC_POSTHOG_KEY` | clave del proyecto de PostHog | Build variable | Environment Variable | Opcional: sin ella no sale ninguna petición de analítica |
-| `NEXT_PUBLIC_POSTHOG_HOST` | `https://eu.i.posthog.com` | Build variable | Environment Variable | Con la anterior |
 | `PNPM_VERSION`, `NODE_VERSION` | versiones del build (sección 1) | Build variable | no (Vercel las saca de `packageManager` y del ajuste Node 24.x) | Sí, en Cloudflare |
 | `SUPABASE_SERVICE_ROLE_KEY` | la *secret key* de Supabase | **nunca** | **nunca** | Ninguna ruta del servidor la usa (`apps/web/lib/supabase/service.ts` no lo importa ninguna página ni API); sólo los scripts (`pnpm admin:grant`, `pnpm test:supabase`…) desde la terminal, con `apps/web/.env.local` |
 | `ADMIN_DEMO_PASSWORD` | la contraseña del Admin demo | **nunca** | **nunca** | Sólo la leen las pruebas (`lib/admin/demo-auth.test.ts`, `e2e/admin-acceso.spec.ts`) desde la terminal; la web compara con un hash guardado en el código |
@@ -348,11 +346,11 @@ original» → SPF, DKIM y DMARC en `PASS`.
   correos de recuperación de esas cuentas llegarían a un buzón que depende de
   ellas mismas, y no habría forma de entrar a arreglarlo. Con 2FA activado.
 - **Todo lo demás, con la dirección corporativa** `admin@boiaplanet.net`:
-  Vercel, Supabase, GitHub (la organización o el colaborador), PostHog, Brevo,
+  Vercel, Supabase, GitHub (la organización o el colaborador), Brevo,
   la ticketera.
 - **Cómo migrar una cuenta que hoy está en otro correo:** invitar a
   `admin@boiaplanet.net` como **Owner** (Supabase: Organization → Team →
-  Invite, rol Owner; PostHog: Organization → Members; GitHub: Settings →
+  Invite, rol Owner; GitHub: Settings →
   Collaborators o una organización), aceptar desde `admin@`, entrar con ella y
   comprobar que lo ve y puede cambiarlo todo; **sólo entonces** quitar la
   cuenta vieja. Donde no hay invitaciones (Vercel Hobby es de una persona,

@@ -10,8 +10,8 @@ import { openTickets, pastHero } from './hero-helpers';
  * de entorno): el arte de `art/` se sirve como archivos estáticos desde `/art`
  * (copiados a `public/art/` por `scripts/copy-art.mjs`, los mismos en Vercel y
  * en Cloudflare), las URL `/api/art/...` viejas siguen respondiendo, los
- * vídeos van por trozos y sin clave de PostHog no sale ninguna petición de
- * analítica.
+ * vídeos van por trozos y, en modo local, no sale ninguna petición de
+ * analítica (los contadores propios del plan 032 T301 se quedan en el navegador).
  */
 
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -82,7 +82,7 @@ test('los vídeos del arte se sirven por trozos (Safari pide 206)', async ({ req
   expect((await res.body()).length).toBe(16);
 });
 
-test('sin clave de PostHog no sale ninguna petición de analítica', async ({ page }) => {
+test('en modo local no sale ninguna petición de analítica', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (r) => requests.push(r.url()));
   await page.goto('/?intro=0');
@@ -103,5 +103,5 @@ test('sin clave de PostHog no sale ninguna petición de analítica', async ({ pa
   await expect
     .poll(() => page.evaluate(() => (window.__boiaAnalytics ?? []).length))
     .toBeGreaterThan(1);
-  expect(requests.filter((u) => /posthog|\/i\/v0\/e\//i.test(u))).toEqual([]);
+  expect(requests.filter((u) => /posthog|funnel_hit|site_settings/i.test(u))).toEqual([]);
 });

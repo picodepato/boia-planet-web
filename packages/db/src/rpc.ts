@@ -127,6 +127,8 @@ export const RPC_REJECTIONS = [
   'profile_requested',
   'unknown_request',
   'request_closed',
+  // Embudo (plan 032 T301): un paso que no existe
+  'unknown_event',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -141,6 +143,16 @@ export const FULL_ACCESS_LIMIT = 3;
 export interface FullAccessResult {
   count: number;
   limit: number;
+}
+
+/**
+ * admin_funnel_counts (plan 032 T301, 20261015101100_funnel_counts.sql): las
+ * filas (día, paso, cuántas) de los últimos días, hoy incluido, y qué día es
+ * hoy en Alicante (Europe/Madrid).
+ */
+export interface FunnelCountsResult {
+  today: string;
+  rows: { day: string; event: string; count: number }[];
 }
 
 export function isRpcRejection(message: unknown): message is RpcRejection {

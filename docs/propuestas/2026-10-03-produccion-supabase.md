@@ -194,6 +194,21 @@ pnpm db:migrate:dev     # otra vez: «0 aplicadas de 40 (al día)»
     `select * from private.achievement_prizes;` da una fila
     (`siempre-hay-after`, 150, 500). Si se quita la muestra (paso 13), el
     barco se va con ella; la fila del tope puede quedarse.
+  - `20261015101100_funnel_counts.sql` (T301): contadores propios del
+    embudo, sin terceros (PostHog retirado). La tabla
+    `private.funnel_counts` (día de Alicante, paso, cuántas; nada de ids ni
+    datos personales), `funnel_hit(p_event)` para anon (sólo los cinco pasos
+    del navegador; con la analítica apagada no suma) y
+    `admin_funnel_counts(p_days)` para un admin (panel «Embudo»). Nace vacía
+    y no toca ningún dato. No hace falta ninguna variable nueva en Vercel ni
+    en Cloudflare: usa la URL y la clave publicable de siempre.
+    Comprobar después, en el **SQL Editor**:
+    `select count(*) from private.funnel_counts;` da 0 (o lo que se haya
+    sumado si la analítica ya está encendida), y
+    `select proname from pg_proc where proname in ('funnel_hit', 'admin_funnel_counts') and pronamespace = 'public'::regnamespace and prosecdef;`
+    sale vacío (las públicas son INVOKER). Para empezar a contar: Admin →
+    Integraciones → «Analítica de visitas encendida»; los números, en Admin
+    → Embudo.
 - [ ] Comprobar en producción, en el **SQL Editor**, que no queda ninguna
       función con SECURITY DEFINER en `public` (tiene que salir vacío):
       `select proname from pg_proc where pronamespace = 'public'::regnamespace and prosecdef;`

@@ -40,7 +40,6 @@ const GENERATED = '# Generado por scripts/cf-assets.mjs al construir; no editar 
 export function headersFile(env = process.env) {
   const security = securityHeaders({
     dev: false,
-    analyticsHost: env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com',
     supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
   });
   const art = [{ key: 'Cache-Control', value: ART_CACHE_CONTROL }];

@@ -12,18 +12,16 @@
  * - `media-src data: blob:`: la música y los clips de la Galería que sube el
  *   Admin en modo local viven en el navegador; con cuentas, los clips están
  *   en Supabase Storage (su https, plan 019 T216).
- * - `connect-src`: el propio sitio y PostHog (apagado si no hay clave); con
- *   cuentas (plan 008), también la API de Supabase (https y wss, la sesión
- *   y las RPC). Sin Supabase no se añade nada.
+ * - `connect-src`: el propio sitio; con cuentas (plan 008), también la API
+ *   de Supabase (https y wss, la sesión, las RPC y los contadores del
+ *   embudo, plan 032 T301). Sin Supabase no se añade nada: ningún tercero.
  * - `frame-ancestors 'self'`: sólo el Admin enmarca la web (vista previa).
  */
 export function securityHeaders({
   dev,
-  analyticsHost,
   supabaseUrl,
 }: {
   dev: boolean;
-  analyticsHost: string;
   /** `NEXT_PUBLIC_SUPABASE_URL`; vacío o ausente en modo local. */
   supabaseUrl?: string | null | undefined;
 }): { key: string; value: string }[] {
@@ -35,7 +33,7 @@ export function securityHeaders({
     "img-src 'self' data: blob: https:",
     `media-src 'self' data: blob:${supabaseHttps(supabaseUrl)}`,
     "font-src 'self' data:",
-    `connect-src 'self' data: blob: ${analyticsHost}${supabase}${dev ? ' ws: wss:' : ''}`,
+    `connect-src 'self' data: blob:${supabase}${dev ? ' ws: wss:' : ''}`,
     "worker-src 'self' blob:",
     "frame-src 'self'",
     "frame-ancestors 'self'",

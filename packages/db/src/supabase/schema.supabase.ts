@@ -46,7 +46,7 @@ describe('esquema del proyecto de desarrollo', () => {
     expect(await clientWriteLeaks(client)).toEqual([]);
   });
 
-  it('anon sólo ejecuta las RPC de lectura (rankings, botellas, calitas)', async () => {
+  it('anon sólo ejecuta las RPC de lectura (rankings, botellas, calitas) y el embudo', async () => {
     const { rows } = await client.query<{ name: string }>(`
       select p.proname as name
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -60,6 +60,9 @@ describe('esquema del proyecto de desarrollo', () => {
       'artist_claim_info',
       // El tablón de calitas se lee sin cuenta (20261008100500_calitas).
       'calitas_list',
+      // Suma un paso al contador del día del embudo (plan 032 T301): sólo
+      // los pasos permitidos y con la analítica encendida.
+      'funnel_hit',
       'latest_bottles',
       'ranking_canon',
       'ranking_castle',
@@ -81,6 +84,8 @@ describe('esquema del proyecto de desarrollo', () => {
       // La página del enlace para reclamar una ficha (plan 031 T296).
       'artist_claim_info',
       'calitas_list',
+      // El contador del embudo (plan 032 T301).
+      'funnel_hit',
       // Políticas de RLS de todo el esquema.
       'has_staff_role',
       'is_member',

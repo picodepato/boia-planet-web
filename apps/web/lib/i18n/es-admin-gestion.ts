@@ -1,6 +1,7 @@
 /**
  * Textos del Admin para el acceso completo, la papelera de cambios y la
- * analítica de visitas (plan 019 T223, decisión 17). Todo `muestra` hasta que
+ * analítica de visitas (plan 019 T223, decisión 17), con el panel «Embudo»
+ * (plan 032 T301). Todo `muestra` hasta que
  * Álvaro lo apruebe.
  */
 export const esAdminGestion = {
@@ -34,13 +35,29 @@ export const esAdminGestion = {
   // Analítica de visitas
   'admin.gestion.analytics.title': 'Analítica de visitas',
   'admin.gestion.analytics.lead':
-    'El embudo de visitas, anónimo, en PostHog (UE): sin cookies y sin nada guardado en el navegador. Apagada, la web no manda ningún evento.',
+    'El embudo de visitas, anónimo, en nuestros propios contadores: sólo cuántas visitas pasan por cada paso cada día. Sin cookies, sin datos personales y sin terceros. Apagada, la web no manda nada. Los números, en «Embudo».',
   'admin.gestion.analytics.toggle': 'Analítica de visitas encendida',
   'admin.gestion.analytics.on': 'Encendida.',
   'admin.gestion.analytics.off': 'Apagada: no sale ningún evento.',
-  'admin.gestion.analytics.noKey':
-    'Falta la clave de PostHog (NEXT_PUBLIC_POSTHOG_KEY): aunque esté encendida, no sale nada hasta que Hernán la ponga.',
   'admin.gestion.analytics.local': 'En la versión de prueba vale sólo para este navegador.',
   'admin.gestion.analytics.real': 'Vale para toda la web.',
   'admin.gestion.analytics.reason': 'analítica de visitas',
+
+  // Embudo (plan 032 T301): los contadores propios
+  'admin.gestion.funnel.nav': 'Embudo',
+  'admin.gestion.funnel.title': 'Embudo de visitas',
+  'admin.gestion.funnel.lead':
+    'Cuántas visitas pasan por cada paso, de la portada a la ticketera. Cada paso cuenta una vez por visita. Sin cookies ni datos personales: sólo la suma de cada día. Sólo cuenta con la analítica encendida (Integraciones). Como cualquiera puede sumar, los números son orientativos.',
+  'admin.gestion.funnel.step': 'Paso',
+  'admin.gestion.funnel.window': 'Últimos {days} días',
+  'admin.gestion.funnel.pct': '% del anterior',
+  'admin.gestion.funnel.noPct': '—',
+  'admin.gestion.funnel.refresh': 'Actualizar',
+  'admin.gestion.funnel.local': 'En la versión de prueba cuenta sólo lo de este navegador.',
+  'admin.gestion.funnel.real': 'Cuenta toda la web. Los días son los de Alicante.',
+  'admin.gestion.funnel.step.landing_view': 'Ve la portada',
+  'admin.gestion.funnel.step.explore_start': 'Entra en el mar',
+  'admin.gestion.funnel.step.discount_found': 'Encuentra un descuento',
+  'admin.gestion.funnel.step.tickets_panel_open': 'Abre «Entradas»',
+  'admin.gestion.funnel.step.ticket_click_out': 'Va a la ticketera',
 } as const;

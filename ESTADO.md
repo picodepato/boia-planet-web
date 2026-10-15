@@ -4,6 +4,61 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T301: Our own funnel counters and the «Embudo» panel
+
+REQ-ARQ-019 sin terceros (Álvaro, 2026-10-15). PostHog retirado.
+
+Qué existe:
+- **Migración `supabase/migrations/20261015101100_funnel_counts.sql`** (aplicada sólo a `boia-planet-dev`;
+  anotada en «Del plan 032» de `docs/propuestas/2026-10-03-produccion-supabase.md`). Tabla
+  `private.funnel_counts` (día de Alicante, paso, cuántas; sin ids, sin datos personales; como mucho 6 filas
+  al día). `funnel_hit(p_event)` (anon y authenticated): sólo los 5 pasos del navegador
+  (landing_view, explore_start, discount_found, tickets_panel_open, ticket_click_out), si no `unknown_event`;
+  con `site_settings.analytics_enabled` apagada no suma (devuelve false). `admin_funnel_counts(p_days)`
+  (1–90 días, `require_staff('admin')`). Privadas SECURITY DEFINER con `search_path = ''`, públicas INVOKER.
+  `purchase_confirmed` cabe en la tabla para el webhook futuro, pero no entra por `funnel_hit`. Inflar los
+  números llamando a mano se acepta (anotado en la migración y en el panel). Tipos regenerados
+  (`database.types.ts`), `FunnelCountsResult` y el rechazo `unknown_event` en `packages/db/src/rpc.ts`.
+- **`apps/web/lib/analytics/index.ts`**: `track()` sigue siendo la única entrada. Rechaza nombres que no son
+  pasos; cada paso sale una vez por visita (pestaña: `sessionStorage` `boia.embudo.visita`, sólo nombres de
+  pasos); un paso que no llegó (la página navegó) se manda al cargar la siguiente página. Todo sigue en
+  `window.__boiaAnalytics` (e2e). `trackSandboxPurchase` ya sólo apunta en la página.
+- **`sink.ts`** (cargado a demanda, fuera de la ruta crítica): con Supabase, dos `fetch` a la Data API con la
+  clave publicable (sin supabase-js ni la sesión de quien navega): lee el interruptor de `site_settings` y
+  manda `funnel_hit` con `keepalive`. En modo local, `local-counts.ts` (`localStorage` `boia.embudo`, 90 días).
+  `switch.ts` se fue (su lectura está en `sink.ts`).
+- **/mar manda `discount_found`** al encontrar un descuento por primera vez (`mar-client.tsx`, `persist`).
+- **Admin → «Embudo»** (`app/admin/sections/embudo.tsx`, en demo y con cuentas; con cuentas, sólo admin vía
+  `NeedsAdmin`): por paso, últimos 7 y 30 días y % del paso anterior (`lib/analytics/funnel.ts`), botón
+  «Actualizar». Textos `admin.gestion.funnel.*` (muestra). Integraciones: fuera el aviso de la clave de
+  PostHog; el texto de la analítica ya no habla de PostHog (muestra).
+- PostHog fuera también de la CSP (`security-headers.ts`, `next.config.ts`, `scripts/cf-assets.mjs`),
+  `.env.example`, README, `docs/DESPLIEGUE.md` y la clave `admin.misc.eventosDelEmbudoEn` (sin uso).
+  Las e2e `despliegue.spec.ts` y `admin-papelera.spec.ts` miran ahora `funnel_hit` (no corridas).
+- El texto de privacidad no menciona PostHog: no se toca.
+- `docs/spec/estado.md`: REQ-ARQ-019 sigue PARCIAL (falta `purchase_confirmed` del webhook y el texto de la
+  spec), con las pruebas nuevas enlazadas.
+
+Comandos:
+- `pnpm --filter @boia/db db:migrate:dev -- --no-seed` (dev) → 1 aplicada (20261015101100), exit 0
+- `pnpm --filter @boia/db db:types:dev` → +2 funciones en `database.types.ts`
+- `pnpm test:supabase funnel` (dev) → 1 archivo, 5 pass, exit 0
+- `pnpm test:supabase` completo (dev) → 32 archivos: 31 pass + `schema.supabase.ts` con 2 fallos (la lista de RPC de anon no tenía `funnel_hit`); añadida y `pnpm test:supabase schema funnel admin-limits` → 3 archivos, 17 pass, exit 0; 0 cuentas de prueba quedan
+- `pnpm exec vitest run apps/web/lib/analytics` → 2 archivos, 18 pass
+- `node apps/web/scripts/landing-budget.mjs` → 199.3 / 200 kB, OK (igual que antes), exit 0
+- Test command → vitest 340 archivos / 3043 pass, 3 skip, exit 0; `checks.sh` exit 0; lint exit 0; build exit 0; typecheck exit 0
+
+Pendiente:
+- El orquestador aplica la migración a producción antes del push.
+- Si en Vercel/Cloudflare quedan `NEXT_PUBLIC_POSTHOG_KEY`/`_HOST`, ya no se usan: se pueden borrar.
+- Spec 08/09 (REQ-ARQ-019) aún dicen PostHog (D-04): lo decide Álvaro.
+- Al encender la analítica, el texto de privacidad («Medición de visitas: apagada en esta versión») queda viejo.
+
+Probar a mano:
+- Demo: /admin → Integraciones → encender; en otra pestaña, landing → bajar → Explorar → encontrar un
+  descuento → Entradas → Comprar; /admin → Embudo: 1 en cada paso, % del anterior. Repetir en la misma
+  pestaña no suma; una pestaña nueva sí.
+
 ## 2026-10-15 — plan 032 T298: A livelier sea
 
 Qué existe:

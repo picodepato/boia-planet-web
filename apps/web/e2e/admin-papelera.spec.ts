@@ -71,9 +71,9 @@ test('editar y borrar un evento; la papelera devuelve las dos cosas', async ({ p
 test('la analítica se enciende y se apaga; el límite de acceso completo se explica', async ({
   page,
 }) => {
-  const posthog: string[] = [];
+  const outbound: string[] = [];
   page.on('request', (r) => {
-    if (/posthog\.com/.test(r.url())) posthog.push(r.url());
+    if (/posthog|funnel_hit/.test(r.url())) outbound.push(r.url());
   });
   await page.goto('/admin');
   await section(page, 'usuarios');
@@ -92,8 +92,8 @@ test('la analítica se enciende y se apaga; el límite de acceso completo se exp
   await page.getByTestId('analitica-interruptor').uncheck();
   await expect(page.getByTestId('analitica-estado')).toHaveAttribute('data-on', '0');
 
-  // Apagada, la landing no manda nada a PostHog.
+  // Apagada, la landing no manda nada ni suma en los contadores (plan 032 T301).
   await page.goto('/?intro=0');
   await expect(page.locator('main')).toHaveAttribute('data-contenido', 'repositorio');
-  expect(posthog).toEqual([]);
+  expect(outbound).toEqual([]);
 });

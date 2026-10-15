@@ -1,6 +1,9 @@
 /**
- * Eventos del embudo en PostHog UE (D-04, REQ-ARQ-019). Los nombres son
- * contrato: el panel de PostHog se construye sobre ellos.
+ * Pasos del embudo (D-04, REQ-ARQ-019), en orden. Desde el plan 032 T301 se
+ * cuentan en nuestros propios contadores diarios (Supabase
+ * `private.funnel_counts`, sin terceros) y el panel «Embudo» del Admin los
+ * pinta en este orden. Los nombres son contrato: la base de datos sólo
+ * acepta estos.
  */
 export const FUNNEL_EVENTS = [
   'landing_view',
@@ -43,12 +46,7 @@ export interface FunnelEventProps {
      * `world`: «Comprar» en el panel de «Entradas» del mar 3D (T58).
      */
     source:
-      | 'priority_event'
-      | 'upcoming_events'
-      | 'tickets_panel'
-      | 'event_page'
-      | 'island'
-      | 'world';
+      'priority_event' | 'upcoming_events' | 'tickets_panel' | 'event_page' | 'island' | 'world';
   };
   purchase_confirmed: {
     eventId: string;

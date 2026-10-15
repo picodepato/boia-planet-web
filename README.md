@@ -299,8 +299,9 @@ Hoy en https://boia-planet-roan.vercel.app (la copia; la web pública irá en
 Supabase, sin correo y sin ticketera. Todo lo que hace el visitante (Carnet,
 botellas, sellos, descuentos, cambios del Admin) se guarda en su navegador.
 Por eso **no necesita ninguna variable de entorno**: `pnpm build` funciona con el
-entorno vacío, la analítica queda apagada sin `NEXT_PUBLIC_POSTHOG_KEY` (los
-eventos sólo se apuntan en `window.__boiaAnalytics`) y el arte sale del
+entorno vacío, la analítica (contadores propios, plan 032 T301) queda apagada
+hasta que se enciende en Admin → Integraciones (los eventos siempre se apuntan
+en `window.__boiaAnalytics`) y el arte sale del
 propio repo: `pnpm build` copia `art/` a `apps/web/public/art` y se sirve
 estático en `/art` (las URL viejas `/api/art/...` siguen funcionando).
 
