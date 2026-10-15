@@ -1,6 +1,13 @@
 'use client';
 
-import { MinimapGesture, TAP_SLOP_PX } from '@boia/engine/ui';
+import {
+  type MarMinimapZone,
+  MinimapGesture,
+  TAP_SLOP_PX,
+  minimapRelease,
+  otherMarMinimapZone,
+  snapMarMinimap,
+} from '@boia/engine/ui';
 import { type PointerEvent, type RefObject, useEffect, useRef } from 'react';
 import { type GlobePin, drawGlobe, globeProject } from './engine/globe';
 import type { Mar3D, PinSpec } from './engine/mar3d';
@@ -22,6 +29,10 @@ import { t as msg } from '../../lib/i18n';
  * cierra. El gesto es el del minimapa del 2D (`MinimapGesture`): un roce
  * que empieza en él y se mueve no cuenta como toque. Tampoco un arrastre
  * lejos que vuelve al sitio (T65): sólo abre una pulsación que no se movió.
+ *
+ * Moverlo (T298, REQ-MUN-021): con «Mover el minimapa» de Ajustes entra en
+ * modo mover; entonces arrastrarlo lo deja en el lado donde se suelte y
+ * tocarlo (o Intro) lo cambia de lado. En ese modo nunca abre el mapa.
  * muestra
  */
 
@@ -43,6 +54,9 @@ export function MarMinimap({
   mapMode,
   objective = null,
   onToggle,
+  zone = 'top-left',
+  moving = false,
+  onMove,
 }: {
   engineRef: RefObject<Mar3D | null>;
   pins: readonly PinSpec[];
@@ -50,6 +64,12 @@ export function MarMinimap({
   mapMode: boolean;
   objective?: { placeId: string; x: number; y: number } | null;
   onToggle: () => void;
+  /** Dónde está ahora (T298). */
+  zone?: MarMinimapZone;
+  /** Modo mover (Ajustes → «Mover el minimapa»). */
+  moving?: boolean;
+  /** Se soltó o se cambió de lado en modo mover: su sitio nuevo. */
+  onMove?: (zone: MarMinimapZone) => void;
 }) {
   const objectiveRef = useRef(objective);
   const markerRef = useRef<HTMLSpanElement>(null);
@@ -65,6 +85,8 @@ export function MarMinimap({
   const pinsRef = useRef(pins);
   const marksRef = useRef(marks);
   const drawRef = useRef<() => void>(() => {});
+  /** Hay un dedo puesto que empezó en el minimapa. */
+  const pressed = useRef(false);
 
   useEffect(() => {
     pinsRef.current = pins;
@@ -152,28 +174,44 @@ export function MarMinimap({
     e.currentTarget.setPointerCapture?.(e.pointerId);
     from.current = { x: e.clientX, y: e.clientY };
     reach.current = 0;
+    pressed.current = true;
     gesture.current.down(performance.now(), e.clientX, e.clientY);
   };
 
   const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
     const r = gesture.current.up(performance.now());
-    if (!r) return;
+    if (!pressed.current) return;
+    pressed.current = false;
     // Una pulsación larga que no se mueve también abre (aquí no se arrastra);
     // ir lejos y volver al mismo sitio no es quedarse quieto (T65).
     const still =
       Math.max(reach.current, Math.hypot(e.clientX - from.current.x, e.clientY - from.current.y)) <=
       TAP_SLOP_PX;
-    if (r.kind === 'tap' || (r.kind === 'drop' && still)) onToggle();
+    const el = e.currentTarget;
+    const action = minimapRelease({ moving, result: r, still });
+    if (action === 'drop') {
+      // Donde quedó su centro, con el arrastre puesto; luego vuelve a su caja.
+      const box = el.getBoundingClientRect();
+      onMove?.(snapMarMinimap(window.innerWidth, box.left + box.width / 2));
+    } else if (action === 'swap') onMove?.(otherMarMinimapZone(zone));
+    else if (action === 'toggle-map') onToggle();
+    el.style.translate = '';
   };
 
   return (
     <button
       type="button"
-      className={`mar-minimap${mapMode ? ' is-on' : ''}`}
+      className={`mar-minimap${mapMode ? ' is-on' : ''}${moving ? ' is-moving' : ''}`}
       data-testid="mar-minimapa"
-      aria-label={`${mapMode ? msg('mar.minimap.cerrarElMapaY') : msg('mar.minimap.abrirElMapaDel')}${
-        marks.length ? ` · ${msg('mar.minimap.codigos', { n: marks.length })}` : ''
-      }`}
+      data-zona={zone}
+      data-moviendo={moving ? 'si' : undefined}
+      aria-label={
+        moving
+          ? msg('mar.minimap.moverAria')
+          : `${mapMode ? msg('mar.minimap.cerrarElMapaY') : msg('mar.minimap.abrirElMapaDel')}${
+              marks.length ? ` · ${msg('mar.minimap.codigos', { n: marks.length })}` : ''
+            }`
+      }
       data-codigos={marks.length}
       aria-pressed={mapMode}
       onPointerDown={onPointerDown}
@@ -183,12 +221,24 @@ export function MarMinimap({
           Math.hypot(e.clientX - from.current.x, e.clientY - from.current.y),
         );
         gesture.current.move(performance.now(), e.clientX, e.clientY);
+        // En modo mover, el minimapa sigue al dedo hasta soltarlo.
+        if (moving && pressed.current) {
+          e.currentTarget.style.translate = `${e.clientX - from.current.x}px ${
+            e.clientY - from.current.y
+          }px`;
+        }
       }}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => gesture.current.cancel()}
+      onPointerCancel={(e) => {
+        gesture.current.cancel();
+        pressed.current = false;
+        e.currentTarget.style.translate = '';
+      }}
       onClick={(e) => {
         // El puntero ya se trató arriba; el teclado (Intro, espacio) llega sólo como clic.
-        if (e.detail === 0) onToggle();
+        if (e.detail !== 0) return;
+        if (moving) onMove?.(otherMarMinimapZone(zone));
+        else onToggle();
       }}
     >
       <canvas ref={canvasRef} aria-hidden="true" />
@@ -204,7 +254,11 @@ export function MarMinimap({
         </span>
       ) : null}
       <span className="mar-minimap__tag" aria-hidden="true">
-        {mapMode ? msg('mar.minimap.barco') : msg('mar.minimap.mapa')}
+        {moving
+          ? msg('mar.minimap.mover')
+          : mapMode
+            ? msg('mar.minimap.barco')
+            : msg('mar.minimap.mapa')}
       </span>
     </button>
   );

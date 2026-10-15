@@ -254,3 +254,41 @@ export function loadMinimapZone(store: KeyValueStore): MinimapZone | null {
 export function saveMinimapZone(store: KeyValueStore, zone: MinimapZone): void {
   store.setItem(MINIMAP_ZONE_KEY, zone);
 }
+
+/**
+ * El minimapa de `/mar` (plan 032 T298, REQ-MUN-021): vive en la fila de
+ * arriba, bajo los enlaces, a la izquierda (por defecto, encima del Menú) o a
+ * la derecha (cambiándose el sitio con los saldos). Se mueve con «Mover el
+ * minimapa» de Ajustes: allí un toque largo ya abre el mapa grande, así que
+ * el gesto de 500 ms no sirve. Su preferencia va aparte de la del 2D.
+ */
+export const MAR_MINIMAP_ZONES = [
+  'top-left',
+  'top-right',
+] as const satisfies readonly MinimapZone[];
+export type MarMinimapZone = (typeof MAR_MINIMAP_ZONES)[number];
+export const DEFAULT_MAR_MINIMAP_ZONE: MarMinimapZone = 'top-left';
+export const MAR_MINIMAP_ZONE_KEY = 'boia.mar.minimapa.zona';
+
+export function isMarMinimapZone(v: unknown): v is MarMinimapZone {
+  return typeof v === 'string' && (MAR_MINIMAP_ZONES as readonly string[]).includes(v);
+}
+
+export function loadMarMinimapZone(store: KeyValueStore): MarMinimapZone {
+  const v = store.getItem(MAR_MINIMAP_ZONE_KEY);
+  return isMarMinimapZone(v) ? v : DEFAULT_MAR_MINIMAP_ZONE;
+}
+
+export function saveMarMinimapZone(store: KeyValueStore, zone: MarMinimapZone): void {
+  store.setItem(MAR_MINIMAP_ZONE_KEY, zone);
+}
+
+/** Al soltar el minimapa de `/mar`: el lado de la pantalla donde quedó su centro. */
+export function snapMarMinimap(viewportWidth: number, dropCenterX: number): MarMinimapZone {
+  return dropCenterX < viewportWidth / 2 ? 'top-left' : 'top-right';
+}
+
+/** El otro sitio (tocar el minimapa en modo mover, o Intro con el teclado). */
+export function otherMarMinimapZone(zone: MarMinimapZone): MarMinimapZone {
+  return zone === 'top-left' ? 'top-right' : 'top-left';
+}

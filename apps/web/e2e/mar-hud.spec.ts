@@ -13,7 +13,8 @@ import { seedCarnet } from './carnet-seed';
  * la web (Fotos, Shop, Artistas y Contacto salen a su sección de la landing;
  * Carnet, el último desde T68, abre el menú del juego en Mi Carnet); a la izquierda, el botón del
  * menú del juego con el icono de logros y todo dentro; abajo, sólo «Entradas»
- * y el turbo. El minimapa se queda y su arrastre ya no rompe nada. Las
+ * y el turbo. El minimapa se queda y su arrastre ya no rompe nada; se mueve
+ * sólo con «Mover el minimapa» de Ajustes (T298). Las
  * tarjetas siguen siendo pequeñas, abajo; los avisos, chips arriba.
  *
  * En el móvil (375×812, proyecto `mobile`) y en escritorio (proyecto
@@ -125,14 +126,16 @@ for (const view of VIEWS) {
       await expectOnTop(page.getByTestId('mar-minimapa'));
       await expect(page.getByTestId('mar-saldos')).toBeVisible();
 
-      // Abajo, sólo «Entradas» (en el centro) y el turbo; nada de la barra de antes.
+      // Abajo, sólo «Entradas» (en el centro), la bocina (T271) y el turbo; nada de la barra de antes.
       const bar = page.getByTestId('mar-barra');
-      await expect(bar.locator('button, a')).toHaveCount(2);
+      await expect(bar.locator('button, a')).toHaveCount(3);
       const tickets = bar.getByTestId('mar-entradas');
       const turbo = bar.getByTestId('mar-turbo');
+      const horn = bar.getByTestId('mar-bocina');
       await expect(tickets).toContainText(t('hud.tickets'));
       await expectOnTop(tickets);
       await expectOnTop(turbo);
+      await expectOnTop(horn);
       for (const gone of ['mar-barra-mapa', 'mar-barra-carnet', 'mar-barra-menu']) {
         await expect(page.getByTestId(gone)).toHaveCount(0);
       }
@@ -152,6 +155,7 @@ for (const view of VIEWS) {
             menuBtn,
             tickets,
             turbo,
+            horn,
           ].map(box),
         )),
       ];
@@ -286,6 +290,76 @@ for (const view of VIEWS) {
         await page.goto(hrefs[l.id]!);
         await expect(page.locator(`#${l.section}`), l.id).toBeAttached();
       }
+    });
+
+    test('el minimapa se mueve con «Mover el minimapa» de Ajustes, sin abrir el mapa, y sigue ahí al recargar (T298)', async ({
+      page,
+    }) => {
+      test.setTimeout(240_000);
+      const errors = await openMar(page);
+      const vp = page.viewportSize()!;
+      const mini = page.getByTestId('mar-minimapa');
+      const centerX = async () => {
+        const b = await box(mini);
+        return b.x + b.width / 2;
+      };
+      // De salida, arriba a la izquierda (encima del Menú).
+      await expect(mini).toHaveAttribute('data-zona', 'top-left');
+      expect(await centerX()).toBeLessThan(vp.width / 2);
+
+      // Menú → Ajustes → «Mover el minimapa»: la hoja se cierra y el minimapa queda en modo mover.
+      await page.getByTestId('mar-logros').click();
+      await page.getByTestId('mar-menu-ajustes').click();
+      await page.getByTestId('mar-ajustes-mover-minimapa').click();
+      await expect(page.getByTestId('mar-ajustes')).toHaveCount(0);
+      await expect(mini).toHaveAttribute('data-moviendo', 'si');
+      await expect(mini).toHaveAccessibleName(t('mar.minimap.moverAria'));
+
+      // Arrastrarlo al otro lado (con una pausa larga, como el toque largo que abre el mapa):
+      // se suelta a la derecha y el mapa grande no se abre.
+      const start = await box(mini);
+      const cx = start.x + start.width / 2;
+      const cy = start.y + start.height / 2;
+      await page.mouse.move(cx, cy);
+      await page.mouse.down();
+      await page.waitForTimeout(600);
+      const to = vp.width - start.width / 2 - 12;
+      for (let i = 1; i <= 6; i++) await page.mouse.move(cx + ((to - cx) * i) / 6, cy + i * 2);
+      await page.mouse.up();
+      await expect(mini).toHaveAttribute('aria-pressed', 'false');
+      await expect(mini).toHaveAttribute('data-zona', 'top-right');
+      await expect(mini).not.toHaveAttribute('data-moviendo', 'si');
+      await expect(page.locator('main.mar')).toHaveAttribute('data-minimapa', 'derecha');
+      await expect.poll(centerX).toBeGreaterThan(vp.width / 2);
+      await expectOnTop(mini);
+      // Los saldos se van a la izquierda y nada se pisa.
+      const saldos = await box(page.getByTestId('mar-saldos'));
+      expect(saldos.x + saldos.width / 2).toBeLessThan(vp.width / 2);
+      for (const other of ['mar-saldos', 'mar-enlaces', 'mar-logros']) {
+        expect(apart(await box(mini), await box(page.getByTestId(other))), other).toBe(true);
+      }
+      // Fuera del modo mover, tocarlo sigue abriendo y cerrando el mapa.
+      await mini.click();
+      await expect(mini).toHaveAttribute('aria-pressed', 'true');
+      await mini.click();
+      await expect(mini).toHaveAttribute('aria-pressed', 'false');
+
+      // Al recargar, sigue a la derecha.
+      await page.reload();
+      await expect(page.locator('.mar-splash')).toHaveCount(0, { timeout: 30_000 });
+      await expect(mini).toHaveAttribute('data-zona', 'top-right');
+      await expect.poll(centerX).toBeGreaterThan(vp.width / 2);
+
+      // En modo mover, tocarlo lo cambia de lado (y tampoco abre el mapa).
+      await page.getByTestId('mar-logros').click();
+      await page.getByTestId('mar-menu-ajustes').click();
+      await page.getByTestId('mar-ajustes-mover-minimapa').click();
+      await expect(mini).toHaveAttribute('data-moviendo', 'si');
+      await mini.click();
+      await expect(mini).toHaveAttribute('data-zona', 'top-left');
+      await expect(mini).toHaveAttribute('aria-pressed', 'false');
+      await expect.poll(centerX).toBeLessThan(vp.width / 2);
+      expect(errors).toEqual([]);
     });
 
     test('el minimapa: arrastrarlo lejos a cada lado y volver no lo rompe (ni la carta)', async ({

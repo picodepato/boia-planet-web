@@ -10,6 +10,7 @@ import {
   Vector4,
 } from 'three';
 import { PLANET_PARS, planetUniforms } from './planet';
+import { SEA_WAVE_MAX, WAVES_GLSL } from './waves';
 import { wrapD } from './wrap';
 
 /**
@@ -20,6 +21,10 @@ import { wrapD } from './wrap';
  * isla (en su copia más cercana: el mar da la vuelta), espuma que late en la
  * orilla, bandas de ola y destellos que se apagan de lejos. Sin costas: el
  * mar no se acaba. Niebla de three.js para que el horizonte se funda.
+ *
+ * Con olas (T298, `waves.ts`): el vértice sube y baja con unas pocas olas
+ * suaves (calmadas junto a las orillas) y el píxel se aclara u oscurece con
+ * su pendiente. Sin olas, los shaders son los de antes, letra por letra.
  */
 
 export const MAX_SHORES = 32;
@@ -29,21 +34,66 @@ const WATER_RADIUS = 2600;
 const RINGS = 56;
 const SEGMENTS = 128;
 
-const vertex = /* glsl */ `
+/** Lo que mide el paso entre anillos a `r` de la cámara, en fracción de `r` (ver `ringGrid`). */
+const RING_STEP = 0.165;
+
+function vertexShader(waves: boolean): string {
+  const pars = waves
+    ? `
+  uniform float uTime;
+  uniform float uWaveAmp;
+  uniform vec4 uShores[${MAX_SHORES}];
+  uniform int uShoreCount;
+  ${WAVES_GLSL}`
+    : '';
+  const lift = waves
+    ? `
+    if (uWaveAmp > 0.001) {
+      // El oleaje (T298): la malla sigue a la cámara, así que cada vértice
+      // apaga las olas que su paso entre anillos ya no puede dibujar.
+      float d = 1e4;
+      for (int i = 0; i < ${MAX_SHORES}; i++) {
+        if (i >= uShoreCount) break;
+        vec4 s = uShores[i];
+        d = min(d, length(world.xz - s.xy) - s.z);
+      }
+      float spacing = ${RING_STEP} * length(world.xz - cameraPosition.xz);
+      world.y += seaWave(world.xz, uTime, spacing).x * uWaveAmp * seaCalm(d);
+    }`
+    : '';
+  return /* glsl */ `
   #include <fog_pars_vertex>
   ${PLANET_PARS}
-  varying vec3 vWorld;
+  varying vec3 vWorld;${pars}
   void main() {
     vec4 world = modelMatrix * vec4(position, 1.0);
-    vWorld = world.xyz;
+    vWorld = world.xyz;${lift}
     vec3 bent = planetCurve(world.xyz);
     vec4 mvPosition = viewMatrix * vec4(bent, 1.0);
     gl_Position = projectionMatrix * mvPosition;
     #include <fog_vertex>
   }
 `;
+}
 
-const fragment = /* glsl */ `
+function fragmentShader(waves: boolean): string {
+  const pars = waves
+    ? `
+  uniform float uWaveAmp;
+  ${WAVES_GLSL}`
+    : '';
+  const shade = waves
+    ? `
+
+    // El oleaje (T298): la cara que mira a la cámara, más clara; el seno,
+    // más oscuro; las crestas, hacia el bajío. Calmado junto a la orilla.
+    if (uWaveAmp > 0.001) {
+      vec3 sw = seaWave(p, uTime, fwidth(p.x) * 6.0) * uWaveAmp * seaCalm(d);
+      col *= 1.0 + clamp(-sw.z * 1.6 + sw.y * 0.5, -0.18, 0.18);
+      col = mix(col, uShallow * 1.12, smoothstep(0.25, 0.85, sw.x / ${SEA_WAVE_MAX.toFixed(4)}) * 0.22);
+    }`
+    : '';
+  return /* glsl */ `
   #include <fog_pars_fragment>
   uniform float uTime;
   uniform vec3 uDeep;
@@ -55,7 +105,7 @@ const fragment = /* glsl */ `
   // Viento del tiempo (T268): rayas de espuma a favor del viento (0: nada).
   uniform float uWind;
   uniform vec2 uWindDir;
-  varying vec3 vWorld;
+  varying vec3 vWorld;${pars}
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise(vec2 p) {
@@ -88,7 +138,7 @@ const fragment = /* glsl */ `
 
     // Manchas grandes: el mar no es un color plano.
     float big = noise(p * 0.018 + vec2(uTime * 0.008, 0.0));
-    col *= 0.9 + big * 0.2;
+    col *= 0.9 + big * 0.2;${shade}
 
     // Olitas dibujadas: trazos cortos y casi horizontales que se mecen,
     // más visibles cerca (la derivada dice cuánto mide un píxel).
@@ -132,10 +182,18 @@ const fragment = /* glsl */ `
     #include <fog_fragment>
   }
 `;
+}
+
+/** Los dos shaders del agua, con o sin olas (las pruebas comparan las dos versiones). */
+export function waterShaders(waves: boolean): { vertex: string; fragment: string } {
+  return { vertex: vertexShader(waves), fragment: fragmentShader(waves) };
+}
 
 export interface Water {
   mesh: Mesh;
   material: ShaderMaterial;
+  /** Si el shader lleva olas (T298): entonces `uWaveAmp` dice cuántas. */
+  waves: boolean;
   /** Orillas: centro (en el mapa), radio y ancho del bajío. */
   setShores(shores: readonly { x: number; z: number; r: number; w?: number }[]): void;
   /**
@@ -179,11 +237,13 @@ function ringGrid(): BufferGeometry {
   return g;
 }
 
-export function createWater(): Water {
+export function createWater(opts: { waves?: boolean } = {}): Water {
+  const waves = opts.waves ?? false;
+  const shaders = waterShaders(waves);
   const shores = Array.from({ length: MAX_SHORES }, () => new Vector4(0, 0, 0, 0));
   const material = new ShaderMaterial({
-    vertexShader: vertex,
-    fragmentShader: fragment,
+    vertexShader: shaders.vertex,
+    fragmentShader: shaders.fragment,
     fog: true,
     uniforms: UniformsUtils.merge([
       UniformsLib.fog,
@@ -197,6 +257,7 @@ export function createWater(): Water {
         uSparkle: { value: 0.9 },
         uWind: { value: 0 },
         uWindDir: { value: new Vector2(-1, 0) },
+        ...(waves ? { uWaveAmp: { value: 0 } } : {}),
       },
     ]),
   });
@@ -212,6 +273,7 @@ export function createWater(): Water {
   return {
     mesh,
     material,
+    waves,
     setShores(list) {
       all = list.map((s) => ({ x: s.x, z: s.z, r: s.r, w: s.w ?? 10 }));
     },

@@ -30,10 +30,14 @@ import {
   rescueMissionOf,
 } from '@boia/engine/mission';
 import {
+  DEFAULT_MAR_MINIMAP_ZONE,
+  type MarMinimapZone,
   type Notice,
   type Settings,
   browserStore,
+  loadMarMinimapZone,
   loadSettings,
+  saveMarMinimapZone,
   parseSettings,
   readableDurationMs,
   saveSettings,
@@ -683,6 +687,26 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
     applyAudioSettings(next);
     setControlSensitivity(next.sensitivity);
   }, []);
+  // El sitio del minimapa (T298, REQ-MUN-021): guardado en este navegador;
+  // «Mover el minimapa» de Ajustes lo deja en modo mover hasta soltarlo.
+  const [minimapZone, setMinimapZone] = useState<MarMinimapZone>(DEFAULT_MAR_MINIMAP_ZONE);
+  const [movingMinimap, setMovingMinimap] = useState(false);
+  useEffect(() => {
+    setMinimapZone(loadMarMinimapZone(browserStore()));
+  }, []);
+  const moveMinimap = useCallback((zone: MarMinimapZone) => {
+    setMinimapZone(zone);
+    setMovingMinimap(false);
+    saveMarMinimapZone(browserStore(), zone);
+  }, []);
+  useEffect(() => {
+    if (!movingMinimap) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMovingMinimap(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [movingMinimap]);
   const { data: balances } = useRepoData((r) => r.progress.balances());
   const balancesRef = useRef(balances);
   balancesRef.current = balances;
@@ -2490,6 +2514,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       data-modelos={stats?.models}
       data-llegada={arrivedAt ?? undefined}
       data-giro={stats ? `${stats.sensitivity.keyboard},${stats.sensitivity.touch}` : undefined}
+      // El minimapa a la derecha (T298); en las partidas, en su sitio de siempre (allí manda su HUD).
+      data-minimapa={minimapZone === 'top-right' && gameHidden.size === 0 ? 'derecha' : undefined}
     >
       <canvas
         ref={canvasRef}
@@ -2570,6 +2596,9 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
               objective={shownObjective}
               mapMode={!!stats?.mapMode}
               onToggle={() => engineRef.current?.toggleMap()}
+              zone={minimapZone}
+              moving={movingMinimap}
+              onMove={moveMinimap}
             />
           </div>
         ) : null}
@@ -3111,6 +3140,10 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
           onBottles={() => openBottle({ kind: 'mine' })}
           // «Comprar entradas» de Welcome Aboard: «Elige tu evento», ya en el mar.
           {...(hoja === 'bienvenida' ? { onTickets: openEntradas } : {})}
+          onMoveMinimap={() => {
+            setHoja(null);
+            setMovingMinimap(true);
+          }}
           carnetCreate={hoja === 'carnet' && carnetForCheckout !== null}
           onCarnetCreated={() => {
             // Vuelta a la compra: con el Carnet ya creado, se puede comprar (plan 019, decisión 1).

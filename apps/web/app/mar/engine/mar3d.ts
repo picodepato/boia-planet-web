@@ -188,6 +188,7 @@ import {
   roadMarkers,
 } from './race-props';
 import { createWater } from './water';
+import { LIVELY_SEA, NO_ROCK, boatRock, shoreCalm, shoreDistance, waveAmplitude } from './waves';
 import { type Canoncito, createCanoncito } from './canoncito';
 import { AFTER_PLACE_ID, AfterClock, type AfterEvent } from '@boia/engine/after';
 import { AfterIsland } from './after';
@@ -664,6 +665,8 @@ export class Mar3D {
   private weatherFogK = 1;
   /** Reloj del oleaje: corre más deprisa con viento. */
   private waterTime = 0;
+  /** Amplitud de las olas de este fotograma (T298; 0 sin olas, en el mapa o con movimiento reducido). */
+  private waveAmp = 0;
   private crew: Group | null = null;
   private prev = { x: 0, y: 0, heading: 0 };
   private acc = 0;
@@ -890,7 +893,8 @@ export class Mar3D {
     this.scene.add(this.hemi, this.sun, this.sun.target);
     this.scene.add(this.sky.mesh);
 
-    this.water = createWater();
+    // El oleaje (T298): con el interruptor de `waves.ts`, y nunca en calidad `baja`.
+    this.water = createWater({ waves: LIVELY_SEA && this.quality !== 'baja' });
     this.scene.add(this.water.mesh);
 
     this.faces = createFaceTextures();
@@ -4046,6 +4050,18 @@ export class Mar3D {
     return { x, z, h };
   }
 
+  /**
+   * El vaivén de las olas bajo el barco (T298): la amplitud del fotograma,
+   * calmada junto a las orillas y apagada mientras está en el aire.
+   */
+  private rockOnWaves(x: number, z: number, heading: number) {
+    if (this.waveAmp <= 0) return NO_ROCK;
+    const ground = 1 - smooth(0, 0.5, this.air);
+    if (ground <= 0) return NO_ROCK;
+    const calm = shoreCalm(shoreDistance(x, z, this.allShores, this.periodS));
+    return boatRock(x, z, heading, this.waterTime, this.waveAmp * calm * ground);
+  }
+
   private readonly shipCanon = new Vector2();
   /** Hacia dónde mira la cámara por delante del barco (suave; al principio, el norte). */
   private readonly aheadDir = new Vector2(0, -1);
@@ -4260,6 +4276,15 @@ export class Mar3D {
     const wu = this.water.material.uniforms;
     this.waterTime += dt * (1 + (look ? look.flow * w.strength : 0));
     wu.uWind!.value = look ? look.streaks * w.strength : 0;
+    if (this.water.waves) {
+      this.waveAmp = waveAmplitude({
+        on: true,
+        reduced: this.reducedMotion,
+        mapK: smooth(0.25, 0.6, this.zoom),
+        wind: wu.uWind!.value as number,
+      });
+      wu.uWaveAmp!.value = this.waveAmp;
+    }
     const glow = this.mood.glow;
     wu.uTime!.value = this.waterTime;
     (this.glow.material as ShaderMaterial).uniforms.uTime!.value = t;
@@ -4293,13 +4318,19 @@ export class Mar3D {
       body.rotation.x = Math.max(-0.45, Math.min(0.45, -this.turnRate * 0.2));
       body.rotation.z = still ? 0.04 : 0.04 + Math.sin(t * 1.7) * 0.03;
     } else {
-      body.position.y = Math.sin(t * 1.9) * 0.07 + Math.sin(t * 3.3) * 0.03 + v01 * 0.08;
+      // Sobre las olas (T298): sube con el agua y se inclina con su pendiente; en el aire, no.
+      const rock = this.water.waves ? this.rockOnWaves(x, z, h) : NO_ROCK;
+      body.position.y =
+        Math.sin(t * 1.9) * 0.07 + Math.sin(t * 3.3) * 0.03 + v01 * 0.08 + rock.heave;
       body.rotation.x =
-        Math.max(-0.35, Math.min(0.35, -this.turnRate * 0.14)) + Math.sin(t * 1.5) * 0.03;
+        Math.max(-0.35, Math.min(0.35, -this.turnRate * 0.14)) +
+        Math.sin(t * 1.5) * 0.03 +
+        rock.roll;
       body.rotation.z =
         v01 * 0.07 +
         Math.sin(t * 2.1) * 0.025 +
-        (movement ? movement.jumpPitch : this.jump.pitch(t) + this.jump.flipAngle(t));
+        (movement ? movement.jumpPitch : this.jump.pitch(t) + this.jump.flipAngle(t)) +
+        rock.pitch;
     }
     this.wings.group.position.y = body.position.y;
     this.wings.group.rotation.copy(body.rotation);

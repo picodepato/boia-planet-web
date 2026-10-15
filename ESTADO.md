@@ -4,6 +4,105 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T298: A livelier sea
+
+Qué existe:
+- `apps/web/app/mar/engine/waves.ts` (nuevo, sin three.js): el interruptor
+  `LIVELY_SEA = true` (una línea; `false` deja el mar y el barco como antes:
+  shaders del agua sin código de olas y el vaivén de siempre), tres olas
+  direccionales a favor del viento (`SEA_WAVES`, λ 26/17/11, crestas
+  0,2/0,12/0,06 escena), `waveAt` (altura y pendiente deterministas),
+  `shoreCalm`/`shoreDistance` (calma junto a islas y muelles: 0 hasta 1 u de
+  la orilla, entero a 15), `waveAmplitude` (0 con movimiento reducido, en la
+  vista de mapa y con el interruptor apagado; crece hasta +50 % con viento),
+  `boatRock` (subir con el agua, cabeceo ±0,08 y balanceo ±0,1 rad con topes)
+  y `WAVES_GLSL`, generado de las mismas constantes.
+- `water.ts`: `createWater({ waves })` y `waterShaders(waves)`. Con olas, el
+  vértice sube con las olas (cada vértice apaga las que su paso entre anillos
+  no dibuja sin dientes) y el píxel se aclara/oscurece con la pendiente y
+  aclara las crestas. Sin olas, los shaders son los de antes letra por letra.
+- `mar3d.ts`: olas sólo si `LIVELY_SEA` y la calidad no es `baja`; la
+  amplitud se escribe cada fotograma; el barco (navegando, no en vuelo ni
+  avión) suma `rockOnWaves` a su vaivén, apagado en el aire (saltos de la ola
+  grande T269 y de las rampas) y calmado en la orilla. Simulación, choques,
+  ola grande y cámara no cambian (la cámara no sigue el oleaje).
+- Minimapa movible (REQ-MUN-021): Ajustes → «Mover el minimapa»
+  (`a-bordo.tsx`) cierra la hoja y deja el minimapa en modo mover (aro naranja
+  discontinuo, etiqueta «Muéveme»); arrastrarlo lo suelta en el lado de arriba
+  más cercano (izquierda o derecha, cambiándose con los saldos), tocarlo o
+  Intro lo cambia de lado, Escape sale; en modo mover nunca abre el mapa. Se
+  guarda en `boia.mar.minimapa.zona` (`hud-layout.ts`: `MAR_MINIMAP_ZONES`,
+  `loadMarMinimapZone`, `saveMarMinimapZone`, `snapMarMinimap`,
+  `otherMarMinimapZone`); la lógica de soltar, en `minimap.ts`
+  (`minimapRelease`). En el Cañón y el Castillo vuelve a la izquierda.
+  Textos nuevos en `es-mar.ts` (`muestra`).
+- Pruebas: `apps/web/app/mar/engine/waves.test.ts` (11) y
+  `packages/engine/src/ui/mar-minimap.test.ts` (5); `mar-hud.spec.ts`, prueba
+  nueva «el minimapa se mueve con «Mover el minimapa» de Ajustes…» y la cuenta
+  de la barra de abajo al día (3 botones: la bocina de T271).
+- `docs/spec/estado.md`: REQ-MUN-003 FALTA → PARCIAL (falta la revisión visual
+  de Álvaro), REQ-MUN-021 PARCIAL → HECHO (criterio de 09 por ajustar: «Mover»
+  en vez de 500 ms).
+
+FPS antes/después (build de producción, `/mar` 1280×720, Chromium con vsync
+apagado, 3 tomas de 8 s por calidad; `baja` forzada con `deviceMemory` 2;
+«antes» = mismo build con `LIVELY_SEA = false`; tomas intercaladas porque la
+máquina deriva entre tandas), media del tiempo por fotograma:
+
+| Calidad | GPU (RX 6800, D3D11) antes → después | SwiftShader (sin GPU) antes → después |
+| --- | --- | --- |
+| alta | 1,78 → 1,65 ms (otra tanda: 1,64 → 1,57) | 73,0 → 72,9 ms |
+| baja | 1,69 → 1,62 ms | 70,3 → 70,5 ms (+0,2 %) |
+
+Sin diferencia medible; en `baja` las olas no se compilan (el shader es el
+de antes), dentro del ~5 % pedido. Sin errores de consola ni de shader.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/mar/engine/waves.test.ts packages/engine/src/ui/` → 11 + 41 pasan.
+- `E2E_PORT=3217 pnpm exec playwright test e2e/mar-hud.spec.ts --workers=1`
+  (desde apps/web) → exit 1: 10 pasan, 10 saltadas, 4 fallan. La prueba nueva
+  de T298 pasa en móvil y escritorio. Fallos: «arriba los enlaces…» (la
+  barra tenía 3 botones, la bocina de T271: arreglado en la prueba después de
+  esta tanda) y «el minimapa: arrastrarlo lejos… (ni la carta)» en la parte
+  de la carta («se mueve entera» 104,9 > 75 en móvil; «fotos sigue a la
+  izquierda de calitas» 502,9 > 474,3 en escritorio): falla igual, con los
+  mismos números, con `LIVELY_SEA = false`; no es de T298 (la parte del
+  minimapa de esa prueba pasa). Con 8 trabajadores la máquina se ahoga y
+  todo cae por tiempo.
+- Tras el arreglo: `E2E_PORT=3217 pnpm exec playwright test e2e/mar-hud.spec.ts
+  -g "arriba los enlaces|Mover el minimapa" --workers=1` → exit 0, 4 pasan, 4 saltadas.
+- Comando de prueba del plan, uno a uno: vitest → 339 archivos, 3036 pasan, 1
+  saltada; `tools/spec/checks.sh` → OK (estado.md: HECHO 186 · PARCIAL 60 ·
+  FALTA 14); `pnpm lint` → exit 0; `pnpm build` → exit 0 (landing 199,3 kB de
+  200, sin cambio); `pnpm typecheck` → exit 0.
+
+Prueba a mano para Álvaro (móvil y escritorio):
+1. Navega por mar abierto: el agua sube y baja suave, con caras claras y
+   senos oscuros; el barco cabecea y se balancea un poco, sin marear.
+2. Acércate a un muelle (Puerto) y a una isla: el agua se calma y el barco
+   queda quieto junto a la orilla; nada atraviesa el casco.
+3. Ola grande (`/mar?ola=1`): el salto y la vuelta se ven igual que antes; en
+   el aire el barco no se mece.
+4. Cañón, Castillo, carrera y Fiestera: se juegan igual; boyas, aletas y
+   bichos flotando se ven bien (pueden hundirse un pelo en un seno).
+5. Mapa grande: el mar está plano y se lee igual.
+6. Ajustes → «Mover el minimapa»: arrástralo a la derecha, suéltalo; no se
+   abre el mapa; recarga y sigue a la derecha; tócalo en modo mover y vuelve.
+7. Con «reducir movimiento» del sistema: mar plano y barco sin oleaje.
+8. Calidad baja (móvil modesto o ahorro de datos): sin olas, como antes.
+Si algo no convence: `LIVELY_SEA = false` en
+`apps/web/app/mar/engine/waves.ts` y vuelve el mar de antes.
+
+Pendiente:
+- La revisión visual de Álvaro (REQ-MUN-003) y ajustar el criterio de
+  REQ-MUN-021 en `09-requisitos.md` («Mover» de Ajustes en vez de 500 ms).
+- El consejo de la Boia «mantenlo pulsado para moverlo»
+  (`world.arcilla.boia.tutorial.5`, `es-zonas.ts`, `es-mundo.ts`,
+  `es-juego.ts`) ya no es cierto en /mar (tampoco lo era antes: el toque
+  largo abre el mapa). Propuesta: «tócalo para ampliar; para moverlo,
+  Ajustes → Mover el minimapa». Es texto aprobado: lo decide Álvaro.
+- La parte de la carta de `mar-hud.spec.ts` «(ni la carta)» falla ya sin T298.
+
 ## 2026-10-15 — plan 032 T300: Accounts and progress leftovers
 
 Sólo con cuentas (Supabase). En modo local (D-20) nada cambia.

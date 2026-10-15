@@ -29,6 +29,7 @@ export function MarABordo({
   onClose,
   onMenu,
   onTickets,
+  onMoveMinimap,
 }: {
   panel: Exclude<MarPanel, 'logros'>;
   settings: Settings | null;
@@ -44,6 +45,8 @@ export function MarABordo({
   onMenu?: () => void;
   /** «Comprar entradas» de Welcome Aboard: abre «Elige tu evento» dentro del mar. */
   onTickets?: () => void;
+  /** «Mover el minimapa» de Ajustes (T298): cierra la hoja y deja el minimapa en modo mover. */
+  onMoveMinimap?: () => void;
 }) {
   const body = useRef<HTMLDivElement>(null);
   const menu = onMenu ? { onMenu } : {};
@@ -90,6 +93,20 @@ export function MarABordo({
                 settings={settings}
                 onChange={(patch) => onSettings((s) => ({ ...s, ...patch }))}
               />
+              {onMoveMinimap ? (
+                <fieldset className="juego-field" data-testid="mar-ajustes-minimapa">
+                  <legend>{t('mar.ajustes.minimapa')}</legend>
+                  <button
+                    type="button"
+                    className="mar-btn"
+                    data-testid="mar-ajustes-mover-minimapa"
+                    onClick={onMoveMinimap}
+                  >
+                    {t('mar.ajustes.moverMinimapa')}
+                  </button>
+                  <small>{t('mar.ajustes.moverMinimapaAyuda')}</small>
+                </fieldset>
+              ) : null}
             </>
           ) : null}
         </MarHoja>

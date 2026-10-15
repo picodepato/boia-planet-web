@@ -53,6 +53,26 @@ export type GestureResult =
   { kind: 'tap' } | { kind: 'drop'; x: number; y: number } | { kind: 'cancel' };
 
 /**
+ * Qué hace soltar el minimapa de `/mar` (plan 032 T298). Normal: un toque, o
+ * una pulsación larga que no se movió, abre o cierra el mapa grande; lo demás
+ * no hace nada. En modo mover (Ajustes → «Mover el minimapa») nunca abre el
+ * mapa: arrastrarlo lo suelta en un sitio (`drop`) y tocarlo lo cambia de lado
+ * (`swap`). `still`: el dedo no se apartó más de `TAP_SLOP_PX` en todo el gesto.
+ */
+export type MinimapRelease = 'toggle-map' | 'drop' | 'swap' | 'none';
+
+export function minimapRelease(o: {
+  moving: boolean;
+  result: GestureResult | null;
+  still: boolean;
+}): MinimapRelease {
+  if (o.moving) return o.still ? 'swap' : 'drop';
+  if (!o.result) return 'none';
+  if (o.result.kind === 'tap' || (o.result.kind === 'drop' && o.still)) return 'toggle-map';
+  return 'none';
+}
+
+/**
  * Toque = soltar antes de 500 ms sin moverse; pulsación larga = 500 ms
  * quieto, y entonces el dedo arrastra; si se mueve antes, no es nada (así un
  * roce del minimapa no lo abre). Tiempos en ms, posiciones en px de pantalla.

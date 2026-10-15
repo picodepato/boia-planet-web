@@ -1038,6 +1038,51 @@
   border-color: transparent;
 }
 
+/* Mover el minimapa (T298, REQ-MUN-021): un aro naranja discontinuo mientras
+   está en modo mover; sigue al dedo y se suelta a un lado de arriba. */
+.mar-minimap.is-moving {
+  outline: 3px dashed var(--orange);
+  outline-offset: 4px;
+  cursor: grab;
+  animation: mar-minimap-moving 1.2s ease-in-out infinite;
+}
+
+.mar-minimap.is-moving .mar-minimap__tag {
+  background: var(--orange);
+  border-color: transparent;
+}
+
+/* Sólo late el aro (el minimapa no cambia de caja: se puede tocar mientras). */
+@keyframes mar-minimap-moving {
+  0%,
+  100% {
+    outline-offset: 3px;
+  }
+  50% {
+    outline-offset: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mar-minimap.is-moving {
+    animation: none;
+  }
+}
+
+/* El minimapa a la derecha: se cambia el sitio con los saldos; los avisos, sin pisarlo. */
+.mar[data-minimapa='derecha'] .mar-top {
+  flex-direction: row-reverse;
+}
+
+.mar[data-minimapa='derecha'] .mar-balances {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.mar[data-minimapa='derecha'] .mar-notices {
+  right: calc(var(--safe-r) + 10px + var(--mini) + 10px);
+}
+
 /* En el mapa grande el globo se encoge: deja ver los rótulos de arriba. */
 .mar-globe.is-map .mar-minimap {
   width: 56px;

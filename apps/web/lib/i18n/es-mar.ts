@@ -135,6 +135,14 @@ export const esMar = {
   'mar.minimap.abrirElMapaDel': 'Abrir el mapa del planeta',
   'mar.minimap.barco': 'Barco',
   'mar.minimap.mapa': 'Mapa',
+  // Plan 032 T298, mover el minimapa: muestra, pendiente del visto bueno de Álvaro.
+  'mar.minimap.mover': 'Muéveme',
+  'mar.minimap.moverAria':
+    'Mover el minimapa: arrástralo a un lado y suéltalo, o tócalo para cambiarlo de lado',
+  'mar.ajustes.minimapa': 'Minimapa',
+  'mar.ajustes.moverMinimapa': 'Mover el minimapa',
+  'mar.ajustes.moverMinimapaAyuda':
+    'Se cierra este menú: arrastra el minimapa al otro lado de arriba o tócalo para cambiarlo de lado.',
   'mar.sheet.descuentoEncontradoMuestra': '🎁 Descuento encontrado · muestra',
   'mar.sheet.loTienesGuardadoEn': 'Lo tienes guardado en el menú, en «Mis códigos».',
   'mar.sheet.m': ' · {distance} m',
