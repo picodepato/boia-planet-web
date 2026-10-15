@@ -411,7 +411,11 @@ for (const view of VIEWS) {
             Object.fromEntries(
               [...document.querySelectorAll<HTMLElement>('.mar-pin.is-on[data-pin]')].map((el) => {
                 const r = el.getBoundingClientRect();
-                return [el.dataset.pin!, { x: r.left + r.width / 2, y: r.bottom }];
+                // La punta del rótulo (su isla), no su caja: el reparto de rótulos (T280) aparta
+                // las cajas de los mandos y de otras islas, y la punta (`--pin-tip`) sigue a la isla.
+                const tip = parseFloat(el.style.getPropertyValue('--pin-tip')) || 0;
+                const scale = el.offsetWidth ? r.width / el.offsetWidth : 1;
+                return [el.dataset.pin!, { x: r.left + r.width / 2 + tip * scale, y: r.bottom }];
               }),
             ),
           );
@@ -556,6 +560,94 @@ test.describe('tarjetas y avisos (móvil 375×812)', () => {
     }
     // Sin tocarlo, se va solo (con su tiempo de lectura, D-22).
     await expect(page.getByTestId('mar-aviso')).toHaveCount(0, { timeout: 45_000 });
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('móvil pequeño 360×640 (plan 032 T299)', () => {
+  test.use({ viewport: { width: 360, height: 640 } });
+
+  test('el mapa grande: ningún rótulo bajo el «Cerrar» ni encima de otro', async ({ page }) => {
+    test.setTimeout(240_000);
+    const errors = await openMar(page);
+    await page.getByTestId('mar-minimapa').click();
+    await expect(page.getByTestId('mar-minimapa')).toHaveAttribute('aria-pressed', 'true');
+    const read = () =>
+      page.evaluate(() => {
+        const rect = (el: Element) => {
+          const r = el.getBoundingClientRect();
+          return {
+            id: (el as HTMLElement).dataset.pin ?? '',
+            l: r.left,
+            t: r.top,
+            r: r.right,
+            b: r.bottom,
+          };
+        };
+        const alpha = (el: Element) => {
+          const v = parseFloat(getComputedStyle(el).getPropertyValue('--pin-alpha'));
+          return Number.isNaN(v) ? 1 : v;
+        };
+        const close = document.querySelector('.mar-mapclose');
+        return {
+          close: close ? rect(close) : null,
+          pins: [...document.querySelectorAll('.mar-pin.is-on[data-pin]')]
+            .filter((el) => !el.classList.contains('is-behind') && alpha(el) > 0.9)
+            .map(rect),
+        };
+      });
+    // Quieta: la cámara del mapa llega suave.
+    let prev = '';
+    await expect
+      .poll(
+        async () => {
+          const now = JSON.stringify(await read());
+          const same = now === prev;
+          prev = now;
+          return same;
+        },
+        { intervals: [400], timeout: 30_000 },
+      )
+      .toBe(true);
+    const { close, pins } = await read();
+    expect(close, 'el «Cerrar» del mapa').not.toBeNull();
+    expect(pins.length, 'rótulos a la vista').toBeGreaterThanOrEqual(4);
+    const hit = (a: NonNullable<typeof close>, b: NonNullable<typeof close>) =>
+      a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+    for (const p of pins) {
+      expect(hit(p, close!), `${p.id} bajo el «Cerrar»`).toBe(false);
+      for (const q of pins) if (p.id < q.id) expect(hit(p, q), `${p.id} / ${q.id}`).toBe(false);
+    }
+    expect(errors).toEqual([]);
+  });
+
+  test('si el navegador quita el 3D, el mar se para con un aviso y sigue al volver', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const errors = await openMar(page);
+    const canvas = page.getByTestId('mar-canvas');
+    await expect(canvas).toHaveAttribute('data-gl', 'running');
+    const lose = (action: 'loseContext' | 'restoreContext') =>
+      page.evaluate((a) => {
+        const el = document.querySelector('[data-testid="mar-canvas"]') as HTMLCanvasElement;
+        // Con el contexto perdido `getExtension` da null: la extensión se guarda la primera vez.
+        const w = window as unknown as { __loseCtx?: WEBGL_lose_context };
+        if (!w.__loseCtx) {
+          const gl = el.getContext('webgl2') ?? el.getContext('webgl');
+          w.__loseCtx = gl!.getExtension('WEBGL_lose_context')!;
+        }
+        w.__loseCtx[a]();
+      }, action);
+    await lose('loseContext');
+    await expect(canvas).toHaveAttribute('data-gl', 'lost');
+    const aviso = page.getByTestId('mar-gl-aviso');
+    await expect(aviso).toBeVisible();
+    await expectOnTop(aviso);
+    expect((await box(aviso)).width).toBeLessThanOrEqual(360);
+    await lose('restoreContext');
+    await expect(canvas).toHaveAttribute('data-gl', 'running');
+    await expect(aviso).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 });

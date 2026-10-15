@@ -183,6 +183,7 @@ import { takeZarpar } from '../../lib/intro/zarpar';
 import type { RadioMount as RadioMountComponent } from '../../lib/radio/ui/radio-mount';
 import { marWorld } from './engine/compact';
 import type { CharacterEvent, CourseInfo, Mar3D, PinSpec, Stats, VoyageEnd } from './engine/mar3d';
+import type { GlTrack } from '../../lib/intro/gl-context';
 import { PIN_AVOID, mapKeeps } from './engine/labels';
 import { MOOD_IDS, type MoodId } from './engine/palette';
 import type { Period } from './engine/wrap';
@@ -660,6 +661,8 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
   // Cambio de mundo por agujero negro (T41, T51): el mundo de ahora y la transición.
   const [worldId, setWorldId] = useState<string | null>(null);
   const [switching, setSwitching] = useState<'vortex' | 'fade' | null>(null);
+  // El contexto WebGL del mar (T299): `lost` se espera; `fallback` ofrece recargar.
+  const [gl, setGl] = useState<GlTrack['state']>('running');
   const [worldPending, setWorldPending] = useState(false);
   const [ships, setShips] = useState<ShipModelEntry[]>([]);
   // El barco que se lleva (estilo y skin) y la tienda «Barco» (T40).
@@ -1656,6 +1659,7 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         // 22 nudos sólo con el cronómetro de Los Rápidos corriendo (T109).
         racing: () => raceRef.current?.race.racing ?? false,
         onSwitch: (mode) => setSwitching(mode),
+        onGl: (t) => setGl(t.state),
         // El tiempo (T268): sin episodios en una carrera ni con un minijuego abierto.
         busy: () => (raceRef.current?.race.active ?? false) || minigameOpenRef.current,
         // Un temporal entero navegado (T274): el episodio de tormenta se va del todo.
@@ -2720,6 +2724,30 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
       ) : null}
 
       {/* Avisos (T53): un chip pequeño arriba que se va solo (tiempo de lectura, D-22). */}
+      {gl !== 'running' ? (
+        <div
+          className="mar-glnotice"
+          role="status"
+          aria-live="polite"
+          data-testid="mar-gl-aviso"
+          data-gl={gl}
+        >
+          <span className="mar-glnotice__text">
+            {msg(gl === 'lost' ? 'mar.gl.perdido' : 'mar.gl.noVuelve')}
+          </span>
+          {gl === 'fallback' ? (
+            <button
+              type="button"
+              className="mar-glnotice__btn"
+              data-testid="mar-gl-recargar"
+              onClick={() => window.location.reload()}
+            >
+              {msg('mar.gl.recargar')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="mar-notices" role="status" aria-live="polite">
         {notices.current ? (
           <div

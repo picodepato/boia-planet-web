@@ -187,7 +187,9 @@ import {
   raceBuoy,
   roadMarkers,
 } from './race-props';
+import { GlWatch } from './gl-watch';
 import { createWater } from './water';
+import type { GlTrack } from '../../../lib/intro/gl-context';
 import { LIVELY_SEA, NO_ROCK, boatRock, shoreCalm, shoreDistance, waveAmplitude } from './waves';
 import { type Canoncito, createCanoncito } from './canoncito';
 import { AFTER_PLACE_ID, AfterClock, type AfterEvent } from '@boia/engine/after';
@@ -364,6 +366,11 @@ export interface Mar3DOptions {
   hour?(): number | null;
   /** La isla del after sube del agua o se hunde (T273). Para el aviso. */
   onAfter?(e: AfterEvent): void;
+  /**
+   * El contexto WebGL del lienzo se pierde, vuelve o no vuelve (plan 032 T299, REQ-ARQ-016):
+   * `lost` el mar se para, `running` sigue, `fallback` no vuelve (la web ofrece recargar).
+   */
+  onGl?(t: GlTrack): void;
 }
 
 /** Lo que pasa con los personajes del agua (plan 029 T270). */
@@ -554,6 +561,8 @@ export class Mar3D {
 
   private readonly opts: Mar3DOptions;
   private readonly renderer: WebGLRenderer;
+  /** El contexto WebGL del lienzo (T299): perdido, el mar no simula ni pinta. */
+  private readonly glWatch: GlWatch;
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(40, 1, 0.5, 5000);
   private readonly hemi = new HemisphereLight();
@@ -881,6 +890,13 @@ export class Mar3D {
       stencil: false,
     });
     this.renderer.setPixelRatio(this.dpr);
+    this.opts.canvas.dataset.gl = 'running';
+    this.glWatch = new GlWatch(opts.canvas, (t) => {
+      opts.canvas.dataset.gl = t.state;
+      // De vuelta: el reloj sigue desde ahora (sin un salto de tiempo).
+      if (t.state === 'running') this.last = performance.now();
+      opts.onGl?.(t);
+    });
 
     this.moods = moods(opts.sea);
     this.moodId = opts.mood;
@@ -2715,6 +2731,7 @@ export class Mar3D {
     this.stopDefense();
     this.switcher.destroy();
     cancelAnimationFrame(this.raf);
+    this.glWatch.dispose();
     window.removeEventListener('resize', this.resize);
     this.unbindInput();
     for (const p of this.pins) p.el.remove();
@@ -3786,7 +3803,7 @@ export class Mar3D {
     this.raf = requestAnimationFrame(this.frame);
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    if (this.paused) return;
+    if (this.paused || !this.glWatch.paints) return;
     this.time += dt;
     // Cambio de mundo: el barco se queda quieto y la entrada no cuenta.
     const free = this.switcher.advance(dt * 1000);
@@ -4997,7 +5014,12 @@ export class Mar3D {
    * último; mientras se mueve (arrastrar, acercar), cada rótulo sigue a su
    * lugar tal cual y el reparto se rehace cada `PIN_RELAYOUT_MS`.
    */
-  private layoutOf(far: boolean, shown: readonly PinView[], sights: PinSight[], W: number): PinLook[] {
+  private layoutOf(
+    far: boolean,
+    shown: readonly PinView[],
+    sights: PinSight[],
+    W: number,
+  ): PinLook[] {
     const shape = `${far ? 'm' : ''}|${W}|${this.hudRects.map((r) => `${r.left},${r.top},${r.right},${r.bottom}`).join(';')}|${shown
       .map((p, i) => {
         const s = sights[i]!;

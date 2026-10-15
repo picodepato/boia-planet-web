@@ -2,6 +2,7 @@
 
 import type { Settings } from '@boia/engine/ui';
 import { useRef } from 'react';
+import { CarnetIcon } from '../../lib/carnet-icon';
 import { CarnetPanel } from '../../lib/mundo/carnet/carnet-panel';
 import { SoundAndLanguage } from '../../lib/mundo/menu/sections/ajustes';
 import { SensitivityField } from '../../lib/mundo/menu/sections/controles';
@@ -54,7 +55,11 @@ export function MarABordo({
     case 'carnet':
       return (
         <MarHoja
-          title={t('mar.client.miCarnet')}
+          title={
+            <>
+              <CarnetIcon /> {t('mar.client.miCarnet')}
+            </>
+          }
           label={t('menu.carnet')}
           closeLabel={t('mar.hoja.cerrar', { title: t('menu.carnet') })}
           testId="mar-carnet"

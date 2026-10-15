@@ -14,6 +14,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { CarnetIcon } from '../carnet-icon';
 import { type MessageKey, t } from '../i18n';
 import { isSupabaseConfigured } from '../supabase/config';
 import './account.css';
@@ -124,8 +125,8 @@ const TITLE: Record<GateRequest['reason'], MessageKey> = {
   ranking: 'auth.title.ranking',
 };
 
-const WHY_ICON: Record<GateRequest['reason'], string> = {
-  carnet: '🪪',
+const WHY_ICON: Record<GateRequest['reason'], ReactNode> = {
+  carnet: <CarnetIcon />,
   skin: '⛵',
   stamp: '✺',
   ranking: '🏆',

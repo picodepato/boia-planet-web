@@ -105,7 +105,7 @@ Definidos en [03-mundo-y-motor](03-mundo-y-motor.md). 39 requisitos: 38 L1, 1 L2
 | REQ-MUN-018 | Boceto del mapa de lanzamiento | §49.14, P3, D-20 | L1 | Documento del mapa revisado por el equipo, con puerto de salida e islas de Faro y Cañón | Es el mapa compartido de REQ-MUN-035 |
 | REQ-MUN-019 | Tamaño del minimapa | §10, D-07 | L1 | Medición en 360×640 y en escritorio | — |
 | REQ-MUN-020 | Minimapa ampliable | §10, P1 | L1 | Test: un toque lo amplía y muestra los nombres de lo descubierto | — |
-| REQ-MUN-021 | Minimapa reposicionable | §10, D-07 | L1 | Test: 500 ms entra en modo mover; la posición persiste tras recargar | — |
+| REQ-MUN-021 | Minimapa reposicionable | §10, D-07 | L1 | Test: «Mover el minimapa» de Ajustes (en /mar, un toque largo abre el mapa grande; el gesto de 500 ms sigue en el motor) entra en modo mover; la posición persiste tras recargar | — |
 | REQ-MUN-022 | Brújula al objetivo | §5, §10, P3 | L1 | Test: apunta al seleccionado, si no al siguiente sin explorar, y a la isla del evento de entrada | — |
 | REQ-MUN-023 | Objeto = asset + comportamientos | §9, §24, §48.1, §48.9 | L1 | Cocodrilo convertido en roca cambiando sólo el asset (P2, prueba 2) | — |
 | REQ-MUN-024 | Anatomía de 9 partes | §48.2 | L1 | El esquema del objeto tiene las 9 partes | — |

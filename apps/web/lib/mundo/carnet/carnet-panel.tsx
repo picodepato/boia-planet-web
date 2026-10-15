@@ -16,7 +16,7 @@ import { carnetPath } from './share';
 import { useCarnet } from './use-carnet';
 
 /**
- * 🪪 Mi Carnet (REQ-IDE-011): al entrar se ve primero como lo ven otros, con
+ * Mi Carnet (REQ-IDE-011): al entrar se ve primero como lo ven otros, con
  * «Editar mi Carnet»; sin Carnet, la invitación es «Crear mi Carnet». Desde
  * aquí también se comparte y se llega a la botella propia. Lo enseñan el Menú
  * de a bordo del 2D y la hoja «Mi Carnet» del mar 3D (T55), sin salir del mar.

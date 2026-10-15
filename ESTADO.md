@@ -4,6 +4,48 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T299: /mar and phones
+
+Qué existe:
+- /mar sobrevive a perder el contexto WebGL como la landing desde T289:
+  `apps/web/app/mar/engine/gl-watch.ts` (`GlWatch`: `webglcontextlost` /
+  `webglcontextrestored`, la espera de 5 s sólo con la página a la vista, las
+  reglas son las de `lib/intro/gl-context.ts`). `Mar3D` lo crea con el lienzo,
+  no simula ni pinta mientras falta (`frame`), pone `data-gl` en el lienzo y
+  avisa con `onGl`; `mar-client.tsx` muestra un aviso tranquilo
+  (`.mar-glnotice`, claves `mar.gl.*`, `muestra`) y, si no vuelve, un botón
+  «Recargar». three.js reconstruye solo sus recursos al restaurar.
+  `docs/matriz-dispositivos.md` fila 16 pasa a e2e (8 e2e, 6 parciales, 2 a
+  mano) y REQ-ARQ-016 (estado.md) lo recoge; sigue PARCIAL por las otras filas.
+- Avisos de arriba (`.mar-notice`): el texto se parte (hasta 3 líneas) en vez
+  de cortarse con puntos suspensivos; ya respetaban las zonas seguras.
+- Mapa grande a 360 px: ya estaba cubierto por T279/T280 (`map-labels.test.ts`
+  pasa); se añade una comprobación real en el navegador (ningún rótulo bajo el
+  «Cerrar» ni encima de otro) sin cambiar el código del mapa: no se encontró
+  solape.
+- El emoji de la tarjeta de identidad (U+1FAAA) sale de `apps/web` y
+  `packages`: componente `apps/web/lib/carnet-icon.tsx` (SVG de 1em, sin
+  imports) usado en `sign-in-sheet`, `reward`, sección Carnet del menú,
+  `checkout`, `a-bordo` y `logros`; las claves `mar.logros.miCarnet` y
+  `mar.client.miCarnet` pierden el emoji. `carnet-icon.test.ts` vigila que no
+  vuelva. Landing: 199,3 kB de 200, sin cambio.
+- Prueba «(ni la carta)» de `mar-hud.spec.ts`: la que fallaba era la prueba,
+  no la app. Medía la caja del rótulo, que el reparto de rótulos de T280
+  aparta de los mandos y de otras islas; ahora mide la punta del rótulo
+  (`--pin-tip`), que sigue a su isla. Pasa en móvil y escritorio.
+- REQ-MUN-021 en `09-requisitos.md`: criterio ajustado a «Mover el minimapa»
+  de Ajustes (T298).
+
+Comandos:
+- `E2E_PORT=3343 pnpm exec playwright test e2e/mar-hud.spec.ts --workers=1`
+  (desde apps/web) → exit 0, 18 pasan, 10 saltadas (las de otro proyecto).
+- vitest (`--exclude '**/packages/db/**'`): 344 archivos, 3058 pasan, 1 saltada.
+- `tools/spec/checks.sh` (sus 6 comprobadores uno a uno): exit 0 todos.
+- `pnpm lint` exit 0 · `pnpm typecheck` exit 0 · `pnpm build` exit 0 (landing 199,3 / 200 kB).
+
+Pendiente: textos `mar.gl.*` son `muestra` hasta el visto bueno de Álvaro;
+probar a mano en un móvil real (bloquear la pantalla y volver).
+
 ## 2026-10-15 — plan 032 T301: Our own funnel counters and the «Embudo» panel
 
 REQ-ARQ-019 sin terceros (Álvaro, 2026-10-15). PostHog retirado.

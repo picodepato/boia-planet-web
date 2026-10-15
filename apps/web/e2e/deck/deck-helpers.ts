@@ -38,7 +38,7 @@ const conRutaEmoji = new WeakSet<Page>();
 
 /**
  * Noto Color Emoji en la página (T209): Windows 10 no tiene los emoji nuevos
- * (🪪). Se sirve la fuente que descarga `fuente-emoji.ts` y se añade, sólo
+ * (como la tarjeta de identidad, U+1FAAA). Se sirve la fuente que descarga `fuente-emoji.ts` y se añade, sólo
  * para los emoji (`unicode-range`), a cada familia de fuentes de la página
  * (las de next/font): el texto se ve igual y los emoji salen pintados. Se
  * rehace en cada foto por si la página ha navegado o tiene fuentes nuevas.

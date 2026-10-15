@@ -29,11 +29,11 @@ pruebas del mundo 2D borrado (D-25), al día con el plan 017 (2026-10-07, T196).
 | 13 | Sin conexión | a mano | Sin prueba ni pantalla propia: el navegador enseña su error |
 | 14 | Recarga | e2e | `mar-paridad.spec.ts` «al recargar, el barco sigue donde estaba (REQ-IDE-004)»; `mar-botellas.spec.ts` «botellas: las de muestra flotan; con Carnet se echa una de 140 y sigue al recargar»; `carnet.spec.ts` «leer una botella de muestra → VER SU CARNET»; `logros.spec.ts` «/mar: completar un logro, su número en el icono, «Reclamar» una vez y recargar» |
 | 15 | Retorno desde el checkout | parcial | `tickets.spec.ts` «landing → compra de prueba → Mi Carnet; isla → compra de prueba → los dos sellos» (checkout de prueba dentro de la web); volver desde una ticketera real llega con la versión final (D-20) |
-| 16 | Pérdida de contexto gráfico | parcial | Plan 022 T243, en el panel del navegador con `WEBGL_lose_context` sobre la landing en reposo: sin errores de JS y «Zarpar» sigue funcionando, pero la escena desaparece; al restaurar el contexto vuelve el planeta sin las islas y el lienzo del rótulo «BOIA» queda en blanco. Sin manejo propio de `webglcontextlost`. `/mar`, sin probar |
+| 16 | Pérdida de contexto gráfico | e2e | Landing (plan 030 T289, `landing-gl-context.spec.ts`): versión estática mientras falta, la escena vuelve al restaurar; sin restaurar en 5 s o a la 3.ª pérdida, estática el resto de la visita. `/mar` (plan 032 T299, `mar-hud.spec.ts` «si el navegador quita el 3D…» con `WEBGL_lose_context`, y `gl-watch.test.ts`): el mar se para (sin simular ni pintar), un aviso tranquilo arriba, y al restaurar sigue; sin restaurar en 5 s con la página a la vista (o a la 3.ª pérdida) el aviso ofrece «Recargar». La espera sólo corre con la página a la vista: un cambio de app o la pantalla bloqueada no la agotan. Antes de T289 y T299 (plan 022 T243), la escena desaparecía y no volvía bien |
 
-**Resumen:** 7 con e2e, 7 parciales, 2 a mano (áreas seguras y sin
+**Resumen:** 8 con e2e, 6 parciales, 2 a mano (áreas seguras y sin
 conexión). Zoom y pérdida de contexto se probaron en emulación en el plan 022
-(T243); la pérdida de contexto deja la escena rota hasta recargar.
+(T243); la pérdida de contexto ya se maneja en la landing (T289) y en /mar (T299).
 
 ## Pruebas en dispositivos físicos (REQ-ARQ-017, ENT 04)
 

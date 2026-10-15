@@ -4,6 +4,7 @@ import { NICKNAME_MAX, NICKNAME_MIN } from '@boia/contracts';
 import type { PurchaseSource } from '@boia/contracts/analytics';
 import { isStoreError } from '@boia/store';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { CarnetIcon } from '../carnet-icon';
 import { esCarnetBloque } from '../i18n/es-carnet-bloque';
 import { formatEventDate } from '../i18n/web';
 import { draftFrom, saveCarnet } from '../mundo/carnet/carnet-editor';
@@ -336,7 +337,7 @@ export function CarnetRequired({ accounts = isSupabaseConfigured() }: { accounts
   return (
     <div className="checkout__offer" role="status" data-testid="checkout-carnet-requerido">
       <p className="checkout__offer-title">
-        <span aria-hidden="true">🪪 </span>
+        <CarnetIcon />{' '}
         {C.carnet.requiredTitle}
       </p>
       <p data-testid="checkout-carnet-entrar">

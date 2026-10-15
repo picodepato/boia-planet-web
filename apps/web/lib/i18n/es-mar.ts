@@ -35,7 +35,7 @@ export const esMar = {
   'mar.canon.anuncio.cofre': 'Cofre abierto: elige una mejora.',
   'mar.logros.logros': 'Logros',
   'mar.logros.logros2': '🏆 Logros',
-  'mar.logros.miCarnet': '🪪 Mi Carnet',
+  'mar.logros.miCarnet': 'Mi Carnet',
   'mar.logros.cerrarLogros': 'Cerrar logros',
   'mar.botella.cerrar': 'Cerrar la botella',
   'mar.botella.miBotella': '✉️ Mi botella',
@@ -70,9 +70,13 @@ export const esMar = {
   'mar.client.logros': 'Logros',
   'mar.client.menu': 'Menú',
   'mar.client.momentoDelDia': 'Momento del día',
-  'mar.client.miCarnet': '🪪 Mi Carnet',
+  'mar.client.miCarnet': 'Mi Carnet',
   'mar.client.mundos': 'Mundos',
   'mar.client.cerrarAviso': 'Cerrar aviso',
+  // Plan 032 T299, el 3D se pierde (cambio de app, pantalla bloqueada…): muestra, pendiente de Álvaro.
+  'mar.gl.perdido': 'El mar se ha puesto en pausa un momento. Espera: vuelve solo.',
+  'mar.gl.noVuelve': 'El mar no ha vuelto. Recarga la página para seguir navegando.',
+  'mar.gl.recargar': 'Recargar',
   'mar.client.entreDosMundos': 'Entre dos mundos…',
   'mar.client.preparados': 'Preparados…',
   // Los Rápidos (antes El Freu), circuito cerrado de tres vueltas (T61).

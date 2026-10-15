@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 /**
  * Emoji nuevos en las capturas (plan 018 T209). Windows 10 no trae los emoji
- * de Unicode 14 o más (🪪 de «Mi Carnet»), así que el navegador de las
+ * de Unicode 14 o más (la tarjeta de identidad, U+1FAAA), así que el navegador de las
  * capturas los pinta como un cuadrado. Las capturas usan Noto Color Emoji
  * (Google, SIL OFL), que se descarga una vez del repositorio oficial de
  * Google Fonts a esta carpeta ignorada por git; `deck-helpers` la sirve y la

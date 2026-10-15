@@ -1,5 +1,6 @@
 'use client';
 
+import { CarnetIcon } from '../../lib/carnet-icon';
 import { AchievementsPanel } from '../../lib/logros/panel';
 import { t } from '../../lib/i18n';
 import { MarHoja } from './hoja';
@@ -34,7 +35,7 @@ export function MarLogros({
           data-testid="mar-logros-carnet"
           onClick={onCarnet}
         >
-          {t('mar.logros.miCarnet')}
+          <CarnetIcon /> {t('mar.logros.miCarnet')}
         </button>
       }
       onClose={onClose}

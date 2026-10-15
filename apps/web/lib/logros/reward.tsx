@@ -2,6 +2,7 @@
 
 import type { AchievementReward } from '@boia/store';
 import { useEffect } from 'react';
+import { CarnetIcon } from '../carnet-icon';
 import { CoinIcon } from '../coin-icon';
 import { type CosmeticNames, REWARD_MS } from './model';
 import { useCountUp } from './use-logros';
@@ -66,7 +67,7 @@ export function ClaimReward({
       {reward.kind === 'badge' ? (
         <span className="logros-premio__badge">
           <span className="logros-premio__carnet" aria-hidden="true">
-            🪪
+            <CarnetIcon />
           </span>
           <span className="logros-premio__fly" aria-hidden="true">
             🎖️
