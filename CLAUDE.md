@@ -48,7 +48,7 @@ de ~10 tareas grandes (T00, T01…, la numeración sigue entre planes) que la
 skill `/orchestrator` (`.claude/skills/orchestrator/`; qué necesita, en
 `.claude/skills/README.md`) planifica con Álvaro y
 corre con agentes en worktrees, integrando cada tarea en `main` con sus
-pruebas. Los planes 001–026 están terminados; el 027 está escrito y sin aprobar.
+pruebas. Los planes 001–032 están terminados.
 
 - Cada tarea deja su sección arriba de `ESTADO.md` (`## <fecha> — plan NNN
   Txx: <título>`: qué existe, comandos con su resultado, pendiente).

@@ -69,7 +69,7 @@ El invitado juega con progreso local y una identidad anónima de servidor; al re
 
 ## Operación y entrega
 
-- **REQ-ARQ-019** `L1` — Medir el embudo con PostHog en la nube UE con los eventos landing_view, explore_start, discount_found, tickets_panel_open, ticket_click_out y purchase_confirmed, este último emitido sólo desde el webhook de la ticketera. *Fuente: D-04*
+- **REQ-ARQ-019** `L1` — Medir el embudo con contadores propios en Supabase (día, paso y cuántas, sin identificadores de visitante) con los eventos landing_view, explore_start, discount_found, tickets_panel_open, ticket_click_out y purchase_confirmed, este último emitido sólo desde el webhook de la ticketera. PostHog se retiró (plan 032 T301, Álvaro, 2026-10-15), sustituido por esos contadores propios. *Fuente: D-04*
 - **REQ-ARQ-020** `L1` — Preparar i18n por claves desde el principio y publicar el contenido sólo en español. *Fuente: P2, D-03*
 - **REQ-ARQ-021** `L2` — Añadir inglés: traducción del contenido administrable, resolución automática del idioma y selector en Ajustes. *Fuente: §4.1, §20, §47-B, D-02, D-03*
 - **REQ-ARQ-022** `L1` — Preparar entornos de prueba y producción con HTTPS, caché con archivos versionados, métricas de errores, alertas y límites de coste. *Fuente: P3*

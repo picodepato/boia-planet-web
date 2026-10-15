@@ -4,6 +4,25 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-15 — plan 032 T304: Spec and docs up to date
+
+- **REQ-ARQ-018 pasa a HECHO** (suite automática): nueva prueba `test_suite_automatica` en `tools/spec/test_estado.py` (nombra el REQ en su docstring) que comprueba que `pnpm test` llega a `checks.sh` y que `checks.sh` corre `estado.py`, `test_estado.py` y `check.py`. Lo de «en cada encargo» es costumbre de trabajo, no lo que la prueba mide.
+- **REQ-ARQ-019 sigue PARCIAL**, con prueba que lo nombra: `apps/web/lib/analytics/funnel.test.ts` (dos pruebas nuevas: los pasos del navegador son el contrato sin `purchase_confirmed`; el sink sólo llama a `funnel_hit` de la base propia, sin PostHog ni otro host). Falta `purchase_confirmed` desde el webhook de la ticketera (REQ-COM-017).
+- **Spec de REQ-ARQ-019** actualizada en `docs/spec/08-arquitectura-y-datos.md` y `docs/spec/09-requisitos.md`: contadores propios en Supabase (T301, Álvaro, 2026-10-15) en lugar de PostHog. La fuente sigue siendo D-04, para que el chequeo de coherencia 08/09 pase.
+- **`docs/TRASPASO.md` reescrito** a una pantalla (estado 2026-10-15): Álvaro lleva el proyecto, Cloudflare y Vercel, modo cuentas desde 2026-10-14, planes 027–032, contadores del REQ, qué depende de Álvaro (P-preguntas abiertas, D-04 pendiente, plan de seguridad).
+- **`CLAUDE.md`**: la frase de estado de planes pasa a «Los planes 001–032 están terminados.»
+- **`ESTADO.md`: sin cambios.** La frase de la T303 que decía que `mundos/arcilla/mapa.json` se había formateado con Prettier no existe en el archivo; la sección T303 sólo dice que `prettier --write .` formateó 227 archivos. Nada que corregir ahí.
+- **Comandos (resultados):**
+  - `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 348 archivos, 3099 pruebas pasan, 3 omitidas.
+  - `python3 tools/spec/check.py` → exit 0, 295 requisitos, 0 duplicados.
+  - `python3 tools/spec/estado.py` → exit 0: 295 REQ · HECHO 187 · PARCIAL 59 · FALTA 14 · L2 25 · final 8 · retirado 2 (antes: HECHO 186, PARCIAL 60).
+  - `python3 tools/spec/test_check.py` → exit 0 (18 pruebas). `test_estado.py` → exit 0 (9 pruebas). `test_cobertura.py` → exit 0. `tools/blender/check.py` → exit 0.
+  - `pnpm lint` → exit 0. `pnpm typecheck` → exit 0. `pnpm build` → exit 0 (landing 199.3 kB de 200 kB). `pnpm exec prettier --check .` → exit 0.
+- **Pendiente:**
+  - Los PARCIAL restantes sin prueba que los nombre (por ejemplo REQ-MUN-004, MUN-028, MUN-030, MUN-032, AVE-003, AVE-007, AVE-035, COM-015, ADM-008, ADM-032, IDE-006, IDE-012) no pasaron a HECHO: su criterio pide medición en móvil, revisión de diseño, texto aprobado por Álvaro, o una prueba que no existe aún. Quedan con su nota.
+  - Antes de publicar: D-04 de `docs/DECISIONES.md` sigue diciendo PostHog. Lo decide Álvaro; no se ha tocado.
+  - PostHog sigue en pruebas de e2e y de cabeceras (`apps/web/lib/security-headers.test.ts`, `apps/web/e2e/despliegue.spec.ts`, `apps/web/e2e/admin-papelera.spec.ts`): comprueban que no salga, no son código de envío. Limpiarlas es trabajo aparte.
+
 ## 2026-10-15 — plan 032 T303: Code cleanup
 
 - **Textos a i18n** (mismos textos, ahora por clave): la piel de Acuarela (`packages/world/src/worlds/acuarela/skin.ts` → claves `world.acuarela.*`, las nuevas en `apps/web/lib/i18n/es-acuarela.ts`; las que ya existían se reutilizan); `leaveReaction` (valor por defecto en `behaviors.ts` → `world.dialogue.leaveReaction`; `mar-client.tsx` lo resuelve con `translateSkinText`, un texto ya escrito se queda igual); `MERCHANDISE_NOTICE` / `MERCHANDISE_SAMPLE_NOTICE` → `store.notice.party` / `store.notice.sample` (en `es-web.ts`); `carrusel`, y los sueltos que halló la regla (plurales de Admin, «pendiente», «(próximamente)», «nº …»; `es-admin-gestion.ts`). Prueba nueva `apps/web/lib/mundo/acuarela-textos.test.ts` (los nombres siguen siendo los de `lugares.json` y el registro de la web no deja claves sin resolver).

@@ -7,6 +7,7 @@ Copia docs/spec/, el comprobador y las pruebas que enlaza estado.md a un
 directorio temporal, rompe una cosa y comprueba que estado.py sale con 1. La
 primera prueba exige que el estado real pase limpio.
 """
+import json
 import re
 import shutil
 import subprocess
@@ -94,6 +95,16 @@ class EstadoChecks(unittest.TestCase):
         )
         code, out = self.run_check()
         self.assertEqual(code, 0, out)
+
+
+class SuiteChecks(unittest.TestCase):
+    def test_suite_automatica(self):
+        """REQ-ARQ-018: `pnpm test` corre vitest y los comprobadores de la spec (checks.sh)."""
+        pkg = json.loads((ROOT / "package.json").read_text("utf8"))
+        self.assertIn("checks.sh", pkg["scripts"]["test"])
+        sh = (ROOT / "tools" / "spec" / "checks.sh").read_text("utf8")
+        for comprobador in ("tools/spec/estado.py", "tools/spec/test_estado.py", "tools/spec/check.py"):
+            self.assertIn(comprobador, sh)
 
 
 if __name__ == "__main__":

@@ -347,7 +347,7 @@ Definidos en [08-arquitectura-y-datos](08-arquitectura-y-datos.md). 25 requisito
 | REQ-ARQ-016 | Matriz de accesibilidad y fallos | P3 | L1 | Matriz con los 16 casos y su resultado | — |
 | REQ-ARQ-017 | Pruebas en dispositivos físicos | §4.4, P3 | L1 | Registro por dispositivo con los 5 datos y resultado de los 11 aspectos | — |
 | REQ-ARQ-018 | Suite automática desde el principio | P2, P3 | L1 | Suite leída por exit code y conteo en cada encargo | — |
-| REQ-ARQ-019 | Analítica del embudo | D-04 | L1 | Los 6 eventos llegan a PostHog; purchase_confirmed sólo desde el servidor | — |
+| REQ-ARQ-019 | Analítica del embudo | D-04 | L1 | Los pasos del navegador llegan a los contadores propios de Supabase (sin terceros; PostHog retirado, plan 032 T301); purchase_confirmed sólo desde el servidor | — |
 | REQ-ARQ-020 | i18n por claves, contenido en español | P2, D-03 | L1 | Ninguna cadena visible fuera de los archivos de claves | — |
 | REQ-ARQ-021 | Inglés | §4.1, §20, §47-B, D-02, D-03 | L2 | Cambiar a inglés traduce todo el contenido publicado | — |
 | REQ-ARQ-022 | Entornos y despliegue | P3 | L1 | Entornos de prueba y producción separados, con HTTPS | — |

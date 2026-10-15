@@ -1,4 +1,4 @@
-import { CLIENT_FUNNEL_EVENTS } from '@boia/contracts/analytics';
+import { CLIENT_FUNNEL_EVENTS, FUNNEL_EVENTS } from '@boia/contracts/analytics';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { es } from '../i18n/es';
@@ -181,5 +181,20 @@ describe('la migración (texto)', () => {
       SQL.indexOf(');', SQL.indexOf('create table')),
     );
     expect(table).not.toMatch(/\b(ip|user_agent|visitor|session|user_id)\b/);
+  });
+});
+
+describe('REQ-ARQ-019: analítica del embudo sin terceros', () => {
+  const SINK = readFileSync(new URL('./sink.ts', import.meta.url), 'utf8');
+
+  it('REQ-ARQ-019: los pasos del navegador son todo el contrato menos purchase_confirmed', () => {
+    expect(CLIENT_FUNNEL_EVENTS).toEqual(FUNNEL_EVENTS.filter((e) => e !== 'purchase_confirmed'));
+    expect(CLIENT_FUNNEL_EVENTS).not.toContain('purchase_confirmed');
+  });
+
+  it('REQ-ARQ-019: cada paso sale sólo a la base propia (funnel_hit), sin PostHog ni otro host', () => {
+    expect(SINK).toContain('/rest/v1/rpc/funnel_hit');
+    expect(SINK).not.toMatch(/posthog/i);
+    expect(SINK).not.toMatch(/https?:\/\//);
   });
 });
