@@ -1,6 +1,6 @@
 # Plan 032 — Polish, a livelier sea and our own funnel
 
-Status: active
+Status: done
 Created: 2026-10-15
 Base branch: main
 Goal: After plan 031 (artists claim their profile), and leaving the security checklist (`plans/seguridad-pendiente.md`) for later (Álvaro, 2026-10-15): half polish, half new things. Polish: /mar and phones (lost 3D context, cut notices, map labels, 🪪 box on Windows), accounts and progress leftovers, code cleanup (loose strings to i18n with a lint rule, prettier, flaky test, stale «faro»), and the spec and docs brought up to date (REQs that are built but no test names, a rewritten `docs/TRASPASO.md`). New: a livelier sea (real waves that move the surface and rock the boat, a movable minimap, FPS measured), our own cookie-free funnel counters in Supabase with an «Embudo» panel in the Admin (replacing the PostHog sink), and a tested backup restore plus host parity that also checks the accounts mode. Ticketing (P2) stays out.
@@ -103,7 +103,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: loose strings to keys (Acuarela, leaveReaction, store notices, ~20 admin), ESLint rule `no-loose-strings` (+ attribute expressions), prettier over the repo with ESTADO/CLAUDE.md/mundos ignored, admin-password test reports Auth status (cause unconfirmed, 6+ green runs); faro kept (still read); Opus audit ok after minor fixes → a9d0a6c
 
 ## T304 — Spec and docs up to date
-- Status: pending
+- Status: done
 - Depends on: T298, T299, T300, T301, T302, T303
 - Model: haiku
 - Skills: none
@@ -113,7 +113,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Done when:
   - `python3 tools/spec/estado.py` → exit 0, with the HECHO count up and every new HECHO linked to a test
   - Test command → exit 0
-- Outcome:
+- Outcome: TRASPASO.md rewritten to one screen (with the pre-push items and the production rule), REQ-ARQ-018 HECHO (187 HECHO), REQ-ARQ-019 wording → own counters, CLAUDE.md plans 001–032 done; the other ~12 PARCIAL need phone/design/Álvaro; Opus audit fixes applied → ac71cfe
 
 ## Decisions
 - 2026-10-15: Plan 032 started after plan 031 ended (main af9ac37, pushed; notice from the session that ran 031, at Álvaro's request) (orchestrator)
@@ -133,8 +133,10 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T299: WebGL loss handled by `GlWatch` reusing the landing rules; map labels needed no code change (T279/T280 layout already fine), only a guard e2e; «(ni la carta)» test was wrong, not the app (agent; Opus audit ok)
 - 2026-10-15 T302: no pg_dump/psql on the machine → Node tools (`restore.mjs`, `dump.mjs`, `counts.mjs`); tested route = new project with migrations, then `--skip-schema`; `--wipe --confirm-ref` only if the target has accounts/Storage (agent; Opus audit fixes)
 - 2026-10-15 T303: `ESTADO.md`, `CLAUDE.md`, `mundos/`, `plans/`, glifos.json, next-env.d.ts in .prettierignore; products.json stays content data; faro kept in mapa.json (still read by map.ts and mundo_arcilla.py) (agent; Opus audit ok)
+- 2026-10-15 T304: only REQ-ARQ-018 could honestly move to HECHO; the T303 ESTADO sentence about mapa.json did not exist (agent; Opus audit fixes)
 
 ## Proposals (new scope)
+- 2026-10-15 T304: PostHog still named in checks (`security-headers.test.ts`, `despliegue.spec.ts`, `admin-papelera.spec.ts`), harmless, could be cleaned
 - 2026-10-15 T303: retire `faro` from mapa.json after migrating `packages/world/src/worlds/arcilla/map.ts` and `tools/blender/mundo_arcilla.py` reads
 - 2026-10-15 T303: a vitest test spawns Python without PYTHONUTF8=1 (cp1252 traceback printed, tests pass); `tools/` is outside eslint
 - 2026-10-15 T302: try the restore once with a real nightly backup (pg_dump 17.6 `schema.sql` untried against Postgres); restoring production is Álvaro's step with the guide
@@ -164,3 +166,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T303 launched · attempt 1 · agent af5b685d1a7cb9b56 (sonnet)
 - 2026-10-15 T303 Opus audit · agent af822fdad5908a010 · ok with minor fixes (0d4788f)
 - 2026-10-15 T303 done · merged a9d0a6c
+- 2026-10-15 T304 launched · attempt 1 · agent adc3c20208b4380e8 (haiku); may also edit one ESTADO.md sentence (T303) and the CLAUDE.md plan-status sentence
+- 2026-10-15 T304 Opus audit · agent add1d286fc2c581ac · fix-needed, fixed (bfe0235)
+- 2026-10-15 T304 done · merged ac71cfe
+- 2026-10-15 plan done; push waits for Álvaro's hand test of the sea, then T300/T301 migrations to production
