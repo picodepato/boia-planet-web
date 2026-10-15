@@ -14,7 +14,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 ## Tasks
 
 ## T298 — A livelier sea
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -28,17 +28,18 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - a short hand-test checklist for Álvaro in the ESTADO section (sail around, docks, islands, swell jump, minigames, map, minimap move, phone and low preset);
   - FPS before/after per preset recorded in the ESTADO section; REQ-MUN-003 and REQ-MUN-021 updated in `docs/spec/estado.md` with their proof
   - Test command → exit 0
-- Outcome:
+- Outcome: gentle waves + boat rocking behind `LIVELY_SEA` (waves.ts), off on low preset, minimap movable from Ajustes, no measurable FPS cost; REQ-MUN-021 HECHO, MUN-003 PARCIAL until Álvaro reviews → 005233d
 
 ## T299 — /mar and phones: lost 3D, cut notices, map labels, the 🪪 box
 - Status: pending
 - Depends on: T298
 - Model: sonnet
 - Skills: none
-- Goal: Phone and small-screen robustness. (1) /mar survives losing its WebGL context the way the landing does since T289 (`webglcontextlost`/`restored`: pause, a calm notice, restore or offer reload; app-switch and screen lock covered) and update `docs/spec/matriz-dispositivos.md` row 16. (2) Top notices (toasts/banners) are not cut off on phones: safe areas, wrapping, max width at 360 px. (3) Big map: the «Cerrar» button no longer covers a label, and the Puig Campana label no longer overlaps another island at 360 px. (4) The 🪪 emoji shows as an empty box on Windows 10 (still in ~8 files, e.g. `reward.tsx`, `sign-in-sheet.tsx`): replace it with an inline SVG/icon component used everywhere, same meaning.
+- Goal: Phone and small-screen robustness. (1) /mar survives losing its WebGL context the way the landing does since T289 (`webglcontextlost`/`restored`: pause, a calm notice, restore or offer reload; app-switch and screen lock covered) and update `docs/spec/matriz-dispositivos.md` row 16. (2) Top notices (toasts/banners) are not cut off on phones: safe areas, wrapping, max width at 360 px. (3) Big map: the «Cerrar» button no longer covers a label, and the Puig Campana label no longer overlaps another island at 360 px. (4) The 🪪 emoji shows as an empty box on Windows 10 (still in ~8 files, e.g. `reward.tsx`, `sign-in-sheet.tsx`): replace it with an inline SVG/icon component used everywhere, same meaning. (5) Fix the chart part of the «(ni la carta)» test in `apps/web/e2e/mar-hud.spec.ts`, failing before T298 (same result with the waves off): find whether the app or the test is wrong. (6) Update the REQ-MUN-021 criterion in `docs/spec/09-requisitos.md` (500 ms press → «Mover el minimapa» in Ajustes, T298).
 - Context: T289 (commit 5001cb3) for the landing pattern, `apps/web/app/mar/`, the big map component, toast/notice components, `docs/spec/matriz-dispositivos.md`, plan 029 Proposals.
 - Scope: may touch /mar UI and engine bootstrap, map overlay, notices, the files using 🪪, i18n, tests, the device matrix / must not change T298's waves or minimap gesture.
 - Done when:
+  - `pnpm e2e apps/web/e2e/mar-hud.spec.ts --workers=1` (single spec, free port) → pass
   - unit/component tests: context lost → paused + notice, restored → resumes; no 🪪 left in `apps/web` and `packages` (grep in a test or check script); map label layout at 360 px has no overlap with «Cerrar» or between islands → pass
   - Test command → exit 0
 - Outcome:
@@ -58,7 +59,7 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - Outcome: guest data merges only into the first account since the last reset; server accepts the after boat/secret prizes (migration 20261015100700, dev only); trashed members with a reused number restore with a new number → 65546bb
 
 ## T301 — Our own funnel counters and the «Embudo» panel
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Model: opus
 - Skills: none
@@ -125,8 +126,12 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T300: guest data merges only into the first account that signs in since the last device reset (`boia.invitado.cuenta`); another account gets no merge and no nickname suggestion (agent)
 - 2026-10-15 T300: migration 20261015100700 (dev only, listed for production): cosmetic `barco-after`, `private.achievement_prizes` (after = 150 points / 500 coins, once, outside the daily cap), `award_points` uses it (agent)
 - 2026-10-15 T300: restored member with a taken number gets the next number; audit row has old/new; Admin trash warns `number_taken` (agent)
+- 2026-10-15 T298: switch `LIVELY_SEA` in `apps/web/app/mar/engine/waves.ts`; waves not compiled on low preset, flat with reduced motion and in map view, up to +50% with wind; boat does not rock airborne; camera ignores waves; minimap moved via Ajustes → «Mover el minimapa» (drag/tap swaps sides, saved in `boia.mar.minimapa.zona`), back to the left in Cañón/Castillo (agent)
+- 2026-10-15 T299 extended with the pre-existing failing chart part of `mar-hud.spec.ts` and the REQ-MUN-021 criterion text (orchestrator)
 
 ## Proposals (new scope)
+- 2026-10-15 T298: Boia tip «mantenlo pulsado para moverlo» (es-zonas, es-mundo, es-juego, skins) was already wrong (long press opens the map); approved text, new wording is Álvaro's call
+- 2026-10-15 T298: floating props on the open sea can dip ~0.4 units into a wave trough
 - 2026-10-15 T300: security checklist: `private.award_points`, `merge_guest` and similar are granted to `authenticated` with a `p_user` parameter, safe only while `private` is not exposed
 - 2026-10-15 T300: restoring a member reports any other unique clash (e.g. `artist_profile_id`) as `nickname_taken`
 - 2026-10-15 T300: after prize amounts are `muestra` (Álvaro to confirm)
@@ -135,3 +140,5 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T298 launched · attempt 1 · agent a77bbe2571cd5b3b3 (opus)
 - 2026-10-15 T300 launched · attempt 1 · agent a51d8e80172ae1e65 (opus)
 - 2026-10-15 T300 done · merged 65546bb
+- 2026-10-15 T301 launched · attempt 1 · agent afec63d06fce2b83d (opus)
+- 2026-10-15 T298 done · merged 005233d
