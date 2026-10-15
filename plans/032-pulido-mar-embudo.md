@@ -115,11 +115,26 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
   - Test command → exit 0
 - Outcome: TRASPASO.md rewritten to one screen (with the pre-push items and the production rule), REQ-ARQ-018 HECHO (187 HECHO), REQ-ARQ-019 wording → own counters, CLAUDE.md plans 001–032 done; the other ~12 PARCIAL need phone/design/Álvaro; Opus audit fixes applied → ac71cfe
 
+## T305 — Console errors in /mar after plan 032
+- Status: done
+- Depends on: T298, T299, T301
+- Model: opus
+- Skills: none
+- Goal: Before Álvaro's hand test, the local demo (`pnpm demo`, port 3100) shows two console errors on /mar that production (af9ac37, before plan 032) does not seem to show: `THREE.BufferGeometry.computeBoundingSphere(): Computed radius is NaN` (a geometry with NaN positions) and a `Failed to load resource: 400`. Find out whether plan 032 introduced them (compare with af9ac37), find the cause, and fix it if it is ours; if it is pre-existing or harmless, say so with evidence.
+- Context: T298 waves (`apps/web/app/mar/engine/waves.ts`, water, boat), T299 `gl-watch.ts`, T301 funnel sink (`apps/web/lib/analytics/`, `funnel_hit`), local demo mode without Supabase variables.
+- Scope: may touch the files at fault and their tests / must not change visible behaviour beyond the fix.
+- Done when:
+  - /mar in the local demo loads with no NaN geometry warning and no 400 (or evidence that they predate plan 032 and are harmless)
+  - a unit test guarding the fix, if there is one
+  - Test command → exit 0
+- Outcome: 400 = supabase-js refreshing a stale saved dev session on localhost (once, then clean; not from plan 032); NaN warning never reproduced in many probe runs, plan 032 adds no CPU geometry; guard test added in waves.test.ts → 7e7099b
+
 ## Decisions
 - 2026-10-15: Plan 032 started after plan 031 ended (main af9ac37, pushed; notice from the session that ran 031, at Álvaro's request) (orchestrator)
 - 2026-10-15: Half polish, half new; no security work, no ticketing until P2 is chosen; funnel with our own Supabase counters, not PostHog; restore tested on dev only (Álvaro)
 - 2026-10-15: Minimap and living water mostly existed, so they become one «livelier sea» task with real waves and a movable minimap; backups and host parity existed, so the gap (tested restore, accounts-mode parity) is one task (orchestrator, Álvaro agreed)
 - 2026-10-15: Models: opus for T298/T300/T301, sonnet for T299/T302/T303, haiku for T304, Opus audit for sonnet/haiku (Álvaro)
+- 2026-10-15: T305 added: console errors seen on /mar in the local demo before the hand test (orchestrator)
 - 2026-10-15: T299 after T298 (both touch /mar UI); T303 and T304 last because they sweep many files (orchestrator)
 - 2026-10-15: Push when every task is done, after applying T300/T301 migrations to production, only on Álvaro's yes (Álvaro)
 - 2026-10-15: No push until Álvaro has tried the new sea by hand (local dev server, T298's checklist) and confirmed it breaks nothing in the world; if something breaks, turn the waves switch off (or fix) before pushing (Álvaro)
@@ -134,8 +149,10 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T302: no pg_dump/psql on the machine → Node tools (`restore.mjs`, `dump.mjs`, `counts.mjs`); tested route = new project with migrations, then `--skip-schema`; `--wipe --confirm-ref` only if the target has accounts/Storage (agent; Opus audit fixes)
 - 2026-10-15 T303: `ESTADO.md`, `CLAUDE.md`, `mundos/`, `plans/`, glifos.json, next-env.d.ts in .prettierignore; products.json stays content data; faro kept in mapa.json (still read by map.ts and mundo_arcilla.py) (agent; Opus audit ok)
 - 2026-10-15 T304: only REQ-ARQ-018 could honestly move to HECHO; the T303 ESTADO sentence about mapa.json did not exist (agent; Opus audit fixes)
+- 2026-10-15 T305: no product code change; the 400 is supabase-js behaviour, the NaN could not be reproduced (agent)
 
 ## Proposals (new scope)
+- 2026-10-15 T305: `pnpm demo` rewrites `apps/web/tsconfig.json` on every start (dirties main)
 - 2026-10-15 T304: PostHog still named in checks (`security-headers.test.ts`, `despliegue.spec.ts`, `admin-papelera.spec.ts`), harmless, could be cleaned
 - 2026-10-15 T303: retire `faro` from mapa.json after migrating `packages/world/src/worlds/arcilla/map.ts` and `tools/blender/mundo_arcilla.py` reads
 - 2026-10-15 T303: a vitest test spawns Python without PYTHONUTF8=1 (cp1252 traceback printed, tests pass); `tools/` is outside eslint
@@ -170,3 +187,5 @@ Accounts rules for every task: accounts mode is LIVE in production since 2026-10
 - 2026-10-15 T304 Opus audit · agent add1d286fc2c581ac · fix-needed, fixed (bfe0235)
 - 2026-10-15 T304 done · merged ac71cfe
 - 2026-10-15 plan done; push waits for Álvaro's hand test of the sea, then T300/T301 migrations to production
+- 2026-10-15 T305 launched · attempt 1 · agent a1e5cf5c2d1b9e0c5 (opus)
+- 2026-10-15 T305 done · merged 7e7099b; plan done again
