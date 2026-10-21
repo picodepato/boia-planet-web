@@ -112,6 +112,21 @@ export const eventSchema = z.object({
    */
   ticketsNotYet: z.boolean().default(false),
   /**
+   * La fiesta va «en lista» (plan 034 T308, Álvaro 2026-10-21): en vez de
+   * vender entradas, quien tiene Carnet se apunta en la lista. Son los
+   * ajustes de partida (el contenido de muestra y la demo); con cuentas los
+   * cambia el Admin en `event_guest_lists` y el estado vivo lo da
+   * `apps/web/lib/guestlist` (`status`). `closesAt`: a esa hora la lista se
+   * cierra sola; `open`: el interruptor del Admin.
+   */
+  guestList: z
+    .object({
+      cap: z.number().int().min(1).max(100000),
+      closesAt: isoOffset.optional(),
+      open: z.boolean().default(true),
+    })
+    .optional(),
+  /**
    * Nombre de la ticketera que vende este evento («Fourvenues»…), por elegir
    * (plan 019 T215, decisión 5): la ficha enseña la que haya.
    */

@@ -1006,6 +1006,44 @@ export type Database = {
           },
         ];
       };
+      event_guest_lists: {
+        Row: {
+          cap: number;
+          closes_at: string | null;
+          enabled: boolean;
+          event_id: string;
+          open: boolean;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          cap?: number;
+          closes_at?: string | null;
+          enabled?: boolean;
+          event_id: string;
+          open?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          cap?: number;
+          closes_at?: string | null;
+          enabled?: boolean;
+          event_id?: string;
+          open?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'event_guest_lists_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: true;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       event_photos: {
         Row: {
           album_id: string;
@@ -1253,6 +1291,35 @@ export type Database = {
             columns: ['island_id'];
             isOneToOne: false;
             referencedRelation: 'islands';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      guest_list_signups: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          list_name: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          list_name: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          list_name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'guest_list_signups_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
             referencedColumns: ['id'];
           },
         ];
@@ -2293,6 +2360,44 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      admin_guest_list: {
+        Args: {
+          p_event: string;
+        };
+        Returns: {
+          user_id: string;
+          list_name: string;
+          nickname: string;
+          email: string;
+          created_at: string;
+          attended: boolean;
+          attended_at: string;
+        }[];
+      };
+      admin_guest_list_remove: {
+        Args: {
+          p_event: string;
+          p_member: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_guest_list_settings: {
+        Args: {
+          p_event: string;
+          p_enabled: boolean;
+          p_cap: number;
+          p_closes_at: string;
+          p_open: boolean;
+        };
+        Returns: Json;
+      };
+      admin_guest_list_status: {
+        Args: {
+          p_event: string;
+        };
+        Returns: Json;
+      };
       admin_join_artist_profile: {
         Args: {
           p_user: string;
@@ -2643,6 +2748,32 @@ export type Database = {
           p_event: string;
         };
         Returns: boolean;
+      };
+      guest_list_door: {
+        Args: {
+          p_member: string;
+          p_event: string;
+        };
+        Returns: Json;
+      };
+      guest_list_join: {
+        Args: {
+          p_event: string;
+          p_name?: string;
+        };
+        Returns: Json;
+      };
+      guest_list_leave: {
+        Args: {
+          p_event: string;
+        };
+        Returns: Json;
+      };
+      guest_list_status: {
+        Args: {
+          p_event: string;
+        };
+        Returns: Json;
       };
       latest_bottles: {
         Args: {

@@ -67,6 +67,8 @@ describe('esquema del proyecto de desarrollo', () => {
       // Suma un paso al contador del día del embudo (plan 032 T301): sólo
       // los pasos permitidos y con la analítica encendida.
       'funnel_hit',
+      // El estado de la lista de una fiesta (plan 034 T308): sin contador.
+      'guest_list_status',
       'latest_bottles',
       'ranking_canon',
       'ranking_castle',
@@ -93,6 +95,10 @@ describe('esquema del proyecto de desarrollo', () => {
       'door_link_stamp',
       // El contador del embudo (plan 032 T301).
       'funnel_hit',
+      // El estado de la lista de una fiesta (plan 034 T308).
+      'guest_list_party',
+      'guest_list_state',
+      'guest_list_status',
       // Políticas de RLS de todo el esquema.
       'has_staff_role',
       'is_member',

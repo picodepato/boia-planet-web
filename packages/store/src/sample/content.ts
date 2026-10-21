@@ -142,6 +142,8 @@ export const SAMPLE_HOME_BLOCKS: AreaInput<'homeBlocks'>[] = sampleHomeBlocks();
 export const HALLOWEEN_EVENT_ID = 'halloween-2026';
 export const SONIDO_EVENT_ID = 'sonido-2026';
 export const NOCHEVIEJA_EVENT_ID = 'nochevieja-2026';
+/** Hora de cierre de la lista de Halloween (plan 034 T308): 22:30 del 31, Europe/Madrid. */
+export const HALLOWEEN_LIST_CLOSES_AT = '2026-10-31T22:30:00+01:00';
 
 /** Isla de cada evento con entradas (ids del mapa compartido). */
 export const TICKET_EVENT_ISLANDS: Readonly<Record<string, string>> = {
@@ -170,6 +172,9 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     // Plan 019 T215 (decisión 6): sin venta online, «Solo en puerta · 5 € con
     // carnet». Muestra.
     boxOfficeOnly: { doorPriceCents: 500 },
+    // Plan 034 T308 (Álvaro 2026-10-21): va en lista, tope 100; la lista vale
+    // hasta las 22:30 del 31 (Alicante) y después, por orden de llegada.
+    guestList: { cap: 100, closesAt: HALLOWEEN_LIST_CLOSES_AT, open: true },
     islandId: TICKET_EVENT_ISLANDS[HALLOWEEN_EVENT_ID],
     sample: false,
   },

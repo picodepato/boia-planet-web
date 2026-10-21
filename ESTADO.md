@@ -4,6 +4,50 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — plan 034 T308: Guest list: data and rules
+
+Qué existe:
+- `supabase/migrations/20261021200100_guest_lists.sql` (aplicada sólo en
+  boia-planet-dev): `event_guest_lists` (enabled, cap, closes_at, open; la lee
+  cualquiera en una fiesta publicada) y `guest_list_signups` (una por cuenta y
+  fiesta, list_name 2–30; cada cual lee la suya, el equipo todas). RLS en las
+  dos, nadie escribe a mano. RPC (envoltura `public` + `private` SECURITY
+  DEFINER): `guest_list_status` (anon también; sin contador), `guest_list_join`
+  (devuelve la inscripción anterior si ya estaba; `not_member`,
+  `carnet_required`, `not_enabled`, `closed`, `full`, `invalid_input`),
+  `guest_list_leave` (`closed` con el interruptor o pasada la hora),
+  `admin_guest_list_status` / `admin_guest_list` (apodo, email, `attended` de
+  `event_attendance`) / `admin_guest_list_remove` (auditoría) /
+  `admin_guest_list_settings` (rol admin), `guest_list_door` (editor).
+  Halloween en lista (tope 100, cierre 2026-10-31 22:30 Europe/Madrid,
+  abierta) en la migración y en `supabase/seeds/20261021200100_guest_lists.sql`.
+- Rechazos nuevos en `RPC_REJECTIONS`: `not_enabled`, `closed`, `full`; tipos
+  de resultado en `packages/db/src/rpc.ts`; `database.types.ts` con las tablas
+  y RPC nuevas (sólo las de T308).
+- `@boia/contracts`: campo opcional `guestList {cap, closesAt, open}` del
+  evento; contenido de muestra: Halloween con `HALLOWEEN_LIST_CLOSES_AT`.
+- `packages/store/src/guestlist.ts`: tipos (`GuestListApi`…), reglas puras y
+  `createLocalGuestList` (la demo, en localStorage `boia.guestlist`).
+- `apps/web/lib/guestlist/index.ts` (API documentada arriba del archivo;
+  `supabaseGuestList`, `localGuestList`) y `client.ts` (`guestListClient()`
+  elige demo o Supabase) para T309 y T310.
+- REQ-COM-037 (06-comercial, 09, estado PARCIAL: falta la interfaz).
+
+Comandos:
+- `pnpm --filter @boia/db db:migrate:dev -- --no-seed` → 1 aplicada (20261021200100).
+- `node src/cli/test-supabase.ts src/supabase/guest-list.supabase.ts src/supabase/schema.supabase.ts`
+  (en packages/db), tras fusionar main (T307) → exit 0, 2 archivos, 23
+  pruebas pasan (guest-list 14, schema 9: listas de anon y tipos con T307 y
+  T308).
+- `pnpm --filter @boia/db db:types:dev` tras la fusión → igual a lo versionado.
+- `pnpm exec vitest run packages/store/src/guestlist.test.ts apps/web/lib/guestlist` → 2 archivos, 23 pruebas pasan.
+- Comando de prueba del proyecto → vitest 352 archivos, 3150 pasan, 1 omitida, exit 0; checks.sh, lint, build, typecheck exit 0.
+
+Pendiente:
+- Producción: aplicar la migración (con el sí de Álvaro).
+- T309/T310: la interfaz. Con Supabase, el estado vivo de la lista sale de
+  `status()`; `event.guestList` es sólo el ajuste de partida del contenido.
+
 ## 2026-10-21 — plan 034 T307: Shareable door-scanner link per party
 
 Qué existe:

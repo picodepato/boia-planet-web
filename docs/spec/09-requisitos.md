@@ -275,6 +275,7 @@ Definidos en [06-comercial](06-comercial.md). 36 requisitos: 32 L1, 4 L2, 0 dife
 | REQ-COM-034 | Tienda con checkout propio | §22, P3, D-02 | L2 | Compra en sandbox sin datos de tarjeta guardados | — |
 | REQ-COM-035 | Versión de prueba: sello por checkout sandbox | D-06, D-20, D-22 | L1 | e2e: confirmar la compra de prueba añade 1 sello y 1 logro; repetir con el mismo ID de compra no añade nada; el checkout se rotula como prueba | Sólo versión de prueba; se retira con la ticketera real (P2) |
 | REQ-COM-036 | El descuento lleva a su isla y se ve al comprar | §2.1, §12, D-23 | L1 | e2e: «Ir a la isla» de una tarjeta lleva el barco a la isla de su evento; comprar allí muestra el aviso con el código y el ahorro aplicado en el checkout sandbox; el de tienda enseña «Ir a la tienda» | — |
+| REQ-COM-037 | Lista de una fiesta en vez de entradas | plan 034, Álvaro 2026-10-21 | L1 | Una fiesta en modo lista (Halloween: tope 100, la lista cierra a las 22:30 del 31, Europe/Madrid): quien tiene Carnet se apunta una vez con un nombre de 2 a 30 caracteres (por defecto su apodo); apuntarse otra vez devuelve la inscripción de antes; llena → completa; cerrada (interruptor del Admin o pasada la hora) → ni apuntarse ni borrarse; borrarse libera el sitio; nadie lee la inscripción de otro; el Admin ve la lista con apodo, email y si entró por la puerta; la puerta sabe si un Carnet está en la lista y si pasó la hora, sin bloquear | Sin contador público. Interfaz del socio (T309), Admin y puerta (T310) |
 
 ## ADM · Admin
 

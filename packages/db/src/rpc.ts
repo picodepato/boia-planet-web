@@ -129,6 +129,10 @@ export const RPC_REJECTIONS = [
   'request_closed',
   // Embudo (plan 032 T301): un paso que no existe
   'unknown_event',
+  // La lista de una fiesta (plan 034 T308): no va en lista, cerrada o llena
+  'not_enabled',
+  'closed',
+  'full',
   // El enlace de la puerta (plan 034 T307): revocado, de otra fiesta o equivocado
   'door_link_invalid',
 ] as const;
@@ -204,6 +208,52 @@ export interface StaffStampResult {
   nickname: string;
   at: string;
   points: number;
+}
+
+/**
+ * guest_list_status / admin_guest_list_status / admin_guest_list_settings
+ * (plan 034 T308, 20261021200100_guest_lists.sql). `count` sólo en las del
+ * Admin: no hay contador público.
+ */
+export interface GuestListStatusResult {
+  /** Slug de la fiesta. */
+  event: string;
+  enabled: boolean;
+  cap: number | null;
+  closes_at: string | null;
+  open: boolean;
+  past_closing: boolean;
+  /** No va en lista, interruptor cerrado o pasada la hora de cierre. */
+  closed: boolean;
+  full: boolean;
+  /** La inscripción de quien llama (null sin cuenta o sin apuntarse). */
+  mine: { list_name: string; created_at: string } | null;
+  count?: number;
+}
+
+/** guest_list_join: created=false si ya estaba (su inscripción de antes). */
+export interface GuestListJoinResult {
+  created: boolean;
+  event: string;
+  list_name: string;
+  created_at: string;
+}
+
+/** guest_list_leave / admin_guest_list_remove */
+export interface GuestListRemoveResult {
+  removed: boolean;
+  event: string;
+}
+
+/** guest_list_door: lo que ve la puerta tras leer un Carnet. */
+export interface GuestListDoorResult {
+  event: string;
+  enabled: boolean;
+  on_list: boolean;
+  list_name: string | null;
+  created_at: string | null;
+  closes_at: string | null;
+  past_closing: boolean;
 }
 
 /** door_link_stamp: el lector del enlace de la puerta (plan 034 T307). Sólo el apodo. */

@@ -17,3 +17,4 @@ export * from './member';
 export * from './bottle-text';
 export * from './comment-text';
 export * from './member-number';
+export * from './guestlist';
