@@ -20,7 +20,7 @@ Shared rules for every task:
 ## Tasks
 
 ## T307 — Shareable door-scanner link per party
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: An admin creates, from Admin → Puerta (or the party's row in Admin → Fiestas, whichever fits the current UI best), one secret link per party, can copy it and revoke it (revoking and creating again gives a new link). The link does not expire on its own; it stops working when revoked or when the party is archived or cancelled. Opening it (no login) shows the party name and the same camera scanner as `/admin/puerta`; scanning a Carnet QR stamps it for that party exactly like the staff door scan (same `stamps` / `event_attendance` rules, once per account, points as today). Scan only: no manual stamping by nickname, no member data beyond what the staff door shows after a scan (nickname + result). Every link scan is recorded in `event_attendance` with source `door` and a reference to the link (scanned_by may be null), and in the audit log.
 - Context: `apps/web/app/admin/puerta/page.tsx`, `apps/web/app/admin/door/*` (door-page, door-camera, use-door, backend), `apps/web/app/admin/real/gate.tsx`, `supabase/migrations/20261008100300_door_stamps.sql` (`staff_stamp`, `event_attendance`), `apps/web/app/carnet/[id]` (what the QR encodes), `apps/web/lib/i18n/es-admin.ts`, `docs/DECISIONES.md`.
@@ -33,7 +33,7 @@ Shared rules for every task:
 - Outcome:
 
 ## T308 — Guest list: data and rules
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: none
 - Goal: Back end (and store/demo layer) for party guest lists. Per party settings: list mode on/off, cap (number of people), the list closing time (Halloween: 22:30 on the 31st, shown to members in the notice) and an open/closed switch for the admin. At the closing time the list closes by itself: nobody can sign up or remove themselves after it; an admin may also close it earlier with the switch. One signup per account per party: list name (2–30 chars, defaults to the Carnet nickname, free text, duplicates allowed), created_at. Rules: must be a Carnet account (anonymous rejected, like `not_member` today); if already signed up, the join call returns the existing signup (date + name) instead of creating one; a member may remove their own signup while the list is open and before the closing time, and may sign up again afterwards (freeing the spot); full list → `full`; closed list (switch off or closing time passed) → `closed`. Admin RPCs: read the list of a party with list name, Carnet nickname, email, signup date and whether that account was scanned at the door for that party (`event_attendance`), remove a signup, update the settings. A lookup the door can use: «is account X on party Y's list, under which name, and is it past the closing time». Halloween (`halloween-2026`) is set to list mode, cap 100, closing time 22:30 on 2026-10-31 (Europe/Madrid), open, in the sample content and in the seeds.
 - Context: `packages/store/src/sample/content.ts` (Halloween, `boxOfficeOnly`), `apps/web/lib/ticketing/`, `supabase/migrations/20260928100200_events.sql`, `20260928100100_identity.sql` (`carnets.nickname`), `20261008100300_door_stamps.sql`, `supabase/seeds/20261003100100_economy.sql`, `apps/web/lib/account/session.ts`, `apps/web/lib/account/admin-auth.ts` (`my_staff_role`).
@@ -83,3 +83,5 @@ Shared rules for every task:
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-21 T307 launched · attempt 1 · agent a97242e042f901574
+- 2026-10-21 T308 launched · attempt 1 · agent afa55efafafd1c3be
