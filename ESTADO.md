@@ -4,6 +4,34 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — T313: Cloudflare build blocked by the Next.js support check
+
+Qué existe:
+- `apps/web/package.json` `cf:build` pasa `--dangerouslyUseUnsupportedNextVersion`
+  a `opennextjs-cloudflare build`. Desde hoy (Next 15 salió el 2024-10-21, soporte
+  de 2 años) OpenNext se negaba a construir y Workers Builds dejó de desplegar
+  (boiaplanet.net seguía en 65d0a30). El panel de Workers Builds usa
+  `pnpm cf:build`, así que el flag le llega sin tocar el panel; `cf:measure` y el
+  flujo `cf-size` también pasan por `cf:build`.
+- `docs/DESPLIEGUE.md`, lista «Ojo»: por qué está el flag y que el arreglo de
+  verdad es subir a Next 16 (y quitar el flag entonces).
+- `scripts/hosts.test.ts` sigue valiendo (`^opennextjs-cloudflare build`).
+
+Comandos:
+- `pnpm cf:build` (árbol pnpm normal en Windows) → exit 1, pero ya pasa la
+  comprobación de versión; falla después en `next build` con EPERM al crear
+  symlinks en `.next/standalone`: el fallo de Windows ya documentado (en Windows
+  sólo desde una copia `nodeLinker: hoisted`).
+- `pnpm cf:measure` (corre `cf:build` en copia hoisted) → exit 0; 2.335 KiB gzip,
+  presupuesto 2.800 · OK.
+- vitest (sin packages/db) → 356 ficheros, 3186 pasan, 3 saltadas;
+  `tools/spec/checks.sh` → OK; `pnpm lint`, `pnpm build`, `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Push a `main` (Álvaro) para que Workers Builds vuelva a desplegar; comprobar
+  en el Worker → Deployments que el build pasa.
+- Subir a Next 16 y quitar el flag.
+
 ## 2026-10-21 — plan 034 T311: Guest list: live settings on the web and return after Carnet signup
 
 Qué existe:

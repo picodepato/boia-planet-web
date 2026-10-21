@@ -97,6 +97,12 @@ prerenderizadas) → `node scripts/cf-assets.mjs` (escribe `_headers` y
 
 Ojo:
 
+- **`--dangerouslyUseUnsupportedNextVersion` en `cf:build` (T313).** Desde el
+  2026-10-21 `opennextjs-cloudflare build` se niega a construir con Next 15
+  («not supported by the Next.js team»: Next da soporte 2 años por versión
+  mayor y la 15 salió el 2024-10-21). Ese día Workers Builds dejó de
+  desplegar. El flag sólo salta esa comprobación de fecha; el arreglo de
+  verdad es subir a Next 16. Cuando se suba, quita el flag.
 - **El primer build en Linux es la prueba de verdad.** En este Windows
   `cf:build` sólo se ha corrido desde una copia con `nodeLinker: hoisted`
   (`pnpm cf:measure` la hace sola); en Linux debería ir tal cual. Si el primer
