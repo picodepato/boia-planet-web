@@ -15,7 +15,7 @@
     "e2e": "playwright test",
     "start": "next start --hostname 0.0.0.0 --port 3000",
     "typecheck": "tsc -p tsconfig.json",
-    "cf:build": "opennextjs-cloudflare build && opennextjs-cloudflare populateCache local && node scripts/cf-assets.mjs",
+    "cf:build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && opennextjs-cloudflare populateCache local && node scripts/cf-assets.mjs",
     "cf:preview": "pnpm cf:build && opennextjs-cloudflare preview",
     "cf:measure": "node scripts/cf-measure.mjs",
     "admin:password": "node scripts/admin-password.mjs"
