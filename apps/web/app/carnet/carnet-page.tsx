@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MAR_CARNET_HREF, MAR_PATH } from '../../lib/world-handoff';
 import '../../lib/mundo/hud.css';
 import '../../lib/mundo/carnet/carnet.css';
@@ -21,7 +21,7 @@ import { LOCAL_ONLY_NOTICE } from '../../lib/mundo/carnet/carnet-editor';
 import { OwnCarnet } from '../../lib/mundo/carnet/own-carnet';
 import { INVITE_COPY } from '../../lib/landing/invitations';
 import { useCarnet } from '../../lib/mundo/carnet/use-carnet';
-import { returnPath, wantsCreate } from '../../lib/scanner/carnet-url';
+import { returnPath, signupStart, wantsCreate } from '../../lib/scanner/carnet-url';
 
 /**
  * El Carnet a pantalla completa (REQ-IDE-010, REQ-IDE-017): el propio en
@@ -35,7 +35,9 @@ import { returnPath, wantsCreate } from '../../lib/scanner/carnet-url';
  * - `/carnet?crear=1` (el QR de alta de la puerta, plan 019 T218): sin Carnet,
  *   empieza el alta aquí mismo (con cuentas, por el email y su código). Con
  *   `&volver=<ruta>` (plan 034 T311: la lista o la compra de una fiesta), al
- *   terminar el alta, o si ya había Carnet, se vuelve allí.
+ *   terminar el alta, o si ya había Carnet, se vuelve allí. Con cuentas,
+ *   «ya había Carnet» es el de la cuenta en el servidor, nunca el de este
+ *   navegador (T312: si no, la lista y /carnet se mandaban el uno al otro).
  * - Bajo las respuestas (plan 023 T251): «Descubre otro miembro BOIA» y, en
  *   el de un artista, «Descubre un artista».
  */
@@ -67,13 +69,19 @@ export function CarnetPage({ userId }: { userId: string | null }) {
     const back = returnPath(window.location.search);
     if (back) window.location.replace(back);
   };
+  // T312: con cuentas, sólo se vuelve si la cuenta tiene su Carnet en el
+  // servidor (un Carnet de este navegador no vale para la lista ni la compra).
+  const decided = useRef(false);
   useEffect(() => {
-    if (!loaded || userId !== null) return;
+    if (!loaded || userId !== null || decided.current) return;
     if (!wantsCreate(window.location.search)) return;
-    if (data?.carnet) goBack();
+    const next = signupStart(!local, account.status, !!data?.carnet);
+    if (next === 'wait') return;
+    decided.current = true;
+    if (next === 'back') goBack();
     else setSignup(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, userId]);
+  }, [loaded, userId, account.status]);
   return (
     <main className="carnet-page" data-testid="carnet-pagina">
       <header className="carnet-page-head">

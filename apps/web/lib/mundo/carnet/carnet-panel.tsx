@@ -65,8 +65,11 @@ export function CarnetPanel({
     setCreating(true);
     try {
       if (!(await requireAccount('carnet', { onRegistered: () => setEditing(true) }))) return;
-      if (!(await repo.carnet.mine())) setEditing(true);
-      else onReady?.();
+      // Con cuentas, la puerta sólo deja pasar con sesión y Carnet en el
+      // servidor (`member`): ése es el Carnet que cuenta, no el de este
+      // navegador (T312).
+      if (isSupabaseConfigured() || (await repo.carnet.mine())) onReady?.();
+      else setEditing(true);
     } finally {
       setCreating(false);
     }
@@ -74,8 +77,16 @@ export function CarnetPanel({
 
   // «Crear carnet» ya pedido (el QR de alta, la compra): con cuentas, la hoja
   // del email se abre sola una vez, en cuanto se sabe que no hay Carnet.
+  // T312: pedida el alta con cuentas, un Carnet sólo de este navegador (el del
+  // invitado) no cuenta: hace falta el de la cuenta, el que ve el servidor.
+  const accountWithoutCarnet =
+    startEditing &&
+    isSupabaseConfigured() &&
+    (account.status === 'guest' || account.status === 'incomplete');
   const guestWithoutCarnet =
-    !!data && !data.carnet && (account.status === 'guest' || account.status === 'incomplete');
+    !!data &&
+    (!data.carnet || accountWithoutCarnet) &&
+    (account.status === 'guest' || account.status === 'incomplete');
   useEffect(() => {
     if (!startEditing || !isSupabaseConfigured() || !guestWithoutCarnet || autoStarted.current)
       return;
@@ -85,7 +96,8 @@ export function CarnetPanel({
   }, [startEditing, guestWithoutCarnet]);
 
   if (!data || !repo) return <p className="juego-muted">{t('juego.carnet.cargandoTuCarnet')}</p>;
-  const { carnet, extras } = data;
+  const { extras } = data;
+  const carnet = accountWithoutCarnet ? null : data.carnet;
 
   if (editing) {
     return (

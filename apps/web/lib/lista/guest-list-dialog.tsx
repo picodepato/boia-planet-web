@@ -11,11 +11,16 @@ import {
   type GuestListStatus,
 } from '../guestlist';
 import { guestListClient } from '../guestlist/client';
-import { gameRepository } from '../repo';
 import { returnHere, signupUrl } from '../scanner/carnet-url';
 import { isSupabaseConfigured } from '../supabase/config';
 import { TicketNoticeDialog } from '../ticketing/box-office-dialog';
 import { QuickCarnet } from '../ticketing/checkout';
+import {
+  currentListNickname,
+  markCarnetTrip,
+  missingCarnetStep,
+  takeCarnetTrip,
+} from './account-carnet';
 import { type ListEvent, listDoorPrice, listNotice, listPhase } from './model';
 import { signupLine, tl } from './t';
 import './lista.css';
@@ -39,7 +44,7 @@ type State =
   | { kind: 'error' }
   | { kind: 'closed'; mine: GuestListSignup | null }
   | { kind: 'full' }
-  | { kind: 'carnet'; step: 'notice' | 'form' }
+  | { kind: 'carnet'; step: 'notice' | 'form' | 'missing' }
   | { kind: 'join'; name: string; busy: boolean; error: string | null; left: boolean }
   | { kind: 'mine'; signup: GuestListSignup; asking: boolean; busy: boolean; error: string | null };
 
@@ -48,6 +53,7 @@ export function stateFor(
   status: GuestListStatus,
   nickname: string | null,
   left = false,
+  returned = false,
 ): Exclude<State, { kind: 'loading' } | { kind: 'error' }> {
   switch (listPhase(status, nickname !== null)) {
     case 'closed':
@@ -57,7 +63,7 @@ export function stateFor(
     case 'full':
       return { kind: 'full' };
     case 'carnet':
-      return { kind: 'carnet', step: 'notice' };
+      return { kind: 'carnet', step: missingCarnetStep(returned) };
     case 'join':
       return { kind: 'join', name: nickname ?? '', busy: false, error: null, left };
   }
@@ -89,6 +95,8 @@ export function GuestListDialog({
   const [closesAt, setClosesAt] = useState(event.guestList?.closesAt ?? null);
   // Uno por diálogo (el de la demo o el de las RPC).
   const [api] = useState(() => (client === undefined ? guestListClient() : client));
+  // T312: ¿se vuelve del alta del Carnet para esta fiesta? (una vez por viaje).
+  const [returned] = useState(() => takeCarnetTrip(event.id));
 
   useEffect(() => {
     let alive = true;
@@ -96,11 +104,13 @@ export function GuestListDialog({
       setState({ kind: 'error' });
       return;
     }
-    Promise.all([api.status(event.slug), gameRepository().carnet.mine()])
-      .then(([status, carnet]) => {
+    // T312: con cuentas, el Carnet de la cuenta (el que ve la base), nunca
+    // el de este navegador.
+    Promise.all([api.status(event.slug), currentListNickname(isSupabaseConfigured())])
+      .then(([status, nickname]) => {
         if (!alive) return;
         setClosesAt(status.closesAt);
-        setState(stateFor(status, carnet?.nickname ?? null, left));
+        setState(stateFor(status, nickname, left, returned));
       })
       .catch((err: unknown) => {
         console.warn('[boia] la lista', err);
@@ -136,7 +146,7 @@ export function GuestListDialog({
         }
         if (r.reason === 'invalid_name') setState({ ...state, busy: false, error: invalidName() });
         else if (r.reason === 'not_member' || r.reason === 'carnet_required')
-          setState({ kind: 'carnet', step: 'notice' });
+          setState({ kind: 'carnet', step: missingCarnetStep(returned) });
         else if (r.reason === 'full') setState({ kind: 'full' });
         else if (r.reason === 'closed' || r.reason === 'not_enabled')
           setState({ kind: 'closed', mine: null });
@@ -172,11 +182,12 @@ export function GuestListDialog({
   const createCarnet = () => {
     if (onCreateCarnet) onCreateCarnet();
     // Con cuentas, el Carnet empieza por el email y su código: el alta de /carnet.
-    else if (isSupabaseConfigured())
+    else if (isSupabaseConfigured()) {
+      markCarnetTrip(event.id);
       window.location.assign(
         signupUrl(window.location.origin, returnHere(window.location, event.id)),
       );
-    else setState({ kind: 'carnet', step: 'form' });
+    } else setState({ kind: 'carnet', step: 'form' });
   };
 
   const notice = listNotice(closesAt, event.timeZone);
@@ -216,7 +227,14 @@ export function GuestListDialog({
       );
       break;
     case 'carnet':
-      if (state.step === 'form') {
+      if (state.step === 'missing') {
+        // T312: se volvió del alta y la base sigue sin ver la cuenta o su Carnet.
+        body = (
+          <p className="checkout__message" role="alert" data-testid="lista-carnet-falta">
+            {tl('lista.carnet.missing')}
+          </p>
+        );
+      } else if (state.step === 'form') {
         body = (
           <QuickCarnet
             submitLabel={tl('lista.carnet.createAndBack')}

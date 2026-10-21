@@ -74,6 +74,8 @@ export function MarABordo({
             onTop={() => body.current?.scrollTo?.({ top: 0 })}
             {...(onBottles ? { onBottles } : {})}
             {...(onCarnetCreated ? { onCreated: onCarnetCreated } : {})}
+            // T312: con cuentas, entrar en una cuenta que ya tenía Carnet también vuelve.
+            {...(onCarnetCreated && carnetCreate ? { onReady: onCarnetCreated } : {})}
           />
         </MarHoja>
       );

@@ -4,6 +4,61 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — T312: Guest list asks for a Carnet the member already has
+
+Bug (Álvaro, boia-planet-roan.vercel.app, con cuentas, Halloween): el diálogo
+de la lista traía su apodo, «Apuntarme» decía que hacía falta el Carnet y
+«Sacarme el Carnet» (`/carnet?crear=1&volver=…?abrir=<id>`) le devolvía al
+momento a la lista: vuelta sin fin.
+
+Causa: el Carnet que veía era el del invitado de este navegador
+(localStorage, de antes de las cuentas), no uno de `public.carnets`. Con
+cuentas, `gameRepository()` sigue siendo el repositorio local mientras no hay
+sesión con Carnet (`guest` / `incomplete`), así que el diálogo
+(`gameRepository().carnet.mine()`) y `/carnet` (`useCarnet(null)`) lo daban
+por bueno, mientras la RPC `guest_list_join` pide sesión y Carnet en el
+servidor (`not_member` / `carnet_required`).
+
+Qué existe:
+- `apps/web/lib/lista/account-carnet.ts`: `listNickname` (con cuentas, sólo
+  el apodo de la cuenta `member`; en la demo, el local), `currentListNickname`
+  (espera a la sesión, máx. 8 s), `missingCarnetStep`, y el viaje al alta
+  (`markCarnetTrip` / `takeCarnetTrip`, sessionStorage `boia.lista.alta`, se
+  lee una vez).
+- El diálogo (`guest-list-dialog.tsx`) rellena con ese apodo; sin Carnet de
+  cuenta enseña el aviso. Al ir a `/carnet` marca el viaje; si al volver la
+  base sigue diciendo `not_member` / `carnet_required`, enseña el error
+  `lista.carnet.missing` (nuevo en `es-lista.ts`), sin el botón de volver al
+  alta. Otra apertura del diálogo vuelve al aviso (decide la persona).
+- `/carnet?crear=1` (`carnet-page.tsx`, `signupStart` en
+  `lib/scanner/carnet-url.ts`): con cuentas sólo vuelve a `volver` si la
+  cuenta es `member`; espera mientras `loading`; si no, empieza el alta.
+- `CarnetPanel`: pedida el alta con cuentas (`startEditing`), un Carnet sólo
+  local no cuenta: se abre la hoja de acceso (email, código, Carnet; la hoja
+  ya pasa lo del invitado a la cuenta con `mergeGuest`). Tras la puerta, con
+  cuentas, `onReady` (la cuenta ya tiene su Carnet).
+- /mar (`a-bordo.tsx`): Mi Carnet pedido desde la lista o la compra también
+  vuelve al entrar en una cuenta que ya tenía Carnet (`onReady`).
+- Compra (`checkout.tsx`): usaba el mismo `/carnet?crear=1&volver=`; queda
+  arreglada por el cambio de `/carnet` (ya no rebota sin Carnet de cuenta).
+  La compra de prueba sigue mirando el Carnet del repositorio (sin cambios).
+- Demo (sin Supabase): igual que antes.
+
+Comandos:
+- `pnpm exec vitest run apps/web/lib/lista apps/web/lib/guestlist apps/web/lib/scanner` → 6 archivos, 48 pruebas, pasan (nuevas: `lib/lista/account-carnet.test.ts`, 7).
+- `E2E_PORT=3871 pnpm e2e lista.spec.ts` → 4 passed (dos veces seguidas,
+  ~48 s). Antes, con la máquina cargada, la ficha falló a ratos en su último
+  paso (la landing: «Entradas» de la cabecera sin aparecer tras bajar), fuera
+  de la lista; con `--workers=1` también pasó.
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → 3195 passed, 1 skipped (exit 0).
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0; `pnpm typecheck` → 0;
+  `pnpm build` → OK, landing 199.9 kB de 200.0 kB.
+
+Pendiente:
+- Verlo en la web con cuentas (Álvaro): con un Carnet sólo local, «Sacarme el
+  Carnet» lleva a la hoja de acceso y, con la cuenta y su Carnet, vuelve a la
+  lista ya rellena con el apodo de la cuenta.
+
 ## 2026-10-21 — T313: Cloudflare build blocked by the Next.js support check
 
 Qué existe:

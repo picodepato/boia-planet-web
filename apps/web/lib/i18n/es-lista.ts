@@ -44,6 +44,9 @@ export const esLista = {
   'lista.carnet.body': 'Sácatelo (es gratis) y vuelves a la lista.',
   'lista.carnet.create': 'Sacarme el Carnet',
   'lista.carnet.createAndBack': 'Crear Carnet y volver a la lista',
+  // T312: de vuelta del alta, la cuenta sigue sin Carnet (o sin sesión).
+  'lista.carnet.missing':
+    'No encontramos el Carnet BOIA de tu cuenta. Entra en /carnet con el email de tu Carnet (o sácatelo allí) y vuelve a apuntarte.',
 } as const;
 
 export type ListaKey = keyof typeof esLista;

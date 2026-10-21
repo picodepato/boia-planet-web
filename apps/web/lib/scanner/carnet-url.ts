@@ -94,3 +94,20 @@ export function returnPath(search: string): string | null {
 export function wantsCreate(search: string): boolean {
   return new URLSearchParams(search).get(CREATE_PARAM) === '1';
 }
+
+/**
+ * `/carnet?crear=1` (T312): ¿se vuelve ya a `?volver=`, se empieza el alta o
+ * se espera a saber si hay sesión? Con cuentas sólo cuenta el Carnet de la
+ * cuenta (`member`: sesión y fila en `public.carnets`); el de este navegador
+ * (el invitado) no, o la lista volvería a mandar aquí sin fin. Sin Supabase,
+ * el de este navegador.
+ */
+export function signupStart(
+  accounts: boolean,
+  accountStatus: string,
+  hasLocalCarnet: boolean,
+): 'back' | 'signup' | 'wait' {
+  if (!accounts) return hasLocalCarnet ? 'back' : 'signup';
+  if (accountStatus === 'loading') return 'wait';
+  return accountStatus === 'member' ? 'back' : 'signup';
+}
