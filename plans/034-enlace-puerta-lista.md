@@ -57,7 +57,7 @@ Shared rules for every task:
 - Outcome:
 
 ## T310 — Guest list in Admin and at the door
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T307, T308
 - Goal: Admin → Fiestas: for each party, turn list mode on/off and edit cap, closing time and open/closed. A guest-list view per party: count signed up / cap / scanned, table with list name, Carnet nickname, email, signup date and «entró» (scanned at the door), remove a signup (admin, with confirmation), and «Descargar CSV» with the same columns (reuse `app/admin/real/csv.ts`). At the door, both the staff scanner and the shared link scanner, after a scan show «En lista como <nombre>» or «No está en la lista» when the party is in list mode. Past the closing time the scan still works and still shows the list name, plus a notice that it is past the list time (e.g. «En lista como X · pasada la hora de lista (22:30)»): the door decides, nothing is blocked. Through the shared link only the list name is shown, never email.
 - Context: `apps/web/app/admin/real/*` (fiestas, socios, csv.ts), `apps/web/app/admin/door/*` and the link route from T307, the client module and admin RPCs from T308, `apps/web/lib/i18n/es-admin.ts`.
@@ -66,7 +66,7 @@ Shared rules for every task:
   - unit tests (CSV columns, list view, door result) → pass
   - SQL tests for any new RPC → pass against dev
   - the project Test command → pass
-- Outcome:
+- Outcome: list panel per party in Admin (settings, table, remove, CSV nombre_lista,apodo,email,apuntado,entro), «En lista como X» / «No está en la lista» + past-closing notice on both scanners, public RPC door_link_guest_list (migration 20261021300100); REQ-ADM-042 — b15cc49
 
 ## Decisions
 - 2026-10-21: Door link: one per party, no expiry, revocable; anyone with the link can scan and stamp (Álvaro)
@@ -82,11 +82,14 @@ Shared rules for every task:
 - 2026-10-21 T307: links managed in Admin → Puerta y sellos, admin/owner only; full link shown only at creation (hash stored), re-create to get a new one; scan by camera or photo, no paste, no count; every link scan audited; door_links has RLS and no client grants, event_attendance.door_link_id; demo links in localStorage boia.puerta.enlaces.v1; error door_link_invalid; /puerta/ in robots private paths (agent)
 - 2026-10-21 T308: optional guestList {cap, closesAt, open} on the event contract (content default; live state from status()); settings table event_guest_lists publicly readable for published events, no public counter (members only see full); rejections not_enabled/closed/full/invalid_input(→invalid_name)/carnet_required; admin RPCs admin+2FA, door lookup editor; repeat join returns the existing signup even if closed/full; admin removal allowed when closed, audited; Halloween set in migration and seed (agent)
 - 2026-10-21 T308: rpc.ts conflict with T307 resolved keeping both; types and schema allowlists hold both tasks (agent)
+- 2026-10-21 T310: migration 20261021300100 public RPC door_link_guest_list(token, member) → enabled/on_list/list_name/closes_at/past_closing only; panel in «Fiestas y QR» (accounts) and «Eventos» (demo), loaded on open; stamp first, list lookup second (lookup failure keeps the stamp result); past-closing notice also on «No está en la lista»; Europe/Madrid time; REQ-ADM-042 HECHO (agent)
 
 ## Proposals (new scope)
 
-- 2026-10-21 T307/T308: production migrations pending (20261021100100+, 20261021200100); apply before the push on Álvaro's yes
+- 2026-10-21 T307/T308: production migrations pending (20261021100100, 20261021200100, 20261021300100); apply before the push on Álvaro's yes
 - 2026-10-21 T308: `pnpm --filter @boia/db test:supabase -- <file>` ignores the file filter (extra `--`); fix the script
+
+- 2026-10-21 T310: no e2e spec for the Admin list panel (unit tests cover the demo path)
 
 ## Log
 - 2026-10-21 T307 launched · attempt 1 · agent a97242e042f901574
@@ -94,3 +97,6 @@ Shared rules for every task:
 - 2026-10-21 T307 done · branch worktree-agent-a97242e042f901574 → f6b0621 (worktree folder left on disk: node_modules, guard blocks rm)
 - 2026-10-21 T308 conflict in packages/db/src/rpc.ts → agent resolved
 - 2026-10-21 T308 done · branch worktree-agent-afa55efafafd1c3be → 9f010ac
+- 2026-10-21 T309 launched · attempt 1 · agent aacd5eba390d0b1f4
+- 2026-10-21 T310 launched · attempt 1 · agent a082fd56a6118a550
+- 2026-10-21 T310 done · branch worktree-agent-a082fd56a6118a550 → b15cc49
