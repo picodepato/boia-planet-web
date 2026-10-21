@@ -193,6 +193,19 @@
   margin: 0 0 6px;
 }
 
+/* Plan 034 T309: «Apuntarse en la lista», con el precio en la puerta y la hora debajo. */
+.event-page__list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  flex-basis: 100%;
+}
+
+.event-page__list p {
+  margin: 0;
+}
+
 .event-page__door .box-office__label {
   font-size: 1.125rem;
 }

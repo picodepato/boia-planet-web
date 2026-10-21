@@ -3,6 +3,7 @@ import type { FunnelEventProps } from '@boia/contracts/analytics';
 import { eventKicker } from '@boia/contracts/event-labels';
 import { EVENT_CARD_COPY } from '../../../lib/landing/card-copy';
 import { formatEventDate, t } from '../../../lib/landing/texts';
+import { inListMode, listEventOf } from '../../../lib/lista/model';
 import { BuyButton } from './buy-button';
 
 type Source = FunnelEventProps['ticket_click_out']['source'];
@@ -172,6 +173,7 @@ export function EventCard({
           boxOfficeOnly={event.boxOfficeOnly}
           priceCents={event.priceCents}
           notYet={event.ticketsNotYet}
+          guestList={inListMode(event) ? listEventOf(event) : undefined}
           source={source}
         />
       ) : (

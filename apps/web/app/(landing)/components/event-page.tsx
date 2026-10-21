@@ -6,6 +6,7 @@ import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import { EVENTOS_COPY } from '../../../lib/landing/eventos-copy';
 import { eventHref, type EventPageView } from '../../../lib/landing/eventos';
 import { formatEventDate } from '../../../lib/landing/texts';
+import { inListMode, listEventOf } from '../../../lib/lista/model';
 import { BoxOfficeMessage } from '../../../lib/ticketing/box-office';
 import { BuyButton } from './buy-button';
 import { MediaCollage } from './media-collage';
@@ -30,6 +31,8 @@ function formatTime(iso: string, timeZone: string): string {
  * pide el Carnet BOIA (lo dice al lado) y junto a la compra va «Consigue un
  * descuento», que entra en el mundo como «Zarpar». Un evento «Solo en puerta»
  * no tiene compra: dice el precio en la puerta con carnet y lleva a crearlo.
+ * Una fiesta en lista (plan 034 T309) lleva «Apuntarse en la lista», con el
+ * precio en la puerta y la hora de la lista, en vez de todo eso.
  */
 export function EventPageBody({ view }: { view: EventPageView }) {
   const { event } = view;
@@ -44,8 +47,13 @@ export function EventPageBody({ view }: { view: EventPageView }) {
   const format = event.series
     ? `${EVENT_FORMAT_LABELS[event.format]} · ${seriesLabel(event.series)}`
     : EVENT_FORMAT_LABELS[event.format];
-  // Con «Tickets todavía no disponibles» (T292) manda ese aviso, también en un «Solo en puerta».
-  const doorOnly = event.boxOfficeOnly !== undefined && !event.ticketsNotYet;
+  // En lista (T309) manda la lista; si no, con «Tickets todavía no
+  // disponibles» (T292) manda ese aviso, también en un «Solo en puerta».
+  const listMode = inListMode(event);
+  const doorPriced = event.boxOfficeOnly !== undefined && !event.ticketsNotYet;
+  const doorOnly = doorPriced && !listMode;
+  // Lleva el botón de compra (o el de «todavía no»): ni puerta ni lista.
+  const buys = view.buyable && !doorOnly && !listMode;
   const price = event.boxOfficeOnly !== undefined ? doorPriceCents(event) : event.priceCents;
 
   return (
@@ -137,12 +145,12 @@ export function EventPageBody({ view }: { view: EventPageView }) {
               <dt>{EVENTOS_COPY.price}</dt>
               <dd data-testid="evento-precio">
                 {EUR.format(price / 100)}
-                {doorOnly ? ` · ${EVENTOS_COPY.doorPrice}` : ''}
+                {doorPriced ? ` · ${EVENTOS_COPY.doorPrice}` : ''}
                 {event.priceSample ? ` · ${EVENTOS_COPY.priceSample}` : ''}
               </dd>
             </div>
           ) : null}
-          {event.ticketProvider && !doorOnly && !finished ? (
+          {event.ticketProvider && !doorOnly && !listMode && !finished ? (
             <div>
               <dt>{EVENTOS_COPY.provider}</dt>
               <dd data-testid="evento-ticketera">{event.ticketProvider}</dd>
@@ -175,7 +183,17 @@ export function EventPageBody({ view }: { view: EventPageView }) {
         ) : null}
 
         <div className="event-page__actions">
-          {view.buyable && !doorOnly ? (
+          {view.buyable && listMode ? (
+            <div className="event-page__list" data-testid="evento-lista">
+              <BuyButton
+                eventId={event.id}
+                eventName={event.name}
+                ticketUrl={undefined}
+                guestList={listEventOf(event)}
+                source="event_page"
+              />
+            </div>
+          ) : buys ? (
             <>
               <BuyButton
                 eventId={event.id}
@@ -210,7 +228,7 @@ export function EventPageBody({ view }: { view: EventPageView }) {
             </a>
           ) : null}
         </div>
-        {view.buyable && !doorOnly ? (
+        {buys ? (
           <p className="event-page__carnet-note" data-testid="evento-aviso-carnet">
             {EVENTOS_COPY.carnetNeeded}{' '}
             <a href={CARNET_CREATE_HREF} data-testid="evento-crear-carnet">

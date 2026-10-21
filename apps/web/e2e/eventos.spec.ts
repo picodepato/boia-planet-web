@@ -58,7 +58,14 @@ test('la ficha de Halloween: el cartel que falta, su isla, su estado y «Solo en
   // «Solo en puerta» (plan 019 T215): nunca hay compra online; mientras está
   // a la venta, el aviso de la puerta con el Carnet.
   await expect(ficha.getByTestId(`comprar-${halloween.id}`)).toHaveCount(0);
-  await expect(ficha.getByTestId('evento-solo-puerta')).toHaveCount(canBuy(halloween, now) ? 1 : 0);
+  // En lista (plan 034 T309), «Apuntarse en la lista» en vez del aviso de la puerta.
+  const listed = !!halloween.guestList;
+  await expect(ficha.getByTestId('evento-solo-puerta')).toHaveCount(
+    canBuy(halloween, now) && !listed ? 1 : 0,
+  );
+  await expect(ficha.getByTestId(`lista-${halloween.id}`)).toHaveCount(
+    canBuy(halloween, now) && listed ? 1 : 0,
+  );
 });
 
 test('la home enseña sólo la selección de fotos y «Ver todas» lleva a la Galería', async ({
@@ -126,6 +133,7 @@ test.describe('sin JavaScript', () => {
     page,
   }) => {
     test.skip(!halloween.boxOfficeOnly || !canBuy(halloween, now), 'Halloween no está a la venta');
+    test.skip(!!halloween.guestList, 'Halloween va en lista (plan 034 T309): lista.spec.ts');
     await page.goto(eventHref(halloween.slug));
     const ficha = page.getByTestId('evento-ficha');
     const message = ficha.getByTestId('box-office-message');

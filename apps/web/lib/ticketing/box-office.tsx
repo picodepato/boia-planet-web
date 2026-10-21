@@ -41,19 +41,26 @@ export function BoxOfficeMessage({ event, carnet }: { event: DoorEvent; carnet: 
   );
 }
 
-/** El diálogo de un aviso de entradas (puerta o «todavía no disponibles»), sobre el checkout.css. */
-function TicketNoticeDialog({
+/**
+ * El diálogo de un aviso de entradas (puerta, «todavía no disponibles» o la
+ * lista, plan 034 T309), sobre el checkout.css. `actions` va antes de «Cerrar».
+ */
+export function TicketNoticeDialog({
   title,
   onClose,
   className,
   testId,
   children,
+  actions,
+  closeLabel,
 }: {
   title: string;
   onClose: () => void;
   className?: string | undefined;
   testId: string;
   children: ReactNode;
+  actions?: ReactNode;
+  closeLabel?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -97,13 +104,14 @@ function TicketNoticeDialog({
         </h2>
         {children}
         <div className="checkout__actions">
+          {actions}
           <button
             type="button"
             className="checkout__secondary"
             onClick={onClose}
             data-testid={`${testId}-close`}
           >
-            {t('tickets.close')}
+            {closeLabel ?? t('tickets.close')}
           </button>
         </div>
       </div>

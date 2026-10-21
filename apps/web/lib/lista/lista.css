@@ -1,0 +1,26 @@
+/* La lista de una fiesta (plan 034 T309): el diálogo, sobre checkout.css. */
+
+.checkout.lista .lista__door {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 2px dashed #12233f;
+  border-radius: var(--radius);
+}
+
+.checkout.lista .lista__door p {
+  margin: 0 0 4px;
+}
+
+.checkout.lista .lista__door p:last-child {
+  margin-bottom: 0;
+}
+
+.checkout.lista .lista__notice {
+  font-size: 14px;
+  color: #3b4d6b;
+}
+
+.checkout.lista .lista__ask {
+  margin-top: 8px;
+  font-weight: 700;
+}

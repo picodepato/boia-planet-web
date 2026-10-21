@@ -4,6 +4,64 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — plan 034 T309: Guest list: member flow on the web and in /mar
+
+Qué existe:
+
+- `apps/web/lib/lista/`: `model.ts` (qué fiestas van en lista, `inListMode`;
+  «5 € con carnet en puerta», `listDoorPrice`; «La lista vale hasta las
+  22:30; después, por orden de llegada» con la hora de los ajustes,
+  `listNotice`; la fecha y el nombre de la inscripción; `listPhase`),
+  `guest-list-buy.tsx` (el botón de la landing y la ficha, con el diálogo
+  perezoso) y `guest-list-dialog.tsx` (el diálogo: sin Carnet, alta rápida en
+  la landing / Mi Carnet en el mar / /carnet con cuentas, y vuelta a la
+  lista; nombre con el apodo y «Apuntarme»; ya apuntado, fecha, nombre, aviso y
+  «Borrarme de la lista» con confirmación; «Lista completa»; «Lista cerrada»
+  sin botones). Usa el cliente de T308 (`lib/guestlist`) sin tocarlo.
+- Textos en `apps/web/lib/i18n/es-lista-boton.ts` (lo que va en la landing) y
+  `es-lista.ts` (el diálogo y /mar), los dos registrados en `es.ts`.
+- La landing (tarjeta y panel de Tickets, `BuyButton` con `guestList`), la
+  ficha `/eventos/<slug>` y /mar («Elige tu evento» y la ficha de la isla:
+  `marPurchase` → `guest_list`, que abre el diálogo; sin Carnet, Mi Carnet del
+  mundo y vuelta) dicen «Apuntarse en la lista» en una fiesta en lista. Las
+  demás, como antes.
+- `TicketNoticeDialog` (box-office.tsx) y `QuickCarnet` (checkout.tsx),
+  exportados para reutilizarlos.
+- Pruebas que esperaban el aviso «Solo en puerta» de Halloween: ahora usan la
+  fiesta sin lista (`withoutGuestList`) para la puerta y comprueban la lista
+  en Halloween (eventos.test, not-yet.test, event-card.test,
+  real-content.test); en e2e, las de puerta de Halloween se saltan si va en
+  lista (tickets, eventos, carnet-requerido) y la cubre `lista.spec.ts`.
+- REQ-COM-037 pasa a HECHO (con main y T310 mezclados: el Admin y la puerta
+  están en REQ-ADM-042), con `lista.test.ts` y `lista.spec.ts` enlazadas.
+- Presupuesto de la landing: queda en 204 791 B de 204 800 B (9 B de margen).
+  Para caber, el botón de la landing no lleva `aria-label` ni `aria-haspopup`,
+  el precio y el aviso van en una sola nota sin testid y, si el diálogo no
+  carga, no hay aviso (otro toque lo reintenta).
+
+Comandos:
+
+- `pnpm exec vitest run apps/web/lib/lista` → 1 archivo, 11 pruebas, pasa.
+- `E2E_PORT=3391 pnpm e2e lista.spec.ts carnet-requerido.spec.ts
+  tickets.spec.ts --workers=2` (tras mezclar main) → 14 passed, 4 skipped.
+- `E2E_PORT=3391 pnpm e2e lista.spec.ts eventos.spec.ts tickets.spec.ts
+  carnet-requerido.spec.ts --workers=2` → 22 passed, 12 skipped, 4 failed: los
+  4 son de la Galería en eventos.spec.ts (`.galeria [role="img"]` y el
+  recuento de piezas), que no toca este cambio.
+- Comando de prueba del proyecto (vitest sin packages/db, checks.sh, lint,
+  build, typecheck) → todo exit 0; vitest 355 archivos, 3178 pasan, 1 saltada;
+  build con la landing en 200.0 kB · OK.
+
+Pendiente:
+
+- Con cuentas, «Sacarme el Carnet» lleva a /carnet?crear=1 (como la compra) y
+  no vuelve sola a la lista.
+- El modo lista sale del contenido (`event.guestList`): si el Admin lo activa
+  en la base para otra fiesta sin `guestList` en su contenido, la web no lo
+  sabe hasta que el contenido lo lleve.
+- El aviso junto al botón usa la hora del contenido; el diálogo, la del
+  estado vivo.
+
 ## 2026-10-21 — plan 034 T310: Guest list in Admin and at the door
 
 Qué existe:

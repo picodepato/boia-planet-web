@@ -65,6 +65,7 @@ import { liveWorld } from '../../lib/admin/live-world';
 import { track } from '../../lib/analytics';
 import { SandboxCheckout } from '../../lib/ticketing/checkout';
 import { BoxOfficeDialog, TicketsNotYetDialog } from '../../lib/ticketing/box-office';
+import { GuestListDialog } from '../../lib/lista/guest-list-dialog';
 import { purchaseNotices } from '../../lib/ticketing/notices';
 import { ClaimBadge, claimLabel } from '../../lib/logros/claim-badge';
 import { useReadyCount } from '../../lib/logros/use-logros';
@@ -3219,7 +3220,21 @@ export function MarClient({ shipCatalog = null }: { shipCatalog?: ShipCatalog | 
         />
       ) : null}
 
-      {checkoutFor && marPurchase(findEvent(checkoutFor)) === 'not_yet' ? (
+      {checkoutFor && marPurchase(findEvent(checkoutFor)) === 'guest_list' ? (
+        // La fiesta va en lista (plan 034 T309): apuntarse o borrarse, sin compra.
+        // Sin Carnet, Mi Carnet del mundo y, al crearlo, vuelve aquí.
+        <GuestListDialog
+          event={findEvent(checkoutFor)!}
+          className="checkout--mar"
+          onClose={() => setCheckoutFor(null)}
+          onCreateCarnet={() => {
+            const eventId = checkoutFor;
+            setCheckoutFor(null);
+            openPanel('carnet');
+            setCarnetForCheckout(eventId);
+          }}
+        />
+      ) : checkoutFor && marPurchase(findEvent(checkoutFor)) === 'not_yet' ? (
         // «Tickets todavía no disponibles» (plan 030 T292): ni checkout ni ticketera.
         <TicketsNotYetDialog
           eventName={findEvent(checkoutFor)!.name}

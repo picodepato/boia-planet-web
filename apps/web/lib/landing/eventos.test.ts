@@ -18,6 +18,7 @@ import { IslandUpcoming } from '../mundo/place-panels';
 import { EventBlock } from '../../app/mar/sheet';
 import { eventSailHref } from '../world-handoff';
 import { ZARPAR_HREF } from '../intro/zarpar';
+import { listDoorPrice, listNotice, withoutGuestList } from '../lista/model';
 import { boxOfficeLabel } from '../ticketing/box-office-label';
 import { CARNET_CREATE_HREF } from './access';
 import { EVENTOS_COPY } from './eventos-copy';
@@ -179,9 +180,23 @@ describe('ficha de evento: lo que falta, cartel de fondo, puerta y descuento (pl
     expect(page(onSale, NOW)).not.toContain('evento-ticketera');
   });
 
-  it('Halloween: «Solo en puerta · 5 € con carnet», sin compra y con el Carnet', () => {
+  it('Halloween va en lista (plan 034 T309): «Apuntarse en la lista», con el precio en la puerta', () => {
     expect(canBuy(halloween, NOW)).toBe(true);
     const html = page(halloween, NOW);
+    expect(html).toContain('data-testid="evento-lista"');
+    expect(html).toContain(`data-testid="lista-${halloween.id}"`);
+    expect(html).toContain(listDoorPrice(halloween)!);
+    expect(html).toContain(listNotice(halloween.guestList!.closesAt, halloween.timeZone)!);
+    expect(html).not.toContain('evento-solo-puerta');
+    expect(html).not.toContain(BUY);
+    expect(html).not.toContain('evento-descuento');
+    expect(html).not.toContain('evento-aviso-carnet');
+  });
+
+  it('una fiesta «Solo en puerta» sin lista: «5 € con carnet», sin compra y con el Carnet', () => {
+    const door = withoutGuestList(halloween);
+    expect(canBuy(door, NOW)).toBe(true);
+    const html = page(door, NOW);
     expect(html).toContain('data-testid="evento-solo-puerta"');
     expect(html).toContain(boxOfficeLabel(halloween));
     expect(boxOfficeLabel(halloween)).toBe('Solo en puerta · 5 € con carnet');

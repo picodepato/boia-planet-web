@@ -3,6 +3,7 @@
 import { eventKicker } from '@boia/contracts';
 import { formatEventDate, t } from '../../lib/i18n';
 import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
+import { inListMode, listDoorPrice, listNotice } from '../../lib/lista/model';
 import { CHECKOUT_COPY } from '../../lib/ticketing/copy';
 import { EventDiscountBanner } from '../../lib/ticketing/discount-banner';
 import type { WorldTicket, WorldTickets } from './entradas-model';
@@ -16,7 +17,9 @@ import './entradas.css';
  * mismos eventos que el panel de Tickets de la landing. «Comprar entrada»
  * abre el checkout de prueba encima, sin salir del mundo (con el código
  * encontrado navegando, si vale para ese evento); «Ir a su isla» vuela o
- * navega hasta ella y abre la compra al llegar. Textos `muestra`.
+ * navega hasta ella y abre la compra al llegar. Una fiesta en lista (plan
+ * 034 T309) dice «Apuntarse en la lista», con el precio en la puerta y la
+ * hora de la lista, y abre la lista en vez de la compra. Textos `muestra`.
  */
 export function MarEntradas({
   tickets,
@@ -67,6 +70,9 @@ function Ticket({
   onBuy: (eventId: string) => void;
   onSail: (eventId: string) => void;
 }) {
+  const list = inListMode(e);
+  const door = list ? listDoorPrice(e) : null;
+  const notice = list ? listNotice(e.guestList?.closesAt, e.timeZone) : null;
   return (
     <article
       className={featured ? 'mar-entrada is-featured' : 'mar-entrada'}
@@ -84,18 +90,31 @@ function Ticket({
         {formatEventDate(e.startsAt, e.timeZone)} ·{' '}
         {e.placeAnnounced ? e.placeLabel : EVENTOS_COPY.placeSoon}
       </p>
-      {buyable ? <EventDiscountBanner event={e} /> : null}
+      {buyable && !list ? <EventDiscountBanner event={e} /> : null}
+      {buyable && door ? (
+        <p className="mar-sheet__meta" data-testid={`mar-entradas-lista-precio-${e.id}`}>
+          <strong>{door}</strong>
+        </p>
+      ) : null}
+      {buyable && notice ? (
+        <p className="mar-sheet__meta" data-testid={`mar-entradas-lista-aviso-${e.id}`}>
+          {notice}
+        </p>
+      ) : null}
       {buyable ? (
         <div className="mar-sheet__actions">
           <button
             type="button"
             className="mar-btn mar-btn--primary"
             data-testid={`mar-entradas-comprar-${e.id}`}
-            aria-label={CHECKOUT_COPY.buyAria(e.name)}
+            data-lista={list ? '' : undefined}
+            aria-label={
+              list ? t('lista.joinAria', { name: e.name }) : CHECKOUT_COPY.buyAria(e.name)
+            }
             aria-haspopup="dialog"
             onClick={() => onBuy(e.id)}
           >
-            {t('mar.sheet.comprarEntrada')}
+            {list ? t('lista.joinMar') : t('mar.sheet.comprarEntrada')}
           </button>
           {placeId ? (
             <button

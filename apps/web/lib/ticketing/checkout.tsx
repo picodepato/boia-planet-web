@@ -351,9 +351,18 @@ export function CarnetRequired({ accounts = isSupabaseConfigured() }: { accounts
  * Alta rápida del Carnet dentro de la compra (T66, la landing): sólo el
  * apodo, con el avatar por defecto; el resto se completa luego en Mi Carnet.
  * Crea el mismo Carnet que el editor (con su logro) y la compra se vuelve a
- * preparar.
+ * preparar. La lista (plan 034 T309) la usa igual.
  */
-function QuickCarnet({ onCreated, onBack }: { onCreated: () => void; onBack: () => void }) {
+export function QuickCarnet({
+  onCreated,
+  onBack,
+  submitLabel = C.carnet.createAndBack,
+}: {
+  onCreated: () => void;
+  onBack: () => void;
+  /** El botón de guardar («… y volver a la compra»; la lista dice el suyo, T309). */
+  submitLabel?: string;
+}) {
   const [nickname, setNickname] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -397,7 +406,7 @@ function QuickCarnet({ onCreated, onBack }: { onCreated: () => void; onBack: () 
         data-testid="checkout-carnet-guardar"
         disabled={busy}
       >
-        {busy ? C.carnet.creating : C.carnet.createAndBack}
+        {busy ? C.carnet.creating : submitLabel}
       </button>
       <button type="button" className="checkout__secondary" onClick={onBack}>
         {C.carnet.back}

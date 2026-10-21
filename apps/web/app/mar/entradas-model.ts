@@ -50,15 +50,17 @@ export function worldTickets(
 }
 
 /**
- * Qué abre «Comprar entrada» en el mar: «Tickets todavía no disponibles»
- * (plan 030 T292; nunca el checkout ni la ticketera), el aviso «Solo en
- * puerta» o el checkout de prueba. Manda el primero.
+ * Qué abre «Comprar entrada» en el mar: la lista de la fiesta (plan 034
+ * T309, «Apuntarse en la lista»), «Tickets todavía no disponibles» (plan 030
+ * T292; nunca el checkout ni la ticketera), el aviso «Solo en puerta» o el
+ * checkout de prueba. Manda el primero.
  */
-export type MarPurchase = 'not_yet' | 'box_office' | 'checkout';
+export type MarPurchase = 'guest_list' | 'not_yet' | 'box_office' | 'checkout';
 
 export function marPurchase(
-  event: Pick<BoiaEvent, 'ticketsNotYet' | 'boxOfficeOnly'> | undefined,
+  event: Pick<BoiaEvent, 'ticketsNotYet' | 'boxOfficeOnly' | 'guestList'> | undefined,
 ): MarPurchase {
+  if (event?.guestList) return 'guest_list';
   if (event?.ticketsNotYet) return 'not_yet';
   if (event?.boxOfficeOnly) return 'box_office';
   return 'checkout';

@@ -16,6 +16,7 @@ import { draftOf, eventInputOf } from '../../app/admin/sections/events';
 import { marPurchase, worldTickets } from '../../app/mar/entradas-model';
 import { createAdminActions } from '../admin/actions';
 import { t } from '../i18n/web';
+import { withoutGuestList } from '../lista/model';
 import { eventPageView } from '../landing/eventos';
 import { resolveHome } from '../landing/resolve';
 import { SAMPLE_CONTENT } from '../landing/sample-content';
@@ -72,8 +73,8 @@ describe('«Tickets todavía no disponibles» (T292)', () => {
     );
     expect(html).not.toContain(sonido.ticketUrl!);
     expect(html).not.toContain('ticket_click_out');
-    // Halloween sigue con su aviso «Solo en puerta».
-    const door = card(halloween);
+    // Una fiesta «Solo en puerta» sin lista sigue con su aviso (Halloween va en lista, T309).
+    const door = card(withoutGuestList(halloween));
     expect(door).toContain('data-testid="box-office-message"');
     expect(door).not.toContain(MESSAGE);
   });
@@ -132,7 +133,8 @@ describe('«Tickets todavía no disponibles» (T292)', () => {
     expect(mar.entries.find((x) => x.event.id === sonido.id)?.buyable).toBe(true);
     expect(marPurchase(sonido)).toBe('not_yet');
     expect(marPurchase(nochevieja)).toBe('not_yet');
-    expect(marPurchase(halloween)).toBe('box_office');
+    expect(marPurchase(halloween)).toBe('guest_list');
+    expect(marPurchase(withoutGuestList(halloween))).toBe('box_office');
     expect(marPurchase({ ...sonido, ticketsNotYet: false })).toBe('checkout');
   });
 

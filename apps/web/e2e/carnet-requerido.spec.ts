@@ -218,6 +218,7 @@ test('Halloween: «Solo en puerta · 5 € con carnet», sin checkout, y lleva a
     !EVENT_STATE_BEHAVIOR[eventState(halloween, now)].purchasable,
     'Halloween ya pasó: no hay nada que comprar',
   );
+  test.skip(!!halloween.guestList, 'Halloween va en lista (plan 034 T309): lista.spec.ts');
   await page.goto(`/eventos/${halloween.slug}`);
   const ficha = page.getByTestId('evento-ficha');
   const door = ficha.getByTestId('evento-solo-puerta');

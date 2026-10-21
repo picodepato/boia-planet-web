@@ -31,8 +31,16 @@ export const OPENED_EVENTS: BoiaEvent[] = SAMPLE_CONTENT.events.map((e) =>
  */
 export const ONLINE_EVENT = OPENED_EVENTS.find((e) => canBuy(e) && !e.boxOfficeOnly)!;
 
-/** Los que se venden sólo en la puerta. */
-export const BOX_OFFICE_EVENTS = SAMPLE_CONTENT.events.filter((e) => canBuy(e) && e.boxOfficeOnly);
+/**
+ * Los que se venden sólo en la puerta y no van en lista: una fiesta en lista
+ * (plan 034 T309, Halloween) lleva «Apuntarse en la lista» (lista.spec.ts).
+ */
+export const BOX_OFFICE_EVENTS = SAMPLE_CONTENT.events.filter(
+  (e) => canBuy(e) && e.boxOfficeOnly && !e.guestList,
+);
+
+/** Las fiestas en lista (plan 034 T309). */
+export const GUEST_LIST_EVENTS = SAMPLE_CONTENT.events.filter((e) => canBuy(e) && e.guestList);
 
 let prepared: Promise<{ doc: string; entries: Record<string, unknown> }> | null = null;
 

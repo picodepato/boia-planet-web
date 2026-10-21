@@ -131,7 +131,8 @@ test('Halloween: «Solo en puerta · 5 € con carnet», en la landing y en su i
   page,
 }, info) => {
   test.setTimeout(120_000);
-  expect(BOX_OFFICE_EVENTS.length, 'hay eventos de puerta').toBeGreaterThan(0);
+  // Halloween va en lista desde el plan 034 (T309): lo prueba lista.spec.ts.
+  test.skip(BOX_OFFICE_EVENTS.length === 0, 'ninguna fiesta de puerta sin lista en la muestra');
   const message = t('ticketing.boxOffice.message');
 
   await page.goto('/?intro=0');

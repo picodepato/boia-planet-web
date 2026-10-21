@@ -20,6 +20,7 @@ import { EVENTOS_COPY } from '../../lib/landing/eventos-copy';
 import { eventHref, photosHref } from '../../lib/landing/eventos';
 import { liveContent } from '../../lib/landing/live-content';
 import { EventDiscountBanner } from '../../lib/ticketing/discount-banner';
+import { inListMode, listDoorPrice, listNotice } from '../../lib/lista/model';
 import {
   DiscountCard,
   ISLAND_EXPLORE,
@@ -243,10 +244,11 @@ export function Sheet({
             type="button"
             className="mar-btn mar-btn--primary"
             data-testid="mar-comprar"
+            data-lista={inListMode(e) ? '' : undefined}
             aria-haspopup="dialog"
             onClick={() => onBuy(e.id)}
           >
-            {t('mar.sheet.comprarEntrada')}
+            {buyLabel(e)}
           </button>
         ) : undefined,
     };
@@ -692,13 +694,15 @@ export function EventBlock({
             type="button"
             className="mar-btn mar-btn--primary mar-btn--big"
             data-testid="mar-comprar"
+            data-lista={inListMode(e) ? '' : undefined}
             aria-haspopup="dialog"
             onClick={() => onBuy(e.id)}
           >
-            {t('mar.sheet.comprarEntrada')}
+            {buyLabel(e)}
           </button>
         </div>
       ) : null}
+      {buy && inListMode(e) ? <ListLines event={e} /> : null}
       {e.islandId ? <IslandMemories placeId={e.islandId} /> : null}
       <IslandUpcoming islandId={e.islandId} excludeId={e.id} onSteer={onSteer} />
     </>
@@ -797,6 +801,31 @@ function MyCodes({ onGoToIsland }: { onGoToIsland: (eventId: string) => void }) 
             ))}
         </ul>
       )}
+    </>
+  );
+}
+
+/** «Comprar entrada» o, en una fiesta en lista (plan 034 T309), «Apuntarse en la lista». */
+function buyLabel(e: BoiaEvent): string {
+  return inListMode(e) ? t('lista.joinMar') : t('mar.sheet.comprarEntrada');
+}
+
+/** El precio en la puerta y la hora de la lista, bajo «Apuntarse en la lista» (T309). */
+function ListLines({ event: e }: { event: BoiaEvent }) {
+  const door = listDoorPrice(e);
+  const notice = listNotice(e.guestList?.closesAt, e.timeZone);
+  return (
+    <>
+      {door ? (
+        <p className="mar-sheet__meta" data-testid="mar-lista-precio">
+          <strong>{door}</strong>
+        </p>
+      ) : null}
+      {notice ? (
+        <p className="mar-sheet__meta" data-testid="mar-lista-aviso">
+          {notice}
+        </p>
+      ) : null}
     </>
   );
 }

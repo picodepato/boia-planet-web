@@ -20,6 +20,8 @@ import { esCuenta } from './es-cuenta';
 import { esJuego } from './es-juego';
 import { esLib } from './es-lib';
 import { esLibEventos } from './es-lib-eventos';
+import { esLista } from './es-lista';
+import { esListaBoton } from './es-lista-boton';
 import { esMar } from './es-mar';
 import { esMarBanter } from './es-mar-banter';
 import { esMundo } from './es-mundo';
@@ -77,6 +79,9 @@ export const es = {
   ...esSeo,
   // La piel de Acuarela, por clave (plan 032 T303).
   ...esAcuarela,
+  // La lista de una fiesta, del lado del socio (plan 034 T309).
+  ...esListaBoton,
+  ...esLista,
 } as const;
 
 export type MessageKey = keyof typeof es;

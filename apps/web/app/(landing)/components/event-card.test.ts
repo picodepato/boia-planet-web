@@ -6,10 +6,15 @@ import { EventBlock } from '../../mar/sheet';
 import { EVENT_CARD_COPY } from '../../../lib/landing/card-copy';
 import { EVENTOS_COPY } from '../../../lib/landing/eventos-copy';
 import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
+import { t } from '../../../lib/i18n';
+import { withoutGuestList } from '../../../lib/lista/model';
+import { tl } from '../../../lib/lista/t';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
 import { EventCard } from './event-card';
 
-const base = SAMPLE_CONTENT.events.find((e) => canBuy(e))!;
+// Halloween va en lista (plan 034 T309): aquí, la fiesta sin lista, con su compra de siempre.
+const listed = SAMPLE_CONTENT.events.find((e) => canBuy(e) && e.guestList)!;
+const base = withoutGuestList(SAMPLE_CONTENT.events.find((e) => canBuy(e))!);
 const withState = (state: BoiaEvent['state']): BoiaEvent => ({ ...base, state });
 
 function card(event: BoiaEvent): string {
@@ -34,6 +39,18 @@ describe('CTA de compra (REQ-COM-035, REQ-COM-005)', () => {
     // En el HTML (sin JavaScript) es el enlace a la ticketera; al hidratar, la compra de prueba.
     expect(card(base)).toContain(`data-testid="comprar-${base.id}"`);
     expect(panel(base)).toContain('data-testid="mar-comprar"');
+  });
+
+  it('una fiesta en lista dice «Apuntarse en la lista» en la landing y en su isla (T309)', () => {
+    const html = card(listed);
+    expect(html).toContain(`data-testid="lista-${listed.id}"`);
+    expect(html).toContain(tl('lista.join'));
+    expect(html).not.toContain(`data-testid="comprar-${listed.id}"`);
+    const island = panel(listed);
+    expect(island).toContain('data-testid="mar-comprar"');
+    expect(island).toContain(t('lista.joinMar'));
+    expect(island).toContain('data-testid="mar-lista-aviso"');
+    expect(island).not.toContain(t('mar.sheet.comprarEntrada'));
   });
 
   it('un evento finalizado nunca muestra compra, ni en la landing ni en su isla', () => {

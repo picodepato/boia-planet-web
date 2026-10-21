@@ -9,6 +9,8 @@ import type { SandboxCheckout } from '../../../lib/ticketing/checkout';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
 import type { BoiaEvent } from '@boia/contracts';
 import { BoxOfficeDialog, BoxOfficeMessage } from '../../../lib/ticketing/box-office';
+import { GuestListBuy } from '../../../lib/lista/guest-list-buy';
+import type { ListEvent } from '../../../lib/lista/model';
 
 type Source = FunnelEventProps['ticket_click_out']['source'];
 type Checkout = typeof SandboxCheckout;
@@ -79,7 +81,9 @@ export const CARNET_FROM_LANDING = CARNET_CREATE_HREF;
  * eventos con compra (`buyButtonShown`): un finalizado nunca llega aquí. Con
  * `notYet` (plan 030 T292) el botón sigue en su sitio, pero al tocarlo dice
  * «Tickets todavía no disponibles» y no abre nada (sin JavaScript tampoco:
- * no hay enlace a la ticketera).
+ * no hay enlace a la ticketera). Con `guestList` (plan 034 T309, una fiesta
+ * en lista) no se compra: «Apuntarse en la lista», que manda sobre todo lo
+ * demás.
  */
 export function BuyButton({
   eventId,
@@ -89,6 +93,7 @@ export function BuyButton({
   boxOfficeOnly,
   priceCents,
   notYet = false,
+  guestList,
 }: {
   eventId: string;
   eventName: string;
@@ -100,6 +105,8 @@ export function BuyButton({
   priceCents?: BoiaEvent['priceCents'];
   /** «Tickets todavía no disponibles» (`event.ticketsNotYet`, T292). */
   notYet?: boolean;
+  /** La fiesta va en lista (`listEventOf(event)` si `inListMode(event)`). */
+  guestList?: ListEvent | undefined;
 }) {
   const [Checkout, setCheckout] = useState<ComponentType<Parameters<Checkout>[0]> | null>(null);
   const [open, setOpen] = useState(false);
@@ -116,6 +123,8 @@ export function BuyButton({
     'data-source': source,
     'data-testid': `comprar-${eventId}`,
   };
+
+  if (guestList) return <GuestListBuy event={guestList} />;
 
   if (notYet) {
     return (
