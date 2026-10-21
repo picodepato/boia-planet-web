@@ -123,3 +123,4 @@ Shared rules for every task:
 - 2026-10-21 T309 done · branch worktree-agent-aacd5eba390d0b1f4 → d2d2123
 - 2026-10-21 T311 launched · attempt 1 · agent a2fc1e38c662cab87
 - 2026-10-21 T311 done · branch worktree-agent-a2fc1e38c662cab87 → 60c8f1c; full test command on main → pass (integration run); plan done
+- 2026-10-21 production: applied 5 migrations (20261015100700, 20261015101100, 20261021100100, 20261021200100, 20261021300100), no seeds; pushed main 65d0a30..9f6b7df (Álvaro's yes in session)
