@@ -33,7 +33,7 @@ Shared rules for every task:
 - Outcome: door_links table + admin RPCs + public link RPCs, /puerta/[token] scanner (camera/photo), Admin → Puerta «Enlace de la puerta»; REQ-ADM-041 — f6b0621
 
 ## T308 — Guest list: data and rules
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: Back end (and store/demo layer) for party guest lists. Per party settings: list mode on/off, cap (number of people), the list closing time (Halloween: 22:30 on the 31st, shown to members in the notice) and an open/closed switch for the admin. At the closing time the list closes by itself: nobody can sign up or remove themselves after it; an admin may also close it earlier with the switch. One signup per account per party: list name (2–30 chars, defaults to the Carnet nickname, free text, duplicates allowed), created_at. Rules: must be a Carnet account (anonymous rejected, like `not_member` today); if already signed up, the join call returns the existing signup (date + name) instead of creating one; a member may remove their own signup while the list is open and before the closing time, and may sign up again afterwards (freeing the spot); full list → `full`; closed list (switch off or closing time passed) → `closed`. Admin RPCs: read the list of a party with list name, Carnet nickname, email, signup date and whether that account was scanned at the door for that party (`event_attendance`), remove a signup, update the settings. A lookup the door can use: «is account X on party Y's list, under which name, and is it past the closing time». Halloween (`halloween-2026`) is set to list mode, cap 100, closing time 22:30 on 2026-10-31 (Europe/Madrid), open, in the sample content and in the seeds.
 - Context: `packages/store/src/sample/content.ts` (Halloween, `boxOfficeOnly`), `apps/web/lib/ticketing/`, `supabase/migrations/20260928100200_events.sql`, `20260928100100_identity.sql` (`carnets.nickname`), `20261008100300_door_stamps.sql`, `supabase/seeds/20261003100100_economy.sql`, `apps/web/lib/account/session.ts`, `apps/web/lib/account/admin-auth.ts` (`my_staff_role`).
@@ -42,10 +42,10 @@ Shared rules for every task:
   - SQL tests against dev → pass, covering: join once; second join returns the first signup unchanged; anonymous rejected; cap reached → full; closed switch → closed; past the closing time → closed for join and leave; leave then join again works; a member cannot read others' signups; admin list includes the attended flag
   - `pnpm exec vitest run` on the new unit tests (client module + demo implementation) → pass
   - the project Test command → pass
-- Outcome:
+- Outcome: event_guest_lists + signups tables, member/admin/door RPCs, store demo (localStorage boia.guestlist), client module apps/web/lib/guestlist, Halloween list mode cap 100 closes 22:30; REQ-COM-037 PARCIAL — 9f010ac
 
 ## T309 — Guest list: member flow on the web and in /mar
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T308
 - Goal: For a party in list mode, every place that shows «Comprar entrada» (landing event card, `/eventos/[slug]`, the tickets panel in `/mar`) shows instead «Apuntarse en la lista», keeping the door price text (Halloween: «5 € con carnet en puerta») and the notice «La lista vale hasta las 22:30; después, por orden de llegada» (the closing time from the party settings). Not logged in → the existing Carnet login/registration, then back to the list. Logged in → a small dialog with the list-name field prefilled with the Carnet nickname, and a confirm button. Already signed up → a message with the date they signed up and the name used, the same notice, and «Borrarme de la lista» (with confirmation). Full → «Lista completa»; closed (switch off or past the closing time) → «Lista cerrada», and no join or remove buttons. Parties not in list mode behave exactly as before.
 - Context: `apps/web/app/(landing)/components/buy-button.tsx`, `event-card.tsx`, `apps/web/app/eventos/[slug]`, `/mar` `entradas.tsx`, the client module from T308, Carnet login components, `apps/web/lib/i18n/es-*.ts`, `apps/web/e2e/carnet-requerido.spec.ts` (login-required pattern).
@@ -57,7 +57,7 @@ Shared rules for every task:
 - Outcome:
 
 ## T310 — Guest list in Admin and at the door
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T307, T308
 - Goal: Admin → Fiestas: for each party, turn list mode on/off and edit cap, closing time and open/closed. A guest-list view per party: count signed up / cap / scanned, table with list name, Carnet nickname, email, signup date and «entró» (scanned at the door), remove a signup (admin, with confirmation), and «Descargar CSV» with the same columns (reuse `app/admin/real/csv.ts`). At the door, both the staff scanner and the shared link scanner, after a scan show «En lista como <nombre>» or «No está en la lista» when the party is in list mode. Past the closing time the scan still works and still shows the list name, plus a notice that it is past the list time (e.g. «En lista como X · pasada la hora de lista (22:30)»): the door decides, nothing is blocked. Through the shared link only the list name is shown, never email.
 - Context: `apps/web/app/admin/real/*` (fiestas, socios, csv.ts), `apps/web/app/admin/door/*` and the link route from T307, the client module and admin RPCs from T308, `apps/web/lib/i18n/es-admin.ts`.
@@ -80,12 +80,17 @@ Shared rules for every task:
 - 2026-10-21: Link scanner is scan-only (no manual stamping by nickname) and shows only nickname/list name (orchestrator)
 - 2026-10-21: 22:30 read as 22:30 on 31 October; editable per party in Admin; removing yourself also stops at the closing time; admin keeps a manual open/closed switch (orchestrator)
 - 2026-10-21 T307: links managed in Admin → Puerta y sellos, admin/owner only; full link shown only at creation (hash stored), re-create to get a new one; scan by camera or photo, no paste, no count; every link scan audited; door_links has RLS and no client grants, event_attendance.door_link_id; demo links in localStorage boia.puerta.enlaces.v1; error door_link_invalid; /puerta/ in robots private paths (agent)
+- 2026-10-21 T308: optional guestList {cap, closesAt, open} on the event contract (content default; live state from status()); settings table event_guest_lists publicly readable for published events, no public counter (members only see full); rejections not_enabled/closed/full/invalid_input(→invalid_name)/carnet_required; admin RPCs admin+2FA, door lookup editor; repeat join returns the existing signup even if closed/full; admin removal allowed when closed, audited; Halloween set in migration and seed (agent)
+- 2026-10-21 T308: rpc.ts conflict with T307 resolved keeping both; types and schema allowlists hold both tasks (agent)
 
 ## Proposals (new scope)
 
-- 2026-10-21 T307: regenerate database.types.ts / schema test after T308 lands (`pnpm --filter @boia/db db:types:dev`); production migration pending
+- 2026-10-21 T307/T308: production migrations pending (20261021100100+, 20261021200100); apply before the push on Álvaro's yes
+- 2026-10-21 T308: `pnpm --filter @boia/db test:supabase -- <file>` ignores the file filter (extra `--`); fix the script
 
 ## Log
 - 2026-10-21 T307 launched · attempt 1 · agent a97242e042f901574
 - 2026-10-21 T308 launched · attempt 1 · agent afa55efafafd1c3be
 - 2026-10-21 T307 done · branch worktree-agent-a97242e042f901574 → f6b0621 (worktree folder left on disk: node_modules, guard blocks rm)
+- 2026-10-21 T308 conflict in packages/db/src/rpc.ts → agent resolved
+- 2026-10-21 T308 done · branch worktree-agent-afa55efafafd1c3be → 9f010ac
