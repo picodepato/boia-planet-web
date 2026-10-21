@@ -126,3 +126,4 @@ Shared rules for every task:
 - 2026-10-21 production: applied 5 migrations (20261015100700, 20261015101100, 20261021100100, 20261021200100, 20261021300100), no seeds; pushed main 65d0a30..9f6b7df (Álvaro's yes in session)
 - 2026-10-21 post-plan fix T312 (list asked for a Carnet the member had: local browser Carnet vs server Carnet, /carnet bounce loop) → 0d5f51b; anti-loop text `lista.carnet.missing` is muestra
 - 2026-10-21 post-plan fix T313 (Cloudflare Workers Builds failing since today: OpenNext refuses Next 15 past its 2-year support; cf:build now passes --dangerouslyUseUnsupportedNextVersion) → b9d1dd7; two earlier integration attempts failed only on vitest worker-spawn timeouts under load and were reverted (e1f3324/f82a708, 5b12d09/1da5a4e)
+- 2026-10-21 pushed 9f6b7df..98640e4 (T312, T313); Cloudflare and Vercel both serve 98640e4
