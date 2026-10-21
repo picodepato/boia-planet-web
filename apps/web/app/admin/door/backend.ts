@@ -29,6 +29,8 @@ export type DoorOutcome =
   | { kind: 'notCarnet' }
   /** Ese Carnet no existe (o ya no). */
   | { kind: 'unknown' }
+  /** El enlace de la puerta ya no vale: revocado o fiesta cerrada (plan 034 T307). */
+  | { kind: 'linkGone' }
   | { kind: 'error'; message: string };
 
 export interface DoorBackend {
@@ -69,6 +71,8 @@ export function outcomeText(outcome: DoorOutcome): string {
       return t('puerta.result.notCarnet');
     case 'unknown':
       return t('puerta.result.unknown');
+    case 'linkGone':
+      return t('puerta.link.gone');
     case 'error':
       return t('puerta.result.error', { message: outcome.message });
   }

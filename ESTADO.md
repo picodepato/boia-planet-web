@@ -4,6 +4,54 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — plan 034 T307: Shareable door-scanner link per party
+
+Qué existe:
+- `supabase/migrations/20261021100100_door_links.sql` (aplicada en
+  boia-planet-dev): tabla `public.door_links` (sólo el hash SHA-256 del
+  código, uno vivo por fiesta con índice parcial, RLS y sin permisos para
+  anon/authenticated); `event_attendance.door_link_id`; RPC del Admin (rol
+  admin con segundo factor) `admin_create_door_link` (devuelve el código una
+  vez y revoca el vivo), `admin_door_links` (sin código) y
+  `admin_revoke_door_link`; sin cuenta, `door_link_info` (título y fecha si
+  vale) y `door_link_stamp` (como `staff_stamp` con `door`: un sello por
+  fiesta y cuenta, mismos puntos, `puerta:<slug>` en el libro; asistencia con
+  `scanned_by` null y el enlace; auditoría `door_link_stamp` en cada lectura;
+  devuelve sólo título, apodo, fecha y si dio sello). Rechazo nuevo
+  `door_link_invalid` (revocado, equivocado, fiesta archivada, cancelada,
+  borrador o sin publicar). Envolturas SECURITY INVOKER en `public`, lógica en
+  `private`.
+- `/puerta/<código>` (`apps/web/app/puerta/[token]/`, noindex, `/puerta/` en
+  `PRIVATE_PATHS`): nombre de la fiesta y el mismo lector que /admin/puerta
+  (cámara y foto del QR); sin elegir fiesta, sin pegar enlaces, sin sellar
+  por apodo. Si el enlace deja de valer a mitad, lo dice.
+- Lector compartido: `apps/web/app/admin/door/door-scanner.tsx` (cámara,
+  resultado, foto) lo usan /admin/puerta y el enlace; `door-camera.tsx` tiene
+  avisos sin «pega el enlace» para el enlace.
+- Admin → «Puerta y sellos» → «Enlace de la puerta» (`door-links.tsx`):
+  elegir fiesta, crear (o «crear otro»), copiar (sólo al crearlo), lista de
+  vivos con «Revocar». Con cuentas, sólo admin/owner.
+- Versión de prueba (D-20): los enlaces viven en este navegador
+  (`apps/web/lib/door-links.ts`, `boia.puerta.enlaces.v1`) y sellan sus
+  Carnets con el repositorio local.
+- REQ-ADM-041 en `07-admin.md`, `09-requisitos.md` y `estado.md` (HECHO).
+- i18n: `puerta.links.*` y `puerta.link.*` en `es-puerta.ts`.
+
+Comandos:
+- `pnpm --filter @boia/db db:migrate:dev -- --no-seed` → 1 aplicada (20261021100100).
+- `pnpm test:supabase door-links` → 8 pruebas pasan; con `door-stamps` y `security-definer`, pasan.
+- `pnpm test:supabase schema` → 3 fallan sólo por lo de T308 ya aplicado en dev (`guest_list_*` en las listas de anon y en los tipos); lo de T307 coincide. Al integrar T308 (que trae sus nombres y tipos) debe pasar.
+- `pnpm exec vitest run apps/web/app/admin/door` → pasan (links.test.ts nuevo).
+- `E2E_PORT=3341 pnpm e2e puerta-enlace.spec.ts` → 6 pasan (móvil y escritorio).
+- vitest sin packages/db → 351 archivos, 3137 pasan, 3 omitidas; `tools/spec/checks.sh` OK; `pnpm lint`, `pnpm build`, `pnpm typecheck` exit 0.
+
+Pendiente:
+- `database.types.ts` lleva sólo lo de T307; al integrar con T308, regenerar
+  (`pnpm --filter @boia/db db:types:dev`) para que `schema.supabase.ts` cuadre.
+- Producción recibe la migración cuando Álvaro lo decida.
+- La e2e de la cámara con un QR real sigue en `puerta.spec.ts`; la del enlace
+  sella con la foto del QR.
+
 ## 2026-10-15 — plan 033 T306: Twice-monthly SMTP test email workflow
 
 Qué existe:

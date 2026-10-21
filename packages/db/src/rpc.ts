@@ -129,6 +129,8 @@ export const RPC_REJECTIONS = [
   'request_closed',
   // Embudo (plan 032 T301): un paso que no existe
   'unknown_event',
+  // El enlace de la puerta (plan 034 T307): revocado, de otra fiesta o equivocado
+  'door_link_invalid',
 ] as const;
 export type RpcRejection = (typeof RPC_REJECTIONS)[number];
 
@@ -202,6 +204,37 @@ export interface StaffStampResult {
   nickname: string;
   at: string;
   points: number;
+}
+
+/** door_link_stamp: el lector del enlace de la puerta (plan 034 T307). Sólo el apodo. */
+export interface DoorLinkStampResult {
+  granted: boolean;
+  reason?: 'already_stamped';
+  title: string;
+  nickname: string;
+  at: string;
+}
+
+/** door_link_info: ¿vale el enlace de la puerta? ¿de qué fiesta es? */
+export type DoorLinkInfo =
+  { valid: true; title: string; starts_at: string | null } | { valid: false };
+
+/** admin_create_door_link: el código sólo sale aquí, una vez. */
+export interface DoorLinkCreated {
+  token: string;
+  id: string;
+  /** Slug de la fiesta. */
+  event: string;
+  title: string;
+  created_at: string;
+}
+
+/** admin_door_links: los enlaces vivos (sin el código). */
+export interface DoorLinkRow {
+  id: string;
+  event: string;
+  title: string;
+  created_at: string;
 }
 
 /** submit_race_time */

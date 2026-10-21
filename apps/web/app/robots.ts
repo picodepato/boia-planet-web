@@ -4,7 +4,7 @@ import { canonicalOf } from '../lib/seo';
 export const dynamic = 'force-static';
 
 /** Rutas que ningún buscador debe rastrear: Admin, API y enlaces privados. */
-export const PRIVATE_PATHS = ['/admin', '/api', '/sello', '/artista/'];
+export const PRIVATE_PATHS = ['/admin', '/api', '/sello', '/artista/', '/puerta/'];
 
 export default function robots(): MetadataRoute.Robots {
   return {

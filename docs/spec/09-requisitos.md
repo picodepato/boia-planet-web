@@ -322,6 +322,7 @@ Definidos en [07-admin](07-admin.md). 40 requisitos: 30 L1, 10 L2, 0 diferidos.
 | REQ-ADM-038 | Prueba de usabilidad de 10 minutos | P3 | L1 | Registro de la prueba con tiempo y dudas | — |
 | REQ-ADM-039 | Versión de prueba: «Probar admin» | D-20 | L1 | e2e: «Probar admin» abre el Admin sin login con el aviso de demo; un cambio queda en la auditoría local y se puede volver a los datos de muestra | Sólo versión de prueba; se retira con REQ-ADM-002 |
 | REQ-ADM-040 | Moderación de Carnets | §23.2, §49.2, D-23 | L1 | e2e: reportar un Carnet lo pone en Moderación; ocultar una respuesta, la foto o restablecer el apodo cambia el Carnet público y deja una entrada de auditoría | — |
+| REQ-ADM-041 | Enlace de la puerta por fiesta | plan 034, decisión de Álvaro 2026-10-21 | L1 | El Admin crea, copia y revoca un enlace secreto por fiesta, sin caducidad (crear otro revoca el anterior). Sin cuenta, el enlace abre el lector de su fiesta y sólo escanea: sella cada Carnet una vez, como el lector del equipo, y enseña el apodo y el resultado. Revocado, de una fiesta archivada o cancelada, o equivocado, no vale; anon no lee los enlaces | Se guarda sólo el hash del código; cada lectura queda en la asistencia (con el enlace) y en la auditoría |
 
 ## ARQ · Arquitectura y datos
 

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { t } from '../../../lib/i18n';
 import { gameRepository } from '../../../lib/repo';
-import { decodeFrame } from '../../../lib/scanner/decode';
 import { type RealAdmin, when } from '../real/common';
 import { useDoorSupabase } from './use-door';
 import {
@@ -13,11 +12,10 @@ import {
   type DoorParty,
   currentParty,
   localDoor,
-  outcomeText,
   realDoor,
   stampFromQr,
 } from './backend';
-import { DoorCamera } from './door-camera';
+import { DoorPhoto, DoorScanner } from './door-scanner';
 import { SignupQr } from './signup-qr';
 import './door.css';
 
@@ -42,7 +40,6 @@ export function DoorPage({ real, onSignOut }: { real?: RealAdmin; onSignOut?: ()
   const [parties, setParties] = useState<DoorParty[] | null>(null);
   const [party, setParty] = useState('');
   const [count, setCount] = useState<number | null>(null);
-  const [camera, setCamera] = useState(false);
   const [result, setResult] = useState<DoorOutcome | null>(null);
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
@@ -92,12 +89,6 @@ export function DoorPage({ real, onSignOut }: { real?: RealAdmin; onSignOut?: ()
     const text = typed.trim();
     if (!text) return;
     void handle(text).then(() => setTyped(''));
-  };
-
-  const readPhoto = async (file: File) => {
-    const text = await qrFromImage(file);
-    if (text) await handle(text);
-    else setResult({ kind: 'notCarnet' });
   };
 
   const name = parties?.find((p) => p.key === party)?.name ?? '';
@@ -151,31 +142,7 @@ export function DoorPage({ real, onSignOut }: { real?: RealAdmin; onSignOut?: ()
           {count === null ? ' ' : t('puerta.count', { n: count, party: name })}
         </p>
 
-        {camera ? (
-          <>
-            <DoorCamera onText={handle} />
-            <button
-              type="button"
-              className="admin-button admin-button--ghost puerta-ancho"
-              data-testid="puerta-cerrar-camara"
-              onClick={() => setCamera(false)}
-            >
-              {t('puerta.closeCamera')}
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="admin-button puerta-ancho"
-            disabled={!party}
-            data-testid="puerta-abrir-camara"
-            onClick={() => setCamera(true)}
-          >
-            {t('puerta.openCamera')}
-          </button>
-        )}
-
-        <Result outcome={result} busy={busy} />
+        <DoorScanner onText={handle} outcome={result} busy={busy} disabled={!party} />
 
         <form className="puerta-manual" onSubmit={submitTyped}>
           <label className="admin-field">
@@ -198,20 +165,11 @@ export function DoorPage({ real, onSignOut }: { real?: RealAdmin; onSignOut?: ()
             {t('puerta.typedStamp')}
           </button>
         </form>
-        <label className="admin-field">
-          <span className="admin-field__label">{t('puerta.photo')}</span>
-          <input
-            type="file"
-            accept="image/*"
-            disabled={busy || !party}
-            data-testid="puerta-foto"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = '';
-              if (file) void readPhoto(file);
-            }}
-          />
-        </label>
+        <DoorPhoto
+          onText={handle}
+          onNoQr={() => setResult({ kind: 'notCarnet' })}
+          disabled={busy || !party}
+        />
 
         <section className="puerta-alta-bloque" aria-label={t('puerta.signup.title')}>
           <h2>{t('puerta.signup.title')}</h2>
@@ -221,44 +179,4 @@ export function DoorPage({ real, onSignOut }: { real?: RealAdmin; onSignOut?: ()
       </main>
     </div>
   );
-}
-
-function Result({ outcome, busy }: { outcome: DoorOutcome | null; busy: boolean }) {
-  if (busy && !outcome) {
-    return (
-      <p className="puerta-resultado" role="status">
-        {t('puerta.stamping')}
-      </p>
-    );
-  }
-  if (!outcome) return <p className="puerta-resultado is-vacio" role="status" />;
-  const text = outcomeText(outcome);
-  return (
-    <p
-      className={`puerta-resultado is-${outcome.kind}`}
-      role={outcome.kind === 'granted' || outcome.kind === 'already' ? 'status' : 'alert'}
-      data-testid="puerta-resultado"
-      data-resultado={outcome.kind}
-    >
-      {text}
-    </p>
-  );
-}
-
-/** El texto del QR de una foto (la cámara del móvil o una captura). */
-async function qrFromImage(file: File): Promise<string | null> {
-  try {
-    const bitmap = await createImageBitmap(file);
-    const k = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * k);
-    canvas.height = Math.round(bitmap.height * k);
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return null;
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    return await decodeFrame({ data: img.data, width: img.width, height: img.height });
-  } catch {
-    return null;
-  }
 }

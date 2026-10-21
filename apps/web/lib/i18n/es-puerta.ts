@@ -56,4 +56,35 @@ export const esPuerta = {
   'puerta.manual.none': 'Ningún Carnet con ese apodo.',
   'puerta.manual.stamp': 'Poner el sello',
   'puerta.manual.done': 'Sello puesto.',
+
+  // El enlace de la puerta (plan 034 T307): en el Admin…
+  'puerta.links.title': 'Enlace de la puerta',
+  'puerta.links.hint':
+    'Un enlace secreto por fiesta: quien lo abra escanea Carnets en la puerta sin entrar al Admin. No caduca; deja de valer si lo revocas o si la fiesta se archiva o se cancela. Pásalo sólo a quien esté en la puerta.',
+  'puerta.links.create': 'Crear enlace',
+  'puerta.links.recreate': 'Crear otro (revoca el de ahora)',
+  'puerta.links.created': 'Enlace creado. Cópialo ahora: luego no se puede volver a ver.',
+  'puerta.links.copyNow': 'Cópialo ahora (luego no se vuelve a ver)',
+  'puerta.links.copy': 'Copiar enlace',
+  'puerta.links.copied': 'Copiado.',
+  'puerta.links.live': '{party}: enlace activo desde {date}',
+  'puerta.links.revoke': 'Revocar',
+  'puerta.links.revoked': 'Enlace revocado: ya no abre el lector.',
+  'puerta.links.none': 'Ninguna fiesta tiene enlace de la puerta ahora mismo.',
+  // …y la página del enlace (/puerta/<código>)
+  'puerta.link.metaTitle': 'Puerta · BOIA',
+  'puerta.link.title': 'Puerta BOIA',
+  'puerta.link.checking': 'Comprobando el enlace…',
+  'puerta.link.invalid':
+    'Este enlace de la puerta ya no vale: lo han revocado o la fiesta ya no está abierta. Pide uno nuevo al equipo.',
+  'puerta.link.gone': 'Este enlace de la puerta ya no vale.',
+  'puerta.link.offline': 'No hay conexión con BOIA. Revisa la red y vuelve a abrir el enlace.',
+  'puerta.link.localNote':
+    'Versión de prueba: este enlace sólo vale en este navegador y sella sus Carnets.',
+  'puerta.link.hint':
+    'Abre el lector y enseña cada Carnet a la cámara: sella una vez por fiesta y te dice quién ha entrado.',
+  'puerta.link.camera.denied':
+    'La cámara está bloqueada. Actívala en los ajustes del navegador para esta web, o lee una foto del QR aquí abajo.',
+  'puerta.link.camera.none':
+    'No encontramos una cámara. Lee una foto del QR del Carnet aquí abajo.',
 } as const;

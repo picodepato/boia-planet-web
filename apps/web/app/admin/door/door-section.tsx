@@ -17,6 +17,7 @@ import {
   outcomeText,
   realDoor,
 } from './backend';
+import { DoorLinks } from './door-links';
 import { SignupQr } from './signup-qr';
 import './door.css';
 
@@ -25,7 +26,8 @@ import './door.css';
  * para enseñar en la puerta, la entrada al lector de la puerta
  * (/admin/puerta) y «Sellar a mano» un Carnet cualquiera, con motivo. Sin
  * Supabase va sobre los Carnets de este navegador; con cuentas, sobre los
- * socios reales (`staff_stamp`; a mano pide el rol admin).
+ * socios reales (`staff_stamp`; a mano pide el rol admin). Y el enlace de la
+ * puerta de cada fiesta (plan 034 T307), también sólo para el rol admin.
  */
 export function DoorSection({ ctx }: { ctx: AdminContext }) {
   const real = useMaybeRealAdmin();
@@ -55,6 +57,18 @@ export function DoorSection({ ctx }: { ctx: AdminContext }) {
         >
           {t('puerta.section.openScanner')}
         </Link>
+      </div>
+
+      <div className="admin-card" data-testid="puerta-enlaces">
+        <h3>{t('puerta.links.title')}</h3>
+        <p className="admin-meta">{t('puerta.links.hint')}</p>
+        {real && !canManage(real.role) ? (
+          <p className="admin-lead">{t('admin.real.editorOnly')}</p>
+        ) : backend ? (
+          <DoorLinks backend={backend} real={!!real} sb={sb} repo={ctx.repo} />
+        ) : (
+          <p>{t('empty.loading')}</p>
+        )}
       </div>
 
       <div className="admin-card">

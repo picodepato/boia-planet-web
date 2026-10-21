@@ -60,6 +60,10 @@ describe('esquema del proyecto de desarrollo', () => {
       'artist_claim_info',
       // El tablón de calitas se lee sin cuenta (20261008100500_calitas).
       'calitas_list',
+      // El enlace de la puerta (plan 034 T307): de qué fiesta es y sellar
+      // el Carnet escaneado; el código es la llave.
+      'door_link_info',
+      'door_link_stamp',
       // Suma un paso al contador del día del embudo (plan 032 T301): sólo
       // los pasos permitidos y con la analítica encendida.
       'funnel_hit',
@@ -84,6 +88,9 @@ describe('esquema del proyecto de desarrollo', () => {
       // La página del enlace para reclamar una ficha (plan 031 T296).
       'artist_claim_info',
       'calitas_list',
+      // El enlace de la puerta (plan 034 T307).
+      'door_link_info',
+      'door_link_stamp',
       // El contador del embudo (plan 032 T301).
       'funnel_hit',
       // Políticas de RLS de todo el esquema.

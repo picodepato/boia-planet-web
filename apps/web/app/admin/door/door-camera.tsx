@@ -22,7 +22,14 @@ const SAME_QR_MS = 6000;
 
 type CameraState = 'starting' | 'scanning' | 'denied' | 'nocamera';
 
-export function DoorCamera({ onText }: { onText: (text: string) => Promise<void> }) {
+export function DoorCamera({
+  onText,
+  photoOnly = false,
+}: {
+  onText: (text: string) => Promise<void>;
+  /** Sin campo para pegar el enlace (el lector del enlace de la puerta): los avisos sólo hablan de la foto. */
+  photoOnly?: boolean;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [state, setState] = useState<CameraState>('starting');
   const handler = useRef(onText);
@@ -127,7 +134,9 @@ export function DoorCamera({ onText }: { onText: (text: string) => Promise<void>
       ) : null}
       {state === 'denied' || state === 'nocamera' ? (
         <p className="puerta-camara__aviso" role="alert" data-testid="puerta-camara-bloqueada">
-          {state === 'denied' ? t('puerta.camera.denied') : t('puerta.camera.none')}
+          {state === 'denied'
+            ? t(photoOnly ? 'puerta.link.camera.denied' : 'puerta.camera.denied')
+            : t(photoOnly ? 'puerta.link.camera.none' : 'puerta.camera.none')}
         </p>
       ) : null}
     </div>

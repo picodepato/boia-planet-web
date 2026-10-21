@@ -858,6 +858,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      door_links: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          event_id: string;
+          id: string;
+          revoked_at: string | null;
+          revoked_by: string | null;
+          token_hash: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          event_id: string;
+          id?: string;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          token_hash: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          event_id?: string;
+          id?: string;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'door_links_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       equipped_cosmetics: {
         Row: {
           cosmetic_id: string;
@@ -928,6 +966,7 @@ export type Database = {
       };
       event_attendance: {
         Row: {
+          door_link_id: string | null;
           event_id: string;
           scanned_at: string;
           scanned_by: string | null;
@@ -935,6 +974,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          door_link_id?: string | null;
           event_id: string;
           scanned_at?: string;
           scanned_by?: string | null;
@@ -942,6 +982,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          door_link_id?: string | null;
           event_id?: string;
           scanned_at?: string;
           scanned_by?: string | null;
@@ -949,6 +990,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: 'event_attendance_door_link_id_fkey';
+            columns: ['door_link_id'];
+            isOneToOne: false;
+            referencedRelation: 'door_links';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'event_attendance_event_id_fkey';
             columns: ['event_id'];
@@ -2191,6 +2239,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_create_door_link: {
+        Args: {
+          p_event: string;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_decide_artist_claim_request: {
         Args: {
           p_request: string;
@@ -2218,6 +2273,10 @@ export type Database = {
           p_report: string;
           p_reason?: string;
         };
+        Returns: Json;
+      };
+      admin_door_links: {
+        Args: Record<PropertyKey, never>;
         Returns: Json;
       };
       admin_full_access: {
@@ -2354,6 +2413,13 @@ export type Database = {
           p_user: string;
           p_key: string;
           p_version: number;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
+      admin_revoke_door_link: {
+        Args: {
+          p_event: string;
           p_reason?: string;
         };
         Returns: Json;
@@ -2541,6 +2607,19 @@ export type Database = {
           p_discount: string;
         };
         Returns: string;
+      };
+      door_link_info: {
+        Args: {
+          p_token: string;
+        };
+        Returns: Json;
+      };
+      door_link_stamp: {
+        Args: {
+          p_token: string;
+          p_member: string;
+        };
+        Returns: Json;
       };
       equip_cosmetic: {
         Args: {

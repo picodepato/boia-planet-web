@@ -51,6 +51,7 @@ Publicar un logro nuevo para todos desde su publicación es L1; evaluar hechos a
 
 - **REQ-ADM-025** `L2` — Buscar por apodo, email privado autorizado, rol, tipo, estado, rango y fecha, y editar cualquier Carnet (identidad pública, imagen, biografía autorizada, visibilidad, respuestas, sellos, logros, puntos, monedas, barco y cosméticos), en lote sólo para cambios reversibles, con motivo en las correcciones sensibles e historial de valor anterior, nuevo, autor y fecha, sin ver ni tocar contraseñas, sesiones ni factores [provisional]. *Fuente: §49.2, P1, P2*
 - **REQ-ADM-026** `L2` — Crear perfiles oficiales sin cuenta (miembro, artista, colaborador o editorial) asociables a eventos y reclamables con una invitación de un solo uso que detecta duplicados, pide confirmación del equipo si ya existe un perfil parecido y no concede permisos no aprobados. *Fuente: §49.2, P2, D-02*
+- **REQ-ADM-041** `L1` — Enlace de la puerta por fiesta: el Admin crea, copia y revoca un enlace secreto por fiesta, sin caducidad (crear otro revoca el anterior); sin cuenta, abre el lector de esa fiesta, que sólo escanea Carnets y los sella una vez como el lector del equipo, enseñando el apodo y el resultado; deja de valer al revocarlo o al archivar o cancelar la fiesta, y cada lectura queda en la asistencia y la auditoría. *Fuente: plan 034, decisión de Álvaro 2026-10-21*
 
 ## Moderación, borrado y datos personales
 
