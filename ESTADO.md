@@ -4,6 +4,41 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — plan 034 T311: Guest list: live settings on the web and return after Carnet signup
+
+Qué existe:
+- `apps/web/lib/lista/live.ts` (trozo perezoso): con cuentas, si la fiesta va
+  en lista y su hora de cierre salen de `status()` (`lib/guestlist`);
+  `liveListEvent`, `resolveLiveList` (demo / sin cliente / error / fiesta
+  desconocida → se queda el contenido), `takeOpen` (`?abrir=<id>`, una vez).
+- `apps/web/lib/lista/use-live-list.ts`: el hook (contenido primero, luego lo
+  del Admin). Lo usa `BuyButton` (landing, panel de Tickets y ficha): el Admin
+  pone la lista → «Apuntarse en la lista» con su hora; la quita → la compra de
+  siempre. Abierta/completa/cerrada, en el diálogo (ya pedía `status()`).
+- `apps/web/lib/lista/live-switch.tsx` (`WhenListed`, `ListBox`): la ficha
+  enseña u oculta «Solo en puerta», «Consigue un descuento», el aviso del
+  Carnet y la ticketera según lo del Admin.
+- Vuelta tras el alta del Carnet con cuentas: el diálogo de la lista y el
+  checkout mandan a `/carnet?crear=1&volver=<ruta>?abrir=<id>`
+  (`signupUrl`/`returnHere`/`returnPath` en `lib/scanner/carnet-url.ts`);
+  `/carnet` vuelve al terminar el alta (`CarnetPanel onReady`) o al momento
+  si ya había Carnet; al volver, el botón de esa fiesta abre la lista (o la
+  compra) una sola vez.
+- Presupuesto de la landing: `BoxOfficeDialog`, `TicketsNotYetDialog` y
+  `TicketNoticeDialog` pasan a `lib/ticketing/box-office-dialog.tsx` y la
+  landing carga el de «Solo en puerta» al pulsar.
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0, 356 archivos, 3188 pasan, 1 saltada
+- `sh tools/spec/checks.sh` → exit 0; `pnpm lint` → exit 0; `pnpm typecheck` → exit 0
+- `pnpm build` → exit 0, landing 199.9 kB de 200.0 kB (204 677 B; en main, con el `.env.local` de cuentas, 204 801 B: 1 B por encima)
+- `E2E_PORT=3291 pnpm e2e lista.spec.ts tickets.spec.ts eventos.spec.ts --workers=2` → lista.spec 4/4 y tickets.spec pasan; eventos.spec: 4 fallos de las fotos de la home y la Galería (`#fotos [data-pieza]` 9 en vez de 6, `.galeria [role="img"]`), ajenos a esta tarea
+
+Pendiente:
+- /mar sigue decidiendo la lista por el contenido (`inListMode` en `entradas.tsx` y `sheet.tsx`).
+- La vuelta con cuentas no tiene e2e (las e2e corren sin Supabase); la cubren las unitarias de `live.test.ts`.
+- Al volver tras un alta nueva se salta el cuestionario opcional del Carnet (se completa luego en Mi Carnet).
+
 ## 2026-10-21 — plan 034 T309: Guest list: member flow on the web and in /mar
 
 Qué existe:

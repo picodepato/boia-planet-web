@@ -8,12 +8,15 @@ import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import type { SandboxCheckout } from '../../../lib/ticketing/checkout';
 import { CHECKOUT_COPY } from '../../../lib/ticketing/copy';
 import type { BoiaEvent } from '@boia/contracts';
-import { BoxOfficeDialog, BoxOfficeMessage } from '../../../lib/ticketing/box-office';
+import type { BoxOfficeDialog } from '../../../lib/ticketing/box-office-dialog';
+import { BoxOfficeMessage } from '../../../lib/ticketing/box-office';
 import { GuestListBuy } from '../../../lib/lista/guest-list-buy';
 import type { ListEvent } from '../../../lib/lista/model';
+import { useLiveList } from '../../../lib/lista/use-live-list';
 
 type Source = FunnelEventProps['ticket_click_out']['source'];
 type Checkout = typeof SandboxCheckout;
+type Door = typeof BoxOfficeDialog;
 
 /**
  * «Comprar entradas» de un evento con «Tickets todavía no disponibles» (plan
@@ -83,7 +86,9 @@ export const CARNET_FROM_LANDING = CARNET_CREATE_HREF;
  * «Tickets todavía no disponibles» y no abre nada (sin JavaScript tampoco:
  * no hay enlace a la ticketera). Con `guestList` (plan 034 T309, una fiesta
  * en lista) no se compra: «Apuntarse en la lista», que manda sobre todo lo
- * demás.
+ * demás. Con cuentas, si va en lista lo dice el Admin (T311, `useLiveList`):
+ * `guestList` es lo que se pinta primero. Al volver del alta del Carnet
+ * (`?abrir=<id>`) se abre otra vez la lista o la compra.
  */
 export function BuyButton({
   eventId,
@@ -105,10 +110,12 @@ export function BuyButton({
   priceCents?: BoiaEvent['priceCents'];
   /** «Tickets todavía no disponibles» (`event.ticketsNotYet`, T292). */
   notYet?: boolean;
-  /** La fiesta va en lista (`listEventOf(event)` si `inListMode(event)`). */
+  /** La fiesta va en lista según el contenido (`listEventOf(event)` si `inListMode(event)`). */
   guestList?: ListEvent | undefined;
 }) {
   const [Checkout, setCheckout] = useState<ComponentType<Parameters<Checkout>[0]> | null>(null);
+  // El aviso de «Solo en puerta» también se carga al pulsar (T311: la landing va justa).
+  const [Door, setDoor] = useState<ComponentType<Parameters<Door>[0]> | null>(null);
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
   const [notYetShown, setNotYetShown] = useState(false);
@@ -116,6 +123,21 @@ export function BuyButton({
   // muestra, como antes (REQ-ENT-017); con JavaScript, la compra de prueba.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
+  const onClick = () => {
+    setFailed(false);
+    if (Checkout) return setOpen(true);
+    import('../../../lib/ticketing/checkout')
+      .then((m) => {
+        setCheckout(() => m.SandboxCheckout);
+        setOpen(true);
+      })
+      .catch((err: unknown) => {
+        console.warn('[boia] no se pudo cargar la compra de prueba', err);
+        setFailed(true);
+      });
+  };
+  const [reopen, setReopen] = useState(false);
+  const list = useLiveList(eventId, guestList, (l) => (l ? setReopen(true) : onClick()));
 
   const track = {
     'data-track': 'ticket_click_out',
@@ -124,7 +146,7 @@ export function BuyButton({
     'data-testid': `comprar-${eventId}`,
   };
 
-  if (guestList) return <GuestListBuy event={guestList} />;
+  if (list) return <GuestListBuy event={list} reopen={reopen} />;
 
   if (notYet) {
     return (
@@ -160,13 +182,18 @@ export function BuyButton({
           aria-label={t('ticketing.boxOffice.buyAria', { name: eventName })}
           aria-haspopup="dialog"
           {...track}
-          onClick={() => setOpen(true)}
+          onClick={() =>
+            import('../../../lib/ticketing/box-office-dialog').then((m) => {
+              setDoor(() => m.BoxOfficeDialog);
+              setOpen(true);
+            }, console.warn)
+          }
         >
           {t('event.buy')}
         </button>
-        {open
+        {open && Door
           ? createPortal(
-              <BoxOfficeDialog
+              <Door
                 eventName={eventName}
                 event={door}
                 carnet={carnet}
@@ -193,20 +220,6 @@ export function BuyButton({
       </a>
     );
   }
-
-  const onClick = () => {
-    setFailed(false);
-    if (Checkout) return setOpen(true);
-    import('../../../lib/ticketing/checkout')
-      .then((m) => {
-        setCheckout(() => m.SandboxCheckout);
-        setOpen(true);
-      })
-      .catch((err: unknown) => {
-        console.warn('[boia] no se pudo cargar la compra de prueba', err);
-        setFailed(true);
-      });
-  };
 
   return (
     <>

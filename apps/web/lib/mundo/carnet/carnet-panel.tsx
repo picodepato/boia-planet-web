@@ -26,6 +26,9 @@ import { useCarnet } from './use-carnet';
  * - `startEditing`: entra ya en el alta (p. ej. desde «Crear mi Carnet» o el
  *   QR de alta). Con cuentas, el alta empieza por el email y su código.
  * - `onCreated`: se acaba de crear el Carnet (p. ej. para volver a la compra, T66).
+ * - `onReady`: el alta pedida (`create`) terminó con un Carnet (nuevo, o el
+ *   de una cuenta que ya lo tenía): /carnet vuelve a la lista o la compra de
+ *   la que se vino (plan 034 T311).
  *
  * Con cuentas (plan 019 T218, decisión 11) crear el Carnet empieza siempre
  * por el email → el código de 6 cifras → el Carnet (apodo y política, en la
@@ -37,11 +40,13 @@ export function CarnetPanel({
   onBottles,
   startEditing = false,
   onCreated,
+  onReady,
 }: {
   onTop?: () => void;
   onBottles?: () => void;
   startEditing?: boolean;
   onCreated?: () => void;
+  onReady?: () => void;
 }) {
   const { data, repo } = useCarnet(null);
   const { data: bottle } = useRepoData((r) => r.bottles.mine());
@@ -61,6 +66,7 @@ export function CarnetPanel({
     try {
       if (!(await requireAccount('carnet', { onRegistered: () => setEditing(true) }))) return;
       if (!(await repo.carnet.mine())) setEditing(true);
+      else onReady?.();
     } finally {
       setCreating(false);
     }
@@ -89,7 +95,10 @@ export function CarnetPanel({
         before={carnet}
         onDone={() => {
           setEditing(false);
-          if (!carnet) onCreated?.();
+          if (!carnet) {
+            onCreated?.();
+            onReady?.();
+          }
         }}
         onCancel={() => setEditing(false)}
       />

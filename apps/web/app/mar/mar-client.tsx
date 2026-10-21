@@ -64,7 +64,7 @@ import {
 import { liveWorld } from '../../lib/admin/live-world';
 import { track } from '../../lib/analytics';
 import { SandboxCheckout } from '../../lib/ticketing/checkout';
-import { BoxOfficeDialog, TicketsNotYetDialog } from '../../lib/ticketing/box-office';
+import { BoxOfficeDialog, TicketsNotYetDialog } from '../../lib/ticketing/box-office-dialog';
 import { GuestListDialog } from '../../lib/lista/guest-list-dialog';
 import { purchaseNotices } from '../../lib/ticketing/notices';
 import { ClaimBadge, claimLabel } from '../../lib/logros/claim-badge';

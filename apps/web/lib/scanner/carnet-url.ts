@@ -43,11 +43,51 @@ export function parseCarnetQr(text: string): string | null {
   return ID_RE.test(id) ? id : null;
 }
 
-/** La URL del QR de alta: «Crear carnet» directamente. */
-export function signupUrl(origin: string): string {
+/**
+ * `?volver=<ruta>` en /carnet (plan 034 T311): adónde se vuelve al terminar el
+ * alta (la lista o la compra de la que se vino).
+ */
+export const RETURN_PARAM = 'volver';
+/** `?abrir=<id>` al volver: abre otra vez la lista (o la compra) de esa fiesta. */
+export const OPEN_PARAM = 'abrir';
+
+/**
+ * La URL del QR de alta: «Crear carnet» directamente. Con `back` (una ruta
+ * de esta web, de `returnHere`), al terminar el alta se vuelve allí.
+ */
+export function signupUrl(origin: string, back?: string): string {
   const u = new URL(CARNET_PATH, origin);
   u.searchParams.set(CREATE_PARAM, '1');
+  if (back) u.searchParams.set(RETURN_PARAM, back);
   return u.toString();
+}
+
+/**
+ * La ruta de vuelta a esta página con la lista (o la compra) de `eventId`
+ * abierta: la ruta y la búsqueda de ahora, con `?abrir=<id>`.
+ */
+export function returnHere(loc: { pathname: string; search: string }, eventId: string): string {
+  const params = new URLSearchParams(loc.search);
+  params.set(OPEN_PARAM, eventId);
+  return `${loc.pathname}?${params.toString()}`;
+}
+
+/**
+ * La ruta de `?volver=` si es de esta web («/…», nunca «//otro» ni una URL
+ * entera): null si no hay o no vale.
+ */
+export function returnPath(search: string): string | null {
+  const back = new URLSearchParams(search).get(RETURN_PARAM);
+  if (!back?.startsWith('/')) return null;
+  // Se resuelve contra un origen inventado: «//otro» o «/\otro» cambian de origen.
+  const base = 'http://boia.invalid';
+  let u: URL;
+  try {
+    u = new URL(back, base);
+  } catch {
+    return null;
+  }
+  return u.origin === base ? `${u.pathname}${u.search}${u.hash}` : null;
 }
 
 /** ¿Pide esta búsqueda (`location.search`) empezar el alta? */

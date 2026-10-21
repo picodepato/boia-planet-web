@@ -21,7 +21,7 @@ import { LOCAL_ONLY_NOTICE } from '../../lib/mundo/carnet/carnet-editor';
 import { OwnCarnet } from '../../lib/mundo/carnet/own-carnet';
 import { INVITE_COPY } from '../../lib/landing/invitations';
 import { useCarnet } from '../../lib/mundo/carnet/use-carnet';
-import { wantsCreate } from '../../lib/scanner/carnet-url';
+import { returnPath, wantsCreate } from '../../lib/scanner/carnet-url';
 
 /**
  * El Carnet a pantalla completa (REQ-IDE-010, REQ-IDE-017): el propio en
@@ -33,7 +33,9 @@ import { wantsCreate } from '../../lib/scanner/carnet-url';
  * - Con cuentas: el Carnet público de cualquier miembro se lee del servidor
  *   (apodo, rango, sellos; nunca el email), y el propio trae «Escanear sello».
  * - `/carnet?crear=1` (el QR de alta de la puerta, plan 019 T218): sin Carnet,
- *   empieza el alta aquí mismo (con cuentas, por el email y su código).
+ *   empieza el alta aquí mismo (con cuentas, por el email y su código). Con
+ *   `&volver=<ruta>` (plan 034 T311: la lista o la compra de una fiesta), al
+ *   terminar el alta, o si ya había Carnet, se vuelve allí.
  * - Bajo las respuestas (plan 023 T251): «Descubre otro miembro BOIA» y, en
  *   el de un artista, «Descubre un artista».
  */
@@ -61,9 +63,15 @@ export function CarnetPage({ userId }: { userId: string | null }) {
       alive = false;
     };
   }, [userId, router]);
+  const goBack = () => {
+    const back = returnPath(window.location.search);
+    if (back) window.location.replace(back);
+  };
   useEffect(() => {
-    if (!loaded || userId !== null || data?.carnet) return;
-    if (wantsCreate(window.location.search)) setSignup(true);
+    if (!loaded || userId !== null) return;
+    if (!wantsCreate(window.location.search)) return;
+    if (data?.carnet) goBack();
+    else setSignup(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, userId]);
   return (
@@ -79,7 +87,7 @@ export function CarnetPage({ userId }: { userId: string | null }) {
           <p>{t('carnet.page.loading')}</p>
         ) : signup ? (
           <div className="carnet-page-cuenta carnet-page-alta" data-testid="carnet-alta">
-            <CarnetPanel startEditing />
+            <CarnetPanel startEditing onReady={goBack} />
           </div>
         ) : data.carnet ? (
           <>

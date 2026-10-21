@@ -1,11 +1,13 @@
 import { doorPriceCents } from '@boia/contracts';
 import { EVENT_FORMAT_LABELS, seriesLabel } from '@boia/contracts/event-labels';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { ZARPAR_HREF } from '../../../lib/intro/zarpar';
 import { CARNET_CREATE_HREF } from '../../../lib/landing/access';
 import { EVENTOS_COPY } from '../../../lib/landing/eventos-copy';
 import { eventHref, type EventPageView } from '../../../lib/landing/eventos';
 import { formatEventDate } from '../../../lib/landing/texts';
+import { ListBox, WhenListed } from '../../../lib/lista/live-switch';
 import { inListMode, listEventOf } from '../../../lib/lista/model';
 import { BoxOfficeMessage } from '../../../lib/ticketing/box-office';
 import { BuyButton } from './buy-button';
@@ -32,7 +34,9 @@ function formatTime(iso: string, timeZone: string): string {
  * descuento», que entra en el mundo como «Zarpar». Un evento «Solo en puerta»
  * no tiene compra: dice el precio en la puerta con carnet y lleva a crearlo.
  * Una fiesta en lista (plan 034 T309) lleva «Apuntarse en la lista», con el
- * precio en la puerta y la hora de la lista, en vez de todo eso.
+ * precio en la puerta y la hora de la lista, en vez de todo eso. Con cuentas,
+ * si va en lista lo dice el Admin (T311, `WhenListed`/`ListBox`); el
+ * contenido es lo que se pinta primero.
  */
 export function EventPageBody({ view }: { view: EventPageView }) {
   const { event } = view;
@@ -49,11 +53,17 @@ export function EventPageBody({ view }: { view: EventPageView }) {
     : EVENT_FORMAT_LABELS[event.format];
   // En lista (T309) manda la lista; si no, con «Tickets todavía no
   // disponibles» (T292) manda ese aviso, también en un «Solo en puerta».
-  const listMode = inListMode(event);
+  // `doorOnly` y `buys` son sin lista: lo de la lista lo decide `listed`.
+  const listContent = inListMode(event) ? listEventOf(event) : undefined;
   const doorPriced = event.boxOfficeOnly !== undefined && !event.ticketsNotYet;
-  const doorOnly = doorPriced && !listMode;
+  const doorOnly = doorPriced;
   // Lleva el botón de compra (o el de «todavía no»): ni puerta ni lista.
-  const buys = view.buyable && !doorOnly && !listMode;
+  const buys = view.buyable && !doorOnly;
+  const listed = (on: boolean, node: ReactNode) => (
+    <WhenListed eventId={event.id} content={listContent} listed={on}>
+      {node}
+    </WhenListed>
+  );
   const price = event.boxOfficeOnly !== undefined ? doorPriceCents(event) : event.priceCents;
 
   return (
@@ -150,12 +160,15 @@ export function EventPageBody({ view }: { view: EventPageView }) {
               </dd>
             </div>
           ) : null}
-          {event.ticketProvider && !doorOnly && !listMode && !finished ? (
-            <div>
-              <dt>{EVENTOS_COPY.provider}</dt>
-              <dd data-testid="evento-ticketera">{event.ticketProvider}</dd>
-            </div>
-          ) : null}
+          {event.ticketProvider && !doorOnly && !finished
+            ? listed(
+                false,
+                <div>
+                  <dt>{EVENTOS_COPY.provider}</dt>
+                  <dd data-testid="evento-ticketera">{event.ticketProvider}</dd>
+                </div>,
+              )
+            : null}
         </dl>
 
         {event.description ? <p className="event-page__desc">{event.description}</p> : null}
@@ -175,34 +188,48 @@ export function EventPageBody({ view }: { view: EventPageView }) {
           </p>
         ) : null}
 
-        {view.buyable && doorOnly ? (
-          // Solo en puerta (decisión 6): sin checkout; lleva a hacerse el Carnet.
-          <div className="event-page__door" role="note" data-testid="evento-solo-puerta">
-            <BoxOfficeMessage event={event} carnet={{ href: CARNET_CREATE_HREF }} />
-          </div>
-        ) : null}
+        {view.buyable && doorOnly
+          ? // Solo en puerta (decisión 6): sin checkout; lleva a hacerse el Carnet.
+            listed(
+              false,
+              <div className="event-page__door" role="note" data-testid="evento-solo-puerta">
+                <BoxOfficeMessage event={event} carnet={{ href: CARNET_CREATE_HREF }} />
+              </div>,
+            )
+          : null}
 
         <div className="event-page__actions">
-          {view.buyable && listMode ? (
-            <div className="event-page__list" data-testid="evento-lista">
-              <BuyButton
-                eventId={event.id}
-                eventName={event.name}
-                ticketUrl={undefined}
-                guestList={listEventOf(event)}
-                source="event_page"
-              />
-            </div>
-          ) : buys ? (
-            <>
+          {buys ? (
+            // El mismo botón con lista o sin ella: no se vuelve a montar al saber lo del Admin.
+            <ListBox eventId={event.id} content={listContent}>
               <BuyButton
                 eventId={event.id}
                 eventName={event.name}
                 ticketUrl={event.ticketUrl}
                 priceCents={event.priceCents}
                 notYet={event.ticketsNotYet}
+                guestList={listContent}
                 source="event_page"
               />
+            </ListBox>
+          ) : view.buyable ? (
+            // Solo en puerta: el botón, sólo en lista.
+            listed(
+              true,
+              <div className="event-page__list" data-testid="evento-lista">
+                <BuyButton
+                  eventId={event.id}
+                  eventName={event.name}
+                  ticketUrl={undefined}
+                  guestList={listContent}
+                  source="event_page"
+                />
+              </div>,
+            )
+          ) : null}
+          {buys ? (
+            listed(
+              false,
               <a
                 className="button button--discount"
                 href={ZARPAR_HREF}
@@ -211,8 +238,8 @@ export function EventPageBody({ view }: { view: EventPageView }) {
                 data-source="event"
               >
                 {EVENTOS_COPY.getDiscount}
-              </a>
-            </>
+              </a>,
+            )
           ) : event.state === 'coming_soon' ? (
             <p className="event-card__soon">{EVENTOS_COPY.soon}</p>
           ) : null}
@@ -228,14 +255,17 @@ export function EventPageBody({ view }: { view: EventPageView }) {
             </a>
           ) : null}
         </div>
-        {buys ? (
-          <p className="event-page__carnet-note" data-testid="evento-aviso-carnet">
-            {EVENTOS_COPY.carnetNeeded}{' '}
-            <a href={CARNET_CREATE_HREF} data-testid="evento-crear-carnet">
-              {EVENTOS_COPY.carnetCta}
-            </a>
-          </p>
-        ) : null}
+        {buys
+          ? listed(
+              false,
+              <p className="event-page__carnet-note" data-testid="evento-aviso-carnet">
+                {EVENTOS_COPY.carnetNeeded}{' '}
+                <a href={CARNET_CREATE_HREF} data-testid="evento-crear-carnet">
+                  {EVENTOS_COPY.carnetCta}
+                </a>
+              </p>,
+            )
+          : null}
 
         <section className="event-page__block" aria-labelledby="evento-cartel">
           <h2 id="evento-cartel" className="event-page__subtitle">

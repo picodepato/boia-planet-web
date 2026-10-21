@@ -12,9 +12,9 @@ import {
 } from '../guestlist';
 import { guestListClient } from '../guestlist/client';
 import { gameRepository } from '../repo';
-import { signupUrl } from '../scanner/carnet-url';
+import { returnHere, signupUrl } from '../scanner/carnet-url';
 import { isSupabaseConfigured } from '../supabase/config';
-import { TicketNoticeDialog } from '../ticketing/box-office';
+import { TicketNoticeDialog } from '../ticketing/box-office-dialog';
 import { QuickCarnet } from '../ticketing/checkout';
 import { type ListEvent, listDoorPrice, listNotice, listPhase } from './model';
 import { signupLine, tl } from './t';
@@ -172,7 +172,10 @@ export function GuestListDialog({
   const createCarnet = () => {
     if (onCreateCarnet) onCreateCarnet();
     // Con cuentas, el Carnet empieza por el email y su código: el alta de /carnet.
-    else if (isSupabaseConfigured()) window.location.assign(signupUrl(window.location.origin));
+    else if (isSupabaseConfigured())
+      window.location.assign(
+        signupUrl(window.location.origin, returnHere(window.location, event.id)),
+      );
     else setState({ kind: 'carnet', step: 'form' });
   };
 

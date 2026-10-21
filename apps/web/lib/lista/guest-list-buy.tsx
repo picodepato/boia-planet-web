@@ -13,8 +13,9 @@ import { type ListEvent, listDoorPrice, listNotice, tlb } from './model';
  * por orden de llegada», con la hora de cierre del contenido; el diálogo
  * enseña la del estado vivo). El diálogo se carga al pulsar, fuera de la
  * ruta crítica de la landing. Sin JavaScript el botón queda desactivado.
+ * `reopen` (T311): se vuelve del alta del Carnet; el diálogo se abre solo.
  */
-export function GuestListBuy({ event }: { event: ListEvent }) {
+export function GuestListBuy({ event, reopen }: { event: ListEvent; reopen?: boolean }) {
   const [Dialog, setDialog] = useState<ComponentType<Parameters<typeof GuestListDialog>[0]> | null>(
     null,
   );
@@ -37,6 +38,8 @@ export function GuestListBuy({ event }: { event: ListEvent }) {
         console.warn('[boia] no se pudo cargar la lista', err);
       });
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => void (reopen && onClick()), [reopen]);
 
   return (
     <>

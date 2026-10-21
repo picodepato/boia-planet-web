@@ -7,7 +7,8 @@ import { SAMPLE_CONTENT } from '../landing/sample-content';
 import { CARNET_CREATE_HREF } from '../landing/access';
 import { t } from '../i18n/web';
 import { BuyButton } from '../../app/(landing)/components/buy-button';
-import { BoxOfficeDialog, boxOfficeLabel } from './box-office';
+import { boxOfficeLabel } from './box-office';
+import { BoxOfficeDialog } from './box-office-dialog';
 
 /**
  * «Solo en puerta» (plan 019 T215, decisiones 1 y 6): sin venta online; la

@@ -9,7 +9,7 @@ import { esCarnetBloque } from '../i18n/es-carnet-bloque';
 import { formatEventDate } from '../i18n/web';
 import { draftFrom, saveCarnet } from '../mundo/carnet/carnet-editor';
 import { gameRepository } from '../repo';
-import { signupUrl } from '../scanner/carnet-url';
+import { returnHere, signupUrl } from '../scanner/carnet-url';
 import { isSupabaseConfigured } from '../supabase/config';
 import type { CheckoutEvent, CheckoutSession, PurchaseOutcome, TicketingAdapter } from './adapter';
 import './checkout.css';
@@ -177,7 +177,10 @@ export function SandboxCheckout({
     if (onCreateCarnet) onCreateCarnet();
     // Con cuentas, el Carnet empieza por el email y su código (plan 019 T218,
     // decisión 11): el alta de /carnet, que lleva la hoja de acceso.
-    else if (isSupabaseConfigured()) window.location.assign(signupUrl(window.location.origin));
+    else if (isSupabaseConfigured())
+      window.location.assign(
+        signupUrl(window.location.origin, returnHere(window.location, eventId)),
+      );
     else setCarnetStep('form');
   };
 
