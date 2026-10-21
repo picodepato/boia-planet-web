@@ -45,7 +45,7 @@ Shared rules for every task:
 - Outcome: event_guest_lists + signups tables, member/admin/door RPCs, store demo (localStorage boia.guestlist), client module apps/web/lib/guestlist, Halloween list mode cap 100 closes 22:30; REQ-COM-037 PARCIAL — 9f010ac
 
 ## T309 — Guest list: member flow on the web and in /mar
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T308
 - Goal: For a party in list mode, every place that shows «Comprar entrada» (landing event card, `/eventos/[slug]`, the tickets panel in `/mar`) shows instead «Apuntarse en la lista», keeping the door price text (Halloween: «5 € con carnet en puerta») and the notice «La lista vale hasta las 22:30; después, por orden de llegada» (the closing time from the party settings). Not logged in → the existing Carnet login/registration, then back to the list. Logged in → a small dialog with the list-name field prefilled with the Carnet nickname, and a confirm button. Already signed up → a message with the date they signed up and the name used, the same notice, and «Borrarme de la lista» (with confirmation). Full → «Lista completa»; closed (switch off or past the closing time) → «Lista cerrada», and no join or remove buttons. Parties not in list mode behave exactly as before.
 - Context: `apps/web/app/(landing)/components/buy-button.tsx`, `event-card.tsx`, `apps/web/app/eventos/[slug]`, `/mar` `entradas.tsx`, the client module from T308, Carnet login components, `apps/web/lib/i18n/es-*.ts`, `apps/web/e2e/carnet-requerido.spec.ts` (login-required pattern).
@@ -54,7 +54,7 @@ Shared rules for every task:
   - unit tests of the new components/hooks → pass
   - `E2E_PORT=<free> pnpm e2e <new spec>` → pass: Halloween shows «Apuntarse en la lista»; a demo member signs up with a custom name; reopening shows the date and that name; removing works; another party still shows its normal buy button
   - the project Test command → pass
-- Outcome:
+- Outcome: «Apuntarse en la lista» on landing card, /eventos/[slug] and /mar with door price + notice, name dialog prefilled with nickname, signed-up view with date/name and «Borrarme», full/closed states; lista.spec.ts; REQ-COM-037 HECHO — d2d2123
 
 ## T310 — Guest list in Admin and at the door
 - Status: done
@@ -67,6 +67,18 @@ Shared rules for every task:
   - SQL tests for any new RPC → pass against dev
   - the project Test command → pass
 - Outcome: list panel per party in Admin (settings, table, remove, CSV nombre_lista,apodo,email,apuntado,entro), «En lista como X» / «No está en la lista» + past-closing notice on both scanners, public RPC door_link_guest_list (migration 20261021300100); REQ-ADM-042 — b15cc49
+
+## T311 — Guest list: live settings on the web and return after Carnet signup
+- Status: running (attempt 1)
+- Depends on: T309, T310
+- Goal: Close two gaps T309 left. (1) The web decides list mode only from the event content (`event.guestList`), so a party where an admin turns list mode on in Admin (accounts mode) does not show «Apuntarse en la lista», and cap/closing time edited in Admin are not reflected. With accounts, list mode, closing time (for the notice) and open/full/closed must come from the live settings (`status()` of `apps/web/lib/guestlist/`), with the content value only as the demo/no-Supabase default and as first paint; turning list mode off in Admin brings back the normal button. Keep the landing within its byte budget (it is 9 bytes under 200 kB: load the live check lazily or outside the landing bundle). (2) With accounts, a member who has to create a Carnet on the way (`/carnet?crear=1`) must come back to the list dialog of that party afterwards (the plan says «then back to the list»); fix it for the list (and for checkout too if the same small change covers it).
+- Context: T309 commit d2d2123 (`apps/web/lib/lista/`, `es-lista*.ts`, `lista.spec.ts`), T308 client `apps/web/lib/guestlist/`, T310 admin panel, `/carnet` creation flow, landing budget check in `tools/spec/checks.sh` or the build.
+- Scope: may touch the list components, the guest-list client (read-only additions), the Carnet creation redirect, tests / must not touch SQL, admin, door, production.
+- Done when:
+  - unit tests covering: live settings override content (on/off, closing time), demo falls back to content, return URL after Carnet creation → pass
+  - `E2E_PORT=<free> pnpm e2e lista.spec.ts` → pass
+  - the project Test command → pass
+- Outcome:
 
 ## Decisions
 - 2026-10-21: Door link: one per party, no expiry, revocable; anyone with the link can scan and stamp (Álvaro)
@@ -83,6 +95,8 @@ Shared rules for every task:
 - 2026-10-21 T308: optional guestList {cap, closesAt, open} on the event contract (content default; live state from status()); settings table event_guest_lists publicly readable for published events, no public counter (members only see full); rejections not_enabled/closed/full/invalid_input(→invalid_name)/carnet_required; admin RPCs admin+2FA, door lookup editor; repeat join returns the existing signup even if closed/full; admin removal allowed when closed, audited; Halloween set in migration and seed (agent)
 - 2026-10-21 T308: rpc.ts conflict with T307 resolved keeping both; types and schema allowlists hold both tasks (agent)
 - 2026-10-21 T310: migration 20261021300100 public RPC door_link_guest_list(token, member) → enabled/on_list/list_name/closes_at/past_closing only; panel in «Fiestas y QR» (accounts) and «Eventos» (demo), loaded on open; stamp first, list lookup second (lookup failure keeps the stamp result); past-closing notice also on «No está en la lista»; Europe/Madrid time; REQ-ADM-042 HECHO (agent)
+- 2026-10-21 T309: list mode from event content first (fixed by T311); list takes priority over buy/«Solo en puerta»; no notice without closing time; member without Carnet → /carnet?crear=1; reused TicketNoticeDialog and QuickCarnet; keys in es-lista-boton.ts (landing) and es-lista.ts; landing button trimmed (no aria-label/haspopup) to fit the 200 kB budget; old Halloween «Solo en puerta» tests use withoutGuestList, Halloween e2e in tickets/eventos/carnet-requerido skipped in list mode (agent)
+- 2026-10-21: added T311 to close T309's gaps (live Admin settings not reflected on the web; no return to the list after Carnet creation) (orchestrator)
 
 ## Proposals (new scope)
 
@@ -90,6 +104,9 @@ Shared rules for every task:
 - 2026-10-21 T308: `pnpm --filter @boia/db test:supabase -- <file>` ignores the file filter (extra `--`); fix the script
 
 - 2026-10-21 T310: no e2e spec for the Admin list panel (unit tests cover the demo path)
+
+- 2026-10-21 T309: 4 Galería tests in eventos.spec.ts fail (`.galeria [role="img"]` not found); not touched by this plan — check whether they already failed before
+- 2026-10-21 T309: landing is 9 bytes under its 200 kB budget; the landing button lost aria-label to fit — consider raising the budget or slimming the landing
 
 ## Log
 - 2026-10-21 T307 launched · attempt 1 · agent a97242e042f901574
@@ -100,3 +117,4 @@ Shared rules for every task:
 - 2026-10-21 T309 launched · attempt 1 · agent aacd5eba390d0b1f4
 - 2026-10-21 T310 launched · attempt 1 · agent a082fd56a6118a550
 - 2026-10-21 T310 done · branch worktree-agent-a082fd56a6118a550 → b15cc49
+- 2026-10-21 T309 done · branch worktree-agent-aacd5eba390d0b1f4 → d2d2123
