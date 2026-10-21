@@ -20,7 +20,7 @@ Shared rules for every task:
 ## Tasks
 
 ## T307 — Shareable door-scanner link per party
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: An admin creates, from Admin → Puerta (or the party's row in Admin → Fiestas, whichever fits the current UI best), one secret link per party, can copy it and revoke it (revoking and creating again gives a new link). The link does not expire on its own; it stops working when revoked or when the party is archived or cancelled. Opening it (no login) shows the party name and the same camera scanner as `/admin/puerta`; scanning a Carnet QR stamps it for that party exactly like the staff door scan (same `stamps` / `event_attendance` rules, once per account, points as today). Scan only: no manual stamping by nickname, no member data beyond what the staff door shows after a scan (nickname + result). Every link scan is recorded in `event_attendance` with source `door` and a reference to the link (scanned_by may be null), and in the audit log.
 - Context: `apps/web/app/admin/puerta/page.tsx`, `apps/web/app/admin/door/*` (door-page, door-camera, use-door, backend), `apps/web/app/admin/real/gate.tsx`, `supabase/migrations/20261008100300_door_stamps.sql` (`staff_stamp`, `event_attendance`), `apps/web/app/carnet/[id]` (what the QR encodes), `apps/web/lib/i18n/es-admin.ts`, `docs/DECISIONES.md`.
@@ -30,7 +30,7 @@ Shared rules for every task:
   - `pnpm exec vitest run` on the new/changed unit tests → pass
   - `E2E_PORT=<free> pnpm e2e <new spec>` → pass (link page renders the scanner in demo mode)
   - the project Test command → pass
-- Outcome:
+- Outcome: door_links table + admin RPCs + public link RPCs, /puerta/[token] scanner (camera/photo), Admin → Puerta «Enlace de la puerta»; REQ-ADM-041 — f6b0621
 
 ## T308 — Guest list: data and rules
 - Status: running (attempt 1)
@@ -79,9 +79,13 @@ Shared rules for every task:
 - 2026-10-21: Agents test migrations on dev; the orchestrator applies them to production right before the push, only on Álvaro's yes (Álvaro)
 - 2026-10-21: Link scanner is scan-only (no manual stamping by nickname) and shows only nickname/list name (orchestrator)
 - 2026-10-21: 22:30 read as 22:30 on 31 October; editable per party in Admin; removing yourself also stops at the closing time; admin keeps a manual open/closed switch (orchestrator)
+- 2026-10-21 T307: links managed in Admin → Puerta y sellos, admin/owner only; full link shown only at creation (hash stored), re-create to get a new one; scan by camera or photo, no paste, no count; every link scan audited; door_links has RLS and no client grants, event_attendance.door_link_id; demo links in localStorage boia.puerta.enlaces.v1; error door_link_invalid; /puerta/ in robots private paths (agent)
 
 ## Proposals (new scope)
+
+- 2026-10-21 T307: regenerate database.types.ts / schema test after T308 lands (`pnpm --filter @boia/db db:types:dev`); production migration pending
 
 ## Log
 - 2026-10-21 T307 launched · attempt 1 · agent a97242e042f901574
 - 2026-10-21 T308 launched · attempt 1 · agent afa55efafafd1c3be
+- 2026-10-21 T307 done · branch worktree-agent-a97242e042f901574 → f6b0621 (worktree folder left on disk: node_modules, guard blocks rm)
