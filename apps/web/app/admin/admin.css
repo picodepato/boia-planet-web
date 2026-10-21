@@ -444,6 +444,12 @@
   background: var(--admin-card);
 }
 
+/* Una tabla ancha (la lista de una fiesta, plan 034 T310) se desliza en el móvil. */
+.admin-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .admin-table th,
 .admin-table td {
   padding: 8px;

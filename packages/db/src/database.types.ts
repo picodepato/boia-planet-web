@@ -2713,6 +2713,13 @@ export type Database = {
         };
         Returns: string;
       };
+      door_link_guest_list: {
+        Args: {
+          p_token: string;
+          p_member: string;
+        };
+        Returns: Json;
+      };
       door_link_info: {
         Args: {
           p_token: string;

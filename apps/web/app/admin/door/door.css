@@ -149,6 +149,20 @@
   background: #fbeaea;
   color: var(--admin-danger);
 }
+/* La lista de la fiesta tras leer un Carnet (plan 034 T310). */
+.puerta-lista {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 17px;
+  font-weight: 700;
+  border: 2px dashed currentColor;
+}
+.puerta-lista.is-en-lista {
+  color: var(--admin-ok);
+}
+.puerta-lista.is-fuera {
+  color: var(--admin-navy);
+}
 
 .puerta-manual {
   display: flex;

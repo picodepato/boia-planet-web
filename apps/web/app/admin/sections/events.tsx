@@ -11,8 +11,11 @@ import {
   effectiveEvents,
   eventState,
 } from '@boia/contracts';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { EventInput } from '../../../lib/admin/actions';
+import { localGuestList } from '../../../lib/guestlist';
+import { useMaybeRealAdmin } from '../real/common';
+import { GuestListPanel } from '../real/guest-list';
 import { ADMIN_COPY } from '../../../lib/admin/copy';
 import { DEFAULT_TIME_ZONE, isoToLocal, localToIso } from '../../../lib/admin/dates';
 import { eventIslands, islandEvent, islandMemories } from '../../../lib/admin/world';
@@ -550,6 +553,10 @@ export function EventsSection({ ctx }: { ctx: AdminContext }) {
   const pending = useRead(ctx, (r) => r.admin.pendingDrafts());
   const [editing, setEditing] = useState<Draft | null>(null);
   const { status, busy, run } = useRun();
+  // La lista de cada fiesta (plan 034 T310): en la demo, la de este navegador;
+  // con cuentas va en «Fiestas y QR», sobre la base.
+  const real = useMaybeRealAdmin();
+  const guestList = useMemo(() => (real ? null : localGuestList(ctx.repo)), [real, ctx.repo]);
   if (!events) return <p>{t('empty.loading')}</p>;
   const changedSet = new Set(changed ?? []);
   const drafts = new Map(
@@ -687,6 +694,9 @@ export function EventsSection({ ctx }: { ctx: AdminContext }) {
                 }
               />
             </div>
+            {guestList && !drafts.get(e.id) ? (
+              <GuestListPanel api={guestList} event={e.id} />
+            ) : null}
           </li>
         ))}
       </ul>

@@ -54,3 +54,35 @@ export function newsCsv(rows: readonly MemberRow[]): string {
   // BOM: Excel lo abre como UTF-8 (tildes y eñes en los apodos).
   return `${BOM}${lines.join('\r\n')}\r\n`;
 }
+
+/**
+ * El CSV de la lista de una fiesta (plan 034 T310): las mismas columnas que
+ * la tabla del Admin, por orden de llegada. `entro`: «sí» si leyeron su
+ * Carnet en la puerta de esa fiesta.
+ */
+export const GUEST_LIST_CSV_COLUMNS = [
+  'nombre_lista',
+  'apodo',
+  'email',
+  'apuntado',
+  'entro',
+] as const;
+
+/** Una fila de la lista (`GuestListAdminRow` de lib/guestlist). */
+export interface GuestListCsvRow {
+  listName: string;
+  nickname: string | null;
+  email: string | null;
+  createdAt: string;
+  attended: boolean;
+}
+
+export function guestListCsv(rows: readonly GuestListCsvRow[]): string {
+  const lines = [GUEST_LIST_CSV_COLUMNS.join(',')];
+  for (const r of rows) {
+    lines.push(
+      [r.listName, r.nickname, r.email, r.createdAt, r.attended ? 'sí' : 'no'].map(cell).join(','),
+    );
+  }
+  return `${BOM}${lines.join('\r\n')}\r\n`;
+}

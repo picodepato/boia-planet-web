@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { t } from '../../../lib/i18n';
 import { decodeFrame } from '../../../lib/scanner/decode';
-import { type DoorOutcome, outcomeText } from './backend';
+import { type DoorOutcome, listText, outcomeText } from './backend';
 import { DoorCamera } from './door-camera';
 
 /**
@@ -97,15 +97,30 @@ function DoorResult({ outcome, busy }: { outcome: DoorOutcome | null; busy: bool
     );
   }
   if (!outcome) return <p className="puerta-resultado is-vacio" role="status" />;
+  const list = outcome.kind === 'granted' || outcome.kind === 'already' ? outcome.list : undefined;
   return (
-    <p
-      className={`puerta-resultado is-${outcome.kind}`}
-      role={outcome.kind === 'granted' || outcome.kind === 'already' ? 'status' : 'alert'}
-      data-testid="puerta-resultado"
-      data-resultado={outcome.kind}
-    >
-      {outcomeText(outcome)}
-    </p>
+    <>
+      <p
+        className={`puerta-resultado is-${outcome.kind}`}
+        role={outcome.kind === 'granted' || outcome.kind === 'already' ? 'status' : 'alert'}
+        data-testid="puerta-resultado"
+        data-resultado={outcome.kind}
+      >
+        {outcomeText(outcome)}
+      </p>
+      {list ? (
+        // La lista de la fiesta (plan 034 T310): la puerta decide, nada se bloquea.
+        <p
+          className={`puerta-lista ${list.onList ? 'is-en-lista' : 'is-fuera'}`}
+          role="status"
+          data-testid="puerta-lista"
+          data-lista={list.onList ? 'si' : 'no'}
+          data-tarde={list.pastClosing ? 'si' : 'no'}
+        >
+          {listText(list)}
+        </p>
+      ) : null}
+    </>
   );
 }
 

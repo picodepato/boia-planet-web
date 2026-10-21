@@ -62,6 +62,9 @@ describe('esquema del proyecto de desarrollo', () => {
       'calitas_list',
       // El enlace de la puerta (plan 034 T307): de qué fiesta es y sellar
       // el Carnet escaneado; el código es la llave.
+      // …y si el Carnet escaneado está en la lista de la fiesta (plan 034
+      // T310): sólo el nombre de lista.
+      'door_link_guest_list',
       'door_link_info',
       'door_link_stamp',
       // Suma un paso al contador del día del embudo (plan 032 T301): sólo
@@ -91,6 +94,9 @@ describe('esquema del proyecto de desarrollo', () => {
       'artist_claim_info',
       'calitas_list',
       // El enlace de la puerta (plan 034 T307).
+      // …y si el Carnet escaneado está en la lista de la fiesta (plan 034
+      // T310): sólo el nombre de lista.
+      'door_link_guest_list',
       'door_link_info',
       'door_link_stamp',
       // El contador del embudo (plan 032 T301).

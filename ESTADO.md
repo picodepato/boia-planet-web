@@ -4,6 +4,37 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-21 — plan 034 T310: Guest list in Admin and at the door
+
+Qué existe:
+- Admin, panel «Lista» en cada fiesta (`apps/web/app/admin/real/guest-list.tsx`,
+  lógica en `guest-list-model.ts`): modo lista sí/no, tope, hora de cierre,
+  interruptor abierta/cerrada; «N apuntados de TOPE · M han entrado»; tabla con
+  nombre de lista, apodo, email, fecha y «Entró»; «Borrar» con confirmación;
+  «Descargar CSV» (`guestListCsv` en `real/csv.ts`, columnas
+  `nombre_lista,apodo,email,apuntado,entro`). Se carga al abrir el panel.
+  Con cuentas va en «Fiestas y QR» (RPC `admin_guest_list*`, rol admin + 2FA);
+  en la demo, en «Eventos» (la lista de este navegador, `boia.guestlist`).
+- Puerta: los dos lectores (`/admin/puerta` y `/puerta/<código>`) dicen tras
+  cada Carnet «En lista como X» o «No está en la lista» si la fiesta va en
+  lista; pasada la hora de cierre, «… · pasada la hora de lista (22:30)». Nada
+  se bloquea; si la consulta de la lista falla, el sello sigue. El equipo usa
+  `guest_list_door`; el enlace, la RPC nueva `door_link_guest_list(p_token,
+  p_member)` (migración `20261021300100_door_link_guest_list.sql`, aplicada en
+  boia-planet-dev; anon con el código; sólo enabled/on_list/list_name/
+  closes_at/past_closing). Allowlists de anon en `schema.supabase.ts` al día.
+- REQ-ADM-042 (nuevo) HECHO en `docs/spec/estado.md`.
+
+Comandos:
+- `pnpm exec vitest run apps/web/app/admin/real/guest-list.test.ts apps/web/app/admin/door/ apps/web/app/admin/real/csv.test.ts` → 6 archivos, 38 pruebas, pasan.
+- `node src/cli/test-supabase.ts src/supabase/door-link-guest-list.supabase.ts` (packages/db) → 4 pasan; `schema.supabase.ts` → 9 pasan.
+- Comando de pruebas del proyecto → ver el informe de la tarea.
+
+Pendiente:
+- La migración 20261021300100 llega a producción con las demás del plan.
+- La fila de REQ-COM-037 en `estado.md` aún dice que falta el Admin y la puerta (T310): la cierra quien integre T309.
+- Sin e2e propia (el Admin real pide cuentas; la demo queda cubierta por las unitarias).
+
 ## 2026-10-21 — plan 034 T308: Guest list: data and rules
 
 Qué existe:

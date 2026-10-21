@@ -2,6 +2,7 @@ import { isStoreError, type BoiaRepository, type StaffStampSource } from '@boia/
 import type { StaffStampResult } from '@boia/db/rpc';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { t } from '../../../lib/i18n';
+import { type GuestListApi, localGuestList, supabaseGuestList } from '../../../lib/guestlist';
 import { parseCarnetQr } from '../../../lib/scanner/carnet-url';
 import { realErrorText } from '../real/common';
 
@@ -23,8 +24,27 @@ export interface DoorMember {
   memberNumber: number | null;
 }
 
+/**
+ * La lista de la fiesta tras leer un Carnet (plan 034 T310), sólo si la
+ * fiesta va en lista. Nunca bloquea nada: la puerta decide. Sólo el nombre de
+ * lista (por el enlace de la puerta no llega nada más).
+ */
+export interface DoorListView {
+  onList: boolean;
+  listName: string | null;
+  closesAt: string | null;
+  pastClosing: boolean;
+}
+
 export type DoorOutcome =
-  | { kind: 'granted' | 'already'; nickname: string; party: string; at: string }
+  | {
+      kind: 'granted' | 'already';
+      nickname: string;
+      party: string;
+      at: string;
+      /** La lista de la fiesta, si va en lista (plan 034 T310). */
+      list?: DoorListView;
+    }
   /** Lo leído no es el QR de un Carnet de BOIA. */
   | { kind: 'notCarnet' }
   /** Ese Carnet no existe (o ya no). */
@@ -45,6 +65,8 @@ export interface DoorBackend {
   ): Promise<DoorOutcome>;
   /** Cuántos han entrado a la fiesta. */
   attendance(party: string): Promise<number>;
+  /** La lista de la fiesta para ese Carnet; null si la fiesta no va en lista. */
+  guestList?(userId: string, party: string): Promise<DoorListView | null>;
 }
 
 /** La fiesta que toca: la que está en marcha o la próxima; si no, la última. */
@@ -78,7 +100,69 @@ export function outcomeText(outcome: DoorOutcome): string {
   }
 }
 
-/** Sella lo que dijo un QR (o lo que se pegó en la puerta). */
+/** «22:30»: la hora de cierre de la lista, en la hora de Alicante. */
+export function listTime(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('es-ES', {
+    timeZone: 'Europe/Madrid',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * «En lista como Ana» o «No está en la lista»; pasada la hora de cierre, con
+ * el aviso («… · pasada la hora de lista (22:30)»).
+ */
+export function listText(list: DoorListView): string {
+  const base =
+    list.onList && list.listName
+      ? t('puerta.list.on', { name: list.listName })
+      : t('puerta.list.off');
+  return list.pastClosing
+    ? t('puerta.list.late', { text: base, time: listTime(list.closesAt) })
+    : base;
+}
+
+/** De lo que dice la lista a lo que enseña la puerta: null si no va en lista. */
+export function doorListView(r: {
+  enabled: boolean;
+  onList: boolean;
+  listName: string | null;
+  closesAt: string | null;
+  pastClosing: boolean;
+}): DoorListView | null {
+  if (!r.enabled) return null;
+  return {
+    onList: r.onList,
+    listName: r.listName,
+    closesAt: r.closesAt,
+    pastClosing: r.pastClosing,
+  };
+}
+
+/**
+ * Le pone la lista de la fiesta a un Carnet ya leído (sellado o repetido). Si
+ * la consulta falla, la puerta sigue: el sello ya está y la lista no se dice.
+ */
+export async function withList(
+  outcome: DoorOutcome,
+  lookup: ((userId: string) => Promise<DoorListView | null>) | undefined,
+  userId: string,
+): Promise<DoorOutcome> {
+  if (!lookup || (outcome.kind !== 'granted' && outcome.kind !== 'already')) return outcome;
+  try {
+    const list = await lookup(userId);
+    return list ? { ...outcome, list } : outcome;
+  } catch (e) {
+    console.warn('[boia] puerta: sin la lista', e);
+    return outcome;
+  }
+}
+
+/** Sella lo que dijo un QR (o lo que se pegó en la puerta) y mira la lista. */
 export async function stampFromQr(
   backend: DoorBackend,
   text: string,
@@ -86,11 +170,19 @@ export async function stampFromQr(
 ): Promise<DoorOutcome> {
   const userId = parseCarnetQr(text);
   if (!userId) return { kind: 'notCarnet' };
-  return backend.stamp(userId, party, 'door');
+  const outcome = await backend.stamp(userId, party, 'door');
+  const lookup = backend.guestList?.bind(backend);
+  return withList(outcome, lookup && ((id) => lookup(id, party)), userId);
 }
 
-/** Sin servidor: el repositorio de este navegador (el Carnet de quien está aquí). */
-export function localDoor(repo: BoiaRepository): DoorBackend {
+/**
+ * Sin servidor: el repositorio de este navegador (el Carnet de quien está
+ * aquí) y su lista (`lists`, por defecto la de este navegador).
+ */
+export function localDoor(
+  repo: BoiaRepository,
+  lists: GuestListApi = localGuestList(repo),
+): DoorBackend {
   return {
     parties: async () =>
       (await repo.content.list('events'))
@@ -132,6 +224,7 @@ export function localDoor(repo: BoiaRepository): DoorBackend {
       }
     },
     attendance: async (party) => (await repo.admin.attendance(party)).length,
+    guestList: async (userId, party) => doorListView(await lists.door(party, userId)),
   };
 }
 
@@ -202,5 +295,8 @@ export function realDoor(sb: BoiaSupabase): DoorBackend {
       if (error) throw new Error(realErrorText(error));
       return count ?? 0;
     },
+    // `guest_list_door` (editor, como el lector).
+    guestList: async (userId, party) =>
+      UUID_RE.test(userId) ? doorListView(await supabaseGuestList(sb).door(party, userId)) : null,
   };
 }

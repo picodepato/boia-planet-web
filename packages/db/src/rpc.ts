@@ -265,6 +265,18 @@ export interface DoorLinkStampResult {
   at: string;
 }
 
+/**
+ * door_link_guest_list: la lista de la fiesta en el lector del enlace (plan
+ * 034 T310). Sólo el nombre de lista: ni email, ni apodo, ni fecha.
+ */
+export interface DoorLinkGuestListResult {
+  enabled: boolean;
+  on_list: boolean;
+  list_name: string | null;
+  closes_at: string | null;
+  past_closing: boolean;
+}
+
 /** door_link_info: ¿vale el enlace de la puerta? ¿de qué fiesta es? */
 export type DoorLinkInfo =
   { valid: true; title: string; starts_at: string | null } | { valid: false };

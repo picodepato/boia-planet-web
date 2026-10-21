@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminAccessToken } from '../../../lib/account/admin-auth';
 import {
   STAMP_IMAGE_BUCKET,
@@ -10,6 +10,7 @@ import {
   stampImagePath,
   stampImageProblem,
 } from '../../../lib/admin/stamp-image';
+import { type GuestListApi, supabaseGuestList } from '../../../lib/guestlist';
 import { type MessageKey, t } from '../../../lib/i18n';
 import { QrCode, qrPath } from '../../../lib/mundo/carnet/qr-code';
 import { RubberStamp } from '../../../lib/mundo/carnet/stamp';
@@ -17,6 +18,7 @@ import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { SectionHead, StatusLine } from '../ui';
 import { useRun } from '../use-admin';
 import { NeedsAdmin, download, must, useAdminSupabase, when } from './common';
+import { GuestListPanel } from './guest-list';
 
 interface PartyRow {
   id: string;
@@ -169,11 +171,14 @@ function Projector({ title, url, onClose }: { title: string; url: string; onClos
 
 function PartyCard({
   sb,
+  guestList,
   party,
   code,
   onChanged,
 }: {
   sb: BoiaSupabase;
+  /** La lista de la fiesta (plan 034 T310). */
+  guestList: GuestListApi;
   party: PartyRow;
   code: CodeRow | null;
   onChanged: () => void;
@@ -534,6 +539,7 @@ function PartyCard({
         </div>
       ) : null}
       <StatusLine status={status} />
+      <GuestListPanel api={guestList} event={s} />
       {projecting && url ? (
         <Projector title={party.title} url={url} onClose={() => setProjecting(false)} />
       ) : null}
@@ -544,6 +550,7 @@ function PartyCard({
 /** Fiestas y QR (T94, decisiones 9 y 11): ventana y código del sello, el QR, la imagen del sello. */
 export function FiestasSection() {
   const sb = useAdminSupabase();
+  const guestList = useMemo(() => (sb ? supabaseGuestList(sb) : null), [sb]);
   const [parties, setParties] = useState<PartyRow[] | null>(null);
   const [codes, setCodes] = useState<Map<string, CodeRow>>(new Map());
   const [query, setQuery] = useState('');
@@ -600,7 +607,7 @@ export function FiestasSection() {
             {error}
           </p>
         ) : null}
-        {!parties || !sb ? (
+        {!parties || !sb || !guestList ? (
           <p>{t('empty.loading')}</p>
         ) : (
           <ul className="admin-list">
@@ -610,6 +617,7 @@ export function FiestasSection() {
                 <PartyCard
                   key={p.id}
                   sb={sb}
+                  guestList={guestList}
                   party={p}
                   code={code}
                   onChanged={() => setRevision((r) => r + 1)}

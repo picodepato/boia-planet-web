@@ -640,4 +640,34 @@ export const esAdmin = {
   'admin.photos.losVideosYLa':
     'Todo lo de aquí sale en la Galería, en collage: las fotos y los clips cortos (siempre sin sonido) se suben arriba, por isla y evento; abajo, fotos por URL.',
   'admin.texts.mp3OggOWav': 'mp3, ogg o wav; hasta ~1 MB en la demo.',
+
+  // La lista de cada fiesta (plan 034 T310): ajustes, quién se apuntó y el CSV.
+  'admin.guestList.title': 'Lista',
+  'admin.guestList.hint':
+    'En modo lista la fiesta no vende entradas: quien tiene Carnet se apunta. A la hora de cierre la lista se cierra sola; con el interruptor la cierras antes. En la puerta se ve si cada Carnet está en la lista.',
+  'admin.guestList.enabled': 'Va en lista (en vez de vender entradas)',
+  'admin.guestList.open': 'Lista abierta',
+  'admin.guestList.cap': 'Tope de personas',
+  'admin.guestList.closes': 'Hora de cierre de la lista',
+  'admin.guestList.closesHint': 'Vacío: sólo la cierra el interruptor.',
+  'admin.guestList.save': 'Guardar la lista',
+  'admin.guestList.saved': 'Lista guardada.',
+  'admin.guestList.csv': 'Descargar CSV',
+  'admin.guestList.csvReady': 'CSV descargado.',
+  'admin.guestList.count': '{n} apuntados de {cap} · {scanned} han entrado',
+  'admin.guestList.countNoCap': '{n} apuntados · {scanned} han entrado',
+  'admin.guestList.empty': 'Nadie se ha apuntado todavía.',
+  'admin.guestList.col.name': 'Nombre en la lista',
+  'admin.guestList.col.nickname': 'Apodo del Carnet',
+  'admin.guestList.col.email': 'Email',
+  'admin.guestList.col.date': 'Se apuntó',
+  'admin.guestList.col.attended': 'Entró',
+  'admin.guestList.col.actions': 'Acciones',
+  'admin.guestList.attendedYes': 'Entró',
+  'admin.guestList.remove': 'Borrar',
+  'admin.guestList.removeConfirm':
+    '¿Borrar a «{name}» de la lista? Deja su sitio libre y no se puede deshacer.',
+  'admin.guestList.removed': 'Borrado de la lista.',
+  'admin.guestList.error.cap': 'El tope tiene que ser un número entero de 1 a 100000.',
+  'admin.guestList.error.closes': 'La hora de cierre no es una fecha válida.',
 } as const;

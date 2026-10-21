@@ -87,4 +87,8 @@ export const esPuerta = {
     'La cámara está bloqueada. Actívala en los ajustes del navegador para esta web, o lee una foto del QR aquí abajo.',
   'puerta.link.camera.none':
     'No encontramos una cámara. Lee una foto del QR del Carnet aquí abajo.',
+  // La lista de la fiesta tras leer un Carnet (plan 034 T310), en los dos lectores.
+  'puerta.list.on': 'En lista como {name}',
+  'puerta.list.off': 'No está en la lista',
+  'puerta.list.late': '{text} · pasada la hora de lista ({time})',
 } as const;

@@ -1,10 +1,17 @@
 import { isStoreError, type BoiaRepository } from '@boia/store';
-import type { DoorLinkCreated, DoorLinkInfo, DoorLinkRow, DoorLinkStampResult } from '@boia/db/rpc';
+import type {
+  DoorLinkCreated,
+  DoorLinkGuestListResult,
+  DoorLinkInfo,
+  DoorLinkRow,
+  DoorLinkStampResult,
+} from '@boia/db/rpc';
 import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { localDoorLinks } from '../../../lib/door-links';
+import { type GuestListApi, localGuestList } from '../../../lib/guestlist';
 import { parseCarnetQr } from '../../../lib/scanner/carnet-url';
 import { realErrorText } from '../real/common';
-import type { DoorOutcome } from './backend';
+import { type DoorListView, type DoorOutcome, doorListView, withList } from './backend';
 
 /**
  * El enlace de la puerta (plan 034 T307): lo que gestiona el Admin (crear,
@@ -34,13 +41,18 @@ export interface LinkDoor {
   /** El nombre de la fiesta, o null si el enlace no vale. */
   title(): Promise<string | null>;
   stamp(userId: string): Promise<DoorOutcome>;
+  /**
+   * La lista de la fiesta para ese Carnet (plan 034 T310): sólo el nombre de
+   * lista, nunca el email. null si la fiesta no va en lista.
+   */
+  guestList?(userId: string): Promise<DoorListView | null>;
 }
 
-/** Sella lo que dijo un QR con el enlace (sólo escanear: nada de apodos). */
+/** Sella lo que dijo un QR con el enlace (sólo escanear: nada de apodos) y mira la lista. */
 export async function linkStampFromQr(door: LinkDoor, text: string): Promise<DoorOutcome> {
   const userId = parseCarnetQr(text);
   if (!userId) return { kind: 'notCarnet' };
-  return door.stamp(userId);
+  return withList(await door.stamp(userId), door.guestList?.bind(door), userId);
 }
 
 type KeyValue = Parameters<typeof localDoorLinks>[0];
@@ -70,8 +82,16 @@ export function localLinksAdmin(repo: BoiaRepository, storage: KeyValue): DoorLi
   };
 }
 
-/** Sin servidor: la página del enlace sella los Carnets de este navegador. */
-export function localLinkDoor(repo: BoiaRepository, storage: KeyValue, token: string): LinkDoor {
+/**
+ * Sin servidor: la página del enlace sella los Carnets de este navegador y
+ * mira su lista (`lists`, por defecto la de este navegador).
+ */
+export function localLinkDoor(
+  repo: BoiaRepository,
+  storage: KeyValue,
+  token: string,
+  lists: GuestListApi = localGuestList(repo),
+): LinkDoor {
   const links = localDoorLinks(storage);
   const party = async () => {
     const link = links.find(token);
@@ -95,6 +115,10 @@ export function localLinkDoor(repo: BoiaRepository, storage: KeyValue, token: st
         if (isStoreError(e, 'not_found')) return { kind: 'unknown' };
         return { kind: 'error', message: e instanceof Error ? e.message : String(e) };
       }
+    },
+    guestList: async (userId) => {
+      const ev = await party();
+      return ev ? doorListView(await lists.door(ev.id, userId)) : null;
     },
   };
 }
@@ -152,6 +176,23 @@ export function realLinkDoor(sb: BoiaSupabase, token: string): LinkDoor {
         party: r.title,
         at: r.at,
       };
+    },
+    // `door_link_guest_list`: con el código, sólo el nombre de lista.
+    guestList: async (userId) => {
+      if (!UUID_RE.test(userId)) return null;
+      const { data, error } = await sb.rpc('door_link_guest_list', {
+        p_token: token,
+        p_member: userId,
+      });
+      if (error) throw new Error(realErrorText(error));
+      const r = data as unknown as DoorLinkGuestListResult;
+      return doorListView({
+        enabled: r.enabled,
+        onList: r.on_list,
+        listName: r.list_name,
+        closesAt: r.closes_at,
+        pastClosing: r.past_closing,
+      });
     },
   };
 }
