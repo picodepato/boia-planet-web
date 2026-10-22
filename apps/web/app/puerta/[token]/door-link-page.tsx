@@ -7,6 +7,7 @@ import { gameRepository } from '../../../lib/repo';
 import { browserSupabase } from '../../../lib/supabase/browser';
 import type { DoorOutcome } from '../../admin/door/backend';
 import { DoorPhoto, DoorScanner } from '../../admin/door/door-scanner';
+import { SignupQr } from '../../admin/door/signup-qr';
 import {
   type LinkDoor,
   linkStampFromQr,
@@ -100,6 +101,11 @@ export function DoorLinkPage({ token: raw, real }: { token: string; real: boolea
               onNoQr={() => setResult({ kind: 'notCarnet' })}
               disabled={busy}
             />
+            <section className="puerta-alta-bloque" aria-label={t('puerta.signup.title')}>
+              <h2>{t('puerta.signup.title')}</h2>
+              <p className="admin-meta">{t('puerta.signup.doorHint')}</p>
+              <SignupQr compact />
+            </section>
           </>
         ) : null}
       </main>

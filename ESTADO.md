@@ -4,6 +4,13 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-22 — plan 038 T318: Signup QR on the shared door link page
+
+- `/puerta/<código>` (enlace válido) muestra bajo el lector el bloque «QR para crear el Carnet» con `SignupQr compact` (mismo componente y textos que `/admin/puerta`): un botón abre el QR a pantalla completa (Esc cierra). No aparece en el enlace inválido/revocado. Sin claves i18n nuevas.
+- Cambios: `apps/web/app/puerta/[token]/door-link-page.tsx`, `apps/web/e2e/puerta-enlace.spec.ts` (extendido). REQ-ADM-041 menciona el QR.
+- El QR codifica `/carnet?crear=1` en el origen actual (`signupUrl`, probado en `carnet-url.test.ts`); vitest corre en node sin pruebas de componentes, así que presencia/ausencia en la página la cubre la e2e.
+- `E2E_PORT=3457 pnpm e2e puerta-enlace.spec.ts`: 6 passed.
+
 ## 2026-10-22 — plan 037 T317: «Entraron» panel and CSV in Admin
 
 Qué existe:

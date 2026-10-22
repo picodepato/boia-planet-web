@@ -92,6 +92,18 @@ test.describe('sin sesión del Admin', () => {
     await expect(page.getByTestId('sellar-a-mano')).toHaveCount(0);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
+    // El QR de alta, compacto bajo el lector: se amplía con un toque.
+    const alta = page.getByTestId('qr-alta');
+    await expect(alta).toBeVisible();
+    await expect(page.getByTestId('qr-alta-proyectar')).toHaveText(t('puerta.signup.show'));
+    await page.getByTestId('qr-alta-proyectar').click();
+    const big = page.getByTestId('qr-alta-proyector');
+    await expect(big).toBeVisible();
+    await expect(big.locator('svg[data-qr]').first()).toBeVisible();
+    await expect(big).toContainText(t('puerta.signup.caption'));
+    await page.keyboard.press('Escape');
+    await expect(big).toHaveCount(0);
+
     // El mismo lector que /admin/puerta.
     await page.getByTestId('puerta-abrir-camara').click();
     await expect(page.getByTestId('puerta-camara')).toBeVisible();
@@ -115,6 +127,7 @@ test.describe('sin sesión del Admin', () => {
     await page.goto(`/puerta/${newDoorToken()}`);
     await expect(page.getByTestId('puerta-enlace-no-vale')).toHaveText(t('puerta.link.invalid'));
     await expect(page.getByTestId('puerta-abrir-camara')).toHaveCount(0);
+    await expect(page.getByTestId('qr-alta')).toHaveCount(0);
   });
 });
 
