@@ -1,4 +1,9 @@
-import type { GuestListAdminRow, GuestListSettings, GuestListStatus } from '../../../lib/guestlist';
+import type {
+  EventAttendeeRow,
+  GuestListAdminRow,
+  GuestListSettings,
+  GuestListStatus,
+} from '../../../lib/guestlist';
 import type { MessageKey } from '../../../lib/i18n';
 
 /**
@@ -72,4 +77,23 @@ export function settingsOf(
 /** `boia-lista-halloween-2026-2026-10-21.csv` */
 export function guestListCsvName(event: string, now = new Date()): string {
   return `boia-lista-${event}-${now.toISOString().slice(0, 10)}.csv`;
+}
+
+/** Cuántos entraron, de ellos cuántos estaban en la lista y cuántos no (plan 037 T317). */
+export interface AttendeesSummary {
+  total: number;
+  onList: number;
+  offList: number;
+}
+
+export function attendeesSummary(
+  rows: readonly Pick<EventAttendeeRow, 'listName'>[],
+): AttendeesSummary {
+  const onList = rows.filter((r) => r.listName !== null).length;
+  return { total: rows.length, onList, offList: rows.length - onList };
+}
+
+/** `boia-entraron-halloween-2026-2026-10-22.csv` */
+export function attendeesCsvName(event: string, now = new Date()): string {
+  return `boia-entraron-${event}-${now.toISOString().slice(0, 10)}.csv`;
 }

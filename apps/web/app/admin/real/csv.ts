@@ -86,3 +86,40 @@ export function guestListCsv(rows: readonly GuestListCsvRow[]): string {
   }
   return `${BOM}${lines.join('\r\n')}\r\n`;
 }
+
+/**
+ * El CSV de «Entraron» (plan 037 T317): quien entró a una fiesta, esté o no en
+ * la lista, el más reciente primero. `en_lista`: «sí» / «no», vacío si la
+ * fiesta no va en lista. `como`: puerta, enlace o a mano.
+ */
+export const ATTENDEES_CSV_COLUMNS = [
+  'apodo',
+  'email',
+  'en_lista',
+  'nombre_lista',
+  'escaneado',
+  'como',
+] as const;
+
+export interface AttendeesCsvRow {
+  nickname: string | null;
+  email: string | null;
+  listName: string | null;
+  scannedAt: string;
+  source: 'door' | 'link' | 'manual';
+}
+
+const ATTENDEE_SOURCE_CSV = { door: 'puerta', link: 'enlace', manual: 'a mano' } as const;
+
+export function attendeesCsv(rows: readonly AttendeesCsvRow[], listMode: boolean): string {
+  const lines = [ATTENDEES_CSV_COLUMNS.join(',')];
+  for (const r of rows) {
+    const onList = listMode ? (r.listName === null ? 'no' : 'sí') : '';
+    lines.push(
+      [r.nickname, r.email, onList, r.listName, r.scannedAt, ATTENDEE_SOURCE_CSV[r.source]]
+        .map(cell)
+        .join(','),
+    );
+  }
+  return `${BOM}${lines.join('\r\n')}\r\n`;
+}

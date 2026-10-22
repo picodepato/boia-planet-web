@@ -4,6 +4,21 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-22 — plan 037 T317: «Entraron» panel and CSV in Admin
+
+Qué existe:
+- Migración `20261022100100_event_attendees.sql` (aplicada sólo a DEV): `public.admin_event_attendees(p_event)` (INVOKER) sobre `private.admin_event_attendees` (SECURITY DEFINER, search_path vacío, `require_staff('admin')` con 2FA). Devuelve una fila por cuenta de `event_attendance` (el primer escaneo), con apodo, email, hora, `source` (door / link si hay `door_link_id` / manual) y `list_name` (null si no estaba en la lista). Más reciente primero.
+- Cliente: `GuestListApi.admin.attendees(event)` (store local para la demo y RPC para cuentas), tipo `EventAttendeeRow`.
+- Admin: `app/admin/real/attendees.tsx` (`AttendeesPanel`, junto a «Lista» en Fiestas y QR y, en la demo, en cada tarjeta de Eventos), `attendeesCsv` en `csv.ts`, resumen y nombre de CSV en `guest-list-model.ts`, claves `admin.attendees.*`.
+- REQ-ADM-043 (07, 09 y estado.md).
+
+Comandos:
+- `node src/cli/test-supabase.ts src/supabase/event-attendees.supabase.ts` (packages/db) → 5 passed.
+- `pnpm exec vitest run apps/web/app/admin/real apps/web/lib/guestlist` → 29 passed.
+- Comprobación completa: ver el mensaje final del agente.
+
+Pendiente: aplicar la migración a producción (decide Álvaro). Los tipos generados y la lista de permitidas de anon no cambian (la RPC es sólo de authenticated).
+
 ## 2026-10-22 — plan 036 T316: Real Halloween poster and WhatsApp link
 
 **Qué existe**

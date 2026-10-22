@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react';
 import type { EventInput } from '../../../lib/admin/actions';
 import { localGuestList } from '../../../lib/guestlist';
 import { useMaybeRealAdmin } from '../real/common';
+import { AttendeesPanel } from '../real/attendees';
 import { GuestListPanel } from '../real/guest-list';
 import { ADMIN_COPY } from '../../../lib/admin/copy';
 import { DEFAULT_TIME_ZONE, isoToLocal, localToIso } from '../../../lib/admin/dates';
@@ -695,7 +696,10 @@ export function EventsSection({ ctx }: { ctx: AdminContext }) {
               />
             </div>
             {guestList && !drafts.get(e.id) ? (
-              <GuestListPanel api={guestList} event={e.id} />
+              <>
+                <GuestListPanel api={guestList} event={e.id} />
+                <AttendeesPanel api={guestList} event={e.id} />
+              </>
             ) : null}
           </li>
         ))}

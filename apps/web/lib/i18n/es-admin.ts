@@ -641,6 +641,25 @@ export const esAdmin = {
     'Todo lo de aquí sale en la Galería, en collage: las fotos y los clips cortos (siempre sin sonido) se suben arriba, por isla y evento; abajo, fotos por URL.',
   'admin.texts.mp3OggOWav': 'mp3, ogg o wav; hasta ~1 MB en la demo.',
 
+  // «Entraron» de cada fiesta (plan 037 T317): quién pasó por la puerta, con lista o sin ella.
+  'admin.attendees.title': 'Entraron',
+  'admin.attendees.hint':
+    'Todas las personas cuyo Carnet se leyó en la puerta (lector, enlace o a mano), estuvieran o no en la lista. Cada una sale una vez, con su primer escaneo.',
+  'admin.attendees.count': '{n} han entrado ({onList} en lista, {offList} sin lista)',
+  'admin.attendees.countNoList': '{n} han entrado',
+  'admin.attendees.empty': 'Todavía no ha entrado nadie.',
+  'admin.attendees.csv': 'Descargar CSV',
+  'admin.attendees.csvReady': 'CSV descargado.',
+  'admin.attendees.col.nickname': 'Apodo del Carnet',
+  'admin.attendees.col.email': 'Email',
+  'admin.attendees.col.listName': 'Nombre en la lista',
+  'admin.attendees.col.time': 'Hora del escaneo',
+  'admin.attendees.col.source': 'Cómo',
+  'admin.attendees.notOnList': 'No estaba en la lista',
+  'admin.attendees.source.door': 'Puerta',
+  'admin.attendees.source.link': 'Enlace',
+  'admin.attendees.source.manual': 'A mano',
+
   // La lista de cada fiesta (plan 034 T310): ajustes, quién se apuntó y el CSV.
   'admin.guestList.title': 'Lista',
   'admin.guestList.hint':

@@ -24,6 +24,9 @@
  * - `admin.list(event)` → filas `{userId, listName, nickname, email,
  *   createdAt, attended, attendedAt}` por orden de llegada; `attended`: la
  *   leyeron en la puerta de esa fiesta. Email null en la demo.
+ * - `admin.attendees(event)` → filas `{userId, nickname, email, scannedAt,
+ *   source: door|link|manual, listName}`: quien entró, esté o no en la lista,
+ *   una vez por cuenta (primer escaneo), el más reciente primero (T317).
  * - `admin.remove(event, userId, reason?)` → `{removed}` (también cerrada).
  * - `admin.updateSettings(event, {enabled, cap, closesAt, open})` → el estado
  *   con `count`. `closesAt` ISO o null (sin hora de cierre).
@@ -38,6 +41,7 @@ import {
   createLocalGuestList,
   GuestListError,
   type BoiaRepository,
+  type EventAttendeeRow,
   type GuestListAdminRow,
   type GuestListApi,
   type GuestListRejection,
@@ -59,6 +63,8 @@ export {
   normalizeListName,
 } from '@boia/store';
 export type {
+  AttendeeSource,
+  EventAttendeeRow,
   GuestListAdminRow,
   GuestListApi,
   GuestListDoorView,
@@ -204,6 +210,18 @@ export function supabaseGuestList(sb: BoiaSupabase): GuestListApi {
           createdAt: r.created_at,
           attended: r.attended,
           attendedAt: r.attended_at ?? null,
+        }));
+      },
+      async attendees(event): Promise<EventAttendeeRow[]> {
+        const { data, error } = await sb.rpc('admin_event_attendees', { p_event: event });
+        if (error) throw adminError(error);
+        return (data ?? []).map((r) => ({
+          userId: r.user_id,
+          nickname: r.nickname ?? null,
+          email: r.email ?? null,
+          scannedAt: r.scanned_at,
+          source: r.source === 'link' || r.source === 'manual' ? r.source : 'door',
+          listName: r.list_name ?? null,
         }));
       },
       async remove(event, userId, reason) {

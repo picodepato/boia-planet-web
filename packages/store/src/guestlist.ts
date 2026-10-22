@@ -88,6 +88,25 @@ export interface GuestListAdminRow {
   attendedAt: string | null;
 }
 
+/** Cómo se leyó el Carnet: lector de la puerta, enlace de la puerta o sello a mano. */
+export type AttendeeSource = 'door' | 'link' | 'manual';
+
+/**
+ * Una persona que entró a la fiesta (plan 037 T317): su Carnet se leyó en la
+ * puerta, esté o no en la lista. Una fila por cuenta, con el primer escaneo.
+ */
+export interface EventAttendeeRow {
+  userId: string;
+  /** Apodo del Carnet (null si ya no tiene). */
+  nickname: string | null;
+  /** Email de la cuenta; null en la demo. */
+  email: string | null;
+  scannedAt: string;
+  source: AttendeeSource;
+  /** El nombre con el que se apuntó a la lista de esa fiesta; null si no estaba. */
+  listName: string | null;
+}
+
 /** Lo que ve la puerta tras leer un Carnet. Nunca bloquea nada: la puerta decide. */
 export interface GuestListDoorView {
   enabled: boolean;
@@ -127,6 +146,8 @@ export interface GuestListApi {
     status(event: string): Promise<GuestListStatus>;
     /** Las inscripciones, por orden de llegada, con si entraron. */
     list(event: string): Promise<GuestListAdminRow[]>;
+    /** Quién entró (Carnet leído en la puerta), esté o no en la lista; el más reciente primero. */
+    attendees(event: string): Promise<EventAttendeeRow[]>;
     /** Borra la inscripción de alguien (aunque la lista esté cerrada). */
     remove(event: string, userId: string, reason?: string): Promise<{ removed: boolean }>;
     /** Cambia todos los ajustes a la vez; devuelve el estado con `count`. */
@@ -390,6 +411,27 @@ export function createLocalGuestList(options: LocalGuestListOptions): GuestListA
         }
         return out.sort(
           (a, b) => a.createdAt.localeCompare(b.createdAt) || a.userId.localeCompare(b.userId),
+        );
+      },
+      async attendees(event) {
+        const e = await adminParty(event);
+        const rows = signupsOf(load(), e);
+        const first = new Map<string, EventAttendeeRow>();
+        for (const a of await repo.admin.attendance(e.id)) {
+          const prev = first.get(a.userId);
+          if (prev && prev.scannedAt <= a.at) continue;
+          const carnet = await repo.carnet.get(a.userId);
+          first.set(a.userId, {
+            userId: a.userId,
+            nickname: carnet?.nickname ?? null,
+            email: null,
+            scannedAt: a.at,
+            source: a.source,
+            listName: rows[a.userId]?.listName ?? null,
+          });
+        }
+        return [...first.values()].sort(
+          (a, b) => b.scannedAt.localeCompare(a.scannedAt) || a.userId.localeCompare(b.userId),
         );
       },
       async remove(event, userId) {

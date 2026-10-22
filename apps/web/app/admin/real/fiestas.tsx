@@ -18,6 +18,7 @@ import type { BoiaSupabase } from '../../../lib/supabase/browser';
 import { SectionHead, StatusLine } from '../ui';
 import { useRun } from '../use-admin';
 import { NeedsAdmin, download, must, useAdminSupabase, when } from './common';
+import { AttendeesPanel } from './attendees';
 import { GuestListPanel } from './guest-list';
 
 interface PartyRow {
@@ -540,6 +541,7 @@ function PartyCard({
       ) : null}
       <StatusLine status={status} />
       <GuestListPanel api={guestList} event={s} />
+      <AttendeesPanel api={guestList} event={s} />
       {projecting && url ? (
         <Projector title={party.title} url={url} onClose={() => setProjecting(false)} />
       ) : null}

@@ -2346,6 +2346,19 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      admin_event_attendees: {
+        Args: {
+          p_event: string;
+        };
+        Returns: {
+          user_id: string;
+          nickname: string;
+          email: string;
+          scanned_at: string;
+          source: string;
+          list_name: string;
+        }[];
+      };
       admin_full_access: {
         Args: Record<PropertyKey, never>;
         Returns: Json;
