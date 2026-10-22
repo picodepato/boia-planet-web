@@ -191,11 +191,24 @@ describe('the landing ready for real content (plan 007 T82)', () => {
   it('the sample content renders the muestra placeholders and marks', () => {
     const html = renderLanding(SAMPLE_CONTENT);
 
-    // P19: «Cartel próximamente» in the poster slot, no image.
+    // P19: Halloween's real poster is in the band (plan 036 T316); with no
+    // poster the slot says «Cartel próximamente», with no image.
     const priority = priorityBand(html);
-    expect(priority).toContain('<p class="event-card__poster">');
-    expect(priority).toContain(t('priority.posterSoon'));
-    expect(priority).not.toContain('<img');
+    expect(priority).toContain(`src="${eventPosterPath(HALLOWEEN_EVENT_ID)}"`);
+    expect(priority).not.toContain(t('priority.posterSoon'));
+    const bare = priorityBand(
+      renderLanding({
+        ...SAMPLE_CONTENT,
+        events: SAMPLE_CONTENT.events.map((e) => {
+          const rest = { ...e };
+          delete rest.posterUrl;
+          return rest;
+        }),
+      }),
+    );
+    expect(bare).toContain('<p class="event-card__poster">');
+    expect(bare).toContain(t('priority.posterSoon'));
+    expect(bare).not.toContain('<img');
 
     // P17: no photos, the band shows the names only.
     expect(html).not.toContain('artist-card__photo');

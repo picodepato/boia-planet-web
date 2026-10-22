@@ -110,3 +110,9 @@ Llegan el cartel de Halloween, la foto de Alba Fitz y el Instagram:
 3. `pnpm test`, commit, push (Hernán).
 
 Lo demás sigue `muestra` y marcado hasta que llegue.
+
+## Qué ha llegado ya
+
+- Fila 1: el cartel de Halloween (`halloween-2026.webp`, 900×1200) y la
+  fila 9: el grupo de WhatsApp (`links.whatsapp`) son reales desde el plan 036
+  (T316). El resto sigue `muestra`.

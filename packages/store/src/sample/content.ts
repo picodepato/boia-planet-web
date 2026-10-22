@@ -159,8 +159,8 @@ const BASE_EVENTS: AreaInput<'events'>[] = [
     name: 'HALLOWEEN IN THE CLUB',
     format: 'satelite',
     series: 'boia-club',
-    // La fecha es real; la hora, de muestra hasta que Álvaro la confirme.
-    startsAt: '2026-10-31T23:00:00+01:00',
+    // Fecha y hora reales (cartel: de 22:00 a 4:00; Álvaro 2026-10-22).
+    startsAt: '2026-10-31T22:00:00+01:00',
     timeZone: 'Europe/Madrid',
     placeLabel: 'Kiki García',
     state: 'on_sale',

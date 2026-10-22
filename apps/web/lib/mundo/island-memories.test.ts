@@ -19,7 +19,8 @@ const islands = [
 ];
 const last = Math.max(...SAMPLE_CONTENT.events.map((e) => Date.parse(e.startsAt)));
 const AFTER_ALL = new Date(last + 30 * 24 * 3600 * 1000);
-const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]!);
+// Only the anchors: React also emits <link rel="preload" href=…> for a real poster image.
+const hrefs = (html: string) => [...html.matchAll(/<a\s[^>]*?href="([^"]+)"/g)].map((m) => m[1]!);
 
 afterEach(() => {
   vi.useRealTimers();

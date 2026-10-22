@@ -4,6 +4,21 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-22 — plan 036 T316: Real Halloween poster and WhatsApp link
+
+**Qué existe**
+- `apps/web/public/contenido/carteles/halloween-2026.webp`: 900×1200, 127 962 bytes (~125 kB), WebP q90 (sharp del store de pnpm), registrado en `eventPosters`.
+- `links.whatsapp` = `https://chat.whatsapp.com/LfcWsDaBzbLAB6H7WK7Lyw` (ya sin marca MUESTRA: la marca depende del enlace sandbox).
+- Hora de Halloween (decisión de Álvaro, 2026-10-22): `startsAt` 2026-10-31T22:00+01:00 en `content.ts` (comentario: ya real) y en `supabase/seeds/20261003100100_economy.sql` (con `ends_at` 2026-11-01T04:00+01:00). La lista sigue cerrando a las 22:30.
+- `docs/contenido-real.md`: sección «Qué ha llegado ya».
+- Tests: `real-content.test.ts` (cartel real en la banda; el hueco «Cartel próximamente» se comprueba quitando el cartel), `eventos.test.ts` (idem), `island-memories.test.ts` (sólo mira `<a href>`; React añade un `<link rel=preload>` para la imagen real).
+
+**Presupuesto de la landing**: con cartel + WhatsApp real + endsAt el total fue 204 819 B (19 B sobre 204 800). Por eso `endsAt` NO está en el contenido de muestra de la web (sí en el seed SQL); sin él: 200.0 kB OK, al límite. El cartel es un archivo, no JS: lo que sube es el HTML (img + URL de WhatsApp repetida).
+
+**Comandos**: vitest (excl. db) 3 fallos sólo por timeouts de engine/survivors bajo carga, 220/220 al repetirlos; `tools/spec/checks.sh` OK; `pnpm lint` OK; `pnpm typecheck` OK; `pnpm build` OK (budget 200.0 kB).
+
+**Pendiente / a mano**: ver la banda «Próximo evento» y `/eventos/halloween-2026` con el cartel; abrir el enlace de WhatsApp; la fila de `public.events` de producción de halloween-2026 (starts_at/ends_at) hay que actualizarla aparte.
+
 ## 2026-10-21 — T312: Guest list asks for a Carnet the member already has
 
 Bug (Álvaro, boia-planet-roan.vercel.app, con cuentas, Halloween): el diálogo

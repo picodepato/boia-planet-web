@@ -127,8 +127,11 @@ describe('ficha de evento (REQ-COM-012)', () => {
   });
 
   it('sin cartel: «El cartel todavía no está anunciado»', () => {
-    const html = page({ ...halloween }, NOW);
-    expect(halloween.posterUrl).toBeUndefined();
+    // Halloween has its real poster now (plan 036 T316); the empty state is checked without it.
+    const noPoster: BoiaEvent = { ...halloween };
+    delete noPoster.posterUrl;
+    const html = page(noPoster, NOW);
+    expect(halloween.posterUrl).toBe('/contenido/carteles/halloween-2026.webp');
     expect(html).toContain(EVENTOS_COPY.posterSoon);
   });
 });

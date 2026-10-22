@@ -45,12 +45,12 @@ export const EVENT_POSTER_DIR = '/contenido/carteles';
 export const artistPhotoPath = (id: string) => `${ARTIST_PHOTO_DIR}/${id}.webp`;
 export const eventPosterPath = (id: string) => `${EVENT_POSTER_DIR}/${id}.webp`;
 
-/** Today: nothing real yet, everything `muestra`. */
+/** Today: Halloween poster and WhatsApp group are real; the rest is `muestra`. */
 export const REAL_CONTENT: RealContent = {
   links: {
     tickets: {},
     store: null,
-    whatsapp: null,
+    whatsapp: 'https://chat.whatsapp.com/LfcWsDaBzbLAB6H7WK7Lyw',
     instagram: null,
     tiktok: null,
     email: null,
@@ -58,5 +58,5 @@ export const REAL_CONTENT: RealContent = {
     artistSpotify: {},
   },
   artistPhotos: [],
-  eventPosters: [],
+  eventPosters: ['halloween-2026'],
 };
