@@ -33,3 +33,4 @@ Status file: ESTADO.md
 ## Log
 - 2026-10-22 T317 launched · attempt 1 · agent a0994cd6a31bf0526
 - 2026-10-22 T317 done · branch worktree-agent-a0994cd6a31bf0526 → 01dfc32; plan done
+- 2026-10-22 production: applied 20261022100100 (admin_event_attendees); pushing main (Álvaro's yes)
