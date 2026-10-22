@@ -4,6 +4,15 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-22 — plan 039 T319: Real legal data and accurate privacy text
+
+Qué existe:
+- Titular, NIF, domicilio y correo reales (`legal.aviso.owner`, `legal.privacy.controller` en `apps/web/lib/i18n/es-zonas.ts`); sustituyen los datos del 2026-10-14. Sin forma jurídica.
+- Privacidad (modo demo y modo cuentas) corregida: contadores propios sin cookies ni terceros (ya no dice «apagada»), alojamiento Cloudflare y Vercel (`legal.privacy.hosting`), lista de invitados y escaneo en puerta (`legal.privacy.account.guestlist`), Brevo para el código de acceso y las noticias, localStorage/sessionStorage listados en cookies. Fecha 22 de octubre; `PRIVACY_POLICY_VERSION` sigue en 2026-10-14 (no fuerza reaceptación).
+- `docs/propuestas/textos-zonas.md` sincronizado (lo exige zonas.test.ts); `docs/contenido-real.md` actualizado; `lib/legal/docs.test.ts` aserta los valores reales y la ausencia de «muestra»/«ejemplo».
+
+Pendiente (abogado): plazos de conservación y bases legales (texto estándar prudente, no revisado). DECISIONES.md P21 sin tocar: marcar recibido 2026-10-22, revisión pendiente.
+
 ## 2026-10-22 — plan 038 T318: Signup QR on the shared door link page
 
 - `/puerta/<código>` (enlace válido) muestra bajo el lector el bloque «QR para crear el Carnet» con `SignupQr compact` (mismo componente y textos que `/admin/puerta`): un botón abre el QR a pantalla completa (Esc cierra). No aparece en el enlace inválido/revocado. Sin claves i18n nuevas.

@@ -109,13 +109,15 @@ export const esCuenta = {
   'legal.privacy.account.intro':
     'Navegar, jugar y leer en BOIA.PLANET no piden nada. Te pedimos un email sólo cuando guardas algo: tu Carnet, una compra del barco, el sello de una fiesta o tu puesto en el ranking. Desde ese momento lo que guardas va a tu cuenta, en nuestro servidor, para que no se pierda.',
   'legal.privacy.account.what':
-    'Qué se guarda: tu email, para entrar con un código de 6 cifras (sin contraseñas); tu Carnet (apodo, número de miembro, foto o avatar y respuestas); tus puntos, monedas, logros, sellos, tiempos del circuito, descuentos y compras del barco; tu botella; cuándo y en qué versión aceptaste esta política, y si quieres recibir noticias. Al entrar, lo que tenías en este navegador pasa a tu cuenta.',
+    'Qué se guarda: tu email, para entrar con un código de 6 cifras (sin contraseñas); tu Carnet (apodo, número de miembro, foto o avatar y respuestas); tus puntos, monedas, logros, sellos, tiempos del circuito, descuentos y compras del barco; tu botella; cuándo y en qué versión aceptaste esta política, y si quieres recibir noticias. Si te apuntas a la lista de una fiesta, el nombre que elijas para la lista y la fecha en que te apuntas; y si tu Carnet se lee en la puerta, que has asistido a esa fiesta, y cuándo. Al entrar, lo que tenías en este navegador pasa a tu cuenta.',
   'legal.privacy.account.public':
     'Qué es público: tu apodo, tu Carnet, tus puestos en el ranking y tu botella. Tu email nunca: en BOIA te ven por tu apodo.',
   'legal.privacy.account.notAsked':
     'Qué no te pedimos: ni contraseña, ni teléfono, ni datos de pago.',
   'legal.privacy.account.where':
-    'Dónde: en la base de datos de BOIA.PLANET, en los servidores de nuestro proveedor Supabase, en la Unión Europea, que la guarda por encargo nuestro. El correo con tu código de acceso lo envía nuestro proveedor de email, Brevo, también por encargo nuestro. En tu navegador quedan tu sesión y una copia de tu progreso.',
+    'Dónde: en la base de datos de BOIA.PLANET, en los servidores de nuestro proveedor Supabase, en la Unión Europea, que la guarda por encargo nuestro. El correo con tu código de acceso y, si lo pides, las noticias, los envía nuestro proveedor de email, Brevo, también por encargo nuestro. En tu navegador quedan tu sesión y una copia de tu progreso.',
+  'legal.privacy.account.guestlist':
+    'Lista de invitados y puerta: si te apuntas a la lista de una fiesta, el equipo de BOIA que gestiona esa fiesta ve el nombre que elegiste para la lista, el apodo de tu Carnet, tu email y la fecha en que te apuntaste. Cuando tu Carnet se escanea en la puerta (también a través del enlace compartido de la puerta) queda registrado que has asistido, con la fecha y hora del escaneo, aunque no estuvieras en la lista. Puedes salir de la lista mientras siga abierta.',
   'legal.privacy.account.why':
     'Para qué: para que tu Carnet y tu progreso estén en cualquier dispositivo, para los rankings y los sellos de las fiestas y, sólo si marcas la casilla, para mandarte noticias de BOIA por email (fiestas y entradas).',
   'legal.privacy.account.basis':
@@ -126,7 +128,7 @@ export const esCuenta = {
     'Cuánto tiempo: mientras tengas la cuenta. Puedes borrarla cuando quieras en Mi Carnet («Borrar mi cuenta») y se borra todo; las noticias se quitan con un toque en el mismo sitio.',
   'legal.privacy.account.rights':
     'Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. En Mi Carnet puedes editar tu Carnet, dejar de recibir noticias y borrar tu cuenta; para lo demás, escribe a hola@boiaplanet.net. También puedes reclamar ante la Agencia Española de Protección de Datos.',
-  'legal.privacy.account.updated': 'Última actualización: 14 de octubre de 2026.',
+  'legal.privacy.account.updated': 'Última actualización: 22 de octubre de 2026.',
 
   // El progreso en la cuenta (T90): avisos de la copia del navegador.
   'sync.offline':

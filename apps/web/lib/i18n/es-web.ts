@@ -159,7 +159,7 @@ const base = {
 
   'legal.back': 'Volver al inicio',
   'legal.cookies.body':
-    'Esta web no usa cookies de analítica ni de publicidad. La medición de visitas es anónima y no se guarda en tu navegador.',
+    'Esta web no usa cookies de analítica ni de publicidad. La medición de visitas es con contadores propios, anónimos y sin cookies.',
 
   'common.newTab': '(se abre en otra pestaña)',
 } as const;

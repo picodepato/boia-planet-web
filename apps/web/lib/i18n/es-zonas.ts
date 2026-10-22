@@ -595,10 +595,10 @@ export const esZonas = {
   'photos.page.title': 'Galería',
   'photos.filter.all': 'Todas',
   'photos.backToIsland': 'Volver a la isla',
-  'legal.updated': 'Última actualización: 29 de septiembre de 2026.',
+  'legal.updated': 'Última actualización: 22 de octubre de 2026.',
   'legal.aviso.title': 'Aviso legal y condiciones de uso',
   'legal.aviso.owner':
-    'Titular: BOIA PLANET (CIF en trámite), con domicilio en Calle Hondón de las Nieves, 7, 03005 Alicante.',
+    'Titular: Boia planet, NIF E0764676C, con domicilio en Calle Alicante, 7, 03005 Alicante.',
   'legal.aviso.contact': 'Contacto: hola@boiaplanet.net.',
   'legal.aviso.purpose':
     'Esta web presenta los eventos de BOIA, enlaza a la venta de sus entradas y ofrece BOIA.PLANET, un mar para explorar en barco. Usarla es gratis.',
@@ -620,28 +620,31 @@ export const esZonas = {
   'legal.privacy.intro':
     'En esta versión de prueba no guardamos tus datos en ningún servidor: todo lo que haces se queda en tu navegador.',
   'legal.privacy.controller':
-    'Responsable: BOIA PLANET (CIF en trámite), Calle Hondón de las Nieves, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net.',
+    'Responsable: Boia planet, NIF E0764676C, Calle Alicante, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net.',
   'legal.privacy.what':
     'Qué se guarda: el apodo, la foto o el avatar y las respuestas de tu Carnet, tu botella, tu progreso en el juego y tus preferencias de sonido y controles.',
   'legal.privacy.notAsked': 'Qué no te pedimos: ni email, ni teléfono, ni datos de pago.',
   'legal.privacy.where':
-    'Dónde: en el almacenamiento de tu navegador, en este dispositivo. No sale de ahí y no lo vemos.',
+    'Dónde: en el almacenamiento local de tu navegador (localStorage), en este dispositivo. No sale de ahí y no lo vemos.',
   'legal.privacy.why':
     'Para qué: para que tu Carnet, tu barco y tu progreso sigan ahí cuando vuelvas.',
   'legal.privacy.basis':
     'Base legal: tu consentimiento al crear el Carnet o la botella, y lo necesario para darte el servicio que pides.',
   'legal.privacy.sharing':
-    'No se comparte con nadie. Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos servicios tienen su propia política.',
-  'legal.privacy.analytics': 'Medición de visitas: apagada en esta versión.',
+    'No se comparte con nadie ni se vende. Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos servicios tienen su propia política.',
+  'legal.privacy.analytics':
+    'Medición de visitas: sólo contadores propios y anónimos de los pasos de la web (ver un evento, pulsar «Comprar»), sin cookies, sin servicios de analítica de terceros, sin identificador de visitante y sin datos personales. Con cuentas se suman en nuestra base de datos en Supabase; en la versión de prueba se quedan en tu navegador. Los pasos de la visita en curso se anotan en el almacenamiento de la pestaña y se borran al cerrarla.',
+  'legal.privacy.hosting':
+    'Alojamiento: la web se sirve desde Cloudflare y Vercel, que reciben tu dirección IP y los datos técnicos de cada petición para entregarte las páginas, por encargo nuestro.',
   'legal.privacy.retention':
     'Cuánto tiempo: hasta que borres los datos de este sitio en tu navegador o retires tu Carnet o tu botella.',
   'legal.privacy.rights':
     'Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. Como todo está en tu navegador, puedes ejercerlos directamente, borrando o editando; si necesitas algo más, escribe a hola@boiaplanet.net. También puedes reclamar ante la Agencia Española de Protección de Datos.',
   'legal.privacy.future':
-    'Cuando BOIA.PLANET abra con cuentas, esta política cambiará y te lo contaremos antes de que pase.',
+    'Cuando BOIA.PLANET abra con cuentas, esta política cambiará y te lo contaremos antes de que pase. Con cuentas habrá además lista de invitados de las fiestas y registro de asistencia en la puerta.',
   'legal.cookies.title': 'Cookies',
   'legal.cookies.storage':
-    'Sí usa el almacenamiento local del navegador para guardar tu progreso, tu Carnet y tus preferencias (sonido y controles). Es técnico: sin él no funciona lo que pides.',
+    'No usamos cookies propias. Sí usamos el almacenamiento local del navegador (localStorage) para guardar tu Carnet, tu progreso en el juego, tu posición en el mar y tus preferencias (sonido, controles, columnas de artistas), y el de la pestaña (sessionStorage) para recordar los pasos de la visita en curso. Con cuenta, también guarda tu sesión. Es técnico: sin él no funciona lo que pides.',
   'legal.cookies.thirdParty':
     'Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos sitios pueden usar sus propias cookies.',
   'legal.cookies.manage':

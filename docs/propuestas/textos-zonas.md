@@ -887,10 +887,10 @@ y `/legal/cookies`; la ruta vieja `/legal/condiciones` pasa a aviso legal.
 
 | Clave | Texto | Nota |
 |---|---|---|
-| `legal.updated` | Última actualización: 29 de septiembre de 2026. | |
+| `legal.updated` | Última actualización: 22 de octubre de 2026. | |
 | `legal.back` | Volver al inicio | = es.ts |
 | `legal.aviso.title` | Aviso legal y condiciones de uso | |
-| `legal.aviso.owner` | Titular: BOIA PLANET (CIF en trámite), con domicilio en Calle Hondón de las Nieves, 7, 03005 Alicante. | Aprobado 2026-10-14 |
+| `legal.aviso.owner` | Titular: Boia planet, NIF E0764676C, con domicilio en Calle Alicante, 7, 03005 Alicante. | Datos reales de Álvaro, 2026-10-22 (plan 039) |
 | `legal.aviso.contact` | Contacto: hola@boiaplanet.net. | Aprobado 2026-10-14 |
 | `legal.aviso.purpose` | Esta web presenta los eventos de BOIA, enlaza a la venta de sus entradas y ofrece BOIA.PLANET, un mar para explorar en barco. Usarla es gratis. | |
 | `legal.aviso.use` | Al usarla te comprometes a hacerlo de buena fe: sin suplantar a nadie, sin publicar en Carnets o botellas nada ofensivo o que no sea tuyo, y sin intentar romper el juego para llevarte premios que no has ganado. | |
@@ -902,20 +902,21 @@ y `/legal/cookies`; la ruta vieja `/legal/condiciones` pasa a aviso legal.
 | `legal.aviso.law` | Se aplica la ley española. Si alguna vez hay un conflicto, lo resolverán los juzgados que correspondan según la ley. | |
 | `legal.privacy.title` | Política de privacidad | |
 | `legal.privacy.intro` | En esta versión de prueba no guardamos tus datos en ningún servidor: todo lo que haces se queda en tu navegador. | |
-| `legal.privacy.controller` | Responsable: BOIA PLANET (CIF en trámite), Calle Hondón de las Nieves, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net. | Aprobado 2026-10-14 |
+| `legal.privacy.controller` | Responsable: Boia planet, NIF E0764676C, Calle Alicante, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net. | Datos reales de Álvaro, 2026-10-22 (plan 039) |
 | `legal.privacy.what` | Qué se guarda: el apodo, la foto o el avatar y las respuestas de tu Carnet, tu botella, tu progreso en el juego y tus preferencias de sonido y controles. | |
 | `legal.privacy.notAsked` | Qué no te pedimos: ni email, ni teléfono, ni datos de pago. | |
-| `legal.privacy.where` | Dónde: en el almacenamiento de tu navegador, en este dispositivo. No sale de ahí y no lo vemos. | |
+| `legal.privacy.where` | Dónde: en el almacenamiento local de tu navegador (localStorage), en este dispositivo. No sale de ahí y no lo vemos. | |
 | `legal.privacy.why` | Para qué: para que tu Carnet, tu barco y tu progreso sigan ahí cuando vuelvas. | |
 | `legal.privacy.basis` | Base legal: tu consentimiento al crear el Carnet o la botella, y lo necesario para darte el servicio que pides. | |
-| `legal.privacy.sharing` | No se comparte con nadie. Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos servicios tienen su propia política. | |
-| `legal.privacy.analytics` | Medición de visitas: apagada en esta versión. | |
+| `legal.privacy.sharing` | No se comparte con nadie ni se vende. Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos servicios tienen su propia política. | |
+| `legal.privacy.hosting` | Alojamiento: la web se sirve desde Cloudflare y Vercel, que reciben tu dirección IP y los datos técnicos de cada petición para entregarte las páginas, por encargo nuestro. | Plan 039 T319 |
+| `legal.privacy.analytics` | Medición de visitas: sólo contadores propios y anónimos de los pasos de la web (ver un evento, pulsar «Comprar»), sin cookies, sin servicios de analítica de terceros, sin identificador de visitante y sin datos personales. Con cuentas se suman en nuestra base de datos en Supabase; en la versión de prueba se quedan en tu navegador. Los pasos de la visita en curso se anotan en el almacenamiento de la pestaña y se borran al cerrarla. | |
 | `legal.privacy.retention` | Cuánto tiempo: hasta que borres los datos de este sitio en tu navegador o retires tu Carnet o tu botella. | |
 | `legal.privacy.rights` | Tus derechos: acceso, rectificación, supresión, oposición, limitación y portabilidad. Como todo está en tu navegador, puedes ejercerlos directamente, borrando o editando; si necesitas algo más, escribe a hola@boiaplanet.net. También puedes reclamar ante la Agencia Española de Protección de Datos. | |
-| `legal.privacy.future` | Cuando BOIA.PLANET abra con cuentas, esta política cambiará y te lo contaremos antes de que pase. | |
+| `legal.privacy.future` | Cuando BOIA.PLANET abra con cuentas, esta política cambiará y te lo contaremos antes de que pase. Con cuentas habrá además lista de invitados de las fiestas y registro de asistencia en la puerta. | |
 | `legal.cookies.title` | Cookies | |
 | `legal.cookies.body` | Esta web no usa cookies de analítica ni de publicidad. | = es.ts |
-| `legal.cookies.storage` | Sí usa el almacenamiento local del navegador para guardar tu progreso, tu Carnet y tus preferencias (sonido y controles). Es técnico: sin él no funciona lo que pides. | |
+| `legal.cookies.storage` | No usamos cookies propias. Sí usamos el almacenamiento local del navegador (localStorage) para guardar tu Carnet, tu progreso en el juego, tu posición en el mar y tus preferencias (sonido, controles, columnas de artistas), y el de la pestaña (sessionStorage) para recordar los pasos de la visita en curso. Con cuenta, también guarda tu sesión. Es técnico: sin él no funciona lo que pides. | |
 | `legal.cookies.thirdParty` | Si pulsas un enlace a Instagram, WhatsApp, la tienda o la ticketera, esos sitios pueden usar sus propias cookies. | |
 | `legal.cookies.manage` | Para borrarlo todo, entra en los ajustes de tu navegador y borra los datos de este sitio. | |
 | `legal.cookies.prefs` | Preferencias de cookies: no hay nada que activar ni desactivar, porque no usamos cookies opcionales. | |

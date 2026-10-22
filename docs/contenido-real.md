@@ -116,3 +116,10 @@ Lo demás sigue `muestra` y marcado hasta que llegue.
 - Fila 1: el cartel de Halloween (`halloween-2026.webp`, 900×1200) y la
   fila 9: el grupo de WhatsApp (`links.whatsapp`) son reales desde el plan 036
   (T316). El resto sigue `muestra`.
+- Datos legales (P21): llegaron el 2026-10-22 (plan 039, T319). Titular «Boia
+  planet», NIF E0764676C, domicilio Calle Alicante, 7, 03005 Alicante, correo
+  `hola@boiaplanet.net`. Están en `apps/web/lib/i18n/es-zonas.ts`
+  (`legal.aviso.owner`, `legal.privacy.controller`) y en
+  `docs/propuestas/textos-zonas.md`. No se indica forma jurídica. Los textos
+  de aviso legal, privacidad y cookies no están revisados por un abogado:
+  quedan por confirmar los plazos de conservación y las bases legales.

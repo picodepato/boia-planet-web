@@ -7,21 +7,49 @@ import { LEGAL_DOCS, PRIVACY_WITH_ACCOUNTS } from './docs';
 
 const textOf = (keys: readonly string[]) => keys.map((k) => t(k as MessageKey)).join('\n');
 
-describe('identidad legal real (plan 030, T291)', () => {
+describe('datos legales reales (plan 039, T319)', () => {
   const approved =
-    'BOIA PLANET (CIF en trámite), Calle Hondón de las Nieves, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net.';
+    'Boia planet, NIF E0764676C, Calle Alicante, 7, 03005 Alicante. Para cualquier cosa sobre tus datos: hola@boiaplanet.net.';
+  const allKeys = [
+    ...Object.values(LEGAL_DOCS).flatMap((d) => d.body),
+    ...PRIVACY_WITH_ACCOUNTS.body,
+  ];
 
-  it('el aviso legal lleva titular y contacto aprobados', () => {
+  it('el aviso legal lleva titular, NIF, domicilio y contacto reales', () => {
     const text = textOf(LEGAL_DOCS['aviso-legal'].body);
     expect(text).toContain(
-      'Titular: BOIA PLANET (CIF en trámite), con domicilio en Calle Hondón de las Nieves, 7, 03005 Alicante.',
+      'Titular: Boia planet, NIF E0764676C, con domicilio en Calle Alicante, 7, 03005 Alicante.',
     );
     expect(text).toContain('Contacto: hola@boiaplanet.net.');
   });
 
-  it('la privacidad, en los dos modos, lleva el responsable aprobado', () => {
+  it('la privacidad, en los dos modos, lleva el responsable real', () => {
     expect(textOf(LEGAL_DOCS.privacidad.body)).toContain(`Responsable: ${approved}`);
     expect(textOf(PRIVACY_WITH_ACCOUNTS.body)).toContain(`Responsable: ${approved}`);
+  });
+
+  it('ninguna página legal conserva datos antiguos, de muestra o de ejemplo, ni una forma jurídica', () => {
+    const text = textOf(allKeys);
+    for (const w of ['muestra', 'ejemplo', 'Hondón', 'CIF en trámite', 'BOIA PLANET (']) {
+      expect(text.toLowerCase()).not.toContain(w.toLowerCase());
+    }
+    for (const w of ['S.L.', 'asociación', 'comunidad de bienes', 'sociedad']) {
+      expect(text.toLowerCase()).not.toContain(w.toLowerCase());
+    }
+    for (const k of ['legal.aviso.title', 'legal.cookies.body', 'legal.cookies.storage']) {
+      expect(t(k as MessageKey).toLowerCase()).not.toContain('muestra');
+    }
+  });
+
+  it('la privacidad dice lo que la app hace: contadores propios, lista, puerta y alojamiento', () => {
+    expect(textOf(allKeys)).not.toContain('apagada en esta versión');
+    const text = textOf(PRIVACY_WITH_ACCOUNTS.body);
+    expect(text).toContain('contadores propios');
+    expect(text).toContain('Cloudflare y Vercel');
+    expect(text).toContain('escanea en la puerta');
+    expect(text).toContain('tu email');
+    expect(text).toContain('hola@boiaplanet.net');
+    expect(t('legal.cookies.storage')).toContain('localStorage');
   });
 
   it('ningún texto legal conserva datos inventados', () => {
@@ -36,11 +64,11 @@ describe('identidad legal real (plan 030, T291)', () => {
     expect(text).toContain('hola@boiaplanet.net');
   });
 
-  it('la política con cuentas nombra Supabase (UE) y Brevo, y la versión es 2026-10-14', () => {
+  it('la política con cuentas nombra Supabase (UE) y Brevo; actualizada el 22 de octubre, versión de aceptación 2026-10-14', () => {
     const text = textOf(PRIVACY_WITH_ACCOUNTS.body);
     expect(text).toContain('Supabase, en la Unión Europea');
     expect(text).toContain('Brevo');
-    expect(t(PRIVACY_WITH_ACCOUNTS.updated)).toBe('Última actualización: 14 de octubre de 2026.');
+    expect(t(PRIVACY_WITH_ACCOUNTS.updated)).toBe('Última actualización: 22 de octubre de 2026.');
     expect(PRIVACY_POLICY_VERSION).toBe('2026-10-14');
   });
 
