@@ -23,7 +23,7 @@ Status file: ESTADO.md
 - Outcome:
 
 ## Decisions
-- 2026-10-22: First visit: install prompt 30 s after the page is usable; later visits (after a dismissal): again 5 min after entering, every visit; never when installed (Álvaro)
+- 2026-10-22: First visit: install prompt 30 s after the page is usable; later visits (after a dismissal): again 2 min after entering, every visit; never when installed (Álvaro)
 
 ## Proposals (new scope)
 
