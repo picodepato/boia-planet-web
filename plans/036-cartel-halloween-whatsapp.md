@@ -35,3 +35,4 @@ Status file: ESTADO.md
 ## Log
 - 2026-10-22 T316 launched · attempt 1 · agent af4bd1625066fe4e7
 - 2026-10-22 T316 done · branch worktree-agent-af4bd1625066fe4e7 → 6230cb3; plan done
+- 2026-10-22 production: UPDATE public.events halloween-2026 → starts_at 2026-10-31 21:00Z (22:00 Madrid), ends_at 2026-11-01 03:00Z (04:00); pushed to main (Álvaro's yes)
