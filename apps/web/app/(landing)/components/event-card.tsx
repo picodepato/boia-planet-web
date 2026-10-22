@@ -149,7 +149,7 @@ export function EventCard({
       {note && <p className="event-card__note">{note}</p>}
       {lineup.length > 0 && (
         <p className="event-card__lineup">
-          <span className="visually-hidden">{t('event.lineup')}: </span>
+          <span className="visually-hidden">{`${t('event.lineup')}: `}</span>
           {lineup.join(' · ')}
         </p>
       )}

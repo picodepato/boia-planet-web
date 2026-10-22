@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react';
 import { clearInstallPrompt, installPrompt, onInstallPrompt } from '../../../lib/pwa/capture';
 import {
+  closedThisVisit,
+  hasInstalledRelatedApp,
+  elapsedSinceLoad,
   isDismissed,
   isIosSafari,
-  PROMPT_DELAY_MS,
+  isMarkedInstalled,
+  markInstalled,
+  promptDelay,
   promptKind,
+  rememberClosedThisVisit,
   rememberDismiss,
   swUrl,
   type PromptKind,
@@ -40,29 +46,56 @@ export function PwaPrompt() {
 
   useEffect(() => {
     let ready = false;
+    let closed = false;
     const decide = () => {
-      if (!ready) return;
+      if (!ready || closed) return;
       const standalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      if (standalone) markInstalled(storage());
       const next = promptKind({
-        dismissed: isDismissed(storage()),
+        installed: isMarkedInstalled(storage()),
+        closedThisVisit: closedThisVisit(session()),
         standalone,
         webdriver: navigator.webdriver === true,
         canPrompt: installPrompt() !== null,
         iosSafari: isIosSafari(navigator.userAgent, navigator.maxTouchPoints),
       });
-      // La pista de iPhone sale una vez: vista, cuenta como cerrada.
-      if (next === 'ios') rememberDismiss(storage());
+      // La pista de iPhone sale una vez por visita: vista, cuenta como cerrada.
+      if (next === 'ios') {
+        rememberDismiss(storage());
+        rememberClosedThisVisit(session());
+        closed = true;
+      }
       setKind(next);
     };
-    const timer = window.setTimeout(() => {
+    // Primera visita: 30 s; si ya se cerró alguna vez en este dispositivo: 5 min.
+    // Se cuenta tiempo con la página a la vista (una pestaña en segundo plano
+    // no avanza), desde el `load`, no desde que llegó este trozo.
+    const delay = promptDelay(isDismissed(storage()));
+    const nav = performance.getEntriesByType('navigation')[0] as
+      PerformanceNavigationTiming | undefined;
+    let elapsed = elapsedSinceLoad(nav?.loadEventEnd ?? 0, performance.now());
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      elapsed += TICK_MS;
+      if (elapsed < delay) return;
+      window.clearInterval(timer);
       ready = true;
       decide();
-    }, PROMPT_DELAY_MS);
+    }, TICK_MS);
+    // Best effort (Chrome): si dice que la app ya está instalada, se marca.
+    void hasInstalledRelatedApp(navigator as Parameters<typeof hasInstalledRelatedApp>[0]).then(
+      (yes) => {
+        if (yes) markInstalled(storage());
+      },
+    );
+    const onInstalled = () => markInstalled(storage());
+    window.addEventListener('appinstalled', onInstalled);
     const off = onInstallPrompt(decide);
     return () => {
-      window.clearTimeout(timer);
+      window.clearInterval(timer);
+      window.removeEventListener('appinstalled', onInstalled);
       off();
     };
   }, []);
@@ -71,6 +104,7 @@ export function PwaPrompt() {
 
   const close = () => {
     rememberDismiss(storage());
+    rememberClosedThisVisit(session());
     setKind(null);
   };
   const install = async () => {
@@ -117,6 +151,17 @@ export function PwaPrompt() {
       </div>
     </aside>
   );
+}
+
+/** Cada tic suma un segundo de tiempo en la página. */
+const TICK_MS = 1_000;
+
+function session(): Storage | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
 function storage(): Storage | null {

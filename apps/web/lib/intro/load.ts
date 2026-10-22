@@ -60,7 +60,7 @@ function titleSheet(config: PlanetIntroConfig): TitleSheet | null {
   return r.sheet;
 }
 
-const pct = (f: number) => `${(f * 100).toFixed(3)}%`;
+const pct = (f: number) => `${+(f * 100).toFixed(3)}%`;
 const media = (minWidth: number, css: string) =>
   minWidth > 0 ? `@media (min-width:${minWidth}px){${css}}` : css;
 
@@ -72,17 +72,24 @@ const media = (minWidth: number, css: string) =>
  * como el de la escena.
  */
 export function stillCss({ config }: IntroData): string {
-  return config.framings
-    .map((f) => {
-      const { fit, anchor } = f.intro;
-      const size = `${(fit * 100).toFixed(3)}cqmin`;
-      return media(
-        f.minWidth,
-        `.hero__planet{width:${size};height:${size};` +
-          `left:calc(${pct(anchor[0])} - ${size} / 2);top:calc(${pct(anchor[1])} - ${size} / 2)}`,
-      );
-    })
-    .join('\n');
+  return (
+    config.framings
+      .map((f) => {
+        const { fit, anchor } = f.intro;
+        const size = `${+(fit * 100).toFixed(3)}cqmin`;
+        return {
+          minWidth: f.minWidth,
+          css:
+            `.hero__planet{width:${size};height:${size};` +
+            `left:calc(${pct(anchor[0])} - ${size} / 2);top:calc(${pct(anchor[1])} - ${size} / 2)}`,
+        };
+      })
+      // Un encuadre igual que el anterior no añade nada (los `min-width` se
+      // acumulan): fuera, que este CSS va dos veces en el HTML de la landing.
+      .filter((r, i, all) => i === 0 || r.css !== all[i - 1]!.css)
+      .map((r) => media(r.minWidth, r.css))
+      .join('\n')
+  );
 }
 
 /**

@@ -56,7 +56,7 @@ export function SiteHeader({
             rel="noopener noreferrer"
             aria-label={ACCESS_COPY.instagramAria}
           >
-            {ACCESS_COPY.instagram} ↗
+            {`${ACCESS_COPY.instagram} ↗`}
           </a>
         </li>
       ) : null}
@@ -70,7 +70,7 @@ export function SiteHeader({
             aria-label={ACCESS_COPY.whatsappAria}
             data-testid="cabecera-whatsapp"
           >
-            {ACCESS_COPY.whatsapp} ↗
+            {`${ACCESS_COPY.whatsapp} ↗`}
           </a>
         </li>
       ) : null}

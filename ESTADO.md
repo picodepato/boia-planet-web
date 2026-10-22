@@ -4,6 +4,40 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-22 — plan 040 T320: Show the install prompt after ~5 s
+
+Replaced by the coordinator's timing (first visit 30 s, later visits 2 min).
+
+- Causa del ~40 s: la espera de 15 s empezaba al montar `pwa-prompt.tsx`, es decir despues de `load` + 2 s (`AFTER_LOAD_MS`) + la descarga del trozo; en movil `load` tarda y todo se sumaba. `beforeinstallprompt` se recoge desde el principio (`capture.ts`), no retrasa nada: no hay evidencia de que Chrome lo dispare tarde. En Android el aviso sigue esperando a ese evento (`promptKind` exige `canPrompt`) y sale en cuanto llega pasada la espera.
+- Nuevo comportamiento: primera visita (sin `boia.pwa.aviso` en localStorage) -> aviso a los `FIRST_VISIT_DELAY_MS` = 30 s; si ya se cerro o vio alguna vez -> `RETURN_VISIT_DELAY_MS` = 120 s en cada visita nueva (la clave solo cambia la espera, ya no bloquea). Las rutas dentro de la misma visita no reinician nada (el componente vive en el layout). Cerrado (o pista iOS vista) en la visita, `sessionStorage` `boia.pwa.visita` + memoria impiden que vuelva en esa visita. Siguen: standalone y webdriver excluidos.
+- Tiempo: se cuenta tiempo con la pagina visible (tic de 1 s que no suma en segundo plano), partiendo de lo ya pasado desde `load` al montar el trozo.
+- Pruebas: `install.test.ts` (constantes, `promptDelay`, cierre por visita, `elapsedSinceLoad`). No hay e2e del aviso (webdriver lo excluye).
+
+### App ya instalada (best effort)
+- (a) Standalone (`display-mode: standalone`, iOS `navigator.standalone`): nunca sale; ademas se marca el dispositivo en `localStorage` (`boia.pwa.instalada`).
+- (b) Android Chrome: si Chrome no dispara `beforeinstallprompt` (no lo hace con la app instalada) no sale. El evento `appinstalled` (escuchado en `pwa-prompt.tsx`; `capture.ts` sigue igual por el presupuesto de la landing) y `navigator.getInstalledRelatedApps()` (si existe y devuelve algo; necesita `related_applications` en el manifiesto) marcan el dispositivo y no vuelve a salir.
+- (c) iPhone Safari: no se puede detectar la app de pantalla de inicio desde una pestana de Safari; la pista puede seguir saliendo hasta que se abra la app desde el icono (entonces (a) la oculta).
+- Pruebas unitarias del marcado en `install.test.ts`.
+
+### Presupuesto de la landing (integracion tras T319)
+- Mi cambio no anade bytes a la ruta critica (todo va en el trozo perezoso). Para dejar margen tras T319 se recortaron bytes sin cambiar comportamiento ni texto visible: script de arranque de la entrada compactado (sin saltos de linea, nombres cortos, sin bucle de precarga si no hay nada que precargar) en `packages/engine/src/intro/entry.ts`; CSS del planeta sin ceros finales (`78.000` a `78`) y sin repetir un encuadre igual al anterior (`lib/intro/load.ts`); tres reglas CSS muertas fuera (`.button--secondary`, `.link-list--inline`, `.merchandise-notice`); `pwa-lazy.tsx` pasa `console.warn` directo al `catch`; varios `{x} ↗` de JSX pasan a una sola cadena para evitar los comentarios `<!-- -->` del HTML.
+- Resultado: 204 5xx de 204 800 bytes gzip (margen ~270 bytes, no llega a los 300 pedidos).
+
+## 2026-10-22 — plan 040 T320: Show the install prompt after ~5 s
+
+Replaced by the coordinator's timing (first visit 30 s, later visits 2 min).
+
+- Causa del ~40 s: la espera de 15 s empezaba al montar `pwa-prompt.tsx`, es decir despues de `load` + 2 s (`AFTER_LOAD_MS`) + la descarga del trozo; en movil `load` tarda y todo se sumaba. `beforeinstallprompt` se recoge desde el principio (`capture.ts`), no retrasa nada: no hay evidencia de que Chrome lo dispare tarde. En Android el aviso sigue esperando a ese evento (`promptKind` exige `canPrompt`) y sale en cuanto llega pasada la espera.
+- Nuevo comportamiento: primera visita (sin `boia.pwa.aviso` en localStorage) -> aviso a los `FIRST_VISIT_DELAY_MS` = 30 s; si ya se cerro o vio alguna vez -> `RETURN_VISIT_DELAY_MS` = 120 s en cada visita nueva (la clave solo cambia la espera, ya no bloquea). Las rutas dentro de la misma visita no reinician nada (el componente vive en el layout). Cerrado (o pista iOS vista) en la visita, `sessionStorage` `boia.pwa.visita` + memoria impiden que vuelva en esa visita. Siguen: standalone y webdriver excluidos.
+- Tiempo: se cuenta tiempo con la pagina visible (tic de 1 s que no suma en segundo plano), partiendo de lo ya pasado desde `load` al montar el trozo.
+- Pruebas: `install.test.ts` (constantes, `promptDelay`, cierre por visita, `elapsedSinceLoad`). No hay e2e del aviso (webdriver lo excluye).
+
+### App ya instalada (best effort)
+- (a) Standalone (`display-mode: standalone`, iOS `navigator.standalone`): nunca sale; ademas se marca el dispositivo en `localStorage` (`boia.pwa.instalada`).
+- (b) Android Chrome: si Chrome no dispara `beforeinstallprompt` (no lo hace con la app instalada) no sale. El evento `appinstalled` (escuchado en `pwa-prompt.tsx`; `capture.ts` sigue igual por el presupuesto de la landing) y `navigator.getInstalledRelatedApps()` (si existe y devuelve algo; necesita `related_applications` en el manifiesto) marcan el dispositivo y no vuelve a salir.
+- (c) iPhone Safari: no se puede detectar la app de pantalla de inicio desde una pestana de Safari; la pista puede seguir saliendo hasta que se abra la app desde el icono (entonces (a) la oculta).
+- Pruebas unitarias del marcado en `install.test.ts`.
+
 ## 2026-10-22 — plan 039 T319: Real legal data and accurate privacy text
 
 Qué existe:

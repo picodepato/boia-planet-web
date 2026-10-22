@@ -49,7 +49,7 @@ export function ArtistCard({ artist, genresLabel }: { artist: ArtistEntry; genre
       </h3>
       {artist.genres.length > 0 ? (
         <p className="artist-card__genres">
-          <span className="visually-hidden">{genresLabel}: </span>
+          <span className="visually-hidden">{`${genresLabel}: `}</span>
           {artist.genres.join(', ')}
         </p>
       ) : null}

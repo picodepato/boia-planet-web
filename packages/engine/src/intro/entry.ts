@@ -115,28 +115,36 @@ export function bootScript(opts: {
   /** Recursos que la cinemática necesita primero; se piden ya, sólo si se va a reproducir. */
   preload?: readonly string[];
 }): string {
+  // Sin saltos de línea, con nombres cortos y sin el bucle de precarga si no hay
+  // nada que pedir: el script va dos veces en el HTML de la landing y cuenta
+  // para su presupuesto de bytes.
+  const preload = opts.preload ?? [];
+  const pre = preload.length
+    ? `var pre=${JSON.stringify(preload)};for(var i=0;i<pre.length;i++){new Image().src=pre[i];}`
+    : '';
   return `(function(){try{
-var decide=${decideEntry.toString()};
-var d=document.documentElement,w=window,doc=document,reduced=false;
-try{reduced=w.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
-var mode=decide({pathname:location.pathname,search:location.search,hash:location.hash,reducedMotion:reduced});
-var hf=reduced?${HEADER_FROM}:${Number(opts.headerFrom ?? HEADER_FROM)};
-var entry=w.__boiaEntry={mode:mode,t0:performance.now(),claimed:false,skipped:false,landed:null,timer:0,headerFrom:hf,
-reveal:function(o){if(entry.landed)return;entry.landed=o;clearTimeout(entry.timer);entry.timer=0;d.removeAttribute("data-intro");
-try{w.dispatchEvent(new CustomEvent(${JSON.stringify(LANDED_EVENT)},{detail:{intro:o}}));}catch(e){}}};
-d.setAttribute("data-entry",mode);
-if(reduced){d.setAttribute("data-hero","still");d.setAttribute("data-hero-static","");}
-var top=function(){if(w.scrollY<w.innerHeight*hf)d.setAttribute("data-hero-top","");else d.removeAttribute("data-hero-top");
-if(mode==="intro"&&!entry.claimed&&w.scrollY>0)entry.reveal("skipped");};
-top();w.addEventListener("scroll",top,{passive:true});
-if(mode==="direct"){entry.landed="none";return;}
-if(mode==="intro")d.setAttribute("data-intro","play");
-var pre=${JSON.stringify(opts.preload ?? [])};for(var i=0;i<pre.length;i++){new Image().src=pre[i];}
-var arm=function(){if(entry.claimed||entry.landed||entry.timer||doc.hidden)return;
-entry.timer=setTimeout(function(){entry.timer=0;if(!entry.claimed)entry.reveal("none");},${Math.round(opts.capMs)});};
-doc.addEventListener("visibilitychange",function(){if(doc.hidden){clearTimeout(entry.timer);entry.timer=0;}else arm();});
-arm();
-doc.addEventListener("click",function(e){var t=e.target;
-if(!entry.claimed&&t&&t.closest&&t.closest("[data-intro-skip]")){entry.skipped=true;entry.reveal("skipped");}},true);
-}catch(e){document.documentElement.removeAttribute("data-intro");}})();`;
+var K=@@DECIDE@@;
+var d=document.documentElement,w=window,c=document,r=!1;
+try{r=w.matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}
+var m=K({pathname:location.pathname,search:location.search,hash:location.hash,reducedMotion:r});
+var h=r?${HEADER_FROM}:${Number(opts.headerFrom ?? HEADER_FROM)};
+var E=w.__boiaEntry={mode:m,t0:performance.now(),claimed:!1,skipped:!1,landed:null,timer:0,headerFrom:h,
+reveal:function(o){if(E.landed)return;E.landed=o;clearTimeout(E.timer);E.timer=0;d.removeAttribute("data-intro");
+try{w.dispatchEvent(new CustomEvent(${JSON.stringify(LANDED_EVENT)},{detail:{intro:o}}))}catch(e){}}};
+d.setAttribute("data-entry",m);
+if(r){d.setAttribute("data-hero","still");d.setAttribute("data-hero-static","")}
+var T=function(){if(w.scrollY<w.innerHeight*h)d.setAttribute("data-hero-top","");else d.removeAttribute("data-hero-top");
+if(m==="intro"&&!E.claimed&&w.scrollY>0)E.reveal("skipped")};
+T();w.addEventListener("scroll",T,{passive:!0});
+if(m==="direct"){E.landed="none";return}
+if(m==="intro")d.setAttribute("data-intro","play");
+${pre}var A=function(){if(E.claimed||E.landed||E.timer||c.hidden)return;
+E.timer=setTimeout(function(){E.timer=0;if(!E.claimed)E.reveal("none")},${Math.round(opts.capMs)})};
+c.addEventListener("visibilitychange",function(){if(c.hidden){clearTimeout(E.timer);E.timer=0}else A()});
+A();
+c.addEventListener("click",function(e){var t=e.target;
+if(!E.claimed&&t&&t.closest&&t.closest("[data-intro-skip]")){E.skipped=!0;E.reveal("skipped")}},!0);
+}catch(e){document.documentElement.removeAttribute("data-intro")}})();`
+    .replace(/\n/g, '')
+    .replace('@@DECIDE@@', () => decideEntry.toString());
 }

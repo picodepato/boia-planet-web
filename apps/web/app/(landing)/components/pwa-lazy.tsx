@@ -22,12 +22,10 @@ export function PwaLazy() {
     let timer = 0;
     const go = () => {
       timer = window.setTimeout(() => {
-        import('./pwa-prompt').then(
-          (m) => {
-            if (!gone) setPrompt(() => m.PwaPrompt);
-          },
-          (err: unknown) => console.warn('[boia] no cargó la app instalable', err),
-        );
+        // Si el trozo no carga, `console.warn` lo deja dicho y la web sigue igual.
+        import('./pwa-prompt').then((m) => {
+          if (!gone) setPrompt(() => m.PwaPrompt);
+        }, console.warn);
       }, AFTER_LOAD_MS);
     };
     if (document.readyState === 'complete') go();

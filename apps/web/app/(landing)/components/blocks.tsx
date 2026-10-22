@@ -149,7 +149,8 @@ function PhilosophyBody({
         <ul className="philosophy__verbs">
           {block.verbs.map((v) => (
             <li key={v.verb}>
-              <strong className="philosophy__verb">{v.verb}</strong> {v.text}
+              <strong className="philosophy__verb">{v.verb}</strong>
+              {` ${v.text}`}
             </li>
           ))}
         </ul>
@@ -357,7 +358,8 @@ export function BlockView({
                   aria-label={t('artists.spotify.aria')}
                   data-testid="artistas-spotify"
                 >
-                  {t('artists.spotify')} <span aria-hidden="true">↗</span>
+                  {`${t('artists.spotify')} `}
+                  <span aria-hidden="true">↗</span>
                 </a>
               </p>
             ) : null}
@@ -498,7 +500,8 @@ export function BlockView({
                 {block.links.map((l) => (
                   <li key={l.url}>
                     <a href={l.url} target="_blank" rel="noopener noreferrer">
-                      {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
+                      {`${l.label} `}
+                      <span className="visually-hidden">{t('common.newTab')}</span>
                     </a>
                   </li>
                 ))}
@@ -538,7 +541,8 @@ export function BlockView({
                       aria-label={t('artists.spotify.aria')}
                       data-testid="pie-spotify"
                     >
-                      {t('artists.spotify')} <span aria-hidden="true">↗</span>
+                      {`${t('artists.spotify')} `}
+                      <span aria-hidden="true">↗</span>
                     </a>
                   </p>
                 </div>
@@ -568,7 +572,7 @@ export function BlockView({
                       aria-label={ACCESS_COPY.whatsappAria}
                       data-testid="pie-whatsapp"
                     >
-                      {ACCESS_COPY.whatsappCta} ↗
+                      {`${ACCESS_COPY.whatsappCta} ↗`}
                     </a>
                   </p>
                 ) : null}
@@ -585,7 +589,8 @@ export function BlockView({
                       .map((l) => (
                         <li key={l.url}>
                           <a href={l.url} target="_blank" rel="noopener noreferrer">
-                            {l.label} <span className="visually-hidden">{t('common.newTab')}</span>
+                            {`${l.label} `}
+                            <span className="visually-hidden">{t('common.newTab')}</span>
                           </a>
                         </li>
                       ))}

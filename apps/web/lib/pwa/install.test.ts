@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
+  closedThisVisit,
+  hasInstalledRelatedApp,
+  isMarkedInstalled,
+  markInstalled,
+  PWA_INSTALLED_KEY,
+  FIRST_VISIT_DELAY_MS,
+  elapsedSinceLoad,
   isDismissed,
   isIosSafari,
+  promptDelay,
   promptKind,
   PWA_DISMISS_KEY,
+  rememberClosedThisVisit,
+  RETURN_VISIT_DELAY_MS,
   rememberDismiss,
   SW_PATH,
   swUrl,
@@ -34,7 +44,7 @@ const ANDROID_CHROME =
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36';
 
 const base = {
-  dismissed: false,
+  closedThisVisit: false,
   standalone: false,
   webdriver: false,
   canPrompt: false,
@@ -48,9 +58,10 @@ describe('aviso «Instalar app» (lib/pwa/install.ts)', () => {
     rememberDismiss(s);
     expect(isDismissed(s)).toBe(true);
     expect(s.getItem(PWA_DISMISS_KEY)).not.toBeNull();
-    // Y con eso, no vuelve a salir ni en Android ni en iPhone.
-    expect(promptKind({ ...base, dismissed: isDismissed(s), canPrompt: true })).toBeNull();
-    expect(promptKind({ ...base, dismissed: isDismissed(s), iosSafari: true })).toBeNull();
+    // Y con eso, las siguientes visitas esperan más, pero el aviso puede volver.
+    expect(promptDelay(isDismissed(s))).toBe(RETURN_VISIT_DELAY_MS);
+    expect(promptKind({ ...base, canPrompt: true })).toBe('android');
+    expect(promptKind({ ...base, iosSafari: true })).toBe('ios');
   });
 
   it('otro valor en la clave no cuenta como cerrado', () => {
@@ -59,7 +70,7 @@ describe('aviso «Instalar app» (lib/pwa/install.ts)', () => {
     expect(isDismissed(s)).toBe(false);
   });
 
-  it('sin almacenamiento (o si falla) no molesta: se trata como cerrado', () => {
+  it('sin almacenamiento (o si falla) se trata como visita de vuelta', () => {
     expect(isDismissed(null)).toBe(true);
     const broken = {
       getItem: () => {
@@ -101,5 +112,67 @@ describe('aviso «Instalar app» (lib/pwa/install.ts)', () => {
     expect(url.pathname).toBe(SW_PATH);
     expect(url.searchParams.get('offline')).toBe('Sin conexión & más');
     expect(url.searchParams.get('title')).toBe('BOIA.PLANET');
+  });
+});
+
+describe('espera del aviso', () => {
+  it('primera visita 30 s, visita de vuelta 2 min', () => {
+    expect(FIRST_VISIT_DELAY_MS).toBe(30_000);
+    expect(RETURN_VISIT_DELAY_MS).toBe(120_000);
+    expect(promptDelay(false)).toBe(FIRST_VISIT_DELAY_MS);
+    expect(promptDelay(true)).toBe(RETURN_VISIT_DELAY_MS);
+  });
+  it('lo cerrado en esta visita no vuelve en la misma visita', () => {
+    const s = memoryStorage();
+    expect(closedThisVisit(s)).toBe(false);
+    rememberClosedThisVisit(s);
+    expect(closedThisVisit(s)).toBe(true);
+    expect(promptKind({ ...base, closedThisVisit: true, canPrompt: true })).toBeNull();
+    expect(promptKind({ ...base, closedThisVisit: true, iosSafari: true })).toBeNull();
+    expect(closedThisVisit(null)).toBe(false);
+  });
+  it('cuenta desde el load, no desde que llega el trozo', () => {
+    expect(elapsedSinceLoad(10_000, 12_100)).toBe(2_100);
+    expect(elapsedSinceLoad(0, 30_000)).toBe(0);
+    expect(elapsedSinceLoad(20_000, 5_000)).toBe(0);
+  });
+});
+
+describe('app ya instalada', () => {
+  it('marcar el dispositivo oculta el aviso en Android y en iPhone', () => {
+    const s = memoryStorage();
+    expect(isMarkedInstalled(s)).toBe(false);
+    markInstalled(s);
+    expect(isMarkedInstalled(s)).toBe(true);
+    expect(s.getItem(PWA_INSTALLED_KEY)).not.toBeNull();
+    const installed = isMarkedInstalled(s);
+    expect(promptKind({ ...base, installed, canPrompt: true })).toBeNull();
+    expect(promptKind({ ...base, installed, iosSafari: true })).toBeNull();
+  });
+  it('sin almacenamiento o si falla, no consta y no revienta', () => {
+    expect(isMarkedInstalled(null)).toBe(false);
+    expect(() => markInstalled(null)).not.toThrow();
+    expect(() =>
+      markInstalled({
+        setItem: () => {
+          throw new Error('QuotaExceededError');
+        },
+      }),
+    ).not.toThrow();
+  });
+  it('standalone sigue ocultando el aviso', () => {
+    expect(promptKind({ ...base, standalone: true, canPrompt: true })).toBeNull();
+  });
+  it('getInstalledRelatedApps: una app instalada cuenta; sin API o con fallo, no', async () => {
+    expect(await hasInstalledRelatedApp({ getInstalledRelatedApps: async () => [{}] })).toBe(true);
+    expect(await hasInstalledRelatedApp({ getInstalledRelatedApps: async () => [] })).toBe(false);
+    expect(await hasInstalledRelatedApp({})).toBe(false);
+    expect(
+      await hasInstalledRelatedApp({
+        getInstalledRelatedApps: async () => {
+          throw new Error('x');
+        },
+      }),
+    ).toBe(false);
   });
 });

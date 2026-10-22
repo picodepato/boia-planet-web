@@ -47,7 +47,7 @@ export function CarnetInvite({
                 aria-label={ACCESS_COPY.whatsappAria}
                 data-testid="carnet-whatsapp"
               >
-                {ACCESS_COPY.whatsappCta} <span aria-hidden="true">↗</span>
+                {`${ACCESS_COPY.whatsappCta} `}<span aria-hidden="true">↗</span>
               </a>
             ) : null}
           </div>

@@ -227,10 +227,6 @@ p.event-card__poster {
   min-height: 48px;
 }
 
-.button--secondary {
-  margin-top: 20px;
-}
-
 /* El anillo de foco (T77 §10) con su halo oscuro, sin perder la sombra dura. */
 .button:focus-visible {
   box-shadow:
@@ -1435,12 +1431,6 @@ a:is([href*='example.com'], [href*='example.net'], [href*='example.org']):not(.b
   min-height: 44px;
   font-weight: 600;
   text-underline-offset: 4px;
-}
-
-.link-list--inline {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 24px;
 }
 
 /* ---------- Pie ---------- */
