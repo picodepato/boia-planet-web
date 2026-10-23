@@ -79,7 +79,7 @@ export interface QualityDiagnostics {
   probeMs: (number | null)[] | null;
   /** Quality level of the frames in motion (0 = full; frames at rest are always 0). */
   motion: number | null;
-  /** The probe saw under 30 fps at the lowest level: the static version. */
+  /** The probe saw under 20 fps (PROBE_MIN_FPS) at the lowest level: the static version. */
   lowFps: boolean;
   /** Times the frames in motion came too slow and the level went down. */
   stepDowns: number;

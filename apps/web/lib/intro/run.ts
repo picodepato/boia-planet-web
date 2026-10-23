@@ -323,7 +323,7 @@ class IntroRun {
       this.diag.islandIds = [...scene.islandIds];
       return scene;
     } catch (err) {
-      // The first-frames probe: under 30 fps even at the lowest quality (low power).
+      // The first-frames probe: under PROBE_MIN_FPS even at the lowest quality (low power).
       const probe = (err as { name?: string; probe?: { costs: (number | null)[] } })?.probe;
       if ((err as { name?: string })?.name === 'LowPowerError' && probe) {
         this.diag.quality.lowFps = true;

@@ -25,7 +25,10 @@ import { adminWorldId, currentWorld } from '../mundo/world-choice';
 import { buildMiniPlanet } from './mini-planet';
 import {
   CLEARLY_OVER_MS,
+  PROBE_MIN_FPS,
   QUALITY,
+  cappedResolution,
+  needsResolutionCap,
   nextProbeLevel,
   pickMotionLevel,
   type ProbeResult,
@@ -84,10 +87,10 @@ export interface IntroScene extends IntroSceneHandle {
   loadProps(): void;
 }
 
-/** The scene cannot hold 30 fps even at the lowest quality (the hero shows the still). */
+/** The scene cannot hold `PROBE_MIN_FPS` even at the lowest quality (the hero shows the still). */
 export class LowPowerError extends Error {
   constructor(readonly probe: ProbeResult) {
-    super(`la GPU no llega a 30 fps (${JSON.stringify(probe.costs)} ms)`);
+    super(`la GPU no llega a ${PROBE_MIN_FPS} fps (${JSON.stringify(probe.costs)} ms)`);
     this.name = 'LowPowerError';
   }
 }
@@ -212,7 +215,12 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
   if (!context || context.isContextLost()) throw new Error('sin WebGL 2 en este navegador');
   const renderer = new WebGLRenderer({ canvas, context, ...attributes });
   canvas.dataset.scene = INTRO_SCENE_MARK;
-  renderer.setPixelRatio(opts.resolution);
+  // Device px per CSS px; capped for good if the GPU needs the lowest level (T321).
+  let capped = false;
+  const resolutionFor = (w: number, h: number) =>
+    capped ? cappedResolution(w, h, opts.resolution) : opts.resolution;
+  let resolution = opts.resolution;
+  renderer.setPixelRatio(resolution);
 
   // The planet over space (orthographic, CSS px of the view).
   const scene = new Scene();
@@ -296,6 +304,8 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
   const resize = (w: number, h: number) => {
     width = Math.max(1, w);
     height = Math.max(1, h);
+    resolution = resolutionFor(width, height);
+    renderer.setPixelRatio(resolution);
     renderer.setSize(width, height, false);
     camera.left = -width / 2;
     camera.right = width / 2;
@@ -304,8 +314,8 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
     camera.updateProjectionMatrix();
     stars.scale.set(width, height, 1);
     sea.resize(width, height);
-    px = Math.round(width * opts.resolution);
-    py = Math.round(height * opts.resolution);
+    px = Math.round(width * resolution);
+    py = Math.round(height * resolution);
     rtPlanet.setSize(px, py);
     rtSea.setSize(px, py);
     if (fast) for (const rt of fast) rt.setSize(px, py);
@@ -421,8 +431,18 @@ export async function createIntroScene(opts: IntroSceneOptions): Promise<IntroSc
     const warm = lv === 0 || (!QUALITY[lv]!.msaa && QUALITY.slice(0, lv).every((q) => q.msaa));
     costs[lv] = await timeLevel(lv, warm);
   }
-  const motion = pickMotionLevel(costs);
-  const probe: ProbeResult = { costs, motion: motion ?? QUALITY.length - 1 };
+  let motion = pickMotionLevel(costs);
+  // A GPU at the lowest level (or below it): the canvas gets capped at
+  // `LOW_POWER_MAX_SIDE` device px on its long side, upscaled by CSS, and the
+  // lowest level is timed again at that size (T321).
+  if (needsResolutionCap(motion) && cappedResolution(width, height, resolution) < resolution) {
+    capped = true;
+    resize(width, height);
+    const last = QUALITY.length - 1;
+    costs[last] = await timeLevel(last, true);
+    motion = pickMotionLevel(costs);
+  }
+  const probe: ProbeResult = { costs, motion: motion ?? QUALITY.length - 1, resolution };
   level = 0;
   // The canvas starts empty, as without the probe.
   renderer.setRenderTarget(null);

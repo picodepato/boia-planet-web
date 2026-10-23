@@ -4,6 +4,46 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-23 — plan 041 T321: More tolerant GPU probe for the hero globe
+
+Qué existe:
+
+- `apps/web/lib/planeta/quality.ts`: el suelo del sondeo de los primeros
+  fotogramas baja de 30 a 20 fps (`PROBE_MIN_FPS = 20`,
+  `PROBE_FLOOR_MS = 50`). `pickMotionLevel` compara el suelo con el coste
+  más barato medido entre los niveles sondeados (el nivel más bajo no cuesta
+  más que los otros; las muestras son ruidosas: 46.6 ms en el nivel 0 y
+  45.5 en el 3, o 46.5 en el 1 y 62.9 en el 3). Un nivel sin medir (`null`)
+  nunca contó como fallo y sigue sin contar. Nuevo `LOW_POWER_MAX_SIDE =
+  1280`, `cappedResolution(w, h, dpr)` y `needsResolutionCap(motion)`.
+- `apps/web/lib/planeta/intro-scene.ts`: si el sondeo acaba en el nivel más
+  bajo (o por debajo), el canvas queda limitado a 1280 px de dispositivo en
+  su lado largo (lo escala el CSS), también en los `resize` siguientes, y el
+  nivel más bajo se vuelve a medir a ese tamaño antes de decidir. El still
+  sigue siendo la salida por debajo de 20 fps; `prefers-reduced-motion`,
+  bajo consumo y la pérdida de WebGL, sin cambios. El tope de 30 fps en
+  movimiento (`IDLE_FRAME_MS`, run.ts) no cambia. `ProbeResult` lleva
+  `resolution`.
+- Niveles de calidad sin cambios: 0 MSAA ×1, 1 sin MSAA ×1, 2 ×0.75, 3 ×0.5;
+  el sondeo mide 0, 1 y 3.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**' --testTimeout=30000`
+  → exit 0, 358 archivos, 3215 pasan, 1 saltada (nuevas en
+  `apps/web/lib/planeta/quality.test.ts`: 20 fps aceptado, 51 ms rechazado,
+  los costes reales del PC de Álvaro aceptados, tope en 1920×1080 y
+  2560×1440 → 1280×720).
+- `sh tools/spec/checks.sh`, `pnpm lint`, `pnpm build` (landing 199.7 kB de
+  200.0 kB, OK), `pnpm typecheck` → exit 0.
+- `E2E_PORT=3871 pnpm e2e landing-gl-context.spec.ts --workers=1` → 2 pasan,
+  2 saltadas (móvil). Con 4 workers las dos de escritorio esperan la escena
+  60 s y fallan: dos SwiftShader a la vez no llegan a 20 fps y sale el still
+  (carga de la máquina, no del cambio).
+
+Pendiente: comprobar en el PC de Álvaro (1440×900) que el globo aparece;
+mirar `__boiaIntro.quality.probeMs` si no.
+
 ## 2026-10-22 — plan 040 T320: Show the install prompt after ~5 s
 
 Replaced by the coordinator's timing (first visit 30 s, later visits 2 min).
