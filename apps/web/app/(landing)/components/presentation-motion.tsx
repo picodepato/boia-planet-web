@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { PRESENTATION_VIDEO } from '../../../lib/landing/hero-media';
+import {
+  PRESENTATION_VIDEO,
+  type PresentationViewer,
+  presentationVideoSrc,
+} from '../../../lib/landing/hero-media';
 import {
   PRESENTATION,
   type ReelVideoMode,
@@ -49,7 +53,14 @@ export function PresentationMotion() {
       loaded = true;
       video.poster = PRESENTATION_VIDEO.poster;
       video.preload = 'auto';
-      video.src = PRESENTATION_VIDEO.src;
+      // 720p or 1080p, decided here once: no switching mid-play (plan 043 T323).
+      video.src = presentationVideoSrc({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        dpr: window.devicePixelRatio,
+        connection: (navigator as Navigator & { connection?: PresentationViewer['connection'] })
+          .connection,
+      });
     };
     let cancelIdle = () => {};
     const whenIdle = () => {

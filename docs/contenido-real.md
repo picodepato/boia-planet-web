@@ -123,8 +123,13 @@ Lo demás sigue `muestra` y marcado hasta que llegue.
   1280×720, 24 fps, `+faststart`, ≤ 2 MB) con su póster
   `presentacion.webp` (el primer fotograma, 1280×720, ≤ 120 kB);
   `PRESENTATION_VIDEO` en `apps/web/lib/landing/hero-media.ts` apunta a los
-  dos. El original `.mov` no va al repositorio. Para cambiarlo, se
-  sustituyen los dos archivos con el mismo formato. El vídeo de muestra
+  dos. Desde el plan 043 (T323) hay también una versión 1080p,
+  `presentacion-1080.mp4` (1920×1080, mismo formato, ≤ 5 MB), que la web
+  elige sólo en pantallas grandes (ancho CSS ≥ 1024 px, así que nunca en
+  móviles, y lado largo × densidad ≥ 1440 px) sin
+  ahorro de datos y, si el navegador informa de la conexión, en 4g con
+  ≥ 5 Mbps; si no, la de 720p. El original `.mov` no va al repositorio.
+  Para cambiarlo, se sustituyen los tres archivos con el mismo formato. El vídeo de muestra
   (`art/landing/presentacion-muestra.*`) ya no existe.
 - Datos legales (P21): llegaron el 2026-10-22 (plan 039, T319). Titular «Boia
   planet», NIF E0764676C, domicilio Calle Alicante, 7, 03005 Alicante, correo

@@ -4,6 +4,38 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 043 T323: 1080p presentation video chosen by screen and connection
+
+Qué existe:
+- `apps/web/public/contenido/portada/presentacion-1080.mp4`: del original
+  `BOIAvidwebsite.mov` (4K HEVC), libx264 CRF 25 `veryslow`, escalado
+  lanczos, 1920×1080, 24 fps, yuv420p, bt709, sin audio ni pista de datos
+  (timecode quitado), `+faststart`. 4 883 141 bytes (≤ 5 MB), 8,0 s.
+- `apps/web/lib/landing/hero-media.ts`: `PRESENTATION_VIDEO.src1080`,
+  constantes `PRESENTATION_1080_MIN_CSS_WIDTH` (1024),
+  `PRESENTATION_1080_MIN_PX` (1440), `PRESENTATION_1080_MIN_MBPS`
+  (5), `PRESENTATION_1080_TYPE` ('4g') y la función pura
+  `presentationVideoSrc({ width, height, dpr, connection })`: 1080p si
+  `innerWidth` ≥ 1024 (los móviles quedan en 720p), max(ancho, alto) × dpr
+  ≥ 1440 (bajado de ~1600 para que 1440×900 @1 reciba 1080p) y, si hay
+  `navigator.connection`, sin
+  `saveData`, `effectiveType` '4g' y `downlink` (si viene) ≥ 5; sin
+  `navigator.connection`, sólo la pantalla. Si no, 720p.
+- `presentation-motion.tsx` (chunk perezoso): fija `video.src` con esa
+  función una sola vez, al cargar. El póster no cambia; el reel tampoco.
+- `docs/contenido-real.md`: anotada la versión 1080p.
+
+Comandos:
+- ffprobe → h264 1920×1080 yuv420p bt709 24/1, un solo stream (vídeo), 8.000 s.
+- `vitest run apps/web/lib/landing` → 11 archivos, 125 pruebas OK.
+- vitest completo (sin packages/db) → 359 archivos, 3224 OK, 3 skipped.
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → OK; `pnpm typecheck` → OK.
+- `pnpm build` → OK; ruta crítica de la landing 199.9 / 200.0 kB.
+
+Pendiente:
+- Verlo en un navegador real (escritorio grande frente a móvil) y en las e2e
+  del reel, que corre Álvaro.
+
 ## 2026-10-24 — plan 042 T322: Real presentation video
 
 Qué existe:
