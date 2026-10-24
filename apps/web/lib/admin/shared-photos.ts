@@ -8,6 +8,14 @@ import {
 } from '@boia/contracts';
 import type { BoiaRepository } from '@boia/store';
 import { isSupabaseConfigured } from '../supabase/config';
+import {
+  MEDIA_SETTINGS_COLUMNS,
+  type MediaSettings,
+  NO_MEDIA_SETTINGS,
+  mediaSettingsFromRows,
+  readLocalMediaSettings,
+  withMediaSettings,
+} from './media-settings';
 
 /**
  * Las fotos de las islas con cuentas (plan 017 T189, decisión 4): el Admin
@@ -130,8 +138,45 @@ export async function readSharedPhotos(): Promise<SharedPhotos> {
   }
 }
 
-/** El contenido de este navegador con las fotos compartidas (con cuentas). */
+/**
+ * Los ajustes de las piezas (plan 048 T329): con cuentas, los de Supabase
+ * (lectura pública); en la demo, los de este navegador. Con error, ninguno:
+ * cada pieza se queda como la deja el código.
+ */
+export async function readMediaSettings(): Promise<MediaSettings> {
+  if (typeof window === 'undefined') return NO_MEDIA_SETTINGS;
+  if (!isSupabaseConfigured()) return readLocalMediaSettings();
+  try {
+    const { browserSupabase } = await import('../supabase/browser');
+    const sb = browserSupabase();
+    if (!sb) return NO_MEDIA_SETTINGS;
+    const { data, error } = await sb.from('media_settings').select(MEDIA_SETTINGS_COLUMNS);
+    if (error) throw error;
+    return mediaSettingsFromRows(data ?? []);
+  } catch (err) {
+    console.warn('[boia] ajustes de la galería sin leer', err);
+    return NO_MEDIA_SETTINGS;
+  }
+}
+
+/**
+ * El contenido como lo ve la web: con cuentas, las fotos compartidas encima
+ * (T189); y los ajustes del Admin puestos en todas las piezas (T329): sin las
+ * borradas, en su orden y con su portada.
+ */
+export async function withSiteMedia<
+  C extends {
+    events: readonly BoiaEvent[];
+    albums?: readonly Album[] | undefined;
+    photos: readonly Photo[];
+  },
+>(content: C): Promise<C> {
+  const [shared, settings] = await Promise.all([readSharedPhotos(), readMediaSettings()]);
+  const merged: C = shared === NO_SHARED_PHOTOS ? content : mergeSharedPhotos(content, shared);
+  return withMediaSettings(merged, settings);
+}
+
+/** El contenido de este navegador con las fotos compartidas (con cuentas) y los ajustes. */
 export async function homeWithSharedPhotos(repo: BoiaRepository): Promise<HomeContent> {
-  const [home, shared] = await Promise.all([repo.content.home(), readSharedPhotos()]);
-  return shared === NO_SHARED_PHOTOS ? home : mergeSharedPhotos(home, shared);
+  return withSiteMedia(await repo.content.home());
 }

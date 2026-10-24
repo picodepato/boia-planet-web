@@ -4,6 +4,50 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 048 T329: Admin: thumbnails, delete, portada/galería and order, in production
+
+Qué existe:
+
+- Migración `supabase/migrations/20261024100100_media_settings.sql` (aplicada sólo en
+  boia-planet-dev; producción pendiente, la aplica Álvaro): tabla `media_settings`
+  (piece_id, on_home, sort, hidden, updated_by, updated_at) con RLS; lectura pública
+  sólo de piece_id/on_home/sort/hidden; escribir sólo con las RPC `admin_media_set_home`,
+  `admin_media_order` (lista entera de ids), `admin_media_hide` y `admin_media_delete`
+  (envoltura `public` INVOKER → `private` SECURITY DEFINER, search_path vacío,
+  `require_staff('admin')` = admin con aal2, fila en `audit_log`). `admin_media_delete`
+  borra la fila de `event_photos` y devuelve sus URL; el Admin quita los archivos del
+  bucket con su sesión (la política de storage de T189/T216).
+- `apps/web/lib/admin/media-settings.ts`: ajustes por pieza, `applyMediaSettings`
+  (sin borradas, ordenadas primero y el resto detrás en su orden, portada del ajuste),
+  `movePiece`, y el almacén de la demo (localStorage `boia-media-settings`).
+- `apps/web/lib/admin/media-admin.ts`: controles con cuentas (RPC + storage) y en la demo
+  (ajuste local; una pieza añadida en el navegador va a la papelera).
+- `shared-photos.ts`: `readMediaSettings` y `withSiteMedia` (fotos compartidas + ajustes);
+  `homeWithSharedPhotos` los pone (Galería, mar/islas). La landing usa
+  `resolveLiveHome` (resolve.ts, chunk diferido) y la ficha de evento `withSiteMedia`
+  con import dinámico: nada nuevo en la ruta crítica.
+- Admin «Galería: fotos y vídeos» → «Portada y galería»: una fila por pieza (código y
+  subidas) con miniatura, «En portada», ↑/↓ y «Borrar» con confirmación; editar texto y
+  álbum de las piezas del repositorio queda en un desplegable.
+- REQ-ADM-044 (07-admin, 09, estado HECHO).
+
+Comandos:
+
+- `node src/cli/test-supabase.ts src/supabase/media-settings.supabase.ts` (packages/db) → 9/9 pass
+- `node src/cli/test-supabase.ts src/supabase/schema.supabase.ts` → 9/9 pass (tipos al día)
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 361 archivos, 3258 pass, 1 skipped
+- `sh tools/spec/checks.sh` → OK; `python3 tools/spec/estado.py` → exit 0
+- `pnpm lint` → 0; `pnpm typecheck` → OK; `pnpm build` → landing 199.8 / 200.0 kB OK
+- `E2E_PORT=3291 pnpm e2e admin-fotos.spec.ts` → 4 passed (arreglado también el nombre de
+  isla del test de T189: clave i18n del mapa, como galeria.spec)
+- `E2E_PORT=3292 pnpm e2e galeria.spec.ts eventos.spec.ts` → 18 passed, 8 skipped
+
+Pendiente:
+
+- Aplicar la migración 20261024100100 en producción (Álvaro).
+- Probar en producción con cuentas (admin + TOTP): sólo probado contra dev con las pruebas SQL.
+- En la demo, un cambio de ajustes no repinta otra pestaña ya abierta de la landing (se ve al recargar).
+
 ## 2026-10-24 — plan 048 T328: Real media in, sample media out
 
 Qué existe:

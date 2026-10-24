@@ -19,8 +19,12 @@ type ExploreSource = FunnelEventProps['explore_start']['source'];
 export function LiveEvent({ slug, initial }: { slug: string; initial: EventPageView | null }) {
   const { view, live } = useLiveRepo<EventPageView | null>(initial, async (repo, now) => {
     const [home, albums] = await Promise.all([repo.content.home(), repo.content.list('albums')]);
-    const { eventPageView } = await import('../../../lib/landing/eventos');
-    return eventPageView({ ...home, albums }, slug, now);
+    const [{ eventPageView }, { withSiteMedia }] = await Promise.all([
+      import('../../../lib/landing/eventos'),
+      // Fotos compartidas y ajustes de la Galería del Admin (plan 048 T329).
+      import('../../../lib/admin/shared-photos'),
+    ]);
+    return eventPageView(await withSiteMedia({ ...home, albums }), slug, now);
   });
 
   // Analítica del embudo (la de la landing la hace LandingClient).

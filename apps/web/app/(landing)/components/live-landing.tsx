@@ -12,10 +12,11 @@ import { TicketsPanel } from './tickets-panel';
  * La resolución de la home (programación, evento prioritario, próximos,
  * Tickets) vive en `resolve.ts`, que arrastra los esquemas de
  * `@boia/contracts` y zod: el navegador sólo la carga cuando llega el
- * contenido del repositorio (T29, presupuesto de la landing).
+ * contenido del repositorio (T29, presupuesto de la landing), y con ella los
+ * ajustes de la Galería del Admin (plan 048 T329).
  */
 const deriveView = async (content: HomeContent, now: Date): Promise<HomeView> =>
-  (await import('../../../lib/landing/resolve')).resolveHome(content, now);
+  (await import('../../../lib/landing/resolve')).resolveLiveHome(content, now);
 
 /**
  * Cabecera, bloques, pie y panel de Tickets de la home. El servidor los pinta

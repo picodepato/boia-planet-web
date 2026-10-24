@@ -105,6 +105,8 @@ export function resolveBlock(
 
     case 'photos': {
       // Sólo la selección de Álvaro (D-23, respuesta 6); el resto, en /fotos.
+      // Con los ajustes del Admin (plan 048 T329, `withSiteMedia`) las piezas ya
+      // llegan sin las borradas, en su orden y con su portada.
       // Las fotos reales (de un álbum sin la marca `muestra`) van primero (plan 029 T277);
       // dentro de cada grupo se respeta el orden del contenido. Los clips también
       // (plan 048 T328): el collage pinta su póster y sólo baja el vídeo en
@@ -264,4 +266,15 @@ export function resolveHome(stored: HomeContent, now: Date): HomeView {
     social: socialLinks(content),
     ticketsIsland: tickets.featured?.islandId ?? commonIslandId(content.events, now),
   };
+}
+
+/**
+ * La home del navegador (plan 048 T329): el contenido del repositorio con
+ * las fotos compartidas y los ajustes de la Galería del Admin (portada,
+ * orden, borradas), y luego resuelta. Va en este módulo, que la landing ya
+ * carga aparte (T29): nada nuevo en su ruta crítica.
+ */
+export async function resolveLiveHome(stored: HomeContent, now: Date): Promise<HomeView> {
+  const { withSiteMedia } = await import('../admin/shared-photos');
+  return resolveHome(await withSiteMedia(stored), now);
 }

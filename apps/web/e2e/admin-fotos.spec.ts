@@ -1,12 +1,14 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { eventSchema } from '@boia/contracts';
-import { SAMPLE_EVENTS } from '@boia/store';
+import { HOME_PHOTOS_LIMIT, SAMPLE_EVENTS } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { eventIslands, islandEvent } from '../lib/admin/world';
-import { t } from '../lib/i18n';
+import { t, type MessageKey } from '../lib/i18n';
+import { es } from '../lib/i18n/es';
+import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { marSheet, openMar } from './mar-helpers';
 
 /**
@@ -28,9 +30,11 @@ const events = SAMPLE_EVENTS.map((e) => eventSchema.parse(e));
 const island = eventIslands(WORLD_REGISTRY.map).find((p) => islandEvent(p.id, events, now))!;
 const event = islandEvent(island.id, events, now)!;
 /** El nombre que enseña el Admin (el del mundo principal). */
-const islandName =
+const placeName =
   WORLD_REGISTRY.get(WORLD_REGISTRY.defaultId).places.find((p) => p.id === island.id)?.name ??
   island.id;
+// El nombre del mapa es una clave de i18n (`mapa.…`); el Admin enseña su texto.
+const islandName = placeName in es ? t(placeName as MessageKey) : placeName;
 const ALT = 'Fotos de prueba en la isla';
 
 /** Un PNG de verdad (degradado) para el selector de archivos. */
@@ -142,4 +146,88 @@ test('subir fotos a una isla y marcar el evento pasado: la isla lo enseña como 
   // 4. «Fotos y eventos»: la galería de la isla la tiene.
   await page.goto(`/galeria#${island.id}`);
   await expectPainted(page.getByTestId(`galeria-${island.id}`).getByRole('img', { name: ALT }));
+});
+
+/**
+ * Portada, orden y borrar desde el Admin de la demo (plan 048 T329): quitar
+ * una pieza de la portada, poner otra, subir una en el orden y borrar otra
+ * (con confirmación) se ve en la portada de la landing y en la Galería.
+ *
+ * REQ-ADM-044, REQ-ADM-019.
+ */
+test('portada, orden y borrar desde el Admin: la landing y la Galería lo reflejan', async ({
+  page,
+}) => {
+  const home = SAMPLE_CONTENT.photos.filter((p) => p.selection).slice(0, HOME_PHOTOS_LIMIT);
+  const [off, second, third, gone] = home.map((p) => p.id);
+  const extra = SAMPLE_CONTENT.photos.find((p) => !p.selection)!.id;
+  expect(off && second && third && gone && extra).toBeTruthy();
+
+  await page.goto('/admin');
+  await page.getByTestId('admin-nav-fotos').click();
+  const list = page.getByTestId('fotos-piezas');
+  await expect(list).toBeVisible();
+  const rows = list.locator('li[data-testid^="foto-"]');
+  const row = (id: string) => list.getByTestId(`foto-${id}`);
+  // Todas las piezas, con su miniatura.
+  await expect(rows).toHaveCount(SAMPLE_CONTENT.photos.length);
+  await expect(row(off!).locator('img.admin-photo-thumb')).toHaveCount(1);
+  await expect(row(off!)).toHaveAttribute('data-portada', 'si');
+
+  // 1. Fuera de la portada una; dentro otra.
+  await row(off!).getByTestId(`foto-portada-${off}`).uncheck();
+  await expect(row(off!)).toHaveAttribute('data-portada', 'no');
+  await row(extra).getByTestId(`foto-portada-${extra}`).check();
+  await expect(row(extra)).toHaveAttribute('data-portada', 'si');
+
+  // 2. La tercera sube un puesto: pasa delante de la segunda.
+  const listed = () =>
+    rows.evaluateAll((els) =>
+      els.map((el) => ({
+        id: el.getAttribute('data-testid')!.slice('foto-'.length),
+        home: el.getAttribute('data-portada') === 'si',
+      })),
+    );
+  const before = (await listed()).map((r) => r.id);
+  await row(third!).getByTestId(`foto-subir-${third}`).click();
+  await expect
+    .poll(async () => (await listed()).map((r) => r.id))
+    .toEqual(before.map((id) => (id === third ? second : id === second ? third : id)));
+
+  // 3. Borrar pide confirmación; cancelada no borra; confirmada, sí.
+  await row(gone!).getByTestId(`foto-borrar-${gone}`).click();
+  await row(gone!).getByRole('button', { name: t('admin.photos.pieces.cancel') }).click();
+  await expect(row(gone!)).toHaveCount(1);
+  await row(gone!).getByTestId(`foto-borrar-${gone}`).click();
+  await row(gone!).getByTestId(`foto-borrar-confirmar-${gone}`).click();
+  await expect(row(gone!)).toHaveCount(0);
+  await expect(rows).toHaveCount(SAMPLE_CONTENT.photos.length - 1);
+
+  // La portada es la de la lista del Admin: las marcadas, en su orden, hasta el tope.
+  const expected = (await listed())
+    .filter((r) => r.home)
+    .map((r) => r.id)
+    .slice(0, HOME_PHOTOS_LIMIT);
+  expect(expected).toContain(extra);
+  expect(expected).not.toContain(off);
+  expect(expected).not.toContain(gone);
+  expect(expected.indexOf(third!)).toBeLessThan(expected.indexOf(second!));
+
+  // La landing.
+  await page.goto('/?intro=0');
+  await expect(page.locator('main')).toHaveAttribute('data-contenido', 'repositorio');
+  const grid = page.locator('#fotos [data-pieza]');
+  await expect
+    .poll(() => grid.evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.pieza)))
+    .toEqual(expected);
+
+  // La Galería: sin la borrada, con todas las demás y en el orden del Admin.
+  await page.goto('/galeria');
+  const pieces = page.locator('.galeria [data-pieza]');
+  await expect(pieces).toHaveCount(SAMPLE_CONTENT.photos.length - 1);
+  await expect(page.locator(`.galeria [data-pieza="${gone}"]`)).toHaveCount(0);
+  const gallery = await pieces.evaluateAll((els) =>
+    els.map((el) => (el as HTMLElement).dataset.pieza),
+  );
+  expect(gallery.indexOf(third)).toBeLessThan(gallery.indexOf(second));
 });

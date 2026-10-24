@@ -1543,6 +1543,33 @@ export type Database = {
           },
         ];
       };
+      media_settings: {
+        Row: {
+          hidden: boolean;
+          on_home: boolean | null;
+          piece_id: string;
+          sort: number | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          hidden?: boolean;
+          on_home?: boolean | null;
+          piece_id: string;
+          sort?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          hidden?: boolean;
+          on_home?: boolean | null;
+          piece_id?: string;
+          sort?: number | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       member_trash: {
         Row: {
           answers: Json;
@@ -2466,6 +2493,32 @@ export type Database = {
       admin_list_voided: {
         Args: {
           p_limit?: number;
+        };
+        Returns: Json;
+      };
+      admin_media_delete: {
+        Args: {
+          p_piece: string;
+        };
+        Returns: Json;
+      };
+      admin_media_hide: {
+        Args: {
+          p_piece: string;
+          p_hidden?: boolean;
+        };
+        Returns: Json;
+      };
+      admin_media_order: {
+        Args: {
+          p_pieces: string[];
+        };
+        Returns: Json;
+      };
+      admin_media_set_home: {
+        Args: {
+          p_piece: string;
+          p_on_home: boolean;
         };
         Returns: Json;
       };

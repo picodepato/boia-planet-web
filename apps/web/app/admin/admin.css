@@ -290,6 +290,18 @@
   margin-bottom: 8px;
 }
 
+/* Plan 048 T329: cada pieza de «Portada y galería». */
+.admin-piece__alt {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.admin-piece__edit summary {
+  cursor: pointer;
+  min-height: 40px;
+  padding-top: 8px;
+}
+
 .admin-button,
 .admin-icon {
   min-height: 40px;

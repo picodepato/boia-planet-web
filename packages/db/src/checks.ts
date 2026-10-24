@@ -40,6 +40,8 @@ export const CLIENT_READ_ONLY_TABLES = [
   'castle_scores',
   // Papelera de socios (plan 020 T230): sólo las RPC del Admin.
   'member_trash',
+  // Plan 048 T329: ajustes de la Galería, sólo con las RPC admin_media_*.
+  'media_settings',
 ] as const;
 
 /** Derivados del libro: sólo los escribe su disparador, ni service_role. */

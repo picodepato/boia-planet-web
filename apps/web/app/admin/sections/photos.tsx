@@ -1,7 +1,8 @@
 'use client';
 
 import { type BoiaEvent, type Photo, effectiveEvents } from '@boia/contracts';
-import { useState } from 'react';
+import { HOME_PHOTOS_LIMIT } from '@boia/store';
+import { type ReactNode, useEffect, useState } from 'react';
 import {
   PhotoUploadError,
   type SaveIslandPhotos,
@@ -9,25 +10,37 @@ import {
   saveLocalIslandPhotos,
   saveSharedIslandPhotos,
 } from '../../../lib/admin/island-photos';
+import {
+  type MediaControls,
+  type MediaPiece,
+  localMediaControls,
+  sharedMediaControls,
+} from '../../../lib/admin/media-admin';
+import {
+  type MediaSettings,
+  NO_MEDIA_SETTINGS,
+  applyMediaSettings,
+  movePiece,
+} from '../../../lib/admin/media-settings';
 import { putLocalPhoto } from '../../../lib/admin/photo-store';
 import { MEDIA_UPLOAD_ACCEPT } from '../../../lib/admin/photo-upload';
+import {
+  NO_SHARED_PHOTOS,
+  type SharedPhotos,
+  readMediaSettings,
+  readSharedPhotos,
+} from '../../../lib/admin/shared-photos';
 import { eventIslands } from '../../../lib/admin/world';
+import { SAMPLE_CONTENT } from '../../../lib/landing/sample-content';
 import { PhotoImage } from '../../../lib/photo-image';
-import { useAdminSupabase, useMaybeRealAdmin } from '../real/common';
+import { realErrorText, useAdminSupabase, useMaybeRealAdmin } from '../real/common';
 import type { AdminContext } from '../use-admin';
 import { useRead, useRun } from '../use-admin';
-import {
-  Changed,
-  DeleteButton,
-  Field,
-  ResetButton,
-  SectionHead,
-  StatusLine,
-  TrashInline,
-} from '../ui';
+import { Changed, Field, ResetButton, SectionHead, StatusLine, TrashInline } from '../ui';
 import { t } from '../../../lib/i18n';
 
-function PhotoRow({
+/** Texto, imagen y álbum de una pieza del repositorio de este navegador (REQ-ADM-019). */
+function PhotoEdit({
   ctx,
   photo,
   albums,
@@ -43,9 +56,8 @@ function PhotoRow({
   const [albumId, setAlbumId] = useState(photo.albumId);
   const { status, busy, run } = useRun();
   return (
-    <li className="admin-card" data-testid={`foto-${photo.id}`} data-kind={photo.kind ?? 'image'}>
-      {photo.src ? <PhotoImage photo={photo} className="admin-photo-thumb" /> : null}
-      {photo.kind === 'video' ? <p className="admin-meta">{t('admin.photos.clip')}</p> : null}
+    <details className="admin-piece__edit">
+      <summary>{t('admin.photos.pieces.edit')}</summary>
       <div className="admin-grid">
         <Field
           label={t('admin.photos.textoAlternativo')}
@@ -81,10 +93,253 @@ function PhotoRow({
         >
           {t('admin.photos.guardar')}
         </button>
-        <DeleteButton ctx={ctx} area="photos" id={photo.id} />
       </div>
       <StatusLine status={status} />
+    </details>
+  );
+}
+
+/** Lo que hace una fila con los controles; `ok` es el mensaje si sale bien. */
+type Act = (work: (c: MediaControls) => Promise<unknown>, ok: string) => void;
+
+/**
+ * Una pieza de la Galería (plan 048 T329): su miniatura, «En portada», subir
+ * y bajar en el orden y «Borrar» con confirmación.
+ */
+function PieceRow({
+  piece,
+  code,
+  first,
+  last,
+  disabled,
+  act,
+  move,
+  children,
+}: {
+  piece: MediaPiece;
+  /** Va en el código de la web: borrarla la oculta. */
+  code: boolean;
+  first: boolean;
+  last: boolean;
+  disabled: boolean;
+  act: Act;
+  move: (delta: -1 | 1) => void;
+  children?: ReactNode;
+}) {
+  const { photo, uploaded } = piece;
+  const [confirming, setConfirming] = useState(false);
+  const id = photo.id;
+  const confirmText = uploaded
+    ? 'admin.photos.pieces.confirmUploaded'
+    : code
+      ? 'admin.photos.pieces.confirm'
+      : 'admin.photos.pieces.confirmLocal';
+  return (
+    <li
+      className="admin-card admin-piece"
+      data-testid={`foto-${id}`}
+      data-kind={photo.kind ?? 'image'}
+      data-portada={photo.selection ? 'si' : 'no'}
+    >
+      {photo.src || photo.poster ? (
+        <PhotoImage photo={photo} className="admin-photo-thumb" />
+      ) : null}
+      {photo.kind === 'video' ? <p className="admin-meta">{t('admin.photos.clip')}</p> : null}
+      <p className="admin-piece__alt">{photo.alt}</p>
+      <p className="admin-meta">
+        {uploaded ? t('admin.photos.pieces.uploaded') : t('admin.photos.pieces.code')}
+      </p>
+      <div className="admin-row">
+        <label className="admin-check">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={photo.selection}
+            disabled={disabled}
+            data-testid={`foto-portada-${id}`}
+            onChange={(e) => {
+              const on = e.target.checked;
+              act(
+                (c) => c.setHome(id, on),
+                on ? t('admin.photos.pieces.homeOn') : t('admin.photos.pieces.homeOff'),
+              );
+            }}
+          />{' '}
+          {t('admin.photos.pieces.onHome')}
+        </label>
+        <button
+          type="button"
+          className="admin-button admin-button--ghost"
+          disabled={disabled || first}
+          aria-label={t('admin.photos.pieces.upLabel', { alt: photo.alt })}
+          data-testid={`foto-subir-${id}`}
+          onClick={() => move(-1)}
+        >
+          ↑ {t('admin.photos.pieces.up')}
+        </button>
+        <button
+          type="button"
+          className="admin-button admin-button--ghost"
+          disabled={disabled || last}
+          aria-label={t('admin.photos.pieces.downLabel', { alt: photo.alt })}
+          data-testid={`foto-bajar-${id}`}
+          onClick={() => move(1)}
+        >
+          ↓ {t('admin.photos.pieces.down')}
+        </button>
+        <button
+          type="button"
+          className="admin-button admin-button--ghost"
+          disabled={disabled}
+          data-testid={`foto-borrar-${id}`}
+          onClick={() => setConfirming((v) => !v)}
+        >
+          {t('admin.photos.pieces.delete')}
+        </button>
+      </div>
+      {confirming ? (
+        <div className="admin-card admin-delete__panel" role="group">
+          <p>{t(confirmText, { alt: photo.alt })}</p>
+          <div className="admin-row">
+            <button
+              type="button"
+              className="admin-button admin-button--danger"
+              disabled={disabled}
+              data-testid={`foto-borrar-confirmar-${id}`}
+              onClick={() => {
+                setConfirming(false);
+                act((c) => c.remove(piece), t('admin.photos.pieces.deleted'));
+              }}
+            >
+              {t('admin.photos.pieces.confirmYes')}
+            </button>
+            <button
+              type="button"
+              className="admin-button admin-button--ghost"
+              onClick={() => setConfirming(false)}
+            >
+              {t('admin.photos.pieces.cancel')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {children}
     </li>
+  );
+}
+
+/** Las piezas que van en el código de la web (el álbum real, T328): borrarlas las oculta. */
+const CODE_PIECES: ReadonlySet<string> = new Set(SAMPLE_CONTENT.photos.map((p) => p.id));
+
+/**
+ * Portada y galería (plan 048 T329): una lista con todas las piezas, las del
+ * código y las subidas a Supabase, en el orden en que salen. Con cuentas, los
+ * cambios van a Supabase (RPC del Admin); en la demo, a este navegador.
+ */
+function GalleryPieces({
+  ctx,
+  photos,
+  albums,
+  changed,
+  revision,
+}: {
+  ctx: AdminContext;
+  photos: Photo[];
+  albums: { id: string; title: string }[];
+  changed: ReadonlySet<string>;
+  /** Cambia cuando se suben fotos: se vuelve a leer lo compartido. */
+  revision: number;
+}) {
+  const real = useMaybeRealAdmin();
+  const sb = useAdminSupabase();
+  const [shared, setShared] = useState<SharedPhotos>(NO_SHARED_PHOTOS);
+  const [settings, setSettings] = useState<MediaSettings>(NO_MEDIA_SETTINGS);
+  const [reads, setReads] = useState(0);
+  const { status, busy, run } = useRun();
+
+  useEffect(() => {
+    let alive = true;
+    void Promise.all([readSharedPhotos(), readMediaSettings()]).then(([s, m]) => {
+      if (!alive) return;
+      setShared(s);
+      setSettings(m);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [reads, revision]);
+
+  const sharedIds = new Set(shared.photos.map((p) => p.id));
+  const all = [...photos.filter((p) => !sharedIds.has(p.id)), ...shared.photos];
+  const pieces: MediaPiece[] = applyMediaSettings(all, settings).map((photo) => ({
+    photo,
+    uploaded: sharedIds.has(photo.id),
+  }));
+  const ids = pieces.map((p) => p.photo.id);
+  const controls: MediaControls | null = real
+    ? sb
+      ? sharedMediaControls(sb)
+      : null
+    : localMediaControls(CODE_PIECES, (id) =>
+        ctx.repo.admin.remove('photos', id, { reason: t('admin.photos.pieces.deleted') }),
+      );
+
+  const act: Act = (work, ok) => {
+    if (!controls) return;
+    void run(async () => {
+      try {
+        await work(controls);
+      } catch (err) {
+        throw real ? new Error(realErrorText(err)) : err;
+      } finally {
+        setReads((n) => n + 1);
+      }
+    }, ok);
+  };
+  const onHome = pieces.filter((p) => p.photo.selection).length;
+
+  return (
+    <div className="admin-card" data-testid="fotos-piezas">
+      <h3>{t('admin.photos.pieces.title')}</h3>
+      <p className="admin-meta">
+        {t('admin.photos.pieces.lead', { limit: HOME_PHOTOS_LIMIT })}{' '}
+        {real ? t('admin.photos.pieces.leadShared') : t('admin.photos.pieces.leadLocal')}
+      </p>
+      <p className="admin-meta" data-testid="fotos-piezas-cuenta">
+        {t('admin.photos.pieces.count', { n: onHome, total: pieces.length })}
+      </p>
+      {real && !sb ? <p className="admin-meta">{t('admin.photos.pieces.noSession')}</p> : null}
+      <StatusLine status={status} />
+      <ul className="admin-list">
+        {pieces.map((piece, i) => {
+          const { photo, uploaded } = piece;
+          return (
+            <PieceRow
+              key={photo.id}
+              piece={piece}
+              code={CODE_PIECES.has(photo.id)}
+              first={i === 0}
+              last={i === pieces.length - 1}
+              disabled={busy || !controls}
+              act={act}
+              move={(delta) =>
+                act((c) => c.order(movePiece(ids, photo.id, delta)), t('admin.photos.pieces.moved'))
+              }
+            >
+              {!uploaded ? (
+                <PhotoEdit
+                  key={`${photo.id}|${photo.alt}|${photo.src}|${photo.albumId}`}
+                  ctx={ctx}
+                  photo={photos.find((p) => p.id === photo.id) ?? photo}
+                  albums={albums}
+                  changed={changed.has(photo.id)}
+                />
+              ) : null}
+            </PieceRow>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -96,25 +351,27 @@ type SavePhotos = (input: SaveIslandPhotos) => Promise<void>;
  * marcado, el evento pasa a finalizado: la isla lo enseña como recuerdo con
  * su galería. Modo local: en este navegador; con cuentas: en Supabase.
  */
-function IslandPhotoUpload({ ctx }: { ctx: AdminContext }) {
+function IslandPhotoUpload({ ctx, onSaved }: { ctx: AdminContext; onSaved: () => void }) {
   const real = useMaybeRealAdmin();
-  if (real) return <SharedIslandPhotoUpload ctx={ctx} />;
+  if (real) return <SharedIslandPhotoUpload ctx={ctx} onSaved={onSaved} />;
   return (
     <IslandPhotoForm
       ctx={ctx}
       shared={false}
       save={(input) => saveLocalIslandPhotos(ctx.actions, input, putLocalPhoto)}
+      onSaved={onSaved}
     />
   );
 }
 
-function SharedIslandPhotoUpload({ ctx }: { ctx: AdminContext }) {
+function SharedIslandPhotoUpload({ ctx, onSaved }: { ctx: AdminContext; onSaved: () => void }) {
   const sb = useAdminSupabase();
   return (
     <IslandPhotoForm
       ctx={ctx}
       shared
       save={sb ? (input) => saveSharedIslandPhotos(sb, input) : null}
+      onSaved={onSaved}
     />
   );
 }
@@ -123,10 +380,12 @@ function IslandPhotoForm({
   ctx,
   shared,
   save,
+  onSaved,
 }: {
   ctx: AdminContext;
   shared: boolean;
   save: SavePhotos | null;
+  onSaved: () => void;
 }) {
   const stored = useRead(ctx, (r) => r.content.events());
   const islands = eventIslands(ctx.registry.map);
@@ -176,6 +435,7 @@ function IslandPhotoForm({
             }
             setFiles([]);
             setInputKey((k) => k + 1);
+            onSaved();
           },
           markPast
             ? t(n === 1 ? 'admin.photos.upload.donePast1' : 'admin.photos.upload.donePast', {
@@ -268,16 +528,16 @@ function IslandPhotoForm({
   );
 }
 
-/** Galería (REQ-ADM-019; plan 019 T216): álbumes, fotos y clips de la home, las islas y la Galería. */
+/** Galería (REQ-ADM-019; plan 019 T216, plan 048 T329): fotos y clips de la home, las islas y la Galería. */
 export function PhotosSection({ ctx }: { ctx: AdminContext }) {
   const photos = useRead(ctx, (r) => r.content.list('photos'));
   const albums = useRead(ctx, (r) => r.content.list('albums'));
   const changed = useRead(ctx, (r) => r.admin.overridden('photos'));
   const [alt, setAlt] = useState('');
   const [albumTitle, setAlbumTitle] = useState('');
+  const [uploads, setUploads] = useState(0);
   const { status, busy, run } = useRun();
   if (!photos || !albums) return <p>{t('empty.loading')}</p>;
-  const changedSet = new Set(changed ?? []);
   const nextId = () => {
     let n = photos.length + 1;
     while (photos.some((p) => p.id === `foto-${n}`)) n++;
@@ -288,7 +548,7 @@ export function PhotosSection({ ctx }: { ctx: AdminContext }) {
       <SectionHead title={t('admin.photos.fotosYVideos')} lead={t('admin.photos.losVideosYLa')}>
         <ResetButton ctx={ctx} areas={['photos', 'albums']} />
       </SectionHead>
-      <IslandPhotoUpload ctx={ctx} />
+      <IslandPhotoUpload ctx={ctx} onSaved={() => setUploads((n) => n + 1)} />
       <div className="admin-grid">
         <form
           className="admin-card admin-form"
@@ -350,17 +610,13 @@ export function PhotosSection({ ctx }: { ctx: AdminContext }) {
         {t('admin.photos.albumes', { v1: albums.map((a) => a.title).join(' · ') })}
       </p>
       <TrashInline ctx={ctx} area="photos" />
-      <ul className="admin-list">
-        {photos.map((p) => (
-          <PhotoRow
-            key={`${p.id}|${p.alt}|${p.src}|${p.albumId}`}
-            ctx={ctx}
-            photo={p}
-            albums={albums}
-            changed={changedSet.has(p.id)}
-          />
-        ))}
-      </ul>
+      <GalleryPieces
+        ctx={ctx}
+        photos={photos}
+        albums={albums}
+        changed={new Set(changed ?? [])}
+        revision={uploads + ctx.revision}
+      />
     </section>
   );
 }
