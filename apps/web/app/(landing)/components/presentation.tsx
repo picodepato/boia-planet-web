@@ -12,9 +12,10 @@ const PresentationMotion = lazy(() =>
  * screen over the hero where the scroll brings «BOIA» in three beats, opens a
  * small window of video and takes it to the full screen. The layout (its
  * height, the pin) is decided by the CSS before the first paint; the motion
- * and the video come with `PresentationMotion`. Without JavaScript or with
- * reduced motion it is a still block: the poster and the logo. Decorative:
- * the hero and the sections around it say everything.
+ * and the video come with `PresentationMotion`, which adds the `<video>` only
+ * when the scroll enters the track (plan 048 T330: none on load). Without
+ * JavaScript or with reduced motion it is a still block: the poster and the
+ * logo. Decorative: the hero and the sections around it say everything.
  */
 export function Presentation() {
   return (
@@ -31,7 +32,6 @@ export function Presentation() {
             loading="lazy"
             decoding="async"
           />
-          <video className="reel__video" loop playsInline preload="none" />
         </div>
         <span className="reel__logo" />
       </div>

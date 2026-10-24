@@ -9,6 +9,7 @@ import {
   prepareInlineVideo,
   presentationFrame,
   reelVideoMode,
+  reelVideoWanted,
   presentationStage,
   smallWindow,
   windowBox,
@@ -205,5 +206,27 @@ describe('presentation video (plan 026 T260): never a stray frame', () => {
     ).toMatch(/display:\s*block/);
     // No other rule shows the video while data-entry pins the stage.
     expect(css.match(/\.reel__video\s*{[^}]*display:\s*block/g) ?? []).toHaveLength(0);
+  });
+});
+
+describe('presentation video (plan 048 T330): nothing downloads on load', () => {
+  const ROOT = path.resolve(__dirname, '../../app/(landing)/components');
+  const read = (f: string) => readFileSync(path.join(ROOT, f), 'utf8');
+
+  it('the video is wanted only while the page is inside the track', () => {
+    expect(reelVideoWanted(0)).toBe(false);
+    expect(reelVideoWanted(0.01)).toBe(true);
+    expect(reelVideoWanted(P.window)).toBe(true);
+    expect(reelVideoWanted(P.end + 0.9)).toBe(true);
+    // A jump down the page (or a reload below the presentation) loads nothing.
+    expect(reelVideoWanted(P.end + 1)).toBe(false);
+    expect(reelVideoWanted(40)).toBe(false);
+  });
+
+  it('the server renders no <video>; the motion creates it from the scroll, not on idle', () => {
+    expect(read('presentation.tsx')).not.toMatch(/<video\s/);
+    const motion = read('presentation-motion.tsx');
+    expect(motion).toMatch(/if \(reelVideoWanted\(target\)\) load\(\)/);
+    expect(motion).not.toMatch(/requestIdleCallback|boia:landed/);
   });
 });

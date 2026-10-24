@@ -162,6 +162,17 @@ export function presentationFrame(p: number, vw: number, vh: number): Presentati
 }
 
 /**
+ * Whether the scroll `p` (the page's, not the smoothed one) is inside the
+ * presentation's track, where its video is about to show (plan 048 T330):
+ * only then does the video element appear and ask for its file. At the top
+ * (`p = 0`) and past the track (`p ≥ end + 1`, as after a jump down the
+ * page) nothing downloads (REQ-COM-032).
+ */
+export function reelVideoWanted(p: number): boolean {
+  return p > 0 && p < PRESENTATION.end + 1;
+}
+
+/**
  * How the presentation's `<video>` is shown (plan 026 T260), written by
  * presentation-motion.tsx as `data-video` on `.reel`; landing.css shows the
  * element only with `on`:

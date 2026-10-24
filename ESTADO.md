@@ -4,6 +4,50 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 048 T330: Presentation video must not download on load
+
+Qué existe:
+- La presentación (`presentation.tsx`) ya no pinta un `<video>` en el
+  servidor: `presentation-motion.tsx` lo crea (muted/playsinline antes del
+  `src`, `preload=auto`, 720p/1080p de `presentationVideoSrc` del plan 043)
+  sólo cuando el scroll real de la página está dentro de la pista
+  (`reelVideoWanted(p)`: `0 < p < end + 1`, nuevo en
+  `lib/landing/presentation.ts`) y sigue ahí 500 ms (`LOAD_DWELL_MS`).
+  Fuera la precarga en reposo (`requestIdleCallback` tras `boia:landed`).
+- Por qué la espera: `landing.css` tiene `scroll-behavior: smooth`; un salto
+  al pie cruza la pista en ~0,3 s (medido en Chromium, móvil y escritorio) y,
+  sin ella, pedía el vídeo al pasar.
+- El póster `<img>` sigue `loading="lazy"`; el Range de Cloudflare (plan 046)
+  no se toca.
+- Causa: no la trajo el plan 042/043/046. El `<video>` vacío en el HTML y la
+  precarga en reposo vienen de T235 (9544a34, plan 021); entonces descargaba
+  `art/landing/presentacion-muestra.mp4`. Las últimas pasadas en verde de
+  `videos-perezosos.spec.ts` en ESTADO son de T197 y T216, anteriores a T235.
+  T322 (3d77361) sólo cambió la ruta del archivo; T323 y T326 no tocan el
+  momento de la carga.
+- Vitest: `reelVideoWanted` y que el servidor no pinta `<video>` ni hay
+  precarga en reposo (`presentation.test.ts`).
+
+Comandos:
+- `E2E_PORT=3348 pnpm e2e videos-perezosos.spec.ts landing-scroll.spec.ts
+  --repeat-each=3 --workers=2`: videos-perezosos entero pasa (×3, móvil y
+  escritorio), también «la presentación carga y reproduce el vídeo con
+  navigator.connection». 84 pasan, 18 fallan: las 3 de landing-scroll de
+  siempre en este Windows (accesibilidad :449, teclado :525, escena lenta
+  :615) ×2 proyectos ×3. Con el código de `main`, `landing-scroll.spec.ts`
+  → 18 pasan, 6 fallan: las mismas.
+- Antes del cambio: «REQ-COM-032: /?intro=0 carga sin descargar vídeos»
+  fallaba en móvil y escritorio (`contenido/portada/presentacion.mp4`).
+- `vitest run --exclude '**/packages/db/**' --testTimeout=30000` → exit 0,
+  360 archivos, 3246 pasan, 1 omitida. `sh tools/spec/checks.sh` → OK.
+  `pnpm lint` → exit 0. `pnpm build` → exit 0, landing 199,7 / 200,0 kB.
+  `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Ver en un móvil real que el vídeo llega a tiempo cuando se abre la
+  ventana (antes se precargaba en reposo; ahora empieza al entrar en la
+  pista, ~1,3 pantallas antes de que se abra).
+
 ## 2026-10-24 — plan 048 T329: Admin: thumbnails, delete, portada/galería and order, in production
 
 Qué existe:

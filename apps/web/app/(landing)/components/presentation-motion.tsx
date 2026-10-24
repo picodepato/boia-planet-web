@@ -13,21 +13,27 @@ import {
   prepareInlineVideo,
   presentationFrame,
   reelVideoMode,
+  reelVideoWanted,
 } from '../../../lib/landing/presentation';
 
 /** Smoothing of the scroll position (time constant, ms): coarse wheels do not jump. */
 const SMOOTH_MS = 70;
-/** After the hero is at rest, how long the video waits, at most, for an idle moment. */
-const PRELOAD_IDLE_MS = 2000;
+/**
+ * How long the scroll stays in the track before the video is asked for (plan
+ * 048 T330): a smooth jump down the page crosses the track in ~0.3 s.
+ */
+const LOAD_DWELL_MS = 500;
 /** `<html>` says the black covers the hero's scene (run.ts stops painting it). */
 const COVERED = 'data-reel-covered';
 
 /**
  * The motion of the presentation (`presentation.tsx`, plan 021 T235): reads
  * the scroll, writes the frame of `presentationFrame` as CSS variables on the
- * stage, and plays the video only while its window is on screen. The video
- * (poster and file) is asked for once the hero is at rest and the page idle,
- * or on the first scroll, whichever comes first. With reduced motion the
+ * stage, and plays the video only while its window is on screen. The
+ * `<video>` (poster and file) is created only when the page's scroll is inside
+ * the track (`reelVideoWanted`) and stays there `LOAD_DWELL_MS` (plan 048
+ * T330): loading the landing, or jumping past it, downloads nothing
+ * (REQ-COM-032). With reduced motion the
  * block is still (landing.css) and nothing here runs.
  */
 export function PresentationMotion() {
@@ -36,21 +42,25 @@ export function PresentationMotion() {
   useEffect(() => {
     const reel = ref.current?.closest<HTMLElement>('.reel');
     const stage = reel?.querySelector<HTMLElement>('.reel__stage');
-    const video = reel?.querySelector<HTMLVideoElement>('.reel__video');
+    const box = reel?.querySelector<HTMLElement>('.reel__window');
     const html = document.documentElement;
     // The pin needs the boot script's mark (the CSS reads the same).
-    if (!reel || !stage || !video || !html.hasAttribute('data-entry')) return;
+    if (!reel || !stage || !box || !html.hasAttribute('data-entry')) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    // Muted and inline as attributes before any `src` (iOS WebViews read them).
-    prepareInlineVideo(video);
     // The element shows only while its window is open (`reelVideoMode`).
     reel.dataset.video = 'off';
 
-    let loaded = false;
+    let video: HTMLVideoElement | null = null;
     const load = () => {
-      if (loaded) return;
-      loaded = true;
+      if (video) return;
+      video = document.createElement('video');
+      video.className = 'reel__video';
+      video.loop = true;
+      // Muted and inline as attributes before any `src` (iOS WebViews read them).
+      prepareInlineVideo(video);
+      video.addEventListener('error', block);
+      box.append(video);
       video.poster = PRESENTATION_VIDEO.poster;
       video.preload = 'auto';
       // 720p or 1080p, decided here once: no switching mid-play (plan 043 T323).
@@ -62,21 +72,6 @@ export function PresentationMotion() {
           .connection,
       });
     };
-    let cancelIdle = () => {};
-    const whenIdle = () => {
-      if (loaded) return;
-      if ('requestIdleCallback' in window) {
-        const id = window.requestIdleCallback(load, { timeout: PRELOAD_IDLE_MS });
-        cancelIdle = () => window.cancelIdleCallback(id);
-      } else {
-        const id = setTimeout(load, PRELOAD_IDLE_MS);
-        cancelIdle = () => clearTimeout(id);
-      }
-    };
-    // The hero at rest: its appearance has landed (the boot script's event).
-    if (window.__boiaEntry?.landed !== null) whenIdle();
-    else window.addEventListener('boia:landed', whenIdle, { once: true });
-
     let top = 0;
     let vh = 1;
     let vw = 1;
@@ -91,6 +86,7 @@ export function PresentationMotion() {
     let p = -1;
     let tick = 0;
     let raf = 0;
+    let dwell = 0;
     let onScreen = true;
     let wantPlay = false;
     // The video cannot play here: the window keeps the poster (landing.css).
@@ -104,17 +100,17 @@ export function PresentationMotion() {
       mode = next;
       reel.dataset.video = next;
     };
-    const block = () => {
+    function block() {
       if (blocked) return;
       blocked = true;
       wantPlay = false;
-      if (!video.paused) video.pause();
+      if (video && !video.paused) video.pause();
       show();
-    };
-    video.addEventListener('error', block);
+    }
 
     const syncPlay = () => {
-      const play = wantPlay && !blocked && onScreen && !document.hidden && loaded;
+      if (!video) return;
+      const play = wantPlay && !blocked && onScreen && !document.hidden;
       if (play && video.paused) {
         void video.play().catch((err: unknown) => {
           if (playBlocked(err)) block();
@@ -141,7 +137,6 @@ export function PresentationMotion() {
         // The hero's scene paints again (run.ts listens to the scroll).
         if (!covered) window.dispatchEvent(new Event('scroll'));
       }
-      if (at > 0) load();
       last = { video: f.video, playing: f.playing };
       show();
       wantPlay = f.playing;
@@ -163,6 +158,14 @@ export function PresentationMotion() {
     };
     const read = () => {
       target = Math.max(0, (window.scrollY - top) / vh);
+      // The page's scroll, not the smoothed one, and still in the track after
+      // a moment: a (smooth) jump past the track loads nothing.
+      if (!video && !dwell && reelVideoWanted(target)) {
+        dwell = window.setTimeout(() => {
+          dwell = 0;
+          if (reelVideoWanted(target)) load();
+        }, LOAD_DWELL_MS);
+      }
       kick();
     };
     const onResize = () => {
@@ -189,14 +192,16 @@ export function PresentationMotion() {
     return () => {
       window.removeEventListener('scroll', read);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('boia:landed', whenIdle);
       document.removeEventListener('visibilitychange', syncPlay);
       io?.disconnect();
       if (raf) cancelAnimationFrame(raf);
-      cancelIdle();
+      clearTimeout(dwell);
       html.removeAttribute(COVERED);
-      video.removeEventListener('error', block);
-      video.pause();
+      if (video) {
+        video.removeEventListener('error', block);
+        video.pause();
+        video.remove();
+      }
       delete reel.dataset.video;
     };
   }, []);
