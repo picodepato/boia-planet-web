@@ -119,9 +119,9 @@ export function sampleHomeBlocks(real: RealContent = REAL_CONTENT): AreaInput<'h
       visible: true,
       officialLinks: [
         { label: 'Instagram', url: l.instagram ?? `${SANDBOX}/instagram` },
-        { label: 'TikTok', url: l.tiktok ?? `${SANDBOX}/tiktok` },
-        // BOIA's playlist (plan 007 T79): the artists band and the footer link to it.
-        { label: 'Spotify', url: l.spotifyPlaylist ?? `${SANDBOX}/spotify/playlist/boia` },
+        // BOIA's playlist (plan 007 T79): the artists band and the footer link
+        // to it. Only a real one (plan 045 T325): no sample placeholder.
+        ...(l.spotifyPlaylist ? [{ label: 'Spotify', url: l.spotifyPlaylist }] : []),
       ],
     },
   ];

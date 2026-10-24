@@ -20,11 +20,15 @@ export interface RealContent {
     store: string | null;
     /** The WhatsApp group or chat (`https://chat.whatsapp.com/…` or `https://wa.me/…`). */
     whatsapp: string | null;
+    /** Instagram profile (P15; the handle `@boia.planet`). No TikTok: BOIA has none (plan 045 T325). */
     instagram: string | null;
-    tiktok: string | null;
     /** Contact email (the address, not `mailto:`). */
     email: string | null;
-    /** BOIA's Spotify playlist (plan 007 T79). */
+    /**
+     * BOIA's Spotify playlist (plan 007 T79). `null` shows nothing: no
+     * «escucha» column, no «Escúchalo en Spotify», no «muestra» placeholder
+     * (plan 045 T325), until a real playlist exists.
+     */
     spotifyPlaylist: string | null;
     /**
      * Each artist's Spotify by artist id: a URL, or `null` if the artist has
@@ -45,15 +49,14 @@ export const EVENT_POSTER_DIR = '/contenido/carteles';
 export const artistPhotoPath = (id: string) => `${ARTIST_PHOTO_DIR}/${id}.webp`;
 export const eventPosterPath = (id: string) => `${EVENT_POSTER_DIR}/${id}.webp`;
 
-/** Today: Halloween poster and WhatsApp group are real; the rest is `muestra`. */
+/** Today: Halloween poster, WhatsApp group, Instagram and contact email are real; the rest is `muestra`. */
 export const REAL_CONTENT: RealContent = {
   links: {
     tickets: {},
     store: null,
     whatsapp: 'https://chat.whatsapp.com/LfcWsDaBzbLAB6H7WK7Lyw',
-    instagram: null,
-    tiktok: null,
-    email: null,
+    instagram: 'https://www.instagram.com/boia.planet/',
+    email: 'hola@boiaplanet.net',
     spotifyPlaylist: null,
     artistSpotify: {},
   },

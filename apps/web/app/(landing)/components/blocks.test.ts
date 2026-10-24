@@ -187,17 +187,27 @@ describe('renderizador de bloques de la home', () => {
   });
 
   it('Spotify (plan 007): «Escúchalo en Spotify» en Artistas y el pie, y uno por artista que lo tenga', () => {
-    const social = resolveHome(SAMPLE_CONTENT, NOW).social;
-    expect(social.spotify).toMatch(/spotify/);
+    // The sample has no playlist (plan 045 T325): one added in the footer, as Admin → «Enlaces» would.
+    const playlist = 'https://open.spotify.com/playlist/boiafixture';
+    const content = {
+      ...SAMPLE_CONTENT,
+      blocks: SAMPLE_CONTENT.blocks.map((b) =>
+        b.type === 'footer'
+          ? { ...b, officialLinks: [...b.officialLinks, { label: 'Spotify', url: playlist }] }
+          : b,
+      ),
+    };
+    const social = resolveHome(content, NOW).social;
+    expect(social.spotify).toBe(playlist);
     const artists = resolveBlock(
-      SAMPLE_CONTENT.blocks.find((b) => b.type === 'artists')!,
-      SAMPLE_CONTENT,
+      content.blocks.find((b) => b.type === 'artists')!,
+      content,
       NOW,
     )!;
     const html = renderToStaticMarkup(
       createElement(BlockView, {
         block: artists,
-        artists: SAMPLE_CONTENT.artists,
+        artists: content.artists,
         buyable: new Set<string>(),
         social,
       }),
@@ -210,8 +220,8 @@ describe('renderizador de bloques de la home', () => {
     }
     expect(html).toContain(`href="${social.spotify}"`);
     const footer = resolveBlock(
-      SAMPLE_CONTENT.blocks.find((b) => b.type === 'footer')!,
-      SAMPLE_CONTENT,
+      content.blocks.find((b) => b.type === 'footer')!,
+      content,
       NOW,
     )!;
     const foot = renderToStaticMarkup(
@@ -219,6 +229,7 @@ describe('renderizador de bloques de la home', () => {
     );
     expect(foot).toContain('role="img" aria-label="BOIA"');
     expect(foot.match(new RegExp(`href="${social.spotify}"`, 'g'))).toHaveLength(1);
+    expect(foot).toContain('data-testid="pie-spotify"');
   });
 
   it('el hero tiene clave fija: otro id del repositorio no desmonta la entrada (T57)', () => {

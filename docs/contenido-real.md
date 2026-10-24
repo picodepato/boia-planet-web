@@ -56,9 +56,9 @@ campo del Admin corresponde a cada cosa, para probarlo antes.
 | 8 | Tienda | P15 | URL `https://` de la tienda | — | `links.store` | — | Banda Tienda, «Ir a la tienda» | Enlace de prueba marcado «MUESTRA» |
 | 9 | WhatsApp | P15 | URL de invitación al grupo (`https://chat.whatsapp.com/…`) o del chat (`https://wa.me/34…`) | — | `links.whatsapp` | — | Invitación del pie, Contacto, la boia de WhatsApp en `/mar` | Marcado «MUESTRA» |
 | 10 | Instagram | P15 | URL del perfil (`https://www.instagram.com/<cuenta>`) | — | `links.instagram` | — | Cabecera y pie | Marcado «MUESTRA» |
-| 11 | TikTok | P15 | URL del perfil (`https://www.tiktok.com/@<cuenta>`) | — | `links.tiktok` | — | Pie | Marcado «MUESTRA» |
+| 11 | TikTok | — | Ya no: BOIA no tiene TikTok (plan 045 T325). Quitado del archivo y de la web | — | — | — | — | — |
 | 12 | Correo de contacto | P15 | La dirección (`hola@…`), sin `mailto:` | — | `links.email` | — | Contacto, «Escríbenos» | `hola@example.com` marcado «MUESTRA» |
-| 13 | Lista de BOIA en Spotify | P15 | URL de la lista (`https://open.spotify.com/playlist/…`) | — | `links.spotifyPlaylist` | — | «Escúchalo en Spotify» en Artistas y en el pie | Marcado «MUESTRA» |
+| 13 | Lista de BOIA en Spotify | P15 | URL de la lista (`https://open.spotify.com/playlist/…`) | — | `links.spotifyPlaylist` | Enlaces → pie, un enlace con «Spotify» en la etiqueta | «Escúchalo en Spotify» en Artistas y la columna «escucha» del pie | Nada: sin lista real no sale ni la columna ni el enlace (plan 045 T325) |
 | 14 | Spotify de cada artista | P15 | URL del artista (`https://open.spotify.com/artist/…`), o «no tiene» | — | `links.artistSpotify['<id>']`: la URL, o `null` si no tiene (sin enlace). Un artista que no está en la lista sigue con el de prueba | Artistas → el artista → «Spotify (URL, opcional)» | «Spotify» al final de la fila del artista | Uno de cada dos artistas con enlace de prueba marcado «MUESTRA» |
 
 Los enlaces son enlaces normales que se abren en otra pestaña: la web no
@@ -116,6 +116,11 @@ Lo demás sigue `muestra` y marcado hasta que llegue.
 - Fila 1: el cartel de Halloween (`halloween-2026.webp`, 900×1200) y la
   fila 9: el grupo de WhatsApp (`links.whatsapp`) son reales desde el plan 036
   (T316). El resto sigue `muestra`.
+- Fila 10: Instagram `@boia.planet` (`links.instagram` =
+  `https://www.instagram.com/boia.planet/`) y fila 12: el correo de contacto
+  `hola@boiaplanet.net` (`links.email`, en «Contacto») son reales desde el
+  plan 045 (T325). La fila 11 (TikTok) ya no existe, y la lista de Spotify
+  (fila 13) no sale hasta que haya una real.
 - Vídeo de la presentación (la ventana negra después de la portada que se
   abre a pantalla completa): el real de BOIA llegó el 2026-10-24 (plan 042,
   T322; `BOIAvidwebsite.mov`, 8 s, 4K HEVC con sonido). Está en

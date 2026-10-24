@@ -4,6 +4,35 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 045 T325: Contact email, Instagram, no TikTok, hidden Spotify
+
+Qué existe:
+- `packages/store/src/sample/real-content.ts`: `links.email = 'hola@boiaplanet.net'`
+  (sale en «Contacto»), `links.instagram = 'https://www.instagram.com/boia.planet/'`
+  (cabecera y pie, sin marca «muestra»). El campo `tiktok` ya no existe.
+- `packages/store/src/sample/content.ts`: el pie ya no lleva TikTok; la lista de
+  Spotify sólo entra en los enlaces oficiales si `spotifyPlaylist` no es `null`.
+  Sin ella no sale la columna «escucha», ni «Escúchalo en Spotify» en Artistas,
+  ni un enlace de prueba. El Spotify propio de cada artista sigue igual.
+- Admin → «Enlaces» toma lo de serie de esos mismos bloques: ya enseña los
+  valores nuevos. Una copia guardada (borrador del navegador o el contenido
+  publicado en Supabase) sigue mandando sobre lo de serie.
+- Pruebas: `real-content.test.ts` (nueva: correo y enlace de Instagram reales,
+  nada de TikTok, ni lista ni «escucha» con `null`); `blocks.test.ts` comprueba
+  el enlace de la lista con una lista añadida en el pie.
+- `docs/contenido-real.md`: filas 11–13 y «Qué ha llegado ya».
+
+Comandos:
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 359 archivos, 3228 pruebas, sin fallos.
+- `sh tools/spec/checks.sh`, `pnpm lint`, `pnpm build` (presupuesto de la landing), `pnpm typecheck` → exit 0.
+
+Pendiente:
+- Si el contenido publicado en Supabase (o un borrador de algún navegador) ya
+  tiene guardados los bloques de contacto/pie, siguen saliendo sus enlaces
+  antiguos (TikTok/Spotify de prueba, correo de ejemplo) hasta que se guarden
+  de nuevo desde Admin → «Enlaces». No se ha mirado producción.
+- `docs/presentacion/` todavía nombra TikTok (fuera del alcance de esta tarea).
+
 ## 2026-10-24 — plan 044 T324: Remove the third sticker-pack photo
 
 - `apps/web/lib/merchandise/products.json`: «Packs de pegatinas» keeps two

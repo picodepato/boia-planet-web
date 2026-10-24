@@ -767,7 +767,7 @@ export function createAdminActions(deps: AdminDeps) {
       await repo.admin.draftUpsert('homeBlocks', next, opts(msg('admin.links.audit.contact')));
     },
 
-    /** Los enlaces oficiales del pie (Instagram, TikTok, Spotify…). */
+    /** Los enlaces oficiales del pie (Instagram, Spotify…). */
     async setFooterLinks(rows: readonly LinkRow[]) {
       const block = await blockOfType('footer');
       const parsed = parseLinks(rows);

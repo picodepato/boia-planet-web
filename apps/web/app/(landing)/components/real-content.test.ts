@@ -100,7 +100,6 @@ const FIXTURE: RealContent = {
     store: 'https://tienda.boia-fixture.es',
     whatsapp: 'https://chat.whatsapp.com/BoiaFixture',
     instagram: 'https://www.instagram.com/boia.fixture',
-    tiktok: 'https://www.tiktok.com/@boia.fixture',
     email: 'hola@boia-fixture.es',
     spotifyPlaylist: 'https://open.spotify.com/playlist/boiafixture',
     artistSpotify: Object.fromEntries([
@@ -158,7 +157,7 @@ describe('the landing ready for real content (plan 007 T82)', () => {
     // Merchandise stays internal even when legacy content still has an external store URL.
     expect(shown).toContain('/tienda');
     expect(shown).not.toContain(l.store);
-    for (const url of [l.whatsapp, l.instagram, l.tiktok, l.spotifyPlaylist]) {
+    for (const url of [l.whatsapp, l.instagram, l.spotifyPlaylist]) {
       expect(shown, String(url)).toContain(url);
     }
     expect(shown).toContain(`mailto:${l.email}`);
@@ -255,7 +254,6 @@ describe('the landing ready for real content (plan 007 T82)', () => {
       l.store,
       l.whatsapp,
       l.instagram,
-      l.tiktok,
       l.email,
       l.spotifyPlaylist,
       ...Object.values(l.tickets),
@@ -263,6 +261,31 @@ describe('the landing ready for real content (plan 007 T82)', () => {
     ].filter((u): u is string => u !== null);
     // A real link never points at the sandbox (that would hide the mark's meaning).
     expect(real.filter(isSampleLink)).toEqual([]);
+  });
+
+  it('today: contact email and Instagram are real; no TikTok; no sample playlist (plan 045 T325)', () => {
+    expect(REAL_CONTENT.links.email).toBe('hola@boiaplanet.net');
+    expect(REAL_CONTENT.links.instagram).toBe('https://www.instagram.com/boia.planet/');
+    expect(REAL_CONTENT.links).not.toHaveProperty('tiktok');
+    const html = renderLanding(SAMPLE_CONTENT);
+    const contact = /<section id="contacto".*?<\/section>/s.exec(html)?.[0] ?? '';
+    expect(contact).toContain('href="mailto:hola@boiaplanet.net"');
+    expect(contact).toContain('hola@boiaplanet.net');
+    expect(hrefs(html)).toContain('https://www.instagram.com/boia.planet/');
+    expect(html).not.toMatch(/tiktok/i);
+    // With no real playlist (null): no «escucha» column, no «Escúchalo en
+    // Spotify», no sandbox playlist link anywhere.
+    expect(REAL_CONTENT.links.spotifyPlaylist).toBeNull();
+    expect(resolveHome(SAMPLE_CONTENT, NOW).social.spotify).toBeNull();
+    expect(html).not.toContain(t('footer.col.listen'));
+    expect(html).not.toContain(t('artists.spotify'));
+    expect(html).not.toContain('data-testid="pie-spotify"');
+    expect(html).not.toContain('data-testid="artistas-spotify"');
+    expect(html).not.toContain('playlist');
+    const official = SAMPLE_CONTENT.blocks.flatMap((b) =>
+      b.type === 'footer' ? b.officialLinks : [],
+    );
+    expect(official.map((x) => x.label)).toEqual(['Instagram']);
   });
 
   it('the files of real-content.ts are in apps/web/public/contenido, and only those', () => {
