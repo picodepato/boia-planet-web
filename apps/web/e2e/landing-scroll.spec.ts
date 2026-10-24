@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { t } from '../lib/i18n';
 import { ZARPAR_HREF } from '../lib/intro/zarpar';
+import { PRESENTATION_VIDEO } from '../lib/landing/hero-media';
 import { PRESENTATION } from '../lib/landing/presentation';
 import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { lowContrast, measureContrast } from './contrast';
@@ -257,6 +258,55 @@ test('`/#tickets` y `/?intro=0` abren en reposo, sin la aparición', async ({ pa
   await expect(zarpar(page)).toBeVisible();
   await expect(page.locator('.hero__wordmark')).toBeVisible();
   expect(await cls(page)).toBeLessThan(0.05);
+});
+
+/**
+ * Plan 046 T326: Álvaro's Chrome on his phone did not play the presentation.
+ * Chrome is the browser with `navigator.connection` (Safari and Brave hide
+ * it): with one present, as Chrome on Android reports it, the video gets its
+ * file (720p on a phone and on this desktop size), loads and plays once its
+ * window is open, and pauses past the presentation.
+ */
+test('la presentación carga y reproduce el vídeo con navigator.connection (Chrome)', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'connection', {
+      configurable: true,
+      get: () => ({
+        effectiveType: '4g',
+        downlink: 10,
+        saveData: false,
+        addEventListener() {},
+        removeEventListener() {},
+      }),
+    });
+  });
+  await page.goto('/?intro=0');
+  await page.waitForFunction(() => window.__boiaIntro?.phase === 'paused');
+  const H = page.viewportSize()!.height;
+  const video = page.locator('.reel__video');
+  // The window open, halfway to the full screen.
+  const mid = (PRESENTATION.open + PRESENTATION.full) / 2;
+  for (let p = 0.2; p <= mid; p += 0.2) await scrollTo(page, H * p);
+  await scrollTo(page, H * mid);
+  await expect(page.getByTestId('presentacion')).toHaveAttribute('data-video', 'on');
+  await expect(video).toHaveAttribute('src', PRESENTATION_VIDEO.src);
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState), { timeout: 15_000 })
+    .toBeGreaterThanOrEqual(2);
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => !v.paused && v.currentTime > 0), {
+      timeout: 15_000,
+    })
+    .toBe(true);
+  expect(await video.evaluate((v: HTMLVideoElement) => v.error)).toBeNull();
+
+  // Well past the presentation (`playing` ends a screen after `end`).
+  await scrollTo(page, H * (PRESENTATION.end + 1.3));
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement) => v.paused), { timeout: 5_000 })
+    .toBe(true);
 });
 
 test('el pie lleva el logo de BOIA; Spotify son enlaces sin nada cargado de Spotify', async ({

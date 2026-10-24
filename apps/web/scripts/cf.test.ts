@@ -6,6 +6,8 @@ import { securityHeaders } from '../lib/security-headers';
 // @ts-expect-error: script de Node sin tipos
 import { headersFile, redirectsFile } from './cf-assets.mjs';
 // @ts-expect-error: script de Node sin tipos
+import { MEDIA_RUN_WORKER_FIRST } from './cf-range.mjs';
+// @ts-expect-error: script de Node sin tipos
 import { ASSETS_MAX_FILES, BUDGET_GZIP, shouldCopy } from './cf-measure.mjs';
 
 /**
@@ -104,9 +106,17 @@ describe('wrangler.jsonc y .gitignore', () => {
 
   it('Worker boia-planet con nodejs_compat, assets y la salida de OpenNext', () => {
     expect(config.name).toBe('boia-planet');
-    expect(config.main).toBe('.open-next/worker.js');
+    // The entry wraps OpenNext's Worker with the media ranges (plan 046 T326).
+    expect(config.main).toBe('cf-worker.mjs');
+    expect(readFileSync(path.join(WEB, 'cf-worker.mjs'), 'utf8')).toContain(
+      "from './.open-next/worker.js'",
+    );
     expect(config.compatibility_flags).toContain('nodejs_compat');
-    expect(config.assets).toEqual({ directory: '.open-next/assets', binding: 'ASSETS' });
+    expect(config.assets).toEqual({
+      directory: '.open-next/assets',
+      binding: 'ASSETS',
+      run_worker_first: MEDIA_RUN_WORKER_FIRST,
+    });
     expect(config.compatibility_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(new Date(config.compatibility_date).getTime()).toBeLessThanOrEqual(Date.now());
   });

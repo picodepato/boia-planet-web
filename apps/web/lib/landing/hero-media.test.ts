@@ -120,6 +120,19 @@ describe('presentationVideoSrc (plan 043 T323): 1080p only on big screens and go
     expect(presentationVideoSrc({ width: 1440, height: 900, dpr: 1, connection: fast })).toBe(hd);
   });
 
+  it('Chrome with navigator.connection (plan 046 T326): a Pixel 8 gets 720p, a desktop 1080p', () => {
+    const chrome = { effectiveType: '4g', downlink: 10, saveData: false };
+    expect(presentationVideoSrc({ width: 412, height: 915, dpr: 2.625, connection: chrome })).toBe(
+      sd,
+    );
+    expect(presentationVideoSrc({ width: 375, height: 812, dpr: 3, connection: chrome })).toBe(sd);
+    expect(presentationVideoSrc({ ...desktop, connection: chrome })).toBe(hd);
+    // Whatever Chrome reports, the answer is always one of the two files.
+    for (const connection of [{}, { effectiveType: '2g' }, { downlink: 0 }, undefined]) {
+      expect([sd, hd]).toContain(presentationVideoSrc({ ...desktop, connection }));
+    }
+  });
+
   it('no navigator.connection (Safari, Firefox) + big screen → 1080p', () => {
     expect(presentationVideoSrc(desktop)).toBe(hd);
     expect(presentationVideoSrc({ ...desktop, connection: null })).toBe(hd);

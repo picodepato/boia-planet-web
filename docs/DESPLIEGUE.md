@@ -91,8 +91,9 @@ Qué hace `pnpm cf:build` (script de `apps/web/package.json`):
 `public/art`, escribe `version.json`, `next build` y el presupuesto de la
 landing de 200 kB) → `opennextjs-cloudflare populateCache local` (las páginas
 prerenderizadas) → `node scripts/cf-assets.mjs` (escribe `_headers` y
-`_redirects` en `.open-next/assets`). Después `wrangler deploy` sube
-`.open-next/worker.js` y `.open-next/assets`. El commit del build sale de
+`_redirects` en `.open-next/assets`). Después `wrangler deploy` sube el
+Worker (entrada `apps/web/cf-worker.mjs`, que envuelve `.open-next/worker.js`)
+y `.open-next/assets`. El commit del build sale de
 `WORKERS_CI_COMMIT_SHA`, que Workers Builds pone solo.
 
 Ojo:
@@ -114,7 +115,20 @@ Ojo:
 - `/eventos/[slug]` no se regenera cada 5 min en Cloudflare como en Vercel:
   se queda como salió del último despliegue (decisión de T262, caché de sólo
   lectura; el estado «hoy / en curso» lo calcula el navegador).
-- Tamaño del Worker: ~2.186 KiB gzip, con el tope gratis en 3 MB. Antes de
+- **Vídeos y audios con `Range` (plan 046 T326).** Los archivos estáticos de
+  Cloudflare ignoran `Range`: responden `200` con el archivo entero y sin
+  `Accept-Ranges` (Vercel responde `206`), y los navegadores reproducen
+  vídeo y audio pidiendo trozos (para saltar, repetir el bucle o reanudar
+  una descarga en pausa). Por eso `wrangler.jsonc` manda primero al Worker
+  (`assets.run_worker_first`) sólo las rutas `*.mp4`, `*.webm`, `*.mp3`,
+  `*.m4a` y `*.ogg`; `apps/web/cf-worker.mjs` pide el archivo entero al
+  binding `ASSETS` y responde el trozo (`206` con `Content-Range`, `416` si
+  no cabe; `apps/web/scripts/cf-range.mjs`). Cada petición de un vídeo o
+  audio cuenta como petición del Worker (100.000 al día gratis); lo demás
+  no. Comprobar tras desplegar:
+  `curl -sI -H "Range: bytes=0-99" https://boiaplanet.net/contenido/portada/presentacion.mp4`
+  → `206` y `Content-Range: bytes 0-99/…`.
+- Tamaño del Worker: ~2.340 KiB gzip (2026-10-24), con el tope gratis en 3 MB. Antes de
   cambios grandes, `pnpm cf:measure` (falla por encima de 2.800 KiB).
 - La URL `https://boia-planet.<tu-subdominio>.workers.dev` sirve para probar
   antes de poner el dominio.

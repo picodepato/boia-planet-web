@@ -4,6 +4,58 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 046 T326: Presentation video plays in Chrome mobile
+
+Qué existe:
+
+- **Diagnóstico.** En Chromium con emulación móvil (375×812, UA de Pixel 8,
+  `navigator.connection` = 4g/10/false) el vídeo de la presentación recibe su
+  fuente (720p) y se reproduce, tanto en el build local como en
+  https://boiaplanet.net. El código de `presentationVideoSrc` y de
+  `presentation-motion.tsx` no tiene ninguna rama que dependa de
+  `navigator.connection` en un móvil (ancho < 1024 → 720p siempre). La firma
+  exacta medida por el orquestador (`currentSrc` "", readyState 0,
+  networkState 0, sin error) sólo se reproduce con
+  `prefers-reduced-motion: reduce`: con movimiento reducido el bloque es
+  quieto a propósito (sólo el póster; REQ-ENT-010, «nada animándose solo»).
+  Chrome lo informa si Android tiene «Quitar animaciones» o el ahorro de
+  batería, o Windows sin «Efectos de animación». Queda a Álvaro comprobarlo.
+- **Defecto real arreglado: Cloudflare sin `Range`.** Workers Static Assets
+  ignora `Range` (200 con todo el archivo, sin `Accept-Ranges`; Vercel da
+  206). Ahora `wrangler.jsonc` lleva `assets.run_worker_first` para
+  `/*.mp4`, `/*.webm`, `/*.mp3`, `/*.m4a`, `/*.ogg`, y la nueva entrada del
+  Worker `apps/web/cf-worker.mjs` (envuelve `.open-next/worker.js`) responde
+  esas rutas con `apps/web/scripts/cf-range.mjs`: 206 + `Content-Range`, 416
+  si no cabe, 200 + `Accept-Ranges` sin rango; If-Range y HEAD. Lo demás no
+  pasa por el Worker.
+- Pruebas: `scripts/cf-range.test.ts` (nuevo), `scripts/cf.test.ts`
+  (main/run_worker_first), `lib/landing/hero-media.test.ts` (Chrome con
+  `navigator.connection`: Pixel 8 → 720p, escritorio → 1080p), e2e nueva en
+  `e2e/landing-scroll.spec.ts`: «la presentación carga y reproduce el vídeo
+  con navigator.connection (Chrome)».
+- `docs/DESPLIEGUE.md`: nota del `Range` en Cloudflare y cómo comprobarlo.
+
+Comandos:
+
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 360 archivos, 3241
+  pasan, 1 saltada.
+- `pnpm cf:measure` → OK, 2.340 KiB gzip (presupuesto 2.800). `wrangler dev`
+  sobre esa copia: `Range: bytes=0-99` en `presentacion.mp4` → 206
+  `Content-Range: bytes 0-99/1823066`; `/` → 200.
+- `playwright test e2e/landing-scroll.spec.ts --project=mobile` → 9 pasan,
+  3 fallan (accesibilidad/contraste tras la zambullida, teclado, escena
+  lenta): no tocan el vídeo y el código de la app no cambia en esta tarea.
+  La e2e nueva pasa en mobile y desktop.
+
+Pendiente:
+
+- Álvaro: tras desplegar, `curl -sI -H "Range: bytes=0-99"
+  https://boiaplanet.net/contenido/portada/presentacion.mp4` → 206.
+- Álvaro: si su Chrome sigue sin vídeo, mirar si el móvil tiene «Quitar
+  animaciones» o ahorro de batería (movimiento reducido = póster quieto, por
+  diseño). Si quiere vídeo también ahí, sería un cambio de REQ-ENT-010.
+- Las 3 e2e de landing-scroll que fallan en este Windows, a revisar aparte.
+
 ## 2026-10-24 — plan 045 T325: Contact email, Instagram, no TikTok, hidden Spotify
 
 Qué existe:
