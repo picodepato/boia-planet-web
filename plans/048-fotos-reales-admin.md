@@ -78,3 +78,4 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
 - 2026-10-24 T328 done · branch worktree-agent-a08726efa11cefb8f → 848a44e
 - 2026-10-24 T329 launched · agent ad7dfe8b809e6b00b; done → 283a713
 - 2026-10-24 T330 launched · agent a94a24fb7c7f0491a; done → 205f0cb; plan done
+- 2026-10-24 production: applied 20261024100100 (media_settings); pushing main with plans 047+048 (Álvaro: «al acabar súbelo todo junto»)
