@@ -1,6 +1,6 @@
 # Plan 048 — Real photos and videos, no sample media, and Admin control of portada/galería
 
-Status: active
+Status: done
 Created: 2026-10-24
 Base branch: main
 Goal: Álvaro's real media (`C:\Users\alvar\Desktop\boiafoto\`: 7 PNG photos and 3 videos) replaces every sample photo and clip on the site. The landing collage (#fotos, «portada») and `/galeria` («galería/imágenes») show real media only. From Admin, in production (accounts mode), Álvaro sees thumbnails of every photo and video, deletes the ones he does not want, chooses which ones appear on the portada (the rest only in the galería) and orders them.
@@ -31,7 +31,7 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
 - Outcome: 7 photos + 3 clips (HLG→SDR, 1280 px, 2.9–5.4 MB) in public/contenido/galeria, album-boia; all sample media and galeria-3/4 removed (retiredIds in sample revision 4); clips allowed on the landing; default portada 7 photos + 2 clips — 848a44e
 
 ## T329 — Admin: thumbnails, delete, portada/galería and order, in production
-- Status: running (attempt 1)
+- Status: done
 - Depends on: T328
 - Goal: In the Admin photos section, one list with a thumbnail of every piece (photos and clips) from both sources: the ones shipped in the code (real album) and the ones uploaded to Supabase (`event_photos`, buckets `event-photos` / `event-clips`). Per piece: a switch «En portada» (on = portada and galería; off = only galería), up/down arrows to order (the order applies to the portada and the galería), and «Borrar» with confirmation. It must work in production (accounts mode), not only on the browser's local copy as today. Design: a new Supabase table for per-piece settings keyed by piece id (e.g. `media_settings`: piece id, on_home, sort, hidden, updated_by, updated_at) with RLS, public read of what the site needs, writes only through admin RPCs (admin + 2FA, `public` INVOKER wrapper over `private` SECURITY DEFINER, empty search_path, audit row), like the plan 034/037 migrations. «Borrar» on an uploaded piece deletes its `event_photos` row and its storage object; on a piece shipped in the code it sets `hidden` (the file stays in the repo). The landing collage and `/galeria` (and island/event galleries) apply the settings: hidden pieces disappear, portada = pieces with on_home in sort order up to `HOME_PHOTOS_LIMIT`, galería in sort order; uploaded pieces can now be put on the portada too (remove the forced `selection: false` or let the setting override it). The landing is `force-static`: apply the settings in the browser the same way `homeWithSharedPhotos` already merges Supabase photos (no new code on the landing critical path; keep it in the lazy chunk). Demo mode (no Supabase): the same controls work on the local store. Migration applied to dev only; the orchestrator applies it to production.
 - Context: `apps/web/app/admin/sections/photos.tsx`, `apps/web/lib/admin/photo-store.ts`, `island-photos.ts`, `shared-photos.ts`, `actions.ts` (~473 `selection: false`), `apps/web/lib/landing/resolve.ts`, `e2e/admin-fotos.spec.ts`, migrations `20261008100400_gallery_clips.sql`, `20261021200100_guest_lists.sql` (admin RPC pattern), `packages/db/src/supabase/schema.supabase.ts` (allowlists), `pnpm --filter @boia/db db:migrate:dev -- --no-seed`, `db:types:dev`, `node src/cli/test-supabase.ts <file>` in packages/db.
@@ -41,10 +41,10 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
   - unit tests: settings applied to the portada (on_home + sort + limit) and the galería (hidden removed, sort) for code and uploaded pieces → pass
   - `E2E_PORT=<free> pnpm e2e admin-fotos.spec.ts` (demo mode: toggle, order and delete reflected on the landing) → pass
   - the project Test command → pass (landing budget OK)
-- Outcome:
+- Outcome: media_settings table + admin RPCs (admin+2FA, audited), Admin list with thumbnails, «En portada», arrows, «Borrar» (uploaded: row + storage; code: hidden), settings applied in the lazy resolve chunk; REQ-ADM-044 — 283a713
 
 ## T330 — Presentation video must not download on load
-- Status: running (attempt 1)
+- Status: done
 - Depends on: none
 - Goal: e2e «REQ-COM-032: /?intro=0 carga sin descargar vídeos» (in `apps/web/e2e/videos-perezosos.spec.ts`) fails on mobile and desktop since plan 042/043/046: loading the landing downloads `presentacion.mp4` (and the reel has an empty `<video>`) before the user scrolls to the reel. Make the reel video load only when the reel is about to be shown (as the original sample did), keeping plans 043 (720p/1080p choice) and 046 (Range) intact, and keep the poster lazy. Run that spec and the reel e2e spec alone.
 - Context: `apps/web/app/(landing)/components/presentation.tsx`, `presentation-motion.tsx`, `apps/web/lib/landing/hero-media.ts`, `apps/web/e2e/videos-perezosos.spec.ts`, plans 042/043/046.
@@ -53,7 +53,7 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
   - `E2E_PORT=<free> pnpm e2e videos-perezosos.spec.ts` → pass (mobile and desktop)
   - the reel e2e spec alone → pass (or the same failures as on main, stated)
   - the project Test command → pass
-- Outcome:
+- Outcome: no server <video>; created only after 500 ms inside the reel; idle preload removed; cause was T235 (9544a34), not plans 042/043/046 — 205f0cb
 
 ## Decisions
 - 2026-10-24: All sample photos and clips go; galeria-3 (blue tracksuit) and galeria-4 (Los Chunguitos) go too; galeria-1/2 stay (Álvaro)
@@ -65,8 +65,16 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
 - 2026-10-24 T328: media under public/contenido/galeria (art/galeria and galeria-fuentes deleted); tools/galeria scripts now convert Álvaro's sources; clip-480 kept as e2e fixture; /mar photos island → album-boia; one-line fallback album change in admin photos.tsx (agent)
 - 2026-10-24: T330 added: plan 042 presentation video downloads on load (REQ-COM-032 e2e failing) (orchestrator)
 
+- 2026-10-24 T329: arrows save the whole order via admin_media_order(ids[]); storage files deleted by the Admin's session after admin_media_delete returns URLs; demo settings in localStorage boia-media-settings; per-photo text/album edit moved to «Editar texto y álbum» (agent)
+- 2026-10-24 T330: video loads ~1.3 screens before the window opens (LOAD_DWELL_MS 500) (agent)
+
 ## Proposals (new scope)
+- 2026-10-24 T329: demo: open landing tab does not refresh until reload; «Restablecer» does not clear demo media settings
+- 2026-10-24 T330: check on a real phone that the reel video is ready in time
+- 2026-10-24 landing-scroll.spec.ts: 3 tests (accessibility :449, keyboard :525, slow scene :615) fail on main on this machine
 
 ## Log
 - 2026-10-24 T328 launched · attempt 1 · agent a08726efa11cefb8f
 - 2026-10-24 T328 done · branch worktree-agent-a08726efa11cefb8f → 848a44e
+- 2026-10-24 T329 launched · agent ad7dfe8b809e6b00b; done → 283a713
+- 2026-10-24 T330 launched · agent a94a24fb7c7f0491a; done → 205f0cb; plan done
