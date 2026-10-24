@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 044 T324: Remove the third sticker-pack photo
+
+- `apps/web/lib/merchandise/products.json`: «Packs de pegatinas» keeps two
+  photos (`pegatinas-muestra.webp` alone, `pegatinas-angulo-muestra.webp`
+  angle); the `model` image is gone and its file
+  `apps/web/public/contenido/tienda/pegatinas-modelo-muestra.webp` deleted
+  (nothing else used it). Shop README updated.
+- `catalog.test.ts`: the alone/angle/model rule now exempts only `pegatinas`
+  from `model` (other products unchanged); a new test pins the two photos and
+  the deleted file. The contract (`images.min(1)`) already allowed it.
+- Stored shop block: the `store` home block (seed
+  `packages/store/src/sample/content.ts`, local store) holds only product
+  names, not images; images come from `products.json` at render. No reseed or
+  revision bump needed.
+- Commands: `pnpm exec vitest run apps/web/lib/merchandise
+  packages/store/src/sample-reseed.test.ts` → 2 files, 20 tests pass; full
+  vitest (excl. packages/db) → 359 files, 3228 passed / 3 skipped; checks.sh OK;
+  lint 0; build 0 (landing 199.8 kB / 200.0 kB OK); typecheck 0.
+- Pending: presentation texts (`docs/presentacion/partes/02-landing.ts`,
+  `03-paginas.ts`, `boia-planet.pptx`) still say each product shows three
+  photos.
+
 ## 2026-10-24 — plan 043 T323: 1080p presentation video chosen by screen and connection
 
 Qué existe:

@@ -26,7 +26,8 @@ only sold at the party and links to Instagram (no checkout).
 - (T249: the T-shirt's angle and model placeholders were removed; the T-shirt
   and the «Tote bag BOIA» (Manu Ropero) use real photos: `camiseta-*.webp`,
   `tote-1-bolsa.webp` … `tote-4-llena.webp`.)
-- `pegatinas-angulo-muestra.webp`, `pegatinas-modelo-muestra.webp`
+- `pegatinas-angulo-muestra.webp` (T324: the stickers' model placeholder
+  `pegatinas-modelo-muestra.webp` was removed; the stickers show two photos.)
 
 Final prompts, built-in mode (no CLI/API fallback):
 

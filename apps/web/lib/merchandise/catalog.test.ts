@@ -25,10 +25,15 @@ describe('store products (plan 017 T201, decision 11)', () => {
   });
 
   it('every product has its image alone, another angle and on a model, all present as WebP', () => {
+    // Plan 044 T324: the sticker packs keep only alone + angle (no model photo).
+    const withoutModel = new Set(['pegatinas']);
     for (const product of MERCHANDISE_PRODUCTS) {
-      expect(product.images.length).toBeGreaterThanOrEqual(3);
+      const kinds = withoutModel.has(product.id)
+        ? (['alone', 'angle'] as const)
+        : (['alone', 'angle', 'model'] as const);
+      expect(product.images.length).toBeGreaterThanOrEqual(kinds.length);
       expect(product.images[0]!.kind).toBe('alone');
-      for (const kind of ['alone', 'angle', 'model'] as const) {
+      for (const kind of kinds) {
         expect(product.images.some((i) => i.kind === kind)).toBe(true);
       }
       for (const image of product.images) {
@@ -44,6 +49,16 @@ describe('store products (plan 017 T201, decision 11)', () => {
       handle: '@boia.planet',
       url: 'https://www.instagram.com/boia.planet/',
     });
+  });
+
+  it('the sticker packs show two photos, without the model one (plan 044 T324)', () => {
+    const stickers = MERCHANDISE_PRODUCTS.find((p) => p.id === 'pegatinas');
+    expect(stickers?.images.map((i) => i.src)).toEqual([
+      '/contenido/tienda/pegatinas-muestra.webp',
+      '/contenido/tienda/pegatinas-angulo-muestra.webp',
+    ]);
+    expect(stickers?.images.some((i) => i.kind === 'model')).toBe(false);
+    expect(existsSync(join(PUBLIC, '/contenido/tienda/pegatinas-modelo-muestra.webp'))).toBe(false);
   });
 
   it('the store has the real T-shirt and the handmade tote by Manu Ropero (plan 023 T249)', () => {
