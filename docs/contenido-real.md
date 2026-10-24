@@ -116,6 +116,16 @@ Lo demás sigue `muestra` y marcado hasta que llegue.
 - Fila 1: el cartel de Halloween (`halloween-2026.webp`, 900×1200) y la
   fila 9: el grupo de WhatsApp (`links.whatsapp`) son reales desde el plan 036
   (T316). El resto sigue `muestra`.
+- Vídeo de la presentación (la ventana negra después de la portada que se
+  abre a pantalla completa): el real de BOIA llegó el 2026-10-24 (plan 042,
+  T322; `BOIAvidwebsite.mov`, 8 s, 4K HEVC con sonido). Está en
+  `apps/web/public/contenido/portada/presentacion.mp4` (H.264 sin sonido,
+  1280×720, 24 fps, `+faststart`, ≤ 2 MB) con su póster
+  `presentacion.webp` (el primer fotograma, 1280×720, ≤ 120 kB);
+  `PRESENTATION_VIDEO` en `apps/web/lib/landing/hero-media.ts` apunta a los
+  dos. El original `.mov` no va al repositorio. Para cambiarlo, se
+  sustituyen los dos archivos con el mismo formato. El vídeo de muestra
+  (`art/landing/presentacion-muestra.*`) ya no existe.
 - Datos legales (P21): llegaron el 2026-10-22 (plan 039, T319). Titular «Boia
   planet», NIF E0764676C, domicilio Calle Alicante, 7, 03005 Alicante, correo
   `hola@boiaplanet.net`. Están en `apps/web/lib/i18n/es-zonas.ts`

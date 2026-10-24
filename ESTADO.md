@@ -4,6 +4,40 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 042 T322: Real presentation video
+
+Qué existe:
+
+- El vídeo real de BOIA (`BOIAvidwebsite.mov`: 8 s, 3840×2160, HEVC 10 bit,
+  bt709 SDR, 24 fps, audio PCM) sustituye a la muestra en la presentación de
+  la landing. `apps/web/public/contenido/portada/presentacion.mp4`: H.264
+  High 4.0, 1280×720, 24 fps, yuv420p, bt709, sin audio, `+faststart`,
+  8.0 s, 1 823 066 bytes (CRF 25, preset veryslow, escalado lanczos).
+  Póster `presentacion.webp`: primer fotograma (no es negro), 1280×720,
+  WebP calidad 80, 69 786 bytes.
+- `PRESENTATION_VIDEO` (`apps/web/lib/landing/hero-media.ts`) apunta a los
+  dos; sin la nota de muestra. Mismo comportamiento, tamaños y maqueta.
+- Borrados `art/landing/presentacion-muestra.mp4` y `.webp`: nada más los
+  usaba. El `.mov` original no está en el repositorio.
+- Prueba nueva `apps/web/lib/landing/hero-media.test.ts`: rutas reales, sin
+  «muestra», MP4 ≤ 2 MB con `moov` antes de `mdat`, póster WebP ≤ 120 kB.
+- `docs/contenido-real.md` («Qué ha llegado ya»): el vídeo llegó.
+
+Comandos:
+
+- `ffprobe presentacion.mp4` → h264, 1280×720, yuv420p, 24/1, un solo
+  stream (vídeo), duration 8.000000, size 1823066.
+- `pnpm exec vitest run --exclude '**/packages/db/**'` → 359 archivos,
+  3216 pasan, 3 omitidas.
+- `sh tools/spec/checks.sh` → OK. `pnpm lint` → 0. `pnpm typecheck` → OK.
+- `pnpm build` → exit 0; presupuesto de la landing 199.7 kB / 200.0 kB OK.
+
+Pendiente:
+
+- `tools/landing/presentacion.mjs` sigue generando la muestra en
+  `art/landing/` aunque ya no se usa; retirarlo o dejarlo es decisión de
+  Álvaro (fuera del alcance de T322).
+
 ## 2026-10-23 — plan 041 T321: More tolerant GPU probe for the hero globe
 
 Qué existe:

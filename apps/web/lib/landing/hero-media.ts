@@ -1,5 +1,3 @@
-import { ART_BASE_URL } from '../art-url';
-
 /**
  * The hero's static version (2026-10-08, decision 4): today the T78 stills of
  * the sea by the port; Roke will provide a video or a GIF to replace them.
@@ -19,13 +17,13 @@ export function heroMediaKind(src: string): HeroMediaKind {
 
 /**
  * The video of the presentation after the hero (plan 021 T235): the small
- * window that opens to the full screen. Today the 8 s sample built from the
- * project's art (`tools/landing/presentacion.mjs`, `muestra`). To swap it, put
- * the new file under `public/` (for example `public/contenido/portada/
- * presentacion.mp4`: muted H.264 MP4, ~8 s, 720p, ≤ 2 MB) with a poster frame
- * next to it, and set both paths here.
+ * window that opens to the full screen. Since plan 042 T322 it is BOIA's real
+ * video (8 s), converted to a muted H.264 MP4 (1280×720, 24 fps, yuv420p,
+ * `+faststart`, ≤ 2 MB) with its first frame as the poster (WebP, 1280×720).
+ * To swap it, replace both files under `public/contenido/portada/` in the
+ * same format.
  */
 export const PRESENTATION_VIDEO = {
-  src: `${ART_BASE_URL}/landing/presentacion-muestra.mp4`,
-  poster: `${ART_BASE_URL}/landing/presentacion-muestra.webp`,
+  src: '/contenido/portada/presentacion.mp4',
+  poster: '/contenido/portada/presentacion.webp',
 } as const;
