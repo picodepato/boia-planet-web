@@ -18,7 +18,7 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
 ## Tasks
 
 ## T328 — Real media in, sample media out
-- Status: pending
+- Status: done
 - Depends on: none
 - Goal: (1) Convert the 7 PNGs to WebP with the pipeline the gallery already uses (`tools/galeria/fotos.mjs` or the same settings: long side ≤ 1600 px, quality ~0.82) and the 3 videos to web clips the collage accepts (H.264 MP4, yuv420p, bt709, no audio, `+faststart`, 1280 px on the long side keeping aspect ratio, source fps, ≤ 60 s, aim ≤ 6 MB each; HEVC iPhone sources: check HDR/HLG and tone-map to SDR bt709 if needed) plus a WebP poster per clip (like `clips.mjs`). Put them under `apps/web/public/art/galeria/` (or `public/contenido/galeria/`, matching how real content is stored — follow `docs/contenido-real.md`). Spanish alt texts from the file names (they describe the scene). (2) Add them to the real album «Fotos de BOIA» (`REAL_ALBUM_ID`, `packages/store/src/sample/content.ts`), not sample. (3) Delete ALL sample media: albums `album-muestra` and `album-cala`, photos `foto-1..8`, `foto-cala-1..3`, sample clips `clip-boia-baila`, `clip-puerto-dia-noche`, `clip-barco-fiesta`, their files in `public/art/galeria/` and originals in `public/art/galeria-fuentes/` if only used for them, and stop the generators from recreating them (or retire them). Also delete the real-album photos `galeria-3` (person in a blue tracksuit with a ball) and `galeria-4` (Los Chunguitos album cover) and their files. Keep `galeria-1` and `galeria-2`. (4) Let clips appear in the landing collage too (today `resolve.ts` excludes videos from `block.photos`); they already play muted, looping, only on screen, never with reduced motion — keep that. Default portada selection (`selection: true`), in this order: the 7 new photos, then the `20260530_231216` and `IMG_0561` clips — 9 pieces (`HOME_PHOTOS_LIMIT` = 9 stays); `IMG_0564`, `galeria-1`, `galeria-2` only in the galería (Álvaro will change it from Admin in T329). (5) Islands/events that pointed at sample albums or a `coverPhotoId` of a deleted photo must point at a real one or none, without breaking the island galleries, `/galeria`, event pages and `/mar` sheets. Update tests and e2e specs that counted sample photos (e.g. `eventos.spec.ts` «Galería», `#fotos [data-pieza]` counts) to assert against the real content, never hand-written counts. Update `docs/contenido-real.md`.
 - Context: `packages/store/src/sample/content.ts` (~307-458), `apps/web/lib/landing/resolve.ts` (~106-116, `HOME_PHOTOS_LIMIT`), `apps/web/app/(landing)/components/media-collage.tsx`, `collage-viewer.tsx`, `photo-galleries.tsx`, `blocks.tsx` (~385-425), `tools/galeria/fotos.mjs`, `clips.mjs`, `apps/web/lib/admin/photo-upload.ts` (formats), `docs/contenido-real.md`, landing budget (~0.5 kB margin; each collage item adds HTML: keep the portada at 9 and the markup per item unchanged; report the final number).
@@ -28,10 +28,10 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
   - `grep -rn "foto-cala\|album-muestra\|clip-boia-baila\|galeria-3\|galeria-4" apps/web packages --include=*.ts --include=*.tsx` → nothing in app code
   - unit tests for the landing selection (9 pieces, clips allowed, order) and the e2e specs touched, run alone → pass
   - the project Test command → pass (landing budget OK)
-- Outcome:
+- Outcome: 7 photos + 3 clips (HLG→SDR, 1280 px, 2.9–5.4 MB) in public/contenido/galeria, album-boia; all sample media and galeria-3/4 removed (retiredIds in sample revision 4); clips allowed on the landing; default portada 7 photos + 2 clips — 848a44e
 
 ## T329 — Admin: thumbnails, delete, portada/galería and order, in production
-- Status: pending
+- Status: running (attempt 1)
 - Depends on: T328
 - Goal: In the Admin photos section, one list with a thumbnail of every piece (photos and clips) from both sources: the ones shipped in the code (real album) and the ones uploaded to Supabase (`event_photos`, buckets `event-photos` / `event-clips`). Per piece: a switch «En portada» (on = portada and galería; off = only galería), up/down arrows to order (the order applies to the portada and the galería), and «Borrar» with confirmation. It must work in production (accounts mode), not only on the browser's local copy as today. Design: a new Supabase table for per-piece settings keyed by piece id (e.g. `media_settings`: piece id, on_home, sort, hidden, updated_by, updated_at) with RLS, public read of what the site needs, writes only through admin RPCs (admin + 2FA, `public` INVOKER wrapper over `private` SECURITY DEFINER, empty search_path, audit row), like the plan 034/037 migrations. «Borrar» on an uploaded piece deletes its `event_photos` row and its storage object; on a piece shipped in the code it sets `hidden` (the file stays in the repo). The landing collage and `/galeria` (and island/event galleries) apply the settings: hidden pieces disappear, portada = pieces with on_home in sort order up to `HOME_PHOTOS_LIMIT`, galería in sort order; uploaded pieces can now be put on the portada too (remove the forced `selection: false` or let the setting override it). The landing is `force-static`: apply the settings in the browser the same way `homeWithSharedPhotos` already merges Supabase photos (no new code on the landing critical path; keep it in the lazy chunk). Demo mode (no Supabase): the same controls work on the local store. Migration applied to dev only; the orchestrator applies it to production.
 - Context: `apps/web/app/admin/sections/photos.tsx`, `apps/web/lib/admin/photo-store.ts`, `island-photos.ts`, `shared-photos.ts`, `actions.ts` (~473 `selection: false`), `apps/web/lib/landing/resolve.ts`, `e2e/admin-fotos.spec.ts`, migrations `20261008100400_gallery_clips.sql`, `20261021200100_guest_lists.sql` (admin RPC pattern), `packages/db/src/supabase/schema.supabase.ts` (allowlists), `pnpm --filter @boia/db db:migrate:dev -- --no-seed`, `db:types:dev`, `node src/cli/test-supabase.ts <file>` in packages/db.
@@ -43,6 +43,18 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
   - the project Test command → pass (landing budget OK)
 - Outcome:
 
+## T330 — Presentation video must not download on load
+- Status: running (attempt 1)
+- Depends on: none
+- Goal: e2e «REQ-COM-032: /?intro=0 carga sin descargar vídeos» (in `apps/web/e2e/videos-perezosos.spec.ts`) fails on mobile and desktop since plan 042/043/046: loading the landing downloads `presentacion.mp4` (and the reel has an empty `<video>`) before the user scrolls to the reel. Make the reel video load only when the reel is about to be shown (as the original sample did), keeping plans 043 (720p/1080p choice) and 046 (Range) intact, and keep the poster lazy. Run that spec and the reel e2e spec alone.
+- Context: `apps/web/app/(landing)/components/presentation.tsx`, `presentation-motion.tsx`, `apps/web/lib/landing/hero-media.ts`, `apps/web/e2e/videos-perezosos.spec.ts`, plans 042/043/046.
+- Scope: may touch the reel components and their tests / must not touch the gallery/collage (T329 runs in parallel), video files, SQL, production. Landing budget ~0.3 kB margin.
+- Done when:
+  - `E2E_PORT=<free> pnpm e2e videos-perezosos.spec.ts` → pass (mobile and desktop)
+  - the reel e2e spec alone → pass (or the same failures as on main, stated)
+  - the project Test command → pass
+- Outcome:
+
 ## Decisions
 - 2026-10-24: All sample photos and clips go; galeria-3 (blue tracksuit) and galeria-4 (Los Chunguitos) go too; galeria-1/2 stay (Álvaro)
 - 2026-10-24: Álvaro chooses the portada from Admin; Admin needs thumbnails + delete + portada/galería switch + order, working in production (Álvaro)
@@ -50,6 +62,11 @@ ffmpeg: `C:\Users\alvar\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Micr
 - 2026-10-24: .MOV upload in Admin not included (Álvaro did not pick it) (orchestrator)
 - 2026-10-24: Push everything together at the end, including T327 and the production migration (Álvaro: «al acabar súbelo todo junto»)
 
+- 2026-10-24 T328: media under public/contenido/galeria (art/galeria and galeria-fuentes deleted); tools/galeria scripts now convert Álvaro's sources; clip-480 kept as e2e fixture; /mar photos island → album-boia; one-line fallback album change in admin photos.tsx (agent)
+- 2026-10-24: T330 added: plan 042 presentation video downloads on load (REQ-COM-032 e2e failing) (orchestrator)
+
 ## Proposals (new scope)
 
 ## Log
+- 2026-10-24 T328 launched · attempt 1 · agent a08726efa11cefb8f
+- 2026-10-24 T328 done · branch worktree-agent-a08726efa11cefb8f → 848a44e
