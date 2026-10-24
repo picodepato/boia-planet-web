@@ -62,7 +62,7 @@ describe('parseRange', () => {
 describe('isMediaPath y run_worker_first', () => {
   it('vídeos y audios sí; imágenes, modelos y páginas no', () => {
     expect(isMediaPath('/contenido/portada/presentacion.mp4')).toBe(true);
-    expect(isMediaPath('/art/galeria/boia-baila.MP4')).toBe(true);
+    expect(isMediaPath('/contenido/galeria/clip-img-0561.MP4')).toBe(true);
     expect(isMediaPath('/radio/muestra/muestra-001.mp3')).toBe(true);
     expect(isMediaPath('/contenido/portada/presentacion.webp')).toBe(false);
     expect(isMediaPath('/art/barco/barco.glb')).toBe(false);

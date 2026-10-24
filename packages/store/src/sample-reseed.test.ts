@@ -212,8 +212,43 @@ describe('fotos reales renovadas en un navegador con la revisión 2 (T277)', () 
     expect(mine).toMatchObject({ alt: 'Foto subida en el Admin', selection: true });
     const home = await repo.content.home();
     const photo = home.photos.find((p) => p.id === 'galeria-1');
-    expect(photo).toMatchObject({ albumId: 'album-boia', selection: true });
+    // Desde el plan 048 (T328) galeria-1 sigue real pero sólo en la galería.
+    expect(photo).toMatchObject({
+      albumId: 'album-boia',
+      src: '/contenido/galeria/galeria-1.webp',
+      selection: false,
+    });
     const album = (home.albums ?? []).find((a) => a.id === 'album-boia');
     expect(album?.sample).toBe(false);
+  });
+});
+
+/**
+ * Plan 048 T328: fuera toda la muestra de la Galería. Un navegador con la
+ * revisión 3 que guardó una foto o un clip de muestra (o su álbum) deja de
+ * verlos; lo subido en el Admin se queda.
+ */
+describe('fotos y clips de muestra retirados en un navegador con la revisión 3 (T328)', () => {
+  it('las piezas y los álbumes de muestra guardados desaparecen', async () => {
+    const doc = staleDoc() as unknown as { content: Record<string, unknown> };
+    doc.content.sampleRevision = 3;
+    const items = doc.content.items as Record<string, Record<string, unknown>>;
+    const retired = SAMPLE_RESEEDS.find((s) => s.revision === 4)!.retiredIds!;
+    const photo = (id: string, albumId: string) =>
+      edit({ id, albumId, alt: id, src: `/art/galeria/${id}.webp`, width: 800, height: 600 });
+    items.photos = Object.fromEntries([
+      ...retired.photos!.map((id) => [id, photo(id, retired.albums![0]!)]),
+      ['mi-foto', photo('mi-foto', 'album-boia')],
+    ]);
+    items.albums = Object.fromEntries(
+      retired.albums!.map((id) => [id, edit({ id, title: id, date: AT, sample: true })]),
+    );
+    const { repo } = open(doc);
+    const home = await repo.content.home();
+    const ids = new Set(home.photos.map((p) => p.id));
+    for (const id of retired.photos!) expect(ids.has(id)).toBe(false);
+    expect(ids.has('mi-foto')).toBe(true);
+    const albums = (home.albums ?? []).map((a) => a.id);
+    expect(albums).toEqual(['album-boia']);
   });
 });

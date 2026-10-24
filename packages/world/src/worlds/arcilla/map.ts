@@ -470,7 +470,7 @@ const ISLANDS: PlaceInput[] = [
     -20,
     4.0,
     // REQ-AVE-022: la galería como lugar del mundo.
-    [content('photos', 'album-muestra'), points(20), visit()],
+    [content('photos', 'album-boia'), points(20), visit()],
     [
       'zonas/fotos',
       'zonas/fotos/proximidad/isla',

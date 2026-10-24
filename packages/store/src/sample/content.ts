@@ -62,7 +62,7 @@ const SANDBOX = SAMPLE_LINK_BASE;
 /** El álbum de las fotos reales de BOIA, sin la marca `muestra` (plan 029 T277). */
 export const REAL_ALBUM_ID = 'album-boia';
 
-/** Fotos del bloque de la home: caben las 4 reales y las de muestra de la selección (9 hoy; ≥ 7). */
+/** Piezas del bloque de la home: la selección de la portada (7 fotos y 2 clips hoy, plan 048 T328). */
 export const HOME_PHOTOS_LIMIT = 9;
 
 /** The home blocks with the real links where there are (P15) and sandbox ones elsewhere. */
@@ -306,154 +306,145 @@ export const SAMPLE_ARTISTS: AreaInput<'artists'>[] = sampleArtists();
 
 export const SAMPLE_ALBUMS: AreaInput<'albums'>[] = [
   // Fotos reales de BOIA (plan 029 T277): sin evento ni isla, van a la galería general; sin `sample`.
+  // Desde el plan 048 (T328) es el único álbum: las fotos y los clips de muestra ya no existen.
   {
     id: REAL_ALBUM_ID,
     title: 'Fotos de BOIA',
     date: '2026-10-13T12:00:00+02:00',
     coverPhotoId: 'galeria-1',
   },
-  {
-    id: 'album-muestra',
-    title: 'All Day BOIA 2026',
-    eventId: 'ev-finalizado',
-    date: '2026-06-20T12:00:00+02:00',
-    coverPhotoId: 'foto-1',
-    sample: true,
-  },
-  {
-    id: 'album-cala',
-    title: 'Tardes en la cala',
-    islandId: 'cala',
-    date: '2026-08-15T19:00:00+02:00',
-    sample: true,
-  },
 ];
 
-/** Los clips de muestra (art/galeria/, tools/galeria/clips.mjs), con su tamaño. */
-const SAMPLE_CLIPS = [
-  {
-    id: 'boia-baila',
-    albumId: 'album-cala',
-    alt: 'Clip de muestra: la boia flota al atardecer',
-    width: 480,
-    height: 480,
-  },
-  {
-    id: 'puerto-dia-noche',
-    albumId: 'album-muestra',
-    alt: 'Clip de muestra: el puerto pasa del día a la noche',
-    width: 640,
-    height: 400,
-  },
-  {
-    id: 'barco-fiesta',
-    albumId: 'album-muestra',
-    alt: 'Clip de muestra: el barco de fiesta da la vuelta',
-    width: 360,
-    height: 640,
-  },
-] as const;
+/** Dónde están las fotos y los clips reales de la Galería (docs/contenido-real.md). */
+const GALLERY_DIR = '/contenido/galeria';
 
 /**
- * Las fotos de muestra de la Galería (plan 020 T234): composiciones con arte
- * del proyecto (tools/galeria/fotos.mjs, art/galeria/<id>.webp), cada una con
- * su forma, para que el collage mezcle tamaños. `muestra`.
+ * Las fotos reales (plan 048 T328): las 7 que mandó Álvaro el 2026-10-24
+ * (tools/galeria/fotos.mjs, WebP de ≤ 1600 px), en el orden de la portada, y
+ * las 2 de antes que se quedan (plan 023 T250, derechos aprobados el
+ * 2026-10-13), sólo en la galería. `onHome`: en la selección de la portada.
  */
-const SAMPLE_STILLS = [
-  { id: 'foto-1', albumId: 'album-muestra', width: 1200, height: 800 },
-  { id: 'foto-2', albumId: 'album-muestra', width: 640, height: 800 },
-  { id: 'foto-3', albumId: 'album-muestra', width: 800, height: 800 },
-  { id: 'foto-4', albumId: 'album-muestra', width: 1280, height: 720 },
-  { id: 'foto-5', albumId: 'album-muestra', width: 600, height: 900 },
-  { id: 'foto-6', albumId: 'album-muestra', width: 960, height: 720 },
-  { id: 'foto-7', albumId: 'album-muestra', width: 720, height: 960 },
-  { id: 'foto-8', albumId: 'album-muestra', width: 1000, height: 800 },
-  { id: 'foto-cala-1', albumId: 'album-cala', width: 720, height: 960 },
-  { id: 'foto-cala-2', albumId: 'album-cala', width: 800, height: 800 },
-  { id: 'foto-cala-3', albumId: 'album-cala', width: 1280, height: 800 },
-] as const;
-
-/**
- * Las 4 fotos reales (plan 023 T250; tools/galeria/fotos.mjs, art/galeria/
- * galeria-N.webp). Álvaro aprobó sus derechos el 2026-10-13 (plan 029 T277):
- * ya no son `muestra` (viven en `REAL_ALBUM_ID`, un álbum sin la marca) y
- * salen en la home, las primeras.
- */
-
-const SAMPLE_GALERIA = [
+const REAL_PHOTOS = [
+  {
+    id: 'galeria-dj-cabina-humo-neon',
+    alt: 'DJ en la cabina entre humo y luces de neón',
+    width: 930,
+    height: 1600,
+    onHome: true,
+  },
+  {
+    id: 'galeria-dj-neones-humo',
+    alt: 'DJ entre neones y humo',
+    width: 912,
+    height: 1600,
+    onHome: true,
+  },
+  {
+    id: 'galeria-djs-cantando-palmeras',
+    alt: 'DJs cantando entre luces de neón y palmeras',
+    width: 1076,
+    height: 1462,
+    onHome: true,
+  },
+  {
+    id: 'galeria-fiesta-nocturna-humo',
+    alt: 'Fiesta nocturna entre luces y humo',
+    width: 1536,
+    height: 1024,
+    onHome: true,
+  },
+  {
+    id: 'galeria-grafiti-valla',
+    alt: 'Grafiti nocturno junto a la valla iluminada',
+    width: 1451,
+    height: 1084,
+    onHome: true,
+  },
+  {
+    id: 'galeria-mezcla-allen-heath',
+    alt: 'Mezcla nocturna en una mesa Allen & Heath',
+    width: 1600,
+    height: 872,
+    onHome: true,
+  },
+  {
+    id: 'galeria-pista-baile-humo',
+    alt: 'Pista de baile entre luces y humo',
+    width: 1098,
+    height: 1433,
+    onHome: true,
+  },
   {
     id: 'galeria-1',
-    albumId: REAL_ALBUM_ID,
     alt: 'DJ con un vinilo en la mano, en la cabina de los platos',
     width: 1200,
     height: 675,
+    onHome: false,
   },
   {
     id: 'galeria-2',
-    albumId: REAL_ALBUM_ID,
     alt: 'Gente bailando en una fiesta de BOIA',
     width: 1200,
     height: 675,
-  },
-  {
-    id: 'galeria-3',
-    albumId: REAL_ALBUM_ID,
-    alt: 'Hombre con camiseta azul retro de Francia, sujetando un balón',
-    width: 800,
-    height: 1321,
-  },
-  {
-    id: 'galeria-4',
-    albumId: REAL_ALBUM_ID,
-    alt: 'Portada de muestra del álbum «Limosna de amor», de Los Chunguitos',
-    width: 1000,
-    height: 965,
+    onHome: false,
   },
 ] as const;
 
 /**
- * Fotos de muestra y los clips de la Galería. Las marcadas `selection` son las
- * que salen en la home (D-23, respuesta 6); todas, en `/galeria`, en la
- * galería de su isla (la del evento del álbum, o la del álbum).
+ * Los clips reales (plan 048 T328; tools/galeria/clips.mjs): H.264 sin audio,
+ * 1280 px de lado largo, con su póster WebP. Los dos primeros, en la portada
+ * detrás de las fotos; el tercero, sólo en la galería.
+ */
+const REAL_CLIPS = [
+  {
+    id: 'clip-20260530-231216',
+    alt: 'Gente bailando de noche entre luces azules y moradas',
+    width: 1280,
+    height: 720,
+    onHome: true,
+  },
+  {
+    id: 'clip-img-0561',
+    alt: 'Una banda toca en directo bajo un toldo: batería, guitarra, teclado y bajo',
+    width: 720,
+    height: 1280,
+    onHome: true,
+  },
+  {
+    id: 'clip-img-0564',
+    alt: 'DJ pinchando vinilos en una cabina redonda, bajo una bola de discoteca y una red',
+    width: 720,
+    height: 1280,
+    onHome: false,
+  },
+] as const;
+
+/**
+ * Las fotos y los clips de la Galería, todos reales y en `REAL_ALBUM_ID`. Los
+ * marcados `selection` salen en la portada (D-23, respuesta 6), en este orden;
+ * todos, en `/galeria`. En la portada un clip enseña su póster y sólo se
+ * reproduce, mudo, mientras está en pantalla (REQ-COM-032).
  */
 export const SAMPLE_PHOTOS: AreaInput<'photos'>[] = [
-  ...SAMPLE_GALERIA.map((p) => ({
+  ...REAL_PHOTOS.map((p) => ({
     id: p.id,
-    albumId: p.albumId,
+    albumId: REAL_ALBUM_ID,
     alt: p.alt,
-    src: `/art/galeria/${p.id}.webp`,
+    src: `${GALLERY_DIR}/${p.id}.webp`,
     width: p.width,
     height: p.height,
-    selection: true,
+    selection: p.onHome,
   })),
-  ...SAMPLE_STILLS.map((p, i) => {
-    const cala = p.albumId === 'album-cala';
-    const n = cala ? Number(p.id.slice('foto-cala-'.length)) : i + 1;
-    return {
-      id: p.id,
-      albumId: p.albumId,
-      alt: cala
-        ? `Foto de muestra ${n} de una tarde en la cala`
-        : `Foto de muestra ${n} de un All Day BOIA`,
-      src: `/art/galeria/${p.id}.webp`,
-      width: p.width,
-      height: p.height,
-      selection: cala ? n === 1 : n <= 4,
-    };
-  }),
-  // Clips de muestra de la Galería (plan 019 T216, decisión 8): hechos con
-  // arte del proyecto (tools/galeria/clips.mjs), servidos desde art/. Nunca
-  // en la home (`selection: false`): la home no descarga vídeos (REQ-COM-032).
-  ...SAMPLE_CLIPS.map((c) => ({
-    id: `clip-${c.id}`,
-    albumId: c.albumId,
+  ...REAL_CLIPS.map((c) => ({
+    id: c.id,
+    albumId: REAL_ALBUM_ID,
     alt: c.alt,
     kind: 'video' as const,
-    src: `/art/galeria/${c.id}.mp4`,
-    poster: `/art/galeria/${c.id}.webp`,
+    src: `${GALLERY_DIR}/${c.id}.mp4`,
+    poster: `${GALLERY_DIR}/${c.id}.webp`,
     width: c.width,
     height: c.height,
-    selection: false,
+    selection: c.onHome,
   })),
 ];
 

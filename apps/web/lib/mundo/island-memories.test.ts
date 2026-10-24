@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { islandMemoryGalleries } from '../admin/world';
 import { EVENTS_PATH, photosHref } from '../landing/eventos';
-import { liveContent, resetLiveContentForTests } from '../landing/live-content';
+import type { BoiaRepository } from '@boia/store';
+import { liveContent, refreshLiveContent, resetLiveContentForTests } from '../landing/live-content';
 import { SAMPLE_CONTENT } from '../landing/sample-content';
 import { IslandMemories, IslandUpcoming } from './place-panels';
 
@@ -20,6 +21,19 @@ const islands = [
 const last = Math.max(...SAMPLE_CONTENT.events.map((e) => Date.parse(e.startsAt)));
 const AFTER_ALL = new Date(last + 30 * 24 * 3600 * 1000);
 // Only the anchors: React also emits <link rel="preload" href=…> for a real poster image.
+/**
+ * La muestra ya no trae fotos de eventos (plan 048 T328: sólo el álbum real,
+ * sin evento): una fiesta con isla recibe un álbum con una foto real.
+ */
+const remembered = SAMPLE_CONTENT.events.find((e) => e.islandId)!;
+const WITH_ALBUM = {
+  ...SAMPLE_CONTENT,
+  albums: [
+    ...(SAMPLE_CONTENT.albums ?? []),
+    { id: 'album-recuerdo', title: 'Recuerdo', date: remembered.startsAt, eventId: remembered.id },
+  ],
+  photos: [{ ...SAMPLE_CONTENT.photos[0]!, albumId: 'album-recuerdo' }, ...SAMPLE_CONTENT.photos],
+};
 const hrefs = (html: string) => [...html.matchAll(/<a\s[^>]*?href="([^"]+)"/g)].map((m) => m[1]!);
 
 afterEach(() => {
@@ -28,7 +42,10 @@ afterEach(() => {
 });
 
 describe('recuerdos y próximos eventos en la isla (REQ-AVE-014)', () => {
-  it('con y sin fotos: cada fiesta pasada sale como recuerdo y ninguna tarjeta enlaza a sus entradas', () => {
+  it('con y sin fotos: cada fiesta pasada sale como recuerdo y ninguna tarjeta enlaza a sus entradas', async () => {
+    await refreshLiveContent({
+      content: { home: async () => WITH_ALBUM },
+    } as unknown as BoiaRepository);
     vi.useFakeTimers();
     vi.setSystemTime(AFTER_ALL);
     const memories = islands.flatMap((id) =>

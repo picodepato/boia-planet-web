@@ -136,6 +136,30 @@ Lo demás sigue `muestra` y marcado hasta que llegue.
   ≥ 5 Mbps; si no, la de 720p. El original `.mov` no va al repositorio.
   Para cambiarlo, se sustituyen los tres archivos con el mismo formato. El vídeo de muestra
   (`art/landing/presentacion-muestra.*`) ya no existe.
+- Fotos y vídeos de la Galería y de la portada (`#fotos`): los reales de
+  BOIA llegaron el 2026-10-24 (plan 048, T328): 7 fotos PNG y 3 vídeos
+  (`20260530_231216.mp4`, `IMG_0561.MOV`, `IMG_0564.MOV`). Están en
+  `apps/web/public/contenido/galeria/`, junto a `galeria-1` y `galeria-2`
+  (las dos de antes que se quedan), todas en el álbum real «Fotos de BOIA»
+  (`REAL_ALBUM_ID`, `REAL_PHOTOS` y `REAL_CLIPS` en
+  `packages/store/src/sample/content.ts`, con su texto alternativo). Ya no
+  queda ninguna foto ni clip de muestra (ni `art/galeria/`).
+  - **Fotos**: WebP de lado largo ≤ 1600 px, calidad 0,82, sin metadatos
+    (lo mismo que la subida del Admin): `node tools/galeria/fotos.mjs
+    <carpeta>`. El id sale del nombre del archivo (`galeria-<escena>`).
+  - **Clips**: H.264, yuv420p, bt709, sin audio, `+faststart`, 1280 px de
+    lado largo con su proporción, los fotogramas de la fuente, ≤ 60 s y
+    unos 6 MB como mucho, con un póster WebP (`<id>.webp`, el fotograma de
+    0,5 s): `FFMPEG=<ruta de ffmpeg> node tools/galeria/clips.mjs
+    <carpeta>`. Los `.MOV` del iPhone son HDR (HLG): el script los pasa a
+    SDR bt709 con un mapeo de tonos.
+  - **Portada**: las piezas con `onHome: true`, en su orden, hasta 9
+    (`HOME_PHOTOS_LIMIT`): las 7 fotos nuevas y los clips `20260530_231216`
+    e `IMG_0561`. `IMG_0564`, `galeria-1` y `galeria-2` sólo salen en
+    `/galeria`. En la portada un clip enseña su póster y sólo se reproduce,
+    mudo y en bucle, mientras está en pantalla (nunca con «reducir
+    movimiento»). Desde el T329 lo cambia Álvaro en el Admin.
+  - Los originales (PNG, MOV, MP4) no van al repositorio.
 - Datos legales (P21): llegaron el 2026-10-22 (plan 039, T319). Titular «Boia
   planet», NIF E0764676C, domicilio Calle Alicante, 7, 03005 Alicante, correo
   `hola@boiaplanet.net`. Están en `apps/web/lib/i18n/es-zonas.ts`

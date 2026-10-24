@@ -300,7 +300,7 @@ export function PhotosSection({ ctx }: { ctx: AdminContext }) {
                 'photos',
                 {
                   id: nextId(),
-                  albumId: albums[0]?.id ?? 'album-muestra',
+                  albumId: albums[0]?.id ?? 'album-boia', // REAL_ALBUM_ID (plan 048 T328)
                   alt: alt.trim(),
                   width: 4,
                   height: 3,

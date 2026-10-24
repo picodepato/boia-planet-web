@@ -1,6 +1,6 @@
 import { canBuy, eventState, isIslandlessSatellite } from '@boia/contracts';
 import { eventSailHref } from '../lib/world-handoff';
-import { HALLOWEEN_EVENT_ID } from '@boia/store';
+import { HALLOWEEN_EVENT_ID, HOME_PHOTOS_LIMIT } from '@boia/store';
 import { WORLD_REGISTRY } from '@boia/world';
 import { expect, test, type Page } from '@playwright/test';
 import { eventIslands } from '../lib/admin/world';
@@ -28,7 +28,8 @@ const map = WORLD_REGISTRY.map;
 const island = eventIslands(map).find((p) =>
   p.behaviors.some((b) => b.type === 'content' && b.params.target === 'event'),
 )!;
-const selection = SAMPLE_CONTENT.photos.filter((p) => p.selection);
+// La selección de la portada, en su orden, fotos y clips (plan 048 T328).
+const selection = SAMPLE_CONTENT.photos.filter((p) => p.selection).slice(0, HOME_PHOTOS_LIMIT);
 
 /** Sin la entrada: ni el guion de arranque ni la escena de la intro. */
 async function noIntro(page: Page) {
@@ -44,7 +45,12 @@ test('la ficha de Halloween: el cartel que falta, su isla, su estado y «Solo en
   const ficha = page.getByTestId('evento-ficha');
   await expect(ficha.getByRole('heading', { level: 1 })).toHaveText(halloween.name);
   await expect(ficha).toHaveAttribute('data-estado', eventState(halloween, now));
-  await expect(ficha.getByTestId('evento-cartel')).toContainText(EVENTOS_COPY.posterSoon);
+  // Con su cartel real (plan 036 T316) se ve la imagen; sin él, el aviso.
+  if (halloween.posterUrl)
+    await expect(
+      ficha.getByRole('img', { name: EVENTOS_COPY.posterAlt(halloween.name) }),
+    ).toBeVisible();
+  else await expect(ficha.getByTestId('evento-cartel')).toContainText(EVENTOS_COPY.posterSoon);
   await expect(ficha).toContainText('BOIA Club');
   await expect(ficha).toContainText(halloween.placeLabel);
   // Desde T67 tiene isla propia (la Isla de Halloween): «Ir a su isla» y nada de «calienta».
@@ -74,7 +80,13 @@ test('la home enseña sólo la selección de fotos y «Ver todas» lleva a la Ga
   await page.goto('/?intro=0');
   await expect(page.locator('main')).toHaveAttribute('data-contenido', 'repositorio');
   const grid = page.locator('#fotos [data-pieza]');
-  await expect(grid).toHaveCount(Math.min(selection.length, 6));
+  await expect(grid).toHaveCount(selection.length);
+  expect(
+    await grid.evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.pieza)),
+  ).toEqual(selection.map((p) => p.id));
+  await expect(page.locator('#fotos [data-kind="video"]')).toHaveCount(
+    selection.filter((p) => p.kind === 'video').length,
+  );
   // El enlace de la home va directo a /galeria (T227; /fotos sigue redirigiendo).
   await expect(page.getByTestId('ver-fotos')).toHaveAttribute('href', '/galeria');
   await page.getByTestId('ver-fotos').click();
@@ -158,6 +170,7 @@ test.describe('sin JavaScript', () => {
     await page.goto(photosHref(island.id));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(FOTOS_COPY.pageTitle);
     await expect(page.getByTestId(`galeria-${island.id}`)).toBeInViewport();
-    await expect(page.locator('.galeria [role="img"]').first()).toBeVisible();
+    // El collage, pintado por el servidor: las fotos reales (plan 048 T328).
+    await expect(page.locator('.galeria [data-pieza] img').first()).toBeVisible();
   });
 });

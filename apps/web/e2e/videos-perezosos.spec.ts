@@ -42,8 +42,37 @@ test('REQ-COM-032: /?intro=0 carga sin descargar vídeos', async ({ page }) => {
   expect(downloads).toEqual([]);
 });
 
+test('plan 048 T328: un clip de la portada sólo se descarga y se reproduce, mudo, en pantalla', async ({
+  page,
+}) => {
+  const downloads = mediaRequests(page);
+  await page.goto('/?intro=0');
+  const clip = page.locator('#fotos [data-kind="video"]').first();
+  await expect(clip.locator('video')).toHaveCount(0);
+  await clip.scrollIntoViewIfNeeded();
+  const video = clip.locator('video');
+  await expect(video).toHaveCount(1);
+  expect(await video.evaluate((v: HTMLVideoElement) => v.muted && v.loop)).toBe(true);
+  await expect
+    .poll(() => downloads.some((u) => /\/contenido\/galeria\/.+\.mp4$/.test(u)))
+    .toBe(true);
+});
+
 test.describe('la Galería con «reducir movimiento»', () => {
   test.use({ reducedMotion: 'reduce' });
+
+  test('REQ-COM-032: los clips de la portada (plan 048 T328) enseñan su póster y no se descargan', async ({
+    page,
+  }) => {
+    const downloads = mediaRequests(page);
+    await page.goto('/?intro=0');
+    const clip = page.locator('#fotos [data-kind="video"]').first();
+    await clip.scrollIntoViewIfNeeded();
+    await expect(clip.locator('img')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(downloads).toEqual([]);
+    await expect(page.locator('#fotos video')).toHaveCount(0);
+  });
 
   test('REQ-COM-032: /galeria enseña los pósteres de los clips y no descarga ninguno', async ({
     page,

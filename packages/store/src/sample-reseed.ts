@@ -48,6 +48,26 @@ export const SAMPLE_RESEEDS: readonly SampleReseed[] = [
       'las 4 fotos reales (galeria-1..4) en la selección de la home, en su álbum sin muestra, y el bloque de fotos con tope 9 (plan 029 T277)',
     areas: ['homeBlocks', 'photos', 'albums'],
   },
+  {
+    revision: 4,
+    reason:
+      'las fotos y los clips reales de Álvaro en la portada y la galería; fuera toda la muestra (plan 048 T328)',
+    areas: ['photos', 'albums'],
+    // Copia fija de lo que la muestra retiró: así un navegador que guardó una
+    // de estas piezas (o su álbum) deja de verla.
+    retiredIds: {
+      albums: ['album-muestra', 'album-cala'],
+      photos: [
+        ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `foto-${n}`),
+        ...[1, 2, 3].map((n) => `foto-cala-${n}`),
+        'clip-boia-baila',
+        'clip-puerto-dia-noche',
+        'clip-barco-fiesta',
+        'galeria-3',
+        'galeria-4',
+      ],
+    },
+  },
 ];
 
 /** ids de la muestra actual por área, para saber qué es de la muestra. */

@@ -106,10 +106,12 @@ export function resolveBlock(
     case 'photos': {
       // Sólo la selección de Álvaro (D-23, respuesta 6); el resto, en /fotos.
       // Las fotos reales (de un álbum sin la marca `muestra`) van primero (plan 029 T277);
-      // dentro de cada grupo se respeta el orden del contenido.
+      // dentro de cada grupo se respeta el orden del contenido. Los clips también
+      // (plan 048 T328): el collage pinta su póster y sólo baja el vídeo en
+      // pantalla y sin «reducir movimiento» (REQ-COM-032).
       const sampleAlbums = new Set((content.albums ?? []).filter((a) => a.sample).map((a) => a.id));
       const chosen = content.photos
-        .filter((p) => p.selection && p.kind !== 'video') // la home no baja clips (REQ-COM-032)
+        .filter((p) => p.selection)
         .filter((p) => block.albumId === undefined || p.albumId === block.albumId);
       const photos = [
         ...chosen.filter((p) => !sampleAlbums.has(p.albumId)),

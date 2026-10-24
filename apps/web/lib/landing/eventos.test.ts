@@ -209,11 +209,20 @@ describe('ficha de evento: lo que falta, cartel de fondo, puerta y descuento (pl
   });
 
   it('las fotos del evento van en collage, como la Galería', () => {
-    const past = SAMPLE_CONTENT.events.find((e) => {
-      const v = eventPageView(content, e.slug, after(e));
-      return v && v.photos.length > 0;
-    })!;
-    const html = page(past, after(past));
+    // La muestra ya no trae álbumes de evento (plan 048 T328): uno con una foto real.
+    const past = SAMPLE_CONTENT.events.find((e) => e.state === 'finished')!;
+    const photo = SAMPLE_CONTENT.photos[0]!;
+    const view = eventPageView(
+      {
+        ...content,
+        albums: [...content.albums, { ...content.albums[0]!, id: 'album-x', eventId: past.id }],
+        photos: [{ ...photo, albumId: 'album-x' }],
+      },
+      past.slug,
+      after(past),
+    );
+    expect(view?.photos.map((p) => p.id)).toEqual([photo.id]);
+    const html = renderToStaticMarkup(createElement(EventPageBody, { view: view! }));
     expect(html).toContain('data-testid="evento-collage"');
   });
 });

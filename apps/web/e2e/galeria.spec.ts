@@ -308,8 +308,8 @@ test('el Admin sube un clip (modo local) y sale en el collage, mudo', async ({ p
   await form.getByTestId('fotos-isla-subir').click();
   await expect(form).toContainText(t('admin.photos.upload.problem.type', { file: 'video.mov' }));
 
-  // Un mp4 de verdad (un clip de muestra).
-  const mp4 = readFileSync(new URL('../../../art/galeria/boia-baila.mp4', import.meta.url));
+  // Un mp4 de verdad (480 × 480, el clip de muestra de antes, ahora sólo para pruebas).
+  const mp4 = readFileSync(new URL('./fixtures/clip-480.mp4', import.meta.url));
   await form.getByTestId('fotos-isla-archivos').setInputFiles({
     name: 'baile.mp4',
     mimeType: 'video/mp4',

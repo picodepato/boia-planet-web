@@ -1,183 +1,146 @@
 #!/usr/bin/env node
 /**
- * Los clips de muestra de la Galería (plan 019 T216, decisión 8: «el agente
- * añade 2–3 clips de muestra hechos con arte del proyecto»). `muestra`.
+ * Los clips reales de la Galería (plan 048 T328): de los vídeos que manda
+ * Álvaro (MP4 o MOV de iPhone) a clips que el collage acepta:
  *
- * Cada clip se dibuja en un <canvas> del Chromium de Playwright con arte de
- * art/ y se graba con MediaRecorder en MP4 (H.264, sin audio); su póster es
- * un fotograma en WebP. Salen en art/galeria/ y la web los sirve por
- * /api/art/galeria/… (SAMPLE_PHOTOS de packages/store los nombra).
+ *   - H.264 (High), yuv420p, bt709, sin audio, `+faststart`;
+ *   - 1280 px de lado largo con su proporción (girado según el móvil), los
+ *     fotogramas por segundo de la fuente, ≤ 60 s;
+ *   - las fuentes HDR (HLG o PQ en bt2020, las del iPhone) pasan a SDR bt709
+ *     con un mapeo de tonos (zscale + tonemap); las SDR sólo se escalan;
+ *   - un póster WebP (calidad 82) con el fotograma de 0,5 s.
  *
- *   - boia-baila: la boia del tutorial (art/boia-tutorial, 12 fotogramas)
- *     flotando sobre olas de píxel. 480 × 480, 4 s.
- *   - puerto-dia-noche: el puerto del hero (art/landing/hero-still*), de día
- *     a noche con un zoom lento. 640 × 400, 5 s.
- *   - barco-fiesta: el barco de fiesta (art/barco/fiesta) dando la vuelta
- *     con sus 8 direcciones. 360 × 640, 4 s.
+ * Salen en apps/web/public/contenido/galeria/<id>.mp4 y <id>.webp; REAL_CLIPS
+ * de packages/store (sample/content.ts) los nombra con su tamaño. Las
+ * fuentes no van al repositorio.
  *
- * Uso (desde la raíz): node tools/galeria/clips.mjs
+ * Los clips de muestra de antes (boia-baila, puerto-dia-noche, barco-fiesta,
+ * dibujados con arte del proyecto) ya no existen: este script ya no los crea.
+ *
+ * Uso (desde la raíz): node tools/galeria/clips.mjs <carpeta de las fuentes>
+ * El ffmpeg es el del PATH, o el de la variable FFMPEG (ffprobe, a su lado).
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const ART = join(ROOT, 'art');
-const OUT = join(ART, 'galeria');
-const require = createRequire(join(ROOT, 'apps/web/package.json'));
-const { chromium } = require('@playwright/test');
+const OUT = join(ROOT, 'apps/web/public/contenido/galeria');
+const LONG_SIDE = 1280;
+const MAX_SECONDS = 60;
 
-const dataUrl = (rel) => {
-  const ext = rel.endsWith('.webp') ? 'webp' : 'png';
-  return `data:image/${ext};base64,${readFileSync(join(ART, rel)).toString('base64')}`;
-};
-
-const CLIPS = [
-  {
-    id: 'boia-baila',
-    width: 480,
-    height: 480,
-    seconds: 4,
-    images: Array.from({ length: 12 }, (_, i) => dataUrl(`boia-tutorial/idle_${i}.png`)),
-    draw: `(g, t, img, W, H) => {
-      // Cielo de atardecer en bandas (de píxel) y mar con olas.
-      const bands = ['#36278a', '#5a2f8f', '#a33a7a', '#ec4f24', '#ff8a3d'];
-      bands.forEach((c, i) => { g.fillStyle = c; g.fillRect(0, i * H * 0.11, W, H * 0.11 + 1); });
-      g.fillStyle = '#12233f';
-      g.fillRect(0, H * 0.55, W, H);
-      g.fillStyle = '#ffd36b';
-      g.fillRect(W * 0.62, H * 0.18, 64, 64);
-      for (let row = 0; row < 6; row++) {
-        g.fillStyle = row % 2 ? '#1d3a66' : '#274c7d';
-        const y = H * 0.58 + row * 30;
-        for (let x = -40; x < W + 40; x += 40) {
-          const dx = ((t * (40 + row * 12)) % 40);
-          g.fillRect(x + (row % 2 ? dx : -dx), y + Math.sin(t * 3 + x) * 2, 24, 6);
-        }
-      }
-      const f = img[Math.floor(t * 8) % img.length];
-      const bob = Math.sin(t * Math.PI * 1.5) * 10;
-      g.imageSmoothingEnabled = false;
-      g.drawImage(f, W / 2 - 160, H * 0.3 + bob, 320, 320);
-    }`,
-  },
-  {
-    id: 'puerto-dia-noche',
-    width: 640,
-    height: 400,
-    seconds: 5,
-    images: [dataUrl('landing/hero-still-1600.webp'), dataUrl('landing/hero-still-noche-1600.webp')],
-    draw: `(g, t, img, W, H, T) => {
-      const k = t / T;
-      const zoom = 1 + k * 0.18;
-      const sw = 1600 / zoom, sh = 1000 / zoom;
-      const sx = (1600 - sw) * 0.65, sy = (1000 - sh) * 0.4;
-      g.globalAlpha = 1;
-      g.drawImage(img[0], sx, sy, sw, sh, 0, 0, W, H);
-      g.globalAlpha = Math.min(1, Math.max(0, (k - 0.3) / 0.4));
-      g.drawImage(img[1], sx, sy, sw, sh, 0, 0, W, H);
-      g.globalAlpha = 1;
-    }`,
-  },
-  {
-    id: 'barco-fiesta',
-    width: 360,
-    height: 640,
-    seconds: 4,
-    images: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((d) => dataUrl(`barco/fiesta/${d}.png`)),
-    draw: `(g, t, img, W, H) => {
-      g.fillStyle = '#ec4f24';
-      g.fillRect(0, 0, W, H);
-      // Trama de píxel y focos que giran.
-      g.fillStyle = 'rgba(0,0,0,0.14)';
-      for (let y = 0; y < H; y += 8) for (let x = (y / 8) % 2 ? 0 : 4; x < W; x += 8) g.fillRect(x, y, 4, 4);
-      for (let i = 0; i < 3; i++) {
-        const a = t * 1.6 + i * 2.1;
-        g.fillStyle = ['rgba(255,211,107,0.35)', 'rgba(54,39,138,0.35)', 'rgba(255,255,255,0.25)'][i];
-        g.beginPath();
-        g.moveTo(W / 2, H * 0.08);
-        g.lineTo(W / 2 + Math.cos(a) * W, H * 0.08 + H);
-        g.lineTo(W / 2 + Math.cos(a + 0.25) * W, H * 0.08 + H);
-        g.fill();
-      }
-      g.fillStyle = '#12233f';
-      g.fillRect(0, H * 0.68, W, H);
-      const f = img[Math.floor(t * 4) % img.length];
-      g.imageSmoothingEnabled = false;
-      g.drawImage(f, W / 2 - 170, H * 0.36 + Math.sin(t * 4) * 6, 340, 340);
-    }`,
-  },
+/** id y archivo de origen. */
+export const CLIPS = [
+  { id: 'clip-20260530-231216', file: '20260530_231216.mp4' },
+  { id: 'clip-img-0561', file: 'IMG_0561.MOV' },
+  { id: 'clip-img-0564', file: 'IMG_0564.MOV' },
 ];
 
-async function record(page, clip) {
-  return page.evaluate(
-    async ({ width, height, seconds, images, draw }) => {
-      const loaded = await Promise.all(
-        images.map(
-          (src) =>
-            new Promise((ok, ko) => {
-              const i = new Image();
-              i.onload = () => ok(i);
-              i.onerror = ko;
-              i.src = src;
-            }),
-        ),
-      );
-      const paint = (0, eval)(draw);
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      document.body.append(canvas);
-      const g = canvas.getContext('2d');
-      // El póster: el fotograma de 0,5 s.
-      paint(g, 0.5, loaded, width, height, seconds);
-      const poster = await new Promise((ok) => canvas.toBlob(ok, 'image/webp', 0.82));
-      const stream = canvas.captureStream(30);
-      const rec = new MediaRecorder(stream, {
-        mimeType: 'video/mp4;codecs=avc1.42E01E',
-        videoBitsPerSecond: 900_000,
-      });
-      const chunks = [];
-      rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-      const stopped = new Promise((ok) => (rec.onstop = ok));
-      const start = performance.now();
-      rec.start();
-      await new Promise((done) => {
-        const frame = () => {
-          const t = (performance.now() - start) / 1000;
-          if (t >= seconds) return done();
-          paint(g, t, loaded, width, height, seconds);
-          requestAnimationFrame(frame);
-        };
-        frame();
-      });
-      rec.stop();
-      await stopped;
-      const b64 = async (blob) => {
-        const bytes = new Uint8Array(await blob.arrayBuffer());
-        let s = '';
-        for (let i = 0; i < bytes.length; i += 0x8000)
-          s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-        return btoa(s);
-      };
-      return { video: await b64(new Blob(chunks, { type: 'video/mp4' })), poster: await b64(poster) };
-    },
-    clip,
+const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
+const FFPROBE = process.env.FFMPEG
+  ? join(dirname(process.env.FFMPEG), `ffprobe${process.platform === 'win32' ? '.exe' : ''}`)
+  : 'ffprobe';
+
+function probe(file) {
+  const out = execFileSync(
+    FFPROBE,
+    [
+      '-v',
+      'error',
+      '-select_streams',
+      'v:0',
+      '-show_entries',
+      'stream=width,height,color_transfer:stream_side_data=rotation',
+      '-of',
+      'json',
+      file,
+    ],
+    { encoding: 'utf8' },
   );
+  const s = JSON.parse(out).streams[0];
+  const rotation = Math.abs(Number(s.side_data_list?.find((d) => 'rotation' in d)?.rotation ?? 0));
+  const portrait = rotation === 90 || rotation === 270 ? s.width > s.height : s.height > s.width;
+  return { hdr: ['arib-std-b67', 'smpte2084'].includes(s.color_transfer), portrait };
 }
 
-mkdirSync(OUT, { recursive: true });
-const browser = await chromium.launch();
-try {
-  const page = await browser.newPage();
-  await page.setContent('<!doctype html><body style="margin:0;background:#000"></body>');
-  for (const clip of CLIPS) {
-    const { video, poster } = await record(page, clip);
-    writeFileSync(join(OUT, `${clip.id}.mp4`), Buffer.from(video, 'base64'));
-    writeFileSync(join(OUT, `${clip.id}.webp`), Buffer.from(poster, 'base64'));
-    console.log(`${clip.id}: ${clip.width} × ${clip.height}, ${clip.seconds} s`);
+function convert(src, clip) {
+  const { hdr, portrait } = probe(src);
+  // ffmpeg ya gira el vídeo según el móvil (autorotate): sólo hay que escalar.
+  const scale = portrait ? `scale=-2:${LONG_SIDE}` : `scale=${LONG_SIDE}:-2`;
+  const tone = hdr
+    ? 'zscale=t=linear:npl=203,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,'
+    : '';
+  const mp4 = join(OUT, `${clip.id}.mp4`);
+  execFileSync(FFMPEG, [
+    '-v',
+    'error',
+    '-y',
+    '-i',
+    src,
+    '-t',
+    String(MAX_SECONDS),
+    '-vf',
+    `${tone}${scale}:flags=lanczos,format=yuv420p`,
+    '-an',
+    '-map_metadata',
+    '-1',
+    '-dn',
+    '-sn',
+    '-c:v',
+    'libx264',
+    '-profile:v',
+    'high',
+    '-preset',
+    'slow',
+    '-crf',
+    '24',
+    '-maxrate',
+    '2400k',
+    '-bufsize',
+    '4800k',
+    '-color_primaries',
+    'bt709',
+    '-color_trc',
+    'bt709',
+    '-colorspace',
+    'bt709',
+    '-color_range',
+    'tv',
+    '-movflags',
+    '+faststart',
+    mp4,
+  ]);
+  const poster = join(OUT, `${clip.id}.webp`);
+  execFileSync(FFMPEG, [
+    '-v',
+    'error',
+    '-y',
+    '-ss',
+    '0.5',
+    '-i',
+    mp4,
+    '-frames:v',
+    '1',
+    '-c:v',
+    'libwebp',
+    '-quality',
+    '82',
+    '-map_metadata',
+    '-1',
+    poster,
+  ]);
+  const mb = (statSync(mp4).size / 1024 / 1024).toFixed(1);
+  const kb = (statSync(poster).size / 1024).toFixed(0);
+  console.log(`${clip.id}: ${hdr ? 'HDR → SDR, ' : ''}${mb} MB, póster ${kb} kB`);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const from = process.argv[2];
+  if (!from) {
+    console.error('Uso: node tools/galeria/clips.mjs <carpeta de las fuentes>');
+    process.exit(1);
   }
-} finally {
-  await browser.close();
+  mkdirSync(OUT, { recursive: true });
+  for (const clip of CLIPS) convert(join(from, clip.file), clip);
 }

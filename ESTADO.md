@@ -4,6 +4,62 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 048 T328: Real media in, sample media out
+
+Qué existe:
+- `apps/web/public/contenido/galeria/`: las 7 fotos reales de Álvaro en WebP
+  (lado largo ≤ 1600 px, calidad 0,82): `galeria-dj-cabina-humo-neon`
+  930×1600 19 kB, `galeria-dj-neones-humo` 912×1600 45 kB,
+  `galeria-djs-cantando-palmeras` 1076×1462 77 kB,
+  `galeria-fiesta-nocturna-humo` 1536×1024 73 kB, `galeria-grafiti-valla`
+  1451×1084 334 kB, `galeria-mezcla-allen-heath` 1600×872 79 kB,
+  `galeria-pista-baile-humo` 1098×1433 82 kB; los 3 clips (H.264 High,
+  yuv420p, bt709, sin audio, `+faststart`, póster WebP del fotograma de 0,5 s):
+  `clip-20260530-231216` 1280×720 30 fps 15,6 s 2,9 MB, `clip-img-0561`
+  720×1280 29,97 fps 22,5 s 5,2 MB, `clip-img-0564` 720×1280 29,97 fps
+  19,6 s 5,4 MB (los dos `.MOV` eran HEVC HLG bt2020 girados: pasan a SDR
+  bt709 con zscale + tonemap hable); y `galeria-1`/`galeria-2`, movidas de
+  `art/galeria/`.
+- `packages/store/src/sample/content.ts`: un solo álbum (`album-boia`,
+  «Fotos de BOIA»); `REAL_PHOTOS` y `REAL_CLIPS` con su texto alternativo
+  en español. Portada por defecto (`selection`): las 7 fotos y los clips
+  `20260530_231216` e `IMG_0561` (9 = `HOME_PHOTOS_LIMIT`); `IMG_0564`,
+  `galeria-1` y `galeria-2`, sólo en `/galeria`.
+- Fuera toda la muestra: álbumes `album-muestra`/`album-cala`, fotos
+  `foto-1..8`, `foto-cala-1..3`, clips `clip-boia-baila`,
+  `clip-puerto-dia-noche`, `clip-barco-fiesta`, y `galeria-3`/`galeria-4`,
+  con sus archivos (`art/galeria/` y `art/galeria-fuentes/` ya no existen).
+  Revisión de la muestra 4 (`sample-reseed.ts`): un navegador que guardó
+  alguna de esas piezas o álbumes deja de verlas (`retiredIds`).
+- `tools/galeria/fotos.mjs` y `clips.mjs` ya no dibujan muestra: convierten
+  las fuentes de Álvaro (`node tools/galeria/fotos.mjs <carpeta>`,
+  `FFMPEG=<ffmpeg> node tools/galeria/clips.mjs <carpeta>`).
+- `apps/web/lib/landing/resolve.ts`: los clips también entran en la portada
+  (el collage ya pinta su póster y sólo reproduce, mudo, en pantalla y
+  nunca con «reducir movimiento»).
+- La isla de las fotos del mapa (`packages/world/.../arcilla/map.ts`) abre
+  `album-boia`; el Admin, sin álbumes, sube a `album-boia`.
+- El clip de muestra de 480 px queda sólo como dato de prueba de subida:
+  `apps/web/e2e/fixtures/clip-480.mp4`.
+- `docs/contenido-real.md` (cómo entran fotos y clips) y la nota de
+  REQ-COM-032 en `docs/spec/estado.md`.
+
+Comandos:
+- ffprobe de cada clip: h264 High, 0 pistas de audio (arriba tamaño y duración).
+- `pnpm exec vitest run --exclude '**/packages/db/**'`: 360 archivos, pasan.
+- `sh tools/spec/checks.sh`: OK. `pnpm lint`: OK. `pnpm typecheck`: OK.
+- `pnpm build`: presupuesto de la landing 199,7 / 200,0 kB, OK.
+- `E2E_PORT=3291 pnpm e2e videos-perezosos.spec.ts eventos.spec.ts
+  galeria.spec.ts --workers=2`: 26 pasan, 8 omitidas, 2 fallan: «REQ-COM-032:
+  /?intro=0 carga sin descargar vídeos» (móvil y escritorio), que ya fallaba
+  antes de este cambio: el `<video>` vacío y la descarga de
+  `contenido/portada/presentacion.mp4` son de la presentación del plan 042,
+  no de la Galería.
+
+Pendiente:
+- T329: Admin de portada/galería (orden, borrar, «En portada»).
+- La prueba de REQ-COM-032 de la home frente a la presentación (plan 042).
+
 ## 2026-10-24 — plan 047 T327: Remove the «Probar admin» links
 
 Qué existe: el pie de la landing (`blocks.tsx`) y el Menú de a bordo

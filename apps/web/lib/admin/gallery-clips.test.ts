@@ -254,19 +254,16 @@ describe('dónde se guarda un clip (T216)', () => {
   });
 });
 
-describe('clips de muestra (T216)', () => {
-  it('hay 2 o 3, con póster, de art/galeria, y ninguno sale en la home', () => {
+describe('clips reales de la Galería (plan 048 T328)', () => {
+  it('3, con póster, de contenido/galeria, mp4 de verdad y dentro del tope de subida', () => {
     const clips = SAMPLE_PHOTOS.filter((p) => p.kind === 'video');
-    expect(clips.length).toBeGreaterThanOrEqual(2);
-    expect(clips.length).toBeLessThanOrEqual(3);
+    expect(clips).toHaveLength(3);
     for (const c of clips) {
-      expect(c.src).toMatch(/^\/art\/galeria\/[a-z-]+\.mp4$/);
-      expect(c.poster).toMatch(/^\/art\/galeria\/[a-z-]+\.webp$/);
-      expect(c.selection).toBe(false);
+      expect(c.src).toMatch(/^\/contenido\/galeria\/[a-z0-9-]+\.mp4$/);
+      expect(c.poster).toMatch(/^\/contenido\/galeria\/[a-z0-9-]+\.webp$/);
       expect(photoSchema.safeParse(c).success).toBe(true);
-      // Los archivos están en art/ (servidos estáticos desde /art) y el clip es un mp4 de verdad.
-      const file = (ref: string) =>
-        new URL(`../../../../art/${ref.replace('/art/', '')}`, import.meta.url);
+      // Los archivos están en apps/web/public/ y el clip es un mp4 de verdad.
+      const file = (ref: string) => new URL(`../../public${ref}`, import.meta.url);
       expect(existsSync(file(c.poster!))).toBe(true);
       const bytes = new Uint8Array(readFileSync(file(c.src!)));
       expect(isMp4(bytes)).toBe(true);
