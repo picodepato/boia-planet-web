@@ -1,7 +1,6 @@
 import type { Artist } from '@boia/contracts';
 import Link from 'next/link';
 import { Fragment, type ReactNode, Suspense, lazy } from 'react';
-import { ADMIN_PATH } from '../../../lib/admin/paths';
 import {
   ACCESS_COPY,
   CARNET_CREATE_HREF,
@@ -627,17 +626,6 @@ export function BlockView({
                   {/* Carga completa a propósito: la entrada la decide el script de arranque. */}
                   {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
                   <a href="/?intro=1">{t('footer.replayIntro')}</a>
-                </p>
-                <p className="site-footer__small">
-                  {/* Versión de prueba (D-20, REQ-ADM-039): el Admin sin login. */}
-                  <Link
-                    href={ADMIN_PATH}
-                    prefetch={false}
-                    data-testid="probar-admin"
-                    title={t('footer.tryAdmin.hint')}
-                  >
-                    {t('footer.tryAdmin')}
-                  </Link>
                 </p>
               </div>
             </div>

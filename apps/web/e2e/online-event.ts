@@ -8,7 +8,7 @@ import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
  * BOIA Nochevieja llevan «Tickets todavía no disponibles» y Halloween es
  * «Solo en puerta»: no queda ningún evento con checkout online. Las e2e que
  * compran abren la venta de los dos en este navegador, como lo haría el
- * Admin de la demo («Probar admin»): `openSales(page)` antes de cargar la
+ * Admin de la demo (/admin): `openSales(page)` antes de cargar la
  * página (y después de las semillas propias de la spec, que sólo escriben si
  * no hay nada). El contenido de la muestra no cambia.
  */

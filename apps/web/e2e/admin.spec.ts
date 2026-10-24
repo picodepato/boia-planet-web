@@ -8,8 +8,9 @@ import { SAMPLE_CONTENT } from '../lib/landing/sample-content';
 import { marSheet, openMar, shipAt } from './mar-helpers';
 
 /**
- * «Probar admin» (T26, D-20, REQ-ADM-039): desde el pie de la landing se abre
- * el Admin sin login, con su aviso; se crea un evento en una isla, se suben
+ * Admin de la demo (T26, D-20, REQ-ADM-039): se entra escribiendo /admin
+ * (desde 2026-10-24 ni el pie de la landing ni el menú enlazan al Admin) y
+ * se abre con su aviso; se crea un evento en una isla, se suben
  * los artistas en la home y se publica el borrador (T48), se mueve la isla en
  * el mapa compartido (antes, un
  * movimiento que dejaría la salida en tierra se rechaza con su motivo) y se
@@ -79,13 +80,14 @@ async function section(page: Page, id: string) {
   await expect(page.getByTestId(`admin-seccion-${id}`)).toBeVisible();
 }
 
-test('Probar admin: los cambios se ven en la landing y en el mar', async ({ page }) => {
+test('Admin de la demo: los cambios se ven en la landing y en el mar', async ({ page }) => {
   await seedReport(page);
 
-  // 1. Desde el pie de la landing, sin login, con el aviso permanente.
+  // 1. El pie de la landing ya no enlaza al Admin (2026-10-24, Álvaro): se
+  // entra escribiendo /admin, con el aviso permanente.
   await page.goto('/?intro=0');
-  await page.getByTestId('probar-admin').click();
-  await expect(page).toHaveURL(/\/admin/);
+  await expect(page.locator('.site-footer a[href="/admin"]')).toHaveCount(0);
+  await page.goto('/admin');
   await expect(page.getByTestId('admin-aviso')).toContainText(ADMIN_COPY.bannerTitle);
   await expect(page.getByTestId('admin-aviso')).toContainText('este navegador');
 

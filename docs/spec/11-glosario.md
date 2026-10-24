@@ -90,7 +90,7 @@ Términos del producto tal como se usan en esta spec. Entre paréntesis, la secc
 ## Alcance y marcas
 
 - **L1, L2, diferido.** Lanzamiento 1, lanzamiento 2 y sin fecha (D-02).
-- **Versión de prueba.** La versión completa del plan 002 que Hernán despliega para enseñar, sin servicios externos: todo en el navegador, sello por sandbox y «Probar admin». No es la publicación (D-20; REQ-PRO-020).
+- **Versión de prueba.** La versión completa del plan 002 que Hernán despliega para enseñar, sin servicios externos: todo en el navegador, sello por sandbox y el Admin de la demo en `/admin`. No es la publicación (D-20; REQ-PRO-020).
 - **muestra, pendiente.** Etiquetas del contenido real no aprobado (REQ-PRO-018).
 - **[pendiente Álvaro], [pendiente Hernán].** El REQ necesita un dato o una aprobación de esa persona.
 - **[provisional].** Alcance o resolución a confirmar por el orquestador (ver 00-indice).

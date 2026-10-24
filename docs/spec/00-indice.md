@@ -180,6 +180,6 @@ Excepciones temporales de la versión de prueba, sin servicios externos. No se p
 | Datos en Supabase, compartidos entre visitantes | Todo en el navegador, detrás de una interfaz de repositorio | Supabase | REQ-ARQ-025 |
 | Cuenta por correo; botellas públicas para todos | Invitado con apodo; cada botella sólo la ve quien la escribe | REQ-IDE-002 | REQ-IDE-051 |
 | Sello sólo por el webhook de la ticketera | Sello al confirmar un checkout sandbox rotulado como prueba | La ticketera real (P2) | REQ-COM-035 |
-| Admin con contraseña, TOTP y roles | «Probar admin» sin login, con aviso de demo | REQ-ADM-002 a REQ-ADM-004 | REQ-ADM-039 |
+| Admin con contraseña, TOTP y roles | Admin de la demo en `/admin` (sin enlace en la web desde 2026-10-24), sin login, con aviso de demo | REQ-ADM-002 a REQ-ADM-004 | REQ-ADM-039 |
 | Recompensas de minijuegos validadas en servidor | Validadas en el navegador | Supabase | REQ-AVE-038 |
 | Ranking de puntos validado y compartido | Ranking local de este navegador, con los miembros `muestra` (D-23) | Supabase y REQ-IDE-038 | REQ-IDE-053 |

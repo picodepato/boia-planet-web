@@ -15,7 +15,7 @@ import { DoorPage } from './door/door-page';
 /**
  * /admin en modo local (D-20) con la puerta del Carnet 000 (plan 017 T193,
  * decisión 9): el número 000 y la contraseña, comprobada en el navegador
- * contra un hash con sal. Dentro, el «Probar admin» de siempre, o con `door`
+ * contra un hash con sal. Dentro, el Admin de la demo de siempre, o con `door`
  * el lector de la puerta (/admin/puerta, plan 019 T218).
  */
 export function DemoAdminGate({ door = false }: { door?: boolean } = {}) {

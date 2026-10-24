@@ -875,8 +875,6 @@ punto 7 y respuesta 6 de Álvaro; REQ-COM-031).
 | `footer.cookies` | Preferencias de cookies | = es.ts |
 | `footer.copyright` | © BOIA, Alicante | = es.ts |
 | `footer.replayIntro` | Ver la introducción | = es.ts |
-| `footer.tryAdmin` | Probar admin | |
-| `footer.tryAdmin.hint` | Versión de prueba: sin login, los cambios se quedan en este navegador. | |
 
 ## 32 · Legales: aviso legal, privacidad y cookies
 

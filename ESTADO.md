@@ -4,6 +4,28 @@ Dónde quedó el repo al cerrar la última sesión. Una sección por encargo, la
 más nueva arriba: `## <fecha> — encargo NN: <título>`. Se lee después de los
 documentos base y se actualiza al cerrar cada sesión.
 
+## 2026-10-24 — plan 047 T327: Remove the «Probar admin» links
+
+Qué existe: el pie de la landing (`blocks.tsx`) y el Menú de a bordo
+(`onboard-menu.tsx`) ya no enlazan al Admin; se entra escribiendo `/admin`
+(Álvaro, 2026-10-24). `/admin` sigue igual: con Supabase, login de cuentas;
+sin Supabase, el Admin de la demo tras el Carnet 000. Fuera las claves
+`footer.tryAdmin`, `footer.tryAdmin.hint` (catálogo y `textos-zonas.md`) y
+`ADMIN_COPY.tryAdmin*`. Spec: REQ-ADM-039 renombrado «Versión de prueba: Admin
+de la demo» en 07/09/estado, con la nota del retiro del enlace; 00-indice y
+glosario al día. `e2e/admin.spec.ts` entra por `/admin` y comprueba que el pie
+no enlaza al Admin; el test se llama «Admin de la demo: los cambios se ven en
+la landing y en el mar» (REQ-ENT-033 y REQ-ADM-039 lo citan así).
+
+Comandos:
+- `grep -rn "Probar admin\|tryAdmin" apps/web --include=*.ts --include=*.tsx` → nada
+- vitest (sin packages/db) → 360 archivos, 3240 pasan, 3 skipped
+- `sh tools/spec/checks.sh` → OK; `pnpm lint` → 0; `pnpm build` → 0 (landing 199.5/200 kB OK); `pnpm typecheck` → 0
+- `E2E_PORT=3327 pnpm exec playwright test e2e/admin.spec.ts` → 2 passed (móvil y escritorio)
+
+Pendiente: nada. Los documentos de fuera de docs/spec (DECISIONES, manuales,
+entrega, presentación) aún hablan del botón «Probar admin».
+
 ## 2026-10-24 — plan 046 T326: Presentation video plays in Chrome mobile
 
 Qué existe:

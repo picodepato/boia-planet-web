@@ -92,8 +92,6 @@ export const esZonasWeb = {
   'footer.cookies': 'Preferencias de cookies',
   'footer.copyright': '© BOIA, Alicante',
   'footer.replayIntro': 'Ver la introducción',
-  'footer.tryAdmin': 'Probar admin',
-  'footer.tryAdmin.hint': 'Versión de prueba: sin login, los cambios se quedan en este navegador.',
   'legal.back': 'Volver al inicio',
   'legal.cookies.body': 'Esta web no usa cookies de analítica ni de publicidad.',
 } as const;

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Sin Supabase, «Probar admin» (T26, D-20): todo pasa en el navegador, con el
+ * Sin Supabase, el Admin de la demo (T26, D-20): todo pasa en el navegador, con el
  * repositorio local, tras el Carnet 000 y su contraseña (plan 017 T193). Con
  * Supabase (T94, decisión 11; T193), el Carnet 000 con su contraseña (o el
  * código del email) y el TOTP, y las secciones sobre datos reales.
